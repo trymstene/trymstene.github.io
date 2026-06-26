@@ -124,6 +124,7 @@ a { color: inherit; }
 @media (min-width: 820px) {
   .nav__toggle { display: none; }
   .nav__backdrop { display: none; }
+  .nav__brand { font-size: 1.85rem; }
   .nav__links {
     position: static;
     transform: none;
