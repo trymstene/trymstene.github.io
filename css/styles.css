@@ -438,7 +438,7 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 
 /* ---------- dark-section treatments (yellow accents) ---------- */
 /* white buttons on black: yellow border + yellow shadow, black text */
-.block--dark .btn--light { border-color: var(--banana); box-shadow: 4px 4px 0 var(--banana); }
+.block--dark .btn--light { color: var(--ink); border-color: var(--banana); box-shadow: 4px 4px 0 var(--banana); }
 .block--dark .btn--light:hover { box-shadow: 6px 6px 0 var(--banana); }
 .block--dark .btn--light:active { box-shadow: 2px 2px 0 var(--banana); }
 
