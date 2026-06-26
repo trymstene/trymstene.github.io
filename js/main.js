@@ -1,21 +1,28 @@
 // Trym Stene — homepage interactions
 
-// Mobile nav toggle
+// Mobile nav: slide-in panel
 const nav = document.querySelector('.nav');
 const toggle = document.querySelector('.nav__toggle');
+const backdrop = document.querySelector('.nav__backdrop');
+
+function setMenu(open) {
+  if (!nav || !toggle) return;
+  nav.classList.toggle('open', open);
+  toggle.setAttribute('aria-expanded', String(open));
+  toggle.textContent = open ? '✕' : '☰';
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
 if (toggle) {
-  toggle.addEventListener('click', () => {
-    const open = nav.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', String(open));
-  });
-  // close menu after tapping a link (mobile)
+  toggle.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+  // close after tapping a link
   nav.querySelectorAll('.nav__links a').forEach((a) =>
-    a.addEventListener('click', () => {
-      nav.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    })
+    a.addEventListener('click', () => setMenu(false))
   );
 }
+if (backdrop) backdrop.addEventListener('click', () => setMenu(false));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+window.addEventListener('resize', () => { if (window.innerWidth >= 820) setMenu(false); });
 
 // Current year in footer
 const year = document.getElementById('year');
