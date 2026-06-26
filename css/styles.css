@@ -436,6 +436,22 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 /* ---------- fine print ---------- */
 .fineprint { max-width: 75ch; margin: 1.5rem auto 0; font-size: 0.85rem; opacity: 0.8; text-align: left; }
 
+/* ---------- dark-section treatments (yellow accents) ---------- */
+/* white buttons on black: yellow border + yellow shadow, black text */
+.block--dark .btn--light { border-color: var(--banana); box-shadow: 4px 4px 0 var(--banana); }
+.block--dark .btn--light:hover { box-shadow: 6px 6px 0 var(--banana); }
+.block--dark .btn--light:active { box-shadow: 2px 2px 0 var(--banana); }
+
+/* images on black: thick yellow border, yellow shadow, playful tilt */
+.split__media img { transition: transform 0.25s ease; }
+.block--dark .split__media img {
+  border: 5px solid var(--banana);
+  box-shadow: 12px 12px 0 var(--banana);
+  transform: rotate(-2.5deg);
+}
+.block--dark .split--reverse .split__media img { transform: rotate(2.5deg); }
+.block--dark .split__media img:hover { transform: rotate(0); }
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback { animation: none; }
