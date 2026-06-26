@@ -215,6 +215,20 @@ a { color: inherit; }
 .card h3 { font-size: 1.3rem; margin-bottom: 0.5rem; }
 .card__go { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--hot); }
 
+/* ---------- split (image + text) ---------- */
+.split { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; }
+.split__media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: var(--line);
+  box-shadow: var(--shadow);
+}
+@media (min-width: 760px) {
+  .split { grid-template-columns: 1fr 1.2fr; gap: 3rem; }
+  .split--reverse .split__media { order: 2; }
+}
+
 /* ---------- socials / footer ---------- */
 .socials {
   display: flex;
