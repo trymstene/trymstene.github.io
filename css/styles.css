@@ -218,22 +218,28 @@ a { color: inherit; }
   position: relative;
 }
 
-/* textured hazard-stripe separator at the top of every section */
+/* row-of-bananas separator at the top of every section */
 .block::before {
-  content: "";
+  content: "🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌" / "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 16px;
+  height: 30px;
+  background: var(--ink);
   border-top: 3px solid var(--ink);
   border-bottom: 3px solid var(--ink);
-  background-image: repeating-linear-gradient(-45deg, var(--ink) 0 9px, transparent 9px 18px);
+  font-size: 16px;
+  line-height: 30px;
+  letter-spacing: 7px;
+  text-indent: 7px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+  pointer-events: none;
 }
-.block--dark::before {
-  border-color: var(--banana);
-  background-image: repeating-linear-gradient(-45deg, var(--banana) 0 9px, transparent 9px 18px);
-}
+.block--dark::before { border-color: var(--banana); }
 
 .block--yellow { background: var(--banana); }
 .block--dark { background: var(--ink); color: var(--paper); }
