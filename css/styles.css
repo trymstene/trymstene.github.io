@@ -362,6 +362,33 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
   .faq__item { margin-inline: auto; text-align: left; }
 }
 
+/* ---------- bullet lists ---------- */
+.bullets { list-style: none; max-width: 70ch; margin: 1.2rem auto 0; text-align: left; }
+.bullets li { position: relative; padding: 0.55rem 0 0.55rem 1.8rem; }
+.bullets li::before { content: "→"; position: absolute; left: 0; font-weight: 700; color: var(--hot); }
+.block--dark .bullets li::before { color: var(--banana); }
+
+/* ---------- factor chips ---------- */
+.factors { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.2rem; }
+.factors span { border: 3px solid currentColor; padding: 0.35rem 0.7rem; font-weight: 700; }
+
+/* ---------- callout box (verbatim notes) ---------- */
+.callout {
+  max-width: 75ch;
+  margin: 1.5rem auto 0;
+  padding: 1.2rem 1.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  font-size: 0.97rem;
+}
+.callout strong { font-family: "Archivo Black", sans-serif; display: block; margin-bottom: 0.4rem; }
+
+/* ---------- fine print ---------- */
+.fineprint { max-width: 75ch; margin: 1.5rem auto 0; font-size: 0.85rem; opacity: 0.8; text-align: left; }
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback { animation: none; }
