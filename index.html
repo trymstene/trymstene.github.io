@@ -3,14 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trym Stene</title>
+  <title>Trym Stene — hello yes, it's the banana guy</title>
+  <meta name="description" content="Trym Stene — the guy who made the Dancing Banana GIF back in 1999. Lead SEO, web comedian, music producer. Satirical web projects, dancing banana merch, and the full banana story.">
+
+  <!-- Open Graph / social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trym Stene — hello yes, it's the banana guy">
+  <meta property="og:description" content="The guy who made the Dancing Banana GIF. Web comedian, SEO, music producer.">
+  <meta property="og:url" content="https://trymstene.github.io/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <main class="hero">
-    <h1>Trym Stene</h1>
-    <p>New site coming soon.</p>
-  </main>
+
+  <!-- scrolling marquee banner -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee__track">
+      <span>🍌 NOW LICENSING THE DANCING BANANA &nbsp;•&nbsp; NO PUMP-AND-DUMP, THANK YOU &nbsp;•&nbsp; YES IT'S THE REAL BANANA GUY &nbsp;•&nbsp; EST. 1999 &nbsp;•&nbsp; </span>
+      <span>🍌 NOW LICENSING THE DANCING BANANA &nbsp;•&nbsp; NO PUMP-AND-DUMP, THANK YOU &nbsp;•&nbsp; YES IT'S THE REAL BANANA GUY &nbsp;•&nbsp; EST. 1999 &nbsp;•&nbsp; </span>
+    </div>
+  </div>
+
+  <!-- nav -->
+  <header class="nav">
+    <a class="nav__brand" href="/">TRYM<span>STENE</span></a>
+    <button class="nav__toggle" aria-label="Menu" aria-expanded="false">☰</button>
+    <nav class="nav__links">
+      <a href="#banana">The Banana</a>
+      <a href="#projects">Projects</a>
+      <a href="#shop">Merch</a>
+      <a href="#about">Me</a>
+      <a href="https://www.djsentry.com" target="_blank" rel="noopener">Music ↗</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="hero__banana">
+      <!-- Placeholder banana. Drop the real GIF at assets/dancing-banana.gif and it auto-swaps. -->
+      <img src="assets/dancing-banana.gif" alt="The Dancing Banana"
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
+    <h1 class="hero__title">hello yes,<br>it's the <span class="wobble">banana</span> guy</h1>
+    <p class="hero__tag">LEAD SEO &nbsp;·&nbsp; WEB COMEDIAN &nbsp;·&nbsp; MUSIC PRODUCER</p>
+    <div class="hero__cta">
+      <a class="btn btn--dark" href="#banana">Meet the banana →</a>
+      <a class="btn btn--light" href="#shop">Get the merch</a>
+    </div>
+  </section>
+
+  <!-- banana hook -->
+  <section class="block block--yellow" id="banana">
+    <p class="kicker">Yes, THAT banana</p>
+    <h2>I made the internet's favourite fruit.</h2>
+    <p class="lead">
+      Back in <strong>1999</strong>, on an AMD K6-2 running at a screaming 350MHz, I made a little
+      dancing banana GIF. It became <strong>Peanut Butter Jelly Time</strong>, it cameo'd in
+      <strong>Family Guy</strong>, and it's been bouncing across the internet ever since.
+    </p>
+    <p class="lead">
+      The full story — the remixes, the FAQ, and how to <strong>license</strong> the banana
+      (spoiler: not for your crypto coin) — lives on its own page.
+    </p>
+    <a class="btn btn--dark" href="dancing-banana-gif-meme/">Read the full banana story →</a>
+  </section>
+
+  <!-- projects -->
+  <section class="block" id="projects">
+    <p class="kicker">Things I've built to make people laugh</p>
+    <h2>Projects</h2>
+    <div class="cards">
+      <a class="card" href="#">
+        <h3>The Corporate Rangers</h3>
+        <p>Saving the world, one synergy at a time.</p>
+        <span class="card__go">Explore →</span>
+      </a>
+      <a class="card" href="dancing-banana-gif-meme/">
+        <h3>The Dancing Banana</h3>
+        <p>The 1999 GIF that refuses to stop dancing.</p>
+        <span class="card__go">The story →</span>
+      </a>
+      <a class="card" href="#">
+        <h3>More satire ↗</h3>
+        <p>A pile of silly little web projects. More coming here soon.</p>
+        <span class="card__go">Soon →</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- merch -->
+  <section class="block block--dark" id="shop">
+    <p class="kicker kicker--light">New!</p>
+    <h2>Dancing Banana Merch</h2>
+    <p class="lead">Wear the banana. Officially. The shop is being re-hung in its new home — drop back soon.</p>
+    <a class="btn btn--light" href="#">Visit the shop →</a>
+  </section>
+
+  <!-- about -->
+  <section class="block block--yellow" id="about">
+    <p class="kicker">The guy behind the fruit</p>
+    <h2>Me</h2>
+    <p class="lead">
+      I'm Trym Stene — a Norwegian who does SEO for a living, makes jokes on the internet for fun,
+      and produces music as <a href="https://www.djsentry.com" target="_blank" rel="noopener">DJ Sentry</a>.
+      One time in 1999 I drew a fruit and it got a little out of hand.
+    </p>
+  </section>
+
+  <!-- contact / footer -->
+  <footer class="block block--dark" id="contact">
+    <p class="kicker kicker--light">Say hello</p>
+    <h2>Contact</h2>
+    <p class="lead">
+      Got a project, a question, or want to license the banana?
+      Email <a href="mailto:trym@trymstene.com">trym@trymstene.com</a>.
+      <br><span class="muted">(A proper spam-proof contact form is coming to this spot.)</span>
+    </p>
+    <div class="socials">
+      <a href="#" target="_blank" rel="noopener">Facebook</a>
+      <a href="#" target="_blank" rel="noopener">X</a>
+      <a href="#" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="#" target="_blank" rel="noopener">SoundCloud</a>
+      <a href="#" target="_blank" rel="noopener">Instagram</a>
+      <a href="#" target="_blank" rel="noopener">Spotify</a>
+    </div>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy · best viewed in any browser, even Netscape 🍌</p>
+  </footer>
+
   <script src="js/main.js"></script>
 </body>
 </html>
