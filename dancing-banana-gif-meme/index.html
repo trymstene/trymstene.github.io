@@ -4,31 +4,179 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Dancing Banana GIF — The Story | Trym Stene</title>
-  <meta name="description" content="The story of the Dancing Banana GIF, made by Trym Stene in 1999. The history, the community remixes, the FAQ, and how to license the banana.">
+  <meta name="description" content="The story of the Dancing Banana GIF, made by Trym Stene in 1999. The history, the community remixes, the FAQ, how to download it, and how to license the banana.">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="The Dancing Banana GIF — The Story">
+  <meta property="og:description" content="Made by Trym Stene in 1999. The full history, remixes, FAQ, download and licensing.">
+  <meta property="og:url" content="https://trymstene.github.io/dancing-banana-gif-meme/">
+  <meta property="og:image" content="https://trymstene.github.io/assets/dancing-banana-gif.gif">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+
+  <!-- Structured data: helps Google understand the page + creator -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": "The Dancing Banana GIF",
+    "alternateName": "Peanut Butter Jelly Time banana",
+    "dateCreated": "1999",
+    "image": "https://trymstene.github.io/assets/dancing-banana-gif.gif",
+    "creator": { "@type": "Person", "name": "Trym Stene", "url": "https://trymstene.github.io/" }
+  }
+  </script>
 </head>
 <body>
+
+  <!-- nav -->
   <header class="nav">
     <a class="nav__brand" href="/">TRYM<span>STENE</span></a>
-    <nav class="nav__links" style="display:flex;flex-direction:row;gap:.5rem;">
-      <a href="/">← Home</a>
+    <button class="nav__toggle" aria-label="Menu" aria-expanded="false">☰</button>
+    <nav class="nav__links">
+      <a href="/">Home</a>
+      <a href="/#projects">Projects</a>
+      <a href="/#shop">Merch</a>
+      <a href="/#about">Me</a>
+      <a href="#license">License the banana</a>
+      <a href="/#contact">Contact</a>
     </nav>
   </header>
 
+  <!-- hero -->
   <section class="hero">
     <div class="hero__banana">
       <img src="../assets/dancing-banana-gif.gif" alt="The Dancing Banana GIF, created by Trym Stene in 1999"
            onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
     </div>
-    <h1 class="hero__title">the banana story</h1>
-    <p class="hero__tag">Coming next — the full history, remixes &amp; licensing</p>
-    <p class="lead" style="margin:2rem auto 0;">
-      This is where the complete Dancing Banana story lives: 1999, the remixes, the FAQ,
-      a one-click GIF download, and how to license the banana.
-      We're building it next.
-    </p>
-    <a class="btn btn--dark" href="/" style="margin-top:2rem;">← Back to home</a>
+    <h1 class="hero__title">the dancing<br>banana</h1>
+    <p class="hero__tag">A GIF I made in 1999 that never stopped dancing</p>
   </section>
+
+  <!-- the story -->
+  <section class="block block--yellow">
+    <p class="kicker">The story</p>
+    <h2>It started on a 350MHz machine.</h2>
+    <p class="lead">
+      I made the Dancing Banana back in <strong>1999</strong>, on an AMD K6-2 running at a blistering
+      350MHz. I used <strong>Animation Shop</strong>, the little tool that came bundled with Paint Shop Pro —
+      it basically arrived ready with grids and everything, so it was just play around and make GIFs and
+      pixel art almost right out of the box.
+    </p>
+    <p class="lead">
+      I grew up in rural Norway, without many people around who were into the same things, so I made silly
+      digital stuff to amuse myself and the people I met on internet forums and IRC. The banana became my
+      little "celebration" emoji — I'd post it whenever I finished something new. I made other animations
+      too, an angry toaster, a melting ice-cream cone with big sad eyes — but none of them had whatever the
+      banana had.
+    </p>
+    <p class="lead">
+      Before Flash took over, I actually made a bit of money drawing animated GIF ad-banners for people I
+      met on IRC — about <strong>$25</strong> a pop (250 kroner), though cashing a foreign check ate a chunk
+      of that. Then Flash arrived, <strong>The Buckwheat Boyz</strong> set a version to
+      <strong>"Peanut Butter Jelly Time,"</strong> and the banana took on a life of its own — eventually
+      even turning up in <strong>Family Guy</strong>.
+    </p>
+  </section>
+
+  <!-- grab the gif -->
+  <section class="block">
+    <p class="kicker">Take it with you</p>
+    <h2>Grab the GIF</h2>
+    <p class="lead">It's the people's banana. Download it, share it, enjoy it.</p>
+    <div class="grab">
+      <img src="../assets/dancing-banana-gif.gif" alt="Dancing Banana">
+      <a class="btn btn--dark" href="../assets/dancing-banana-gif.gif" download="dancing-banana.gif">Download the GIF ↓</a>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="block block--dark">
+    <p class="kicker kicker--light">The usual questions</p>
+    <h2>FAQ</h2>
+    <div class="faq__item">
+      <h3>When did you make the Dancing Banana GIF?</h3>
+      <p>Around 1999. I made shitloads of GIFs in those years, but this one shone the brightest.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Are you really the creator?</h3>
+      <p>
+        Yes. I'll be honest — I don't still have the original Animation Shop file as a smoking gun, but the
+        story has been picked up over the years by USA Today, Fandom, City AM and others.
+      </p>
+    </div>
+    <div class="faq__item">
+      <h3>Can I use it?</h3>
+      <p>For fun? Go wild. For commercial use? <a href="#license">Read this first.</a></p>
+    </div>
+    <div class="press">
+      <span>USA Today</span>
+      <span>Fandom</span>
+      <span>City AM</span>
+    </div>
+  </section>
+
+  <!-- licensing -->
+  <section class="block block--yellow" id="license">
+    <p class="kicker">Want to use the banana?</p>
+    <h2>Licensing</h2>
+    <p class="lead">
+      The Dancing Banana has been bouncing around the internet for 25+ years, and honestly that's how I like
+      it — <strong>free to enjoy, share and remix</strong> for the love of it.
+    </p>
+    <p class="lead">
+      For <strong>commercial</strong> use, you'll need a license — and I get a <em>lot</em> of these
+      requests. I'll be upfront: a large share are crypto projects wanting a mascot for a token, and I
+      won't endorse or promote pump-and-dump schemes. A license from me is not an endorsement of your
+      project.
+    </p>
+    <p class="lead">
+      That said — if you're genuinely set on using the banana, I'm open to a
+      <strong>limited-time commercial license for a fee</strong>. Tell me what you have in mind and we'll
+      talk.
+    </p>
+    <a class="btn btn--dark" href="/#contact">Enquire about licensing →</a>
+  </section>
+
+  <!-- community remixes -->
+  <section class="block">
+    <p class="kicker">Thank you, internet</p>
+    <h2>Community remixes</h2>
+    <p class="lead">
+      A huge thank you to the meme community for all the Dancing Banana remixes over the years — the
+      warrior banana, the skiing banana, the alien banana, all of them. (Gallery going up here soon.)
+    </p>
+    <div class="remix-grid">
+      <div class="slot">🍌</div>
+      <div class="slot">🍌</div>
+      <div class="slot">🍌</div>
+      <div class="slot">🍌</div>
+      <div class="slot">🍌</div>
+      <div class="slot">🍌</div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer class="block block--dark" id="contact">
+    <p class="kicker kicker--light">Say hello</p>
+    <h2>Contact</h2>
+    <p class="lead">
+      Licensing, questions, or just a hello —
+      email <a href="mailto:trym@trymstene.com">trym@trymstene.com</a>.
+    </p>
+    <div class="socials">
+      <a href="https://www.facebook.com/trymstene" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://twitter.com/trymstene" target="_blank" rel="noopener">X</a>
+      <a href="https://www.linkedin.com/in/trymstene/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://soundcloud.com/sentryofficial" target="_blank" rel="noopener">SoundCloud</a>
+      <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
+    </div>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy 🍌</p>
+  </footer>
+
+  <script src="../js/main.js"></script>
 </body>
 </html>

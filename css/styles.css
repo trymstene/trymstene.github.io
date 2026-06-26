@@ -245,6 +245,53 @@ a { color: inherit; }
 .muted { opacity: 0.7; font-size: 0.9em; }
 .copyright { margin-top: 2rem; font-size: 0.8rem; opacity: 0.75; }
 
+/* ---------- FAQ ---------- */
+.faq__item { border-top: 3px solid var(--ink); padding: 1.3rem 0; max-width: 70ch; }
+.faq__item:last-child { border-bottom: 3px solid var(--ink); }
+.faq__item h3 { font-size: 1.15rem; margin-bottom: 0.4rem; }
+.faq__item p { font-size: 1.05rem; }
+.block--dark .faq__item { border-color: var(--banana); }
+
+/* ---------- press row ---------- */
+.press { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.2rem; }
+.press span {
+  font-weight: 700;
+  border: 3px solid var(--ink);
+  padding: 0.4rem 0.8rem;
+  background: var(--paper);
+}
+
+/* ---------- grab-the-gif box ---------- */
+.grab {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: var(--paper);
+  border: var(--line);
+  box-shadow: var(--shadow);
+}
+.grab img { width: 90px; height: auto; }
+
+/* ---------- remix gallery placeholder ---------- */
+.remix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.remix-grid .slot {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: var(--paper);
+  border: 3px dashed var(--ink);
+  opacity: 0.6;
+}
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback { animation: none; }
