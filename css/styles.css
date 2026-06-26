@@ -215,8 +215,26 @@ a { color: inherit; }
 /* ---------- content blocks ---------- */
 .block {
   padding: 4rem 1.2rem;
-  border-bottom: var(--line);
+  position: relative;
 }
+
+/* textured hazard-stripe separator at the top of every section */
+.block::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  border-top: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+  background-image: repeating-linear-gradient(-45deg, var(--ink) 0 9px, transparent 9px 18px);
+}
+.block--dark::before {
+  border-color: var(--banana);
+  background-image: repeating-linear-gradient(-45deg, var(--banana) 0 9px, transparent 9px 18px);
+}
+
 .block--yellow { background: var(--banana); }
 .block--dark { background: var(--ink); color: var(--paper); }
 .block--dark a { color: var(--banana); }
