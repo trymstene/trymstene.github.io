@@ -107,9 +107,7 @@ a { color: inherit; }
 .hero {
   text-align: center;
   padding: 3rem 1.2rem 4rem;
-  background:
-    radial-gradient(circle at 20% 20%, var(--banana) 0 12px, transparent 13px) 0 0/48px 48px,
-    var(--paper);
+  background: #ffffff;
 }
 .hero__banana { margin: 0 auto 1.5rem; width: min(60vw, 240px); }
 .hero__banana img { width: 100%; height: auto; image-rendering: auto; }
