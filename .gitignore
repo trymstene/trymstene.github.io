@@ -14,3 +14,6 @@ Desktop.ini
 
 # Local-only planning doc
 ROADMAP.md
+
+# Local-only upload pack for Giphy/Tenor (not for the website)
+giphy-tenor-pack/
