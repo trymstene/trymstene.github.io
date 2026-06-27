@@ -523,6 +523,20 @@ details.story p { margin-bottom: 1rem; }
 /* offset in-page anchors so they clear the sticky nav */
 .block[id], .hero[id] { scroll-margin-top: 5rem; }
 
+/* ---------- language switcher ---------- */
+.langswitch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.langswitch a { color: inherit; text-decoration: underline; }
+.langswitch a[aria-current="true"] { color: var(--banana); text-decoration: none; }
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback { animation: none; }
