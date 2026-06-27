@@ -43,7 +43,7 @@ a { color: inherit; }
 }
 .marquee__track {
   display: inline-flex;
-  animation: scroll 22s linear infinite;
+  animation: scroll 80s linear infinite;
   padding: 0.5rem 0;
 }
 .marquee__track span { padding-right: 1rem; }
