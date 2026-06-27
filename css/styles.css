@@ -470,30 +470,22 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 .block--dark .split--reverse .split__media img { transform: rotate(2.5deg); }
 .block--dark .split__media img:hover { transform: rotate(0); }
 
-/* ---------- ad slots (tasteful, reserved, non-invasive) ---------- */
-.ad-slot {
-  max-width: 728px;
-  margin: 2.5rem auto 0;
-  text-align: center;
-}
-.ad-slot__label {
-  display: block;
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  opacity: 0.45;
-  margin-bottom: 0.4rem;
-}
-.ad-slot__inner {
-  min-height: 100px;
-  display: grid;
-  place-items: center;
-  border: 2px dashed currentColor;
-  border-radius: 4px;
-  opacity: 0.4;
+/* ---------- download buttons + embed box ---------- */
+.dl-buttons { display: flex; flex-direction: column; gap: 0.7rem; }
+.embed { max-width: 640px; margin: 2rem auto 0; text-align: left; }
+.embed label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+.embed textarea {
+  width: 100%;
+  border: 3px solid var(--ink);
+  border-radius: 2px;
+  padding: 0.7rem;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-size: 0.82rem;
-  padding: 1rem;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
 }
+.embed .btn { margin-top: 0.7rem; }
 
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {

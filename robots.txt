@@ -1,0 +1,7 @@
+# trymstene.github.io is a build/staging domain.
+# Block indexing so it does NOT compete with the live site at trymstene.com.
+#
+# >>> AT LAUNCH (when this moves to trymstene.com): DELETE the two lines below
+#     (or replace with "Allow: /") and add a Sitemap: line. <<<
+User-agent: *
+Disallow: /

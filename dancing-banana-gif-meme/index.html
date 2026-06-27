@@ -87,30 +87,34 @@
     </p>
   </section>
 
-  <!-- grab the gif -->
+  <!-- download hub -->
   <section class="block">
     <p class="kicker">Take it with you</p>
-    <h2>Grab the GIF</h2>
-    <p class="lead">It's the people's banana. Download it, share it, enjoy it.</p>
+    <h2>Download the Dancing Banana</h2>
+    <p class="lead">It's the people's banana — free to download, share and embed. Grab it however you need it.</p>
     <div class="grab">
-      <img src="../assets/dancing-banana-gif.gif" alt="Dancing Banana">
-      <a class="btn btn--dark" href="../assets/dancing-banana-gif.gif" download="dancing-banana.gif">Download the GIF ↓</a>
+      <img src="../assets/dancing-banana-gif.gif" alt="The Dancing Banana GIF, free download">
+      <div class="dl-buttons">
+        <a class="btn btn--dark" href="../assets/dancing-banana-gif.gif" download="dancing-banana.gif">Original GIF ↓</a>
+        <a class="btn btn--dark" href="../assets/dancing-banana-transparent.gif" download="dancing-banana-transparent.gif">Transparent GIF ↓</a>
+        <a class="btn btn--light" href="../assets/dancing-banana-transparent.png" download="dancing-banana-transparent.png">Transparent PNG ↓</a>
+      </div>
     </div>
+
     <p style="margin-top:1.5rem;">
       <a class="btn btn--dark" href="/make-a-banana/">🎨 Make your own dancing banana →</a>
     </p>
-    <p class="lead" style="margin-top:1.5rem;">
+
+    <div class="embed">
+      <label for="embedCode">Putting the banana on your site? Use this — it keeps a credit link back:</label>
+      <textarea id="embedCode" readonly rows="3"></textarea>
+      <button class="btn btn--light" id="copyEmbed" type="button">Copy embed code</button>
+    </div>
+
+    <p class="lead" style="margin-top:2rem;">
       It's free — always. But if the banana made you smile, you can
       <a href="https://ko-fi.com/REPLACE_ME" target="_blank" rel="noopener">buy the banana guy a coffee</a>. ☕🍌
     </p>
-
-    <aside class="ad-slot" aria-label="Advertisement">
-      <span class="ad-slot__label">Advertisement</span>
-      <div class="ad-slot__inner">
-        <!-- AdSense: paste your <ins class="adsbygoogle">…</ins> unit here when live on trymstene.com -->
-        <span>Ad space — enabled at launch</span>
-      </div>
-    </aside>
   </section>
 
   <!-- FAQ -->
@@ -189,5 +193,22 @@
   </footer>
 
   <script src="../js/main.js"></script>
+  <script>
+    (function(){
+      var origin = location.origin;
+      var page = origin + '/dancing-banana-gif-meme/';
+      var gif = origin + '/assets/dancing-banana-gif.gif';
+      var code = '<a href="' + page + '" title="The original Dancing Banana GIF by Trym Stene">\n  <img src="' + gif + '" alt="Dancing Banana" width="120" height="128">\n</a>';
+      var ta = document.getElementById('embedCode');
+      if (ta) ta.value = code;
+      var btn = document.getElementById('copyEmbed');
+      if (btn && ta) btn.addEventListener('click', function(){
+        ta.select();
+        var done = function(){ btn.textContent = 'Copied!'; setTimeout(function(){ btn.textContent = 'Copy embed code'; }, 1500); };
+        if (navigator.clipboard) { navigator.clipboard.writeText(ta.value).then(done).catch(function(){ document.execCommand('copy'); done(); }); }
+        else { document.execCommand('copy'); done(); }
+      });
+    })();
+  </script>
 </body>
 </html>
