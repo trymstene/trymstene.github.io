@@ -218,25 +218,21 @@ a { color: inherit; }
   position: relative;
 }
 
-/* row-of-bananas separator at the top of every section */
+/* row-of-bananas separator — custom SVG, consistent on every device */
 .block::before {
-  content: "🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌🍌" / "";
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 30px;
-  background: var(--ink);
+  height: 28px;
+  background-color: var(--ink);
+  background-image: url('/assets/banana-icon.svg');
+  background-repeat: repeat-x;
+  background-position: center;
+  background-size: auto 16px;
   border-top: 3px solid var(--ink);
   border-bottom: 3px solid var(--ink);
-  font-size: 16px;
-  line-height: 30px;
-  letter-spacing: 7px;
-  text-indent: 7px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  user-select: none;
   pointer-events: none;
 }
 .block--dark::before { border-color: var(--banana); }
