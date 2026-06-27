@@ -470,6 +470,31 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 .block--dark .split--reverse .split__media img { transform: rotate(2.5deg); }
 .block--dark .split__media img:hover { transform: rotate(0); }
 
+/* ---------- ad slots (tasteful, reserved, non-invasive) ---------- */
+.ad-slot {
+  max-width: 728px;
+  margin: 2.5rem auto 0;
+  text-align: center;
+}
+.ad-slot__label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-bottom: 0.4rem;
+}
+.ad-slot__inner {
+  min-height: 100px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed currentColor;
+  border-radius: 4px;
+  opacity: 0.4;
+  font-size: 0.82rem;
+  padding: 1rem;
+}
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback { animation: none; }
