@@ -218,24 +218,20 @@ a { color: inherit; }
   position: relative;
 }
 
-/* row-of-bananas separator — custom SVG, consistent on every device */
+/* organic banana separator — scattered bananas floating across each section boundary */
 .block::before {
   content: "";
   position: absolute;
-  top: 0;
+  top: -26px;
   left: 0;
   right: 0;
-  height: 30px;
-  background-color: var(--ink);
+  height: 52px;
   background-image: url('/assets/banana-icon.svg');
   background-repeat: repeat-x;
   background-position: center;
-  background-size: auto 20px;
-  border-top: 3px solid var(--ink);
-  border-bottom: 3px solid var(--ink);
+  background-size: auto 44px;
   pointer-events: none;
 }
-.block--dark::before { border-color: var(--banana); }
 
 .block--yellow { background: var(--banana); }
 .block--dark { background: var(--ink); color: var(--paper); }
