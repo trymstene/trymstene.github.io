@@ -225,12 +225,12 @@ a { color: inherit; }
   top: 0;
   left: 0;
   right: 0;
-  height: 28px;
+  height: 30px;
   background-color: var(--ink);
   background-image: url('/assets/banana-icon.svg');
   background-repeat: repeat-x;
   background-position: center;
-  background-size: auto 16px;
+  background-size: auto 20px;
   border-top: 3px solid var(--ink);
   border-bottom: 3px solid var(--ink);
   pointer-events: none;
