@@ -487,6 +487,42 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 }
 .embed .btn { margin-top: 0.7rem; }
 
+/* ---------- jump nav (in-page anchors) ---------- */
+.jumpnav { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 1.5rem; }
+.jumpnav a {
+  font-weight: 700;
+  text-decoration: none;
+  border: 3px solid var(--ink);
+  padding: 0.4rem 0.9rem;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.jumpnav a:hover { background: var(--ink); color: var(--banana); }
+
+/* ---------- accordion (native details) ---------- */
+details.story {
+  max-width: 70ch;
+  margin: 1.3rem auto 0;
+  text-align: left;
+  border-top: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+}
+details.story summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 1rem 0;
+  list-style: none;
+}
+details.story summary::-webkit-details-marker { display: none; }
+details.story summary::after { content: " +"; font-family: monospace; }
+details.story[open] summary::after { content: " –"; }
+details.story p { margin-bottom: 1rem; }
+
+/* offset in-page anchors so they clear the sticky nav */
+.block[id], .hero[id] { scroll-margin-top: 5rem; }
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback { animation: none; }
