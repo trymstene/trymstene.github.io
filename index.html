@@ -12,12 +12,48 @@
   <meta property="og:title" content="Trym Stene — hello yes, it's the banana guy">
   <meta property="og:description" content="The guy who made the Dancing Banana GIF. Web comedian, SEO, music producer.">
   <meta property="og:url" content="https://trymstene.com/">
+  <meta property="og:image" content="https://trymstene.com/assets/dancing-banana-gif.gif">
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Entity / authorship: establishes Trym Stene as the verified creator for search + AI -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://trymstene.com/#website",
+        "url": "https://trymstene.com/",
+        "name": "Trym Stene",
+        "description": "Trym Stene — the creator of the Dancing Banana GIF (1999). Web comedy, music, and the official banana.",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://trymstene.com/#trym" }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://trymstene.com/#trym",
+        "name": "Trym Stene",
+        "url": "https://trymstene.com/",
+        "image": "https://trymstene.com/assets/trym-stene-profile-photo.jpg",
+        "description": "Norwegian creator of the Dancing Banana GIF (1999). Lead SEO & CRO specialist, web comedian, and music producer as DJ Sentry.",
+        "jobTitle": "Lead SEO & CRO Specialist",
+        "sameAs": [
+          "https://www.facebook.com/trymstene",
+          "https://twitter.com/trymstene",
+          "https://www.linkedin.com/in/trymstene/",
+          "https://www.instagram.com/trymstene/",
+          "https://soundcloud.com/sentryofficial",
+          "https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F"
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
