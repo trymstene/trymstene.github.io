@@ -222,14 +222,14 @@ a { color: inherit; }
 .block::before {
   content: "";
   position: absolute;
-  top: -26px;
+  top: -28px;
   left: 0;
   right: 0;
-  height: 52px;
+  height: 56px;
   background-image: url('/assets/banana-icon.svg');
   background-repeat: repeat-x;
   background-position: center;
-  background-size: auto 44px;
+  background-size: auto 50px;
   pointer-events: none;
 }
 
