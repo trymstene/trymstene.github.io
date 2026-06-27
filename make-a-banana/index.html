@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Make Your Own Dancing Banana | Trym Stene</title>
+  <meta name="description" content="Customize the original Dancing Banana — add shades, hats, captions and dance moves, then download it or share your creation. Free banana builder by the guy who made the meme.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Make Your Own Dancing Banana">
+  <meta property="og:description" content="Add shades, hats, captions and dance moves to the original Dancing Banana, then download or share it.">
+  <meta property="og:url" content="https://trymstene.github.io/make-a-banana/">
+  <meta property="og:image" content="https://trymstene.github.io/assets/dancing-banana-gif.gif">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .bb-wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.2rem 4rem; }
+    .bb-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 820px) { .bb-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+    /* stage */
+    .bb-stage {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border: var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      background: var(--banana);
+    }
+    .bb-char { position: relative; width: 52%; }
+    .bb-banana { width: 100%; height: auto; display: block; image-rendering: auto; }
+    .bb-acc { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
+    .bb-glasses { top: 30%; width: 46%; }
+    .bb-hat { top: -19%; width: 48%; }
+    .bb-acc[hidden] { display: none; }
+
+    .bb-caption {
+      position: absolute; left: 0; right: 0; text-align: center;
+      font-family: "Archivo Black", Impact, sans-serif;
+      text-transform: uppercase; color: #fff;
+      -webkit-text-stroke: 2px #111;
+      paint-order: stroke fill;
+      line-height: 1; padding: 0 0.5rem;
+      font-size: clamp(1.1rem, 5vw, 2rem);
+      word-break: break-word;
+    }
+    .bb-top { top: 4%; }
+    .bb-bottom { bottom: 4%; }
+
+    /* dance moves applied to .bb-char */
+    .move-bounce { animation: bb-bounce var(--spd, 0.7s) ease-in-out infinite; }
+    .move-spin   { animation: bb-spin var(--spd, 0.7s) linear infinite; }
+    .move-shake  { animation: bb-shake var(--spd, 0.7s) ease-in-out infinite; }
+    .move-disco  { animation: bb-bounce var(--spd, 0.7s) ease-in-out infinite; }
+    .move-disco .bb-banana { animation: bb-hue var(--spd, 0.7s) linear infinite; }
+    @keyframes bb-bounce { 0%,100%{transform:translateY(6%)} 50%{transform:translateY(-8%)} }
+    @keyframes bb-spin   { to { transform: rotate(360deg); } }
+    @keyframes bb-shake  { 0%,100%{transform:translateX(-4%) rotate(-5deg)} 50%{transform:translateX(4%) rotate(5deg)} }
+    @keyframes bb-hue    { to { filter: hue-rotate(360deg); } }
+
+    /* controls */
+    .bb-controls { display: flex; flex-direction: column; gap: 1.2rem; }
+    .bb-row label { display:block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .bb-input, .bb-select {
+      width: 100%; padding: 0.6rem 0.7rem; border: 3px solid var(--ink);
+      font-family: inherit; font-size: 1rem; background: var(--paper); border-radius: 2px;
+    }
+    .bb-swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .bb-swatch { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
+    .bb-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--hot); }
+    .bb-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .bb-chip {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
+      font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
+    }
+    .bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .bb-actions { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.5rem; }
+    .bb-note { font-size: 0.82rem; opacity: 0.7; }
+    .bb-toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+      background: var(--ink); color: var(--banana); font-weight: 700; padding: 0.7rem 1.2rem;
+      border-radius: 4px; opacity: 0; transition: all 0.25s ease; pointer-events: none; z-index: 80;
+    }
+    .bb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- nav -->
+  <header class="nav">
+    <a class="nav__brand" href="/">TRYM<span>STENE</span></a>
+    <button class="nav__toggle" aria-label="Menu" aria-expanded="false">☰</button>
+    <nav class="nav__links">
+      <div class="nav__group nav__group--banana">
+        <a href="/dancing-banana-gif-meme/">Banana</a>
+        <a href="/license-the-dancing-banana/">License</a>
+        <a href="/#shop">Merch</a>
+      </div>
+      <div class="nav__group nav__group--trym">
+        <a href="/projects/">Projects</a>
+        <a href="/#music">Music</a>
+        <a href="/me/">Me</a>
+        <a href="/#contact">Contact</a>
+      </div>
+    </nav>
+    <div class="nav__backdrop"></div>
+  </header>
+
+  <section class="hero" style="padding-bottom:1.5rem;">
+    <p class="kicker">Free banana toy</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,4rem);">make your own<br>dancing banana</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Shades, hats, captions, dance moves. Build one, share it, slap it on a sticker.</p>
+  </section>
+
+  <div class="bb-wrap">
+    <div class="bb-grid">
+      <!-- PREVIEW -->
+      <div>
+        <div class="bb-stage" id="bbStage">
+          <div class="bb-caption bb-top" id="bbTop"></div>
+          <div class="bb-char" id="bbChar">
+            <div class="bb-acc bb-hat" id="bbHat" hidden></div>
+            <img class="bb-banana" id="bbBanana" src="../assets/dancing-banana-transparent.gif" alt="Your dancing banana" crossorigin="anonymous">
+            <div class="bb-acc bb-glasses" id="bbGlasses" hidden></div>
+          </div>
+          <div class="bb-caption bb-bottom" id="bbBottom"></div>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="bb-controls">
+        <div class="bb-row">
+          <label>Background</label>
+          <div class="bb-swatches" id="bbSwatches"></div>
+        </div>
+        <div class="bb-row">
+          <label for="bbTopText">Top caption</label>
+          <input class="bb-input" id="bbTopText" maxlength="40" placeholder="e.g. HELLO YES">
+        </div>
+        <div class="bb-row">
+          <label for="bbBottomText">Bottom caption</label>
+          <input class="bb-input" id="bbBottomText" maxlength="40" placeholder="e.g. IT'S THE BANANA GUY">
+        </div>
+        <div class="bb-row">
+          <label>Shades</label>
+          <div class="bb-chips" id="bbGlassesChips"></div>
+        </div>
+        <div class="bb-row">
+          <label>Hat</label>
+          <div class="bb-chips" id="bbHatChips"></div>
+        </div>
+        <div class="bb-row">
+          <label>Dance move</label>
+          <div class="bb-chips" id="bbMoveChips"></div>
+        </div>
+        <div class="bb-row">
+          <label for="bbSpeed">Speed</label>
+          <input class="bb-input" type="range" id="bbSpeed" min="0.25" max="1.6" step="0.05" value="0.7">
+        </div>
+
+        <div class="bb-actions">
+          <button class="btn btn--light" id="bbRandom">🎲 Randomize</button>
+          <button class="btn btn--light" id="bbShare">🔗 Copy share link</button>
+          <button class="btn btn--dark" id="bbDownload">⬇ Download image</button>
+        </div>
+        <div class="bb-actions">
+          <a class="btn btn--dark" id="bbSticker" href="/#shop">🍌 Get it on a sticker</a>
+        </div>
+        <p class="bb-note">Download saves a still image of your banana. (Animated-GIF export is coming.)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bb-toast" id="bbToast">Copied!</div>
+
+  <footer class="block block--dark">
+    <p class="kicker kicker--light">The original</p>
+    <h2>Made by the banana guy</h2>
+    <p class="lead">This is the real 1999 Dancing Banana. <a href="/dancing-banana-gif-meme/">Read its story →</a> · <a href="/license-the-dancing-banana/">License it →</a></p>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy 🍌</p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>
+  (function(){
+    const SVG = {
+      classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
+      cool:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44"><g><rect x="6" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="68" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="52" y="16" width="16" height="6" fill="#111"/><rect x="12" y="11" width="14" height="6" fill="#ff4d6d"/><rect x="74" y="11" width="14" height="6" fill="#6c8cff"/></g></svg>',
+      party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
+      crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
+      tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
+    };
+    const BGS = ['#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
+    const GLASSES = [['none','None'],['classic','Classic'],['cool','Cool']];
+    const HATS = [['none','None'],['party','Party'],['crown','Crown'],['tophat','Top hat']];
+    const MOVES = [['none','None'],['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','Disco']];
+
+    const el = (id)=>document.getElementById(id);
+    const stage=el('bbStage'), char=el('bbChar'), banana=el('bbBanana');
+    const topCap=el('bbTop'), botCap=el('bbBottom'), glassesEl=el('bbGlasses'), hatEl=el('bbHat');
+    const topIn=el('bbTopText'), botIn=el('bbBottomText'), speed=el('bbSpeed');
+
+    const state = { bg:'#ffe135', top:'', bottom:'', glasses:'none', hat:'none', move:'bounce', spd:0.7 };
+
+    // build swatches
+    BGS.forEach(c=>{ const b=document.createElement('button'); b.className='bb-swatch'; b.style.background=c; b.setAttribute('aria-label',c); b.onclick=()=>{state.bg=c; render(); sync();}; el('bbSwatches').appendChild(b); });
+    function chips(host, items, key){ items.forEach(([val,label])=>{ const b=document.createElement('button'); b.className='bb-chip'; b.textContent=label; b.dataset.val=val; b.onclick=()=>{ state[key]=val; render(); sync(); }; host.appendChild(b); }); }
+    chips(el('bbGlassesChips'), GLASSES, 'glasses');
+    chips(el('bbHatChips'), HATS, 'hat');
+    chips(el('bbMoveChips'), MOVES, 'move');
+
+    topIn.addEventListener('input', ()=>{ state.top=topIn.value; render(); sync(); });
+    botIn.addEventListener('input', ()=>{ state.bottom=botIn.value; render(); sync(); });
+    speed.addEventListener('input', ()=>{ state.spd=parseFloat(speed.value); render(); sync(); });
+
+    function render(){
+      stage.style.background = state.bg;
+      topCap.textContent = state.top;
+      botCap.textContent = state.bottom;
+      // caption colour: dark bg -> keep white; it has a black outline so fine everywhere
+      // glasses
+      if(state.glasses==='none'){ glassesEl.hidden=true; } else { glassesEl.hidden=false; glassesEl.innerHTML=SVG[state.glasses]; }
+      // hat
+      if(state.hat==='none'){ hatEl.hidden=true; } else { hatEl.hidden=false; hatEl.innerHTML=SVG[state.hat]; }
+      // move
+      char.className='bb-char';
+      if(state.move!=='none'){ char.classList.add('move-'+state.move); char.style.setProperty('--spd', state.spd+'s'); }
+      // reflect active chips/swatches
+      document.querySelectorAll('.bb-swatch').forEach(s=>s.setAttribute('aria-pressed', s.style.background.replace(/\s/g,'')!==''&&toHex(s.style.background)===state.bg));
+      [['bbGlassesChips','glasses'],['bbHatChips','hat'],['bbMoveChips','move']].forEach(([host,key])=>{
+        document.querySelectorAll('#'+host+' .bb-chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.val===state[key]));
+      });
+    }
+    function toHex(rgb){ const m=rgb.match(/\d+/g); if(!m) return rgb; return '#'+m.slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join(''); }
+
+    // URL state
+    function sync(){ const p=new URLSearchParams(); p.set('bg',state.bg); if(state.top)p.set('t',state.top); if(state.bottom)p.set('b',state.bottom); if(state.glasses!=='none')p.set('g',state.glasses); if(state.hat!=='none')p.set('h',state.hat); if(state.move!=='bounce')p.set('m',state.move); if(state.spd!==0.7)p.set('s',state.spd); history.replaceState(null,'','?'+p.toString()); }
+    function load(){ const p=new URLSearchParams(location.search); if(p.get('bg'))state.bg=p.get('bg'); state.top=p.get('t')||''; state.bottom=p.get('b')||''; state.glasses=p.get('g')||'none'; state.hat=p.get('h')||'none'; state.move=p.get('m')||'bounce'; state.spd=p.get('s')?parseFloat(p.get('s')):0.7; topIn.value=state.top; botIn.value=state.bottom; speed.value=state.spd; }
+
+    // randomize
+    el('bbRandom').onclick=()=>{
+      const pick=a=>a[Math.floor(Math.random()*a.length)];
+      const quips=[['HELLO YES','IT’S THE BANANA GUY'],['B','A N A N A'],['IT IS','WEDNESDAY MY DUDES'],['','PEANUT BUTTER JELLY TIME'],['CERTIFIED','BANANA MOMENT'],['',''],['ME WHEN','THE BANANA']];
+      const q=pick(quips);
+      state.bg=pick(BGS); state.top=q[0]; state.bottom=q[1];
+      state.glasses=pick(GLASSES)[0]; state.hat=pick(HATS)[0]; state.move=pick(MOVES.slice(1))[0]; state.spd=Math.round((0.4+Math.random()*0.9)*100)/100;
+      topIn.value=state.top; botIn.value=state.bottom; speed.value=state.spd; render(); sync();
+    };
+
+    // toast
+    let toastT; function toast(msg){ const t=el('bbToast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1600); }
+
+    // share
+    el('bbShare').onclick=async ()=>{ sync(); try{ await navigator.clipboard.writeText(location.href); toast('Share link copied!'); }catch(e){ toast('Copy this URL from the address bar'); } };
+
+    // download (composite still image)
+    el('bbDownload').onclick=()=>{
+      const S=600; const cv=document.createElement('canvas'); cv.width=S; cv.height=S; const ctx=cv.getContext('2d');
+      ctx.fillStyle=state.bg; ctx.fillRect(0,0,S,S);
+      const bw=banana.naturalWidth||120, bh=banana.naturalHeight||200;
+      const targetH=S*0.5, scale=targetH/bh, w=bw*scale, h=targetH;
+      const cx=S/2, cy=S/2; const bx=cx-w/2, by=cy-h/2;
+      function drawSVG(svg, dx, dy, dw, dh, cb){ const img=new Image(); img.onload=()=>{ ctx.drawImage(img,dx,dy,dw,dh); cb&&cb(); }; img.onerror=()=>cb&&cb(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }
+      function caption(text, top){ if(!text) return; let fs=Math.round(S*0.09); ctx.font='900 '+fs+'px Archivo Black, Impact, sans-serif'; while(ctx.measureText(text.toUpperCase()).width>S*0.92 && fs>14){ fs-=2; ctx.font='900 '+fs+'px Archivo Black, Impact, sans-serif'; } ctx.textAlign='center'; ctx.textBaseline=top?'top':'bottom'; ctx.lineWidth=fs*0.14; ctx.strokeStyle='#111'; ctx.fillStyle='#fff'; ctx.lineJoin='round'; const y=top?S*0.04:S*0.96; ctx.strokeText(text.toUpperCase(),S/2,y); ctx.fillText(text.toUpperCase(),S/2,y); }
+      // draw banana, then accessories, then captions, then export
+      try { ctx.drawImage(banana, bx, by, w, h); } catch(e){}
+      const after2=()=>{ caption(state.top,true); caption(state.bottom,false); const url=cv.toDataURL('image/png'); const a=document.createElement('a'); a.href=url; a.download='my-dancing-banana.png'; a.click(); toast('Downloaded!'); };
+      const afterHat=()=>{ if(state.glasses!=='none'){ drawSVG(SVG[state.glasses], cx-w*0.5, by+h*0.30, w, w*44/120, after2); } else after2(); };
+      if(state.hat!=='none'){ drawSVG(SVG[state.hat], cx-w*0.48, by-h*0.20, w*0.96, h*0.42, afterHat); } else afterHat();
+    };
+
+    load(); render();
+  })();
+  </script>
+</body>
+</html>
