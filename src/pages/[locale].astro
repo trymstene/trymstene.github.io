@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hreflang from '../components/Hreflang.astro';
+import LangSwitch from '../components/LangSwitch.astro';
+import { locales } from '../data/locales.js';
+
+export function getStaticPaths() {
+  return locales.map((loc) => ({ params: { locale: loc.code }, props: { loc } }));
+}
+
+const { loc } = Astro.props;
+
+const stripHtml = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  inLanguage: loc.code,
+  mainEntity: loc.faq.map((f) => ({
+    '@type': 'Question',
+    name: stripHtml(f.q),
+    acceptedAnswer: { '@type': 'Answer', text: stripHtml(f.a) },
+  })),
+};
+---
+<BaseLayout
+  title={loc.title}
+  description={loc.description}
+  ogDescription={loc.ogDescription}
+  ogType="article"
+  ogLocale={loc.ogLocale}
+  lang={loc.code}
+  showFooter={false}
+>
+  <Fragment slot="head">
+    <Hreflang />
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  </Fragment>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-gif.gif" alt={loc.heroAlt}
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
+    <p class="kicker">{loc.kicker}</p>
+    <h1 class="hero__title" set:html={loc.h1}></h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">{loc.heroTag}</p>
+  </section>
+
+  <!-- answer-first + download -->
+  <section class="block">
+    <p class="lead" style="max-width:64ch;margin-inline:auto;font-size:1.2rem;" set:html={loc.intro}></p>
+    <div class="grab">
+      <img src="/assets/dancing-banana-gif.gif" alt={loc.grabAlt}>
+      <div class="dl-buttons">
+        <a class="btn btn--dark" href="/assets/dancing-banana-gif.gif" download={loc.dlOriginalFile}>{loc.dlOriginalLabel}</a>
+        <a class="btn btn--light" href="/assets/dancing-banana-transparent.png" download={loc.dlTransFile}>{loc.dlTransLabel}</a>
+      </div>
+    </div>
+    <p style="margin-top:1.5rem;">
+      <a class="btn btn--dark" href="/make-a-banana/">{loc.makeYourOwn}</a>
+    </p>
+    <p class="lead" style="margin-top:2rem;" set:html={loc.tip}></p>
+  </section>
+
+  <!-- FAQ -->
+  <section class="block block--dark">
+    <p class="kicker kicker--light">{loc.faqKicker}</p>
+    <h2>{loc.faqHeading}</h2>
+    {loc.faq.map((f) => (
+      <div class="faq__item">
+        <h3>{f.q}</h3>
+        <p>{f.a}</p>
+      </div>
+    ))}
+  </section>
+
+  <!-- footer / links to English -->
+  <footer class="block block--dark">
+    <p class="kicker kicker--light">{loc.footerKicker}</p>
+    <h2>{loc.footerHeading}</h2>
+    <p class="lead">
+      {loc.footerLead}
+      <a href="/dancing-banana-gif-meme/">{loc.linkStory}</a> ·
+      <a href="/make-a-banana/">{loc.linkMake}</a> ·
+      <a href="/license-the-dancing-banana/">{loc.linkLicense}</a> ·
+      <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">{loc.linkTip}</a>
+    </p>
+    <LangSwitch current={loc.code} label={loc.langAria} />
+    <p class="copyright">© <span id="year">2026</span> {loc.copyright}</p>
+  </footer>
+</BaseLayout>

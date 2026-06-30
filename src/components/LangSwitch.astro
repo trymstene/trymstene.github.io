@@ -1,0 +1,19 @@
+---
+// Shared language switcher (hub + all localized pages). `current` = active code.
+const { current, label = 'Language' } = Astro.props;
+const langs = [
+  { code: 'en', href: '/dancing-banana-gif-meme/', name: 'English' },
+  { code: 'nl', href: '/nl/', name: 'Nederlands' },
+  { code: 'es', href: '/es/', name: 'Español' },
+  { code: 'pt', href: '/pt/', name: 'Português' },
+  { code: 'fr', href: '/fr/', name: 'Français' },
+  { code: 'de', href: '/de/', name: 'Deutsch' },
+  { code: 'ru', href: '/ru/', name: 'Русский' },
+];
+---
+<nav class="langswitch" aria-label={label}>
+  🌍
+  {langs.map((l) => (
+    <a href={l.href} hreflang={l.code} aria-current={l.code === current ? 'true' : undefined}>{l.name}</a>
+  ))}
+</nav>

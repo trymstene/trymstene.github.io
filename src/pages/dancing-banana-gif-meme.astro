@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hreflang from '../components/Hreflang.astro';
+import LangSwitch from '../components/LangSwitch.astro';
 
 const title = "Dancing Banana GIF — Download the Original Meme (Free)";
 const description = "The original Dancing Banana GIF — free to download (GIF + transparent PNG). Made in 1999 by its creator, Trym Stene. Grab it, make your own, or license it.";
@@ -216,16 +217,7 @@ const faq = {
       <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
       <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
     </div>
-    <nav class="langswitch" aria-label="Language">
-      🌍
-      <a href="/dancing-banana-gif-meme/" hreflang="en" aria-current="true">English</a>
-      <a href="/nl/" hreflang="nl">Nederlands</a>
-      <a href="/es/" hreflang="es">Español</a>
-      <a href="/pt/" hreflang="pt">Português</a>
-      <a href="/fr/" hreflang="fr">Français</a>
-      <a href="/de/" hreflang="de">Deutsch</a>
-      <a href="/ru/" hreflang="ru">Русский</a>
-    </nav>
+    <LangSwitch current="en" label="Language" />
     <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy 🍌</p>
   </footer>
 
