@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getProducts, money, colorHex, firstSentence, sizeTableHtml, SITE } from '../../lib/shop.js';
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return products.map((p) => ({ params: { handle: p.handle }, props: { m: p } }));
+}
+
+const { m } = Astro.props;
+
+const titleTag = `${m.title} — official Dancing Banana merch | Trym Stene`;
+const descMeta = `${firstSentence(m.descHtml, 100)} From ${money(m.pmin, m.cur)}, made on demand and shipped worldwide.`;
+const mainImg = m.colors.length ? m.colorImage[m.colors[0]] : m.featured;
+
+const island = {
+  title: m.title,
+  currency: m.cur,
+  priceMin: m.pmin,
+  colorImage: m.colorImage,
+  variants: Object.fromEntries(Object.entries(m.vmap).map(([k, v]) => [k, { id: v.id, price: v.price, available: v.available }])),
+};
+
+const productSchema = {
+  '@context': 'https://schema.org/',
+  '@type': 'Product',
+  name: m.title,
+  image: m.images.slice(0, 10),
+  description: firstSentence(m.descHtml, 300),
+  brand: { '@type': 'Brand', name: 'Dancing Banana Official' },
+  sku: m.handle,
+  offers: {
+    '@type': 'AggregateOffer',
+    priceCurrency: m.cur,
+    lowPrice: m.pmin.toFixed(2),
+    highPrice: m.pmax.toFixed(2),
+    offerCount: m.variants.length,
+    availability: 'https://schema.org/InStock',
+    url: m.url,
+    priceValidUntil: '2027-12-31',
+  },
+};
+const breadcrumbSchema = {
+  '@context': 'https://schema.org/',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
+    { '@type': 'ListItem', position: 2, name: 'Shop', item: SITE + '/shop/' },
+    { '@type': 'ListItem', position: 3, name: m.title, item: m.url },
+  ],
+};
+---
+<BaseLayout
+  title={titleTag}
+  description={descMeta}
+  ogTitle={m.title}
+  ogType="product"
+  ogImage={m.featured}
+>
+  <Fragment slot="head">
+    <link rel="stylesheet" href="/css/shop.css" />
+    <meta property="product:price:amount" content={m.pmin.toFixed(2)} />
+    <meta property="product:price:currency" content={m.cur} />
+    <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  </Fragment>
+
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a><span>›</span><a href="/shop/">Shop</a><span>›</span><b>{m.title}</b>
+  </nav>
+
+  <main class="pdp" data-pdp>
+    <div class="pdp__gallery">
+      <img class="pdp__main" src={mainImg} alt={m.title} width="800" height="800" />
+      <div class="pdp__thumbs">
+        {m.colors.map((c) => (
+          <button class="pdp-thumb" data-color={c} aria-label={c}>
+            <img src={m.colorImage[c]} alt={`${m.title} – ${c}`} loading="lazy" />
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div class="pdp__info">
+      <h1>{m.title}</h1>
+      <p class="pdp__tag">{firstSentence(m.descHtml, 120)}</p>
+      <p class="pdp__price"><small>from</small> {money(m.pmin, m.cur)}</p>
+      <p class="pdp__note">Tax included where applicable · shipping calculated at checkout</p>
+
+      <div class="pdp-field">
+        <div class="pdp-field__label">Colour <span>— {m.colors.length} options</span></div>
+        <div class="pdp-swatches">
+          {m.colors.map((c) => (
+            <button class="pdp-swatch" data-color={c} title={c} aria-label={c} style={`background:${colorHex(c)}`}></button>
+          ))}
+        </div>
+      </div>
+
+      <div class="pdp-field">
+        <div class="pdp-field__label">Size <span>— <a href="#size-guide">size guide</a></span></div>
+        <div class="pdp-sizes">
+          {m.sizes.map((s) => <button class="pdp-size" data-size={s}>{s}</button>)}
+        </div>
+      </div>
+
+      <button class="btn btn--dark pdp-buy" disabled>Select a size</button>
+      <p class="pdp-stock"></p>
+
+      <ul class="pdp-trust">
+        <li>Printed &amp; shipped on demand — made just for you</li>
+        <li>Ships worldwide</li>
+        <li>Secure checkout via Shopify</li>
+        <li>From the creator of the original 1999 dancing banana</li>
+      </ul>
+    </div>
+  </main>
+
+  <section class="pdp-details">
+    <details open>
+      <summary>Product details &amp; materials</summary>
+      <div class="pdp-details__body" set:html={m.descHtml}></div>
+    </details>
+    <details id="size-guide">
+      <summary>Size guide &amp; measurements</summary>
+      <div class="pdp-details__body" set:html={sizeTableHtml(m)}></div>
+    </details>
+  </section>
+
+  <section class="block">
+    <p class="kicker">Keep going</p>
+    <h2>More banana</h2>
+    <p class="lead">
+      <a href="/shop/">← All merch</a> ·
+      <a href="/make-a-banana/">🎨 Make your own banana</a> ·
+      <a href="/dancing-banana-gif-meme/">The story &amp; free GIF</a>
+    </p>
+  </section>
+
+  <script id="pdp-data" type="application/json" set:html={JSON.stringify(island)}></script>
+  <script src="/js/shop.js" is:inline></script>
+</BaseLayout>

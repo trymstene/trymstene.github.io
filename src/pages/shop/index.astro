@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getProducts, money } from '../../lib/shop.js';
+
+const products = await getProducts();
+---
+<BaseLayout
+  title="Shop — Dancing Banana Merch | Trym Stene"
+  description="Official Dancing Banana merch — tees, stickers and more, from the creator of the meme. Printed on demand, shipped worldwide."
+  ogTitle="Shop — Dancing Banana Merch"
+  ogDescription="Official Dancing Banana merch from the creator of the meme."
+>
+  <link rel="stylesheet" href="/css/shop.css" slot="head" />
+
+  <section class="hero">
+    <p class="kicker">Official merch</p>
+    <h1 class="hero__title">dancing banana<br>shop</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Wear the banana. The original meme, on stuff you can actually own.</p>
+  </section>
+
+  <section class="block block--yellow">
+    <p class="kicker">The goods</p>
+    <h2>Dancing Banana merch</h2>
+    <p class="lead">Printed on demand, shipped worldwide. Checkout is secured by Shopify.</p>
+    {products.length ? (
+      <div class="cards">
+        {products.map((p) => (
+          <a class="project-card" href={`/shop/${p.handle}/`}>
+            <img class="shop-card__img" src={p.featured} alt={p.title} loading="lazy" />
+            <div class="project-card__body">
+              <h3>{p.title}</h3>
+              <p class="shop-card__price"><span class="shop-card__from">from</span>{money(p.pmin, p.cur)}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p class="shop-status">The shop is being stocked — check back soon! 🍌</p>
+    )}
+  </section>
+
+  <section class="block">
+    <p class="kicker">Or design your own</p>
+    <h2>Make a custom banana</h2>
+    <p class="lead">Add shades, a hat, a caption — then (soon) put <em>your</em> banana on a sticker.</p>
+    <a class="btn btn--dark" href="/make-a-banana/">🎨 Make your own dancing banana →</a>
+  </section>
+</BaseLayout>
