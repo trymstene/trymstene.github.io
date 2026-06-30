@@ -45,21 +45,24 @@ const POSES = [
   { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.35, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.96, coolTop: 0.38, coolScale: 1.35, coolRot: -4, coolFlip: true },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
-// resolves the right shades asset for a pose + style: 'cool' is a real pixel-art PNG (front/side
-// crop), 'classic' is the hand-drawn SVG (frontal pair / side visor). key is either inline SVG
-// markup (starts with '<') or an image URL — imgFor()/drawAccSync() handle both transparently.
+// resolves the right shades asset for a pose + style. 'cool' is a real pixel-art "deal with it"
+// PNG — but only on frontal poses (Hands-up): the side crop never sat right on the angled head
+// after several sizing/mirroring rounds, so it's parked for a hand-made asset later. Side poses
+// fall back to the SVG side-visor for BOTH styles until then. key is either inline SVG markup
+// (starts with '<') or an image URL — imgFor()/drawAccSync() handle both transparently.
+function usesCoolRaster(pose, style) { return style === 'cool' && !pose.glassSide; }
 function glassAsset(pose, style) {
-  if (style === 'cool') {
-    const r = pose.glassSide ? GLASS_RASTER.coolSide : GLASS_RASTER.coolFront;
+  if (usesCoolRaster(pose, style)) {
+    const r = GLASS_RASTER.coolFront;
     return { key: r.src, w: r.w, h: r.h };
   }
   const k = pose.glassSide ? 'classicSide' : 'classic';
   return { key: SVG[k], w: VB[k][0], h: VB[k][1] };
 }
-const glassScaleFor = (pose, style) => (style === 'cool' ? pose.coolScale : pose.glassScale);
-const glassRotFor = (pose, style) => (style === 'cool' ? pose.coolRot : pose.glassRot);
-const glassTopFor = (pose, style) => (style === 'cool' ? pose.coolTop : pose.glassTop);
-const glassFlipFor = (pose, style) => (style === 'cool' ? pose.coolFlip : pose.glassFlip);
+const glassScaleFor = (pose, style) => (usesCoolRaster(pose, style) ? pose.coolScale : pose.glassScale);
+const glassRotFor = (pose, style) => (usesCoolRaster(pose, style) ? pose.coolRot : pose.glassRot);
+const glassTopFor = (pose, style) => (usesCoolRaster(pose, style) ? pose.coolTop : pose.glassTop);
+const glassFlipFor = (pose, style) => (usesCoolRaster(pose, style) ? pose.coolFlip : pose.glassFlip);
 
 const el = (id) => document.getElementById(id);
 const root = el('bbStage');
