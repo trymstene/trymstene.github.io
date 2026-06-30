@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="canonical" href="https://trymstene.com/shop/">
   <title>Shop — Dancing Banana Merch | Trym Stene</title>
-  <meta name="description" content="Official Dancing Banana merch — tees, stickers and more, from the creator of the meme. Made on demand, shipped worldwide.">
+  <meta name="description" content="Official Dancing Banana merch — tees, stickers and more, from the creator of the meme. Printed on demand, shipped worldwide.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="Shop — Dancing Banana Merch">
@@ -15,20 +16,11 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/styles.css">
-  <style>
-    .shop-price { font-weight: 800; font-size: 1.15rem; margin: 0.2rem 0 0.2rem; }
-    .shop-note { font-size: 0.8rem; opacity: 0.6; margin: 0 0 0.8rem; }
-    .shop-variant { width: 100%; padding: 0.55rem 0.6rem; border: 3px solid var(--ink); border-radius: 2px; font-family: inherit; font-size: 0.95rem; background: var(--paper); color: var(--ink); margin-bottom: 0.8rem; font-weight: 700; }
-    .shop-buy { width: 100%; cursor: pointer; }
-    .shop-buy[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .shop-status { text-align: center; font-weight: 700; padding: 2.5rem 1rem; }
-    .project-card__img { width: 100%; height: auto; aspect-ratio: auto; object-fit: contain; background: #fff; }
-  </style>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/shop.css">
 </head>
 <body>
 
-  <!-- nav -->
   <header class="nav">
     <a class="nav__brand" href="/">TRYM<span>STENE</span></a>
     <button class="nav__toggle" aria-label="Menu" aria-expanded="false">☰</button>
@@ -48,23 +40,21 @@
     <div class="nav__backdrop"></div>
   </header>
 
-  <!-- hero -->
   <section class="hero">
     <p class="kicker">Official merch</p>
     <h1 class="hero__title">dancing banana<br>shop</h1>
     <p class="hero__tag" style="text-transform:none;font-weight:500;">Wear the banana. The original meme, on stuff you can actually own.</p>
   </section>
 
-  <!-- products (populated from Shopify Storefront API) -->
   <section class="block block--yellow">
     <p class="kicker">The goods</p>
     <h2>Dancing Banana merch</h2>
-    <p class="lead">Made on demand, shipped worldwide. Checkout is secured by Shopify.</p>
-    <div class="cards" id="shopGrid"></div>
-    <p class="shop-status" id="shopStatus">Loading the merch… 🍌</p>
+    <p class="lead">Printed on demand, shipped worldwide. Checkout is secured by Shopify.</p>
+    <div class="cards">
+      <a class="project-card" href="/shop/dancing-banana-official-unisex-classic-tee/"><img class="shop-card__img" src="https://cdn.shopify.com/s/files/1/0836/5280/4827/files/unisex-classic-tee-maroon-front-6a4146da18c21.jpg?v=1782662889" alt="DANCING BANANA OFFICIAL Unisex classic tee" loading="lazy"><div class="project-card__body"><h3>DANCING BANANA OFFICIAL Unisex classic tee</h3><p class="shop-card__price"><span class="shop-card__from">from</span>NOK 98.50</p></div></a>
+    </div>
   </section>
 
-  <!-- make your own -->
   <section class="block">
     <p class="kicker">Or design your own</p>
     <h2>Make a custom banana</h2>
@@ -72,7 +62,6 @@
     <a class="btn btn--dark" href="/make-a-banana/">🎨 Make your own dancing banana →</a>
   </section>
 
-  <!-- footer -->
   <footer class="block block--dark">
     <p class="kicker kicker--light">More banana</p>
     <h2>The original, from its creator</h2>
@@ -85,115 +74,6 @@
     <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy 🍌</p>
   </footer>
 
-  <script src="../js/main.js"></script>
-  <script>
-  (function () {
-    var SHOP = 'officialdancingbanana.myshopify.com';
-    var TOKEN = '1032480366b6bf67760ba73ace4fe0f8';
-    var API = 'https://' + SHOP + '/api/2024-10/graphql.json';
-    var grid = document.getElementById('shopGrid');
-    var status = document.getElementById('shopStatus');
-
-    function gql(query, variables) {
-      return fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': TOKEN },
-        body: JSON.stringify({ query: query, variables: variables || {} })
-      }).then(function (r) { return r.json(); });
-    }
-
-    function money(amount, currency) {
-      try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency }).format(parseFloat(amount)); }
-      catch (e) { return amount + ' ' + currency; }
-    }
-
-    var PRODUCTS_Q = 'query { products(first: 50, sortKey: BEST_SELLING) { edges { node {' +
-      ' id title featuredImage { url altText } priceRange { minVariantPrice { amount currencyCode } }' +
-      ' variants(first: 100) { edges { node { id title availableForSale price { amount currencyCode } image { url altText } } } }' +
-      ' } } } }';
-
-    var CART_M = 'mutation cartCreate($id: ID!) { cartCreate(input: { lines: [{ merchandiseId: $id, quantity: 1 }] }) { cart { checkoutUrl } userErrors { message } } }';
-
-    function buy(btn, variantId) {
-      btn.disabled = true;
-      var orig = btn.textContent; btn.textContent = 'Opening checkout…';
-      gql(CART_M, { id: variantId }).then(function (res) {
-        var url = res && res.data && res.data.cartCreate && res.data.cartCreate.cart && res.data.cartCreate.cart.checkoutUrl;
-        if (url) {
-          if (window.gtag) gtag('event', 'begin_checkout');
-          window.location.href = url;
-        } else {
-          btn.disabled = false; btn.textContent = orig;
-          alert('Sorry — could not start checkout. Try again in a sec.');
-        }
-      }).catch(function () { btn.disabled = false; btn.textContent = orig; alert('Network hiccup — try again.'); });
-    }
-
-    function esc(s) {
-      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
-
-    function card(node) {
-      var variants = node.variants.edges.map(function (e) { return e.node; }).filter(function (v) { return v.availableForSale; });
-      var el = document.createElement('div');
-      el.className = 'project-card';
-
-      var fallbackImg = node.featuredImage ? node.featuredImage.url : '../assets/dancing-banana-gif.gif';
-      var html = '<img class="project-card__img" src="' + esc(fallbackImg) + '" alt="' + esc(node.title || 'product') + '" loading="lazy">';
-      html += '<div class="project-card__body">';
-      html += '<h3>' + esc(node.title) + '</h3>';
-      html += '<p class="shop-price"></p>';
-      html += '<p class="shop-note">+ shipping, calculated at checkout</p>';
-
-      if (!variants.length) {
-        html += '<span class="project-card__tag">Sold out</span>';
-        html += '</div>';
-        el.innerHTML = html;
-        return el;
-      }
-      if (variants.length > 1) {
-        html += '<select class="shop-variant">';
-        variants.forEach(function (v, i) { html += '<option value="' + i + '">' + esc(v.title) + '</option>'; });
-        html += '</select>';
-      }
-      html += '<button class="btn btn--dark shop-buy">Buy →</button>';
-      html += '</div>';
-      el.innerHTML = html;
-
-      var img = el.querySelector('.project-card__img');
-      var priceEl = el.querySelector('.shop-price');
-      var sel = el.querySelector('.shop-variant');
-      var btn = el.querySelector('.shop-buy');
-
-      // reflect the chosen variant: its price, and its colour's mockup image
-      function apply(i) {
-        var v = variants[i];
-        priceEl.textContent = money(v.price.amount, v.price.currencyCode);
-        img.src = (v.image && v.image.url) ? v.image.url : fallbackImg;
-      }
-      apply(0);
-      if (sel) sel.addEventListener('change', function () { apply(parseInt(sel.value, 10)); });
-
-      btn.addEventListener('click', function () {
-        buy(btn, variants[sel ? parseInt(sel.value, 10) : 0].id);
-      });
-      return el;
-    }
-
-    gql(PRODUCTS_Q).then(function (res) {
-      var edges = res && res.data && res.data.products && res.data.products.edges;
-      if (!edges || !edges.length) {
-        status.innerHTML = 'The shop is being stocked — check back soon! 🍌<br><small style="font-weight:500;">(If you just added products, make sure they\'re published to the Headless sales channel.)</small>';
-        return;
-      }
-      status.style.display = 'none';
-      edges.forEach(function (e) { grid.appendChild(card(e.node)); });
-    }).catch(function () {
-      status.textContent = 'Could not load the shop right now — please refresh. 🍌';
-    });
-  })();
-  </script>
+  <script src="/js/main.js"></script>
 </body>
 </html>
