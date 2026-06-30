@@ -12,28 +12,15 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
   ogDescription={ogDescription}
   showFooter={false}
 >
-  <div class="bb-wip" slot="banner">
-    <div class="bb-wip__bar">
-      <span class="bb-wip__emoji" aria-hidden="true">🍌</span>
-      <p><strong>Banana Lab:</strong> this generator's still cooking — new poses, dance moves &amp; sticker printing are on the way. Got an idea? <a href="mailto:trym@trymstene.com">Tell the banana guy →</a></p>
-      <span class="bb-wip__emoji" aria-hidden="true">🍌</span>
-    </div>
-  </div>
-
   <style is:inline slot="head">
-    .bb-wip { background: repeating-linear-gradient(45deg, var(--banana) 0 16px, #111 16px 32px); padding: 5px 0; }
-    .bb-wip__bar {
-      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
-      max-width: 820px; margin: 0 auto; background: var(--ink); color: var(--banana);
-      font-weight: 800; text-align: center; padding: 0.55rem 1rem; font-size: 0.88rem;
+    .bb-soon {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-top: 0.9rem; background: var(--ink); color: var(--banana);
+      font-weight: 800; font-size: 0.8rem; letter-spacing: 0.02em;
+      padding: 0.45rem 0.9rem; border-radius: 999px;
     }
-    .bb-wip__bar p { margin: 0; line-height: 1.4; }
-    .bb-wip__bar a { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
-    .bb-wip__bar a:hover { color: var(--banana); }
-    .bb-wip__emoji { display: inline-block; font-size: 1.1rem; animation: bb-wip-wiggle 1.6s ease-in-out infinite; flex: none; }
-    .bb-wip__emoji:last-child { animation-delay: 0.3s; }
-    @keyframes bb-wip-wiggle { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
-    @media (max-width: 560px) { .bb-wip__bar { flex-wrap: wrap; font-size: 0.82rem; } }
+    .bb-soon__dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--banana); animation: bb-soon-pulse 1.4s ease-in-out infinite; }
+    @keyframes bb-soon-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     .bb-wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.2rem 4rem; }
     .bb-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
@@ -136,6 +123,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     <p class="kicker">Free banana toy</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,4rem);">make your own<br>dancing banana</h1>
     <p class="hero__tag" style="text-transform:none;font-weight:500;">Shades, hats, captions, dance moves. Build one, share it, slap it on a sticker.</p>
+    <p class="bb-soon"><span class="bb-soon__dot" aria-hidden="true"></span> This feature is still being worked on these days — stay tuned!</p>
   </section>
 
   <div class="bb-wrap">
