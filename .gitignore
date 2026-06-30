@@ -20,3 +20,8 @@ giphy-tenor-pack/
 
 # Shop build input — refetched from Shopify, not served (see build-shop.py)
 shop/products.json
+
+# Astro / Node
+node_modules/
+dist/
+.astro/

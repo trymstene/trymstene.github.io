@@ -1,0 +1,51 @@
+---
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+// One <head> to rule them all. Pages pass SEO props; extra <head> tags
+// (JSON-LD schema, hreflang) go through the named "head" slot.
+const {
+  title,
+  description,
+  canonical,
+  lang = 'en',
+  ogType = 'website',
+  ogImage = 'https://trymstene.com/assets/dancing-banana-gif.gif',
+  robots = 'index,follow,max-image-preview:large',
+  showFooter = true,
+} = Astro.props;
+
+const site = 'https://trymstene.com';
+const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
+---
+<!DOCTYPE html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href={canonicalURL} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <slot name="head" />
+  </head>
+  <body>
+    <Nav />
+    <slot />
+    {showFooter && <Footer />}
+    <script src="/js/main.js" is:inline></script>
+  </body>
+</html>
