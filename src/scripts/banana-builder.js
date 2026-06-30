@@ -19,7 +19,7 @@ const HATS = [['none','None'],['party','Party'],['crown','Crown'],['tophat','Top
 const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','Disco'],['none','Still']];
 
 // accessory sizing
-const HAT_W = 0.26, GLASS_W = 0.30;
+const HAT_W = 0.34, GLASS_W = 0.38;
 // poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top)
 const POSES = [
   { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.40 },
