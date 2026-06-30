@@ -18,9 +18,12 @@ const SVG = {
 const VB = { classic:[120,44], classicSide:[120,60], party:[80,92], crown:[100,70], tophat:[100,86] };
 // "Cool" = Trym's hand-picked pixel-art "deal with it" shades (real PNGs, pre-trimmed to content
 // bbox — the source files have huge transparent padding that would throw off the sizing math).
+// coolSide is cropped to just the lens shape (the source also had a long thin temple-arm tail
+// trailing off to one side, which dragged the whole image's aspect ratio flat and made it render
+// as a thin sliver at any sane width-based scale).
 const GLASS_RASTER = {
   coolFront: { src: '/assets/cool-shades-trim.png?v=1', w: 844, h: 172 },
-  coolSide:  { src: '/assets/cool-shades-sideways-trim.png?v=1', w: 362, h: 62 },
+  coolSide:  { src: '/assets/cool-shades-sideways-trim.png?v=2', w: 257, h: 60 },
 };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -31,13 +34,15 @@ const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','D
 // accessory sizing
 const HAT_W = 0.34, GLASS_W = 0.38;
 // poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top).
-// glassSide: use the single-lens side-visor SVG (Classic/Strut face at an angle) instead of the
+// glassSide: use the single-lens side-visor (Classic/Strut face at an angle) instead of the
 // two-lens frontal pair (Hands-up faces forward). glassRot/glassFlip tilt+mirror the visor to match
-// the lean of the head; glassScale lets a pose size its shades independently (Hands-up bumped up).
+// the lean of the head. glassScale/glassRot size+tilt the SVG "Classic" shades; coolScale/coolRot do
+// the same for the photo-based "Cool" shades — kept separate because the Cool side-crop is much
+// wider/flatter than the SVG, so the same rotation angle reads as a much bigger tilt at its size.
 const POSES = [
-  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.35, glassSide: true,  glassRot: 8,  glassFlip: false, glassScale: 0.96 },
-  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', hatCx: 0.52, hatBase: 0.07, glassCx: 0.50, glassTop: 0.22, glassSide: false, glassRot: 0,  glassFlip: false, glassScale: 1.18 },
-  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.35, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.96 },
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.35, glassSide: true,  glassRot: 8,  glassFlip: false, glassScale: 0.96, coolScale: 1.15, coolRot: 4 },
+  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', hatCx: 0.52, hatBase: 0.07, glassCx: 0.50, glassTop: 0.22, glassSide: false, glassRot: 0,  glassFlip: false, glassScale: 1.18, coolScale: 1.18, coolRot: 0 },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.35, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.96, coolScale: 1.15, coolRot: -4 },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
 // resolves the right shades asset for a pose + style: 'cool' is a real pixel-art PNG (front/side
@@ -51,6 +56,8 @@ function glassAsset(pose, style) {
   const k = pose.glassSide ? 'classicSide' : 'classic';
   return { key: SVG[k], w: VB[k][0], h: VB[k][1] };
 }
+const glassScaleFor = (pose, style) => (style === 'cool' ? pose.coolScale : pose.glassScale);
+const glassRotFor = (pose, style) => (style === 'cool' ? pose.coolRot : pose.glassRot);
 
 const el = (id) => document.getElementById(id);
 const root = el('bbStage');
@@ -95,8 +102,8 @@ function init() {
     if (banana.getAttribute('src') !== pose.src) banana.setAttribute('src', pose.src);
     hatEl.style.left = (pose.hatCx * 100) + '%'; hatEl.style.bottom = ((1 - pose.hatBase) * 100) + '%';
     glassesEl.style.left = (pose.glassCx * 100) + '%'; glassesEl.style.top = (pose.glassTop * 100) + '%';
-    glassesEl.style.width = (GLASS_W * 100 * pose.glassScale) + '%';
-    glassesEl.style.transform = 'translateX(-50%) ' + (pose.glassFlip ? 'scaleX(-1) ' : '') + 'rotate(' + pose.glassRot + 'deg)';
+    glassesEl.style.width = (GLASS_W * 100 * glassScaleFor(pose, state.glasses)) + '%';
+    glassesEl.style.transform = 'translateX(-50%) ' + (pose.glassFlip ? 'scaleX(-1) ' : '') + 'rotate(' + glassRotFor(pose, state.glasses) + 'deg)';
     if (state.bg === 'transparent') { stage.classList.add('bb-stage--transparent'); stage.style.background = ''; }
     else { stage.classList.remove('bb-stage--transparent'); stage.style.background = state.bg; }
     topCap.textContent = state.top;
@@ -189,8 +196,8 @@ function init() {
     if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawAccSync(ctx, SVG[state.hat], bx + P.hatCx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
     if (state.glasses !== 'none') {
       const a = glassAsset(P, state.glasses);
-      const gw = GLASS_W * bw * P.glassScale, gh = gw * a.h / a.w;
-      drawAccSync(ctx, a.key, bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh, P.glassFlip, P.glassRot);
+      const gw = GLASS_W * bw * glassScaleFor(P, state.glasses), gh = gw * a.h / a.w;
+      drawAccSync(ctx, a.key, bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh, P.glassFlip, glassRotFor(P, state.glasses));
     }
     ctx.restore();
 
