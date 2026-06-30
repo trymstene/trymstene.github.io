@@ -373,8 +373,9 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
-  margin-top: 1.5rem;
+  margin: 1.5rem auto 0;
   padding: 1.5rem;
+  max-width: 640px;
   background: var(--paper);
   border: var(--line);
   box-shadow: var(--shadow);
