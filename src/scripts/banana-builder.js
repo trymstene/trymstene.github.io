@@ -22,9 +22,9 @@ const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','D
 const HAT_W = 0.26, GLASS_W = 0.30;
 // poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top)
 const POSES = [
-  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', cx: 0.56, hatBase: 0.20, glassTop: 0.31 },
-  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', cx: 0.52, hatBase: 0.07, glassTop: 0.22 },
-  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    cx: 0.44, hatBase: 0.20, glassTop: 0.31 },
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.40 },
+  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', hatCx: 0.52, hatBase: 0.07, glassCx: 0.50, glassTop: 0.22 },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.40 },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
 
@@ -69,8 +69,8 @@ function init() {
   function render() {
     const pose = curPose(state.pose);
     if (banana.getAttribute('src') !== pose.src) banana.setAttribute('src', pose.src);
-    hatEl.style.left = (pose.cx * 100) + '%'; hatEl.style.bottom = ((1 - pose.hatBase) * 100) + '%';
-    glassesEl.style.left = (pose.cx * 100) + '%'; glassesEl.style.top = (pose.glassTop * 100) + '%';
+    hatEl.style.left = (pose.hatCx * 100) + '%'; hatEl.style.bottom = ((1 - pose.hatBase) * 100) + '%';
+    glassesEl.style.left = (pose.glassCx * 100) + '%'; glassesEl.style.top = (pose.glassTop * 100) + '%';
     if (state.bg === 'transparent') { stage.classList.add('bb-stage--transparent'); stage.style.background = ''; }
     else { stage.classList.remove('bb-stage--transparent'); stage.style.background = state.bg; }
     topCap.textContent = state.top;
@@ -156,8 +156,8 @@ function init() {
     ctx.imageSmoothingEnabled = true;
     // accessories ride along (per-pose anchors)
     const P = curPose(state.pose);
-    if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawSVGSync(ctx, SVG[state.hat], bx + P.cx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
-    if (state.glasses !== 'none') { const gw = GLASS_W * bw, gh = gw * VB[state.glasses][1] / VB[state.glasses][0]; drawSVGSync(ctx, SVG[state.glasses], bx + P.cx * bw - gw / 2, by + P.glassTop * bh, gw, gh); }
+    if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawSVGSync(ctx, SVG[state.hat], bx + P.hatCx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
+    if (state.glasses !== 'none') { const gw = GLASS_W * bw, gh = gw * VB[state.glasses][1] / VB[state.glasses][0]; drawSVGSync(ctx, SVG[state.glasses], bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh); }
     ctx.restore();
 
     if (withCaptions) { caption(ctx, W, state.top, true); caption(ctx, W, state.bottom, false); }
