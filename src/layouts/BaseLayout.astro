@@ -15,6 +15,7 @@ const {
   showFooter = true,
 } = Astro.props;
 
+const ogDescription = Astro.props.ogDescription ?? description;
 const site = 'https://trymstene.com';
 const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
 ---
@@ -30,11 +31,13 @@ const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
 
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={ogDescription} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={ogImage} />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
@@ -43,6 +46,7 @@ const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
     <slot name="head" />
   </head>
   <body>
+    <slot name="banner" />
     <Nav />
     <slot />
     {showFooter && <Footer />}

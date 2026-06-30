@@ -1,18 +1,183 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-// Phase-1 scaffold check — real homepage content lands in Phase 2.
+
+const title = "Trym Stene — hello yes, it's the banana guy";
+const description = "Trym Stene — the guy who made the Dancing Banana GIF back in 1999. Lead SEO, web comedian, music producer. Satirical web projects, dancing banana merch, and the full banana story.";
+const ogDescription = "The guy who made the Dancing Banana GIF. Web comedian, SEO, music producer.";
+
+// Entity / authorship: establishes Trym Stene as the verified creator for search + AI
+const schema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://trymstene.com/#website",
+      "url": "https://trymstene.com/",
+      "name": "Trym Stene",
+      "description": "Trym Stene — the creator of the Dancing Banana GIF (1999). Web comedy, music, and the official banana.",
+      "inLanguage": "en",
+      "publisher": { "@id": "https://trymstene.com/#trym" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://trymstene.com/#trym",
+      "name": "Trym Stene",
+      "url": "https://trymstene.com/",
+      "image": "https://trymstene.com/assets/trym-stene-profile-photo.jpg",
+      "description": "Norwegian creator of the Dancing Banana GIF (1999). Lead SEO & CRO specialist, web comedian, and music producer as DJ Sentry.",
+      "jobTitle": "Lead SEO & CRO Specialist",
+      "sameAs": [
+        "https://www.facebook.com/trymstene",
+        "https://twitter.com/trymstene",
+        "https://www.linkedin.com/in/trymstene/",
+        "https://www.instagram.com/trymstene/",
+        "https://soundcloud.com/sentryofficial",
+        "https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F"
+      ]
+    }
+  ]
+};
+
+const marqueeText = "the dancing banana  ·  since 1999  ·  web comedy & music  ·  licensing enquiries welcome  ·  ".repeat(5);
 ---
-<BaseLayout title="Scaffold check — Trym Stene" description="Validating the Astro pipeline on the real design.">
+<BaseLayout title={title} description={description} ogDescription={ogDescription} showFooter={false}>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+
+  <!-- scrolling marquee banner -->
+  <div class="marquee" slot="banner" aria-hidden="true">
+    <div class="marquee__track">
+      <span>{marqueeText}</span>
+      <span>{marqueeText}</span>
+    </div>
+  </div>
+
+  <!-- hero -->
   <section class="hero">
-    <p class="kicker">Scaffold check</p>
-    <h1 class="hero__title">it<br>works</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">Astro + shared components + global CSS, rendering on the real neo-brutalist design.</p>
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-gif.gif" alt="The Dancing Banana GIF, created by Trym Stene in 1999"
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
+    <h1 class="hero__title">hello yes,<br>it's the <span class="wobble">banana</span> guy</h1>
+    <p class="hero__tag">LEAD SEO &nbsp;·&nbsp; WEB COMEDIAN &nbsp;·&nbsp; MUSIC PRODUCER</p>
+    <div class="hero__cta">
+      <a class="btn btn--dark" href="#banana">Meet the banana →</a>
+      <a class="btn btn--light" href="#shop">Get the merch</a>
+    </div>
   </section>
 
-  <section class="block block--yellow">
-    <p class="kicker">The goods</p>
-    <h2>Section in banana yellow</h2>
-    <p class="lead">If this is styled — yellow block, hard borders, Nunito logo, two-tone nav — the pipeline is good.</p>
-    <a class="btn btn--dark" href="/shop/">Test button →</a>
+  <!-- banana hook -->
+  <section class="block block--yellow" id="banana">
+    <p class="kicker">Yes, THAT banana</p>
+    <h2>I made the internet's favourite fruit.</h2>
+    <p class="lead">
+      Back in <strong>1999</strong>, on an AMD K6-2 running at a screaming 350MHz, I made a little
+      dancing banana GIF. It became <strong>Peanut Butter Jelly Time</strong>, it cameo'd in
+      <strong>Family Guy</strong>, and it's been bouncing across the internet ever since.
+    </p>
+    <p class="lead">
+      The full story — the remixes, the FAQ, and how to <strong>license</strong> the banana
+      (spoiler: not for your crypto coin) — lives on its own page.
+    </p>
+    <a class="btn btn--dark" href="/dancing-banana-gif-meme/">Read the full banana story →</a>
+    <a class="btn btn--light" href="/make-a-banana/" style="margin-left:0.6rem;">🎨 Make your own →</a>
   </section>
+
+  <!-- projects -->
+  <section class="block" id="projects">
+    <p class="kicker">Things I've built to make people laugh</p>
+    <h2>Projects</h2>
+    <p class="lead">Satirical web experiments, fake municipalities, and a country album about office despair.</p>
+    <div class="cards">
+      <a class="project-card" href="https://open.spotify.com/artist/6o8Td2bXOhcE5xtsBsYNiF" target="_blank" rel="noopener">
+        <img class="project-card__img" src="/assets/projects/corporate-rangers.jpg" alt="The Corporate Rangers" loading="lazy">
+        <div class="project-card__body">
+          <h3>The Corporate Rangers</h3>
+          <p>A six-track country meltdown about printers, pointless meetings, and coffee that tastes like regret.</p>
+          <span class="project-card__go">Listen on Spotify ↗</span>
+        </div>
+      </a>
+      <a class="project-card" href="https://chromewebstore.google.com/detail/karbonadify/dmnefnajildhaohggehgniogjiklanco" target="_blank" rel="noopener">
+        <img class="project-card__img" src="/assets/projects/karbonadify.jpg" alt="Karbonadify Chrome extension" loading="lazy">
+        <div class="project-card__body">
+          <h3>Karbonadify</h3>
+          <p>A Chrome extension that turns every "corona" on the news into "karbonade" — a Norwegian meat patty.</p>
+          <span class="project-card__go">Get the extension ↗</span>
+        </div>
+      </a>
+      <a class="project-card" href="https://lekeplass.com/projects/trymflix/" target="_blank" rel="noopener">
+        <img class="project-card__img" src="/assets/projects/trymflix.png" alt="Trymflix" loading="lazy">
+        <div class="project-card__body">
+          <h3>Trymflix.com</h3>
+          <p>A Netflix parody built mostly as an excuse to play with jQuery UI.</p>
+          <span class="project-card__go">Visit ↗</span>
+        </div>
+      </a>
+    </div>
+    <a class="btn btn--dark" href="/projects/" style="margin-top:2rem;">See all 6 projects →</a>
+  </section>
+
+  <!-- merch -->
+  <section class="block block--dark" id="shop">
+    <p class="kicker kicker--light">New!</p>
+    <h2>Dancing Banana Merch</h2>
+    <p class="lead">Wear the banana. Officially. Stickers, mugs, tees and more.</p>
+    <a class="btn btn--light" href="/shop/">Visit the shop →</a>
+  </section>
+
+  <!-- about -->
+  <section class="block" id="about">
+    <div class="split">
+      <div class="split__media">
+        <img src="/assets/trym-stene-profile-photo.jpg" alt="Trym Stene" loading="lazy">
+      </div>
+      <div class="split__text">
+        <p class="kicker">The guy behind the fruit</p>
+        <h2>Me</h2>
+        <p class="lead">
+          I'm Trym Stene — a Norwegian who does SEO for a living, makes jokes on the internet for fun,
+          and produces music as <a href="https://www.djsentry.com" target="_blank" rel="noopener">DJ Sentry</a>.
+          One time in 1999 I drew a fruit and it got a little out of hand.
+        </p>
+        <a class="btn btn--dark" href="/me/">More about me →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- music -->
+  <section class="block block--dark" id="music">
+    <div class="split split--reverse">
+      <div class="split__media">
+        <img src="/assets/trym-stene-studio.png" alt="Trym Stene in the studio" loading="lazy">
+      </div>
+      <div class="split__text">
+        <p class="kicker kicker--light">Also a producer</p>
+        <h2>Music</h2>
+        <p class="lead">
+          When I'm not making the internet laugh, I'm in the studio making noise as
+          <strong>DJ Sentry</strong>.
+        </p>
+        <a class="btn btn--light" href="https://www.djsentry.com" target="_blank" rel="noopener">Hear it on djsentry.com ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- contact / footer -->
+  <footer class="block block--dark" id="contact">
+    <p class="kicker kicker--light">Say hello</p>
+    <h2>Contact</h2>
+    <p class="lead">
+      Got a project, a question, or want to license the banana?
+      Email <a href="mailto:trym@trymstene.com">trym@trymstene.com</a>.
+      <br><span class="muted">(A proper spam-proof contact form is coming to this spot.)</span>
+    </p>
+    <div class="socials">
+      <a href="https://www.facebook.com/trymstene" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://twitter.com/trymstene" target="_blank" rel="noopener">X</a>
+      <a href="https://www.linkedin.com/in/trymstene/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://soundcloud.com/sentryofficial" target="_blank" rel="noopener">SoundCloud</a>
+      <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
+    </div>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy · best viewed in any browser, even Netscape 🍌</p>
+  </footer>
 </BaseLayout>

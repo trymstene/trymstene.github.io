@@ -1,0 +1,17 @@
+---
+// Shared hreflang mesh — identical on the banana hub + all localized pages.
+// Single source of truth so the language alternates never drift.
+const base = 'https://trymstene.com';
+const alternates = [
+  { lang: 'en', href: base + '/dancing-banana-gif-meme/' },
+  { lang: 'nl', href: base + '/nl/' },
+  { lang: 'es', href: base + '/es/' },
+  { lang: 'pt', href: base + '/pt/' },
+  { lang: 'fr', href: base + '/fr/' },
+  { lang: 'de', href: base + '/de/' },
+  { lang: 'ru', href: base + '/ru/' },
+];
+const xDefault = base + '/dancing-banana-gif-meme/';
+---
+{alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+<link rel="alternate" hreflang="x-default" href={xDefault} />
