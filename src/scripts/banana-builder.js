@@ -6,18 +6,22 @@ import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
 const SVG = {
   classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
-  cool:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g><rect x="6" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="68" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="52" y="16" width="16" height="6" fill="#111"/><rect x="12" y="11" width="14" height="6" fill="#ff4d6d"/><rect x="74" y="11" width="14" height="6" fill="#6c8cff"/></g></svg>',
-  // "side visor" variants — used on Classic/Strut where the head is shown at an angle (one wide
+  // "side visor" variant — used on Classic/Strut where the head is shown at an angle (one wide
   // eye-block, not two forward eyes). A single solid blob read as paint on the face, not glasses,
   // so this is two foreshortened lenses (big near lens + smaller far lens peeking out behind it,
   // with a visible gap/bridge) plus a shine streak so the silhouette reads as glass, not a blot.
   classicSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60"><g fill="#111"><rect x="60" y="6" width="36" height="26" rx="10"/><rect x="8" y="16" width="62" height="38" rx="14"/><rect x="58" y="30" width="14" height="8" rx="3"/><rect x="92" y="14" width="20" height="9" rx="4"/></g><rect x="20" y="24" width="9" height="20" rx="3" fill="#fff" opacity="0.55" transform="rotate(18 24 34)"/></svg>',
-  coolSide:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60"><g fill="#111"><rect x="60" y="6" width="36" height="26" rx="10"/><rect x="8" y="16" width="62" height="38" rx="14"/><rect x="58" y="30" width="14" height="8" rx="3"/><rect x="92" y="14" width="20" height="9" rx="4"/></g><rect x="18" y="24" width="40" height="9" fill="#ff4d6d"/><rect x="66" y="12" width="20" height="8" fill="#6c8cff"/><rect x="20" y="24" width="9" height="20" rx="3" fill="#fff" opacity="0.5" transform="rotate(18 24 34)"/></svg>',
   party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92" width="80" height="92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
   crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70" width="100" height="70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
   tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86" width="100" height="86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
 };
-const VB = { classic:[120,44], cool:[120,44], classicSide:[120,60], coolSide:[120,60], party:[80,92], crown:[100,70], tophat:[100,86] };
+const VB = { classic:[120,44], classicSide:[120,60], party:[80,92], crown:[100,70], tophat:[100,86] };
+// "Cool" = Trym's hand-picked pixel-art "deal with it" shades (real PNGs, pre-trimmed to content
+// bbox — the source files have huge transparent padding that would throw off the sizing math).
+const GLASS_RASTER = {
+  coolFront: { src: '/assets/cool-shades-trim.png?v=1', w: 844, h: 172 },
+  coolSide:  { src: '/assets/cool-shades-sideways-trim.png?v=1', w: 362, h: 62 },
+};
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
 const GLASSES = [['none','None'],['classic','Classic'],['cool','Cool']];
@@ -36,7 +40,17 @@ const POSES = [
   { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.35, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.96 },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
-const glassKeyFor = (pose, style) => (pose.glassSide ? style + 'Side' : style);
+// resolves the right shades asset for a pose + style: 'cool' is a real pixel-art PNG (front/side
+// crop), 'classic' is the hand-drawn SVG (frontal pair / side visor). key is either inline SVG
+// markup (starts with '<') or an image URL — imgFor()/drawAccSync() handle both transparently.
+function glassAsset(pose, style) {
+  if (style === 'cool') {
+    const r = pose.glassSide ? GLASS_RASTER.coolSide : GLASS_RASTER.coolFront;
+    return { key: r.src, w: r.w, h: r.h };
+  }
+  const k = pose.glassSide ? 'classicSide' : 'classic';
+  return { key: SVG[k], w: VB[k][0], h: VB[k][1] };
+}
 
 const el = (id) => document.getElementById(id);
 const root = el('bbStage');
@@ -87,7 +101,11 @@ function init() {
     else { stage.classList.remove('bb-stage--transparent'); stage.style.background = state.bg; }
     topCap.textContent = state.top;
     botCap.textContent = state.bottom;
-    if (state.glasses === 'none') glassesEl.hidden = true; else { glassesEl.hidden = false; glassesEl.innerHTML = SVG[glassKeyFor(pose, state.glasses)]; }
+    if (state.glasses === 'none') glassesEl.hidden = true; else {
+      glassesEl.hidden = false;
+      const a = glassAsset(pose, state.glasses);
+      glassesEl.innerHTML = a.key.charAt(0) === '<' ? a.key : '<img src="' + a.key + '" alt="" style="display:block;width:100%;height:auto" draggable="false">';
+    }
     if (state.hat === 'none') hatEl.hidden = true; else { hatEl.hidden = false; hatEl.innerHTML = SVG[state.hat]; }
     char.className = 'bb-char';
     if (state.move !== 'none') { char.classList.add('move-' + state.move); char.style.setProperty('--spd', state.spd + 's'); }
@@ -168,26 +186,28 @@ function init() {
     ctx.imageSmoothingEnabled = true;
     // accessories ride along (per-pose anchors)
     const P = curPose(state.pose);
-    if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawSVGSync(ctx, SVG[state.hat], bx + P.hatCx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
+    if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawAccSync(ctx, SVG[state.hat], bx + P.hatCx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
     if (state.glasses !== 'none') {
-      const gKey = glassKeyFor(P, state.glasses);
-      const gw = GLASS_W * bw * P.glassScale, gh = gw * VB[gKey][1] / VB[gKey][0];
-      drawSVGSync(ctx, SVG[gKey], bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh, P.glassFlip, P.glassRot);
+      const a = glassAsset(P, state.glasses);
+      const gw = GLASS_W * bw * P.glassScale, gh = gw * a.h / a.w;
+      drawAccSync(ctx, a.key, bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh, P.glassFlip, P.glassRot);
     }
     ctx.restore();
 
     if (withCaptions) { caption(ctx, W, state.top, true); caption(ctx, W, state.bottom, false); }
   }
 
-  // pre-rasterized accessory images (so canvas draw is synchronous)
-  const svgCache = {};
-  function svgImg(svg) {
-    if (svgCache[svg]) return svgCache[svg];
-    const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    svgCache[svg] = img; return img;
+  // pre-rasterized accessory images (so canvas draw is synchronous). key is either inline SVG
+  // markup or an image URL (real PNG assets, e.g. the Cool shades) — both cache/draw the same way.
+  const imgCache = {};
+  function imgFor(key) {
+    if (imgCache[key]) return imgCache[key];
+    const img = new Image();
+    img.src = key.charAt(0) === '<' ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(key) : key;
+    imgCache[key] = img; return img;
   }
-  function drawSVGSync(ctx, svg, dx, dy, dw, dh, flip, rotDeg) {
-    const img = svgImg(svg); if (!(img.complete && img.naturalWidth)) return;
+  function drawAccSync(ctx, key, dx, dy, dw, dh, flip, rotDeg) {
+    const img = imgFor(key); if (!(img.complete && img.naturalWidth)) return;
     if (!flip && !rotDeg) { ctx.drawImage(img, dx, dy, dw, dh); return; }
     ctx.save();
     const ccx = dx + dw / 2, ccy = dy + dh / 2;
@@ -220,14 +240,14 @@ function init() {
   }
 
   async function ensureAssetsReady() {
-    const imgs = [banana, ...Object.values(svgCache)];
+    const imgs = [banana, ...Object.values(imgCache)];
     await Promise.all(imgs.map((i) => (i.complete && i.naturalWidth) ? Promise.resolve() : i.decode().catch(() => {})));
   }
 
   // ---- still PNG (trimmed if transparent) ----
   el('bbDownloadPng').onclick = async () => {
-    // make sure any selected accessory SVGs are rasterized
-    if (state.hat !== 'none') svgImg(SVG[state.hat]); if (state.glasses !== 'none') svgImg(SVG[state.glasses]);
+    // make sure any selected accessory images are pre-loaded
+    if (state.hat !== 'none') imgFor(SVG[state.hat]); if (state.glasses !== 'none') imgFor(glassAsset(curPose(state.pose), state.glasses).key);
     await ensureAssetsReady();
     const W = 720;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
@@ -245,7 +265,7 @@ function init() {
   el('bbDownloadGif').onclick = async () => {
     const btn = el('bbDownloadGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Rendering…';
     try {
-      if (state.hat !== 'none') svgImg(SVG[state.hat]); if (state.glasses !== 'none') svgImg(SVG[state.glasses]);
+      if (state.hat !== 'none') imgFor(SVG[state.hat]); if (state.glasses !== 'none') imgFor(glassAsset(curPose(state.pose), state.glasses).key);
       await ensureAssetsReady();
       const W = 360;
       const N = state.move === 'none' ? 1 : (state.move === 'spin' ? 24 : 18);
@@ -299,7 +319,7 @@ function init() {
   function download(href, name) { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 
   // expose the frame drawer for the sticker (print-res) flow later
-  window.__bananaBuilder = { state, drawFrame, bboxOf, pad, crop, ensureAssetsReady, svgImg, SVG };
+  window.__bananaBuilder = { state, drawFrame, bboxOf, pad, crop, ensureAssetsReady, imgFor, SVG };
 
   load(); render();
 }
