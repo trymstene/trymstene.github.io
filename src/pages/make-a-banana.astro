@@ -30,9 +30,9 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     }
     .bb-char { position: relative; width: 52%; }
     .bb-banana { width: 100%; height: auto; display: block; image-rendering: auto; }
-    .bb-acc { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
-    .bb-glasses { top: 30%; width: 46%; }
-    .bb-hat { top: -19%; width: 48%; }
+    .bb-acc { position: absolute; left: 56%; transform: translateX(-50%); pointer-events: none; }
+    .bb-glasses { top: 31%; width: 30%; }
+    .bb-hat { bottom: 80%; width: 26%; }
     .bb-acc[hidden] { display: none; }
 
     .bb-caption {
@@ -85,10 +85,6 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 
-  <div style="background:var(--hot);color:#fff;border-bottom:var(--line);padding:0.9rem 1.2rem;text-align:center;font-weight:700;line-height:1.4;">
-    🚧 Heads up — the banana builder is under construction this week. It's giving some weird results right now, I know. I'm on it! 🍌
-  </div>
-
   <section class="hero" style="padding-bottom:1.5rem;">
     <p class="kicker">Free banana toy</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,4rem);">make your own<br>dancing banana</h1>
@@ -103,7 +99,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
           <div class="bb-caption bb-top" id="bbTop"></div>
           <div class="bb-char" id="bbChar">
             <div class="bb-acc bb-hat" id="bbHat" hidden></div>
-            <img class="bb-banana" id="bbBanana" src="/assets/dancing-banana-transparent.gif" alt="Your dancing banana" crossorigin="anonymous">
+            <img class="bb-banana" id="bbBanana" src="/assets/dancing-banana-transparent.png" alt="Your dancing banana" crossorigin="anonymous">
             <div class="bb-acc bb-glasses" id="bbGlasses" hidden></div>
           </div>
           <div class="bb-caption bb-bottom" id="bbBottom"></div>
@@ -235,20 +231,20 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     // share
     el('bbShare').onclick=async ()=>{ sync(); try{ await navigator.clipboard.writeText(location.href); toast('Share link copied!'); }catch(e){ toast('Copy this URL from the address bar'); } };
 
-    // download (composite still image)
+    // download (composite still image) — deterministic + print-crisp, mirrors the on-screen layout
+    const VB={classic:[120,44],cool:[120,44],party:[80,92],crown:[100,70],tophat:[100,86]};
     el('bbDownload').onclick=()=>{
-      const S=600; const cv=document.createElement('canvas'); cv.width=S; cv.height=S; const ctx=cv.getContext('2d');
+      const S=1024; const cv=document.createElement('canvas'); cv.width=S; cv.height=S; const ctx=cv.getContext('2d');
       ctx.fillStyle=state.bg; ctx.fillRect(0,0,S,S);
-      const bw=banana.naturalWidth||120, bh=banana.naturalHeight||200;
-      const targetH=S*0.5, scale=targetH/bh, w=bw*scale, h=targetH;
-      const cx=S/2, cy=S/2; const bx=cx-w/2, by=cy-h/2;
-      function drawSVG(svg, dx, dy, dw, dh, cb){ const img=new Image(); img.onload=()=>{ ctx.drawImage(img,dx,dy,dw,dh); cb&&cb(); }; img.onerror=()=>cb&&cb(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }
-      function caption(text, top){ if(!text) return; let fs=Math.round(S*0.09); ctx.font='900 '+fs+'px Archivo Black, Impact, sans-serif'; while(ctx.measureText(text.toUpperCase()).width>S*0.92 && fs>14){ fs-=2; ctx.font='900 '+fs+'px Archivo Black, Impact, sans-serif'; } ctx.textAlign='center'; ctx.textBaseline=top?'top':'bottom'; ctx.lineWidth=fs*0.14; ctx.strokeStyle='#111'; ctx.fillStyle='#fff'; ctx.lineJoin='round'; const y=top?S*0.04:S*0.96; ctx.strokeText(text.toUpperCase(),S/2,y); ctx.fillText(text.toUpperCase(),S/2,y); }
-      // draw banana, then accessories, then captions, then export
-      try { ctx.drawImage(banana, bx, by, w, h); } catch(e){}
+      ctx.imageSmoothingEnabled=false; // keep the pixel banana crisp
+      const bh=S*0.62, scale=bh/(banana.naturalHeight||498), bw=(banana.naturalWidth||469)*scale;
+      const bx=(S-bw)/2, by=(S-bh)/2, cxF=0.56; // figure sits at 56% within its box
+      function drawSVG(svg, dx, dy, dw, dh, cb){ const img=new Image(); img.onload=()=>{ ctx.imageSmoothingEnabled=true; ctx.drawImage(img,dx,dy,dw,dh); cb&&cb(); }; img.onerror=()=>cb&&cb(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }
+      function caption(text, top){ if(!text) return; let fs=Math.round(S*0.095); ctx.font='900 '+fs+'px "Archivo Black", Impact, sans-serif'; while(ctx.measureText(text.toUpperCase()).width>S*0.92 && fs>16){ fs-=2; ctx.font='900 '+fs+'px "Archivo Black", Impact, sans-serif'; } ctx.textAlign='center'; ctx.textBaseline=top?'top':'bottom'; ctx.lineWidth=fs*0.16; ctx.strokeStyle='#111'; ctx.fillStyle='#fff'; ctx.lineJoin='round'; const y=top?S*0.035:S*0.965; ctx.strokeText(text.toUpperCase(),S/2,y); ctx.fillText(text.toUpperCase(),S/2,y); }
+      try { ctx.drawImage(banana, bx, by, bw, bh); } catch(e){}
       const after2=()=>{ caption(state.top,true); caption(state.bottom,false); const url=cv.toDataURL('image/png'); const a=document.createElement('a'); a.href=url; a.download='my-dancing-banana.png'; a.click(); toast('Downloaded!'); };
-      const afterHat=()=>{ if(state.glasses!=='none'){ drawSVG(SVG[state.glasses], cx-w*0.5, by+h*0.30, w, w*44/120, after2); } else after2(); };
-      if(state.hat!=='none'){ drawSVG(SVG[state.hat], cx-w*0.48, by-h*0.20, w*0.96, h*0.42, afterHat); } else afterHat();
+      const afterHat=()=>{ if(state.glasses!=='none'){ const gw=0.30*bw, gh=gw*VB[state.glasses][1]/VB[state.glasses][0]; drawSVG(SVG[state.glasses], bx+cxF*bw-gw/2, by+0.31*bh, gw, gh, after2); } else after2(); };
+      if(state.hat!=='none'){ const hw=0.26*bw, hh=hw*VB[state.hat][1]/VB[state.hat][0]; drawSVG(SVG[state.hat], bx+cxF*bw-hw/2, (by+0.20*bh)-hh, hw, hh, afterHat); } else afterHat();
     };
 
     load(); render();
