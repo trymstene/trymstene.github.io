@@ -233,10 +233,11 @@ function init() {
   function caption(ctx, W, text, top) {
     if (!text) return;
     let fs = Math.round(W * 0.095);
-    ctx.font = '900 ' + fs + 'px "Archivo Black", Impact, sans-serif';
-    while (ctx.measureText(text.toUpperCase()).width > W * 0.92 && fs > 14) { fs -= 2; ctx.font = '900 ' + fs + 'px "Archivo Black", Impact, sans-serif'; }
+    const fontStack = (size) => '900 ' + size + 'px Impact, "Arial Black", "Franklin Gothic Bold", sans-serif';
+    ctx.font = fontStack(fs);
+    while (ctx.measureText(text.toUpperCase()).width > W * 0.92 && fs > 14) { fs -= 2; ctx.font = fontStack(fs); }
     ctx.textAlign = 'center'; ctx.textBaseline = top ? 'top' : 'bottom';
-    ctx.lineWidth = fs * 0.16; ctx.strokeStyle = '#111'; ctx.fillStyle = '#fff'; ctx.lineJoin = 'round';
+    ctx.lineWidth = fs * 0.24; ctx.strokeStyle = '#111'; ctx.fillStyle = '#fff'; ctx.lineJoin = 'round';
     const y = top ? W * 0.035 : W * 0.965;
     ctx.strokeText(text.toUpperCase(), W / 2, y); ctx.fillText(text.toUpperCase(), W / 2, y);
   }
