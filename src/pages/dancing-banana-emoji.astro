@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = "Dancing Banana Emoji & Sticker — Free for Discord & Slack";
+const description = "The Dancing Banana as a free emoji and sticker — transparent, ready for Discord, Slack and Telegram. Add the original 1999 meme by its creator, or make your own.";
+const ogDescription = "The original Dancing Banana as a free, transparent emoji/sticker for Discord, Slack and Telegram. Add it or make your own.";
+
+const faq = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Is there a dancing banana emoji?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The original Dancing Banana is available as a free transparent emoji and sticker you can add to Discord, Slack, Telegram and more, from its creator Trym Stene." } },
+    { "@type": "Question", "name": "How do I add the dancing banana to Discord?", "acceptedAnswer": { "@type": "Answer", "text": "Download the transparent version, then in Discord open Server Settings, go to Emoji or Stickers, click Upload, and choose the file. Animated emoji require a server with the right boost level." } },
+    { "@type": "Question", "name": "Can I use the dancing banana on Slack or Telegram?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Upload the transparent GIF or PNG as a custom emoji in Slack, or add it as a sticker in Telegram." } }
+  ]
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="Dancing Banana Emoji & Sticker — Free for Discord & Slack"
+  ogDescription={ogDescription}
+  ogImage="https://trymstene.com/assets/dancing-banana-transparent.png"
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-transparent.gif" alt="The Dancing Banana emoji / sticker, transparent"
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
+    <p class="kicker">Free emoji &amp; sticker</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">dancing banana<br>emoji &amp; sticker</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Transparent, free, and ready for Discord, Slack &amp; Telegram</p>
+  </section>
+
+  <!-- answer-first + download -->
+  <section class="block">
+    <p class="lead" style="max-width:64ch;margin-inline:auto;font-size:1.2rem;">
+      Yes — the <strong>Dancing Banana</strong> makes a perfect emoji or sticker. Here's the
+      <strong>transparent</strong> version of the original 1999 meme, free to drop into Discord, Slack,
+      Telegram, or anywhere you chat.
+    </p>
+    <div class="grab">
+      <img src="/assets/dancing-banana-transparent.png" alt="Transparent Dancing Banana sticker">
+      <div class="dl-buttons">
+        <a class="btn btn--dark" href="/assets/dancing-banana-transparent.gif" download="dancing-banana-emoji.gif">Animated (GIF) ↓</a>
+        <a class="btn btn--light" href="/assets/dancing-banana-transparent.png" download="dancing-banana-sticker.png">Still (PNG) ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- how to add -->
+  <section class="block block--yellow">
+    <p class="kicker">Quick setup</p>
+    <h2>How to add it to Discord</h2>
+    <ul class="bullets">
+      <li>Download the <strong>transparent</strong> banana above (GIF for animated, PNG for still).</li>
+      <li>In Discord: <strong>Server Settings → Emoji</strong> (or <strong>Stickers</strong>) → <strong>Upload</strong>.</li>
+      <li>Pick the file, give it a name like <code>:banana:</code>, and save. Done. 🍌</li>
+    </ul>
+    <p class="lead" style="margin-top:1.2rem;">
+      On <strong>Slack</strong>, add it as a custom emoji; on <strong>Telegram</strong>, add it as a sticker.
+      Same file works everywhere.
+    </p>
+  </section>
+
+  <!-- make your own -->
+  <section class="block">
+    <p class="kicker">Make it yours</p>
+    <h2>Want a custom banana sticker?</h2>
+    <p class="lead">Add shades, a hat, or a caption, then download your own — perfect for a personal server emoji.</p>
+    <a class="btn btn--dark" href="/make-a-banana/">🎨 Make your own dancing banana →</a>
+  </section>
+
+  <!-- FAQ -->
+  <section class="block block--dark">
+    <p class="kicker kicker--light">The usual questions</p>
+    <h2>Dancing Banana emoji FAQ</h2>
+    <div class="faq__item">
+      <h3>Is there a dancing banana emoji?</h3>
+      <p>Yes — the original, right here, free and transparent. Add it to Discord, Slack, Telegram or anywhere.</p>
+    </div>
+    <div class="faq__item">
+      <h3>How do I add the dancing banana to Discord?</h3>
+      <p>Download the transparent version, then Server Settings → Emoji (or Stickers) → Upload → pick the file. Animated emoji need a boosted server.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Can I use it on Slack or Telegram?</h3>
+      <p>Yes — upload it as a custom emoji (Slack) or a sticker (Telegram). The same transparent file works.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Where's it from?</h3>
+      <p>It's the original Dancing Banana, made by Trym Stene in 1999. <a href="/dancing-banana-gif-meme/">Read the story →</a></p>
+    </div>
+  </section>
+</BaseLayout>

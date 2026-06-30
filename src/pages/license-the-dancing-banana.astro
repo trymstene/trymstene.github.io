@@ -1,0 +1,164 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = "License the Dancing Banana | Trym Stene";
+const description = "License the original Dancing Banana GIF — the pixel banana bobbing across the internet since 1999, licensed directly by its creator, Trym Stene. Ads, merch, games, video and more.";
+const ogDescription = "The original 1999 pixel banana, licensed directly by its creator. Ads, merch, games, video — quoted per project.";
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="License the Dancing Banana"
+  ogDescription={ogDescription}
+  showFooter={false}
+>
+  <!-- hero -->
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-gif.gif" alt="The original Dancing Banana GIF, created by Trym Stene in 1999"
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
+    <p class="kicker">Original · since 1999</p>
+    <h1 class="hero__title">license the<br>dancing banana</h1>
+    <p class="hero__tag" style="max-width:60ch;margin:1.2rem auto 0;text-transform:none;font-weight:500;">
+      The pixel banana that's been bobbing across the internet since 1999 — born as a forum emoticon,
+      danced its way to YouTube, Newgrounds and prime-time TV. If you want to use it commercially,
+      this is the door.
+    </p>
+    <div class="hero__cta">
+      <a class="btn btn--dark" href="#request">Request a license →</a>
+    </div>
+    <p class="hero__tag" style="margin-top:1.5rem;text-transform:none;font-weight:500;opacity:.75;">
+      Created 1999 · first posted on Norsk FreakForum · the same banana later set to
+      Peanut Butter Jelly Time · licensed directly by its creator, no middlemen.
+    </p>
+  </section>
+
+  <!-- the real one -->
+  <section class="block block--yellow">
+    <p class="kicker">The real one</p>
+    <h2>One banana. One creator.</h2>
+    <p class="lead">
+      Plenty of versions float around. This is the original — licensed by the person who drew it.
+    </p>
+    <div class="faq__item">
+      <h3>1999</h3>
+      <p>Animated in Animation Shop as a celebratory forum emoticon — the <code>:banana:</code> that replaced the typed shortcut.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Forums → TV</h3>
+      <p>Spread across early-2000s message boards, became a Flash and YouTube staple, and made it to network television.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Credited</h3>
+      <p>Consistently attributed to one creator across meme archives and press — and uncontested by anyone else.</p>
+    </div>
+  </section>
+
+  <!-- what you can license -->
+  <section class="block">
+    <p class="kicker">What you can license</p>
+    <h2>The banana itself — for almost anything.</h2>
+    <p class="lead">Ads, merch, packaging, games, video, editorial, apps. Pick the asset and the use; the license is written to fit it.</p>
+    <div class="faq__item">
+      <h3>The original GIF</h3>
+      <p>The classic looping animation as it first appeared — for digital, social and editorial use.</p>
+    </div>
+    <div class="faq__item">
+      <h3>The hi-res remaster</h3>
+      <p>A clean, high-resolution version of the character — for print, merch and large-format display.</p>
+    </div>
+    <div class="faq__item">
+      <h3>The character</h3>
+      <p>The Dancing Banana likeness for products, packaging, games and animation — scoped per project.</p>
+    </div>
+    <div class="callout">
+      <strong>Scope</strong>
+      This licenses the Dancing Banana — the character and its animation. It does not cover the "Peanut Butter Jelly Time" flash animation or the song, which were made by other people. If your use needs those too, you'll want their permission separately.
+    </div>
+  </section>
+
+  <!-- how it works -->
+  <section class="block block--dark">
+    <p class="kicker kicker--light">How licensing works</p>
+    <h2>Every use is quoted to the project.</h2>
+    <p class="lead">
+      There's no fixed price list, because a sticker pack and a national ad campaign aren't the same ask.
+      Tell me what you're making and I'll quote it. Roughly, requests fall into three shapes:
+    </p>
+    <div class="faq__item">
+      <h3>Social &amp; short campaign</h3>
+      <p>One brand, a defined run, limited channels. The light end — usually a flat fee.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Merch &amp; product</h3>
+      <p>The banana on something you sell. Typically a fee plus a small royalty, so it scales with the product, not with guesswork.</p>
+    </div>
+    <div class="faq__item">
+      <h3>Broadcast, film &amp; games</h3>
+      <p>Wide reach, long life, or exclusivity. Quoted per project — the serious end of the range.</p>
+    </div>
+    <p class="lead" style="margin-top:1.5rem;">Four things move a quote:</p>
+    <div class="factors">
+      <span>Use — where it appears</span>
+      <span>Reach — how many people</span>
+      <span>Term — how long</span>
+      <span>Exclusivity — anyone else?</span>
+    </div>
+    <p class="lead" style="margin-top:1.2rem;">Non-exclusive and short is cheap; exclusive and perpetual is not.</p>
+  </section>
+
+  <!-- crypto -->
+  <section class="block block--yellow">
+    <p class="kicker">Crypto, tokens &amp; "bananacoin" projects</p>
+    <h2>Possible — on stricter terms.</h2>
+    <p class="lead">
+      I don't endorse, promote, or post about token projects. The banana's image can be licensed for one,
+      but the terms are deliberately different:
+    </p>
+    <ul class="bullets">
+      <li><strong>Image only</strong> — no use of my name, likeness, or any implied endorsement.</li>
+      <li><strong>Fee paid in full, upfront, in regular currency.</strong> No tokens, no equity, no "you'll be early."</li>
+      <li><strong>Short term, non-exclusive</strong>, with a written right to terminate and require removal.</li>
+      <li><strong>A morality clause</strong> — misuse ends the license immediately.</li>
+    </ul>
+    <p class="lead" style="margin-top:1.2rem;">Flag it honestly when you get in touch — it changes the quote, not your odds.</p>
+  </section>
+
+  <!-- request -->
+  <section class="block block--dark" id="request">
+    <p class="kicker kicker--light">Request a license</p>
+    <h2>Tell me what you're making.</h2>
+    <p class="lead">
+      The more you share, the faster I can come back with a real number instead of more questions.
+      The button below opens an email with the checklist ready to fill in.
+    </p>
+    <ul class="bullets">
+      <li>Your name and company / project</li>
+      <li>What you're making and how the banana would be used</li>
+      <li>Where it'll appear, and the reach / audience size</li>
+      <li>Exclusive or non-exclusive — and for how long</li>
+      <li>Ballpark budget</li>
+      <li>Whether it's a crypto / token / web3 project</li>
+      <li>A link to a site, deck or mockup, if you have one</li>
+    </ul>
+    <div class="hero__cta" style="justify-content:flex-start;margin-top:1.5rem;">
+      <a class="btn btn--light" href="mailto:trym@trymstene.com?subject=Dancing%20Banana%20licensing%20enquiry&body=Hi%20Trym%2C%0A%0AName%20%2F%20company%3A%0AWhat%20I%27m%20making%3A%0AHow%20the%20banana%20would%20be%20used%3A%0AWhere%20it%27ll%20appear%3A%0AReach%20%2F%20audience%20size%3A%0AExclusive%20or%20non-exclusive%20%2B%20how%20long%3A%0ABallpark%20budget%3A%0ACrypto%2Ftoken%2Fweb3%20project%3F%20(yes%2Fno)%3A%0ALink%20(site%2Fdeck%2Fmockup)%3A%0A%0AThanks!">Email a licensing enquiry →</a>
+    </div>
+    <p class="fineprint">
+      Every license comes with a short written agreement covering scope, term and territory, plus a mutual
+      representation and indemnity clause — standard language that protects us both. Getting in touch isn't
+      an agreement; it's the start of a conversation. Free or non-commercial fan use generally doesn't need
+      a license.
+    </p>
+  </section>
+
+  <!-- footer -->
+  <footer class="block block--dark">
+    <p class="copyright" style="opacity:1;">Dancing Banana © 1999–<span id="year">2026</span>. Licensed by its creator.</p>
+    <p class="fineprint" style="margin-top:1rem;text-align:center;">
+      This page licenses the Dancing Banana character and animation only. It is not affiliated with, and
+      does not grant rights to, the "Peanut Butter Jelly Time" Flash animation or the Buckwheat Boyz song.
+    </p>
+  </footer>
+</BaseLayout>

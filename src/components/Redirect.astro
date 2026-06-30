@@ -1,0 +1,18 @@
+---
+// Noindex meta-refresh redirect (for old Wix URLs). `to` = absolute target;
+// `canonical` defaults to `to`. Message goes in the default slot.
+const { to, canonical } = Astro.props;
+const canon = canonical ?? to;
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <link rel="canonical" href={canon} />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0; url=${to}`} />
+    <script set:html={`location.replace(${JSON.stringify(to)})`}></script>
+  </head>
+  <body><p><slot /></p></body>
+</html>
