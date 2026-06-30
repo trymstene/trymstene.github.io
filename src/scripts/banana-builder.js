@@ -5,11 +5,11 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
 const SVG = {
-  classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
-  cool:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44"><g><rect x="6" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="68" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="52" y="16" width="16" height="6" fill="#111"/><rect x="12" y="11" width="14" height="6" fill="#ff4d6d"/><rect x="74" y="11" width="14" height="6" fill="#6c8cff"/></g></svg>',
-  party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
-  crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
-  tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
+  classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
+  cool:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g><rect x="6" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="68" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="52" y="16" width="16" height="6" fill="#111"/><rect x="12" y="11" width="14" height="6" fill="#ff4d6d"/><rect x="74" y="11" width="14" height="6" fill="#6c8cff"/></g></svg>',
+  party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92" width="80" height="92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
+  crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70" width="100" height="70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
+  tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86" width="100" height="86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
 };
 const VB = { classic:[120,44], cool:[120,44], party:[80,92], crown:[100,70], tophat:[100,86] };
 
@@ -22,9 +22,9 @@ const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','D
 const HAT_W = 0.26, GLASS_W = 0.30;
 // poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top)
 const POSES = [
-  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png', cx: 0.56, hatBase: 0.20, glassTop: 0.31 },
-  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png', cx: 0.52, hatBase: 0.07, glassTop: 0.22 },
-  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png',    cx: 0.44, hatBase: 0.20, glassTop: 0.31 },
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=2', cx: 0.56, hatBase: 0.20, glassTop: 0.31 },
+  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=2', cx: 0.52, hatBase: 0.07, glassTop: 0.22 },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=2',    cx: 0.44, hatBase: 0.20, glassTop: 0.31 },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
 
