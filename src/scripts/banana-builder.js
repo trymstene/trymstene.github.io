@@ -40,9 +40,9 @@ const HAT_W = 0.34, GLASS_W = 0.38;
 // vs coolScale/coolRot/coolFlip/coolTop) because they're different assets with different native
 // proportions and the photo's lens/temple-arm orientation runs the opposite way from the SVG's.
 const POSES = [
-  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.35, glassSide: true,  glassRot: 8,  glassFlip: false, glassScale: 0.96, coolTop: 0.40, coolScale: 1.6, coolRot: 4,  coolFlip: true },
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.35, glassSide: true,  glassRot: 8,  glassFlip: false, glassScale: 0.96, coolTop: 0.38, coolScale: 1.35, coolRot: 4,  coolFlip: false },
   { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', hatCx: 0.52, hatBase: 0.07, glassCx: 0.50, glassTop: 0.22, glassSide: false, glassRot: 0,  glassFlip: false, glassScale: 1.18, coolTop: 0.22, coolScale: 1.18, coolRot: 0, coolFlip: false },
-  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.35, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.96, coolTop: 0.40, coolScale: 1.6, coolRot: -4, coolFlip: false },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.35, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.96, coolTop: 0.38, coolScale: 1.35, coolRot: -4, coolFlip: true },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
 // resolves the right shades asset for a pose + style: 'cool' is a real pixel-art PNG (front/side
