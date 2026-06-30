@@ -18,8 +18,15 @@ const GLASSES = [['none','None'],['classic','Classic'],['cool','Cool']];
 const HATS = [['none','None'],['party','Party'],['crown','Crown'],['tophat','Top hat']];
 const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','Disco'],['none','Still']];
 
-// figure anchors within the banana image (measured): centre 56%, head top ~18%
-const CX = 0.56, HAT_BASE = 0.20, GLASS_TOP = 0.31, HAT_W = 0.26, GLASS_W = 0.30;
+// accessory sizing
+const HAT_W = 0.26, GLASS_W = 0.30;
+// poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top)
+const POSES = [
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png', cx: 0.56, hatBase: 0.20, glassTop: 0.31 },
+  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png', cx: 0.52, hatBase: 0.07, glassTop: 0.22 },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png',    cx: 0.44, hatBase: 0.20, glassTop: 0.31 },
+];
+const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
 
 const el = (id) => document.getElementById(id);
 const root = el('bbStage');
@@ -29,7 +36,7 @@ function init() {
   const stage = el('bbStage'), banana = el('bbBanana');
   const topIn = el('bbTopText'), botIn = el('bbBottomText'), speed = el('bbSpeed');
 
-  const state = { bg:'transparent', top:'', bottom:'', glasses:'none', hat:'none', move:'bounce', spd:0.7 };
+  const state = { pose:'classic', bg:'transparent', top:'', bottom:'', glasses:'none', hat:'none', move:'bounce', spd:0.7 };
 
   // swatches
   BGS.forEach((c) => {
@@ -47,6 +54,7 @@ function init() {
       el(host).appendChild(b);
     });
   }
+  chips('bbPoseChips', POSES.map((p) => [p.id, p.label]), 'pose');
   chips('bbGlassesChips', GLASSES, 'glasses');
   chips('bbHatChips', HATS, 'hat');
   chips('bbMoveChips', MOVES, 'move');
@@ -59,6 +67,10 @@ function init() {
   const topCap = el('bbTop'), botCap = el('bbBottom');
 
   function render() {
+    const pose = curPose(state.pose);
+    if (banana.getAttribute('src') !== pose.src) banana.setAttribute('src', pose.src);
+    hatEl.style.left = (pose.cx * 100) + '%'; hatEl.style.bottom = ((1 - pose.hatBase) * 100) + '%';
+    glassesEl.style.left = (pose.cx * 100) + '%'; glassesEl.style.top = (pose.glassTop * 100) + '%';
     if (state.bg === 'transparent') { stage.classList.add('bb-stage--transparent'); stage.style.background = ''; }
     else { stage.classList.remove('bb-stage--transparent'); stage.style.background = state.bg; }
     topCap.textContent = state.top;
@@ -68,7 +80,7 @@ function init() {
     char.className = 'bb-char';
     if (state.move !== 'none') { char.classList.add('move-' + state.move); char.style.setProperty('--spd', state.spd + 's'); }
     document.querySelectorAll('.bb-swatch').forEach((s) => s.setAttribute('aria-pressed', s.dataset.bg === state.bg));
-    [['bbGlassesChips','glasses'],['bbHatChips','hat'],['bbMoveChips','move']].forEach(([host, key]) => {
+    [['bbPoseChips','pose'],['bbGlassesChips','glasses'],['bbHatChips','hat'],['bbMoveChips','move']].forEach(([host, key]) => {
       document.querySelectorAll('#' + host + ' .bb-chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.val === state[key]));
     });
   }
@@ -76,6 +88,7 @@ function init() {
   // ---- URL state ----
   function sync() {
     const p = new URLSearchParams();
+    if (state.pose !== 'classic') p.set('pose', state.pose);
     if (state.bg !== 'transparent') p.set('bg', state.bg);
     if (state.top) p.set('t', state.top);
     if (state.bottom) p.set('b', state.bottom);
@@ -87,6 +100,7 @@ function init() {
   }
   function load() {
     const p = new URLSearchParams(location.search);
+    state.pose = p.get('pose') || 'classic';
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
     state.glasses = p.get('g') || 'none'; state.hat = p.get('h') || 'none';
@@ -98,7 +112,7 @@ function init() {
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
     const quips = [['HELLO YES',"IT'S THE BANANA GUY"],['B','A N A N A'],['IT IS','WEDNESDAY MY DUDES'],['','PEANUT BUTTER JELLY TIME'],['CERTIFIED','BANANA MOMENT'],['',''],['ME WHEN','THE BANANA']];
     const q = pick(quips);
-    state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
+    state.pose = pick(POSES).id; state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
     state.move = pick(MOVES.slice(0, 4))[0]; state.spd = Math.round((0.4 + Math.random() * 0.9) * 100) / 100;
     topIn.value = state.top; botIn.value = state.bottom; speed.value = state.spd; render(); sync();
@@ -140,9 +154,10 @@ function init() {
     try { ctx.drawImage(banana, bx, by, bw, bh); } catch (e) {}
     ctx.filter = 'none';
     ctx.imageSmoothingEnabled = true;
-    // accessories ride along
-    if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawSVGSync(ctx, SVG[state.hat], bx + CX * bw - hw / 2, (by + HAT_BASE * bh) - hh, hw, hh); }
-    if (state.glasses !== 'none') { const gw = GLASS_W * bw, gh = gw * VB[state.glasses][1] / VB[state.glasses][0]; drawSVGSync(ctx, SVG[state.glasses], bx + CX * bw - gw / 2, by + GLASS_TOP * bh, gw, gh); }
+    // accessories ride along (per-pose anchors)
+    const P = curPose(state.pose);
+    if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawSVGSync(ctx, SVG[state.hat], bx + P.cx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
+    if (state.glasses !== 'none') { const gw = GLASS_W * bw, gh = gw * VB[state.glasses][1] / VB[state.glasses][0]; drawSVGSync(ctx, SVG[state.glasses], bx + P.cx * bw - gw / 2, by + P.glassTop * bh, gw, gh); }
     ctx.restore();
 
     if (withCaptions) { caption(ctx, W, state.top, true); caption(ctx, W, state.bottom, false); }
