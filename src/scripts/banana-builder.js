@@ -7,15 +7,17 @@ import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 const SVG = {
   classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
   cool:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g><rect x="6" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="68" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="52" y="16" width="16" height="6" fill="#111"/><rect x="12" y="11" width="14" height="6" fill="#ff4d6d"/><rect x="74" y="11" width="14" height="6" fill="#6c8cff"/></g></svg>',
-  // single-lens "side visor" variants — used on Classic/Strut where the head is shown at an angle
-  // (one wide eye-block, not two forward eyes), so a symmetric two-lens pair never sat right.
-  classicSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 54" width="120" height="54"><g fill="#111"><ellipse cx="54" cy="27" rx="50" ry="22"/><rect x="98" y="20" width="20" height="14" rx="6"/></g></svg>',
-  coolSide:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 54" width="120" height="54"><g><ellipse cx="54" cy="27" rx="50" ry="22" fill="#111"/><rect x="98" y="20" width="20" height="14" rx="6" fill="#111"/><rect x="18" y="11" width="22" height="8" fill="#ff4d6d"/></g></svg>',
+  // "side visor" variants — used on Classic/Strut where the head is shown at an angle (one wide
+  // eye-block, not two forward eyes). A single solid blob read as paint on the face, not glasses,
+  // so this is two foreshortened lenses (big near lens + smaller far lens peeking out behind it,
+  // with a visible gap/bridge) plus a shine streak so the silhouette reads as glass, not a blot.
+  classicSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60"><g fill="#111"><rect x="60" y="6" width="36" height="26" rx="10"/><rect x="8" y="16" width="62" height="38" rx="14"/><rect x="58" y="30" width="14" height="8" rx="3"/><rect x="92" y="14" width="20" height="9" rx="4"/></g><rect x="20" y="24" width="9" height="20" rx="3" fill="#fff" opacity="0.55" transform="rotate(18 24 34)"/></svg>',
+  coolSide:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60"><rect x="60" y="6" width="36" height="26" rx="10" fill="#6c8cff"/><rect x="8" y="16" width="62" height="38" rx="14" fill="#111"/><rect x="58" y="30" width="14" height="8" rx="3" fill="#111"/><rect x="92" y="14" width="20" height="9" rx="4" fill="#111"/><rect x="18" y="22" width="46" height="9" fill="#ff4d6d"/><rect x="20" y="32" width="9" height="18" rx="3" fill="#fff" opacity="0.5" transform="rotate(18 24 41)"/></svg>',
   party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92" width="80" height="92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
   crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70" width="100" height="70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
   tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86" width="100" height="86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
 };
-const VB = { classic:[120,44], cool:[120,44], classicSide:[120,54], coolSide:[120,54], party:[80,92], crown:[100,70], tophat:[100,86] };
+const VB = { classic:[120,44], cool:[120,44], classicSide:[120,60], coolSide:[120,60], party:[80,92], crown:[100,70], tophat:[100,86] };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
 const GLASSES = [['none','None'],['classic','Classic'],['cool','Cool']];
