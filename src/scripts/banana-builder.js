@@ -237,7 +237,7 @@ function init() {
     ctx.font = fontStack(fs);
     while (ctx.measureText(text.toUpperCase()).width > W * 0.92 && fs > 14) { fs -= 2; ctx.font = fontStack(fs); }
     ctx.textAlign = 'center'; ctx.textBaseline = top ? 'top' : 'bottom';
-    ctx.lineWidth = fs * 0.24; ctx.strokeStyle = '#111'; ctx.fillStyle = '#fff'; ctx.lineJoin = 'round';
+    ctx.lineWidth = fs * 0.29; ctx.strokeStyle = '#111'; ctx.fillStyle = '#fff'; ctx.lineJoin = 'round';
     const y = top ? W * 0.035 : W * 0.965;
     ctx.strokeText(text.toUpperCase(), W / 2, y); ctx.fillText(text.toUpperCase(), W / 2, y);
   }
