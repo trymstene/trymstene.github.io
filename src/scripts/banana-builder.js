@@ -22,9 +22,9 @@ const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','D
 const HAT_W = 0.26, GLASS_W = 0.30;
 // poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top)
 const POSES = [
-  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=2', cx: 0.56, hatBase: 0.20, glassTop: 0.31 },
-  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=2', cx: 0.52, hatBase: 0.07, glassTop: 0.22 },
-  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=2',    cx: 0.44, hatBase: 0.20, glassTop: 0.31 },
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', cx: 0.56, hatBase: 0.20, glassTop: 0.31 },
+  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', cx: 0.52, hatBase: 0.07, glassTop: 0.22 },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    cx: 0.44, hatBase: 0.20, glassTop: 0.31 },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
 
