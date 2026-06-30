@@ -7,11 +7,15 @@ import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 const SVG = {
   classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
   cool:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g><rect x="6" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="68" y="6" width="46" height="30" rx="4" fill="#111"/><rect x="52" y="16" width="16" height="6" fill="#111"/><rect x="12" y="11" width="14" height="6" fill="#ff4d6d"/><rect x="74" y="11" width="14" height="6" fill="#6c8cff"/></g></svg>',
+  // single-lens "side visor" variants — used on Classic/Strut where the head is shown at an angle
+  // (one wide eye-block, not two forward eyes), so a symmetric two-lens pair never sat right.
+  classicSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 54" width="120" height="54"><g fill="#111"><ellipse cx="54" cy="27" rx="50" ry="22"/><rect x="98" y="20" width="20" height="14" rx="6"/></g></svg>',
+  coolSide:    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 54" width="120" height="54"><g><ellipse cx="54" cy="27" rx="50" ry="22" fill="#111"/><rect x="98" y="20" width="20" height="14" rx="6" fill="#111"/><rect x="18" y="11" width="22" height="8" fill="#ff4d6d"/></g></svg>',
   party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92" width="80" height="92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
   crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70" width="100" height="70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
   tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86" width="100" height="86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
 };
-const VB = { classic:[120,44], cool:[120,44], party:[80,92], crown:[100,70], tophat:[100,86] };
+const VB = { classic:[120,44], cool:[120,44], classicSide:[120,54], coolSide:[120,54], party:[80,92], crown:[100,70], tophat:[100,86] };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
 const GLASSES = [['none','None'],['classic','Classic'],['cool','Cool']];
@@ -20,13 +24,17 @@ const MOVES = [['bounce','Bounce'],['spin','Spin'],['shake','Shake'],['disco','D
 
 // accessory sizing
 const HAT_W = 0.34, GLASS_W = 0.38;
-// poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top)
+// poses, each with its own measured accessory anchors (centre x, hat base from top, glasses top).
+// glassSide: use the single-lens side-visor SVG (Classic/Strut face at an angle) instead of the
+// two-lens frontal pair (Hands-up faces forward). glassRot/glassFlip tilt+mirror the visor to match
+// the lean of the head; glassScale lets a pose size its shades independently (Hands-up bumped up).
 const POSES = [
-  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.40 },
-  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', hatCx: 0.52, hatBase: 0.07, glassCx: 0.50, glassTop: 0.22 },
-  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.40 },
+  { id: 'classic', label: 'Classic',  src: '/assets/banana-classic.png?v=3', hatCx: 0.55, hatBase: 0.28, glassCx: 0.52, glassTop: 0.37, glassSide: true,  glassRot: 8,  glassFlip: false, glassScale: 0.85 },
+  { id: 'handsup', label: 'Hands up', src: '/assets/banana-handsup.png?v=3', hatCx: 0.52, hatBase: 0.07, glassCx: 0.50, glassTop: 0.22, glassSide: false, glassRot: 0,  glassFlip: false, glassScale: 1.18 },
+  { id: 'strut',   label: 'Strut',    src: '/assets/banana-strut.png?v=3',    hatCx: 0.45, hatBase: 0.28, glassCx: 0.48, glassTop: 0.37, glassSide: true,  glassRot: -8, glassFlip: true,  glassScale: 0.85 },
 ];
 const curPose = (id) => POSES.find((p) => p.id === id) || POSES[0];
+const glassKeyFor = (pose, style) => (pose.glassSide ? style + 'Side' : style);
 
 const el = (id) => document.getElementById(id);
 const root = el('bbStage');
@@ -71,11 +79,13 @@ function init() {
     if (banana.getAttribute('src') !== pose.src) banana.setAttribute('src', pose.src);
     hatEl.style.left = (pose.hatCx * 100) + '%'; hatEl.style.bottom = ((1 - pose.hatBase) * 100) + '%';
     glassesEl.style.left = (pose.glassCx * 100) + '%'; glassesEl.style.top = (pose.glassTop * 100) + '%';
+    glassesEl.style.width = (GLASS_W * 100 * pose.glassScale) + '%';
+    glassesEl.style.transform = 'translateX(-50%) ' + (pose.glassFlip ? 'scaleX(-1) ' : '') + 'rotate(' + pose.glassRot + 'deg)';
     if (state.bg === 'transparent') { stage.classList.add('bb-stage--transparent'); stage.style.background = ''; }
     else { stage.classList.remove('bb-stage--transparent'); stage.style.background = state.bg; }
     topCap.textContent = state.top;
     botCap.textContent = state.bottom;
-    if (state.glasses === 'none') glassesEl.hidden = true; else { glassesEl.hidden = false; glassesEl.innerHTML = SVG[state.glasses]; }
+    if (state.glasses === 'none') glassesEl.hidden = true; else { glassesEl.hidden = false; glassesEl.innerHTML = SVG[glassKeyFor(pose, state.glasses)]; }
     if (state.hat === 'none') hatEl.hidden = true; else { hatEl.hidden = false; hatEl.innerHTML = SVG[state.hat]; }
     char.className = 'bb-char';
     if (state.move !== 'none') { char.classList.add('move-' + state.move); char.style.setProperty('--spd', state.spd + 's'); }
@@ -157,7 +167,11 @@ function init() {
     // accessories ride along (per-pose anchors)
     const P = curPose(state.pose);
     if (state.hat !== 'none') { const hw = HAT_W * bw, hh = hw * VB[state.hat][1] / VB[state.hat][0]; drawSVGSync(ctx, SVG[state.hat], bx + P.hatCx * bw - hw / 2, (by + P.hatBase * bh) - hh, hw, hh); }
-    if (state.glasses !== 'none') { const gw = GLASS_W * bw, gh = gw * VB[state.glasses][1] / VB[state.glasses][0]; drawSVGSync(ctx, SVG[state.glasses], bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh); }
+    if (state.glasses !== 'none') {
+      const gKey = glassKeyFor(P, state.glasses);
+      const gw = GLASS_W * bw * P.glassScale, gh = gw * VB[gKey][1] / VB[gKey][0];
+      drawSVGSync(ctx, SVG[gKey], bx + P.glassCx * bw - gw / 2, by + P.glassTop * bh, gw, gh, P.glassFlip, P.glassRot);
+    }
     ctx.restore();
 
     if (withCaptions) { caption(ctx, W, state.top, true); caption(ctx, W, state.bottom, false); }
@@ -170,7 +184,17 @@ function init() {
     const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     svgCache[svg] = img; return img;
   }
-  function drawSVGSync(ctx, svg, dx, dy, dw, dh) { const img = svgImg(svg); if (img.complete && img.naturalWidth) ctx.drawImage(img, dx, dy, dw, dh); }
+  function drawSVGSync(ctx, svg, dx, dy, dw, dh, flip, rotDeg) {
+    const img = svgImg(svg); if (!(img.complete && img.naturalWidth)) return;
+    if (!flip && !rotDeg) { ctx.drawImage(img, dx, dy, dw, dh); return; }
+    ctx.save();
+    const ccx = dx + dw / 2, ccy = dy + dh / 2;
+    ctx.translate(ccx, ccy);
+    if (flip) ctx.scale(-1, 1);
+    if (rotDeg) ctx.rotate(rotDeg * Math.PI / 180);
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+    ctx.restore();
+  }
 
   function caption(ctx, W, text, top) {
     if (!text) return;
