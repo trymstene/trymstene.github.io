@@ -9,5 +9,16 @@ export default defineConfig({
   site: 'https://trymstene.com',
   trailingSlash: 'always',
   build: { format: 'directory' },
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // keep the noindex old-Wix redirect stubs out of the sitemap
+      filter: (page) =>
+        ![
+          'https://trymstene.com/about-me/',
+          'https://trymstene.com/contact/',
+          'https://trymstene.com/category/all-products/',
+          'https://trymstene.com/projects/the-corporate-rangers/',
+        ].includes(page),
+    }),
+  ],
 });
