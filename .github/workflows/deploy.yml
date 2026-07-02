@@ -13,10 +13,13 @@ permissions:
   pages: write
   id-token: write
 
-# Only one concurrent deploy; let an in-progress run finish.
+# Latest push wins: cancel any in-progress deploy. (A Pages-side stall on
+# 2 Jul 2026 left a deploy job hung for 13h; with cancel-in-progress: false
+# every new push queued behind it forever. Cancelling is safe — deploys are
+# atomic and a newer push always carries the full site.)
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:

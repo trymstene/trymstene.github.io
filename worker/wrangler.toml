@@ -1,0 +1,20 @@
+# Banana sticker fulfilment worker — see worker/README.md for setup.
+name = "banana-sticker"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[[r2_buckets]]
+binding = "DESIGNS"
+bucket_name = "banana-designs"
+
+[vars]
+# Origin allowed to upload designs (the site itself)
+ALLOWED_ORIGIN = "https://trymstene.com"
+# Printful catalog variant for the sticker (set after catalog lookup with the
+# real token — e.g. the Kiss-Cut Sticker 3"x3" variant id)
+PRINTFUL_VARIANT_ID = "0"
+
+# Secrets — set with `npx wrangler secret put <NAME>` (NEVER commit values):
+#   PRINTFUL_TOKEN          Printful API token (Printful -> Settings -> API)
+#   SHOPIFY_WEBHOOK_SECRET  Shopify webhook signing secret (shown in
+#                           Shopify admin -> Settings -> Notifications -> Webhooks)
