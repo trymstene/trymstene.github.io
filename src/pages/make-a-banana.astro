@@ -129,6 +129,9 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-chat__text canvas { vertical-align: middle; margin-left: 0.2rem; }
     .bb-chat__big { margin-top: 0.35rem; }
 
+    /* the paid CTA gets its own zone under a dashed divider */
+    .bb-order { margin-top: 1rem; padding-top: 1rem; border-top: 3px dashed rgba(17,17,17,0.18); }
+
     /* frame picker — freeze a moment of the dance */
     .bb-frames { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; }
     .bb-frame { width: 56px; height: 56px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
@@ -221,8 +224,11 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
           <h3><PixelIcon name="tag" /> Sticker &amp; meme image</h3>
           <p>Your captions, your background, full size. Freeze your favourite moment of the dance:</p>
           <div class="bb-frames" id="bbFrames"></div>
-          <button class="btn btn--dark" id="bbDownloadPng"><PixelIcon name="download" /> Download image (PNG)</button>
-          <p class="bb-note"><PixelIcon name="tag" /> Order your banana as a printed sticker — coming soon.</p>
+          <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" /> Download image (PNG)</button>
+          <div class="bb-order">
+            <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" /> Order it as a real sticker</button>
+            <p class="bb-note">3″×3″ (7.5 cm) kiss-cut vinyl sticker of the frame you picked — 69 kr + shipping. Printed on demand and checked by the banana guy himself before it ships.</p>
+          </div>
         </div>
       </div>
     </section>

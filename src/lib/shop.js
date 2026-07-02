@@ -128,6 +128,11 @@ function model(node) {
   };
 }
 
+// Products that must NOT get a PLP card / PDP page: the custom sticker is only
+// purchasable through the make-a-banana builder (which attaches the design) —
+// a bare PDP would let people buy it with no design attached.
+const BUILDER_ONLY = new Set(['custom-banana-sticker']);
+
 let _cache;
 export async function getProducts() {
   if (_cache) return _cache;
@@ -139,6 +144,6 @@ export async function getProducts() {
   if (!res.ok) throw new Error(`Shopify Storefront API ${res.status} at build time`);
   const json = await res.json();
   const nodes = (((json.data || {}).products || {}).edges || []).map((e) => e.node);
-  _cache = nodes.map(model);
+  _cache = nodes.filter((n) => !BUILDER_ONLY.has(n.handle)).map(model);
   return _cache;
 }

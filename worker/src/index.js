@@ -44,9 +44,12 @@ function json(obj, status = 200, extra = {}) {
   });
 }
 
-function corsHeaders(env) {
+function corsHeaders(env, request) {
+  // ALLOWED_ORIGIN is a comma-separated allowlist (prod site + local dev)
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+  const origin = request ? request.headers.get('Origin') : null;
   return {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN,
+    'Access-Control-Allow-Origin': origin && allowed.includes(origin) ? origin : allowed[0],
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
@@ -56,27 +59,27 @@ function corsHeaders(env) {
 // ---------- POST /upload ----------
 
 async function handleUpload(request, env) {
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env) });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env, request) });
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   const len = parseInt(request.headers.get('Content-Length') || '0', 10);
-  if (!len || len > MAX_UPLOAD_BYTES) return json({ error: 'file too large' }, 413, corsHeaders(env));
+  if (!len || len > MAX_UPLOAD_BYTES) return json({ error: 'file too large' }, 413, corsHeaders(env, request));
   if (!(request.headers.get('Content-Type') || '').includes('image/png')) {
-    return json({ error: 'png only' }, 415, corsHeaders(env));
+    return json({ error: 'png only' }, 415, corsHeaders(env, request));
   }
 
   const buf = await request.arrayBuffer();
-  if (buf.byteLength > MAX_UPLOAD_BYTES) return json({ error: 'file too large' }, 413, corsHeaders(env));
+  if (buf.byteLength > MAX_UPLOAD_BYTES) return json({ error: 'file too large' }, 413, corsHeaders(env, request));
   // PNG magic bytes — don't trust the header alone
   const sig = new Uint8Array(buf.slice(0, 8));
   const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  if (!PNG.every((b, i) => sig[i] === b)) return json({ error: 'not a png' }, 415, corsHeaders(env));
+  if (!PNG.every((b, i) => sig[i] === b)) return json({ error: 'not a png' }, 415, corsHeaders(env, request));
 
   const key = crypto.randomUUID() + '.png';
   await env.DESIGNS.put(key, buf, { httpMetadata: { contentType: 'image/png' } });
 
   const base = new URL(request.url).origin;
-  return json({ key, url: `${base}/d/${key}` }, 200, corsHeaders(env));
+  return json({ key, url: `${base}/d/${key}` }, 200, corsHeaders(env, request));
 }
 
 // ---------- GET /d/<key> ----------
@@ -123,8 +126,10 @@ async function handleWebhook(request, env, url) {
   const raw = await request.text();
   const given = request.headers.get('X-Shopify-Hmac-Sha256') || '';
   if (!(await verifyShopifyHmac(raw, given, env.SHOPIFY_WEBHOOK_SECRET))) {
+    console.log('webhook: HMAC verification FAILED (bad/missing secret or forged request)');
     return json({ error: 'invalid hmac' }, 401);
   }
+  console.log('webhook: HMAC verified OK');
 
   const order = JSON.parse(raw);
 

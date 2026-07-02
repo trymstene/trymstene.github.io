@@ -565,8 +565,72 @@ function init() {
     track('gif_download', { file: 'builder-meme.png' });
   };
 
-  // expose for the sticker (print-res) flow later
-  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS };
+  // ---- order it as a REAL printed sticker (Part B) ----
+  // Renders a print-res PNG of the picked frame, uploads it to the fulfilment
+  // worker (R2), then opens a Shopify checkout with the design attached as a
+  // line-item attribute. After payment, the worker's orders/paid webhook
+  // creates a DRAFT Printful order that Trym approves before printing.
+  const STICKER = {
+    workerBase: 'https://banana-sticker.trymstene.workers.dev',
+    variantGid: 'gid://shopify/ProductVariant/48935555006683', // Custom Banana Sticker
+    shopDomain: 'officialdancingbanana.myshopify.com',
+    storefrontToken: '1032480366b6bf67760ba73ace4fe0f8', // public Storefront token, safe to embed
+  };
+  // Quick client-side caption screen. Deliberately blunt (substring match, a
+  // few false positives are fine — the toast just asks to reword). The REAL
+  // moderation gate is Trym approving every Printful draft before print.
+  const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jævla','jævel','fitte','kuk','pikk','hore','kneppe'];
+  const captionsClean = () => { const t = (state.top + ' ' + state.bottom).toLowerCase(); return !BLOCKLIST.some((w) => t.includes(w)); };
+
+  el('bbOrderSticker').onclick = async () => {
+    const btn = el('bbOrderSticker'); const label = btn.innerHTML;
+    if (!captionsClean()) { toast('Let’s keep it family friendly \u{1F34C} — try other words'); return; }
+    btn.disabled = true; btn.innerHTML = 'Preparing your sticker…';
+    try {
+      await assetsReady();
+      // print-res render of the picked frame (same look as the PNG export)
+      const W = 2048;
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
+      drawComposite(ctx, W, state.frame, {
+        bg: state.bg, captions: true, effect: state.effect,
+        hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+      });
+      let out = cv;
+      if (state.bg === 'transparent') {
+        const data = ctx.getImageData(0, 0, W, W).data;
+        out = crop(cv, pad(bboxOf([data], W), W));
+      }
+      const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
+      const up = await fetch(STICKER.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
+      if (!up.ok) throw new Error('upload failed: ' + up.status);
+      const { key, url } = await up.json();
+
+      const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
+      const res = await fetch('https://' + STICKER.shopDomain + '/api/2024-10/graphql.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STICKER.storefrontToken },
+        body: JSON.stringify({
+          query: mutation,
+          variables: { lines: [{ merchandiseId: STICKER.variantGid, quantity: 1, attributes: [
+            { key: '_design_key', value: key },   // machine-readable, hidden in checkout
+            { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
+          ] }] },
+        }),
+      });
+      const data = await res.json();
+      const checkout = data && data.data && data.data.cartCreate && data.data.cartCreate.cart && data.data.cartCreate.cart.checkoutUrl;
+      if (!checkout) throw new Error('cart failed: ' + JSON.stringify(data));
+      track('sticker_order_click', {});
+      window.location.href = checkout;
+    } catch (e) {
+      console.error(e);
+      toast('Hmm, that didn’t work — give it another try?');
+      btn.disabled = false; btn.innerHTML = label;
+    }
+  };
+
+  // exposed for debugging + future flows
+  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS, STICKER };
 
   // ---- boot ----
   load();

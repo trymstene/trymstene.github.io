@@ -8,8 +8,8 @@ binding = "DESIGNS"
 bucket_name = "banana-designs"
 
 [vars]
-# Origin allowed to upload designs (the site itself)
-ALLOWED_ORIGIN = "https://trymstene.com"
+# Origins allowed to upload designs (prod site first, then local dev)
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # Printful catalog variant: Kiss-Cut Stickers (product 358), 3"x3", cost $2.25
 PRINTFUL_VARIANT_ID = "10163"
 
