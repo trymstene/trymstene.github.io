@@ -108,20 +108,22 @@ CWWCCCCCC
 CCCCCCCCC
 ''',
     # ---- extras ----
+    # curly French handlebar: wide, tips stepping UP at the ends
     'mustacheFront': '''
-DDDD.DDDD
-DDDDDDDDD
-.DD...DD.
+D...........D
+DD.........DD
+.DDDDD.DDDDD.
 ''',
     'mustacheSide': '''
-DDDDD.
-DDDDDD
-.DD...
+D......
+DD.....
+.DDDDDD
 ''',
+    # blue polka-dot bow tie (red clashed with the red mouth)
     'bowtie': '''
-RR...RR
-RRRDRRR
-RR...RR
+CW...WC
+CCCDCCC
+CC...CC
 ''',
 }
 
@@ -192,8 +194,9 @@ if __name__ == '__main__':
     HATCX = {0: 272, 1: 272, 2: 248, 3: 206, 4: 196, 5: 196, 6: 220, 7: 262}
     OUTLINE_SEAT = -1.0   # outlined hats: their bottom row is outline, not body
     SH_DY = -0.5          # shades ride slightly high to fully cover the eye whites
-    MU_DY, MU_SIDE_DX = 3.6, -1.2
-    BT_DY, BT_SIDE_DX = 6.0, -1.0
+    MU_DY, MU_SIDE_DX = 4.0, -1.2
+    BT_DY = 9.5           # bow tie x-anchor = per-frame body centre measured at this depth
+    BTCX = {0: 268, 1: 270, 2: 248, 3: 206, 4: 200, 5: 198, 6: 220, 7: 262}
     # all 8 dance frames with the same hat: the animation-coherence check
     combos = [(0,'party','shades'),(1,'party','shades'),(2,'party','shades'),(3,'party','shades'),
               (4,'party','shades'),(5,'party','shades'),(6,'party','shades'),(7,'party','shades')]
@@ -215,8 +218,7 @@ if __name__ == '__main__':
         bg.alpha_composite(mu, (ecx + mdx - mu.width//2, int(ecy + MU_DY*UNIT) - mu.height//2))
         # bow tie
         bt = render('bowtie')
-        bdx = 0 if not side else int(BT_SIDE_DX*UNIT) * (1 if face!='left' else -1)
-        bg.alpha_composite(bt, (ecx + bdx - bt.width//2, int(ecy + BT_DY*UNIT) - bt.height//2))
+        bg.alpha_composite(bt, (BTCX[fi] - bt.width//2, int(ecy + BT_DY*UNIT) - bt.height//2))
         # hat
         ht = render(hat)
         seat = HAT_OVERLAP + (OUTLINE_SEAT if hat in OUTLINED else 0)

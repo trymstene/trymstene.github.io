@@ -16,14 +16,14 @@ const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // where the hat actually sits, per frame; this keeps the hat riding the head
 // smoothly through the dance), and which way the face points.
 const FRAMES = [
-  { eyeCx: 232, eyeCy: 222, hatCx: 272, tipY: 85, face: 'right' },
-  { eyeCx: 232, eyeCy: 192, hatCx: 272, tipY: 57, face: 'right' },
-  { eyeCx: 234, eyeCy: 135, hatCx: 248, tipY: 0,  face: 'front' },
-  { eyeCx: 232, eyeCy: 156, hatCx: 206, tipY: 28, face: 'front' },
-  { eyeCx: 236, eyeCy: 222, hatCx: 196, tipY: 85, face: 'left'  },
-  { eyeCx: 236, eyeCy: 192, hatCx: 196, tipY: 57, face: 'left'  },
-  { eyeCx: 234, eyeCy: 135, hatCx: 220, tipY: 0,  face: 'front' },
-  { eyeCx: 237, eyeCy: 156, hatCx: 262, tipY: 28, face: 'front' },
+  { eyeCx: 232, eyeCy: 222, hatCx: 272, btCx: 268, tipY: 85, face: 'right' },
+  { eyeCx: 232, eyeCy: 192, hatCx: 272, btCx: 270, tipY: 57, face: 'right' },
+  { eyeCx: 234, eyeCy: 135, hatCx: 248, btCx: 248, tipY: 0,  face: 'front' },
+  { eyeCx: 232, eyeCy: 156, hatCx: 206, btCx: 206, tipY: 28, face: 'front' },
+  { eyeCx: 236, eyeCy: 222, hatCx: 196, btCx: 200, tipY: 85, face: 'left'  },
+  { eyeCx: 236, eyeCy: 192, hatCx: 196, btCx: 198, tipY: 57, face: 'left'  },
+  { eyeCx: 234, eyeCy: 135, hatCx: 220, btCx: 220, tipY: 0,  face: 'front' },
+  { eyeCx: 237, eyeCy: 156, hatCx: 262, btCx: 262, tipY: 28, face: 'front' },
 ];
 
 // ---- accessory art: hand-authored PIXEL SVGs on the banana's own 13px grid ----
@@ -41,9 +41,9 @@ const SVG = {
   heartsSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 80" width="130" height="80" shape-rendering="crispEdges"><rect x="10" y="0" width="30" height="10" fill="#111111"/><rect x="50" y="0" width="30" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#ff4d6d"/><rect x="40" y="10" width="10" height="10" fill="#111111"/><rect x="50" y="10" width="30" height="10" fill="#ff4d6d"/><rect x="80" y="10" width="40" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#ff4d6d"/><rect x="20" y="20" width="10" height="10" fill="#ffffff"/><rect x="30" y="20" width="90" height="10" fill="#ff4d6d"/><rect x="120" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="70" height="10" fill="#ff4d6d"/><rect x="80" y="30" width="40" height="10" fill="#111111"/><rect x="10" y="40" width="10" height="10" fill="#111111"/><rect x="20" y="40" width="50" height="10" fill="#ff4d6d"/><rect x="70" y="40" width="10" height="10" fill="#111111"/><rect x="20" y="50" width="10" height="10" fill="#111111"/><rect x="30" y="50" width="30" height="10" fill="#ff4d6d"/><rect x="60" y="50" width="10" height="10" fill="#111111"/><rect x="30" y="60" width="10" height="10" fill="#111111"/><rect x="40" y="60" width="10" height="10" fill="#ff4d6d"/><rect x="50" y="60" width="10" height="10" fill="#111111"/><rect x="40" y="70" width="10" height="10" fill="#111111"/></svg>',
   visorFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 50" width="150" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="130" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="130" height="10" fill="#4db8ff"/><rect x="140" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#4db8ff"/><rect x="20" y="20" width="20" height="10" fill="#ffffff"/><rect x="40" y="20" width="100" height="10" fill="#4db8ff"/><rect x="140" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="130" height="10" fill="#4db8ff"/><rect x="140" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="130" height="10" fill="#111111"/></svg>',
   visorSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 50" width="110" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="90" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="90" height="10" fill="#4db8ff"/><rect x="100" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#4db8ff"/><rect x="20" y="20" width="20" height="10" fill="#ffffff"/><rect x="40" y="20" width="60" height="10" fill="#4db8ff"/><rect x="100" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="90" height="10" fill="#4db8ff"/><rect x="100" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="90" height="10" fill="#111111"/></svg>',
-  mustacheFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 30" width="90" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="40" height="10" fill="#5a3618"/><rect x="50" y="0" width="40" height="10" fill="#5a3618"/><rect x="0" y="10" width="90" height="10" fill="#5a3618"/><rect x="10" y="20" width="20" height="10" fill="#5a3618"/><rect x="60" y="20" width="20" height="10" fill="#5a3618"/></svg>',
-  mustacheSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="60" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="50" height="10" fill="#5a3618"/><rect x="0" y="10" width="60" height="10" fill="#5a3618"/><rect x="10" y="20" width="20" height="10" fill="#5a3618"/></svg>',
-  bowtie: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 50" width="90" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="20" height="10" fill="#111111"/><rect x="60" y="0" width="20" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="20" height="10" fill="#e22020"/><rect x="30" y="10" width="30" height="10" fill="#111111"/><rect x="60" y="10" width="20" height="10" fill="#e22020"/><rect x="80" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="30" height="10" fill="#e22020"/><rect x="40" y="20" width="10" height="10" fill="#5a3618"/><rect x="50" y="20" width="30" height="10" fill="#e22020"/><rect x="80" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="20" height="10" fill="#e22020"/><rect x="30" y="30" width="30" height="10" fill="#111111"/><rect x="60" y="30" width="20" height="10" fill="#e22020"/><rect x="80" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="20" height="10" fill="#111111"/><rect x="60" y="40" width="20" height="10" fill="#111111"/></svg>',
+  mustacheFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 30" width="130" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="10" height="10" fill="#5a3618"/><rect x="120" y="0" width="10" height="10" fill="#5a3618"/><rect x="0" y="10" width="20" height="10" fill="#5a3618"/><rect x="110" y="10" width="20" height="10" fill="#5a3618"/><rect x="10" y="20" width="50" height="10" fill="#5a3618"/><rect x="70" y="20" width="50" height="10" fill="#5a3618"/></svg>',
+  mustacheSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 30" width="70" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="10" height="10" fill="#5a3618"/><rect x="0" y="10" width="20" height="10" fill="#5a3618"/><rect x="10" y="20" width="60" height="10" fill="#5a3618"/></svg>',
+  bowtie: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 50" width="90" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="20" height="10" fill="#111111"/><rect x="60" y="0" width="20" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="10" height="10" fill="#4db8ff"/><rect x="20" y="10" width="10" height="10" fill="#ffffff"/><rect x="30" y="10" width="30" height="10" fill="#111111"/><rect x="60" y="10" width="10" height="10" fill="#ffffff"/><rect x="70" y="10" width="10" height="10" fill="#4db8ff"/><rect x="80" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="30" height="10" fill="#4db8ff"/><rect x="40" y="20" width="10" height="10" fill="#5a3618"/><rect x="50" y="20" width="30" height="10" fill="#4db8ff"/><rect x="80" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="20" height="10" fill="#4db8ff"/><rect x="30" y="30" width="30" height="10" fill="#111111"/><rect x="60" y="30" width="20" height="10" fill="#4db8ff"/><rect x="80" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="20" height="10" fill="#111111"/><rect x="60" y="40" width="20" height="10" fill="#111111"/></svg>',
 };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -69,8 +69,10 @@ const gridH = (key) => parseInt(key.match(/viewBox="0 0 \d+ (\d+)/)[1], 10) / 10
 // Outlined hats seat 1 unit less deep (their bottom row is outline, not body).
 const HAT_OVERLAP = 7.3;
 const HAT_SEAT = { tophat: 0, crown: -1, party: -1, cowboy: -1 };
-// shades ride slightly high to fully cover the eye whites; extras placement
-const SH_DY = -0.5, MU_DY = 3.6, MU_SIDE_DX = -1.2, BT_DY = 6.0, BT_SIDE_DX = -1.0;
+// shades ride slightly high to fully cover the eye whites; extras placement.
+// bow tie x-anchor = per-frame btCx (body centre measured at BT_DY depth —
+// the body sways ±3 units at chest height through the dance).
+const SH_DY = -0.5, MU_DY = 4.0, MU_SIDE_DX = -1.2, BT_DY = 9.5;
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
 
@@ -280,7 +282,7 @@ function init() {
     if (state.bowtie) {
       const key = SVG.bowtie;
       const bw = gridW(key) * unit, bh = gridH(key) * unit;
-      const bx = fx + F.eyeCx * scale + (side ? mirror * BT_SIDE_DX * unit : 0);
+      const bx = fx + F.btCx * scale;
       const by = fy + (F.eyeCy + BT_DY * PX) * scale;
       drawAcc(ctx, key, bx - bw / 2, by - bh / 2, bw, bh, false);
     }
