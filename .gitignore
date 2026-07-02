@@ -25,3 +25,5 @@ shop/products.json
 node_modules/
 dist/
 .astro/
+
+__pycache__/
