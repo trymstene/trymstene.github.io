@@ -47,16 +47,65 @@ const SVG = {
 };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
-const GLASSES = [['none','None'],['shades','Deal with it'],['hearts','Hearts'],['visor','Visor']];
-const SHADE_ART = { shades: ['shadesFront','shadesSide'], hearts: ['heartsFront','heartsSide'], visor: ['visorFront','visorSide'] };
-const HATS = [['none','None'],['party','Party'],['crown','Crown'],['tophat','Top hat'],['cowboy','Cowboy']];
 const EFFECTS = [['none','None'],['disco','Disco'],['sparkle','Sparkles'],['confetti','Confetti']];
 // tiny monochrome pixel icons (currentColor) for the extras chips + pause button
 const ICON_MUSTACHE = '<svg class="pxi" viewBox="0 0 90 30" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="40" height="10"/><rect x="50" y="0" width="40" height="10"/><rect x="0" y="10" width="90" height="10"/><rect x="10" y="20" width="20" height="10"/><rect x="60" y="20" width="20" height="10"/></svg>';
 const ICON_BOWTIE = '<svg class="pxi" viewBox="0 0 70 30" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="20" height="10"/><rect x="50" y="0" width="20" height="10"/><rect x="0" y="10" width="70" height="10"/><rect x="0" y="20" width="20" height="10"/><rect x="50" y="20" width="20" height="10"/></svg>';
 const ICON_PAUSE = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="10" y="10" width="20" height="60"/><rect x="40" y="10" width="20" height="60"/></svg>';
 const ICON_PLAY = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="15" y="10" width="15" height="60"/><rect x="30" y="20" width="15" height="40"/><rect x="45" y="30" width="15" height="20"/></svg>';
-const EXTRAS = [['mustache', ICON_MUSTACHE + ' Moustache'],['bowtie', ICON_BOWTIE + ' Bow tie']];
+
+// ---- ASSET PACKS ----
+// Every wearable lives in a pack. 'core' is always on; a themed pack (e.g. a
+// Christmas set) declares a month-day window and auto-activates in that range —
+// no admin panel needed. Any pack can be force-enabled with ?pack=<id> for
+// testing. To add a pack: author the art as ASCII maps in tools/pixel-assets.py,
+// verify + emit with --svg, paste the SVGs into the SVG dict above, and declare
+// the pack here. Chips, randomizer, URL state and rendering all derive from
+// this registry — no other code changes needed.
+const PACKS = {
+  core: {
+    label: 'The classics',
+    always: true,
+    hats: [
+      { id: 'party',  label: 'Party',   art: 'party',  seat: -1 },
+      { id: 'crown',  label: 'Crown',   art: 'crown',  seat: -1 },
+      { id: 'tophat', label: 'Top hat', art: 'tophat', seat: 0  },
+      { id: 'cowboy', label: 'Cowboy',  art: 'cowboy', seat: -1 },
+    ],
+    shades: [
+      { id: 'shades', label: 'Deal with it', front: 'shadesFront', side: 'shadesSide' },
+      { id: 'hearts', label: 'Hearts',       front: 'heartsFront', side: 'heartsSide' },
+      { id: 'visor',  label: 'Visor',        front: 'visorFront',  side: 'visorSide'  },
+    ],
+    // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
+    // left-facing frames) or the CHEST (per-frame btCx body centre + dy)
+    extras: [
+      { id: 'mustache', label: ICON_MUSTACHE + ' Moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
+      { id: 'bowtie',   label: ICON_BOWTIE + ' Bow tie',     anchor: 'chest', dy: 9.5, art: 'bowtie' },
+    ],
+  },
+  // Example future pack (art not drawn yet):
+  // xmas: { label: 'Christmas', window: { from: '12-01', to: '12-26' },
+  //         hats: [{ id: 'santa', label: 'Santa', art: 'santa', seat: -1 }], shades: [], extras: [] },
+};
+
+function isPackActive(id, pack) {
+  if (pack.always) return true;
+  if (new URLSearchParams(location.search).get('pack') === id) return true;
+  if (!pack.window) return false;
+  const n = new Date();
+  const md = String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0');
+  const { from, to } = pack.window;
+  return from <= to ? (md >= from && md <= to) : (md >= from || md <= to); // 'from' > 'to' wraps over new year
+}
+const ACTIVE_PACKS = Object.entries(PACKS).filter(([id, p]) => isPackActive(id, p)).map(([, p]) => p);
+const HAT_DEFS = ACTIVE_PACKS.flatMap((p) => p.hats || []);
+const SHADE_DEFS = ACTIVE_PACKS.flatMap((p) => p.shades || []);
+const EXTRA_DEFS = ACTIVE_PACKS.flatMap((p) => p.extras || []);
+const HAT_BY_ID = Object.fromEntries(HAT_DEFS.map((h) => [h.id, h]));
+const SHADE_BY_ID = Object.fromEntries(SHADE_DEFS.map((s) => [s.id, s]));
+const HATS = [['none', 'None'], ...HAT_DEFS.map((h) => [h.id, h.label])];
+const GLASSES = [['none', 'None'], ...SHADE_DEFS.map((s) => [s.id, s.label])];
 
 // The banana sprite's pixel unit is 13 source px; the pixel SVGs use 10 svg-px
 // per unit. Sizing accessories in banana-pixels guarantees they match the
@@ -65,14 +114,12 @@ const PX = 13;
 const gridW = (key) => parseInt(key.match(/viewBox="0 0 (\d+)/)[1], 10) / 10;
 const gridH = (key) => parseInt(key.match(/viewBox="0 0 \d+ (\d+)/)[1], 10) / 10;
 // hat seating: deep enough to sit ON the head mass (not the stem peak); the
-// x-anchor comes from the per-frame hatCx measured at this same depth.
-// Outlined hats seat 1 unit less deep (their bottom row is outline, not body).
+// x-anchor comes from the per-frame hatCx measured at this same depth. A hat
+// def's `seat` adjusts per hat (outlined hats: -1, their bottom row is outline).
 const HAT_OVERLAP = 7.3;
-const HAT_SEAT = { tophat: 0, crown: -1, party: -1, cowboy: -1 };
-// shades ride slightly high to fully cover the eye whites; extras placement.
-// bow tie x-anchor = per-frame btCx (body centre measured at BT_DY depth —
-// the body sways ±3 units at chest height through the dance).
-const SH_DY = -0.5, MU_DY = 4.0, MU_SIDE_DX = -1.2, BT_DY = 9.5;
+// shades ride slightly high to fully cover the eye whites. Chest-anchored
+// extras (bow tie) use per-frame btCx: the body sways ±3 units at chest depth.
+const SH_DY = -0.5;
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
 
@@ -101,7 +148,7 @@ function init() {
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const state = {
     bg: 'transparent', top: '', bottom: '', glasses: 'none', hat: 'none',
-    mustache: false, bowtie: false, effect: 'none',
+    extras: {}, effect: 'none', // extras keyed by def id, e.g. { mustache: true }
     spd: BASE_CYCLE_S, frame: 0, // frame = the sticker still
     paused: reducedMotion,
   };
@@ -141,10 +188,10 @@ function init() {
   chips('bbHatChips', HATS, 'hat');
   chips('bbEffectChips', EFFECTS, 'effect');
   // extras = independent toggles, not a single-choice row (labels carry pixel icons)
-  EXTRAS.forEach(([val, label]) => {
+  EXTRA_DEFS.forEach((d) => {
     const b = document.createElement('button');
-    b.className = 'bb-chip'; b.innerHTML = label; b.dataset.val = val;
-    b.onclick = () => { state[val] = !state[val]; onState(); };
+    b.className = 'bb-chip'; b.innerHTML = d.label; b.dataset.val = d.id;
+    b.onclick = () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
     el('bbExtrasChips').appendChild(b);
   });
 
@@ -193,7 +240,7 @@ function init() {
     const q = pick(quips);
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
-    state.mustache = Math.random() < 0.3; state.bowtie = Math.random() < 0.3;
+    EXTRA_DEFS.forEach((d) => { state.extras[d.id] = Math.random() < 0.3; });
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     state.spd = Math.round((0.5 + Math.random() * 0.8) * 100) / 100;
     topIn.value = state.top; botIn.value = state.bottom;
@@ -214,8 +261,8 @@ function init() {
     if (state.bottom) p.set('b', state.bottom);
     if (state.glasses !== 'none') p.set('g', state.glasses);
     if (state.hat !== 'none') p.set('h', state.hat);
-    if (state.mustache) p.set('mu', '1');
-    if (state.bowtie) p.set('bt', '1');
+    const exOn = EXTRA_DEFS.filter((d) => state.extras[d.id]).map((d) => d.id);
+    if (exOn.length) p.set('ex', exOn.join('.'));
     if (state.effect !== 'none') p.set('e', state.effect);
     if (state.spd !== BASE_CYCLE_S) p.set('s', state.spd);
     if (state.frame !== 0) p.set('f', state.frame);
@@ -226,8 +273,11 @@ function init() {
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
     const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
-    const h = p.get('h'); state.hat = HATS.some(([v]) => v === h) ? h : 'none';
-    state.mustache = p.get('mu') === '1'; state.bowtie = p.get('bt') === '1';
+    const h = p.get('h'); state.hat = HAT_BY_ID[h] ? h : 'none';
+    state.extras = {};
+    (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id)) state.extras[id] = true; });
+    if (p.get('mu') === '1') state.extras.mustache = true; // legacy params
+    if (p.get('bt') === '1') state.extras.bowtie = true;
     const e = p.get('e') || p.get('m'); // old m=disco links still work
     if (EFFECTS.some(([v]) => v === e)) state.effect = e;
     state.spd = p.get('s') ? parseFloat(p.get('s')) : BASE_CYCLE_S;
@@ -258,33 +308,36 @@ function init() {
 
     // accessories ride the head/eyes; art switches side/front with the face.
     // No rotation ever — axis-aligned pixels are the authentic look.
-    if (state.hat !== 'none') {
-      const key = SVG[state.hat];
+    const hatDef = HAT_BY_ID[state.hat];
+    if (hatDef) {
+      const key = SVG[hatDef.art];
       const hw = gridW(key) * unit, hh = gridH(key) * unit;
-      const seat = HAT_OVERLAP + (HAT_SEAT[state.hat] || 0);
+      const seat = HAT_OVERLAP + (hatDef.seat || 0);
       const hBottom = fy + F.tipY * scale + seat * unit;
       drawAcc(ctx, key, fx + F.hatCx * scale - hw / 2, hBottom - hh, hw, hh, false);
     }
-    if (state.glasses !== 'none') {
-      const art = SHADE_ART[state.glasses] || SHADE_ART.shades;
-      const key = SVG[side ? art[1] : art[0]];
+    const shadeDef = SHADE_BY_ID[state.glasses];
+    if (shadeDef) {
+      const key = SVG[side ? shadeDef.side : shadeDef.front];
       const gw = gridW(key) * unit, gh = gridH(key) * unit;
       const gx = fx + F.eyeCx * scale, gy = fy + (F.eyeCy + SH_DY * PX) * scale;
       drawAcc(ctx, key, gx - gw / 2, gy - gh / 2, gw, gh, F.face === 'left');
     }
-    if (state.mustache) {
-      const key = side ? SVG.mustacheSide : SVG.mustacheFront;
-      const mw = gridW(key) * unit, mh = gridH(key) * unit;
-      const mx = fx + F.eyeCx * scale + (side ? mirror * MU_SIDE_DX * unit : 0);
-      const my = fy + (F.eyeCy + MU_DY * PX) * scale;
-      drawAcc(ctx, key, mx - mw / 2, my - mh / 2, mw, mh, F.face === 'left');
-    }
-    if (state.bowtie) {
-      const key = SVG.bowtie;
-      const bw = gridW(key) * unit, bh = gridH(key) * unit;
-      const bx = fx + F.btCx * scale;
-      const by = fy + (F.eyeCy + BT_DY * PX) * scale;
-      drawAcc(ctx, key, bx - bw / 2, by - bh / 2, bw, bh, false);
+    for (const d of EXTRA_DEFS) {
+      if (!state.extras[d.id]) continue;
+      if (d.anchor === 'face') {
+        const key = SVG[side ? d.side : d.front];
+        const mw = gridW(key) * unit, mh = gridH(key) * unit;
+        const mx = fx + F.eyeCx * scale + (side ? mirror * d.sideDx * unit : 0);
+        const my = fy + (F.eyeCy + d.dy * PX) * scale;
+        drawAcc(ctx, key, mx - mw / 2, my - mh / 2, mw, mh, F.face === 'left');
+      } else { // 'chest'
+        const key = SVG[d.art];
+        const bw = gridW(key) * unit, bh = gridH(key) * unit;
+        const bx = fx + F.btCx * scale;
+        const by = fy + (F.eyeCy + d.dy * PX) * scale;
+        drawAcc(ctx, key, bx - bw / 2, by - bh / 2, bw, bh, false);
+      }
     }
     ctx.filter = 'none';
     ctx.restore();
@@ -422,7 +475,7 @@ function init() {
     [['bbGlassesChips','glasses'],['bbHatChips','hat'],['bbEffectChips','effect']].forEach(([host, key]) => {
       document.querySelectorAll('#' + host + ' .bb-chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.val === state[key]));
     });
-    document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state[c.dataset.val])));
+    document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
     document.querySelectorAll('.bb-frame').forEach((f) => f.setAttribute('aria-pressed', String(parseInt(f.dataset.frame, 10) === state.frame)));
     const pb = el('bbPause');
     pb.innerHTML = state.paused ? ICON_PLAY : ICON_PAUSE;
@@ -513,7 +566,7 @@ function init() {
   };
 
   // expose for the sticker (print-res) flow later
-  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES };
+  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS };
 
   // ---- boot ----
   load();
