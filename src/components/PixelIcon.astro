@@ -1,0 +1,173 @@
+---
+// Monochrome pixel-art icons, drawn as ASCII maps on a 10-unit grid and
+// rendered as crispEdges SVG rects in currentColor — so they inherit the
+// button/text colour automatically (yellow on dark buttons, ink on light).
+// Same visual language as the banana sprite (tools/pixel-assets.py).
+const ICONS = {
+  banana: `
+.....KK.
+....KK..
+...KKK..
+..KKKK..
+..KKKK..
+.KKKK...
+KKKK....
+.KK.....`,
+  coffee: `
+..K..K....
+.K..K.....
+..K..K....
+KKKKKKKK..
+K......K.K
+K......KKK
+K......K..
+.K....K...
+KKKKKKKK..`,
+  brush: `
+.......KK
+......KKK
+.....KKK.
+....KKK..
+...KKK...
+..KK.....
+.KKK.....
+KKK......
+KK.......`,
+  dice: `
+KKKKKKKKK
+K.......K
+K.KK....K
+K.KK....K
+K...K...K
+K....KK.K
+K....KK.K
+K.......K
+KKKKKKKKK`,
+  link: `
+.KKK..KKK.
+K...KK...K
+K...KK...K
+.KKK..KKK.`,
+  download: `
+....KK....
+....KK....
+....KK....
+.KKKKKKKK.
+..KKKKKK..
+...KKKK...
+....KK....
+KK......KK
+KKKKKKKKKK`,
+  chat: `
+KKKKKKKKKK
+K........K
+K.K.K.K..K
+K........K
+KKKKKKKKKK
+..KK......
+.KK.......`,
+  tag: `
+KKKKKKK..
+K.....KK.
+K......KK
+K.KK....K
+K.KK....K
+K.......K
+KKKKKKKKK`,
+  globe: `
+..KKKKK..
+.K..K..K.
+K...K...K
+KKKKKKKKK
+K...K...K
+.K..K..K.
+..KKKKK..`,
+  note: `
+....KKKK
+....K..K
+....K..K
+....K...
+....K...
+..KKK...
+.KKKK...
+..KK....`,
+  floppy: `
+KKKKKKKK.
+K..KK..KK
+K..KK...K
+K.......K
+K.KKKKK.K
+K.K...K.K
+K.K...K.K
+KKKKKKKKK`,
+  bolt: `
+...KKKK.
+..KKKK..
+.KKKK...
+KKKKKKK.
+...KKK..
+..KKK...
+.KKK....
+.KK.....`,
+  heart: `
+.KK..KK.
+KKKKKKKK
+KKKKKKKK
+.KKKKKK.
+..KKKK..
+...KK...`,
+  sparkle: `
+...KK...
+...KK...
+.KKKKKK.
+KKKKKKKK
+.KKKKKK.
+...KK...
+...KK...`,
+  burger: `
+KKKKKKKKK
+KKKKKKKKK
+.........
+KKKKKKKKK
+KKKKKKKKK
+.........
+KKKKKKKKK
+KKKKKKKKK`,
+  close: `
+KK.....KK
+KKK...KKK
+.KKK.KKK.
+..KKKKK..
+...KKK...
+..KKKKK..
+.KKK.KKK.
+KKK...KKK
+KK.....KK`,
+};
+
+const { name, size = '1em' } = Astro.props;
+const map = ICONS[name];
+if (!map) throw new Error(`PixelIcon: unknown icon "${name}"`);
+const rows = map.trim().split('\n').map((r) => r.trimEnd());
+const w = Math.max(...rows.map((r) => r.length));
+const runs = [];
+rows.forEach((row, y) => {
+  let x = 0;
+  while (x < row.length) {
+    if (row[x] !== 'K') { x++; continue; }
+    const x0 = x;
+    while (x < row.length && row[x] === 'K') x++;
+    runs.push({ x: x0 * 10, y: y * 10, w: (x - x0) * 10 });
+  }
+});
+---
+<svg
+  class="pxi"
+  viewBox={`0 0 ${w * 10} ${rows.length * 10}`}
+  style={`width:${size};height:${size};`}
+  shape-rendering="crispEdges"
+  fill="currentColor"
+  aria-hidden="true"
+>
+  {runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" />)}
+</svg>

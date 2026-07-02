@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 
 const title = "Dancing Banana Emoji & Sticker — Free for Discord & Slack";
 const description = "The Dancing Banana as a free emoji and sticker — transparent, ready for Discord, Slack and Telegram. Add the original 1999 meme by its creator, or make your own.";
@@ -58,7 +59,7 @@ const faq = {
     <ul class="bullets">
       <li>Download the <strong>transparent</strong> banana above (GIF for animated, PNG for still).</li>
       <li>In Discord: <strong>Server Settings → Emoji</strong> (or <strong>Stickers</strong>) → <strong>Upload</strong>.</li>
-      <li>Pick the file, give it a name like <code>:banana:</code>, and save. Done. 🍌</li>
+      <li>Pick the file, give it a name like <code>:banana:</code>, and save. Done. <PixelIcon name="banana" /></li>
     </ul>
     <p class="lead" style="margin-top:1.2rem;">
       On <strong>Slack</strong>, add it as a custom emoji; on <strong>Telegram</strong>, add it as a sticker.
@@ -71,7 +72,7 @@ const faq = {
     <p class="kicker">Make it yours</p>
     <h2>Want a custom banana sticker?</h2>
     <p class="lead">Add shades, a hat, or a caption, then download your own — perfect for a personal server emoji.</p>
-    <a class="btn btn--dark" href="/make-a-banana/">🎨 Make your own dancing banana →</a>
+    <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="brush" /> Make your own dancing banana →</a>
   </section>
 
   <!-- FAQ -->

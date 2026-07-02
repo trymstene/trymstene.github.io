@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 
 const title = "Dancing Banana GIF — Download the Original Meme (Free)";
 const description = "The original Dancing Banana GIF — free to download (GIF + transparent PNG). Made in 1999 by its creator, Trym Stene. Grab it, make your own, or license it.";
@@ -63,9 +64,9 @@ const faq = {
       Download it free below, make your own, or license it.
     </p>
     <nav class="jumpnav" aria-label="On this page">
-      <a href="#download">⬇ Download</a>
+      <a href="#download"><PixelIcon name="download" /> Download</a>
       <a href="#story">The story</a>
-      <a href="/make-a-banana/">🎨 Make your own</a>
+      <a href="/make-a-banana/"><PixelIcon name="brush" /> Make your own</a>
       <a href="#faq">FAQ</a>
       <a href="#license">License</a>
     </nav>
@@ -86,7 +87,7 @@ const faq = {
     </div>
 
     <p style="margin-top:1.5rem;">
-      <a class="btn btn--dark" href="/make-a-banana/">🎨 Make your own dancing banana →</a>
+      <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="brush" /> Make your own dancing banana →</a>
     </p>
     <p class="lead" style="margin-top:1rem;">
       Want it as a <a href="/dancing-banana-emoji/">Discord, Slack or Telegram emoji / sticker</a>? Grab the transparent version.
@@ -100,7 +101,7 @@ const faq = {
 
     <p class="lead" style="margin-top:2rem;">
       It's free — always. But if the banana made you smile, you can
-      <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">buy the banana guy a coffee</a>. ☕🍌
+      <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">buy the banana guy a coffee</a>. <PixelIcon name="coffee" /> <PixelIcon name="banana" />
     </p>
   </section>
 
@@ -192,12 +193,12 @@ const faq = {
       warrior banana, the skiing banana, the alien banana, all of them. (Gallery going up here soon.)
     </p>
     <div class="remix-grid">
-      <div class="slot">🍌</div>
-      <div class="slot">🍌</div>
-      <div class="slot">🍌</div>
-      <div class="slot">🍌</div>
-      <div class="slot">🍌</div>
-      <div class="slot">🍌</div>
+      <div class="slot"><PixelIcon name="banana" /></div>
+      <div class="slot"><PixelIcon name="banana" /></div>
+      <div class="slot"><PixelIcon name="banana" /></div>
+      <div class="slot"><PixelIcon name="banana" /></div>
+      <div class="slot"><PixelIcon name="banana" /></div>
+      <div class="slot"><PixelIcon name="banana" /></div>
     </div>
   </section>
 
@@ -218,7 +219,7 @@ const faq = {
       <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
     </div>
     <LangSwitch current="en" label="Language" />
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy 🍌</p>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
   </footer>
 
   <script is:inline>

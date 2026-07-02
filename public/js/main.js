@@ -42,7 +42,6 @@ function setMenu(open) {
   if (!nav || !toggle) return;
   nav.classList.toggle('open', open);
   toggle.setAttribute('aria-expanded', String(open));
-  toggle.textContent = open ? '✕' : '☰';
   document.body.style.overflow = open ? 'hidden' : '';
 }
 

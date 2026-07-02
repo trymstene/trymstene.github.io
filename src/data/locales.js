@@ -19,8 +19,8 @@ export const locales = [
     grabAlt: 'De dansende banaan GIF, gratis download',
     dlOriginalLabel: 'Originele GIF ↓', dlOriginalFile: 'dansende-banaan.gif',
     dlTransLabel: 'Transparante PNG ↓', dlTransFile: 'dansende-banaan-transparant.png',
-    makeYourOwn: '🎨 Maak je eigen dansende banaan →',
-    tip: 'Hij is gratis — altijd. Maar als de banaan je liet glimlachen, kun je <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">de bananenman een koffie aanbieden</a>. ☕🍌',
+    makeYourOwn: 'Maak je eigen dansende banaan →',
+    tip: 'Hij is gratis — altijd. Maar als de banaan je liet glimlachen, kun je <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">de bananenman een koffie aanbieden</a>.',
     faqKicker: 'Veelgestelde vragen', faqHeading: 'Dansende banaan — FAQ',
     faq: [
       { q: 'Wie heeft de dansende banaan gemaakt?', a: 'Ik — Trym Stene. Ik animeerde hem in 1999 in Animation Shop.' },
@@ -30,7 +30,7 @@ export const locales = [
     ],
     footerKicker: 'Meer banaan', footerHeading: 'Het origineel, van de maker',
     footerLead: 'In het Engels:', linkStory: 'het volledige verhaal', linkMake: 'maak je eigen', linkLicense: 'licentie', linkTip: '☕ Tip',
-    copyright: 'Trym Stene · de bananenman 🍌',
+    copyright: 'Trym Stene · de bananenman',
   },
   {
     code: 'es', ogLocale: 'es_ES', langName: 'Español', langAria: 'Idioma',
@@ -44,8 +44,8 @@ export const locales = [
     grabAlt: 'El GIF del plátano bailando, descarga gratis',
     dlOriginalLabel: 'GIF original ↓', dlOriginalFile: 'platano-bailando.gif',
     dlTransLabel: 'PNG transparente ↓', dlTransFile: 'platano-bailando-transparente.png',
-    makeYourOwn: '🎨 Crea tu propio plátano bailando →',
-    tip: 'Es gratis — siempre. Pero si el plátano te sacó una sonrisa, puedes <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">invitarle un café al creador</a>. ☕🍌',
+    makeYourOwn: 'Crea tu propio plátano bailando →',
+    tip: 'Es gratis — siempre. Pero si el plátano te sacó una sonrisa, puedes <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">invitarle un café al creador</a>.',
     faqKicker: 'Preguntas frecuentes', faqHeading: 'Plátano bailando — FAQ',
     faq: [
       { q: '¿Quién creó el plátano bailando?', a: 'Yo — Trym Stene. Lo animé en 1999 en Animation Shop.' },
@@ -55,7 +55,7 @@ export const locales = [
     ],
     footerKicker: 'Más plátano', footerHeading: 'El original, de su creador',
     footerLead: 'En inglés:', linkStory: 'la historia completa', linkMake: 'crea el tuyo', linkLicense: 'licencia', linkTip: '☕ Propina',
-    copyright: 'Trym Stene · el de la banana 🍌',
+    copyright: 'Trym Stene · el de la banana',
   },
   {
     code: 'pt', ogLocale: 'pt_BR', langName: 'Português', langAria: 'Idioma',
@@ -69,8 +69,8 @@ export const locales = [
     grabAlt: 'O GIF da banana dançando, download grátis',
     dlOriginalLabel: 'GIF original ↓', dlOriginalFile: 'banana-dancando.gif',
     dlTransLabel: 'PNG transparente ↓', dlTransFile: 'banana-dancando-transparente.png',
-    makeYourOwn: '🎨 Crie a sua própria banana dançando →',
-    tip: 'É grátis — sempre. Mas se a banana te fez sorrir, você pode <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">pagar um café para o criador</a>. ☕🍌',
+    makeYourOwn: 'Crie a sua própria banana dançando →',
+    tip: 'É grátis — sempre. Mas se a banana te fez sorrir, você pode <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">pagar um café para o criador</a>.',
     faqKicker: 'Perguntas frequentes', faqHeading: 'Banana dançando — FAQ',
     faq: [
       { q: 'Quem criou a banana dançando?', a: 'Eu — Trym Stene. Eu a animei em 1999 no Animation Shop.' },
@@ -80,7 +80,7 @@ export const locales = [
     ],
     footerKicker: 'Mais banana', footerHeading: 'O original, do criador',
     footerLead: 'Em inglês:', linkStory: 'a história completa', linkMake: 'crie a sua', linkLicense: 'licença', linkTip: '☕ Gorjeta',
-    copyright: 'Trym Stene · o cara da banana 🍌',
+    copyright: 'Trym Stene · o cara da banana',
   },
   {
     code: 'fr', ogLocale: 'fr_FR', langName: 'Français', langAria: 'Langue',
@@ -94,8 +94,8 @@ export const locales = [
     grabAlt: 'Le GIF de la banane qui danse, téléchargement gratuit',
     dlOriginalLabel: 'GIF original ↓', dlOriginalFile: 'banane-qui-danse.gif',
     dlTransLabel: 'PNG transparent ↓', dlTransFile: 'banane-qui-danse-transparent.png',
-    makeYourOwn: '🎨 Crée ta propre banane qui danse →',
-    tip: "C'est gratuit — toujours. Mais si la banane t'a fait sourire, tu peux <a href=\"https://buymeacoffee.com/trymstene\" target=\"_blank\" rel=\"noopener\">offrir un café au créateur</a>. ☕🍌",
+    makeYourOwn: 'Crée ta propre banane qui danse →',
+    tip: "C'est gratuit — toujours. Mais si la banane t'a fait sourire, tu peux <a href=\"https://buymeacoffee.com/trymstene\" target=\"_blank\" rel=\"noopener\">offrir un café au créateur</a>.",
     faqKicker: 'Questions fréquentes', faqHeading: 'Banane qui danse — FAQ',
     faq: [
       { q: 'Qui a créé la banane qui danse ?', a: "Moi — Trym Stene. Je l'ai animée en 1999 dans Animation Shop." },
@@ -105,7 +105,7 @@ export const locales = [
     ],
     footerKicker: 'Plus de banane', footerHeading: "L'original, par son créateur",
     footerLead: 'En anglais :', linkStory: "l'histoire complète", linkMake: 'crée la tienne', linkLicense: 'licence', linkTip: '☕ Pourboire',
-    copyright: 'Trym Stene · le gars de la banane 🍌',
+    copyright: 'Trym Stene · le gars de la banane',
   },
   {
     code: 'de', ogLocale: 'de_DE', langName: 'Deutsch', langAria: 'Sprache',
@@ -119,8 +119,8 @@ export const locales = [
     grabAlt: 'Das Tanzende-Banane-GIF, kostenloser Download',
     dlOriginalLabel: 'Original-GIF ↓', dlOriginalFile: 'tanzende-banane.gif',
     dlTransLabel: 'Transparentes PNG ↓', dlTransFile: 'tanzende-banane-transparent.png',
-    makeYourOwn: '🎨 Mach deine eigene tanzende Banane →',
-    tip: 'Es ist gratis — immer. Aber wenn die Banane dich zum Lächeln gebracht hat, kannst du <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">dem Bananen-Typen einen Kaffee spendieren</a>. ☕🍌',
+    makeYourOwn: 'Mach deine eigene tanzende Banane →',
+    tip: 'Es ist gratis — immer. Aber wenn die Banane dich zum Lächeln gebracht hat, kannst du <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">dem Bananen-Typen einen Kaffee spendieren</a>.',
     faqKicker: 'Häufige Fragen', faqHeading: 'Tanzende Banane — FAQ',
     faq: [
       { q: 'Wer hat die tanzende Banane gemacht?', a: 'Ich — Trym Stene. Ich habe sie 1999 in Animation Shop animiert.' },
@@ -130,7 +130,7 @@ export const locales = [
     ],
     footerKicker: 'Mehr Banane', footerHeading: 'Das Original, vom Schöpfer',
     footerLead: 'Auf Englisch:', linkStory: 'die ganze Geschichte', linkMake: 'mach deine eigene', linkLicense: 'Lizenz', linkTip: '☕ Trinkgeld',
-    copyright: 'Trym Stene · der Bananen-Typ 🍌',
+    copyright: 'Trym Stene · der Bananen-Typ',
   },
   {
     code: 'ru', ogLocale: 'ru_RU', langName: 'Русский', langAria: 'Язык',
@@ -144,8 +144,8 @@ export const locales = [
     grabAlt: 'GIF с танцующим бананом, скачать бесплатно',
     dlOriginalLabel: 'Оригинальный GIF ↓', dlOriginalFile: 'tancuyushchiy-banan.gif',
     dlTransLabel: 'Прозрачный PNG ↓', dlTransFile: 'tancuyushchiy-banan-transparent.png',
-    makeYourOwn: '🎨 Создайте свой танцующий банан →',
-    tip: 'Это бесплатно — всегда. Но если банан вызвал у вас улыбку, вы можете <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">угостить автора кофе</a>. ☕🍌',
+    makeYourOwn: 'Создайте свой танцующий банан →',
+    tip: 'Это бесплатно — всегда. Но если банан вызвал у вас улыбку, вы можете <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">угостить автора кофе</a>.',
     faqKicker: 'Частые вопросы', faqHeading: 'Танцующий банан — FAQ',
     faq: [
       { q: 'Кто создал танцующий банан?', a: 'Я — Trym Stene. Я анимировал его в 1999 году в Animation Shop.' },
@@ -155,6 +155,6 @@ export const locales = [
     ],
     footerKicker: 'Больше банана', footerHeading: 'Оригинал, от создателя',
     footerLead: 'На английском:', linkStory: 'полная история', linkMake: 'создайте свой', linkLicense: 'лицензия', linkTip: '☕ Чаевые',
-    copyright: 'Trym Stene · банановый парень 🍌',
+    copyright: 'Trym Stene · банановый парень',
   },
 ];

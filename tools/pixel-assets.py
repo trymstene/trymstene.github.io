@@ -24,7 +24,7 @@ PALETTE = {
 
 # assets in this set get an automatic 1-unit black outline (like the sprite
 # itself has) so they stay visible on ANY background colour
-OUTLINED = {'crown', 'party', 'cowboy', 'bowtie'}
+OUTLINED = {'crown', 'party', 'cowboy', 'bowtie', 'heartsFront', 'heartsSide', 'visorFront', 'visorSide'}
 
 ASSETS = {
     # ---- shades: one style, two views (classic pixel "deal with it") ----
@@ -74,12 +74,38 @@ OOOOOOOOOOO
 CCCCCCCCCC
 ''',
     'cowboy': '''
-....BBBB....
-...BBBBBB...
-...BBBBBB...
-B..DDDDDD..B
-BB.BBBBBB.BB
-.BBBBBBBBBB.
+.....BBBB.....
+....BBBBBB....
+....BBBBBB....
+....DDDDDD....
+BB..BBBBBB..BB
+.BBBBBBBBBBBB.
+..BBBBBBBBBB..
+''',
+    # ---- more shade styles (front + side views like the deal-with-its) ----
+    'heartsFront': '''
+PP.PP.PP.PP
+PWPPPPPPWPP
+.PPP...PPP.
+..P.....P..
+''',
+    'heartsSide': '''
+PPP.PPP....
+PWPPPPPPPPP
+PPPPPPP....
+.PPPPP.....
+..PPP......
+...P.......
+''',
+    'visorFront': '''
+CCCCCCCCCCCCC
+CWWCCCCCCCCCC
+CCCCCCCCCCCCC
+''',
+    'visorSide': '''
+CCCCCCCCC
+CWWCCCCCC
+CCCCCCCCC
 ''',
     # ---- extras ----
     'mustacheFront': '''
@@ -161,21 +187,22 @@ if __name__ == '__main__':
     FR = {0: (232,222,256,85,'right'), 1: (232,192,256,57,'right'), 2: (234,135,242,0,'front'),
           3: (232,156,212,28,'front'), 4: (236,222,212,85,'left'), 5: (236,192,212,57,'left')}
     # placement (kept in sync with banana-builder.js):
-    HAT_OVERLAP_FRONT, HAT_OVERLAP_SIDE, HAT_SHIFT_SIDE = 2.8, 3.6, 1.5
+    HAT_OVERLAP_FRONT, HAT_OVERLAP_SIDE, HAT_SHIFT_SIDE = 5.8, 5.8, 2.0
     OUTLINE_SEAT = -1.0   # outlined hats: their bottom row is outline, not body
     SH_DY = -0.5          # shades ride slightly high to fully cover the eye whites
     MU_DY, MU_SIDE_DX = 3.6, -1.2
     BT_DY, BT_SIDE_DX = 6.0, -1.0
-    combos = [(0,'tophat'),(3,'tophat'),(4,'cowboy'),(0,'crown'),
-              (3,'crown'),(4,'party'),(1,'cowboy'),(3,'party')]
+    combos = [(0,'tophat','shades'),(3,'tophat','hearts'),(4,'cowboy','visor'),(0,'crown','hearts'),
+              (3,'crown','visor'),(4,'party','shades'),(1,'cowboy','hearts'),(3,'party','shades')]
     W,H = im.size
+    SHADE_ART = {'shades': ('shadesFront','shadesSide'), 'hearts': ('heartsFront','heartsSide'), 'visor': ('visorFront','visorSide')}
     cells = []
-    for fi, hat in combos:
+    for fi, hat, shade in combos:
         bg = Image.new('RGBA',(W,H),(255,0,255,255)); bg.alpha_composite(frames[fi])
         ecx,ecy,hcx,tipy,face = FR[fi]
         side = face != 'front'
         # shades
-        sh = render('shadesFront' if not side else 'shadesSide')
+        sh = render(SHADE_ART[shade][1 if side else 0])
         if face=='left': sh = sh.transpose(Image.FLIP_LEFT_RIGHT)
         bg.alpha_composite(sh, (ecx - sh.width//2, int(ecy + SH_DY*UNIT) - sh.height//2))
         # moustache
@@ -198,7 +225,7 @@ if __name__ == '__main__':
         # close-up crops of the head/face region for pixel-level seating checks
         CW, CH = 320, 400
         sheet = Image.new('RGB',(CW*4, CH*2),(255,0,255))
-        for j,((fi, hat), cell) in enumerate(zip(combos, cells)):
+        for j,((fi, hat, shade), cell) in enumerate(zip(combos, cells)):
             hcx, tipy = FR[fi][2], FR[fi][3]
             box = (hcx-CW//2, max(0,tipy-150), hcx+CW//2, max(0,tipy-150)+CH)
             sheet.paste(cell.crop(box), ((j%4)*CW, (j//4)*CH))

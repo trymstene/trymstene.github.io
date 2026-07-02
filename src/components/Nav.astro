@@ -1,10 +1,14 @@
 ---
 // Canonical site navigation — the single source of truth for every page.
 // Two-tone groups: banana (black) + trym (yellow). Mobile = slide-in (js/main.js).
+import PixelIcon from './PixelIcon.astro';
 ---
 <header class="nav">
   <a class="nav__brand" href="/">TRYM<span>STENE</span></a>
-  <button class="nav__toggle" aria-label="Menu" aria-expanded="false">☰</button>
+  <button class="nav__toggle" aria-label="Menu" aria-expanded="false">
+    <span class="nav__ic nav__ic--open"><PixelIcon name="burger" /></span>
+    <span class="nav__ic nav__ic--close"><PixelIcon name="close" /></span>
+  </button>
   <nav class="nav__links">
     <div class="nav__group nav__group--banana">
       <a href="/dancing-banana-gif-meme/">Dancing Banana</a>

@@ -33,17 +33,27 @@ const SVG = {
   tophat: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80" shape-rendering="crispEdges"><rect x="20" y="0" width="80" height="10" fill="#111111"/><rect x="20" y="10" width="10" height="10" fill="#111111"/><rect x="30" y="10" width="10" height="10" fill="#484848"/><rect x="40" y="10" width="60" height="10" fill="#111111"/><rect x="20" y="20" width="10" height="10" fill="#111111"/><rect x="30" y="20" width="10" height="10" fill="#484848"/><rect x="40" y="20" width="60" height="10" fill="#111111"/><rect x="20" y="30" width="10" height="10" fill="#111111"/><rect x="30" y="30" width="10" height="10" fill="#484848"/><rect x="40" y="30" width="60" height="10" fill="#111111"/><rect x="20" y="40" width="10" height="10" fill="#111111"/><rect x="30" y="40" width="60" height="10" fill="#e22020"/><rect x="90" y="40" width="10" height="10" fill="#111111"/><rect x="20" y="50" width="80" height="10" fill="#111111"/><rect x="0" y="60" width="120" height="10" fill="#111111"/><rect x="0" y="70" width="120" height="10" fill="#111111"/></svg>',
   crown: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 80" width="130" height="80" shape-rendering="crispEdges"><rect x="10" y="0" width="10" height="10" fill="#111111"/><rect x="60" y="0" width="10" height="10" fill="#111111"/><rect x="110" y="0" width="10" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="10" height="10" fill="#f2c200"/><rect x="20" y="10" width="10" height="10" fill="#111111"/><rect x="50" y="10" width="10" height="10" fill="#111111"/><rect x="60" y="10" width="10" height="10" fill="#f2c200"/><rect x="70" y="10" width="10" height="10" fill="#111111"/><rect x="100" y="10" width="10" height="10" fill="#111111"/><rect x="110" y="10" width="10" height="10" fill="#f2c200"/><rect x="120" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="20" height="10" fill="#f2c200"/><rect x="30" y="20" width="20" height="10" fill="#111111"/><rect x="50" y="20" width="30" height="10" fill="#f2c200"/><rect x="80" y="20" width="20" height="10" fill="#111111"/><rect x="100" y="20" width="20" height="10" fill="#f2c200"/><rect x="120" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="30" height="10" fill="#f2c200"/><rect x="40" y="30" width="10" height="10" fill="#111111"/><rect x="50" y="30" width="30" height="10" fill="#f2c200"/><rect x="80" y="30" width="10" height="10" fill="#111111"/><rect x="90" y="30" width="30" height="10" fill="#f2c200"/><rect x="120" y="30" width="10" height="10" fill="#111111"/><rect x="0" y="40" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="50" height="10" fill="#f2c200"/><rect x="60" y="40" width="10" height="10" fill="#e22020"/><rect x="70" y="40" width="50" height="10" fill="#f2c200"/><rect x="120" y="40" width="10" height="10" fill="#111111"/><rect x="0" y="50" width="10" height="10" fill="#111111"/><rect x="10" y="50" width="110" height="10" fill="#f2c200"/><rect x="120" y="50" width="10" height="10" fill="#111111"/><rect x="0" y="60" width="10" height="10" fill="#111111"/><rect x="10" y="60" width="110" height="10" fill="#c49a00"/><rect x="120" y="60" width="10" height="10" fill="#111111"/><rect x="10" y="70" width="110" height="10" fill="#111111"/></svg>',
   party: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" shape-rendering="crispEdges"><rect x="50" y="0" width="20" height="10" fill="#111111"/><rect x="40" y="10" width="10" height="10" fill="#111111"/><rect x="50" y="10" width="20" height="10" fill="#f2c200"/><rect x="70" y="10" width="10" height="10" fill="#111111"/><rect x="30" y="20" width="10" height="10" fill="#111111"/><rect x="40" y="20" width="40" height="10" fill="#f2c200"/><rect x="80" y="20" width="10" height="10" fill="#111111"/><rect x="40" y="30" width="10" height="10" fill="#111111"/><rect x="50" y="30" width="20" height="10" fill="#4db8ff"/><rect x="70" y="30" width="10" height="10" fill="#111111"/><rect x="30" y="40" width="10" height="10" fill="#111111"/><rect x="40" y="40" width="40" height="10" fill="#4db8ff"/><rect x="80" y="40" width="10" height="10" fill="#111111"/><rect x="30" y="50" width="10" height="10" fill="#111111"/><rect x="40" y="50" width="10" height="10" fill="#4db8ff"/><rect x="50" y="50" width="10" height="10" fill="#ffffff"/><rect x="60" y="50" width="20" height="10" fill="#4db8ff"/><rect x="80" y="50" width="10" height="10" fill="#111111"/><rect x="20" y="60" width="10" height="10" fill="#111111"/><rect x="30" y="60" width="60" height="10" fill="#4db8ff"/><rect x="90" y="60" width="10" height="10" fill="#111111"/><rect x="20" y="70" width="10" height="10" fill="#111111"/><rect x="30" y="70" width="20" height="10" fill="#4db8ff"/><rect x="50" y="70" width="10" height="10" fill="#ffffff"/><rect x="60" y="70" width="30" height="10" fill="#4db8ff"/><rect x="90" y="70" width="10" height="10" fill="#111111"/><rect x="10" y="80" width="10" height="10" fill="#111111"/><rect x="20" y="80" width="60" height="10" fill="#4db8ff"/><rect x="80" y="80" width="10" height="10" fill="#ffffff"/><rect x="90" y="80" width="10" height="10" fill="#4db8ff"/><rect x="100" y="80" width="10" height="10" fill="#111111"/><rect x="10" y="90" width="10" height="10" fill="#111111"/><rect x="20" y="90" width="80" height="10" fill="#4db8ff"/><rect x="100" y="90" width="10" height="10" fill="#111111"/><rect x="0" y="100" width="10" height="10" fill="#111111"/><rect x="10" y="100" width="100" height="10" fill="#4db8ff"/><rect x="110" y="100" width="10" height="10" fill="#111111"/><rect x="10" y="110" width="100" height="10" fill="#111111"/></svg>',
-  cowboy: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 80" width="140" height="80" shape-rendering="crispEdges"><rect x="50" y="0" width="40" height="10" fill="#111111"/><rect x="40" y="10" width="10" height="10" fill="#111111"/><rect x="50" y="10" width="40" height="10" fill="#8a5a2b"/><rect x="90" y="10" width="10" height="10" fill="#111111"/><rect x="30" y="20" width="10" height="10" fill="#111111"/><rect x="40" y="20" width="60" height="10" fill="#8a5a2b"/><rect x="100" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="10" height="10" fill="#111111"/><rect x="30" y="30" width="10" height="10" fill="#111111"/><rect x="40" y="30" width="60" height="10" fill="#8a5a2b"/><rect x="100" y="30" width="10" height="10" fill="#111111"/><rect x="120" y="30" width="10" height="10" fill="#111111"/><rect x="0" y="40" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="10" height="10" fill="#8a5a2b"/><rect x="20" y="40" width="20" height="10" fill="#111111"/><rect x="40" y="40" width="60" height="10" fill="#5a3618"/><rect x="100" y="40" width="20" height="10" fill="#111111"/><rect x="120" y="40" width="10" height="10" fill="#8a5a2b"/><rect x="130" y="40" width="10" height="10" fill="#111111"/><rect x="0" y="50" width="10" height="10" fill="#111111"/><rect x="10" y="50" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="50" width="10" height="10" fill="#111111"/><rect x="40" y="50" width="60" height="10" fill="#8a5a2b"/><rect x="100" y="50" width="10" height="10" fill="#111111"/><rect x="110" y="50" width="20" height="10" fill="#8a5a2b"/><rect x="130" y="50" width="10" height="10" fill="#111111"/><rect x="10" y="60" width="10" height="10" fill="#111111"/><rect x="20" y="60" width="100" height="10" fill="#8a5a2b"/><rect x="120" y="60" width="10" height="10" fill="#111111"/><rect x="20" y="70" width="100" height="10" fill="#111111"/></svg>',
+  cowboy: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90" width="160" height="90" shape-rendering="crispEdges"><rect x="60" y="0" width="40" height="10" fill="#111111"/><rect x="50" y="10" width="10" height="10" fill="#111111"/><rect x="60" y="10" width="40" height="10" fill="#8a5a2b"/><rect x="100" y="10" width="10" height="10" fill="#111111"/><rect x="40" y="20" width="10" height="10" fill="#111111"/><rect x="50" y="20" width="60" height="10" fill="#8a5a2b"/><rect x="110" y="20" width="10" height="10" fill="#111111"/><rect x="40" y="30" width="10" height="10" fill="#111111"/><rect x="50" y="30" width="60" height="10" fill="#8a5a2b"/><rect x="110" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="20" height="10" fill="#111111"/><rect x="40" y="40" width="10" height="10" fill="#111111"/><rect x="50" y="40" width="60" height="10" fill="#5a3618"/><rect x="110" y="40" width="10" height="10" fill="#111111"/><rect x="130" y="40" width="20" height="10" fill="#111111"/><rect x="0" y="50" width="10" height="10" fill="#111111"/><rect x="10" y="50" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="50" width="20" height="10" fill="#111111"/><rect x="50" y="50" width="60" height="10" fill="#8a5a2b"/><rect x="110" y="50" width="20" height="10" fill="#111111"/><rect x="130" y="50" width="20" height="10" fill="#8a5a2b"/><rect x="150" y="50" width="10" height="10" fill="#111111"/><rect x="10" y="60" width="10" height="10" fill="#111111"/><rect x="20" y="60" width="120" height="10" fill="#8a5a2b"/><rect x="140" y="60" width="10" height="10" fill="#111111"/><rect x="20" y="70" width="10" height="10" fill="#111111"/><rect x="30" y="70" width="100" height="10" fill="#8a5a2b"/><rect x="130" y="70" width="10" height="10" fill="#111111"/><rect x="30" y="80" width="100" height="10" fill="#111111"/></svg>',
+  heartsFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 60" width="130" height="60" shape-rendering="crispEdges"><rect x="10" y="0" width="20" height="10" fill="#111111"/><rect x="40" y="0" width="20" height="10" fill="#111111"/><rect x="70" y="0" width="20" height="10" fill="#111111"/><rect x="100" y="0" width="20" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="20" height="10" fill="#ff4d6d"/><rect x="30" y="10" width="10" height="10" fill="#111111"/><rect x="40" y="10" width="20" height="10" fill="#ff4d6d"/><rect x="60" y="10" width="10" height="10" fill="#111111"/><rect x="70" y="10" width="20" height="10" fill="#ff4d6d"/><rect x="90" y="10" width="10" height="10" fill="#111111"/><rect x="100" y="10" width="20" height="10" fill="#ff4d6d"/><rect x="120" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#ff4d6d"/><rect x="20" y="20" width="10" height="10" fill="#ffffff"/><rect x="30" y="20" width="60" height="10" fill="#ff4d6d"/><rect x="90" y="20" width="10" height="10" fill="#ffffff"/><rect x="100" y="20" width="20" height="10" fill="#ff4d6d"/><rect x="120" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="10" height="10" fill="#111111"/><rect x="20" y="30" width="30" height="10" fill="#ff4d6d"/><rect x="50" y="30" width="30" height="10" fill="#111111"/><rect x="80" y="30" width="30" height="10" fill="#ff4d6d"/><rect x="110" y="30" width="10" height="10" fill="#111111"/><rect x="20" y="40" width="10" height="10" fill="#111111"/><rect x="30" y="40" width="10" height="10" fill="#ff4d6d"/><rect x="40" y="40" width="10" height="10" fill="#111111"/><rect x="80" y="40" width="10" height="10" fill="#111111"/><rect x="90" y="40" width="10" height="10" fill="#ff4d6d"/><rect x="100" y="40" width="10" height="10" fill="#111111"/><rect x="30" y="50" width="10" height="10" fill="#111111"/><rect x="90" y="50" width="10" height="10" fill="#111111"/></svg>',
+  heartsSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 80" width="130" height="80" shape-rendering="crispEdges"><rect x="10" y="0" width="30" height="10" fill="#111111"/><rect x="50" y="0" width="30" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#ff4d6d"/><rect x="40" y="10" width="10" height="10" fill="#111111"/><rect x="50" y="10" width="30" height="10" fill="#ff4d6d"/><rect x="80" y="10" width="40" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#ff4d6d"/><rect x="20" y="20" width="10" height="10" fill="#ffffff"/><rect x="30" y="20" width="90" height="10" fill="#ff4d6d"/><rect x="120" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="70" height="10" fill="#ff4d6d"/><rect x="80" y="30" width="40" height="10" fill="#111111"/><rect x="10" y="40" width="10" height="10" fill="#111111"/><rect x="20" y="40" width="50" height="10" fill="#ff4d6d"/><rect x="70" y="40" width="10" height="10" fill="#111111"/><rect x="20" y="50" width="10" height="10" fill="#111111"/><rect x="30" y="50" width="30" height="10" fill="#ff4d6d"/><rect x="60" y="50" width="10" height="10" fill="#111111"/><rect x="30" y="60" width="10" height="10" fill="#111111"/><rect x="40" y="60" width="10" height="10" fill="#ff4d6d"/><rect x="50" y="60" width="10" height="10" fill="#111111"/><rect x="40" y="70" width="10" height="10" fill="#111111"/></svg>',
+  visorFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 50" width="150" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="130" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="130" height="10" fill="#4db8ff"/><rect x="140" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#4db8ff"/><rect x="20" y="20" width="20" height="10" fill="#ffffff"/><rect x="40" y="20" width="100" height="10" fill="#4db8ff"/><rect x="140" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="130" height="10" fill="#4db8ff"/><rect x="140" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="130" height="10" fill="#111111"/></svg>',
+  visorSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 50" width="110" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="90" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="90" height="10" fill="#4db8ff"/><rect x="100" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="10" height="10" fill="#4db8ff"/><rect x="20" y="20" width="20" height="10" fill="#ffffff"/><rect x="40" y="20" width="60" height="10" fill="#4db8ff"/><rect x="100" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="90" height="10" fill="#4db8ff"/><rect x="100" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="90" height="10" fill="#111111"/></svg>',
   mustacheFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 30" width="90" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="40" height="10" fill="#5a3618"/><rect x="50" y="0" width="40" height="10" fill="#5a3618"/><rect x="0" y="10" width="90" height="10" fill="#5a3618"/><rect x="10" y="20" width="20" height="10" fill="#5a3618"/><rect x="60" y="20" width="20" height="10" fill="#5a3618"/></svg>',
   mustacheSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="60" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="50" height="10" fill="#5a3618"/><rect x="0" y="10" width="60" height="10" fill="#5a3618"/><rect x="10" y="20" width="20" height="10" fill="#5a3618"/></svg>',
   bowtie: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 50" width="90" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="20" height="10" fill="#111111"/><rect x="60" y="0" width="20" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="20" height="10" fill="#e22020"/><rect x="30" y="10" width="30" height="10" fill="#111111"/><rect x="60" y="10" width="20" height="10" fill="#e22020"/><rect x="80" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="30" height="10" fill="#e22020"/><rect x="40" y="20" width="10" height="10" fill="#5a3618"/><rect x="50" y="20" width="30" height="10" fill="#e22020"/><rect x="80" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="20" height="10" fill="#e22020"/><rect x="30" y="30" width="30" height="10" fill="#111111"/><rect x="60" y="30" width="20" height="10" fill="#e22020"/><rect x="80" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="20" height="10" fill="#111111"/><rect x="60" y="40" width="20" height="10" fill="#111111"/></svg>',
 };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
-const GLASSES = [['none','None'],['shades','Deal with it']];
+const GLASSES = [['none','None'],['shades','Deal with it'],['hearts','Hearts'],['visor','Visor']];
+const SHADE_ART = { shades: ['shadesFront','shadesSide'], hearts: ['heartsFront','heartsSide'], visor: ['visorFront','visorSide'] };
 const HATS = [['none','None'],['party','Party'],['crown','Crown'],['tophat','Top hat'],['cowboy','Cowboy']];
 const EFFECTS = [['none','None'],['disco','Disco'],['sparkle','Sparkles'],['confetti','Confetti']];
-const EXTRAS = [['mustache','🥸 Moustache'],['bowtie','🎀 Bow tie']];
+// tiny monochrome pixel icons (currentColor) for the extras chips + pause button
+const ICON_MUSTACHE = '<svg class="pxi" viewBox="0 0 90 30" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="40" height="10"/><rect x="50" y="0" width="40" height="10"/><rect x="0" y="10" width="90" height="10"/><rect x="10" y="20" width="20" height="10"/><rect x="60" y="20" width="20" height="10"/></svg>';
+const ICON_BOWTIE = '<svg class="pxi" viewBox="0 0 70 30" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="20" height="10"/><rect x="50" y="0" width="20" height="10"/><rect x="0" y="10" width="70" height="10"/><rect x="0" y="20" width="20" height="10"/><rect x="50" y="20" width="20" height="10"/></svg>';
+const ICON_PAUSE = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="10" y="10" width="20" height="60"/><rect x="40" y="10" width="20" height="60"/></svg>';
+const ICON_PLAY = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="15" y="10" width="15" height="60"/><rect x="30" y="20" width="15" height="40"/><rect x="45" y="30" width="15" height="20"/></svg>';
+const EXTRAS = [['mustache', ICON_MUSTACHE + ' Moustache'],['bowtie', ICON_BOWTIE + ' Bow tie']];
 
 // The banana sprite's pixel unit is 13 source px; the pixel SVGs use 10 svg-px
 // per unit. Sizing accessories in banana-pixels guarantees they match the
@@ -54,7 +64,7 @@ const gridH = (key) => parseInt(key.match(/viewBox="0 0 \d+ (\d+)/)[1], 10) / 10
 // hat seating: on lean frames, shift toward the face + bite deeper so the hat
 // sits ON the head mass instead of balancing on the very peak of the tip.
 // Outlined hats seat 1 unit less deep (their bottom row is outline, not body).
-const HAT_OVERLAP_FRONT = 2.8, HAT_OVERLAP_SIDE = 3.6, HAT_SHIFT_SIDE = 1.5;
+const HAT_OVERLAP_FRONT = 5.8, HAT_OVERLAP_SIDE = 5.8, HAT_SHIFT_SIDE = 2.0;
 const HAT_SEAT = { tophat: 0, crown: -1, party: -1, cowboy: -1 };
 // shades ride slightly high to fully cover the eye whites; extras placement
 const SH_DY = -0.5, MU_DY = 3.6, MU_SIDE_DX = -1.2, BT_DY = 6.0, BT_SIDE_DX = -1.0;
@@ -125,10 +135,10 @@ function init() {
   chips('bbGlassesChips', GLASSES, 'glasses');
   chips('bbHatChips', HATS, 'hat');
   chips('bbEffectChips', EFFECTS, 'effect');
-  // extras = independent toggles, not a single-choice row
+  // extras = independent toggles, not a single-choice row (labels carry pixel icons)
   EXTRAS.forEach(([val, label]) => {
     const b = document.createElement('button');
-    b.className = 'bb-chip'; b.textContent = label; b.dataset.val = val;
+    b.className = 'bb-chip'; b.innerHTML = label; b.dataset.val = val;
     b.onclick = () => { state[val] = !state[val]; onState(); };
     el('bbExtrasChips').appendChild(b);
   });
@@ -142,7 +152,39 @@ function init() {
 
   el('bbRandom').onclick = () => {
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
-    const quips = [['HELLO YES',"IT'S THE BANANA GUY"],['B','A N A N A'],['IT IS','WEDNESDAY MY DUDES'],['','PEANUT BUTTER JELLY TIME'],['CERTIFIED','BANANA MOMENT'],['',''],['ME WHEN','THE BANANA']];
+    const quips = [
+      ['HELLO YES', "IT'S THE BANANA GUY"],
+      ['IT IS', 'WEDNESDAY MY DUDES'],
+      ['', 'PEANUT BUTTER JELLY TIME'],
+      ['CERTIFIED', 'BANANA MOMENT'],
+      ['NO THOUGHTS', 'JUST DANCE'],
+      ['MOM SAID', "IT'S MY TURN TO DANCE"],
+      ['CEO', 'OF DANCING'],
+      ['ERROR 404', 'CHILL NOT FOUND'],
+      ['LOCAL BANANA', 'REFUSES TO STOP'],
+      ['ME AFTER', 'ONE COFFEE'],
+      ['VIBE CHECK', 'PASSED'],
+      ['5 AM', 'STILL DANCING'],
+      ['THE FLOOR IS LAVA', 'ANYWAY'],
+      ['BANANA', 'FOR SCALE'],
+      ['UNLIMITED', 'POTASSIUM'],
+      ['WHEN THE', 'BEAT DROPS'],
+      ['MY LAST', 'BRAINCELL'],
+      ['FRIDAY', 'ENERGY'],
+      ['EMOTIONAL', 'SUPPORT BANANA'],
+      ['GO', 'BANANAS'],
+      ['DANCE LIKE NOBODY', 'IS WATCHING'],
+      ['100%', 'RIPE'],
+      ['POV:', 'YOU FOUND THE BANANA'],
+      ['B', 'A N A N A'],
+      ['ME WHEN', 'THE BANANA'],
+      ['THIS IS', 'FINE'],
+      ['ONE MORE DANCE', 'I PROMISE'],
+      ['ABSOLUTE', 'UNIT'],
+      ['PEEL', 'GOOD VIBES'],
+      ['MAXIMUM', 'WIGGLE'],
+      ['', ''],
+    ];
     const q = pick(quips);
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
@@ -220,7 +262,8 @@ function init() {
       drawAcc(ctx, key, fx + F.headCx * scale + shift - hw / 2, hBottom - hh, hw, hh, false);
     }
     if (state.glasses !== 'none') {
-      const key = side ? SVG.shadesSide : SVG.shadesFront;
+      const art = SHADE_ART[state.glasses] || SHADE_ART.shades;
+      const key = SVG[side ? art[1] : art[0]];
       const gw = gridW(key) * unit, gh = gridH(key) * unit;
       const gx = fx + F.eyeCx * scale, gy = fy + (F.eyeCy + SH_DY * PX) * scale;
       drawAcc(ctx, key, gx - gw / 2, gy - gh / 2, gw, gh, F.face === 'left');
@@ -378,7 +421,7 @@ function init() {
     document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state[c.dataset.val])));
     document.querySelectorAll('.bb-frame').forEach((f) => f.setAttribute('aria-pressed', String(parseInt(f.dataset.frame, 10) === state.frame)));
     const pb = el('bbPause');
-    pb.textContent = state.paused ? '▶' : '⏸';
+    pb.innerHTML = state.paused ? ICON_PLAY : ICON_PAUSE;
     pb.setAttribute('aria-label', state.paused ? 'Play the dance' : 'Pause the dance');
   }
 
@@ -440,7 +483,7 @@ function init() {
       gif.finish();
       const blob = new Blob([gif.bytes()], { type: 'image/gif' });
       download(URL.createObjectURL(blob), 'my-dancing-banana.gif');
-      toast('Emoji GIF downloaded! 🍌');
+      toast('Emoji GIF downloaded!');
       track('gif_download', { file: 'builder-emoji.gif' });
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }

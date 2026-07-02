@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 import { locales } from '../data/locales.js';
 
 export function getStaticPaths() {
@@ -58,7 +59,7 @@ const faqSchema = {
       </div>
     </div>
     <p style="margin-top:1.5rem;">
-      <a class="btn btn--dark" href="/make-a-banana/">{loc.makeYourOwn}</a>
+      <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="brush" /> {loc.makeYourOwn}</a>
     </p>
     <p class="lead" style="margin-top:2rem;" set:html={loc.tip}></p>
   </section>

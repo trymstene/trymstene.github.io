@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 
 const title = "Trym Stene — hello yes, it's the banana guy";
 const description = "Trym Stene — the guy who made the Dancing Banana GIF back in 1999. Lead SEO, web comedian, music producer. Satirical web projects, dancing banana merch, and the full banana story.";
@@ -79,7 +80,7 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  web comedy & mu
       (spoiler: not for your crypto coin) — lives on its own page.
     </p>
     <a class="btn btn--dark" href="/dancing-banana-gif-meme/">Read the full banana story →</a>
-    <a class="btn btn--light" href="/make-a-banana/" style="margin-left:0.6rem;">🎨 Make your own →</a>
+    <a class="btn btn--light" href="/make-a-banana/" style="margin-left:0.6rem;"><PixelIcon name="brush" /> Make your own →</a>
   </section>
 
   <!-- projects -->
@@ -178,6 +179,6 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  web comedy & mu
       <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
       <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
     </div>
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy · best viewed in any browser, even Netscape 🍌</p>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy · best viewed in any browser, even Netscape <PixelIcon name="banana" /></p>
   </footer>
 </BaseLayout>

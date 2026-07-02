@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 
 const title = "Make Your Own Dancing Banana | Trym Stene";
 const description = "Customize the original Dancing Banana — add shades, hats, captions and dance moves, then download it or share your creation. Free banana builder by the guy who made the meme.";
@@ -121,7 +122,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     /* fake chat row — your emoji at actual chat size */
     .bb-chat { background: #313338; border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
     .bb-chat__msg { display: flex; gap: 0.7rem; align-items: flex-start; }
-    .bb-chat__avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--banana); display: grid; place-items: center; font-size: 1.2rem; }
+    .bb-chat__avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--banana); color: var(--ink); display: grid; place-items: center; font-size: 1.2rem; }
     .bb-chat__meta { color: #f2c94c; font-weight: 700; font-size: 0.85rem; }
     .bb-chat__meta span { color: #949ba4; font-weight: 500; font-size: 0.72rem; margin-left: 0.4rem; }
     .bb-chat__text { color: #dbdee1; font-size: 0.9rem; margin: 0.15rem 0 0; }
@@ -155,7 +156,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
 
       <!-- CONTROLS -->
       <div class="bb-controls">
-        <button class="btn btn--dark bb-random" id="bbRandom">🎲 Surprise me</button>
+        <button class="btn btn--dark bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
         <div class="bb-row">
           <label>Background</label>
           <div class="bb-swatches" id="bbSwatches"></div>
@@ -187,10 +188,10 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
         <div class="bb-row">
           <label for="bbSpeed">Dance speed</label>
           <input class="bb-slider" type="range" id="bbSpeed" min="0.35" max="1.6" step="0.05" value="1.15">
-          <div class="bb-speedends" aria-hidden="true"><span>🐢 chill</span><span>banana overdrive ⚡</span></div>
+          <div class="bb-speedends" aria-hidden="true"><span>chill</span><span>banana overdrive <PixelIcon name="bolt" /></span></div>
         </div>
         <div class="bb-actions">
-          <button class="btn btn--light" id="bbShare">🔗 Copy share link</button>
+          <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
         </div>
       </div>
     </div>
@@ -201,11 +202,11 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
       <h2 id="bbTakeTitle">Take it with you</h2>
       <div class="bb-cards">
         <div class="bb-card">
-          <h3>💬 Chat emoji</h3>
+          <h3><PixelIcon name="chat" /> Chat emoji</h3>
           <p>Animated, transparent and cropped tight — drops straight into Discord, Slack or Twitch. Here's yours at actual chat size:</p>
           <div class="bb-chat" aria-hidden="true">
             <div class="bb-chat__msg">
-              <span class="bb-chat__avatar">🍌</span>
+              <span class="bb-chat__avatar"><PixelIcon name="banana" /></span>
               <div>
                 <div class="bb-chat__meta">banana_guy <span>today at 19:99</span></div>
                 <p class="bb-chat__text">check out my new emoji <canvas id="bbEmoji32" width="32" height="32"></canvas></p>
@@ -213,15 +214,15 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
               </div>
             </div>
           </div>
-          <button class="btn btn--dark" id="bbDownloadGif">⬇ Download emoji GIF</button>
+          <button class="btn btn--dark" id="bbDownloadGif"><PixelIcon name="download" /> Download emoji GIF</button>
           <p class="bb-note">Captions are left off the emoji — they're too tiny to read at chat size.</p>
         </div>
         <div class="bb-card">
-          <h3>🏷️ Sticker &amp; meme image</h3>
+          <h3><PixelIcon name="tag" /> Sticker &amp; meme image</h3>
           <p>Your captions, your background, full size. Freeze your favourite moment of the dance:</p>
           <div class="bb-frames" id="bbFrames"></div>
-          <button class="btn btn--dark" id="bbDownloadPng">⬇ Download image (PNG)</button>
-          <p class="bb-note">🚧 Order your banana as a printed sticker — coming soon.</p>
+          <button class="btn btn--dark" id="bbDownloadPng"><PixelIcon name="download" /> Download image (PNG)</button>
+          <p class="bb-note"><PixelIcon name="tag" /> Order your banana as a printed sticker — coming soon.</p>
         </div>
       </div>
     </section>
@@ -233,7 +234,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     <p class="kicker kicker--light">The original</p>
     <h2>Made by the banana guy</h2>
     <p class="lead">This is the real 1999 Dancing Banana. <a href="/dancing-banana-gif-meme/">Read its story →</a> · <a href="/license-the-dancing-banana/">License it →</a></p>
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy 🍌</p>
+    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
   </footer>
 
   <script>

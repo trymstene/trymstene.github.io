@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
 import { getProducts, money, colorHex, firstSentence, sizeTableHtml, SITE } from '../../lib/shop.js';
 
 export async function getStaticPaths() {
@@ -131,7 +132,7 @@ const breadcrumbSchema = {
     <h2>More banana</h2>
     <p class="lead">
       <a href="/shop/">← All merch</a> ·
-      <a href="/make-a-banana/">🎨 Make your own banana</a> ·
+      <a href="/make-a-banana/"><PixelIcon name="brush" /> Make your own banana</a> ·
       <a href="/dancing-banana-gif-meme/">The story &amp; free GIF</a>
     </p>
   </section>
