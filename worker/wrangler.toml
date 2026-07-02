@@ -10,9 +10,8 @@ bucket_name = "banana-designs"
 [vars]
 # Origin allowed to upload designs (the site itself)
 ALLOWED_ORIGIN = "https://trymstene.com"
-# Printful catalog variant for the sticker (set after catalog lookup with the
-# real token — e.g. the Kiss-Cut Sticker 3"x3" variant id)
-PRINTFUL_VARIANT_ID = "0"
+# Printful catalog variant: Kiss-Cut Stickers (product 358), 3"x3", cost $2.25
+PRINTFUL_VARIANT_ID = "10163"
 
 # Secrets — set with `npx wrangler secret put <NAME>` (NEVER commit values):
 #   PRINTFUL_TOKEN          Printful API token (Printful -> Settings -> API)
