@@ -48,3 +48,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # Pages processing can be slow on GitHub's side; the 10-min default
+          # timeout caused spurious failures (2 Jul 2026) — give it 20.
+          timeout: 1200000
