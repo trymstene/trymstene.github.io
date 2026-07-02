@@ -22,27 +22,31 @@ const FRAMES = [
   { eyeCx: 237, eyeCy: 156, headCx: 256, tipY: 28, face: 'front' },
 ];
 
-// ---- accessory art ----
+// ---- accessory art: hand-authored PIXEL SVGs on the banana's own 13px grid ----
+// (generated from ASCII pixel maps + Pillow-verified against the real frames,
+// so they share the sprite's chunky-pixel look; crispEdges keeps them sharp)
 const SVG = {
-  classic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="120" height="44"><g fill="#111"><rect x="6" y="6" width="44" height="30" rx="9"/><rect x="70" y="6" width="44" height="30" rx="9"/><rect x="50" y="15" width="20" height="7"/></g></svg>',
-  // side visor for the lean frames (face at an angle = one wide eye-block): two
-  // foreshortened lenses + shine streak so it reads as glasses, not a blob.
-  classicSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60"><g fill="#111"><rect x="60" y="6" width="36" height="26" rx="10"/><rect x="8" y="16" width="62" height="38" rx="14"/><rect x="58" y="30" width="14" height="8" rx="3"/><rect x="92" y="14" width="20" height="9" rx="4"/></g><rect x="20" y="24" width="9" height="20" rx="3" fill="#fff" opacity="0.55" transform="rotate(18 24 34)"/></svg>',
-  party:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92" width="80" height="92"><polygon points="40,4 72,82 8,82" fill="#ff4d6d" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="6" r="7" fill="#ffe135" stroke="#111" stroke-width="3"/><circle cx="28" cy="40" r="4" fill="#fff"/><circle cx="50" cy="58" r="4" fill="#fff"/><circle cx="36" cy="66" r="4" fill="#fff"/></svg>',
-  crown:   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70" width="100" height="70"><path d="M10 62 L10 24 L30 40 L50 14 L70 40 L90 24 L90 62 Z" fill="#ffd400" stroke="#111" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="12" r="5" fill="#ff4d6d" stroke="#111" stroke-width="3"/></svg>',
-  tophat:  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86" width="100" height="86"><rect x="28" y="4" width="44" height="56" fill="#111"/><rect x="8" y="58" width="84" height="13" rx="5" fill="#111"/><rect x="28" y="42" width="44" height="10" fill="#ff4d6d"/></svg>'
+  shadesFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 40" width="150" height="40" shape-rendering="crispEdges"><rect x="0" y="0" width="150" height="10" fill="#111111"/><rect x="10" y="10" width="10" height="10" fill="#111111"/><rect x="20" y="10" width="20" height="10" fill="#ffffff"/><rect x="40" y="10" width="30" height="10" fill="#111111"/><rect x="80" y="10" width="10" height="10" fill="#111111"/><rect x="90" y="10" width="20" height="10" fill="#ffffff"/><rect x="110" y="10" width="30" height="10" fill="#111111"/><rect x="10" y="20" width="60" height="10" fill="#111111"/><rect x="80" y="20" width="60" height="10" fill="#111111"/><rect x="20" y="30" width="40" height="10" fill="#111111"/><rect x="90" y="30" width="40" height="10" fill="#111111"/></svg>',
+  shadesSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 40" width="130" height="40" shape-rendering="crispEdges"><rect x="0" y="0" width="130" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="20" height="10" fill="#ffffff"/><rect x="30" y="10" width="50" height="10" fill="#111111"/><rect x="0" y="20" width="80" height="10" fill="#111111"/><rect x="10" y="30" width="60" height="10" fill="#111111"/></svg>',
+  tophat: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" width="100" height="60" shape-rendering="crispEdges"><rect x="20" y="0" width="60" height="10" fill="#111111"/><rect x="20" y="10" width="10" height="10" fill="#111111"/><rect x="30" y="10" width="10" height="10" fill="#484848"/><rect x="40" y="10" width="40" height="10" fill="#111111"/><rect x="20" y="20" width="10" height="10" fill="#111111"/><rect x="30" y="20" width="10" height="10" fill="#484848"/><rect x="40" y="20" width="40" height="10" fill="#111111"/><rect x="20" y="30" width="10" height="10" fill="#111111"/><rect x="30" y="30" width="40" height="10" fill="#e22020"/><rect x="70" y="30" width="10" height="10" fill="#111111"/><rect x="20" y="40" width="60" height="10" fill="#111111"/><rect x="0" y="50" width="100" height="10" fill="#111111"/></svg>',
+  crown: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 70" width="110" height="70" shape-rendering="crispEdges"><rect x="0" y="0" width="10" height="10" fill="#f2c200"/><rect x="50" y="0" width="10" height="10" fill="#f2c200"/><rect x="100" y="0" width="10" height="10" fill="#f2c200"/><rect x="0" y="10" width="20" height="10" fill="#f2c200"/><rect x="50" y="10" width="20" height="10" fill="#f2c200"/><rect x="100" y="10" width="10" height="10" fill="#f2c200"/><rect x="0" y="20" width="20" height="10" fill="#f2c200"/><rect x="40" y="20" width="30" height="10" fill="#f2c200"/><rect x="90" y="20" width="20" height="10" fill="#f2c200"/><rect x="0" y="30" width="110" height="10" fill="#f2c200"/><rect x="0" y="40" width="50" height="10" fill="#f2c200"/><rect x="50" y="40" width="10" height="10" fill="#e22020"/><rect x="60" y="40" width="50" height="10" fill="#f2c200"/><rect x="0" y="50" width="110" height="10" fill="#f2c200"/><rect x="0" y="60" width="110" height="10" fill="#c49a00"/></svg>',
+  party: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" width="100" height="110" shape-rendering="crispEdges"><rect x="40" y="0" width="20" height="10" fill="#ffffff"/><rect x="30" y="10" width="40" height="10" fill="#ffffff"/><rect x="30" y="20" width="40" height="10" fill="#ffffff"/><rect x="40" y="30" width="20" height="10" fill="#ff4d6d"/><rect x="30" y="40" width="40" height="10" fill="#ff4d6d"/><rect x="30" y="50" width="10" height="10" fill="#ff4d6d"/><rect x="40" y="50" width="10" height="10" fill="#ffffff"/><rect x="50" y="50" width="20" height="10" fill="#ff4d6d"/><rect x="20" y="60" width="60" height="10" fill="#ff4d6d"/><rect x="20" y="70" width="30" height="10" fill="#ff4d6d"/><rect x="50" y="70" width="10" height="10" fill="#ffffff"/><rect x="60" y="70" width="20" height="10" fill="#ff4d6d"/><rect x="10" y="80" width="80" height="10" fill="#ff4d6d"/><rect x="10" y="90" width="60" height="10" fill="#ff4d6d"/><rect x="70" y="90" width="10" height="10" fill="#ffffff"/><rect x="80" y="90" width="10" height="10" fill="#ff4d6d"/><rect x="0" y="100" width="100" height="10" fill="#ff4d6d"/></svg>',
 };
-// Trym's real pixel-art "deal with it" shades — frontal frames only (the side
-// crop never sat right on the angled head; side frames fall back to the visor).
-const COOL_FRONT = { src: '/assets/cool-shades-trim.png?v=1', w: 844, h: 172 };
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
-const GLASSES = [['none','None'],['classic','Classic'],['cool','Cool']];
+const GLASSES = [['none','None'],['shades','Deal with it']];
 const HATS = [['none','None'],['party','Party'],['crown','Crown'],['tophat','Top hat']];
 const MOVES = [['dance','Dance'],['spin','Spin'],['disco','Disco'],['still','Still']];
 
-// accessory sizing as fractions of the drawn frame width
-const HAT_W = 0.34, GLASS_FRONT_W = 0.45, GLASS_SIDE_W = 0.37;
+// The banana sprite's pixel unit is 13 source px; the pixel SVGs use 10 svg-px
+// per unit. Sizing accessories in banana-pixels guarantees they match the
+// sprite's resolution exactly (no mixed pixel densities).
+const PX = 13;
+const gridW = (key) => parseInt(key.match(/viewBox="0 0 (\d+)/)[1], 10) / 10;
+const gridH = (key) => parseInt(key.match(/viewBox="0 0 \d+ (\d+)/)[1], 10) / 10;
+// hat seating: on lean frames, shift toward the face + bite deeper so the hat
+// sits ON the head mass instead of balancing on the very peak of the tip
+const HAT_OVERLAP_FRONT = 1.6, HAT_OVERLAP_SIDE = 2.4, HAT_SHIFT_SIDE = 1.5; // in banana px
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
 
@@ -69,7 +73,7 @@ function init() {
     img.src = key.charAt(0) === '<' ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(key) : key;
     imgCache[key] = img; return img;
   }
-  Object.values(SVG).forEach(imgFor); imgFor(COOL_FRONT.src); // prewarm
+  Object.values(SVG).forEach(imgFor); // prewarm
   async function assetsReady() {
     const imgs = [sheet, ...Object.values(imgCache)];
     await Promise.all(imgs.map((i) => (i.complete && i.naturalWidth) ? Promise.resolve() : i.decode().catch(() => {})));
@@ -134,7 +138,8 @@ function init() {
     const p = new URLSearchParams(location.search);
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
-    state.glasses = p.get('g') || 'none'; state.hat = p.get('h') || 'none';
+    const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
+    const h = p.get('h'); state.hat = HATS.some(([v]) => v === h) ? h : 'none';
     const m = p.get('m'); if (m && MOVES.some(([v]) => v === m)) state.move = m;
     state.spd = p.get('s') ? parseFloat(p.get('s')) : BASE_CYCLE_S;
     const f = parseInt(p.get('f'), 10); if (f >= 0 && f < NFRAMES) state.frame = f;
@@ -158,41 +163,36 @@ function init() {
     try { ctx.drawImage(sheet, idx * FW, 0, FW, FH, fx, fy, fw, fh); } catch (e) {}
     ctx.imageSmoothingEnabled = true;
 
-    // accessories ride the head/eyes, style follows the face direction
+    // accessories ride the head/eyes, style follows the face direction.
+    // Sizes are in banana-pixels (grid units × PX × scale) so the pixel art
+    // matches the sprite's resolution exactly; no rotation — axis-aligned
+    // pixels are the authentic look (rotating pixel art blurs it).
+    const unit = PX * scale;
     if (state.hat !== 'none') {
-      const hw = HAT_W * fw, hh = hw * heightRatio(SVG[state.hat]);
-      const hx = fx + F.headCx * scale - hw / 2;
-      const hBottom = fy + (F.tipY + 18) * scale;
-      drawAcc(ctx, SVG[state.hat], hx, hBottom - hh, hw, hh, false, 0);
+      const key = SVG[state.hat];
+      const hw = gridW(key) * unit, hh = gridH(key) * unit;
+      const side = F.face !== 'front';
+      const shift = side ? (F.face === 'right' ? -HAT_SHIFT_SIDE : HAT_SHIFT_SIDE) * unit : 0;
+      const hBottom = fy + F.tipY * scale + (side ? HAT_OVERLAP_SIDE : HAT_OVERLAP_FRONT) * unit;
+      drawAcc(ctx, key, fx + F.headCx * scale + shift - hw / 2, hBottom - hh, hw, hh, false);
     }
     if (state.glasses !== 'none') {
-      const side = F.face !== 'front';
-      let key, gw;
-      if (side) { key = SVG.classicSide; gw = GLASS_SIDE_W * fw; }
-      else if (state.glasses === 'cool') { key = COOL_FRONT.src; gw = GLASS_FRONT_W * fw; }
-      else { key = SVG.classic; gw = GLASS_FRONT_W * fw; }
-      const gh = gw * heightRatio(key);
+      const key = F.face === 'front' ? SVG.shadesFront : SVG.shadesSide;
+      const gw = gridW(key) * unit, gh = gridH(key) * unit;
       const gx = fx + F.eyeCx * scale, gy = fy + F.eyeCy * scale;
-      drawAcc(ctx, key, gx - gw / 2, gy - gh / 2, gw, gh, F.face === 'left', side ? (F.face === 'left' ? -8 : 8) : 0);
+      drawAcc(ctx, key, gx - gw / 2, gy - gh / 2, gw, gh, F.face === 'left');
     }
     ctx.filter = 'none';
     ctx.restore();
 
     if (o.captions) { caption(ctx, W, state.top, true); caption(ctx, W, state.bottom, false); }
   }
-  function heightRatio(key) {
-    if (key === COOL_FRONT.src) return COOL_FRONT.h / COOL_FRONT.w;
-    const m = key.match(/viewBox="0 0 (\d+) (\d+)"/);
-    return m ? m[2] / m[1] : 0.4;
-  }
-  function drawAcc(ctx, key, dx, dy, dw, dh, flip, rotDeg) {
+  function drawAcc(ctx, key, dx, dy, dw, dh, flip) {
     const img = imgFor(key); if (!(img.complete && img.naturalWidth)) return;
-    if (!flip && !rotDeg) { ctx.drawImage(img, dx, dy, dw, dh); return; }
+    if (!flip) { ctx.drawImage(img, dx, dy, dw, dh); return; }
     ctx.save();
-    const cx = dx + dw / 2, cy = dy + dh / 2;
-    ctx.translate(cx, cy);
-    if (flip) ctx.scale(-1, 1);
-    if (rotDeg) ctx.rotate(rotDeg * Math.PI / 180);
+    ctx.translate(dx + dw / 2, dy + dh / 2);
+    ctx.scale(-1, 1);
     ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
     ctx.restore();
   }
