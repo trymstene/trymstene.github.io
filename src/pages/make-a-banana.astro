@@ -26,75 +26,18 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
     @media (min-width: 820px) { .bb-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
 
-    /* stage */
+    /* stage — sticky so you never tweak blind */
+    .bb-stagewrap { position: sticky; top: 72px; z-index: 40; background: var(--paper); padding-bottom: 0.6rem; }
     .bb-stage {
       position: relative;
       aspect-ratio: 1 / 1;
       border: var(--line);
       box-shadow: var(--shadow);
       overflow: hidden;
-      display: grid;
-      place-items: center;
       background: var(--banana);
     }
-    .bb-char { position: relative; width: 52%; }
-    .bb-banana { width: 100%; height: auto; display: block; image-rendering: auto; }
-    .bb-acc { position: absolute; left: 56%; transform: translateX(-50%); pointer-events: none; }
-    .bb-acc svg { display: block; width: 100%; height: auto; }
-    .bb-glasses { top: 31%; width: 38%; }
-    .bb-hat { bottom: 80%; width: 34%; }
-    .bb-acc[hidden] { display: none; }
-
-    .bb-caption {
-      position: absolute; left: 0; right: 0; text-align: center;
-      font-family: Impact, "Arial Black", "Franklin Gothic Bold", sans-serif;
-      text-transform: uppercase; color: #fff;
-      -webkit-text-stroke: 0.29em #111;
-      text-stroke: 0.29em #111;
-      paint-order: stroke fill;
-      line-height: 1; padding: 0 0.5rem;
-      font-size: clamp(1.1rem, 5vw, 2rem);
-      word-break: break-word;
-      letter-spacing: 0.01em;
-    }
-    .bb-top { top: 4%; }
-    .bb-bottom { bottom: 4%; }
-
-    /* dance moves applied to .bb-char */
-    .move-bounce { animation: bb-bounce var(--spd, 0.7s) ease-in-out infinite; }
-    .move-spin   { animation: bb-spin var(--spd, 0.7s) linear infinite; }
-    .move-shake  { animation: bb-shake var(--spd, 0.7s) ease-in-out infinite; }
-    .move-disco  { animation: bb-bounce var(--spd, 0.7s) ease-in-out infinite; }
-    .move-disco .bb-banana { animation: bb-hue var(--spd, 0.7s) linear infinite; }
-    @keyframes bb-bounce { 0%,100%{transform:translateY(6%)} 50%{transform:translateY(-8%)} }
-    @keyframes bb-spin   { to { transform: rotate(360deg); } }
-    @keyframes bb-shake  { 0%,100%{transform:translateX(-4%) rotate(-5deg)} 50%{transform:translateX(4%) rotate(5deg)} }
-    @keyframes bb-hue    { to { filter: hue-rotate(360deg); } }
-
-    /* controls */
-    .bb-controls { display: flex; flex-direction: column; gap: 1.2rem; }
-    .bb-row label { display:block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.95rem; }
-    .bb-input, .bb-select {
-      width: 100%; padding: 0.6rem 0.7rem; border: 3px solid var(--ink);
-      font-family: inherit; font-size: 1rem; background: var(--paper); border-radius: 2px;
-    }
-    .bb-swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .bb-swatch { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
-    .bb-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--hot); }
-    .bb-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .bb-chip {
-      border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
-      font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
-    }
-    .bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
-    .bb-actions { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.5rem; }
-    .bb-note { font-size: 0.82rem; opacity: 0.7; }
-    .bb-toast {
-      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
-      background: var(--ink); color: var(--banana); font-weight: 700; padding: 0.7rem 1.2rem;
-      border-radius: 4px; opacity: 0; transition: all 0.25s ease; pointer-events: none; z-index: 80;
-    }
-    .bb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .bb-stage canvas { display: block; width: 100%; height: 100%; }
+    @media (max-width: 819px) { .bb-stage { width: min(100%, 44vh); margin-inline: auto; } }
 
     /* transparent background = checkerboard so it's obvious there's no bg */
     .bb-stage--transparent {
@@ -117,6 +60,59 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
       background-size: 12px 12px;
       background-position: 0 0, 0 6px, 6px -6px, -6px 0;
     }
+
+    /* controls */
+    .bb-controls { display: flex; flex-direction: column; gap: 1.2rem; }
+    .bb-random { width: 100%; font-size: 1.05rem; }
+    .bb-row label { display:block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .bb-input, .bb-select {
+      width: 100%; padding: 0.6rem 0.7rem; border: 3px solid var(--ink);
+      font-family: inherit; font-size: 1rem; background: var(--paper); border-radius: 2px;
+    }
+    .bb-swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .bb-swatch { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
+    .bb-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--hot); }
+    .bb-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .bb-chip {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
+      font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
+    }
+    .bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .bb-actions { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+    .bb-note { font-size: 0.82rem; opacity: 0.7; margin: 0.6rem 0 0; }
+    .bb-toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+      background: var(--ink); color: var(--banana); font-weight: 700; padding: 0.7rem 1.2rem;
+      border-radius: 4px; opacity: 0; transition: all 0.25s ease; pointer-events: none; z-index: 80;
+    }
+    .bb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ---- "Take it with you" output cards ---- */
+    .bb-outputs { margin-top: 3rem; text-align: center; }
+    .bb-outputs h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin: 0.2rem 0 1.2rem; }
+    .bb-cards { display: grid; grid-template-columns: 1fr; gap: 1.2rem; text-align: left; }
+    @media (min-width: 820px) { .bb-cards { grid-template-columns: 1fr 1fr; align-items: start; } }
+    .bb-card { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 1.3rem; }
+    .bb-card h3 { margin: 0 0 0.4rem; font-size: 1.2rem; }
+    .bb-card > p { margin: 0 0 1rem; font-size: 0.95rem; }
+    .bb-card .btn { width: 100%; text-align: center; }
+
+    /* fake chat row — your emoji at actual chat size */
+    .bb-chat { background: #313338; border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
+    .bb-chat__msg { display: flex; gap: 0.7rem; align-items: flex-start; }
+    .bb-chat__avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--banana); display: grid; place-items: center; font-size: 1.2rem; }
+    .bb-chat__meta { color: #f2c94c; font-weight: 700; font-size: 0.85rem; }
+    .bb-chat__meta span { color: #949ba4; font-weight: 500; font-size: 0.72rem; margin-left: 0.4rem; }
+    .bb-chat__text { color: #dbdee1; font-size: 0.9rem; margin: 0.15rem 0 0; }
+    .bb-chat__text canvas { vertical-align: middle; margin-left: 0.2rem; }
+    .bb-chat__big { margin-top: 0.35rem; }
+
+    /* frame picker — freeze a moment of the dance */
+    .bb-frames { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; }
+    .bb-frame { width: 56px; height: 56px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
+    .bb-frame canvas { width: 100%; height: 100%; }
+    .bb-frame:hover { transform: translateY(-2px); }
+    .bb-frame[aria-pressed="true"] { outline: 3px solid var(--hot); outline-offset: 1px; }
   </style>
 
   <section class="hero" style="padding-bottom:1.5rem;">
@@ -128,25 +124,16 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
 
   <div class="bb-wrap">
     <div class="bb-grid">
-      <!-- PREVIEW -->
-      <div>
-        <div class="bb-stage" id="bbStage">
-          <div class="bb-caption bb-top" id="bbTop"></div>
-          <div class="bb-char" id="bbChar">
-            <div class="bb-acc bb-hat" id="bbHat" hidden></div>
-            <img class="bb-banana" id="bbBanana" src="/assets/banana-classic.png?v=3" alt="Your dancing banana" crossorigin="anonymous">
-            <div class="bb-acc bb-glasses" id="bbGlasses" hidden></div>
-          </div>
-          <div class="bb-caption bb-bottom" id="bbBottom"></div>
+      <!-- PREVIEW: the banana always dances -->
+      <div class="bb-stagewrap">
+        <div class="bb-stage bb-stage--transparent" id="bbStage">
+          <canvas id="bbCanvas" width="720" height="720" aria-label="Your dancing banana"></canvas>
         </div>
       </div>
 
       <!-- CONTROLS -->
       <div class="bb-controls">
-        <div class="bb-row">
-          <label>Pose</label>
-          <div class="bb-chips" id="bbPoseChips"></div>
-        </div>
+        <button class="btn btn--dark bb-random" id="bbRandom">🎲 Surprise me</button>
         <div class="bb-row">
           <label>Background</label>
           <div class="bb-swatches" id="bbSwatches"></div>
@@ -173,23 +160,44 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
         </div>
         <div class="bb-row">
           <label for="bbSpeed">Speed</label>
-          <input class="bb-input" type="range" id="bbSpeed" min="0.25" max="1.6" step="0.05" value="0.7">
+          <input class="bb-input" type="range" id="bbSpeed" min="0.35" max="1.6" step="0.05" value="0.8">
         </div>
-
         <div class="bb-actions">
-          <button class="btn btn--light" id="bbRandom">🎲 Randomize</button>
           <button class="btn btn--light" id="bbShare">🔗 Copy share link</button>
-        </div>
-        <div class="bb-actions">
-          <button class="btn btn--dark" id="bbDownloadGif">⬇ Download GIF</button>
-          <button class="btn btn--light" id="bbDownloadPng">⬇ Download PNG</button>
-        </div>
-        <p class="bb-note">The <strong>GIF</strong> is animated &amp; transparent — drop it into Discord/Slack as an emoji or reaction. The <strong>PNG</strong> is a still. (Captions read great on stickers &amp; posts, but are too tiny to read as a chat emoji.)</p>
-        <div class="bb-actions">
-          <a class="btn btn--dark" id="bbSticker" href="/shop/">🏷️ Order it as a sticker</a>
         </div>
       </div>
     </div>
+
+    <!-- TAKE IT WITH YOU -->
+    <section class="bb-outputs" aria-labelledby="bbTakeTitle">
+      <p class="kicker">Done building?</p>
+      <h2 id="bbTakeTitle">Take it with you</h2>
+      <div class="bb-cards">
+        <div class="bb-card">
+          <h3>💬 Chat emoji</h3>
+          <p>Animated, transparent and cropped tight — drops straight into Discord, Slack or Twitch. Here's yours at actual chat size:</p>
+          <div class="bb-chat" aria-hidden="true">
+            <div class="bb-chat__msg">
+              <span class="bb-chat__avatar">🍌</span>
+              <div>
+                <div class="bb-chat__meta">banana_guy <span>today at 19:99</span></div>
+                <p class="bb-chat__text">check out my new emoji <canvas id="bbEmoji32" width="32" height="32"></canvas></p>
+                <p class="bb-chat__text bb-chat__big"><canvas id="bbEmoji48" width="48" height="48"></canvas></p>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn--dark" id="bbDownloadGif">⬇ Download emoji GIF</button>
+          <p class="bb-note">Captions are left off the emoji — they're too tiny to read at chat size.</p>
+        </div>
+        <div class="bb-card">
+          <h3>🏷️ Sticker &amp; meme image</h3>
+          <p>Your captions, your background, full size. Freeze your favourite moment of the dance:</p>
+          <div class="bb-frames" id="bbFrames"></div>
+          <button class="btn btn--dark" id="bbDownloadPng">⬇ Download image (PNG)</button>
+          <p class="bb-note">🚧 Order your banana as a printed sticker — coming soon.</p>
+        </div>
+      </div>
+    </section>
   </div>
 
   <div class="bb-toast" id="bbToast">Copied!</div>
