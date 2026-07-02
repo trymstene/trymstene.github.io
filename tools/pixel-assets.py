@@ -185,15 +185,18 @@ if __name__ == '__main__':
     im = Image.open('C:/Web Development/trymstene.com/public/assets/dancing-banana-transparent.gif')
     frames = [f.convert('RGBA') for f in ImageSequence.Iterator(im)]
     FR = {0: (232,222,256,85,'right'), 1: (232,192,256,57,'right'), 2: (234,135,242,0,'front'),
-          3: (232,156,212,28,'front'), 4: (236,222,212,85,'left'), 5: (236,192,212,57,'left')}
+          3: (232,156,212,28,'front'), 4: (236,222,212,85,'left'), 5: (236,192,212,57,'left'),
+          6: (234,135,226,0,'front'), 7: (237,156,256,28,'front')}
     # placement (kept in sync with banana-builder.js):
-    HAT_OVERLAP_FRONT, HAT_OVERLAP_SIDE, HAT_SHIFT_SIDE = 5.8, 5.8, 2.0
+    HAT_OVERLAP = 7.3     # hat x-anchor = per-frame head centre measured AT this depth
+    HATCX = {0: 272, 1: 272, 2: 248, 3: 206, 4: 196, 5: 196, 6: 220, 7: 262}
     OUTLINE_SEAT = -1.0   # outlined hats: their bottom row is outline, not body
     SH_DY = -0.5          # shades ride slightly high to fully cover the eye whites
     MU_DY, MU_SIDE_DX = 3.6, -1.2
     BT_DY, BT_SIDE_DX = 6.0, -1.0
-    combos = [(0,'tophat','shades'),(3,'tophat','hearts'),(4,'cowboy','visor'),(0,'crown','hearts'),
-              (3,'crown','visor'),(4,'party','shades'),(1,'cowboy','hearts'),(3,'party','shades')]
+    # all 8 dance frames with the same hat: the animation-coherence check
+    combos = [(0,'party','shades'),(1,'party','shades'),(2,'party','shades'),(3,'party','shades'),
+              (4,'party','shades'),(5,'party','shades'),(6,'party','shades'),(7,'party','shades')]
     W,H = im.size
     SHADE_ART = {'shades': ('shadesFront','shadesSide'), 'hearts': ('heartsFront','heartsSide'), 'visor': ('visorFront','visorSide')}
     cells = []
@@ -216,9 +219,8 @@ if __name__ == '__main__':
         bg.alpha_composite(bt, (ecx + bdx - bt.width//2, int(ecy + BT_DY*UNIT) - bt.height//2))
         # hat
         ht = render(hat)
-        shift = 0 if not side else (-int(HAT_SHIFT_SIDE*UNIT) if face=='right' else int(HAT_SHIFT_SIDE*UNIT))
-        seat = (HAT_OVERLAP_FRONT if not side else HAT_OVERLAP_SIDE) + (OUTLINE_SEAT if hat in OUTLINED else 0)
-        bg.alpha_composite(ht, (hcx + shift - ht.width//2, tipy + int(seat*UNIT) - ht.height))
+        seat = HAT_OVERLAP + (OUTLINE_SEAT if hat in OUTLINED else 0)
+        bg.alpha_composite(ht, (HATCX[fi] - ht.width//2, tipy + int(seat*UNIT) - ht.height))
         cells.append(bg.convert('RGB'))
 
     if '--zoom' in sys.argv:

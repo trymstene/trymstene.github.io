@@ -11,16 +11,19 @@ const FW = 469, FH = 498, NFRAMES = 8;
 const BASE_CYCLE_S = 0.8; // 8 frames x 100ms = the original GIF timing
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // Per-frame anchors measured from the sprite pixels (Pillow-verified):
-// eye centre (glasses), head-top centre + tip Y (hat), and which way the face points.
+// eye centre (glasses), tip Y + head centre AT BRIM DEPTH (hat — the stem curves
+// toward the body going down, so the hat anchor must be measured at the depth
+// where the hat actually sits, per frame; this keeps the hat riding the head
+// smoothly through the dance), and which way the face points.
 const FRAMES = [
-  { eyeCx: 232, eyeCy: 222, headCx: 256, tipY: 85, face: 'right' },
-  { eyeCx: 232, eyeCy: 192, headCx: 256, tipY: 57, face: 'right' },
-  { eyeCx: 234, eyeCy: 135, headCx: 242, tipY: 0,  face: 'front' },
-  { eyeCx: 232, eyeCy: 156, headCx: 212, tipY: 28, face: 'front' },
-  { eyeCx: 236, eyeCy: 222, headCx: 212, tipY: 85, face: 'left'  },
-  { eyeCx: 236, eyeCy: 192, headCx: 212, tipY: 57, face: 'left'  },
-  { eyeCx: 234, eyeCy: 135, headCx: 226, tipY: 0,  face: 'front' },
-  { eyeCx: 237, eyeCy: 156, headCx: 256, tipY: 28, face: 'front' },
+  { eyeCx: 232, eyeCy: 222, hatCx: 272, tipY: 85, face: 'right' },
+  { eyeCx: 232, eyeCy: 192, hatCx: 272, tipY: 57, face: 'right' },
+  { eyeCx: 234, eyeCy: 135, hatCx: 248, tipY: 0,  face: 'front' },
+  { eyeCx: 232, eyeCy: 156, hatCx: 206, tipY: 28, face: 'front' },
+  { eyeCx: 236, eyeCy: 222, hatCx: 196, tipY: 85, face: 'left'  },
+  { eyeCx: 236, eyeCy: 192, hatCx: 196, tipY: 57, face: 'left'  },
+  { eyeCx: 234, eyeCy: 135, hatCx: 220, tipY: 0,  face: 'front' },
+  { eyeCx: 237, eyeCy: 156, hatCx: 262, tipY: 28, face: 'front' },
 ];
 
 // ---- accessory art: hand-authored PIXEL SVGs on the banana's own 13px grid ----
@@ -61,10 +64,10 @@ const EXTRAS = [['mustache', ICON_MUSTACHE + ' Moustache'],['bowtie', ICON_BOWTI
 const PX = 13;
 const gridW = (key) => parseInt(key.match(/viewBox="0 0 (\d+)/)[1], 10) / 10;
 const gridH = (key) => parseInt(key.match(/viewBox="0 0 \d+ (\d+)/)[1], 10) / 10;
-// hat seating: on lean frames, shift toward the face + bite deeper so the hat
-// sits ON the head mass instead of balancing on the very peak of the tip.
+// hat seating: deep enough to sit ON the head mass (not the stem peak); the
+// x-anchor comes from the per-frame hatCx measured at this same depth.
 // Outlined hats seat 1 unit less deep (their bottom row is outline, not body).
-const HAT_OVERLAP_FRONT = 5.8, HAT_OVERLAP_SIDE = 5.8, HAT_SHIFT_SIDE = 2.0;
+const HAT_OVERLAP = 7.3;
 const HAT_SEAT = { tophat: 0, crown: -1, party: -1, cowboy: -1 };
 // shades ride slightly high to fully cover the eye whites; extras placement
 const SH_DY = -0.5, MU_DY = 3.6, MU_SIDE_DX = -1.2, BT_DY = 6.0, BT_SIDE_DX = -1.0;
@@ -256,10 +259,9 @@ function init() {
     if (state.hat !== 'none') {
       const key = SVG[state.hat];
       const hw = gridW(key) * unit, hh = gridH(key) * unit;
-      const shift = side ? -mirror * HAT_SHIFT_SIDE * unit : 0;
-      const seat = (side ? HAT_OVERLAP_SIDE : HAT_OVERLAP_FRONT) + (HAT_SEAT[state.hat] || 0);
+      const seat = HAT_OVERLAP + (HAT_SEAT[state.hat] || 0);
       const hBottom = fy + F.tipY * scale + seat * unit;
-      drawAcc(ctx, key, fx + F.headCx * scale + shift - hw / 2, hBottom - hh, hw, hh, false);
+      drawAcc(ctx, key, fx + F.hatCx * scale - hw / 2, hBottom - hh, hw, hh, false);
     }
     if (state.glasses !== 'none') {
       const art = SHADE_ART[state.glasses] || SHADE_ART.shades;
