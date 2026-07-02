@@ -1,6 +1,9 @@
 # Pixel-art accessory designer for the dancing banana.
 # Authors assets as ASCII maps on the banana's own 13px grid, composites them
 # onto real dance frames for visual verification, and emits SVG rect-grids.
+#
+#   python tools/pixel-assets.py out.png          -> verification contact sheet
+#   python tools/pixel-assets.py out.png --svg    -> also print SVG strings
 from PIL import Image, ImageSequence, ImageDraw
 
 UNIT = 13  # banana pixel size in source px
@@ -13,8 +16,15 @@ PALETTE = {
     'Y': (242, 194, 0, 255),     # gold
     'O': (196, 154, 0, 255),     # darker gold shade
     'P': (255, 77, 109, 255),    # hot pink
+    'C': (77, 184, 255, 255),    # cone blue
+    'B': (138, 90, 43, 255),     # cowboy brown
+    'D': (90, 54, 24, 255),      # dark brown / knot
     '.': None,
 }
+
+# assets in this set get an automatic 1-unit black outline (like the sprite
+# itself has) so they stay visible on ANY background colour
+OUTLINED = {'crown', 'party', 'cowboy', 'bowtie'}
 
 ASSETS = {
     # ---- shades: one style, two views (classic pixel "deal with it") ----
@@ -22,54 +32,102 @@ ASSETS = {
 KKKKKKKKKKKKKKK
 .KWWKKK.KWWKKK.
 .KKKKKK.KKKKKK.
+.KKKKKK.KKKKKK.
 ..KKKK...KKKK..
 ''',
     'shadesSide': '''
 KKKKKKKKKKKKK
 KWWKKKKK.....
 KKKKKKKK.....
+KKKKKKKK.....
 .KKKKKK......
 ''',
     # ---- hats ----
     'tophat': '''
-..KKKKKK..
-..KGKKKK..
-..KGKKKK..
-..KRRRRK..
-..KKKKKK..
-KKKKKKKKKK
+..KKKKKKKK..
+..KGKKKKKK..
+..KGKKKKKK..
+..KGKKKKKK..
+..KRRRRRRK..
+..KKKKKKKK..
+KKKKKKKKKKKK
+KKKKKKKKKKKK
 ''',
     'crown': '''
 Y....Y....Y
-YY...YY...Y
 YY..YYY..YY
-YYYYYYYYYYY
+YYY.YYY.YYY
 YYYYYRYYYYY
 YYYYYYYYYYY
 OOOOOOOOOOO
 ''',
     'party': '''
-....WW....
-...WWWW...
-...WWWW...
-....PP....
-...PPPP...
-...PWPP...
-..PPPPPP..
-..PPPWPP..
-.PPPPPPPP.
-.PPPPPPWP.
-PPPPPPPPPP
+....YY....
+...YYYY...
+....CC....
+...CCCC...
+...CWCC...
+..CCCCCC..
+..CCWCCC..
+.CCCCCCWC.
+.CCCCCCCC.
+CCCCCCCCCC
+''',
+    'cowboy': '''
+....BBBB....
+...BBBBBB...
+...BBBBBB...
+B..DDDDDD..B
+BB.BBBBBB.BB
+.BBBBBBBBBB.
+''',
+    # ---- extras ----
+    'mustacheFront': '''
+DDDD.DDDD
+DDDDDDDDD
+.DD...DD.
+''',
+    'mustacheSide': '''
+DDDDD.
+DDDDDD
+.DD...
+''',
+    'bowtie': '''
+RR...RR
+RRRDRRR
+RR...RR
 ''',
 }
 
 def parse(m):
     rows = [r for r in m.strip('\n').split('\n')]
     w = max(len(r) for r in rows)
-    return [r.ljust(w, '.') for r in rows], w, len(rows)
+    return [r.ljust(w, '.') for r in rows]
+
+def add_outline(rows):
+    w, h = len(rows[0]), len(rows)
+    grid = [['.'] * (w + 2) for _ in range(h + 2)]
+    for y in range(h):
+        for x in range(w):
+            if rows[y][x] != '.': grid[y + 1][x + 1] = rows[y][x]
+    out = [row[:] for row in grid]
+    for y in range(h + 2):
+        for x in range(w + 2):
+            if grid[y][x] == '.':
+                for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):
+                    ny, nx = y + dy, x + dx
+                    if 0 <= ny < h + 2 and 0 <= nx < w + 2 and grid[ny][nx] not in ('.', 'K'):
+                        out[y][x] = 'K'; break
+    return [''.join(r) for r in out]
+
+def grid_of(name):
+    rows = parse(ASSETS[name])
+    if name in OUTLINED: rows = add_outline(rows)
+    return rows
 
 def render(name, unit=UNIT):
-    rows, w, h = parse(ASSETS[name])
+    rows = grid_of(name)
+    w, h = len(rows[0]), len(rows)
     img = Image.new('RGBA', (w*unit, h*unit), (0,0,0,0))
     d = ImageDraw.Draw(img)
     for y, row in enumerate(rows):
@@ -79,7 +137,8 @@ def render(name, unit=UNIT):
     return img
 
 def svg(name):
-    rows, w, h = parse(ASSETS[name])
+    rows = grid_of(name)
+    w, h = len(rows[0]), len(rows)
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w*10} {h*10}" width="{w*10}" height="{h*10}" shape-rendering="crispEdges">']
     for y, row in enumerate(rows):
         x = 0
@@ -94,30 +153,60 @@ def svg(name):
     parts.append('</svg>')
     return ''.join(parts)
 
-# ---- verification: composite onto frames 0 (side-right), 2 (front), 4 (side-left) ----
+# ---- verification: composite onto real frames ----
 if __name__ == '__main__':
     import sys
     im = Image.open('C:/Web Development/trymstene.com/public/assets/dancing-banana-transparent.gif')
     frames = [f.convert('RGBA') for f in ImageSequence.Iterator(im)]
-    FR = {0: (232,222,256,85,'right'), 1: (232,192,256,57,'right'), 2: (234,135,242,0,'front'), 3: (232,156,212,28,'front'), 4: (236,222,212,85,'left'), 5: (236,192,212,57,'left')}
-    combos = [(0,'tophat'),(3,'tophat'),(4,'tophat'),(0,'crown'),(3,'crown'),(4,'party'),(1,'party'),(5,'crown')]
+    FR = {0: (232,222,256,85,'right'), 1: (232,192,256,57,'right'), 2: (234,135,242,0,'front'),
+          3: (232,156,212,28,'front'), 4: (236,222,212,85,'left'), 5: (236,192,212,57,'left')}
+    # placement (kept in sync with banana-builder.js):
+    HAT_OVERLAP_FRONT, HAT_OVERLAP_SIDE, HAT_SHIFT_SIDE = 2.8, 3.6, 1.5
+    OUTLINE_SEAT = -1.0   # outlined hats: their bottom row is outline, not body
+    SH_DY = -0.5          # shades ride slightly high to fully cover the eye whites
+    MU_DY, MU_SIDE_DX = 3.6, -1.2
+    BT_DY, BT_SIDE_DX = 6.0, -1.0
+    combos = [(0,'tophat'),(3,'tophat'),(4,'cowboy'),(0,'crown'),
+              (3,'crown'),(4,'party'),(1,'cowboy'),(3,'party')]
     W,H = im.size
-    sheet = Image.new('RGB',(W*4,H*2),(255,0,255))
-    for j,(fi, hat) in enumerate(combos):
+    cells = []
+    for fi, hat in combos:
         bg = Image.new('RGBA',(W,H),(255,0,255,255)); bg.alpha_composite(frames[fi])
         ecx,ecy,hcx,tipy,face = FR[fi]
+        side = face != 'front'
         # shades
-        sh = render('shadesFront' if face=='front' else 'shadesSide')
+        sh = render('shadesFront' if not side else 'shadesSide')
         if face=='left': sh = sh.transpose(Image.FLIP_LEFT_RIGHT)
-        bg.alpha_composite(sh, (ecx - sh.width//2, ecy - sh.height//2))
-        # hat: on lean frames, shift toward the face + bite deeper so it sits ON
-        # the head mass, not balanced on the very peak of the tip
+        bg.alpha_composite(sh, (ecx - sh.width//2, int(ecy + SH_DY*UNIT) - sh.height//2))
+        # moustache
+        mu = render('mustacheFront' if not side else 'mustacheSide')
+        mdx = 0 if not side else int(MU_SIDE_DX*UNIT) * (1 if face!='left' else -1)
+        if face=='left': mu = mu.transpose(Image.FLIP_LEFT_RIGHT)
+        bg.alpha_composite(mu, (ecx + mdx - mu.width//2, int(ecy + MU_DY*UNIT) - mu.height//2))
+        # bow tie
+        bt = render('bowtie')
+        bdx = 0 if not side else int(BT_SIDE_DX*UNIT) * (1 if face!='left' else -1)
+        bg.alpha_composite(bt, (ecx + bdx - bt.width//2, int(ecy + BT_DY*UNIT) - bt.height//2))
+        # hat
         ht = render(hat)
-        shift = 0 if face=='front' else (-int(1.5*UNIT) if face=='right' else int(1.5*UNIT))
-        overlap = int(1.6*UNIT) if face=='front' else int(2.4*UNIT)
-        bg.alpha_composite(ht, (hcx + shift - ht.width//2, tipy + overlap - ht.height))
-        sheet.paste(bg.convert('RGB'), ((j%4)*W, (j//4)*H))
-    sheet.thumbnail((1600,900))
+        shift = 0 if not side else (-int(HAT_SHIFT_SIDE*UNIT) if face=='right' else int(HAT_SHIFT_SIDE*UNIT))
+        seat = (HAT_OVERLAP_FRONT if not side else HAT_OVERLAP_SIDE) + (OUTLINE_SEAT if hat in OUTLINED else 0)
+        bg.alpha_composite(ht, (hcx + shift - ht.width//2, tipy + int(seat*UNIT) - ht.height))
+        cells.append(bg.convert('RGB'))
+
+    if '--zoom' in sys.argv:
+        # close-up crops of the head/face region for pixel-level seating checks
+        CW, CH = 320, 400
+        sheet = Image.new('RGB',(CW*4, CH*2),(255,0,255))
+        for j,((fi, hat), cell) in enumerate(zip(combos, cells)):
+            hcx, tipy = FR[fi][2], FR[fi][3]
+            box = (hcx-CW//2, max(0,tipy-150), hcx+CW//2, max(0,tipy-150)+CH)
+            sheet.paste(cell.crop(box), ((j%4)*CW, (j//4)*CH))
+    else:
+        sheet = Image.new('RGB',(W*4,H*2),(255,0,255))
+        for j, cell in enumerate(cells):
+            sheet.paste(cell, ((j%4)*W, (j//4)*H))
+        sheet.thumbnail((1600,900))
     out = sys.argv[1] if len(sys.argv)>1 else 'pixel_assets_check.png'
     sheet.save(out)
     print('saved', out)
