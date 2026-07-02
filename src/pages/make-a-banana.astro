@@ -132,6 +132,21 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     /* the paid CTA gets its own zone under a dashed divider */
     .bb-order { margin-top: 1rem; padding-top: 1rem; border-top: 3px dashed rgba(17,17,17,0.18); }
 
+    /* sticker preview modal */
+    .bb-modal {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(17,17,17,0.55);
+      display: grid; place-items: center; padding: 1rem;
+    }
+    .bb-modal[hidden] { display: none; }
+    .bb-modal__box {
+      background: var(--paper); border: var(--line); box-shadow: var(--shadow);
+      padding: 1.3rem; max-width: 460px; width: 100%; max-height: 92vh; overflow: auto;
+    }
+    .bb-modal__box h3 { margin: 0 0 0.8rem; font-size: 1.3rem; }
+    .bb-modal__box canvas { display: block; width: 100%; height: auto; border: var(--line); }
+    .bb-modal .bb-actions .btn { flex: 1; text-align: center; }
+
     /* frame picker — freeze a moment of the dance */
     .bb-frames { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; }
     .bb-frame { width: 56px; height: 56px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
@@ -232,6 +247,19 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- sticker order preview: see YOUR sticker before paying -->
+  <div class="bb-modal" id="bbOrderModal" hidden>
+    <div class="bb-modal__box" role="dialog" aria-modal="true" aria-labelledby="bbModalTitle">
+      <h3 id="bbModalTitle">Your sticker</h3>
+      <canvas id="bbMockup" aria-label="Preview of your printed sticker"></canvas>
+      <p class="bb-note" style="margin-top:0.8rem;">3″×3″ (7.5 cm) kiss-cut vinyl, cut along your banana's outline — <strong>69 kr</strong> + shipping. Checked by the banana guy himself before it's printed.</p>
+      <div class="bb-actions" style="margin-top:1rem;">
+        <button class="btn btn--dark" id="bbOrderConfirm">Looks good — to checkout</button>
+        <button class="btn btn--light" id="bbOrderCancel">Back to editing</button>
+      </div>
+    </div>
   </div>
 
   <div class="bb-toast" id="bbToast">Copied!</div>

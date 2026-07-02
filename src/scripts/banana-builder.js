@@ -582,25 +582,96 @@ function init() {
   const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jævla','jævel','fitte','kuk','pikk','hore','kneppe'];
   const captionsClean = () => { const t = (state.top + ' ' + state.bottom).toLowerCase(); return !BLOCKLIST.some((w) => t.includes(w)); };
 
+  // Renders the print file (what actually gets printed): the picked frame
+  // with captions + background, trimmed tight when transparent.
+  function renderPrintFile() {
+    const W = 2048;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
+    drawComposite(ctx, W, state.frame, {
+      bg: state.bg, captions: true, effect: state.effect,
+      hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+    });
+    if (state.bg === 'transparent') {
+      const data = ctx.getImageData(0, 0, W, W).data;
+      return crop(cv, pad(bboxOf([data], W), W));
+    }
+    return cv;
+  }
+
+  // Turns a design canvas into a kiss-cut sticker MOCKUP: white die-cut border
+  // hugging the design (or a rounded white mat for square designs), soft
+  // shadow, paper backdrop — so the buyer sees the physical thing.
+  function makeStickerMockup(design, size = 900) {
+    const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#efece4'; ctx.fillRect(0, 0, size, size); // paper backdrop
+    const margin = size * 0.16;
+    const s = Math.min((size - 2 * margin) / design.width, (size - 2 * margin) / design.height);
+    const dw = design.width * s, dh = design.height * s;
+    const dx = (size - dw) / 2, dy = (size - dh) / 2;
+    const border = size * 0.022; // the white kiss-cut edge
+
+    if (state.bg === 'transparent') {
+      // white silhouette of the design
+      const sil = document.createElement('canvas'); sil.width = size; sil.height = size;
+      const sctx = sil.getContext('2d');
+      sctx.drawImage(design, dx, dy, dw, dh);
+      sctx.globalCompositeOperation = 'source-in';
+      sctx.fillStyle = '#fff'; sctx.fillRect(0, 0, size, size);
+      // dilate the silhouette in a ring = the die-cut border
+      const outline = document.createElement('canvas'); outline.width = size; outline.height = size;
+      const octx = outline.getContext('2d');
+      for (let k = 0; k < 24; k++) {
+        const a = (k / 24) * 2 * Math.PI;
+        octx.drawImage(sil, Math.cos(a) * border, Math.sin(a) * border);
+      }
+      octx.drawImage(sil, 0, 0);
+      ctx.save();
+      ctx.shadowColor = 'rgba(17,17,17,0.25)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
+      ctx.drawImage(outline, 0, 0);
+      ctx.restore();
+      ctx.drawImage(outline, 0, 0); // crisp second pass over the shadowed one
+    } else {
+      // square design -> rounded white mat behind it
+      const r = size * 0.03;
+      ctx.save();
+      ctx.shadowColor = 'rgba(17,17,17,0.25)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.roundRect(dx - border, dy - border, dw + 2 * border, dh + 2 * border, r); ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, r * 0.6); ctx.clip();
+    }
+    ctx.drawImage(design, dx, dy, dw, dh);
+    if (state.bg !== 'transparent') ctx.restore();
+    return cv;
+  }
+
+  // Step 1: the preview modal — see YOUR sticker before paying (trust!)
+  let pendingPrint = null;
   el('bbOrderSticker').onclick = async () => {
-    const btn = el('bbOrderSticker'); const label = btn.innerHTML;
     if (!captionsClean()) { toast('Let’s keep it family friendly \u{1F34C} — try other words'); return; }
+    await assetsReady();
+    pendingPrint = renderPrintFile();
+    const mock = makeStickerMockup(pendingPrint);
+    const mc = el('bbMockup');
+    mc.width = mock.width; mc.height = mock.height;
+    mc.getContext('2d').drawImage(mock, 0, 0);
+    el('bbOrderModal').hidden = false;
+    document.body.style.overflow = 'hidden';
+    track('sticker_preview_open', {});
+  };
+  function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
+  el('bbOrderCancel').onclick = closeOrderModal;
+  el('bbOrderModal').addEventListener('click', (e) => { if (e.target === el('bbOrderModal')) closeOrderModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('bbOrderModal').hidden) closeOrderModal(); });
+
+  // Step 2: confirmed — upload the print file + open the Shopify checkout
+  el('bbOrderConfirm').onclick = async () => {
+    const btn = el('bbOrderConfirm'); const label = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Preparing your sticker…';
     try {
-      await assetsReady();
-      // print-res render of the picked frame (same look as the PNG export)
-      const W = 2048;
-      const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
-      drawComposite(ctx, W, state.frame, {
-        bg: state.bg, captions: true, effect: state.effect,
-        hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
-      });
-      let out = cv;
-      if (state.bg === 'transparent') {
-        const data = ctx.getImageData(0, 0, W, W).data;
-        out = crop(cv, pad(bboxOf([data], W), W));
-      }
-      const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
+      const blob = await new Promise((r) => pendingPrint.toBlob(r, 'image/png'));
       const up = await fetch(STICKER.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
       if (!up.ok) throw new Error('upload failed: ' + up.status);
       const { key, url } = await up.json();
@@ -630,7 +701,7 @@ function init() {
   };
 
   // exposed for debugging + future flows
-  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS, STICKER };
+  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS, STICKER, makeStickerMockup, renderPrintFile };
 
   // ---- boot ----
   load();
