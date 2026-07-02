@@ -26,6 +26,7 @@ export default {
       if (url.pathname === '/upload') return handleUpload(request, env);
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
+      if (url.pathname === '/health') return handleHealth(env);
       return json({ error: 'not found' }, 404);
     } catch (e) {
       console.error(e);
@@ -91,6 +92,27 @@ async function handleServe(request, env, url) {
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
+}
+
+// ---------- GET /health ----------
+// Verifies the Printful token + config without exposing anything sensitive.
+
+async function handleHealth(env) {
+  const out = { variant_id: env.PRINTFUL_VARIANT_ID, printful: 'no token set' };
+  if (env.PRINTFUL_TOKEN) {
+    const res = await fetch('https://api.printful.com/stores', {
+      headers: { Authorization: `Bearer ${env.PRINTFUL_TOKEN}` },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) {
+      const stores = body.result || [];
+      out.printful = 'ok';
+      out.stores = stores.map((s) => ({ id: s.id, name: s.name, type: s.type }));
+    } else {
+      out.printful = `error ${res.status}`;
+    }
+  }
+  return json(out);
 }
 
 // ---------- POST /webhook/shopify (orders/paid) ----------
