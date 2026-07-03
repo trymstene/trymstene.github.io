@@ -49,3 +49,25 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: true
+
+      # IndexNow: tell Bing/DuckDuckGo/Seznam etc. the site changed (minutes
+      # instead of weeks). Google ignores it; harmless if the ping fails.
+      - name: Ping IndexNow
+        continue-on-error: true
+        run: |
+          curl -s -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d '{
+              "host": "trymstene.com",
+              "key": "a68abc54470f9a4662b2bbc53c2c0ab2",
+              "keyLocation": "https://trymstene.com/a68abc54470f9a4662b2bbc53c2c0ab2.txt",
+              "urlList": [
+                "https://trymstene.com/",
+                "https://trymstene.com/dancing-banana-gif-meme/",
+                "https://trymstene.com/make-a-banana/",
+                "https://trymstene.com/dancing-banana-emoji/",
+                "https://trymstene.com/peanut-butter-jelly-time/",
+                "https://trymstene.com/license-the-dancing-banana/",
+                "https://trymstene.com/shop/"
+              ]
+            }'
