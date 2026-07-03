@@ -4,6 +4,7 @@
 // (drawComposite) drives the live preview, the chat-size emoji preview, the
 // frame-picker thumbnails and both exports, so what you see is what you get.
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
+import { dailyOutfit } from '../lib/banana-daily.js';
 
 // ---- authentic dance frames ----
 // ?v= busts stale browser caches: bump it whenever the sheet's pixels change,
@@ -778,14 +779,11 @@ function init() {
     document.documentElement.classList.add('bb-overlay');
     state.paused = false; // an overlay must dance, reduced-motion or not
     if (urlP.has('daily')) {
-      const now = new Date();
-      let seed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
-      const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-      state.hat = HATS[Math.floor(rnd() * HATS.length)][0];
-      state.glasses = GLASSES[Math.floor(rnd() * GLASSES.length)][0];
-      state.extras = {};
-      EXTRA_DEFS.forEach((def) => { if (rnd() < 0.4) state.extras[def.id] = true; });
-      state.effect = rnd() < 0.35 ? EFFECTS[1 + Math.floor(rnd() * (EFFECTS.length - 1))][0] : 'none';
+      // shared with /banana-of-the-day/ (built server-side) — same date,
+      // same banana, everywhere. Algorithm lives in src/lib/banana-daily.js.
+      const o = dailyOutfit();
+      state.hat = o.hat; state.glasses = o.glasses;
+      state.extras = o.extras; state.effect = o.effect;
     }
   }
 

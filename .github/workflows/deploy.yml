@@ -16,6 +16,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # daily rebuild at 00:05 UTC: the Banana of the Day page's crawlable text
+  # changes with the date, and IndexNow gets pinged — a static site that
+  # visibly lives. (Also refreshes shop data from Shopify daily.)
+  schedule:
+    - cron: '5 0 * * *'
 
 permissions:
   contents: write

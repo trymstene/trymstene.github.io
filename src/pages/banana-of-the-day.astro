@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+import { dailyOutfit, describeOutfit } from '../lib/banana-daily.js';
+
+// Built fresh every day by the scheduled deploy (00:05 UTC) — the outfit text
+// below is crawlable static HTML that genuinely changes daily.
+const today = new Date();
+const outfit = dailyOutfit(today);
+const outfitText = describeOutfit(outfit);
+const dateText = today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+const title = 'Banana of the Day — a new dancing banana every day';
+const description = `Every day at midnight UTC the dancing banana puts on a new outfit. Today (${dateText}) it wears ${outfitText}. Come see it dance.`;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'Banana of the Day',
+  url: 'https://trymstene.com/banana-of-the-day/',
+  description: 'A new randomly dressed dancing banana every day, from the creator of the original 1999 GIF.',
+  about: { '@id': 'https://trymstene.com/#banana-gif' },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="Banana of the Day"
+  ogDescription={`Today the banana wears ${outfitText}.`}
+  ogImage="https://trymstene.com/assets/og/builder.png"
+  showFooter={false}
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <style is:inline slot="head">
+    .botd-stage {
+      width: min(420px, 88vw); aspect-ratio: 1; margin: 1.5rem auto;
+      border: var(--line); box-shadow: var(--shadow); background: var(--paper);
+    }
+    .botd-stage iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .botd-count { font-weight: 700; font-size: 0.95rem; opacity: 0.75; }
+  </style>
+
+  <section class="hero" style="padding-bottom:1rem;">
+    <p class="kicker">A new fit every midnight (UTC)</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,7vw,3.6rem);">banana of the day</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">{dateText}</p>
+  </section>
+
+  <section class="block" style="text-align:center;">
+    <p class="lead" style="max-width:56ch;margin-inline:auto;">
+      Today the banana wears <strong>{outfitText}</strong>.
+    </p>
+    <div class="botd-stage">
+      <iframe src="/overlay/?daily=1" title="Today's dancing banana" loading="eager"></iframe>
+    </div>
+    <p class="botd-count">Next banana in <span id="botdCountdown">…</span></p>
+    <p style="margin-top:1.6rem;">
+      <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Make your own instead →</a>
+    </p>
+    <p class="bb-note" style="margin-top:0.8rem;">
+      Streamers: today's banana is always live at
+      <a href="/overlay/">trymstene.com/overlay/</a> — paste it into OBS as a browser source.
+    </p>
+  </section>
+
+  <script is:inline>
+    (function () {
+      var el = document.getElementById('botdCountdown');
+      function tick() {
+        var now = new Date();
+        var next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+        var s = Math.max(0, Math.floor((next - now) / 1000));
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+        el.textContent = h + 'h ' + String(m).padStart(2, '0') + 'm';
+      }
+      tick();
+      setInterval(tick, 30000);
+    })();
+  </script>
+</BaseLayout>

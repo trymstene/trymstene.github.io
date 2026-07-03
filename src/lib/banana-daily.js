@@ -1,0 +1,72 @@
+// The BANANA OF THE DAY — one shared, deterministic outfit-picker used by
+// BOTH the /banana-of-the-day/ page (at build time, for crawlable text) and
+// the builder's overlay daily mode (in the browser). Same UTC date in = same
+// banana out, everywhere, no drift.
+//
+// ⚠️ KEEP THE OPTION POOLS IN SYNC with the PACKS registry in
+// src/scripts/banana-builder.js (ids must match; labels here are plain text
+// for sentences). When a seasonal pack is added there, add its ids + window
+// here too.
+
+const PACK_POOLS = {
+  core: {
+    always: true,
+    hats: [['party', 'a party hat'], ['crown', 'a crown'], ['tophat', 'a top hat'], ['cowboy', 'a cowboy hat']],
+    shades: [['shades', '"deal with it" shades'], ['hearts', 'heart shades'], ['visor', 'a visor']],
+    extras: [['mustache', 'a fine moustache'], ['bowtie', 'a bow tie']],
+  },
+  // xmas: { window: { from: '12-01', to: '12-26' }, hats: [['santa', 'a Santa hat']], shades: [], extras: [] },
+};
+
+const EFFECT_POOL = [['disco', 'disco mode'], ['sparkle', 'sparkles'], ['confetti', 'confetti']];
+
+function packActive(pack, date) {
+  if (pack.always) return true;
+  if (!pack.window) return false;
+  const md = String(date.getUTCMonth() + 1).padStart(2, '0') + '-' + String(date.getUTCDate()).padStart(2, '0');
+  const { from, to } = pack.window;
+  return from <= to ? (md >= from && md <= to) : (md >= from || md <= to);
+}
+
+// Pools as the builder sees them: 'none' first (so indices match its
+// HATS/GLASSES arrays), then every active pack's options in declaration order.
+function pools(date) {
+  const active = Object.values(PACK_POOLS).filter((p) => packActive(p, date));
+  return {
+    hats: [['none', 'no hat'], ...active.flatMap((p) => p.hats || [])],
+    shades: [['none', 'no shades'], ...active.flatMap((p) => p.shades || [])],
+    extras: active.flatMap((p) => p.extras || []),
+  };
+}
+
+// Deterministic outfit for a UTC date. The rnd() CALL ORDER is the contract —
+// hat, shades, one per extra, effect gate, effect pick — do not reorder.
+export function dailyOutfit(date = new Date()) {
+  let seed = date.getUTCFullYear() * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate();
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  const { hats, shades, extras } = pools(date);
+  const hat = hats[Math.floor(rnd() * hats.length)];
+  const glasses = shades[Math.floor(rnd() * shades.length)];
+  const worn = extras.filter(() => rnd() < 0.4);
+  const effect = rnd() < 0.35 ? EFFECT_POOL[Math.floor(rnd() * EFFECT_POOL.length)] : null;
+  return {
+    hat: hat[0], glasses: glasses[0],
+    extras: Object.fromEntries(worn.map(([id]) => [id, true])),
+    effect: effect ? effect[0] : 'none',
+    labels: { hat: hat[1], glasses: glasses[1], extras: worn.map(([, l]) => l), effect: effect ? effect[1] : null },
+  };
+}
+
+// "a cowboy hat, heart shades and a bow tie — in disco mode"
+export function describeOutfit(o) {
+  const bits = [];
+  if (o.hat !== 'none') bits.push(o.labels.hat);
+  if (o.glasses !== 'none') bits.push(o.labels.glasses);
+  bits.push(...o.labels.extras);
+  let s;
+  if (!bits.length) s = 'absolutely nothing — a rare naked banana day';
+  else if (bits.length === 1) s = bits[0];
+  else s = bits.slice(0, -1).join(', ') + ' and ' + bits[bits.length - 1];
+  if (o.labels.effect) s += ' — in ' + o.labels.effect;
+  return s;
+}

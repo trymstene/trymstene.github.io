@@ -22,6 +22,7 @@ const PAGES = [
     ],
   },
   { path: '/make-a-banana/', images: [['/assets/og/builder.png', 'Make your own Dancing Banana — free banana builder']] },
+  { path: '/banana-of-the-day/', images: [] },
   {
     path: '/dancing-banana-emoji/',
     images: [
