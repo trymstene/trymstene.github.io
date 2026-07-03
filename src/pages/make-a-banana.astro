@@ -130,26 +130,30 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-minimock { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto 0.9rem; border: var(--line); }
     /* cheesy supermarket sale banners: price in a pixel starburst, shipping
        in a hot pill — both slightly tilted like hanging posters */
-    .bb-deal { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: -0.4rem 0 0.7rem; }
+    .bb-deal { display: flex; flex-direction: column; align-items: center; margin: -0.3rem 0 0.8rem; }
     .bb-burst {
-      width: 172px; aspect-ratio: 1; flex: none;
+      width: min(300px, 94%); aspect-ratio: 48 / 34; flex: none;
       background: url('/assets/price-burst.svg') center/contain no-repeat;
       display: grid; place-items: center;
-      transform: rotate(-6deg);
+      transform: rotate(-4deg);
       image-rendering: pixelated;
     }
     .bb-burst span {
       font-family: "Archivo Black", system-ui, sans-serif;
-      font-size: 1.7rem; letter-spacing: -0.5px; transform: rotate(1deg);
-      max-width: 100px; text-align: center; line-height: 1;
+      font-size: 1.8rem; letter-spacing: -0.5px; transform: rotate(1deg);
+      max-width: 150px; text-align: center; line-height: 1;
     }
+    /* the pill hangs over the burst's lower edge, one line, a bit off-centre —
+       organic sale-poster look, not grid-perfect */
     .bb-shippill {
       background: var(--hot); color: #fff; border: 3px solid var(--ink);
       box-shadow: 3px 3px 0 var(--ink);
-      padding: 0.55rem 0.8rem; text-align: center;
-      font-weight: 800; font-size: 0.82rem; line-height: 1.25;
+      padding: 0.45rem 0.85rem; white-space: nowrap;
+      font-weight: 800; font-size: 0.78rem; line-height: 1;
       text-transform: uppercase; letter-spacing: 0.05em;
-      transform: rotate(3deg);
+      transform: rotate(-3deg);
+      margin: -1.4rem 0 0 3rem;
+      position: relative; z-index: 1;
     }
     .bb-trust { margin: 0 0 1.1rem; padding-left: 1.15rem; font-size: 0.92rem; display: grid; gap: 0.35rem; }
     .bb-trust li { margin: 0; }
@@ -286,7 +290,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
           <canvas id="bbMiniMock" class="bb-minimock" aria-label="Live preview of your printed sticker"></canvas>
           <div class="bb-deal">
             <div class="bb-burst"><span id="bbPrice">149 kr</span></div>
-            <div class="bb-shippill">Free shipping<br>worldwide</div>
+            <div class="bb-shippill">Free shipping worldwide</div>
           </div>
           <ul class="bb-trust">
             <li>3″×3″ (7.5 cm) durable vinyl — die-cut along your design (square if you picked a background)</li>
