@@ -463,13 +463,35 @@ function init() {
     pickerCvs.forEach((c, i) => drawComposite(c.getContext('2d'), 96, i, { bg: 'transparent', captions: false }));
   }
 
+  // ---- live mini sticker mockup (buy card): see the physical thing update
+  // as you build — same die-cut/square logic as the real print file, small.
+  const miniMock = el('bbMiniMock');
+  function drawMiniMock() {
+    if (!miniMock) return;
+    const W = 512;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
+    const ctx = cv.getContext('2d');
+    drawComposite(ctx, W, state.frame, {
+      bg: state.bg, captions: true, effect: state.effect,
+      hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+    });
+    let design = cv;
+    if (state.bg === 'transparent') {
+      const data = ctx.getImageData(0, 0, W, W).data;
+      design = crop(cv, pad(bboxOf([data], W), W));
+    }
+    const mock = makeStickerMockup(design, 480);
+    miniMock.width = mock.width; miniMock.height = mock.height;
+    miniMock.getContext('2d').drawImage(mock, 0, 0);
+  }
+
   // ---- state change: repaint everything derived ----
   let bbT;
   function onState() {
     dirty = true;
     refreshUI(); sync();
     clearTimeout(bbT);
-    bbT = setTimeout(() => { recomputeEmojiBB(); drawPicker(); dirty = true; }, 60);
+    bbT = setTimeout(() => { recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true; }, 60);
   }
   function refreshUI() {
     if (state.bg === 'transparent') { stage.classList.add('bb-stage--transparent'); stage.style.background = ''; }
@@ -715,7 +737,7 @@ function init() {
   load();
   refreshUI();
   sheet.decode().catch(() => {}).finally(() => {
-    recomputeEmojiBB(); drawPicker(); dirty = true;
+    recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true;
     requestAnimationFrame(tick);
   });
 }

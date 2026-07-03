@@ -115,9 +115,22 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-cards { display: grid; grid-template-columns: 1fr; gap: 1.2rem; text-align: left; }
     @media (min-width: 820px) { .bb-cards { grid-template-columns: 1fr 1fr; align-items: start; } }
     .bb-card { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 1.3rem; }
-    .bb-card h3 { margin: 0 0 0.4rem; font-size: 1.2rem; }
-    .bb-card > p { margin: 0 0 1rem; font-size: 0.95rem; }
-    .bb-card .btn { width: 100%; text-align: center; }
+    .bb-card h3 { margin: 0 0 0.5rem; font-size: 1.35rem; display: flex; align-items: center; gap: 0.5rem; }
+    .bb-card p { margin: 0 0 1rem; font-size: 0.95rem; }
+    .bb-card .btn {
+      width: 100%; min-height: 54px; font-size: 1.08rem;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+      text-align: center; padding: 0.85rem 1rem;
+    }
+    /* second download block (meme image) under a dashed divider */
+    .bb-dl2 { margin-top: 1.15rem; padding-top: 1.15rem; border-top: 3px dashed rgba(17,17,17,0.18); }
+    /* the BUY card: hot shadow so the money maker pops */
+    .bb-card--buy { box-shadow: 8px 8px 0 var(--hot); }
+    .bb-minimock { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto 0.9rem; border: var(--line); }
+    .bb-price { text-align: center; margin: 0 0 0.9rem; font-size: 1rem; }
+    .bb-price strong { font-size: 2rem; margin-right: 0.5rem; letter-spacing: -0.5px; }
+    .bb-trust { margin: 0 0 1.1rem; padding-left: 1.15rem; font-size: 0.92rem; display: grid; gap: 0.35rem; }
+    .bb-trust li { margin: 0; }
 
     /* fake chat row — your emoji at actual chat size */
     .bb-chat { background: #313338; border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
@@ -129,8 +142,6 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-chat__text canvas { vertical-align: middle; margin-left: 0.2rem; }
     .bb-chat__big { margin-top: 0.35rem; }
 
-    /* the paid CTA gets its own zone under a dashed divider */
-    .bb-order { margin-top: 1rem; padding-top: 1rem; border-top: 3px dashed rgba(17,17,17,0.18); }
 
     /* sticker preview modal */
     .bb-modal {
@@ -148,11 +159,12 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     .bb-modal .bb-actions .btn { flex: 1; text-align: center; }
 
     /* frame picker — freeze a moment of the dance */
-    .bb-frames { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; }
-    .bb-frame { width: 56px; height: 56px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
+    .bb-frames { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .bb-frame { width: 72px; height: 72px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
     .bb-frame canvas { width: 100%; height: 100%; }
-    .bb-frame:hover { transform: translateY(-2px); }
+    @media (hover: hover) { .bb-frame:hover { transform: translateY(-2px); } }
     .bb-frame[aria-pressed="true"] { outline: 3px solid var(--hot); outline-offset: 1px; }
+    @media (max-width: 400px) { .bb-frame { width: 64px; height: 64px; } }
   </style>
 
   <section class="hero" style="padding-bottom:1.5rem;">
@@ -220,8 +232,8 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
       <h2 id="bbTakeTitle">Take it with you</h2>
       <div class="bb-cards">
         <div class="bb-card">
-          <h3><PixelIcon name="chat" /> Chat emoji</h3>
-          <p>Animated, transparent and cropped tight — drops straight into Discord, Slack or Twitch. Here's yours at actual chat size:</p>
+          <h3><PixelIcon name="download" size="1.5em" /> Download it — free</h3>
+          <p>As an animated <strong>chat emoji</strong> — transparent, cropped tight, drops straight into Discord, Slack or Twitch. Here's yours at actual chat size:</p>
           <div class="bb-chat" aria-hidden="true">
             <div class="bb-chat__msg">
               <span class="bb-chat__avatar"><PixelIcon name="banana" /></span>
@@ -232,18 +244,25 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
               </div>
             </div>
           </div>
-          <button class="btn btn--dark" id="bbDownloadGif"><PixelIcon name="download" /> Download emoji GIF</button>
+          <button class="btn btn--dark" id="bbDownloadGif"><PixelIcon name="chat" size="1.4em" /> Download emoji GIF</button>
           <p class="bb-note">Captions are left off the emoji — they're too tiny to read at chat size.</p>
-        </div>
-        <div class="bb-card">
-          <h3><PixelIcon name="tag" /> Sticker &amp; meme image</h3>
-          <p>Your captions, your background, full size. Freeze your favourite moment of the dance:</p>
-          <div class="bb-frames" id="bbFrames"></div>
-          <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" /> Download image (PNG)</button>
-          <div class="bb-order">
-            <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" /> Order it as a real sticker</button>
-            <p class="bb-note">3″×3″ (7.5 cm) vinyl sticker of the frame you picked — 149 kr, free shipping worldwide. Printed on demand and checked by the banana guy himself before it ships.</p>
+          <div class="bb-dl2">
+            <p>Or as a <strong>full-size meme image</strong> — captions, background and all. Freeze your favourite moment of the dance:</p>
+            <div class="bb-frames" id="bbFrames"></div>
+            <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" size="1.4em" /> Download image (PNG)</button>
           </div>
+        </div>
+        <div class="bb-card bb-card--buy">
+          <h3><PixelIcon name="tag" size="1.5em" /> Get it as a real sticker</h3>
+          <p>Your banana, printed and mailed to your door. Live preview of the frame you picked:</p>
+          <canvas id="bbMiniMock" class="bb-minimock" aria-label="Live preview of your printed sticker"></canvas>
+          <p class="bb-price"><strong>149 kr</strong> <span>free shipping worldwide</span></p>
+          <ul class="bb-trust">
+            <li>3″×3″ (7.5 cm) durable vinyl — die-cut along your design (square if you picked a background)</li>
+            <li>Printed on demand and checked by the banana guy himself before it ships</li>
+            <li>From the creator of the original 1999 Dancing Banana</li>
+          </ul>
+          <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" size="1.4em" /> Order my sticker</button>
         </div>
       </div>
     </section>
