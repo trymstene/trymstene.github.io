@@ -14,15 +14,6 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
   showFooter={false}
 >
   <style is:inline slot="head">
-    .bb-soon {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      margin-top: 0.9rem; background: var(--ink); color: var(--banana);
-      font-weight: 800; font-size: 0.8rem; letter-spacing: 0.02em;
-      padding: 0.45rem 0.9rem; border-radius: 999px;
-    }
-    .bb-soon__dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--banana); animation: bb-soon-pulse 1.4s ease-in-out infinite; }
-    @keyframes bb-soon-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
     .bb-wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.2rem 4rem; }
     .bb-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
     @media (min-width: 820px) { .bb-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
@@ -201,7 +192,6 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
     <p class="kicker">Free banana toy</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,4rem);">make your own<br>dancing banana</h1>
     <p class="hero__tag" style="text-transform:none;font-weight:500;">Shades, hats, captions, dance moves. Build one, share it, slap it on a sticker.</p>
-    <p class="bb-soon"><span class="bb-soon__dot" aria-hidden="true"></span> This feature is still being worked on these days — stay tuned!</p>
   </section>
 
   <div class="bb-wrap">
