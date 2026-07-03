@@ -24,6 +24,15 @@ const PAGES = [
   { path: '/make-a-banana/', images: [['/assets/og/builder.png', 'Make your own Dancing Banana — free banana builder']] },
   { path: '/banana-of-the-day/', images: [] },
   {
+    path: '/dancing-banana-wallpaper/',
+    images: [
+      ['/assets/wallpapers/dancing-banana-wallpaper-classic-desktop.png', 'Dancing Banana wallpaper — classic yellow, 1920x1080'],
+      ['/assets/wallpapers/dancing-banana-wallpaper-ink-desktop.png', 'Dancing Banana wallpaper — dark mode, 1920x1080'],
+      ['/assets/wallpapers/dancing-banana-wallpaper-pattern-desktop.png', 'Dancing Banana pattern wallpaper, 1920x1080'],
+      ['/assets/wallpapers/dancing-banana-wallpaper-classic-phone.png', 'Dancing Banana phone wallpaper — classic yellow'],
+    ],
+  },
+  {
     path: '/dancing-banana-emoji/',
     images: [
       ['/assets/dancing-banana-transparent.gif', 'Dancing Banana emoji for Discord, Slack and Telegram'],

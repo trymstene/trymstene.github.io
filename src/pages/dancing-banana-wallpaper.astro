@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+
+const title = 'Dancing Banana Wallpapers — Free Downloads (Desktop, 4K, Phone)';
+const description = 'Free Dancing Banana wallpapers from the creator of the original 1999 GIF — classic yellow, dark mode and an all-over banana pattern, in desktop, 4K and phone sizes.';
+
+const DESIGNS = [
+  { id: 'classic', name: 'Classic yellow', blurb: 'The arms-up original on banana yellow.' },
+  { id: 'ink', name: 'Dark mode', blurb: 'Same banana, midnight edition.' },
+  { id: 'pattern', name: 'The pattern', blurb: 'All eight dance moves, everywhere, forever.' },
+];
+const SIZES = [
+  { id: 'desktop', label: 'Desktop 1920×1080' },
+  { id: '4k', label: '4K 3840×2160' },
+  { id: 'phone', label: 'Phone 1080×1920' },
+];
+const file = (d, s) => `/assets/wallpapers/dancing-banana-wallpaper-${d}-${s}.png`;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Dancing Banana Wallpapers',
+  url: 'https://trymstene.com/dancing-banana-wallpaper/',
+  description,
+  about: { '@id': 'https://trymstene.com/#banana-gif' },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="Dancing Banana Wallpapers — Free"
+  ogDescription="Free wallpapers of the original 1999 Dancing Banana: classic, dark and pattern — desktop, 4K and phone."
+  ogImage={'https://trymstene.com' + file('classic', 'desktop')}
+  showFooter={false}
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <style is:inline slot="head">
+    .wp-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; max-width: 1000px; margin: 0 auto; text-align: left; }
+    @media (min-width: 820px) { .wp-grid { grid-template-columns: repeat(3, 1fr); } }
+    .wp-card { border: var(--line); background: var(--paper); box-shadow: var(--shadow); }
+    .wp-card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-bottom: var(--line); image-rendering: pixelated; }
+    .wp-card__body { padding: 1rem 1.1rem 1.2rem; }
+    .wp-card h3 { margin: 0 0 0.2rem; font-size: 1.15rem; }
+    .wp-card p { margin: 0 0 0.8rem; font-size: 0.9rem; opacity: 0.85; }
+    .wp-links { display: flex; flex-direction: column; gap: 0.45rem; }
+    .wp-links a { font-weight: 700; font-size: 0.95rem; }
+  </style>
+
+  <section class="hero" style="padding-bottom:1rem;">
+    <p class="kicker">Free downloads</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,7vw,3.6rem);">dancing banana<br>wallpapers</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">The original 1999 banana, on every screen you own</p>
+  </section>
+
+  <section class="block" style="text-align:center;">
+    <div class="wp-grid">
+      {DESIGNS.map((d) => (
+        <div class="wp-card">
+          <img src={file(d.id, 'desktop')} width="1920" height="1080" alt={`Dancing Banana wallpaper — ${d.name}`} loading="lazy" />
+          <div class="wp-card__body">
+            <h3>{d.name}</h3>
+            <p>{d.blurb}</p>
+            <div class="wp-links">
+              {SIZES.map((s) => (
+                <a href={file(d.id, s.id)} download><PixelIcon name="download" size="1.1em" /> {s.label} ↓</a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+    <p class="lead" style="margin-top:2.5rem;">
+      Want a wallpaper of <em>your</em> banana — hats, shades, captions and all?
+    </p>
+    <p><a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Make your own dancing banana →</a></p>
+  </section>
+</BaseLayout>
