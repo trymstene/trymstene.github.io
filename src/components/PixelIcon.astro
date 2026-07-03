@@ -1,165 +1,223 @@
 ---
-// 3D pixel-art emoji icons (v3, per Trym's reference): chunky charcoal
-// outlines (not black — stays visible on dark buttons), fresh Material-ish
-// colours, and an auto-generated extrusion — the glyph's silhouette offset
-// one unit down-right in deep ink, drawn underneath, gives every icon the
-// same isometric-lite depth. ASCII maps on a 10-unit grid → crispEdges SVG
-// rects. Letter M = currentColor for mono UI glyphs (burger/close), which
-// also skip the extrusion.
+// Pixel-art icons v4 (matched to Trym's reference pack): soft dark outlines
+// (dark plum, not pure black — visible on dark buttons), bright modern
+// colours, internal dimensional shading with dithering, and FULL-BLEED
+// square-ish tiles — every glyph fills its box (the letterboxing was why v3
+// icons looked small next to the palette). ASCII maps on a 10-unit grid →
+// crispEdges SVG rects. Letter M = currentColor for mono UI glyphs.
+// Iterate art in the scratchpad Pillow preview (white/banana/black swatches)
+// before touching this file.
 const PALETTE = {
-  T: '#37474f', // charcoal outline
-  K: '#1d272c', // deep ink: pips, extrusion
+  K: '#262233', // soft black outline (dark plum)
   W: '#ffffff',
-  L: '#eceff1', // light grey
-  G: '#b0bec5', // mid grey
-  R: '#ef5350', // coral red
-  S: '#c62828', // dark red
-  Y: '#ffca28', // amber
-  O: '#f9a825', // dark amber
-  H: '#ffe082', // light amber
-  C: '#4dd0e1', // cyan
-  U: '#0097a7', // dark cyan
-  E: '#b2ebf2', // light cyan
-  Z: '#42a5f5', // blue
-  X: '#1976d2', // dark blue
-  N: '#66bb6a', // green
-  V: '#2e7d32', // dark green
-  P: '#f06292', // pink
-  B: '#8d6e63', // brown
-  D: '#5d4037', // dark brown
-  A: '#bcaaa4', // light brown
+  L: '#e9edf4', // light grey
+  G: '#a9b6c6', // mid grey
+  g: '#67748a', // dark grey (dice outline)
+  R: '#ff6259', // coral red
+  S: '#c73e4e', // dark red
+  Y: '#ffd23f', // banana yellow
+  O: '#f5a623', // orange
+  H: '#fff3b0', // pale yellow highlight
+  C: '#64d8e8', // teal
+  U: '#2ba6b8', // dark teal
+  Z: '#55aaff', // blue
+  X: '#2f6fd0', // dark blue
+  E: '#b8dcff', // light blue
+  N: '#58c05c', // green
+  V: '#2f8f46', // dark green
+  P: '#ff7bac', // pink
+  B: '#a8713d', // warm brown
+  D: '#6e4423', // dark brown
+  A: '#d9a066', // tan highlight
   M: 'currentColor',
 };
 
 const ICONS = {
   banana: `
-......TT.
-.....TDT.
-....THYT.
-...THYOT.
-..THYYOT.
-.THYYOT..
-.THYOT...
-THYYOT...
-TYYOT....
-.TTT.....`,
+..........KKK.
+.........KKDK.
+........KHYYK.
+........KHYYK.
+.......KHYYOK.
+.......KHYYOK.
+......KHYYOK..
+.....KHYYYOK..
+....KHYYYOK...
+..KKHYYYOK....
+.KYYYYYOK.....
+KYYYYOOK......
+KYOOOK........
+.KKKK.........`,
   coffee: `
-..G..G....
-.G..G.....
-..G..G....
-TTTTTTTT..
-TDDDDDDTT.
-TWWWWWWT.T
-TWWWWWLTTT
-.TWLLLT...
-TTTTTTTT..`,
+...G..G.......
+..G..G........
+...G..G.......
+.KKKKKKKKK....
+.KDDADDDDK....
+.KWWWWWWWKKK..
+.KWWWWWWWK.K..
+.KWWWWWWWKKK..
+.KLWWWWWLK....
+..KLLLLLK.....
+.KKKKKKKKK....
+KGLLLLLLLGK...
+.KKKKKKKKK....`,
   palette: `
-...TTTTTT...
-..TABBBBBT..
-.TARRBBZZBT.
-.TBRRBBZZBT.
-TABBBBBBBBBT
-TBYYBBBTKBBT
-TBYYBBBTKBBT
-.TBBBBBBBBT.
-.TBNNBBBBBT.
-..TBNNBBBT..
-...TTTTTT...`,
+....KKKKKK....
+..KKABBBBKK...
+..KARRBBZZK...
+.KBRRRBZZZBK..
+.KBBBBBBBBBK..
+KABBBBBBBBBBK.
+KBYYBBBBKKBBK.
+KBYYBBBBKKBBK.
+.KBBBBBBBBBK..
+.KBNNBBBBBK...
+..KBNNBBBK....
+....KKKKKK....`,
   dice: `
-TTTTTTTTTT
-TWWWWWWWWT
-TWKKWWWWWT
-TWKKWWWWWT
-TWWWWKWWWT
-TWWWWWKKWT
-TWWWWWKKWT
-TWWWWWWWLT
-TWLLLLLLLT
-TTTTTTTTTT`,
+.gggggggggggg.
+gWWWWWWWWWWWLg
+gWKKWWWWWWKKLg
+gWKKWWWWWWKKLg
+gWWWWWWWWWWLLg
+gWWWWWKKWWWLGg
+gWWWWWKKWWLLGg
+gWWWWWWWWWLGGg
+gWKKWWWWKKLGGg
+gWKKWWWWKKGGGg
+gWLLLLLLGGGGGg
+gLLGGGGGGGGGGg
+.gggggggggggg.`,
   link: `
-.TTT..TTT.
-TZZZTTZZZT
-TZ.ZTTZ.ZT
-TXZZTTXZZT
-.TTT..TTT.`,
+..KKKKK.......
+.KZEEEZK......
+.KZKKKZK......
+.KZK.KZKKKK...
+.KZK.KZEEEZK..
+.KZK.KZKKKZK..
+.KZKKKZK.KZK..
+.KXZZZXK.KZK..
+..KKKKKXKKZK..
+......KXZZZK..
+.......KKKK...`,
   download: `
-TTTTTTTTTT
-TZZZWWZZZT
-TZZZWWZZZT
-TZWWWWWWZT
-TZZWWWWZZT
-TZZZWWZZZT
-TXXXXXXXXT
-TTTTTTTTTT`,
+....KKKKKK....
+....KEWWZK....
+....KEWWZK....
+..KKKEWWZKKK..
+...KEWWWWZK...
+....KEWWZK....
+.....KWZK.....
+......KK......
+KXK.........KK
+KXKKKKKKKKKKXK
+KXXXXXXXXXXXXK
+KKKKKKKKKKKKKK`,
   chat: `
-TTTTTTTTTT
-TCCCCCCCCT
-TCWCWCWCCT
-TUCCCCCCUT
-TTTTTTTTTT
-.TCT......
-.TT.......`,
+.KKKKKKKKKKK..
+KCEEEEEEEEECK.
+KCWWCWWCWWCCK.
+KCWWCWWCWWCCK.
+KCCCCCCCCCCCK.
+KUCCCCCCCCCUK.
+.KKKKKKKKKKK..
+...KCCK.......
+...KCK........
+...KK.........`,
   tag: `
-TTTTTTT..
-THHYYYTT.
-THYYYYYTT
-TYKKYYYYT
-TYKKYYYYT
-TOYYYYYOT
-TTTTTTTTT`,
+KKKKKKKKK.....
+KHHYYYYYKK....
+KHYYYYYYYKK...
+KYYYYYYYYYKK..
+KYKKYYYYYYYK..
+KYKKYYYYYYYK..
+KYYYYYYYYYKK..
+KOYYYYYYYKK...
+KOOYYYYYKK....
+KKKKKKKKK.....`,
   globe: `
-..TTTTT..
-.TNNZENT.
-TZNNZNNZT
-TZZNNZNZT
-TZNNZZZXT
-.TZXNNXT.
-..TTTTT..`,
+....KKKKK....
+..KKZEEZZKK..
+.KZEENNEZZZK.
+.KZENNNEZZZK.
+KZZENNEZNNZZK
+KZZZEZZZNNNZK
+KZZNNZZZZNZZK
+KZNNNNZZZZZXK
+KZNNNZZZZXXXK
+.KZNZZZZXXXK.
+.KZZZZXXXXXK.
+..KKZXXXXKK..
+....KKKKK....`,
   note: `
-TTTTTTT..
-TWWWWWT..
-TWGGGWTT.
-TWWWWTHYT
-TWGGTYOT.
-TWWTYOT..
-TWTDDT...
-TTTTT....`,
+KKKKKKKKKK....
+KWWWWWWWWK....
+KWGGGGGWWKKK..
+KWWWWWWWKHYKK.
+KWGGGGWKHYYOK.
+KWWWWWKHYYOK..
+KWGGGKHYYOK...
+KWWWKYYOK.....
+KWWKYOKK......
+KWKDDK........
+KKKDK.........
+KKKK..........`,
   floppy: `
-TTTTTTTT.
-TZZWWZZTT
-TZZWWZZZT
-TZZZZZZZT
-TZTTTTTZT
-TZTWWWTZT
-TZTWWLTXT
-TTTTTTTT.`,
+KKKKKKKKKKKK..
+KZZZWWWWZZZKK.
+KZZZWWWWZZZZK.
+KZZZWWWWZZZZK.
+KZZZZZZZZZZZK.
+KZZKKKKKKKZZK.
+KZZKWWWWWKZZK.
+KZZKWWWWWKZZK.
+KZZKWWWLLKZZK.
+KZZKWWWLLKXZK.
+KXZKKKKKKKXXK.
+KKKKKKKKKKKKK.`,
   bolt: `
-....TTTT.
-...THYYT.
-..THYYT..
-.THYYYTTT
-TTHYYYYYT
-TTTTYYOT.
-...TYOT..
-..TYOT...
-..TOT....
-..TT.....`,
+......KKKKK...
+.....KHYYYK...
+....KHYYYK....
+...KHYYYK.....
+..KHYYYYKKKK..
+.KHYYYYYYYYK..
+KKKKKYYYYOK...
+....KYYYOK....
+...KYYYOK.....
+...KYYOK......
+..KYYOK.......
+..KYOK........
+..KOK.........
+..KK..........`,
   heart: `
-.TT..TT.
-TRRTTRRT
-TRWRRRRT
-TRRRRRRT
-.TSRRST.
-..TSST..
-...TT...`,
+..KKK...KKK...
+.KRRRK.KRRRK..
+KRWWRRKRRRRRK.
+KRWRRRRRRRRRK.
+KRRRRRRRRRRRK.
+KSRRRRRRRRRSK.
+.KSRRRRRRRSK..
+..KSRRRRRSK...
+...KSRRRSK....
+....KSRSK.....
+.....KSK......
+......K.......`,
   sparkle: `
-...TT...
-..THYT..
-.THYYYT.
-THYWYYOT
-.TYYYOT.
-..TYOT..
-...TT...`,
+......KK......
+.....KHYK.....
+.....KHYK...W.
+....KHYYYK....
+.KKKHYYYYKKK..
+KHHYYYWWYYYYK.
+KYYYYYWWYYYOK.
+.KKKYYYYYOKK..
+.W..KYYYOK....
+....KYYOK.....
+.....KYOK.....
+.....KOK......
+......KK......`,
   burger: `
 MMMMMMMMM
 MMMMMMMMM
@@ -186,23 +244,6 @@ const map = ICONS[name];
 if (!map) throw new Error(`PixelIcon: unknown icon "${name}"`);
 const rows = map.trim().split('\n').map((r) => r.trimEnd());
 const w = Math.max(...rows.map((r) => r.length));
-const mono = rows.some((r) => r.includes('M'));
-const depth = mono ? 0 : 1;
-
-// extrusion layer: silhouette runs offset (+1,+1) unit in deep ink
-const silRuns = [];
-if (depth) {
-  rows.forEach((row, y) => {
-    let x = 0;
-    while (x < row.length) {
-      if (!(row[x] in PALETTE)) { x++; continue; }
-      const x0 = x;
-      while (x < row.length && row[x] in PALETTE) x++;
-      silRuns.push({ x: (x0 + depth) * 10, y: (y + depth) * 10, w: (x - x0) * 10 });
-    }
-  });
-}
-// colour layer
 const runs = [];
 rows.forEach((row, y) => {
   let x = 0;
@@ -217,11 +258,10 @@ rows.forEach((row, y) => {
 ---
 <svg
   class="pxi"
-  viewBox={`0 0 ${(w + depth) * 10} ${(rows.length + depth) * 10}`}
+  viewBox={`0 0 ${w * 10} ${rows.length * 10}`}
   style={`width:${size};height:${size};`}
   shape-rendering="crispEdges"
   aria-hidden="true"
 >
-  {silRuns.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" fill={PALETTE.K} />)}
   {runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" fill={r.fill} />)}
 </svg>
