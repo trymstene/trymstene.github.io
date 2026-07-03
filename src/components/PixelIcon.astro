@@ -1,153 +1,165 @@
 ---
-// Pixel-art emoji icons, drawn as ASCII maps on a 10-unit grid and rendered
-// as crispEdges SVG rects — coloured reimaginations of the stock emojis they
-// replaced (🍌 ☕ 🎨 🎲 🔗 💬 🏷️ 🌍 📝 💾 ⚡ ❤️ ✨), on the same palette as the
-// banana sprite (tools/pixel-assets.py). The letter M renders as currentColor
-// for the mono UI glyphs (burger/close) that must adapt to the button colour.
+// 3D pixel-art emoji icons (v3, per Trym's reference): chunky charcoal
+// outlines (not black — stays visible on dark buttons), fresh Material-ish
+// colours, and an auto-generated extrusion — the glyph's silhouette offset
+// one unit down-right in deep ink, drawn underneath, gives every icon the
+// same isometric-lite depth. ASCII maps on a 10-unit grid → crispEdges SVG
+// rects. Letter M = currentColor for mono UI glyphs (burger/close), which
+// also skip the extrusion.
 const PALETTE = {
-  K: '#111111', // ink black (outline)
-  G: '#484848', // dark grey
-  L: '#cdd3db', // light grey
-  W: '#ffffff', // white
-  R: '#e22020', // red
-  Y: '#f2c200', // gold
-  O: '#c49a00', // darker gold shade
-  P: '#ff4d6d', // hot pink
-  C: '#4db8ff', // blue
-  N: '#3aa655', // leaf green
-  B: '#8a5a2b', // brown
-  D: '#5a3618', // dark brown
+  T: '#37474f', // charcoal outline
+  K: '#1d272c', // deep ink: pips, extrusion
+  W: '#ffffff',
+  L: '#eceff1', // light grey
+  G: '#b0bec5', // mid grey
+  R: '#ef5350', // coral red
+  S: '#c62828', // dark red
+  Y: '#ffca28', // amber
+  O: '#f9a825', // dark amber
+  H: '#ffe082', // light amber
+  C: '#4dd0e1', // cyan
+  U: '#0097a7', // dark cyan
+  E: '#b2ebf2', // light cyan
+  Z: '#42a5f5', // blue
+  X: '#1976d2', // dark blue
+  N: '#66bb6a', // green
+  V: '#2e7d32', // dark green
+  P: '#f06292', // pink
+  B: '#8d6e63', // brown
+  D: '#5d4037', // dark brown
+  A: '#bcaaa4', // light brown
   M: 'currentColor',
 };
 
 const ICONS = {
   banana: `
-......KK.
-.....KDK.
-....KYYK.
-...KYYOK.
-..KYYYOK.
-.KYYYOK..
-.KYYOK...
-KYYYOK...
-KYYOK....
-.KKK.....`,
+......TT.
+.....TDT.
+....THYT.
+...THYOT.
+..THYYOT.
+.THYYOT..
+.THYOT...
+THYYOT...
+TYYOT....
+.TTT.....`,
   coffee: `
-..K..K....
-.K..K.....
-..K..K....
-KKKKKKKK..
-KDDDDDDKK.
-KWWWWWWK.K
-KWWWWWWKKK
-.KWWWWK...
-KKKKKKKK..`,
+..G..G....
+.G..G.....
+..G..G....
+TTTTTTTT..
+TDDDDDDTT.
+TWWWWWWT.T
+TWWWWWLTTT
+.TWLLLT...
+TTTTTTTT..`,
   palette: `
-...KKKKKK...
-..KBBBBBBK..
-.KBRRBBCCBK.
-.KBRRBBCCBK.
-KBBBBBBBBBBK
-KBYYBBBKKBBK
-KBYYBBBKKBBK
-.KBBBBBBBBK.
-.KBNNBBBBBK.
-..KBNNBBBK..
-...KKKKKK...`,
+...TTTTTT...
+..TABBBBBT..
+.TARRBBZZBT.
+.TBRRBBZZBT.
+TABBBBBBBBBT
+TBYYBBBTKBBT
+TBYYBBBTKBBT
+.TBBBBBBBBT.
+.TBNNBBBBBT.
+..TBNNBBBT..
+...TTTTTT...`,
   dice: `
-KKKKKKKKK
-KWWWWWWWK
-KWKKWWWWK
-KWKKWWWWK
-KWWWKWWWK
-KWWWWKKWK
-KWWWWKKWK
-KWWWWWWWK
-KKKKKKKKK`,
+TTTTTTTTTT
+TWWWWWWWWT
+TWKKWWWWWT
+TWKKWWWWWT
+TWWWWKWWWT
+TWWWWWKKWT
+TWWWWWKKWT
+TWWWWWWWLT
+TWLLLLLLLT
+TTTTTTTTTT`,
   link: `
-.KKK..KKK.
-KCCCKKCCCK
-KC.CKKC.CK
-KCCCKKCCCK
-.KKK..KKK.`,
+.TTT..TTT.
+TZZZTTZZZT
+TZ.ZTTZ.ZT
+TXZZTTXZZT
+.TTT..TTT.`,
   download: `
-KKKKKKKKKK
-KCCCWWCCCK
-KCCCWWCCCK
-KCWWWWWWCK
-KCCWWWWCCK
-KCCCWWCCCK
-KCCCCCCCCK
-KKKKKKKKKK`,
+TTTTTTTTTT
+TZZZWWZZZT
+TZZZWWZZZT
+TZWWWWWWZT
+TZZWWWWZZT
+TZZZWWZZZT
+TXXXXXXXXT
+TTTTTTTTTT`,
   chat: `
-KKKKKKKKKK
-KCCCCCCCCK
-KCWCWCWCCK
-KCCCCCCCCK
-KKKKKKKKKK
-.KCK......
-.KK.......`,
+TTTTTTTTTT
+TCCCCCCCCT
+TCWCWCWCCT
+TUCCCCCCUT
+TTTTTTTTTT
+.TCT......
+.TT.......`,
   tag: `
-KKKKKKK..
-KYYYYYKK.
-KYYYYYYKK
-KYKKYYYYK
-KYKKYYYYK
-KYYYYYYYK
-KKKKKKKKK`,
+TTTTTTT..
+THHYYYTT.
+THYYYYYTT
+TYKKYYYYT
+TYKKYYYYT
+TOYYYYYOT
+TTTTTTTTT`,
   globe: `
-..KKKKK..
-.KNNCCNK.
-KCNNCNNCK
-KCCNNCNCK
-KCNNCCCCK
-.KCCNNCK.
-..KKKKK..`,
+..TTTTT..
+.TNNZENT.
+TZNNZNNZT
+TZZNNZNZT
+TZNNZZZXT
+.TZXNNXT.
+..TTTTT..`,
   note: `
-KKKKKKK..
-KWWWWWK..
-KWGGGWKK.
-KWWWWKYYK
-KWGGKYYK.
-KWWKYYK..
-KWKDDK...
-KKKKK....`,
+TTTTTTT..
+TWWWWWT..
+TWGGGWTT.
+TWWWWTHYT
+TWGGTYOT.
+TWWTYOT..
+TWTDDT...
+TTTTT....`,
   floppy: `
-KKKKKKKK.
-KCCWWCCKK
-KCCWWCCCK
-KCCCCCCCK
-KCKKKKKCK
-KCKWWWKCK
-KCKWWWKCK
-KKKKKKKKK`,
+TTTTTTTT.
+TZZWWZZTT
+TZZWWZZZT
+TZZZZZZZT
+TZTTTTTZT
+TZTWWWTZT
+TZTWWLTXT
+TTTTTTTT.`,
   bolt: `
-....KKKK.
-...KYYYK.
-..KYYYK..
-.KYYYYKKK
-KKYYYYYYK
-KKKKYYYK.
-...KYYK..
-..KYYK...
-..KYK....
-..KK.....`,
+....TTTT.
+...THYYT.
+..THYYT..
+.THYYYTTT
+TTHYYYYYT
+TTTTYYOT.
+...TYOT..
+..TYOT...
+..TOT....
+..TT.....`,
   heart: `
-.KK..KK.
-KRRKKRRK
-KRWRRRRK
-KRRRRRRK
-.KRRRRK.
-..KRRK..
-...KK...`,
+.TT..TT.
+TRRTTRRT
+TRWRRRRT
+TRRRRRRT
+.TSRRST.
+..TSST..
+...TT...`,
   sparkle: `
-...KK...
-..KYYK..
-.KYYYYK.
-KYYWYYYK
-.KYYYYK.
-..KYYK..
-...KK...`,
+...TT...
+..THYT..
+.THYYYT.
+THYWYYOT
+.TYYYOT.
+..TYOT..
+...TT...`,
   burger: `
 MMMMMMMMM
 MMMMMMMMM
@@ -169,11 +181,28 @@ MMM...MMM
 MM.....MM`,
 };
 
-const { name, size = '1em' } = Astro.props;
+const { name, size = '1.25em' } = Astro.props;
 const map = ICONS[name];
 if (!map) throw new Error(`PixelIcon: unknown icon "${name}"`);
 const rows = map.trim().split('\n').map((r) => r.trimEnd());
 const w = Math.max(...rows.map((r) => r.length));
+const mono = rows.some((r) => r.includes('M'));
+const depth = mono ? 0 : 1;
+
+// extrusion layer: silhouette runs offset (+1,+1) unit in deep ink
+const silRuns = [];
+if (depth) {
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      if (!(row[x] in PALETTE)) { x++; continue; }
+      const x0 = x;
+      while (x < row.length && row[x] in PALETTE) x++;
+      silRuns.push({ x: (x0 + depth) * 10, y: (y + depth) * 10, w: (x - x0) * 10 });
+    }
+  });
+}
+// colour layer
 const runs = [];
 rows.forEach((row, y) => {
   let x = 0;
@@ -188,10 +217,11 @@ rows.forEach((row, y) => {
 ---
 <svg
   class="pxi"
-  viewBox={`0 0 ${w * 10} ${rows.length * 10}`}
+  viewBox={`0 0 ${(w + depth) * 10} ${(rows.length + depth) * 10}`}
   style={`width:${size};height:${size};`}
   shape-rendering="crispEdges"
   aria-hidden="true"
 >
+  {silRuns.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" fill={PALETTE.K} />)}
   {runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" fill={r.fill} />)}
 </svg>
