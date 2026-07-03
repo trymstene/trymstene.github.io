@@ -380,26 +380,31 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 .block--dark .faq__item { border-color: var(--banana); }
 
 /* ---------- press row ---------- */
-/* "As featured in" outlet strip — typographic wordmarks with each outlet's
-   brand colour as an accent bar; ink text set EXPLICITLY (the strip sits in
-   a dark section whose inherited white text made the boxes look empty). */
-.press-kicker { margin: 1.6rem 0 0; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
-.press { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.7rem; }
-.press a, .press span {
-  font-weight: 800;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  border: 3px solid var(--ink);
-  padding: 0.45rem 0.9rem;
+/* "As featured in" press belt — full-width paper band, real outlet logos at
+   a uniform height, evenly spaced and centred. */
+.press-belt {
   background: var(--paper);
-  color: var(--ink);
-  text-decoration: none;
-  border-left-width: 8px;
+  border-top: var(--line);
+  border-bottom: var(--line);
+  padding: 1.8rem 1.2rem 2rem;
+  text-align: center;
 }
-.press a:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-.press .press__usatoday { border-left-color: #009bff; }
-.press .press__fandom { border-left-color: #fa005a; }
-.press .press__cityam { border-left-color: #ef3e42; }
+.press-belt__kicker {
+  margin: 0 0 1.3rem;
+  font-size: 0.8rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink); opacity: 0.55;
+}
+.press-belt__logos {
+  display: flex; flex-wrap: wrap;
+  justify-content: center; align-items: center;
+  gap: 1.6rem 3.5rem;
+}
+.press-belt__logos a, .press-belt__logos span { display: inline-flex; align-items: center; }
+.press-belt__logos img { height: 30px; width: auto; display: block; }
+.press-belt__logos a { transition: transform 0.15s ease; }
+.press-belt__logos a:hover { transform: translateY(-3px); }
+@media (max-width: 480px) { .press-belt__logos img { height: 24px; } .press-belt__logos { gap: 1.2rem 2rem; } }
 
 /* ---------- grab-the-gif box ---------- */
 /* hub CTA: example customized bananas */
