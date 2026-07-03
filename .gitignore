@@ -11,6 +11,7 @@ Desktop.ini
 
 # Claude Code local settings
 .claude/
+.mcp.json
 
 # Local-only planning doc
 ROADMAP.md
