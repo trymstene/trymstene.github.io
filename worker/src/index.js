@@ -16,6 +16,7 @@
 //   POST /upload            (CORS: ALLOWED_ORIGIN)  body = image/png, max 8 MB
 //   GET  /d/<key>           serve a stored design (Printful fetches from here)
 //   POST /webhook/shopify   Shopify orders/paid webhook
+//   GET  /geo               visitor country code (for localized price display)
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -27,6 +28,14 @@ export default {
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
       if (url.pathname === '/health') return handleHealth(env);
+      // visitor country (Cloudflare provides it on every request) — the
+      // builder uses it to show Shopify's localized price for that country
+      if (url.pathname === '/geo') {
+        return json({ country: (request.cf && request.cf.country) || null }, 200, {
+          'Cache-Control': 'no-store',
+          ...corsHeaders(env, request),
+        });
+      }
       return json({ error: 'not found' }, 404);
     } catch (e) {
       console.error(e);

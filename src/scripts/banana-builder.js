@@ -601,6 +601,31 @@ function init() {
     shopDomain: 'officialdancingbanana.myshopify.com',
     storefrontToken: '1032480366b6bf67760ba73ace4fe0f8', // public Storefront token, safe to embed
   };
+
+  // ---- localized price: ask the Worker where the visitor is (Cloudflare
+  // knows for free), then ask Shopify what THAT country pays via @inContext.
+  // Whatever comes back is EXACTLY what checkout will charge — so the badge
+  // never lies. Any failure leaves the static "149 kr" fallback in place.
+  (async () => {
+    try {
+      const geo = await fetch(STICKER.workerBase + '/geo').then((r) => r.json());
+      const cc = String(geo.country || '').toUpperCase();
+      if (!/^[A-Z]{2}$/.test(cc)) return;
+      const res = await fetch('https://' + STICKER.shopDomain + '/api/2024-10/graphql.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STICKER.storefrontToken },
+        body: JSON.stringify({
+          query: 'query($id: ID!, $country: CountryCode!) @inContext(country: $country) { node(id: $id) { ... on ProductVariant { price { amount currencyCode } } } }',
+          variables: { id: STICKER.variantGid, country: cc },
+        }),
+      }).then((r) => r.json());
+      const p = res && res.data && res.data.node && res.data.node.price;
+      if (!p) return;
+      const txt = new Intl.NumberFormat(undefined, { style: 'currency', currency: p.currencyCode, maximumFractionDigits: 0 }).format(parseFloat(p.amount));
+      const badge = el('bbPrice'); if (badge) badge.textContent = txt;
+      const modal = el('bbModalPrice'); if (modal) modal.textContent = txt + ', free shipping worldwide';
+    } catch (e) { /* static fallback stands */ }
+  })();
   // Quick client-side caption screen. Deliberately blunt (substring match, a
   // few false positives are fine — the toast just asks to reword). The REAL
   // moderation gate is Trym approving every Printful draft before print.
