@@ -380,13 +380,26 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 .block--dark .faq__item { border-color: var(--banana); }
 
 /* ---------- press row ---------- */
-.press { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.2rem; }
-.press span {
-  font-weight: 700;
+/* "As featured in" outlet strip — typographic wordmarks with each outlet's
+   brand colour as an accent bar; ink text set EXPLICITLY (the strip sits in
+   a dark section whose inherited white text made the boxes look empty). */
+.press-kicker { margin: 1.6rem 0 0; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
+.press { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.7rem; }
+.press a, .press span {
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
   border: 3px solid var(--ink);
-  padding: 0.4rem 0.8rem;
+  padding: 0.45rem 0.9rem;
   background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  border-left-width: 8px;
 }
+.press a:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.press .press__usatoday { border-left-color: #009bff; }
+.press .press__fandom { border-left-color: #fa005a; }
+.press .press__cityam { border-left-color: #ef3e42; }
 
 /* ---------- grab-the-gif box ---------- */
 /* hub CTA: example customized bananas */
