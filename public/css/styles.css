@@ -138,7 +138,7 @@ a { color: inherit; }
 .nav.open .nav__backdrop { opacity: 1; visibility: visible; }
 
 /* ---- desktop: two-tone segmented bar, no panel ---- */
-@media (min-width: 820px) {
+@media (min-width: 900px) {
   .nav__toggle { display: none; }
   .nav__backdrop { display: none; }
   .nav__brand { font-size: 1.85rem; }
@@ -158,8 +158,9 @@ a { color: inherit; }
   .nav__group a {
     display: flex;
     align-items: center;
-    padding: 0.5rem 0.9rem;
+    padding: 0.5rem 0.6rem;
     border-top: none;
+    font-size: 0.92rem;
   }
   .nav__group--banana { border: 3px solid var(--ink); }
   .nav__group--banana a { color: var(--banana); }
@@ -167,6 +168,9 @@ a { color: inherit; }
   .nav__group--trym { border: 3px solid var(--ink); border-left: none; }
   .nav__group--trym a { color: var(--ink); }
   .nav__group--trym a:hover { background: var(--ink); color: var(--banana); }
+}
+@media (min-width: 1160px) {
+  .nav__group a { padding: 0.5rem 0.9rem; font-size: 1rem; }
 }
 
 /* ---------- hero ---------- */
