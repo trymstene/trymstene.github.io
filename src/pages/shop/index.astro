@@ -4,6 +4,22 @@ import PixelIcon from '../../components/PixelIcon.astro';
 import { getProducts, money } from '../../lib/shop.js';
 
 const products = await getProducts();
+
+const collectionSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Dancing Banana Shop",
+  "url": "https://trymstene.com/shop/",
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": products.map((p, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": p.url,
+      "name": p.title,
+    })),
+  },
+};
 ---
 <BaseLayout
   title="Shop — Dancing Banana Merch | Trym Stene"
@@ -13,6 +29,7 @@ const products = await getProducts();
   ogDescription="Official Dancing Banana merch from the creator of the meme."
 >
   <link rel="stylesheet" href="/css/shop.css" slot="head" />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(collectionSchema)} />
 
   <section class="hero">
     <p class="kicker">Official merch</p>
@@ -44,7 +61,7 @@ const products = await getProducts();
   <section class="block">
     <p class="kicker">Or design your own</p>
     <h2>Make a custom banana</h2>
-    <p class="lead">Add shades, a hat, a caption — then (soon) put <em>your</em> banana on a sticker.</p>
+    <p class="lead">Add shades, a hat, a caption — then put <em>your</em> banana on a real vinyl sticker, shipped free worldwide.</p>
     <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Make your own dancing banana →</a>
   </section>
 </BaseLayout>

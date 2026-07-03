@@ -4,6 +4,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const title = "License the Dancing Banana | Trym Stene";
 const description = "License the original Dancing Banana GIF — the pixel banana bobbing across the internet since 1999, licensed directly by its creator, Trym Stene. Ads, merch, games, video and more.";
 const ogDescription = "The original 1999 pixel banana, licensed directly by its creator. Ads, merch, games, video — quoted per project.";
+
+// this page is ABOUT the banana CreativeWork (entity defined on the hub)
+const pageSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "License the Dancing Banana",
+  "url": "https://trymstene.com/license-the-dancing-banana/",
+  "about": {
+    "@type": "CreativeWork",
+    "@id": "https://trymstene.com/#banana-gif",
+    "name": "The Dancing Banana GIF",
+    "creator": { "@id": "https://trymstene.com/#trym", "@type": "Person", "name": "Trym Stene" }
+  }
+};
 ---
 <BaseLayout
   title={title}
@@ -13,6 +27,7 @@ const ogDescription = "The original 1999 pixel banana, licensed directly by its 
   ogDescription={ogDescription}
   showFooter={false}
 >
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(pageSchema)} />
   <!-- hero -->
   <section class="hero">
     <div class="hero__banana">

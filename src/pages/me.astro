@@ -5,6 +5,22 @@ import PixelIcon from '../components/PixelIcon.astro';
 const title = "Me — Trym Stene, the banana guy";
 const description = "Trym Stene — 40, Oslo-based Lead SEO & CRO specialist by day, web comedian and music producer by night, and the guy who made the Dancing Banana GIF in 1999.";
 const ogDescription = "Lead SEO by day, web comedian by night, the banana guy since 1999.";
+
+// profile page anchored to the same Person entity the rest of the site cites
+const profileSchema = {
+  "@context": "https://schema.org",
+  "@type": "ProfilePage",
+  "mainEntity": {
+    "@type": "Person",
+    "@id": "https://trymstene.com/#trym",
+    "name": "Trym Stene",
+    "url": "https://trymstene.com/",
+    "image": "https://trymstene.com/assets/trym-stene-profile-photo.jpg",
+    "jobTitle": "Lead SEO & CRO Specialist",
+    "description": "Norwegian creator of the Dancing Banana GIF (1999). Lead SEO & CRO specialist, web comedian, and music producer as DJ Sentry.",
+    "knowsAbout": ["SEO", "CRO", "web comedy", "music production", "internet memes"]
+  }
+};
 ---
 <BaseLayout
   title={title}
@@ -15,6 +31,7 @@ const ogDescription = "Lead SEO by day, web comedian by night, the banana guy si
   ogImage="https://trymstene.com/assets/trym-stene-profile-photo.jpg"
   showFooter={false}
 >
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(profileSchema)} />
   <!-- hero -->
   <section class="hero">
     <p class="kicker">The guy behind the fruit</p>

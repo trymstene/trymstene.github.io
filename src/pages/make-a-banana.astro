@@ -5,6 +5,24 @@ import PixelIcon from '../components/PixelIcon.astro';
 const title = "Make Your Own Dancing Banana | Trym Stene";
 const description = "Customize the original Dancing Banana — add shades, hats, captions and dance moves, then download it or share your creation. Free banana builder by the guy who made the meme.";
 const ogDescription = "Add shades, hats, captions and dance moves to the original Dancing Banana, then download or share it.";
+
+// the builder is a free web app (with an optional physical sticker offer)
+const appSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Make Your Own Dancing Banana",
+  "url": "https://trymstene.com/make-a-banana/",
+  "applicationCategory": "EntertainmentApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "screenshot": "https://trymstene.com/assets/og/builder.png",
+  "isBasedOn": { "@id": "https://trymstene.com/#banana-gif" },
+  "creator": { "@id": "https://trymstene.com/#trym", "@type": "Person", "name": "Trym Stene", "url": "https://trymstene.com/" },
+  "offers": [
+    { "@type": "Offer", "price": "0", "priceCurrency": "NOK", "description": "Free animated emoji GIF and meme image downloads" },
+    { "@type": "Offer", "price": "149", "priceCurrency": "NOK", "description": "Your custom banana as a 3″×3″ vinyl sticker, free worldwide shipping" }
+  ]
+};
 ---
 <BaseLayout
   title={title}
@@ -14,6 +32,7 @@ const ogDescription = "Add shades, hats, captions and dance moves to the origina
   ogDescription={ogDescription}
   showFooter={false}
 >
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(appSchema)} />
   <style is:inline slot="head">
     .bb-wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.2rem 4rem; }
     .bb-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
