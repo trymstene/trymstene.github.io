@@ -16,19 +16,24 @@
   gtag('js', new Date());
   gtag('config', GA_ID);
 
-  // Key conversion events
+  // Key conversion events. `placement` (data-place attr or the page path)
+  // answers "which CTA earns its pixels" across every builder entry point.
   document.addEventListener('click', function (e) {
     var a = e.target.closest ? e.target.closest('a') : null;
     if (!a) return;
     var href = a.getAttribute('href') || '';
-    if (a.hasAttribute('download') || /\.(gif|png|webp|mp4)(\?|$)/i.test(href)) {
+    var place = a.getAttribute('data-place') || location.pathname;
+    if (href.indexOf('/assets/wallpapers/') > -1) {
+      var m = href.match(/wallpaper-([a-z]+)-([a-z0-9]+)\.png/i) || [];
+      gtag('event', 'wallpaper_download', { design: m[1] || '', size: m[2] || '' });
+    } else if (a.hasAttribute('download') || /\.(gif|png|webp|mp4)(\?|$)/i.test(href)) {
       gtag('event', 'gif_download', { file: href.split('/').pop() });
     } else if (href.indexOf('make-a-banana') > -1) {
-      gtag('event', 'generator_click');
+      gtag('event', 'generator_click', { placement: place });
     } else if (href.indexOf('buymeacoffee') > -1) {
-      gtag('event', 'tip_click');
+      gtag('event', 'tip_click', { placement: place });
     } else if (href.indexOf('license-the-dancing-banana') > -1) {
-      gtag('event', 'license_click');
+      gtag('event', 'license_click', { placement: place });
     }
   });
 })();

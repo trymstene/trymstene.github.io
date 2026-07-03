@@ -249,11 +249,12 @@ function init() {
     state.spd = Math.round((0.5 + Math.random() * 0.8) * 100) / 100;
     topIn.value = state.top; botIn.value = state.bottom;
     onState();
+    track('surprise_me');
   };
 
   let toastT;
   function toast(msg) { const t = el('bbToast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
-  el('bbShare').onclick = async () => { sync(); try { await navigator.clipboard.writeText(location.href); toast('Share link copied!'); } catch (e) { toast('Copy this URL from the address bar'); } };
+  el('bbShare').onclick = async () => { sync(); try { await navigator.clipboard.writeText(location.href); toast('Share link copied!'); } catch (e) { toast('Copy this URL from the address bar'); } track('share_link_copy', { design: designStr() }); };
   el('bbOverlayLink').onclick = async () => {
     sync();
     const url = location.origin + '/overlay/' + location.search;
@@ -263,6 +264,12 @@ function init() {
   };
 
   function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
+  // compact outfit fingerprint attached to downloads/orders — six months of
+  // this tells us which accessories to build packs and pre-made stickers from
+  function designStr() {
+    const ex = Object.keys(state.extras).filter((k) => state.extras[k]).join('+') || 'none';
+    return [state.hat, state.glasses, ex, state.effect, state.bg].join('|');
+  }
 
   // ---- URL state ----
   function sync() {
@@ -495,7 +502,9 @@ function init() {
 
   // ---- state change: repaint everything derived ----
   let bbT;
+  let bbStarted = false;
   function onState() {
+    if (!bbStarted) { bbStarted = true; track('builder_start'); }
     dirty = true;
     refreshUI(); sync();
     clearTimeout(bbT);
@@ -574,7 +583,7 @@ function init() {
       const blob = new Blob([gif.bytes()], { type: 'image/gif' });
       download(URL.createObjectURL(blob), 'my-dancing-banana.gif');
       toast('Emoji GIF downloaded!');
-      track('gif_download', { file: 'builder-emoji.gif' });
+      track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
@@ -595,7 +604,7 @@ function init() {
     }
     download(out.toDataURL('image/png'), 'my-dancing-banana.png');
     toast('Image downloaded!');
-    track('gif_download', { file: 'builder-meme.png' });
+    track('png_download', { file: 'builder-meme.png', design: designStr() });
   };
 
   // ---- order it as a REAL printed sticker (Part B) ----
@@ -609,6 +618,8 @@ function init() {
     shopDomain: 'officialdancingbanana.myshopify.com',
     storefrontToken: '1032480366b6bf67760ba73ace4fe0f8', // public Storefront token, safe to embed
   };
+  // what the visitor will actually pay — updated by the localized-price fetch
+  const PRICE = { amount: 149, currency: 'NOK' };
 
   // ---- localized price: ask the Worker where the visitor is (Cloudflare
   // knows for free), then ask Shopify what THAT country pays via @inContext.
@@ -632,6 +643,7 @@ function init() {
       const txt = new Intl.NumberFormat(undefined, { style: 'currency', currency: p.currencyCode, maximumFractionDigits: 0 }).format(parseFloat(p.amount));
       const badge = el('bbPrice'); if (badge) badge.textContent = txt;
       const modal = el('bbModalPrice'); if (modal) modal.textContent = txt + ', free shipping worldwide';
+      PRICE.amount = parseFloat(p.amount); PRICE.currency = p.currencyCode; // analytics value matches checkout
     } catch (e) { /* static fallback stands */ }
   })();
   // Quick client-side caption screen. Deliberately blunt (substring match, a
@@ -722,7 +734,7 @@ function init() {
       : '3″×3″ (7.5 cm) square vinyl sticker with your design';
     el('bbOrderModal').hidden = false;
     document.body.style.overflow = 'hidden';
-    track('sticker_preview_open', {});
+    track('sticker_order_click', { design: designStr() });
   };
   function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
   el('bbOrderCancel').onclick = closeOrderModal;
@@ -733,10 +745,13 @@ function init() {
   el('bbOrderConfirm').onclick = async () => {
     const btn = el('bbOrderConfirm'); const label = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Preparing your sticker…';
+    // fired up front so the begin-checkout signal isn't lost to the redirect
+    track('sticker_preview_confirm', { value: PRICE.amount, currency: PRICE.currency, design: designStr() });
     try {
       const blob = await new Promise((r) => pendingPrint.toBlob(r, 'image/png'));
       const up = await fetch(STICKER.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
       if (!up.ok) throw new Error('upload failed: ' + up.status);
+      track('sticker_upload_ok');
       const { key, url } = await up.json();
 
       const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
@@ -754,10 +769,11 @@ function init() {
       const data = await res.json();
       const checkout = data && data.data && data.data.cartCreate && data.data.cartCreate.cart && data.data.cartCreate.cart.checkoutUrl;
       if (!checkout) throw new Error('cart failed: ' + JSON.stringify(data));
-      track('sticker_order_click', {});
+      track('checkout_redirect', { value: PRICE.amount, currency: PRICE.currency });
       window.location.href = checkout;
     } catch (e) {
       console.error(e);
+      track('sticker_order_fail', { message: String(e && e.message || e).slice(0, 90) });
       toast('Hmm, that didn’t work — give it another try?');
       btn.disabled = false; btn.innerHTML = label;
     }
