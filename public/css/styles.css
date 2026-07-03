@@ -402,9 +402,17 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 }
 .press-belt__logos a, .press-belt__logos span { display: inline-flex; align-items: center; }
 .press-belt__logos img { height: 30px; width: auto; display: block; }
+/* stacked/compact marks need more height to sit at the same OPTICAL size */
+.press-belt__logos img[alt="Family Guy"] { height: 44px; }
+.press-belt__logos img[alt="Know Your Meme"] { height: 26px; }
 .press-belt__logos a { transition: transform 0.15s ease; }
 .press-belt__logos a:hover { transform: translateY(-3px); }
-@media (max-width: 480px) { .press-belt__logos img { height: 24px; } .press-belt__logos { gap: 1.2rem 2rem; } }
+@media (max-width: 480px) {
+  .press-belt__logos img { height: 24px; }
+  .press-belt__logos img[alt="Family Guy"] { height: 36px; }
+  .press-belt__logos img[alt="Know Your Meme"] { height: 21px; }
+  .press-belt__logos { gap: 1.2rem 2rem; }
+}
 
 /* ---------- grab-the-gif box ---------- */
 /* hub CTA: example customized bananas */
