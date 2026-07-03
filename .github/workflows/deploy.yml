@@ -1,7 +1,16 @@
 name: Deploy to GitHub Pages
 
-# Builds the Astro site and publishes it to GitHub Pages on every push to main.
-# Requires: repo Settings → Pages → Build and deployment → Source = "GitHub Actions".
+# Builds the Astro site and pushes the output to the `gh-pages` branch.
+# Requires: repo Settings → Pages → Build and deployment →
+#   Source = "Deploy from a branch", Branch = gh-pages / (root).
+#
+# WHY branch-based: the artifact API path (upload-pages-artifact +
+# deploy-pages) failed 5 consecutive deploys on 3 Jul 2026 with a generic
+# backend "Deployment failed, try again later" (builds green, artifact fine,
+# no incident on githubstatus.com) — second such wave in two days. Pushing to
+# a branch and letting GitHub's own pages-build-deployment pipeline publish it
+# is the boring, battle-tested path. dist/ already contains CNAME + .nojekyll
+# (they live in public/), so no extra config here.
 
 on:
   push:
@@ -9,9 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 # Latest push wins: cancel any in-progress deploy. (A Pages-side stall on
 # 2 Jul 2026 left a deploy job hung for 13h; with cancel-in-progress: false
@@ -22,7 +29,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,18 +43,9 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Publish dist to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: ./dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          force_orphan: true
