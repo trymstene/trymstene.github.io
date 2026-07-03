@@ -385,6 +385,13 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 }
 
 /* ---------- grab-the-gif box ---------- */
+/* hub CTA: example customized bananas */
+.mkb-examples { display: flex; justify-content: center; align-items: flex-end; gap: clamp(0.8rem, 4vw, 2.2rem); margin: 1.6rem 0 0.4rem; }
+.mkb-examples img { height: clamp(110px, 18vw, 170px); width: auto; image-rendering: pixelated; }
+.mkb-examples img:nth-child(1) { transform: rotate(-4deg); }
+.mkb-examples img:nth-child(3) { transform: rotate(4deg); }
+.mkb-note { font-size: 0.85rem; opacity: 0.75; margin-top: 0.7rem; }
+
 .grab {
   display: flex;
   flex-wrap: wrap;
