@@ -1,0 +1,26 @@
+---
+// /overlay/ — the dancing banana as an OBS/streaming browser source.
+// Forwards straight into the builder's overlay mode with all params intact:
+//   /overlay/?h=cowboy&t=YEEHAW   → that banana, transparent, always dancing
+//   /overlay/                     → the banana of the day (date-seeded outfit)
+// A tiny static forwarder keeps the pretty URL on GitHub Pages.
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dancing Banana overlay</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      var q = new URLSearchParams(location.search);
+      q.set('overlay', '1');
+      if ([...q.keys()].length === 1) q.set('daily', '1'); // bare /overlay/ = banana of the day
+      location.replace('/make-a-banana/?' + q.toString());
+    </script>
+  </head>
+  <body style="background:transparent;">
+    <p><a href="/make-a-banana/">Open the banana builder</a></p>
+  </body>
+</html>

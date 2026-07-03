@@ -199,6 +199,22 @@ const appSchema = {
     .bb-modal__box canvas { display: block; width: 100%; height: auto; border: var(--line); }
     .bb-modal .bb-actions .btn { flex: 1; text-align: center; }
 
+    /* ---- OBS overlay mode (?overlay=1 via /overlay/): nothing but the
+       banana, transparent page, sized for a streaming browser source ---- */
+    html.bb-overlay, html.bb-overlay body { background: transparent !important; }
+    html.bb-overlay .nav, html.bb-overlay .hero, html.bb-overlay .bb-controls,
+    html.bb-overlay .bb-outputs, html.bb-overlay footer, html.bb-overlay .bb-toast,
+    html.bb-overlay .bb-pause, html.bb-overlay .bb-modal, html.bb-overlay .bb-freeze { display: none !important; }
+    html.bb-overlay .bb-wrap { max-width: none; padding: 0; }
+    html.bb-overlay .bb-grid { display: block; }
+    html.bb-overlay .bb-stagewrap { position: fixed; inset: 0; padding: 0; background: transparent; }
+    html.bb-overlay .bb-stage {
+      position: absolute; inset: 0; margin: auto;
+      width: 100vmin; height: 100vmin; aspect-ratio: auto;
+      border: none; box-shadow: none; background: transparent !important;
+    }
+    html.bb-overlay .bb-stage--transparent { background: transparent !important; background-image: none !important; }
+
     /* frame picker — freeze a moment of the dance */
     .bb-frames { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
     .bb-frame { width: 72px; height: 72px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
@@ -262,6 +278,7 @@ const appSchema = {
         </div>
         <div class="bb-actions">
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
+          <button class="btn btn--light" id="bbOverlayLink" title="A transparent always-dancing version of your banana, for OBS / streaming browser sources"><PixelIcon name="sparkle" /> Stream overlay link</button>
         </div>
       </div>
     </div>

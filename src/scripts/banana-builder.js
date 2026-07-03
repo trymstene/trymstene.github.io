@@ -253,6 +253,13 @@ function init() {
   let toastT;
   function toast(msg) { const t = el('bbToast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
   el('bbShare').onclick = async () => { sync(); try { await navigator.clipboard.writeText(location.href); toast('Share link copied!'); } catch (e) { toast('Copy this URL from the address bar'); } };
+  el('bbOverlayLink').onclick = async () => {
+    sync();
+    const url = location.origin + '/overlay/' + location.search;
+    try { await navigator.clipboard.writeText(url); toast('Overlay link copied — add it in OBS as a Browser Source!'); }
+    catch (e) { toast(url); }
+    track('overlay_link_copy');
+  };
 
   function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
@@ -760,6 +767,28 @@ function init() {
 
   // ---- boot ----
   load();
+
+  // ---- OBS overlay mode (after load() so it can override the defaults) ----
+  // ?overlay=1 (usually reached via /overlay/) strips all chrome via CSS on
+  // <html> and leaves just the dancing banana on a transparent page — sized
+  // for an OBS/streaming browser source. ?daily seeds the outfit from the
+  // UTC date: same banana-of-the-day for everyone, changes at midnight.
+  const urlP = new URLSearchParams(location.search);
+  if (urlP.get('overlay') === '1') {
+    document.documentElement.classList.add('bb-overlay');
+    state.paused = false; // an overlay must dance, reduced-motion or not
+    if (urlP.has('daily')) {
+      const now = new Date();
+      let seed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+      const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+      state.hat = HATS[Math.floor(rnd() * HATS.length)][0];
+      state.glasses = GLASSES[Math.floor(rnd() * GLASSES.length)][0];
+      state.extras = {};
+      EXTRA_DEFS.forEach((def) => { if (rnd() < 0.4) state.extras[def.id] = true; });
+      state.effect = rnd() < 0.35 ? EFFECTS[1 + Math.floor(rnd() * (EFFECTS.length - 1))][0] : 'none';
+    }
+  }
+
   refreshUI();
   sheet.decode().catch(() => {}).finally(() => {
     recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true;
