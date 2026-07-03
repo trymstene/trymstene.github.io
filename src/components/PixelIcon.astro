@@ -1,148 +1,172 @@
 ---
-// Monochrome pixel-art icons, drawn as ASCII maps on a 10-unit grid and
-// rendered as crispEdges SVG rects in currentColor — so they inherit the
-// button/text colour automatically (yellow on dark buttons, ink on light).
-// Same visual language as the banana sprite (tools/pixel-assets.py).
+// Pixel-art emoji icons, drawn as ASCII maps on a 10-unit grid and rendered
+// as crispEdges SVG rects — coloured reimaginations of the stock emojis they
+// replaced (🍌 ☕ 🎨 🎲 🔗 💬 🏷️ 🌍 📝 💾 ⚡ ❤️ ✨), on the same palette as the
+// banana sprite (tools/pixel-assets.py). The letter M renders as currentColor
+// for the mono UI glyphs (burger/close) that must adapt to the button colour.
+const PALETTE = {
+  K: '#111111', // ink black (outline)
+  G: '#484848', // dark grey
+  L: '#cdd3db', // light grey
+  W: '#ffffff', // white
+  R: '#e22020', // red
+  Y: '#f2c200', // gold
+  O: '#c49a00', // darker gold shade
+  P: '#ff4d6d', // hot pink
+  C: '#4db8ff', // blue
+  N: '#3aa655', // leaf green
+  B: '#8a5a2b', // brown
+  D: '#5a3618', // dark brown
+  M: 'currentColor',
+};
+
 const ICONS = {
   banana: `
-.....KK.
-....KK..
-...KKK..
-..KKKK..
-..KKKK..
-.KKKK...
-KKKK....
-.KK.....`,
+......KK.
+.....KDK.
+....KYYK.
+...KYYOK.
+..KYYYOK.
+.KYYYOK..
+.KYYOK...
+KYYYOK...
+KYYOK....
+.KKK.....`,
   coffee: `
 ..K..K....
 .K..K.....
 ..K..K....
 KKKKKKKK..
-K......K.K
-K......KKK
-K......K..
-.K....K...
+KDDDDDDKK.
+KWWWWWWK.K
+KWWWWWWKKK
+.KWWWWK...
 KKKKKKKK..`,
-  brush: `
-.......KK
-......KKK
-.....KKK.
-....KKK..
-...KKK...
-..KK.....
-.KKK.....
-KKK......
-KK.......`,
+  palette: `
+...KKKKKK...
+..KBBBBBBK..
+.KBRRBBCCBK.
+.KBRRBBCCBK.
+KBBBBBBBBBBK
+KBYYBBBKKBBK
+KBYYBBBKKBBK
+.KBBBBBBBBK.
+.KBNNBBBBBK.
+..KBNNBBBK..
+...KKKKKK...`,
   dice: `
 KKKKKKKKK
-K.......K
-K.KK....K
-K.KK....K
-K...K...K
-K....KK.K
-K....KK.K
-K.......K
+KWWWWWWWK
+KWKKWWWWK
+KWKKWWWWK
+KWWWKWWWK
+KWWWWKKWK
+KWWWWKKWK
+KWWWWWWWK
 KKKKKKKKK`,
   link: `
 .KKK..KKK.
-K...KK...K
-K...KK...K
+KCCCKKCCCK
+KC.CKKC.CK
+KCCCKKCCCK
 .KKK..KKK.`,
   download: `
-....KK....
-....KK....
-....KK....
-.KKKKKKKK.
-..KKKKKK..
-...KKKK...
-....KK....
-KK......KK
+KKKKKKKKKK
+KCCCWWCCCK
+KCCCWWCCCK
+KCWWWWWWCK
+KCCWWWWCCK
+KCCCWWCCCK
+KCCCCCCCCK
 KKKKKKKKKK`,
   chat: `
 KKKKKKKKKK
-K........K
-K.K.K.K..K
-K........K
+KCCCCCCCCK
+KCWCWCWCCK
+KCCCCCCCCK
 KKKKKKKKKK
-..KK......
+.KCK......
 .KK.......`,
   tag: `
 KKKKKKK..
-K.....KK.
-K......KK
-K.KK....K
-K.KK....K
-K.......K
+KYYYYYKK.
+KYYYYYYKK
+KYKKYYYYK
+KYKKYYYYK
+KYYYYYYYK
 KKKKKKKKK`,
   globe: `
 ..KKKKK..
-.K..K..K.
-K...K...K
-KKKKKKKKK
-K...K...K
-.K..K..K.
+.KNNCCNK.
+KCNNCNNCK
+KCCNNCNCK
+KCNNCCCCK
+.KCCNNCK.
 ..KKKKK..`,
   note: `
-....KKKK
-....K..K
-....K..K
-....K...
-....K...
-..KKK...
-.KKKK...
-..KK....`,
+KKKKKKK..
+KWWWWWK..
+KWGGGWKK.
+KWWWWKYYK
+KWGGKYYK.
+KWWKYYK..
+KWKDDK...
+KKKKK....`,
   floppy: `
 KKKKKKKK.
-K..KK..KK
-K..KK...K
-K.......K
-K.KKKKK.K
-K.K...K.K
-K.K...K.K
+KCCWWCCKK
+KCCWWCCCK
+KCCCCCCCK
+KCKKKKKCK
+KCKWWWKCK
+KCKWWWKCK
 KKKKKKKKK`,
   bolt: `
-...KKKK.
-..KKKK..
-.KKKK...
-KKKKKKK.
-...KKK..
-..KKK...
-.KKK....
-.KK.....`,
+....KKKK.
+...KYYYK.
+..KYYYK..
+.KYYYYKKK
+KKYYYYYYK
+KKKKYYYK.
+...KYYK..
+..KYYK...
+..KYK....
+..KK.....`,
   heart: `
 .KK..KK.
-KKKKKKKK
-KKKKKKKK
-.KKKKKK.
-..KKKK..
+KRRKKRRK
+KRWRRRRK
+KRRRRRRK
+.KRRRRK.
+..KRRK..
 ...KK...`,
   sparkle: `
 ...KK...
-...KK...
-.KKKKKK.
-KKKKKKKK
-.KKKKKK.
-...KK...
+..KYYK..
+.KYYYYK.
+KYYWYYYK
+.KYYYYK.
+..KYYK..
 ...KK...`,
   burger: `
-KKKKKKKKK
-KKKKKKKKK
+MMMMMMMMM
+MMMMMMMMM
 .........
-KKKKKKKKK
-KKKKKKKKK
+MMMMMMMMM
+MMMMMMMMM
 .........
-KKKKKKKKK
-KKKKKKKKK`,
+MMMMMMMMM
+MMMMMMMMM`,
   close: `
-KK.....KK
-KKK...KKK
-.KKK.KKK.
-..KKKKK..
-...KKK...
-..KKKKK..
-.KKK.KKK.
-KKK...KKK
-KK.....KK`,
+MM.....MM
+MMM...MMM
+.MMM.MMM.
+..MMMMM..
+...MMM...
+..MMMMM..
+.MMM.MMM.
+MMM...MMM
+MM.....MM`,
 };
 
 const { name, size = '1em' } = Astro.props;
@@ -154,10 +178,11 @@ const runs = [];
 rows.forEach((row, y) => {
   let x = 0;
   while (x < row.length) {
-    if (row[x] !== 'K') { x++; continue; }
+    const ch = row[x];
+    if (!(ch in PALETTE)) { x++; continue; }
     const x0 = x;
-    while (x < row.length && row[x] === 'K') x++;
-    runs.push({ x: x0 * 10, y: y * 10, w: (x - x0) * 10 });
+    while (x < row.length && row[x] === ch) x++;
+    runs.push({ x: x0 * 10, y: y * 10, w: (x - x0) * 10, fill: PALETTE[ch] });
   }
 });
 ---
@@ -166,8 +191,7 @@ rows.forEach((row, y) => {
   viewBox={`0 0 ${w * 10} ${rows.length * 10}`}
   style={`width:${size};height:${size};`}
   shape-rendering="crispEdges"
-  fill="currentColor"
   aria-hidden="true"
 >
-  {runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" />)}
+  {runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="10" fill={r.fill} />)}
 </svg>
