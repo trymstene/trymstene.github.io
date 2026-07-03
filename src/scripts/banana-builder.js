@@ -582,40 +582,70 @@ function init() {
   const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jævla','jævel','fitte','kuk','pikk','hore','kneppe'];
   const captionsClean = () => { const t = (state.top + ' ' + state.bottom).toLowerCase(); return !BLOCKLIST.some((w) => t.includes(w)); };
 
-  // Renders the print file (what actually gets printed): the FULL SQUARE
-  // canvas — we sell square stickers with the banana centred. A transparent
-  // background is substituted with white so the print is always a clean square.
+  // Renders the print file (what actually gets printed). Two sticker styles
+  // (Trym's call, 3 Jul): TRANSPARENT background → trimmed transparent PNG so
+  // Printful DIE-CUTS along the design's outline (banana + captions included;
+  // Trym's draft approval catches odd cases like floating confetti). A
+  // COLOURED background → the full square canvas (square sticker).
   function renderPrintFile() {
     const W = 2048;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
     drawComposite(ctx, W, state.frame, {
-      bg: state.bg === 'transparent' ? '#ffffff' : state.bg,
-      captions: true, effect: state.effect,
+      bg: state.bg, captions: true, effect: state.effect,
       hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
     });
+    if (state.bg === 'transparent') {
+      const data = ctx.getImageData(0, 0, W, W).data;
+      return crop(cv, pad(bboxOf([data], W), W));
+    }
     return cv;
   }
 
-  // Turns the square design into a sticker MOCKUP: rounded square sticker with
-  // a white kiss-cut margin, soft shadow, paper backdrop — the physical thing.
+  // Sticker MOCKUP matching the style: die-cut white contour border for
+  // transparent designs, rounded white square for coloured ones. Soft shadow,
+  // paper backdrop — so the buyer sees the physical thing.
   function makeStickerMockup(design, size = 900) {
     const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
     const ctx = cv.getContext('2d');
     ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
-    const margin = size * 0.12;
-    const dw = size - 2 * margin, dh = dw;
-    const dx = margin, dy = margin;
-    const border = size * 0.02; // white kiss-cut margin around the artwork
-    const r = size * 0.035;
-    ctx.save();
-    ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.roundRect(dx - border, dy - border, dw + 2 * border, dh + 2 * border, r); ctx.fill();
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, r * 0.5); ctx.clip();
-    ctx.drawImage(design, dx, dy, dw, dh);
-    ctx.restore();
+    const margin = size * 0.14;
+    const s = Math.min((size - 2 * margin) / design.width, (size - 2 * margin) / design.height);
+    const dw = design.width * s, dh = design.height * s;
+    const dx = (size - dw) / 2, dy = (size - dh) / 2;
+    const border = size * 0.02; // the white kiss-cut edge
+
+    if (state.bg === 'transparent') {
+      // white silhouette of the design, dilated in a ring = the die-cut border
+      const sil = document.createElement('canvas'); sil.width = size; sil.height = size;
+      const sctx = sil.getContext('2d');
+      sctx.drawImage(design, dx, dy, dw, dh);
+      sctx.globalCompositeOperation = 'source-in';
+      sctx.fillStyle = '#fff'; sctx.fillRect(0, 0, size, size);
+      const outline = document.createElement('canvas'); outline.width = size; outline.height = size;
+      const octx = outline.getContext('2d');
+      for (let k = 0; k < 24; k++) {
+        const a = (k / 24) * 2 * Math.PI;
+        octx.drawImage(sil, Math.cos(a) * border, Math.sin(a) * border);
+      }
+      octx.drawImage(sil, 0, 0);
+      ctx.save();
+      ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
+      ctx.drawImage(outline, 0, 0);
+      ctx.restore();
+      ctx.drawImage(outline, 0, 0); // crisp second pass over the shadowed one
+      ctx.drawImage(design, dx, dy, dw, dh);
+    } else {
+      const r = size * 0.035;
+      ctx.save();
+      ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.roundRect(dx - border, dy - border, dw + 2 * border, dh + 2 * border, r); ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, r * 0.5); ctx.clip();
+      ctx.drawImage(design, dx, dy, dw, dh);
+      ctx.restore();
+    }
     return cv;
   }
 
@@ -629,6 +659,9 @@ function init() {
     const mc = el('bbMockup');
     mc.width = mock.width; mc.height = mock.height;
     mc.getContext('2d').drawImage(mock, 0, 0);
+    el('bbModalCut').textContent = state.bg === 'transparent'
+      ? '3″×3″ (7.5 cm) vinyl sticker, die-cut along your design’s outline'
+      : '3″×3″ (7.5 cm) square vinyl sticker with your design';
     el('bbOrderModal').hidden = false;
     document.body.style.overflow = 'hidden';
     track('sticker_preview_open', {});
