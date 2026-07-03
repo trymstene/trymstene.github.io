@@ -16,6 +16,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* buttons inherit our font + ink — otherwise iOS Safari paints its default
+   blue button text on every <button> that doesn't set color explicitly */
+button { font: inherit; color: inherit; }
+
 html { scroll-behavior: smooth; }
 
 body {
@@ -88,6 +92,9 @@ a { color: inherit; }
   color: var(--ink);
   z-index: 70;
 }
+/* the open panel is ink-black behind the toggle — flip the X to banana
+   yellow or it disappears against it */
+.nav.open .nav__toggle { color: var(--banana); }
 
 .nav__group { display: flex; }
 .nav__group a { text-decoration: none; font-weight: 700; }
