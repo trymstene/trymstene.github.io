@@ -1,0 +1,17 @@
+# Banana share worker — share pages + OG images so shared bananas unfurl as
+# themselves. Deliberately SEPARATE from the payment worker (worker/):
+# different blast radius, own R2 bucket, no secrets.
+#
+# Deploy:  cd worker-share && npx wrangler deploy
+# Bucket:  npx wrangler r2 bucket create banana-shares   (one-time)
+
+name = "banana-share"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[r2_buckets]]
+binding = "SHARES"
+bucket_name = "banana-shares"
+
+[vars]
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"

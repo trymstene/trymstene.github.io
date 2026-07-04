@@ -254,7 +254,59 @@ function init() {
 
   let toastT;
   function toast(msg) { const t = el('bbToast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
-  el('bbShare').onclick = async () => { sync(); try { await navigator.clipboard.writeText(location.href); toast('Share link copied!'); } catch (e) { toast('Copy this URL from the address bar'); } track('share_link_copy', { design: designStr() }); };
+  // ---- share: links that unfurl as YOUR banana ----
+  // The browser renders a 1200x630 OG card (the only place the banana can be
+  // rendered faithfully) and posts it to the share worker; the short /s/<id>
+  // link serves crawler-readable og tags + bounces humans to the builder.
+  // Any failure falls back to copying the plain builder URL.
+  const SHARE_BASE = 'https://banana-share.trymstene.workers.dev';
+  function renderShareCard() {
+    const W = 1200, H = 630;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    const cardBg = state.bg === 'transparent' ? '#ffe135' : state.bg;
+    ctx.fillStyle = cardBg;
+    ctx.fillRect(0, 0, W, H);
+    // drawComposite clears its square first, so it must paint its own bg
+    drawComposite(ctx, 630, state.frame, {
+      bg: cardBg, captions: true, effect: state.effect,
+      hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+    });
+    // the composite drew into the top-left 630px square; add the pitch right
+    const ink = '#111111', paper = '#fffdf5';
+    ctx.textAlign = 'left'; ctx.lineJoin = 'round';
+    const line = (txt, x, y, size, fill) => {
+      ctx.font = '800 ' + size + 'px "Archivo Black", "Arial Black", sans-serif';
+      ctx.strokeStyle = fill === ink ? paper : ink;
+      ctx.lineWidth = size * 0.18;
+      ctx.strokeText(txt, x, y);
+      ctx.fillStyle = fill;
+      ctx.fillText(txt, x, y);
+    };
+    line('I made a', 660, 240, 52, ink);
+    line('dancing banana', 660, 310, 60, ink);
+    line('make yours at', 660, 420, 30, ink);
+    line('trymstene.com', 660, 466, 36, ink);
+    return cv;
+  }
+  el('bbShare').onclick = async () => {
+    sync();
+    const plain = location.href;
+    let copied = plain, mode = 'plain';
+    try {
+      await assetsReady();
+      const blob = await new Promise((r) => renderShareCard().toBlob(r, 'image/png'));
+      const res = await fetch(SHARE_BASE + '/share?p=' + encodeURIComponent(location.search.slice(1)), {
+        method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob,
+      });
+      if (res.ok) { const d = await res.json(); if (d && d.url) { copied = d.url; mode = 'unfurl'; } }
+    } catch (e) { /* plain fallback stands */ }
+    try {
+      await navigator.clipboard.writeText(copied);
+      toast(mode === 'unfurl' ? 'Link copied — it unfurls with YOUR banana!' : 'Share link copied!');
+    } catch (e) { toast('Copy this URL from the address bar'); }
+    track('share_link_copy', { design: designStr(), mode });
+  };
   el('bbOverlayLink').onclick = async () => {
     sync();
     const url = location.origin + '/overlay/' + location.search;
