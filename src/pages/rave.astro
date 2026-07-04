@@ -43,7 +43,7 @@ const schema = {
     .rv-club { position: relative; border: 4px solid #ffe135; box-shadow: 8px 8px 0 #000; overflow: hidden; }
     /* the stage: Sentry-style DJ desk front-centre, speakers flanking,
        earned companions dancing on a line behind the DJ */
-    .rv-booth { position: relative; background: #17121f; border-bottom: 4px solid #ffe135; min-height: 164px; }
+    .rv-booth { position: relative; background: #17121f; border-bottom: 4px solid #0d0b14; min-height: 164px; }
     .rv-stage {
       position: absolute; left: 0; right: 0; bottom: 42px;
       display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
@@ -147,7 +147,7 @@ const schema = {
        so raising him shrank the bottom-anchored block and the DESK sank instead
        (Trym caught it in devtools: the desk followed him). top adjusts ONLY him. */
     #rvBarman {
-      position: absolute; top: -83px; left: 14px; width: 150px; height: 150px;
+      position: absolute; top: -91px; left: 14px; width: 150px; height: 150px;
       z-index: 3; image-rendering: pixelated;
     }
     .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -24px; z-index: 4; }
@@ -218,6 +218,7 @@ const schema = {
       position: absolute; left: 0; right: 0; top: 4px; display: grid; place-items: center;
       pointer-events: none; z-index: 600;
     }
+    .rv-dropflash[hidden] { display: none; } /* our display:grid beats the UA [hidden] rule — the text was stuck ON permanently */
     .rv-dropflash span {
       font-family: "Archivo Black", sans-serif; font-size: clamp(1.3rem, 4.5vw, 2.4rem);
       color: #ffe135; -webkit-text-stroke: 2px #111; animation: rvDropPulse 0.5s steps(2) infinite;
@@ -301,7 +302,6 @@ const schema = {
           <span class="rv-mnote rv-mnote--2" aria-hidden="true">♫</span>
           <span class="rv-mnote rv-mnote--3" aria-hidden="true">♪</span>
           <span class="rv-mnote rv-mnote--4" aria-hidden="true">♫</span>
-          <div class="rv-sign">🎧 actual music coming soon</div>
           <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div>
           <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
