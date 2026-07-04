@@ -175,14 +175,6 @@ const appSchema = {
     .bb-dl2 { margin-top: 1.15rem; padding-top: 1.15rem; border-top: 3px dashed rgba(17,17,17,0.18); }
     /* the BUY card: hot shadow so the money maker pops */
     .bb-card--buy { box-shadow: 8px 8px 0 var(--hot); }
-    .bb-ravedoor {
-      display: block; margin-top: 1.4rem; padding: 0.9rem 1.1rem; text-align: center;
-      background: var(--ink); color: var(--paper); text-decoration: none;
-      border: var(--line); box-shadow: var(--shadow);
-      transition: transform 0.12s ease;
-    }
-    .bb-ravedoor:hover { transform: translate(-2px, -2px); }
-    .bb-ravedoor strong { color: var(--banana); }
     .bb-shelfrow { margin-top: 1.6rem; }
     .bb-shelfrow h3 { margin: 0; }
     .bb-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
@@ -412,9 +404,6 @@ const appSchema = {
           <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" size="1.4em" /> Order my sticker</button>
         </div>
       </div>
-      <a class="bb-ravedoor" href="/rave/">
-        🪩 <strong>Your banana can dance with the others.</strong> It walks into the rave dressed exactly like this — join the floor →
-      </a>
       <div class="bb-shelfrow">
         <h3>🗄 My shelf</h3>
         <p class="bb-note" style="margin-top:0.2rem;">Every banana you download, share or order lands here — click one to bring it back. Feeling ambitious? <a href="/forge/">Forge a pixel emoji from scratch →</a></p>
