@@ -54,7 +54,7 @@ const SVG = {
   bowtie: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 50" width="90" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="20" height="10" fill="#111111"/><rect x="60" y="0" width="20" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="10" height="10" fill="#4db8ff"/><rect x="20" y="10" width="10" height="10" fill="#ffffff"/><rect x="30" y="10" width="30" height="10" fill="#111111"/><rect x="60" y="10" width="10" height="10" fill="#ffffff"/><rect x="70" y="10" width="10" height="10" fill="#4db8ff"/><rect x="80" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="30" height="10" fill="#4db8ff"/><rect x="40" y="20" width="10" height="10" fill="#5a3618"/><rect x="50" y="20" width="30" height="10" fill="#4db8ff"/><rect x="80" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="20" height="10" fill="#4db8ff"/><rect x="30" y="30" width="30" height="10" fill="#111111"/><rect x="60" y="30" width="20" height="10" fill="#4db8ff"/><rect x="80" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="20" height="10" fill="#111111"/><rect x="60" y="40" width="20" height="10" fill="#111111"/></svg>',
   // the rave souvenir: a neon glowstick, held in the glove (anchor: hand). The
   // pixel halo (low-opacity flanks) is the glow — crispEdges, no blur, engine style.
-  glowstick: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70" shape-rendering="crispEdges"><rect x="10" y="10" width="10" height="40" fill="#39ff14" opacity="0.35"/><rect x="30" y="10" width="10" height="40" fill="#39ff14" opacity="0.35"/><rect x="20" y="0" width="10" height="10" fill="#eaffe0"/><rect x="20" y="10" width="10" height="50" fill="#39ff14"/><rect x="20" y="60" width="10" height="10" fill="#111111"/></svg>',
+  glowstick: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 100" width="70" height="100" shape-rendering="crispEdges"><rect x="10" y="10" width="10" height="60" fill="#39ff14" opacity="0.2"/><rect x="50" y="10" width="10" height="60" fill="#39ff14" opacity="0.2"/><rect x="20" y="0" width="10" height="70" fill="#39ff14" opacity="0.4"/><rect x="40" y="0" width="10" height="70" fill="#39ff14" opacity="0.4"/><rect x="30" y="0" width="10" height="10" fill="#eaffe0"/><rect x="30" y="10" width="10" height="70" fill="#39ff14"/><rect x="30" y="80" width="10" height="10" fill="#111111"/></svg>',
 };
 
 const EFFECTS = [['none','None'],['disco','Disco'],['sparkle','Sparkles'],['confetti','Confetti']];
@@ -91,7 +91,7 @@ const PACKS = {
       // NOT in banana-daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
       // art top to where the glove wraps it (here: the black cap).
-      { id: 'glowstick', label: 'Glowstick', anchor: 'hand', hand: 'right', grip: 6.5, art: 'glowstick', earned: 'rave' },
+      { id: 'glowstick', label: 'Glowstick', anchor: 'hand', hand: 'right', grip: 8.5, art: 'glowstick', earned: 'rave' },
     ],
   },
   // Example future pack (art not drawn yet):
