@@ -74,19 +74,29 @@ const schema = {
     .rv-sign { position: absolute; top: 8px; right: 12px; font-size: 0.72rem; color: #b388ff; font-weight: 700; letter-spacing: 0.04em; text-align: right; }
     .rv-sign b { color: #ffe135; display: block; font-size: 0.82rem; }
 
-    .rv-floor {
-      position: relative; height: min(62vh, 560px);
+    .rv-floor { position: relative; height: min(62vh, 560px); overflow: hidden; background: #161022; }
+    /* the world layer: ravers + checkerboard live here so the camera (translate+scale)
+       moves the floor WITH the crowd; screen-space chrome (drop flash, zoom btn) stays outside */
+    .rv-world {
+      position: absolute; inset: 0; transform-origin: 0 0;
       background:
         repeating-conic-gradient(#161022 0% 25%, #1d1530 0% 50%) 0 0 / 96px 96px;
       image-rendering: pixelated;
     }
-    body.rv-drop .rv-floor {
+    body.rv-drop .rv-world {
       background:
         repeating-conic-gradient(#2a1650 0% 25%, #451d66 0% 50%) 0 0 / 96px 96px;
       animation: rvStrobe 0.24s steps(2) infinite;
     }
     @keyframes rvStrobe { 50% { filter: hue-rotate(140deg) brightness(1.25); } }
-    @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-floor { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-world { animation: none; } }
+    .rv-zoom {
+      position: absolute; top: 8px; right: 8px; z-index: 600;
+      background: rgba(13, 11, 20, 0.85); color: #fffdf5; border: 3px solid #ffe135;
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; padding: 0.45rem 0.6rem;
+      cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .rv-zoom:hover { background: #ffe135; color: #111; }
 
     .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
     .rv-raver canvas { transition: transform 0.15s ease; }
@@ -200,6 +210,8 @@ const schema = {
           </svg>
         </div>
         <div class="rv-floor" id="rvFloor">
+          <div class="rv-world" id="rvWorld"></div>
+          <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
           <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
         </div>
         <div class="rv-hud">

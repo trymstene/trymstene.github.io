@@ -23,6 +23,7 @@ const MOVE_SEND_MS = 150;  // network throttle; local echo runs every frame
 
 const el = (id) => document.getElementById(id);
 const floor = el('rvFloor');
+const world = el('rvWorld');
 if (floor) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
@@ -86,7 +87,7 @@ function init() {
       tag.textContent = 'you';
       wrap.appendChild(tag);
     }
-    floor.appendChild(wrap);
+    world.appendChild(wrap);
     ravers.set(p.id, { ...p, wrap, cv, x, y, size });
     if (p.stage) setStage(p.id, true);
     refreshHud();
@@ -125,6 +126,33 @@ function init() {
   let lastMoveSent = 0;
   let walkedOnce = false;
 
+  // ---- the camera: follow-me zoom for small screens (walking IS panning) ----
+  const CAM_SCALE = 1.75;
+  const cam = { on: matchMedia('(max-width: 640px)').matches, s: 1, tx: 0, ty: 0 };
+  let floorW = 0, floorH = 0;
+  const measureFloor = () => { floorW = floor.clientWidth; floorH = floor.clientHeight; };
+  measureFloor();
+  addEventListener('resize', measureFloor);
+
+  const zoomBtn = el('rvZoom');
+  function refreshZoomBtn() { zoomBtn.hidden = false; zoomBtn.textContent = cam.on ? '🗺 whole floor' : '🔍 follow me'; }
+  refreshZoomBtn();
+  zoomBtn.addEventListener('click', () => { cam.on = !cam.on; refreshZoomBtn(); track('rave_zoom', { on: cam.on }); });
+
+  function updateCam() {
+    const me = myId && ravers.get(myId);
+    if (!cam.on || !me || me.stage) {
+      if (cam.s !== 1) { cam.s = 1; cam.tx = 0; cam.ty = 0; world.style.transform = ''; }
+      return;
+    }
+    cam.s = CAM_SCALE;
+    const px = (me.x / 100) * floorW * cam.s;
+    const py = (me.y / 100) * floorH * cam.s;
+    cam.tx = clamp(floorW / 2 - px, floorW - floorW * cam.s, 0);
+    cam.ty = clamp(floorH / 2 - py, floorH - floorH * cam.s, 0);
+    world.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.s})`;
+  }
+
   const KEYMAP = {
     ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd',
     a: 'l', d: 'r', w: 'u', s: 'd', A: 'l', D: 'r', W: 'u', S: 'd',
@@ -140,12 +168,14 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
+    if (e.target.closest('.rv-zoom')) return; // the camera toggle is not a walk order
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     const rect = floor.getBoundingClientRect();
+    // undo the camera: screen point → world percent
     walkTarget = {
-      x: clamp(((e.clientX - rect.left) / rect.width) * 100, 4, 96),
-      y: clamp(((e.clientY - rect.top) / rect.height) * 100, 6, 92),
+      x: clamp(((e.clientX - rect.left - cam.tx) / (rect.width * cam.s)) * 100, 4, 96),
+      y: clamp(((e.clientY - rect.top - cam.ty) / (rect.height * cam.s)) * 100, 6, 92),
     };
   });
 
@@ -197,7 +227,7 @@ function init() {
       r.wrap.style.left = r.x + '%';
       r.wrap.style.top = r.y + '%';
       r.wrap.style.zIndex = String(100 + r.y);
-      floor.appendChild(r.wrap);
+      world.appendChild(r.wrap);
     }
     if (id === myId) refreshStageUi();
     refreshHud();
@@ -349,6 +379,7 @@ function init() {
     const dtMs = lastTick ? Math.min(now - lastTick, 100) : 16;
     lastTick = now;
     stepMe(now, dtMs);
+    updateCam();
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
     }
