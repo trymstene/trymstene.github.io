@@ -121,6 +121,16 @@ const schema = {
       cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
     .rv-zoom:hover { background: #ffe135; color: #111; }
+    /* first-night tip: how to move — fades on the first step or after a few seconds */
+    .rv-tip {
+      position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%); z-index: 650;
+      max-width: 86%; text-align: center; pointer-events: none;
+      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      line-height: 1.5; padding: 0.5rem 0.7rem;
+      opacity: 1; transition: opacity 0.6s ease;
+    }
+    .rv-tip--fade { opacity: 0; }
     .rv-glowtoast {
       position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 700;
       max-width: min(88%, 400px); text-align: center; font-size: 0.85rem; line-height: 1.5;
@@ -257,6 +267,7 @@ const schema = {
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
+          <div class="rv-tip" id="rvTip" hidden></div>
           <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
         </div>
         <div class="rv-hud">

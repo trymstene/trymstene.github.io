@@ -143,6 +143,27 @@ function init() {
   let lastMoveSent = 0;
   let walkedOnce = false;
 
+  // first-night tip: how to move — fades on the first step or after a few seconds
+  let tipDismiss = null;
+  try {
+    if (!localStorage.getItem('rv-tip')) {
+      localStorage.setItem('rv-tip', '1');
+      const tip = el('rvTip');
+      tip.textContent = matchMedia('(pointer: coarse)').matches
+        ? '👆 tap anywhere on the floor to walk over'
+        : '🕹 walk with WASD / arrow keys — or click the floor';
+      tip.hidden = false;
+      let gone = false;
+      tipDismiss = () => {
+        if (gone) return;
+        gone = true;
+        tip.classList.add('rv-tip--fade');
+        setTimeout(() => tip.remove(), 700);
+      };
+      setTimeout(tipDismiss, 7000);
+    }
+  } catch (e) {}
+
   // ---- the camera: follow-me zoom for small screens (walking IS panning) ----
   const CAM_SCALE = 1.75;
   const cam = { on: matchMedia('(max-width: 640px)').matches, s: 1, tx: 0, ty: 0 };
@@ -239,7 +260,7 @@ function init() {
     }
     setPos(me, nx, ny);
     leanInto(me, dx);
-    if (!walkedOnce) { walkedOnce = true; track('rave_walk'); }
+    if (!walkedOnce) { walkedOnce = true; track('rave_walk'); if (tipDismiss) tipDismiss(); }
     if (now - lastMoveSent > MOVE_SEND_MS && ws && ws.readyState === 1) {
       lastMoveSent = now;
       ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
