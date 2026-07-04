@@ -332,7 +332,7 @@ function init() {
   }
 
   // ---- chat-size emoji preview (the "this is how it looks in chat" moment) ----
-  const chatCvs = [el('bbEmoji32'), el('bbEmoji48')].filter(Boolean);
+  const chatCvs = [el('bbEmoji32')].filter(Boolean); // one true chat size — the 48px sibling made the line wrap
   const OFF = document.createElement('canvas'); OFF.width = 240; OFF.height = 240;
   const offCtx = OFF.getContext('2d');
   let emojiBB = { x: 0, y: 0, w: 240, h: 240 };
