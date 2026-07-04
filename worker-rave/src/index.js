@@ -33,6 +33,26 @@ function happyWindow(now) {
   const ph = (((now - HAPPY_OFFSET) % HAPPY_PERIOD) + HAPPY_PERIOD) % HAPPY_PERIOD;
   return ph < HAPPY_LEN ? Math.floor((now - HAPPY_OFFSET) / HAPPY_PERIOD) : -1;
 }
+// THE LOST VINYL — courier quest (keep schedule + spot math in sync with banana-rave.js):
+// spawns every 7 min at a clock-seeded spot, first banana to reach it carries it,
+// delivering to the stage edge buys the whole floor a bonus drop.
+const VINYL_PERIOD = 420_000, VINYL_WAIT = 180_000, VINYL_OFFSET = 210_000;
+function vinylWindow(now) {
+  const ph = (((now - VINYL_OFFSET) % VINYL_PERIOD) + VINYL_PERIOD) % VINYL_PERIOD;
+  return ph < VINYL_WAIT ? Math.floor((now - VINYL_OFFSET) / VINYL_PERIOD) : -1;
+}
+function seedRand(n) {
+  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+function vinylSpot(w) {
+  let x = 12 + seedRand(0x5eed + w * 2) * 70;
+  let y = 16 + seedRand(0x5eed + w * 2 + 1) * 60;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
 
 export default {
   async fetch(request, env) {
@@ -123,7 +143,8 @@ export class RaveRoom {
       };
       ws.serializeAttachment(p);
       const beerWin = (await this.state.storage.get('beerWin')) ?? null;
-      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin }));
+      const vinylWin = (await this.state.storage.get('vinylWin')) ?? null;
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
       return;
     }
@@ -169,6 +190,30 @@ export class RaveRoom {
       return;
     }
 
+    if (msg.t === 'vinyl' && me && !me.vinyl) { // first banana to the lost record
+      const win = vinylWindow(Date.now());
+      if (win < 0) return;
+      if (this.vinylWin === win) return;      // sync guard before any await
+      const spot = vinylSpot(win);
+      if (!(typeof me.x === 'number' && Math.abs(me.x - spot.x) < 10 && typeof me.y === 'number' && Math.abs(me.y - spot.y) < 10)) return;
+      this.vinylWin = win;
+      const stored = await this.state.storage.get('vinylWin');
+      if (stored === win) return;
+      await this.state.storage.put('vinylWin', win);
+      me.vinyl = true;
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'vinyl', id: me.id });
+      return;
+    }
+
+    if (msg.t === 'vinylDrop' && me && me.vinyl) { // courier reached the stage edge
+      if (!(typeof me.y === 'number' && me.y < 18 && me.x > 26 && me.x < 74)) return;
+      me.vinyl = false;
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'minidrop', id: me.id });
+      return;
+    }
+
     if (msg.t === 'stage' && me) {
       if (msg.on) {
         if (Date.now() - me.joined < STAGE_MIN_MS) {
@@ -208,5 +253,5 @@ export class RaveRoom {
 }
 
 function strip(p) {
-  return { id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, x: p.x, y: p.y };
+  return { id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, vinyl: !!p.vinyl, x: p.x, y: p.y };
 }

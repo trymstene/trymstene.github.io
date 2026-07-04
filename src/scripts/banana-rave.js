@@ -29,6 +29,34 @@ const BAR_ZONE = { x: 34, y: 70 }; // bottom-LEFT bar: at the bar = x < 34% AND 
 const happyPhase = (t) => (((t - HAPPY_OFFSET) % HAPPY_PERIOD) + HAPPY_PERIOD) % HAPPY_PERIOD;
 const happyActive = (t) => happyPhase(t) < HAPPY_LEN;
 const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
+// FLOOR LIFE — all clock-synced or derived from positions we already have:
+// light trails (walking paints the floor), the spotlight (a gathering ritual),
+// high-fives (proximity sparks), and the lost vinyl (courier quest → bonus drop).
+const SPOT_PERIOD = 120, SPOT_LEN = 18, SPOT_OFFSET = 30, SPOT_R = 14; // seconds / floor-%
+const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
+const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
+// deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
+function seedRand(n) {
+  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+function spotFor(w) {
+  let x = 12 + seedRand(w * 2) * 70;
+  let y = 16 + seedRand(w * 2 + 1) * 60;
+  if (x < 36 && y > 66) y -= 30; // never inside the bar corner
+  return { x, y };
+}
+function vinylSpotFor(w) { // keep in sync with vinylSpot() in worker-rave
+  let x = 12 + seedRand(0x5eed + w * 2) * 70;
+  let y = 16 + seedRand(0x5eed + w * 2 + 1) * 60;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+const MITT_SVG = '<svg viewBox="0 0 6 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="4" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="3" fill="#111111"/><rect x="1" y="1" width="4" height="3" fill="#fffdf5"/><rect x="5" y="1" width="1" height="3" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="2" height="1" fill="#fffdf5"/><rect x="4" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="2" height="1" fill="#111111"/></svg>';
+const VINYL_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#8a8a8a"/><rect x="1" y="1" width="5" height="1" fill="#484848"/><rect x="0" y="2" width="7" height="3" fill="#484848"/><rect x="1" y="5" width="5" height="1" fill="#333333"/><rect x="2" y="6" width="3" height="1" fill="#222222"/><rect x="3" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="2" width="1" height="1" fill="#fffdf5"/></svg>';
+
 const BAR_QUIPS = [
   'we only serve potassium',
   'the drop hits every third minute. the bar never misses',
@@ -131,6 +159,7 @@ function init() {
     const flip = r.facing === -1 ? 'scaleX(-1) ' : '';
     r.cv.style.transform = flip + (Math.abs(dx) > 0.01 ? 'rotate(4deg)' : '');
     r.lastWalk = Date.now();
+    r.lastMoveAt = r.lastWalk; // survives stopLean — trails + high-fives read this
   }
 
   function stopLean(r) {
@@ -173,6 +202,8 @@ function init() {
   // with the floor. Occupied corner = x < barSolid.x AND y > barSolid.y.
   const barEl = document.querySelector('.rv-bar');
   const barSolid = { x: 0, y: 100 };
+  const trailCv = el('rvTrails');
+  const trailCtx = trailCv ? trailCv.getContext('2d') : null;
   const measureFloor = () => {
     floorW = floor.clientWidth;
     floorH = floor.clientHeight;
@@ -180,6 +211,7 @@ function init() {
       barSolid.x = ((barEl.offsetWidth - 18) / floorW) * 100;       // 18px bleeds off the left
       barSolid.y = 100 - (((barEl.offsetHeight - 52) / floorH) * 100); // 52px bleeds off the bottom
     }
+    if (trailCv) { trailCv.width = floorW; trailCv.height = floorH; } // resize clears — trails restart, fine
   };
   measureFloor();
   addEventListener('resize', measureFloor);
@@ -371,6 +403,123 @@ function init() {
   }
   setInterval(barTick, 1000);
 
+  // ---- floor life: spotlight + lost vinyl (one 500ms rhythm tick) ----
+  let vinylWinClaimed = -1;
+  let lastVinylTry = 0;
+  let miniDropUntil = 0;
+
+  function carryIcon(r, on) {
+    if (on && !r.carryEl) {
+      const d = document.createElement('div');
+      d.className = 'rv-carry';
+      d.innerHTML = VINYL_SVG;
+      r.wrap.appendChild(d);
+      r.carryEl = d;
+    } else if (!on && r.carryEl) {
+      r.carryEl.remove();
+      r.carryEl = null;
+    }
+  }
+
+  function pickVinyl(id) {
+    const r = ravers.get(id);
+    if (!r || r.vinyl) return;
+    r.vinyl = true;
+    vinylWinClaimed = Math.floor((Date.now() / 1000 - VINYL_OFFSET) / VINYL_PERIOD);
+    carryIcon(r, true);
+    showBubble('💿 ' + autoName(r.outfit) + ' found a lost record — run it to the DJ!', false, 6000);
+    refreshHud();
+    if (id === myId) track('rave_vinyl_pickup');
+  }
+
+  function deliverVinyl(id) {
+    const r = ravers.get(id);
+    if (!r || !r.vinyl) return;
+    r.vinyl = false;
+    carryIcon(r, false);
+    miniDropUntil = Date.now() + 6000; // the whole floor gets a bonus drop
+    showBubble('💿 ' + autoName(r.outfit) + ' dropped a banger!', false, 7000);
+    refreshHud();
+    if (id === myId) track('rave_vinyl_delivered');
+  }
+
+  function rhythmTick() {
+    const t = Date.now() / 1000;
+    // — the spotlight: lands somewhere new every 2 minutes; stand in it to shine —
+    const spotEl = el('rvSpot');
+    const sPh = (((t - SPOT_OFFSET) % SPOT_PERIOD) + SPOT_PERIOD) % SPOT_PERIOD;
+    if (sPh < SPOT_LEN) {
+      const s = spotFor(Math.floor((t - SPOT_OFFSET) / SPOT_PERIOD));
+      spotEl.hidden = false;
+      spotEl.style.left = s.x + '%';
+      spotEl.style.top = s.y + '%';
+      for (const r of ravers.values()) {
+        const lit = !r.stage && Math.hypot(r.x - s.x, r.y - s.y) < SPOT_R;
+        r.wrap.classList.toggle('rv-lit', lit);
+        if (lit && r.id === myId && !r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); }
+      }
+    } else if (!spotEl.hidden) {
+      spotEl.hidden = true;
+      for (const r of ravers.values()) r.wrap.classList.remove('rv-lit');
+    }
+    // — the lost vinyl: spawns every 7 minutes, first to reach it becomes the courier —
+    const vEl = el('rvVinyl');
+    const vPh = (((t - VINYL_OFFSET) % VINYL_PERIOD) + VINYL_PERIOD) % VINYL_PERIOD;
+    const vWin = Math.floor((t - VINYL_OFFSET) / VINYL_PERIOD);
+    const carried = [...ravers.values()].some((r) => r.vinyl);
+    if (vPh < VINYL_WAIT && vinylWinClaimed !== vWin && !carried) {
+      const s = vinylSpotFor(vWin);
+      vEl.style.display = '';
+      vEl.style.left = s.x + '%';
+      vEl.style.top = s.y + '%';
+      const me = myId && ravers.get(myId);
+      if (me && !me.stage && !me.vinyl && Math.hypot(me.x - s.x, me.y - s.y) < 8 && Date.now() - lastVinylTry > 2000) {
+        lastVinylTry = Date.now();
+        if (ws && ws.readyState === 1) ws.send('{"t":"vinyl"}');
+        else pickVinyl(myId); // solo mode
+      }
+    } else {
+      vEl.style.display = 'none';
+    }
+    // — the delivery: carrier reaches the stage edge → bonus drop for everyone —
+    const me = myId && ravers.get(myId);
+    if (me && me.vinyl && me.y < 18 && me.x > 26 && me.x < 74 && Date.now() - lastVinylTry > 2000) {
+      lastVinylTry = Date.now();
+      if (ws && ws.readyState === 1) ws.send('{"t":"vinylDrop"}');
+      else deliverVinyl(myId); // solo mode
+    }
+  }
+  setInterval(rhythmTick, 500);
+
+  // ---- floor life: high-fives (proximity + recent movement = a mitten pops) ----
+  const fived = new Map();
+  function spawnFive(x, y) {
+    const d = document.createElement('div');
+    d.className = 'rv-five';
+    d.style.left = x + '%';
+    d.style.top = y + '%';
+    d.innerHTML = MITT_SVG;
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 1300);
+  }
+  setInterval(() => {
+    const now = Date.now();
+    const list = [...ravers.values()].filter((r) => !r.stage).slice(0, 40);
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i], b = list[j];
+        if (Math.hypot(a.x - b.x, a.y - b.y) > FIVE_DIST) continue;
+        const moved = (a.lastMoveAt && now - a.lastMoveAt < 8000) || (b.lastMoveAt && now - b.lastMoveAt < 8000);
+        if (!moved) continue; // idle clusters don't spontaneously combust into greetings
+        const key = a.id < b.id ? a.id + b.id : b.id + a.id;
+        if ((fived.get(key) || 0) > now) continue;
+        fived.set(key, now + FIVE_COOLDOWN);
+        spawnFive((a.x + b.x) / 2, (a.y + b.y) / 2 - 4);
+        if (a.id === myId || b.id === myId) track('rave_highfive');
+      }
+    }
+  }, 600);
+
   // ---- HUD ----
   function refreshHud() {
     el('rvCount').textContent = String(ravers.size);
@@ -381,7 +530,7 @@ function init() {
       .slice(0, 5)
       .map((r) => {
         const mins = Math.max(0, Math.floor((now - r.joined) / 60000));
-        const name = (r.stage ? '⭐ ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
+        const name = (r.stage ? '⭐ ' : '') + (r.vinyl ? '💿 ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
         return `<li${r.id === myId ? ' class="rv-me"' : ''}><span>${name}</span><b>${mins}m</b></li>`;
       });
     board.innerHTML = rows.join('') || '<li><span>the floor awaits…</span></li>';
@@ -411,6 +560,8 @@ function init() {
         [...ravers.keys()].forEach((id) => { if (!alive.has(id)) dropRaver(id); });
         m.all.forEach((p) => addRaver(p, p.id === m.you));
         if (typeof m.beerWin === 'number') beerWin = m.beerWin; // late joiners learn this window's beer is gone
+        if (typeof m.vinylWin === 'number') vinylWinClaimed = m.vinylWin;
+        m.all.forEach((p) => { const r = ravers.get(p.id); if (r && p.vinyl) { r.vinyl = true; carryIcon(r, true); } });
         track('rave_join', { count: m.all.length });
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
@@ -421,6 +572,8 @@ function init() {
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
       }
       else if (m.t === 'beer') claimBeer(m.id);
+      else if (m.t === 'vinyl') pickVinyl(m.id);
+      else if (m.t === 'minidrop') deliverVinyl(m.id);
       else if (m.t === 'stage') setStage(m.id, m.on);
       else if (m.t === 'stageNo') {
         el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';
@@ -543,8 +696,25 @@ function init() {
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
     }
+    // light trails: walking paints the floor (12px tiles, per-raver hue, slow fade)
+    if (trailCtx && !reduced && floorW) {
+      trailCtx.globalCompositeOperation = 'destination-out';
+      trailCtx.fillStyle = 'rgba(0,0,0,0.035)';
+      trailCtx.fillRect(0, 0, floorW, floorH);
+      trailCtx.globalCompositeOperation = 'source-over';
+      for (const r of ravers.values()) {
+        if (r.stage || !r.lastMoveAt || now - r.lastMoveAt > 350) continue;
+        if (!r.hue) { let h = 0; for (let i = 0; i < r.id.length; i++) h = (h * 31 + r.id.charCodeAt(i)) >>> 0; r.hue = h % 360; }
+        const gx = Math.floor(((r.x / 100) * floorW) / 12) * 12;
+        const gy = Math.floor(((r.y / 100) * floorH) / 12) * 12;
+        trailCtx.fillStyle = `hsl(${r.hue} 90% 62% / 0.4)`;
+        trailCtx.fillRect(gx, gy, 12, 12);
+      }
+    }
     const secs = (now / 1000) % DROP_PERIOD;
-    const dropActive = secs < DROP_LEN;
+    const clockDrop = secs < DROP_LEN;
+    const dropActive = clockDrop || now < miniDropUntil; // a delivered vinyl buys everyone a bonus drop
+    el('rvDropFlash').querySelector('span').textContent = clockDrop ? 'THE DROP' : 'BONUS DROP!';
     const cycleMs = dropActive ? 480 : 800;
     const idx = Math.floor((now % cycleMs) / (cycleMs / NFRAMES));
 
