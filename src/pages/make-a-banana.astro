@@ -93,26 +93,10 @@ const appSchema = {
     .bb-random { flex: 1.25; font-size: 1rem; }
     .bb-torave { flex: 1; text-align: center; font-size: 1rem; }
 
-    /* mobile sticky action bar: the money actions + the rave, always in reach —
-       the page is LONG on phones and the download/order cards live at the bottom */
-    .bb-stickybar { display: none; }
-    @media (max-width: 640px) {
-      body { padding-bottom: 76px; }
-      .bb-stickybar {
-        position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
-        display: flex; background: var(--ink); border-top: 3px solid var(--banana);
-        padding: 0.45rem 0.4rem calc(0.45rem + env(safe-area-inset-bottom));
-      }
-      .bb-stickybar button, .bb-stickybar a {
-        flex: 1; margin: 0 0.25rem; background: var(--ink); color: var(--banana);
-        border: 2px solid var(--banana); border-radius: 2px; font-weight: 800; font-size: 0.85rem;
-        padding: 0.6rem 0.2rem; text-align: center; text-decoration: none; cursor: pointer;
-        touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-      }
-      .bb-torave { display: none; } /* the sticky bar owns the rave exit on phones */
-      .bb-random { flex: 1; }
-    }
-    html.bb-overlay .bb-stickybar { display: none !important; }
+    /* quick actions live IN the page, right under the stage where thumbs already
+       are — standard buttons, no page-specific chrome (the sticky bar was a
+       one-page anomaly, Trym verdict) */
+    .bb-toprow--go { margin-top: 0.7rem; }
     .bb-row label { display:block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.95rem; }
     .bb-input, .bb-select {
       width: 100%; padding: 0.6rem 0.7rem; border: 3px solid var(--ink);
@@ -276,6 +260,14 @@ const appSchema = {
 
     /* frame picker — freeze a moment of the dance */
     .bb-frames { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    @media (max-width: 640px) {
+      /* one swipeable strip instead of two stacked rows (Trym) */
+      .bb-frames, .bb-freeze .bb-frames {
+        flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+        scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; padding-bottom: 6px;
+      }
+      .bb-frame { flex: 0 0 auto; scroll-snap-align: center; }
+    }
     .bb-frame { width: 72px; height: 72px; padding: 2px; border: 3px solid var(--ink); background: #fff; cursor: pointer; border-radius: 2px; line-height: 0; }
     .bb-frame canvas { width: 100%; height: 100%; }
     @media (hover: hover) { .bb-frame:hover { transform: translateY(-2px); } }
@@ -303,7 +295,11 @@ const appSchema = {
       <div class="bb-controls">
         <div class="bb-toprow">
           <button class="btn btn--dark bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
-          <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top">🪩 To the rave</a>
+          <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top">🪩 Rave</a>
+        </div>
+        <div class="bb-toprow bb-toprow--go">
+          <button class="btn btn--light" id="bbQuickGif"><PixelIcon name="download" /> Emoji GIF</button>
+          <button class="btn btn--light" id="bbQuickSticker"><PixelIcon name="tag" /> Order sticker</button>
         </div>
         <div class="bb-row">
           <label>Background</label>
@@ -407,13 +403,6 @@ const appSchema = {
         <div id="bbShelf" class="bb-shelf" aria-label="My saved bananas"></div>
       </div>
     </section>
-  </div>
-
-  <!-- mobile quick actions: the long page's bottom cards, always one thumb away -->
-  <div class="bb-stickybar" aria-label="Quick actions">
-    <button id="bbBarGif"><PixelIcon name="download" /> GIF</button>
-    <button id="bbBarSticker"><PixelIcon name="tag" /> Sticker</button>
-    <a href="/rave/" data-place="builder-bar">🪩 Rave</a>
   </div>
 
   <!-- sticker order preview: see YOUR sticker before paying -->
