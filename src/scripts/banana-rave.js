@@ -32,7 +32,7 @@ const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
 // FLOOR LIFE — all clock-synced or derived from positions we already have:
 // light trails (walking paints the floor), the spotlight (a gathering ritual),
 // high-fives (proximity sparks), and the lost vinyl (courier quest → bonus drop).
-const SPOT_PERIOD = 120, SPOT_LEN = 18, SPOT_OFFSET = 30, SPOT_R = 14; // seconds / floor-%
+const SPOT_PERIOD = 120, SPOT_LEN = 35, SPOT_OFFSET = 30, SPOT_R = 14; // seconds / floor-% (35s = time to actually reach it)
 const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
 // deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
@@ -429,7 +429,15 @@ function init() {
     carryIcon(r, true);
     showBubble('💿 ' + autoName(r.outfit) + ' found a lost record — run it to the DJ!', false, 6000);
     refreshHud();
-    if (id === myId) track('rave_vinyl_pickup');
+    if (id === myId) {
+      // unmissable self-feedback — the bar bubble is easy to overlook mid-dance
+      const toast = document.createElement('div');
+      toast.className = 'rv-glowtoast';
+      toast.innerHTML = '💿 <b>YOU GOT THE RECORD!</b><br>Run it up to the DJ — the whole floor gets a bonus drop.';
+      floor.appendChild(toast);
+      setTimeout(() => toast.remove(), 7000);
+      track('rave_vinyl_pickup');
+    }
   }
 
   function deliverVinyl(id) {
@@ -514,7 +522,7 @@ function init() {
         const key = a.id < b.id ? a.id + b.id : b.id + a.id;
         if ((fived.get(key) || 0) > now) continue;
         fived.set(key, now + FIVE_COOLDOWN);
-        spawnFive((a.x + b.x) / 2, (a.y + b.y) / 2 - 4);
+        spawnFive((a.x + b.x) / 2, Math.min(a.y, b.y) - 9); // ABOVE both heads — between them it hid behind the sprites
         if (a.id === myId || b.id === myId) track('rave_highfive');
       }
     }
@@ -696,19 +704,19 @@ function init() {
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
     }
-    // light trails: walking paints the floor (12px tiles, per-raver hue, slow fade)
+    // light trails: walking leaves faint violet footprints (one calm tone — the
+    // per-raver rainbow read as MESS on the checkerboard, Trym verdict)
     if (trailCtx && !reduced && floorW) {
       trailCtx.globalCompositeOperation = 'destination-out';
-      trailCtx.fillStyle = 'rgba(0,0,0,0.035)';
+      trailCtx.fillStyle = 'rgba(0,0,0,0.06)';
       trailCtx.fillRect(0, 0, floorW, floorH);
       trailCtx.globalCompositeOperation = 'source-over';
       for (const r of ravers.values()) {
         if (r.stage || !r.lastMoveAt || now - r.lastMoveAt > 350) continue;
-        if (!r.hue) { let h = 0; for (let i = 0; i < r.id.length; i++) h = (h * 31 + r.id.charCodeAt(i)) >>> 0; r.hue = h % 360; }
-        const gx = Math.floor(((r.x / 100) * floorW) / 12) * 12;
-        const gy = Math.floor(((r.y / 100) * floorH) / 12) * 12;
-        trailCtx.fillStyle = `hsl(${r.hue} 90% 62% / 0.4)`;
-        trailCtx.fillRect(gx, gy, 12, 12);
+        const gx = Math.floor(((r.x / 100) * floorW) / 8) * 8;
+        const gy = Math.floor((((r.y + 3) / 100) * floorH) / 8) * 8; // at the feet, not the torso
+        trailCtx.fillStyle = 'rgba(179, 136, 255, 0.16)';
+        trailCtx.fillRect(gx, gy, 8, 8);
       }
     }
     const secs = (now / 1000) % DROP_PERIOD;
