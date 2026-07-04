@@ -144,20 +144,25 @@ const schema = {
     .rv-bar { position: absolute; left: -18px; bottom: -52px; width: 205px; z-index: 300; pointer-events: none; }
     .rv-counter { display: block; width: 100%; height: auto; position: relative; z-index: 2; }
     #rvBarman {
-      display: block; width: 150px; height: 150px; margin: -144px 0 0 14px;
+      display: block; width: 150px; height: 150px; margin: -150px 0 0 14px;
       position: relative; z-index: 3; image-rendering: pixelated;
     }
-    .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -16px; z-index: 4; }
+    .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -24px; z-index: 4; }
     .rv-bubble {
-      position: absolute; bottom: calc(100% + 6px); left: 42%; transform: translateX(-50%);
+      position: absolute; bottom: calc(100% + 54px); left: 46%; transform: translateX(-50%);
       min-width: 150px; max-width: 210px; z-index: 5; text-align: center;
       background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
       font-size: 0.58rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
       line-height: 1.5; padding: 0.4rem 0.5rem;
     }
+    /* stepped pixel tail pointing down at Barty (two shrinking steps, no rotation) */
+    .rv-bubble::before {
+      content: ''; position: absolute; top: 100%; left: 30px; width: 14px; height: 6px;
+      background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111;
+    }
     .rv-bubble::after {
-      content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
-      width: 10px; height: 8px; background: #fffdf5; border: 3px solid #111; border-top: none;
+      content: ''; position: absolute; top: calc(100% + 6px); left: 34px; width: 6px; height: 6px;
+      background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111; border-bottom: 3px solid #111;
     }
 
     .rv-zoom {
@@ -239,6 +244,7 @@ const schema = {
     .rv-stage-btn[disabled] { background: #0d0b14; color: #b388ff; border-color: #b388ff; cursor: default; }
     .rv-more { font-size: 0.8rem; opacity: 0.7; }
     .rv-emote--fire { color: #ff9e2c; font-size: 1.7rem; }
+    .rv-emote svg { width: 24px; height: auto; image-rendering: pixelated; }
 
     @media (max-width: 640px) {
       .rv-booth { min-height: 138px; }
@@ -330,9 +336,9 @@ const schema = {
         </div>
         <div class="rv-hud">
           <div class="rv-emotes" role="group" aria-label="Send an emote">
-            <button class="rv-emote-btn" data-emote="heart" aria-label="Send a heart">&#10084;</button>
-            <button class="rv-emote-btn" data-emote="confetti" aria-label="Send confetti">&#10022;</button>
-            <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana">&#127820;</button>
+            <button class="rv-emote-btn" data-emote="heart" aria-label="Send a heart"><PixelIcon name="heart" size="1.5em" /></button>
+            <button class="rv-emote-btn" data-emote="confetti" aria-label="Send confetti"><PixelIcon name="sparkle" size="1.5em" /></button>
+            <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana"><PixelIcon name="banana" size="1.5em" /></button>
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
           </div>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>

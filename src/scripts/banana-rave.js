@@ -307,7 +307,10 @@ function init() {
     if (!r) return;
     const e = document.createElement('span');
     e.className = 'rv-emote rv-emote--' + kind;
-    e.innerHTML = { heart: '&#10084;', confetti: '&#10022;', banana: '&#127820;', fire: '&#128293;' }[kind] || '';
+    // floats reuse the buttons' pixel icons (single art source); fire has no pixel icon yet
+    const iconSvg = document.querySelector('.rv-emote-btn[data-emote="' + kind + '"] svg');
+    if (iconSvg) e.appendChild(iconSvg.cloneNode(true));
+    else e.innerHTML = { heart: '&#10084;', confetti: '&#10022;', banana: '&#127820;', fire: '&#128293;' }[kind] || '';
     r.wrap.appendChild(e);
     setTimeout(() => e.remove(), 1900);
   }
