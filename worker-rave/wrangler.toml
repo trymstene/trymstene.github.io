@@ -1,0 +1,23 @@
+# Banana rave worker — the realtime dance floor. One Durable Object = the
+# room; presence only (join/leave/emotes). Animation needs NO server traffic:
+# every client dances in sync off the wall clock.
+# SEPARATE from the payment worker (blast radius rule) and the share worker.
+# Free-plan friendly: SQLite-backed DO class + WebSocket hibernation = fails
+# closed at the free ceilings, can never bill.
+#
+# Deploy: cd worker-rave && npx wrangler deploy
+
+name = "banana-rave"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "RAVE"
+class_name = "RaveRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RaveRoom"]
+
+[vars]
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"

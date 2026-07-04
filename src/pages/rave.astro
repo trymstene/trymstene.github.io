@@ -1,0 +1,163 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+
+const title = 'The Banana Rave — everyone dances together';
+const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others. Silent disco until DJ Sentry finishes the remix.';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'The Banana Rave',
+  url: 'https://trymstene.com/rave/',
+  applicationCategory: 'EntertainmentApplication',
+  operatingSystem: 'Web',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  description: 'A realtime dance floor for custom dancing bananas, from the creator of the original 1999 GIF.',
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="The Banana Rave 🪩"
+  ogDescription="Every visitor's banana, dancing together in perfect sync. Right now. Join the floor."
+  ogImage="https://trymstene.com/assets/og/builder.png"
+  showFooter={false}
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <style is:inline slot="head">
+    .rv-hall { background: #0d0b14; color: #fffdf5; padding: 1.6rem 1rem 2.5rem; }
+    .rv-head { max-width: 1100px; margin: 0 auto 1rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem 1.4rem; }
+    .rv-head h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.6rem); color: #ffe135; }
+    .rv-live { color: #37d67a; font-weight: 700; }
+    .rv-status { font-size: 0.85rem; opacity: 0.85; }
+    .rv-sub { max-width: 1100px; margin: 0 auto 1.2rem; font-size: 0.92rem; opacity: 0.75; }
+
+    .rv-stagewrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 1rem; grid-template-columns: 1fr; }
+    @media (min-width: 980px) { .rv-stagewrap { grid-template-columns: 1fr 240px; align-items: start; } }
+
+    /* the floor: pixel checkerboard that pulses */
+    .rv-club { position: relative; border: 4px solid #ffe135; box-shadow: 8px 8px 0 #000; overflow: hidden; }
+    .rv-booth {
+      position: relative; background: #17121f; border-bottom: 4px solid #ffe135;
+      display: flex; align-items: flex-end; justify-content: center; gap: 1rem;
+      padding: 0.8rem 1rem 0; min-height: 150px;
+    }
+    .rv-booth canvas { width: 120px; height: 120px; display: block; }
+    .rv-podium { text-align: center; }
+    .rv-podium__base { background: #ffe135; color: #111; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; padding: 0.3rem 0.7rem; text-transform: uppercase; }
+    .rv-sign { font-size: 0.75rem; color: #b388ff; font-weight: 700; letter-spacing: 0.04em; padding-bottom: 0.6rem; text-align: center; }
+    .rv-sign b { color: #ffe135; display: block; font-size: 0.85rem; }
+
+    .rv-floor {
+      position: relative; height: min(62vh, 560px);
+      background:
+        repeating-conic-gradient(#161022 0% 25%, #1d1530 0% 50%) 0 0 / 96px 96px;
+      image-rendering: pixelated;
+    }
+    body.rv-drop .rv-floor {
+      background:
+        repeating-conic-gradient(#2a1650 0% 25%, #451d66 0% 50%) 0 0 / 96px 96px;
+      animation: rvStrobe 0.24s steps(2) infinite;
+    }
+    @keyframes rvStrobe { 50% { filter: hue-rotate(140deg) brightness(1.25); } }
+    @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-floor { animation: none; } }
+
+    .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; }
+    .rv-raver canvas { image-rendering: pixelated; }
+    .rv-raver--me canvas { filter: drop-shadow(0 0 6px #ffe135); }
+    .rv-you {
+      position: absolute; top: -1.1rem; left: 50%; transform: translateX(-50%);
+      background: #ffe135; color: #111; font-size: 0.62rem; font-weight: 800;
+      padding: 0.1rem 0.4rem; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .rv-emote {
+      position: absolute; left: 50%; top: 0; font-size: 1.5rem; line-height: 1;
+      animation: rvFloat 1.9s ease-out forwards; pointer-events: none;
+    }
+    .rv-emote--heart { color: #ff4d6d; }
+    .rv-emote--confetti { color: #4db8ff; }
+    .rv-emote--banana { font-size: 1.3rem; }
+    @keyframes rvFloat { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, -70px); opacity: 0; } }
+
+    .rv-dropflash {
+      position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 500;
+    }
+    .rv-dropflash span {
+      font-family: "Archivo Black", sans-serif; font-size: clamp(2rem, 8vw, 4.5rem);
+      color: #ffe135; -webkit-text-stroke: 3px #111; animation: rvDropPulse 0.5s steps(2) infinite;
+    }
+    @keyframes rvDropPulse { 50% { transform: scale(1.06) rotate(-2deg); color: #ff4d6d; } }
+
+    .rv-hud {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+      background: #17121f; border-top: 4px solid #ffe135; padding: 0.7rem 0.9rem; flex-wrap: wrap;
+    }
+    .rv-emotes { display: flex; gap: 0.5rem; }
+    .rv-emote-btn {
+      background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;
+      font-size: 1.15rem; line-height: 1; padding: 0.45rem 0.7rem; border-radius: 2px;
+    }
+    .rv-emote-btn:hover { background: #ffe135; }
+    .rv-more { font-size: 0.8rem; opacity: 0.7; }
+
+    .rv-panel { border: 4px solid #ffe135; background: #17121f; box-shadow: 8px 8px 0 #000; padding: 1rem; }
+    .rv-panel h2 { margin: 0 0 0.6rem; font-size: 1rem; color: #ffe135; }
+    .rv-panel ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.45rem; font-size: 0.85rem; }
+    .rv-panel li { display: flex; justify-content: space-between; gap: 0.6rem; }
+    .rv-panel li b { color: #ffe135; }
+    .rv-panel li.rv-me span { color: #ffe135; }
+    .rv-panel .rv-door { margin-top: 1rem; }
+    .rv-door a { display: block; text-align: center; background: #ffe135; color: #111; font-weight: 800; padding: 0.7rem 0.6rem; text-decoration: none; border: 3px solid #111; }
+    .rv-door a:hover { transform: translateY(-2px); }
+    .rv-note { font-size: 0.75rem; opacity: 0.65; margin-top: 0.8rem; }
+  </style>
+
+  <div class="rv-hall">
+    <div class="rv-head">
+      <h1>the banana rave</h1>
+      <span class="rv-status"><span id="rvCount">0</span> on the floor · <span id="rvStatus">connecting…</span></span>
+    </div>
+    <p class="rv-sub">
+      Every banana here is a real visitor, dancing in perfect sync — same beat, whole planet.
+      🎧 Silent disco until DJ Sentry finishes the remix.
+    </p>
+
+    <div class="rv-stagewrap">
+      <div class="rv-club">
+        <div class="rv-booth">
+          <div class="rv-podium">
+            <canvas id="rvDj" width="200" height="200"></canvas>
+            <div class="rv-podium__base">tonight's DJ</div>
+          </div>
+          <div class="rv-sign">DJ SENTRY<b>remix in production</b></div>
+        </div>
+        <div class="rv-floor" id="rvFloor">
+          <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
+        </div>
+        <div class="rv-hud">
+          <div class="rv-emotes" role="group" aria-label="Send an emote">
+            <button class="rv-emote-btn" data-emote="heart" aria-label="Send a heart">&#10084;</button>
+            <button class="rv-emote-btn" data-emote="confetti" aria-label="Send confetti">&#10022;</button>
+            <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana">&#127820;</button>
+          </div>
+          <span class="rv-more" id="rvMore"></span>
+        </div>
+      </div>
+
+      <aside class="rv-panel">
+        <h2>on the floor</h2>
+        <ol id="rvBoard"><li><span>the floor awaits…</span></li></ol>
+        <div class="rv-door">
+          <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
+        </div>
+        <p class="rv-note">Your latest builder banana walks in with you. The drop hits every third minute — you'll know.</p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/banana-rave.js';
+  </script>
+</BaseLayout>
