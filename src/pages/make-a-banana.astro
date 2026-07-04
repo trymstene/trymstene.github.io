@@ -111,6 +111,10 @@ const appSchema = {
       font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
     }
     .bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .bb-chip--locked {
+      display: inline-block; border-style: dashed; opacity: 0.75; text-decoration: none; color: var(--ink);
+    }
+    .bb-chip--locked:hover { opacity: 1; background: var(--banana); }
     .bb-actions { display: flex; flex-wrap: wrap; gap: 0.8rem; }
     .bb-note { font-size: 0.82rem; opacity: 0.7; margin: 0.6rem 0 0; }
     .bb-card .btn + .bb-note { margin-top: 0.9rem; }

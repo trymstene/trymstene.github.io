@@ -20,6 +20,8 @@ const STAGE_UNLOCK_MS = location.search.includes('stagetest') ? 5000 : 5 * 60 * 
 // walking (option A: you dance-walk — the dance keeps playing, mirror + lean give direction)
 const WALK_SPEED = 16;     // % of floor per second
 const MOVE_SEND_MS = 150;  // network throttle; local echo runs every frame
+// the souvenir: survive this long → the glow necklace is yours forever (client-side unlock, it's a joke not DRM)
+const GLOW_MS = location.search.includes('stagetest') ? 20000 : 30 * 60 * 1000;
 
 const el = (id) => document.getElementById(id);
 const floor = el('rvFloor');
@@ -30,7 +32,8 @@ function track(name, params) { if (window.gtag) window.gtag('event', name, param
 
 // outfit → a name with no moderation surface: built ONLY from known ids
 function autoName(o) {
-  const adj = { shades: 'Cool', hearts: 'Lovestruck', visor: 'Sporty' }[o.glasses]
+  const adj = (o.extras && o.extras.glowstick ? 'Glowing' : null)
+    || { shades: 'Cool', hearts: 'Lovestruck', visor: 'Sporty' }[o.glasses]
     || { disco: 'Disco', sparkle: 'Sparkly', confetti: 'Party' }[o.effect]
     || (o.extras && o.extras.mustache ? 'Distinguished' : 'Fresh');
   const noun = { cowboy: 'Cowboy', crown: 'Royal', tophat: 'Fancy', party: 'Birthday' }[o.hat]
@@ -297,7 +300,7 @@ function init() {
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
-      else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) r.outfit = m.outfit; }
+      else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) { r.outfit = m.outfit; refreshHud(); } }
       else if (m.t === 'move') {
         const r = ravers.get(m.id);
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
@@ -362,6 +365,38 @@ function init() {
     fireBtn.hidden = !onStage();
   }
   setInterval(refreshStageUi, 1000);
+
+  // ---- the glowstick souvenir: 30 minutes on the floor → a glow necklace, forever ----
+  let glowChecked = false;
+  function checkGlowstick() {
+    if (glowChecked || !myId || Date.now() - sessionStart < GLOW_MS) return;
+    glowChecked = true;
+    let had = false;
+    try {
+      had = localStorage.getItem('rv-glowstick') === '1';
+      localStorage.setItem('rv-glowstick', '1');
+    } catch (e) {}
+    if (had) return; // already earned on an earlier night
+    // put it on right here on the floor, for everyone to see
+    const me = ravers.get(myId);
+    if (me) {
+      me.outfit.extras = { ...(me.outfit.extras || {}), glowstick: true };
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+    }
+    // the saved builder banana wears it home too
+    try {
+      const saved = JSON.parse(localStorage.getItem('bb-last') || '{}');
+      saved.extras = { ...(saved.extras || {}), glowstick: true };
+      localStorage.setItem('bb-last', JSON.stringify(saved));
+    } catch (e) {}
+    const toast = document.createElement('div');
+    toast.className = 'rv-glowtoast';
+    toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR!</b><br>The glow necklace is yours — forever. Your banana wears it now, and it\'s waiting in the builder too.';
+    floor.appendChild(toast);
+    setTimeout(() => toast.remove(), 9000);
+    track('rave_glowstick_unlock');
+  }
+  setInterval(checkGlowstick, 5000);
 
   stageBtn.addEventListener('click', () => {
     if (stageBtn.disabled) return;

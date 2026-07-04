@@ -19,7 +19,7 @@
 // ⚠️ keep in sync with PACKS in src/lib/banana-engine.js
 const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy'];
 const SHADE_IDS = ['none', 'shades', 'hearts', 'visor'];
-const EXTRA_IDS = ['mustache', 'bowtie'];
+const EXTRA_IDS = ['mustache', 'bowtie', 'glowstick'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
 const ROOM_CAP = 200;

@@ -68,8 +68,22 @@ function init() {
   chips('bbGlassesChips', GLASSES, 'glasses');
   chips('bbHatChips', HATS, 'hat');
   chips('bbEffectChips', EFFECTS, 'effect');
+  // earned accessories: unlocked at the rave, remembered forever (localStorage)
+  const earnedUnlocked = (d) => {
+    if (!d.earned) return true;
+    try { return localStorage.getItem('rv-glowstick') === '1'; } catch (e) { return false; }
+  };
   // extras = independent toggles, not a single-choice row (labels carry pixel icons)
   EXTRA_DEFS.forEach((d) => {
+    if (!earnedUnlocked(d)) {
+      // a locked souvenir is a DOOR: the chip links to where you earn it
+      const a = document.createElement('a');
+      a.className = 'bb-chip bb-chip--locked'; a.href = '/rave/'; a.dataset.place = 'builder-locked';
+      a.innerHTML = '🔒 ' + d.label + ' — survive 30 min at the rave';
+      a.title = 'Rave souvenir: stay 30 minutes on the dance floor and it’s yours forever';
+      el('bbExtrasChips').appendChild(a);
+      return;
+    }
     const b = document.createElement('button');
     b.className = 'bb-chip'; b.innerHTML = (EXTRA_ICONS[d.id] ? EXTRA_ICONS[d.id] + ' ' : '') + d.label; b.dataset.val = d.id;
     b.onclick = () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
@@ -121,7 +135,7 @@ function init() {
     const q = pick(quips);
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
-    EXTRA_DEFS.forEach((d) => { state.extras[d.id] = Math.random() < 0.3; });
+    EXTRA_DEFS.forEach((d) => { state.extras[d.id] = earnedUnlocked(d) && Math.random() < 0.3; });
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     state.spd = Math.round((0.5 + Math.random() * 0.8) * 100) / 100;
     topIn.value = state.top; botIn.value = state.bottom;

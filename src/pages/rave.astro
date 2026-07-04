@@ -97,6 +97,13 @@ const schema = {
       cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
     .rv-zoom:hover { background: #ffe135; color: #111; }
+    .rv-glowtoast {
+      position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 700;
+      max-width: min(88%, 400px); text-align: center; font-size: 0.85rem; line-height: 1.5;
+      background: #17121f; color: #fffdf5; border: 3px solid #39ff14;
+      box-shadow: 0 0 14px rgba(57, 255, 20, 0.5); padding: 0.7rem 0.9rem;
+    }
+    .rv-glowtoast b { color: #39ff14; }
 
     .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
     .rv-raver canvas { transition: transform 0.15s ease; }
