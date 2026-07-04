@@ -5,6 +5,7 @@
 // frame-picker thumbnails and both exports, so what you see is what you get.
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
+import { shelfAdd, renderShelf } from '../lib/banana-shelf.js';
 import {
   SHEET_SRC, FW, FH, NFRAMES, BASE_CYCLE_S, FRAMES, SVG, EFFECTS,
   PACKS, HAT_DEFS, SHADE_DEFS, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, HATS, GLASSES,
@@ -197,6 +198,7 @@ function init() {
       toast(mode === 'unfurl' ? 'Link copied — it unfurls with YOUR banana!' : 'Share link copied!');
     } catch (e) { toast('Copy this URL from the address bar'); }
     track('share_link_copy', { design: designStr(), mode });
+    saveToShelf(mode === 'unfurl' ? (copied.split('/s/')[1] || null) : null);
   };
   el('bbOverlayLink').onclick = async () => {
     sync();
@@ -207,6 +209,21 @@ function init() {
   };
 
   function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
+
+  // ---- the shelf: creations you kept (downloaded / shared / ordered) ----
+  function refreshShelf() {
+    renderShelf(el('bbShelf'), {
+      onPick: (c) => {
+        track('shelf_pick', { design: c.params });
+        location.href = location.pathname + '?' + c.params; // full reload = every param (captions, bg, speed, frame) restored the proven way
+      },
+    });
+  }
+  function saveToShelf(shareId) {
+    sync(); // make sure location.search reflects the current banana
+    shelfAdd({ kind: 'banana', params: location.search.slice(1), shareId: shareId || null });
+    refreshShelf();
+  }
   // compact outfit fingerprint attached to downloads/orders — six months of
   // this tells us which accessories to build packs and pre-made stickers from
   function designStr() {
@@ -418,6 +435,7 @@ function init() {
       download(URL.createObjectURL(blob), 'my-dancing-banana.gif');
       toast('Emoji GIF downloaded!');
       track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
+      saveToShelf();
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
@@ -439,6 +457,7 @@ function init() {
     download(out.toDataURL('image/png'), 'my-dancing-banana.png');
     toast('Image downloaded!');
     track('png_download', { file: 'builder-meme.png', design: designStr() });
+    saveToShelf();
   };
 
   // ---- order it as a REAL printed sticker (Part B) ----
@@ -569,6 +588,7 @@ function init() {
     el('bbOrderModal').hidden = false;
     document.body.style.overflow = 'hidden';
     track('sticker_order_click', { design: designStr() });
+    saveToShelf();
   };
   function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
   el('bbOrderCancel').onclick = closeOrderModal;
@@ -638,6 +658,7 @@ function init() {
   }
 
   refreshUI();
+  refreshShelf();
   sheet.decode().catch(() => {}).finally(() => {
     recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true;
     requestAnimationFrame(tick);
