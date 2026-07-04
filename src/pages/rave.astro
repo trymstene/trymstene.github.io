@@ -92,9 +92,10 @@ const schema = {
     .rv-raver canvas { image-rendering: pixelated; }
     .rv-raver--me canvas { filter: drop-shadow(0 0 6px #ffe135); }
     .rv-you {
-      position: absolute; top: -1.1rem; left: 50%; transform: translateX(-50%);
+      position: absolute; top: -1.3rem; left: 50%; transform: translateX(-50%);
       background: #ffe135; color: #111; font-size: 0.62rem; font-weight: 800;
-      padding: 0.1rem 0.4rem; letter-spacing: 0.06em; text-transform: uppercase;
+      line-height: 1.2; /* .rv-raver zeroes line-height for the canvas — restore it or the tag collapses to a sliver */
+      padding: 0.14rem 0.45rem; letter-spacing: 0.06em; text-transform: uppercase;
     }
     .rv-emote {
       position: absolute; left: 50%; top: 0; font-size: 1.5rem; line-height: 1;
