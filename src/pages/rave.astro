@@ -183,12 +183,40 @@ const schema = {
       z-index: 9; image-rendering: pixelated; animation: rvVinylPulse 1s steps(2) infinite;
     }
     @keyframes rvVinylPulse { 50% { transform: translate(-50%, -50%) scale(1.18); } }
-    .rv-five { position: absolute; transform: translate(-50%, -50%); z-index: 500; pointer-events: none; animation: rvFive 1.4s steps(5) forwards; }
-    .rv-five svg { width: 36px; height: auto; image-rendering: pixelated; filter: drop-shadow(0 0 5px #ffe135); }
-    @keyframes rvFive {
-      0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
-      30% { opacity: 1; }
-      100% { transform: translate(-50%, -90%) scale(1.2); opacity: 0; }
+    /* the fistbump: two gloves slide in, BUMP (pixel spark), drift up and fade */
+    .rv-five { position: absolute; width: 74px; height: 40px; transform: translate(-50%, -50%); z-index: 500; pointer-events: none; animation: rvFiveWrap 1.5s steps(6) forwards; }
+    .rv-five span { position: absolute; left: 50%; top: 50%; width: 32px; line-height: 0; }
+    .rv-five svg { width: 100%; height: auto; image-rendering: pixelated; filter: drop-shadow(0 0 4px #ffe135); }
+    .rv-five__l { animation: rvBumpL 0.8s steps(4) forwards; }
+    .rv-five__r { animation: rvBumpR 0.8s steps(4) forwards; }
+    .rv-five::after { /* the impact star — a crisp pixel plus, no glyphs */
+      content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+      background: #ffe135; box-shadow: 0 -9px #ffe135, 0 9px #ffe135, -9px 0 #ffe135, 9px 0 #ffe135, 0 0 8px #ffe135;
+      opacity: 0; animation: rvBumpSpark 1.5s steps(3) forwards;
+    }
+    @keyframes rvBumpL {
+      0% { transform: translate(-34px, -50%); }
+      45% { transform: translate(-27px, -50%); }
+      55% { transform: translate(-30px, -50%); }
+      100% { transform: translate(-28px, -50%); }
+    }
+    @keyframes rvBumpR {
+      0% { transform: translate(6px, -50%) scaleX(-1); }
+      45% { transform: translate(-1px, -50%) scaleX(-1); }
+      55% { transform: translate(2px, -50%) scaleX(-1); }
+      100% { transform: translate(0px, -50%) scaleX(-1); }
+    }
+    @keyframes rvBumpSpark {
+      0%, 40% { opacity: 0; transform: scale(0.4); }
+      50% { opacity: 1; transform: scale(1.2); }
+      75% { opacity: 0.8; }
+      100% { opacity: 0; transform: scale(0.6); }
+    }
+    @keyframes rvFiveWrap {
+      0% { opacity: 0; transform: translate(-50%, -50%); }
+      10% { opacity: 1; }
+      65% { opacity: 1; transform: translate(-50%, -60%); }
+      100% { opacity: 0; transform: translate(-50%, -110%); }
     }
     .rv-carry { position: absolute; top: -1.5rem; right: -0.8rem; width: 22px; z-index: 5; line-height: 0; }
     .rv-carry svg { width: 100%; height: auto; image-rendering: pixelated; }

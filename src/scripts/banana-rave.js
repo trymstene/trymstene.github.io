@@ -54,7 +54,9 @@ function vinylSpotFor(w) { // keep in sync with vinylSpot() in worker-rave
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
-const MITT_SVG = '<svg viewBox="0 0 6 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="4" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="3" fill="#111111"/><rect x="1" y="1" width="4" height="3" fill="#fffdf5"/><rect x="5" y="1" width="1" height="3" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="2" height="1" fill="#fffdf5"/><rect x="4" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="2" height="1" fill="#111111"/></svg>';
+// a gloved FIST with a wrist cuff (yellow stripe) — a plain mitten blob read as
+// "a white ball" at rave size; the cuff is what makes it read as a glove
+const MITT_SVG = '<svg viewBox="0 0 10 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="4" height="1" fill="#111111"/><rect x="3" y="1" width="1" height="1" fill="#111111"/><rect x="4" y="1" width="4" height="1" fill="#fffdf5"/><rect x="8" y="1" width="1" height="1" fill="#111111"/><rect x="0" y="2" width="1" height="4" fill="#111111"/><rect x="1" y="2" width="1" height="4" fill="#ffe135"/><rect x="2" y="2" width="1" height="4" fill="#111111"/><rect x="3" y="2" width="6" height="4" fill="#fffdf5"/><rect x="9" y="2" width="1" height="4" fill="#111111"/><rect x="3" y="6" width="1" height="1" fill="#111111"/><rect x="4" y="6" width="4" height="1" fill="#fffdf5"/><rect x="8" y="6" width="1" height="1" fill="#111111"/><rect x="4" y="7" width="4" height="1" fill="#111111"/></svg>';
 const VINYL_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#8a8a8a"/><rect x="1" y="1" width="5" height="1" fill="#484848"/><rect x="0" y="2" width="7" height="3" fill="#484848"/><rect x="1" y="5" width="5" height="1" fill="#333333"/><rect x="2" y="6" width="3" height="1" fill="#222222"/><rect x="3" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="2" width="1" height="1" fill="#fffdf5"/></svg>';
 
 const BAR_QUIPS = [
@@ -506,9 +508,10 @@ function init() {
     d.className = 'rv-five';
     d.style.left = x + '%';
     d.style.top = y + '%';
-    d.innerHTML = MITT_SVG;
+    // TWO gloves bumping — one mitten alone read as "a white ball" (Trym)
+    d.innerHTML = '<span class="rv-five__l">' + MITT_SVG + '</span><span class="rv-five__r">' + MITT_SVG + '</span>';
     world.appendChild(d);
-    setTimeout(() => d.remove(), 1300);
+    setTimeout(() => d.remove(), 1600);
   }
   setInterval(() => {
     const now = Date.now();
