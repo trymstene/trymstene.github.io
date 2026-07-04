@@ -93,7 +93,7 @@ function init() {
     wrap.className = 'rv-raver' + (isMe ? ' rv-raver--me' : '');
     wrap.style.left = x + '%';
     wrap.style.top = y + '%';
-    wrap.style.zIndex = String(100 + y);
+    wrap.style.zIndex = String(100 + Math.round(y)); // must be an INTEGER — browsers silently reject "188.5" leaving z auto
     const cv = document.createElement('canvas');
     cv.width = 160; cv.height = 160;
     cv.style.width = size + 'px'; cv.style.height = size + 'px';
@@ -287,7 +287,7 @@ function init() {
       r.cv.style.width = r.cv.style.height = r.size + 'px';
       r.wrap.style.left = r.x + '%';
       r.wrap.style.top = r.y + '%';
-      r.wrap.style.zIndex = String(100 + r.y);
+      r.wrap.style.zIndex = String(100 + Math.round(r.y));
       world.appendChild(r.wrap);
     }
     if (id === myId) refreshStageUi();
