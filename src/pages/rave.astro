@@ -70,9 +70,53 @@ const schema = {
     .rv-speaker--r { right: calc(50% - 134px); }
     body.rv-drop .rv-speaker { animation: rvPump 0.24s steps(2) infinite; transform-origin: bottom center; }
     @keyframes rvPump { 50% { transform: scaleY(1.07) scaleX(1.05); } }
-    @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-speaker { animation: none; } }
-    .rv-sign { position: absolute; top: 8px; right: 12px; font-size: 0.72rem; color: #b388ff; font-weight: 700; letter-spacing: 0.04em; text-align: right; }
-    .rv-sign b { color: #ffe135; display: block; font-size: 0.82rem; }
+    @media (prefers-reduced-motion: reduce) {
+      body.rv-drop .rv-speaker, .rv-mnote, .rv-beam, .rv-dropflash span { animation: none; }
+      .rv-pyro { display: none !important; }
+      .rv-mnote { opacity: 0.5; }
+    }
+    .rv-sign { position: absolute; top: 8px; right: 12px; font-size: 0.6rem; color: #b388ff; opacity: 0.7; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    /* stage production: notes drift from the speakers; beams sweep always;
+       pyro fountains fire during THE DROP (which now flashes ABOVE the DJ) */
+    .rv-mnote { /* NOT .rv-note — that's the panel's text note */
+      position: absolute; bottom: 44px; font-size: 0.95rem; color: #b388ff; opacity: 0;
+      z-index: 3; pointer-events: none; animation: rvNote 2.6s linear infinite;
+    }
+    .rv-mnote--1 { left: calc(50% - 152px); }
+    .rv-mnote--2 { left: calc(50% - 118px); color: #4db8ff; animation-delay: 1.2s; }
+    .rv-mnote--3 { right: calc(50% - 152px); animation-delay: 0.6s; }
+    .rv-mnote--4 { right: calc(50% - 118px); color: #4db8ff; animation-delay: 1.8s; }
+    @keyframes rvNote {
+      0% { transform: translateY(0); opacity: 0; }
+      15% { opacity: 1; }
+      100% { transform: translateY(-48px); opacity: 0; }
+    }
+    .rv-beam {
+      position: absolute; top: 0; width: 44px; height: 100%; z-index: 0; pointer-events: none;
+      background: linear-gradient(rgba(255, 225, 53, 0.14), transparent 80%);
+      clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+      transform-origin: 50% 0; animation: rvBeam 3.4s steps(7) infinite alternate;
+    }
+    .rv-beam--l { left: 16%; }
+    .rv-beam--r { right: 16%; animation-delay: 1.7s; }
+    body.rv-drop .rv-beam { animation-duration: 0.5s; background: linear-gradient(rgba(255, 77, 109, 0.3), transparent 80%); }
+    @keyframes rvBeam { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+    .rv-pyro {
+      position: absolute; bottom: 0; width: 6px; height: 62px; z-index: 1; pointer-events: none;
+      display: none; transform-origin: bottom;
+      background: linear-gradient(to top, transparent, #ff9f1c 30%, #ffe135 70%, #fffdf5);
+    }
+    body.rv-drop .rv-pyro { display: block; animation: rvPyro 0.45s steps(5) infinite; }
+    .rv-pyro--1 { left: 7%; }
+    .rv-pyro--2 { left: 24%; animation-delay: 0.15s; }
+    .rv-pyro--3 { right: 24%; animation-delay: 0.3s; }
+    .rv-pyro--4 { right: 7%; animation-delay: 0.1s; }
+    @keyframes rvPyro {
+      0% { transform: scaleY(0.15); }
+      60% { transform: scaleY(1); opacity: 1; }
+      100% { transform: scaleY(0.7); opacity: 0.55; }
+    }
 
     .rv-floor { position: relative; height: min(62vh, 560px); overflow: hidden; background: #161022; }
     /* the world layer: ravers + checkerboard live here so the camera (translate+scale)
@@ -95,7 +139,9 @@ const schema = {
        countertop peeks in (the rest bleeds off the corner). Barty — full
        bottom-of-floor dancer size — stands on the NEAR side of the counter,
        mirrored to face the stage; the floor edge crops his lower half. */
-    .rv-bar { position: absolute; left: -18px; bottom: -52px; width: 290px; z-index: 95; pointer-events: none; }
+    /* z 300 > any raver (they cap at 100 + y = ~192): a banana overlapping the bar
+       is standing further away on the floor, so the counter must cover it */
+    .rv-bar { position: absolute; left: -18px; bottom: -52px; width: 205px; z-index: 300; pointer-events: none; }
     .rv-counter { display: block; width: 100%; height: auto; position: relative; z-index: 2; }
     #rvBarman {
       display: block; width: 150px; height: 150px; margin: -78px 0 0 34px;
@@ -159,12 +205,14 @@ const schema = {
     .rv-emote--banana { font-size: 1.3rem; }
     @keyframes rvFloat { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, -70px); opacity: 0; } }
 
+    /* THE DROP flashes above the DJ — it's the stage's moment */
     .rv-dropflash {
-      position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 500;
+      position: absolute; left: 0; right: 0; top: 4px; display: grid; place-items: center;
+      pointer-events: none; z-index: 600;
     }
     .rv-dropflash span {
-      font-family: "Archivo Black", sans-serif; font-size: clamp(2rem, 8vw, 4.5rem);
-      color: #ffe135; -webkit-text-stroke: 3px #111; animation: rvDropPulse 0.5s steps(2) infinite;
+      font-family: "Archivo Black", sans-serif; font-size: clamp(1.3rem, 4.5vw, 2.4rem);
+      color: #ffe135; -webkit-text-stroke: 2px #111; animation: rvDropPulse 0.5s steps(2) infinite;
     }
     @keyframes rvDropPulse { 50% { transform: scale(1.06) rotate(-2deg); color: #ff4d6d; } }
 
@@ -233,7 +281,18 @@ const schema = {
     <div class="rv-stagewrap">
       <div class="rv-club">
         <div class="rv-booth">
-          <div class="rv-sign">SENTRY<b>remix in production</b></div>
+          <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
+          <span class="rv-beam rv-beam--l" aria-hidden="true"></span>
+          <span class="rv-beam rv-beam--r" aria-hidden="true"></span>
+          <span class="rv-pyro rv-pyro--1" aria-hidden="true"></span>
+          <span class="rv-pyro rv-pyro--2" aria-hidden="true"></span>
+          <span class="rv-pyro rv-pyro--3" aria-hidden="true"></span>
+          <span class="rv-pyro rv-pyro--4" aria-hidden="true"></span>
+          <span class="rv-mnote rv-mnote--1" aria-hidden="true">♪</span>
+          <span class="rv-mnote rv-mnote--2" aria-hidden="true">♫</span>
+          <span class="rv-mnote rv-mnote--3" aria-hidden="true">♪</span>
+          <span class="rv-mnote rv-mnote--4" aria-hidden="true">♫</span>
+          <div class="rv-sign">🎧 actual music coming soon</div>
           <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div>
           <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
@@ -268,7 +327,6 @@ const schema = {
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
           <div class="rv-tip" id="rvTip" hidden></div>
-          <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
         </div>
         <div class="rv-hud">
           <div class="rv-emotes" role="group" aria-label="Send an emote">
