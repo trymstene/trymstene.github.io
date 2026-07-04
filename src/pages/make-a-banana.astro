@@ -81,6 +81,14 @@ const appSchema = {
 
     /* controls */
     .bb-controls { display: flex; flex-direction: column; gap: 1.2rem; }
+    .bb-hero { padding: 2rem 1.2rem 1.2rem; }
+    @media (max-width: 640px) {
+      .bb-hero { padding: 1.1rem 1rem 0.8rem; }
+      .bb-hero .hero__tag { margin-top: 0.6rem; font-size: 0.85rem; }
+    }
+    .bb-actions .btn { flex: 1; min-width: 46%; }
+    .bb-overlayrow { display: flex; align-items: center; gap: 0.45rem; margin: 0.7rem 0 0; font-size: 0.85rem; }
+    .bb-overlayrow a { color: var(--ink); }
     .bb-toprow { display: flex; gap: 0.7rem; }
     .bb-random { flex: 1.25; font-size: 1rem; }
     .bb-torave { flex: 1; text-align: center; font-size: 1rem; }
@@ -222,7 +230,7 @@ const appSchema = {
 
     /* shared frame picker: one "freeze the moment" strip feeds BOTH cards */
     .bb-freeze { max-width: 760px; margin: 0 auto 1.4rem; }
-    .bb-freeze p { margin: 0 0 0.8rem; font-size: 0.95rem; }
+    .bb-freeze p, .bb-freeze__label { margin: 0 0 0.8rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; }
     .bb-freeze .bb-frames { justify-content: center; margin-bottom: 0; }
 
     /* fake chat row — compact, one line, both sizes inline */
@@ -275,7 +283,7 @@ const appSchema = {
     @media (max-width: 400px) { .bb-frame { width: 64px; height: 64px; } }
   </style>
 
-  <section class="hero" style="padding-bottom:1.5rem;">
+  <section class="hero bb-hero">
     <p class="kicker">Free banana toy</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,4rem);">make your own<br>dancing banana</h1>
     <p class="hero__tag" style="text-transform:none;font-weight:500;">Shades, hats, captions, dance moves. Build one, share it, slap it on a sticker.</p>
@@ -301,14 +309,19 @@ const appSchema = {
           <label>Background</label>
           <div class="bb-swatches" id="bbSwatches"></div>
         </div>
-        <div class="bb-row">
-          <label for="bbTopText">Top caption</label>
-          <input class="bb-input" id="bbTopText" maxlength="40" placeholder="e.g. HELLO YES">
-        </div>
-        <div class="bb-row">
-          <label for="bbBottomText">Bottom caption</label>
-          <input class="bb-input" id="bbBottomText" maxlength="40" placeholder="e.g. IT'S THE BANANA GUY">
-        </div>
+        <details class="px-fold" id="bbCaptionsFold">
+          <summary>Add captions</summary>
+          <div class="px-fold__body">
+            <div class="bb-row">
+              <label for="bbTopText">Top caption</label>
+              <input class="bb-input" id="bbTopText" maxlength="40" placeholder="e.g. HELLO YES">
+            </div>
+            <div class="bb-row">
+              <label for="bbBottomText">Bottom caption</label>
+              <input class="bb-input" id="bbBottomText" maxlength="40" placeholder="e.g. IT'S THE BANANA GUY">
+            </div>
+          </div>
+        </details>
         <div class="bb-row">
           <label>Shades</label>
           <div class="bb-chips" id="bbGlassesChips"></div>
@@ -333,7 +346,10 @@ const appSchema = {
         <div class="bb-actions">
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
           <button class="btn btn--light" id="bbWallSubmit" title="The banana guy hangs the best ones on the wall">🖼 Submit to the Wall</button>
-          <button class="btn btn--light" id="bbOverlayLink" title="A transparent always-dancing version of your banana, for OBS / streaming browser sources"><PixelIcon name="sparkle" /> Stream overlay link</button>
+        </div>
+        <div class="bb-overlayrow">
+          <a href="#" id="bbOverlayLink">Streamer? Copy the overlay link</a>
+          <details class="px-info"><summary>?</summary><span class="px-info__bubble">A transparent, always-dancing version of this exact banana. Paste the copied link into OBS as a Browser Source and it dances on your stream forever.</span></details>
         </div>
       </div>
     </div>
@@ -343,7 +359,7 @@ const appSchema = {
       <p class="kicker">Done building?</p>
       <h2 id="bbTakeTitle">Take it with you</h2>
       <div class="bb-freeze">
-        <p><strong>Freeze your favourite moment of the dance</strong> — it's the one on your meme image and your sticker:</p>
+        <div class="bb-freeze__label"><strong>Pick your pose</strong> <details class="px-info"><summary>?</summary><span class="px-info__bubble">The frame you freeze here is the one on your meme image and your printed sticker. The chat emoji GIF always keeps the full dance.</span></details></div>
         <div class="bb-frames" id="bbFrames"></div>
       </div>
       <div class="bb-cards">
@@ -375,9 +391,9 @@ const appSchema = {
             <div class="bb-shippill">Free shipping worldwide</div>
           </div>
           <ul class="bb-trust">
-            <li>3″×3″ (7.5 cm) durable vinyl — die-cut along your design (square if you picked a background)</li>
-            <li>Printed on demand and checked by the banana guy himself before it ships</li>
-            <li>From the creator of the original 1999 Dancing Banana</li>
+            <li>Checked by the banana guy himself before it ships
+              <details class="px-info"><summary>?</summary><span class="px-info__bubble">3″×3″ (7.5 cm) durable vinyl, printed on demand — die-cut along your design's outline (square if you picked a background). Sold by the creator of the original 1999 Dancing Banana.</span></details>
+            </li>
           </ul>
           <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" size="1.4em" /> Order my sticker</button>
         </div>

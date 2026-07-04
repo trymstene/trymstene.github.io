@@ -224,7 +224,8 @@ function init() {
     track('wall_submit', { kind: 'banana', design: designStr() });
   };
 
-  el('bbOverlayLink').onclick = async () => {
+  el('bbOverlayLink').onclick = async (e) => {
+    if (e) e.preventDefault(); // it's a text link now — no jumping to the top
     sync();
     const url = location.origin + '/overlay/' + location.search;
     try { await navigator.clipboard.writeText(url); toast('Overlay link copied — add it in OBS as a Browser Source!'); }
@@ -684,6 +685,8 @@ function init() {
 
   refreshUI();
   refreshShelf();
+  // captions live behind a fold — open it when a share link arrives wearing them
+  if (state.top || state.bottom) { const f = el('bbCaptionsFold'); if (f) f.open = true; }
   sheet.decode().catch(() => {}).finally(() => {
     recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true;
     requestAnimationFrame(tick);

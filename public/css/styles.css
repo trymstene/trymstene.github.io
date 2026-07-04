@@ -587,6 +587,43 @@ details.story p { margin-bottom: 1rem; }
 .langswitch a[aria-current="true"] { color: var(--banana); text-decoration: none; }
 
 /* respect reduced motion */
+/* ---------- progressive disclosure: the pixel fold + the ⓘ popover ----------
+   Both are plain <details> — no JS, keyboard/screen-reader friendly for free. */
+.px-fold { margin: 0; }
+.px-fold > summary {
+  display: inline-block; cursor: pointer; list-style: none;
+  border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
+  font-weight: 700; font-size: 0.9rem; border-radius: 2px; user-select: none;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.px-fold > summary::-webkit-details-marker { display: none; }
+.px-fold > summary::before { content: '+ '; font-weight: 800; }
+.px-fold[open] > summary::before { content: '− '; }
+.px-fold[open] > summary { background: var(--ink); color: var(--banana); }
+.px-fold > .px-fold__body { margin-top: 0.8rem; }
+
+.px-info { display: inline-block; position: relative; vertical-align: middle; }
+.px-info > summary {
+  display: inline-grid; place-items: center; cursor: help; list-style: none;
+  width: 1.15rem; height: 1.15rem; border: 2px solid currentColor; border-radius: 50%;
+  font-size: 0.7rem; font-weight: 800; line-height: 1; opacity: 0.6; user-select: none;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.px-info > summary::-webkit-details-marker { display: none; }
+.px-info > summary:hover, .px-info[open] > summary { opacity: 1; }
+.px-info > .px-info__bubble {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(260px, 78vw); z-index: 60;
+  background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); padding: 0.5rem 0.65rem;
+  font-size: 0.78rem; font-weight: 400; line-height: 1.5; text-align: left;
+}
+.px-info > .px-info__bubble::after {
+  content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+  width: 10px; height: 7px; background: var(--paper);
+  border: 3px solid var(--ink); border-top: none;
+}
+
 /* ---------- the doors (homepage) ---------- */
 .doors {
   display: grid;
