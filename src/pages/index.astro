@@ -3,8 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 
 const title = "Trym Stene — hello yes, it's the banana guy";
-const description = "Trym Stene — the guy who made the Dancing Banana GIF back in 1999. Lead SEO, web comedian, music producer. Satirical web projects, dancing banana merch, and the full banana story.";
-const ogDescription = "The guy who made the Dancing Banana GIF. Web comedian, SEO, music producer.";
+const description = "Trym Stene — the guy who made the Dancing Banana GIF back in 1999. This is where the banana lives: the full story, make your own, join the live rave, and the official shop.";
+const ogDescription = "The guy who made the Dancing Banana GIF. The story, the builder, the rave, the shop.";
 
 // Entity / authorship: establishes Trym Stene as the verified creator for search + AI
 const schema = {
@@ -15,7 +15,7 @@ const schema = {
       "@id": "https://trymstene.com/#website",
       "url": "https://trymstene.com/",
       "name": "Trym Stene",
-      "description": "Trym Stene — the creator of the Dancing Banana GIF (1999). Web comedy, music, and the official banana.",
+      "description": "Trym Stene — the creator of the Dancing Banana GIF (1999). The banana's home: story, builder, live rave, and official shop.",
       "inLanguage": "en",
       "publisher": { "@id": "https://trymstene.com/#trym" }
     },
@@ -39,9 +39,9 @@ const schema = {
   ]
 };
 
-const marqueeText = "the dancing banana  ·  since 1999  ·  web comedy & music  ·  licensing enquiries welcome  ·  ".repeat(5);
+const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  ·  make your own  ·  licensing enquiries welcome  ·  ".repeat(5);
 ---
-<BaseLayout title={title} description={description} ogDescription={ogDescription} showFooter={false}>
+<BaseLayout title={title} description={description} ogDescription={ogDescription}>
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
 
   <!-- scrolling marquee banner -->
@@ -59,11 +59,40 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  web comedy & mu
            onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
     </div>
     <h1 class="hero__title">hello yes,<br>it's the <span class="wobble">banana</span> guy</h1>
-    <p class="hero__tag">LEAD SEO &nbsp;·&nbsp; WEB COMEDIAN &nbsp;·&nbsp; MUSIC PRODUCER</p>
+    <p class="hero__tag">Welcome in. This is where the dancing banana lives — since 1999, still dancing.</p>
     <div class="hero__cta">
-      <a class="btn btn--dark" href="#banana">Meet the banana →</a>
-      <a class="btn btn--light" href="#shop">Get the merch</a>
+      <a class="btn btn--dark" href="/rave/">🪩 Join the rave →</a>
+      <a class="btn btn--light" href="/make-a-banana/" data-place="hero"><PixelIcon name="palette" /> Make a banana</a>
     </div>
+  </section>
+
+  <!-- the doors -->
+  <section class="block" id="doors">
+    <p class="kicker">Pick a door</p>
+    <h2>The banana is a place now.</h2>
+    <div class="doors">
+      <a class="door" href="/dancing-banana-gif-meme/">
+        <span class="door__verb">story</span>
+        <p>How a 1999 forum emoticon became Peanut Butter Jelly Time — and everything since.</p>
+        <span class="door__live">dancing since 1999</span>
+      </a>
+      <a class="door" href="/make-a-banana/" data-place="home-door">
+        <span class="door__verb">make</span>
+        <p>Dress your own banana. Download it free, or get it as a real sticker.</p>
+        <span class="door__live">hats · shades · chaos</span>
+      </a>
+      <a class="door door--dance" href="/rave/">
+        <span class="door__verb">dance</span>
+        <p>Every visitor's banana on one floor, dancing in perfect sync. Right now.</p>
+        <span class="door__live"><span class="door__dot"></span><span id="raveCount">the floor is open</span></span>
+      </a>
+      <a class="door" href="/shop/">
+        <span class="door__verb">shop</span>
+        <p>Stickers, mugs and tees. Official, from the creator himself.</p>
+        <span class="door__live">ships worldwide</span>
+      </a>
+    </div>
+    <p class="doors__daily">On the decks today: <a href="/banana-of-the-day/">the banana of the day →</a></p>
   </section>
 
   <!-- banana hook -->
@@ -80,105 +109,40 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  web comedy & mu
       (spoiler: not for your crypto coin) — lives on its own page.
     </p>
     <a class="btn btn--dark" href="/dancing-banana-gif-meme/">Read the full banana story →</a>
-    <a class="btn btn--light" href="/make-a-banana/" style="margin-left:0.6rem;"><PixelIcon name="palette" /> Make your own →</a>
   </section>
 
-  <!-- projects -->
-  <section class="block" id="projects">
-    <p class="kicker">Things I've built to make people laugh</p>
-    <h2>Projects</h2>
-    <p class="lead">Satirical web experiments, fake municipalities, and a country album about office despair.</p>
-    <div class="cards">
-      <a class="project-card" href="https://open.spotify.com/artist/6o8Td2bXOhcE5xtsBsYNiF" target="_blank" rel="noopener">
-        <img class="project-card__img" src="/assets/projects/corporate-rangers.jpg" alt="The Corporate Rangers" loading="lazy">
-        <div class="project-card__body">
-          <h3>The Corporate Rangers</h3>
-          <p>A six-track country meltdown about printers, pointless meetings, and coffee that tastes like regret.</p>
-          <span class="project-card__go">Listen on Spotify ↗</span>
-        </div>
-      </a>
-      <a class="project-card" href="https://chromewebstore.google.com/detail/karbonadify/dmnefnajildhaohggehgniogjiklanco" target="_blank" rel="noopener">
-        <img class="project-card__img" src="/assets/projects/karbonadify.jpg" alt="Karbonadify Chrome extension" loading="lazy">
-        <div class="project-card__body">
-          <h3>Karbonadify</h3>
-          <p>A Chrome extension that turns every "corona" on the news into "karbonade" — a Norwegian meat patty.</p>
-          <span class="project-card__go">Get the extension ↗</span>
-        </div>
-      </a>
-      <a class="project-card" href="https://lekeplass.com/projects/trymflix/" target="_blank" rel="noopener">
-        <img class="project-card__img" src="/assets/projects/trymflix.png" alt="Trymflix" loading="lazy">
-        <div class="project-card__body">
-          <h3>Trymflix.com</h3>
-          <p>A Netflix parody built mostly as an excuse to play with jQuery UI.</p>
-          <span class="project-card__go">Visit ↗</span>
-        </div>
-      </a>
-    </div>
-    <a class="btn btn--dark" href="/projects/" style="margin-top:2rem;">See all 6 projects →</a>
-  </section>
-
-  <!-- merch -->
-  <section class="block block--dark" id="shop">
-    <p class="kicker kicker--light">New!</p>
-    <h2>The Dancing Banana Shop</h2>
-    <p class="lead">Wear the banana. Officially. Stickers, mugs, tees and more.</p>
-    <a class="btn btn--light" href="/shop/">Visit the shop →</a>
-  </section>
-
-  <!-- about -->
+  <!-- the host -->
   <section class="block" id="about">
     <div class="split">
       <div class="split__media">
         <img src="/assets/trym-stene-profile-photo.jpg" alt="Trym Stene" loading="lazy">
       </div>
       <div class="split__text">
-        <p class="kicker">The guy behind the fruit</p>
+        <p class="kicker">Your host</p>
         <h2>Me</h2>
         <p class="lead">
           I'm Trym Stene — a Norwegian who does SEO for a living, makes jokes on the internet for fun,
           and produces music as <a href="https://www.djsentry.com" target="_blank" rel="noopener">Sentry</a>.
           One time in 1999 I drew a fruit and it got a little out of hand.
         </p>
+        <p class="lead">
+          Say hello: <a href="mailto:trym@trymstene.com">trym@trymstene.com</a>
+        </p>
         <a class="btn btn--dark" href="/me/">More about me →</a>
       </div>
     </div>
   </section>
 
-  <!-- music -->
-  <section class="block block--dark" id="music">
-    <div class="split split--reverse">
-      <div class="split__media">
-        <img src="/assets/trym-stene-studio.png" alt="Trym Stene in the studio" loading="lazy">
-      </div>
-      <div class="split__text">
-        <p class="kicker kicker--light">Also a producer</p>
-        <h2>Music</h2>
-        <p class="lead">
-          When I'm not making the internet laugh, I'm in the studio making noise as
-          <strong>Sentry</strong>.
-        </p>
-        <a class="btn btn--light" href="https://www.djsentry.com" target="_blank" rel="noopener">Hear it on djsentry.com ↗</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- contact / footer -->
-  <footer class="block block--dark" id="contact">
-    <p class="kicker kicker--light">Say hello</p>
-    <h2>Contact</h2>
-    <p class="lead">
-      Got a project, a question, or want to license the banana?
-      Email <a href="mailto:trym@trymstene.com">trym@trymstene.com</a>.
-      <br><span class="muted">(A proper spam-proof contact form is coming to this spot.)</span>
-    </p>
-    <div class="socials">
-      <a href="https://www.facebook.com/trymstene" target="_blank" rel="noopener">Facebook</a>
-      <a href="https://twitter.com/trymstene" target="_blank" rel="noopener">X</a>
-      <a href="https://www.linkedin.com/in/trymstene/" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://soundcloud.com/sentryofficial" target="_blank" rel="noopener">SoundCloud</a>
-      <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
-      <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
-    </div>
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy · best viewed in any browser, even Netscape <PixelIcon name="banana" /></p>
-  </footer>
+  <script>
+    // proof of life on the dance door — fail silently, never block the page
+    fetch('https://banana-rave.trymstene.workers.dev/count')
+      .then((r) => r.json())
+      .then((d) => {
+        const el = document.getElementById('raveCount');
+        if (el && typeof d.count === 'number' && d.count > 0) {
+          el.textContent = d.count === 1 ? '1 banana on the floor' : `${d.count} bananas on the floor`;
+        }
+      })
+      .catch(() => {});
+  </script>
 </BaseLayout>

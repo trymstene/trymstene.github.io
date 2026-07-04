@@ -1,17 +1,26 @@
 ---
-// Default site footer ("More banana"). Pages can opt out via showFooter={false}.
+// Default site footer — the whole banana world + the host. Pages can opt out via showFooter={false}.
 import PixelIcon from './PixelIcon.astro';
 ---
 <footer class="block block--dark">
   <p class="kicker kicker--light">More banana</p>
   <h2>The original, from its creator</h2>
   <p class="lead">
-    <a href="/dancing-banana-gif-meme/">Download the GIF &amp; story</a> ·
+    <a href="/dancing-banana-gif-meme/">The story &amp; the GIF</a> ·
     <a href="/make-a-banana/" data-place="footer">Make your own</a> ·
+    <a href="/rave/">Join the rave</a> ·
     <a href="/banana-of-the-day/">Banana of the day</a> ·
     <a href="/dancing-banana-wallpaper/">Wallpapers</a> ·
     <a href="/license-the-dancing-banana/">License it</a> ·
+    <a href="/shop/">Shop</a> ·
     <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener"><PixelIcon name="coffee" /> Tip</a>
+  </p>
+  <p class="lead footer__host">
+    Your host:
+    <a href="/me/">Me</a> ·
+    <a href="/projects/">Projects</a> ·
+    <a href="https://www.djsentry.com" target="_blank" rel="noopener">Music ↗</a> ·
+    <a href="/me/#contact">Contact</a>
   </p>
   <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
 </footer>

@@ -63,7 +63,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 export function sizeTableHtml(m) {
   const g = guideFor(m.title);
-  if (!g) return '<p>Fit runs true to size. For exact measurements, <a href="/#contact">drop me a message</a> and I\'ll send the size chart.</p>';
+  if (!g) return '<p>Fit runs true to size. For exact measurements, <a href="/me/#contact">drop me a message</a> and I\'ll send the size chart.</p>';
   const rows = m.sizes.filter((s) => s in g.rows);
   const head = g.cols.map((c) => `<th>${esc(c)}</th>`).join('');
   const body = (rows.length ? rows : Object.keys(g.rows)).map((s) => {

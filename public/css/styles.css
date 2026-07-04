@@ -123,9 +123,6 @@ a { color: inherit; }
 .nav__group a { padding: 1rem 1.4rem; }
 .nav__group--banana { background: var(--ink); }
 .nav__group--banana a { color: var(--banana); border-top: 2px solid #333; }
-.nav__group--trym { background: var(--banana); }
-.nav__group--trym a { color: var(--ink); border-top: 2px solid var(--ink); }
-
 .nav__backdrop {
   position: fixed;
   inset: 0;
@@ -165,9 +162,6 @@ a { color: inherit; }
   .nav__group--banana { border: 3px solid var(--ink); }
   .nav__group--banana a { color: var(--banana); }
   .nav__group--banana a:hover { background: var(--banana); color: var(--ink); }
-  .nav__group--trym { border: 3px solid var(--ink); border-left: none; }
-  .nav__group--trym a { color: var(--ink); }
-  .nav__group--trym a:hover { background: var(--ink); color: var(--banana); }
 }
 @media (min-width: 1160px) {
   .nav__group a { padding: 0.5rem 0.9rem; font-size: 1rem; }
@@ -593,7 +587,47 @@ details.story p { margin-bottom: 1rem; }
 .langswitch a[aria-current="true"] { color: var(--banana); text-decoration: none; }
 
 /* respect reduced motion */
+/* ---------- the doors (homepage) ---------- */
+.doors {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  margin-top: 1.8rem;
+  text-align: left;
+}
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line);
+  box-shadow: var(--shadow);
+  padding: 1.2rem 1.2rem 1rem;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.door:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 var(--ink); }
+.door__verb { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; line-height: 1; }
+.door p { margin: 0; font-size: 0.92rem; line-height: 1.5; flex: 1; }
+.door__live {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.door--dance { background: var(--ink); color: var(--paper); }
+.door--dance .door__verb { color: var(--banana); }
+.door--dance .door__live { opacity: 1; color: #37d67a; display: flex; align-items: center; gap: 0.45rem; }
+.door__dot { width: 8px; height: 8px; background: #37d67a; animation: doorPulse 1.2s steps(2) infinite; }
+@keyframes doorPulse { 50% { opacity: 0.25; } }
+.doors__daily { margin-top: 1.6rem; font-size: 0.95rem; }
+
+/* footer host line */
+.footer__host { font-size: 0.95rem; opacity: 0.85; }
+
 @media (prefers-reduced-motion: reduce) {
-  .marquee__track, .banana-fallback { animation: none; }
+  .marquee__track, .banana-fallback, .door__dot { animation: none; }
   html { scroll-behavior: auto; }
 }
