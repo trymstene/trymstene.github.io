@@ -87,6 +87,8 @@ const appSchema = {
       .bb-hero .hero__tag { margin-top: 0.6rem; font-size: 0.85rem; }
     }
     .bb-actions .btn { flex: 1; min-width: 46%; }
+    .bb-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+    .bb-signrow .bb-input { flex: 1; min-width: 0; }
     .bb-overlayrow { display: flex; align-items: center; gap: 0.45rem; margin: 0.7rem 0 0; font-size: 0.85rem; }
     .bb-overlayrow a { color: var(--ink); }
     .bb-toprow { display: flex; gap: 0.7rem; }
@@ -353,6 +355,10 @@ const appSchema = {
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
           <button class="btn btn--light" id="bbWallSubmit" title="The banana guy hangs the best ones on the wall">🖼 Submit to the Wall</button>
         </div>
+        <div class="bb-signrow" id="bbSignRow" hidden>
+          <input class="bb-input" id="bbSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
+          <button class="btn btn--dark" id="bbSignSend">Send to the Wall</button>
+        </div>
         <div class="bb-overlayrow">
           <a href="#" id="bbOverlayLink">Streamer? Copy the overlay link</a>
           <details class="px-info"><summary>?</summary><span class="px-info__bubble">A transparent, always-dancing version of this exact banana. Paste the copied link into OBS as a Browser Source and it dances on your stream forever.</span></details>
@@ -406,7 +412,7 @@ const appSchema = {
       </div>
       <div class="bb-shelfrow">
         <h3>🗄 My shelf</h3>
-        <p class="bb-note" style="margin-top:0.2rem;">Every banana you download, share or order lands here — click one to bring it back. Feeling ambitious? <a href="/forge/">Forge a pixel emoji from scratch →</a></p>
+        <p class="bb-note" style="margin-top:0.2rem;">Your latest saves — click one to bring it back. <a href="/pass/">Full shelf on your pass 🎫</a> · <a href="/forge/">or forge a pixel emoji →</a></p>
         <div id="bbShelf" class="bb-shelf" aria-label="My saved bananas"></div>
       </div>
     </section>

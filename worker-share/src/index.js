@@ -190,12 +190,17 @@ async function handleWallSubmit(request, env, url) {
   try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, corsHeaders(env, request)); }
   const kind = body && body.kind;
   const params = body && typeof body.params === 'string' ? body.params.slice(0, MAX_WALL_BYTES) : '';
+  // the optional signature — free text is acceptable ONLY because every entry
+  // passes Trym's human gate before publication (he reads name + art together)
+  const by = body && typeof body.by === 'string'
+    ? body.by.replace(/[\\u0000-\\u001f\\u007f]/g, '').trim().slice(0, 24)
+    : '';
   if (!['banana', 'emoji'].includes(kind) || !params) {
     return json({ error: 'bad submission' }, 400, corsHeaders(env, request));
   }
 
   const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
-  await env.SHARES.put(`wall-inbox/${id}.json`, JSON.stringify({ kind, params, created: Date.now() }), {
+  await env.SHARES.put(`wall-inbox/${id}.json`, JSON.stringify({ kind, params, by, created: Date.now() }), {
     httpMetadata: { contentType: 'application/json' },
   });
   return json({ ok: true, id }, 200, corsHeaders(env, request));
@@ -223,6 +228,7 @@ async function handleWallInbox(request, env, url) {
         id,
         kind: d.kind,
         params: d.params,
+        by: d.by || '',
         created: d.created,
         preview: d.kind === 'banana' ? `${SITE}/make-a-banana/?${d.params}` : '(open the forge and load via shelf format)',
       });

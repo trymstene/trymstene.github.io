@@ -8,8 +8,11 @@ reviews them.
 ## The flow
 
 1. Users hit **Submit to the Wall** in the builder or the forge.
-2. `worker-share` stores `{kind, params, created}` at
-   `banana-shares/wall-inbox/<id>.json`. No IPs, no names — just the creation.
+2. `worker-share` stores `{kind, params, by, created}` at
+   `banana-shares/wall-inbox/<id>.json`. No IPs — `by` is the submitter's
+   OPTIONAL signature (≤24 chars). **Read it as carefully as the art**: the
+   name publishes on the wall exactly as approved (add `"by"` to the
+   wall.json entry, or drop it if the name is off).
 3. Review (run from `worker-share/`, uses the existing wrangler login):
 
    ```

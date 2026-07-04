@@ -72,6 +72,11 @@ const schema = {
     #fgFrameInfo { font-size: 0.8rem; opacity: 0.7; }
 
     .fg-export { margin-top: 1.4rem; }
+    .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+    .fg-signrow input {
+      flex: 1; min-width: 0; padding: 0.55rem 0.7rem; border: 3px solid var(--ink);
+      font-family: inherit; font-size: 0.95rem; background: var(--paper); border-radius: 2px;
+    }
     #fgDone { margin-top: 0.8rem; border: 3px solid var(--ink); background: var(--banana); padding: 0.7rem 0.9rem; font-size: 0.9rem; }
     #fgDone a { font-weight: 700; }
 
@@ -152,6 +157,10 @@ const schema = {
     <div class="fg-export">
       <button class="btn btn--dark" id="fgExport">⚒ Forge the GIF (transparent, chat-ready)</button>
       <button class="btn btn--light" id="fgWallSubmit" title="The banana guy hangs the best ones on the wall">🖼 Submit to the Wall</button>
+      <div class="fg-signrow" id="fgSignRow" hidden>
+        <input id="fgSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
+        <button class="btn btn--dark" id="fgSignSend">Send to the Wall</button>
+      </div>
       <div id="fgDone" hidden>
         🎉 Forged — and saved to your shelf below. Drop it straight into Discord, Slack or Twitch.
         Feeling proud? <a href="/make-a-banana/" data-place="forge">The banana would love company →</a>
@@ -160,7 +169,7 @@ const schema = {
 
     <div class="fg-shelfrow">
       <h3>🗄 My shelf</h3>
-      <p class="shelf-empty" style="opacity:0.75;">Everything you forge or build lands here — click one to keep working on it.</p>
+      <p class="shelf-empty" style="opacity:0.75;">Your latest saves — click one to keep working on it. <a href="/pass/">Full shelf on your pass 🎫</a></p>
       <div id="fgShelf" class="fg-shelf" aria-label="My saved creations"></div>
     </div>
   </div>

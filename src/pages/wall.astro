@@ -37,6 +37,7 @@ const schema = {
       border: 3px solid var(--ink);
     }
     .wl-frame h3 { margin: 0.7rem 0 0.1rem; font-size: 1rem; }
+    .wl-frame .wl-by { margin: 0 0 0.2rem; font-size: 0.78rem; font-weight: 700; color: var(--hot, #ff4d6d); }
     .wl-frame p { margin: 0; font-size: 0.8rem; opacity: 0.7; line-height: 1.45; }
     .wl-frame .wl-date { display: block; margin-top: 0.35rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
     .wl-how {
@@ -63,6 +64,7 @@ const schema = {
         <figure class="wl-frame" data-kind={piece.kind} data-params={piece.params}>
           <canvas aria-label={piece.title}></canvas>
           <h3>{piece.title}</h3>
+          {piece.by && <p class="wl-by">by {piece.by}</p>}
           <p>{piece.note}</p>
           <span class="wl-date">{piece.date}</span>
         </figure>

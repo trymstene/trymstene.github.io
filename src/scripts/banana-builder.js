@@ -227,20 +227,31 @@ function init() {
     saveToShelf(mode === 'unfurl' ? (copied.split('/s/')[1] || null) : null);
     passPatch('spreader');
   };
-  el('bbWallSubmit').onclick = async () => {
+  // wall submission is two steps: the first click reveals the optional
+  // signature (free text is fine here — it rides Trym's human review gate)
+  el('bbWallSubmit').onclick = () => {
+    sync();
+    if (!location.search.slice(1)) { toast('Dress it up a little first 🍌'); return; }
+    if (!captionsClean()) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
+    const row = el('bbSignRow');
+    row.hidden = !row.hidden;
+    if (!row.hidden) el('bbSignName').focus();
+  };
+  el('bbSignSend').onclick = async () => {
     sync();
     const params = location.search.slice(1);
-    if (!params) { toast('Dress it up a little first 🍌'); return; }
-    if (!captionsClean()) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
+    const by = el('bbSignName').value.trim().slice(0, 24);
+    el('bbSignRow').hidden = true;
     try {
       const res = await fetch(SHARE_BASE + '/wall/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'banana', params }),
+        body: JSON.stringify({ kind: 'banana', params, by }),
       });
       toast(res.ok ? 'Submitted! The banana guy hangs the best ones 🖼' : 'The wall is busy — try again in a bit');
+      if (res.ok) passPatch('exhibitor');
     } catch (e) { toast('The wall is busy — try again in a bit'); }
-    track('wall_submit', { kind: 'banana', design: designStr() });
+    track('wall_submit', { kind: 'banana', signed: by ? 1 : 0, design: designStr() });
   };
 
   el('bbOverlayLink').onclick = async (e) => {
@@ -257,6 +268,7 @@ function init() {
   // ---- the shelf: creations you kept (downloaded / shared / ordered) ----
   function refreshShelf() {
     renderShelf(el('bbShelf'), {
+      limit: 6, // a strip, not the archive — the full shelf lives on the pass
       onPick: (c) => {
         track('shelf_pick', { design: c.params.slice(0, 60) });
         if (c.kind === 'emoji') { location.href = '/forge/?shelf=' + c.id; return; } // pixel creations belong to the forge

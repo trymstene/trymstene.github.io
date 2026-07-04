@@ -58,11 +58,13 @@ function outfitFrom(params) {
   };
 }
 
-// render the shelf strip into a host element; onPick(creation) on click
-export async function renderShelf(host, { onPick } = {}) {
+// render the shelf strip into a host element; onPick(creation) on click.
+// opts.limit shows only the latest N (the tools show a strip; the full shelf
+// lives on the pass).
+export async function renderShelf(host, { onPick, limit } = {}) {
   if (!host) return;
   await assetsReady();
-  const list = read();
+  const list = limit ? read().slice(0, limit) : read();
   host.innerHTML = '';
   if (!list.length) {
     host.innerHTML = '<p class="shelf-empty">Empty so far — download, share or order a banana and it lands here.</p>';

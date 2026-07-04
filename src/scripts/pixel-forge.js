@@ -318,27 +318,37 @@ function init() {
     }
   };
 
-  // ---- submit to the Wall (private inbox — the banana guy hangs the best) ----
-  el('fgWallSubmit').onclick = async () => {
+  // ---- submit to the Wall: first click reveals the optional signature ----
+  // (free text is fine here — it rides Trym's human review gate)
+  el('fgWallSubmit').onclick = () => {
     const btn = el('fgWallSubmit'); const label = btn.textContent;
     if (!state.frames.some((f) => f.some((v) => v))) { btn.textContent = 'Draw something first 🎨'; setTimeout(() => { btn.textContent = label; }, 2500); return; }
+    const row = el('fgSignRow');
+    row.hidden = !row.hidden;
+    if (!row.hidden) el('fgSignName').focus();
+  };
+  el('fgSignSend').onclick = async () => {
+    const btn = el('fgWallSubmit'); const label = btn.textContent;
+    const by = el('fgSignName').value.trim().slice(0, 24);
+    el('fgSignRow').hidden = true;
     btn.disabled = true;
     try {
       const res = await fetch('https://banana-share.trymstene.workers.dev/wall/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'emoji', params: 'forge:' + serialize() }),
+        body: JSON.stringify({ kind: 'emoji', params: 'forge:' + serialize(), by }),
       });
       btn.textContent = res.ok ? 'Submitted! 🖼 The banana guy hangs the best ones' : 'The wall is busy — try again later';
       if (res.ok) passPatch('exhibitor');
     } catch (e) { btn.textContent = 'The wall is busy — try again later'; }
-    track('wall_submit', { kind: 'emoji', size: state.size, frames: state.frames.length });
+    track('wall_submit', { kind: 'emoji', signed: by ? 1 : 0, size: state.size, frames: state.frames.length });
     setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 4000);
   };
 
   // ---- the shelf strip on the forge ----
   function refreshShelfStrip() {
     renderShelf(el('fgShelf'), {
+      limit: 6, // a strip, not the archive — the full shelf lives on the pass
       onPick: (c) => {
         if (c.kind === 'emoji') {
           if (deserialize(c.params)) {
