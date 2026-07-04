@@ -208,6 +208,22 @@ function init() {
     track('share_link_copy', { design: designStr(), mode });
     saveToShelf(mode === 'unfurl' ? (copied.split('/s/')[1] || null) : null);
   };
+  el('bbWallSubmit').onclick = async () => {
+    sync();
+    const params = location.search.slice(1);
+    if (!params) { toast('Dress it up a little first 🍌'); return; }
+    if (!captionsClean()) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
+    try {
+      const res = await fetch(SHARE_BASE + '/wall/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'banana', params }),
+      });
+      toast(res.ok ? 'Submitted! The banana guy hangs the best ones 🖼' : 'The wall is busy — try again in a bit');
+    } catch (e) { toast('The wall is busy — try again in a bit'); }
+    track('wall_submit', { kind: 'banana', design: designStr() });
+  };
+
   el('bbOverlayLink').onclick = async () => {
     sync();
     const url = location.origin + '/overlay/' + location.search;

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "origin-1999",
+    "kind": "banana",
+    "params": "",
+    "title": "The Original",
+    "note": "Drawn in 1999 on an AMD K6-2. The one that started it all.",
+    "date": "1999"
+  },
+  {
+    "id": "royal-disco",
+    "kind": "banana",
+    "params": "h=crown&g=shades&e=disco",
+    "title": "Royal Disco",
+    "note": "First resident of the rave era.",
+    "date": "2026-07"
+  },
+  {
+    "id": "glowstick-veteran",
+    "kind": "banana",
+    "params": "h=party&g=hearts&ex=glowstick.bowtie&e=sparkle",
+    "title": "The Veteran",
+    "note": "Survived 30 minutes on the floor. Has the glowstick to prove it.",
+    "date": "2026-07"
+  },
+  {
+    "id": "dapper-cowboy",
+    "kind": "banana",
+    "params": "h=cowboy&ex=mustache.bowtie",
+    "title": "The Regular",
+    "note": "Barty's best customer.",
+    "date": "2026-07"
+  }
+]

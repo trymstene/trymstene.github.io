@@ -19,9 +19,16 @@
 //                          ?p=<urlencoded builder query>  max 600 KB
 //   GET  /s/<id>           share page: og tags + redirect to the builder
 //   GET  /so/<id>.png      the stored OG image (immutable cache)
+//   POST /wall/submit      (CORS: ALLOWED_ORIGIN)  body = JSON {kind, params}
+//                          → the PRIVATE wall inbox. NOTHING here is public:
+//                          the wall page is statically built from wall.json in
+//                          the repo — publishing = a commit through Trym's hands.
+//   GET  /wall/inbox?key=  capability-URL review list (WALL_KEY secret)
+//   DELETE /wall/inbox/<id>?key=   remove after review
 //   GET  /health           bucket reachability
 
 const MAX_UPLOAD_BYTES = 600 * 1024;
+const MAX_WALL_BYTES = 160 * 1024; // forge creations (b64 frames) can be chunky
 const SITE = 'https://trymstene.com';
 
 export default {
@@ -31,6 +38,8 @@ export default {
       if (url.pathname === '/share') return handleShare(request, env, url);
       if (url.pathname.startsWith('/s/')) return handlePage(env, url);
       if (url.pathname.startsWith('/so/')) return handleImage(request, env, url);
+      if (url.pathname === '/wall/submit') return handleWallSubmit(request, env, url);
+      if (url.pathname.startsWith('/wall/inbox')) return handleWallInbox(request, env, url);
       if (url.pathname === '/health') return handleHealth(env);
       return json({ error: 'not found' }, 404);
     } catch (e) {
@@ -160,6 +169,66 @@ async function handleImage(request, env, url) {
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
+}
+
+// ---------- POST /wall/submit — into the PRIVATE inbox, never public ----------
+async function handleWallSubmit(request, env, url) {
+  if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(env, request) });
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+  if (!allowed.includes(request.headers.get('Origin') || '')) {
+    return json({ error: 'forbidden' }, 403);
+  }
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (throttled(ip)) return json({ error: 'slow down' }, 429, corsHeaders(env, request));
+
+  const len = parseInt(request.headers.get('Content-Length') || '0', 10);
+  if (!len || len > MAX_WALL_BYTES) return json({ error: 'too large' }, 413, corsHeaders(env, request));
+
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, corsHeaders(env, request)); }
+  const kind = body && body.kind;
+  const params = body && typeof body.params === 'string' ? body.params.slice(0, MAX_WALL_BYTES) : '';
+  if (!['banana', 'emoji'].includes(kind) || !params) {
+    return json({ error: 'bad submission' }, 400, corsHeaders(env, request));
+  }
+
+  const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+  await env.SHARES.put(`wall-inbox/${id}.json`, JSON.stringify({ kind, params, created: Date.now() }), {
+    httpMetadata: { contentType: 'application/json' },
+  });
+  return json({ ok: true, id }, 200, corsHeaders(env, request));
+}
+
+// ---------- the review gate: capability URL with the WALL_KEY secret ----------
+async function handleWallInbox(request, env, url) {
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) {
+    return json({ error: 'forbidden' }, 403);
+  }
+  const delMatch = url.pathname.match(/^\/wall\/inbox\/([a-f0-9]{6,32})$/);
+  if (delMatch && request.method === 'DELETE') {
+    await env.SHARES.delete(`wall-inbox/${delMatch[1]}.json`);
+    return json({ ok: true });
+  }
+  const list = await env.SHARES.list({ prefix: 'wall-inbox/', limit: 100 });
+  const out = [];
+  for (const o of list.objects) {
+    const obj = await env.SHARES.get(o.key);
+    if (!obj) continue;
+    try {
+      const d = await obj.json();
+      const id = o.key.slice('wall-inbox/'.length, -'.json'.length);
+      out.push({
+        id,
+        kind: d.kind,
+        params: d.params,
+        created: d.created,
+        preview: d.kind === 'banana' ? `${SITE}/make-a-banana/?${d.params}` : '(open the forge and load via shelf format)',
+      });
+    } catch (e) {}
+  }
+  return json({ pending: out.length, items: out });
 }
 
 // ---------- GET /health ----------

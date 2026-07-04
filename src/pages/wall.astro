@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import wall from '../data/wall.json';
+
+const title = 'The Banana Wall — hung by the banana guy';
+const description = 'The permanent gallery of the banana world: the best bananas and pixel emojis made by visitors, curated and hung by the creator of the original 1999 Dancing Banana GIF.';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'The Banana Wall',
+  url: 'https://trymstene.com/wall/',
+  description: 'A curated gallery of visitor-made dancing bananas and pixel emojis, hung by Trym Stene.',
+  creator: { '@id': 'https://trymstene.com/#trym' },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="The Banana Wall 🖼"
+  ogDescription="The best bananas and pixel emojis, hung by the banana guy himself. Make one and earn your spot."
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <style is:inline slot="head">
+    .wl-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
+    .wl-head h1 { margin: 0 0 0.3rem; }
+    .wl-head p { margin: 0 0 1.8rem; opacity: 0.8; max-width: 62ch; }
+    .wl-grid { display: grid; gap: 1.6rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .wl-frame {
+      background: var(--paper); border: var(--line); box-shadow: var(--shadow);
+      padding: 0.9rem 0.9rem 0.7rem; text-align: center;
+    }
+    .wl-frame canvas {
+      display: block; width: 100%; max-width: 200px; margin: 0 auto; aspect-ratio: 1;
+      image-rendering: pixelated; background:
+        repeating-conic-gradient(#f4f1e8 0% 25%, #e9e5d8 0% 50%) 0 0 / 20px 20px;
+      border: 3px solid var(--ink);
+    }
+    .wl-frame h3 { margin: 0.7rem 0 0.1rem; font-size: 1rem; }
+    .wl-frame p { margin: 0; font-size: 0.8rem; opacity: 0.7; line-height: 1.45; }
+    .wl-frame .wl-date { display: block; margin-top: 0.35rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
+    .wl-how {
+      margin-top: 2.4rem; border: var(--line); background: var(--ink); color: var(--paper);
+      box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
+    }
+    .wl-how h2 { margin: 0 0 0.4rem; font-size: 1.15rem; color: var(--banana); }
+    .wl-how p { margin: 0 0 0.9rem; font-size: 0.92rem; opacity: 0.9; }
+    .wl-how a { color: var(--banana); font-weight: 700; }
+  </style>
+
+  <div class="wl-wrap">
+    <div class="wl-head">
+      <p class="kicker">The permanent collection</p>
+      <h1>the banana wall</h1>
+      <p>
+        The rave forgets when the night ends — the wall remembers. The best things made
+        in the workshop get hung here, picked by the banana guy himself. Every piece dances.
+      </p>
+    </div>
+
+    <div class="wl-grid">
+      {wall.map((piece) => (
+        <figure class="wl-frame" data-kind={piece.kind} data-params={piece.params}>
+          <canvas aria-label={piece.title}></canvas>
+          <h3>{piece.title}</h3>
+          <p>{piece.note}</p>
+          <span class="wl-date">{piece.date}</span>
+        </figure>
+      ))}
+    </div>
+
+    <div class="wl-how">
+      <h2>🖼 How to get on the wall</h2>
+      <p>
+        Make something — <a href="/make-a-banana/">dress a banana</a> or
+        <a href="/forge/">forge a pixel emoji</a> — and hit <strong>Submit to the Wall</strong>.
+        The banana guy reviews every submission by hand and hangs the ones that make him smile.
+        No accounts, no algorithms, just taste.
+      </p>
+      <a class="btn btn--light" href="/make/">To the workshop →</a>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/banana-wall.js';
+  </script>
+</BaseLayout>

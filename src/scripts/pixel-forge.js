@@ -316,6 +316,23 @@ function init() {
     }
   };
 
+  // ---- submit to the Wall (private inbox — the banana guy hangs the best) ----
+  el('fgWallSubmit').onclick = async () => {
+    const btn = el('fgWallSubmit'); const label = btn.textContent;
+    if (!state.frames.some((f) => f.some((v) => v))) { btn.textContent = 'Draw something first 🎨'; setTimeout(() => { btn.textContent = label; }, 2500); return; }
+    btn.disabled = true;
+    try {
+      const res = await fetch('https://banana-share.trymstene.workers.dev/wall/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'emoji', params: 'forge:' + serialize() }),
+      });
+      btn.textContent = res.ok ? 'Submitted! 🖼 The banana guy hangs the best ones' : 'The wall is busy — try again later';
+    } catch (e) { btn.textContent = 'The wall is busy — try again later'; }
+    track('wall_submit', { kind: 'emoji', size: state.size, frames: state.frames.length });
+    setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 4000);
+  };
+
   // ---- the shelf strip on the forge ----
   function refreshShelfStrip() {
     renderShelf(el('fgShelf'), {
