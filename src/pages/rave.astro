@@ -92,12 +92,17 @@ const schema = {
     @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-world { animation: none; } }
     /* the bar, tucked into the BOTTOM-LEFT corner of the world — down = nearer, so
        you "come up to the bar" by dancing toward the viewer. Only the top of the
-       countertop peeks in (the rest bleeds off the corner) and Barty — full
-       bottom-of-floor dancer size — stands behind it, legs hidden by the counter. */
-    .rv-bar { position: absolute; left: -18px; bottom: -32px; width: 330px; z-index: 95; pointer-events: none; }
-    #rvBarman { display: block; width: 150px; height: 150px; margin: 0 0 -60px 64px; position: relative; z-index: 1; image-rendering: pixelated; }
+       countertop peeks in (the rest bleeds off the corner). Barty — full
+       bottom-of-floor dancer size — stands on the NEAR side of the counter,
+       mirrored to face the stage; the floor edge crops his lower half. */
+    .rv-bar { position: absolute; left: -18px; bottom: -40px; width: 330px; z-index: 95; pointer-events: none; }
     .rv-counter { display: block; width: 100%; height: auto; position: relative; z-index: 2; }
-    .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 58%; bottom: 56px; z-index: 3; }
+    #rvBarman {
+      display: block; width: 150px; height: 150px; margin: -66px 0 0 62px;
+      position: relative; z-index: 3; image-rendering: pixelated;
+      transform: scaleX(-1); /* frame 4 faces left — mirror so he faces the stage from the left corner */
+    }
+    .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -16px; z-index: 4; }
     .rv-bubble {
       position: absolute; bottom: calc(100% + 6px); left: 42%; transform: translateX(-50%);
       min-width: 150px; max-width: 210px; z-index: 5; text-align: center;
@@ -243,13 +248,13 @@ const schema = {
               <svg class="rv-counterbeer" id="rvCounterBeer" viewBox="0 0 50 60" style="display:none;">
                 <rect x="10" y="0" width="30" height="10" fill="#fffdf5"/><rect x="0" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#fffdf5"/><rect x="40" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="20" width="30" height="30" fill="#f2c200"/><rect x="15" y="25" width="7" height="20" fill="#ffe135"/><rect x="10" y="50" width="30" height="10" fill="#111111"/>
               </svg>
-              <canvas id="rvBarman" width="160" height="160"></canvas>
               <svg class="rv-counter" viewBox="0 0 170 36" shape-rendering="crispEdges">
                 <rect x="0" y="0" width="170" height="8" fill="#a97139"/>
                 <rect x="0" y="8" width="170" height="4" fill="#111111"/>
                 <rect x="0" y="12" width="170" height="24" fill="#5a3618"/>
                 <rect x="14" y="12" width="4" height="24" fill="#6b4320"/><rect x="52" y="12" width="4" height="24" fill="#6b4320"/><rect x="90" y="12" width="4" height="24" fill="#6b4320"/><rect x="128" y="12" width="4" height="24" fill="#6b4320"/><rect x="162" y="12" width="4" height="24" fill="#6b4320"/>
               </svg>
+              <canvas id="rvBarman" width="160" height="160"></canvas>
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
