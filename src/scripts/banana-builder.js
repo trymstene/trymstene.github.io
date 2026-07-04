@@ -76,6 +76,7 @@ function init() {
   };
   // extras = independent toggles, not a single-choice row (labels carry pixel icons)
   EXTRA_DEFS.forEach((d) => {
+    if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
       const a = document.createElement('a');
@@ -136,7 +137,7 @@ function init() {
     const q = pick(quips);
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
-    EXTRA_DEFS.forEach((d) => { state.extras[d.id] = earnedUnlocked(d) && Math.random() < 0.3; });
+    EXTRA_DEFS.forEach((d) => { state.extras[d.id] = !d.raveOnly && earnedUnlocked(d) && Math.random() < 0.3; });
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     state.spd = Math.round((0.5 + Math.random() * 0.8) * 100) / 100;
     topIn.value = state.top; botIn.value = state.bottom;

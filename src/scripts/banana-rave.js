@@ -22,6 +22,20 @@ const WALK_SPEED = 16;     // % of floor per second
 const MOVE_SEND_MS = 150;  // network throttle; local echo runs every frame
 // the souvenir: survive this long → the glowstick is yours forever (client-side unlock, it's a joke not DRM)
 const GLOW_MS = location.search.includes('stagetest') ? 20000 : 30 * 60 * 1000;
+// HAPPY HOUR — clock-synced like the drop: same window for the whole planet,
+// every 5th minute for 40s. First banana at the bar drinks free (server-arbitrated).
+const HAPPY_PERIOD = 300, HAPPY_LEN = 40, HAPPY_OFFSET = 120; // seconds, wall clock
+const BAR_ZONE = { x: 62, y: 70 }; // bottom-right bar: at the bar = x > 62% AND y > 70% (down = nearer)
+const happyPhase = (t) => (((t - HAPPY_OFFSET) % HAPPY_PERIOD) + HAPPY_PERIOD) % HAPPY_PERIOD;
+const happyActive = (t) => happyPhase(t) < HAPPY_LEN;
+const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
+const BAR_QUIPS = [
+  'we only serve potassium',
+  'the drop hits every third minute. the bar never misses',
+  'nice moves. hydrate.',
+  'I peeled at my first rave too',
+  'happy hour every 5th minute — be quick',
+];
 
 const el = (id) => document.getElementById(id);
 const floor = el('rvFloor');
@@ -258,6 +272,58 @@ function init() {
   const djOutfit = dailyOutfit();
   const djCv = el('rvDj');
 
+  // ---- the bar: Barty (static NPC, frame 4 = first left-facing pose) + happy hour ----
+  let beerWin = -1;      // last claimed happy-hour window
+  let lastBeerTry = 0;
+  let bubbleSticky = false, bubbleT = null;
+  function showBubble(text, sticky, ms) {
+    const b = el('rvBubble');
+    b.textContent = text;
+    b.hidden = false;
+    bubbleSticky = !!sticky;
+    clearTimeout(bubbleT);
+    if (!sticky) bubbleT = setTimeout(hideBubble, ms || 4000);
+  }
+  function hideBubble() { el('rvBubble').hidden = true; bubbleSticky = false; }
+
+  function claimBeer(id) {
+    const r = ravers.get(id);
+    if (!r) return;
+    r.outfit.extras = { ...(r.outfit.extras || {}), beer: true };
+    beerWin = happyWin(Date.now() / 1000);
+    el('rvCounterBeer').style.display = 'none'; // SVG: no .hidden property AND the UA [hidden] rule skips it — inline display only
+    showBubble('SERVED! 🍺 ' + autoName(r.outfit) + ' drinks free', false, 6000);
+    refreshHud();
+    if (id === myId) track('rave_beer');
+  }
+
+  function barTick() {
+    const t = Date.now() / 1000;
+    const bub = el('rvBubble');
+    if (happyActive(t)) {
+      const win = happyWin(t);
+      if (beerWin !== win) { // this window's beer still on the counter
+        el('rvCounterBeer').style.display = '';
+        if (!bubbleSticky) showBubble('HAPPY HOUR! 🍺 first banana to the bar drinks free', true);
+        const me = myId && ravers.get(myId);
+        const mine = me && me.outfit.extras && me.outfit.extras.beer;
+        if (me && !me.stage && !mine && me.x > BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastBeerTry > 2000) {
+          lastBeerTry = Date.now();
+          if (ws && ws.readyState === 1) ws.send('{"t":"beer"}');
+          else claimBeer(myId); // solo mode: the bar is all yours
+        }
+      }
+    } else {
+      el('rvCounterBeer').style.display = 'none';
+      if (bubbleSticky) hideBubble();
+      // ambient Barty: the occasional quip between happy hours
+      if (bub.hidden && Math.random() < 0.014) {
+        showBubble(BAR_QUIPS[Math.floor(Math.random() * BAR_QUIPS.length)], false, 3500);
+      }
+    }
+  }
+  setInterval(barTick, 1000);
+
   // ---- HUD ----
   function refreshHud() {
     el('rvCount').textContent = String(ravers.size);
@@ -268,7 +334,7 @@ function init() {
       .slice(0, 5)
       .map((r) => {
         const mins = Math.max(0, Math.floor((now - r.joined) / 60000));
-        const name = (r.stage ? '⭐ ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
+        const name = (r.stage ? '⭐ ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
         return `<li${r.id === myId ? ' class="rv-me"' : ''}><span>${name}</span><b>${mins}m</b></li>`;
       });
     board.innerHTML = rows.join('') || '<li><span>the floor awaits…</span></li>';
@@ -297,6 +363,7 @@ function init() {
         const alive = new Set(m.all.map((p) => p.id));
         [...ravers.keys()].forEach((id) => { if (!alive.has(id)) dropRaver(id); });
         m.all.forEach((p) => addRaver(p, p.id === m.you));
+        if (typeof m.beerWin === 'number') beerWin = m.beerWin; // late joiners learn this window's beer is gone
         track('rave_join', { count: m.all.length });
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
@@ -306,6 +373,7 @@ function init() {
         const r = ravers.get(m.id);
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
       }
+      else if (m.t === 'beer') claimBeer(m.id);
       else if (m.t === 'stage') setStage(m.id, m.on);
       else if (m.t === 'stageNo') {
         el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';
@@ -465,6 +533,16 @@ function init() {
   }
 
   assetsReady().then(() => {
+    // Barty the bartender: drawn ONCE (static NPC — he's working, not dancing),
+    // frame 4 = the first left-facing pose, moustache + bow tie = the uniform
+    const barCv = el('rvBarman');
+    if (barCv) {
+      drawComposite(barCv.getContext('2d'), 160, 4, {
+        bg: 'transparent', captions: false,
+        hat: 'none', glasses: 'none', extras: { mustache: true, bowtie: true }, top: '', bottom: '',
+        effect: 'none',
+      });
+    }
     connect();
     requestAnimationFrame(tick);
   });

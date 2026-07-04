@@ -25,6 +25,14 @@ const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members 
 const ROOM_CAP = 200;
 const STAGE_CAP = 8;                  // spots on the line behind the DJ
 const STAGE_MIN_MS = 5 * 60 * 1000;   // survive 5 min on the floor → the stage opens (keep in sync with STAGE_UNLOCK_MS in banana-rave.js)
+// HAPPY HOUR — same wall-clock windows as the client (keep in sync with banana-rave.js).
+// One beer per window, first claim wins; the beer lives in outfit.extras but is
+// SERVER-GRANTED only ('beer' is deliberately NOT in EXTRA_IDS → sanitize strips it).
+const HAPPY_PERIOD = 300_000, HAPPY_LEN = 40_000, HAPPY_OFFSET = 120_000;
+function happyWindow(now) {
+  const ph = (((now - HAPPY_OFFSET) % HAPPY_PERIOD) + HAPPY_PERIOD) % HAPPY_PERIOD;
+  return ph < HAPPY_LEN ? Math.floor((now - HAPPY_OFFSET) / HAPPY_PERIOD) : -1;
+}
 
 export default {
   async fetch(request, env) {
@@ -114,8 +122,27 @@ export class RaveRoom {
         lastEmote: 0,
       };
       ws.serializeAttachment(p);
-      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip) }));
+      const beerWin = (await this.state.storage.get('beerWin')) ?? null;
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
+      return;
+    }
+
+    if (msg.t === 'beer' && me && !me.beer) { // first banana at the bar this window
+      const win = happyWindow(Date.now());
+      if (win < 0) return;
+      // you must actually WALK to the bar — the server knows your position from the
+      // move messages (keep the zone in sync with BAR_ZONE in banana-rave.js)
+      if (!(typeof me.x === 'number' && me.x > 62 && typeof me.y === 'number' && me.y > 70)) return;
+      if (this.beerWin === win) return;   // sync fast-path — two claims in the same window can't both pass
+      this.beerWin = win;                 // claim in-memory BEFORE any await (DO interleaves at await points)
+      const stored = await this.state.storage.get('beerWin');
+      if (stored === win) return;         // claimed before a hibernation wipe of the instance field
+      await this.state.storage.put('beerWin', win);
+      me.beer = true;
+      me.outfit.extras = { ...(me.outfit.extras || {}), beer: true };
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'beer', id: me.id });
       return;
     }
 
@@ -163,6 +190,7 @@ export class RaveRoom {
 
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       me.outfit = sanitizeOutfit(msg.outfit);
+      if (me.beer) me.outfit.extras.beer = true; // the beer survives a wardrobe change
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit });
     }
