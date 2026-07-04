@@ -99,6 +99,13 @@ function init() {
 
   el('bbPause').onclick = () => { state.paused = !state.paused; refreshUI(); };
 
+  // mobile sticky bar proxies the real buttons (one render path, one code path)
+  const barGif = el('bbBarGif');
+  if (barGif) {
+    barGif.onclick = () => { el('bbDownloadGif').click(); track('sticky_bar', { action: 'gif' }); };
+    el('bbBarSticker').onclick = () => { el('bbOrderSticker').click(); track('sticky_bar', { action: 'sticker' }); };
+  }
+
   el('bbRandom').onclick = () => {
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
     const quips = [
