@@ -20,7 +20,7 @@ const STAGE_UNLOCK_MS = location.search.includes('stagetest') ? 5000 : 5 * 60 * 
 // walking (option A: you dance-walk — the dance keeps playing, mirror + lean give direction)
 const WALK_SPEED = 16;     // % of floor per second
 const MOVE_SEND_MS = 150;  // network throttle; local echo runs every frame
-// the souvenir: survive this long → the glow necklace is yours forever (client-side unlock, it's a joke not DRM)
+// the souvenir: survive this long → the glowstick is yours forever (client-side unlock, it's a joke not DRM)
 const GLOW_MS = location.search.includes('stagetest') ? 20000 : 30 * 60 * 1000;
 
 const el = (id) => document.getElementById(id);
@@ -366,7 +366,7 @@ function init() {
   }
   setInterval(refreshStageUi, 1000);
 
-  // ---- the glowstick souvenir: 30 minutes on the floor → a glow necklace, forever ----
+  // ---- the glowstick souvenir: 30 minutes on the floor → a glowstick, forever ----
   let glowChecked = false;
   function checkGlowstick() {
     if (glowChecked || !myId || Date.now() - sessionStart < GLOW_MS) return;
@@ -391,7 +391,7 @@ function init() {
     } catch (e) {}
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
-    toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR!</b><br>The glow necklace is yours — forever. Your banana wears it now, and it\'s waiting in the builder too.';
+    toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR!</b><br>The glowstick is yours — forever. Your banana is holding it right now, and it\'s waiting in the builder too.';
     floor.appendChild(toast);
     setTimeout(() => toast.remove(), 9000);
     track('rave_glowstick_unlock');

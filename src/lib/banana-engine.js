@@ -20,15 +20,18 @@ const BASE_CYCLE_S = 0.8; // 8 frames x 100ms = the original GIF timing
 // toward the body going down, so the hat anchor must be measured at the depth
 // where the hat actually sits, per frame; this keeps the hat riding the head
 // smoothly through the dance), and which way the face points.
+// hands = the two white-glove centres [left, right] in screen space, measured by
+// tools/find-hand-anchors.py — HELD items (anchor: 'hand') ride these. Both arms
+// pump together in this dance (down 362 → up 135), so a held item pumps with the beat.
 const FRAMES = [
-  { eyeCx: 232, eyeCy: 222, hatCx: 272, btCx: 268, tipY: 85, face: 'right' },
-  { eyeCx: 232, eyeCy: 192, hatCx: 272, btCx: 270, tipY: 57, face: 'right' },
-  { eyeCx: 234, eyeCy: 135, hatCx: 248, btCx: 248, tipY: 0,  face: 'front' },
-  { eyeCx: 232, eyeCy: 156, hatCx: 206, btCx: 206, tipY: 28, face: 'front' },
-  { eyeCx: 236, eyeCy: 222, hatCx: 196, btCx: 200, tipY: 85, face: 'left'  },
-  { eyeCx: 236, eyeCy: 192, hatCx: 196, btCx: 198, tipY: 57, face: 'left'  },
-  { eyeCx: 234, eyeCy: 135, hatCx: 220, btCx: 220, tipY: 0,  face: 'front' },
-  { eyeCx: 237, eyeCy: 156, hatCx: 262, btCx: 262, tipY: 28, face: 'front' },
+  { eyeCx: 232, eyeCy: 222, hatCx: 272, btCx: 268, tipY: 85, face: 'right', hands: [[145, 362], [380, 362]] },
+  { eyeCx: 232, eyeCy: 192, hatCx: 272, btCx: 270, tipY: 57, face: 'right', hands: [[116, 334], [409, 334]] },
+  { eyeCx: 234, eyeCy: 135, hatCx: 248, btCx: 248, tipY: 0,  face: 'front', hands: [[45, 135], [437, 135]] },
+  { eyeCx: 232, eyeCy: 156, hatCx: 206, btCx: 206, tipY: 28, face: 'front', hands: [[45, 206], [366, 206]] },
+  { eyeCx: 236, eyeCy: 222, hatCx: 196, btCx: 200, tipY: 85, face: 'left',  hands: [[88, 362], [323, 362]] },
+  { eyeCx: 236, eyeCy: 192, hatCx: 196, btCx: 198, tipY: 57, face: 'left',  hands: [[59, 334], [352, 334]] },
+  { eyeCx: 234, eyeCy: 135, hatCx: 220, btCx: 220, tipY: 0,  face: 'front', hands: [[31, 135], [423, 135]] },
+  { eyeCx: 237, eyeCy: 156, hatCx: 262, btCx: 262, tipY: 28, face: 'front', hands: [[102, 206], [423, 206]] },
 ];
 
 // ---- accessory art: hand-authored PIXEL SVGs on the banana's own 13px grid ----
@@ -49,8 +52,9 @@ const SVG = {
   mustacheFront: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 30" width="130" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="10" height="10" fill="#5a3618"/><rect x="120" y="0" width="10" height="10" fill="#5a3618"/><rect x="0" y="10" width="20" height="10" fill="#5a3618"/><rect x="110" y="10" width="20" height="10" fill="#5a3618"/><rect x="10" y="20" width="50" height="10" fill="#5a3618"/><rect x="70" y="20" width="50" height="10" fill="#5a3618"/></svg>',
   mustacheSide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 30" width="70" height="30" shape-rendering="crispEdges"><rect x="0" y="0" width="10" height="10" fill="#5a3618"/><rect x="0" y="10" width="20" height="10" fill="#5a3618"/><rect x="10" y="20" width="60" height="10" fill="#5a3618"/></svg>',
   bowtie: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 50" width="90" height="50" shape-rendering="crispEdges"><rect x="10" y="0" width="20" height="10" fill="#111111"/><rect x="60" y="0" width="20" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="10" height="10" fill="#4db8ff"/><rect x="20" y="10" width="10" height="10" fill="#ffffff"/><rect x="30" y="10" width="30" height="10" fill="#111111"/><rect x="60" y="10" width="10" height="10" fill="#ffffff"/><rect x="70" y="10" width="10" height="10" fill="#4db8ff"/><rect x="80" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="30" height="10" fill="#4db8ff"/><rect x="40" y="20" width="10" height="10" fill="#5a3618"/><rect x="50" y="20" width="30" height="10" fill="#4db8ff"/><rect x="80" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="20" height="10" fill="#4db8ff"/><rect x="30" y="30" width="30" height="10" fill="#111111"/><rect x="60" y="30" width="20" height="10" fill="#4db8ff"/><rect x="80" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="40" width="20" height="10" fill="#111111"/><rect x="60" y="40" width="20" height="10" fill="#111111"/></svg>',
-  // the rave souvenir: a glow necklace, alternating neon segments (chest anchor like the bowtie)
-  glowneck: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 50" width="90" height="50" shape-rendering="crispEdges"><rect x="0" y="0" width="10" height="10" fill="#39ff14"/><rect x="80" y="0" width="10" height="10" fill="#ff2ec4"/><rect x="0" y="10" width="10" height="10" fill="#ff2ec4"/><rect x="80" y="10" width="10" height="10" fill="#39ff14"/><rect x="10" y="20" width="10" height="10" fill="#39ff14"/><rect x="70" y="20" width="10" height="10" fill="#ff2ec4"/><rect x="20" y="30" width="10" height="10" fill="#ff2ec4"/><rect x="60" y="30" width="10" height="10" fill="#39ff14"/><rect x="30" y="40" width="10" height="10" fill="#39ff14"/><rect x="40" y="40" width="10" height="10" fill="#ff2ec4"/><rect x="50" y="40" width="10" height="10" fill="#39ff14"/></svg>',
+  // the rave souvenir: a neon glowstick, held in the glove (anchor: hand). The
+  // pixel halo (low-opacity flanks) is the glow — crispEdges, no blur, engine style.
+  glowstick: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="50" height="70" shape-rendering="crispEdges"><rect x="10" y="10" width="10" height="40" fill="#39ff14" opacity="0.35"/><rect x="30" y="10" width="10" height="40" fill="#39ff14" opacity="0.35"/><rect x="20" y="0" width="10" height="10" fill="#eaffe0"/><rect x="20" y="10" width="10" height="50" fill="#39ff14"/><rect x="20" y="60" width="10" height="10" fill="#111111"/></svg>',
 };
 
 const EFFECTS = [['none','None'],['disco','Disco'],['sparkle','Sparkles'],['confetti','Confetti']];
@@ -85,7 +89,9 @@ const PACKS = {
       { id: 'bowtie',   label: 'Bow tie',     anchor: 'chest', dy: 9.5, art: 'bowtie' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in banana-daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
-      { id: 'glowstick', label: 'Glow necklace', anchor: 'chest', dy: 10.5, art: 'glowneck', earned: 'rave' },
+      // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
+      // art top to where the glove wraps it (here: the black cap).
+      { id: 'glowstick', label: 'Glowstick', anchor: 'hand', hand: 'right', grip: 6.5, art: 'glowstick', earned: 'rave' },
     ],
   },
   // Example future pack (art not drawn yet):
@@ -199,6 +205,14 @@ function drawComposite(ctx, W, idx, o) {
       const mx = fx + F.eyeCx * scale + (side ? mirror * d.sideDx * unit : 0);
       const my = fy + (F.eyeCy + d.dy * PX) * scale;
       drawAcc(ctx, key, mx - mw / 2, my - mh / 2, mw, mh, F.face === 'left');
+    } else if (d.anchor === 'hand') { // held items ride the per-frame glove centres
+      const hands = F.hands;
+      if (hands) {
+        const [hx, hy] = d.hand === 'left' ? hands[0] : hands[1];
+        const key = SVG[d.art];
+        const gw2 = gridW(key) * unit, gh2 = gridH(key) * unit;
+        drawAcc(ctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
+      }
     } else { // 'chest'
       const key = SVG[d.art];
       const bw = gridW(key) * unit, bh = gridH(key) * unit;
