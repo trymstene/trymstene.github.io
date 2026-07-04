@@ -147,9 +147,22 @@ function init() {
   const CAM_SCALE = 1.75;
   const cam = { on: matchMedia('(max-width: 640px)').matches, s: 1, tx: 0, ty: 0 };
   let floorW = 0, floorH = 0;
-  const measureFloor = () => { floorW = floor.clientWidth; floorH = floor.clientHeight; };
+  // the bar is SOLID — bananas stop at it instead of moonwalking through the counter.
+  // It's sized in px, so its world-percent rect depends on the floor size: re-measured
+  // with the floor. Occupied corner = x < barSolid.x AND y > barSolid.y.
+  const barEl = document.querySelector('.rv-bar');
+  const barSolid = { x: 0, y: 100 };
+  const measureFloor = () => {
+    floorW = floor.clientWidth;
+    floorH = floor.clientHeight;
+    if (barEl && floorW && floorH) {
+      barSolid.x = ((barEl.offsetWidth - 18) / floorW) * 100;       // 18px bleeds off the left
+      barSolid.y = 100 - (((barEl.offsetHeight - 52) / floorH) * 100); // 52px bleeds off the bottom
+    }
+  };
   measureFloor();
   addEventListener('resize', measureFloor);
+  const insideBar = (x, y) => x < barSolid.x && y > barSolid.y;
 
   const zoomBtn = el('rvZoom');
   function refreshZoomBtn() { zoomBtn.hidden = false; zoomBtn.textContent = cam.on ? '🗺 whole floor' : '🔍 follow me'; }
@@ -214,7 +227,17 @@ function init() {
     if (!dx && !dy) return;
     const norm = Math.hypot(dx, dy) || 1;
     const step = (WALK_SPEED * dtMs) / 1000;
-    setPos(me, clamp(me.x + (dx / norm) * step, 4, 96), clamp(me.y + (dy / norm) * step, 6, 92));
+    let nx = clamp(me.x + (dx / norm) * step, 4, 96);
+    let ny = clamp(me.y + (dy / norm) * step, 6, 92);
+    // the bar is solid: block ENTERING it (slide along the edge you hit); anyone
+    // who spawned inside can still walk free
+    if (insideBar(nx, ny) && !insideBar(me.x, me.y)) {
+      if (me.x >= barSolid.x) nx = barSolid.x;      // hit the bar's right edge
+      else if (me.y <= barSolid.y) ny = barSolid.y; // hit the countertop from above
+      else { nx = me.x; ny = me.y; }
+      if (walkTarget && insideBar(walkTarget.x, walkTarget.y)) walkTarget = null; // no tables inside the bar
+    }
+    setPos(me, nx, ny);
     leanInto(me, dx);
     if (!walkedOnce) { walkedOnce = true; track('rave_walk'); }
     if (now - lastMoveSent > MOVE_SEND_MS && ws && ws.readyState === 1) {
