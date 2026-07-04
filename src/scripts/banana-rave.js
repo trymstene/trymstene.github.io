@@ -25,7 +25,7 @@ const GLOW_MS = location.search.includes('stagetest') ? 20000 : 30 * 60 * 1000;
 // HAPPY HOUR — clock-synced like the drop: same window for the whole planet,
 // every 5th minute for 40s. First banana at the bar drinks free (server-arbitrated).
 const HAPPY_PERIOD = 300, HAPPY_LEN = 40, HAPPY_OFFSET = 120; // seconds, wall clock
-const BAR_ZONE = { x: 62, y: 70 }; // bottom-right bar: at the bar = x > 62% AND y > 70% (down = nearer)
+const BAR_ZONE = { x: 34, y: 70 }; // bottom-LEFT bar: at the bar = x < 34% AND y > 70% (down = nearer)
 const happyPhase = (t) => (((t - HAPPY_OFFSET) % HAPPY_PERIOD) + HAPPY_PERIOD) % HAPPY_PERIOD;
 const happyActive = (t) => happyPhase(t) < HAPPY_LEN;
 const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
@@ -307,7 +307,7 @@ function init() {
         if (!bubbleSticky) showBubble('HAPPY HOUR! 🍺 first banana to the bar drinks free', true);
         const me = myId && ravers.get(myId);
         const mine = me && me.outfit.extras && me.outfit.extras.beer;
-        if (me && !me.stage && !mine && me.x > BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastBeerTry > 2000) {
+        if (me && !me.stage && !mine && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastBeerTry > 2000) {
           lastBeerTry = Date.now();
           if (ws && ws.readyState === 1) ws.send('{"t":"beer"}');
           else claimBeer(myId); // solo mode: the bar is all yours

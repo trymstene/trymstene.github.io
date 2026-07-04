@@ -133,7 +133,7 @@ export class RaveRoom {
       if (win < 0) return;
       // you must actually WALK to the bar — the server knows your position from the
       // move messages (keep the zone in sync with BAR_ZONE in banana-rave.js)
-      if (!(typeof me.x === 'number' && me.x > 62 && typeof me.y === 'number' && me.y > 70)) return;
+      if (!(typeof me.x === 'number' && me.x < 34 && typeof me.y === 'number' && me.y > 70)) return;
       if (this.beerWin === win) return;   // sync fast-path — two claims in the same window can't both pass
       this.beerWin = win;                 // claim in-memory BEFORE any await (DO interleaves at await points)
       const stored = await this.state.storage.get('beerWin');
