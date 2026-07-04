@@ -97,7 +97,14 @@ function init() {
     if (on) {
       r.cv.style.width = r.cv.style.height = ''; // stage size comes from CSS
       r.wrap.style.left = r.wrap.style.top = r.wrap.style.zIndex = '';
-      el('rvStage').appendChild(r.wrap);
+      // balance the line around the centre gap (the DJ stands in the middle)
+      const stageEl = el('rvStage');
+      const gap = stageEl.querySelector('.rv-stage__gap');
+      const kids = [...stageEl.children];
+      const leftCount = kids.indexOf(gap);
+      const rightCount = kids.length - 1 - leftCount;
+      if (leftCount <= rightCount) stageEl.insertBefore(r.wrap, gap);
+      else stageEl.appendChild(r.wrap);
     } else {
       r.cv.style.width = r.cv.style.height = r.size + 'px';
       r.wrap.style.left = r.x + '%';
@@ -150,18 +157,24 @@ function init() {
 
   // ---- websocket presence ----
   let ws = null;
+  let lastPong = 0;
   function connect() {
     try { ws = new WebSocket(RAVE_WS); } catch (e) { return soloMode(); }
     ws.onopen = () => {
       online = true;
+      lastPong = Date.now();
       el('rvStatus').textContent = 'live';
       el('rvStatus').className = 'rv-live';
       ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit() }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
-      if (m.t === 'roster') {
+      if (m.t === 'pong') { lastPong = Date.now(); }
+      else if (m.t === 'roster') {
         myId = m.you;
+        // a reconnect gets a fresh roster — clear ghosts from the dead session first
+        const alive = new Set(m.all.map((p) => p.id));
+        [...ravers.keys()].forEach((id) => { if (!alive.has(id)) dropRaver(id); });
         m.all.forEach((p) => addRaver(p, p.id === m.you));
         track('rave_join', { count: m.all.length });
       } else if (m.t === 'join') addRaver(m.p, false);
@@ -176,8 +189,18 @@ function init() {
     };
     ws.onclose = () => { if (!online) soloMode(); else { el('rvStatus').textContent = 'reconnecting…'; setTimeout(connect, 3000 + Math.random() * 4000); } };
     ws.onerror = () => {};
-    setInterval(() => { if (ws && ws.readyState === 1) ws.send('{"t":"ping"}'); }, 40000);
   }
+  // heartbeat with a DEADLINE: the server pongs without waking (auto-response), so a
+  // missing pong = zombie socket (readyState lies at 1 after a worker redeploy or NAT
+  // drop — send() goes into the void). Force-close → the onclose reconnect takes over.
+  setInterval(() => {
+    if (!ws || ws.readyState !== 1) return;
+    if (lastPong && Date.now() - lastPong > 100000) {
+      try { ws.close(); } catch (e) {}
+      return;
+    }
+    try { ws.send('{"t":"ping"}'); } catch (e) {}
+  }, 40000);
 
   function soloMode() {
     el('rvStatus').textContent = 'solo mode (connection trouble) — still dancing';

@@ -49,6 +49,7 @@ const schema = {
       display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
     }
     .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
+    .rv-stage__gap { flex: none; width: 104px; } /* the DJ stands here — keep the middle clear */
     .rv-stage .rv-raver canvas { width: 58px !important; height: 58px !important; }
     .rv-djgroup { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 150px; z-index: 2; }
     .rv-djgroup canvas { width: 96px; height: 96px; display: block; margin: 0 auto -36px; position: relative; z-index: 1; }
@@ -146,6 +147,7 @@ const schema = {
       .rv-speaker--l { left: calc(50% - 102px); }
       .rv-speaker--r { right: calc(50% - 102px); }
       .rv-stage { bottom: 36px; gap: 6px; }
+      .rv-stage__gap { width: 84px; }
       .rv-stage .rv-raver canvas { width: 46px !important; height: 46px !important; }
       .rv-emotes { flex: 1; }
       .rv-emote-btn { flex: 1; padding: 0.75rem 0; font-size: 1.4rem; }
@@ -178,7 +180,7 @@ const schema = {
       <div class="rv-club">
         <div class="rv-booth">
           <div class="rv-sign">SENTRY<b>remix in production</b></div>
-          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"></div>
+          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div>
           <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
             <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>
