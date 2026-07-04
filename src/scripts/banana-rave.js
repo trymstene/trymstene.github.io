@@ -17,6 +17,9 @@ const DROP_PERIOD = 180, DROP_LEN = 10; // seconds
 const MAX_VISIBLE = 60;
 // stay this long → the stage opens (server enforces the same; ?stagetest = solo-mode preview)
 const STAGE_UNLOCK_MS = location.search.includes('stagetest') ? 5000 : 5 * 60 * 1000;
+// walking (option A: you dance-walk — the dance keeps playing, mirror + lean give direction)
+const WALK_SPEED = 16;     // % of floor per second
+const MOVE_SEND_MS = 150;  // network throttle; local echo runs every frame
 
 const el = (id) => document.getElementById(id);
 const floor = el('rvFloor');
@@ -66,7 +69,7 @@ function init() {
 
   function addRaver(p, isMe) {
     if (ravers.has(p.id)) return;
-    const { x, y } = place(p.id);
+    const { x, y } = (typeof p.x === 'number' && typeof p.y === 'number') ? { x: p.x, y: p.y } : place(p.id);
     const size = Math.round(74 + y * 0.9); // deeper = bigger (fake depth)
     const wrap = document.createElement('div');
     wrap.className = 'rv-raver' + (isMe ? ' rv-raver--me' : '');
@@ -87,6 +90,90 @@ function init() {
     ravers.set(p.id, { ...p, wrap, cv, x, y, size });
     if (p.stage) setStage(p.id, true);
     refreshHud();
+  }
+
+  // ---- walking ----
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  function setPos(r, x, y) {
+    r.x = x; r.y = y;
+    r.size = Math.round(74 + y * 0.9);
+    if (r.stage) return; // stage members keep their spot for the return
+    r.wrap.style.left = x + '%';
+    r.wrap.style.top = y + '%';
+    r.wrap.style.zIndex = String(100 + Math.round(y));
+    r.cv.style.width = r.cv.style.height = r.size + 'px';
+  }
+
+  // mirror + lean into the direction of travel (rotate composes inside the flip,
+  // so the same 4deg leans "forward" on both sides)
+  function leanInto(r, dx) {
+    if (dx < -0.01) r.facing = -1;
+    else if (dx > 0.01) r.facing = 1;
+    const flip = r.facing === -1 ? 'scaleX(-1) ' : '';
+    r.cv.style.transform = flip + (Math.abs(dx) > 0.01 ? 'rotate(4deg)' : '');
+    r.lastWalk = Date.now();
+  }
+
+  function stopLean(r) {
+    r.cv.style.transform = r.facing === -1 ? 'scaleX(-1)' : '';
+    r.lastWalk = 0;
+  }
+
+  let walkTarget = null;        // tap-to-move destination
+  const keysDown = new Set();   // arrow/WASD state
+  let lastMoveSent = 0;
+  let walkedOnce = false;
+
+  const KEYMAP = {
+    ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd',
+    a: 'l', d: 'r', w: 'u', s: 'd', A: 'l', D: 'r', W: 'u', S: 'd',
+  };
+  addEventListener('keydown', (e) => {
+    const k = KEYMAP[e.key];
+    if (!k) return;
+    e.preventDefault(); // arrows must not scroll the hall
+    keysDown.add(k);
+    walkTarget = null;
+  });
+  addEventListener('keyup', (e) => { const k = KEYMAP[e.key]; if (k) keysDown.delete(k); });
+  addEventListener('blur', () => keysDown.clear());
+
+  floor.addEventListener('click', (e) => {
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return;
+    const rect = floor.getBoundingClientRect();
+    walkTarget = {
+      x: clamp(((e.clientX - rect.left) / rect.width) * 100, 4, 96),
+      y: clamp(((e.clientY - rect.top) / rect.height) * 100, 6, 92),
+    };
+  });
+
+  function stepMe(now, dtMs) {
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return;
+    let dx = 0, dy = 0;
+    if (keysDown.size) {
+      if (keysDown.has('l')) dx -= 1;
+      if (keysDown.has('r')) dx += 1;
+      if (keysDown.has('u')) dy -= 1;
+      if (keysDown.has('d')) dy += 1;
+    } else if (walkTarget) {
+      dx = walkTarget.x - me.x; dy = walkTarget.y - me.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 1) { walkTarget = null; return; }
+      dx /= dist; dy /= dist;
+    }
+    if (!dx && !dy) return;
+    const norm = Math.hypot(dx, dy) || 1;
+    const step = (WALK_SPEED * dtMs) / 1000;
+    setPos(me, clamp(me.x + (dx / norm) * step, 4, 96), clamp(me.y + (dy / norm) * step, 6, 92));
+    leanInto(me, dx);
+    if (!walkedOnce) { walkedOnce = true; track('rave_walk'); }
+    if (now - lastMoveSent > MOVE_SEND_MS && ws && ws.readyState === 1) {
+      lastMoveSent = now;
+      ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
+    }
   }
 
   // move a raver between the floor and the stage line behind the DJ
@@ -181,6 +268,10 @@ function init() {
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
       else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) r.outfit = m.outfit; }
+      else if (m.t === 'move') {
+        const r = ravers.get(m.id);
+        if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
+      }
       else if (m.t === 'stage') setStage(m.id, m.on);
       else if (m.t === 'stageNo') {
         el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';
@@ -252,9 +343,15 @@ function init() {
 
   // ---- the render loop: everyone dances off the same clock ----
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let lastIdx = -1, lastDrop = null;
+  let lastIdx = -1, lastDrop = null, lastTick = 0;
   function tick() {
     const now = Date.now();
+    const dtMs = lastTick ? Math.min(now - lastTick, 100) : 16;
+    lastTick = now;
+    stepMe(now, dtMs);
+    for (const r of ravers.values()) {
+      if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
+    }
     const secs = (now / 1000) % DROP_PERIOD;
     const dropActive = secs < DROP_LEN;
     const cycleMs = dropActive ? 480 : 800;

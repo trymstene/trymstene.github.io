@@ -88,7 +88,9 @@ const schema = {
     @keyframes rvStrobe { 50% { filter: hue-rotate(140deg) brightness(1.25); } }
     @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-floor { animation: none; } }
 
-    .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; }
+    .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
+    .rv-raver canvas { transition: transform 0.15s ease; }
+    .rv-floor { cursor: pointer; touch-action: manipulation; }
     .rv-raver canvas { image-rendering: pixelated; }
     .rv-raver--me canvas { filter: drop-shadow(0 0 6px #ffe135); }
     .rv-you {
@@ -218,7 +220,7 @@ const schema = {
         <div class="rv-door">
           <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
         </div>
-        <p class="rv-note">Your latest builder banana walks in with you. The drop hits every third minute — you'll know. Survive 5 minutes on the floor and the stage opens: dance behind the DJ and unlock the &#128293;.</p>
+        <p class="rv-note">Your latest builder banana walks in with you — <strong>boogie around with the arrow keys, or tap the floor</strong>. The drop hits every third minute — you'll know. Survive 5 minutes and the stage opens: dance behind the DJ and unlock the &#128293;.</p>
       </aside>
     </div>
   </div>

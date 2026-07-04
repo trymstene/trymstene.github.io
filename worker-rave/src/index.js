@@ -129,6 +129,19 @@ export class RaveRoom {
       return;
     }
 
+    if (msg.t === 'move' && me) { // walking: position relay, sender echoes locally
+      const x = Number(msg.x), y = Number(msg.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      const now = Date.now();
+      if (now - (me.lastMove || 0) < 100) return; // rate guard: client sends at 150ms
+      me.lastMove = now;
+      me.x = Math.min(96, Math.max(4, Math.round(x * 10) / 10));
+      me.y = Math.min(92, Math.max(6, Math.round(y * 10) / 10));
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'move', id: me.id, x: me.x, y: me.y }, ws);
+      return;
+    }
+
     if (msg.t === 'stage' && me) {
       if (msg.on) {
         if (Date.now() - me.joined < STAGE_MIN_MS) {
@@ -167,5 +180,5 @@ export class RaveRoom {
 }
 
 function strip(p) {
-  return { id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage };
+  return { id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, x: p.x, y: p.y };
 }
