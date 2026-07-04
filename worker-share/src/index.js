@@ -62,9 +62,30 @@ const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---------- POST /share ----------
+// Cost guardrails (R2 writes are the one pay-as-you-go surface on the
+// account): strict Origin check + a best-effort per-IP throttle. Imperfect
+// across isolates, but it blunts scripted abuse to a trickle.
+const ipHits = new Map();
+function throttled(ip) {
+  const now = Date.now();
+  const rec = ipHits.get(ip) || { n: 0, t: now };
+  if (now - rec.t > 60000) { rec.n = 0; rec.t = now; }
+  rec.n++;
+  ipHits.set(ip, rec);
+  if (ipHits.size > 5000) ipHits.clear();
+  return rec.n > 10; // max 10 shares/min/IP — no human shares faster
+}
+
 async function handleShare(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(env, request) });
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+  if (!allowed.includes(request.headers.get('Origin') || '')) {
+    return json({ error: 'forbidden' }, 403);
+  }
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (throttled(ip)) return json({ error: 'slow down' }, 429, corsHeaders(env, request));
 
   const len = parseInt(request.headers.get('Content-Length') || '0', 10);
   if (!len || len > MAX_UPLOAD_BYTES) return json({ error: 'too large' }, 413, corsHeaders(env, request));
