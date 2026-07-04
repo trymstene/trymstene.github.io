@@ -1,4 +1,4 @@
-// Dancing Banana builder — the banana ALWAYS dances (authentic 8-frame arm-wave
+﻿// Dancing Banana builder â€” the banana ALWAYS dances (authentic 8-frame arm-wave
 // from the original 1999 GIF, via /assets/banana-dance.png spritesheet); stills
 // are only chosen at export time (sticker/meme card). One canvas render path
 // (drawComposite) drives the live preview, the chat-size emoji preview, the
@@ -17,9 +17,7 @@ const SPD_MIN = 0.35, SPD_MAX = 1.6;
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
-// tiny monochrome pixel icons (currentColor) for the extras chips + pause button
-const ICON_MUSTACHE = '<svg class="pxi" viewBox="0 0 90 30" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="40" height="10"/><rect x="50" y="0" width="40" height="10"/><rect x="0" y="10" width="90" height="10"/><rect x="10" y="20" width="20" height="10"/><rect x="60" y="20" width="20" height="10"/></svg>';
-const ICON_BOWTIE = '<svg class="pxi" viewBox="0 0 140 110" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="30" height="10" fill="#262233"/><rect x="100" y="0" width="30" height="10" fill="#262233"/><rect x="0" y="10" width="10" height="10" fill="#262233"/><rect x="10" y="10" width="10" height="10" fill="#55aaff"/><rect x="20" y="10" width="10" height="10" fill="#b8dcff"/><rect x="30" y="10" width="10" height="10" fill="#262233"/><rect x="90" y="10" width="10" height="10" fill="#262233"/><rect x="100" y="10" width="10" height="10" fill="#b8dcff"/><rect x="110" y="10" width="10" height="10" fill="#55aaff"/><rect x="120" y="10" width="10" height="10" fill="#262233"/><rect x="0" y="20" width="10" height="10" fill="#262233"/><rect x="10" y="20" width="30" height="10" fill="#55aaff"/><rect x="40" y="20" width="10" height="10" fill="#262233"/><rect x="80" y="20" width="10" height="10" fill="#262233"/><rect x="90" y="20" width="30" height="10" fill="#55aaff"/><rect x="120" y="20" width="10" height="10" fill="#262233"/><rect x="0" y="30" width="10" height="10" fill="#262233"/><rect x="10" y="30" width="40" height="10" fill="#55aaff"/><rect x="50" y="30" width="10" height="10" fill="#262233"/><rect x="70" y="30" width="10" height="10" fill="#262233"/><rect x="80" y="30" width="40" height="10" fill="#55aaff"/><rect x="120" y="30" width="10" height="10" fill="#262233"/><rect x="0" y="40" width="10" height="10" fill="#262233"/><rect x="10" y="40" width="40" height="10" fill="#55aaff"/><rect x="50" y="40" width="30" height="10" fill="#262233"/><rect x="80" y="40" width="40" height="10" fill="#55aaff"/><rect x="120" y="40" width="10" height="10" fill="#262233"/><rect x="0" y="50" width="10" height="10" fill="#262233"/><rect x="10" y="50" width="10" height="10" fill="#2f6fd0"/><rect x="20" y="50" width="20" height="10" fill="#55aaff"/><rect x="40" y="50" width="10" height="10" fill="#262233"/><rect x="50" y="50" width="30" height="10" fill="#6e4423"/><rect x="80" y="50" width="10" height="10" fill="#262233"/><rect x="90" y="50" width="20" height="10" fill="#55aaff"/><rect x="110" y="50" width="10" height="10" fill="#2f6fd0"/><rect x="120" y="50" width="10" height="10" fill="#262233"/><rect x="0" y="60" width="10" height="10" fill="#262233"/><rect x="10" y="60" width="10" height="10" fill="#2f6fd0"/><rect x="20" y="60" width="30" height="10" fill="#55aaff"/><rect x="50" y="60" width="30" height="10" fill="#262233"/><rect x="80" y="60" width="30" height="10" fill="#55aaff"/><rect x="110" y="60" width="10" height="10" fill="#2f6fd0"/><rect x="120" y="60" width="10" height="10" fill="#262233"/><rect x="0" y="70" width="10" height="10" fill="#262233"/><rect x="10" y="70" width="10" height="10" fill="#2f6fd0"/><rect x="20" y="70" width="30" height="10" fill="#55aaff"/><rect x="50" y="70" width="10" height="10" fill="#262233"/><rect x="70" y="70" width="10" height="10" fill="#262233"/><rect x="80" y="70" width="30" height="10" fill="#55aaff"/><rect x="110" y="70" width="10" height="10" fill="#2f6fd0"/><rect x="120" y="70" width="10" height="10" fill="#262233"/><rect x="0" y="80" width="10" height="10" fill="#262233"/><rect x="10" y="80" width="10" height="10" fill="#2f6fd0"/><rect x="20" y="80" width="20" height="10" fill="#55aaff"/><rect x="40" y="80" width="10" height="10" fill="#262233"/><rect x="80" y="80" width="10" height="10" fill="#262233"/><rect x="90" y="80" width="20" height="10" fill="#55aaff"/><rect x="110" y="80" width="10" height="10" fill="#2f6fd0"/><rect x="120" y="80" width="10" height="10" fill="#262233"/><rect x="0" y="90" width="10" height="10" fill="#262233"/><rect x="10" y="90" width="10" height="10" fill="#2f6fd0"/><rect x="20" y="90" width="10" height="10" fill="#55aaff"/><rect x="30" y="90" width="10" height="10" fill="#262233"/><rect x="90" y="90" width="10" height="10" fill="#262233"/><rect x="100" y="90" width="10" height="10" fill="#55aaff"/><rect x="110" y="90" width="10" height="10" fill="#2f6fd0"/><rect x="120" y="90" width="10" height="10" fill="#262233"/><rect x="0" y="100" width="30" height="10" fill="#262233"/><rect x="100" y="100" width="30" height="10" fill="#262233"/></svg>';
+// tiny monochrome pixel icons (currentColor) for the pause button
 const ICON_PAUSE = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="10" y="10" width="20" height="60"/><rect x="40" y="10" width="20" height="60"/></svg>';
 const ICON_PLAY = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="15" y="10" width="15" height="60"/><rect x="30" y="20" width="15" height="40"/><rect x="45" y="30" width="15" height="20"/></svg>';
 
@@ -48,7 +46,6 @@ function init() {
   // outfit lives in `state`, so wrap it once and every old call site works.
   const drawComposite = (ctx, W, idx, o) =>
     engineDraw(ctx, W, idx, { hat: state.hat, glasses: state.glasses, extras: state.extras, top: state.top, bottom: state.bottom, ...o });
-  const EXTRA_ICONS = { mustache: ICON_MUSTACHE, bowtie: ICON_BOWTIE };
 
   // ---- controls ----
   BGS.forEach((c) => {
@@ -66,28 +63,50 @@ function init() {
       el(host).appendChild(b);
     });
   }
-  chips('bbGlassesChips', GLASSES, 'glasses');
-  chips('bbHatChips', HATS, 'hat');
-  chips('bbEffectChips', EFFECTS, 'effect');
+  // wearables show THEMSELVES â€” the asset art IS the button (Trym: takes up a
+  // lot less space than words). 'none' = a dashed empty slot.
+  function iconChips(host, items, key, artFor) {
+    items.forEach(([val, label]) => {
+      const b = document.createElement('button');
+      const art = val === 'none' ? null : artFor(val);
+      b.className = 'bb-chip bb-chip--icon' + (art ? '' : ' bb-chip--none');
+      if (art) b.innerHTML = art;
+      b.dataset.val = val;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.onclick = () => { state[key] = val; onState(); };
+      el(host).appendChild(b);
+    });
+  }
+  iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; });
+  iconChips('bbHatChips', HATS, 'hat', (id) => { const d = HAT_BY_ID[id]; return d && SVG[d.art]; });
+  chips('bbEffectChips', EFFECTS, 'effect'); // effects have no wearable art â€” words stay
   // earned accessories: unlocked at the rave, remembered forever (localStorage)
   const earnedUnlocked = (d) => {
     if (!d.earned) return true;
     try { return localStorage.getItem('rv-glowstick') === '1'; } catch (e) { return false; }
   };
-  // extras = independent toggles, not a single-choice row (labels carry pixel icons)
+  // extras = independent toggles, not a single-choice row (the art is the button)
   EXTRA_DEFS.forEach((d) => {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
+    const art = SVG[d.front || d.art];
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
       const a = document.createElement('a');
-      a.className = 'bb-chip bb-chip--locked'; a.href = '/rave/'; a.dataset.place = 'builder-locked';
-      a.innerHTML = '🔒 ' + d.label + ' — survive 30 min at the rave';
-      a.title = 'Rave souvenir: stay 30 minutes on the dance floor and it’s yours forever';
+      a.className = 'bb-chip bb-chip--icon bb-chip--locked';
+      a.href = '/rave/'; a.dataset.place = 'builder-locked';
+      a.innerHTML = art || d.label;
+      a.title = d.label + ' â€” a rave souvenir: survive 30 minutes on the dance floor and itâ€™s yours forever';
+      a.setAttribute('aria-label', d.label + ' (locked â€” earn it at the rave)');
       el('bbExtrasChips').appendChild(a);
       return;
     }
     const b = document.createElement('button');
-    b.className = 'bb-chip'; b.innerHTML = (EXTRA_ICONS[d.id] ? EXTRA_ICONS[d.id] + ' ' : '') + d.label; b.dataset.val = d.id;
+    b.className = 'bb-chip bb-chip--icon';
+    b.innerHTML = art || d.label;
+    b.dataset.val = d.id;
+    b.title = d.label;
+    b.setAttribute('aria-label', d.label);
     b.onclick = () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
     el('bbExtrasChips').appendChild(b);
   });
@@ -200,7 +219,7 @@ function init() {
     } catch (e) { /* plain fallback stands */ }
     try {
       await navigator.clipboard.writeText(copied);
-      toast(mode === 'unfurl' ? 'Link copied — it unfurls with YOUR banana!' : 'Share link copied!');
+      toast(mode === 'unfurl' ? 'Link copied â€” it unfurls with YOUR banana!' : 'Share link copied!');
     } catch (e) { toast('Copy this URL from the address bar'); }
     track('share_link_copy', { design: designStr(), mode });
     saveToShelf(mode === 'unfurl' ? (copied.split('/s/')[1] || null) : null);
@@ -208,24 +227,24 @@ function init() {
   el('bbWallSubmit').onclick = async () => {
     sync();
     const params = location.search.slice(1);
-    if (!params) { toast('Dress it up a little first 🍌'); return; }
-    if (!captionsClean()) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
+    if (!params) { toast('Dress it up a little first ðŸŒ'); return; }
+    if (!captionsClean()) { toast('Letâ€™s keep it family friendly ðŸŒ â€” try other words'); return; }
     try {
       const res = await fetch(SHARE_BASE + '/wall/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: 'banana', params }),
       });
-      toast(res.ok ? 'Submitted! The banana guy hangs the best ones 🖼' : 'The wall is busy — try again in a bit');
-    } catch (e) { toast('The wall is busy — try again in a bit'); }
+      toast(res.ok ? 'Submitted! The banana guy hangs the best ones ðŸ–¼' : 'The wall is busy â€” try again in a bit');
+    } catch (e) { toast('The wall is busy â€” try again in a bit'); }
     track('wall_submit', { kind: 'banana', design: designStr() });
   };
 
   el('bbOverlayLink').onclick = async (e) => {
-    if (e) e.preventDefault(); // it's a text link now — no jumping to the top
+    if (e) e.preventDefault(); // it's a text link now â€” no jumping to the top
     sync();
     const url = location.origin + '/overlay/' + location.search;
-    try { await navigator.clipboard.writeText(url); toast('Overlay link copied — add it in OBS as a Browser Source!'); }
+    try { await navigator.clipboard.writeText(url); toast('Overlay link copied â€” add it in OBS as a Browser Source!'); }
     catch (e) { toast(url); }
     track('overlay_link_copy');
   };
@@ -247,7 +266,7 @@ function init() {
     shelfAdd({ kind: 'banana', params: location.search.slice(1), shareId: shareId || null });
     refreshShelf();
   }
-  // compact outfit fingerprint attached to downloads/orders — six months of
+  // compact outfit fingerprint attached to downloads/orders â€” six months of
   // this tells us which accessories to build packs and pre-made stickers from
   function designStr() {
     const ex = Object.keys(state.extras).filter((k) => state.extras[k]).join('+') || 'none';
@@ -275,7 +294,7 @@ function init() {
     const p = new URLSearchParams(location.search);
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
-    const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
+    const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links â†’ shades
     const h = p.get('h'); state.hat = HAT_BY_ID[h] ? h : 'none';
     state.extras = {};
     (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id)) state.extras[id] = true; });
@@ -353,7 +372,7 @@ function init() {
   }
 
   // ---- live mini sticker mockup (buy card): see the physical thing update
-  // as you build — same die-cut/square logic as the real print file, small.
+  // as you build â€” same die-cut/square logic as the real print file, small.
   const miniMock = el('bbMiniMock');
   function drawMiniMock() {
     if (!miniMock) return;
@@ -420,7 +439,7 @@ function init() {
 
   // ---- emoji GIF export: ALWAYS transparent, tight-trimmed, no captions ----
   el('bbDownloadGif').onclick = async () => {
-    const btn = el('bbDownloadGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Rendering…';
+    const btn = el('bbDownloadGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Renderingâ€¦';
     try {
       await assetsReady();
       const W = 360;
@@ -459,7 +478,7 @@ function init() {
       toast('Emoji GIF downloaded!');
       track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
       saveToShelf();
-    } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
+    } catch (e) { toast('GIF export hiccup â€” try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
 
@@ -494,12 +513,12 @@ function init() {
     shopDomain: 'officialdancingbanana.myshopify.com',
     storefrontToken: '1032480366b6bf67760ba73ace4fe0f8', // public Storefront token, safe to embed
   };
-  // what the visitor will actually pay — updated by the localized-price fetch
+  // what the visitor will actually pay â€” updated by the localized-price fetch
   const PRICE = { amount: 149, currency: 'NOK' };
 
   // ---- localized price: ask the Worker where the visitor is (Cloudflare
   // knows for free), then ask Shopify what THAT country pays via @inContext.
-  // Whatever comes back is EXACTLY what checkout will charge — so the badge
+  // Whatever comes back is EXACTLY what checkout will charge â€” so the badge
   // never lies. Any failure leaves the static "149 kr" fallback in place.
   (async () => {
     try {
@@ -523,16 +542,16 @@ function init() {
     } catch (e) { /* static fallback stands */ }
   })();
   // Quick client-side caption screen. Deliberately blunt (substring match, a
-  // few false positives are fine — the toast just asks to reword). The REAL
+  // few false positives are fine â€” the toast just asks to reword). The REAL
   // moderation gate is Trym approving every Printful draft before print.
-  const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jævla','jævel','fitte','kuk','pikk','hore','kneppe'];
+  const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jÃ¦vla','jÃ¦vel','fitte','kuk','pikk','hore','kneppe'];
   const captionsClean = () => { const t = (state.top + ' ' + state.bottom).toLowerCase(); return !BLOCKLIST.some((w) => t.includes(w)); };
 
   // Renders the print file (what actually gets printed). Two sticker styles
-  // (Trym's call, 3 Jul): TRANSPARENT background → trimmed transparent PNG so
+  // (Trym's call, 3 Jul): TRANSPARENT background â†’ trimmed transparent PNG so
   // Printful DIE-CUTS along the design's outline (banana + captions included;
   // Trym's draft approval catches odd cases like floating confetti). A
-  // COLOURED background → the full square canvas (square sticker).
+  // COLOURED background â†’ the full square canvas (square sticker).
   function renderPrintFile() {
     const W = 2048;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
@@ -549,7 +568,7 @@ function init() {
 
   // Sticker MOCKUP matching the style: die-cut white contour border for
   // transparent designs, rounded white square for coloured ones. Soft shadow,
-  // paper backdrop — so the buyer sees the physical thing.
+  // paper backdrop â€” so the buyer sees the physical thing.
   function makeStickerMockup(design, size = 900) {
     const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
     const ctx = cv.getContext('2d');
@@ -595,10 +614,10 @@ function init() {
     return cv;
   }
 
-  // Step 1: the preview modal — see YOUR sticker before paying (trust!)
+  // Step 1: the preview modal â€” see YOUR sticker before paying (trust!)
   let pendingPrint = null;
   el('bbOrderSticker').onclick = async () => {
-    if (!captionsClean()) { toast('Let’s keep it family friendly \u{1F34C} — try other words'); return; }
+    if (!captionsClean()) { toast('Letâ€™s keep it family friendly \u{1F34C} â€” try other words'); return; }
     await assetsReady();
     pendingPrint = renderPrintFile();
     const mock = makeStickerMockup(pendingPrint);
@@ -606,8 +625,8 @@ function init() {
     mc.width = mock.width; mc.height = mock.height;
     mc.getContext('2d').drawImage(mock, 0, 0);
     el('bbModalCut').textContent = state.bg === 'transparent'
-      ? '3″×3″ (7.5 cm) vinyl sticker, die-cut along your design’s outline'
-      : '3″×3″ (7.5 cm) square vinyl sticker with your design';
+      ? '3â€³Ã—3â€³ (7.5 cm) vinyl sticker, die-cut along your designâ€™s outline'
+      : '3â€³Ã—3â€³ (7.5 cm) square vinyl sticker with your design';
     el('bbOrderModal').hidden = false;
     document.body.style.overflow = 'hidden';
     track('sticker_order_click', { design: designStr() });
@@ -618,10 +637,10 @@ function init() {
   el('bbOrderModal').addEventListener('click', (e) => { if (e.target === el('bbOrderModal')) closeOrderModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('bbOrderModal').hidden) closeOrderModal(); });
 
-  // Step 2: confirmed — upload the print file + open the Shopify checkout
+  // Step 2: confirmed â€” upload the print file + open the Shopify checkout
   el('bbOrderConfirm').onclick = async () => {
     const btn = el('bbOrderConfirm'); const label = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = 'Preparing your sticker…';
+    btn.disabled = true; btn.innerHTML = 'Preparing your stickerâ€¦';
     // fired up front so the begin-checkout signal isn't lost to the redirect
     track('sticker_preview_confirm', { value: PRICE.amount, currency: PRICE.currency, design: designStr() });
     try {
@@ -651,7 +670,7 @@ function init() {
     } catch (e) {
       console.error(e);
       track('sticker_order_fail', { message: String(e && e.message || e).slice(0, 90) });
-      toast('Hmm, that didn’t work — give it another try?');
+      toast('Hmm, that didnâ€™t work â€” give it another try?');
       btn.disabled = false; btn.innerHTML = label;
     }
   };
@@ -664,7 +683,7 @@ function init() {
 
   // ---- OBS overlay mode (after load() so it can override the defaults) ----
   // ?overlay=1 (usually reached via /overlay/) strips all chrome via CSS on
-  // <html> and leaves just the dancing banana on a transparent page — sized
+  // <html> and leaves just the dancing banana on a transparent page â€” sized
   // for an OBS/streaming browser source. ?daily seeds the outfit from the
   // UTC date: same banana-of-the-day for everyone, changes at midnight.
   const urlP = new URLSearchParams(location.search);
@@ -672,7 +691,7 @@ function init() {
     document.documentElement.classList.add('bb-overlay');
     state.paused = false; // an overlay must dance, reduced-motion or not
     if (urlP.has('daily')) {
-      // shared with /banana-of-the-day/ (built server-side) — same date,
+      // shared with /banana-of-the-day/ (built server-side) â€” same date,
       // same banana, everywhere. Algorithm lives in src/lib/banana-daily.js.
       const o = dailyOutfit();
       state.hat = o.hat; state.glasses = o.glasses;
@@ -682,7 +701,7 @@ function init() {
 
   refreshUI();
   refreshShelf();
-  // captions live behind a fold — open it when a share link arrives wearing them
+  // captions live behind a fold â€” open it when a share link arrives wearing them
   if (state.top || state.bottom) { const f = el('bbCaptionsFold'); if (f) f.open = true; }
   sheet.decode().catch(() => {}).finally(() => {
     recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true;

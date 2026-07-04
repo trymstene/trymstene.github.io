@@ -126,6 +126,24 @@ const appSchema = {
       font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
     }
     .bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    /* icon chips: the wearable art IS the button */
+    .bb-chip--icon {
+      width: 56px; height: 56px; padding: 6px;
+      display: inline-grid; place-items: center; line-height: 0;
+    }
+    .bb-chip--icon svg { max-width: 100%; max-height: 100%; width: auto; height: auto; image-rendering: pixelated; }
+    .bb-chip--icon[aria-pressed="true"] {
+      background: var(--banana); outline: 3px solid var(--hot); outline-offset: 1px;
+    }
+    .bb-chip--none {
+      border-style: dashed;
+      background-image: linear-gradient(to top right, transparent 46%, rgba(17,17,17,0.45) 46%, rgba(17,17,17,0.45) 54%, transparent 54%);
+    }
+    .bb-chip--none[aria-pressed="true"] { background-color: var(--banana); }
+    .bb-chip--icon.bb-chip--locked { position: relative; opacity: 0.8; }
+    .bb-chip--icon.bb-chip--locked::after {
+      content: '🔒'; position: absolute; right: -7px; bottom: -7px; font-size: 0.85rem; line-height: 1;
+    }
     .bb-chip--locked {
       display: inline-block; border-style: dashed; opacity: 0.75; text-decoration: none; color: var(--ink);
     }
