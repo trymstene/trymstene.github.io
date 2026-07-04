@@ -214,7 +214,8 @@ function init() {
   function refreshShelf() {
     renderShelf(el('bbShelf'), {
       onPick: (c) => {
-        track('shelf_pick', { design: c.params });
+        track('shelf_pick', { design: c.params.slice(0, 60) });
+        if (c.kind === 'emoji') { location.href = '/forge/?shelf=' + c.id; return; } // pixel creations belong to the forge
         location.href = location.pathname + '?' + c.params; // full reload = every param (captions, bg, speed, frame) restored the proven way
       },
     });

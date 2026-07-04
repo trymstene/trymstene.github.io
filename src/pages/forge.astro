@@ -1,0 +1,170 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'The Pixel Forge — make the next dancing banana';
+const description = 'A dead-simple pixel GIF maker, rebuilt from the kind of tool the Dancing Banana was born in (1999). Draw a tiny animated emoji, watch it live at real chat size, export a transparent GIF for Discord, Slack or Twitch.';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'The Pixel Forge',
+  url: 'https://trymstene.com/forge/',
+  applicationCategory: 'DesignApplication',
+  operatingSystem: 'Web',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  description: 'A deliberately simple pixel-art GIF maker for animated emoji, from the creator of the 1999 Dancing Banana GIF.',
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="The Pixel Forge 🎨"
+  ogDescription="The dancing banana was drawn in a tool like this in 1999. Here it is, rebuilt. Make the next one."
+  ogImage="https://trymstene.com/assets/og/builder.png"
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <style is:inline slot="head">
+    .fg-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
+    .fg-head h1 { margin: 0 0 0.3rem; }
+    .fg-head p { margin: 0 0 1.4rem; opacity: 0.8; max-width: 62ch; }
+
+    .fg-grid { display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
+    @media (min-width: 920px) { .fg-grid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; } }
+
+    .fg-stagecard { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 0.8rem; }
+    #fgCanvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
+
+    .fg-side { display: grid; gap: 1rem; }
+    .fg-panel { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.9rem; }
+    .fg-panel h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+
+    .fg-tools { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .fg-tool, .fg-size, #fgOnion, #fgUndo {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.7rem;
+      font-weight: 700; cursor: pointer; font-size: 0.85rem;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .fg-tool[aria-pressed="true"], .fg-size[aria-pressed="true"], #fgOnion[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    #fgUndo[disabled] { opacity: 0.4; cursor: default; }
+
+    .fg-paletterow { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
+    .fg-swatch { aspect-ratio: 1; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
+    .fg-swatch[aria-pressed="true"] { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
+
+    /* the killer feature: your emoji at REAL chat size, live */
+    .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
+    .fg-chat__meta { font-weight: 700; color: #fffdf5; margin-bottom: 0.2rem; }
+    .fg-chat__meta span { font-weight: 400; font-size: 0.7rem; opacity: 0.55; margin-left: 0.4rem; }
+    .fg-chat p { margin: 0; display: flex; align-items: center; gap: 0.35rem; }
+    #fgPreview { image-rendering: pixelated; width: 32px; height: 32px; }
+
+    .fg-framesrow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .fg-frames { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .fg-frame { position: relative; border: 3px solid var(--ink); background: #f4f1e8; cursor: pointer; line-height: 0; }
+    .fg-frame canvas { width: 56px; height: 56px; image-rendering: pixelated; }
+    .fg-frame span { position: absolute; left: 2px; top: 2px; font-size: 0.6rem; font-weight: 800; line-height: 1; background: var(--paper); padding: 1px 3px; }
+    .fg-frame--cur { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
+    .fg-framectl { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .fg-framectl button { border: 3px solid var(--ink); background: var(--paper); font-weight: 700; padding: 0.4rem 0.6rem; cursor: pointer; }
+    .fg-framectl button[disabled] { opacity: 0.4; cursor: default; }
+    #fgDelay { width: 5.5rem; border: 3px solid var(--ink); padding: 0.35rem 0.4rem; font: inherit; }
+    #fgFrameInfo { font-size: 0.8rem; opacity: 0.7; }
+
+    .fg-export { margin-top: 1.4rem; }
+    #fgDone { margin-top: 0.8rem; border: 3px solid var(--ink); background: var(--banana); padding: 0.7rem 0.9rem; font-size: 0.9rem; }
+    #fgDone a { font-weight: 700; }
+
+    .fg-shelfrow { margin-top: 2rem; }
+    .fg-shelfrow h3 { margin: 0 0 0.2rem; }
+    .bb-shelf, .fg-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
+    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
+    .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.12s ease; }
+    .shelf-item:hover { transform: translate(-2px, -2px); }
+    .shelf-item canvas { display: block; width: 76px; height: 76px; image-rendering: pixelated; }
+    .shelf-x { position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; line-height: 1; background: var(--ink); color: var(--paper); border: 2px solid var(--paper); font-weight: 800; cursor: pointer; }
+    .shelf-x:hover { background: var(--hot, #ff4d6d); }
+  </style>
+
+  <div class="fg-wrap">
+    <div class="fg-head">
+      <h1>the pixel forge</h1>
+      <p>
+        In 1999 I drew a dancing banana in a tool about this simple — and it took over the internet.
+        Here's that tool, rebuilt. Pencil, fill, frames, one great palette. <strong>Make the next one.</strong>
+      </p>
+    </div>
+
+    <div class="fg-grid">
+      <div class="fg-stagecard">
+        <canvas id="fgCanvas" width="512" height="512" aria-label="Pixel drawing canvas"></canvas>
+      </div>
+
+      <div class="fg-side">
+        <div class="fg-panel">
+          <h3>Tools</h3>
+          <div class="fg-tools" role="group" aria-label="Drawing tools">
+            <button class="fg-tool" data-tool="pencil">✏️ Pencil</button>
+            <button class="fg-tool" data-tool="eraser">🧽 Eraser</button>
+            <button class="fg-tool" data-tool="fill">🪣 Fill</button>
+            <button class="fg-tool" data-tool="picker">💉 Pick</button>
+            <button id="fgUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
+          </div>
+        </div>
+
+        <div class="fg-panel">
+          <h3>Palette</h3>
+          <div class="fg-paletterow" id="fgPalette" role="group" aria-label="Colours"></div>
+        </div>
+
+        <div class="fg-panel">
+          <h3>Live at chat size</h3>
+          <div class="fg-chat" aria-hidden="true">
+            <div class="fg-chat__meta">banana_guy <span>today at 19:99</span></div>
+            <p>my new emoji <canvas id="fgPreview" width="32" height="32"></canvas> just dropped</p>
+          </div>
+        </div>
+
+        <div class="fg-panel">
+          <h3>Canvas</h3>
+          <div class="fg-tools" role="group" aria-label="Canvas size">
+            <button class="fg-size" data-size="32">32</button>
+            <button class="fg-size" data-size="48">48</button>
+            <button class="fg-size" data-size="64">64</button>
+            <button id="fgOnion" title="Ghost of the previous frame">👻 Onion</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fg-framesrow">
+      <div class="fg-frames" id="fgFrames"></div>
+      <div class="fg-framectl">
+        <button id="fgAdd" title="New empty frame">+ frame</button>
+        <button id="fgDup" title="Duplicate this frame">⧉ duplicate</button>
+        <button id="fgDel" title="Delete this frame">🗑</button>
+        <label for="fgDelay" style="font-size:0.8rem;">delay</label>
+        <input id="fgDelay" type="number" min="50" max="1000" step="10" value="120"> <span style="font-size:0.8rem;opacity:0.7;">ms</span>
+        <span id="fgFrameInfo"></span>
+      </div>
+    </div>
+
+    <div class="fg-export">
+      <button class="btn btn--dark" id="fgExport">⚒ Forge the GIF (transparent, chat-ready)</button>
+      <div id="fgDone" hidden>
+        🎉 Forged — and saved to your shelf below. Drop it straight into Discord, Slack or Twitch.
+        Feeling proud? <a href="/make-a-banana/" data-place="forge">The banana would love company →</a>
+      </div>
+    </div>
+
+    <div class="fg-shelfrow">
+      <h3>🗄 My shelf</h3>
+      <p class="shelf-empty" style="opacity:0.75;">Everything you forge or build lands here — click one to keep working on it.</p>
+      <div id="fgShelf" class="fg-shelf" aria-label="My saved creations"></div>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/pixel-forge.js';
+  </script>
+</BaseLayout>

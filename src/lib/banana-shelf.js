@@ -8,6 +8,7 @@
 // CLIENT-ONLY module (renders thumbnails via the engine — never import from
 // Astro frontmatter).
 import { drawComposite, assetsReady } from './banana-engine.js';
+import { forgeParse, forgeDrawFrame } from './forge-format.js';
 
 const KEY = 'shelf-v1';
 const CAP = 24; // oldest fall off the back — it's a shelf, not a warehouse
@@ -68,15 +69,20 @@ export async function renderShelf(host, { onPick } = {}) {
     return;
   }
   list.forEach((c) => {
-    const o = outfitFrom(c.params);
     const cell = document.createElement('div');
     cell.className = 'shelf-item';
     const cv = document.createElement('canvas');
     cv.width = cv.height = 96;
-    drawComposite(cv.getContext('2d'), 96, o.frame, {
-      bg: o.bg, captions: false,
-      hat: o.hat, glasses: o.glasses, extras: o.extras, top: '', bottom: '', effect: 'none',
-    });
+    if (c.kind === 'emoji') {
+      const f = forgeParse(c.params);
+      if (f) forgeDrawFrame(cv.getContext('2d'), f.frames[0], f.size, Math.max(1, Math.floor(96 / f.size)));
+    } else {
+      const o = outfitFrom(c.params);
+      drawComposite(cv.getContext('2d'), 96, o.frame, {
+        bg: o.bg, captions: false,
+        hat: o.hat, glasses: o.glasses, extras: o.extras, top: '', bottom: '', effect: 'none',
+      });
+    }
     cell.appendChild(cv);
     const x = document.createElement('button');
     x.className = 'shelf-x';
