@@ -10,6 +10,7 @@
 // delays. Serialized as base64 for autosave + the Shelf.
 import { GIFEncoder } from 'gifenc';
 import { shelfAdd, renderShelf, shelfList } from '../lib/banana-shelf.js';
+import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 import { FORGE_PALETTE as PALETTE, FORGE_RGB as RGB, FORGE_MAX_FRAMES as MAX_FRAMES, b64, forgeParse } from '../lib/forge-format.js';
 
 const el = (id) => document.getElementById(id);
@@ -311,6 +312,7 @@ function init() {
       refreshShelfStrip();
       el('fgDone').hidden = false;
       track('forge_gif_export', { size: state.size, frames: state.frames.length });
+      passPatch('smith'); passStat('forges');
     } finally {
       btn.disabled = false; btn.textContent = label;
     }
@@ -328,6 +330,7 @@ function init() {
         body: JSON.stringify({ kind: 'emoji', params: 'forge:' + serialize() }),
       });
       btn.textContent = res.ok ? 'Submitted! 🖼 The banana guy hangs the best ones' : 'The wall is busy — try again later';
+      if (res.ok) passPatch('exhibitor');
     } catch (e) { btn.textContent = 'The wall is busy — try again later'; }
     track('wall_submit', { kind: 'emoji', size: state.size, frames: state.frames.length });
     setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 4000);
@@ -373,4 +376,5 @@ function init() {
   refreshShelfStrip();
   requestAnimationFrame(previewTick);
   track('forge_open');
+  passVisit();
 }

@@ -11,6 +11,7 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES } from '../lib/banana-engine.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
+import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 10; // seconds
@@ -375,7 +376,7 @@ function init() {
     el('rvCounterBeer').style.display = 'none'; // SVG: no .hidden property AND the UA [hidden] rule skips it — inline display only
     showBubble('SERVED! 🍺 ' + autoName(r.outfit) + ' drinks free', false, 6000);
     refreshHud();
-    if (id === myId) track('rave_beer');
+    if (id === myId) { track('rave_beer'); passPatch('round'); passStat('beers'); }
   }
 
   function barTick() {
@@ -450,7 +451,7 @@ function init() {
     miniDropUntil = Date.now() + 6000; // the whole floor gets a bonus drop
     showBubble('💿 ' + autoName(r.outfit) + ' dropped a banger!', false, 7000);
     refreshHud();
-    if (id === myId) track('rave_vinyl_delivered');
+    if (id === myId) { track('rave_vinyl_delivered'); passPatch('courier'); passStat('vinyls'); }
   }
 
   function rhythmTick() {
@@ -466,7 +467,7 @@ function init() {
       for (const r of ravers.values()) {
         const lit = !r.stage && Math.hypot(r.x - s.x, r.y - s.y) < SPOT_R;
         r.wrap.classList.toggle('rv-lit', lit);
-        if (lit && r.id === myId && !r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); }
+        if (lit && r.id === myId && !r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); passPatch('spotlight'); }
       }
     } else if (!spotEl.hidden) {
       spotEl.hidden = true;
@@ -526,7 +527,7 @@ function init() {
         if ((fived.get(key) || 0) > now) continue;
         fived.set(key, now + FIVE_COOLDOWN);
         spawnFive((a.x + b.x) / 2, Math.min(a.y, b.y) - 9); // ABOVE both heads — between them it hid behind the sprites
-        if (a.id === myId || b.id === myId) track('rave_highfive');
+        if (a.id === myId || b.id === myId) { track('rave_highfive'); passStat('fives'); }
       }
     }
   }, 600);
@@ -684,6 +685,7 @@ function init() {
     floor.appendChild(toast);
     setTimeout(() => toast.remove(), 9000);
     track('rave_glowstick_unlock');
+    passPatch('survivor', { quiet: true }); // the glowtoast IS the celebration here
   }
   setInterval(checkGlowstick, 5000);
 
@@ -730,6 +732,7 @@ function init() {
     const idx = Math.floor((now % cycleMs) / (cycleMs / NFRAMES));
 
     if (dropActive !== lastDrop) {
+      if (lastDrop === true && !dropActive) passStat('drops'); // survived another one
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       el('rvDropFlash').hidden = !dropActive;
@@ -759,6 +762,12 @@ function init() {
     }
     requestAnimationFrame(tick);
   }
+
+  // ---- the pass: rave moments leave marks ----
+  passVisit();
+  passPatch('raver');
+  setInterval(() => { if (ws && ws.readyState === 1) passStat('raveMin'); }, 60000);
+  try { if (localStorage.getItem('rv-glowstick') === '1') passPatch('survivor', { quiet: true }); } catch (e) {}
 
   assetsReady().then(() => {
     // Barty the bartender: drawn ONCE (static NPC — he's working, not dancing),

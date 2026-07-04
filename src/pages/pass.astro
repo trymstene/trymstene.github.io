@@ -1,0 +1,132 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+import { PATCHES } from '../lib/pass-defs.js';
+
+const title = 'Your Banana Pass — patches, shelf and stats';
+const description = 'Your membership card to the banana world: the patches you have earned, your creations, and your nights on the dance floor. No account needed — the pass lives with you.';
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="Your Banana Pass 🎫"
+  ogDescription="Patches, creations and rave nights — your membership card to the banana world."
+>
+  <meta name="robots" content="noindex" slot="head" />
+  <style is:inline slot="head">
+    .ps-wrap { max-width: 900px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
+    .ps-head h1 { margin: 0 0 0.3rem; }
+    .ps-head p { margin: 0 0 1.6rem; opacity: 0.8; max-width: 60ch; }
+
+    /* THE CARD — looks like a physical club membership card */
+    .ps-card {
+      display: flex; gap: 1.1rem; align-items: center;
+      background: var(--ink); color: var(--paper);
+      border: var(--line); box-shadow: var(--shadow); padding: 1.1rem 1.2rem;
+      max-width: 560px;
+    }
+    .ps-card canvas { width: 110px; height: 110px; flex: none; image-rendering: pixelated; background:
+      repeating-conic-gradient(#221c30 0% 25%, #2a2340 0% 50%) 0 0 / 18px 18px; border: 3px solid var(--banana); }
+    .ps-card__meta { min-width: 0; }
+    .ps-card__kicker { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--banana); margin: 0; }
+    .ps-card__name { font-family: "Archivo Black", sans-serif; font-size: 1.25rem; margin: 0.15rem 0 0.3rem; }
+    .ps-card__since { font-size: 0.72rem; opacity: 0.7; margin: 0 0 0.5rem; }
+    .ps-card__patches { display: flex; gap: 0.4rem; flex-wrap: wrap; min-height: 1.4rem; }
+    .ps-card__patches .pxi, .ps-card__patches svg { width: 1.25rem; height: 1.25rem; }
+    .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
+
+    .ps-section { margin-top: 2.2rem; }
+    .ps-section h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
+    .ps-section > p { margin: 0 0 1rem; font-size: 0.88rem; opacity: 0.75; }
+
+    /* the collection: earned bright, unearned dark silhouettes with hints */
+    .ps-patches { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ps-patch {
+      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.8rem 0.8rem 0.7rem; text-align: center;
+    }
+    .ps-patch svg { width: 34px; height: 34px; }
+    .ps-patch h3 { margin: 0.5rem 0 0.15rem; font-size: 0.85rem; }
+    .ps-patch p { margin: 0; font-size: 0.72rem; opacity: 0.7; line-height: 1.45; }
+    .ps-patch .ps-patch__date { display: none; margin-top: 0.3rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
+    .ps-patch:not(.ps-patch--earned) { opacity: 0.55; }
+    .ps-patch:not(.ps-patch--earned) svg { filter: grayscale(1) contrast(0.6) brightness(0.9); }
+    .ps-patch--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
+    .ps-patch--earned .ps-patch__date { display: block; }
+
+    .ps-stats { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+    .ps-stat {
+      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.55rem 0.9rem; font-size: 0.82rem;
+    }
+    .ps-stat b { font-family: "Archivo Black", sans-serif; font-size: 1.05rem; margin-right: 0.35rem; }
+
+    .ps-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
+    .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.12s ease; }
+    .shelf-item:hover { transform: translate(-2px, -2px); }
+    .shelf-item canvas { display: block; width: 88px; height: 88px; image-rendering: pixelated; }
+    .shelf-x { position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; line-height: 1; background: var(--ink); color: var(--paper); border: 2px solid var(--paper); font-weight: 800; cursor: pointer; }
+    .shelf-x:hover { background: var(--hot, #ff4d6d); }
+
+    .ps-doors { margin-top: 2.4rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  </style>
+
+  <div class="ps-wrap">
+    <div class="ps-head">
+      <p class="kicker">Members only (everyone's a member)</p>
+      <h1>your banana pass</h1>
+      <p>
+        Everything you've done in the banana world, pinned in one place. No account,
+        no password — the pass simply lives with you.
+      </p>
+    </div>
+
+    <div class="ps-card">
+      <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
+      <div class="ps-card__meta">
+        <p class="ps-card__kicker">Banana world membership</p>
+        <p class="ps-card__name" id="psName">Fresh Dancing Banana</p>
+        <p class="ps-card__since" id="psSince">member since tonight</p>
+        <div class="ps-card__patches" id="psCardPatches"></div>
+      </div>
+    </div>
+    <p class="ps-device">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
+
+    <div class="ps-section">
+      <h2>Patches</h2>
+      <p>Moments, not points. The dark ones tell you where the fun is hiding.</p>
+      <div class="ps-patches">
+        {PATCHES.map((p) => (
+          <div class="ps-patch" data-patch={p.id}>
+            <PixelIcon name={p.icon} size="34px" />
+            <h3>{p.title}</h3>
+            <p>{p.hint}</p>
+            <span class="ps-patch__date"></span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="ps-section">
+      <h2>Tonight's numbers</h2>
+      <p>Gentle stats. Nobody's ranking you.</p>
+      <div class="ps-stats" id="psStats"><span class="shelf-empty">Go do things — the numbers follow.</span></div>
+    </div>
+
+    <div class="ps-section">
+      <h2>My shelf</h2>
+      <p>Your creations — bananas open in the builder, pixels open in the forge.</p>
+      <div class="ps-shelf" id="psShelf"></div>
+    </div>
+
+    <div class="ps-doors">
+      <a class="btn btn--dark" href="/make/">To the workshop →</a>
+      <a class="btn btn--light" href="/rave/">To the floor →</a>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/banana-pass-page.js';
+  </script>
+</BaseLayout>
