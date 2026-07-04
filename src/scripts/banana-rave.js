@@ -15,6 +15,8 @@ import { dailyOutfit } from '../lib/banana-daily.js';
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 10; // seconds
 const MAX_VISIBLE = 60;
+// stay this long → the stage opens (server enforces the same; ?stagetest = solo-mode preview)
+const STAGE_UNLOCK_MS = location.search.includes('stagetest') ? 5000 : 5 * 60 * 1000;
 
 const el = (id) => document.getElementById(id);
 const floor = el('rvFloor');
@@ -48,16 +50,17 @@ function myOutfit() {
 }
 
 function init() {
-  const ravers = new Map(); // id -> {outfit, joined, elWrap, cv, x, y, size}
+  const ravers = new Map(); // id -> {outfit, joined, stage, wrap, cv, x, y, size}
   let myId = null;
   let online = false;
+  const sessionStart = Date.now();
 
   // deterministic floor position from id (no server coordinates needed)
   function place(id) {
     let h = 0;
     for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
     const x = 4 + (h % 79);            // 4..82 (%)
-    const y = 6 + ((h >> 8) % 68);     // 6..73 (%)
+    const y = 6 + ((h >>> 8) % 68);    // 6..73 (%) — MUST be >>> : >> is signed, went negative for half of all ids and floated bananas above the floor
     return { x, y };
   }
 
@@ -82,6 +85,27 @@ function init() {
     }
     floor.appendChild(wrap);
     ravers.set(p.id, { ...p, wrap, cv, x, y, size });
+    if (p.stage) setStage(p.id, true);
+    refreshHud();
+  }
+
+  // move a raver between the floor and the stage line behind the DJ
+  function setStage(id, on) {
+    const r = ravers.get(id);
+    if (!r) return;
+    r.stage = !!on;
+    if (on) {
+      r.cv.style.width = r.cv.style.height = ''; // stage size comes from CSS
+      r.wrap.style.left = r.wrap.style.top = r.wrap.style.zIndex = '';
+      el('rvStage').appendChild(r.wrap);
+    } else {
+      r.cv.style.width = r.cv.style.height = r.size + 'px';
+      r.wrap.style.left = r.x + '%';
+      r.wrap.style.top = r.y + '%';
+      r.wrap.style.zIndex = String(100 + r.y);
+      floor.appendChild(r.wrap);
+    }
+    if (id === myId) refreshStageUi();
     refreshHud();
   }
 
@@ -98,7 +122,7 @@ function init() {
     if (!r) return;
     const e = document.createElement('span');
     e.className = 'rv-emote rv-emote--' + kind;
-    e.innerHTML = { heart: '&#10084;', confetti: '&#10022;', banana: '&#127820;' }[kind] || '';
+    e.innerHTML = { heart: '&#10084;', confetti: '&#10022;', banana: '&#127820;', fire: '&#128293;' }[kind] || '';
     r.wrap.appendChild(e);
     setTimeout(() => e.remove(), 1900);
   }
@@ -117,7 +141,7 @@ function init() {
       .slice(0, 5)
       .map((r) => {
         const mins = Math.max(0, Math.floor((now - r.joined) / 60000));
-        const name = autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
+        const name = (r.stage ? '⭐ ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
         return `<li${r.id === myId ? ' class="rv-me"' : ''}><span>${name}</span><b>${mins}m</b></li>`;
       });
     board.innerHTML = rows.join('') || '<li><span>the floor awaits…</span></li>';
@@ -144,6 +168,11 @@ function init() {
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
       else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) r.outfit = m.outfit; }
+      else if (m.t === 'stage') setStage(m.id, m.on);
+      else if (m.t === 'stageNo') {
+        el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';
+        setTimeout(() => { el('rvMore').textContent = ''; }, 4000);
+      }
     };
     ws.onclose = () => { if (!online) soloMode(); else { el('rvStatus').textContent = 'reconnecting…'; setTimeout(connect, 3000 + Math.random() * 4000); } };
     ws.onerror = () => {};
@@ -164,6 +193,38 @@ function init() {
       if (myId) floatEmote(myId, k); // instant local echo
       track('rave_emote', { k });
     });
+  });
+
+  // ---- the stage: survive STAGE_UNLOCK_MS → dance behind the DJ, earn the 🔥 ----
+  const stageBtn = el('rvStageBtn');
+  const fireBtn = document.querySelector('.rv-emote-btn--fire');
+  const onStage = () => { const me = ravers.get(myId); return !!(me && me.stage); };
+
+  function refreshStageUi() {
+    if (!myId) return;
+    const left = STAGE_UNLOCK_MS - (Date.now() - sessionStart);
+    stageBtn.hidden = false;
+    if (onStage()) {
+      stageBtn.disabled = false;
+      stageBtn.textContent = '↩ back to the floor';
+    } else if (left > 0) {
+      const m = Math.floor(left / 60000), s = Math.ceil((left % 60000) / 1000) % 60;
+      stageBtn.disabled = true;
+      stageBtn.textContent = `⭐ stage opens in ${m}:${String(s).padStart(2, '0')}`;
+    } else {
+      stageBtn.disabled = false;
+      stageBtn.textContent = '⭐ join the stage';
+    }
+    fireBtn.hidden = !onStage();
+  }
+  setInterval(refreshStageUi, 1000);
+
+  stageBtn.addEventListener('click', () => {
+    if (stageBtn.disabled) return;
+    const want = !onStage();
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'stage', on: want }));
+    else if (myId) setStage(myId, want); // solo mode: the stage is all yours
+    track(want ? 'rave_stage_join' : 'rave_stage_leave');
   });
 
   // ---- the render loop: everyone dances off the same clock ----

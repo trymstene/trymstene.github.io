@@ -21,8 +21,10 @@ const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy'];
 const SHADE_IDS = ['none', 'shades', 'hearts', 'visor'];
 const EXTRA_IDS = ['mustache', 'bowtie'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
-const EMOTES = ['heart', 'confetti', 'banana'];
+const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
 const ROOM_CAP = 200;
+const STAGE_CAP = 8;                  // spots on the line behind the DJ
+const STAGE_MIN_MS = 5 * 60 * 1000;   // survive 5 min on the floor → the stage opens (keep in sync with STAGE_UNLOCK_MS in banana-rave.js)
 
 export default {
   async fetch(request, env) {
@@ -118,11 +120,31 @@ export class RaveRoom {
     }
 
     if (msg.t === 'emote' && me && EMOTES.includes(msg.k)) {
+      if (msg.k === 'fire' && !me.stage) return; // the 🔥 is earned, not given
       const now = Date.now();
       if (now - (me.lastEmote || 0) < 1500) return; // throttle: no spam cannons
       me.lastEmote = now;
       ws.serializeAttachment(me);
       this.broadcast({ t: 'emote', id: me.id, k: msg.k });
+      return;
+    }
+
+    if (msg.t === 'stage' && me) {
+      if (msg.on) {
+        if (Date.now() - me.joined < STAGE_MIN_MS) {
+          ws.send('{"t":"stageNo","reason":"early"}');
+          return;
+        }
+        if (this.roster().filter((p) => p.stage).length >= STAGE_CAP) {
+          ws.send('{"t":"stageNo","reason":"full"}');
+          return;
+        }
+        me.stage = true;
+      } else {
+        me.stage = false;
+      }
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'stage', id: me.id, on: me.stage }); // includes sender = server-authoritative echo
       return;
     }
 
@@ -145,5 +167,5 @@ export class RaveRoom {
 }
 
 function strip(p) {
-  return { id: p.id, outfit: p.outfit, joined: p.joined };
+  return { id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage };
 }

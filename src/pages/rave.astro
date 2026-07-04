@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 
 const title = 'The Banana Rave — everyone dances together';
-const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others. Silent disco until DJ Sentry finishes the remix.';
+const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others. Silent disco until Sentry finishes the remix.';
 
 const schema = {
   '@context': 'https://schema.org',
@@ -27,7 +27,9 @@ const schema = {
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <style is:inline slot="head">
-    .rv-hall { background: #0d0b14; color: #fffdf5; padding: 1.6rem 1rem 2.5rem; }
+    /* isolate = nothing inside the rave (raver z-indexes, drop flash) can ever
+       paint over the sticky nav / slide menu (iOS Safari bug Trym caught) */
+    .rv-hall { background: #0d0b14; color: #fffdf5; padding: 1.6rem 1rem 2.5rem; position: relative; isolation: isolate; z-index: 0; }
     .rv-head { max-width: 1100px; margin: 0 auto 1rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem 1.4rem; }
     .rv-head h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.6rem); color: #ffe135; }
     .rv-live { color: #37d67a; font-weight: 700; }
@@ -39,16 +41,37 @@ const schema = {
 
     /* the floor: pixel checkerboard that pulses */
     .rv-club { position: relative; border: 4px solid #ffe135; box-shadow: 8px 8px 0 #000; overflow: hidden; }
-    .rv-booth {
-      position: relative; background: #17121f; border-bottom: 4px solid #ffe135;
-      display: flex; align-items: flex-end; justify-content: center; gap: 1rem;
-      padding: 0.8rem 1rem 0; min-height: 150px;
+    /* the stage: Sentry-style DJ desk front-centre, speakers flanking,
+       earned companions dancing on a line behind the DJ */
+    .rv-booth { position: relative; background: #17121f; border-bottom: 4px solid #ffe135; min-height: 164px; }
+    .rv-stage {
+      position: absolute; left: 0; right: 0; bottom: 42px;
+      display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
     }
-    .rv-booth canvas { width: 120px; height: 120px; display: block; }
-    .rv-podium { text-align: center; }
-    .rv-podium__base { background: #ffe135; color: #111; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; padding: 0.3rem 0.7rem; text-transform: uppercase; }
-    .rv-sign { font-size: 0.75rem; color: #b388ff; font-weight: 700; letter-spacing: 0.04em; padding-bottom: 0.6rem; text-align: center; }
-    .rv-sign b { color: #ffe135; display: block; font-size: 0.85rem; }
+    .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
+    .rv-stage .rv-raver canvas { width: 58px !important; height: 58px !important; }
+    .rv-djgroup { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 150px; z-index: 2; }
+    .rv-djgroup canvas { width: 96px; height: 96px; display: block; margin: 0 auto -36px; position: relative; z-index: 1; }
+    .rv-desk {
+      position: relative; z-index: 2; height: 40px;
+      background: #241a38; border: 3px solid #0d0b14; box-shadow: inset 0 4px 0 #2f2250;
+    }
+    .rv-desk::before, .rv-desk::after { content: ''; position: absolute; top: 7px; width: 6px; height: 6px; background: #b388ff; box-shadow: 0 10px 0 #37d67a; }
+    .rv-desk::before { left: 8px; }
+    .rv-desk::after { right: 8px; }
+    .rv-desk__label {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      background: #ffe135; color: #111; font-weight: 800; font-size: 0.58rem;
+      letter-spacing: 0.08em; padding: 0.18rem 0.45rem; text-transform: uppercase; white-space: nowrap;
+    }
+    .rv-speaker { position: absolute; bottom: 0; width: 50px; height: 68px; z-index: 2; shape-rendering: crispEdges; }
+    .rv-speaker--l { left: calc(50% - 134px); }
+    .rv-speaker--r { right: calc(50% - 134px); }
+    body.rv-drop .rv-speaker { animation: rvPump 0.24s steps(2) infinite; transform-origin: bottom center; }
+    @keyframes rvPump { 50% { transform: scaleY(1.07) scaleX(1.05); } }
+    @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-speaker { animation: none; } }
+    .rv-sign { position: absolute; top: 8px; right: 12px; font-size: 0.72rem; color: #b388ff; font-weight: 700; letter-spacing: 0.04em; text-align: right; }
+    .rv-sign b { color: #ffe135; display: block; font-size: 0.82rem; }
 
     .rv-floor {
       position: relative; height: min(62vh, 560px);
@@ -93,14 +116,41 @@ const schema = {
     .rv-hud {
       display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
       background: #17121f; border-top: 4px solid #ffe135; padding: 0.7rem 0.9rem; flex-wrap: wrap;
+      touch-action: manipulation; /* no iOS double-tap zoom when mashing emotes */
     }
     .rv-emotes { display: flex; gap: 0.5rem; }
     .rv-emote-btn {
       background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;
-      font-size: 1.15rem; line-height: 1; padding: 0.45rem 0.7rem; border-radius: 2px;
+      font-size: 1.2rem; line-height: 1; padding: 0.55rem 0.9rem; border-radius: 2px;
+      min-width: 48px; min-height: 48px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
     .rv-emote-btn:hover { background: #ffe135; }
+    .rv-emote-btn--fire { border-color: #ff9e2c; }
+    .rv-emote-btn--fire:hover { background: #ff9e2c; }
+    .rv-stage-btn {
+      background: #ffe135; color: #111; border: 3px solid #111; cursor: pointer;
+      font-weight: 800; font-size: 0.78rem; letter-spacing: 0.04em; padding: 0.55rem 0.8rem;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .rv-stage-btn[disabled] { background: #0d0b14; color: #b388ff; border-color: #b388ff; cursor: default; }
     .rv-more { font-size: 0.8rem; opacity: 0.7; }
+    .rv-emote--fire { color: #ff9e2c; font-size: 1.7rem; }
+
+    @media (max-width: 640px) {
+      .rv-booth { min-height: 138px; }
+      .rv-djgroup { width: 120px; }
+      .rv-djgroup canvas { width: 78px; height: 78px; margin-bottom: -30px; }
+      .rv-desk { height: 34px; }
+      .rv-speaker { width: 34px; height: 48px; }
+      .rv-speaker--l { left: calc(50% - 102px); }
+      .rv-speaker--r { right: calc(50% - 102px); }
+      .rv-stage { bottom: 36px; gap: 6px; }
+      .rv-stage .rv-raver canvas { width: 46px !important; height: 46px !important; }
+      .rv-emotes { flex: 1; }
+      .rv-emote-btn { flex: 1; padding: 0.75rem 0; font-size: 1.4rem; }
+      .rv-stage-btn { flex-basis: 100%; }
+    }
 
     .rv-panel { border: 4px solid #ffe135; background: #17121f; box-shadow: 8px 8px 0 #000; padding: 1rem; }
     .rv-panel h2 { margin: 0 0 0.6rem; font-size: 1rem; color: #ffe135; }
@@ -121,17 +171,28 @@ const schema = {
     </div>
     <p class="rv-sub">
       Every banana here is a real visitor, dancing in perfect sync — same beat, whole planet.
-      🎧 Silent disco until DJ Sentry finishes the remix.
+      🎧 Silent disco until Sentry finishes the remix.
     </p>
 
     <div class="rv-stagewrap">
       <div class="rv-club">
         <div class="rv-booth">
-          <div class="rv-podium">
+          <div class="rv-sign">SENTRY<b>remix in production</b></div>
+          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"></div>
+          <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
+            <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
+            <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>
+            <rect x="3" y="9" width="6" height="6" fill="#2a1650"/><rect x="5" y="11" width="2" height="2" fill="#b388ff"/>
+          </svg>
+          <div class="rv-djgroup">
             <canvas id="rvDj" width="200" height="200"></canvas>
-            <div class="rv-podium__base">tonight's DJ</div>
+            <div class="rv-desk"><span class="rv-desk__label">tonight's DJ</span></div>
           </div>
-          <div class="rv-sign">DJ SENTRY<b>remix in production</b></div>
+          <svg class="rv-speaker rv-speaker--r" viewBox="0 0 12 16" aria-hidden="true">
+            <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
+            <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>
+            <rect x="3" y="9" width="6" height="6" fill="#2a1650"/><rect x="5" y="11" width="2" height="2" fill="#b388ff"/>
+          </svg>
         </div>
         <div class="rv-floor" id="rvFloor">
           <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
@@ -141,7 +202,9 @@ const schema = {
             <button class="rv-emote-btn" data-emote="heart" aria-label="Send a heart">&#10084;</button>
             <button class="rv-emote-btn" data-emote="confetti" aria-label="Send confetti">&#10022;</button>
             <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana">&#127820;</button>
+            <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
           </div>
+          <button class="rv-stage-btn" id="rvStageBtn" hidden></button>
           <span class="rv-more" id="rvMore"></span>
         </div>
       </div>
@@ -152,7 +215,7 @@ const schema = {
         <div class="rv-door">
           <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
         </div>
-        <p class="rv-note">Your latest builder banana walks in with you. The drop hits every third minute — you'll know.</p>
+        <p class="rv-note">Your latest builder banana walks in with you. The drop hits every third minute — you'll know. Survive 5 minutes on the floor and the stage opens: dance behind the DJ and unlock the &#128293;.</p>
       </aside>
     </div>
   </div>
