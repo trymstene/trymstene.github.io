@@ -279,6 +279,7 @@ function init() {
   let ws = null;
   let lastPong = 0;
   function connect() {
+    if (ws && ws.readyState <= 1) return; // already live or connecting — never stack sockets (a stacked one = an orphaned ghost)
     try { ws = new WebSocket(RAVE_WS); } catch (e) { return soloMode(); }
     ws.onopen = () => {
       online = true;
@@ -314,6 +315,15 @@ function init() {
     ws.onclose = () => { if (!online) soloMode(); else { el('rvStatus').textContent = 'reconnecting…'; setTimeout(connect, 3000 + Math.random() * 4000); } };
     ws.onerror = () => {};
   }
+  // say a clean goodbye when actually LEAVING (navigation / tab close) so the floor
+  // drops your ghost instantly — iOS never sends a close frame on its own and the
+  // banana kept dancing for minutes (Trym caught his own ghost). Brief app-switches
+  // deliberately do NOT disconnect: pocket-AFK endurance farming is the sport.
+  addEventListener('pagehide', () => { try { if (ws) ws.close(); } catch (e) {} });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && online && (!ws || ws.readyState > 1)) connect();
+  });
+
   // heartbeat with a DEADLINE: the server pongs without waking (auto-response), so a
   // missing pong = zombie socket (readyState lies at 1 after a worker redeploy or NAT
   // drop — send() goes into the void). Force-close → the onclose reconnect takes over.
