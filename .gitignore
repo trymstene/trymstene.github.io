@@ -19,9 +19,6 @@ ROADMAP.md
 # Local-only upload pack for Giphy/Tenor (not for the website)
 giphy-tenor-pack/
 
-# Shop build input — refetched from Shopify, not served (see build-shop.py)
-shop/products.json
-
 # Astro / Node
 node_modules/
 dist/
