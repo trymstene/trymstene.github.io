@@ -143,9 +143,12 @@ const schema = {
        is standing further away on the floor, so the counter must cover it */
     .rv-bar { position: absolute; left: -18px; bottom: -52px; width: 205px; z-index: 300; pointer-events: none; }
     .rv-counter { display: block; width: 100%; height: auto; position: relative; z-index: 2; }
+    /* Barty is ABSOLUTE — fully independent of the counter. He was in flow before,
+       so raising him shrank the bottom-anchored block and the DESK sank instead
+       (Trym caught it in devtools: the desk followed him). top adjusts ONLY him. */
     #rvBarman {
-      display: block; width: 150px; height: 150px; margin: -150px 0 0 14px;
-      position: relative; z-index: 3; image-rendering: pixelated;
+      position: absolute; top: -83px; left: 14px; width: 150px; height: 150px;
+      z-index: 3; image-rendering: pixelated;
     }
     .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -24px; z-index: 4; }
     .rv-bubble {
