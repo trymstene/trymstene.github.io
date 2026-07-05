@@ -1,0 +1,20 @@
+name = "banana-pass"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# The pass-sync worker: WebAuthn-gated cross-device sync for the Banana Pass.
+# Own worker + own bucket = own blast radius (never mixes with payments/shares).
+# Free plan, fails closed. Consider an R2 lifecycle on pass/ (e.g. 540 days
+# since last write) as stale-pass insurance.
+
+[[r2_buckets]]
+binding = "PASSES"
+bucket_name = "banana-passes"
+
+[vars]
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
+# Challenge-freshness HMAC. Repo-visible = challenges are forgeable in theory,
+# which only enables assertion replay (needs a TLS break to capture one — not
+# this site's threat model). Upgrade any time with:
+#   npx wrangler secret put PASS_HMAC   (the secret overrides this var)
+PASS_HMAC = "banana-world-challenge-stamp-v1"

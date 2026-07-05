@@ -3,8 +3,9 @@
 // stats and hosts the Shelf in its true home. CLIENT-ONLY.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { renderShelf } from '../lib/banana-shelf.js';
-import { passGet, passVisit } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast } from '../lib/banana-pass.js';
 import { PATCHES } from '../lib/pass-defs.js';
+import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 
 const el = (id) => document.getElementById(id);
 if (el('psSig')) init();
@@ -31,9 +32,11 @@ function signatureOutfit() {
   return { hat: 'none', glasses: 'none', extras: {}, effect: 'none' };
 }
 
-function init() {
+async function init() {
   passVisit();
   if (window.gtag) window.gtag('event', 'pass_view');
+  initSync();
+  if (linked()) await pullLatest(); // freshest world BEFORE we draw it
   const pass = passGet();
   const outfit = signatureOutfit();
 
@@ -103,4 +106,45 @@ function init() {
     requestAnimationFrame(tick);
   }
   assetsReady().then(() => requestAnimationFrame(tick));
+}
+
+// ---- passkey sync panel ------------------------------------------------
+function initSync() {
+  const box = el('psSync');
+  if (!box || !passkeysSupported()) return; // unsupported → the old device note stands
+  box.hidden = false;
+  el('psDevice').hidden = true;
+  const note = el('psSyncNote');
+  const showLinked = () => {
+    box.classList.add('ps-sync--linked');
+    el('psSyncLead').innerHTML = '<b>🔐 Pass saved.</b> Open <a href="/pass/">trymstene.com/pass</a> on any device, tap “I already have a pass”, and everything follows you.';
+    note.textContent = '';
+  };
+  if (linked()) { showLinked(); return; }
+
+  el('psSave').addEventListener('click', async () => {
+    note.textContent = 'Your device will ask to confirm — that’s the passkey being made…';
+    try {
+      await savePass();
+      showLinked();
+      passToast('🔐 <b>PASS SAVED</b><br>Your patches and creations now follow you across devices.');
+    } catch (e) {
+      note.textContent = e && e.name === 'NotAllowedError'
+        ? 'No worries — nothing was saved. Try again whenever you like.'
+        : 'That didn’t work — try again in a moment.';
+    }
+  });
+
+  el('psRestore').addEventListener('click', async () => {
+    note.textContent = 'Pick the banana-world passkey on your device…';
+    try {
+      await restorePass();
+      passToast('🎫 <b>WELCOME BACK</b><br>Your pass is on this device now.');
+      setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
+    } catch (e) {
+      note.textContent = e && e.name === 'NotAllowedError'
+        ? 'No worries — nothing happened.'
+        : 'Couldn’t find that pass — did you save it on your other device first?';
+    }
+  });
 }

@@ -7,6 +7,7 @@
 import { PATCHES, OG_CUTOFF } from './pass-defs.js';
 
 const KEY = 'pass-v1';
+export const PASS_API = 'https://banana-pass.trymstene.workers.dev';
 
 function read() {
   try {
@@ -17,9 +18,38 @@ function read() {
 }
 function write(p) {
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {}
+  schedulePush();
 }
 
 export function passGet() { return read(); }
+
+// ---- sync push (Phase 2) ----------------------------------------------
+// If this device is linked to a passkey (pass-sync.js stores 'pass-link'),
+// every pass write quietly pushes the whole world after a 10s debounce.
+// The worker merges (union/max), so pushes can never lose remote progress.
+export function collectBlob() {
+  const g = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  let shelf = [];
+  let bbLast = null;
+  try { shelf = JSON.parse(g('shelf-v1') || '[]'); } catch (e) {}
+  try { bbLast = JSON.parse(g('bb-last') || 'null'); } catch (e) {}
+  return { pass: read(), shelf, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '' };
+}
+
+let pushT = null;
+function schedulePush() {
+  let link = null;
+  try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
+  if (!link || !link.credId || !link.token) return;
+  clearTimeout(pushT);
+  pushT = setTimeout(() => {
+    fetch(PASS_API + '/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credId: link.credId, token: link.token, blob: collectBlob() }),
+    }).catch(() => {});
+  }, 10000);
+}
 
 // mint a patch (once). Returns true only the FIRST time — callers can skip
 // their own celebration; we toast here so every surface behaves the same.

@@ -35,6 +35,14 @@ const description = 'Your membership card to the banana world: the patches you h
     .ps-card__patches .pxi, .ps-card__patches svg { width: 1.25rem; height: 1.25rem; }
     .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
 
+    /* passkey sync panel (Phase 2) */
+    .ps-sync { margin: 0.9rem 0 0; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.8rem 0.95rem; max-width: 560px; }
+    .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
+    .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.6rem; }
+    .ps-sync__note { margin-top: 0.5rem !important; font-size: 0.74rem !important; opacity: 0.7; min-height: 1em; }
+    .ps-sync--linked { border-color: var(--banana); }
+    .ps-sync--linked .ps-sync__row { display: none; }
+
     .ps-section { margin-top: 2.2rem; }
     .ps-section h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
     .ps-section > p { margin: 0 0 1rem; font-size: 0.88rem; opacity: 0.75; }
@@ -91,7 +99,19 @@ const description = 'Your membership card to the banana world: the patches you h
         <div class="ps-card__patches" id="psCardPatches"></div>
       </div>
     </div>
-    <p class="ps-device">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
+    <div class="ps-sync" id="psSync" hidden>
+      <p id="psSyncLead">
+        <b>Take your pass everywhere.</b> Save it with a passkey — Face&nbsp;ID, fingerprint
+        or your device PIN — and open the same pass on your phone and computer.
+        No email, no password, nothing to remember.
+      </p>
+      <div class="ps-sync__row">
+        <button class="btn btn--dark" id="psSave" type="button">💾 Save my pass</button>
+        <button class="btn btn--light" id="psRestore" type="button">📲 I already have a pass</button>
+      </div>
+      <p class="ps-sync__note" id="psSyncNote"></p>
+    </div>
+    <p class="ps-device" id="psDevice">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
 
     <div class="ps-section">
       <h2>Patches</h2>
