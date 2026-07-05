@@ -49,10 +49,33 @@ function seedRand(n) {
 }
 function vinylSpot(w) {
   let x = 12 + seedRand(0x5eed + w * 2) * 70;
-  let y = 16 + seedRand(0x5eed + w * 2 + 1) * 60;
+  let y = 26 + seedRand(0x5eed + w * 2 + 1) * 46; // open floor only — high spawns near the stage edge were unreachable on iOS
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
+// HOT SAUCE — a bottle on the open floor every 4 min; grabbing it grants a timed
+// flame-trail fx. fx is SERVER-GRANTED like the beer: clients only render what
+// the roster says, so effects can't be spoofed.
+const SAUCE_PERIOD = 240_000, SAUCE_WAIT = 120_000, SAUCE_OFFSET = 60_000;
+function sauceWindow(now) {
+  const ph = (((now - SAUCE_OFFSET) % SAUCE_PERIOD) + SAUCE_PERIOD) % SAUCE_PERIOD;
+  return ph < SAUCE_WAIT ? Math.floor((now - SAUCE_OFFSET) / SAUCE_PERIOD) : -1;
+}
+function sauceSpot(w) {
+  let x = 12 + seedRand(0xf1a5 + w * 2) * 70;
+  let y = 26 + seedRand(0xf1a5 + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+// BARTY'S SPECIALS — between happy hours a rotating cocktail lands on the counter;
+// first banana at the bar drinks it and wears its effect for a while.
+const SPECIAL_PERIOD = 300_000, SPECIAL_LEN = 35_000, SPECIAL_OFFSET = 270_000;
+const COCKTAILS = ['daiquiri', 'fizz'];
+function specialWindow(now) {
+  const ph = (((now - SPECIAL_OFFSET) % SPECIAL_PERIOD) + SPECIAL_PERIOD) % SPECIAL_PERIOD;
+  return ph < SPECIAL_LEN ? Math.floor((now - SPECIAL_OFFSET) / SPECIAL_PERIOD) : -1;
+}
+const FX_MS = 150_000;
 
 export default {
   async fetch(request, env) {
@@ -144,7 +167,9 @@ export class RaveRoom {
       ws.serializeAttachment(p);
       const beerWin = (await this.state.storage.get('beerWin')) ?? null;
       const vinylWin = (await this.state.storage.get('vinylWin')) ?? null;
-      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin }));
+      const sauceWin = (await this.state.storage.get('sauceWin')) ?? null;
+      const cocktailWin = (await this.state.storage.get('cocktailWin')) ?? null;
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
       return;
     }
@@ -195,7 +220,7 @@ export class RaveRoom {
       if (win < 0) return;
       if (this.vinylWin === win) return;      // sync guard before any await
       const spot = vinylSpot(win);
-      if (!(typeof me.x === 'number' && Math.abs(me.x - spot.x) < 10 && typeof me.y === 'number' && Math.abs(me.y - spot.y) < 10)) return;
+      if (!(typeof me.x === 'number' && Math.abs(me.x - spot.x) < 14 && typeof me.y === 'number' && Math.abs(me.y - spot.y) < 14)) return;
       this.vinylWin = win;
       const stored = await this.state.storage.get('vinylWin');
       if (stored === win) return;
@@ -203,6 +228,38 @@ export class RaveRoom {
       me.vinyl = true;
       ws.serializeAttachment(me);
       this.broadcast({ t: 'vinyl', id: me.id });
+      return;
+    }
+
+    if (msg.t === 'sauce' && me) { // first banana to the hot-sauce bottle
+      const win = sauceWindow(Date.now());
+      if (win < 0) return;
+      if (this.sauceWin === win) return;      // sync guard before any await
+      const spot = sauceSpot(win);
+      if (!(typeof me.x === 'number' && Math.abs(me.x - spot.x) < 14 && typeof me.y === 'number' && Math.abs(me.y - spot.y) < 14)) return;
+      this.sauceWin = win;
+      const stored = await this.state.storage.get('sauceWin');
+      if (stored === win) return;
+      await this.state.storage.put('sauceWin', win);
+      me.fx = { id: 'flames', until: Date.now() + FX_MS };
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'fx', id: me.id, fx: me.fx, src: 'sauce' });
+      return;
+    }
+
+    if (msg.t === 'cocktail' && me) { // first banana at the bar during specials
+      const win = specialWindow(Date.now());
+      if (win < 0) return;
+      if (this.cocktailWin === win) return;   // sync guard before any await
+      // same walk-to-the-bar zone as the beer (keep in sync with BAR_ZONE)
+      if (!(typeof me.x === 'number' && me.x < 34 && typeof me.y === 'number' && me.y > 70)) return;
+      this.cocktailWin = win;
+      const stored = await this.state.storage.get('cocktailWin');
+      if (stored === win) return;
+      await this.state.storage.put('cocktailWin', win);
+      me.fx = { id: COCKTAILS[((win % COCKTAILS.length) + COCKTAILS.length) % COCKTAILS.length], until: Date.now() + FX_MS };
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'fx', id: me.id, fx: me.fx, src: 'cocktail' });
       return;
     }
 
@@ -253,5 +310,8 @@ export class RaveRoom {
 }
 
 function strip(p) {
-  return { id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, vinyl: !!p.vinyl, x: p.x, y: p.y };
+  return {
+    id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, vinyl: !!p.vinyl, x: p.x, y: p.y,
+    fx: p.fx && p.fx.until > Date.now() ? p.fx : undefined, // active effects survive a rejoin, expired ones don't travel
+  };
 }

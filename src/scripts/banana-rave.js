@@ -35,6 +35,13 @@ const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
 // high-fives (proximity sparks), and the lost vinyl (courier quest → bonus drop).
 const SPOT_PERIOD = 120, SPOT_LEN = 35, SPOT_OFFSET = 30, SPOT_R = 14; // seconds / floor-% (35s = time to actually reach it)
 const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
+const SAUCE_PERIOD = 240, SAUCE_WAIT = 120, SAUCE_OFFSET = 60;          // hot sauce drop — keep in sync with worker
+const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
+const COCKTAILS = ['daiquiri', 'fizz'];                                 // rotation — keep in sync with worker
+const FX_MS = 150000;
+const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz' };
+const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧' };
+const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
 // deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
 function seedRand(n) {
@@ -51,14 +58,25 @@ function spotFor(w) {
 }
 function vinylSpotFor(w) { // keep in sync with vinylSpot() in worker-rave
   let x = 12 + seedRand(0x5eed + w * 2) * 70;
-  let y = 16 + seedRand(0x5eed + w * 2 + 1) * 60;
+  let y = 26 + seedRand(0x5eed + w * 2 + 1) * 46; // open floor only — never against the stage edge
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+function sauceSpotFor(w) { // keep in sync with sauceSpot() in worker-rave
+  let x = 12 + seedRand(0xf1a5 + w * 2) * 70;
+  let y = 26 + seedRand(0xf1a5 + w * 2 + 1) * 46;
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
 // a gloved FIST with a wrist cuff (yellow stripe) — a plain mitten blob read as
 // "a white ball" at rave size; the cuff is what makes it read as a glove
 const MITT_SVG = '<svg viewBox="0 0 10 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="4" height="1" fill="#111111"/><rect x="3" y="1" width="1" height="1" fill="#111111"/><rect x="4" y="1" width="4" height="1" fill="#fffdf5"/><rect x="8" y="1" width="1" height="1" fill="#111111"/><rect x="0" y="2" width="1" height="4" fill="#111111"/><rect x="1" y="2" width="1" height="4" fill="#ffe135"/><rect x="2" y="2" width="1" height="4" fill="#111111"/><rect x="3" y="2" width="6" height="4" fill="#fffdf5"/><rect x="9" y="2" width="1" height="4" fill="#111111"/><rect x="3" y="6" width="1" height="1" fill="#111111"/><rect x="4" y="6" width="4" height="1" fill="#fffdf5"/><rect x="8" y="6" width="1" height="1" fill="#111111"/><rect x="4" y="7" width="4" height="1" fill="#111111"/></svg>';
-const VINYL_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#8a8a8a"/><rect x="1" y="1" width="5" height="1" fill="#484848"/><rect x="0" y="2" width="7" height="3" fill="#484848"/><rect x="1" y="5" width="5" height="1" fill="#333333"/><rect x="2" y="6" width="3" height="1" fill="#222222"/><rect x="3" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="2" width="1" height="1" fill="#fffdf5"/></svg>';
+// Floor-item sprites — authored in scratchpad floor-items.py (Pillow-verified on
+// the real floor colour at floor size; the old 7×7 vinyl "looked like a rock").
+const VINYL_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="6" height="1" fill="#52526a"/><rect x="2" y="1" width="1" height="1" fill="#52526a"/><rect x="3" y="1" width="6" height="1" fill="#101016"/><rect x="9" y="1" width="1" height="1" fill="#52526a"/><rect x="1" y="2" width="1" height="1" fill="#52526a"/><rect x="2" y="2" width="1" height="1" fill="#101016"/><rect x="3" y="2" width="2" height="1" fill="#f0f0fa"/><rect x="5" y="2" width="5" height="1" fill="#101016"/><rect x="10" y="2" width="1" height="1" fill="#52526a"/><rect x="1" y="3" width="1" height="1" fill="#52526a"/><rect x="2" y="3" width="2" height="1" fill="#f0f0fa"/><rect x="4" y="3" width="6" height="1" fill="#101016"/><rect x="10" y="3" width="1" height="1" fill="#52526a"/><rect x="0" y="4" width="1" height="1" fill="#52526a"/><rect x="1" y="4" width="1" height="1" fill="#101016"/><rect x="2" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="3" y="4" width="2" height="1" fill="#101016"/><rect x="5" y="4" width="2" height="1" fill="#ff4d9d"/><rect x="7" y="4" width="3" height="1" fill="#101016"/><rect x="10" y="4" width="1" height="1" fill="#787894"/><rect x="11" y="4" width="1" height="1" fill="#52526a"/><rect x="0" y="5" width="1" height="1" fill="#52526a"/><rect x="1" y="5" width="3" height="1" fill="#101016"/><rect x="4" y="5" width="1" height="1" fill="#ff4d9d"/><rect x="5" y="5" width="2" height="1" fill="#ffe135"/><rect x="7" y="5" width="1" height="1" fill="#c62c74"/><rect x="8" y="5" width="2" height="1" fill="#101016"/><rect x="10" y="5" width="1" height="1" fill="#787894"/><rect x="11" y="5" width="1" height="1" fill="#52526a"/><rect x="0" y="6" width="1" height="1" fill="#52526a"/><rect x="1" y="6" width="3" height="1" fill="#101016"/><rect x="4" y="6" width="1" height="1" fill="#ff4d9d"/><rect x="5" y="6" width="2" height="1" fill="#ffe135"/><rect x="7" y="6" width="1" height="1" fill="#c62c74"/><rect x="8" y="6" width="2" height="1" fill="#101016"/><rect x="10" y="6" width="1" height="1" fill="#787894"/><rect x="11" y="6" width="1" height="1" fill="#52526a"/><rect x="0" y="7" width="1" height="1" fill="#52526a"/><rect x="1" y="7" width="4" height="1" fill="#101016"/><rect x="5" y="7" width="2" height="1" fill="#c62c74"/><rect x="7" y="7" width="3" height="1" fill="#101016"/><rect x="10" y="7" width="1" height="1" fill="#787894"/><rect x="11" y="7" width="1" height="1" fill="#52526a"/><rect x="1" y="8" width="1" height="1" fill="#52526a"/><rect x="2" y="8" width="6" height="1" fill="#101016"/><rect x="8" y="8" width="2" height="1" fill="#787894"/><rect x="10" y="8" width="1" height="1" fill="#52526a"/><rect x="1" y="9" width="1" height="1" fill="#52526a"/><rect x="2" y="9" width="8" height="1" fill="#101016"/><rect x="10" y="9" width="1" height="1" fill="#52526a"/><rect x="2" y="10" width="1" height="1" fill="#52526a"/><rect x="3" y="10" width="6" height="1" fill="#101016"/><rect x="9" y="10" width="1" height="1" fill="#52526a"/><rect x="3" y="11" width="6" height="1" fill="#52526a"/></svg>';
+const SAUCE_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="2" height="1" fill="#3a304c"/><rect x="3" y="1" width="2" height="1" fill="#3a304c"/><rect x="2" y="2" width="1" height="1" fill="#1e182c"/><rect x="3" y="2" width="2" height="1" fill="#fffaf0"/><rect x="5" y="2" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="1" height="1" fill="#1e182c"/><rect x="3" y="3" width="2" height="1" fill="#e83b3b"/><rect x="5" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="4" height="1" fill="#e83b3b"/><rect x="6" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="1" height="1" fill="#e83b3b"/><rect x="3" y="5" width="2" height="1" fill="#fffaf0"/><rect x="5" y="5" width="1" height="1" fill="#e83b3b"/><rect x="6" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="2" height="1" fill="#fffaf0"/><rect x="4" y="6" width="1" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffaf0"/><rect x="6" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#fffaf0"/><rect x="3" y="7" width="2" height="1" fill="#ff9128"/><rect x="5" y="7" width="1" height="1" fill="#fffaf0"/><rect x="6" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="1" height="1" fill="#e83b3b"/><rect x="3" y="8" width="2" height="1" fill="#fffaf0"/><rect x="5" y="8" width="1" height="1" fill="#e83b3b"/><rect x="6" y="8" width="1" height="1" fill="#1e182c"/><rect x="1" y="9" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="2" height="1" fill="#e83b3b"/><rect x="4" y="9" width="1" height="1" fill="#a62026"/><rect x="5" y="9" width="1" height="1" fill="#e83b3b"/><rect x="6" y="9" width="1" height="1" fill="#1e182c"/><rect x="1" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="10" width="2" height="1" fill="#e83b3b"/><rect x="4" y="10" width="2" height="1" fill="#a62026"/><rect x="6" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="11" width="4" height="1" fill="#1e182c"/></svg>';
+const DAIQUIRI_SVG = '<svg viewBox="0 0 10 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="2" height="1" fill="#ff5078"/><rect x="3" y="1" width="4" height="1" fill="#ff5078"/><rect x="2" y="2" width="1" height="1" fill="#ff5078"/><rect x="3" y="2" width="1" height="1" fill="#c8285a"/><rect x="4" y="2" width="2" height="1" fill="#ff5078"/><rect x="6" y="2" width="1" height="1" fill="#c8285a"/><rect x="7" y="2" width="1" height="1" fill="#ff5078"/><rect x="4" y="3" width="2" height="1" fill="#ffffff"/><rect x="1" y="4" width="1" height="1" fill="#6caac4"/><rect x="2" y="4" width="6" height="1" fill="#ffd650"/><rect x="8" y="4" width="1" height="1" fill="#6caac4"/><rect x="1" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="5" width="1" height="1" fill="#ffd650"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="3" height="1" fill="#ffd650"/><rect x="7" y="5" width="1" height="1" fill="#d6a024"/><rect x="8" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="6" width="1" height="1" fill="#6caac4"/><rect x="3" y="6" width="3" height="1" fill="#ffd650"/><rect x="6" y="6" width="1" height="1" fill="#d6a024"/><rect x="7" y="6" width="1" height="1" fill="#6caac4"/><rect x="3" y="7" width="1" height="1" fill="#6caac4"/><rect x="4" y="7" width="1" height="1" fill="#ffd650"/><rect x="5" y="7" width="1" height="1" fill="#d6a024"/><rect x="6" y="7" width="1" height="1" fill="#6caac4"/><rect x="4" y="8" width="2" height="1" fill="#6caac4"/><rect x="4" y="9" width="2" height="1" fill="#6caac4"/><rect x="3" y="10" width="4" height="1" fill="#6caac4"/><rect x="2" y="11" width="6" height="1" fill="#6caac4"/></svg>';
+const FIZZ_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="0" width="1" height="1" fill="#ff4d9d"/><rect x="6" y="0" width="1" height="1" fill="#ffffff"/><rect x="4" y="1" width="1" height="1" fill="#ff4d9d"/><rect x="5" y="1" width="1" height="1" fill="#ffffff"/><rect x="1" y="2" width="1" height="1" fill="#6caac4"/><rect x="2" y="2" width="4" height="1" fill="#ffffff"/><rect x="6" y="2" width="1" height="1" fill="#6caac4"/><rect x="1" y="3" width="1" height="1" fill="#6caac4"/><rect x="2" y="3" width="1" height="1" fill="#78ebff"/><rect x="3" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="3" width="2" height="1" fill="#78ebff"/><rect x="6" y="3" width="1" height="1" fill="#6caac4"/><rect x="1" y="4" width="1" height="1" fill="#6caac4"/><rect x="2" y="4" width="3" height="1" fill="#78ebff"/><rect x="5" y="4" width="1" height="1" fill="#ffffff"/><rect x="6" y="4" width="1" height="1" fill="#6caac4"/><rect x="1" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="5" width="1" height="1" fill="#ffffff"/><rect x="3" y="5" width="3" height="1" fill="#78ebff"/><rect x="6" y="5" width="1" height="1" fill="#6caac4"/><rect x="1" y="6" width="1" height="1" fill="#6caac4"/><rect x="2" y="6" width="4" height="1" fill="#78ebff"/><rect x="6" y="6" width="1" height="1" fill="#6caac4"/><rect x="1" y="7" width="1" height="1" fill="#6caac4"/><rect x="2" y="7" width="1" height="1" fill="#78ebff"/><rect x="3" y="7" width="1" height="1" fill="#ffffff"/><rect x="4" y="7" width="2" height="1" fill="#78ebff"/><rect x="6" y="7" width="1" height="1" fill="#6caac4"/><rect x="1" y="8" width="1" height="1" fill="#6caac4"/><rect x="2" y="8" width="4" height="1" fill="#78ebff"/><rect x="6" y="8" width="1" height="1" fill="#6caac4"/><rect x="1" y="9" width="1" height="1" fill="#6caac4"/><rect x="2" y="9" width="1" height="1" fill="#42a8c6"/><rect x="3" y="9" width="2" height="1" fill="#78ebff"/><rect x="5" y="9" width="1" height="1" fill="#42a8c6"/><rect x="6" y="9" width="1" height="1" fill="#6caac4"/><rect x="1" y="10" width="1" height="1" fill="#6caac4"/><rect x="2" y="10" width="4" height="1" fill="#42a8c6"/><rect x="6" y="10" width="1" height="1" fill="#6caac4"/><rect x="1" y="11" width="6" height="1" fill="#6caac4"/></svg>';
 
 const BAR_QUIPS = [
   'we only serve potassium',
@@ -282,7 +300,8 @@ function init() {
     }
     if (!dx && !dy) return;
     const norm = Math.hypot(dx, dy) || 1;
-    const step = (WALK_SPEED * dtMs) / 1000;
+    const boost = fxActive(me, now) && me.fx.id === 'daiquiri' ? 1.45 : 1; // fresh daiquiri legs
+    const step = (WALK_SPEED * boost * dtMs) / 1000;
     let nx = clamp(me.x + (dx / norm) * step, 4, 96);
     let ny = clamp(me.y + (dy / norm) * step, 6, 92);
     // the bar is solid: block ENTERING it (slide along the edge you hit); anyone
@@ -397,19 +416,82 @@ function init() {
       }
     } else {
       el('rvCounterBeer').style.display = 'none';
-      if (bubbleSticky) hideBubble();
-      // ambient Barty: the occasional quip between happy hours
-      if (bub.hidden && Math.random() < 0.014) {
-        showBubble(BAR_QUIPS[Math.floor(Math.random() * BAR_QUIPS.length)], false, 3500);
+      // — Barty's specials: a rotating cocktail on the counter between happy hours —
+      const spEl = el('rvSpecial');
+      const spPh = (((t - SPECIAL_OFFSET) % SPECIAL_PERIOD) + SPECIAL_PERIOD) % SPECIAL_PERIOD;
+      const spWin = Math.floor((t - SPECIAL_OFFSET) / SPECIAL_PERIOD);
+      if (spPh < SPECIAL_LEN && cocktailWinClaimed !== spWin) {
+        const kind = COCKTAILS[((spWin % COCKTAILS.length) + COCKTAILS.length) % COCKTAILS.length];
+        if (spEl.dataset.kind !== kind) {
+          spEl.dataset.kind = kind;
+          spEl.innerHTML = kind === 'daiquiri' ? DAIQUIRI_SVG : FIZZ_SVG;
+        }
+        spEl.hidden = false;
+        if (!bubbleSticky) showBubble('SPECIALS! ' + FX_ICON[kind] + ' first banana to the bar gets the ' + FX_NAMES[kind], true);
+        const me = myId && ravers.get(myId);
+        if (me && !me.stage && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastCocktailTry > 2000) {
+          lastCocktailTry = Date.now();
+          if (ws && ws.readyState === 1) ws.send('{"t":"cocktail"}');
+          else { cocktailWinClaimed = spWin; spEl.hidden = true; applyFx(myId, { id: kind, until: Date.now() + FX_MS }, { x: 10, y: 76 }); } // solo mode
+        }
+      } else {
+        spEl.hidden = true;
+        if (bubbleSticky) hideBubble();
+        // ambient Barty: the occasional quip between rituals
+        if (bub.hidden && Math.random() < 0.014) {
+          showBubble(BAR_QUIPS[Math.floor(Math.random() * BAR_QUIPS.length)], false, 3500);
+        }
       }
     }
   }
   setInterval(barTick, 1000);
 
-  // ---- floor life: spotlight + lost vinyl (one 500ms rhythm tick) ----
+  // ---- floor life: spotlight + lost vinyl + hot sauce (one 500ms rhythm tick) ----
   let vinylWinClaimed = -1;
   let lastVinylTry = 0;
   let miniDropUntil = 0;
+  let sauceWinClaimed = -1;
+  let lastSauceTry = 0;
+  let cocktailWinClaimed = -1;
+  let lastCocktailTry = 0;
+
+  // pickup juice: a pixel ring + four stars burst where an item was grabbed —
+  // grabbing something should FEEL like grabbing something
+  function pickupPop(xPct, yPct) {
+    const d = document.createElement('div');
+    d.className = 'rv-pop';
+    d.style.left = xPct + '%';
+    d.style.top = yPct + '%';
+    d.innerHTML = '<span class="rv-pop__ring"></span>'
+      + [[-24, -18], [24, -14], [-16, 20], [18, 18]]
+        .map(([dx, dy]) => `<span class="rv-pop__s" style="--dx:${dx}px;--dy:${dy}px"></span>`).join('');
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 900);
+  }
+
+  // timed effects (flames/daiquiri/fizz) — SERVER-GRANTED, worn until fx.until
+  const fxActive = (r, now) => !!(r && r.fx && r.fx.until > now);
+  function applyFx(id, fx, at) {
+    const r = ravers.get(id);
+    if (!r || !fx) return;
+    r.fx = fx;
+    refreshHud();
+    if (at) pickupPop(at.x, at.y);
+    if (id === myId) {
+      const toast = document.createElement('div');
+      toast.className = 'rv-glowtoast';
+      toast.innerHTML = FX_ICON[fx.id] + ' <b>' + (FX_NAMES[fx.id] || 'POWER-UP').toUpperCase() + '!</b><br>' + ({
+        flames: 'You’re literally on fire — go strut.',
+        daiquiri: 'Fresh legs! You’re faster while it lasts.',
+        fizz: 'You’re bubbling. Dance it out.',
+      }[fx.id] || '');
+      floor.appendChild(toast);
+      setTimeout(() => toast.remove(), 6000);
+      track('rave_fx', { fx: fx.id });
+    } else {
+      showBubble(FX_ICON[fx.id] + ' ' + autoName(r.outfit) + ' got the ' + (FX_NAMES[fx.id] || 'good stuff') + '!', false, 5000);
+    }
+  }
 
   function carryIcon(r, on) {
     if (on && !r.carryEl) {
@@ -429,6 +511,8 @@ function init() {
     if (!r || r.vinyl) return;
     r.vinyl = true;
     vinylWinClaimed = Math.floor((Date.now() / 1000 - VINYL_OFFSET) / VINYL_PERIOD);
+    const vs = vinylSpotFor(vinylWinClaimed);
+    pickupPop(vs.x, vs.y);
     carryIcon(r, true);
     showBubble('💿 ' + autoName(r.outfit) + ' found a lost record — run it to the DJ!', false, 6000);
     refreshHud();
@@ -473,6 +557,11 @@ function init() {
       spotEl.hidden = true;
       for (const r of ravers.values()) r.wrap.classList.remove('rv-lit');
     }
+    // — floor items, CAPPED (Trym's rule): a couple on the floor at most, never a
+    // flood. Blocks run in priority order (quest vinyl outranks power-ups); when
+    // the cap is full, lower items simply wait invisible for their next window.
+    const MAX_FLOOR_ITEMS = 2;
+    let floorItems = 0;
     // — the lost vinyl: spawns every 7 minutes, first to reach it becomes the courier —
     const vEl = el('rvVinyl');
     const vPh = (((t - VINYL_OFFSET) % VINYL_PERIOD) + VINYL_PERIOD) % VINYL_PERIOD;
@@ -480,17 +569,37 @@ function init() {
     const carried = [...ravers.values()].some((r) => r.vinyl);
     if (vPh < VINYL_WAIT && vinylWinClaimed !== vWin && !carried) {
       const s = vinylSpotFor(vWin);
+      floorItems++;
       vEl.style.display = '';
       vEl.style.left = s.x + '%';
       vEl.style.top = s.y + '%';
       const me = myId && ravers.get(myId);
-      if (me && !me.stage && !me.vinyl && Math.hypot(me.x - s.x, me.y - s.y) < 8 && Date.now() - lastVinylTry > 2000) {
+      if (me && !me.stage && !me.vinyl && Math.hypot(me.x - s.x, me.y - s.y) < GRAB_R && Date.now() - lastVinylTry > 2000) {
         lastVinylTry = Date.now();
         if (ws && ws.readyState === 1) ws.send('{"t":"vinyl"}');
         else pickVinyl(myId); // solo mode
       }
     } else {
       vEl.style.display = 'none';
+    }
+    // — the hot sauce: a bottle on the open floor every 4 minutes; grab it for flames —
+    const saEl = el('rvSauce');
+    const saPh = (((t - SAUCE_OFFSET) % SAUCE_PERIOD) + SAUCE_PERIOD) % SAUCE_PERIOD;
+    const saWin = Math.floor((t - SAUCE_OFFSET) / SAUCE_PERIOD);
+    if (saPh < SAUCE_WAIT && sauceWinClaimed !== saWin && floorItems < MAX_FLOOR_ITEMS) {
+      const ss = sauceSpotFor(saWin);
+      floorItems++;
+      saEl.style.display = '';
+      saEl.style.left = ss.x + '%';
+      saEl.style.top = ss.y + '%';
+      const meS = myId && ravers.get(myId);
+      if (meS && !meS.stage && Math.hypot(meS.x - ss.x, meS.y - ss.y) < GRAB_R && Date.now() - lastSauceTry > 2000) {
+        lastSauceTry = Date.now();
+        if (ws && ws.readyState === 1) ws.send('{"t":"sauce"}');
+        else { sauceWinClaimed = saWin; applyFx(myId, { id: 'flames', until: Date.now() + FX_MS }, ss); } // solo mode
+      }
+    } else {
+      saEl.style.display = 'none';
     }
     // — the delivery: carrier reaches the stage edge → bonus drop for everyone —
     const me = myId && ravers.get(myId);
@@ -542,7 +651,7 @@ function init() {
       .slice(0, 5)
       .map((r) => {
         const mins = Math.max(0, Math.floor((now - r.joined) / 60000));
-        const name = (r.stage ? '⭐ ' : '') + (r.vinyl ? '💿 ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
+        const name = (r.stage ? '⭐ ' : '') + (r.vinyl ? '💿 ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + (fxActive(r, Date.now()) ? FX_ICON[r.fx.id] + ' ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
         return `<li${r.id === myId ? ' class="rv-me"' : ''}><span>${name}</span><b>${mins}m</b></li>`;
       });
     board.innerHTML = rows.join('') || '<li><span>the floor awaits…</span></li>';
@@ -573,7 +682,13 @@ function init() {
         m.all.forEach((p) => addRaver(p, p.id === m.you));
         if (typeof m.beerWin === 'number') beerWin = m.beerWin; // late joiners learn this window's beer is gone
         if (typeof m.vinylWin === 'number') vinylWinClaimed = m.vinylWin;
-        m.all.forEach((p) => { const r = ravers.get(p.id); if (r && p.vinyl) { r.vinyl = true; carryIcon(r, true); } });
+        if (typeof m.sauceWin === 'number') sauceWinClaimed = m.sauceWin;
+        if (typeof m.cocktailWin === 'number') cocktailWinClaimed = m.cocktailWin;
+        m.all.forEach((p) => {
+          const r = ravers.get(p.id);
+          if (r && p.vinyl) { r.vinyl = true; carryIcon(r, true); }
+          if (r && p.fx) r.fx = p.fx; // active effects survive a rejoin
+        });
         track('rave_join', { count: m.all.length });
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
@@ -584,6 +699,17 @@ function init() {
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
       }
       else if (m.t === 'beer') claimBeer(m.id);
+      else if (m.t === 'fx') {
+        const tw = Date.now() / 1000;
+        if (m.src === 'sauce') {
+          sauceWinClaimed = Math.floor((tw - SAUCE_OFFSET) / SAUCE_PERIOD);
+          applyFx(m.id, m.fx, sauceSpotFor(sauceWinClaimed));
+        } else if (m.src === 'cocktail') {
+          cocktailWinClaimed = Math.floor((tw - SPECIAL_OFFSET) / SPECIAL_PERIOD);
+          el('rvSpecial').hidden = true;
+          applyFx(m.id, m.fx, { x: 10, y: 76 }); // the pop lands over the bar counter
+        } else applyFx(m.id, m.fx);
+      }
       else if (m.t === 'vinyl') pickVinyl(m.id);
       else if (m.t === 'minidrop') deliverVinyl(m.id);
       else if (m.t === 'stage') setStage(m.id, m.on);
@@ -700,6 +826,20 @@ function init() {
   // ---- the render loop: everyone dances off the same clock ----
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let lastIdx = -1, lastDrop = null, lastTick = 0;
+  let confetti = [];
+  function confettiBurst() {
+    if (reduced || !floorW) return;
+    const COLS = ['#ffe135', '#ff4d9d', '#78ebff', '#58c05c', '#fffdf5'];
+    for (let i = 0; i < 90; i++) {
+      confetti.push({
+        x: Math.random() * floorW,
+        y: -10 - Math.random() * 80,
+        v: 70 + Math.random() * 100,
+        sw: Math.random() * 2 * Math.PI,
+        c: COLS[i % COLS.length],
+      });
+    }
+  }
   function tick() {
     const now = Date.now();
     const dtMs = lastTick ? Math.min(now - lastTick, 100) : 16;
@@ -717,11 +857,49 @@ function init() {
       trailCtx.fillRect(0, 0, floorW, floorH);
       trailCtx.globalCompositeOperation = 'source-over';
       for (const r of ravers.values()) {
-        if (r.stage || !r.lastMoveAt || now - r.lastMoveAt > 350) continue;
-        const gx = Math.floor(((r.x / 100) * floorW) / 8) * 8;
-        const gy = Math.floor((((r.y + 3) / 100) * floorH) / 8) * 8; // at the feet, not the torso
-        trailCtx.fillStyle = 'rgba(179, 136, 255, 0.16)';
-        trailCtx.fillRect(gx, gy, 8, 8);
+        if (r.stage) continue;
+        const moving = r.lastMoveAt && now - r.lastMoveAt < 350;
+        const px = (r.x / 100) * floorW;
+        const py = ((r.y + 3) / 100) * floorH; // at the feet, not the torso
+        const gx = Math.floor(px / 8) * 8;
+        const gy = Math.floor(py / 8) * 8;
+        if (moving) {
+          trailCtx.fillStyle = 'rgba(179, 136, 255, 0.16)';
+          trailCtx.fillRect(gx, gy, 8, 8);
+        }
+        if (!fxActive(r, now)) continue;
+        if (r.fx.id === 'flames' && moving) {
+          // pixel flames at the heels: orange body + yellow lick, the canvas fade
+          // stretches them into a burning trail for free
+          trailCtx.fillStyle = 'rgba(255, 122, 24, 0.85)';
+          trailCtx.fillRect(gx, gy, 8, 8);
+          trailCtx.fillStyle = 'rgba(255, 225, 53, 0.9)';
+          trailCtx.fillRect(gx + 2, gy - 6, 4, 6);
+        } else if (r.fx.id === 'daiquiri' && moving) {
+          // speed dashes kicked out behind the runner
+          trailCtx.fillStyle = 'rgba(255, 214, 80, 0.55)';
+          trailCtx.fillRect(gx - 12, gy - 10, 8, 3);
+          trailCtx.fillRect(gx + 12, gy - 4, 8, 3);
+        } else if (r.fx.id === 'fizz') {
+          // bubbles rise off the banana whether it walks or just dances
+          for (let b = 0; b < 2; b++) {
+            const ph = ((now / 1400) + b * 0.5) % 1;
+            const bx = px + Math.sin(now / 320 + b * 2.7) * 14;
+            const by = py - 34 - ph * 52;
+            trailCtx.fillStyle = `rgba(120, 235, 255, ${0.75 * (1 - ph)})`;
+            trailCtx.fillRect(Math.floor(bx / 4) * 4, Math.floor(by / 4) * 4, 4, 4);
+          }
+        }
+      }
+      // drop-end confetti: a burst of pixel squares raining over the whole floor
+      if (confetti.length) {
+        confetti = confetti.filter((p) => p.y < floorH + 10);
+        for (const p of confetti) {
+          p.y += (p.v * dtMs) / 1000;
+          const sway = Math.sin(p.sw + p.y / 24) * 10;
+          trailCtx.fillStyle = p.c;
+          trailCtx.fillRect(Math.floor((p.x + sway) / 4) * 4, Math.floor(p.y / 4) * 4, 4, 4);
+        }
       }
     }
     const secs = (now / 1000) % DROP_PERIOD;
@@ -732,7 +910,7 @@ function init() {
     const idx = Math.floor((now % cycleMs) / (cycleMs / NFRAMES));
 
     if (dropActive !== lastDrop) {
-      if (lastDrop === true && !dropActive) passStat('drops'); // survived another one
+      if (lastDrop === true && !dropActive) { passStat('drops'); confettiBurst(); } // survived another one — rain the confetti
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       el('rvDropFlash').hidden = !dropActive;
