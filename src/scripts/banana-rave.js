@@ -426,12 +426,14 @@ function init() {
       cv.style.animation = `rvWaveHop 0.55s steps(4) ${(i * 0.09).toFixed(2)}s`;
       setTimeout(() => { cv.style.animation = ''; }, 2600);
     });
+    if (wavers.has(myId)) addHype(10); // you rode the wave
     if (parts.length) showBubble('🌊 what a wave!', false, 3000);
   }
 
   function floatEmote(id, kind) {
     const wPh = (((Date.now() / 1000 - WAVE_OFFSET) % WAVE_PERIOD) + WAVE_PERIOD) % WAVE_PERIOD;
     if (wPh < WAVE_LEN) wavers.add(id); // emoting during the call = you're in the wave
+    if (id === myId) addHype(2);
     const r = ravers.get(id);
     if (!r) return;
     const e = document.createElement('span');
@@ -532,6 +534,127 @@ function init() {
   let itemWinClaimed = -1;
   let lastItemTry = 0;
 
+  // THE HYPE METER — the base loop (Trym's call): everything you do fills it,
+  // standing still drains it, full = HYPE MODE where the whole floor sees you
+  // peak (the effect travels the existing outfit pipe). Purely client-side.
+  const HYPE_MAX = 100, HYPE_MODE_MS = 20000;
+  const hypeBoost = new URLSearchParams(location.search).has('hypetest') ? 8 : 1; // ?hypetest = fast meter for visual testing
+  let hype = 0, hypeModeUntil = 0, lastHypeGain = 0, prevEffect = null;
+  const hypeSegs = [];
+  (() => {
+    const bar = el('rvHypeBar');
+    if (!bar) return;
+    for (let i = 0; i < 12; i++) {
+      const s = document.createElement('span');
+      s.className = 'rv-mixer__seg';
+      bar.appendChild(s);
+      hypeSegs.push(s);
+    }
+  })();
+  function renderHype() {
+    const on = Math.round((hype / HYPE_MAX) * 12);
+    hypeSegs.forEach((s, i) => s.classList.toggle('on', i < on || Date.now() < hypeModeUntil));
+    el('rvMixer').classList.toggle('rv-mixer--peak', Date.now() < hypeModeUntil);
+  }
+  function addHype(n) {
+    if (Date.now() < hypeModeUntil) return; // the meter rests while you peak
+    hype = Math.min(HYPE_MAX, hype + n * hypeBoost);
+    lastHypeGain = Date.now();
+    if (hype >= HYPE_MAX) startHypeMode();
+    renderHype();
+  }
+  function startHypeMode() {
+    hype = 0;
+    hypeModeUntil = Date.now() + HYPE_MODE_MS;
+    passPatch('hype');
+    passStat('hypes');
+    track('rave_hype');
+    const me = myId && ravers.get(myId);
+    if (me) {
+      me.wrap.classList.add('rv-hypemode');
+      prevEffect = me.outfit.effect;
+      me.outfit.effect = 'disco'; // broadcast: the floor sees you peaking
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+      const toast = document.createElement('div');
+      toast.className = 'rv-glowtoast';
+      toast.innerHTML = '🌟 <b>HYPE MODE</b> — you’re PEAKING and the whole floor can see it!';
+      floor.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+    setTimeout(endHypeMode, HYPE_MODE_MS);
+  }
+  function endHypeMode() {
+    const me = myId && ravers.get(myId);
+    if (me) {
+      me.wrap.classList.remove('rv-hypemode');
+      me.outfit.effect = prevEffect || 'none';
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+    }
+    renderHype();
+  }
+
+  // SPARKLE RUNS — your personal pellet trail, the meter's endless fuel: an arc
+  // of sparkles only YOU see; finish it and a new one draws itself elsewhere.
+  // Client-only and per-visitor, so there is ALWAYS something to chase.
+  let run = null, nextRunAt = Date.now() + 6000;
+  function newRun() {
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return null;
+    let ang = Math.random() * 2 * Math.PI;
+    const turn = (Math.random() - 0.5) * 0.55;
+    let x = me.x, y = me.y;
+    const host = el('rvRun');
+    host.innerHTML = '';
+    const pts = [];
+    for (let i = 0; i < 9; i++) {
+      ang += turn;
+      x = clamp(x + Math.cos(ang) * 9, 8, 92);
+      y = clamp(y + Math.sin(ang) * 7, topClamp + 4, 88);
+      if (insideBar(x, y)) y = Math.max(topClamp + 4, barSolid.y - 6); // runs never lead into the counter
+      const d = document.createElement('div');
+      d.className = 'rv-pellet';
+      d.style.left = x + '%';
+      d.style.top = y + '%';
+      d.style.animationDelay = (i * 0.08) + 's';
+      host.appendChild(d);
+      pts.push({ x, y, got: false, elm: d });
+    }
+    return { pts, born: Date.now() };
+  }
+  function tickRun() {
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return;
+    const now = Date.now();
+    if (!run) {
+      if (now >= nextRunAt) run = newRun();
+      return;
+    }
+    if (now - run.born > 120000) { // stale — redraw somewhere fresh
+      el('rvRun').innerHTML = '';
+      run = newRun();
+      return;
+    }
+    let left = 0;
+    for (const p of run.pts) {
+      if (p.got) continue;
+      if (Math.hypot(me.x - p.x, me.y - p.y) < 5) {
+        p.got = true;
+        p.elm.classList.add('rv-pellet--got');
+        addHype(4);
+      } else {
+        left++;
+      }
+    }
+    if (!left) { // run complete: chain bump + breather before the next one
+      run = null;
+      nextRunAt = now + 8000;
+      bumpChain();
+      addHype(8);
+      el('rvRun').innerHTML = '';
+      track('rave_run');
+    }
+  }
+
   // THE CHAIN: every pickup within 90s of the last extends it — the lone
   // visitor's reason to keep moving. Client-side, personal, no leaderboard.
   let chain = 0, chainAt = 0;
@@ -539,6 +662,7 @@ function init() {
     const now = Date.now();
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
     chainAt = now;
+    addHype(12); // every pickup is hype fuel
     if (chain === 5) {
       const me = myId && ravers.get(myId);
       if (me) {
@@ -706,7 +830,10 @@ function init() {
       for (const r of ravers.values()) {
         const lit = !r.stage && Math.hypot(r.x - s.x, r.y - s.y) < SPOT_R;
         r.wrap.classList.toggle('rv-lit', lit);
-        if (lit && r.id === myId && !r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); passPatch('spotlight'); }
+        if (lit && r.id === myId) {
+          addHype(1.5); // basking in the light per rhythm tick
+          if (!r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); passPatch('spotlight'); }
+        }
       }
     } else if (!spotEl.hidden) {
       spotEl.hidden = true;
@@ -789,6 +916,20 @@ function init() {
     } else {
       twEl.hidden = true;
     }
+    // — the hype economy: dancing across the floor earns, standing still bleeds —
+    const meH = myId && ravers.get(myId);
+    if (meH && !meH.stage && meH.lastMoveAt && Date.now() - meH.lastMoveAt < 600) {
+      addHype(0.7);
+    } else if (hype > 0 && Date.now() - lastHypeGain > 2500 && Date.now() >= hypeModeUntil) {
+      hype = Math.max(0, hype - 0.9);
+      renderHype();
+    }
+    tickRun();
+    // the chain readout lives on the mixer; it fades when the chain window lapses
+    const chainRow = el('rvChainRow');
+    const chainLive = chain > 1 && Date.now() - chainAt < CHAIN_MS;
+    chainRow.hidden = !chainLive;
+    if (chainLive) el('rvChainN').textContent = chain;
     // — THE WAVE: Barty calls it, emote in time to join the ripple (staff always join) —
     const wvPh = (((t - WAVE_OFFSET) % WAVE_PERIOD) + WAVE_PERIOD) % WAVE_PERIOD;
     const wvWin = Math.floor((t - WAVE_OFFSET) / WAVE_PERIOD);
@@ -1163,7 +1304,7 @@ function init() {
     const idx = Math.floor((now % cycleMs) / (cycleMs / NFRAMES));
 
     if (dropActive !== lastDrop) {
-      if (lastDrop === true && !dropActive) { passStat('drops'); confettiBurst(); } // survived another one — rain the confetti
+      if (lastDrop === true && !dropActive) { passStat('drops'); confettiBurst(); addHype(8); } // survived another one — rain the confetti
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       el('rvDropFlash').hidden = !dropActive;

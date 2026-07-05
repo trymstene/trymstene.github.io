@@ -267,6 +267,38 @@ const schema = {
     .rv-carry svg { width: 100%; height: auto; image-rendering: pixelated; }
     @media (prefers-reduced-motion: reduce) { .rv-item, .rv-five, .rv-special, .rv-pop *, .rv-twinkle { animation: none; } }
 
+    /* THE MIXER — hype meter + chain, docked in the dead space right of the bar
+       (Trym's placement: on the floor itself, no scrolling to see your numbers) */
+    .rv-mixer {
+      position: absolute; right: 8px; bottom: 8px; z-index: 600; pointer-events: none;
+      background: rgba(13, 11, 20, 0.88); border: 3px solid #2f2250; padding: 6px 8px;
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; color: #b388ff;
+    }
+    .rv-mixer__row { display: flex; align-items: center; gap: 6px; }
+    .rv-mixer__bar { display: flex; gap: 2px; }
+    .rv-mixer__seg { width: 7px; height: 13px; background: #241a38; }
+    .rv-mixer__seg.on { background: #b388ff; }
+    .rv-mixer__seg.on:nth-child(n+6) { background: #ffe135; }
+    .rv-mixer__seg.on:nth-child(n+10) { background: #ff4d9d; }
+    .rv-mixer--peak { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
+    @keyframes rvMixerPeak { 50% { border-color: #ff4d9d; } }
+    .rv-mixer__chain { margin-top: 4px; color: #ffe135; }
+    .rv-mixer__chain[hidden] { display: none; }
+    /* hype mode: the whole floor sees you peak (effect travels the outfit pipe;
+       this glow is the local cherry) */
+    .rv-raver.rv-hypemode canvas { filter: drop-shadow(0 0 10px #ffe135) drop-shadow(0 0 18px #ff4d9d); }
+    /* sparkle runs: your personal pellet trail — pure chase fuel */
+    .rv-pellet {
+      position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px;
+      background: #ffe135; transform: rotate(45deg); z-index: 8; pointer-events: none;
+      box-shadow: 0 0 6px rgba(255, 225, 53, 0.8);
+      animation: rvPelletBob 0.7s steps(2) infinite;
+    }
+    @keyframes rvPelletBob { 50% { transform: rotate(45deg) scale(1.35); } }
+    .rv-pellet--got { animation: rvPelletGot 0.4s steps(3) forwards; }
+    @keyframes rvPelletGot { 100% { transform: rotate(45deg) scale(2.4); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .rv-pellet, .rv-mixer--peak { animation: none; } }
+
     .rv-zoom {
       position: absolute; top: 8px; right: 8px; z-index: 600;
       background: rgba(13, 11, 20, 0.85); color: #fffdf5; border: 3px solid #ffe135;
@@ -429,6 +461,7 @@ const schema = {
             </svg>
             <div class="rv-item" id="rvItem" style="display:none;" aria-hidden="true"></div>
             <div class="rv-twinkle" id="rvTwinkle" hidden aria-hidden="true"></div>
+            <div id="rvRun" aria-hidden="true"></div>
             <svg class="rv-item rv-item--gold" id="rvGold" viewBox="0 0 12 12" shape-rendering="crispEdges" style="display:none;" aria-hidden="true">
               <rect x="4" y="0" width="2" height="1" fill="#d69a1e"/><rect x="3" y="1" width="1" height="1" fill="#d69a1e"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="6" y="1" width="1" height="1" fill="#d69a1e"/><rect x="10" y="1" width="1" height="1" fill="#ffffff"/><rect x="3" y="2" width="1" height="1" fill="#d69a1e"/><rect x="4" y="2" width="2" height="1" fill="#ffe135"/><rect x="6" y="2" width="1" height="1" fill="#d69a1e"/><rect x="2" y="3" width="1" height="1" fill="#d69a1e"/><rect x="3" y="3" width="3" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="1" fill="#d69a1e"/><rect x="2" y="4" width="1" height="1" fill="#d69a1e"/><rect x="3" y="4" width="3" height="1" fill="#ffe135"/><rect x="6" y="4" width="1" height="1" fill="#d69a1e"/><rect x="1" y="5" width="1" height="1" fill="#d69a1e"/><rect x="2" y="5" width="1" height="1" fill="#ffe135"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="2" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#d69a1e"/><rect x="1" y="6" width="1" height="1" fill="#d69a1e"/><rect x="2" y="6" width="1" height="1" fill="#ffe135"/><rect x="3" y="6" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="6" width="3" height="1" fill="#ffe135"/><rect x="7" y="6" width="1" height="1" fill="#d69a1e"/><rect x="1" y="7" width="1" height="1" fill="#d69a1e"/><rect x="2" y="7" width="5" height="1" fill="#ffe135"/><rect x="7" y="7" width="1" height="1" fill="#d69a1e"/><rect x="1" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="8" width="6" height="1" fill="#ffe135"/><rect x="8" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="9" width="1" height="1" fill="#d69a1e"/><rect x="3" y="9" width="6" height="1" fill="#ffe135"/><rect x="9" y="9" width="2" height="1" fill="#d69a1e"/><rect x="0" y="10" width="1" height="1" fill="#ffffff"/><rect x="3" y="10" width="2" height="1" fill="#d69a1e"/><rect x="5" y="10" width="5" height="1" fill="#ffe135"/><rect x="10" y="10" width="1" height="1" fill="#d69a1e"/><rect x="5" y="11" width="5" height="1" fill="#d69a1e"/>
             </svg>
@@ -448,6 +481,10 @@ const schema = {
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
+          <div class="rv-mixer" id="rvMixer" aria-hidden="true">
+            <div class="rv-mixer__row"><span>HYPE</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
+            <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
+          </div>
           <div class="rv-tip" id="rvTip" hidden></div>
         </div>
         <div class="rv-hud">
