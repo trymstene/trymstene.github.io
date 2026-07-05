@@ -97,7 +97,7 @@ a { color: inherit; }
 .nav.open .nav__toggle { color: var(--banana); }
 
 .nav__group { display: flex; }
-.nav__group a { text-decoration: none; font-weight: 700; }
+.nav__group a { text-decoration: none; font-weight: 700; white-space: nowrap; }
 
 /* ---- mobile: slide-in panel from the right ---- */
 .nav__links {
