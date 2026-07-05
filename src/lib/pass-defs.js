@@ -20,6 +20,7 @@ export const PATCHES = [
   { id: 'regular',   icon: 'burger',   title: 'The Regular',    hint: 'Show up on five different days.' },
   { id: 'patron',    icon: 'tag',      title: 'Sticker Patron', hint: 'Your banana, on real vinyl.' },
   { id: 'golden',    icon: 'sparkle',  title: 'The Golden One', hint: 'Once in a golden while, something rare hits the floor. Be there.' },
+  { id: 'chain',     icon: 'link',     title: 'Chain Chaser',   hint: 'Keep a ten-pickup chain alive on the dance floor.' },
   { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },
 ];
 

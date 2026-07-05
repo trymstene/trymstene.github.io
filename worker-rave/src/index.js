@@ -80,6 +80,26 @@ function goldSpot(w) {
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
+// THE CONVEYOR — one unified item stream so the floor is NEVER dead (Trym's
+// low-traffic brief: solo visitors need a constant chase). A new item every 75s
+// at a clock-seeded spot; the type comes from the same seed. Effect items ride
+// the fx system; snacks (candy/pizza/balloon) are pure chase + client-side chain.
+const ITEM_PERIOD = 75_000, ITEM_WAIT = 55_000, ITEM_OFFSET = 15_000;
+function itemWindow(now) {
+  const ph = (((now - ITEM_OFFSET) % ITEM_PERIOD) + ITEM_PERIOD) % ITEM_PERIOD;
+  return ph < ITEM_WAIT ? Math.floor((now - ITEM_OFFSET) / ITEM_PERIOD) : -1;
+}
+function itemSpot(w) {
+  let x = 12 + seedRand(0x17e6 + w * 2) * 70;
+  let y = 26 + seedRand(0x17e6 + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+function itemType(w) { // keep weights in sync with banana-rave.js
+  const r = seedRand(0x7ab1e + w);
+  return r < 0.2 ? 'sauce' : r < 0.38 ? 'zap' : r < 0.55 ? 'fizz' : r < 0.7 ? 'candy' : r < 0.85 ? 'pizza' : 'balloon';
+}
+const ITEM_FX = { sauce: 'flames', zap: 'zap', fizz: 'fizz' };
 // BARTY'S SPECIALS — between happy hours a rotating cocktail lands on the counter;
 // first banana at the bar drinks it and wears its effect for a while.
 const SPECIAL_PERIOD = 300_000, SPECIAL_LEN = 35_000, SPECIAL_OFFSET = 270_000;
@@ -183,7 +203,8 @@ export class RaveRoom {
       const sauceWin = (await this.state.storage.get('sauceWin')) ?? null;
       const cocktailWin = (await this.state.storage.get('cocktailWin')) ?? null;
       const goldWin = (await this.state.storage.get('goldWin')) ?? null;
-      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin, goldWin }));
+      const itemWin = (await this.state.storage.get('itemWin')) ?? null;
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin, goldWin, itemWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
       return;
     }
@@ -245,6 +266,26 @@ export class RaveRoom {
       return;
     }
 
+    if (msg.t === 'item' && me) { // first banana to this window's conveyor item
+      const win = itemWindow(Date.now());
+      if (win < 0) return;
+      if (this.itemWin === win) return;       // sync guard before any await
+      const spot = itemSpot(win);
+      if (!(typeof me.x === 'number' && Math.abs(me.x - spot.x) < 14 && typeof me.y === 'number' && Math.abs(me.y - spot.y) < 14)) return;
+      this.itemWin = win;
+      const stored = await this.state.storage.get('itemWin');
+      if (stored === win) return;
+      await this.state.storage.put('itemWin', win);
+      const kind = itemType(win);
+      if (ITEM_FX[kind]) {
+        me.fx = { id: ITEM_FX[kind], until: Date.now() + FX_MS };
+        ws.serializeAttachment(me);
+      }
+      this.broadcast({ t: 'item', id: me.id, win, kind, fx: ITEM_FX[kind] ? me.fx : undefined });
+      return;
+    }
+
+    // legacy: pre-conveyor clients still send 'sauce' against the old windows
     if (msg.t === 'sauce' && me) { // first banana to the hot-sauce bottle
       const win = sauceWindow(Date.now());
       if (win < 0) return;

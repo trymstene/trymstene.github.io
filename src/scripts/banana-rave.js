@@ -37,11 +37,16 @@ const SPOT_PERIOD = 120, SPOT_LEN = 35, SPOT_OFFSET = 30, SPOT_R = 14; // second
 const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
 const SAUCE_PERIOD = 180, SAUCE_WAIT = 100, SAUCE_OFFSET = 60;          // hot sauce drop — keep in sync with worker
 const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE GOLDEN BANANA (rare) — keep in sync with worker
+const ITEM_PERIOD = 75, ITEM_WAIT = 55, ITEM_OFFSET = 15;               // THE CONVEYOR: an item every 75s, forever — keep in sync with worker
+const SNACKS = { candy: ['🍬', 'CANDY'], pizza: ['🍕', 'PIZZA SLICE'], balloon: ['🎈', 'BALLOON'] };
+const WAVE_PERIOD = 480, WAVE_LEN = 8, WAVE_OFFSET = 300;               // THE WAVE — client-only, synced by clock + emote broadcasts
+const SMOKE_PERIOD = 300, SMOKE_LEN = 22, SMOKE_OFFSET = 30;            // smoke machine — ambient, client-only
+const CHAIN_MS = 90000;                                                  // grab the next item within 90s to keep the chain
 const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
 const COCKTAILS = ['daiquiri', 'fizz'];                                 // rotation — keep in sync with worker
 const FX_MS = 150000;
-const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz' };
-const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧' };
+const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge' };
+const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧', zap: '⚡' };
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
 // deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
@@ -75,6 +80,16 @@ function goldSpotFor(w) { // keep in sync with goldSpot() in worker-rave
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
+function itemSpotFor(w) { // keep in sync with itemSpot() in worker-rave
+  let x = 12 + seedRand(0x17e6 + w * 2) * 70;
+  let y = 26 + seedRand(0x17e6 + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+function itemTypeFor(w) { // keep weights in sync with itemType() in worker-rave
+  const r = seedRand(0x7ab1e + w);
+  return r < 0.2 ? 'sauce' : r < 0.38 ? 'zap' : r < 0.55 ? 'fizz' : r < 0.7 ? 'candy' : r < 0.85 ? 'pizza' : 'balloon';
+}
 // a gloved FIST with a wrist cuff (yellow stripe) — a plain mitten blob read as
 // "a white ball" at rave size; the cuff is what makes it read as a glove
 const MITT_SVG = '<svg viewBox="0 0 10 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="4" height="1" fill="#111111"/><rect x="3" y="1" width="1" height="1" fill="#111111"/><rect x="4" y="1" width="4" height="1" fill="#fffdf5"/><rect x="8" y="1" width="1" height="1" fill="#111111"/><rect x="0" y="2" width="1" height="4" fill="#111111"/><rect x="1" y="2" width="1" height="4" fill="#ffe135"/><rect x="2" y="2" width="1" height="4" fill="#111111"/><rect x="3" y="2" width="6" height="4" fill="#fffdf5"/><rect x="9" y="2" width="1" height="4" fill="#111111"/><rect x="3" y="6" width="1" height="1" fill="#111111"/><rect x="4" y="6" width="4" height="1" fill="#fffdf5"/><rect x="8" y="6" width="1" height="1" fill="#111111"/><rect x="4" y="7" width="4" height="1" fill="#111111"/></svg>';
@@ -84,6 +99,12 @@ const VINYL_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="
 const SAUCE_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="2" height="1" fill="#3a304c"/><rect x="3" y="1" width="2" height="1" fill="#3a304c"/><rect x="2" y="2" width="1" height="1" fill="#1e182c"/><rect x="3" y="2" width="2" height="1" fill="#fffaf0"/><rect x="5" y="2" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="1" height="1" fill="#1e182c"/><rect x="3" y="3" width="2" height="1" fill="#e83b3b"/><rect x="5" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="4" height="1" fill="#e83b3b"/><rect x="6" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="1" height="1" fill="#e83b3b"/><rect x="3" y="5" width="2" height="1" fill="#fffaf0"/><rect x="5" y="5" width="1" height="1" fill="#e83b3b"/><rect x="6" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="2" height="1" fill="#fffaf0"/><rect x="4" y="6" width="1" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffaf0"/><rect x="6" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#fffaf0"/><rect x="3" y="7" width="2" height="1" fill="#ff9128"/><rect x="5" y="7" width="1" height="1" fill="#fffaf0"/><rect x="6" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="1" height="1" fill="#e83b3b"/><rect x="3" y="8" width="2" height="1" fill="#fffaf0"/><rect x="5" y="8" width="1" height="1" fill="#e83b3b"/><rect x="6" y="8" width="1" height="1" fill="#1e182c"/><rect x="1" y="9" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="2" height="1" fill="#e83b3b"/><rect x="4" y="9" width="1" height="1" fill="#a62026"/><rect x="5" y="9" width="1" height="1" fill="#e83b3b"/><rect x="6" y="9" width="1" height="1" fill="#1e182c"/><rect x="1" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="10" width="2" height="1" fill="#e83b3b"/><rect x="4" y="10" width="2" height="1" fill="#a62026"/><rect x="6" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="11" width="4" height="1" fill="#1e182c"/></svg>';
 const DAIQUIRI_SVG = '<svg viewBox="0 0 10 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="2" height="1" fill="#ff5078"/><rect x="3" y="1" width="4" height="1" fill="#ff5078"/><rect x="2" y="2" width="1" height="1" fill="#ff5078"/><rect x="3" y="2" width="1" height="1" fill="#c8285a"/><rect x="4" y="2" width="2" height="1" fill="#ff5078"/><rect x="6" y="2" width="1" height="1" fill="#c8285a"/><rect x="7" y="2" width="1" height="1" fill="#ff5078"/><rect x="4" y="3" width="2" height="1" fill="#ffffff"/><rect x="1" y="4" width="1" height="1" fill="#6caac4"/><rect x="2" y="4" width="6" height="1" fill="#ffd650"/><rect x="8" y="4" width="1" height="1" fill="#6caac4"/><rect x="1" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="5" width="1" height="1" fill="#ffd650"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="3" height="1" fill="#ffd650"/><rect x="7" y="5" width="1" height="1" fill="#d6a024"/><rect x="8" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="6" width="1" height="1" fill="#6caac4"/><rect x="3" y="6" width="3" height="1" fill="#ffd650"/><rect x="6" y="6" width="1" height="1" fill="#d6a024"/><rect x="7" y="6" width="1" height="1" fill="#6caac4"/><rect x="3" y="7" width="1" height="1" fill="#6caac4"/><rect x="4" y="7" width="1" height="1" fill="#ffd650"/><rect x="5" y="7" width="1" height="1" fill="#d6a024"/><rect x="6" y="7" width="1" height="1" fill="#6caac4"/><rect x="4" y="8" width="2" height="1" fill="#6caac4"/><rect x="4" y="9" width="2" height="1" fill="#6caac4"/><rect x="3" y="10" width="4" height="1" fill="#6caac4"/><rect x="2" y="11" width="6" height="1" fill="#6caac4"/></svg>';
 const FIZZ_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="0" width="1" height="1" fill="#ff4d9d"/><rect x="6" y="0" width="1" height="1" fill="#ffffff"/><rect x="4" y="1" width="1" height="1" fill="#ff4d9d"/><rect x="5" y="1" width="1" height="1" fill="#ffffff"/><rect x="1" y="2" width="1" height="1" fill="#6caac4"/><rect x="2" y="2" width="4" height="1" fill="#ffffff"/><rect x="6" y="2" width="1" height="1" fill="#6caac4"/><rect x="1" y="3" width="1" height="1" fill="#6caac4"/><rect x="2" y="3" width="1" height="1" fill="#78ebff"/><rect x="3" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="3" width="2" height="1" fill="#78ebff"/><rect x="6" y="3" width="1" height="1" fill="#6caac4"/><rect x="1" y="4" width="1" height="1" fill="#6caac4"/><rect x="2" y="4" width="3" height="1" fill="#78ebff"/><rect x="5" y="4" width="1" height="1" fill="#ffffff"/><rect x="6" y="4" width="1" height="1" fill="#6caac4"/><rect x="1" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="5" width="1" height="1" fill="#ffffff"/><rect x="3" y="5" width="3" height="1" fill="#78ebff"/><rect x="6" y="5" width="1" height="1" fill="#6caac4"/><rect x="1" y="6" width="1" height="1" fill="#6caac4"/><rect x="2" y="6" width="4" height="1" fill="#78ebff"/><rect x="6" y="6" width="1" height="1" fill="#6caac4"/><rect x="1" y="7" width="1" height="1" fill="#6caac4"/><rect x="2" y="7" width="1" height="1" fill="#78ebff"/><rect x="3" y="7" width="1" height="1" fill="#ffffff"/><rect x="4" y="7" width="2" height="1" fill="#78ebff"/><rect x="6" y="7" width="1" height="1" fill="#6caac4"/><rect x="1" y="8" width="1" height="1" fill="#6caac4"/><rect x="2" y="8" width="4" height="1" fill="#78ebff"/><rect x="6" y="8" width="1" height="1" fill="#6caac4"/><rect x="1" y="9" width="1" height="1" fill="#6caac4"/><rect x="2" y="9" width="1" height="1" fill="#42a8c6"/><rect x="3" y="9" width="2" height="1" fill="#78ebff"/><rect x="5" y="9" width="1" height="1" fill="#42a8c6"/><rect x="6" y="9" width="1" height="1" fill="#6caac4"/><rect x="1" y="10" width="1" height="1" fill="#6caac4"/><rect x="2" y="10" width="4" height="1" fill="#42a8c6"/><rect x="6" y="10" width="1" height="1" fill="#6caac4"/><rect x="1" y="11" width="6" height="1" fill="#6caac4"/></svg>';
+
+const ZAP_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="1" height="1" fill="#1e182c"/><rect x="4" y="0" width="2" height="1" fill="#78ebff"/><rect x="2" y="1" width="1" height="1" fill="#1e182c"/><rect x="3" y="1" width="3" height="1" fill="#78ebff"/><rect x="2" y="2" width="1" height="1" fill="#1e182c"/><rect x="3" y="2" width="1" height="1" fill="#78ebff"/><rect x="4" y="2" width="1" height="1" fill="#ffffff"/><rect x="5" y="2" width="1" height="1" fill="#78ebff"/><rect x="1" y="3" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="1" height="1" fill="#78ebff"/><rect x="3" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="3" width="1" height="1" fill="#78ebff"/><rect x="5" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="1" height="1" fill="#78ebff"/><rect x="3" y="4" width="1" height="1" fill="#ffffff"/><rect x="4" y="4" width="1" height="1" fill="#78ebff"/><rect x="0" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#78ebff"/><rect x="2" y="5" width="2" height="1" fill="#ffffff"/><rect x="4" y="5" width="2" height="1" fill="#78ebff"/><rect x="6" y="5" width="1" height="1" fill="#1e182c"/><rect x="0" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="2" height="1" fill="#78ebff"/><rect x="3" y="6" width="1" height="1" fill="#ffffff"/><rect x="4" y="6" width="1" height="1" fill="#78ebff"/><rect x="5" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="7" width="1" height="1" fill="#ffffff"/><rect x="4" y="7" width="1" height="1" fill="#78ebff"/><rect x="2" y="8" width="1" height="1" fill="#1e182c"/><rect x="3" y="8" width="2" height="1" fill="#78ebff"/><rect x="1" y="9" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="2" height="1" fill="#78ebff"/><rect x="1" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="10" width="1" height="1" fill="#78ebff"/><rect x="1" y="11" width="2" height="1" fill="#1e182c"/></svg>';
+const CANDY_SVG = '<svg viewBox="0 0 12 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="1" height="1" fill="#c62c74"/><rect x="4" y="0" width="4" height="1" fill="#c62c74"/><rect x="10" y="0" width="1" height="1" fill="#c62c74"/><rect x="0" y="1" width="1" height="1" fill="#c62c74"/><rect x="1" y="1" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="1" width="6" height="1" fill="#ff4d9d"/><rect x="10" y="1" width="1" height="1" fill="#ff4d9d"/><rect x="11" y="1" width="1" height="1" fill="#c62c74"/><rect x="0" y="2" width="1" height="1" fill="#c62c74"/><rect x="1" y="2" width="3" height="1" fill="#ff4d9d"/><rect x="4" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="2" width="6" height="1" fill="#ff4d9d"/><rect x="11" y="2" width="1" height="1" fill="#c62c74"/><rect x="1" y="3" width="1" height="1" fill="#c62c74"/><rect x="2" y="3" width="2" height="1" fill="#ff4d9d"/><rect x="4" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="3" width="1" height="1" fill="#ffffff"/><rect x="6" y="3" width="4" height="1" fill="#ff4d9d"/><rect x="10" y="3" width="1" height="1" fill="#c62c74"/><rect x="1" y="4" width="1" height="1" fill="#c62c74"/><rect x="2" y="4" width="3" height="1" fill="#ff4d9d"/><rect x="5" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="6" y="4" width="4" height="1" fill="#ff4d9d"/><rect x="10" y="4" width="1" height="1" fill="#c62c74"/><rect x="0" y="5" width="1" height="1" fill="#c62c74"/><rect x="1" y="5" width="5" height="1" fill="#ff4d9d"/><rect x="6" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="7" y="5" width="4" height="1" fill="#ff4d9d"/><rect x="11" y="5" width="1" height="1" fill="#c62c74"/><rect x="0" y="6" width="1" height="1" fill="#c62c74"/><rect x="1" y="6" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="6" width="6" height="1" fill="#ff4d9d"/><rect x="10" y="6" width="1" height="1" fill="#ff4d9d"/><rect x="11" y="6" width="1" height="1" fill="#c62c74"/><rect x="1" y="7" width="1" height="1" fill="#c62c74"/><rect x="4" y="7" width="4" height="1" fill="#c62c74"/><rect x="10" y="7" width="1" height="1" fill="#c62c74"/></svg>';
+const PIZZA_SVG = '<svg viewBox="0 0 10 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="8" height="1" fill="#dea85c"/><rect x="0" y="1" width="1" height="1" fill="#dea85c"/><rect x="1" y="1" width="8" height="1" fill="#ffd650"/><rect x="9" y="1" width="1" height="1" fill="#dea85c"/><rect x="1" y="2" width="1" height="1" fill="#dea85c"/><rect x="2" y="2" width="1" height="1" fill="#ffd650"/><rect x="3" y="2" width="2" height="1" fill="#e83b3b"/><rect x="5" y="2" width="2" height="1" fill="#ffd650"/><rect x="7" y="2" width="1" height="1" fill="#e83b3b"/><rect x="8" y="2" width="1" height="1" fill="#dea85c"/><rect x="1" y="3" width="1" height="1" fill="#dea85c"/><rect x="2" y="3" width="1" height="1" fill="#ffd650"/><rect x="3" y="3" width="2" height="1" fill="#e83b3b"/><rect x="5" y="3" width="1" height="1" fill="#ffd650"/><rect x="6" y="3" width="2" height="1" fill="#e83b3b"/><rect x="8" y="3" width="1" height="1" fill="#dea85c"/><rect x="2" y="4" width="1" height="1" fill="#dea85c"/><rect x="3" y="4" width="3" height="1" fill="#ffd650"/><rect x="6" y="4" width="2" height="1" fill="#e83b3b"/><rect x="8" y="4" width="1" height="1" fill="#dea85c"/><rect x="2" y="5" width="1" height="1" fill="#dea85c"/><rect x="3" y="5" width="4" height="1" fill="#ffd650"/><rect x="7" y="5" width="1" height="1" fill="#dea85c"/><rect x="3" y="6" width="1" height="1" fill="#dea85c"/><rect x="4" y="6" width="2" height="1" fill="#e83b3b"/><rect x="6" y="6" width="1" height="1" fill="#ffd650"/><rect x="7" y="6" width="1" height="1" fill="#dea85c"/><rect x="3" y="7" width="1" height="1" fill="#dea85c"/><rect x="4" y="7" width="2" height="1" fill="#ffd650"/><rect x="6" y="7" width="1" height="1" fill="#dea85c"/><rect x="4" y="8" width="2" height="1" fill="#dea85c"/><rect x="4" y="9" width="2" height="1" fill="#dea85c"/></svg>';
+const BALLOON_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="1" height="1" fill="#1e182c"/><rect x="3" y="0" width="2" height="1" fill="#c62c74"/><rect x="5" y="0" width="1" height="1" fill="#1e182c"/><rect x="1" y="1" width="1" height="1" fill="#1e182c"/><rect x="2" y="1" width="1" height="1" fill="#c62c74"/><rect x="3" y="1" width="2" height="1" fill="#ff4d9d"/><rect x="5" y="1" width="1" height="1" fill="#c62c74"/><rect x="6" y="1" width="1" height="1" fill="#1e182c"/><rect x="0" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#c62c74"/><rect x="2" y="2" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="6" y="2" width="1" height="1" fill="#c62c74"/><rect x="7" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="1" height="1" fill="#c62c74"/><rect x="2" y="3" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="3" width="2" height="1" fill="#ff4d9d"/><rect x="6" y="3" width="1" height="1" fill="#c62c74"/><rect x="7" y="3" width="1" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#c62c74"/><rect x="2" y="4" width="4" height="1" fill="#ff4d9d"/><rect x="6" y="4" width="1" height="1" fill="#c62c74"/><rect x="7" y="4" width="1" height="1" fill="#1e182c"/><rect x="0" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="5" width="4" height="1" fill="#ff4d9d"/><rect x="6" y="5" width="1" height="1" fill="#c62c74"/><rect x="7" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="1" height="1" fill="#c62c74"/><rect x="3" y="6" width="2" height="1" fill="#ff4d9d"/><rect x="5" y="6" width="1" height="1" fill="#c62c74"/><rect x="6" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="7" width="2" height="1" fill="#c62c74"/><rect x="5" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="8" width="2" height="1" fill="#1e182c"/><rect x="3" y="9" width="1" height="1" fill="#ffffff"/><rect x="2" y="10" width="1" height="1" fill="#ffffff"/><rect x="3" y="11" width="1" height="1" fill="#ffffff"/></svg>';
+const ITEM_SVGS = { sauce: SAUCE_SVG, zap: ZAP_SVG, fizz: FIZZ_SVG, candy: CANDY_SVG, pizza: PIZZA_SVG, balloon: BALLOON_SVG };
 
 // flame trail: two flicker frames (Pillow-verified in scratchpad floor-items.py),
 // prerendered to tiny canvases and stamped per particle — a straight line of
@@ -393,7 +414,24 @@ function init() {
     refreshHud();
   }
 
+  // THE WAVE: everyone who emotes during the call-window joins the ripple —
+  // synced purely by the shared clock + the emote broadcasts everyone already sees
+  let waveWin = -1;
+  const wavers = new Set();
+  function runWave() {
+    const parts = [...wavers].map((id) => ravers.get(id)).filter((r) => r && !r.stage).sort((a, b) => a.x - b.x);
+    // staff ALWAYS join (honest NPCs with jobs — even a lone visitor gets a wave)
+    const hops = [el('rvBarman'), ...parts.map((r) => r.cv), el('rvDj')].filter(Boolean);
+    hops.forEach((cv, i) => {
+      cv.style.animation = `rvWaveHop 0.55s steps(4) ${(i * 0.09).toFixed(2)}s`;
+      setTimeout(() => { cv.style.animation = ''; }, 2600);
+    });
+    if (parts.length) showBubble('🌊 what a wave!', false, 3000);
+  }
+
   function floatEmote(id, kind) {
+    const wPh = (((Date.now() / 1000 - WAVE_OFFSET) % WAVE_PERIOD) + WAVE_PERIOD) % WAVE_PERIOD;
+    if (wPh < WAVE_LEN) wavers.add(id); // emoting during the call = you're in the wave
     const r = ravers.get(id);
     if (!r) return;
     const e = document.createElement('span');
@@ -432,7 +470,7 @@ function init() {
     el('rvCounterBeer').style.display = 'none'; // SVG: no .hidden property AND the UA [hidden] rule skips it — inline display only
     showBubble('SERVED! 🍺 ' + autoName(r.outfit) + ' drinks free', false, 6000);
     refreshHud();
-    if (id === myId) { track('rave_beer'); passPatch('round'); passStat('beers'); }
+    if (id === myId) { bumpChain(); track('rave_beer'); passPatch('round'); passStat('beers'); }
   }
 
   function barTick() {
@@ -491,6 +529,47 @@ function init() {
   let lastSauceTry = 0;
   let goldWinClaimed = -1;
   let lastGoldTry = 0;
+  let itemWinClaimed = -1;
+  let lastItemTry = 0;
+
+  // THE CHAIN: every pickup within 90s of the last extends it — the lone
+  // visitor's reason to keep moving. Client-side, personal, no leaderboard.
+  let chain = 0, chainAt = 0;
+  function bumpChain() {
+    const now = Date.now();
+    chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
+    chainAt = now;
+    if (chain === 5) {
+      const me = myId && ravers.get(myId);
+      if (me) {
+        me.wrap.classList.add('rv-chainglow');
+        setTimeout(() => me.wrap.classList.remove('rv-chainglow'), 12000);
+        showBubble('🔥 ' + autoName(me.outfit) + ' is on a CHAIN of FIVE!', false, 6000);
+      }
+      track('rave_chain', { n: 5 });
+    }
+    if (chain === 10) { passPatch('chain'); track('rave_chain', { n: 10 }); }
+    return chain;
+  }
+  const chainTag = () => (chain > 1 ? ' — chain ×' + chain + '!' : '');
+
+  // conveyor grant — shared by the ws broadcast and solo mode
+  function itemGrant(id, win, kind, fx) {
+    itemWinClaimed = win;
+    const sp = itemSpotFor(win);
+    pickupPop(sp.x, sp.y);
+    if (id === myId) bumpChain();
+    if (fx) {
+      applyFx(id, fx);
+    } else if (id === myId && SNACKS[kind]) {
+      const toast = document.createElement('div');
+      toast.className = 'rv-glowtoast';
+      toast.innerHTML = SNACKS[kind][0] + ' <b>' + SNACKS[kind][1] + '</b>' + (chain > 1 ? ' — chain ×' + chain + '!' : ' — keep moving, keep the chain!');
+      floor.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+      track('rave_snack', { kind });
+    }
+  }
   let cocktailWinClaimed = -1;
   let lastCocktailTry = 0;
 
@@ -530,6 +609,7 @@ function init() {
     pickupPop(gs.x, gs.y);
     confettiBurst();
     if (id === myId) {
+      bumpChain();
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = '🍌 <b>THE GOLDEN BANANA</b> — the whole floor parties for you!';
@@ -557,7 +637,8 @@ function init() {
         flames: 'you’re literally on fire!',
         daiquiri: 'fresh legs, you’re faster!',
         fizz: 'you’re bubbling, dance it out!',
-      }[fx.id] || '');
+        zap: 'you’re crackling with static!',
+      }[fx.id] || '') + chainTag();
       floor.appendChild(toast);
       setTimeout(() => toast.remove(), 4500);
       track('rave_fx', { fx: fx.id });
@@ -590,6 +671,7 @@ function init() {
     showBubble('💿 ' + autoName(r.outfit) + ' found a lost record — run it to the DJ!', false, 6000);
     refreshHud();
     if (id === myId) {
+      bumpChain();
       // unmissable self-feedback — the bar bubble is easy to overlook mid-dance
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
@@ -674,24 +756,52 @@ function init() {
     } else {
       goEl.style.display = 'none';
     }
-    // — the hot sauce: a bottle on the open floor every 3 minutes; grab it for flames —
-    const saEl = el('rvSauce');
-    const saPh = (((t - SAUCE_OFFSET) % SAUCE_PERIOD) + SAUCE_PERIOD) % SAUCE_PERIOD;
-    const saWin = Math.floor((t - SAUCE_OFFSET) / SAUCE_PERIOD);
-    if (saPh < SAUCE_WAIT && sauceWinClaimed !== saWin && floorItems < MAX_FLOOR_ITEMS) {
-      const ss = sauceSpotFor(saWin);
+    // — THE CONVEYOR: a fresh item lands every 75 seconds, forever — the floor is
+    // never dead (Trym's brief: solo visitors need a constant chase) —
+    const itEl = el('rvItem');
+    const iPh = (((t - ITEM_OFFSET) % ITEM_PERIOD) + ITEM_PERIOD) % ITEM_PERIOD;
+    const iWin = Math.floor((t - ITEM_OFFSET) / ITEM_PERIOD);
+    if (iPh < ITEM_WAIT && itemWinClaimed !== iWin && floorItems < MAX_FLOOR_ITEMS) {
+      const isp = itemSpotFor(iWin);
+      const kind = itemTypeFor(iWin);
       floorItems++;
-      saEl.style.display = '';
-      saEl.style.left = ss.x + '%';
-      saEl.style.top = ss.y + '%';
-      const meS = myId && ravers.get(myId);
-      if (meS && !meS.stage && Math.hypot(meS.x - ss.x, meS.y - ss.y) < GRAB_R && Date.now() - lastSauceTry > 2000) {
-        lastSauceTry = Date.now();
-        if (ws && ws.readyState === 1) sendClaim('{"t":"sauce"}');
-        else { sauceWinClaimed = saWin; applyFx(myId, { id: 'flames', until: Date.now() + FX_MS }, ss); } // solo mode
+      if (itEl.dataset.kind !== kind) { itEl.dataset.kind = kind; itEl.innerHTML = ITEM_SVGS[kind]; }
+      itEl.style.display = '';
+      itEl.style.left = isp.x + '%';
+      itEl.style.top = isp.y + '%';
+      const meI = myId && ravers.get(myId);
+      if (meI && !meI.stage && Math.hypot(meI.x - isp.x, meI.y - isp.y) < GRAB_R && Date.now() - lastItemTry > 2000) {
+        lastItemTry = Date.now();
+        const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz' }[kind];
+        if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
+        else itemGrant(myId, iWin, kind, soloFx ? { id: soloFx, until: Date.now() + FX_MS } : undefined); // solo mode
       }
     } else {
-      saEl.style.display = 'none';
+      itEl.style.display = 'none';
+    }
+    // — the twinkle: the next item announces its landing spot 4s early — race it —
+    const twEl = el('rvTwinkle');
+    if (iPh > ITEM_PERIOD - 4) {
+      const nsp = itemSpotFor(iWin + 1);
+      twEl.hidden = false;
+      twEl.style.left = nsp.x + '%';
+      twEl.style.top = nsp.y + '%';
+    } else {
+      twEl.hidden = true;
+    }
+    // — THE WAVE: Barty calls it, emote in time to join the ripple (staff always join) —
+    const wvPh = (((t - WAVE_OFFSET) % WAVE_PERIOD) + WAVE_PERIOD) % WAVE_PERIOD;
+    const wvWin = Math.floor((t - WAVE_OFFSET) / WAVE_PERIOD);
+    if (wvPh < WAVE_LEN) {
+      if (waveWin !== wvWin) {
+        waveWin = wvWin;
+        wavers.clear();
+        showBubble('🌊 WAAAVE! smash any emote NOW!', true);
+      }
+    } else if (waveWin === wvWin) {
+      waveWin = -1; // fires exactly once per window
+      hideBubble();
+      runWave();
     }
     // — the delivery: carrier reaches the stage edge → bonus drop for everyone —
     const me = myId && ravers.get(myId);
@@ -777,6 +887,7 @@ function init() {
         if (typeof m.sauceWin === 'number') sauceWinClaimed = m.sauceWin;
         if (typeof m.cocktailWin === 'number') cocktailWinClaimed = m.cocktailWin;
         if (typeof m.goldWin === 'number') goldWinClaimed = m.goldWin;
+        if (typeof m.itemWin === 'number') itemWinClaimed = m.itemWin;
         m.all.forEach((p) => {
           const r = ravers.get(p.id);
           if (r && p.vinyl) { r.vinyl = true; carryIcon(r, true); }
@@ -794,6 +905,7 @@ function init() {
       else if (m.t === 'beer') claimBeer(m.id);
       else if (m.t === 'fx') {
         const tw = Date.now() / 1000;
+        if (m.id === myId) bumpChain(); // bar cocktails and legacy grants chain too
         if (m.src === 'sauce') {
           sauceWinClaimed = Math.floor((tw - SAUCE_OFFSET) / SAUCE_PERIOD);
           applyFx(m.id, m.fx, sauceSpotFor(sauceWinClaimed));
@@ -803,6 +915,7 @@ function init() {
           applyFx(m.id, m.fx, { x: 10, y: 76 }); // the pop lands over the bar counter
         } else applyFx(m.id, m.fx);
       }
+      else if (m.t === 'item') itemGrant(m.id, m.win, m.kind, m.fx);
       else if (m.t === 'gold') claimGold(m.id);
       else if (m.t === 'vinyl') pickVinyl(m.id);
       else if (m.t === 'minidrop') deliverVinyl(m.id);
@@ -962,7 +1075,14 @@ function init() {
           trailCtx.fillStyle = 'rgba(179, 136, 255, 0.16)';
           trailCtx.fillRect(gx, gy, 8, 8);
         }
-        if (!fxActive(r, now)) continue;
+        const hasFx = fxActive(r, now);
+        r.wrap.classList.toggle('rv-zapfx', hasFx && r.fx.id === 'zap');
+        if (!hasFx) continue;
+        if (r.fx.id === 'zap' && now - (r.zapSpawnAt || 0) > 130) {
+          // static crackles off you whether you walk or dance
+          r.zapSpawnAt = now;
+          fxParts.push({ x: px + (Math.sin(now / 70) * 26), y: py - 20 - ((now >> 6) % 5) * 9, t0: now, kind: 'zap', seed: now % 13 });
+        }
         // flames + dashes are PARTICLES at past positions (a real trail behind the
         // walker) — drawing at the live feet hid them under the sprite, and the
         // canvas fade killed them in ~1s (Trym, iOS)
@@ -984,11 +1104,20 @@ function init() {
       // fx particle trails: flames are SPRITES that flicker, sway and rise as they
       // die (~2s); dashes streak ~1.4s. Both fade with age.
       if (fxParts.length) {
-        fxParts = fxParts.filter((p) => now - p.t0 < (p.kind === 'flames' ? 2000 : 1400));
+        fxParts = fxParts.filter((p) => now - p.t0 < (p.kind === 'flames' ? 2000 : p.kind === 'zap' ? 350 : 1400));
         trailCtx.imageSmoothingEnabled = false;
         for (const p of fxParts) {
-          const age = (now - p.t0) / (p.kind === 'flames' ? 2000 : 1400);
-          if (p.kind === 'flames') {
+          const age = (now - p.t0) / (p.kind === 'flames' ? 2000 : p.kind === 'zap' ? 350 : 1400);
+          if (p.kind === 'zap') {
+            // a tiny lightning kink: two offset cyan ticks + a white joint
+            trailCtx.globalAlpha = 1 - age;
+            trailCtx.fillStyle = '#78ebff';
+            trailCtx.fillRect(p.x, p.y, 3, 6);
+            trailCtx.fillRect(p.x - 3, p.y + 6, 3, 6);
+            trailCtx.fillStyle = '#ffffff';
+            trailCtx.fillRect(p.x - 1, p.y + 5, 3, 3);
+            trailCtx.globalAlpha = 1;
+          } else if (p.kind === 'flames') {
             const frame = flameCvs[(Math.floor(now / 90) + (p.seed || 0)) % 2]; // per-particle flicker offset
             const w = 21 * (1 - age * 0.45);
             const h = w * 8 / 7;
@@ -1002,6 +1131,17 @@ function init() {
             trailCtx.fillStyle = `rgba(255, 214, 80, ${0.7 * (1 - age)})`;
             trailCtx.fillRect(gx2 - 4, gy2 - 6, 12, 3);
           }
+        }
+      }
+      // smoke machine: low pixel fog rolls across the floor every 5 minutes
+      const smPh = ((((now / 1000) - SMOKE_OFFSET) % SMOKE_PERIOD) + SMOKE_PERIOD) % SMOKE_PERIOD;
+      if (smPh < SMOKE_LEN) {
+        for (let i = 0; i < 7; i++) {
+          const sx = ((smPh * 55 + i * 173) % (floorW + 240)) - 120;
+          const sy = floorH * 0.58 + Math.sin(i * 2.1) * floorH * 0.13 + (i % 3) * 14;
+          trailCtx.fillStyle = 'rgba(190, 190, 215, 0.028)';
+          trailCtx.fillRect(Math.floor(sx / 16) * 16, Math.floor(sy / 16) * 16, 48, 20);
+          trailCtx.fillRect(Math.floor(sx / 16) * 16 + 16, Math.floor(sy / 16) * 16 - 16, 32, 16);
         }
       }
       // drop-end confetti: a burst of pixel squares raining over the whole floor
