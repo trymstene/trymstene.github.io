@@ -126,6 +126,7 @@ const schema = {
       background:
         repeating-conic-gradient(#161022 0% 25%, #1d1530 0% 50%) 0 0 / 96px 96px;
       image-rendering: pixelated;
+      will-change: transform; /* the follow-cam pans this layer every frame — keep it on the compositor */
     }
     body.rv-drop .rv-world {
       background:

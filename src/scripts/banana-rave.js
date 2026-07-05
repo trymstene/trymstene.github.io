@@ -40,7 +40,6 @@ const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE G
 const ITEM_PERIOD = 75, ITEM_WAIT = 55, ITEM_OFFSET = 15;               // THE CONVEYOR: an item every 75s, forever — keep in sync with worker
 const SNACKS = { candy: ['🍬', 'CANDY'], pizza: ['🍕', 'PIZZA SLICE'], balloon: ['🎈', 'BALLOON'] };
 const WAVE_PERIOD = 480, WAVE_LEN = 8, WAVE_OFFSET = 300;               // THE WAVE — client-only, synced by clock + emote broadcasts
-const SMOKE_PERIOD = 300, SMOKE_LEN = 22, SMOKE_OFFSET = 30;            // smoke machine — ambient, client-only
 const CHAIN_MS = 90000;                                                  // grab the next item within 90s to keep the chain
 const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
 const COCKTAILS = ['daiquiri', 'fizz'];                                 // rotation — keep in sync with worker
@@ -295,10 +294,11 @@ function init() {
   refreshZoomBtn();
   zoomBtn.addEventListener('click', () => { cam.on = !cam.on; refreshZoomBtn(); track('rave_zoom', { on: cam.on }); });
 
+  let camLastTx = null, camLastTy = null;
   function updateCam() {
     const me = myId && ravers.get(myId);
     if (!cam.on || !me || me.stage) {
-      if (cam.s !== 1) { cam.s = 1; cam.tx = 0; cam.ty = 0; world.style.transform = ''; }
+      if (cam.s !== 1) { cam.s = 1; cam.tx = 0; cam.ty = 0; camLastTx = null; world.style.transform = ''; }
       return;
     }
     cam.s = CAM_SCALE;
@@ -306,6 +306,9 @@ function init() {
     const py = (me.y / 100) * floorH * cam.s;
     cam.tx = clamp(floorW / 2 - px, floorW - floorW * cam.s, 0);
     cam.ty = clamp(floorH / 2 - py, floorH - floorH * cam.s, 0);
+    // a stationary camera writes nothing — style writes every frame are compositor churn
+    if (camLastTx !== null && Math.abs(cam.tx - camLastTx) < 0.1 && Math.abs(cam.ty - camLastTy) < 0.1) return;
+    camLastTx = cam.tx; camLastTy = cam.ty;
     world.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.s})`;
   }
 
@@ -551,10 +554,15 @@ function init() {
       hypeSegs.push(s);
     }
   })();
+  const mixerEl = el('rvMixer');
+  let lastSegsOn = -1;
   function renderHype() {
-    const on = Math.round((hype / HYPE_MAX) * 12);
-    hypeSegs.forEach((s, i) => s.classList.toggle('on', i < on || Date.now() < hypeModeUntil));
-    el('rvMixer').classList.toggle('rv-mixer--peak', Date.now() < hypeModeUntil);
+    const peaking = Date.now() < hypeModeUntil;
+    const on = peaking ? 12 : Math.round((hype / HYPE_MAX) * 12);
+    if (on === lastSegsOn && !peaking) return; // segment count unchanged — no DOM work
+    lastSegsOn = on;
+    hypeSegs.forEach((s, i) => s.classList.toggle('on', i < on));
+    mixerEl.classList.toggle('rv-mixer--peak', peaking);
   }
   function addHype(n) {
     if (Date.now() < hypeModeUntil) return; // the meter rests while you peak
@@ -924,7 +932,6 @@ function init() {
       hype = Math.max(0, hype - 0.9);
       renderHype();
     }
-    tickRun();
     // the chain readout lives on the mixer; it fades when the chain window lapses
     const chainRow = el('rvChainRow');
     const chainLive = chain > 1 && Date.now() - chainAt < CHAIN_MS;
@@ -1189,18 +1196,32 @@ function init() {
       });
     }
   }
+  const dropFlashEl = el('rvDropFlash');
+  const dropFlashSpan = dropFlashEl.querySelector('span');
+  let lastDropLabel = '';
+  let trailsDirtyUntil = 0;
   function tick() {
     const now = Date.now();
     const dtMs = lastTick ? Math.min(now - lastTick, 100) : 16;
     lastTick = now;
     stepMe(now, dtMs);
     updateCam();
+    tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
     }
+    // is anything actually painting? a still floor skips the whole canvas pass
+    // (the full-canvas fade composite ran every frame forever, even when blank)
+    let liveCanvas = fxParts.length > 0 || confetti.length > 0;
+    if (!liveCanvas) {
+      for (const r of ravers.values()) {
+        if (!r.stage && ((r.lastMoveAt && now - r.lastMoveAt < 350) || fxActive(r, now))) { liveCanvas = true; break; }
+      }
+    }
+    if (liveCanvas) trailsDirtyUntil = now + 4000; // fade needs ~4s of runway to fully clear
     // light trails: walking leaves faint violet footprints (one calm tone — the
     // per-raver rainbow read as MESS on the checkerboard, Trym verdict)
-    if (trailCtx && !reduced && floorW) {
+    if (trailCtx && !reduced && floorW && now < trailsDirtyUntil) {
       trailCtx.globalCompositeOperation = 'destination-out';
       trailCtx.fillStyle = 'rgba(0,0,0,0.06)';
       trailCtx.fillRect(0, 0, floorW, floorH);
@@ -1217,7 +1238,8 @@ function init() {
           trailCtx.fillRect(gx, gy, 8, 8);
         }
         const hasFx = fxActive(r, now);
-        r.wrap.classList.toggle('rv-zapfx', hasFx && r.fx.id === 'zap');
+        const zapOn = hasFx && r.fx.id === 'zap';
+        if (r.zapOn !== zapOn) { r.zapOn = zapOn; r.wrap.classList.toggle('rv-zapfx', zapOn); } // DOM writes only on change
         if (!hasFx) continue;
         if (r.fx.id === 'zap' && now - (r.zapSpawnAt || 0) > 130) {
           // static crackles off you whether you walk or dance
@@ -1274,17 +1296,6 @@ function init() {
           }
         }
       }
-      // smoke machine: low pixel fog rolls across the floor every 5 minutes
-      const smPh = ((((now / 1000) - SMOKE_OFFSET) % SMOKE_PERIOD) + SMOKE_PERIOD) % SMOKE_PERIOD;
-      if (smPh < SMOKE_LEN) {
-        for (let i = 0; i < 7; i++) {
-          const sx = ((smPh * 55 + i * 173) % (floorW + 240)) - 120;
-          const sy = floorH * 0.58 + Math.sin(i * 2.1) * floorH * 0.13 + (i % 3) * 14;
-          trailCtx.fillStyle = 'rgba(190, 190, 215, 0.028)';
-          trailCtx.fillRect(Math.floor(sx / 16) * 16, Math.floor(sy / 16) * 16, 48, 20);
-          trailCtx.fillRect(Math.floor(sx / 16) * 16 + 16, Math.floor(sy / 16) * 16 - 16, 32, 16);
-        }
-      }
       // drop-end confetti: a burst of pixel squares raining over the whole floor
       if (confetti.length) {
         confetti = confetti.filter((p) => p.y < floorH + 10);
@@ -1299,7 +1310,8 @@ function init() {
     const secs = (now / 1000) % DROP_PERIOD;
     const clockDrop = secs < DROP_LEN;
     const dropActive = clockDrop || now < miniDropUntil; // a delivered vinyl buys everyone a bonus drop
-    el('rvDropFlash').querySelector('span').textContent = clockDrop ? 'THE DROP' : 'BONUS DROP!';
+    const dropLabel = clockDrop ? 'THE DROP' : 'BONUS DROP!';
+    if (dropLabel !== lastDropLabel) { lastDropLabel = dropLabel; dropFlashSpan.textContent = dropLabel; } // was a querySelector + write EVERY frame
     const cycleMs = dropActive ? 480 : 800;
     const idx = Math.floor((now % cycleMs) / (cycleMs / NFRAMES));
 
@@ -1307,7 +1319,7 @@ function init() {
       if (lastDrop === true && !dropActive) { passStat('drops'); confettiBurst(); addHype(8); } // survived another one — rain the confetti
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
-      el('rvDropFlash').hidden = !dropActive;
+      dropFlashEl.hidden = !dropActive;
     }
     if (idx !== lastIdx) {
       lastIdx = idx;
