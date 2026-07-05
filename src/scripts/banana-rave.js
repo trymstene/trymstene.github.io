@@ -85,6 +85,24 @@ const SAUCE_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="h
 const DAIQUIRI_SVG = '<svg viewBox="0 0 10 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="2" height="1" fill="#ff5078"/><rect x="3" y="1" width="4" height="1" fill="#ff5078"/><rect x="2" y="2" width="1" height="1" fill="#ff5078"/><rect x="3" y="2" width="1" height="1" fill="#c8285a"/><rect x="4" y="2" width="2" height="1" fill="#ff5078"/><rect x="6" y="2" width="1" height="1" fill="#c8285a"/><rect x="7" y="2" width="1" height="1" fill="#ff5078"/><rect x="4" y="3" width="2" height="1" fill="#ffffff"/><rect x="1" y="4" width="1" height="1" fill="#6caac4"/><rect x="2" y="4" width="6" height="1" fill="#ffd650"/><rect x="8" y="4" width="1" height="1" fill="#6caac4"/><rect x="1" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="5" width="1" height="1" fill="#ffd650"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="3" height="1" fill="#ffd650"/><rect x="7" y="5" width="1" height="1" fill="#d6a024"/><rect x="8" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="6" width="1" height="1" fill="#6caac4"/><rect x="3" y="6" width="3" height="1" fill="#ffd650"/><rect x="6" y="6" width="1" height="1" fill="#d6a024"/><rect x="7" y="6" width="1" height="1" fill="#6caac4"/><rect x="3" y="7" width="1" height="1" fill="#6caac4"/><rect x="4" y="7" width="1" height="1" fill="#ffd650"/><rect x="5" y="7" width="1" height="1" fill="#d6a024"/><rect x="6" y="7" width="1" height="1" fill="#6caac4"/><rect x="4" y="8" width="2" height="1" fill="#6caac4"/><rect x="4" y="9" width="2" height="1" fill="#6caac4"/><rect x="3" y="10" width="4" height="1" fill="#6caac4"/><rect x="2" y="11" width="6" height="1" fill="#6caac4"/></svg>';
 const FIZZ_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="0" width="1" height="1" fill="#ff4d9d"/><rect x="6" y="0" width="1" height="1" fill="#ffffff"/><rect x="4" y="1" width="1" height="1" fill="#ff4d9d"/><rect x="5" y="1" width="1" height="1" fill="#ffffff"/><rect x="1" y="2" width="1" height="1" fill="#6caac4"/><rect x="2" y="2" width="4" height="1" fill="#ffffff"/><rect x="6" y="2" width="1" height="1" fill="#6caac4"/><rect x="1" y="3" width="1" height="1" fill="#6caac4"/><rect x="2" y="3" width="1" height="1" fill="#78ebff"/><rect x="3" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="3" width="2" height="1" fill="#78ebff"/><rect x="6" y="3" width="1" height="1" fill="#6caac4"/><rect x="1" y="4" width="1" height="1" fill="#6caac4"/><rect x="2" y="4" width="3" height="1" fill="#78ebff"/><rect x="5" y="4" width="1" height="1" fill="#ffffff"/><rect x="6" y="4" width="1" height="1" fill="#6caac4"/><rect x="1" y="5" width="1" height="1" fill="#6caac4"/><rect x="2" y="5" width="1" height="1" fill="#ffffff"/><rect x="3" y="5" width="3" height="1" fill="#78ebff"/><rect x="6" y="5" width="1" height="1" fill="#6caac4"/><rect x="1" y="6" width="1" height="1" fill="#6caac4"/><rect x="2" y="6" width="4" height="1" fill="#78ebff"/><rect x="6" y="6" width="1" height="1" fill="#6caac4"/><rect x="1" y="7" width="1" height="1" fill="#6caac4"/><rect x="2" y="7" width="1" height="1" fill="#78ebff"/><rect x="3" y="7" width="1" height="1" fill="#ffffff"/><rect x="4" y="7" width="2" height="1" fill="#78ebff"/><rect x="6" y="7" width="1" height="1" fill="#6caac4"/><rect x="1" y="8" width="1" height="1" fill="#6caac4"/><rect x="2" y="8" width="4" height="1" fill="#78ebff"/><rect x="6" y="8" width="1" height="1" fill="#6caac4"/><rect x="1" y="9" width="1" height="1" fill="#6caac4"/><rect x="2" y="9" width="1" height="1" fill="#42a8c6"/><rect x="3" y="9" width="2" height="1" fill="#78ebff"/><rect x="5" y="9" width="1" height="1" fill="#42a8c6"/><rect x="6" y="9" width="1" height="1" fill="#6caac4"/><rect x="1" y="10" width="1" height="1" fill="#6caac4"/><rect x="2" y="10" width="4" height="1" fill="#42a8c6"/><rect x="6" y="10" width="1" height="1" fill="#6caac4"/><rect x="1" y="11" width="6" height="1" fill="#6caac4"/></svg>';
 
+// flame trail: two flicker frames (Pillow-verified in scratchpad floor-items.py),
+// prerendered to tiny canvases and stamped per particle — a straight line of
+// squares "kind of looked like fire but wasn't flaming" (Trym)
+const FLAME_MAPS = [
+  ['...Y...', '..YY...', '..YYO..', '.YOOO..', '.YOWOY.', 'YOWWOY.', 'YOWOOY.', '.YOOY..'],
+  ['..Y..Y.', '..YY.Y.', '.YYOY..', '.YOOOY.', 'YOWWOY.', 'YOWWOOY', '.YOWOY.', '..YOY..'],
+];
+const FLAME_COLS = { Y: '#ffe135', O: '#ff9128', W: '#f0f0fa' };
+const flameCvs = FLAME_MAPS.map((rows) => {
+  const c = document.createElement('canvas');
+  c.width = 7; c.height = 8;
+  const x = c.getContext('2d');
+  rows.forEach((row, ry) => [...row].forEach((ch, rx) => {
+    if (FLAME_COLS[ch]) { x.fillStyle = FLAME_COLS[ch]; x.fillRect(rx, ry, 1, 1); }
+  }));
+  return c;
+});
+
 const BAR_QUIPS = [
   'we only serve potassium',
   'the drop hits every third minute. the bar never misses',
@@ -308,7 +326,13 @@ function init() {
     } else if (walkTarget) {
       dx = walkTarget.x - me.x; dy = walkTarget.y - me.y;
       const dist = Math.hypot(dx, dy);
-      if (dist < 1) { walkTarget = null; return; }
+      if (dist < 1) {
+        walkTarget = null;
+        // report the RESTING spot — the throttle can eat the last step, and the
+        // server verifies claims against its copy of your position
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
+        return;
+      }
       dx /= dist; dy /= dist;
     }
     if (!dx && !dy) return;
@@ -423,7 +447,7 @@ function init() {
         const mine = me && me.outfit.extras && me.outfit.extras.beer;
         if (me && !me.stage && !mine && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastBeerTry > 2000) {
           lastBeerTry = Date.now();
-          if (ws && ws.readyState === 1) ws.send('{"t":"beer"}');
+          if (ws && ws.readyState === 1) sendClaim('{"t":"beer"}');
           else claimBeer(myId); // solo mode: the bar is all yours
         }
       }
@@ -444,7 +468,7 @@ function init() {
         const me = myId && ravers.get(myId);
         if (me && !me.stage && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastCocktailTry > 2000) {
           lastCocktailTry = Date.now();
-          if (ws && ws.readyState === 1) ws.send('{"t":"cocktail"}');
+          if (ws && ws.readyState === 1) sendClaim('{"t":"cocktail"}');
           else { cocktailWinClaimed = spWin; spEl.hidden = true; applyFx(myId, { id: kind, until: Date.now() + FX_MS }, { x: 10, y: 76 }); } // solo mode
         }
       } else {
@@ -469,6 +493,18 @@ function init() {
   let lastGoldTry = 0;
   let cocktailWinClaimed = -1;
   let lastCocktailTry = 0;
+
+  // every claim rides with a fresh position: the server position-verifies claims,
+  // but it only learns your position from move messages — a fresh reconnect (iOS
+  // app-switch = pagehide + reconnect) has NO coords, and standing still never
+  // sends any. Trym stood ON the vinyl and nothing happened — this is why.
+  function sendClaim(payload) {
+    const me = myId && ravers.get(myId);
+    if (me && ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
+      ws.send(payload);
+    }
+  }
 
   // pickup juice: a pixel ring + four stars burst where an item was grabbed —
   // grabbing something should FEEL like grabbing something
@@ -613,7 +649,7 @@ function init() {
       const me = myId && ravers.get(myId);
       if (me && !me.stage && !me.vinyl && Math.hypot(me.x - s.x, me.y - s.y) < GRAB_R && Date.now() - lastVinylTry > 2000) {
         lastVinylTry = Date.now();
-        if (ws && ws.readyState === 1) ws.send('{"t":"vinyl"}');
+        if (ws && ws.readyState === 1) sendClaim('{"t":"vinyl"}');
         else pickVinyl(myId); // solo mode
       }
     } else {
@@ -632,7 +668,7 @@ function init() {
       const meG = myId && ravers.get(myId);
       if (meG && !meG.stage && Math.hypot(meG.x - gs.x, meG.y - gs.y) < GRAB_R && Date.now() - lastGoldTry > 2000) {
         lastGoldTry = Date.now();
-        if (ws && ws.readyState === 1) ws.send('{"t":"gold"}');
+        if (ws && ws.readyState === 1) sendClaim('{"t":"gold"}');
         else claimGold(myId); // solo mode
       }
     } else {
@@ -651,7 +687,7 @@ function init() {
       const meS = myId && ravers.get(myId);
       if (meS && !meS.stage && Math.hypot(meS.x - ss.x, meS.y - ss.y) < GRAB_R && Date.now() - lastSauceTry > 2000) {
         lastSauceTry = Date.now();
-        if (ws && ws.readyState === 1) ws.send('{"t":"sauce"}');
+        if (ws && ws.readyState === 1) sendClaim('{"t":"sauce"}');
         else { sauceWinClaimed = saWin; applyFx(myId, { id: 'flames', until: Date.now() + FX_MS }, ss); } // solo mode
       }
     } else {
@@ -661,7 +697,7 @@ function init() {
     const me = myId && ravers.get(myId);
     if (me && me.vinyl && me.y < 18 && me.x > 26 && me.x < 74 && Date.now() - lastVinylTry > 2000) {
       lastVinylTry = Date.now();
-      if (ws && ws.readyState === 1) ws.send('{"t":"vinylDrop"}');
+      if (ws && ws.readyState === 1) sendClaim('{"t":"vinylDrop"}');
       else deliverVinyl(myId); // solo mode
     }
   }
@@ -932,7 +968,7 @@ function init() {
         // canvas fade killed them in ~1s (Trym, iOS)
         if ((r.fx.id === 'flames' || r.fx.id === 'daiquiri') && moving && now - (r.fxSpawnAt || 0) > 85) {
           r.fxSpawnAt = now;
-          fxParts.push({ x: px, y: py, t0: now, kind: r.fx.id });
+          fxParts.push({ x: px, y: py, t0: now, kind: r.fx.id, seed: (fxParts.length * 7 + 3) % 13 });
           if (fxParts.length > 400) fxParts.splice(0, fxParts.length - 400);
         } else if (r.fx.id === 'fizz') {
           // bubbles rise off the banana whether it walks or just dances
@@ -945,19 +981,24 @@ function init() {
           }
         }
       }
-      // fx particle trails: flames burn ~2s, dashes streak ~1.4s, fading with age
+      // fx particle trails: flames are SPRITES that flicker, sway and rise as they
+      // die (~2s); dashes streak ~1.4s. Both fade with age.
       if (fxParts.length) {
         fxParts = fxParts.filter((p) => now - p.t0 < (p.kind === 'flames' ? 2000 : 1400));
+        trailCtx.imageSmoothingEnabled = false;
         for (const p of fxParts) {
           const age = (now - p.t0) / (p.kind === 'flames' ? 2000 : 1400);
-          const gx2 = Math.floor(p.x / 8) * 8;
-          const gy2 = Math.floor(p.y / 8) * 8;
           if (p.kind === 'flames') {
-            trailCtx.fillStyle = `rgba(255, 122, 24, ${0.9 * (1 - age)})`;
-            trailCtx.fillRect(gx2, gy2, 8, 8);
-            trailCtx.fillStyle = `rgba(255, 225, 53, ${0.95 * (1 - age)})`;
-            trailCtx.fillRect(gx2 + 2, gy2 - 6 - Math.floor(age * 6), 4, 6);
+            const frame = flameCvs[(Math.floor(now / 90) + (p.seed || 0)) % 2]; // per-particle flicker offset
+            const w = 21 * (1 - age * 0.45);
+            const h = w * 8 / 7;
+            const sway = Math.sin((p.seed || 0) * 2.1 + now / 160) * 2.5;
+            trailCtx.globalAlpha = 0.95 * (1 - age);
+            trailCtx.drawImage(frame, p.x - w / 2 + sway, p.y - h - age * 12, w, h);
+            trailCtx.globalAlpha = 1;
           } else {
+            const gx2 = Math.floor(p.x / 8) * 8;
+            const gy2 = Math.floor(p.y / 8) * 8;
             trailCtx.fillStyle = `rgba(255, 214, 80, ${0.7 * (1 - age)})`;
             trailCtx.fillRect(gx2 - 4, gy2 - 6, 12, 3);
           }
