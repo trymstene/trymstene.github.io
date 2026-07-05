@@ -35,7 +35,8 @@ const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
 // high-fives (proximity sparks), and the lost vinyl (courier quest → bonus drop).
 const SPOT_PERIOD = 120, SPOT_LEN = 35, SPOT_OFFSET = 30, SPOT_R = 14; // seconds / floor-% (35s = time to actually reach it)
 const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
-const SAUCE_PERIOD = 240, SAUCE_WAIT = 120, SAUCE_OFFSET = 60;          // hot sauce drop — keep in sync with worker
+const SAUCE_PERIOD = 180, SAUCE_WAIT = 100, SAUCE_OFFSET = 60;          // hot sauce drop — keep in sync with worker
+const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE GOLDEN BANANA (rare) — keep in sync with worker
 const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
 const COCKTAILS = ['daiquiri', 'fizz'];                                 // rotation — keep in sync with worker
 const FX_MS = 150000;
@@ -65,6 +66,12 @@ function vinylSpotFor(w) { // keep in sync with vinylSpot() in worker-rave
 function sauceSpotFor(w) { // keep in sync with sauceSpot() in worker-rave
   let x = 12 + seedRand(0xf1a5 + w * 2) * 70;
   let y = 26 + seedRand(0xf1a5 + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+function goldSpotFor(w) { // keep in sync with goldSpot() in worker-rave
+  let x = 12 + seedRand(0x601d + w * 2) * 70;
+  let y = 26 + seedRand(0x601d + w * 2 + 1) * 46;
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
@@ -225,9 +232,15 @@ function init() {
   const barSolid = { x: 0, y: 100 };
   const trailCv = el('rvTrails');
   const trailCtx = trailCv ? trailCv.getContext('2d') : null;
+  // the sprite is a FIXED-px box while y is a floor-percent, so how high a banana
+  // can stand before its head + YOU tag poke above the floor (and read as "sliding
+  // under the DJ stage" — Trym, iOS) depends on the floor height. Clamp dynamically;
+  // capped at 16 so the vinyl delivery zone (y < 18) stays reachable on short floors.
+  let topClamp = 10;
   const measureFloor = () => {
     floorW = floor.clientWidth;
     floorH = floor.clientHeight;
+    if (floorH) topClamp = Math.min(16, Math.max(6, (58 / floorH) * 100));
     if (barEl && floorW && floorH) {
       barSolid.x = ((barEl.offsetWidth - 18) / floorW) * 100;       // 18px bleeds off the left
       barSolid.y = 100 - (((barEl.offsetHeight - 52) / floorH) * 100); // 52px bleeds off the bottom
@@ -279,7 +292,7 @@ function init() {
     // undo the camera: screen point → world percent
     walkTarget = {
       x: clamp(((e.clientX - rect.left - cam.tx) / (rect.width * cam.s)) * 100, 4, 96),
-      y: clamp(((e.clientY - rect.top - cam.ty) / (rect.height * cam.s)) * 100, 6, 92),
+      y: clamp(((e.clientY - rect.top - cam.ty) / (rect.height * cam.s)) * 100, topClamp, 92),
     };
   });
 
@@ -303,7 +316,7 @@ function init() {
     const boost = fxActive(me, now) && me.fx.id === 'daiquiri' ? 1.45 : 1; // fresh daiquiri legs
     const step = (WALK_SPEED * boost * dtMs) / 1000;
     let nx = clamp(me.x + (dx / norm) * step, 4, 96);
-    let ny = clamp(me.y + (dy / norm) * step, 6, 92);
+    let ny = clamp(me.y + (dy / norm) * step, topClamp, 92);
     // the bar is solid: block ENTERING it (slide along the edge you hit); anyone
     // who spawned inside can still walk free
     if (insideBar(nx, ny) && !insideBar(me.x, me.y)) {
@@ -452,6 +465,8 @@ function init() {
   let miniDropUntil = 0;
   let sauceWinClaimed = -1;
   let lastSauceTry = 0;
+  let goldWinClaimed = -1;
+  let lastGoldTry = 0;
   let cocktailWinClaimed = -1;
   let lastCocktailTry = 0;
 
@@ -469,6 +484,28 @@ function init() {
     setTimeout(() => d.remove(), 900);
   }
 
+  // the golden banana: a MOMENT for the whole floor — finder mints the patch,
+  // everyone gets the confetti
+  function claimGold(id) {
+    const r = ravers.get(id);
+    if (!r) return;
+    goldWinClaimed = Math.floor((Date.now() / 1000 - GOLD_OFFSET) / GOLD_PERIOD);
+    const gs = goldSpotFor(goldWinClaimed);
+    pickupPop(gs.x, gs.y);
+    confettiBurst();
+    if (id === myId) {
+      const toast = document.createElement('div');
+      toast.className = 'rv-glowtoast';
+      toast.innerHTML = '🍌 <b>THE GOLDEN BANANA</b> — the whole floor parties for you!';
+      floor.appendChild(toast);
+      setTimeout(() => toast.remove(), 6000);
+      passPatch('golden');
+      track('rave_gold');
+    } else {
+      showBubble('🍌 ' + autoName(r.outfit) + ' found the GOLDEN BANANA!', false, 6000);
+    }
+  }
+
   // timed effects (flames/daiquiri/fizz) — SERVER-GRANTED, worn until fx.until
   const fxActive = (r, now) => !!(r && r.fx && r.fx.until > now);
   function applyFx(id, fx, at) {
@@ -480,13 +517,13 @@ function init() {
     if (id === myId) {
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
-      toast.innerHTML = FX_ICON[fx.id] + ' <b>' + (FX_NAMES[fx.id] || 'POWER-UP').toUpperCase() + '!</b><br>' + ({
-        flames: 'You’re literally on fire — go strut.',
-        daiquiri: 'Fresh legs! You’re faster while it lasts.',
-        fizz: 'You’re bubbling. Dance it out.',
+      toast.innerHTML = FX_ICON[fx.id] + ' <b>' + (FX_NAMES[fx.id] || 'POWER-UP').toUpperCase() + '</b> — ' + ({
+        flames: 'you’re literally on fire!',
+        daiquiri: 'fresh legs, you’re faster!',
+        fizz: 'you’re bubbling, dance it out!',
       }[fx.id] || '');
       floor.appendChild(toast);
-      setTimeout(() => toast.remove(), 6000);
+      setTimeout(() => toast.remove(), 4500);
       track('rave_fx', { fx: fx.id });
     } else {
       showBubble(FX_ICON[fx.id] + ' ' + autoName(r.outfit) + ' got the ' + (FX_NAMES[fx.id] || 'good stuff') + '!', false, 5000);
@@ -520,9 +557,9 @@ function init() {
       // unmissable self-feedback — the bar bubble is easy to overlook mid-dance
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
-      toast.innerHTML = '💿 <b>YOU GOT THE RECORD!</b><br>Run it up to the DJ — the whole floor gets a bonus drop.';
+      toast.innerHTML = '💿 <b>YOU GOT THE RECORD</b> — run it up to the DJ!';
       floor.appendChild(toast);
-      setTimeout(() => toast.remove(), 7000);
+      setTimeout(() => toast.remove(), 5000);
       track('rave_vinyl_pickup');
     }
   }
@@ -582,7 +619,26 @@ function init() {
     } else {
       vEl.style.display = 'none';
     }
-    // — the hot sauce: a bottle on the open floor every 4 minutes; grab it for flames —
+    // — THE GOLDEN BANANA: rare; the finder mints a patch, everyone parties —
+    const goEl = el('rvGold');
+    const goPh = (((t - GOLD_OFFSET) % GOLD_PERIOD) + GOLD_PERIOD) % GOLD_PERIOD;
+    const goWin = Math.floor((t - GOLD_OFFSET) / GOLD_PERIOD);
+    if (goPh < GOLD_WAIT && goldWinClaimed !== goWin && floorItems < MAX_FLOOR_ITEMS) {
+      const gs = goldSpotFor(goWin);
+      floorItems++;
+      goEl.style.display = '';
+      goEl.style.left = gs.x + '%';
+      goEl.style.top = gs.y + '%';
+      const meG = myId && ravers.get(myId);
+      if (meG && !meG.stage && Math.hypot(meG.x - gs.x, meG.y - gs.y) < GRAB_R && Date.now() - lastGoldTry > 2000) {
+        lastGoldTry = Date.now();
+        if (ws && ws.readyState === 1) ws.send('{"t":"gold"}');
+        else claimGold(myId); // solo mode
+      }
+    } else {
+      goEl.style.display = 'none';
+    }
+    // — the hot sauce: a bottle on the open floor every 3 minutes; grab it for flames —
     const saEl = el('rvSauce');
     const saPh = (((t - SAUCE_OFFSET) % SAUCE_PERIOD) + SAUCE_PERIOD) % SAUCE_PERIOD;
     const saWin = Math.floor((t - SAUCE_OFFSET) / SAUCE_PERIOD);
@@ -684,6 +740,7 @@ function init() {
         if (typeof m.vinylWin === 'number') vinylWinClaimed = m.vinylWin;
         if (typeof m.sauceWin === 'number') sauceWinClaimed = m.sauceWin;
         if (typeof m.cocktailWin === 'number') cocktailWinClaimed = m.cocktailWin;
+        if (typeof m.goldWin === 'number') goldWinClaimed = m.goldWin;
         m.all.forEach((p) => {
           const r = ravers.get(p.id);
           if (r && p.vinyl) { r.vinyl = true; carryIcon(r, true); }
@@ -710,6 +767,7 @@ function init() {
           applyFx(m.id, m.fx, { x: 10, y: 76 }); // the pop lands over the bar counter
         } else applyFx(m.id, m.fx);
       }
+      else if (m.t === 'gold') claimGold(m.id);
       else if (m.t === 'vinyl') pickVinyl(m.id);
       else if (m.t === 'minidrop') deliverVinyl(m.id);
       else if (m.t === 'stage') setStage(m.id, m.on);
@@ -807,9 +865,9 @@ function init() {
     } catch (e) {}
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
-    toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR!</b><br>The glowstick is yours — forever. Your banana is holding it right now, and it\'s waiting in the builder too.';
+    toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR</b> — the glowstick is yours forever. It’s in your hand and in the builder.';
     floor.appendChild(toast);
-    setTimeout(() => toast.remove(), 9000);
+    setTimeout(() => toast.remove(), 8000);
     track('rave_glowstick_unlock');
     passPatch('survivor', { quiet: true }); // the glowtoast IS the celebration here
   }
@@ -827,6 +885,7 @@ function init() {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let lastIdx = -1, lastDrop = null, lastTick = 0;
   let confetti = [];
+  let fxParts = []; // flame/dash trail particles — {x, y, t0, kind}
   function confettiBurst() {
     if (reduced || !floorW) return;
     const COLS = ['#ffe135', '#ff4d9d', '#78ebff', '#58c05c', '#fffdf5'];
@@ -868,18 +927,13 @@ function init() {
           trailCtx.fillRect(gx, gy, 8, 8);
         }
         if (!fxActive(r, now)) continue;
-        if (r.fx.id === 'flames' && moving) {
-          // pixel flames at the heels: orange body + yellow lick, the canvas fade
-          // stretches them into a burning trail for free
-          trailCtx.fillStyle = 'rgba(255, 122, 24, 0.85)';
-          trailCtx.fillRect(gx, gy, 8, 8);
-          trailCtx.fillStyle = 'rgba(255, 225, 53, 0.9)';
-          trailCtx.fillRect(gx + 2, gy - 6, 4, 6);
-        } else if (r.fx.id === 'daiquiri' && moving) {
-          // speed dashes kicked out behind the runner
-          trailCtx.fillStyle = 'rgba(255, 214, 80, 0.55)';
-          trailCtx.fillRect(gx - 12, gy - 10, 8, 3);
-          trailCtx.fillRect(gx + 12, gy - 4, 8, 3);
+        // flames + dashes are PARTICLES at past positions (a real trail behind the
+        // walker) — drawing at the live feet hid them under the sprite, and the
+        // canvas fade killed them in ~1s (Trym, iOS)
+        if ((r.fx.id === 'flames' || r.fx.id === 'daiquiri') && moving && now - (r.fxSpawnAt || 0) > 85) {
+          r.fxSpawnAt = now;
+          fxParts.push({ x: px, y: py, t0: now, kind: r.fx.id });
+          if (fxParts.length > 400) fxParts.splice(0, fxParts.length - 400);
         } else if (r.fx.id === 'fizz') {
           // bubbles rise off the banana whether it walks or just dances
           for (let b = 0; b < 2; b++) {
@@ -888,6 +942,24 @@ function init() {
             const by = py - 34 - ph * 52;
             trailCtx.fillStyle = `rgba(120, 235, 255, ${0.75 * (1 - ph)})`;
             trailCtx.fillRect(Math.floor(bx / 4) * 4, Math.floor(by / 4) * 4, 4, 4);
+          }
+        }
+      }
+      // fx particle trails: flames burn ~2s, dashes streak ~1.4s, fading with age
+      if (fxParts.length) {
+        fxParts = fxParts.filter((p) => now - p.t0 < (p.kind === 'flames' ? 2000 : 1400));
+        for (const p of fxParts) {
+          const age = (now - p.t0) / (p.kind === 'flames' ? 2000 : 1400);
+          const gx2 = Math.floor(p.x / 8) * 8;
+          const gy2 = Math.floor(p.y / 8) * 8;
+          if (p.kind === 'flames') {
+            trailCtx.fillStyle = `rgba(255, 122, 24, ${0.9 * (1 - age)})`;
+            trailCtx.fillRect(gx2, gy2, 8, 8);
+            trailCtx.fillStyle = `rgba(255, 225, 53, ${0.95 * (1 - age)})`;
+            trailCtx.fillRect(gx2 + 2, gy2 - 6 - Math.floor(age * 6), 4, 6);
+          } else {
+            trailCtx.fillStyle = `rgba(255, 214, 80, ${0.7 * (1 - age)})`;
+            trailCtx.fillRect(gx2 - 4, gy2 - 6, 12, 3);
           }
         }
       }

@@ -151,8 +151,10 @@ const schema = {
       z-index: 3; image-rendering: pixelated;
     }
     .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -24px; z-index: 4; }
-    /* Barty's special of the window: the cocktail waits on the countertop */
-    .rv-special { position: absolute; width: 26px; left: 38%; top: -30px; z-index: 4; line-height: 0; animation: rvItemBob 0.8s steps(2) infinite; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
+    /* Barty's special of the window: the cocktail sits where the beer sits —
+       38% landed ON Barty and overflowed him (Trym, iOS). Beer + special never
+       show at the same time (happy hour vs specials window), so they share the spot. */
+    .rv-special { position: absolute; width: 26px; left: 62%; top: -26px; z-index: 4; line-height: 0; animation: rvItemBob 0.8s steps(2) infinite; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
     .rv-special[hidden] { display: none; }
     .rv-special svg { width: 100%; height: auto; image-rendering: pixelated; }
     .rv-bubble {
@@ -190,6 +192,7 @@ const schema = {
       animation: rvItemBob 0.8s steps(2) infinite;
     }
     .rv-item--tall { width: 26px; height: 39px; }
+    .rv-item--gold { width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(255, 225, 53, 0.85)) drop-shadow(0 0 3px #fffdf5); }
     @keyframes rvItemBob { 50% { transform: translate(-50%, -62%) scale(1.1); } }
     /* pickup juice: a pixel ring + four stars burst where the item was grabbed */
     .rv-pop { position: absolute; width: 60px; height: 60px; transform: translate(-50%, -50%); z-index: 520; pointer-events: none; }
@@ -267,11 +270,14 @@ const schema = {
       opacity: 1; transition: opacity 0.6s ease;
     }
     .rv-tip--fade { opacity: 0; }
+    /* pickup/earn banner: SLIM and at the BOTTOM — the old top box covered the
+       exact spot you tap to walk toward the DJ, and ate the taps (Trym, iOS) */
     .rv-glowtoast {
-      position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 700;
-      max-width: min(88%, 400px); text-align: center; font-size: 0.85rem; line-height: 1.5;
-      background: #17121f; color: #fffdf5; border: 3px solid #39ff14;
-      box-shadow: 0 0 14px rgba(57, 255, 20, 0.5); padding: 0.7rem 0.9rem;
+      position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 700;
+      max-width: 94%; text-align: center; font-size: 0.72rem; line-height: 1.4;
+      background: rgba(23, 18, 31, 0.94); color: #fffdf5; border: 2px solid #39ff14;
+      box-shadow: 0 0 10px rgba(57, 255, 20, 0.4); padding: 0.35rem 0.75rem;
+      pointer-events: none;
     }
     .rv-glowtoast b { color: #39ff14; }
 
@@ -409,6 +415,9 @@ const schema = {
             </svg>
             <svg class="rv-item rv-item--tall" id="rvSauce" viewBox="0 0 8 12" shape-rendering="crispEdges" style="display:none;" aria-hidden="true">
               <rect x="3" y="0" width="2" height="1" fill="#3a304c"/><rect x="3" y="1" width="2" height="1" fill="#3a304c"/><rect x="2" y="2" width="1" height="1" fill="#1e182c"/><rect x="3" y="2" width="2" height="1" fill="#fffaf0"/><rect x="5" y="2" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="1" height="1" fill="#1e182c"/><rect x="3" y="3" width="2" height="1" fill="#e83b3b"/><rect x="5" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="4" height="1" fill="#e83b3b"/><rect x="6" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="1" height="1" fill="#e83b3b"/><rect x="3" y="5" width="2" height="1" fill="#fffaf0"/><rect x="5" y="5" width="1" height="1" fill="#e83b3b"/><rect x="6" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="2" height="1" fill="#fffaf0"/><rect x="4" y="6" width="1" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffaf0"/><rect x="6" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#fffaf0"/><rect x="3" y="7" width="2" height="1" fill="#ff9128"/><rect x="5" y="7" width="1" height="1" fill="#fffaf0"/><rect x="6" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="1" height="1" fill="#e83b3b"/><rect x="3" y="8" width="2" height="1" fill="#fffaf0"/><rect x="5" y="8" width="1" height="1" fill="#e83b3b"/><rect x="6" y="8" width="1" height="1" fill="#1e182c"/><rect x="1" y="9" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="2" height="1" fill="#e83b3b"/><rect x="4" y="9" width="1" height="1" fill="#a62026"/><rect x="5" y="9" width="1" height="1" fill="#e83b3b"/><rect x="6" y="9" width="1" height="1" fill="#1e182c"/><rect x="1" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="10" width="2" height="1" fill="#e83b3b"/><rect x="4" y="10" width="2" height="1" fill="#a62026"/><rect x="6" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="11" width="4" height="1" fill="#1e182c"/>
+            </svg>
+            <svg class="rv-item rv-item--gold" id="rvGold" viewBox="0 0 12 12" shape-rendering="crispEdges" style="display:none;" aria-hidden="true">
+              <rect x="4" y="0" width="2" height="1" fill="#d69a1e"/><rect x="3" y="1" width="1" height="1" fill="#d69a1e"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="6" y="1" width="1" height="1" fill="#d69a1e"/><rect x="10" y="1" width="1" height="1" fill="#ffffff"/><rect x="3" y="2" width="1" height="1" fill="#d69a1e"/><rect x="4" y="2" width="2" height="1" fill="#ffe135"/><rect x="6" y="2" width="1" height="1" fill="#d69a1e"/><rect x="2" y="3" width="1" height="1" fill="#d69a1e"/><rect x="3" y="3" width="3" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="1" fill="#d69a1e"/><rect x="2" y="4" width="1" height="1" fill="#d69a1e"/><rect x="3" y="4" width="3" height="1" fill="#ffe135"/><rect x="6" y="4" width="1" height="1" fill="#d69a1e"/><rect x="1" y="5" width="1" height="1" fill="#d69a1e"/><rect x="2" y="5" width="1" height="1" fill="#ffe135"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="2" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#d69a1e"/><rect x="1" y="6" width="1" height="1" fill="#d69a1e"/><rect x="2" y="6" width="1" height="1" fill="#ffe135"/><rect x="3" y="6" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="6" width="3" height="1" fill="#ffe135"/><rect x="7" y="6" width="1" height="1" fill="#d69a1e"/><rect x="1" y="7" width="1" height="1" fill="#d69a1e"/><rect x="2" y="7" width="5" height="1" fill="#ffe135"/><rect x="7" y="7" width="1" height="1" fill="#d69a1e"/><rect x="1" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="8" width="6" height="1" fill="#ffe135"/><rect x="8" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="9" width="1" height="1" fill="#d69a1e"/><rect x="3" y="9" width="6" height="1" fill="#ffe135"/><rect x="9" y="9" width="2" height="1" fill="#d69a1e"/><rect x="0" y="10" width="1" height="1" fill="#ffffff"/><rect x="3" y="10" width="2" height="1" fill="#d69a1e"/><rect x="5" y="10" width="5" height="1" fill="#ffe135"/><rect x="10" y="10" width="1" height="1" fill="#d69a1e"/><rect x="5" y="11" width="5" height="1" fill="#d69a1e"/>
             </svg>
             <div class="rv-bar" aria-hidden="true">
               <div class="rv-bubble" id="rvBubble" hidden></div>

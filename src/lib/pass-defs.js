@@ -19,6 +19,7 @@ export const PATCHES = [
   { id: 'spotlight', icon: 'heart',    title: 'In the Light',   hint: 'Be standing in the spotlight when it lands.' },
   { id: 'regular',   icon: 'burger',   title: 'The Regular',    hint: 'Show up on five different days.' },
   { id: 'patron',    icon: 'tag',      title: 'Sticker Patron', hint: 'Your banana, on real vinyl.' },
+  { id: 'golden',    icon: 'sparkle',  title: 'The Golden One', hint: 'Once in a golden while, something rare hits the floor. Be there.' },
   { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },
 ];
 

@@ -56,7 +56,7 @@ function vinylSpot(w) {
 // HOT SAUCE — a bottle on the open floor every 4 min; grabbing it grants a timed
 // flame-trail fx. fx is SERVER-GRANTED like the beer: clients only render what
 // the roster says, so effects can't be spoofed.
-const SAUCE_PERIOD = 240_000, SAUCE_WAIT = 120_000, SAUCE_OFFSET = 60_000;
+const SAUCE_PERIOD = 180_000, SAUCE_WAIT = 100_000, SAUCE_OFFSET = 60_000;
 function sauceWindow(now) {
   const ph = (((now - SAUCE_OFFSET) % SAUCE_PERIOD) + SAUCE_PERIOD) % SAUCE_PERIOD;
   return ph < SAUCE_WAIT ? Math.floor((now - SAUCE_OFFSET) / SAUCE_PERIOD) : -1;
@@ -64,6 +64,19 @@ function sauceWindow(now) {
 function sauceSpot(w) {
   let x = 12 + seedRand(0xf1a5 + w * 2) * 70;
   let y = 26 + seedRand(0xf1a5 + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+// THE GOLDEN BANANA — a rare drop (~every 30 min); the finder mints a patch and
+// the whole floor gets a confetti party. A moment, not a power-up.
+const GOLD_PERIOD = 1_800_000, GOLD_WAIT = 240_000, GOLD_OFFSET = 660_000;
+function goldWindow(now) {
+  const ph = (((now - GOLD_OFFSET) % GOLD_PERIOD) + GOLD_PERIOD) % GOLD_PERIOD;
+  return ph < GOLD_WAIT ? Math.floor((now - GOLD_OFFSET) / GOLD_PERIOD) : -1;
+}
+function goldSpot(w) {
+  let x = 12 + seedRand(0x601d + w * 2) * 70;
+  let y = 26 + seedRand(0x601d + w * 2 + 1) * 46;
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
@@ -169,7 +182,8 @@ export class RaveRoom {
       const vinylWin = (await this.state.storage.get('vinylWin')) ?? null;
       const sauceWin = (await this.state.storage.get('sauceWin')) ?? null;
       const cocktailWin = (await this.state.storage.get('cocktailWin')) ?? null;
-      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin }));
+      const goldWin = (await this.state.storage.get('goldWin')) ?? null;
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin, goldWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
       return;
     }
@@ -244,6 +258,20 @@ export class RaveRoom {
       me.fx = { id: 'flames', until: Date.now() + FX_MS };
       ws.serializeAttachment(me);
       this.broadcast({ t: 'fx', id: me.id, fx: me.fx, src: 'sauce' });
+      return;
+    }
+
+    if (msg.t === 'gold' && me) { // first banana to the golden one
+      const win = goldWindow(Date.now());
+      if (win < 0) return;
+      if (this.goldWin === win) return;       // sync guard before any await
+      const spot = goldSpot(win);
+      if (!(typeof me.x === 'number' && Math.abs(me.x - spot.x) < 14 && typeof me.y === 'number' && Math.abs(me.y - spot.y) < 14)) return;
+      this.goldWin = win;
+      const stored = await this.state.storage.get('goldWin');
+      if (stored === win) return;
+      await this.state.storage.put('goldWin', win);
+      this.broadcast({ t: 'gold', id: me.id });
       return;
     }
 
