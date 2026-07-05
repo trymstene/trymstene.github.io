@@ -177,6 +177,10 @@ const appSchema = {
     .bb-dl2 { margin-top: 1.15rem; padding-top: 1.15rem; border-top: 3px dashed rgba(17,17,17,0.18); }
     /* the BUY card: hot shadow so the money maker pops */
     .bb-card--buy { box-shadow: 8px 8px 0 var(--hot); }
+    /* a shelf 🏷 tag brought you here: greet with a couple of blinks */
+    .bb-card--pulse { animation: bbCardPulse 0.9s steps(2) 3; }
+    @keyframes bbCardPulse { 50% { outline: 5px solid var(--banana); outline-offset: 4px; } }
+    @media (prefers-reduced-motion: reduce) { .bb-card--pulse { animation: none; outline: 5px solid var(--banana); outline-offset: 4px; } }
     .bb-shelfrow { margin-top: 1.6rem; }
     .bb-shelfrow h3 { margin: 0; }
     .bb-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }

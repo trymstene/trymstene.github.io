@@ -674,6 +674,16 @@ details.story p { margin-bottom: 1rem; }
   opacity: 0; visibility: hidden; transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .pass-toast--show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+
+/* the shelf's shop door: banana items carry a make-it-real corner tag
+   (global because the shelf renders on builder, forge, /make/ and /pass/) */
+.shelf-tag {
+  position: absolute; bottom: -12px; right: -12px; width: 24px; height: 24px;
+  display: grid; place-items: center; line-height: 1; font-size: 13px;
+  background: var(--banana); border: 2px solid var(--ink); text-decoration: none;
+  cursor: pointer;
+}
+.shelf-tag:hover { transform: scale(1.15); }
 .pass-toast b { color: var(--banana); }
 .pass-toast a { color: var(--banana); font-weight: 700; }
 

@@ -720,6 +720,15 @@ function init() {
   refreshUI();
   refreshShelf();
   passVisit();
+  // shelf 🏷 tags land here: walk the visitor straight to the sticker card
+  if (urlP.get('go') === 'sticker') {
+    const card = el('bbOrderSticker') && el('bbOrderSticker').closest('.bb-card');
+    if (card) setTimeout(() => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('bb-card--pulse');
+      track('shelf_sticker_land');
+    }, 400);
+  }
   // captions live behind a fold — open it when a share link arrives wearing them
   if (state.top || state.bottom) { const f = el('bbCaptionsFold'); if (f) f.open = true; }
   sheet.decode().catch(() => {}).finally(() => {

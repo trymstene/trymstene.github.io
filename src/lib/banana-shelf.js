@@ -86,6 +86,17 @@ export async function renderShelf(host, { onPick, limit } = {}) {
       });
     }
     cell.appendChild(cv);
+    if (c.kind !== 'emoji') {
+      // the shop door on every creation: bananas can become real stickers
+      const t = document.createElement('a');
+      t.className = 'shelf-tag';
+      t.href = '/make-a-banana/?' + c.params + '&go=sticker';
+      t.textContent = '🏷';
+      t.title = 'Make it a real sticker';
+      t.setAttribute('aria-label', 'Order this banana as a sticker');
+      t.onclick = (e) => { e.stopPropagation(); if (window.gtag) window.gtag('event', 'shelf_sticker_click'); };
+      cell.appendChild(t);
+    }
     const x = document.createElement('button');
     x.className = 'shelf-x';
     x.textContent = '×';

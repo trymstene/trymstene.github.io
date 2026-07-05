@@ -35,6 +35,8 @@ const description = 'Your membership card to the banana world: the patches you h
     .ps-card__patches .pxi, .ps-card__patches svg { width: 1.25rem; height: 1.25rem; }
     .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
 
+    .ps-actions { margin-top: 0.9rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
     /* passkey sync panel (Phase 2) */
     .ps-sync { margin: 0.9rem 0 0; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.8rem 0.95rem; max-width: 560px; }
     .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
@@ -99,6 +101,10 @@ const description = 'Your membership card to the banana world: the patches you h
         <div class="ps-card__patches" id="psCardPatches"></div>
       </div>
     </div>
+    <div class="ps-actions">
+      <button class="btn btn--light" id="psShareCard" type="button">📸 Share my card</button>
+    </div>
+
     <div class="ps-sync" id="psSync" hidden>
       <p id="psSyncLead">
         <b>Take your pass everywhere.</b> Save it with a passkey — Face&nbsp;ID, fingerprint
@@ -136,7 +142,7 @@ const description = 'Your membership card to the banana world: the patches you h
 
     <div class="ps-section">
       <h2>My shelf</h2>
-      <p>Your creations — bananas open in the builder, pixels open in the forge.</p>
+      <p>Your creations — bananas open in the builder, pixels open in the forge. The 🏷 turns one into a real sticker.</p>
       <div class="ps-shelf" id="psShelf"></div>
     </div>
 

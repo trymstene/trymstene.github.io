@@ -106,6 +106,136 @@ async function init() {
     requestAnimationFrame(tick);
   }
   assetsReady().then(() => requestAnimationFrame(tick));
+
+  initShare(outfit);
+}
+
+// ---- share my card: the membership card as a 1200×630 PNG ---------------
+// (OG dimensions on purpose — it looks right posted anywhere)
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+function svgToImage(svg, px) {
+  return new Promise((resolve) => {
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('width', px);
+    clone.setAttribute('height', px);
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+  });
+}
+
+async function composeCard(outfit) {
+  await assetsReady();
+  await document.fonts.ready;
+  await document.fonts.load('56px "Archivo Black"').catch(() => {});
+  await document.fonts.load('700 24px "Space Grotesk"').catch(() => {});
+  const ink = cssVar('--ink', '#111111');
+  const paper = cssVar('--paper', '#faf6ee');
+  const banana = cssVar('--banana', '#ffd93d');
+
+  const cv = document.createElement('canvas');
+  cv.width = 1200; cv.height = 630;
+  const ctx = cv.getContext('2d');
+
+  // paper page, ink card with a hard banana shadow — the house style
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, 1200, 630);
+  ctx.fillStyle = banana;
+  ctx.fillRect(84, 84, 1060, 490);
+  ctx.fillStyle = ink;
+  ctx.fillRect(70, 70, 1060, 490);
+
+  // the signature banana on its dark checker, banana-framed
+  const bx = 120, by = 130, bs = 370;
+  for (let yy = 0; yy < bs; yy += 24) {
+    for (let xx = 0; xx < bs; xx += 24) {
+      ctx.fillStyle = ((xx + yy) / 24) % 2 ? '#2a2340' : '#221c30';
+      ctx.fillRect(bx + xx, by + yy, 24, 24);
+    }
+  }
+  const bcv = document.createElement('canvas');
+  bcv.width = bcv.height = bs;
+  drawComposite(bcv.getContext('2d'), bs, 2, {
+    bg: 'transparent', captions: false,
+    hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, top: '', bottom: '',
+    effect: outfit.effect,
+  });
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(bcv, bx, by);
+  ctx.strokeStyle = banana;
+  ctx.lineWidth = 6;
+  ctx.strokeRect(bx - 3, by - 3, bs + 6, bs + 6);
+
+  // the words
+  const tx = 550;
+  ctx.fillStyle = banana;
+  ctx.font = '700 24px "Space Grotesk", sans-serif';
+  try { ctx.letterSpacing = '4px'; } catch (e) {}
+  ctx.fillText('BANANA WORLD MEMBERSHIP', tx, 190);
+  try { ctx.letterSpacing = '0px'; } catch (e) {}
+
+  const name = el('psName').textContent;
+  ctx.fillStyle = paper;
+  let px = 56;
+  do { ctx.font = px + 'px "Archivo Black", sans-serif'; px -= 2; }
+  while (ctx.measureText(name).width > 540 && px > 26);
+  ctx.fillText(name, tx, 260);
+
+  ctx.globalAlpha = 0.7;
+  ctx.font = '24px "Space Grotesk", sans-serif';
+  ctx.fillText(el('psSince').textContent, tx, 306);
+  ctx.globalAlpha = 1;
+
+  // earned patches, straight off the page's own pixel icons
+  const svgs = [...document.querySelectorAll('.ps-patch--earned svg')].slice(0, 8);
+  const icons = (await Promise.all(svgs.map((s) => svgToImage(s, 56)))).filter(Boolean);
+  icons.forEach((img, i) => ctx.drawImage(img, tx + i * 68, 340, 56, 56));
+
+  ctx.fillStyle = paper;
+  ctx.globalAlpha = 0.55;
+  ctx.font = '22px "Space Grotesk", sans-serif';
+  ctx.fillText('get yours: trymstene.com/pass', tx, 520);
+  ctx.globalAlpha = 1;
+
+  return cv;
+}
+
+function initShare(outfit) {
+  const btn = el('psShareCard');
+  if (!btn) return;
+  let busy = false;
+  btn.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    const was = btn.textContent;
+    btn.textContent = '📸 Developing…';
+    try {
+      const cv = await composeCard(outfit);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+      const file = new File([blob], 'my-banana-pass.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'My Banana Pass' });
+        if (window.gtag) window.gtag('event', 'pass_share', { method: 'share' });
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'my-banana-pass.png';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+        passToast('📸 <b>CARD SAVED</b><br>Post it anywhere — the club takes no attendance.');
+        if (window.gtag) window.gtag('event', 'pass_share', { method: 'download' });
+      }
+    } catch (e) {
+      if (!e || e.name !== 'AbortError') passToast('That didn’t work — try again in a moment.');
+    }
+    btn.textContent = was;
+    busy = false;
+  });
 }
 
 // ---- passkey sync panel ------------------------------------------------
