@@ -1515,18 +1515,29 @@ function init() {
   const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
   function nightLoad() { try { return JSON.parse(localStorage.getItem('rv-night-v1') || '{}'); } catch (e) { return {}; } }
   let night = null; // { def, step, qv }
+  const questKicker = (txt) => { document.querySelector('.rv-quest__k').textContent = txt; };
+  // the receipt answers BOTH questions Trym couldn't: WHICH shift you finished
+  // and WHEN the next one opens ("done, doing something i dont remember, but i
+  // dont know when or how i advance")
+  function nightReceipt(doneN) {
+    questKicker('shift ' + doneN + ' ✔');
+    nightTray(doneN < NIGHTS.length
+      ? 'done! shift ' + (doneN + 1) + ' opens tomorrow — back to clubbing'
+      : 'all five shifts done — you’re a regular ⭐', true);
+  }
   function nightInit() {
     if (night) return; // a tour replay must not restart a night in progress
     const s = nightLoad();
     if (!NIGHT_TEST && s.lastStamp === localDay()) {
       // already stamped tonight: the chip stays as the day's receipt — an
       // empty corner read as "broken", not "done"
-      nightTray('✔ nightshift done — back to clubbing', true);
+      nightReceipt(Math.min(Math.max((s.arc || 2) - 1, 1), NIGHTS.length));
       return;
     }
     const arc = NIGHT_TEST || s.arc || 1;
-    if (arc > NIGHTS.length) return; // Act One is all we have — Act Two arrives with "the program"
+    if (arc > NIGHTS.length) { nightReceipt(NIGHTS.length); return; } // Act One done — Act Two arrives with "the program"
     night = { def: NIGHTS[arc - 1], step: -1 };
+    questKicker('shift ' + night.def.n); // the chip names your shift all night
     setTimeout(nightAdvance, 2500); // a breath after the tour (or the join), then Barty's first job
   }
   // the BIG MOMENT: pixel-type over the floor for session-defining beats —
@@ -1817,7 +1828,7 @@ function init() {
     confettiBurst();
     miniDropUntil = Date.now() + 8000; // the club celebrates your shift
     bartySay(d.done.say, true);
-    nightTray('✔ nightshift done — back to clubbing', true);
+    nightReceipt(d.n);
     if (d.done.patch) passPatch(d.done.patch);
     if (d.n === NIGHTS.length) {
       // THE REGULAR: five shifts = you're furniture now, in the good way
