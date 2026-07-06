@@ -479,12 +479,15 @@ function init() {
 
   // stand-up timing: each part gets read before the next lands — the dark drip
   // arrives in its own quieter bubble, a beat after the cheer (Trym's direction)
-  let sayGen = 0;
+  let sayGen = 0, bartyBusyUntil = 0;
   const readMs = (t) => clamp(1400 + t.length * 55, 2200, 5200);
   function bartySay(parts, quest) {
     const seq = Array.isArray(parts) ? parts : [parts];
     const gen = ++sayGen; // a newer say cancels the tail of an older sequence
     let delay = 0;
+    // Barty holds the floor for the whole delivery — a specials/happy-hour
+    // sticky stomped the STAMP-OUT line at the emotional peak in testing
+    bartyBusyUntil = Date.now() + seq.reduce((ms, p) => ms + readMs(typeof p === 'string' ? p : p.t), 0) + 4500;
     seq.forEach((p, i) => {
       const txt = typeof p === 'string' ? p : p.t;
       const mutter = typeof p === 'object' && !!p.mutter;
@@ -523,7 +526,7 @@ function init() {
       barBeerLive = beerWin !== win;
       if (barBeerLive) { // this window's beer still on the counter
         el('rvCounterBeer').style.display = '';
-        if (!bubbleSticky) showBubble('HAPPY HOUR! 🍺 first banana to the bar drinks free', true);
+        if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('HAPPY HOUR! 🍺 first banana to the bar drinks free', true);
       }
     } else {
       el('rvCounterBeer').style.display = 'none';
@@ -540,7 +543,7 @@ function init() {
         }
         spEl.hidden = false;
         barSpecialLive = { win: spWin, kind };
-        if (!bubbleSticky) showBubble('SPECIALS! ' + FX_ICON[kind] + ' first banana to the bar gets the ' + FX_NAMES[kind], true);
+        if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('SPECIALS! ' + FX_ICON[kind] + ' first banana to the bar gets the ' + FX_NAMES[kind], true);
       } else {
         spEl.hidden = true;
         barSpecialLive = null;
@@ -1460,12 +1463,12 @@ function init() {
       { tray: 'fill the JELLY meter — then hit JELLY TIME', check: 'hypedrop',
         say: ['WOO, listen to that! last job: fill that JELLY meter — sparkles, snacks, the works — and when she’s full… you know what time it is.'] },
     ], done: { patch: 'night1',
-      say: ['FIRST NIGHT complete, partner! 🌟 you’re one of us now. come back tomorrow — night two’s on me.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
+      say: ['FIRST NIGHTSHIFT done, partner! 🌟 you’re one of us now — back to clubbing! night two’s on me tomorrow.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
     { n: 2, steps: [ // look who's back — the club KNOWS you now
       { tray: 'build a chain of THREE pickups', check: 'chain3',
-        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'tonight’s job: a CHAIN of THREE — pickups, back to back, no dawdlin’!'] },
+        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'tonight’s shift: a CHAIN of THREE — pickups, back to back, no dawdlin’!'] },
     ], done: { patch: null,
-      say: ['a NATURAL! night two, in the books. same time tomorrow, partner?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
+      say: ['shift’s OVER — back to clubbing, partner! same time tomorrow?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
   ];
   const NIGHT_TEST = parseInt((location.search.match(/nighttest=(\d)/) || [])[1] || '0', 10);
   const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
@@ -1474,11 +1477,28 @@ function init() {
   function nightInit() {
     if (night) return; // a tour replay must not restart a night in progress
     const s = nightLoad();
+    if (!NIGHT_TEST && s.lastStamp === localDay()) {
+      // already stamped tonight: the chip stays as the day's receipt — an
+      // empty corner read as "broken", not "done"
+      nightTray('✔ nightshift done — back to clubbing', true);
+      return;
+    }
     const arc = NIGHT_TEST || s.arc || 1;
     if (arc > NIGHTS.length) return; // Act One is all we have — Act Two arrives with "the program"
-    if (!NIGHT_TEST && s.lastStamp === localDay()) return; // one night per night
     night = { def: NIGHTS[arc - 1], step: -1 };
     setTimeout(nightAdvance, 2500); // a breath after the tour (or the join), then Barty's first job
+  }
+  // the BIG MOMENT: pixel-type over the floor for session-defining beats —
+  // the stamp-out must be unmissable (a toast is a "nice moment" register)
+  function bigMoment(title, sub) {
+    const d = document.createElement('div');
+    d.className = 'rv-bigmoment';
+    d.innerHTML = '<b></b><small></small>';
+    d.querySelector('b').textContent = title;
+    d.querySelector('small').textContent = sub || '';
+    floor.appendChild(d);
+    setTimeout(() => d.classList.add('rv-bigmoment--out'), 3800);
+    setTimeout(() => d.remove(), 4400);
   }
   // small screens get progressive disclosure: a new job announces itself,
   // then tucks behind the TONIGHT chip after a read — the floor view wins
@@ -1571,14 +1591,13 @@ function init() {
   function nightStamp() {
     const d = night.def;
     night = null;
-    nightTray(null);
-    confettiBurst(); // night completion is rare + earned — it gets the flakes
+    // THE STAMP-OUT: your shift ends, the club doesn't — big type, the floor
+    // drops FOR you, Barty stamps you out, and the chip becomes the receipt
+    bigMoment('NIGHTSHIFT DONE ✔', 'back to clubbing!');
+    confettiBurst();
+    miniDropUntil = Date.now() + 8000; // the club celebrates your shift
     bartySay(d.done.say, true);
-    const toast = document.createElement('div');
-    toast.className = 'rv-glowtoast';
-    toast.innerHTML = '🌙 <b>NIGHT ' + d.n + ' COMPLETE</b>' + (d.n < NIGHTS.length ? ' — night ' + (d.n + 1) + ' opens tomorrow' : '');
-    floor.appendChild(toast);
-    setTimeout(() => toast.remove(), 7000);
+    nightTray('✔ nightshift done — back to clubbing', true);
     if (d.done.patch) passPatch(d.done.patch);
     passStat('nights');
     track('rave_night_complete', { night: d.n });
