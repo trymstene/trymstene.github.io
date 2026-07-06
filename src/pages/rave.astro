@@ -311,8 +311,10 @@ const schema = {
     .rv-mixer__chain[hidden] { display: none; }
     /* THE NIGHT: the quest log gets its own panel, top-left — the classic HUD
        spot for "what am I doing?", away from the meter it merely feeds */
-    .rv-quest {
+    .rv-quest { /* same height as the zoom button opposite — the top row is symmetric */
       position: absolute; top: 8px; left: 8px; z-index: 600; max-width: 190px;
+      box-sizing: border-box; min-height: 44px;
+      display: flex; flex-direction: column; justify-content: center;
       background: rgba(13, 11, 20, 0.88); border: 3px solid #ffe135; padding: 6px 9px 7px;
     }
     .rv-quest[hidden] { display: none; }
@@ -326,6 +328,13 @@ const schema = {
       .rv-quest { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
       .rv-quest__k::after { content: ' ▾'; }
       .rv-quest--min .rv-quest__k::after { content: ' ▸'; }
+    }
+    /* desktop: one horizontal bar (TONIGHT · job) — exactly the zoom button's
+       44px, so the floor's top row is symmetric (Trym's rule) */
+    @media (min-width: 641px) {
+      .rv-quest { flex-direction: row; align-items: center; gap: 9px; max-width: none; }
+      .rv-quest__k { margin-bottom: 0; }
+      .rv-quest__row { white-space: nowrap; }
     }
     .rv-qbox { flex: none; width: 9px; height: 9px; border: 2px solid #ffe135; background: #241a38; }
     .rv-qbox.done { background: #39ff14; border-color: #39ff14; }
@@ -347,6 +356,7 @@ const schema = {
     .rv-zoom {
       position: absolute; top: 8px; right: 8px; z-index: 600;
       display: flex; align-items: center; gap: 6px;
+      box-sizing: border-box; min-height: 44px;
       background: rgba(13, 11, 20, 0.85); color: #fffdf5; border: 3px solid #ffe135;
       font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; padding: 0.45rem 0.6rem;
       cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
