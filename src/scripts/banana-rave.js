@@ -508,25 +508,25 @@ function init() {
     if (id === myId) { bumpChain(); track('rave_beer'); passPatch('round'); passStat('beers'); }
   }
 
+  // what's ON the counter right now — barTick (1s) stages it, tryClaims (frame
+  // rate) grabs it: the claims used to live on this slow tick + a 2s retry =
+  // "i stand at the bar and nothing happens" (Trym)
+  let barBeerLive = false, barSpecialLive = null;
   function barTick() {
     if (tourActive) return; // the bar holds its announcements while the tour is on stage
     const t = Date.now() / 1000;
     const bub = el('rvBubble');
     if (happyActive(t)) {
       const win = happyWin(t);
-      if (beerWin !== win) { // this window's beer still on the counter
+      barSpecialLive = null;
+      barBeerLive = beerWin !== win;
+      if (barBeerLive) { // this window's beer still on the counter
         el('rvCounterBeer').style.display = '';
         if (!bubbleSticky) showBubble('HAPPY HOUR! 🍺 first banana to the bar drinks free', true);
-        const me = myId && ravers.get(myId);
-        const mine = me && me.outfit.extras && me.outfit.extras.beer;
-        if (me && !me.stage && !mine && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastBeerTry > 2000) {
-          lastBeerTry = Date.now();
-          if (ws && ws.readyState === 1) sendClaim('{"t":"beer"}');
-          else claimBeer(myId); // solo mode: the bar is all yours
-        }
       }
     } else {
       el('rvCounterBeer').style.display = 'none';
+      barBeerLive = false;
       // — Barty's specials: a rotating cocktail on the counter between happy hours —
       const spEl = el('rvSpecial');
       const spPh = (((t - SPECIAL_OFFSET) % SPECIAL_PERIOD) + SPECIAL_PERIOD) % SPECIAL_PERIOD;
@@ -538,15 +538,11 @@ function init() {
           spEl.innerHTML = kind === 'daiquiri' ? DAIQUIRI_SVG : FIZZ_SVG;
         }
         spEl.hidden = false;
+        barSpecialLive = { win: spWin, kind };
         if (!bubbleSticky) showBubble('SPECIALS! ' + FX_ICON[kind] + ' first banana to the bar gets the ' + FX_NAMES[kind], true);
-        const me = myId && ravers.get(myId);
-        if (me && !me.stage && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y && Date.now() - lastCocktailTry > 2000) {
-          lastCocktailTry = Date.now();
-          if (ws && ws.readyState === 1) sendClaim('{"t":"cocktail"}');
-          else { cocktailWinClaimed = spWin; spEl.hidden = true; applyFx(myId, { id: kind, until: Date.now() + FX_MS }, { x: 10, y: 76 }); } // solo mode
-        }
       } else {
         spEl.hidden = true;
+        barSpecialLive = null;
         if (bubbleSticky) hideBubble();
         // ambient Barty: the chatter between rituals — chattier now, he's a
         // living NPC, not a sign that occasionally speaks (Trym's direction)
@@ -1044,6 +1040,25 @@ function init() {
       const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz' }[itemLive.kind];
       if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
       else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + (soloFx === 'zap' ? FX_ZAP_MS : FX_MS) } : undefined);
+    }
+    // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
+    // rectangle — the solid counter's edge scales with the floor (x≈50% on
+    // phones), so the old x<34 zone was unreachable when you approached from
+    // the right and stopped against the counter. Nothing happened. (Trym)
+    const atBar = me.x < Math.max(BAR_ZONE.x, barSolid.x + 4) && me.y > BAR_ZONE.y;
+    if (barBeerLive && atBar && !(me.outfit.extras && me.outfit.extras.beer) && now - lastBeerTry > 800) {
+      lastBeerTry = now;
+      if (ws && ws.readyState === 1) sendClaim('{"t":"beer"}');
+      else claimBeer(myId); // solo mode: the bar is all yours
+    }
+    if (barSpecialLive && atBar && now - lastCocktailTry > 800) {
+      lastCocktailTry = now;
+      if (ws && ws.readyState === 1) sendClaim('{"t":"cocktail"}');
+      else { // solo mode
+        cocktailWinClaimed = barSpecialLive.win;
+        el('rvSpecial').hidden = true;
+        applyFx(myId, { id: barSpecialLive.kind, until: Date.now() + FX_MS }, { x: 10, y: 76 });
+      }
     }
   }
 

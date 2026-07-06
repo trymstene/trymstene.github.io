@@ -213,9 +213,11 @@ export class RaveRoom {
     if (msg.t === 'beer' && me && !me.beer) { // first banana at the bar this window
       const win = happyWindow(Date.now());
       if (win < 0) return;
-      // you must actually WALK to the bar — the server knows your position from the
-      // move messages (keep the zone in sync with BAR_ZONE in banana-rave.js)
-      if (!(typeof me.x === 'number' && me.x < 34 && typeof me.y === 'number' && me.y > 70)) return;
+      // you must actually WALK to the bar. The zone is a GENEROUS anti-cheat
+      // bound: the solid counter's edge scales with the client's floor width
+      // (x≈50-62% on phones), so the precise at-the-counter gate lives client-
+      // side and this only blocks cross-floor spoofing.
+      if (!(typeof me.x === 'number' && me.x < 70 && typeof me.y === 'number' && me.y > 64)) return;
       if (this.beerWin === win) return;   // sync fast-path — two claims in the same window can't both pass
       this.beerWin = win;                 // claim in-memory BEFORE any await (DO interleaves at await points)
       const stored = await this.state.storage.get('beerWin');
@@ -321,8 +323,8 @@ export class RaveRoom {
       const win = specialWindow(Date.now());
       if (win < 0) return;
       if (this.cocktailWin === win) return;   // sync guard before any await
-      // same walk-to-the-bar zone as the beer (keep in sync with BAR_ZONE)
-      if (!(typeof me.x === 'number' && me.x < 34 && typeof me.y === 'number' && me.y > 70)) return;
+      // same generous walk-to-the-bar bound as the beer (client gates precisely)
+      if (!(typeof me.x === 'number' && me.x < 70 && typeof me.y === 'number' && me.y > 64)) return;
       this.cocktailWin = win;
       const stored = await this.state.storage.get('cocktailWin');
       if (stored === win) return;

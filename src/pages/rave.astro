@@ -153,13 +153,13 @@ const schema = {
       z-index: 3; image-rendering: pixelated;
     }
     /* beer at HALF size — 32px read as "a bucket of beer" next to Barty (Trym);
-       top keeps its bottom seated on the countertop band */
-    .rv-counterbeer { position: absolute; width: 18px; height: auto; left: 62%; top: -8px; z-index: 4; }
+       top keeps its bottom seated on the countertop band (nudged 2px up) */
+    .rv-counterbeer { position: absolute; width: 18px; height: auto; left: 62%; top: -10px; z-index: 4; }
     /* Barty's special of the window: the cocktail sits where the beer sits —
        38% landed ON Barty and overflowed him (Trym, iOS). Beer + special never
        show at the same time (happy hour vs specials window), so they share the
        spot. NO bob — drinks on a counter SIT (only floor items dance). */
-    .rv-special { position: absolute; width: 26px; left: 62%; top: -26px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
+    .rv-special { position: absolute; width: 26px; left: 62%; top: -28px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
     .rv-special[hidden] { display: none; }
     .rv-special svg { width: 100%; height: auto; image-rendering: pixelated; }
     .rv-bubble {
