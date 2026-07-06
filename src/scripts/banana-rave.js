@@ -178,12 +178,17 @@ function init() {
   let welcomed = false; // first roster (or solo fallback) triggers the tour-or-night decision once
   const sessionStart = Date.now();
 
-  // deterministic floor position from id (no server coordinates needed)
+  // deterministic floor position from id (no server coordinates needed).
+  // THE SPAWN POINT (Trym): everyone walks in mid-floor-ish — a fixed-ish
+  // spot with id-jitter so arrivals don't stack. Center spawns keep the
+  // tour's 2.6× zoom-in off the walls (at that scale the camera needs ~19%
+  // clearance on every side to center you) and clear of the bar, the stage
+  // edge and the delivery zone.
   function place(id) {
     let h = 0;
     for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-    const x = 4 + (h % 79);            // 4..82 (%)
-    const y = 6 + ((h >>> 8) % 68);    // 6..73 (%) — MUST be >>> : >> is signed, went negative for half of all ids and floated bananas above the floor
+    const x = 36 + (h % 29);           // 36..64 (%)
+    const y = 34 + ((h >>> 8) % 23);   // 34..56 (%) — MUST be >>> : >> is signed, went negative for half of all ids and floated bananas above the floor
     return { x, y };
   }
 
