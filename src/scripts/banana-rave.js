@@ -140,6 +140,8 @@ const BAR_QUIPS = [
   ['the drop hits every third minute. the bar never misses!', { t: 'it can’t.', mutter: true }],
   ['smile, partner! it’s free!', { t: 'only thing that ever was.', mutter: true }],
   ['fill that jelly meter, partner!', { t: 'i’ve been full of jelly my whole life. the other kind. anyway!', mutter: true }],
+  ['this floor don’t sweep itself, partner!', { t: 'i would know. i sweep it.', mutter: true }],
+  ['thanks for helpin’ an old banana out!', { t: 'the young ones just dance right past.', mutter: true }],
 ];
 
 const el = (id) => document.getElementById(id);
@@ -1371,7 +1373,7 @@ function init() {
     () => { // who Barty is — the camera STAYS on him from his hello (a corner
       // pool skewed; the close-up IS the highlight)
       setTimeout(() => {
-        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'calls the happy hours, mixes the specials, hands out tonight’s jobs. never stops talking.', { noPool: true });
+        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'runs the bar, calls the happy hours — and always needs a hand with some little chore. help him out and he stamps your nightshift.', { noPool: true });
       }, 600);
     },
     () => { // the mixer: camera home; screen-space UI can't be zoomed, so the
@@ -1398,7 +1400,7 @@ function init() {
       tourDemoEl.style.top = '48%';
       tourDemoEl.style.animation = 'none'; // it holds still for its close-up (the bob made the light sit off-centre)
       world.appendChild(tourDemoEl);
-      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build JELLY.', { pad: 12 });
+      tourBox(tourDemoEl, 'FLOOR SNACKS', 'the crowd drops stuff all night. first banana to reach it keeps it — pickups chain, chains build JELLY. (and it keeps the floor clean. Barty notices.)', { pad: 12 });
     },
   ];
   function runTour() {
@@ -1455,18 +1457,18 @@ function init() {
   // pixel checkbox. ONE night per calendar day (closure + a reason to return).
   // ?nighttest=N previews night N without saving progress.
   const NIGHTS = [
-    { n: 1, steps: [ // FIRST NIGHT — the guided tour, extends the welcome show
+    { n: 1, steps: [ // FIRST NIGHTSHIFT — Barty's humble ask (Trym's line), then the chores
       { tray: 'go to the bar — first one’s on the house', check: 'bar',
-        say: ['well howdy, new face! 🤠 c’mon down to the bar — first one’s on the house!', { t: 'nobody ever bought ME a first one. anyway!', mutter: true }] },
+        say: ['well howdy, new face! 🤠 i know you came to RAVE…', { t: '…everyone does. anyway!', mutter: true }, 'but could ya help an old banana with a few chores tonight? c’mon down to the bar — first one’s on the house!'] },
       { tray: 'run the lost record up to the DJ', check: 'qvinyl',
         say: ['there ya go! now — the DJ lost a record out on that floor. run it up to the booth, would ya?', { t: 'errands build character. they’re all i had.', mutter: true }] },
       { tray: 'fill the JELLY meter — then hit JELLY TIME', check: 'hypedrop',
-        say: ['WOO, listen to that! last job: fill that JELLY meter — sparkles, snacks, the works — and when she’s full… you know what time it is.'] },
+        say: ['WOO, listen to that! last chore ain’t even a chore: fill that JELLY meter — sparkles, snacks, the works — and when she’s full… you know what time it is.'] },
     ], done: { patch: 'night1',
       say: ['FIRST NIGHTSHIFT done, partner! 🌟 you’re one of us now — back to clubbing! night two’s on me tomorrow.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
     { n: 2, steps: [ // look who's back — the club KNOWS you now
       { tray: 'build a chain of THREE pickups', check: 'chain3',
-        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'tonight’s shift: a CHAIN of THREE — pickups, back to back, no dawdlin’!'] },
+        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'tonight’s chore: help me clear this floor — a CHAIN of THREE pickups, back to back, no dawdlin’!'] },
     ], done: { patch: null,
       say: ['shift’s OVER — back to clubbing, partner! same time tomorrow?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
   ];
