@@ -1039,6 +1039,7 @@ function init() {
   }
   const zappedPair = new Map(); // static-discharge cooldown per pair
   setInterval(() => {
+    if (tourActive) return; // no mittens or shocks popping mid-lesson
     const now = Date.now();
     const list = [...ravers.values()].filter((r) => !r.stage).slice(0, 40);
     for (let i = 0; i < list.length; i++) {
@@ -1322,8 +1323,9 @@ function init() {
       tourDemoEl.innerHTML = ITEM_SVGS.candy;
       tourDemoEl.style.left = '55%';
       tourDemoEl.style.top = '48%';
+      tourDemoEl.style.animation = 'none'; // it holds still for its close-up (the bob made the light sit off-centre)
       world.appendChild(tourDemoEl);
-      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build HYPE.');
+      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build HYPE.', 12);
     },
   ];
   function runTour() {
@@ -1331,6 +1333,7 @@ function init() {
     tourActive = true;
     tourStep = -1;
     world.classList.add('rv-world--tour');
+    floor.classList.add('rv-tourclean'); // no chase-ables spawn mid-lesson, ever
     el('rvTour').hidden = false;
     // the control band: "tap to continue" centred + SKIP at its right, both
     // floating just above the HUD — the floor's top band belongs to the show
@@ -1344,9 +1347,9 @@ function init() {
   function tourNext() {
     tourStep++;
     tourClear();
-    // steps 1–3 strip the floor to furniture + staff; the callout steps get
-    // their focus from the cutout dim instead (and need their targets visible)
-    floor.classList.toggle('rv-tourclean', tourStep >= 0 && tourStep < 3);
+    // steps 1–3 also hide the meters (furniture + staff only); the callout
+    // steps un-hide them for their own close-ups
+    floor.classList.toggle('rv-tourfocus', tourStep >= 0 && tourStep < 3);
     const step = TOUR[tourStep];
     if (!step) return endTour(false);
     step();
@@ -1357,6 +1360,7 @@ function init() {
     el('rvTour').hidden = true;
     world.classList.remove('rv-world--tour');
     floor.classList.remove('rv-tourclean');
+    floor.classList.remove('rv-tourfocus');
     world.style.transform = '';
     camLastTx = null; // the follow-cam recomputes from scratch
     if (tourDemoEl) { tourDemoEl.remove(); tourDemoEl = null; }
@@ -1741,7 +1745,9 @@ function init() {
     }
     const secs = (now / 1000) % DROP_PERIOD;
     const clockDrop = secs < DROP_LEN;
-    const dropActive = clockDrop || now < miniDropUntil; // a delivered vinyl buys everyone a bonus drop
+    // the clock doesn't care about the tour, but the STROBE does — a drop
+    // landing mid-lesson would out-shout the teacher
+    const dropActive = (clockDrop || now < miniDropUntil) && !tourActive;
     const dropLabel = clockDrop ? 'THE DROP' : 'BONUS DROP!';
     if (dropLabel !== lastDropLabel) { lastDropLabel = dropLabel; dropFlashSpan.textContent = dropLabel; } // was a querySelector + write EVERY frame
     const cycleMs = dropActive ? 480 : 800;

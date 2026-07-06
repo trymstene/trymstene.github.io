@@ -344,9 +344,12 @@ const schema = {
        the dark overlay (clipped by the club's overflow:hidden). All controls
        follow the site's yellow pixel-button language. */
     .rv-tour { position: absolute; inset: 0; z-index: 800; cursor: pointer; }
+    /* the highlight is LIGHT, not a box: the cutout stays bright while the
+       giant shadow dims the room, and a soft glow rings it — the caption is
+       the only box on screen ("it CAN be too many boxes" — Trym) */
     .rv-tour__hl {
-      position: absolute; border: 3px solid #ffe135; pointer-events: none;
-      box-shadow: 0 0 0 9999px rgba(8, 6, 14, 0.78), 0 0 14px rgba(255, 225, 53, 0.5);
+      position: absolute; pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(8, 6, 14, 0.8), 0 0 34px 12px rgba(255, 225, 53, 0.35);
       transition: all 0.45s ease;
     }
     .rv-tour__hl[hidden] { display: none; }
@@ -398,10 +401,12 @@ const schema = {
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
     .rv-tour__skip:hover { background: #ffe135; }
-    /* tour steps 1–2: furniture and staff only — no chase-ables, no meters */
+    /* during the WHOLE tour: no chase-ables spawning mid-lesson — a tutorial
+       shows one thing at a time (the demo snack is spawned by the tour itself) */
     .rv-floor.rv-tourclean #rvItem, .rv-floor.rv-tourclean #rvVinyl, .rv-floor.rv-tourclean #rvGold,
-    .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot,
-    .rv-floor.rv-tourclean .rv-mixer, .rv-floor.rv-tourclean .rv-quest { visibility: hidden; }
+    .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot { visibility: hidden; }
+    /* steps 1–2 only: meters off too — furniture and staff, nothing else */
+    .rv-floor.rv-tourfocus .rv-mixer, .rv-floor.rv-tourfocus .rv-quest { visibility: hidden; }
     .rv-world--tour { transition: transform 0.85s ease; }
     /* pickup/earn banner: SLIM and at the BOTTOM — the old top box covered the
        exact spot you tap to walk toward the DJ, and ate the taps (Trym, iOS) */
