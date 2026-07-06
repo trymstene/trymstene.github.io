@@ -175,8 +175,7 @@ function init() {
   const ravers = new Map(); // id -> {outfit, joined, stage, wrap, cv, x, y, size}
   let myId = null;
   let online = false;
-  let welcomed = false; // first roster (or solo fallback) triggers the welcome show once
-  let welcomeRan = false; // true when the welcome show actually plays — the night waits for it
+  let welcomed = false; // first roster (or solo fallback) triggers the tour-or-night decision once
   const sessionStart = Date.now();
 
   // deterministic floor position from id (no server coordinates needed)
@@ -300,6 +299,7 @@ function init() {
 
   let camLastTx = null, camLastTy = null;
   function updateCam() {
+    if (tourActive) return; // the tour drives the camera itself
     const me = myId && ravers.get(myId);
     if (!cam.on || !me || me.stage) {
       if (cam.s !== 1) { cam.s = 1; cam.tx = 0; cam.ty = 0; camLastTx = null; world.style.transform = ''; }
@@ -343,6 +343,7 @@ function init() {
   });
 
   function stepMe(now, dtMs) {
+    if (tourActive) return; // nobody wanders off mid-tour
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     let dx = 0, dy = 0;
@@ -506,6 +507,7 @@ function init() {
   }
 
   function barTick() {
+    if (tourActive) return; // the bar holds its announcements while the tour is on stage
     const t = Date.now() / 1000;
     const bub = el('rvBubble');
     if (happyActive(t)) {
@@ -999,7 +1001,7 @@ function init() {
       if (waveWin !== wvWin) {
         waveWin = wvWin;
         wavers.clear();
-        showBubble('🌊 WAAAVE! smash any emote NOW!', true);
+        if (!tourActive) showBubble('🌊 WAAAVE! smash any emote NOW!', true); // never over the tour
       }
     } else if (waveWin === wvWin) {
       waveWin = -1; // fires exactly once per window
@@ -1014,6 +1016,7 @@ function init() {
   // miss the window (Trym: "i can walk over them several times")
   let vinylLive = null, goldLive = null, itemLive = null;
   function tryClaims(now) {
+    if (tourActive) return; // hidden items can't be grabbed mid-tour
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     if (vinylLive && !me.vinyl && now - lastVinylTry > 800 && Math.hypot(me.x - vinylLive.x, me.y - vinylLive.y) < GRAB_R) {
@@ -1137,7 +1140,7 @@ function init() {
           if (r && p.fx) r.fx = p.fx; // active effects survive a rejoin
         });
         track('rave_join', { count: m.all.length });
-        if (!welcomed) { welcomed = true; firstVisitShow(); nightInit(); }
+        if (!welcomed) { welcomed = true; maybeTour(); }
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
@@ -1205,47 +1208,149 @@ function init() {
     el('rvStatus').textContent = 'solo mode (connection trouble) — still dancing';
     myId = 'me';
     addRaver({ id: 'me', outfit: myOutfit(), joined: Date.now() }, true);
-    if (!welcomed) { welcomed = true; firstVisitShow(); nightInit(); }
+    if (!welcomed) { welcomed = true; maybeTour(); }
   }
 
-  // THE WELCOME — a first visit gets a ten-second personal opening: the lights
-  // dim, a spotlight finds YOU, Barty announces you, confetti. This is the
-  // staff rolling out the red carpet (honest NPCs with jobs) — never fake
-  // guests. A cold visitor must get a personal payoff within seconds; before
-  // this, walking into a quiet club read as "what the f is this" (the funnel
-  // gap Trym named).
-  function firstVisitShow() {
-    const wtest = location.search.includes('welcometest'); // replay for visual testing
-    try {
-      if (!wtest && localStorage.getItem('rv-welcomed')) return;
-      localStorage.setItem('rv-welcomed', '1');
-    } catch (e) { if (!wtest) return; }
-    welcomeRan = true;
-    setTimeout(() => {
-      const me = myId && ravers.get(myId);
-      if (!me || me.stage) return;
-      track('rave_welcome');
-      const spot = document.createElement('div');
-      spot.className = 'rv-spot';
-      spot.style.left = me.x + '%';
-      spot.style.top = me.y + '%';
-      world.appendChild(spot);
-      me.wrap.classList.add('rv-lit');
-      if (!reduced) world.classList.add('rv-world--dim');
-      showBubble('🍌 ' + autoName(me.outfit).toUpperCase() + ' IS IN THE HOUSE! welcome!', false, 6500);
-      setTimeout(confettiBurst, 1800);
-      setTimeout(() => {
-        world.classList.remove('rv-world--dim');
-        spot.remove();
-        me.wrap.classList.remove('rv-lit');
-        const toast = document.createElement('div');
-        toast.className = 'rv-glowtoast';
-        toast.innerHTML = '⭐ the floor is yours — chase the sparkles, charge the <b>HYPE</b> meter, then DROP IT';
-        floor.appendChild(toast);
-        setTimeout(() => toast.remove(), 6000);
-      }, 7000);
-    }, 1200);
+  // ---- THE TOUR — the first-visit cinematic (Trym's spec: camera moves, big
+  // pixel type, spotlight cutouts, "not just a big text box in the middle").
+  // It replaced the old welcome show: same red-carpet job, done properly.
+  // Once per device (rv-tour-v1); the ❓ button replays it; ends → Night 1.
+  let tourActive = false, tourStep = -1, tourDemoEl = null;
+  function maybeTour() {
+    let seen = false;
+    try { seen = !!localStorage.getItem('rv-tour-v1'); } catch (e) {}
+    if (!seen || location.search.includes('tourtest')) {
+      try { localStorage.setItem('rv-tour-v1', '1'); } catch (e) {}
+      setTimeout(runTour, 1200);
+    } else {
+      nightInit();
+    }
   }
+  function tourCamTo(xPct, yPct, s) { // same math as updateCam, arbitrary target
+    const px = (xPct / 100) * floorW * s;
+    const py = (yPct / 100) * floorH * s;
+    const tx = clamp(floorW / 2 - px, floorW - floorW * s, 0);
+    const ty = clamp(floorH / 2 - py, floorH - floorH * s, 0);
+    world.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  }
+  function bartyPct() { // Barty's floor spot from offsets — transform-immune
+    const bm = el('rvBarman');
+    const bar = bm.offsetParent; // .rv-bar
+    return {
+      x: ((bar.offsetLeft + bm.offsetLeft + bm.offsetWidth / 2) / floorW) * 100,
+      y: ((bar.offsetTop + bm.offsetTop + bm.offsetHeight * 0.35) / floorH) * 100,
+    };
+  }
+  function tourBig(txt, sub) {
+    el('rvTourBigTxt').textContent = txt;
+    el('rvTourBigSub').textContent = sub || '';
+    el('rvTourBig').hidden = false;
+  }
+  function tourBox(target, title, text) { // cutout highlight + a captioned box beside it
+    const cr = document.querySelector('.rv-club').getBoundingClientRect();
+    const r = target.getBoundingClientRect();
+    const pad = 8;
+    const hl = el('rvTourHl');
+    hl.style.left = (r.left - cr.left - pad) + 'px';
+    hl.style.top = (r.top - cr.top - pad) + 'px';
+    hl.style.width = (r.width + pad * 2) + 'px';
+    hl.style.height = (r.height + pad * 2) + 'px';
+    hl.hidden = false;
+    const box = el('rvTourBox');
+    el('rvTourTitle').textContent = title;
+    el('rvTourText').textContent = text;
+    const below = (r.top - cr.top) < cr.height * 0.5;
+    box.dataset.side = below ? 'below' : 'above';
+    const bw = Math.min(250, cr.width - 20);
+    box.style.maxWidth = bw + 'px';
+    box.style.left = clamp(r.left - cr.left, 10, Math.max(10, cr.width - bw - 10)) + 'px';
+    box.style.top = below ? (r.bottom - cr.top + pad + 14) + 'px' : 'auto';
+    box.style.bottom = below ? 'auto' : (cr.height - (r.top - cr.top) + pad + 14) + 'px';
+    box.hidden = false;
+  }
+  function tourClear() {
+    el('rvTourHl').hidden = true;
+    el('rvTourBig').hidden = true;
+    el('rvTourBox').hidden = true;
+  }
+  const TOUR = [
+    () => { // tight on YOUR banana — no distractions, just you
+      const me = myId && ravers.get(myId);
+      if (me) tourCamTo(me.x, me.y, 2.6);
+      tourBig('THIS IS YOU', me ? autoName(me.outfit) : '');
+    },
+    () => { // pull back to the whole club
+      world.style.transform = '';
+      tourBig('AND WELCOME TO THE CLUB', '');
+      confettiBurst();
+    },
+    () => { // Barty gets the frame and his first hello
+      const b = bartyPct();
+      tourCamTo(b.x, b.y, 2.1);
+      bartySay(['well howdy! 🤠 welcome to the CLUB, partner!', { t: 'we’ve been expectin’ ya. well. i have.', mutter: true }]);
+    },
+    () => { // who Barty is (camera home first; measure after the glide)
+      world.style.transform = '';
+      setTimeout(() => {
+        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'calls the happy hours, mixes the specials, hands out tonight’s jobs. never stops talking.');
+      }, 900);
+    },
+    () => { // the mixer: hype + the quest log
+      tourBox(el('rvMixer'), 'THE MIXER', 'everything you do fills the HYPE meter — fill it and TAP it to drop the floor. your current job sits right under it.');
+    },
+    () => { // the floor itself
+      const how = matchMedia('(pointer: coarse)').matches ? 'tap anywhere to walk over.' : 'walk with WASD, or click anywhere.';
+      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.');
+    },
+    () => { // the DJ
+      tourBox(document.querySelector('.rv-djgroup'), 'TONIGHT’S DJ', 'the banana of the day is on the decks. every third minute: THE DROP. you’ll know it when it hits.');
+    },
+    () => { // an example item, spawned just for show
+      tourDemoEl = document.createElement('div');
+      tourDemoEl.className = 'rv-item';
+      tourDemoEl.dataset.kind = 'candy';
+      tourDemoEl.innerHTML = ITEM_SVGS.candy;
+      tourDemoEl.style.left = '55%';
+      tourDemoEl.style.top = '48%';
+      world.appendChild(tourDemoEl);
+      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build HYPE.');
+    },
+  ];
+  function runTour() {
+    if (tourActive || !myId || !ravers.get(myId)) return;
+    tourActive = true;
+    tourStep = -1;
+    world.classList.add('rv-world--tour');
+    floor.classList.add('rv-tourclean');
+    el('rvTour').hidden = false;
+    track('rave_tour_start');
+    tourNext();
+  }
+  function tourNext() {
+    tourStep++;
+    tourClear();
+    const step = TOUR[tourStep];
+    if (!step) return endTour(false);
+    step();
+  }
+  function endTour(skipped) {
+    tourActive = false;
+    tourClear();
+    el('rvTour').hidden = true;
+    world.classList.remove('rv-world--tour');
+    floor.classList.remove('rv-tourclean');
+    world.style.transform = '';
+    camLastTx = null; // the follow-cam recomputes from scratch
+    if (tourDemoEl) { tourDemoEl.remove(); tourDemoEl = null; }
+    hideBubble();
+    track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
+    nightInit(); // the tour hands straight off to Barty's first job
+  }
+  el('rvTour').addEventListener('click', (e) => {
+    if (e.target.closest('.rv-tour__skip')) { endTour(true); return; }
+    tourNext();
+  });
+  el('rvTourBtn').addEventListener('click', () => runTour());
 
   // ---- THE NIGHT: the quest layer, Act One (full design: the-night-plan) ----
   // Barty is the quest giver. His voice: over-cheerful southwestern bartender,
@@ -1274,12 +1379,13 @@ function init() {
   function nightLoad() { try { return JSON.parse(localStorage.getItem('rv-night-v1') || '{}'); } catch (e) { return {}; } }
   let night = null; // { def, step, qv }
   function nightInit() {
+    if (night) return; // a tour replay must not restart a night in progress
     const s = nightLoad();
     const arc = NIGHT_TEST || s.arc || 1;
     if (arc > NIGHTS.length) return; // Act One is all we have — Act Two arrives with "the program"
     if (!NIGHT_TEST && s.lastStamp === localDay()) return; // one night per night
     night = { def: NIGHTS[arc - 1], step: -1 };
-    setTimeout(nightAdvance, welcomeRan ? 10500 : 3000); // night one lets the welcome show finish first
+    setTimeout(nightAdvance, 2500); // a breath after the tour (or the join), then Barty's first job
   }
   function nightTray(txt, done) {
     const q = el('rvQuest');

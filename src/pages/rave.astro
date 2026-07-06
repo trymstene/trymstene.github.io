@@ -128,9 +128,7 @@ const schema = {
         repeating-conic-gradient(#161022 0% 25%, #1d1530 0% 50%) 0 0 / 96px 96px;
       image-rendering: pixelated;
       will-change: transform; /* the follow-cam pans this layer every frame — keep it on the compositor */
-      transition: filter 0.9s ease; /* the welcome show dims the floor around your spotlight */
     }
-    .rv-world--dim { filter: brightness(0.45); }
     body.rv-drop .rv-world {
       background:
         repeating-conic-gradient(#2a1650 0% 25%, #451d66 0% 50%) 0 0 / 96px 96px;
@@ -335,6 +333,57 @@ const schema = {
       cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
     .rv-zoom:hover { background: #ffe135; color: #111; }
+    .rv-tourbtn { right: auto; left: 8px; border-color: #b388ff; opacity: 0.8; }
+
+    /* THE TOUR — z 800 beats everything; the highlight's giant box-shadow IS
+       the dark overlay (clipped by the club's overflow:hidden) */
+    .rv-tour { position: absolute; inset: 0; z-index: 800; cursor: pointer; }
+    .rv-tour__hl {
+      position: absolute; border: 3px solid #ffe135; pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(8, 6, 14, 0.78), 0 0 14px rgba(255, 225, 53, 0.5);
+      transition: all 0.45s ease;
+    }
+    .rv-tour__hl[hidden] { display: none; }
+    .rv-tour__big {
+      position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+      pointer-events: none; padding: 0 1rem;
+    }
+    .rv-tour__big[hidden] { display: none; }
+    .rv-tour__big span {
+      font-family: "Archivo Black", sans-serif; font-size: clamp(1.5rem, 6vw, 2.9rem);
+      color: #ffe135; -webkit-text-stroke: 2px #111; text-shadow: 4px 4px 0 #000; line-height: 1.15;
+    }
+    .rv-tour__big small { display: block; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000; }
+    .rv-tour__box {
+      position: absolute; max-width: 250px; pointer-events: none;
+      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 4px 4px 0 #000;
+      padding: 0.6rem 0.8rem; font-size: 0.74rem; line-height: 1.5;
+    }
+    .rv-tour__box[hidden] { display: none; }
+    .rv-tour__box::before { /* the pixel arrow, flipped per side via data-side */
+      content: ''; position: absolute; left: 26px; width: 12px; height: 12px; background: #ffe135; border: 3px solid #111;
+    }
+    .rv-tour__box[data-side="below"]::before { top: -9px; }
+    .rv-tour__box[data-side="above"]::before { bottom: -9px; }
+    .rv-tour__title { margin: 0 0 0.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; background: #ffe135; display: inline-block; padding: 0.08rem 0.35rem; }
+    .rv-tour__text { margin: 0; }
+    .rv-tour__next {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); margin: 0;
+      color: #fffdf5; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      text-shadow: 2px 2px 0 #000; animation: rvTourNext 1.2s steps(2) infinite; pointer-events: none;
+    }
+    @keyframes rvTourNext { 50% { opacity: 0.45; } }
+    .rv-tour__skip {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(13, 11, 20, 0.85); color: #fffdf5; border: 3px solid #b388ff;
+      font-size: 0.66rem; font-weight: 800; padding: 0.35rem 0.55rem; cursor: pointer;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    /* tour steps 1–2: furniture and staff only — no chase-ables, no meters */
+    .rv-floor.rv-tourclean #rvItem, .rv-floor.rv-tourclean #rvVinyl, .rv-floor.rv-tourclean #rvGold,
+    .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot,
+    .rv-floor.rv-tourclean .rv-tip { visibility: hidden; }
+    .rv-world--tour { transition: transform 0.85s ease; }
     /* first-night tip: how to move — fades on the first step or after a few seconds */
     .rv-tip {
       position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%); z-index: 650;
@@ -504,6 +553,7 @@ const schema = {
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
+          <button class="rv-zoom rv-tourbtn" id="rvTourBtn" aria-label="Replay the club tour" title="how does this club work?">❓</button>
           <div class="rv-mixer" id="rvMixer" role="button" aria-label="The hype mixer — full meter drops the floor">
             <div class="rv-mixer__row"><span>HYPE</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
             <div class="rv-mixer__go" id="rvHypeGo" hidden>🔥 TAP TO DROP IT</div>
@@ -511,6 +561,18 @@ const schema = {
             <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
           </div>
           <div class="rv-tip" id="rvTip" hidden></div>
+        </div>
+        <!-- THE TOUR: first-visit cinematic — camera moves, big pixel type,
+             spotlight cutouts. Tap advances; the ❓ button replays it. -->
+        <div class="rv-tour" id="rvTour" hidden>
+          <div class="rv-tour__hl" id="rvTourHl" hidden></div>
+          <div class="rv-tour__big" id="rvTourBig" hidden><span id="rvTourBigTxt"></span><small id="rvTourBigSub"></small></div>
+          <div class="rv-tour__box" id="rvTourBox" hidden>
+            <p class="rv-tour__title" id="rvTourTitle"></p>
+            <p class="rv-tour__text" id="rvTourText"></p>
+          </div>
+          <p class="rv-tour__next" id="rvTourNext">tap to continue →</p>
+          <button class="rv-tour__skip" id="rvTourSkip" type="button">skip the tour ✕</button>
         </div>
         <div class="rv-hud">
           <div class="rv-emotes" role="group" aria-label="Send an emote">
