@@ -1240,21 +1240,25 @@ function init() {
     big.style.top = yPx + 'px';
     big.hidden = false;
   }
-  function tourBox(target, title, text, pad = 8) { // cutout highlight + a captioned box beside it
+  function tourBox(target, title, text, pad = 8) { // spotlight pool + a captioned box beside it
     const cr = document.querySelector('.rv-club').getBoundingClientRect();
     const r = target.getBoundingClientRect();
-    // the cutout never bleeds past the floor's bottom edge into the HUD
-    // (Barty's sprite rect reaches down there) nor off the club sides
+    // the pool is an ELLIPSE ~1.8× the target (never smaller than a hand):
+    // generous + feathered means off-by-a-few-px centering can't be seen.
+    // It SHIFTS to stay inside the floor (cropping changed its size = the
+    // asymmetry Trym caught); the feather forgives the shift too.
+    const cx = r.left - cr.left + r.width / 2;
+    const cy = r.top - cr.top + r.height / 2;
     const maxY = floor.offsetTop + floor.offsetHeight;
-    const hx = clamp(r.left - cr.left - pad, 4, cr.width - 8);
-    const hy = clamp(r.top - cr.top - pad, 4, maxY - 8);
-    const hw = Math.min(r.width + pad * 2, cr.width - 4 - hx);
-    const hh = Math.min(r.height + pad * 2, maxY - 4 - hy);
+    const pw = Math.min(Math.max(r.width * 1.8 + pad * 2, 130), cr.width - 8);
+    const ph = Math.min(Math.max(r.height * 1.8 + pad * 2, 110), maxY - 8);
+    const hx = clamp(cx - pw / 2, 4, cr.width - 4 - pw);
+    const hy = clamp(cy - ph / 2, 4, maxY - 4 - ph);
     const hl = el('rvTourHl');
     hl.style.left = hx + 'px';
     hl.style.top = hy + 'px';
-    hl.style.width = hw + 'px';
-    hl.style.height = hh + 'px';
+    hl.style.width = pw + 'px';
+    hl.style.height = ph + 'px';
     hl.hidden = false;
     const box = el('rvTourBox');
     el('rvTourTitle').textContent = title;
@@ -1263,13 +1267,13 @@ function init() {
     box.dataset.side = below ? 'below' : 'above';
     const bw = Math.min(250, cr.width - 20);
     box.style.maxWidth = bw + 'px';
-    const bx = clamp(hx + hw / 2 - bw / 2, 10, Math.max(10, cr.width - bw - 10));
+    const bx = clamp(cx - bw / 2, 10, Math.max(10, cr.width - bw - 10));
     box.style.left = bx + 'px';
-    // a huge cutout (the floor step) would push the box out of the club — cap it
-    box.style.top = below ? Math.min(hy + hh + 14, cr.height - 130) + 'px' : 'auto';
-    box.style.bottom = below ? 'auto' : (cr.height - hy + 14) + 'px';
+    // a huge pool (the floor step) would push the box out of the club — cap it
+    box.style.top = below ? Math.min(hy + ph + 10, cr.height - 130) + 'px' : 'auto';
+    box.style.bottom = below ? 'auto' : (cr.height - hy + 10) + 'px';
     // the pixel arrow points at the TARGET, wherever the box got clamped to
-    box.style.setProperty('--ax', clamp(hx + hw / 2 - bx - 6, 10, bw - 28) + 'px');
+    box.style.setProperty('--ax', clamp(cx - bx - 6, 10, bw - 28) + 'px');
     box.hidden = false;
   }
   function tourClear() {

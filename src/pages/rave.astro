@@ -344,12 +344,14 @@ const schema = {
        the dark overlay (clipped by the club's overflow:hidden). All controls
        follow the site's yellow pixel-button language. */
     .rv-tour { position: absolute; inset: 0; z-index: 800; cursor: pointer; }
-    /* the highlight is LIGHT, not a box: the cutout stays bright while the
-       giant shadow dims the room, and a soft glow rings it — the caption is
-       the only box on screen ("it CAN be too many boxes" — Trym) */
+    /* the highlight is a SPOTLIGHT POOL: a round cutout with a feathered edge
+       (the blur on the giant dim shadow) that fades smoothly into the dark —
+       generous and soft, so dead-on centering stops mattering (Trym: the hard
+       square "highlights well when it's not symmetrical") */
     .rv-tour__hl {
       position: absolute; pointer-events: none;
-      box-shadow: 0 0 0 9999px rgba(8, 6, 14, 0.8), 0 0 34px 12px rgba(255, 225, 53, 0.35);
+      border-radius: 50%;
+      box-shadow: 0 0 56px 9999px rgba(8, 6, 14, 0.82);
       transition: all 0.45s ease;
     }
     .rv-tour__hl[hidden] { display: none; }
