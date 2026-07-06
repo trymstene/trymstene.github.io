@@ -371,7 +371,14 @@ function init() {
       const dist = Math.hypot(dx, dy);
       if (dist < 1) {
         walkTarget = null;
-        if (pendingSit) { pendingSit = false; sitting = true; } // reached the stool — take a load off
+        if (pendingSit) {
+          pendingSit = false;
+          sitting = true;
+          // anchor the BUM on the seat, not the eyes: both sprites are centre-
+          // anchored, so lift the banana by ~30% of its own height — the stool
+          // (z just above) then covers the legs like a real seat
+          setPos(me, stoolPos.x, stoolPos.y - ((me.size || 90) * 0.3 / floorH) * 100);
+        }
         // report the RESTING spot — the throttle can eat the last step, and the
         // server verifies claims against its copy of your position
         if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
@@ -1697,7 +1704,7 @@ function init() {
     // side (the counter-top already holds the drinks + broom, and mid-floor
     // read as "a chair standing alone" — Trym). Clamped into the walkable
     // floor: an unreachable stool is furniture-only.
-    stoolPos = { x: clamp(barSolid.x + 2, 10, 62), y: clamp(barSolid.y - 1, topClamp + 6, 90) };
+    stoolPos = { x: clamp(barSolid.x + 2, 10, 62), y: clamp(barSolid.y - 1, topClamp + 6, 91) };
     const d = document.createElement('div');
     d.id = 'rvStool';
     d.className = 'rv-stool';
