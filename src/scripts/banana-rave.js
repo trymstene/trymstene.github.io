@@ -322,7 +322,7 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom')) return; // the camera toggle is not a walk order
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-mixer')) return; // buttons are not walk orders
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     const rect = floor.getBoundingClientRect();
@@ -560,20 +560,33 @@ function init() {
     hypeSegs.forEach((s, i) => s.classList.toggle('on', i < on));
     mixerEl.classList.toggle('rv-mixer--peak', peaking);
   }
+  // full ≠ auto-fire: a full meter ARMS the mixer and waits. Hype is a resource
+  // you SPEND — "it's just something that is there and i cant use it for much"
+  // (Trym) was the tell: a passive bar with a cosmetic ending isn't a loop.
+  let hypeCharged = false;
   function addHype(n) {
-    if (Date.now() < hypeModeUntil) return; // the meter rests while you peak
+    if (hypeCharged || Date.now() < hypeModeUntil) return; // holds while armed or peaking
     hype = Math.min(HYPE_MAX, hype + n * hypeBoost);
     lastHypeGain = Date.now();
-    if (hype >= HYPE_MAX) startHypeMode();
+    if (hype >= HYPE_MAX) {
+      hypeCharged = true;
+      el('rvHypeGo').hidden = false;
+      mixerEl.classList.add('rv-mixer--charged');
+    }
     renderHype();
   }
-  function startHypeMode() {
+  function spendHype() {
+    if (!hypeCharged) return;
+    hypeCharged = false;
+    el('rvHypeGo').hidden = true;
+    mixerEl.classList.remove('rv-mixer--charged');
     hype = 0;
     hypeModeUntil = Date.now() + HYPE_MODE_MS;
+    miniDropUntil = Date.now() + 8000; // YOU drop the floor — strobe, pyro, the works
     passPatch('hype');
     passStat('hypes');
     track('rave_hype');
-    confettiBurst(); // filling the meter is a MOMENT, not a stat tick
+    confettiBurst();
     const me = myId && ravers.get(myId);
     if (me) {
       me.wrap.classList.add('rv-hypemode');
@@ -582,12 +595,13 @@ function init() {
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
-      toast.innerHTML = '🌟 <b>HYPE MODE</b> — disco legs! you’re FASTER, you paint GOLD, and the whole floor sees it!';
+      toast.innerHTML = '🔥 <b>YOU DROPPED IT</b> — disco legs, gold trail, and the floor goes OFF!';
       floor.appendChild(toast);
       setTimeout(() => toast.remove(), 5000);
     }
     setTimeout(endHypeMode, HYPE_MODE_MS);
   }
+  mixerEl.addEventListener('click', spendHype);
   function endHypeMode() {
     const me = myId && ravers.get(myId);
     if (me) {
@@ -664,11 +678,21 @@ function init() {
       return;
     }
     let left = 0;
+    // pickup radius in PX, sized to the sprite: %-distance is anisotropic (5%
+    // vertically is ~half of 5% horizontally on this floor) so the banana
+    // visibly STOOD on pellets it hadn't "reached" — Trym circled back for
+    // one or two every single run
+    const rPx = (me.size || 90) * 0.55;
     for (const p of run.pts) {
       if (p.got) continue;
-      if (Math.hypot(me.x - p.x, me.y - p.y) < 5) {
+      const dxp = ((me.x - p.x) / 100) * floorW;
+      const dyp = ((me.y - p.y) / 100) * floorH;
+      if (Math.hypot(dxp, dyp) < rPx) {
         p.got = true;
+        p.elm.style.animationDelay = ''; // the spawn stagger must not postpone the pop
         p.elm.classList.add('rv-pellet--got');
+        const gone = p.elm;
+        setTimeout(() => gone.remove(), 500); // no half-faded ghosts, ever
         addHype(6);
       } else {
         left++;
@@ -676,7 +700,7 @@ function init() {
     }
     if (!left) { // run complete: chain bump + breather before the next one
       run = null;
-      nextRunAt = now + 8000;
+      nextRunAt = now + 5000;
       bumpChain();
       addHype(10);
       el('rvRun').innerHTML = '';
@@ -994,6 +1018,7 @@ function init() {
     world.appendChild(d);
     setTimeout(() => d.remove(), 1600);
   }
+  const zappedPair = new Map(); // static-discharge cooldown per pair
   setInterval(() => {
     const now = Date.now();
     const list = [...ravers.values()].filter((r) => !r.stage).slice(0, 40);
@@ -1001,6 +1026,21 @@ function init() {
       for (let j = i + 1; j < list.length; j++) {
         const a = list[i], b = list[j];
         if (Math.hypot(a.x - b.x, a.y - b.y) > FIVE_DIST) continue;
+        // static discharge: brush past a CHARGED banana and you FEEL it — the
+        // uncharged one shock-blinks (both clients compute this from the fx +
+        // positions they already share; zero new traffic)
+        const aZap = fxActive(a, now) && a.fx.id === 'zap';
+        const bZap = fxActive(b, now) && b.fx.id === 'zap';
+        if (aZap !== bZap) {
+          const key = a.id < b.id ? a.id + b.id : b.id + a.id;
+          if ((zappedPair.get(key) || 0) <= now) {
+            zappedPair.set(key, now + 5000);
+            const victim = aZap ? b : a;
+            victim.wrap.classList.add('rv-shock');
+            setTimeout(() => victim.wrap.classList.remove('rv-shock'), 460);
+            if (victim.id === myId) addHype(4); // a jolt IS hype
+          }
+        }
         const moved = (a.lastMoveAt && now - a.lastMoveAt < 8000) || (b.lastMoveAt && now - b.lastMoveAt < 8000);
         if (!moved) continue; // idle clusters don't spontaneously combust into greetings
         const key = a.id < b.id ? a.id + b.id : b.id + a.id;
@@ -1165,7 +1205,7 @@ function init() {
         me.wrap.classList.remove('rv-lit');
         const toast = document.createElement('div');
         toast.className = 'rv-glowtoast';
-        toast.innerHTML = '⭐ the floor is yours — chase the sparkles, fill the <b>HYPE</b> meter';
+        toast.innerHTML = '⭐ the floor is yours — chase the sparkles, charge the <b>HYPE</b> meter, then DROP IT';
         floor.appendChild(toast);
         setTimeout(() => toast.remove(), 6000);
       }, 7000);
@@ -1261,14 +1301,18 @@ function init() {
   let fxParts = []; // flame/dash trail particles — {x, y, t0, kind}
   function confettiBurst() {
     if (reduced || !floorW) return;
+    // airy, not a hose: fewer pieces, slower fall, wide flutter — and each piece
+    // ERASES its previous spot instead of smearing a streamer down the fade
+    // canvas ("giant hoses of color" — Trym)
     const COLS = ['#ffe135', '#ff4d9d', '#78ebff', '#58c05c', '#fffdf5'];
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 45; i++) {
       confetti.push({
         x: Math.random() * floorW,
-        y: -10 - Math.random() * 80,
-        v: 70 + Math.random() * 100,
+        y: -10 - Math.random() * 140,
+        v: 38 + Math.random() * 46,
         sw: Math.random() * 2 * Math.PI,
         c: COLS[i % COLS.length],
+        s: 3 + (i % 3),
       });
     }
   }
@@ -1324,6 +1368,15 @@ function init() {
           r.zapSpawnAt = now;
           fxParts.push({ x: px + (Math.sin(now / 70) * 26), y: py - 20 - ((now >> 6) % 5) * 9, t0: now, kind: 'zap', seed: now % 13 });
         }
+        // the cartoon electrocution: every couple of seconds the whole banana
+        // shock-blinks — black skeleton silhouette ↔ white flash (Trym's brief:
+        // "tiny electrical sausages" weren't an electric shock)
+        if (r.fx.id === 'zap' && now - (r.shockAt || 0) > 1900 + ((r.id ? r.id.length : 0) % 5) * 180) {
+          r.shockAt = now;
+          const w = r.wrap;
+          w.classList.add('rv-shock');
+          setTimeout(() => w.classList.remove('rv-shock'), 460);
+        }
         // flames + dashes are PARTICLES at past positions (a real trail behind the
         // walker) — drawing at the live feet hid them under the sprite, and the
         // canvas fade killed them in ~1s (Trym, iOS). Each spawn lands at the
@@ -1377,14 +1430,20 @@ function init() {
           }
         }
       }
-      // drop-end confetti: a burst of pixel squares raining over the whole floor
+      // confetti: loose pixel flakes for the RARE moments (golden banana, your
+      // hype drop, the welcome) — erase-then-draw keeps them airy on the canvas
       if (confetti.length) {
+        for (const p of confetti) {
+          if (p.px !== undefined) trailCtx.clearRect(p.px - 1, p.py - 1, p.s + 2, p.s + 2);
+        }
         confetti = confetti.filter((p) => p.y < floorH + 10);
         for (const p of confetti) {
           p.y += (p.v * dtMs) / 1000;
-          const sway = Math.sin(p.sw + p.y / 24) * 10;
+          const sway = Math.sin(p.sw + p.y / 14) * 26; // wide lazy flutter
+          p.px = Math.floor((p.x + sway) / 2) * 2;
+          p.py = Math.floor(p.y / 2) * 2;
           trailCtx.fillStyle = p.c;
-          trailCtx.fillRect(Math.floor((p.x + sway) / 4) * 4, Math.floor(p.y / 4) * 4, 4, 4);
+          trailCtx.fillRect(p.px, p.py, p.s, p.s);
         }
       }
     }
@@ -1397,7 +1456,9 @@ function init() {
     const idx = Math.floor((now % cycleMs) / (cycleMs / NFRAMES));
 
     if (dropActive !== lastDrop) {
-      if (lastDrop === true && !dropActive) { passStat('drops'); confettiBurst(); addHype(8); } // survived another one — rain the confetti
+      // no confetti here — every-3rd-minute confetti was wallpaper (Trym: "too
+      // frequent to appreciate"); the drop already has strobe + pyro + the flash
+      if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); }
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       dropFlashEl.hidden = !dropActive;

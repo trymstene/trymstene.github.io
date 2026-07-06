@@ -206,14 +206,23 @@ const schema = {
     .rv-item[data-kind="candy"] { width: 38px; height: 26px; }
     .rv-item[data-kind="pizza"] { width: 32px; height: 32px; }
     .rv-item[data-kind="zap"] { filter: drop-shadow(0 0 8px rgba(120, 235, 255, 0.7)); }
-    /* the twinkle: the next item announces its spot 4s early — race it */
-    .rv-twinkle { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; z-index: 8; pointer-events: none; background: #fffdf5; box-shadow: 0 -10px #ffe135, 0 10px #ffe135, -10px 0 #ffe135, 10px 0 #ffe135, 0 0 10px #fffdf5; animation: rvTwinkle 0.5s steps(2) infinite; }
+    /* the twinkle: the next item announces its spot 4s early — race it.
+       CYAN, not yellow: in pellet-gold it read as an uncollectable pellet */
+    .rv-twinkle { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; z-index: 8; pointer-events: none; background: #fffdf5; box-shadow: 0 -10px #78ebff, 0 10px #78ebff, -10px 0 #78ebff, 10px 0 #78ebff, 0 0 10px #fffdf5; animation: rvTwinkle 0.5s steps(2) infinite; }
     .rv-twinkle[hidden] { display: none; }
     @keyframes rvTwinkle { 50% { transform: scale(0.45) rotate(45deg); opacity: 0.5; } }
     /* THE WAVE hop (applied inline with per-banana delay) + chain glow + zap glow */
     @keyframes rvWaveHop { 30% { transform: translateY(-20px); } 60% { transform: translateY(-3px); } }
     .rv-raver.rv-chainglow canvas { filter: drop-shadow(0 0 8px #ffd23f) drop-shadow(0 0 16px #ff9128); }
     .rv-raver.rv-zapfx canvas { filter: drop-shadow(0 0 7px #78ebff); }
+    /* the cartoon electrocution: the whole banana blinks between a white flash
+       and its black skeleton silhouette (the sprite itself, floored to black) */
+    .rv-raver.rv-shock canvas { animation: rvShockBlink 0.15s steps(2) 3; }
+    @keyframes rvShockBlink {
+      0%, 100% { filter: brightness(0) drop-shadow(0 0 5px #78ebff); }
+      50% { filter: brightness(2.8) saturate(0) drop-shadow(0 0 14px #78ebff); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-shock canvas { animation: none; } }
     @keyframes rvItemBob { 50% { transform: translate(-50%, -62%) scale(1.1); } }
     /* pickup juice: a pixel ring + four stars burst where the item was grabbed */
     .rv-pop { position: absolute; width: 60px; height: 60px; transform: translate(-50%, -50%); z-index: 520; pointer-events: none; }
@@ -287,6 +296,10 @@ const schema = {
     .rv-mixer__seg.on:nth-child(n+10) { background: #ff4d9d; }
     .rv-mixer--peak { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
     @keyframes rvMixerPeak { 50% { border-color: #ff4d9d; } }
+    /* CHARGED: a full meter arms the mixer — hype is a resource you SPEND */
+    .rv-mixer--charged { pointer-events: auto; cursor: pointer; border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .rv-mixer__go { margin-top: 4px; color: #ffe135; font-size: 0.66rem; }
+    .rv-mixer__go[hidden] { display: none; }
     .rv-mixer__chain { margin-top: 4px; color: #ffe135; }
     .rv-mixer__chain[hidden] { display: none; }
     /* hype mode: the whole floor sees you peak (effect travels the outfit pipe;
@@ -480,8 +493,9 @@ const schema = {
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
-          <div class="rv-mixer" id="rvMixer" aria-hidden="true">
+          <div class="rv-mixer" id="rvMixer" role="button" aria-label="The hype mixer — full meter drops the floor">
             <div class="rv-mixer__row"><span>HYPE</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
+            <div class="rv-mixer__go" id="rvHypeGo" hidden>🔥 TAP TO DROP IT</div>
             <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
           </div>
           <div class="rv-tip" id="rvTip" hidden></div>
