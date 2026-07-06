@@ -109,6 +109,7 @@ function specialWindow(now) {
   return ph < SPECIAL_LEN ? Math.floor((now - SPECIAL_OFFSET) / SPECIAL_PERIOD) : -1;
 }
 const FX_MS = 150_000;
+const FX_ZAP_MS = 60_000; // the electric charge is LOUD (shock-blinks) — it burns out fastest (Trym: 150s was way too long)
 
 export default {
   async fetch(request, env) {
@@ -278,7 +279,7 @@ export class RaveRoom {
       await this.state.storage.put('itemWin', win);
       const kind = itemType(win);
       if (ITEM_FX[kind]) {
-        me.fx = { id: ITEM_FX[kind], until: Date.now() + FX_MS };
+        me.fx = { id: ITEM_FX[kind], until: Date.now() + (ITEM_FX[kind] === 'zap' ? FX_ZAP_MS : FX_MS) };
         ws.serializeAttachment(me);
       }
       this.broadcast({ t: 'item', id: me.id, win, kind, fx: ITEM_FX[kind] ? me.fx : undefined });

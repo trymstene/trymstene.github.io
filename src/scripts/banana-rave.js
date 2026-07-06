@@ -44,6 +44,10 @@ const CHAIN_MS = 90000;                                                  // grab
 const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
 const COCKTAILS = ['daiquiri', 'fizz'];                                 // rotation — keep in sync with worker
 const FX_MS = 150000;
+const FX_ZAP_MS = 60000; // the electric charge is LOUD — it burns out fastest (keep in sync with worker)
+// zap windows are capped at FIRST SIGHT too, so the short fuse holds even
+// against a not-yet-redeployed worker still stamping 150s
+const capFx = (fx) => (fx && fx.id === 'zap' ? { ...fx, until: Math.min(fx.until, Date.now() + FX_ZAP_MS) } : fx);
 const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge' };
 const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧', zap: '⚡' };
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
@@ -827,7 +831,7 @@ function init() {
   function applyFx(id, fx, at) {
     const r = ravers.get(id);
     if (!r || !fx) return;
-    r.fx = fx;
+    r.fx = capFx(fx);
     refreshHud();
     if (at) pickupPop(at.x, at.y);
     if (id === myId) {
@@ -1026,7 +1030,7 @@ function init() {
       lastItemTry = now;
       const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz' }[itemLive.kind];
       if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
-      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + FX_MS } : undefined);
+      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + (soloFx === 'zap' ? FX_ZAP_MS : FX_MS) } : undefined);
     }
   }
 
@@ -1125,7 +1129,7 @@ function init() {
         m.all.forEach((p) => {
           const r = ravers.get(p.id);
           if (r && p.vinyl) r.vinyl = true; // drawn into the glove at render time
-          if (r && p.fx) r.fx = p.fx; // active effects survive a rejoin
+          if (r && p.fx) r.fx = capFx(p.fx); // active effects survive a rejoin (zap on its short fuse)
         });
         track('rave_join', { count: m.all.length });
         if (!welcomed) { welcomed = true; maybeTour(); }
