@@ -284,7 +284,14 @@ function init() {
   const insideBar = (x, y) => x < barSolid.x && y > barSolid.y;
 
   const zoomBtn = el('rvZoom');
-  function refreshZoomBtn() { zoomBtn.hidden = false; zoomBtn.textContent = cam.on ? '🗺 whole floor' : '🔍 follow me'; }
+  // the label is the ACTION, not the state; on small screens it's icon-only —
+  // "users click stuff to see what it does" (Trym), and the corner gets freed
+  function refreshZoomBtn() {
+    zoomBtn.hidden = false;
+    const small = matchMedia('(max-width: 640px)').matches;
+    zoomBtn.textContent = cam.on ? (small ? '🗺' : '🗺 whole floor') : (small ? '🔍' : '🔍 follow me');
+    zoomBtn.setAttribute('aria-label', cam.on ? 'Show the whole floor' : 'Follow my banana');
+  }
   refreshZoomBtn();
   zoomBtn.addEventListener('click', () => { cam.on = !cam.on; refreshZoomBtn(); track('rave_zoom', { on: cam.on }); });
 
