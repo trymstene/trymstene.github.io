@@ -5,6 +5,10 @@ import PixelIcon from '../components/PixelIcon.astro';
 const title = 'The Banana Rave — everyone dances together';
 const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others.';
 
+// pyro fountains: two-frame tall pixel flames (Pillow-authored, scratchpad
+// pyro.py) — both frames stacked per fountain, CSS flips between them
+const PYRO_FRAMES = '<svg class="rv-pyro__a" viewBox="0 0 7 14" shape-rendering="crispEdges"><rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="2" y="1" width="2" height="1" fill="#ffe135"/><rect x="2" y="2" width="1" height="1" fill="#ffe135"/><rect x="3" y="2" width="1" height="1" fill="#ff9128"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="1" height="1" fill="#ff9128"/><rect x="4" y="3" width="1" height="1" fill="#ffe135"/><rect x="1" y="4" width="1" height="1" fill="#ffe135"/><rect x="2" y="4" width="2" height="1" fill="#ff9128"/><rect x="4" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="5" width="1" height="1" fill="#ff9128"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="1" height="1" fill="#ff9128"/><rect x="5" y="5" width="1" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ff9128"/><rect x="3" y="6" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="6" width="1" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#ffe135"/><rect x="0" y="7" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ff9128"/><rect x="2" y="7" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="7" width="1" height="1" fill="#ff9128"/><rect x="6" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="1" height="1" fill="#ff9128"/><rect x="2" y="8" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="8" width="1" height="1" fill="#ff9128"/><rect x="6" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="1" height="1" fill="#ff9128"/><rect x="2" y="9" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="9" width="1" height="1" fill="#ff9128"/><rect x="6" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="1" height="1" fill="#ff9128"/><rect x="2" y="10" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="10" width="1" height="1" fill="#ff9128"/><rect x="1" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="11" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="11" width="1" height="1" fill="#ff9128"/><rect x="1" y="12" width="1" height="1" fill="#e83b3b"/><rect x="2" y="12" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="12" width="1" height="1" fill="#e83b3b"/><rect x="2" y="13" width="3" height="1" fill="#e83b3b"/></svg><svg class="rv-pyro__b" viewBox="0 0 7 14" shape-rendering="crispEdges"><rect x="5" y="0" width="1" height="1" fill="#ffe135"/><rect x="1" y="1" width="1" height="1" fill="#ffe135"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="1" y="2" width="2" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ffe135"/><rect x="5" y="2" width="1" height="1" fill="#ff9128"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="1" height="1" fill="#ff9128"/><rect x="4" y="3" width="1" height="1" fill="#ffe135"/><rect x="5" y="3" width="1" height="1" fill="#ff9128"/><rect x="2" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="2" height="1" fill="#ff9128"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="5" width="1" height="1" fill="#ff9128"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="1" height="1" fill="#ff9128"/><rect x="5" y="5" width="1" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ff9128"/><rect x="3" y="6" width="2" height="1" fill="#f0f0fa"/><rect x="5" y="6" width="1" height="1" fill="#ffe135"/><rect x="0" y="7" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ff9128"/><rect x="2" y="7" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="7" width="1" height="1" fill="#ff9128"/><rect x="6" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="1" height="1" fill="#ff9128"/><rect x="2" y="8" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="8" width="1" height="1" fill="#ff9128"/><rect x="6" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="1" height="1" fill="#ff9128"/><rect x="2" y="9" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="9" width="1" height="1" fill="#ff9128"/><rect x="6" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="1" height="1" fill="#ff9128"/><rect x="2" y="10" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="10" width="1" height="1" fill="#ff9128"/><rect x="1" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="11" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="11" width="1" height="1" fill="#ff9128"/><rect x="1" y="12" width="1" height="1" fill="#e83b3b"/><rect x="2" y="12" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="12" width="1" height="1" fill="#e83b3b"/><rect x="2" y="13" width="3" height="1" fill="#e83b3b"/></svg>';
+
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
@@ -103,21 +107,53 @@ const schema = {
     .rv-beam--r { right: 16%; animation-delay: 1.7s; }
     body.rv-drop .rv-beam { animation-duration: 0.5s; background: linear-gradient(rgba(255, 77, 109, 0.3), transparent 80%); }
     @keyframes rvBeam { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+    /* pyro fountains: two-frame pixel flames (the old 6px gradient columns
+       read as glitches, not fire — Trym). Frames flip = flicker; the whole
+       flame bursts up from the floor on the drop. */
     .rv-pyro {
-      position: absolute; bottom: 0; width: 6px; height: 62px; z-index: 1; pointer-events: none;
+      position: absolute; bottom: 0; width: 30px; height: 60px; z-index: 1; pointer-events: none;
       display: none; transform-origin: bottom;
-      background: linear-gradient(to top, transparent, #ff9f1c 30%, #ffe135 70%, #fffdf5);
+      filter: drop-shadow(0 0 8px rgba(255, 145, 40, 0.55));
     }
-    body.rv-drop .rv-pyro { display: block; animation: rvPyro 0.45s steps(5) infinite; }
+    .rv-pyro svg { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+    .rv-pyro__a { animation: rvTwinkleFlip 0.26s steps(1) infinite; }
+    .rv-pyro__b { animation: rvTwinkleFlip 0.26s steps(1) infinite; animation-delay: -0.13s; }
+    body.rv-drop .rv-pyro { display: block; animation: rvPyro 0.5s steps(4) infinite; }
     .rv-pyro--1 { left: 7%; }
     .rv-pyro--2 { left: 24%; animation-delay: 0.15s; }
     .rv-pyro--3 { right: 24%; animation-delay: 0.3s; }
     .rv-pyro--4 { right: 7%; animation-delay: 0.1s; }
     @keyframes rvPyro {
-      0% { transform: scaleY(0.15); }
-      60% { transform: scaleY(1); opacity: 1; }
-      100% { transform: scaleY(0.7); opacity: 0.55; }
+      0% { transform: scaleY(0.35); }
+      60% { transform: scaleY(1); }
+      100% { transform: scaleY(0.8); }
     }
+    /* THE EQ WALL: pixel equalizer bars along the back wall — the dead space
+       behind the DJ becomes club dressing that dances (honest furniture, never
+       fake guests). Hard-stop gradient bands = pixel look; red + frantic on
+       the drop. */
+    .rv-eq {
+      position: absolute; left: 50%; transform: translateX(-50%); bottom: 46px;
+      width: min(420px, 76%); height: 44px; z-index: 0; pointer-events: none;
+      display: flex; align-items: flex-end; justify-content: center; gap: 6px; opacity: 0.9;
+    }
+    .rv-eq span {
+      flex: 1; max-width: 10px; height: 100%; transform-origin: bottom;
+      background: linear-gradient(to top, #2f2250 0 45%, #b388ff 45% 78%, #78ebff 78% 100%);
+      animation: rvEq 0.8s steps(4) infinite;
+    }
+    .rv-eq span:nth-child(2n) { animation-duration: 0.62s; background: linear-gradient(to top, #2f2250 0 50%, #4db8ff 50% 82%, #f0f0fa 82% 100%); }
+    .rv-eq span:nth-child(3n) { animation-delay: -0.25s; }
+    .rv-eq span:nth-child(4n) { animation-duration: 0.94s; animation-delay: -0.5s; }
+    .rv-eq span:nth-child(5n) { animation-delay: -0.65s; }
+    @keyframes rvEq {
+      0%, 100% { transform: scaleY(0.22); }
+      30% { transform: scaleY(0.8); }
+      55% { transform: scaleY(0.45); }
+      80% { transform: scaleY(1); }
+    }
+    body.rv-drop .rv-eq span { animation-duration: 0.3s; background: linear-gradient(to top, #451d66 0 45%, #ff4d6d 45% 78%, #ffe135 78% 100%); }
+    @media (prefers-reduced-motion: reduce) { .rv-eq span { animation: none; transform: scaleY(0.45); } .rv-pyro svg { animation: none; } .rv-pyro__b { opacity: 0; } }
 
     .rv-floor { position: relative; height: min(62vh, 560px); overflow: hidden; background: #161022; }
     /* the world layer: ravers + checkerboard live here so the camera (translate+scale)
@@ -575,10 +611,11 @@ const schema = {
           <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div>
           <span class="rv-beam rv-beam--l" aria-hidden="true"></span>
           <span class="rv-beam rv-beam--r" aria-hidden="true"></span>
-          <span class="rv-pyro rv-pyro--1" aria-hidden="true"></span>
-          <span class="rv-pyro rv-pyro--2" aria-hidden="true"></span>
-          <span class="rv-pyro rv-pyro--3" aria-hidden="true"></span>
-          <span class="rv-pyro rv-pyro--4" aria-hidden="true"></span>
+          <span class="rv-pyro rv-pyro--1" aria-hidden="true" set:html={PYRO_FRAMES}></span>
+          <span class="rv-pyro rv-pyro--2" aria-hidden="true" set:html={PYRO_FRAMES}></span>
+          <span class="rv-pyro rv-pyro--3" aria-hidden="true" set:html={PYRO_FRAMES}></span>
+          <span class="rv-pyro rv-pyro--4" aria-hidden="true" set:html={PYRO_FRAMES}></span>
+          <div class="rv-eq" aria-hidden="true">{Array.from({ length: 14 }).map(() => <span></span>)}</div>
           <span class="rv-mnote rv-mnote--1" aria-hidden="true">♪</span>
           <span class="rv-mnote rv-mnote--2" aria-hidden="true">♫</span>
           <span class="rv-mnote rv-mnote--3" aria-hidden="true">♪</span>
@@ -629,7 +666,7 @@ const schema = {
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
           <div class="rv-quest" id="rvQuest" hidden>
-            <span class="rv-quest__k">tonight</span>
+            <span class="rv-quest__k">quest</span>
             <div class="rv-quest__row"><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
           </div>
           <div class="rv-mixer" id="rvMixer" aria-hidden="true" title="the JELLY meter — fill it and it's jelly time">
