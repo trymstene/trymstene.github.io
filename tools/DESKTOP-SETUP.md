@@ -25,26 +25,41 @@ All of the gitignored items above are bundled by the move-kit (see below).
    The path is not cosmetic — Claude's memory folder is named after it
    (`C--Web-Development-trymstene-com`). Same path = memory just works.
 
-2. **Transfer `banana-move-kit.zip`** (made on the old machine, sits on its
-   Desktop) via USB/cloud, then unpack:
-   - `memory\` → `%USERPROFILE%\.claude\projects\C--Web-Development-trymstene-com\memory\`
-     (create the folders if missing — THIS IS THE IMPORTANT ONE)
+2. **Claude's memory syncs via OneDrive** (set up Jul 2026): the real files live
+   in `OneDrive\banana-memory\`, and each machine points Claude's memory path
+   at them with a junction. On the new machine (after OneDrive has synced —
+   check that `%OneDrive%\banana-memory\MEMORY.md` exists), run in cmd/PowerShell:
+
+   ```
+   mkdir "%USERPROFILE%\.claude\projects\C--Web-Development-trymstene-com"
+   mklink /J "%USERPROFILE%\.claude\projects\C--Web-Development-trymstene-com\memory" "%OneDrive%\banana-memory"
+   ```
+
+   (If Claude Code already created an empty `memory` folder there, delete it
+   first — the junction must take its place.) From then on, both machines read
+   and write the SAME memory, automatically. One rule: avoid running long
+   build sessions on both machines at the same time.
+
+3. **Transfer `banana-move-kit.zip`** (made on the old machine, sits on its
+   Desktop) via USB/cloud for the remaining local-only files, unpack:
    - `dot-claude\` → `.claude\` in the repo root
    - `.mcp.json`, `ROADMAP.md`, `giphy-tenor-pack\` → repo root
+   (The kit also contains a `memory\` snapshot — IGNORE it; OneDrive is the
+   live copy now.)
 
-3. **Tooling**:
+4. **Tooling**:
    - Node 20+ → `npm install` in the repo root
    - `npx wrangler login` (one-time browser auth; needed only to deploy workers)
    - Python 3 + Pillow (`pip install pillow`) — the pixel-asset pipeline
    - GitHub auth: pushing to main = the deploy, so make sure `git push` works
 
-4. **Smoke test**: open Claude (Code/Desktop) in the repo folder and ask
+5. **Smoke test**: open Claude (Code/Desktop) in the repo folder and ask
    "what's the current state of the project?" — if it answers with the rave/
    pass/ecosystem specifics, the memory landed correctly. Then `npm run dev`
    and open localhost to confirm the site builds.
 
 ## Keeping two machines in sync later
-Code syncs through git as always. Memory does NOT auto-sync — if you work a
-long session on one machine, re-copy the memory folder to the other (it's a
-plain folder of .md files; newest wins). Treat the machine you're currently
-building on as the memory master.
+Code syncs through git; memory syncs through OneDrive (the junction above) —
+both automatic. The only habit: don't run heavy build sessions on both
+machines simultaneously, and give OneDrive a moment to sync before starting
+on the other machine.
