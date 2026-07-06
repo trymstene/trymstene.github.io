@@ -182,6 +182,10 @@ const schema = {
     }
     /* quest bubbles go YELLOW — Barty means business; white stays chatter */
     .rv-bubble--quest, .rv-bubble--quest::before, .rv-bubble--quest::after { background: #ffe135; }
+    /* the under-the-breath bubble: smaller, dimmer — the dark drip lands a
+       beat after the cheer, stand-up timing */
+    .rv-bubble--mutter { font-size: 0.5rem; color: #55524a; background: #eae7db; min-width: 110px; }
+    .rv-bubble--mutter::before, .rv-bubble--mutter::after { background: #eae7db; }
 
     /* floor life: light trails, the wandering spotlight, the lost vinyl */
     .rv-trails { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; image-rendering: pixelated; }

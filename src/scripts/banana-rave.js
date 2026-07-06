@@ -123,17 +123,18 @@ const flameCvs = FLAME_MAPS.map((rows) => {
 });
 
 // Barty's voice (Trym's brief): a southwestern, over-cheerful cowboy-bartender —
-// with small drips of a tragic childhood under the breath, right after the
-// cheer (Jared Dunn energy). Short and chatty, never long sentences.
+// with small drips of a tragic childhood UNDER THE BREATH: the dark part lands
+// in its OWN smaller bubble, a beat after the cheer, stand-up timing (Jared
+// Dunn energy). A quip = [cheer, {mutter}] — bartySay() runs the sequence.
 const BAR_QUIPS = [
-  'yee-haw! another beautiful night at the club!',
-  'we only serve potassium. pa said fruit was for the weak. anyway!',
-  'you dance like a champion! i was never allowed to dance.',
-  'happy hour every 5th minute! you can set your heart to it. i did.',
-  'nice moves, partner! hydrate! ma never did.',
-  'i love this job. i sleep under the bar. anyway!',
-  'the drop hits every third minute. the bar never misses. it can’t.',
-  'smile, partner! it’s free. only thing that ever was.',
+  ['yee-haw! another beautiful night at the club!', { t: 'every night here is beautiful. only here. anyway!', mutter: true }],
+  ['we only serve potassium!', { t: 'pa said fruit was for the weak.', mutter: true }],
+  ['you dance like a champion!', { t: 'i was never allowed to dance.', mutter: true }],
+  ['happy hour every 5th minute! you can set your heart to it.', { t: 'i did.', mutter: true }],
+  ['nice moves, partner! hydrate!', { t: 'ma never did.', mutter: true }],
+  ['i love this job!', { t: 'i sleep under the bar. anyway!', mutter: true }],
+  ['the drop hits every third minute. the bar never misses!', { t: 'it can’t.', mutter: true }],
+  ['smile, partner! it’s free!', { t: 'only thing that ever was.', mutter: true }],
 ];
 
 const el = (id) => document.getElementById(id);
@@ -460,14 +461,35 @@ function init() {
   let beerWin = -1;      // last claimed happy-hour window
   let lastBeerTry = 0;
   let bubbleSticky = false, bubbleT = null;
-  function showBubble(text, sticky, ms, quest) {
+  function showBubble(text, sticky, ms, kind) {
     const b = el('rvBubble');
     b.textContent = text;
-    b.classList.toggle('rv-bubble--quest', !!quest); // yellow = Barty means BUSINESS; white = chatter
+    b.classList.toggle('rv-bubble--quest', kind === 'quest');   // yellow = Barty means BUSINESS
+    b.classList.toggle('rv-bubble--mutter', kind === 'mutter'); // small + dim = under the breath
     b.hidden = false;
     bubbleSticky = !!sticky;
     clearTimeout(bubbleT);
     if (!sticky) bubbleT = setTimeout(hideBubble, ms || 4000);
+  }
+
+  // stand-up timing: each part gets read before the next lands — the dark drip
+  // arrives in its own quieter bubble, a beat after the cheer (Trym's direction)
+  let sayGen = 0;
+  const readMs = (t) => clamp(1400 + t.length * 55, 2200, 5200);
+  function bartySay(parts, quest) {
+    const seq = Array.isArray(parts) ? parts : [parts];
+    const gen = ++sayGen; // a newer say cancels the tail of an older sequence
+    let delay = 0;
+    seq.forEach((p, i) => {
+      const txt = typeof p === 'string' ? p : p.t;
+      const mutter = typeof p === 'object' && !!p.mutter;
+      const last = i === seq.length - 1;
+      setTimeout(() => {
+        if (gen !== sayGen) return;
+        showBubble(txt, false, last ? (quest && !mutter ? 9000 : 5000) : readMs(txt) + 400, mutter ? 'mutter' : (quest ? 'quest' : undefined));
+      }, delay);
+      delay += readMs(txt);
+    });
   }
   function hideBubble() { el('rvBubble').hidden = true; bubbleSticky = false; }
 
@@ -521,9 +543,10 @@ function init() {
       } else {
         spEl.hidden = true;
         if (bubbleSticky) hideBubble();
-        // ambient Barty: the occasional quip between rituals
-        if (bub.hidden && Math.random() < 0.014) {
-          showBubble(BAR_QUIPS[Math.floor(Math.random() * BAR_QUIPS.length)], false, 3500);
+        // ambient Barty: the chatter between rituals — chattier now, he's a
+        // living NPC, not a sign that occasionally speaks (Trym's direction)
+        if (bub.hidden && Math.random() < 0.026) {
+          bartySay(BAR_QUIPS[Math.floor(Math.random() * BAR_QUIPS.length)]);
         }
       }
     }
@@ -1232,18 +1255,18 @@ function init() {
   const NIGHTS = [
     { n: 1, steps: [ // FIRST NIGHT — the guided tour, extends the welcome show
       { tray: 'go to the bar — first one’s on the house', check: 'bar',
-        say: 'well howdy, new face! 🤠 c’mon down to the bar — first one’s on the house!' },
+        say: ['well howdy, new face! 🤠 c’mon down to the bar — first one’s on the house!', { t: 'nobody ever bought ME a first one. anyway!', mutter: true }] },
       { tray: 'run the lost record up to the DJ', check: 'qvinyl',
-        say: 'there ya go! now — the DJ lost a record out on that floor. run it up to the booth, would ya? errands build character. they’re all i had.' },
+        say: ['there ya go! now — the DJ lost a record out on that floor. run it up to the booth, would ya?', { t: 'errands build character. they’re all i had.', mutter: true }] },
       { tray: 'charge the HYPE meter — then DROP IT', check: 'hypedrop',
-        say: 'WOO, listen to that! last job: CHARGE that hype meter — sparkles, snacks, the works — and when she’s full… DROP IT.' },
+        say: ['WOO, listen to that! last job: CHARGE that hype meter — sparkles, snacks, the works — and when she’s full… DROP IT.'] },
     ], done: { patch: 'night1',
-      say: 'FIRST NIGHT complete, partner! 🌟 you’re one of us now. come back tomorrow — night two’s on me. i’ll be here. i’m always here.' } },
+      say: ['FIRST NIGHT complete, partner! 🌟 you’re one of us now. come back tomorrow — night two’s on me.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
     { n: 2, steps: [ // look who's back — the club KNOWS you now
       { tray: 'build a chain of THREE pickups', check: 'chain3',
-        say: 'well look who’s BACK! 🤠 knew it. folks always come back. ’cept pa. — tonight’s job: a CHAIN of THREE. pickups, back to back, no dawdlin’!' },
+        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'tonight’s job: a CHAIN of THREE — pickups, back to back, no dawdlin’!'] },
     ], done: { patch: null,
-      say: 'a NATURAL! night two, in the books. same time tomorrow, partner? i’ll count the hours. all of ’em.' } },
+      say: ['a NATURAL! night two, in the books. same time tomorrow, partner?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
   ];
   const NIGHT_TEST = parseInt((location.search.match(/nighttest=(\d)/) || [])[1] || '0', 10);
   const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
@@ -1275,7 +1298,7 @@ function init() {
     setTimeout(() => {
       if (!night) return;
       if (st) {
-        showBubble(st.say, false, 9500, true);
+        bartySay(st.say, true);
         nightTray(st.tray, false);
         if (st.check === 'qvinyl') nightSpawnVinyl();
       } else {
@@ -1316,7 +1339,7 @@ function init() {
           me.qvinyl = true; // rides the left glove via the engine (render-time inject)
           night.qv.el.remove();
           pickupPop(night.qv.x, night.qv.y);
-          showBubble('that’s the one! up to the booth with it, partner!', false, 5000, true);
+          bartySay(['that’s the one! up to the booth with it, partner!'], true);
         }
       } else if (me.y < 18 && me.x > 26 && me.x < 74) {
         me.qvinyl = false;
@@ -1337,7 +1360,7 @@ function init() {
     night = null;
     nightTray(null);
     confettiBurst(); // night completion is rare + earned — it gets the flakes
-    showBubble(d.done.say, false, 9500, true);
+    bartySay(d.done.say, true);
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
     toast.innerHTML = '🌙 <b>NIGHT ' + d.n + ' COMPLETE</b>' + (d.n < NIGHTS.length ? ' — night ' + (d.n + 1) + ' opens tomorrow' : '');
