@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 
 const title = 'The Banana Rave — everyone dances together';
-const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others. Silent disco until Sentry finishes the remix.';
+const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others.';
 
 const schema = {
   '@context': 'https://schema.org',
@@ -51,6 +51,8 @@ const schema = {
     .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
     .rv-stage__gap { flex: none; width: 104px; } /* the DJ stands here — keep the middle clear */
     .rv-stage .rv-raver canvas { width: 58px !important; height: 58px !important; }
+    /* stage members glow under the rig — being up there has to LOOK special */
+    .rv-stage .rv-raver canvas { filter: drop-shadow(0 0 7px #ffe135) !important; }
     .rv-djgroup { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 150px; z-index: 2; }
     .rv-djgroup canvas { width: 96px; height: 96px; display: block; margin: 0 auto -36px; position: relative; z-index: 1; }
     .rv-desk {
@@ -75,7 +77,6 @@ const schema = {
       .rv-pyro { display: none !important; }
       .rv-mnote { opacity: 0.5; }
     }
-    .rv-sign { position: absolute; top: 8px; right: 12px; font-size: 0.6rem; color: #b388ff; opacity: 0.7; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 
     /* stage production: notes drift from the speakers; beams sweep always;
        pyro fountains fire during THE DROP (which now flashes ABOVE the DJ) */
@@ -127,7 +128,9 @@ const schema = {
         repeating-conic-gradient(#161022 0% 25%, #1d1530 0% 50%) 0 0 / 96px 96px;
       image-rendering: pixelated;
       will-change: transform; /* the follow-cam pans this layer every frame — keep it on the compositor */
+      transition: filter 0.9s ease; /* the welcome show dims the floor around your spotlight */
     }
+    .rv-world--dim { filter: brightness(0.45); }
     body.rv-drop .rv-world {
       background:
         repeating-conic-gradient(#2a1650 0% 25%, #451d66 0% 50%) 0 0 / 96px 96px;
@@ -151,11 +154,14 @@ const schema = {
       position: absolute; top: -91px; left: 14px; width: 150px; height: 150px;
       z-index: 3; image-rendering: pixelated;
     }
-    .rv-counterbeer { position: absolute; width: 32px; height: auto; left: 62%; top: -24px; z-index: 4; }
+    /* beer at HALF size — 32px read as "a bucket of beer" next to Barty (Trym);
+       top keeps its bottom seated on the countertop band */
+    .rv-counterbeer { position: absolute; width: 18px; height: auto; left: 62%; top: -8px; z-index: 4; }
     /* Barty's special of the window: the cocktail sits where the beer sits —
        38% landed ON Barty and overflowed him (Trym, iOS). Beer + special never
-       show at the same time (happy hour vs specials window), so they share the spot. */
-    .rv-special { position: absolute; width: 26px; left: 62%; top: -26px; z-index: 4; line-height: 0; animation: rvItemBob 0.8s steps(2) infinite; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
+       show at the same time (happy hour vs specials window), so they share the
+       spot. NO bob — drinks on a counter SIT (only floor items dance). */
+    .rv-special { position: absolute; width: 26px; left: 62%; top: -26px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
     .rv-special[hidden] { display: none; }
     .rv-special svg { width: 100%; height: auto; image-rendering: pixelated; }
     .rv-bubble {
@@ -264,9 +270,7 @@ const schema = {
       65% { opacity: 1; transform: translate(-50%, -60%); }
       100% { opacity: 0; transform: translate(-50%, -110%); }
     }
-    .rv-carry { position: absolute; top: -1.5rem; right: -0.8rem; width: 22px; z-index: 5; line-height: 0; }
-    .rv-carry svg { width: 100%; height: auto; image-rendering: pixelated; }
-    @media (prefers-reduced-motion: reduce) { .rv-item, .rv-five, .rv-special, .rv-pop *, .rv-twinkle { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .rv-item, .rv-five, .rv-pop *, .rv-twinkle { animation: none; } }
 
     /* THE MIXER — hype meter + chain, docked in the dead space right of the bar
        (Trym's placement: on the floor itself, no scrolling to see your numbers) */
@@ -333,12 +337,6 @@ const schema = {
     .rv-floor { cursor: pointer; touch-action: manipulation; }
     .rv-raver canvas { image-rendering: pixelated; }
     .rv-raver--me canvas { filter: drop-shadow(0 0 6px #ffe135); }
-    .rv-you {
-      position: absolute; top: -1.3rem; left: 50%; transform: translateX(-50%);
-      background: #ffe135; color: #111; font-size: 0.62rem; font-weight: 800;
-      line-height: 1.2; /* .rv-raver zeroes line-height for the canvas — restore it or the tag collapses to a sliver */
-      padding: 0.14rem 0.45rem; letter-spacing: 0.06em; text-transform: uppercase;
-    }
     .rv-emote {
       position: absolute; left: 50%; top: 0; font-size: 1.5rem; line-height: 1;
       animation: rvFloat 1.9s ease-out forwards; pointer-events: none;
@@ -382,7 +380,8 @@ const schema = {
     }
     .rv-stage-btn[disabled] { background: #0d0b14; color: #b388ff; border-color: #b388ff; cursor: default; }
     .rv-more { font-size: 0.8rem; opacity: 0.7; }
-    .rv-emote--fire { color: #ff9e2c; font-size: 1.7rem; }
+    /* the stage exclusive reads BIG — it's the point of being up there */
+    .rv-emote--fire { color: #ff9e2c; font-size: 2.3rem; }
     .rv-emote svg { width: 24px; height: auto; image-rendering: pixelated; }
 
     @media (max-width: 640px) {
@@ -420,7 +419,6 @@ const schema = {
     </div>
     <p class="rv-sub">
       Every banana here is a real visitor, dancing in perfect sync — same beat, whole planet.
-      🎧 Silent disco until Sentry finishes the remix.
     </p>
 
     <div class="rv-stagewrap">
