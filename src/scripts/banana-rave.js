@@ -1240,7 +1240,7 @@ function init() {
     big.style.top = yPx + 'px';
     big.hidden = false;
   }
-  function tourBox(target, title, text, pad = 8) { // spotlight pool + a captioned box beside it
+  function tourBox(target, title, text, pad = 8, pin) { // spotlight pool + a captioned box beside it
     const cr = document.querySelector('.rv-club').getBoundingClientRect();
     const r = target.getBoundingClientRect();
     // the pool is an ELLIPSE ~1.8× the target (never smaller than a hand):
@@ -1263,18 +1263,27 @@ function init() {
     const box = el('rvTourBox');
     el('rvTourTitle').textContent = title;
     el('rvTourText').textContent = text;
-    const below = hy < cr.height * 0.5;
-    box.dataset.side = below ? 'below' : 'above';
     const bw = Math.min(250, cr.width - 20);
     box.style.maxWidth = bw + 'px';
     const bx = clamp(cx - bw / 2, 10, Math.max(10, cr.width - bw - 10));
     box.style.left = bx + 'px';
-    // a huge pool (the floor step) would push the box out of the club — cap it
-    box.style.top = below ? Math.min(hy + ph + 10, cr.height - 130) + 'px' : 'auto';
-    box.style.bottom = below ? 'auto' : (cr.height - hy + 10) + 'px';
-    // the pixel arrow points at the TARGET, wherever the box got clamped to
-    box.style.setProperty('--ax', clamp(cx - bx - 6, 10, bw - 28) + 'px');
-    box.hidden = false;
+    box.hidden = false; // visible BEFORE measuring — offsetHeight is 0 while hidden
+    if (pin === 'top') {
+      // a full-floor pool has no "beside": the caption reads as a subtitle,
+      // pinned under the booth, no arrow (you can't point at everything)
+      box.dataset.side = 'none';
+      box.style.top = (floor.offsetTop + 12) + 'px';
+      box.style.bottom = 'auto';
+    } else {
+      const below = hy < cr.height * 0.5;
+      box.dataset.side = below ? 'below' : 'above';
+      // never into the control band: cap "below" boxes above the buttons
+      const bandTop = el('rvTourBand').getBoundingClientRect().top - cr.top;
+      box.style.top = below ? Math.min(hy + ph + 10, bandTop - box.offsetHeight - 10) + 'px' : 'auto';
+      box.style.bottom = below ? 'auto' : (cr.height - hy + 10) + 'px';
+      // the pixel arrow points at the TARGET, wherever the box got clamped to
+      box.style.setProperty('--ax', clamp(cx - bx - 6, 10, bw - 28) + 'px');
+    }
   }
   function tourClear() {
     el('rvTourHl').hidden = true;
@@ -1318,9 +1327,9 @@ function init() {
     () => { // the mixer: hype + the quest log
       tourBox(el('rvMixer'), 'THE MIXER', 'everything you do fills the HYPE meter — fill it and TAP it to drop the floor. your current job sits right under it.');
     },
-    () => { // the floor itself (inset cutout — a border ON the border reads as a glitch)
+    () => { // the floor itself: full-floor pool, caption pinned up top like a subtitle
       const how = matchMedia('(pointer: coarse)').matches ? 'tap anywhere to walk over.' : 'walk with WASD, or click anywhere.';
-      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.', -18);
+      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.', -18, 'top');
     },
     () => { // the DJ
       tourBox(document.querySelector('.rv-djgroup'), 'TONIGHT’S DJ', 'the banana of the day is on the decks. every third minute: THE DROP. you’ll know it when it hits.');
