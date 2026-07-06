@@ -120,9 +120,15 @@ const schema = {
     .rv-pyro__b { animation: rvTwinkleFlip 0.26s steps(1) infinite; animation-delay: -0.13s; }
     body.rv-drop .rv-pyro { display: block; animation: rvPyro 0.5s steps(4) infinite; }
     .rv-pyro--1 { left: 7%; }
-    .rv-pyro--2 { left: 24%; animation-delay: 0.15s; }
-    .rv-pyro--3 { right: 24%; animation-delay: 0.3s; }
+    /* the inner pair anchors just OUTSIDE the speakers (which are centre-
+       anchored) — %-positions put them BEHIND the speakers on narrow booths */
+    .rv-pyro--2 { left: calc(50% - 172px); animation-delay: 0.15s; }
+    .rv-pyro--3 { right: calc(50% - 172px); animation-delay: 0.3s; }
     .rv-pyro--4 { right: 7%; animation-delay: 0.1s; }
+    @media (max-width: 640px) {
+      /* a 375px booth holds TWO flames comfortably — four is a crowd */
+      .rv-pyro--2, .rv-pyro--3 { display: none !important; }
+    }
     @keyframes rvPyro {
       0% { transform: scaleY(0.35); }
       60% { transform: scaleY(1); }
