@@ -241,26 +241,8 @@ function init() {
   let lastMoveSent = 0;
   let walkedOnce = false;
 
-  // first-night tip: how to move — fades on the first step or after a few seconds
-  let tipDismiss = null;
-  try {
-    if (!localStorage.getItem('rv-tip')) {
-      localStorage.setItem('rv-tip', '1');
-      const tip = el('rvTip');
-      tip.textContent = matchMedia('(pointer: coarse)').matches
-        ? '👆 tap anywhere on the floor to walk over'
-        : '🕹 walk with WASD / arrow keys — or click the floor';
-      tip.hidden = false;
-      let gone = false;
-      tipDismiss = () => {
-        if (gone) return;
-        gone = true;
-        tip.classList.add('rv-tip--fade');
-        setTimeout(() => tip.remove(), 700);
-      };
-      setTimeout(tipDismiss, 7000);
-    }
-  } catch (e) {}
+  // (the old first-night walk tip is gone — the tour's dance-floor step
+  // teaches movement now, with input-aware copy)
 
   // ---- the camera: follow-me zoom for small screens (walking IS panning) ----
   const CAM_SCALE = 1.75;
@@ -381,7 +363,7 @@ function init() {
     }
     setPos(me, nx, ny);
     leanInto(me, dx);
-    if (!walkedOnce) { walkedOnce = true; track('rave_walk'); if (tipDismiss) tipDismiss(); }
+    if (!walkedOnce) { walkedOnce = true; track('rave_walk'); }
     if (now - lastMoveSent > MOVE_SEND_MS && ws && ws.readyState === 1) {
       lastMoveSent = now;
       ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
@@ -1241,31 +1223,47 @@ function init() {
       y: ((bar.offsetTop + bm.offsetTop + bm.offsetHeight * 0.35) / floorH) * 100,
     };
   }
-  function tourBig(txt, sub) {
+  // the big line anchors to a POINT (club coordinates) — above your banana on
+  // step 1, centred over the floor on step 2. "Somewhere in the club" reads
+  // as misaligned (Trym: "THIS IS YOU isn't centered").
+  function tourBigAt(xPx, yPx, txt, sub) {
+    const big = el('rvTourBig');
     el('rvTourBigTxt').textContent = txt;
     el('rvTourBigSub').textContent = sub || '';
-    el('rvTourBig').hidden = false;
+    big.style.left = xPx + 'px';
+    big.style.top = yPx + 'px';
+    big.hidden = false;
   }
-  function tourBox(target, title, text) { // cutout highlight + a captioned box beside it
+  function tourBox(target, title, text, pad = 8) { // cutout highlight + a captioned box beside it
     const cr = document.querySelector('.rv-club').getBoundingClientRect();
     const r = target.getBoundingClientRect();
-    const pad = 8;
+    // the cutout never bleeds past the floor's bottom edge into the HUD
+    // (Barty's sprite rect reaches down there) nor off the club sides
+    const maxY = floor.offsetTop + floor.offsetHeight;
+    const hx = clamp(r.left - cr.left - pad, 4, cr.width - 8);
+    const hy = clamp(r.top - cr.top - pad, 4, maxY - 8);
+    const hw = Math.min(r.width + pad * 2, cr.width - 4 - hx);
+    const hh = Math.min(r.height + pad * 2, maxY - 4 - hy);
     const hl = el('rvTourHl');
-    hl.style.left = (r.left - cr.left - pad) + 'px';
-    hl.style.top = (r.top - cr.top - pad) + 'px';
-    hl.style.width = (r.width + pad * 2) + 'px';
-    hl.style.height = (r.height + pad * 2) + 'px';
+    hl.style.left = hx + 'px';
+    hl.style.top = hy + 'px';
+    hl.style.width = hw + 'px';
+    hl.style.height = hh + 'px';
     hl.hidden = false;
     const box = el('rvTourBox');
     el('rvTourTitle').textContent = title;
     el('rvTourText').textContent = text;
-    const below = (r.top - cr.top) < cr.height * 0.5;
+    const below = hy < cr.height * 0.5;
     box.dataset.side = below ? 'below' : 'above';
     const bw = Math.min(250, cr.width - 20);
     box.style.maxWidth = bw + 'px';
-    box.style.left = clamp(r.left - cr.left, 10, Math.max(10, cr.width - bw - 10)) + 'px';
-    box.style.top = below ? (r.bottom - cr.top + pad + 14) + 'px' : 'auto';
-    box.style.bottom = below ? 'auto' : (cr.height - (r.top - cr.top) + pad + 14) + 'px';
+    const bx = clamp(hx + hw / 2 - bw / 2, 10, Math.max(10, cr.width - bw - 10));
+    box.style.left = bx + 'px';
+    // a huge cutout (the floor step) would push the box out of the club — cap it
+    box.style.top = below ? Math.min(hy + hh + 14, cr.height - 130) + 'px' : 'auto';
+    box.style.bottom = below ? 'auto' : (cr.height - hy + 14) + 'px';
+    // the pixel arrow points at the TARGET, wherever the box got clamped to
+    box.style.setProperty('--ax', clamp(hx + hw / 2 - bx - 6, 10, bw - 28) + 'px');
     box.hidden = false;
   }
   function tourClear() {
@@ -1274,14 +1272,26 @@ function init() {
     el('rvTourBox').hidden = true;
   }
   const TOUR = [
-    () => { // tight on YOUR banana — no distractions, just you
+    () => { // tight on YOUR banana — the line sits right above your head
       const me = myId && ravers.get(myId);
-      if (me) tourCamTo(me.x, me.y, 2.6);
-      tourBig('THIS IS YOU', me ? autoName(me.outfit) : '');
+      const s = 2.6;
+      let sx = floorW / 2, sy = floorH / 2, half = 100;
+      if (me) {
+        tourCamTo(me.x, me.y, s);
+        const px = (me.x / 100) * floorW * s, py = (me.y / 100) * floorH * s;
+        sx = clamp(floorW / 2 - px, floorW - floorW * s, 0) + px;
+        sy = clamp(floorH / 2 - py, floorH - floorH * s, 0) + py;
+        half = ((me.size || 90) * s) / 2;
+      }
+      tourBigAt(
+        clamp(sx, 130, floorW - 130),
+        floor.offsetTop + clamp(sy - half - 108, 10, floorH - 150),
+        'THIS IS YOU', me ? autoName(me.outfit) : ''
+      );
     },
     () => { // pull back to the whole club
       world.style.transform = '';
-      tourBig('AND WELCOME TO THE CLUB', '');
+      tourBigAt(floorW / 2, floor.offsetTop + floorH * 0.28, 'AND WELCOME TO THE CLUB', '');
       confettiBurst();
     },
     () => { // Barty gets the frame and his first hello
@@ -1298,9 +1308,9 @@ function init() {
     () => { // the mixer: hype + the quest log
       tourBox(el('rvMixer'), 'THE MIXER', 'everything you do fills the HYPE meter — fill it and TAP it to drop the floor. your current job sits right under it.');
     },
-    () => { // the floor itself
+    () => { // the floor itself (inset cutout — a border ON the border reads as a glitch)
       const how = matchMedia('(pointer: coarse)').matches ? 'tap anywhere to walk over.' : 'walk with WASD, or click anywhere.';
-      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.');
+      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.', -18);
     },
     () => { // the DJ
       tourBox(document.querySelector('.rv-djgroup'), 'TONIGHT’S DJ', 'the banana of the day is on the decks. every third minute: THE DROP. you’ll know it when it hits.');
@@ -1321,14 +1331,22 @@ function init() {
     tourActive = true;
     tourStep = -1;
     world.classList.add('rv-world--tour');
-    floor.classList.add('rv-tourclean');
     el('rvTour').hidden = false;
+    // the control band: "tap to continue" centred + SKIP at its right, both
+    // floating just above the HUD — the floor's top band belongs to the show
+    // (and the club's very top hides under the sticky nav on mobile)
+    const hud = document.querySelector('.rv-hud');
+    el('rvTourBand').style.bottom = ((hud ? hud.offsetHeight : 60) + 14) + 'px';
+    el('rvZoom').hidden = true; // the camera toggle isn't part of the show
     track('rave_tour_start');
     tourNext();
   }
   function tourNext() {
     tourStep++;
     tourClear();
+    // steps 1–3 strip the floor to furniture + staff; the callout steps get
+    // their focus from the cutout dim instead (and need their targets visible)
+    floor.classList.toggle('rv-tourclean', tourStep >= 0 && tourStep < 3);
     const step = TOUR[tourStep];
     if (!step) return endTour(false);
     step();
@@ -1343,6 +1361,7 @@ function init() {
     camLastTx = null; // the follow-cam recomputes from scratch
     if (tourDemoEl) { tourDemoEl.remove(); tourDemoEl = null; }
     hideBubble();
+    refreshZoomBtn(); // the camera toggle gets its corner back
     track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
     nightInit(); // the tour hands straight off to Barty's first job
   }

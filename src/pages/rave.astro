@@ -306,10 +306,16 @@ const schema = {
     .rv-mixer__go[hidden] { display: none; }
     .rv-mixer__chain { margin-top: 4px; color: #ffe135; }
     .rv-mixer__chain[hidden] { display: none; }
-    /* THE NIGHT: Barty's active job, docked under the hype bar (Trym's spec) */
-    .rv-mixer__quest { margin-top: 5px; display: flex; align-items: center; gap: 6px; color: #78ebff; max-width: 172px; line-height: 1.35; letter-spacing: 0.03em; }
-    .rv-mixer__quest[hidden] { display: none; }
-    .rv-qbox { flex: none; width: 9px; height: 9px; border: 2px solid #78ebff; background: #241a38; }
+    /* THE NIGHT: the quest log gets its own panel, top-left — the classic HUD
+       spot for "what am I doing?", away from the meter it merely feeds */
+    .rv-quest {
+      position: absolute; top: 8px; left: 8px; z-index: 600; max-width: 190px;
+      background: rgba(13, 11, 20, 0.88); border: 3px solid #ffe135; padding: 6px 9px 7px;
+    }
+    .rv-quest[hidden] { display: none; }
+    .rv-quest__k { display: block; font-size: 0.54rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #ffe135; margin-bottom: 3px; }
+    .rv-quest__row { display: flex; align-items: center; gap: 6px; font-size: 0.66rem; font-weight: 800; color: #fffdf5; line-height: 1.35; }
+    .rv-qbox { flex: none; width: 9px; height: 9px; border: 2px solid #ffe135; background: #241a38; }
     .rv-qbox.done { background: #39ff14; border-color: #39ff14; }
     /* hype mode: the whole floor sees you peak (effect travels the outfit pipe;
        this glow is the local cherry) */
@@ -333,10 +339,10 @@ const schema = {
       cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
     .rv-zoom:hover { background: #ffe135; color: #111; }
-    .rv-tourbtn { right: auto; left: 8px; border-color: #b388ff; opacity: 0.8; }
 
     /* THE TOUR — z 800 beats everything; the highlight's giant box-shadow IS
-       the dark overlay (clipped by the club's overflow:hidden) */
+       the dark overlay (clipped by the club's overflow:hidden). All controls
+       follow the site's yellow pixel-button language. */
     .rv-tour { position: absolute; inset: 0; z-index: 800; cursor: pointer; }
     .rv-tour__hl {
       position: absolute; border: 3px solid #ffe135; pointer-events: none;
@@ -344,56 +350,59 @@ const schema = {
       transition: all 0.45s ease;
     }
     .rv-tour__hl[hidden] { display: none; }
+    /* the big line rides an anchor set by JS: above YOUR banana on step 1,
+       centred over the floor on step 2 — never "somewhere in the club" */
     .rv-tour__big {
-      position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
-      pointer-events: none; padding: 0 1rem;
+      position: absolute; transform: translateX(-50%); text-align: center;
+      pointer-events: none; max-width: 94%; width: max-content;
     }
     .rv-tour__big[hidden] { display: none; }
     .rv-tour__big span {
-      font-family: "Archivo Black", sans-serif; font-size: clamp(1.5rem, 6vw, 2.9rem);
+      display: block; font-family: "Archivo Black", sans-serif; font-size: clamp(1.5rem, 6vw, 2.9rem);
       color: #ffe135; -webkit-text-stroke: 2px #111; text-shadow: 4px 4px 0 #000; line-height: 1.15;
     }
-    .rv-tour__big small { display: block; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000; }
+    .rv-tour__big small { display: block; margin-top: 0.5rem; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000; }
     .rv-tour__box {
       position: absolute; max-width: 250px; pointer-events: none;
       background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 4px 4px 0 #000;
       padding: 0.6rem 0.8rem; font-size: 0.74rem; line-height: 1.5;
     }
     .rv-tour__box[hidden] { display: none; }
-    .rv-tour__box::before { /* the pixel arrow, flipped per side via data-side */
-      content: ''; position: absolute; left: 26px; width: 12px; height: 12px; background: #ffe135; border: 3px solid #111;
+    .rv-tour__box::before { /* the pixel arrow: side + x-position set per target by JS */
+      content: ''; position: absolute; left: var(--ax, 26px); width: 12px; height: 12px; background: #ffe135; border: 3px solid #111;
     }
     .rv-tour__box[data-side="below"]::before { top: -9px; }
     .rv-tour__box[data-side="above"]::before { bottom: -9px; }
     .rv-tour__title { margin: 0 0 0.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; background: #ffe135; display: inline-block; padding: 0.08rem 0.35rem; }
     .rv-tour__text { margin: 0; }
-    .rv-tour__next {
-      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); margin: 0;
-      color: #fffdf5; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
-      text-shadow: 2px 2px 0 #000; animation: rvTourNext 1.2s steps(2) infinite; pointer-events: none;
+    /* the control band: ONE centred row just above the HUD (bottom offset set
+       by JS) — "tap to continue" bounces, skip sits quietly beside it. House
+       yellow pixel buttons, never glued to a screen edge, can never overlap. */
+    .rv-tour__band {
+      position: absolute; left: 0; right: 0; bottom: 76px;
+      display: flex; justify-content: center; align-items: center; gap: 10px;
+      pointer-events: none;
     }
-    @keyframes rvTourNext { 50% { opacity: 0.45; } }
+    .rv-tour__next {
+      margin: 0;
+      background: #ffe135; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.5rem 0.9rem;
+      animation: rvTourNext 1.4s steps(2) infinite;
+    }
+    @keyframes rvTourNext { 50% { transform: translateY(-4px); } }
     .rv-tour__skip {
-      position: absolute; top: 8px; right: 8px;
-      background: rgba(13, 11, 20, 0.85); color: #fffdf5; border: 3px solid #b388ff;
-      font-size: 0.66rem; font-weight: 800; padding: 0.35rem 0.55rem; cursor: pointer;
+      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.5rem 0.6rem; cursor: pointer; pointer-events: auto;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
+    .rv-tour__skip:hover { background: #ffe135; }
     /* tour steps 1–2: furniture and staff only — no chase-ables, no meters */
     .rv-floor.rv-tourclean #rvItem, .rv-floor.rv-tourclean #rvVinyl, .rv-floor.rv-tourclean #rvGold,
     .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot,
-    .rv-floor.rv-tourclean .rv-tip { visibility: hidden; }
+    .rv-floor.rv-tourclean .rv-mixer, .rv-floor.rv-tourclean .rv-quest { visibility: hidden; }
     .rv-world--tour { transition: transform 0.85s ease; }
-    /* first-night tip: how to move — fades on the first step or after a few seconds */
-    .rv-tip {
-      position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%); z-index: 650;
-      max-width: 86%; text-align: center; pointer-events: none;
-      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
-      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
-      line-height: 1.5; padding: 0.5rem 0.7rem;
-      opacity: 1; transition: opacity 0.6s ease;
-    }
-    .rv-tip--fade { opacity: 0; }
     /* pickup/earn banner: SLIM and at the BOTTOM — the old top box covered the
        exact spot you tap to walk toward the DJ, and ate the taps (Trym, iOS) */
     .rv-glowtoast {
@@ -431,8 +440,12 @@ const schema = {
     }
     @keyframes rvDropPulse { 50% { transform: scale(1.06) rotate(-2deg); color: #ff4d6d; } }
 
+    /* the HUD: ONE centred cluster — reactions, the stage, the tour replay.
+       The stage is a peer of the emotes now, not the marquee act (it looked
+       like the main feature and it isn't — Trym). */
     .rv-hud {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+      position: relative;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
       background: #17121f; border-top: 4px solid #ffe135; padding: 0.7rem 0.9rem; flex-wrap: wrap;
       touch-action: manipulation; /* no iOS double-tap zoom when mashing emotes */
     }
@@ -447,12 +460,16 @@ const schema = {
     .rv-emote-btn--fire { border-color: #ff9e2c; }
     .rv-emote-btn--fire:hover { background: #ff9e2c; }
     .rv-stage-btn {
-      background: #ffe135; color: #111; border: 3px solid #111; cursor: pointer;
-      font-weight: 800; font-size: 0.78rem; letter-spacing: 0.04em; padding: 0.55rem 0.8rem;
+      background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;
+      font-weight: 800; font-size: 0.7rem; letter-spacing: 0.04em; padding: 0.55rem 0.8rem;
+      min-height: 48px;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
-    .rv-stage-btn[disabled] { background: #0d0b14; color: #b388ff; border-color: #b388ff; cursor: default; }
-    .rv-more { font-size: 0.8rem; opacity: 0.7; }
+    .rv-stage-btn:hover:not([disabled]) { background: #ffe135; color: #111; }
+    .rv-stage-btn[disabled] { color: #b388ff; border-color: #4a3b6b; cursor: default; }
+    .rv-tourbtn { flex: 0 0 auto !important; border-color: #4a3b6b; opacity: 0.85; font-size: 0.95rem; }
+    .rv-tourbtn:hover { background: #b388ff; opacity: 1; }
+    .rv-more { position: absolute; right: 0.9rem; bottom: 0.3rem; font-size: 0.7rem; opacity: 0.6; }
     /* the stage exclusive reads BIG — it's the point of being up there */
     .rv-emote--fire { color: #ff9e2c; font-size: 2.3rem; }
     .rv-emote svg { width: 24px; height: auto; image-rendering: pixelated; }
@@ -468,9 +485,10 @@ const schema = {
       .rv-stage { bottom: 36px; gap: 6px; }
       .rv-stage__gap { width: 84px; }
       .rv-stage .rv-raver canvas { width: 46px !important; height: 46px !important; }
-      .rv-emotes { flex: 1; }
+      /* emotes own the first row; the stage + tour buttons centre beneath as
+         normal-sized peers (the full-width stage bar read as THE main feature) */
+      .rv-emotes { flex: 1 1 100%; }
       .rv-emote-btn { flex: 1; padding: 0.75rem 0; font-size: 1.4rem; }
-      .rv-stage-btn { flex-basis: 100%; }
     }
 
     .rv-panel { border: 4px solid #ffe135; background: #17121f; box-shadow: 8px 8px 0 #000; padding: 1rem; }
@@ -553,14 +571,15 @@ const schema = {
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
-          <button class="rv-zoom rv-tourbtn" id="rvTourBtn" aria-label="Replay the club tour" title="how does this club work?">❓</button>
+          <div class="rv-quest" id="rvQuest" hidden>
+            <span class="rv-quest__k">tonight</span>
+            <div class="rv-quest__row"><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
+          </div>
           <div class="rv-mixer" id="rvMixer" role="button" aria-label="The hype mixer — full meter drops the floor">
             <div class="rv-mixer__row"><span>HYPE</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
             <div class="rv-mixer__go" id="rvHypeGo" hidden>🔥 TAP TO DROP IT</div>
-            <div class="rv-mixer__quest" id="rvQuest" hidden><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
             <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
           </div>
-          <div class="rv-tip" id="rvTip" hidden></div>
         </div>
         <!-- THE TOUR: first-visit cinematic — camera moves, big pixel type,
              spotlight cutouts. Tap advances; the ❓ button replays it. -->
@@ -571,8 +590,10 @@ const schema = {
             <p class="rv-tour__title" id="rvTourTitle"></p>
             <p class="rv-tour__text" id="rvTourText"></p>
           </div>
-          <p class="rv-tour__next" id="rvTourNext">tap to continue →</p>
-          <button class="rv-tour__skip" id="rvTourSkip" type="button">skip the tour ✕</button>
+          <div class="rv-tour__band" id="rvTourBand">
+            <p class="rv-tour__next" id="rvTourNext">tap to continue →</p>
+            <button class="rv-tour__skip" id="rvTourSkip" type="button">skip ✕</button>
+          </div>
         </div>
         <div class="rv-hud">
           <div class="rv-emotes" role="group" aria-label="Send an emote">
@@ -582,6 +603,7 @@ const schema = {
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
           </div>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>
+          <button class="rv-emote-btn rv-tourbtn" id="rvTourBtn" aria-label="Replay the club tour" title="how does this club work?">❓</button>
           <span class="rv-more" id="rvMore"></span>
         </div>
       </div>
