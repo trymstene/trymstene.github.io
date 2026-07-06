@@ -122,12 +122,18 @@ const flameCvs = FLAME_MAPS.map((rows) => {
   return c;
 });
 
+// Barty's voice (Trym's brief): a southwestern, over-cheerful cowboy-bartender —
+// with small drips of a tragic childhood under the breath, right after the
+// cheer (Jared Dunn energy). Short and chatty, never long sentences.
 const BAR_QUIPS = [
-  'we only serve potassium',
-  'the drop hits every third minute. the bar never misses',
-  'nice moves. hydrate.',
-  'I peeled at my first rave too',
-  'happy hour every 5th minute — be quick',
+  'yee-haw! another beautiful night at the club!',
+  'we only serve potassium. pa said fruit was for the weak. anyway!',
+  'you dance like a champion! i was never allowed to dance.',
+  'happy hour every 5th minute! you can set your heart to it. i did.',
+  'nice moves, partner! hydrate! ma never did.',
+  'i love this job. i sleep under the bar. anyway!',
+  'the drop hits every third minute. the bar never misses. it can’t.',
+  'smile, partner! it’s free. only thing that ever was.',
 ];
 
 const el = (id) => document.getElementById(id);
@@ -168,6 +174,7 @@ function init() {
   let myId = null;
   let online = false;
   let welcomed = false; // first roster (or solo fallback) triggers the welcome show once
+  let welcomeRan = false; // true when the welcome show actually plays — the night waits for it
   const sessionStart = Date.now();
 
   // deterministic floor position from id (no server coordinates needed)
@@ -453,9 +460,10 @@ function init() {
   let beerWin = -1;      // last claimed happy-hour window
   let lastBeerTry = 0;
   let bubbleSticky = false, bubbleT = null;
-  function showBubble(text, sticky, ms) {
+  function showBubble(text, sticky, ms, quest) {
     const b = el('rvBubble');
     b.textContent = text;
+    b.classList.toggle('rv-bubble--quest', !!quest); // yellow = Barty means BUSINESS; white = chatter
     b.hidden = false;
     bubbleSticky = !!sticky;
     clearTimeout(bubbleT);
@@ -600,6 +608,7 @@ function init() {
       setTimeout(() => toast.remove(), 5000);
     }
     setTimeout(endHypeMode, HYPE_MODE_MS);
+    nightEvent('hypedrop');
   }
   mixerEl.addEventListener('click', spendHype);
   function endHypeMode() {
@@ -716,6 +725,7 @@ function init() {
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
     chainAt = now;
     addHype(12); // every pickup is hype fuel
+    nightEvent('chain', chain);
     if (chain === 5) {
       const me = myId && ravers.get(myId);
       if (me) {
@@ -1103,7 +1113,7 @@ function init() {
           if (r && p.fx) r.fx = p.fx; // active effects survive a rejoin
         });
         track('rave_join', { count: m.all.length });
-        if (!welcomed) { welcomed = true; firstVisitShow(); }
+        if (!welcomed) { welcomed = true; firstVisitShow(); nightInit(); }
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
@@ -1171,7 +1181,7 @@ function init() {
     el('rvStatus').textContent = 'solo mode (connection trouble) — still dancing';
     myId = 'me';
     addRaver({ id: 'me', outfit: myOutfit(), joined: Date.now() }, true);
-    if (!welcomed) { welcomed = true; firstVisitShow(); }
+    if (!welcomed) { welcomed = true; firstVisitShow(); nightInit(); }
   }
 
   // THE WELCOME — a first visit gets a ten-second personal opening: the lights
@@ -1186,6 +1196,7 @@ function init() {
       if (!wtest && localStorage.getItem('rv-welcomed')) return;
       localStorage.setItem('rv-welcomed', '1');
     } catch (e) { if (!wtest) return; }
+    welcomeRan = true;
     setTimeout(() => {
       const me = myId && ravers.get(myId);
       if (!me || me.stage) return;
@@ -1210,6 +1221,137 @@ function init() {
         setTimeout(() => toast.remove(), 6000);
       }, 7000);
     }, 1200);
+  }
+
+  // ---- THE NIGHT: the quest layer, Act One (full design: the-night-plan) ----
+  // Barty is the quest giver. His voice: over-cheerful southwestern bartender,
+  // tragic childhood leaking out under the breath. Chat bubbles stay white;
+  // QUEST bubbles go yellow; the active job docks under the hype bar with a
+  // pixel checkbox. ONE night per calendar day (closure + a reason to return).
+  // ?nighttest=N previews night N without saving progress.
+  const NIGHTS = [
+    { n: 1, steps: [ // FIRST NIGHT — the guided tour, extends the welcome show
+      { tray: 'go to the bar — first one’s on the house', check: 'bar',
+        say: 'well howdy, new face! 🤠 c’mon down to the bar — first one’s on the house!' },
+      { tray: 'run the lost record up to the DJ', check: 'qvinyl',
+        say: 'there ya go! now — the DJ lost a record out on that floor. run it up to the booth, would ya? errands build character. they’re all i had.' },
+      { tray: 'charge the HYPE meter — then DROP IT', check: 'hypedrop',
+        say: 'WOO, listen to that! last job: CHARGE that hype meter — sparkles, snacks, the works — and when she’s full… DROP IT.' },
+    ], done: { patch: 'night1',
+      say: 'FIRST NIGHT complete, partner! 🌟 you’re one of us now. come back tomorrow — night two’s on me. i’ll be here. i’m always here.' } },
+    { n: 2, steps: [ // look who's back — the club KNOWS you now
+      { tray: 'build a chain of THREE pickups', check: 'chain3',
+        say: 'well look who’s BACK! 🤠 knew it. folks always come back. ’cept pa. — tonight’s job: a CHAIN of THREE. pickups, back to back, no dawdlin’!' },
+    ], done: { patch: null,
+      say: 'a NATURAL! night two, in the books. same time tomorrow, partner? i’ll count the hours. all of ’em.' } },
+  ];
+  const NIGHT_TEST = parseInt((location.search.match(/nighttest=(\d)/) || [])[1] || '0', 10);
+  const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  function nightLoad() { try { return JSON.parse(localStorage.getItem('rv-night-v1') || '{}'); } catch (e) { return {}; } }
+  let night = null; // { def, step, qv }
+  function nightInit() {
+    const s = nightLoad();
+    const arc = NIGHT_TEST || s.arc || 1;
+    if (arc > NIGHTS.length) return; // Act One is all we have — Act Two arrives with "the program"
+    if (!NIGHT_TEST && s.lastStamp === localDay()) return; // one night per night
+    night = { def: NIGHTS[arc - 1], step: -1 };
+    setTimeout(nightAdvance, welcomeRan ? 10500 : 3000); // night one lets the welcome show finish first
+  }
+  function nightTray(txt, done) {
+    const q = el('rvQuest');
+    if (txt === null) { q.hidden = true; return; }
+    q.hidden = false;
+    el('rvQuestBox').classList.toggle('done', !!done);
+    el('rvQuestTxt').textContent = txt;
+  }
+  function nightAdvance() {
+    if (!night) return;
+    if (night.step >= 0) { // tick the finished box for a beat before what's next
+      nightTray(night.def.steps[night.step].tray, true);
+      track('rave_night_step', { night: night.def.n, step: night.step });
+    }
+    night.step++;
+    const st = night.def.steps[night.step];
+    setTimeout(() => {
+      if (!night) return;
+      if (st) {
+        showBubble(st.say, false, 9500, true);
+        nightTray(st.tray, false);
+        if (st.check === 'qvinyl') nightSpawnVinyl();
+      } else {
+        nightStamp();
+      }
+    }, night.step === 0 ? 0 : 1400);
+  }
+  function nightSpawnVinyl() { // the QUEST record: personal, clones the floor sprite
+    const me = myId && ravers.get(myId);
+    let x = 50, y = 50;
+    for (let i = 0; i < 20; i++) {
+      x = 15 + Math.random() * 70; y = 28 + Math.random() * 44;
+      if (!insideBar(x, y) && (!me || Math.hypot(x - me.x, y - me.y) > 24)) break;
+    }
+    const q = el('rvVinyl').cloneNode(true);
+    q.id = 'rvQVinyl';
+    q.style.display = '';
+    q.style.left = x + '%';
+    q.style.top = y + '%';
+    world.appendChild(q);
+    night.qv = { el: q, x, y };
+  }
+  function nightFrame(now) { // proximity checks at frame rate (the claims lesson)
+    if (!night || night.step < 0) return;
+    const st = night.def.steps[night.step];
+    if (!st) return;
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return;
+    if (now - (night.lastPoll || 0) < 120) return;
+    night.lastPoll = now;
+    if (st.check === 'bar' && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y) {
+      pickupPop(me.x, me.y);
+      nightAdvance();
+    } else if (st.check === 'qvinyl' && night.qv) {
+      if (!me.qvinyl) {
+        const dxq = ((me.x - night.qv.x) / 100) * floorW, dyq = ((me.y - night.qv.y) / 100) * floorH;
+        if (Math.hypot(dxq, dyq) < (me.size || 90) * 0.6) {
+          me.qvinyl = true; // rides the left glove via the engine (render-time inject)
+          night.qv.el.remove();
+          pickupPop(night.qv.x, night.qv.y);
+          showBubble('that’s the one! up to the booth with it, partner!', false, 5000, true);
+        }
+      } else if (me.y < 18 && me.x > 26 && me.x < 74) {
+        me.qvinyl = false;
+        miniDropUntil = Date.now() + 6000; // your delivery, your bonus drop
+        nightAdvance();
+      }
+    }
+  }
+  function nightEvent(kind, val) { // hooks fired by the floor's own machinery
+    if (!night || night.step < 0) return;
+    const st = night.def.steps[night.step];
+    if (!st) return;
+    if ((st.check === 'hypedrop' && kind === 'hypedrop')
+      || (st.check === 'chain3' && kind === 'chain' && val >= 3)) nightAdvance();
+  }
+  function nightStamp() {
+    const d = night.def;
+    night = null;
+    nightTray(null);
+    confettiBurst(); // night completion is rare + earned — it gets the flakes
+    showBubble(d.done.say, false, 9500, true);
+    const toast = document.createElement('div');
+    toast.className = 'rv-glowtoast';
+    toast.innerHTML = '🌙 <b>NIGHT ' + d.n + ' COMPLETE</b>' + (d.n < NIGHTS.length ? ' — night ' + (d.n + 1) + ' opens tomorrow' : '');
+    floor.appendChild(toast);
+    setTimeout(() => toast.remove(), 7000);
+    if (d.done.patch) passPatch(d.done.patch);
+    passStat('nights');
+    track('rave_night_complete', { night: d.n });
+    if (!NIGHT_TEST) {
+      try {
+        const s = nightLoad();
+        localStorage.setItem('rv-night-v1', JSON.stringify({ arc: d.n + 1, lastStamp: localDay(), n: (s.n || 0) + 1 }));
+      } catch (e) {}
+    }
   }
 
   // ---- emotes ----
@@ -1328,6 +1470,7 @@ function init() {
     updateCam();
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
+    nightFrame(now); // quest proximity checks — same lesson again
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
     }
@@ -1472,7 +1615,7 @@ function init() {
           bg: 'transparent', captions: false,
           // the courier's record rides the LEFT glove via the engine's hand anchor
           // (r.vinyl is a rave flag, never part of the broadcast outfit)
-          hat: o.hat, glasses: o.glasses, extras: r.vinyl ? { ...(o.extras || {}), vinyl: true } : (o.extras || {}), top: '', bottom: '',
+          hat: o.hat, glasses: o.glasses, extras: (r.vinyl || r.qvinyl) ? { ...(o.extras || {}), vinyl: true } : (o.extras || {}), top: '', bottom: '',
           effect: dropActive ? 'confetti' : o.effect,
           hue: dropActive ? hue : (o.effect === 'disco' ? (360 * idx / NFRAMES) : 0),
         });

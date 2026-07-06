@@ -180,6 +180,8 @@ const schema = {
       content: ''; position: absolute; top: calc(100% + 6px); left: 34px; width: 6px; height: 6px;
       background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111; border-bottom: 3px solid #111;
     }
+    /* quest bubbles go YELLOW — Barty means business; white stays chatter */
+    .rv-bubble--quest, .rv-bubble--quest::before, .rv-bubble--quest::after { background: #ffe135; }
 
     /* floor life: light trails, the wandering spotlight, the lost vinyl */
     .rv-trails { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; image-rendering: pixelated; }
@@ -302,6 +304,11 @@ const schema = {
     .rv-mixer__go[hidden] { display: none; }
     .rv-mixer__chain { margin-top: 4px; color: #ffe135; }
     .rv-mixer__chain[hidden] { display: none; }
+    /* THE NIGHT: Barty's active job, docked under the hype bar (Trym's spec) */
+    .rv-mixer__quest { margin-top: 5px; display: flex; align-items: center; gap: 6px; color: #78ebff; max-width: 172px; line-height: 1.35; letter-spacing: 0.03em; }
+    .rv-mixer__quest[hidden] { display: none; }
+    .rv-qbox { flex: none; width: 9px; height: 9px; border: 2px solid #78ebff; background: #241a38; }
+    .rv-qbox.done { background: #39ff14; border-color: #39ff14; }
     /* hype mode: the whole floor sees you peak (effect travels the outfit pipe;
        this glow is the local cherry) */
     .rv-raver.rv-hypemode canvas { filter: drop-shadow(0 0 10px #ffe135) drop-shadow(0 0 18px #ff4d9d); }
@@ -496,6 +503,7 @@ const schema = {
           <div class="rv-mixer" id="rvMixer" role="button" aria-label="The hype mixer — full meter drops the floor">
             <div class="rv-mixer__row"><span>HYPE</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
             <div class="rv-mixer__go" id="rvHypeGo" hidden>🔥 TAP TO DROP IT</div>
+            <div class="rv-mixer__quest" id="rvQuest" hidden><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
             <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
           </div>
           <div class="rv-tip" id="rvTip" hidden></div>
