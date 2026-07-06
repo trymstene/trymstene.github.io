@@ -300,10 +300,13 @@ const schema = {
     .rv-mixer__seg.on:nth-child(n+10) { background: #ff4d9d; }
     .rv-mixer--peak { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
     @keyframes rvMixerPeak { 50% { border-color: #ff4d9d; } }
-    /* CHARGED: a full meter arms the mixer — hype is a resource you SPEND */
-    .rv-mixer--charged { pointer-events: auto; cursor: pointer; border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    .rv-mixer__go { margin-top: 4px; color: #ffe135; font-size: 0.66rem; }
-    .rv-mixer__go[hidden] { display: none; }
+    /* CHARGED: the meter is pure STATUS — it pulses "FULL" while the action
+       (the DROP IT button) lives in the controls with the other actions */
+    .rv-mixer--charged { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
+    /* the tour's close-up: screen-space UI can't be camera-zoomed, so the
+       meter itself steps forward — and UP, clear of the tap-to-continue band
+       (they shared the bottom row on mobile) */
+    .rv-mixer--tour { transform: translateY(-64px) scale(1.55); transform-origin: 100% 100%; transition: transform 0.45s ease; box-shadow: 0 0 26px rgba(255, 225, 53, 0.45); }
     .rv-mixer__chain { margin-top: 4px; color: #ffe135; }
     .rv-mixer__chain[hidden] { display: none; }
     /* THE NIGHT: the quest log gets its own panel, top-left — the classic HUD
@@ -477,6 +480,15 @@ const schema = {
     .rv-stage-btn[disabled] { color: #b388ff; border-color: #4a3b6b; cursor: default; }
     .rv-tourbtn { flex: 0 0 auto !important; border-color: #4a3b6b; opacity: 0.85; font-size: 0.95rem; }
     .rv-tourbtn:hover { background: #b388ff; opacity: 1; }
+    /* DROP IT: the charged meter's release — THE action of the moment, so the
+       one yellow button in the row while it's live */
+    .rv-drop-btn {
+      background: #ffe135; color: #111; border: 3px solid #111; cursor: pointer;
+      font-weight: 800; font-size: 0.74rem; letter-spacing: 0.04em; padding: 0.55rem 0.9rem;
+      min-height: 48px; animation: rvDropBtn 0.8s steps(2) infinite;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    @keyframes rvDropBtn { 50% { transform: translateY(-3px); box-shadow: 0 3px 0 #111; } }
     .rv-more { position: absolute; right: 0.9rem; bottom: 0.3rem; font-size: 0.7rem; opacity: 0.6; }
     /* the stage exclusive reads BIG — it's the point of being up there */
     .rv-emote--fire { color: #ff9e2c; font-size: 2.3rem; }
@@ -583,9 +595,8 @@ const schema = {
             <span class="rv-quest__k">tonight</span>
             <div class="rv-quest__row"><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
           </div>
-          <div class="rv-mixer" id="rvMixer" role="button" aria-label="The hype mixer — full meter drops the floor">
+          <div class="rv-mixer" id="rvMixer" aria-hidden="true">
             <div class="rv-mixer__row"><span>HYPE</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
-            <div class="rv-mixer__go" id="rvHypeGo" hidden>🔥 TAP TO DROP IT</div>
             <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
           </div>
         </div>
@@ -610,6 +621,7 @@ const schema = {
             <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana"><PixelIcon name="banana" size="1.5em" /></button>
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
           </div>
+          <button class="rv-drop-btn" id="rvDropBtn" hidden>🔥 DROP IT</button>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>
           <button class="rv-emote-btn rv-tourbtn" id="rvTourBtn" aria-label="Replay the club tour" title="how does this club work?">❓</button>
           <span class="rv-more" id="rvMore"></span>

@@ -322,7 +322,7 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-mixer')) return; // buttons are not walk orders
+    if (e.target.closest('.rv-zoom')) return; // the camera toggle is not a walk order (the mixer is pure display again)
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     const rect = floor.getBoundingClientRect();
@@ -594,8 +594,10 @@ function init() {
     hype = Math.min(HYPE_MAX, hype + n * hypeBoost);
     lastHypeGain = Date.now();
     if (hype >= HYPE_MAX) {
+      // the meter is STATUS (it pulses FULL); the ACTION lights up in the
+      // controls with the other actions — interaction grammar (Trym's call)
       hypeCharged = true;
-      el('rvHypeGo').hidden = false;
+      el('rvDropBtn').hidden = false;
       mixerEl.classList.add('rv-mixer--charged');
     }
     renderHype();
@@ -603,7 +605,7 @@ function init() {
   function spendHype() {
     if (!hypeCharged) return;
     hypeCharged = false;
-    el('rvHypeGo').hidden = true;
+    el('rvDropBtn').hidden = true;
     mixerEl.classList.remove('rv-mixer--charged');
     hype = 0;
     hypeModeUntil = Date.now() + HYPE_MODE_MS;
@@ -627,7 +629,7 @@ function init() {
     setTimeout(endHypeMode, HYPE_MODE_MS);
     nightEvent('hypedrop');
   }
-  mixerEl.addEventListener('click', spendHype);
+  el('rvDropBtn').addEventListener('click', spendHype);
   function endHypeMode() {
     const me = myId && ravers.get(myId);
     if (me) {
@@ -1244,26 +1246,38 @@ function init() {
     big.style.top = yPx + 'px';
     big.hidden = false;
   }
-  function tourBox(target, title, text, pad = 8, pin) { // spotlight pool + a captioned box beside it
+  function tourBox(target, title, text, opts = {}) { // spotlight pool (optional) + a captioned box beside it
+    const pad = opts.pad != null ? opts.pad : 8;
+    const pin = opts.pin;
     const cr = document.querySelector('.rv-club').getBoundingClientRect();
     const r = target.getBoundingClientRect();
-    // the pool is an ELLIPSE ~1.8× the target (never smaller than a hand):
-    // generous + feathered means off-by-a-few-px centering can't be seen.
-    // It SHIFTS to stay inside the floor (cropping changed its size = the
-    // asymmetry Trym caught); the feather forgives the shift too.
     const cx = r.left - cr.left + r.width / 2;
     const cy = r.top - cr.top + r.height / 2;
     const maxY = floor.offsetTop + floor.offsetHeight;
-    const pw = Math.min(Math.max(r.width * 1.8 + pad * 2, 130), cr.width - 8);
-    const ph = Math.min(Math.max(r.height * 1.8 + pad * 2, 110), maxY - 8);
-    const hx = clamp(cx - pw / 2, 4, cr.width - 4 - pw);
-    const hy = clamp(cy - ph / 2, 4, maxY - 4 - ph);
-    const hl = el('rvTourHl');
-    hl.style.left = hx + 'px';
-    hl.style.top = hy + 'px';
-    hl.style.width = pw + 'px';
-    hl.style.height = ph + 'px';
-    hl.hidden = false;
+    let hx, hy, pw, ph;
+    if (opts.noPool) {
+      // corner targets get a CLOSE-UP instead of a pool — pressing an ellipse
+      // into a corner skewed it off-centre (Trym); the zoom IS the highlight
+      el('rvTourHl').hidden = true;
+      pw = r.width + pad * 2;
+      ph = r.height + pad * 2;
+      hx = r.left - cr.left - pad;
+      hy = r.top - cr.top - pad;
+    } else {
+      // the pool is an ELLIPSE ~1.8× the target (never smaller than a hand):
+      // generous + feathered means off-by-a-few-px centering can't be seen.
+      // It SHIFTS to stay inside the floor; the feather forgives the shift.
+      pw = Math.min(Math.max(r.width * 1.8 + pad * 2, 130), cr.width - 8);
+      ph = Math.min(Math.max(r.height * 1.8 + pad * 2, 110), maxY - 8);
+      hx = clamp(cx - pw / 2, 4, cr.width - 4 - pw);
+      hy = clamp(cy - ph / 2, 4, maxY - 4 - ph);
+      const hl = el('rvTourHl');
+      hl.style.left = hx + 'px';
+      hl.style.top = hy + 'px';
+      hl.style.width = pw + 'px';
+      hl.style.height = ph + 'px';
+      hl.hidden = false;
+    }
     const box = el('rvTourBox');
     el('rvTourTitle').textContent = title;
     el('rvTourText').textContent = text;
@@ -1293,6 +1307,7 @@ function init() {
     el('rvTourHl').hidden = true;
     el('rvTourBig').hidden = true;
     el('rvTourBox').hidden = true;
+    mixerEl.classList.remove('rv-mixer--tour'); // the meter steps back after its close-up
   }
   const TOUR = [
     () => { // tight on YOUR banana — the line sits right above your head
@@ -1322,18 +1337,23 @@ function init() {
       tourCamTo(b.x, b.y, 2.1);
       bartySay(['well howdy! 🤠 welcome to the CLUB, partner!', { t: 'we’ve been expectin’ ya. well. i have.', mutter: true }]);
     },
-    () => { // who Barty is (camera home first; measure after the glide)
-      world.style.transform = '';
+    () => { // who Barty is — the camera STAYS on him from his hello (a corner
+      // pool skewed; the close-up IS the highlight)
       setTimeout(() => {
-        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'calls the happy hours, mixes the specials, hands out tonight’s jobs. never stops talking.');
-      }, 900);
+        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'calls the happy hours, mixes the specials, hands out tonight’s jobs. never stops talking.', { noPool: true });
+      }, 600);
     },
-    () => { // the mixer: hype + the quest log
-      tourBox(el('rvMixer'), 'THE MIXER', 'everything you do fills the HYPE meter — fill it and TAP it to drop the floor. your current job sits right under it.');
+    () => { // the mixer: camera home; screen-space UI can't be zoomed, so the
+      // meter itself steps forward for its close-up
+      world.style.transform = '';
+      mixerEl.classList.add('rv-mixer--tour');
+      setTimeout(() => {
+        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE MIXER', 'everything you do fills the HYPE meter. full = the DROP IT button lights up in your controls — press it and the floor is yours.', { noPool: true });
+      }, 550);
     },
     () => { // the floor itself: full-floor pool, caption pinned up top like a subtitle
       const how = matchMedia('(pointer: coarse)').matches ? 'tap anywhere to walk over.' : 'walk with WASD, or click anywhere.';
-      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.', -18, 'top');
+      tourBox(el('rvTrails'), 'THE DANCE FLOOR', how + ' chase the sparkle trails, catch what lands, bump into strangers.', { pad: -18, pin: 'top' });
     },
     () => { // the DJ
       tourBox(document.querySelector('.rv-djgroup'), 'TONIGHT’S DJ', 'the banana of the day is on the decks. every third minute: THE DROP. you’ll know it when it hits.');
@@ -1347,7 +1367,7 @@ function init() {
       tourDemoEl.style.top = '48%';
       tourDemoEl.style.animation = 'none'; // it holds still for its close-up (the bob made the light sit off-centre)
       world.appendChild(tourDemoEl);
-      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build HYPE.', 12);
+      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build HYPE.', { pad: 12 });
     },
   ];
   function runTour() {
