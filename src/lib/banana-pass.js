@@ -51,6 +51,10 @@ function schedulePush() {
   }, 10000);
 }
 
+// nudge a sync push without touching the pass — for writes that live OUTSIDE
+// pass-v1 but ride the blob (the gear toggle writes bb-last)
+export function passPush() { schedulePush(); }
+
 // mint a patch (once). Returns true only the FIRST time — callers can skip
 // their own celebration; we toast here so every surface behaves the same.
 export function passPatch(id, opts = {}) {

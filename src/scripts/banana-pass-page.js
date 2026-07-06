@@ -3,8 +3,8 @@
 // stats and hosts the Shelf in its true home. CLIENT-ONLY.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { renderShelf } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast } from '../lib/banana-pass.js';
-import { PATCHES } from '../lib/pass-defs.js';
+import { passGet, passVisit, passToast, passPush } from '../lib/banana-pass.js';
+import { PATCHES, GEAR } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 
 const el = (id) => document.getElementById(id);
@@ -13,7 +13,8 @@ if (el('psSig')) init();
 // same naming as the rave's endurance board — your outfit IS your name
 // (duplicated from banana-rave.js on purpose: the rave build must stay lean)
 function autoName(o) {
-  const adj = (o.extras && o.extras.glowstick ? 'Glowing' : null)
+  const adj = (o.extras && o.extras.goldbanana ? 'Golden' : null) // the trophy outranks everything
+    || (o.extras && o.extras.glowstick ? 'Glowing' : null)
     || { shades: 'Cool', hearts: 'Lovestruck', visor: 'Sporty' }[o.glasses]
     || { disco: 'Disco', sparkle: 'Sparkly', confetti: 'Party' }[o.effect]
     || (o.extras && o.extras.mustache ? 'Distinguished' : 'Fresh');
@@ -86,6 +87,63 @@ async function init() {
       location.href = c.kind === 'emoji' ? '/forge/?shelf=' + c.id : '/make-a-banana/?' + c.params;
     },
   });
+
+  // — THE GEAR ROW: earned wearables, toggled straight onto the banana.
+  // bb-last is the toggle target (the rave, stickers and share cards all read
+  // it) and it rides the sync blob — so gear follows you across devices. —
+  function gearEarned(def) {
+    if (def.flag) { try { return localStorage.getItem(def.flag) === '1'; } catch (e) { return false; } }
+    if (def.patch) return !!pass.patches[def.patch];
+    return false;
+  }
+  function saveOutfit() {
+    try { localStorage.setItem('bb-last', JSON.stringify({ hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, effect: outfit.effect })); } catch (e) {}
+    passPush();
+  }
+  function renderGear() {
+    const host = el('psGear');
+    host.innerHTML = '';
+    GEAR.forEach((def) => {
+      const earned = gearEarned(def);
+      const wearing = earned && !!outfit.extras[def.extra];
+      const cell = document.createElement('div');
+      cell.className = 'ps-gear__item' + (earned ? ' ps-gear__item--earned' : '');
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 168;
+      cell.appendChild(cv);
+      const h = document.createElement('h3');
+      h.textContent = def.title;
+      cell.appendChild(h);
+      const p = document.createElement('p');
+      p.textContent = def.hint;
+      cell.appendChild(p);
+      if (earned) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
+        b.textContent = wearing ? '✓ wearing it' : 'wear it';
+        b.addEventListener('click', () => {
+          outfit.extras[def.extra] = !outfit.extras[def.extra];
+          saveOutfit();
+          el('psName').textContent = autoName(outfit);
+          lastIdx = -1; // the signature banana redraws on its next frame
+          renderGear();
+          if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: !!outfit.extras[def.extra] });
+        });
+        cell.appendChild(b);
+      }
+      host.appendChild(cell);
+      // a banana MODELS each item (frame 2, the classic pose); unearned slots
+      // go grayscale via CSS — the closet doubles as the feature map
+      assetsReady().then(() => {
+        drawComposite(cv.getContext('2d'), 168, 2, {
+          bg: 'transparent', captions: false,
+          hat: 'none', glasses: 'none', extras: { [def.extra]: true }, top: '', bottom: '', effect: 'none',
+        });
+      });
+    });
+  }
+  renderGear();
 
   // — the signature banana dances on the shared clock —
   const cv = el('psSig');

@@ -26,6 +26,16 @@ export const PATCHES = [
   { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },
 ];
 
+// THE GEAR ROW — earned wearables, the pass's closet. `extra` is the engine
+// extras id it toggles on your banana (bb-last); proof of earning is either a
+// localStorage `flag` or a minted pass `patch`. PURE DATA.
+export const GEAR = [
+  { id: 'glowstick', extra: 'glowstick', flag: 'rv-glowstick',
+    title: 'The Glowstick', hint: 'Survive 30 minutes on the dance floor — yours forever.' },
+  { id: 'goldbanana', extra: 'goldbanana', patch: 'golden',
+    title: 'The Golden Banana', hint: 'Catch the rarest thing that ever hits the floor. Hold it forever.' },
+];
+
 // visitors before this date mint the OG patch automatically (set it to the
 // real launch day when the launch happens)
 export const OG_CUTOFF = '2026-08-01';

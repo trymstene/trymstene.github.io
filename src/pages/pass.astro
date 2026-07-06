@@ -49,6 +49,25 @@ const description = 'Your membership card to the banana world: the patches you h
     .ps-section h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
     .ps-section > p { margin: 0 0 1rem; font-size: 0.88rem; opacity: 0.75; }
 
+    /* THE GEAR ROW: earned wearables — a banana models each item; unearned =
+       grayscale silhouette (the closet doubles as a feature map) */
+    .ps-gear { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ps-gear__item {
+      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.8rem 0.8rem 0.7rem; text-align: center;
+    }
+    .ps-gear__item canvas { width: 84px; height: 84px; image-rendering: pixelated; }
+    .ps-gear__item h3 { margin: 0.35rem 0 0.15rem; font-size: 0.85rem; }
+    .ps-gear__item p { margin: 0 0 0.55rem; font-size: 0.72rem; opacity: 0.7; line-height: 1.45; }
+    .ps-gear__item:not(.ps-gear__item--earned) { opacity: 0.55; }
+    .ps-gear__item:not(.ps-gear__item--earned) canvas { filter: grayscale(1) contrast(0.65) brightness(0.9); }
+    .ps-gear__item--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
+    .ps-gear__btn {
+      border: 3px solid var(--ink); background: var(--paper); font-weight: 800;
+      font-size: 0.72rem; padding: 0.35rem 0.7rem; cursor: pointer;
+    }
+    .ps-gear__btn.on { background: var(--banana); }
+
     /* the collection: earned bright, unearned dark silhouettes with hints */
     .ps-patches { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .ps-patch {
@@ -118,6 +137,12 @@ const description = 'Your membership card to the banana world: the patches you h
       <p class="ps-sync__note" id="psSyncNote"></p>
     </div>
     <p class="ps-device" id="psDevice">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
+
+    <div class="ps-section">
+      <h2>Gear</h2>
+      <p>Earned on the floor, worn everywhere. Toggle it onto your banana — the rave, stickers and share cards all follow.</p>
+      <div class="ps-gear" id="psGear"></div>
+    </div>
 
     <div class="ps-section">
       <h2>Patches</h2>

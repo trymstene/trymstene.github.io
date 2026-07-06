@@ -146,7 +146,8 @@ function track(name, params) { if (window.gtag) window.gtag('event', name, param
 
 // outfit → a name with no moderation surface: built ONLY from known ids
 function autoName(o) {
-  const adj = (o.extras && o.extras.glowstick ? 'Glowing' : null)
+  const adj = (o.extras && o.extras.goldbanana ? 'Golden' : null) // the trophy outranks everything
+    || (o.extras && o.extras.glowstick ? 'Glowing' : null)
     || { shades: 'Cool', hearts: 'Lovestruck', visor: 'Sporty' }[o.glasses]
     || { disco: 'Disco', sparkle: 'Sparkly', confetti: 'Party' }[o.effect]
     || (o.extras && o.extras.mustache ? 'Distinguished' : 'Fresh');

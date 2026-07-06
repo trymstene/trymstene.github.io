@@ -82,10 +82,15 @@ function init() {
   iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; });
   iconChips('bbHatChips', HATS, 'hat', (id) => { const d = HAT_BY_ID[id]; return d && SVG[d.art]; });
   chips('bbEffectChips', EFFECTS, 'effect'); // effects have no wearable art — words stay
-  // earned accessories: unlocked at the rave, remembered forever (localStorage)
+  // earned accessories: unlocked at the rave, remembered forever — each kind
+  // of `earned` knows where its proof lives (a flag, or a minted pass patch)
   const earnedUnlocked = (d) => {
     if (!d.earned) return true;
-    try { return localStorage.getItem('rv-glowstick') === '1'; } catch (e) { return false; }
+    try {
+      if (d.earned === 'rave') return localStorage.getItem('rv-glowstick') === '1';
+      if (d.earned === 'golden') return !!((JSON.parse(localStorage.getItem('pass-v1') || '{}').patches || {}).golden);
+    } catch (e) {}
+    return false;
   };
   // extras = independent toggles, not a single-choice row (the art is the button)
   EXTRA_DEFS.forEach((d) => {
@@ -97,7 +102,7 @@ function init() {
       a.className = 'bb-chip bb-chip--icon bb-chip--locked';
       a.href = '/rave/'; a.dataset.place = 'builder-locked';
       a.innerHTML = art || d.label;
-      a.title = d.label + ' — a rave souvenir: survive 30 minutes on the dance floor and it’s yours forever';
+      a.title = d.label + ' — ' + (d.lock || 'earned at the rave');
       a.setAttribute('aria-label', d.label + ' (locked — earn it at the rave)');
       el('bbExtrasChips').appendChild(a);
       return;
