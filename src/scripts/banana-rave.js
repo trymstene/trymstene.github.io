@@ -139,6 +139,7 @@ const BAR_QUIPS = [
   ['i love this job!', { t: 'i sleep under the bar. anyway!', mutter: true }],
   ['the drop hits every third minute. the bar never misses!', { t: 'it can’t.', mutter: true }],
   ['smile, partner! it’s free!', { t: 'only thing that ever was.', mutter: true }],
+  ['fill that jelly meter, partner!', { t: 'i’ve been full of jelly my whole life. the other kind. anyway!', mutter: true }],
 ];
 
 const el = (id) => document.getElementById(id);
@@ -565,8 +566,9 @@ function init() {
   let itemWinClaimed = -1;
   let lastItemTry = 0;
 
-  // THE HYPE METER — the base loop (Trym's call): everything you do fills it,
-  // standing still drains it, full = HYPE MODE where the whole floor sees you
+  // THE JELLY METER (the lore name — internals keep 'hype' ids for continuity):
+  // everything you do fills it, standing still drains it, full = JELLY TIME,
+  // where the whole floor sees you
   // peak (the effect travels the existing outfit pipe). Purely client-side.
   const HYPE_MAX = 100, HYPE_MODE_MS = 20000;
   const hypeBoost = new URLSearchParams(location.search).has('hypetest') ? 8 : 1; // ?hypetest = fast meter for visual testing
@@ -629,7 +631,7 @@ function init() {
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
-      toast.innerHTML = '🔥 <b>YOU DROPPED IT</b> — disco legs, gold trail, and the floor goes OFF!';
+      toast.innerHTML = '🍌 <b>IT’S JELLY TIME</b> — disco legs, gold trail, the floor goes OFF!';
       floor.appendChild(toast);
       setTimeout(() => toast.remove(), 5000);
     }
@@ -1374,7 +1376,7 @@ function init() {
       world.style.transform = '';
       mixerEl.classList.add('rv-mixer--tour');
       setTimeout(() => {
-        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE MIXER', 'everything you do fills the HYPE meter. full = the DROP IT button lights up in your controls — press it and the floor is yours.', { noPool: true });
+        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE JELLY METER', 'everything you do fills it with JELLY. full = the JELLY TIME button lights up in your controls — press it and the floor drops.', { noPool: true });
       }, 550);
     },
     () => { // the floor itself: full-floor pool, caption pinned up top like a subtitle
@@ -1393,7 +1395,7 @@ function init() {
       tourDemoEl.style.top = '48%';
       tourDemoEl.style.animation = 'none'; // it holds still for its close-up (the bob made the light sit off-centre)
       world.appendChild(tourDemoEl);
-      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build HYPE.', { pad: 12 });
+      tourBox(tourDemoEl, 'FLOOR SNACKS', 'something lands every minute or two. first banana to reach it keeps it — pickups chain, chains build JELLY.', { pad: 12 });
     },
   ];
   function runTour() {
@@ -1455,8 +1457,8 @@ function init() {
         say: ['well howdy, new face! 🤠 c’mon down to the bar — first one’s on the house!', { t: 'nobody ever bought ME a first one. anyway!', mutter: true }] },
       { tray: 'run the lost record up to the DJ', check: 'qvinyl',
         say: ['there ya go! now — the DJ lost a record out on that floor. run it up to the booth, would ya?', { t: 'errands build character. they’re all i had.', mutter: true }] },
-      { tray: 'charge the HYPE meter — then DROP IT', check: 'hypedrop',
-        say: ['WOO, listen to that! last job: CHARGE that hype meter — sparkles, snacks, the works — and when she’s full… DROP IT.'] },
+      { tray: 'fill the JELLY meter — then hit JELLY TIME', check: 'hypedrop',
+        say: ['WOO, listen to that! last job: fill that JELLY meter — sparkles, snacks, the works — and when she’s full… you know what time it is.'] },
     ], done: { patch: 'night1',
       say: ['FIRST NIGHT complete, partner! 🌟 you’re one of us now. come back tomorrow — night two’s on me.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
     { n: 2, steps: [ // look who's back — the club KNOWS you now
