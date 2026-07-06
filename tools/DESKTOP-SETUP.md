@@ -21,18 +21,26 @@ All of the gitignored items above are bundled by the move-kit (see below).
 
 ## The steps
 
-1. **Clone to the EXACT same path**: `C:\Web Development\trymstene.com`.
-   The path is not cosmetic — Claude's memory folder is named after it
-   (`C--Web-Development-trymstene-com`). Same path = memory just works.
+1. **Clone the repo** — any path/drive works, e.g. `F:\Web Development\trymstene.com`.
+   BUT the path decides the name of Claude's memory folder: the slug is the
+   full path with `:`/`\`/spaces/dots turned into `-`, so
+   `C:\Web Development\trymstene.com` → `C--Web-Development-trymstene-com`,
+   `F:\Web Development\trymstene.com` → `F--Web-Development-trymstene-com`.
+   Use YOUR machine's slug in step 2. (Unsure? Start one Claude Code session
+   in the project folder and see which folder appears under
+   `%USERPROFILE%\.claude\projects\` — then delete its empty `memory` subfolder
+   and put the junction in its place.)
 
 2. **Claude's memory syncs via OneDrive** (set up Jul 2026): the real files live
    in `OneDrive\banana-memory\`, and each machine points Claude's memory path
    at them with a junction. On the new machine (after OneDrive has synced —
    check that `%OneDrive%\banana-memory\MEMORY.md` exists), run in cmd/PowerShell:
 
-   ```
-   mkdir "%USERPROFILE%\.claude\projects\C--Web-Development-trymstene-com"
-   mklink /J "%USERPROFILE%\.claude\projects\C--Web-Development-trymstene-com\memory" "%OneDrive%\banana-memory"
+   In PowerShell (swap the slug for your machine's, per step 1):
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\projects\<YOUR-SLUG>" | Out-Null
+   New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\projects\<YOUR-SLUG>\memory" -Target "$env:OneDrive\banana-memory"
    ```
 
    (If Claude Code already created an empty `memory` folder there, delete it
