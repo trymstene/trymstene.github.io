@@ -1678,9 +1678,11 @@ function init() {
     if (document.getElementById('rvStool')) return;
     // by the counter's right edge, just behind its top — device-aware like the
     // bar zone itself (barSolid scales with the floor)
-    // clamped INTO the walkable floor (barSolid.y can sit below the 92% walk
-    // limit on tall floors — an unreachable stool is furniture-only)
-    stoolPos = { x: Math.max(10, barSolid.x - 5), y: clamp(barSolid.y - 2, topClamp + 6, 88) };
+    // at the counter's END — snug against its right edge, on the open-floor
+    // side (the counter-top already holds the drinks + broom, and mid-floor
+    // read as "a chair standing alone" — Trym). Clamped into the walkable
+    // floor: an unreachable stool is furniture-only.
+    stoolPos = { x: clamp(barSolid.x + 2, 10, 62), y: clamp(barSolid.y - 1, topClamp + 6, 90) };
     const d = document.createElement('div');
     d.id = 'rvStool';
     d.className = 'rv-stool';
