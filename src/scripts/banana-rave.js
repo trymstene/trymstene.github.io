@@ -107,6 +107,11 @@ const CANDY_SVG = '<svg viewBox="0 0 12 8" shape-rendering="crispEdges" xmlns="h
 const PIZZA_SVG = '<svg viewBox="0 0 10 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="8" height="1" fill="#dea85c"/><rect x="0" y="1" width="1" height="1" fill="#dea85c"/><rect x="1" y="1" width="8" height="1" fill="#ffd650"/><rect x="9" y="1" width="1" height="1" fill="#dea85c"/><rect x="1" y="2" width="1" height="1" fill="#dea85c"/><rect x="2" y="2" width="1" height="1" fill="#ffd650"/><rect x="3" y="2" width="2" height="1" fill="#e83b3b"/><rect x="5" y="2" width="2" height="1" fill="#ffd650"/><rect x="7" y="2" width="1" height="1" fill="#e83b3b"/><rect x="8" y="2" width="1" height="1" fill="#dea85c"/><rect x="1" y="3" width="1" height="1" fill="#dea85c"/><rect x="2" y="3" width="1" height="1" fill="#ffd650"/><rect x="3" y="3" width="2" height="1" fill="#e83b3b"/><rect x="5" y="3" width="1" height="1" fill="#ffd650"/><rect x="6" y="3" width="2" height="1" fill="#e83b3b"/><rect x="8" y="3" width="1" height="1" fill="#dea85c"/><rect x="2" y="4" width="1" height="1" fill="#dea85c"/><rect x="3" y="4" width="3" height="1" fill="#ffd650"/><rect x="6" y="4" width="2" height="1" fill="#e83b3b"/><rect x="8" y="4" width="1" height="1" fill="#dea85c"/><rect x="2" y="5" width="1" height="1" fill="#dea85c"/><rect x="3" y="5" width="4" height="1" fill="#ffd650"/><rect x="7" y="5" width="1" height="1" fill="#dea85c"/><rect x="3" y="6" width="1" height="1" fill="#dea85c"/><rect x="4" y="6" width="2" height="1" fill="#e83b3b"/><rect x="6" y="6" width="1" height="1" fill="#ffd650"/><rect x="7" y="6" width="1" height="1" fill="#dea85c"/><rect x="3" y="7" width="1" height="1" fill="#dea85c"/><rect x="4" y="7" width="2" height="1" fill="#ffd650"/><rect x="6" y="7" width="1" height="1" fill="#dea85c"/><rect x="4" y="8" width="2" height="1" fill="#dea85c"/><rect x="4" y="9" width="2" height="1" fill="#dea85c"/></svg>';
 const BALLOON_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="1" height="1" fill="#1e182c"/><rect x="3" y="0" width="2" height="1" fill="#c62c74"/><rect x="5" y="0" width="1" height="1" fill="#1e182c"/><rect x="1" y="1" width="1" height="1" fill="#1e182c"/><rect x="2" y="1" width="1" height="1" fill="#c62c74"/><rect x="3" y="1" width="2" height="1" fill="#ff4d9d"/><rect x="5" y="1" width="1" height="1" fill="#c62c74"/><rect x="6" y="1" width="1" height="1" fill="#1e182c"/><rect x="0" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#c62c74"/><rect x="2" y="2" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="6" y="2" width="1" height="1" fill="#c62c74"/><rect x="7" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="1" height="1" fill="#c62c74"/><rect x="2" y="3" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="3" width="2" height="1" fill="#ff4d9d"/><rect x="6" y="3" width="1" height="1" fill="#c62c74"/><rect x="7" y="3" width="1" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#c62c74"/><rect x="2" y="4" width="4" height="1" fill="#ff4d9d"/><rect x="6" y="4" width="1" height="1" fill="#c62c74"/><rect x="7" y="4" width="1" height="1" fill="#1e182c"/><rect x="0" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="5" width="4" height="1" fill="#ff4d9d"/><rect x="6" y="5" width="1" height="1" fill="#c62c74"/><rect x="7" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="1" height="1" fill="#c62c74"/><rect x="3" y="6" width="2" height="1" fill="#ff4d9d"/><rect x="5" y="6" width="1" height="1" fill="#c62c74"/><rect x="6" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="7" width="2" height="1" fill="#c62c74"/><rect x="5" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="8" width="2" height="1" fill="#1e182c"/><rect x="3" y="9" width="1" height="1" fill="#ffffff"/><rect x="2" y="10" width="1" height="1" fill="#ffffff"/><rect x="3" y="11" width="1" height="1" fill="#ffffff"/></svg>';
 const ITEM_SVGS = { sauce: SAUCE_SVG, zap: ZAP_SVG, fizz: FIZZ_SVG, candy: CANDY_SVG, pizza: PIZZA_SVG, balloon: BALLOON_SVG };
+// THE NIGHT's chores + characters (Pillow-authored, scratchpad night-sprites)
+const PEEL_SVG = '<svg viewBox="0 0 12 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="0" width="2" height="1" fill="#ffe135"/><rect x="4" y="1" width="1" height="1" fill="#ffe135"/><rect x="5" y="1" width="2" height="1" fill="#f0f0fa"/><rect x="7" y="1" width="1" height="1" fill="#ffe135"/><rect x="3" y="2" width="1" height="1" fill="#ffe135"/><rect x="4" y="2" width="4" height="1" fill="#f0f0fa"/><rect x="8" y="2" width="1" height="1" fill="#ffe135"/><rect x="1" y="3" width="2" height="1" fill="#ffe135"/><rect x="4" y="3" width="1" height="1" fill="#ffe135"/><rect x="5" y="3" width="2" height="1" fill="#f0f0fa"/><rect x="7" y="3" width="1" height="1" fill="#ffe135"/><rect x="9" y="3" width="2" height="1" fill="#ffe135"/><rect x="0" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="4" width="1" height="1" fill="#d6a024"/><rect x="2" y="4" width="1" height="1" fill="#ffe135"/><rect x="5" y="4" width="2" height="1" fill="#ffe135"/><rect x="9" y="4" width="1" height="1" fill="#ffe135"/><rect x="10" y="4" width="1" height="1" fill="#d6a024"/><rect x="11" y="4" width="1" height="1" fill="#ffe135"/><rect x="0" y="5" width="2" height="1" fill="#ffe135"/><rect x="4" y="5" width="4" height="1" fill="#ffe135"/><rect x="10" y="5" width="2" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#5a3618"/><rect x="4" y="6" width="1" height="1" fill="#ffe135"/><rect x="5" y="6" width="2" height="1" fill="#d6a024"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="10" y="6" width="1" height="1" fill="#5a3618"/><rect x="4" y="7" width="1" height="1" fill="#5a3618"/><rect x="7" y="7" width="1" height="1" fill="#5a3618"/></svg>';
+const PUDDLE_SVG = '<svg viewBox="0 0 14 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="5" height="1" fill="#4db8ff"/><rect x="2" y="1" width="2" height="1" fill="#4db8ff"/><rect x="4" y="1" width="5" height="1" fill="#78ebff"/><rect x="9" y="1" width="2" height="1" fill="#4db8ff"/><rect x="1" y="2" width="1" height="1" fill="#4db8ff"/><rect x="2" y="2" width="3" height="1" fill="#78ebff"/><rect x="5" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="6" y="2" width="5" height="1" fill="#78ebff"/><rect x="11" y="2" width="1" height="1" fill="#4db8ff"/><rect x="1" y="3" width="1" height="1" fill="#4db8ff"/><rect x="2" y="3" width="7" height="1" fill="#78ebff"/><rect x="9" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="10" y="3" width="1" height="1" fill="#78ebff"/><rect x="11" y="3" width="1" height="1" fill="#4db8ff"/><rect x="2" y="4" width="2" height="1" fill="#4db8ff"/><rect x="4" y="4" width="5" height="1" fill="#78ebff"/><rect x="9" y="4" width="2" height="1" fill="#4db8ff"/><rect x="4" y="5" width="5" height="1" fill="#4db8ff"/></svg>';
+const MONKEY_SVG = '<svg viewBox="0 0 10 13" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#111111"/><rect x="1" y="1" width="1" height="1" fill="#111111"/><rect x="2" y="1" width="4" height="1" fill="#7a5234"/><rect x="6" y="1" width="1" height="1" fill="#111111"/><rect x="0" y="2" width="1" height="1" fill="#111111"/><rect x="1" y="2" width="1" height="1" fill="#7a5234"/><rect x="2" y="2" width="1" height="1" fill="#111111"/><rect x="3" y="2" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="2" width="1" height="1" fill="#111111"/><rect x="6" y="2" width="1" height="1" fill="#7a5234"/><rect x="7" y="2" width="1" height="1" fill="#111111"/><rect x="1" y="3" width="1" height="1" fill="#111111"/><rect x="2" y="3" width="1" height="1" fill="#d6aa7d"/><rect x="3" y="3" width="2" height="1" fill="#111111"/><rect x="5" y="3" width="1" height="1" fill="#d6aa7d"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="4" height="1" fill="#d6aa7d"/><rect x="6" y="4" width="1" height="1" fill="#111111"/><rect x="8" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="1" height="1" fill="#111111"/><rect x="3" y="5" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="5" width="1" height="1" fill="#111111"/><rect x="7" y="5" width="1" height="1" fill="#111111"/><rect x="8" y="5" width="1" height="1" fill="#7a5234"/><rect x="9" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#111111"/><rect x="3" y="6" width="2" height="1" fill="#7a5234"/><rect x="5" y="6" width="1" height="1" fill="#111111"/><rect x="7" y="6" width="1" height="1" fill="#111111"/><rect x="8" y="6" width="1" height="1" fill="#7a5234"/><rect x="9" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="4" height="1" fill="#7a5234"/><rect x="6" y="7" width="1" height="1" fill="#111111"/><rect x="7" y="7" width="1" height="1" fill="#7a5234"/><rect x="8" y="7" width="1" height="1" fill="#111111"/><rect x="1" y="8" width="1" height="1" fill="#111111"/><rect x="2" y="8" width="4" height="1" fill="#7a5234"/><rect x="6" y="8" width="2" height="1" fill="#111111"/><rect x="1" y="9" width="1" height="1" fill="#111111"/><rect x="2" y="9" width="4" height="1" fill="#7a5234"/><rect x="6" y="9" width="1" height="1" fill="#111111"/><rect x="2" y="10" width="1" height="1" fill="#111111"/><rect x="3" y="10" width="2" height="1" fill="#7a5234"/><rect x="5" y="10" width="1" height="1" fill="#111111"/><rect x="1" y="11" width="1" height="1" fill="#111111"/><rect x="2" y="11" width="1" height="1" fill="#7a5234"/><rect x="5" y="11" width="1" height="1" fill="#7a5234"/><rect x="6" y="11" width="1" height="1" fill="#111111"/><rect x="1" y="12" width="2" height="1" fill="#111111"/><rect x="5" y="12" width="2" height="1" fill="#111111"/></svg>';
+const STOOL_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="6" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="1" width="6" height="1" fill="#8a5a2b"/><rect x="7" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="2" width="6" height="1" fill="#111111"/><rect x="1" y="3" width="1" height="1" fill="#111111"/><rect x="2" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="4" height="1" fill="#8a5a2b"/><rect x="6" y="5" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="7" width="1" height="1" fill="#111111"/></svg>';
 
 // flame trail: two flicker frames (Pillow-verified in scratchpad floor-items.py),
 // prerendered to tiny canvases and stamped per particle — a straight line of
@@ -779,7 +784,7 @@ function init() {
     itemWinClaimed = win;
     const sp = itemSpotFor(win);
     pickupPop(sp.x, sp.y);
-    if (id === myId) bumpChain();
+    if (id === myId) { bumpChain(); nightEvent('item'); }
     if (fx) {
       applyFx(id, fx);
     } else if (id === myId && SNACKS[kind]) {
@@ -914,6 +919,7 @@ function init() {
         r.wrap.classList.toggle('rv-lit', lit);
         if (lit && r.id === myId) {
           addHype(2); // basking in the light per rhythm tick
+          nightEvent('spotlight');
           if (!r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); passPatch('spotlight'); }
         }
       }
@@ -1467,11 +1473,38 @@ function init() {
         say: ['WOO, listen to that! last chore ain’t even a chore: fill that JELLY meter — sparkles, snacks, the works — and when she’s full… you know what time it is.'] },
     ], done: { patch: 'night1',
       say: ['FIRST NIGHTSHIFT done, partner! 🌟 you’re one of us now — back to clubbing! night two’s on me tomorrow.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
-    { n: 2, steps: [ // look who's back — the club KNOWS you now
+    { n: 2, steps: [ // look who's back — the broom debuts
+      { tray: 'grab the broom at the bar, sweep the peels', check: 'sweep', targets: ['peel', 'peel', 'peel', 'peel'],
+        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'some ANIMAL left peels all over my floor — grab the broom off the counter and sweep ’em up, would ya?'] },
       { tray: 'build a chain of THREE pickups', check: 'chain3',
-        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'tonight’s chore: help me clear this floor — a CHAIN of THREE pickups, back to back, no dawdlin’!'] },
+        say: ['SPOTLESS! now help me clear what the crowd drops — a CHAIN of THREE pickups, back to back, no dawdlin’!'] },
+      { tray: 'stand in the spotlight when it lands', check: 'spotlight',
+        say: ['look at you GO! 🤠 last one’s for you: get in that SPOTLIGHT when it lands. you earned some shine.', { t: 'i had a spotlight once. it moved on.', mutter: true }] },
     ], done: { patch: null,
       say: ['shift’s OVER — back to clubbing, partner! same time tomorrow?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
+    { n: 3, steps: [ // THE MONKEY debuts — the club's other staff member
+      { tray: 'catch that monkey!', check: 'monkey',
+        say: ['🐒 the MONKEY’s loose again! little bandit swiped my best bottle — catch him, partner!', { t: 'i named him. that was my mistake.', mutter: true }] },
+      { tray: 'grab a floor snack, pay the monkey', check: 'feed',
+        say: ['HA! got him! now… he only trades for snacks. grab somethin’ off the floor and pay the little bandit.', { t: 'we all have a price. his is candy.', mutter: true }] },
+    ], done: { patch: null,
+      say: ['bottle’s BACK! that’s a nightshift, partner — back to clubbing!', { t: 'the monkey stays. everybody stays but says they won’t.', mutter: true }] } },
+    { n: 4, steps: [ // THE LEAK + stage night
+      { tray: 'grab the broom, mop up the puddles', check: 'sweep', targets: ['puddle', 'puddle', 'puddle'],
+        say: ['EMERGENCY, partner! ⚠️ pipe burst somewhere — there’s PUDDLES on my floor! broom’s on the counter. GO!', { t: 'the plumbing’s older than the wiring. i’m older than both.', mutter: true }] },
+      { tray: 'when the stage opens: get up there, throw a 🔥', check: 'stagefire',
+        say: ['DRY! you’re a lifesaver. now get ON that stage when it opens and throw a 🔥 — tonight YOU’re the show.', { t: 'i was the show once. one night. 1987.', mutter: true }] },
+    ], done: { patch: null,
+      say: ['what a SHIFT. the club owes ya one, partner — back to clubbing!', { t: 'the club never pays its debts. anyway!', mutter: true }] } },
+    { n: 5, steps: [ // THE REGULAR — the best-of shift
+      { tray: 'grab the broom — one last sweep of the mess', check: 'sweep', targets: ['peel', 'peel', 'peel', 'puddle', 'puddle'],
+        say: ['night FIVE, partner. 🤠 one last shift, the full mess: peels AND puddles. you know where the broom is.', { t: 'you know where everything is now. that’s how it gets you.', mutter: true }] },
+      { tray: 'survive THE DROP on the floor', check: 'drop',
+        say: ['CLEAN! now stay on that floor for THE DROP — every third minute, you know the clock by now.'] },
+      { tray: 'one more JELLY TIME — end it right', check: 'hypedrop',
+        say: ['LAST one, and it ain’t even a chore: fill that JELLY meter and end your shift the only right way.', { t: 'endings should be loud. mine wasn’t.', mutter: true }] },
+    ], done: { patch: null,
+      say: ['FIVE nightshifts, partner. you’re not a guest anymore.', { t: 'guests leave.', mutter: true }, 'that stool by the bar? YOURS. always. now — back to clubbing! ⭐'] } },
   ];
   const NIGHT_TEST = parseInt((location.search.match(/nighttest=(\d)/) || [])[1] || '0', 10);
   const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
@@ -1525,6 +1558,7 @@ function init() {
   });
   function nightAdvance() {
     if (!night) return;
+    if (location.search.includes('nightdebug')) console.log('[night] advance from step', night.step, new Error().stack.split('\n')[2]);
     if (night.step >= 0) { // tick the finished box for a beat before what's next
       nightTray(night.def.steps[night.step].tray, true);
       track('rave_night_step', { night: night.def.n, step: night.step });
@@ -1538,6 +1572,8 @@ function init() {
         nightTray(st.tray, false);
         if (st.check === 'bar') el('rvQuestDrink').style.display = ''; // the promised drink WAITS on the counter
         if (st.check === 'qvinyl') nightSpawnVinyl();
+        if (st.check === 'sweep') { spawnChores(st.targets); el('rvBroomProp').style.display = ''; } // the broom leans on the counter
+        if (st.check === 'monkey') monkeySpawn();
       } else {
         nightStamp();
       }
@@ -1557,6 +1593,89 @@ function init() {
     q.style.top = y + '%';
     world.appendChild(q);
     night.qv = { el: q, x, y };
+  }
+  // ---- chores: sweepables (peels + puddles), swept while HOLDING the broom ----
+  function spawnChores(kinds) {
+    const host = el('rvChores');
+    host.innerHTML = '';
+    night.chores = [];
+    for (const kind of kinds) {
+      let x = 50, y = 50;
+      for (let t = 0; t < 30; t++) {
+        x = 12 + Math.random() * 74;
+        y = clamp(26 + Math.random() * 58, topClamp + 6, 86);
+        if (!insideBar(x, y) && night.chores.every((c) => Math.hypot(c.x - x, c.y - y) > 13)) break;
+      }
+      const d = document.createElement('div');
+      d.className = 'rv-chore rv-chore--' + kind;
+      d.innerHTML = kind === 'peel' ? PEEL_SVG : PUDDLE_SVG;
+      d.style.left = x + '%';
+      d.style.top = y + '%';
+      host.appendChild(d);
+      night.chores.push({ x, y, elm: d, done: false });
+    }
+  }
+  function clearChores() {
+    const h = el('rvChores');
+    if (h) h.innerHTML = '';
+    if (night) night.chores = null;
+  }
+  // ---- THE MONKEY: the club's chaos agent — staff pet, THEATRICAL guest,
+  // never a fake visitor (the sacred rule). Flees the chaser, a hair slower
+  // than a banana: catchable by commitment, not luck. ----
+  let monkey = null;
+  function monkeySpawn() {
+    if (monkey) monkeyRemove();
+    const d = document.createElement('div');
+    d.className = 'rv-monkey';
+    d.innerHTML = MONKEY_SVG;
+    world.appendChild(d);
+    monkey = { x: 50, y: topClamp + 8, tx: 25 + Math.random() * 50, ty: 45, el: d, mode: 'loose', lastPick: 0 };
+    pickupPop(monkey.x, monkey.y); // pops in from the booth side — an ENTRANCE
+  }
+  function monkeyRemove() { if (monkey) { monkey.el.remove(); monkey = null; } }
+  function monkeyTick(now, dtMs) {
+    if (!monkey || monkey.mode !== 'loose') return;
+    const me = myId && ravers.get(myId);
+    if (me) {
+      const d = Math.hypot(me.x - monkey.x, me.y - monkey.y);
+      if (d < 18 && now - monkey.lastPick > 650) { // flee the chaser
+        monkey.lastPick = now;
+        const ang = Math.atan2(monkey.y - me.y, monkey.x - me.x) + (Math.random() - 0.5) * 1.2;
+        monkey.tx = clamp(monkey.x + Math.cos(ang) * 30, 8, 92);
+        monkey.ty = clamp(monkey.y + Math.sin(ang) * 24, topClamp + 4, 86);
+        if (insideBar(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, barSolid.y - 8);
+      } else if (now - monkey.lastPick > 2600 && Math.hypot(monkey.tx - monkey.x, monkey.ty - monkey.y) < 2) {
+        monkey.lastPick = now; // amble somewhere new
+        monkey.tx = 12 + Math.random() * 76;
+        monkey.ty = clamp(24 + Math.random() * 60, topClamp + 4, 86);
+        if (insideBar(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, barSolid.y - 8);
+      }
+    }
+    const dx = monkey.tx - monkey.x, dy = monkey.ty - monkey.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0.8) {
+      const step = (13.5 * dtMs) / 1000;
+      monkey.x += (dx / dist) * Math.min(step, dist);
+      monkey.y += (dy / dist) * Math.min(step, dist);
+      monkey.el.style.left = monkey.x + '%';
+      monkey.el.style.top = monkey.y + '%';
+      monkey.el.style.zIndex = String(100 + Math.round(monkey.y));
+      monkey.el.style.transform = 'translate(-50%, -50%)' + (dx < 0 ? ' scaleX(-1)' : '');
+    }
+  }
+  // the regular's stool: N5's privilege — furniture that is YOURS, forever
+  function stoolRender() {
+    try { if (localStorage.getItem('rv-stool') !== '1') return; } catch (e) { return; }
+    if (document.getElementById('rvStool')) return;
+    const d = document.createElement('div');
+    d.id = 'rvStool';
+    d.className = 'rv-stool';
+    d.innerHTML = STOOL_SVG;
+    d.style.left = '38%';
+    d.style.top = '78%';
+    d.style.zIndex = '178';
+    world.appendChild(d);
   }
   function nightFrame(now) { // proximity checks at frame rate (the claims lesson)
     if (!night || night.step < 0) return;
@@ -1587,17 +1706,87 @@ function init() {
         miniDropUntil = Date.now() + 6000; // your delivery, your bonus drop
         nightAdvance();
       }
+    } else if (st.check === 'sweep') {
+      if (!me.qbroom) {
+        // first: the broom, off the counter (adjacency zone, like every bar visit)
+        if (me.x < Math.max(BAR_ZONE.x, barSolid.x + 4) && me.y > BAR_ZONE.y) {
+          me.qbroom = true; // rides the right glove via the engine
+          el('rvBroomProp').style.display = 'none';
+          pickupPop(me.x, me.y);
+          const total = night.chores ? night.chores.length : 0;
+          nightTray(st.tray + ' — 0/' + total, false);
+        }
+      } else if (night.chores) {
+        const rPx = (me.size || 90) * 0.55;
+        let left = 0, hit = false;
+        for (const c of night.chores) {
+          if (c.done) { continue; }
+          if (Math.hypot(((me.x - c.x) / 100) * floorW, ((me.y - c.y) / 100) * floorH) < rPx) {
+            c.done = true;
+            hit = true;
+            c.elm.classList.add('rv-chore--swept');
+            const gone = c.elm;
+            setTimeout(() => gone.remove(), 500);
+            pickupPop(c.x, c.y);
+            addHype(4); // chores are jelly too
+          } else {
+            left++;
+          }
+        }
+        if (hit) {
+          const total = night.chores.length;
+          if (left) {
+            nightTray(st.tray + ' — ' + (total - left) + '/' + total, false);
+          } else {
+            me.qbroom = false; // Barty takes the good broom back
+            nightAdvance();
+          }
+        }
+      }
+    } else if (st.check === 'monkey' && monkey && monkey.mode === 'loose') {
+      if (Math.hypot(me.x - monkey.x, me.y - monkey.y) < 6.5) {
+        monkey.mode = 'caught'; // sits still, waits for his price
+        monkey.el.classList.add('rv-monkey--calm');
+        pickupPop(monkey.x, monkey.y);
+        nightAdvance();
+      }
+    } else if (st.check === 'feed' && monkey && night.snack) {
+      if (Math.hypot(me.x - monkey.x, me.y - monkey.y) < 7.5) {
+        night.snack = false;
+        pickupPop(monkey.x, monkey.y);
+        const m = monkey; // paid — waves off and scampers backstage
+        monkey = null;
+        setTimeout(() => {
+          m.el.classList.add('rv-monkey--off');
+          setTimeout(() => m.el.remove(), 900);
+        }, 1500);
+        nightAdvance();
+      }
     }
   }
   function nightEvent(kind, val) { // hooks fired by the floor's own machinery
     if (!night || night.step < 0) return;
     const st = night.def.steps[night.step];
     if (!st) return;
+    if (st.check === 'feed' && kind === 'item' && !night.snack) {
+      night.snack = true; // any floor grab is monkey currency
+      nightTray('got one — bring the snack to the monkey', false);
+      return;
+    }
     if ((st.check === 'hypedrop' && kind === 'hypedrop')
-      || (st.check === 'chain3' && kind === 'chain' && val >= 3)) nightAdvance();
+      || (st.check === 'chain3' && kind === 'chain' && val >= 3)
+      || (st.check === 'spotlight' && kind === 'spotlight')
+      || (st.check === 'stagefire' && kind === 'fire')
+      || (st.check === 'drop' && kind === 'drop')) nightAdvance();
   }
   function nightStamp() {
     const d = night.def;
+    // tidy the props before the ceremony (whatever the shift left behind)
+    clearChores();
+    monkeyRemove();
+    el('rvBroomProp').style.display = 'none';
+    const meS = myId && ravers.get(myId);
+    if (meS) meS.qbroom = false;
     night = null;
     // THE STAMP-OUT: your shift ends, the club doesn't — big type, the floor
     // drops FOR you, Barty stamps you out, and the chip becomes the receipt
@@ -1607,6 +1796,15 @@ function init() {
     bartySay(d.done.say, true);
     nightTray('✔ nightshift done — back to clubbing', true);
     if (d.done.patch) passPatch(d.done.patch);
+    if (d.n === NIGHTS.length) {
+      // THE REGULAR: five shifts = you're furniture now, in the good way
+      try { localStorage.setItem('rv-stool', '1'); } catch (e) {}
+      setTimeout(() => {
+        bigMoment('YOU’RE A REGULAR ⭐', 'the stool by the bar is yours');
+        stoolRender();
+        passPatch('regular');
+      }, 4800);
+    }
     passStat('nights');
     track('rave_night_complete', { night: d.n });
     if (!NIGHT_TEST) {
@@ -1623,6 +1821,7 @@ function init() {
       const k = b.dataset.emote;
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'emote', k }));
       if (myId) floatEmote(myId, k); // instant local echo
+      if (k === 'fire' && onStage()) nightEvent('fire'); // night 4's stage moment
       track('rave_emote', { k });
     });
   });
@@ -1734,6 +1933,7 @@ function init() {
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
     nightFrame(now); // quest proximity checks — same lesson again
+    monkeyTick(now, dtMs); // the bandit keeps its distance
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
     }
@@ -1867,7 +2067,7 @@ function init() {
     if (dropActive !== lastDrop) {
       // no confetti here — every-3rd-minute confetti was wallpaper (Trym: "too
       // frequent to appreciate"); the drop already has strobe + pyro + the flash
-      if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); }
+      if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); nightEvent('drop'); }
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       dropFlashEl.hidden = !dropActive;
@@ -1879,9 +2079,13 @@ function init() {
         const o = r.outfit;
         drawComposite(r.cv.getContext('2d'), 160, idx, {
           bg: 'transparent', captions: false,
-          // the courier's record rides the LEFT glove via the engine's hand anchor
-          // (r.vinyl is a rave flag, never part of the broadcast outfit)
-          hat: o.hat, glasses: o.glasses, extras: (r.vinyl || r.qvinyl) ? { ...(o.extras || {}), vinyl: true } : (o.extras || {}), top: '', bottom: '',
+          // held quest props ride the gloves via the engine's hand anchors
+          // (r.vinyl/qvinyl/qbroom are rave flags, never in the broadcast outfit)
+          hat: o.hat, glasses: o.glasses,
+          extras: (r.vinyl || r.qvinyl || r.qbroom)
+            ? { ...(o.extras || {}), ...((r.vinyl || r.qvinyl) ? { vinyl: true } : {}), ...(r.qbroom ? { broom: true } : {}) }
+            : (o.extras || {}),
+          top: '', bottom: '',
           effect: dropActive ? 'confetti' : o.effect,
           hue: dropActive ? hue : (o.effect === 'disco' ? (360 * idx / NFRAMES) : 0),
         });
@@ -1903,6 +2107,7 @@ function init() {
   // ---- the pass: rave moments leave marks ----
   passVisit();
   passPatch('raver');
+  stoolRender(); // the regular's stool, for those who've earned it
   setInterval(() => { if (ws && ws.readyState === 1) passStat('raveMin'); }, 60000);
   try { if (localStorage.getItem('rv-glowstick') === '1') passPatch('survivor', { quiet: true }); } catch (e) {}
 
