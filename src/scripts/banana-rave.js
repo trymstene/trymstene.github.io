@@ -1533,6 +1533,7 @@ function init() {
       if (st) {
         bartySay(st.say, true);
         nightTray(st.tray, false);
+        if (st.check === 'bar') el('rvQuestDrink').style.display = ''; // the promised drink WAITS on the counter
         if (st.check === 'qvinyl') nightSpawnVinyl();
       } else {
         nightStamp();
@@ -1562,7 +1563,11 @@ function init() {
     if (!me || me.stage) return;
     if (now - (night.lastPoll || 0) < 120) return;
     night.lastPoll = now;
-    if (st.check === 'bar' && me.x < BAR_ZONE.x && me.y > BAR_ZONE.y) {
+    if (st.check === 'bar' && me.x < Math.max(BAR_ZONE.x, barSolid.x + 4) && me.y > BAR_ZONE.y) {
+      // the house pour moves from the counter into your glove — a promised
+      // drink you can SEE is a promise kept (local-only; it's your moment)
+      el('rvQuestDrink').style.display = 'none';
+      me.outfit.extras = { ...(me.outfit.extras || {}), beer: true };
       pickupPop(me.x, me.y);
       nightAdvance();
     } else if (st.check === 'qvinyl' && night.qv) {
@@ -1593,7 +1598,7 @@ function init() {
     night = null;
     // THE STAMP-OUT: your shift ends, the club doesn't — big type, the floor
     // drops FOR you, Barty stamps you out, and the chip becomes the receipt
-    bigMoment('NIGHTSHIFT DONE ✔', 'back to clubbing!');
+    bigMoment('NIGHTSHIFT ' + d.n + ' — IN THE BOOKS', 'back to clubbing! 🍌');
     confettiBurst();
     miniDropUntil = Date.now() + 8000; // the club celebrates your shift
     bartySay(d.done.say, true);

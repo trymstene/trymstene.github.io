@@ -197,6 +197,7 @@ const schema = {
     /* beer at HALF size — 32px read as "a bucket of beer" next to Barty (Trym);
        top keeps its bottom seated on the countertop band (nudged 2px up) */
     .rv-counterbeer { position: absolute; width: 18px; height: auto; left: 62%; top: -10px; z-index: 4; }
+    .rv-counterbeer--quest { left: 44%; filter: drop-shadow(0 0 5px rgba(255, 225, 53, 0.6)); } /* the house pour glows a little — it's YOURS */
     /* Barty's special of the window: the cocktail sits where the beer sits —
        38% landed ON Barty and overflowed him (Trym, iOS). Beer + special never
        show at the same time (happy hour vs specials window), so they share the
@@ -680,6 +681,12 @@ const schema = {
               <div class="rv-bubble" id="rvBubble" hidden></div>
               <div class="rv-special" id="rvSpecial" hidden></div>
               <svg class="rv-counterbeer" id="rvCounterBeer" viewBox="0 0 50 60" style="display:none;">
+                <rect x="10" y="0" width="30" height="10" fill="#fffdf5"/><rect x="0" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#fffdf5"/><rect x="40" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="20" width="30" height="30" fill="#f2c200"/><rect x="15" y="25" width="7" height="20" fill="#ffe135"/><rect x="10" y="50" width="30" height="10" fill="#111111"/>
+              </svg>
+              <!-- the FIRST NIGHTSHIFT's house pour: waits on the counter during
+                   step 1, then moves into the newcomer's glove (SVG quirk: inline
+                   display only — [hidden] doesn't work on svg) -->
+              <svg class="rv-counterbeer rv-counterbeer--quest" id="rvQuestDrink" viewBox="0 0 50 60" style="display:none;">
                 <rect x="10" y="0" width="30" height="10" fill="#fffdf5"/><rect x="0" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#fffdf5"/><rect x="40" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="20" width="30" height="30" fill="#f2c200"/><rect x="15" y="25" width="7" height="20" fill="#ffe135"/><rect x="10" y="50" width="30" height="10" fill="#111111"/>
               </svg>
               <svg class="rv-counter" viewBox="0 0 170 60" shape-rendering="crispEdges">
