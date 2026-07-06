@@ -489,7 +489,7 @@ function init() {
       }
       gif.finish();
       const blob = new Blob([gif.bytes()], { type: 'image/gif' });
-      download(URL.createObjectURL(blob), 'my-dancing-banana.gif');
+      download(URL.createObjectURL(blob), 'my-dancing-banana-trymstene.com.gif');
       toast('Emoji GIF downloaded!');
       track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
       saveToShelf();
@@ -512,7 +512,7 @@ function init() {
       const data = ctx.getImageData(0, 0, W, W).data;
       out = crop(cv, pad(bboxOf([data], W), W));
     }
-    download(out.toDataURL('image/png'), 'my-dancing-banana.png');
+    download(out.toDataURL('image/png'), 'my-dancing-banana-trymstene.com.png');
     toast('Image downloaded!');
     track('png_download', { file: 'builder-meme.png', design: designStr() });
     saveToShelf();

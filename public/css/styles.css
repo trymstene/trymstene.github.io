@@ -521,6 +521,10 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 
 /* ---------- download buttons + embed box ---------- */
 .dl-buttons { display: flex; flex-direction: column; gap: 0.7rem; }
+/* the post-download door — hidden until a download button is clicked (main.js) */
+.dl-door { display: none; margin-top: 1.1rem; font-weight: 700; }
+.dl-door.show { display: block; animation: dl-door-in 0.35s ease-out; }
+@keyframes dl-door-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .embed { max-width: 640px; margin: 2rem auto 0; text-align: left; }
 .embed label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
 .embed textarea {

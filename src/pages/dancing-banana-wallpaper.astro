@@ -63,7 +63,7 @@ const schema = {
             <p>{d.blurb}</p>
             <div class="wp-links">
               {SIZES.map((s) => (
-                <a href={file(d.id, s.id)} download><PixelIcon name="download" size="1.1em" /> {s.label} ↓</a>
+                <a href={file(d.id, s.id)} download={`dancing-banana-wallpaper-${d.id}-${s.id}-trymstene.com.png`}><PixelIcon name="download" size="1.1em" /> {s.label} ↓</a>
               ))}
             </div>
           </div>

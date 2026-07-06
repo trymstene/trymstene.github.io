@@ -305,7 +305,7 @@ function init() {
       const blob = new Blob([gif.bytes()], { type: 'image/gif' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'my-pixel-emoji.gif';
+      a.download = 'my-pixel-emoji-trymstene.com.gif';
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });

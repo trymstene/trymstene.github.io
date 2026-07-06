@@ -38,6 +38,18 @@
   });
 })();
 
+// The post-download door: downloading is a completed action, so it gets ONE
+// warm next step — the .dl-door line under the buttons stays hidden until the
+// visitor actually takes a banana. (Outside the GA block: works on previews.)
+(function () {
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('a') : null;
+    if (!a || !a.hasAttribute('download')) return;
+    var door = document.querySelector('.dl-door');
+    if (door) door.classList.add('show');
+  });
+})();
+
 // Mobile nav: slide-in panel
 const nav = document.querySelector('.nav');
 const toggle = document.querySelector('.nav__toggle');
