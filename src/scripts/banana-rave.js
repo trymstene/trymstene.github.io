@@ -284,12 +284,16 @@ function init() {
   const insideBar = (x, y) => x < barSolid.x && y > barSolid.y;
 
   const zoomBtn = el('rvZoom');
-  // the label is the ACTION, not the state; on small screens it's icon-only —
-  // "users click stuff to see what it does" (Trym), and the corner gets freed
+  // pixel magnifiers, Pillow-verified (scratchpad zoom-icons): + = zoom in on
+  // you, − = pull back to the whole floor. The label is the ACTION, not the
+  // state; small screens are icon-only ("users click stuff to see what it
+  // does" — Trym), and the corner gets freed.
+  const ZOOM_IN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90" shape-rendering="crispEdges"><rect x="20" y="0" width="30" height="10" fill="#fffdf5"/><rect x="10" y="10" width="10" height="10" fill="#fffdf5"/><rect x="50" y="10" width="10" height="10" fill="#fffdf5"/><rect x="0" y="20" width="10" height="10" fill="#fffdf5"/><rect x="30" y="20" width="10" height="10" fill="#ffe135"/><rect x="60" y="20" width="10" height="10" fill="#fffdf5"/><rect x="0" y="30" width="10" height="10" fill="#fffdf5"/><rect x="20" y="30" width="30" height="10" fill="#ffe135"/><rect x="60" y="30" width="10" height="10" fill="#fffdf5"/><rect x="0" y="40" width="10" height="10" fill="#fffdf5"/><rect x="30" y="40" width="10" height="10" fill="#ffe135"/><rect x="60" y="40" width="10" height="10" fill="#fffdf5"/><rect x="10" y="50" width="10" height="10" fill="#fffdf5"/><rect x="50" y="50" width="20" height="10" fill="#fffdf5"/><rect x="20" y="60" width="30" height="10" fill="#fffdf5"/><rect x="60" y="60" width="20" height="10" fill="#fffdf5"/><rect x="70" y="70" width="20" height="10" fill="#fffdf5"/><rect x="80" y="80" width="20" height="10" fill="#fffdf5"/></svg>';
+  const ZOOM_OUT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90" shape-rendering="crispEdges"><rect x="20" y="0" width="30" height="10" fill="#fffdf5"/><rect x="10" y="10" width="10" height="10" fill="#fffdf5"/><rect x="50" y="10" width="10" height="10" fill="#fffdf5"/><rect x="0" y="20" width="10" height="10" fill="#fffdf5"/><rect x="60" y="20" width="10" height="10" fill="#fffdf5"/><rect x="0" y="30" width="10" height="10" fill="#fffdf5"/><rect x="20" y="30" width="30" height="10" fill="#ffe135"/><rect x="60" y="30" width="10" height="10" fill="#fffdf5"/><rect x="0" y="40" width="10" height="10" fill="#fffdf5"/><rect x="60" y="40" width="10" height="10" fill="#fffdf5"/><rect x="10" y="50" width="10" height="10" fill="#fffdf5"/><rect x="50" y="50" width="20" height="10" fill="#fffdf5"/><rect x="20" y="60" width="30" height="10" fill="#fffdf5"/><rect x="60" y="60" width="20" height="10" fill="#fffdf5"/><rect x="70" y="70" width="20" height="10" fill="#fffdf5"/><rect x="80" y="80" width="20" height="10" fill="#fffdf5"/></svg>';
   function refreshZoomBtn() {
     zoomBtn.hidden = false;
     const small = matchMedia('(max-width: 640px)').matches;
-    zoomBtn.textContent = cam.on ? (small ? '🗺' : '🗺 whole floor') : (small ? '🔍' : '🔍 follow me');
+    zoomBtn.innerHTML = (cam.on ? ZOOM_OUT_SVG : ZOOM_IN_SVG) + (small ? '' : '<span>' + (cam.on ? 'whole floor' : 'follow me') + '</span>');
     zoomBtn.setAttribute('aria-label', cam.on ? 'Show the whole floor' : 'Follow my banana');
   }
   refreshZoomBtn();
