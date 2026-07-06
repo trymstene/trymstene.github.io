@@ -30,6 +30,11 @@ const schema = {
   showFooter={false}
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <!-- perf: the dance sheet is otherwise only discovered after the JS bundle
+       parses (a full network waterfall); ?v must match SHEET_SRC in banana-engine.js -->
+  <link rel="preload" as="image" href="/assets/banana-dance.png?v=5" slot="head" />
+  <!-- perf: warm DNS+TCP+TLS to the presence worker before the WS handshake -->
+  <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">
     /* isolate = nothing inside the rave (raver z-indexes, drop flash) can ever
        paint over the sticky nav / slide menu (iOS Safari bug Trym caught) */
@@ -275,7 +280,7 @@ const schema = {
        not prizes); swept things spin away under the broom */
     .rv-chore { position: absolute; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; }
     .rv-chore svg { display: block; image-rendering: pixelated; }
-    .rv-chore--peel svg { width: 30px; height: 20px; }
+    .rv-chore--peel svg { width: 54px; height: auto; }
     .rv-chore--puddle svg { width: 44px; height: 20px; opacity: 0.9; }
     .rv-chore--swept { animation: rvSwept 0.5s steps(4) forwards; }
     @keyframes rvSwept { 100% { transform: translate(-50%, -50%) scale(0.15) rotate(120deg); opacity: 0; } }
@@ -285,7 +290,7 @@ const schema = {
     .rv-monkey--calm svg { filter: drop-shadow(0 0 6px #ffe135); }
     .rv-monkey--off { transition: opacity 0.8s ease, transform 0.8s ease; opacity: 0; }
     /* the regular's stool (N5's privilege) + the broom leaning on the counter */
-    .rv-stool { position: absolute; transform: translate(-50%, -50%); width: 26px; pointer-events: auto; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .rv-stool { position: absolute; transform: translate(-50%, -50%); width: 34px; pointer-events: auto; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .rv-stool svg { width: 100%; height: auto; image-rendering: pixelated; }
     .rv-broomprop { position: absolute; width: 15px; left: 84%; top: -48px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 5px rgba(255, 214, 80, 0.5)); }
     .rv-broomprop svg { width: 100%; height: auto; image-rendering: pixelated; }
@@ -546,6 +551,9 @@ const schema = {
     .rv-glowtoast b { color: #39ff14; }
 
     .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
+    /* YOUR banana echoes input at frame rate — the 0.18s glide (needed to
+       smooth remote 150ms packets) only added ~180ms of input lag here */
+    .rv-raver--me { transition: none; }
     .rv-raver canvas { transition: transform 0.15s ease; }
     .rv-floor { cursor: pointer; touch-action: manipulation; }
     .rv-raver canvas { image-rendering: pixelated; }
