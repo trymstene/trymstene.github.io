@@ -322,7 +322,7 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom')) return; // the camera toggle is not a walk order (the mixer is pure display again)
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest')) return; // buttons + the quest chip are not walk orders
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     const rect = floor.getBoundingClientRect();
@@ -1452,13 +1452,26 @@ function init() {
     night = { def: NIGHTS[arc - 1], step: -1 };
     setTimeout(nightAdvance, 2500); // a breath after the tour (or the join), then Barty's first job
   }
+  // small screens get progressive disclosure: a new job announces itself,
+  // then tucks behind the TONIGHT chip after a read — the floor view wins
+  // (Trym: "how can we not present everything all at once"). Tap toggles.
+  const questSmall = matchMedia('(max-width: 640px)');
+  let questTuckT = null;
   function nightTray(txt, done) {
     const q = el('rvQuest');
     if (txt === null) { q.hidden = true; return; }
     q.hidden = false;
     el('rvQuestBox').classList.toggle('done', !!done);
     el('rvQuestTxt').textContent = txt;
+    clearTimeout(questTuckT);
+    q.classList.remove('rv-quest--min'); // news always shows itself first
+    if (questSmall.matches) questTuckT = setTimeout(() => q.classList.add('rv-quest--min'), 7000);
   }
+  el('rvQuest').addEventListener('click', () => {
+    if (!questSmall.matches) return; // desktop never collapses — space is free
+    clearTimeout(questTuckT);
+    el('rvQuest').classList.toggle('rv-quest--min');
+  });
   function nightAdvance() {
     if (!night) return;
     if (night.step >= 0) { // tick the finished box for a beat before what's next
@@ -1687,6 +1700,7 @@ function init() {
       trailCtx.globalCompositeOperation = 'source-over';
       for (const r of ravers.values()) {
         if (r.stage) continue;
+        if (tourActive && r.id !== myId) continue; // hidden guests must not paint trails through the lesson
         const moving = r.lastMoveAt && now - r.lastMoveAt < 350;
         const px = (r.x / 100) * floorW;
         const py = ((r.y + 3) / 100) * floorH; // at the feet, not the torso
