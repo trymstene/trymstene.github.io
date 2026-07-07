@@ -606,7 +606,10 @@ const schema = {
     }
     .rv-stage-btn:hover:not([disabled]) { background: #ffe135; color: #111; }
     .rv-stage-btn[disabled] { color: #b388ff; border-color: #4a3b6b; cursor: default; }
-    .rv-tourbtn { flex: 0 0 auto !important; border-color: #4a3b6b; opacity: 0.85; font-size: 0.95rem; }
+    /* inline-flex centring: the pixel ? is a display:block svg, and a block
+       box never text-align-centres in a button — on mobile the emote row's
+       zero horizontal padding parked it at the left edge (Trym's catch) */
+    .rv-tourbtn { flex: 0 0 auto !important; display: inline-flex; align-items: center; justify-content: center; border-color: #4a3b6b; opacity: 0.85; font-size: 0.95rem; }
     .rv-tourbtn:hover { background: #b388ff; opacity: 1; }
     .rv-tourbtn svg { width: 13px; height: auto; image-rendering: pixelated; display: block; }
     /* DROP IT: the charged meter's release — THE action of the moment, so the
