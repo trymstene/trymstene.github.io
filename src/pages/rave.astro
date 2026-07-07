@@ -456,14 +456,15 @@ const GUIDE = [
     .rv-poof__2 { animation: rvPoofStep 0.75s steps(1) 0.25s forwards; }
     .rv-poof__3 { animation: rvPoofStep 0.75s steps(1) 0.5s forwards; }
     @keyframes rvPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
-    /* the cartoon electrocution: the whole banana blinks between a white flash
-       and its black skeleton silhouette (the sprite itself, floored to black) */
-    .rv-raver.rv-shock canvas { animation: rvShockBlink 0.15s steps(2) 3; }
-    @keyframes rvShockBlink {
-      0%, 100% { filter: brightness(0) drop-shadow(0 0 5px #78ebff); }
-      50% { filter: brightness(2.8) saturate(0) drop-shadow(0 0 14px #78ebff); }
+    /* the cartoon electrocution: JS flips these STATIC classes — deliberately
+       NO keyframes: iOS baked the animation's black frame into the composited
+       layer and kept it long after the class was gone (the permanent-skeleton
+       bug); plain class flips end in a plain style change, nothing can stick */
+    .rv-raver.rv-shock canvas { filter: brightness(0) drop-shadow(0 0 5px #78ebff); }
+    .rv-raver.rv-shockflash canvas { filter: brightness(2.8) saturate(0) drop-shadow(0 0 14px #78ebff); }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-raver.rv-shock canvas, .rv-raver.rv-shockflash canvas { filter: drop-shadow(0 0 7px #78ebff); }
     }
-    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-shock canvas { animation: none; } }
     @keyframes rvItemBob { 50% { transform: translate(-50%, -62%) scale(1.1); } }
     /* pickup juice: a pixel ring + four stars burst where the item was grabbed */
     .rv-pop { position: absolute; width: 60px; height: 60px; transform: translate(-50%, -50%); z-index: 520; pointer-events: none; }

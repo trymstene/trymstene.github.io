@@ -1490,8 +1490,7 @@ function init() {
           if ((zappedPair.get(key) || 0) <= now) {
             zappedPair.set(key, now + 5000);
             const victim = aZap ? b : a;
-            victim.shockUntil = now + 460; // frame-driven removal (no lone timer to lose)
-            victim.wrap.classList.add('rv-shock');
+            victim.shockUntil = now + 460; // the ungated loop renders + ends the blink
             if (victim.id === myId) addHype(4); // a jolt IS hype
           }
         }
@@ -2372,6 +2371,20 @@ function init() {
     monkeyTick(now, dtMs); // the bandit keeps its distance
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
+      // the shock-blink renders HERE — the one loop with no perf gates and no
+      // CSS animation. v1's lone timer could be lost (iOS freeze); v2's sweep
+      // sat inside the trails pass, which the liveCanvas gate STOPS once the
+      // floor goes still — fx dies, floor quiets, cleanup never ran; and the
+      // keyframe animation could leave its black frame baked in the composited
+      // layer even after the class left (only Trym's filter-changing hype drop
+      // freed him). Static classes flipped by JS end in a plain style change.
+      if (r.shockUntil) {
+        const done = now > r.shockUntil;
+        const white = !done && ((((r.shockUntil - now) / 75) | 0) % 2 === 1);
+        r.wrap.classList.toggle('rv-shock', !done && !white);
+        r.wrap.classList.toggle('rv-shockflash', white);
+        if (done) r.shockUntil = 0;
+      }
     }
     // is anything actually painting? a still floor skips the whole canvas pass
     // (the full-canvas fade composite ran every frame forever, even when blank)
@@ -2405,11 +2418,6 @@ function init() {
         const hasFx = fxActive(r, now);
         const zapOn = hasFx && r.fx.id === 'zap';
         if (r.zapOn !== zapOn) { r.zapOn = zapOn; r.wrap.classList.toggle('rv-zapfx', zapOn); } // DOM writes only on change
-        // shock-blink cleanup is FRAME-DRIVEN, not a one-shot timer: iOS can
-        // swallow a setTimeout during a page freeze, and a lost removal left
-        // the banana a permanent black skeleton after the fx expired (Trym).
-        // The loop re-checks every frame, so a missed tick heals on the next.
-        if (r.shockUntil && now > r.shockUntil) { r.shockUntil = 0; r.wrap.classList.remove('rv-shock'); }
         // costume effects are pure CSS on the wrap — one class per fx, DOM
         // writes only on change (the zapOn lesson)
         const fxClass = hasFx ? FX_CLASS[r.fx.id] : undefined;
@@ -2429,8 +2437,7 @@ function init() {
         // "tiny electrical sausages" weren't an electric shock)
         if (r.fx.id === 'zap' && now - (r.shockAt || 0) > 1900 + ((r.id ? r.id.length : 0) % 5) * 180) {
           r.shockAt = now;
-          r.shockUntil = now + 460; // the frame loop above takes it off
-          r.wrap.classList.add('rv-shock');
+          r.shockUntil = now + 460; // the ungated loop renders + ends the blink
         }
         // flames + dashes are PARTICLES at past positions (a real trail behind the
         // walker) — drawing at the live feet hid them under the sprite, and the
