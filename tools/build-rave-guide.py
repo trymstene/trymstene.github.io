@@ -28,9 +28,14 @@ def raster(svg, target_h=72):
     k = max(1, round(target_h / vh))
     im = Image.new('RGBA', (vw * k, vh * k), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    for r in re.finditer(r'<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"', svg):
+    # honour per-rect opacity — the glowstick's halo flanks are 0.2/0.4 alpha
+    # and rendered solid they turned the thin stick into a fat blob (Trym)
+    for r in re.finditer(r'<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"(?: opacity="([\d.]+)")?', svg):
         x, y, w, h = (int(r.group(i)) for i in range(1, 5))
-        d.rectangle([x * k, y * k, (x + w) * k - 1, (y + h) * k - 1], fill=r.group(5))
+        col = r.group(5)
+        alpha = int(float(r.group(6) or 1) * 255)
+        rgb = tuple(int(col[i:i + 2], 16) for i in (1, 3, 5))
+        d.rectangle([x * k, y * k, (x + w) * k - 1, (y + h) * k - 1], fill=rgb + (alpha,))
     return im
 
 
