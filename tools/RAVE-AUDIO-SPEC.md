@@ -85,6 +85,23 @@ so the floor is genuinely beat-locked to the kick.
 - **Stems** (drums / bass / music) would enable adaptive intensity —
   not needed for v1.
 
+## The AI workflow (Suno → DAW)
+
+Sentry generates the raw material in Suno, then enforces this spec in the
+DAW (exact 180.000s cut, seamless loop edge, the hold, the stinger bounce).
+
+- ⚠️ **Don't prompt Suno with "peanut butter jelly time"** — the Buckwheat
+  Boyz song is in its training data and it may regurgitate their actual
+  hook/cadence dressed as "original". Prompt **"it's jelly time!"** (the
+  club's canon line). If the full phrase is ever tried anyway: A/B the
+  output against the real song before keeping it.
+- **Paid Suno plan only** — free-tier outputs are non-commercial and the
+  site sells stickers. Pro/Premier grants commercial rights.
+- Generate at/around 150 BPM (Suno's tempo control is loose — time-stretch
+  in the DAW if needed).
+- Raw AI output isn't copyrightable; the DAW processing/arrangement is what
+  makes the master Sentry's own.
+
 ## Rules that already exist
 
 - All music = original Sentry productions. The Buckwheat Boyz' PBJT song is
