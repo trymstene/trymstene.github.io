@@ -13,17 +13,15 @@ lands on the visual strobe by arithmetic alone.*
 | The groove (normal floor) | the other 170s | — |
 | JELLY TIME (personal, any moment) | player-triggered | ~8s overlay |
 
-## ⭐ CURRENT PLAN (Sentry, 7 Jul): FOUR files instead of one chapter
+## ⭐ CURRENT PLAN (Sentry, 7 Jul): TWO files
 
 The client is a wall-clock DJ scheduling these sample-accurately (with
-~10ms crossfades at file joints). All 150 BPM, same key, WAV 44.1k/24-bit:
+~10ms crossfades at file joints). Both 150 BPM, same key, WAV 44.1k/24-bit:
 
 | File | Content | Length (hard) |
 | --- | --- | --- |
-| `intro.wav` | the AIRLOCK — plays once, personally, when a visitor taps sound-on, then crossfades into the synced schedule | 4–8 whole bars (6.4–12.8s), ends open/airy |
 | `loop.wav` | the melodic club groove, seamless into itself | **32 bars = 51.2s** (16/24/48/96 also legal — must divide 96 bars) |
 | `drop.wav` | 0.8s HOLD (near-silence; a shouted vocal fits, barely) + the 16-bar drop; final bar resolves into loop bar 1 | **26.4s exactly** (0.8 + 25.6) |
-| `jellytime.wav` | the personal stinger — riser → impact; the natural home for the "IT'S JELLY TIME!" vocal | **5 bars = 8.000s** |
 
 Window math (why 16 bars is load-bearing): drop 16 bars leaves 180 − 26.4
 = 153.6s = 96 bars of groove — divisible by lots of loop lengths. Any
@@ -32,9 +30,14 @@ starts 0.8s BEFORE second 0 (impact = strobe), ends 25.6s in; loop.wav
 plays 3× (at 32 bars) to 179.2s; the next drop.wav's hold covers the last
 0.8s. Total: 180.000s.
 
-The intro is PERSONAL by design — the club "was already playing" when you
-walked in (the lore and the sync model agree). Short is good: a visitor
-mid-intro can't hear a drop landing.
+**JELLY TIME reuses drop.wav**: the client plays its first 8.0s (hold +
+impact = exactly 5 bars) as the personal ducked overlay — matching the
+visuals, which already reuse the drop strobe for the personal mini-drop.
+So if a vocal lives in the hold, jelly time gets it too. No separate file.
+
+**No intro file**: tapping sound-on fades you into the live set mid-groove
+— the music was playing before you arrived (the lore and the sync model
+agree). An intro airlock can be added later without touching anything.
 
 ---
 
