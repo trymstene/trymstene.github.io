@@ -801,16 +801,30 @@ function init() {
   // ---- TONIGHT's stats: the braggable numbers of this visit (session-only;
   // lifetime totals live on the pass). refreshStats repaints the panel row.
   const tonight = { jelly: 0, fives: 0, pickups: 0, jellytimes: 0 };
+  // time in the club — same source as the endurance board (joined timestamp,
+  // server-held in multiplayer), formatted 1h 2m 3s / 4m 32s / 12s
+  function clubTime() {
+    const me = myId && ravers.get(myId);
+    const ms = me && me.joined ? Date.now() - me.joined : 0;
+    const t = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+    return h ? h + 'h ' + m + 'm ' + sec + 's' : m ? m + 'm ' + sec + 's' : sec + 's';
+  }
   function refreshStats() {
     const s = el('rvStats');
     if (!s) return;
     const one = (n, sing, plur) => '<span><b>' + n + '</b> ' + (n === 1 ? sing : plur) + '</span>';
     s.innerHTML =
+      '<span class="rv-stats__time" id="rvClubTime">⏱ <b>' + clubTime() + '</b> in the club</span>' +
       '<span><b>' + tonight.jelly + '</b> jelly</span>' +
       one(tonight.pickups, 'pickup', 'pickups') +
       one(tonight.fives, 'high-five', 'high-fives') +
       one(tonight.jellytimes, 'jelly time', 'jelly times');
   }
+  setInterval(() => { // the counter TICKS — watching it climb is the point
+    const t = el('rvClubTime');
+    if (t) t.innerHTML = '⏱ <b>' + clubTime() + '</b> in the club';
+  }, 1000);
   // the little "+1" that makes a pickup FEEL counted — floats off the spot
   function floatPlus(x, y, text) {
     const d = document.createElement('div');
@@ -887,6 +901,13 @@ function init() {
     c.fillStyle = '#ffe135';
     c.font = '800 76px "Archivo Black", sans-serif';
     c.fillText('THE BANANA RAVE', S - 60, 215);
+    // the headline stat: how long you danced — pink, above the numbers
+    c.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    c.shadowBlur = 18;
+    c.fillStyle = '#ff4d9d';
+    c.font = '800 42px "Archivo Black", sans-serif';
+    c.fillText('DANCED FOR ' + clubTime().toUpperCase(), S - 60, 292);
+    c.shadowBlur = 0;
     const rows = [
       [tonight.jelly, 'JELLY'],
       [tonight.pickups, tonight.pickups === 1 ? 'PICKUP' : 'PICKUPS'],
