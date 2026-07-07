@@ -428,7 +428,13 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
   border: var(--line);
   box-shadow: var(--shadow);
 }
-.grab img { width: 90px; height: auto; }
+.grab img { width: 150px; height: auto; margin-inline: auto; display: block; }
+/* desktop: the banana matches the button stack beside it instead of
+   floating tiny in the corner */
+@media (min-width: 760px) {
+  .grab { gap: 2rem; }
+  .grab img { width: 250px; margin-inline: auto; }
+}
 
 /* ---------- remix gallery placeholder ---------- */
 .remix-grid {
