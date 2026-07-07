@@ -13,7 +13,32 @@ lands on the visual strobe by arithmetic alone.*
 | The groove (normal floor) | the other 170s | — |
 | JELLY TIME (personal, any moment) | player-triggered | ~8s overlay |
 
-## File 1 — the chapter loop (`chapter-01.wav`) — 150 BPM (Sentry's pick)
+## ⭐ CURRENT PLAN (Sentry, 7 Jul): FOUR files instead of one chapter
+
+The client is a wall-clock DJ scheduling these sample-accurately (with
+~10ms crossfades at file joints). All 150 BPM, same key, WAV 44.1k/24-bit:
+
+| File | Content | Length (hard) |
+| --- | --- | --- |
+| `intro.wav` | the AIRLOCK — plays once, personally, when a visitor taps sound-on, then crossfades into the synced schedule | 4–8 whole bars (6.4–12.8s), ends open/airy |
+| `loop.wav` | the melodic club groove, seamless into itself | **32 bars = 51.2s** (16/24/48/96 also legal — must divide 96 bars) |
+| `drop.wav` | 0.8s HOLD (near-silence; a shouted vocal fits, barely) + the 16-bar drop; final bar resolves into loop bar 1 | **26.4s exactly** (0.8 + 25.6) |
+| `jellytime.wav` | the personal stinger — riser → impact; the natural home for the "IT'S JELLY TIME!" vocal | **5 bars = 8.000s** |
+
+Window math (why 16 bars is load-bearing): drop 16 bars leaves 180 − 26.4
+= 153.6s = 96 bars of groove — divisible by lots of loop lengths. Any
+other drop length breaks the tiling. Schedule per 180s window: drop.wav
+starts 0.8s BEFORE second 0 (impact = strobe), ends 25.6s in; loop.wav
+plays 3× (at 32 bars) to 179.2s; the next drop.wav's hold covers the last
+0.8s. Total: 180.000s.
+
+The intro is PERSONAL by design — the club "was already playing" when you
+walked in (the lore and the sync model agree). Short is good: a visitor
+mid-intro can't hear a drop landing.
+
+---
+
+## (Superseded) File 1 — the single chapter loop — 150 BPM
 
 150 BPM is the magic tempo: the banana's sacred 0.8s bob = exactly 2 beats,
 so the floor is genuinely beat-locked to the kick.
