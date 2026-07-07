@@ -32,7 +32,7 @@ const schema = {
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <!-- perf: the dance sheet is otherwise only discovered after the JS bundle
        parses (a full network waterfall); ?v must match SHEET_SRC in banana-engine.js -->
-  <link rel="preload" as="image" href="/assets/banana-dance.png?v=5" slot="head" />
+  <link rel="preload" as="image" href="/assets/banana-dance.png?v=6" slot="head" />
   <!-- perf: warm DNS+TCP+TLS to the presence worker before the WS handshake -->
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">

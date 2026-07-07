@@ -11,7 +11,7 @@
 // ?v= busts stale browser caches: bump it whenever the sheet's pixels change,
 // or old cached copies (e.g. the pre-fix sheet with white-filled arm gaps)
 // keep haunting returning visitors' previews and exports.
-const SHEET_SRC = '/assets/banana-dance.png?v=5';
+const SHEET_SRC = '/assets/banana-dance.png?v=6'; // v6 = rebuilt from Trym's 2000px remasters (tools/build-banana-assets.py)
 const FW = 469, FH = 498, NFRAMES = 8;
 const BASE_CYCLE_S = 0.8; // 8 frames x 100ms = the original GIF timing
 
