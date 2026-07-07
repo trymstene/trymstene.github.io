@@ -43,11 +43,13 @@ const WAVE_PERIOD = 480, WAVE_LEN = 8, WAVE_OFFSET = 300;               // THE W
 const CHAIN_MS = 90000;                                                  // grab the next item within 90s to keep the chain
 const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
 const COCKTAILS = ['daiquiri', 'fizz'];                                 // rotation — keep in sync with worker
-const FX_MS = 150000;
-const FX_ZAP_MS = 60000; // the electric charge is LOUD — it burns out fastest (keep in sync with worker)
-// zap windows are capped at FIRST SIGHT too, so the short fuse holds even
-// against a not-yet-redeployed worker still stamping 150s
-const capFx = (fx) => (fx && fx.id === 'zap' ? { ...fx, until: Math.min(fx.until, Date.now() + FX_ZAP_MS) } : fx);
+// with a whole menu of items and drinks cycling, effects are MOMENTS, not
+// outfits — 10s flat (Trym's call; was 150s/60s). Keep in sync with worker.
+const FX_MS = 10000;
+const FX_ZAP_MS = 10000;
+// every fx window is capped at FIRST SIGHT, so the short fuse holds even
+// against a not-yet-redeployed worker still stamping the old long windows
+const capFx = (fx) => (fx ? { ...fx, until: Math.min(fx.until, Date.now() + FX_MS) } : fx);
 const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge', balloon: 'Balloon Ride' };
 const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧', zap: '⚡', balloon: '🎈' };
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
@@ -1285,7 +1287,7 @@ function init() {
       lastItemTry = now;
       const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon' }[itemLive.kind];
       if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
-      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + (soloFx === 'zap' || soloFx === 'balloon' ? FX_ZAP_MS : FX_MS) } : undefined);
+      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + FX_MS } : undefined);
     }
     // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
     // rectangle — the solid counter's edge scales with the floor (x≈50% on
@@ -2407,9 +2409,11 @@ function init() {
   // never broadcast; the stagetest/nighttest pattern for fx work)
   const fxTest = new URLSearchParams(location.search).get('fxtest');
   if (fxTest) {
-    const t = setInterval(() => {
-      if (myId && ravers.get(myId)) { clearInterval(t); applyFx(myId, { id: fxTest, until: Date.now() + 600_000 }); }
-    }, 500);
+    // capFx trims every window to FX_MS, so QA REAPPLIES on a loop — the
+    // effect stays on for as long as the param is in the url
+    setInterval(() => {
+      if (myId && ravers.get(myId)) applyFx(myId, { id: fxTest, until: Date.now() + FX_MS });
+    }, 800);
   }
   setInterval(() => { if (ws && ws.readyState === 1) passStat('raveMin'); }, 60000);
   try { if (localStorage.getItem('rv-glowstick') === '1') passPatch('survivor', { quiet: true }); } catch (e) {}

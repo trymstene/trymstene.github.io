@@ -108,8 +108,10 @@ function specialWindow(now) {
   const ph = (((now - SPECIAL_OFFSET) % SPECIAL_PERIOD) + SPECIAL_PERIOD) % SPECIAL_PERIOD;
   return ph < SPECIAL_LEN ? Math.floor((now - SPECIAL_OFFSET) / SPECIAL_PERIOD) : -1;
 }
-const FX_MS = 150_000;
-const FX_ZAP_MS = 60_000; // the electric charge is LOUD (shock-blinks) — it burns out fastest (Trym: 150s was way too long)
+// effects are MOMENTS, not outfits — 10s flat with the item menu cycling
+// (Trym's call; was 150s/60s). Clients also cap at first sight (capFx).
+const FX_MS = 10_000;
+const FX_ZAP_MS = 10_000;
 
 export default {
   async fetch(request, env) {
