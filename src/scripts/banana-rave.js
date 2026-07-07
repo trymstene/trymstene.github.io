@@ -1483,8 +1483,8 @@ function init() {
           if ((zappedPair.get(key) || 0) <= now) {
             zappedPair.set(key, now + 5000);
             const victim = aZap ? b : a;
+            victim.shockUntil = now + 460; // frame-driven removal (no lone timer to lose)
             victim.wrap.classList.add('rv-shock');
-            setTimeout(() => victim.wrap.classList.remove('rv-shock'), 460);
             if (victim.id === myId) addHype(4); // a jolt IS hype
           }
         }
@@ -2398,6 +2398,11 @@ function init() {
         const hasFx = fxActive(r, now);
         const zapOn = hasFx && r.fx.id === 'zap';
         if (r.zapOn !== zapOn) { r.zapOn = zapOn; r.wrap.classList.toggle('rv-zapfx', zapOn); } // DOM writes only on change
+        // shock-blink cleanup is FRAME-DRIVEN, not a one-shot timer: iOS can
+        // swallow a setTimeout during a page freeze, and a lost removal left
+        // the banana a permanent black skeleton after the fx expired (Trym).
+        // The loop re-checks every frame, so a missed tick heals on the next.
+        if (r.shockUntil && now > r.shockUntil) { r.shockUntil = 0; r.wrap.classList.remove('rv-shock'); }
         // costume effects are pure CSS on the wrap — one class per fx, DOM
         // writes only on change (the zapOn lesson)
         const fxClass = hasFx ? FX_CLASS[r.fx.id] : undefined;
@@ -2417,9 +2422,8 @@ function init() {
         // "tiny electrical sausages" weren't an electric shock)
         if (r.fx.id === 'zap' && now - (r.shockAt || 0) > 1900 + ((r.id ? r.id.length : 0) % 5) * 180) {
           r.shockAt = now;
-          const w = r.wrap;
-          w.classList.add('rv-shock');
-          setTimeout(() => w.classList.remove('rv-shock'), 460);
+          r.shockUntil = now + 460; // the frame loop above takes it off
+          r.wrap.classList.add('rv-shock');
         }
         // flames + dashes are PARTICLES at past positions (a real trail behind the
         // walker) — drawing at the live feet hid them under the sprite, and the
