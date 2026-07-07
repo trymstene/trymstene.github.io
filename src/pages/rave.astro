@@ -787,15 +787,6 @@ const GUIDE = [
     @keyframes rvWave1 { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.2; } }
     .rv-tourbtn:hover { background: #b388ff; opacity: 1; }
     .rv-tourbtn svg { width: 13px; height: auto; image-rendering: pixelated; display: block; }
-    /* DROP IT: the charged meter's release — THE action of the moment, so the
-       one yellow button in the row while it's live */
-    .rv-drop-btn {
-      background: #ffe135; color: #111; border: 3px solid #111; cursor: pointer;
-      font-weight: 800; font-size: 0.74rem; letter-spacing: 0.04em; padding: 0.55rem 0.9rem;
-      min-height: 48px; animation: rvDropBtn 0.8s steps(2) infinite;
-      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
-    }
-    @keyframes rvDropBtn { 50% { transform: translateY(-3px); box-shadow: 0 3px 0 #111; } }
     .rv-more { position: absolute; right: 0.9rem; bottom: 0.3rem; font-size: 0.7rem; opacity: 0.6; }
     /* the stage exclusive reads BIG — it's the point of being up there */
     .rv-emote--fire { color: #ff9e2c; font-size: 2.3rem; }
@@ -940,7 +931,6 @@ const GUIDE = [
             <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana"><PixelIcon name="banana" size="1.5em" /></button>
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
           </div>
-          <button class="rv-drop-btn" id="rvDropBtn" hidden>🍌 JELLY TIME!</button>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>
           <button class="rv-emote-btn rv-tourbtn rv-soundbtn" id="rvSoundBtn" aria-label="Toggle the music" aria-pressed="false" title="sound on — the set is live"><svg viewBox="0 0 12 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="3" width="2" height="4" fill="#fffdf5"/><rect x="2" y="2" width="1" height="6" fill="#fffdf5"/><rect x="3" y="1" width="1" height="8" fill="#fffdf5"/><rect x="4" y="0" width="1" height="10" fill="#fffdf5"/><rect x="6" y="3" width="1" height="4" fill="#fffdf5" class="rv-soundbtn__w1"/><rect x="8" y="2" width="1" height="6" fill="#fffdf5" class="rv-soundbtn__w2"/><rect x="10" y="1" width="1" height="8" fill="#fffdf5" class="rv-soundbtn__w3"/></svg></button>
           <button class="rv-emote-btn rv-tourbtn" id="rvTourBtn" aria-label="Replay the club tour" title="how does this club work?"><svg viewBox="0 0 8 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#fffdf5"/><rect x="1" y="1" width="6" height="1" fill="#fffdf5"/><rect x="1" y="2" width="2" height="1" fill="#fffdf5"/><rect x="5" y="2" width="2" height="1" fill="#fffdf5"/><rect x="5" y="3" width="2" height="1" fill="#fffdf5"/><rect x="4" y="4" width="2" height="1" fill="#fffdf5"/><rect x="3" y="5" width="2" height="1" fill="#fffdf5"/><rect x="3" y="6" width="2" height="1" fill="#fffdf5"/><rect x="3" y="8" width="2" height="1" fill="#fffdf5"/><rect x="3" y="9" width="2" height="1" fill="#fffdf5"/></svg></button>
@@ -1033,7 +1023,7 @@ const GUIDE = [
           <h3>Why does the club never close?</h3>
           <p>Somebody's always on shift. Finish your chores and Barty stamps you out — <em>"nightshift's done, back to clubbing"</em> — but the music was playing before you arrived and it'll play after you leave.</p>
           <h3>What's the JELLY meter?</h3>
-          <p>The gauge of the night. Jelly drops, snacks, chores, the spotlight, surviving drops — it all fills it. Full meter = it's jelly time, and that button is yours to press.</p>
+          <p>The gauge of the night. Jelly drops, snacks, chores, the spotlight, surviving drops — it all fills it. Full meter = it starts flashing, and tapping it drops the floor — just for you.</p>
           <h3>Do my things carry over?</h3>
           <p>Everything. Patches and stats live on <a href="/pass/">your pass</a>, earned gear like the glowstick follows your banana into <a href="/make-a-banana/">the builder</a>, and the stool waits for its regular.</p>
         </div>

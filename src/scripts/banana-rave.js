@@ -761,23 +761,19 @@ function init() {
     hype = Math.min(HYPE_MAX, hype + n * hypeBoost * shot);
     lastHypeGain = Date.now();
     if (hype >= HYPE_MAX) {
-      // the meter is STATUS (it pulses FULL); the ACTION lights up in the
-      // controls with the other actions — interaction grammar (Trym's call)
       hypeCharged = true;
-      el('rvDropBtn').hidden = false;
       mixerEl.classList.add('rv-mixer--charged');
     }
     renderHype();
   }
-  // the METER IS THE BUTTON too (wife-test: on mobile the JELLY TIME button
-  // hides below the fold, so a full meter looked stuck) — tapping the charged
-  // mixer fires it; the HUD button stays for the interaction grammar
+  // the METER IS THE BUTTON (Trym's call after the wife-test: the HUD JELLY
+  // TIME button hid below the fold on mobile and was pure duplication —
+  // deleted; the flashing TAP! meter is the one and only trigger)
   mixerEl.addEventListener('click', () => { if (hypeCharged) spendHype(); });
 
   function spendHype() {
     if (!hypeCharged) return;
     hypeCharged = false;
-    el('rvDropBtn').hidden = true;
     mixerEl.classList.remove('rv-mixer--charged');
     hype = 0;
     hypeModeUntil = Date.now() + HYPE_MODE_MS;
@@ -803,7 +799,6 @@ function init() {
     setTimeout(endHypeMode, HYPE_MODE_MS);
     nightEvent('hypedrop');
   }
-  el('rvDropBtn').addEventListener('click', spendHype);
   function endHypeMode() {
     const me = myId && ravers.get(myId);
     if (me) {
@@ -1842,6 +1837,10 @@ function init() {
     refreshZoomBtn(); // the camera toggle gets its corner back
     track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
     nightInit(); // the tour hands straight off to Barty's first job
+    // the first-night patch waits its turn — the welcome + tour own the first
+    // minutes, so the PATCH EARNED toast lands 10s after the lesson (idempotent:
+    // ❓ replays just no-op here)
+    setTimeout(() => passPatch('raver'), 10000);
   }
   el('rvTour').addEventListener('click', (e) => {
     if (e.target.closest('.rv-tour__skip')) { endTour(true); return; }
@@ -2839,7 +2838,10 @@ function init() {
 
   // ---- the pass: rave moments leave marks ----
   passVisit();
-  passPatch('raver');
+  // first-timers get the raver patch AFTER the tour (endTour schedules it —
+  // the arrival toast pile was "too much noise", Trym); returners mint now
+  // (a no-op for anyone who already has it)
+  try { if (localStorage.getItem('rv-tour-v1')) passPatch('raver'); } catch (e) { passPatch('raver'); }
   stoolRender(); // the regular's stool, for those who've earned it
   // ?fxtest=<id> — preview any timed effect on yourself (local visual only,
   // never broadcast; the stagetest/nighttest pattern for fx work)
