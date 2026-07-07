@@ -758,7 +758,9 @@ function init() {
     // the DOUBLE JELLY SHOT: everything counts twice while it lasts
     const me = myId && ravers.get(myId);
     const shot = me && fxActive(me, Date.now()) && me.fx.id === 'jellyshot' ? 2 : 1;
-    hype = Math.min(HYPE_MAX, hype + n * hypeBoost * shot);
+    // ÷3: it's raining jelly on this floor — a full meter came too cheap and
+    // the drops never stopped (Trym's recalibration, one dial for all gains)
+    hype = Math.min(HYPE_MAX, hype + (n * hypeBoost * shot) / 3);
     lastHypeGain = Date.now();
     if (hype >= HYPE_MAX) {
       hypeCharged = true;
@@ -1306,7 +1308,12 @@ function init() {
     const vPh = (((t - VINYL_OFFSET) % VINYL_PERIOD) + VINYL_PERIOD) % VINYL_PERIOD;
     const vWin = Math.floor((t - VINYL_OFFSET) / VINYL_PERIOD);
     const carried = [...ravers.values()].some((r) => r.vinyl);
-    if (vPh < VINYL_WAIT && vinylWinClaimed !== vWin && !carried) {
+    // the record is RARE now — every third window (~21 min): its bonus drop
+    // stacked with jelly time and the clock into "drops all the time" (Trym).
+    // While a night quest asks for it, every window shows. Client-side skip
+    // only, so every shown window is still a real worker window — no deploy.
+    const questVinyl = night && night.def && night.def.steps[night.step] && night.def.steps[night.step].check === 'qvinyl';
+    if (vPh < VINYL_WAIT && (questVinyl || vWin % 3 === 0) && vinylWinClaimed !== vWin && !carried) {
       const s = vinylSpotFor(vWin);
       floorItems++;
       vEl.style.display = '';
@@ -1857,43 +1864,43 @@ function init() {
   const NIGHTS = [
     { n: 1, steps: [ // FIRST NIGHTSHIFT — Barty's humble ask (Trym's line), then the chores
       { tray: 'go to the bar — first one’s on the house', check: 'bar',
-        say: ['well howdy, new face! 🤠 i know you came to RAVE…', { t: '…everyone does. anyway!', mutter: true }, 'but could ya help an old banana with a few chores tonight? c’mon down to the bar — first one’s on the house!'] },
+        say: ['well howdy, new face! 🤠 i know you came to RAVE…', { t: '…everyone does. anyway!', mutter: true }, 'help an old banana with some chores? c’mon down to the bar — first one’s on the house!'] },
       { tray: 'run the lost record up to the DJ', check: 'qvinyl',
-        say: ['there ya go! now — the DJ lost a record out on that floor. run it up to the booth, would ya?', { t: 'errands build character. they’re all i had.', mutter: true }] },
+        say: ['there ya go! the DJ lost a record on the floor — run it up to the booth, would ya?', { t: 'errands build character. they’re all i had.', mutter: true }] },
       { tray: 'fill the JELLY meter — then hit JELLY TIME', check: 'hypedrop',
-        say: ['WOO, listen to that! last chore ain’t even a chore: fill that JELLY meter — jelly drops, snacks, the works — and when she’s full… you know what time it is.'] },
+        say: ['WOO! last chore ain’t even a chore: fill that JELLY meter…', { t: '…and when she’s full, you know what time it is.', mutter: true }] },
     ], done: { patch: 'night1',
-      say: ['FIRST NIGHTSHIFT done, partner! 🌟 you’re one of us now — back to clubbing! night two’s on me tomorrow.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
+      say: ['FIRST NIGHTSHIFT done! 🌟 you’re one of us now — night two’s on me tomorrow.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
     { n: 2, steps: [ // look who's back — the broom debuts
       { tray: 'grab the broom at the bar, sweep the peels', check: 'sweep', targets: ['peel', 'peel', 'peel', 'peel'],
-        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'some ANIMAL left peels all over my floor — grab the broom off the counter and sweep ’em up, would ya?'] },
+        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'some ANIMAL left peels on my floor — grab the broom off the counter and sweep ’em up!'] },
       { tray: 'build a chain of THREE pickups', check: 'chain3',
-        say: ['SPOTLESS! now help me clear what the crowd drops — a CHAIN of THREE pickups, back to back, no dawdlin’!'] },
+        say: ['SPOTLESS! now — a CHAIN of THREE pickups, back to back, no dawdlin’!'] },
       { tray: 'stand in the spotlight when it lands', check: 'spotlight',
-        say: ['look at you GO! 🤠 last one’s for you: get in that SPOTLIGHT when it lands. you earned some shine.', { t: 'i had a spotlight once. it moved on.', mutter: true }] },
+        say: ['look at you GO! 🤠 last one: stand in the SPOTLIGHT when it lands. you earned some shine.', { t: 'i had a spotlight once. it moved on.', mutter: true }] },
     ], done: { patch: null,
       say: ['shift’s OVER — back to clubbing, partner! same time tomorrow?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
     { n: 3, steps: [ // THE MONKEY debuts — the club's other staff member
       { tray: 'catch that monkey!', check: 'monkey',
         say: ['🐒 the MONKEY’s loose again! little bandit swiped my best bottle — catch him, partner!', { t: 'i named him. that was my mistake.', mutter: true }] },
       { tray: 'grab a floor snack, pay the monkey', check: 'feed',
-        say: ['HA! got him! now… he only trades for snacks. grab somethin’ off the floor and pay the little bandit.', { t: 'we all have a price. his is candy.', mutter: true }] },
+        say: ['HA! got him! he only trades for snacks — grab somethin’ off the floor and pay the bandit.', { t: 'we all have a price. his is candy.', mutter: true }] },
     ], done: { patch: null,
       say: ['bottle’s BACK! that’s a nightshift, partner — back to clubbing!', { t: 'the monkey stays. everybody stays but says they won’t.', mutter: true }] } },
     { n: 4, steps: [ // THE LEAK + stage night
       { tray: 'grab the broom, mop up the puddles', check: 'sweep', targets: ['puddle', 'puddle', 'puddle'],
-        say: ['EMERGENCY, partner! ⚠️ pipe burst somewhere — there’s PUDDLES on my floor! broom’s on the counter. GO!', { t: 'the plumbing’s older than the wiring. i’m older than both.', mutter: true }] },
+        say: ['EMERGENCY! ⚠️ pipe burst — PUDDLES on my floor! broom’s on the counter. GO!', { t: 'the plumbing’s older than the wiring. i’m older than both.', mutter: true }] },
       { tray: 'when the stage opens: get up there, throw a 🔥', check: 'stagefire',
-        say: ['DRY! you’re a lifesaver. now get ON that stage when it opens and throw a 🔥 — tonight YOU’re the show.', { t: 'i was the show once. one night. 1987.', mutter: true }] },
+        say: ['DRY! now get ON that stage when it opens and throw a 🔥 — tonight YOU’RE the show.', { t: 'i was the show once. one night. 1987.', mutter: true }] },
     ], done: { patch: null,
       say: ['what a SHIFT. the club owes ya one, partner — back to clubbing!', { t: 'the club never pays its debts. anyway!', mutter: true }] } },
     { n: 5, steps: [ // THE REGULAR — the best-of shift
       { tray: 'grab the broom — one last sweep of the mess', check: 'sweep', targets: ['peel', 'peel', 'peel', 'puddle', 'puddle'],
-        say: ['night FIVE, partner. 🤠 one last shift, the full mess: peels AND puddles. you know where the broom is.', { t: 'you know where everything is now. that’s how it gets you.', mutter: true }] },
+        say: ['night FIVE, partner. 🤠 the full mess: peels AND puddles. you know where the broom is.', { t: 'you know where everything is now. that’s how it gets you.', mutter: true }] },
       { tray: 'survive THE DROP on the floor', check: 'drop',
         say: ['CLEAN! now stay on that floor for THE DROP — every third minute, you know the clock by now.'] },
       { tray: 'one more JELLY TIME — end it right', check: 'hypedrop',
-        say: ['LAST one, and it ain’t even a chore: fill that JELLY meter and end your shift the only right way.', { t: 'endings should be loud. mine wasn’t.', mutter: true }] },
+        say: ['LAST one’s a treat: fill that JELLY meter and end your shift the only right way.', { t: 'endings should be loud. mine wasn’t.', mutter: true }] },
     ], done: { patch: null,
       say: ['FIVE nightshifts, partner. you’re not a guest anymore.', { t: 'guests leave.', mutter: true }, 'that stool by the bar? YOURS. always. now — back to clubbing! ⭐'] } },
   ];
@@ -2702,7 +2709,19 @@ function init() {
     src.loopEnd = tr.end;
     src.connect(loopGain);
     src.start(t, tr.start);
+    // a looped source only "ends" when something kills it (drop cut, iOS
+    // interruption) — nulling here is what lets relightLoop() detect silence
+    src.onended = () => { if (audio && audio.loopSrc === src) audio.loopSrc = null; };
     audio.loopSrc = src;
+  }
+
+  // running context, dead loop source = the silent-zombie state (iOS kills
+  // sources on interruptions; resume() alone brings back nothing). Waits out
+  // dropBusyUntil so it never doubles a loop the drop already scheduled.
+  function relightLoop() {
+    if (audio && audioOn && audio.ctx.state === 'running' && !audio.loopSrc && audio.ctx.currentTime > audio.dropBusyUntil) {
+      startLoopAt(audio.ctx.currentTime + 0.05);
+    }
   }
 
   // no ducking, no overlap (Trym: "why a duck release?") — a drop CUTS the
@@ -2821,6 +2840,25 @@ function init() {
   // calls, Siri, silent-mode juggling…
   document.addEventListener('visibilitychange', () => {
     if (audio && document.visibilityState === 'visible' && audio.ctx.state !== 'running') audio.ctx.resume().catch(() => {});
+    if (document.visibilityState === 'visible') relightLoop();
+  });
+  // coming BACK from the builder (bfcache restore) resurrects a ZOMBIE engine:
+  // `audio` exists but its context/sources are dead, and audioStart refuses to
+  // rebuild while `audio` is set — the button toggled, the speakers didn't
+  // (Trym). A restore gets a full teardown; the remembered pref re-arms the
+  // proven cold-start path on the first tap.
+  addEventListener('pageshow', (e) => {
+    if (!e.persisted) return;
+    if (audio) { try { audio.ctx.close(); } catch (err) {} }
+    audio = null;
+    audioLoading = false;
+    if (audioOn) {
+      audioOn = false;
+      refreshSoundBtn();
+      const arm = () => { if (!audioOn && !audioLoading) audioStart(); };
+      addEventListener('pointerdown', arm, { once: true });
+      addEventListener('keydown', arm, { once: true });
+    }
   });
   // belt for iOS: if the context is ever stuck (decode outlived the gesture,
   // low-power mode, interruption), the NEXT tap anywhere unsticks it — and
@@ -2830,6 +2868,7 @@ function init() {
       audio.ctx.resume().catch(() => {});
       if (audioUnlockEl) audioUnlockEl.play().catch(() => {});
     }
+    relightLoop(); // running-but-silent heals on the next tap too
   });
   // QA handle (harmless): lets tests confirm the graph without ears
   window.__rvAudio = () => ({

@@ -291,6 +291,11 @@ const GUIDE = [
        beat after the cheer, stand-up timing */
     .rv-bubble--mutter { font-size: 0.5rem; color: #55524a; background: #eae7db; min-width: 110px; }
     .rv-bubble--mutter::before, .rv-bubble--mutter::after { background: #eae7db; }
+    /* phones: Barty pipes down a notch — the bubbles ate too much floor */
+    @media (max-width: 640px) {
+      .rv-bubble { font-size: 0.52rem; max-width: 180px; }
+      .rv-bubble--mutter { font-size: 0.46rem; }
+    }
 
     /* floor life: light trails, the wandering spotlight, the lost vinyl */
     .rv-trails { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; image-rendering: pixelated; }
