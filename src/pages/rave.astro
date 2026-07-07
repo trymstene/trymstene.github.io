@@ -354,9 +354,10 @@ const GUIDE = [
     .rv-broomprop svg { width: 100%; height: auto; image-rendering: pixelated; }
     /* THE WAVE hop (applied inline with per-banana delay) + chain glow + zap glow */
     @keyframes rvWaveHop { 30% { transform: translateY(-20px); } 60% { transform: translateY(-3px); } }
-    /* TONIGHT's stats — the braggable, screenshottable numbers */
-    .rv-panel__h2 { margin-top: 1.1rem; }
-    .rv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.7rem; font-size: 0.78rem; }
+    /* TONIGHT's stats — the braggable, screenshottable numbers. The divider
+       gives the section its own room; it was breathing down the board's neck */
+    .rv-panel .rv-panel__h2 { margin-top: 1.5rem; padding-top: 1.1rem; border-top: 3px solid rgba(255, 225, 53, 0.3); } /* .rv-panel h2 outranks a lone class — this was WHY it sat squeezed */
+    .rv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 0.7rem; font-size: 0.78rem; }
     .rv-stats span { color: #b8b3c7; }
     .rv-stats b { color: #ffe135; font-size: 0.95rem; margin-right: 0.3rem; }
     .rv-share-btn {
