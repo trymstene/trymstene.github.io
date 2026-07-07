@@ -532,9 +532,16 @@ const GUIDE = [
     .rv-mixer__seg.on:nth-child(n+10) { background: #ff4d9d; }
     .rv-mixer--peak { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
     @keyframes rvMixerPeak { 50% { border-color: #ff4d9d; } }
-    /* CHARGED: the meter is pure STATUS — it pulses "FULL" while the action
-       (the DROP IT button) lives in the controls with the other actions */
-    .rv-mixer--charged { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
+    /* CHARGED: the meter pulses FULL and IS the button (wife-test: the HUD
+       button hides below the fold on mobile, so a full meter looked stuck) —
+       a TAP! tag hangs off it so nobody has to guess */
+    .rv-mixer--charged { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; cursor: pointer; pointer-events: auto; }
+    .rv-mixer--charged::after {
+      content: '🍌 TAP!'; position: absolute; top: -20px; right: 0;
+      background: #ffe135; color: #111; font-weight: 800; font-size: 0.62rem;
+      padding: 2px 6px; border: 2px solid #111; animation: rvTapNudge 0.8s ease-in-out infinite;
+    }
+    @keyframes rvTapNudge { 50% { transform: translateY(-3px); } }
     /* the tour's close-up: screen-space UI can't be camera-zoomed, so the
        meter itself steps forward — and UP, clear of the tap-to-continue band
        (they shared the bottom row on mobile) */

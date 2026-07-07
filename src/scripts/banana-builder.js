@@ -312,16 +312,36 @@ function init() {
   }
   function load() {
     const p = new URLSearchParams(location.search);
+    // continuity: with no outfit in the URL, you dress the banana you HAVE —
+    // the one the rave knows (bb-last). Opening the builder fresh used to
+    // start from defaults, which read as "my outfit changed on its own"
+    // when returning to the rave (wife-test).
+    const hasOutfitParams = ['g', 'h', 'ex', 'mu', 'bt', 'e', 'm'].some((k) => p.has(k));
+    if (!hasOutfitParams) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('bb-last') || 'null');
+        if (saved && typeof saved === 'object') {
+          if (HAT_BY_ID[saved.hat]) state.hat = saved.hat;
+          if (GLASSES.some(([v]) => v === saved.glasses)) state.glasses = saved.glasses;
+          EXTRA_DEFS.forEach((d) => {
+            if (saved.extras && saved.extras[d.id] && !d.raveOnly && earnedUnlocked(d)) state.extras[d.id] = true;
+          });
+          if (EFFECTS.some(([v]) => v === saved.effect)) state.effect = saved.effect;
+        }
+      } catch (e) {}
+    }
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
-    const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
-    const h = p.get('h'); state.hat = HAT_BY_ID[h] ? h : 'none';
-    state.extras = {};
-    (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id)) state.extras[id] = true; });
-    if (p.get('mu') === '1') state.extras.mustache = true; // legacy params
-    if (p.get('bt') === '1') state.extras.bowtie = true;
-    const e = p.get('e') || p.get('m'); // old m=disco links still work
-    if (EFFECTS.some(([v]) => v === e)) state.effect = e;
+    if (hasOutfitParams) { // URL outfits win; a paramless open keeps the bb-last seed above
+      const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
+      const h = p.get('h'); state.hat = HAT_BY_ID[h] ? h : 'none';
+      state.extras = {};
+      (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id)) state.extras[id] = true; });
+      if (p.get('mu') === '1') state.extras.mustache = true; // legacy params
+      if (p.get('bt') === '1') state.extras.bowtie = true;
+      const e = p.get('e') || p.get('m'); // old m=disco links still work
+      if (EFFECTS.some(([v]) => v === e)) state.effect = e;
+    }
     state.spd = p.get('s') ? parseFloat(p.get('s')) : BASE_CYCLE_S;
     if (!(state.spd >= SPD_MIN && state.spd <= SPD_MAX)) state.spd = BASE_CYCLE_S;
     const f = parseInt(p.get('f'), 10); if (f >= 0 && f < NFRAMES) state.frame = f;

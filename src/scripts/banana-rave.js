@@ -269,14 +269,18 @@ function myOutfit() {
     const saved = JSON.parse(localStorage.getItem('bb-last') || 'null');
     if (saved && typeof saved === 'object') return saved;
   } catch (e) {}
-  // first-timers get a party-ready random fit
+  // first-timers get a party-ready random fit — SAVED, so it's THEIR banana
+  // from now on. Regenerating per visit read as "my outfit randomly changes
+  // whenever I leave and come back" (wife-test).
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
-  return {
+  const fit = {
     hat: pick(['none', 'party', 'crown', 'tophat', 'cowboy']),
     glasses: pick(['none', 'shades', 'hearts', 'visor']),
     extras: { mustache: Math.random() < 0.25, bowtie: Math.random() < 0.25 },
     effect: 'none',
   };
+  try { localStorage.setItem('bb-last', JSON.stringify(fit)); } catch (e) {}
+  return fit;
 }
 
 function init() {
@@ -614,6 +618,7 @@ function init() {
   let lastBeerTry = 0;
   let bubbleSticky = false, bubbleT = null;
   function showBubble(text, sticky, ms, kind) {
+    if (tourActive) return; // one voice at a time — Barty doesn't talk over the tour (wife-test)
     const b = el('rvBubble');
     b.textContent = text;
     b.classList.toggle('rv-bubble--quest', kind === 'quest');   // yellow = Barty means BUSINESS
@@ -764,6 +769,11 @@ function init() {
     }
     renderHype();
   }
+  // the METER IS THE BUTTON too (wife-test: on mobile the JELLY TIME button
+  // hides below the fold, so a full meter looked stuck) — tapping the charged
+  // mixer fires it; the HUD button stays for the interaction grammar
+  mixerEl.addEventListener('click', () => { if (hypeCharged) spendHype(); });
+
   function spendHype() {
     if (!hypeCharged) return;
     hypeCharged = false;
@@ -1583,7 +1593,12 @@ function init() {
         // yourself arrive up there — Trym)
         const sr = ravers.get(m.id);
         if (m.on && sr) showBubble('⭐ ' + autoName(sr.outfit) + ' takes the stage!', false, 4000);
-        if (m.on && m.id === myId) el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (m.on && m.id === myId) {
+          el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // the join needs a MOMENT — wife-test: tapped the button, nothing
+          // seemed to happen (the banana quietly teleported to a tiny row)
+          bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap ⭐ again to come down');
+        }
       }
       else if (m.t === 'stageNo') {
         el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';
@@ -1764,7 +1779,7 @@ function init() {
       world.style.transform = '';
       mixerEl.classList.add('rv-mixer--tour');
       setTimeout(() => {
-        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE JELLY METER', 'everything you do fills it with JELLY. full = the JELLY TIME button lights up in your controls — press it and the floor drops.', { noPool: true });
+        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE JELLY METER', 'everything you do fills it with JELLY. when it’s FULL it starts flashing — tap the meter and the floor drops, just for you.', { noPool: true });
       }, 550);
     },
     () => { // the floor itself: full-floor pool, caption pinned up top like a subtitle
@@ -1790,6 +1805,7 @@ function init() {
     if (tourActive || !myId || !ravers.get(myId)) return;
     tourActive = true;
     tourStep = -1;
+    el('rvBubble').hidden = true; // Barty hushes mid-sentence — the tour has the floor
     world.classList.add('rv-world--tour');
     floor.classList.add('rv-tourclean'); // no chase-ables spawn mid-lesson, ever
     el('rvTour').hidden = false;
@@ -1891,7 +1907,7 @@ function init() {
   // and WHEN the next one opens ("done, doing something i dont remember, but i
   // dont know when or how i advance")
   function nightReceipt(doneN) {
-    questKicker('shift ' + doneN + ' ✔');
+    questKicker('quests ✔');
     nightTray(doneN < NIGHTS.length
       ? 'done! shift ' + (doneN + 1) + ' opens tomorrow — back to clubbing'
       : 'all five shifts done — you’re a regular ⭐', true);
@@ -1908,7 +1924,7 @@ function init() {
     const arc = NIGHT_TEST || s.arc || 1;
     if (arc > NIGHTS.length) { nightReceipt(NIGHTS.length); return; } // Act One done — Act Two arrives with "the program"
     night = { def: NIGHTS[arc - 1], step: -1 };
-    questKicker('shift ' + night.def.n); // the chip names your shift all night
+    questKicker('quests'); // fresh users read QUESTS — the shift lore lives in the tray text (wife-test: "SHIFT" meant nothing)
     setTimeout(nightAdvance, 2500); // a breath after the tour (or the join), then Barty's first job
   }
   // the BIG MOMENT: pixel-type over the floor for session-defining beats —
@@ -2306,6 +2322,7 @@ function init() {
         const sr = ravers.get(myId);
         if (sr) showBubble('⭐ ' + autoName(sr.outfit) + ' takes the stage!', false, 4000);
         el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap ⭐ again to come down');
       }
     }
     track(want ? 'rave_stage_join' : 'rave_stage_leave');
