@@ -339,6 +339,34 @@ def stage_wallpapers(write):
         rebuild_pattern('dancing-banana-wallpaper-pattern-%s.png' % kind, size)
 
 
+def stage_emoji(write):
+    """platform cuts from the masters: Discord/Slack want 128x128 (Slack caps
+    at 128KB), Telegram stickers are 512x512. The crop is the UNION bbox of
+    all 8 frames (a per-frame crop would make the banana jump), squared and
+    padded ~4% so nothing touches the edge."""
+    frames = [load_master(n) for n in range(1, N + 1)]
+    x0 = min(bbox_of(f)[0] for f in frames)
+    y0 = min(bbox_of(f)[1] for f in frames)
+    x1 = max(bbox_of(f)[2] for f in frames)
+    y1 = max(bbox_of(f)[3] for f in frames)
+    side = max(x1 - x0, y1 - y0)
+    pad = round(side * 0.04)
+    side += 2 * pad
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    left, top = cx - side // 2, cy - side // 2
+    def cut(size):
+        out = []
+        for f in frames:
+            sq = np.zeros((side, side, 4), dtype=np.uint8)
+            sx0, sy0 = max(0, left), max(0, top)
+            sx1, sy1 = min(MW, left + side), min(MH, top + side)
+            sq[sy0 - top:sy1 - top, sx0 - left:sx1 - left] = f[sy0:sy1, sx0:sx1]
+            out.append(np.asarray(Image.fromarray(sq).resize((size, size), Image.NEAREST)))
+        return out
+    save_gif(cut(128), os.path.join(ASSETS, 'dancing-banana-emoji-128.gif'), write, transparent=True)
+    save_gif(cut(512), os.path.join(ASSETS, 'dancing-banana-sticker-512.gif'), write, transparent=True)
+
+
 def stage_icons(write):
     """apple-touch-icon: flat yellow, arms-up banana, 180x180 (the old one
     was an upscaled-sheet render). favicon.ico / the SVGs are hand-authored
@@ -366,10 +394,13 @@ if __name__ == '__main__':
         stage_wallpapers(write)
     elif stage == 'icons':
         stage_icons(write)
+    elif stage == 'emoji':
+        stage_emoji(write)
     elif stage == 'all':
         f = stage_sheet(write)
         stage_downloads(write, f)
         stage_wallpapers(write)
         stage_icons(write)
+        stage_emoji(write)
     else:
         print('unknown stage', stage)
