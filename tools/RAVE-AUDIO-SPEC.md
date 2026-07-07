@@ -24,19 +24,25 @@ so the floor is genuinely beat-locked to the kick.
 
   | Section | Bars | Seconds |
   | --- | --- | --- |
-  | THE DROP (strobe covers the first 10s) | 8 | 12.8 |
+  | THE DROP (strobe covers the first 10s) | 16 | 25.6 |
   | The groove (split however you like) | 88 | 140.8 |
-  | The build / riser | 16 | 25.6 |
+  | The build / riser | 8 | 12.8 |
   | THE HOLD — 2 beats of near-silence | 0.5 | 0.8 |
   | **Total** | **112.5** | **180.000** |
+
+  (Proportions are a SUGGESTION — normal club shape: short build, longer
+  drop. Only three things are rules: total = 180.000s, bar 1 = the drop,
+  the file ends on the 2-beat hold. The strobe is only the first 10s, so a
+  16-bar drop keeps banging after the lights calm — reads fine; an 8-bar
+  drop peaks tighter with the visuals. Producer's call.)
 
   The file ENDS on the 2-beat hold; the loop lands on bar 1 = the drop on
   the strobe. 0.8s = exactly one banana dance cycle: the whole planet does
   one silent bob in the dark, then the drop hits. That's the signature.
-- Only the total (180.000s) and the ending-on-the-hold are fixed — the
-  groove/build split is the producer's business. Musical drop section =
-  whole bars (8 recommended; the strobe is 10.0s = 6.25 bars, so the music
-  drop outlasting it by 2.8s reads as natural decay).
+- Only the total (180.000s), bar 1 = drop, and ending-on-the-hold are
+  fixed — everything between is the producer's business. Keep sections to
+  whole bars (the strobe's 10.0s = 6.25 bars is NOT a musical boundary —
+  don't chase it).
 - **Loop-clean edges**: no reverb/delay tail past the last sample — the
   hold wants to be NEARLY silent anyway; bake any tail into the file start.
 - The dance visually double-times during the drop (0.8s → 0.48s cycle) —
