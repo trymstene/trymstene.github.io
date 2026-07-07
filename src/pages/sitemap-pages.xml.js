@@ -49,6 +49,7 @@ const PAGES = [
   { path: '/peanut-butter-jelly-time/', images: [['/assets/dancing-banana-gif.gif', 'The Peanut Butter Jelly Time banana — the original Dancing Banana']] },
   { path: '/license-the-dancing-banana/', images: [['/assets/dancing-banana-gif.gif', 'License the original Dancing Banana GIF']] },
   { path: '/projects/', images: [] },
+  { path: '/contact/', images: [] },
   { path: '/me/', images: [['/assets/trym-stene-profile-photo.jpg', 'Trym Stene — creator of the Dancing Banana GIF']] },
   ...locales.map((l) => ({
     path: `/${l.code}/`,

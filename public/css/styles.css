@@ -438,12 +438,16 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 
 /* ---------- remix gallery placeholder ---------- */
 .remix-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  /* six fixed tiles, CENTRED — auto-fill grid left empty tracks on the right
+     and the row sat left-aligned on wide screens */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem;
   margin-top: 1.5rem;
 }
 .remix-grid .slot {
+  width: 140px;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -451,6 +455,11 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
   background: var(--paper);
   border: 3px solid var(--ink);
   box-shadow: 5px 5px 0 #000;
+}
+/* mobile: one tidy row of three — the button matters more than scroll-depth */
+@media (max-width: 640px) {
+  .remix-grid .slot { width: 96px; }
+  .remix-grid .slot:nth-child(n + 4) { display: none; }
 }
 
 /* ---------- desktop: center sections under the hero ---------- */
@@ -674,6 +683,23 @@ details.story p { margin-bottom: 1rem; }
 .door__dot { width: 8px; height: 8px; background: #37d67a; animation: doorPulse 1.2s steps(2) infinite; }
 @keyframes doorPulse { 50% { opacity: 0.25; } }
 .doors__daily { margin-top: 1.6rem; font-size: 0.95rem; }
+
+/* ---------- the contact form (spam-safe inbox, no exposed email) ---------- */
+.cform { max-width: 560px; margin: 1.8rem auto 0; text-align: left; display: grid; gap: 0.9rem; }
+.cform label { display: grid; gap: 0.35rem; font-weight: 700; font-size: 0.85rem; }
+.cform input,
+.cform textarea {
+  border: 3px solid var(--ink); background: var(--paper); color: var(--ink);
+  font: inherit; padding: 0.55rem 0.7rem; border-radius: 0;
+}
+.cform textarea { resize: vertical; }
+.cform input:focus,
+.cform textarea:focus { outline: 3px solid var(--banana); outline-offset: 2px; }
+.cform__row { display: grid; gap: 0.9rem; grid-template-columns: 1fr 1fr; }
+@media (max-width: 640px) { .cform__row { grid-template-columns: 1fr; } }
+.cform__hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.cform__send { justify-self: start; }
+.cform__note { font-weight: 700; margin: 0; }
 
 /* footer host line */
 .footer__host { font-size: 0.95rem; opacity: 0.85; }

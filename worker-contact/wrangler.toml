@@ -1,0 +1,24 @@
+# Contact form worker — the spam-safe mailbox behind /contact/.
+# No email sending at all: submissions land in a Durable Object inbox that
+# Trym reads at /inbox?token=… (token = wrangler secret). Zero address
+# exposure, zero deliverability infrastructure, nothing for scrapers.
+# SEPARATE from payment/rave/remix workers (blast radius rule).
+#
+# Deploy:  cd worker-contact && npx wrangler deploy
+# Token:   npx wrangler secret put INBOX_TOKEN   (pick a long random string)
+# Read:    https://banana-contact.trymstene.workers.dev/inbox?token=<token>
+
+name = "banana-contact"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "INBOX"
+class_name = "ContactInbox"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ContactInbox"]
+
+[vars]
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"

@@ -1,0 +1,73 @@
+---
+// The spam-safe contact form — posts to worker-contact (a stored inbox,
+// no email address anywhere in the page source). Honeypot field included;
+// the worker enforces the rest. `topic` tags the message in Trym's inbox.
+const { topic = 'general' } = Astro.props;
+---
+<form class="cform" data-topic={topic}>
+  <div class="cform__row">
+    <label>your name <input type="text" name="name" maxlength="200" placeholder="Distinguished Moustache Banana" /></label>
+    <label>your email (if you want a reply) <input type="email" name="email" maxlength="200" placeholder="you@example.com" /></label>
+  </div>
+  <label>the message
+    <textarea name="message" required minlength="5" maxlength="4000" rows="6" placeholder="say hello, ask a thing, send a remix…"></textarea>
+  </label>
+  <!-- bots: this one's for you -->
+  <input class="cform__hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+  <button class="btn btn--dark cform__send" type="submit">Send it →</button>
+  <p class="cform__note" hidden></p>
+</form>
+
+<script>
+  const WORKER = 'https://banana-contact.trymstene.workers.dev';
+  document.querySelectorAll('.cform').forEach((form) => {
+    // ?topic=licensing pre-fills the licensing checklist (the old mailto template)
+    const params = new URLSearchParams(location.search);
+    if (params.get('topic') === 'licensing' && form.dataset.topic === 'general') {
+      form.dataset.topic = 'licensing';
+      form.querySelector('textarea').value = [
+        'Licensing enquiry', '', 'Name / company:', "What I'm making:",
+        'How the banana would be used:', "Where it'll appear:", 'Reach / audience size:',
+        'Exclusive or non-exclusive + how long:', 'Ballpark budget:',
+        'Crypto/token/web3 project? (yes/no):', 'Link (site/deck/mockup):',
+      ].join('\n');
+    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const note = form.querySelector('.cform__note');
+      const btn = form.querySelector('.cform__send');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      try {
+        const res = await fetch(WORKER + '/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name.value,
+            email: form.email.value,
+            message: form.message.value,
+            website: form.website.value,
+            topic: form.dataset.topic,
+          }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (res.ok && d.ok) {
+          form.reset();
+          note.textContent = '✓ sent — I read everything, promise. 🍌';
+          btn.textContent = 'Send another →';
+        } else if (res.status === 429) {
+          note.textContent = 'easy there — that’s enough messages for one day.';
+          btn.textContent = 'Send it →';
+        } else {
+          note.textContent = 'hmm, that didn’t go through — try again in a minute.';
+          btn.textContent = 'Try again →';
+        }
+      } catch (err) {
+        note.textContent = 'hmm, that didn’t go through — try again in a minute.';
+        btn.textContent = 'Try again →';
+      }
+      note.hidden = false;
+      btn.disabled = false;
+    });
+  });
+</script>

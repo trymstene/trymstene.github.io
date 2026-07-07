@@ -1,4 +1,30 @@
 ---
-import Redirect from '../components/Redirect.astro';
+// The one place to reach Trym — a stored-inbox form instead of a scrapeable
+// email address (his address no longer appears anywhere in the site source).
+// (This URL was a redirect stub to /me/#contact from the old site — now it's
+// a real page again.)
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ContactForm from '../components/ContactForm.astro';
+
+const title = 'Contact — Trym Stene, the banana guy';
+const description = 'Say hello, ask about licensing the Dancing Banana, or send a remix — straight to Trym Stene, the creator of the 1999 GIF.';
 ---
-<Redirect to="https://trymstene.com/me/#contact" canonical="https://trymstene.com/me/">Contact has moved — see <a href="https://trymstene.com/me/#contact">trymstene.com/me</a>.</Redirect>
+<BaseLayout title={title} description={description} ogTitle="Contact the banana guy" ogDescription={description}>
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-transparent.gif" alt="The Dancing Banana" style="width:110px;height:auto;image-rendering:pixelated;">
+    </div>
+    <p class="kicker">Say hello</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">talk to the<br>banana guy</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Licensing, questions, remixes I've missed, or just a hello</p>
+  </section>
+
+  <section class="block">
+    <p class="lead" style="max-width:60ch;margin-inline:auto;">
+      This goes straight to me — no forms department, no ticket numbers.
+      <strong>Licensing something?</strong> The <a href="/license-the-dancing-banana/">license page</a> lists
+      what I'll ask anyway — or just write and we'll get there.
+    </p>
+    <ContactForm />
+  </section>
+</BaseLayout>
