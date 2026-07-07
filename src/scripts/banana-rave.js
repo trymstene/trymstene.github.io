@@ -893,7 +893,7 @@ function init() {
         p.elm.classList.add('rv-pellet--got');
         const gone = p.elm;
         setTimeout(() => gone.remove(), 500); // no half-faded ghosts, ever
-        addHype(6);
+        addHype(4); // 6 → 4: the onboarding was a drop-fest (Trym round 2)
         tonight.jelly += 1;
         passStat('jelly'); // lifetime total on the pass
         floatPlus(p.x, p.y - 3);
@@ -1111,7 +1111,7 @@ function init() {
     chainAt = now;
     tonight.pickups += 1;
     refreshStats();
-    addHype(12); // every pickup is hype fuel
+    addHype(7); // every pickup is jelly fuel (12 → 7: items overfilled the meter, Trym round 2)
     nightEvent('chain', chain);
     if (chain === 5) {
       const me = myId && ravers.get(myId);
@@ -1136,7 +1136,7 @@ function init() {
     if (fx) {
       applyFx(id, fx);
     } else if (id === myId && SNACKS[kind]) {
-      if (kind === 'pizzabox') addHype(25); // a whole pizza is a MEAL
+      if (kind === 'pizzabox') addHype(15); // a whole pizza is a MEAL (25 → 15 with the meter diet)
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = SNACKS[kind][0] + ' <b>' + SNACKS[kind][1] + '</b>' +
@@ -1840,6 +1840,11 @@ function init() {
     camLastTx = null; // the follow-cam recomputes from scratch
     if (tourDemoEl) { tourDemoEl.remove(); tourDemoEl = null; }
     hideBubble();
+    // class dismissed: pull back to the whole floor and start the set — the
+    // tap that ends the tour is a live gesture, so audio may start right here.
+    // Respect an explicit mute (rv-sound '0'): the ❓ replay never forces sound.
+    cam.on = false;
+    try { if (localStorage.getItem('rv-sound') !== '0' && !audioOn && !audioLoading) audioStart(); } catch (e) {}
     refreshZoomBtn(); // the camera toggle gets its corner back
     track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
     nightInit(); // the tour hands straight off to Barty's first job
