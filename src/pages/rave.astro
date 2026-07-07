@@ -50,6 +50,7 @@ const GUIDE = [
   { img: 'monkey', name: 'The monkey', text: 'The staff pet. Shows up on certain nights, steals things (famously: the bottle), keeps its distance when chased. Theatrical, never malicious. Mostly.' },
   { img: 'glowstick', name: 'The glowstick', text: 'Survive 30 minutes on the floor and the neon glowstick is yours forever — it pumps with the beat in your banana’s glove, here and in the builder.' },
   { img: 'stool', name: 'Your stool', text: 'Finish all five of Barty’s nightshifts and become a regular: your own stool at the counter’s end, forever. Click it, sit down, watch the floor. Nobody else gets one.' },
+  { img: 'mystery', name: '…and the rest', text: 'Many other items and drinks turn up when they feel like it — mirror shards, lost phones, things Barty won’t put on the menu. Hang around and see. They don’t wait long: five seconds, then poof.' },
 ];
 ---
 <BaseLayout
@@ -420,6 +421,36 @@ const GUIDE = [
       background: rgba(255, 130, 180, 0.9); transform: translateX(-50%) rotate(45deg);
       pointer-events: none;
     }
+    /* ---- THE MENU's costume effects (one class per fx, 10s moments) ---- */
+    /* paparazzi: the flash keeps going off */
+    .rv-raver.rv-flashfx canvas { animation: rvFlashPop 1.4s steps(1) infinite; }
+    @keyframes rvFlashPop { 0%, 88% { filter: none; } 89%, 100% { filter: brightness(2.4) drop-shadow(0 0 14px #ffffff); } }
+    /* the off-menu milkshake: THICC (keyframe-free transform override) */
+    .rv-raver.rv-thicc { transform: translate(-50%, -50%) scale(1.12); }
+    /* blue lagoon: cool cyan aura */
+    .rv-raver.rv-lagoonglow canvas { filter: drop-shadow(0 0 8px #4db8ff); }
+    /* water: clean, clear, hydrated */
+    .rv-raver.rv-waterglow canvas { filter: drop-shadow(0 0 7px #e8f6ff); }
+    /* espresso martini: the caffeine jitter */
+    .rv-raver.rv-jitter { animation: rvJitter 0.16s steps(2) infinite; }
+    @keyframes rvJitter {
+      0%, 100% { transform: translate(calc(-50% - 2px), -50%); }
+      50% { transform: translate(calc(-50% + 2px), calc(-50% - 1px)); }
+    }
+    /* piña colada: the sway — the floor is a hammock */
+    .rv-raver.rv-sway { animation: rvSway 1.7s ease-in-out infinite; }
+    @keyframes rvSway {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-7deg); }
+      50% { transform: translate(-50%, -50%) rotate(7deg); }
+    }
+    /* THE SMOKE POOF: expired items + leaving ravers exit in a puff, never a blink */
+    .rv-poof { position: absolute; transform: translate(-50%, -50%); width: 36px; pointer-events: none; }
+    .rv-poof span { position: absolute; inset: 0; opacity: 0; }
+    .rv-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .rv-poof__1 { animation: rvPoofStep 0.75s steps(1) forwards; }
+    .rv-poof__2 { animation: rvPoofStep 0.75s steps(1) 0.25s forwards; }
+    .rv-poof__3 { animation: rvPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes rvPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
     /* the cartoon electrocution: the whole banana blinks between a white flash
        and its black skeleton silhouette (the sprite itself, floored to black) */
     .rv-raver.rv-shock canvas { animation: rvShockBlink 0.15s steps(2) 3; }

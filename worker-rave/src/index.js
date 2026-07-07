@@ -84,7 +84,9 @@ function goldSpot(w) {
 // low-traffic brief: solo visitors need a constant chase). A new item every 75s
 // at a clock-seeded spot; the type comes from the same seed. Effect items ride
 // the fx system; snacks (candy/pizza/balloon) are pure chase + client-side chain.
-const ITEM_PERIOD = 75_000, ITEM_WAIT = 55_000, ITEM_OFFSET = 15_000;
+// items live FIVE SECONDS on the floor (Trym: reflex, not patience) — the
+// client shows/poofs at 5s; the server window carries 1.5s latency grace
+const ITEM_PERIOD = 75_000, ITEM_WAIT = 6_500, ITEM_OFFSET = 15_000;
 function itemWindow(now) {
   const ph = (((now - ITEM_OFFSET) % ITEM_PERIOD) + ITEM_PERIOD) % ITEM_PERIOD;
   return ph < ITEM_WAIT ? Math.floor((now - ITEM_OFFSET) / ITEM_PERIOD) : -1;
@@ -97,13 +99,23 @@ function itemSpot(w) {
 }
 function itemType(w) { // keep weights in sync with banana-rave.js
   const r = seedRand(0x7ab1e + w);
-  return r < 0.2 ? 'sauce' : r < 0.38 ? 'zap' : r < 0.55 ? 'fizz' : r < 0.7 ? 'candy' : r < 0.85 ? 'pizza' : 'balloon';
+  // 16 kinds — classics keep a slight edge, THE MENU fills the rest
+  return r < 0.10 ? 'sauce' : r < 0.19 ? 'zap' : r < 0.28 ? 'fizz'
+    : r < 0.36 ? 'candy' : r < 0.44 ? 'pizza' : r < 0.52 ? 'balloon'
+    : r < 0.58 ? 'shard' : r < 0.64 ? 'cone' : r < 0.70 ? 'popper'
+    : r < 0.76 ? 'remote' : r < 0.81 ? 'kazoo' : r < 0.86 ? 'glitter'
+    : r < 0.90 ? 'phone' : r < 0.94 ? 'cube' : r < 0.97 ? 'pizzabox' : 'wand';
 }
-const ITEM_FX = { sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon' }; // balloon = the ride (frozen frame + float + drift), client-rendered
+const ITEM_FX = { // all rendering is client-side; the server only stamps fx ids
+  sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon',
+  shard: 'prism', cone: 'cone', popper: 'popper', remote: 'fog', kazoo: 'notes',
+  glitter: 'glitter', phone: 'flash', cube: 'slide', wand: 'bubbles',
+  // candy/pizza/pizzabox = pure snacks (no fx; pizzabox pays jelly client-side)
+};
 // BARTY'S SPECIALS — between happy hours a rotating cocktail lands on the counter;
 // first banana at the bar drinks it and wears its effect for a while.
 const SPECIAL_PERIOD = 300_000, SPECIAL_LEN = 35_000, SPECIAL_OFFSET = 270_000;
-const COCKTAILS = ['daiquiri', 'fizz'];
+const COCKTAILS = ['daiquiri', 'fizz', 'espresso', 'lagoon', 'colada', 'margarita', 'champagne', 'milkshake', 'jellyshot', 'water']; // keep in sync with banana-rave.js
 function specialWindow(now) {
   const ph = (((now - SPECIAL_OFFSET) % SPECIAL_PERIOD) + SPECIAL_PERIOD) % SPECIAL_PERIOD;
   return ph < SPECIAL_LEN ? Math.floor((now - SPECIAL_OFFSET) / SPECIAL_PERIOD) : -1;
