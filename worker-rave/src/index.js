@@ -99,7 +99,7 @@ function itemType(w) { // keep weights in sync with banana-rave.js
   const r = seedRand(0x7ab1e + w);
   return r < 0.2 ? 'sauce' : r < 0.38 ? 'zap' : r < 0.55 ? 'fizz' : r < 0.7 ? 'candy' : r < 0.85 ? 'pizza' : 'balloon';
 }
-const ITEM_FX = { sauce: 'flames', zap: 'zap', fizz: 'fizz' };
+const ITEM_FX = { sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon' }; // balloon = the ride (frozen frame + float + drift), client-rendered
 // BARTY'S SPECIALS — between happy hours a rotating cocktail lands on the counter;
 // first banana at the bar drinks it and wears its effect for a while.
 const SPECIAL_PERIOD = 300_000, SPECIAL_LEN = 35_000, SPECIAL_OFFSET = 270_000;
@@ -281,7 +281,7 @@ export class RaveRoom {
       await this.state.storage.put('itemWin', win);
       const kind = itemType(win);
       if (ITEM_FX[kind]) {
-        me.fx = { id: ITEM_FX[kind], until: Date.now() + (ITEM_FX[kind] === 'zap' ? FX_ZAP_MS : FX_MS) };
+        me.fx = { id: ITEM_FX[kind], until: Date.now() + (ITEM_FX[kind] === 'zap' || ITEM_FX[kind] === 'balloon' ? FX_ZAP_MS : FX_MS) };
         ws.serializeAttachment(me);
       }
       this.broadcast({ t: 'item', id: me.id, win, kind, fx: ITEM_FX[kind] ? me.fx : undefined });

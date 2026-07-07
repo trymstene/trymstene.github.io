@@ -44,7 +44,8 @@ const GUIDE = [
   { img: 'beer', name: 'Happy hour', text: 'Every 5th minute Barty yells and pours ONE beer. First banana to reach the counter carries it in their glove for everyone to see. Between happy hours: cocktails — the daiquiri gives you disco legs, the fizz makes you bubble.' },
   { img: 'cable', name: 'The loose cable', text: 'The rig’s wiring is older than Barty (nothing is older than Barty). Grab the live end to tidy the hazard — you’ll shock-blink like a cartoon, and brushing past friends zaps them too.' },
   { img: 'sauce', name: 'Hot sauce', text: 'A bottle of the house burner lands on the floor every few minutes. Drink it and your footsteps catch fire for a while. Completely safe. Probably.' },
-  { img: 'pizza', name: 'Club snacks', text: 'Pizza slices, candy, balloons — the conveyor drops something chaseable every ~75 seconds. Snacks are pure jelly for the meter; being first is the sport.' },
+  { img: 'pizza', name: 'Club snacks', text: 'Pizza slices and candy — the conveyor drops something chaseable every ~75 seconds. Snacks are pure jelly for the meter; being first is the sport.' },
+  { img: 'balloon', name: 'The balloon', text: 'Catch it and up you go: sealed inside, frozen mid-pose, drifting over the floor faster than anyone can dance. It deflates after a minute. Gravity is a rule, not a law.' },
   { img: 'broom', name: 'The broom & the mess', text: 'Peels and puddles pile up on a nightshift. Grab the broom from the counter and sweep — every swept peel is jelly too. The floor remembers who cleans it.' },
   { img: 'monkey', name: 'The monkey', text: 'The staff pet. Shows up on certain nights, steals things (famously: the bottle), keeps its distance when chased. Theatrical, never malicious. Mostly.' },
   { img: 'glowstick', name: 'The glowstick', text: 'Survive 30 minutes on the floor and the neon glowstick is yours forever — it pumps with the beat in your banana’s glove, here and in the builder.' },
@@ -355,6 +356,26 @@ const GUIDE = [
     @keyframes rvWaveHop { 30% { transform: translateY(-20px); } 60% { transform: translateY(-3px); } }
     .rv-raver.rv-chainglow canvas { filter: drop-shadow(0 0 8px #ffd23f) drop-shadow(0 0 16px #ff9128); }
     .rv-raver.rv-zapfx canvas { filter: drop-shadow(0 0 7px #78ebff); }
+    /* THE BALLOON RIDE: sealed inside a big translucent balloon, frozen on the
+       calm frame, floating — the keyframes carry the centring translate so the
+       bob never fights the wrap's base transform */
+    .rv-raver.rv-balloonfx { animation: rvBalloonFloat 2.4s ease-in-out infinite; }
+    @keyframes rvBalloonFloat {
+      0%, 100% { transform: translate(-50%, -50%); }
+      50% { transform: translate(-50%, calc(-50% - 12px)); }
+    }
+    .rv-raver.rv-balloonfx::after {
+      content: ''; position: absolute; inset: -4% 10% 4% 10%; border-radius: 50%;
+      border: 3px solid rgba(255, 130, 180, 0.85);
+      background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.35) 0 9%, rgba(255, 140, 190, 0.14) 55%, rgba(255, 77, 157, 0.22));
+      pointer-events: none;
+    }
+    .rv-raver.rv-balloonfx::before {
+      /* the knot under the balloon */
+      content: ''; position: absolute; left: 50%; bottom: -2%; width: 10px; height: 10px;
+      background: rgba(255, 130, 180, 0.9); transform: translateX(-50%) rotate(45deg);
+      pointer-events: none;
+    }
     /* the cartoon electrocution: the whole banana blinks between a white flash
        and its black skeleton silhouette (the sprite itself, floored to black) */
     .rv-raver.rv-shock canvas { animation: rvShockBlink 0.15s steps(2) 3; }

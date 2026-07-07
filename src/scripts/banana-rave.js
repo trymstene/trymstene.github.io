@@ -48,8 +48,8 @@ const FX_ZAP_MS = 60000; // the electric charge is LOUD — it burns out fastest
 // zap windows are capped at FIRST SIGHT too, so the short fuse holds even
 // against a not-yet-redeployed worker still stamping 150s
 const capFx = (fx) => (fx && fx.id === 'zap' ? { ...fx, until: Math.min(fx.until, Date.now() + FX_ZAP_MS) } : fx);
-const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge' };
-const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧', zap: '⚡' };
+const FX_NAMES = { flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge', balloon: 'Balloon Ride' };
+const FX_ICON = { flames: '🔥', daiquiri: '🍹', fizz: '🫧', zap: '⚡', balloon: '🎈' };
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
 // deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
@@ -128,6 +128,24 @@ const flameCvs = FLAME_MAPS.map((rows) => {
   const x = c.getContext('2d');
   rows.forEach((row, ry) => [...row].forEach((ch, rx) => {
     if (FLAME_COLS[ch]) { x.fillStyle = FLAME_COLS[ch]; x.fillRect(rx, ry, 1, 1); }
+  }));
+  return c;
+});
+
+// the daiquiri trail v2: tiny cocktail UMBRELLAS wobbling in your wake (two
+// tilt frames), plus creamy splash droplets — the old gold dashes read as
+// "thin yellow stripes" (Trym), which is no way to describe a banana daiquiri
+const UMB_MAPS = [
+  ['..PPPPP..', '.PPPPPPP.', 'PDPDPDPDP', '....W....', '....W....', '....W....', '....W....', '...WW....'],
+  ['...PPPPP.', '..PPPPPPP', '.PDPDPDPD', '.....W...', '....W....', '....W....', '...W.....', '...WW....'],
+];
+const UMB_COLS = { P: '#ff4d9d', D: '#c62c74', W: '#fffdf5' };
+const umbCvs = UMB_MAPS.map((rows) => {
+  const c = document.createElement('canvas');
+  c.width = 9; c.height = 8;
+  const x = c.getContext('2d');
+  rows.forEach((row, ry) => [...row].forEach((ch, rx) => {
+    if (UMB_COLS[ch]) { x.fillStyle = UMB_COLS[ch]; x.fillRect(rx, ry, 1, 1); }
   }));
   return c;
 });
@@ -390,7 +408,8 @@ function init() {
     }
     if (!dx && !dy) return;
     const norm = Math.hypot(dx, dy) || 1;
-    let boost = fxActive(me, now) && me.fx.id === 'daiquiri' ? 1.45 : 1; // fresh daiquiri legs
+    let boost = fxActive(me, now) && me.fx.id === 'daiquiri' ? 1.45
+      : fxActive(me, now) && me.fx.id === 'balloon' ? 1.35 : 1; // daiquiri legs / balloon drift
     if (now < hypeModeUntil) boost *= 1.25; // hype mode = disco legs — peaking must FEEL like peaking
     const step = (WALK_SPEED * boost * dtMs) / 1000;
     let nx = clamp(me.x + (dx / norm) * step, 4, 96);
@@ -878,6 +897,7 @@ function init() {
         daiquiri: 'fresh legs, you’re faster!',
         fizz: 'you’re bubbling, dance it out!',
         zap: 'you grabbed the LIVE end — you’re crackling!',
+        balloon: 'up you go — the club looks better from in here!',
       }[fx.id] || '') + chainTag();
       floor.appendChild(toast);
       setTimeout(() => toast.remove(), 4500);
@@ -1065,9 +1085,9 @@ function init() {
     }
     if (itemLive && now - lastItemTry > 800 && Math.hypot(me.x - itemLive.x, me.y - itemLive.y) < GRAB_R) {
       lastItemTry = now;
-      const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz' }[itemLive.kind];
+      const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon' }[itemLive.kind];
       if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
-      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + (soloFx === 'zap' ? FX_ZAP_MS : FX_MS) } : undefined);
+      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + (soloFx === 'zap' || soloFx === 'balloon' ? FX_ZAP_MS : FX_MS) } : undefined);
     }
     // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
     // rectangle — the solid counter's edge scales with the floor (x≈50% on
@@ -2017,6 +2037,9 @@ function init() {
         const hasFx = fxActive(r, now);
         const zapOn = hasFx && r.fx.id === 'zap';
         if (r.zapOn !== zapOn) { r.zapOn = zapOn; r.wrap.classList.toggle('rv-zapfx', zapOn); } // DOM writes only on change
+        // the balloon ride: envelope + float are pure CSS on the wrap
+        const balloonOn = hasFx && r.fx.id === 'balloon';
+        if (r.balloonOn !== balloonOn) { r.balloonOn = balloonOn; r.wrap.classList.toggle('rv-balloonfx', balloonOn); }
         if (!hasFx) continue;
         if (r.fx.id === 'zap' && now - (r.zapSpawnAt || 0) > 130) {
           // static crackles off you whether you walk or dance
@@ -2077,11 +2100,29 @@ function init() {
             trailCtx.globalAlpha = 0.95 * (1 - age);
             trailCtx.drawImage(frame, p.x - w / 2 + sway, p.y - h - age * 12, w, h);
             trailCtx.globalAlpha = 1;
-          } else {
-            const gx2 = Math.floor(p.x / 8) * 8;
-            const gy2 = Math.floor(p.y / 8) * 8;
-            trailCtx.fillStyle = `rgba(255, 214, 80, ${0.7 * (1 - age)})`;
-            trailCtx.fillRect(gx2 - 4, gy2 - 6, 12, 3);
+          } else if (p.kind === 'daiquiri') {
+            // tropical wake: cocktail umbrellas wobbling upward, cream splash
+            // droplets arcing out, the odd cherry — a DAIQUIRI, not gold dashes
+            if ((p.seed || 0) % 2 === 0) {
+              const frame = umbCvs[(Math.floor(now / 150) + (p.seed || 0)) % 2];
+              const w = 18 * (1 - age * 0.3);
+              const h = w * 8 / 9;
+              const sway = Math.sin((p.seed || 0) * 1.7 + now / 220) * 3;
+              trailCtx.globalAlpha = 0.95 * (1 - age);
+              trailCtx.drawImage(frame, p.x - w / 2 + sway, p.y - h - age * 10, w, h);
+              trailCtx.globalAlpha = 1;
+            } else {
+              trailCtx.globalAlpha = 0.9 * (1 - age);
+              for (let b2 = 0; b2 < 3; b2++) {
+                const ang = (p.seed || 0) * 2.4 + b2 * 2.1;
+                const dx2 = Math.cos(ang) * (6 + age * 16);
+                const dy2 = -10 * age + 22 * age * age + Math.sin(ang) * 3; // splash arc
+                trailCtx.fillStyle = b2 === 2 && (p.seed || 0) % 5 === 0 ? '#ff4d9d'
+                  : b2 % 2 ? '#fff6c8' : '#ffe135';
+                trailCtx.fillRect(Math.round(p.x + dx2), Math.round(p.y - 8 + dy2), 3, 3);
+              }
+              trailCtx.globalAlpha = 1;
+            }
           }
         }
       }
@@ -2125,8 +2166,9 @@ function init() {
       const hue = dropActive ? Math.floor((now / 12) % 360) : 0;
       for (const r of [...ravers.values()].slice(0, MAX_VISIBLE)) {
         const o = r.outfit;
-        // seated on YOUR stool = the dance rests on the calm frame (local-only)
-        const fIdx = (r.id === myId && sitting) ? 0 : idx;
+        // seated on YOUR stool = the dance rests on the calm frame (local-only);
+        // sealed in a balloon = same calm frame — you float, you don't dance
+        const fIdx = ((r.id === myId && sitting) || (fxActive(r, now) && r.fx.id === 'balloon')) ? 0 : idx;
         drawComposite(r.cv.getContext('2d'), 160, fIdx, {
           bg: 'transparent', captions: false,
           // held quest props ride the gloves via the engine's hand anchors
@@ -2158,6 +2200,14 @@ function init() {
   passVisit();
   passPatch('raver');
   stoolRender(); // the regular's stool, for those who've earned it
+  // ?fxtest=<id> — preview any timed effect on yourself (local visual only,
+  // never broadcast; the stagetest/nighttest pattern for fx work)
+  const fxTest = new URLSearchParams(location.search).get('fxtest');
+  if (fxTest) {
+    const t = setInterval(() => {
+      if (myId && ravers.get(myId)) { clearInterval(t); applyFx(myId, { id: fxTest, until: Date.now() + 600_000 }); }
+    }, 500);
+  }
   setInterval(() => { if (ws && ws.readyState === 1) passStat('raveMin'); }, 60000);
   try { if (localStorage.getItem('rv-glowstick') === '1') passPatch('survivor', { quiet: true }); } catch (e) {}
 
