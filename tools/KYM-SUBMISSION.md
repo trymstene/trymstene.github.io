@@ -23,8 +23,9 @@ Disclose: "I'm the creator of the banana GIF — sources attached."
 > The dancing banana character featured in the animation predates the Flash
 > by several years. According to its creator, Norwegian web developer Trym
 > Stene, the animated GIF was drawn in 1999 in Animation Shop (bundled with
-> Paint Shop Pro) and first posted to Norsk FreakForum, a Norwegian
-> discussion board, where it was used as a celebration emoticon. By late 2001
+> Paint Shop Pro) and first posted to a Norwegian discussion board — the
+> community known today as Norsk FreakForum, which earlier operated as
+> iblis.nu — where it was used as a celebration emoticon. By late 2001
 > the banana had spread to numerous message boards as a standard `:banana:`
 > smiley, before Etrata and Flynn paired it with the Buckwheat Boyz track in
 > early 2002. Stene's account of the GIF's creation has been covered by
@@ -44,8 +45,10 @@ Disclose: "I'm the creator of the banana GIF — sources attached."
 >
 > The GIF was created in 1999 by Norwegian web developer Trym Stene, who drew
 > and animated the eight-frame banana in Animation Shop on a PC as a
-> celebration emoticon for Norsk FreakForum, a Norwegian discussion
-> board.[1][2] Stene has said he posted it whenever he finished something.
+> celebration emoticon for a Norwegian discussion board — the community known
+> today as Norsk FreakForum, which earlier ran as iblis.nu (Stene does not
+> recall which incarnation hosted the first post).[1][2] Stene has said he
+> posted it whenever he finished something.
 >
 > **Spread**
 >
@@ -71,8 +74,10 @@ Disclose: "I'm the creator of the banana GIF — sources attached."
 
 ## Related follow-ups (not KYM)
 
-- **Wayback archaeology**: pre-2002 Norsk FreakForum captures showing the
-  banana = the closest thing to a smoking gun (Trym no longer has the
+- **Wayback archaeology**: pre-2002 captures of the community's forums —
+  check BOTH wrappings, Norsk FreakForum AND iblis.nu (same community,
+  renamed; Trym can't recall which name it ran under at the time) — showing
+  the banana = the closest thing to a smoking gun (Trym no longer has the
   original file).
 - **Wikipedia**: no Dancing Banana article exists today; City A.M. +
   USA Today (https://eu.usatoday.com/story/news/nation-now/2014/04/02/peanut-butter-jelly-time/7194151/)
