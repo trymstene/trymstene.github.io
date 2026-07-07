@@ -2657,20 +2657,22 @@ function init() {
   }
 
   function playDropAudio() {
-    if (!audio) return;
+    if (!audio) return 0;
     const { ctx, dropBuf, dropGain, loopGain } = audio;
     const t = ctx.currentTime;
-    if (t < audio.dropBusyUntil) return; // one drop at a time (greeting overlap etc.)
+    if (t < audio.dropBusyUntil) return 0; // one drop at a time (greeting overlap etc.)
     audio.dropBusyUntil = t + AUDIO_DROP_S - 0.5;
     const src = ctx.createBufferSource();
     src.buffer = dropBuf;
     src.connect(dropGain);
     const tr = audioTrim(dropBuf, AUDIO_DROP_S);
     src.start(t, tr.start, AUDIO_DROP_S);
-    // the loop steps back for the drop, then swells home
+    // the loop steps back for the drop and only swells home AFTER the drop
+    // has fully landed — restoring early stepped on the drop's ending (Trym)
     loopGain.gain.cancelScheduledValues(t);
     loopGain.gain.setTargetAtTime(LOOP_DUCK, t, 0.05);
-    loopGain.gain.setTargetAtTime(LOOP_LEVEL, t + AUDIO_DROP_S - 0.8, 0.4);
+    loopGain.gain.setTargetAtTime(LOOP_LEVEL, t + AUDIO_DROP_S, 0.3);
+    return t; // exact start — the greeting butt-joins the loop to this
   }
 
   async function audioStart() {
@@ -2699,8 +2701,10 @@ function init() {
       dropGain.connect(master);
       audio = { ctx, loopBuf, dropBuf, loopGain, dropGain, master, dropBusyUntil: 0 };
       // the greeting: the drop first…
-      playDropAudio();
-      // …and the loop enters as it resolves, then loops forever
+      const dropAt = playDropAudio() || ctx.currentTime;
+      // …and the loop butt-joins the moment it ends — the drop's last bar is
+      // CUT to resolve into the loop's first (Sentry's arrangement); both an
+      // overlap and a gap step on the joint, so it's scheduled sample-exact
       const tr = audioTrim(loopBuf, AUDIO_LOOP_S);
       const src = ctx.createBufferSource();
       src.buffer = loopBuf;
@@ -2708,7 +2712,7 @@ function init() {
       src.loopStart = tr.start;
       src.loopEnd = tr.end;
       src.connect(loopGain);
-      src.start(ctx.currentTime + AUDIO_DROP_S - 0.1, tr.start);
+      src.start(dropAt + AUDIO_DROP_S, tr.start);
       audio.loopSrc = src;
       audioOn = true;
       try { localStorage.setItem('rv-sound', '1'); } catch (e) {}
