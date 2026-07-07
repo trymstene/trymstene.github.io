@@ -70,6 +70,8 @@ async function init() {
   const rows = [
     [S.raveMin, 'rave minutes'],
     [S.drops, 'drops survived'],
+    [S.jelly, 'jelly collected'],
+    [S.hypes, 'jelly times'],
     [S.fives, 'high-fives'],
     [S.beers, 'happy hours won'],
     [S.vinyls, 'records delivered'],

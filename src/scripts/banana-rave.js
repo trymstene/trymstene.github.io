@@ -664,6 +664,8 @@ function init() {
     miniDropUntil = Date.now() + 8000; // YOU drop the floor — strobe, pyro, the works
     passPatch('hype');
     passStat('hypes');
+    tonight.jellytimes += 1;
+    refreshStats();
     track('rave_hype');
     confettiBurst();
     const me = myId && ravers.get(myId);
@@ -775,6 +777,10 @@ function init() {
         const gone = p.elm;
         setTimeout(() => gone.remove(), 500); // no half-faded ghosts, ever
         addHype(6);
+        tonight.jelly += 1;
+        passStat('jelly'); // lifetime total on the pass
+        floatPlus(p.x, p.y - 3);
+        refreshStats();
       } else {
         left++;
       }
@@ -792,10 +798,37 @@ function init() {
   // THE CHAIN: every pickup within 90s of the last extends it — the lone
   // visitor's reason to keep moving. Client-side, personal, no leaderboard.
   let chain = 0, chainAt = 0;
+  // ---- TONIGHT's stats: the braggable numbers of this visit (session-only;
+  // lifetime totals live on the pass). refreshStats repaints the panel row.
+  const tonight = { jelly: 0, fives: 0, pickups: 0, jellytimes: 0 };
+  function refreshStats() {
+    const s = el('rvStats');
+    if (!s) return;
+    const one = (n, sing, plur) => '<span><b>' + n + '</b> ' + (n === 1 ? sing : plur) + '</span>';
+    s.innerHTML =
+      '<span><b>' + tonight.jelly + '</b> jelly</span>' +
+      one(tonight.pickups, 'pickup', 'pickups') +
+      one(tonight.fives, 'high-five', 'high-fives') +
+      one(tonight.jellytimes, 'jelly time', 'jelly times');
+  }
+  // the little "+1" that makes a pickup FEEL counted — floats off the spot
+  function floatPlus(x, y, text) {
+    const d = document.createElement('div');
+    d.className = 'rv-plus';
+    d.textContent = text || '+1';
+    d.style.left = x + '%';
+    d.style.top = y + '%';
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 950);
+  }
+  refreshStats(); // paint the zeros — the row invites filling them
+
   function bumpChain() {
     const now = Date.now();
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
     chainAt = now;
+    tonight.pickups += 1;
+    refreshStats();
     addHype(12); // every pickup is hype fuel
     nightEvent('chain', chain);
     if (chain === 5) {
@@ -1152,7 +1185,12 @@ function init() {
         if ((fived.get(key) || 0) > now) continue;
         fived.set(key, now + FIVE_COOLDOWN);
         spawnFive((a.x + b.x) / 2, Math.min(a.y, b.y) - 9); // ABOVE both heads — between them it hid behind the sprites
-        if (a.id === myId || b.id === myId) { track('rave_highfive'); passStat('fives'); }
+        if (a.id === myId || b.id === myId) {
+          track('rave_highfive');
+          passStat('fives');
+          tonight.fives += 1;
+          refreshStats();
+        }
       }
     }
   }, 600);

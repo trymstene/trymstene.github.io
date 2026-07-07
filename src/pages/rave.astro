@@ -354,6 +354,23 @@ const GUIDE = [
     .rv-broomprop svg { width: 100%; height: auto; image-rendering: pixelated; }
     /* THE WAVE hop (applied inline with per-banana delay) + chain glow + zap glow */
     @keyframes rvWaveHop { 30% { transform: translateY(-20px); } 60% { transform: translateY(-3px); } }
+    /* TONIGHT's stats — the braggable, screenshottable numbers */
+    .rv-panel__h2 { margin-top: 1.1rem; }
+    .rv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.7rem; font-size: 0.78rem; }
+    .rv-stats span { color: #b8b3c7; }
+    .rv-stats b { color: #ffe135; font-size: 0.95rem; margin-right: 0.3rem; }
+    /* the +1 that floats off a picked jelly */
+    .rv-plus {
+      position: absolute; transform: translate(-50%, -50%); z-index: 400; pointer-events: none;
+      font-weight: 800; font-size: 0.95rem; color: #ffe135;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+      animation: rvPlusUp 0.9s ease-out forwards;
+    }
+    @keyframes rvPlusUp {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+      18% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); }
+      100% { opacity: 0; transform: translate(-50%, -190%) scale(1); }
+    }
     .rv-raver.rv-chainglow canvas { filter: drop-shadow(0 0 8px #ffd23f) drop-shadow(0 0 16px #ff9128); }
     .rv-raver.rv-zapfx canvas { filter: drop-shadow(0 0 7px #78ebff); }
     /* THE BALLOON RIDE: sealed inside a big translucent balloon, frozen on the
@@ -852,6 +869,8 @@ const GUIDE = [
       <aside class="rv-panel">
         <h2>on the floor</h2>
         <ol id="rvBoard"><li><span>the floor awaits…</span></li></ol>
+        <h2 class="rv-panel__h2">your night</h2>
+        <div class="rv-stats" id="rvStats"></div>
         <div class="rv-door">
           <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
         </div>
