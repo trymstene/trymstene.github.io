@@ -6,8 +6,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import remixes from '../data/remixes.json';
 
-const title = 'Dancing Banana Community Remixes — 268 GIFs by the Internet';
-const description = 'The community remix gallery: 268 Dancing Banana GIF remixes made by the internet since 1999 — warrior bananas, Mario, Homer, dancing tacos. Rate them, download them, enjoy them.';
+const title = `Dancing Banana Community Remixes — ${remixes.length} GIFs by the Internet`;
+const description = `The community remix gallery: ${remixes.length} Dancing Banana GIF remixes made by the internet since 1999 — warrior bananas, Mario, Homer, dancing tacos. Rate them, download them, enjoy them.`;
 const counts = remixes.reduce((a, r) => { a[r.cat] = (a[r.cat] || 0) + 1; return a; }, {});
 const CATS = [
   ['all', 'All', remixes.length],

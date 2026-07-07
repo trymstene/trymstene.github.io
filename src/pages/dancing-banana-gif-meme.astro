@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import remixes from '../data/remixes.json';
 
 const title = "Dancing Banana GIF — Download the Original Meme (Free)";
 const description = "The original Dancing Banana GIF — free to download (GIF + transparent PNG). Made in 1999 by its creator, Trym Stene. Grab it, make your own, or license it.";
@@ -233,7 +234,7 @@ const faq = {
     <h2>Community remixes</h2>
     <p class="lead">
       A huge thank you to the meme community for all the Dancing Banana remixes over the years — the
-      warrior banana, the jedi banana, dancing Mario, all of them. The full gallery has 268 of them,
+      warrior banana, the jedi banana, dancing Mario, all of them. The full gallery has {remixes.length} of them,
       rateable in bananas and free to download.
     </p>
     <div class="remix-grid">
@@ -245,7 +246,7 @@ const faq = {
       ))}
     </div>
     <p style="text-align:center;margin-top:1.4rem;">
-      <a class="btn btn--dark" href="/dancing-banana-remixes/">Browse all 268 remixes →</a>
+      <a class="btn btn--dark" href="/dancing-banana-remixes/">Browse all {remixes.length} remixes →</a>
     </p>
   </section>
 
