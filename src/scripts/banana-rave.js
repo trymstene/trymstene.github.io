@@ -2588,6 +2588,7 @@ function init() {
       // no confetti here — every-3rd-minute confetti was wallpaper (Trym: "too
       // frequent to appreciate"); the drop already has strobe + pyro + the flash
       if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); nightEvent('drop'); }
+      if (dropActive && audioOn) playDropAudio(); // the music drops WITH the lights
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       dropFlashEl.hidden = !dropActive;
@@ -2632,6 +2633,119 @@ function init() {
     }
     requestAnimationFrame(tick);
   }
+
+  // ---- THE SOUND: Sentry's set (tools/RAVE-AUDIO-SPEC.md) ----
+  // loop.mp3 = the default bed (40.000s = 25 bars @ 150 BPM, seamless);
+  // drop.mp3 = 12.8s (8 bars), fired on EVERY dropActive rising edge — clock
+  // drops, jelly time and bonus drops all ride the same flag, so the music
+  // is synced to the lights by construction. On enable: the drop greets you
+  // first, then the loop rolls (Trym's call). Mute by default, gesture-gated.
+  const AUDIO_LOOP_URL = '/assets/audio/rave-loop.mp3';
+  const AUDIO_DROP_URL = '/assets/audio/rave-drop.mp3';
+  const AUDIO_LOOP_S = 40.0, AUDIO_DROP_S = 12.8; // true master lengths
+  const LOOP_LEVEL = 0.9, LOOP_DUCK = 0.18;
+  let audio = null, audioOn = false, audioLoading = false;
+
+  // mp3 decode can prepend encoder delay; if the decoded buffer is longer
+  // than the master, trim with the standard-LAME-preroll heuristic so the
+  // loop seam stays sample-tight
+  function audioTrim(buf, wantS) {
+    const extra = buf.duration - wantS;
+    if (extra < 0.005) return { start: 0, end: buf.duration };
+    const start = Math.min(extra, 1105 / 44100);
+    return { start, end: start + wantS };
+  }
+
+  function playDropAudio() {
+    if (!audio) return;
+    const { ctx, dropBuf, dropGain, loopGain } = audio;
+    const t = ctx.currentTime;
+    if (t < audio.dropBusyUntil) return; // one drop at a time (greeting overlap etc.)
+    audio.dropBusyUntil = t + AUDIO_DROP_S - 0.5;
+    const src = ctx.createBufferSource();
+    src.buffer = dropBuf;
+    src.connect(dropGain);
+    const tr = audioTrim(dropBuf, AUDIO_DROP_S);
+    src.start(t, tr.start, AUDIO_DROP_S);
+    // the loop steps back for the drop, then swells home
+    loopGain.gain.cancelScheduledValues(t);
+    loopGain.gain.setTargetAtTime(LOOP_DUCK, t, 0.05);
+    loopGain.gain.setTargetAtTime(LOOP_LEVEL, t + AUDIO_DROP_S - 0.8, 0.4);
+  }
+
+  async function audioStart() {
+    if (audioLoading || audio) return;
+    audioLoading = true;
+    refreshSoundBtn();
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const [loopBuf, dropBuf] = await Promise.all([AUDIO_LOOP_URL, AUDIO_DROP_URL].map(async (u) => {
+        const r = await fetch(u);
+        return ctx.decodeAudioData(await r.arrayBuffer());
+      }));
+      const master = ctx.createGain();
+      master.connect(ctx.destination);
+      const loopGain = ctx.createGain();
+      loopGain.gain.value = LOOP_DUCK; // born ducked — the greeting drop is on
+      loopGain.connect(master);
+      const dropGain = ctx.createGain();
+      dropGain.connect(master);
+      audio = { ctx, loopBuf, dropBuf, loopGain, dropGain, master, dropBusyUntil: 0 };
+      // the greeting: the drop first…
+      playDropAudio();
+      // …and the loop enters as it resolves, then loops forever
+      const tr = audioTrim(loopBuf, AUDIO_LOOP_S);
+      const src = ctx.createBufferSource();
+      src.buffer = loopBuf;
+      src.loop = true;
+      src.loopStart = tr.start;
+      src.loopEnd = tr.end;
+      src.connect(loopGain);
+      src.start(ctx.currentTime + AUDIO_DROP_S - 0.1, tr.start);
+      audio.loopSrc = src;
+      audioOn = true;
+      try { localStorage.setItem('rv-sound', '1'); } catch (e) {}
+      track('rave_sound', { on: true });
+    } catch (e) {
+      audio = null;
+    }
+    audioLoading = false;
+    refreshSoundBtn();
+  }
+
+  function audioStop() {
+    if (audio) { try { audio.ctx.close(); } catch (e) {} }
+    audio = null;
+    audioOn = false;
+    try { localStorage.setItem('rv-sound', '0'); } catch (e) {}
+    track('rave_sound', { on: false });
+    refreshSoundBtn();
+  }
+
+  function refreshSoundBtn() {
+    const b = el('rvSoundBtn');
+    if (!b) return;
+    b.classList.toggle('rv-soundbtn--on', audioOn);
+    b.setAttribute('aria-pressed', String(audioOn));
+    b.title = audioLoading ? 'warming up the speakers…' : audioOn ? 'sound off' : 'sound on — the set is live';
+  }
+  const soundBtn = el('rvSoundBtn');
+  if (soundBtn) soundBtn.addEventListener('click', () => (audioOn ? audioStop() : audioStart()));
+  // returning listeners: pref remembered, but browsers demand a gesture —
+  // the FIRST tap/keypress anywhere re-opens the doors
+  try {
+    if (localStorage.getItem('rv-sound') === '1') {
+      const arm = () => { if (!audioOn && !audioLoading) audioStart(); };
+      addEventListener('pointerdown', arm, { once: true });
+      addEventListener('keydown', arm, { once: true });
+    }
+  } catch (e) {}
+  // iOS backgrounds the context — resume when the tab returns
+  document.addEventListener('visibilitychange', () => {
+    if (audio && document.visibilityState === 'visible' && audio.ctx.state === 'suspended') audio.ctx.resume();
+  });
+  // QA handle (harmless): lets tests confirm the graph without ears
+  window.__rvAudio = () => ({ on: audioOn, loading: audioLoading, ctx: audio && audio.ctx.state, loopDur: audio && audio.loopBuf.duration, dropDur: audio && audio.dropBuf.duration, busyUntil: audio && audio.dropBusyUntil });
 
   // ---- the pass: rave moments leave marks ----
   passVisit();
