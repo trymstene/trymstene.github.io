@@ -692,11 +692,17 @@ const GUIDE = [
     @keyframes rvBigOut { 100% { transform: translateX(-50%) translateY(-24px); opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .rv-bigmoment, .rv-bigmoment--out { animation: none; } }
 
-    /* pickup/earn banner: SLIM and at the BOTTOM — the old top box covered the
-       exact spot you tap to walk toward the DJ, and ate the taps (Trym, iOS) */
-    .rv-glowtoast {
+    /* pickup/earn banners: SLIM and at the BOTTOM — the old top box covered the
+       exact spot you tap to walk toward the DJ, and ate the taps (Trym, iOS).
+       They live in a STACK now: simultaneous pickups pile upward instead of
+       overlapping on the same pixel (Trym's catch) */
+    .rv-toasts {
       position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 700;
-      max-width: 94%; text-align: center; font-size: 0.72rem; line-height: 1.4;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      max-width: 94%; width: max-content; pointer-events: none;
+    }
+    .rv-glowtoast {
+      max-width: 100%; text-align: center; font-size: 0.72rem; line-height: 1.4;
       background: rgba(23, 18, 31, 0.94); color: #fffdf5; border: 2px solid #39ff14;
       box-shadow: 0 0 10px rgba(57, 255, 20, 0.4); padding: 0.35rem 0.75rem;
       pointer-events: none;
@@ -860,6 +866,7 @@ const GUIDE = [
           </svg>
         </div>
         <div class="rv-floor" id="rvFloor">
+          <div class="rv-toasts" id="rvToasts" aria-live="polite"></div>
           <div class="rv-world" id="rvWorld">
             <canvas class="rv-trails" id="rvTrails" aria-hidden="true"></canvas>
             <div class="rv-spot" id="rvSpot" hidden aria-hidden="true"></div>

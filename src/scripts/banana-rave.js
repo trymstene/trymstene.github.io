@@ -787,7 +787,7 @@ function init() {
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = '🍌 <b>IT’S JELLY TIME</b> — disco legs, gold trail, the floor goes OFF!';
-      floor.appendChild(toast);
+      (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 5000);
     }
     setTimeout(endHypeMode, HYPE_MODE_MS);
@@ -1134,7 +1134,7 @@ function init() {
       toast.className = 'rv-glowtoast';
       toast.innerHTML = SNACKS[kind][0] + ' <b>' + SNACKS[kind][1] + '</b>' +
         (kind === 'pizzabox' ? ' — +25 jelly, that’s dinner!' : (chain > 1 ? ' — chain ×' + chain + '!' : ' — keep moving, keep the chain!'));
-      floor.appendChild(toast);
+      (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 4000);
       track('rave_snack', { kind });
     }
@@ -1182,7 +1182,7 @@ function init() {
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = '🍌 <b>THE GOLDEN BANANA</b> — the whole floor parties for you!';
-      floor.appendChild(toast);
+      (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 6000);
       passPatch('golden');
       track('rave_gold');
@@ -1226,7 +1226,7 @@ function init() {
         jellyshot: 'DOUBLE jelly on everything — quick!',
         water: 'hydrated and unstoppable.',
       }[fx.id] || '') + chainTag();
-      floor.appendChild(toast);
+      (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 4500);
       // one-shot garnishes on top of the timed window
       if (fx.id === 'popper') confettiBurst();
@@ -1252,7 +1252,7 @@ function init() {
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = '💿 <b>YOU GOT THE RECORD</b> — run it up to the DJ!';
-      floor.appendChild(toast);
+      (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 5000);
       track('rave_vinyl_pickup');
     }
@@ -2288,7 +2288,7 @@ function init() {
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
     toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR</b> — the glowstick is yours forever. It’s in your hand and in the builder.';
-    floor.appendChild(toast);
+    (el('rvToasts') || floor).appendChild(toast);
     setTimeout(() => toast.remove(), 8000);
     track('rave_glowstick_unlock');
     passPatch('survivor', { quiet: true }); // the glowtoast IS the celebration here
