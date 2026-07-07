@@ -2679,10 +2679,17 @@ function init() {
     refreshSoundBtn();
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // iOS: the context starts SUSPENDED even inside a tap — resume() must be
+      // called while the gesture is still live (before any await), and the
+      // page must declare itself a media player or the silent switch mutes
+      // Web Audio entirely (phones live on silent)
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+      if (ctx.state === 'suspended') ctx.resume();
       const [loopBuf, dropBuf] = await Promise.all([AUDIO_LOOP_URL, AUDIO_DROP_URL].map(async (u) => {
         const r = await fetch(u);
         return ctx.decodeAudioData(await r.arrayBuffer());
       }));
+      if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
       const master = ctx.createGain();
       master.connect(ctx.destination);
       const loopGain = ctx.createGain();
@@ -2743,6 +2750,11 @@ function init() {
   // iOS backgrounds the context — resume when the tab returns
   document.addEventListener('visibilitychange', () => {
     if (audio && document.visibilityState === 'visible' && audio.ctx.state === 'suspended') audio.ctx.resume();
+  });
+  // belt for iOS: if the context is ever stuck suspended (decode outlived the
+  // gesture, low-power mode, etc.), the NEXT tap anywhere unsticks it
+  addEventListener('pointerdown', () => {
+    if (audio && audioOn && audio.ctx.state === 'suspended') audio.ctx.resume();
   });
   // QA handle (harmless): lets tests confirm the graph without ears
   window.__rvAudio = () => ({ on: audioOn, loading: audioLoading, ctx: audio && audio.ctx.state, loopDur: audio && audio.loopBuf.duration, dropDur: audio && audio.dropBuf.duration, busyUntil: audio && audio.dropBusyUntil });
