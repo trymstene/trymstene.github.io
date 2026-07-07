@@ -635,6 +635,10 @@ details.story p { margin-bottom: 1rem; }
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   margin-top: 1.8rem;
   text-align: left;
+  /* wide desktops: don't let the four doors stretch wall-to-wall */
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .door {
   display: flex;
