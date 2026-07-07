@@ -2643,7 +2643,7 @@ function init() {
   const AUDIO_LOOP_URL = '/assets/audio/rave-loop.mp3';
   const AUDIO_DROP_URL = '/assets/audio/rave-drop.mp3';
   const AUDIO_LOOP_S = 40.0, AUDIO_DROP_S = 12.8; // true master lengths
-  const LOOP_LEVEL = 0.9, LOOP_DUCK = 0.18;
+  const LOOP_LEVEL = 0.9;
   let audio = null, audioOn = false, audioLoading = false;
 
   // mp3 decode can prepend encoder delay; if the decoded buffer is longer
@@ -2656,23 +2656,45 @@ function init() {
     return { start, end: start + wantS };
   }
 
+  // the loop, from ITS bar 1, scheduled at time t — used on enable and after
+  // every drop, because drop-end resolves into loop-start (the authored seam)
+  function startLoopAt(t) {
+    const { ctx, loopBuf, loopGain } = audio;
+    const tr = audioTrim(loopBuf, AUDIO_LOOP_S);
+    const src = ctx.createBufferSource();
+    src.buffer = loopBuf;
+    src.loop = true;
+    src.loopStart = tr.start;
+    src.loopEnd = tr.end;
+    src.connect(loopGain);
+    src.start(t, tr.start);
+    audio.loopSrc = src;
+  }
+
+  // no ducking, no overlap (Trym: "why a duck release?") — a drop CUTS the
+  // loop like a DJ would (its impact masks the cut), plays clean and alone,
+  // and the loop RESTARTS from bar 1 at the exact end: the same butt joint
+  // Sentry authored, on every single drop
   function playDropAudio() {
-    if (!audio) return 0;
+    if (!audio) return;
     const { ctx, dropBuf, dropGain, loopGain } = audio;
     const t = ctx.currentTime;
-    if (t < audio.dropBusyUntil) return 0; // one drop at a time (greeting overlap etc.)
+    if (t < audio.dropBusyUntil) return; // one drop at a time
     audio.dropBusyUntil = t + AUDIO_DROP_S - 0.5;
     const src = ctx.createBufferSource();
     src.buffer = dropBuf;
     src.connect(dropGain);
     const tr = audioTrim(dropBuf, AUDIO_DROP_S);
     src.start(t, tr.start, AUDIO_DROP_S);
-    // the loop steps back for the drop and only swells home AFTER the drop
-    // has fully landed — restoring early stepped on the drop's ending (Trym)
-    loopGain.gain.cancelScheduledValues(t);
-    loopGain.gain.setTargetAtTime(LOOP_DUCK, t, 0.05);
-    loopGain.gain.setTargetAtTime(LOOP_LEVEL, t + AUDIO_DROP_S, 0.3);
-    return t; // exact start — the greeting butt-joins the loop to this
+    if (audio.loopSrc) {
+      // 25ms fade-out kills the cut click, then the old source dies
+      loopGain.gain.cancelScheduledValues(t);
+      loopGain.gain.setTargetAtTime(0.0001, t, 0.012);
+      try { audio.loopSrc.stop(t + 0.06); } catch (e) {}
+      audio.loopSrc = null;
+    }
+    loopGain.gain.setValueAtTime(LOOP_LEVEL, t + AUDIO_DROP_S); // full level at the joint
+    startLoopAt(t + AUDIO_DROP_S);
   }
 
   async function audioStart() {
@@ -2695,25 +2717,14 @@ function init() {
       const master = ctx.createGain();
       master.connect(ctx.destination);
       const loopGain = ctx.createGain();
-      loopGain.gain.value = LOOP_DUCK; // born ducked — the greeting drop is on
+      loopGain.gain.value = LOOP_LEVEL;
       loopGain.connect(master);
       const dropGain = ctx.createGain();
       dropGain.connect(master);
       audio = { ctx, loopBuf, dropBuf, loopGain, dropGain, master, dropBusyUntil: 0 };
-      // the greeting: the drop first…
-      const dropAt = playDropAudio() || ctx.currentTime;
-      // …and the loop butt-joins the moment it ends — the drop's last bar is
-      // CUT to resolve into the loop's first (Sentry's arrangement); both an
-      // overlap and a gap step on the joint, so it's scheduled sample-exact
-      const tr = audioTrim(loopBuf, AUDIO_LOOP_S);
-      const src = ctx.createBufferSource();
-      src.buffer = loopBuf;
-      src.loop = true;
-      src.loopStart = tr.start;
-      src.loopEnd = tr.end;
-      src.connect(loopGain);
-      src.start(dropAt + AUDIO_DROP_S, tr.start);
-      audio.loopSrc = src;
+      // the greeting IS just a drop with no loop to cut — playDropAudio
+      // schedules the loop's entry at the authored joint itself
+      playDropAudio();
       audioOn = true;
       try { localStorage.setItem('rv-sound', '1'); } catch (e) {}
       track('rave_sound', { on: true });
