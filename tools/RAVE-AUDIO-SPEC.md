@@ -13,19 +13,32 @@ lands on the visual strobe by arithmetic alone.*
 | The groove (normal floor) | the other 170s | — |
 | JELLY TIME (personal, any moment) | player-triggered | ~8s overlay |
 
-## File 1 — the chapter loop (`chapter-01.wav`)
+## File 1 — the chapter loop (`chapter-01.wav`) — 150 BPM (Sentry's pick)
+
+150 BPM is the magic tempo: the banana's sacred 0.8s bob = exactly 2 beats,
+so the floor is genuinely beat-locked to the kick.
 
 - **Exactly 180.000 seconds.** At 44.1kHz = **7,938,000 samples**, not one
   more. Any excess drifts the drop against the strobe a little every cycle.
-- **120 BPM (90 bars) or 128 BPM (96 bars)** — both divide 180s into whole
-  bars. Pick by vibe; stick to it for all future chapters.
-- **Arrangement: drop FIRST.** Bars 1–8-ish = the banger (the strobe covers
-  the first 10s). Then groove/verse — moving but breathable (most visitors
-  hear this part). Last ~8 bars = the riser that resolves into bar 1 when
-  the file loops. The end is the build-up to its own beginning.
-- **Loop-clean edges**: no reverb/delay tail past the last sample. Cut dry
-  into the loop point (the drop impact masks it) or bake the tail into the
-  file's start.
+- 180s at 150 BPM = 450 beats = **112.5 bars** — the half bar is THE HOLD:
+
+  | Section | Bars | Seconds |
+  | --- | --- | --- |
+  | THE DROP (strobe covers the first 10s) | 8 | 12.8 |
+  | The groove (split however you like) | 88 | 140.8 |
+  | The build / riser | 16 | 25.6 |
+  | THE HOLD — 2 beats of near-silence | 0.5 | 0.8 |
+  | **Total** | **112.5** | **180.000** |
+
+  The file ENDS on the 2-beat hold; the loop lands on bar 1 = the drop on
+  the strobe. 0.8s = exactly one banana dance cycle: the whole planet does
+  one silent bob in the dark, then the drop hits. That's the signature.
+- Only the total (180.000s) and the ending-on-the-hold are fixed — the
+  groove/build split is the producer's business. Musical drop section =
+  whole bars (8 recommended; the strobe is 10.0s = 6.25 bars, so the music
+  drop outlasting it by 2.8s reads as natural decay).
+- **Loop-clean edges**: no reverb/delay tail past the last sample — the
+  hold wants to be NEARLY silent anyway; bake any tail into the file start.
 - The dance visually double-times during the drop (0.8s → 0.48s cycle) —
   no tempo change needed; that's what drops feel like.
 - Deliver **WAV, 44.1kHz, 24-bit stereo**. Claude handles encoding; looping
@@ -34,15 +47,16 @@ lands on the visual strobe by arithmetic alone.*
 
 ## File 2 — the jelly-time stinger (`jellytime.wav`)
 
-- ~4 bars (8.0s at 120 / 7.5s at 128), **same key as the chapter** — it
-  overlays the groove at ANY bar, so it must stack harmonically.
+- **Exactly 5 bars = 8.000s at 150 BPM** — a perfect match for the 8s
+  jelly-time mini-drop visual. Same key as the chapter (it overlays the
+  groove at ANY bar, so it must stack harmonically).
 - Shape: riser → impact → short sub hit → clean out (a short tail is fine;
   it plays on its own layer).
 - The client ducks the main loop ~6dB under it, then releases.
 
 ## Later (optional, same spec)
 
-- **More chapters**: each exactly 180.000s, same BPM + key family. The
+- **More chapters**: each exactly 180.000s, 150 BPM, same key family. The
   clock's window number picks the chapter deterministically — everyone on
   Earth still hears the same thing, but the set rotates.
 - **Stems** (drums / bass / music) would enable adaptive intensity —
