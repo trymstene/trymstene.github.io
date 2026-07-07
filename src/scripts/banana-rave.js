@@ -2644,7 +2644,21 @@ function init() {
   const AUDIO_DROP_URL = '/assets/audio/rave-drop.mp3';
   const AUDIO_LOOP_S = 40.0, AUDIO_DROP_S = 12.8; // true master lengths
   const LOOP_LEVEL = 0.9;
-  let audio = null, audioOn = false, audioLoading = false;
+  let audio = null, audioOn = false, audioLoading = false, audioUnlockEl = null;
+
+  // 1s of silence as a WAV — the iOS session-unlock element plays this
+  function silentWav() {
+    const rate = 8000, n = rate; // 1s mono 8kHz
+    const buf = new ArrayBuffer(44 + n * 2);
+    const v = new DataView(buf);
+    const wr = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    wr(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); wr(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    wr(36, 'data'); v.setUint32(40, n * 2, true);
+    return buf;
+  }
 
   // mp3 decode can prepend encoder delay; if the decoded buffer is longer
   // than the master, trim with the standard-LAME-preroll heuristic so the
@@ -2708,12 +2722,31 @@ function init() {
       // page must declare itself a media player or the silent switch mutes
       // Web Audio entirely (phones live on silent)
       try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
-      if (ctx.state === 'suspended') ctx.resume();
+      if (ctx.state !== 'running') ctx.resume();
+      // audioSession only exists on newer Safari — the evergreen unlock is a
+      // silent looped <audio> ELEMENT started in the same tap: media-element
+      // playback flips the audio session so the ringer switch stops muting
+      // Web Audio on every iOS version
+      try {
+        if (!audioUnlockEl) {
+          audioUnlockEl = document.createElement('audio');
+          audioUnlockEl.loop = true;
+          audioUnlockEl.volume = 0.01;
+          // 1-second silent WAV, generated inline — nothing to download
+          audioUnlockEl.src = URL.createObjectURL(new Blob([silentWav()], { type: 'audio/wav' }));
+        }
+        audioUnlockEl.play().catch(() => {});
+      } catch (e) {}
+      // some WebKit builds still want the callback form of decodeAudioData
+      const decode = (buf) => new Promise((ok, err) => {
+        const p = ctx.decodeAudioData(buf, ok, err);
+        if (p && p.then) p.then(ok, err);
+      });
       const [loopBuf, dropBuf] = await Promise.all([AUDIO_LOOP_URL, AUDIO_DROP_URL].map(async (u) => {
         const r = await fetch(u);
-        return ctx.decodeAudioData(await r.arrayBuffer());
+        return decode(await r.arrayBuffer());
       }));
-      if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
+      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
       const master = ctx.createGain();
       master.connect(ctx.destination);
       const loopGain = ctx.createGain();
@@ -2737,6 +2770,7 @@ function init() {
 
   function audioStop() {
     if (audio) { try { audio.ctx.close(); } catch (e) {} }
+    if (audioUnlockEl) { try { audioUnlockEl.pause(); } catch (e) {} }
     audio = null;
     audioOn = false;
     try { localStorage.setItem('rv-sound', '0'); } catch (e) {}
@@ -2762,17 +2796,29 @@ function init() {
       addEventListener('keydown', arm, { once: true });
     }
   } catch (e) {}
-  // iOS backgrounds the context — resume when the tab returns
+  // iOS backgrounds the context — resume when the tab returns. Match any
+  // non-running state: iOS also uses a non-standard 'interrupted' after
+  // calls, Siri, silent-mode juggling…
   document.addEventListener('visibilitychange', () => {
-    if (audio && document.visibilityState === 'visible' && audio.ctx.state === 'suspended') audio.ctx.resume();
+    if (audio && document.visibilityState === 'visible' && audio.ctx.state !== 'running') audio.ctx.resume().catch(() => {});
   });
-  // belt for iOS: if the context is ever stuck suspended (decode outlived the
-  // gesture, low-power mode, etc.), the NEXT tap anywhere unsticks it
+  // belt for iOS: if the context is ever stuck (decode outlived the gesture,
+  // low-power mode, interruption), the NEXT tap anywhere unsticks it — and
+  // re-kicks the session-unlock element too
   addEventListener('pointerdown', () => {
-    if (audio && audioOn && audio.ctx.state === 'suspended') audio.ctx.resume();
+    if (audio && audioOn && audio.ctx.state !== 'running') {
+      audio.ctx.resume().catch(() => {});
+      if (audioUnlockEl) audioUnlockEl.play().catch(() => {});
+    }
   });
   // QA handle (harmless): lets tests confirm the graph without ears
-  window.__rvAudio = () => ({ on: audioOn, loading: audioLoading, ctx: audio && audio.ctx.state, loopDur: audio && audio.loopBuf.duration, dropDur: audio && audio.dropBuf.duration, busyUntil: audio && audio.dropBusyUntil });
+  window.__rvAudio = () => ({
+    on: audioOn, loading: audioLoading, ctx: audio && audio.ctx.state,
+    loopDur: audio && audio.loopBuf.duration, dropDur: audio && audio.dropBuf.duration,
+    busyUntil: audio && audio.dropBusyUntil,
+    unlock: audioUnlockEl ? (audioUnlockEl.paused ? 'paused' : 'playing') : 'none',
+    session: (navigator.audioSession && navigator.audioSession.type) || 'unsupported',
+  });
 
   // ---- the pass: rave moments leave marks ----
   passVisit();
