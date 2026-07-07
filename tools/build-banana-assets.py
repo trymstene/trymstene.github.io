@@ -364,7 +364,10 @@ def stage_emoji(write):
             out.append(np.asarray(Image.fromarray(sq).resize((size, size), Image.NEAREST)))
         return out
     save_gif(cut(128), os.path.join(ASSETS, 'dancing-banana-emoji-128.gif'), write, transparent=True)
-    save_gif(cut(512), os.path.join(ASSETS, 'dancing-banana-sticker-512.gif'), write, transparent=True)
+    frames512 = cut(512)
+    save_gif(frames512, os.path.join(ASSETS, 'dancing-banana-sticker-512.gif'), write, transparent=True)
+    # Telegram STICKER PACKS (@Stickers bot) only take static 512x512 PNG/WEBP
+    save_png(frames512[0], os.path.join(ASSETS, 'dancing-banana-sticker-512.png'), write)
 
 
 def stage_icons(write):

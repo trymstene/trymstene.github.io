@@ -2,18 +2,29 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 
-const title = "Dancing Banana Emoji & Sticker — Free for Discord & Slack";
-const description = "The Dancing Banana as a free emoji and sticker — transparent, ready for Discord, Slack and Telegram. Add the original 1999 meme by its creator, or make your own.";
-const ogDescription = "The original Dancing Banana as a free, transparent emoji/sticker for Discord, Slack and Telegram. Add it or make your own.";
+const title = "Dancing Banana Emoji & Sticker — Discord, Slack, Telegram, Twitch";
+const description = "The Dancing Banana as a free emoji and sticker — pre-cropped and sized for Discord, Slack, Telegram, Twitch and Teams. No trimming needed. From the meme's creator.";
+const ogDescription = "The original Dancing Banana as a free emoji/sticker — pre-sized for Discord, Slack, Telegram, Twitch and Teams. Grab it or make your own.";
 
 const faq = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    { "@type": "Question", "name": "Is there a dancing banana emoji?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The original Dancing Banana is available as a free transparent emoji and sticker you can add to Discord, Slack, Telegram and more, from its creator Trym Stene." } },
-    { "@type": "Question", "name": "How do I add the dancing banana to Discord?", "acceptedAnswer": { "@type": "Answer", "text": "Download the transparent version, then in Discord open Server Settings, go to Emoji or Stickers, click Upload, and choose the file. Animated emoji require a server with the right boost level." } },
-    { "@type": "Question", "name": "Can I use the dancing banana on Slack or Telegram?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Upload the transparent GIF or PNG as a custom emoji in Slack, or add it as a sticker in Telegram." } }
+    { "@type": "Question", "name": "Is there a dancing banana emoji?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The original Dancing Banana is available as a free transparent emoji and sticker, pre-sized for Discord, Slack, Telegram, Twitch and more, from its creator Trym Stene." } },
+    { "@type": "Question", "name": "How do I add the dancing banana emoji to Discord?", "acceptedAnswer": { "@type": "Answer", "text": "Download the 128px transparent GIF, then in Discord open Server Settings, go to Emoji, click Upload Emoji and choose the file. It is pre-cropped, so no editing is needed." } },
+    { "@type": "Question", "name": "How do I add the dancing banana to Slack?", "acceptedAnswer": { "@type": "Answer", "text": "Download the 128px GIF (13KB, well under Slack's size cap), click the emoji smiley in any message field, choose Add emoji, upload the file and name it, for example :bananadance:." } },
+    { "@type": "Question", "name": "Can I use the dancing banana on Telegram?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Send the 512px GIF in any chat and tap Save to GIFs to reuse it anywhere, or build a sticker pack with the 512px PNG via Telegram's @Stickers bot." } }
   ]
+};
+
+// the platform cuts — every button on this page maps a search intent to the
+// exact right file, pre-cropped: nobody should ever need an image editor
+const DL = {
+  emoji128: ['/assets/dancing-banana-emoji-128.gif', 'dancing-banana-emoji-trymstene.com.gif'],
+  gif512: ['/assets/dancing-banana-sticker-512.gif', 'dancing-banana-sticker-trymstene.com.gif'],
+  png512: ['/assets/dancing-banana-sticker-512.png', 'dancing-banana-sticker-trymstene.com.png'],
+  gif500: ['/assets/dancing-banana-transparent.gif', 'dancing-banana-animated-trymstene.com.gif'],
+  png500: ['/assets/dancing-banana-transparent.png', 'dancing-banana-transparent-trymstene.com.png'],
 };
 ---
 <BaseLayout
@@ -33,41 +44,85 @@ const faq = {
     </div>
     <p class="kicker">Free emoji &amp; sticker</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">dancing banana<br>emoji &amp; sticker</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">Transparent, free, and ready for Discord, Slack &amp; Telegram</p>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Transparent, free, pre-sized for Discord, Slack, Telegram &amp; Twitch</p>
   </section>
 
   <!-- answer-first + download -->
   <section class="block">
     <p class="lead" style="max-width:64ch;margin-inline:auto;font-size:1.2rem;">
-      Yes — the <strong>Dancing Banana</strong> makes a perfect emoji or sticker. Here's the
-      <strong>transparent</strong> version of the original 1999 meme, free to drop into Discord, Slack,
-      Telegram, or anywhere you chat.
+      Yes — the <strong>Dancing Banana</strong> makes a perfect emoji or sticker. Every file below is
+      <strong>transparent and pre-cropped to the exact size each platform wants</strong> — no trimming,
+      no resizing, no thinking. Pick your platform:
     </p>
+    <nav class="jumpnav" aria-label="Pick your platform">
+      <a href="#discord">Discord</a>
+      <a href="#slack">Slack</a>
+      <a href="#telegram">Telegram</a>
+      <a href="#twitch">Twitch</a>
+      <a href="#everywhere">Everywhere else</a>
+    </nav>
     <div class="grab">
-      <img src="/assets/dancing-banana-transparent.png" alt="Transparent Dancing Banana sticker">
+      <img src="/assets/dancing-banana-transparent.gif" alt="Transparent Dancing Banana emoji, animated">
       <div class="dl-buttons">
-        <a class="btn btn--dark" href="/assets/dancing-banana-emoji-128.gif" download="dancing-banana-emoji-trymstene.com.gif">Discord / Slack emoji (128px) ↓</a>
-        <a class="btn btn--dark" href="/assets/dancing-banana-sticker-512.gif" download="dancing-banana-sticker-trymstene.com.gif">Telegram sticker (512px) ↓</a>
-        <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download="dancing-banana-animated-trymstene.com.gif">Animated (GIF, 500px) ↓</a>
-        <a class="btn btn--light" href="/assets/dancing-banana-transparent.png" download="dancing-banana-sticker-trymstene.com.png">Still (PNG) ↓</a>
+        <a class="btn btn--dark" href={DL.emoji128[0]} download={DL.emoji128[1]}>Emoji (128px GIF) ↓</a>
+        <a class="btn btn--dark" href={DL.gif512[0]} download={DL.gif512[1]}>Sticker (512px GIF) ↓</a>
+        <a class="btn btn--light" href={DL.gif500[0]} download={DL.gif500[1]}>Animated (GIF, 500px) ↓</a>
+        <a class="btn btn--light" href={DL.png500[0]} download={DL.png500[1]}>Still (PNG) ↓</a>
       </div>
     </div>
     <p class="dl-door">Nice pick — but your server deserves a banana nobody else has. <a href="/make-a-banana/" data-place="post-dl-emoji">Dress your own →</a></p>
   </section>
 
-  <!-- how to add -->
-  <section class="block block--yellow">
+  <!-- per-platform setup: each block answers one search intent completely -->
+  <section class="block block--yellow" id="discord">
     <p class="kicker">Quick setup</p>
-    <h2>How to add it to Discord</h2>
+    <h2>Add it to Discord</h2>
     <ul class="bullets">
-      <li>Download the <strong>128px emoji</strong> above — it's pre-cropped and sized for emoji slots (well under Slack's 128KB cap too).</li>
-      <li>In Discord: <strong>Server Settings → Emoji</strong> (or <strong>Stickers</strong>) → <strong>Upload</strong>.</li>
-      <li>Pick the file, give it a name like <code>:banana:</code>, and save. Done. <PixelIcon name="banana" /></li>
+      <li>Grab the emoji file: <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.emoji128[0]} download={DL.emoji128[1]}>Discord emoji (128px GIF) ↓</a></li>
+      <li>In Discord: <strong>Server Settings → Emoji → Upload Emoji</strong> and pick the file.</li>
+      <li>Name it <code>:bananadance:</code> and save. Done. <PixelIcon name="banana" /></li>
+      <li><em>Good to know:</em> animated server emoji show for everyone, but members need Nitro to send them — the <a href={DL.png500[0]} download={DL.png500[1]}>still PNG</a> makes a static one anybody can use.</li>
     </ul>
-    <p class="lead" style="margin-top:1.2rem;">
-      On <strong>Slack</strong>, add it as a custom emoji; on <strong>Telegram</strong>, add it as a sticker.
-      Same file works everywhere.
-    </p>
+  </section>
+
+  <section class="block" id="slack">
+    <p class="kicker">Quick setup</p>
+    <h2>Add it to Slack</h2>
+    <ul class="bullets">
+      <li>Grab the emoji file: <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.emoji128[0]} download={DL.emoji128[1]}>Slack emoji (128px GIF) ↓</a> — 13KB, comfortably under Slack's size cap.</li>
+      <li>In any message field, click the <strong>smiley → Add emoji → Upload image</strong>.</li>
+      <li>Name it <code>:bananadance:</code> — it animates right in the message line. <PixelIcon name="banana" /></li>
+    </ul>
+  </section>
+
+  <section class="block block--yellow" id="telegram">
+    <p class="kicker">Quick setup</p>
+    <h2>Add it to Telegram</h2>
+    <ul class="bullets">
+      <li>Easiest: send the <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.gif512[0]} download={DL.gif512[1]}>512px GIF ↓</a> in any chat, tap it and choose <strong>Save to GIFs</strong> — it lives in your GIF drawer forever.</li>
+      <li>Building a real <strong>sticker pack</strong>? Telegram's <strong>@Stickers</strong> bot takes static 512×512 PNGs: <a class="btn btn--light" style="margin-inline:0.3rem;" href={DL.png512[0]} download={DL.png512[1]}>sticker PNG (512px) ↓</a></li>
+      <li>Message <code>@Stickers</code> → <code>/newpack</code> → send the PNG → pick an emoji for it. <PixelIcon name="banana" /></li>
+    </ul>
+  </section>
+
+  <section class="block" id="twitch">
+    <p class="kicker">Quick setup</p>
+    <h2>Add it to Twitch</h2>
+    <ul class="bullets">
+      <li>Affiliates &amp; partners: grab the <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.emoji128[0]} download={DL.emoji128[1]}>emote file (128px GIF) ↓</a></li>
+      <li><strong>Creator Dashboard → Viewer Rewards → Emotes</strong> → upload as an <strong>animated emote</strong> — Twitch auto-generates the 112/56/28px sizes.</li>
+      <li>Prefer a static emote? Use the <a href={DL.png500[0]} download={DL.png500[1]}>still PNG</a> the same way.</li>
+    </ul>
+  </section>
+
+  <section class="block block--yellow" id="everywhere">
+    <p class="kicker">Quick setup</p>
+    <h2>Everywhere else</h2>
+    <ul class="bullets">
+      <li><strong>Microsoft Teams:</strong> emoji picker → <strong>+ Add emoji</strong> → upload the <a href={DL.emoji128[0]} download={DL.emoji128[1]}>128px GIF</a> (if your org allows custom emoji).</li>
+      <li><strong>WhatsApp / Signal:</strong> feed the <a href={DL.png512[0]} download={DL.png512[1]}>512px PNG</a> to any sticker-maker app — it's already square and transparent.</li>
+      <li><strong>Anywhere that takes GIFs</strong> (iMessage, forums, docs, presentations): the <a href={DL.gif500[0]} download={DL.gif500[1]}>500px transparent GIF</a> just works.</li>
+    </ul>
   </section>
 
   <!-- make your own -->
@@ -88,11 +143,11 @@ const faq = {
     </div>
     <div class="faq__item">
       <h3>How do I add the dancing banana to Discord?</h3>
-      <p>Download the transparent version, then Server Settings → Emoji (or Stickers) → Upload → pick the file. Animated emoji need a boosted server.</p>
+      <p>Download the <a href="#discord">128px emoji GIF</a>, then Server Settings → Emoji → Upload Emoji → pick the file. It's pre-cropped — no editing needed.</p>
     </div>
     <div class="faq__item">
-      <h3>Can I use it on Slack or Telegram?</h3>
-      <p>Yes — upload it as a custom emoji (Slack) or a sticker (Telegram). The same transparent file works.</p>
+      <h3>Can I use it on Slack, Telegram or Twitch?</h3>
+      <p>Yes — every platform has its own pre-sized file and 3-step guide above: <a href="#slack">Slack</a>, <a href="#telegram">Telegram</a>, <a href="#twitch">Twitch</a>.</p>
     </div>
     <div class="faq__item">
       <h3>Where's it from?</h3>
