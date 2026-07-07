@@ -823,6 +823,123 @@ function init() {
   }
   refreshStats(); // paint the zeros — the row invites filling them
 
+  // ---- SHARE MY NIGHT: a 1080x1080 card rendered on the spot — YOUR banana
+  // (outfit and all) big on the left, tilted, one raised glove waving out of
+  // the crop (Trym's composition), tonight's numbers overflowing onto him.
+  async function shareNight() {
+    try { await document.fonts.ready; } catch (e) {}
+    const me = myId && ravers.get(myId);
+    if (!me) return;
+    const S = 1080;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const c = cv.getContext('2d');
+    // the club: near-black, a whisper of checkerboard, two spotlight beams
+    c.fillStyle = '#0d0b14';
+    c.fillRect(0, 0, S, S);
+    c.fillStyle = 'rgba(179, 136, 255, 0.05)';
+    for (let ty = 6; ty < 12; ty++) for (let tx = 0; tx < 12; tx++) {
+      if ((tx + ty) % 2) c.fillRect(tx * 90, ty * 90, 90, 90);
+    }
+    for (const [bx, tilt] of [[220, 0.5], [760, -0.35]]) {
+      const g = c.createLinearGradient(bx, 0, bx + tilt * S, S);
+      g.addColorStop(0, 'rgba(255, 225, 53, 0.16)');
+      g.addColorStop(1, 'rgba(255, 225, 53, 0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(bx - 40, 0); c.lineTo(bx + 40, 0);
+      c.lineTo(bx + tilt * S + 190, S); c.lineTo(bx + tilt * S - 190, S);
+      c.closePath(); c.fill();
+    }
+    // confetti pinches
+    const CONF = ['#ffe135', '#ff4d9d', '#78ebff', '#58c05c'];
+    for (let i = 0; i < 46; i++) {
+      c.fillStyle = CONF[i % CONF.length];
+      c.globalAlpha = 0.35 + (i % 5) * 0.12;
+      c.fillRect(Math.floor(((i * 733) % S) / 10) * 10, Math.floor(((i * 379) % S) / 10) * 10, 10, 10);
+    }
+    c.globalAlpha = 1;
+    // the banana: hands-up frame, big, tilted, hugging the left edge so the
+    // near arm crops out and the far glove reads as a WAVE
+    const bcv = document.createElement('canvas');
+    bcv.width = bcv.height = 1024;
+    drawComposite(bcv.getContext('2d'), 1024, 2, {
+      bg: 'transparent', captions: false, top: '', bottom: '',
+      hat: me.outfit.hat, glasses: me.outfit.glasses, extras: me.outfit.extras || {},
+      effect: 'none',
+    });
+    const glow = c.createRadialGradient(240, 620, 60, 240, 620, 560);
+    glow.addColorStop(0, 'rgba(255, 225, 53, 0.28)');
+    glow.addColorStop(1, 'rgba(255, 225, 53, 0)');
+    c.fillStyle = glow;
+    c.fillRect(0, 0, S, S);
+    c.save();
+    c.imageSmoothingEnabled = false;
+    c.translate(150, 640);           // centre sits past the left edge's third
+    c.rotate(-10 * Math.PI / 180);   // the lean
+    c.drawImage(bcv, -620, -620, 1240, 1240);
+    c.restore();
+    // type — right-aligned column the banana leans INTO
+    c.textAlign = 'right';
+    c.fillStyle = '#fffdf5';
+    c.font = '800 44px "Archivo Black", sans-serif';
+    c.fillText('MY NIGHT AT', S - 60, 130);
+    c.fillStyle = '#ffe135';
+    c.font = '800 76px "Archivo Black", sans-serif';
+    c.fillText('THE BANANA RAVE', S - 60, 215);
+    const rows = [
+      [tonight.jelly, 'JELLY'],
+      [tonight.pickups, tonight.pickups === 1 ? 'PICKUP' : 'PICKUPS'],
+      [tonight.fives, tonight.fives === 1 ? 'HIGH-FIVE' : 'HIGH-FIVES'],
+      [tonight.jellytimes, tonight.jellytimes === 1 ? 'JELLY TIME' : 'JELLY TIMES'],
+    ];
+    let y = 400;
+    for (const [n, label] of rows) {
+      // the numbers OVERFLOW onto the banana (Trym's brief) — gold glow keeps
+      // them readable where they cross his arm
+      c.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      c.shadowBlur = 26;
+      c.fillStyle = '#ffe135';
+      c.font = '800 120px "Archivo Black", sans-serif';
+      c.fillText(String(n), S - 540, y);
+      c.shadowBlur = 14;
+      c.fillStyle = '#fffdf5';
+      c.font = '800 36px "Archivo Black", sans-serif';
+      c.textAlign = 'left';
+      c.fillText(label, S - 505, y - 10);
+      c.textAlign = 'right';
+      c.shadowBlur = 0;
+      y += 138;
+    }
+    c.fillStyle = '#fffdf5';
+    c.font = '700 30px "Archivo Black", sans-serif';
+    c.fillText(autoName(me.outfit).toUpperCase(), S - 60, S - 116);
+    c.fillStyle = '#ffe135';
+    c.font = '800 34px "Archivo Black", sans-serif';
+    c.fillText('trymstene.com/rave', S - 60, S - 62);
+    track('rave_share_night');
+    if (location.search.includes('sharetest')) { // visual QA: show, don't share
+      cv.style.cssText = 'position:fixed;inset:40px auto auto 40px;width:520px;z-index:9999;border:4px solid #ffe135;';
+      cv.id = 'rvShareCard';
+      document.body.appendChild(cv);
+      return;
+    }
+    cv.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'my-night-banana-rave-trymstene.com.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'My night at the banana rave' }); return; } catch (e) { /* fall through to download */ }
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = file.name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }, 'image/png');
+  }
+  const shareBtn = el('rvShareNight');
+  if (shareBtn) shareBtn.addEventListener('click', shareNight);
+
   function bumpChain() {
     const now = Date.now();
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;

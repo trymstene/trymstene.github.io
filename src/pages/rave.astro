@@ -359,6 +359,12 @@ const GUIDE = [
     .rv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.7rem; font-size: 0.78rem; }
     .rv-stats span { color: #b8b3c7; }
     .rv-stats b { color: #ffe135; font-size: 0.95rem; margin-right: 0.3rem; }
+    .rv-share-btn {
+      margin-top: 0.7rem; width: 100%; background: #17121f; color: #ffe135;
+      border: 3px solid #ffe135; font-weight: 800; font-size: 0.8rem; padding: 0.5rem 0;
+      cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .rv-share-btn:hover { background: #ffe135; color: #111; }
     /* the +1 that floats off a picked jelly */
     .rv-plus {
       position: absolute; transform: translate(-50%, -50%); z-index: 400; pointer-events: none;
@@ -871,6 +877,7 @@ const GUIDE = [
         <ol id="rvBoard"><li><span>the floor awaits…</span></li></ol>
         <h2 class="rv-panel__h2">your night</h2>
         <div class="rv-stats" id="rvStats"></div>
+        <button class="rv-share-btn" id="rvShareNight">📸 share my night</button>
         <div class="rv-door">
           <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
         </div>
