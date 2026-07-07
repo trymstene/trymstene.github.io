@@ -64,7 +64,9 @@ export function passPatch(id, opts = {}) {
   p.patches[id] = Date.now();
   write(p);
   const def = PATCHES.find((d) => d.id === id);
-  if (!opts.quiet) passToast('🎖 <b>PATCH EARNED: ' + def.title + '</b><br>It’s pinned to <a href="/pass/">your banana pass</a>.');
+  // players read "badge"; the code keeps saying patch (the JELLY precedent —
+  // ids, storage and GA events never rename)
+  if (!opts.quiet) passToast('🎖 <b>' + def.title + '</b> — <a href="/pass/">badge on your pass</a>');
   if (window.gtag) window.gtag('event', 'patch_earn', { patch: id });
   return true;
 }

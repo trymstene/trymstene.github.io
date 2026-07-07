@@ -704,16 +704,18 @@ details.story p { margin-bottom: 1rem; }
 /* footer host line */
 .footer__host { font-size: 0.95rem; opacity: 0.85; }
 
-/* ---------- the pass toast: one celebration pattern for every page ---------- */
+/* ---------- the pass toast: one celebration pattern for every page ----------
+   a compact chip TOP-RIGHT under the nav (Trym: the bottom band is already
+   packed on the rave, and the old ink box covered too much screen) */
 .pass-toast {
-  position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 12px); z-index: 900;
-  max-width: min(420px, 90vw); text-align: center;
-  background: var(--ink); color: var(--paper); border: 3px solid var(--banana);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45); padding: 0.7rem 1rem;
-  font-size: 0.9rem; line-height: 1.5;
+  position: fixed; top: 72px; right: 12px; transform: translateY(-8px); z-index: 900;
+  max-width: min(300px, calc(100vw - 24px));
+  background: var(--banana); color: var(--ink); border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45); padding: 0.35rem 0.65rem;
+  font-size: 0.78rem; line-height: 1.45;
   opacity: 0; visibility: hidden; transition: opacity 0.25s ease, transform 0.25s ease;
 }
-.pass-toast--show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+.pass-toast--show { opacity: 1; visibility: visible; transform: translateY(0); }
 
 /* the shelf's shop door: banana items carry a make-it-real corner tag
    (global because the shelf renders on builder, forge, /make/ and /pass/) */
@@ -724,8 +726,8 @@ details.story p { margin-bottom: 1rem; }
   cursor: pointer;
 }
 .shelf-tag:hover { transform: scale(1.15); }
-.pass-toast b { color: var(--banana); }
-.pass-toast a { color: var(--banana); font-weight: 700; }
+.pass-toast b { color: var(--ink); }
+.pass-toast a { color: var(--ink); font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) {
   .marquee__track, .banana-fallback, .door__dot { animation: none; }

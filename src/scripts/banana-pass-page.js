@@ -62,7 +62,7 @@ async function init() {
       if (src) strip.appendChild(src.cloneNode(true));
     });
   } else {
-    strip.innerHTML = '<span style="font-size:0.72rem;opacity:0.6;">no patches yet — the floor awaits</span>';
+    strip.innerHTML = '<span style="font-size:0.72rem;opacity:0.6;">no badges yet — the floor awaits</span>';
   }
 
   // — gentle stats —
@@ -317,7 +317,7 @@ function initSync() {
     try {
       await savePass();
       showLinked();
-      passToast('🔐 <b>PASS SAVED</b><br>Your patches and creations now follow you across devices.');
+      passToast('🔐 <b>PASS SAVED</b> — your badges and creations follow you across devices');
     } catch (e) {
       note.textContent = e && e.name === 'NotAllowedError'
         ? 'No worries — nothing was saved. Try again whenever you like.'

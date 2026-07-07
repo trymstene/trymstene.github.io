@@ -3,14 +3,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import { PATCHES } from '../lib/pass-defs.js';
 
-const title = 'Your Banana Pass — patches, shelf and stats';
-const description = 'Your membership card to the banana world: the patches you have earned, your creations, and your nights on the dance floor. No account needed — the pass lives with you.';
+const title = 'Your Banana Pass — badges, shelf and stats';
+const description = 'Your membership card to the banana world: the badges you have earned, your creations, and your nights on the dance floor. No account needed — the pass lives with you.';
 ---
 <BaseLayout
   title={title}
   description={description}
   ogTitle="Your Banana Pass 🎫"
-  ogDescription="Patches, creations and rave nights — your membership card to the banana world."
+  ogDescription="Badges, creations and rave nights — your membership card to the banana world."
 >
   <meta name="robots" content="noindex" slot="head" />
   <style is:inline slot="head">
@@ -145,7 +145,7 @@ const description = 'Your membership card to the banana world: the patches you h
     </div>
 
     <div class="ps-section">
-      <h2>Patches</h2>
+      <h2>Badges</h2>
       <p>Moments, not points. The dark ones tell you where the fun is hiding.</p>
       <div class="ps-patches">
         {PATCHES.map((p) => (

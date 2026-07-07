@@ -1,4 +1,6 @@
-// THE BANANA PASS — patch catalog. PURE DATA (safe for Astro frontmatter):
+// THE BANANA PASS — patch catalog. Players read "badge" everywhere; the code,
+// ids, storage and GA events keep saying patch (the JELLY naming precedent).
+// PURE DATA (safe for Astro frontmatter):
 // the Card server-renders every patch as a dark slot with its hint; the client
 // lights up the earned ones from localStorage. Patches are MOMENTS, not
 // metrics: one-time, never expire, no streaks, no leaderboards.
