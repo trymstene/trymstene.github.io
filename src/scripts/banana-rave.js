@@ -14,7 +14,7 @@ import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
-const DROP_PERIOD = 180, DROP_LEN = 10; // seconds
+const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
 const MAX_VISIBLE = 60;
 // stay this long → the stage opens (server enforces the same; ?stagetest = solo-mode preview)
 const STAGE_UNLOCK_MS = location.search.includes('stagetest') ? 5000 : 5 * 60 * 1000;
