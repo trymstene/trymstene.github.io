@@ -1,0 +1,115 @@
+---
+// The community remix gallery — 268 dancing-banana remixes made by the
+// internet over 25+ years, honoured properly: categorised, rated in bananas,
+// every one downloadable. Data comes from tools/build-remix-gallery.py.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+import remixes from '../data/remixes.json';
+
+const title = 'Dancing Banana Community Remixes — 268 GIFs by the Internet';
+const description = 'The community remix gallery: 268 Dancing Banana GIF remixes made by the internet since 1999 — warrior bananas, Mario, Homer, dancing tacos. Rate them, download them, enjoy them.';
+const counts = remixes.reduce((a, r) => { a[r.cat] = (a[r.cat] || 0) + 1; return a; }, {});
+const CATS = [
+  ['all', 'All', remixes.length],
+  ['banana', 'Banana remixes', counts.banana || 0],
+  ['characters', 'Characters', counts.characters || 0],
+  ['food', 'Food', counts.food || 0],
+  ['wild', 'Wildcards', counts.wild || 0],
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="The Dancing Banana Community Remixes"
+  ogDescription="268 remixes by the internet, since 1999. Rate them in bananas."
+  ogImage="https://trymstene.com/assets/og/gif.png"
+>
+  <style is:inline slot="head">
+    .rmx-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.6rem 0 0.4rem; }
+    .rmx-chip {
+      background: var(--paper); color: var(--ink); border: 3px solid var(--ink); cursor: pointer;
+      font-weight: 800; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 2px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .rmx-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .rmx-sort { margin: 0.6rem auto 0; display: flex; gap: 0.5rem; justify-content: center; align-items: center; font-size: 0.85rem; font-weight: 700; }
+    .rmx-sort select { border: 3px solid var(--ink); background: var(--paper); font: inherit; padding: 0.3rem 0.5rem; }
+    .rmx-grid {
+      display: grid; gap: 1rem; margin-top: 1.6rem;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      max-width: 1160px; margin-left: auto; margin-right: auto;
+    }
+    .rmx-card {
+      background: var(--paper); border: 3px solid var(--ink); box-shadow: 5px 5px 0 #000;
+      display: flex; flex-direction: column; text-align: center;
+    }
+    .rmx-card .rmx-box {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      background: #fff; border-bottom: 3px solid var(--ink); overflow: hidden;
+    }
+    .rmx-card img { image-rendering: pixelated; width: 72%; height: 72%; object-fit: contain; }
+    .rmx-card h3 { font-size: 0.8rem; margin: 0.5rem 0.4rem 0.15rem; line-height: 1.25; min-height: 2em; display: flex; align-items: center; justify-content: center; }
+    .rmx-stars { display: flex; justify-content: center; gap: 2px; padding: 0.1rem 0 0; }
+    .rmx-stars button {
+      background: none; border: 0; cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px;
+      filter: grayscale(1) opacity(0.35); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .rmx-stars button.on { filter: none; }
+    .rmx-count { font-size: 0.68rem; opacity: 0.65; font-weight: 700; min-height: 1em; }
+    .rmx-dl {
+      margin: 0.45rem 0.45rem 0.45rem; font-size: 0.72rem; font-weight: 800; text-decoration: none;
+      border: 2px solid var(--ink); padding: 0.3rem 0; color: var(--ink); background: var(--banana);
+    }
+    .rmx-more { margin: 1.6rem auto 0; display: block; }
+    .rmx-note { font-size: 0.85rem; opacity: 0.75; margin-top: 1rem; }
+    @media (max-width: 640px) {
+      .rmx-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.7rem; }
+    }
+  </style>
+
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-community-remixes/bananadance-warrior.gif" width="40" height="44" style="image-rendering:pixelated;width:120px;height:auto;"
+           alt="The warrior banana — a community remix of the Dancing Banana" />
+    </div>
+    <p class="kicker">Thank you, internet</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">the community<br>remixes</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">{remixes.length} Dancing Banana remixes made by you, since 1999</p>
+  </section>
+
+  <section class="block">
+    <p class="lead" style="max-width:64ch;margin-inline:auto;">
+      I made one banana. <strong>The internet made all of these.</strong> Warrior bananas, jedi bananas,
+      dancing tacos, Mario, Homer — collected over 25 years of the meme living its own life.
+      Rate your favourites in bananas, and take any of them home. If you made one of these
+      (or have one I've missed): <a href="mailto:trym@trymstene.com">email me</a> — credit where credit's due.
+    </p>
+
+    <div class="rmx-filters" id="rmxFilters" role="group" aria-label="Filter remixes">
+      {CATS.map(([id, label, n]) => (
+        <button class="rmx-chip" data-cat={id} aria-pressed={id === 'all' ? 'true' : 'false'}>{label} · {n}</button>
+      ))}
+    </div>
+    <div class="rmx-sort">
+      <label for="rmxSort">Sort</label>
+      <select id="rmxSort">
+        <option value="top">Top rated</option>
+        <option value="az">A → Z</option>
+        <option value="lucky">I'm feeling lucky</option>
+      </select>
+    </div>
+
+    <div class="rmx-grid" id="rmxGrid"></div>
+    <button class="btn btn--dark rmx-more" id="rmxMore" hidden>Show more ↓</button>
+    <p class="rmx-note" style="text-align:center;">
+      All remixes are fan works shared here non-commercially, with love. Want to add yours to the pile?
+      <a href="/make-a-banana/" data-place="remixes">Dress a banana</a> or <a href="/forge/">forge a pixel from scratch</a>.
+    </p>
+  </section>
+
+  <script type="application/json" id="rmxData" set:html={JSON.stringify(remixes)} />
+  <script>
+    import '../scripts/remix-gallery.js';
+  </script>
+</BaseLayout>

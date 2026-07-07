@@ -39,6 +39,13 @@ const PAGES = [
       ['/assets/dancing-banana-transparent.png', 'Dancing Banana emoji transparent PNG'],
     ],
   },
+  {
+    path: '/dancing-banana-remixes/',
+    images: [
+      ['/assets/dancing-banana-community-remixes/bananadance-warrior.gif', 'The warrior banana — Dancing Banana community remix'],
+      ['/assets/dancing-banana-community-remixes/mariodance-pbj.gif', 'Dancing Mario — Peanut Butter Jelly Time community remix'],
+    ],
+  },
   { path: '/peanut-butter-jelly-time/', images: [['/assets/dancing-banana-gif.gif', 'The Peanut Butter Jelly Time banana — the original Dancing Banana']] },
   { path: '/license-the-dancing-banana/', images: [['/assets/dancing-banana-gif.gif', 'License the original Dancing Banana GIF']] },
   { path: '/projects/', images: [] },

@@ -443,8 +443,8 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
   place-items: center;
   font-size: 2rem;
   background: var(--paper);
-  border: 3px dashed var(--ink);
-  opacity: 0.6;
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 #000;
 }
 
 /* ---------- desktop: center sections under the hero ---------- */

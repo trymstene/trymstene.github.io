@@ -233,16 +233,20 @@ const faq = {
     <h2>Community remixes</h2>
     <p class="lead">
       A huge thank you to the meme community for all the Dancing Banana remixes over the years — the
-      warrior banana, the skiing banana, the alien banana, all of them. (Gallery going up here soon.)
+      warrior banana, the jedi banana, dancing Mario, all of them. The full gallery has 268 of them,
+      rateable in bananas and free to download.
     </p>
     <div class="remix-grid">
-      <div class="slot"><PixelIcon name="banana" /></div>
-      <div class="slot"><PixelIcon name="banana" /></div>
-      <div class="slot"><PixelIcon name="banana" /></div>
-      <div class="slot"><PixelIcon name="banana" /></div>
-      <div class="slot"><PixelIcon name="banana" /></div>
-      <div class="slot"><PixelIcon name="banana" /></div>
+      {['bananadance-warrior', 'bananadance-jedi', 'mariodance-pbj', 'dancing-banana-homer', 'bananadance-rainbow', 'bananadance-santa'].map((id) => (
+        <a class="slot" href="/dancing-banana-remixes/" aria-label="Open the community remix gallery">
+          <img src={'/assets/dancing-banana-community-remixes/' + id + '.gif'} alt="Dancing Banana community remix" loading="lazy"
+               style="image-rendering:pixelated;width:64%;height:64%;object-fit:contain;" />
+        </a>
+      ))}
     </div>
+    <p style="text-align:center;margin-top:1.4rem;">
+      <a class="btn btn--dark" href="/dancing-banana-remixes/">Browse all 268 remixes →</a>
+    </p>
   </section>
 
   <!-- footer -->

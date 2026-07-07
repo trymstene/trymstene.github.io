@@ -1,0 +1,21 @@
+# Community remix ratings worker — 1-5 banana votes for the remix gallery
+# at /dancing-banana-remixes/. One Durable Object holds every tally; ids are
+# validated against a slug pattern (no free text anywhere = zero moderation
+# surface). SEPARATE from the payment/rave workers (blast radius rule).
+#
+# Deploy: cd worker-remixes && npx wrangler deploy
+
+name = "banana-remixes"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "RATINGS"
+class_name = "RemixRatings"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RemixRatings"]
+
+[vars]
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
