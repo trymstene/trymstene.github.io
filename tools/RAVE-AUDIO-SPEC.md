@@ -31,10 +31,27 @@ so the floor is genuinely beat-locked to the kick.
   | **Total** | **112.5** | **180.000** |
 
   (Proportions are a SUGGESTION — normal club shape: short build, longer
-  drop. Only three things are rules: total = 180.000s, bar 1 = the drop,
-  the file ends on the 2-beat hold. The strobe is only the first 10s, so a
-  16-bar drop keeps banging after the lights calm — reads fine; an 8-bar
-  drop peaks tighter with the visuals. Producer's call.)
+  drop. The strobe is only the first 10s of the visual window, so a 16-bar
+  drop keeps banging after the lights calm — reads fine; an 8-bar drop
+  peaks tighter with the visuals. Producer's call.)
+
+  **The drop does NOT have to be at the start of the file.** Sentry's
+  preferred arrangement — club loop first, vocal, drop at the END, looping
+  seamlessly back into the club section — works identically: the client
+  plays with a phase offset. The rules then are just:
+  1. total = exactly 180.000s,
+  2. the file loops seamlessly end → start,
+  3. **report the exact bar/second where the drop impact hits** — that
+     becomes the client's alignment constant (drop impact = strobe start).
+  The pre-drop hold relocates with it: silence, the vocal, impact.
+
+  **⚠️ The drop vocal**: never sample the Buckwheat Boyz recording or sing
+  their melodic hook (the hard rule). A freshly recorded SPOKEN phrase is
+  a grey zone for the full "peanut butter jelly time" (it's their song
+  title); **"IT'S JELLY TIME!" is 100% ours and matches the club's whole
+  vocabulary** (the meter, the button). The jelly-time stinger is the
+  natural home for that shout — the player presses a button that says
+  JELLY TIME and the club yells it back.
 
   The file ENDS on the 2-beat hold; the loop lands on bar 1 = the drop on
   the strobe. 0.8s = exactly one banana dance cycle: the whole planet does
