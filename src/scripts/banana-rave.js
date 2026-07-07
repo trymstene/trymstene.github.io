@@ -918,24 +918,51 @@ function init() {
     c.font = '800 34px "Archivo Black", sans-serif';
     c.fillText('trymstene.com/rave', S - 60, S - 62);
     track('rave_share_night');
-    if (location.search.includes('sharetest')) { // visual QA: show, don't share
-      cv.style.cssText = 'position:fixed;inset:40px auto auto 40px;width:520px;z-index:9999;border:4px solid #ffe135;';
-      cv.id = 'rvShareCard';
-      document.body.appendChild(cv);
-      return;
-    }
-    cv.toBlob(async (blob) => {
-      if (!blob) return;
-      const file = new File([blob], 'my-night-banana-rave-trymstene.com.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: 'My night at the banana rave' }); return; } catch (e) { /* fall through to download */ }
-      }
+    openShareModal(cv);
+  }
+  // the card gets a proper REVEAL — our own lightbox, not the OS dialog
+  // (Windows' native share sheet has no image preview; Trym: "depressing").
+  // The system sheet stays as an opt-in button where it's actually nice (phones).
+  const FILE_NAME = 'my-night-banana-rave-trymstene.com.png';
+  function openShareModal(cv) {
+    const modal = el('rvShareModal');
+    const slot = el('rvShareSlot');
+    slot.replaceChildren(cv);
+    modal.hidden = false;
+    el('rvShareSys').hidden = !navigator.canShare;
+    const toBlob = () => new Promise((r) => cv.toBlob(r, 'image/png'));
+    el('rvShareDl').onclick = async () => {
+      const blob = await toBlob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = file.name;
+      a.download = FILE_NAME;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    }, 'image/png');
+    };
+    el('rvShareCopy').onclick = async () => {
+      try {
+        const blob = await toBlob();
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        el('rvShareCopy').textContent = '✓ copied — paste it anywhere';
+        setTimeout(() => { el('rvShareCopy').textContent = '📋 copy image'; }, 2500);
+      } catch (e) {
+        el('rvShareCopy').textContent = 'copy blocked — use download';
+        setTimeout(() => { el('rvShareCopy').textContent = '📋 copy image'; }, 2500);
+      }
+    };
+    el('rvShareSys').onclick = async () => {
+      const blob = await toBlob();
+      const file = new File([blob], FILE_NAME, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'My night at the banana rave' }); } catch (e) { /* user closed it */ }
+      }
+    };
+  }
+  const closeShare = () => { el('rvShareModal').hidden = true; };
+  if (el('rvShareModal')) {
+    el('rvShareClose').addEventListener('click', closeShare);
+    el('rvShareModal').addEventListener('click', (e) => { if (e.target === el('rvShareModal')) closeShare(); });
+    addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('rvShareModal').hidden) closeShare(); });
   }
   const shareBtn = el('rvShareNight');
   if (shareBtn) shareBtn.addEventListener('click', shareNight);
