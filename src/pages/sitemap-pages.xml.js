@@ -13,8 +13,8 @@ const PAGES = [
   {
     path: '/dancing-banana-gif-meme/',
     images: [
-      ['/assets/dancing-banana-gif.gif', 'The original Dancing Banana GIF (1999) by Trym Stene'],
-      ['/assets/dancing-banana-transparent.gif', 'Dancing Banana GIF with transparent background'],
+      ['/assets/dancing-banana-gif.gif', 'The Dancing Banana — the original banana meme GIF (1999) by Trym Stene'],
+      ['/assets/dancing-banana-transparent.gif', 'Dancing Banana meme GIF with a transparent background'],
       ['/assets/dancing-banana-transparent.png', 'Dancing Banana transparent PNG'],
       ['/assets/example-banana-1.png', 'Custom dancing banana with a cowboy hat'],
       ['/assets/example-banana-2.png', 'Custom dancing banana with top hat, moustache and bow tie'],
@@ -22,6 +22,10 @@ const PAGES = [
     ],
   },
   { path: '/make-a-banana/', images: [['/assets/og/builder.png', 'Make your own Dancing Banana — free banana builder']] },
+  { path: '/make/', images: [] },
+  { path: '/rave/', images: [] },
+  { path: '/forge/', images: [] },
+  { path: '/wall/', images: [] },
   { path: '/banana-of-the-day/', images: [] },
   {
     path: '/dancing-banana-wallpaper/',
