@@ -65,3 +65,33 @@ better. Until then `ga4.py` shows a note where the placement table would be.
 Also worth doing once (from the monetization notes): mark the money-funnel
 events (`sticker_preview_confirm`, `checkout_redirect`, `generator_click`) as
 **Key events** in GA4 so they count as conversions.
+
+---
+
+# Search Console pull (`tools/gsc.py`) — the GROWTH dataset
+
+GSC shows what people SEARCH and whether they click — the CTR lever GA4 can't
+see. Reuses the SAME service-account key. Setup:
+
+1. **Google Cloud** (same project) → APIs & Services → Library → enable
+   **"Google Search Console API"**.
+2. **Search Console** → the `https://trymstene.com` property → **Settings →
+   Users and permissions → Add user** → paste the service-account email
+   (`…@….iam.gserviceaccount.com`) → permission **Full**.
+3. Add the property id to `tools/ga4.local.json`:
+   ```json
+   { "…": "…", "gsc_site": "sc-domain:trymstene.com" }
+   ```
+   Use `sc-domain:trymstene.com` for a **Domain** property, or
+   `https://trymstene.com/` (trailing slash) for a **URL-prefix** property.
+4. `pip install google-api-python-client`
+5. Run:
+   ```bash
+   python tools/gsc.py                 # last 28 days (GSC lags ~3 days)
+   python tools/gsc.py --range 90d
+   python tools/gsc.py --range 2026-06-01:2026-06-28
+   ```
+
+⚠️ The NEW property only has data since the migration; the old
+`https://www.trymstene.com` 16-month history ages out. The baseline is captured
+in the [[traffic-and-monetization]] memory.
