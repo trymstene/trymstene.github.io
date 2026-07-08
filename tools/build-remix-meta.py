@@ -22,15 +22,33 @@ BASE = os.path.join(SITE, 'src', 'data', 'remixes.json')
 OUT  = os.path.join(SITE, 'src', 'data', 'remix-meta.json')
 
 # --- corrections: the community name is wrong for what the GIF actually shows
+# (Trym reviewed the duplicates/mislabels by eye). Slugs derive from these.
 RENAMES = {
-    'bananadance-left': 'Dead',        # a banana flat on its back, not dancing
+    'bananadance-left': 'Dead',            # a banana flat on its back, not dancing
+    'banana-dance-1': 'Sweet Potato',      # a sprouting sweet-potato-looking banana
+    'banana-dance-2': 'Ketchup Song',      # does the ketchup-song dance
+    'banana-dance': 'Robot Dance',         # doing the robot
+    'bananadance-pbj': 'Flash Banana Red', # Flash-era banana, red racing stripes
+    'bananadance': 'Flash Banana Classic', # the classic Flash PBJT banana
+    'pbj-dance': 'Berry',                  # a winged berry, not a banana
+    'dancing-banana-alien': 'Xenomorph',   # the Alien-vs-Predator alien
+    'dancing-banana-devil': 'Pitchfork Devil',
+    'bananadance-fade2': 'Sliding Fade',
+    'bananadance-pink-1': 'Nerdy Pink',    # nerdy pink (glasses); the other is classic
+    'bananadance-satan': 'Satan Splits',   # a Satan banana doing the splits
+    'bananadance-sign': 'Dance Sign',      # holds a sign reading DANCE
+    'super-mario-banana': 'Super Mario Banana Party',  # Mario + banana together
+    'bananadance-slow-2': 'Boogie',        # does the boogie
 }
+
+# --- remove entirely: near-duplicate the source can't tell apart (Trym's call)
+DROP = {'dancing-banana-upsidedown'}       # dup of bananadance-upsidedown
 
 # --- visual hints from reviewing every GIF → richer, non-boilerplate blurbs.
 # keyed by id. Absent ids fall back to a name-based description.
 HINTS = {
-    'aliendance-pbj': 'a grey little-green-man alien banana',
-    'dancing-banana-alien': 'a dark, armoured alien banana',
+    'aliendance-pbj': 'a grey little-green-man Area-51 alien banana',
+    'dancing-banana-alien': 'a Xenomorph — the Alien-vs-Predator alien, as a banana',
     'bananadance-warrior': 'a warrior banana kitted out with a sword and shield',
     'bananadance-jedi': 'a Jedi banana swinging a green lightsaber',
     'bananadance-sunglasses': 'a banana chilling in black sunglasses',
@@ -49,7 +67,7 @@ HINTS = {
     'bananadance-rapper': 'a rapper banana in a cap and gold chains',
     'bananadance-devil': 'a little red devil banana',
     'dancing-banana-devil': 'a red devil banana with a pitchfork',
-    'bananadance-satan': 'a horned red devil banana',
+    'bananadance-satan': 'a Satan banana dropping into the splits, pitchfork and all',
     'dancing-banana-satan': 'Satan himself, as a red banana with a pitchfork',
     'bananadance-angel': 'an angel banana with a halo and wings',
     'bananadance-pinkangel': 'a pink angel banana with a halo',
@@ -69,7 +87,7 @@ HINTS = {
     'dancing-banana-homer': 'a Homer Simpson banana',
     'mariodance-pbj': 'a Mario banana',
     'dancing-super-mario': 'a Super Mario banana',
-    'super-mario-banana': 'Mario, dancing next to a banana',
+    'super-mario-banana': 'Super Mario and a banana partying together',
     'luigi-dance-pbj': 'a Luigi banana',
     'sonicdance-pbjtime': 'a Sonic the Hedgehog banana',
     'bender-dance-pbj': 'Bender from Futurama, as a banana',
@@ -111,6 +129,17 @@ HINTS = {
     'bananadance-greenmonster': 'a green monster banana',
     'bananadance-shark': 'a banana in shark-grey, jaws and all',
     'bananadance-dragon': 'a fierce blue dragon banana',
+    # Trym's fixups
+    'banana-dance-1': 'a sprouting sweet-potato-looking banana',
+    'banana-dance-2': 'a banana doing the ketchup-song dance',
+    'banana-dance': 'a banana busting out the robot',
+    'bananadance-pbj': 'the Flash-era banana in red racing stripes',
+    'bananadance': 'the classic Flash Peanut-Butter-Jelly-Time banana',
+    'pbj-dance': 'a little winged berry cutting a rug',
+    'bananadance-fade2': 'a banana in a sliding fade',
+    'bananadance-pink-1': 'a nerdy pink banana in glasses',
+    'bananadance-sign': 'a banana holding up a sign that reads DANCE',
+    'bananadance-slow-2': 'a banana doing the boogie',
 }
 
 # names that match real search demand (GSC) → mood tag + query-first phrasing
@@ -154,6 +183,8 @@ def main(write):
     seen, out = set(), []
     for i, r in enumerate(base):
         rid = r['id']
+        if rid in DROP:
+            continue
         title = RENAMES.get(rid, r['title'])
         # tidy display casing: "apple red" -> "Apple Red" (leave odd ones alone)
         title = ' '.join(w if (w.isupper() and len(w) > 1) else w.capitalize()
