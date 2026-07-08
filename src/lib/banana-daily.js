@@ -26,8 +26,9 @@ function pools(date) {
   return {
     hats: [['none', 'no hat'], ...active.flatMap((p) => (p.hats || []).map(pair))],
     shades: [['none', 'no shades'], ...active.flatMap((p) => (p.shades || []).map(pair))],
-    // the daily only wears freely-available extras (never earned trophies or rave-granted items)
-    extras: active.flatMap((p) => (p.extras || []).filter((e) => !e.earned && !e.raveOnly).map(pair)),
+    // the daily only wears freely-available extras (never earned trophies, rave-granted
+    // items, or FEET overlays — the daily keeps its own baked-in shoes)
+    extras: active.flatMap((p) => (p.extras || []).filter((e) => !e.earned && !e.raveOnly && e.anchor !== 'feet').map(pair)),
   };
 }
 

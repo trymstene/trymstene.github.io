@@ -23,7 +23,7 @@
 // vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
 const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy'];
 const SHADE_IDS = ['none', 'shades', 'hearts', 'visor'];
-const EXTRA_IDS = ['mustache', 'bowtie', 'sneakers', 'glowstick', 'goldbanana'];
+const EXTRA_IDS = ['mustache', 'bowtie', 'sneakers', 'sneakersblue', 'sneakersgold', 'glowstick', 'goldbanana'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
 const ROOM_CAP = 200;

@@ -15,6 +15,10 @@ import {
 } from '../lib/banana-engine.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
+// FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
+// state.extras like other extras (so the outfit shape / URL / bb-last / worker
+// are all unchanged) but the builder + engine keep it mutually exclusive.
+const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly);
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -95,6 +99,7 @@ function init() {
   // extras = independent toggles, not a single-choice row (the art is the button)
   EXTRA_DEFS.forEach((d) => {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
+    if (d.anchor === 'feet') return; // shoes get their own single-select row below
     const art = SVG[d.front || d.art];
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
@@ -116,6 +121,27 @@ function init() {
     b.onclick = () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
     el('bbExtrasChips').appendChild(b);
   });
+
+  // FEET row — single-select: one shoe clears the others; a 'none' chip returns
+  // to the banana's own baked-in shoes. setFeet enforces the exclusivity.
+  const setFeet = (id) => { FEET_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
+  if (el('bbFeetChips') && FEET_DEFS.length) {
+    const none = document.createElement('button');
+    none.className = 'bb-chip bb-chip--icon bb-chip--none';
+    none.dataset.feet = 'none';
+    none.title = 'Default shoes'; none.setAttribute('aria-label', 'Default shoes');
+    none.onclick = () => setFeet(null);
+    el('bbFeetChips').appendChild(none);
+    FEET_DEFS.forEach((d) => {
+      const b = document.createElement('button');
+      b.className = 'bb-chip bb-chip--icon';
+      b.innerHTML = SVG[d.art];
+      b.dataset.feet = d.id;
+      b.title = d.label; b.setAttribute('aria-label', d.label);
+      b.onclick = () => setFeet(state.extras[d.id] ? null : d.id); // click the active pair = take them off
+      el('bbFeetChips').appendChild(b);
+    });
+  }
 
   topIn.addEventListener('input', () => { state.top = topIn.value; onState(); });
   botIn.addEventListener('input', () => { state.bottom = botIn.value; onState(); });
@@ -451,6 +477,8 @@ function init() {
       document.querySelectorAll('#' + host + ' .bb-chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.val === state[key]));
     });
     document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
+    const anyFeet = FEET_DEFS.some((d) => state.extras[d.id]); // 'none' lights up when no shoe is worn
+    document.querySelectorAll('#bbFeetChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
     document.querySelectorAll('.bb-frame').forEach((f) => f.setAttribute('aria-pressed', String(parseInt(f.dataset.frame, 10) === state.frame)));
     const pb = el('bbPause');
     pb.innerHTML = state.paused ? ICON_PLAY : ICON_PAUSE;
