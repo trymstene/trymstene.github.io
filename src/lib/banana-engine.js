@@ -27,15 +27,19 @@ const BASE_CYCLE_S = 0.8; // 8 frames x 100ms = the original GIF timing
 // hands = the two white-glove centres [left, right] in screen space, measured by
 // tools/find-hand-anchors.py — HELD items (anchor: 'hand') ride these. Both arms
 // pump together in this dance (down 362 → up 135), so a held item pumps with the beat.
+// feetX = the two shoe centroids [left, right] per frame (measured, y>=458 band).
+// The feet bbox is fixed but the weight ROCKS side to side ~5px per frame — a
+// held-still overlay reads as stiff, so shoes ride these per-frame anchors and
+// dance with the banana. Bottom is constant (FEET_BOTTOM).
 const FRAMES = [
-  { eyeCx: 232, eyeCy: 222, hatCx: 272, btCx: 268, tipY: 85, face: 'right', hands: [[145, 362], [380, 362]] },
-  { eyeCx: 232, eyeCy: 192, hatCx: 272, btCx: 270, tipY: 57, face: 'right', hands: [[116, 334], [409, 334]] },
-  { eyeCx: 234, eyeCy: 135, hatCx: 248, btCx: 248, tipY: 0,  face: 'front', hands: [[45, 135], [437, 135]] },
-  { eyeCx: 232, eyeCy: 156, hatCx: 206, btCx: 206, tipY: 28, face: 'front', hands: [[45, 206], [366, 206]] },
-  { eyeCx: 236, eyeCy: 222, hatCx: 196, btCx: 200, tipY: 85, face: 'left',  hands: [[88, 362], [323, 362]] },
-  { eyeCx: 236, eyeCy: 192, hatCx: 196, btCx: 198, tipY: 57, face: 'left',  hands: [[59, 334], [352, 334]] },
-  { eyeCx: 234, eyeCy: 135, hatCx: 220, btCx: 220, tipY: 0,  face: 'front', hands: [[31, 135], [423, 135]] },
-  { eyeCx: 237, eyeCy: 156, hatCx: 262, btCx: 262, tipY: 28, face: 'front', hands: [[102, 206], [423, 206]] },
+  { eyeCx: 232, eyeCy: 222, hatCx: 272, btCx: 268, tipY: 85, face: 'right', hands: [[145, 362], [380, 362]], feetX: [159, 309] },
+  { eyeCx: 232, eyeCy: 192, hatCx: 272, btCx: 270, tipY: 57, face: 'right', hands: [[116, 334], [409, 334]], feetX: [160, 308] },
+  { eyeCx: 234, eyeCy: 135, hatCx: 248, btCx: 248, tipY: 0,  face: 'front', hands: [[45, 135], [437, 135]], feetX: [162, 306] },
+  { eyeCx: 232, eyeCy: 156, hatCx: 206, btCx: 206, tipY: 28, face: 'front', hands: [[45, 206], [366, 206]], feetX: [163, 305] },
+  { eyeCx: 236, eyeCy: 222, hatCx: 196, btCx: 200, tipY: 85, face: 'left',  hands: [[88, 362], [323, 362]], feetX: [159, 309] },
+  { eyeCx: 236, eyeCy: 192, hatCx: 196, btCx: 198, tipY: 57, face: 'left',  hands: [[59, 334], [352, 334]], feetX: [160, 308] },
+  { eyeCx: 234, eyeCy: 135, hatCx: 220, btCx: 220, tipY: 0,  face: 'front', hands: [[31, 135], [423, 135]], feetX: [162, 306] },
+  { eyeCx: 237, eyeCy: 156, hatCx: 262, btCx: 262, tipY: 28, face: 'front', hands: [[102, 206], [423, 206]], feetX: [163, 305] },
 ];
 
 // ---- accessory art: hand-authored PIXEL SVGs on the banana's own 13px grid ----
@@ -73,10 +77,10 @@ const SVG = {
   broom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 220" width="80" height="220" shape-rendering="crispEdges"><rect x="30" y="0" width="20" height="10" fill="#5a3618"/><rect x="30" y="10" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="20" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="30" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="40" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="50" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="60" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="70" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="80" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="90" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="100" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="110" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="120" width="20" height="10" fill="#8a5a2b"/><rect x="30" y="130" width="20" height="10" fill="#8a5a2b"/><rect x="20" y="140" width="10" height="10" fill="#111111"/><rect x="30" y="140" width="20" height="10" fill="#8a5a2b"/><rect x="50" y="140" width="10" height="10" fill="#111111"/><rect x="20" y="150" width="10" height="10" fill="#111111"/><rect x="30" y="150" width="20" height="10" fill="#ffd650"/><rect x="50" y="150" width="10" height="10" fill="#111111"/><rect x="10" y="160" width="10" height="10" fill="#111111"/><rect x="20" y="160" width="40" height="10" fill="#ffd650"/><rect x="60" y="160" width="10" height="10" fill="#111111"/><rect x="10" y="170" width="10" height="10" fill="#111111"/><rect x="20" y="170" width="20" height="10" fill="#ffd650"/><rect x="40" y="170" width="10" height="10" fill="#d6a024"/><rect x="50" y="170" width="10" height="10" fill="#ffd650"/><rect x="60" y="170" width="10" height="10" fill="#111111"/><rect x="0" y="180" width="10" height="10" fill="#111111"/><rect x="10" y="180" width="20" height="10" fill="#ffd650"/><rect x="30" y="180" width="10" height="10" fill="#d6a024"/><rect x="40" y="180" width="30" height="10" fill="#ffd650"/><rect x="70" y="180" width="10" height="10" fill="#111111"/><rect x="0" y="190" width="10" height="10" fill="#111111"/><rect x="10" y="190" width="10" height="10" fill="#ffd650"/><rect x="20" y="190" width="10" height="10" fill="#d6a024"/><rect x="30" y="190" width="20" height="10" fill="#ffd650"/><rect x="50" y="190" width="10" height="10" fill="#d6a024"/><rect x="60" y="190" width="10" height="10" fill="#ffd650"/><rect x="70" y="190" width="10" height="10" fill="#111111"/><rect x="0" y="200" width="10" height="10" fill="#111111"/><rect x="10" y="200" width="30" height="10" fill="#ffd650"/><rect x="40" y="200" width="10" height="10" fill="#d6a024"/><rect x="50" y="200" width="20" height="10" fill="#ffd650"/><rect x="70" y="200" width="10" height="10" fill="#111111"/><rect x="10" y="210" width="60" height="10" fill="#111111"/></svg>',
   // the lost record, carried in the glove while the courier runs it to the DJ
   // (same 12×12 art as the floor sprite, engine ×10 units)
-  // a first pair of FEET wearables (the new feet anchor): red high-top
-  // sneakers — two 7-unit shoes at the outer feet that FULLY COVER the banana's
-  // own white shoes (per the footwear doctrine), white soles + a lace flash
-  sneakers: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" width="180" height="40" shape-rendering="crispEdges"><rect x="10" y="0" width="50" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="50" height="10" fill="#e22020"/><rect x="60" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="20" height="10" fill="#e22020"/><rect x="30" y="20" width="10" height="10" fill="#ffffff"/><rect x="40" y="20" width="20" height="10" fill="#e22020"/><rect x="60" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="50" height="10" fill="#ffffff"/><rect x="60" y="30" width="10" height="10" fill="#111111"/><rect x="120" y="0" width="50" height="10" fill="#111111"/><rect x="110" y="10" width="10" height="10" fill="#111111"/><rect x="120" y="10" width="50" height="10" fill="#e22020"/><rect x="170" y="10" width="10" height="10" fill="#111111"/><rect x="110" y="20" width="10" height="10" fill="#111111"/><rect x="120" y="20" width="20" height="10" fill="#e22020"/><rect x="140" y="20" width="10" height="10" fill="#ffffff"/><rect x="150" y="20" width="20" height="10" fill="#e22020"/><rect x="170" y="20" width="10" height="10" fill="#111111"/><rect x="110" y="30" width="10" height="10" fill="#111111"/><rect x="120" y="30" width="50" height="10" fill="#ffffff"/><rect x="170" y="30" width="10" height="10" fill="#111111"/></svg>',
+  // FEET slot: a SINGLE shoe (drawn once per foot on the per-frame anchor).
+  // 7 units wide → covers a ~70px foot with margin. Red high-top, white sole,
+  // a lace flash. Symmetric, so it reads right on both feet.
+  sneakers: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 40" width="70" height="40" shape-rendering="crispEdges"><rect x="10" y="0" width="50" height="10" fill="#111111"/><rect x="0" y="10" width="10" height="10" fill="#111111"/><rect x="10" y="10" width="50" height="10" fill="#e22020"/><rect x="60" y="10" width="10" height="10" fill="#111111"/><rect x="0" y="20" width="10" height="10" fill="#111111"/><rect x="10" y="20" width="20" height="10" fill="#e22020"/><rect x="30" y="20" width="10" height="10" fill="#ffffff"/><rect x="40" y="20" width="20" height="10" fill="#e22020"/><rect x="60" y="20" width="10" height="10" fill="#111111"/><rect x="0" y="30" width="10" height="10" fill="#111111"/><rect x="10" y="30" width="50" height="10" fill="#ffffff"/><rect x="60" y="30" width="10" height="10" fill="#111111"/></svg>',
   vinyl: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" shape-rendering="crispEdges"><rect x="30" y="0" width="60" height="10" fill="#52526a"/><rect x="20" y="10" width="10" height="10" fill="#52526a"/><rect x="30" y="10" width="60" height="10" fill="#101016"/><rect x="90" y="10" width="10" height="10" fill="#52526a"/><rect x="10" y="20" width="10" height="10" fill="#52526a"/><rect x="20" y="20" width="10" height="10" fill="#101016"/><rect x="30" y="20" width="20" height="10" fill="#f0f0fa"/><rect x="50" y="20" width="50" height="10" fill="#101016"/><rect x="100" y="20" width="10" height="10" fill="#52526a"/><rect x="10" y="30" width="10" height="10" fill="#52526a"/><rect x="20" y="30" width="20" height="10" fill="#f0f0fa"/><rect x="40" y="30" width="60" height="10" fill="#101016"/><rect x="100" y="30" width="10" height="10" fill="#52526a"/><rect x="0" y="40" width="10" height="10" fill="#52526a"/><rect x="10" y="40" width="10" height="10" fill="#101016"/><rect x="20" y="40" width="10" height="10" fill="#f0f0fa"/><rect x="30" y="40" width="20" height="10" fill="#101016"/><rect x="50" y="40" width="20" height="10" fill="#ff4d9d"/><rect x="70" y="40" width="30" height="10" fill="#101016"/><rect x="100" y="40" width="10" height="10" fill="#787894"/><rect x="110" y="40" width="10" height="10" fill="#52526a"/><rect x="0" y="50" width="10" height="10" fill="#52526a"/><rect x="10" y="50" width="30" height="10" fill="#101016"/><rect x="40" y="50" width="10" height="10" fill="#ff4d9d"/><rect x="50" y="50" width="20" height="10" fill="#ffe135"/><rect x="70" y="50" width="10" height="10" fill="#c62c74"/><rect x="80" y="50" width="20" height="10" fill="#101016"/><rect x="100" y="50" width="10" height="10" fill="#787894"/><rect x="110" y="50" width="10" height="10" fill="#52526a"/><rect x="0" y="60" width="10" height="10" fill="#52526a"/><rect x="10" y="60" width="30" height="10" fill="#101016"/><rect x="40" y="60" width="10" height="10" fill="#ff4d9d"/><rect x="50" y="60" width="20" height="10" fill="#ffe135"/><rect x="70" y="60" width="10" height="10" fill="#c62c74"/><rect x="80" y="60" width="20" height="10" fill="#101016"/><rect x="100" y="60" width="10" height="10" fill="#787894"/><rect x="110" y="60" width="10" height="10" fill="#52526a"/><rect x="0" y="70" width="10" height="10" fill="#52526a"/><rect x="10" y="70" width="40" height="10" fill="#101016"/><rect x="50" y="70" width="20" height="10" fill="#c62c74"/><rect x="70" y="70" width="30" height="10" fill="#101016"/><rect x="100" y="70" width="10" height="10" fill="#787894"/><rect x="110" y="70" width="10" height="10" fill="#52526a"/><rect x="10" y="80" width="10" height="10" fill="#52526a"/><rect x="20" y="80" width="60" height="10" fill="#101016"/><rect x="80" y="80" width="20" height="10" fill="#787894"/><rect x="100" y="80" width="10" height="10" fill="#52526a"/><rect x="10" y="90" width="10" height="10" fill="#52526a"/><rect x="20" y="90" width="80" height="10" fill="#101016"/><rect x="100" y="90" width="10" height="10" fill="#52526a"/><rect x="20" y="100" width="10" height="10" fill="#52526a"/><rect x="30" y="100" width="60" height="10" fill="#101016"/><rect x="90" y="100" width="10" height="10" fill="#52526a"/><rect x="30" y="110" width="60" height="10" fill="#52526a"/></svg>',
 };
 
@@ -120,13 +124,16 @@ const HAT_OVERLAP = 7.3;
 // shades ride slightly high to fully cover the eye whites. Chest-anchored
 // extras (bow tie) use per-frame btCx: the body sways ±3 units at chest depth.
 const SH_DY = -0.5;
-// FEET anchor — measured from the sprite: the shoes are BYTE-IDENTICAL in all 8
-// frames (the banana bobs, the feet stay planted), so footwear needs ONE static
-// anchor. The existing white feet footprint to COVER: left shoe x 128→198, right
-// x 270→340, y 456→483 (each foot ~70px, pair centred at 234). FOOTWEAR DOCTRINE:
-// any shoe art must at minimum fully cover that footprint (so the banana's own
-// shoes don't peek out) — it may be bigger (giant shoes) but never smaller.
-// Shoes hang from FEET_BOTTOM so they sit flat on the ground.
+// FOOTWEAR DOCTRINE (feet slot). Footwear art is ONE shoe (viewBox ~70×40),
+// drawn once per foot at that foot's per-frame `feetX` centroid, so the pair
+// rocks with the dance. Rules for any new shoe:
+//   • COVER: each foot's white footprint is x±35 of its centroid, y 458→483
+//     (~70px). The shoe must at minimum cover that (bigger = fine: giant shoes;
+//     smaller = never), so the banana's own white shoes can't peek out.
+//   • CRISP: shoes overlay the sprite's own crisp pixels → draw with smoothing
+//     OFF (below), or anti-aliasing fractures the shared edges into notches.
+//   • FLAT: the shoe hangs from FEET_BOTTOM so it sits on the ground.
+// FEET_CX is only a fallback centre if a frame lacks feetX.
 const FEET_CX = 234, FEET_BOTTOM = 486;
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
@@ -211,16 +218,19 @@ function drawComposite(ctx, W, idx, o) {
         const gw2 = gridW(key) * unit, gh2 = gridH(key) * unit;
         drawAcc(ctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
       }
-    } else if (d.anchor === 'feet') { // footwear sits on the static feet, flat on the ground
+    } else if (d.anchor === 'feet') { // ONE shoe drawn per foot, riding the per-frame centroid so the pair dances
       const key = SVG[d.art];
       const fw2 = gridW(key) * unit, fh2 = gridH(key) * unit;
-      const fcx = fx + (FEET_CX + (d.dx || 0) * PX) * scale;
       const fby = fy + FEET_BOTTOM * scale + (d.dy || 0) * unit;
-      // shoes overlay the sprite's OWN crisp shoe pixels, so they must render
-      // CRISP too — smoothing (on for other accessories) softens the edges and
-      // they stop lining up 1:1 with the sprite, leaving notches at the corners
+      // CRISP: shoes overlay the sprite's own crisp pixels — smoothing (on for
+      // other accessories) softens the edges so they stop landing 1:1 and the
+      // shared corners fracture into notches
       const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
-      drawAcc(ctx, key, fcx - fw2 / 2, fby - fh2, fw2, fh2, false);
+      const feetX = F.feetX || [FEET_CX - 71, FEET_CX + 71];
+      for (const cxu of feetX) {
+        const fcx = fx + (cxu + (d.dx || 0) * PX) * scale;
+        drawAcc(ctx, key, fcx - fw2 / 2, fby - fh2, fw2, fh2, false);
+      }
       ctx.imageSmoothingEnabled = sm;
     } else { // 'chest'
       const key = SVG[d.art];
