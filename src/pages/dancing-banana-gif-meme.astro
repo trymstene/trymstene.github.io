@@ -52,6 +52,31 @@ const faq = {
     <script type="application/ld+json" set:html={JSON.stringify(faq)} />
   </Fragment>
 
+  <style>
+    .hero__cta { margin-top: 1.1rem; }
+    /* the sticker moment — YELLOW so it reads as the offer, not another free link */
+    .sticker-offer {
+      display: flex; align-items: center; gap: 1.2rem;
+      max-width: 640px; margin: 1.1rem auto 0; padding: 1rem 1.2rem;
+      background: var(--banana); color: var(--ink);
+      border: var(--line); box-shadow: var(--shadow);
+      text-decoration: none; transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .sticker-offer:hover, .sticker-offer:focus-visible { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
+    .sticker-offer img { width: 116px; height: auto; flex: none; }
+    .sticker-offer__copy { display: flex; flex-direction: column; align-items: flex-start; }
+    .sticker-offer__k { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
+    .sticker-offer__h { font-size: 1.12rem; font-weight: 800; margin: 0.15rem 0 0.3rem; line-height: 1.2; }
+    .sticker-offer__p { font-weight: 700; margin-bottom: 0.7rem; }
+    .sticker-offer__btn { pointer-events: none; }
+    @media (max-width: 560px) {
+      .sticker-offer { flex-direction: column; text-align: center; }
+      .sticker-offer__copy { align-items: center; }
+    }
+    /* the tip steps back — it shares the sticker's emotion at 1/30th the value */
+    .dl-tip { font-size: 0.9rem; opacity: 0.7; }
+  </style>
+
   <!-- hero -->
   <section class="hero">
     <div class="hero__banana">
@@ -60,6 +85,7 @@ const faq = {
     </div>
     <h1 class="hero__title">the dancing<br>banana</h1>
     <p class="hero__tag">A GIF I made in 1999 that never stopped dancing</p>
+    <p class="hero__cta"><a class="btn btn--dark" href="#download"><PixelIcon name="download" /> Download the GIF ↓</a></p>
   </section>
 
   <!-- answer-first intro + jump menu -->
@@ -94,6 +120,18 @@ const faq = {
         <a class="btn btn--light" href="/assets/dancing-banana-hd.gif" download="dancing-banana-hd-trymstene.com.gif">HD remaster GIF (2000px) ↓</a>
       </div>
     </div>
+
+    <!-- the sticker moment: the product, right where the traffic actually is -->
+    <a class="sticker-offer" href="/make-a-banana/" data-place="hub_sticker">
+      <img src="/assets/custom-banana-sticker-product.png" width="300" height="300" alt="A custom dancing banana printed as a real vinyl sticker" loading="lazy">
+      <span class="sticker-offer__copy">
+        <span class="sticker-offer__k">Take one home for real</span>
+        <span class="sticker-offer__h">Your banana, on a real vinyl sticker</span>
+        <span class="sticker-offer__p"><strong>from 149 kr</strong> · free shipping worldwide</span>
+        <span class="btn btn--dark sticker-offer__btn">Make &amp; order yours →</span>
+      </span>
+    </a>
+
     <p class="dl-door">It's yours <PixelIcon name="banana" /> — and it can also wear a hat. <a href="/make-a-banana/" data-place="post-dl-hub">Dress your own →</a></p>
 
     <p class="lead" style="margin-top:1.5rem;">
@@ -107,9 +145,8 @@ const faq = {
       <button class="btn btn--light" id="copyEmbed" type="button">Copy embed code</button>
     </div>
 
-    <p class="lead" style="margin-top:2rem;">
-      It's free — always. But if the banana made you smile, you can
-      <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">buy the banana guy a coffee</a>. <PixelIcon name="coffee" /> <PixelIcon name="banana" />
+    <p class="dl-tip" style="margin-top:2rem;">
+      Rather just say thanks? You can <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">buy the banana guy a coffee</a>. <PixelIcon name="coffee" />
     </p>
   </section>
 
