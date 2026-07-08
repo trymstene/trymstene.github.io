@@ -88,6 +88,7 @@ const appSchema = {
     }
     .bb-actions .btn { flex: 1; min-width: 46%; }
     .bb-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+    .bb-signrow[hidden] { display: none; }
     .bb-signrow .bb-input { flex: 1; min-width: 0; }
     .bb-overlayrow { display: flex; align-items: center; gap: 0.45rem; margin: 0.7rem 0 0; font-size: 0.85rem; }
     .bb-overlayrow a { color: var(--ink); }
@@ -154,8 +155,13 @@ const appSchema = {
     /* locked icon chips are <a> tags → the .bb-chip--locked display override
        killed their grid-centering; restore it so the art sits centred */
     .bb-chip--icon.bb-chip--locked { position: relative; opacity: 0.8; display: inline-grid; place-items: center; }
+    /* pixel padlock badge (no stock emoji) — white disc + crisp lock */
     .bb-chip--icon.bb-chip--locked::after {
-      content: '🔒'; position: absolute; right: -7px; bottom: -7px; font-size: 0.85rem; line-height: 1;
+      content: ''; position: absolute; right: -6px; bottom: -6px;
+      width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box;
+      border: 2px solid var(--ink); background-color: #fff; image-rendering: pixelated;
+      background-repeat: no-repeat; background-position: center; background-size: 9px 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 80' shape-rendering='crispEdges' fill='%23262233'%3E%3Crect x='20' width='30' height='10'/%3E%3Crect x='20' y='10' width='10' height='20'/%3E%3Crect x='40' y='10' width='10' height='20'/%3E%3Crect y='30' width='70' height='20'/%3E%3Crect y='50' width='30' height='10'/%3E%3Crect x='40' y='50' width='30' height='10'/%3E%3Crect y='60' width='70' height='20'/%3E%3C/svg%3E");
     }
     .bb-chip--locked {
       display: inline-block; border-style: dashed; opacity: 0.75; text-decoration: none; color: var(--ink);
@@ -354,12 +360,12 @@ const appSchema = {
           <div class="bb-chips" id="bbHatChips"></div>
         </div>
         <div class="bb-row">
-          <label>Extras</label>
-          <div class="bb-chips" id="bbExtrasChips"></div>
-        </div>
-        <div class="bb-row">
           <label>Shoes</label>
           <div class="bb-chips" id="bbFeetChips"></div>
+        </div>
+        <div class="bb-row">
+          <label>Extras</label>
+          <div class="bb-chips" id="bbExtrasChips"></div>
         </div>
         <div class="bb-row">
           <label>Effects</label>
@@ -372,7 +378,9 @@ const appSchema = {
         </div>
         <div class="bb-actions">
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
-          <button class="btn btn--light" id="bbWallSubmit" title="The banana guy hangs the best ones on the wall"><PixelIcon name="frame" /> Submit to the Wall</button>
+        </div>
+        <div class="bb-overlayrow">
+          <a href="#" id="bbWallSubmit" title="The banana guy hangs the best ones on the wall"><PixelIcon name="frame" size="1em" /> Hang it on the Wall</a>
         </div>
         <div class="bb-signrow" id="bbSignRow" hidden>
           <input class="bb-input" id="bbSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
