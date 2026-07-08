@@ -109,10 +109,8 @@ const CATS = [
       .rmx-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.7rem; }
     }
 
-    /* card is now a link to the detail page (crawlable); JS opens it as a modal */
-    .rmx-open { text-decoration: none; color: var(--ink); display: block; }
-    .rmx-open .rmx-box { transition: transform 0.1s ease; }
-    .rmx-open:hover .rmx-box { transform: translateY(-2px); }
+    /* the yellow button is the card's ONE link → detail page (crawlable); JS opens it as a modal */
+    .rmx-dl.rmx-open { text-decoration: none; }
 
     /* URL-addressable modal */
     .rmx-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -179,15 +177,12 @@ const CATS = [
     <div class="rmx-grid" id="rmxGrid">
       {SSR.map((r) => (
         <div class="rmx-card">
-          <a class="rmx-open" href={`/dancing-banana-remixes/${r.slug}/`}>
-            <div class="rmx-box">
-              <img src={`/assets/remix-thumbs/${r.id}.png`} width={r.w} height={r.h} loading="lazy"
-                   alt={`${r.title} — a dancing banana meme`} />
-            </div>
-            <h3>{r.title}</h3>
-          </a>
-          <a class="rmx-dl" href={`/assets/dancing-banana-community-remixes/${r.id}.gif`}
-             download={`dancing-banana-remix-${r.id}-trymstene.com.gif`}>Download ↓</a>
+          <div class="rmx-box">
+            <img src={`/assets/remix-thumbs/${r.id}.png`} width={r.w} height={r.h} loading="lazy"
+                 alt={`${r.title} — a dancing banana meme`} />
+          </div>
+          <h3>{r.title}</h3>
+          <a class="rmx-dl rmx-open" href={`/dancing-banana-remixes/${r.slug}/`}>Download ↓</a>
         </div>
       ))}
     </div>

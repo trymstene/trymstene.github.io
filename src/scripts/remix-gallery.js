@@ -91,11 +91,6 @@ if (grid) {
   function card(r) {
     const el = document.createElement('div');
     el.className = 'rmx-card';
-    // the box + title are a real link to the detail page (crawlable, deep-linkable);
-    // the grid click handler intercepts it into a modal for JS visitors
-    const link = document.createElement('a');
-    link.className = 'rmx-open';
-    link.href = '/dancing-banana-remixes/' + r.slug + '/';
     const box = document.createElement('div');
     box.className = 'rmx-box';
     const img = document.createElement('img');
@@ -109,15 +104,15 @@ if (grid) {
     io.observe(img);
     const h = document.createElement('h3');
     h.textContent = r.title;
-    link.append(box, h);
     const count = document.createElement('div');
     count.className = 'rmx-count';
-    el.append(link, starRow(r), count);
+    el.append(box, h, starRow(r), count);
     count.textContent = countText(r);
+    // the button is the card's one link → real detail-page href (crawlable);
+    // the grid click handler intercepts it into the modal for JS visitors
     const dl = document.createElement('a');
-    dl.className = 'rmx-dl';
-    dl.href = DIR + r.id + '.gif';
-    dl.setAttribute('download', 'dancing-banana-remix-' + r.id + '-trymstene.com.gif');
+    dl.className = 'rmx-dl rmx-open';
+    dl.href = '/dancing-banana-remixes/' + r.slug + '/';
     dl.textContent = 'Download ↓';
     el.appendChild(dl);
     return el;
