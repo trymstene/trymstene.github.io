@@ -6,13 +6,38 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import remixes from '../data/remixes.json';
 
-const title = `Dancing Banana Community Remixes — ${remixes.length} GIFs by the Internet`;
-const description = `The community remix gallery: ${remixes.length} Dancing Banana GIF remixes made by the internet since 1999 — warrior bananas, Mario, Homer, dancing tacos. Rate them, download them, enjoy them.`;
+// Targets the "banana meme(s)" COLLECTION intent (199k impr/16mo cluster the
+// single-GIF hub can't fully serve). Distinct from the hub, which owns the head
+// term "banana meme" (singular/origin); this spoke owns the browse-many intent
+// and is tied to the hub as a part-of entity below → no cannibalisation.
+const title = `${remixes.length} Banana Memes — Dancing Banana GIFs by the Internet`;
+const description = `${remixes.length} banana memes: Dancing Banana GIF remixes the internet has made since 1999 — warrior bananas, Mario, Homer, dancing tacos. Browse, rate and download them free.`;
 const counts = remixes.reduce((a, r) => { a[r.cat] = (a[r.cat] || 0) + 1; return a; }, {});
-// SSR the first 60 cards as real <img> so crawlers + Google Images (and no-JS
-// visitors) see actual banana-meme content instead of an empty grid. The
-// gallery JS wipes and rebuilds the grid on load for the interactive version.
-const SSR = remixes.slice(0, 60);
+// SSR every card as a real <img> so crawlers + Google Images (and no-JS
+// visitors) see actual banana-meme content, not an empty grid — the whole
+// image-pack play depends on these being crawlable. The gallery JS wipes and
+// rebuilds the grid on load for the interactive (paginated) version.
+const SSR = remixes;
+
+const breadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Dancing Banana GIF", "item": "https://trymstene.com/dancing-banana-gif-meme/" },
+    { "@type": "ListItem", "position": 2, "name": "Banana Memes", "item": "https://trymstene.com/dancing-banana-remixes/" }
+  ]
+};
+const gallery = {
+  "@context": "https://schema.org",
+  "@type": "ImageGallery",
+  "@id": "https://trymstene.com/dancing-banana-remixes/#gallery",
+  "url": "https://trymstene.com/dancing-banana-remixes/",
+  "name": `Banana Memes — ${remixes.length} Dancing Banana GIFs by the Internet`,
+  "description": description,
+  "about": { "@id": "https://trymstene.com/#banana-gif" },
+  "isPartOf": { "@id": "https://trymstene.com/#banana-gif" },
+  "creator": { "@type": "Person", "name": "Trym Stene", "url": "https://trymstene.com/" }
+};
 const CATS = [
   ['all', 'All', remixes.length],
   ['banana', 'Banana remixes', counts.banana || 0],
@@ -25,10 +50,14 @@ const CATS = [
 <BaseLayout
   title={title}
   description={description}
-  ogTitle="The Dancing Banana Community Remixes"
-  ogDescription="268 remixes by the internet, since 1999. Rate them in bananas."
+  ogTitle="Banana Memes — the Dancing Banana Remix Gallery"
+  ogDescription={`${remixes.length} dancing banana memes by the internet, since 1999. Rate them in bananas.`}
   ogImage="https://trymstene.com/assets/og/gif.png"
 >
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumb)} />
+    <script type="application/ld+json" set:html={JSON.stringify(gallery)} />
+  </Fragment>
   <style is:inline slot="head">
     .rmx-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.6rem 0 0.4rem; }
     .rmx-chip {
@@ -78,16 +107,17 @@ const CATS = [
            alt="The warrior banana — a community remix of the Dancing Banana" />
     </div>
     <p class="kicker">Thank you, internet</p>
-    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">the community<br>remixes</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">{remixes.length} Dancing Banana remixes made by you, since 1999</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">the banana meme<br>collection</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">{remixes.length} dancing banana remixes the internet made, since 1999</p>
   </section>
 
   <section class="block">
     <p class="lead" style="max-width:64ch;margin-inline:auto;">
       I made one banana. <strong>The internet made all of these.</strong> Warrior bananas, jedi bananas,
-      dancing tacos, Mario, Homer — collected over 25 years of the meme living its own life.
-      Rate your favourites in bananas, and take any of them home. If you made one of these
-      (or have one I've missed): <a href="/contact/">send it my way</a> — credit where credit's due.
+      dancing tacos, Mario, Homer — {remixes.length} banana memes collected over 25 years of the
+      <a href="/dancing-banana-gif-meme/">original dancing banana</a> living its own life.
+      Rate your favourites in bananas, and take any of them home. Made one of these
+      (or have one I've missed)? <a href="/contact/">Send it my way</a> — credit where credit's due.
     </p>
 
     <div class="rmx-filters" id="rmxFilters" role="group" aria-label="Filter remixes">
@@ -109,7 +139,7 @@ const CATS = [
         <div class="rmx-card">
           <div class="rmx-box">
             <img src={`/assets/remix-thumbs/${r.id}.png`} width={r.w} height={r.h} loading="lazy"
-                 alt={`${r.title} — Dancing Banana community remix`} />
+                 alt={`${r.title} — a dancing banana meme`} />
           </div>
           <h3>{r.title}</h3>
           <a class="rmx-dl" href={`/assets/dancing-banana-community-remixes/${r.id}.gif`}

@@ -94,7 +94,7 @@ if (grid) {
     img.dataset.gif = DIR + r.id + '.gif';
     img.dataset.thumb = THUMBS + r.id + '.png';
     img.src = img.dataset.thumb;
-    img.alt = r.title + ' — Dancing Banana community remix';
+    img.alt = r.title + ' — a dancing banana meme';
     img.loading = 'lazy';
     img.width = r.w; img.height = r.h;
     box.appendChild(img);

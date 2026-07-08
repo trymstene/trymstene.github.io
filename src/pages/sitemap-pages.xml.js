@@ -7,11 +7,11 @@ import remixes from '../data/remixes.json';
 
 const SITE = 'https://trymstene.com';
 
-// surface the first 60 community remix GIFs to Google Images — every one a
-// distinct dancing-banana meme pointing back to the gallery (matches the SSR set)
-const REMIX_IMAGES = remixes.slice(0, 60).map((r) => [
+// surface EVERY community remix GIF to Google Images — each a distinct
+// dancing-banana meme pointing back to the gallery (matches the full SSR set)
+const REMIX_IMAGES = remixes.map((r) => [
   `/assets/dancing-banana-community-remixes/${r.id}.gif`,
-  `${r.title} — Dancing Banana community remix`,
+  `${r.title} — a dancing banana meme`,
 ]);
 
 // Canonical content URLs. Redirect stubs are noindex and intentionally excluded.
