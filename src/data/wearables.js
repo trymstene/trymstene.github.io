@@ -49,6 +49,8 @@ export const WEARABLE_PACKS = {
     extras: [
       { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
       { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', dy: 9.5, art: 'bowtie' },
+      // the FEET slot debuts: footwear rides the new static feet anchor
+      { id: 'sneakers', label: 'Sneakers',  phrase: 'red sneakers',     anchor: 'feet',  art: 'sneakers' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
