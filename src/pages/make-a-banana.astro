@@ -100,6 +100,11 @@ const appSchema = {
        one-page anomaly, Trym verdict) */
     .bb-toprow--go { margin-top: 0.7rem; }
     .bb-row label { display:block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    /* group each item CATEGORY on its own faint surface — separates the
+       categories and grounds the de-chromed items so they don't float in white */
+    .bb-row:has(.bb-chips), .bb-row:has(.bb-swatches) {
+      background: rgba(17, 17, 17, 0.045); border-radius: 8px; padding: 0.6rem 0.7rem;
+    }
     .bb-input, .bb-select {
       width: 100%; padding: 0.6rem 0.7rem; border: 3px solid var(--ink);
       font-family: inherit; font-size: 1rem; background: var(--paper); border-radius: 2px;
@@ -128,21 +133,27 @@ const appSchema = {
       font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
     }
     .bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
-    /* icon chips: the wearable art IS the button */
+    /* icon chips: the wearable art IS the button. DE-CHROMED — unselected items
+       carry NO box (just the pixel art), so a row of options reads as a calm set,
+       not a wall of identical rectangles. Only the CHOSEN one gets a frame. */
     .bb-chip--icon {
       width: 56px; height: 56px; padding: 6px;
       display: inline-grid; place-items: center; line-height: 0;
+      border-color: transparent; background: transparent; border-radius: 4px;
     }
+    .bb-chip--icon:hover { background: rgba(17, 17, 17, 0.06); }
     .bb-chip--icon svg { max-width: 100%; max-height: 100%; width: auto; height: auto; image-rendering: pixelated; }
     .bb-chip--icon[aria-pressed="true"] {
-      background: var(--banana); outline: 3px solid var(--hot); outline-offset: 1px;
+      background: var(--banana); border-color: var(--ink); outline: 3px solid var(--hot); outline-offset: 1px;
     }
     .bb-chip--none {
       border-style: dashed;
       background-image: linear-gradient(to top right, transparent 46%, rgba(17,17,17,0.45) 46%, rgba(17,17,17,0.45) 54%, transparent 54%);
     }
     .bb-chip--none[aria-pressed="true"] { background-color: var(--banana); }
-    .bb-chip--icon.bb-chip--locked { position: relative; opacity: 0.8; }
+    /* locked icon chips are <a> tags → the .bb-chip--locked display override
+       killed their grid-centering; restore it so the art sits centred */
+    .bb-chip--icon.bb-chip--locked { position: relative; opacity: 0.8; display: inline-grid; place-items: center; }
     .bb-chip--icon.bb-chip--locked::after {
       content: '🔒'; position: absolute; right: -7px; bottom: -7px; font-size: 0.85rem; line-height: 1;
     }
@@ -310,12 +321,12 @@ const appSchema = {
       <!-- CONTROLS -->
       <div class="bb-controls">
         <div class="bb-toprow">
-          <button class="btn btn--dark bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
-          <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top">🪩 Rave</a>
+          <button class="btn btn--light bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
+          <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top"><PixelIcon name="mirrorball" /> Rave</a>
         </div>
         <div class="bb-toprow bb-toprow--go">
           <button class="btn btn--light" id="bbQuickGif"><PixelIcon name="download" /> Emoji GIF</button>
-          <button class="btn btn--light" id="bbQuickSticker"><PixelIcon name="tag" /> Order sticker</button>
+          <button class="btn btn--dark" id="bbQuickSticker"><PixelIcon name="tag" /> Order sticker</button>
         </div>
         <div class="bb-row">
           <label>Background</label>
@@ -361,7 +372,7 @@ const appSchema = {
         </div>
         <div class="bb-actions">
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
-          <button class="btn btn--light" id="bbWallSubmit" title="The banana guy hangs the best ones on the wall">🖼 Submit to the Wall</button>
+          <button class="btn btn--light" id="bbWallSubmit" title="The banana guy hangs the best ones on the wall"><PixelIcon name="frame" /> Submit to the Wall</button>
         </div>
         <div class="bb-signrow" id="bbSignRow" hidden>
           <input class="bb-input" id="bbSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">

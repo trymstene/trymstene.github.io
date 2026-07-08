@@ -72,14 +72,14 @@ function init() {
   // lot less space than words). 'none' = a dashed empty slot.
   function iconChips(host, items, key, artFor) {
     items.forEach(([val, label]) => {
+      if (val === 'none') return; // no 'none' chip — click the worn item to take it off (like extras)
       const b = document.createElement('button');
-      const art = val === 'none' ? null : artFor(val);
-      b.className = 'bb-chip bb-chip--icon' + (art ? '' : ' bb-chip--none');
-      if (art) b.innerHTML = art;
+      b.className = 'bb-chip bb-chip--icon';
+      b.innerHTML = artFor(val);
       b.dataset.val = val;
       b.title = label;
       b.setAttribute('aria-label', label);
-      b.onclick = () => { state[key] = val; onState(); };
+      b.onclick = () => { state[key] = (state[key] === val ? 'none' : val); onState(); };
       el(host).appendChild(b);
     });
   }
@@ -126,12 +126,6 @@ function init() {
   // to the banana's own baked-in shoes. setFeet enforces the exclusivity.
   const setFeet = (id) => { FEET_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
   if (el('bbFeetChips') && FEET_DEFS.length) {
-    const none = document.createElement('button');
-    none.className = 'bb-chip bb-chip--icon bb-chip--none';
-    none.dataset.feet = 'none';
-    none.title = 'Default shoes'; none.setAttribute('aria-label', 'Default shoes');
-    none.onclick = () => setFeet(null);
-    el('bbFeetChips').appendChild(none);
     FEET_DEFS.forEach((d) => {
       const b = document.createElement('button');
       b.className = 'bb-chip bb-chip--icon';
