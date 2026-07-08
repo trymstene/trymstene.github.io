@@ -18,6 +18,12 @@ import json
 import os
 import sys
 
+# Windows consoles default to cp1252, which can't encode →/· etc. Force UTF-8.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: BLE001 — older/odd stdouts just keep their default
+    pass
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL_CFG = os.path.join(HERE, "ga4.local.json")
 
