@@ -62,15 +62,31 @@ def die(msg):
 
 
 def parse_range(r):
-    """'28d' -> (current (start,end), previous (start,end)) as GA4 relative dates,
-    each an equal-length window; previous sits immediately before current."""
-    r = (r or "28d").strip().lower()
+    """Return (n_days, current (start,end), previous (start,end)). Accepts either
+    a relative window ('28d' / 7d / 90d) or an explicit 'YYYY-MM-DD:YYYY-MM-DD'.
+    The previous window is always the equal-length span immediately before —
+    e.g. explicit '2026-06-30:2026-07-07' auto-compares to the 8 days before it
+    (the pre-launch Wix site)."""
+    import datetime
+    r = (r or "28d").strip()
+    if ":" in r:  # explicit dates
+        try:
+            a, b = r.split(":")
+            start = datetime.date.fromisoformat(a)
+            end = datetime.date.fromisoformat(b)
+        except ValueError:
+            die(f"--range dates must be YYYY-MM-DD:YYYY-MM-DD (got {r!r})")
+        n = (end - start).days + 1
+        if n < 1:
+            die("--range end is before start")
+        prev_end = start - datetime.timedelta(days=1)
+        prev_start = prev_end - datetime.timedelta(days=n - 1)
+        return n, (a, b), (prev_start.isoformat(), prev_end.isoformat())
+    r = r.lower()
     if not r.endswith("d") or not r[:-1].isdigit():
-        die(f"--range must look like 28d / 7d / 90d (got {r!r})")
+        die(f"--range must be 28d / 7d / 90d or YYYY-MM-DD:YYYY-MM-DD (got {r!r})")
     n = int(r[:-1])
-    cur = (f"{n}daysAgo", "1daysAgo")
-    prev = (f"{2 * n}daysAgo", f"{n + 1}daysAgo")
-    return n, cur, prev
+    return n, (f"{n}daysAgo", "1daysAgo"), (f"{2 * n}daysAgo", f"{n + 1}daysAgo")
 
 
 def pct(cur, prev):
