@@ -128,9 +128,10 @@ def main():
     # strip our own testing traffic (Oslo = Trym) from every number when asked
     dim_filter = None
     if args.exclude_country:
+        countries = [c.strip() for c in args.exclude_country.split(",") if c.strip()]
         dim_filter = FilterExpression(not_expression=FilterExpression(
             filter=Filter(field_name="country",
-                          string_filter=Filter.StringFilter(value=args.exclude_country))))
+                          in_list_filter=Filter.InListFilter(values=countries))))
 
     def run(dimensions, metrics, dr, limit=25, order_metric=None, use_filter=True):
         req = RunReportRequest(
