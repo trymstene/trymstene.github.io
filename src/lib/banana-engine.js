@@ -135,7 +135,7 @@ const SH_DY = -0.5;
 //     OFF (below), or anti-aliasing fractures the shared edges into notches.
 //   • FLAT: the shoe hangs from FEET_BOTTOM so it sits on the ground.
 // FEET_CX is only a fallback centre if a frame lacks feetX.
-const FEET_CX = 234, FEET_BOTTOM = 497;
+const FEET_CX = 234, FEET_BOTTOM = 488;
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
 
