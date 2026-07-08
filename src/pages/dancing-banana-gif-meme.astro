@@ -37,6 +37,29 @@ const faq = {
     { "@type": "Question", "name": "Can I use the Dancing Banana?", "acceptedAnswer": { "@type": "Answer", "text": "Free for personal and fun use. Commercial use requires a license from the creator." } }
   ]
 };
+
+// The GIF as a first-class ImageObject with license info → eligible for the
+// "Licensable" badge in Google Images (where this page's impressions live).
+// Additive; the CreativeWork entity above is untouched.
+const bananaImage = {
+  "@context": "https://schema.org",
+  "@type": "ImageObject",
+  "@id": "https://trymstene.com/#banana-gif-image",
+  "contentUrl": "https://trymstene.com/assets/dancing-banana-gif.gif",
+  "url": "https://trymstene.com/dancing-banana-gif-meme/",
+  "name": "The Dancing Banana GIF",
+  "caption": "The original Dancing Banana — an animated pixel GIF created by Trym Stene in 1999.",
+  "encodingFormat": "image/gif",
+  "width": 500,
+  "height": 500,
+  "creator": { "@id": "https://trymstene.com/#trym" },
+  "copyrightHolder": { "@id": "https://trymstene.com/#trym" },
+  "copyrightYear": 1999,
+  "creditText": "Trym Stene",
+  "acquireLicensePage": "https://trymstene.com/license-the-dancing-banana/",
+  "license": "https://trymstene.com/license-the-dancing-banana/",
+  "isBasedOn": { "@id": "https://trymstene.com/#banana-gif" }
+};
 ---
 <BaseLayout
   title={title}
@@ -49,6 +72,7 @@ const faq = {
   <Fragment slot="head">
     <Hreflang />
     <script type="application/ld+json" set:html={JSON.stringify(creativeWork)} />
+    <script type="application/ld+json" set:html={JSON.stringify(bananaImage)} />
     <script type="application/ld+json" set:html={JSON.stringify(faq)} />
   </Fragment>
 
