@@ -216,7 +216,12 @@ function drawComposite(ctx, W, idx, o) {
       const fw2 = gridW(key) * unit, fh2 = gridH(key) * unit;
       const fcx = fx + (FEET_CX + (d.dx || 0) * PX) * scale;
       const fby = fy + FEET_BOTTOM * scale + (d.dy || 0) * unit;
+      // shoes overlay the sprite's OWN crisp shoe pixels, so they must render
+      // CRISP too — smoothing (on for other accessories) softens the edges and
+      // they stop lining up 1:1 with the sprite, leaving notches at the corners
+      const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
       drawAcc(ctx, key, fcx - fw2 / 2, fby - fh2, fw2, fh2, false);
+      ctx.imageSmoothingEnabled = sm;
     } else { // 'chest'
       const key = SVG[d.art];
       const bw = gridW(key) * unit, bh = gridH(key) * unit;
