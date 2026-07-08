@@ -100,6 +100,9 @@ def main():
     ap.add_argument("--range", default="28d", help="window, e.g. 28d / 7d / 90d")
     ap.add_argument("--prop", help="override GA4 property id")
     ap.add_argument("--events", action="store_true", help="show the FULL event table")
+    ap.add_argument("--exclude-country", metavar="NAME",
+                    help="drop a country from every number, e.g. --exclude-country Norway "
+                         "(= strip our own testing traffic)")
     args = ap.parse_args()
 
     prop, key = load_config(args.prop)
@@ -114,20 +117,29 @@ def main():
     try:
         from google.analytics.data_v1beta import BetaAnalyticsDataClient
         from google.analytics.data_v1beta.types import (
-            DateRange, Dimension, Metric, RunReportRequest, OrderBy)
+            DateRange, Dimension, Metric, RunReportRequest, OrderBy,
+            Filter, FilterExpression)
     except ImportError:
         die("Missing dependency. Run:\n    pip install google-analytics-data")
 
     client = BetaAnalyticsDataClient()
     n, cur, prev = parse_range(args.range)
 
-    def run(dimensions, metrics, dr, limit=25, order_metric=None):
+    # strip our own testing traffic (Oslo = Trym) from every number when asked
+    dim_filter = None
+    if args.exclude_country:
+        dim_filter = FilterExpression(not_expression=FilterExpression(
+            filter=Filter(field_name="country",
+                          string_filter=Filter.StringFilter(value=args.exclude_country))))
+
+    def run(dimensions, metrics, dr, limit=25, order_metric=None, use_filter=True):
         req = RunReportRequest(
             property=f"properties/{prop}",
             dimensions=[Dimension(name=d) for d in dimensions],
             metrics=[Metric(name=m) for m in metrics],
             date_ranges=[DateRange(start_date=dr[0], end_date=dr[1])],
             limit=limit,
+            dimension_filter=dim_filter if use_filter else None,
             order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name=order_metric),
                                desc=True)] if order_metric else None,
         )
@@ -145,6 +157,20 @@ def main():
 
     print(f"\n=== trymstene.com · GA4 · last {n} days vs prior {n} "
           f"(property {prop}) ===")
+    if args.exclude_country:
+        print(f"    (excluding {args.exclude_country} from every number below "
+              "— our own testing traffic)")
+
+    # WHERE — always the FULL, unfiltered country split, so we can SEE how much
+    # is us (Oslo). Runs even when --exclude-country is stripping the rest.
+    print("\n-- WHERE (sessions by country, UNFILTERED) " + "-" * 16)
+    wc = run(["country"], ["sessions"], cur, limit=8, order_metric="sessions",
+             use_filter=False)
+    wtot = sum(float(m[0]) for _, m in wc) or 1
+    for dims, mets in wc:
+        s = int(float(mets[0]))
+        flag = "  ← likely you" if dims[0] in ("Norway",) else ""
+        print(f"  {s:>6,} ({s / wtot * 100:>4.0f}%)  {dims[0] or '(not set)'}{flag}")
 
     # 1) overview with trend
     om = ["sessions", "totalUsers", "newUsers", "engagedSessions",
