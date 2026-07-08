@@ -7,6 +7,10 @@
 // CLIENT-ONLY module (creates Image objects at import) — never import from
 // Astro frontmatter; that is what src/lib/banana-daily.js is for.
 
+// the wearable catalog is PURE DATA, shared with the daily picker + the rave
+// worker. Only the pixel ART (the SVG dict below) is client-only.
+import { WEARABLE_PACKS as PACKS } from '../data/wearables.js';
+
 // ---- authentic dance frames ----
 // ?v= busts stale browser caches: bump it whenever the sheet's pixels change,
 // or old cached copies (e.g. the pre-fix sheet with white-filled arm gaps)
@@ -75,59 +79,12 @@ const SVG = {
 const EFFECTS = [['none','None'],['disco','Disco'],['sparkle','Sparkles'],['confetti','Confetti']];
 
 // ---- ASSET PACKS ----
-// Every wearable lives in a pack. 'core' is always on; a themed pack (e.g. a
-// Christmas set) declares a month-day window and auto-activates in that range —
-// no admin panel needed. Any pack can be force-enabled with ?pack=<id> for
-// testing. To add a pack: author the art as ASCII maps in tools/pixel-assets.py,
-// verify + emit with --svg, paste the SVGs into the SVG dict above, and declare
-// the pack here. Chips, randomizer, URL state and rendering all derive from
-// this registry — no other code changes needed.
-const PACKS = {
-  core: {
-    label: 'The classics',
-    always: true,
-    hats: [
-      { id: 'party',  label: 'Party',   art: 'party',  seat: -1 },
-      { id: 'crown',  label: 'Crown',   art: 'crown',  seat: -1 },
-      { id: 'tophat', label: 'Top hat', art: 'tophat', seat: 0  },
-      { id: 'cowboy', label: 'Cowboy',  art: 'cowboy', seat: -1 },
-    ],
-    shades: [
-      { id: 'shades', label: 'Deal with it', front: 'shadesFront', side: 'shadesSide' },
-      { id: 'hearts', label: 'Hearts',       front: 'heartsFront', side: 'heartsSide' },
-      { id: 'visor',  label: 'Visor',        front: 'visorFront',  side: 'visorSide'  },
-    ],
-    // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
-    // left-facing frames) or the CHEST (per-frame btCx body centre + dy)
-    extras: [
-      { id: 'mustache', label: 'Moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
-      { id: 'bowtie',   label: 'Bow tie',     anchor: 'chest', dy: 9.5, art: 'bowtie' },
-      // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
-      // NOT in banana-daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
-      // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
-      // art top to where the glove wraps it (here: the black cap).
-      { id: 'glowstick', label: 'Glowstick', anchor: 'hand', hand: 'right', grip: 8.5, art: 'glowstick', earned: 'rave',
-        lock: 'a rave souvenir: survive 30 minutes on the dance floor and it’s yours forever' },
-      // the trophy: earned by catching the golden banana at the rave (patch
-      // `golden` is the proof of the moment); worn from the pass or the builder
-      { id: 'goldbanana', label: 'Golden Banana', anchor: 'hand', hand: 'left', grip: 2, art: 'goldbanana', earned: 'golden',
-        lock: 'the trophy: catch the golden banana at the rave — it strikes every half hour' },
-      // happy-hour trophy: lives for one rave session, granted by the worker (first
-      // banana at the bar). raveOnly = never a builder chip, never randomized.
-      { id: 'cone', label: 'Traffic cone', anchor: 'face', dy: -10.5, sideDx: 0, front: 'cone', side: 'cone', raveOnly: true },
-      { id: 'beer', label: 'Beer', anchor: 'hand', hand: 'left', grip: 3.5, art: 'beer', raveOnly: true },
-      // the courier's record: injected at DRAW time from the rave's carry flag
-      // (never in outfit broadcasts); left glove — it overflows the beer while carried
-      { id: 'vinyl', label: 'Vinyl', anchor: 'hand', hand: 'left', grip: 1.5, art: 'vinyl', raveOnly: true },
-      // the nightshift broom — injected at draw time from the rave's chore flag
-      { id: 'broom', label: 'Broom', anchor: 'hand', hand: 'right', grip: 3, art: 'broom', raveOnly: true },
-    ],
-  },
-  // Example future pack (art not drawn yet):
-  // xmas: { label: 'Christmas', window: { from: '12-01', to: '12-26' },
-  //         hats: [{ id: 'santa', label: 'Santa', art: 'santa', seat: -1 }], shades: [], extras: [] },
-};
-
+// PACKS is imported from src/data/wearables.js (the single-source catalog).
+// Every wearable's ART lives in the SVG dict above, keyed by its `art` field;
+// to add one: add the entry in wearables.js, then paste its pixel SVG here.
+// 'core' is always on; a themed pack declares a month-day window and
+// auto-activates. Any pack force-enables with ?pack=<id>. Chips, randomizer,
+// URL state and rendering all derive from the registry — no other code changes.
 function isPackActive(id, pack) {
   if (pack.always) return true;
   if (new URLSearchParams(location.search).get('pack') === id) return true;

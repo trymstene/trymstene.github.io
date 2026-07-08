@@ -3,20 +3,10 @@
 // the builder's overlay daily mode (in the browser). Same UTC date in = same
 // banana out, everywhere, no drift.
 //
-// ⚠️ KEEP THE OPTION POOLS IN SYNC with the PACKS registry in
-// src/scripts/banana-builder.js (ids must match; labels here are plain text
-// for sentences). When a seasonal pack is added there, add its ids + window
-// here too.
-
-const PACK_POOLS = {
-  core: {
-    always: true,
-    hats: [['party', 'a party hat'], ['crown', 'a crown'], ['tophat', 'a top hat'], ['cowboy', 'a cowboy hat']],
-    shades: [['shades', '"deal with it" shades'], ['hearts', 'heart shades'], ['visor', 'a visor']],
-    extras: [['mustache', 'a fine moustache'], ['bowtie', 'a bow tie']],
-  },
-  // xmas: { window: { from: '12-01', to: '12-26' }, hats: [['santa', 'a Santa hat']], shades: [], extras: [] },
-};
+// The option pools come STRAIGHT from the shared catalog (src/data/wearables.js)
+// — no more hand-syncing with the engine. Earned / rave-only extras are excluded
+// here: the daily banana only wears things anyone could actually get.
+import { WEARABLE_PACKS } from '../data/wearables.js';
 
 const EFFECT_POOL = [['disco', 'disco mode'], ['sparkle', 'sparkles'], ['confetti', 'confetti']];
 
@@ -31,11 +21,13 @@ function packActive(pack, date) {
 // Pools as the builder sees them: 'none' first (so indices match its
 // HATS/GLASSES arrays), then every active pack's options in declaration order.
 function pools(date) {
-  const active = Object.values(PACK_POOLS).filter((p) => packActive(p, date));
+  const active = Object.values(WEARABLE_PACKS).filter((p) => packActive(p, date));
+  const pair = (x) => [x.id, x.phrase];
   return {
-    hats: [['none', 'no hat'], ...active.flatMap((p) => p.hats || [])],
-    shades: [['none', 'no shades'], ...active.flatMap((p) => p.shades || [])],
-    extras: active.flatMap((p) => p.extras || []),
+    hats: [['none', 'no hat'], ...active.flatMap((p) => (p.hats || []).map(pair))],
+    shades: [['none', 'no shades'], ...active.flatMap((p) => (p.shades || []).map(pair))],
+    // the daily only wears freely-available extras (never earned trophies or rave-granted items)
+    extras: active.flatMap((p) => (p.extras || []).filter((e) => !e.earned && !e.raveOnly).map(pair)),
   };
 }
 
