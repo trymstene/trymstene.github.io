@@ -3,8 +3,16 @@
 // channel for a GIF-seeking audience, so we tell it exactly which images
 // matter on each page.
 import { locales } from '../data/locales.js';
+import remixes from '../data/remixes.json';
 
 const SITE = 'https://trymstene.com';
+
+// surface the first 60 community remix GIFs to Google Images — every one a
+// distinct dancing-banana meme pointing back to the gallery (matches the SSR set)
+const REMIX_IMAGES = remixes.slice(0, 60).map((r) => [
+  `/assets/dancing-banana-community-remixes/${r.id}.gif`,
+  `${r.title} — Dancing Banana community remix`,
+]);
 
 // Canonical content URLs. Redirect stubs are noindex and intentionally excluded.
 // images: [path, title] pairs surfaced to Google Images for that page.
@@ -45,10 +53,7 @@ const PAGES = [
   },
   {
     path: '/dancing-banana-remixes/',
-    images: [
-      ['/assets/dancing-banana-community-remixes/bananadance-warrior.gif', 'The warrior banana — Dancing Banana community remix'],
-      ['/assets/dancing-banana-community-remixes/mariodance-pbj.gif', 'Dancing Mario — Peanut Butter Jelly Time community remix'],
-    ],
+    images: REMIX_IMAGES,
   },
   { path: '/peanut-butter-jelly-time/', images: [['/assets/dancing-banana-gif.gif', 'The Peanut Butter Jelly Time banana — the original Dancing Banana']] },
   { path: '/license-the-dancing-banana/', images: [['/assets/dancing-banana-gif.gif', 'License the original Dancing Banana GIF']] },

@@ -9,6 +9,10 @@ import remixes from '../data/remixes.json';
 const title = `Dancing Banana Community Remixes — ${remixes.length} GIFs by the Internet`;
 const description = `The community remix gallery: ${remixes.length} Dancing Banana GIF remixes made by the internet since 1999 — warrior bananas, Mario, Homer, dancing tacos. Rate them, download them, enjoy them.`;
 const counts = remixes.reduce((a, r) => { a[r.cat] = (a[r.cat] || 0) + 1; return a; }, {});
+// SSR the first 60 cards as real <img> so crawlers + Google Images (and no-JS
+// visitors) see actual banana-meme content instead of an empty grid. The
+// gallery JS wipes and rebuilds the grid on load for the interactive version.
+const SSR = remixes.slice(0, 60);
 const CATS = [
   ['all', 'All', remixes.length],
   ['banana', 'Banana remixes', counts.banana || 0],
@@ -100,7 +104,19 @@ const CATS = [
       </select>
     </div>
 
-    <div class="rmx-grid" id="rmxGrid"></div>
+    <div class="rmx-grid" id="rmxGrid">
+      {SSR.map((r) => (
+        <div class="rmx-card">
+          <div class="rmx-box">
+            <img src={`/assets/remix-thumbs/${r.id}.png`} width={r.w} height={r.h} loading="lazy"
+                 alt={`${r.title} — Dancing Banana community remix`} />
+          </div>
+          <h3>{r.title}</h3>
+          <a class="rmx-dl" href={`/assets/dancing-banana-community-remixes/${r.id}.gif`}
+             download={`dancing-banana-remix-${r.id}-trymstene.com.gif`}>Download ↓</a>
+        </div>
+      ))}
+    </div>
     <button class="btn btn--dark rmx-more" id="rmxMore" hidden>Show more ↓</button>
     <p class="rmx-note" style="text-align:center;">
       All remixes are fan works shared here non-commercially, with love. Want to add yours to the pile?
