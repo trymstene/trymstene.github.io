@@ -144,8 +144,8 @@ function init() {
 
   el('bbPause').onclick = () => { state.paused = !state.paused; refreshUI(); };
 
-  // the under-stage quick actions proxy the real buttons (one render path)
-  el('bbQuickGif').onclick = () => { el('bbDownloadGif').click(); track('quick_action', { action: 'gif' }); };
+  // the under-stage Order-sticker quick action proxies the real button below
+  // (the free GIF download lives in the "Take it with you" box — no top dupe)
   el('bbQuickSticker').onclick = () => { el('bbOrderSticker').click(); track('quick_action', { action: 'sticker' }); };
 
   el('bbRandom').onclick = () => {
