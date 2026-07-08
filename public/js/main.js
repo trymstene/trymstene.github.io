@@ -14,6 +14,34 @@
   window.dataLayer = window.dataLayer || [];
   window.gtag = function () { dataLayer.push(arguments); };
   gtag('js', new Date());
+
+  // ---- internal-traffic tag: keep OUR testing out of the reports ----
+  // Country filtering can't separate us (Trym tests while travelling), so we
+  // tag at the source. Visit trymstene.com/?internal=1 ONCE per browser to
+  // flag it forever (?internal=0 clears it). QA/debug params flag that session
+  // only. GA4's Internal Traffic filter (traffic_type=internal) then drops it
+  // from every report — events still FIRE (so realtime/DebugView still works),
+  // they're just marked internal. Builder share params (?g=…&h=…) are NOT
+  // treated as internal — real people follow those.
+  var qs = location.search;
+  try {
+    if (/[?&]internal=1(?:&|$)/.test(qs)) localStorage.setItem('tt-internal', '1');
+    else if (/[?&]internal=0(?:&|$)/.test(qs)) localStorage.removeItem('tt-internal');
+  } catch (e) {}
+  var isInternal = false;
+  try { isInternal = localStorage.getItem('tt-internal') === '1'; } catch (e) {}
+  if (!isInternal &&
+      /[?&](tourtest|fxtest|welcometest|hypetest|stagetest|nighttest)(?:=|&|$)/.test(qs)) {
+    isInternal = true; // a QA/debug param = us, this session
+  }
+  if (isInternal) {
+    gtag('set', { traffic_type: 'internal' });
+    if (window.console) {
+      console.log('%c[GA] internal traffic — your visits are excluded from reports',
+        'color:#b8860b;font-weight:bold');
+    }
+  }
+
   gtag('config', GA_ID);
 
   // Key conversion events. `placement` (data-place attr or the page path)
