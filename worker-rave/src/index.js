@@ -16,7 +16,11 @@
 //   GET /ws      upgrade → the room ("main-floor")
 //   GET /count   current floor count (for the homepage proof-of-life later)
 
-// ⚠️ keep in sync with PACKS in src/lib/banana-engine.js
+// ⚠️ MIRROR of the single-source catalog in src/data/wearables.js — a separate
+// worker bundle can't import site source, so these are copied by hand. The
+// canonical order: edit wearables.js, then paste here. EXTRA_IDS === its
+// CLIENT_EXTRA_IDS export (non-raveOnly extras); raveOnly items (beer/cone/
+// vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
 const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy'];
 const SHADE_IDS = ['none', 'shades', 'hearts', 'visor'];
 const EXTRA_IDS = ['mustache', 'bowtie', 'glowstick', 'goldbanana'];
