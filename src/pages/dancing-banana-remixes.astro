@@ -4,7 +4,16 @@
 // every one downloadable. Data comes from tools/build-remix-gallery.py.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
-import remixes from '../data/remixes.json';
+import remixesBase from '../data/remixes.json';
+import remixMeta from '../data/remix-meta.json';
+
+// merge the curated overlay (slug / corrected title / blurb) into each remix so
+// the cards can link to real detail pages and the modal can render from data
+const metaById = Object.fromEntries(remixMeta.map((m) => [m.id, m]));
+const remixes = remixesBase.map((r) => {
+  const m = metaById[r.id] || {};
+  return { ...r, slug: m.slug, title: m.title || r.title, blurb: m.blurb };
+});
 
 // Targets the "banana meme(s)" COLLECTION intent (199k impr/16mo cluster the
 // single-GIF hub can't fully serve). Distinct from the hub, which owns the head
@@ -99,6 +108,39 @@ const CATS = [
     @media (max-width: 640px) {
       .rmx-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.7rem; }
     }
+
+    /* card is now a link to the detail page (crawlable); JS opens it as a modal */
+    .rmx-open { text-decoration: none; color: var(--ink); display: block; }
+    .rmx-open .rmx-box { transition: transform 0.1s ease; }
+    .rmx-open:hover .rmx-box { transform: translateY(-2px); }
+
+    /* URL-addressable modal */
+    .rmx-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .rmx-modal[hidden] { display: none; }
+    .rmx-modal__backdrop { position: absolute; inset: 0; background: rgba(17, 17, 17, 0.66); }
+    .rmx-modal__card {
+      position: relative; z-index: 1; background: var(--paper); border: var(--line); box-shadow: 8px 8px 0 #000;
+      width: min(460px, 100%); max-height: 90vh; overflow-y: auto; text-align: center; padding: 1.5rem 1.4rem 1.3rem;
+    }
+    .rmx-modal__x {
+      position: absolute; top: 0.5rem; right: 0.5rem; width: 34px; height: 34px; display: grid; place-items: center;
+      background: var(--paper); border: 2px solid var(--ink); cursor: pointer; color: var(--ink); border-radius: 2px;
+    }
+    .rmx-modal__x:hover { background: var(--banana); }
+    .rmx-modal__box {
+      display: flex; align-items: center; justify-content: center; background: #fff;
+      border: 2px solid var(--ink); min-height: 200px; padding: 1.2rem; margin-bottom: 1rem;
+    }
+    .rmx-modal__box img { image-rendering: pixelated; }
+    .rmx-modal__title { font-size: 1.7rem; margin: 0 0 0.4rem; }
+    .rmx-modal__stars { justify-content: center; }
+    .rmx-modal__count { margin: 0.2rem 0 0; }
+    .rmx-modal__blurb { font-size: 0.9rem; line-height: 1.5; margin: 0.9rem auto; max-width: 42ch; }
+    .rmx-modal__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .rmx-modal__actions .btn { flex: 1; min-width: 160px; }
+    .rmx-modal__foot { font-size: 0.8rem; margin: 0.9rem 0 0; }
+    .rmx-modal__foot a { color: var(--ink); opacity: 0.75; }
+    body.rmx-modal-open { overflow: hidden; }
   </style>
 
   <section class="hero">
@@ -137,11 +179,13 @@ const CATS = [
     <div class="rmx-grid" id="rmxGrid">
       {SSR.map((r) => (
         <div class="rmx-card">
-          <div class="rmx-box">
-            <img src={`/assets/remix-thumbs/${r.id}.png`} width={r.w} height={r.h} loading="lazy"
-                 alt={`${r.title} — a dancing banana meme`} />
-          </div>
-          <h3>{r.title}</h3>
+          <a class="rmx-open" href={`/dancing-banana-remixes/${r.slug}/`}>
+            <div class="rmx-box">
+              <img src={`/assets/remix-thumbs/${r.id}.png`} width={r.w} height={r.h} loading="lazy"
+                   alt={`${r.title} — a dancing banana meme`} />
+            </div>
+            <h3>{r.title}</h3>
+          </a>
           <a class="rmx-dl" href={`/assets/dancing-banana-community-remixes/${r.id}.gif`}
              download={`dancing-banana-remix-${r.id}-trymstene.com.gif`}>Download ↓</a>
         </div>
@@ -153,6 +197,26 @@ const CATS = [
       <a href="/make-a-banana/" data-place="remixes">Dress a banana</a> or <a href="/forge/">forge a pixel from scratch</a>.
     </p>
   </section>
+
+  <!-- URL-addressable modal: opened by JS over the gallery, but every card is a
+       real <a href> to a static /dancing-banana-remixes/<slug>/ page for crawlers
+       and deep links. The modal just mirrors that page's content in an overlay. -->
+  <div class="rmx-modal" id="rmxModal" hidden role="dialog" aria-modal="true" aria-labelledby="rmxModalTitle">
+    <div class="rmx-modal__backdrop" data-close></div>
+    <div class="rmx-modal__card" role="document">
+      <button class="rmx-modal__x" id="rmxModalClose" aria-label="Close" data-close><PixelIcon name="close" size="1em" /></button>
+      <div class="rmx-modal__box"><img id="rmxModalImg" alt="" /></div>
+      <h2 class="rmx-modal__title" id="rmxModalTitle"></h2>
+      <div class="rmx-stars rmx-modal__stars" id="rmxModalStars" role="group"></div>
+      <p class="rmx-count rmx-modal__count" id="rmxModalCount"></p>
+      <p class="rmx-modal__blurb" id="rmxModalBlurb"></p>
+      <div class="rmx-modal__actions">
+        <a class="btn btn--dark" id="rmxModalDl"><PixelIcon name="download" /> Download the GIF</a>
+        <a class="btn btn--light" href="/make-a-banana/" data-place="remix_modal"><PixelIcon name="palette" /> Make your own →</a>
+      </div>
+      <p class="rmx-modal__foot"><a id="rmxModalPage" href="#">Open full page ↗</a></p>
+    </div>
+  </div>
 
   <script type="application/json" id="rmxData" set:html={JSON.stringify(remixes)} />
   <script>

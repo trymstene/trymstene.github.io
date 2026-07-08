@@ -43,12 +43,10 @@ if (grid) {
     if (entries.some((e) => e.isIntersecting)) renderMore();
   });
 
-  function starRow(r) {
-    const wrap = document.createElement('div');
-    wrap.className = 'rmx-stars';
+  function fillStars(wrap, r) {
+    wrap.replaceChildren();
     wrap.setAttribute('aria-label', 'Rate ' + r.title + ' in bananas');
-    const mine = votes[r.id] || 0;
-    const shownScore = mine || Math.round(avg(r));
+    const shownScore = votes[r.id] || Math.round(avg(r));
     for (let s = 1; s <= 5; s++) {
       const b = document.createElement('button');
       b.textContent = '🍌';
@@ -58,6 +56,11 @@ if (grid) {
       wrap.appendChild(b);
     }
     return wrap;
+  }
+  function starRow(r) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rmx-stars';
+    return fillStars(wrap, r);
   }
 
   function rate(r, stars, wrap) {
@@ -88,6 +91,11 @@ if (grid) {
   function card(r) {
     const el = document.createElement('div');
     el.className = 'rmx-card';
+    // the box + title are a real link to the detail page (crawlable, deep-linkable);
+    // the grid click handler intercepts it into a modal for JS visitors
+    const link = document.createElement('a');
+    link.className = 'rmx-open';
+    link.href = '/dancing-banana-remixes/' + r.slug + '/';
     const box = document.createElement('div');
     box.className = 'rmx-box';
     const img = document.createElement('img');
@@ -101,9 +109,10 @@ if (grid) {
     io.observe(img);
     const h = document.createElement('h3');
     h.textContent = r.title;
+    link.append(box, h);
     const count = document.createElement('div');
     count.className = 'rmx-count';
-    el.append(box, h, starRow(r), count);
+    el.append(link, starRow(r), count);
     count.textContent = countText(r);
     const dl = document.createElement('a');
     dl.className = 'rmx-dl';
@@ -142,6 +151,60 @@ if (grid) {
     refresh();
   });
   document.getElementById('rmxSort').addEventListener('change', (e) => { sort = e.target.value; refresh(); });
+
+  // ---- URL-addressable modal: opens over the gallery, syncs a clean URL ------
+  const modal = document.getElementById('rmxModal');
+  const bySlug = {};
+  ALL.forEach((r) => { if (r.slug) bySlug[r.slug] = r; });
+
+  function openModal(r, push) {
+    document.getElementById('rmxModalTitle').textContent = r.title;
+    const img = document.getElementById('rmxModalImg');
+    img.src = DIR + r.id + '.gif';
+    img.width = r.w; img.height = r.h;
+    img.alt = r.title + ' — a dancing banana meme (animated GIF)';
+    const scale = Math.max(4, Math.min(8, Math.round(220 / Math.max(r.w, r.h))));
+    img.style.width = Math.min(230, r.w * scale) + 'px';
+    img.style.height = 'auto';
+    fillStars(document.getElementById('rmxModalStars'), r);
+    document.getElementById('rmxModalCount').textContent = countText(r);
+    document.getElementById('rmxModalBlurb').textContent = r.blurb || '';
+    const url = '/dancing-banana-remixes/' + r.slug + '/';
+    const dl = document.getElementById('rmxModalDl');
+    dl.href = DIR + r.id + '.gif';
+    dl.setAttribute('download', 'dancing-banana-' + r.slug + '-trymstene.com.gif');
+    document.getElementById('rmxModalPage').href = url;
+    modal.hidden = false;
+    document.body.classList.add('rmx-modal-open');
+    document.getElementById('rmxModalClose').focus();
+    if (push) history.pushState({ remix: r.slug }, '', url);
+  }
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove('rmx-modal-open');
+  }
+  function requestClose() {
+    if (history.state && history.state.remix) history.back();
+    else { closeModal(); history.replaceState(null, '', '/dancing-banana-remixes/'); }
+  }
+
+  grid.addEventListener('click', (e) => {
+    const a = e.target.closest('.rmx-open');
+    if (!a) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // let new-tab / middle-click work
+    e.preventDefault();
+    const slug = a.getAttribute('href').split('/').filter(Boolean).pop();
+    if (bySlug[slug]) openModal(bySlug[slug], true);
+  });
+  modal.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { e.preventDefault(); requestClose(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) requestClose(); });
+  window.addEventListener('popstate', (e) => {
+    const slug = e.state && e.state.remix;
+    if (slug && bySlug[slug]) openModal(bySlug[slug], false);
+    else closeModal();
+  });
 
   refresh(); // paint immediately (alphabetical-ish until ratings land)
   fetch(WORKER + '/ratings').then((r) => r.ok && r.json()).then((d) => {

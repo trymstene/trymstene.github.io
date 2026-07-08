@@ -1,0 +1,157 @@
+---
+// One indexable page per community remix — the Giphy/Tenor model. Static at
+// build time (real URL, full HTML, no JS needed to read it), and doubles as the
+// deep-link target for the gallery's modal. Data merges remixes.json (base) +
+// remix-meta.json (curated slug/title/meta/blurb, from tools/build-remix-meta.py).
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+import remixes from '../../data/remixes.json';
+import meta from '../../data/remix-meta.json';
+
+export function getStaticPaths() {
+  const byId = Object.fromEntries(meta.map((m) => [m.id, m]));
+  // skip any remix that has no curated slug yet (run tools/build-remix-meta.py)
+  return remixes.filter((r) => byId[r.id] && byId[r.id].slug).map((r) => {
+    const m = byId[r.id];
+    const related = remixes
+      .filter((x) => x.cat === r.cat && x.id !== r.id)
+      .slice(0, 6)
+      .map((x) => ({ id: x.id, w: x.w, h: x.h, slug: (byId[x.id] || {}).slug, title: (byId[x.id] || {}).title || x.title }));
+    return { params: { slug: m.slug }, props: { r, m, related } };
+  });
+}
+
+const { r, m, related } = Astro.props;
+const SITE = 'https://trymstene.com';
+const pageUrl = `${SITE}/dancing-banana-remixes/${m.slug}/`;
+const gifUrl = `${SITE}/assets/dancing-banana-community-remixes/${r.id}.gif`;
+
+const imageLD = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageObject',
+  '@id': pageUrl + '#image',
+  contentUrl: gifUrl,
+  url: pageUrl,
+  name: m.metaTitle,
+  caption: m.metaDescription,
+  encodingFormat: 'image/gif',
+  width: r.w,
+  height: r.h,
+  isBasedOn: { '@id': SITE + '/#banana-gif' },
+  isPartOf: { '@id': SITE + '/dancing-banana-remixes/#gallery' },
+  creditText: m.creator || 'Community remix',
+  ...(m.creator ? { author: { '@type': 'Person', name: m.creator } } : {}),
+};
+const crumbLD = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Dancing Banana GIF', item: SITE + '/dancing-banana-gif-meme/' },
+    { '@type': 'ListItem', position: 2, name: 'Banana memes', item: SITE + '/dancing-banana-remixes/' },
+    { '@type': 'ListItem', position: 3, name: m.title, item: pageUrl },
+  ],
+};
+// scale the tiny pixel GIF (mostly 33×35) up to a comfortable hero size
+const scale = Math.max(4, Math.min(8, Math.round(280 / Math.max(r.w, r.h))));
+---
+
+<BaseLayout title={m.metaTitle} description={m.metaDescription} ogType="article" ogImage={gifUrl}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(imageLD)} />
+    <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} />
+  </Fragment>
+
+  <style>
+    .rd { max-width: 640px; margin: 1.5rem auto 0; text-align: center; }
+    .rd-crumb { font-size: 0.82rem; opacity: 0.7; margin-bottom: 1rem; }
+    .rd-crumb a { color: var(--ink); }
+    .rd-box {
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: var(--line); box-shadow: var(--shadow);
+      padding: 1.6rem; min-height: 260px; margin-bottom: 1.3rem;
+    }
+    .rd-box img { image-rendering: pixelated; }
+    .rd-title { font-size: clamp(1.8rem, 7vw, 2.8rem); margin: 0 0 0.5rem; }
+    .rd-stars { display: flex; justify-content: center; gap: 3px; }
+    .rd-stars button {
+      background: none; border: 0; cursor: pointer; font-size: 1.35rem; line-height: 1; padding: 3px;
+      filter: grayscale(1) opacity(0.35); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .rd-stars button.on { filter: none; }
+    .rd-count { font-size: 0.78rem; opacity: 0.7; font-weight: 700; margin: 0.25rem 0 0; }
+    .rd-blurb { max-width: 52ch; margin: 1.1rem auto; line-height: 1.55; }
+    .rd-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; margin-top: 1.2rem; }
+    .rd-actions .btn { flex: 1; min-width: 220px; }
+    .rd-credit { font-size: 0.82rem; opacity: 0.7; margin-top: 1.2rem; }
+    .rd-credit a { color: var(--ink); }
+    .rd-related { margin-top: 3rem; }
+    .rd-related h2 { text-align: center; font-size: 1.2rem; }
+    .rd-related-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 0.7rem; margin-top: 1rem;
+    }
+    .rd-rel {
+      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+      text-decoration: none; color: var(--ink); font-size: 0.72rem; font-weight: 700;
+      border: 2px solid var(--ink); background: #fff; padding: 0.5rem 0.3rem;
+    }
+    .rd-rel img { image-rendering: pixelated; width: 56px; height: 56px; object-fit: contain; }
+    .rd-rel:hover { background: var(--banana); }
+  </style>
+
+  <article class="rd" id="remix-detail" data-id={r.id} data-slug={m.slug}>
+    <nav class="rd-crumb" aria-label="Breadcrumb">
+      <a href="/dancing-banana-gif-meme/">Dancing Banana</a> ›
+      <a href="/dancing-banana-remixes/">Banana memes</a> › <span>{m.title}</span>
+    </nav>
+
+    <div class="rd-box">
+      <img src={gifUrl} width={r.w} height={r.h}
+           style={`width:${r.w * scale}px;height:auto;`}
+           alt={`${m.title} — a dancing banana meme (animated GIF)`} />
+    </div>
+
+    <h1 class="rd-title">{m.title}</h1>
+    <div class="rd-rate">
+      <div class="rd-stars" role="group" aria-label={`Rate ${m.title} in bananas`}></div>
+      <p class="rd-count">be the first to rate 🍌</p>
+    </div>
+
+    <p class="rd-blurb">{m.blurb}</p>
+
+    <div class="rd-actions">
+      <a class="btn btn--dark" href={gifUrl} download={`dancing-banana-${m.slug}-trymstene.com.gif`}>
+        <PixelIcon name="download" /> Download the GIF
+      </a>
+      <a class="btn btn--light" href="/make-a-banana/" data-place="remix_detail">
+        <PixelIcon name="palette" /> Make your own →
+      </a>
+    </div>
+
+    <p class="rd-credit">
+      {m.creator
+        ? <span>Remix by <strong>{m.creator}</strong>.</span>
+        : <span>A community remix — creator unknown. <a href="/contact/">Made this one?</a> I'll credit you.</span>}
+    </p>
+
+    <section class="rd-related">
+      <h2>More banana memes</h2>
+      <div class="rd-related-grid">
+        {related.map((x) => (
+          <a class="rd-rel" href={`/dancing-banana-remixes/${x.slug}/`}>
+            <img src={`/assets/remix-thumbs/${x.id}.png`} width={x.w} height={x.h} loading="lazy"
+                 alt={`${x.title} — a dancing banana meme`} />
+            <span>{x.title}</span>
+          </a>
+        ))}
+      </div>
+      <p style="text-align:center;margin-top:1.4rem;">
+        <a class="btn btn--dark" href="/dancing-banana-remixes/">← All {remixes.length} banana memes</a>
+      </p>
+    </section>
+  </article>
+
+  <script>
+    import '../../scripts/remix-detail.js';
+  </script>
+</BaseLayout>

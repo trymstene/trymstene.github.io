@@ -3,7 +3,7 @@
 // child separately for per-category coverage reports).
 const SITE = 'https://trymstene.com';
 
-const CHILDREN = ['/sitemap-pages.xml', '/sitemap-products.xml'];
+const CHILDREN = ['/sitemap-pages.xml', '/sitemap-remixes.xml', '/sitemap-products.xml'];
 
 export function GET() {
   const items = CHILDREN.map((c) => `  <sitemap><loc>${SITE}${c}</loc></sitemap>`).join('\n');
