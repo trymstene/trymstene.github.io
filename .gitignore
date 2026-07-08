@@ -25,3 +25,8 @@ dist/
 .astro/
 
 __pycache__/
+
+# GA4 pull — secrets, NEVER commit (service-account key + property id)
+tools/ga4.local.json
+tools/*service-account*.json
+tools/*-ga4-key*.json
