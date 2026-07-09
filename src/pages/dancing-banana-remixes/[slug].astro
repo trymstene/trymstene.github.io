@@ -93,7 +93,8 @@ const scale = Math.max(4, Math.min(8, Math.round(280 / Math.max(r.w, r.h))));
     .rd-rel {
       display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
       text-decoration: none; color: var(--ink); font-size: 0.72rem; font-weight: 700;
-      border: 2px solid var(--ink); background: #fff; padding: 0.5rem 0.3rem;
+      border: 3px solid var(--ink); box-shadow: 5px 5px 0 #000; background: var(--paper);
+      padding: 0.5rem 0.3rem;
     }
     .rd-rel img { image-rendering: pixelated; width: 56px; height: 56px; object-fit: contain; }
     .rd-rel:hover { background: var(--banana); }
