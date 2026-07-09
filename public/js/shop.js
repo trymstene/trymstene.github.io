@@ -81,16 +81,25 @@
     }
   }
 
+  // show the best image for the current selection: the exact variant's mockup
+  // (posters have a different mockup per SIZE), else the colour image.
+  function applyImage() {
+    var s = hasSizes ? selSize : '';
+    var v = (selColor !== null && s !== null) ? variantFor(selColor, s) : null;
+    if (v && v.img) { mainImg.src = v.img; return; }
+    if (selColor && DATA.colorImage[selColor]) mainImg.src = DATA.colorImage[selColor];
+  }
+
   function pickColour(c) {
     selColor = c;
     markColour(c);
-    if (DATA.colorImage[c]) mainImg.src = DATA.colorImage[c];
     refreshSizes();
     // drop a size selection that isn't available in the new colour
     if (selSize) {
       var v = variantFor(c, selSize);
       if (!v || !v.available) { selSize = null; markSize(null); }
     }
+    applyImage();
     update();
   }
   function pickSize(s) {
@@ -98,6 +107,7 @@
     if (!v || !v.available) return;
     selSize = s;
     markSize(s);
+    applyImage();
     update();
   }
 

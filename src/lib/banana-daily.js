@@ -35,8 +35,18 @@ function pools(date) {
 // Deterministic outfit for a UTC date. The rnd() CALL ORDER is the contract —
 // hat, shades, one per extra, effect gate, effect pick — do not reorder.
 export function dailyOutfit(date = new Date()) {
-  let seed = date.getUTCFullYear() * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate();
-  const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  // splitmix32 seeded by the UTC date. A STRONG mix is essential: consecutive
+  // days' seeds differ by 1, and the old plain LCG barely changed its first
+  // draw — so the hat stayed identical for weeks (only glasses/fx drifted). The
+  // rnd() CALL ORDER below is still the contract; only the PRNG quality changed.
+  let h = (date.getUTCFullYear() * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate()) >>> 0;
+  const rnd = () => {
+    h = (h + 0x9e3779b9) | 0;
+    let t = h ^ (h >>> 16); t = Math.imul(t, 0x21f0aaad);
+    t = t ^ (t >>> 15); t = Math.imul(t, 0x735a2d97);
+    t = t ^ (t >>> 15);
+    return (t >>> 0) / 4294967296;
+  };
   const { hats, shades, extras } = pools(date);
   const hat = hats[Math.floor(rnd() * hats.length)];
   const glasses = shades[Math.floor(rnd() * shades.length)];
