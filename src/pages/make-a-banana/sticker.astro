@@ -1,0 +1,67 @@
+---
+// Custom sticker PDP — a product page for a banana designed in the builder.
+// Same look as the official shop (.pdp / shop.css) so custom + shop feel like
+// one store; the "product image" is rendered live from the design in the URL
+// and checkout runs the custom pipeline (sticker-pdp.js → sticker-core.js).
+// Transient per-design page → noindex.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+---
+<BaseLayout
+  title="Your custom Dancing Banana sticker | Trym Stene"
+  description="Order the banana you just made as a real die-cut vinyl sticker — printed on demand and shipped worldwide with free shipping."
+  robots="noindex,follow"
+>
+  <Fragment slot="head">
+    <link rel="stylesheet" href="/css/shop.css" />
+  </Fragment>
+
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a><span>›</span><a href="/make-a-banana/">Make a Banana</a><span>›</span><b>Your sticker</b>
+  </nav>
+
+  <main class="pdp">
+    <div class="pdp__gallery">
+      <canvas id="pdpMock" class="pdp__main" width="900" height="900" aria-label="Preview of your banana as a real sticker"></canvas>
+      <p style="margin:0.9rem 0 0;font-size:0.9rem;">
+        <a id="pdpBack" href="/make-a-banana/"><PixelIcon name="palette" /> Back to editing</a>
+      </p>
+    </div>
+
+    <div class="pdp__info">
+      <h1>Your custom sticker</h1>
+      <p class="pdp__tag">The exact banana you just made — printed and mailed to your door.</p>
+      <p class="pdp__price" id="pdpPrice"><small>from</small> 149 kr</p>
+      <p class="pdp__note" id="pdpNote">Free worldwide shipping · tax included where applicable</p>
+
+      <div class="pdp-field">
+        <div class="pdp-field__label">What you get</div>
+        <p id="pdpCut" style="margin:0;font-weight:500;">3″×3″ (7.5 cm) vinyl, die-cut along your design’s outline</p>
+      </div>
+
+      <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
+      <p class="pdp-stock" id="pdpStock"></p>
+
+      <ul class="pdp-trust">
+        <li>Checked by the banana guy himself before it ships</li>
+        <li>Durable weatherproof vinyl, printed on demand</li>
+        <li>Free shipping worldwide</li>
+        <li>Made by the creator of the original 1999 Dancing Banana</li>
+      </ul>
+    </div>
+  </main>
+
+  <section class="block">
+    <p class="kicker">Keep going</p>
+    <h2>More banana</h2>
+    <p class="lead">
+      <a href="/make-a-banana/"><PixelIcon name="palette" /> Back to the builder</a> ·
+      <a href="/shop/">Official merch</a> ·
+      <a href="/dancing-banana-gif-meme/">The story &amp; free GIF</a>
+    </p>
+  </section>
+
+  <script>
+    import '../../scripts/sticker-pdp.js';
+  </script>
+</BaseLayout>

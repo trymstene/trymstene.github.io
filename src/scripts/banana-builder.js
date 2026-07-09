@@ -13,6 +13,8 @@ import {
   PX, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
   sheet, assetsReady, drawComposite as engineDraw,
 } from '../lib/banana-engine.js';
+// shared sticker brain (config + checkout) — one source of truth with the PDP
+import { STICKER, PRICE } from '../lib/sticker-core.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -144,9 +146,9 @@ function init() {
 
   el('bbPause').onclick = () => { state.paused = !state.paused; refreshUI(); };
 
-  // the under-stage Order-sticker quick action proxies the real button below
+  // the under-stage Order-sticker quick action jumps straight to the sticker PDP
   // (the free GIF download lives in the "Take it with you" box — no top dupe)
-  el('bbQuickSticker').onclick = () => { el('bbOrderSticker').click(); track('quick_action', { action: 'sticker' }); };
+  el('bbQuickSticker').onclick = () => { track('quick_action', { action: 'sticker' }); goToProduct('sticker'); };
 
   el('bbRandom').onclick = () => {
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -564,14 +566,8 @@ function init() {
   // worker (R2), then opens a Shopify checkout with the design attached as a
   // line-item attribute. After payment, the worker's orders/paid webhook
   // creates a DRAFT Printful order that Trym approves before printing.
-  const STICKER = {
-    workerBase: 'https://banana-sticker.trymstene.workers.dev',
-    variantGid: 'gid://shopify/ProductVariant/48935555006683', // Custom Banana Sticker
-    shopDomain: 'officialdancingbanana.myshopify.com',
-    storefrontToken: '1032480366b6bf67760ba73ace4fe0f8', // public Storefront token, safe to embed
-  };
-  // what the visitor will actually pay — updated by the localized-price fetch
-  const PRICE = { amount: 149, currency: 'NOK' };
+  // STICKER config + PRICE now live in ../lib/sticker-core.js (shared with the
+  // custom PDP) — imported at the top so the two pages never drift.
 
   // ---- localized price: ask the Worker where the visitor is (Cloudflare
   // knows for free), then ask Shopify what THAT country pays via @inContext.
@@ -703,15 +699,20 @@ function init() {
     track('sticker_order_click', { design: designStr() });
     saveToShelf();
   };
-  // the picker: tap a product tile → open that product. Sticker rides the live
-  // flow (preview modal → checkout); magnet is shown but lands when its Printful
-  // backend is wired — never a dead-end, always the sticker as today's default.
+  // the picker: tap a product tile → go to that product's page. Sticker opens
+  // its real PDP (same look as the shop, preview + checkout there); magnet is
+  // shown but lands when its Printful backend is wired — never a dead-end.
+  function goToProduct(prod) {
+    sync(); // make sure the current design is in the URL before we carry it over
+    saveToShelf();
+    window.location.href = '/make-a-banana/' + prod + '/' + location.search;
+  }
   const bbPgrid = el('bbPgrid');
   if (bbPgrid) bbPgrid.addEventListener('click', (e) => {
     const tile = e.target.closest('.bb-ptile'); if (!tile) return;
     const prod = tile.dataset.prod;
     track('product_tile_click', { product: prod });
-    if (prod === 'sticker') { el('bbOrderSticker').click(); return; }
+    if (prod === 'sticker') { goToProduct('sticker'); return; }
     toast('Magnets are almost here \u{1F9F2}\u{1F34C} — grab the sticker today, magnet drops soon');
   });
   function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
