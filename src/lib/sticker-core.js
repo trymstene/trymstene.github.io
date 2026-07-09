@@ -95,7 +95,9 @@ export function renderPrintFile(state) {
   const W = 2048;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
   composite(ctx, W, state.frame, state, {
-    bg: state.bg, captions: true, effect: state.effect,
+    // captions only print on a SQUARE (background) sticker — on a transparent
+    // die-cut they'd become a separate floating island = two stickers, not one.
+    bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
   if (state.bg === 'transparent') {

@@ -21,7 +21,8 @@ function designCanvas() {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
   const ctx = cv.getContext('2d');
   composite(ctx, W, state.frame, state, {
-    bg: state.bg, captions: true, effect: state.effect,
+    // die-cut (transparent) = banana only; captions live on square stickers
+    bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
   if (state.bg === 'transparent') {
@@ -44,6 +45,12 @@ async function boot() {
     : `${product.size} ${product.material}, square with your design`;
   // carry the exact design back to the editor
   const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
+  // die-cut can't hold a floating caption — tell the user their text was left
+  // off, and how to keep it (pick a background = a square sticker)
+  if (state.bg === 'transparent' && (state.top || state.bottom)) {
+    const h = el('pdpHint');
+    if (h) { h.hidden = false; h.textContent = '✎ Your caption prints on square stickers only — this die-cut is just the banana. Pick a background back in the editor to keep the text.'; }
+  }
   await assetsReady();
   paintMockup();
   track('sticker_pdp_view', { product: product.key, design: designStr(state) });

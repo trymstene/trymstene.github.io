@@ -433,7 +433,9 @@ function init() {
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
     const ctx = cv.getContext('2d');
     drawComposite(ctx, W, state.frame, {
-      bg: state.bg, captions: true, effect: state.effect,
+      // captions only on square stickers (a transparent die-cut would cut the
+      // caption into its own floating piece — see sticker-core renderPrintFile)
+      bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
       hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
     });
     let design = cv;
@@ -609,7 +611,7 @@ function init() {
     const W = 2048;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
     drawComposite(ctx, W, state.frame, {
-      bg: state.bg, captions: true, effect: state.effect,
+      bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
       hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
     });
     if (state.bg === 'transparent') {
