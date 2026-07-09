@@ -98,6 +98,7 @@ def money(v):
 def main():
     ap = argparse.ArgumentParser(description="Shopify revenue pull")
     ap.add_argument("--days", type=int, default=60)
+    ap.add_argument("--products", action="store_true", help="list the catalog instead of orders")
     ap.add_argument("--raw", action="store_true")
     args = ap.parse_args()
 
@@ -106,6 +107,23 @@ def main():
 
     shop = gql(store, token, "{ shop { name currencyCode myshopifyDomain } }")["shop"]
     cur = shop["currencyCode"]
+
+    if args.products:
+        print(f"\n=== {shop['name']} · Shopify PRODUCTS ===")
+        q = """{ products(first: 100, sortKey: CREATED_AT, reverse: true) {
+          edges { node { title productType status totalInventory
+            priceRangeV2 { minVariantPrice { amount } maxVariantPrice { amount } }
+            variants(first: 100) { edges { node { id } } } } } } }"""
+        prods = [e["node"] for e in gql(store, token, q)["products"]["edges"]]
+        print(f"  {len(prods)} products\n")
+        for p in prods:
+            lo = money(p["priceRangeV2"]["minVariantPrice"]["amount"])
+            hi = money(p["priceRangeV2"]["maxVariantPrice"]["amount"])
+            price = f"{lo:,.0f}" + ("" if lo == hi else f"-{hi:,.0f}") + f" {cur}"
+            nv = len(p["variants"]["edges"])
+            print(f"  [{p['status']:<8}] {price:>14}  {nv:>2} var  {p['title'][:50]}  · {p['productType'] or '—'}")
+        return
+
     print(f"\n=== {shop['name']} · Shopify · last {args.days}d ({shop['myshopifyDomain']}) ===")
 
     since = (datetime.date.today() - datetime.timedelta(days=args.days)).isoformat()
