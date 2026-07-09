@@ -24,11 +24,17 @@
   var thumbs = [].slice.call(root.querySelectorAll('.pdp-thumb'));
   var sizeBtns = [].slice.call(root.querySelectorAll('.pdp-size'));
 
-  var selColor = null, selSize = null;
+  // a product may have colours+sizes (tee), only sizes (poster), or a single
+  // variant (mug/tote). Missing dimension = '' so the variant key still matches.
+  var hasColors = swatches.length > 0;
+  var hasSizes = sizeBtns.length > 0;
+  var selColor = hasColors ? null : '';
+  var selSize = hasSizes ? null : '';
 
   function money(amount) {
-    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: DATA.currency }).format(parseFloat(amount)); }
-    catch (e) { return amount + ' ' + DATA.currency; }
+    var n = parseFloat(amount);
+    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: DATA.currency, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n); }
+    catch (e) { return n + ' ' + DATA.currency; }
   }
   function key(c, s) { return c + '||' + s; }
   function variantFor(c, s) { return DATA.variants[key(c, s)]; }
@@ -51,13 +57,15 @@
   }
 
   function update() {
-    var v = selSize ? variantFor(selColor, selSize) : null;
-    if (!selSize) {
+    var needColor = hasColors && selColor === null;
+    var needSize = hasSizes && selSize === null;
+    var v = (!needColor && !needSize) ? variantFor(selColor, selSize) : null;
+    if (needColor || needSize) {
       priceEl.innerHTML = '<small>from</small> ' + money(DATA.priceMin);
       stockEl.textContent = '';
       stockEl.className = 'pdp-stock';
       buyBtn.disabled = true;
-      buyBtn.textContent = 'Select a size';
+      buyBtn.textContent = needSize ? 'Select a size' : 'Select a colour';
     } else if (v && v.available) {
       priceEl.textContent = money(v.price);
       stockEl.textContent = 'In stock · printed & shipped on demand';
@@ -66,7 +74,7 @@
       buyBtn.textContent = 'Buy →';
     } else {
       priceEl.textContent = v ? money(v.price) : money(DATA.priceMin);
-      stockEl.textContent = 'Sold out in this colour & size';
+      stockEl.textContent = 'Sold out' + (hasColors || hasSizes ? ' in this option' : '');
       stockEl.className = 'pdp-stock pdp-stock--no';
       buyBtn.disabled = true;
       buyBtn.textContent = 'Unavailable';
@@ -124,9 +132,15 @@
     }).catch(function () { buyBtn.disabled = false; buyBtn.textContent = orig; alert('Network hiccup — try again.'); });
   });
 
-  // init: first colour, no size chosen (nudges an explicit size choice)
-  var firstColour = (swatches[0] && swatches[0].dataset.color) || (thumbs[0] && thumbs[0].dataset.color);
-  if (firstColour) pickColour(firstColour);
+  // init: pick the first colour (nudges an explicit size choice); products with
+  // no colours still need their sizes enabled + the buy state initialised.
+  if (hasColors) {
+    var firstColour = (swatches[0] && swatches[0].dataset.color) || (thumbs[0] && thumbs[0].dataset.color);
+    if (firstColour) pickColour(firstColour);
+  } else {
+    refreshSizes();
+    update();
+  }
 
   // unit toggle for the size table (in / cm)
   var toggle = document.querySelector('.size-toggle');

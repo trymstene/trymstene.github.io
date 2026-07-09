@@ -123,8 +123,11 @@ function model(node) {
     colorImage[c] = (hit && hit.image) || featured;
   }
 
+  // key EVERY variant by color||size (either dimension may be empty '' for
+  // products that only have sizes, only colours, or a single variant) — else
+  // size-only / single-variant products (poster, mug, tote) get no buyable map.
   const vmap = {};
-  for (const v of variants) if (v.color && v.size) vmap[`${v.color}||${v.size}`] = v;
+  for (const v of variants) vmap[`${v.color}||${v.size}`] = v;
 
   const prices = variants.map((v) => v.price);
   const cur = variants.length ? variants[0].cur : 'NOK';

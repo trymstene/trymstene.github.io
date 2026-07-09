@@ -88,23 +88,27 @@ const breadcrumbSchema = {
       <p class="pdp__price"><small>from</small> {money(m.pmin, m.cur)}</p>
       <p class="pdp__note">Tax included where applicable · shipping calculated at checkout</p>
 
-      <div class="pdp-field">
-        <div class="pdp-field__label">Colour <span>— {m.colors.length} options</span></div>
-        <div class="pdp-swatches">
-          {m.colors.map((c) => (
-            <button class="pdp-swatch" data-color={c} title={c} aria-label={c} style={`background:${colorHex(c)}`}></button>
-          ))}
+      {m.colors.length > 0 && (
+        <div class="pdp-field">
+          <div class="pdp-field__label">Colour <span>— {m.colors.length} {m.colors.length === 1 ? 'option' : 'options'}</span></div>
+          <div class="pdp-swatches">
+            {m.colors.map((c) => (
+              <button class="pdp-swatch" data-color={c} title={c} aria-label={c} style={`background:${colorHex(c)}`}></button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div class="pdp-field">
-        <div class="pdp-field__label">Size <span>— <a href="#size-guide">size guide</a></span></div>
-        <div class="pdp-sizes">
-          {m.sizes.map((s) => <button class="pdp-size" data-size={s}>{s}</button>)}
+      {m.sizes.length > 0 && (
+        <div class="pdp-field">
+          <div class="pdp-field__label">Size <span>— <a href="#size-guide">size guide</a></span></div>
+          <div class="pdp-sizes">
+            {m.sizes.map((s) => <button class="pdp-size" data-size={s}>{s}</button>)}
+          </div>
         </div>
-      </div>
+      )}
 
-      <button class="btn btn--dark pdp-buy" disabled>Select a size</button>
+      <button class="btn btn--dark pdp-buy" disabled>{m.sizes.length ? 'Select a size' : 'Buy →'}</button>
       <p class="pdp-stock"></p>
 
       <ul class="pdp-trust">

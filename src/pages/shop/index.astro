@@ -43,14 +43,13 @@ const collectionSchema = {
     <ul class="shop-trust">
       <li>Printed on demand</li>
       <li>Ships worldwide</li>
+      <li>Secure Shopify checkout</li>
       <li>By the guy who made the meme</li>
     </ul>
   </section>
 
   <section class="block block--yellow">
-    <p class="kicker">The collection</p>
-    <h2>Wear the original</h2>
-    <p class="lead">The real 1999 Dancing Banana, on things you’ll actually use. Secure checkout via Shopify.</p>
+    <h2 class="sr-only">The collection</h2>
     {products.length ? (
       <div class="shop-grid">
         {products.map((p) => (

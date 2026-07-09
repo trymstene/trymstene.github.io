@@ -3,6 +3,9 @@
    Builds on styles.css (neo-brutalist, banana-yellow).
    ============================================================ */
 
+/* visually-hidden but kept for screen readers + document outline */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
 /* ---------- PLP: hero trust chips ---------- */
 .shop-trust { list-style: none; display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; padding: 0; margin: 1.6rem auto 0; max-width: 660px; }
 .shop-trust li { background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 0.4rem 0.85rem; font-weight: 800; font-size: 0.82rem; }
