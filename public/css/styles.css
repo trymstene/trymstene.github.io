@@ -498,7 +498,7 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
 .block--dark .bullets li::before { color: var(--banana); }
 
 /* ---------- factor chips ---------- */
-.factors { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.2rem; }
+.factors { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.2rem; }
 .factors span { border: 3px solid currentColor; padding: 0.35rem 0.7rem; font-weight: 700; }
 
 /* ---------- callout box (verbatim notes) ---------- */
