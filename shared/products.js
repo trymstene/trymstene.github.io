@@ -34,11 +34,11 @@ export default [
   {
     key: 'magnet',
     name: 'Magnet',
-    shopifyVariantGid: null,    // ← set when the Shopify "Custom Banana Magnet" product exists
+    shopifyVariantGid: 'gid://shopify/ProductVariant/48962172354779', // Custom Banana Magnet
     printfulVariantId: 16366,   // Die-Cut Magnets (product 656), 3″×3″, cost $3.32
     size: '3″×3″ (7.5 cm)',
     material: 'flexible fridge magnet',
     priceHint: 169,
-    live: false,                // "soon" until the Shopify variant + a worker deploy land
+    live: true,
   },
 ];

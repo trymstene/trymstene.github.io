@@ -79,7 +79,7 @@ el('pdpBuy').onclick = async () => {
   }
   busy = true;
   const btn = el('pdpBuy'); const label = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Preparing your sticker…';
+  btn.disabled = true; btn.textContent = `Preparing your ${product.name.toLowerCase()}…`;
   el('pdpStock').textContent = '';
   track('sticker_pdp_checkout', { product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) });
   try {
