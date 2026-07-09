@@ -19,13 +19,19 @@ const QUERY = `{ products(first: 50) { edges { node {
 } } } }`;
 
 // ---- colour name -> swatch hex ----
+// REAL Printful catalog hexes (Gildan 18500 hoodie + 5000 tee — /products/146,438),
+// so the swatch matches the garment. Add new colours here as products are added;
+// an unmapped name falls back to grey (a visible signal that it needs adding).
 const COLOR_HEX = {
-  black: '#1a1a1a', navy: '#1f2a44', purple: '#4b2e83', red: '#b42121',
-  'dark chocolate': '#3b2417', charcoal: '#4d4d4d', 'military green': '#4b5320',
-  orange: '#e0592a', 'brown savana': '#8b6f47', 'carolina blue': '#7ba7d7',
-  gold: '#f2c200', 'light blue': '#a9d3e6', white: '#ffffff', maroon: '#6e1f2a',
-  'sport grey': '#b0b0b0', ash: '#e8e8e0', natural: '#efe7d2', forest: '#22402c',
-  royal: '#2a4b9b', heather: '#9aa0a6',
+  ash: '#dedede', azalea: '#ff9faf', black: '#0b0b0b', 'brown savana': '#9f8971',
+  'carolina blue': '#8db7f6', charcoal: '#534e4a', 'dark chocolate': '#35241b',
+  'dark heather': '#47484d', 'forest green': '#222e1f', gold: '#ffaf24',
+  'graphite heather': '#686868', 'heather sport dark navy': '#515a6e',
+  heliconia: '#f63880', 'indigo blue': '#395d82', 'irish green': '#1d9345',
+  'light blue': '#a1c5e1', 'light pink': '#f3d4e3', maroon: '#47171c',
+  'military green': '#7e8560', navy: '#131928', orange: '#ff5723',
+  purple: '#4a1c7d', red: '#da0a1a', royal: '#1d50a4', sand: '#e7d3b3',
+  'sport grey': '#9b969c', white: '#ffffff', natural: '#efe7d2',
 };
 export const colorHex = (name) => COLOR_HEX[(name || '').trim().toLowerCase()] || '#cccccc';
 
@@ -37,10 +43,6 @@ export const money = (amount, cur) => {
   const n = parseFloat(amount);
   return `${cur} ${Number.isInteger(n) ? n : n.toFixed(2)}`; // 249, not 249.00
 };
-
-// Strip the redundant "Dancing Banana Official" brand prefix for display — we're
-// already IN the dancing banana shop, so card/PDP titles read cleaner without it.
-export const shopTitle = (t) => (t || '').replace(/^dancing banana official[\s—:-]*/i, '').replace(/^\w/, (c) => c.toUpperCase()).trim() || (t || '');
 
 const plain = (html) =>
   (html || '').replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '')

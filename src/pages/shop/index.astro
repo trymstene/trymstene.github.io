@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
-import { getProducts, money, colorHex, shopTitle } from '../../lib/shop.js';
+import { getProducts, money, colorHex } from '../../lib/shop.js';
 
 const products = await getProducts();
 
@@ -57,7 +57,7 @@ const collectionSchema = {
           <a class="project-card shop-card" href={`/shop/${p.handle}/`}>
             <img class="shop-card__img" src={p.featured} alt={p.title} loading="lazy" width="600" height="600" />
             <div class="project-card__body">
-              <h3>{shopTitle(p.title)}</h3>
+              <h3>{p.title}</h3>
               {p.colors.length > 1 && (
                 <div class="shop-card__swatches" aria-label={`${p.colors.length} colours`}>
                   {p.colors.slice(0, 6).map((c) => (
