@@ -173,6 +173,13 @@ if (grid) {
     document.body.classList.add('rmx-modal-open');
     document.getElementById('rmxModalClose').focus();
     if (push) history.pushState({ remix: r.slug }, '', url);
+    // SPA page_view so modal opens land in GA4 under the remix's own URL —
+    // otherwise browsing remixes via the modal is invisible (only the gallery
+    // gets counted). Unifies with direct visits to the static detail page.
+    if (window.gtag) window.gtag('event', 'page_view', {
+      page_location: location.origin + url,
+      page_title: r.title + ' — a Dancing Banana Remix',
+    });
   }
   function closeModal() {
     modal.hidden = true;
