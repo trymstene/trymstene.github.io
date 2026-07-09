@@ -26,6 +26,8 @@ dist/
 
 __pycache__/
 
+# Local secret configs (API tokens/keys) — NEVER commit. Catch-all + specifics.
+tools/*.local.json
 # GA4 pull — secrets, NEVER commit (service-account key + property id)
 tools/ga4.local.json
 tools/*service-account*.json
