@@ -44,6 +44,18 @@
 
   gtag('config', GA_ID);
 
+  // Cloudflare Web Analytics — adblocker-resilient, server-side pageview truth
+  // (GA4 is blocked for ~30-40% of visitors; this cross-checks the real total).
+  // Token is public (rides in the HTML). Skipped for internal traffic so it
+  // stays comparable to GA4's internal-filtered numbers.
+  if (!isInternal) {
+    var cfb = document.createElement('script');
+    cfb.defer = true;
+    cfb.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    cfb.setAttribute('data-cf-beacon', '{"token":"2ec40ec596fc44a19251c3d36b1f0abb"}');
+    document.head.appendChild(cfb);
+  }
+
   // Key conversion events. `placement` (data-place attr or the page path)
   // answers "which CTA earns its pixels" across every builder entry point.
   document.addEventListener('click', function (e) {
