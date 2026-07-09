@@ -14,7 +14,7 @@ import {
   sheet, assetsReady, drawComposite as engineDraw,
 } from '../lib/banana-engine.js';
 // shared sticker brain (config + checkout) — one source of truth with the PDP
-import { STICKER, PRICE } from '../lib/sticker-core.js';
+import { STICKER, PRICE, stickerCaptions, stickerEffect } from '../lib/sticker-core.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -433,9 +433,9 @@ function init() {
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
     const ctx = cv.getContext('2d');
     drawComposite(ctx, W, state.frame, {
-      // captions only on square stickers (a transparent die-cut would cut the
-      // caption into its own floating piece — see sticker-core renderPrintFile)
-      bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
+      // die-cut = banana only; captions + confetti/sparkle would cut into loose
+      // pieces (see sticker-core stickerCaptions / stickerEffect)
+      bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
       hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
     });
     let design = cv;
@@ -611,7 +611,7 @@ function init() {
     const W = 2048;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
     drawComposite(ctx, W, state.frame, {
-      bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
+      bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
       hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
     });
     if (state.bg === 'transparent') {

@@ -88,6 +88,16 @@ export function crop(cv, bb) {
   o.getContext('2d').drawImage(cv, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h); return o;
 }
 
+// ---- die-cut sticker rules ------------------------------------------------
+// A transparent sticker is DIE-CUT along the artwork outline, so anything
+// floating free of the banana can't exist on one physical piece: captions cut
+// into a separate island, and confetti/sparkle cut into a scatter of specks.
+// So on a die-cut we drop both; a SQUARE (background) sticker keeps everything.
+// (disco stays — it just recolours the banana, no floating bits.)
+export const stickerCaptions = (state) => state.bg !== 'transparent';
+export const stickerEffect = (state) =>
+  (state.bg === 'transparent' && (state.effect === 'confetti' || state.effect === 'sparkle')) ? 'none' : state.effect;
+
 // ---- the print file (what actually gets printed) --------------------------
 // Two sticker styles (Trym's call): TRANSPARENT bg → trimmed transparent PNG
 // so Printful DIE-CUTS along the outline; a COLOURED bg → the full square.
@@ -95,9 +105,7 @@ export function renderPrintFile(state) {
   const W = 2048;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
   composite(ctx, W, state.frame, state, {
-    // captions only print on a SQUARE (background) sticker — on a transparent
-    // die-cut they'd become a separate floating island = two stickers, not one.
-    bg: state.bg, captions: state.bg !== 'transparent', effect: state.effect,
+    bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
   if (state.bg === 'transparent') {
