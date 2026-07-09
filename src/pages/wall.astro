@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 import wall from '../data/wall.json';
 
 const title = 'The Banana Wall — hung by the banana guy';
@@ -46,7 +47,7 @@ const schema = {
     }
     .wl-how h2 { margin: 0 0 0.4rem; font-size: 1.15rem; color: var(--banana); }
     .wl-how p { margin: 0 0 0.9rem; font-size: 0.92rem; opacity: 0.9; }
-    .wl-how a { color: var(--banana); font-weight: 700; }
+    .wl-how a:not(.btn) { color: var(--banana); font-weight: 700; }
   </style>
 
   <div class="wl-wrap">
@@ -72,7 +73,7 @@ const schema = {
     </div>
 
     <div class="wl-how">
-      <h2>🖼 How to get on the wall</h2>
+      <h2><PixelIcon name="frame" size="1em" /> How to get on the wall</h2>
       <p>
         Make something — <a href="/make-a-banana/">dress a banana</a> or
         <a href="/forge/">forge a pixel emoji</a> — and hit <strong>Submit to the Wall</strong>.
