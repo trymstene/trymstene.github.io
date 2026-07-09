@@ -283,8 +283,10 @@ function init() {
 
   el('bbOverlayLink').onclick = async (e) => {
     if (e) e.preventDefault(); // it's a text link now — no jumping to the top
-    sync();
-    const url = location.origin + '/overlay/' + location.search;
+    // the streamer overlay is the BANANA OF THE DAY (a fresh, date-seeded outfit
+    // every day) — NOT the banana being built here. Bare /overlay/ resolves to
+    // the daily outfit; so the streamer sets it once and it changes on its own.
+    const url = location.origin + '/overlay/';
     try { await navigator.clipboard.writeText(url); toast('Overlay link copied — add it in OBS as a Browser Source!'); }
     catch (e) { toast(url); }
     track('overlay_link_copy');
