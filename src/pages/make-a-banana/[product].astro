@@ -1,15 +1,25 @@
 ---
-// Custom sticker PDP — a product page for a banana designed in the builder.
+// Custom product PDP — a product page for a banana designed in the builder.
+// ONE route serves every sellable custom product (sticker, magnet, …); the
+// list comes from shared/products.js so adding a product needs no new page.
 // Same look as the official shop (.pdp / shop.css) so custom + shop feel like
 // one store; the "product image" is rendered live from the design in the URL
 // and checkout runs the custom pipeline (sticker-pdp.js → sticker-core.js).
 // Transient per-design page → noindex.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
+import PRODUCTS from '../../../shared/products.js';
+
+export function getStaticPaths() {
+  // only sellable products get a page; a teaser ("soon") has no PDP yet
+  return PRODUCTS.filter((p) => p.live).map((p) => ({ params: { product: p.key }, props: { p } }));
+}
+const { p } = Astro.props;
+const nameLc = p.name.toLowerCase();
 ---
 <BaseLayout
-  title="Your custom Dancing Banana sticker | Trym Stene"
-  description="Order the banana you just made as a real die-cut vinyl sticker — printed on demand and shipped worldwide with free shipping."
+  title={`Your custom Dancing Banana ${nameLc} | Trym Stene`}
+  description={`Order the banana you just made as a real ${nameLc} — printed on demand and shipped worldwide with free shipping.`}
   robots="noindex,follow"
 >
   <Fragment slot="head">
@@ -17,26 +27,26 @@ import PixelIcon from '../../components/PixelIcon.astro';
   </Fragment>
 
   <nav class="crumbs" aria-label="Breadcrumb">
-    <a href="/">Home</a><span>›</span><a href="/make-a-banana/">Make a Banana</a><span>›</span><b>Your sticker</b>
+    <a href="/">Home</a><span>›</span><a href="/make-a-banana/">Make a Banana</a><span>›</span><b>Your {nameLc}</b>
   </nav>
 
-  <main class="pdp">
+  <main class="pdp" id="pdpRoot" data-product={p.key}>
     <div class="pdp__gallery">
-      <canvas id="pdpMock" class="pdp__main" width="900" height="900" aria-label="Preview of your banana as a real sticker"></canvas>
+      <canvas id="pdpMock" class="pdp__main" width="900" height="900" aria-label={`Preview of your banana as a real ${nameLc}`}></canvas>
       <p style="margin:0.9rem 0 0;font-size:0.9rem;">
         <a id="pdpBack" href="/make-a-banana/"><PixelIcon name="palette" /> Back to editing</a>
       </p>
     </div>
 
     <div class="pdp__info">
-      <h1>Your custom sticker</h1>
+      <h1>Your custom {nameLc}</h1>
       <p class="pdp__tag">The exact banana you just made — printed and mailed to your door.</p>
-      <p class="pdp__price" id="pdpPrice"><small>from</small> 149 kr</p>
+      <p class="pdp__price" id="pdpPrice"><small>from</small> {p.priceHint} kr</p>
       <p class="pdp__note" id="pdpNote">Free worldwide shipping · tax included where applicable</p>
 
       <div class="pdp-field">
         <div class="pdp-field__label">What you get</div>
-        <p id="pdpCut" style="margin:0;font-weight:500;">3″×3″ (7.5 cm) vinyl, die-cut along your design’s outline</p>
+        <p id="pdpCut" style="margin:0;font-weight:500;">{p.size} {p.material}, die-cut along your design’s outline</p>
       </div>
 
       <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
@@ -44,7 +54,7 @@ import PixelIcon from '../../components/PixelIcon.astro';
 
       <ul class="pdp-trust">
         <li>Checked by the banana guy himself before it ships</li>
-        <li>Durable weatherproof vinyl, printed on demand</li>
+        <li>{p.size} {p.material}, printed on demand</li>
         <li>Free shipping worldwide</li>
         <li>Made by the creator of the original 1999 Dancing Banana</li>
       </ul>

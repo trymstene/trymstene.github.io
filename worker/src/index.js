@@ -18,7 +18,20 @@
 //   POST /webhook/shopify   Shopify orders/paid webhook
 //   GET  /geo               visitor country code (for localized price display)
 
+import PRODUCTS from '../../shared/products.js';
+
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+// Shopify numeric variant id -> Printful catalog variant id, derived from the
+// shared manifest (shared/products.js). This is why nothing is hardcoded: add
+// a product to that list (with its Shopify variant + Printful variant) and the
+// right thing gets printed — no worker code change, just a redeploy. Mapping is
+// server-side + trusted (Shopify enforces the price; we pick what to print).
+const PRINTFUL_BY_SHOPIFY = Object.fromEntries(
+  PRODUCTS
+    .filter((p) => p.shopifyVariantGid && p.printfulVariantId)
+    .map((p) => [String(p.shopifyVariantGid).split('/').pop(), p.printfulVariantId])
+);
 
 export default {
   async fetch(request, env) {
@@ -110,7 +123,7 @@ async function handleServe(request, env, url) {
 // Verifies the Printful token + config without exposing anything sensitive.
 
 async function handleHealth(env) {
-  const out = { variant_id: env.PRINTFUL_VARIANT_ID, printful: 'no token set' };
+  const out = { variant_id: env.PRINTFUL_VARIANT_ID, variant_map: PRINTFUL_BY_SHOPIFY, printful: 'no token set' };
   if (env.PRINTFUL_TOKEN) {
     const res = await fetch('https://api.printful.com/stores', {
       headers: { Authorization: `Bearer ${env.PRINTFUL_TOKEN}` },
@@ -147,8 +160,12 @@ async function handleWebhook(request, env, url) {
   for (const li of order.line_items || []) {
     const props = Object.fromEntries((li.properties || []).map((p) => [p.name, p.value]));
     if (props._design_key && /^[a-f0-9-]{36}\.png$/.test(props._design_key)) {
+      // which Printful variant to print = looked up from this line item's
+      // Shopify variant (manifest map). Fall back to the sticker so a missing
+      // mapping never drops an order silently.
+      const pfVariant = PRINTFUL_BY_SHOPIFY[String(li.variant_id)] || parseInt(env.PRINTFUL_VARIANT_ID, 10);
       items.push({
-        variant_id: parseInt(env.PRINTFUL_VARIANT_ID, 10),
+        variant_id: pfVariant,
         quantity: li.quantity || 1,
         files: [{ url: `${url.origin}/d/${props._design_key}` }],
       });

@@ -5,13 +5,15 @@
 // the builder) so config + render + checkout never drift between the two.
 import { assetsReady, NFRAMES } from '../lib/banana-engine.js';
 import {
-  PRICE, parseDesign, composite, designStr, captionsClean,
+  PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
   bboxOf, pad, crop, renderPrintFile, makeStickerMockup, localizedPrice, uploadAndCheckout,
 } from '../lib/sticker-core.js';
 
 const el = (id) => document.getElementById(id);
 const track = (name, p) => { if (window.gtag) window.gtag('event', name, p || {}); };
 const state = parseDesign(new URLSearchParams(location.search));
+// which product this page sells — from the route (shared/products.js drives it)
+const product = getProduct((el('pdpRoot') || {}).dataset && el('pdpRoot').dataset.product) || getProduct('sticker');
 
 // the trimmed "design" (banana + captions + bg), rendered once at preview res
 function designCanvas() {
@@ -30,7 +32,7 @@ function designCanvas() {
 }
 
 function paintMockup() {
-  const mock = makeStickerMockup(state, designCanvas(), 900, 'sticker');
+  const mock = makeStickerMockup(state, designCanvas(), 900, product.key);
   const main = el('pdpMock');
   main.width = mock.width; main.height = mock.height;
   main.getContext('2d').drawImage(mock, 0, 0);
@@ -38,20 +40,20 @@ function paintMockup() {
 
 async function boot() {
   el('pdpCut').textContent = state.bg === 'transparent'
-    ? '3″×3″ (7.5 cm) vinyl, die-cut along your design’s outline'
-    : '3″×3″ (7.5 cm) square vinyl sticker with your design';
+    ? `${product.size} ${product.material}, die-cut along your design’s outline`
+    : `${product.size} ${product.material}, square with your design`;
   // carry the exact design back to the editor
   const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
   await assetsReady();
   paintMockup();
-  track('sticker_pdp_view', { design: designStr(state) });
-  const lp = await localizedPrice();
+  track('sticker_pdp_view', { product: product.key, design: designStr(state) });
+  const lp = await localizedPrice(product);
   if (lp) {
     el('pdpPrice').innerHTML = '<small>from</small> ' + lp.display;
     el('pdpNote').textContent = lp.display + ' · free worldwide shipping · tax where applicable';
   }
 }
-boot();
+boot().catch((e) => { console.error('PDP boot failed:', e); track('sticker_pdp_boot_fail', { message: String((e && e.message) || e).slice(0, 90) }); });
 
 let busy = false;
 el('pdpBuy').onclick = async () => {
@@ -64,9 +66,9 @@ el('pdpBuy').onclick = async () => {
   const btn = el('pdpBuy'); const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Preparing your sticker…';
   el('pdpStock').textContent = '';
-  track('sticker_pdp_checkout', { value: PRICE.amount, currency: PRICE.currency, design: designStr(state) });
+  track('sticker_pdp_checkout', { product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) });
   try {
-    const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state));
+    const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state), product);
     track('checkout_redirect', { value: PRICE.amount, currency: PRICE.currency });
     window.location.href = checkoutUrl;
   } catch (e) {

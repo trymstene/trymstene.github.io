@@ -712,8 +712,12 @@ function init() {
     const tile = e.target.closest('.bb-ptile'); if (!tile) return;
     const prod = tile.dataset.prod;
     track('product_tile_click', { product: prod });
-    if (prod === 'sticker') { goToProduct('sticker'); return; }
-    toast('Magnets are almost here \u{1F9F2}\u{1F34C} — grab the sticker today, magnet drops soon');
+    if (tile.hasAttribute('data-soon')) { // teaser product — not sellable yet
+      const name = (tile.querySelector('.bb-ptile__name') || {}).textContent || 'That one';
+      toast(name + 's land any day now \u{1F34C} — the sticker’s ready to order today');
+      return;
+    }
+    goToProduct(prod);
   });
   function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
   el('bbOrderCancel').onclick = closeOrderModal;
@@ -796,7 +800,9 @@ function init() {
   }
   // captions live behind a fold — open it when a share link arrives wearing them
   if (state.top || state.bottom) { const f = el('bbCaptionsFold'); if (f) f.open = true; }
-  sheet.decode().catch(() => {}).finally(() => {
+  // assetsReady() waits on load/error events, not sheet.decode() — decode() can
+  // hang forever on a cache-served image in Chromium and would stall boot.
+  assetsReady().finally(() => {
     recomputeEmojiBB(); drawPicker(); drawTiles(); dirty = true;
     requestAnimationFrame(tick);
   });

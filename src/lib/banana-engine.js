@@ -175,8 +175,14 @@ function imgFor(key) {
 }
 Object.values(SVG).forEach(imgFor); // prewarm
 async function assetsReady() {
+  // Wait on load/error events, NOT img.decode(): decode() can hang forever on a
+  // cache-served image in Chromium (bites the PDP, which awaits this at boot
+  // while the sheet is still loading). Already-complete images resolve at once.
   const imgs = [sheet, ...Object.values(imgCache)];
-  await Promise.all(imgs.map((i) => (i.complete && i.naturalWidth) ? Promise.resolve() : i.decode().catch(() => {})));
+  await Promise.all(imgs.map((i) => (i.complete && i.naturalWidth) ? Promise.resolve() : new Promise((res) => {
+    i.addEventListener('load', () => res(), { once: true });
+    i.addEventListener('error', () => res(), { once: true });
+  })));
 }
 
 // ---- the one render path ----

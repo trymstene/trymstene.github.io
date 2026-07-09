@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PRODUCTS from '../../shared/products.js';
 
 const title = "Make Your Own Dancing Banana | Trym Stene";
 const description = "Customize the original Dancing Banana — add shades, hats, captions and dance moves, then download it or share your creation. Free banana builder by the guy who made the meme.";
@@ -406,17 +407,14 @@ const appSchema = {
                on each) → tap opens that product. Adding a product = one more tile,
                never a new button. -->
           <div class="bb-pgrid" id="bbPgrid">
-            <button type="button" class="bb-ptile" data-prod="sticker">
-              <span class="bb-ptile__mock"><canvas data-mock="sticker" aria-hidden="true"></canvas></span>
-              <span class="bb-ptile__name">Sticker</span>
-              <span class="bb-ptile__price" id="bbPrice">149 kr</span>
-            </button>
-            <button type="button" class="bb-ptile" data-prod="magnet" data-soon>
-              <span class="bb-ptile__soon">soon</span>
-              <span class="bb-ptile__mock"><canvas data-mock="magnet" aria-hidden="true"></canvas></span>
-              <span class="bb-ptile__name">Magnet</span>
-              <span class="bb-ptile__price">169 kr</span>
-            </button>
+            {PRODUCTS.map((p) => (
+              <button type="button" class="bb-ptile" data-prod={p.key} data-soon={!p.live ? true : undefined}>
+                {!p.live && <span class="bb-ptile__soon">soon</span>}
+                <span class="bb-ptile__mock"><canvas data-mock={p.key} aria-hidden="true"></canvas></span>
+                <span class="bb-ptile__name">{p.name}</span>
+                <span class="bb-ptile__price" id={p.key === 'sticker' ? 'bbPrice' : undefined}>{p.priceHint} kr</span>
+              </button>
+            ))}
           </div>
           <ul class="bb-trust">
             <li>Made on demand · free worldwide shipping · checked by the banana guy before it ships

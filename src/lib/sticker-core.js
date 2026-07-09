@@ -6,15 +6,24 @@ import {
   GLASSES, HAT_BY_ID, EXTRA_DEFS, EFFECTS, NFRAMES,
   drawComposite as engineDraw,
 } from './banana-engine.js';
+import PRODUCTS from '../../shared/products.js';
 
-// The live Shopify + Cloudflare-Worker wiring. Storefront token is PUBLIC
-// (safe to embed). See memory: sticker-flow.
-export const STICKER = {
+// Shared store wiring — the SAME store + worker fulfil every custom product;
+// only the variant changes per product (see shared/products.js). Storefront
+// token is PUBLIC (safe to embed). See memory: sticker-flow.
+export const SHOP = {
   workerBase: 'https://banana-sticker.trymstene.workers.dev',
-  variantGid: 'gid://shopify/ProductVariant/48935555006683', // Custom Banana Sticker
   shopDomain: 'officialdancingbanana.myshopify.com',
   storefrontToken: '1032480366b6bf67760ba73ace4fe0f8',
 };
+export { PRODUCTS };
+export function getProduct(key) { return PRODUCTS.find((p) => p.key === key) || null; }
+
+// Back-compat: the sticker as a flat config. The builder's localized-price
+// fetch + its (now-dormant) modal still import STICKER; new multi-product code
+// uses SHOP + getProduct() instead.
+export const STICKER = { ...SHOP, variantGid: (getProduct('sticker') || {}).shopifyVariantGid };
+
 // What the visitor will actually pay — the static fallback; localizedPrice()
 // overwrites it with exactly what checkout charges in the visitor's currency.
 export const PRICE = { amount: 149, currency: 'NOK' };
@@ -99,7 +108,7 @@ export function renderPrintFile(state) {
 // ---- product MOCKUP (what the buyer sees) ---------------------------------
 // die-cut white contour for transparent designs, rounded white square for
 // coloured ones. product='magnet' adds a grey depth band = visible thickness.
-export function makeStickerMockup(state, design, size = 900, product = 'sticker') {
+export function makeStickerMockup(state, design, size = 900, style = 'sticker') {
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
@@ -108,7 +117,7 @@ export function makeStickerMockup(state, design, size = 900, product = 'sticker'
   const dw = design.width * s, dh = design.height * s;
   const dx = (size - dw) / 2, dy = (size - dh) / 2;
   const border = size * 0.02; // the white kiss-cut edge
-  const thick = product === 'magnet' ? size * 0.022 : 0; // magnets show visible depth
+  const thick = style === 'magnet' ? size * 0.022 : 0; // magnets show visible depth
 
   if (state.bg === 'transparent') {
     const sil = document.createElement('canvas'); sil.width = size; sil.height = size;
@@ -161,17 +170,18 @@ export function makeStickerMockup(state, design, size = 900, product = 'sticker'
 // Ask the Worker where the visitor is (Cloudflare knows for free), then ask
 // Shopify what THAT country pays via @inContext — exactly what checkout will
 // charge. Returns { display, amount, currency } or null on any failure.
-export async function localizedPrice() {
+export async function localizedPrice(product = getProduct('sticker')) {
   try {
-    const geo = await fetch(STICKER.workerBase + '/geo').then((r) => r.json());
+    if (!product || !product.shopifyVariantGid) return null;
+    const geo = await fetch(SHOP.workerBase + '/geo').then((r) => r.json());
     const cc = String(geo.country || '').toUpperCase();
     if (!/^[A-Z]{2}$/.test(cc)) return null;
-    const res = await fetch('https://' + STICKER.shopDomain + '/api/2024-10/graphql.json', {
+    const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STICKER.storefrontToken },
+      headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
       body: JSON.stringify({
         query: 'query($id: ID!, $country: CountryCode!) @inContext(country: $country) { node(id: $id) { ... on ProductVariant { price { amount currencyCode } } } }',
-        variables: { id: STICKER.variantGid, country: cc },
+        variables: { id: product.shopifyVariantGid, country: cc },
       }),
     }).then((r) => r.json());
     const p = res && res.data && res.data.node && res.data.node.price;
@@ -186,19 +196,20 @@ export async function localizedPrice() {
 // Upload the print PNG to the Worker (→ R2), then create a Shopify cart with
 // the design attached as line-item attributes. Returns the checkoutUrl (the
 // caller redirects). Throws on any failure so the caller can recover the UI.
-export async function uploadAndCheckout(printCanvas) {
+export async function uploadAndCheckout(printCanvas, product = getProduct('sticker')) {
+  if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
   const blob = await new Promise((r) => printCanvas.toBlob(r, 'image/png'));
-  const up = await fetch(STICKER.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
+  const up = await fetch(SHOP.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
   if (!up.ok) throw new Error('upload failed: ' + up.status);
   const { key, url } = await up.json();
 
   const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
-  const res = await fetch('https://' + STICKER.shopDomain + '/api/2024-10/graphql.json', {
+  const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STICKER.storefrontToken },
+    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
     body: JSON.stringify({
       query: mutation,
-      variables: { lines: [{ merchandiseId: STICKER.variantGid, quantity: 1, attributes: [
+      variables: { lines: [{ merchandiseId: product.shopifyVariantGid, quantity: 1, attributes: [
         { key: '_design_key', value: key },   // machine-readable, hidden in checkout
         { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
       ] }] },
