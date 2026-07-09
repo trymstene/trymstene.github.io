@@ -17,12 +17,12 @@ const description = 'Two workbenches, no wrong answers: dress your own dancing b
 
   <section class="block" style="padding-top:0;">
     <div class="doors" style="max-width:760px;margin-inline:auto;">
-      <a class="door" href="/make-a-banana/" data-place="make-landing">
+      <a class="door door--dance" href="/make-a-banana/" data-place="make-landing">
         <span class="door__verb">dress the banana</span>
         <p>The classic. Hats, shades, captions, dance moves — then take it home as a chat emoji, a meme, or a real 149&nbsp;kr sticker.</p>
         <span class="door__live">the original, since 1999</span>
       </a>
-      <a class="door door--dance" href="/forge/">
+      <a class="door" href="/forge/">
         <span class="door__verb">forge an emoji</span>
         <p>From scratch, pixel by pixel — in the kind of dead-simple tool the banana was born in. Frames, onion skin, transparent GIF out.</p>
         <span class="door__live">make the next one</span>
@@ -32,34 +32,9 @@ const description = 'Two workbenches, no wrong answers: dress your own dancing b
     <p class="mk-note" style="text-align:center; margin-top:1.4rem;">
       The best things made here get hung on <a href="/wall/">the banana wall →</a>
     </p>
-
-    <div class="mk-shelfrow">
-      <h3>🗄 My shelf</h3>
-      <p class="mk-note">Everything you make lands here — bananas open in the builder, pixels open in the forge.</p>
-      <div id="mkShelf" class="mk-shelf" aria-label="My saved creations"></div>
-    </div>
   </section>
 
   <style is:inline slot="head">
-    .mk-shelfrow { max-width: 760px; margin: 2.5rem auto 0; }
-    .mk-shelfrow h3 { margin: 0; }
     .mk-note { font-size: 0.85rem; opacity: 0.7; margin: 0.2rem 0 0; }
-    .mk-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
-    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
-    .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.12s ease; }
-    .shelf-item:hover { transform: translate(-2px, -2px); }
-    .shelf-item canvas { display: block; width: 76px; height: 76px; image-rendering: pixelated; }
-    .shelf-x { position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; line-height: 1; background: var(--ink); color: var(--paper); border: 2px solid var(--paper); font-weight: 800; cursor: pointer; }
-    .shelf-x:hover { background: var(--hot, #ff4d6d); }
   </style>
-
-  <script>
-    import { renderShelf } from '../lib/banana-shelf.js';
-    const host = document.getElementById('mkShelf');
-    renderShelf(host, {
-      onPick: (c) => {
-        location.href = c.kind === 'emoji' ? '/forge/?shelf=' + c.id : '/make-a-banana/?' + c.params;
-      },
-    });
-  </script>
 </BaseLayout>

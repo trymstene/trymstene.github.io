@@ -197,22 +197,6 @@ const appSchema = {
     .bb-card--pulse { animation: bbCardPulse 0.9s steps(2) 3; }
     @keyframes bbCardPulse { 50% { outline: 5px solid var(--banana); outline-offset: 4px; } }
     @media (prefers-reduced-motion: reduce) { .bb-card--pulse { animation: none; outline: 5px solid var(--banana); outline-offset: 4px; } }
-    .bb-shelfrow { margin-top: 1.6rem; }
-    .bb-shelfrow h3 { margin: 0; }
-    .bb-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
-    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
-    .shelf-item {
-      position: relative; border: 3px solid var(--ink); background: var(--paper);
-      box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.12s ease;
-    }
-    .shelf-item:hover { transform: translate(-2px, -2px); }
-    .shelf-item canvas { display: block; width: 76px; height: 76px; image-rendering: pixelated; }
-    .shelf-x {
-      position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; line-height: 1;
-      background: var(--ink); color: var(--paper); border: 2px solid var(--paper);
-      font-weight: 800; cursor: pointer; border-radius: 0;
-    }
-    .shelf-x:hover { background: var(--hot); }
     .bb-minimock { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto 0.9rem; border: var(--line); }
     /* cheesy supermarket sale banners: price in a pixel starburst, shipping
        in a hot pill — both slightly tilted like hanging posters */
@@ -434,11 +418,6 @@ const appSchema = {
           </ul>
           <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" size="1.4em" /> Order my sticker</button>
         </div>
-      </div>
-      <div class="bb-shelfrow">
-        <h3>🗄 My shelf</h3>
-        <p class="bb-note" style="margin-top:0.2rem;">Your latest saves — click one to bring it back. <a href="/pass/">Full shelf on your pass 🎫</a> · <a href="/forge/">or forge a pixel emoji →</a></p>
-        <div id="bbShelf" class="bb-shelf" aria-label="My saved bananas"></div>
       </div>
     </section>
   </div>

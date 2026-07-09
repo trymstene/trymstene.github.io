@@ -5,7 +5,7 @@
 // frame-picker thumbnails and both exports, so what you see is what you get.
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { shelfAdd, renderShelf } from '../lib/banana-shelf.js';
+import { shelfAdd } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 import {
   SHEET_SRC, FW, FH, NFRAMES, BASE_CYCLE_S, FRAMES, SVG, EFFECTS,
@@ -290,21 +290,11 @@ function init() {
 
   function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
-  // ---- the shelf: creations you kept (downloaded / shared / ordered) ----
-  function refreshShelf() {
-    renderShelf(el('bbShelf'), {
-      limit: 6, // a strip, not the archive — the full shelf lives on the pass
-      onPick: (c) => {
-        track('shelf_pick', { design: c.params.slice(0, 60) });
-        if (c.kind === 'emoji') { location.href = '/forge/?shelf=' + c.id; return; } // pixel creations belong to the forge
-        location.href = location.pathname + '?' + c.params; // full reload = every param (captions, bg, speed, frame) restored the proven way
-      },
-    });
-  }
+  // creations you keep (downloaded / shared / ordered) are recorded to the
+  // shelf — the shelf itself lives on your pass (/pass/); the builder just saves
   function saveToShelf(shareId) {
     sync(); // make sure location.search reflects the current banana
     shelfAdd({ kind: 'banana', params: location.search.slice(1), shareId: shareId || null });
-    refreshShelf();
   }
   // compact outfit fingerprint attached to downloads/orders — six months of
   // this tells us which accessories to build packs and pre-made stickers from
@@ -765,7 +755,6 @@ function init() {
   }
 
   refreshUI();
-  refreshShelf();
   passVisit();
   // shelf 🏷 tags land here: walk the visitor straight to the sticker card
   if (urlP.get('go') === 'sticker') {

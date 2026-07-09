@@ -9,7 +9,7 @@
 // in a Uint8Array per frame (0 = transparent), sizes 32/48/64, per-frame
 // delays. Serialized as base64 for autosave + the Shelf.
 import { GIFEncoder } from 'gifenc';
-import { shelfAdd, renderShelf, shelfList } from '../lib/banana-shelf.js';
+import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 import { FORGE_PALETTE as PALETTE, FORGE_RGB as RGB, FORGE_MAX_FRAMES as MAX_FRAMES, b64, forgeParse } from '../lib/forge-format.js';
 
@@ -309,7 +309,6 @@ function init() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });
-      refreshShelfStrip();
       el('fgDone').hidden = false;
       track('forge_gif_export', { size: state.size, frames: state.frames.length });
       passPatch('smith'); passStat('forges');
@@ -346,23 +345,6 @@ function init() {
   };
 
   // ---- the shelf strip on the forge ----
-  function refreshShelfStrip() {
-    renderShelf(el('fgShelf'), {
-      limit: 6, // a strip, not the archive — the full shelf lives on the pass
-      onPick: (c) => {
-        if (c.kind === 'emoji') {
-          if (deserialize(c.params)) {
-            document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === state.size)));
-            fitCanvas(); refreshAll(); save();
-            track('forge_shelf_pick');
-          }
-        } else {
-          location.href = '/make-a-banana/?' + c.params; // bananas belong to the builder
-        }
-      },
-    });
-  }
-
   function refreshAll() {
     drawEditor();
     drawFrames();
@@ -383,7 +365,6 @@ function init() {
   setColor(state.color);
   el('fgOnion').setAttribute('aria-pressed', String(state.onion));
   refreshAll();
-  refreshShelfStrip();
   requestAnimationFrame(previewTick);
   track('forge_open');
   passVisit();
