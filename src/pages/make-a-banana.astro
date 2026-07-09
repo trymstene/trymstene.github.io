@@ -197,34 +197,30 @@ const appSchema = {
     .bb-card--pulse { animation: bbCardPulse 0.9s steps(2) 3; }
     @keyframes bbCardPulse { 50% { outline: 5px solid var(--banana); outline-offset: 4px; } }
     @media (prefers-reduced-motion: reduce) { .bb-card--pulse { animation: none; outline: 5px solid var(--banana); outline-offset: 4px; } }
-    .bb-minimock { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto 0.9rem; border: var(--line); }
-    /* cheesy supermarket sale banners: price in a pixel starburst, shipping
-       in a hot pill — both slightly tilted like hanging posters */
-    .bb-deal { display: flex; flex-direction: column; align-items: center; margin: -0.3rem 0 0.8rem; }
-    .bb-burst {
-      width: min(300px, 94%); aspect-ratio: 48 / 34; flex: none;
-      background: url('/assets/price-burst.svg') center/contain no-repeat;
-      display: grid; place-items: center;
-      transform: rotate(-4deg);
-      image-rendering: pixelated;
+    /* the product picker IS the card: one tile per product, each previewing
+       the user's banana on that item. Scales by adding tiles, not buttons. */
+    .bb-pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); gap: 0.7rem; margin: 0 0 1rem; }
+    .bb-ptile {
+      position: relative;
+      display: flex; flex-direction: column; padding: 0; text-align: center;
+      background: var(--paper); border: 3px solid var(--ink);
+      box-shadow: 4px 4px 0 var(--ink); cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      font: inherit; color: inherit;
     }
-    .bb-burst span {
-      font-family: "Archivo Black", system-ui, sans-serif;
-      font-size: 1.8rem; letter-spacing: -0.5px; transform: rotate(1deg);
-      max-width: 150px; text-align: center; line-height: 1;
+    .bb-ptile[data-soon] { opacity: 0.9; }
+    .bb-ptile__soon {
+      position: absolute; top: -3px; right: -3px; z-index: 1;
+      background: var(--ink); color: var(--banana);
+      font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0.16rem 0.4rem; border: 2px solid var(--banana);
     }
-    /* the pill hangs over the burst's lower edge, one line, a bit off-centre —
-       organic sale-poster look, not grid-perfect */
-    .bb-shippill {
-      background: var(--hot); color: #fff; border: 3px solid var(--ink);
-      box-shadow: 3px 3px 0 var(--ink);
-      padding: 0.45rem 0.85rem; white-space: nowrap;
-      font-weight: 800; font-size: 0.78rem; line-height: 1;
-      text-transform: uppercase; letter-spacing: 0.05em;
-      transform: rotate(-3deg);
-      margin: -1.4rem 0 0 3rem;
-      position: relative; z-index: 1;
-    }
+    .bb-ptile:hover, .bb-ptile:focus-visible { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); outline: none; }
+    .bb-ptile:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--ink); }
+    .bb-ptile__mock { aspect-ratio: 1; background: #fff; border-bottom: 3px solid var(--ink); display: grid; place-items: center; overflow: hidden; }
+    .bb-ptile__mock canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
+    .bb-ptile__name { font-weight: 800; font-size: 0.95rem; margin-top: 0.45rem; }
+    .bb-ptile__price { font-weight: 800; font-size: 0.85rem; color: var(--hot); margin: 0.05rem 0 0.5rem; }
     .bb-trust { margin: 0 0 1.1rem; padding-left: 1.15rem; font-size: 0.92rem; display: grid; gap: 0.35rem; }
     .bb-trust li { margin: 0; }
 
@@ -404,19 +400,32 @@ const appSchema = {
           </div>
         </div>
         <div class="bb-card bb-card--buy">
-          <h3><PixelIcon name="tag" size="1.5em" /> Get it as a real sticker</h3>
-          <p>Your banana, printed and mailed to your door. Live preview of the moment you froze:</p>
-          <canvas id="bbMiniMock" class="bb-minimock" aria-label="Live preview of your printed sticker"></canvas>
-          <div class="bb-deal">
-            <div class="bb-burst"><span id="bbPrice">149 kr</span></div>
-            <div class="bb-shippill">Free shipping worldwide</div>
+          <h3><PixelIcon name="tag" size="1.5em" /> Take this banana home</h3>
+          <p>Your banana on real things — printed and mailed to your door. Pick your thing:</p>
+          <!-- the card IS the picker: one tile per product (your banana previewed
+               on each) → tap opens that product. Adding a product = one more tile,
+               never a new button. -->
+          <div class="bb-pgrid" id="bbPgrid">
+            <button type="button" class="bb-ptile" data-prod="sticker">
+              <span class="bb-ptile__mock"><canvas data-mock="sticker" aria-hidden="true"></canvas></span>
+              <span class="bb-ptile__name">Sticker</span>
+              <span class="bb-ptile__price" id="bbPrice">149 kr</span>
+            </button>
+            <button type="button" class="bb-ptile" data-prod="magnet" data-soon>
+              <span class="bb-ptile__soon">soon</span>
+              <span class="bb-ptile__mock"><canvas data-mock="magnet" aria-hidden="true"></canvas></span>
+              <span class="bb-ptile__name">Magnet</span>
+              <span class="bb-ptile__price">129 kr</span>
+            </button>
           </div>
           <ul class="bb-trust">
-            <li>Checked by the banana guy himself before it ships
-              <details class="px-info"><summary>?</summary><span class="px-info__bubble">3″×3″ (7.5 cm) durable vinyl, printed on demand — die-cut along your design's outline (square if you picked a background). Sold by the creator of the original 1999 Dancing Banana.</span></details>
+            <li>Made on demand · free worldwide shipping · checked by the banana guy before it ships
+              <details class="px-info"><summary>?</summary><span class="px-info__bubble">Printed on demand by the creator of the original 1999 Dancing Banana. Tap a product to preview it and order — die-cut along your design's outline (or square if you picked a background).</span></details>
             </li>
           </ul>
-          <button class="btn btn--dark" id="bbOrderSticker"><PixelIcon name="tag" size="1.4em" /> Order my sticker</button>
+          <!-- hidden proxy: the tiles drive the flow; kept so the existing order
+               logic + top quick-action + shelf scroll-to keep working unchanged -->
+          <button id="bbOrderSticker" hidden aria-hidden="true" tabindex="-1">Order my sticker</button>
         </div>
       </div>
     </section>

@@ -421,11 +421,12 @@ function init() {
     pickerCvs.forEach((c, i) => drawComposite(c.getContext('2d'), 96, i, { bg: 'transparent', captions: false }));
   }
 
-  // ---- live mini sticker mockup (buy card): see the physical thing update
-  // as you build — same die-cut/square logic as the real print file, small.
-  const miniMock = el('bbMiniMock');
-  function drawMiniMock() {
-    if (!miniMock) return;
+  // ---- live product tiles (buy card = the picker): each tile previews the
+  // user's banana ON that product (sticker, magnet, …). One design rendered
+  // once, then mocked per product. Adding a product = one more tile, no button.
+  function drawTiles() {
+    const tiles = document.querySelectorAll('#bbPgrid [data-mock]');
+    if (!tiles.length) return;
     const W = 512;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
     const ctx = cv.getContext('2d');
@@ -438,9 +439,11 @@ function init() {
       const data = ctx.getImageData(0, 0, W, W).data;
       design = crop(cv, pad(bboxOf([data], W), W));
     }
-    const mock = makeStickerMockup(design, 480);
-    miniMock.width = mock.width; miniMock.height = mock.height;
-    miniMock.getContext('2d').drawImage(mock, 0, 0);
+    tiles.forEach((c) => {
+      const mock = makeStickerMockup(design, 360, c.dataset.mock);
+      c.width = mock.width; c.height = mock.height;
+      c.getContext('2d').drawImage(mock, 0, 0);
+    });
   }
 
   // ---- state change: repaint everything derived ----
@@ -451,7 +454,7 @@ function init() {
     dirty = true;
     refreshUI(); sync();
     clearTimeout(bbT);
-    bbT = setTimeout(() => { recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true; }, 60);
+    bbT = setTimeout(() => { recomputeEmojiBB(); drawPicker(); drawTiles(); dirty = true; }, 60);
   }
   function refreshUI() {
     if (state.bg === 'transparent') { stage.classList.add('bb-stage--transparent'); stage.style.background = ''; }
@@ -623,7 +626,7 @@ function init() {
   // Sticker MOCKUP matching the style: die-cut white contour border for
   // transparent designs, rounded white square for coloured ones. Soft shadow,
   // paper backdrop — so the buyer sees the physical thing.
-  function makeStickerMockup(design, size = 900) {
+  function makeStickerMockup(design, size = 900, product = 'sticker') {
     const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
     const ctx = cv.getContext('2d');
     ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
@@ -632,6 +635,7 @@ function init() {
     const dw = design.width * s, dh = design.height * s;
     const dx = (size - dw) / 2, dy = (size - dh) / 2;
     const border = size * 0.02; // the white kiss-cut edge
+    const thick = product === 'magnet' ? size * 0.022 : 0; // magnets show visible depth
 
     if (state.bg === 'transparent') {
       // white silhouette of the design, dilated in a ring = the die-cut border
@@ -647,6 +651,14 @@ function init() {
         octx.drawImage(sil, Math.cos(a) * border, Math.sin(a) * border);
       }
       octx.drawImage(sil, 0, 0);
+      if (thick) { // grey depth band beneath = magnet body
+        const dark = document.createElement('canvas'); dark.width = size; dark.height = size;
+        const dctx = dark.getContext('2d');
+        dctx.drawImage(outline, 0, 0);
+        dctx.globalCompositeOperation = 'source-in';
+        dctx.fillStyle = '#c7c1b4'; dctx.fillRect(0, 0, size, size);
+        ctx.drawImage(dark, thick, thick);
+      }
       ctx.save();
       ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
       ctx.drawImage(outline, 0, 0);
@@ -655,6 +667,11 @@ function init() {
       ctx.drawImage(design, dx, dy, dw, dh);
     } else {
       const r = size * 0.035;
+      if (thick) { // grey depth band beneath = magnet body
+        ctx.save(); ctx.fillStyle = '#c7c1b4';
+        ctx.beginPath(); ctx.roundRect(dx - border + thick, dy - border + thick, dw + 2 * border, dh + 2 * border, r); ctx.fill();
+        ctx.restore();
+      }
       ctx.save();
       ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
       ctx.fillStyle = '#fff';
@@ -686,6 +703,17 @@ function init() {
     track('sticker_order_click', { design: designStr() });
     saveToShelf();
   };
+  // the picker: tap a product tile → open that product. Sticker rides the live
+  // flow (preview modal → checkout); magnet is shown but lands when its Printful
+  // backend is wired — never a dead-end, always the sticker as today's default.
+  const bbPgrid = el('bbPgrid');
+  if (bbPgrid) bbPgrid.addEventListener('click', (e) => {
+    const tile = e.target.closest('.bb-ptile'); if (!tile) return;
+    const prod = tile.dataset.prod;
+    track('product_tile_click', { product: prod });
+    if (prod === 'sticker') { el('bbOrderSticker').click(); return; }
+    toast('Magnets are almost here \u{1F9F2}\u{1F34C} — grab the sticker today, magnet drops soon');
+  });
   function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
   el('bbOrderCancel').onclick = closeOrderModal;
   el('bbOrderModal').addEventListener('click', (e) => { if (e.target === el('bbOrderModal')) closeOrderModal(); });
@@ -768,7 +796,7 @@ function init() {
   // captions live behind a fold — open it when a share link arrives wearing them
   if (state.top || state.bottom) { const f = el('bbCaptionsFold'); if (f) f.open = true; }
   sheet.decode().catch(() => {}).finally(() => {
-    recomputeEmojiBB(); drawPicker(); drawMiniMock(); dirty = true;
+    recomputeEmojiBB(); drawPicker(); drawTiles(); dirty = true;
     requestAnimationFrame(tick);
   });
 }
