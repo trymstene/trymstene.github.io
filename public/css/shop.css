@@ -8,7 +8,9 @@
 .shop-trust li { background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 0.4rem 0.85rem; font-weight: 800; font-size: 0.82rem; }
 
 /* ---------- PLP: product grid + cards ---------- */
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+/* same content width + centring as .cards/.remix-grid on the rest of the site,
+   so the grid doesn't sprawl left-aligned across a widescreen */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.5rem; margin: 2rem auto 0; max-width: 1100px; }
 .shop-card__img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; background: #fff; border-bottom: var(--line); display: block; }
 .shop-card .project-card__body { padding: 1.1rem 1.2rem 1.2rem; }
 .shop-card h3 { font-size: 1.08rem; line-height: 1.15; margin-bottom: 0.55rem; }
