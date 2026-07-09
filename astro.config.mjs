@@ -11,4 +11,9 @@ export default defineConfig({
   site: 'https://trymstene.com',
   trailingSlash: 'always',
   build: { format: 'directory' },
+  // /make/ was a fork page (builder vs forge) — now both live in the top nav,
+  // so the middle step is gone. Keep old links/bookmarks alive → the builder.
+  redirects: {
+    '/make/': '/make-a-banana/',
+  },
 });
