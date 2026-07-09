@@ -9,7 +9,10 @@ const TOKEN = '1032480366b6bf67760ba73ace4fe0f8';
 const API = `https://${SHOP}/api/2024-10/graphql.json`;
 export const SITE = 'https://trymstene.com';
 
-const QUERY = `{ products(first: 50) { edges { node {
+// @inContext(country: US) → prices come back in USD, the shop's main display
+// currency (most traffic is international/US; Shopify still charges each buyer
+// their own market currency at checkout).
+const QUERY = `query @inContext(country: US) { products(first: 50) { edges { node {
   handle title descriptionHtml productType
   featuredImage { url altText }
   images(first: 30) { edges { node { url altText } } }
@@ -41,7 +44,9 @@ const sizeRank = (s) => (s.toUpperCase() in SIZE_RANK ? SIZE_RANK[s.toUpperCase(
 
 export const money = (amount, cur) => {
   const n = parseFloat(amount);
-  return `${cur} ${Number.isInteger(n) ? n : n.toFixed(2)}`; // 249, not 249.00
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n); // $27, not USD 27.00
+  } catch (e) { return `${cur} ${Number.isInteger(n) ? n : n.toFixed(2)}`; }
 };
 
 const plain = (html) =>

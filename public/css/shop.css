@@ -83,7 +83,7 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 .pdp-trust li::before { content: "🍌"; position: absolute; left: 0; }
 
 /* ---------- details / size guide sections ---------- */
-.pdp-details { max-width: 1200px; margin: 0 auto; padding: 0 5vw; }
+.pdp-details { max-width: 1200px; margin: 0 auto; padding: 0 5vw 3rem; }
 .pdp-details details { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm); margin-bottom: 1rem; }
 .pdp-details summary { cursor: pointer; font-weight: 800; font-size: 1.05rem; padding: 1rem 1.2rem; list-style: none; }
 .pdp-details summary::-webkit-details-marker { display: none; }
