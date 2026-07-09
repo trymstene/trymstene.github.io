@@ -27,6 +27,7 @@ from PIL import Image
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(SITE, 'public', 'assets')
 HIRES = os.path.join(ASSETS, 'dancing-banana-highres')
+GIPHY = os.path.join(SITE, 'giphy-tenor-pack')   # local-only upload pack (gitignored)
 FW, FH, N = 469, 498, 8
 SCALE = 4          # master pixel unit 52 = 4 x the sheet's 13
 MW = MH = 2000
@@ -339,6 +340,52 @@ def stage_wallpapers(write):
         rebuild_pattern('dancing-banana-wallpaper-pattern-%s.png' % kind, size)
 
 
+def stage_giphy(write):
+    """Regenerate the local Giphy/Tenor upload pack from the MASTERS (the old
+    pack's colour variants were the low-quality online banana). Trimmed to the
+    union bbox of all 8 frames (+6% pad) so there's no dead transparent space —
+    tight crops read better in the GIF keyboards. Writes to giphy-tenor-pack/."""
+    frames = [load_master(n) for n in range(1, N + 1)]
+    x0 = min(bbox_of(f)[0] for f in frames); y0 = min(bbox_of(f)[1] for f in frames)
+    x1 = max(bbox_of(f)[2] for f in frames); y1 = max(bbox_of(f)[3] for f in frames)
+    side = max(x1 - x0, y1 - y0); pad = round(side * 0.06); side += 2 * pad
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    left, top = cx - side // 2, cy - side // 2
+
+    def cut(size):
+        out = []
+        for f in frames:
+            sq = np.zeros((side, side, 4), dtype=np.uint8)
+            sx0, sy0 = max(0, left), max(0, top)
+            sx1, sy1 = min(MW, left + side), min(MH, top + side)
+            sq[sy0 - top:sy1 - top, sx0 - left:sx1 - left] = f[sy0:sy1, sx0:sx1]
+            out.append(np.asarray(Image.fromarray(sq).resize((size, size), Image.NEAREST)))
+        return out
+
+    if write:
+        os.makedirs(GIPHY, exist_ok=True)
+        # drop the stale online-sourced variants + old flagship names
+        import glob
+        for old in glob.glob(os.path.join(GIPHY, 'dancing-banana-*.gif')):
+            os.remove(old)
+
+    # flagships (from masters, trimmed)
+    save_gif(cut(640), os.path.join(GIPHY, 'dancing-banana-original.gif'), write, transparent=False)
+    save_gif(cut(1200), os.path.join(GIPHY, 'dancing-banana-hd.gif'), write, transparent=True)
+    save_gif(cut(512), os.path.join(GIPHY, 'dancing-banana-sticker.gif'), write, transparent=True)
+
+    # solid-colour background variants — the SAME master banana, just placed on a
+    # flat colour (to_gif_frames puts index 0 = the bg). Variety for the feed.
+    sq640 = cut(640)
+    for name, bg in [('black', (17, 17, 17)), ('blue', (47, 111, 208)),
+                     ('pink', (255, 93, 115)), ('green', (60, 160, 90))]:
+        f = to_gif_frames(sq640, bg=bg)
+        p = os.path.join(GIPHY, 'dancing-banana-%s.gif' % name)
+        if write:
+            f[0].save(p, save_all=True, append_images=f[1:], duration=100, loop=0, optimize=False)
+        print(('wrote ' if write else 'DRY: would write ') + os.path.relpath(p, SITE))
+
+
 def stage_emoji(write):
     """platform cuts from the masters: Discord/Slack want 128x128 (Slack caps
     at 128KB), Telegram stickers are 512x512. The crop is the UNION bbox of
@@ -399,6 +446,8 @@ if __name__ == '__main__':
         stage_icons(write)
     elif stage == 'emoji':
         stage_emoji(write)
+    elif stage == 'giphy':
+        stage_giphy(write)
     elif stage == 'all':
         f = stage_sheet(write)
         stage_downloads(write, f)
