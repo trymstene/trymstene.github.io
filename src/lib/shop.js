@@ -33,7 +33,14 @@ export const colorHex = (name) => COLOR_HEX[(name || '').trim().toLowerCase()] |
 const SIZE_RANK = { XXS: -1, XS: 0, S: 1, M: 2, L: 3, XL: 4, '2XL': 5, XXL: 5, '3XL': 6, XXXL: 6, '4XL': 7, '5XL': 8, '6XL': 9 };
 const sizeRank = (s) => (s.toUpperCase() in SIZE_RANK ? SIZE_RANK[s.toUpperCase()] : 50);
 
-export const money = (amount, cur) => `${cur} ${parseFloat(amount).toFixed(2)}`;
+export const money = (amount, cur) => {
+  const n = parseFloat(amount);
+  return `${cur} ${Number.isInteger(n) ? n : n.toFixed(2)}`; // 249, not 249.00
+};
+
+// Strip the redundant "Dancing Banana Official" brand prefix for display — we're
+// already IN the dancing banana shop, so card/PDP titles read cleaner without it.
+export const shopTitle = (t) => (t || '').replace(/^dancing banana official[\s—:-]*/i, '').replace(/^\w/, (c) => c.toUpperCase()).trim() || (t || '');
 
 const plain = (html) =>
   (html || '').replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '')

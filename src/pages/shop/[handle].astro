@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
-import { getProducts, money, colorHex, firstSentence, sizeTableHtml, SITE } from '../../lib/shop.js';
+import { getProducts, money, colorHex, firstSentence, sizeTableHtml, shopTitle, SITE } from '../../lib/shop.js';
 
 export async function getStaticPaths() {
   const products = await getProducts();
@@ -67,7 +67,7 @@ const breadcrumbSchema = {
   </Fragment>
 
   <nav class="crumbs" aria-label="Breadcrumb">
-    <a href="/">Home</a><span>›</span><a href="/shop/">Shop</a><span>›</span><b>{m.title}</b>
+    <a href="/">Home</a><span>›</span><a href="/shop/">Shop</a><span>›</span><b>{shopTitle(m.title)}</b>
   </nav>
 
   <main class="pdp" data-pdp>
@@ -83,7 +83,7 @@ const breadcrumbSchema = {
     </div>
 
     <div class="pdp__info">
-      <h1>{m.title}</h1>
+      <h1>{shopTitle(m.title)}</h1>
       <p class="pdp__tag">{firstSentence(m.descHtml, 120)}</p>
       <p class="pdp__price"><small>from</small> {money(m.pmin, m.cur)}</p>
       <p class="pdp__note">Tax included where applicable · shipping calculated at checkout</p>

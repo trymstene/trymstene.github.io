@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
-import { getProducts, money } from '../../lib/shop.js';
+import { getProducts, money, colorHex, shopTitle } from '../../lib/shop.js';
 
 const products = await getProducts();
 
@@ -23,7 +23,7 @@ const collectionSchema = {
 ---
 <BaseLayout
   title="Shop — Dancing Banana Merch | Trym Stene"
-  description="Official Dancing Banana merch — tees, stickers and more, from the creator of the meme. Printed on demand, shipped worldwide."
+  description="Official Dancing Banana merch — tees, posters, mugs and more, from the creator of the meme. Printed on demand, shipped worldwide."
   ogTitle="Shop — Dancing Banana Merch"
   ogImage="https://trymstene.com/assets/og/shop.png"
   ogDescription="Official Dancing Banana merch from the creator of the meme."
@@ -31,24 +31,45 @@ const collectionSchema = {
   <link rel="stylesheet" href="/css/shop.css" slot="head" />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(collectionSchema)} />
 
-  <section class="hero">
+  <section class="hero shop-hero">
+    <div class="hero__banana">
+      <img src="/assets/banana-strut.png" alt="The Dancing Banana strutting"
+           width="240" height="240"
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
     <p class="kicker">Official merch</p>
     <h1 class="hero__title">dancing banana<br>shop</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">Wear the banana. The original meme, on stuff you can actually own.</p>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Wear the banana — the original 1999 meme, on stuff you can actually own.</p>
+    <ul class="shop-trust">
+      <li>Printed on demand</li>
+      <li>Ships worldwide</li>
+      <li>By the guy who made the meme</li>
+    </ul>
   </section>
 
   <section class="block block--yellow">
-    <p class="kicker">The goods</p>
-    <h2>Dancing Banana merch</h2>
-    <p class="lead">Printed on demand, shipped worldwide. Checkout is secured by Shopify.</p>
+    <p class="kicker">The collection</p>
+    <h2>Wear the original</h2>
+    <p class="lead">The real 1999 Dancing Banana, on things you’ll actually use. Secure checkout via Shopify.</p>
     {products.length ? (
-      <div class="cards">
+      <div class="shop-grid">
         {products.map((p) => (
-          <a class="project-card" href={`/shop/${p.handle}/`}>
-            <img class="shop-card__img" src={p.featured} alt={p.title} loading="lazy" />
+          <a class="project-card shop-card" href={`/shop/${p.handle}/`}>
+            <img class="shop-card__img" src={p.featured} alt={p.title} loading="lazy" width="600" height="600" />
             <div class="project-card__body">
-              <h3>{p.title}</h3>
-              <p class="shop-card__price"><span class="shop-card__from">from</span>{money(p.pmin, p.cur)}</p>
+              <h3>{shopTitle(p.title)}</h3>
+              {p.colors.length > 1 && (
+                <div class="shop-card__swatches" aria-label={`${p.colors.length} colours`}>
+                  {p.colors.slice(0, 6).map((c) => (
+                    <span class="shop-card__swatch" style={`background:${colorHex(c)}`} title={c}></span>
+                  ))}
+                  {p.colors.length > 6 && <span class="shop-card__more">+{p.colors.length - 6}</span>}
+                </div>
+              )}
+              <div class="shop-card__foot">
+                <p class="shop-card__price"><span class="shop-card__from">from</span>{money(p.pmin, p.cur)}</p>
+                <span class="shop-card__cta">View →</span>
+              </div>
             </div>
           </a>
         ))}
@@ -59,9 +80,9 @@ const collectionSchema = {
   </section>
 
   <section class="block">
-    <p class="kicker">Or design your own</p>
-    <h2>Make a custom banana</h2>
-    <p class="lead">Add shades, a hat, a caption — then put <em>your</em> banana on a real vinyl sticker, shipped free worldwide.</p>
-    <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Make your own dancing banana →</a>
+    <p class="kicker">Or make your own</p>
+    <h2>Put <em>your</em> banana on it</h2>
+    <p class="lead">Add shades, a hat, a caption — build your own dancing banana and get it as a real vinyl sticker, shipped free worldwide.</p>
+    <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Open the banana builder →</a>
   </section>
 </BaseLayout>

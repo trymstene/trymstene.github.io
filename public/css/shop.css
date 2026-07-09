@@ -3,10 +3,23 @@
    Builds on styles.css (neo-brutalist, banana-yellow).
    ============================================================ */
 
-/* ---------- PLP: product cards ---------- */
+/* ---------- PLP: hero trust chips ---------- */
+.shop-trust { list-style: none; display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; padding: 0; margin: 1.6rem auto 0; max-width: 660px; }
+.shop-trust li { background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 0.4rem 0.85rem; font-weight: 800; font-size: 0.82rem; }
+
+/* ---------- PLP: product grid + cards ---------- */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
 .shop-card__img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; background: #fff; border-bottom: var(--line); display: block; }
-.shop-card__price { font-weight: 800; font-size: 1.1rem; margin-top: auto; padding-top: 0.6rem; }
-.shop-card__from { font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; display: block; }
+.shop-card .project-card__body { padding: 1.1rem 1.2rem 1.2rem; }
+.shop-card h3 { font-size: 1.08rem; line-height: 1.15; margin-bottom: 0.55rem; }
+.shop-card__swatches { display: flex; align-items: center; gap: 5px; margin: 0 0 0.8rem; }
+.shop-card__swatch { width: 15px; height: 15px; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 1px 1px 0 rgba(17, 17, 17, 0.35); flex: none; }
+.shop-card__more { font-size: 0.72rem; font-weight: 800; opacity: 0.6; margin-left: 1px; }
+.shop-card__foot { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 0.5rem; }
+.shop-card__price { font-weight: 900; font-size: 1.15rem; line-height: 1; margin: 0; }
+.shop-card__from { display: block; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.55; margin-bottom: 3px; }
+.shop-card__cta { font-weight: 800; color: var(--hot); font-size: 0.92rem; white-space: nowrap; }
+a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 .shop-status { text-align: center; font-weight: 700; padding: 2.5rem 1rem; }
 
 /* ---------- breadcrumbs ---------- */
