@@ -60,6 +60,26 @@ const bananaImage = {
   "license": "https://trymstene.com/license-the-dancing-banana/",
   "isBasedOn": { "@id": "https://trymstene.com/#banana-gif" }
 };
+
+// The author entity, finally DEFINED (every schema above references #trym by id
+// but it was never a full node). E-E-A-T for the informational "dancing banana"
+// query — tells Google the authoritative person behind the meme. Purely additive.
+const person = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": "https://trymstene.com/#trym",
+  "name": "Trym Stene",
+  "url": "https://trymstene.com/me/",
+  "image": "https://trymstene.com/assets/trym-stene-profile-photo.jpg",
+  "description": "Norwegian designer and creator of the Dancing Banana GIF (1999) — one of the internet's earliest memes.",
+  "jobTitle": "Creator of the Dancing Banana",
+  "sameAs": [
+    "https://www.facebook.com/trymstene",
+    "https://twitter.com/trymstene",
+    "https://www.linkedin.com/in/trymstene/",
+    "https://www.instagram.com/trymstene/"
+  ]
+};
 ---
 <BaseLayout
   title={title}
@@ -71,6 +91,7 @@ const bananaImage = {
 >
   <Fragment slot="head">
     <Hreflang />
+    <script type="application/ld+json" set:html={JSON.stringify(person)} />
     <script type="application/ld+json" set:html={JSON.stringify(creativeWork)} />
     <script type="application/ld+json" set:html={JSON.stringify(bananaImage)} />
     <script type="application/ld+json" set:html={JSON.stringify(faq)} />
