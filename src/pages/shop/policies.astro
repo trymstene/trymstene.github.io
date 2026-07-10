@@ -81,8 +81,11 @@ import PixelIcon from '../../components/PixelIcon.astro';
     /* no banana belt at the very top — there's no section change up there */
     .pol-block::before { display: none; }
     /* crumbs align with THIS page's content column (the .pol boxes), not the
-       1200px PDP container */
-    nav.crumbs { max-width: 760px; }
+       1200px PDP container. .crumbs keeps its side padding INSIDE the box, so
+       the box must be column + padding for the TEXT to sit flush with .pol —
+       and the padding mirrors .block's (2rem desktop / 1.2rem mobile). */
+    nav.crumbs { max-width: calc(760px + 4rem); padding: 1rem 2rem 0; }
+    @media (max-width: 760px) { nav.crumbs { padding: 1rem 1.2rem 0; max-width: calc(760px + 2.4rem); } }
     .pol { max-width: 760px; margin: 2rem auto 0; text-align: left; display: grid; gap: 2rem; }
     .pol section { background: var(--paper); border: var(--line); box-shadow: var(--shadow-sm); padding: 1.4rem 1.6rem; }
     .pol h3 { margin: 0 0 0.8rem; font-size: 1.25rem; }
