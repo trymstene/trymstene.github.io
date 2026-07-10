@@ -35,3 +35,4 @@ tools/*-ga4-key*.json
 # Google service-account keys drop in as project-hash.json — catch them all
 tools/trymstene-com-*.json
 tools/*.iam.gserviceaccount.com.json
+ad-pack/
