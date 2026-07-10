@@ -31,7 +31,6 @@ const appSchema = {
   ogTitle="Make Your Own Dancing Banana"
   ogImage="https://trymstene.com/assets/og/builder.png"
   ogDescription={ogDescription}
-  showFooter={false}
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(appSchema)} />
   <style is:inline slot="head">
@@ -412,13 +411,6 @@ const appSchema = {
   </div>
 
   <div class="bb-toast" id="bbToast">Copied!</div>
-
-  <footer class="block block--dark">
-    <p class="kicker kicker--light">The original</p>
-    <h2>Made by the banana guy</h2>
-    <p class="lead">This is the real 1999 Dancing Banana. <a href="/dancing-banana-gif-meme/">Read its story →</a> · <a href="/license-the-dancing-banana/">License it →</a></p>
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
-  </footer>
 
   <script>
     import '../scripts/banana-builder.js';

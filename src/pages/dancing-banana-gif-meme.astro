@@ -90,7 +90,6 @@ const person = {
   ogDescription={ogDescription}
   ogImage="https://trymstene.com/assets/og/gif.png"
   ogType="article"
-  showFooter={false}
 >
   <Fragment slot="head">
     <Hreflang />
@@ -377,25 +376,11 @@ const person = {
     </p>
   </section>
 
-  <!-- footer -->
-  <footer class="block block--dark" id="contact">
-    <p class="kicker kicker--light">Say hello</p>
-    <h2>Contact</h2>
-    <p class="lead">
-      Licensing, questions, or just a hello —
-      <a href="/contact/">drop me a line →</a>
-    </p>
-    <div class="socials">
-      <a href="https://www.facebook.com/trymstene" target="_blank" rel="noopener">Facebook</a>
-      <a href="https://twitter.com/trymstene" target="_blank" rel="noopener">X</a>
-      <a href="https://www.linkedin.com/in/trymstene/" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://soundcloud.com/sentryofficial" target="_blank" rel="noopener">SoundCloud</a>
-      <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
-      <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
-    </div>
+  <!-- the hub is the home of the translated pages — the switch lives here,
+       just above the shared footer -->
+  <section class="block" style="padding-top:1.2rem;padding-bottom:1.2rem;">
     <LangSwitch current="en" label="Language" />
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
-  </footer>
+  </section>
 
   <script is:inline>
     (function(){

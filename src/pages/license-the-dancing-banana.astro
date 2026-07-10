@@ -25,7 +25,6 @@ const pageSchema = {
   ogTitle="License the Dancing Banana"
   ogImage="https://trymstene.com/assets/og/license.png"
   ogDescription={ogDescription}
-  showFooter={false}
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(pageSchema)} />
   <!-- hero -->
@@ -169,12 +168,12 @@ const pageSchema = {
     </p>
   </section>
 
-  <!-- footer -->
-  <footer class="block block--dark">
-    <p class="copyright" style="opacity:1;">Dancing Banana © 1999–<span id="year">2026</span> Trym Stene.</p>
+  <!-- the legal lines stay (load-bearing) — as a section; the shared footer follows -->
+  <section class="block block--dark" style="padding-top:1.4rem;padding-bottom:1.4rem;">
+    <p class="copyright" style="opacity:1;">Dancing Banana © 1999–2026 Trym Stene.</p>
     <p class="fineprint" style="margin-top:1rem;text-align:center;">
       This page licenses the Dancing Banana character and animation only. It is not affiliated with, and
       does not grant rights to, the "Peanut Butter Jelly Time" Flash animation or the Buckwheat Boyz song.
     </p>
-  </footer>
+  </section>
 </BaseLayout>

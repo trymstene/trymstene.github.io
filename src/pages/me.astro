@@ -29,7 +29,6 @@ const profileSchema = {
   ogDescription={ogDescription}
   ogType="profile"
   ogImage="https://trymstene.com/assets/trym-stene-profile-photo.jpg"
-  showFooter={false}
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(profileSchema)} />
   <!-- hero -->
@@ -93,8 +92,9 @@ const profileSchema = {
     </div>
   </section>
 
-  <!-- contact -->
-  <footer class="block block--dark" id="contact">
+  <!-- contact: a page SECTION now (the shared footer follows) — keeps the
+       socials, which live only here, and the #contact anchor old links target -->
+  <section class="block block--dark" id="contact">
     <p class="kicker kicker--light">Say hello</p>
     <h2>Contact</h2>
     <p class="lead">
@@ -109,6 +109,5 @@ const profileSchema = {
       <a href="https://www.instagram.com/trymstene/" target="_blank" rel="noopener">Instagram</a>
       <a href="https://open.spotify.com/artist/3mPwC4BdfC6fxNg8pIlA4F" target="_blank" rel="noopener">Spotify</a>
     </div>
-    <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
-  </footer>
+  </section>
 </BaseLayout>
