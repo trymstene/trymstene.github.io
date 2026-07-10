@@ -116,6 +116,54 @@ if (backdrop) backdrop.addEventListener('click', () => setMenu(false));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
 window.addEventListener('resize', () => { if (window.innerWidth >= 820) setMenu(false); });
 
+// Badge notification on the pass — iOS-style: a hot dot with the count of
+// UNSEEN badges (earned since you last looked at /pass/). Visiting the pass
+// clears it, earning a badge pops it live. Nothing shows at zero.
+(function () {
+  var SEEN_KEY = 'pass-seen-v1';
+  function earnedCount() {
+    try {
+      var p = JSON.parse(localStorage.getItem('pass-v1') || 'null');
+      return p && p.patches ? Object.keys(p.patches).length : 0;
+    } catch (e) { return 0; }
+  }
+  function seenCount() {
+    try { return parseInt(localStorage.getItem(SEEN_KEY) || '0', 10) || 0; } catch (e) { return 0; }
+  }
+  function renderPassNote() {
+    var unseen = earnedCount() - seenCount();
+    var hosts = [document.querySelector('.nav__pass'), document.querySelector('.nav__toggle')];
+    hosts.forEach(function (host) {
+      if (!host) return;
+      var dot = host.querySelector('.nav-note');
+      if (unseen <= 0) { if (dot) dot.remove(); return; }
+      if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'nav-note';
+        dot.setAttribute('aria-hidden', 'true');
+        host.appendChild(dot);
+      }
+      dot.textContent = unseen;
+    });
+    var pass = document.querySelector('.nav__pass');
+    if (pass) pass.setAttribute('aria-label', unseen > 0 ? ('Your banana pass — ' + unseen + ' new badge' + (unseen > 1 ? 's' : '')) : 'Your banana pass');
+  }
+  function markSeen() {
+    try { localStorage.setItem(SEEN_KEY, String(earnedCount())); } catch (e) {}
+    document.querySelectorAll('.nav-note').forEach(function (d) { d.remove(); });
+  }
+  if (location.pathname === '/pass/') {
+    // checking the pass = notification read — including badges minted WHILE
+    // looking at it (they light up on the page itself, no dot needed)
+    markSeen();
+    document.addEventListener('pass:change', markSeen);
+  } else {
+    renderPassNote();
+    // a badge earned mid-page pops the dot immediately (banana-pass.js dispatches)
+    document.addEventListener('pass:change', renderPassNote);
+  }
+})();
+
 // Current year in footer
 const year = document.getElementById('year');
 if (year) year.textContent = new Date().getFullYear();

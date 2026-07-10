@@ -96,6 +96,25 @@ a { color: inherit; }
    yellow or it disappears against it */
 .nav.open .nav__toggle { color: var(--banana); }
 
+/* badge notification: iOS-style hot dot with the UNSEEN badge count — sits on
+   "My Pass" (desktop) and on the burger (mobile, where the links hide).
+   Rendered by main.js; visiting /pass/ clears it; earning pops it live. */
+.nav__pass, .nav__toggle { position: relative; }
+.nav-note {
+  position: absolute; top: -9px; right: -11px;
+  min-width: 19px; height: 19px; padding: 0 5px;
+  display: grid; place-items: center;
+  background: var(--hot); color: #fff;
+  border: 2px solid var(--ink); border-radius: 999px;
+  font-size: 0.68rem; font-weight: 800; line-height: 1;
+  font-family: inherit; letter-spacing: 0;
+  animation: navNotePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.nav__toggle .nav-note { top: -6px; right: -8px; }
+@keyframes navNotePop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .nav-note { animation: none; } }
+
 .nav__group { display: flex; }
 .nav__group a { text-decoration: none; font-weight: 700; white-space: nowrap; }
 

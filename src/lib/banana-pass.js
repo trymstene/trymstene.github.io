@@ -68,6 +68,8 @@ export function passPatch(id, opts = {}) {
   // ids, storage and GA events never rename)
   if (!opts.quiet) passToast('🎖 <b>' + def.title + '</b> — <a href="/pass/">badge on your pass</a>');
   if (window.gtag) window.gtag('event', 'patch_earn', { patch: id });
+  // pop the nav's badge-notification dot live (rendered by main.js)
+  try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
   return true;
 }
 
