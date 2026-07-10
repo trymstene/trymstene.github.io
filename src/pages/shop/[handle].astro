@@ -13,6 +13,7 @@ const { m } = Astro.props;
 const titleTag = `${m.title} — official Dancing Banana merch | Trym Stene`;
 const descMeta = `${firstSentence(m.descHtml, 100)} From ${money(m.pmin, m.cur)}, made on demand and shipped worldwide.`;
 const mainImg = m.colors.length ? m.colorImage[m.colors[0]] : m.featured;
+const sizeGuide = sizeTableHtml(m); // null = no chart for this product → section hidden
 
 const island = {
   title: m.title,
@@ -101,7 +102,7 @@ const breadcrumbSchema = {
 
       {m.sizes.length > 0 && (
         <div class="pdp-field">
-          <div class="pdp-field__label">Size <span>— <a href="#size-guide">size guide</a></span></div>
+          <div class="pdp-field__label">Size {sizeGuide && <span>— <a href="#size-guide">size guide</a></span>}</div>
           <div class="pdp-sizes">
             {m.sizes.map((s) => <button class="pdp-size" data-size={s}>{s}</button>)}
           </div>
@@ -126,10 +127,12 @@ const breadcrumbSchema = {
       <summary>Product details &amp; materials</summary>
       <div class="pdp-details__body" set:html={m.descHtml}></div>
     </details>
-    <details id="size-guide">
-      <summary>Size guide &amp; measurements</summary>
-      <div class="pdp-details__body" set:html={sizeTableHtml(m)}></div>
-    </details>
+    {sizeGuide && (
+      <details id="size-guide">
+        <summary>Size guide &amp; measurements</summary>
+        <div class="pdp-details__body" set:html={sizeGuide}></div>
+      </details>
+    )}
   </section>
 
   <section class="block">

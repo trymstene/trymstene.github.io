@@ -1,0 +1,180 @@
+{
+  "438": {
+    "product": "Unisex Classic Tee | Gildan 5000",
+    "unit": "inches",
+    "kind": "product_measure",
+    "note": "Flat garment measurements (from the Printful catalog).",
+    "cols": [
+      "Length",
+      "Width",
+      "Sleeve length"
+    ],
+    "rows": {
+      "S": [
+        "28",
+        "18",
+        "15.63"
+      ],
+      "M": [
+        "29",
+        "20",
+        "17"
+      ],
+      "L": [
+        "30",
+        "22",
+        "18.5"
+      ],
+      "XL": [
+        "31",
+        "24",
+        "20"
+      ],
+      "2XL": [
+        "32",
+        "26",
+        "21.5"
+      ],
+      "3XL": [
+        "33",
+        "28",
+        "22.8"
+      ],
+      "4XL": [
+        "34",
+        "30",
+        "24.2"
+      ],
+      "5XL": [
+        "35",
+        "32",
+        "25.3"
+      ]
+    }
+  },
+  "146": {
+    "product": "Unisex Heavy Blend Hoodie | Gildan 18500",
+    "unit": "inches",
+    "kind": "product_measure",
+    "note": "Flat garment measurements (from the Printful catalog).",
+    "cols": [
+      "Length",
+      "Width",
+      "Sleeve length"
+    ],
+    "rows": {
+      "S": [
+        "27",
+        "20",
+        "33.5"
+      ],
+      "M": [
+        "28",
+        "22",
+        "34.5"
+      ],
+      "L": [
+        "29",
+        "24",
+        "35.5"
+      ],
+      "XL": [
+        "30",
+        "26",
+        "36.5"
+      ],
+      "2XL": [
+        "31",
+        "28",
+        "37.5"
+      ],
+      "3XL": [
+        "32",
+        "30",
+        "38.5"
+      ],
+      "4XL": [
+        "33",
+        "32",
+        "39.5"
+      ],
+      "5XL": [
+        "34",
+        "34",
+        "40.5"
+      ]
+    }
+  },
+  "200": {
+    "product": "All-Over Print Crop Top",
+    "unit": "inches",
+    "kind": "measure_yourself",
+    "note": "Body measurements — measure yourself (from the Printful catalog).",
+    "cols": [
+      "Chest",
+      "Waist"
+    ],
+    "rows": {
+      "XS": [
+        "33.07",
+        "25.20"
+      ],
+      "S": [
+        "34.65",
+        "26.77"
+      ],
+      "M": [
+        "36.22",
+        "28.35"
+      ],
+      "L": [
+        "39.37",
+        "31.50"
+      ],
+      "XL": [
+        "42.52",
+        "34.65"
+      ]
+    }
+  },
+  "108": {
+    "product": "Men's Fitted T-Shirt | Next Level 3600",
+    "unit": "inches",
+    "kind": "product_measure",
+    "note": "Flat garment measurements (from the Printful catalog).",
+    "cols": [
+      "Length",
+      "Width"
+    ],
+    "rows": {
+      "XS": [
+        "27",
+        "17 ½"
+      ],
+      "S": [
+        "28",
+        "19"
+      ],
+      "M": [
+        "29",
+        "20 ½"
+      ],
+      "L": [
+        "30",
+        "22"
+      ],
+      "XL": [
+        "31",
+        "24"
+      ],
+      "2XL": [
+        "32",
+        "26"
+      ],
+      "3XL": [
+        "33",
+        "28"
+      ]
+    }
+  }
+}
