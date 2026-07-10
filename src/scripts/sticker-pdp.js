@@ -46,8 +46,9 @@ async function boot() {
   el('pdpCut').textContent = state.bg === 'transparent'
     ? `${product.size} ${product.material}, die-cut along your design’s outline`
     : `${product.size} ${product.material}, square with your design`;
-  // carry the exact design back to the editor
+  // carry the exact design back to the editor + across to the cross-sell PDPs
   const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
+  document.querySelectorAll('[data-xsell]').forEach((a) => { a.href = a.getAttribute('href') + location.search; });
   // die-cut can't hold floating bits — tell the user what was left off (caption
   // and/or confetti/sparkle) and how to keep it (pick a background = square)
   if (state.bg === 'transparent') {

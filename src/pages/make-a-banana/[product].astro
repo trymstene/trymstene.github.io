@@ -16,6 +16,9 @@ export function getStaticPaths() {
 }
 const { p } = Astro.props;
 const nameLc = p.name.toLowerCase();
+// cross-sell: the same design on every OTHER live product (manifest-driven —
+// a new product automatically appears here). Design params attach client-side.
+const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
 ---
 <BaseLayout
   title={`Your custom Dancing Banana ${nameLc} | Trym Stene`}
@@ -52,6 +55,15 @@ const nameLc = p.name.toLowerCase();
 
       <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
       <p class="pdp-stock" id="pdpStock"></p>
+
+      {others.length > 0 && (
+        <p class="pdp-xsell">
+          Same banana, different thing:
+          {others.map((o) => (
+            <a class="pdp-xsell__link" data-xsell href={`/make-a-banana/${o.key}/`}>as a {o.name.toLowerCase()} ({o.priceHint} kr) →</a>
+          ))}
+        </p>
+      )}
 
       <ul class="pdp-trust">
         <li>Checked by the banana guy himself before it ships</li>

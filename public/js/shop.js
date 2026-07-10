@@ -115,6 +115,12 @@
   thumbs.forEach(function (t) { t.addEventListener('click', function () { pickColour(t.dataset.color); }); });
   sizeBtns.forEach(function (b) { b.addEventListener('click', function () { pickSize(b.dataset.size); }); });
 
+  // funnel: PDP viewed (pairs with select_item on the PLP + begin_checkout below)
+  if (window.gtag) gtag('event', 'view_item', {
+    currency: DATA.currency, value: DATA.priceMin,
+    items: [{ item_name: DATA.title, price: DATA.priceMin }],
+  });
+
   // checkout
   function gql(query, variables) {
     return fetch(API, {

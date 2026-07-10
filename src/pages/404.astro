@@ -1,0 +1,30 @@
+---
+// Branded 404 — Astro emits dist/404.html, which GitHub Pages serves for any
+// unknown URL automatically. Keep it light: one banana, one joke, the doors
+// people actually came for. noindex (error pages don't belong in the index).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+---
+<BaseLayout
+  title="404 — this banana doesn't exist | Trym Stene"
+  description="That page slipped on a peel. The dancing banana lives at trymstene.com."
+  robots="noindex,follow"
+>
+  <section class="hero" style="padding-bottom:4rem;">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-transparent.gif" alt="The Dancing Banana, still dancing"
+           width="240" height="240"
+           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+    </div>
+    <p class="kicker">404</p>
+    <h1 class="hero__title">this page slipped<br>on a peel</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">
+      Whatever was here isn't — but the banana never stops dancing.
+    </p>
+    <div class="hero__cta">
+      <a class="btn btn--dark" href="/dancing-banana-gif-meme/"><PixelIcon name="banana" /> Get the GIF</a>
+      <a class="btn btn--light" href="/make-a-banana/"><PixelIcon name="palette" /> Make a banana</a>
+      <a class="btn btn--light" href="/">Home</a>
+    </div>
+  </section>
+</BaseLayout>

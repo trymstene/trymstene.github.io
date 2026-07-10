@@ -84,4 +84,15 @@ const collectionSchema = {
     <p class="lead">Different thing: in the builder you give the banana shades, a hat and a caption, then get <em>that</em> one-of-a-kind banana as a real die-cut vinyl sticker — shipped free worldwide.</p>
     <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Open the banana builder →</a>
   </section>
+
+  <script>
+    // funnel: which PLP card gets picked (pairs with view_item + begin_checkout
+    // in /js/shop.js). gtag beacons survive the navigation.
+    document.querySelectorAll('.shop-grid .shop-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const name = card.querySelector('h3')?.textContent?.trim();
+        if (window.gtag && name) window.gtag('event', 'select_item', { items: [{ item_name: name }] });
+      });
+    });
+  </script>
 </BaseLayout>

@@ -78,6 +78,10 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 .pdp-stock--ok::before { content: "● "; color: #2e9b57; }
 .pdp-stock--no::before { content: "● "; color: var(--hot); }
 
+/* cross-sell on the CUSTOM product pages: same design, other products */
+.pdp-xsell { font-size: 0.9rem; font-weight: 600; margin: 0.9rem 0 0; }
+.pdp-xsell__link { display: inline-block; margin-left: 0.5rem; color: var(--hot); font-weight: 800; }
+
 .pdp-trust { list-style: none; padding: 0; margin: 1.4rem 0 0; font-size: 0.9rem; }
 .pdp-trust li { padding: 0.25rem 0 0.25rem 1.6rem; position: relative; }
 .pdp-trust li::before { content: "🍌"; position: absolute; left: 0; }
