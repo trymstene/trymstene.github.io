@@ -1,0 +1,84 @@
+---
+// Shop policies — one honest page for the whole store (official shop + the
+// custom builder lane). Content mirrors the Shopify checkout policy fields
+// (tools/SHOPIFY-POLICY-TEXT.md) so the two surfaces never disagree.
+// Everything is print-on-demand via Printful; Shopify runs the checkout.
+// noindex: useful to buyers, useless in search.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+---
+<BaseLayout
+  title="Shipping, Returns & Policies — Dancing Banana Shop | Trym Stene"
+  description="How shipping, returns, refunds and privacy work in the Dancing Banana shop — everything is printed on demand and shipped worldwide."
+  robots="noindex,follow"
+>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a><span>›</span><a href="/shop/">Shop</a><span>›</span><b>Policies</b>
+  </nav>
+
+  <section class="block" style="padding-top:1.5rem;">
+    <p class="kicker">The fine print, banana-sized</p>
+    <h2>Shipping, returns &amp; policies</h2>
+    <p class="lead">
+      Everything in the shop — and every custom sticker or magnet from the builder — is
+      <strong>printed on demand</strong> just for you by our print partner (Printful) and shipped worldwide.
+      No warehouse, no waste, no surprises. Here's exactly how it works.
+    </p>
+
+    <div class="pol">
+      <section id="shipping">
+        <h3><PixelIcon name="banana" /> Shipping</h3>
+        <ul class="bullets">
+          <li><strong>Production first:</strong> your item is made after you order — typically 2–5 business days before it ships.</li>
+          <li><strong>Delivery:</strong> usually 5–20 business days after production, depending on where you live. Tracking is emailed when it ships.</li>
+          <li><strong>Custom stickers &amp; magnets</strong> (from the <a href="/make-a-banana/">builder</a>): <strong>free shipping worldwide</strong>, always.</li>
+          <li><strong>Shop products</strong> (tees, hoodies, mugs, posters, totes): shipping is calculated at checkout based on your address.</li>
+          <li>Prices include tax where applicable; any import duties outside those regions are the carrier's/customs' call, not ours.</li>
+        </ul>
+      </section>
+
+      <section id="returns">
+        <h3><PixelIcon name="banana" /> Returns &amp; refunds</h3>
+        <ul class="bullets">
+          <li><strong>Wrong, damaged or misprinted?</strong> That's on us. <a href="/contact/">Contact me</a> within <strong>30 days</strong> of delivery with your order number and a photo — you'll get a free replacement or a full refund.</li>
+          <li><strong>Lost in transit?</strong> If it never shows up, reach out within 30 days of the estimated delivery date and we'll sort it — replacement or refund.</li>
+          <li><strong>Changed your mind?</strong> Because every item is made to order (and custom bananas are personal to you), made-on-demand products are exempt from the standard 14-day withdrawal right for distance sales (EU Directive 2011/83/EU, art. 16c — goods made to your specification). But I'm one person, not a corporation: if something feels wrong, <a href="/contact/">write to me</a> and we'll figure it out.</li>
+          <li><strong>Sizing:</strong> check the size guide on each product page before ordering — size-swap returns aren't possible on made-to-order garments.</li>
+          <li><strong>Custom designs:</strong> I personally review every custom order before it prints. If a design can't be printed (rights or content issues), you get a full refund and nothing is made.</li>
+        </ul>
+      </section>
+
+      <section id="privacy">
+        <h3><PixelIcon name="banana" /> Privacy</h3>
+        <ul class="bullets">
+          <li><strong>No accounts, no tracking walls.</strong> trymstene.com works without signing up for anything.</li>
+          <li><strong>Orders:</strong> checkout runs on Shopify — they process your payment and address (see the full privacy policy at checkout). Your name and shipping address are shared with Printful only to print and ship your order.</li>
+          <li><strong>Analytics:</strong> anonymous usage stats (Google Analytics + Cloudflare) to see which bananas people like. No ad targeting, no selling data — there's nothing to sell.</li>
+          <li><strong>On your device:</strong> your banana designs and pass live in your browser's local storage, not on a server.</li>
+          <li>Questions or deletion requests: <a href="/contact/">contact me</a>.</li>
+        </ul>
+      </section>
+
+      <section id="terms">
+        <h3><PixelIcon name="banana" /> Terms &amp; the banana</h3>
+        <ul class="bullets">
+          <li>The Dancing Banana is © Trym Stene, 1999–today. Personal use of the GIF is free and always will be; commercial use needs a <a href="/license-the-dancing-banana/">license</a>.</li>
+          <li>Custom designs you make in the builder are for your personal products — you can't resell products with the banana on them without a license.</li>
+          <li>Custom orders with hateful or unlawful text will be refused and refunded — the banana is for everyone.</li>
+          <li>Sold by Trym Stene, Norway — the guy who made the banana. Fastest way to reach me: the <a href="/contact/">contact form</a>.</li>
+        </ul>
+      </section>
+    </div>
+
+    <p class="lead" style="margin-top:2rem;">
+      <a class="btn btn--dark" href="/shop/">← Back to the shop</a>
+    </p>
+  </section>
+
+  <style is:inline slot="head">
+    .pol { max-width: 760px; margin: 2rem auto 0; text-align: left; display: grid; gap: 2rem; }
+    .pol section { background: var(--paper); border: var(--line); box-shadow: var(--shadow-sm); padding: 1.4rem 1.6rem; }
+    .pol h3 { margin: 0 0 0.8rem; font-size: 1.25rem; }
+    .pol .bullets { margin-top: 0; }
+  </style>
+</BaseLayout>
