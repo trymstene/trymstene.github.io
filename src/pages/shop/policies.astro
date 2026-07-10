@@ -12,11 +12,13 @@ import PixelIcon from '../../components/PixelIcon.astro';
   description="How shipping, returns, refunds and privacy work in the Dancing Banana shop — everything is printed on demand and shipped worldwide."
   robots="noindex,follow"
 >
+  <link rel="stylesheet" href="/css/shop.css" slot="head" />
+
   <nav class="crumbs" aria-label="Breadcrumb">
     <a href="/">Home</a><span>›</span><a href="/shop/">Shop</a><span>›</span><b>Policies</b>
   </nav>
 
-  <section class="block" style="padding-top:1.5rem;">
+  <section class="block pol-block" style="padding-top:1.5rem;">
     <p class="kicker">The fine print, banana-sized</p>
     <h2>Shipping, returns &amp; policies</h2>
     <p class="lead">
@@ -76,6 +78,11 @@ import PixelIcon from '../../components/PixelIcon.astro';
   </section>
 
   <style is:inline slot="head">
+    /* no banana belt at the very top — there's no section change up there */
+    .pol-block::before { display: none; }
+    /* crumbs align with THIS page's content column (the .pol boxes), not the
+       1200px PDP container */
+    nav.crumbs { max-width: 760px; }
     .pol { max-width: 760px; margin: 2rem auto 0; text-align: left; display: grid; gap: 2rem; }
     .pol section { background: var(--paper); border: var(--line); box-shadow: var(--shadow-sm); padding: 1.4rem 1.6rem; }
     .pol h3 { margin: 0 0 0.8rem; font-size: 1.25rem; }
