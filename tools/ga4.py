@@ -28,15 +28,20 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL_CFG = os.path.join(HERE, "ga4.local.json")
 
 # our tracked events, grouped the way we actually think about them (see
-# traffic-and-monetization memory / public/js/main.js + banana-builder.js)
+# traffic-and-monetization memory / public/js/main.js + banana-builder.js).
+# ⚠ FUNNEL REBUILT 10 Jul 2026: the old modal flow (sticker_order_click /
+# sticker_preview_confirm / sticker_upload_ok) is DEAD — since 9 Jul the tiles
+# navigate to per-product PDPs (sticker-pdp.js). Old-event rows before 9 Jul
+# are the modal era; don't mix eras when comparing.
 FUNNEL = [
     ("generator_click", "→ builder opened (any entry point)"),
     ("builder_start", "   builder actually loaded"),
-    ("sticker_order_click", "   started a sticker order"),
-    ("sticker_preview_confirm", "   confirmed preview = BEGIN CHECKOUT"),
-    ("sticker_upload_ok", "   art uploaded ok"),
+    ("product_tile_click", "   picked a product tile (sticker/magnet)"),
+    ("sticker_pdp_view", "   landed on a product page"),
+    ("sticker_pdp_checkout", "   clicked Order = BEGIN CHECKOUT"),
     ("checkout_redirect", "   → sent to Shopify checkout"),
     ("sticker_order_fail", "   ⚠ pipeline failure (alarm)"),
+    ("sticker_pdp_boot_fail", "   ⚠ PDP failed to render (alarm)"),
 ]
 SURFACES = ["gif_download", "png_download", "wallpaper_download",
             "share_link_copy", "tip_click", "license_click", "surprise_me",
@@ -210,12 +215,15 @@ def main():
     for name, desc in FUNNEL:
         cc, pp = ev(name)
         print(f"  {int(cc):>6,}  ({pct(cc, pp)})  {name:<24} {desc}")
-    # headline conversion rates
+    # headline conversion rates (new PDP-flow events, 9 Jul onwards)
     gc = ev_c.get("generator_click", 0)
-    bc = ev_c.get("sticker_preview_confirm", 0)
+    pv = ev_c.get("sticker_pdp_view", 0)
+    bc = ev_c.get("sticker_pdp_checkout", 0)
     co = ev_c.get("checkout_redirect", 0)
     if gc:
-        print(f"\n  builder-open → begin-checkout : {bc / gc * 100:.1f}%  ({int(bc)}/{int(gc)})")
+        print(f"\n  builder-open → product page   : {pv / gc * 100:.1f}%  ({int(pv)}/{int(gc)})")
+    if pv:
+        print(f"  product page → begin-checkout : {bc / pv * 100:.1f}%  ({int(bc)}/{int(pv)})")
     if bc:
         print(f"  begin-checkout → checkout     : {co / bc * 100:.1f}%  ({int(co)}/{int(bc)})")
 
@@ -227,18 +235,22 @@ def main():
 
     # 4) generator_click by placement — THE hub_sticker test.
     # needs 'placement' registered as an event-scoped custom dimension in GA4.
+    # ⚠ MUST be scoped to generator_click: an unscoped placement query counts
+    # EVERY event's (not set) row (the "11,340 (not set)" bug, fixed 10 Jul).
     print("\n-- BUILDER ENTRY BY PLACEMENT (the CTA test) " + "-" * 15)
     try:
-        rows = run(["customEvent:placement"], ["eventCount"], cur,
-                   limit=25, order_metric="eventCount")
-        prows = {d[0]: float(m[0]) for d, m in
-                 run(["customEvent:placement"], ["eventCount"], prev, limit=25)}
+        def placement_rows(dr):
+            raw = run(["eventName", "customEvent:placement"], ["eventCount"], dr,
+                      limit=200, order_metric="eventCount")
+            return {d[1]: float(m[0]) for d, m in raw if d[0] == "generator_click"}
+        rows = placement_rows(cur)
+        prows = placement_rows(prev)
         if not rows:
             print("  (no data yet)")
-        for dims, mets in rows:
-            place = dims[0] or "(not set)"
-            cc = float(mets[0])
-            print(f"  {int(cc):>6,}  ({pct(cc, prows.get(dims[0], 0))})  {place}")
+        for place in sorted(rows, key=rows.get, reverse=True):
+            cc = rows[place]
+            label = place or "(not set)"
+            print(f"  {int(cc):>6,}  ({pct(cc, prows.get(place, 0))})  {label}")
     except Exception as e:  # noqa: BLE001 — expected until the custom dim exists
         print("  ⚠ can't break down by placement yet — register 'placement' as an")
         print("    event-scoped Custom Dimension in GA4 Admin (Data display →")

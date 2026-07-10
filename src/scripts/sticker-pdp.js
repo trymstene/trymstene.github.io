@@ -4,6 +4,7 @@
 // pipeline. All the heavy lifting lives in ../lib/sticker-core.js (shared with
 // the builder) so config + render + checkout never drift between the two.
 import { assetsReady, NFRAMES } from '../lib/banana-engine.js';
+import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
   bboxOf, pad, crop, renderPrintFile, makeStickerMockup, localizedPrice, uploadAndCheckout,
@@ -85,6 +86,7 @@ el('pdpBuy').onclick = async () => {
   try {
     const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state), product);
     track('checkout_redirect', { value: PRICE.amount, currency: PRICE.currency });
+    passPatch('patron', { quiet: true }); // pass badge for ordering — celebrate on return, not mid-redirect
     window.location.href = checkoutUrl;
   } catch (e) {
     console.error(e);

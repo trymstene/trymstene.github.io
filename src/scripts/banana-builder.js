@@ -13,8 +13,12 @@ import {
   PX, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
   sheet, assetsReady, drawComposite as engineDraw,
 } from '../lib/banana-engine.js';
-// shared sticker brain (config + checkout) — one source of truth with the PDP
-import { STICKER, PRICE, stickerCaptions, stickerEffect } from '../lib/sticker-core.js';
+// shared sticker brain — one source of truth with the PDP (which owns the
+// preview + checkout since 9 Jul; the builder only picks products + previews)
+import {
+  stickerCaptions, stickerEffect, captionsClean, localizedPrice,
+  makeStickerMockup as coreMockup,
+} from '../lib/sticker-core.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -259,7 +263,7 @@ function init() {
   el('bbWallSubmit').onclick = () => {
     sync();
     if (!location.search.slice(1)) { toast('Dress it up a little first 🍌'); return; }
-    if (!captionsClean()) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
+    if (!captionsClean(state)) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
     const row = el('bbSignRow');
     row.hidden = !row.hidden;
     if (!row.hidden) el('bbSignName').focus();
@@ -446,7 +450,7 @@ function init() {
       design = crop(cv, pad(bboxOf([data], W), W));
     }
     tiles.forEach((c) => {
-      const mock = makeStickerMockup(design, 360, c.dataset.mock);
+      const mock = coreMockup(state, design, 360, c.dataset.mock);
       c.width = mock.width; c.height = mock.height;
       c.getContext('2d').drawImage(mock, 0, 0);
     });
@@ -566,143 +570,19 @@ function init() {
   };
 
   // ---- order it as a REAL printed sticker (Part B) ----
-  // Renders a print-res PNG of the picked frame, uploads it to the fulfilment
-  // worker (R2), then opens a Shopify checkout with the design attached as a
-  // line-item attribute. After payment, the worker's orders/paid webhook
-  // creates a DRAFT Printful order that Trym approves before printing.
-  // STICKER config + PRICE now live in ../lib/sticker-core.js (shared with the
-  // custom PDP) — imported at the top so the two pages never drift.
+  // Ordering lives on the per-product PDPs (/make-a-banana/<product>/) since
+  // 9 Jul — the tiles below navigate there with the design in the URL. All the
+  // shared machinery (config, render, mockup, checkout) is in sticker-core.js.
 
-  // ---- localized price: ask the Worker where the visitor is (Cloudflare
-  // knows for free), then ask Shopify what THAT country pays via @inContext.
-  // Whatever comes back is EXACTLY what checkout will charge — so the badge
-  // never lies. Any failure leaves the static "149 kr" fallback in place.
+  // ---- localized price on the Sticker tile: exactly what checkout charges
+  // (shared sticker-core fetch: Worker /geo → Shopify @inContext). Any failure
+  // leaves the static "149 kr" fallback in place.
   (async () => {
-    try {
-      const geo = await fetch(STICKER.workerBase + '/geo').then((r) => r.json());
-      const cc = String(geo.country || '').toUpperCase();
-      if (!/^[A-Z]{2}$/.test(cc)) return;
-      const res = await fetch('https://' + STICKER.shopDomain + '/api/2024-10/graphql.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STICKER.storefrontToken },
-        body: JSON.stringify({
-          query: 'query($id: ID!, $country: CountryCode!) @inContext(country: $country) { node(id: $id) { ... on ProductVariant { price { amount currencyCode } } } }',
-          variables: { id: STICKER.variantGid, country: cc },
-        }),
-      }).then((r) => r.json());
-      const p = res && res.data && res.data.node && res.data.node.price;
-      if (!p) return;
-      const txt = new Intl.NumberFormat(undefined, { style: 'currency', currency: p.currencyCode, maximumFractionDigits: 0 }).format(parseFloat(p.amount));
-      const badge = el('bbPrice'); if (badge) badge.textContent = txt;
-      const modal = el('bbModalPrice'); if (modal) modal.textContent = txt + ', free shipping worldwide';
-      PRICE.amount = parseFloat(p.amount); PRICE.currency = p.currencyCode; // analytics value matches checkout
-    } catch (e) { /* static fallback stands */ }
+    const lp = await localizedPrice();
+    if (!lp) return;
+    const badge = el('bbPrice'); if (badge) badge.textContent = lp.display;
   })();
-  // Quick client-side caption screen. Deliberately blunt (substring match, a
-  // few false positives are fine — the toast just asks to reword). The REAL
-  // moderation gate is Trym approving every Printful draft before print.
-  const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jævla','jævel','fitte','kuk','pikk','hore','kneppe'];
-  const captionsClean = () => { const t = (state.top + ' ' + state.bottom).toLowerCase(); return !BLOCKLIST.some((w) => t.includes(w)); };
 
-  // Renders the print file (what actually gets printed). Two sticker styles
-  // (Trym's call, 3 Jul): TRANSPARENT background → trimmed transparent PNG so
-  // Printful DIE-CUTS along the design's outline (banana + captions included;
-  // Trym's draft approval catches odd cases like floating confetti). A
-  // COLOURED background → the full square canvas (square sticker).
-  function renderPrintFile() {
-    const W = 2048;
-    const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
-    drawComposite(ctx, W, state.frame, {
-      bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
-      hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
-    });
-    if (state.bg === 'transparent') {
-      const data = ctx.getImageData(0, 0, W, W).data;
-      return crop(cv, pad(bboxOf([data], W), W));
-    }
-    return cv;
-  }
-
-  // Sticker MOCKUP matching the style: die-cut white contour border for
-  // transparent designs, rounded white square for coloured ones. Soft shadow,
-  // paper backdrop — so the buyer sees the physical thing.
-  function makeStickerMockup(design, size = 900, product = 'sticker') {
-    const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
-    const ctx = cv.getContext('2d');
-    ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
-    const margin = size * 0.14;
-    const s = Math.min((size - 2 * margin) / design.width, (size - 2 * margin) / design.height);
-    const dw = design.width * s, dh = design.height * s;
-    const dx = (size - dw) / 2, dy = (size - dh) / 2;
-    const border = size * 0.02; // the white kiss-cut edge
-    const thick = product === 'magnet' ? size * 0.022 : 0; // magnets show visible depth
-
-    if (state.bg === 'transparent') {
-      // white silhouette of the design, dilated in a ring = the die-cut border
-      const sil = document.createElement('canvas'); sil.width = size; sil.height = size;
-      const sctx = sil.getContext('2d');
-      sctx.drawImage(design, dx, dy, dw, dh);
-      sctx.globalCompositeOperation = 'source-in';
-      sctx.fillStyle = '#fff'; sctx.fillRect(0, 0, size, size);
-      const outline = document.createElement('canvas'); outline.width = size; outline.height = size;
-      const octx = outline.getContext('2d');
-      for (let k = 0; k < 24; k++) {
-        const a = (k / 24) * 2 * Math.PI;
-        octx.drawImage(sil, Math.cos(a) * border, Math.sin(a) * border);
-      }
-      octx.drawImage(sil, 0, 0);
-      if (thick) { // grey depth band beneath = magnet body
-        const dark = document.createElement('canvas'); dark.width = size; dark.height = size;
-        const dctx = dark.getContext('2d');
-        dctx.drawImage(outline, 0, 0);
-        dctx.globalCompositeOperation = 'source-in';
-        dctx.fillStyle = '#c7c1b4'; dctx.fillRect(0, 0, size, size);
-        ctx.drawImage(dark, thick, thick);
-      }
-      ctx.save();
-      ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
-      ctx.drawImage(outline, 0, 0);
-      ctx.restore();
-      ctx.drawImage(outline, 0, 0); // crisp second pass over the shadowed one
-      ctx.drawImage(design, dx, dy, dw, dh);
-    } else {
-      const r = size * 0.035;
-      if (thick) { // grey depth band beneath = magnet body
-        ctx.save(); ctx.fillStyle = '#c7c1b4';
-        ctx.beginPath(); ctx.roundRect(dx - border + thick, dy - border + thick, dw + 2 * border, dh + 2 * border, r); ctx.fill();
-        ctx.restore();
-      }
-      ctx.save();
-      ctx.shadowColor = 'rgba(17,17,17,0.28)'; ctx.shadowBlur = size * 0.03; ctx.shadowOffsetY = size * 0.012;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.roundRect(dx - border, dy - border, dw + 2 * border, dh + 2 * border, r); ctx.fill();
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, r * 0.5); ctx.clip();
-      ctx.drawImage(design, dx, dy, dw, dh);
-      ctx.restore();
-    }
-    return cv;
-  }
-
-  // Step 1: the preview modal — see YOUR sticker before paying (trust!)
-  let pendingPrint = null;
-  el('bbOrderSticker').onclick = async () => {
-    if (!captionsClean()) { toast('Let’s keep it family friendly \u{1F34C} — try other words'); return; }
-    await assetsReady();
-    pendingPrint = renderPrintFile();
-    const mock = makeStickerMockup(pendingPrint);
-    const mc = el('bbMockup');
-    mc.width = mock.width; mc.height = mock.height;
-    mc.getContext('2d').drawImage(mock, 0, 0);
-    el('bbModalCut').textContent = state.bg === 'transparent'
-      ? '3″×3″ (7.5 cm) vinyl sticker, die-cut along your design’s outline'
-      : '3″×3″ (7.5 cm) square vinyl sticker with your design';
-    el('bbOrderModal').hidden = false;
-    document.body.style.overflow = 'hidden';
-    track('sticker_order_click', { design: designStr() });
-    saveToShelf();
-  };
   // the picker: tap a product tile → go to that product's page. Sticker opens
   // its real PDP (same look as the shop, preview + checkout there); magnet is
   // shown but lands when its Printful backend is wired — never a dead-end.
@@ -723,52 +603,8 @@ function init() {
     }
     goToProduct(prod);
   });
-  function closeOrderModal() { el('bbOrderModal').hidden = true; document.body.style.overflow = ''; }
-  el('bbOrderCancel').onclick = closeOrderModal;
-  el('bbOrderModal').addEventListener('click', (e) => { if (e.target === el('bbOrderModal')) closeOrderModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('bbOrderModal').hidden) closeOrderModal(); });
-
-  // Step 2: confirmed — upload the print file + open the Shopify checkout
-  el('bbOrderConfirm').onclick = async () => {
-    const btn = el('bbOrderConfirm'); const label = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = 'Preparing your sticker…';
-    // fired up front so the begin-checkout signal isn't lost to the redirect
-    track('sticker_preview_confirm', { value: PRICE.amount, currency: PRICE.currency, design: designStr() });
-    try {
-      const blob = await new Promise((r) => pendingPrint.toBlob(r, 'image/png'));
-      const up = await fetch(STICKER.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
-      if (!up.ok) throw new Error('upload failed: ' + up.status);
-      track('sticker_upload_ok');
-      const { key, url } = await up.json();
-
-      const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
-      const res = await fetch('https://' + STICKER.shopDomain + '/api/2024-10/graphql.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STICKER.storefrontToken },
-        body: JSON.stringify({
-          query: mutation,
-          variables: { lines: [{ merchandiseId: STICKER.variantGid, quantity: 1, attributes: [
-            { key: '_design_key', value: key },   // machine-readable, hidden in checkout
-            { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
-          ] }] },
-        }),
-      });
-      const data = await res.json();
-      const checkout = data && data.data && data.data.cartCreate && data.data.cartCreate.cart && data.data.cartCreate.cart.checkoutUrl;
-      if (!checkout) throw new Error('cart failed: ' + JSON.stringify(data));
-      track('checkout_redirect', { value: PRICE.amount, currency: PRICE.currency });
-      passPatch('patron', { quiet: true }); // celebrate on return, not mid-redirect
-      window.location.href = checkout;
-    } catch (e) {
-      console.error(e);
-      track('sticker_order_fail', { message: String(e && e.message || e).slice(0, 90) });
-      toast('Hmm, that didn’t work — give it another try?');
-      btn.disabled = false; btn.innerHTML = label;
-    }
-  };
-
   // exposed for debugging + future flows
-  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS, STICKER, makeStickerMockup, renderPrintFile };
+  window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS };
 
   // ---- boot ----
   load();
@@ -795,7 +631,8 @@ function init() {
   passVisit();
   // shelf 🏷 tags land here: walk the visitor straight to the sticker card
   if (urlP.get('go') === 'sticker') {
-    const card = el('bbOrderSticker') && el('bbOrderSticker').closest('.bb-card');
+    const grid = el('bbPgrid');
+    const card = grid && grid.closest('.bb-card');
     if (card) setTimeout(() => {
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       card.classList.add('bb-card--pulse');
