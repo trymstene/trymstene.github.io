@@ -5,6 +5,9 @@
   var GA_ID = 'G-1C0QRT9SRK';
   var host = location.hostname;
   if (host !== 'trymstene.com' && host !== 'www.trymstene.com') return;
+  // OBS/stream overlays are machine views, not people — a streamer's browser
+  // source would fire a "session" every stream start. Don't count them.
+  if (/[?&]overlay=1/.test(location.search)) return;
 
   var s = document.createElement('script');
   s.async = true;
