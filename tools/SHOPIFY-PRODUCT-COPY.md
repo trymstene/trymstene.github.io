@@ -61,6 +61,27 @@ the selling.
 
 ---
 
+## ⚠️ GPSR paragraph fix (ALL products, same editing pass)
+
+Printful's synced descriptions end with a GPSR block containing UNFILLED
+placeholders: "Oak inc." (sample company) and "123 Main Street, Anytown,
+Country" (sample address). Replace that whole paragraph with:
+
+> In compliance with the General Product Safety Regulation (GPSR), Trym Stene
+> (store operator) and SINDEN VENTURES LIMITED (EU representative) ensure that
+> all consumer products offered are safe and meet EU standards. For any product
+> safety related inquiries or concerns, please contact the EU representative at
+> gpsr@sindenventures.com or write to Markou Evgenikou 11, Mesa Geitonia, 4002,
+> Limassol, Cyprus. You can also reach the store at trymstene.com/contact.
+
+(Keeps the real EU-rep contact; names Trym as operator; no home address.)
+To fix at the SOURCE for future products: Printful → Store Settings → the
+GPSR / product safety information setting (business info fields live there);
+bulk-apply to existing products via My products → select → More actions →
+Edit description → Add product safety information.
+
+---
+
 *Optional add-on line for ALL products (paste at the end of any description):*
 
 > Designed and remastered by Trym Stene — the guy who actually made the
