@@ -156,10 +156,13 @@ function model(node) {
   };
 }
 
-// Products that must NOT get a PLP card / PDP page: the custom sticker is only
+// Products that must NOT get a PLP card / PDP page: custom products are only
 // purchasable through the make-a-banana builder (which attaches the design) —
-// a bare PDP would let people buy it with no design attached.
-const BUILDER_ONLY = new Set(['custom-banana-sticker']);
+// a bare PDP would let people buy them with no design attached.
+// ⚠️ EVERY custom builder product added to Shopify needs its handle here, or it
+// leaks into the official shop grid (the magnet did — Trym caught it live,
+// broken image and all, since custom products have no Shopify product photos).
+const BUILDER_ONLY = new Set(['custom-banana-sticker', 'custom-banana-magnet']);
 
 let _cache;
 export async function getProducts() {
