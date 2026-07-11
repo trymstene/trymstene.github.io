@@ -185,6 +185,26 @@ async function assetsReady() {
   })));
 }
 
+// Safari (macOS + iOS) does NOT support ctx.filter — it silently ignores it,
+// so hue-rotate (disco, the drop rainbow) did nothing on Apple devices
+// (Trym's iOS catch). Detect once; ?huetest forces the fallback for testing.
+const CTX_FILTER_OK = (() => {
+  try {
+    if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('huetest')) return false;
+    const c = document.createElement('canvas').getContext('2d');
+    c.filter = 'hue-rotate(90deg)';
+    return c.filter === 'hue-rotate(90deg)';
+  } catch (e) { return false; }
+})();
+// the fallback's scratch canvases (module-cached, resized on demand)
+let _hueLayerCv = null, _hueMaskCv = null;
+function scratchCv(which, W) {
+  let cv = which === 'layer' ? _hueLayerCv : _hueMaskCv;
+  if (!cv) { cv = document.createElement('canvas'); if (which === 'layer') _hueLayerCv = cv; else _hueMaskCv = cv; }
+  if (cv.width !== W) { cv.width = W; cv.height = W; }
+  return cv;
+}
+
 // ---- the one render path ----
 // Draws frame `idx` composited into a W×W canvas.
 // o: { bg: css color|'transparent', captions: bool, hue: deg, effect: 'none'|'disco'|'sparkle'|'confetti' }
@@ -198,11 +218,22 @@ function drawComposite(ctx, W, idx, o) {
   const side = F.face !== 'front';
   const mirror = F.face === 'left' ? -1 : 1;
 
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  ctx.filter = o.hue ? `hue-rotate(${o.hue}deg)` : 'none';
-  try { ctx.drawImage(sheet, idx * FW, 0, FW, FH, fx, fy, fw, fh); } catch (e) {}
-  ctx.imageSmoothingEnabled = true;
+  // banana + accessories render to `bctx`: the main canvas normally, or an
+  // isolated scratch layer when Safari needs the hue-wash fallback
+  const useHueWash = !!o.hue && !CTX_FILTER_OK;
+  let layer = null;
+  let bctx = ctx;
+  if (useHueWash) {
+    layer = scratchCv('layer', W);
+    bctx = layer.getContext('2d');
+    bctx.clearRect(0, 0, W, W);
+  }
+
+  bctx.save();
+  bctx.imageSmoothingEnabled = false;
+  bctx.filter = o.hue && CTX_FILTER_OK ? `hue-rotate(${o.hue}deg)` : 'none';
+  try { bctx.drawImage(sheet, idx * FW, 0, FW, FH, fx, fy, fw, fh); } catch (e) {}
+  bctx.imageSmoothingEnabled = true;
 
   // accessories ride the head/eyes; art switches side/front with the face.
   // No rotation ever — axis-aligned pixels are the authentic look.
@@ -212,14 +243,14 @@ function drawComposite(ctx, W, idx, o) {
     const hw = gridW(key) * unit, hh = gridH(key) * unit;
     const seat = HAT_OVERLAP + (hatDef.seat || 0);
     const hBottom = fy + F.tipY * scale + seat * unit;
-    drawAcc(ctx, key, fx + F.hatCx * scale - hw / 2, hBottom - hh, hw, hh, false);
+    drawAcc(bctx, key, fx + F.hatCx * scale - hw / 2, hBottom - hh, hw, hh, false);
   }
   const shadeDef = SHADE_BY_ID[o.glasses];
   if (shadeDef) {
     const key = SVG[side ? shadeDef.side : shadeDef.front];
     const gw = gridW(key) * unit, gh = gridH(key) * unit;
     const gx = fx + F.eyeCx * scale, gy = fy + (F.eyeCy + SH_DY * PX) * scale;
-    drawAcc(ctx, key, gx - gw / 2, gy - gh / 2, gw, gh, F.face === 'left');
+    drawAcc(bctx, key, gx - gw / 2, gy - gh / 2, gw, gh, F.face === 'left');
   }
   let feetDrawn = false; // feet is a single-select slot — never stack two shoes
   for (const d of EXTRA_DEFS) {
@@ -230,14 +261,14 @@ function drawComposite(ctx, W, idx, o) {
       const mw = gridW(key) * unit, mh = gridH(key) * unit;
       const mx = fx + F.eyeCx * scale + (side ? mirror * d.sideDx * unit : 0);
       const my = fy + (F.eyeCy + d.dy * PX) * scale;
-      drawAcc(ctx, key, mx - mw / 2, my - mh / 2, mw, mh, F.face === 'left');
+      drawAcc(bctx, key, mx - mw / 2, my - mh / 2, mw, mh, F.face === 'left');
     } else if (d.anchor === 'hand') { // held items ride the per-frame glove centres
       const hands = F.hands;
       if (hands) {
         const [hx, hy] = d.hand === 'left' ? hands[0] : hands[1];
         const key = SVG[d.art];
         const gw2 = gridW(key) * unit, gh2 = gridH(key) * unit;
-        drawAcc(ctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
+        drawAcc(bctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
       }
     } else if (d.anchor === 'feet') { // ONE shoe drawn per foot, riding the per-frame centroid so the pair dances
       feetDrawn = true;
@@ -247,23 +278,42 @@ function drawComposite(ctx, W, idx, o) {
       // CRISP: shoes overlay the sprite's own crisp pixels — smoothing (on for
       // other accessories) softens the edges so they stop landing 1:1 and the
       // shared corners fracture into notches
-      const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+      const sm = bctx.imageSmoothingEnabled; bctx.imageSmoothingEnabled = false;
       const feetX = F.feetX || [FEET_CX - 71, FEET_CX + 71];
       for (const cxu of feetX) {
         const fcx = fx + (cxu + (d.dx || 0) * PX) * scale;
-        drawAcc(ctx, key, fcx - fw2 / 2, fby - fh2, fw2, fh2, false);
+        drawAcc(bctx, key, fcx - fw2 / 2, fby - fh2, fw2, fh2, false);
       }
-      ctx.imageSmoothingEnabled = sm;
+      bctx.imageSmoothingEnabled = sm;
     } else { // 'chest'
       const key = SVG[d.art];
       const bw = gridW(key) * unit, bh = gridH(key) * unit;
       const bx = fx + F.btCx * scale;
       const by = fy + (F.eyeCy + d.dy * PX) * scale;
-      drawAcc(ctx, key, bx - bw / 2, by - bh / 2, bw, bh, false);
+      drawAcc(bctx, key, bx - bw / 2, by - bh / 2, bw, bh, false);
     }
   }
-  ctx.filter = 'none';
-  ctx.restore();
+  bctx.filter = 'none';
+  bctx.restore();
+
+  if (useHueWash) {
+    // Safari path: wash the isolated banana layer. The 'hue' blend keeps the
+    // sprite's luminosity (shading, white gloves, black outlines) and pushes
+    // every pixel toward the target hue ≈ what hue-rotate does to a yellow
+    // banana. The blend rect paints the whole layer, so a mask pass restores
+    // the layer's own alpha before compositing onto the real canvas.
+    const mask = scratchCv('mask', W);
+    const mctx = mask.getContext('2d');
+    mctx.clearRect(0, 0, W, W);
+    mctx.drawImage(layer, 0, 0);
+    bctx.globalCompositeOperation = 'hue';
+    bctx.fillStyle = `hsl(${(52 + o.hue) % 360}, 100%, 50%)`; // 52 ≈ the banana's own yellow
+    bctx.fillRect(0, 0, W, W);
+    bctx.globalCompositeOperation = 'destination-in';
+    bctx.drawImage(mask, 0, 0);
+    bctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(layer, 0, 0);
+  }
 
   // effects in front of the banana (deterministic per frame → GIF loops clean)
   const fxType = o.effect || 'none';
@@ -272,7 +322,7 @@ function drawComposite(ctx, W, idx, o) {
 
   if (o.captions) { caption(ctx, W, o.top, true); caption(ctx, W, o.bottom, false); }
 }
-function drawAcc(ctx, key, dx, dy, dw, dh, flip) {
+function drawAcc(bctx, key, dx, dy, dw, dh, flip) {
   const img = imgFor(key); if (!(img.complete && img.naturalWidth)) return;
   if (!flip) { ctx.drawImage(img, dx, dy, dw, dh); return; }
   ctx.save();
