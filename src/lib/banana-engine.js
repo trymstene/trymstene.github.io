@@ -322,7 +322,7 @@ function drawComposite(ctx, W, idx, o) {
 
   if (o.captions) { caption(ctx, W, o.top, true); caption(ctx, W, o.bottom, false); }
 }
-function drawAcc(bctx, key, dx, dy, dw, dh, flip) {
+function drawAcc(ctx, key, dx, dy, dw, dh, flip) {
   const img = imgFor(key); if (!(img.complete && img.naturalWidth)) return;
   if (!flip) { ctx.drawImage(img, dx, dy, dw, dh); return; }
   ctx.save();
