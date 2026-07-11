@@ -1,0 +1,281 @@
+---
+// 🍌 BANANA MAIL™ — the executive correspondence system. Trym's private inbox
+// client for worker-contact: token-gated (fragment or localStorage, never in
+// the page source), noindex, absent from the sitemap allowlist. Over-the-top
+// corporate-mailroom theme on purpose — it's the admin room of a banana empire.
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'BANANA MAIL™';
+const description = 'Authorized banana personnel only.';
+---
+<BaseLayout title={title} description={description} showFooter={false}>
+  <meta name="robots" content="noindex" slot="head" />
+  <style is:inline slot="head">
+    .bm-wrap { max-width: 760px; margin: 0 auto; padding: 1.6rem 1rem 4rem; }
+    .bm-letterhead {
+      background: var(--ink); color: var(--paper); border: var(--line); box-shadow: var(--shadow);
+      padding: 1.1rem 1.2rem 1rem; text-align: center; position: relative; overflow: hidden;
+    }
+    .bm-letterhead::before, .bm-letterhead::after { content: '🍌'; position: absolute; top: 0.9rem; font-size: 1.4rem; }
+    .bm-letterhead::before { left: 1rem; } .bm-letterhead::after { right: 1rem; transform: scaleX(-1); }
+    .bm-letterhead h1 { margin: 0; font-size: clamp(1.5rem, 6vw, 2.2rem); color: var(--banana); letter-spacing: 0.02em; }
+    .bm-letterhead .bm-sub { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.75; margin: 0.35rem 0 0; }
+    .bm-letterhead .bm-est { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--banana); opacity: 0.9; margin: 0.2rem 0 0; }
+
+    /* the security checkpoint */
+    .bm-gate { margin-top: 1.2rem; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 1.1rem; text-align: center; }
+    .bm-gate p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+    .bm-gate .bm-gate__row { display: flex; gap: 0.6rem; max-width: 420px; margin-inline: auto; }
+    .bm-gate input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border: 3px solid var(--ink); font-family: inherit; font-size: 0.95rem; border-radius: 2px; }
+    .bm-gate .bm-wrong { color: var(--hot); font-weight: 700; font-size: 0.8rem; margin-top: 0.6rem; }
+
+    /* toolbar */
+    .bm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 1.2rem 0 0.9rem; }
+    .bm-count { font-weight: 800; font-size: 0.85rem; margin-right: auto; }
+    .bm-chip {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.28rem 0.6rem;
+      font-weight: 800; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; border-radius: 2px;
+    }
+    .bm-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .bm-chip--ghost { border-style: dashed; opacity: 0.75; }
+
+    /* mail cards */
+    .bm-mail { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); margin: 0 0 0.9rem; position: relative; }
+    .bm-mail--unread { box-shadow: 4px 4px 0 var(--hot); }
+    .bm-mail__head { width: 100%; display: block; text-align: left; background: none; border: none; font-family: inherit; padding: 0.8rem 0.9rem; cursor: pointer; }
+    .bm-mail__top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; }
+    .bm-stamp {
+      border: 2px solid var(--ink); padding: 0.1rem 0.4rem; border-radius: 2px; opacity: 1;
+      background: var(--banana); transform: rotate(2deg); font-size: 0.58rem;
+    }
+    .bm-stamp--licensing { background: var(--hot); color: #fff; transform: rotate(-2deg); }
+    .bm-mail__from { font-weight: 800; font-size: 0.98rem; margin: 0.35rem 0 0; word-break: break-word; }
+    .bm-mail__from .bm-dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; background: var(--hot); margin-right: 0.4rem; vertical-align: 1px; }
+    .bm-mail__peek { font-size: 0.82rem; opacity: 0.7; margin: 0.25rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bm-mail__body { padding: 0 0.9rem 0.9rem; }
+    .bm-mail__msg { white-space: pre-wrap; font-family: inherit; font-size: 0.92rem; line-height: 1.55; margin: 0.2rem 0 0.9rem; border-top: 3px dashed rgba(17,17,17,0.15); padding-top: 0.8rem; word-break: break-word; }
+    .bm-mail__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .bm-btn {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.8rem;
+      font-weight: 800; font-size: 0.78rem; cursor: pointer; border-radius: 2px; text-decoration: none; color: var(--ink);
+    }
+    .bm-btn--shred { background: var(--hot); color: #fff; }
+    .bm-btn--shred[data-arm="1"] { background: #111; color: var(--hot); }
+    .bm-mail--shredding { transition: transform 0.35s ease, opacity 0.35s ease; transform: translateX(40px) rotate(2deg); opacity: 0; }
+
+    .bm-empty { text-align: center; padding: 2.5rem 1rem; border: 3px dashed rgba(17,17,17,0.3); border-radius: 4px; }
+    .bm-empty .bm-big { font-size: 2rem; }
+    .bm-empty p { margin: 0.4rem 0 0; font-weight: 700; opacity: 0.7; }
+
+    .bm-fine { text-align: center; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; margin-top: 2rem; line-height: 1.8; }
+    @media (max-width: 480px) { .bm-count { flex-basis: 100%; } }
+  </style>
+
+  <div class="bm-wrap">
+    <header class="bm-letterhead">
+      <h1>BANANA MAIL™</h1>
+      <p class="bm-sub">Executive correspondence system</p>
+      <p class="bm-est">First-class potassium post · est. 1999</p>
+    </header>
+
+    <div class="bm-gate" id="bmGate" hidden>
+      <p><b>🛂 SECURITY CHECKPOINT</b><br>Authorized banana personnel only. Present your credentials.</p>
+      <div class="bm-gate__row">
+        <input id="bmToken" type="password" placeholder="inbox token" autocomplete="off" />
+        <button class="bm-btn" id="bmClockIn" type="button">Clock in →</button>
+      </div>
+      <p class="bm-wrong" id="bmWrong" hidden>❌ Credentials rejected. The bouncer remembers faces.</p>
+    </div>
+
+    <div id="bmApp" hidden>
+      <div class="bm-bar">
+        <span class="bm-count" id="bmCount"></span>
+        <span id="bmChips"></span>
+        <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button>
+      </div>
+      <div id="bmList"></div>
+      <p class="bm-fine">
+        BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
+        Unauthorized peeling is prohibited and punishable by dance-off.<br>
+        <button class="bm-chip bm-chip--ghost" id="bmLogout" type="button" style="margin-top:0.5rem;">🚪 clock out</button>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API = new URLSearchParams(location.search).get('api') || 'https://banana-contact.trymstene.workers.dev';
+    const READ_KEY = 'inbox-read-v1';
+    const el = (id) => document.getElementById(id);
+
+    let token = '';
+    let mails = [];
+    let topic = 'all';
+
+    const readSet = () => { try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]')); } catch (e) { return new Set(); } };
+    const saveRead = (s) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...s].slice(-500))); } catch (e) {} };
+
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' +
+        d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function render() {
+      const read = readSet();
+      const list = el('bmList');
+      list.textContent = '';
+      const shown = mails.filter((m) => topic === 'all' || m.topic === topic);
+      const unread = mails.filter((m) => !read.has(m.key)).length;
+      el('bmCount').textContent = '📥 ' + mails.length + ' item' + (mails.length === 1 ? '' : 's') + ' of official correspondence' + (unread ? ' · ' + unread + ' unread' : '');
+
+      // topic chips, built from the data
+      const topics = ['all', ...new Set(mails.map((m) => m.topic || 'general'))];
+      const chips = el('bmChips');
+      chips.textContent = '';
+      topics.forEach((t) => {
+        const b = document.createElement('button');
+        b.className = 'bm-chip';
+        b.type = 'button';
+        b.textContent = t;
+        b.setAttribute('aria-pressed', String(t === topic));
+        b.onclick = () => { topic = t; render(); };
+        chips.appendChild(b);
+      });
+
+      if (!shown.length) {
+        const d = document.createElement('div');
+        d.className = 'bm-empty';
+        d.innerHTML = '<div class="bm-big">🏝</div><p>Inbox zero. The bananas rest.</p>';
+        list.appendChild(d);
+        return;
+      }
+
+      shown.forEach((m) => {
+        const isRead = read.has(m.key);
+        const card = document.createElement('article');
+        card.className = 'bm-mail' + (isRead ? '' : ' bm-mail--unread');
+
+        const head = document.createElement('button');
+        head.className = 'bm-mail__head';
+        head.type = 'button';
+        const top = document.createElement('div');
+        top.className = 'bm-mail__top';
+        const stamp = document.createElement('span');
+        stamp.className = 'bm-stamp' + (m.topic === 'licensing' ? ' bm-stamp--licensing' : '');
+        stamp.textContent = m.topic || 'general';
+        top.appendChild(stamp);
+        top.appendChild(document.createTextNode(' stamped ' + fmtDate(m.ts) + ' · agent ' + String(m.sender || '?').slice(0, 8)));
+        const from = document.createElement('p');
+        from.className = 'bm-mail__from';
+        if (!isRead) { const dot = document.createElement('span'); dot.className = 'bm-dot'; from.appendChild(dot); }
+        from.appendChild(document.createTextNode((m.name || 'anonymous banana') + (m.email ? ' <' + m.email + '>' : '')));
+        const peek = document.createElement('p');
+        peek.className = 'bm-mail__peek';
+        peek.textContent = String(m.message || '').slice(0, 90);
+        head.appendChild(top); head.appendChild(from); head.appendChild(peek);
+
+        const body = document.createElement('div');
+        body.className = 'bm-mail__body';
+        body.hidden = true;
+        const msg = document.createElement('pre');
+        msg.className = 'bm-mail__msg';
+        msg.textContent = m.message || '';
+        const actions = document.createElement('div');
+        actions.className = 'bm-mail__actions';
+        if (m.email) {
+          const reply = document.createElement('a');
+          reply.className = 'bm-btn';
+          reply.href = 'mailto:' + encodeURIComponent(m.email) + '?subject=' + encodeURIComponent('Re: your message to the banana guy 🍌');
+          reply.textContent = '✉ reply';
+          actions.appendChild(reply);
+        }
+        const shred = document.createElement('button');
+        shred.className = 'bm-btn bm-btn--shred';
+        shred.type = 'button';
+        shred.textContent = '🗑 shred';
+        shred.onclick = async () => {
+          if (shred.dataset.arm !== '1') { shred.dataset.arm = '1'; shred.textContent = '⚠ shred, really?'; setTimeout(() => { shred.dataset.arm = ''; shred.textContent = '🗑 shred'; }, 3000); return; }
+          shred.disabled = true; shred.textContent = 'shredding…';
+          try {
+            const r = await fetch(API + '/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, keys: [m.key] }) });
+            const d = await r.json();
+            if (d.ok) {
+              card.classList.add('bm-mail--shredding');
+              setTimeout(() => { mails = mails.filter((x) => x.key !== m.key); render(); }, 360);
+            } else { shred.disabled = false; shred.textContent = '🗑 shred'; }
+          } catch (e) { shred.disabled = false; shred.textContent = '🗑 shred'; }
+        };
+        actions.appendChild(shred);
+        body.appendChild(msg); body.appendChild(actions);
+
+        head.onclick = () => {
+          body.hidden = !body.hidden;
+          if (!read.has(m.key)) { const s = readSet(); s.add(m.key); saveRead(s); card.classList.remove('bm-mail--unread'); const dt = from.querySelector('.bm-dot'); if (dt) dt.remove(); render0nly(); }
+        };
+        card.appendChild(head); card.appendChild(body);
+        list.appendChild(card);
+      });
+
+      function render0nly() { // refresh just the counter without collapsing open mails
+        const rd = readSet();
+        const un = mails.filter((x) => !rd.has(x.key)).length;
+        el('bmCount').textContent = '📥 ' + mails.length + ' item' + (mails.length === 1 ? '' : 's') + ' of official correspondence' + (un ? ' · ' + un + ' unread' : '');
+      }
+    }
+
+    async function load() {
+      const r = await fetch(API + '/messages?token=' + encodeURIComponent(token));
+      if (r.status === 403) return false;
+      mails = await r.json();
+      return true;
+    }
+
+    async function boot() {
+      // token: URL fragment (from the old bookmark redirect) → localStorage → ask
+      const frag = new URLSearchParams(location.hash.slice(1));
+      if (frag.get('token')) {
+        token = frag.get('token');
+        history.replaceState(null, '', location.pathname); // never leave it visible
+      } else {
+        try { token = localStorage.getItem('inbox-token') || ''; } catch (e) {}
+      }
+      if (token && await load().catch(() => false)) {
+        try { localStorage.setItem('inbox-token', token); } catch (e) {}
+        el('bmApp').hidden = false;
+        render();
+        return;
+      }
+      token = '';
+      el('bmGate').hidden = false;
+    }
+
+    el('bmClockIn').onclick = async () => {
+      token = el('bmToken').value.trim();
+      el('bmWrong').hidden = true;
+      if (token && await load().catch(() => false)) {
+        try { localStorage.setItem('inbox-token', token); } catch (e) {}
+        el('bmGate').hidden = true;
+        el('bmApp').hidden = false;
+        render();
+      } else {
+        token = '';
+        el('bmWrong').hidden = false;
+      }
+    };
+    el('bmToken').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('bmClockIn').click(); });
+
+    el('bmReadAll').onclick = () => {
+      const s = readSet();
+      mails.forEach((m) => s.add(m.key));
+      saveRead(s);
+      render();
+    };
+    el('bmLogout').onclick = () => {
+      try { localStorage.removeItem('inbox-token'); } catch (e) {}
+      location.reload();
+    };
+
+    boot();
+  </script>
+</BaseLayout>

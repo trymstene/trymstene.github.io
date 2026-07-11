@@ -13,6 +13,9 @@ Desktop.ini
 .claude/
 .mcp.json
 
+# wrangler local-dev secrets (any worker folder)
+.dev.vars
+
 # Local-only planning doc
 ROADMAP.md
 

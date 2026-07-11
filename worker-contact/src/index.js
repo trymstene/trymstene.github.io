@@ -63,21 +63,28 @@ export default {
       return new Response(await res.text(), { status: res.status, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
+    // the old bookmark keeps working: it now opens BANANA MAIL™ (the client at
+    // /inbox/ on the site) with the token riding the FRAGMENT (never logged)
     if (url.pathname === '/inbox' && request.method === 'GET') {
       const token = url.searchParams.get('token') || '';
       if (!env.INBOX_TOKEN || token !== env.INBOX_TOKEN) return new Response('nope', { status: 403 });
+      return Response.redirect('https://trymstene.com/inbox/#token=' + encodeURIComponent(token), 302);
+    }
+
+    if (url.pathname === '/messages' && request.method === 'GET') {
+      const token = url.searchParams.get('token') || '';
+      if (!env.INBOX_TOKEN || token !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
       const res = await stub.fetch('https://do/list');
-      const items = await res.json();
-      const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const rows = items.map((m) => `<article style="border:3px solid #111;padding:12px;margin:0 0 14px;background:#fffdf5;">
-        <div style="font-size:12px;color:#666;">${new Date(m.ts).toISOString()} · <b>${esc(m.topic)}</b> · ${esc(m.sender)}</div>
-        <div style="font-weight:700;">${esc(m.name || 'anonymous')} ${m.email ? '&lt;' + esc(m.email) + '&gt;' : ''}</div>
-        <pre style="white-space:pre-wrap;font-family:inherit;margin:8px 0 0;">${esc(m.message)}</pre>
-      </article>`).join('');
-      return new Response(`<!doctype html><meta charset="utf-8"><title>banana mail</title>
-        <body style="font-family:system-ui;background:#eee;max-width:720px;margin:2rem auto;padding:0 1rem;">
-        <h1>🍌 banana mail — ${items.length} message${items.length === 1 ? '' : 's'}</h1>${rows || '<p>empty. peaceful.</p>'}`,
-        { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    if (url.pathname === '/delete' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (e) { return new Response('bad json', { status: 400, headers: cors }); }
+      if (!env.INBOX_TOKEN || String(body.token || '') !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
+      const keys = Array.isArray(body.keys) ? body.keys.filter((k) => typeof k === 'string' && k.startsWith('m:')).slice(0, 128) : [];
+      const res = await stub.fetch('https://do/delete', { method: 'POST', body: JSON.stringify({ keys }) });
+      return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
     return new Response('not found', { status: 404, headers: cors });
   },
@@ -103,7 +110,14 @@ export class ContactInbox {
     }
     if (url.pathname === '/list') {
       const list = await this.state.storage.list({ prefix: 'm:', reverse: true, limit: 200 });
-      return new Response(JSON.stringify([...list.values()]), { headers: { 'Content-Type': 'application/json' } });
+      // each message carries its storage key = the id the client deletes by
+      return new Response(JSON.stringify([...list.entries()].map(([key, m]) => ({ key, ...m }))), { headers: { 'Content-Type': 'application/json' } });
+    }
+    if (url.pathname === '/delete') {
+      const { keys } = await request.json();
+      let deleted = 0;
+      if (Array.isArray(keys) && keys.length) deleted = await this.state.storage.delete(keys);
+      return new Response(JSON.stringify({ ok: true, deleted }));
     }
     return new Response('not found', { status: 404 });
   }

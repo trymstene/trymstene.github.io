@@ -4,21 +4,21 @@
 a URL that ends in `?token=YOUR-PASSWORD`, and that password is in your
 password manager under "banana contact inbox".*
 
-## Reading your messages
+## Reading your messages — BANANA MAIL™ (since 12 Jul 2026)
 
-Open this in any browser (bookmark it somewhere private):
+The inbox is a proper little mail client now: **https://trymstene.com/inbox/**
+— enter your token once per device ("Clock in") and it remembers you.
+Your OLD bookmark (`…workers.dev/inbox?token=…`) still works: it redirects
+into the client with the token attached. Features: read/unread (per device),
+topic filter chips, **🗑 shred** (tap twice — deletes for real, everywhere),
+✉ reply (opens your mail app toward the sender), 🚪 clock out.
 
-```
-https://banana-contact.trymstene.workers.dev/inbox?token=YOUR-TOKEN-HERE
-```
+The token is the secret you created on 7 Jul 2026 (`wrangler secret put
+INBOX_TOKEN` — the long random string in your password manager under
+"banana contact inbox"). Newest first, up to the latest 200.
 
-Replace `YOUR-TOKEN-HERE` with the secret you created on 7 Jul 2026
-(`wrangler secret put INBOX_TOKEN` — the long random string you saved in
-your password manager). Newest messages first, up to the latest 200.
-Licensing enquiries are tagged **licensing**; everything else **general**.
-
-⚠️ Anyone with that URL can read your messages. Don't share it, don't put
-it in a screenshot.
+⚠️ Anyone with the token can read AND delete your messages. Don't share it,
+don't put it in a screenshot.
 
 ## How messages get there
 
@@ -28,10 +28,13 @@ Cloudflare Worker. Messages are **stored, never emailed**: there is no
 email-sending setup to break, and your real address appears nowhere in the
 site's source code (that was the whole point).
 
-Spam protection, in order of who it stops:
+Spam protection, in order of who it stops (all gates pretend success so
+bots never learn what failed):
+- server-side Origin check (bots posting the endpoint directly from servers)
 - a hidden honeypot field (bots fill it → message silently discarded)
+- a 3-second time-gate (bots that submit the instant the page loads)
 - max 5 messages per day per sender (per browser+IP fingerprint)
-- length caps, and only trymstene.com may talk to the worker
+- length caps
 
 ## Forgot / leaked the token?
 
@@ -59,6 +62,6 @@ key as another secret, and ask Claude to "add forwarding to worker-contact"
 | --- | --- |
 | The form the internet sees | `trymstene.com/contact/` (`src/pages/contact.astro` + `src/components/ContactForm.astro`) |
 | The worker | `worker-contact/` in the repo → `banana-contact` on Cloudflare |
-| Your inbox page | `…workers.dev/inbox?token=…` (this doc, section 1) |
+| Your inbox (BANANA MAIL™) | `trymstene.com/inbox/` (`src/pages/inbox.astro`; noindex, not in sitemap) |
 | The token | Cloudflare secret `INBOX_TOKEN` + your password manager |
 | Deploy after changes | `cd worker-contact` then `npx wrangler deploy` |
