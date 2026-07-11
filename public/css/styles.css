@@ -112,6 +112,14 @@ a { color: inherit; }
   pointer-events: none;
 }
 .nav__toggle .nav-note { top: -6px; right: -8px; }
+/* menu OPEN: the panel's own My-Pass row carries the news — a count floating
+   on the close ✗ is noise (Trym's iOS screenshot) */
+.nav.open .nav__toggle .nav-note { display: none; }
+/* mobile panel: the row spans the full screen, so the absolute corner spot is
+   PAST the viewport edge — sit inline after "My Pass" like an iOS list badge */
+@media (max-width: 899.98px) {
+  .nav__pass .nav-note { position: static; display: inline-grid; margin-left: 0.5rem; vertical-align: 2px; }
+}
 @keyframes navNotePop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .nav-note { animation: none; } }
 
