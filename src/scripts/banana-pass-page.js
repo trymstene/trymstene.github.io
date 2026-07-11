@@ -4,7 +4,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { renderShelf } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush } from '../lib/banana-pass.js';
-import { PATCHES, GEAR } from '../lib/pass-defs.js';
+import { PATCHES, GEAR, rankFor, nextRank } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 
 const el = (id) => document.getElementById(id);
@@ -46,6 +46,17 @@ async function init() {
   const since = new Date(pass.created);
   el('psSince').textContent = 'member since ' + since.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+  // — your standing at the club (REP → rank; earned on the dance floor) —
+  const rep = (pass.stats || {}).rep || 0;
+  const rk = rankFor(rep), nx = nextRank(rep);
+  const rankEl = document.createElement('div');
+  rankEl.className = 'ps-rank';
+  rankEl.style.cssText = 'margin-top:4px;font-size:0.82rem;';
+  rankEl.innerHTML = '🎖 <b>' + rk.title + '</b> <span style="opacity:0.65;font-size:0.72rem;">'
+    + (nx ? rep + ' / ' + nx.at + ' rep — next: ' + nx.title : rep + ' rep — top of the ladder')
+    + '</span>';
+  el('psSince').after(rankEl);
+
   // — patches: light the earned, pin the first few to the card —
   const earned = PATCHES.filter((d) => pass.patches[d.id]);
   earned.forEach((d) => {
@@ -68,6 +79,7 @@ async function init() {
   // — gentle stats —
   const S = pass.stats || {};
   const rows = [
+    [S.rep, 'rep at the club'],
     [S.raveMin, 'rave minutes'],
     [S.drops, 'drops survived'],
     [S.jelly, 'jelly collected'],

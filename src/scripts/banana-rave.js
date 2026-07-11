@@ -11,7 +11,8 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES } from '../lib/banana-engine.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
+import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
+import { rankFor, nextRank } from '../lib/pass-defs.js';
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
@@ -788,7 +789,29 @@ function init() {
   // you SPEND — "it's just something that is there and i cant use it for much"
   // (Trym) was the tell: a passive bar with a cosmetic ending isn't a loop.
   let hypeCharged = false;
+  // ---- REP: the club remembers (THE WHY BUILD, phase 1) ----
+  // Every action pays REP into the pass (stats.rep — cross-device via the
+  // passkey sync, never decays: the no-punishing rule). Crossing a rank
+  // threshold is a MOMENT on the floor, right where you earned it. Rank
+  // REWARDS (wearable drops + privileges) arrive with the ownership stack —
+  // never music drops; those are atmosphere, not currency (Trym).
+  function earnRep(n) {
+    const pts = Math.round(n);
+    if (!pts || pts < 0) return;
+    const total = passStat('rep', pts);
+    const now2 = rankFor(total);
+    if (now2.id !== rankFor(total - pts).id) {
+      bigMoment('RANK UP 🎖 ' + now2.title.toUpperCase(), nextRank(total)
+        ? 'the club knows your face — next stop: ' + nextRank(total).title
+        : 'top of the ladder. the club is basically yours.');
+      passToast('🎖 <b>' + now2.title + '</b> — <a href="/pass/">your standing at the club</a>');
+      try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
+      track('rave_rankup', { rank: now2.id });
+    }
+  }
+
   function addHype(n) {
+    earnRep(n); // REP flows on EVERY action — even while the meter is charged or peaking
     if (hypeCharged || Date.now() < hypeModeUntil) return; // holds while armed or peaking
     // the DOUBLE JELLY SHOT: everything counts twice while it lasts
     const me = myId && ravers.get(myId);

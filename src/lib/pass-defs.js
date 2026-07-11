@@ -41,3 +41,22 @@ export const GEAR = [
 // visitors before this date mint the OG patch automatically (set it to the
 // real launch day when the launch happens)
 export const OG_CUTOFF = '2026-08-01';
+
+// ---- REP & RANKS (THE WHY BUILD, 12 Jul) ----
+// Everything you DO at the rave pays REP; REP climbs club RANKS. Ranks never
+// decay (no-punishing doctrine — Trym's core rule) and rank-ups will pay
+// wearable drops + privileges via the ownership stack, never music drops.
+// rep rides pass-v1.stats.rep → syncs cross-device (stats merge = max).
+// Thresholds: an active ~20-min night ≈ 150–300 rep — second rank on night
+// one, The Regular after a handful of real nights, the top is a journey.
+export const RANKS = [
+  { id: 'peel',    title: 'Fresh Peel',           at: 0 },
+  { id: 'list',    title: 'On the List',          at: 150 },
+  { id: 'face',    title: 'Face at the Door',     at: 400 },
+  { id: 'regular', title: 'The Regular',          at: 900 },
+  { id: 'vip',     title: 'VIP',                  at: 1800 },
+  { id: 'legend',  title: 'Legend of the Floor',  at: 3200 },
+  { id: 'staff',   title: 'Practically Staff',    at: 5500 },
+];
+export const rankFor = (rep) => { let r = RANKS[0]; for (const k of RANKS) { if (rep >= k.at) r = k; } return r; };
+export const nextRank = (rep) => RANKS.find((k) => k.at > rep) || null;
