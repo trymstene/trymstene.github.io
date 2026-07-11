@@ -979,7 +979,7 @@ function init() {
       d.innerHTML = JELLY_SVG; // the drops ARE jelly — that's why they fill the meter
       d.style.left = p.x + '%';
       d.style.top = p.y + '%';
-      d.style.animationDelay = (i * 0.08) + 's';
+      d.style.setProperty('--pd', (i * 0.08) + 's'); // stagger rides a var so the drop + jiggle delays chain
       host.appendChild(d);
       p.elm = d;
     });
@@ -1032,14 +1032,17 @@ function init() {
       const dyp = ((me.y - p.y) / 100) * floorH;
       if (Math.hypot(dxp, dyp) < rPx) {
         p.got = true;
-        p.elm.style.animationDelay = ''; // the spawn stagger must not postpone the pop
+        p.elm.style.removeProperty('--pd'); // the spawn stagger must not postpone the pop
         p.elm.classList.add('rv-pellet--got');
         const gone = p.elm;
         setTimeout(() => gone.remove(), 500); // no half-faded ghosts, ever
         addHype(4); // 6 → 4: the onboarding was a drop-fest (Trym round 2)
-        tonight.jelly += 1;
-        passStat('jelly'); // lifetime total on the pass
-        floatPlus(p.x, p.y - 3);
+        // the DOUBLE JELLY SHOT means what it says: the count and the little
+        // +N agree with the meter (it said +1 while quietly doubling — Trym)
+        const shot2 = fxActive(me, now) && me.fx.id === 'jellyshot' ? 2 : 1;
+        tonight.jelly += shot2;
+        passStat('jelly', shot2); // lifetime total on the pass
+        floatPlus(p.x, p.y - 3, shot2 === 2 ? '+2' : '+1');
         refreshStats();
       } else {
         left++;
@@ -1059,6 +1062,7 @@ function init() {
         d.innerHTML = JELLY_SVG;
         d.style.left = x + '%';
         d.style.top = y + '%';
+        d.style.setProperty('--pd', (added * 0.1) + 's'); // the top-up rains in staggered too
         el('rvRun').appendChild(d);
         run.pts.push({ x, y, got: false, elm: d });
         added++;

@@ -671,9 +671,20 @@ const GUIDE = [
       position: absolute; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
       z-index: 8; pointer-events: none;
       filter: drop-shadow(0 0 6px rgba(255, 77, 157, 0.75));
-      animation: rvPelletBob 0.7s steps(2) infinite;
+      /* jelly RAINS from the rig (Trym: "where does the jelly come from?") —
+         each pellet falls in from above and lands with a squash, THEN jiggles.
+         --pd = the per-pellet stagger; the bob waits out its own landing. */
+      animation: rvPelletDrop 0.5s cubic-bezier(0.3, 0, 0.55, 1.2) var(--pd, 0s) backwards,
+                 rvPelletBob 0.7s steps(2) calc(var(--pd, 0s) + 0.5s) infinite;
     }
     .rv-pellet svg { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    @keyframes rvPelletDrop {
+      0% { opacity: 0; transform: translateY(-52px); }
+      12% { opacity: 1; }
+      68% { transform: translateY(0) scale(1, 1); }
+      84% { transform: scale(1.35, 0.65); }
+      100% { transform: scale(1, 1); }
+    }
     @keyframes rvPelletBob { 50% { transform: scale(1.18, 0.88); } } /* jelly JIGGLES */
     .rv-pellet--got { animation: rvPelletGot 0.4s steps(3) forwards; }
     @keyframes rvPelletGot { 100% { transform: scale(2.1); opacity: 0; } }
