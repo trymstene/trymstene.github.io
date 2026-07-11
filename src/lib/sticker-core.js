@@ -209,6 +209,7 @@ export async function localizedPrice(product = getProduct('sticker')) {
 export async function uploadAndCheckout(printCanvas, product = getProduct('sticker')) {
   if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
   const blob = await new Promise((r) => printCanvas.toBlob(r, 'image/png'));
+  if (!blob) throw new Error('render failed: toBlob returned null'); // iOS under memory pressure does this silently
   const up = await fetch(SHOP.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
   if (!up.ok) throw new Error('upload failed: ' + up.status);
   const { key, url } = await up.json();

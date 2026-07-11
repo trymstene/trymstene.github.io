@@ -91,7 +91,13 @@ el('pdpBuy').onclick = async () => {
     window.location.href = checkoutUrl;
   } catch (e) {
     console.error(e);
-    track('sticker_order_fail', { message: String((e && e.message) || e).slice(0, 90) });
+    const msg = String((e && e.message) || e);
+    // the STAGE rides in the event NAME — event names are queryable in GA4
+    // without registering custom dimensions (two real-user fails were opaque)
+    const stage = msg.includes('upload') ? 'upload' : msg.includes('cart') ? 'cart'
+      : msg.includes('render') ? 'render' : msg.includes('not available') ? 'product' : 'other';
+    track('sticker_order_fail', { message: msg.slice(0, 90), stage });
+    track('sticker_order_fail_' + stage, { message: msg.slice(0, 90) });
     const s = el('pdpStock'); s.textContent = 'Hmm, that didn’t work — give it another try?';
     s.className = 'pdp-stock pdp-stock--no';
     btn.disabled = false; btn.textContent = label; busy = false;
