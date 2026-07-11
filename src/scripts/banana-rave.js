@@ -243,6 +243,20 @@ const noteCvs = NOTE_MAPS.map((rows) => {
   }));
   return c;
 });
+// the espresso cup: a tiny white cup with the shot in it, handle right, gold
+// saucer — the trail is a line of abandoned coffees (Trym: dashes were
+// "disappointing"). Pillow-verified in scratchpad clap-cup.py.
+const CUP_MAP = ['OOOOOO..', 'OKKKKO.O', 'OCCCCOO.', 'OCCCCO..', '.OCCO...', '.OOOO...', 'OGGGGGO.'];
+const CUP_COLS = { O: '#111111', K: '#5a3618', C: '#f0f0fa', G: '#d6a024' };
+const cupCv = (() => {
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 7;
+  const x = c.getContext('2d');
+  CUP_MAP.forEach((row, ry) => [...row].forEach((ch, rx) => {
+    if (CUP_COLS[ch]) { x.fillStyle = CUP_COLS[ch]; x.fillRect(rx, ry, 1, 1); }
+  }));
+  return c;
+})();
 // the fog sprite: ONE soft radial blob (squashed wide), drawn smoothed at
 // many sizes — fillRect fog read as "grey blocks" on iOS (Trym v3)
 const fogCv = (() => {
@@ -2942,10 +2956,14 @@ function init() {
             trailCtx.fillRect(Math.round(p.x - 1 + Math.sin((p.seed || 0)) * 5), Math.round(p.y - 6 + age * 12), 3, 3);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'espresso') {
-            // caffeinated dashes: short, brown, FAST — gone before you see them twice
-            trailCtx.globalAlpha = 0.8 * (1 - age);
-            trailCtx.fillStyle = '#8a5a2b';
-            trailCtx.fillRect(Math.round(p.x - 5), Math.round(p.y - 5), 10, 3);
+            // the closing-shift wake: a trail of ABANDONED ESPRESSO CUPS,
+            // steam still rising off each one (dashes were "disappointing")
+            const cw = 18 * (1 - age * 0.2);
+            trailCtx.globalAlpha = 0.95 * (1 - age);
+            trailCtx.drawImage(cupCv, p.x - cw / 2, p.y - cw * 7 / 8, cw, cw * 7 / 8);
+            trailCtx.fillStyle = '#e8eaf2';
+            trailCtx.fillRect(Math.round(p.x - 3 + Math.sin((p.seed || 0) + now / 160) * 2), Math.round(p.y - cw - 4 - age * 8), 2, 2);
+            trailCtx.fillRect(Math.round(p.x + 2 + Math.sin((p.seed || 0) * 2 + now / 130) * 2), Math.round(p.y - cw - 9 - age * 10), 2, 2);
             trailCtx.globalAlpha = 1;
           }
         }
