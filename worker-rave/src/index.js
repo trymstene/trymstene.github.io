@@ -260,6 +260,7 @@ export class RaveRoom {
         // as the liveness floor for fresh sockets, so backdating it would get
         // newcomers reaped before their first ping.
         since: Date.now() - Math.min(Math.max(Number(msg.sess) || 0, 0), 86_400_000),
+        lvl: sanLvl(msg.lvl),
         lastEmote: 0,
       };
       ws.serializeAttachment(p);
@@ -427,6 +428,16 @@ export class RaveRoom {
       return;
     }
 
+    if (msg.t === 'lvl' && me) { // levelled up mid-rave — the roster title updates live
+      const n = sanLvl(msg.n);
+      if (!n || n === me.lvl) return;
+      if (me.lvl && n < me.lvl) return; // levels only climb (no-decay rule, enforced here too)
+      me.lvl = n;
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'lvl', id: me.id, n });
+      return;
+    }
+
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       me.outfit = sanitizeOutfit(msg.outfit);
       if (msg.sober) { me.beer = false; me.fx = undefined; } // the water: a clean slate is a CLEAN slate
@@ -451,5 +462,7 @@ function strip(p) {
   return {
     id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, vinyl: !!p.vinyl, x: p.x, y: p.y,
     fx: p.fx && p.fx.until > Date.now() ? p.fx : undefined, // active effects survive a rejoin, expired ones don't travel
+    lvl: p.lvl || undefined, // club level (REP) — titles show on the floor roster
   };
 }
+const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 99 ? n : undefined; };

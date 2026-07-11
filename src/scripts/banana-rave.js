@@ -815,6 +815,9 @@ function init() {
       }
       const lvlRow = el('rvLvlRow');
       if (lvlRow) { lvlRow.classList.remove('rv-mixer__lvl--pop'); void lvlRow.offsetWidth; lvlRow.classList.add('rv-mixer__lvl--pop'); }
+      const meR = myId && ravers.get(myId);
+      if (meR) { meR.lvl = lv.level; refreshHud(); } // the roster title climbs with you
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'lvl', n: lv.level }));
       try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
       track('rave_levelup', { level: lv.level });
     }
@@ -1641,7 +1644,11 @@ function init() {
       .map((r) => {
         const mins = Math.max(0, Math.floor((now - r.joined) / 60000));
         const name = (r.stage ? '⭐ ' : '') + (r.vinyl ? '💿 ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + (fxActive(r, Date.now()) ? FX_ICON[r.fx.id] + ' ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
-        return `<li${r.id === myId ? ' class="rv-me"' : ''}><span>${name}</span><b>${mins}m</b></li>`;
+        // club titles show at brackets (level 5+) — status the whole floor can SEE
+        // (mine derives locally so it shows even in solo mode / before the echo)
+        const rl = r.id === myId ? levelFor((passGet().stats || {}).rep || 0).level : r.lvl;
+        const title = rl >= 5 ? `<i class="rv-title">${rankFor(rl).title}</i>` : '';
+        return `<li${r.id === myId ? ' class="rv-me"' : ''}><span>${name}${title}</span><b>${mins}m</b></li>`;
       });
     board.innerHTML = rows.join('') || '<li><span>the floor awaits…</span></li>';
   }
@@ -1660,7 +1667,7 @@ function init() {
       el('rvStatus').className = 'rv-live';
       // sess = floor time so far: iOS re-sockets on every background/foreground,
       // and the server's stage gate must not restart with the socket
-      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit(), sess: Date.now() - sessionStart }));
+      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -1722,6 +1729,10 @@ function init() {
           // seemed to happen (the banana quietly teleported to a tiny row)
           bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap ⭐ again to come down');
         }
+      }
+      else if (m.t === 'lvl') {
+        const r = ravers.get(m.id);
+        if (r) { r.lvl = m.n; refreshHud(); }
       }
       else if (m.t === 'stageNo') {
         el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';
