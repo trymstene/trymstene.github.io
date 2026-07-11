@@ -11,8 +11,8 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES } from '../lib/banana-engine.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
-import { rankFor, nextRank } from '../lib/pass-defs.js';
+import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
+import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
@@ -799,16 +799,33 @@ function init() {
     const pts = Math.round(n);
     if (!pts || pts < 0) return;
     const total = passStat('rep', pts);
-    const now2 = rankFor(total);
-    if (now2.id !== rankFor(total - pts).id) {
-      bigMoment('RANK UP 🎖 ' + now2.title.toUpperCase(), nextRank(total)
-        ? 'the club knows your face — next stop: ' + nextRank(total).title
-        : 'top of the ladder. the club is basically yours.');
-      passToast('🎖 <b>' + now2.title + '</b> — <a href="/pass/">your standing at the club</a>');
+    const was = levelFor(total - pts);
+    const lv = levelFor(total);
+    refreshLvlBar(lv);
+    if (lv.level !== was.level) {
+      // every level POPS (the bar refilling is the engine of the whole thing);
+      // bracket titles get the big on-floor moment
+      const rk = rankFor(lv.level), rkWas = rankFor(was.level);
+      if (rk.id !== rkWas.id) {
+        bigMoment('LEVEL ' + lv.level + ' 🎖 ' + rk.title.toUpperCase(), nextRank(lv.level)
+          ? 'the club knows your face — next title at level ' + nextRank(lv.level).at
+          : 'top of the ladder. the club is basically yours.');
+      } else {
+        passToast('🎖 <b>LEVEL ' + lv.level + '</b> — the club remembers. keep dancing.');
+      }
+      const lvlRow = el('rvLvlRow');
+      if (lvlRow) { lvlRow.classList.remove('rv-mixer__lvl--pop'); void lvlRow.offsetWidth; lvlRow.classList.add('rv-mixer__lvl--pop'); }
       try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
-      track('rave_rankup', { rank: now2.id });
+      track('rave_levelup', { level: lv.level });
     }
   }
+  function refreshLvlBar(lv) {
+    const nEl = el('rvLvlN'), fEl = el('rvLvlFill');
+    if (!nEl) return;
+    nEl.textContent = 'LVL ' + lv.level;
+    if (fEl) fEl.style.width = Math.round((lv.into / lv.need) * 100) + '%';
+  }
+  refreshLvlBar(levelFor((passGet().stats || {}).rep || 0)); // boot: the bar picks up where you left off
 
   function addHype(n) {
     earnRep(n); // REP flows on EVERY action — even while the meter is charged or peaking

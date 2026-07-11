@@ -4,7 +4,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { renderShelf } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush } from '../lib/banana-pass.js';
-import { PATCHES, GEAR, rankFor, nextRank } from '../lib/pass-defs.js';
+import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 
 const el = (id) => document.getElementById(id);
@@ -46,15 +46,18 @@ async function init() {
   const since = new Date(pass.created);
   el('psSince').textContent = 'member since ' + since.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // — your standing at the club (REP → rank; earned on the dance floor) —
+  // — your standing at the club: LEVEL 1–99 + the bar, title at brackets —
   const rep = (pass.stats || {}).rep || 0;
-  const rk = rankFor(rep), nx = nextRank(rep);
+  const lv = levelFor(rep);
+  const rk = rankFor(lv.level), nx = nextRank(lv.level);
   const rankEl = document.createElement('div');
   rankEl.className = 'ps-rank';
-  rankEl.style.cssText = 'margin-top:4px;font-size:0.82rem;';
-  rankEl.innerHTML = '🎖 <b>' + rk.title + '</b> <span style="opacity:0.65;font-size:0.72rem;">'
-    + (nx ? rep + ' / ' + nx.at + ' rep — next: ' + nx.title : rep + ' rep — top of the ladder')
-    + '</span>';
+  rankEl.style.cssText = 'margin-top:5px;font-size:0.82rem;';
+  rankEl.innerHTML = '<b>LVL ' + lv.level + '</b> · 🎖 ' + rk.title
+    + '<span style="display:block;margin:3px 0 2px;height:7px;background:#241a38;max-width:220px;">'
+    + '<i style="display:block;height:100%;width:' + Math.round((lv.into / lv.need) * 100) + '%;background:#ffe135;"></i></span>'
+    + '<span style="opacity:0.65;font-size:0.7rem;">' + lv.into + ' / ' + lv.need + ' rep'
+    + (nx ? ' — next title at level ' + nx.at : ' — top of the ladder') + '</span>';
   el('psSince').after(rankEl);
 
   // — patches: light the earned, pin the first few to the card —

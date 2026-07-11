@@ -49,14 +49,26 @@ export const OG_CUTOFF = '2026-08-01';
 // rep rides pass-v1.stats.rep → syncs cross-device (stats merge = max).
 // Thresholds: an active ~20-min night ≈ 150–300 rep — second rank on night
 // one, The Regular after a handful of real nights, the top is a journey.
+// LEVELS 1–99 (Trym: "a visible progress bar you always need to fill is
+// extremely powerful — titles at brackets"). The curve front-loads the hook:
+// a first real night (~200 rep) reaches ~level 5 with several level-ups;
+// 99 is a legend's journey (~25k rep). levelFor returns {level, into, need}
+// so every surface can draw the same bar.
+export const levelStep = (n) => 30 + n * 6; // rep to go from level n → n+1
+export const levelFor = (rep) => {
+  let n = 1, c = 0;
+  while (n < 99 && rep >= c + levelStep(n)) { c += levelStep(n); n++; }
+  return { level: n, into: Math.max(0, rep - c), need: levelStep(n) };
+};
+// title BRACKETS by level — flavor milestones, not a ladder of 99 names
 export const RANKS = [
-  { id: 'peel',    title: 'Fresh Peel',           at: 0 },
-  { id: 'list',    title: 'On the List',          at: 150 },
-  { id: 'face',    title: 'Face at the Door',     at: 400 },
-  { id: 'regular', title: 'The Regular',          at: 900 },
-  { id: 'vip',     title: 'VIP',                  at: 1800 },
-  { id: 'legend',  title: 'Legend of the Floor',  at: 3200 },
-  { id: 'staff',   title: 'Practically Staff',    at: 5500 },
+  { id: 'peel',    title: 'Fresh Peel',           at: 1 },
+  { id: 'list',    title: 'On the List',          at: 5 },
+  { id: 'face',    title: 'Face at the Door',     at: 10 },
+  { id: 'regular', title: 'The Regular',          at: 20 },
+  { id: 'vip',     title: 'VIP',                  at: 35 },
+  { id: 'legend',  title: 'Legend of the Floor',  at: 60 },
+  { id: 'staff',   title: 'Practically Staff',    at: 90 },
 ];
-export const rankFor = (rep) => { let r = RANKS[0]; for (const k of RANKS) { if (rep >= k.at) r = k; } return r; };
-export const nextRank = (rep) => RANKS.find((k) => k.at > rep) || null;
+export const rankFor = (level) => { let r = RANKS[0]; for (const k of RANKS) { if (level >= k.at) r = k; } return r; };
+export const nextRank = (level) => RANKS.find((k) => k.at > level) || null;
