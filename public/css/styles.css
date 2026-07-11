@@ -93,8 +93,15 @@ a { color: inherit; }
   z-index: 70;
 }
 /* the open panel is ink-black behind the toggle — flip the X to banana
-   yellow or it disappears against it */
-.nav.open .nav__toggle { color: var(--banana); }
+   yellow or it disappears against it. And PIN it: left to the header's flow
+   it lands wherever the sticky bar happens to sit (read as misplaced on iOS,
+   Trym's catch) — pinned, it aligns with the panel rows' right padding and
+   centers in the panel's top band. */
+.nav.open .nav__toggle {
+  color: var(--banana);
+  position: fixed; top: 0.85rem; right: 1.4rem;
+  margin: 0; padding: 0; line-height: 0;
+}
 
 /* badge notification: iOS-style hot dot with the UNSEEN badge count — sits on
    "My Pass" (desktop) and on the burger (mobile, where the links hide).
@@ -102,12 +109,17 @@ a { color: inherit; }
 .nav__pass, .nav__toggle { position: relative; }
 .nav-note {
   position: absolute; top: -9px; right: -11px;
-  min-width: 19px; height: 19px; padding: 0 5px;
-  display: grid; place-items: center;
+  box-sizing: border-box;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
   background: var(--hot); color: #fff;
   border: 2px solid var(--ink); border-radius: 999px;
-  font-size: 0.68rem; font-weight: 800; line-height: 1;
-  font-family: inherit; letter-spacing: 0;
+  /* system digits, like a real iOS badge — Space Grotesk numerals have
+     lopsided side-bearings, so counts sat visibly off-centre (Trym's catch) */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px; font-weight: 700; line-height: 1;
+  letter-spacing: 0;
   animation: navNotePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
 }
@@ -118,7 +130,7 @@ a { color: inherit; }
 /* mobile panel: the row spans the full screen, so the absolute corner spot is
    PAST the viewport edge — sit inline after "My Pass" like an iOS list badge */
 @media (max-width: 899.98px) {
-  .nav__pass .nav-note { position: static; display: inline-grid; margin-left: 0.5rem; vertical-align: 2px; }
+  .nav__pass .nav-note { position: static; display: inline-flex; margin-left: 0.5rem; vertical-align: 2px; }
 }
 @keyframes navNotePop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .nav-note { animation: none; } }
