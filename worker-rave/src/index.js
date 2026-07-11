@@ -103,17 +103,20 @@ function itemSpot(w) {
 }
 function itemType(w) { // keep weights in sync with banana-rave.js
   const r = seedRand(0x7ab1e + w);
-  // 16 kinds — classics keep a slight edge, THE MENU fills the rest
-  return r < 0.10 ? 'sauce' : r < 0.19 ? 'zap' : r < 0.28 ? 'fizz'
-    : r < 0.36 ? 'candy' : r < 0.44 ? 'pizza' : r < 0.52 ? 'balloon'
-    : r < 0.58 ? 'shard' : r < 0.64 ? 'cone' : r < 0.70 ? 'popper'
-    : r < 0.76 ? 'remote' : r < 0.81 ? 'kazoo' : r < 0.86 ? 'glitter'
-    : r < 0.90 ? 'phone' : r < 0.94 ? 'cube' : r < 0.97 ? 'pizzabox' : 'wand';
+  // 22 kinds — classics keep a slight edge; the R4.5 six close the table
+  return r < 0.08 ? 'sauce' : r < 0.15 ? 'zap' : r < 0.22 ? 'fizz'
+    : r < 0.28 ? 'candy' : r < 0.34 ? 'pizza' : r < 0.40 ? 'balloon'
+    : r < 0.45 ? 'shard' : r < 0.50 ? 'cone' : r < 0.55 ? 'popper'
+    : r < 0.59 ? 'remote' : r < 0.63 ? 'kazoo' : r < 0.67 ? 'glitter'
+    : r < 0.71 ? 'phone' : r < 0.75 ? 'cube' : r < 0.78 ? 'pizzabox'
+    : r < 0.81 ? 'wand' : r < 0.85 ? 'boots' : r < 0.88 ? 'gel'
+    : r < 0.91 ? 'sparkler' : r < 0.94 ? 'magnet' : r < 0.97 ? 'vhs' : 'star';
 }
 const ITEM_FX = { // all rendering is client-side; the server only stamps fx ids
   sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon',
   shard: 'prism', cone: 'cone', popper: 'popper', remote: 'fog', kazoo: 'notes',
   glitter: 'glitter', phone: 'flash', cube: 'slide', wand: 'bubbles',
+  boots: 'boots', gel: 'wobble', sparkler: 'sparkler', magnet: 'magnet', vhs: 'vhs', star: 'conga',
   // candy/pizza/pizzabox = pure snacks (no fx; pizzabox pays jelly client-side)
 };
 // BARTY'S SPECIALS — between happy hours a rotating cocktail lands on the counter;
@@ -129,7 +132,7 @@ function specialWindow(now) {
 // Trym's juice pass: the crowd favourites earn longer runs (keep in sync
 // with banana-rave.js FX_DUR — the client cap clamps to the same table).
 const FX_MS = 10_000;
-const FX_DUR = { cone: 30_000, balloon: 20_000, zap: 20_000 };
+const FX_DUR = { cone: 30_000, balloon: 20_000, zap: 20_000, conga: 15_000, boots: 15_000, magnet: 12_000, sparkler: 12_000 };
 const fxLen = (id) => FX_DUR[id] || FX_MS;
 
 export default {

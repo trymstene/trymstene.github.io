@@ -50,7 +50,7 @@ const COCKTAILS = ['daiquiri', 'fizz', 'espresso', 'lagoon', 'colada', 'margarit
 // outfits — 10s baseline (Trym's call; was 150s/60s). The crowd favourites
 // earn longer runs (Trym's juice pass: "it's fun!"). Keep in sync with worker.
 const FX_MS = 10000;
-const FX_DUR = { cone: 30000, balloon: 20000, zap: 20000 };
+const FX_DUR = { cone: 30000, balloon: 20000, zap: 20000, conga: 15000, boots: 15000, magnet: 12000, sparkler: 12000 };
 const fxLen = (id) => FX_DUR[id] || FX_MS;
 // every fx window is capped at FIRST SIGHT, so each id's fuse holds even
 // against a not-yet-redeployed worker still stamping different windows
@@ -59,6 +59,8 @@ const FX_NAMES = {
   flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge', balloon: 'Balloon Ride',
   prism: 'Mirror Mirror', cone: 'The Cone of Honour', popper: 'Party Popper', fog: 'Fog on the Floor', notes: 'Kazoo Solo',
   glitter: 'Glitter Bombed', flash: 'Paparazzi', slide: 'Ice Legs', bubbles: 'Bubble Wand',
+  boots: 'Moon Boots', wobble: 'Jelly Legs', sparkler: 'The Sparkler',
+  magnet: 'The Jelly Magnet', vhs: 'VHS Banana', conga: 'The Entourage',
   espresso: 'Espresso Martini', lagoon: 'Blue Lagoon', colada: 'Piña Colada', margarita: 'Spicy Margarita',
   champagne: 'Champagne', milkshake: 'The Off-Menu Milkshake', jellyshot: 'Double Jelly Shot', water: 'Water (Barty Insists)',
 };
@@ -66,9 +68,13 @@ const FX_ICON = {
   flames: '🔥', daiquiri: '🍹', fizz: '🫧', zap: '⚡', balloon: '🎈',
   prism: '🪩', cone: '🚧', popper: '🎉', fog: '🌫️', notes: '🎶', glitter: '✨', flash: '📸', slide: '🧊', bubbles: '🧼',
   espresso: '☕', lagoon: '🌊', colada: '🍍', margarita: '🌶️', champagne: '🥂', milkshake: '🥤', jellyshot: '🍮', water: '💧',
+  boots: '👟', wobble: '🫠', sparkler: '🎇', magnet: '🧲', vhs: '📼', conga: '👯',
 };
 // what each conveyor item grants (client mirror of the worker's ITEM_FX)
-const MENU_FX = { shard: 'prism', cone: 'cone', popper: 'popper', remote: 'fog', kazoo: 'notes', glitter: 'glitter', phone: 'flash', cube: 'slide', wand: 'bubbles' };
+const MENU_FX = {
+  shard: 'prism', cone: 'cone', popper: 'popper', remote: 'fog', kazoo: 'notes', glitter: 'glitter', phone: 'flash', cube: 'slide', wand: 'bubbles',
+  boots: 'boots', gel: 'wobble', sparkler: 'sparkler', magnet: 'magnet', vhs: 'vhs', star: 'conga',
+};
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
 // deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
@@ -110,12 +116,14 @@ function itemSpotFor(w) { // keep in sync with itemSpot() in worker-rave
 }
 function itemTypeFor(w) { // keep weights in sync with itemType() in worker-rave
   const r = seedRand(0x7ab1e + w);
-  // 16 kinds now — classics keep a slight edge, the menu fills the rest
-  return r < 0.10 ? 'sauce' : r < 0.19 ? 'zap' : r < 0.28 ? 'fizz'
-    : r < 0.36 ? 'candy' : r < 0.44 ? 'pizza' : r < 0.52 ? 'balloon'
-    : r < 0.58 ? 'shard' : r < 0.64 ? 'cone' : r < 0.70 ? 'popper'
-    : r < 0.76 ? 'remote' : r < 0.81 ? 'kazoo' : r < 0.86 ? 'glitter'
-    : r < 0.90 ? 'phone' : r < 0.94 ? 'cube' : r < 0.97 ? 'pizzabox' : 'wand';
+  // 22 kinds now — classics keep a slight edge; the R4.5 six close the table
+  return r < 0.08 ? 'sauce' : r < 0.15 ? 'zap' : r < 0.22 ? 'fizz'
+    : r < 0.28 ? 'candy' : r < 0.34 ? 'pizza' : r < 0.40 ? 'balloon'
+    : r < 0.45 ? 'shard' : r < 0.50 ? 'cone' : r < 0.55 ? 'popper'
+    : r < 0.59 ? 'remote' : r < 0.63 ? 'kazoo' : r < 0.67 ? 'glitter'
+    : r < 0.71 ? 'phone' : r < 0.75 ? 'cube' : r < 0.78 ? 'pizzabox'
+    : r < 0.81 ? 'wand' : r < 0.85 ? 'boots' : r < 0.88 ? 'gel'
+    : r < 0.91 ? 'sparkler' : r < 0.94 ? 'magnet' : r < 0.97 ? 'vhs' : 'star';
 }
 // a gloved FIST with a wrist cuff (yellow stripe) — a plain mitten blob read as
 // "a white ball" at rave size; the cuff is what makes it read as a glove
@@ -167,6 +175,16 @@ Object.assign(ITEM_SVGS, {
   shard: MENU_SVGS.shard, cone: MENU_SVGS.cone, popper: MENU_SVGS.popper, remote: MENU_SVGS.remote,
   kazoo: MENU_SVGS.kazoo, glitter: MENU_SVGS.glitter, phone: MENU_SVGS.phone, cube: MENU_SVGS.cube,
   pizzabox: MENU_SVGS.pizzabox, wand: MENU_SVGS.wand,
+});
+// R4.5 conveyor items (Trym: "build all of them") — sprites authored in
+// scratchpad floor-items-3.py, Pillow-verified on the floor colour
+Object.assign(ITEM_SVGS, {
+  boots: '<svg viewBox="0 0 12 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#1e182c"/><rect x="2" y="1" width="1" height="1" fill="#1e182c"/><rect x="3" y="1" width="1" height="1" fill="#fffdf5"/><rect x="4" y="1" width="1" height="1" fill="#c8d8e8"/><rect x="5" y="1" width="1" height="1" fill="#fffdf5"/><rect x="6" y="1" width="1" height="1" fill="#1e182c"/><rect x="2" y="2" width="1" height="1" fill="#1e182c"/><rect x="3" y="2" width="1" height="1" fill="#fffdf5"/><rect x="4" y="2" width="1" height="1" fill="#c8d8e8"/><rect x="5" y="2" width="1" height="1" fill="#fffdf5"/><rect x="6" y="2" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="1" height="1" fill="#1e182c"/><rect x="3" y="3" width="3" height="1" fill="#8898b8"/><rect x="6" y="3" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="1" height="1" fill="#1e182c"/><rect x="3" y="4" width="1" height="1" fill="#fffdf5"/><rect x="4" y="4" width="1" height="1" fill="#c8d8e8"/><rect x="5" y="4" width="1" height="1" fill="#fffdf5"/><rect x="6" y="4" width="3" height="1" fill="#1e182c"/><rect x="2" y="5" width="1" height="1" fill="#1e182c"/><rect x="3" y="5" width="1" height="1" fill="#fffdf5"/><rect x="4" y="5" width="1" height="1" fill="#c8d8e8"/><rect x="5" y="5" width="4" height="1" fill="#fffdf5"/><rect x="9" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="1" height="1" fill="#1e182c"/><rect x="3" y="6" width="7" height="1" fill="#fffdf5"/><rect x="10" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="8" height="1" fill="#78ebff"/><rect x="10" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="1" height="1" fill="#78ebff"/><rect x="3" y="8" width="1" height="1" fill="#fffdf5"/><rect x="4" y="8" width="4" height="1" fill="#78ebff"/><rect x="8" y="8" width="1" height="1" fill="#fffdf5"/><rect x="9" y="8" width="1" height="1" fill="#78ebff"/><rect x="10" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="8" height="1" fill="#1e182c"/></svg>',
+  gel: '<svg viewBox="0 0 12 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="6" height="1" fill="#1e182c"/><rect x="2" y="1" width="1" height="1" fill="#1e182c"/><rect x="3" y="1" width="2" height="1" fill="#b6f0b0"/><rect x="5" y="1" width="4" height="1" fill="#58c05c"/><rect x="9" y="1" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#1e182c"/><rect x="2" y="2" width="2" height="1" fill="#b6f0b0"/><rect x="4" y="2" width="6" height="1" fill="#58c05c"/><rect x="10" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="1" height="1" fill="#b6f0b0"/><rect x="3" y="3" width="7" height="1" fill="#58c05c"/><rect x="10" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="8" height="1" fill="#58c05c"/><rect x="10" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="7" height="1" fill="#58c05c"/><rect x="9" y="5" width="1" height="1" fill="#2f8f3c"/><rect x="10" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="6" height="1" fill="#58c05c"/><rect x="8" y="6" width="2" height="1" fill="#2f8f3c"/><rect x="10" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="2" height="1" fill="#2f8f3c"/><rect x="4" y="7" width="3" height="1" fill="#58c05c"/><rect x="7" y="7" width="3" height="1" fill="#2f8f3c"/><rect x="10" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="8" height="1" fill="#1e182c"/></svg>',
+  sparkler: '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffffff"/><rect x="7" y="0" width="1" height="1" fill="#ffe135"/><rect x="2" y="1" width="1" height="1" fill="#ffe135"/><rect x="4" y="1" width="1" height="1" fill="#ffffff"/><rect x="5" y="1" width="1" height="1" fill="#ffe135"/><rect x="6" y="1" width="1" height="1" fill="#ffffff"/><rect x="3" y="2" width="1" height="1" fill="#ffffff"/><rect x="4" y="2" width="1" height="1" fill="#ffe135"/><rect x="5" y="2" width="1" height="1" fill="#ffffff"/><rect x="6" y="2" width="1" height="1" fill="#ffe135"/><rect x="7" y="2" width="1" height="1" fill="#ffffff"/><rect x="10" y="2" width="1" height="1" fill="#ffe135"/><rect x="1" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="1" height="1" fill="#ffe135"/><rect x="4" y="3" width="1" height="1" fill="#ffffff"/><rect x="5" y="3" width="1" height="1" fill="#fffdf5"/><rect x="6" y="3" width="1" height="1" fill="#ffffff"/><rect x="7" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="4" width="1" height="1" fill="#ffffff"/><rect x="3" y="4" width="1" height="1" fill="#ffe135"/><rect x="4" y="4" width="1" height="1" fill="#ffffff"/><rect x="5" y="4" width="1" height="1" fill="#fffdf5"/><rect x="6" y="4" width="1" height="1" fill="#ffffff"/><rect x="7" y="4" width="1" height="1" fill="#ffe135"/><rect x="8" y="4" width="1" height="1" fill="#ffffff"/><rect x="3" y="5" width="1" height="1" fill="#ffe135"/><rect x="4" y="5" width="1" height="1" fill="#ffffff"/><rect x="5" y="5" width="1" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#ffffff"/><rect x="7" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ffe135"/><rect x="4" y="6" width="1" height="1" fill="#ffffff"/><rect x="5" y="6" width="1" height="1" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#ffffff"/><rect x="9" y="6" width="1" height="1" fill="#ffe135"/><rect x="5" y="7" width="1" height="1" fill="#1e182c"/><rect x="5" y="8" width="1" height="1" fill="#1e182c"/><rect x="5" y="9" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="10" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="11" width="1" height="1" fill="#8a5a2b"/></svg>',
+  magnet: '<svg viewBox="0 0 12 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#1e182c"/><rect x="7" y="0" width="3" height="1" fill="#1e182c"/><rect x="1" y="1" width="1" height="1" fill="#1e182c"/><rect x="2" y="1" width="3" height="1" fill="#e83b3b"/><rect x="5" y="1" width="1" height="1" fill="#1e182c"/><rect x="7" y="1" width="1" height="1" fill="#1e182c"/><rect x="8" y="1" width="3" height="1" fill="#e83b3b"/><rect x="11" y="1" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#1e182c"/><rect x="2" y="2" width="3" height="1" fill="#e83b3b"/><rect x="5" y="2" width="1" height="1" fill="#1e182c"/><rect x="7" y="2" width="1" height="1" fill="#1e182c"/><rect x="8" y="2" width="3" height="1" fill="#e83b3b"/><rect x="11" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="1" height="1" fill="#1e182c"/><rect x="2" y="3" width="3" height="1" fill="#fffdf5"/><rect x="5" y="3" width="1" height="1" fill="#1e182c"/><rect x="7" y="3" width="1" height="1" fill="#1e182c"/><rect x="8" y="3" width="3" height="1" fill="#fffdf5"/><rect x="11" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#1e182c"/><rect x="2" y="4" width="3" height="1" fill="#e83b3b"/><rect x="5" y="4" width="1" height="1" fill="#1e182c"/><rect x="7" y="4" width="1" height="1" fill="#1e182c"/><rect x="8" y="4" width="3" height="1" fill="#e83b3b"/><rect x="11" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="3" height="1" fill="#e83b3b"/><rect x="5" y="5" width="3" height="1" fill="#1e182c"/><rect x="8" y="5" width="3" height="1" fill="#e83b3b"/><rect x="11" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="9" height="1" fill="#e83b3b"/><rect x="11" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#a62026"/><rect x="3" y="7" width="7" height="1" fill="#e83b3b"/><rect x="10" y="7" width="1" height="1" fill="#a62026"/><rect x="11" y="7" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="1" height="1" fill="#1e182c"/><rect x="3" y="8" width="2" height="1" fill="#a62026"/><rect x="5" y="8" width="3" height="1" fill="#e83b3b"/><rect x="8" y="8" width="2" height="1" fill="#a62026"/><rect x="10" y="8" width="1" height="1" fill="#1e182c"/><rect x="3" y="9" width="7" height="1" fill="#1e182c"/></svg>',
+  vhs: '<svg viewBox="0 0 12 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="12" height="1" fill="#1e182c"/><rect x="0" y="1" width="1" height="1" fill="#1e182c"/><rect x="1" y="1" width="10" height="1" fill="#111111"/><rect x="11" y="1" width="1" height="1" fill="#1e182c"/><rect x="0" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#111111"/><rect x="2" y="2" width="8" height="1" fill="#ff4d9d"/><rect x="10" y="2" width="1" height="1" fill="#111111"/><rect x="11" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="10" height="1" fill="#111111"/><rect x="11" y="3" width="1" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#3a304c"/><rect x="3" y="4" width="1" height="1" fill="#fffdf5"/><rect x="4" y="4" width="1" height="1" fill="#3a304c"/><rect x="5" y="4" width="2" height="1" fill="#111111"/><rect x="7" y="4" width="1" height="1" fill="#3a304c"/><rect x="8" y="4" width="1" height="1" fill="#fffdf5"/><rect x="9" y="4" width="1" height="1" fill="#3a304c"/><rect x="10" y="4" width="1" height="1" fill="#111111"/><rect x="11" y="4" width="1" height="1" fill="#1e182c"/><rect x="0" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="1" height="1" fill="#3a304c"/><rect x="3" y="5" width="1" height="1" fill="#111111"/><rect x="4" y="5" width="1" height="1" fill="#3a304c"/><rect x="5" y="5" width="2" height="1" fill="#111111"/><rect x="7" y="5" width="1" height="1" fill="#3a304c"/><rect x="8" y="5" width="1" height="1" fill="#111111"/><rect x="9" y="5" width="1" height="1" fill="#3a304c"/><rect x="10" y="5" width="1" height="1" fill="#111111"/><rect x="11" y="5" width="1" height="1" fill="#1e182c"/><rect x="0" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="10" height="1" fill="#111111"/><rect x="11" y="6" width="1" height="1" fill="#1e182c"/><rect x="0" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="2" height="1" fill="#111111"/><rect x="3" y="7" width="6" height="1" fill="#fffdf5"/><rect x="9" y="7" width="2" height="1" fill="#111111"/><rect x="11" y="7" width="1" height="1" fill="#1e182c"/><rect x="0" y="8" width="12" height="1" fill="#1e182c"/></svg>',
+  star: '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="0" width="2" height="1" fill="#1e182c"/><rect x="4" y="1" width="1" height="1" fill="#1e182c"/><rect x="5" y="1" width="2" height="1" fill="#ffd23f"/><rect x="7" y="1" width="1" height="1" fill="#1e182c"/><rect x="4" y="2" width="1" height="1" fill="#1e182c"/><rect x="5" y="2" width="2" height="1" fill="#ffd23f"/><rect x="7" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="5" height="1" fill="#1e182c"/><rect x="5" y="3" width="2" height="1" fill="#ffd23f"/><rect x="7" y="3" width="5" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="10" height="1" fill="#ffd23f"/><rect x="11" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="8" height="1" fill="#ffd23f"/><rect x="10" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="1" height="1" fill="#1e182c"/><rect x="3" y="6" width="6" height="1" fill="#ffd23f"/><rect x="9" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="7" width="6" height="1" fill="#ffd23f"/><rect x="9" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="3" height="1" fill="#ffd23f"/><rect x="5" y="8" width="2" height="1" fill="#1e182c"/><rect x="7" y="8" width="3" height="1" fill="#ffd23f"/><rect x="10" y="8" width="1" height="1" fill="#1e182c"/><rect x="1" y="9" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="1" height="1" fill="#ffd23f"/><rect x="3" y="9" width="1" height="1" fill="#e6a817"/><rect x="4" y="9" width="1" height="1" fill="#1e182c"/><rect x="7" y="9" width="1" height="1" fill="#1e182c"/><rect x="8" y="9" width="1" height="1" fill="#e6a817"/><rect x="9" y="9" width="1" height="1" fill="#ffd23f"/><rect x="10" y="9" width="1" height="1" fill="#1e182c"/><rect x="1" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="10" width="1" height="1" fill="#e6a817"/><rect x="3" y="10" width="1" height="1" fill="#1e182c"/><rect x="8" y="10" width="1" height="1" fill="#1e182c"/><rect x="9" y="10" width="1" height="1" fill="#e6a817"/><rect x="10" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="11" width="1" height="1" fill="#1e182c"/><rect x="9" y="11" width="1" height="1" fill="#1e182c"/></svg>',
 });
 // the smoke poof: unclaimed items vanish with it; so do leaving ravers
 const POOF_FRAMES = ['<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="1" width="2" height="1" fill="#b8bcd0"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="4" y="2" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="3" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="4" width="2" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="1" fill="#b8bcd0"/><rect x="7" y="0" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="2" y="1" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="7" y="1" width="1" height="1" fill="#8890a8"/><rect x="8" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="0" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="2" width="1" height="1" fill="#8890a8"/><rect x="2" y="2" width="3" height="1" fill="#e8eaf2"/><rect x="5" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="2" width="1" height="1" fill="#8890a8"/><rect x="7" y="2" width="1" height="1" fill="#e8eaf2"/><rect x="8" y="2" width="1" height="1" fill="#8890a8"/><rect x="1" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="3" width="1" height="1" fill="#8890a8"/><rect x="5" y="3" width="3" height="1" fill="#e8eaf2"/><rect x="8" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="4" width="2" height="1" fill="#8890a8"/><rect x="4" y="4" width="1" height="1" fill="#b8bcd0"/><rect x="5" y="4" width="2" height="1" fill="#e8eaf2"/><rect x="7" y="4" width="1" height="1" fill="#8890a8"/><rect x="4" y="5" width="3" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="1" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="9" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="0" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="2" y="1" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="7" y="2" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="9" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="0" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="3" y="3" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="2" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="7" y="4" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="10" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/></svg>'];
@@ -221,13 +239,14 @@ const noteCvs = NOTE_MAPS.map((rows) => {
   return c;
 });
 // which effects paint a trail behind the walker (spawned at walk cadence)
-const TRAIL_FX = new Set(['flames', 'daiquiri', 'prism', 'fog', 'notes', 'glitter', 'slide', 'popper', 'lagoon', 'espresso']);
+const TRAIL_FX = new Set(['flames', 'daiquiri', 'prism', 'fog', 'notes', 'glitter', 'slide', 'popper', 'lagoon', 'espresso', 'sparkler']);
 // which effects dress the banana itself (CSS class on the wrap)
 const FX_CLASS = {
   balloon: 'rv-balloonfx', flash: 'rv-flashfx', milkshake: 'rv-thicc',
   // bubblegum fizz spins the whole banana + inflates it bubbly (Trym: the
   // bubbles alone were underwhelming — "rotate 360 for the fun of it")
   fizz: 'rv-fizzfx',
+  boots: 'rv-bootsfx', wobble: 'rv-wobblefx',
   lagoon: 'rv-lagoonglow', water: 'rv-waterglow', espresso: 'rv-jitter', colada: 'rv-sway',
 };
 
@@ -866,17 +885,36 @@ function init() {
     }
     return null; // cornered — tickRun retries in a moment
   }
+  let magnetT = 0;
   function tickRun() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     const now = Date.now();
+    // THE JELLY MAGNET: while it runs, jelly can't wait — no breather between
+    // runs, and every loose pellet slides across the floor INTO you
+    const magnetOn = fxActive(me, now) && me.fx.id === 'magnet';
     if (!run) {
-      if (now >= nextRunAt) {
+      if (now >= nextRunAt || magnetOn) {
         run = newRun();
         if (!run) nextRunAt = now + 2500;
       }
       return;
     }
+    if (magnetOn) {
+      const dt = Math.min(now - (magnetT || now), 100);
+      const pull = (160 * dt) / 1000; // px per frame toward the magnet
+      for (const p of run.pts) {
+        if (p.got) continue;
+        const dxp = ((me.x - p.x) / 100) * floorW;
+        const dyp = ((me.y - p.y) / 100) * floorH;
+        const d = Math.hypot(dxp, dyp) || 1;
+        p.x += ((dxp / d) * pull * 100) / floorW;
+        p.y += ((dyp / d) * pull * 100) / floorH;
+        p.elm.style.left = p.x + '%';
+        p.elm.style.top = p.y + '%';
+      }
+    }
+    magnetT = now;
     if (now - run.born > 120000) { // stale — redraw somewhere fresh
       el('rvRun').innerHTML = '';
       run = newRun();
@@ -1232,6 +1270,12 @@ function init() {
         bubbles: 'big bubbles, no troubles.',
         espresso: 'the closing-shift special — HOLD ON!',
         lagoon: 'cool as the deep end.',
+        boots: 'one small step for banana — BOING!',
+        wobble: 'your legs went full jelly. dance anyway!',
+        sparkler: 'write your name on the night!',
+        magnet: 'the floor’s jelly wants YOU!',
+        vhs: 'tracking error — you’re glitching!',
+        conga: 'you brought backup — it’s a conga line!',
         colada: 'the floor is a hammock now, sway with it.',
         margarita: 'spicy rim, fire breath — olé!',
         champagne: 'somebody’s celebrating — it’s you!',
@@ -2392,6 +2436,27 @@ function init() {
     }));
     return c;
   });
+  // VHS BANANA: bad-tracking glitch — horizontal slices of the fresh composite
+  // shear sideways in bursts, with a white tracking band rolling through.
+  // Mutates the raver's own canvas AFTER drawComposite; the next dance frame
+  // redraws clean, so glitch phrases alternate with clean frames like a worn tape.
+  function vhsGlitch(cv, now) {
+    const g = Math.floor(now / 130) % 7;
+    if (g > 4) return; // clean frames between bursts — the tape "recovers"
+    const x = cv.getContext('2d');
+    for (let s = 0; s < 4; s++) {
+      const sy = ((g * 53 + s * 41) % 115) + 22;
+      const sh = 6 + ((g * 7 + s * 5) % 10);
+      const dx = ((g + s) % 2 ? 1 : -1) * (6 + ((g * 31 + s * 17) % 10));
+      x.drawImage(cv, 0, sy, 160, sh, dx, sy, 160, sh);
+    }
+    if (g === 2 || g === 4) {
+      x.globalAlpha = 0.22;
+      x.fillStyle = '#ffffff';
+      x.fillRect(0, (now / 9) % 160, 160, 6);
+      x.globalAlpha = 1;
+    }
+  }
   function goldenRain() {
     if (reduced || !floorW) return;
     for (let i = 0; i < 22; i++) {
@@ -2500,6 +2565,34 @@ function init() {
           trailCtx.restore();
           trailCtx.globalAlpha = 1;
         }
+        // THE ENTOURAGE: a conga line of YOU — ghost copies replay your own
+        // path half a second and a second behind (position history recorded
+        // only while the fx runs), stamped per beat and left to the fade.
+        // Standing still, the entourage catches up and merges into you.
+        if (r.fx.id === 'conga') {
+          const cyc = py - 0.03 * floorH;
+          (r.hist || (r.hist = [])).push({ x: px, y: cyc, f: r.facing || 1, t: now });
+          while (r.hist.length && now - r.hist[0].t > 1400) r.hist.shift();
+          {
+            // stamped EVERY frame at the delayed spot: the moving position
+            // paints a bright leading copy, the fade turns the rest into a
+            // comet tail (per-beat stamps read as smears — first draft)
+            const sz = r.size || 90;
+            trailCtx.imageSmoothingEnabled = false;
+            for (const [delay, alpha] of [[500, 0.5], [1000, 0.34]]) {
+              let h = null;
+              for (const e of r.hist) { if (now - e.t >= delay) h = e; else break; }
+              if (!h) continue;
+              trailCtx.globalAlpha = alpha;
+              trailCtx.save();
+              trailCtx.translate(h.x, h.y);
+              if (h.f === -1) trailCtx.scale(-1, 1); // the entourage faces YOUR way
+              trailCtx.drawImage(r.cv, -sz / 2, -sz / 2, sz, sz);
+              trailCtx.restore();
+            }
+            trailCtx.globalAlpha = 1;
+          }
+        } else if (r.hist) r.hist = null; // fx over — drop the buffer
         if (r.fx.id === 'zap' && now - (r.zapSpawnAt || 0) > 130) {
           // static crackles off you whether you walk or dance
           r.zapSpawnAt = now;
@@ -2562,10 +2655,11 @@ function init() {
       // fx particle trails: flames are SPRITES that flicker, sway and rise as they
       // die (~2s); dashes streak ~1.4s. Both fade with age.
       if (fxParts.length) {
-        fxParts = fxParts.filter((p) => now - p.t0 < (p.kind === 'flames' ? 1400 : p.kind === 'zap' ? 350 : 1400));
+        const life = (p) => (p.kind === 'zap' ? 350 : p.kind === 'sparkler' ? 2600 : 1400); // sparkler segments burn long — that's the light-writing
+        fxParts = fxParts.filter((p) => now - p.t0 < life(p));
         trailCtx.imageSmoothingEnabled = false;
         for (const p of fxParts) {
-          const age = (now - p.t0) / (p.kind === 'flames' ? 1400 : p.kind === 'zap' ? 350 : 1400);
+          const age = (now - p.t0) / life(p);
           if (p.kind === 'zap') {
             // a tiny lightning kink: two offset cyan ticks + a white joint
             trailCtx.globalAlpha = 1 - age;
@@ -2616,6 +2710,15 @@ function init() {
               trailCtx.fillStyle = '#ffffff';
               trailCtx.fillRect(Math.round(p.x - 1), Math.round(p.y - 13 - age * 8), 2, 2);
             }
+            trailCtx.globalAlpha = 1;
+          } else if (p.kind === 'sparkler') {
+            // light-writing: a white-hot core that twinkles gold as it burns
+            trailCtx.globalAlpha = 1 - age;
+            trailCtx.fillStyle = '#ffffff';
+            trailCtx.fillRect(Math.round(p.x - 1), Math.round(p.y - 8), 3, 3);
+            trailCtx.fillStyle = '#ffe135';
+            trailCtx.fillRect(Math.round(p.x - 2 + Math.sin((p.seed || 0) + now / 150) * 2), Math.round(p.y - 12), 2, 2);
+            trailCtx.fillRect(Math.round(p.x + 1 + Math.sin((p.seed || 0) * 2 + now / 120) * 2), Math.round(p.y - 4), 2, 2);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'fog') {
             // smoke-machine wisps: wide soft greys, hanging low, drifting apart
@@ -2732,6 +2835,7 @@ function init() {
           effect: dropActive ? 'confetti' : o.effect,
           hue: dropActive ? hue : (o.effect === 'disco' ? (360 * idx / NFRAMES) : 0),
         });
+        if (fxActive(r, now) && r.fx.id === 'vhs') vhsGlitch(r.cv, now); // worn-tape shear on the fresh frame
       }
       if (djCv) {
         drawComposite(djCv.getContext('2d'), 200, idx, {

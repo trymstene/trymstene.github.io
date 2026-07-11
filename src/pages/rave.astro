@@ -438,6 +438,23 @@ const GUIDE = [
       100% { transform: rotate(360deg) scale(1); }
     }
     @media (prefers-reduced-motion: reduce) { .rv-raver.rv-fizzfx canvas { animation: none; } }
+    /* MOON BOOTS: big lunar hops on the wrap — crouch, float up, squash the
+       landing (the keyframes carry the centring translate, balloon-style) */
+    .rv-raver.rv-bootsfx { animation: rvMoonHop 0.85s ease-in-out infinite; }
+    @keyframes rvMoonHop {
+      0%, 100% { transform: translate(-50%, -50%) scale(1, 1); }
+      12% { transform: translate(-50%, -50%) scale(1.1, 0.85); }
+      45% { transform: translate(-50%, calc(-50% - 42px)) scale(0.94, 1.1); }
+      78% { transform: translate(-50%, -50%) scale(1, 1); }
+      88% { transform: translate(-50%, -50%) scale(1.14, 0.82); }
+    }
+    /* JELLY LEGS: the whole banana wobbles like jello, anchored at the feet */
+    .rv-raver.rv-wobblefx canvas { transform-origin: 50% 92%; animation: rvJellyWobble 0.5s ease-in-out infinite; }
+    @keyframes rvJellyWobble {
+      0%, 100% { transform: skewX(-7deg) scaleY(0.97); }
+      50% { transform: skewX(7deg) scaleY(1.03); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-bootsfx, .rv-raver.rv-wobblefx canvas { animation: none; } }
     /* ---- THE MENU's costume effects (one class per fx, 10s moments) ---- */
     /* paparazzi: the flash keeps going off */
     .rv-raver.rv-flashfx canvas { animation: rvFlashPop 1.4s steps(1) infinite; }
