@@ -191,9 +191,11 @@ async function assetsReady() {
 const CTX_FILTER_OK = (() => {
   try {
     if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('huetest')) return false;
-    const c = document.createElement('canvas').getContext('2d');
-    c.filter = 'hue-rotate(90deg)';
-    return c.filter === 'hue-rotate(90deg)';
+    // ⚠️ do NOT detect by set-and-read-back: Safari has no ctx.filter IDL
+    // attribute, so the assignment lands as a plain JS expando that echoes the
+    // value straight back — the read-back check passed on Safari and sent it
+    // down the native (dead) path. Prototype membership is the honest test.
+    return typeof CanvasRenderingContext2D !== 'undefined' && 'filter' in CanvasRenderingContext2D.prototype;
   } catch (e) { return false; }
 })();
 // the fallback's scratch canvases (module-cached, resized on demand)
