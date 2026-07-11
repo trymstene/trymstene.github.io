@@ -425,6 +425,19 @@ const GUIDE = [
       background: rgba(255, 130, 180, 0.9); transform: translateX(-50%) rotate(45deg);
       pointer-events: none;
     }
+    /* BUBBLEGUM FIZZ: the whole banana goes on a bubbly spin cycle — a full
+       360 while it dances, inflating and deflating like gum mid-chew (Trym:
+       the bubbles alone were underwhelming). Transform only, on the CANVAS
+       so the wrap keeps its floor position. */
+    .rv-raver.rv-fizzfx canvas { animation: rvFizzSpin 1.9s linear infinite; }
+    @keyframes rvFizzSpin {
+      0%   { transform: rotate(0deg) scale(1); }
+      25%  { transform: rotate(90deg) scale(1.14); }
+      50%  { transform: rotate(180deg) scale(0.92); }
+      75%  { transform: rotate(270deg) scale(1.16); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-fizzfx canvas { animation: none; } }
     /* ---- THE MENU's costume effects (one class per fx, 10s moments) ---- */
     /* paparazzi: the flash keeps going off */
     .rv-raver.rv-flashfx canvas { animation: rvFlashPop 1.4s steps(1) infinite; }

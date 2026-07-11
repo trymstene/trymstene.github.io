@@ -124,10 +124,13 @@ function specialWindow(now) {
   const ph = (((now - SPECIAL_OFFSET) % SPECIAL_PERIOD) + SPECIAL_PERIOD) % SPECIAL_PERIOD;
   return ph < SPECIAL_LEN ? Math.floor((now - SPECIAL_OFFSET) / SPECIAL_PERIOD) : -1;
 }
-// effects are MOMENTS, not outfits — 10s flat with the item menu cycling
+// effects are MOMENTS, not outfits — 10s baseline with the item menu cycling
 // (Trym's call; was 150s/60s). Clients also cap at first sight (capFx).
+// Trym's juice pass: the crowd favourites earn longer runs (keep in sync
+// with banana-rave.js FX_DUR — the client cap clamps to the same table).
 const FX_MS = 10_000;
-const FX_ZAP_MS = 10_000;
+const FX_DUR = { cone: 30_000, balloon: 20_000, zap: 20_000 };
+const fxLen = (id) => FX_DUR[id] || FX_MS;
 
 export default {
   async fetch(request, env) {
@@ -244,6 +247,14 @@ export class RaveRoom {
         id: crypto.randomUUID().slice(0, 8),
         outfit: sanitizeOutfit(msg.outfit),
         joined: Date.now(),
+        // floor time carried across reconnects: iOS re-sockets on every
+        // background/foreground, so gating the stage on `joined` alone made
+        // the button LOOK ready (client clock) while the server said "early"
+        // (fresh socket clock). The client reports its floor time; clamp it
+        // and keep it AWAY from `joined` — the ghost reaper trusts `joined`
+        // as the liveness floor for fresh sockets, so backdating it would get
+        // newcomers reaped before their first ping.
+        since: Date.now() - Math.min(Math.max(Number(msg.sess) || 0, 0), 86_400_000),
         lastEmote: 0,
       };
       ws.serializeAttachment(p);
@@ -329,7 +340,7 @@ export class RaveRoom {
       await this.state.storage.put('itemWin', win);
       const kind = itemType(win);
       if (ITEM_FX[kind]) {
-        me.fx = { id: ITEM_FX[kind], until: Date.now() + (ITEM_FX[kind] === 'zap' || ITEM_FX[kind] === 'balloon' ? FX_ZAP_MS : FX_MS) };
+        me.fx = { id: ITEM_FX[kind], until: Date.now() + fxLen(ITEM_FX[kind]) };
         ws.serializeAttachment(me);
       }
       this.broadcast({ t: 'item', id: me.id, win, kind, fx: ITEM_FX[kind] ? me.fx : undefined });
@@ -347,7 +358,7 @@ export class RaveRoom {
       const stored = await this.state.storage.get('sauceWin');
       if (stored === win) return;
       await this.state.storage.put('sauceWin', win);
-      me.fx = { id: 'flames', until: Date.now() + FX_MS };
+      me.fx = { id: 'flames', until: Date.now() + fxLen('flames') };
       ws.serializeAttachment(me);
       this.broadcast({ t: 'fx', id: me.id, fx: me.fx, src: 'sauce' });
       return;
@@ -377,7 +388,8 @@ export class RaveRoom {
       const stored = await this.state.storage.get('cocktailWin');
       if (stored === win) return;
       await this.state.storage.put('cocktailWin', win);
-      me.fx = { id: COCKTAILS[((win % COCKTAILS.length) + COCKTAILS.length) % COCKTAILS.length], until: Date.now() + FX_MS };
+      const drink = COCKTAILS[((win % COCKTAILS.length) + COCKTAILS.length) % COCKTAILS.length];
+      me.fx = { id: drink, until: Date.now() + fxLen(drink) };
       ws.serializeAttachment(me);
       this.broadcast({ t: 'fx', id: me.id, fx: me.fx, src: 'cocktail' });
       return;
@@ -393,7 +405,7 @@ export class RaveRoom {
 
     if (msg.t === 'stage' && me) {
       if (msg.on) {
-        if (Date.now() - me.joined < STAGE_MIN_MS) {
+        if (Date.now() - (me.since || me.joined) < STAGE_MIN_MS) { // since = floor time across reconnects
           ws.send('{"t":"stageNo","reason":"early"}');
           return;
         }

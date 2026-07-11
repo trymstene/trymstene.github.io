@@ -47,12 +47,14 @@ const CHAIN_MS = 90000;                                                  // grab
 const SPECIAL_PERIOD = 300, SPECIAL_LEN = 35, SPECIAL_OFFSET = 270;     // Barty's specials, right between happy hours — keep in sync with worker
 const COCKTAILS = ['daiquiri', 'fizz', 'espresso', 'lagoon', 'colada', 'margarita', 'champagne', 'milkshake', 'jellyshot', 'water']; // rotation — keep in sync with worker
 // with a whole menu of items and drinks cycling, effects are MOMENTS, not
-// outfits — 10s flat (Trym's call; was 150s/60s). Keep in sync with worker.
+// outfits — 10s baseline (Trym's call; was 150s/60s). The crowd favourites
+// earn longer runs (Trym's juice pass: "it's fun!"). Keep in sync with worker.
 const FX_MS = 10000;
-const FX_ZAP_MS = 10000;
-// every fx window is capped at FIRST SIGHT, so the short fuse holds even
-// against a not-yet-redeployed worker still stamping the old long windows
-const capFx = (fx) => (fx ? { ...fx, until: Math.min(fx.until, Date.now() + FX_MS) } : fx);
+const FX_DUR = { cone: 30000, balloon: 20000, zap: 20000 };
+const fxLen = (id) => FX_DUR[id] || FX_MS;
+// every fx window is capped at FIRST SIGHT, so each id's fuse holds even
+// against a not-yet-redeployed worker still stamping different windows
+const capFx = (fx) => (fx ? { ...fx, until: Math.min(fx.until, Date.now() + fxLen(fx.id)) } : fx);
 const FX_NAMES = {
   flames: 'Flaming Potassium', daiquiri: 'Banana Daiquiri', fizz: 'Bubblegum Fizz', zap: 'Electric Charge', balloon: 'Balloon Ride',
   prism: 'Mirror Mirror', cone: 'The Cone of Honour', popper: 'Party Popper', fog: 'Fog on the Floor', notes: 'Kazoo Solo',
@@ -223,6 +225,9 @@ const TRAIL_FX = new Set(['flames', 'daiquiri', 'prism', 'fog', 'notes', 'glitte
 // which effects dress the banana itself (CSS class on the wrap)
 const FX_CLASS = {
   balloon: 'rv-balloonfx', flash: 'rv-flashfx', milkshake: 'rv-thicc',
+  // bubblegum fizz spins the whole banana + inflates it bubbly (Trym: the
+  // bubbles alone were underwhelming — "rotate 360 for the fun of it")
+  fizz: 'rv-fizzfx',
   lagoon: 'rv-lagoonglow', water: 'rv-waterglow', espresso: 'rv-jitter', colada: 'rv-sway',
 };
 
@@ -442,7 +447,7 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest')) return; // buttons + the quest chip are not walk orders
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer')) return; // buttons, the quest chip + the JELLY meter are not walk orders (a charged-meter tap walked you INTO the corner — Trym, iOS + Chrome)
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     sitting = false; pendingSit = false; // clicking anywhere else stands you up
@@ -1184,6 +1189,7 @@ function init() {
     const gs = goldSpotFor(goldWinClaimed);
     pickupPop(gs.x, gs.y);
     confettiBurst();
+    goldenRain(); // the golden banana brings its own weather
     if (id === myId) {
       bumpChain();
       const toast = document.createElement('div');
@@ -1310,10 +1316,12 @@ function init() {
     const carried = [...ravers.values()].some((r) => r.vinyl);
     // the record is RARE now — every third window (~21 min): its bonus drop
     // stacked with jelly time and the clock into "drops all the time" (Trym).
-    // While a night quest asks for it, every window shows. Client-side skip
-    // only, so every shown window is still a real worker window — no deploy.
+    // While a night quest asks for it, the AMBIENT record hides — the quest
+    // spawns its own personal vinyl, and two records + a stored jelly time
+    // was "3 drops in a row, a bit much" (Trym). Client-side skip only, so
+    // every shown window is still a real worker window — no deploy.
     const questVinyl = night && night.def && night.def.steps[night.step] && night.def.steps[night.step].check === 'qvinyl';
-    if (vPh < VINYL_WAIT && (questVinyl || vWin % 3 === 0) && vinylWinClaimed !== vWin && !carried) {
+    if (vPh < VINYL_WAIT && !questVinyl && vWin % 3 === 0 && vinylWinClaimed !== vWin && !carried) {
       const s = vinylSpotFor(vWin);
       floorItems++;
       vEl.style.display = '';
@@ -1434,7 +1442,7 @@ function init() {
       lastItemTry = now;
       const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon', ...MENU_FX }[itemLive.kind];
       if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
-      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + FX_MS } : undefined);
+      else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + fxLen(soloFx) } : undefined);
     }
     // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
     // rectangle — the solid counter's edge scales with the floor (x≈50% on
@@ -1452,7 +1460,7 @@ function init() {
       else { // solo mode
         cocktailWinClaimed = barSpecialLive.win;
         el('rvSpecial').hidden = true;
-        applyFx(myId, { id: barSpecialLive.kind, until: Date.now() + FX_MS }, { x: 10, y: 76 });
+        applyFx(myId, { id: barSpecialLive.kind, until: Date.now() + fxLen(barSpecialLive.kind) }, { x: 10, y: 76 });
       }
     }
   }
@@ -1538,7 +1546,9 @@ function init() {
       lastPong = Date.now();
       el('rvStatus').textContent = 'live';
       el('rvStatus').className = 'rv-live';
-      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit() }));
+      // sess = floor time so far: iOS re-sockets on every background/foreground,
+      // and the server's stage gate must not restart with the socket
+      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit(), sess: Date.now() - sessionStart }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -2360,6 +2370,41 @@ function init() {
       });
     }
   }
+  // IT'S RAINING BANANAS — the golden banana's own weather (Trym: a repeat
+  // find got "only confetti"; now the sky owes you). Rides the confetti
+  // system: same fall/flutter/erase, but each piece is a tiny gold crescent
+  // (Pillow-verified on the floor colour) that flips as it tumbles.
+  const GOLDRAIN_MAP = [
+    '..B.....W.',
+    '..Y.....Y.',
+    '..YY...YY.',
+    '...YY.YYY.',
+    '...OYYYYO.',
+    '....OYYO..',
+  ];
+  const GOLDRAIN_COLS = { Y: '#ffd23f', B: '#7a4a21', W: '#fff6c8', O: '#e6a817' };
+  const goldCvs = [false, true].map((mirror) => {
+    const c = document.createElement('canvas');
+    c.width = 10; c.height = 6;
+    const x = c.getContext('2d');
+    GOLDRAIN_MAP.forEach((row, ry) => [...row].forEach((ch, rx) => {
+      if (GOLDRAIN_COLS[ch]) { x.fillStyle = GOLDRAIN_COLS[ch]; x.fillRect(mirror ? 9 - rx : rx, ry, 1, 1); }
+    }));
+    return c;
+  });
+  function goldenRain() {
+    if (reduced || !floorW) return;
+    for (let i = 0; i < 22; i++) {
+      confetti.push({
+        x: Math.random() * floorW,
+        y: -14 - Math.random() * 260,
+        v: 46 + Math.random() * 52,
+        sw: Math.random() * 2 * Math.PI,
+        spr: true,
+        s: 14 + (i % 3) * 4, // drawn width; height rides the 10:6 sprite ratio
+      });
+    }
+  }
   const dropFlashEl = el('rvDropFlash');
   const dropFlashSpan = dropFlashEl.querySelector('span');
   let lastDropLabel = '';
@@ -2432,6 +2477,29 @@ function init() {
           r.fxClass = fxClass;
         }
         if (!hasFx) continue;
+        // MIRROR MIRROR: ghost reflections of YOU flicker in and out of the
+        // original — one stamp per beat, left to the canvas fade to dissolve
+        // ("mirrors floating in and out of your banana" — Trym; the rainbow
+        // glints still trail behind the walk). Every other ghost is flipped:
+        // a mirror shows the mirrored you.
+        if (r.fx.id === 'prism' && now - (r.prismAt || 0) > 240) {
+          r.prismAt = now;
+          const sz = r.size || 90;
+          const beat = Math.floor(now / 240);
+          // offsets CLEAR of the sprite — ghosts stamped under the banana's
+          // own DOM canvas just vanish behind it (the R1 flame-trail lesson)
+          const offs = [[-sz * 0.72, -sz * 0.14], [sz * 0.70, -sz * 0.20], [-sz * 0.52, -sz * 0.48], [sz * 0.55, sz * 0.10]];
+          const [ox, oy] = offs[beat % offs.length];
+          const cy = py - 0.03 * floorH; // py is at the feet; the sprite centres 3% higher
+          trailCtx.imageSmoothingEnabled = false; // crisp pixel ghosts, not a smear
+          trailCtx.globalAlpha = 0.55;
+          trailCtx.save();
+          trailCtx.translate(px + ox, cy + oy);
+          if (beat % 2) trailCtx.scale(-1, 1);
+          trailCtx.drawImage(r.cv, -sz / 2, -sz / 2, sz, sz);
+          trailCtx.restore();
+          trailCtx.globalAlpha = 1;
+        }
         if (r.fx.id === 'zap' && now - (r.zapSpawnAt || 0) > 130) {
           // static crackles off you whether you walk or dance
           r.zapSpawnAt = now;
@@ -2608,8 +2676,14 @@ function init() {
           const sway = Math.sin(p.sw + p.y / 14) * 26; // wide lazy flutter
           p.px = Math.floor((p.x + sway) / 2) * 2;
           p.py = Math.floor(p.y / 2) * 2;
-          trailCtx.fillStyle = p.c;
-          trailCtx.fillRect(p.px, p.py, p.s, p.s);
+          if (p.spr) { // golden rain: a tumbling gold crescent, not a square
+            trailCtx.imageSmoothingEnabled = false;
+            // p.y starts NEGATIVE (spawn above the floor) — % can yield -1
+            trailCtx.drawImage(goldCvs[Math.abs(Math.floor(p.sw * 7 + p.y / 26)) % 2], p.px, p.py, p.s, Math.round(p.s * 0.6));
+          } else {
+            trailCtx.fillStyle = p.c;
+            trailCtx.fillRect(p.px, p.py, p.s, p.s);
+          }
         }
       }
     }
@@ -2901,11 +2975,14 @@ function init() {
   // ?fxtest=<id> — preview any timed effect on yourself (local visual only,
   // never broadcast; the stagetest/nighttest pattern for fx work)
   const fxTest = new URLSearchParams(location.search).get('fxtest');
-  if (fxTest) {
-    // capFx trims every window to FX_MS, so QA REAPPLIES on a loop — the
-    // effect stays on for as long as the param is in the url
+  if (fxTest === 'goldrain') {
+    // the golden banana's weather, on demand (its real window is ~30 min apart)
+    setInterval(() => goldenRain(), 4000);
+  } else if (fxTest) {
+    // capFx trims every window to its fx length, so QA REAPPLIES on a loop —
+    // the effect stays on for as long as the param is in the url
     setInterval(() => {
-      if (myId && ravers.get(myId)) applyFx(myId, { id: fxTest, until: Date.now() + FX_MS });
+      if (myId && ravers.get(myId)) applyFx(myId, { id: fxTest, until: Date.now() + fxLen(fxTest) });
     }, 800);
   }
   setInterval(() => { if (ws && ws.readyState === 1) passStat('raveMin'); }, 60000);
