@@ -117,7 +117,9 @@ const ITEM_FX = { // all rendering is client-side; the server only stamps fx ids
   shard: 'prism', cone: 'cone', popper: 'popper', remote: 'fog', kazoo: 'notes',
   glitter: 'glitter', phone: 'flash', cube: 'slide', wand: 'bubbles',
   boots: 'boots', gel: 'wobble', sparkler: 'sparkler', magnet: 'magnet', vhs: 'vhs', star: 'conga',
-  // candy/pizza/pizzabox = pure snacks (no fx; pizzabox pays jelly client-side)
+  // the snacks wear their dinner now (Trym round 2): held pizza props + the
+  // sugar shakes; pizzabox still pays its jelly client-side on top
+  pizza: 'slice', pizzabox: 'box', candy: 'sugar',
 };
 // BARTY'S SPECIALS — between happy hours a rotating cocktail lands on the counter;
 // first banana at the bar drinks it and wears its effect for a while.
@@ -132,7 +134,7 @@ function specialWindow(now) {
 // Trym's juice pass: the crowd favourites earn longer runs (keep in sync
 // with banana-rave.js FX_DUR — the client cap clamps to the same table).
 const FX_MS = 10_000;
-const FX_DUR = { cone: 30_000, balloon: 20_000, zap: 20_000, conga: 15_000, boots: 15_000, magnet: 12_000, sparkler: 12_000 };
+const FX_DUR = { cone: 30_000, balloon: 20_000, zap: 20_000, conga: 15_000, boots: 15_000, magnet: 12_000, sparkler: 12_000, fog: 20_000 };
 const fxLen = (id) => FX_DUR[id] || FX_MS;
 
 export default {
@@ -427,6 +429,7 @@ export class RaveRoom {
 
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       me.outfit = sanitizeOutfit(msg.outfit);
+      if (msg.sober) { me.beer = false; me.fx = undefined; } // the water: a clean slate is a CLEAN slate
       if (me.beer) me.outfit.extras.beer = true; // the beer survives a wardrobe change
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit });

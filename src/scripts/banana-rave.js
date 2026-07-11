@@ -50,7 +50,7 @@ const COCKTAILS = ['daiquiri', 'fizz', 'espresso', 'lagoon', 'colada', 'margarit
 // outfits — 10s baseline (Trym's call; was 150s/60s). The crowd favourites
 // earn longer runs (Trym's juice pass: "it's fun!"). Keep in sync with worker.
 const FX_MS = 10000;
-const FX_DUR = { cone: 30000, balloon: 20000, zap: 20000, conga: 15000, boots: 15000, magnet: 12000, sparkler: 12000 };
+const FX_DUR = { cone: 30000, balloon: 20000, zap: 20000, conga: 15000, boots: 15000, magnet: 12000, sparkler: 12000, fog: 20000 };
 const fxLen = (id) => FX_DUR[id] || FX_MS;
 // every fx window is capped at FIRST SIGHT, so each id's fuse holds even
 // against a not-yet-redeployed worker still stamping different windows
@@ -61,6 +61,7 @@ const FX_NAMES = {
   glitter: 'Glitter Bombed', flash: 'Paparazzi', slide: 'Ice Legs', bubbles: 'Bubble Wand',
   boots: 'Moon Boots', wobble: 'Jelly Legs', sparkler: 'The Sparkler',
   magnet: 'The Jelly Magnet', vhs: 'VHS Banana', conga: 'The Entourage',
+  slice: 'Pizza in Hand', box: 'The Whole Box', sugar: 'Sugar Rush',
   espresso: 'Espresso Martini', lagoon: 'Blue Lagoon', colada: 'Piña Colada', margarita: 'Spicy Margarita',
   champagne: 'Champagne', milkshake: 'The Off-Menu Milkshake', jellyshot: 'Double Jelly Shot', water: 'Water (Barty Insists)',
 };
@@ -69,11 +70,14 @@ const FX_ICON = {
   prism: '🪩', cone: '🚧', popper: '🎉', fog: '🌫️', notes: '🎶', glitter: '✨', flash: '📸', slide: '🧊', bubbles: '🧼',
   espresso: '☕', lagoon: '🌊', colada: '🍍', margarita: '🌶️', champagne: '🥂', milkshake: '🥤', jellyshot: '🍮', water: '💧',
   boots: '👟', wobble: '🫠', sparkler: '🎇', magnet: '🧲', vhs: '📼', conga: '👯',
+  slice: '🍕', box: '🍕', sugar: '🍬',
 };
 // what each conveyor item grants (client mirror of the worker's ITEM_FX)
 const MENU_FX = {
   shard: 'prism', cone: 'cone', popper: 'popper', remote: 'fog', kazoo: 'notes', glitter: 'glitter', phone: 'flash', cube: 'slide', wand: 'bubbles',
   boots: 'boots', gel: 'wobble', sparkler: 'sparkler', magnet: 'magnet', vhs: 'vhs', star: 'conga',
+  // the snacks got fx too (Trym's juice round 2): held pizza props + the sugar shakes
+  pizza: 'slice', pizzabox: 'box', candy: 'sugar',
 };
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
@@ -247,6 +251,7 @@ const FX_CLASS = {
   // bubbles alone were underwhelming — "rotate 360 for the fun of it")
   fizz: 'rv-fizzfx',
   boots: 'rv-bootsfx', wobble: 'rv-wobblefx',
+  sugar: 'rv-sugarfx', // the candy: shaking off ALL the sugar
   lagoon: 'rv-lagoonglow', water: 'rv-waterglow', espresso: 'rv-jitter', colada: 'rv-sway',
 };
 
@@ -523,8 +528,14 @@ function init() {
     const step = (WALK_SPEED * boost * dtMs) / 1000;
     let nx, ny;
     if (sliding) {
-      me.slideVx = (me.slideVx || 0) * 0.93 + (dx / norm) * step * 0.1;
-      me.slideVy = (me.slideVy || 0) * 0.93 + (dy / norm) * step * 0.1;
+      // v2 (Trym: "slide quickly and fast... long slides"): harder acceleration,
+      // slower decay — top speed ~2.4× walking, glide-out ~2s. Capped so a
+      // long hold can't rocket through the walls between frames.
+      me.slideVx = (me.slideVx || 0) * 0.95 + (dx / norm) * step * 0.16;
+      me.slideVy = (me.slideVy || 0) * 0.95 + (dy / norm) * step * 0.16;
+      const vMag = Math.hypot(me.slideVx, me.slideVy);
+      const vMax = step * 2.4;
+      if (vMag > vMax) { me.slideVx *= vMax / vMag; me.slideVy *= vMax / vMag; }
       nx = clamp(me.x + me.slideVx, 4, 96);
       ny = clamp(me.y + me.slideVy, topClamp, 92);
     } else {
@@ -1176,10 +1187,10 @@ function init() {
     const sp = itemSpotFor(win);
     pickupPop(sp.x, sp.y);
     if (id === myId) { bumpChain(); nightEvent('item'); }
+    if (id === myId && kind === 'pizzabox') addHype(15); // a whole pizza is a MEAL — paid even now that the box grants a held-prop fx
     if (fx) {
       applyFx(id, fx);
     } else if (id === myId && SNACKS[kind]) {
-      if (kind === 'pizzabox') addHype(15); // a whole pizza is a MEAL (25 → 15 with the meter diet)
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = SNACKS[kind][0] + ' <b>' + SNACKS[kind][1] + '</b>' +
@@ -1276,22 +1287,39 @@ function init() {
         magnet: 'the floor’s jelly wants YOU!',
         vhs: 'tracking error — you’re glitching!',
         conga: 'you brought backup — it’s a conga line!',
+        slice: 'dinner AND a show — hold it high!',
+        box: 'the WHOLE box — +15 jelly, no regrets!',
+        sugar: 'SUGAR RUSH — shake it off, shake it ALL off!',
         colada: 'the floor is a hammock now, sway with it.',
         margarita: 'spicy rim, fire breath — olé!',
         champagne: 'somebody’s celebrating — it’s you!',
         milkshake: 'off the menu, onto the hips.',
         jellyshot: 'DOUBLE jelly on everything — quick!',
-        water: 'hydrated and unstoppable.',
+        water: 'squeaky clean — Barty’s orders. dress up again!',
       }[fx.id] || '') + chainTag();
       (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 4500);
       // one-shot garnishes on top of the timed window
       if (fx.id === 'popper') confettiBurst();
-      if (fx.id === 'water') { addHype(8); showBubble('somebody’s gotta drink it.', false, 3200, 'mutter'); }
+      // WATER, Barty insists: the sober-up — EVERYTHING comes off (clothes,
+      // effects, the lot). A clean default banana, and the closet's right
+      // there. (Trym: "forces you to go and dress up again")
+      if (fx.id === 'water') { soberUp(); addHype(8); showBubble('fresh as the day you were peeled.', false, 3200, 'mutter'); }
       track('rave_fx', { fx: fx.id });
     } else {
       showBubble(FX_ICON[fx.id] + ' ' + autoName(r.outfit) + ' got the ' + (FX_NAMES[fx.id] || 'good stuff') + '!', false, 5000);
     }
+  }
+
+  function soberUp() {
+    const me = myId && ravers.get(myId);
+    if (!me) return;
+    me.outfit = { hat: '', glasses: '', extras: {}, effect: 'none' };
+    me.fx = null; // "no effects" means NO effects — the water glow goes too
+    prevEffect = null; // the hype drop must not re-dress the stripped effect
+    refreshHud();
+    // sober: true also clears the server-held beer + fx — a clean slate is a clean slate
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit, sober: true }));
   }
 
   function pickVinyl(id) {
@@ -2541,7 +2569,31 @@ function init() {
           if (fxClass) r.wrap.classList.add(fxClass);
           r.fxClass = fxClass;
         }
+        // FLAMING POTASSIUM v2 (Trym: "it's chilisauce, it's hot") — the banana
+        // ITSELF flares up in flickers. Static class flips by JS, never a
+        // keyframed filter (the iOS bake rule); computed BEFORE the continue
+        // so the glow can't stick after the fx ends.
+        // Math.floor, NOT |0 — epoch/260 overflows int32 and goes negative,
+        // and a negative %3 never hits 2 (the goldrain lesson, same day)
+        const hot = hasFx && r.fx.id === 'flames' && (Math.floor(now / 260) % 3) !== 2;
+        if (r.hotOn !== hot) { r.hotOn = hot; r.wrap.classList.toggle('rv-flamehot', hot); }
         if (!hasFx) continue;
+        // ...and it occasionally burns off the peel itself: a flame ON the body
+        if (r.fx.id === 'flames' && now - (r.bodyFlameAt || 0) > 600) {
+          r.bodyFlameAt = now;
+          fxParts.push({ x: px + Math.sin(now / 280) * 12, y: py - (r.size || 90) * 0.35, t0: now, kind: 'flames', seed: now % 13 });
+        }
+        // GLITTER BOMBED v2: the bomb goes off every beat-and-a-half — a radial
+        // burst of glitter AROUND the banana, not just a trail behind it
+        if (r.fx.id === 'glitter' && now - (r.glitterAt || 0) > 1600) {
+          r.glitterAt = now;
+          for (let gb = 0; gb < 14; gb++) fxParts.push({ x: px, y: py - (r.size || 90) * 0.45, t0: now, kind: 'gburst', seed: gb });
+        }
+        // PARTY POPPER v2: it keeps POPPING — a streamer burst every two seconds
+        if (r.fx.id === 'popper' && now - (r.popAt || 0) > 2000) {
+          r.popAt = now;
+          for (let pb = 0; pb < 10; pb++) fxParts.push({ x: px, y: py - (r.size || 90) * 0.5, t0: now, kind: 'pburst', seed: pb });
+        }
         // MIRROR MIRROR: ghost reflections of YOU flicker in and out of the
         // original — one stamp per beat, left to the canvas fade to dissolve
         // ("mirrors floating in and out of your banana" — Trym; the rainbow
@@ -2655,7 +2707,7 @@ function init() {
       // fx particle trails: flames are SPRITES that flicker, sway and rise as they
       // die (~2s); dashes streak ~1.4s. Both fade with age.
       if (fxParts.length) {
-        const life = (p) => (p.kind === 'zap' ? 350 : p.kind === 'sparkler' ? 2600 : 1400); // sparkler segments burn long — that's the light-writing
+        const life = (p) => (p.kind === 'zap' ? 350 : p.kind === 'sparkler' ? 2600 : p.kind === 'gburst' ? 900 : p.kind === 'pburst' ? 1100 : 1400); // sparkler segments burn long — that's the light-writing; bursts are quick
         fxParts = fxParts.filter((p) => now - p.t0 < life(p));
         trailCtx.imageSmoothingEnabled = false;
         for (const p of fxParts) {
@@ -2671,7 +2723,7 @@ function init() {
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'flames') {
             const frame = flameCvs[(Math.floor(now / 90) + (p.seed || 0)) % 2]; // per-particle flicker offset
-            const w = 21 * (1 - age * 0.45);
+            const w = 30 * (1 - age * 0.45); // 21 → 30: "bigger flames" (Trym round 2)
             const h = w * 8 / 7;
             const sway = Math.sin((p.seed || 0) * 2.1 + now / 160) * 2.5;
             trailCtx.globalAlpha = 0.95 * (1 - age);
@@ -2712,20 +2764,30 @@ function init() {
             }
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'sparkler') {
-            // light-writing: a white-hot core that twinkles gold as it burns
+            // light-writing v2, the golden firecracker (Trym: "even more
+            // sparkly"): a white-hot core with sparks SPRAYING off it —
+            // 6 radiating flecks per segment, gold/white, jittering fast
             trailCtx.globalAlpha = 1 - age;
             trailCtx.fillStyle = '#ffffff';
-            trailCtx.fillRect(Math.round(p.x - 1), Math.round(p.y - 8), 3, 3);
-            trailCtx.fillStyle = '#ffe135';
-            trailCtx.fillRect(Math.round(p.x - 2 + Math.sin((p.seed || 0) + now / 150) * 2), Math.round(p.y - 12), 2, 2);
-            trailCtx.fillRect(Math.round(p.x + 1 + Math.sin((p.seed || 0) * 2 + now / 120) * 2), Math.round(p.y - 4), 2, 2);
+            trailCtx.fillRect(Math.round(p.x - 2), Math.round(p.y - 9), 4, 4);
+            for (let sk = 0; sk < 6; sk++) {
+              const sa = (p.seed || 0) * 1.3 + sk * 1.05 + now / 90;
+              const sd = 4 + ((sk * 3 + (p.seed || 0)) % 8) + age * 8;
+              trailCtx.fillStyle = sk % 3 === 0 ? '#ffffff' : sk % 3 === 1 ? '#ffe135' : '#ff9128';
+              trailCtx.fillRect(Math.round(p.x + Math.cos(sa) * sd), Math.round(p.y - 7 + Math.sin(sa) * sd * 0.8), 2, 2);
+            }
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'fog') {
-            // smoke-machine wisps: wide soft greys, hanging low, drifting apart
-            trailCtx.globalAlpha = 0.16 * (1 - age);
+            // smoke-machine wisps v2: BIG puffy banks, layered — a fog you can
+            // lose your shoes in (Trym: "bigger and puffier"; runs 20s now)
+            trailCtx.globalAlpha = 0.26 * (1 - age);
             trailCtx.fillStyle = '#b8bcd0';
-            const fw = 14 + age * 18;
-            trailCtx.fillRect(Math.round(p.x - fw / 2), Math.round(p.y - 8 - age * 4), Math.round(fw), 8);
+            const fw = 24 + age * 34;
+            trailCtx.fillRect(Math.round(p.x - fw / 2), Math.round(p.y - 10 - age * 5), Math.round(fw), 12);
+            trailCtx.globalAlpha = 0.14 * (1 - age);
+            trailCtx.fillStyle = '#e8eaf2';
+            const fw2 = 14 + age * 20;
+            trailCtx.fillRect(Math.round(p.x - fw2 / 2 + Math.sin((p.seed || 0) + now / 400) * 5), Math.round(p.y - 16 - age * 8), Math.round(fw2), 7);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'notes') {
             const nf = noteCvs[(p.seed || 0) % 2];
@@ -2734,24 +2796,53 @@ function init() {
             trailCtx.drawImage(nf, p.x + Math.sin((p.seed || 0) + now / 240) * 4, p.y - 14 - age * 26, nw, nw);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'glitter') {
+            // glitter v2: a wider, denser shimmer (the bombs are spawned as
+            // 'gburst' back in the fx pass)
             trailCtx.globalAlpha = 0.9 * (1 - age);
-            for (let g2 = 0; g2 < 3; g2++) {
-              trailCtx.fillStyle = g2 === 1 ? '#ffffff' : '#ffd23f';
-              const gx3 = p.x + Math.cos((p.seed || 0) * 1.9 + g2 * 2.2) * (4 + age * 10);
-              trailCtx.fillRect(Math.round(gx3), Math.round(p.y - 6 + age * 10 + g2 * 2), 2, 2);
+            for (let g2 = 0; g2 < 5; g2++) {
+              trailCtx.fillStyle = g2 % 2 ? '#ffffff' : g2 === 2 ? '#ff4d9d' : '#ffd23f';
+              const gx3 = p.x + Math.cos((p.seed || 0) * 1.9 + g2 * 1.4) * (6 + age * 14);
+              trailCtx.fillRect(Math.round(gx3), Math.round(p.y - 8 + age * 12 + g2 * 2), 3, 3);
             }
             trailCtx.globalAlpha = 1;
+          } else if (p.kind === 'gburst') {
+            // the glitter BOMB: a radial explosion around the banana
+            const ga = (p.seed / 14) * Math.PI * 2;
+            const gd = age * 46;
+            trailCtx.globalAlpha = 1 - age;
+            trailCtx.fillStyle = p.seed % 3 === 0 ? '#ffffff' : p.seed % 3 === 1 ? '#ffd23f' : '#ff4d9d';
+            trailCtx.fillRect(Math.round(p.x + Math.cos(ga) * gd), Math.round(p.y + Math.sin(ga) * gd * 0.7), 3, 3);
+            trailCtx.globalAlpha = 1;
           } else if (p.kind === 'slide') {
-            // ice legs: frosty skid ticks at the feet
-            trailCtx.globalAlpha = 0.8 * (1 - age);
+            // ice legs v2: a windy icy wake — wide frost streaks + blown-up flurries
+            trailCtx.globalAlpha = 0.7 * (1 - age);
             trailCtx.fillStyle = (p.seed || 0) % 2 ? '#b9f4ff' : '#78ebff';
-            trailCtx.fillRect(Math.round(p.x - 5), Math.round(p.y - 2), 10, 2);
+            const iw = 16 + age * 22;
+            trailCtx.fillRect(Math.round(p.x - iw / 2), Math.round(p.y - 3), Math.round(iw), 3);
+            trailCtx.fillStyle = '#eafcff';
+            trailCtx.fillRect(Math.round(p.x - 4 + Math.sin((p.seed || 0) * 2 + now / 140) * 9), Math.round(p.y - 10 - age * 12), 3, 3);
+            trailCtx.fillRect(Math.round(p.x + 3 + Math.sin((p.seed || 0) * 3 + now / 110) * 7), Math.round(p.y - 5 - age * 8), 2, 2);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'popper') {
-            trailCtx.globalAlpha = 0.9 * (1 - age);
+            // party popper v2: curling streamer RIBBONS falling behind you
+            trailCtx.globalAlpha = 0.95 * (1 - age);
             const POP = ['#ffe135', '#ff4d9d', '#78ebff', '#58c05c'];
             trailCtx.fillStyle = POP[(p.seed || 0) % POP.length];
-            trailCtx.fillRect(Math.round(p.x + Math.sin((p.seed || 0) + age * 6) * 6), Math.round(p.y - 10 + age * 14), 3, 3);
+            for (let rb = 0; rb < 4; rb++) {
+              const rx = p.x + Math.sin((p.seed || 0) * 1.7 + age * 9 + rb * 0.9) * 7;
+              trailCtx.fillRect(Math.round(rx), Math.round(p.y - 16 + rb * 4 + age * 16), 3, 4);
+            }
+            trailCtx.fillStyle = '#fffdf5';
+            trailCtx.fillRect(Math.round(p.x + Math.cos((p.seed || 0) * 3.1) * 10), Math.round(p.y - 6 + age * 12), 2, 2);
+            trailCtx.globalAlpha = 1;
+          } else if (p.kind === 'pburst') {
+            // the popper's POP: streamers shot radially off the banana
+            const pa = (p.seed / 10) * Math.PI * 2;
+            const pd = 6 + age * 40;
+            const POPB = ['#ffe135', '#ff4d9d', '#78ebff', '#58c05c', '#fffdf5'];
+            trailCtx.globalAlpha = 1 - age;
+            trailCtx.fillStyle = POPB[p.seed % POPB.length];
+            trailCtx.fillRect(Math.round(p.x + Math.cos(pa) * pd), Math.round(p.y + Math.sin(pa) * pd * 0.7), 3, 5);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'lagoon') {
             trailCtx.globalAlpha = 0.85 * (1 - age);
@@ -2822,13 +2913,16 @@ function init() {
           // held quest props ride the gloves via the engine's hand anchors
           // (r.vinyl/qvinyl/qbroom are rave flags, never in the broadcast outfit)
           hat: o.hat, glasses: o.glasses,
-          extras: (r.vinyl || r.qvinyl || r.qbroom || (fxActive(r, now) && r.fx.id === 'cone'))
+          extras: (r.vinyl || r.qvinyl || r.qbroom || (fxActive(r, now) && ['cone', 'slice', 'box'].includes(r.fx.id)))
             ? {
               ...(o.extras || {}),
               ...((r.vinyl || r.qvinyl) ? { vinyl: true } : {}),
               ...(r.qbroom ? { broom: true } : {}),
               // the stolen traffic cone rides the head while the fx runs
               ...((fxActive(r, now) && r.fx.id === 'cone') ? { cone: true } : {}),
+              // dinner rides the gloves: the slice (right) or the whole box (left)
+              ...((fxActive(r, now) && r.fx.id === 'slice') ? { slice: true } : {}),
+              ...((fxActive(r, now) && r.fx.id === 'box') ? { pizzabox: true } : {}),
             }
             : (o.extras || {}),
           top: '', bottom: '',

@@ -456,11 +456,34 @@ const GUIDE = [
     }
     @media (prefers-reduced-motion: reduce) { .rv-raver.rv-bootsfx, .rv-raver.rv-wobblefx canvas { animation: none; } }
     /* ---- THE MENU's costume effects (one class per fx, 10s moments) ---- */
-    /* paparazzi: the flash keeps going off */
+    /* paparazzi: the flash keeps going off — BIGGER (Trym round 2): brighter
+       pop + a white radial flashbang behind the banana on the same clock */
     .rv-raver.rv-flashfx canvas { animation: rvFlashPop 1.4s steps(1) infinite; }
-    @keyframes rvFlashPop { 0%, 88% { filter: none; } 89%, 100% { filter: brightness(2.4) drop-shadow(0 0 14px #ffffff); } }
-    /* the off-menu milkshake: THICC (keyframe-free transform override) */
-    .rv-raver.rv-thicc { transform: translate(-50%, -50%) scale(1.12); }
+    @keyframes rvFlashPop { 0%, 88% { filter: none; } 89%, 100% { filter: brightness(3) drop-shadow(0 0 26px #ffffff); } }
+    .rv-raver.rv-flashfx::before {
+      content: ''; position: absolute; inset: -30%; pointer-events: none;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 14%, rgba(255, 255, 255, 0.25) 34%, transparent 55%);
+      opacity: 0; animation: rvFlashBang 1.4s steps(1) infinite;
+    }
+    @keyframes rvFlashBang { 0%, 88% { opacity: 0; } 89%, 100% { opacity: 1; } }
+    /* the off-menu milkshake: PROPERLY THICC now (Trym: "fun fat banana") —
+       half again as wide, jiggling on the hips */
+    .rv-raver.rv-thicc { animation: rvThicc 0.7s ease-in-out infinite; }
+    @keyframes rvThicc {
+      0%, 100% { transform: translate(-50%, -50%) scale(1.42, 0.96); }
+      50% { transform: translate(-50%, -50%) scale(1.55, 0.92); }
+    }
+    /* sugar rush: rapidly shaking off ALL the sugar (canvas jitter, transform only) */
+    .rv-raver.rv-sugarfx canvas { animation: rvSugarShake 0.12s steps(2) infinite; }
+    @keyframes rvSugarShake {
+      0%, 100% { transform: translate(-3px, 0) rotate(-3deg); }
+      50% { transform: translate(3px, -2px) rotate(3deg); }
+    }
+    /* flaming potassium: the flare-up glow — a STATIC filter class flipped by
+       JS on a flicker clock (never keyframe filter on banana canvases — iOS
+       bakes it; the shock-blink lesson) */
+    .rv-raver.rv-flamehot canvas { filter: drop-shadow(0 0 9px #ff9128) drop-shadow(0 0 20px #e8542c); }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-thicc, .rv-raver.rv-sugarfx canvas, .rv-raver.rv-flashfx::before { animation: none; } }
     /* blue lagoon: cool cyan aura */
     .rv-raver.rv-lagoonglow canvas { filter: drop-shadow(0 0 8px #4db8ff); }
     /* water: clean, clear, hydrated */

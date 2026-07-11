@@ -73,6 +73,9 @@ export const WEARABLE_PACKS = {
       { id: 'vinyl', label: 'Vinyl', anchor: 'hand', hand: 'left', grip: 1.5, art: 'vinyl', raveOnly: true },
       // the nightshift broom — injected at draw time from the rave's chore flag
       { id: 'broom', label: 'Broom', anchor: 'hand', hand: 'right', grip: 3, art: 'broom', raveOnly: true },
+      // dinner props: worn while the rave's 'slice'/'box' fx runs (draw-time inject)
+      { id: 'slice', label: 'Pizza slice', anchor: 'hand', hand: 'right', grip: 1, art: 'pizzaslice', raveOnly: true },
+      { id: 'pizzabox', label: 'Pizza box', anchor: 'hand', hand: 'left', grip: 3.5, art: 'pizzaboxheld', raveOnly: true },
     ],
   },
   // Example future pack (art not drawn yet):
