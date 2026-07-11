@@ -55,6 +55,51 @@ function schedulePush() {
 // pass-v1 but ride the blob (the gear toggle writes bb-last)
 export function passPush() { schedulePush(); }
 
+// merge a synced blob INTO this device's localStorage (union/max — the same
+// semantics as the worker, so order never matters). Lives HERE (not in
+// pass-sync.js) so the ambient pull below avoids a circular import.
+export function applyBlob(blob) {
+  if (!blob) return;
+  try {
+    const local = collectBlob();
+    const patches = { ...(local.pass.patches || {}) };
+    for (const [id, ts] of Object.entries((blob.pass && blob.pass.patches) || {})) patches[id] = Math.min(patches[id] || ts, ts);
+    const stats = { ...(local.pass.stats || {}) };
+    for (const [k, v] of Object.entries((blob.pass && blob.pass.stats) || {})) stats[k] = Math.max(stats[k] || 0, v);
+    const days = [...new Set([...(local.pass.days || []), ...((blob.pass && blob.pass.days) || [])])].sort().slice(-400);
+    localStorage.setItem('pass-v1', JSON.stringify({
+      created: Math.min(local.pass.created || Date.now(), (blob.pass && blob.pass.created) || Date.now()),
+      patches, stats, days,
+    }));
+    const seen = new Set();
+    const shelf = [...(blob.shelf || []), ...(local.shelf || [])]
+      .filter((c) => c && c.params && !seen.has(c.params) && seen.add(c.params))
+      .slice(0, 24);
+    localStorage.setItem('shelf-v1', JSON.stringify(shelf));
+    if (!local.bbLast && blob.bbLast) localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
+    if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
+    try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
+  } catch (e) {}
+}
+
+// AMBIENT PULL (12 Jul — Trym's badge dot showed 9 on the laptop, 13 on the
+// phone): earned badges used to converge only on /pass/ visits. Now any page
+// that loads this module pulls the synced blob when linked, at most every
+// 10 minutes — the nav dot converges within a page-view.
+(() => {
+  try {
+    const link = JSON.parse(localStorage.getItem('pass-link') || 'null');
+    if (!link || !link.credId || !link.token) return;
+    const last = parseInt(localStorage.getItem('pass-pull-at') || '0', 10) || 0;
+    if (Date.now() - last < 600000) return;
+    localStorage.setItem('pass-pull-at', String(Date.now()));
+    fetch(PASS_API + `/pull?credId=${encodeURIComponent(link.credId)}&token=${encodeURIComponent(link.token)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d && d.blob) applyBlob(d.blob); })
+      .catch(() => {});
+  } catch (e) {}
+})();
+
 // mint a patch (once). Returns true only the FIRST time — callers can skip
 // their own celebration; we toast here so every surface behaves the same.
 export function passPatch(id, opts = {}) {

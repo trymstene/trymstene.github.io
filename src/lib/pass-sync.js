@@ -2,10 +2,10 @@
 // Biometrics appear ONLY here, when linking a device; day-to-day sync rides
 // the device token this module stores (see pushNow in banana-pass.js).
 // CLIENT-ONLY; loaded on /pass/ only.
-import { PASS_API, collectBlob } from './banana-pass.js';
+import { PASS_API, collectBlob, applyBlob } from './banana-pass.js';
 
 const LINK_KEY = 'pass-link'; // { credId, token }
-export { PASS_API, collectBlob };
+export { PASS_API, collectBlob, applyBlob };
 
 export const passkeysSupported = () =>
   !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
@@ -19,30 +19,8 @@ function setLink(credId, token) {
 
 const bufToB64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-// merge a synced blob INTO this device's localStorage (union/max — same
-// semantics as the worker, so order never matters)
-export function applyBlob(blob) {
-  if (!blob) return;
-  try {
-    const local = collectBlob();
-    const patches = { ...(local.pass.patches || {}) };
-    for (const [id, ts] of Object.entries((blob.pass && blob.pass.patches) || {})) patches[id] = Math.min(patches[id] || ts, ts);
-    const stats = { ...(local.pass.stats || {}) };
-    for (const [k, v] of Object.entries((blob.pass && blob.pass.stats) || {})) stats[k] = Math.max(stats[k] || 0, v);
-    const days = [...new Set([...(local.pass.days || []), ...((blob.pass && blob.pass.days) || [])])].sort().slice(-400);
-    localStorage.setItem('pass-v1', JSON.stringify({
-      created: Math.min(local.pass.created || Date.now(), (blob.pass && blob.pass.created) || Date.now()),
-      patches, stats, days,
-    }));
-    const seen = new Set();
-    const shelf = [...(blob.shelf || []), ...(local.shelf || [])]
-      .filter((c) => c && c.params && !seen.has(c.params) && seen.add(c.params))
-      .slice(0, 24);
-    localStorage.setItem('shelf-v1', JSON.stringify(shelf));
-    if (!local.bbLast && blob.bbLast) localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
-    if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
-  } catch (e) {}
-}
+// (applyBlob moved to banana-pass.js so the ambient pull there can use it
+// without a circular import — re-exported above for compatibility)
 
 async function getChallenge() {
   const res = await fetch(PASS_API + '/challenge', { method: 'POST' });
