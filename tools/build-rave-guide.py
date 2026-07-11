@@ -20,6 +20,8 @@ spec.loader.exec_module(ogc)
 
 RAVE = open(os.path.join(SITE, 'src', 'scripts', 'banana-rave.js'), encoding='utf-8').read()
 RAVE_SVGS = dict(re.findall(r"const (\w+)_SVG = '(<svg[^']+</svg>)'", RAVE))
+# the R4.5 conveyor items live as KEYED entries (Object.assign(ITEM_SVGS, {...}))
+KEYED_SVGS = dict(re.findall(r"^\s+(\w+): '(<svg[^']+</svg>)',?$", RAVE, re.M))
 
 
 def raster(svg, target_h=72):
@@ -47,6 +49,11 @@ for name, key in [('jelly', 'JELLY'), ('candy', 'CANDY'), ('pizza', 'PIZZA'),
                   ('fizz', 'FIZZ'), ('peel', 'PEEL'), ('puddle', 'PUDDLE'),
                   ('monkey', 'MONKEY'), ('stool', 'STOOL')]:
     raster(RAVE_SVGS[key]).save(os.path.join(OUT, name + '.png'), optimize=True)
+    print('wrote', name + '.png')
+
+# the R4.5 six (keyed entries) — the new power-up generation
+for name in ['boots', 'gel', 'sparkler', 'magnet', 'vhs', 'star']:
+    raster(KEYED_SVGS[name]).save(os.path.join(OUT, name + '.png'), optimize=True)
     print('wrote', name + '.png')
 
 # engine accessories/props (grid = 10 svg-px per unit — raster handles it,

@@ -38,19 +38,25 @@ const raveFaq = {
 const G = '/assets/rave-guide/';
 const GUIDE = [
   { img: 'barty', name: 'Barty, the bartender', text: 'Runs the bar, never sleeps. Calls HAPPY HOUR every 5th minute (first banana to the counter wins the beer), mixes specials in between — and always needs a hand with some little chore. Help him and he stamps your nightshift.' },
-  { img: 'jelly', name: 'Jelly drops', text: 'Spilled jelly, everywhere, always. Hoover a trail of them to fill the JELLY meter — when she’s full, you know what time it is: your own personal drop, spent whenever you like.' },
+  { img: 'jelly', name: 'Jelly drops', text: 'It rains jelly on this floor — watch it fall from the rig, land with a wobble, and wait. Hoover it up to fill the JELLY meter; when she’s full, you know what time it is: your own personal drop, spent whenever you like.' },
   { img: 'vinyl', name: 'The lost vinyl', text: 'The DJ keeps losing records. Every 7 minutes one lands somewhere on the floor — carry it back to the booth and the whole club gets a bonus drop, courtesy of you.' },
-  { img: 'goldbanana', name: 'The golden banana', text: 'Every half hour, once, somewhere: the golden one. The finder gets the trophy in their hand and “The Golden One” badge on their pass. The whole floor gets confetti.' },
-  { img: 'beer', name: 'Happy hour', text: 'Every 5th minute Barty yells and pours ONE beer. First banana to reach the counter carries it in their glove for everyone to see. Between happy hours: cocktails — the daiquiri gives you disco legs, the fizz makes you bubble.' },
+  { img: 'goldbanana', name: 'The golden banana', text: 'Every half hour, once, somewhere: the golden one. The finder gets the trophy in their hand and “The Golden One” badge on their pass — and for the whole floor, it rains golden bananas.' },
+  { img: 'beer', name: 'Happy hour & the specials', text: 'Every 5th minute Barty yells and pours ONE beer — first banana to the counter carries it for all to see. Between happy hours: rotating specials. The daiquiri gives you disco legs, the milkshake goes straight to the hips, and the water… the water takes EVERYTHING off. Barty insists.' },
   { img: 'cable', name: 'The loose cable', text: 'The rig’s wiring is older than Barty (nothing is older than Barty). Grab the live end to tidy the hazard — you’ll shock-blink like a cartoon, and brushing past friends zaps them too.' },
   { img: 'sauce', name: 'Hot sauce', text: 'A bottle of the house burner lands on the floor every few minutes. Drink it and your footsteps catch fire for a while. Completely safe. Probably.' },
-  { img: 'pizza', name: 'Club snacks', text: 'Pizza slices and candy — the conveyor drops something chaseable every ~75 seconds. Snacks are pure jelly for the meter; being first is the sport.' },
+  { img: 'pizza', name: 'Club snacks', text: 'The conveyor drops something chaseable every ~75 seconds. Grab a slice and your banana holds it high; the whole box rides the other glove (and pays a meal of jelly). Candy? A sugar rush — you’ll shake it off. Literally.' },
   { img: 'balloon', name: 'The balloon', text: 'Catch it and up you go: sealed inside, frozen mid-pose, drifting over the floor faster than anyone can dance. It deflates after a minute. Gravity is a rule, not a law.' },
   { img: 'broom', name: 'The broom & the mess', text: 'Peels and puddles pile up on a nightshift. Grab the broom from the counter and sweep — every swept peel is jelly too. The floor remembers who cleans it.' },
   { img: 'monkey', name: 'The monkey', text: 'The staff pet. Shows up on certain nights, steals things (famously: the bottle), keeps its distance when chased. Theatrical, never malicious. Mostly.' },
   { img: 'glowstick', name: 'The glowstick', text: 'Survive 30 minutes on the floor and the neon glowstick is yours forever — it pumps with the beat in your banana’s glove, here and in the builder.' },
   { img: 'stool', name: 'Your stool', text: 'Finish all five of Barty’s nightshifts and become a regular: your own stool at the counter’s end, forever. Click it, sit down, watch the floor. Nobody else gets one.' },
-  { img: 'mystery', name: '…and the rest', text: 'Many other items and drinks turn up when they feel like it — mirror shards, lost phones, things Barty won’t put on the menu. Hang around and see. They don’t wait long: five seconds, then poof.' },
+  { img: 'star', name: 'The gold star', text: 'Grab it and THE ENTOURAGE arrives: two copies of you replaying your every step, half a beat behind. A conga line of yourself. Stop moving and they walk right into you.' },
+  { img: 'boots', name: 'Moon boots', text: 'One small step for banana. Big lunar hops with a proper squash on every landing — fifteen seconds of low gravity on a crowded dance floor.' },
+  { img: 'gel', name: 'The jello cube', text: 'Eat the wobble, become the wobble: your whole banana goes jelly-legged, wobbling from the feet up. On this floor, that’s practically a religious experience.' },
+  { img: 'sparkler', name: 'The sparkler', text: 'Write your name on the night. A white-hot ribbon of light follows wherever you walk, spitting golden sparks as it burns out behind you.' },
+  { img: 'magnet', name: 'The jelly magnet', text: 'For twelve seconds the floor’s jelly wants YOU — every loose drop slides across the boards straight into your banana, and fresh jelly keeps raining. Pure harvest.' },
+  { img: 'vhs', name: 'The VHS tape', text: 'Tracking error. Your banana glitches like a tape that’s been rewound one time too many — slices shear sideways, a white band rolls through, then it recovers. Then it doesn’t.' },
+  { img: 'mystery', name: '…and the rest', text: 'Many other items and drinks turn up when they feel like it — mirror shards, lost phones, ice cubes, things Barty won’t put on the menu. Hang around and see. They don’t wait long: five seconds, then poof.' },
 ];
 ---
 <BaseLayout
@@ -1078,7 +1084,8 @@ const GUIDE = [
           <li><strong>Chase what the floor spawns.</strong> Jelly drops, snacks, power-ups, the lost vinyl, the golden banana — being first is the sport. Everything you grab fills the <strong>JELLY meter</strong>; a full meter is yours to spend on a personal drop.</li>
           <li><strong>Help Barty.</strong> He knows you're here to rave — but could you help an old banana with a few chores? Finish his requests and he stamps your <strong>nightshift</strong>. Five shifts make you a regular, with a regular's privileges.</li>
           <li><strong>Outlast everyone.</strong> Survive 5 minutes and the stage opens: dance behind the DJ, earn the &#128293; emote. Survive 30 and the glowstick is yours forever. The endurance board remembers.</li>
-          <li><strong>Collect the marks.</strong> Everything you earn here lands on <a href="/pass/">your banana pass</a> — badges, gear, stats. The rave writes your history.</li>
+          <li><strong>Make a name.</strong> Everything you do pays into your club LEVEL — the gold bar by the JELLY meter, 1 to 99, forever. Climb the brackets and the roster shows your title in gold: On the List, The Regular, VIP… Legend of the Floor.</li>
+          <li><strong>Collect the marks.</strong> Everything you earn here lands on <a href="/pass/">your banana pass</a> — badges, gear, level, stats. The rave writes your history.</li>
         </ul>
       </section>
 
@@ -1124,6 +1131,8 @@ const GUIDE = [
           <p>Somebody's always on shift. Finish your chores and Barty stamps you out — <em>"nightshift's done, back to clubbing"</em> — but the music was playing before you arrived and it'll play after you leave.</p>
           <h3>What's the JELLY meter?</h3>
           <p>The gauge of the night. Jelly drops, snacks, chores, the spotlight, surviving drops — it all fills it. Full meter = it starts flashing, and tapping it drops the floor — just for you.</p>
+          <h3>What's my LEVEL?</h3>
+          <p>Your standing at the club, 1 to 99 — the gold bar under the JELLY meter. Every jelly, pickup and chore pays into it, it syncs across your devices with <a href="/pass/">your pass</a>, and it never goes down. Titles land at the big levels, and the floor roster shows them in gold — the room knows who's a regular.</p>
           <h3>Do my things carry over?</h3>
           <p>Everything. Badges and stats live on <a href="/pass/">your pass</a>, earned gear like the glowstick follows your banana into <a href="/make-a-banana/">the builder</a>, and the stool waits for its regular.</p>
         </div>
