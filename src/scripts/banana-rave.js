@@ -501,7 +501,7 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer')) return; // buttons, the quest chip + the JELLY meter are not walk orders (a charged-meter tap walked you INTO the corner — Trym, iOS + Chrome)
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led')) return; // buttons, the quest chip, the JELLY meter + the LED strip are not walk orders (a charged-meter tap walked you INTO the corner — Trym, iOS + Chrome)
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     sitting = false; pendingSit = false; // clicking anywhere else stands you up
@@ -2451,6 +2451,7 @@ function init() {
       // champagne in hand: every emote is a little celebration (+2 jelly)
       const meC = myId && ravers.get(myId);
       if (meC && fxActive(meC, Date.now()) && meC.fx.id === 'champagne') addHype(2);
+      ledNoteEmote(k); // the sign might be asking for exactly this
       track('rave_emote', { k });
     });
   });
@@ -2527,6 +2528,151 @@ function init() {
       }
     }
     track(want ? 'rave_stage_join' : 'rave_stage_leave');
+  });
+
+  // ---- THE LED STRIP: the club sign takes requests (WHY build, phase 3) ----
+  // A slim diegetic ticker, top-centre of the floor. THE POLITE-DJ RULE: it
+  // only speaks into dead air — never over an item, a carry, a drop, or a
+  // peak. It teaches each call once (short copy after), asks one tap or one
+  // move, pays REP, and a miss just dims out: no punishment, ever.
+  const LED_CALLS = [
+    { id: 'freeze', teach: 'FREEZE! NOBODY MOVE — 3 SECONDS!', short: 'FREEZE!', secs: 9 },
+    { id: 'stage', teach: '📢 EVERYBODY STAGE SIDE — UP FRONT!', short: '📢 STAGE SIDE!', secs: 11, zone: (me) => me.y < 34 },
+    { id: 'bar', teach: '📢 EVERYBODY TO THE BAR — GO!', short: '📢 BAR SIDE!', secs: 11, zone: (me) => me.x < barSolid.x + 14 && me.y > 58 },
+    { id: 'left', teach: '📢 LEFT WALL — GO GO GO!', short: '📢 LEFT WALL!', secs: 10, zone: (me) => me.x < 18 },
+    { id: 'right', teach: '📢 RIGHT WALL — MOVE IT!', short: '📢 RIGHT WALL!', secs: 10, zone: (me) => me.x > 82 },
+    { id: 'heart', teach: 'GIVE US A ❤ — TAP HERE!', short: '❤ — TAP!', secs: 8, emote: 'heart' },
+    { id: 'nana', teach: 'GIVE US A 🍌 — TAP HERE!', short: '🍌 — TAP!', secs: 8, emote: 'banana' },
+    { id: 'clap', teach: 'A ROUND OF APPLAUSE — TAP HERE!', short: '👏 — TAP!', secs: 8, emote: 'confetti' },
+    { id: 'spin', teach: 'SPIN FOR ME — ONE FULL CIRCLE!', short: 'SPIN!', secs: 10 },
+    { id: 'run', teach: 'RUN IT OUT — CROSS THAT FLOOR!', short: 'RUN IT OUT!', secs: 10 },
+    { id: 'light', teach: 'FOLLOW THE LIGHT — STAY IN IT!', short: 'FOLLOW THE LIGHT!', secs: 12, light: true },
+  ];
+  const LED_REWARD = 50;
+  const ledTest = new URLSearchParams(location.search).get('ledtest'); // ?ledtest=<id> — QA: force a call, skip the gaps
+  let ledCall = null;
+  let ledNextAt = Date.now() + (ledTest ? 4000 : 45000); // the sign warms up ~45s into the night
+  let ledSeen = {};
+  try { ledSeen = JSON.parse(localStorage.getItem('rv-led-seen-v1') || '{}'); } catch (e) {}
+
+  function ledIdle(now) { // dead air ONLY — the strip must never compete with play
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return false;
+    if (tourActive) return false;
+    if (itemLive || goldLive || vinylLive || barSpecialLive) return false;
+    if (me.vinyl || me.qvinyl || me.qbroom) return false;
+    if (hypeCharged || now < hypeModeUntil) return false;
+    if (((now / 1000) % DROP_PERIOD) < DROP_LEN || now < miniDropUntil) return false;
+    return true;
+  }
+  function ledStart(now) {
+    const pool = ledTest ? LED_CALLS.filter((c) => c.id === ledTest) : LED_CALLS;
+    const def = pool[Math.floor(Math.random() * pool.length)];
+    if (!def) return;
+    ledCall = { def, until: now + def.secs * 1000, start: now, spun: 0, lastAng: null, dist: 0, lightMs: 0, won: false };
+    if (def.light) ledSpawnLight(now, def.secs);
+    const led = el('rvLed');
+    led.hidden = false;
+    led.className = 'rv-led';
+    el('rvLedTxt').textContent = ledSeen[def.id] ? def.short : def.teach;
+    el('rvLedBar').style.width = '100%';
+    ledSeen[def.id] = 1;
+    try { localStorage.setItem('rv-led-seen-v1', JSON.stringify(ledSeen)); } catch (e) {}
+    track('rave_call', { id: def.id });
+  }
+  function ledWin(now) {
+    ledCall.won = true;
+    ledCall.until = now + 1800; // linger the win flash, then back to dark
+    el('rvLed').className = 'rv-led rv-led--won';
+    el('rvLedTxt').textContent = '✔ +' + LED_REWARD + ' REP';
+    el('rvLedBar').style.width = '100%';
+    earnRep(LED_REWARD);
+    addHype(10);
+    tonight.calls = (tonight.calls || 0) + 1;
+    track('rave_call_ok', { id: ledCall.def.id });
+    ledKillLight();
+  }
+  function ledEnd(now, missed) {
+    if (missed) track('rave_call_miss', { id: ledCall.def.id }); // silence for the player — no heckle, no loss
+    el('rvLed').hidden = true;
+    ledKillLight();
+    ledCall = null;
+    ledNextAt = now + (ledTest ? 4000 : 120000 + Math.random() * 60000); // 2–3 min of peace
+  }
+  function ledNoteEmote(kind) { // wired into the emote buttons
+    if (ledCall && !ledCall.won && ledCall.def.emote === kind) ledWin(Date.now());
+  }
+  // FOLLOW THE LIGHT (Trym's call): the sign's own little spotlight glides a
+  // path near you — stay inside it while it moves
+  let ledLightEl = null, ledLightPath = null;
+  function ledSpawnLight(now, secs) {
+    ledKillLight();
+    const me = ravers.get(myId);
+    const d = document.createElement('div');
+    d.className = 'rv-ledlight';
+    world.appendChild(d);
+    ledLightEl = d;
+    const p0 = { x: clamp((me ? me.x : 50) + 16, 12, 88), y: clamp((me ? me.y : 60) - 6, topClamp + 8, 84) };
+    const p1 = { x: clamp(p0.x > 50 ? p0.x - 52 : p0.x + 52, 10, 90), y: clamp(p0.y + (Math.random() > 0.5 ? 16 : -14), topClamp + 8, 84) };
+    ledLightPath = { p0, p1, t0: now, ms: secs * 1000 };
+  }
+  function ledKillLight() { if (ledLightEl) { ledLightEl.remove(); ledLightEl = null; ledLightPath = null; } }
+  function ledFrame(now, dtMs) {
+    if (!ledCall) {
+      if (now >= ledNextAt && myId && (ledTest || ledIdle(now))) ledStart(now);
+      return;
+    }
+    const c = ledCall;
+    if (now > c.until) { ledEnd(now, !c.won); return; }
+    if (c.won) return;
+    el('rvLedBar').style.width = Math.max(0, Math.round(((c.until - now) / (c.def.secs * 1000)) * 100)) + '%';
+    const me = myId && ravers.get(myId);
+    if (!me) return;
+    const d = c.def;
+    if (d.zone) { if (d.zone(me)) ledWin(now); return; }
+    if (d.id === 'freeze') {
+      // stand dead still for 3s (being still BEFORE the call counts — obedience is obedience)
+      if ((!me.lastMoveAt || now - me.lastMoveAt > 3000) && now - c.start > 3000) ledWin(now);
+      return;
+    }
+    if (d.id === 'spin' || d.id === 'run') {
+      if (c.px !== undefined) {
+        const ddx = me.x - c.px, ddy = me.y - c.py;
+        const dl = Math.hypot(ddx, ddy);
+        c.dist += dl;
+        if (dl > 0.05) {
+          const ang = Math.atan2(ddy, ddx);
+          if (c.lastAng !== null) {
+            let da = ang - c.lastAng;
+            while (da > Math.PI) da -= 2 * Math.PI;
+            while (da < -Math.PI) da += 2 * Math.PI;
+            c.spun += Math.abs(da);
+          }
+          c.lastAng = ang;
+        }
+      }
+      c.px = me.x; c.py = me.y;
+      if (d.id === 'spin' && c.spun > Math.PI * 1.7) ledWin(now);
+      if (d.id === 'run' && c.dist > 110) ledWin(now);
+      return;
+    }
+    if (d.light && ledLightPath && ledLightEl) {
+      const t = Math.min(1, (now - ledLightPath.t0) / ledLightPath.ms);
+      const lx = ledLightPath.p0.x + (ledLightPath.p1.x - ledLightPath.p0.x) * t;
+      const ly = ledLightPath.p0.y + (ledLightPath.p1.y - ledLightPath.p0.y) * t;
+      ledLightEl.style.left = lx + '%';
+      ledLightEl.style.top = ly + '%';
+      const inIt = Math.hypot(((me.x - lx) / 100) * floorW, ((me.y - ly) / 100) * floorH) < 80;
+      ledLightEl.classList.toggle('rv-ledlight--in', inIt);
+      if (inIt) { c.lightMs += dtMs; if (c.lightMs > 2400) ledWin(now); }
+    }
+  }
+  // tapping the strip IS the emote for emote calls — no hunting the bar below the fold
+  el('rvLed').addEventListener('click', () => {
+    if (ledCall && !ledCall.won && ledCall.def.emote) {
+      const b = document.querySelector('.rv-emote-btn[data-emote="' + ledCall.def.emote + '"]');
+      if (b) b.click();
+    }
   });
 
   // ---- the render loop: everyone dances off the same clock ----
@@ -2620,6 +2766,7 @@ function init() {
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
     nightFrame(now); // quest proximity checks — same lesson again
+    ledFrame(now, dtMs); // the club sign — calls, countdowns, the wandering light
     monkeyTick(now, dtMs); // the bandit keeps its distance
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)

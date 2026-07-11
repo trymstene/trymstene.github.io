@@ -54,7 +54,11 @@ export const OG_CUTOFF = '2026-08-01';
 // a first real night (~200 rep) reaches ~level 5 with several level-ups;
 // 99 is a legend's journey (~25k rep). levelFor returns {level, into, need}
 // so every surface can draw the same bar.
-export const levelStep = (n) => 30 + n * 6; // rep to go from level n → n+1
+// CALIBRATED against real play (Trym: 30 min → level 34 on the first curve;
+// the floor pays ~145 rep/min now that jelly never stops): first level in a
+// minute, ~level 5 by minute 8 (first-night title ✓), ON THE LIST → THE
+// REGULAR ≈ 1.3h, VIP ≈ 4h, LEGEND ≈ 11h, 99 ≈ 34 hours of actual dancing.
+export const levelStep = (n) => 150 + n * 45; // rep to go from level n → n+1
 export const levelFor = (rep) => {
   let n = 1, c = 0;
   while (n < 99 && rep >= c + levelStep(n)) { c += levelStep(n); n++; }
