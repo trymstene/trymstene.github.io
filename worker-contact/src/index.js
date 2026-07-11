@@ -33,7 +33,16 @@ export default {
     if (url.pathname === '/send' && request.method === 'POST') {
       let body;
       try { body = await request.json(); } catch (e) { return new Response('bad json', { status: 400, headers: cors }); }
-      if (String(body.website || '') !== '') return new Response(JSON.stringify({ ok: true }), { headers: cors }); // honeypot: pretend success, store nothing
+      const fakeOk = () => new Response(JSON.stringify({ ok: true }), { headers: cors }); // pretend success, store nothing — bots must never learn what failed
+      // server-side Origin check: CORS headers only discipline browsers; the
+      // first spam wave (11 Jul, two posts 3s apart) replayed the endpoint
+      // directly from a server with no Origin at all
+      const origin = request.headers.get('Origin') || '';
+      if (!(env.ALLOWED_ORIGIN || '').split(',').includes(origin)) return fakeOk();
+      if (String(body.website || '') !== '') return fakeOk(); // honeypot: bots love filling it
+      // time-gate: humans read a page before writing; headless bots submit
+      // instantly. `t` = ms between page load and submit (sent by the form).
+      if (typeof body.t === 'number' && body.t >= 0 && body.t < 3000) return fakeOk();
       const msg = String(body.message || '').trim();
       if (msg.length < 5 || msg.length > MAX_MSG) return new Response('message length', { status: 400, headers: cors });
       const ip = request.headers.get('CF-Connecting-IP') || '?';

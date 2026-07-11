@@ -20,6 +20,7 @@ const { topic = 'general' } = Astro.props;
 
 <script>
   const WORKER = 'https://banana-contact.trymstene.workers.dev';
+  const loadedAt = Date.now(); // the worker's time-gate reads how long a "human" spent before sending
   document.querySelectorAll('.cform').forEach((form) => {
     // ?topic=licensing pre-fills the licensing checklist (the old mailto template)
     const params = new URLSearchParams(location.search);
@@ -48,6 +49,7 @@ const { topic = 'general' } = Astro.props;
             message: form.message.value,
             website: form.website.value,
             topic: form.dataset.topic,
+            t: Date.now() - loadedAt,
           }),
         });
         const d = await res.json().catch(() => ({}));
