@@ -171,15 +171,43 @@ export class RaveRoom {
     );
   }
 
+  // GHOST REAPER (12 Jul — Trym saw his own iOS zombie twice on the floor):
+  // iOS drops the goodbye close-frame on quick reloads/backgrounding, so dead
+  // sessions linger in the roster. Liveness = the hibernation auto-response
+  // timestamp (every client pings ~30s; the runtime stamps it WITHOUT waking
+  // us) — so pocket-AFK farmers stay safe and no client change is needed.
+  reapStale() {
+    const now = Date.now();
+    for (const ws of this.state.getWebSockets()) {
+      let last = 0;
+      try {
+        const t = this.state.getWebSocketAutoResponseTimestamp(ws);
+        if (t) last = t.getTime();
+      } catch (e) {}
+      let a = null;
+      try { a = ws.deserializeAttachment(); } catch (e) {}
+      if (a && a.joined > last) last = a.joined; // fresh sockets haven't pinged yet
+      if (last && now - last > 120_000) { // 4 missed pings = dead
+        // close() is async — the socket stays in getWebSockets() this tick, so
+        // mark the attachment dead and roster()/count filter it out NOW
+        if (a) { a.dead = true; try { ws.serializeAttachment(a); } catch (e) {} }
+        try { ws.close(1011, 'stale'); } catch (e) {}
+        if (a) this.broadcast({ t: 'leave', id: a.id }, ws);
+      }
+    }
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/count') {
-      return new Response(JSON.stringify({ count: this.state.getWebSockets().length }));
+      this.reapStale(); // the homepage door polls this — free periodic sweeps
+      return new Response(JSON.stringify({ count: this.roster().length }));
     }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
     }
-    if (this.state.getWebSockets().length >= ROOM_CAP) {
+    this.reapStale(); // ghosts must never hold seats against the cap
+    if (this.roster().length >= ROOM_CAP) {
       return new Response('floor full', { status: 503 });
     }
     const pair = new WebSocketPair();
@@ -190,7 +218,7 @@ export class RaveRoom {
   roster() {
     return this.state.getWebSockets()
       .map((ws) => { try { return ws.deserializeAttachment(); } catch (e) { return null; } })
-      .filter(Boolean);
+      .filter((a) => a && !a.dead);
   }
 
   broadcast(msg, exceptWs) {
@@ -208,8 +236,10 @@ export class RaveRoom {
 
     let me = null;
     try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && me.dead) return; // reaped — everyone already saw the leave; no resurrection
 
     if (msg.t === 'hi' && !me) {
+      this.reapStale(); // every join clears the zombies before the roster ships
       const p = {
         id: crypto.randomUUID().slice(0, 8),
         outfit: sanitizeOutfit(msg.outfit),
@@ -391,7 +421,7 @@ export class RaveRoom {
   async webSocketClose(ws) {
     let me = null;
     try { me = ws.deserializeAttachment(); } catch (e) {}
-    if (me) this.broadcast({ t: 'leave', id: me.id }, ws);
+    if (me && !me.dead) this.broadcast({ t: 'leave', id: me.id }, ws); // reaped ghosts already announced their leave
   }
 
   async webSocketError(ws) {
