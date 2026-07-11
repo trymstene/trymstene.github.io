@@ -17,6 +17,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE = open(os.path.join(SITE, 'src', 'lib', 'banana-engine.js'), encoding='utf-8').read()
+# wearable DEFS moved to the shared manifest (ownership-stack keystone, 8 Jul);
+# the SVG art itself still lives in the engine
+MANIFEST = open(os.path.join(SITE, 'src', 'data', 'wearables.js'), encoding='utf-8').read()
 OG = os.path.join(SITE, 'public', 'assets', 'og')
 FONT = os.path.join(SITE, 'tools', 'ArchivoBlack.ttf')
 FW, FH, PX = 469, 498, 13
@@ -33,9 +36,10 @@ for m in re.finditer(r'\{ eyeCx: (\d+), eyeCy: (\d+), hatCx: (\d+), btCx: (\d+),
 assert len(FRAMES) == 8, 'anchor parse drifted: %d frames' % len(FRAMES)
 
 HATS = {m.group(1): dict(art=m.group(2), seat=int(m.group(3)))
-        for m in re.finditer(r"id: '(\w+)',\s+label: '[^']+',\s+art: '(\w+)',\s+seat: (-?\d+)", ENGINE)}
+        for m in re.finditer(r"id: '(\w+)',\s+label: '[^']+',\s+phrase: '[^']+',\s+art: '(\w+)',\s+seat: (-?\d+)", MANIFEST)}
 SHADES = {m.group(1): dict(front=m.group(2), side=m.group(3))
-          for m in re.finditer(r"id: '(\w+)',\s+label: '[^']+',\s+front: '(\w+)',\s+side: '(\w+)'", ENGINE)}
+          for m in re.finditer(r"id: '(\w+)',\s+label: '[^']+',\s+phrase: '[^']+',\s+front: '(\w+)',\s+side: '(\w+)'", MANIFEST)}
+assert 'party' in HATS and 'hearts' in SHADES, 'manifest parse drifted: hats=%s shades=%s' % (sorted(HATS), sorted(SHADES))
 
 
 def svg_layer(key, out_w, out_h, flip=False):
@@ -100,7 +104,7 @@ CARDS = {
     'pbjt':     dict(chip="IT'S THAT SONG", title=['Peanut Butter', 'Jelly Time'], pose=2),
     'license':  dict(chip='FROM THE CREATOR', title=['License the', 'Dancing Banana'], pose=2),
     'projects': dict(chip='BY TRYM STENE', title=['Projects'], pose=2),
-    'builder':  dict(chip='FREE BANANA TOY', title=['Make Your Own', 'Dancing Banana'], pose=2,
+    'builder':  dict(chip='FREE BANANA BUILDER', title=['Make Your Own', 'Dancing Banana'], pose=2,
                      hat='party', glasses='hearts'),
     'shop':     dict(chip='OFFICIAL MERCH', title=['Dancing Banana', 'Shop'], pose=4,
                      hat='cowboy', bowtie=True),
