@@ -243,6 +243,21 @@ const noteCvs = NOTE_MAPS.map((rows) => {
   }));
   return c;
 });
+// the fog sprite: ONE soft radial blob (squashed wide), drawn smoothed at
+// many sizes — fillRect fog read as "grey blocks" on iOS (Trym v3)
+const fogCv = (() => {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 32;
+  const x = c.getContext('2d');
+  x.scale(2, 1);
+  const g = x.createRadialGradient(16, 16, 2, 16, 16, 15);
+  g.addColorStop(0, 'rgba(206, 210, 228, 0.85)');
+  g.addColorStop(0.55, 'rgba(184, 188, 208, 0.4)');
+  g.addColorStop(1, 'rgba(184, 188, 208, 0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 32, 32);
+  return c;
+})();
 // which effects paint a trail behind the walker (spawned at walk cadence)
 const TRAIL_FX = new Set(['flames', 'daiquiri', 'prism', 'fog', 'notes', 'glitter', 'slide', 'popper', 'lagoon', 'espresso', 'sparkler']);
 // which effects dress the banana itself (CSS class on the wrap)
@@ -817,11 +832,45 @@ function init() {
       if (lvlRow) { lvlRow.classList.remove('rv-mixer__lvl--pop'); void lvlRow.offsetWidth; lvlRow.classList.add('rv-mixer__lvl--pop'); }
       const meR = myId && ravers.get(myId);
       if (meR) { meR.lvl = lv.level; refreshHud(); } // the roster title climbs with you
+      // THE FEEL (Trym: "they don't feel good, just popups") — a pixel arrow
+      // + the new level rides up off YOUR banana, and the classic four-note
+      // arpeggio plays (original square-wave, when the club audio is on)
+      if (meR && !meR.stage) {
+        const d = document.createElement('div');
+        d.className = 'rv-lvlup';
+        d.innerHTML = '<svg viewBox="0 0 7 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="2" y="1" width="3" height="1" fill="#ffe135"/><rect x="1" y="2" width="5" height="1" fill="#ffe135"/><rect x="0" y="3" width="7" height="1" fill="#ffe135"/><rect x="2" y="4" width="3" height="4" fill="#ffe135"/></svg><b>LVL ' + lv.level + '</b>';
+        d.style.left = meR.x + '%';
+        d.style.top = Math.max(topClamp, meR.y - 9) + '%';
+        world.appendChild(d);
+        setTimeout(() => d.remove(), 1900);
+      }
+      playLevelUp();
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'lvl', n: lv.level }));
       try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
       track('rave_levelup', { level: lv.level });
     }
   }
+  // the classic level-up: an ascending C-major square-wave arpeggio, written
+  // here note by note — original, nobody's copyright, everybody's childhood
+  function playLevelUp() {
+    if (!audio || !audioOn) return;
+    try {
+      const { ctx } = audio;
+      const t0 = ctx.currentTime + 0.02;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'square';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.09);
+        g.gain.exponentialRampToValueAtTime(0.1, t0 + i * 0.09 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.09 + (i === 3 ? 0.38 : 0.11));
+        o.connect(g).connect(ctx.destination);
+        o.start(t0 + i * 0.09);
+        o.stop(t0 + i * 0.09 + 0.45);
+      });
+    } catch (e) {}
+  }
+
   function refreshLvlBar(lv) {
     const nEl = el('rvLvlN'), fEl = el('rvLvlFill');
     if (!nEl) return;
@@ -896,48 +945,31 @@ function init() {
   function newRun() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage || !floorW || !floorH) return null;
-    // DESIGNED shapes, not a random wander — the clamped walk read as "thrown
-    // in there" (Trym): uneven gaps, kinked columns. Now: even spacing in PX
-    // (the floor is wider than tall) and a whole shape either fits clean or we
-    // rotate and try again — no per-pellet clamping, no smears.
-    const STEP = clamp(floorW / 13, 44, 70);
-    const px0 = (me.x / 100) * floorW, py0 = (me.y / 100) * floorH;
-    const topPx = ((topClamp + 4) / 100) * floorH;
-    const KINDS = ['line', 'arc', 'zig'];
-    const kind0 = Math.floor(Math.random() * 3);
-    const ang0 = Math.atan2(floorH / 2 - py0, floorW / 2 - px0) + (Math.random() - 0.5) * 1.2;
-    for (let tryN = 0; tryN < 12; tryN++) {
-      const kind = KINDS[(kind0 + tryN) % 3];
-      let ang = ang0 + tryN * 0.55;
-      const turn = kind === 'arc' ? (tryN % 2 ? -0.22 : 0.22) : 0;
-      let x = px0, y = py0;
-      const pts = [];
-      let ok = true;
-      for (let i = 0; i < 8; i++) {
-        const a = ang + (kind === 'zig' ? (i % 2 ? 0.55 : -0.55) : 0);
-        x += Math.cos(a) * STEP;
-        y += Math.sin(a) * STEP * 0.8; // slight y squash — matches the floor's fake depth
-        ang += turn;
-        const xp = (x / floorW) * 100, yp = (y / floorH) * 100;
-        if (x < floorW * 0.06 || x > floorW * 0.94 || y < topPx || y > floorH * 0.9 || insideBar(xp, yp)) { ok = false; break; }
-        pts.push({ x: xp, y: yp, got: false });
-      }
-      if (!ok) continue;
-      const host = el('rvRun');
-      host.innerHTML = '';
-      pts.forEach((p, i) => {
-        const d = document.createElement('div');
-        d.className = 'rv-pellet';
-        d.innerHTML = JELLY_SVG; // the drops ARE jelly — that's why they fill the meter
-        d.style.left = p.x + '%';
-        d.style.top = p.y + '%';
-        d.style.animationDelay = (i * 0.08) + 's';
-        host.appendChild(d);
-        p.elm = d;
-      });
-      return { pts, born: Date.now() };
+    // RANDOM SCATTER (Trym's call, v3): jelly spills EVERYWHERE like a real
+    // party mess — 8 pellets anywhere walkable, spaced so they never clump
+    const topPct = topClamp + 5;
+    const pts = [];
+    for (let tries = 0; tries < 140 && pts.length < 8; tries++) {
+      const x = 7 + Math.random() * 86;
+      const y = topPct + Math.random() * (88 - topPct);
+      if (insideBar(x, y)) continue;
+      if (pts.some((q) => Math.hypot(((q.x - x) / 100) * floorW, ((q.y - y) / 100) * floorH) < 56)) continue;
+      pts.push({ x, y, got: false });
     }
-    return null; // cornered — tickRun retries in a moment
+    if (pts.length < 4) return null; // cornered — tickRun retries in a moment
+    const host = el('rvRun');
+    host.innerHTML = '';
+    pts.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.className = 'rv-pellet';
+      d.innerHTML = JELLY_SVG; // the drops ARE jelly — that's why they fill the meter
+      d.style.left = p.x + '%';
+      d.style.top = p.y + '%';
+      d.style.animationDelay = (i * 0.08) + 's';
+      host.appendChild(d);
+      p.elm = d;
+    });
+    return { pts, born: Date.now() };
   }
   let magnetT = 0;
   function tickRun() {
@@ -999,9 +1031,29 @@ function init() {
         left++;
       }
     }
-    if (!left) { // run complete: chain bump + breather before the next one
+    // TOP-UP (Trym v3: "bigger chance that there's always some jelly") — when
+    // the scatter runs thin, more spills in before it's empty; items stay the
+    // fun distractions, jelly is the constant
+    if (left > 0 && left <= 2 && run.pts.length < 18) {
+      const topPct = topClamp + 5;
+      let added = 0;
+      for (let tries = 0; tries < 60 && added < 5; tries++) {
+        const x = 7 + Math.random() * 86, y = topPct + Math.random() * (88 - topPct);
+        if (insideBar(x, y)) continue;
+        const d = document.createElement('div');
+        d.className = 'rv-pellet';
+        d.innerHTML = JELLY_SVG;
+        d.style.left = x + '%';
+        d.style.top = y + '%';
+        el('rvRun').appendChild(d);
+        run.pts.push({ x, y, got: false, elm: d });
+        added++;
+      }
+      if (added) run.born = now; // fresh jelly resets the stale clock
+    }
+    if (!left) { // run complete — barely a breather: there should ~always be jelly (Trym v3)
       run = null;
-      nextRunAt = now + 5000;
+      nextRunAt = now + 1200;
       bumpChain();
       addHype(10);
       el('rvRun').innerHTML = '';
@@ -1202,6 +1254,8 @@ function init() {
   const shareBtn = el('rvShareNight');
   if (shareBtn) shareBtn.addEventListener('click', shareNight);
 
+  // the CHAIN is INVISIBLE now (Trym: "i dont care much about it — noise") —
+  // the counter only survives quietly for the night-quest step + the badge
   function bumpChain() {
     const now = Date.now();
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
@@ -1210,19 +1264,9 @@ function init() {
     refreshStats();
     addHype(7); // every pickup is jelly fuel (12 → 7: items overfilled the meter, Trym round 2)
     nightEvent('chain', chain);
-    if (chain === 5) {
-      const me = myId && ravers.get(myId);
-      if (me) {
-        me.wrap.classList.add('rv-chainglow');
-        setTimeout(() => me.wrap.classList.remove('rv-chainglow'), 12000);
-        showBubble('🔥 ' + autoName(me.outfit) + ' is on a CHAIN of FIVE!', false, 6000);
-      }
-      track('rave_chain', { n: 5 });
-    }
-    if (chain === 10) { passPatch('chain'); track('rave_chain', { n: 10 }); }
+    if (chain === 10) passPatch('chain'); // the badge still mints — quietly
     return chain;
   }
-  const chainTag = () => (chain > 1 ? ' — chain ×' + chain + '!' : '');
 
   // conveyor grant — shared by the ws broadcast and solo mode
   function itemGrant(id, win, kind, fx) {
@@ -1237,7 +1281,7 @@ function init() {
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = SNACKS[kind][0] + ' <b>' + SNACKS[kind][1] + '</b>' +
-        (kind === 'pizzabox' ? ' — +25 jelly, that’s dinner!' : (chain > 1 ? ' — chain ×' + chain + '!' : ' — keep moving, keep the chain!'));
+        (kind === 'pizzabox' ? ' — +25 jelly, that’s dinner!' : ' — keep moving!');
       (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 4000);
       track('rave_snack', { kind });
@@ -1339,7 +1383,7 @@ function init() {
         milkshake: 'off the menu, onto the hips.',
         jellyshot: 'DOUBLE jelly on everything — quick!',
         water: 'squeaky clean — Barty’s orders. dress up again!',
-      }[fx.id] || '') + chainTag();
+      }[fx.id] || '');
       (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
       setTimeout(() => toast.remove(), 4500);
       // one-shot garnishes on top of the timed window
@@ -1507,11 +1551,7 @@ function init() {
       hype = Math.max(0, hype - 1.2);
       renderHype();
     }
-    // the chain readout lives on the mixer; it fades when the chain window lapses
-    const chainRow = el('rvChainRow');
-    const chainLive = chain > 1 && Date.now() - chainAt < CHAIN_MS;
-    chainRow.hidden = !chainLive;
-    if (chainLive) el('rvChainN').textContent = chain;
+    // (the chain readout is gone — the counter lives on invisibly for quests)
     // — THE WAVE: Barty calls it, emote in time to join the ripple (staff always join) —
     const wvPh = (((t - WAVE_OFFSET) % WAVE_PERIOD) + WAVE_PERIOD) % WAVE_PERIOD;
     const wvWin = Math.floor((t - WAVE_OFFSET) / WAVE_PERIOD);
@@ -1932,7 +1972,7 @@ function init() {
       tourDemoEl.style.top = '48%';
       tourDemoEl.style.animation = 'none'; // it holds still for its close-up (the bob made the light sit off-centre)
       world.appendChild(tourDemoEl);
-      tourBox(tourDemoEl, 'FLOOR SNACKS', 'the crowd drops stuff all night. first banana to reach it keeps it — pickups chain, chains build JELLY. (and it keeps the floor clean. Barty notices.)', { pad: 12 });
+      tourBox(tourDemoEl, 'FLOOR SNACKS', 'the crowd drops stuff all night. first banana to reach it keeps it — every pickup builds JELLY. (and it keeps the floor clean. Barty notices.)', { pad: 12 });
     },
   ];
   function runTour() {
@@ -2011,8 +2051,8 @@ function init() {
     { n: 2, steps: [ // look who's back — the broom debuts
       { tray: 'grab the broom at the bar, sweep the peels', check: 'sweep', targets: ['peel', 'peel', 'peel', 'peel'],
         say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'some ANIMAL left peels on my floor — grab the broom off the counter and sweep ’em up!'] },
-      { tray: 'build a chain of THREE pickups', check: 'chain3',
-        say: ['SPOTLESS! now — a CHAIN of THREE pickups, back to back, no dawdlin’!'] },
+      { tray: 'grab THREE pickups, back to back', check: 'chain3',
+        say: ['SPOTLESS! now — THREE pickups, back to back, no dawdlin’!'] },
       { tray: 'stand in the spotlight when it lands', check: 'spotlight',
         say: ['look at you GO! 🤠 last one: stand in the SPOTLIGHT when it lands. you earned some shine.', { t: 'i had a spotlight once. it moved on.', mutter: true }] },
     ], done: { patch: null,
@@ -2829,17 +2869,18 @@ function init() {
             }
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'fog') {
-            // smoke-machine wisps v2: BIG puffy banks, layered — a fog you can
-            // lose your shoes in (Trym: "bigger and puffier"; runs 20s now)
-            trailCtx.globalAlpha = 0.26 * (1 - age);
-            trailCtx.fillStyle = '#b8bcd0';
-            const fw = 24 + age * 34;
-            trailCtx.fillRect(Math.round(p.x - fw / 2), Math.round(p.y - 10 - age * 5), Math.round(fw), 12);
-            trailCtx.globalAlpha = 0.14 * (1 - age);
-            trailCtx.fillStyle = '#e8eaf2';
-            const fw2 = 14 + age * 20;
-            trailCtx.fillRect(Math.round(p.x - fw2 / 2 + Math.sin((p.seed || 0) + now / 400) * 5), Math.round(p.y - 16 - age * 8), Math.round(fw2), 7);
+            // smoke-machine wisps v3 (Trym, iOS: "grey blocks, not fog") —
+            // soft ROUND blobs from a pre-rendered radial-gradient sprite,
+            // drawn smoothed: the one place square pixels are wrong
+            trailCtx.imageSmoothingEnabled = true;
+            trailCtx.globalAlpha = 0.34 * (1 - age);
+            const fw = 30 + age * 40;
+            trailCtx.drawImage(fogCv, p.x - fw / 2, p.y - 12 - age * 6 - fw / 4, fw, fw / 2);
+            trailCtx.globalAlpha = 0.2 * (1 - age);
+            const fw2 = 18 + age * 26;
+            trailCtx.drawImage(fogCv, p.x - fw2 / 2 + Math.sin((p.seed || 0) + now / 400) * 6, p.y - 20 - age * 9 - fw2 / 4, fw2, fw2 / 2);
             trailCtx.globalAlpha = 1;
+            trailCtx.imageSmoothingEnabled = false;
           } else if (p.kind === 'notes') {
             const nf = noteCvs[(p.seed || 0) % 2];
             const nw = 12 * (1 - age * 0.25);

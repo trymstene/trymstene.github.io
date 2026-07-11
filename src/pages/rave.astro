@@ -599,14 +599,33 @@ const GUIDE = [
       -webkit-tap-highlight-color: transparent; user-select: none;
       animation: rvTapNudge 0.8s ease-in-out infinite;
     }
-    .rv-mixer--charged .rv-mixer__row, .rv-mixer--charged .rv-mixer__chain, .rv-mixer--charged .rv-mixer__lvl { display: none; }
+    .rv-mixer--charged .rv-mixer__row, .rv-mixer--charged .rv-mixer__lvl { display: none; }
     /* LEVEL: the lifetime bar under the jelly meter — REP fills it forever
        (the WHY build: a bar that's always almost full is the oldest trick) */
     .rv-mixer__lvl { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #ffe135; }
     .rv-mixer__lvlbar { flex: 1; min-width: 60px; height: 7px; background: #241a38; overflow: hidden; }
     .rv-mixer__lvlbar i { display: block; height: 100%; width: 0; background: #ffe135; transition: width 0.4s ease; }
-    .rv-mixer__lvl--pop { animation: rvLvlPop 0.7s steps(3); }
-    @keyframes rvLvlPop { 33% { transform: scale(1.25); } 66% { transform: scale(0.95); } }
+    .rv-mixer__lvl--pop { animation: rvLvlPop 0.9s steps(3); }
+    .rv-mixer__lvl--pop .rv-mixer__lvlbar { box-shadow: 0 0 6px #ffe135, 0 0 16px #ffe135; }
+    .rv-mixer__lvl--pop span:first-child { color: #fffdf5; text-shadow: 0 0 8px #ffe135; }
+    @keyframes rvLvlPop { 33% { transform: scale(1.3); } 66% { transform: scale(0.95); } }
+    /* the level-up moment: pixel arrow + LVL N riding up off YOUR banana */
+    .rv-lvlup {
+      position: absolute; transform: translate(-50%, -50%); z-index: 650; pointer-events: none;
+      display: flex; align-items: center; gap: 6px;
+      font-weight: 800; font-size: 1.1rem; color: #ffe135; letter-spacing: 0.04em;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000, 0 0 12px rgba(255, 225, 53, 0.8);
+      animation: rvLvlUpFloat 1.85s ease-out forwards;
+    }
+    .rv-lvlup svg { width: 22px; height: 25px; image-rendering: pixelated; filter: drop-shadow(0 0 6px rgba(255, 225, 53, 0.9)); animation: rvLvlArrow 0.4s steps(2) infinite; }
+    @keyframes rvLvlUpFloat {
+      0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+      12% { opacity: 1; transform: translate(-50%, -70%) scale(1.35); }
+      26% { transform: translate(-50%, -85%) scale(1); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -230%) scale(1); }
+    }
+    @keyframes rvLvlArrow { 50% { transform: translateY(-3px); } }
     /* club titles on the roster — earned status, gold and quiet */
     .rv-title { font-style: normal; color: #ffe135; font-size: 0.62rem; letter-spacing: 0.06em; margin-left: 6px; opacity: 0.85; }
     .rv-mixer--charged::after { content: '🍌 JELLY TIME!'; display: block; padding: 4px 2px; font-size: 0.66rem; }
@@ -615,8 +634,6 @@ const GUIDE = [
        meter itself steps forward — and UP, clear of the tap-to-continue band
        (they shared the bottom row on mobile) */
     .rv-mixer--tour { transform: translateY(-64px) scale(1.55); transform-origin: 100% 100%; transition: transform 0.45s ease; box-shadow: 0 0 26px rgba(255, 225, 53, 0.45); }
-    .rv-mixer__chain { margin-top: 4px; color: #ffe135; }
-    .rv-mixer__chain[hidden] { display: none; }
     /* THE NIGHT: the quest log gets its own panel, top-left — the classic HUD
        spot for "what am I doing?", away from the meter it merely feeds */
     .rv-quest { /* same height as the zoom button opposite — the top row is symmetric */
@@ -768,15 +785,17 @@ const GUIDE = [
     @keyframes rvBigOut { 100% { transform: translateX(-50%) translateY(-24px); opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .rv-bigmoment, .rv-bigmoment--out { animation: none; } }
 
-    /* pickup/earn banners: SLIM and at the BOTTOM — the old top box covered the
-       exact spot you tap to walk toward the DJ, and ate the taps (Trym, iOS).
-       They live in a STACK now: simultaneous pickups pile upward instead of
-       overlapping on the same pixel (Trym's catch) */
+    /* pickup/earn banners: TOP BAND, between the quest chip and the zoom
+       button (Trym v3: the bottom stack covered the LVL meter + Barty's
+       bubbles). pointer-events: none throughout, so the old top-box
+       tap-eating bug (why they once moved down) cannot return. On phones the
+       centre gap up there is too narrow — they drop just below the row. */
     .rv-toasts {
-      position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 700;
+      position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 700;
       display: flex; flex-direction: column; align-items: center; gap: 5px;
-      max-width: 94%; width: max-content; pointer-events: none;
+      max-width: min(94%, calc(100% - 250px)); width: max-content; pointer-events: none;
     }
+    @media (max-width: 640px) { .rv-toasts { top: 60px; max-width: 94%; } }
     .rv-glowtoast {
       max-width: 100%; text-align: center; font-size: 0.72rem; line-height: 1.4;
       background: rgba(23, 18, 31, 0.94); color: #fffdf5; border: 2px solid #39ff14;
@@ -977,7 +996,6 @@ const GUIDE = [
           <div class="rv-mixer" id="rvMixer" aria-hidden="true" title="the JELLY meter — fill it and it's jelly time">
             <div class="rv-mixer__row"><span>JELLY</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
             <div class="rv-mixer__lvl" id="rvLvlRow"><span id="rvLvlN">LVL 1</span><span class="rv-mixer__lvlbar"><i id="rvLvlFill"></i></span></div>
-            <div class="rv-mixer__chain" id="rvChainRow" hidden>⛓ CHAIN ×<span id="rvChainN">1</span></div>
           </div>
         </div>
         <!-- THE TOUR: first-visit cinematic — camera moves, big pixel type,
