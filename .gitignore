@@ -39,3 +39,6 @@ tools/*-ga4-key*.json
 tools/trymstene-com-*.json
 tools/*.iam.gserviceaccount.com.json
 ad-pack/
+
+# wrangler local dev state (miniflare caches, local DO sqlite)
+.wrangler/
