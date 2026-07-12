@@ -329,6 +329,11 @@ a { color: inherit; }
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 .card:hover { transform: translate(-3px, -3px) rotate(-1deg); box-shadow: 11px 11px 0 var(--ink); }
+/* paper cards on DARK bands: reset the band's paper-white text back to ink
+   (white-on-white otherwise) and swap the invisible ink shadow for the
+   banana one — the same treatment .btn--light gets on dark */
+.block--dark .card { color: var(--ink); box-shadow: 6px 6px 0 var(--banana); }
+.block--dark .card:hover { box-shadow: 11px 11px 0 var(--banana); }
 .card h3 { font-size: 1.3rem; margin-bottom: 0.5rem; }
 .card__go { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--hot); }
 
