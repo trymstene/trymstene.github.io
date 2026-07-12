@@ -38,6 +38,7 @@ export const WEARABLE_PACKS = {
       { id: 'tophat', label: 'Top hat', phrase: 'a top hat',    art: 'tophat', seat: 0  },
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },
       { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
+      { id: 'sombrero', label: 'Sombrero', phrase: 'a big sombrero', art: 'sombrero', seat: -1 },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -45,12 +46,14 @@ export const WEARABLE_PACKS = {
       { id: 'hearts', label: 'Hearts',       phrase: 'heart shades',          front: 'heartsFront', side: 'heartsSide' },
       { id: 'visor',  label: 'Visor',        phrase: 'a visor',               front: 'visorFront',  side: 'visorSide'  },
       { id: 'threed', label: '3D', phrase: '3D glasses', front: 'threedFront', side: 'threedSide' },
+      { id: 'potter', label: 'Rounds', phrase: 'round wizard glasses', front: 'potterFront', side: 'potterSide' },
     ],
     // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
     // left-facing frames), the CHEST (per-frame btCx body centre + dy), or a
     // HAND (per-frame glove centre + grip).
     extras: [
       { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
+      { id: 'fatstache', label: 'Fat moustache', phrase: 'a fat black moustache', anchor: 'face', dy: 4.0, sideDx: -1.2, front: 'fatstacheFront', side: 'fatstacheSide' },
       { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', dy: 9.5, art: 'bowtie' },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
@@ -58,6 +61,7 @@ export const WEARABLE_PACKS = {
       { id: 'sneakersblue', label: 'Blue sneakers', phrase: 'blue sneakers', anchor: 'feet', art: 'sneakersblue' },
       { id: 'sneakersgold', label: 'Gold sneakers', phrase: 'gold sneakers', anchor: 'feet', art: 'sneakersgold' },
       { id: 'skates', label: 'Roller skates', phrase: 'roller skates', anchor: 'feet', art: 'skates' },
+      { id: 'clownshoes', label: 'Clown shoes', phrase: 'big clown shoes', anchor: 'feet', art: 'clownshoes' },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.

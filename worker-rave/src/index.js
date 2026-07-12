@@ -21,9 +21,9 @@
 // canonical order: edit wearables.js, then paste here. EXTRA_IDS === its
 // CLIENT_EXTRA_IDS export (non-raveOnly extras); raveOnly items (beer/cone/
 // vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
-const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking'];
-const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi'];
-const EXTRA_IDS = ['mustache', 'bowtie', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'boombox', 'glowstick', 'goldbanana'];
+const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero'];
+const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi', 'potter'];
+const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'boombox', 'glowstick', 'goldbanana'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
 const ROOM_CAP = 200;
