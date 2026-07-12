@@ -27,6 +27,24 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
 >
   <Fragment slot="head">
     <link rel="stylesheet" href="/css/shop.css" />
+    <style>
+      /* the PDP pose picker — same idea as the builder's freeze strip: you can
+         still change your mind about the MOVE right up until you order */
+      .pdp-poses__wrap { margin-top: 0.9rem; }
+      .pdp-poses__label { margin: 0 0 0.5rem; font-size: 0.9rem; }
+      .pdp-poses {
+        display: flex; gap: 0.5rem; flex-wrap: nowrap; overflow-x: auto;
+        scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; padding-bottom: 6px;
+      }
+      .pdp-poses button {
+        flex: 0 0 auto; padding: 2px; background: #fff; border: 3px solid var(--ink, #111);
+        cursor: pointer; line-height: 0; scroll-snap-align: start;
+      }
+      .pdp-poses button[aria-pressed="true"] {
+        border-color: var(--hot, #ff2e88); box-shadow: 3px 3px 0 var(--ink, #111);
+      }
+      .pdp-poses canvas { width: 64px; height: 64px; image-rendering: pixelated; display: block; }
+    </style>
   </Fragment>
 
   <nav class="crumbs" aria-label="Breadcrumb">
@@ -36,6 +54,10 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
   <main class="pdp" id="pdpRoot" data-product={p.key}>
     <div class="pdp__gallery">
       <canvas id="pdpMock" class="pdp__main" width="900" height="900" aria-label={`Preview of your banana as a real ${nameLc}`}></canvas>
+      <div class="pdp-poses__wrap">
+        <p class="pdp-poses__label"><strong>Pick your pose</strong> — the move that gets printed</p>
+        <div class="pdp-poses" id="pdpPoses" role="group" aria-label="Pick your pose"></div>
+      </div>
       <p style="margin:0.9rem 0 0;font-size:0.9rem;">
         <a id="pdpBack" href="/make-a-banana/"><PixelIcon name="palette" /> Back to editing</a>
       </p>

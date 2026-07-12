@@ -42,6 +42,39 @@ function paintMockup() {
   main.getContext('2d').drawImage(mock, 0, 0);
 }
 
+// last-minute pose change, right on the product page (Trym: you shouldn't have
+// to go back to the editor just to pick a different move). state.frame feeds
+// the mockup AND renderPrintFile, so what you pick here is what gets printed.
+function buildPosePicker() {
+  const host = el('pdpPoses');
+  if (!host) return;
+  const mark = () => host.querySelectorAll('button').forEach((b) =>
+    b.setAttribute('aria-pressed', String(parseInt(b.dataset.frame, 10) === state.frame)));
+  for (let i = 0; i < NFRAMES; i++) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.frame = i;
+    b.setAttribute('aria-label', 'Dance frame ' + (i + 1));
+    const c = document.createElement('canvas'); c.width = 96; c.height = 96;
+    // thumbnails show the outfit, not effects/captions (same as the builder's strip)
+    composite(c.getContext('2d'), 96, i, state, { bg: 'transparent', captions: false });
+    b.appendChild(c);
+    b.onclick = () => {
+      state.frame = i;
+      paintMockup(); mark();
+      // keep the pose in the URL so back-to-editor, cross-sell and refresh all agree
+      const q = new URLSearchParams(location.search); q.set('f', String(i));
+      history.replaceState(null, '', location.pathname + '?' + q.toString());
+      const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
+      document.querySelectorAll('[data-xsell]').forEach((a) => {
+        a.href = a.href.split('?')[0] + location.search;
+      });
+      track('pdp_pose_pick', { product: product.key, frame: i });
+    };
+    host.appendChild(b);
+  }
+  mark();
+}
+
 async function boot() {
   el('pdpCut').textContent = state.bg === 'transparent'
     ? `${product.size} ${product.material}, die-cut along your design’s outline`
@@ -63,6 +96,7 @@ async function boot() {
   }
   await assetsReady();
   paintMockup();
+  buildPosePicker();
   track('sticker_pdp_view', { product: product.key, design: designStr(state) });
   const lp = await localizedPrice(product);
   if (lp) {

@@ -603,6 +603,29 @@ function init() {
     }
     goToProduct(prod);
   });
+  // ---- scroll-visibility truth (Trym's CRO question: does anyone even SEE
+  // the order button on mobile?): fire ONE section_seen per section per load
+  // when it's half-visible. placement is a registered GA4 custom dimension,
+  // so "saw the button ÷ builder_start" is a real, queryable rate.
+  if ('IntersectionObserver' in window) {
+    const seen = new Set();
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        const place = en.target.dataset.seenPlace;
+        if (seen.has(place)) return;
+        seen.add(place);
+        track('section_seen', { placement: place });
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.5 });
+    [['bbQuickSticker', 'order_btn_top'], ['bbTakeTitle', 'take_it'], ['bbPgrid', 'tiles']]
+      .forEach(([id, place]) => {
+        const t = el(id);
+        if (t) { t.dataset.seenPlace = place; io.observe(t); }
+      });
+  }
+
   // exposed for debugging + future flows
   window.__bananaBuilder = { state, drawComposite, bboxOf, pad, crop, assetsReady, FRAMES, PACKS };
 
