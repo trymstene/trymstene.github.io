@@ -1,0 +1,15 @@
+# Banana Pulse — Trym's private realtime GA4 dashboard.
+# Token-gated (DASH_TOKEN secret); the GA4 service-account key lives ONLY as
+# a worker secret (GA4_KEY). Never linked from the site, X-Robots-Tag: noindex
+# on every response. SEPARATE worker (blast radius rule).
+#
+# Deploy: cd worker-pulse && npx wrangler deploy
+# Secrets: wrangler secret put GA4_KEY   (the service-account JSON)
+#          wrangler secret put DASH_TOKEN (the door key)
+
+name = "banana-pulse"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[vars]
+PROPERTY_ID = "358694050"
