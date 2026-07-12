@@ -27,10 +27,17 @@ const { topic = 'general' } = Astro.props;
     if (params.get('topic') === 'licensing' && form.dataset.topic === 'general') {
       form.dataset.topic = 'licensing';
       form.querySelector('textarea').value = [
-        'Licensing enquiry', '', 'Name / company:', "What I'm making:",
-        'How the banana would be used:', "Where it'll appear:", 'Reach / audience size:',
-        'Exclusive or non-exclusive + how long:', 'Ballpark budget:',
-        'Crypto/token/web3 project? (yes/no):', 'Link (site/deck/mockup):',
+        'Licensing enquiry', '',
+        'Legal entity (registered company name):',
+        'Company reg. no. + country:',
+        'Contact name + role (who signs):',
+        "What I'm making:",
+        'How the banana would be used:',
+        "Where it'll appear (links):",
+        'Reach / audience size:',
+        'How long you need it (licenses are non-exclusive):',
+        'Ballpark budget:',
+        'Crypto/token/web3 project? (yes/no):',
       ].join('\n');
     }
     form.addEventListener('submit', async (e) => {
