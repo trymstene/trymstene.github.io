@@ -14,7 +14,7 @@ const LENS_EVENTS = [
   'generator_click', 'surprise_me', 'share_link_copy', 'rave_join',
   'sticker_pdp_view', 'sticker_pdp_checkout', 'checkout_redirect',
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
-  'begin_checkout', 'purchase',
+  'begin_checkout', 'purchase', 'shop_view',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -419,7 +419,8 @@ var EV_LABEL = {
   checkout_redirect:'went to checkout 💰', select_item:'picked merch',
   view_item:'viewed merch', license_click:'read the license',
   tip_click:'tipped the banana 💛', forge_start:'fired up the forge',
-  begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰' };
+  begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
+  shop_view:'browsed the shop' };
 var LENSES = ['gif_download','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -639,6 +640,8 @@ var FUNNELS=[
     'Shopify reported real money paid. Store-wide — and stays 0 until the Shopify→GA4 purchase link is fixed (your errand in the G&Y channel).']],
   [['sessions','On the site',
     'A visit to trymstene.com — any page, any door. Everyone starts here.'],
+   ['shop_view','Browsed the shop',
+    'They opened the Banana Shop front page (/shop/) and saw the product grid. Counting starts 13 Jul — the event is new.'],
    ['select_item','Picked a product',
     'They clicked a product tile in the Banana Shop (/shop/).'],
    ['view_item','Product page',

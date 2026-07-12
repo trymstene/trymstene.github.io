@@ -87,6 +87,9 @@ const collectionSchema = {
   </section>
 
   <script>
+    // funnel top: someone opened the shop's front page — the merch funnel's
+    // first real step in Banana Pulse (before select_item / view_item)
+    if (window.gtag) window.gtag('event', 'shop_view');
     // funnel: which PLP card gets picked (pairs with view_item + begin_checkout
     // in /js/shop.js). gtag beacons survive the navigation.
     document.querySelectorAll('.shop-grid .shop-card').forEach((card) => {
