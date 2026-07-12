@@ -95,7 +95,7 @@ async function apiLive(env) {
   if (hit && Date.now() - hit.t < 25000) return hit.data;
 
   const q = (body) => gaPost(env, 'runRealtimeReport', body);
-  const [countries, cities, pages, events, spark, recent] = await Promise.all([
+  const [countries, cities, pages, events, spark, recent, cpages] = await Promise.all([
     q({ dimensions: [{ name: 'countryId' }, { name: 'country' }],
         metrics: [{ name: 'activeUsers' }], limit: 250 }),
     q({ dimensions: [{ name: 'city' }, { name: 'countryId' }],
@@ -111,6 +111,9 @@ async function apiLive(env) {
         metrics: [{ name: 'eventCount' }], limit: 60,
         minuteRanges: [{ startMinutesAgo: 4, endMinutesAgo: 0 }],
         orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }] }),
+    q({ dimensions: [{ name: 'countryId' }, { name: 'unifiedScreenName' }],
+        metrics: [{ name: 'activeUsers' }], limit: 80,
+        orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }] }),
   ]);
 
   const sparkArr = new Array(30).fill(0);
@@ -129,6 +132,12 @@ async function apiLive(env) {
     spark: sparkArr,
     recent: rows(recent).map((r) => ({ name: dim(r, 0), cc: dim(r, 1), v: met(r, 0) }))
       .filter((e) => LENS_EVENTS.includes(e.name)),
+    countryPages: rows(cpages).reduce((acc, r) => {
+      const cc = dim(r, 0);
+      (acc[cc] = acc[cc] || []).push({
+        page: dim(r, 1).replace(/\s*\|\s*Trym Stene\s*$/, ''), v: met(r, 0) });
+      return acc;
+    }, {}),
   };
   rspCache.set('live', { t: Date.now(), data });
   return data;
@@ -266,14 +275,19 @@ function page() {
   <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" alt="">
   <h1>BANANA PULSE</h1>
   <span class="live-dot"></span>
-  <span><span class="bignum" id="liveTotal">…</span> <span class="muted">on the floor right now</span></span>
+  <span><span class="bignum" id="liveTotal">…</span> <span class="muted">on the site right now</span></span>
   <canvas id="spark" width="120" height="26" style="image-rendering:pixelated;"></canvas>
 </div>
 <div class="err" id="err"></div>
 
 <div class="panel">
-  <h2>🌍 The floor — pixel earth</h2>
-  <canvas id="map"></canvas>
+  <h2>🌍 Pixel earth</h2>
+  <div style="position:relative;">
+    <canvas id="map"></canvas>
+    <div id="mapTip" style="display:none;position:absolute;pointer-events:none;z-index:5;
+      background:#000;border:2px solid var(--nana);padding:7px 9px;font-size:.72rem;
+      max-width:240px;box-shadow:4px 4px 0 rgba(0,0,0,.6);"></div>
+  </div>
   <div class="chips" id="mapModes">
     <button class="chip on" data-mode="live">LIVE · who&#39;s on now</button>
     <button class="chip" data-mode="range">RANGE · visitors</button>
@@ -317,7 +331,7 @@ function page() {
 
 <div class="grid2">
   <div class="panel"><h2>📄 On screen right now</h2><table id="livePages"></table></div>
-  <div class="panel"><h2>🏙️ Cities on the floor</h2><table id="liveCities"></table></div>
+  <div class="panel"><h2>🏙️ Cities visiting right now</h2><table id="liveCities"></table></div>
 </div>
 
 <p class="foot">🍌 private — token door, noindex, no links from anywhere · live refresh 30s · range refresh 5m</p>
@@ -373,9 +387,11 @@ function drawMap(){
     for(var x=0;x<MAP.w;x++){ if(row[x]==='1') mctx.fillRect(x*PX,y*PX,PX-1,PX-1); } }
   var data=mapData(); var max=1;
   data.forEach(function(d){ if(d.v>max) max=d.v; });
+  lastDots=[];
   data.forEach(function(d){
     var c=MAP.cent[d.cc]; if(!c) return;
     var r=1+Math.round(2*Math.sqrt(d.v/max));
+    lastDots.push({x:c[0], y:c[1], r:r, cc:d.cc, name:d.name, v:d.v});
     var glow=(state.mode==='live')? (0.55+0.45*Math.sin((pulse/60)*6.283)) : 1;
     mctx.fillStyle = state.mode==='event' ? 'rgba(94,224,138,'+glow+')'
       : (state.mode==='live' ? 'rgba(255,210,63,'+glow+')' : 'rgba(255,93,143,'+glow+')');
@@ -392,6 +408,42 @@ function drawMap(){
     : '● green = “'+(EV_LABEL[state.lens]||state.lens)+'” ('+state.lens+'), '+state.from+' → '+state.to+' ('+total+' total)';
 }
 setInterval(drawMap, 120);
+var lastDots=[];
+
+// hover a pulse → who/where/what they're looking at (LIVE mode gets pages)
+var mapTip=document.getElementById('mapTip');
+function tipFor(ev){
+  var rect=mapCv.getBoundingClientRect();
+  var cx=(ev.clientX-rect.left)/rect.width*MAP.w;
+  var cy=(ev.clientY-rect.top)/rect.height*MAP.h;
+  var best=null, bd=1e9;
+  lastDots.forEach(function(d){
+    var dx=Math.abs(cx-d.x), dy=Math.abs(cy-d.y);
+    var dist=Math.max(dx,dy);
+    if(dist<=d.r+1.5 && dist<bd){ bd=dist; best=d; }
+  });
+  if(!best){ mapTip.style.display='none'; return; }
+  var html='<div style="color:var(--nana);">'+FLAG(best.cc)+' '+esc(best.name)+'</div>';
+  if(state.mode==='live'){
+    html+='<div>'+best.v+' visiting now</div>';
+    var pgs=(state.live && state.live.countryPages && state.live.countryPages[best.cc])||[];
+    pgs.slice(0,3).forEach(function(p){
+      html+='<div class="muted">▸ '+esc(p.page)+(p.v>1?' ×'+p.v:'')+'</div>'; });
+  } else if(state.mode==='range'){
+    html+='<div>'+best.v+' sessions · '+state.from+' → '+state.to+'</div>';
+  } else {
+    html+='<div>'+best.v+'× '+(EV_LABEL[state.lens]||state.lens)+'</div>';
+  }
+  mapTip.innerHTML=html;
+  mapTip.style.display='block';
+  var wrap=mapCv.parentElement.getBoundingClientRect();
+  var tx=ev.clientX-wrap.left+14, ty=ev.clientY-wrap.top+10;
+  if(tx>wrap.width-250) tx=Math.max(4,tx-270);
+  mapTip.style.left=tx+'px'; mapTip.style.top=ty+'px';
+}
+mapCv.addEventListener('mousemove', tipFor);
+mapCv.addEventListener('mouseleave', function(){ mapTip.style.display='none'; });
+mapCv.addEventListener('click', tipFor); // tap on mobile
 
 // ── live widgets ──
 function drawSpark(){
@@ -416,7 +468,7 @@ function renderLive(){
   var t = L.recent.map(function(e){
     return FLAG(e.cc)+' '+(EV_LABEL[e.name]||e.name)+(e.v>1?' ×'+e.v:''); });
   document.getElementById('ticker').textContent =
-    t.length ? '⏱ Last 5 min:  '+t.join('   ·   ')+'   🍌' : 'quiet on the floor… the banana dances alone 🍌';
+    t.length ? '⏱ Last 5 min:  '+t.join('   ·   ')+'   🍌' : 'quiet out there right now… the banana dances alone 🍌';
 }
 function loadLive(){
   api('/api/live').then(function(d){ state.live=d; renderLive(); })
