@@ -37,6 +37,11 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 
 /* ---------- PDP layout ---------- */
 .pdp { max-width: 1200px; margin: 0 auto; padding: 1.5rem 5vw 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+/* grid children must be allowed to shrink below their content's intrinsic
+   width — the 900px PDP mock canvas otherwise balloons the mobile layout
+   viewport (phone renders zoomed-out and the media queries never trigger) */
+.pdp > * { min-width: 0; }
+.pdp__main { max-width: 100%; }
 @media (max-width: 820px) { .pdp { grid-template-columns: 1fr; gap: 1.5rem; padding-top: 1rem; } }
 
 /* gallery */

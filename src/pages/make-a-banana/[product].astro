@@ -27,9 +27,11 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
 >
   <Fragment slot="head">
     <link rel="stylesheet" href="/css/shop.css" />
-    <style>
+    <style is:global>
       /* the PDP pose picker — same idea as the builder's freeze strip: you can
-         still change your mind about the MOVE right up until you order */
+         still change your mind about the MOVE right up until you order.
+         is:global because the strip's buttons are created by JS at runtime,
+         so Astro's scoped-style attribute never lands on them */
       .pdp-poses__wrap { margin-top: 0.9rem; }
       .pdp-poses__label { margin: 0 0 0.5rem; font-size: 0.9rem; }
       .pdp-poses {
