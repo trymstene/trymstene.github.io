@@ -14,6 +14,7 @@ const LENS_EVENTS = [
   'generator_click', 'surprise_me', 'share_link_copy', 'rave_join',
   'sticker_pdp_view', 'sticker_pdp_checkout', 'checkout_redirect',
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
+  'begin_checkout', 'purchase',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -334,9 +335,11 @@ var EV_LABEL = {
   sticker_pdp_view:'eyed a sticker', sticker_pdp_checkout:'hit ORDER',
   checkout_redirect:'went to checkout 💰', select_item:'picked merch',
   view_item:'viewed merch', license_click:'read the license',
-  tip_click:'tipped the banana 💛', forge_start:'fired up the forge' };
+  tip_click:'tipped the banana 💛', forge_start:'fired up the forge',
+  begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰' };
 var LENSES = ['gif_download','builder_start','rave_join','sticker_pdp_view',
-  'checkout_redirect','view_item','select_item','wallpaper_download','license_click'];
+  'checkout_redirect','begin_checkout','purchase','view_item','select_item',
+  'wallpaper_download','license_click'];
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };
 
@@ -440,7 +443,8 @@ function stepVal(R,key){
 var FUNNELS=[
   [['sessions','On the site'],['builder_start','Builder loaded'],
    ['sticker_pdp_view','Product page'],['sticker_pdp_checkout','Hit ORDER'],
-   ['checkout_redirect','→ Shopify checkout']],
+   ['checkout_redirect','→ Shopify checkout'],
+   ['begin_checkout','Checkout started ⌁store-wide'],['purchase','PAID 💰 ⌁store-wide']],
   [['sessions','On the site'],['select_item','Picked a product'],
    ['view_item','Product page'],['transactions','Purchases 💰']]];
 function renderFunnel(el, steps){
@@ -454,10 +458,11 @@ function renderFunnel(el, steps){
   for(var i=0;i<steps.length;i++){
     var pct=vals[0]? Math.max(1.2,(vals[i]/vals[0])*100) : 0;
     var conv=i>0 ? (vals[i-1]? Math.round((vals[i]/vals[i-1])*100) : 0) : null;
-    html+='<div class="fstep"><div class="row"><span>'+steps[i][1]+'</span>'+
+    var lbl=steps[i][1].replace(' ⌁store-wide',' <span class="muted">(store-wide)</span>');
+    html+='<div class="fstep"><div class="row"><span>'+lbl+'</span>'+
       '<span>'+fmt(vals[i])+' '+delta(vals[i],pvals[i])+'</span></div>'+
       '<div class="fbar'+(i===worst?' hotspot':'')+'"><div class="fill" style="width:'+pct+'%"></div></div>'+
-      (i>0?'<div class="fdrop">'+(i===worst?'<b>⟵ WORK HERE · </b>':'')+conv+'% make it from “'+steps[i-1][1]+'”</div>':'')+
+      (i>0?'<div class="fdrop">'+(i===worst?'<b>⟵ WORK HERE · </b>':'')+conv+'% make it from “'+steps[i-1][1].replace(/ ⌁.*$/,'')+'”</div>':'')+
       '</div>';
   }
   el.innerHTML=html;
