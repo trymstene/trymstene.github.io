@@ -215,8 +215,8 @@ function page() {
 <meta name="robots" content="noindex,nofollow,noarchive">
 <title>🍌 Banana Pulse</title>
 <style>
-  :root{ --bg:#0d0b16; --panel:#171326; --line:#2b2344; --ink:#f4eeff; --dim:#8f86ad;
-         --nana:#ffd23f; --hot:#ff5d8f; --ok:#5ee08a; --bad:#ff6b6b; --cool:#5ec8e0; }
+  :root{ --bg:#0d0b16; --panel:#171326; --line:#4a3f14; --ink:#f4eeff; --dim:#9a9070;
+         --nana:#ffe135; --hot:#ff5d8f; --ok:#5ee08a; --bad:#ff6b6b; --cool:#5ec8e0; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html{ -webkit-text-size-adjust:100%; }
   body{ background:var(--bg); color:var(--ink);
@@ -231,16 +231,23 @@ function page() {
              box-shadow:0 0 8px var(--ok); animation:blink 1.2s steps(2) infinite; }
   @keyframes blink{ 50%{ opacity:.25; } }
   .bignum{ font-size:1.5rem; color:var(--nana); }
-  .panel{ background:var(--panel); border:3px solid #000; box-shadow:6px 6px 0 #000;
-          padding:14px; margin-bottom:16px; }
+  .panel{ background:var(--panel); border:3px solid var(--nana); box-shadow:7px 7px 0 #000;
+          padding:14px; margin-bottom:18px; }
+  h1{ color:var(--nana); text-shadow:3px 3px 0 #000; }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media(max-width:800px){ .grid2{ grid-template-columns:1fr; } }
   canvas#map{ width:100%; image-rendering:pixelated; display:block; background:#0a0814;
               border:3px solid #000; }
   .chips{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
-  .chip{ font:inherit; font-size:.72rem; padding:5px 9px; background:#0a0814; color:var(--dim);
-         border:2px solid var(--line); cursor:pointer; letter-spacing:.05em; }
-  .chip.on{ background:var(--nana); color:#000; border-color:var(--nana); }
+  .chip{ font:inherit; font-size:.72rem; padding:5px 9px; background:#0a0814; color:#d8c96a;
+         border:2px solid #6b5c16; cursor:pointer; letter-spacing:.05em; }
+  .chip:hover{ border-color:var(--nana); color:var(--nana); }
+  .chip.on{ background:var(--nana); color:#000; border-color:var(--nana); box-shadow:3px 3px 0 #000; }
+  .mzoom{ position:absolute; top:8px; right:8px; z-index:6; display:flex; gap:6px; }
+  .mzoom button{ font:inherit; font-weight:800; font-size:1rem; min-width:40px; min-height:40px;
+    background:rgba(13,11,20,.85); color:#fffdf5; border:3px solid var(--nana); cursor:pointer;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; }
+  .mzoom button:hover{ background:var(--nana); color:#111; }
   select,input[type=date]{ font:inherit; font-size:.72rem; background:#0a0814; color:var(--ink);
          border:2px solid var(--line); padding:4px 6px; }
   .ticker{ overflow:hidden; white-space:nowrap; border-block:2px solid var(--line);
@@ -248,11 +255,12 @@ function page() {
   .ticker .in{ display:inline-block; padding-left:100%; animation:tick 40s linear infinite; }
   @keyframes tick{ to{ transform:translateX(-100%); } }
   .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
-  .kpi{ background:#0a0814; border:2px solid var(--line); padding:10px; }
-  .kpi .l{ font-size:.62rem; color:var(--dim); letter-spacing:.14em; text-transform:uppercase; }
-  .kpi .v{ font-size:1.25rem; color:var(--nana); margin-top:2px; }
+  .kpi{ background:var(--nana); border:3px solid #000; box-shadow:4px 4px 0 #000; padding:10px; }
+  .kpi .l{ font-size:.62rem; color:#6b5a00; letter-spacing:.14em; text-transform:uppercase; }
+  .kpi .v{ font-size:1.25rem; color:#111; margin-top:2px; }
   .kpi .d{ font-size:.68rem; margin-top:2px; }
   .up{ color:var(--ok); } .down{ color:var(--bad); } .flat{ color:var(--dim); }
+  .kpi .up{ color:#0a7a3c; } .kpi .down{ color:#c81e1e; } .kpi .flat{ color:#6b5a00; }
   .fstep{ margin-bottom:8px; }
   .fstep .row{ display:flex; justify-content:space-between; font-size:.74rem; margin-bottom:3px; }
   .fbar{ height:16px; background:#0a0814; border:2px solid var(--line); position:relative; }
@@ -284,6 +292,10 @@ function page() {
   <h2>🌍 Pixel earth</h2>
   <div style="position:relative;">
     <canvas id="map"></canvas>
+    <div class="mzoom">
+      <button id="zIn" aria-label="Zoom in">🔍+</button>
+      <button id="zOut" aria-label="Zoom out" style="display:none;">−</button>
+    </div>
     <div id="mapTip" style="display:none;position:absolute;pointer-events:none;z-index:5;
       background:#000;border:2px solid var(--nana);padding:7px 9px;font-size:.72rem;
       max-width:240px;box-shadow:4px 4px 0 rgba(0,0,0,.6);"></div>
@@ -370,9 +382,15 @@ var LAND = MAP.land.map(function(hexRow){
   var bits=''; for(var i=0;i<hexRow.length;i++){ bits+=('000'+parseInt(hexRow[i],16).toString(2)).slice(-4); }
   return bits; });
 var mapCv = document.getElementById('map');
-var PX = 8; mapCv.width = MAP.w*PX; mapCv.height = MAP.h*PX;
+var PX = 6; mapCv.width = MAP.w*PX; mapCv.height = MAP.h*PX;
 var mctx = mapCv.getContext('2d');
 var pulse = 0;
+var view = { s:1, ox:0, oy:0 }; // zoom scale + pan offset in map cells
+function clampView(){
+  view.s = Math.max(1, Math.min(5, view.s));
+  view.ox = Math.max(0, Math.min(MAP.w - MAP.w/view.s, view.ox));
+  view.oy = Math.max(0, Math.min(MAP.h - MAP.h/view.s, view.oy));
+}
 function mapData(){
   if(state.mode==='live') return (state.live? state.live.countries.map(function(c){ return {cc:c.cc,v:c.v,name:c.name}; }):[]);
   if(state.mode==='range') return (state.range? state.range.countries.map(function(c){ return {cc:c.cc,v:c.sessions,name:c.name}; }):[]);
@@ -381,7 +399,9 @@ function mapData(){
 }
 function drawMap(){
   pulse=(pulse+1)%60;
+  mctx.setTransform(1,0,0,1,0,0);
   mctx.fillStyle='#0a0814'; mctx.fillRect(0,0,mapCv.width,mapCv.height);
+  mctx.setTransform(view.s,0,0,view.s,-view.ox*PX*view.s,-view.oy*PX*view.s);
   mctx.fillStyle='#241d3a';
   for(var y=0;y<MAP.h;y++){ var row=LAND[y];
     for(var x=0;x<MAP.w;x++){ if(row[x]==='1') mctx.fillRect(x*PX,y*PX,PX-1,PX-1); } }
@@ -414,8 +434,8 @@ var lastDots=[];
 var mapTip=document.getElementById('mapTip');
 function tipFor(ev){
   var rect=mapCv.getBoundingClientRect();
-  var cx=(ev.clientX-rect.left)/rect.width*MAP.w;
-  var cy=(ev.clientY-rect.top)/rect.height*MAP.h;
+  var cx=view.ox+(ev.clientX-rect.left)/rect.width*(MAP.w/view.s);
+  var cy=view.oy+(ev.clientY-rect.top)/rect.height*(MAP.h/view.s);
   var best=null, bd=1e9;
   lastDots.forEach(function(d){
     var dx=Math.abs(cx-d.x), dy=Math.abs(cy-d.y);
@@ -441,9 +461,49 @@ function tipFor(ev){
   if(tx>wrap.width-250) tx=Math.max(4,tx-270);
   mapTip.style.left=tx+'px'; mapTip.style.top=ty+'px';
 }
-mapCv.addEventListener('mousemove', tipFor);
+mapCv.addEventListener('mousemove', function(ev){ if(!drag.on) tipFor(ev); });
 mapCv.addEventListener('mouseleave', function(){ mapTip.style.display='none'; });
-mapCv.addEventListener('click', tipFor); // tap on mobile
+
+// zoom — the rave's camera button, ported to the earth
+var zIn=document.getElementById('zIn'), zOut=document.getElementById('zOut');
+function setZoom(s){
+  var cxc=view.ox+(MAP.w/view.s)/2, cyc=view.oy+(MAP.h/view.s)/2;
+  view.s=s; view.ox=cxc-(MAP.w/s)/2; view.oy=cyc-(MAP.h/s)/2;
+  clampView();
+  zOut.style.display = view.s>1 ? '' : 'none';
+  zIn.textContent = view.s>=5 ? '🔍 max' : '🔍+';
+  mapCv.style.cursor = view.s>1 ? 'grab' : 'crosshair';
+  mapCv.style.touchAction = view.s>1 ? 'none' : 'auto'; // pan the MAP when zoomed, the PAGE when not
+  drawMap();
+}
+zIn.onclick=function(){ setZoom(Math.min(5, view.s+1)); };
+zOut.onclick=function(){ setZoom(Math.max(1, view.s-1)); };
+
+// drag to pan when zoomed; a tap without movement = the tooltip (mobile)
+var drag={ on:false, moved:false, x:0, y:0, ox:0, oy:0 };
+mapCv.addEventListener('pointerdown', function(ev){
+  drag.on=true; drag.moved=false; drag.x=ev.clientX; drag.y=ev.clientY;
+  drag.ox=view.ox; drag.oy=view.oy;
+  mapCv.setPointerCapture(ev.pointerId);
+  if(view.s>1) mapCv.style.cursor='grabbing';
+});
+mapCv.addEventListener('pointermove', function(ev){
+  if(!drag.on || view.s<=1) return;
+  var rect=mapCv.getBoundingClientRect();
+  var dx=ev.clientX-drag.x, dy=ev.clientY-drag.y;
+  if(Math.abs(dx)+Math.abs(dy)>6) drag.moved=true;
+  if(drag.moved){
+    mapTip.style.display='none';
+    view.ox=drag.ox-dx/rect.width*(MAP.w/view.s);
+    view.oy=drag.oy-dy/rect.height*(MAP.h/view.s);
+    clampView(); drawMap();
+  }
+});
+mapCv.addEventListener('pointerup', function(ev){
+  var wasTap=!drag.moved; drag.on=false;
+  mapCv.style.cursor = view.s>1 ? 'grab' : 'crosshair';
+  if(wasTap) tipFor(ev);
+});
 
 // ── live widgets ──
 function drawSpark(){
