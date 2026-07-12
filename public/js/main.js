@@ -37,6 +37,13 @@
       /[?&](tourtest|fxtest|welcometest|hypetest|stagetest|nighttest)(?:=|&|$)/.test(qs)) {
     isInternal = true; // a QA/debug param = us, this session
   }
+  if (!isInternal && /^\/inbox\/?$/.test(location.pathname) && /[?&]token=/.test(qs)) {
+    // the bananamail door: only Trym holds the token, so reading mail flags
+    // this browser as internal FOREVER (same as ?internal=1) — no more
+    // inbox-refresh "sessions" from unflagged devices
+    try { localStorage.setItem('tt-internal', '1'); } catch (e) {}
+    isInternal = true;
+  }
   if (isInternal) {
     gtag('set', { traffic_type: 'internal' });
     if (window.console) {
