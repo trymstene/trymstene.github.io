@@ -40,7 +40,8 @@ export const WEARABLE_PACKS = {
       { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
     ],
     shades: [
-      { id: 'shades', label: 'Deal with it', phrase: '"deal with it" shades', front: 'shadesFront', side: 'shadesSide' },
+      { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
+      { id: 'dwi', label: 'Deal with it', phrase: '"deal with it" shades', front: 'dwiFront', side: 'dwiSide' },
       { id: 'hearts', label: 'Hearts',       phrase: 'heart shades',          front: 'heartsFront', side: 'heartsSide' },
       { id: 'visor',  label: 'Visor',        phrase: 'a visor',               front: 'visorFront',  side: 'visorSide'  },
       { id: 'threed', label: '3D', phrase: '3D glasses', front: 'threedFront', side: 'threedSide' },

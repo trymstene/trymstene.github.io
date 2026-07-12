@@ -22,7 +22,7 @@
 // CLIENT_EXTRA_IDS export (non-raveOnly extras); raveOnly items (beer/cone/
 // vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
 const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking'];
-const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed'];
+const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi'];
 const EXTRA_IDS = ['mustache', 'bowtie', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'boombox', 'glowstick', 'goldbanana'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
