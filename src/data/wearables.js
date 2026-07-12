@@ -37,11 +37,13 @@ export const WEARABLE_PACKS = {
       { id: 'crown',  label: 'Crown',   phrase: 'a crown',      art: 'crown',  seat: -1 },
       { id: 'tophat', label: 'Top hat', phrase: 'a top hat',    art: 'tophat', seat: 0  },
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },
+      { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
     ],
     shades: [
       { id: 'shades', label: 'Deal with it', phrase: '"deal with it" shades', front: 'shadesFront', side: 'shadesSide' },
       { id: 'hearts', label: 'Hearts',       phrase: 'heart shades',          front: 'heartsFront', side: 'heartsSide' },
       { id: 'visor',  label: 'Visor',        phrase: 'a visor',               front: 'visorFront',  side: 'visorSide'  },
+      { id: 'threed', label: '3D', phrase: '3D glasses', front: 'threedFront', side: 'threedSide' },
     ],
     // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
     // left-facing frames), the CHEST (per-frame btCx body centre + dy), or a
@@ -54,6 +56,8 @@ export const WEARABLE_PACKS = {
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
       { id: 'sneakersblue', label: 'Blue sneakers', phrase: 'blue sneakers', anchor: 'feet', art: 'sneakersblue' },
       { id: 'sneakersgold', label: 'Gold sneakers', phrase: 'gold sneakers', anchor: 'feet', art: 'sneakersgold' },
+      { id: 'skates', label: 'Roller skates', phrase: 'roller skates', anchor: 'feet', art: 'skates' },
+      { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
