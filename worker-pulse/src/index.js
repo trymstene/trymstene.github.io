@@ -289,6 +289,16 @@ function page() {
   .kpi .up{ color:#0a7a3c; } .kpi .down{ color:#c81e1e; } .kpi .flat{ color:#6b5a00; }
   .fstep{ margin-bottom:8px; }
   .fstep .row{ display:flex; justify-content:space-between; font-size:.74rem; margin-bottom:3px; }
+  .info{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px;
+         border:2px solid #6b5c16; color:#d8c96a; font-size:.6rem; font-style:normal;
+         cursor:help; position:relative; vertical-align:1px; user-select:none;
+         -webkit-tap-highlight-color:transparent; }
+  .info:hover, .info.show{ border-color:var(--nana); color:var(--nana); }
+  .info::after{ content:attr(data-tip); display:none; position:absolute; left:-10px; top:150%;
+         z-index:9; width:230px; background:#000; border:2px solid var(--nana); color:var(--ink);
+         padding:7px 9px; font-size:.68rem; font-weight:700; line-height:1.45; text-align:left;
+         box-shadow:4px 4px 0 rgba(0,0,0,.6); white-space:normal; }
+  .info:hover::after, .info.show::after{ display:block; }
   .fbar{ height:16px; background:#0a0814; border:2px solid var(--line); position:relative; }
   .fbar .fill{ height:100%; background:var(--nana); }
   .fbar.hotspot .fill{ background:var(--hot); box-shadow:0 0 10px var(--hot); }
@@ -591,12 +601,28 @@ function stepVal(R,key){
   return evCount(R,key);
 }
 var FUNNELS=[
-  [['sessions','On the site'],['builder_start','Builder loaded'],
-   ['sticker_pdp_view','Product page'],['sticker_pdp_checkout','Hit ORDER'],
-   ['checkout_redirect','→ Shopify checkout'],
-   ['begin_checkout','Checkout started ⌁store-wide'],['purchase','PAID 💰 ⌁store-wide']],
-  [['sessions','On the site'],['select_item','Picked a product'],
-   ['view_item','Product page'],['transactions','Purchases 💰']]];
+  [['sessions','On the site',
+    'A visit to trymstene.com — any page, any door. Everyone starts here.'],
+   ['builder_start','Builder loaded',
+    'The make-a-banana builder finished loading on their screen — they saw the banana dance.'],
+   ['sticker_pdp_view','Product page',
+    'They clicked to order their design and landed on the sticker product page.'],
+   ['sticker_pdp_checkout','Hit ORDER',
+    'They clicked the big ORDER button on the sticker product page.'],
+   ['checkout_redirect','→ Shopify checkout',
+    'Their design uploaded fine and the browser sent them off to the Shopify checkout.'],
+   ['begin_checkout','Checkout started ⌁store-wide',
+    'Shopify saw a checkout page actually open. Store-wide: stickers AND merch count together here.'],
+   ['purchase','PAID 💰 ⌁store-wide',
+    'Shopify reported real money paid. Store-wide — and stays 0 until the Shopify→GA4 purchase link is fixed (your errand in the G&Y channel).']],
+  [['sessions','On the site',
+    'A visit to trymstene.com — any page, any door. Everyone starts here.'],
+   ['select_item','Picked a product',
+    'They clicked a product tile in the Banana Shop (/shop/).'],
+   ['view_item','Product page',
+    'They opened a merch product page — mug, tee, and friends.'],
+   ['transactions','Purchases 💰',
+    'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']]];
 function renderFunnel(el, steps){
   var R=state.range, P=state.prev;
   var vals=steps.map(function(s){ return stepVal(R,s[0]); });
@@ -609,6 +635,7 @@ function renderFunnel(el, steps){
     var pct=vals[0]? Math.max(1.2,(vals[i]/vals[0])*100) : 0;
     var conv=i>0 ? (vals[i-1]? Math.round((vals[i]/vals[i-1])*100) : 0) : null;
     var lbl=steps[i][1].replace(' ⌁store-wide',' <span class="muted">(store-wide)</span>');
+    if(steps[i][2]) lbl+=' <span class="info" data-tip="'+esc(steps[i][2])+'">i</span>';
     html+='<div class="fstep"><div class="row"><span>'+lbl+'</span>'+
       '<span>'+fmt(vals[i])+' '+delta(vals[i],pvals[i])+'</span></div>'+
       '<div class="fbar'+(i===worst?' hotspot':'')+'"><div class="fill" style="width:'+pct+'%"></div></div>'+
@@ -696,6 +723,14 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
   c.onclick=function(){
     document.querySelectorAll('.chip[data-n]').forEach(function(x){ x.classList.remove('on'); });
     c.classList.add('on'); state.topN=Number(c.dataset.n); renderRange(); }; });
+
+// info ⓘ on touch: tap toggles the tooltip, tapping anywhere else closes it
+document.addEventListener('click', function(e){
+  var isInfo = e.target.classList && e.target.classList.contains('info');
+  document.querySelectorAll('.info.show').forEach(function(el){
+    if(el!==e.target) el.classList.remove('show'); });
+  if(isInfo) e.target.classList.toggle('show');
+});
 
 loadLive(); loadRange();
 setInterval(loadLive, 60000);
