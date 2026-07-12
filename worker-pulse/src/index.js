@@ -89,55 +89,81 @@ function rows(resp) {
 function dim(row, i) { return row.dimensionValues[i].value; }
 function met(row, i) { return Number(row.metricValues[i].value) || 0; }
 
-// ── /api/live — the realtime pulse (cached 25s) ─────────────────────────
+// ── /api/live — the realtime pulse ───────────────────────────────────────
+// Quota discipline (learned the 429 way): the realtime bucket is small and
+// hourly, so this is 4 merged queries (was 7), cached 60s, and clients only
+// poll while visible. geo carries countries+cities; events carries the
+// 30-min totals AND the 5-min ticker via two minuteRanges; pages carries
+// both the aggregate list and the per-country hover detail.
 async function apiLive(env) {
   const hit = rspCache.get('live');
-  if (hit && Date.now() - hit.t < 25000) return hit.data;
+  if (hit && Date.now() - hit.t < 60000) return hit.data;
 
   const q = (body) => gaPost(env, 'runRealtimeReport', body);
-  const [countries, cities, pages, events, spark, recent, cpages] = await Promise.all([
-    q({ dimensions: [{ name: 'countryId' }, { name: 'country' }],
-        metrics: [{ name: 'activeUsers' }], limit: 250 }),
-    q({ dimensions: [{ name: 'city' }, { name: 'countryId' }],
-        metrics: [{ name: 'activeUsers' }], limit: 15,
-        orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }] }),
-    q({ dimensions: [{ name: 'unifiedScreenName' }],
-        metrics: [{ name: 'activeUsers' }], limit: 12,
-        orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }] }),
-    q({ dimensions: [{ name: 'eventName' }], metrics: [{ name: 'eventCount' }], limit: 40,
-        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }] }),
-    q({ dimensions: [{ name: 'minutesAgo' }], metrics: [{ name: 'activeUsers' }], limit: 30 }),
+  const [geo, events, pagesByCc, spark] = await Promise.all([
+    q({ dimensions: [{ name: 'countryId' }, { name: 'country' }, { name: 'city' }],
+        metrics: [{ name: 'activeUsers' }], limit: 200 }),
     q({ dimensions: [{ name: 'eventName' }, { name: 'countryId' }],
-        metrics: [{ name: 'eventCount' }], limit: 60,
-        minuteRanges: [{ startMinutesAgo: 4, endMinutesAgo: 0 }],
-        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }] }),
+        metrics: [{ name: 'eventCount' }], limit: 250,
+        minuteRanges: [
+          { name: 'full', startMinutesAgo: 29, endMinutesAgo: 0 },
+          { name: 'now5', startMinutesAgo: 4, endMinutesAgo: 0 },
+        ] }),
     q({ dimensions: [{ name: 'countryId' }, { name: 'unifiedScreenName' }],
-        metrics: [{ name: 'activeUsers' }], limit: 80,
+        metrics: [{ name: 'activeUsers' }], limit: 100,
         orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }] }),
+    q({ dimensions: [{ name: 'minutesAgo' }], metrics: [{ name: 'activeUsers' }], limit: 30 }),
   ]);
+
+  const countries = {}; const cities = [];
+  for (const r of rows(geo)) {
+    const cc = dim(r, 0); const v = met(r, 0);
+    countries[cc] = countries[cc] || { cc, name: dim(r, 1), v: 0 };
+    countries[cc].v += v;
+    const city = dim(r, 2);
+    if (city && city !== '(not set)') cities.push({ city, cc, v });
+  }
+  cities.sort((a, b) => b.v - a.v);
+
+  // multi-minuteRange rows carry the range name as the LAST dimension value
+  const evFull = {}; const evNow = [];
+  for (const r of rows(events)) {
+    const which = dim(r, r.dimensionValues.length - 1);
+    const name = dim(r, 0); const cc = dim(r, 1); const v = met(r, 0);
+    if (which === 'now5') {
+      if (LENS_EVENTS.includes(name)) evNow.push({ name, cc, v });
+    } else {
+      evFull[name] = (evFull[name] || 0) + v;
+    }
+  }
+  evNow.sort((a, b) => b.v - a.v);
+
+  const pages = {}; const countryPages = {};
+  for (const r of rows(pagesByCc)) {
+    const cc = dim(r, 0); const v = met(r, 0);
+    const page = dim(r, 1).replace(/\s*\|\s*Trym Stene\s*$/, '');
+    pages[page] = (pages[page] || 0) + v;
+    (countryPages[cc] = countryPages[cc] || []).push({ page, v });
+  }
 
   const sparkArr = new Array(30).fill(0);
   for (const r of rows(spark)) {
     const m = Number(dim(r, 0));
     if (m >= 0 && m < 30) sparkArr[29 - m] = met(r, 0);
   }
+  const cList = Object.values(countries).sort((a, b) => b.v - a.v);
   const data = {
     at: Date.now(),
-    total: rows(countries).reduce((a, r) => a + met(r, 0), 0),
-    countries: rows(countries).map((r) => ({ cc: dim(r, 0), name: dim(r, 1), v: met(r, 0) })),
-    cities: rows(cities).map((r) => ({ city: dim(r, 0), cc: dim(r, 1), v: met(r, 0) }))
-      .filter((c) => c.city && c.city !== '(not set)'),
-    pages: rows(pages).map((r) => ({ page: dim(r, 0).replace(/\s*\|\s*Trym Stene\s*$/, ''), v: met(r, 0) })),
-    events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0) })),
+    total: cList.reduce((a, c) => a + c.v, 0),
+    countries: cList,
+    cities: cities.slice(0, 12),
+    pages: Object.entries(pages).map(([page, v]) => ({ page, v }))
+      .sort((a, b) => b.v - a.v).slice(0, 12),
+    events: Object.entries(evFull).map(([name, v]) => ({ name, v }))
+      .sort((a, b) => b.v - a.v),
     spark: sparkArr,
-    recent: rows(recent).map((r) => ({ name: dim(r, 0), cc: dim(r, 1), v: met(r, 0) }))
-      .filter((e) => LENS_EVENTS.includes(e.name)),
-    countryPages: rows(cpages).reduce((acc, r) => {
-      const cc = dim(r, 0);
-      (acc[cc] = acc[cc] || []).push({
-        page: dim(r, 1).replace(/\s*\|\s*Trym Stene\s*$/, ''), v: met(r, 0) });
-      return acc;
-    }, {}),
+    recent: evNow.slice(0, 25),
+    countryPages,
   };
   rspCache.set('live', { t: Date.now(), data });
   return data;
@@ -372,7 +398,18 @@ var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function api(path){
   return fetch(path + (path.indexOf('?')>=0?'&':'?') + 't=' + encodeURIComponent(TOKEN))
-    .then(function(r){ if(!r.ok) throw new Error('api ' + r.status); return r.json(); });
+    .then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(d){
+        if(r.status===503 && d.quota) throw new Error('QUOTA');
+        if(!r.ok) throw new Error('api ' + r.status + (d.error? ' — '+d.error.slice(0,120):''));
+        return d;
+      });
+    });
+}
+function friendly(e, what){
+  if(e.message==='QUOTA')
+    return 'GA4’s hourly quota is napping 💤 — keeping the last picture, fresh data returns within the hour';
+  return what + ': ' + e.message;
 }
 function showErr(m){ var e=document.getElementById('err'); e.textContent='⚠ '+m; e.style.display='block';
   setTimeout(function(){ e.style.display='none'; }, 8000); }
@@ -531,8 +568,9 @@ function renderLive(){
     t.length ? '⏱ Last 5 min:  '+t.join('   ·   ')+'   🍌' : 'quiet out there right now… the banana dances alone 🍌';
 }
 function loadLive(){
+  if(document.hidden) return; // background tabs don't spend quota
   api('/api/live').then(function(d){ state.live=d; renderLive(); })
-    .catch(function(e){ showErr('live: '+e.message); });
+    .catch(function(e){ showErr(friendly(e,'live')); });
 }
 
 // ── range widgets ──
@@ -631,7 +669,7 @@ function loadRange(){
     api('/api/range?from='+state.from+'&to='+state.to),
     api('/api/range?from='+pw[0]+'&to='+pw[1]),
   ]).then(function(rs){ state.range=rs[0]; state.prev=rs[1]; renderRange(); })
-   .catch(function(e){ showErr('range: '+e.message); });
+   .catch(function(e){ showErr(friendly(e,'range')); });
 }
 
 // ── controls ──
@@ -660,8 +698,11 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
     c.classList.add('on'); state.topN=Number(c.dataset.n); renderRange(); }; });
 
 loadLive(); loadRange();
-setInterval(loadLive, 30000);
-setInterval(function(){ if(state.to==='today') loadRange(); }, 300000);
+setInterval(loadLive, 60000);
+setInterval(function(){ if(state.to==='today' && !document.hidden) loadRange(); }, 300000);
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden){ loadLive(); if(state.to==='today') loadRange(); }
+});
 </script>
 </body></html>`;
 }
@@ -697,8 +738,11 @@ export default {
       }
       return deny();
     } catch (e) {
-      return new Response(JSON.stringify({ error: String(e.message || e).slice(0, 300) }), {
-        status: 502, headers: noRobots({ 'Content-Type': 'application/json' }),
+      const msg = String(e.message || e);
+      const quota = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
+      return new Response(JSON.stringify({ error: msg.slice(0, 300), quota }), {
+        status: quota ? 503 : 502,
+        headers: noRobots({ 'Content-Type': 'application/json' }),
       });
     }
   },
