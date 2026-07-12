@@ -100,8 +100,8 @@ async function boot() {
   track('sticker_pdp_view', { product: product.key, design: designStr(state) });
   const lp = await localizedPrice(product);
   if (lp) {
+    // the price lives ONLY in the badge — the note never repeats it (Trym)
     el('pdpPrice').innerHTML = '<small>from</small> ' + lp.display;
-    el('pdpNote').textContent = lp.display + ' · free worldwide shipping · tax where applicable';
   }
 }
 boot().catch((e) => { console.error('PDP boot failed:', e); track('sticker_pdp_boot_fail', { message: String((e && e.message) || e).slice(0, 90) }); });

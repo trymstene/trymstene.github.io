@@ -86,7 +86,9 @@ const breadcrumbSchema = {
     <div class="pdp__info">
       <h1>{m.title}</h1>
       <p class="pdp__tag">{firstSentence(m.descHtml, 120)}</p>
-      <p class="pdp__price"><small>from</small> {money(m.pmin, m.cur)}</p>
+      <div class="pdp-pricetags">
+        <p class="pdp__price price-tag"><small>from</small> {money(m.pmin, m.cur)}</p>
+      </div>
       <p class="pdp__note">Tax included where applicable · shipping calculated at checkout</p>
 
       {m.colors.length > 0 && (
