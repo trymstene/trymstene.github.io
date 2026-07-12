@@ -101,8 +101,9 @@ async function apiLive(env) {
 
   const q = (body) => gaPost(env, 'runRealtimeReport', body);
   const [geo, events, pagesByCc, spark] = await Promise.all([
-    q({ dimensions: [{ name: 'countryId' }, { name: 'country' }, { name: 'city' }],
-        metrics: [{ name: 'activeUsers' }], limit: 200 }),
+    q({ dimensions: [{ name: 'countryId' }, { name: 'country' }, { name: 'city' },
+        { name: 'deviceCategory' }],
+        metrics: [{ name: 'activeUsers' }], limit: 250 }),
     q({ dimensions: [{ name: 'eventName' }, { name: 'countryId' }],
         metrics: [{ name: 'eventCount' }], limit: 250,
         minuteRanges: [
@@ -115,15 +116,21 @@ async function apiLive(env) {
     q({ dimensions: [{ name: 'minutesAgo' }], metrics: [{ name: 'activeUsers' }], limit: 30 }),
   ]);
 
-  const countries = {}; const cities = [];
+  const countries = {}; const cityMap = {}; const devices = {};
   for (const r of rows(geo)) {
     const cc = dim(r, 0); const v = met(r, 0);
     countries[cc] = countries[cc] || { cc, name: dim(r, 1), v: 0 };
     countries[cc].v += v;
     const city = dim(r, 2);
-    if (city && city !== '(not set)') cities.push({ city, cc, v });
+    if (city && city !== '(not set)') {
+      const k = city + '|' + cc;
+      cityMap[k] = cityMap[k] || { city, cc, v: 0 };
+      cityMap[k].v += v;
+    }
+    const dev = dim(r, 3);
+    devices[dev] = (devices[dev] || 0) + v;
   }
-  cities.sort((a, b) => b.v - a.v);
+  const cities = Object.values(cityMap).sort((a, b) => b.v - a.v);
 
   // multi-minuteRange rows carry the range name as the LAST dimension value
   const evFull = {}; const evNow = [];
@@ -164,6 +171,7 @@ async function apiLive(env) {
     spark: sparkArr,
     recent: evNow.slice(0, 25),
     countryPages,
+    devices,
   };
   rspCache.set('live', { t: Date.now(), data });
   return data;
@@ -181,8 +189,10 @@ async function apiRange(env, from, to) {
   const dateRanges = [{ startDate: from, endDate: to }];
   const resp = await gaPost(env, 'batchRunReports', {
     requests: [
-      { dateRanges, dimensions: [{ name: 'countryId' }, { name: 'country' }],
-        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }], limit: 250 },
+      { dateRanges, dimensions: [{ name: 'countryId' }, { name: 'country' },
+        { name: 'deviceCategory' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'engagedSessions' }],
+        limit: 500 },
       { dateRanges, dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }],
         metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }, { name: 'screenPageViews' }],
         limit: 12, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }] },
@@ -220,8 +230,18 @@ async function apiRange(env, from, to) {
       revenue: sum('revenue'), transactions: sum('tx'),
     },
     daily: dailyRows,
-    countries: rows(countries).map((r) => ({ cc: dim(r, 0), name: dim(r, 1),
-      sessions: met(r, 0), users: met(r, 1) })),
+    countries: Object.values(rows(countries).reduce((acc, r) => {
+      const cc = dim(r, 0);
+      acc[cc] = acc[cc] || { cc, name: dim(r, 1), sessions: 0, users: 0 };
+      acc[cc].sessions += met(r, 0); acc[cc].users += met(r, 1);
+      return acc;
+    }, {})),
+    devices: Object.values(rows(countries).reduce((acc, r) => {
+      const dev = dim(r, 2);
+      acc[dev] = acc[dev] || { dev, sessions: 0, engaged: 0 };
+      acc[dev].sessions += met(r, 0); acc[dev].engaged += met(r, 2);
+      return acc;
+    }, {})).sort((a, b) => b.sessions - a.sessions),
     sources: rows(sources).map((r) => ({ source: dim(r, 0), medium: dim(r, 1),
       sessions: met(r, 0), engaged: met(r, 1), views: met(r, 2) })),
     events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0) })),
@@ -357,6 +377,7 @@ function page() {
     <button class="chip" id="dGo">GO</button>
   </div>
   <div class="kpis" id="kpis"></div>
+  <div class="kpis" id="devRow" style="margin-top:10px;"></div>
   <p class="muted" style="margin-top:8px;">deltas = vs the previous window of the same length ·
      GA4 intraday lags ~4–8h, so “today” fills in through the day</p>
 </div>
@@ -570,6 +591,7 @@ function renderLive(){
   var L=state.live; if(!L) return;
   document.getElementById('liveTotal').textContent = L.total;
   drawSpark();
+  renderDevices(); // refresh the "on now" per device
   tbl(document.getElementById('livePages'), L.pages.map(function(p){ return [esc(p.page), p.v]; }));
   tbl(document.getElementById('liveCities'), L.cities.map(function(c){ return [FLAG(c.cc)+' '+esc(c.city), c.v]; }));
   var t = L.recent.map(function(e){
@@ -644,6 +666,21 @@ function renderFunnel(el, steps){
   }
   el.innerHTML=html;
 }
+var DEV_ICON={ desktop:'🖥', mobile:'📱', tablet:'📟' };
+function renderDevices(){
+  var R=state.range; if(!R || !R.devices) return;
+  var P=state.prev, L=state.live;
+  var prevOf=function(dev){ if(!P||!P.devices) return null;
+    for(var i=0;i<P.devices.length;i++) if(P.devices[i].dev===dev) return P.devices[i].sessions;
+    return 0; };
+  document.getElementById('devRow').innerHTML = R.devices.map(function(d){
+    var er=d.sessions? Math.round((d.engaged/d.sessions)*100):0;
+    var now=(L&&L.devices&&L.devices[d.dev])||0;
+    return '<div class="kpi"><div class="l">'+(DEV_ICON[d.dev]||'')+' '+esc(d.dev)+'</div>'+
+      '<div class="v">'+fmt(d.sessions)+' <span style="font-size:.7rem;">'+delta(d.sessions,prevOf(d.dev))+'</span></div>'+
+      '<div class="d" style="color:#6b5a00;">'+er+'% engaged'+(now?' · <b>'+now+' on now</b>':'')+'</div></div>';
+  }).join('');
+}
 function renderRange(){
   var R=state.range, P=state.prev; if(!R) return;
   var k=R.kpis, pk=P&&P.kpis;
@@ -656,6 +693,7 @@ function renderRange(){
     kpi('Revenue',kr,delta(k.revenue,pk&&pk.revenue))+
     kpi('Purchases',fmt(k.transactions),delta(k.transactions,pk&&pk.transactions));
   function kpi(l,v,d){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>'; }
+  renderDevices();
   renderFunnel(document.getElementById('fun0'),FUNNELS[0]);
   renderFunnel(document.getElementById('fun1'),FUNNELS[1]);
   var smax=R.sources.length? R.sources[0].sessions:1;
