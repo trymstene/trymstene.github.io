@@ -50,7 +50,7 @@ async function gaToken(env) {
   const now = Math.floor(Date.now() / 1000);
   const input = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' })) + '.' + b64url(JSON.stringify({
     iss: key.client_email,
-    scope: 'https://www.googleapis.com/auth/analytics.readonly',
+    scope: 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now, exp: now + 3600,
   }));
@@ -251,6 +251,117 @@ async function apiRange(env, from, to) {
   return data;
 }
 
+// ── /api/report — the ANALYST BANANA's morning summary of yesterday ──────
+// Generated on demand (no cron, no storage): by the time Trym wakes up,
+// GA4's "yesterday" is queryable live — fresher than any 5AM snapshot.
+// Cached per day in the isolate; regenerating costs two batch queries.
+const FLAG_S = (cc) => (cc && cc.length === 2)
+  ? String.fromCodePoint(127397 + cc.charCodeAt(0), 127397 + cc.charCodeAt(1)) : '·';
+const escS = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function pctDelta(cur, prev) {
+  if (!prev) return cur ? '<i class="up">new</i>' : '<i class="flat">—</i>';
+  const d = Math.round(((cur - prev) / prev) * 100);
+  if (d === 0) return '<i class="flat">±0%</i>';
+  return d > 0 ? '<i class="up">▲' + d + '%</i>' : '<i class="down">▼' + Math.abs(d) + '%</i>';
+}
+
+async function gscYesterday(env, dateStr) {
+  const tok = await gaToken(env);
+  const r = await fetch('https://searchconsole.googleapis.com/webmasters/v3/sites/'
+    + encodeURIComponent(env.GSC_SITE) + '/searchAnalytics/query', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startDate: dateStr, endDate: dateStr, dataState: 'all', rowLimit: 1 }),
+  });
+  if (!r.ok) throw new Error('gsc ' + r.status);
+  const d = await r.json();
+  return (d.rows && d.rows[0]) || null;
+}
+
+async function apiReport(env) {
+  const now = new Date();
+  const osloDay = (offset) => {
+    const d = new Date(now.getTime() - offset * 86400000);
+    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Oslo' }); // YYYY-MM-DD
+  };
+  const yDate = osloDay(1);
+  const hit = rspCache.get('report:' + yDate);
+  if (hit && Date.now() - hit.t < 1800000) return hit.data; // fresh for 30 min
+
+  const [cur, prev] = await Promise.all([
+    apiRange(env, 'yesterday', 'yesterday'),
+    apiRange(env, '2daysAgo', '2daysAgo'),
+  ]);
+  let gsc = null;
+  try { gsc = await gscYesterday(env, yDate); } catch (e) { /* still baking */ }
+
+  const ev = (R, name) => { for (const e of R.events) if (e.name === name) return e.v; return 0; };
+  const k = cur.kpis, pk = prev.kpis;
+  const nice = new Date(yDate + 'T12:00:00').toLocaleDateString('en-GB',
+    { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
+
+  const devLine = cur.devices.map((d) => {
+    const share = k.sessions ? Math.round((d.sessions / k.sessions) * 100) : 0;
+    const er = d.sessions ? Math.round((d.engaged / d.sessions) * 100) : 0;
+    const ico = { desktop: '🖥', mobile: '📱', tablet: '📟' }[d.dev] || '';
+    return ico + ' ' + share + '% (' + er + '% eng)';
+  }).join(' · ');
+  const srcLine = cur.sources.slice(0, 3).map((s) => {
+    const er = s.sessions ? Math.round((s.engaged / s.sessions) * 100) : 0;
+    return escS(s.source) + ' <b>' + s.sessions + '</b> (' + er + '%)';
+  }).join(' · ');
+  const geoLine = cur.countries.sort((a, b) => b.sessions - a.sessions).slice(0, 3)
+    .map((c) => FLAG_S(c.cc) + ' ' + c.sessions).join(' · ');
+
+  const fun = [ev(cur, 'builder_start'), ev(cur, 'sticker_pdp_view'),
+    ev(cur, 'sticker_pdp_checkout'), ev(cur, 'checkout_redirect')];
+  const merch = [ev(cur, 'shop_view'), ev(cur, 'select_item'), ev(cur, 'view_item')];
+
+  // the analyst's verdicts — rule-based, max 3, most important first
+  const notes = [];
+  if (k.transactions > 0) notes.push('💰 <b>' + Math.round(k.revenue) + ' kr from '
+    + k.transactions + ' purchase' + (k.transactions > 1 ? 's' : '') + '!</b> Check Shopify for details.');
+  const sDelta = pk.sessions ? (k.sessions - pk.sessions) / pk.sessions : 0;
+  if (Math.abs(sDelta) >= 0.3) notes.push(sDelta > 0
+    ? 'Traffic jumped ' + Math.round(sDelta * 100) + '% vs the day before.'
+    : 'Traffic dipped ' + Math.round(-sDelta * 100) + '% vs the day before.');
+  const paid = cur.sources.find((s) => s.medium === 'paid' || s.medium === 'cpc');
+  if (paid && k.sessions && paid.sessions / k.sessions > 0.5) {
+    const er = paid.sessions ? Math.round((paid.engaged / paid.sessions) * 100) : 0;
+    notes.push('Ads drove ' + Math.round((paid.sessions / k.sessions) * 100)
+      + '% of traffic at ' + er + '% engagement — the organic core behaves differently, read them separately.');
+  }
+  if (fun[0] >= 10 && fun[1] === 0) notes.push('⚠ ' + fun[0]
+    + ' builder loads but nobody reached a product page — the sticker funnel died at step one.');
+  const gifs = ev(cur, 'gif_download'); const pgifs = ev(prev, 'gif_download');
+  if (gifs >= 5 && pgifs && gifs / pgifs >= 2) notes.push('GIF downloads doubled (' + gifs + ') — something is spreading.');
+  if (!notes.length) notes.push('A quiet, normal day on the floor. The banana kept dancing.');
+
+  const lines = [
+    '👥 <b>' + k.sessions + '</b> sessions ' + pctDelta(k.sessions, pk.sessions)
+      + ' · ' + k.users + ' visitors · ' + k.newUsers + ' new · '
+      + Math.round(k.engagementRate * 100) + '% engaged ' + pctDelta(k.engagementRate, pk.engagementRate),
+    devLine,
+    '🚪 ' + (srcLine || 'no source data'),
+    '🌍 ' + (geoLine || 'nobody? spooky'),
+    '🎬 ' + gifs + ' GIF downloads ' + pctDelta(gifs, pgifs)
+      + ' · ' + ev(cur, 'builder_start') + ' builder loads ' + pctDelta(ev(cur, 'builder_start'), ev(prev, 'builder_start'))
+      + ' · ' + ev(cur, 'rave_join') + ' rave joins ' + pctDelta(ev(cur, 'rave_join'), ev(prev, 'rave_join')),
+    '🏷️ Sticker funnel: builder <b>' + fun[0] + '</b> → PDP <b>' + fun[1] + '</b> → order <b>'
+      + fun[2] + '</b> → checkout <b>' + fun[3] + '</b>',
+    '👕 Merch: shop <b>' + merch[0] + '</b> → picked <b>' + merch[1] + '</b> → product page <b>' + merch[2] + '</b>',
+    '💰 ' + Math.round(k.revenue) + ' kr · ' + k.transactions + ' purchases · '
+      + ev(cur, 'begin_checkout') + ' checkout starts',
+    gsc ? '🔎 Google: ' + Math.round(gsc.clicks) + ' clicks from ' + Math.round(gsc.impressions)
+        + ' impressions (pos ' + (gsc.position || 0).toFixed(1) + ')'
+      : '🔎 Google Search data still baking (GSC lags a day or two)',
+  ];
+  const data = { date: yDate, niceDate: nice, generatedAt: Date.now(), lines, notes };
+  rspCache.set('report:' + yDate, { t: Date.now(), data });
+  return data;
+}
+
 // ── the page ─────────────────────────────────────────────────────────────
 function page() {
   const mapJson = JSON.stringify({ w: MAP_W, h: MAP_H, land: LAND_HEX, cent: CENTROIDS });
@@ -306,6 +417,7 @@ function page() {
   .kpi .v{ font-size:1.25rem; color:#111; margin-top:2px; }
   .kpi .d{ font-size:.68rem; margin-top:2px; }
   .up{ color:var(--ok); } .down{ color:var(--bad); } .flat{ color:var(--dim); }
+  i.up, i.down, i.flat{ font-style:normal; }
   .kpi .up{ color:#0a7a3c; } .kpi .down{ color:#c81e1e; } .kpi .flat{ color:#6b5a00; }
   .fstep{ margin-bottom:8px; }
   .fstep .row{ display:flex; justify-content:space-between; font-size:.74rem; margin-bottom:3px; }
@@ -341,8 +453,33 @@ function page() {
   <span class="live-dot"></span>
   <span><span class="bignum" id="liveTotal">…</span> <span class="muted">on the site right now</span></span>
   <canvas id="spark" width="120" height="26" style="image-rendering:pixelated;"></canvas>
+  <button class="chip" id="rptBtn" style="position:relative;">🍌📊 MORNING REPORT<span id="rptDot" hidden
+    style="position:absolute;top:-5px;right:-5px;width:11px;height:11px;background:var(--hot);
+    border:2px solid #000;border-radius:0;box-shadow:0 0 8px var(--hot);"></span></button>
 </div>
 <div class="err" id="err"></div>
+
+<!-- the ANALYST BANANA's speech bubble -->
+<div id="rptWrap" hidden style="position:fixed;inset:0;z-index:50;background:rgba(6,4,12,.72);
+  display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;">
+  <div style="max-width:560px;width:100%;margin-top:4vh;position:relative;">
+    <div style="display:flex;align-items:flex-end;gap:4px;margin-left:6px;">
+      <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" alt=""
+           style="width:54px;image-rendering:pixelated;">
+      <div style="width:16px;height:16px;background:var(--panel);border-left:3px solid var(--nana);
+           border-top:3px solid var(--nana);transform:rotate(45deg) translate(8px,8px);"></div>
+    </div>
+    <div class="panel" style="margin-bottom:40px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+        <h2 style="margin-bottom:4px;">📊 Yesterday, <span id="rptDate">…</span></h2>
+        <button class="chip" id="rptClose" style="min-width:44px;min-height:38px;font-size:1rem;">✕</button>
+      </div>
+      <div id="rptBody" style="max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <p class="muted">the analyst banana is crunching…</p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="panel">
   <h2>🌍 Pixel earth</h2>
@@ -765,6 +902,40 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
     document.querySelectorAll('.chip[data-n]').forEach(function(x){ x.classList.remove('on'); });
     c.classList.add('on'); state.topN=Number(c.dataset.n); renderRange(); }; });
 
+// ── THE ANALYST BANANA: yesterday's report in a speech bubble ──
+// NEW dot until the day's report has been opened once (per browser).
+(function(){
+  var wrap=document.getElementById('rptWrap');
+  var btn=document.getElementById('rptBtn');
+  var dot=document.getElementById('rptDot');
+  function osloYesterday(){
+    return new Date(Date.now()-86400000).toLocaleDateString('en-CA',{timeZone:'Europe/Oslo'});
+  }
+  function refreshDot(){
+    var read=''; try{ read=localStorage.getItem('pulse-rpt-read')||''; }catch(e){}
+    dot.hidden = (read===osloYesterday());
+  }
+  refreshDot();
+  setInterval(refreshDot, 600000); // a new day re-lights the dot without a reload
+  btn.onclick=function(){
+    wrap.hidden=false;
+    try{ localStorage.setItem('pulse-rpt-read', osloYesterday()); }catch(e){}
+    refreshDot();
+    api('/api/report').then(function(r){
+      document.getElementById('rptDate').textContent=r.niceDate;
+      document.getElementById('rptBody').innerHTML =
+        r.lines.map(function(l){ return '<p style="margin:0 0 9px;font-size:.85rem;line-height:1.5;">'+l+'</p>'; }).join('')
+        + '<div style="border-top:2px solid var(--line);margin:12px 0 9px;"></div>'
+        + r.notes.map(function(n){ return '<p style="margin:0 0 9px;font-size:.85rem;line-height:1.5;color:var(--nana);">⭐ '+n+'</p>'; }).join('')
+        + '<p class="muted" style="margin-top:10px;">the analyst banana · numbers can still settle through the morning (GA4 processing lag)</p>';
+    }).catch(function(e){
+      document.getElementById('rptBody').innerHTML='<p class="muted">⚠ '+friendly(e,'report')+'</p>';
+    });
+  };
+  document.getElementById('rptClose').onclick=function(){ wrap.hidden=true; };
+  wrap.addEventListener('click', function(e){ if(e.target===wrap) wrap.hidden=true; });
+})();
+
 // info ⓘ on touch: tap toggles the tooltip, tapping anywhere else closes it
 document.addEventListener('click', function(e){
   var isInfo = e.target.classList && e.target.classList.contains('info');
@@ -792,6 +963,11 @@ export default {
     try {
       if (url.pathname === '/api/live') {
         return new Response(JSON.stringify(await apiLive(env)), {
+          headers: noRobots({ 'Content-Type': 'application/json' }),
+        });
+      }
+      if (url.pathname === '/api/report') {
+        return new Response(JSON.stringify(await apiReport(env)), {
           headers: noRobots({ 'Content-Type': 'application/json' }),
         });
       }

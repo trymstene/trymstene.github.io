@@ -13,3 +13,4 @@ compatibility_date = "2026-06-01"
 
 [vars]
 PROPERTY_ID = "358694050"
+GSC_SITE = "https://trymstene.com/"
