@@ -663,7 +663,9 @@ var LAND = MAP.land.map(function(hexRow){
 var mapCv = document.getElementById('map');
 var PX = 6; mapCv.width = MAP.w*PX; mapCv.height = MAP.h*PX;
 var mctx = mapCv.getContext('2d');
-var pulse = 0;
+// the land never changes — render it ONCE so 60fps costs almost nothing
+var landCv = document.createElement('canvas');
+landCv.width = MAP.w*PX; landCv.height = MAP.h*PX;
 var view = { s:1, ox:0, oy:0 }; // zoom scale + pan offset in map cells
 function clampView(){
   view.s = Math.max(1, Math.min(5, view.s));
@@ -675,14 +677,6 @@ function mapData(){
   if(state.mode==='range') return (state.range? state.range.countries.map(function(c){ return {cc:c.cc,v:c.sessions,name:c.name}; }):[]);
   var em = state.range && state.range.eventMap[state.lens] || {};
   return Object.keys(em).map(function(cc){ return {cc:cc,v:em[cc],name:cc}; });
-}
-// square 1-cell-thick ring (the radar ping)
-function cellRing(x0,y0,n){
-  if(n<3){ mctx.fillRect(x0*PX,y0*PX,n*PX,n*PX); return; }
-  mctx.fillRect(x0*PX, y0*PX, n*PX, PX);
-  mctx.fillRect(x0*PX, (y0+n-1)*PX, n*PX, PX);
-  mctx.fillRect(x0*PX, (y0+1)*PX, PX, (n-2)*PX);
-  mctx.fillRect((x0+n-1)*PX, (y0+1)*PX, PX, (n-2)*PX);
 }
 // corner brackets — the "locked on, close to buying" marker
 function brackets(x,y,r,col){
@@ -698,14 +692,22 @@ function brackets(x,y,r,col){
 var CONF_COLS=['#ffe135','#ff5d8f','#78ebff','#5ee08a'];
 var confettiUntil=0;
 function drawPin(d, hotStage){
-  var x=d.x, y=d.y, r=Math.max(1,d.r), p=pulse/60;
+  var x=d.x, y=d.y, r=Math.max(1,d.r);
+  var t=performance.now()/1000;
   var col = state.mode==='event' ? '94,224,138' : state.mode==='range' ? '255,93,143' : '255,225,53';
   if(hotStage>=4) col='255,215,0';
-  if(state.mode==='live'){ // expanding radar ping
+  if(state.mode==='live'){ // two soft sonar rings — time-based, sub-pixel smooth
     var ringCol = hotStage>=2 ? '94,224,138' : col;
-    var rr=r+1+Math.floor(p*4);
-    mctx.fillStyle='rgba('+ringCol+','+((1-p)*0.55).toFixed(2)+')';
-    cellRing(x-rr, y-rr, 2*rr+1);
+    var cx=(x+0.5)*PX, cy=(y+0.5)*PX;
+    var seed=((x*7+y*13)%10)/10; // desync pins slightly so they don't march in step
+    for(var k=0;k<2;k++){
+      var p=(t/2.6 + k*0.5 + seed)%1;
+      var rad=(r+0.5)*PX + p*3.5*PX;
+      var a=Math.pow(1-p,2)*0.4;
+      mctx.strokeStyle='rgba('+ringCol+','+a.toFixed(3)+')';
+      mctx.lineWidth=PX*0.9;
+      mctx.strokeRect(cx-rad, cy-rad, rad*2, rad*2);
+    }
   }
   // drop shadow, then a rounded plus-shape body + a light catch pixel
   var w=2*r-1;
@@ -721,9 +723,10 @@ function drawPin(d, hotStage){
   plus(0,0,'rgb('+col+')');
   if(r>=2){ mctx.fillStyle='rgba(255,255,255,.85)';
     mctx.fillRect((x-r+2)*PX,(y-r+2)*PX,PX,PX); }
-  if(hotStage>=2){ // fast green blink while someone shops
-    var blink=(pulse%16)<10;
-    if(blink) brackets(x,y,r, hotStage>=4?'#ffd700':'#5ee08a');
+  if(hotStage>=2){ // soft breathing glow on the brackets while someone shops
+    mctx.globalAlpha=0.4+0.6*(0.5+0.5*Math.sin(t*2.6));
+    brackets(x,y,r, hotStage>=4?'#ffd700':'#5ee08a');
+    mctx.globalAlpha=1;
   }
   if(d.v>1){ // count rides a little badge, not the pin's face
     var txt=String(d.v);
@@ -736,14 +739,18 @@ function drawPin(d, hotStage){
     mctx.fillStyle='rgb('+col+')'; mctx.fillText(txt, bx, by+PX*1.7);
   }
 }
+(function paintLand(){
+  var g=landCv.getContext('2d');
+  g.fillStyle='#151129'; g.fillRect(0,0,landCv.width,landCv.height);
+  g.fillStyle='#453a75';
+  for(var y=0;y<MAP.h;y++){ var row=LAND[y];
+    for(var x=0;x<MAP.w;x++){ if(row[x]==='1') g.fillRect(x*PX,y*PX,PX-1,PX-1); } }
+})();
 function drawMap(){
-  pulse=(pulse+1)%60;
   mctx.setTransform(1,0,0,1,0,0);
   mctx.fillStyle='#151129'; mctx.fillRect(0,0,mapCv.width,mapCv.height);
   mctx.setTransform(view.s,0,0,view.s,-view.ox*PX*view.s,-view.oy*PX*view.s);
-  mctx.fillStyle='#453a75';
-  for(var y=0;y<MAP.h;y++){ var row=LAND[y];
-    for(var x=0;x<MAP.w;x++){ if(row[x]==='1') mctx.fillRect(x*PX,y*PX,PX-1,PX-1); } }
+  mctx.drawImage(landCv,0,0);
   var data=mapData(); var max=1;
   data.forEach(function(d){ if(d.v>max) max=d.v; });
   var HOT=(state.mode==='live' && state.live && state.live.hot)||{};
@@ -761,9 +768,12 @@ function drawMap(){
       var c=MAP.cent[cc]; if(!c) return;
       var g={x:c[0], y:c[1], r:1, cc:cc, name:cc, v:0, hot:HOT[cc], ghost:true};
       lastDots.push(g);
-      mctx.fillStyle='rgba(94,224,138,.7)';
+      var gt=performance.now()/1000;
+      mctx.fillStyle='rgba(94,224,138,'+(0.5+0.25*Math.sin(gt*2)).toFixed(3)+')';
       mctx.fillRect(c[0]*PX, c[1]*PX, PX, PX);
-      if((pulse%16)<10) brackets(c[0], c[1], 1, '#5ee08a');
+      mctx.globalAlpha=0.35+0.5*(0.5+0.5*Math.sin(gt*2.6));
+      brackets(c[0], c[1], 1, '#5ee08a');
+      mctx.globalAlpha=1;
     });
   }
   if(Date.now()<confettiUntil){ // 💰 the purchase rain
@@ -783,7 +793,8 @@ function drawMap(){
     : state.mode==='range' ? '● pink = sessions, '+state.from+' → '+state.to+' ('+total+' total)'
     : '● green = “'+(EV_LABEL[state.lens]||state.lens)+'” ('+state.lens+'), '+state.from+' → '+state.to+' ('+total+' total)';
 }
-setInterval(drawMap, 120);
+// 60fps via rAF (idles with the tab) — the old 120ms interval read as lag
+(function mapLoop(){ if(!document.hidden) drawMap(); requestAnimationFrame(mapLoop); })();
 var lastDots=[];
 
 // hover a pulse → who/where/what they're looking at (LIVE mode gets pages)
