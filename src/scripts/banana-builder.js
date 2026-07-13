@@ -150,9 +150,65 @@ function init() {
 
   el('bbPause').onclick = () => { state.paused = !state.paused; refreshUI(); };
 
-  // the under-stage Order-sticker quick action jumps straight to the sticker PDP
-  // (the free GIF download lives in the "Take it with you" box — no top dupe)
-  el('bbQuickSticker').onclick = () => { track('quick_action', { action: 'sticker' }); goToProduct('sticker'); };
+  // the top quick action reveals the SHOP (all three products, your banana
+  // previewed on each) instead of teleporting to one PDP — the line is
+  // sticker + magnet + tee now, and the choice converts better than a jump
+  el('bbQuickSticker').onclick = () => {
+    track('quick_action', { action: 'takehome' });
+    const t = document.getElementById('bbTakeHome');
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ---- the take-it-home bar (mobile): armed by the first customization tap,
+  // hidden while the offer itself is on screen, dismissible for the session ----
+  const homeBar = el('bbHomeBar');
+  const takeSec = document.getElementById('bbTakeHome');
+  if (homeBar && takeSec && window.matchMedia('(max-width: 640px)').matches) {
+    let armed = false;
+    let dismissed = false;
+    let takeVisible = false;
+    try { dismissed = sessionStorage.getItem('bb-homebar-x') === '1'; } catch (e) {}
+    const sync = () => homeBar.classList.toggle('show', armed && !dismissed && !takeVisible);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver((es) => {
+        es.forEach((x) => { takeVisible = x.isIntersecting; });
+        sync();
+      }, { threshold: 0.12 }).observe(takeSec);
+    }
+    document.querySelector('.bb-controls').addEventListener('click', (e) => {
+      if (armed || e.target.closest('#bbQuickSticker')) return; // the CTA isn't "playing"
+      armed = true;
+      track('section_seen', { placement: 'homebar' });
+      setTimeout(sync, 800); // let the first change land before nudging
+    });
+    el('bbHomeBarGo').onclick = () => {
+      track('quick_action', { action: 'homebar' });
+      takeSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    el('bbHomeBarX').onclick = () => {
+      dismissed = true;
+      try { sessionStorage.setItem('bb-homebar-x', '1'); } catch (e) {}
+      sync();
+    };
+  }
+
+  // ---- dock the sticky preview on mobile: past the hero it becomes a small
+  // floating picture-in-picture (top-right) so the controls get the screen
+  // back. The wrap's LAYOUT height is pinned first, so the dock is purely
+  // visual — no reflow, no scroll jumps, no compensation needed. ----
+  const stagewrap = document.querySelector('.bb-stagewrap');
+  if (stagewrap && window.matchMedia('(max-width: 819px)').matches
+      && !document.documentElement.classList.contains('bb-overlay')) {
+    let mini = false;
+    let pinned = false;
+    addEventListener('scroll', () => {
+      const want = mini ? scrollY > 300 : scrollY > 420; // small hysteresis
+      if (want === mini) return;
+      if (!pinned) { stagewrap.style.minHeight = stagewrap.offsetHeight + 'px'; pinned = true; }
+      mini = want;
+      stagewrap.classList.toggle('bb-mini', mini);
+    }, { passive: true });
+  }
 
   el('bbRandom').onclick = () => {
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
