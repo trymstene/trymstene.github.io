@@ -177,10 +177,6 @@ const appSchema = {
     .bb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* ---- "Take it with you" output cards ---- */
-    /* the take-home offer: its own section right after the controls */
-    .bb-takehome { margin-top: 2rem; }
-    @media (min-width: 820px) { .bb-takehome .bb-card--buy { max-width: 640px; margin-inline: auto; } }
-
     /* mini-preview: on mobile, once you scroll into the controls the sticky
        stage docks into a floating picture-in-picture (top-right) — live
        feedback stays, and the controls get the screen back (Trym's audit:
@@ -252,10 +248,25 @@ const appSchema = {
 
     .bb-outputs { margin-top: 3rem; text-align: center; }
     .bb-outputs h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin: 0.2rem 0 1.2rem; }
-    /* since the buy card moved up to its own take-home section, the outputs
-       grid holds ONE card — center it instead of leaving a ghost column */
+    /* the classic two-card layout on desktop: download LEFT, buy RIGHT (the
+       buy card is FIRST in the DOM so mobile shows it right after the
+       controls; desktop swaps the columns back with `order`) */
     .bb-cards { display: grid; grid-template-columns: 1fr; gap: 1.2rem; text-align: left; }
-    @media (min-width: 820px) { .bb-cards .bb-card { max-width: 640px; margin-inline: auto; width: 100%; } }
+    @media (min-width: 820px) {
+      .bb-cards { grid-template-columns: 1fr 1fr; align-items: start; }
+      .bb-cards .bb-card--buy { order: 2; }
+    }
+    /* mobile: lift the BUY card above the section header + pose strip, so the
+       flow stays customize → take it home → free downloads (display:contents
+       makes the cards direct flex items so `order` can cross the wrapper) */
+    @media (max-width: 819px) {
+      .bb-outputs { display: flex; flex-direction: column; gap: 0; }
+      .bb-outputs .bb-cards { display: contents; }
+      .bb-outputs .bb-card--buy { order: -1; margin-bottom: 2.4rem; }
+      .bb-outputs .kicker, .bb-outputs h2 { order: 0; }
+      .bb-outputs .bb-freeze { order: 1; width: 100%; }
+      .bb-outputs .bb-card:not(.bb-card--buy) { order: 2; margin-top: 1.2rem; }
+    }
     .bb-card { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 1.3rem; }
     .bb-card h3 { margin: 0 0 0.5rem; font-size: 1.35rem; display: flex; align-items: center; gap: 0.5rem; }
     .bb-card p { margin: 0 0 1rem; font-size: 0.95rem; }
@@ -299,11 +310,12 @@ const appSchema = {
     .bb-trust { margin: 0 0 1.1rem; padding-left: 1.15rem; font-size: 0.92rem; display: grid; gap: 0.35rem; }
     .bb-trust li { margin: 0; }
 
-    /* the frame picker lives inside the download card (meme-PNG only now —
-       printed products pick their pose on the PDP) */
-    .bb-freeze { margin: 0 0 1rem; }
-    .bb-freeze p, .bb-freeze__label { margin: 0 0 0.6rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.45rem; }
-    .bb-freeze .bb-frames { justify-content: flex-start; margin-bottom: 0; }
+    /* shared frame picker: the strip sits centered above the two cards on
+       desktop (the classic layout); it only affects the meme PNG now —
+       printed products pick their pose on the PDP */
+    .bb-freeze { max-width: 760px; margin: 0 auto 1.4rem; }
+    .bb-freeze p, .bb-freeze__label { margin: 0 0 0.8rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; }
+    .bb-freeze .bb-frames { justify-content: center; margin-bottom: 0; }
 
     /* fake chat row — compact, one line, both sizes inline */
     .bb-chat { background: #313338; border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
@@ -319,7 +331,7 @@ const appSchema = {
        banana, transparent page, sized for a streaming browser source ---- */
     html.bb-overlay, html.bb-overlay body { background: transparent !important; }
     html.bb-overlay .nav, html.bb-overlay .hero, html.bb-overlay .bb-controls,
-    html.bb-overlay .bb-outputs, html.bb-overlay .bb-takehome, html.bb-overlay .bb-homebar,
+    html.bb-overlay .bb-outputs, html.bb-overlay .bb-homebar,
     html.bb-overlay footer, html.bb-overlay .bb-toast,
     html.bb-overlay .bb-pause, html.bb-overlay .bb-freeze { display: none !important; }
     html.bb-overlay .bb-wrap { max-width: none; padding: 0; }
@@ -433,42 +445,41 @@ const appSchema = {
       </div>
     </div>
 
-    <!-- TAKE IT HOME — the offer sits right after customizing, where the
-         attachment is. Mobile data (section_seen, 13 Jul): at its old depth
-         below the downloads, 0% of mobile visitors ever saw the tiles. -->
-    <section class="bb-takehome" id="bbTakeHome" aria-label="Take this banana home">
-      <div class="bb-card bb-card--buy">
-        <h3><PixelIcon name="tag" size="1.5em" /> Take this banana home</h3>
-        <p>Your banana on real things — printed and mailed to your door. Pick your thing:</p>
-        <!-- the card IS the picker: one tile per product (your banana previewed
-             on each) → tap opens that product. Adding a product = one more tile,
-             never a new button. -->
-        <div class="bb-pgrid" id="bbPgrid">
-          {PRODUCTS.map((p) => (
-            <button type="button" class="bb-ptile" data-prod={p.key} data-soon={!p.live ? true : undefined}>
-              {!p.live && <span class="bb-ptile__soon">soon</span>}
-              <span class="bb-ptile__mock"><canvas data-mock={p.key} aria-hidden="true"></canvas></span>
-              <span class="bb-ptile__name">{p.name}</span>
-              <span class="bb-ptile__price" id={p.key === 'sticker' ? 'bbPrice' : undefined}>{p.priceHint} kr</span>
-            </button>
-          ))}
-        </div>
-        <ul class="bb-trust">
-          <li>Made on demand · free worldwide shipping · checked by the banana guy before it ships
-            <details class="px-info"><summary>?</summary><span class="px-info__bubble">Printed on demand by the creator of the original 1999 Dancing Banana. Tap a product to preview it and order — die-cut along your design's outline (or square if you picked a background).</span></details>
-          </li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- TAKE IT WITH YOU (free downloads). The pose strip lives INSIDE the
-         download card now: since the PDPs grew their own pose pickers, the
-         frozen frame only affects the meme PNG — parking the strip between
-         the buy card and the downloads read as noise (Trym's catch). -->
+    <!-- TAKE IT WITH YOU — the classic desktop layout: pose strip above TWO
+         cards (download | buy). On mobile, CSS reorders the BUY card to the
+         top of the section (display:contents + order), so the offer keeps
+         sitting right after customizing — the mobile CRO win — without a
+         second DOM copy or a stacked desktop (Trym: stacking doesn't work). -->
     <section class="bb-outputs" aria-labelledby="bbTakeTitle">
       <p class="kicker">Done building?</p>
-      <h2 id="bbTakeTitle">Take it with you — free</h2>
+      <h2 id="bbTakeTitle">Take it with you</h2>
+      <div class="bb-freeze">
+        <div class="bb-freeze__label"><strong>Pick your pose</strong> <details class="px-info"><summary>?</summary><span class="px-info__bubble">The frame you freeze here is the one on your meme image. The chat emoji GIF always keeps the full dance, and printed products pick their pose on the product page.</span></details></div>
+        <div class="bb-frames" id="bbFrames"></div>
+      </div>
       <div class="bb-cards">
+        <div class="bb-card bb-card--buy" id="bbTakeHome">
+          <h3><PixelIcon name="tag" size="1.5em" /> Take this banana home</h3>
+          <p>Your banana on real things — printed and mailed to your door. Pick your thing:</p>
+          <!-- the card IS the picker: one tile per product (your banana previewed
+               on each) → tap opens that product. Adding a product = one more tile,
+               never a new button. -->
+          <div class="bb-pgrid" id="bbPgrid">
+            {PRODUCTS.map((p) => (
+              <button type="button" class="bb-ptile" data-prod={p.key} data-soon={!p.live ? true : undefined}>
+                {!p.live && <span class="bb-ptile__soon">soon</span>}
+                <span class="bb-ptile__mock"><canvas data-mock={p.key} aria-hidden="true"></canvas></span>
+                <span class="bb-ptile__name">{p.name}</span>
+                <span class="bb-ptile__price" id={p.key === 'sticker' ? 'bbPrice' : undefined}>{p.priceHint} kr</span>
+              </button>
+            ))}
+          </div>
+          <ul class="bb-trust">
+            <li>Made on demand · free worldwide shipping · checked by the banana guy before it ships
+              <details class="px-info"><summary>?</summary><span class="px-info__bubble">Printed on demand by the creator of the original 1999 Dancing Banana. Tap a product to preview it and order — die-cut along your design's outline (or square if you picked a background).</span></details>
+            </li>
+          </ul>
+        </div>
         <div class="bb-card">
           <h3><PixelIcon name="download" size="1.5em" /> Download it — free</h3>
           <p>As an animated <strong>chat emoji</strong> — transparent, cropped tight, drops straight into Discord, Slack or Twitch. Here's yours at actual chat size:</p>
@@ -484,11 +495,7 @@ const appSchema = {
           <button class="btn btn--dark" id="bbDownloadGif"><PixelIcon name="chat" size="1.4em" /> Download emoji GIF</button>
           <p class="bb-note">Captions are left off the emoji — they're too tiny to read at chat size.</p>
           <div class="bb-dl2">
-            <p>Or as a <strong>full-size meme image</strong> — captions, background and your favourite pose:</p>
-            <div class="bb-freeze">
-              <div class="bb-freeze__label"><strong>Pick your pose</strong> <details class="px-info"><summary>?</summary><span class="px-info__bubble">The frame you freeze here is the one on your meme image. The chat emoji GIF always keeps the full dance, and printed products pick their pose on the product page.</span></details></div>
-              <div class="bb-frames" id="bbFrames"></div>
-            </div>
+            <p>Or as a <strong>full-size meme image</strong> — captions, background and the moment you froze above:</p>
             <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" size="1.4em" /> Download image (PNG)</button>
           </div>
         </div>
