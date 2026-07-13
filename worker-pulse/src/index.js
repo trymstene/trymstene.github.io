@@ -342,7 +342,7 @@ async function apiReport(env) {
       + '% of traffic at ' + er + '% engagement — the organic core behaves differently, read them separately.');
   }
   if (fun[0] >= 10 && fun[1] === 0) notes.push('⚠ ' + fun[0]
-    + ' builder loads but nobody reached a product page — the sticker funnel died at step one.');
+    + ' builder loads but nobody reached a product page — the custom funnel died at step one.');
   const gifs = ev(cur, 'gif_download'); const pgifs = ev(prev, 'gif_download');
   if (gifs >= 5 && pgifs && gifs / pgifs >= 2) notes.push('GIF downloads doubled (' + gifs + ') — something is spreading.');
   if (!notes.length) notes.push('A quiet, normal day on the floor. The banana kept dancing.');
@@ -357,7 +357,7 @@ async function apiReport(env) {
     '🎬 ' + gifs + ' GIF downloads ' + pctDelta(gifs, pgifs)
       + ' · ' + ev(cur, 'builder_start') + ' builder loads ' + pctDelta(ev(cur, 'builder_start'), ev(prev, 'builder_start'))
       + ' · ' + ev(cur, 'rave_join') + ' rave joins ' + pctDelta(ev(cur, 'rave_join'), ev(prev, 'rave_join')),
-    '🏷️ Sticker funnel: builder <b>' + fun[0] + '</b> → PDP <b>' + fun[1] + '</b> → order <b>'
+    '🏷️ Custom funnel (tee/sticker/magnet): builder <b>' + fun[0] + '</b> → PDP <b>' + fun[1] + '</b> → order <b>'
       + fun[2] + '</b> → checkout <b>' + fun[3] + '</b>',
     '👕 Merch: shop <b>' + merch[0] + '</b> → picked <b>' + merch[1] + '</b> → product page <b>' + merch[2] + '</b>',
     '💰 ' + Math.round(k.revenue) + ' kr · ' + k.transactions + ' purchases · '
@@ -540,7 +540,7 @@ function page() {
 </div>
 
 <div class="grid2">
-  <div class="panel"><h2>🏷️ Sticker shop funnel <span class="muted">(make-a-banana)</span></h2><div id="fun0"></div></div>
+  <div class="panel"><h2>🏷️ Custom banana funnel <span class="muted">(make-a-banana · tee/sticker/magnet)</span></h2><div id="fun0"></div></div>
   <div class="panel"><h2>👕 Official merch funnel <span class="muted">(/shop/)</span></h2><div id="fun1"></div></div>
 </div>
 
@@ -572,7 +572,7 @@ var EV_LABEL = {
   wallpaper_download:'took a wallpaper', builder_start:'opened the builder',
   generator_click:'headed to the builder', surprise_me:'hit surprise me',
   share_link_copy:'shared a banana', rave_join:'joined the rave',
-  sticker_pdp_view:'eyed a sticker', sticker_pdp_checkout:'hit ORDER',
+  sticker_pdp_view:'eyed a custom product', sticker_pdp_checkout:'hit ORDER',
   checkout_redirect:'went to checkout 💰', select_item:'picked merch',
   view_item:'viewed merch', license_click:'read the license',
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
@@ -951,13 +951,13 @@ var FUNNELS=[
    ['builder_start','Builder loaded',
     'The make-a-banana builder finished loading on their screen — they saw the banana dance.'],
    ['sticker_pdp_view','Product page',
-    'They clicked to order their design and landed on the sticker product page.'],
+    'They clicked to order their design and landed on a custom product page — tee, sticker or magnet, their banana on it.'],
    ['sticker_pdp_checkout','Hit ORDER',
-    'They clicked the big ORDER button on the sticker product page.'],
+    'They clicked the big ORDER button on a custom product page.'],
    ['checkout_redirect','→ Shopify checkout',
     'Their design uploaded fine and the browser sent them off to the Shopify checkout.'],
    ['begin_checkout','Checkout started ⌁store-wide',
-    'Shopify saw a checkout page actually open. Store-wide: stickers AND merch count together here.'],
+    'Shopify saw a checkout page actually open. Store-wide: custom products AND official merch count together here.'],
    ['purchase','PAID 💰 ⌁store-wide',
     'Shopify reported real money paid. Store-wide — and stays 0 until the Shopify→GA4 purchase link is fixed (your errand in the G&Y channel).']],
   [['sessions','On the site',
