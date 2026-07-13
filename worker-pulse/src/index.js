@@ -555,7 +555,7 @@ var EV_LABEL = {
   sticker_pdp_view:'eyed a sticker', sticker_pdp_checkout:'hit ORDER',
   checkout_redirect:'went to checkout 💰', select_item:'picked merch',
   view_item:'viewed merch', license_click:'read the license',
-  tip_click:'tipped the banana 💛', forge_start:'fired up the forge',
+  tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop' };
 var LENSES = ['gif_download','builder_start','rave_join','sticker_pdp_view',
