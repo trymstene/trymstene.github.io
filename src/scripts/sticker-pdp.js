@@ -23,6 +23,17 @@ const selHex = () => {
   const c = apparel && product.options.colors.find((x) => x.id === sel.color);
   return c ? c.hex : '#ffffff';
 };
+// per-colour MODEL PHOTOS (Printful catalog shots, self-hosted) — preloaded so
+// swatch taps repaint instantly; until a photo lands the pixel tee fills in
+const photos = {};
+if (apparel) {
+  product.options.colors.forEach((c) => {
+    const img = new Image();
+    img.onload = () => { if (sel.color === c.id) paintMockup(); }; // upgrade in place
+    img.src = `/assets/${product.key}/${product.key}-${c.id}.jpg`;
+    photos[c.id] = img;
+  });
+}
 
 // the trimmed "design" (banana + captions + bg), rendered once at preview res
 function designCanvas() {
@@ -48,7 +59,8 @@ function designCanvas() {
 }
 
 function paintMockup() {
-  const mock = makeStickerMockup(state, designCanvas(), 900, product.key, { colorHex: selHex() });
+  const mock = makeStickerMockup(state, designCanvas(), 900, product.key,
+    { colorHex: selHex(), photo: apparel ? photos[sel.color] : null });
   const main = el('pdpMock');
   main.width = mock.width; main.height = mock.height;
   main.getContext('2d').drawImage(mock, 0, 0);
@@ -74,6 +86,17 @@ function wireOptions() {
       track('pdp_option_pick', { product: product.key, option: 'size', value: sel.size });
     };
   });
+  // size-guide unit toggle (same behaviour as /js/shop.js on the official PDPs)
+  const toggle = document.querySelector('.size-toggle');
+  if (toggle) {
+    toggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      toggle.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      document.querySelectorAll('.size-table [data-unit]').forEach((c) => {
+        c.style.display = (c.dataset.unit === btn.dataset.unit) ? '' : 'none';
+      });
+    });
+  }
 }
 
 // last-minute pose change, right on the product page (Trym: you shouldn't have

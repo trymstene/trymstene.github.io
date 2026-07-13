@@ -176,5 +176,53 @@
         "28"
       ]
     }
+  },
+  "71": {
+    "product": "Unisex Staple T-Shirt | Bella+Canvas 3001",
+    "unit": "inches",
+    "kind": "product_measure",
+    "note": "Flat garment measurements (from the Printful catalog).",
+    "cols": [
+      "Length",
+      "Width"
+    ],
+    "rows": {
+      "XS": [
+        "27",
+        "16.5"
+      ],
+      "S": [
+        "28",
+        "18"
+      ],
+      "M": [
+        "29",
+        "20"
+      ],
+      "L": [
+        "30",
+        "22"
+      ],
+      "XL": [
+        "31",
+        "24"
+      ],
+      "2XL": [
+        "32",
+        "26"
+      ],
+      "3XL": [
+        "33",
+        "28"
+      ],
+      "4XL": [
+        "34",
+        "30"
+      ],
+      "5XL": [
+        "35",
+        "32"
+      ]
+    }
   }
 }

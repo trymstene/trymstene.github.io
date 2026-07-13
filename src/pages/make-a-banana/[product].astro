@@ -9,6 +9,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import PRODUCTS from '../../../shared/products.js';
+import { sizeTableForGuideId } from '../../lib/shop.js';
 
 export function getStaticPaths() {
   // every catalog product gets a page (noindex anyway); a not-yet-live one
@@ -18,6 +19,8 @@ export function getStaticPaths() {
 }
 const { p } = Astro.props;
 const nameLc = p.name.toLowerCase();
+// apparel gets the SAME real-Printful size chart as the official shop
+const sizeGuide = p.options ? sizeTableForGuideId(p.options.sizeGuideId, p.options.sizes) : null;
 // cross-sell: the same design on every OTHER live product (manifest-driven —
 // a new product automatically appears here). Design params attach client-side.
 const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
@@ -113,7 +116,8 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
                 style={`background:${c.hex}`}></button>
             ))}
           </div>
-          <div class="pdp-field__label" style="margin-top:0.9rem;">Size <span style="font-weight:500;opacity:.7;">(unisex)</span></div>
+          <div class="pdp-field__label" style="margin-top:0.9rem;">Size <span style="font-weight:500;opacity:.7;">(unisex)</span>
+            {sizeGuide && <span style="font-weight:500;"> — <a href="#size-guide">size guide</a></span>}</div>
           <div class="pdp-opts" id="pdpSizes">
             {p.options.sizes.map((s) => (
               <button type="button" class="pdp-sizebtn" data-size={s}
@@ -146,6 +150,13 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
         <li>Free replacement if it arrives wrong — <a href="/shop/policies/">shipping &amp; returns</a></li>
         <li>Made by the creator of the original 1999 Dancing Banana</li>
       </ul>
+
+      {sizeGuide && (
+        <details id="size-guide" class="pdp-details">
+          <summary>Size guide &amp; measurements</summary>
+          <div class="pdp-details__body" set:html={sizeGuide}></div>
+        </details>
+      )}
     </div>
   </main>
 

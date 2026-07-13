@@ -21,6 +21,7 @@ GARMENTS = {
     "146": "Unisex Heavy Blend Hoodie | Gildan 18500",  # hoodie
     "200": "All-Over Print Crop Top",                   # crop top
     "108": "Men's Fitted T-Shirt | Next Level 3600",    # short sleeve t-shirt
+    "71":  "Unisex Staple T-Shirt | Bella+Canvas 3001", # CUSTOM banana tee
 }
 
 

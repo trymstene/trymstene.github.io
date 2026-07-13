@@ -126,10 +126,16 @@ export function renderPrintFile(state, product = null) {
 // ---- product MOCKUP (what the buyer sees) ---------------------------------
 // die-cut white contour for transparent designs, rounded white square for
 // coloured ones. product='magnet' adds a grey depth band = visible thickness.
-// style='tee' draws a chunky pixel-art t-shirt (on brand — no photo mockup
-// assets needed) tinted opts.colorHex, with the design on the chest.
+// style='tee' composites the design onto a real per-colour MODEL PHOTO
+// (Printful catalog shots in /assets/tee/, preloaded by the PDP and passed as
+// opts.photo) — same photo-mockup feel as the official shop. Without a photo
+// (builder tiles, photo still loading) it falls back to the chunky pixel tee.
 export function makeStickerMockup(state, design, size = 900, style = 'sticker', opts = {}) {
-  if (style === 'tee') return makeTeeMockup(design, size, opts.colorHex || '#ffffff');
+  if (style === 'tee') {
+    return (opts.photo && opts.photo.complete && opts.photo.naturalWidth)
+      ? makeTeePhotoMockup(design, size, opts.photo)
+      : makeTeeMockup(design, size, opts.colorHex || '#ffffff');
+  }
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
@@ -184,6 +190,27 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
     ctx.drawImage(design, dx, dy, dw, dh);
     ctx.restore();
   }
+  return cv;
+}
+
+// photo mockup: the design composited onto the model's chest. The Printful
+// catalog shots share one shoot, so the chest quad (fractions of the photo)
+// holds across every colour. Square canvas, photo letterboxed on white.
+function makeTeePhotoMockup(design, size, photo) {
+  const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+  const iw = photo.naturalWidth, ih = photo.naturalHeight;
+  const s = Math.min(size / iw, size / ih);
+  const pw = iw * s, ph = ih * s;
+  const px = (size - pw) / 2, py = (size - ph) / 2;
+  ctx.drawImage(photo, px, py, pw, ph);
+  // the DTG front-print zone as fractions of the photo (tuned to the shoot)
+  const zone = { cx: 0.505, top: 0.30, w: 0.34, h: 0.30 };
+  const zw = zone.w * pw, zh = zone.h * ph;
+  const ds = Math.min(zw / design.width, zh / design.height);
+  const dw = design.width * ds, dh = design.height * ds;
+  ctx.drawImage(design, px + zone.cx * pw - dw / 2, py + zone.top * ph, dw, dh);
   return cv;
 }
 

@@ -87,9 +87,18 @@ const toCm = (v) => String(v).replace(/\d+(\.\d+)?/g, (n) => String(Math.round(p
 // Returns the table HTML, or null when the product has no chart (the PDP then
 // hides the whole size-guide section — no "contact me for a chart" nonsense).
 export function sizeTableHtml(m) {
-  const g = guideFor(m.title);
-  if (!g || !m.sizes.length) return null;
-  const rows = m.sizes.filter((s) => s in g.rows);
+  return sizeTableForGuide(guideFor(m.title), m.sizes);
+}
+
+// Same table for a KNOWN guide id (the custom tee PDP: BC3001 = catalog 71) —
+// keeps custom + official apparel on the identical real-Printful chart.
+export function sizeTableForGuideId(guideId, sizes) {
+  return sizeTableForGuide(GUIDES[guideId] || null, sizes || []);
+}
+
+function sizeTableForGuide(g, sizes) {
+  if (!g || !sizes.length) return null;
+  const rows = sizes.filter((s) => s in g.rows);
   if (!rows.length) return null;
   const head = g.cols.map((c) => `<th>${esc(c)}</th>`).join('');
   const body = rows.map((s) => {
@@ -162,7 +171,7 @@ function model(node) {
 // ⚠️ EVERY custom builder product added to Shopify needs its handle here, or it
 // leaks into the official shop grid (the magnet did — Trym caught it live,
 // broken image and all, since custom products have no Shopify product photos).
-const BUILDER_ONLY = new Set(['custom-banana-sticker', 'custom-banana-magnet']);
+const BUILDER_ONLY = new Set(['custom-banana-sticker', 'custom-banana-magnet', 'custom-banana-tee']);
 
 let _cache;
 export async function getProducts() {

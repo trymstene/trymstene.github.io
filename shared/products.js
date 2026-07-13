@@ -55,6 +55,7 @@ export default [
     shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee, 349 NOK (created 13 Jul)
     printfulVariantId: 4012, // fallback = White / M (never used once options resolve)
     options: {
+      sizeGuideId: '71', // Printful catalog id → src/data/size-guides.json (build-size-guides.py)
       sizes: ['S', 'M', 'L', 'XL', '2XL'],
       colors: [
         { id: 'white',     label: 'White',      hex: '#ffffff', variants: { S: 4011, M: 4012, L: 4013, XL: 4014, '2XL': 4015 } },
