@@ -460,8 +460,8 @@ function page() {
 <div class="err" id="err"></div>
 
 <!-- the ANALYST BANANA's speech bubble -->
-<div id="rptWrap" hidden style="position:fixed;inset:0;z-index:50;background:rgba(6,4,12,.72);
-  display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;">
+<div id="rptWrap" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(6,4,12,.72);
+  align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;">
   <div style="max-width:560px;width:100%;margin-top:4vh;position:relative;">
     <div style="display:flex;align-items:flex-end;gap:4px;margin-left:6px;">
       <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" alt=""
@@ -918,7 +918,7 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
   refreshDot();
   setInterval(refreshDot, 600000); // a new day re-lights the dot without a reload
   btn.onclick=function(){
-    wrap.hidden=false;
+    wrap.style.display='flex';
     try{ localStorage.setItem('pulse-rpt-read', osloYesterday()); }catch(e){}
     refreshDot();
     api('/api/report').then(function(r){
@@ -932,8 +932,8 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
       document.getElementById('rptBody').innerHTML='<p class="muted">⚠ '+friendly(e,'report')+'</p>';
     });
   };
-  document.getElementById('rptClose').onclick=function(){ wrap.hidden=true; };
-  wrap.addEventListener('click', function(e){ if(e.target===wrap) wrap.hidden=true; });
+  document.getElementById('rptClose').onclick=function(){ wrap.style.display='none'; };
+  wrap.addEventListener('click', function(e){ if(e.target===wrap) wrap.style.display='none'; });
 })();
 
 // info ⓘ on touch: tap toggles the tooltip, tapping anywhere else closes it
