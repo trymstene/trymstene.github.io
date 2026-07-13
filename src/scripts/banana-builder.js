@@ -240,7 +240,11 @@ function init() {
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
     EXTRA_DEFS.forEach((d) => { state.extras[d.id] = !d.raveOnly && earnedUnlocked(d) && Math.random() < 0.3; });
     state.effect = pick(['none','none','disco','sparkle','confetti']);
-    state.spd = Math.round((0.5 + Math.random() * 0.8) * 100) / 100;
+    // tempo stays at the DEFAULT (Trym: the surprise is the outfit + caption;
+    // tempo is a deliberate final adjustment, and randomizing it also left the
+    // slider out of sync with the actual speed)
+    state.spd = BASE_CYCLE_S;
+    speed.value = SPD_MIN + SPD_MAX - state.spd;
     topIn.value = state.top; botIn.value = state.bottom;
     onState();
     track('surprise_me');
