@@ -177,12 +177,19 @@ function init() {
         sync();
       }, { threshold: 0.12 }).observe(takeSec);
     }
-    document.querySelector('.bb-controls').addEventListener('click', (e) => {
-      if (armed || e.target.closest('#bbQuickSticker')) return; // the CTA isn't "playing"
+    const arm = (delay) => {
+      if (armed) return;
       armed = true;
       track('section_seen', { placement: 'homebar' });
-      setTimeout(sync, 800); // let the first change land before nudging
+      setTimeout(sync, delay);
+    };
+    document.querySelector('.bb-controls').addEventListener('click', (e) => {
+      if (e.target.closest('#bbQuickSticker')) return; // the CTA isn't "playing"
+      arm(800); // let the first change land before nudging
     });
+    // scroll-only visitors (most ad traffic) never click a control — arm once
+    // they're clearly into the page, so the nudge exists for them too
+    addEventListener('scroll', () => { if (scrollY > 500) arm(400); }, { passive: true });
     el('bbHomeBarGo').onclick = () => {
       track('quick_action', { action: 'homebar' });
       takeSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
