@@ -207,6 +207,8 @@ const appSchema = {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 500; display: none;
       background: var(--banana); border-top: 3px solid var(--ink);
       box-shadow: 0 -6px 0 rgba(255, 46, 136, 0.35);
+      /* keep the bar above the iPhone home indicator */
+      padding-bottom: env(safe-area-inset-bottom, 0);
     }
     .bb-homebar.show { display: flex; animation: bbBarIn 0.3s ease-out; }
     @keyframes bbBarIn { from { transform: translateY(100%); } to { transform: none; } }
@@ -297,10 +299,11 @@ const appSchema = {
     .bb-trust { margin: 0 0 1.1rem; padding-left: 1.15rem; font-size: 0.92rem; display: grid; gap: 0.35rem; }
     .bb-trust li { margin: 0; }
 
-    /* shared frame picker: one "freeze the moment" strip feeds BOTH cards */
-    .bb-freeze { max-width: 760px; margin: 0 auto 1.4rem; }
-    .bb-freeze p, .bb-freeze__label { margin: 0 0 0.8rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; }
-    .bb-freeze .bb-frames { justify-content: center; margin-bottom: 0; }
+    /* the frame picker lives inside the download card (meme-PNG only now —
+       printed products pick their pose on the PDP) */
+    .bb-freeze { margin: 0 0 1rem; }
+    .bb-freeze p, .bb-freeze__label { margin: 0 0 0.6rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.45rem; }
+    .bb-freeze .bb-frames { justify-content: flex-start; margin-bottom: 0; }
 
     /* fake chat row — compact, one line, both sizes inline */
     .bb-chat { background: #313338; border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
@@ -458,14 +461,13 @@ const appSchema = {
       </div>
     </section>
 
-    <!-- TAKE IT WITH YOU -->
+    <!-- TAKE IT WITH YOU (free downloads). The pose strip lives INSIDE the
+         download card now: since the PDPs grew their own pose pickers, the
+         frozen frame only affects the meme PNG — parking the strip between
+         the buy card and the downloads read as noise (Trym's catch). -->
     <section class="bb-outputs" aria-labelledby="bbTakeTitle">
       <p class="kicker">Done building?</p>
-      <h2 id="bbTakeTitle">Take it with you</h2>
-      <div class="bb-freeze">
-        <div class="bb-freeze__label"><strong>Pick your pose</strong> <details class="px-info"><summary>?</summary><span class="px-info__bubble">The frame you freeze here is the one on your meme image and your printed sticker. The chat emoji GIF always keeps the full dance.</span></details></div>
-        <div class="bb-frames" id="bbFrames"></div>
-      </div>
+      <h2 id="bbTakeTitle">Take it with you — free</h2>
       <div class="bb-cards">
         <div class="bb-card">
           <h3><PixelIcon name="download" size="1.5em" /> Download it — free</h3>
@@ -482,7 +484,11 @@ const appSchema = {
           <button class="btn btn--dark" id="bbDownloadGif"><PixelIcon name="chat" size="1.4em" /> Download emoji GIF</button>
           <p class="bb-note">Captions are left off the emoji — they're too tiny to read at chat size.</p>
           <div class="bb-dl2">
-            <p>Or as a <strong>full-size meme image</strong> — captions, background and the moment you froze above:</p>
+            <p>Or as a <strong>full-size meme image</strong> — captions, background and your favourite pose:</p>
+            <div class="bb-freeze">
+              <div class="bb-freeze__label"><strong>Pick your pose</strong> <details class="px-info"><summary>?</summary><span class="px-info__bubble">The frame you freeze here is the one on your meme image. The chat emoji GIF always keeps the full dance, and printed products pick their pose on the product page.</span></details></div>
+              <div class="bb-frames" id="bbFrames"></div>
+            </div>
             <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" size="1.4em" /> Download image (PNG)</button>
           </div>
         </div>
