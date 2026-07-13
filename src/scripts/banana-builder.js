@@ -159,11 +159,13 @@ function init() {
     if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // ---- the take-it-home bar (mobile): armed by the first customization tap,
-  // hidden while the offer itself is on screen, dismissible for the session ----
+  // ---- the take-it-home bar: armed by the first customization tap, hidden
+  // while the offer itself is on screen, dismissible for the session. Mobile
+  // = bottom bar, desktop = floating card (CSS decides); the mini canvas
+  // mirrors the main stage so YOUR banana dances on the nudge. ----
   const homeBar = el('bbHomeBar');
   const takeSec = document.getElementById('bbTakeHome');
-  if (homeBar && takeSec && window.matchMedia('(max-width: 640px)').matches) {
+  if (homeBar && takeSec) {
     let armed = false;
     let dismissed = false;
     let takeVisible = false;
@@ -190,6 +192,20 @@ function init() {
       try { sessionStorage.setItem('bb-homebar-x', '1'); } catch (e) {}
       sync();
     };
+    // the mini stage: mirror the live main canvas while the bar is visible
+    const barCv = el('bbHomeBarCv');
+    const mainCv = el('bbCanvas');
+    if (barCv && mainCv) {
+      const bctx = barCv.getContext('2d');
+      bctx.imageSmoothingEnabled = false;
+      (function mirror() {
+        if (homeBar.classList.contains('show')) {
+          bctx.clearRect(0, 0, barCv.width, barCv.height);
+          bctx.drawImage(mainCv, 0, 0, barCv.width, barCv.height);
+        }
+        requestAnimationFrame(mirror);
+      })();
+    }
   }
 
   // ---- dock the sticky preview on mobile: past the hero it becomes a small

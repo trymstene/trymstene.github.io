@@ -199,28 +199,61 @@ const appSchema = {
       .bb-stagewrap.bb-mini .bb-pause { transform: scale(0.68); transform-origin: bottom right; }
     }
 
-    /* the take-it-home bar: fixed bottom nudge on mobile, armed by the first
-       customization tap, gone while the offer itself is on screen */
+    /* the take-it-home bar: armed by the first customization tap, gone while
+       the offer itself is on screen. Mobile = full-width bottom bar; desktop
+       = floating card bottom-right. YOUR banana dances on it (the mini canvas
+       mirrors the main stage) — it should look like a treat, not like chrome. */
     .bb-homebar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 500; display: none;
       background: var(--banana); border-top: 3px solid var(--ink);
+      box-shadow: 0 -6px 0 rgba(255, 46, 136, 0.35);
     }
-    .bb-homebar.show { display: flex; }
-    @media (min-width: 641px) { .bb-homebar.show { display: none; } }
+    .bb-homebar.show { display: flex; animation: bbBarIn 0.3s ease-out; }
+    @keyframes bbBarIn { from { transform: translateY(100%); } to { transform: none; } }
     .bb-homebar__go {
-      flex: 1; font: inherit; background: none; border: 0; cursor: pointer;
-      text-align: left; padding: 0.85rem 0.5rem 0.85rem 1rem; font-size: 0.92rem; font-weight: 700;
+      flex: 1; display: flex; align-items: center; gap: 0.75rem;
+      font: inherit; background: none; border: 0; cursor: pointer;
+      text-align: left; padding: 0.7rem 0.4rem 0.7rem 0.8rem;
     }
-    .bb-homebar__go b { font-weight: 900; }
+    .bb-homebar__stage {
+      flex: 0 0 auto; width: 52px; height: 52px; background: #fff;
+      border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+      display: grid; place-items: center;
+    }
+    .bb-homebar__stage canvas { width: 44px; height: 44px; image-rendering: pixelated; display: block; }
+    .bb-homebar__txt { display: flex; flex-direction: column; line-height: 1.25; }
+    .bb-homebar__txt b { font-weight: 900; font-size: 1.02rem; }
+    .bb-homebar__txt small { font-weight: 700; font-size: 0.74rem; opacity: 0.75; }
+    .bb-homebar__arrow {
+      margin-left: auto; flex: 0 0 auto; font-weight: 900; font-size: 1.1rem;
+      background: var(--ink); color: var(--banana); padding: 0.35rem 0.6rem;
+      animation: bbArrowNudge 1.6s ease-in-out 2;
+    }
+    @keyframes bbArrowNudge { 0%, 100% { transform: none; } 50% { transform: translateX(4px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .bb-homebar.show, .bb-homebar__arrow { animation: none; }
+    }
     .bb-homebar__x {
       font: inherit; font-weight: 900; background: none; border: 0; cursor: pointer;
       border-left: 3px solid var(--ink); padding: 0 1.05rem; min-width: 48px;
     }
+    /* desktop: a floating take-home card, bottom-right (chat-widget position,
+       banana-shop energy) */
+    @media (min-width: 641px) {
+      .bb-homebar {
+        left: auto; right: 18px; bottom: 18px; max-width: 380px;
+        border: 3px solid var(--ink); box-shadow: 8px 8px 0 var(--hot);
+      }
+      .bb-homebar.show { animation: bbBarInD 0.25s ease-out; }
+      @keyframes bbBarInD { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+    }
 
     .bb-outputs { margin-top: 3rem; text-align: center; }
     .bb-outputs h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin: 0.2rem 0 1.2rem; }
+    /* since the buy card moved up to its own take-home section, the outputs
+       grid holds ONE card — center it instead of leaving a ghost column */
     .bb-cards { display: grid; grid-template-columns: 1fr; gap: 1.2rem; text-align: left; }
-    @media (min-width: 820px) { .bb-cards { grid-template-columns: 1fr 1fr; align-items: start; } }
+    @media (min-width: 820px) { .bb-cards .bb-card { max-width: 640px; margin-inline: auto; width: 100%; } }
     .bb-card { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 1.3rem; }
     .bb-card h3 { margin: 0 0 0.5rem; font-size: 1.35rem; display: flex; align-items: center; gap: 0.5rem; }
     .bb-card p { margin: 0 0 1rem; font-size: 0.95rem; }
@@ -460,7 +493,11 @@ const appSchema = {
   <div class="bb-toast" id="bbToast">Copied!</div>
 
   <div class="bb-homebar" id="bbHomeBar">
-    <button type="button" class="bb-homebar__go" id="bbHomeBarGo"><b>Make it real</b> — sticker · magnet · tee</button>
+    <button type="button" class="bb-homebar__go" id="bbHomeBarGo">
+      <span class="bb-homebar__stage"><canvas id="bbHomeBarCv" width="72" height="72" aria-hidden="true"></canvas></span>
+      <span class="bb-homebar__txt"><b>Make it real</b><small>tee · sticker · magnet — from 149 kr</small></span>
+      <span class="bb-homebar__arrow" aria-hidden="true">→</span>
+    </button>
     <button type="button" class="bb-homebar__x" id="bbHomeBarX" aria-label="No thanks">✕</button>
   </div>
 
