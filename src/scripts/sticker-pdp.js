@@ -7,8 +7,8 @@ import { assetsReady, NFRAMES } from '../lib/banana-engine.js';
 import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
-  bboxOf, pad, crop, renderPrintFile, makeStickerMockup, localizedPrice, uploadAndCheckout,
-  stickerCaptions, stickerEffect,
+  bboxOf, pad, crop, renderPrintFile, renderApparelPrint, makeStickerMockup,
+  localizedPrice, uploadAndCheckout, stickerCaptions, stickerEffect,
 } from '../lib/sticker-core.js';
 
 const el = (id) => document.getElementById(id);
@@ -37,21 +37,19 @@ if (apparel) {
 
 // the trimmed "design" (banana + captions + bg), rendered once at preview res
 function designCanvas() {
+  // apparel: the preview IS the print file (the full 12″×16″ area with the
+  // design placed inside it) at preview res — WYSIWYG with the real print
+  if (apparel) return renderApparelPrint(state, 512);
   const W = 512;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
   const ctx = cv.getContext('2d');
-  composite(ctx, W, state.frame, state, apparel ? {
-    // DTG print = the design itself on the garment: no bg square, and captions
-    // + effects DO print (no die-cut constraint) — mirrors renderPrintFile
-    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
-    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
-  } : {
+  composite(ctx, W, state.frame, state, {
     // die-cut (transparent) = banana only; captions + confetti/sparkle live on
     // square stickers (see sticker-core stickerCaptions / stickerEffect)
     bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
-  if (apparel || state.bg === 'transparent') {
+  if (state.bg === 'transparent') {
     const data = ctx.getImageData(0, 0, W, W).data;
     return crop(cv, pad(bboxOf([data], W), W));
   }

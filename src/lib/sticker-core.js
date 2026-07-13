@@ -106,20 +106,45 @@ export const stickerEffect = (state) =>
 // never prints, and captions + confetti/sparkle DO print (no die-cut
 // constraint to cut them loose).
 export function renderPrintFile(state, product = null) {
+  if (product && product.options) return renderApparelPrint(state);
   const W = 2048;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
-  const apparel = !!(product && product.options);
-  composite(ctx, W, state.frame, state, apparel ? {
-    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
-    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
-  } : {
+  composite(ctx, W, state.frame, state, {
     bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
-  if (apparel || state.bg === 'transparent') {
+  if (state.bg === 'transparent') {
     const data = ctx.getImageData(0, 0, W, W).data;
     return crop(cv, pad(bboxOf([data], W), W));
   }
+  return cv;
+}
+
+// APPAREL print file: the design deliberately PLACED inside the full 12″×16″
+// DTG area (3:4 canvas) — Printful prints the file as the whole area, so the
+// transparent margins here ARE the real-world print size and position. The
+// design caps at ~76% of the area width (≈9″ on the chest) and starts ~9%
+// down (≈1.4″ below the collar seam) — Trym: the fill-the-area default sat
+// huge and right at the neck opening. The PDP mockup draws this same canvas,
+// so what you see is what prints.
+export function renderApparelPrint(state, W = 2048) {
+  const H = Math.round(W * (16 / 12));
+  // render + trim the raw design first
+  const raw = document.createElement('canvas'); raw.width = W; raw.height = W;
+  const rctx = raw.getContext('2d');
+  composite(rctx, W, state.frame, state, {
+    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
+    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+  });
+  const data = rctx.getImageData(0, 0, W, W).data;
+  const trimmed = crop(raw, pad(bboxOf([data], W), W));
+  // place it in the print area
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const s = Math.min((W * 0.78) / trimmed.width, (H * 0.66) / trimmed.height);
+  const dw = trimmed.width * s, dh = trimmed.height * s;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(trimmed, (W - dw) / 2, H * 0.07, dw, dh);
   return cv;
 }
 
@@ -205,12 +230,14 @@ function makeTeePhotoMockup(design, size, photo) {
   const pw = iw * s, ph = ih * s;
   const px = (size - pw) / 2, py = (size - ph) / 2;
   ctx.drawImage(photo, px, py, pw, ph);
-  // the DTG front-print zone as fractions of the photo (tuned to the shoot)
-  const zone = { cx: 0.505, top: 0.30, w: 0.34, h: 0.30 };
-  const zw = zone.w * pw, zh = zone.h * ph;
+  // the full 12″×16″ DTG print AREA as it sits on this shoot's shirt — the
+  // design canvas (renderApparelPrint) is that whole area incl. margins, so
+  // drawing it here previews the exact physical print size and position.
+  const zw = 0.34 * pw;
+  const zh = zw * (16 / 12);
   const ds = Math.min(zw / design.width, zh / design.height);
   const dw = design.width * ds, dh = design.height * ds;
-  ctx.drawImage(design, px + zone.cx * pw - dw / 2, py + zone.top * ph, dw, dh);
+  ctx.drawImage(design, px + 0.505 * pw - dw / 2, py + 0.283 * ph, dw, dh);
   return cv;
 }
 
