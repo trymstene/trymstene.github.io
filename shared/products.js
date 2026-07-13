@@ -52,9 +52,7 @@ export default [
     // (banana camouflage) — Trym's call: colored/white, banana shines.
     key: 'tee',
     name: 'Tee',
-    shopifyVariantGid: null, // ← Trym: create "Custom Banana Tee" (349 kr) in
-    //   Shopify, publish to the Headless channel, paste the variant GID here
-    //   and flip live: true. Everything else is already wired.
+    shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee, 349 NOK (created 13 Jul)
     printfulVariantId: 4012, // fallback = White / M (never used once options resolve)
     options: {
       sizes: ['S', 'M', 'L', 'XL', '2XL'],
@@ -70,6 +68,6 @@ export default [
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
     priceHint: 349,
-    live: false, // teaser tile until the Shopify product exists
+    live: true,
   },
 ];
