@@ -202,7 +202,9 @@ function init() {
     let mini = false;
     let pinned = false;
     addEventListener('scroll', () => {
-      const want = mini ? scrollY > 300 : scrollY > 420; // small hysteresis
+      // compact as soon as the hero is gone (Trym: it waited until the
+      // Background row before docking — too late); small hysteresis
+      const want = mini ? scrollY > 160 : scrollY > 240;
       if (want === mini) return;
       if (!pinned) { stagewrap.style.minHeight = stagewrap.offsetHeight + 'px'; pinned = true; }
       mini = want;

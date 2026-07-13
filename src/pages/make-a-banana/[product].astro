@@ -59,6 +59,13 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
       .pdp-zoom canvas { transition: transform 0.15s ease-out; transform-origin: 50% 50%; }
       .pdp-zoom.zooming canvas { transition: none; }
       .pdp-zoom.zoomed { cursor: zoom-out; }
+      .pdp-zoomhint {
+        position: absolute; right: 10px; bottom: 10px; z-index: 3; pointer-events: none;
+        background: var(--ink, #111); color: #ffe135; font-size: 0.72rem; font-weight: 800;
+        letter-spacing: 0.04em; padding: 0.35rem 0.6rem; opacity: 0.92;
+        transition: opacity 0.9s ease;
+      }
+      .pdp-zoomhint.fade { opacity: 0; }
       /* apparel options: colour swatches + size chips (tee) */
       .pdp-opts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.45rem; }
       .pdp-swatch {

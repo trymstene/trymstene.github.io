@@ -162,7 +162,16 @@ function wireZoom() {
     const y = Math.max(0, Math.min(100, ((ev.clientY - r.top) / r.height) * 100));
     cv.style.transformOrigin = `${x}% ${y}%`;
   };
-  if (window.matchMedia('(hover: hover)').matches) {
+  // a small self-fading hint so the zoom is discoverable (both input worlds)
+  const hover = window.matchMedia('(hover: hover)').matches;
+  const hint = document.createElement('div');
+  hint.className = 'pdp-zoomhint';
+  hint.textContent = hover ? '🔍 hover to zoom' : '🔍 tap to zoom';
+  wrap.appendChild(hint);
+  setTimeout(() => hint.classList.add('fade'), 4200);
+  setTimeout(() => hint.remove(), 5400);
+
+  if (hover) {
     wrap.addEventListener('mouseenter', (ev) => { originAt(ev); cv.style.transform = `scale(${Z})`; });
     wrap.addEventListener('mousemove', (ev) => { wrap.classList.add('zooming'); originAt(ev); });
     wrap.addEventListener('mouseleave', () => {
@@ -170,13 +179,30 @@ function wireZoom() {
     });
     return;
   }
-  // touch: tap toggles, drag pans while zoomed
-  let zoomed = false; let moved = false; let downAt = null;
-  wrap.addEventListener('pointerdown', (ev) => { downAt = { x: ev.clientX, y: ev.clientY }; moved = false; });
+  // touch: tap toggles; while zoomed you DRAG THE IMAGE (swipe left → view
+  // moves right, like grabbing a photo — Trym: the follow-the-finger version
+  // felt inverted). Origin moves opposite the finger, scaled so the drag
+  // feels 1:1 with the picture.
+  let zoomed = false; let moved = false; let downAt = null; let startOrigin = null;
+  const getOrigin = () => {
+    const m = /([\d.]+)%\s+([\d.]+)%/.exec(cv.style.transformOrigin || '50% 50%');
+    return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 50, y: 50 };
+  };
+  wrap.addEventListener('pointerdown', (ev) => {
+    downAt = { x: ev.clientX, y: ev.clientY }; startOrigin = getOrigin(); moved = false;
+  });
   wrap.addEventListener('pointermove', (ev) => {
     if (!downAt) return;
-    if (Math.abs(ev.clientX - downAt.x) + Math.abs(ev.clientY - downAt.y) > 8) moved = true;
-    if (zoomed && moved) { ev.preventDefault(); wrap.classList.add('zooming'); originAt(ev); }
+    const dx = ev.clientX - downAt.x, dy = ev.clientY - downAt.y;
+    if (Math.abs(dx) + Math.abs(dy) > 8) moved = true;
+    if (zoomed && moved) {
+      ev.preventDefault();
+      wrap.classList.add('zooming');
+      const r = wrap.getBoundingClientRect();
+      const ox = Math.max(0, Math.min(100, startOrigin.x - (dx * 100) / ((Z - 1) * r.width)));
+      const oy = Math.max(0, Math.min(100, startOrigin.y - (dy * 100) / ((Z - 1) * r.height)));
+      cv.style.transformOrigin = `${ox}% ${oy}%`;
+    }
   });
   wrap.addEventListener('pointerup', (ev) => {
     wrap.classList.remove('zooming');
