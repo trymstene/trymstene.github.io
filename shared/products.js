@@ -8,6 +8,9 @@
 // branching logic anywhere — the tile grid, the product pages, and what gets
 // printed all follow this list.
 //
+// ARRAY ORDER = display order in the "Take this banana home" tiles (Trym's
+// merchandising call 13 Jul: tee leads, then sticker, then magnet).
+//
 // Fields:
 //   key                unique slug — the PDP URL (/make-a-banana/<key>/), the
 //                      mockup style ('magnet' gets a depth edge), the tile id.
@@ -21,26 +24,6 @@
 //   priceHint          display fallback only; Shopify is the source of truth
 //                      for the real (localized) price at checkout.
 export default [
-  {
-    key: 'sticker',
-    name: 'Sticker',
-    shopifyVariantGid: 'gid://shopify/ProductVariant/48935555006683', // Custom Banana Sticker
-    printfulVariantId: 10163,   // Kiss-Cut Stickers (product 358), 3″×3″, cost $2.50
-    size: '3″×3″ (7.5 cm)',
-    material: 'durable weatherproof vinyl',
-    priceHint: 149,
-    live: true,
-  },
-  {
-    key: 'magnet',
-    name: 'Magnet',
-    shopifyVariantGid: 'gid://shopify/ProductVariant/48962172354779', // Custom Banana Magnet
-    printfulVariantId: 16366,   // Die-Cut Magnets (product 656), 3″×3″, cost $3.32
-    size: '3″×3″ (7.5 cm)',
-    material: 'flexible fridge magnet',
-    priceHint: 169,
-    live: true,
-  },
   {
     // THE TEE (13 Jul 2026, research-backed: apparel = #1 POD category; the
     // wearer's OWN dressed banana printed front and center). Color x size ride
@@ -69,6 +52,26 @@ export default [
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
     priceHint: 349,
+    live: true,
+  },
+  {
+    key: 'sticker',
+    name: 'Sticker',
+    shopifyVariantGid: 'gid://shopify/ProductVariant/48935555006683', // Custom Banana Sticker
+    printfulVariantId: 10163,   // Kiss-Cut Stickers (product 358), 3″×3″, cost $2.50
+    size: '3″×3″ (7.5 cm)',
+    material: 'durable weatherproof vinyl',
+    priceHint: 149,
+    live: true,
+  },
+  {
+    key: 'magnet',
+    name: 'Magnet',
+    shopifyVariantGid: 'gid://shopify/ProductVariant/48962172354779', // Custom Banana Magnet
+    printfulVariantId: 16366,   // Die-Cut Magnets (product 656), 3″×3″, cost $3.32
+    size: '3″×3″ (7.5 cm)',
+    material: 'flexible fridge magnet',
+    priceHint: 169,
     live: true,
   },
 ];
