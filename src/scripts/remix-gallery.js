@@ -81,6 +81,30 @@ if (grid) {
     }).catch(() => {}); // worker asleep? your vote still counts locally
   }
 
+  // One-time restore: the worker wasn't deployed until 13 Jul 2026, so votes
+  // cast before that only exist in localStorage. Re-votes SWAP server-side,
+  // which makes re-posting idempotent — push everything up once, then flag it.
+  function syncLocalVotes(onDone) {
+    let synced = false;
+    try { synced = !!localStorage.getItem('rmx-synced'); } catch (e) {}
+    const ids = Object.keys(votes);
+    if (synced || !ids.length) return;
+    Promise.allSettled(ids.map((id) =>
+      fetch(WORKER + '/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, stars: votes[id] }),
+      }).then((res) => { if (!res.ok) throw 0; return res.json(); }).then((d) => {
+        if (d && d.ok) ratings[id] = [d.sum, d.count];
+      })
+    )).then((results) => {
+      if (results.every((r) => r.status === 'fulfilled')) {
+        try { localStorage.setItem('rmx-synced', '1'); } catch (e) {}
+      }
+      onDone && onDone();
+    });
+  }
+
   const countEl = (wrap) => wrap.parentElement.querySelector('.rmx-count');
   function countText(r) {
     const t = ratings[r.id];
@@ -210,6 +234,6 @@ if (grid) {
 
   refresh(); // paint immediately (alphabetical-ish until ratings land)
   fetch(WORKER + '/ratings').then((r) => r.ok && r.json()).then((d) => {
-    if (d) { ratings = d; refresh(); }
+    if (d) { ratings = d; refresh(); syncLocalVotes(refresh); }
   }).catch(() => {});
 }

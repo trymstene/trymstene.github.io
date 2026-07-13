@@ -42,9 +42,34 @@ if (root) {
     b.addEventListener('click', () => vote(s));
     starsEl.appendChild(b);
   }
+  // One-time restore: the worker wasn't deployed until 13 Jul 2026, so votes
+  // cast before that only exist in localStorage. Re-votes SWAP server-side,
+  // which makes re-posting idempotent — push everything up once, then flag it.
+  // Same flag as the gallery so whichever page syncs first wins.
+  function syncLocalVotes() {
+    let synced = false;
+    try { synced = !!localStorage.getItem('rmx-synced'); } catch (e) {}
+    const ids = Object.keys(votes);
+    if (synced || !ids.length) return;
+    Promise.allSettled(ids.map((vid) =>
+      fetch(WORKER + '/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: vid, stars: votes[vid] }),
+      }).then((res) => { if (!res.ok) throw 0; return res.json(); }).then((d) => {
+        if (d && d.ok && vid === id) { tally = [d.sum, d.count]; paint(); }
+      })
+    )).then((results) => {
+      if (results.every((r) => r.status === 'fulfilled')) {
+        try { localStorage.setItem('rmx-synced', '1'); } catch (e) {}
+      }
+    });
+  }
+
   paint();
   // load the real tally
   fetch(WORKER + '/ratings').then((r) => r.ok && r.json()).then((board) => {
     if (board && board[id]) { tally = board[id]; paint(); }
+    syncLocalVotes();
   }).catch(() => {});
 }
