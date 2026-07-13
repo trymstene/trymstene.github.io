@@ -133,7 +133,13 @@ async function apiLive(env) {
   const cities = Object.values(cityMap).sort((a, b) => b.v - a.v);
 
   // multi-minuteRange rows carry the range name as the LAST dimension value
-  const evFull = {}; const evNow = [];
+  // hot = per-country purchase proximity in the last 30 min:
+  // 1 eyeing a product · 2 hit ORDER · 3 at the checkout · 4 PAID
+  const STAGE = {
+    sticker_pdp_view: 1, view_item: 1, select_item: 1,
+    sticker_pdp_checkout: 2, checkout_redirect: 3, begin_checkout: 3, purchase: 4,
+  };
+  const evFull = {}; const evNow = []; const hot = {};
   for (const r of rows(events)) {
     const which = dim(r, r.dimensionValues.length - 1);
     const name = dim(r, 0); const cc = dim(r, 1); const v = met(r, 0);
@@ -141,6 +147,8 @@ async function apiLive(env) {
       if (LENS_EVENTS.includes(name)) evNow.push({ name, cc, v });
     } else {
       evFull[name] = (evFull[name] || 0) + v;
+      const st = STAGE[name];
+      if (st && cc && cc !== '(not set)') hot[cc] = Math.max(hot[cc] || 0, st);
     }
   }
   evNow.sort((a, b) => b.v - a.v);
@@ -172,6 +180,7 @@ async function apiLive(env) {
     recent: evNow.slice(0, 25),
     countryPages,
     devices,
+    hot,
   };
   rspCache.set('live', { t: Date.now(), data });
   return data;
@@ -393,8 +402,18 @@ function page() {
   h1{ color:var(--nana); text-shadow:3px 3px 0 #000; }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media(max-width:800px){ .grid2{ grid-template-columns:1fr; } }
-  canvas#map{ width:100%; image-rendering:pixelated; display:block; background:#0a0814;
+  canvas#map{ width:100%; image-rendering:pixelated; display:block; background:#151129;
               border:3px solid #000; }
+  .hotline{ font-size:.74rem; margin-top:6px; color:var(--ok); }
+  .hotline.gold{ color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,.5); }
+  .tt{ cursor:help; border-bottom:2px dotted #6b5c16; position:relative;
+       -webkit-tap-highlight-color:transparent; }
+  .tt:hover, .tt.show{ border-bottom-color:var(--nana); }
+  .tt::after{ content:attr(data-tip); display:none; position:absolute; left:0; top:140%;
+       z-index:9; width:250px; background:#000; border:2px solid var(--nana); color:var(--ink);
+       padding:7px 9px; font-size:.68rem; font-weight:700; line-height:1.45; text-align:left;
+       box-shadow:4px 4px 0 rgba(0,0,0,.6); white-space:normal; }
+  .tt:hover::after, .tt.show::after{ display:block; }
   .chips{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
   .chip{ font:inherit; font-size:.72rem; padding:5px 9px; background:#0a0814; color:#d8c96a;
          border:2px solid #6b5c16; cursor:pointer; letter-spacing:.05em; }
@@ -500,6 +519,7 @@ function page() {
     <select id="lensSel"></select>
   </div>
   <div class="muted" id="mapLegend"></div>
+  <div class="hotline" id="hotLine" style="display:none;"></div>
   <div class="ticker"><div class="in" id="ticker">warming up the decks…</div></div>
 </div>
 
@@ -561,6 +581,59 @@ var EV_LABEL = {
 var LENSES = ['gif_download','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
+// what each event MEANS — hover any event name to see what the visitor did
+var EV_EXPLAIN = {
+  page_view:'loaded any page on the site (GA4 auto)',
+  session_start:'a new visit began (GA4 auto)',
+  first_visit:'a brand-new visitor GA4 has never seen before',
+  user_engagement:'stayed 10s+, clicked or scrolled (GA4 auto)',
+  scroll:'scrolled 90% of the way down a page (GA4 auto)',
+  click:'clicked an outbound link (GA4 auto)',
+  file_download:'downloaded a file via a direct link (GA4 auto)',
+  gif_download:'downloaded the dancing banana GIF — the classic grab',
+  png_download:'downloaded their custom banana as a full-size meme image',
+  wallpaper_download:'downloaded a wallpaper from the wallpaper page',
+  builder_start:'the make-a-banana builder finished loading and the banana danced on their screen',
+  generator_click:'clicked a make-your-own-banana link somewhere on the site',
+  surprise_me:'hit SURPRISE ME in the builder — random outfit + caption',
+  share_link_copy:'copied a share link to their custom banana',
+  section_seen:'scrolled a key builder section into view (order button / take-home card / product tiles)',
+  quick_action:'used a shortcut: the take-it-home button or the bottom bar',
+  pdp_pose_pick:'picked which dance pose gets printed, on a product page',
+  pdp_option_pick:'picked a tee color or size on the product page',
+  sticker_pdp_view:'opened a custom-product page (sticker / magnet / tee) with THEIR banana on it',
+  sticker_pdp_checkout:'clicked the big ORDER button on a custom-product page',
+  checkout_redirect:'their design uploaded fine and they were sent to the Shopify checkout',
+  sticker_order_fail:'the order pipeline errored before checkout — a spike here = something broke',
+  sticker_order_fail_upload:'order failed while uploading the design (network/worker)',
+  sticker_order_fail_cart:'order failed while creating the Shopify cart',
+  sticker_order_fail_render:'order failed while rendering the print file (device/canvas)',
+  sticker_order_fail_product:'order failed resolving the product/variant',
+  begin_checkout:'a Shopify checkout page actually opened (store-wide)',
+  purchase:'real money changed hands 💰 (via the Shopify→GA4 link)',
+  shop_view:'opened the official Banana Shop front page (/shop/)',
+  select_item:'clicked a product tile in the shop',
+  view_item:'opened a merch product page (mug, tee & friends)',
+  license_click:'opened the licensing page',
+  tip_click:'clicked the buy-me-a-coffee link — a click, not a paid tip',
+  rave_join:'stepped onto the rave dance floor',
+  rave_run:'kept dancing — fires periodically while on the floor',
+  rave_emote:'sent an emote at the rave',
+  rave_fx:'triggered a dance-floor effect at the rave',
+  rave_call:'answered a DJ call at the rave',
+  rave_call_miss:'missed a DJ call at the rave',
+  rave_hype:'helped fill the hype meter at the rave',
+  rave_levelup:'earned rave rep and levelled up',
+  rave_spotlight:'got the spotlight at the rave',
+  rave_zoom:'used the rave camera zoom',
+  rave_tour_start:'started the club tour with Barty',
+  rave_share_night:'made a share-my-night card at the rave',
+  patch_earn:'earned a badge (⚠ the OG badge auto-mints for every new visitor — inflated at traffic spikes)',
+  pass_view:'opened their Banana Pass',
+  forge_start:'started drawing in the Pixel Forge',
+  forge_export:'exported a creation from the Pixel Forge',
+  overlay_link_copy:'copied the OBS overlay link — a streamer!' };
+function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };
 
@@ -603,33 +676,110 @@ function mapData(){
   var em = state.range && state.range.eventMap[state.lens] || {};
   return Object.keys(em).map(function(cc){ return {cc:cc,v:em[cc],name:cc}; });
 }
+// square 1-cell-thick ring (the radar ping)
+function cellRing(x0,y0,n){
+  if(n<3){ mctx.fillRect(x0*PX,y0*PX,n*PX,n*PX); return; }
+  mctx.fillRect(x0*PX, y0*PX, n*PX, PX);
+  mctx.fillRect(x0*PX, (y0+n-1)*PX, n*PX, PX);
+  mctx.fillRect(x0*PX, (y0+1)*PX, PX, (n-2)*PX);
+  mctx.fillRect((x0+n-1)*PX, (y0+1)*PX, PX, (n-2)*PX);
+}
+// corner brackets — the "locked on, close to buying" marker
+function brackets(x,y,r,col){
+  var o=r+2, b=2;
+  mctx.fillStyle=col;
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){
+    var cx=x+s[0]*o, cy=y+s[1]*o;
+    // horizontal arm points inward, vertical arm points inward
+    mctx.fillRect((s[0]<0?cx:cx-b+1)*PX, cy*PX, b*PX, PX);
+    mctx.fillRect(cx*PX, (s[1]<0?cy:cy-b+1)*PX, PX, b*PX);
+  });
+}
+var CONF_COLS=['#ffe135','#ff5d8f','#78ebff','#5ee08a'];
+var confettiUntil=0;
+function drawPin(d, hotStage){
+  var x=d.x, y=d.y, r=Math.max(1,d.r), p=pulse/60;
+  var col = state.mode==='event' ? '94,224,138' : state.mode==='range' ? '255,93,143' : '255,225,53';
+  if(hotStage>=4) col='255,215,0';
+  if(state.mode==='live'){ // expanding radar ping
+    var ringCol = hotStage>=2 ? '94,224,138' : col;
+    var rr=r+1+Math.floor(p*4);
+    mctx.fillStyle='rgba('+ringCol+','+((1-p)*0.55).toFixed(2)+')';
+    cellRing(x-rr, y-rr, 2*rr+1);
+  }
+  // drop shadow, then a rounded plus-shape body + a light catch pixel
+  var w=2*r-1;
+  function plus(ox,oy,fill){
+    mctx.fillStyle=fill;
+    if(r<2){ mctx.fillRect((x+ox)*PX,(y+oy)*PX,PX,PX); return; }
+    // small pins stay solid squares — corner-rounding a 3×3 body leaves a "+"
+    if(r<3){ mctx.fillRect((x-r+1+ox)*PX,(y-r+1+oy)*PX,w*PX,w*PX); return; }
+    mctx.fillRect((x-r+1+ox)*PX,(y-r+2+oy)*PX,w*PX,(w-2)*PX);
+    mctx.fillRect((x-r+2+ox)*PX,(y-r+1+oy)*PX,(w-2)*PX,w*PX);
+  }
+  plus(1,1,'rgba(0,0,0,.5)');
+  plus(0,0,'rgb('+col+')');
+  if(r>=2){ mctx.fillStyle='rgba(255,255,255,.85)';
+    mctx.fillRect((x-r+2)*PX,(y-r+2)*PX,PX,PX); }
+  if(hotStage>=2){ // fast green blink while someone shops
+    var blink=(pulse%16)<10;
+    if(blink) brackets(x,y,r, hotStage>=4?'#ffd700':'#5ee08a');
+  }
+  if(d.v>1){ // count rides a little badge, not the pin's face
+    var txt=String(d.v);
+    mctx.font='bold '+(PX*2)+'px monospace'; mctx.textAlign='left';
+    var tw=mctx.measureText(txt).width;
+    var bx=(x+r)*PX+2, by=(y-r-2)*PX;
+    if(bx+tw+6>MAP.w*PX) bx=(x-r)*PX-tw-8;
+    if(by<0) by=(y+r+1)*PX;
+    mctx.fillStyle='#000'; mctx.fillRect(bx-3, by-2, tw+7, PX*2+4);
+    mctx.fillStyle='rgb('+col+')'; mctx.fillText(txt, bx, by+PX*1.7);
+  }
+}
 function drawMap(){
   pulse=(pulse+1)%60;
   mctx.setTransform(1,0,0,1,0,0);
-  mctx.fillStyle='#0a0814'; mctx.fillRect(0,0,mapCv.width,mapCv.height);
+  mctx.fillStyle='#151129'; mctx.fillRect(0,0,mapCv.width,mapCv.height);
   mctx.setTransform(view.s,0,0,view.s,-view.ox*PX*view.s,-view.oy*PX*view.s);
-  mctx.fillStyle='#241d3a';
+  mctx.fillStyle='#453a75';
   for(var y=0;y<MAP.h;y++){ var row=LAND[y];
     for(var x=0;x<MAP.w;x++){ if(row[x]==='1') mctx.fillRect(x*PX,y*PX,PX-1,PX-1); } }
   var data=mapData(); var max=1;
   data.forEach(function(d){ if(d.v>max) max=d.v; });
+  var HOT=(state.mode==='live' && state.live && state.live.hot)||{};
   lastDots=[];
   data.forEach(function(d){
     var c=MAP.cent[d.cc]; if(!c) return;
     var r=1+Math.round(2*Math.sqrt(d.v/max));
-    lastDots.push({x:c[0], y:c[1], r:r, cc:d.cc, name:d.name, v:d.v});
-    var glow=(state.mode==='live')? (0.55+0.45*Math.sin((pulse/60)*6.283)) : 1;
-    mctx.fillStyle = state.mode==='event' ? 'rgba(94,224,138,'+glow+')'
-      : (state.mode==='live' ? 'rgba(255,210,63,'+glow+')' : 'rgba(255,93,143,'+glow+')');
-    mctx.fillRect((c[0]-r+1)*PX,(c[1]-r+1)*PX,(2*r-1)*PX,(2*r-1)*PX);
-    mctx.fillStyle='#000';
-    if(d.v>0 && r>1){ mctx.font='bold '+(PX*2)+'px monospace'; mctx.textAlign='center';
-      mctx.fillText(d.v, c[0]*PX+PX/2, (c[1]+1)*PX+PX*0.1); }
+    var hs=HOT[d.cc]||0;
+    lastDots.push({x:c[0], y:c[1], r:r, cc:d.cc, name:d.name, v:d.v, hot:hs});
+    drawPin(lastDots[lastDots.length-1], hs);
   });
+  if(state.mode==='live'){ // hot countries whose visitor already left = small green ghosts
+    Object.keys(HOT).forEach(function(cc){
+      if(data.some(function(d){ return d.cc===cc; })) return;
+      var c=MAP.cent[cc]; if(!c) return;
+      var g={x:c[0], y:c[1], r:1, cc:cc, name:cc, v:0, hot:HOT[cc], ghost:true};
+      lastDots.push(g);
+      mctx.fillStyle='rgba(94,224,138,.7)';
+      mctx.fillRect(c[0]*PX, c[1]*PX, PX, PX);
+      if((pulse%16)<10) brackets(c[0], c[1], 1, '#5ee08a');
+    });
+  }
+  if(Date.now()<confettiUntil){ // 💰 the purchase rain
+    mctx.setTransform(1,0,0,1,0,0);
+    var t=Date.now()/40;
+    for(var i=0;i<90;i++){
+      mctx.fillStyle=CONF_COLS[i%4];
+      var cx2=((i*97)%(MAP.w))*PX + ((i*31)%PX);
+      var cy2=((t*(1+(i%3)*0.4) + i*137) % (MAP.h*PX+80)) - 40;
+      mctx.fillRect(cx2, cy2, PX, PX);
+    }
+  }
   var lg=document.getElementById('mapLegend');
   var total=data.reduce(function(a,d){ return a+d.v; },0);
   lg.textContent = state.mode==='live'
-    ? '● yellow pulses = active visitors, last 30 min ('+total+' total)'
+    ? '● gold pings = visitors now ('+total+') · 🟢 brackets = close to buying (last 30 min) · gold+confetti = PAID'
     : state.mode==='range' ? '● pink = sessions, '+state.from+' → '+state.to+' ('+total+' total)'
     : '● green = “'+(EV_LABEL[state.lens]||state.lens)+'” ('+state.lens+'), '+state.from+' → '+state.to+' ('+total+' total)';
 }
@@ -651,7 +801,13 @@ function tipFor(ev){
   if(!best){ mapTip.style.display='none'; return; }
   var html='<div style="color:var(--nana);">'+FLAG(best.cc)+' '+esc(best.name)+'</div>';
   if(state.mode==='live'){
-    html+='<div>'+best.v+' visiting now</div>';
+    html+= best.ghost ? '<div class="muted">left already, but…</div>'
+                      : '<div>'+best.v+' visiting now</div>';
+    if(best.hot){
+      var HOTTXT={1:'👀 eyeing a product',2:'🛒 hit ORDER',3:'💳 reached the CHECKOUT',4:'💰 BOUGHT!'};
+      html+='<div style="color:'+(best.hot>=4?'#ffd700':'var(--ok)')+';">'
+        +HOTTXT[best.hot]+' <span class="muted">(last 30 min)</span></div>';
+    }
     var pgs=(state.live && state.live.countryPages && state.live.countryPages[best.cc])||[];
     pgs.slice(0,3).forEach(function(p){
       html+='<div class="muted">▸ '+esc(p.page)+(p.v>1?' ×'+p.v:'')+'</div>'; });
@@ -725,6 +881,7 @@ function tbl(el, rows){
   el.innerHTML = rows.map(function(r){
     return '<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'</td></tr>'; }).join('');
 }
+var lastPurch=-1;
 function renderLive(){
   var L=state.live; if(!L) return;
   document.getElementById('liveTotal').textContent = L.total;
@@ -733,9 +890,26 @@ function renderLive(){
   tbl(document.getElementById('livePages'), L.pages.map(function(p){ return [esc(p.page), p.v]; }));
   tbl(document.getElementById('liveCities'), L.cities.map(function(c){ return [FLAG(c.cc)+' '+esc(c.city), c.v]; }));
   var t = L.recent.map(function(e){
-    return FLAG(e.cc)+' '+(EV_LABEL[e.name]||e.name)+(e.v>1?' ×'+e.v:''); });
-  document.getElementById('ticker').textContent =
+    return '<span title="'+esc(explain(e.name))+'">'+FLAG(e.cc)+' '
+      +esc(EV_LABEL[e.name]||e.name)+(e.v>1?' ×'+e.v:'')+'</span>'; });
+  document.getElementById('ticker').innerHTML =
     t.length ? '⏱ Last 5 min:  '+t.join('   ·   ')+'   🍌' : 'quiet out there right now… the banana dances alone 🍌';
+  // the hot line — who is CLOSE right now (stage 2+), gold when someone PAID
+  var hot=L.hot||{}; var msgs=[]; var anyGold=false;
+  var HOTTXT={2:'hit ORDER 🛒',3:'reached the CHECKOUT 💳',4:'BOUGHT 💰🎉'};
+  Object.keys(hot).sort(function(a,b){ return hot[b]-hot[a]; }).forEach(function(cc){
+    if(hot[cc]>=2 && msgs.length<4){ msgs.push(FLAG(cc)+' someone '+HOTTXT[hot[cc]]);
+      if(hot[cc]>=4) anyGold=true; }
+  });
+  var hl=document.getElementById('hotLine');
+  if(msgs.length){ hl.style.display='';
+    hl.className='hotline'+(anyGold?' gold':'');
+    hl.textContent='🟢 last 30 min: '+msgs.join('  ·  ');
+  } else hl.style.display='none';
+  // 💰 celebration: confetti over the pixel earth whenever a purchase shows up
+  var p30=0; L.events.forEach(function(e){ if(e.name==='purchase') p30=e.v; });
+  if(p30>Math.max(lastPurch,0)) confettiUntil=Date.now()+8000;
+  lastPurch=p30;
 }
 function loadLive(){
   if(document.hidden) return; // background tabs don't spend quota
@@ -848,7 +1022,7 @@ function renderRange(){
     .slice(0,state.topN);
   var emax=evs.length? evs[0].v:1;
   document.getElementById('events').innerHTML =
-    evs.map(function(e){ return '<tr><td>'+esc(e.name)+'</td>'+
+    evs.map(function(e){ return '<tr><td><span class="tt" data-tip="'+esc(explain(e.name))+'">'+esc(e.name)+'</span></td>'+
       '<td><span class="minibar" style="width:'+Math.max(2,Math.round((e.v/emax)*90))+'px"></span></td>'+
       '<td class="num">'+fmt(e.v)+'</td></tr>'; }).join('');
   drawMap();
@@ -936,12 +1110,13 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
   wrap.addEventListener('click', function(e){ if(e.target===wrap) wrap.style.display='none'; });
 })();
 
-// info ⓘ on touch: tap toggles the tooltip, tapping anywhere else closes it
+// info ⓘ + event-name tooltips on touch: tap toggles, tapping elsewhere closes
 document.addEventListener('click', function(e){
-  var isInfo = e.target.classList && e.target.classList.contains('info');
-  document.querySelectorAll('.info.show').forEach(function(el){
+  var cl = e.target.classList;
+  var isTip = cl && (cl.contains('info') || cl.contains('tt'));
+  document.querySelectorAll('.info.show, .tt.show').forEach(function(el){
     if(el!==e.target) el.classList.remove('show'); });
-  if(isInfo) e.target.classList.toggle('show');
+  if(isTip) e.target.classList.toggle('show');
 });
 
 loadLive(); loadRange();
