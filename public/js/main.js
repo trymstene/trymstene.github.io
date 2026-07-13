@@ -9,23 +9,15 @@
   // source would fire a "session" every stream start. Don't count them.
   if (/[?&]overlay=1/.test(location.search)) return;
 
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
-  document.head.appendChild(s);
-
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function () { dataLayer.push(arguments); };
-  gtag('js', new Date());
-
-  // ---- internal-traffic tag: keep OUR testing out of the reports ----
-  // Country filtering can't separate us (Trym tests while travelling), so we
-  // tag at the source. Visit trymstene.com/?internal=1 ONCE per browser to
-  // flag it forever (?internal=0 clears it). QA/debug params flag that session
-  // only. GA4's Internal Traffic filter (traffic_type=internal) then drops it
-  // from every report — events still FIRE (so realtime/DebugView still works),
-  // they're just marked internal. Builder share params (?g=…&h=…) are NOT
-  // treated as internal — real people follow those.
+  // ---- internal-traffic flag: OUR browsers send NOTHING ----
+  // Checked BEFORE any analytics loads. Visit trymstene.com/?internal=1 ONCE
+  // per browser to flag it forever (?internal=0 clears it); QA/debug params
+  // flag that session; opening bananamail (/inbox?token=…) flags forever.
+  // Flagged = fully silent: GA4's Internal Traffic data filter cleans the
+  // standard reports, but the REALTIME API (Banana Pulse's live map) shows
+  // whatever it receives — tagging wasn't enough (proven 13 Jul), so the only
+  // reliable exclusion is to never talk to Google at all. Builder share
+  // params (?g=…&h=…) are NOT internal — real people follow those.
   var qs = location.search;
   try {
     if (/[?&]internal=1(?:&|$)/.test(qs)) localStorage.setItem('tt-internal', '1');
@@ -38,33 +30,38 @@
     isInternal = true; // a QA/debug param = us, this session
   }
   if (!isInternal && /^\/inbox\/?$/.test(location.pathname) && /[?&]token=/.test(qs)) {
-    // the bananamail door: only Trym holds the token, so reading mail flags
-    // this browser as internal FOREVER (same as ?internal=1) — no more
-    // inbox-refresh "sessions" from unflagged devices
     try { localStorage.setItem('tt-internal', '1'); } catch (e) {}
     isInternal = true;
   }
+
+  // gtag always EXISTS (site code calls it blindly) — but on a flagged
+  // browser it's a dead end: gtag.js never loads, nothing is ever sent.
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { dataLayer.push(arguments); };
+
   if (isInternal) {
-    gtag('set', { traffic_type: 'internal' });
     if (window.console) {
-      console.log('%c[GA] internal traffic — your visits are excluded from reports',
+      console.log('%c[GA] internal browser — analytics fully OFF, nothing is sent',
         'color:#b8860b;font-weight:bold');
     }
+    return; // no gtag.js, no config, no Cloudflare beacon, no event wiring
   }
 
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+  gtag('js', new Date());
   gtag('config', GA_ID);
 
   // Cloudflare Web Analytics — adblocker-resilient, server-side pageview truth
   // (GA4 is blocked for ~30-40% of visitors; this cross-checks the real total).
-  // Token is public (rides in the HTML). Skipped for internal traffic so it
-  // stays comparable to GA4's internal-filtered numbers.
-  if (!isInternal) {
-    var cfb = document.createElement('script');
-    cfb.defer = true;
-    cfb.src = 'https://static.cloudflareinsights.com/beacon.min.js';
-    cfb.setAttribute('data-cf-beacon', '{"token":"2ec40ec596fc44a19251c3d36b1f0abb"}');
-    document.head.appendChild(cfb);
-  }
+  // Token is public (rides in the HTML).
+  var cfb = document.createElement('script');
+  cfb.defer = true;
+  cfb.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+  cfb.setAttribute('data-cf-beacon', '{"token":"2ec40ec596fc44a19251c3d36b1f0abb"}');
+  document.head.appendChild(cfb);
 
   // Key conversion events. `placement` (data-place attr or the page path)
   // answers "which CTA earns its pixels" across every builder entry point.
