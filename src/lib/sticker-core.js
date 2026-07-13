@@ -145,14 +145,17 @@ export function renderApparelPrint(state, W = 2048) {
   if (state.top && state.effect !== 'confetti' && state.effect !== 'sparkle') {
     trimmed = tightenTopGap(trimmed);
   }
-  // place it in the print area: capped size, vertically CENTERED in the chest
-  // band (7%–73% of the area) so short lockups sit mid-chest, not at the seam
+  // place it in the print area: capped size, BOTTOM-ANCHORED at the 73% line
+  // (Trym's call: keep the motive as far down as possible so all the slack
+  // becomes clearance between the neck edge and the top of the design — a
+  // max-height design now starts 13% down the area (≈2″ below the collar
+  // seam) instead of 7%, and shorter designs sit even lower, mid-chest)
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
-  const s = Math.min((W * 0.78) / trimmed.width, (H * 0.66) / trimmed.height);
+  const s = Math.min((W * 0.74) / trimmed.width, (H * 0.60) / trimmed.height);
   const dw = trimmed.width * s, dh = trimmed.height * s;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(trimmed, (W - dw) / 2, H * 0.07 + (H * 0.66 - dh) / 2, dw, dh);
+  ctx.drawImage(trimmed, (W - dw) / 2, H * 0.73 - dh, dw, dh);
   return cv;
 }
 
@@ -192,7 +195,7 @@ function tightenTopGap(cv) {
 export function makeStickerMockup(state, design, size = 900, style = 'sticker', opts = {}) {
   if (style === 'tee') {
     return (opts.photo && opts.photo.complete && opts.photo.naturalWidth)
-      ? makeTeePhotoMockup(design, size, opts.photo)
+      ? makeTeePhotoMockup(design, size, opts.photo, opts.quad)
       : makeTeeMockup(design, size, opts.colorHex || '#ffffff');
   }
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
@@ -255,7 +258,7 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
 // photo mockup: the design composited onto the model's chest. The Printful
 // catalog shots share one shoot, so the chest quad (fractions of the photo)
 // holds across every colour. Square canvas, photo letterboxed on white.
-function makeTeePhotoMockup(design, size, photo) {
+function makeTeePhotoMockup(design, size, photo, quad) {
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
@@ -267,13 +270,22 @@ function makeTeePhotoMockup(design, size, photo) {
   // the full 12″×16″ DTG print AREA as it sits on this shoot's shirt — the
   // design canvas (renderApparelPrint) is that whole area incl. margins, so
   // drawing it here previews the exact physical print size and position.
-  const zw = 0.34 * pw;
+  // Quads are per shoot (each mockup style frames the shirt differently).
+  const q = quad || TEE_QUADS.woman;
+  const zw = q.w * pw;
   const zh = zw * (16 / 12);
   const ds = Math.min(zw / design.width, zh / design.height);
   const dw = design.width * ds, dh = design.height * ds;
-  ctx.drawImage(design, px + 0.505 * pw - dw / 2, py + 0.283 * ph, dw, dh);
+  ctx.drawImage(design, px + q.cx * pw - dw / 2, py + q.top * ph, dw, dh);
   return cv;
 }
+
+// print-area quads (fractions of each photo) — hand-tuned per mockup shoot
+export const TEE_QUADS = {
+  woman: { cx: 0.500, top: 0.355, w: 0.250 },
+  man:   { cx: 0.500, top: 0.355, w: 0.250 },
+  flat:  { cx: 0.500, top: 0.205, w: 0.420 },
+};
 
 // the pixel tee: a step-polygon t-shirt on a 24-unit grid, filled with the
 // chosen garment colour, black pixel outline (the site's art language), a

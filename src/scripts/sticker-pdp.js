@@ -8,7 +8,7 @@ import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
   bboxOf, pad, crop, renderPrintFile, renderApparelPrint, makeStickerMockup,
-  localizedPrice, uploadAndCheckout, stickerCaptions, stickerEffect,
+  localizedPrice, uploadAndCheckout, stickerCaptions, stickerEffect, TEE_QUADS,
 } from '../lib/sticker-core.js';
 
 const el = (id) => document.getElementById(id);
@@ -23,16 +23,21 @@ const selHex = () => {
   const c = apparel && product.options.colors.find((x) => x.id === sel.color);
   return c ? c.hex : '#ffffff';
 };
-// per-colour MODEL PHOTOS (Printful catalog shots, self-hosted) — preloaded so
-// swatch taps repaint instantly; until a photo lands the pixel tee fills in
-const photos = {};
-if (apparel) {
-  product.options.colors.forEach((c) => {
+// MODEL/FLAT PHOTOS (Printful mockup shoots, self-hosted, per style × colour)
+// loaded lazily with a cache — until a photo lands the pixel tee fills in.
+// sel.mstyle picks the shoot: 'woman' (smiling — the default after the
+// original catalog model was voted too melancholic), 'man', 'flat'.
+if (sel) sel.mstyle = 'woman';
+const photoCache = {};
+function photoFor(style, color) {
+  const k = style + '-' + color;
+  if (!photoCache[k]) {
     const img = new Image();
-    img.onload = () => { if (sel.color === c.id) paintMockup(); }; // upgrade in place
-    img.src = `/assets/${product.key}/${product.key}-${c.id}.jpg`;
-    photos[c.id] = img;
-  });
+    img.onload = () => { if (sel.mstyle === style && sel.color === color) paintMockup(); };
+    img.src = `/assets/${product.key}/${product.key}-${k}.jpg`;
+    photoCache[k] = img;
+  }
+  return photoCache[k];
 }
 
 // the trimmed "design" (banana + captions + bg), rendered once at preview res
@@ -57,8 +62,11 @@ function designCanvas() {
 }
 
 function paintMockup() {
-  const mock = makeStickerMockup(state, designCanvas(), 900, product.key,
-    { colorHex: selHex(), photo: apparel ? photos[sel.color] : null });
+  const mock = makeStickerMockup(state, designCanvas(), 900, product.key, {
+    colorHex: selHex(),
+    photo: apparel ? photoFor(sel.mstyle, sel.color) : null,
+    quad: apparel ? TEE_QUADS[sel.mstyle] : null,
+  });
   const main = el('pdpMock');
   main.width = mock.width; main.height = mock.height;
   main.getContext('2d').drawImage(mock, 0, 0);
@@ -82,6 +90,16 @@ function wireOptions() {
       document.querySelectorAll('#pdpSizes .pdp-sizebtn').forEach((x) =>
         x.setAttribute('aria-pressed', String(x === b)));
       track('pdp_option_pick', { product: product.key, option: 'size', value: sel.size });
+    };
+  });
+  // mockup-style thumbnails: her / him / flat — same design, different shoot
+  document.querySelectorAll('#pdpStyles button').forEach((b) => {
+    b.onclick = () => {
+      sel.mstyle = b.dataset.mstyle;
+      document.querySelectorAll('#pdpStyles button').forEach((x) =>
+        x.setAttribute('aria-pressed', String(x === b)));
+      paintMockup();
+      track('pdp_option_pick', { product: product.key, option: 'mockup', value: sel.mstyle });
     };
   });
   // size-guide unit toggle (same behaviour as /js/shop.js on the official PDPs)
@@ -130,6 +148,49 @@ function buildPosePicker() {
   mark();
 }
 
+// mockup zoom (all custom PDPs): desktop hover magnifies where the cursor
+// points; touch taps to 2.2× at the tap point, drags to look around, taps
+// again to reset. Pure CSS transform — repaints don't disturb it.
+function wireZoom() {
+  const wrap = document.getElementById('pdpZoom');
+  const cv = el('pdpMock');
+  if (!wrap || !cv) return;
+  const Z = 2.2;
+  const originAt = (ev) => {
+    const r = wrap.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((ev.clientX - r.left) / r.width) * 100));
+    const y = Math.max(0, Math.min(100, ((ev.clientY - r.top) / r.height) * 100));
+    cv.style.transformOrigin = `${x}% ${y}%`;
+  };
+  if (window.matchMedia('(hover: hover)').matches) {
+    wrap.addEventListener('mouseenter', (ev) => { originAt(ev); cv.style.transform = `scale(${Z})`; });
+    wrap.addEventListener('mousemove', (ev) => { wrap.classList.add('zooming'); originAt(ev); });
+    wrap.addEventListener('mouseleave', () => {
+      wrap.classList.remove('zooming'); cv.style.transform = ''; cv.style.transformOrigin = '50% 50%';
+    });
+    return;
+  }
+  // touch: tap toggles, drag pans while zoomed
+  let zoomed = false; let moved = false; let downAt = null;
+  wrap.addEventListener('pointerdown', (ev) => { downAt = { x: ev.clientX, y: ev.clientY }; moved = false; });
+  wrap.addEventListener('pointermove', (ev) => {
+    if (!downAt) return;
+    if (Math.abs(ev.clientX - downAt.x) + Math.abs(ev.clientY - downAt.y) > 8) moved = true;
+    if (zoomed && moved) { ev.preventDefault(); wrap.classList.add('zooming'); originAt(ev); }
+  });
+  wrap.addEventListener('pointerup', (ev) => {
+    wrap.classList.remove('zooming');
+    if (!moved) {
+      zoomed = !zoomed;
+      wrap.classList.toggle('zoomed', zoomed);
+      wrap.style.touchAction = zoomed ? 'none' : '';
+      if (zoomed) { originAt(ev); cv.style.transform = `scale(${Z})`; }
+      else { cv.style.transform = ''; cv.style.transformOrigin = '50% 50%'; }
+    }
+    downAt = null;
+  });
+}
+
 async function boot() {
   if (!apparel) {
     el('pdpCut').textContent = state.bg === 'transparent'
@@ -156,6 +217,7 @@ async function boot() {
   paintMockup();
   buildPosePicker();
   wireOptions();
+  wireZoom();
   track('sticker_pdp_view', { product: product.key, design: designStr(state) });
   const lp = await localizedPrice(product);
   if (lp) {
