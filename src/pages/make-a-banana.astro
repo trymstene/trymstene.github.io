@@ -312,10 +312,13 @@ const appSchema = {
 
     /* shared frame picker: the strip sits centered above the two cards on
        desktop (the classic layout); it only affects the meme PNG now —
-       printed products pick their pose on the PDP */
-    .bb-freeze { max-width: 760px; margin: 0 auto 1.4rem; }
+       printed products pick their pose on the PDP. fit-content shrink-wraps
+       the box to the strip so the block stays centered while the label's left
+       edge lines up with the first thumb (mobile overrides to width:100% in
+       the 819px block above) */
+    .bb-freeze { width: fit-content; max-width: 760px; margin: 0 auto 1.4rem; }
     .bb-freeze p, .bb-freeze__label { margin: 0 0 0.8rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; }
-    .bb-freeze .bb-frames { justify-content: center; margin-bottom: 0; }
+    .bb-freeze .bb-frames { justify-content: flex-start; margin-bottom: 0; }
 
     /* fake chat row — compact, one line, both sizes inline */
     .bb-chat { background: #313338; border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
