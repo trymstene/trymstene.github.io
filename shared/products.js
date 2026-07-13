@@ -41,4 +41,35 @@ export default [
     priceHint: 169,
     live: true,
   },
+  {
+    // THE TEE (13 Jul 2026, research-backed: apparel = #1 POD category; the
+    // wearer's OWN dressed banana printed front and center). Color x size ride
+    // as cart attributes on ONE Shopify variant (same price for all), and the
+    // worker maps the selection to the right Printful variant server-side —
+    // price stays Shopify-enforced, the selection is price-neutral.
+    // Base garment: Bella+Canvas 3001 (Printful product 71, $13.50 all colors).
+    // NO black/dark grounds (the banana's outline is black) and NO yellows
+    // (banana camouflage) — Trym's call: colored/white, banana shines.
+    key: 'tee',
+    name: 'Tee',
+    shopifyVariantGid: null, // ← Trym: create "Custom Banana Tee" (349 kr) in
+    //   Shopify, publish to the Headless channel, paste the variant GID here
+    //   and flip live: true. Everything else is already wired.
+    printfulVariantId: 4012, // fallback = White / M (never used once options resolve)
+    options: {
+      sizes: ['S', 'M', 'L', 'XL', '2XL'],
+      colors: [
+        { id: 'white',     label: 'White',      hex: '#ffffff', variants: { S: 4011, M: 4012, L: 4013, XL: 4014, '2XL': 4015 } },
+        { id: 'red',       label: 'Red',        hex: '#d0071e', variants: { S: 4141, M: 4142, L: 4143, XL: 4144, '2XL': 4145 } },
+        { id: 'royal',     label: 'True Royal', hex: '#01408d', variants: { S: 4171, M: 4172, L: 4173, XL: 4174, '2XL': 4175 } },
+        { id: 'kelly',     label: 'Kelly',      hex: '#1a9462', variants: { S: 4086, M: 4087, L: 4088, XL: 4089, '2XL': 4090 } },
+        { id: 'turquoise', label: 'Turquoise',  hex: '#54d9eb', variants: { S: 4176, M: 4177, L: 4178, XL: 4179, '2XL': 4180 } },
+        { id: 'berry',     label: 'Berry',      hex: '#c02773', variants: { S: 4041, M: 4042, L: 4043, XL: 4044, '2XL': 4045 } },
+      ],
+    },
+    size: 'S–2XL',
+    material: 'soft unisex cotton tee (Bella+Canvas 3001)',
+    priceHint: 349,
+    live: false, // teaser tile until the Shopify product exists
+  },
 ];

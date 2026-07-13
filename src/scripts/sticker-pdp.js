@@ -16,19 +16,31 @@ const track = (name, p) => { if (window.gtag) window.gtag('event', name, p || {}
 const state = parseDesign(new URLSearchParams(location.search));
 // which product this page sells — from the route (shared/products.js drives it)
 const product = getProduct((el('pdpRoot') || {}).dataset && el('pdpRoot').dataset.product) || getProduct('sticker');
+const apparel = !!product.options;
+// apparel selection (colour + size) — defaults: first colour, size M
+const sel = apparel ? { color: product.options.colors[0].id, size: 'M' } : null;
+const selHex = () => {
+  const c = apparel && product.options.colors.find((x) => x.id === sel.color);
+  return c ? c.hex : '#ffffff';
+};
 
 // the trimmed "design" (banana + captions + bg), rendered once at preview res
 function designCanvas() {
   const W = 512;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
   const ctx = cv.getContext('2d');
-  composite(ctx, W, state.frame, state, {
+  composite(ctx, W, state.frame, state, apparel ? {
+    // DTG print = the design itself on the garment: no bg square, and captions
+    // + effects DO print (no die-cut constraint) — mirrors renderPrintFile
+    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
+    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+  } : {
     // die-cut (transparent) = banana only; captions + confetti/sparkle live on
     // square stickers (see sticker-core stickerCaptions / stickerEffect)
     bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
-  if (state.bg === 'transparent') {
+  if (apparel || state.bg === 'transparent') {
     const data = ctx.getImageData(0, 0, W, W).data;
     return crop(cv, pad(bboxOf([data], W), W));
   }
@@ -36,10 +48,32 @@ function designCanvas() {
 }
 
 function paintMockup() {
-  const mock = makeStickerMockup(state, designCanvas(), 900, product.key);
+  const mock = makeStickerMockup(state, designCanvas(), 900, product.key, { colorHex: selHex() });
   const main = el('pdpMock');
   main.width = mock.width; main.height = mock.height;
   main.getContext('2d').drawImage(mock, 0, 0);
+}
+
+// apparel option chips: colour repaints the tee, size just marks itself
+function wireOptions() {
+  if (!apparel) return;
+  document.querySelectorAll('#pdpColors .pdp-swatch').forEach((b) => {
+    b.onclick = () => {
+      sel.color = b.dataset.color;
+      document.querySelectorAll('#pdpColors .pdp-swatch').forEach((x) =>
+        x.setAttribute('aria-pressed', String(x === b)));
+      paintMockup();
+      track('pdp_option_pick', { product: product.key, option: 'color', value: sel.color });
+    };
+  });
+  document.querySelectorAll('#pdpSizes .pdp-sizebtn').forEach((b) => {
+    b.onclick = () => {
+      sel.size = b.dataset.size;
+      document.querySelectorAll('#pdpSizes .pdp-sizebtn').forEach((x) =>
+        x.setAttribute('aria-pressed', String(x === b)));
+      track('pdp_option_pick', { product: product.key, option: 'size', value: sel.size });
+    };
+  });
 }
 
 // last-minute pose change, right on the product page (Trym: you shouldn't have
@@ -76,15 +110,18 @@ function buildPosePicker() {
 }
 
 async function boot() {
-  el('pdpCut').textContent = state.bg === 'transparent'
-    ? `${product.size} ${product.material}, die-cut along your design’s outline`
-    : `${product.size} ${product.material}, square with your design`;
+  if (!apparel) {
+    el('pdpCut').textContent = state.bg === 'transparent'
+      ? `${product.size} ${product.material}, die-cut along your design’s outline`
+      : `${product.size} ${product.material}, square with your design`;
+  }
   // carry the exact design back to the editor + across to the cross-sell PDPs
   const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
   document.querySelectorAll('[data-xsell]').forEach((a) => { a.href = a.getAttribute('href') + location.search; });
   // die-cut can't hold floating bits — tell the user what was left off (caption
-  // and/or confetti/sparkle) and how to keep it (pick a background = square)
-  if (state.bg === 'transparent') {
+  // and/or confetti/sparkle) and how to keep it (pick a background = square).
+  // Apparel has no die-cut: everything prints, so no hint needed.
+  if (!apparel && state.bg === 'transparent') {
     const dropped = [];
     if (state.top || state.bottom) dropped.push('captions');
     if (state.effect === 'confetti' || state.effect === 'sparkle') dropped.push('effects');
@@ -97,6 +134,7 @@ async function boot() {
   await assetsReady();
   paintMockup();
   buildPosePicker();
+  wireOptions();
   track('sticker_pdp_view', { product: product.key, design: designStr(state) });
   const lp = await localizedPrice(product);
   if (lp) {
@@ -107,7 +145,8 @@ async function boot() {
 boot().catch((e) => { console.error('PDP boot failed:', e); track('sticker_pdp_boot_fail', { message: String((e && e.message) || e).slice(0, 90) }); });
 
 let busy = false;
-el('pdpBuy').onclick = async () => {
+// not-yet-live products render a disabled teaser button without the id
+if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
   if (busy) return;
   if (!captionsClean(state)) {
     const s = el('pdpStock'); s.textContent = 'Let’s keep it family friendly \u{1F34C} — head back and try other words';
@@ -119,7 +158,7 @@ el('pdpBuy').onclick = async () => {
   el('pdpStock').textContent = '';
   track('sticker_pdp_checkout', { product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) });
   try {
-    const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state), product);
+    const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state, product), product, sel);
     track('checkout_redirect', { value: PRICE.amount, currency: PRICE.currency });
     passPatch('patron', { quiet: true }); // pass badge for ordering — celebrate on return, not mid-redirect
     window.location.href = checkoutUrl;

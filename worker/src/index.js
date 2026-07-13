@@ -22,16 +22,34 @@ import PRODUCTS from '../../shared/products.js';
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
-// Shopify numeric variant id -> Printful catalog variant id, derived from the
+// Shopify numeric variant id -> product manifest entry, derived from the
 // shared manifest (shared/products.js). This is why nothing is hardcoded: add
 // a product to that list (with its Shopify variant + Printful variant) and the
 // right thing gets printed — no worker code change, just a redeploy. Mapping is
 // server-side + trusted (Shopify enforces the price; we pick what to print).
-const PRINTFUL_BY_SHOPIFY = Object.fromEntries(
+const PRODUCT_BY_SHOPIFY = Object.fromEntries(
   PRODUCTS
     .filter((p) => p.shopifyVariantGid && p.printfulVariantId)
-    .map((p) => [String(p.shopifyVariantGid).split('/').pop(), p.printfulVariantId])
+    .map((p) => [String(p.shopifyVariantGid).split('/').pop(), p])
 );
+const PRINTFUL_BY_SHOPIFY = Object.fromEntries(
+  Object.entries(PRODUCT_BY_SHOPIFY).map(([k, p]) => [k, p.printfulVariantId])
+);
+
+// Resolve the Printful variant for a line item. Products with options (the
+// tee) carry _color/_size as line properties — price-neutral (every combo
+// sells at the same Shopify price), so trusting them only lets a buyer pick
+// which colour/size THEY get. Unknown values fall back to the product default.
+function printfulVariantFor(li, props, env) {
+  const p = PRODUCT_BY_SHOPIFY[String(li.variant_id)];
+  if (!p) return parseInt(env.PRINTFUL_VARIANT_ID, 10); // unmapped → default sticker
+  if (p.options) {
+    const color = p.options.colors.find((c) => c.id === props._color) || p.options.colors[0];
+    const size = p.options.sizes.includes(props._size) ? props._size : 'M';
+    return color.variants[size] || p.printfulVariantId;
+  }
+  return p.printfulVariantId;
+}
 
 export default {
   async fetch(request, env) {
@@ -161,11 +179,10 @@ async function handleWebhook(request, env, url) {
     const props = Object.fromEntries((li.properties || []).map((p) => [p.name, p.value]));
     if (props._design_key && /^[a-f0-9-]{36}\.png$/.test(props._design_key)) {
       // which Printful variant to print = looked up from this line item's
-      // Shopify variant (manifest map). Fall back to the sticker so a missing
-      // mapping never drops an order silently.
-      const pfVariant = PRINTFUL_BY_SHOPIFY[String(li.variant_id)] || parseInt(env.PRINTFUL_VARIANT_ID, 10);
+      // Shopify variant (manifest map; apparel also reads _color/_size).
+      // Fall back to the sticker so a missing mapping never drops an order.
       items.push({
-        variant_id: pfVariant,
+        variant_id: printfulVariantFor(li, props, env),
         quantity: li.quantity || 1,
         files: [{ url: `${url.origin}/d/${props._design_key}` }],
       });

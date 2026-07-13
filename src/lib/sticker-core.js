@@ -101,14 +101,22 @@ export const stickerEffect = (state) =>
 // ---- the print file (what actually gets printed) --------------------------
 // Two sticker styles (Trym's call): TRANSPARENT bg → trimmed transparent PNG
 // so Printful DIE-CUTS along the outline; a COLOURED bg → the full square.
-export function renderPrintFile(state) {
+// APPAREL (product.options set, e.g. the tee): always a trimmed transparent
+// PNG — the DTG print is the design itself on the garment, so the bg square
+// never prints, and captions + confetti/sparkle DO print (no die-cut
+// constraint to cut them loose).
+export function renderPrintFile(state, product = null) {
   const W = 2048;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
-  composite(ctx, W, state.frame, state, {
+  const apparel = !!(product && product.options);
+  composite(ctx, W, state.frame, state, apparel ? {
+    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
+    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+  } : {
     bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
-  if (state.bg === 'transparent') {
+  if (apparel || state.bg === 'transparent') {
     const data = ctx.getImageData(0, 0, W, W).data;
     return crop(cv, pad(bboxOf([data], W), W));
   }
@@ -118,7 +126,10 @@ export function renderPrintFile(state) {
 // ---- product MOCKUP (what the buyer sees) ---------------------------------
 // die-cut white contour for transparent designs, rounded white square for
 // coloured ones. product='magnet' adds a grey depth band = visible thickness.
-export function makeStickerMockup(state, design, size = 900, style = 'sticker') {
+// style='tee' draws a chunky pixel-art t-shirt (on brand — no photo mockup
+// assets needed) tinted opts.colorHex, with the design on the chest.
+export function makeStickerMockup(state, design, size = 900, style = 'sticker', opts = {}) {
+  if (style === 'tee') return makeTeeMockup(design, size, opts.colorHex || '#ffffff');
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
@@ -176,6 +187,53 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker') 
   return cv;
 }
 
+// the pixel tee: a step-polygon t-shirt on a 24-unit grid, filled with the
+// chosen garment colour, black pixel outline (the site's art language), a
+// simple shade under collar + hem, and the design scaled onto the chest.
+function makeTeeMockup(design, size, colorHex) {
+  const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // same paper backdrop
+  const u = size / 24;
+  // step-polygon outline (u-grid points), drawn clockwise from left collar
+  const pts = [
+    [8, 3], [9.6, 3], [10.4, 4.4], [13.6, 4.4], [14.4, 3], [16, 3], // collar notch
+    [21.5, 5.4], [23, 9], [19.2, 10.8], [18.4, 9.4],                // right sleeve
+    [18.4, 20.6], [5.6, 20.6],                                      // hem
+    [5.6, 9.4], [4.8, 10.8], [1, 9], [2.5, 5.4],                    // left sleeve
+  ];
+  const path = () => {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x * u, y * u) : ctx.moveTo(x * u, y * u)));
+    ctx.closePath();
+  };
+  // soft drop shadow, then fill + chunky outline
+  ctx.save();
+  ctx.shadowColor = 'rgba(17,17,17,0.25)'; ctx.shadowBlur = size * 0.025; ctx.shadowOffsetY = size * 0.012;
+  path(); ctx.fillStyle = colorHex; ctx.fill();
+  ctx.restore();
+  path(); ctx.fillStyle = colorHex; ctx.fill();
+  path(); ctx.lineWidth = Math.max(3, u * 0.28); ctx.strokeStyle = '#141310'; ctx.stroke();
+  // collar band + hem shade (a slightly darker/lighter tint of the garment)
+  const shade = (hex, f) => {
+    const n = parseInt(hex.slice(1), 16);
+    const ch = (v) => Math.max(0, Math.min(255, Math.round(v * f)));
+    return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
+  };
+  ctx.fillStyle = shade(colorHex, colorHex.toLowerCase() === '#ffffff' ? 0.88 : 0.78);
+  ctx.beginPath(); // collar band follows the notch
+  ctx.moveTo(9.6 * u, 3 * u); ctx.lineTo(10.4 * u, 4.4 * u); ctx.lineTo(13.6 * u, 4.4 * u);
+  ctx.lineTo(14.4 * u, 3 * u); ctx.lineTo(13.9 * u, 3 * u); ctx.lineTo(13.25 * u, 3.9 * u);
+  ctx.lineTo(10.75 * u, 3.9 * u); ctx.lineTo(10.1 * u, 3 * u); ctx.closePath(); ctx.fill();
+  ctx.fillRect(5.6 * u, 20.1 * u, 12.8 * u, 0.5 * u); // hem
+  // the design on the chest — fit inside a 9.4u x 9.6u print zone
+  const zw = 9.4 * u, zh = 9.6 * u;
+  const s = Math.min(zw / design.width, zh / design.height);
+  const dw = design.width * s, dh = design.height * s;
+  ctx.drawImage(design, (size - dw) / 2, 6.6 * u + (zh - dh) / 2, dw, dh);
+  return cv;
+}
+
 // ---- localized price ------------------------------------------------------
 // Ask the Worker where the visitor is (Cloudflare knows for free), then ask
 // Shopify what THAT country pays via @inContext — exactly what checkout will
@@ -206,7 +264,7 @@ export async function localizedPrice(product = getProduct('sticker')) {
 // Upload the print PNG to the Worker (→ R2), then create a Shopify cart with
 // the design attached as line-item attributes. Returns the checkoutUrl (the
 // caller redirects). Throws on any failure so the caller can recover the UI.
-export async function uploadAndCheckout(printCanvas, product = getProduct('sticker')) {
+export async function uploadAndCheckout(printCanvas, product = getProduct('sticker'), selection = null) {
   if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
   const blob = await new Promise((r) => printCanvas.toBlob(r, 'image/png'));
   if (!blob) throw new Error('render failed: toBlob returned null'); // iOS under memory pressure does this silently
@@ -214,16 +272,31 @@ export async function uploadAndCheckout(printCanvas, product = getProduct('stick
   if (!up.ok) throw new Error('upload failed: ' + up.status);
   const { key, url } = await up.json();
 
+  const attributes = [
+    { key: '_design_key', value: key },   // machine-readable, hidden in checkout
+    { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
+  ];
+  if (selection && product.options) {
+    // apparel: colour + size ride as attributes on the ONE Shopify variant.
+    // Price-neutral (all colour/size combos cost the same), so the worker can
+    // trust them to pick the Printful variant. Visible copies for the human.
+    const colorDef = product.options.colors.find((c) => c.id === selection.color) || product.options.colors[0];
+    const size = product.options.sizes.includes(selection.size) ? selection.size : 'M';
+    attributes.push(
+      { key: '_color', value: colorDef.id },
+      { key: '_size', value: size },
+      { key: 'Color', value: colorDef.label },
+      { key: 'Size', value: size },
+    );
+  }
+
   const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
   const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
     body: JSON.stringify({
       query: mutation,
-      variables: { lines: [{ merchandiseId: product.shopifyVariantGid, quantity: 1, attributes: [
-        { key: '_design_key', value: key },   // machine-readable, hidden in checkout
-        { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
-      ] }] },
+      variables: { lines: [{ merchandiseId: product.shopifyVariantGid, quantity: 1, attributes }] },
     }),
   });
   const data = await res.json();

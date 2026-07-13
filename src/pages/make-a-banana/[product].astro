@@ -11,8 +11,10 @@ import PixelIcon from '../../components/PixelIcon.astro';
 import PRODUCTS from '../../../shared/products.js';
 
 export function getStaticPaths() {
-  // only sellable products get a page; a teaser ("soon") has no PDP yet
-  return PRODUCTS.filter((p) => p.live).map((p) => ({ params: { product: p.key }, props: { p } }));
+  // every catalog product gets a page (noindex anyway); a not-yet-live one
+  // renders as a preview with the buy button replaced by a "soon" note, so
+  // launching it later is just flipping `live` in shared/products.js
+  return PRODUCTS.map((p) => ({ params: { product: p.key }, props: { p } }));
 }
 const { p } = Astro.props;
 const nameLc = p.name.toLowerCase();
@@ -46,6 +48,23 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
         border-color: var(--hot, #ff2e88); box-shadow: 3px 3px 0 var(--ink, #111);
       }
       .pdp-poses canvas { width: 64px; height: 64px; image-rendering: pixelated; display: block; }
+      /* apparel options: colour swatches + size chips (tee) */
+      .pdp-opts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.45rem; }
+      .pdp-swatch {
+        width: 40px; height: 40px; padding: 0; border: 3px solid var(--ink, #111);
+        cursor: pointer; box-shadow: 2px 2px 0 rgba(17,17,17,.35);
+      }
+      .pdp-swatch[aria-pressed="true"] {
+        outline: 3px solid var(--hot, #ff2e88); outline-offset: 2px;
+      }
+      .pdp-sizebtn {
+        font: inherit; font-weight: 800; min-width: 46px; min-height: 40px;
+        background: #fff; color: var(--ink, #111); border: 3px solid var(--ink, #111);
+        cursor: pointer; padding: 0.3rem 0.6rem;
+      }
+      .pdp-sizebtn[aria-pressed="true"] {
+        background: var(--ink, #111); color: #ffe135; box-shadow: 3px 3px 0 rgba(17,17,17,.35);
+      }
     </style>
   </Fragment>
 
@@ -76,11 +95,39 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
 
       <div class="pdp-field">
         <div class="pdp-field__label">What you get</div>
-        <p id="pdpCut" style="margin:0;font-weight:500;">{p.size} {p.material}, die-cut along your design’s outline</p>
+        <p id="pdpCut" style="margin:0;font-weight:500;">
+          {p.options
+            ? `${p.material} — your banana printed big on the front`
+            : `${p.size} ${p.material}, die-cut along your design’s outline`}
+        </p>
         <p id="pdpHint" hidden style="margin:0.5rem 0 0;font-size:0.85rem;font-weight:700;color:var(--hot);"></p>
       </div>
 
-      <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
+      {p.options && (
+        <div class="pdp-field">
+          <div class="pdp-field__label">Colour</div>
+          <div class="pdp-opts" id="pdpColors">
+            {p.options.colors.map((c, i) => (
+              <button type="button" class="pdp-swatch" data-color={c.id} data-hex={c.hex}
+                aria-pressed={i === 0 ? 'true' : 'false'} title={c.label} aria-label={c.label}
+                style={`background:${c.hex}`}></button>
+            ))}
+          </div>
+          <div class="pdp-field__label" style="margin-top:0.9rem;">Size <span style="font-weight:500;opacity:.7;">(unisex)</span></div>
+          <div class="pdp-opts" id="pdpSizes">
+            {p.options.sizes.map((s) => (
+              <button type="button" class="pdp-sizebtn" data-size={s}
+                aria-pressed={s === 'M' ? 'true' : 'false'}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {p.live ? (
+        <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
+      ) : (
+        <button class="btn btn--dark pdp-buy" disabled style="opacity:.55;cursor:default;">Landing any day now 🍌</button>
+      )}
       <p class="pdp-stock" id="pdpStock"></p>
 
       {others.length > 0 && (
