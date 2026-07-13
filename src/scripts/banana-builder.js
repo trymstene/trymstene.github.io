@@ -238,7 +238,16 @@ function init() {
     const q = pick(quips);
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
-    EXTRA_DEFS.forEach((d) => { state.extras[d.id] = !d.raveOnly && earnedUnlocked(d) && Math.random() < 0.3; });
+    // non-feet extras roll independently; feet are EXCLUSIVE (same rule
+    // setFeet enforces) — at most one pair, so the chips can't show four
+    // pressed shoes at once (Trym's catch)
+    const feetIds = FEET_DEFS.map((d) => d.id);
+    EXTRA_DEFS.forEach((d) => {
+      state.extras[d.id] = !d.raveOnly && !feetIds.includes(d.id)
+        && earnedUnlocked(d) && Math.random() < 0.3;
+    });
+    const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && earnedUnlocked(d));
+    if (shoeable.length && Math.random() < 0.45) state.extras[pick(shoeable).id] = true;
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     // tempo stays at the DEFAULT (Trym: the surprise is the outfit + caption;
     // tempo is a deliberate final adjustment, and randomizing it also left the
