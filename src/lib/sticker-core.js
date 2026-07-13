@@ -137,15 +137,49 @@ export function renderApparelPrint(state, W = 2048) {
     hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
   });
   const data = rctx.getImageData(0, 0, W, W).data;
-  const trimmed = crop(raw, pad(bboxOf([data], W), W));
-  // place it in the print area
+  let trimmed = crop(raw, pad(bboxOf([data], W), W));
+  // a TOP caption inherits the meme layout's top-edge position, leaving a big
+  // empty gap above the banana — on a chest that parks the text at the collar
+  // (Trym: "i wouldnt order that"). Close the gap into a tight lockup. Skipped
+  // for confetti/sparkle (their specks live in that gap by design).
+  if (state.top && state.effect !== 'confetti' && state.effect !== 'sparkle') {
+    trimmed = tightenTopGap(trimmed);
+  }
+  // place it in the print area: capped size, vertically CENTERED in the chest
+  // band (7%–73% of the area) so short lockups sit mid-chest, not at the seam
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
   const s = Math.min((W * 0.78) / trimmed.width, (H * 0.66) / trimmed.height);
   const dw = trimmed.width * s, dh = trimmed.height * s;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(trimmed, (W - dw) / 2, H * 0.07, dw, dh);
+  ctx.drawImage(trimmed, (W - dw) / 2, H * 0.07 + (H * 0.66 - dh) / 2, dw, dh);
   return cv;
+}
+
+// If the artwork's FIRST content band (the top caption) is separated from the
+// rest by a fully-transparent gap, shrink that gap to ~3% of the height.
+function tightenTopGap(cv) {
+  const w = cv.width, h = cv.height;
+  const d = cv.getContext('2d').getImageData(0, 0, w, h).data;
+  const rowEmpty = (y) => {
+    for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 16) return false;
+    return true;
+  };
+  let y = 0;
+  while (y < h && rowEmpty(y)) y++;          // leading padding
+  let bandEnd = y;
+  while (bandEnd < h && !rowEmpty(bandEnd)) bandEnd++; // first band (the caption)
+  let gapEnd = bandEnd;
+  while (gapEnd < h && rowEmpty(gapEnd)) gapEnd++;     // the gap below it
+  const gap = gapEnd - bandEnd;
+  const keep = Math.round(h * 0.03);
+  if (gapEnd >= h || gap <= keep) return cv; // no lower band, or already tight
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h - (gap - keep);
+  const ctx = out.getContext('2d');
+  ctx.drawImage(cv, 0, 0, w, bandEnd, 0, 0, w, bandEnd);
+  ctx.drawImage(cv, 0, gapEnd, w, h - gapEnd, 0, bandEnd + keep, w, h - gapEnd);
+  return out;
 }
 
 // ---- product MOCKUP (what the buyer sees) ---------------------------------
