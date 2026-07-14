@@ -173,6 +173,56 @@ def write_stl(path, tris):
             f.write(struct.pack('<H', 0))
 
 
+def write_3mf(path, color_tris):
+    """ONE file, colors included — STL can't carry color, 3MF can.
+    color_tris: list of (name, (r,g,b), tris). Each color = one mesh object
+    with a base material; slicers and POD quote forms read this directly."""
+    import zipfile
+    def fmt(v):
+        s = ('%.3f' % v).rstrip('0').rstrip('.')
+        return s if s else '0'
+    objects, items = [], []
+    for oid, (name, rgb, tris) in enumerate(color_tris, start=2):
+        verts, index, tri_idx = [], {}, []
+        for tri in tris:
+            ids = []
+            for p in tri:
+                k = (round(p[0], 3), round(p[1], 3), round(p[2], 3))
+                if k not in index:
+                    index[k] = len(verts)
+                    verts.append(k)
+                ids.append(index[k])
+            tri_idx.append(ids)
+        vx = ''.join('<vertex x="%s" y="%s" z="%s"/>' % (fmt(v[0]), fmt(v[1]), fmt(v[2])) for v in verts)
+        tx = ''.join('<triangle v1="%d" v2="%d" v3="%d"/>' % tuple(t) for t in tri_idx)
+        objects.append(
+            '<object id="%d" type="model" pid="1" pindex="%d" name="%s">'
+            '<mesh><vertices>%s</vertices><triangles>%s</triangles></mesh></object>'
+            % (oid, oid - 2, name, vx, tx))
+        items.append('<item objectid="%d"/>' % oid)
+    mats = ''.join('<base name="%s" displaycolor="#%02X%02X%02XFF"/>' % (n, *rgb)
+                   for n, rgb, _ in color_tris)
+    model = ('<?xml version="1.0" encoding="UTF-8"?>'
+             '<model unit="millimeter" xml:lang="en-US" '
+             'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+             '<resources><basematerials id="1">%s</basematerials>%s</resources>'
+             '<build>%s</build></model>' % (mats, ''.join(objects), ''.join(items)))
+    with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('[Content_Types].xml',
+                   '<?xml version="1.0" encoding="UTF-8"?>'
+                   '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                   '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>'
+                   '</Types>')
+        z.writestr('_rels/.rels',
+                   '<?xml version="1.0" encoding="UTF-8"?>'
+                   '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                   '<Relationship Target="/3D/3dmodel.model" Id="rel-1" '
+                   'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>'
+                   '</Relationships>')
+        z.writestr('3D/3dmodel.model', model)
+
+
 # ---- previews (no matplotlib: hand-rolled isometric painter) ----
 def preview_front(grid, path, scale=14):
     H, W = grid.shape
@@ -226,11 +276,14 @@ def build(frame, mm, depth, base, out):
     write_stl(os.path.join(out, tag + '.stl'), all_tris)
     used = sorted(set(vox.values()))
     per_color = {}
+    color_tris = []
     for code in used:
         name = PALETTE[code - 1][0]
         tris = emit_mesh(vox, lambda c, k=code: c == k, mm, maxy)
         per_color[name] = len(tris)
         write_stl(os.path.join(out, '%s-%s.stl' % (tag, name)), tris)
+        color_tris.append((name, PALETTE[code - 1][1], tris))
+    write_3mf(os.path.join(out, tag + '.3mf'), color_tris)
     preview_front(grid, os.path.join(out, tag + '-front.png'))
     preview_iso(vox, os.path.join(out, tag + '-iso.png'), maxy)
 
