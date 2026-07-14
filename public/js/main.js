@@ -63,6 +63,15 @@
   cfb.setAttribute('data-cf-beacon', '{"token":"2ec40ec596fc44a19251c3d36b1f0abb"}');
   document.head.appendChild(cfb);
 
+  // Microsoft Clarity — session recordings + heatmaps (free, uncapped).
+  // Sits INSIDE the production + internal-flag guard like everything else:
+  // flagged browsers record nothing. Recordings stop at the Shopify domain.
+  (function (c, l, a, r, i, t, y) {
+    c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+    t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
+    y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+  })(window, document, 'clarity', 'script', 'xmja5x3h8h');
+
   // Key conversion events. `placement` (data-place attr or the page path)
   // answers "which CTA earns its pixels" across every builder entry point.
   document.addEventListener('click', function (e) {
