@@ -655,7 +655,15 @@ function init() {
       setTimeout(() => { cv.style.animation = ''; }, 2600);
     });
     if (wavers.has(myId)) addHype(10); // you rode the wave
-    if (parts.length) showBubble('🌊 what a wave!', false, 3000);
+    // first wave ever: make the multiplayer-ness legible (one-time garnish)
+    let waveTxt = '🌊 what a wave!';
+    try {
+      if (parts.length > 1 && !localStorage.getItem('rv-realwave')) {
+        localStorage.setItem('rv-realwave', '1');
+        waveTxt += ' — every banana here is a real person';
+      }
+    } catch (e) {}
+    if (parts.length) showBubble(waveTxt, false, 3600);
   }
 
   function floatEmote(id, kind) {
@@ -733,8 +741,26 @@ function init() {
   // rate) grabs it: the claims used to live on this slow tick + a 2s retry =
   // "i stand at the bar and nothing happens" (Trym)
   let barBeerLive = false, barSpecialLive = null;
+  // the lonely-floor invite nudge: solo for 90s -> Barty points at the
+  // BRING +1 sign, once per session. Rides this 1s tick (no lone timers).
+  let soloSince = 0;
+  let inviteNudged = false;
+  try { inviteNudged = !!sessionStorage.getItem('rv-nudged'); } catch (e) {}
+  function inviteNudge() {
+    if (ravers.size > 1) { soloSince = 0; return; }
+    if (!soloSince) { soloSince = Date.now(); return; }
+    if (inviteNudged || Date.now() - soloSince < 90000) return;
+    if (bubbleSticky || Date.now() < bartyBusyUntil) return;
+    inviteNudged = true;
+    try { sessionStorage.setItem('rv-nudged', '1'); } catch (e) {}
+    bartySay(['quiet night… bring a friend 🍌', { t: 'the BRING +1 sign up there copies the invite', mutter: true }]);
+    const sign = el('rvInvite');
+    if (sign) { sign.classList.add('rv-sign--pulse'); setTimeout(() => sign.classList.remove('rv-sign--pulse'), 5200); }
+    track('rave_invite_nudge');
+  }
   function barTick() {
     if (tourActive) return; // the bar holds its announcements while the tour is on stage
+    inviteNudge();
     const t = Date.now() / 1000;
     const bub = el('rvBubble');
     if (happyActive(t)) {
@@ -774,6 +800,20 @@ function init() {
     }
   }
   setInterval(barTick, 1000);
+
+  // the BRING +1 sign: club wall decor that copies the invite link
+  const inviteSign = el('rvInvite');
+  if (inviteSign) {
+    inviteSign.addEventListener('click', async () => {
+      const url = 'https://trymstene.com/rave/';
+      let ok = false;
+      try { await navigator.clipboard.writeText(url); ok = true; } catch (e) {}
+      if (!bubbleSticky && Date.now() > bartyBusyUntil) {
+        showBubble(ok ? 'invite copied 🍌 raves are better with friends' : 'the door link: ' + url, false, 4200);
+      }
+      track('rave_invite_copy');
+    });
+  }
 
   // ---- floor life: spotlight + lost vinyl + hot sauce (one 500ms rhythm tick) ----
   let vinylWinClaimed = -1;
@@ -1686,6 +1726,15 @@ function init() {
           passStat('fives');
           tonight.fives += 1;
           refreshStats();
+          // first five ever: teach that the other banana is a HUMAN (once)
+          try {
+            if (!localStorage.getItem('rv-real5')) {
+              localStorage.setItem('rv-real5', '1');
+              if (!bubbleSticky && Date.now() > bartyBusyUntil) {
+                showBubble('high five! 🖐 that was a real person, by the way', false, 4200);
+              }
+            }
+          } catch (e) {}
         }
       }
     }
