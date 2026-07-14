@@ -41,6 +41,11 @@ const imageLD = {
   isPartOf: { '@id': SITE + '/dancing-banana-remixes/#gallery' },
   creditText: m.creator || 'Community remix',
   ...(m.creator ? { author: { '@type': 'Person', name: m.creator } } : {}),
+  // image-license metadata (the Licensable treatment in Google Images):
+  // every remix is a derivative of Trym's character, so commercial-use
+  // questions route to the character's license page — same as the hub
+  license: SITE + '/license-the-dancing-banana/',
+  acquireLicensePage: SITE + '/license-the-dancing-banana/',
 };
 const crumbLD = {
   '@context': 'https://schema.org',
