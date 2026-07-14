@@ -10,7 +10,7 @@ const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 
 // events worth plotting on the map / showing in the ticker (the rest is noise)
 const LENS_EVENTS = [
-  'gif_download', 'png_download', 'wallpaper_download', 'builder_start',
+  'gif_download', 'png_download', 'wallpaper_download', 'builder_boot', 'builder_start',
   'generator_click', 'surprise_me', 'share_link_copy', 'rave_join',
   'sticker_pdp_view', 'sticker_pdp_checkout', 'checkout_redirect',
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
@@ -342,7 +342,7 @@ async function apiReport(env) {
       + '% of traffic at ' + er + '% engagement — the organic core behaves differently, read them separately.');
   }
   if (fun[0] >= 10 && fun[1] === 0) notes.push('⚠ ' + fun[0]
-    + ' builder loads but nobody reached a product page — the custom funnel died at step one.');
+    + ' customized bananas but nobody reached a product page — the custom funnel died at step one.');
   const gifs = ev(cur, 'gif_download'); const pgifs = ev(prev, 'gif_download');
   if (gifs >= 5 && pgifs && gifs / pgifs >= 2) notes.push('GIF downloads doubled (' + gifs + ') — something is spreading.');
   if (!notes.length) notes.push('A quiet, normal day on the floor. The banana kept dancing.');
@@ -355,9 +355,9 @@ async function apiReport(env) {
     '🚪 ' + (srcLine || 'no source data'),
     '🌍 ' + (geoLine || 'nobody? spooky'),
     '🎬 ' + gifs + ' GIF downloads ' + pctDelta(gifs, pgifs)
-      + ' · ' + ev(cur, 'builder_start') + ' builder loads ' + pctDelta(ev(cur, 'builder_start'), ev(prev, 'builder_start'))
+      + ' · ' + ev(cur, 'builder_start') + ' bananas customized ' + pctDelta(ev(cur, 'builder_start'), ev(prev, 'builder_start'))
       + ' · ' + ev(cur, 'rave_join') + ' rave joins ' + pctDelta(ev(cur, 'rave_join'), ev(prev, 'rave_join')),
-    '🏷️ Custom funnel (tee/sticker/magnet): builder <b>' + fun[0] + '</b> → PDP <b>' + fun[1] + '</b> → order <b>'
+    '🏷️ Custom funnel (tee/sticker/magnet): customized <b>' + fun[0] + '</b> → PDP <b>' + fun[1] + '</b> → order <b>'
       + fun[2] + '</b> → checkout <b>' + fun[3] + '</b>',
     '👕 Merch: shop <b>' + merch[0] + '</b> → picked <b>' + merch[1] + '</b> → product page <b>' + merch[2] + '</b>',
     '💰 ' + Math.round(k.revenue) + ' kr · ' + k.transactions + ' purchases · '
@@ -569,7 +569,8 @@ var FLAG = function(cc){ if(!cc||cc.length!==2) return '·';
   return String.fromCodePoint(127397+cc.charCodeAt(0),127397+cc.charCodeAt(1)); };
 var EV_LABEL = {
   gif_download:'grabbed the GIF', png_download:'grabbed the PNG',
-  wallpaper_download:'took a wallpaper', builder_start:'opened the builder',
+  wallpaper_download:'took a wallpaper',
+  builder_boot:'the banana danced', builder_start:'customized a banana',
   generator_click:'headed to the builder', surprise_me:'hit surprise me',
   share_link_copy:'shared a banana', rave_join:'joined the rave',
   sticker_pdp_view:'eyed a custom product', sticker_pdp_checkout:'hit ORDER',
@@ -578,7 +579,7 @@ var EV_LABEL = {
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop' };
-var LENSES = ['gif_download','builder_start','rave_join','sticker_pdp_view',
+var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
 // what each event MEANS — hover any event name to see what the visitor did
@@ -593,7 +594,8 @@ var EV_EXPLAIN = {
   gif_download:'downloaded the dancing banana GIF — the classic grab',
   png_download:'downloaded their custom banana as a full-size meme image',
   wallpaper_download:'downloaded a wallpaper from the wallpaper page',
-  builder_start:'the make-a-banana builder finished loading and the banana danced on their screen',
+  builder_boot:'the make-a-banana page finished loading and the banana danced on their screen — the TRUE page-load signal (counting starts 14 Jul)',
+  builder_start:'made their FIRST customization in the builder — an interaction, NOT a page load (⚠ was misread as "builder loaded" until 14 Jul; passive watchers never fire it)',
   generator_click:'clicked a make-your-own-banana link somewhere on the site',
   surprise_me:'hit SURPRISE ME in the builder — random outfit + caption',
   share_link_copy:'copied a share link to their custom banana',
@@ -950,8 +952,10 @@ function stepVal(R,key){
 var FUNNELS=[
   [['sessions','On the site',
     'A visit to trymstene.com — any page, any door. Everyone starts here.'],
-   ['builder_start','Builder loaded',
-    'The make-a-banana builder finished loading on their screen — they saw the banana dance.'],
+   ['builder_boot','Banana danced',
+    'The make-a-banana page finished loading and the banana danced on their screen — the TRUE page-load signal. Counting starts 14 Jul (new event).'],
+   ['builder_start','Customized it',
+    'They touched a control — a hat, a caption, surprise me… their first change to the banana. This is an INTERACTION, not a page load (it was mislabeled "Builder loaded" until 14 Jul).'],
    ['sticker_pdp_view','Product page',
     'They clicked to order their design and landed on a custom product page — tee, sticker or magnet, their banana on it.'],
    ['sticker_pdp_checkout','Hit ORDER',

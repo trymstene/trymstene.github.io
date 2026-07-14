@@ -808,5 +808,10 @@ function init() {
   assetsReady().finally(() => {
     recomputeEmojiBB(); drawPicker(); drawTiles(); dirty = true;
     requestAnimationFrame(tick);
+    // TRUE boot signal (added 14 Jul): fires after the first painted frame —
+    // "the banana danced on their screen". builder_start does NOT mean this:
+    // it fires on the first CUSTOMIZATION (misread as boot for a while —
+    // passive watchers never counted, which made ad traffic look broken).
+    requestAnimationFrame(() => track('builder_boot'));
   });
 }
