@@ -97,6 +97,28 @@ def logical_grid(n):
     return grid[nz_y.min():nz_y.max() + 1, nz_x.min():nz_x.max() + 1]
 
 
+def reinforce_diagonals(grid):
+    """Pixel-art staircase lines (the arms!) connect voxels only DIAGONALLY —
+    edge contact, zero thickness: unprintable and non-manifold. Fill the
+    lower corner cell of every pure-diagonal step (in the step's own color)
+    so every connection is face-to-face. Repeats until stable."""
+    g = grid.copy()
+    changed = True
+    while changed:
+        changed = False
+        H, W = g.shape
+        for y in range(H - 1):
+            for x in range(W):
+                if not g[y, x]:
+                    continue
+                for dx in (-1, 1):
+                    nx = x + dx
+                    if 0 <= nx < W and g[y + 1, nx] and not g[y + 1, x] and not g[y, nx]:
+                        g[y + 1, x] = g[y, x]  # fill under the upper cell
+                        changed = True
+    return g
+
+
 def add_base(grid, depth):
     """A plate under the feet: 1 px tall, sprite width + margin, deeper than
     the body. Returns (grid_with_base_row, base_span, base_depth_range)."""
@@ -265,6 +287,7 @@ def preview_iso(vox, path, maxy, scale=9):
 def build(frame, mm, depth, base, out):
     os.makedirs(out, exist_ok=True)
     grid = logical_grid(frame)
+    grid = reinforce_diagonals(grid)
     if base:
         grid, _ = add_base(grid, depth)
     H, W = grid.shape
