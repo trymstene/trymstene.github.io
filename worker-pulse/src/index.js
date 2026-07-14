@@ -1020,6 +1020,16 @@ function renderRange(){
     kpi('Revenue',kr,delta(k.revenue,pk&&pk.revenue))+
     kpi('Purchases',fmt(k.transactions),delta(k.transactions,pk&&pk.transactions));
   function kpi(l,v,d){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>'; }
+  // GA4 sometimes takes >12h to produce ANY intraday rows for a new day —
+  // say so instead of showing spooky zeros (the live layer is unaffected)
+  var lateNote=document.getElementById('lateNote');
+  if(lateNote) lateNote.remove();
+  if(state.to==='today' && k.sessions===0){
+    document.getElementById('kpis').insertAdjacentHTML('afterend',
+      '<p class="muted" id="lateNote" style="margin-top:8px;color:var(--hot);">'+
+      '⏳ GA4 hasn’t produced today’s report data yet (Google-side intraday lag, sometimes 12h+). '+
+      'The LIVE map and ticker above are unaffected — today’s numbers will backfill on their own.</p>');
+  }
   renderDevices();
   renderFunnel(document.getElementById('fun0'),FUNNELS[0]);
   renderFunnel(document.getElementById('fun1'),FUNNELS[1]);
