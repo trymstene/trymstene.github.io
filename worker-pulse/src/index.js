@@ -451,7 +451,7 @@ function page() {
          border:2px solid var(--line); padding:4px 6px; }
   .ticker{ overflow:hidden; white-space:nowrap; border-block:2px solid var(--line);
            padding:7px 0; font-size:.78rem; }
-  .ticker .in{ display:inline-block; padding-left:100%; animation:tick 26s linear infinite; }
+  .ticker .in{ display:inline-block; padding-left:100%; animation:tick 17s linear infinite; }
   @keyframes tick{ to{ transform:translateX(-100%); } }
   .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
   .kpi{ background:var(--nana); border:3px solid #000; box-shadow:4px 4px 0 #000; padding:10px; }
