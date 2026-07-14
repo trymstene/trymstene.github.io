@@ -151,7 +151,8 @@ const GUIDE = [
       box-shadow: 0 0 10px rgba(255, 77, 157, 0.35), inset 0 0 8px rgba(255, 77, 157, 0.18);
       animation: rvNeonFlicker 5s steps(1) infinite;
     }
-    .rv-sign:hover { color: #ffd7e8; border-color: #ffd7e8; }
+    /* hover-capable pointers only — iOS keeps :hover stuck after a tap */
+    @media (hover: hover) { .rv-sign:hover { color: #ffd7e8; border-color: #ffd7e8; } }
     .rv-sign--pulse { animation: rvNeonPulse 0.8s ease-in-out 6; }
     @keyframes rvNeonFlicker {
       0%, 100% { opacity: 0.85; } 7% { opacity: 0.5; } 9% { opacity: 0.85; }

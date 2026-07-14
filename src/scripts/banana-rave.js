@@ -806,11 +806,27 @@ function init() {
   if (inviteSign) {
     inviteSign.addEventListener('click', async () => {
       const url = 'https://trymstene.com/rave/';
+      // clipboard.writeText can HANG unsettled (iOS quirks, unfocused docs) —
+      // feedback must never wait on it: race a 900ms deadline, fall back to
+      // showing the link itself (never wrong, even if the copy lands late)
       let ok = false;
-      try { await navigator.clipboard.writeText(url); ok = true; } catch (e) {}
-      if (!bubbleSticky && Date.now() > bartyBusyUntil) {
+      try {
+        await Promise.race([
+          navigator.clipboard.writeText(url).then(() => { ok = true; }),
+          new Promise((res) => setTimeout(res, 900)),
+        ]);
+      } catch (e) {}
+      // user-initiated feedback is UNMISSABLE (rave doctrine): it overrides
+      // ambient chatter/stickies and claims the bubble briefly so barTick's
+      // sticky re-show doesn't stomp it (happy hour returns right after).
+      // Only the tour outranks it. (v1 deferred to Barty's busy state — on
+      // iOS he's always mid-quip, so the confirm never showed. Trym's catch.)
+      if (!tourActive) {
+        bartyBusyUntil = Math.max(bartyBusyUntil, Date.now() + 4200);
         showBubble(ok ? 'invite copied 🍌 raves are better with friends' : 'the door link: ' + url, false, 4200);
       }
+      inviteSign.classList.add('rv-sign--pulse'); // feedback at the finger too
+      setTimeout(() => inviteSign.classList.remove('rv-sign--pulse'), 1700);
       track('rave_invite_copy');
     });
   }
