@@ -1033,6 +1033,12 @@ function renderRange(){
   renderDevices();
   renderFunnel(document.getElementById('fun0'),FUNNELS[0]);
   renderFunnel(document.getElementById('fun1'),FUNNELS[1]);
+  if(state.to==='today' && k.sessions===0){ // the funnels ride the same lagged window
+    ['fun0','fun1'].forEach(function(id){
+      document.getElementById(id).insertAdjacentHTML('afterbegin',
+        '<p class="muted" style="margin-bottom:8px;color:var(--hot);">⏳ waiting for GA4’s intraday data — today’s visits land here when Google catches up</p>');
+    });
+  }
   var smax=R.sources.length? R.sources[0].sessions:1;
   document.getElementById('sources').innerHTML = R.sources.slice(0,8).map(function(s){
     var er=s.sessions? Math.round((s.engaged/s.sessions)*100):0;
