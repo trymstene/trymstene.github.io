@@ -115,11 +115,21 @@
   thumbs.forEach(function (t) { t.addEventListener('click', function () { pickColour(t.dataset.color); }); });
   sizeBtns.forEach(function (b) { b.addEventListener('click', function () { pickSize(b.dataset.size); }); });
 
+  // funnel step clock (shared sessionStorage key with the PLP/builder) —
+  // secs_since_prev lets Pulse average time-per-funnel-step
+  function stepSecs() {
+    var now = Date.now(); var prev = 0;
+    try { prev = +(sessionStorage.getItem('fk-t') || 0); sessionStorage.setItem('fk-t', String(now)); } catch (e) {}
+    var s = prev ? Math.round((now - prev) / 1000) : -1;
+    return (s >= 0 && s <= 1800) ? s : undefined;
+  }
+  function withSecs(p) { var s = stepSecs(); if (s !== undefined) p.secs_since_prev = s; return p; }
+
   // funnel: PDP viewed (pairs with select_item on the PLP + begin_checkout below)
-  if (window.gtag) gtag('event', 'view_item', {
+  if (window.gtag) gtag('event', 'view_item', withSecs({
     currency: DATA.currency, value: DATA.priceMin,
     items: [{ item_name: DATA.title, price: DATA.priceMin }],
-  });
+  }));
 
   // checkout
   function gql(query, variables) {
@@ -139,7 +149,7 @@
     gql(CART_M, { id: v.id }).then(function (res) {
       var url = res && res.data && res.data.cartCreate && res.data.cartCreate.cart && res.data.cartCreate.cart.checkoutUrl;
       if (url) {
-        if (window.gtag) gtag('event', 'begin_checkout', { items: [{ item_name: DATA.title, item_variant: selColor + ' / ' + selSize }] });
+        if (window.gtag) gtag('event', 'begin_checkout', withSecs({ items: [{ item_name: DATA.title, item_variant: selColor + ' / ' + selSize }] }));
         window.location.href = url;
       } else {
         buyBtn.disabled = false; buyBtn.textContent = orig;

@@ -220,6 +220,28 @@ async function apiRange(env, from, to) {
   });
   const [countries, sources, events, daily, evmap] = resp.reports || [];
 
+  // avg seconds-from-previous-step per funnel event (client sends
+  // secs_since_prev since 14 Jul). Separate call + swallow errors: until the
+  // custom metric is registered in GA4 admin, the API rejects it.
+  const stepTimes = {};
+  try {
+    const st = await gaPost(env, 'runReport', {
+      dateRanges,
+      dimensions: [{ name: 'eventName' }],
+      metrics: [{ name: 'averageCustomEvent:secs_since_prev' }],
+      dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: [
+        'builder_boot', 'builder_start', 'product_tile_click', 'sticker_pdp_view',
+        'sticker_pdp_checkout', 'checkout_redirect', 'shop_view', 'select_item',
+        'view_item', 'begin_checkout',
+      ] } } },
+      limit: 20,
+    });
+    for (const r of rows(st)) {
+      const v = met(r, 0);
+      if (v > 0) stepTimes[dim(r, 0)] = Math.round(v);
+    }
+  } catch (e) { /* metric not registered yet — funnel just shows no times */ }
+
   const dailyRows = rows(daily).map((r) => ({
     d: dim(r, 0), sessions: met(r, 0), users: met(r, 1), newUsers: met(r, 2),
     eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5),
@@ -255,6 +277,7 @@ async function apiRange(env, from, to) {
       sessions: met(r, 0), engaged: met(r, 1), views: met(r, 2) })),
     events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0) })),
     eventMap: evmapObj,
+    stepTimes,
   };
   rspCache.set(key, { t: Date.now(), data });
   return data;
@@ -976,8 +999,13 @@ var FUNNELS=[
     'They opened a merch product page — mug, tee, and friends.'],
    ['transactions','Purchases 💰',
     'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']]];
+function fmtDur(s){
+  if(s<90) return s+'s';
+  return Math.floor(s/60)+'m '+(s%60)+'s';
+}
 function renderFunnel(el, steps){
   var R=state.range, P=state.prev;
+  var times=(R&&R.stepTimes)||{};
   var vals=steps.map(function(s){ return stepVal(R,s[0]); });
   var pvals=steps.map(function(s){ return P? stepVal(P,s[0]) : null; });
   var worst=-1, worstRate=2;
@@ -989,10 +1017,13 @@ function renderFunnel(el, steps){
     var conv=i>0 ? (vals[i-1]? Math.round((vals[i]/vals[i-1])*100) : 0) : null;
     var lbl=steps[i][1].replace(' ⌁store-wide',' <span class="muted">(store-wide)</span>');
     if(steps[i][2]) lbl+=' <span class="info" data-tip="'+esc(steps[i][2])+'">i</span>';
+    // avg seconds the CONVERTERS took to get here from the previous step
+    var t=times[steps[i][0]];
+    var tTxt=(i>0 && t)?' · ⌀ '+fmtDur(t)+' to get here':'';
     html+='<div class="fstep"><div class="row"><span>'+lbl+'</span>'+
       '<span>'+fmt(vals[i])+' '+delta(vals[i],pvals[i])+'</span></div>'+
       '<div class="fbar'+(i===worst?' hotspot':'')+'"><div class="fill" style="width:'+pct+'%"></div></div>'+
-      (i>0?'<div class="fdrop">'+(i===worst?'<b>⟵ WORK HERE · </b>':'')+conv+'% make it from “'+steps[i-1][1].replace(/ ⌁.*$/,'')+'”</div>':'')+
+      (i>0?'<div class="fdrop">'+(i===worst?'<b>⟵ WORK HERE · </b>':'')+conv+'% make it from “'+steps[i-1][1].replace(/ ⌁.*$/,'')+'”'+tTxt+'</div>':'')+
       '</div>';
   }
   el.innerHTML=html;

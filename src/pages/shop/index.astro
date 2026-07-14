@@ -87,15 +87,24 @@ const collectionSchema = {
   </section>
 
   <script>
+    // funnel step clock (same sessionStorage key as the builder/PDPs): each
+    // funnel event carries secs_since_prev so Pulse can average time-per-step
+    const stepSecs = () => {
+      const now = Date.now(); let prev = 0;
+      try { prev = +(sessionStorage.getItem('fk-t') || 0); sessionStorage.setItem('fk-t', String(now)); } catch (e) {}
+      const s = prev ? Math.round((now - prev) / 1000) : -1;
+      return (s >= 0 && s <= 1800) ? s : undefined;
+    };
+    const withSecs = (p) => { const s = stepSecs(); if (s !== undefined) p.secs_since_prev = s; return p; };
     // funnel top: someone opened the shop's front page — the merch funnel's
     // first real step in Banana Pulse (before select_item / view_item)
-    if (window.gtag) window.gtag('event', 'shop_view');
+    if (window.gtag) window.gtag('event', 'shop_view', withSecs({}));
     // funnel: which PLP card gets picked (pairs with view_item + begin_checkout
     // in /js/shop.js). gtag beacons survive the navigation.
     document.querySelectorAll('.shop-grid .shop-card').forEach((card) => {
       card.addEventListener('click', () => {
         const name = card.querySelector('h3')?.textContent?.trim();
-        if (window.gtag && name) window.gtag('event', 'select_item', { items: [{ item_name: name }] });
+        if (window.gtag && name) window.gtag('event', 'select_item', withSecs({ items: [{ item_name: name }] }));
       });
     });
   </script>

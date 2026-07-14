@@ -436,6 +436,21 @@ function init() {
   };
 
   function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
+  // funnel step clock: seconds since the PREVIOUS funnel step (sessionStorage
+  // so it survives builder->PDP navigation). >30min = wandered off, send
+  // nothing. Read via GA4 custom metric secs_since_prev (avg per step).
+  function stepSecs() {
+    var now = Date.now(); var prev = 0;
+    try { prev = +(sessionStorage.getItem('fk-t') || 0); sessionStorage.setItem('fk-t', String(now)); } catch (e) {}
+    var s = prev ? Math.round((now - prev) / 1000) : -1;
+    return (s >= 0 && s <= 1800) ? s : undefined;
+  }
+  function withSecs(params) {
+    var s = stepSecs();
+    params = params || {};
+    if (s !== undefined) params.secs_since_prev = s;
+    return params;
+  }
 
   // creations you keep (downloaded / shared / ordered) are recorded to the
   // shelf — the shelf itself lives on your pass (/pass/); the builder just saves
@@ -599,7 +614,7 @@ function init() {
   let bbT;
   let bbStarted = false;
   function onState() {
-    if (!bbStarted) { bbStarted = true; track('builder_start'); }
+    if (!bbStarted) { bbStarted = true; track('builder_start', withSecs()); }
     dirty = true;
     refreshUI(); sync();
     clearTimeout(bbT);
@@ -734,7 +749,7 @@ function init() {
   if (bbPgrid) bbPgrid.addEventListener('click', (e) => {
     const tile = e.target.closest('.bb-ptile'); if (!tile) return;
     const prod = tile.dataset.prod;
-    track('product_tile_click', { product: prod });
+    track('product_tile_click', withSecs({ product: prod }));
     if (tile.hasAttribute('data-soon')) { // teaser product — not sellable yet
       const name = (tile.querySelector('.bb-ptile__name') || {}).textContent || 'That one';
       toast(name + 's land any day now \u{1F34C} — the sticker’s ready to order today');
@@ -812,6 +827,11 @@ function init() {
     // "the banana danced on their screen". builder_start does NOT mean this:
     // it fires on the first CUSTOMIZATION (misread as boot for a while —
     // passive watchers never counted, which made ad traffic look broken).
-    requestAnimationFrame(() => track('builder_boot'));
+    // secs_since_prev on boot = time from navigation start to the first
+    // painted dance frame (the page-load-speed metric); also arms the clock
+    requestAnimationFrame(() => {
+      stepSecs(); // arm the clock at boot; boot latency comes from performance
+      track('builder_boot', { secs_since_prev: Math.min(1800, Math.round(performance.now() / 1000)) });
+    });
   });
 }

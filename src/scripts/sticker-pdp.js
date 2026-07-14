@@ -13,6 +13,21 @@ import {
 
 const el = (id) => document.getElementById(id);
 const track = (name, p) => { if (window.gtag) window.gtag('event', name, p || {}); };
+// funnel step clock — same sessionStorage key the builder uses, so the
+// builder -> PDP -> ORDER -> checkout gaps are measured ACROSS pages;
+// >30min = wandered off, send nothing (skews averages less than capping)
+const stepSecs = () => {
+  const now = Date.now(); let prev = 0;
+  try { prev = +(sessionStorage.getItem('fk-t') || 0); sessionStorage.setItem('fk-t', String(now)); } catch (e) {}
+  const s = prev ? Math.round((now - prev) / 1000) : -1;
+  return (s >= 0 && s <= 1800) ? s : undefined;
+};
+const withSecs = (p) => {
+  const s = stepSecs();
+  p = p || {};
+  if (s !== undefined) p.secs_since_prev = s;
+  return p;
+};
 const state = parseDesign(new URLSearchParams(location.search));
 // which product this page sells — from the route (shared/products.js drives it)
 const product = getProduct((el('pdpRoot') || {}).dataset && el('pdpRoot').dataset.product) || getProduct('sticker');
@@ -244,7 +259,7 @@ async function boot() {
   buildPosePicker();
   wireOptions();
   wireZoom();
-  track('sticker_pdp_view', { product: product.key, design: designStr(state) });
+  track('sticker_pdp_view', withSecs({ product: product.key, design: designStr(state) }));
   const lp = await localizedPrice(product);
   if (lp) {
     // the price lives ONLY in the badge — the note never repeats it (Trym)
@@ -265,10 +280,11 @@ if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
   const btn = el('pdpBuy'); const label = btn.textContent;
   btn.disabled = true; btn.textContent = `Preparing your ${product.name.toLowerCase()}…`;
   el('pdpStock').textContent = '';
-  track('sticker_pdp_checkout', { product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) });
+  track('sticker_pdp_checkout', withSecs({ product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
   try {
     const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state, product), product, sel);
-    track('checkout_redirect', { value: PRICE.amount, currency: PRICE.currency });
+    // secs_since_prev here = upload+cart pipeline latency (ORDER click -> redirect)
+    track('checkout_redirect', withSecs({ value: PRICE.amount, currency: PRICE.currency }));
     passPatch('patron', { quiet: true }); // pass badge for ordering — celebrate on return, not mid-redirect
     window.location.href = checkoutUrl;
   } catch (e) {
