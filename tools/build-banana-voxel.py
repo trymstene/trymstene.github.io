@@ -175,8 +175,11 @@ def emit_mesh(vox, keep, mm, maxy):
             for cx, cy, cz in corners:
                 # world: X right, Y depth, Z up (flip image y)
                 pts.append(((x + cx) * mm, (z + cz) * mm, (maxy - y + (1 - cy)) * mm))
-            tris.append((pts[0], pts[1], pts[2]))
-            tris.append((pts[0], pts[2], pts[3]))
+            # the image-y -> world-Z flip MIRRORS the geometry, which reverses
+            # triangle handedness — wind (0,2,1)/(0,3,2) so normals face OUT
+            # (Shop3D's validator rejected the naive winding: negative volume)
+            tris.append((pts[0], pts[2], pts[1]))
+            tris.append((pts[0], pts[3], pts[2]))
     return tris
 
 
