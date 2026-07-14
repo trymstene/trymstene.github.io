@@ -42,3 +42,5 @@ ad-pack/
 
 # wrangler local dev state (miniflare caches, local DO sqlite)
 .wrangler/
+
+banana-3d/
