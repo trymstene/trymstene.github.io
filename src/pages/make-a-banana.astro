@@ -376,7 +376,7 @@ const appSchema = {
   <section class="hero bb-hero">
     <p class="kicker">Free banana builder</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,4rem);">make your own<br>dancing banana</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">Shades, hats, captions, dance moves. Build one, share it, slap it on a sticker.</p>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Shades, hats, captions, dance moves. Build one, share it — or buy it on a tee, sticker or magnet.</p>
   </section>
 
   <div class="bb-wrap">
@@ -396,7 +396,7 @@ const appSchema = {
           <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top"><PixelIcon name="mirrorball" /> Rave</a>
         </div>
         <div class="bb-toprow bb-toprow--go">
-          <button class="btn btn--dark" id="bbQuickSticker" style="flex:1"><PixelIcon name="tag" /> Take it home — from 149 kr</button>
+          <button class="btn btn--dark" id="bbQuickSticker" style="flex:1"><PixelIcon name="tag" /> BUY as sticker or tee — from 149 kr</button>
         </div>
         <div class="bb-row">
           <label>Background</label>
@@ -464,15 +464,15 @@ const appSchema = {
          second DOM copy or a stacked desktop (Trym: stacking doesn't work). -->
     <section class="bb-outputs" aria-labelledby="bbTakeTitle">
       <p class="kicker">Done building?</p>
-      <h2 id="bbTakeTitle">Take it with you</h2>
+      <h2 id="bbTakeTitle">Buy it — or download it</h2>
       <div class="bb-freeze">
         <div class="bb-freeze__label"><strong>Pick your pose</strong> <details class="px-info"><summary>?</summary><span class="px-info__bubble">The frame you freeze here is the one on your meme image. The chat emoji GIF always keeps the full dance, and printed products pick their pose on the product page.</span></details></div>
         <div class="bb-frames" id="bbFrames"></div>
       </div>
       <div class="bb-cards">
         <div class="bb-card bb-card--buy" id="bbTakeHome">
-          <h3><PixelIcon name="tag" size="1.5em" /> Take this banana home</h3>
-          <p>Your banana on real things — printed and mailed to your door. Pick your thing:</p>
+          <h3><PixelIcon name="tag" size="1.5em" /> Buy this banana</h3>
+          <p>Your design, printed and mailed to your door. Tap a product to buy:</p>
           <p class="bb-ship">🌍 FREE WORLDWIDE SHIPPING</p>
           <!-- the card IS the picker: one tile per product (your banana previewed
                on each) → tap opens that product. Adding a product = one more tile,
@@ -521,7 +521,7 @@ const appSchema = {
   <div class="bb-homebar" id="bbHomeBar">
     <button type="button" class="bb-homebar__go" id="bbHomeBarGo">
       <span class="bb-homebar__stage"><canvas id="bbHomeBarCv" width="72" height="72" aria-hidden="true"></canvas></span>
-      <span class="bb-homebar__txt"><b>Make it real</b><small>tee · sticker · magnet — from 149 kr</small></span>
+      <span class="bb-homebar__txt"><b>Buy your banana</b><small>sticker · magnet · tee — from 149 kr</small></span>
       <span class="bb-homebar__arrow" aria-hidden="true">→</span>
     </button>
     <button type="button" class="bb-homebar__x" id="bbHomeBarX" aria-label="No thanks">✕</button>
