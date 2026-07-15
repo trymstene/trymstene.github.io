@@ -12,7 +12,8 @@ import { GIFEncoder } from 'gifenc';
 import { parseGIF, decompressFrames } from 'gifuct-js';
 import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
-import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, b64, forgeParse } from '../lib/forge-format.js';
+import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, b64, forgeParse } from '../lib/forge-format.js';
+import { BANANA_REMIX } from '../data/banana-remix.js';
 
 const el = (id) => document.getElementById(id);
 const stage = el('fgCanvas');
@@ -563,7 +564,7 @@ function init() {
     const W = gif.lsd.width, H = gif.lsd.height;
     const full = document.createElement('canvas');
     full.width = W; full.height = H;
-    const fctx = full.getContext('2d');
+    const fctx = full.getContext('2d', { willReadFrequently: true });
     const tmp = document.createElement('canvas');
     const tctx = tmp.getContext('2d');
     // evenly sample long GIFs down to our frame cap
@@ -583,22 +584,70 @@ function init() {
     return out;
   }
   function rasterToGrid(entry) {
+    // Downscaling by AVERAGE turns crisp outlines into mud (the broken-banana
+    // bug). Instead: small sources land 1:1 (integer-scaled, centred) so their
+    // pixels survive exactly; big sources get a DOMINANT-colour vote per cell.
     const S = state.size;
-    const cv2 = document.createElement('canvas');
-    cv2.width = cv2.height = S;
-    const c2 = cv2.getContext('2d', { willReadFrequently: true });
-    let src = entry.src;
-    if (entry.snapshot) { // GIF path: draw the composited snapshot, not the live canvas
-      src = document.createElement('canvas');
-      src.width = entry.w; src.height = entry.h;
-      src.getContext('2d').putImageData(entry.snapshot, 0, 0);
-    }
     const iw = entry.w, ih = entry.h;
+    let src = entry.snapshot;
+    if (!src) {
+      const c = document.createElement('canvas');
+      c.width = iw; c.height = ih;
+      const cc = c.getContext('2d', { willReadFrequently: true });
+      cc.drawImage(entry.src, 0, 0);
+      src = cc.getImageData(0, 0, iw, ih);
+    }
+    const d = src.data;
+    const out = new ImageData(S, S);
+    const o = out.data;
+    if (iw <= S && ih <= S) {
+      const k = Math.max(1, Math.floor(Math.min(S / iw, S / ih)));
+      const ox = ((S - iw * k) / 2) | 0, oy = ((S - ih * k) / 2) | 0;
+      for (let y = 0; y < ih; y++) {
+        for (let x = 0; x < iw; x++) {
+          const si = (y * iw + x) * 4;
+          for (let dy = 0; dy < k; dy++) {
+            for (let dx = 0; dx < k; dx++) {
+              const ti = ((oy + y * k + dy) * S + ox + x * k + dx) * 4;
+              o[ti] = d[si]; o[ti + 1] = d[si + 1]; o[ti + 2] = d[si + 2]; o[ti + 3] = d[si + 3];
+            }
+          }
+        }
+      }
+      return out;
+    }
     const sc = Math.min(S / iw, S / ih);
     const dw = Math.max(1, Math.round(iw * sc)), dh = Math.max(1, Math.round(ih * sc));
-    c2.imageSmoothingEnabled = true;
-    c2.drawImage(src, ((S - dw) / 2) | 0, ((S - dh) / 2) | 0, dw, dh);
-    return c2.getImageData(0, 0, S, S);
+    const ox = ((S - dw) / 2) | 0, oy = ((S - dh) / 2) | 0;
+    for (let ty = 0; ty < dh; ty++) {
+      const sy0 = Math.floor((ty * ih) / dh), sy1 = Math.max(sy0 + 1, Math.floor(((ty + 1) * ih) / dh));
+      for (let tx = 0; tx < dw; tx++) {
+        const sx0 = Math.floor((tx * iw) / dw), sx1 = Math.max(sx0 + 1, Math.floor(((tx + 1) * iw) / dw));
+        const stepY = Math.max(1, ((sy1 - sy0) / 6) | 0), stepX = Math.max(1, ((sx1 - sx0) / 6) | 0);
+        const buckets = new Map();
+        let clear = 0, total = 0;
+        for (let sy = sy0; sy < sy1; sy += stepY) {
+          for (let sx = sx0; sx < sx1; sx += stepX) {
+            const si = (sy * iw + sx) * 4;
+            total++;
+            if (d[si + 3] < 128) { clear++; continue; }
+            const key = ((d[si] >> 4) << 8) | ((d[si + 1] >> 4) << 4) | (d[si + 2] >> 4);
+            let b = buckets.get(key);
+            if (!b) { b = { n: 0, r: 0, g: 0, bl: 0 }; buckets.set(key, b); }
+            b.n++; b.r += d[si]; b.g += d[si + 1]; b.bl += d[si + 2];
+          }
+        }
+        const ti = ((oy + ty) * S + ox + tx) * 4;
+        let best = null;
+        for (const b of buckets.values()) if (!best || b.n > best.n) best = b;
+        if (!best || clear >= total / 2) { o[ti + 3] = 0; continue; }
+        o[ti] = Math.round(best.r / best.n);
+        o[ti + 1] = Math.round(best.g / best.n);
+        o[ti + 2] = Math.round(best.bl / best.n);
+        o[ti + 3] = 255;
+      }
+    }
+    return out;
   }
   function nearestIdx(r, g, b, rgb) {
     let best = 1, bd = Infinity;
@@ -677,16 +726,48 @@ function init() {
     if (f) importImage(f, 'upload');
     e.target.value = '';
   });
+  // the banana never touches the GIF path: it loads its NATIVE pixel data
+  // (generated from the 2000px masters by tools/build-banana-remix.py) —
+  // pixel-perfect, authentic 1999 colours riding as customs
+  function ensureCustom(hex) {
+    const i = state.cpal.indexOf(hex);
+    if (i >= 0) return PALETTE.length + i;
+    if (state.cpal.length >= FORGE_CUSTOM_MAX) {
+      return nearestIdx(...hexRGB(hex), palRGB()); // palette full — closest match
+    }
+    state.cpal.push(hex);
+    return PALETTE.length + state.cpal.length - 1;
+  }
   el('fgBanana').onclick = async () => {
-    const btn = el('fgBanana'); const label = btn.textContent;
-    btn.disabled = true;
-    try {
-      const r = await fetch('/assets/dancing-banana-transparent.gif');
-      if (!(await importImage(await r.blob(), 'banana'))) btn.textContent = label;
-    } catch (e) {
-      btn.textContent = 'The banana is shy — try again';
-      setTimeout(() => { btn.textContent = label; }, 2500);
-    } finally { btn.disabled = false; }
+    stopPlay();
+    const hasArt = state.frames.some((f) => f.some((v) => v));
+    if (hasArt && !(await fgConfirm({
+      title: '🍌 Summon the banana?',
+      body: 'The original 1999 dancing banana lands pixel-perfect on the 48 grid — replacing what you have here. Then it\'s yours to remix.',
+      yes: '🍌 Summon it', no: 'Cancel',
+    }))) return;
+    const B = BANANA_REMIX;
+    const S = FORGE_SIZES.find((s) => s >= Math.max(B.w, B.h)) || FORGE_SIZES[FORGE_SIZES.length - 1];
+    const remap = B.cpal.map((hex) => ensureCustom(hex));
+    const ox = ((S - B.w) / 2) | 0, oy = ((S - B.h) / 2) | 0;
+    state.size = S;
+    state.frames = B.frames.map((f64) => {
+      const src = b64.dec(f64);
+      const f = new Uint8Array(S * S);
+      for (let y = 0; y < B.h; y++) {
+        for (let x = 0; x < B.w; x++) {
+          const idx = src[y * B.w + x];
+          f[(oy + y) * S + ox + x] = idx >= PALETTE.length ? remap[idx - PALETTE.length] : idx;
+        }
+      }
+      return f;
+    });
+    state.delays = B.delays.slice();
+    state.cur = 0; state.undo = []; state.redo = [];
+    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === S)));
+    fitCanvas(); renderPalette(); refreshAll(); save();
+    track('forge_import', { src: 'banana', frames: state.frames.length });
+    togglePlay(); // instant payoff: the banana dances where you draw
   };
 
   // ---- export: transparent GIF/PNG at platform-labeled sizes ----
