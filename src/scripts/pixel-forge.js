@@ -619,6 +619,21 @@ function init() {
     const sc = Math.min(S / iw, S / ih);
     const dw = Math.max(1, Math.round(iw * sc)), dh = Math.max(1, Math.round(ih * sc));
     const ox = ((S - dw) / 2) | 0, oy = ((S - dh) / 2) | 0;
+    if (sc >= 0.5) {
+      // near-native pixel art: POINT-sample. A dominant vote erases 1px
+      // details (thin outlines lose every ballot to their background — the
+      // missing-face bug); nearest keeps them, only evenly-spread rows drop.
+      for (let ty = 0; ty < dh; ty++) {
+        const sy = Math.min(ih - 1, (((ty + 0.5) * ih) / dh) | 0);
+        for (let tx = 0; tx < dw; tx++) {
+          const sx = Math.min(iw - 1, (((tx + 0.5) * iw) / dw) | 0);
+          const si = (sy * iw + sx) * 4;
+          const ti = ((oy + ty) * S + ox + tx) * 4;
+          o[ti] = d[si]; o[ti + 1] = d[si + 1]; o[ti + 2] = d[si + 2]; o[ti + 3] = d[si + 3];
+        }
+      }
+      return out;
+    }
     for (let ty = 0; ty < dh; ty++) {
       const sy0 = Math.floor((ty * ih) / dh), sy1 = Math.max(sy0 + 1, Math.floor(((ty + 1) * ih) / dh));
       for (let tx = 0; tx < dw; tx++) {
@@ -684,14 +699,13 @@ function init() {
       }
     }
   }
+  function applySize(S) {
+    state.size = S;
+    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === S)));
+    fitCanvas();
+  }
   async function importImage(blob, srcName) {
     stopPlay();
-    const hasArt = state.frames.some((f) => f.some((v) => v));
-    if (hasArt && !(await fgConfirm({
-      title: '🍌 Import over this?',
-      body: 'The import gets pixelated onto the grid and replaces what you have here. Colours it can\'t match join your palette.',
-      yes: '⬆ Import it', no: 'Cancel',
-    }))) return false;
     let entries = [];
     if (blob.type === 'image/gif') {
       try { entries = decodeGifFrames(await blob.arrayBuffer()); } catch (e) { entries = []; }
@@ -702,9 +716,20 @@ function init() {
         entries = [{ src: bmp, w: bmp.width, h: bmp.height, delay: 120 }];
       } catch (e) { return false; }
     }
+    // fidelity picks the grid: smallest that holds the source 1:1, else the
+    // biggest canvas we have (more cells = more surviving pixels)
+    const need = Math.max(entries[0].w, entries[0].h);
+    const S = FORGE_SIZES.find((s) => s >= need) || FORGE_SIZES[FORGE_SIZES.length - 1];
+    const hasArt = state.frames.some((f) => f.some((v) => v));
+    if (hasArt && !(await fgConfirm({
+      title: '🍌 Import over this?',
+      body: `The import gets pixelated onto the ${S}×${S} grid and replaces what you have here. Colours it can't match join your palette.`,
+      yes: '⬆ Import it', no: 'Cancel',
+    }))) return false;
+    applySize(S);
     const images = entries.map(rasterToGrid);
     learnColors(images);
-    const rgb = palRGB(), S = state.size;
+    const rgb = palRGB();
     state.frames = images.map((im) => {
       const f = new Uint8Array(S * S);
       const d = im.data;
@@ -750,7 +775,7 @@ function init() {
     const S = FORGE_SIZES.find((s) => s >= Math.max(B.w, B.h)) || FORGE_SIZES[FORGE_SIZES.length - 1];
     const remap = B.cpal.map((hex) => ensureCustom(hex));
     const ox = ((S - B.w) / 2) | 0, oy = ((S - B.h) / 2) | 0;
-    state.size = S;
+    applySize(S);
     state.frames = B.frames.map((f64) => {
       const src = b64.dec(f64);
       const f = new Uint8Array(S * S);
@@ -764,8 +789,7 @@ function init() {
     });
     state.delays = B.delays.slice();
     state.cur = 0; state.undo = []; state.redo = [];
-    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === S)));
-    fitCanvas(); renderPalette(); refreshAll(); save();
+    renderPalette(); refreshAll(); save();
     track('forge_import', { src: 'banana', frames: state.frames.length });
     togglePlay(); // instant payoff: the banana dances where you draw
   };
