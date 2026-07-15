@@ -355,7 +355,13 @@ export async function localizedPrice(product = getProduct('sticker')) {
     const p = res && res.data && res.data.node && res.data.node.price;
     if (!p) return null;
     PRICE.amount = parseFloat(p.amount); PRICE.currency = p.currencyCode;
-    const display = new Intl.NumberFormat(undefined, { style: 'currency', currency: p.currencyCode, maximumFractionDigits: 0 }).format(parseFloat(p.amount));
+    // en-US formatting so the dynamic price matches the site's static "$14.99"
+    // style in every visitor locale; cents show only when they carry meaning
+    // ($14.99 keeps its psychology, a rounded $15.00 shows as $15)
+    const display = new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: p.currencyCode,
+      currencyDisplay: 'narrowSymbol', trailingZeroDisplay: 'stripIfInteger',
+    }).format(PRICE.amount);
     return { display, amount: PRICE.amount, currency: PRICE.currency };
   } catch (e) { return null; }
 }
