@@ -1,32 +1,91 @@
 ---
-// Default site footer — the whole banana world + the host. Pages can opt out via showFooter={false}.
+// Default site footer — the whole banana world + the host. Pages can opt out
+// via showFooter={false}. Links are CATEGORIZED (15 Jul, Trym: the flat line
+// got unreadable) — keep every link, group by what the visitor is doing.
 import PixelIcon from './PixelIcon.astro';
+
+const COLS = [
+  {
+    title: 'The GIF',
+    links: [
+      ['/dancing-banana-gif-meme/', 'The story & the GIF'],
+      ['/dancing-banana-emoji/', 'Dancing banana emoji'],
+      ['/peanut-butter-jelly-time/', 'Peanut Butter Jelly Time'],
+      ['/dancing-banana-wallpaper/', 'Wallpapers'],
+      ['/dancing-banana-remixes/', 'Community remixes'],
+    ],
+  },
+  {
+    title: 'Make',
+    links: [
+      ['/make-a-banana/', 'Make your own'],
+      ['/forge/', 'Forge an emoji'],
+      ['/guides/', 'Emote size guides'],
+    ],
+  },
+  {
+    title: 'The place',
+    links: [
+      ['/rave/', 'Join the rave'],
+      ['/wall/', 'The Wall'],
+      ['/banana-of-the-day/', 'Banana of the day'],
+    ],
+  },
+  {
+    title: 'The goods',
+    links: [
+      ['/shop/', 'Shop'],
+      ['/license-the-dancing-banana/', 'License it'],
+    ],
+  },
+];
 ---
 <footer class="block block--dark">
   <p class="kicker kicker--light">More banana</p>
   <h2>The banana lives here</h2>
-  <p class="lead">
-    <a href="/dancing-banana-gif-meme/">The story &amp; the GIF</a> ·
-    <a href="/dancing-banana-emoji/">Dancing banana emoji</a> ·
-    <a href="/peanut-butter-jelly-time/">Peanut Butter Jelly Time</a> ·
-    <a href="/make-a-banana/" data-place="footer">Make your own</a> ·
-    <a href="/forge/">Forge an emoji</a> ·
-    <a href="/rave/">Join the rave</a> ·
-    <a href="/wall/">The Wall</a> ·
-    <a href="/banana-of-the-day/">Banana of the day</a> ·
-    <a href="/dancing-banana-wallpaper/">Wallpapers</a> ·
-    <a href="/guides/">Emote size guides</a> ·
-    <a href="/dancing-banana-remixes/">Community remixes</a> ·
-    <a href="/license-the-dancing-banana/">License it</a> ·
-    <a href="/shop/">Shop</a> ·
-    <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener"><PixelIcon name="coffee" /> Tip</a>
-  </p>
+  <div class="ft-cols">
+    {COLS.map((col) => (
+      <nav class="ft-col" aria-label={col.title}>
+        <h3>{col.title}</h3>
+        {col.links.map(([href, label]) => (
+          <a href={href} data-place={href === '/make-a-banana/' ? 'footer' : undefined}>{label}</a>
+        ))}
+      </nav>
+    ))}
+  </div>
   <p class="lead footer__host">
     Your host:
     <a href="/me/">Me</a> ·
     <a href="/projects/">Projects</a> ·
     <a href="https://www.djsentry.com" target="_blank" rel="noopener">Music ↗</a> ·
-    <a href="/contact/">Contact</a>
+    <a href="/contact/">Contact</a> ·
+    <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener"><PixelIcon name="coffee" /> Tip</a>
   </p>
   <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
 </footer>
+
+<style>
+  .ft-cols {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.6rem 2rem;
+    max-width: 880px;
+    margin: 1.8rem auto 1.6rem;
+    text-align: left;
+  }
+  .ft-col h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.55;
+    margin: 0 0 0.6rem;
+  }
+  .ft-col a {
+    display: block;
+    margin-bottom: 0.45rem;
+    line-height: 1.35;
+  }
+  @media (max-width: 719px) {
+    .ft-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 26rem; }
+  }
+</style>
