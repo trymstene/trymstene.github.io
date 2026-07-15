@@ -9,9 +9,10 @@
 // in a Uint8Array per frame (0 = transparent), sizes 32/48/64, per-frame
 // delays. Serialized as base64 for autosave + the Shelf.
 import { GIFEncoder } from 'gifenc';
+import { parseGIF, decompressFrames } from 'gifuct-js';
 import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
-import { FORGE_PALETTE as PALETTE, FORGE_RGB as RGB, FORGE_MAX_FRAMES as MAX_FRAMES, b64, forgeParse } from '../lib/forge-format.js';
+import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, b64, forgeParse } from '../lib/forge-format.js';
 
 const el = (id) => document.getElementById(id);
 const stage = el('fgCanvas');
@@ -29,10 +30,15 @@ function init() {
     cur: 0,
     tool: 'pencil',
     color: 3, // banana yellow, obviously
+    brush: 1,
+    cpal: [], // this creation's custom colours — indices PALETTE.length..
     onion: true,
     undo: [],
     redo: [],
   };
+  const pal = () => PALETTE.concat(state.cpal);
+  const hexRGB = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const palRGB = () => pal().map((h) => (h ? hexRGB(h) : [0, 0, 0]));
 
   const ctx = stage.getContext('2d');
   const prevCv = el('fgPreview');
@@ -49,8 +55,15 @@ function init() {
 
   // ---- painting ----
   function paintCell(x, y, idx) {
-    if (x < 0 || y < 0 || x >= state.size || y >= state.size) return;
-    frame()[y * state.size + x] = idx;
+    const B = state.brush;
+    const o = B === 3 ? -1 : 0; // 3px centres on the cursor, 2px extends right/down
+    for (let dy = 0; dy < B; dy++) {
+      for (let dx = 0; dx < B; dx++) {
+        const px = x + dx + o, py = y + dy + o;
+        if (px < 0 || py < 0 || px >= state.size || py >= state.size) continue;
+        frame()[py * state.size + px] = idx;
+      }
+    }
   }
 
   function fill(x, y, idx) {
@@ -138,10 +151,10 @@ function init() {
     pushUndo();
     drawing = true;
     lastCell = [x, y];
-    stage.setPointerCapture(e.pointerId);
     if (state.tool === 'fill') { fill(x, y, state.color); drawing = false; }
     else paintCell(x, y, state.tool === 'eraser' ? 0 : state.color);
     drawEditor(); save();
+    try { stage.setPointerCapture(e.pointerId); } catch (err) {} // quirky webviews must not kill the stroke
   });
   stage.addEventListener('pointermove', (e) => {
     if (!drawing) return;
@@ -156,12 +169,13 @@ function init() {
 
   // ---- rendering ----
   function drawGridInto(c2, f, scale, dim) {
+    const p = pal();
     for (let y = 0; y < state.size; y++) {
       for (let x = 0; x < state.size; x++) {
         const idx = f[y * state.size + x];
-        if (!idx) continue;
+        if (!idx || !p[idx]) continue;
         c2.globalAlpha = dim || 1;
-        c2.fillStyle = PALETTE[idx];
+        c2.fillStyle = p[idx];
         c2.fillRect(x * scale, y * scale, scale, scale);
       }
     }
@@ -342,21 +356,65 @@ function init() {
   }
   document.querySelectorAll('.fg-tool').forEach((b) => { b.onclick = () => setTool(b.dataset.tool); });
 
+  function setBrush(n) {
+    state.brush = n;
+    document.querySelectorAll('.fg-brush').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.brush === n)));
+    track('forge_brush', { px: n });
+  }
+  document.querySelectorAll('.fg-brush').forEach((b) => { b.onclick = () => setBrush(+b.dataset.brush); });
+
   function setColor(idx) {
     state.color = idx;
     document.querySelectorAll('.fg-swatch').forEach((s) => s.setAttribute('aria-pressed', String(+s.dataset.idx === idx)));
+    el('fgPalEdit').hidden = idx < PALETTE.length; // only YOUR colours are editable
   }
   const palHost = el('fgPalette');
-  PALETTE.forEach((hex, idx) => {
-    if (!idx) return;
-    const s = document.createElement('button');
-    s.className = 'fg-swatch';
-    s.dataset.idx = idx;
-    s.style.background = hex;
-    s.title = hex;
-    s.setAttribute('aria-label', 'Colour ' + hex);
-    s.onclick = () => setColor(idx);
-    palHost.appendChild(s);
+  function renderPalette() {
+    palHost.innerHTML = '';
+    pal().forEach((hex, idx) => {
+      if (!idx) return;
+      const s = document.createElement('button');
+      s.className = 'fg-swatch' + (idx >= PALETTE.length ? ' fg-swatch--custom' : '');
+      s.dataset.idx = idx;
+      s.style.background = hex;
+      s.title = idx >= PALETTE.length ? hex + ' (yours — select, then ✎ to tweak)' : hex;
+      s.setAttribute('aria-label', 'Colour ' + hex);
+      s.setAttribute('aria-pressed', String(idx === state.color));
+      s.onclick = () => setColor(idx);
+      palHost.appendChild(s);
+    });
+    el('fgPalAdd').hidden = state.cpal.length >= FORGE_CUSTOM_MAX;
+  }
+
+  // custom colours: + opens the native picker to ADD, ✎ re-opens it to refine
+  // the selected custom swatch (live palette swap — pixels using it recolour)
+  const colorInput = el('fgColorInput');
+  let pickerMode = 'add';
+  el('fgPalAdd').onclick = () => {
+    pickerMode = 'add';
+    colorInput.value = pal()[state.color] || '#ffe135';
+    colorInput.click();
+  };
+  el('fgPalEdit').onclick = () => {
+    if (state.color < PALETTE.length) return;
+    pickerMode = 'edit';
+    colorInput.value = state.cpal[state.color - PALETTE.length];
+    colorInput.click();
+  };
+  colorInput.addEventListener('change', () => {
+    const hex = colorInput.value;
+    if (pickerMode === 'edit' && state.color >= PALETTE.length) {
+      state.cpal[state.color - PALETTE.length] = hex;
+      renderPalette(); refreshAll(); save();
+      track('forge_custom_color', { mode: 'edit' });
+    } else {
+      if (state.cpal.length >= FORGE_CUSTOM_MAX) return;
+      state.cpal.push(hex);
+      renderPalette();
+      setColor(PALETTE.length + state.cpal.length - 1);
+      save();
+      track('forge_custom_color', { mode: 'add' });
+    }
   });
 
   // ---- live chat preview (the killer feature: see it at REAL chat size) ----
@@ -373,11 +431,14 @@ function init() {
 
   // ---- autosave + shelf ----
   function serialize() {
-    return JSON.stringify({
-      v: 1, size: state.size,
+    const d = {
+      v: state.cpal.length ? 2 : 1, // v1 when no customs — stale renderers keep working
+      size: state.size,
       frames: state.frames.map((f) => b64.enc(f)),
       delays: state.delays,
-    });
+    };
+    if (state.cpal.length) d.cpal = state.cpal;
+    return JSON.stringify(d);
   }
   function deserialize(json) {
     const d = forgeParse(json);
@@ -385,6 +446,7 @@ function init() {
     state.size = d.size;
     state.frames = d.frames;
     state.delays = d.delays;
+    state.cpal = d.cpal;
     state.cur = 0;
     return true;
   }
@@ -412,6 +474,139 @@ function init() {
     };
   });
 
+  // ---- import: pixelate an existing GIF/image onto the grid (remix!) ----
+  // gifuct-js decodes GIFs everywhere (incl. iOS Safari — no ImageDecoder bet);
+  // static images ride createImageBitmap. Colours map to the nearest palette
+  // entry, learning up to the custom-slot budget of dominant colours first.
+  function decodeGifFrames(buf) {
+    const gif = parseGIF(buf);
+    const frames = decompressFrames(gif, true);
+    if (!frames.length) return [];
+    const W = gif.lsd.width, H = gif.lsd.height;
+    const full = document.createElement('canvas');
+    full.width = W; full.height = H;
+    const fctx = full.getContext('2d');
+    const tmp = document.createElement('canvas');
+    const tctx = tmp.getContext('2d');
+    // evenly sample long GIFs down to our frame cap
+    const take = Math.min(MAX_FRAMES, frames.length);
+    const wanted = new Set();
+    for (let i = 0; i < take; i++) wanted.add(frames.length <= MAX_FRAMES ? i : Math.floor((i * frames.length) / take));
+    const out = [];
+    let prev = null;
+    frames.forEach((fr, i) => {
+      if (prev && prev.disposalType === 2) fctx.clearRect(prev.dims.left, prev.dims.top, prev.dims.width, prev.dims.height);
+      tmp.width = fr.dims.width; tmp.height = fr.dims.height;
+      tctx.putImageData(new ImageData(new Uint8ClampedArray(fr.patch), fr.dims.width, fr.dims.height), 0, 0);
+      fctx.drawImage(tmp, fr.dims.left, fr.dims.top);
+      if (wanted.has(i)) out.push({ src: full, w: W, h: H, delay: fr.delay || 120, snapshot: fctx.getImageData(0, 0, W, H) });
+      prev = fr;
+    });
+    return out;
+  }
+  function rasterToGrid(entry) {
+    const S = state.size;
+    const cv2 = document.createElement('canvas');
+    cv2.width = cv2.height = S;
+    const c2 = cv2.getContext('2d', { willReadFrequently: true });
+    let src = entry.src;
+    if (entry.snapshot) { // GIF path: draw the composited snapshot, not the live canvas
+      src = document.createElement('canvas');
+      src.width = entry.w; src.height = entry.h;
+      src.getContext('2d').putImageData(entry.snapshot, 0, 0);
+    }
+    const iw = entry.w, ih = entry.h;
+    const sc = Math.min(S / iw, S / ih);
+    const dw = Math.max(1, Math.round(iw * sc)), dh = Math.max(1, Math.round(ih * sc));
+    c2.imageSmoothingEnabled = true;
+    c2.drawImage(src, ((S - dw) / 2) | 0, ((S - dh) / 2) | 0, dw, dh);
+    return c2.getImageData(0, 0, S, S);
+  }
+  function nearestIdx(r, g, b, rgb) {
+    let best = 1, bd = Infinity;
+    for (let i = 1; i < rgb.length; i++) {
+      const p = rgb[i];
+      const d = (r - p[0]) ** 2 + (g - p[1]) ** 2 + (b - p[2]) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  function learnColors(images) {
+    // dominant-colour histogram (coarse 32-step buckets, averaged) → new
+    // custom slots for anything the palette can't already say convincingly
+    const buckets = new Map();
+    images.forEach((im) => {
+      const d = im.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 128) continue;
+        const key = ((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3);
+        let b = buckets.get(key);
+        if (!b) { b = { n: 0, r: 0, g: 0, bl: 0 }; buckets.set(key, b); }
+        b.n++; b.r += d[i]; b.g += d[i + 1]; b.bl += d[i + 2];
+      }
+    });
+    const cands = [...buckets.values()].sort((a, z) => z.n - a.n);
+    for (const c of cands) {
+      if (state.cpal.length >= FORGE_CUSTOM_MAX) break;
+      const r = Math.round(c.r / c.n), g = Math.round(c.g / c.n), b = Math.round(c.bl / c.n);
+      const rgb = palRGB();
+      const near = rgb[nearestIdx(r, g, b, rgb)];
+      const dist = (r - near[0]) ** 2 + (g - near[1]) ** 2 + (b - near[2]) ** 2;
+      if (dist > 3000) { // ~32/channel off — worth its own slot
+        state.cpal.push('#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join(''));
+      }
+    }
+  }
+  async function importImage(blob, srcName) {
+    stopPlay();
+    const hasArt = state.frames.some((f) => f.some((v) => v));
+    if (hasArt && !confirm('Importing replaces your current canvas. Continue?')) return false;
+    let entries = [];
+    if (blob.type === 'image/gif') {
+      try { entries = decodeGifFrames(await blob.arrayBuffer()); } catch (e) { entries = []; }
+    }
+    if (!entries.length) {
+      try {
+        const bmp = await createImageBitmap(blob);
+        entries = [{ src: bmp, w: bmp.width, h: bmp.height, delay: 120 }];
+      } catch (e) { return false; }
+    }
+    const images = entries.map(rasterToGrid);
+    learnColors(images);
+    const rgb = palRGB(), S = state.size;
+    state.frames = images.map((im) => {
+      const f = new Uint8Array(S * S);
+      const d = im.data;
+      for (let i = 0, px = 0; i < d.length; i += 4, px++) {
+        f[px] = d[i + 3] < 128 ? 0 : nearestIdx(d[i], d[i + 1], d[i + 2], rgb);
+      }
+      return f;
+    });
+    state.delays = entries.map((e2) => Math.min(1000, Math.max(50, Math.round(e2.delay))));
+    state.cur = 0; state.undo = []; state.redo = [];
+    renderPalette(); refreshAll(); save();
+    track('forge_import', { src: srcName, frames: state.frames.length });
+    if (state.frames.length > 1) togglePlay(); // instant payoff: see it dance in pixels
+    return true;
+  }
+  el('fgImportBtn').onclick = () => el('fgImportFile').click();
+  el('fgImportFile').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importImage(f, 'upload');
+    e.target.value = '';
+  });
+  el('fgBanana').onclick = async () => {
+    const btn = el('fgBanana'); const label = btn.textContent;
+    btn.disabled = true;
+    try {
+      const r = await fetch('/assets/dancing-banana-transparent.gif');
+      if (!(await importImage(await r.blob(), 'banana'))) btn.textContent = label;
+    } catch (e) {
+      btn.textContent = 'The banana is shy — try again';
+      setTimeout(() => { btn.textContent = label; }, 2500);
+    } finally { btn.disabled = false; }
+  };
+
   // ---- export: transparent GIF/PNG at platform-labeled sizes ----
   function download(blob, name) {
     const a = document.createElement('a');
@@ -437,7 +632,7 @@ function init() {
         }
       }
       gif.writeFrame(idx, W, W, {
-        palette: RGB, transparent: true, transparentIndex: 0,
+        palette: palRGB(), transparent: true, transparentIndex: 0,
         delay: state.delays[i], disposal: 2, first: i === 0,
       });
     });
@@ -532,7 +727,9 @@ function init() {
   document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === state.size)));
   fitCanvas();
   setTool('pencil');
+  renderPalette();
   setColor(state.color);
+  document.querySelector('.fg-brush[data-brush="1"]').setAttribute('aria-pressed', 'true');
   el('fgOnion').setAttribute('aria-pressed', String(state.onion));
   refreshAll();
   requestAnimationFrame(previewTick);

@@ -77,7 +77,7 @@ export async function renderShelf(host, { onPick, limit } = {}) {
     cv.width = cv.height = 96;
     if (c.kind === 'emoji') {
       const f = forgeParse(c.params);
-      if (f) forgeDrawFrame(cv.getContext('2d'), f.frames[0], f.size, Math.max(1, Math.floor(96 / f.size)));
+      if (f) forgeDrawFrame(cv.getContext('2d'), f.frames[0], f.size, Math.max(1, Math.floor(96 / f.size)), 1, f.palette);
     } else {
       const o = outfitFrom(c.params);
       drawComposite(cv.getContext('2d'), 96, o.frame, {

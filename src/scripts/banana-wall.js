@@ -61,11 +61,11 @@ function init() {
           p.last = now;
           p.idx = (p.idx + 1) % p.data.frames.length;
           p.ctx.clearRect(0, 0, p.data.size, p.data.size);
-          forgeDrawFrame(p.ctx, p.data.frames[p.idx], p.data.size, 1);
+          forgeDrawFrame(p.ctx, p.data.frames[p.idx], p.data.size, 1, 1, p.data.palette);
         }
       } else if (!p.drawn) {
         p.drawn = true;
-        forgeDrawFrame(p.ctx, p.data.frames[0], p.data.size, 1);
+        forgeDrawFrame(p.ctx, p.data.frames[0], p.data.size, 1, 1, p.data.palette);
       }
     }
     if (idx !== lastIdx) lastIdx = idx;

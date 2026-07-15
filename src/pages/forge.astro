@@ -14,7 +14,7 @@ const schema = {
   operatingSystem: 'Web',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   creator: { '@id': 'https://trymstene.com/#trym' },
-  featureList: 'Pixel drawing tools, frame-by-frame animation, onion skinning, live chat-size preview, transparent GIF and PNG export sized for Discord, Twitch, Slack and Telegram',
+  featureList: 'Pixel drawing tools, brush sizes, custom colours, GIF import and remix, frame-by-frame animation, onion skinning, live chat-size preview, transparent GIF and PNG export sized for Discord, Twitch, Slack and Telegram',
   description: 'A deliberately simple pixel-art emoji and emote maker, from the creator of the 1999 Dancing Banana GIF.',
 };
 
@@ -65,6 +65,15 @@ const faqLD = {
     .fg-paletterow { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
     .fg-swatch { aspect-ratio: 1; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
     .fg-swatch[aria-pressed="true"] { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
+    .fg-swatch--custom { border-radius: 50%; } /* round = yours */
+    .fg-palctl { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
+    .fg-palctl > button {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.7rem;
+      font-weight: 700; cursor: pointer; font-size: 0.85rem;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .fg-hiddeninput { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+    .fg-importnote { font-size: 0.72rem; opacity: 0.65; margin: 0.5rem 0 0; }
 
     /* the killer feature: your emoji at REAL chat size, live */
     .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
@@ -127,6 +136,9 @@ const faqLD = {
             <button class="fg-tool" data-tool="picker" title="Pick a colour (I)">💉 Pick</button>
             <button id="fgUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
             <button id="fgRedo" title="Redo (Ctrl+Y)">↪ Redo</button>
+            <button class="fg-brush" data-brush="1" title="1-pixel brush">1px</button>
+            <button class="fg-brush" data-brush="2" title="2-pixel brush">2px</button>
+            <button class="fg-brush" data-brush="3" title="3-pixel brush">3px</button>
           </div>
         </div>
 
@@ -145,6 +157,21 @@ const faqLD = {
         <div class="fg-panel">
           <h3>Palette</h3>
           <div class="fg-paletterow" id="fgPalette" role="group" aria-label="Colours"></div>
+          <div class="fg-palctl">
+            <button id="fgPalAdd" title="Pick any colour — it joins your palette">＋ your colour</button>
+            <button id="fgPalEdit" title="Refine this custom colour" hidden>✎ tweak</button>
+            <input id="fgColorInput" type="color" class="fg-hiddeninput" aria-label="Custom colour picker">
+          </div>
+        </div>
+
+        <div class="fg-panel">
+          <h3>Start from</h3>
+          <div class="fg-tools" role="group" aria-label="Import">
+            <button id="fgBanana" title="Load the 1999 dancing banana onto the grid and remix it">🍌 Remix the banana</button>
+            <button id="fgImportBtn" title="Pixelate an existing GIF or image onto the grid">⬆ Import GIF / image</button>
+          </div>
+          <input id="fgImportFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg" class="fg-hiddeninput" aria-label="Import an image">
+          <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
         </div>
 
         <div class="fg-panel">
@@ -224,8 +251,8 @@ const faqLD = {
       </ul>
       <h2>How to make an emoji</h2>
       <ol>
-        <li>Pick a grid — 32×32 is the sweet spot for chat emotes.</li>
-        <li>Draw with pencil, fill and eraser; watch the live chat preview while you work.</li>
+        <li>Pick a grid — 32×32 is the sweet spot for chat emotes. Or skip the blank page: import an existing GIF (yes, <em>the</em> banana is one click away) and remix it.</li>
+        <li>Draw with pencil, fill and eraser; the curated palette covers most emotes, and any colour you pick yourself travels with the creation. Watch the live chat preview while you work.</li>
         <li>Add frames to animate — duplicate, nudge, repeat. Onion skin shows the previous frame as a ghost.</li>
         <li>Forge it: download a transparent GIF or PNG sized for your platform, and upload it straight to Discord, Twitch or Slack.</li>
       </ol>

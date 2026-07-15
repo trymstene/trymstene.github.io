@@ -12,6 +12,7 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.2.0",
     "astro": "^5.0.0",
-    "gifenc": "^1.0.3"
+    "gifenc": "^1.0.3",
+    "gifuct-js": "^2.1.2"
   }
 }
