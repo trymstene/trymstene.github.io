@@ -31,6 +31,7 @@ function init() {
     color: 3, // banana yellow, obviously
     onion: true,
     undo: [],
+    redo: [],
   };
 
   const ctx = stage.getContext('2d');
@@ -67,21 +68,42 @@ function init() {
   }
 
   function pushUndo() {
+    stopPlay();
     state.undo.push({ cur: state.cur, data: frame().slice() });
     if (state.undo.length > MAX_UNDO) state.undo.shift();
+    state.redo = []; // a fresh action forks history — the redo branch dies
     refreshUndoBtn();
   }
   function undo() {
     const u = state.undo.pop();
     if (!u) return;
-    state.cur = Math.min(u.cur, state.frames.length - 1);
-    state.frames[state.cur] = u.data;
+    stopPlay();
+    const c = Math.min(u.cur, state.frames.length - 1);
+    state.redo.push({ cur: c, data: state.frames[c].slice() });
+    state.cur = c;
+    state.frames[c] = u.data;
     refreshAll();
     save(); // an undone stroke must not resurrect from the autosave after a reload
   }
-  function refreshUndoBtn() { el('fgUndo').disabled = !state.undo.length; }
+  function redo() {
+    const r = state.redo.pop();
+    if (!r) return;
+    stopPlay();
+    const c = Math.min(r.cur, state.frames.length - 1);
+    state.undo.push({ cur: c, data: state.frames[c].slice() });
+    if (state.undo.length > MAX_UNDO) state.undo.shift();
+    state.cur = c;
+    state.frames[c] = r.data;
+    refreshAll();
+    save();
+  }
+  function refreshUndoBtn() {
+    el('fgUndo').disabled = !state.undo.length;
+    el('fgRedo').disabled = !state.redo.length;
+  }
 
   let drawing = false;
+  let lastCell = null;
   function cellFromEvent(e) {
     const r = stage.getBoundingClientRect();
     return [
@@ -89,8 +111,23 @@ function init() {
       Math.floor(((e.clientY - r.top) / r.height) * state.size),
     ];
   }
+  // Bresenham between two cells — fast strokes must leave a continuous line,
+  // not a trail of gaps (pointermove only fires so often)
+  function lineCells(x0, y0, x1, y1, cb) {
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    for (;;) {
+      cb(x0, y0);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
   stage.addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    stopPlay();
     const [x, y] = cellFromEvent(e);
     if (state.tool === 'picker') {
       const idx = frame()[y * state.size + x];
@@ -100,6 +137,7 @@ function init() {
     }
     pushUndo();
     drawing = true;
+    lastCell = [x, y];
     stage.setPointerCapture(e.pointerId);
     if (state.tool === 'fill') { fill(x, y, state.color); drawing = false; }
     else paintCell(x, y, state.tool === 'eraser' ? 0 : state.color);
@@ -108,10 +146,13 @@ function init() {
   stage.addEventListener('pointermove', (e) => {
     if (!drawing) return;
     const [x, y] = cellFromEvent(e);
-    paintCell(x, y, state.tool === 'eraser' ? 0 : state.color);
+    const idx = state.tool === 'eraser' ? 0 : state.color;
+    if (lastCell) lineCells(lastCell[0], lastCell[1], x, y, (cx, cy) => paintCell(cx, cy, idx));
+    else paintCell(x, y, idx);
+    lastCell = [x, y];
     drawEditor();
   });
-  addEventListener('pointerup', () => { if (drawing) { drawing = false; drawFrames(); save(); } });
+  addEventListener('pointerup', () => { lastCell = null; if (drawing) { drawing = false; drawFrames(); save(); } });
 
   // ---- rendering ----
   function drawGridInto(c2, f, scale, dim) {
@@ -160,7 +201,7 @@ function init() {
       const n = document.createElement('span');
       n.textContent = i + 1;
       d.appendChild(n);
-      d.onclick = () => { state.cur = i; refreshAll(); };
+      d.onclick = () => { stopPlay(); state.cur = i; refreshAll(); };
       host.appendChild(d);
     });
     el('fgDelay').value = state.delays[state.cur];
@@ -170,12 +211,14 @@ function init() {
   }
 
   el('fgAdd').onclick = () => {
+    stopPlay();
     state.frames.splice(state.cur + 1, 0, new Uint8Array(state.size * state.size));
     state.delays.splice(state.cur + 1, 0, state.delays[state.cur]);
     state.cur++;
     refreshAll(); save(); track('forge_frame_add');
   };
   el('fgDup').onclick = () => {
+    stopPlay();
     state.frames.splice(state.cur + 1, 0, frame().slice());
     state.delays.splice(state.cur + 1, 0, state.delays[state.cur]);
     state.cur++;
@@ -183,10 +226,11 @@ function init() {
   };
   el('fgDel').onclick = () => {
     if (state.frames.length <= 1) return;
+    stopPlay();
     state.frames.splice(state.cur, 1);
     state.delays.splice(state.cur, 1);
     state.cur = Math.max(0, state.cur - 1);
-    state.undo = []; refreshUndoBtn();
+    state.undo = []; state.redo = []; refreshUndoBtn();
     refreshAll(); save();
   };
   el('fgDelay').addEventListener('change', () => {
@@ -195,14 +239,100 @@ function init() {
     el('fgDelay').value = v;
     save();
   });
+  // ---- frame reorder: walk the current frame left/right through the strip ----
+  function moveFrame(dir) {
+    const to = state.cur + dir;
+    if (to < 0 || to >= state.frames.length) return;
+    stopPlay();
+    [state.frames[state.cur], state.frames[to]] = [state.frames[to], state.frames[state.cur]];
+    [state.delays[state.cur], state.delays[to]] = [state.delays[to], state.delays[state.cur]];
+    state.undo = []; state.redo = []; // undo entries are frame-index-bound
+    state.cur = to;
+    refreshAll(); save(); track('forge_frame_move');
+  }
+  el('fgMoveL').onclick = () => moveFrame(-1);
+  el('fgMoveR').onclick = () => moveFrame(1);
+
+  // ---- flip & shift: whole-frame transforms (undo-able like a stroke) ----
+  function xform(map) {
+    pushUndo();
+    const f = frame(), S = state.size, n = new Uint8Array(S * S);
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const [nx, ny] = map(x, y, S);
+        n[ny * S + nx] = f[y * S + x];
+      }
+    }
+    state.frames[state.cur] = n;
+    refreshAll(); save(); track('forge_transform');
+  }
+  el('fgFlipH').onclick = () => xform((x, y, S) => [S - 1 - x, y]);
+  el('fgFlipV').onclick = () => xform((x, y, S) => [x, S - 1 - y]);
+  const shift = (dx, dy) => xform((x, y, S) => [(x + dx + S) % S, (y + dy + S) % S]);
+  el('fgShL').onclick = () => shift(-1, 0);
+  el('fgShR').onclick = () => shift(1, 0);
+  el('fgShU').onclick = () => shift(0, -1);
+  el('fgShD').onclick = () => shift(0, 1);
+
+  // ---- play/pause the big canvas: watch the animation where you draw ----
+  let playing = false, playIdx = 0, playLast = 0;
+  function drawPlayFrame() {
+    const S = state.size;
+    ctx.clearRect(0, 0, stage.width, stage.height);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      ctx.fillStyle = (x + y) % 2 ? '#e8e4d8' : '#f4f1e8';
+      ctx.fillRect(x * cell, y * cell, cell, cell);
+    }
+    drawGridInto(ctx, state.frames[playIdx % state.frames.length], cell, 1);
+  }
+  function playTick(now) {
+    if (!playing) return;
+    if (now - playLast >= state.delays[playIdx % state.frames.length]) {
+      playLast = now;
+      playIdx = (playIdx + 1) % state.frames.length;
+      drawPlayFrame();
+    }
+    requestAnimationFrame(playTick);
+  }
+  function stopPlay() {
+    if (!playing) return;
+    playing = false;
+    el('fgPlay').textContent = '▶ Play';
+    el('fgPlay').setAttribute('aria-pressed', 'false');
+    drawEditor();
+  }
+  function togglePlay() {
+    if (playing) { stopPlay(); return; }
+    playing = true;
+    playIdx = state.cur; playLast = 0;
+    el('fgPlay').textContent = '⏸ Pause';
+    el('fgPlay').setAttribute('aria-pressed', 'true');
+    drawPlayFrame();
+    requestAnimationFrame(playTick);
+    track('forge_play');
+  }
+  el('fgPlay').onclick = togglePlay;
+
   el('fgOnion').onclick = () => {
     state.onion = !state.onion;
     el('fgOnion').setAttribute('aria-pressed', String(state.onion));
     drawEditor();
   };
   el('fgUndo').onclick = undo;
+  el('fgRedo').onclick = redo;
   addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    const k = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (k === ' ') { e.preventDefault(); togglePlay(); }
+    else if (k === 'b' || k === 'p') setTool('pencil');
+    else if (k === 'e') setTool('eraser');
+    else if (k === 'f' || k === 'g') setTool('fill');
+    else if (k === 'i') setTool('picker');
+    else if (k === 'o') el('fgOnion').click();
   });
 
   // ---- tools + palette ----
@@ -271,50 +401,90 @@ function init() {
       if (s === state.size) return;
       const hasArt = state.frames.some((f) => f.some((v) => v));
       if (hasArt && !confirm('Changing the grid starts a fresh canvas. Your current draft will be replaced — continue?')) return;
+      stopPlay();
       state.size = s;
       state.frames = [new Uint8Array(s * s)];
       state.delays = [120];
-      state.cur = 0; state.undo = [];
+      state.cur = 0; state.undo = []; state.redo = [];
       document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       fitCanvas(); refreshAll(); save();
       track('forge_size', { size: s });
     };
   });
 
-  // ---- export: transparent GIF, chat-platform ready ----
-  el('fgExport').onclick = async () => {
-    const btn = el('fgExport'); const label = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Forging…';
-    try {
-      const scale = Math.max(1, Math.ceil(128 / state.size)); // Discord wants ~128px
-      const W = state.size * scale;
-      const gif = GIFEncoder();
-      state.frames.forEach((f, i) => {
-        const idx = new Uint8Array(W * W);
-        for (let y = 0; y < W; y++) {
-          for (let x = 0; x < W; x++) {
-            idx[y * W + x] = f[((y / scale) | 0) * state.size + ((x / scale) | 0)];
-          }
+  // ---- export: transparent GIF/PNG at platform-labeled sizes ----
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function exportDone() {
+    shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });
+    el('fgDone').hidden = false;
+    passPatch('smith'); passStat('forges');
+  }
+  function exportGif(target) {
+    const scale = Math.max(1, Math.ceil(target / state.size));
+    const W = state.size * scale;
+    const gif = GIFEncoder();
+    state.frames.forEach((f, i) => {
+      const idx = new Uint8Array(W * W);
+      for (let y = 0; y < W; y++) {
+        for (let x = 0; x < W; x++) {
+          idx[y * W + x] = f[((y / scale) | 0) * state.size + ((x / scale) | 0)];
         }
-        gif.writeFrame(idx, W, W, {
-          palette: RGB, transparent: true, transparentIndex: 0,
-          delay: state.delays[i], disposal: 2, first: i === 0,
-        });
+      }
+      gif.writeFrame(idx, W, W, {
+        palette: RGB, transparent: true, transparentIndex: 0,
+        delay: state.delays[i], disposal: 2, first: i === 0,
       });
-      gif.finish();
-      const blob = new Blob([gif.bytes()], { type: 'image/gif' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'my-pixel-emoji-trymstene.com.gif';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });
-      el('fgDone').hidden = false;
-      track('forge_gif_export', { size: state.size, frames: state.frames.length });
-      passPatch('smith'); passStat('forges');
-    } finally {
-      btn.disabled = false; btn.textContent = label;
+    });
+    gif.finish();
+    download(new Blob([gif.bytes()], { type: 'image/gif' }), `my-pixel-emoji-${W}px-trymstene.com.gif`);
+    exportDone();
+    track('forge_gif_export', { size: state.size, frames: state.frames.length, px: W });
+  }
+  function exportPng(target) {
+    const scale = Math.max(1, Math.ceil(target / state.size));
+    const W = state.size * scale;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = W;
+    drawGridInto(cv.getContext('2d'), frame(), scale, 1);
+    cv.toBlob((blob) => {
+      if (!blob) return;
+      download(blob, `my-pixel-emoji-${W}px-trymstene.com.png`);
+      exportDone();
+      track('forge_png_export', { size: state.size, px: W });
+    }, 'image/png');
+  }
+  document.querySelectorAll('.fg-exp').forEach((b) => {
+    b.onclick = async () => {
+      const label = b.textContent;
+      b.disabled = true; b.textContent = 'Forging…';
+      try {
+        const px = parseInt(b.dataset.px, 10);
+        if (b.dataset.fmt === 'png') exportPng(px);
+        else exportGif(px);
+      } finally {
+        setTimeout(() => { b.disabled = false; b.textContent = label; }, 400);
+      }
+    };
+  });
+
+  // ---- save to shelf without exporting (park a draft, keep several going) ----
+  el('fgSave').onclick = () => {
+    const btn = el('fgSave'); const label = btn.textContent;
+    if (!state.frames.some((f) => f.some((v) => v))) {
+      btn.textContent = 'Draw something first 🎨';
+      setTimeout(() => { btn.textContent = label; }, 2500);
+      return;
     }
+    shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });
+    btn.textContent = 'Saved to your shelf 🗄';
+    setTimeout(() => { btn.textContent = label; }, 2500);
+    track('forge_shelf_save', { size: state.size, frames: state.frames.length });
   };
 
   // ---- submit to the Wall: first click reveals the optional signature ----

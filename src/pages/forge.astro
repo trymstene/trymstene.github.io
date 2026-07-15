@@ -1,19 +1,32 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const title = 'Pixel Art GIF Maker — Free Animated Emoji Maker | Pixel Forge';
-const description = 'A dead-simple pixel GIF maker, rebuilt from the kind of tool the Dancing Banana was born in (1999). Draw a tiny animated emoji, watch it live at real chat size, export a transparent GIF for Discord, Slack or Twitch.';
+const title = 'Emoji Maker — Free Pixel Emote & Animated Emoji Maker | Pixel Forge';
+const description = 'Free emoji maker & emote maker in your browser: draw pixel art, animate it frame by frame, preview it at real chat size, export transparent GIFs and PNGs sized for Discord (128px), Twitch (112px), Slack and Telegram. No account, no watermark.';
 
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'The Pixel Forge',
+  alternateName: ['Emoji Maker', 'Pixel Emote Maker'],
   url: 'https://trymstene.com/forge/',
   applicationCategory: 'DesignApplication',
   operatingSystem: 'Web',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   creator: { '@id': 'https://trymstene.com/#trym' },
-  description: 'A deliberately simple pixel-art GIF maker for animated emoji, from the creator of the 1999 Dancing Banana GIF.',
+  featureList: 'Pixel drawing tools, frame-by-frame animation, onion skinning, live chat-size preview, transparent GIF and PNG export sized for Discord, Twitch, Slack and Telegram',
+  description: 'A deliberately simple pixel-art emoji and emote maker, from the creator of the 1999 Dancing Banana GIF.',
+};
+
+const faqLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'Is the Pixel Forge emoji maker free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — completely free, no account, no watermark. Draw in the browser and download transparent GIFs or PNGs ready for Discord, Twitch, Slack and Telegram.' } },
+    { '@type': 'Question', name: 'Can I make animated Discord emojis with it?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Draw up to 16 frames with per-frame timing and export a transparent animated GIF at 128×128 pixels — exactly what Discord custom emojis require.' } },
+    { '@type': 'Question', name: 'Can I make Twitch emotes with it?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Export at 112×112 pixels with a transparent background and Twitch auto-generates the 56px and 28px sizes when you upload.' } },
+    { '@type': 'Question', name: 'Why pixel art for emotes?', acceptedAnswer: { '@type': 'Answer', text: 'Emotes render at 28–32 pixels in chat, where fine detail turns to mush. Pixel art drawn on a small grid stays crisp and readable — the same reason the 1999 Dancing Banana still works everywhere.' } },
+  ],
 };
 ---
 <BaseLayout
@@ -24,6 +37,7 @@ const schema = {
   ogImage="https://trymstene.com/assets/og/builder.png"
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqLD)} />
   <style is:inline slot="head">
     .fg-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
     .fg-head h1 { margin: 0 0 0.3rem; }
@@ -40,13 +54,13 @@ const schema = {
     .fg-panel h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
 
     .fg-tools { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .fg-tool, .fg-size, #fgOnion, #fgUndo {
+    .fg-tools > button {
       border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.7rem;
       font-weight: 700; cursor: pointer; font-size: 0.85rem;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
-    .fg-tool[aria-pressed="true"], .fg-size[aria-pressed="true"], #fgOnion[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
-    #fgUndo[disabled] { opacity: 0.4; cursor: default; }
+    .fg-tools > button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .fg-tools > button[disabled] { opacity: 0.4; cursor: default; }
 
     .fg-paletterow { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
     .fg-swatch { aspect-ratio: 1; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
@@ -72,6 +86,13 @@ const schema = {
     #fgFrameInfo { font-size: 0.8rem; opacity: 0.7; }
 
     .fg-export { margin-top: 1.4rem; }
+    .fg-exphead { margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .fg-exprow { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .fg-exprow .btn { font-size: 0.82rem; padding: 0.55rem 0.8rem; }
+    .fg-about { max-width: 68ch; margin-top: 2.6rem; border-top: var(--line); padding-top: 1.6rem; }
+    .fg-about h2 { margin: 1.4rem 0 0.5rem; font-size: 1.25rem; }
+    .fg-about p, .fg-about li { line-height: 1.6; }
+    .fg-about ul, .fg-about ol { padding-left: 1.3rem; display: grid; gap: 0.4rem; margin: 0.5rem 0 0; }
     .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
     .fg-signrow input {
       flex: 1; min-width: 0; padding: 0.55rem 0.7rem; border: 3px solid var(--ink);
@@ -84,7 +105,7 @@ const schema = {
 
   <div class="fg-wrap">
     <div class="fg-head">
-      <h1>the pixel forge</h1>
+      <h1>the pixel forge — free emoji &amp; emote maker</h1>
       <p>
         In 1999 I drew a dancing banana in a tool about this simple — and it took over the internet.
         Here's that tool, rebuilt. Pencil, fill, frames, one great palette. <strong>Make the next one.</strong>
@@ -100,11 +121,24 @@ const schema = {
         <div class="fg-panel">
           <h3>Tools</h3>
           <div class="fg-tools" role="group" aria-label="Drawing tools">
-            <button class="fg-tool" data-tool="pencil">✏️ Pencil</button>
-            <button class="fg-tool" data-tool="eraser">🧽 Eraser</button>
-            <button class="fg-tool" data-tool="fill">🪣 Fill</button>
-            <button class="fg-tool" data-tool="picker">💉 Pick</button>
+            <button class="fg-tool" data-tool="pencil" title="Pencil (B)">✏️ Pencil</button>
+            <button class="fg-tool" data-tool="eraser" title="Eraser (E)">🧽 Eraser</button>
+            <button class="fg-tool" data-tool="fill" title="Fill (F)">🪣 Fill</button>
+            <button class="fg-tool" data-tool="picker" title="Pick a colour (I)">💉 Pick</button>
             <button id="fgUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
+            <button id="fgRedo" title="Redo (Ctrl+Y)">↪ Redo</button>
+          </div>
+        </div>
+
+        <div class="fg-panel">
+          <h3>Flip &amp; move</h3>
+          <div class="fg-tools" role="group" aria-label="Flip and move the frame">
+            <button id="fgFlipH" title="Flip horizontally">⇋ Flip</button>
+            <button id="fgFlipV" title="Flip vertically">⇵ Flip</button>
+            <button id="fgShL" title="Shift left (wraps around)">←</button>
+            <button id="fgShR" title="Shift right (wraps around)">→</button>
+            <button id="fgShU" title="Shift up (wraps around)">↑</button>
+            <button id="fgShD" title="Shift down (wraps around)">↓</button>
           </div>
         </div>
 
@@ -136,9 +170,12 @@ const schema = {
     <div class="fg-framesrow">
       <div class="fg-frames" id="fgFrames"></div>
       <div class="fg-framectl">
+        <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false">▶ Play</button>
         <button id="fgAdd" title="New empty frame">+ frame</button>
         <button id="fgDup" title="Duplicate this frame">⧉ duplicate</button>
         <button id="fgDel" title="Delete this frame">🗑</button>
+        <button id="fgMoveL" title="Move this frame earlier">◀</button>
+        <button id="fgMoveR" title="Move this frame later">▶</button>
         <label for="fgDelay" style="font-size:0.8rem;">delay</label>
         <input id="fgDelay" type="number" min="50" max="1000" step="10" value="120"> <span style="font-size:0.8rem;opacity:0.7;">ms</span>
         <span id="fgFrameInfo"></span>
@@ -146,7 +183,14 @@ const schema = {
     </div>
 
     <div class="fg-export">
-      <button class="btn btn--dark" id="fgExport">⚒ Forge the GIF (transparent, chat-ready)</button>
+      <h3 class="fg-exphead">⚒ Forge it — transparent, chat-ready</h3>
+      <div class="fg-exprow">
+        <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="128">GIF 128px · Discord &amp; Slack</button>
+        <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="112">GIF 112px · Twitch</button>
+        <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="512">GIF 512px · hi-res</button>
+        <button class="btn btn--dark fg-exp" data-fmt="png" data-px="512">PNG 512px · this frame</button>
+      </div>
+      <button class="btn btn--light" id="fgSave" title="Park this draft on your shelf and start another">🗄 Save to shelf</button>
       <button class="btn btn--light" id="fgWallSubmit" title="The banana guy hangs the best ones on the wall">🖼 Submit to the Wall</button>
       <div class="fg-signrow" id="fgSignRow" hidden>
         <input id="fgSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
@@ -157,6 +201,35 @@ const schema = {
         Feeling proud? <a href="/make-a-banana/" data-place="forge">The banana would love company →</a>
       </div>
     </div>
+
+    <section class="fg-about">
+      <h2>An emoji maker that respects the pixel</h2>
+      <p>
+        Most emoji makers hand you a photo cropper and a watermark. This one is different on purpose:
+        it's a <strong>pixel emote maker</strong> — a small grid, four tools, frame-by-frame animation
+        and a live preview at the exact size chat will render your emoji. That constraint is the point.
+        Emotes live at 28–32 pixels, and art drawn <em>for</em> that size beats anything shrunk down to it.
+      </p>
+      <p>
+        I know because I've been here before: in 1999 I drew a
+        <a href="/dancing-banana-gif-meme/">dancing banana</a> in a tool about this simple, and it became
+        one of the most-seen GIFs on the internet. The Forge is that kind of tool, rebuilt for the browser —
+        free, no account, no watermark, and everything you make stays yours.
+      </p>
+      <h2>What comes out</h2>
+      <ul>
+        <li><strong>Discord &amp; Slack</strong> — transparent animated GIF at 128×128, under the size caps. (Full spec: <a href="/discord-emoji-size/">Discord emoji sizes</a>.)</li>
+        <li><strong>Twitch</strong> — 112×112 transparent export; Twitch auto-generates the 56px and 28px versions. (Full spec: <a href="/twitch-emote-size/">Twitch emote sizes</a>.)</li>
+        <li><strong>Telegram &amp; anywhere else</strong> — hi-res 512px GIF or PNG. (All platforms: <a href="/guides/">the emoji size chart</a>.)</li>
+      </ul>
+      <h2>How to make an emoji</h2>
+      <ol>
+        <li>Pick a grid — 32×32 is the sweet spot for chat emotes.</li>
+        <li>Draw with pencil, fill and eraser; watch the live chat preview while you work.</li>
+        <li>Add frames to animate — duplicate, nudge, repeat. Onion skin shows the previous frame as a ghost.</li>
+        <li>Forge it: download a transparent GIF or PNG sized for your platform, and upload it straight to Discord, Twitch or Slack.</li>
+      </ol>
+    </section>
   </div>
 
   <script>

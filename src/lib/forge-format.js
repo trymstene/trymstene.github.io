@@ -5,13 +5,20 @@
 //   { v: 1, size, frames: [b64...], delays: [ms...] }
 // On the Shelf it travels as params = 'forge:' + JSON.
 
-// index 0 = transparent; 1..16 = the curated palette (the banana's own family)
+// index 0 = transparent; 1..16 = the original curated set (the banana's own
+// family); 17..32 = the v2 extension (skins, deeps, pastels, greys).
+// APPEND-ONLY: indices are baked into every saved creation — never reorder,
+// recolor or remove an entry.
 export const FORGE_PALETTE = [
   null,
   '#111111', '#fffdf5', '#ffe135', '#f2c200',
   '#5a3618', '#e22020', '#ff4d6d', '#ff9f1c',
   '#37d67a', '#39ff14', '#4db8ff', '#6c8cff',
   '#b388ff', '#ff2ec4', '#484848', '#d9a066',
+  '#ffdbac', '#c68642', '#8d5524', '#8e1600',
+  '#7b1e3c', '#1d7a3c', '#0fb5ba', '#00e5ff',
+  '#1e2a78', '#6a1b9a', '#ffc1e3', '#a8e6cf',
+  '#d4af37', '#556b2f', '#9e9e9e', '#bdbdbd',
 ];
 export const FORGE_RGB = FORGE_PALETTE.map((h) =>
   h ? [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] : [0, 0, 0]
