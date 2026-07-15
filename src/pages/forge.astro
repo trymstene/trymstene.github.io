@@ -46,7 +46,12 @@ const faqLD = {
     /* LAYOUT — work on the left (canvas + frames), tools on the right,
        ordered by how often a hand actually reaches for them */
     .fg-grid { display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
-    @media (min-width: 920px) { .fg-grid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; } }
+    @media (min-width: 920px) {
+      .fg-grid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+      .fg-stagecol { grid-column: 1; grid-row: 1; }
+      .fg-export { grid-column: 1; grid-row: 2; margin-top: 0; } /* hugs the frames — no void under wide imports */
+      .fg-side { grid-column: 2; grid-row: 1 / span 2; }
+    }
 
     .fg-stagecard { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 0.8rem; }
     #fgCanvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
@@ -55,9 +60,13 @@ const faqLD = {
     .fg-panel { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.9rem; }
     .fg-panel h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
 
-    .fg-tools { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
-    .fg-tools + .fg-tools { margin-top: 0.55rem; }
-    .fg-toolgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem; }
+    .fg-tools { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .fg-tools + .fg-tools { margin-top: 0.65rem; }
+    /* symbol-only buttons slim down so full rows fit the sidebar without wrapping */
+    #fgUndo, #fgRedo, #fgFlipH, #fgFlipV, #fgShL, #fgShR, #fgShU, #fgShD { padding-left: 0.55rem; padding-right: 0.55rem; }
+    .fg-tools > button.fg-brush { padding-left: 0.5rem; padding-right: 0.5rem; }
+    #fgUndo { margin-left: 0.5rem; } /* brushes | history — two groups, not one mush */
+    .fg-toolgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
     .fg-toolgrid > button {
       border: 3px solid var(--ink); background: var(--paper); padding: 0.5rem 0.4rem;
       font-weight: 700; cursor: pointer; font-size: 0.85rem;
@@ -250,9 +259,8 @@ const faqLD = {
           <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
         </details>
       </div>
-    </div>
 
-    <div class="fg-export">
+      <div class="fg-export">
       <h3 class="fg-exphead">⚒ Forge it — transparent, chat-ready</h3>
       <div class="fg-exprow">
         <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="128">GIF 128px · Discord &amp; Slack</button>
@@ -269,6 +277,7 @@ const faqLD = {
       <div id="fgDone" hidden>
         🎉 Forged — and saved to <a href="/pass/">your pass</a>. Drop it straight into Discord, Slack or Twitch.
         Feeling proud? <a href="/make-a-banana/" data-place="forge">The banana would love company →</a>
+      </div>
       </div>
     </div>
 
