@@ -262,9 +262,10 @@ const appSchema = {
     @media (max-width: 819px) {
       .bb-outputs { display: flex; flex-direction: column; gap: 0; }
       .bb-outputs .bb-cards { display: contents; }
+      /* mobile flow (Trym 15 Jul): title -> pose strip -> buy card -> download */
+      .bb-outputs .kicker, .bb-outputs h2 { order: -3; }
+      .bb-outputs .bb-freeze { order: -2; width: 100%; }
       .bb-outputs .bb-card--buy { order: -1; margin-bottom: 2.4rem; }
-      .bb-outputs .kicker, .bb-outputs h2 { order: 0; }
-      .bb-outputs .bb-freeze { order: 1; width: 100%; }
       .bb-outputs .bb-card:not(.bb-card--buy) { order: 2; margin-top: 1.2rem; }
     }
     .bb-card { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 1.3rem; }
@@ -307,6 +308,14 @@ const appSchema = {
     .bb-ptile__mock canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
     .bb-ptile__name { font-weight: 800; font-size: 0.95rem; margin-top: 0.45rem; }
     .bb-ptile__price { font-weight: 800; font-size: 0.85rem; color: var(--hot); margin: 0.05rem 0 0.5rem; }
+    /* free shipping gets the supermarket-banner treatment (Trym: highlight it) */
+    .bb-ship {
+      display: inline-block; background: var(--hot); color: #fff;
+      font-weight: 800; font-size: 0.78rem; letter-spacing: 0.06em;
+      padding: 0.32rem 0.7rem; border: 3px solid var(--ink);
+      box-shadow: 3px 3px 0 var(--ink); transform: rotate(-2deg);
+      margin: 0 0 1.1rem 0.15rem;
+    }
     .bb-trust { margin: 0 0 1.1rem; padding-left: 1.15rem; font-size: 0.92rem; display: grid; gap: 0.35rem; }
     .bb-trust li { margin: 0; }
 
@@ -464,6 +473,7 @@ const appSchema = {
         <div class="bb-card bb-card--buy" id="bbTakeHome">
           <h3><PixelIcon name="tag" size="1.5em" /> Take this banana home</h3>
           <p>Your banana on real things — printed and mailed to your door. Pick your thing:</p>
+          <p class="bb-ship">🌍 FREE WORLDWIDE SHIPPING</p>
           <!-- the card IS the picker: one tile per product (your banana previewed
                on each) → tap opens that product. Adding a product = one more tile,
                never a new button. -->
@@ -478,7 +488,7 @@ const appSchema = {
             ))}
           </div>
           <ul class="bb-trust">
-            <li>Made on demand · free worldwide shipping · checked by the banana guy before it ships
+            <li>Made on demand · checked by the banana guy before it ships
               <details class="px-info"><summary>?</summary><span class="px-info__bubble">Printed on demand by the creator of the original 1999 Dancing Banana. Tap a product to preview it and order — die-cut along your design's outline (or square if you picked a background).</span></details>
             </li>
           </ul>
