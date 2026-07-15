@@ -363,27 +363,58 @@ function init() {
   }
   document.querySelectorAll('.fg-brush').forEach((b) => { b.onclick = () => setBrush(+b.dataset.brush); });
 
+  // Material-style palette UI over the FIXED indices (UI only — the shared
+  // palette itself never changes): 8 hue mains, one shades strip for the
+  // active family, plus your custom colours. Every one of the 32 shared
+  // colours stays reachable; far fewer are on screen at once.
+  const FAMILIES = [
+    { shades: [2, 32, 31, 15, 1] },      // neutrals: white → greys → ink
+    { shades: [3, 4, 29, 8] },           // banana yellows → gold → orange
+    { shades: [27, 7, 14, 6, 20, 21] },  // pinks → reds → wine
+    { shades: [17, 16, 18, 19, 5] },     // skins → tans → brown
+    { shades: [28, 10, 9, 22, 30] },     // greens: mint → neon → forest → olive
+    { shades: [24, 11, 12, 23, 25] },    // cyans → blues → teal → navy
+    { shades: [13, 26] },                // purples
+  ];
+  const MAINS = [1, 2, 3, 6, 18, 9, 11, 26]; // ink, white, banana, red, skin, green, blue, purple
+  const famShades = (idx) => {
+    const f = FAMILIES.find((x) => x.shades.includes(idx));
+    return f ? f.shades : null;
+  };
+  let activeShades = famShades(3); // banana family greets you
+
+  function mkSwatch(idx, cls) {
+    const hex = pal()[idx];
+    const s = document.createElement('button');
+    s.className = 'fg-swatch' + (cls ? ' ' + cls : '');
+    s.dataset.idx = idx;
+    s.style.background = hex;
+    s.title = idx >= PALETTE.length ? hex + ' (yours — select, then ✎ to tweak)' : hex;
+    s.setAttribute('aria-label', 'Colour ' + hex);
+    s.setAttribute('aria-pressed', String(idx === state.color));
+    s.onclick = () => setColor(idx);
+    return s;
+  }
+  function renderPalette() {
+    const mains = el('fgMains'), shades = el('fgShades'), customs = el('fgCustoms');
+    mains.innerHTML = ''; shades.innerHTML = ''; customs.innerHTML = '';
+    MAINS.forEach((idx) => {
+      const s = mkSwatch(idx);
+      if (famShades(idx) === activeShades) s.classList.add('fg-main--active');
+      mains.appendChild(s);
+    });
+    (activeShades || []).forEach((idx) => shades.appendChild(mkSwatch(idx)));
+    state.cpal.forEach((_, i) => customs.appendChild(mkSwatch(PALETTE.length + i)));
+    el('fgPalAdd').hidden = state.cpal.length >= FORGE_CUSTOM_MAX;
+  }
   function setColor(idx) {
     state.color = idx;
-    document.querySelectorAll('.fg-swatch').forEach((s) => s.setAttribute('aria-pressed', String(+s.dataset.idx === idx)));
+    if (idx < PALETTE.length) {
+      const s = famShades(idx);
+      if (s) activeShades = s;
+    }
     el('fgPalEdit').hidden = idx < PALETTE.length; // only YOUR colours are editable
-  }
-  const palHost = el('fgPalette');
-  function renderPalette() {
-    palHost.innerHTML = '';
-    pal().forEach((hex, idx) => {
-      if (!idx) return;
-      const s = document.createElement('button');
-      s.className = 'fg-swatch' + (idx >= PALETTE.length ? ' fg-swatch--custom' : '');
-      s.dataset.idx = idx;
-      s.style.background = hex;
-      s.title = idx >= PALETTE.length ? hex + ' (yours — select, then ✎ to tweak)' : hex;
-      s.setAttribute('aria-label', 'Colour ' + hex);
-      s.setAttribute('aria-pressed', String(idx === state.color));
-      s.onclick = () => setColor(idx);
-      palHost.appendChild(s);
-    });
-    el('fgPalAdd').hidden = state.cpal.length >= FORGE_CUSTOM_MAX;
+    renderPalette();
   }
 
   // custom colours: + opens the native picker to ADD, ✎ re-opens it to refine

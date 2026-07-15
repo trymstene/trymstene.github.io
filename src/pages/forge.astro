@@ -43,33 +43,48 @@ const faqLD = {
     .fg-head h1 { margin: 0 0 0.3rem; }
     .fg-head p { margin: 0 0 1.4rem; opacity: 0.8; max-width: 62ch; }
 
+    /* LAYOUT — work on the left (canvas + frames), tools on the right,
+       ordered by how often a hand actually reaches for them */
     .fg-grid { display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
     @media (min-width: 920px) { .fg-grid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; } }
 
     .fg-stagecard { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 0.8rem; }
     #fgCanvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
 
-    .fg-side { display: grid; gap: 1rem; }
+    .fg-side { display: grid; gap: 1rem; align-content: start; }
     .fg-panel { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.9rem; }
     .fg-panel h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
 
-    .fg-tools { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .fg-tools { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+    .fg-tools + .fg-tools { margin-top: 0.55rem; }
+    .fg-toolgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem; }
+    .fg-toolgrid > button {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.5rem 0.4rem;
+      font-weight: 700; cursor: pointer; font-size: 0.85rem;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .fg-toolgrid > button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
     .fg-tools > button {
-      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.7rem;
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.65rem;
       font-weight: 700; cursor: pointer; font-size: 0.85rem;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
     .fg-tools > button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
     .fg-tools > button[disabled] { opacity: 0.4; cursor: default; }
+    .fg-lab { flex-basis: 100%; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; }
 
-    .fg-paletterow { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
+    /* PALETTE — material-style: 8 hue mains, one shades strip, your colours */
+    .fg-mains { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
     .fg-swatch { aspect-ratio: 1; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
     .fg-swatch[aria-pressed="true"] { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
-    .fg-swatch--custom { border-radius: 50%; } /* round = yours */
-    .fg-palctl { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
-    .fg-palctl > button {
-      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.7rem;
-      font-weight: 700; cursor: pointer; font-size: 0.85rem;
+    .fg-main--active:not([aria-pressed="true"]) { outline: 3px dashed rgba(17, 17, 17, 0.4); outline-offset: 1px; }
+    .fg-shades { display: flex; gap: 0.35rem; margin-top: 0.55rem; min-height: 27px; }
+    .fg-shades .fg-swatch { flex: 0 0 27px; height: 27px; aspect-ratio: auto; border-width: 2px; }
+    .fg-customs { display: flex; gap: 0.35rem; margin-top: 0.55rem; flex-wrap: wrap; align-items: center; }
+    .fg-customs .fg-swatch { flex: 0 0 27px; height: 27px; aspect-ratio: auto; border-width: 2px; border-radius: 50%; } /* round = yours */
+    .fg-customs > button.fg-palbtn {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.3rem 0.55rem;
+      font-weight: 700; cursor: pointer; font-size: 0.78rem;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
     .fg-hiddeninput { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
@@ -82,19 +97,28 @@ const faqLD = {
     .fg-chat p { margin: 0; display: flex; align-items: center; gap: 0.35rem; }
     #fgPreview { image-rendering: pixelated; width: 32px; height: 32px; }
 
-    .fg-framesrow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    /* collapsed setup: once-per-session stuff stays out of the way */
+    details.fg-panel > summary { cursor: pointer; font-weight: 800; font-size: 0.95rem; list-style: none; }
+    details.fg-panel > summary::-webkit-details-marker { display: none; }
+    details.fg-panel > summary::after { content: '＋'; float: right; }
+    details.fg-panel[open] > summary::after { content: '−'; }
+    details.fg-panel[open] > summary { margin-bottom: 0.6rem; }
+
+    /* ANIMATE — frames live right under the canvas */
+    .fg-framesrow { margin-top: 1rem; }
     .fg-frames { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .fg-frame { position: relative; border: 3px solid var(--ink); background: #f4f1e8; cursor: pointer; line-height: 0; }
     .fg-frame canvas { width: 56px; height: 56px; image-rendering: pixelated; }
     .fg-frame span { position: absolute; left: 2px; top: 2px; font-size: 0.6rem; font-weight: 800; line-height: 1; background: var(--paper); padding: 1px 3px; }
     .fg-frame--cur { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
-    .fg-framectl { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .fg-framectl { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
     .fg-framectl button { border: 3px solid var(--ink); background: var(--paper); font-weight: 700; padding: 0.4rem 0.6rem; cursor: pointer; }
     .fg-framectl button[disabled] { opacity: 0.4; cursor: default; }
-    #fgDelay { width: 5.5rem; border: 3px solid var(--ink); padding: 0.35rem 0.4rem; font: inherit; }
+    .fg-framectl button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    #fgDelay { width: 5rem; border: 3px solid var(--ink); padding: 0.35rem 0.4rem; font: inherit; }
     #fgFrameInfo { font-size: 0.8rem; opacity: 0.7; }
 
-    .fg-export { margin-top: 1.4rem; }
+    .fg-export { margin-top: 1.6rem; }
     .fg-exphead { margin: 0 0 0.5rem; font-size: 0.95rem; }
     .fg-exprow { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
     .fg-exprow .btn { font-size: 0.82rem; padding: 0.55rem 0.8rem; }
@@ -103,6 +127,7 @@ const faqLD = {
     .fg-about p, .fg-about li { line-height: 1.6; }
     .fg-about ul, .fg-about ol { padding-left: 1.3rem; display: grid; gap: 0.4rem; margin: 0.5rem 0 0; }
     .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+    .fg-signrow[hidden] { display: none; }
     .fg-signrow input {
       flex: 1; min-width: 0; padding: 0.55rem 0.7rem; border: 3px solid var(--ink);
       font-family: inherit; font-size: 0.95rem; background: var(--paper); border-radius: 2px;
@@ -110,6 +135,10 @@ const faqLD = {
     #fgDone { margin-top: 0.8rem; border: 3px solid var(--ink); background: var(--banana); padding: 0.7rem 0.9rem; font-size: 0.9rem; }
     #fgDone a { font-weight: 700; }
 
+    @media (max-width: 919px) {
+      .fg-frame canvas { width: 48px; height: 48px; }
+      .fg-panel { padding: 0.8rem; }
+    }
   </style>
 
   <div class="fg-wrap">
@@ -122,31 +151,47 @@ const faqLD = {
     </div>
 
     <div class="fg-grid">
-      <div class="fg-stagecard">
-        <canvas id="fgCanvas" width="512" height="512" aria-label="Pixel drawing canvas"></canvas>
+      <div class="fg-stagecol">
+        <div class="fg-stagecard">
+          <canvas id="fgCanvas" width="512" height="512" aria-label="Pixel drawing canvas"></canvas>
+        </div>
+        <div class="fg-framesrow">
+          <div class="fg-frames" id="fgFrames"></div>
+          <div class="fg-framectl">
+            <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false">▶ Play</button>
+            <button id="fgAdd" title="New empty frame">+ frame</button>
+            <button id="fgDup" title="Duplicate this frame">⧉</button>
+            <button id="fgDel" title="Delete this frame">🗑</button>
+            <button id="fgMoveL" title="Move this frame earlier">◀</button>
+            <button id="fgMoveR" title="Move this frame later">▶</button>
+            <button id="fgOnion" title="Ghost of the previous frame (O)">👻</button>
+            <label for="fgDelay" style="font-size:0.8rem;">delay</label>
+            <input id="fgDelay" type="number" min="50" max="1000" step="10" value="120"> <span style="font-size:0.8rem;opacity:0.7;">ms</span>
+            <span id="fgFrameInfo"></span>
+          </div>
+        </div>
       </div>
 
       <div class="fg-side">
         <div class="fg-panel">
-          <h3>Tools</h3>
-          <div class="fg-tools" role="group" aria-label="Drawing tools">
+          <h3>Draw</h3>
+          <div class="fg-toolgrid" role="group" aria-label="Drawing tools">
             <button class="fg-tool" data-tool="pencil" title="Pencil (B)">✏️ Pencil</button>
             <button class="fg-tool" data-tool="eraser" title="Eraser (E)">🧽 Eraser</button>
             <button class="fg-tool" data-tool="fill" title="Fill (F)">🪣 Fill</button>
             <button class="fg-tool" data-tool="picker" title="Pick a colour (I)">💉 Pick</button>
-            <button id="fgUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
-            <button id="fgRedo" title="Redo (Ctrl+Y)">↪ Redo</button>
+          </div>
+          <div class="fg-tools" role="group" aria-label="Brush size and history">
             <button class="fg-brush" data-brush="1" title="1-pixel brush">1px</button>
             <button class="fg-brush" data-brush="2" title="2-pixel brush">2px</button>
             <button class="fg-brush" data-brush="3" title="3-pixel brush">3px</button>
+            <button id="fgUndo" title="Undo (Ctrl+Z)">↩</button>
+            <button id="fgRedo" title="Redo (Ctrl+Y)">↪</button>
           </div>
-        </div>
-
-        <div class="fg-panel">
-          <h3>Flip &amp; move</h3>
           <div class="fg-tools" role="group" aria-label="Flip and move the frame">
-            <button id="fgFlipH" title="Flip horizontally">⇋ Flip</button>
-            <button id="fgFlipV" title="Flip vertically">⇵ Flip</button>
+            <span class="fg-lab">flip &amp; move</span>
+            <button id="fgFlipH" title="Flip horizontally">⇋</button>
+            <button id="fgFlipV" title="Flip vertically">⇵</button>
             <button id="fgShL" title="Shift left (wraps around)">←</button>
             <button id="fgShR" title="Shift right (wraps around)">→</button>
             <button id="fgShU" title="Shift up (wraps around)">↑</button>
@@ -155,23 +200,15 @@ const faqLD = {
         </div>
 
         <div class="fg-panel">
-          <h3>Palette</h3>
-          <div class="fg-paletterow" id="fgPalette" role="group" aria-label="Colours"></div>
-          <div class="fg-palctl">
-            <button id="fgPalAdd" title="Pick any colour — it joins your palette">＋ your colour</button>
-            <button id="fgPalEdit" title="Refine this custom colour" hidden>✎ tweak</button>
+          <h3>Colours</h3>
+          <div class="fg-mains" id="fgMains" role="group" aria-label="Colour families"></div>
+          <div class="fg-shades" id="fgShades" role="group" aria-label="Shades of the picked family"></div>
+          <div class="fg-customs" id="fgCustomsRow" role="group" aria-label="Your colours">
+            <span id="fgCustoms" style="display:contents"></span>
+            <button class="fg-palbtn" id="fgPalAdd" title="Pick any colour — it joins your palette">＋ your colour</button>
+            <button class="fg-palbtn" id="fgPalEdit" title="Refine this custom colour" hidden>✎ tweak</button>
             <input id="fgColorInput" type="color" class="fg-hiddeninput" aria-label="Custom colour picker">
           </div>
-        </div>
-
-        <div class="fg-panel">
-          <h3>Start from</h3>
-          <div class="fg-tools" role="group" aria-label="Import">
-            <button id="fgBanana" title="Load the 1999 dancing banana onto the grid and remix it">🍌 Remix the banana</button>
-            <button id="fgImportBtn" title="Pixelate an existing GIF or image onto the grid">⬆ Import GIF / image</button>
-          </div>
-          <input id="fgImportFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg" class="fg-hiddeninput" aria-label="Import an image">
-          <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
         </div>
 
         <div class="fg-panel">
@@ -182,30 +219,22 @@ const faqLD = {
           </div>
         </div>
 
-        <div class="fg-panel">
-          <h3>Canvas</h3>
+        <details class="fg-panel">
+          <summary>Canvas &amp; import</summary>
           <div class="fg-tools" role="group" aria-label="Canvas size">
+            <span class="fg-lab">grid</span>
             <button class="fg-size" data-size="32">32</button>
             <button class="fg-size" data-size="48">48</button>
             <button class="fg-size" data-size="64">64</button>
-            <button id="fgOnion" title="Ghost of the previous frame">👻 Onion</button>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="fg-framesrow">
-      <div class="fg-frames" id="fgFrames"></div>
-      <div class="fg-framectl">
-        <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false">▶ Play</button>
-        <button id="fgAdd" title="New empty frame">+ frame</button>
-        <button id="fgDup" title="Duplicate this frame">⧉ duplicate</button>
-        <button id="fgDel" title="Delete this frame">🗑</button>
-        <button id="fgMoveL" title="Move this frame earlier">◀</button>
-        <button id="fgMoveR" title="Move this frame later">▶</button>
-        <label for="fgDelay" style="font-size:0.8rem;">delay</label>
-        <input id="fgDelay" type="number" min="50" max="1000" step="10" value="120"> <span style="font-size:0.8rem;opacity:0.7;">ms</span>
-        <span id="fgFrameInfo"></span>
+          <div class="fg-tools" role="group" aria-label="Import">
+            <span class="fg-lab">start from</span>
+            <button id="fgBanana" title="Load the 1999 dancing banana onto the grid and remix it">🍌 Remix the banana</button>
+            <button id="fgImportBtn" title="Pixelate an existing GIF or image onto the grid">⬆ Import GIF / image</button>
+          </div>
+          <input id="fgImportFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg" class="fg-hiddeninput" aria-label="Import an image">
+          <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
+        </details>
       </div>
     </div>
 
