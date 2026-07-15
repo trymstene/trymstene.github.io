@@ -122,16 +122,6 @@ const person = {
     }
     /* the tip steps back — it shares the sticker's emotion at 1/30th the value */
     .dl-tip { font-size: 0.9rem; opacity: 0.7; }
-    /* Quick Facts: compact answer-first fact box (snippet/AI-extractable) */
-    .qfacts {
-      max-width: 720px; margin: 1.6rem auto 0; text-align: left;
-      background: var(--paper); border: var(--line); box-shadow: var(--shadow-sm);
-      padding: 1rem 1.2rem; display: grid; gap: 0.45rem;
-    }
-    .qfacts > div { display: grid; grid-template-columns: 108px 1fr; gap: 0.6rem; align-items: baseline; }
-    .qfacts dt { font-weight: 800; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; opacity: 0.75; }
-    .qfacts dd { margin: 0; font-size: 0.95rem; line-height: 1.45; }
-    @media (max-width: 480px) { .qfacts > div { grid-template-columns: 1fr; gap: 0.1rem; } }
     /* the formats line under the download buttons */
     .dl-formats { font-size: 0.88rem; opacity: 0.78; margin-top: 0.9rem; max-width: 60ch; margin-inline: auto; }
   </style>
@@ -155,17 +145,6 @@ const person = {
       celebration. One of the internet's earliest memes, later set to <em>"Peanut Butter Jelly Time."</em>
       Download it free below, make your own, or license it.
     </p>
-
-    <!-- Quick Facts: answer-first extract for featured snippets / AI answers —
-         short, labelled, machine-liftable facts about the banana meme -->
-    <dl class="qfacts" aria-label="Dancing Banana quick facts">
-      <div><dt>Name</dt><dd>The Dancing Banana (a.k.a. “the banana meme”, “Peanut Butter Jelly Time banana”)</dd></div>
-      <div><dt>Created</dt><dd>1999, by Trym Stene (Norway)</dd></div>
-      <div><dt>What it is</dt><dd>An 8-frame animated pixel GIF, 33×35 pixels, of a banana waving its arms</dd></div>
-      <div><dt>Famous for</dt><dd><em>“Peanut Butter Jelly Time”</em> (2002) and a <em>Family Guy</em> cameo — the banana predates the song</dd></div>
-      <div><dt>Download</dt><dd>Free below — GIF, transparent PNG and HD, no signup</dd></div>
-      <div><dt>Rights</dt><dd>Free for personal use; <a href="/license-the-dancing-banana/">licensing</a> for commercial use</dd></div>
-    </dl>
 
     <nav class="jumpnav" aria-label="On this page">
       <a href="#download"><PixelIcon name="download" /> Download</a>
