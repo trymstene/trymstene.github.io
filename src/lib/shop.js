@@ -155,7 +155,7 @@ function model(node) {
   for (const v of variants) vmap[`${v.color}||${v.size}`] = v;
 
   const prices = variants.map((v) => v.price);
-  const cur = variants.length ? variants[0].cur : 'NOK';
+  const cur = variants.length ? variants[0].cur : 'USD';
 
   return {
     handle, title, descHtml, featured, images, colors, sizes, colorImage, vmap, variants, cur,

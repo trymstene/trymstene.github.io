@@ -118,7 +118,7 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
       <h1>Your custom {nameLc}</h1>
       <p class="pdp__tag">The exact banana you just made — printed and mailed to your door.</p>
       <div class="pdp-pricetags">
-        <p class="pdp__price price-tag" id="pdpPrice"><small>from</small> {p.priceHint} kr</p>
+        <p class="pdp__price price-tag" id="pdpPrice"><small>from</small> ${p.priceHint}</p>
         <span class="price-tag price-tag--ship">🌍 free worldwide shipping</span>
       </div>
       <p class="pdp__note" id="pdpNote">Tax included where applicable</p>
@@ -165,7 +165,7 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
         <p class="pdp-xsell">
           Same banana, different thing:
           {others.map((o) => (
-            <a class="pdp-xsell__link" data-xsell href={`/make-a-banana/${o.key}/`}>as a {o.name.toLowerCase()} ({o.priceHint} kr) →</a>
+            <a class="pdp-xsell__link" data-xsell href={`/make-a-banana/${o.key}/`}>as a {o.name.toLowerCase()} (${o.priceHint}) →</a>
           ))}
         </p>
       )}

@@ -730,7 +730,7 @@ function init() {
 
   // ---- localized price on the Sticker tile: exactly what checkout charges
   // (shared sticker-core fetch: Worker /geo → Shopify @inContext). Any failure
-  // leaves the static "149 kr" fallback in place.
+  // leaves the static "$14.99" fallback in place.
   (async () => {
     const lp = await localizedPrice();
     if (!lp) return;

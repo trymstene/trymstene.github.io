@@ -21,8 +21,9 @@
 //   printfulVariantId  Printful catalog variant = what actually gets printed.
 //   live               true = sellable (tile links to its PDP, worker fulfils).
 //                      false = teaser: shown with a "soon" ribbon, not sold.
-//   priceHint          display fallback only; Shopify is the source of truth
-//                      for the real (localized) price at checkout.
+//   priceHint          display fallback only, in USD (store currency since
+//                      15 Jul 2026); Shopify is the source of truth for the
+//                      real (localized) price at checkout.
 export default [
   {
     // THE TEE (13 Jul 2026, research-backed: apparel = #1 POD category; the
@@ -35,7 +36,7 @@ export default [
     // (banana camouflage) — Trym's call: colored/white, banana shines.
     key: 'tee',
     name: 'Tee',
-    shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee, 349 NOK (created 13 Jul)
+    shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee, $34.99 (USD store since 15 Jul)
     printfulVariantId: 4012, // fallback = White / M (never used once options resolve)
     options: {
       sizeGuideId: '71', // Printful catalog id → src/data/size-guides.json (build-size-guides.py)
@@ -51,7 +52,7 @@ export default [
     },
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
-    priceHint: 349,
+    priceHint: '34.99',
     live: true,
   },
   {
@@ -61,7 +62,7 @@ export default [
     printfulVariantId: 10163,   // Kiss-Cut Stickers (product 358), 3″×3″, cost $2.50
     size: '3″×3″ (7.5 cm)',
     material: 'durable weatherproof vinyl',
-    priceHint: 149,
+    priceHint: '14.99',
     live: true,
   },
   {
@@ -71,7 +72,7 @@ export default [
     printfulVariantId: 16366,   // Die-Cut Magnets (product 656), 3″×3″, cost $3.32
     size: '3″×3″ (7.5 cm)',
     material: 'flexible fridge magnet',
-    priceHint: 169,
+    priceHint: '16.99',
     live: true,
   },
 ];

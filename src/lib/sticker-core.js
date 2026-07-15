@@ -26,7 +26,7 @@ export const STICKER = { ...SHOP, variantGid: (getProduct('sticker') || {}).shop
 
 // What the visitor will actually pay — the static fallback; localizedPrice()
 // overwrites it with exactly what checkout charges in the visitor's currency.
-export const PRICE = { amount: 149, currency: 'NOK' };
+export const PRICE = { amount: 14.99, currency: 'USD' };
 
 // ---- design serialization -------------------------------------------------
 // Parse a builder share-link (URLSearchParams) into a render state. URL-only:
