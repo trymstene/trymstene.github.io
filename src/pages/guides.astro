@@ -1,0 +1,109 @@
+---
+// THE SIZE CHART — the guides hub. Self-value doctrine (Trym): a category
+// page must capture its own searches ("emoji size chart", "emote sizes"),
+// not just navigate. So the hub IS the cheat sheet: every platform in one
+// table, live actual-size banana demos, deep guides linked per row.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+import { GUIDES, CHEATSHEET_EXTRA } from '../data/guides.js';
+
+const title = 'Emoji & Emote Size Chart — Discord, Twitch, Slack & More (2026)';
+const description = 'Every emoji and emote size in one chart: Discord 128px, Twitch 28/56/112px, Slack 128px, Telegram 512px and more — with actual-size previews and free makers.';
+
+// one row per deep-guide platform (linked) + the extras (not yet linked)
+const rows = [
+  ...GUIDES.map((g) => ({
+    platform: g.platform, what: g.specs[0][0], size: g.specs[0][1],
+    file: g.specs[0][2], format: g.specs[0][3], href: `/${g.slug}/`,
+  })),
+  ...CHEATSHEET_EXTRA.map(([platform, what, size, file, format]) => ({ platform, what, size, file, format })),
+];
+
+// the live actual-size demo strip: SEE the sizes, don't imagine them
+const DEMOS = [
+  [28, 'Twitch chat'], [32, 'Discord chat'], [48, 'Discord jumbo'],
+  [56, 'Twitch retina'], [112, 'Twitch large'], [128, 'Discord upload'],
+];
+
+const faqLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'What size are custom emojis on Discord?', acceptedAnswer: { '@type': 'Answer', text: 'Discord custom emojis upload at 128×128 pixels (max 256KB, PNG or GIF) and display at 32×32 in chat.' } },
+    { '@type': 'Question', name: 'What size are Twitch emotes?', acceptedAnswer: { '@type': 'Answer', text: 'Twitch emotes require three sizes: 28×28, 56×56 and 112×112 pixels as transparent PNGs under 1MB each.' } },
+    { '@type': 'Question', name: 'Why do emotes need to be so small?', acceptedAnswer: { '@type': 'Answer', text: 'Emotes render inline with chat text, so platforms display them at 28–32 pixels. Designs with bold shapes and few colors — like pixel art — stay readable at that size.' } },
+  ],
+};
+---
+<BaseLayout title={title} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
+  <main class="gh">
+    <h1>The emoji &amp; emote size chart</h1>
+    <p class="gh-sub">Every platform, one table — kept current by people who ship pixels for a living.
+      Sizes below are the <strong>upload</strong> specs; chat usually renders them smaller.</p>
+
+    <table class="gd-table">
+      <thead><tr><th>Platform</th><th>What</th><th>Size</th><th>Max file</th><th>Format</th></tr></thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr>
+            <td>{r.href ? <a href={r.href}><strong>{r.platform}</strong> →</a> : <strong>{r.platform}</strong>}</td>
+            <td>{r.what}</td><td>{r.size}</td><td>{r.file}</td><td>{r.format}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p class="gh-note">Rows with an arrow have a full guide — gotchas, all the secondary sizes, and quick answers.</p>
+
+    <h2>What those sizes actually look like</h2>
+    <p>Numbers lie; pixels don't. Here's the same dancing banana at each platform's real rendered size —
+      notice how fast detail disappears. That's why bold pixel art wins chat.</p>
+    <div class="gh-demos">
+      {DEMOS.map(([px, label]) => (
+        <figure class="gh-demo">
+          <img src="/assets/dancing-banana-emoji-128.gif" alt={`Dancing banana emote at ${px}×${px} pixels — ${label} size`}
+            width={px} height={px} style={`width:${px}px;height:${px}px`} loading="lazy" />
+          <figcaption><strong>{px}px</strong><br />{label}</figcaption>
+        </figure>
+      ))}
+    </div>
+
+    <div class="gd-cta">
+      <p><strong>Make one that survives the shrink.</strong> The <a href="/forge/">Pixel Forge</a> is a free
+        in-browser pixel-emoji maker — draw on a small grid, animate frame by frame, export a transparent GIF
+        at exactly the size your platform wants. Built by the creator of the
+        <a href="/dancing-banana-gif-meme/">original 1999 dancing banana</a>, who has strong feelings about readable pixels.</p>
+      <a class="btn btn--dark" href="/forge/"><PixelIcon name="palette" /> Open the Pixel Forge →</a>
+    </div>
+
+    <h2>The deep guides</h2>
+    <ul class="gh-list">
+      {GUIDES.map((g) => (
+        <li><a href={`/${g.slug}/`}>{g.title.split(' — ')[0]}</a> — {g.metaDescription.split('.')[0]}.</li>
+      ))}
+    </ul>
+    <p class="gh-note">More platforms get their own guides as we go — the table above is always the complete picture.</p>
+  </main>
+</BaseLayout>
+
+<style>
+  .gh { max-width: 760px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  .gh h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin-bottom: 0.7rem; }
+  .gh-sub { font-size: 1.05rem; line-height: 1.55; margin-bottom: 1.5rem; }
+  .gd-table { width: 100%; border-collapse: collapse; margin-bottom: 0.6rem; font-size: 0.92rem; }
+  .gd-table th, .gd-table td { border: 2px solid var(--ink, #111); padding: 0.5rem 0.6rem; text-align: left; }
+  .gd-table th { background: var(--ink, #111); color: #fff; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.08em; }
+  .gd-table tr:nth-child(even) td { background: rgba(255, 225, 53, 0.18); }
+  .gh-note { font-size: 0.85rem; opacity: 0.75; margin-bottom: 1.8rem; }
+  .gh h2 { margin: 1.6rem 0 0.6rem; }
+  .gh-demos { display: flex; gap: 1.2rem; align-items: flex-end; flex-wrap: wrap;
+    border: 3px solid var(--ink, #111); box-shadow: 6px 6px 0 var(--ink, #111);
+    background: #fff; padding: 1.1rem; margin: 1rem 0 1.8rem; }
+  .gh-demo { margin: 0; text-align: center; }
+  .gh-demo img { image-rendering: pixelated; display: block; margin: 0 auto 0.3rem; }
+  .gh-demo figcaption { font-size: 0.72rem; line-height: 1.3; }
+  .gd-cta { border: 3px dashed var(--ink, #111); padding: 1rem 1.1rem; margin: 1.6rem 0 2rem; }
+  .gd-cta .btn { margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .gh-list { padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+  @media (max-width: 640px) { .gd-table { display: block; overflow-x: auto; } }
+</style>

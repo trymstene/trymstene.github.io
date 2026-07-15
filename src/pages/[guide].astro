@@ -1,0 +1,95 @@
+---
+// One spec-guide page per GUIDES entry (see src/data/guides.js) — the
+// answer-first pattern: featured-snippet bid up top, spec table behind it,
+// gotchas, FAQ schema, and the Forge/builder as the payoff.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+import { GUIDES } from '../data/guides.js';
+
+export function getStaticPaths() {
+  return GUIDES.map((g) => ({ params: { guide: g.slug }, props: { g } }));
+}
+const { g } = Astro.props;
+const others = GUIDES.filter((x) => x.slug !== g.slug);
+
+const faqLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: g.faq.map(([q, a]) => ({
+    '@type': 'Question', name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
+const crumbLD = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Guides', item: 'https://trymstene.com/guides/' },
+    { '@type': 'ListItem', position: 2, name: g.platform + ' emoji size', item: `https://trymstene.com/${g.slug}/` },
+  ],
+};
+// **bold** in the answer line → <strong>
+const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+---
+<BaseLayout title={g.title} description={g.metaDescription}>
+  <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
+  <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
+  <main class="gd">
+    <p class="gd-crumb"><a href="/guides/">← All emoji &amp; emote size guides</a></p>
+    <h1>{g.h1}</h1>
+    <p class="gd-answer" set:html={answerHtml} />
+
+    <table class="gd-table">
+      <thead><tr><th>What</th><th>Size</th><th>Max file</th><th>Format</th></tr></thead>
+      <tbody>
+        {g.specs.map((row) => (
+          <tr>{row.map((cell) => <td>{cell}</td>)}</tr>
+        ))}
+      </tbody>
+    </table>
+
+    <div class="gd-cta">
+      <p><strong>Need one at exactly that size?</strong> The <a href="/forge/">Pixel Forge</a> is a free
+        pixel-emoji maker that exports transparent GIFs ready for {g.platform} — draw it, animate it, download it.
+        Or grab the <a href="/dancing-banana-emoji/">original dancing banana</a>, pre-cropped for every platform.</p>
+      <a class="btn btn--dark" href="/forge/"><PixelIcon name="palette" /> Make a free {g.platform} emote →</a>
+    </div>
+
+    <h2>The gotchas nobody tells you</h2>
+    {g.gotchas.map(([h, body]) => (
+      <div class="gd-gotcha"><h3>{h}</h3><p>{body}</p></div>
+    ))}
+
+    <h2>Quick answers</h2>
+    {g.faq.map(([q, a]) => (
+      <div class="gd-gotcha"><h3>{q}</h3><p>{a}</p></div>
+    ))}
+
+    <p class="gd-more">More sizes:
+      {others.map((o) => <a href={`/${o.slug}/`}> {o.platform} </a>)}
+      · <a href="/guides/">the full cheat sheet</a>
+    </p>
+  </main>
+</BaseLayout>
+
+<style>
+  .gd { max-width: 760px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  .gd-crumb { font-size: 0.85rem; margin-bottom: 1rem; }
+  .gd h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin-bottom: 0.9rem; }
+  .gd-answer { font-size: 1.12rem; line-height: 1.55; background: var(--banana, #ffe135);
+    border: 3px solid var(--ink, #111); box-shadow: 6px 6px 0 var(--ink, #111);
+    padding: 1rem 1.1rem; margin-bottom: 1.6rem; }
+  .gd-table { width: 100%; border-collapse: collapse; margin-bottom: 1.6rem; font-size: 0.95rem; }
+  .gd-table th, .gd-table td { border: 2px solid var(--ink, #111); padding: 0.5rem 0.65rem; text-align: left; }
+  .gd-table th { background: var(--ink, #111); color: #fff; text-transform: uppercase;
+    font-size: 0.72rem; letter-spacing: 0.08em; }
+  .gd-table tr:nth-child(even) td { background: rgba(255, 225, 53, 0.18); }
+  .gd-cta { border: 3px dashed var(--ink, #111); padding: 1rem 1.1rem; margin-bottom: 2rem; }
+  .gd-cta .btn { margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .gd h2 { margin: 1.6rem 0 0.8rem; }
+  .gd-gotcha { margin-bottom: 1rem; }
+  .gd-gotcha h3 { font-size: 1.02rem; margin-bottom: 0.25rem; }
+  .gd-gotcha p { line-height: 1.55; }
+  .gd-more { margin-top: 2rem; font-size: 0.9rem; }
+  @media (max-width: 640px) { .gd-table { display: block; overflow-x: auto; } }
+</style>
