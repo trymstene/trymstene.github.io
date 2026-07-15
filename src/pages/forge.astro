@@ -156,6 +156,7 @@ const faqLD = {
     .fg-modalnana { position: absolute; top: -34px; right: 10px; width: 38px; height: auto;
       image-rendering: pixelated; transform: rotate(6deg); }
     .fg-modalrow { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    #fgModalAlt[hidden] { display: none; } /* .btn sets display — hidden must still win */
 
     @media (max-width: 919px) {
       .fg-frame canvas { width: 48px; height: 48px; }
@@ -318,6 +319,7 @@ const faqLD = {
       <p id="fgModalBody"></p>
       <div class="fg-modalrow">
         <button class="btn btn--dark" id="fgModalYes"></button>
+        <button class="btn btn--light" id="fgModalAlt" hidden></button>
         <button class="btn btn--light" id="fgModalNo"></button>
       </div>
     </div>

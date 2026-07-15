@@ -269,14 +269,17 @@ function init() {
     save();
   });
   // ---- the banana-themed confirm (no stock dialogs in this house) ----
-  function fgConfirm({ title, body, yes, no }) {
+  // resolves true (yes), false (no/escape) or 'alt' (the optional third way)
+  function fgConfirm({ title, body, yes, no, alt }) {
     return new Promise((resolve) => {
       const m = el('fgModal');
       el('fgModalTitle').textContent = title;
       el('fgModalBody').textContent = body;
-      const yBtn = el('fgModalYes'), nBtn = el('fgModalNo');
+      const yBtn = el('fgModalYes'), nBtn = el('fgModalNo'), aBtn = el('fgModalAlt');
       yBtn.textContent = yes || 'Do it';
       nBtn.textContent = no || 'Never mind';
+      aBtn.hidden = !alt;
+      if (alt) aBtn.textContent = alt;
       m.hidden = false;
       const onKey = (e) => {
         if (e.key === 'Escape') { e.preventDefault(); done(false); }
@@ -284,12 +287,13 @@ function init() {
       };
       function done(v) {
         m.hidden = true;
-        yBtn.onclick = nBtn.onclick = m.onclick = null;
+        yBtn.onclick = nBtn.onclick = aBtn.onclick = m.onclick = null;
         removeEventListener('keydown', onKey, true);
         resolve(v);
       }
       yBtn.onclick = () => done(true);
       nBtn.onclick = () => done(false);
+      aBtn.onclick = () => done('alt');
       m.onclick = (e) => { if (e.target === m) done(false); }; // tap outside = never mind
       addEventListener('keydown', onKey, true);
       nBtn.focus(); // the safe answer is one keypress away
@@ -551,18 +555,41 @@ function init() {
       const s = parseInt(b.dataset.size, 10);
       if (s === state.w && s === state.h) return;
       const hasArt = state.frames.some((f) => f.some((v) => v));
-      if (hasArt && !(await fgConfirm({
-        title: '🌱 Fresh canvas?',
-        body: `A ${s}×${s} grid starts you clean — this draft gets replaced. Anything you exported or saved to the shelf is safe.`,
-        yes: 'Start fresh', no: 'Keep drawing',
-      }))) return;
+      let keep = false;
+      if (hasArt) {
+        const fits = s >= state.w && s >= state.h;
+        const res = await fgConfirm(fits ? {
+          // more canvas around existing art = the banana-on-a-horse move
+          title: '⤢ Bigger canvas?',
+          body: `Going ${s}×${s} — keep your art (centred, with room to draw around it) or start clean. Exports and shelf saves are safe either way.`,
+          yes: '⤢ Keep my art', alt: '🌱 Start fresh', no: 'Cancel',
+        } : {
+          title: '🌱 Fresh canvas?',
+          body: `A ${s}×${s} grid is smaller than your ${state.w}×${state.h} art, so it starts you clean. Anything you exported or saved to the shelf is safe.`,
+          yes: 'Start fresh', no: 'Keep drawing',
+        });
+        if (!res) return;
+        keep = fits && res === true;
+      }
       stopPlay();
-      applyDims(s, s);
-      state.frames = [new Uint8Array(s * s)];
-      state.delays = [120];
-      state.cur = 0; state.undo = []; state.redo = [];
+      if (keep) {
+        const ow = state.w, oh = state.h;
+        const ox = ((s - ow) / 2) | 0, oy = ((s - oh) / 2) | 0;
+        state.frames = state.frames.map((f) => {
+          const n = new Uint8Array(s * s);
+          for (let y = 0; y < oh; y++) n.set(f.subarray(y * ow, (y + 1) * ow), (oy + y) * s + ox);
+          return n;
+        });
+        applyDims(s, s);
+        state.undo = []; state.redo = []; // undo data is dimension-bound
+      } else {
+        applyDims(s, s);
+        state.frames = [new Uint8Array(s * s)];
+        state.delays = [120];
+        state.cur = 0; state.undo = []; state.redo = [];
+      }
       refreshAll(); save();
-      track('forge_size', { size: s });
+      track('forge_size', { size: s, keep: keep ? 1 : 0 });
     };
   });
 
