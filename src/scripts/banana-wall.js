@@ -34,7 +34,7 @@ function init() {
     if (kind === 'emoji') {
       const d = forgeParse(params);
       if (!d) return null;
-      cv.width = cv.height = d.size;
+      cv.width = d.w; cv.height = d.h;
       return { kind, cv, ctx: cv.getContext('2d'), data: d, idx: 0, last: 0 };
     }
     cv.width = cv.height = 200;
@@ -60,12 +60,12 @@ function init() {
         if (now - p.last >= p.data.delays[p.idx]) {
           p.last = now;
           p.idx = (p.idx + 1) % p.data.frames.length;
-          p.ctx.clearRect(0, 0, p.data.size, p.data.size);
-          forgeDrawFrame(p.ctx, p.data.frames[p.idx], p.data.size, 1, 1, p.data.palette);
+          p.ctx.clearRect(0, 0, p.data.w, p.data.h);
+          forgeDrawFrame(p.ctx, p.data.frames[p.idx], p.data.w, p.data.h, 1, 1, p.data.palette);
         }
       } else if (!p.drawn) {
         p.drawn = true;
-        forgeDrawFrame(p.ctx, p.data.frames[0], p.data.size, 1, 1, p.data.palette);
+        forgeDrawFrame(p.ctx, p.data.frames[0], p.data.w, p.data.h, 1, 1, p.data.palette);
       }
     }
     if (idx !== lastIdx) lastIdx = idx;

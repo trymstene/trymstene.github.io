@@ -1,11 +1,13 @@
 // The Forge creation format — shared by the editor (pixel-forge.js) and every
 // surface that renders forge creations (the Shelf today; the rave and the shop
 // later). A creation = palette INDICES per frame (0 = transparent), base64
-// per frame, sizes 32/48/64, per-frame delays. Serialized shapes:
-//   v1: { v: 1, size, frames: [b64...], delays: [ms...] }
+// per frame, per-frame delays. Serialized shapes:
+//   v1: { v: 1, size, frames: [b64...], delays: [ms...] } — square 32/48/64
 //   v2: v1 + cpal: ['#rrggbb'...] — per-creation CUSTOM colours, occupying
 //       indices FORGE_PALETTE.length.. (the shared palette never changes;
 //       customs travel WITH the creation so every surface renders them)
+//   v3: { v: 3, w, h, frames, delays, cpal? } — NON-SQUARE, for imports that
+//       keep a GIF's native pixels (full-truth doctrine); w,h ≤ FORGE_DIM_MAX
 // On the Shelf it travels as params = 'forge:' + JSON.
 
 // index 0 = transparent; 1..16 = the original curated set (the banana's own
@@ -27,7 +29,8 @@ export const FORGE_RGB = FORGE_PALETTE.map((h) =>
   h ? [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] : [0, 0, 0]
 );
 export const FORGE_MAX_FRAMES = 16;
-export const FORGE_SIZES = [32, 48, 64];
+export const FORGE_SIZES = [32, 48, 64]; // the hand-drawing squares
+export const FORGE_DIM_MAX = 112; // adaptive import canvases (v3) cap here — largest platform-native emote size
 export const FORGE_CUSTOM_MAX = 32; // per-creation custom colours (33 shared + 32 custom < gifenc's 256 cap)
 
 export const b64 = {
@@ -35,21 +38,29 @@ export const b64 = {
   dec: (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0)),
 };
 
-// parse a serialized creation (raw JSON or the Shelf's 'forge:'-prefixed params)
+// parse a serialized creation (raw JSON or the Shelf's 'forge:'-prefixed params);
+// returns { w, h, frames, delays, cpal, palette } — v1/v2 squares get w === h
 export function forgeParse(str) {
   try {
     const d = JSON.parse(str.startsWith('forge:') ? str.slice(6) : str);
-    if (!d || (d.v !== 1 && d.v !== 2) || !FORGE_SIZES.includes(d.size) || !Array.isArray(d.frames) || !d.frames.length) return null;
+    if (!d || !Array.isArray(d.frames) || !d.frames.length) return null;
+    let w, h;
+    if (d.v === 3) {
+      w = d.w | 0; h = d.h | 0;
+      if (w < 1 || h < 1 || w > FORGE_DIM_MAX || h > FORGE_DIM_MAX) return null;
+    } else if (d.v === 1 || d.v === 2) {
+      if (!FORGE_SIZES.includes(d.size)) return null;
+      w = h = d.size;
+    } else return null;
     const frames = d.frames.slice(0, FORGE_MAX_FRAMES).map((s) => {
       const u = b64.dec(s);
-      return u.length === d.size * d.size ? u : new Uint8Array(d.size * d.size);
+      return u.length === w * h ? u : new Uint8Array(w * h);
     });
-    const cpal = d.v === 2 && Array.isArray(d.cpal)
-      ? d.cpal.slice(0, FORGE_CUSTOM_MAX).filter((h) => /^#[0-9a-f]{6}$/i.test(h))
+    const cpal = d.v >= 2 && Array.isArray(d.cpal)
+      ? d.cpal.slice(0, FORGE_CUSTOM_MAX).filter((x) => /^#[0-9a-f]{6}$/i.test(x))
       : [];
     return {
-      size: d.size,
-      frames,
+      w, h, frames,
       delays: frames.map((_, i) => Math.min(1000, Math.max(50, (d.delays || [])[i] || 120))),
       cpal,
       palette: FORGE_PALETTE.concat(cpal),
@@ -59,11 +70,11 @@ export function forgeParse(str) {
 
 // draw one frame of index data into a 2d context at an integer scale;
 // pass the creation's own palette (from forgeParse) so custom colours render
-export function forgeDrawFrame(ctx, frame, size, scale, alpha = 1, palette = FORGE_PALETTE) {
+export function forgeDrawFrame(ctx, frame, w, h, scale, alpha = 1, palette = FORGE_PALETTE) {
   ctx.globalAlpha = alpha;
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = frame[y * size + x];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = frame[y * w + x];
       if (!idx) continue;
       const col = palette[idx];
       if (!col) continue; // index beyond this palette (stale renderer) — skip, never mis-colour

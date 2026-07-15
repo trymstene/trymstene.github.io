@@ -6,13 +6,14 @@
 // asks for layers, the answer is no.
 //
 // Creation format (the ecosystem interchange for pixel art): palette INDICES
-// in a Uint8Array per frame (0 = transparent), sizes 32/48/64, per-frame
-// delays. Serialized as base64 for autosave + the Shelf.
+// in a Uint8Array per frame (0 = transparent), square 32/48/64 for drawing,
+// native W×H (≤112) for imports — the canvas adapts to the GIF, never the
+// other way (full-truth doctrine). Serialized as base64 for autosave + Shelf.
 import { GIFEncoder } from 'gifenc';
 import { parseGIF, decompressFrames } from 'gifuct-js';
 import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
-import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, b64, forgeParse } from '../lib/forge-format.js';
+import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, FORGE_DIM_MAX, b64, forgeParse } from '../lib/forge-format.js';
 import { BANANA_REMIX } from '../data/banana-remix.js';
 
 const el = (id) => document.getElementById(id);
@@ -25,7 +26,7 @@ const MAX_UNDO = 60;
 
 function init() {
   const state = {
-    size: 32,
+    w: 32, h: 32, // squares (32/48/64) for hand-drawing; imports may keep a GIF's native W×H
     frames: [new Uint8Array(32 * 32)],
     delays: [120],
     cur: 0,
@@ -49,9 +50,15 @@ function init() {
   function frame() { return state.frames[state.cur]; }
 
   function fitCanvas() {
-    cell = Math.max(4, Math.floor(512 / state.size));
-    stage.width = stage.height = state.size * cell;
-    prevCv.width = prevCv.height = state.size;
+    const m = Math.max(state.w, state.h);
+    cell = Math.max(4, Math.floor(512 / m));
+    stage.width = state.w * cell;
+    stage.height = state.h * cell;
+    prevCv.width = state.w;
+    prevCv.height = state.h;
+    // the chat preview renders contain-fit in its 32px box, like real chat
+    prevCv.style.width = Math.max(1, Math.round((32 * state.w) / m)) + 'px';
+    prevCv.style.height = Math.max(1, Math.round((32 * state.h) / m)) + 'px';
   }
 
   // ---- painting ----
@@ -61,22 +68,22 @@ function init() {
     for (let dy = 0; dy < B; dy++) {
       for (let dx = 0; dx < B; dx++) {
         const px = x + dx + o, py = y + dy + o;
-        if (px < 0 || py < 0 || px >= state.size || py >= state.size) continue;
-        frame()[py * state.size + px] = idx;
+        if (px < 0 || py < 0 || px >= state.w || py >= state.h) continue;
+        frame()[py * state.w + px] = idx;
       }
     }
   }
 
   function fill(x, y, idx) {
-    const f = frame(), S = state.size;
-    const from = f[y * S + x];
+    const f = frame(), W = state.w, H = state.h;
+    const from = f[y * W + x];
     if (from === idx) return;
     const q = [[x, y]];
     while (q.length) {
       const [cx, cy] = q.pop();
-      if (cx < 0 || cy < 0 || cx >= S || cy >= S) continue;
-      if (f[cy * S + cx] !== from) continue;
-      f[cy * S + cx] = idx;
+      if (cx < 0 || cy < 0 || cx >= W || cy >= H) continue;
+      if (f[cy * W + cx] !== from) continue;
+      f[cy * W + cx] = idx;
       q.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
     }
   }
@@ -121,8 +128,8 @@ function init() {
   function cellFromEvent(e) {
     const r = stage.getBoundingClientRect();
     return [
-      Math.floor(((e.clientX - r.left) / r.width) * state.size),
-      Math.floor(((e.clientY - r.top) / r.height) * state.size),
+      Math.floor(((e.clientX - r.left) / r.width) * state.w),
+      Math.floor(((e.clientY - r.top) / r.height) * state.h),
     ];
   }
   // Bresenham between two cells — fast strokes must leave a continuous line,
@@ -144,7 +151,7 @@ function init() {
     stopPlay();
     const [x, y] = cellFromEvent(e);
     if (state.tool === 'picker') {
-      const idx = frame()[y * state.size + x];
+      const idx = frame()[y * state.w + x];
       if (idx) setColor(idx);
       setTool('pencil');
       return;
@@ -171,9 +178,9 @@ function init() {
   // ---- rendering ----
   function drawGridInto(c2, f, scale, dim) {
     const p = pal();
-    for (let y = 0; y < state.size; y++) {
-      for (let x = 0; x < state.size; x++) {
-        const idx = f[y * state.size + x];
+    for (let y = 0; y < state.h; y++) {
+      for (let x = 0; x < state.w; x++) {
+        const idx = f[y * state.w + x];
         if (!idx || !p[idx]) continue;
         c2.globalAlpha = dim || 1;
         c2.fillStyle = p[idx];
@@ -184,10 +191,10 @@ function init() {
   }
 
   function drawEditor() {
-    const S = state.size;
+    const W = state.w, H = state.h;
     ctx.clearRect(0, 0, stage.width, stage.height);
     // checkerboard = transparency
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       ctx.fillStyle = (x + y) % 2 ? '#e8e4d8' : '#f4f1e8';
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
@@ -195,9 +202,12 @@ function init() {
     drawGridInto(ctx, frame(), cell, 1);
     // grid lines (light, every cell; stronger every 8)
     ctx.strokeStyle = 'rgba(17,17,17,0.08)';
-    for (let i = 1; i < S; i++) {
+    for (let i = 1; i < W; i++) {
       ctx.lineWidth = i % 8 === 0 ? 2 : 1;
       ctx.beginPath(); ctx.moveTo(i * cell + 0.5, 0); ctx.lineTo(i * cell + 0.5, stage.height); ctx.stroke();
+    }
+    for (let i = 1; i < H; i++) {
+      ctx.lineWidth = i % 8 === 0 ? 2 : 1;
       ctx.beginPath(); ctx.moveTo(0, i * cell + 0.5); ctx.lineTo(stage.width, i * cell + 0.5); ctx.stroke();
     }
   }
@@ -210,7 +220,11 @@ function init() {
       const d = document.createElement('div');
       d.className = 'fg-frame' + (i === state.cur ? ' fg-frame--cur' : '');
       const cv = document.createElement('canvas');
-      cv.width = cv.height = state.size;
+      cv.width = state.w; cv.height = state.h;
+      // thumbs contain-fit their box so non-square imports don't stretch
+      const tm = Math.max(state.w, state.h);
+      cv.style.width = Math.max(1, Math.round((56 * state.w) / tm)) + 'px';
+      cv.style.height = Math.max(1, Math.round((56 * state.h) / tm)) + 'px';
       drawGridInto(cv.getContext('2d'), f, 1, 1);
       d.appendChild(cv);
       const n = document.createElement('span');
@@ -220,14 +234,14 @@ function init() {
       host.appendChild(d);
     });
     el('fgDelay').value = state.delays[state.cur];
-    el('fgFrameInfo').textContent = `frame ${state.cur + 1}/${state.frames.length}`;
+    el('fgFrameInfo').textContent = `frame ${state.cur + 1}/${state.frames.length} · ${state.w}×${state.h}`;
     el('fgDup').disabled = el('fgAdd').disabled = state.frames.length >= MAX_FRAMES;
     el('fgDel').disabled = state.frames.length <= 1;
   }
 
   el('fgAdd').onclick = () => {
     stopPlay();
-    state.frames.splice(state.cur + 1, 0, new Uint8Array(state.size * state.size));
+    state.frames.splice(state.cur + 1, 0, new Uint8Array(state.w * state.h));
     state.delays.splice(state.cur + 1, 0, state.delays[state.cur]);
     state.cur++;
     refreshAll(); save(); track('forge_frame_add');
@@ -313,19 +327,19 @@ function init() {
   // ---- flip & shift: whole-frame transforms (undo-able like a stroke) ----
   function xform(map) {
     pushUndo();
-    const f = frame(), S = state.size, n = new Uint8Array(S * S);
-    for (let y = 0; y < S; y++) {
-      for (let x = 0; x < S; x++) {
-        const [nx, ny] = map(x, y, S);
-        n[ny * S + nx] = f[y * S + x];
+    const f = frame(), W = state.w, H = state.h, n = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const [nx, ny] = map(x, y, W, H);
+        n[ny * W + nx] = f[y * W + x];
       }
     }
     state.frames[state.cur] = n;
     refreshAll(); save(); track('forge_transform');
   }
-  el('fgFlipH').onclick = () => xform((x, y, S) => [S - 1 - x, y]);
-  el('fgFlipV').onclick = () => xform((x, y, S) => [x, S - 1 - y]);
-  const shift = (dx, dy) => xform((x, y, S) => [(x + dx + S) % S, (y + dy + S) % S]);
+  el('fgFlipH').onclick = () => xform((x, y, W) => [W - 1 - x, y]);
+  el('fgFlipV').onclick = () => xform((x, y, W, H) => [x, H - 1 - y]);
+  const shift = (dx, dy) => xform((x, y, W, H) => [(x + dx + W) % W, (y + dy + H) % H]);
   el('fgShL').onclick = () => shift(-1, 0);
   el('fgShR').onclick = () => shift(1, 0);
   el('fgShU').onclick = () => shift(0, -1);
@@ -334,9 +348,8 @@ function init() {
   // ---- play/pause the big canvas: watch the animation where you draw ----
   let playing = false, playIdx = 0, playLast = 0;
   function drawPlayFrame() {
-    const S = state.size;
     ctx.clearRect(0, 0, stage.width, stage.height);
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    for (let y = 0; y < state.h; y++) for (let x = 0; x < state.w; x++) {
       ctx.fillStyle = (x + y) % 2 ? '#e8e4d8' : '#f4f1e8';
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
@@ -498,7 +511,7 @@ function init() {
     if (now - pLast >= state.delays[pIdx % state.frames.length]) {
       pLast = now;
       pIdx = (pIdx + 1) % state.frames.length;
-      prevCtx.clearRect(0, 0, state.size, state.size);
+      prevCtx.clearRect(0, 0, state.w, state.h);
       drawGridInto(prevCtx, state.frames[pIdx], 1, 1);
     }
     requestAnimationFrame(previewTick);
@@ -506,19 +519,20 @@ function init() {
 
   // ---- autosave + shelf ----
   function serialize() {
-    const d = {
-      v: state.cpal.length ? 2 : 1, // v1 when no customs — stale renderers keep working
-      size: state.size,
-      frames: state.frames.map((f) => b64.enc(f)),
-      delays: state.delays,
-    };
+    const sq = state.w === state.h && FORGE_SIZES.includes(state.w);
+    const d = sq
+      ? { v: state.cpal.length ? 2 : 1, size: state.w } // v1/v2 — stale renderers keep working
+      : { v: 3, w: state.w, h: state.h }; // non-square imports carry their true dims
+    d.frames = state.frames.map((f) => b64.enc(f));
+    d.delays = state.delays;
     if (state.cpal.length) d.cpal = state.cpal;
     return JSON.stringify(d);
   }
   function deserialize(json) {
     const d = forgeParse(json);
     if (!d) return false;
-    state.size = d.size;
+    state.w = d.w;
+    state.h = d.h;
     state.frames = d.frames;
     state.delays = d.delays;
     state.cpal = d.cpal;
@@ -535,7 +549,7 @@ function init() {
   document.querySelectorAll('.fg-size').forEach((b) => {
     b.onclick = async () => {
       const s = parseInt(b.dataset.size, 10);
-      if (s === state.size) return;
+      if (s === state.w && s === state.h) return;
       const hasArt = state.frames.some((f) => f.some((v) => v));
       if (hasArt && !(await fgConfirm({
         title: '🌱 Fresh canvas?',
@@ -543,12 +557,11 @@ function init() {
         yes: 'Start fresh', no: 'Keep drawing',
       }))) return;
       stopPlay();
-      state.size = s;
+      applyDims(s, s);
       state.frames = [new Uint8Array(s * s)];
       state.delays = [120];
       state.cur = 0; state.undo = []; state.redo = [];
-      document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      fitCanvas(); refreshAll(); save();
+      refreshAll(); save();
       track('forge_size', { size: s });
     };
   });
@@ -583,61 +596,124 @@ function init() {
     });
     return out;
   }
-  function rasterToGrid(entry) {
-    // Downscaling by AVERAGE turns crisp outlines into mud (the broken-banana
-    // bug). Instead: small sources land 1:1 (integer-scaled, centred) so their
-    // pixels survive exactly; big sources get a DOMINANT-colour vote per cell.
-    const S = state.size;
-    const iw = entry.w, ih = entry.h;
-    let src = entry.snapshot;
-    if (!src) {
-      const c = document.createElement('canvas');
-      c.width = iw; c.height = ih;
-      const cc = c.getContext('2d', { willReadFrequently: true });
-      cc.drawImage(entry.src, 0, 0);
-      src = cc.getImageData(0, 0, iw, ih);
+  function entryImageData(entry) {
+    if (entry.snapshot) return entry.snapshot;
+    const c = document.createElement('canvas');
+    c.width = entry.w; c.height = entry.h;
+    const cc = c.getContext('2d', { willReadFrequently: true });
+    cc.drawImage(entry.src, 0, 0);
+    return cc.getImageData(0, 0, entry.w, entry.h);
+  }
+  // UPSCALE DETECTION — many "big" GIFs are small pixel art scaled up by a
+  // clean factor (a 32px emote exported at 128, the 500px banana render).
+  // Find the block pitch per axis (edges concentrate on the lattice), sample
+  // block centres, and the TRUE pixels come back — full-truth import.
+  function detectLattice(img) {
+    const W = img.width, H = img.height, d = img.data;
+    const key = new Int32Array(W * H);
+    for (let i = 0, p = 0; p < W * H; p++, i += 4) {
+      key[p] = d[i + 3] < 128 ? -1 : ((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3);
     }
-    const d = src.data;
-    const out = new ImageData(S, S);
-    const o = out.data;
-    if (iw <= S && ih <= S) {
-      const k = Math.max(1, Math.floor(Math.min(S / iw, S / ih)));
-      const ox = ((S - iw * k) / 2) | 0, oy = ((S - ih * k) / 2) | 0;
-      for (let y = 0; y < ih; y++) {
-        for (let x = 0; x < iw; x++) {
-          const si = (y * iw + x) * 4;
-          for (let dy = 0; dy < k; dy++) {
-            for (let dx = 0; dx < k; dx++) {
-              const ti = ((oy + y * k + dy) * S + ox + x * k + dx) * 4;
-              o[ti] = d[si]; o[ti + 1] = d[si + 1]; o[ti + 2] = d[si + 2]; o[ti + 3] = d[si + 3];
-            }
+    const colE = new Uint32Array(W), rowE = new Uint32Array(H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 1; x < W; x++) if (key[y * W + x] !== key[y * W + x - 1]) colE[x]++;
+    }
+    for (let y = 1; y < H; y++) {
+      for (let x = 0; x < W; x++) if (key[y * W + x] !== key[(y - 1) * W + x]) rowE[y]++;
+    }
+    // candidate pitches per axis: exact-line concentration for clean integer
+    // upscales, ±1-tolerant for jittery hand-scaled art (the 500px banana's
+    // masters carry ±1px hand jitter). The RECONSTRUCTION check below is the
+    // real gate — these only nominate.
+    function candidates(edges, N) {
+      let total = 0;
+      for (let i = 1; i < N; i++) total += edges[i];
+      if (!total) return [];
+      const out = [];
+      for (let p = 3; p <= Math.min(64, N >> 3); p++) {
+        let best = null;
+        for (let ph = 0; ph < p; ph++) {
+          let on = 0, win = 0;
+          for (let i = ph === 0 ? p : ph; i < N; i += p) {
+            on += edges[i];
+            win += edges[i] + (edges[i - 1] || 0) + (edges[i + 1] || 0);
           }
+          if (!best || on > best.on) best = { p, ph, on, win };
+        }
+        const exact = best.on / total;
+        const winScore = Math.min(1, best.win / total);
+        const quality = winScore / (3 / p); // concentration vs a uniform spread
+        if (exact >= 0.85 || (p >= 8 && winScore >= 0.8 && quality >= 3)) {
+          out.push({ ...best, rank: exact + winScore });
         }
       }
-      return out;
+      return out.sort((a, b) => b.rank - a.rank).slice(0, 3);
     }
-    const sc = Math.min(S / iw, S / ih);
-    const dw = Math.max(1, Math.round(iw * sc)), dh = Math.max(1, Math.round(ih * sc));
-    const ox = ((S - dw) / 2) | 0, oy = ((S - dh) / 2) | 0;
-    if (sc >= 0.5) {
-      // near-native pixel art: POINT-sample. A dominant vote erases 1px
-      // details (thin outlines lose every ballot to their background — the
-      // missing-face bug); nearest keeps them, only evenly-spread rows drop.
-      for (let ty = 0; ty < dh; ty++) {
-        const sy = Math.min(ih - 1, (((ty + 0.5) * ih) / dh) | 0);
-        for (let tx = 0; tx < dw; tx++) {
-          const sx = Math.min(iw - 1, (((tx + 0.5) * iw) / dw) | 0);
+    function cells(p, ph, N) {
+      const c = [];
+      for (let v = ph + (p >> 1); v < N; v += p) c.push(v);
+      return c;
+    }
+    const cellOf = (v, p, ph, n) => Math.min(n - 1, Math.max(0, Math.floor((v - ph) / p)));
+    for (const cx of candidates(colE, W)) {
+      for (const cy of candidates(rowE, H)) {
+        const xs = cells(cx.p, cx.ph, W), ys = cells(cy.p, cy.ph, H);
+        if (xs.length < 8 || ys.length < 8 || xs.length > FORGE_DIM_MAX || ys.length > FORGE_DIM_MAX) continue;
+        // reconstruction: expand the sampled grid back and demand ≥92% match
+        const samp = new Int32Array(xs.length * ys.length);
+        for (let j = 0; j < ys.length; j++) {
+          for (let i2 = 0; i2 < xs.length; i2++) samp[j * xs.length + i2] = key[ys[j] * W + xs[i2]];
+        }
+        let ok = 0;
+        for (let y = 0; y < H; y++) {
+          const j = cellOf(y, cy.p, cy.ph, ys.length);
+          for (let x = 0; x < W; x++) {
+            if (samp[j * xs.length + cellOf(x, cx.p, cx.ph, xs.length)] === key[y * W + x]) ok++;
+          }
+        }
+        if (ok / (W * H) >= 0.92) return { xs, ys };
+      }
+    }
+    return null;
+  }
+  function sampleLattice(img, lat) {
+    const { xs, ys } = lat;
+    const out = new ImageData(xs.length, ys.length);
+    const o = out.data, d = img.data, W = img.width;
+    let t = 0;
+    for (const y of ys) {
+      for (const x of xs) {
+        const si = (y * W + x) * 4;
+        o[t] = d[si]; o[t + 1] = d[si + 1]; o[t + 2] = d[si + 2]; o[t + 3] = d[si + 3];
+        t += 4;
+      }
+    }
+    return out;
+  }
+  // scale a too-big source down to target dims: nearest keeps thin pixel-art
+  // details when near-native; a dominant-colour vote keeps outlines clean on
+  // photos and unrecognized renders
+  function sampleFrame(img, tw, th) {
+    const iw = img.width, ih = img.height, d = img.data;
+    if (tw === iw && th === ih) return img;
+    const out = new ImageData(tw, th);
+    const o = out.data;
+    if (tw / iw >= 0.5) {
+      for (let ty = 0; ty < th; ty++) {
+        const sy = Math.min(ih - 1, (((ty + 0.5) * ih) / th) | 0);
+        for (let tx = 0; tx < tw; tx++) {
+          const sx = Math.min(iw - 1, (((tx + 0.5) * iw) / tw) | 0);
           const si = (sy * iw + sx) * 4;
-          const ti = ((oy + ty) * S + ox + tx) * 4;
+          const ti = (ty * tw + tx) * 4;
           o[ti] = d[si]; o[ti + 1] = d[si + 1]; o[ti + 2] = d[si + 2]; o[ti + 3] = d[si + 3];
         }
       }
       return out;
     }
-    for (let ty = 0; ty < dh; ty++) {
-      const sy0 = Math.floor((ty * ih) / dh), sy1 = Math.max(sy0 + 1, Math.floor(((ty + 1) * ih) / dh));
-      for (let tx = 0; tx < dw; tx++) {
-        const sx0 = Math.floor((tx * iw) / dw), sx1 = Math.max(sx0 + 1, Math.floor(((tx + 1) * iw) / dw));
+    for (let ty = 0; ty < th; ty++) {
+      const sy0 = Math.floor((ty * ih) / th), sy1 = Math.max(sy0 + 1, Math.floor(((ty + 1) * ih) / th));
+      for (let tx = 0; tx < tw; tx++) {
+        const sx0 = Math.floor((tx * iw) / tw), sx1 = Math.max(sx0 + 1, Math.floor(((tx + 1) * iw) / tw));
         const stepY = Math.max(1, ((sy1 - sy0) / 6) | 0), stepX = Math.max(1, ((sx1 - sx0) / 6) | 0);
         const buckets = new Map();
         let clear = 0, total = 0;
@@ -646,13 +722,13 @@ function init() {
             const si = (sy * iw + sx) * 4;
             total++;
             if (d[si + 3] < 128) { clear++; continue; }
-            const key = ((d[si] >> 4) << 8) | ((d[si + 1] >> 4) << 4) | (d[si + 2] >> 4);
-            let b = buckets.get(key);
-            if (!b) { b = { n: 0, r: 0, g: 0, bl: 0 }; buckets.set(key, b); }
+            const bkey = ((d[si] >> 4) << 8) | ((d[si + 1] >> 4) << 4) | (d[si + 2] >> 4);
+            let b = buckets.get(bkey);
+            if (!b) { b = { n: 0, r: 0, g: 0, bl: 0 }; buckets.set(bkey, b); }
             b.n++; b.r += d[si]; b.g += d[si + 1]; b.bl += d[si + 2];
           }
         }
-        const ti = ((oy + ty) * S + ox + tx) * 4;
+        const ti = (ty * tw + tx) * 4;
         let best = null;
         for (const b of buckets.values()) if (!best || b.n > best.n) best = b;
         if (!best || clear >= total / 2) { o[ti + 3] = 0; continue; }
@@ -699,9 +775,10 @@ function init() {
       }
     }
   }
-  function applySize(S) {
-    state.size = S;
-    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === S)));
+  function applyDims(w, h) {
+    state.w = w;
+    state.h = h;
+    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(w === h && +x.dataset.size === w)));
     fitCanvas();
   }
   async function importImage(blob, srcName) {
@@ -716,22 +793,39 @@ function init() {
         entries = [{ src: bmp, w: bmp.width, h: bmp.height, delay: 120 }];
       } catch (e) { return false; }
     }
-    // fidelity picks the grid: smallest that holds the source 1:1, else the
-    // biggest canvas we have (more cells = more surviving pixels)
-    const need = Math.max(entries[0].w, entries[0].h);
-    const S = FORGE_SIZES.find((s) => s >= need) || FORGE_SIZES[FORGE_SIZES.length - 1];
+    let images = entries.map(entryImageData);
+    const iw = images[0].width, ih = images[0].height;
+    // FULL-TRUTH doctrine (Trym, 15 Jul): the canvas adapts to the GIF, not
+    // the GIF to the canvas. Three tiers:
+    let mode;
+    if (iw <= FORGE_DIM_MAX && ih <= FORGE_DIM_MAX) {
+      mode = 'native'; // 1:1 — every pixel kept
+    } else {
+      const lat = iw * ih <= 1024 * 1024 ? detectLattice(images[0]) : null;
+      if (lat) {
+        mode = 'lattice'; // upscaled pixel art — recover the true pixels
+        images = images.map((im) => sampleLattice(im, lat));
+      } else {
+        mode = 'resample'; // photos etc: contain-fit to the cap
+        const sc = Math.min(FORGE_DIM_MAX / iw, FORGE_DIM_MAX / ih);
+        const tw = Math.max(1, Math.round(iw * sc)), th = Math.max(1, Math.round(ih * sc));
+        images = images.map((im) => sampleFrame(im, tw, th));
+      }
+    }
+    const W = images[0].width, H = images[0].height;
     const hasArt = state.frames.some((f) => f.some((v) => v));
     if (hasArt && !(await fgConfirm({
       title: '🍌 Import over this?',
-      body: `The import gets pixelated onto the ${S}×${S} grid and replaces what you have here. Colours it can't match join your palette.`,
+      body: mode === 'resample'
+        ? `The import gets pixelated onto a ${W}×${H} canvas and replaces what you have here. Colours it can't match join your palette.`
+        : `The import lands 1:1 on a ${W}×${H} canvas — every pixel kept — replacing what you have here.`,
       yes: '⬆ Import it', no: 'Cancel',
     }))) return false;
-    applySize(S);
-    const images = entries.map(rasterToGrid);
+    applyDims(W, H);
     learnColors(images);
     const rgb = palRGB();
     state.frames = images.map((im) => {
-      const f = new Uint8Array(S * S);
+      const f = new Uint8Array(W * H);
       const d = im.data;
       for (let i = 0, px = 0; i < d.length; i += 4, px++) {
         f[px] = d[i + 3] < 128 ? 0 : nearestIdx(d[i], d[i + 1], d[i + 2], rgb);
@@ -741,7 +835,7 @@ function init() {
     state.delays = entries.map((e2) => Math.min(1000, Math.max(50, Math.round(e2.delay))));
     state.cur = 0; state.undo = []; state.redo = [];
     renderPalette(); refreshAll(); save();
-    track('forge_import', { src: srcName, frames: state.frames.length });
+    track('forge_import', { src: srcName, frames: state.frames.length, mode, w: W, h: H });
     if (state.frames.length > 1) togglePlay(); // instant payoff: see it dance in pixels
     return true;
   }
@@ -768,22 +862,17 @@ function init() {
     const hasArt = state.frames.some((f) => f.some((v) => v));
     if (hasArt && !(await fgConfirm({
       title: '🍌 Summon the banana?',
-      body: 'The original 1999 dancing banana lands pixel-perfect on the 48 grid — replacing what you have here. Then it\'s yours to remix.',
+      body: 'The original 1999 dancing banana lands pixel-perfect at its native size — replacing what you have here. Then it\'s yours to remix.',
       yes: '🍌 Summon it', no: 'Cancel',
     }))) return;
     const B = BANANA_REMIX;
-    const S = FORGE_SIZES.find((s) => s >= Math.max(B.w, B.h)) || FORGE_SIZES[FORGE_SIZES.length - 1];
     const remap = B.cpal.map((hex) => ensureCustom(hex));
-    const ox = ((S - B.w) / 2) | 0, oy = ((S - B.h) / 2) | 0;
-    applySize(S);
+    applyDims(B.w, B.h);
     state.frames = B.frames.map((f64) => {
       const src = b64.dec(f64);
-      const f = new Uint8Array(S * S);
-      for (let y = 0; y < B.h; y++) {
-        for (let x = 0; x < B.w; x++) {
-          const idx = src[y * B.w + x];
-          f[(oy + y) * S + ox + x] = idx >= PALETTE.length ? remap[idx - PALETTE.length] : idx;
-        }
+      const f = new Uint8Array(B.w * B.h);
+      for (let i = 0; i < src.length; i++) {
+        f[i] = src[i] >= PALETTE.length ? remap[src[i] - PALETTE.length] : src[i];
       }
       return f;
     });
@@ -808,37 +897,39 @@ function init() {
     passPatch('smith'); passStat('forges');
   }
   function exportGif(target) {
-    const scale = Math.max(1, Math.ceil(target / state.size));
-    const W = state.size * scale;
+    const scale = Math.max(1, Math.ceil(target / Math.max(state.w, state.h)));
+    const W = state.w * scale, H = state.h * scale;
     const gif = GIFEncoder();
     state.frames.forEach((f, i) => {
-      const idx = new Uint8Array(W * W);
-      for (let y = 0; y < W; y++) {
+      const idx = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
-          idx[y * W + x] = f[((y / scale) | 0) * state.size + ((x / scale) | 0)];
+          idx[y * W + x] = f[((y / scale) | 0) * state.w + ((x / scale) | 0)];
         }
       }
-      gif.writeFrame(idx, W, W, {
+      gif.writeFrame(idx, W, H, {
         palette: palRGB(), transparent: true, transparentIndex: 0,
         delay: state.delays[i], disposal: 2, first: i === 0,
       });
     });
     gif.finish();
-    download(new Blob([gif.bytes()], { type: 'image/gif' }), `my-pixel-emoji-${W}px-trymstene.com.gif`);
+    const px = Math.max(W, H);
+    download(new Blob([gif.bytes()], { type: 'image/gif' }), `my-pixel-emoji-${px}px-trymstene.com.gif`);
     exportDone();
-    track('forge_gif_export', { size: state.size, frames: state.frames.length, px: W });
+    track('forge_gif_export', { size: Math.max(state.w, state.h), frames: state.frames.length, px });
   }
   function exportPng(target) {
-    const scale = Math.max(1, Math.ceil(target / state.size));
-    const W = state.size * scale;
+    const scale = Math.max(1, Math.ceil(target / Math.max(state.w, state.h)));
     const cv = document.createElement('canvas');
-    cv.width = cv.height = W;
+    cv.width = state.w * scale;
+    cv.height = state.h * scale;
     drawGridInto(cv.getContext('2d'), frame(), scale, 1);
     cv.toBlob((blob) => {
       if (!blob) return;
-      download(blob, `my-pixel-emoji-${W}px-trymstene.com.png`);
+      const px = Math.max(cv.width, cv.height);
+      download(blob, `my-pixel-emoji-${px}px-trymstene.com.png`);
       exportDone();
-      track('forge_png_export', { size: state.size, px: W });
+      track('forge_png_export', { size: Math.max(state.w, state.h), px });
     }, 'image/png');
   }
   document.querySelectorAll('.fg-exp').forEach((b) => {
@@ -866,7 +957,7 @@ function init() {
     shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });
     btn.textContent = 'Saved to your shelf 🗄';
     setTimeout(() => { btn.textContent = label; }, 2500);
-    track('forge_shelf_save', { size: state.size, frames: state.frames.length });
+    track('forge_shelf_save', { size: Math.max(state.w, state.h), frames: state.frames.length });
   };
 
   // ---- submit to the Wall: first click reveals the optional signature ----
@@ -892,7 +983,7 @@ function init() {
       btn.textContent = res.ok ? 'Submitted! 🖼 The banana guy hangs the best ones' : 'The wall is busy — try again later';
       if (res.ok) passPatch('exhibitor');
     } catch (e) { btn.textContent = 'The wall is busy — try again later'; }
-    track('wall_submit', { kind: 'emoji', signed: by ? 1 : 0, size: state.size, frames: state.frames.length });
+    track('wall_submit', { kind: 'emoji', signed: by ? 1 : 0, size: Math.max(state.w, state.h), frames: state.frames.length });
     setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 4000);
   };
 
@@ -911,7 +1002,7 @@ function init() {
     const draft = (() => { try { return localStorage.getItem('forge-draft'); } catch (e) { return null; } })();
     if (draft) deserialize(draft);
   }
-  document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.size === state.size)));
+  document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(state.w === state.h && +x.dataset.size === state.w)));
   fitCanvas();
   setTool('pencil');
   renderPalette();
