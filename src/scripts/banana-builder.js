@@ -702,6 +702,65 @@ function init() {
     finally { btn.disabled = false; btn.textContent = label; }
   };
 
+  // ---- meme GIF export: the WHOLE dance, WITH captions + background + outfit
+  // (the outfit rides every drawComposite via the wrapper; here we just turn
+  // captions ON and keep the visitor's background, unlike the tight transparent
+  // emoji GIF). Solid bg → full square; transparent bg → cropped to content
+  // (captions included in the bbox) with 1-bit alpha. ----
+  el('bbDownloadMemeGif').onclick = async () => {
+    const btn = el('bbDownloadMemeGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Rendering…';
+    try {
+      await assetsReady();
+      const isT = state.bg === 'transparent';
+      const W = 480;
+      const frames = [];
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
+      for (let i = 0; i < NFRAMES; i++) {
+        drawComposite(ctx, W, i, {
+          bg: state.bg, captions: true, effect: state.effect,
+          hue: state.effect === 'disco' ? (360 * i / NFRAMES) : 0,
+        });
+        frames.push(ctx.getImageData(0, 0, W, W));
+      }
+      const bb = isT ? pad(bboxOf(frames.map((f) => f.data), W), W) : { x: 0, y: 0, w: W, h: W };
+      const s = 480 / Math.max(bb.w, bb.h);
+      const tw = Math.max(2, Math.round(bb.w * s)), th = Math.max(2, Math.round(bb.h * s));
+      const delay = Math.max(20, Math.round((state.spd * 1000) / NFRAMES));
+
+      // crop+scale every frame first, then build ONE palette from all of them
+      // (so disco's rotating hue / confetti colours all get represented, no
+      // per-frame flicker); then encode with that shared palette.
+      const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th; const tctx = tmp.getContext('2d');
+      const datas = [];
+      for (let i = 0; i < NFRAMES; i++) {
+        const src = document.createElement('canvas'); src.width = W; src.height = W; src.getContext('2d').putImageData(frames[i], 0, 0);
+        tctx.clearRect(0, 0, tw, th);
+        tctx.imageSmoothingEnabled = false;
+        tctx.drawImage(src, bb.x, bb.y, bb.w, bb.h, 0, 0, tw, th);
+        const data = tctx.getImageData(0, 0, tw, th).data;
+        if (isT) for (let k = 3; k < data.length; k += 4) data[k] = data[k] < 110 ? 0 : 255; // 1-bit alpha
+        datas.push(data);
+      }
+      const merged = new Uint8ClampedArray(datas.length * datas[0].length);
+      datas.forEach((d, i) => merged.set(d, i * d.length));
+      const palette = quantize(merged, 256, { format: 'rgba4444', oneBitAlpha: isT });
+
+      const gif = GIFEncoder();
+      for (let i = 0; i < NFRAMES; i++) {
+        const index = applyPalette(datas[i], palette, 'rgba4444');
+        gif.writeFrame(index, tw, th, isT ? { palette, delay, transparent: true, dispose: 2 } : { palette, delay });
+      }
+      gif.finish();
+      const blob = new Blob([gif.bytes()], { type: 'image/gif' });
+      download(URL.createObjectURL(blob), 'my-dancing-banana-meme-trymstene.com.gif');
+      toast('Meme GIF downloaded!');
+      track('gif_download', { file: 'builder-meme.gif', design: designStr() });
+      saveToShelf();
+      passPatch('maker'); passStat('builds');
+    } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  };
+
   // ---- meme/sticker PNG export: the PICKED frame, captions + background ----
   el('bbDownloadPng').onclick = async () => {
     await assetsReady();
