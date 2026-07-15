@@ -135,6 +135,19 @@ const faqLD = {
     #fgDone { margin-top: 0.8rem; border: 3px solid var(--ink); background: var(--banana); padding: 0.7rem 0.9rem; font-size: 0.9rem; }
     #fgDone a { font-weight: 700; }
 
+    /* the banana-themed confirm — no stock dialogs in this house */
+    #fgModal { position: fixed; inset: 0; z-index: 60; background: rgba(17, 17, 17, 0.55);
+      display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    #fgModal[hidden] { display: none; }
+    .fg-modalcard { position: relative; background: var(--paper); border: 3px solid var(--ink);
+      border-top: 10px solid var(--banana); box-shadow: 8px 8px 0 var(--ink);
+      max-width: 360px; width: 100%; padding: 1.1rem 1.2rem; transform: rotate(-0.6deg); }
+    .fg-modalcard h3 { margin: 0 0 0.4rem; padding-right: 2.6rem; }
+    .fg-modalcard p { margin: 0 0 0.9rem; line-height: 1.5; font-size: 0.92rem; }
+    .fg-modalnana { position: absolute; top: -34px; right: 10px; width: 38px; height: auto;
+      image-rendering: pixelated; transform: rotate(6deg); }
+    .fg-modalrow { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
     @media (max-width: 919px) {
       .fg-frame canvas { width: 48px; height: 48px; }
       .fg-panel { padding: 0.8rem; }
@@ -162,6 +175,7 @@ const faqLD = {
             <button id="fgAdd" title="New empty frame">+ frame</button>
             <button id="fgDup" title="Duplicate this frame">⧉</button>
             <button id="fgDel" title="Delete this frame">🗑</button>
+            <button id="fgClear" title="Wipe this frame clean">🧹</button>
             <button id="fgMoveL" title="Move this frame earlier">◀</button>
             <button id="fgMoveR" title="Move this frame later">▶</button>
             <button id="fgOnion" title="Ghost of the previous frame (O)">👻</button>
@@ -286,6 +300,18 @@ const faqLD = {
         <li>Forge it: download a transparent GIF or PNG sized for your platform, and upload it straight to Discord, Twitch or Slack.</li>
       </ol>
     </section>
+  </div>
+
+  <div id="fgModal" hidden role="dialog" aria-modal="true" aria-labelledby="fgModalTitle">
+    <div class="fg-modalcard">
+      <img class="fg-modalnana" src="/assets/dancing-banana-transparent.gif" alt="" width="38" height="54">
+      <h3 id="fgModalTitle"></h3>
+      <p id="fgModalBody"></p>
+      <div class="fg-modalrow">
+        <button class="btn btn--dark" id="fgModalYes"></button>
+        <button class="btn btn--light" id="fgModalNo"></button>
+      </div>
+    </div>
   </div>
 
   <script>

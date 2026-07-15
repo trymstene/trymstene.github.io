@@ -253,6 +253,48 @@ function init() {
     el('fgDelay').value = v;
     save();
   });
+  // ---- the banana-themed confirm (no stock dialogs in this house) ----
+  function fgConfirm({ title, body, yes, no }) {
+    return new Promise((resolve) => {
+      const m = el('fgModal');
+      el('fgModalTitle').textContent = title;
+      el('fgModalBody').textContent = body;
+      const yBtn = el('fgModalYes'), nBtn = el('fgModalNo');
+      yBtn.textContent = yes || 'Do it';
+      nBtn.textContent = no || 'Never mind';
+      m.hidden = false;
+      const onKey = (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); done(false); }
+        else if (e.key === 'Enter') { e.preventDefault(); done(true); }
+      };
+      function done(v) {
+        m.hidden = true;
+        yBtn.onclick = nBtn.onclick = m.onclick = null;
+        removeEventListener('keydown', onKey, true);
+        resolve(v);
+      }
+      yBtn.onclick = () => done(true);
+      nBtn.onclick = () => done(false);
+      m.onclick = (e) => { if (e.target === m) done(false); }; // tap outside = never mind
+      addEventListener('keydown', onKey, true);
+      nBtn.focus(); // the safe answer is one keypress away
+    });
+  }
+
+  // ---- clear frame: hose the pixels off, keep the frame ----
+  el('fgClear').onclick = async () => {
+    if (!frame().some((v) => v)) return; // already spotless
+    const ok = await fgConfirm({
+      title: '🧹 Wipe this frame?',
+      body: 'Every pixel on this frame gets hosed off. The other frames are safe — and Ctrl+Z can un-wipe it.',
+      yes: '🧹 Wipe it', no: 'Keep it',
+    });
+    if (!ok) return;
+    pushUndo();
+    frame().fill(0);
+    refreshAll(); save(); track('forge_frame_clear');
+  };
+
   // ---- frame reorder: walk the current frame left/right through the strip ----
   function moveFrame(dir) {
     const to = state.cur + dir;
@@ -335,6 +377,7 @@ function init() {
   el('fgUndo').onclick = undo;
   el('fgRedo').onclick = redo;
   addEventListener('keydown', (e) => {
+    if (!el('fgModal').hidden) return; // the banana confirm owns the keyboard
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     const k = e.key.toLowerCase();
@@ -489,11 +532,15 @@ function init() {
 
   // ---- size switch (destructive → confirm when pixels exist) ----
   document.querySelectorAll('.fg-size').forEach((b) => {
-    b.onclick = () => {
+    b.onclick = async () => {
       const s = parseInt(b.dataset.size, 10);
       if (s === state.size) return;
       const hasArt = state.frames.some((f) => f.some((v) => v));
-      if (hasArt && !confirm('Changing the grid starts a fresh canvas. Your current draft will be replaced — continue?')) return;
+      if (hasArt && !(await fgConfirm({
+        title: '🌱 Fresh canvas?',
+        body: `A ${s}×${s} grid starts you clean — this draft gets replaced. Anything you exported or saved to the shelf is safe.`,
+        yes: 'Start fresh', no: 'Keep drawing',
+      }))) return;
       stopPlay();
       state.size = s;
       state.frames = [new Uint8Array(s * s)];
@@ -591,7 +638,11 @@ function init() {
   async function importImage(blob, srcName) {
     stopPlay();
     const hasArt = state.frames.some((f) => f.some((v) => v));
-    if (hasArt && !confirm('Importing replaces your current canvas. Continue?')) return false;
+    if (hasArt && !(await fgConfirm({
+      title: '🍌 Import over this?',
+      body: 'The import gets pixelated onto the grid and replaces what you have here. Colours it can\'t match join your palette.',
+      yes: '⬆ Import it', no: 'Cancel',
+    }))) return false;
     let entries = [];
     if (blob.type === 'image/gif') {
       try { entries = decodeGifFrames(await blob.arrayBuffer()); } catch (e) { entries = []; }
