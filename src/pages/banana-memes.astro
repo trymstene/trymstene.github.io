@@ -14,13 +14,44 @@ const stickers = items.filter((i) => i.kind === 'sticker');
 const gifs = items.filter((i) => i.kind === 'gif');
 
 // community lane: approved visitor submissions live in the share worker's R2;
-// pulled at build (worker down = section simply absent until the next build)
+// pulled at build (worker down = they're simply absent until the next build)
 const WORKER = 'https://banana-share.trymstene.workers.dev';
 let community = [];
 try {
   const res = await fetch(WORKER + '/gallery/approved');
   if (res.ok) community = (await res.json()).sort((a, b) => b.approved - a.approved);
 } catch (e) {}
+
+// ONE grid, first-class citizens (Trym: same visibility, not shoved to the
+// bottom): editorial + community merge into a common card shape, community
+// spread EVENLY through the grid — visible early without dominating
+const cards = items.map((i) => ({
+  href: `/banana-memes/${i.id}/`,
+  img: `/assets/gallery-bananas/${i.file}`,
+  w: i.w, h: i.h,
+  title: i.title,
+  kind: i.kind,
+  community: false,
+  sub: i.kind === 'sticker' ? '✂ sticker' : '🎞 gif',
+  search: `${i.title} ${i.caption} ${i.tags.join(' ')} ${i.kind}`.toLowerCase(),
+  tags: i.tags.join(' '),
+}));
+const commCards = community.map((c) => ({
+  href: `/banana-memes/by/${c.slug}/`,
+  img: `${WORKER}/gallery/gif/${c.slug}.gif`,
+  w: undefined, h: undefined,
+  title: c.title,
+  kind: c.transparent ? 'sticker' : 'gif',
+  community: true,
+  by: c.by || 'a banana fan',
+  sub: `🍌 by ${c.by || 'a banana fan'}`,
+  search: `${c.title} ${c.by || ''} community ${c.transparent ? 'sticker' : 'gif'}`.toLowerCase(),
+  tags: '',
+}));
+if (commCards.length) {
+  const step = Math.ceil((cards.length + 1) / (commCards.length + 1));
+  commCards.forEach((c, n) => cards.splice(Math.min(step * (n + 1) + n, cards.length), 0, c));
+}
 
 const tagCount = {};
 items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
@@ -29,7 +60,7 @@ const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_I
 // title stays OFF the exact phrase "dancing banana gif" — that belongs to
 // /dancing-banana-gif-meme/ (the money page); this hub owns "banana memes"
 const title = 'Banana Memes & Stickers — Free, from the Banana\'s Creator';
-const description = `${items.length} free banana memes: captioned meme GIFs and transparent stickers by the creator of the original 1999 Dancing Banana. Download and share, no watermark.`;
+const description = `${cards.length} free banana memes: captioned meme GIFs and transparent stickers by the creator of the original 1999 Dancing Banana — plus the best from the community. Download and share, no watermark.`;
 
 const galleryLD = {
   '@context': 'https://schema.org',
@@ -41,9 +72,9 @@ const galleryLD = {
   creator: { '@id': SITE + '/#trym' },
   hasPart: {
     '@type': 'ItemList',
-    itemListElement: items.map((i, n) => ({
+    itemListElement: cards.map((c, n) => ({
       '@type': 'ListItem', position: n + 1,
-      url: `${SITE}/banana-memes/${i.id}/`, name: i.title,
+      url: SITE + c.href, name: c.title,
     })),
   },
 };
@@ -105,10 +136,7 @@ const crumbLD = {
     .gm-card img { max-width: 88%; max-height: 88%; height: auto; }
     .gm-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
     .gm-card .gm-kind { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; }
-    .gm-community { margin-top: 2.4rem; border-top: var(--line); padding-top: 1.5rem; }
-    .gm-community h2 { margin: 0 0 0.2rem; }
-    .gm-comm-sub { margin: 0 0 1rem; opacity: 0.75; font-size: 0.9rem; }
-    .gm-community .gm-card h3 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
+    .gm-kind--by { color: var(--hot, #ff4d6d); opacity: 1; }
     .gm-cta {
       margin-top: 2.4rem; border: var(--line); background: var(--ink); color: var(--paper);
       box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
@@ -125,9 +153,10 @@ const crumbLD = {
       <p class="kicker">The gallery</p>
       <h1>banana memes &amp; stickers</h1>
       <p>
-        {items.length} free banana memes, drawn by the person who made the original
-        <a href="/dancing-banana-gif-meme/">1999 Dancing Banana GIF</a> — captioned meme GIFs
-        and transparent stickers, free to download and drop in any chat. No watermark, no sign-up.
+        {cards.length} free banana memes by the person who made the original
+        <a href="/dancing-banana-gif-meme/">1999 Dancing Banana GIF</a> — plus the best
+        from the community. Captioned meme GIFs and transparent stickers, free to download
+        and drop in any chat. No watermark, no sign-up.
       </p>
     </div>
 
@@ -135,9 +164,10 @@ const crumbLD = {
          JS intercepts clicks and filters IN PLACE (Trym: don't bounce people
          to a new page), pushState keeps the URL shareable/refreshable -->
     <div class="gm-filters" id="gmKinds" role="navigation" aria-label="Categories">
-      <a href="/banana-memes/" data-kind="" aria-current="page">All ({items.length})</a>
-      <a href="/banana-memes/stickers/" data-kind="sticker">Stickers ({stickers.length})</a>
-      <a href="/banana-memes/gifs/" data-kind="gif">GIFs ({gifs.length})</a>
+      <a href="/banana-memes/" data-kind="" aria-current="page">All ({cards.length})</a>
+      <a href="/banana-memes/stickers/" data-kind="sticker">Stickers ({cards.filter((c) => c.kind === 'sticker').length})</a>
+      <a href="/banana-memes/gifs/" data-kind="gif">GIFs ({cards.filter((c) => c.kind === 'gif').length})</a>
+      {commCards.length > 0 && <a href="/banana-memes/by/" data-kind="community">🍌 Community ({commCards.length})</a>}
     </div>
     <div class="gm-tagrow" id="gmTags" role="navigation" aria-label="Tags">
       {liveTags.map((t) => <a href={`/banana-memes/${t}/`} data-tag={t}>#{t}</a>)}
@@ -148,38 +178,19 @@ const crumbLD = {
     </div>
 
     <div class="gm-grid" id="gmGrid">
-      {items.map((i, n) => (
-        <a class="gm-card" href={`/banana-memes/${i.id}/`} data-kind={i.kind} data-tags={i.tags.join(' ')}
-           data-search={`${i.title} ${i.caption} ${i.tags.join(' ')} ${i.kind}`.toLowerCase()}>
-          <div class={`gm-img${i.kind === 'sticker' ? ' gm-img--sticker' : ''}`}>
-            <img src={`/assets/gallery-bananas/${i.file}`} width={i.w} height={i.h}
+      {cards.map((c, n) => (
+        <a class="gm-card" href={c.href} data-kind={c.kind} data-tags={c.tags}
+           data-community={c.community ? '1' : undefined} data-search={c.search}>
+          <div class={`gm-img${c.kind === 'sticker' ? ' gm-img--sticker' : ''}`}>
+            <img src={c.img} width={c.w} height={c.h}
                  loading={n < 6 ? 'eager' : 'lazy'}
-                 alt={`${i.title} — ${i.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF'}`} />
+                 alt={`${c.title} — ${c.community ? `a custom dancing banana by ${c.by}` : (c.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF')}`} />
           </div>
-          <h2>{i.title}</h2>
-          <span class="gm-kind">{i.kind === 'sticker' ? '✂ sticker' : '🎞 gif'}</span>
+          <h2>{c.title}</h2>
+          <span class={`gm-kind${c.community ? ' gm-kind--by' : ''}`}>{c.sub}</span>
         </a>
       ))}
     </div>
-
-    {community.length > 0 && (
-      <section class="gm-community">
-        <h2><a href="/banana-memes/by/" style="color:inherit;">By the community →</a></h2>
-        <p class="gm-comm-sub">Made by visitors in the <a href="/make-a-banana/">banana builder</a>, hung here by the banana guy.</p>
-        <div class="gm-grid">
-          {community.map((c) => (
-            <a class="gm-card" href={`/banana-memes/by/${c.slug}/`}>
-              <div class={`gm-img${c.transparent ? ' gm-img--sticker' : ''}`}>
-                <img src={`${WORKER}/gallery/gif/${c.slug}.gif`} loading="lazy"
-                     alt={`${c.title} — a custom dancing banana by ${c.by || 'a banana fan'}`} />
-              </div>
-              <h3>{c.title}</h3>
-              <span class="gm-kind">🍌 by {c.by || 'a banana fan'}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-    )}
 
     <div class="gm-cta">
       <h2>Want a banana that's 100% yours?</h2>
@@ -224,7 +235,8 @@ const crumbLD = {
     function apply() {
       cards.forEach((c) => {
         const okQ = !state.q || c.dataset.search.includes(state.q);
-        const okK = !state.kind || c.dataset.kind === state.kind;
+        const okK = !state.kind
+          || (state.kind === 'community' ? c.dataset.community === '1' : c.dataset.kind === state.kind);
         const okT = !state.tag || c.dataset.tags.split(' ').includes(state.tag);
         c.style.display = okQ && okK && okT ? '' : 'none';
       });
@@ -239,12 +251,13 @@ const crumbLD = {
     }
     function urlFor() {
       if (state.tag) return `/banana-memes/${state.tag}/`;
+      if (state.kind === 'community') return '/banana-memes/by/';
       if (state.kind) return `/banana-memes/${state.kind === 'sticker' ? 'stickers' : 'gifs'}/`;
       return '/banana-memes/';
     }
     function stateFrom(path) {
       const seg = (path.match(/^\/banana-memes\/([a-z0-9-]+)\/$/) || [])[1] || '';
-      state.kind = seg === 'stickers' ? 'sticker' : seg === 'gifs' ? 'gif' : '';
+      state.kind = seg === 'stickers' ? 'sticker' : seg === 'gifs' ? 'gif' : seg === 'by' ? 'community' : '';
       state.tag = (seg && !state.kind) ? seg : '';
     }
     kindLinks.forEach((a) => a.addEventListener('click', (e) => {
