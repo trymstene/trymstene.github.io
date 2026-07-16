@@ -154,6 +154,10 @@ const JELLY_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="ht
 // hues via swap; rainbow = the same rect layout hand-recoloured row by row.
 const JELLY_GOLD_SVG = JELLY_SVG.replace(/ff4d9d/g, 'ffe135').replace(/c62c74/g, 'e0a428');
 const JELLY_RAINBOW_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#ff4d4d"/><rect x="1" y="1" width="5" height="1" fill="#ff9f1c"/><rect x="0" y="2" width="2" height="1" fill="#ffe135"/><rect x="2" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="3" y="2" width="4" height="1" fill="#ffe135"/><rect x="0" y="3" width="7" height="1" fill="#37d67a"/><rect x="0" y="4" width="1" height="1" fill="#2a7ac0"/><rect x="1" y="4" width="5" height="1" fill="#4db8ff"/><rect x="6" y="4" width="1" height="1" fill="#2a7ac0"/><rect x="1" y="5" width="1" height="1" fill="#6a1b9a"/><rect x="2" y="5" width="3" height="1" fill="#b388ff"/><rect x="5" y="5" width="1" height="1" fill="#6a1b9a"/><rect x="2" y="6" width="3" height="1" fill="#6a1b9a"/></svg>';
+// THE MEGA JELLY (16 Jul, Trym: "one big ass jelly, ~6x, doesn't move, +50"):
+// its own 14x12 sprite — a whole dumped pudding with a highlight, dark base
+// and splat feet; same colour language as the pellets, no outline.
+const MEGA_JELLY_SVG = '<svg viewBox="0 0 14 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="6" height="1" fill="#ff4d9d"/><rect x="2" y="1" width="10" height="1" fill="#ff4d9d"/><rect x="1" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="3" y="2" width="2" height="1" fill="#f0f0fa"/><rect x="5" y="2" width="8" height="1" fill="#ff4d9d"/><rect x="1" y="3" width="1" height="1" fill="#ff4d9d"/><rect x="2" y="3" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="3" width="8" height="1" fill="#ff4d9d"/><rect x="0" y="4" width="2" height="1" fill="#ff4d9d"/><rect x="2" y="4" width="2" height="1" fill="#f0f0fa"/><rect x="4" y="4" width="10" height="1" fill="#ff4d9d"/><rect x="0" y="5" width="14" height="1" fill="#ff4d9d"/><rect x="0" y="6" width="14" height="1" fill="#ff4d9d"/><rect x="0" y="7" width="1" height="1" fill="#c62c74"/><rect x="1" y="7" width="12" height="1" fill="#ff4d9d"/><rect x="13" y="7" width="1" height="1" fill="#c62c74"/><rect x="0" y="8" width="2" height="1" fill="#c62c74"/><rect x="2" y="8" width="10" height="1" fill="#ff4d9d"/><rect x="12" y="8" width="2" height="1" fill="#c62c74"/><rect x="1" y="9" width="2" height="1" fill="#c62c74"/><rect x="3" y="9" width="8" height="1" fill="#ff4d9d"/><rect x="11" y="9" width="2" height="1" fill="#c62c74"/><rect x="2" y="10" width="10" height="1" fill="#c62c74"/><rect x="1" y="11" width="3" height="1" fill="#c62c74"/><rect x="6" y="11" width="3" height="1" fill="#c62c74"/><rect x="11" y="11" width="2" height="1" fill="#c62c74"/></svg>';
 const STOOL_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="6" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="1" width="6" height="1" fill="#8a5a2b"/><rect x="7" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="2" width="6" height="1" fill="#111111"/><rect x="1" y="3" width="1" height="1" fill="#111111"/><rect x="2" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="4" height="1" fill="#8a5a2b"/><rect x="6" y="5" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="7" width="1" height="1" fill="#111111"/></svg>';
 // THE MENU (Trym-approved list, 7 Jul): 10 conveyor items + 8 counter
 // drinks — sprites authored in tools/floor-items-2.py on the banana grid.
@@ -1091,10 +1095,63 @@ function init() {
     return { pts, born: Date.now(), tray };
   }
   let magnetT = 0;
+  // THE MEGA JELLY (Trym, 16 Jul): rarely, the rig dumps ONE enormous jelly —
+  // it doesn't move, doesn't flee, isn't fancy; it just sits there being
+  // absolutely massive until somebody eats it. +50. One at a time.
+  const megatest = new URLSearchParams(location.search).has('megatest'); // QA: first dump in ~4s, redumps fast
+  let mega = null;
+  let nextMegaAt = Date.now() + (megatest ? 4000 : (240 + Math.random() * 180) * 1000); // first ~4–7 min in
+  function tickMega(me, now) {
+    if (!mega && now >= nextMegaAt) {
+      for (let tries = 0; tries < 40 && !mega; tries++) {
+        const x = 16 + Math.random() * 68;
+        const y = topClamp + 14 + Math.random() * (72 - topClamp);
+        if (insideBar(x, y)) continue;
+        const d = document.createElement('div');
+        d.className = 'rv-mega';
+        d.innerHTML = MEGA_JELLY_SVG;
+        d.style.left = x + '%';
+        d.style.top = y + '%';
+        el('rvRun').parentElement.appendChild(d); // NOT inside rvRun — run completion wipes that host
+        mega = { x, y, elm: d, born: now };
+        floatPlus(x, y - 10, 'MEGA JELLY!');
+      }
+      if (!mega) nextMegaAt = now + 20000; // cornered — retry in a moment
+      return;
+    }
+    if (!mega) return;
+    if (now - mega.born > 180000) { // nobody wanted the big one — poof + redump later
+      poofAt(mega.x, mega.y, 1.3);
+      mega.elm.remove();
+      mega = null;
+      nextMegaAt = now + (megatest ? 8000 : (300 + Math.random() * 240) * 1000);
+      return;
+    }
+    const dxm = ((me.x - mega.x) / 100) * floorW;
+    const dym = ((me.y - mega.y) / 100) * floorH;
+    if (Math.hypot(dxm, dym) < (me.size || 90) * 0.55 + 34) { // big target, big radius
+      const gone = mega.elm;
+      gone.classList.add('rv-mega--got');
+      setTimeout(() => gone.remove(), 620); // no half-faded ghosts, ever
+      const shotM = fxActive(me, now) && me.fx.id === 'jellyshot' ? 2 : 1;
+      const gainM = 50 * shotM;
+      tonight.jelly += gainM;
+      passStat('jelly', gainM);
+      addHype(15);
+      bumpChain();
+      floatPlus(mega.x, mega.y - 8, '+' + gainM);
+      if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('now THAT is a proper serving 🍮', true);
+      track('rave_jelly_special', { kind: 'mega' });
+      refreshStats();
+      mega = null;
+      nextMegaAt = now + (megatest ? 8000 : (300 + Math.random() * 240) * 1000); // the next dump in 5–9 min
+    }
+  }
   function tickRun() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     const now = Date.now();
+    tickMega(me, now); // the big one ticks even between pellet runs
     // THE JELLY MAGNET: while it runs, jelly can't wait — no breather between
     // runs, and every loose pellet slides across the floor INTO you
     const magnetOn = fxActive(me, now) && me.fx.id === 'magnet';
