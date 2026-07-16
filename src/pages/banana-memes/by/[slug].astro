@@ -97,7 +97,12 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
     .gd-box--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 26px 26px; }
     .gd-box img { max-width: 100%; height: auto; }
     .gd-title { font-size: clamp(1.6rem, 6vw, 2.4rem); margin: 0 0 0.5rem; }
-    .gd-byline { font-size: 0.9rem; font-weight: 700; color: var(--hot, #ff4d6d); margin: 0 0 0.6rem; }
+    .gd-byline { font-size: 0.9rem; font-weight: 700; margin: 0 0 0.6rem; }
+    .gd-byname {
+      display: inline-block; background: var(--banana); color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.08em 0.45em; margin-left: 0.1em;
+      font-weight: 800; transform: rotate(-1deg);
+    }
     .gd-stars { display: flex; justify-content: center; gap: 3px; }
     .gd-stars button {
       background: none; border: 0; cursor: pointer; font-size: 1.35rem; line-height: 1; padding: 3px;
@@ -135,7 +140,7 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
     </div>
 
     <h1 class="gd-title">{item.title}</h1>
-    <p class="gd-byline">by {creator}</p>
+    <p class="gd-byline">by <b class="gd-byname">{creator}</b></p>
     <div class="gd-rate">
       <div class="gd-stars" role="group" aria-label={`Rate ${item.title} in bananas`}></div>
       <p class="gd-count">be the first to rate 🍌</p>

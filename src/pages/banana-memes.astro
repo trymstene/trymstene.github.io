@@ -136,7 +136,14 @@ const crumbLD = {
     .gm-card img { max-width: 88%; max-height: 88%; height: auto; }
     .gm-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
     .gm-card .gm-kind { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; }
-    .gm-kind--by { color: var(--hot, #ff4d6d); opacity: 1; }
+    /* community byline: "by" stays a quiet label, the NAME gets the banana
+       highlight — ink on yellow, unambiguous and high-contrast */
+    .gm-kind--by { opacity: 1; }
+    .gm-byname {
+      display: inline-block; background: var(--banana); color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.05em 0.4em; margin-left: 0.15em;
+      font-weight: 800; transform: rotate(-1deg);
+    }
     .gm-cta {
       margin-top: 2.4rem; border: var(--line); background: var(--ink); color: var(--paper);
       box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
@@ -187,7 +194,9 @@ const crumbLD = {
                  alt={`${c.title} — ${c.community ? `a custom dancing banana by ${c.by}` : (c.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF')}`} />
           </div>
           <h2>{c.title}</h2>
-          <span class={`gm-kind${c.community ? ' gm-kind--by' : ''}`}>{c.sub}</span>
+          {c.community
+            ? <span class="gm-kind gm-kind--by">🍌 by <b class="gm-byname">{c.by}</b></span>
+            : <span class="gm-kind">{c.sub}</span>}
         </a>
       ))}
     </div>

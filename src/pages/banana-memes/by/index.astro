@@ -63,7 +63,12 @@ const ld = [{
     .gc-card .gc-img--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 22px 22px; }
     .gc-card img { max-width: 88%; max-height: 88%; height: auto; }
     .gc-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
-    .gc-card .gc-by { font-size: 0.72rem; font-weight: 700; opacity: 0.6; }
+    .gc-card .gc-by { font-size: 0.72rem; font-weight: 700; }
+    .gc-byname {
+      display: inline-block; background: var(--banana); color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.05em 0.4em; margin-left: 0.15em;
+      font-weight: 800; transform: rotate(-1deg);
+    }
     .gc-cta {
       margin-top: 2.2rem; border: var(--line); background: var(--ink); color: var(--paper);
       box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
@@ -93,7 +98,7 @@ const ld = [{
                    alt={`${c.title} — a custom dancing banana by ${c.by || 'a banana fan'}`} />
             </div>
             <h2>{c.title}</h2>
-            <span class="gc-by">🍌 by {c.by || 'a banana fan'}</span>
+            <span class="gc-by">🍌 by <b class="gc-byname">{c.by || 'a banana fan'}</b></span>
           </a>
         ))}
       </div>
