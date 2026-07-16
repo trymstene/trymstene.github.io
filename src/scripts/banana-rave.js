@@ -569,6 +569,7 @@ function init() {
     if (!dx && !dy && !gliding) { me.slideVx = 0; me.slideVy = 0; return; }
     const norm = Math.hypot(dx, dy) || 1;
     let boost = fxActive(me, now) && me.fx.id === 'daiquiri' ? 1.45
+      : fxActive(me, now) && me.fx.id === 'espresso' ? 2 // caffeine rush — fastest legs in the house
       : fxActive(me, now) && me.fx.id === 'balloon' ? 1.35 : 1; // daiquiri legs / balloon drift
     if (now < hypeModeUntil) boost *= 1.25; // hype mode = disco legs — peaking must FEEL like peaking
     const step = (WALK_SPEED * boost * dtMs) / 1000;
@@ -1606,7 +1607,7 @@ function init() {
         flash: 'the flash is stuck on — strike a pose!',
         slide: 'zero friction. good luck stopping!',
         bubbles: 'big bubbles, no troubles.',
-        espresso: 'the closing-shift special — HOLD ON!',
+        espresso: 'caffeine hits — DOUBLE SPEED, hold on!',
         lagoon: 'blub. you are FISH now — flop it out!',
         boots: 'one small step for banana — BOING!',
         wobble: 'your legs went full jelly. dance anyway!',
