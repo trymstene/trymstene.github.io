@@ -45,8 +45,8 @@ const commCards = community.map((c) => ({
   community: true,
   by: c.by || 'a banana fan',
   sub: `🍌 by ${c.by || 'a banana fan'}`,
-  search: `${c.title} ${c.by || ''} community ${c.transparent ? 'sticker' : 'gif'}`.toLowerCase(),
-  tags: '',
+  search: `${c.title} ${c.by || ''} community ${(c.tags || []).join(' ')} ${c.transparent ? 'sticker' : 'gif'}`.toLowerCase(),
+  tags: (c.tags || []).join(' '),
 }));
 if (commCards.length) {
   const step = Math.ceil((cards.length + 1) / (commCards.length + 1));

@@ -14,15 +14,37 @@ import items from '../../data/gallery.json';
 import { TAGS, MIN_TAG_ITEMS } from '../../data/gallery-tags.js';
 
 export async function getStaticPaths() {
+  // ⚠ isolated scope — consts must live in here (the WORKER lesson)
+  const WORKER = 'https://banana-share.trymstene.workers.dev';
   // live rating board (best effort — build must survive a worker hiccup)
   let board = {};
   try {
     const res = await fetch('https://banana-remixes.trymstene.workers.dev/ratings');
     if (res.ok) board = await res.json();
   } catch (e) { /* no ratings at build = no AggregateRating markup */ }
+  // approved community items — they carry tags too (set at approve/edit time)
+  // and belong on the tag + category pages beside Trym's own
+  let approved = [];
+  try {
+    const res = await fetch(WORKER + '/gallery/approved');
+    if (res.ok) approved = await res.json();
+  } catch (e) {}
+
+  // one member-card shape for both lanes (the collection pages render these)
+  const allCards = [
+    ...items.map((i) => ({
+      href: `/banana-memes/${i.id}/`, img: `/assets/gallery-bananas/${i.file}`,
+      w: i.w, h: i.h, kind: i.kind, title: i.title, tags: i.tags, by: null,
+    })),
+    ...approved.map((c) => ({
+      href: `/banana-memes/by/${c.slug}/`, img: `${WORKER}/gallery/gif/${c.slug}.gif`,
+      w: undefined, h: undefined, kind: c.transparent ? 'sticker' : 'gif',
+      title: c.title, tags: c.tags || [], by: c.by || 'a banana fan',
+    })),
+  ];
 
   const tagCount = {};
-  items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+  allCards.forEach((c) => c.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
   const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
 
   // an item id colliding with a tag/category slug would silently lose its
@@ -55,14 +77,14 @@ export async function getStaticPaths() {
   for (const t of liveTags) {
     paths.push({
       params: { slug: t },
-      props: { type: 'tag', tagKey: t, members: items.filter((i) => i.tags.includes(t)), liveTags },
+      props: { type: 'tag', tagKey: t, members: allCards.filter((c) => c.tags.includes(t)), liveTags },
     });
   }
 
   for (const c of ['stickers', 'gifs']) {
     paths.push({
       params: { slug: c },
-      props: { type: 'cat', catKey: c, members: items.filter((i) => (c === 'stickers' ? i.kind === 'sticker' : i.kind === 'gif')), liveTags },
+      props: { type: 'cat', catKey: c, members: allCards.filter((x) => (c === 'stickers' ? x.kind === 'sticker' : x.kind === 'gif')), liveTags },
     });
   }
   return paths;
@@ -147,9 +169,9 @@ if (type === 'item') {
     creator: { '@id': SITE + '/#trym' },
     hasPart: {
       '@type': 'ItemList',
-      itemListElement: members.map((i, n) => ({
+      itemListElement: members.map((m, n) => ({
         '@type': 'ListItem', position: n + 1,
-        url: `${SITE}/banana-memes/${i.id}/`, name: i.title,
+        url: SITE + m.href, name: m.title,
       })),
     },
   }, {
@@ -225,6 +247,12 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
     .gc-card .gc-img--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 22px 22px; }
     .gc-card img { max-width: 88%; max-height: 88%; height: auto; }
     .gc-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0; }
+    .gc-by { display: block; font-size: 0.72rem; font-weight: 700; margin-top: 0.15rem; }
+    .gc-byname {
+      display: inline-block; background: var(--banana); color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.05em 0.4em; margin-left: 0.15em;
+      font-weight: 800; transform: rotate(-1deg);
+    }
     .gc-back { margin-top: 1.8rem; text-align: center; }
   </style>
 
@@ -297,13 +325,14 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
           : 'Captioned dancing banana meme GIFs — Monday moods, work memes and pure vibes on loud pixel backgrounds. Free to download and share.')}
       </p>
       <div class="gc-grid">
-        {members.map((i) => (
-          <a class="gc-card" href={`/banana-memes/${i.id}/`}>
-            <div class={`gc-img${i.kind === 'sticker' ? ' gc-img--sticker' : ''}`}>
-              <img src={`/assets/gallery-bananas/${i.file}`} width={i.w} height={i.h} loading="lazy"
-                   alt={`${i.title} — ${i.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF'}`} />
+        {members.map((m) => (
+          <a class="gc-card" href={m.href}>
+            <div class={`gc-img${m.kind === 'sticker' ? ' gc-img--sticker' : ''}`}>
+              <img src={m.img} width={m.w} height={m.h} loading="lazy"
+                   alt={`${m.title} — ${m.by ? `a custom dancing banana by ${m.by}` : (m.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF')}`} />
             </div>
-            <h2>{i.title}</h2>
+            <h2>{m.title}</h2>
+            {m.by && <span class="gc-by">🍌 by <b class="gc-byname">{m.by}</b></span>}
           </a>
         ))}
       </div>

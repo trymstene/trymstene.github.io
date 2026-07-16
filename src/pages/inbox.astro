@@ -405,6 +405,10 @@ const description = 'Authorized banana personnel only.';
         titleIn.value = it.title || '';
         titleIn.maxLength = 60;
         titleIn.placeholder = 'title — becomes the page';
+        const tagsIn = document.createElement('input');
+        tagsIn.maxLength = 120;
+        tagsIn.placeholder = 'tags, comma-separated (monday, work, vibes…)';
+        tagsIn.style.marginTop = '0.4rem';
         const line = document.createElement('p');
         line.className = 'bm-sub__line';
         line.textContent = (it.transparent ? 'sticker (transparent)' : 'gif (solid)') + ' · ' + it.kb + ' KB · by ' +
@@ -424,7 +428,7 @@ const description = 'Authorized banana personnel only.';
           try {
             const r = await fetch(GAL + '/gallery/moderate?key=' + encodeURIComponent(gkey), {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: it.id, action, title: titleIn.value }),
+              body: JSON.stringify({ id: it.id, action, title: titleIn.value, tags: tagsIn.value }),
             });
             const d = await r.json();
             if (d.ok) {
@@ -442,7 +446,7 @@ const description = 'Authorized banana personnel only.';
           moderate('reject');
         };
         actions.appendChild(hang); actions.appendChild(bin);
-        meta.appendChild(titleIn); meta.appendChild(line); meta.appendChild(actions);
+        meta.appendChild(titleIn); meta.appendChild(tagsIn); meta.appendChild(line); meta.appendChild(actions);
         card.appendChild(box); card.appendChild(meta);
         list.appendChild(card);
       });

@@ -61,6 +61,7 @@ export default {
       if (url.pathname === '/gallery/pending-list') return handleGalleryPendingList(request, env, url);
       if (url.pathname.startsWith('/gallery/pending/')) return handleGalleryPending(request, env, url);
       if (url.pathname === '/gallery/moderate') return handleGalleryModerate(request, env, url);
+      if (url.pathname === '/gallery/edit') return handleGalleryEdit(request, env, url);
       if (url.pathname === '/gallery/approved') return handleGalleryApproved(env);
       if (url.pathname.startsWith('/gallery/gif/')) return handleGalleryGif(env, url);
       if (url.pathname === '/health') return handleHealth(env);
@@ -265,6 +266,13 @@ async function handleWallInbox(request, env, url) {
 const slugify = (s) => String(s || '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'banana';
 
+// tags: comma/space-separated in → clean kebab list out (≤8, each ≤24 chars)
+const cleanTags = (v) => [...new Set(
+  (Array.isArray(v) ? v : String(v || '').split(/[,\s]+/))
+    .map((t) => String(t).toLowerCase().replace(/[^a-z0-9-]+/g, '').slice(0, 24))
+    .filter((t) => t && !dirty(t))
+)].slice(0, 8);
+
 // ---------- POST /gallery/submit?meta= — GIF binary into the inbox ----------
 async function handleGallerySubmit(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(env, request) });
@@ -349,6 +357,7 @@ async function handleGalleryAdmin(request, env, url) {
       <img src="/gallery/pending/${d.id}.gif?key=${encodeURIComponent(key)}" alt="">
       <div class="meta">
         <input id="t-${d.id}" value="${esc(d.title)}" maxlength="60" placeholder="title (becomes the page)">
+        <input id="g-${d.id}" value="" maxlength="120" placeholder="tags, comma-separated (monday, work, vibes…)" style="margin-top:0.4rem;">
         <p>${d.kind} · ${d.transparent ? 'transparent (sticker)' : 'solid (gif)'} · ${d.kb} KB · by <b>${esc(d.by || 'anonymous')}</b> · ${new Date(d.created).toISOString().slice(0, 10)}</p>
         <div class="btns">
           <button class="ok" onclick="mod('${d.id}','approve')">✓ approve</button>
@@ -376,9 +385,10 @@ ${rows || '<p>Inbox zero 🍌</p>'}
 <script>
 async function mod(id, action) {
   const title = document.getElementById('t-' + id).value;
+  const tags = document.getElementById('g-' + id).value;
   const res = await fetch('/gallery/moderate?key=' + encodeURIComponent(${JSON.stringify(key)}), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, action, title }),
+    body: JSON.stringify({ id, action, title, tags }),
   });
   const d = await res.json().catch(() => ({}));
   if (d.ok) document.getElementById('c-' + id).classList.add('done');
@@ -426,6 +436,7 @@ async function handleGalleryModerate(request, env, url) {
   });
   index.push({
     slug, title, by: d.by || '', kind: d.kind, transparent: !!d.transparent,
+    tags: cleanTags(body.tags),
     params: d.params || '', kb: d.kb || 0, created: d.created, approved: Date.now(),
   });
   await env.SHARES.put('gallery-live/index.json', JSON.stringify(index), {
@@ -434,6 +445,36 @@ async function handleGalleryModerate(request, env, url) {
   await env.SHARES.delete(`gallery-inbox/${id}.gif`);
   await env.SHARES.delete(`gallery-inbox/${id}.json`);
   return json({ ok: true, slug }, 200, cors);
+}
+
+// ---------- POST /gallery/edit?key= — retag/retitle an already-LIVE item ----------
+// (the slug is frozen — it's the URL — so edits touch title/tags/by only)
+async function handleGalleryEdit(request, env, url) {
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403, cors);
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405, cors);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
+  const slug = String(body.slug || '');
+  const idxObj = await env.SHARES.get('gallery-live/index.json');
+  let index = [];
+  if (idxObj) { try { index = await idxObj.json(); } catch (e) {} }
+  const entry = index.find((e) => e.slug === slug);
+  if (!entry) return json({ error: 'not found' }, 404, cors);
+  if (body.tags !== undefined) entry.tags = cleanTags(body.tags);
+  if (body.title !== undefined) {
+    const t = String(body.title).trim().slice(0, 60);
+    if (t && !dirty(t)) entry.title = t;
+  }
+  if (body.by !== undefined) {
+    const b = String(body.by).trim().slice(0, 24);
+    if (!dirty(b)) entry.by = b;
+  }
+  await env.SHARES.put('gallery-live/index.json', JSON.stringify(index), {
+    httpMetadata: { contentType: 'application/json' },
+  });
+  return json({ ok: true, entry }, 200, cors);
 }
 
 // ---------- GET /gallery/approved — public, the build pulls this ----------

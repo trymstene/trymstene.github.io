@@ -8,6 +8,8 @@
 // next build; Trym's own items are unaffected).
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PixelIcon from '../../../components/PixelIcon.astro';
+import editorial from '../../../data/gallery.json';
+import { TAGS, MIN_TAG_ITEMS } from '../../../data/gallery-tags.js';
 
 const WORKER = 'https://banana-share.trymstene.workers.dev';
 
@@ -27,13 +29,20 @@ export async function getStaticPaths() {
     if (res.ok) board = await res.json();
   } catch (e) {}
 
+  // which tags have live pages? counted across BOTH lanes (same rule as the
+  // main route — keep the two computations aligned)
+  const tagCount = {};
+  editorial.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+  approved.forEach((c) => (c.tags || []).forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+  const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+
   return approved.map((item) => {
     const related = approved.filter((x) => x.slug !== item.slug).slice(0, 6);
-    return { params: { slug: item.slug }, props: { item, related, tally: board['gal-c-' + item.slug] || null } };
+    return { params: { slug: item.slug }, props: { item, related, liveTags, tally: board['gal-c-' + item.slug] || null } };
   });
 }
 
-const { item, related, tally } = Astro.props;
+const { item, related, liveTags, tally } = Astro.props;
 const SITE = 'https://trymstene.com';
 const pageUrl = `${SITE}/banana-memes/by/${item.slug}/`;
 const gifUrl = `${WORKER}/gallery/gif/${item.slug}.gif`;
@@ -53,6 +62,7 @@ const imageLD = {
   description,
   encodingFormat: 'image/gif',
   representativeOfPage: true,
+  ...(item.tags && item.tags.length ? { keywords: item.tags.join(', ') } : {}),
   uploadDate: new Date(item.approved).toISOString().slice(0, 10),
   creditText: item.by ? `${item.by} — made in the banana builder on trymstene.com` : 'A visitor — made in the banana builder on trymstene.com',
   ...(item.by ? { author: { '@type': 'Person', name: item.by } } : {}),
@@ -111,6 +121,12 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
     .gd-stars button.on { filter: none; }
     .gd-count { font-size: 0.78rem; opacity: 0.7; font-weight: 700; margin: 0.25rem 0 0; }
     .gd-blurb { max-width: 54ch; margin: 1rem auto 1.2rem; line-height: 1.55; opacity: 0.85; }
+    .gd-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.2rem; }
+    .gd-tags a, .gd-tags span {
+      font-size: 0.74rem; font-weight: 700; text-decoration: none; color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.2rem 0.55rem; background: var(--paper);
+    }
+    .gd-tags a:hover { background: var(--banana); }
     .gd-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
     .gd-actions .btn { flex: 1; min-width: 220px; }
     .gd-note { font-size: 0.8rem; opacity: 0.7; margin-top: 1rem; }
@@ -151,6 +167,15 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
       <a href="/make-a-banana/">banana builder</a> and hung in the gallery by the
       banana guy himself. Free to download and share.
     </p>
+
+    {(item.tags || []).length > 0 && (
+      <div class="gd-tags">
+        {item.tags.map((t) => liveTags.includes(t)
+          ? <a href={`/banana-memes/${t}/`}>#{t}</a>
+          : <span>#{t}</span>)}
+        <a href={`/banana-memes/${item.transparent ? 'stickers' : 'gifs'}/`}>{item.transparent ? '✂ stickers' : '🎞 gifs'}</a>
+      </div>
+    )}
 
     <div class="gd-actions">
       <a class="btn btn--dark" id="gdDownload" href={gifUrl} download={`${item.slug}-trymstene.com.gif`}>
