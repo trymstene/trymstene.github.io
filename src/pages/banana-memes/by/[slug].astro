@@ -12,6 +12,10 @@ import PixelIcon from '../../../components/PixelIcon.astro';
 const WORKER = 'https://banana-share.trymstene.workers.dev';
 
 export async function getStaticPaths() {
+  // ⚠ getStaticPaths runs in an ISOLATED scope — it cannot see module-level
+  // consts (the outer WORKER threw a ReferenceError here, my try/catch
+  // swallowed it, and the route silently built ZERO pages). Define locally.
+  const WORKER = 'https://banana-share.trymstene.workers.dev';
   let approved = [];
   try {
     const res = await fetch(WORKER + '/gallery/approved');
