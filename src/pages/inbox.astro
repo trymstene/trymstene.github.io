@@ -198,6 +198,10 @@ const description = 'Authorized banana personnel only.';
   </div>
 
   <script>
+    // Trym's editorial items (baked at build; runtime overrides merge on top
+    // in the live desk so the inputs always show the CURRENT values)
+    import editorialBase from '../data/gallery.json';
+
     const API = new URLSearchParams(location.search).get('api') || 'https://banana-contact.trymstene.workers.dev';
     const READ_KEY = 'inbox-read-v1';
     const el = (id) => document.getElementById(id);
@@ -508,13 +512,30 @@ const description = 'Authorized banana personnel only.';
         list.appendChild(card);
       });
     }
-    // ── the LIVE catalogue: search / filter / sort / edit, scales to 100s ──
+    // ── the LIVE catalogue: BOTH lanes (Trym's editorial + community),
+    //    search / filter / sort / edit — scales to 100s ──
     let liveItems = null;
     let liveFilter = 'all';
     async function liveLoad() {
-      const r = await fetch(GAL + '/gallery/approved', { cache: 'no-store' });
-      if (!r.ok) return false;
-      liveItems = await r.json();
+      const [ap, ov] = await Promise.all([
+        fetch(GAL + '/gallery/approved', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []),
+        fetch(GAL + '/gallery/overrides', { cache: 'no-store' }).then((r) => r.ok ? r.json() : {}).catch(() => ({})),
+      ]);
+      const mine = editorialBase.map((i) => ({
+        lane: 'mine', key: i.id,
+        title: (ov[i.id] && ov[i.id].title) || i.title,
+        tags: (ov[i.id] && Array.isArray(ov[i.id].tags)) ? ov[i.id].tags : i.tags,
+        kind: i.kind, img: '/assets/gallery-bananas/' + i.file,
+        href: '/banana-memes/' + i.id + '/', ts: Date.parse(i.added) || 0, by: null,
+      }));
+      const comm = (ap || []).map((c) => ({
+        lane: 'community', key: c.slug,
+        title: c.title, tags: c.tags || [], by: c.by || '',
+        kind: c.transparent ? 'sticker' : 'gif',
+        img: GAL + '/gallery/gif/' + c.slug + '.gif',
+        href: '/banana-memes/by/' + c.slug + '/', ts: c.approved || 0,
+      }));
+      liveItems = [...comm, ...mine];
       return true;
     }
     async function liveBoot() {
@@ -528,24 +549,27 @@ const description = 'Authorized banana personnel only.';
       const q = el('bmLiveQ').value.trim().toLowerCase();
       const sort = el('bmLiveSort').value;
       let shown = liveItems.filter((it) => {
-        const hay = (it.title + ' ' + (it.by || '') + ' ' + it.slug + ' ' + (it.tags || []).join(' ')).toLowerCase();
+        const hay = (it.title + ' ' + (it.by || '') + ' ' + it.key + ' ' + it.tags.join(' ')).toLowerCase();
         if (q && !hay.includes(q)) return false;
-        if (liveFilter === 'untagged') return !(it.tags || []).length;
-        if (liveFilter === 'sticker') return it.transparent;
-        if (liveFilter === 'gif') return !it.transparent;
+        if (liveFilter === 'untagged') return !it.tags.length;
+        if (liveFilter === 'mine') return it.lane === 'mine';
+        if (liveFilter === 'community') return it.lane === 'community';
+        if (liveFilter === 'sticker') return it.kind === 'sticker';
+        if (liveFilter === 'gif') return it.kind === 'gif';
         return true;
       });
       shown = shown.slice().sort((a, b) =>
-        sort === 'old' ? a.approved - b.approved :
+        sort === 'old' ? a.ts - b.ts :
         sort === 'az' ? a.title.localeCompare(b.title) :
-        b.approved - a.approved);
+        b.ts - a.ts);
 
       // filter chips with live counts
       const chips = el('bmLiveChips');
       chips.textContent = '';
-      const untagged = liveItems.filter((it) => !(it.tags || []).length).length;
+      const untagged = liveItems.filter((it) => !it.tags.length).length;
       [['all', 'all (' + liveItems.length + ')'],
        ['untagged', '🏷 untagged (' + untagged + ')'],
+       ['mine', '🍌 mine'], ['community', '👥 community'],
        ['sticker', 'stickers'], ['gif', 'gifs']].forEach(([v, label]) => {
         const b = document.createElement('button');
         b.className = 'bm-chip';
@@ -572,7 +596,7 @@ const description = 'Authorized banana personnel only.';
         box.className = 'bm-live__img';
         const img = document.createElement('img');
         img.loading = 'lazy';
-        img.src = GAL + '/gallery/gif/' + it.slug + '.gif';
+        img.src = it.img;
         img.alt = '';
         box.appendChild(img);
 
@@ -585,40 +609,50 @@ const description = 'Authorized banana personnel only.';
         const row2 = document.createElement('div');
         row2.className = 'bm-live__row2';
         const tagsIn = document.createElement('input');
-        tagsIn.value = (it.tags || []).join(', ');
+        tagsIn.value = it.tags.join(', ');
         tagsIn.maxLength = 120;
         tagsIn.placeholder = 'tags, comma-separated';
-        const byIn = document.createElement('input');
-        byIn.value = it.by || '';
-        byIn.maxLength = 24;
-        byIn.placeholder = 'creator (byline)';
-        row2.appendChild(tagsIn); row2.appendChild(byIn);
+        row2.appendChild(tagsIn);
+        let byIn = null;
+        if (it.lane === 'community') {
+          byIn = document.createElement('input');
+          byIn.value = it.by || '';
+          byIn.maxLength = 24;
+          byIn.placeholder = 'creator (byline)';
+          row2.appendChild(byIn);
+        }
 
         const foot = document.createElement('div');
         foot.className = 'bm-live__foot';
         const view = document.createElement('a');
-        view.href = '/banana-memes/by/' + it.slug + '/';
+        view.href = it.href;
         view.target = '_blank';
         view.textContent = '↗ view';
         foot.appendChild(view);
-        foot.appendChild(document.createTextNode((it.transparent ? 'sticker' : 'gif') + ' · ' + fmtDate(it.approved)));
+        foot.appendChild(document.createTextNode(
+          (it.lane === 'mine' ? '🍌 mine' : '👥 community') + ' · ' + it.kind + (it.ts ? ' · ' + fmtDate(it.ts) : '')));
         const save = document.createElement('button');
         save.className = 'bm-btn bm-live__save';
         save.type = 'button';
         save.textContent = '💾 save';
         const markDirty = () => row.classList.add('bm-live--dirty');
-        titleIn.oninput = tagsIn.oninput = byIn.oninput = markDirty;
+        titleIn.oninput = tagsIn.oninput = markDirty;
+        if (byIn) byIn.oninput = markDirty;
         save.onclick = async () => {
           save.disabled = true; save.textContent = 'saving…';
           try {
+            const payload = it.lane === 'mine'
+              ? { eid: it.key, title: titleIn.value, tags: tagsIn.value }
+              : { slug: it.key, title: titleIn.value, tags: tagsIn.value, by: byIn ? byIn.value : undefined };
             const r = await fetch(GAL + '/gallery/edit?key=' + encodeURIComponent(gkey), {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ slug: it.slug, title: titleIn.value, tags: tagsIn.value, by: byIn.value }),
+              body: JSON.stringify(payload),
             });
             const d = await r.json();
             if (d.ok && d.entry) {
-              Object.assign(it, d.entry);
-              tagsIn.value = (it.tags || []).join(', ');
+              if (d.entry.title) { it.title = d.entry.title; titleIn.value = d.entry.title; }
+              if (Array.isArray(d.entry.tags)) { it.tags = d.entry.tags; tagsIn.value = it.tags.join(', '); }
+              if (d.entry.by !== undefined && byIn) { it.by = d.entry.by; byIn.value = it.by; }
               row.classList.remove('bm-live--dirty');
               save.textContent = '✓ saved';
               setTimeout(() => { save.textContent = '💾 save'; save.disabled = false; }, 1200);

@@ -8,7 +8,7 @@
 // next build; Trym's own items are unaffected).
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PixelIcon from '../../../components/PixelIcon.astro';
-import editorial from '../../../data/gallery.json';
+import { loadGalleryItems } from '../../../lib/gallery-items.js';
 import { TAGS, MIN_TAG_ITEMS } from '../../../data/gallery-tags.js';
 
 const WORKER = 'https://banana-share.trymstene.workers.dev';
@@ -31,6 +31,7 @@ export async function getStaticPaths() {
 
   // which tags have live pages? counted across BOTH lanes (same rule as the
   // main route — keep the two computations aligned)
+  const editorial = await loadGalleryItems();
   const tagCount = {};
   editorial.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
   approved.forEach((c) => (c.tags || []).forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));

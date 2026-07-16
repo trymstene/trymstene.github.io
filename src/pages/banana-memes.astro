@@ -6,8 +6,10 @@
 // public/assets/gallery-bananas/).
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
-import items from '../data/gallery.json';
+import { loadGalleryItems } from '../lib/gallery-items.js';
 import { TAGS, MIN_TAG_ITEMS } from '../data/gallery-tags.js';
+
+const items = await loadGalleryItems();
 
 const SITE = 'https://trymstene.com';
 const stickers = items.filter((i) => i.kind === 'sticker');

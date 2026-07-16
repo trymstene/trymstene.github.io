@@ -1,13 +1,14 @@
 // THE BANANA GALLERY sitemap — hub, category, tag and per-item pages, each
 // item carrying its GIF as an image entry (the Google-Images play). Own child
 // sitemap so Search Console reports gallery coverage separately.
-import items from '../data/gallery.json';
+import { loadGalleryItems } from '../lib/gallery-items.js';
 import { TAGS, MIN_TAG_ITEMS } from '../data/gallery-tags.js';
 
 const SITE = 'https://trymstene.com';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export async function GET() {
+  const items = await loadGalleryItems();
   // community lane: approved submissions served by the share worker
   let community = [];
   try {

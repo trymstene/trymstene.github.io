@@ -63,6 +63,7 @@ export default {
       if (url.pathname === '/gallery/moderate') return handleGalleryModerate(request, env, url);
       if (url.pathname === '/gallery/edit') return handleGalleryEdit(request, env, url);
       if (url.pathname === '/gallery/approved') return handleGalleryApproved(env);
+      if (url.pathname === '/gallery/overrides') return handleGalleryOverrides(env);
       if (url.pathname.startsWith('/gallery/gif/')) return handleGalleryGif(env, url);
       if (url.pathname === '/health') return handleHealth(env);
       return json({ error: 'not found' }, 404);
@@ -448,7 +449,9 @@ async function handleGalleryModerate(request, env, url) {
 }
 
 // ---------- POST /gallery/edit?key= — retag/retitle an already-LIVE item ----------
-// (the slug is frozen — it's the URL — so edits touch title/tags/by only)
+// Two lanes: {slug} = a community item (edits the live index) · {eid} = one of
+// Trym's EDITORIAL items — those live in the repo's gallery.json, so edits go
+// into an OVERRIDES object the site build merges on top (git stays the base).
 async function handleGalleryEdit(request, env, url) {
   const cors = corsHeaders(env, request);
   if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
@@ -456,6 +459,27 @@ async function handleGalleryEdit(request, env, url) {
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405, cors);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
+
+  // editorial lane: store an override, never touch the community index
+  if (body.eid !== undefined) {
+    const eid = String(body.eid || '');
+    if (!/^[a-z0-9-]{1,60}$/.test(eid)) return json({ error: 'bad id' }, 400, cors);
+    const ovObj = await env.SHARES.get('gallery-live/editorial-overrides.json');
+    let ov = {};
+    if (ovObj) { try { ov = await ovObj.json(); } catch (e) {} }
+    const entry = ov[eid] || {};
+    if (body.tags !== undefined) entry.tags = cleanTags(body.tags);
+    if (body.title !== undefined) {
+      const t = String(body.title).trim().slice(0, 60);
+      if (t && !dirty(t)) entry.title = t;
+    }
+    ov[eid] = entry;
+    await env.SHARES.put('gallery-live/editorial-overrides.json', JSON.stringify(ov), {
+      httpMetadata: { contentType: 'application/json' },
+    });
+    return json({ ok: true, eid, entry }, 200, cors);
+  }
+
   const slug = String(body.slug || '');
   const idxObj = await env.SHARES.get('gallery-live/index.json');
   let index = [];
@@ -481,6 +505,20 @@ async function handleGalleryEdit(request, env, url) {
 async function handleGalleryApproved(env) {
   const idxObj = await env.SHARES.get('gallery-live/index.json');
   const bodyTxt = idxObj ? await idxObj.text() : '[]';
+  return new Response(bodyTxt, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=300',
+    },
+  });
+}
+
+// ---------- GET /gallery/overrides — public; the build merges these over
+// gallery.json (Trym's editorial title/tag edits from the Banana Mail desk) ----------
+async function handleGalleryOverrides(env) {
+  const obj = await env.SHARES.get('gallery-live/editorial-overrides.json');
+  const bodyTxt = obj ? await obj.text() : '{}';
   return new Response(bodyTxt, {
     headers: {
       'Content-Type': 'application/json',

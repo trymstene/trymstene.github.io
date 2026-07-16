@@ -10,12 +10,14 @@
 // real numbers — the daily banana-of-the-day rebuild keeps it fresh.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
-import items from '../../data/gallery.json';
+import { loadGalleryItems } from '../../lib/gallery-items.js';
 import { TAGS, MIN_TAG_ITEMS } from '../../data/gallery-tags.js';
 
 export async function getStaticPaths() {
-  // ⚠ isolated scope — consts must live in here (the WORKER lesson)
+  // ⚠ isolated scope — consts must live in here (the WORKER lesson);
+  // imported FUNCTIONS are fine, which is why the loader is a module
   const WORKER = 'https://banana-share.trymstene.workers.dev';
+  const items = await loadGalleryItems();
   // live rating board (best effort — build must survive a worker hiccup)
   let board = {};
   try {
