@@ -334,22 +334,22 @@ function makeTeeMockup(design, size, colorHex) {
   return cv;
 }
 
-// ---- localized price ------------------------------------------------------
-// Ask the Worker where the visitor is (Cloudflare knows for free), then ask
-// Shopify what THAT country pays via @inContext — exactly what checkout will
-// charge. Returns { display, amount, currency } or null on any failure.
+// ---- live price -----------------------------------------------------------
+// Ask Shopify the CURRENT price so badges track price edits without a site
+// build. Pinned to the US market since the 15 Jul USD cutover — the store
+// sells in USD everywhere, so geolocating (@inContext with the visitor's
+// country) showed Shopify's auto-converted local currency ("kr 146") on the
+// sticker tile while every static price said "$14.99". One store, one price.
+// Returns { display, amount, currency } or null on any failure.
 export async function localizedPrice(product = getProduct('sticker')) {
   try {
     if (!product || !product.shopifyVariantGid) return null;
-    const geo = await fetch(SHOP.workerBase + '/geo').then((r) => r.json());
-    const cc = String(geo.country || '').toUpperCase();
-    if (!/^[A-Z]{2}$/.test(cc)) return null;
     const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
       body: JSON.stringify({
         query: 'query($id: ID!, $country: CountryCode!) @inContext(country: $country) { node(id: $id) { ... on ProductVariant { price { amount currencyCode } } } }',
-        variables: { id: product.shopifyVariantGid, country: cc },
+        variables: { id: product.shopifyVariantGid, country: 'US' },
       }),
     }).then((r) => r.json());
     const p = res && res.data && res.data.node && res.data.node.price;
