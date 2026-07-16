@@ -653,6 +653,10 @@ var EV_EXPLAIN = {
   rave_zoom:'used the rave camera zoom',
   rave_tour_start:'started the club tour with Barty',
   rave_share_night:'made a share-my-night card at the rave',
+  rave_jelly_special:'found a rare jelly at the rave (rainbow flyby / mega pudding)',
+  rave_invite_copy:'copied the rave invite link from the INVITE A FRIEND sign',
+  rave_invite_nudge:'Barty nudged a lonely floor to bring a friend',
+  rave_highfive:'fistbumped another real banana at the rave',
   patch_earn:'earned a badge (⚠ the OG badge auto-mints for every new visitor — inflated at traffic spikes)',
   pass_view:'opened their Banana Pass',
   forge_start:'started drawing in the Pixel Forge',
@@ -1008,8 +1012,12 @@ function renderFunnel(el, steps){
   var times=(R&&R.stepTimes)||{};
   var vals=steps.map(function(s){ return stepVal(R,s[0]); });
   var pvals=steps.map(function(s){ return P? stepVal(P,s[0]) : null; });
-  var worst=-1, worstRate=2;
+  // worst transition by rate, but only where the base is big enough to mean
+  // something — 0/12 must not outrank 12/197 (the tail steps are tiny)
+  var worst=-1, worstRate=2, MIN_N=20;
   for(var i=1;i<vals.length;i++){ var rate=vals[i-1]? vals[i]/vals[i-1] : 1;
+    if(vals[i-1]>=MIN_N && rate<worstRate){ worstRate=rate; worst=i; } }
+  if(worst<0) for(var i=1;i<vals.length;i++){ var rate=vals[i-1]? vals[i]/vals[i-1] : 1;
     if(vals[i-1]>0 && rate<worstRate){ worstRate=rate; worst=i; } }
   var html='';
   for(var i=0;i<steps.length;i++){
@@ -1020,10 +1028,13 @@ function renderFunnel(el, steps){
     // avg seconds the CONVERTERS took to get here from the previous step
     var t=times[steps[i][0]];
     var tTxt=(i>0 && t)?' · ⌀ '+fmtDur(t)+' to get here':'';
+    // the hotspot marks the step people STALL ON (the page to fix), not the
+    // step they fail to reach — worst is the arrival index, so mark worst-1
     html+='<div class="fstep"><div class="row"><span>'+lbl+'</span>'+
       '<span>'+fmt(vals[i])+' '+delta(vals[i],pvals[i])+'</span></div>'+
-      '<div class="fbar'+(i===worst?' hotspot':'')+'"><div class="fill" style="width:'+pct+'%"></div></div>'+
-      (i>0?'<div class="fdrop">'+(i===worst?'<b>⟵ WORK HERE · </b>':'')+conv+'% make it from “'+steps[i-1][1].replace(/ ⌁.*$/,'')+'”'+tTxt+'</div>':'')+
+      '<div class="fbar'+(i===worst-1?' hotspot':'')+'"><div class="fill" style="width:'+pct+'%"></div></div>'+
+      (i>0?'<div class="fdrop">'+conv+'% make it from “'+steps[i-1][1].replace(/ ⌁.*$/,'')+'”'+tTxt+'</div>':'')+
+      (i===worst-1?'<div class="fdrop"><b>⟵ WORK HERE · </b>only '+Math.round(worstRate*100)+'% continue to “'+steps[worst][1].replace(/ ⌁.*$/,'')+'”</div>':'')+
       '</div>';
   }
   el.innerHTML=html;
