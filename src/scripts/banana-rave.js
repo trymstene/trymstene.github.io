@@ -1023,7 +1023,9 @@ function init() {
   //   spark ~1/10 = blinks for 10s, double while blinking (calms down to a
   //   normal +1 after — the rave never punishes)
   //   plain: 25% chance to DRIFT — slow wander so the floor feels alive
+  const nyantest = new URLSearchParams(location.search).has('nyantest'); // QA: every pellet = rainbow (fxtest pattern)
   function rollJellyKind() {
+    if (nyantest) return 'rainbow';
     const r = Math.random();
     if (r < 1 / 60) return 'rainbow';
     if (r < 1 / 60 + 1 / 12) return 'gold';
@@ -1190,6 +1192,7 @@ function init() {
         floatPlus(p.x, p.y - 3, '+' + gain);
         if (p.kind === 'rainbow') {
           confettiBurst();
+          startNyan(me); // the NYAN BANANA flies for the lucky one
           if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('THE RAINBOW JELLY!! i’ve only seen three of those in my LIFE 🌈', true);
           track('rave_jelly_special', { kind: 'rainbow' });
         } else if (p.kind === 'gold') {
@@ -2919,6 +2922,27 @@ function init() {
   const dropFlashEl = el('rvDropFlash');
   const dropFlashSpan = dropFlashEl.querySelector('span');
   let lastDropLabel = '';
+  // NYAN BANANA (16 Jul, Trym: "can nyan cat fly across? as a cameo, nothing
+  // illegal" — Chris Torres owns and licenses Nyan Cat, so a cameo is out; the
+  // flying-pixel-rainbow trope however is generic, so OUR banana does the
+  // flying. The banana is always the star anyway.) Rainbow-jelly pickup only.
+  let nyan = null;
+  function startNyan(r) {
+    if (reduced || !trailCtx || !floorW || nyan || !r || !r.cv) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'rv-nyan';
+    const cv = document.createElement('canvas');
+    cv.width = 96; cv.height = 96;
+    wrap.appendChild(cv);
+    trailCv.parentElement.appendChild(wrap); // same coordinate space as the trail pixels
+    nyan = {
+      start: Date.now(), dur: 3200, // the render loop's clock is epoch — same clock or instant self-destruct
+      yPx: floorH * (0.24 + Math.random() * 0.14),
+      wrap, cv, cx: cv.getContext('2d'), src: r.cv, // live canvas = it dances mid-flight
+    };
+  }
+  const NYAN_BANDS = ['#ff4d4d', '#ff9f1c', '#ffe135', '#37d67a', '#4db8ff', '#b388ff'];
+
   let trailsDirtyUntil = 0;
   function tick() {
     const now = Date.now();
@@ -2950,7 +2974,7 @@ function init() {
     }
     // is anything actually painting? a still floor skips the whole canvas pass
     // (the full-canvas fade composite ran every frame forever, even when blank)
-    let liveCanvas = fxParts.length > 0 || confetti.length > 0;
+    let liveCanvas = fxParts.length > 0 || confetti.length > 0 || !!nyan; // a flyby keeps the gate open for its own cleanup
     if (!liveCanvas) {
       for (const r of ravers.values()) {
         if (!r.stage && ((r.lastMoveAt && now - r.lastMoveAt < 350) || fxActive(r, now))) { liveCanvas = true; break; }
@@ -2964,6 +2988,32 @@ function init() {
       trailCtx.fillStyle = 'rgba(0,0,0,0.06)';
       trailCtx.fillRect(0, 0, floorW, floorH);
       trailCtx.globalCompositeOperation = 'source-over';
+      // NYAN BANANA flyby: the banana glides left→right on a sine bob, painting
+      // a six-band pixel rainbow behind it; the fade pass dissolves the ribbon
+      if (nyan) {
+        const t = (now - nyan.start) / nyan.dur;
+        if (t >= 1) {
+          nyan.wrap.remove();
+          nyan = null;
+        } else {
+          const x = -90 + (floorW + 180) * t;
+          const y = nyan.yPx + Math.sin(t * Math.PI * 5) * 9;
+          // the ribbon spans from the PREVIOUS stamp to here — solid at any
+          // frame rate (per-frame stamps gap out when rAF is throttled)
+          const fromX = nyan.lastX === undefined ? x - 30 : nyan.lastX;
+          nyan.lastX = x;
+          for (let b = 0; b < 6; b++) {
+            trailCtx.fillStyle = NYAN_BANDS[b];
+            trailCtx.globalAlpha = 0.85;
+            trailCtx.fillRect(Math.round(fromX - 26), Math.round(y - 21 + b * 7), Math.max(30, Math.round(x - fromX) + 30), 7);
+          }
+          trailCtx.globalAlpha = 1;
+          nyan.cx.clearRect(0, 0, 96, 96);
+          nyan.cx.imageSmoothingEnabled = false;
+          nyan.cx.drawImage(nyan.src, 0, 0, 96, 96); // live copy — it keeps dancing mid-flight
+          nyan.wrap.style.transform = 'translate(' + Math.round(x - 48) + 'px, ' + Math.round(y - 48) + 'px)';
+        }
+      }
       for (const r of ravers.values()) {
         if (r.stage) continue;
         if (tourActive && r.id !== myId) continue; // hidden guests must not paint trails through the lesson

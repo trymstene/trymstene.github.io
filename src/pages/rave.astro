@@ -727,6 +727,9 @@ const GUIDE = [
     .rv-pellet--spark svg { animation: rvJellyBlink 0.5s steps(2) infinite; }
     @keyframes rvJellyBlink { 50% { opacity: 0.45; transform: scale(1.15); } }
     .rv-pellet--flee { transition: left 0.38s cubic-bezier(0.3, 1.6, 0.5, 1), top 0.38s cubic-bezier(0.3, 1.6, 0.5, 1); }
+    /* NYAN BANANA — the rainbow-jelly flyby (the trail paints on the canvas) */
+    .rv-nyan { position: absolute; left: 0; top: 0; z-index: 500; pointer-events: none; }
+    .rv-nyan canvas { width: 96px; height: 96px; image-rendering: pixelated; display: block; }
     @media (prefers-reduced-motion: reduce) { .rv-pellet, .rv-pellet svg, .rv-mixer--peak { animation: none; } }
 
     .rv-zoom {
