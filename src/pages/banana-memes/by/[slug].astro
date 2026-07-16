@@ -1,0 +1,180 @@
+---
+// Community lane of the Banana Gallery — /banana-memes/by/<slug>/. Approved
+// visitor submissions live in the share worker's R2 (gallery-live/); the
+// build pulls GET /gallery/approved and mints one indexable page per item.
+// The /by/ namespace can never collide with Trym's items or tag slugs, and
+// the worker guarantees slug uniqueness within itself (title + id tail).
+// Worker down at build = zero community pages that build (they return on the
+// next build; Trym's own items are unaffected).
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PixelIcon from '../../../components/PixelIcon.astro';
+
+const WORKER = 'https://banana-share.trymstene.workers.dev';
+
+export async function getStaticPaths() {
+  let approved = [];
+  try {
+    const res = await fetch(WORKER + '/gallery/approved');
+    if (res.ok) approved = await res.json();
+  } catch (e) { /* build survives; community pages return next build */ }
+  let board = {};
+  try {
+    const res = await fetch('https://banana-remixes.trymstene.workers.dev/ratings');
+    if (res.ok) board = await res.json();
+  } catch (e) {}
+
+  return approved.map((item) => {
+    const related = approved.filter((x) => x.slug !== item.slug).slice(0, 6);
+    return { params: { slug: item.slug }, props: { item, related, tally: board['gal-c-' + item.slug] || null } };
+  });
+}
+
+const { item, related, tally } = Astro.props;
+const SITE = 'https://trymstene.com';
+const pageUrl = `${SITE}/banana-memes/by/${item.slug}/`;
+const gifUrl = `${WORKER}/gallery/gif/${item.slug}.gif`;
+const creator = item.by || 'a banana fan';
+const kindWord = item.transparent ? 'Transparent Dancing Banana Sticker' : 'Dancing Banana Meme GIF';
+const title = `${item.title} — ${kindWord} by ${creator}`;
+const description = `"${item.title}" — a custom dancing banana made by ${creator} in the banana builder on trymstene.com, approved into the Banana Gallery. Free to download and share.`;
+
+const imageLD = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageObject',
+  '@id': pageUrl + '#image',
+  contentUrl: gifUrl,
+  url: pageUrl,
+  name: title,
+  caption: item.title,
+  description,
+  encodingFormat: 'image/gif',
+  representativeOfPage: true,
+  uploadDate: new Date(item.approved).toISOString().slice(0, 10),
+  creditText: item.by ? `${item.by} — made in the banana builder on trymstene.com` : 'A visitor — made in the banana builder on trymstene.com',
+  ...(item.by ? { author: { '@type': 'Person', name: item.by } } : {}),
+  isBasedOn: { '@id': SITE + '/#banana-gif' },
+  isPartOf: { '@id': SITE + '/banana-memes/#gallery' },
+  license: SITE + '/license-the-dancing-banana/',
+  acquireLicensePage: SITE + '/license-the-dancing-banana/',
+  ...(tally && tally[1] ? {
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: (tally[0] / tally[1]).toFixed(1),
+      ratingCount: tally[1], bestRating: 5, worstRating: 1,
+    },
+  } : {}),
+};
+const crumbLD = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Dancing Banana GIF', item: SITE + '/dancing-banana-gif-meme/' },
+    { '@type': 'ListItem', position: 2, name: 'Banana Memes', item: SITE + '/banana-memes/' },
+    { '@type': 'ListItem', position: 3, name: item.title, item: pageUrl },
+  ],
+};
+const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-banana/';
+---
+<BaseLayout title={title} description={description} ogType="article" ogImage={gifUrl}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(imageLD)} />
+    <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} />
+  </Fragment>
+
+  <style is:inline slot="head">
+    .gd { max-width: 680px; margin: 1.5rem auto 0; padding: 0 1rem 2.5rem; text-align: center; }
+    .gd-crumb { font-size: 0.82rem; opacity: 0.7; margin-bottom: 1rem; }
+    .gd-crumb a { color: var(--ink); }
+    .gd-box {
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: var(--line); box-shadow: var(--shadow);
+      padding: 1.4rem; min-height: 260px; margin-bottom: 1.3rem;
+    }
+    .gd-box--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 26px 26px; }
+    .gd-box img { max-width: 100%; height: auto; }
+    .gd-title { font-size: clamp(1.6rem, 6vw, 2.4rem); margin: 0 0 0.5rem; }
+    .gd-byline { font-size: 0.9rem; font-weight: 700; color: var(--hot, #ff4d6d); margin: 0 0 0.6rem; }
+    .gd-stars { display: flex; justify-content: center; gap: 3px; }
+    .gd-stars button {
+      background: none; border: 0; cursor: pointer; font-size: 1.35rem; line-height: 1; padding: 3px;
+      filter: grayscale(1) opacity(0.35); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .gd-stars button.on { filter: none; }
+    .gd-count { font-size: 0.78rem; opacity: 0.7; font-weight: 700; margin: 0.25rem 0 0; }
+    .gd-blurb { max-width: 54ch; margin: 1rem auto 1.2rem; line-height: 1.55; opacity: 0.85; }
+    .gd-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
+    .gd-actions .btn { flex: 1; min-width: 220px; }
+    .gd-note { font-size: 0.8rem; opacity: 0.7; margin-top: 1rem; }
+    .gd-note a { color: var(--ink); }
+    .gd-related { margin-top: 3rem; }
+    .gd-related h2 { font-size: 1.2rem; }
+    .gd-relgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 0.7rem; margin-top: 1rem; }
+    .gd-rel {
+      display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+      text-decoration: none; color: var(--ink); font-size: 0.72rem; font-weight: 700;
+      border: 3px solid var(--ink); box-shadow: 5px 5px 0 #000; background: var(--paper);
+      padding: 0.5rem 0.35rem;
+    }
+    .gd-rel img { width: 72px; height: 72px; object-fit: contain; }
+    .gd-rel:hover { background: var(--banana); }
+    .gc-back { margin-top: 1.8rem; text-align: center; }
+  </style>
+
+  <article class="gd" id="gallery-detail" data-id={'c-' + item.slug}>
+    <nav class="gd-crumb" aria-label="Breadcrumb">
+      <a href="/dancing-banana-gif-meme/">Dancing Banana</a> ›
+      <a href="/banana-memes/">Banana memes</a> › <span>{item.title}</span>
+    </nav>
+
+    <div class={`gd-box${item.transparent ? ' gd-box--sticker' : ''}`}>
+      <img src={gifUrl} alt={`${item.title} — a custom dancing banana ${item.transparent ? 'sticker' : 'meme GIF'} by ${creator}`} />
+    </div>
+
+    <h1 class="gd-title">{item.title}</h1>
+    <p class="gd-byline">by {creator}</p>
+    <div class="gd-rate">
+      <div class="gd-stars" role="group" aria-label={`Rate ${item.title} in bananas`}></div>
+      <p class="gd-count">be the first to rate 🍌</p>
+    </div>
+
+    <p class="gd-blurb">
+      A custom dancing banana, dressed and captioned by {creator} in the
+      <a href="/make-a-banana/">banana builder</a> and hung in the gallery by the
+      banana guy himself. Free to download and share.
+    </p>
+
+    <div class="gd-actions">
+      <a class="btn btn--dark" id="gdDownload" href={gifUrl} download={`${item.slug}-trymstene.com.gif`}>
+        <PixelIcon name="download" /> Download free
+      </a>
+      <a class="btn btn--light" href={remixHref} data-place="gallery_community">
+        <PixelIcon name="palette" /> Remix this banana →
+      </a>
+    </div>
+
+    <p class="gd-note">
+      Based on the original 1999 Dancing Banana by <a href="/me/">Trym Stene</a>.
+      Free for personal use — for commercial use, <a href="/license-the-dancing-banana/">license the banana</a>.
+    </p>
+
+    {related.length > 0 && (
+      <section class="gd-related">
+        <h2>More from the community</h2>
+        <div class="gd-relgrid">
+          {related.map((x) => (
+            <a class="gd-rel" href={`/banana-memes/by/${x.slug}/`}>
+              <img src={`${WORKER}/gallery/gif/${x.slug}.gif`} loading="lazy"
+                   alt={`${x.title} — a custom dancing banana by ${x.by || 'a banana fan'}`} />
+              <span>{x.title}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+    <p class="gc-back"><a class="btn btn--dark" href="/banana-memes/">← All banana memes</a></p>
+  </article>
+
+  <script>
+    import '../../../scripts/gallery-detail.js';
+  </script>
+</BaseLayout>

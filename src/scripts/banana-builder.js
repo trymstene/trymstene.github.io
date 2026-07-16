@@ -412,16 +412,23 @@ function init() {
     const params = location.search.slice(1);
     const by = el('bbSignName').value.trim().slice(0, 24);
     el('bbSignRow').hidden = true;
+    toast('Rendering your banana… 🍌');
     try {
-      const res = await fetch(SHARE_BASE + '/wall/submit', {
+      // submissions carry the REAL rendered GIF (the same pixels the meme
+      // download makes) — approved ones go straight onto /banana-memes/
+      const { blob, isT, tw, th } = await renderMemeGif();
+      const title = [state.top, state.bottom].filter(Boolean).join(' ').trim().slice(0, 60)
+        || 'Custom dancing banana';
+      const meta = { kind: 'banana', by, title, params, transparent: isT, w: tw, h: th };
+      const res = await fetch(SHARE_BASE + '/gallery/submit?meta=' + encodeURIComponent(JSON.stringify(meta)), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'banana', params, by }),
+        headers: { 'Content-Type': 'image/gif' },
+        body: blob,
       });
-      toast(res.ok ? 'Submitted! The banana guy hangs the best ones 🖼' : 'The wall is busy — try again in a bit');
+      toast(res.ok ? 'Submitted! The banana guy hangs the best ones in the gallery 🖼' : 'The gallery is busy — try again in a bit');
       if (res.ok) passPatch('exhibitor');
-    } catch (e) { toast('The wall is busy — try again in a bit'); }
-    track('wall_submit', { kind: 'banana', signed: by ? 1 : 0, design: designStr() });
+    } catch (e) { toast('The gallery is busy — try again in a bit'); }
+    track('gallery_submit', { kind: 'banana', signed: by ? 1 : 0, design: designStr() });
   };
 
   el('bbOverlayLink').onclick = async (e) => {
@@ -707,51 +714,57 @@ function init() {
   // captions ON and keep the visitor's background, unlike the tight transparent
   // emoji GIF). Solid bg → full square; transparent bg → cropped to content
   // (captions included in the bbox) with 1-bit alpha. ----
+  // shared meme-GIF renderer — the download button AND the gallery submission
+  // use this, so what Trym reviews is pixel-identical to what visitors save
+  async function renderMemeGif() {
+    await assetsReady();
+    const isT = state.bg === 'transparent';
+    const W = 480;
+    const frames = [];
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
+    for (let i = 0; i < NFRAMES; i++) {
+      drawComposite(ctx, W, i, {
+        bg: state.bg, captions: true, effect: state.effect,
+        hue: state.effect === 'disco' ? (360 * i / NFRAMES) : 0,
+      });
+      frames.push(ctx.getImageData(0, 0, W, W));
+    }
+    const bb = isT ? pad(bboxOf(frames.map((f) => f.data), W), W) : { x: 0, y: 0, w: W, h: W };
+    const s = 480 / Math.max(bb.w, bb.h);
+    const tw = Math.max(2, Math.round(bb.w * s)), th = Math.max(2, Math.round(bb.h * s));
+    const delay = Math.max(20, Math.round((state.spd * 1000) / NFRAMES));
+
+    // crop+scale every frame first, then build ONE palette from all of them
+    // (so disco's rotating hue / confetti colours all get represented, no
+    // per-frame flicker); then encode with that shared palette.
+    const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th; const tctx = tmp.getContext('2d');
+    const datas = [];
+    for (let i = 0; i < NFRAMES; i++) {
+      const src = document.createElement('canvas'); src.width = W; src.height = W; src.getContext('2d').putImageData(frames[i], 0, 0);
+      tctx.clearRect(0, 0, tw, th);
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(src, bb.x, bb.y, bb.w, bb.h, 0, 0, tw, th);
+      const data = tctx.getImageData(0, 0, tw, th).data;
+      if (isT) for (let k = 3; k < data.length; k += 4) data[k] = data[k] < 110 ? 0 : 255; // 1-bit alpha
+      datas.push(data);
+    }
+    const merged = new Uint8ClampedArray(datas.length * datas[0].length);
+    datas.forEach((d, i) => merged.set(d, i * d.length));
+    const palette = quantize(merged, 256, { format: 'rgba4444', oneBitAlpha: isT });
+
+    const gif = GIFEncoder();
+    for (let i = 0; i < NFRAMES; i++) {
+      const index = applyPalette(datas[i], palette, 'rgba4444');
+      gif.writeFrame(index, tw, th, isT ? { palette, delay, transparent: true, dispose: 2 } : { palette, delay });
+    }
+    gif.finish();
+    return { blob: new Blob([gif.bytes()], { type: 'image/gif' }), isT, tw, th };
+  }
+
   el('bbDownloadMemeGif').onclick = async () => {
     const btn = el('bbDownloadMemeGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Rendering…';
     try {
-      await assetsReady();
-      const isT = state.bg === 'transparent';
-      const W = 480;
-      const frames = [];
-      const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
-      for (let i = 0; i < NFRAMES; i++) {
-        drawComposite(ctx, W, i, {
-          bg: state.bg, captions: true, effect: state.effect,
-          hue: state.effect === 'disco' ? (360 * i / NFRAMES) : 0,
-        });
-        frames.push(ctx.getImageData(0, 0, W, W));
-      }
-      const bb = isT ? pad(bboxOf(frames.map((f) => f.data), W), W) : { x: 0, y: 0, w: W, h: W };
-      const s = 480 / Math.max(bb.w, bb.h);
-      const tw = Math.max(2, Math.round(bb.w * s)), th = Math.max(2, Math.round(bb.h * s));
-      const delay = Math.max(20, Math.round((state.spd * 1000) / NFRAMES));
-
-      // crop+scale every frame first, then build ONE palette from all of them
-      // (so disco's rotating hue / confetti colours all get represented, no
-      // per-frame flicker); then encode with that shared palette.
-      const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th; const tctx = tmp.getContext('2d');
-      const datas = [];
-      for (let i = 0; i < NFRAMES; i++) {
-        const src = document.createElement('canvas'); src.width = W; src.height = W; src.getContext('2d').putImageData(frames[i], 0, 0);
-        tctx.clearRect(0, 0, tw, th);
-        tctx.imageSmoothingEnabled = false;
-        tctx.drawImage(src, bb.x, bb.y, bb.w, bb.h, 0, 0, tw, th);
-        const data = tctx.getImageData(0, 0, tw, th).data;
-        if (isT) for (let k = 3; k < data.length; k += 4) data[k] = data[k] < 110 ? 0 : 255; // 1-bit alpha
-        datas.push(data);
-      }
-      const merged = new Uint8ClampedArray(datas.length * datas[0].length);
-      datas.forEach((d, i) => merged.set(d, i * d.length));
-      const palette = quantize(merged, 256, { format: 'rgba4444', oneBitAlpha: isT });
-
-      const gif = GIFEncoder();
-      for (let i = 0; i < NFRAMES; i++) {
-        const index = applyPalette(datas[i], palette, 'rgba4444');
-        gif.writeFrame(index, tw, th, isT ? { palette, delay, transparent: true, dispose: 2 } : { palette, delay });
-      }
-      gif.finish();
-      const blob = new Blob([gif.bytes()], { type: 'image/gif' });
+      const { blob } = await renderMemeGif();
       download(URL.createObjectURL(blob), 'my-dancing-banana-meme-trymstene.com.gif');
       toast('Meme GIF downloaded!');
       track('gif_download', { file: 'builder-meme.gif', design: designStr() });

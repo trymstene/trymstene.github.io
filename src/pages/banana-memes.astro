@@ -13,6 +13,15 @@ const SITE = 'https://trymstene.com';
 const stickers = items.filter((i) => i.kind === 'sticker');
 const gifs = items.filter((i) => i.kind === 'gif');
 
+// community lane: approved visitor submissions live in the share worker's R2;
+// pulled at build (worker down = section simply absent until the next build)
+const WORKER = 'https://banana-share.trymstene.workers.dev';
+let community = [];
+try {
+  const res = await fetch(WORKER + '/gallery/approved');
+  if (res.ok) community = (await res.json()).sort((a, b) => b.approved - a.approved);
+} catch (e) {}
+
 const tagCount = {};
 items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
 const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
@@ -93,6 +102,10 @@ const crumbLD = {
     .gm-card img { max-width: 88%; max-height: 88%; height: auto; }
     .gm-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
     .gm-card .gm-kind { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; }
+    .gm-community { margin-top: 2.4rem; border-top: var(--line); padding-top: 1.5rem; }
+    .gm-community h2 { margin: 0 0 0.2rem; }
+    .gm-comm-sub { margin: 0 0 1rem; opacity: 0.75; font-size: 0.9rem; }
+    .gm-community .gm-card h3 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
     .gm-cta {
       margin-top: 2.4rem; border: var(--line); background: var(--ink); color: var(--paper);
       box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
@@ -142,10 +155,30 @@ const crumbLD = {
       ))}
     </div>
 
+    {community.length > 0 && (
+      <section class="gm-community">
+        <h2>By the community</h2>
+        <p class="gm-comm-sub">Made by visitors in the <a href="/make-a-banana/">banana builder</a>, hung here by the banana guy.</p>
+        <div class="gm-grid">
+          {community.map((c) => (
+            <a class="gm-card" href={`/banana-memes/by/${c.slug}/`}>
+              <div class={`gm-img${c.transparent ? ' gm-img--sticker' : ''}`}>
+                <img src={`${WORKER}/gallery/gif/${c.slug}.gif`} loading="lazy"
+                     alt={`${c.title} — a custom dancing banana by ${c.by || 'a banana fan'}`} />
+              </div>
+              <h3>{c.title}</h3>
+              <span class="gm-kind">🍌 by {c.by || 'a banana fan'}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
     <div class="gm-cta">
       <h2>Want a banana that's 100% yours?</h2>
       <p>
-        Dress the dancing banana yourself — hats, shades, captions — and download it free.
+        Dress the dancing banana yourself — hats, shades, captions — and download it free,
+        <strong>then submit it to this gallery</strong> — the banana guy hangs the best ones.
         Or draw a whole new creature, pixel by pixel, in the Forge.
       </p>
       <a class="btn btn--light" href="/make-a-banana/" data-place="gallery">
