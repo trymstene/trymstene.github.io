@@ -770,7 +770,7 @@ function init() {
     if (bubbleSticky || Date.now() < bartyBusyUntil) return;
     inviteNudged = true;
     try { sessionStorage.setItem('rv-nudged', '1'); } catch (e) {}
-    bartySay(['quiet night… bring a friend 🍌', { t: 'the BRING +1 sign up there copies the invite', mutter: true }]);
+    bartySay(['quiet night… bring a friend 🍌', { t: 'the INVITE A FRIEND sign up there copies the link', mutter: true }]);
     const sign = el('rvInvite');
     if (sign) { sign.classList.add('rv-sign--pulse'); setTimeout(() => sign.classList.remove('rv-sign--pulse'), 5200); }
     track('rave_invite_nudge');
@@ -822,7 +822,9 @@ function init() {
   const inviteSign = el('rvInvite');
   if (inviteSign) {
     inviteSign.addEventListener('click', async () => {
-      const url = 'https://trymstene.com/rave/';
+      // UTM so invited friends show up attributed in GA/Pulse (source/medium
+      // reads "invite / rave" in the sources table)
+      const url = 'https://trymstene.com/rave/?utm_source=invite&utm_medium=rave&utm_campaign=friend';
       // clipboard.writeText can HANG unsettled (iOS quirks, unfocused docs) —
       // feedback must never wait on it: race a 900ms deadline, fall back to
       // showing the link itself (never wrong, even if the copy lands late)
@@ -840,7 +842,9 @@ function init() {
       // iOS he's always mid-quip, so the confirm never showed. Trym's catch.)
       if (!tourActive) {
         bartyBusyUntil = Math.max(bartyBusyUntil, Date.now() + 4200);
-        showBubble(ok ? 'invite copied 🍌 raves are better with friends' : 'the door link: ' + url, false, 4200);
+        // fallback shows the CLEAN address — someone typing it by hand
+        // shouldn't have to transcribe a UTM tail
+        showBubble(ok ? 'invite copied 🍌 raves are better with friends' : 'the door link: trymstene.com/rave', false, 4200);
       }
       inviteSign.classList.add('rv-sign--pulse'); // feedback at the finger too
       setTimeout(() => inviteSign.classList.remove('rv-sign--pulse'), 1700);
