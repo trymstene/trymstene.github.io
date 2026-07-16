@@ -101,6 +101,28 @@ const description = 'Authorized banana personnel only.';
     .bm-gkey .bm-gate__row { display: flex; gap: 0.6rem; max-width: 460px; margin-inline: auto; }
     .bm-gkey input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border: 3px solid var(--ink); font-family: inherit; font-size: 0.95rem; border-radius: 2px; }
     @media (max-width: 560px) { .bm-sub { flex-direction: column; } .bm-sub__img { width: 100%; flex-basis: auto; height: 180px; } }
+
+    /* the LIVE catalogue — compact rows, built for hundreds */
+    .bm-livetools { gap: 0.5rem; }
+    .bm-livesearch { flex: 1 1 220px; min-width: 0; border: 3px solid var(--ink); padding: 0.45rem 0.6rem; font-family: inherit; font-size: 0.85rem; border-radius: 2px; }
+    .bm-livesort { border: 3px solid var(--ink); padding: 0.4rem 0.45rem; font-family: inherit; font-weight: 700; font-size: 0.72rem; background: var(--paper); border-radius: 2px; }
+    .bm-livenote { font-size: 0.68rem; opacity: 0.6; font-weight: 700; margin: 0 0 0.8rem; }
+    .bm-live { display: flex; gap: 0.7rem; align-items: flex-start; border: var(--line); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); padding: 0.6rem 0.7rem; margin-bottom: 0.6rem; }
+    .bm-live__img {
+      flex: 0 0 72px; width: 72px; height: 72px; border: 2px solid var(--ink);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 14px 14px;
+    }
+    .bm-live__img img { max-width: 94%; max-height: 94%; }
+    .bm-live__meta { flex: 1; min-width: 0; display: grid; gap: 0.4rem; }
+    .bm-live__meta input { width: 100%; box-sizing: border-box; border: 2px solid var(--ink); padding: 0.35rem 0.5rem; font-family: inherit; font-size: 0.82rem; border-radius: 2px; }
+    .bm-live__row2 { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .bm-live__row2 input { flex: 1; min-width: 130px; }
+    .bm-live__foot { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.75; }
+    .bm-live__foot a { color: var(--ink); }
+    .bm-live__save { margin-left: auto; }
+    .bm-live--dirty { box-shadow: 3px 3px 0 var(--hot); }
+    @media (max-width: 560px) { .bm-live { flex-wrap: wrap; } }
   </style>
 
   <div class="bm-wrap">
@@ -142,8 +164,30 @@ const description = 'Authorized banana personnel only.';
             <button class="bm-btn" id="bmGkeySave" type="button">Unlock →</button>
           </div>
         </div>
-        <div class="bm-bar"><span class="bm-count" id="bmGalCount"></span></div>
-        <div id="bmGalList"></div>
+
+        <div class="bm-bar" id="bmGalModes" hidden>
+          <button class="bm-chip" id="bmModePending" aria-pressed="true" type="button">📥 pending</button>
+          <button class="bm-chip" id="bmModeLive" aria-pressed="false" type="button">🖼 live</button>
+        </div>
+
+        <div id="bmGalPending">
+          <div class="bm-bar"><span class="bm-count" id="bmGalCount"></span></div>
+          <div id="bmGalList"></div>
+        </div>
+
+        <div id="bmGalLive" hidden>
+          <div class="bm-bar bm-livetools">
+            <input class="bm-livesearch" id="bmLiveQ" type="search" placeholder="🔍 search title / creator / tag / slug…" />
+            <span id="bmLiveChips"></span>
+            <select class="bm-livesort" id="bmLiveSort" aria-label="Sort">
+              <option value="new">newest first</option>
+              <option value="old">oldest first</option>
+              <option value="az">title A–Z</option>
+            </select>
+          </div>
+          <p class="bm-livenote">Edits save instantly to the index — the live pages pick them up on the next site build (any push, or tonight's cron).</p>
+          <div id="bmLiveList"></div>
+        </div>
       </div>
       <p class="bm-fine">
         BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
@@ -348,6 +392,17 @@ const description = 'Authorized banana personnel only.';
     el('bmTabMail').onclick = () => setTab(false);
     el('bmTabGal').onclick = () => setTab(true);
 
+    // pending ↔ live sub-desks
+    function setGalMode(live) {
+      el('bmModePending').setAttribute('aria-pressed', String(!live));
+      el('bmModeLive').setAttribute('aria-pressed', String(live));
+      el('bmGalPending').hidden = live;
+      el('bmGalLive').hidden = !live;
+      if (live) liveBoot();
+    }
+    el('bmModePending').onclick = () => setGalMode(false);
+    el('bmModeLive').onclick = () => setGalMode(true);
+
     async function galLoad() {
       const r = await fetch(GAL + '/gallery/pending-list?key=' + encodeURIComponent(gkey));
       if (!r.ok) return false;
@@ -356,10 +411,11 @@ const description = 'Authorized banana personnel only.';
     }
     async function galBoot() {
       if (gkey && galItems === null) {
-        if (await galLoad().catch(() => false)) { galRender(); return; }
+        if (await galLoad().catch(() => false)) { el('bmGalModes').hidden = false; galRender(); return; }
         gkey = '';
       }
       if (!gkey) { el('bmGkeyGate').hidden = false; el('bmGalCount').textContent = ''; return; }
+      el('bmGalModes').hidden = false;
       galRender();
     }
     el('bmGkeySave').onclick = async () => {
@@ -367,6 +423,7 @@ const description = 'Authorized banana personnel only.';
       if (gkey && await galLoad().catch(() => false)) {
         try { localStorage.setItem('gallery-key', gkey); } catch (e) {}
         el('bmGkeyGate').hidden = true;
+        el('bmGalModes').hidden = false;
         galRender();
       } else { gkey = ''; el('bmGkey').value = ''; el('bmGkey').placeholder = '❌ wrong key — try again'; }
     };
@@ -451,6 +508,133 @@ const description = 'Authorized banana personnel only.';
         list.appendChild(card);
       });
     }
+    // ── the LIVE catalogue: search / filter / sort / edit, scales to 100s ──
+    let liveItems = null;
+    let liveFilter = 'all';
+    async function liveLoad() {
+      const r = await fetch(GAL + '/gallery/approved', { cache: 'no-store' });
+      if (!r.ok) return false;
+      liveItems = await r.json();
+      return true;
+    }
+    async function liveBoot() {
+      if (liveItems === null) { if (!(await liveLoad().catch(() => false))) { liveItems = []; } }
+      liveRender();
+    }
+    el('bmLiveQ').addEventListener('input', () => liveRender());
+    el('bmLiveSort').addEventListener('change', () => liveRender());
+
+    function liveRender() {
+      const q = el('bmLiveQ').value.trim().toLowerCase();
+      const sort = el('bmLiveSort').value;
+      let shown = liveItems.filter((it) => {
+        const hay = (it.title + ' ' + (it.by || '') + ' ' + it.slug + ' ' + (it.tags || []).join(' ')).toLowerCase();
+        if (q && !hay.includes(q)) return false;
+        if (liveFilter === 'untagged') return !(it.tags || []).length;
+        if (liveFilter === 'sticker') return it.transparent;
+        if (liveFilter === 'gif') return !it.transparent;
+        return true;
+      });
+      shown = shown.slice().sort((a, b) =>
+        sort === 'old' ? a.approved - b.approved :
+        sort === 'az' ? a.title.localeCompare(b.title) :
+        b.approved - a.approved);
+
+      // filter chips with live counts
+      const chips = el('bmLiveChips');
+      chips.textContent = '';
+      const untagged = liveItems.filter((it) => !(it.tags || []).length).length;
+      [['all', 'all (' + liveItems.length + ')'],
+       ['untagged', '🏷 untagged (' + untagged + ')'],
+       ['sticker', 'stickers'], ['gif', 'gifs']].forEach(([v, label]) => {
+        const b = document.createElement('button');
+        b.className = 'bm-chip';
+        b.type = 'button';
+        b.textContent = label;
+        b.setAttribute('aria-pressed', String(liveFilter === v));
+        b.onclick = () => { liveFilter = v; liveRender(); };
+        chips.appendChild(b);
+      });
+
+      const list = el('bmLiveList');
+      list.textContent = '';
+      if (!shown.length) {
+        const d = document.createElement('div');
+        d.className = 'bm-empty';
+        d.innerHTML = '<div class="bm-big">🔍</div><p>No bananas match.</p>';
+        list.appendChild(d);
+        return;
+      }
+      shown.forEach((it) => {
+        const row = document.createElement('article');
+        row.className = 'bm-live';
+        const box = document.createElement('div');
+        box.className = 'bm-live__img';
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.src = GAL + '/gallery/gif/' + it.slug + '.gif';
+        img.alt = '';
+        box.appendChild(img);
+
+        const meta = document.createElement('div');
+        meta.className = 'bm-live__meta';
+        const titleIn = document.createElement('input');
+        titleIn.value = it.title || '';
+        titleIn.maxLength = 60;
+        titleIn.placeholder = 'title';
+        const row2 = document.createElement('div');
+        row2.className = 'bm-live__row2';
+        const tagsIn = document.createElement('input');
+        tagsIn.value = (it.tags || []).join(', ');
+        tagsIn.maxLength = 120;
+        tagsIn.placeholder = 'tags, comma-separated';
+        const byIn = document.createElement('input');
+        byIn.value = it.by || '';
+        byIn.maxLength = 24;
+        byIn.placeholder = 'creator (byline)';
+        row2.appendChild(tagsIn); row2.appendChild(byIn);
+
+        const foot = document.createElement('div');
+        foot.className = 'bm-live__foot';
+        const view = document.createElement('a');
+        view.href = '/banana-memes/by/' + it.slug + '/';
+        view.target = '_blank';
+        view.textContent = '↗ view';
+        foot.appendChild(view);
+        foot.appendChild(document.createTextNode((it.transparent ? 'sticker' : 'gif') + ' · ' + fmtDate(it.approved)));
+        const save = document.createElement('button');
+        save.className = 'bm-btn bm-live__save';
+        save.type = 'button';
+        save.textContent = '💾 save';
+        const markDirty = () => row.classList.add('bm-live--dirty');
+        titleIn.oninput = tagsIn.oninput = byIn.oninput = markDirty;
+        save.onclick = async () => {
+          save.disabled = true; save.textContent = 'saving…';
+          try {
+            const r = await fetch(GAL + '/gallery/edit?key=' + encodeURIComponent(gkey), {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ slug: it.slug, title: titleIn.value, tags: tagsIn.value, by: byIn.value }),
+            });
+            const d = await r.json();
+            if (d.ok && d.entry) {
+              Object.assign(it, d.entry);
+              tagsIn.value = (it.tags || []).join(', ');
+              row.classList.remove('bm-live--dirty');
+              save.textContent = '✓ saved';
+              setTimeout(() => { save.textContent = '💾 save'; save.disabled = false; }, 1200);
+              return;
+            }
+            alert(d.error || 'failed');
+          } catch (e) { alert('the desk is busy — try again'); }
+          save.disabled = false; save.textContent = '💾 save';
+        };
+        foot.appendChild(save);
+        meta.appendChild(titleIn); meta.appendChild(row2); meta.appendChild(foot);
+        row.appendChild(box); row.appendChild(meta);
+        list.appendChild(row);
+      });
+    }
+
     // preload the badge so the tab shows the pending count on arrival
     if (gkey) galLoad().then((ok) => { if (ok) galBadge(); }).catch(() => {});
 
