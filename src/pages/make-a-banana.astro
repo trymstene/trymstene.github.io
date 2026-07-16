@@ -444,13 +444,6 @@ const appSchema = {
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
         </div>
         <div class="bb-overlayrow">
-          <a href="#" id="bbWallSubmit" title="The banana guy hangs the best ones in the Banana Gallery"><PixelIcon name="frame" size="1em" /> Submit to the Gallery</a>
-        </div>
-        <div class="bb-signrow" id="bbSignRow" hidden>
-          <input class="bb-input" id="bbSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
-          <button class="btn btn--dark" id="bbSignSend">Send to the Gallery</button>
-        </div>
-        <div class="bb-overlayrow">
           <a href="#" id="bbOverlayLink">Streamer? Copy the overlay link</a>
           <details class="px-info"><summary>?</summary><span class="px-info__bubble">A transparent, always-dancing <strong>banana of the day</strong> — a fresh outfit every day, decided at midnight. Not the one you’re building here: set it once in OBS as a Browser Source and it changes on its own. (Today’s is also live at <a href="/banana-of-the-day/">banana of the day</a>.)</span></details>
         </div>
@@ -511,6 +504,14 @@ const appSchema = {
             <p>Or as the <strong>full meme</strong> — captions, background and outfit. Animated GIF (the whole dance) or a still image of the frame you froze above:</p>
             <button class="btn btn--dark" id="bbDownloadMemeGif"><PixelIcon name="banana" size="1.4em" /> Download meme GIF</button>
             <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" size="1.4em" /> Download image (PNG)</button>
+          </div>
+          <div class="bb-dl2">
+            <p>Proud of this one? Put it in the <a href="/banana-memes/">Banana Gallery</a> — the banana guy hangs the best ones.</p>
+            <button class="btn btn--light" id="bbWallSubmit" title="Sends your banana to the gallery inbox for review"><PixelIcon name="frame" size="1.4em" /> Submit to the Gallery</button>
+            <div class="bb-signrow" id="bbSignRow" hidden>
+              <input class="bb-input" id="bbSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
+              <button class="btn btn--dark" id="bbSignSend">Send it in</button>
+            </div>
           </div>
         </div>
       </div>
