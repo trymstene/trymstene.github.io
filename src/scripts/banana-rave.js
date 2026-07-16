@@ -438,7 +438,11 @@ function init() {
 
   // ---- the camera: follow-me zoom for small screens (walking IS panning) ----
   const CAM_SCALE = 1.75;
-  const cam = { on: matchMedia('(max-width: 640px)').matches, s: 1, tx: 0, ty: 0 };
+  // returning visitors start ZOOMED OUT (Trym: see the whole floor first);
+  // first-timers keep follow-me — the welcome spotlight needs the close-up.
+  // "been here before" = the tour marker (set on every first visit)
+  const raveSeen = (() => { try { return !!localStorage.getItem('rv-tour-v1'); } catch (e) { return false; } })();
+  const cam = { on: matchMedia('(max-width: 640px)').matches && !raveSeen, s: 1, tx: 0, ty: 0 };
   let floorW = 0, floorH = 0;
   // the bar is SOLID — bananas stop at it instead of moonwalking through the counter.
   // It's sized in px, so its world-percent rect depends on the floor size: re-measured
@@ -2077,7 +2081,11 @@ function init() {
       try { localStorage.setItem('rv-tour-v1', '1'); } catch (e) {}
       setTimeout(runTour, 1200);
     } else {
-      nightInit();
+      // returning visitor: the join is already busy (ravers, jelly raining,
+      // Barty mid-quip) — the quest chip + its chore props wait for a
+      // settle-in breath instead of piling onto the arrival (Trym: "it's a
+      // lot at the same time"). Arrival-quiet principle, extended.
+      setTimeout(nightInit, 9000);
     }
   }
   function tourCamTo(xPct, yPct, s) { // same math as updateCam, arbitrary target
