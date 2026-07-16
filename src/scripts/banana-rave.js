@@ -33,7 +33,7 @@ const happyActive = (t) => happyPhase(t) < HAPPY_LEN;
 const happyWin = (t) => Math.floor((t - HAPPY_OFFSET) / HAPPY_PERIOD);
 // FLOOR LIFE — all clock-synced or derived from positions we already have:
 // light trails (walking paints the floor), the spotlight (a gathering ritual),
-// high-fives (proximity sparks), and the lost vinyl (courier quest → bonus drop).
+// fistbumps (proximity sparks), and the lost vinyl (courier quest → bonus drop).
 const SPOT_PERIOD = 120, SPOT_LEN = 35, SPOT_OFFSET = 30, SPOT_R = 14; // seconds / floor-% (35s = time to actually reach it)
 const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
 const SAUCE_PERIOD = 180, SAUCE_WAIT = 100, SAUCE_OFFSET = 60;          // hot sauce drop — keep in sync with worker
@@ -157,6 +157,11 @@ const JELLY_RAINBOW_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" x
 // THE MEGA JELLY (16 Jul, Trym: "one big ass jelly, ~6x, doesn't move, +50"):
 // its own 14x12 sprite — a whole dumped pudding with a highlight, dark base
 // and splat feet; same colour language as the pellets, no outline.
+// THE LAGOON FISH (16 Jul, Trym: "maybe you turn into a weird looking fish
+// flobbing around, with water trails") — the Blue Lagoon transforms you: a
+// dopey lagoon fish (big blank stare, open mouth, banana-yellow dorsal fin)
+// flops in place of your banana for the fx duration. 17x11 pixel sprite.
+const FISH_SVG = '<svg viewBox="0 0 17 11" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="0" width="3" height="1" fill="#ffe135"/><rect x="6" y="1" width="3" height="1" fill="#ffe135"/><rect x="4" y="2" width="8" height="1" fill="#123a56"/><rect x="3" y="3" width="1" height="1" fill="#123a56"/><rect x="4" y="3" width="8" height="1" fill="#4db8ff"/><rect x="12" y="3" width="1" height="1" fill="#123a56"/><rect x="14" y="3" width="2" height="1" fill="#78ebff"/><rect x="2" y="4" width="1" height="1" fill="#123a56"/><rect x="3" y="4" width="1" height="1" fill="#4db8ff"/><rect x="4" y="4" width="3" height="1" fill="#f0f0fa"/><rect x="7" y="4" width="5" height="1" fill="#4db8ff"/><rect x="12" y="4" width="1" height="1" fill="#123a56"/><rect x="13" y="4" width="3" height="1" fill="#78ebff"/><rect x="1" y="5" width="1" height="1" fill="#123a56"/><rect x="2" y="5" width="2" height="1" fill="#4db8ff"/><rect x="4" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="5" width="1" height="1" fill="#111111"/><rect x="6" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="7" y="5" width="5" height="1" fill="#4db8ff"/><rect x="12" y="5" width="1" height="1" fill="#123a56"/><rect x="14" y="5" width="3" height="1" fill="#78ebff"/><rect x="0" y="6" width="1" height="1" fill="#123a56"/><rect x="1" y="6" width="1" height="1" fill="#0b2436"/><rect x="2" y="6" width="10" height="1" fill="#4db8ff"/><rect x="12" y="6" width="1" height="1" fill="#123a56"/><rect x="13" y="6" width="2" height="1" fill="#78ebff"/><rect x="1" y="7" width="1" height="1" fill="#123a56"/><rect x="2" y="7" width="3" height="1" fill="#4db8ff"/><rect x="5" y="7" width="5" height="1" fill="#78ebff"/><rect x="10" y="7" width="2" height="1" fill="#4db8ff"/><rect x="12" y="7" width="1" height="1" fill="#123a56"/><rect x="14" y="7" width="2" height="1" fill="#78ebff"/><rect x="2" y="8" width="1" height="1" fill="#123a56"/><rect x="3" y="8" width="2" height="1" fill="#4db8ff"/><rect x="5" y="8" width="5" height="1" fill="#78ebff"/><rect x="10" y="8" width="1" height="1" fill="#4db8ff"/><rect x="11" y="8" width="1" height="1" fill="#123a56"/><rect x="13" y="8" width="3" height="1" fill="#78ebff"/><rect x="3" y="9" width="1" height="1" fill="#123a56"/><rect x="4" y="9" width="6" height="1" fill="#4db8ff"/><rect x="10" y="9" width="1" height="1" fill="#123a56"/><rect x="14" y="9" width="1" height="1" fill="#78ebff"/><rect x="4" y="10" width="6" height="1" fill="#123a56"/></svg>';
 const MEGA_JELLY_SVG = '<svg viewBox="0 0 14 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="6" height="1" fill="#ff4d9d"/><rect x="2" y="1" width="10" height="1" fill="#ff4d9d"/><rect x="1" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="3" y="2" width="2" height="1" fill="#f0f0fa"/><rect x="5" y="2" width="8" height="1" fill="#ff4d9d"/><rect x="1" y="3" width="1" height="1" fill="#ff4d9d"/><rect x="2" y="3" width="3" height="1" fill="#f0f0fa"/><rect x="5" y="3" width="8" height="1" fill="#ff4d9d"/><rect x="0" y="4" width="2" height="1" fill="#ff4d9d"/><rect x="2" y="4" width="2" height="1" fill="#f0f0fa"/><rect x="4" y="4" width="10" height="1" fill="#ff4d9d"/><rect x="0" y="5" width="14" height="1" fill="#ff4d9d"/><rect x="0" y="6" width="14" height="1" fill="#ff4d9d"/><rect x="0" y="7" width="1" height="1" fill="#c62c74"/><rect x="1" y="7" width="12" height="1" fill="#ff4d9d"/><rect x="13" y="7" width="1" height="1" fill="#c62c74"/><rect x="0" y="8" width="2" height="1" fill="#c62c74"/><rect x="2" y="8" width="10" height="1" fill="#ff4d9d"/><rect x="12" y="8" width="2" height="1" fill="#c62c74"/><rect x="1" y="9" width="2" height="1" fill="#c62c74"/><rect x="3" y="9" width="8" height="1" fill="#ff4d9d"/><rect x="11" y="9" width="2" height="1" fill="#c62c74"/><rect x="2" y="10" width="10" height="1" fill="#c62c74"/><rect x="1" y="11" width="3" height="1" fill="#c62c74"/><rect x="6" y="11" width="3" height="1" fill="#c62c74"/><rect x="11" y="11" width="2" height="1" fill="#c62c74"/></svg>';
 const STOOL_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="6" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="1" width="6" height="1" fill="#8a5a2b"/><rect x="7" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="2" width="6" height="1" fill="#111111"/><rect x="1" y="3" width="1" height="1" fill="#111111"/><rect x="2" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="4" height="1" fill="#8a5a2b"/><rect x="6" y="5" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="7" width="1" height="1" fill="#111111"/></svg>';
 // THE MENU (Trym-approved list, 7 Jul): 10 conveyor items + 8 counter
@@ -290,7 +295,7 @@ const FX_CLASS = {
   fizz: 'rv-fizzfx',
   boots: 'rv-bootsfx', wobble: 'rv-wobblefx',
   sugar: 'rv-sugarfx', // the candy: shaking off ALL the sugar
-  lagoon: 'rv-lagoonglow', water: 'rv-waterglow', espresso: 'rv-jitter', colada: 'rv-sway',
+  lagoon: 'rv-fishfx', water: 'rv-waterglow', espresso: 'rv-jitter', colada: 'rv-sway',
 };
 
 // Barty's voice (Trym's brief): a southwestern, over-cheerful cowboy-bartender —
@@ -412,7 +417,7 @@ function init() {
     const flip = r.facing === -1 ? 'scaleX(-1) ' : '';
     r.cv.style.transform = flip + (Math.abs(dx) > 0.01 ? 'rotate(4deg)' : '');
     r.lastWalk = Date.now();
-    r.lastMoveAt = r.lastWalk; // survives stopLean — trails + high-fives read this
+    r.lastMoveAt = r.lastWalk; // survives stopLean — trails + fistbumps read this
   }
 
   function stopLean(r) {
@@ -1316,7 +1321,7 @@ function init() {
       '<span class="rv-stats__time" id="rvClubTime">⏱ <b>' + clubTime() + '</b> in the club</span>' +
       '<span><b>' + tonight.jelly + '</b> jelly</span>' +
       one(tonight.pickups, 'pickup', 'pickups') +
-      one(tonight.fives, 'high-five', 'high-fives') +
+      one(tonight.fives, 'fistbump', 'fistbumps') +
       one(tonight.jellytimes, 'jelly time', 'jelly times');
   }
   setInterval(() => { // the counter TICKS — watching it climb is the point
@@ -1409,7 +1414,7 @@ function init() {
     const rows = [
       [tonight.jelly, 'JELLY'],
       [tonight.pickups, tonight.pickups === 1 ? 'PICKUP' : 'PICKUPS'],
-      [tonight.fives, tonight.fives === 1 ? 'HIGH-FIVE' : 'HIGH-FIVES'],
+      [tonight.fives, tonight.fives === 1 ? 'FISTBUMP' : 'FISTBUMPS'],
       [tonight.jellytimes, tonight.jellytimes === 1 ? 'JELLY TIME' : 'JELLY TIMES'],
     ];
     let y = 400;
@@ -1599,7 +1604,7 @@ function init() {
         slide: 'zero friction. good luck stopping!',
         bubbles: 'big bubbles, no troubles.',
         espresso: 'the closing-shift special — HOLD ON!',
-        lagoon: 'cool as the deep end.',
+        lagoon: 'blub. you are FISH now — flop it out!',
         boots: 'one small step for banana — BOING!',
         wobble: 'your legs went full jelly. dance anyway!',
         sparkler: 'write your name on the night!',
@@ -1852,7 +1857,7 @@ function init() {
     }
   }
 
-  // ---- floor life: high-fives (proximity + recent movement = a mitten pops) ----
+  // ---- floor life: fistbumps (proximity + recent movement = gloves bump) ----
   const fived = new Map();
   function spawnFive(x, y) {
     const d = document.createElement('div');
@@ -1872,7 +1877,7 @@ function init() {
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
         const a = list[i], b = list[j];
-        // the cone of honour draws people in — high-fives reach further
+        // the cone of honour draws people in — fistbumps reach further
         const coneOn = (fxActive(a, now) && a.fx.id === 'cone') || (fxActive(b, now) && b.fx.id === 'cone');
         if (Math.hypot(a.x - b.x, a.y - b.y) > FIVE_DIST * (coneOn ? 1.6 : 1)) continue;
         // static discharge: brush past a CHARGED banana and you FEEL it — the
@@ -1905,7 +1910,7 @@ function init() {
             if (!localStorage.getItem('rv-real5')) {
               localStorage.setItem('rv-real5', '1');
               if (!bubbleSticky && Date.now() > bartyBusyUntil) {
-                showBubble('high five! 🖐 that was a real person, by the way', false, 4200);
+                showBubble('fistbump! 👊 that was a real person, by the way', false, 4200);
               }
             }
           } catch (e) {}
@@ -3094,6 +3099,20 @@ function init() {
           if (r.fxClass) r.wrap.classList.remove(r.fxClass);
           if (fxClass) r.wrap.classList.add(fxClass);
           r.fxClass = fxClass;
+          // THE LAGOON FISH swaps the banana out entirely — the sprite is a
+          // JS-injected child (authored like every floor sprite), added and
+          // removed on the same change-only edge as the class itself
+          const wantFish = fxClass === 'rv-fishfx';
+          if (wantFish && !r.fishEl) {
+            const f = document.createElement('div');
+            f.className = 'rv-fish';
+            f.innerHTML = FISH_SVG;
+            r.wrap.appendChild(f);
+            r.fishEl = f;
+          } else if (!wantFish && r.fishEl) {
+            r.fishEl.remove();
+            r.fishEl = null;
+          }
         }
         // FLAMING POTASSIUM v2 (Trym: "it's chilisauce, it's hot") — the banana
         // ITSELF flares up in flickers. Static class flips by JS, never a
@@ -3372,9 +3391,18 @@ function init() {
             trailCtx.fillRect(Math.round(p.x + Math.cos(pa) * pd), Math.round(p.y + Math.sin(pa) * pd * 0.7), 3, 5);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'lagoon') {
-            trailCtx.globalAlpha = 0.85 * (1 - age);
-            trailCtx.fillStyle = (p.seed || 0) % 2 ? '#78ebff' : '#4db8ff';
-            trailCtx.fillRect(Math.round(p.x - 1 + Math.sin((p.seed || 0)) * 5), Math.round(p.y - 6 + age * 12), 3, 3);
+            // WATER WAKE v2: a widening pixel splash crown + droplets thrown
+            // up and falling back (the old lone 3px drip read as nothing)
+            const spread = 4 + age * 15;
+            trailCtx.globalAlpha = 0.9 * (1 - age);
+            trailCtx.fillStyle = '#4db8ff';
+            trailCtx.fillRect(Math.round(p.x - spread), Math.round(p.y - 2), 4, 3);
+            trailCtx.fillRect(Math.round(p.x + spread - 3), Math.round(p.y - 2), 4, 3);
+            trailCtx.fillStyle = '#78ebff';
+            trailCtx.fillRect(Math.round(p.x - spread * 0.5), Math.round(p.y - 5 - age * 8 + age * age * 16), 3, 3);
+            trailCtx.fillRect(Math.round(p.x + spread * 0.5 - 1), Math.round(p.y - 5 - age * 7 + age * age * 14), 3, 3);
+            trailCtx.fillStyle = '#f0f0fa';
+            trailCtx.fillRect(Math.round(p.x - 1 + Math.sin((p.seed || 0)) * 4), Math.round(p.y - 9 - age * 9 + age * age * 18), 2, 2);
             trailCtx.globalAlpha = 1;
           } else if (p.kind === 'espresso') {
             // the closing-shift wake: a trail of ABANDONED ESPRESSO CUPS,

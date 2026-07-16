@@ -87,7 +87,7 @@ async function init() {
     [S.drops, 'drops survived'],
     [S.jelly, 'jelly collected'],
     [S.hypes, 'jelly times'],
-    [S.fives, 'high-fives'],
+    [S.fives, 'fistbumps'],
     [S.beers, 'happy hours won'],
     [S.vinyls, 'records delivered'],
     [S.builds, 'bananas taken home'],

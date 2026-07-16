@@ -513,8 +513,6 @@ const GUIDE = [
        bakes it; the shock-blink lesson) */
     .rv-raver.rv-flamehot canvas { filter: drop-shadow(0 0 9px #ff9128) drop-shadow(0 0 20px #e8542c); }
     @media (prefers-reduced-motion: reduce) { .rv-raver.rv-thicc, .rv-raver.rv-sugarfx canvas, .rv-raver.rv-flashfx::before { animation: none; } }
-    /* blue lagoon: cool cyan aura */
-    .rv-raver.rv-lagoonglow canvas { filter: drop-shadow(0 0 8px #4db8ff); }
     /* water: clean, clear, hydrated */
     .rv-raver.rv-waterglow canvas { filter: drop-shadow(0 0 7px #e8f6ff); }
     /* espresso martini: the caffeine jitter */
@@ -748,7 +746,18 @@ const GUIDE = [
     @keyframes rvMegaBob { 50% { transform: scale(1.06, 0.94); } } /* heavier mass, slower wobble */
     .rv-mega--got { animation: rvMegaGot 0.55s steps(4) forwards; }
     @keyframes rvMegaGot { 100% { transform: scale(1.9); opacity: 0; } }
-    @media (prefers-reduced-motion: reduce) { .rv-pellet, .rv-pellet svg, .rv-mega, .rv-mixer--peak { animation: none; } }
+    /* THE LAGOON FISH — the Blue Lagoon takes you: banana hidden, a dopey
+       fish flops in your place (transform-only animation on the svg) */
+    .rv-fishfx canvas { visibility: hidden; }
+    .rv-fish { position: absolute; left: 50%; top: 34%; width: 78%; line-height: 0; transform: translate(-50%, -50%); pointer-events: none; }
+    .rv-fish svg { width: 100%; height: auto; image-rendering: pixelated; display: block;
+      filter: drop-shadow(0 0 8px rgba(77, 184, 255, 0.8));
+      animation: rvFishFlop 0.5s steps(2) infinite; }
+    @keyframes rvFishFlop {
+      0% { transform: rotate(-22deg) translateY(0); }
+      50% { transform: rotate(20deg) translateY(-8px); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-pellet, .rv-pellet svg, .rv-mega, .rv-fish svg, .rv-mixer--peak { animation: none; } }
 
     .rv-zoom {
       position: absolute; top: 8px; right: 8px; z-index: 600;
