@@ -1,0 +1,315 @@
+---
+// One route, three page types — the whole Banana Gallery under /banana-memes/:
+//   item  — one indexable page per meme/sticker (the Giphy model): ImageObject
+//           + license markup (the Licensable treatment), rating, download CRO
+//   tag   — query-first landing pages (monday/work/vibes…), only built once a
+//           tag holds MIN_TAG_ITEMS items (thin category pages hurt)
+//   cat   — the Stickers / GIFs split (Trym's rule: transparent = sticker)
+// Ratings ride the same worker as the remix gallery (ids prefixed gal-) and
+// the LIVE tally is fetched at build time so AggregateRating markup carries
+// real numbers — the daily banana-of-the-day rebuild keeps it fresh.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+import items from '../../data/gallery.json';
+import { TAGS, MIN_TAG_ITEMS } from '../../data/gallery-tags.js';
+
+export async function getStaticPaths() {
+  // live rating board (best effort — build must survive a worker hiccup)
+  let board = {};
+  try {
+    const res = await fetch('https://banana-remixes.trymstene.workers.dev/ratings');
+    if (res.ok) board = await res.json();
+  } catch (e) { /* no ratings at build = no AggregateRating markup */ }
+
+  const tagCount = {};
+  items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+  const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+
+  // an item id colliding with a tag/category slug would silently lose its
+  // page (both claim the same URL) — fail the BUILD instead
+  const reserved = new Set([...Object.keys(TAGS), 'stickers', 'gifs']);
+  for (const i of items) {
+    if (reserved.has(i.id)) throw new Error(`gallery item id "${i.id}" collides with a tag/category slug — rename the source file`);
+  }
+
+  const paths = [];
+
+  for (const item of items) {
+    // related: same tag first, then same kind — never itself, max 6
+    const rel = [];
+    const seen = new Set([item.id]);
+    for (const x of items) {
+      if (seen.has(x.id)) continue;
+      if (x.tags.some((t) => item.tags.includes(t))) { rel.push(x); seen.add(x.id); }
+    }
+    for (const x of items) {
+      if (rel.length >= 6) break;
+      if (!seen.has(x.id) && x.kind === item.kind) { rel.push(x); seen.add(x.id); }
+    }
+    paths.push({
+      params: { slug: item.id },
+      props: { type: 'item', item, related: rel.slice(0, 6), tally: board['gal-' + item.id] || null, liveTags },
+    });
+  }
+
+  for (const t of liveTags) {
+    paths.push({
+      params: { slug: t },
+      props: { type: 'tag', tagKey: t, members: items.filter((i) => i.tags.includes(t)), liveTags },
+    });
+  }
+
+  for (const c of ['stickers', 'gifs']) {
+    paths.push({
+      params: { slug: c },
+      props: { type: 'cat', catKey: c, members: items.filter((i) => (c === 'stickers' ? i.kind === 'sticker' : i.kind === 'gif')), liveTags },
+    });
+  }
+  return paths;
+}
+
+const { type, item, related, tally, tagKey, catKey, members, liveTags } = Astro.props;
+const SITE = 'https://trymstene.com';
+
+// ---- per-type SEO assembly ----
+let title, description, pageUrl, ld = [], ogImage;
+
+if (type === 'item') {
+  const kindWord = item.kind === 'sticker' ? 'Transparent Dancing Banana Sticker' : 'Dancing Banana Meme GIF';
+  title = `${item.title} — ${kindWord}, Free Download`;
+  description = item.description;
+  pageUrl = `${SITE}/banana-memes/${item.id}/`;
+  ogImage = `${SITE}/assets/gallery-bananas/${item.file}`;
+  const imageLD = {
+    '@context': 'https://schema.org',
+    '@type': 'ImageObject',
+    '@id': pageUrl + '#image',
+    contentUrl: ogImage,
+    thumbnailUrl: `${SITE}/assets/gallery-posters/${item.id}.png`,
+    url: pageUrl,
+    name: title,
+    caption: item.caption,
+    description: item.description,
+    encodingFormat: 'image/gif',
+    width: item.w,
+    height: item.h,
+    representativeOfPage: true,
+    keywords: item.tags.join(', '),
+    uploadDate: item.added,
+    creator: { '@id': SITE + '/#trym' },
+    creditText: 'Trym Stene — creator of the 1999 Dancing Banana',
+    copyrightNotice: '© Trym Stene',
+    isBasedOn: { '@id': SITE + '/#banana-gif' },
+    isPartOf: { '@id': SITE + '/banana-memes/#gallery' },
+    // the Licensable treatment in Google Images — commercial questions route
+    // to the character's license page; personal chat use is the free grant
+    license: SITE + '/license-the-dancing-banana/',
+    acquireLicensePage: SITE + '/license-the-dancing-banana/',
+    ...(tally && tally[1] ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: (tally[0] / tally[1]).toFixed(1),
+        ratingCount: tally[1], bestRating: 5, worstRating: 1,
+      },
+    } : {}),
+  };
+  const crumbLD = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Dancing Banana GIF', item: SITE + '/dancing-banana-gif-meme/' },
+      { '@type': 'ListItem', position: 2, name: 'Banana Memes', item: SITE + '/banana-memes/' },
+      { '@type': 'ListItem', position: 3, name: item.title, item: pageUrl },
+    ],
+  };
+  ld = [imageLD, crumbLD];
+} else {
+  const isTag = type === 'tag';
+  const meta = isTag ? TAGS[tagKey] : null;
+  const catName = catKey === 'stickers' ? 'Banana Stickers — Transparent Dancing Banana Stickers' : 'Banana GIFs — Captioned Dancing Banana Memes';
+  title = isTag ? `${meta.name} — Free Dancing Banana ${tagKey === 'costume' ? 'Stickers' : 'GIFs'}` : catName;
+  description = isTag
+    ? `${members.length} free ${meta.q}s starring the dancing banana — download and share, no watermark. ${meta.blurb.split('—')[0].trim()}.`
+    : (catKey === 'stickers'
+      ? `${members.length} free transparent dancing banana stickers — no background box, ready for Discord, WhatsApp and iMessage. By the banana's original creator.`
+      : `${members.length} free dancing banana meme GIFs with captions — Monday moods, work memes and pure vibes. Download free, no watermark.`);
+  pageUrl = `${SITE}/banana-memes/${isTag ? tagKey : catKey}/`;
+  ogImage = `${SITE}/assets/gallery-posters/${members[0].id}.png`;
+  ld = [{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: isTag ? meta.name : title.split(' — ')[0],
+    url: pageUrl,
+    description,
+    isPartOf: { '@id': SITE + '/banana-memes/#gallery' },
+    creator: { '@id': SITE + '/#trym' },
+    hasPart: {
+      '@type': 'ItemList',
+      itemListElement: members.map((i, n) => ({
+        '@type': 'ListItem', position: n + 1,
+        url: `${SITE}/banana-memes/${i.id}/`, name: i.title,
+      })),
+    },
+  }, {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Banana Memes', item: SITE + '/banana-memes/' },
+      { '@type': 'ListItem', position: 2, name: isTag ? meta.name : (catKey === 'stickers' ? 'Stickers' : 'GIFs'), item: pageUrl },
+    ],
+  }];
+}
+const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
+---
+<BaseLayout title={title} description={description} ogType="article" ogImage={ogImage}>
+  <Fragment slot="head">
+    {ld.map((d) => <script type="application/ld+json" set:html={JSON.stringify(d)} />)}
+  </Fragment>
+
+  <style is:inline slot="head">
+    .gd { max-width: 680px; margin: 1.5rem auto 0; padding: 0 1rem 2.5rem; text-align: center; }
+    .gd-crumb { font-size: 0.82rem; opacity: 0.7; margin-bottom: 1rem; }
+    .gd-crumb a { color: var(--ink); }
+    .gd-box {
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: var(--line); box-shadow: var(--shadow);
+      padding: 1.4rem; min-height: 260px; margin-bottom: 1.3rem;
+    }
+    .gd-box--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 26px 26px; }
+    .gd-box img { max-width: 100%; height: auto; }
+    .gd-title { font-size: clamp(1.7rem, 6.5vw, 2.6rem); margin: 0 0 0.5rem; }
+    .gd-stars { display: flex; justify-content: center; gap: 3px; }
+    .gd-stars button {
+      background: none; border: 0; cursor: pointer; font-size: 1.35rem; line-height: 1; padding: 3px;
+      filter: grayscale(1) opacity(0.35); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .gd-stars button.on { filter: none; }
+    .gd-count { font-size: 0.78rem; opacity: 0.7; font-weight: 700; margin: 0.25rem 0 0; }
+    .gd-caption { font-weight: 700; max-width: 52ch; margin: 1rem auto 0.4rem; }
+    .gd-blurb { max-width: 54ch; margin: 0.4rem auto 1.1rem; line-height: 1.55; opacity: 0.85; }
+    .gd-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.2rem; }
+    .gd-tags a, .gd-tags span {
+      font-size: 0.74rem; font-weight: 700; text-decoration: none; color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.2rem 0.55rem; background: var(--paper);
+    }
+    .gd-tags a:hover { background: var(--banana); }
+    .gd-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
+    .gd-actions .btn { flex: 1; min-width: 220px; }
+    .gd-note { font-size: 0.8rem; opacity: 0.7; margin-top: 1rem; }
+    .gd-note a { color: var(--ink); }
+    .gd-related { margin-top: 3rem; }
+    .gd-related h2 { font-size: 1.2rem; }
+    .gd-relgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 0.7rem; margin-top: 1rem; }
+    .gd-rel {
+      display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+      text-decoration: none; color: var(--ink); font-size: 0.72rem; font-weight: 700;
+      border: 3px solid var(--ink); box-shadow: 5px 5px 0 #000; background: var(--paper);
+      padding: 0.5rem 0.35rem;
+    }
+    .gd-rel img { width: 72px; height: 72px; object-fit: contain; }
+    .gd-rel:hover { background: var(--banana); }
+    /* collection templates */
+    .gc { max-width: 1100px; margin: 1.5rem auto 0; padding: 0 1rem 2.5rem; }
+    .gc h1 { margin: 0 0 0.3rem; }
+    .gc-blurb { margin: 0 0 1.4rem; opacity: 0.8; max-width: 64ch; }
+    .gc-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .gc-card {
+      display: block; text-decoration: none; color: var(--ink);
+      border: var(--line); background: var(--paper); box-shadow: var(--shadow);
+      padding: 0.7rem 0.7rem 0.6rem;
+    }
+    .gc-card:hover { background: var(--banana); }
+    .gc-card .gc-img { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border: 3px solid var(--ink); background: #fff; overflow: hidden; }
+    .gc-card .gc-img--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 22px 22px; }
+    .gc-card img { max-width: 88%; max-height: 88%; height: auto; }
+    .gc-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0; }
+    .gc-back { margin-top: 1.8rem; text-align: center; }
+  </style>
+
+  {type === 'item' ? (
+    <article class="gd" id="gallery-detail" data-id={item.id}>
+      <nav class="gd-crumb" aria-label="Breadcrumb">
+        <a href="/dancing-banana-gif-meme/">Dancing Banana</a> ›
+        <a href="/banana-memes/">Banana memes</a> › <span>{item.title}</span>
+      </nav>
+
+      <div class={`gd-box${item.kind === 'sticker' ? ' gd-box--sticker' : ''}`}>
+        <img src={`/assets/gallery-bananas/${item.file}`} width={item.w} height={item.h}
+             style={heroScale ? 'width:min(320px,80%);' : undefined}
+             alt={`${item.title} — ${item.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF'}, free download`} />
+      </div>
+
+      <h1 class="gd-title">{item.title}</h1>
+      <div class="gd-rate">
+        <div class="gd-stars" role="group" aria-label={`Rate ${item.title} in bananas`}></div>
+        <p class="gd-count">be the first to rate 🍌</p>
+      </div>
+
+      <p class="gd-caption">{item.caption}</p>
+      <p class="gd-blurb">{item.description}</p>
+
+      <div class="gd-tags">
+        {item.tags.map((t) => liveTags.includes(t)
+          ? <a href={`/banana-memes/${t}/`}>#{t}</a>
+          : <span>#{t}</span>)}
+        <a href={`/banana-memes/${item.kind === 'sticker' ? 'stickers' : 'gifs'}/`}>{item.kind === 'sticker' ? '✂ stickers' : '🎞 gifs'}</a>
+      </div>
+
+      <div class="gd-actions">
+        <a class="btn btn--dark" id="gdDownload" href={`/assets/gallery-bananas/${item.file}`} download={item.file}>
+          <PixelIcon name="download" /> Download free
+        </a>
+        <a class="btn btn--light" href="/make-a-banana/" data-place="gallery_detail">
+          <PixelIcon name="palette" /> Make your own →
+        </a>
+      </div>
+
+      <p class="gd-note">
+        Made by <a href="/me/">Trym Stene</a>, creator of the original 1999 Dancing Banana.
+        Free for personal use — for commercial use, <a href="/license-the-dancing-banana/">license the banana</a>.
+      </p>
+
+      <section class="gd-related">
+        <h2>More banana memes</h2>
+        <div class="gd-relgrid">
+          {related.map((x) => (
+            <a class="gd-rel" href={`/banana-memes/${x.id}/`}>
+              <img src={`/assets/gallery-bananas/${x.file}`} width={x.w} height={x.h} loading="lazy"
+                   alt={`${x.title} — dancing banana ${x.kind === 'sticker' ? 'sticker' : 'meme'}`} />
+              <span>{x.title}</span>
+            </a>
+          ))}
+        </div>
+        <p class="gc-back"><a class="btn btn--dark" href="/banana-memes/">← All banana memes</a></p>
+      </section>
+    </article>
+  ) : (
+    <div class="gc">
+      <nav class="gd-crumb" aria-label="Breadcrumb" style="text-align:left;">
+        <a href="/banana-memes/">Banana memes</a> › <span>{type === 'tag' ? TAGS[tagKey].name : (catKey === 'stickers' ? 'Stickers' : 'GIFs')}</span>
+      </nav>
+      <h1>{type === 'tag' ? TAGS[tagKey].name.toLowerCase() : (catKey === 'stickers' ? 'banana stickers' : 'banana meme gifs')}</h1>
+      <p class="gc-blurb">
+        {type === 'tag' ? TAGS[tagKey].blurb : (catKey === 'stickers'
+          ? 'Transparent dancing banana stickers — no background box, they float straight over any chat. Free to download and share, made by the banana\'s original creator.'
+          : 'Captioned dancing banana meme GIFs — Monday moods, work memes and pure vibes on loud pixel backgrounds. Free to download and share.')}
+      </p>
+      <div class="gc-grid">
+        {members.map((i) => (
+          <a class="gc-card" href={`/banana-memes/${i.id}/`}>
+            <div class={`gc-img${i.kind === 'sticker' ? ' gc-img--sticker' : ''}`}>
+              <img src={`/assets/gallery-bananas/${i.file}`} width={i.w} height={i.h} loading="lazy"
+                   alt={`${i.title} — ${i.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF'}`} />
+            </div>
+            <h2>{i.title}</h2>
+          </a>
+        ))}
+      </div>
+      <p class="gc-back"><a class="btn btn--dark" href="/banana-memes/">← All banana memes</a></p>
+    </div>
+  )}
+
+  {type === 'item' && <script>
+    import '../../scripts/gallery-detail.js';
+  </script>}
+</BaseLayout>

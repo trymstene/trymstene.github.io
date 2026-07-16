@@ -19,8 +19,10 @@ const remixes = remixesBase.map((r) => {
 // single-GIF hub can't fully serve). Distinct from the hub, which owns the head
 // term "banana meme" (singular/origin); this spoke owns the browse-many intent
 // and is tied to the hub as a part-of entity below → no cannibalisation.
-const title = `${remixes.length} Banana Memes — Dancing Banana GIFs by the Internet`;
-const description = `${remixes.length} banana memes: Dancing Banana GIF remixes the internet has made since 1999 — warrior bananas, Mario, Homer, dancing tacos. Browse, rate and download them free.`;
+// (retitled 16 Jul: "Banana Memes" now belongs to /banana-memes/ — Trym's own
+// gallery; this page owns "remixes / by the internet". Two galleries, two intents.)
+const title = `${remixes.length} Dancing Banana Remixes — Banana GIFs by the Internet`;
+const description = `${remixes.length} dancing banana remixes the internet has made since 1999 — warrior bananas, Mario, Homer, dancing tacos. Browse, rate and download the community's banana memes free.`;
 const counts = remixes.reduce((a, r) => { a[r.cat] = (a[r.cat] || 0) + 1; return a; }, {});
 // SSR every card as a real <img> so crawlers + Google Images (and no-JS
 // visitors) see actual banana-meme content, not an empty grid — the whole
@@ -33,7 +35,7 @@ const breadcrumb = {
   "@type": "BreadcrumbList",
   "itemListElement": [
     { "@type": "ListItem", "position": 1, "name": "Dancing Banana GIF", "item": "https://trymstene.com/dancing-banana-gif-meme/" },
-    { "@type": "ListItem", "position": 2, "name": "Banana Memes", "item": "https://trymstene.com/dancing-banana-remixes/" }
+    { "@type": "ListItem", "position": 2, "name": "Community remixes", "item": "https://trymstene.com/dancing-banana-remixes/" }
   ]
 };
 const gallery = {
@@ -41,7 +43,7 @@ const gallery = {
   "@type": "ImageGallery",
   "@id": "https://trymstene.com/dancing-banana-remixes/#gallery",
   "url": "https://trymstene.com/dancing-banana-remixes/",
-  "name": `Banana Memes — ${remixes.length} Dancing Banana GIFs by the Internet`,
+  "name": `Dancing Banana Remixes — ${remixes.length} Banana GIFs by the Internet`,
   "description": description,
   "about": { "@id": "https://trymstene.com/#banana-gif" },
   "isPartOf": { "@id": "https://trymstene.com/#banana-gif" },
@@ -59,7 +61,7 @@ const CATS = [
 <BaseLayout
   title={title}
   description={description}
-  ogTitle="Banana Memes — the Dancing Banana Remix Gallery"
+  ogTitle="The Dancing Banana Remix Gallery"
   ogDescription={`${remixes.length} dancing banana memes by the internet, since 1999. Rate them in bananas.`}
   ogImage="https://trymstene.com/assets/og/gif.png"
 >

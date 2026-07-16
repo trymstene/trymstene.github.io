@@ -1,0 +1,182 @@
+---
+// THE BANANA GALLERY hub — /banana-memes/ owns the "banana memes" query
+// (18.1K/mo). Giphy model: this page is the collection, every item below has
+// its own indexable page, tags are query-first landing pages. Items live in
+// src/data/gallery.json (tools/build-gallery.py maintains it from
+// public/assets/gallery-bananas/).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
+import items from '../data/gallery.json';
+import { TAGS, MIN_TAG_ITEMS } from '../data/gallery-tags.js';
+
+const SITE = 'https://trymstene.com';
+const stickers = items.filter((i) => i.kind === 'sticker');
+const gifs = items.filter((i) => i.kind === 'gif');
+
+const tagCount = {};
+items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+
+const title = 'Banana Memes — Free Dancing Banana GIFs & Stickers';
+const description = `${items.length} free banana memes: dancing banana GIFs with captions and transparent stickers, made by the creator of the original 1999 Dancing Banana. Download, share, no watermark.`;
+
+const galleryLD = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': SITE + '/banana-memes/#gallery',
+  name: 'Banana Memes',
+  url: SITE + '/banana-memes/',
+  description,
+  creator: { '@id': SITE + '/#trym' },
+  hasPart: {
+    '@type': 'ItemList',
+    itemListElement: items.map((i, n) => ({
+      '@type': 'ListItem', position: n + 1,
+      url: `${SITE}/banana-memes/${i.id}/`, name: i.title,
+    })),
+  },
+};
+const crumbLD = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Dancing Banana GIF', item: SITE + '/dancing-banana-gif-meme/' },
+    { '@type': 'ListItem', position: 2, name: 'Banana Memes', item: SITE + '/banana-memes/' },
+  ],
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="Banana Memes 🍌"
+  ogDescription="Free dancing banana memes & transparent stickers, straight from the banana's creator."
+  ogImage={`${SITE}/assets/gallery-posters/monday-again.png`}
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(galleryLD)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(crumbLD)} />
+  <style is:inline slot="head">
+    .gm-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
+    .gm-head h1 { margin: 0 0 0.3rem; }
+    .gm-head p { margin: 0 0 1.2rem; opacity: 0.8; max-width: 64ch; }
+    .gm-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
+    .gm-filters a, .gm-filters span.gm-chip {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.35rem 0.7rem;
+      font-weight: 700; font-size: 0.82rem; text-decoration: none; color: var(--ink);
+    }
+    .gm-filters a[aria-current="page"] { background: var(--ink); color: var(--banana); }
+    .gm-filters a:hover { background: var(--banana); }
+    .gm-tagrow { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+    .gm-tagrow a {
+      font-size: 0.74rem; font-weight: 700; text-decoration: none; color: var(--ink);
+      border: 2px solid var(--ink); padding: 0.2rem 0.55rem; background: var(--paper);
+    }
+    .gm-tagrow a:hover { background: var(--banana); }
+    .gm-search { margin: 0 0 1.2rem; }
+    .gm-search input {
+      width: 100%; max-width: 420px; border: 3px solid var(--ink); background: var(--paper);
+      padding: 0.55rem 0.8rem; font: inherit; font-weight: 700;
+    }
+    .gm-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .gm-card {
+      display: block; text-decoration: none; color: var(--ink);
+      border: var(--line); background: var(--paper); box-shadow: var(--shadow);
+      padding: 0.7rem 0.7rem 0.6rem;
+    }
+    .gm-card:hover { background: var(--banana); }
+    .gm-card .gm-img {
+      display: flex; align-items: center; justify-content: center; aspect-ratio: 1;
+      border: 3px solid var(--ink); background: #fff; overflow: hidden;
+    }
+    .gm-card .gm-img--sticker {
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 22px 22px;
+    }
+    .gm-card img { max-width: 88%; max-height: 88%; height: auto; }
+    .gm-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
+    .gm-card .gm-kind { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; }
+    .gm-cta {
+      margin-top: 2.4rem; border: var(--line); background: var(--ink); color: var(--paper);
+      box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
+    }
+    .gm-cta h2 { margin: 0 0 0.4rem; font-size: 1.15rem; color: var(--banana); }
+    .gm-cta p { margin: 0 0 0.9rem; font-size: 0.92rem; opacity: 0.9; max-width: 62ch; }
+    .gm-about { max-width: 68ch; margin-top: 2.4rem; border-top: var(--line); padding-top: 1.5rem; }
+    .gm-about h2 { font-size: 1.25rem; margin: 1.2rem 0 0.5rem; }
+    .gm-about p { line-height: 1.6; }
+  </style>
+
+  <div class="gm-wrap">
+    <div class="gm-head">
+      <p class="kicker">The gallery</p>
+      <h1>banana memes &amp; stickers</h1>
+      <p>
+        {items.length} free banana memes, drawn by the person who made the original
+        <a href="/dancing-banana-gif-meme/">1999 Dancing Banana GIF</a> — captioned meme GIFs
+        and transparent stickers, free to download and drop in any chat. No watermark, no sign-up.
+      </p>
+    </div>
+
+    <div class="gm-filters" role="navigation" aria-label="Categories">
+      <a href="/banana-memes/" aria-current="page">All ({items.length})</a>
+      <a href="/banana-memes/stickers/">Stickers ({stickers.length})</a>
+      <a href="/banana-memes/gifs/">GIFs ({gifs.length})</a>
+    </div>
+    <div class="gm-tagrow" role="navigation" aria-label="Tags">
+      {liveTags.map((t) => <a href={`/banana-memes/${t}/`}>#{t}</a>)}
+    </div>
+
+    <div class="gm-search">
+      <input id="gmSearch" type="search" placeholder="🔍 search the bananas…" aria-label="Search banana memes" />
+    </div>
+
+    <div class="gm-grid" id="gmGrid">
+      {items.map((i, n) => (
+        <a class="gm-card" href={`/banana-memes/${i.id}/`} data-search={`${i.title} ${i.caption} ${i.tags.join(' ')} ${i.kind}`.toLowerCase()}>
+          <div class={`gm-img${i.kind === 'sticker' ? ' gm-img--sticker' : ''}`}>
+            <img src={`/assets/gallery-bananas/${i.file}`} width={i.w} height={i.h}
+                 loading={n < 6 ? 'eager' : 'lazy'}
+                 alt={`${i.title} — ${i.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF'}`} />
+          </div>
+          <h2>{i.title}</h2>
+          <span class="gm-kind">{i.kind === 'sticker' ? '✂ sticker' : '🎞 gif'}</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="gm-cta">
+      <h2>Want a banana that's 100% yours?</h2>
+      <p>
+        Dress the dancing banana yourself — hats, shades, captions — and download it free.
+        Or draw a whole new creature, pixel by pixel, in the Forge.
+      </p>
+      <a class="btn btn--light" href="/make-a-banana/" data-place="gallery">
+        <PixelIcon name="palette" /> Make your own banana →
+      </a>
+      <a class="btn btn--light" href="/forge/" data-place="gallery">⚒ Open the Pixel Forge</a>
+    </div>
+
+    <section class="gm-about">
+      <h2>What is this?</h2>
+      <p>
+        In 1999 I drew a dancing banana and it became one of the most-shared GIFs on the internet.
+        This gallery is the banana's official meme collection — every GIF and sticker here is made
+        by me, its original creator, and every one is free. Transparent-background bananas are
+        <strong>stickers</strong> (they float over any chat), captioned ones are <strong>GIFs</strong>.
+      </p>
+      <p>
+        Looking for the community's versions instead? Browse the
+        <a href="/dancing-banana-remixes/">community remix gallery</a> — 266 bananas drawn by
+        the internet since 1999. Want yours printed?
+        The <a href="/make-a-banana/">banana builder</a> puts your design on real stickers and tees.
+      </p>
+    </section>
+  </div>
+
+  <script>
+    const inp = document.getElementById('gmSearch');
+    const cards = [...document.querySelectorAll('#gmGrid .gm-card')];
+    inp.addEventListener('input', () => {
+      const q = inp.value.trim().toLowerCase();
+      cards.forEach((c) => { c.style.display = !q || c.dataset.search.includes(q) ? '' : 'none'; });
+    });
+  </script>
+</BaseLayout>

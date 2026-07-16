@@ -1,0 +1,31 @@
+// THE BANANA GALLERY sitemap — hub, category, tag and per-item pages, each
+// item carrying its GIF as an image entry (the Google-Images play). Own child
+// sitemap so Search Console reports gallery coverage separately.
+import items from '../data/gallery.json';
+import { TAGS, MIN_TAG_ITEMS } from '../data/gallery-tags.js';
+
+const SITE = 'https://trymstene.com';
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+export function GET() {
+  const tagCount = {};
+  items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+  const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+
+  const urls = [];
+  urls.push(`  <url>\n    <loc>${SITE}/banana-memes/</loc>\n  </url>`);
+  for (const c of ['stickers', 'gifs']) {
+    urls.push(`  <url>\n    <loc>${SITE}/banana-memes/${c}/</loc>\n  </url>`);
+  }
+  for (const t of liveTags) {
+    urls.push(`  <url>\n    <loc>${SITE}/banana-memes/${t}/</loc>\n  </url>`);
+  }
+  for (const i of items) {
+    const loc = `${SITE}/banana-memes/${i.id}/`;
+    const img = `${SITE}/assets/gallery-bananas/${i.file}`;
+    const kind = i.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF';
+    urls.push(`  <url>\n    <loc>${loc}</loc>\n    <image:image><image:loc>${img}</image:loc><image:title>${esc(`${i.title} — ${kind}`)}</image:title></image:image>\n  </url>`);
+  }
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls.join('\n')}\n</urlset>\n`;
+  return new Response(xml, { headers: { 'Content-Type': 'application/xml' } });
+}
