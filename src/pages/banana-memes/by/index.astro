@@ -1,0 +1,117 @@
+---
+// /banana-memes/by/ — the community lane's own collection page. People trim
+// URLs (Trym found this as a 404); the prefix deserves a real page: every
+// approved visitor banana, plus the door to submit your own.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PixelIcon from '../../../components/PixelIcon.astro';
+
+const WORKER = 'https://banana-share.trymstene.workers.dev';
+let community = [];
+try {
+  const res = await fetch(WORKER + '/gallery/approved');
+  if (res.ok) community = (await res.json()).sort((a, b) => b.approved - a.approved);
+} catch (e) { /* build survives; the page just shows the submit door */ }
+
+const SITE = 'https://trymstene.com';
+const title = 'Community Banana Memes — Made by Visitors, Hung by the Banana Guy';
+const description = `${community.length || 'Fresh'} custom dancing bananas made by visitors in the banana builder and approved into the gallery. Make yours, submit it, get hung.`;
+
+const ld = [{
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Community Banana Memes',
+  url: SITE + '/banana-memes/by/',
+  description,
+  isPartOf: { '@id': SITE + '/banana-memes/#gallery' },
+  hasPart: {
+    '@type': 'ItemList',
+    itemListElement: community.map((c, n) => ({
+      '@type': 'ListItem', position: n + 1,
+      url: `${SITE}/banana-memes/by/${c.slug}/`, name: c.title,
+    })),
+  },
+}, {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Banana Memes', item: SITE + '/banana-memes/' },
+    { '@type': 'ListItem', position: 2, name: 'By the community', item: SITE + '/banana-memes/by/' },
+  ],
+}];
+---
+<BaseLayout title={title} description={description}
+  ogTitle="Community Banana Memes 🍌"
+  ogDescription="Custom dancing bananas by visitors — approved and hung by the banana guy himself.">
+  <Fragment slot="head">
+    {ld.map((d) => <script type="application/ld+json" set:html={JSON.stringify(d)} />)}
+  </Fragment>
+
+  <style is:inline slot="head">
+    .gc { max-width: 1100px; margin: 1.5rem auto 0; padding: 0 1rem 2.5rem; }
+    .gc-crumb { font-size: 0.82rem; opacity: 0.7; margin-bottom: 1rem; }
+    .gc-crumb a { color: var(--ink); }
+    .gc h1 { margin: 0 0 0.3rem; }
+    .gc-blurb { margin: 0 0 1.4rem; opacity: 0.8; max-width: 64ch; }
+    .gc-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .gc-card {
+      display: block; text-decoration: none; color: var(--ink);
+      border: var(--line); background: var(--paper); box-shadow: var(--shadow);
+      padding: 0.7rem 0.7rem 0.6rem;
+    }
+    .gc-card:hover { background: var(--banana); }
+    .gc-card .gc-img { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border: 3px solid var(--ink); background: #fff; overflow: hidden; }
+    .gc-card .gc-img--sticker { background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 22px 22px; }
+    .gc-card img { max-width: 88%; max-height: 88%; height: auto; }
+    .gc-card h2 { font-size: 0.95rem; margin: 0.55rem 0 0.1rem; }
+    .gc-card .gc-by { font-size: 0.72rem; font-weight: 700; opacity: 0.6; }
+    .gc-cta {
+      margin-top: 2.2rem; border: var(--line); background: var(--ink); color: var(--paper);
+      box-shadow: var(--shadow); padding: 1.2rem 1.3rem;
+    }
+    .gc-cta h2 { margin: 0 0 0.4rem; font-size: 1.15rem; color: var(--banana); }
+    .gc-cta p { margin: 0 0 0.9rem; font-size: 0.92rem; opacity: 0.9; max-width: 62ch; }
+    .gc-back { margin-top: 1.8rem; text-align: center; }
+  </style>
+
+  <div class="gc">
+    <nav class="gc-crumb" aria-label="Breadcrumb">
+      <a href="/banana-memes/">Banana memes</a> › <span>By the community</span>
+    </nav>
+    <h1>by the community</h1>
+    <p class="gc-blurb">
+      Custom dancing bananas made by visitors in the
+      <a href="/make-a-banana/">banana builder</a> — every one reviewed and hung by
+      the banana guy himself. Free to download, share and remix.
+    </p>
+
+    {community.length > 0 ? (
+      <div class="gc-grid">
+        {community.map((c) => (
+          <a class="gc-card" href={`/banana-memes/by/${c.slug}/`}>
+            <div class={`gc-img${c.transparent ? ' gc-img--sticker' : ''}`}>
+              <img src={`${WORKER}/gallery/gif/${c.slug}.gif`} loading="lazy"
+                   alt={`${c.title} — a custom dancing banana by ${c.by || 'a banana fan'}`} />
+            </div>
+            <h2>{c.title}</h2>
+            <span class="gc-by">🍌 by {c.by || 'a banana fan'}</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p><strong>The frames are up, the wall is waiting.</strong> Be the first — make a banana and submit it.</p>
+    )}
+
+    <div class="gc-cta">
+      <h2>Get YOUR banana on this page</h2>
+      <p>
+        Dress the banana, caption it, hit <strong>Submit to the Gallery</strong> in the
+        download box — if it makes the cut, it hangs here with your name on it.
+      </p>
+      <a class="btn btn--light" href="/make-a-banana/" data-place="gallery_by">
+        <PixelIcon name="palette" /> Make your banana →
+      </a>
+    </div>
+
+    <p class="gc-back"><a class="btn btn--dark" href="/banana-memes/">← All banana memes</a></p>
+  </div>
+</BaseLayout>

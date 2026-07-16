@@ -33,6 +33,7 @@ export async function GET() {
     const kind = i.kind === 'sticker' ? 'transparent dancing banana sticker' : 'dancing banana meme GIF';
     urls.push(`  <url>\n    <loc>${loc}</loc>\n    <image:image><image:loc>${img}</image:loc><image:title>${esc(`${i.title} — ${kind}`)}</image:title></image:image>\n  </url>`);
   }
+  urls.push(`  <url>\n    <loc>${SITE}/banana-memes/by/</loc>\n  </url>`);
   for (const c of community) {
     const loc = `${SITE}/banana-memes/by/${c.slug}/`;
     const img = `https://banana-share.trymstene.workers.dev/gallery/gif/${c.slug}.gif`;
