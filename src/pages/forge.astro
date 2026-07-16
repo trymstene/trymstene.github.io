@@ -149,10 +149,44 @@ const faqLD = {
     .fg-exphead { margin: 0 0 0.5rem; font-size: 0.95rem; }
     .fg-exprow { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
     .fg-exprow .btn { font-size: 0.82rem; padding: 0.55rem 0.8rem; }
-    .fg-about { max-width: 68ch; margin-top: 2.6rem; border-top: var(--line); padding-top: 1.6rem; }
-    .fg-about h2 { margin: 1.4rem 0 0.5rem; font-size: 1.25rem; }
-    .fg-about p, .fg-about li { line-height: 1.6; }
-    .fg-about ul, .fg-about ol { padding-left: 1.3rem; display: grid; gap: 0.4rem; margin: 0.5rem 0 0; }
+    /* ── the under-tool landing sections: visual, wide, to the point ── */
+    .fg-story, .fg-exports, .fg-steps, .fg-drawgif, .fg-faq { margin-top: 2.4rem; }
+    .fg-story { border-top: var(--line); padding-top: 1.8rem; }
+    .fg-story h2, .fg-exports h2, .fg-steps h2, .fg-faq h2 { margin: 0 0 0.7rem; font-size: 1.25rem; }
+    .fg-story p { max-width: 74ch; line-height: 1.6; margin: 0; }
+
+    /* platform export cards — the size IS the headline */
+    .fg-expgrid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .fg-exp {
+      display: block; text-decoration: none; color: var(--ink);
+      border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink));
+      padding: 0.85rem 0.95rem;
+    }
+    .fg-exp:hover { background: var(--banana); }
+    .fg-exp b { display: block; font-size: 1.45rem; line-height: 1.1; }
+    .fg-exp span { display: block; font-weight: 800; font-size: 0.85rem; margin-top: 0.15rem; }
+    .fg-exp small { display: block; font-size: 0.74rem; opacity: 0.65; margin-top: 0.15rem; }
+
+    /* numbered step tiles — big pixel numbers, one line each */
+    .fg-stepgrid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .fg-step {
+      display: flex; gap: 0.75rem; align-items: flex-start;
+      border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink));
+      padding: 0.85rem 0.95rem;
+    }
+    .fg-step b {
+      flex: 0 0 auto; width: 2rem; height: 2rem; display: grid; place-items: center;
+      background: var(--ink); color: var(--banana); font-size: 1.15rem;
+    }
+    .fg-step span { font-size: 0.88rem; line-height: 1.5; }
+
+    /* the draw-a-GIF callout — one loud banana band */
+    .fg-drawgif {
+      border: var(--line); background: var(--banana); box-shadow: var(--shadow);
+      padding: 1.2rem 1.4rem;
+    }
+    .fg-drawgif h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+    .fg-drawgif p { max-width: 74ch; line-height: 1.6; margin: 0; }
 
     /* pixel-fact strip — ink cards, banana numbers */
     .fg-facts { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-top: 2.4rem; }
@@ -160,7 +194,9 @@ const faqLD = {
     .fg-fact b { display: block; font-size: 1.7rem; color: var(--banana); margin-bottom: 0.25rem; }
 
     /* visible FAQ — real content, same text the FAQPage markup carries */
-    .fg-faq details { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.65rem 0.9rem; margin-top: 0.6rem; }
+    .fg-faqgrid { display: grid; gap: 0.6rem; align-items: start; }
+    @media (min-width: 760px) { .fg-faqgrid { grid-template-columns: 1fr 1fr; } }
+    .fg-faq details { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.65rem 0.9rem; }
     .fg-faq summary { font-weight: 800; cursor: pointer; font-size: 0.95rem; }
     .fg-faq details > p { margin: 0.5rem 0 0.2rem; line-height: 1.6; font-size: 0.92rem; }
 
@@ -319,66 +355,65 @@ const faqLD = {
       </div>
     </div>
 
-    <section class="fg-about">
+    <section class="fg-story">
       <h2>An emoji maker that respects the pixel</h2>
       <p>
-        Most emoji makers hand you a photo cropper and a watermark. This one is different on purpose:
-        it's a <strong>pixel emote maker</strong> — a small grid, four tools, frame-by-frame animation
-        and a live preview at the exact size chat will render your emoji. That constraint is the point.
-        Emotes live at 28–32 pixels, and art drawn <em>for</em> that size beats anything shrunk down to it.
+        Most emoji makers are photo croppers with a watermark. This is a
+        <strong>pixel emote maker</strong>: small grid, four tools, frame-by-frame animation,
+        live preview at the exact size chat renders. Emotes live at 28–32 pixels — art drawn
+        <em>for</em> that size beats anything shrunk down to it. In 1999 I drew the
+        <a href="/dancing-banana-gif-meme/">dancing banana</a> in a tool this simple.
+        This is that tool, rebuilt. Free, no account, no watermark.
       </p>
-      <p>
-        I know because I've been here before: in 1999 I drew a
-        <a href="/dancing-banana-gif-meme/">dancing banana</a> in a tool about this simple, and it became
-        one of the most-seen GIFs on the internet. The Forge is that kind of tool, rebuilt for the browser —
-        free, no account, no watermark, and everything you make stays yours.
-      </p>
-      <h2>What comes out</h2>
-      <ul>
-        <li><strong>Discord &amp; Slack</strong> — transparent animated GIF at 128×128, under the size caps. (Full spec: <a href="/discord-emoji-size/">Discord emoji sizes</a>.)</li>
-        <li><strong>Twitch</strong> — 112×112 transparent export; Twitch auto-generates the 56px and 28px versions. (Full spec: <a href="/twitch-emote-size/">Twitch emote sizes</a>.)</li>
-        <li><strong>Telegram &amp; anywhere else</strong> — hi-res 512px GIF or PNG. (All platforms: <a href="/guides/">the emoji size chart</a>.)</li>
-      </ul>
-      <h2>How to make an emoji</h2>
-      <ol>
-        <li>Pick a grid — 32×32 is the sweet spot for chat emotes. Or skip the blank page: import an existing GIF (yes, <em>the</em> banana is one click away) and remix it.</li>
-        <li>Draw with pencil, fill and eraser; the curated palette covers most emotes, and any colour you pick yourself travels with the creation. Watch the live chat preview while you work.</li>
-        <li>Add frames to animate — duplicate, nudge, repeat. Onion skin shows the previous frame as a ghost.</li>
-        <li>Forge it: download a transparent GIF or PNG sized for your platform, and upload it straight to Discord, Twitch or Slack.</li>
-      </ol>
+    </section>
 
+    <section class="fg-exports" aria-label="Export sizes per platform">
+      <h2>Sized for your platform</h2>
+      <div class="fg-expgrid">
+        <a href="/discord-emoji-size/" class="fg-exp"><b>128×128</b><span>Discord &amp; Slack</span><small>transparent GIF, under the caps</small></a>
+        <a href="/twitch-emote-size/" class="fg-exp"><b>112×112</b><span>Twitch</span><small>56px + 28px auto-generated</small></a>
+        <a href="/guides/" class="fg-exp"><b>512×512</b><span>Telegram &amp; hi-res</span><small>GIF or PNG</small></a>
+        <a href="/guides/" class="fg-exp"><b>every ⧉</b><span>All platforms</span><small>the emoji size chart →</small></a>
+      </div>
+    </section>
+
+    <section class="fg-steps" aria-label="How to make an emoji">
+      <h2>How to make an emoji</h2>
+      <div class="fg-stepgrid">
+        <div class="fg-step"><b>1</b><span><strong>Pick a grid</strong> — 32×32 is the sweet spot. Or import a GIF and remix it (<em>the</em> banana is one click away).</span></div>
+        <div class="fg-step"><b>2</b><span><strong>Draw</strong> — pencil, fill, eraser. Watch the live chat preview while you work.</span></div>
+        <div class="fg-step"><b>3</b><span><strong>Animate</strong> — add frames, duplicate, nudge. Onion skin ghosts the previous one.</span></div>
+        <div class="fg-step"><b>4</b><span><strong>Forge it</strong> — transparent GIF or PNG, ready to upload to Discord, Twitch or Slack.</span></div>
+      </div>
+    </section>
+
+    <section class="fg-drawgif">
       <h2>Draw an animated GIF from scratch</h2>
       <p>
-        Almost every GIF maker on the internet does the same thing: it converts a video, or stacks
-        photos into a slideshow. The Forge is the other kind — a <strong>GIF drawing tool</strong>,
-        the kind the first GIF artists used. You draw each frame in pixels, flip between them with
-        onion skin, set the timing per frame, and export a real animated GIF with real transparency.
-        Nothing is converted; everything is <em>drawn</em>. If you can doodle, you can animate —
-        the whole format is built for exactly this.
-      </p>
-      <p>
-        That also makes it a <strong>pixel GIF maker</strong> in the honest sense: the export is
-        crisp at any size because the art is pixels all the way down, not a photo squeezed
-        through a converter. Transparent stickers for chat, tiny looping characters,
-        animated pixel art for a stream — same four tools.
+        Every big GIF maker converts video. The Forge is the other kind — a
+        <strong>GIF drawing tool</strong>, like the ones the first GIF artists used. Draw each
+        frame in pixels, set the timing, export a real animated GIF with real transparency.
+        Nothing converted, everything <em>drawn</em>. If you can doodle, you can animate.
       </p>
     </section>
 
     <section class="fg-facts" aria-label="Pixel facts">
-      <div class="fg-fact"><b>1989</b> the year GIFs learned to animate and go transparent (GIF89a) — every emote you forge ships in that same format</div>
-      <div class="fg-fact"><b>28 px</b> the size a Twitch emote actually renders in chat — art drawn <em>for</em> 28px beats art shrunk to it</div>
-      <div class="fg-fact"><b>1999</b> the year the dancing banana was drawn in a tool this simple — 27 years later it's still everywhere</div>
-      <div class="fg-fact"><b>256</b> colours a GIF frame can hold, plus one transparent — constraints are where style comes from</div>
+      <div class="fg-fact"><b>1989</b> GIFs learn to animate and go transparent (GIF89a) — your emotes ship in that same format</div>
+      <div class="fg-fact"><b>28 px</b> the size a Twitch emote actually renders in chat — draw for it, don't shrink to it</div>
+      <div class="fg-fact"><b>1999</b> the dancing banana is drawn in a tool this simple — 27 years later it's still everywhere</div>
+      <div class="fg-fact"><b>256</b> colours per GIF frame, plus one transparent — constraints are where style comes from</div>
     </section>
 
-    <section class="fg-about fg-faq" aria-label="Frequently asked questions">
+    <section class="fg-faq" aria-label="Frequently asked questions">
       <h2>Questions, answered</h2>
-      {FAQ.map((f) => (
-        <details>
-          <summary>{f.q}</summary>
-          <p>{f.a}</p>
-        </details>
-      ))}
+      <div class="fg-faqgrid">
+        {FAQ.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
     </section>
 
     <section class="fg-doorswrap" aria-label="More on trymstene.com">
