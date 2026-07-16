@@ -2,7 +2,7 @@
 // item carrying its GIF as an image entry (the Google-Images play). Own child
 // sitemap so Search Console reports gallery coverage separately.
 import { loadGalleryItems } from '../lib/gallery-items.js';
-import { TAGS, MIN_TAG_ITEMS } from '../data/gallery-tags.js';
+import { liveTagList } from '../data/gallery-tags.js';
 
 const SITE = 'https://trymstene.com';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -16,9 +16,7 @@ export async function GET() {
     if (res.ok) community = await res.json();
   } catch (e) {}
 
-  const tagCount = {};
-  items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
-  const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+  const liveTags = liveTagList(items, community);
 
   const urls = [];
   urls.push(`  <url>\n    <loc>${SITE}/banana-memes/</loc>\n  </url>`);

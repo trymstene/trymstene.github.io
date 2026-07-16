@@ -9,7 +9,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PixelIcon from '../../../components/PixelIcon.astro';
 import { loadGalleryItems } from '../../../lib/gallery-items.js';
-import { TAGS, MIN_TAG_ITEMS } from '../../../data/gallery-tags.js';
+import { liveTagList } from '../../../data/gallery-tags.js';
 
 const WORKER = 'https://banana-share.trymstene.workers.dev';
 
@@ -29,13 +29,9 @@ export async function getStaticPaths() {
     if (res.ok) board = await res.json();
   } catch (e) {}
 
-  // which tags have live pages? counted across BOTH lanes (same rule as the
-  // main route — keep the two computations aligned)
+  // which tags have live pages? ONE computation for the whole gallery
   const editorial = await loadGalleryItems();
-  const tagCount = {};
-  editorial.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
-  approved.forEach((c) => (c.tags || []).forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
-  const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+  const liveTags = liveTagList(editorial, approved);
 
   return approved.map((item) => {
     const related = approved.filter((x) => x.slug !== item.slug).slice(0, 6);

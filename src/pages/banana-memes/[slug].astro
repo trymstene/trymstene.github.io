@@ -11,7 +11,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import { loadGalleryItems } from '../../lib/gallery-items.js';
-import { TAGS, MIN_TAG_ITEMS } from '../../data/gallery-tags.js';
+import { TAGS, tagMeta, liveTagList } from '../../data/gallery-tags.js';
 
 export async function getStaticPaths() {
   // ⚠ isolated scope — consts must live in here (the WORKER lesson);
@@ -45,13 +45,12 @@ export async function getStaticPaths() {
     })),
   ];
 
-  const tagCount = {};
-  allCards.forEach((c) => c.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
-  const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
+  const liveTags = liveTagList(items, approved);
 
-  // an item id colliding with a tag/category slug would silently lose its
-  // page (both claim the same URL) — fail the BUILD instead
-  const reserved = new Set([...Object.keys(TAGS), 'stickers', 'gifs']);
+  // an item id colliding with a REGISTERED tag or category slug would silently
+  // lose its page (both claim the same URL) — fail the BUILD instead. (Auto
+  // tags never collide: liveTagList excludes item-id matches by design.)
+  const reserved = new Set([...Object.keys(TAGS), 'stickers', 'gifs', 'by']);
   for (const i of items) {
     if (reserved.has(i.id)) throw new Error(`gallery item id "${i.id}" collides with a tag/category slug — rename the source file`);
   }
@@ -151,7 +150,7 @@ if (type === 'item') {
   ld = [imageLD, crumbLD];
 } else {
   const isTag = type === 'tag';
-  const meta = isTag ? TAGS[tagKey] : null;
+  const meta = isTag ? tagMeta(tagKey) : null;
   const catName = catKey === 'stickers' ? 'Banana Stickers — Transparent, for Any Chat' : 'Banana Meme GIFs — the Captioned Collection';
   title = isTag ? `${meta.name} — Free to Download & Share` : catName;
   description = isTag
@@ -318,11 +317,11 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
   ) : (
     <div class="gc">
       <nav class="gd-crumb" aria-label="Breadcrumb" style="text-align:left;">
-        <a href="/banana-memes/">Banana memes</a> › <span>{type === 'tag' ? TAGS[tagKey].name : (catKey === 'stickers' ? 'Stickers' : 'GIFs')}</span>
+        <a href="/banana-memes/">Banana memes</a> › <span>{type === 'tag' ? tagMeta(tagKey).name : (catKey === 'stickers' ? 'Stickers' : 'GIFs')}</span>
       </nav>
-      <h1>{type === 'tag' ? TAGS[tagKey].name.toLowerCase() : (catKey === 'stickers' ? 'banana stickers' : 'banana meme gifs')}</h1>
+      <h1>{type === 'tag' ? tagMeta(tagKey).name.toLowerCase() : (catKey === 'stickers' ? 'banana stickers' : 'banana meme gifs')}</h1>
       <p class="gc-blurb">
-        {type === 'tag' ? TAGS[tagKey].blurb : (catKey === 'stickers'
+        {type === 'tag' ? tagMeta(tagKey).blurb : (catKey === 'stickers'
           ? 'Transparent dancing banana stickers — no background box, they float straight over any chat. Free to download and share, made by the banana\'s original creator.'
           : 'Captioned dancing banana meme GIFs — Monday moods, work memes and pure vibes on loud pixel backgrounds. Free to download and share.')}
       </p>

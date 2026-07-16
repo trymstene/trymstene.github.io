@@ -1,8 +1,40 @@
-// THE BANANA GALLERY tag registry — each tag is a query-first landing page.
-// A tag only GETS a page once it holds MIN_TAG_ITEMS items (thin category
-// pages hurt more than they help); below that, chips render without links.
-// Slugs are frozen once live. Intro copy targets the query in `q`.
+// THE BANANA GALLERY tag registry — a tag gets a landing page once it holds
+// MIN_TAG_ITEMS items (thin category pages hurt more than they help).
+//
+// REGISTRATION IS OPTIONAL (Trym: "what if i just forget to let you know?"):
+// any tag reaching the threshold auto-generates a page from tagMeta()'s
+// template copy — nothing rots waiting for a human. Registering a tag HERE
+// upgrades it with hand-written, query-first copy (do it for tags worth
+// aiming at a real search query). Slugs are frozen once live.
 export const MIN_TAG_ITEMS = 3;
+
+// meta for ANY tag: registered copy if we wrote it, honest template if not
+export function tagMeta(t) {
+  if (TAGS[t]) return TAGS[t];
+  const cap = t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ');
+  return {
+    name: `${cap} Banana Memes`,
+    q: `${t.replace(/-/g, ' ')} meme`,
+    blurb: `${cap} banana memes — GIFs and stickers tagged “${t}”, starring the dancing banana. Free to download and share; new ones join the moment they're made.`,
+    auto: true,
+  };
+}
+
+// THE one liveTags computation (hub, tag/cat routes, community route and the
+// sitemap all call this — four hand-rolled copies is how drift happens).
+// A tag goes live at MIN_TAG_ITEMS across BOTH lanes, unless its slug is
+// reserved by a route or collides with an editorial item id (item pages own
+// their URL; such a tag stays chips-only rather than eating a page).
+export function liveTagList(editorialItems, communityItems = []) {
+  const count = {};
+  editorialItems.forEach((i) => (i.tags || []).forEach((t) => { count[t] = (count[t] || 0) + 1; }));
+  communityItems.forEach((c) => (c.tags || []).forEach((t) => { count[t] = (count[t] || 0) + 1; }));
+  const reserved = new Set(['stickers', 'gifs', 'by', 'tags', 'submit', 'search',
+    ...editorialItems.map((i) => i.id)]);
+  return Object.keys(count)
+    .filter((t) => count[t] >= MIN_TAG_ITEMS && !reserved.has(t))
+    .sort((a, b) => count[b] - count[a]);
+}
 
 export const TAGS = {
   monday: {
