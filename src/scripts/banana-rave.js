@@ -1903,6 +1903,7 @@ function init() {
         if ((fived.get(key) || 0) > now) continue;
         fived.set(key, now + FIVE_COOLDOWN);
         spawnFive((a.x + b.x) / 2, Math.min(a.y, b.y) - 9); // ABOVE both heads — between them it hid behind the sprites
+        floatPlus((a.x + b.x) / 2, Math.min(a.y, b.y) - 14, 'fistbump!'); // tiny label over the gloves, the level-up-float way
         if (a.id === myId || b.id === myId) {
           track('rave_highfive');
           passStat('fives');
