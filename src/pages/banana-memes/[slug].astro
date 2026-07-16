@@ -75,7 +75,9 @@ const SITE = 'https://trymstene.com';
 let title, description, pageUrl, ld = [], ogImage;
 
 if (type === 'item') {
-  const kindWord = item.kind === 'sticker' ? 'Transparent Dancing Banana Sticker' : 'Dancing Banana Meme GIF';
+  // "Banana Meme GIF", never "Dancing Banana GIF" — that exact phrase belongs
+  // to /dancing-banana-gif-meme/ (the money page); titles here stay long-tail
+  const kindWord = item.kind === 'sticker' ? 'Transparent Banana Sticker' : 'Banana Meme GIF';
   title = `${item.title} — ${kindWord}, Free Download`;
   description = item.description;
   pageUrl = `${SITE}/banana-memes/${item.id}/`;
@@ -126,13 +128,13 @@ if (type === 'item') {
 } else {
   const isTag = type === 'tag';
   const meta = isTag ? TAGS[tagKey] : null;
-  const catName = catKey === 'stickers' ? 'Banana Stickers — Transparent Dancing Banana Stickers' : 'Banana GIFs — Captioned Dancing Banana Memes';
-  title = isTag ? `${meta.name} — Free Dancing Banana ${tagKey === 'costume' ? 'Stickers' : 'GIFs'}` : catName;
+  const catName = catKey === 'stickers' ? 'Banana Stickers — Transparent, for Any Chat' : 'Banana Meme GIFs — the Captioned Collection';
+  title = isTag ? `${meta.name} — Free to Download & Share` : catName;
   description = isTag
-    ? `${members.length} free ${meta.q}s starring the dancing banana — download and share, no watermark. ${meta.blurb.split('—')[0].trim()}.`
+    ? `${members.length} free ${meta.q}s starring the banana — download and share, no watermark. ${meta.blurb.split('—')[0].trim()}.`
     : (catKey === 'stickers'
-      ? `${members.length} free transparent dancing banana stickers — no background box, ready for Discord, WhatsApp and iMessage. By the banana's original creator.`
-      : `${members.length} free dancing banana meme GIFs with captions — Monday moods, work memes and pure vibes. Download free, no watermark.`);
+      ? `${members.length} free transparent banana stickers — no background box, they float over any chat. By the banana's original creator.`
+      : `${members.length} free banana meme GIFs with captions — Monday moods, work memes and pure vibes. Download free, no watermark.`);
   pageUrl = `${SITE}/banana-memes/${isTag ? tagKey : catKey}/`;
   ogImage = `${SITE}/assets/gallery-posters/${members[0].id}.png`;
   ld = [{

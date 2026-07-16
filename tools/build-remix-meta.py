@@ -180,7 +180,7 @@ def slugify(s):
 def main(write):
     base = json.load(open(BASE, encoding='utf-8'))
     N = len(base)
-    seen, out = set(), []
+    seen, seen_titles, out = set(), set(), []
     for i, r in enumerate(base):
         rid = r['id']
         if rid in DROP:
@@ -210,6 +210,15 @@ def main(write):
             metaTitle = f'{title} — a Dancing Banana Remix (GIF)'
         else:
             metaTitle = f'{title} Banana GIF — a Dancing Banana Remix'
+        # metaTitles must be GLOBALLY unique — near-duplicate remixes share
+        # display names ("Blue" ×2) and mood winners share MOOD_TITLE strings;
+        # 17 exact duplicate <title>s shipped before this. A numeral beats a dupe.
+        base_mt = metaTitle
+        m = 2
+        while metaTitle in seen_titles:
+            metaTitle = base_mt.replace(' — ', f' #{m} — ', 1)
+            m += 1
+        seen_titles.add(metaTitle)
 
         hint = HINTS.get(rid, f'{low} — a fan take on the dancing banana')
         Hint = hint[0].upper() + hint[1:]

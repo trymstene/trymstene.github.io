@@ -25,10 +25,12 @@ export const TAGS = {
     q: 'vibing meme',
     blurb: 'Not thriving, but vibing — good-vibes banana memes for celebrations, tiny wins and unbothered energy. The dancing banana has been radiating vibes since 1999.',
   },
+  // ⚠ this tag must NEVER target "dancing banana gif" — that phrase belongs to
+  // /dancing-banana-gif-meme/ (the money page). Happy-dance cluster instead.
   dancing: {
-    name: 'Dancing Banana Memes',
-    q: 'dancing gif',
-    blurb: 'The dancing memes by the dancing banana — dance-first philosophy, rent-defying grooves and quiet quitting done loudly. From the creator of the original 1999 GIF.',
+    name: 'Happy Dance Banana Memes',
+    q: 'happy dance gif',
+    blurb: 'Happy dance memes from the banana that started it all — dance-first philosophy, rent-defying grooves and quiet quitting done loudly.',
   },
   party: {
     name: 'Party Banana Memes',

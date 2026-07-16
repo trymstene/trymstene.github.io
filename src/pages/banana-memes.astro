@@ -26,8 +26,10 @@ const tagCount = {};
 items.forEach((i) => i.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
 const liveTags = Object.keys(TAGS).filter((t) => (tagCount[t] || 0) >= MIN_TAG_ITEMS);
 
-const title = 'Banana Memes — Free Dancing Banana GIFs & Stickers';
-const description = `${items.length} free banana memes: dancing banana GIFs with captions and transparent stickers, made by the creator of the original 1999 Dancing Banana. Download, share, no watermark.`;
+// title stays OFF the exact phrase "dancing banana gif" — that belongs to
+// /dancing-banana-gif-meme/ (the money page); this hub owns "banana memes"
+const title = 'Banana Memes & Stickers — Free, from the Banana\'s Creator';
+const description = `${items.length} free banana memes: captioned meme GIFs and transparent stickers by the creator of the original 1999 Dancing Banana. Download and share, no watermark.`;
 
 const galleryLD = {
   '@context': 'https://schema.org',
