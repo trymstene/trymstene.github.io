@@ -1,14 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const title = 'Emoji Maker — Free Pixel Emote & Animated Emoji Maker | Pixel Forge';
-const description = 'Free emoji maker & emote maker in your browser: draw pixel art, animate it frame by frame, preview it at real chat size, export transparent GIFs and PNGs sized for Discord (128px), Twitch (112px), Slack and Telegram. No account, no watermark.';
+const title = 'Emoji Maker & Animated GIF Maker — Free Pixel Emotes | Pixel Forge';
+const description = 'Free emoji maker & animated GIF maker in your browser: draw pixel art frame by frame, remix existing GIFs, preview at real chat size, export transparent GIFs and PNGs sized for Discord (128px), Twitch (112px), Slack and Telegram. No account, no watermark.';
 
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'The Pixel Forge',
-  alternateName: ['Emoji Maker', 'Pixel Emote Maker'],
+  alternateName: ['Emoji Maker', 'Pixel Emote Maker', 'Animated GIF Maker', 'GIF Drawing Tool'],
   url: 'https://trymstene.com/forge/',
   applicationCategory: 'DesignApplication',
   operatingSystem: 'Web',
@@ -18,15 +18,33 @@ const schema = {
   description: 'A deliberately simple pixel-art emoji and emote maker, from the creator of the 1999 Dancing Banana GIF.',
 };
 
+// ONE source for the FAQ: the visible section and the FAQPage JSON-LD both
+// render from this list, so the markup can never drift from the page content
+const FAQ = [
+  { q: 'Is the Pixel Forge emoji maker free?',
+    a: 'Yes — completely free, no account, no watermark. Draw in the browser and download transparent GIFs or PNGs ready for Discord, Twitch, Slack and Telegram.' },
+  { q: 'Can I draw an animated GIF from scratch?',
+    a: 'Yes — that is the whole idea. Most GIF makers only convert videos or stitch photos together; the Forge is a GIF drawing tool. You draw every frame in pixels, set the timing per frame, and export a real animated GIF.' },
+  { q: 'Can I make animated Discord emojis with it?',
+    a: 'Yes. Draw up to 16 frames with per-frame timing and export a transparent animated GIF at 128×128 pixels — exactly what Discord custom emojis require.' },
+  { q: 'Can I make Twitch emotes with it?',
+    a: 'Yes. Export at 112×112 pixels with a transparent background and Twitch auto-generates the 56px and 28px sizes when you upload.' },
+  { q: 'Are the GIFs transparent?',
+    a: 'Yes, every export supports transparency. Anything you leave unpainted stays see-through, so your emote floats over any chat background — no white box around it.' },
+  { q: 'Can I import an existing GIF and remix it?',
+    a: 'Yes. Import any GIF and it lands on the grid frame by frame, ready to redraw — including the original 1999 Dancing Banana, which is one click away.' },
+  { q: 'Do I need an account or an app?',
+    a: 'No. It runs entirely in your browser — nothing to install, no sign-up, no watermark. Finished pieces land on your Banana Pass so you can come back to them.' },
+  { q: 'Why pixel art for emotes?',
+    a: 'Emotes render at 28–32 pixels in chat, where fine detail turns to mush. Pixel art drawn on a small grid stays crisp and readable — the same reason the 1999 Dancing Banana still works everywhere.' },
+];
 const faqLD = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'Is the Pixel Forge emoji maker free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — completely free, no account, no watermark. Draw in the browser and download transparent GIFs or PNGs ready for Discord, Twitch, Slack and Telegram.' } },
-    { '@type': 'Question', name: 'Can I make animated Discord emojis with it?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Draw up to 16 frames with per-frame timing and export a transparent animated GIF at 128×128 pixels — exactly what Discord custom emojis require.' } },
-    { '@type': 'Question', name: 'Can I make Twitch emotes with it?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Export at 112×112 pixels with a transparent background and Twitch auto-generates the 56px and 28px sizes when you upload.' } },
-    { '@type': 'Question', name: 'Why pixel art for emotes?', acceptedAnswer: { '@type': 'Answer', text: 'Emotes render at 28–32 pixels in chat, where fine detail turns to mush. Pixel art drawn on a small grid stays crisp and readable — the same reason the 1999 Dancing Banana still works everywhere.' } },
-  ],
+  mainEntity: FAQ.map((f) => ({
+    '@type': 'Question', name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
 };
 ---
 <BaseLayout
@@ -135,6 +153,25 @@ const faqLD = {
     .fg-about h2 { margin: 1.4rem 0 0.5rem; font-size: 1.25rem; }
     .fg-about p, .fg-about li { line-height: 1.6; }
     .fg-about ul, .fg-about ol { padding-left: 1.3rem; display: grid; gap: 0.4rem; margin: 0.5rem 0 0; }
+
+    /* pixel-fact strip — ink cards, banana numbers */
+    .fg-facts { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-top: 2.4rem; }
+    .fg-fact { border: var(--line); background: var(--ink); color: var(--paper); box-shadow: var(--shadow); padding: 0.9rem 1rem; font-size: 0.85rem; line-height: 1.5; }
+    .fg-fact b { display: block; font-size: 1.7rem; color: var(--banana); margin-bottom: 0.25rem; }
+
+    /* visible FAQ — real content, same text the FAQPage markup carries */
+    .fg-faq details { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.65rem 0.9rem; margin-top: 0.6rem; }
+    .fg-faq summary { font-weight: 800; cursor: pointer; font-size: 0.95rem; }
+    .fg-faq details > p { margin: 0.5rem 0 0.2rem; line-height: 1.6; font-size: 0.92rem; }
+
+    /* doors to the rest of the site */
+    .fg-doorswrap { margin-top: 2.4rem; border-top: var(--line); padding-top: 1.6rem; }
+    .fg-doorswrap h2 { margin: 0 0 0.9rem; font-size: 1.25rem; }
+    .fg-doors { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+    .fg-doors a { display: block; border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.8rem 0.9rem; text-decoration: none; color: inherit; }
+    .fg-doors a:hover b { text-decoration: underline; }
+    .fg-doors b { display: block; margin-bottom: 0.25rem; }
+    .fg-doors span { font-size: 0.83rem; opacity: 0.75; line-height: 1.5; display: block; }
     .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
     .fg-signrow[hidden] { display: none; }
     .fg-signrow input {
@@ -166,7 +203,7 @@ const faqLD = {
 
   <div class="fg-wrap">
     <div class="fg-head">
-      <h1>the pixel forge — free emoji &amp; emote maker</h1>
+      <h1>the pixel forge — free emoji, emote &amp; GIF maker</h1>
       <p>
         In 1999 I drew a dancing banana in a tool about this simple — and it took over the internet.
         Here's that tool, rebuilt. Pencil, fill, frames, one great palette. <strong>Make the next one.</strong>
@@ -309,6 +346,51 @@ const faqLD = {
         <li>Add frames to animate — duplicate, nudge, repeat. Onion skin shows the previous frame as a ghost.</li>
         <li>Forge it: download a transparent GIF or PNG sized for your platform, and upload it straight to Discord, Twitch or Slack.</li>
       </ol>
+
+      <h2>Draw an animated GIF from scratch</h2>
+      <p>
+        Almost every GIF maker on the internet does the same thing: it converts a video, or stacks
+        photos into a slideshow. The Forge is the other kind — a <strong>GIF drawing tool</strong>,
+        the kind the first GIF artists used. You draw each frame in pixels, flip between them with
+        onion skin, set the timing per frame, and export a real animated GIF with real transparency.
+        Nothing is converted; everything is <em>drawn</em>. If you can doodle, you can animate —
+        the whole format is built for exactly this.
+      </p>
+      <p>
+        That also makes it a <strong>pixel GIF maker</strong> in the honest sense: the export is
+        crisp at any size because the art is pixels all the way down, not a photo squeezed
+        through a converter. Transparent stickers for chat, tiny looping characters,
+        animated pixel art for a stream — same four tools.
+      </p>
+    </section>
+
+    <section class="fg-facts" aria-label="Pixel facts">
+      <div class="fg-fact"><b>1989</b> the year GIFs learned to animate and go transparent (GIF89a) — every emote you forge ships in that same format</div>
+      <div class="fg-fact"><b>28 px</b> the size a Twitch emote actually renders in chat — art drawn <em>for</em> 28px beats art shrunk to it</div>
+      <div class="fg-fact"><b>1999</b> the year the dancing banana was drawn in a tool this simple — 27 years later it's still everywhere</div>
+      <div class="fg-fact"><b>256</b> colours a GIF frame can hold, plus one transparent — constraints are where style comes from</div>
+    </section>
+
+    <section class="fg-about fg-faq" aria-label="Frequently asked questions">
+      <h2>Questions, answered</h2>
+      {FAQ.map((f) => (
+        <details>
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </section>
+
+    <section class="fg-doorswrap" aria-label="More on trymstene.com">
+      <h2>More from the banana world</h2>
+      <div class="fg-doors">
+        <a href="/make-a-banana/" data-place="forge-doors"><b>Dress the banana 🍌</b><span>Build your own dancing banana — hats, shades, captions — and download it free as a GIF or meme.</span></a>
+        <a href="/dancing-banana-remixes/" data-place="forge-doors"><b>The remix gallery 🎨</b><span>Hundreds of community remixes of the dancing banana, collected since 1999. Rate your favourites.</span></a>
+        <a href="/dancing-banana-gif-meme/" data-place="forge-doors"><b>The original GIF 📼</b><span>The 1999 Dancing Banana — the story, the free downloads, the whole saga.</span></a>
+        <a href="/guides/" data-place="forge-doors"><b>Emoji size guides 📐</b><span>Exact emoji, emote and sticker dimensions for Discord, Twitch, Slack and the rest.</span></a>
+        <a href="/rave/" data-place="forge-doors"><b>The Banana Rave 🪩</b><span>A live pixel dance floor where every banana is a real visitor. Yes, really.</span></a>
+        <a href="/dancing-banana-wallpaper/" data-place="forge-doors"><b>Wallpapers 🖼</b><span>Dancing banana wallpapers for desktop and phone, free.</span></a>
+      </div>
     </section>
   </div>
 
