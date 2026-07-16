@@ -82,6 +82,7 @@ const crumbLD = {
       border: 2px solid var(--ink); padding: 0.2rem 0.55rem; background: var(--paper);
     }
     .gm-tagrow a:hover { background: var(--banana); }
+    .gm-tagrow a[aria-current="page"] { background: var(--ink); color: var(--banana); }
     .gm-search { margin: 0 0 1.2rem; }
     .gm-search input {
       width: 100%; max-width: 420px; border: 3px solid var(--ink); background: var(--paper);
@@ -130,13 +131,16 @@ const crumbLD = {
       </p>
     </div>
 
-    <div class="gm-filters" role="navigation" aria-label="Categories">
-      <a href="/banana-memes/" aria-current="page">All ({items.length})</a>
-      <a href="/banana-memes/stickers/">Stickers ({stickers.length})</a>
-      <a href="/banana-memes/gifs/">GIFs ({gifs.length})</a>
+    <!-- real <a> hrefs = the SEO pages stay crawlable + internally linked;
+         JS intercepts clicks and filters IN PLACE (Trym: don't bounce people
+         to a new page), pushState keeps the URL shareable/refreshable -->
+    <div class="gm-filters" id="gmKinds" role="navigation" aria-label="Categories">
+      <a href="/banana-memes/" data-kind="" aria-current="page">All ({items.length})</a>
+      <a href="/banana-memes/stickers/" data-kind="sticker">Stickers ({stickers.length})</a>
+      <a href="/banana-memes/gifs/" data-kind="gif">GIFs ({gifs.length})</a>
     </div>
-    <div class="gm-tagrow" role="navigation" aria-label="Tags">
-      {liveTags.map((t) => <a href={`/banana-memes/${t}/`}>#{t}</a>)}
+    <div class="gm-tagrow" id="gmTags" role="navigation" aria-label="Tags">
+      {liveTags.map((t) => <a href={`/banana-memes/${t}/`} data-tag={t}>#{t}</a>)}
     </div>
 
     <div class="gm-search">
@@ -145,7 +149,8 @@ const crumbLD = {
 
     <div class="gm-grid" id="gmGrid">
       {items.map((i, n) => (
-        <a class="gm-card" href={`/banana-memes/${i.id}/`} data-search={`${i.title} ${i.caption} ${i.tags.join(' ')} ${i.kind}`.toLowerCase()}>
+        <a class="gm-card" href={`/banana-memes/${i.id}/`} data-kind={i.kind} data-tags={i.tags.join(' ')}
+           data-search={`${i.title} ${i.caption} ${i.tags.join(' ')} ${i.kind}`.toLowerCase()}>
           <div class={`gm-img${i.kind === 'sticker' ? ' gm-img--sticker' : ''}`}>
             <img src={`/assets/gallery-bananas/${i.file}`} width={i.w} height={i.h}
                  loading={n < 6 ? 'eager' : 'lazy'}
@@ -207,11 +212,57 @@ const crumbLD = {
   </div>
 
   <script>
+    // in-place filtering over the grid; the chip hrefs stay real (SEO pages
+    // keep their links) but clicks filter here + pushState the matching URL,
+    // so refresh/share lands on the static page and back/forward just works
     const inp = document.getElementById('gmSearch');
     const cards = [...document.querySelectorAll('#gmGrid .gm-card')];
-    inp.addEventListener('input', () => {
-      const q = inp.value.trim().toLowerCase();
-      cards.forEach((c) => { c.style.display = !q || c.dataset.search.includes(q) ? '' : 'none'; });
-    });
+    const kindLinks = [...document.querySelectorAll('#gmKinds a')];
+    const tagLinks = [...document.querySelectorAll('#gmTags a')];
+    const state = { q: '', kind: '', tag: '' };
+
+    function apply() {
+      cards.forEach((c) => {
+        const okQ = !state.q || c.dataset.search.includes(state.q);
+        const okK = !state.kind || c.dataset.kind === state.kind;
+        const okT = !state.tag || c.dataset.tags.split(' ').includes(state.tag);
+        c.style.display = okQ && okK && okT ? '' : 'none';
+      });
+      kindLinks.forEach((a) => {
+        if ((a.dataset.kind || '') === state.kind && !state.tag) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+      tagLinks.forEach((a) => {
+        if (a.dataset.tag === state.tag) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+    }
+    function urlFor() {
+      if (state.tag) return `/banana-memes/${state.tag}/`;
+      if (state.kind) return `/banana-memes/${state.kind === 'sticker' ? 'stickers' : 'gifs'}/`;
+      return '/banana-memes/';
+    }
+    function stateFrom(path) {
+      const seg = (path.match(/^\/banana-memes\/([a-z0-9-]+)\/$/) || [])[1] || '';
+      state.kind = seg === 'stickers' ? 'sticker' : seg === 'gifs' ? 'gif' : '';
+      state.tag = (seg && !state.kind) ? seg : '';
+    }
+    kindLinks.forEach((a) => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      state.kind = a.dataset.kind || '';
+      state.tag = '';
+      history.pushState({}, '', a.getAttribute('href'));
+      apply();
+    }));
+    tagLinks.forEach((a) => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      // clicking the active tag clears it
+      state.tag = state.tag === a.dataset.tag ? '' : a.dataset.tag;
+      state.kind = '';
+      history.pushState({}, '', state.tag ? a.getAttribute('href') : '/banana-memes/');
+      apply();
+    }));
+    window.addEventListener('popstate', () => { stateFrom(location.pathname); apply(); });
+    inp.addEventListener('input', () => { state.q = inp.value.trim().toLowerCase(); apply(); });
   </script>
 </BaseLayout>
