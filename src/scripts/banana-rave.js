@@ -150,6 +150,10 @@ const PEEL_SVG = '<svg viewBox="0 0 24 18" shape-rendering="crispEdges" xmlns="h
 const PUDDLE_SVG = '<svg viewBox="0 0 18 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="0" width="6" height="1" fill="#4db8ff"/><rect x="3" y="1" width="3" height="1" fill="#4db8ff"/><rect x="6" y="1" width="6" height="1" fill="#78ebff"/><rect x="12" y="1" width="2" height="1" fill="#4db8ff"/><rect x="2" y="2" width="1" height="1" fill="#4db8ff"/><rect x="3" y="2" width="3" height="1" fill="#78ebff"/><rect x="6" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="7" y="2" width="7" height="1" fill="#78ebff"/><rect x="14" y="2" width="1" height="1" fill="#4db8ff"/><rect x="1" y="3" width="1" height="1" fill="#4db8ff"/><rect x="2" y="3" width="9" height="1" fill="#78ebff"/><rect x="11" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="12" y="3" width="3" height="1" fill="#78ebff"/><rect x="15" y="3" width="1" height="1" fill="#4db8ff"/><rect x="1" y="4" width="1" height="1" fill="#4db8ff"/><rect x="2" y="4" width="2" height="1" fill="#78ebff"/><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="4" width="9" height="1" fill="#78ebff"/><rect x="14" y="4" width="1" height="1" fill="#4db8ff"/><rect x="2" y="5" width="2" height="1" fill="#4db8ff"/><rect x="4" y="5" width="5" height="1" fill="#78ebff"/><rect x="9" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="10" y="5" width="2" height="1" fill="#78ebff"/><rect x="12" y="5" width="2" height="1" fill="#4db8ff"/><rect x="4" y="6" width="3" height="1" fill="#4db8ff"/><rect x="7" y="6" width="3" height="1" fill="#78ebff"/><rect x="10" y="6" width="3" height="1" fill="#4db8ff"/><rect x="7" y="7" width="3" height="1" fill="#4db8ff"/></svg>';
 const MONKEY_SVG = '<svg viewBox="0 0 24 29" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="0" width="5" height="1" fill="#111111"/><rect x="8" y="1" width="2" height="1" fill="#111111"/><rect x="10" y="1" width="5" height="1" fill="#7a5234"/><rect x="15" y="1" width="2" height="1" fill="#111111"/><rect x="7" y="2" width="1" height="1" fill="#111111"/><rect x="8" y="2" width="9" height="1" fill="#583a22"/><rect x="17" y="2" width="1" height="1" fill="#111111"/><rect x="3" y="3" width="2" height="1" fill="#111111"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="7" y="3" width="11" height="1" fill="#7a5234"/><rect x="18" y="3" width="1" height="1" fill="#111111"/><rect x="20" y="3" width="2" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#111111"/><rect x="3" y="4" width="2" height="1" fill="#7a5234"/><rect x="5" y="4" width="1" height="1" fill="#111111"/><rect x="6" y="4" width="13" height="1" fill="#7a5234"/><rect x="19" y="4" width="1" height="1" fill="#111111"/><rect x="20" y="4" width="2" height="1" fill="#7a5234"/><rect x="22" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="6" height="1" fill="#7a5234"/><rect x="8" y="5" width="4" height="1" fill="#d6aa7d"/><rect x="12" y="5" width="1" height="1" fill="#7a5234"/><rect x="13" y="5" width="4" height="1" fill="#d6aa7d"/><rect x="17" y="5" width="6" height="1" fill="#7a5234"/><rect x="23" y="5" width="1" height="1" fill="#111111"/><rect x="0" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="2" height="1" fill="#7a5234"/><rect x="3" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="6" width="2" height="1" fill="#7a5234"/><rect x="7" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="9" y="6" width="1" height="1" fill="#ffffff"/><rect x="10" y="6" width="1" height="1" fill="#1e140c"/><rect x="11" y="6" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="6" width="1" height="1" fill="#ffffff"/><rect x="15" y="6" width="1" height="1" fill="#1e140c"/><rect x="16" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="18" y="6" width="2" height="1" fill="#7a5234"/><rect x="20" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="22" y="6" width="2" height="1" fill="#7a5234"/><rect x="0" y="7" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="2" height="1" fill="#7a5234"/><rect x="3" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="7" width="2" height="1" fill="#7a5234"/><rect x="7" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="9" y="7" width="2" height="1" fill="#1e140c"/><rect x="11" y="7" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="7" width="2" height="1" fill="#1e140c"/><rect x="16" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="18" y="7" width="2" height="1" fill="#7a5234"/><rect x="20" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="22" y="7" width="2" height="1" fill="#7a5234"/><rect x="1" y="8" width="1" height="1" fill="#111111"/><rect x="2" y="8" width="1" height="1" fill="#7a5234"/><rect x="3" y="8" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="8" width="2" height="1" fill="#7a5234"/><rect x="7" y="8" width="11" height="1" fill="#d6aa7d"/><rect x="18" y="8" width="2" height="1" fill="#7a5234"/><rect x="20" y="8" width="2" height="1" fill="#d6aa7d"/><rect x="22" y="8" width="1" height="1" fill="#7a5234"/><rect x="23" y="8" width="1" height="1" fill="#111111"/><rect x="2" y="9" width="1" height="1" fill="#111111"/><rect x="3" y="9" width="2" height="1" fill="#7a5234"/><rect x="5" y="9" width="1" height="1" fill="#111111"/><rect x="6" y="9" width="1" height="1" fill="#7a5234"/><rect x="7" y="9" width="11" height="1" fill="#d6aa7d"/><rect x="18" y="9" width="1" height="1" fill="#7a5234"/><rect x="19" y="9" width="1" height="1" fill="#111111"/><rect x="20" y="9" width="2" height="1" fill="#7a5234"/><rect x="22" y="9" width="1" height="1" fill="#111111"/><rect x="3" y="10" width="3" height="1" fill="#111111"/><rect x="6" y="10" width="2" height="1" fill="#7a5234"/><rect x="8" y="10" width="3" height="1" fill="#d6aa7d"/><rect x="11" y="10" width="1" height="1" fill="#1e140c"/><rect x="12" y="10" width="1" height="1" fill="#d6aa7d"/><rect x="13" y="10" width="1" height="1" fill="#1e140c"/><rect x="14" y="10" width="3" height="1" fill="#d6aa7d"/><rect x="17" y="10" width="2" height="1" fill="#7a5234"/><rect x="19" y="10" width="1" height="1" fill="#111111"/><rect x="20" y="10" width="1" height="1" fill="#583a22"/><rect x="21" y="10" width="1" height="1" fill="#111111"/><rect x="6" y="11" width="1" height="1" fill="#111111"/><rect x="7" y="11" width="1" height="1" fill="#7a5234"/><rect x="8" y="11" width="9" height="1" fill="#d6aa7d"/><rect x="17" y="11" width="1" height="1" fill="#7a5234"/><rect x="18" y="11" width="1" height="1" fill="#111111"/><rect x="19" y="11" width="3" height="1" fill="#583a22"/><rect x="22" y="11" width="1" height="1" fill="#111111"/><rect x="7" y="12" width="1" height="1" fill="#111111"/><rect x="8" y="12" width="1" height="1" fill="#7a5234"/><rect x="9" y="12" width="2" height="1" fill="#d6aa7d"/><rect x="11" y="12" width="3" height="1" fill="#1e140c"/><rect x="14" y="12" width="2" height="1" fill="#d6aa7d"/><rect x="16" y="12" width="1" height="1" fill="#7a5234"/><rect x="17" y="12" width="2" height="1" fill="#111111"/><rect x="19" y="12" width="3" height="1" fill="#583a22"/><rect x="22" y="12" width="1" height="1" fill="#111111"/><rect x="8" y="13" width="2" height="1" fill="#111111"/><rect x="10" y="13" width="5" height="1" fill="#7a5234"/><rect x="15" y="13" width="2" height="1" fill="#111111"/><rect x="19" y="13" width="2" height="1" fill="#111111"/><rect x="21" y="13" width="2" height="1" fill="#583a22"/><rect x="23" y="13" width="1" height="1" fill="#111111"/><rect x="7" y="14" width="3" height="1" fill="#111111"/><rect x="10" y="14" width="5" height="1" fill="#7a5234"/><rect x="15" y="14" width="3" height="1" fill="#111111"/><rect x="21" y="14" width="2" height="1" fill="#111111"/><rect x="6" y="15" width="1" height="1" fill="#111111"/><rect x="7" y="15" width="8" height="1" fill="#7a5234"/><rect x="15" y="15" width="3" height="1" fill="#583a22"/><rect x="18" y="15" width="1" height="1" fill="#111111"/><rect x="20" y="15" width="1" height="1" fill="#111111"/><rect x="21" y="15" width="2" height="1" fill="#583a22"/><rect x="23" y="15" width="1" height="1" fill="#111111"/><rect x="6" y="16" width="1" height="1" fill="#111111"/><rect x="7" y="16" width="8" height="1" fill="#7a5234"/><rect x="15" y="16" width="3" height="1" fill="#583a22"/><rect x="18" y="16" width="1" height="1" fill="#111111"/><rect x="20" y="16" width="1" height="1" fill="#111111"/><rect x="21" y="16" width="1" height="1" fill="#583a22"/><rect x="22" y="16" width="1" height="1" fill="#111111"/><rect x="5" y="17" width="1" height="1" fill="#111111"/><rect x="6" y="17" width="5" height="1" fill="#7a5234"/><rect x="11" y="17" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="17" width="1" height="1" fill="#7a5234"/><rect x="15" y="17" width="4" height="1" fill="#583a22"/><rect x="19" y="17" width="1" height="1" fill="#111111"/><rect x="20" y="17" width="3" height="1" fill="#583a22"/><rect x="23" y="17" width="1" height="1" fill="#111111"/><rect x="5" y="18" width="1" height="1" fill="#111111"/><rect x="6" y="18" width="4" height="1" fill="#7a5234"/><rect x="10" y="18" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="18" width="4" height="1" fill="#583a22"/><rect x="19" y="18" width="1" height="1" fill="#111111"/><rect x="20" y="18" width="2" height="1" fill="#583a22"/><rect x="22" y="18" width="1" height="1" fill="#111111"/><rect x="4" y="19" width="1" height="1" fill="#111111"/><rect x="5" y="19" width="5" height="1" fill="#7a5234"/><rect x="10" y="19" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="19" width="7" height="1" fill="#583a22"/><rect x="22" y="19" width="1" height="1" fill="#111111"/><rect x="4" y="20" width="1" height="1" fill="#111111"/><rect x="5" y="20" width="4" height="1" fill="#7a5234"/><rect x="9" y="20" width="7" height="1" fill="#d6aa7d"/><rect x="16" y="20" width="5" height="1" fill="#583a22"/><rect x="21" y="20" width="1" height="1" fill="#111111"/><rect x="3" y="21" width="1" height="1" fill="#111111"/><rect x="4" y="21" width="2" height="1" fill="#d6aa7d"/><rect x="6" y="21" width="1" height="1" fill="#111111"/><rect x="7" y="21" width="2" height="1" fill="#7a5234"/><rect x="9" y="21" width="7" height="1" fill="#d6aa7d"/><rect x="16" y="21" width="4" height="1" fill="#583a22"/><rect x="20" y="21" width="1" height="1" fill="#d6aa7d"/><rect x="21" y="21" width="1" height="1" fill="#111111"/><rect x="2" y="22" width="1" height="1" fill="#111111"/><rect x="3" y="22" width="4" height="1" fill="#d6aa7d"/><rect x="7" y="22" width="1" height="1" fill="#111111"/><rect x="8" y="22" width="2" height="1" fill="#7a5234"/><rect x="10" y="22" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="22" width="2" height="1" fill="#583a22"/><rect x="17" y="22" width="1" height="1" fill="#111111"/><rect x="18" y="22" width="1" height="1" fill="#583a22"/><rect x="19" y="22" width="3" height="1" fill="#d6aa7d"/><rect x="22" y="22" width="1" height="1" fill="#111111"/><rect x="2" y="23" width="1" height="1" fill="#111111"/><rect x="3" y="23" width="4" height="1" fill="#d6aa7d"/><rect x="7" y="23" width="1" height="1" fill="#111111"/><rect x="8" y="23" width="2" height="1" fill="#7a5234"/><rect x="10" y="23" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="23" width="2" height="1" fill="#583a22"/><rect x="17" y="23" width="1" height="1" fill="#111111"/><rect x="18" y="23" width="4" height="1" fill="#d6aa7d"/><rect x="22" y="23" width="1" height="1" fill="#111111"/><rect x="3" y="24" width="1" height="1" fill="#111111"/><rect x="4" y="24" width="2" height="1" fill="#d6aa7d"/><rect x="6" y="24" width="1" height="1" fill="#111111"/><rect x="8" y="24" width="1" height="1" fill="#111111"/><rect x="9" y="24" width="2" height="1" fill="#7a5234"/><rect x="11" y="24" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="24" width="2" height="1" fill="#583a22"/><rect x="16" y="24" width="1" height="1" fill="#111111"/><rect x="18" y="24" width="1" height="1" fill="#111111"/><rect x="19" y="24" width="2" height="1" fill="#d6aa7d"/><rect x="21" y="24" width="1" height="1" fill="#111111"/><rect x="4" y="25" width="2" height="1" fill="#111111"/><rect x="8" y="25" width="1" height="1" fill="#111111"/><rect x="9" y="25" width="5" height="1" fill="#7a5234"/><rect x="14" y="25" width="2" height="1" fill="#583a22"/><rect x="16" y="25" width="1" height="1" fill="#111111"/><rect x="19" y="25" width="2" height="1" fill="#111111"/><rect x="8" y="26" width="1" height="1" fill="#111111"/><rect x="9" y="26" width="2" height="1" fill="#7a5234"/><rect x="11" y="26" width="3" height="1" fill="#111111"/><rect x="14" y="26" width="2" height="1" fill="#583a22"/><rect x="16" y="26" width="1" height="1" fill="#111111"/><rect x="7" y="27" width="1" height="1" fill="#111111"/><rect x="8" y="27" width="3" height="1" fill="#d6aa7d"/><rect x="11" y="27" width="1" height="1" fill="#111111"/><rect x="13" y="27" width="1" height="1" fill="#111111"/><rect x="14" y="27" width="3" height="1" fill="#d6aa7d"/><rect x="17" y="27" width="1" height="1" fill="#111111"/><rect x="7" y="28" width="1" height="1" fill="#111111"/><rect x="8" y="28" width="3" height="1" fill="#d6aa7d"/><rect x="11" y="28" width="1" height="1" fill="#111111"/><rect x="13" y="28" width="1" height="1" fill="#111111"/><rect x="14" y="28" width="3" height="1" fill="#d6aa7d"/><rect x="17" y="28" width="1" height="1" fill="#111111"/></svg>'; // v4: bigger eyes; sized by floor depth like every dancer
 const JELLY_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#ff4d9d"/><rect x="1" y="1" width="5" height="1" fill="#ff4d9d"/><rect x="0" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="2" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="3" y="2" width="4" height="1" fill="#ff4d9d"/><rect x="0" y="3" width="7" height="1" fill="#ff4d9d"/><rect x="0" y="4" width="1" height="1" fill="#c62c74"/><rect x="1" y="4" width="5" height="1" fill="#ff4d9d"/><rect x="6" y="4" width="1" height="1" fill="#c62c74"/><rect x="1" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="5" width="3" height="1" fill="#ff4d9d"/><rect x="5" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="6" width="3" height="1" fill="#c62c74"/></svg>'; // the pellets ARE jelly — spilled on the floor, hoovered into the meter
+// JELLY VARIETY (15 Jul): rare recolours of the same 7×7 jelly. Gold = banana
+// hues via swap; rainbow = the same rect layout hand-recoloured row by row.
+const JELLY_GOLD_SVG = JELLY_SVG.replace(/ff4d9d/g, 'ffe135').replace(/c62c74/g, 'e0a428');
+const JELLY_RAINBOW_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#ff4d4d"/><rect x="1" y="1" width="5" height="1" fill="#ff9f1c"/><rect x="0" y="2" width="2" height="1" fill="#ffe135"/><rect x="2" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="3" y="2" width="4" height="1" fill="#ffe135"/><rect x="0" y="3" width="7" height="1" fill="#37d67a"/><rect x="0" y="4" width="1" height="1" fill="#2a7ac0"/><rect x="1" y="4" width="5" height="1" fill="#4db8ff"/><rect x="6" y="4" width="1" height="1" fill="#2a7ac0"/><rect x="1" y="5" width="1" height="1" fill="#6a1b9a"/><rect x="2" y="5" width="3" height="1" fill="#b388ff"/><rect x="5" y="5" width="1" height="1" fill="#6a1b9a"/><rect x="2" y="6" width="3" height="1" fill="#6a1b9a"/></svg>';
 const STOOL_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="6" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="1" width="6" height="1" fill="#8a5a2b"/><rect x="7" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="2" width="6" height="1" fill="#111111"/><rect x="1" y="3" width="1" height="1" fill="#111111"/><rect x="2" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="4" height="1" fill="#8a5a2b"/><rect x="6" y="5" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="7" width="1" height="1" fill="#111111"/></svg>';
 // THE MENU (Trym-approved list, 7 Jul): 10 conveyor items + 8 counter
 // drinks — sprites authored in tools/floor-items-2.py on the banana grid.
@@ -1012,34 +1016,77 @@ function init() {
   // of sparkles only YOU see; finish it and a new one draws itself elsewhere.
   // Client-only and per-visitor, so there is ALWAYS something to chase.
   let run = null, nextRunAt = Date.now() + 6000;
+  // JELLY VARIETY (Trym, 15 Jul: "make the drops more exciting"): rare kinds
+  // make every run feel different — variable reward is the whole trick.
+  //   gold ~1/12 = +5 · rainbow ~1/60 = +10, confetti + a Barty sighting
+  //   skittish ~1/14 = hops away ONCE, then gives up (comedy, not challenge)
+  //   spark ~1/10 = blinks for 10s, double while blinking (calms down to a
+  //   normal +1 after — the rave never punishes)
+  //   plain: 25% chance to DRIFT — slow wander so the floor feels alive
+  function rollJellyKind() {
+    const r = Math.random();
+    if (r < 1 / 60) return 'rainbow';
+    if (r < 1 / 60 + 1 / 12) return 'gold';
+    if (r < 1 / 60 + 1 / 12 + 1 / 14) return 'skittish';
+    if (r < 1 / 60 + 1 / 12 + 1 / 14 + 1 / 10) return 'spark';
+    return 'plain';
+  }
+  function mkPellet(x, y, staggerS, forceKind) {
+    const kind = forceKind || rollJellyKind();
+    const d = document.createElement('div');
+    d.className = 'rv-pellet' + ({ gold: ' rv-pellet--gold', rainbow: ' rv-pellet--rainbow', spark: ' rv-pellet--spark', skittish: ' rv-pellet--flee' }[kind] || '');
+    d.innerHTML = kind === 'gold' ? JELLY_GOLD_SVG : kind === 'rainbow' ? JELLY_RAINBOW_SVG : JELLY_SVG;
+    d.style.left = x + '%';
+    d.style.top = y + '%';
+    d.style.setProperty('--pd', staggerS + 's'); // stagger rides a var so the drop + jiggle delays chain
+    const p = { x, y, got: false, elm: d, kind, val: kind === 'rainbow' ? 10 : kind === 'gold' ? 5 : kind === 'spark' ? 2 : 1 };
+    if (kind === 'spark') p.sparkUntil = Date.now() + 10000;
+    if (kind === 'plain' && Math.random() < 0.25) p.drift = { a: Math.random() * Math.PI * 2, ph: Math.random() * 6 };
+    return p;
+  }
   function newRun() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage || !floorW || !floorH) return null;
-    // RANDOM SCATTER (Trym's call, v3): jelly spills EVERYWHERE like a real
-    // party mess — 8 pellets anywhere walkable, spaced so they never clump
     const topPct = topClamp + 5;
     const pts = [];
-    for (let tries = 0; tries < 140 && pts.length < 8; tries++) {
-      const x = 7 + Math.random() * 86;
-      const y = topPct + Math.random() * (88 - topPct);
-      if (insideBar(x, y)) continue;
-      if (pts.some((q) => Math.hypot(((q.x - x) / 100) * floorW, ((q.y - y) / 100) * floorH) < 56)) continue;
-      pts.push({ x, y, got: false });
+    let tray = false;
+    // THE SPILLED TRAY (~1/7 runs): one tight ring instead of a scatter —
+    // somebody dropped the whole thing. Centre drop is always the golden one.
+    if (Math.random() < 1 / 7) {
+      for (let tries = 0; tries < 60 && !pts.length; tries++) {
+        const cx = 18 + Math.random() * 64;
+        const cy = topPct + 8 + Math.random() * (74 - topPct);
+        if (insideBar(cx, cy)) continue;
+        const ring = [];
+        for (let i = 0; i < 7; i++) {
+          const ang = (i / 7) * Math.PI * 2;
+          const x = cx + Math.cos(ang) * 7, y = cy + Math.sin(ang) * 4.6;
+          if (x < 6 || x > 93 || y < topPct || y > 89 || insideBar(x, y)) { ring.length = 0; break; }
+          ring.push(mkPellet(x, y, i * 0.06, 'plain'));
+        }
+        if (!ring.length) continue;
+        ring.push(mkPellet(cx, cy, 0.45, 'gold'));
+        pts.push(...ring);
+        tray = true;
+        floatPlus(cx, cy - 8, 'A WHOLE TRAY!');
+      }
     }
-    if (pts.length < 4) return null; // cornered — tickRun retries in a moment
+    if (!pts.length) {
+      // RANDOM SCATTER (Trym's call, v3): jelly spills EVERYWHERE like a real
+      // party mess — 8 pellets anywhere walkable, spaced so they never clump
+      for (let tries = 0; tries < 140 && pts.length < 8; tries++) {
+        const x = 7 + Math.random() * 86;
+        const y = topPct + Math.random() * (88 - topPct);
+        if (insideBar(x, y)) continue;
+        if (pts.some((q) => Math.hypot(((q.x - x) / 100) * floorW, ((q.y - y) / 100) * floorH) < 56)) continue;
+        pts.push(mkPellet(x, y, pts.length * 0.08));
+      }
+      if (pts.length < 4) return null; // cornered — tickRun retries in a moment
+    }
     const host = el('rvRun');
     host.innerHTML = '';
-    pts.forEach((p, i) => {
-      const d = document.createElement('div');
-      d.className = 'rv-pellet';
-      d.innerHTML = JELLY_SVG; // the drops ARE jelly — that's why they fill the meter
-      d.style.left = p.x + '%';
-      d.style.top = p.y + '%';
-      d.style.setProperty('--pd', (i * 0.08) + 's'); // stagger rides a var so the drop + jiggle delays chain
-      host.appendChild(d);
-      p.elm = d;
-    });
-    return { pts, born: Date.now() };
+    pts.forEach((p) => host.appendChild(p.elm));
+    return { pts, born: Date.now(), tray };
   }
   let magnetT = 0;
   function tickRun() {
@@ -1082,23 +1129,72 @@ function init() {
     // visibly STOOD on pellets it hadn't "reached" — Trym circled back for
     // one or two every single run
     const rPx = (me.size || 90) * 0.55;
+    const tSec = now / 1000;
     for (const p of run.pts) {
       if (p.got) continue;
+      // the spark stops blinking after 10s and calms down to a normal +1
+      if (p.sparkUntil && now > p.sparkUntil) {
+        p.sparkUntil = 0;
+        p.val = 1;
+        p.elm.classList.remove('rv-pellet--spark');
+      }
+      // drifters wander: a slow wobble so the floor feels alive — moved via
+      // left/top like the magnet does (no animation/filter conflicts)
+      if (p.drift) {
+        const nx = p.x + Math.cos(p.drift.a + Math.sin(tSec * 0.9 + p.drift.ph) * 1.3) * 0.05;
+        const ny = p.y + Math.sin(p.drift.a + Math.cos(tSec * 0.7 + p.drift.ph) * 1.1) * 0.033;
+        if (nx > 6 && nx < 93 && ny > topClamp + 5 && ny < 89 && !insideBar(nx, ny)) {
+          p.x = nx; p.y = ny;
+          p.elm.style.left = nx + '%';
+          p.elm.style.top = ny + '%';
+        }
+      }
       const dxp = ((me.x - p.x) / 100) * floorW;
       const dyp = ((me.y - p.y) / 100) * floorH;
-      if (Math.hypot(dxp, dyp) < rPx) {
+      const dist = Math.hypot(dxp, dyp);
+      // the skittish one hops away ONCE, then gives up — unless the Jelly
+      // Magnet is on (jelly can't resist the magnet, that's the fantasy)
+      if (p.kind === 'skittish' && !p.dodged && !magnetOn && dist < rPx * 2.6) {
+        p.dodged = true;
+        // flee AWAY first; a cornered jelly panics and bolts toward the middle
+        // instead (without the fallback, edge spawns failed every try and gave
+        // up invisibly — verified live, 3 of 5 hops were being swallowed)
+        for (let tries = 0; tries < 24; tries++) {
+          const base = tries < 12
+            ? Math.atan2(p.y - me.y, p.x - me.x)
+            : Math.atan2(50 - p.y, 50 - p.x);
+          const ang = base + (Math.random() - 0.5) * 1.4;
+          const nx = p.x + Math.cos(ang) * 16, ny = p.y + Math.sin(ang) * 10;
+          if (nx < 7 || nx > 92 || ny < topClamp + 6 || ny > 88 || insideBar(nx, ny)) continue;
+          p.x = nx; p.y = ny;
+          p.elm.style.left = nx + '%'; // .rv-pellet--flee carries the bouncy transition
+          p.elm.style.top = ny + '%';
+          break;
+        }
+        left++;
+        continue;
+      }
+      if (dist < rPx) {
         p.got = true;
         p.elm.style.removeProperty('--pd'); // the spawn stagger must not postpone the pop
         p.elm.classList.add('rv-pellet--got');
         const gone = p.elm;
         setTimeout(() => gone.remove(), 500); // no half-faded ghosts, ever
-        addHype(4); // 6 → 4: the onboarding was a drop-fest (Trym round 2)
+        addHype(p.kind === 'rainbow' ? 10 : p.kind === 'gold' ? 6 : 4); // 6 → 4 base: the onboarding was a drop-fest (Trym round 2)
         // the DOUBLE JELLY SHOT means what it says: the count and the little
         // +N agree with the meter (it said +1 while quietly doubling — Trym)
         const shot2 = fxActive(me, now) && me.fx.id === 'jellyshot' ? 2 : 1;
-        tonight.jelly += shot2;
-        passStat('jelly', shot2); // lifetime total on the pass
-        floatPlus(p.x, p.y - 3, shot2 === 2 ? '+2' : '+1');
+        const gain = (p.val || 1) * shot2;
+        tonight.jelly += gain;
+        passStat('jelly', gain); // lifetime total on the pass
+        floatPlus(p.x, p.y - 3, '+' + gain);
+        if (p.kind === 'rainbow') {
+          confettiBurst();
+          if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('THE RAINBOW JELLY!! i’ve only seen three of those in my LIFE 🌈', true);
+          track('rave_jelly_special', { kind: 'rainbow' });
+        } else if (p.kind === 'gold') {
+          track('rave_jelly_special', { kind: 'gold' });
+        }
         refreshStats();
       } else {
         left++;
@@ -1106,26 +1202,28 @@ function init() {
     }
     // TOP-UP (Trym v3: "bigger chance that there's always some jelly") — when
     // the scatter runs thin, more spills in before it's empty; items stay the
-    // fun distractions, jelly is the constant
-    if (left > 0 && left <= 2 && run.pts.length < 18) {
+    // fun distractions, jelly is the constant. Trays skip it: a tray is a
+    // discrete little event, cleared whole.
+    if (!run.tray && left > 0 && left <= 2 && run.pts.length < 18) {
       const topPct = topClamp + 5;
       let added = 0;
       for (let tries = 0; tries < 60 && added < 5; tries++) {
         const x = 7 + Math.random() * 86, y = topPct + Math.random() * (88 - topPct);
         if (insideBar(x, y)) continue;
-        const d = document.createElement('div');
-        d.className = 'rv-pellet';
-        d.innerHTML = JELLY_SVG;
-        d.style.left = x + '%';
-        d.style.top = y + '%';
-        d.style.setProperty('--pd', (added * 0.1) + 's'); // the top-up rains in staggered too
-        el('rvRun').appendChild(d);
-        run.pts.push({ x, y, got: false, elm: d });
+        const p2 = mkPellet(x, y, added * 0.1); // the top-up rains in staggered too
+        el('rvRun').appendChild(p2.elm);
+        run.pts.push(p2);
         added++;
       }
       if (added) run.born = now; // fresh jelly resets the stale clock
     }
     if (!left) { // run complete — barely a breather: there should ~always be jelly (Trym v3)
+      if (run.tray) { // cleared the whole tray — service bonus on top
+        tonight.jelly += 3;
+        passStat('jelly', 3);
+        addHype(8);
+        floatPlus(me.x, me.y - 6, 'TRAY CLEARED +3');
+      }
       run = null;
       nextRunAt = now + 1200;
       bumpChain();
