@@ -70,6 +70,37 @@ const description = 'Authorized banana personnel only.';
 
     .bm-fine { text-align: center; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; margin-top: 2rem; line-height: 1.8; }
     @media (max-width: 480px) { .bm-count { flex-basis: 100%; } }
+
+    /* DEPARTMENTS — mail | gallery inbox, one roof */
+    .bm-tabs { display: flex; gap: 0.5rem; margin-top: 1.2rem; }
+    .bm-tab {
+      flex: 1; border: var(--line); background: var(--paper); padding: 0.55rem 0.6rem;
+      font-family: inherit; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.06em;
+      text-transform: uppercase; cursor: pointer; border-radius: 2px;
+    }
+    .bm-tab[aria-selected="true"] { background: var(--ink); color: var(--banana); }
+    .bm-tab .bm-badge { display: inline-block; min-width: 1.2em; padding: 0 0.25em; border-radius: 999px; background: var(--hot); color: #fff; font-size: 0.72rem; margin-left: 0.3rem; }
+
+    /* gallery submission cards */
+    .bm-sub { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); margin: 0 0 0.9rem; padding: 0.8rem 0.9rem; display: flex; gap: 0.9rem; }
+    .bm-sub__img {
+      flex: 0 0 132px; width: 132px; height: 132px; border: 3px solid var(--ink);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 18px 18px;
+    }
+    .bm-sub__img img { max-width: 94%; max-height: 94%; }
+    .bm-sub__meta { flex: 1; min-width: 0; }
+    .bm-sub__meta input {
+      width: 100%; box-sizing: border-box; border: 3px solid var(--ink); padding: 0.45rem 0.55rem;
+      font-family: inherit; font-weight: 700; font-size: 0.9rem; border-radius: 2px;
+    }
+    .bm-sub__line { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6; margin: 0.4rem 0 0.6rem; }
+    .bm-btn--hang { background: var(--banana); }
+    .bm-gkey { margin-top: 1.2rem; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 1.1rem; text-align: center; }
+    .bm-gkey p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+    .bm-gkey .bm-gate__row { display: flex; gap: 0.6rem; max-width: 460px; margin-inline: auto; }
+    .bm-gkey input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border: 3px solid var(--ink); font-family: inherit; font-size: 0.95rem; border-radius: 2px; }
+    @media (max-width: 560px) { .bm-sub { flex-direction: column; } .bm-sub__img { width: 100%; flex-basis: auto; height: 180px; } }
   </style>
 
   <div class="bm-wrap">
@@ -89,12 +120,31 @@ const description = 'Authorized banana personnel only.';
     </div>
 
     <div id="bmApp" hidden>
-      <div class="bm-bar">
-        <span class="bm-count" id="bmCount"></span>
-        <span id="bmChips"></span>
-        <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button>
+      <div class="bm-tabs" role="tablist" aria-label="Departments">
+        <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">✉ Mail room</button>
+        <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery inbox<span class="bm-badge" id="bmGalBadge" hidden></span></button>
       </div>
-      <div id="bmList"></div>
+
+      <div id="bmPaneMail">
+        <div class="bm-bar">
+          <span class="bm-count" id="bmCount"></span>
+          <span id="bmChips"></span>
+          <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button>
+        </div>
+        <div id="bmList"></div>
+      </div>
+
+      <div id="bmPaneGal" hidden>
+        <div class="bm-gkey" id="bmGkeyGate" hidden>
+          <p><b>🖼 CURATION DESK</b><br>The gallery inbox needs its own key (it lives in tools/gallery.local.json).</p>
+          <div class="bm-gate__row">
+            <input id="bmGkey" type="password" placeholder="gallery key" autocomplete="off" />
+            <button class="bm-btn" id="bmGkeySave" type="button">Unlock →</button>
+          </div>
+        </div>
+        <div class="bm-bar"><span class="bm-count" id="bmGalCount"></span></div>
+        <div id="bmGalList"></div>
+      </div>
       <p class="bm-fine">
         BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
         Unauthorized peeling is prohibited and punishable by dance-off.<br>
@@ -234,12 +284,17 @@ const description = 'Authorized banana personnel only.';
     async function boot() {
       // token: URL fragment (from the old bookmark redirect) → localStorage → ask
       const frag = new URLSearchParams(location.hash.slice(1));
+      if (frag.get('gkey')) { // gallery key may ride the same bookmark fragment
+        gkey = frag.get('gkey');
+        try { localStorage.setItem('gallery-key', gkey); } catch (e) {}
+      }
       if (frag.get('token')) {
         token = frag.get('token');
         history.replaceState(null, '', location.pathname); // never leave it visible
       } else {
         try { token = localStorage.getItem('inbox-token') || ''; } catch (e) {}
       }
+      if (frag.get('gkey') && !frag.get('token')) history.replaceState(null, '', location.pathname);
       if (token && await load().catch(() => false)) {
         try { localStorage.setItem('inbox-token', token); } catch (e) {}
         el('bmApp').hidden = false;
@@ -273,8 +328,127 @@ const description = 'Authorized banana personnel only.';
     };
     el('bmLogout').onclick = () => {
       try { localStorage.removeItem('inbox-token'); } catch (e) {}
+      try { localStorage.removeItem('gallery-key'); } catch (e) {}
       location.reload();
     };
+
+    // ── 🖼 THE CURATION DESK — the gallery inbox under the same roof ──
+    const GAL = 'https://banana-share.trymstene.workers.dev';
+    let gkey = '';
+    try { gkey = localStorage.getItem('gallery-key') || ''; } catch (e) {}
+    let galItems = null; // null = not loaded yet
+
+    function setTab(gal) {
+      el('bmTabMail').setAttribute('aria-selected', String(!gal));
+      el('bmTabGal').setAttribute('aria-selected', String(gal));
+      el('bmPaneMail').hidden = gal;
+      el('bmPaneGal').hidden = !gal;
+      if (gal) galBoot();
+    }
+    el('bmTabMail').onclick = () => setTab(false);
+    el('bmTabGal').onclick = () => setTab(true);
+
+    async function galLoad() {
+      const r = await fetch(GAL + '/gallery/pending-list?key=' + encodeURIComponent(gkey));
+      if (!r.ok) return false;
+      galItems = await r.json();
+      return true;
+    }
+    async function galBoot() {
+      if (gkey && galItems === null) {
+        if (await galLoad().catch(() => false)) { galRender(); return; }
+        gkey = '';
+      }
+      if (!gkey) { el('bmGkeyGate').hidden = false; el('bmGalCount').textContent = ''; return; }
+      galRender();
+    }
+    el('bmGkeySave').onclick = async () => {
+      gkey = el('bmGkey').value.trim();
+      if (gkey && await galLoad().catch(() => false)) {
+        try { localStorage.setItem('gallery-key', gkey); } catch (e) {}
+        el('bmGkeyGate').hidden = true;
+        galRender();
+      } else { gkey = ''; el('bmGkey').value = ''; el('bmGkey').placeholder = '❌ wrong key — try again'; }
+    };
+    el('bmGkey').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('bmGkeySave').click(); });
+
+    function galBadge() {
+      const b = el('bmGalBadge');
+      const n = galItems ? galItems.length : 0;
+      b.hidden = !n;
+      b.textContent = n;
+    }
+    function galRender() {
+      const list = el('bmGalList');
+      list.textContent = '';
+      galBadge();
+      el('bmGalCount').textContent = '🖼 ' + galItems.length + ' submission' + (galItems.length === 1 ? '' : 's') + ' awaiting curation';
+      if (!galItems.length) {
+        const d = document.createElement('div');
+        d.className = 'bm-empty';
+        d.innerHTML = '<div class="bm-big">🖼</div><p>Curation desk clear. The gallery rests.</p>';
+        list.appendChild(d);
+        return;
+      }
+      galItems.forEach((it) => {
+        const card = document.createElement('article');
+        card.className = 'bm-sub';
+        const box = document.createElement('div');
+        box.className = 'bm-sub__img';
+        const img = document.createElement('img');
+        img.src = GAL + '/gallery/pending/' + it.id + '.gif?key=' + encodeURIComponent(gkey);
+        img.alt = '';
+        box.appendChild(img);
+        const meta = document.createElement('div');
+        meta.className = 'bm-sub__meta';
+        const titleIn = document.createElement('input');
+        titleIn.value = it.title || '';
+        titleIn.maxLength = 60;
+        titleIn.placeholder = 'title — becomes the page';
+        const line = document.createElement('p');
+        line.className = 'bm-sub__line';
+        line.textContent = (it.transparent ? 'sticker (transparent)' : 'gif (solid)') + ' · ' + it.kb + ' KB · by ' +
+          (it.by || 'anonymous') + ' · ' + fmtDate(it.created);
+        const actions = document.createElement('div');
+        actions.className = 'bm-mail__actions';
+        const hang = document.createElement('button');
+        hang.className = 'bm-btn bm-btn--hang';
+        hang.type = 'button';
+        hang.textContent = '🖼 hang it';
+        const bin = document.createElement('button');
+        bin.className = 'bm-btn bm-btn--shred';
+        bin.type = 'button';
+        bin.textContent = '🗑 reject';
+        async function moderate(action) {
+          hang.disabled = bin.disabled = true;
+          try {
+            const r = await fetch(GAL + '/gallery/moderate?key=' + encodeURIComponent(gkey), {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: it.id, action, title: titleIn.value }),
+            });
+            const d = await r.json();
+            if (d.ok) {
+              card.classList.add('bm-mail--shredding');
+              setTimeout(() => { galItems = galItems.filter((x) => x.id !== it.id); galRender(); }, 360);
+              return;
+            }
+            alert(d.error || 'failed');
+          } catch (e) { alert('the desk is busy — try again'); }
+          hang.disabled = bin.disabled = false;
+        }
+        hang.onclick = () => moderate('approve');
+        bin.onclick = () => {
+          if (bin.dataset.arm !== '1') { bin.dataset.arm = '1'; bin.textContent = '⚠ reject, really?'; setTimeout(() => { bin.dataset.arm = ''; bin.textContent = '🗑 reject'; }, 3000); return; }
+          moderate('reject');
+        };
+        actions.appendChild(hang); actions.appendChild(bin);
+        meta.appendChild(titleIn); meta.appendChild(line); meta.appendChild(actions);
+        card.appendChild(box); card.appendChild(meta);
+        list.appendChild(card);
+      });
+    }
+    // preload the badge so the tab shows the pending count on arrival
+    if (gkey) galLoad().then((ok) => { if (ok) galBadge(); }).catch(() => {});
 
     boot();
   </script>

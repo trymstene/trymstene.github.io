@@ -58,6 +58,7 @@ export default {
       if (url.pathname.startsWith('/wall/inbox')) return handleWallInbox(request, env, url);
       if (url.pathname === '/gallery/submit') return handleGallerySubmit(request, env, url);
       if (url.pathname === '/gallery/admin') return handleGalleryAdmin(request, env, url);
+      if (url.pathname === '/gallery/pending-list') return handleGalleryPendingList(request, env, url);
       if (url.pathname.startsWith('/gallery/pending/')) return handleGalleryPending(request, env, url);
       if (url.pathname === '/gallery/moderate') return handleGalleryModerate(request, env, url);
       if (url.pathname === '/gallery/approved') return handleGalleryApproved(env);
@@ -315,10 +316,8 @@ async function handleGalleryPending(request, env, url) {
   return new Response(obj.body, { headers: { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' } });
 }
 
-// ---------- GET /gallery/admin?key= — the approve/reject panel ----------
-async function handleGalleryAdmin(request, env, url) {
-  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403);
-  const key = url.searchParams.get('key');
+// shared: read the pending inbox (oldest first)
+async function listGalleryInbox(env) {
   const list = await env.SHARES.list({ prefix: 'gallery-inbox/', limit: 200 });
   const items = [];
   for (const o of list.objects) {
@@ -331,6 +330,20 @@ async function handleGalleryAdmin(request, env, url) {
     } catch (e) {}
   }
   items.sort((a, b) => a.created - b.created);
+  return items;
+}
+
+// ---------- GET /gallery/pending-list?key= — JSON for BANANA MAIL's tab ----------
+async function handleGalleryPendingList(request, env, url) {
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403);
+  return json(await listGalleryInbox(env), 200, { ...corsHeaders(env, request), 'Cache-Control': 'no-store' });
+}
+
+// ---------- GET /gallery/admin?key= — the approve/reject panel ----------
+async function handleGalleryAdmin(request, env, url) {
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403);
+  const key = url.searchParams.get('key');
+  const items = await listGalleryInbox(env);
   const rows = items.map((d) => `
     <div class="card" id="c-${d.id}">
       <img src="/gallery/pending/${d.id}.gif?key=${encodeURIComponent(key)}" alt="">
@@ -375,28 +388,30 @@ async function mod(id, action) {
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
-// ---------- POST /gallery/moderate?key= ----------
+// ---------- POST /gallery/moderate?key= (CORS: BANANA MAIL calls it) ----------
 async function handleGalleryModerate(request, env, url) {
-  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403);
-  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403, cors);
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405, cors);
   let body;
-  try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
+  try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
   const id = String(body.id || '');
-  if (!/^[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400);
+  if (!/^[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
 
   if (body.action === 'reject') {
     await env.SHARES.delete(`gallery-inbox/${id}.gif`);
     await env.SHARES.delete(`gallery-inbox/${id}.json`);
-    return json({ ok: true });
+    return json({ ok: true }, 200, cors);
   }
-  if (body.action !== 'approve') return json({ error: 'bad action' }, 400);
+  if (body.action !== 'approve') return json({ error: 'bad action' }, 400, cors);
 
   const metaObj = await env.SHARES.get(`gallery-inbox/${id}.json`);
   const gifObj = await env.SHARES.get(`gallery-inbox/${id}.gif`);
-  if (!metaObj || !gifObj) return json({ error: 'not found' }, 404);
+  if (!metaObj || !gifObj) return json({ error: 'not found' }, 404, cors);
   const d = await metaObj.json();
   const title = String(body.title || d.title || '').trim().slice(0, 60) || 'Community banana';
-  if (dirty(title)) return json({ error: 'title fails the family filter' }, 400);
+  if (dirty(title)) return json({ error: 'title fails the family filter' }, 400, cors);
 
   // slug: title + a short id tail = readable AND collision-proof forever
   const slug = `${slugify(title)}-${id.slice(0, 4)}`;
@@ -404,7 +419,7 @@ async function handleGalleryModerate(request, env, url) {
   const idxObj = await env.SHARES.get('gallery-live/index.json');
   let index = [];
   if (idxObj) { try { index = await idxObj.json(); } catch (e) {} }
-  if (index.some((e) => e.slug === slug)) return json({ error: 'already approved' }, 409);
+  if (index.some((e) => e.slug === slug)) return json({ error: 'already approved' }, 409, cors);
 
   await env.SHARES.put(`gallery-live/${slug}.gif`, await gifObj.arrayBuffer(), {
     httpMetadata: { contentType: 'image/gif' },
@@ -418,7 +433,7 @@ async function handleGalleryModerate(request, env, url) {
   });
   await env.SHARES.delete(`gallery-inbox/${id}.gif`);
   await env.SHARES.delete(`gallery-inbox/${id}.json`);
-  return json({ ok: true, slug });
+  return json({ ok: true, slug }, 200, cors);
 }
 
 // ---------- GET /gallery/approved — public, the build pulls this ----------
