@@ -1188,9 +1188,11 @@ function init() {
   // grab — value is redistributed, never destroyed. Hit detection is VICTIM-
   // authoritative: your client judges hits on YOU and announces the splat, so
   // a cheater can only dodge, never hurt (jelly is a local stat anyway).
-  const NADE_SPEED = 34;   // % of floor per second
-  const NADE_RANGE = 36;   // % of floor before it drops as a peel
+  const NADE_SPEED = 68;   // % of floor per second — doubled (Trym: snappier, fewer whiffs)
+  const NADE_RANGE = 40;   // % of floor before it drops
+  const NADE_HIT = 5.4;    // hit radius — a touch fatter so glancing shots land
   const SHOT_CD = 2000;    // the vibe knob — gentle start (Trym approved)
+  const SPLAT_LOSS = 15;   // jelly a hit knocks loose (Trym: make it hurt)
   const nades = new Map(); // key -> {el, x, y, vx, vy, dist, by}
   let nadeSeq = 0;
   let lastShotAt = 0;
@@ -1287,13 +1289,17 @@ function init() {
     }
   }
 
-  function scatterSpill(x, y, n, seed) {
+  // the knocked-loose jelly flies out as a few GOLD crescents (worth 5 each)
+  // instead of a swarm of 15 specks — juicier loot, same value redistributed,
+  // way fewer elements. Run to your spill to win it back = the scramble.
+  function scatterSpill(x, y, loss, seed) {
     let s = (seed >>> 0) || 7;
     const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
-    for (let i = 0; i < n; i++) {
-      const px = clamp(x + (rnd() - 0.5) * 12, 5, 94);
-      const py = clamp(y + (rnd() - 0.5) * 8, topClamp, 90);
-      const p = mkPellet(px, py, i * 0.05, 'plain');
+    const nGold = Math.min(4, Math.max(1, Math.round(loss / 5)));
+    for (let i = 0; i < nGold; i++) {
+      const px = clamp(x + (rnd() - 0.5) * 16, 5, 94);
+      const py = clamp(y + (rnd() - 0.5) * 10, topClamp, 90);
+      const p = mkPellet(px, py, i * 0.05, 'gold');
       p.spill = Date.now(); // marks it for the standalone ticker below
       (el('rvRun') ? el('rvRun').parentElement : floor).appendChild(p.elm);
       scatterPellets.push(p);
@@ -1337,7 +1343,7 @@ function init() {
     const tgt = lockId && ravers.get(lockId);
     if (tgt && !tgt.stage) base = Math.atan2(tgt.y - me.y, tgt.x - me.x);
     else base = (me.facing || 1) > 0 ? 0 : Math.PI;
-    const a = base + (Math.random() - 0.5) * 0.62; // ±18° of honest incompetence
+    const a = base + (Math.random() - 0.5) * 0.5; // ±14° — still silly, lands more
     spawnNade(myId, me.x, me.y, a);
     if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'shot', a: +a.toFixed(3) }));
     // throw recoil — a quick pop so firing FEELS like firing
@@ -1356,7 +1362,7 @@ function init() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     if (Date.now() < graceUntil) return; // just arrived — not a piñata yet
-    const loss = Math.min(tonight.jelly, 2 + (Math.random() < 0.4 ? 1 : 0));
+    const loss = Math.min(tonight.jelly, SPLAT_LOSS);
     tonight.jelly -= loss;
     const seed = (Date.now() ^ (nadeSeq * 2654435761)) >>> 0;
     splatFx(me, { n: loss }); // I'm the victim — see my own -N, no self hit-ring
@@ -1388,7 +1394,7 @@ function init() {
         continue;
       }
       // victim-authoritative: only judge hits on MYSELF
-      if (me && !me.stage && n.by !== myId && Math.hypot(n.x - me.x, (n.y + 5 - me.y) * 1.4) < 4.6) {
+      if (me && !me.stage && n.by !== myId && Math.hypot(n.x - me.x, (n.y + 5 - me.y) * 1.4) < NADE_HIT) {
         n.el.remove(); nades.delete(key);
         takeSplat(n.by);
         continue;
@@ -1411,7 +1417,8 @@ function init() {
           p.got = true;
           p.elm.classList.add('rv-pellet--got');
           setTimeout(() => p.elm.remove(), 350);
-          tonight.jelly += 1;
+          tonight.jelly += p.val; // gold spill = 5 each
+          floatNum(p.x, p.y - 4, '+' + p.val, 'rv-dmg--good');
           addHype(2);
           refreshStats();
         }
@@ -2261,7 +2268,7 @@ function init() {
         if (r && m.id !== myId) {
           const byMe = m.by === myId;
           splatFx(r, { n: m.n, byMe }); // splash + -N + (if I shot them) the hit-ring
-          if (m.n > 0) scatterSpill(r.x, r.y, Math.min(3, m.n), m.s >>> 0);
+          if (m.n > 0) scatterSpill(r.x, r.y, m.n, m.s >>> 0);
           if (byMe) passStat('splats');
         }
       }

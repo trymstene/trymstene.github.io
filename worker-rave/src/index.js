@@ -564,7 +564,7 @@ export class RaveRoom {
       if (me.lastSplat && nowS - me.lastSplat < 900) return;
       me.lastSplat = nowS;
       ws.serializeAttachment(me);
-      const n = Math.min(3, Math.max(0, Math.round(Number(msg.n) || 0)));
+      const n = Math.min(20, Math.max(0, Math.round(Number(msg.n) || 0)));
       const by = /^[a-f0-9-]{4,12}$/.test(String(msg.by || '')) ? msg.by : '';
       this.broadcast({ t: 'splat', id: me.id, by, n, s: (Number(msg.s) >>> 0) });
       return;
