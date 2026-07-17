@@ -139,6 +139,93 @@ export function passVisit() {
   if (today < OG_CUTOFF) passPatch('og', { quiet: true }); // quietly — it's a surprise for later
 }
 
+// ---- CLUB NOTICES — the pass page's tiny timeline -----------------------
+// Anti-fatigue doctrine (Trym's): a notice must carry VALUE — verdicts on
+// things YOU made, not system chatter. Device-local (like the pass itself);
+// the nav's badge dot counts unread notices alongside unseen badges.
+const NOTICE_KEY = 'ps-notices-v1';
+
+export function passNotices() {
+  try {
+    const l = JSON.parse(localStorage.getItem(NOTICE_KEY) || '[]');
+    return Array.isArray(l) ? l : [];
+  } catch (e) { return []; }
+}
+
+export function passNoticeAdd(n) {
+  const list = passNotices();
+  if (n.id && list.some((x) => x.id === n.id)) return; // idempotent — polls can repeat
+  list.unshift({ id: n.id || String(Date.now()), icon: n.icon || '🍌', text: n.text || '', link: n.link || '', at: Date.now(), read: false });
+  try { localStorage.setItem(NOTICE_KEY, JSON.stringify(list.slice(0, 30))); } catch (e) {}
+  try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
+}
+
+export function passNoticesMarkRead() {
+  const list = passNotices();
+  if (!list.some((x) => !x.read)) return;
+  list.forEach((x) => { x.read = true; });
+  try { localStorage.setItem(NOTICE_KEY, JSON.stringify(list)); } catch (e) {}
+  try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
+}
+
+// ---- gallery submission verdicts -> notices -----------------------------
+// The builder stores {sid, title, at} per submission in gal-subs-v1; here we
+// ask worker-share's /gallery/status what happened and turn NEW verdicts
+// into notices. Throttled + only runs when something is actually unresolved,
+// so 99% of visitors never generate a request.
+const SUBS_KEY = 'gal-subs-v1';
+const SHARE_API = 'https://banana-share.trymstene.workers.dev';
+
+export async function checkGalleryVerdicts(opts = {}) {
+  let subs;
+  try { subs = JSON.parse(localStorage.getItem(SUBS_KEY) || '[]'); } catch (e) { return; }
+  if (!Array.isArray(subs)) return;
+  const open = subs.filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000);
+  if (!open.length) return;
+  try {
+    const last = parseInt(localStorage.getItem('gal-check-at') || '0', 10) || 0;
+    if (!opts.force && Date.now() - last < 6 * 3600000) return;
+    localStorage.setItem('gal-check-at', String(Date.now()));
+  } catch (e) {}
+  try {
+    const r = await fetch(SHARE_API + '/gallery/status?ids=' + open.map((s) => s.sid).join(','));
+    if (!r.ok) return;
+    const verdicts = await r.json();
+    const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let changed = false;
+    for (const s of subs) {
+      const v = verdicts[s.sid];
+      if (!v || s.status !== 'pending') continue;
+      s.status = v.s === 'ok' ? 'approved' : 'rejected';
+      changed = true;
+      const title = esc(s.title) || 'Your banana';
+      if (v.s === 'ok') {
+        passNoticeAdd({
+          id: 'gal-' + s.sid,
+          icon: '🖼',
+          text: '<b>“' + title + '” made the gallery!</b> The banana guy hung it up — it has its own page now.',
+          link: v.slug && /^[a-z0-9-]{1,80}$/.test(v.slug) ? '/banana-memes/by/' + v.slug + '/' : '/banana-memes/',
+        });
+        passPatch('exhibitor', { quiet: true }); // in case the submit-time mint was missed
+      } else {
+        passNoticeAdd({
+          id: 'gal-' + s.sid,
+          icon: '💌',
+          text: '<b>“' + title + '”</b> didn’t make the wall this time — the banana guy hangs only a few. Dress up another and try again!',
+          link: '/make-a-banana/',
+        });
+      }
+    }
+    if (changed) {
+      try { localStorage.setItem(SUBS_KEY, JSON.stringify(subs.slice(0, 20))); } catch (e) {}
+    }
+  } catch (e) { /* offline is fine — next visit asks again */ }
+}
+
+// ambient verdict check: any page that loads the pass lib (builder, rave,
+// pass…) quietly resolves pending submissions so the nav dot can light up
+checkGalleryVerdicts();
+
 // the one toast pattern for pass moments, shared by every page
 let toastT = null;
 export function passToast(html, ms = 7000) {

@@ -143,8 +143,18 @@ window.addEventListener('resize', () => { if (window.innerWidth >= 820) setMenu(
   function seenCount() {
     try { return parseInt(localStorage.getItem(SEEN_KEY) || '0', 10) || 0; } catch (e) { return 0; }
   }
+  // Club Notices (gallery verdicts etc.) ride the same dot — unread ones are
+  // marked read by the pass page itself, which dispatches pass:change
+  function unreadNotices() {
+    try {
+      var l = JSON.parse(localStorage.getItem('ps-notices-v1') || '[]');
+      var n = 0;
+      for (var i = 0; i < l.length; i++) if (l[i] && !l[i].read) n++;
+      return n;
+    } catch (e) { return 0; }
+  }
   function renderPassNote() {
-    var unseen = earnedCount() - seenCount();
+    var unseen = Math.max(0, earnedCount() - seenCount()) + unreadNotices();
     var hosts = [document.querySelector('.nav__pass'), document.querySelector('.nav__toggle')];
     hosts.forEach(function (host) {
       if (!host) return;
@@ -159,7 +169,7 @@ window.addEventListener('resize', () => { if (window.innerWidth >= 820) setMenu(
       dot.textContent = unseen;
     });
     var pass = document.querySelector('.nav__pass');
-    if (pass) pass.setAttribute('aria-label', unseen > 0 ? ('Your banana pass — ' + unseen + ' new badge' + (unseen > 1 ? 's' : '')) : 'Your banana pass');
+    if (pass) pass.setAttribute('aria-label', unseen > 0 ? ('Your banana pass — ' + unseen + ' new') : 'Your banana pass');
   }
   function markSeen() {
     try { localStorage.setItem(SEEN_KEY, String(earnedCount())); } catch (e) {}

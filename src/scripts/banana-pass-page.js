@@ -3,7 +3,7 @@
 // stats and hosts the Shelf in its true home. CLIENT-ONLY.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { renderShelf } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast, passPush } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 
@@ -46,19 +46,25 @@ async function init() {
   const since = new Date(pass.created);
   el('psSince').textContent = 'member since ' + since.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // — your standing at the club: LEVEL 1–99 + the bar, title at brackets —
+  // — your standing at the club, ON the card: level chip + rep bar —
   const rep = (pass.stats || {}).rep || 0;
   const lv = levelFor(rep);
   const rk = rankFor(lv.level), nx = nextRank(lv.level);
-  const rankEl = document.createElement('div');
-  rankEl.className = 'ps-rank';
-  rankEl.style.cssText = 'margin-top:5px;font-size:0.82rem;';
-  rankEl.innerHTML = '<b>LVL ' + lv.level + '</b> · 🎖 ' + rk.title
-    + '<span style="display:block;margin:3px 0 2px;height:7px;background:#241a38;max-width:220px;">'
-    + '<i style="display:block;height:100%;width:' + Math.round((lv.into / lv.need) * 100) + '%;background:#ffe135;"></i></span>'
-    + '<span style="opacity:0.65;font-size:0.7rem;">' + lv.into + ' / ' + lv.need + ' rep'
+  el('psRank').innerHTML = '<span class="ps-rankchip">LVL ' + lv.level + ' · ' + rk.title.toUpperCase() + '</span>'
+    + '<span class="ps-rankbar"><i style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></i></span>'
+    + '<span class="ps-ranknote">' + lv.into + ' / ' + lv.need + ' rep'
     + (nx ? ' — next title at level ' + nx.at : ' — top of the ladder') + '</span>';
-  el('psSince').after(rankEl);
+
+  // — the official furniture: serial + barcode, same seeded pattern as the
+  // share-card PNG (a real document keeps its number) —
+  el('psSerial').textContent = 'Nº ' + pass.created.toString(36).toUpperCase();
+  drawBarcode(el('psBarcode'), pass.created);
+
+  // — 📯 club notices: verdicts on your gallery submissions (and future news
+  // about YOUR stuff). Renders only when there is something to say. —
+  renderNotices();
+  checkGalleryVerdicts({ force: true }).then(renderNotices);
+  setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
 
   // — patches: light the earned, pin the first few to the card —
   const earned = PATCHES.filter((d) => pass.patches[d.id]);
@@ -186,6 +192,45 @@ async function init() {
     rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
     stats: rows.filter(([, l]) => l !== 'rep at the club').slice(0, 3),
   });
+}
+
+// ---- the on-page barcode: same seeded pattern family as the share card ----
+function drawBarcode(cv, seed) {
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = cssVar('--ink', '#111111');
+  let s = (seed % 2147483647) >>> 0 || 7;
+  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  let x = 0;
+  while (x < cv.width - 4) {
+    const w = 2 + Math.floor(rnd() * 5);
+    if (rnd() > 0.42) ctx.fillRect(x, 0, w, cv.height);
+    x += w + 2;
+  }
+}
+
+// ---- 📯 club notices ------------------------------------------------------
+function renderNotices() {
+  const sec = el('psNoticesSec');
+  if (!sec) return;
+  const list = passNotices();
+  let pend = 0;
+  try {
+    pend = (JSON.parse(localStorage.getItem('gal-subs-v1') || '[]') || [])
+      .filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000).length;
+  } catch (e) {}
+  if (!list.length && !pend) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const fmt = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  el('psNotices').innerHTML =
+    (pend ? '<p class="ps-pendingline">⏳ ' + pend + (pend === 1 ? ' banana is' : ' bananas are')
+      + ' with the banana guy for review — the verdict usually lands within 48 hours.</p>' : '')
+    + list.map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
+      + '<span class="ps-notice__icon">' + n.icon + '</span>'
+      + '<div class="ps-notice__body">' + n.text
+      + (n.link ? ' <a href="' + n.link + '">→</a>' : '')
+      + '<span class="ps-notice__date">' + fmt(n.at) + '</span></div></div>').join('');
 }
 
 // ---- share my card: the membership card as a 1200×630 PNG ---------------

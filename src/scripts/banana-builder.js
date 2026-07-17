@@ -6,7 +6,7 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { shelfAdd } from '../lib/banana-shelf.js';
-import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
+import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
 import {
   SHEET_SRC, FW, FH, NFRAMES, BASE_CYCLE_S, FRAMES, SVG, EFFECTS,
   PACKS, HAT_DEFS, SHADE_DEFS, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, HATS, GLASSES,
@@ -594,14 +594,28 @@ function init() {
       const { blob, isT, tw, th } = await renderMemeGif();
       const title = [state.top, state.bottom].filter(Boolean).join(' ').trim().slice(0, 60)
         || 'Custom dancing banana';
-      const meta = { kind: 'banana', by, title, params, transparent: isT, w: tw, h: th };
+      // sid = this browser's anonymous claim ticket: the pass page later asks
+      // /gallery/status how the review went and posts the verdict as a notice
+      const sid = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');
+      const meta = { kind: 'banana', by, title, params, transparent: isT, w: tw, h: th, sid };
       const res = await fetch(SHARE_BASE + '/gallery/submit?meta=' + encodeURIComponent(JSON.stringify(meta)), {
         method: 'POST',
         headers: { 'Content-Type': 'image/gif' },
         body: blob,
       });
-      toast(res.ok ? 'Submitted! The banana guy hangs the best ones in the gallery 🖼' : 'The gallery is busy — try again in a bit');
-      if (res.ok) passPatch('exhibitor');
+      if (res.ok) {
+        try {
+          const subs = JSON.parse(localStorage.getItem('gal-subs-v1') || '[]');
+          subs.unshift({ sid, title, at: Date.now(), status: 'pending' });
+          localStorage.setItem('gal-subs-v1', JSON.stringify(subs.slice(0, 20)));
+        } catch (e) {}
+        // passToast (not the builder's plain toast): renders the pass link +
+        // stays up long enough to read the expectation-setting line
+        passToast('🖼 <b>Sent to the banana guy for review!</b><br>The verdict lands on <a href="/pass/">your Banana Pass</a> — usually within 48 hours.', 9000);
+        passPatch('exhibitor');
+      } else {
+        toast('The gallery is busy — try again in a bit');
+      }
     } catch (e) { toast('The gallery is busy — try again in a bit'); }
     track('gallery_submit', { kind: 'banana', signed: by ? 1 : 0, design: designStr() });
   };

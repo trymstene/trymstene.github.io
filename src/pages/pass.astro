@@ -16,28 +16,63 @@ const description = 'Your membership card to the banana world: the badges you ha
   <style is:inline slot="head">
     .ps-wrap { max-width: 900px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
     .ps-head h1 { margin: 0 0 0.3rem; }
-    .ps-head p { margin: 0 0 1.6rem; opacity: 0.8; max-width: 60ch; }
+    .ps-head p { margin: 0 0 1.4rem; opacity: 0.8; max-width: 60ch; }
 
-    /* THE CARD — looks like a physical club membership card */
-    .ps-card {
-      display: flex; gap: 1.1rem; align-items: center;
-      background: var(--ink); color: var(--paper);
-      border: var(--line); box-shadow: var(--shadow); padding: 1.1rem 1.2rem;
-      max-width: 560px;
+    /* THE OFFICIAL CARD — the share-card's yellow identity, live on the page
+       (banana-yellow face, ink header strip, punched hole, serial + barcode,
+       red OFFICIAL stamp). The PNG people share IS this card. */
+    .ps-official {
+      position: relative; max-width: 640px;
+      background: var(--banana); border: var(--line); box-shadow: 8px 8px 0 var(--ink);
     }
-    .ps-card canvas { width: 110px; height: 110px; flex: none; image-rendering: pixelated; background:
-      repeating-conic-gradient(#221c30 0% 25%, #2a2340 0% 50%) 0 0 / 18px 18px; border: 3px solid var(--banana); }
-    .ps-card__meta { min-width: 0; }
-    .ps-card__kicker { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--banana); margin: 0; }
-    .ps-card__name { font-family: "Archivo Black", sans-serif; font-size: 1.25rem; margin: 0.15rem 0 0.3rem; }
-    .ps-card__since { font-size: 0.72rem; opacity: 0.7; margin: 0 0 0.5rem; }
-    .ps-card__patches { display: flex; gap: 0.4rem; flex-wrap: wrap; min-height: 1.4rem; }
-    .ps-card__patches .pxi, .ps-card__patches svg { width: 1.25rem; height: 1.25rem; }
+    .ps-official__head {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+      background: var(--ink); color: var(--banana); margin: 6px; padding: 0.5rem 0.85rem;
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase;
+      white-space: nowrap; overflow: hidden;
+    }
+    .ps-official__hole { flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 3px var(--banana); }
+    .ps-official__body { display: flex; gap: 1rem; padding: 0.7rem 1rem 0.4rem; align-items: center; }
+    .ps-official canvas#psSig { width: 128px; height: 128px; flex: none; image-rendering: pixelated; }
+    .ps-official__meta { min-width: 0; flex: 1; }
+    .ps-card__name { font-family: "Archivo Black", sans-serif; font-size: 1.3rem; line-height: 1.15; margin: 0 0 0.15rem; color: var(--ink); overflow-wrap: anywhere; }
+    .ps-card__since { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.75; margin: 0 0 0.5rem; }
+    .ps-rankchip { display: inline-block; background: var(--ink); color: var(--banana); font-weight: 800; font-size: 0.78rem; padding: 0.28rem 0.55rem; }
+    .ps-rankbar { display: block; height: 7px; background: rgba(17, 17, 17, 0.22); max-width: 220px; margin: 6px 0 3px; }
+    .ps-rankbar i { display: block; height: 100%; background: var(--ink); }
+    .ps-ranknote { display: block; font-size: 0.66rem; font-weight: 700; opacity: 0.7; }
+    .ps-card__patches { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.55rem; min-height: 1.4rem; }
+    .ps-card__patches svg { width: 1.5rem; height: 1.5rem; background: #fffdf5; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 2px; }
+    .ps-card__patches span { font-size: 0.7rem; opacity: 0.65; align-self: center; }
+    .ps-official__foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 1rem 0.85rem; }
+    #psBarcode { display: block; height: 26px; width: 140px; }
+    .ps-serial { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; color: var(--ink); }
+    .ps-stamp {
+      position: absolute; right: 12px; bottom: 44px; transform: rotate(-8deg);
+      border: 3px solid #e22020; color: #e22020; padding: 3px 12px; opacity: 0.85;
+      font-family: "Archivo Black", sans-serif; font-size: 0.95rem; letter-spacing: 0.04em;
+      pointer-events: none;
+    }
+    .ps-stamp::before { content: ''; position: absolute; inset: 2px; border: 2px solid #e22020; }
+
+    .ps-actions { margin: 0.9rem 0 0; display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
 
-    .ps-actions { margin-top: 0.9rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    /* CLUB NOTICES — verdicts on YOUR stuff, never system chatter. The
+       section renders only when there is something to say (anti-fatigue). */
+    .ps-notices-list { max-width: 640px; }
+    .ps-pendingline { font-size: 0.8rem; opacity: 0.75; margin: 0 0 0.7rem; }
+    .ps-notice {
+      display: flex; gap: 0.7rem; align-items: flex-start;
+      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.7rem 0.85rem; margin-bottom: 0.6rem;
+    }
+    .ps-notice--unread { background: var(--banana); }
+    .ps-notice__icon { font-size: 1.25rem; line-height: 1.2; }
+    .ps-notice__body { font-size: 0.85rem; line-height: 1.45; min-width: 0; }
+    .ps-notice__date { display: block; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; margin-top: 0.25rem; }
 
-    /* passkey sync panel (Phase 2) */
+    /* passkey sync panel (Phase 2) — plumbing, lives low on the page */
     .ps-sync { margin: 0.9rem 0 0; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.8rem 0.95rem; max-width: 560px; }
     .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
     .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.6rem; }
@@ -120,6 +155,13 @@ const description = 'Your membership card to the banana world: the badges you ha
       font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 3px 3px 0 var(--ink);
       touch-action: manipulation;
     }
+
+    @media (max-width: 560px) {
+      .ps-official__body { flex-direction: row; }
+      .ps-official canvas#psSig { width: 104px; height: 104px; }
+      .ps-card__name { font-size: 1.1rem; }
+      .ps-official__head { font-size: 0.58rem; }
+    }
   </style>
 
   <div class="ps-wrap">
@@ -132,32 +174,37 @@ const description = 'Your membership card to the banana world: the badges you ha
       </p>
     </div>
 
-    <div class="ps-card">
-      <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
-      <div class="ps-card__meta">
-        <p class="ps-card__kicker">Banana world membership</p>
-        <p class="ps-card__name" id="psName">Fresh Dancing Banana</p>
-        <p class="ps-card__since" id="psSince">member since tonight</p>
-        <div class="ps-card__patches" id="psCardPatches"></div>
+    <!-- THE OFFICIAL CARD -->
+    <div class="ps-official">
+      <div class="ps-official__head">
+        <span>★ Banana World · Official Membership Pass</span>
+        <span class="ps-official__hole" aria-hidden="true"></span>
       </div>
+      <div class="ps-official__body">
+        <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
+        <div class="ps-official__meta">
+          <p class="ps-card__name" id="psName">Fresh Dancing Banana</p>
+          <p class="ps-card__since" id="psSince">member since tonight</p>
+          <div id="psRank"></div>
+          <div class="ps-card__patches" id="psCardPatches"></div>
+        </div>
+      </div>
+      <div class="ps-official__foot">
+        <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
+        <span class="ps-serial" id="psSerial"></span>
+      </div>
+      <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
     </div>
     <div class="ps-actions">
       <button class="btn btn--light" id="psShareCard" type="button">📸 Share my card</button>
     </div>
 
-    <div class="ps-sync" id="psSync" hidden>
-      <p id="psSyncLead">
-        <b>Take your pass everywhere.</b> Save it with a passkey — Face&nbsp;ID, fingerprint
-        or your device PIN — and open the same pass on your phone and computer.
-        No email, no password, nothing to remember.
-      </p>
-      <div class="ps-sync__row">
-        <button class="btn btn--dark" id="psSave" type="button">💾 Save my pass</button>
-        <button class="btn btn--light" id="psRestore" type="button">📲 I already have a pass</button>
-      </div>
-      <p class="ps-sync__note" id="psSyncNote"></p>
+    <!-- CLUB NOTICES — appears only when there is news about YOUR stuff -->
+    <div class="ps-section" id="psNoticesSec" hidden>
+      <h2>📯 Club notices</h2>
+      <p>News about your stuff — never noise.</p>
+      <div class="ps-notices-list" id="psNotices"></div>
     </div>
-    <p class="ps-device" id="psDevice">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
 
     <div class="ps-section">
       <h2>Gear</h2>
@@ -190,6 +237,23 @@ const description = 'Your membership card to the banana world: the badges you ha
       <h2>My shelf</h2>
       <p>Your creations — bananas open in the builder, pixels open in the forge. The 🏷 turns one into a real sticker.</p>
       <div class="ps-shelf" id="psShelf"></div>
+    </div>
+
+    <div class="ps-section">
+      <h2>Take it everywhere</h2>
+      <div class="ps-sync" id="psSync" hidden>
+        <p id="psSyncLead">
+          <b>Take your pass everywhere.</b> Save it with a passkey — Face&nbsp;ID, fingerprint
+          or your device PIN — and open the same pass on your phone and computer.
+          No email, no password, nothing to remember.
+        </p>
+        <div class="ps-sync__row">
+          <button class="btn btn--dark" id="psSave" type="button">💾 Save my pass</button>
+          <button class="btn btn--light" id="psRestore" type="button">📲 I already have a pass</button>
+        </div>
+        <p class="ps-sync__note" id="psSyncNote"></p>
+      </div>
+      <p class="ps-device" id="psDevice">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
     </div>
 
     <div class="ps-doors">

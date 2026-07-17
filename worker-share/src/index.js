@@ -34,6 +34,7 @@
 //   GET  /gallery/pending/<id>.gif?key=   inbox preview image
 //   POST /gallery/moderate?key=     {id, action:'approve'|'reject', title}
 //   GET  /gallery/approved          public JSON of live items (build-time pull)
+//   GET  /gallery/status?ids=       public verdicts by client sid (pass notices)
 //   GET  /gallery/gif/<slug>.gif    public immutable serve of a live item
 //   GET  /health           bucket reachability
 
@@ -57,6 +58,7 @@ export default {
       if (url.pathname === '/wall/submit') return handleWallSubmit(request, env, url);
       if (url.pathname.startsWith('/wall/inbox')) return handleWallInbox(request, env, url);
       if (url.pathname === '/gallery/submit') return handleGallerySubmit(request, env, url);
+      if (url.pathname === '/gallery/status') return handleGalleryStatus(env, url);
       if (url.pathname === '/gallery/admin') return handleGalleryAdmin(request, env, url);
       if (url.pathname === '/gallery/pending-list') return handleGalleryPendingList(request, env, url);
       if (url.pathname.startsWith('/gallery/pending/')) return handleGalleryPending(request, env, url);
@@ -306,11 +308,15 @@ async function handleGallerySubmit(request, env, url) {
   if (magic !== 'GIF89a' && magic !== 'GIF87a') return json({ error: 'not a gif' }, 415, corsHeaders(env, request));
 
   const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+  // sid = the CLIENT's anonymous tracking id: the submitter's browser keeps it
+  // and later asks /gallery/status how the review went (the pass-page
+  // notices). Unguessable random, no PII, optional (old clients send none).
+  const sid = /^[a-z0-9]{8,32}$/.test(meta.sid || '') ? meta.sid : '';
   await env.SHARES.put(`gallery-inbox/${id}.gif`, body, {
     httpMetadata: { contentType: 'image/gif' },
   });
   await env.SHARES.put(`gallery-inbox/${id}.json`,
-    JSON.stringify({ kind, title, by, params, transparent, kb: Math.round(body.byteLength / 1024), created: Date.now() }),
+    JSON.stringify({ kind, title, by, params, transparent, sid, kb: Math.round(body.byteLength / 1024), created: Date.now() }),
     { httpMetadata: { contentType: 'application/json' } });
   return json({ ok: true, id }, 200, corsHeaders(env, request));
 }
@@ -411,6 +417,16 @@ async function handleGalleryModerate(request, env, url) {
   if (!/^[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
 
   if (body.action === 'reject') {
+    // leave a VERDICT tombstone first — the submitter's browser polls
+    // /gallery/status so their pass page can say what happened (deleting
+    // silently was the old, feedback-less behaviour)
+    try {
+      const metaObj = await env.SHARES.get(`gallery-inbox/${id}.json`);
+      if (metaObj) {
+        const d = await metaObj.json();
+        if (d.sid) await recordVerdict(env, { sid: d.sid, s: 'no', at: Date.now() });
+      }
+    } catch (e) {}
     await env.SHARES.delete(`gallery-inbox/${id}.gif`);
     await env.SHARES.delete(`gallery-inbox/${id}.json`);
     return json({ ok: true }, 200, cors);
@@ -443,9 +459,47 @@ async function handleGalleryModerate(request, env, url) {
   await env.SHARES.put('gallery-live/index.json', JSON.stringify(index), {
     httpMetadata: { contentType: 'application/json' },
   });
+  if (d.sid) await recordVerdict(env, { sid: d.sid, s: 'ok', slug, at: Date.now() });
   await env.SHARES.delete(`gallery-inbox/${id}.gif`);
   await env.SHARES.delete(`gallery-inbox/${id}.json`);
   return json({ ok: true, slug }, 200, cors);
+}
+
+// ---------- the verdict ledger — feeds /gallery/status ----------
+// One small JSON of {sid, s:'ok'|'no', slug?, at}; pruned at 60 days (the
+// submitter's browser stops asking after 30) and hard-capped so it can
+// never grow unbounded. Free-tier discipline: one object, tiny.
+async function recordVerdict(env, entry) {
+  try {
+    const obj = await env.SHARES.get('gallery-live/verdicts.json');
+    let list = [];
+    if (obj) { try { list = await obj.json(); } catch (e) {} }
+    const cutoff = Date.now() - 60 * 86400000;
+    list = list.filter((v) => v.at > cutoff && v.sid !== entry.sid).slice(-800);
+    list.push(entry);
+    await env.SHARES.put('gallery-live/verdicts.json', JSON.stringify(list), {
+      httpMetadata: { contentType: 'application/json' },
+    });
+  } catch (e) {}
+}
+
+// ---------- GET /gallery/status?ids=sid1,sid2 — public, the pass polls it ----
+// Absent from the ledger = still pending (the client treats no-answer as
+// "the banana guy hasn't gotten to it yet"). Ids are unguessable client
+// randoms, so this leaks nothing.
+async function handleGalleryStatus(env, url) {
+  const ids = String(url.searchParams.get('ids') || '')
+    .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s)).slice(0, 20);
+  const out = {};
+  if (ids.length) {
+    const obj = await env.SHARES.get('gallery-live/verdicts.json');
+    let list = [];
+    if (obj) { try { list = await obj.json(); } catch (e) {} }
+    for (const v of list) {
+      if (ids.includes(v.sid)) out[v.sid] = { s: v.s, slug: v.slug || '' };
+    }
+  }
+  return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
 }
 
 // ---------- POST /gallery/edit?key= — retag/retitle an already-LIVE item ----------
