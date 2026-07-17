@@ -172,6 +172,11 @@ const appSchema = {
     @media (hover: none) { .bb-trayarrow { display: none; } }
     /* item count on the slot label — the browse signal at a glance */
     .bb-count { font-weight: 800; font-size: 0.72rem; opacity: 0.55; margin-left: 0.3rem; }
+    /* captions + dance speed side by side; an OPEN captions fold needs the
+       full width for its inputs, so it spans and the speed row wraps under */
+    .bb-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
+    .bb-duo > details[open] { grid-column: 1 / -1; }
+    .bb-row--speed { min-width: 0; }
     .bb-row label { display: flex; align-items: center; }
     .bb-seeall {
       margin-left: auto; border: 2px solid var(--ink); background: var(--paper);
@@ -480,19 +485,6 @@ const appSchema = {
           <label>Background</label>
           <div class="bb-swatches" id="bbSwatches"></div>
         </div>
-        <details class="px-fold" id="bbCaptionsFold">
-          <summary>Add captions</summary>
-          <div class="px-fold__body">
-            <div class="bb-row">
-              <label for="bbTopText">Top caption</label>
-              <input class="bb-input" id="bbTopText" maxlength="40" placeholder="e.g. HELLO YES">
-            </div>
-            <div class="bb-row">
-              <label for="bbBottomText">Bottom caption</label>
-              <input class="bb-input" id="bbBottomText" maxlength="40" placeholder="e.g. IT'S THE BANANA GUY">
-            </div>
-          </div>
-        </details>
         <div class="bb-row">
           <label>Shades</label>
           <div class="bb-chips" id="bbGlassesChips"></div>
@@ -517,10 +509,27 @@ const appSchema = {
           <label>Effects</label>
           <div class="bb-chips" id="bbEffectChips"></div>
         </div>
-        <div class="bb-row">
-          <label for="bbSpeed">Dance speed</label>
-          <input class="bb-slider" type="range" id="bbSpeed" min="0.35" max="1.6" step="0.05" value="1.15">
-          <div class="bb-speedends" aria-hidden="true"><span>chill</span><span>banana overdrive <PixelIcon name="bolt" /></span></div>
+        <!-- captions + speed share a row (Trym's call); an OPEN captions fold
+             takes the full width so its inputs get room, speed drops below -->
+        <div class="bb-duo">
+          <details class="px-fold" id="bbCaptionsFold">
+            <summary>Add captions</summary>
+            <div class="px-fold__body">
+              <div class="bb-row">
+                <label for="bbTopText">Top caption</label>
+                <input class="bb-input" id="bbTopText" maxlength="40" placeholder="e.g. HELLO YES">
+              </div>
+              <div class="bb-row">
+                <label for="bbBottomText">Bottom caption</label>
+                <input class="bb-input" id="bbBottomText" maxlength="40" placeholder="e.g. IT'S THE BANANA GUY">
+              </div>
+            </div>
+          </details>
+          <div class="bb-row bb-row--speed">
+            <label for="bbSpeed">Dance speed</label>
+            <input class="bb-slider" type="range" id="bbSpeed" min="0.35" max="1.6" step="0.05" value="1.15">
+            <div class="bb-speedends" aria-hidden="true"><span>chill</span><span>banana overdrive <PixelIcon name="bolt" /></span></div>
+          </div>
         </div>
         <div class="bb-toprow">
           <button class="btn btn--light bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
