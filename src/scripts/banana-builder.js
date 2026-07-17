@@ -24,10 +24,10 @@ const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
 // state.extras like other extras (so the outfit shape / URL / bb-last / worker
 // are all unchanged) but the builder + engine keep it mutually exclusive.
-const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly);
+const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly && !d.preview);
 // the NECK zone: chest-anchored neckwear (bow tie, ties, chains, scarves…) —
 // mutually exclusive in the builder, same single-select pattern as the feet
-const NECK_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'neck' && !d.raveOnly);
+const NECK_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'neck' && !d.raveOnly && !d.preview);
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -115,6 +115,7 @@ function init() {
   // extras = independent toggles, not a single-choice row (the art is the button)
   EXTRA_DEFS.forEach((d) => {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
+    if (d.preview) return; // review candidates live on /dev-wearables/ only
     if (d.anchor === 'feet') return; // shoes get their own single-select row below
     if (d.zone === 'neck') return; // neckwear too — one thing on the neck at a time
     const art = SVG[d.front || d.art];

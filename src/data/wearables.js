@@ -39,6 +39,12 @@ export const WEARABLE_PACKS = {
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },
       { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
       { id: 'sombrero', label: 'Sombrero', phrase: 'a big sombrero', art: 'sombrero', seat: -1 },
+      // ⏳ PREVIEW BATCH (17 Jul) — visible only on /dev-wearables/ until Trym
+      // approves; ship an item by deleting its preview flag (+ worker EXTRA_IDS
+      // for extras, then Trym redeploys worker-rave)
+      { id: 'halo', label: 'Halo', phrase: 'a golden halo', art: 'halo', seat: -1, preview: true },
+      { id: 'beanieprop', label: 'Propeller beanie', phrase: 'a propeller beanie', art: 'beanieprop', seat: -1, preview: true },
+      { id: 'backwardscap', label: 'Backwards cap', phrase: 'a backwards cap', art: 'backwardscap', seat: -1, preview: true },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -47,6 +53,7 @@ export const WEARABLE_PACKS = {
       { id: 'visor',  label: 'Visor',        phrase: 'a visor',               front: 'visorFront',  side: 'visorSide'  },
       { id: 'threed', label: '3D', phrase: '3D glasses', front: 'threedFront', side: 'threedSide' },
       { id: 'potter', label: 'Rounds', phrase: 'round wizard glasses', front: 'potterFront', side: 'potterSide' },
+      { id: 'nerd', label: 'Nerd glasses', phrase: 'taped nerd glasses', front: 'nerdFront', side: 'nerdSide', preview: true },
     ],
     // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
     // left-facing frames), the CHEST (per-frame btCx body centre + dy), or a
@@ -59,6 +66,9 @@ export const WEARABLE_PACKS = {
       // as a mutually-exclusive group (zone is UI grouping only; the engine
       // keeps drawing via the chest anchor + per-item dy).
       { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', zone: 'neck', dy: 9.5, art: 'bowtie' },
+      { id: 'necktie',  label: 'Necktie',   phrase: 'a red necktie',    anchor: 'chest', zone: 'neck', dy: 10.5, art: 'necktie', preview: true },
+      { id: 'goldchain', label: 'Gold chain', phrase: 'a gold chain',   anchor: 'chest', zone: 'neck', dy: 9.0, art: 'goldchain', preview: true },
+      { id: 'scarf',    label: 'Scarf',     phrase: 'a cosy red scarf', anchor: 'chest', zone: 'neck', dy: 8.5, art: 'scarf', preview: true },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
@@ -66,7 +76,11 @@ export const WEARABLE_PACKS = {
       { id: 'sneakersgold', label: 'Gold sneakers', phrase: 'gold sneakers', anchor: 'feet', art: 'sneakersgold' },
       { id: 'skates', label: 'Roller skates', phrase: 'roller skates', anchor: 'feet', art: 'skates' },
       { id: 'clownshoes', label: 'Clown shoes', phrase: 'big clown shoes', anchor: 'feet', art: 'clownshoes' },
+      { id: 'cowboyboots', label: 'Cowboy boots', phrase: 'cowboy boots', anchor: 'feet', art: 'cowboyboots', preview: true },
+      { id: 'discoboots', label: 'Disco boots', phrase: 'silver disco boots', anchor: 'feet', art: 'discoboots', preview: true },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
+      { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 3.5, art: 'mug', preview: true },
+      { id: 'tinybanana', label: 'Tiny banana', phrase: 'a tiny banana of its own', anchor: 'hand', hand: 'right', grip: 3, art: 'tinybanana', preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the

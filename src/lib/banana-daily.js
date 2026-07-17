@@ -23,12 +23,13 @@ function packActive(pack, date) {
 function pools(date) {
   const active = Object.values(WEARABLE_PACKS).filter((p) => packActive(p, date));
   const pair = (x) => [x.id, x.phrase];
+  const live = (x) => !x.preview; // preview-flagged candidates never go public
   return {
-    hats: [['none', 'no hat'], ...active.flatMap((p) => (p.hats || []).map(pair))],
-    shades: [['none', 'no shades'], ...active.flatMap((p) => (p.shades || []).map(pair))],
+    hats: [['none', 'no hat'], ...active.flatMap((p) => (p.hats || []).filter(live).map(pair))],
+    shades: [['none', 'no shades'], ...active.flatMap((p) => (p.shades || []).filter(live).map(pair))],
     // the daily only wears freely-available extras (never earned trophies, rave-granted
     // items, or FEET overlays — the daily keeps its own baked-in shoes)
-    extras: active.flatMap((p) => (p.extras || []).filter((e) => !e.earned && !e.raveOnly && e.anchor !== 'feet').map(pair)),
+    extras: active.flatMap((p) => (p.extras || []).filter((e) => live(e) && !e.earned && !e.raveOnly && e.anchor !== 'feet').map(pair)),
   };
 }
 

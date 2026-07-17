@@ -1,0 +1,76 @@
+---
+// 🧪 WEARABLES REVIEW — Trym's approval desk for new items. Lists every
+// preview-flagged wearable: the sprite by itself + the dancing banana wearing
+// it, side by side (his call: "a long list, item by itself, and on the banana
+// so i can compare"). Unlinked + noindex + absent from the sitemap allowlist.
+// Approve an item = delete its `preview` flag in src/data/wearables.js.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { WEARABLE_PACKS } from '../data/wearables.js';
+
+const packs = Object.values(WEARABLE_PACKS);
+const rows = [];
+packs.forEach((p) => {
+  (p.hats || []).filter((d) => d.preview).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'hat', zone: 'Hat', art: d.art }));
+  (p.shades || []).filter((d) => d.preview).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'glasses', zone: 'Shades', art: d.front }));
+  (p.extras || []).filter((d) => d.preview).forEach((d) => rows.push({
+    id: d.id, label: d.label, slot: 'extra',
+    zone: d.zone === 'neck' ? 'Neck' : d.anchor === 'feet' ? 'Shoes' : d.anchor === 'hand' ? `Hand (${d.hand})` : 'Extra',
+    art: d.front || d.art,
+  }));
+});
+---
+<BaseLayout title="🧪 Wearables review" description="Internal review desk." showFooter={false}>
+  <meta name="robots" content="noindex" slot="head" />
+  <style is:inline slot="head">
+    .dw-wrap { max-width: 760px; margin: 0 auto; padding: 1.6rem 1rem 4rem; }
+    .dw-wrap h1 { margin: 0 0 0.2rem; }
+    .dw-sub { opacity: 0.7; margin: 0 0 1.4rem; font-size: 0.9rem; }
+    .dw-row {
+      display: flex; gap: 1rem; align-items: center;
+      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.9rem; margin-bottom: 1rem;
+    }
+    .dw-sprite {
+      flex: 0 0 150px; height: 150px; border: 3px solid var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 18px 18px;
+    }
+    .dw-sprite svg { max-width: 84%; max-height: 84%; width: auto; height: auto; image-rendering: pixelated; }
+    .dw-banana { flex: 0 0 170px; height: 170px; border: 3px solid var(--ink); background: #fff; }
+    .dw-banana canvas { width: 100%; height: 100%; display: block; }
+    .dw-meta { flex: 1; min-width: 0; }
+    .dw-meta h2 { margin: 0 0 0.15rem; font-size: 1.05rem; }
+    .dw-meta .dw-zone {
+      display: inline-block; border: 2px solid var(--ink); background: var(--banana);
+      font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 0.12rem 0.45rem; transform: rotate(-1deg);
+    }
+    .dw-meta code { font-size: 0.72rem; opacity: 0.6; display: block; margin-top: 0.35rem; }
+    @media (max-width: 560px) {
+      .dw-row { flex-wrap: wrap; }
+      .dw-sprite, .dw-banana { flex: 1 1 45%; }
+      .dw-meta { flex-basis: 100%; }
+    }
+  </style>
+
+  <div class="dw-wrap">
+    <h1>🧪 wearables review</h1>
+    <p class="dw-sub">{rows.length} candidates awaiting the banana guy's verdict — item alone, and on the banana. Approve = the preview flag comes off.</p>
+    {rows.map((r) => (
+      <article class="dw-row" data-id={r.id} data-slot={r.slot} data-art={r.art}>
+        <div class="dw-sprite" aria-label={`${r.label} sprite`}></div>
+        <div class="dw-banana"><canvas width="200" height="200" aria-label={`Banana wearing ${r.label}`}></canvas></div>
+        <div class="dw-meta">
+          <h2>{r.label}</h2>
+          <span class="dw-zone">{r.zone}</span>
+          <code>id: {r.id}</code>
+        </div>
+      </article>
+    ))}
+    {rows.length === 0 && <p><strong>No candidates in preview.</strong> Add items with <code>preview: true</code> to wearables.js.</p>}
+  </div>
+
+  <script>
+    import '../scripts/dev-wearables.js';
+  </script>
+</BaseLayout>
