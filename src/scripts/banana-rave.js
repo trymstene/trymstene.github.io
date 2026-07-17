@@ -401,6 +401,12 @@ function init() {
     cv.style.width = size + 'px'; cv.style.height = size + 'px';
     wrap.appendChild(cv);
     // no YOU tag — the glow marks you, and the first step confirms it (Trym's call)
+    // tap/click ANOTHER banana = lock onto it for the food fight (stopProp so
+    // it doesn't also read as a walk order); your own banana isn't a target
+    if (!isMe) {
+      wrap.style.cursor = 'crosshair';
+      wrap.addEventListener('click', (e) => { e.stopPropagation(); setTarget(p.id); });
+    }
     world.appendChild(wrap);
     ravers.set(p.id, { ...p, wrap, cv, x, y, size });
     if (p.stage) setStage(p.id, true);
@@ -668,6 +674,7 @@ function init() {
   function dropRaver(id) {
     const r = ravers.get(id);
     if (!r) return;
+    if (id === lockId) clearTarget(); // your target left the floor
     if (!r.stage) poofAt(r.x, r.y, (r.size || 90) / 74); // gone in a puff, not a blink
     r.wrap.remove();
     ravers.delete(id);
@@ -1191,15 +1198,15 @@ function init() {
   let bartyDuckAt = 0;
   const scatterPellets = []; // splat spill — standalone mini-pellets, self-ticked
 
-  const NADE_SVG = '<svg viewBox="0 0 9 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="2" y="0" width="5" height="1" fill="#fffdf5"/><rect x="2" y="8" width="5" height="1" fill="#fffdf5"/>'
-    + '<rect x="0" y="2" width="1" height="5" fill="#fffdf5"/><rect x="8" y="2" width="1" height="5" fill="#fffdf5"/>'
-    + '<rect x="1" y="1" width="1" height="1" fill="#fffdf5"/><rect x="7" y="1" width="1" height="1" fill="#fffdf5"/>'
-    + '<rect x="1" y="7" width="1" height="1" fill="#fffdf5"/><rect x="7" y="7" width="1" height="1" fill="#fffdf5"/>'
-    + '<rect x="1" y="2" width="7" height="5" fill="#16121f"/><rect x="2" y="1" width="5" height="7" fill="#16121f"/>'
-    + '<rect x="4" y="2" width="2" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="3" fill="#ffe135"/>'
-    + '<rect x="5" y="6" width="1" height="1" fill="#ffe135"/><rect x="3" y="6" width="2" height="1" fill="#ffe135"/>'
-    + '<rect x="3" y="2" width="1" height="1" fill="#111111"/></svg>';
+  // the shot = a tiny curved banana, the SAME crescent that rains from the
+  // golden banana (Trym: "like the bananas in the banana rain"), glowing
+  const NADE_SVG = '<svg viewBox="0 0 10 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="2" y="0" width="1" height="1" fill="#7a4a21"/><rect x="8" y="0" width="1" height="1" fill="#fff6c8"/>'
+    + '<rect x="2" y="1" width="1" height="1" fill="#ffd23f"/><rect x="8" y="1" width="1" height="1" fill="#ffd23f"/>'
+    + '<rect x="2" y="2" width="2" height="1" fill="#ffd23f"/><rect x="7" y="2" width="2" height="1" fill="#ffd23f"/>'
+    + '<rect x="3" y="3" width="2" height="1" fill="#ffd23f"/><rect x="6" y="3" width="3" height="1" fill="#ffd23f"/>'
+    + '<rect x="3" y="4" width="1" height="1" fill="#e6a817"/><rect x="4" y="4" width="4" height="1" fill="#ffd23f"/><rect x="8" y="4" width="1" height="1" fill="#e6a817"/>'
+    + '<rect x="4" y="5" width="1" height="1" fill="#e6a817"/><rect x="5" y="5" width="2" height="1" fill="#ffd23f"/><rect x="7" y="5" width="1" height="1" fill="#e6a817"/></svg>';
   const SPLATSTAR_SVG = '<svg viewBox="0 0 13 13" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="6" y="0" width="1" height="3" fill="#fffdf5"/><rect x="6" y="10" width="1" height="3" fill="#fffdf5"/>'
     + '<rect x="0" y="6" width="3" height="1" fill="#fffdf5"/><rect x="10" y="6" width="3" height="1" fill="#fffdf5"/>'
@@ -1216,7 +1223,7 @@ function init() {
     world.appendChild(el2);
     nades.set('n' + (nadeSeq++), {
       el: el2, x, y: y - 5, by,
-      vx: Math.cos(angle) * NADE_SPEED, vy: Math.sin(angle) * NADE_SPEED * 0.35, // mostly flat throws
+      vx: Math.cos(angle) * NADE_SPEED, vy: Math.sin(angle) * NADE_SPEED,
       dist: 0,
     });
   }
@@ -1266,6 +1273,29 @@ function init() {
     }
   }
 
+  // ---- lock-on targeting (Trym's brief: tap a banana to lock a weak green
+  // square around it, then just keep hitting fire while you move + dodge +
+  // grab jelly — no need to aim each shot by hand) ----
+  let lockId = null;
+  function clearTarget() {
+    if (lockId) {
+      const r = ravers.get(lockId);
+      if (r && r.lockEl) { r.lockEl.remove(); r.lockEl = null; }
+    }
+    lockId = null;
+  }
+  function setTarget(id) {
+    if (id === myId) return;
+    if (id === lockId) { clearTarget(); return; } // tap the locked one again = unlock
+    clearTarget();
+    const r = ravers.get(id);
+    if (!r) return;
+    lockId = id;
+    r.lockEl = document.createElement('div');
+    r.lockEl.className = 'rv-lock';
+    r.wrap.appendChild(r.lockEl);
+  }
+
   function fireNade() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage || tourActive) return;
@@ -1273,8 +1303,13 @@ function init() {
     if (now - lastShotAt < SHOT_CD) return;
     lastShotAt = now;
     graceUntil = 0; // opening fire ends your newcomer shield — fair's fair
-    const facing = me.facing || 1;
-    const a = (facing > 0 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.62; // ±18° of honest incompetence
+    // aim at the LOCKED target if you have one (they're on the floor); else
+    // just fling the way you're facing. Either way ±18° keeps it silly.
+    let base;
+    const tgt = lockId && ravers.get(lockId);
+    if (tgt && !tgt.stage) base = Math.atan2(tgt.y - me.y, tgt.x - me.x);
+    else base = (me.facing || 1) > 0 ? 0 : Math.PI;
+    const a = base + (Math.random() - 0.5) * 0.62; // ±18° of honest incompetence
     spawnNade(myId, me.x, me.y, a);
     if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'shot', a: +a.toFixed(3) }));
     // throw recoil — a quick pop so firing FEELS like firing
@@ -2909,6 +2944,7 @@ function init() {
 
   // ---- emotes ----
   document.querySelectorAll('.rv-emote-btn').forEach((b) => {
+    if (!b.dataset.emote) return; // the throw button shares the class for LOOK, not emote behaviour
     b.addEventListener('click', () => {
       const k = b.dataset.emote;
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'emote', k }));
@@ -3053,7 +3089,6 @@ function init() {
     { id: 'left', teach: '📢 LEFT WALL — GO GO GO!', short: '📢 LEFT WALL!', secs: 10, zone: (me) => me.x < 18 },
     { id: 'right', teach: '📢 RIGHT WALL — MOVE IT!', short: '📢 RIGHT WALL!', secs: 10, zone: (me) => me.x > 82 },
     { id: 'heart', teach: 'GIVE US A ❤ — TAP HERE!', short: '❤ — TAP!', secs: 8, emote: 'heart' },
-    { id: 'nana', teach: 'GIVE US A 🍌 — TAP HERE!', short: '🍌 — TAP!', secs: 8, emote: 'banana' },
     { id: 'clap', teach: 'A ROUND OF APPLAUSE — TAP HERE!', short: '👏 — TAP!', secs: 8, emote: 'confetti' },
     { id: 'spin', teach: 'SPIN FOR ME — ONE FULL CIRCLE!', short: 'SPIN!', secs: 10 },
     { id: 'run', teach: 'RUN IT OUT — CROSS THAT FLOOR!', short: 'RUN IT OUT!', secs: 10 },
