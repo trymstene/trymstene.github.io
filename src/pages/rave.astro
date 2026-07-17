@@ -971,38 +971,50 @@ const GUIDE = [
     }
     .rv-nade svg { width: 100%; height: 100%; filter: drop-shadow(0 0 3px #ffe135) drop-shadow(0 0 2px #fff6c8); animation: rvNadeSpin 0.5s linear infinite; }
     @keyframes rvNadeSpin { to { transform: rotate(360deg); } }
-    /* 🎯 the weak green target lock — surrounds the banana, follows it (child
-       of the raver wrap, so its left/top glide comes for free) */
-    .rv-lock {
-      position: absolute; inset: -8px; pointer-events: none; z-index: 200;
-      border: 2px solid rgba(88, 220, 120, 0.75); box-shadow: 0 0 7px rgba(88, 220, 120, 0.45);
-      animation: rvLockPulse 1.1s ease-in-out infinite;
+    /* the landing poof — a quick pixel pop, gone (no litter) */
+    .rv-nadepop { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; z-index: 340; pointer-events: none; }
+    .rv-nadepop svg { width: 100%; height: 100%; animation: rvNadePop 0.35s ease-out forwards; }
+    @keyframes rvNadePop { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+    /* 🎯 the target lock — four green CORNER brackets that breathe in/out
+       around the banana (subtle but clearly "locked"); child of the raver
+       wrap so it glides with them for free */
+    .rv-lock { position: absolute; inset: -3px; pointer-events: none; z-index: 200; animation: rvLockBreathe 1.5s ease-in-out infinite; }
+    .rv-lock i { position: absolute; width: 7px; height: 7px; border: 2px solid rgba(90, 224, 122, 0.85); }
+    .rv-lock i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+    .rv-lock i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+    .rv-lock i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+    .rv-lock i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+    @keyframes rvLockBreathe { 0%, 100% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.04); opacity: 1; } }
+    /* the banana splash on a splat */
+    .rv-splash { position: absolute; width: 58px; height: 58px; margin: -29px 0 0 -29px; z-index: 360; pointer-events: none; }
+    .rv-splash svg { width: 100%; height: 100%; animation: rvSplashPop 0.46s ease-out forwards; }
+    @keyframes rvSplashPop { 0% { transform: scale(0.35); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+    /* MY hit landed — a yellow confirm ring (did I hit? YES) */
+    .rv-hitring {
+      position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; z-index: 362;
+      border: 3px solid #ffe135; border-radius: 50%; pointer-events: none;
+      box-shadow: 0 0 8px rgba(255, 225, 53, 0.7);
+      animation: rvHitRing 0.5s ease-out forwards;
     }
-    @keyframes rvLockPulse { 50% { border-color: rgba(88, 220, 120, 0.32); box-shadow: 0 0 3px rgba(88, 220, 120, 0.25); } }
-    .rv-peeldecal {
-      position: absolute; z-index: 140; font-size: 14px; pointer-events: none;
-      transform: translate(-50%, -50%) rotate(80deg); animation: rvPeelFade 1.6s ease-out forwards;
+    @keyframes rvHitRing { 0% { transform: scale(0.35); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+    /* floating combat number, red '-N' (gaming-style) */
+    .rv-dmg {
+      position: absolute; transform: translate(-50%, 0); z-index: 363; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: #ff4747;
+      -webkit-text-stroke: 3px #16121f; paint-order: stroke fill; white-space: nowrap;
+      animation: rvDmg 1s ease-out forwards;
     }
-    @keyframes rvPeelFade { 70% { opacity: 0.9; } 100% { opacity: 0; } }
-    .rv-splatstar {
-      position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px;
-      z-index: 360; pointer-events: none; animation: rvSplatPop 0.5s ease-out forwards;
+    @keyframes rvDmg {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+      16% { opacity: 1; transform: translate(-50%, -4px) scale(1.18); }
+      100% { opacity: 0; transform: translate(-50%, -26px) scale(1); }
     }
-    .rv-splatstar svg { width: 100%; height: 100%; }
-    @keyframes rvSplatPop { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
-    .rv-splattext {
-      position: absolute; transform: translate(-50%, 0); z-index: 361; pointer-events: none;
-      font-family: "Archivo Black", sans-serif; font-size: 1.05rem; color: #ff4d6d;
-      -webkit-text-stroke: 4px #fffdf5; paint-order: stroke fill;
-      animation: rvSplatText 1.4s ease-out forwards;
-    }
-    @keyframes rvSplatText { 0% { transform: translate(-50%, 0) scale(0.6); } 18% { transform: translate(-50%, -4px) scale(1.25); } 100% { transform: translate(-50%, -26px) scale(1); opacity: 0; } }
     .rv-hitwiggle { animation: rvHitW 0.5s ease-out; }
     @keyframes rvHitW { 0% { rotate: 0deg; } 20% { rotate: -14deg; } 45% { rotate: 11deg; } 70% { rotate: -6deg; } 100% { rotate: 0deg; } }
     .rv-throwpop { animation: rvThrowP 0.25s ease-out; }
     @keyframes rvThrowP { 40% { scale: 1.12; } 100% { scale: 1; } }
     @media (prefers-reduced-motion: reduce) {
-      .rv-nade svg, .rv-splatstar, .rv-splattext, .rv-hitwiggle, .rv-throwpop { animation-duration: 0.01s; }
+      .rv-nade svg, .rv-splash svg, .rv-nadepop svg, .rv-hitring, .rv-dmg, .rv-hitwiggle, .rv-throwpop, .rv-lock { animation-duration: 0.01s; }
     }
     .rv-stage-btn {
       background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;

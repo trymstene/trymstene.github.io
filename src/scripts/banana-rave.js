@@ -1207,12 +1207,20 @@ function init() {
     + '<rect x="3" y="3" width="2" height="1" fill="#ffd23f"/><rect x="6" y="3" width="3" height="1" fill="#ffd23f"/>'
     + '<rect x="3" y="4" width="1" height="1" fill="#e6a817"/><rect x="4" y="4" width="4" height="1" fill="#ffd23f"/><rect x="8" y="4" width="1" height="1" fill="#e6a817"/>'
     + '<rect x="4" y="5" width="1" height="1" fill="#e6a817"/><rect x="5" y="5" width="2" height="1" fill="#ffd23f"/><rect x="7" y="5" width="1" height="1" fill="#e6a817"/></svg>';
-  const SPLATSTAR_SVG = '<svg viewBox="0 0 13 13" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="6" y="0" width="1" height="3" fill="#fffdf5"/><rect x="6" y="10" width="1" height="3" fill="#fffdf5"/>'
-    + '<rect x="0" y="6" width="3" height="1" fill="#fffdf5"/><rect x="10" y="6" width="3" height="1" fill="#fffdf5"/>'
-    + '<rect x="2" y="2" width="2" height="2" fill="#ffe135"/><rect x="9" y="2" width="2" height="2" fill="#ffe135"/>'
-    + '<rect x="2" y="9" width="2" height="2" fill="#ffe135"/><rect x="9" y="9" width="2" height="2" fill="#ffe135"/>'
-    + '<rect x="5" y="5" width="3" height="3" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#ff9e2c"/></svg>';
+  // the banana SPLASH — yellow bits flying out (not a white star); reads as
+  // "splatted with a banana", cuts through the floor noise
+  const SPLASH_SVG = '<svg viewBox="0 0 13 13" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="5" y="5" width="3" height="3" fill="#ffd23f"/><rect x="6" y="6" width="1" height="1" fill="#e6a817"/>'
+    + '<rect x="6" y="0" width="1" height="2" fill="#ffe135"/><rect x="6" y="11" width="1" height="2" fill="#ffe135"/>'
+    + '<rect x="0" y="6" width="2" height="1" fill="#ffe135"/><rect x="11" y="6" width="2" height="1" fill="#ffe135"/>'
+    + '<rect x="2" y="2" width="1" height="1" fill="#ffe135"/><rect x="10" y="2" width="1" height="1" fill="#ffe135"/>'
+    + '<rect x="2" y="10" width="1" height="1" fill="#ffe135"/><rect x="10" y="10" width="1" height="1" fill="#ffe135"/>'
+    + '<rect x="4" y="1" width="1" height="1" fill="#e6a817"/><rect x="8" y="11" width="1" height="1" fill="#e6a817"/></svg>';
+  // the landing poof — a few yellow specks, no stock emoji (Trym's note)
+  const POP_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="0" y="3" width="1" height="1" fill="#ffd23f"/>'
+    + '<rect x="7" y="4" width="1" height="1" fill="#ffd23f"/><rect x="4" y="7" width="1" height="1" fill="#ffe135"/>'
+    + '<rect x="3" y="3" width="2" height="2" fill="#ffd23f"/></svg>';
 
   function spawnNade(by, x, y, angle) {
     const el2 = document.createElement('div');
@@ -1228,36 +1236,55 @@ function init() {
     });
   }
 
-  function peelDecal(x, y) {
+  // the shot just POOFS on landing/miss — no litter left behind
+  function popNade(x, y) {
     const d = document.createElement('div');
-    d.className = 'rv-peeldecal';
-    d.textContent = '🍌';
+    d.className = 'rv-nadepop';
+    d.innerHTML = POP_SVG;
     d.style.left = x + '%';
     d.style.top = y + '%';
     world.appendChild(d);
-    setTimeout(() => d.remove(), 1600);
+    setTimeout(() => d.remove(), 350);
   }
 
-  function splatFx(r) {
-    // CUT-THROUGH kit (Trym: must read through floor noise): white-ring star
-    // burst + red SPLAT! floater + a stagger wiggle on the banana itself
+  // a floating combat number, gaming-style (red '-N' by default)
+  function floatNum(x, y, txt, cls) {
+    const d = document.createElement('div');
+    d.className = 'rv-dmg' + (cls ? ' ' + cls : '');
+    d.textContent = txt;
+    d.style.left = x + '%';
+    d.style.top = Math.max(topClamp, y - 8) + '%';
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 1000);
+  }
+
+  // opts: { n: jelly knocked loose, byMe: I fired the shot that landed }
+  function splatFx(r, opts) {
+    opts = opts || {};
     const s = document.createElement('div');
-    s.className = 'rv-splatstar';
-    s.innerHTML = SPLATSTAR_SVG;
+    s.className = 'rv-splash';
+    s.innerHTML = SPLASH_SVG;
     s.style.left = r.x + '%';
     s.style.top = (r.y - 4) + '%';
     world.appendChild(s);
-    setTimeout(() => s.remove(), 500);
-    const f = document.createElement('div');
-    f.className = 'rv-splattext';
-    f.textContent = 'SPLAT!';
-    f.style.left = r.x + '%';
-    f.style.top = Math.max(topClamp, r.y - 10) + '%';
-    world.appendChild(f);
-    setTimeout(() => f.remove(), 1400);
+    setTimeout(() => s.remove(), 460);
+    // the stagger wiggle on the banana (rotate property — composes with the
+    // walk-flip, and is NOT a canvas filter, per the iOS doctrine)
     r.cv.classList.remove('rv-hitwiggle');
     void r.cv.offsetWidth;
     r.cv.classList.add('rv-hitwiggle');
+    // the damage number — everyone sees what the victim lost (standard game
+    // feel); nothing shows if they were broke (nothing to knock loose)
+    if (opts.n > 0) floatNum(r.x, r.y - 6, '-' + opts.n);
+    // MY hit landed → a yellow confirm ring pops on the victim (did I hit? YES)
+    if (opts.byMe) {
+      const ring = document.createElement('div');
+      ring.className = 'rv-hitring';
+      ring.style.left = r.x + '%';
+      ring.style.top = (r.y - 4) + '%';
+      world.appendChild(ring);
+      setTimeout(() => ring.remove(), 500);
+    }
   }
 
   function scatterSpill(x, y, n, seed) {
@@ -1293,6 +1320,7 @@ function init() {
     lockId = id;
     r.lockEl = document.createElement('div');
     r.lockEl.className = 'rv-lock';
+    r.lockEl.innerHTML = '<i></i><i></i><i></i><i></i>'; // 4 corner brackets, not a full square
     r.wrap.appendChild(r.lockEl);
   }
 
@@ -1331,7 +1359,7 @@ function init() {
     const loss = Math.min(tonight.jelly, 2 + (Math.random() < 0.4 ? 1 : 0));
     tonight.jelly -= loss;
     const seed = (Date.now() ^ (nadeSeq * 2654435761)) >>> 0;
-    splatFx(me);
+    splatFx(me, { n: loss }); // I'm the victim — see my own -N, no self hit-ring
     if (loss > 0) scatterSpill(me.x, me.y, loss, seed);
     refreshStats();
     passStat('splatted');
@@ -1352,7 +1380,7 @@ function init() {
       // Barty HATES this (solo players get a target: the bar)
       if (insideBar(n.x, n.y + 5)) {
         n.el.remove(); nades.delete(key);
-        peelDecal(n.x, n.y + 5);
+        popNade(n.x, n.y + 5);
         if (now - bartyDuckAt > 9000) {
           bartyDuckAt = now;
           showBubble('🤠 HEY! who is throwing PRODUCE in my club?!', false, 3500);
@@ -1367,7 +1395,7 @@ function init() {
       }
       if (grounded) {
         n.el.remove(); nades.delete(key);
-        peelDecal(n.x, Math.min(n.y + 5, 90));
+        popNade(n.x, Math.min(n.y + 5, 90));
       }
     }
     // the spill: collectible by proximity, 25s shelf life
@@ -2231,13 +2259,10 @@ function init() {
       else if (m.t === 'splat') {
         const r = ravers.get(m.id);
         if (r && m.id !== myId) {
-          splatFx(r);
+          const byMe = m.by === myId;
+          splatFx(r, { n: m.n, byMe }); // splash + -N + (if I shot them) the hit-ring
           if (m.n > 0) scatterSpill(r.x, r.y, Math.min(3, m.n), m.s >>> 0);
-        }
-        if (m.by === myId && m.id !== myId) {
-          const me2 = ravers.get(myId);
-          if (me2) floatPlus(me2.x, me2.y - 10, 'DIRECT HIT! 🎯');
-          passStat('splats');
+          if (byMe) passStat('splats');
         }
       }
       else if (m.t === 'move') {
