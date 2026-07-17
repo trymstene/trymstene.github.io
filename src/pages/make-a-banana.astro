@@ -172,11 +172,17 @@ const appSchema = {
     @media (hover: none) { .bb-trayarrow { display: none; } }
     /* item count on the slot label — the browse signal at a glance */
     .bb-count { font-weight: 800; font-size: 0.72rem; opacity: 0.55; margin-left: 0.3rem; }
-    /* captions + dance speed side by side; an OPEN captions fold needs the
-       full width for its inputs, so it spans and the speed row wraps under */
-    .bb-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
+    /* captions + speed side by side (vertically centred); an OPEN captions
+       fold needs the full width for its inputs, so BOTH span — captions on
+       top, speed full-width under, where the overdrive label returns too */
+    .bb-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem; align-items: center; }
     .bb-duo > details[open] { grid-column: 1 / -1; }
+    .bb-duo > details[open] + .bb-row--speed { grid-column: 1 / -1; }
     .bb-row--speed { min-width: 0; }
+    /* side-by-side is tight: the ⚡ carries the meaning alone; the words come
+       back when the row has full width (captions fold open) */
+    .bb-speedword { display: none; }
+    .bb-duo > details[open] + .bb-row--speed .bb-speedword { display: inline; }
     .bb-row label { display: flex; align-items: center; }
     .bb-seeall {
       margin-left: auto; border: 2px solid var(--ink); background: var(--paper);
@@ -526,9 +532,9 @@ const appSchema = {
             </div>
           </details>
           <div class="bb-row bb-row--speed">
-            <label for="bbSpeed">Dance speed</label>
+            <label for="bbSpeed">Speed</label>
             <input class="bb-slider" type="range" id="bbSpeed" min="0.35" max="1.6" step="0.05" value="1.15">
-            <div class="bb-speedends" aria-hidden="true"><span>chill</span><span>banana overdrive <PixelIcon name="bolt" /></span></div>
+            <div class="bb-speedends" aria-hidden="true"><span>chill</span><span><span class="bb-speedword">banana overdrive </span><PixelIcon name="bolt" /></span></div>
           </div>
         </div>
         <div class="bb-toprow">
