@@ -91,7 +91,7 @@ export const WEARABLE_PACKS = {
       // as the happy-hour traffic-cone grant); open middle so the face shows
       // dy 2 + tall solid art = the rim reaches the eyes and the face vanishes
       // into the cone (Trym: that IS the joke)
-      { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'neck', dy: 2, art: 'coneofshame', preview: true },
+      { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'neck', dy: 3, art: 'coneofshame', preview: true },
       // replaced duckfloatie (yellow-on-yellow, killed round 2)
       { id: 'lifering', label: 'Life ring', phrase: 'a life preserver ring', anchor: 'chest', zone: 'neck', dy: 10, art: 'lifering', preview: true },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
@@ -114,8 +114,8 @@ export const WEARABLE_PACKS = {
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
       { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons' },
       // ⏳ BATCH 3 PREVIEW — hands balanced: chicken/sign right, fish left
-      { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 8, art: 'rubberchicken', preview: true },
-      { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 5, art: 'bigfish', preview: true },
+      { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 10, art: 'rubberchicken', preview: true },
+      { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 7, art: 'bigfish', preview: true },
       // behind: true = drawn BEFORE the banana body (engine behind pass), so
       // the big board rides at head height PEEKING OUT behind the head
       { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 14, art: 'protestsign', behind: true, preview: true },
