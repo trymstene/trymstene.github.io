@@ -86,14 +86,14 @@ export const WEARABLE_PACKS = {
       { id: 'cowboyboots', label: 'Cowboy boots', phrase: 'cowboy boots', anchor: 'feet', art: 'cowboyboots' },
       { id: 'discoboots', label: 'Disco boots', phrase: 'golden disco boots', anchor: 'feet', art: 'discoboots' },
       { id: 'ledsneakers', label: 'LED sneakers', phrase: 'LED sneakers', anchor: 'feet', art: 'ledsneakers', preview: true },
-      { id: 'iceskates', label: 'Ice skates', phrase: 'ice skates', anchor: 'feet', art: 'iceskates', preview: true },
+      { id: 'flamekicks', label: 'Flame kicks', phrase: 'flaming sneakers', anchor: 'feet', art: 'flamekicks', preview: true },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 6, art: 'mug' },
       { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 2, art: 'trophy', preview: true },
-      { id: 'boingball', label: 'Boing Ball', phrase: 'a red-white checkered ball', anchor: 'hand', hand: 'left', grip: 2, art: 'boingball', preview: true },
+      { id: 'boingball', label: 'Boing Ball', phrase: 'a red-white checkered ball', anchor: 'hand', hand: 'left', grip: 4, art: 'boingball', preview: true },
       // id is redballoon, NOT balloon — the rave already owns 'balloon' as an
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
-      { id: 'redballoon', label: 'Balloon', phrase: 'a red balloon', anchor: 'hand', hand: 'right', grip: 11, art: 'balloon', preview: true },
+      { id: 'redballoon', label: 'Balloon', phrase: 'a red balloon', anchor: 'hand', hand: 'right', grip: 15, art: 'balloon', preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
