@@ -44,7 +44,7 @@ export const WEARABLE_PACKS = {
       // for extras, then Trym redeploys worker-rave)
       { id: 'halo', label: 'Halo', phrase: 'a golden halo', art: 'halo', seat: -1, preview: true },
       { id: 'beanieprop', label: 'Propeller beanie', phrase: 'a propeller beanie', art: 'beanieprop', seat: -1, preview: true },
-      { id: 'backwardscap', label: 'Backwards cap', phrase: 'a backwards cap', art: 'backwardscap', seat: -1, preview: true },
+      { id: 'backwardscap', label: 'Backwards cap', phrase: 'a backwards cap', art: 'backwardscap', seat: 0, preview: true },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -66,7 +66,7 @@ export const WEARABLE_PACKS = {
       // as a mutually-exclusive group (zone is UI grouping only; the engine
       // keeps drawing via the chest anchor + per-item dy).
       { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', zone: 'neck', dy: 9.5, art: 'bowtie' },
-      { id: 'necktie',  label: 'Necktie',   phrase: 'a red necktie',    anchor: 'chest', zone: 'neck', dy: 10.5, art: 'necktie', preview: true },
+      { id: 'necktie',  label: 'Necktie',   phrase: 'a blue necktie',   anchor: 'chest', zone: 'neck', dy: 11.5, art: 'necktie', preview: true },
       { id: 'goldchain', label: 'Gold chain', phrase: 'a gold chain',   anchor: 'chest', zone: 'neck', dy: 9.0, art: 'goldchain', preview: true },
       { id: 'scarf',    label: 'Scarf',     phrase: 'a cosy red scarf', anchor: 'chest', zone: 'neck', dy: 8.5, art: 'scarf', preview: true },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
@@ -79,8 +79,7 @@ export const WEARABLE_PACKS = {
       { id: 'cowboyboots', label: 'Cowboy boots', phrase: 'cowboy boots', anchor: 'feet', art: 'cowboyboots', preview: true },
       { id: 'discoboots', label: 'Disco boots', phrase: 'silver disco boots', anchor: 'feet', art: 'discoboots', preview: true },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
-      { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 3.5, art: 'mug', preview: true },
-      { id: 'tinybanana', label: 'Tiny banana', phrase: 'a tiny banana of its own', anchor: 'hand', hand: 'right', grip: 3, art: 'tinybanana', preview: true },
+      { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 6, art: 'mug', preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
