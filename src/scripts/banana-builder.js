@@ -25,6 +25,9 @@ const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // state.extras like other extras (so the outfit shape / URL / bb-last / worker
 // are all unchanged) but the builder + engine keep it mutually exclusive.
 const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly);
+// the NECK zone: chest-anchored neckwear (bow tie, ties, chains, scarves…) —
+// mutually exclusive in the builder, same single-select pattern as the feet
+const NECK_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'neck' && !d.raveOnly);
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -113,6 +116,7 @@ function init() {
   EXTRA_DEFS.forEach((d) => {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
     if (d.anchor === 'feet') return; // shoes get their own single-select row below
+    if (d.zone === 'neck') return; // neckwear too — one thing on the neck at a time
     const art = SVG[d.front || d.art];
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
@@ -147,6 +151,21 @@ function init() {
       b.title = d.label; b.setAttribute('aria-label', d.label);
       b.onclick = () => setFeet(state.extras[d.id] ? null : d.id); // click the active pair = take them off
       el('bbFeetChips').appendChild(b);
+    });
+  }
+
+  // NECK row — same single-select contract as the feet (bow tie OR chain OR
+  // tie, never a pile of neckwear on ten pixels of banana)
+  const setNeck = (id) => { NECK_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
+  if (el('bbNeckChips') && NECK_DEFS.length) {
+    NECK_DEFS.forEach((d) => {
+      const b = document.createElement('button');
+      b.className = 'bb-chip bb-chip--icon';
+      b.innerHTML = SVG[d.front || d.art];
+      b.dataset.neck = d.id;
+      b.title = d.label; b.setAttribute('aria-label', d.label);
+      b.onclick = () => setNeck(state.extras[d.id] ? null : d.id); // click the worn one = take it off
+      el('bbNeckChips').appendChild(b);
     });
   }
 
@@ -203,7 +222,7 @@ function init() {
     window.addEventListener('resize', sync);
     sync();
   }
-  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbNeckChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
 
   // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
   // PROXIES of the tray chips — clicks delegate to the real buttons, so every
@@ -759,6 +778,7 @@ function init() {
     document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
     const anyFeet = FEET_DEFS.some((d) => state.extras[d.id]); // 'none' lights up when no shoe is worn
     document.querySelectorAll('#bbFeetChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
+    document.querySelectorAll('#bbNeckChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.neck])));
     document.querySelectorAll('.bb-frame').forEach((f) => f.setAttribute('aria-pressed', String(parseInt(f.dataset.frame, 10) === state.frame)));
     const pb = el('bbPause');
     pb.innerHTML = state.paused ? ICON_PLAY : ICON_PAUSE;

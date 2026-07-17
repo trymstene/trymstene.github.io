@@ -54,7 +54,11 @@ export const WEARABLE_PACKS = {
     extras: [
       { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
       { id: 'fatstache', label: 'Fat moustache', phrase: 'a fat black moustache', anchor: 'face', dy: 4.0, sideDx: -1.2, front: 'fatstacheFront', side: 'fatstacheSide' },
-      { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', dy: 9.5, art: 'bowtie' },
+      // the NECK zone — chest-anchored items that all fight for the same few
+      // pixels (bow tie, ties, chains, scarves…), so the builder treats them
+      // as a mutually-exclusive group (zone is UI grouping only; the engine
+      // keeps drawing via the chest anchor + per-item dy).
+      { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', zone: 'neck', dy: 9.5, art: 'bowtie' },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
