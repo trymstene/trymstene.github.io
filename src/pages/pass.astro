@@ -36,6 +36,9 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-official canvas#psSig { width: 128px; height: 128px; flex: none; image-rendering: pixelated; }
     .ps-official__meta { min-width: 0; flex: 1; }
     .ps-card__name { font-family: "Archivo Black", sans-serif; font-size: 1.3rem; line-height: 1.15; margin: 0 0 0.15rem; color: var(--ink); overflow-wrap: anywhere; }
+    .ps-nameedit { border: 0; background: none; cursor: pointer; font-size: 0.85rem; opacity: 0.5; padding: 0 0.15rem; margin-left: 0.25rem; vertical-align: middle; }
+    .ps-nameedit:hover, .ps-nameedit:focus-visible { opacity: 1; }
+    #psNameInput { font: inherit; width: 100%; max-width: 300px; background: #fffdf5; border: 3px solid var(--ink); padding: 0.1rem 0.4rem; }
     .ps-card__since { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.75; margin: 0 0 0.5rem; }
     .ps-rankchip { display: inline-block; background: var(--ink); color: var(--banana); font-weight: 800; font-size: 0.78rem; padding: 0.28rem 0.55rem; }
     .ps-rankbar { display: block; height: 7px; background: rgba(17, 17, 17, 0.22); max-width: 220px; margin: 6px 0 3px; }
@@ -183,7 +186,9 @@ const description = 'Your membership card to the banana world: the badges you ha
       <div class="ps-official__body">
         <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
         <div class="ps-official__meta">
-          <p class="ps-card__name" id="psName">Fresh Dancing Banana</p>
+          <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
+            class="ps-nameedit" id="psNameEdit" type="button"
+            title="Write your own name on the pass" aria-label="Write your own name on the pass">✏️</button></p>
           <p class="ps-card__since" id="psSince">member since tonight</p>
           <div id="psRank"></div>
           <div class="ps-card__patches" id="psCardPatches"></div>

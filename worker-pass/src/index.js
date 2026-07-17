@@ -135,6 +135,7 @@ function mergeBlob(oldB, newB) {
     .slice(0, 24);
   if (oldB.glow === '1' || newB.glow === '1') out.glow = '1';
   if (!newB.bbLast && oldB.bbLast) out.bbLast = oldB.bbLast; // a fresh device must never erase the signature banana
+  if (!newB.name && oldB.name) out.name = oldB.name; // …nor the name written on the pass
   return out;
 }
 

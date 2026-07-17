@@ -33,7 +33,7 @@ export function collectBlob() {
   let bbLast = null;
   try { shelf = JSON.parse(g('shelf-v1') || '[]'); } catch (e) {}
   try { bbLast = JSON.parse(g('bb-last') || 'null'); } catch (e) {}
-  return { pass: read(), shelf, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '' };
+  return { pass: read(), shelf, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '', name: (g('ps-name-v1') || '').slice(0, 24) };
 }
 
 let pushT = null;
@@ -78,6 +78,7 @@ export function applyBlob(blob) {
     localStorage.setItem('shelf-v1', JSON.stringify(shelf));
     if (!local.bbLast && blob.bbLast) localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
     if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
+    if (blob.name && !localStorage.getItem('ps-name-v1')) localStorage.setItem('ps-name-v1', String(blob.name).slice(0, 24));
     try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
   } catch (e) {}
 }

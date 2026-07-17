@@ -580,7 +580,12 @@ function init() {
     if (!captionsClean(state)) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
     const row = el('bbSignRow');
     row.hidden = !row.hidden;
-    if (!row.hidden) el('bbSignName').focus();
+    if (!row.hidden) {
+      // continuity: the name written on the pass prefills the byline (still
+      // editable, and it rides Trym's human review gate like any signature)
+      try { if (!el('bbSignName').value) el('bbSignName').value = (localStorage.getItem('ps-name-v1') || '').slice(0, 24); } catch (e) {}
+      el('bbSignName').focus();
+    }
   };
   el('bbSignSend').onclick = async () => {
     sync();

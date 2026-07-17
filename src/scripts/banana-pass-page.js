@@ -6,6 +6,7 @@ import { renderShelf } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
+import { captionsClean } from '../lib/sticker-core.js';
 
 const el = (id) => document.getElementById(id);
 if (el('psSig')) init();
@@ -41,8 +42,47 @@ async function init() {
   const pass = passGet();
   const outfit = signatureOutfit();
 
-  // — the card —
-  el('psName').textContent = autoName(outfit);
+  // — the card: YOUR name if you wrote one, the outfit-name otherwise —
+  // ✏️ free text is fine HERE (Trym: the premium feel of a real pass): it
+  // renders only on this device + the PNG the user shares themselves — no
+  // site surface hosts it, so no moderation burden. The rave keeps its
+  // outfit-names; the no-free-text-on-the-floor doctrine is untouched.
+  const customName = () => { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } };
+  const renderName = () => { el('psName').textContent = customName() || autoName(outfit); };
+  renderName();
+  el('psNameEdit').onclick = () => {
+    if (document.getElementById('psNameInput')) return;
+    const inp = document.createElement('input');
+    inp.id = 'psNameInput';
+    inp.maxLength = 24;
+    inp.value = customName();
+    inp.placeholder = autoName(outfit);
+    inp.setAttribute('aria-label', 'Your name on the pass');
+    el('psName').replaceChildren(inp);
+    inp.focus();
+    let closed = false;
+    const done = (save) => {
+      if (closed) return;
+      if (save) {
+        const v = inp.value.trim().slice(0, 24);
+        if (v && !captionsClean({ top: v })) {
+          passToast('Let’s keep it family friendly 🍌 — try another name');
+          inp.focus();
+          return;
+        }
+        try { if (v) localStorage.setItem('ps-name-v1', v); else localStorage.removeItem('ps-name-v1'); } catch (e) {}
+        passPush(); // the name rides the sync blob to your other devices
+        if (v && v !== autoName(outfit)) passToast('🎫 <b>' + v.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> — it’s officially your pass now.');
+      }
+      closed = true;
+      renderName();
+    };
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') done(true);
+      if (e.key === 'Escape') done(false);
+    });
+    inp.addEventListener('blur', () => done(true));
+  };
   const since = new Date(pass.created);
   el('psSince').textContent = 'member since ' + since.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
