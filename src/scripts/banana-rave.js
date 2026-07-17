@@ -9,7 +9,7 @@
 // THE DROP: clock-synced shared moment — every 3 minutes, for 10 seconds,
 // the whole floor goes disco. Everyone sees it together because everyone
 // shares the same clock. Zero server involvement.
-import { drawComposite, assetsReady, NFRAMES } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES, resolveHands, EXTRA_DEFS } from '../lib/banana-engine.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -2750,13 +2750,58 @@ function init() {
     } catch (e) {}
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
-    toast.innerHTML = '🎉 <b>30 MINUTES ON THE FLOOR</b> — the glowstick is yours forever. It’s in your hand and in the builder.';
+    // honest ceremony copy: with both gloves already full the resolver won't
+    // SHOW the glowstick right now — don't claim "it's in your hand" then
+    const glove = me ? resolveHands(me.outfit.extras) : { left: null, right: null };
+    const showing = (glove.left && glove.left.id === 'glowstick') || (glove.right && glove.right.id === 'glowstick');
+    toast.innerHTML = showing
+      ? '🎉 <b>30 MINUTES ON THE FLOOR</b> — the glowstick is yours forever. It’s in your hand and in the builder.'
+      : '🎉 <b>30 MINUTES ON THE FLOOR</b> — the glowstick is yours forever. Hands full tonight — it’s waiting in the builder.';
     (el('rvToasts') || floor).appendChild(toast);
     setTimeout(() => toast.remove(), 8000);
     track('rave_glowstick_unlock');
     passPatch('survivor', { quiet: true }); // the glowtoast IS the celebration here
   }
   setInterval(checkGlowstick, 5000);
+
+  // ---- 🖐 the hands-full watcher ------------------------------------------
+  // The engine's hand resolver means a pickup is NEVER blocked: rave items
+  // (beer, broom, vinyl, pizza…) always win a glove, and one of YOUR held
+  // items steps aside until the moment ends. This watcher just makes that
+  // legible — the instant one of your owned items gets bumped out of view, a
+  // tiny levelup-style floater says which one. ONE watcher, every grant path
+  // (current and future) — nothing to remember when new hand items ship.
+  let hiddenHeld = new Set();
+  setInterval(() => {
+    const me = myId && ravers.get(myId);
+    if (!me) return;
+    const now = Date.now();
+    // mirror of the draw-time inject in the render loop
+    const drawExtras = {
+      ...(me.outfit.extras || {}),
+      ...((me.vinyl || me.qvinyl) ? { vinyl: true } : {}),
+      ...(me.qbroom ? { broom: true } : {}),
+      ...((fxActive(me, now) && me.fx.id === 'slice') ? { slice: true } : {}),
+      ...((fxActive(me, now) && me.fx.id === 'box') ? { pizzabox: true } : {}),
+    };
+    const glove = resolveHands(drawExtras);
+    const shown = new Set([glove.left, glove.right].filter(Boolean).map((d) => d.id));
+    const nowHidden = new Set(EXTRA_DEFS
+      .filter((d) => d.anchor === 'hand' && !d.raveOnly && drawExtras[d.id] && !shown.has(d.id))
+      .map((d) => d.id));
+    for (const id of nowHidden) {
+      if (hiddenHeld.has(id) || me.stage) continue;
+      const d = EXTRA_DEFS.find((x) => x.id === id);
+      const f = document.createElement('div');
+      f.className = 'rv-lvlup';
+      f.innerHTML = '<b>🖐 HANDS FULL</b> — the ' + d.label.toLowerCase() + ' waits';
+      f.style.left = me.x + '%';
+      f.style.top = Math.max(topClamp, me.y - 9) + '%';
+      world.appendChild(f);
+      setTimeout(() => f.remove(), 2400);
+    }
+    hiddenHeld = nowHidden;
+  }, 600);
 
   stageBtn.addEventListener('click', () => {
     if (stageBtn.disabled) return;
