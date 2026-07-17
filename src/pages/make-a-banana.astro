@@ -90,9 +90,13 @@ const appSchema = {
       .bb-hero .hero__tag { margin-top: 0.6rem; font-size: 0.85rem; }
     }
     .bb-actions .btn { flex: 1; min-width: 46%; }
-    .bb-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+    .bb-signrow { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.7rem; }
     .bb-signrow[hidden] { display: none; }
-    .bb-signrow .bb-input { flex: 1; min-width: 0; }
+    .bb-signrow .bb-input { flex: 1 1 180px; min-width: 0; }
+    /* .bb-card .btn is width:100% (full-width card buttons) and sits LATER in
+       the sheet — equal specificity loses by order, so out-rank it here or the
+       Send button eats the row and the name input collapses to a sliver */
+    .bb-card .bb-signrow .btn { width: auto; flex: 0 1 auto; min-width: 9.5rem; }
     .bb-overlayrow { display: flex; align-items: center; justify-content: center; gap: 0.45rem; margin: 0.7rem 0 0; font-size: 0.85rem; }
     .bb-overlayrow a { color: var(--ink); }
     .bb-toprow { display: flex; gap: 0.7rem; }
