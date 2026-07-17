@@ -959,6 +959,46 @@ const GUIDE = [
     .rv-emote-btn:hover { background: #ffe135; }
     .rv-emote-btn--fire { border-color: #ff9e2c; }
     .rv-emote-btn--fire:hover { background: #ff9e2c; }
+    /* 🍌💨 the food fight */
+    .rv-throw-btn {
+      background: #0d0b14; border: 3px solid #ff9e2c; cursor: pointer;
+      line-height: 1; padding: 0.55rem 0.9rem; border-radius: 2px;
+      min-width: 48px; min-height: 48px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .rv-throw-btn:hover:not([disabled]) { background: #ff9e2c; }
+    .rv-throw-btn[disabled] { opacity: 0.4; cursor: default; }
+    .rv-nade {
+      position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px;
+      z-index: 350; pointer-events: none;
+    }
+    .rv-nade svg { width: 100%; height: 100%; animation: rvNadeSpin 0.45s linear infinite; }
+    @keyframes rvNadeSpin { to { transform: rotate(360deg); } }
+    .rv-peeldecal {
+      position: absolute; z-index: 140; font-size: 14px; pointer-events: none;
+      transform: translate(-50%, -50%) rotate(80deg); animation: rvPeelFade 1.6s ease-out forwards;
+    }
+    @keyframes rvPeelFade { 70% { opacity: 0.9; } 100% { opacity: 0; } }
+    .rv-splatstar {
+      position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px;
+      z-index: 360; pointer-events: none; animation: rvSplatPop 0.5s ease-out forwards;
+    }
+    .rv-splatstar svg { width: 100%; height: 100%; }
+    @keyframes rvSplatPop { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+    .rv-splattext {
+      position: absolute; transform: translate(-50%, 0); z-index: 361; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 1.05rem; color: #ff4d6d;
+      -webkit-text-stroke: 4px #fffdf5; paint-order: stroke fill;
+      animation: rvSplatText 1.4s ease-out forwards;
+    }
+    @keyframes rvSplatText { 0% { transform: translate(-50%, 0) scale(0.6); } 18% { transform: translate(-50%, -4px) scale(1.25); } 100% { transform: translate(-50%, -26px) scale(1); opacity: 0; } }
+    .rv-hitwiggle { animation: rvHitW 0.5s ease-out; }
+    @keyframes rvHitW { 0% { rotate: 0deg; } 20% { rotate: -14deg; } 45% { rotate: 11deg; } 70% { rotate: -6deg; } 100% { rotate: 0deg; } }
+    .rv-throwpop { animation: rvThrowP 0.25s ease-out; }
+    @keyframes rvThrowP { 40% { scale: 1.12; } 100% { scale: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-nade svg, .rv-splatstar, .rv-splattext, .rv-hitwiggle, .rv-throwpop { animation-duration: 0.01s; }
+    }
     .rv-stage-btn {
       background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;
       font-weight: 800; font-size: 0.7rem; letter-spacing: 0.04em; padding: 0.55rem 0.8rem;
@@ -1132,6 +1172,10 @@ const GUIDE = [
             <button class="rv-emote-btn" data-emote="confetti" aria-label="Send a clap"><svg viewBox="0 0 14 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em"><rect x="2" y="0" width="1" height="1" fill="#fffdf5"/><rect x="6" y="0" width="2" height="1" fill="#fffdf5"/><rect x="11" y="0" width="1" height="1" fill="#fffdf5"/><rect x="3" y="1" width="1" height="1" fill="#fffdf5"/><rect x="5" y="1" width="1" height="1" fill="#fffdf5"/><rect x="8" y="1" width="1" height="1" fill="#fffdf5"/><rect x="10" y="1" width="1" height="1" fill="#fffdf5"/><rect x="1" y="3" width="4" height="1" fill="#111111"/><rect x="9" y="3" width="4" height="1" fill="#111111"/><rect x="0" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#ffce4a"/><rect x="2" y="4" width="1" height="1" fill="#e5a43b"/><rect x="3" y="4" width="1" height="1" fill="#ffce4a"/><rect x="4" y="4" width="1" height="1" fill="#e5a43b"/><rect x="5" y="4" width="1" height="1" fill="#111111"/><rect x="8" y="4" width="1" height="1" fill="#111111"/><rect x="9" y="4" width="1" height="1" fill="#e5a43b"/><rect x="10" y="4" width="1" height="1" fill="#ffce4a"/><rect x="11" y="4" width="1" height="1" fill="#e5a43b"/><rect x="12" y="4" width="1" height="1" fill="#ffce4a"/><rect x="13" y="4" width="1" height="1" fill="#111111"/><rect x="0" y="5" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#ffce4a"/><rect x="2" y="5" width="1" height="1" fill="#e5a43b"/><rect x="3" y="5" width="1" height="1" fill="#ffce4a"/><rect x="4" y="5" width="1" height="1" fill="#e5a43b"/><rect x="5" y="5" width="1" height="1" fill="#111111"/><rect x="8" y="5" width="1" height="1" fill="#111111"/><rect x="9" y="5" width="1" height="1" fill="#e5a43b"/><rect x="10" y="5" width="1" height="1" fill="#ffce4a"/><rect x="11" y="5" width="1" height="1" fill="#e5a43b"/><rect x="12" y="5" width="1" height="1" fill="#ffce4a"/><rect x="13" y="5" width="1" height="1" fill="#111111"/><rect x="0" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="1" height="1" fill="#ffce4a"/><rect x="2" y="6" width="1" height="1" fill="#e5a43b"/><rect x="3" y="6" width="1" height="1" fill="#ffce4a"/><rect x="4" y="6" width="1" height="1" fill="#e5a43b"/><rect x="5" y="6" width="1" height="1" fill="#111111"/><rect x="8" y="6" width="1" height="1" fill="#111111"/><rect x="9" y="6" width="1" height="1" fill="#e5a43b"/><rect x="10" y="6" width="1" height="1" fill="#ffce4a"/><rect x="11" y="6" width="1" height="1" fill="#e5a43b"/><rect x="12" y="6" width="1" height="1" fill="#ffce4a"/><rect x="13" y="6" width="1" height="1" fill="#111111"/><rect x="0" y="7" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="4" height="1" fill="#ffce4a"/><rect x="5" y="7" width="1" height="1" fill="#111111"/><rect x="8" y="7" width="1" height="1" fill="#111111"/><rect x="9" y="7" width="4" height="1" fill="#ffce4a"/><rect x="13" y="7" width="1" height="1" fill="#111111"/><rect x="0" y="8" width="1" height="1" fill="#111111"/><rect x="1" y="8" width="4" height="1" fill="#ffce4a"/><rect x="5" y="8" width="1" height="1" fill="#111111"/><rect x="8" y="8" width="1" height="1" fill="#111111"/><rect x="9" y="8" width="4" height="1" fill="#ffce4a"/><rect x="13" y="8" width="1" height="1" fill="#111111"/><rect x="1" y="9" width="1" height="1" fill="#111111"/><rect x="2" y="9" width="3" height="1" fill="#ffce4a"/><rect x="5" y="9" width="1" height="1" fill="#111111"/><rect x="8" y="9" width="1" height="1" fill="#111111"/><rect x="9" y="9" width="3" height="1" fill="#ffce4a"/><rect x="12" y="9" width="1" height="1" fill="#111111"/><rect x="1" y="10" width="1" height="1" fill="#111111"/><rect x="2" y="10" width="2" height="1" fill="#ffce4a"/><rect x="4" y="10" width="1" height="1" fill="#e5a43b"/><rect x="5" y="10" width="1" height="1" fill="#111111"/><rect x="8" y="10" width="1" height="1" fill="#111111"/><rect x="9" y="10" width="1" height="1" fill="#e5a43b"/><rect x="10" y="10" width="2" height="1" fill="#ffce4a"/><rect x="12" y="10" width="1" height="1" fill="#111111"/><rect x="2" y="11" width="4" height="1" fill="#111111"/><rect x="8" y="11" width="4" height="1" fill="#111111"/></svg></button>
             <button class="rv-emote-btn" data-emote="banana" aria-label="Send a banana"><PixelIcon name="banana" size="1.5em" /></button>
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
+            <!-- 🍌💨 THE FOOD FIGHT trigger: pixel thrown-banana icon (motion
+                 dashes + burst sparks = reads "attack" instantly, Trym's spec).
+                 NOT an emote (own class + wiring) — it fires a projectile. -->
+            <button class="rv-throw-btn" id="rvThrowBtn" aria-label="Throw a banana (F)" title="throw a banana! (F) — walk to aim"><svg viewBox="0 0 14 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="1.6em" height="1.15em"><rect x="0" y="3" width="2" height="1" fill="#fffdf5"/><rect x="1" y="5" width="2" height="1" fill="#fffdf5"/><rect x="0" y="7" width="2" height="1" fill="#fffdf5"/><rect x="12" y="1" width="1" height="1" fill="#111111"/><rect x="11" y="2" width="2" height="1" fill="#ffe135"/><rect x="10" y="3" width="2" height="1" fill="#ffe135"/><rect x="10" y="4" width="1" height="1" fill="#c49a00"/><rect x="9" y="4" width="1" height="1" fill="#ffe135"/><rect x="8" y="5" width="2" height="1" fill="#ffe135"/><rect x="8" y="6" width="1" height="1" fill="#c49a00"/><rect x="7" y="7" width="1" height="1" fill="#111111"/><rect x="13" y="0" width="1" height="1" fill="#ff9e2c"/><rect x="13" y="2" width="1" height="1" fill="#ff9e2c"/><rect x="12" y="4" width="1" height="1" fill="#ff9e2c"/></svg></button>
           </div>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>
           <button class="rv-emote-btn rv-tourbtn rv-soundbtn" id="rvSoundBtn" aria-label="Toggle the music" aria-pressed="false" title="sound on — the set is live"><svg viewBox="0 0 12 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="3" width="2" height="4" fill="#fffdf5"/><rect x="2" y="2" width="1" height="6" fill="#fffdf5"/><rect x="3" y="1" width="1" height="8" fill="#fffdf5"/><rect x="4" y="0" width="1" height="10" fill="#fffdf5"/><rect x="6" y="3" width="1" height="4" fill="#fffdf5" class="rv-soundbtn__w1"/><rect x="8" y="2" width="1" height="6" fill="#fffdf5" class="rv-soundbtn__w2"/><rect x="10" y="1" width="1" height="8" fill="#fffdf5" class="rv-soundbtn__w3"/></svg></button>

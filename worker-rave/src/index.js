@@ -545,6 +545,31 @@ export class RaveRoom {
       return;
     }
 
+    // 🍌💨 THE FOOD FIGHT relay — pure fan-out, no physics here. Clients
+    // simulate every throw; the VICTIM announces its own splat (their jelly
+    // is a local stat, so victim-authority is the only honest model — a
+    // cheater can dodge but never hurt). Throttles match the client cooldown.
+    if (msg.t === 'shot' && me) {
+      const nowS = Date.now();
+      if (me.lastShot && nowS - me.lastShot < 1800) return;
+      me.lastShot = nowS;
+      ws.serializeAttachment(me);
+      const a = Number(msg.a);
+      if (!isFinite(a)) return;
+      this.broadcast({ t: 'shot', id: me.id, a: +a.toFixed(3) }, ws);
+      return;
+    }
+    if (msg.t === 'splat' && me) {
+      const nowS = Date.now();
+      if (me.lastSplat && nowS - me.lastSplat < 900) return;
+      me.lastSplat = nowS;
+      ws.serializeAttachment(me);
+      const n = Math.min(3, Math.max(0, Math.round(Number(msg.n) || 0)));
+      const by = /^[a-f0-9-]{4,12}$/.test(String(msg.by || '')) ? msg.by : '';
+      this.broadcast({ t: 'splat', id: me.id, by, n, s: (Number(msg.s) >>> 0) });
+      return;
+    }
+
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       const strikes = (await this.state.storage.get('nameStrikes')) || [];
       me.name = sanitizeName(msg.name !== undefined ? msg.name : me.name, strikes);

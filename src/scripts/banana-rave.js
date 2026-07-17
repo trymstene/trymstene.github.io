@@ -1175,6 +1175,187 @@ function init() {
       nextMegaAt = now + (megatest ? 8000 : (300 + Math.random() * 240) * 1000); // the next dump in 5–9 min
     }
   }
+  // ---- 🍌💨 THE FOOD FIGHT — always-on friendly PvP (Trym's brief) ---------
+  // Fling a tiny banana in your facing direction (bad accuracy = the comedy);
+  // a hit knocks 2-3 jelly OUT of the victim onto the floor for ANYONE to
+  // grab — value is redistributed, never destroyed. Hit detection is VICTIM-
+  // authoritative: your client judges hits on YOU and announces the splat, so
+  // a cheater can only dodge, never hurt (jelly is a local stat anyway).
+  const NADE_SPEED = 34;   // % of floor per second
+  const NADE_RANGE = 36;   // % of floor before it drops as a peel
+  const SHOT_CD = 2000;    // the vibe knob — gentle start (Trym approved)
+  const nades = new Map(); // key -> {el, x, y, vx, vy, dist, by}
+  let nadeSeq = 0;
+  let lastShotAt = 0;
+  let graceUntil = 0;      // newcomers can't be splatted for 60s (or until they fire)
+  let bartyDuckAt = 0;
+  const scatterPellets = []; // splat spill — standalone mini-pellets, self-ticked
+
+  const NADE_SVG = '<svg viewBox="0 0 9 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="2" y="0" width="5" height="1" fill="#fffdf5"/><rect x="2" y="8" width="5" height="1" fill="#fffdf5"/>'
+    + '<rect x="0" y="2" width="1" height="5" fill="#fffdf5"/><rect x="8" y="2" width="1" height="5" fill="#fffdf5"/>'
+    + '<rect x="1" y="1" width="1" height="1" fill="#fffdf5"/><rect x="7" y="1" width="1" height="1" fill="#fffdf5"/>'
+    + '<rect x="1" y="7" width="1" height="1" fill="#fffdf5"/><rect x="7" y="7" width="1" height="1" fill="#fffdf5"/>'
+    + '<rect x="1" y="2" width="7" height="5" fill="#16121f"/><rect x="2" y="1" width="5" height="7" fill="#16121f"/>'
+    + '<rect x="4" y="2" width="2" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="3" fill="#ffe135"/>'
+    + '<rect x="5" y="6" width="1" height="1" fill="#ffe135"/><rect x="3" y="6" width="2" height="1" fill="#ffe135"/>'
+    + '<rect x="3" y="2" width="1" height="1" fill="#111111"/></svg>';
+  const SPLATSTAR_SVG = '<svg viewBox="0 0 13 13" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="6" y="0" width="1" height="3" fill="#fffdf5"/><rect x="6" y="10" width="1" height="3" fill="#fffdf5"/>'
+    + '<rect x="0" y="6" width="3" height="1" fill="#fffdf5"/><rect x="10" y="6" width="3" height="1" fill="#fffdf5"/>'
+    + '<rect x="2" y="2" width="2" height="2" fill="#ffe135"/><rect x="9" y="2" width="2" height="2" fill="#ffe135"/>'
+    + '<rect x="2" y="9" width="2" height="2" fill="#ffe135"/><rect x="9" y="9" width="2" height="2" fill="#ffe135"/>'
+    + '<rect x="5" y="5" width="3" height="3" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#ff9e2c"/></svg>';
+
+  function spawnNade(by, x, y, angle) {
+    const el2 = document.createElement('div');
+    el2.className = 'rv-nade';
+    el2.innerHTML = NADE_SVG;
+    el2.style.left = x + '%';
+    el2.style.top = (y - 5) + '%'; // leaves from banana-hand height
+    world.appendChild(el2);
+    nades.set('n' + (nadeSeq++), {
+      el: el2, x, y: y - 5, by,
+      vx: Math.cos(angle) * NADE_SPEED, vy: Math.sin(angle) * NADE_SPEED * 0.35, // mostly flat throws
+      dist: 0,
+    });
+  }
+
+  function peelDecal(x, y) {
+    const d = document.createElement('div');
+    d.className = 'rv-peeldecal';
+    d.textContent = '🍌';
+    d.style.left = x + '%';
+    d.style.top = y + '%';
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 1600);
+  }
+
+  function splatFx(r) {
+    // CUT-THROUGH kit (Trym: must read through floor noise): white-ring star
+    // burst + red SPLAT! floater + a stagger wiggle on the banana itself
+    const s = document.createElement('div');
+    s.className = 'rv-splatstar';
+    s.innerHTML = SPLATSTAR_SVG;
+    s.style.left = r.x + '%';
+    s.style.top = (r.y - 4) + '%';
+    world.appendChild(s);
+    setTimeout(() => s.remove(), 500);
+    const f = document.createElement('div');
+    f.className = 'rv-splattext';
+    f.textContent = 'SPLAT!';
+    f.style.left = r.x + '%';
+    f.style.top = Math.max(topClamp, r.y - 10) + '%';
+    world.appendChild(f);
+    setTimeout(() => f.remove(), 1400);
+    r.cv.classList.remove('rv-hitwiggle');
+    void r.cv.offsetWidth;
+    r.cv.classList.add('rv-hitwiggle');
+  }
+
+  function scatterSpill(x, y, n, seed) {
+    let s = (seed >>> 0) || 7;
+    const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < n; i++) {
+      const px = clamp(x + (rnd() - 0.5) * 12, 5, 94);
+      const py = clamp(y + (rnd() - 0.5) * 8, topClamp, 90);
+      const p = mkPellet(px, py, i * 0.05, 'plain');
+      p.spill = Date.now(); // marks it for the standalone ticker below
+      (el('rvRun') ? el('rvRun').parentElement : floor).appendChild(p.elm);
+      scatterPellets.push(p);
+    }
+  }
+
+  function fireNade() {
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage || tourActive) return;
+    const now = Date.now();
+    if (now - lastShotAt < SHOT_CD) return;
+    lastShotAt = now;
+    graceUntil = 0; // opening fire ends your newcomer shield — fair's fair
+    const facing = me.facing || 1;
+    const a = (facing > 0 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.62; // ±18° of honest incompetence
+    spawnNade(myId, me.x, me.y, a);
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'shot', a: +a.toFixed(3) }));
+    // throw recoil — a quick pop so firing FEELS like firing
+    me.cv.classList.remove('rv-throwpop');
+    void me.cv.offsetWidth;
+    me.cv.classList.add('rv-throwpop');
+    const btn = el('rvThrowBtn');
+    if (btn) {
+      btn.disabled = true;
+      setTimeout(() => { btn.disabled = false; }, SHOT_CD);
+    }
+    track('rave_shot');
+  }
+
+  function takeSplat(by) {
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage) return;
+    if (Date.now() < graceUntil) return; // just arrived — not a piñata yet
+    const loss = Math.min(tonight.jelly, 2 + (Math.random() < 0.4 ? 1 : 0));
+    tonight.jelly -= loss;
+    const seed = (Date.now() ^ (nadeSeq * 2654435761)) >>> 0;
+    splatFx(me);
+    if (loss > 0) scatterSpill(me.x, me.y, loss, seed);
+    refreshStats();
+    passStat('splatted');
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'splat', by, n: loss, s: seed }));
+    track('rave_splat');
+  }
+
+  function nadeTick(now, dtMs) {
+    const dt = dtMs / 1000;
+    const me = myId && ravers.get(myId);
+    for (const [key, n] of nades) {
+      n.x += n.vx * dt;
+      n.y += n.vy * dt;
+      n.dist += Math.hypot(n.vx * dt, n.vy * dt);
+      n.el.style.left = n.x + '%';
+      n.el.style.top = n.y + '%';
+      const grounded = n.dist > NADE_RANGE || n.x < 2 || n.x > 97 || n.y < topClamp - 6 || n.y > 92;
+      // Barty HATES this (solo players get a target: the bar)
+      if (insideBar(n.x, n.y + 5)) {
+        n.el.remove(); nades.delete(key);
+        peelDecal(n.x, n.y + 5);
+        if (now - bartyDuckAt > 9000) {
+          bartyDuckAt = now;
+          showBubble('🤠 HEY! who is throwing PRODUCE in my club?!', false, 3500);
+        }
+        continue;
+      }
+      // victim-authoritative: only judge hits on MYSELF
+      if (me && !me.stage && n.by !== myId && Math.hypot(n.x - me.x, (n.y + 5 - me.y) * 1.4) < 4.6) {
+        n.el.remove(); nades.delete(key);
+        takeSplat(n.by);
+        continue;
+      }
+      if (grounded) {
+        n.el.remove(); nades.delete(key);
+        peelDecal(n.x, Math.min(n.y + 5, 90));
+      }
+    }
+    // the spill: collectible by proximity, 25s shelf life
+    if (me && !me.stage) {
+      for (let i = scatterPellets.length - 1; i >= 0; i--) {
+        const p = scatterPellets[i];
+        if (p.got || now - p.spill > 25000) {
+          if (!p.got) p.elm.remove();
+          scatterPellets.splice(i, 1);
+          continue;
+        }
+        if (Math.hypot(((p.x - me.x) / 100) * floorW, ((p.y - me.y) / 100) * floorH) < 40) {
+          p.got = true;
+          p.elm.classList.add('rv-pellet--got');
+          setTimeout(() => p.elm.remove(), 350);
+          tonight.jelly += 1;
+          addHype(2);
+          refreshStats();
+        }
+      }
+    }
+  }
+
   function tickRun() {
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
@@ -1984,6 +2165,7 @@ function init() {
       if (m.t === 'pong') { lastPong = Date.now(); }
       else if (m.t === 'roster') {
         myId = m.you;
+        graceUntil = Date.now() + 60000; // fresh arrivals aren't piñatas
         // a reconnect gets a fresh roster — clear ghosts from the dead session first
         const alive = new Set(m.all.map((p) => p.id));
         [...ravers.keys()].forEach((id) => { if (!alive.has(id)) dropRaver(id); });
@@ -2008,6 +2190,21 @@ function init() {
       // the QUICK SWIPE: Trym struck a name — it vanishes mid-dance, the
       // banana falls back to its outfit-name
       else if (m.t === 'name') { const r = ravers.get(m.id); if (r) { r.name = m.name || ''; refreshHud(); } }
+      // 🍌💨 the food fight: everyone simulates every throw; splats are
+      // announced by the VICTIM (their jelly, their call)
+      else if (m.t === 'shot') { const r = ravers.get(m.id); if (r && m.id !== myId) spawnNade(m.id, r.x, r.y, m.a); }
+      else if (m.t === 'splat') {
+        const r = ravers.get(m.id);
+        if (r && m.id !== myId) {
+          splatFx(r);
+          if (m.n > 0) scatterSpill(r.x, r.y, Math.min(3, m.n), m.s >>> 0);
+        }
+        if (m.by === myId && m.id !== myId) {
+          const me2 = ravers.get(myId);
+          if (me2) floatPlus(me2.x, me2.y - 10, 'DIRECT HIT! 🎯');
+          passStat('splats');
+        }
+      }
       else if (m.t === 'move') {
         const r = ravers.get(m.id);
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
@@ -2700,6 +2897,16 @@ function init() {
     }
   }
 
+  // ---- the throw button (the food fight's trigger) ----
+  const throwBtn = el('rvThrowBtn');
+  if (throwBtn) throwBtn.addEventListener('click', fireNade);
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'f' && e.key !== 'F') return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    fireNade();
+  });
+
   // ---- emotes ----
   document.querySelectorAll('.rv-emote-btn').forEach((b) => {
     b.addEventListener('click', () => {
@@ -3088,6 +3295,7 @@ function init() {
     lastTick = now;
     stepMe(now, dtMs);
     updateCam();
+    nadeTick(now, dtMs); // 🍌💨 flying bananas + splat spill, frame rate like everything that moves
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
     nightFrame(now); // quest proximity checks — same lesson again
