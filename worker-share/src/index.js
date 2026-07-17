@@ -43,10 +43,38 @@ const MAX_WALL_BYTES = 160 * 1024; // forge creations (b64 frames) can be chunky
 const MAX_GALLERY_BYTES = 350 * 1024; // a 480px 8-frame banana meme is ~60-90 KB
 const SITE = 'https://trymstene.com';
 
-// ⚠ keep in sync with BLOCKLIST in src/lib/sticker-core.js (the client gate);
-// this server copy is the one submitters can't bypass
-const BLOCKLIST = ['fuck','shit','bitch','cunt','nigg','fagg','retard','whore','slut','porn','rape','hitler','nazi','faen','jævla','jævel','fitte','kuk','pikk','hore','kneppe'];
-const dirty = (s) => { const t = String(s || '').toLowerCase(); return BLOCKLIST.some((w) => t.includes(w)); };
+// THE FAMILY FILTER (server copy — the one submitters can't bypass).
+// AUTO-PATCHED by tools/build-family-filter.py between the markers below;
+// same lists + matching as src/lib/family-filter.js. Never edit by hand.
+// FAMILY-FILTER-START
+const F_WORDS = new Set('acrotomophilia|anal|anilingus|anus|arsehole|ass|asshole|assmunch|autoerotic|babeland|bangbros|bangbus|bareback|barenaked|bastard|bastardo|bastinado|bbw|bdsm|beaner|beaners|beastiality|bestiality|bimbos|birdlock|blowjob|blumpkin|bollocks|bondage|boner|boob|boobs|bukkake|bulldyke|bunghole|busty|butt|buttcheeks|butthole|camgirl|camslut|carpetmuncher|cialis|circlejerk|clit|clitoris|cock|cocks|coon|coons|coprolagnia|coprophilia|cornhole|creampie|cum|cumming|cumshot|cumshots|cunnilingus|darkie|daterape|deepthroat|dendrophilia|dick|dildo|dingleberries|dingleberry|doggiestyle|doggystyle|dolcett|domination|dominatrix|dommes|dritt|drittsekk|dvda|ecchi|ejaculation|erotic|erotism|escort|eunuch|faen|fag|fanken|fecal|felch|fellatio|feltch|femdom|figging|fingerbang|fingering|fisting|fitte|footjob|forbanna|forbannet|frotting|fudgepacker|futanari|føkk|føkka|føkkings|gangbang|genitals|goatcx|goatse|gokkun|goodpoop|goregasm|grope|guro|handjob|hardcore|helvete|helvetet|hentai|homoerotic|honkey|hooker|hore|horny|humping|incest|intercourse|jailbait|jigaboo|jiggaboo|jiggerboo|jizz|juggs|kike|kinbaku|kinkster|kinky|kneppe|knobbing|kuk|kukene|kuker|livesex|lolita|lovemaking|masturbate|masturbating|masturbation|milf|mong|morraknuller|morrapuler|muffdiving|nambla|nawashi|nazi|negro|neonazi|nimphomania|nipple|nipples|nsfw|nude|nudity|nutten|nympho|nymphomania|octopussy|omorashi|orgasm|orgy|paedophile|paki|pakkis|panties|panty|pedobear|pedophile|pegging|penis|pikey|pikk|pissing|pisspig|playboy|pokker|ponyplay|poof|poon|poontang|poopchute|pthc|pubes|punany|pussy|queaf|queef|quim|raghead|rape|raping|rapist|rectum|retard|rimjob|rimming|ræva|ræven|sadism|santorum|satan|scat|schlong|scissoring|semen|sex|sexcam|sexo|sexual|sexuality|sexually|sexy|shemale|shibari|shota|shrimping|sinnsykt|skeet|skitt|slanteye|slut|smut|snatch|snowballing|sodomize|sodomy|sotrør|spastic|spic|splooge|spooge|spunk|stapikk|stapikkene|stapikker|strapon|strappado|suck|sucks|svartheiteste|swastika|swinger|threesome|throating|thumbzilla|tit|tits|titties|titty|topless|tosser|towelhead|tranny|tribadism|tubgirl|tushy|twat|twink|twinkie|undressing|upskirt|urophilia|vagina|viagra|vibrator|vorarephilia|voyeur|voyeurweb|voyuer|vulva|wank|wetback|worldsex|xxx|yaoi|yiffy|zoophilia|🖕'.split('|'));
+const F_PHRASES = 'alabamahotpocket|alaskanpipeline|autoerotic|babybatter|babyjuice|ballgag|ballgravy|ballkicking|balllicking|ballsack|ballsucking|barelylegal|beavercleaver|beaverlips|bigblack|bigbreasts|bigknockers|bigtits|blackcock|blondeaction|blondeonblondeaction|blowjob|blowyourload|bluewaffle|bootycall|brownshowers|brunetteaction|bulletvibe|bunghole|cameltoe|carpetmuncher|chocolaterosebuds|clevelandsteamer|cloverclamps|daterape|deepthroat|dirtypillows|dirtysanchez|doggiestyle|doggystyle|dogstyle|donkeypunch|doubledong|doublepenetration|dpaction|dryhump|eatmyass|faenihelvete|femalesquirting|footfetish|fudgepacker|fyfaen|gangbang|gaysex|giantcock|girlon|girlontop|girlscup|girlsgonewild|goddamn|goldenshower|googirl|groupsex|gspot|handjob|hardcore|hotcarl|hotchick|howtokill|howtomurder|hugefat|jackoff|jailbait|jellydonut|jerkoff|leatherrestraint|leatherstraightjacket|lemonparty|makemecome|malesquirting|menageatrois|missionaryposition|moundofvenus|mrhands|muffdiver|nignog|nsfwimages|onecuptwogirls|oneguyonejar|phonesex|pisspig|pleasurechest|polesmoker|poopchute|princealbertpiercing|ragingboner|reversecowgirl|rosypalm|rosypalmandhersisters|rustytrombone|shavedbeaver|shavedpussy|sploogemoose|spreadlegs|strapon|stripclub|styledoggy|suicidegirls|sultrywomen|taintedlove|tastemy|teabagging|tiedup|tightwhite|tongueina|tubgirl|twogirlsonecup|urethraplay|venusmound|violetwand|wetdream|whitepower|wrappingmen|wrinkledstarfish|yellowshowers'.split('|');
+const F_STEMS = 'nigg|fagg|cunt|whore|hitler|jævl|jævel|fuck|shit|bitch|porn'.split('|');
+// FAMILY-FILTER-END
+const F_LEET = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '@': 'a', '$': 's', '!': 'i' };
+// combining-marks range built from charcodes (ASCII-safe source)
+const F_MARKS = new RegExp('[' + String.fromCharCode(768) + '-' + String.fromCharCode(879) + ']', 'g');
+function dirty(s) {
+  let base = String(s || '').toLowerCase();
+  try { base = base.normalize('NFD').replace(F_MARKS, ''); } catch (e) {}
+  base = base.replace(/[0134578@$!]/g, (c) => F_LEET[c] || c);
+  const squeezed = base.replace(/(.)\1{2,}/g, '$1');
+  for (const v of (base === squeezed ? [base] : [base, squeezed])) {
+    const collapsed = v.replace(/[^a-zæø]/g, '');
+    if (F_STEMS.some((w) => collapsed.includes(w))) return true;
+    if (F_PHRASES.some((p) => collapsed.includes(p))) return true;
+    const toks = v.split(/[^a-zæø]+/).filter(Boolean);
+    for (const tok of toks) { if (F_WORDS.has(tok)) return true; }
+    let run = '';
+    for (let i = 0; i <= toks.length; i++) {
+      const t = toks[i];
+      if (t && t.length === 1) { run += t; continue; }
+      if (run.length >= 3 && (F_WORDS.has(run) || F_STEMS.some((w) => run.includes(w)))) return true;
+      run = '';
+    }
+  }
+  return false;
+}
 
 export default {
   async fetch(request, env) {
