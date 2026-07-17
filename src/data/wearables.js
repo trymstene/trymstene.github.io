@@ -114,8 +114,8 @@ export const WEARABLE_PACKS = {
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
       { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons' },
       // ⏳ BATCH 3 PREVIEW — hands balanced: chicken/sign right, fish left
-      { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 6, art: 'rubberchicken', preview: true },
-      { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 3, art: 'bigfish', preview: true },
+      { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 8, art: 'rubberchicken', preview: true },
+      { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 5, art: 'bigfish', preview: true },
       // behind: true = drawn BEFORE the banana body (engine behind pass), so
       // the big board rides at head height PEEKING OUT behind the head
       { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 14, art: 'protestsign', behind: true, preview: true },
