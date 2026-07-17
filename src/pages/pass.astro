@@ -99,6 +99,27 @@ const description = 'Your membership card to the banana world: the badges you ha
     .shelf-x:hover { background: var(--hot, #ff4d6d); }
 
     .ps-doors { margin-top: 2.4rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+
+    /* share-card lightbox — the card revealed in website style (paper box,
+       ink frame); the OS share sheet is an opt-in button, not the default */
+    .ps-sharemodal {
+      position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
+      background: rgba(17, 17, 17, 0.6); padding: 1rem;
+    }
+    .ps-sharemodal[hidden] { display: none; }
+    .ps-sharemodal__box {
+      position: relative; max-width: min(92vw, 640px); width: 100%;
+      background: var(--paper); border: var(--line); box-shadow: var(--shadow); padding: 0.9rem;
+    }
+    .ps-sharemodal__card canvas { display: block; width: 100%; height: auto; border: 3px solid var(--ink); }
+    .ps-sharemodal__row { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+    .ps-sharemodal__row .btn { flex: 1 1 140px; }
+    .ps-sharemodal__close {
+      position: absolute; top: -16px; right: -16px; width: 40px; height: 40px;
+      background: var(--banana); color: var(--ink); border: 3px solid var(--ink);
+      font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 3px 3px 0 var(--ink);
+      touch-action: manipulation;
+    }
   </style>
 
   <div class="ps-wrap">
@@ -174,6 +195,19 @@ const description = 'Your membership card to the banana world: the badges you ha
     <div class="ps-doors">
       <a class="btn btn--dark" href="/make-a-banana/">Make a banana →</a>
       <a class="btn btn--light" href="/rave/">To the floor →</a>
+    </div>
+  </div>
+
+  <!-- share-card lightbox: our own reveal, the rave-card pattern in pass colours -->
+  <div class="ps-sharemodal" id="psShareModal" hidden>
+    <div class="ps-sharemodal__box">
+      <button class="ps-sharemodal__close" id="psShareClose" aria-label="Close">✕</button>
+      <div class="ps-sharemodal__card" id="psShareSlot"></div>
+      <div class="ps-sharemodal__row">
+        <button class="btn btn--dark" id="psShareDl">⬇ Download PNG</button>
+        <button class="btn btn--light" id="psShareCopy">📋 Copy image</button>
+        <button class="btn btn--light" id="psShareSys" hidden>📤 Share…</button>
+      </div>
     </div>
   </div>
 
