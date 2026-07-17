@@ -466,15 +466,24 @@ function init() {
     // pressed shoes at once (Trym's catch)
     const feetIds = FEET_DEFS.map((d) => d.id);
     const neckIds = NECK_DEFS.map((d) => d.id);
+    const handDefs = EXTRA_DEFS.filter((d) => d.anchor === 'hand');
+    const handIds = handDefs.map((d) => d.id);
     EXTRA_DEFS.forEach((d) => {
       state.extras[d.id] = !d.raveOnly && !d.preview && !feetIds.includes(d.id) && !neckIds.includes(d.id)
-        && earnedUnlocked(d) && Math.random() < 0.3;
+        && !handIds.includes(d.id) && earnedUnlocked(d) && Math.random() < 0.3;
     });
     const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && earnedUnlocked(d));
     if (shoeable.length && Math.random() < 0.45) state.extras[pick(shoeable).id] = true;
     // neckwear is EXCLUSIVE too (bow tie OR chain OR tie OR scarf, never a pile)
     const neckable = NECK_DEFS.filter((d) => earnedUnlocked(d));
     if (neckable.length && Math.random() < 0.4) state.extras[pick(neckable).id] = true;
+    // held items are exclusive PER GLOVE (Trym's catch: the independent roll
+    // could double-fist one hand) — at most one item per glove; a left+right
+    // pair (trophy + balloons) is legit, two mugs in one glove is not
+    for (const glove of ['left', 'right']) {
+      const holdable = handDefs.filter((d) => d.hand === glove && !d.raveOnly && earnedUnlocked(d));
+      if (holdable.length && Math.random() < 0.35) state.extras[pick(holdable).id] = true;
+    }
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     // tempo stays at the DEFAULT (Trym: the surprise is the outfit + caption;
     // tempo is a deliberate final adjustment, and randomizing it also left the
