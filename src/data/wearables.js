@@ -39,16 +39,16 @@ export const WEARABLE_PACKS = {
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },
       { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
       { id: 'sombrero', label: 'Sombrero', phrase: 'a big sombrero', art: 'sombrero', seat: -1 },
-      // ⏳ PREVIEW BATCH (17 Jul) — visible only on /dev-wearables/ until Trym
-      // approves; ship an item by deleting its preview flag (+ worker EXTRA_IDS
-      // for extras, then Trym redeploys worker-rave)
+      // NEW ITEMS ship via the review loop: add with `preview: true` (drawable,
+      // /dev-wearables/ renders it, but hidden from every public surface),
+      // Trym approves on the desk, then delete the flag + extend the worker
+      // HAT_IDS/SHADE_IDS/EXTRA_IDS mirrors + deploy worker-rave.
       { id: 'halo', label: 'Halo', phrase: 'a golden halo', art: 'halo', seat: -1 },
       { id: 'beanieprop', label: 'Propeller beanie', phrase: 'a propeller beanie', art: 'beanieprop', seat: -1 },
       { id: 'backwardscap', label: 'Backwards cap', phrase: 'a backwards cap', art: 'backwardscap', seat: 0 },
-      // ⏳ BATCH 2 PREVIEW (17 Jul) — on /dev-wearables/ until Trym approves
-      { id: 'gradcap', label: 'Graduation cap', phrase: 'a graduation cap', art: 'gradcap', seat: -1, preview: true },
-      { id: 'tricorn', label: 'Pirate tricorn', phrase: 'a pirate tricorn', art: 'tricorn', seat: -1, preview: true },
-      { id: 'jester', label: 'Jester hat', phrase: 'a jester hat with bells', art: 'jester', seat: -1, preview: true },
+      { id: 'gradcap', label: 'Graduation cap', phrase: 'a graduation cap', art: 'gradcap', seat: -1 },
+      { id: 'tricorn', label: 'Pirate tricorn', phrase: 'a pirate tricorn', art: 'tricorn', seat: -1 },
+      { id: 'jester', label: 'Jester hat', phrase: 'a jester hat with bells', art: 'jester', seat: -1 },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -58,9 +58,9 @@ export const WEARABLE_PACKS = {
       { id: 'threed', label: '3D', phrase: '3D glasses', front: 'threedFront', side: 'threedSide' },
       { id: 'potter', label: 'Rounds', phrase: 'round wizard glasses', front: 'potterFront', side: 'potterSide' },
       { id: 'nerd', label: 'Nerd glasses', phrase: 'taped nerd glasses', front: 'nerdFront', side: 'nerdSide' },
-      { id: 'monocle', label: 'Monocle', phrase: 'a gold monocle', front: 'monocleFront', side: 'monocleSide', preview: true },
-      { id: 'groucho', label: 'Groucho', phrase: 'the full groucho disguise', front: 'grouchoFront', side: 'grouchoSide', preview: true },
-      { id: 'eyepatch', label: 'Eye patch', phrase: 'a pirate eye patch', front: 'eyepatchFront', side: 'eyepatchSide', preview: true },
+      { id: 'monocle', label: 'Monocle', phrase: 'a gold monocle', front: 'monocleFront', side: 'monocleSide' },
+      { id: 'groucho', label: 'Groucho', phrase: 'the full groucho disguise', front: 'grouchoFront', side: 'grouchoSide' },
+      { id: 'eyepatch', label: 'Eye patch', phrase: 'a pirate eye patch', front: 'eyepatchFront', side: 'eyepatchSide' },
     ],
     // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
     // left-facing frames), the CHEST (per-frame btCx body centre + dy), or a
@@ -85,15 +85,15 @@ export const WEARABLE_PACKS = {
       { id: 'clownshoes', label: 'Clown shoes', phrase: 'big clown shoes', anchor: 'feet', art: 'clownshoes' },
       { id: 'cowboyboots', label: 'Cowboy boots', phrase: 'cowboy boots', anchor: 'feet', art: 'cowboyboots' },
       { id: 'discoboots', label: 'Disco boots', phrase: 'golden disco boots', anchor: 'feet', art: 'discoboots' },
-      { id: 'ledsneakers', label: 'LED sneakers', phrase: 'LED sneakers', anchor: 'feet', art: 'ledsneakers', preview: true },
-      { id: 'flamekicks', label: 'Flame kicks', phrase: 'flaming sneakers', anchor: 'feet', art: 'flamekicks', preview: true },
+      { id: 'ledsneakers', label: 'LED sneakers', phrase: 'LED sneakers', anchor: 'feet', art: 'ledsneakers' },
+      { id: 'flamekicks', label: 'Flame kicks', phrase: 'flaming sneakers', anchor: 'feet', art: 'flamekicks' },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 6, art: 'mug' },
-      { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 5, art: 'trophy', preview: true },
-      { id: 'boingball', label: 'Boing Ball', phrase: 'a red-white checkered ball', anchor: 'hand', hand: 'left', grip: 4, art: 'boingball', preview: true },
+      { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 5, art: 'trophy' },
+      { id: 'boingball', label: 'Boing Ball', phrase: 'a red-white checkered ball', anchor: 'hand', hand: 'left', grip: 4, art: 'boingball' },
       // id is balloons, NOT balloon — the rave already owns 'balloon' as an
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
-      { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons', preview: true },
+      { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
