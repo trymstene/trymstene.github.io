@@ -89,8 +89,11 @@ export const WEARABLE_PACKS = {
       { id: 'scarf',    label: 'Scarf',     phrase: 'a cosy red scarf', anchor: 'chest', zone: 'neck', dy: 8.5, art: 'scarf' },
       // ⏳ BATCH 3 PREVIEW — id is coneofshame, NOT cone (the rave owns 'cone'
       // as the happy-hour traffic-cone grant); open middle so the face shows
-      { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'neck', dy: 6, art: 'coneofshame', preview: true },
-      { id: 'duckfloatie', label: 'Duck floatie', phrase: 'a duck pool floatie', anchor: 'chest', zone: 'neck', dy: 10, art: 'duckfloatie', preview: true },
+      // dy 2 + tall solid art = the rim reaches the eyes and the face vanishes
+      // into the cone (Trym: that IS the joke)
+      { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'neck', dy: 2, art: 'coneofshame', preview: true },
+      // replaced duckfloatie (yellow-on-yellow, killed round 2)
+      { id: 'lifering', label: 'Life ring', phrase: 'a life preserver ring', anchor: 'chest', zone: 'neck', dy: 10, art: 'lifering', preview: true },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
@@ -111,9 +114,11 @@ export const WEARABLE_PACKS = {
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
       { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons' },
       // ⏳ BATCH 3 PREVIEW — hands balanced: chicken/sign right, fish left
-      { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 5, art: 'rubberchicken', preview: true },
-      { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 2, art: 'bigfish', preview: true },
-      { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 9, art: 'protestsign', preview: true },
+      { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 6, art: 'rubberchicken', preview: true },
+      { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 3, art: 'bigfish', preview: true },
+      // behind: true = drawn BEFORE the banana body (engine behind pass), so
+      // the big board rides at head height PEEKING OUT behind the head
+      { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 14, art: 'protestsign', behind: true, preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
