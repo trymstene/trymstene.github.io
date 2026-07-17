@@ -2613,8 +2613,8 @@ function init() {
     ], done: { patch: null,
       say: ['what a SHIFT. the club owes ya one, partner — back to clubbing!', { t: 'the club never pays its debts. anyway!', mutter: true }] } },
     { n: 5, steps: [ // THE REGULAR — the best-of shift
-      { tray: 'grab the broom — one last sweep of the mess', check: 'sweep', targets: ['peel', 'peel', 'peel', 'puddle', 'puddle'],
-        say: ['night FIVE, partner. 🤠 the full mess: peels AND puddles. you know where the broom is.', { t: 'you know where everything is now. that’s how it gets you.', mutter: true }] },
+      { tray: 'grab the broom — mop up the last puddles', check: 'sweep', targets: ['puddle', 'puddle', 'puddle'],
+        say: ['night FIVE, partner. 🤠 pipes leaked again — puddles all over. you know where the broom is.', { t: 'you know where everything is now. that’s how it gets you.', mutter: true }] },
       { tray: 'survive THE DROP on the floor', check: 'drop',
         say: ['CLEAN! now stay on that floor for THE DROP — every third minute, you know the clock by now.'] },
       { tray: 'one more JELLY TIME — end it right', check: 'hypedrop',
