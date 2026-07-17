@@ -211,13 +211,34 @@ def sc_hook(t, T):
         pill(img, 'since 1999', 1420, px=54, bg=(255, 255, 255), rot=-3)
     return flash(img, (0.3 - t) * 1.2 if t < 0.3 else 0)
 
-BUILD_STEPS = [(0.0, 'step1', 'FISHBOWL!'), (0.55, 'step2', 'GOOGLY EYES!'),
-               (1.1, 'step3', 'FLAME KICKS!'), (1.65, 'step4', 'RUBBER CHICKEN!'),
-               (2.2, 'step5', 'BALLOONS!')]
-def sc_builder(t, T):
+def sc_hook_b(t, T):
+    """Variant B: the SLOW hook — creator claim lands first, breathes, then a
+    second beat, THEN the rapid fire starts. (Trym: the intro was very quick.)"""
+    img = Image.new('RGBA', (W, H), YELLOW + (255,))
+    confetti(img, 30, 3, alpha=60)
+    pop = ease_out_back(t / 0.7)  # slower arrival than variant A's 0.45
+    size = int(880 * max(pop, 0.01))
+    if size > 2:
+        paste_center(img, banana('bare', t, size), W / 2, 940)
+    if t > 0.55:
+        k = ease_out((t - 0.55) / 0.3)
+        pill(img, 'I drew this banana in 1999.', 340 - (1 - k) * 60, px=64)
+    if t > 1.5:
+        pill(img, "you've seen him everywhere.", 460, px=52, bg=(255, 255, 255), rot=-2)
+    if t > T - 0.7:
+        confetti(img, 46, 11)
+        pill(img, 'now he has a WARDROBE', 1430, px=56, bg=INK, fg=YELLOW)
+    return flash(img, (0.3 - t) * 1.2 if t < 0.3 else 0)
+
+BUILD_STEPS_A = [(0.0, 'step1', 'FISHBOWL!'), (0.55, 'step2', 'GOOGLY EYES!'),
+                 (1.1, 'step3', 'FLAME KICKS!'), (1.65, 'step4', 'RUBBER CHICKEN!'),
+                 (2.2, 'step5', 'BALLOONS!')]
+BUILD_STEPS_B = [(0.0, 'stepB1', 'FRIED EGG!'), (0.85, 'stepB2', 'FIRE SHOES!'),
+                 (1.7, 'stepB3', 'RUBBER CHICKEN!')]
+def sc_builder(t, T, steps=BUILD_STEPS_A):
     img = Image.new('RGBA', (W, H), CREAM + (255,))
     set_name, label, since = 'bare', None, 99.0
-    for start, name, lab in BUILD_STEPS:
+    for start, name, lab in steps:
         if t >= start:
             set_name, label, since = name, lab, t - start
     b = banana(set_name, t, 820)
@@ -231,7 +252,7 @@ def sc_builder(t, T):
     pill(img, '50 wearables · free · no signup', 1430, px=44, bg=(255, 255, 255))
     return img
 
-def sc_share(t, T):
+def sc_share(t, T, sets=('step5', 'coney')):
     img = Image.new('RGBA', (W, H), DISCORD + (255,))
     d = ImageDraw.Draw(img)
     rows = [('the group chat', 'today at 9:41', 480), ('banana enjoyer', 'today at 9:42', 950)]
@@ -246,7 +267,7 @@ def sc_share(t, T):
         d.text((x + 116, y + 6), name, font=font('nunito', 42), fill=(242, 201, 76))
         d.text((x + 116 + d.textlength(name, font=font('nunito', 42)) + 18, y + 18), ts,
                font=font('nunito', 28), fill=(148, 155, 164))
-        gif = banana('step5' if i == 0 else 'coney', t + i * 0.2, 330)
+        gif = banana(sets[i], t + i * 0.2, 330)
         img.alpha_composite(gif, (int(x) + 110, y + 70))
     pill(img, 'download it — send it anywhere', 1450, px=50)
     return img
@@ -358,16 +379,15 @@ def sc_pass(t, T):
     pill(img, 'earn your Banana World pass', 350, px=54)
     return img
 
-def sc_end(t, T):
+def sc_end(t, T, end_set='step5'):
     img = Image.new('RGBA', (W, H), YELLOW + (255,))
     confetti(img, 40, 21, alpha=80)
     center_text(img, 'One banana.', 330, 'archivo', 92, INK)
     center_text(img, 'Endless party.', 440, 'archivo', 92, INK)
-    # the closer is the FULL absurd build (fishbowl/googly/chicken/balloons) —
-    # it echoes the builder scene, which is where the ad's link goes; the cone
-    # banana already had its moment in the chat scene
+    # the closer is the FULL absurd build — it echoes the builder scene, which
+    # is where the ad's link goes; the cone banana already had its chat moment
     k = ease_out_back(clamp01(t / 0.4))
-    paste_center(img, banana('step5', t, int(700 * max(k, 0.01))), W / 2, 930)
+    paste_center(img, banana(end_set, t, int(700 * max(k, 0.01))), W / 2, 930)
     center_text(img, 'trymstene.com', 1330, 'archivo', 80, INK)
     pill(img, 'free · no signup', 1440, px=46, bg=(255, 255, 255))
     # hand off to TikTok's CTA button (bottom-left) — bouncing pointer
@@ -379,18 +399,34 @@ def sc_end(t, T):
     return img
 
 # ---------------------------------------------------------------- timeline
-def build(renders_dir, out_path):
+# Variant A: instant hook + 5-item fishbowl montage (the original Ad D).
+# Variant B (Trym's notes): SLOWER two-beat hook that breathes, then rapid
+# fire; montage = fried egg / fire shoes / rubber chicken (no googly eyes);
+# the chat + closer use stepB4 = egg+kicks+chicken+balloons in SEPARATE hands
+# (the both-hands shot that proves the balloons hand-flip).
+VARIANTS = {
+    'a': dict(hook=(1.6, sc_hook), steps=BUILD_STEPS_A, builder_d=3.0,
+              share=('step5', 'coney'), share_d=2.0, rave_d=1.8, wall_d=1.8,
+              forge_d=1.6, pass_d=1.8, end='step5'),
+    'b': dict(hook=(2.8, sc_hook_b), steps=BUILD_STEPS_B, builder_d=2.6,
+              share=('stepB4', 'coney'), share_d=1.8, rave_d=1.6, wall_d=1.6,
+              forge_d=1.4, pass_d=1.6, end='stepB4'),
+}
+
+def build(renders_dir, out_path, variant='a'):
     load_renders(renders_dir)
     remixes = load_remixes()
+    V = VARIANTS[variant]
+    hook_d, hook_fn = V['hook']
     scenes = [
-        (1.6, sc_hook),
-        (3.0, sc_builder),
-        (2.0, sc_share),
-        (1.8, sc_rave),
-        (1.8, lambda t, T: sc_wall(t, T, remixes)),
-        (1.6, sc_forge),
-        (1.8, sc_pass),
-        (2.2, sc_end),
+        (hook_d, hook_fn),
+        (V['builder_d'], lambda t, T: sc_builder(t, T, V['steps'])),
+        (V['share_d'], lambda t, T: sc_share(t, T, V['share'])),
+        (V['rave_d'], sc_rave),
+        (V['wall_d'], lambda t, T: sc_wall(t, T, remixes)),
+        (V['forge_d'], sc_forge),
+        (V['pass_d'], sc_pass),
+        (2.2, lambda t, T: sc_end(t, T, V['end'])),
     ]
     total = sum(d for d, _ in scenes)
     n_frames = int(total * FPS)
@@ -420,6 +456,10 @@ def build(renders_dir, out_path):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--renders', required=True)
-    ap.add_argument('--out', default=os.path.join(SITE, 'ad-pack', 'ad-D-tiktok-1080x1920.mp4'))
+    ap.add_argument('--variant', choices=list(VARIANTS), default='a')
+    ap.add_argument('--out')
     a = ap.parse_args()
-    build(a.renders, a.out)
+    out = a.out or os.path.join(
+        SITE, 'ad-pack',
+        'ad-D-tiktok-1080x1920.mp4' if a.variant == 'a' else f'ad-D{a.variant.upper()}-tiktok-1080x1920.mp4')
+    build(a.renders, out, a.variant)
