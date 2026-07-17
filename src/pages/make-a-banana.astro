@@ -462,15 +462,9 @@ const appSchema = {
         </div>
       </div>
 
-      <!-- CONTROLS -->
+      <!-- CONTROLS — customization first; the action buttons (surprise/rave/
+           buy/share) live together at the BOTTOM of the column (Trym's call) -->
       <div class="bb-controls">
-        <div class="bb-toprow">
-          <button class="btn btn--light bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
-          <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top"><PixelIcon name="mirrorball" /> Rave</a>
-        </div>
-        <div class="bb-toprow bb-toprow--go">
-          <button class="btn btn--dark" id="bbQuickSticker" style="flex:1"><PixelIcon name="tag" /> BUY as sticker, tee or magnet</button>
-        </div>
         <div class="bb-row">
           <label>Background</label>
           <div class="bb-swatches" id="bbSwatches"></div>
@@ -512,6 +506,13 @@ const appSchema = {
           <label for="bbSpeed">Dance speed</label>
           <input class="bb-slider" type="range" id="bbSpeed" min="0.35" max="1.6" step="0.05" value="1.15">
           <div class="bb-speedends" aria-hidden="true"><span>chill</span><span>banana overdrive <PixelIcon name="bolt" /></span></div>
+        </div>
+        <div class="bb-toprow">
+          <button class="btn btn--light bb-random" id="bbRandom"><PixelIcon name="dice" /> Surprise me</button>
+          <a class="btn btn--light bb-torave" href="/rave/" data-place="builder-top"><PixelIcon name="mirrorball" /> Rave</a>
+        </div>
+        <div class="bb-toprow bb-toprow--go">
+          <button class="btn btn--dark" id="bbQuickSticker" style="flex:1"><PixelIcon name="tag" /> BUY as sticker, tee or magnet</button>
         </div>
         <div class="bb-actions">
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
