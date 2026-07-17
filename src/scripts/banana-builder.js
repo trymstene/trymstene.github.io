@@ -465,12 +465,16 @@ function init() {
     // setFeet enforces) — at most one pair, so the chips can't show four
     // pressed shoes at once (Trym's catch)
     const feetIds = FEET_DEFS.map((d) => d.id);
+    const neckIds = NECK_DEFS.map((d) => d.id);
     EXTRA_DEFS.forEach((d) => {
-      state.extras[d.id] = !d.raveOnly && !feetIds.includes(d.id)
+      state.extras[d.id] = !d.raveOnly && !d.preview && !feetIds.includes(d.id) && !neckIds.includes(d.id)
         && earnedUnlocked(d) && Math.random() < 0.3;
     });
     const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && earnedUnlocked(d));
     if (shoeable.length && Math.random() < 0.45) state.extras[pick(shoeable).id] = true;
+    // neckwear is EXCLUSIVE too (bow tie OR chain OR tie OR scarf, never a pile)
+    const neckable = NECK_DEFS.filter((d) => earnedUnlocked(d));
+    if (neckable.length && Math.random() < 0.4) state.extras[pick(neckable).id] = true;
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     // tempo stays at the DEFAULT (Trym: the surprise is the outfit + caption;
     // tempo is a deliberate final adjustment, and randomizing it also left the
