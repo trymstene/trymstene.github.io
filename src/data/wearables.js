@@ -112,7 +112,9 @@ export const WEARABLE_PACKS = {
       { id: 'boingball', label: 'Boing Ball', phrase: 'a red-white checkered ball', anchor: 'hand', hand: 'left', grip: 4, art: 'boingball' },
       // id is balloons, NOT balloon — the rave already owns 'balloon' as an
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
-      { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons' },
+      // LEFT hand (flipped 17 Jul): was right, where the rubber chicken also
+      // lives — equipping both stacked one glove (Trym caught it in the ad)
+      { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'left', grip: 15, art: 'balloons' },
       // batch-3 hands, balanced: chicken/sign right, fish left
       { id: 'rubberchicken', label: 'Rubber chicken', phrase: 'a rubber chicken', anchor: 'hand', hand: 'right', grip: 10, art: 'rubberchicken' },
       { id: 'bigfish', label: 'Big fish', phrase: 'a big unhappy fish', anchor: 'hand', hand: 'left', grip: 7, art: 'bigfish' },
