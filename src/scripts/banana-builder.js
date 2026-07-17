@@ -153,10 +153,21 @@ function init() {
     const row = tray.closest('.bb-row');
     const label = row && row.querySelector('label');
     if (label && !label.querySelector('.bb-count')) {
+      const slotName = label.textContent.trim();
       const n = document.createElement('span');
       n.className = 'bb-count';
       n.textContent = tray.children.length;
       label.appendChild(n);
+      // the OVERVIEW door: trays show 4-5 at a time; the inventory sheet
+      // shows the whole category at once (Trym: scanning a long sidescroll
+      // for "that item somewhere at the end" is exhausting)
+      const all = document.createElement('button');
+      all.type = 'button';
+      all.className = 'bb-seeall';
+      all.textContent = '⊞ all';
+      all.setAttribute('aria-label', 'Browse all ' + slotName.toLowerCase());
+      all.onclick = () => openInventory(tray, slotName);
+      label.appendChild(all);
     }
     let aL = null, aR = null;
     if (row) {
@@ -186,6 +197,53 @@ function init() {
     sync();
   }
   ['bbGlassesChips', 'bbHatChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+
+  // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
+  // PROXIES of the tray chips — clicks delegate to the real buttons, so every
+  // selection rule (single-select hats/feet, toggling extras, locked doors)
+  // stays in exactly one place. The sheet stays open to compare; the banana
+  // above it tries things on live.
+  let invTray = null;
+  function syncInv() {
+    if (!invTray) return;
+    [...el('bbInvGrid').children].forEach((p, i) => {
+      const s = invTray.children[i];
+      if (s) p.setAttribute('aria-pressed', s.getAttribute('aria-pressed') || 'false');
+    });
+  }
+  function openInventory(tray, slotName) {
+    invTray = tray;
+    el('bbInvTitle').textContent = slotName;
+    el('bbInvCount').textContent = tray.children.length + ' item' + (tray.children.length === 1 ? '' : 's');
+    const g = el('bbInvGrid');
+    g.textContent = '';
+    [...tray.children].forEach((src) => {
+      const isLink = src.tagName === 'A';
+      const p = document.createElement(isLink ? 'a' : 'button');
+      if (isLink) { p.href = src.getAttribute('href'); p.dataset.place = 'builder-locked'; }
+      // onState→refreshUI runs synchronously inside src.click(), so the tray's
+      // aria-pressed is already fresh here (rAF would stall in occluded tabs)
+      else { p.type = 'button'; p.onclick = () => { src.click(); syncInv(); }; }
+      p.className = src.className;
+      p.innerHTML = src.innerHTML;
+      p.title = src.title || src.textContent;
+      p.setAttribute('aria-label', src.getAttribute('aria-label') || src.textContent);
+      g.appendChild(p);
+    });
+    syncInv();
+    el('bbInv').hidden = false;
+    document.documentElement.style.overflow = 'hidden'; // the sheet scrolls, not the page
+    el('bbInvClose').focus({ preventScroll: true });
+    track('inventory_open', { slot: slotName.toLowerCase() });
+  }
+  function closeInventory() {
+    el('bbInv').hidden = true;
+    invTray = null;
+    document.documentElement.style.overflow = '';
+  }
+  el('bbInvClose').onclick = closeInventory;
+  el('bbInvBack').onclick = closeInventory;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('bbInv').hidden) closeInventory(); });
   // a loaded outfit's worn items scroll into view (never hidden in the overflow)
   function revealWorn() {
     document.querySelectorAll('.bb-chips [aria-pressed="true"]').forEach((c) => {
