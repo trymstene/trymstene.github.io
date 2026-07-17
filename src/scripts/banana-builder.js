@@ -28,6 +28,13 @@ const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly);
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
+// the EXTENDED standardized palette — same tray (it scrolls now), all at once
+// in the inventory sheet. Surprise-me sticks to the core BGS above.
+const BGS_MORE = [
+  '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#03a9f4',
+  '#00bcd4', '#009688', '#8bc34a', '#cddc39', '#ff7043', '#795548',
+  '#607d8b', '#ffd9e8', '#d9e8ff', '#d3f8e2', '#fff3c4', '#22163a',
+];
 // tiny monochrome pixel icons (currentColor) for the pause button
 const ICON_PAUSE = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="10" y="10" width="20" height="60"/><rect x="40" y="10" width="20" height="60"/></svg>';
 const ICON_PLAY = '<svg class="pxi" viewBox="0 0 70 80" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><rect x="15" y="10" width="15" height="60"/><rect x="30" y="20" width="15" height="40"/><rect x="45" y="30" width="15" height="20"/></svg>';
@@ -59,7 +66,7 @@ function init() {
     engineDraw(ctx, W, idx, { hat: state.hat, glasses: state.glasses, extras: state.extras, top: state.top, bottom: state.bottom, ...o });
 
   // ---- controls ----
-  BGS.forEach((c) => {
+  BGS.concat(BGS_MORE).forEach((c) => {
     const b = document.createElement('button');
     b.className = 'bb-swatch'; b.dataset.bg = c; b.setAttribute('aria-label', c);
     if (c === 'transparent') b.classList.add('bb-swatch--none'); else b.style.background = c;
@@ -196,7 +203,7 @@ function init() {
     window.addEventListener('resize', sync);
     sync();
   }
-  ['bbGlassesChips', 'bbHatChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
 
   // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
   // PROXIES of the tray chips — clicks delegate to the real buttons, so every
@@ -226,6 +233,8 @@ function init() {
       else { p.type = 'button'; p.onclick = () => { src.click(); syncInv(); }; }
       p.className = src.className;
       p.innerHTML = src.innerHTML;
+      p.style.cssText = src.style.cssText; // swatches carry their colour inline
+      if (src.dataset.bg) p.dataset.bg = src.dataset.bg; // refreshUI paints .bb-swatch by data-bg
       p.title = src.title || src.textContent;
       p.setAttribute('aria-label', src.getAttribute('aria-label') || src.textContent);
       g.appendChild(p);

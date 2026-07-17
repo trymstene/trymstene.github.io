@@ -128,7 +128,17 @@ const appSchema = {
     }
     .bb-slider:focus-visible { outline: 3px solid var(--hot); outline-offset: 2px; }
     .bb-speedends { display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.65; font-weight: 700; margin-top: 0.15rem; }
-    .bb-swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    /* background swatches ride the same tray system as the wearable slots:
+       ONE scrolling line (never stacks), see-all sheet for the full palette */
+    .bb-swatches {
+      display: flex; flex-wrap: nowrap; gap: 0.5rem;
+      overflow-x: auto; overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity; scrollbar-width: none;
+      padding: 3px; /* room for the selected swatch's ring */
+    }
+    .bb-swatches::-webkit-scrollbar { display: none; }
+    .bb-swatches > * { flex: 0 0 auto; scroll-snap-align: start; }
+    .bb-row:has(.bb-swatches) { position: relative; }
     .bb-swatch { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
     .bb-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--hot); }
     /* SLOT TRAYS (#7 ownership stack): each category is ONE non-wrapping,
@@ -201,6 +211,7 @@ const appSchema = {
     }
     .bb-inv__grid .bb-chip--icon { width: 100%; height: 68px; }
     .bb-inv__grid .bb-chip { width: 100%; }
+    .bb-inv__grid .bb-swatch { width: 100%; height: 52px; }
     .bb-inv__hint { padding: 0 0.9rem 0.8rem; font-size: 0.72rem; font-weight: 700; opacity: 0.55; margin: 0; }
     .bb-chip {
       border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
