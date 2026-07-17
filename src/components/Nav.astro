@@ -15,7 +15,9 @@ import PixelIcon from './PixelIcon.astro';
       <a href="/make-a-banana/" data-place="nav">Make a Banana</a>
       <a href="/forge/">Pixel Forge</a>
       <a href="/rave/">Join the Rave</a>
-      <a href="/banana-memes/">Banana Memes</a>
+      {/* nav says "Banana Gallery" (the place); SEO metadata keeps "Banana
+          Memes" (the query) — Trym's call, avoids gallery-vs-memes confusion */}
+      <a href="/banana-memes/">Banana Gallery</a>
       <a href="/shop/">Banana Shop</a>
       <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a>
     </div>
