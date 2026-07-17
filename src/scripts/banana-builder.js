@@ -11,7 +11,7 @@ import {
   SHEET_SRC, FW, FH, NFRAMES, BASE_CYCLE_S, FRAMES, SVG, EFFECTS,
   PACKS, HAT_DEFS, SHADE_DEFS, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, HATS, GLASSES,
   PX, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
-  sheet, assetsReady, drawComposite as engineDraw,
+  sheet, assetsReady, drawComposite as engineDraw, resolveHands,
 } from '../lib/banana-engine.js';
 // shared sticker brain — one source of truth with the PDP (which owns the
 // preview + checkout since 9 Jul; the builder only picks products + previews)
@@ -112,6 +112,24 @@ function init() {
     } catch (e) {}
     return false;
   };
+  // HANDS — two gloves, one item each. The engine's resolveHands() derives
+  // who-holds-what from the equipped SET (identical on every surface — no
+  // hand state in outfits). Here we only enforce CAPACITY: equipping a third
+  // held item frees the glove it prefers (the item resolved to that glove is
+  // dropped) — like grabbing something new with that hand. New hand items
+  // need nothing beyond their manifest entry; never special-case them here.
+  const toggleHand = (d) => {
+    if (state.extras[d.id]) { state.extras[d.id] = false; onState(); return; }
+    const held = EXTRA_DEFS.filter((x) => x.anchor === 'hand' && !x.raveOnly && state.extras[x.id]);
+    if (held.length >= 2) {
+      const glove = resolveHands(state.extras);
+      const evict = glove[d.hand === 'left' ? 'left' : 'right'] || held[0];
+      state.extras[evict.id] = false;
+    }
+    state.extras[d.id] = true;
+    onState();
+  };
+
   // extras = independent toggles, not a single-choice row (the art is the button)
   EXTRA_DEFS.forEach((d) => {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
@@ -136,7 +154,9 @@ function init() {
     b.dataset.val = d.id;
     b.title = d.label;
     b.setAttribute('aria-label', d.label);
-    b.onclick = () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
+    b.onclick = d.anchor === 'hand'
+      ? () => toggleHand(d)
+      : () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
     el('bbExtrasChips').appendChild(b);
   });
 

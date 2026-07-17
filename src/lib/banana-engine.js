@@ -274,6 +274,32 @@ function scratchCv(which, W) {
   return cv;
 }
 
+// ---- THE HAND RESOLVER: two gloves, one item each, forever ----
+// Outfits carry only item IDS (URLs, bb-last, rave broadcasts — no hand
+// state), so who-holds-what must be DERIVED from the equipped set alone.
+// That way every surface — builder, your rave banana, everyone ELSE'S view
+// of you, pass, prints, OG cards — resolves identically with zero schema
+// change. Rules, in order:
+//   1. rave-granted transients (beer, vinyl, broom…) claim first — a beer in
+//      your busy hand bumps your mug to the other glove (the ownership-plan's
+//      "temporary hand override", for free);
+//   2. then catalog order: each item takes its preferred glove, else the
+//      free one, else it is NOT drawn. Three-fisted bananas cannot exist.
+// New hand items need nothing beyond their manifest `hand:` — never touch this.
+function resolveHands(extras) {
+  const out = { left: null, right: null };
+  if (!extras) return out;
+  const held = EXTRA_DEFS.filter((d) => d.anchor === 'hand' && extras[d.id]);
+  held.sort((a, b) => (b.raveOnly ? 1 : 0) - (a.raveOnly ? 1 : 0)); // stable: catalog order within groups
+  for (const d of held) {
+    const pref = d.hand === 'left' ? 'left' : 'right';
+    const other = pref === 'left' ? 'right' : 'left';
+    if (!out[pref]) out[pref] = d;
+    else if (!out[other]) out[other] = d;
+  }
+  return out;
+}
+
 // ---- the one render path ----
 // Draws frame `idx` composited into a W×W canvas.
 // o: { bg: css color|'transparent', captions: bool, hue: deg, effect: 'none'|'disco'|'sparkle'|'confetti' }
@@ -300,17 +326,21 @@ function drawComposite(ctx, W, idx, o) {
 
   bctx.save();
   bctx.filter = o.hue && CTX_FILTER_OK ? `hue-rotate(${o.hue}deg)` : 'none';
+  // held items: resolved ONCE per draw — each glove carries at most one item,
+  // and the assignment is identical on every surface (see resolveHands)
+  const glove = resolveHands(o.extras);
+  const drawHeld = (gside, d) => {
+    if (!F.hands) return;
+    const [hx, hy] = gside === 'left' ? F.hands[0] : F.hands[1];
+    const key = SVG[d.art];
+    const gw2 = gridW(key) * unit, gh2 = gridH(key) * unit;
+    drawAcc(bctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
+  };
   // BEHIND layer: extras flagged `behind: true` draw BEFORE the banana, so the
   // body occludes them (the protest sign riding behind the head; future wings/
   // backpacks). Hand-anchored only — same glove math as the front pass.
-  for (const d of EXTRA_DEFS) {
-    if (!d.behind || !o.extras || !o.extras[d.id]) continue;
-    if (d.anchor === 'hand' && F.hands) {
-      const [hx, hy] = d.hand === 'left' ? F.hands[0] : F.hands[1];
-      const key = SVG[d.art];
-      const gw2 = gridW(key) * unit, gh2 = gridH(key) * unit;
-      drawAcc(bctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
-    }
+  for (const gside of ['left', 'right']) {
+    if (glove[gside] && glove[gside].behind) drawHeld(gside, glove[gside]);
   }
   bctx.imageSmoothingEnabled = false;
   try { bctx.drawImage(sheet, idx * FW, 0, FW, FH, fx, fy, fw, fh); } catch (e) {}
@@ -344,14 +374,8 @@ function drawComposite(ctx, W, idx, o) {
       const mx = fx + F.eyeCx * scale + (side ? mirror * d.sideDx * unit : 0);
       const my = fy + (F.eyeCy + d.dy * PX) * scale;
       drawAcc(bctx, key, mx - mw / 2, my - mh / 2, mw, mh, F.face === 'left');
-    } else if (d.anchor === 'hand') { // held items ride the per-frame glove centres
-      const hands = F.hands;
-      if (hands) {
-        const [hx, hy] = d.hand === 'left' ? hands[0] : hands[1];
-        const key = SVG[d.art];
-        const gw2 = gridW(key) * unit, gh2 = gridH(key) * unit;
-        drawAcc(bctx, key, fx + hx * scale - gw2 / 2, fy + hy * scale - (d.grip || 0) * unit, gw2, gh2, false);
-      }
+    } else if (d.anchor === 'hand') { // held items draw AFTER this loop, via the resolved gloves
+      continue;
     } else if (d.anchor === 'feet') { // ONE shoe drawn per foot, riding the per-frame centroid so the pair dances
       feetDrawn = true;
       const key = SVG[d.art];
@@ -377,6 +401,11 @@ function drawComposite(ctx, W, idx, o) {
       const by = fy + (F.eyeCy + d.dy * PX) * scale;
       drawAcc(bctx, key, bx - bw / 2, by - bh / 2, bw, bh, false);
     }
+  }
+  // the resolved gloves — front-layer held items, one per hand, on top of the
+  // other accessories (a held thing is always nearest the camera)
+  for (const gside of ['left', 'right']) {
+    if (glove[gside] && !glove[gside].behind) drawHeld(gside, glove[gside]);
   }
   bctx.filter = 'none';
   bctx.restore();
@@ -464,4 +493,5 @@ export {
   PX, gridW, gridH, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
   SPARKS, CONFETTI,
   sheet, imgFor, assetsReady, drawComposite, drawAcc, drawSparks, drawConfetti, caption,
+  resolveHands,
 };
