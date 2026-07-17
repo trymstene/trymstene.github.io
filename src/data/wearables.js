@@ -89,11 +89,11 @@ export const WEARABLE_PACKS = {
       { id: 'flamekicks', label: 'Flame kicks', phrase: 'flaming sneakers', anchor: 'feet', art: 'flamekicks', preview: true },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 6, art: 'mug' },
-      { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 2, art: 'trophy', preview: true },
+      { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 5, art: 'trophy', preview: true },
       { id: 'boingball', label: 'Boing Ball', phrase: 'a red-white checkered ball', anchor: 'hand', hand: 'left', grip: 4, art: 'boingball', preview: true },
-      // id is redballoon, NOT balloon — the rave already owns 'balloon' as an
+      // id is balloons, NOT balloon — the rave already owns 'balloon' as an
       // fx id AND a conveyor item kind; three namespaces sharing one word is a trap
-      { id: 'redballoon', label: 'Balloon', phrase: 'a red balloon', anchor: 'hand', hand: 'right', grip: 15, art: 'balloon', preview: true },
+      { id: 'balloons', label: 'Balloons', phrase: 'a bunch of balloons', anchor: 'hand', hand: 'right', grip: 15, art: 'balloons', preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
