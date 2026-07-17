@@ -35,8 +35,11 @@ const appSchema = {
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(appSchema)} />
   <style is:inline slot="head">
     .bb-wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.2rem 4rem; }
-    .bb-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-    @media (min-width: 820px) { .bb-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+    /* minmax(0,1fr) not 1fr: a bare 1fr track has min-width:auto, so the
+       nowrap slot TRAYS would inflate the track (and the page) instead of
+       overflowing inside their own row */
+    .bb-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    @media (min-width: 820px) { .bb-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
 
     /* stage — sticky so you never tweak blind */
     .bb-stagewrap { position: sticky; top: 72px; z-index: 40; background: var(--paper); padding-bottom: 0.6rem; }
@@ -128,7 +131,37 @@ const appSchema = {
     .bb-swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .bb-swatch { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
     .bb-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--hot); }
-    .bb-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    /* SLOT TRAYS (#7 ownership stack): each category is ONE non-wrapping,
+       horizontally scrollable tray — constant height per slot no matter how
+       big the catalog grows (wrapping rows exploded vertically at ~8 items).
+       JS (trayify) adds edge fades + arrows only when there's actually more. */
+    .bb-chips {
+      display: flex; flex-wrap: nowrap; gap: 0.5rem;
+      overflow-x: auto; overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity; scrollbar-width: none;
+      padding: 2px; /* room for the selected chip's outline */
+    }
+    .bb-chips::-webkit-scrollbar { display: none; }
+    .bb-chips > * { flex: 0 0 auto; scroll-snap-align: start; }
+    .bb-row:has(.bb-chips) { position: relative; }
+    /* edge fades signal hidden items (JS toggles) */
+    .bb-chips--fadeR { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
+    .bb-chips--fadeL { -webkit-mask-image: linear-gradient(to left, #000 88%, transparent); mask-image: linear-gradient(to left, #000 88%, transparent); }
+    .bb-chips--fadeL.bb-chips--fadeR { -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); }
+    /* chunky tray arrows — desktop affordance; touch just swipes */
+    .bb-trayarrow {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+      width: 28px; height: 40px; display: grid; place-items: center;
+      border: 3px solid var(--ink); background: var(--banana); border-radius: 2px;
+      font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 2px 2px 0 var(--ink);
+      padding: 0; line-height: 1;
+    }
+    .bb-trayarrow--l { left: -8px; }
+    .bb-trayarrow--r { right: -8px; }
+    .bb-trayarrow[hidden] { display: none; }
+    @media (hover: none) { .bb-trayarrow { display: none; } }
+    /* item count on the slot label — the browse signal at a glance */
+    .bb-count { font-weight: 800; font-size: 0.72rem; opacity: 0.55; margin-left: 0.3rem; }
     .bb-chip {
       border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
       font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;

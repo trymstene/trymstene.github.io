@@ -143,6 +143,61 @@ function init() {
     });
   }
 
+  // ---- slot trays (#7 ownership stack): the chip rows scroll sideways so the
+  // catalog can grow forever. trayify adds the browse affordances — edge fades
+  // + arrows only WHEN items are actually hidden, an item count on the label,
+  // and scrolls the worn item into view so a loaded outfit is never off-screen.
+  function trayify(hostId) {
+    const tray = el(hostId);
+    if (!tray || !tray.children.length) return;
+    const row = tray.closest('.bb-row');
+    const label = row && row.querySelector('label');
+    if (label && !label.querySelector('.bb-count')) {
+      const n = document.createElement('span');
+      n.className = 'bb-count';
+      n.textContent = tray.children.length;
+      label.appendChild(n);
+    }
+    let aL = null, aR = null;
+    if (row) {
+      const mk = (dir) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'bb-trayarrow bb-trayarrow--' + (dir < 0 ? 'l' : 'r');
+        b.textContent = dir < 0 ? '‹' : '›';
+        b.setAttribute('aria-label', dir < 0 ? 'Scroll back' : 'More items');
+        b.onclick = () => tray.scrollBy({ left: dir * tray.clientWidth * 0.8, behavior: 'smooth' });
+        row.appendChild(b);
+        return b;
+      };
+      aL = mk(-1); aR = mk(1);
+    }
+    const sync = () => {
+      const more = tray.scrollWidth - tray.clientWidth > 4;
+      const atL = tray.scrollLeft < 4;
+      const atR = tray.scrollLeft > tray.scrollWidth - tray.clientWidth - 4;
+      tray.classList.toggle('bb-chips--fadeR', more && !atR);
+      tray.classList.toggle('bb-chips--fadeL', more && !atL);
+      if (aL) aL.hidden = !more || atL;
+      if (aR) aR.hidden = !more || atR;
+    };
+    tray.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    sync();
+  }
+  ['bbGlassesChips', 'bbHatChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+  // a loaded outfit's worn items scroll into view (never hidden in the overflow)
+  function revealWorn() {
+    document.querySelectorAll('.bb-chips [aria-pressed="true"]').forEach((c) => {
+      const tray = c.parentElement;
+      if (tray.scrollWidth - tray.clientWidth > 4) {
+        tray.scrollLeft = Math.max(0, c.offsetLeft - tray.clientWidth / 2 + c.offsetWidth / 2);
+        tray.dispatchEvent(new Event('scroll'));
+      }
+    });
+  }
+  setTimeout(revealWorn, 60); // after refreshUI paints aria-pressed
+
   topIn.addEventListener('input', () => { state.top = topIn.value; onState(); });
   botIn.addEventListener('input', () => { state.bottom = botIn.value; onState(); });
   // slider shows "faster to the right": invert into seconds-per-cycle
