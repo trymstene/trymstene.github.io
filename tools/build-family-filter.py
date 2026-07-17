@@ -135,20 +135,23 @@ export function textClean(str) {{
         f.write(module)
     print('wrote', OUT)
 
-    # auto-patch worker-share's marker block (the sync-copy can never drift)
-    wpath = os.path.join(SITE, 'worker-share', 'src', 'index.js')
-    wsrc = open(wpath, encoding='utf-8').read()
+    # auto-patch every worker's marker block (the sync-copies can never drift)
     block = ('// FAMILY-FILTER-START\n'
              f"const F_WORDS = new Set({js_array(words)}.split('|'));\n"
              f"const F_PHRASES = {js_array(phrases)}.split('|');\n"
              f"const F_STEMS = {js_array(STEMS)}.split('|');\n"
              '// FAMILY-FILTER-END')
-    patched = re.sub(r'// FAMILY-FILTER-START\n.*?// FAMILY-FILTER-END', block, wsrc, flags=re.S)
-    if patched == wsrc and block not in wsrc:
-        print('⚠ worker-share markers not found — NOT patched')
-    else:
-        open(wpath, 'w', encoding='utf-8', newline='\n').write(patched)
-        print('patched', wpath)
+    for worker in ['worker-share', 'worker-rave']:
+        wpath = os.path.join(SITE, worker, 'src', 'index.js')
+        if not os.path.exists(wpath):
+            continue
+        wsrc = open(wpath, encoding='utf-8').read()
+        patched = re.sub(r'// FAMILY-FILTER-START\n.*?// FAMILY-FILTER-END', block, wsrc, flags=re.S)
+        if patched == wsrc and block not in wsrc:
+            print(f'⚠ {worker} markers not found — NOT patched')
+        else:
+            open(wpath, 'w', encoding='utf-8', newline='\n').write(patched)
+            print('patched', wpath)
 
 if __name__ == '__main__':
     main()

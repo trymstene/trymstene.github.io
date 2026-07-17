@@ -324,7 +324,7 @@ if (floor) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
-// outfit → a name with no moderation surface: built ONLY from known ids
+// outfit → the fallback name, built ONLY from known ids
 function autoName(o) {
   const adj = (o.extras && o.extras.goldbanana ? 'Golden' : null) // the trophy outranks everything
     || (o.extras && o.extras.glowstick ? 'Glowing' : null)
@@ -334,6 +334,17 @@ function autoName(o) {
   const noun = { cowboy: 'Cowboy', crown: 'Royal', tophat: 'Fancy', party: 'Birthday' }[o.hat]
     || (o.extras && o.extras.bowtie ? 'Dapper' : 'Dancing');
   return adj + ' ' + noun + ' Banana';
+}
+
+// ONE identity (Trym, 17 Jul): the pass name shows on the floor. The server
+// re-filters it (family filter + strike list) — a struck/dirty name never
+// travels, so display falls back to the outfit-name. r.name comes ONLY from
+// server broadcasts; never trust local text for other ravers.
+function dispName(r) {
+  return (r && r.name) || autoName(r.outfit);
+}
+function myPassName() {
+  try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; }
 }
 
 function myOutfit() {
@@ -753,7 +764,7 @@ function init() {
     r.outfit.extras = { ...(r.outfit.extras || {}), beer: true };
     beerWin = happyWin(Date.now() / 1000);
     el('rvCounterBeer').style.display = 'none'; // SVG: no .hidden property AND the UA [hidden] rule skips it — inline display only
-    showBubble('SERVED! 🍺 ' + autoName(r.outfit) + ' drinks free', false, 6000);
+    showBubble('SERVED! 🍺 ' + dispName(r) + ' drinks free', false, 6000);
     refreshHud();
     if (id === myId) { bumpChain(); track('rave_beer'); passPatch('round'); passStat('beers'); }
   }
@@ -1449,7 +1460,7 @@ function init() {
     }
     c.fillStyle = '#fffdf5';
     c.font = '700 30px "Archivo Black", sans-serif';
-    c.fillText(autoName(me.outfit).toUpperCase(), S - 60, S - 116);
+    c.fillText(dispName(me).toUpperCase(), S - 60, S - 116);
     c.fillStyle = '#ffe135';
     c.font = '800 34px "Archivo Black", sans-serif';
     c.fillText('trymstene.com/rave', S - 60, S - 62);
@@ -1585,7 +1596,7 @@ function init() {
       passPatch('golden');
       track('rave_gold');
     } else {
-      showBubble('🍌 ' + autoName(r.outfit) + ' found the GOLDEN BANANA!', false, 6000);
+      showBubble('🍌 ' + dispName(r) + ' found the GOLDEN BANANA!', false, 6000);
     }
   }
 
@@ -1643,7 +1654,7 @@ function init() {
       if (fx.id === 'water') { soberUp(); addHype(8); showBubble('fresh as the day you were peeled.', false, 3200, 'mutter'); }
       track('rave_fx', { fx: fx.id });
     } else {
-      showBubble(FX_ICON[fx.id] + ' ' + autoName(r.outfit) + ' got the ' + (FX_NAMES[fx.id] || 'good stuff') + '!', false, 5000);
+      showBubble(FX_ICON[fx.id] + ' ' + dispName(r) + ' got the ' + (FX_NAMES[fx.id] || 'good stuff') + '!', false, 5000);
     }
   }
 
@@ -1665,7 +1676,7 @@ function init() {
     vinylWinClaimed = Math.floor((Date.now() / 1000 - VINYL_OFFSET) / VINYL_PERIOD);
     const vs = vinylSpotFor(vinylWinClaimed);
     pickupPop(vs.x, vs.y);
-    showBubble('💿 ' + autoName(r.outfit) + ' found a lost record — run it to the DJ!', false, 6000);
+    showBubble('💿 ' + dispName(r) + ' found a lost record — run it to the DJ!', false, 6000);
     refreshHud();
     if (id === myId) {
       bumpChain();
@@ -1684,7 +1695,7 @@ function init() {
     if (!r || !r.vinyl) return;
     r.vinyl = false;
     miniDropUntil = Date.now() + 6000; // the whole floor gets a bonus drop
-    showBubble('💿 ' + autoName(r.outfit) + ' dropped a banger!', false, 7000);
+    showBubble('💿 ' + dispName(r) + ' dropped a banger!', false, 7000);
     refreshHud();
     if (id === myId) { track('rave_vinyl_delivered'); passPatch('courier'); passStat('vinyls'); }
   }
@@ -1942,7 +1953,7 @@ function init() {
       .slice(0, 5)
       .map((r) => {
         const mins = Math.max(0, Math.floor((now - r.joined) / 60000));
-        const name = (r.stage ? '⭐ ' : '') + (r.vinyl ? '💿 ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + (fxActive(r, Date.now()) ? FX_ICON[r.fx.id] + ' ' : '') + autoName(r.outfit) + (r.id === myId ? ' (you)' : '');
+        const name = (r.stage ? '⭐ ' : '') + (r.vinyl ? '💿 ' : '') + (r.outfit.extras && r.outfit.extras.beer ? '🍺 ' : '') + (fxActive(r, Date.now()) ? FX_ICON[r.fx.id] + ' ' : '') + dispName(r) + (r.id === myId ? ' (you)' : '');
         // club titles show at brackets (level 5+) — status the whole floor can SEE
         // (mine derives locally so it shows even in solo mode / before the echo)
         const rl = r.id === myId ? levelFor((passGet().stats || {}).rep || 0).level : r.lvl;
@@ -1966,7 +1977,7 @@ function init() {
       el('rvStatus').className = 'rv-live';
       // sess = floor time so far: iOS re-sockets on every background/foreground,
       // and the server's stage gate must not restart with the socket
-      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
+      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -1993,7 +2004,10 @@ function init() {
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
-      else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) { r.outfit = m.outfit; refreshHud(); } }
+      else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) { r.outfit = m.outfit; if (m.name !== undefined) r.name = m.name; refreshHud(); } }
+      // the QUICK SWIPE: Trym struck a name — it vanishes mid-dance, the
+      // banana falls back to its outfit-name
+      else if (m.t === 'name') { const r = ravers.get(m.id); if (r) { r.name = m.name || ''; refreshHud(); } }
       else if (m.t === 'move') {
         const r = ravers.get(m.id);
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
@@ -2021,7 +2035,7 @@ function init() {
         // booth into view (on mobile you pressed a bottom button and never saw
         // yourself arrive up there — Trym)
         const sr = ravers.get(m.id);
-        if (m.on && sr) showBubble('⭐ ' + autoName(sr.outfit) + ' takes the stage!', false, 4000);
+        if (m.on && sr) showBubble('⭐ ' + dispName(sr) + ' takes the stage!', false, 4000);
         if (m.on && m.id === myId) {
           el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
           // the join needs a MOMENT — wife-test: tapped the button, nothing
@@ -2065,7 +2079,7 @@ function init() {
   function soloMode() {
     el('rvStatus').textContent = 'solo mode (connection trouble) — still dancing';
     myId = 'me';
-    addRaver({ id: 'me', outfit: myOutfit(), joined: Date.now() }, true);
+    addRaver({ id: 'me', outfit: myOutfit(), name: myPassName(), joined: Date.now() }, true);
     if (!welcomed) { welcomed = true; maybeTour(); }
   }
 
@@ -2192,7 +2206,7 @@ function init() {
       tourBigAt(
         clamp(sx, 130, floorW - 130),
         floor.offsetTop + clamp(sy - half - 108, 10, floorH - 150),
-        'THIS IS YOU', me ? autoName(me.outfit) : ''
+        'THIS IS YOU', me ? dispName(me) : ''
       );
     },
     () => { // pull back to the whole club
@@ -2812,7 +2826,7 @@ function init() {
       setStage(myId, want);
       if (want) {
         const sr = ravers.get(myId);
-        if (sr) showBubble('⭐ ' + autoName(sr.outfit) + ' takes the stage!', false, 4000);
+        if (sr) showBubble('⭐ ' + dispName(sr) + ' takes the stage!', false, 4000);
         el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
         bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap ⭐ again to come down');
       }

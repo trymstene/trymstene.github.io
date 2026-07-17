@@ -145,6 +145,7 @@ const description = 'Authorized banana personnel only.';
       <div class="bm-tabs" role="tablist" aria-label="Departments">
         <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">✉ Mail room</button>
         <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery inbox<span class="bm-badge" id="bmGalBadge" hidden></span></button>
+        <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">🪩 Rave names</button>
       </div>
 
       <div id="bmPaneMail">
@@ -189,6 +190,19 @@ const description = 'Authorized banana personnel only.';
           <div id="bmLiveList"></div>
         </div>
       </div>
+
+      <!-- 🪩 RAVE NAMES — the strike desk (Trym's quick swipe on floor names) -->
+      <div id="bmPaneRave" hidden>
+        <div class="bm-bar">
+          <button class="bm-chip" id="bmRaveRefresh" type="button">↻ refresh</button>
+          <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word/fragment manually…" style="max-width:280px;" />
+          <button class="bm-chip" id="bmStrikeAdd" type="button">🔨 strike</button>
+        </div>
+        <p class="bm-livenote">Names pass the family filter at the door; this desk is the backstop for the clever ones.
+          Striking hides the name floor-wide INSTANTLY (their banana falls back to its outfit-name) and blocks it going forward.</p>
+        <div id="bmRaveList"><p class="bm-livenote">Press refresh to load the ledger.</p></div>
+      </div>
+
       <p class="bm-fine">
         BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
         Unauthorized peeling is prohibited and punishable by dance-off.<br>
@@ -386,15 +400,60 @@ const description = 'Authorized banana personnel only.';
     try { gkey = localStorage.getItem('gallery-key') || ''; } catch (e) {}
     let galItems = null; // null = not loaded yet
 
-    function setTab(gal) {
-      el('bmTabMail').setAttribute('aria-selected', String(!gal));
-      el('bmTabGal').setAttribute('aria-selected', String(gal));
-      el('bmPaneMail').hidden = gal;
-      el('bmPaneGal').hidden = !gal;
-      if (gal) galBoot();
+    function setTab(which) { // 'mail' | 'gal' | 'rave'
+      el('bmTabMail').setAttribute('aria-selected', String(which === 'mail'));
+      el('bmTabGal').setAttribute('aria-selected', String(which === 'gal'));
+      el('bmTabRave').setAttribute('aria-selected', String(which === 'rave'));
+      el('bmPaneMail').hidden = which !== 'mail';
+      el('bmPaneGal').hidden = which !== 'gal';
+      el('bmPaneRave').hidden = which !== 'rave';
+      if (which === 'gal') galBoot();
+      if (which === 'rave') raveLoad();
     }
-    el('bmTabMail').onclick = () => setTab(false);
-    el('bmTabGal').onclick = () => setTab(true);
+    el('bmTabMail').onclick = () => setTab('mail');
+    el('bmTabGal').onclick = () => setTab('gal');
+    el('bmTabRave').onclick = () => setTab('rave');
+
+    // ── 🪩 THE RAVE NAMES DESK — Trym's quick swipe on floor names ──
+    // Uses the SAME key value as the gallery desk (set RAVE_KEY on worker-rave
+    // to the gallery.local.json key). Fails closed until the secret exists.
+    const RAVE_API = 'https://banana-rave.trymstene.workers.dev';
+    const rEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    async function raveLoad() {
+      if (!gkey) { el('bmRaveList').innerHTML = '<p class="bm-livenote">Unlock the gallery desk first — this desk shares its key.</p>'; return; }
+      let d;
+      try {
+        const r = await fetch(RAVE_API + '/names?key=' + encodeURIComponent(gkey));
+        if (r.status === 403) { el('bmRaveList').innerHTML = '<p class="bm-livenote">403 — set the RAVE_KEY secret on worker-rave (same value as the gallery key).</p>'; return; }
+        if (!r.ok) throw new Error(r.status);
+        d = await r.json();
+      } catch (e) { el('bmRaveList').innerHTML = '<p class="bm-livenote">Could not reach the floor — try again.</p>'; return; }
+      const fmt = (t) => new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const live = new Set(d.live || []);
+      el('bmRaveList').innerHTML =
+        '<p class="bm-count">' + (d.live || []).length + ' named on the floor now · ' + (d.names || []).length + ' seen · ' + (d.strikes || []).length + ' struck</p>'
+        + ((d.strikes || []).length
+          ? '<p class="bm-livenote">🔨 struck: ' + d.strikes.map((s) => rEsc(s) + ' <button class="bm-chip bm-chip--ghost" data-unstrike="' + rEsc(s) + '">undo</button>').join(' · ') + '</p>'
+          : '')
+        + (d.names || []).map((x) => '<div class="bm-bar" style="justify-content:space-between;">'
+          + '<span>' + (live.has(x.n) ? '🟢 ' : '') + '<b>' + rEsc(x.n) + '</b> <span style="opacity:0.55;font-size:0.75rem;">' + fmt(x.at) + '</span></span>'
+          + '<button class="bm-chip" data-strike="' + rEsc(x.n) + '">🔨 strike</button></div>').join('')
+        || '<p class="bm-livenote">No names seen yet — the floor is all outfit-names so far.</p>';
+      el('bmRaveList').querySelectorAll('[data-strike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.strike, false); });
+      el('bmRaveList').querySelectorAll('[data-unstrike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.unstrike, true); });
+    }
+    async function raveStrike(t, remove) {
+      try {
+        const r = await fetch(RAVE_API + '/strike?key=' + encodeURIComponent(gkey), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ t, remove }),
+        });
+        if (!r.ok) { alert('strike failed (' + r.status + ')'); return; }
+      } catch (e) { alert('strike failed'); return; }
+      raveLoad();
+    }
+    el('bmRaveRefresh').onclick = raveLoad;
+    el('bmStrikeAdd').onclick = () => { const v = el('bmStrikeInput').value.trim(); if (v) { raveStrike(v, false); el('bmStrikeInput').value = ''; } };
 
     // pending ↔ live sub-desks
     function setGalMode(live) {

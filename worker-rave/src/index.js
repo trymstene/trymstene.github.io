@@ -6,8 +6,13 @@
 // floor (outfit ids + join time) and the occasional emote. A rave is,
 // technically, a chat room where nobody talks.
 //
-// Moderation surface: NONE by design — outfits are validated against the
-// id allowlists below (no free text anywhere), emotes are a fixed set.
+// Moderation surface: ONE field, defended in depth (17 Jul — Trym's ONE-
+// identity call: the pass name shows on the floor too). Outfits validate
+// against id allowlists, emotes are a fixed set, and the NAME passes the
+// family filter + Trym's strike list at the door (sanitizeName) — a name
+// that fails simply doesn't travel; the banana wears its outfit-name.
+// Admin: GET /names?key= (ledger of names seen + live + strikes) and
+// POST /strike?key= {t, remove?} — the quick swipe; scrubs the live floor.
 //
 // Cost guardrails: WebSocket hibernation (idle connections ≈ free), room cap,
 // per-connection emote throttle, Origin allowlist. Free plan fails closed.
@@ -148,6 +153,24 @@ export default {
       }
       return room.fetch(request);
     }
+    // the Banana Mail rave-names desk (browser fetches from trymstene.com)
+    if (url.pathname === '/names' || url.pathname === '/strike') {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      const origin = request.headers.get('Origin') || '';
+      const cors = {
+        'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : 'https://trymstene.com',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'content-type',
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json',
+      };
+      if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+      const res = await room.fetch(new Request('https://room' + url.pathname + url.search, {
+        method: request.method,
+        body: request.method === 'POST' ? await request.text() : undefined,
+      }));
+      return new Response(await res.text(), { status: res.status, headers: cors });
+    }
     if (url.pathname === '/count') {
       const res = await room.fetch(new Request('https://room/count'));
       return new Response(await res.text(), {
@@ -170,9 +193,65 @@ function sanitizeOutfit(o) {
   };
 }
 
+// THE FAMILY FILTER (server copy — floor names the client can't sneak past).
+// AUTO-PATCHED by tools/build-family-filter.py between the markers below;
+// same lists + matching as src/lib/family-filter.js. Never edit by hand.
+// FAMILY-FILTER-START
+const F_WORDS = new Set('acrotomophilia|anal|anilingus|anus|arsehole|ass|asshole|assmunch|autoerotic|babeland|bangbros|bangbus|bareback|barenaked|bastard|bastardo|bastinado|bbw|bdsm|beaner|beaners|beastiality|bestiality|bimbos|birdlock|blowjob|blumpkin|bollocks|bondage|boner|boob|boobs|bukkake|bulldyke|bunghole|busty|butt|buttcheeks|butthole|camgirl|camslut|carpetmuncher|cialis|circlejerk|clit|clitoris|cock|cocks|coon|coons|coprolagnia|coprophilia|cornhole|creampie|cum|cumming|cumshot|cumshots|cunnilingus|darkie|daterape|deepthroat|dendrophilia|dick|dildo|dingleberries|dingleberry|doggiestyle|doggystyle|dolcett|domination|dominatrix|dommes|dritt|drittsekk|dvda|ecchi|ejaculation|erotic|erotism|escort|eunuch|faen|fag|fanken|fecal|felch|fellatio|feltch|femdom|figging|fingerbang|fingering|fisting|fitte|footjob|forbanna|forbannet|frotting|fudgepacker|futanari|føkk|føkka|føkkings|gangbang|genitals|goatcx|goatse|gokkun|goodpoop|goregasm|grope|guro|handjob|hardcore|helvete|helvetet|hentai|homoerotic|honkey|hooker|hore|horny|humping|incest|intercourse|jailbait|jigaboo|jiggaboo|jiggerboo|jizz|juggs|kike|kinbaku|kinkster|kinky|kneppe|knobbing|kuk|kukene|kuker|livesex|lolita|lovemaking|masturbate|masturbating|masturbation|milf|mong|morraknuller|morrapuler|muffdiving|nambla|nawashi|nazi|negro|neonazi|nimphomania|nipple|nipples|nsfw|nude|nudity|nutten|nympho|nymphomania|octopussy|omorashi|orgasm|orgy|paedophile|paki|pakkis|panties|panty|pedobear|pedophile|pegging|penis|pikey|pikk|pissing|pisspig|playboy|pokker|ponyplay|poof|poon|poontang|poopchute|pthc|pubes|punany|pussy|queaf|queef|quim|raghead|rape|raping|rapist|rectum|retard|rimjob|rimming|ræva|ræven|sadism|santorum|satan|scat|schlong|scissoring|semen|sex|sexcam|sexo|sexual|sexuality|sexually|sexy|shemale|shibari|shota|shrimping|sinnsykt|skeet|skitt|slanteye|slut|smut|snatch|snowballing|sodomize|sodomy|sotrør|spastic|spic|splooge|spooge|spunk|stapikk|stapikkene|stapikker|strapon|strappado|suck|sucks|svartheiteste|swastika|swinger|threesome|throating|thumbzilla|tit|tits|titties|titty|topless|tosser|towelhead|tranny|tribadism|tubgirl|tushy|twat|twink|twinkie|undressing|upskirt|urophilia|vagina|viagra|vibrator|vorarephilia|voyeur|voyeurweb|voyuer|vulva|wank|wetback|worldsex|xxx|yaoi|yiffy|zoophilia|🖕'.split('|'));
+const F_PHRASES = 'alabamahotpocket|alaskanpipeline|autoerotic|babybatter|babyjuice|ballgag|ballgravy|ballkicking|balllicking|ballsack|ballsucking|barelylegal|beavercleaver|beaverlips|bigblack|bigbreasts|bigknockers|bigtits|blackcock|blondeaction|blondeonblondeaction|blowjob|blowyourload|bluewaffle|bootycall|brownshowers|brunetteaction|bulletvibe|bunghole|cameltoe|carpetmuncher|chocolaterosebuds|clevelandsteamer|cloverclamps|daterape|deepthroat|dirtypillows|dirtysanchez|doggiestyle|doggystyle|dogstyle|donkeypunch|doubledong|doublepenetration|dpaction|dryhump|eatmyass|faenihelvete|femalesquirting|footfetish|fudgepacker|fyfaen|gangbang|gaysex|giantcock|girlon|girlontop|girlscup|girlsgonewild|goddamn|goldenshower|googirl|groupsex|gspot|handjob|hardcore|hotcarl|hotchick|howtokill|howtomurder|hugefat|jackoff|jailbait|jellydonut|jerkoff|leatherrestraint|leatherstraightjacket|lemonparty|makemecome|malesquirting|menageatrois|missionaryposition|moundofvenus|mrhands|muffdiver|nignog|nsfwimages|onecuptwogirls|oneguyonejar|phonesex|pisspig|pleasurechest|polesmoker|poopchute|princealbertpiercing|ragingboner|reversecowgirl|rosypalm|rosypalmandhersisters|rustytrombone|shavedbeaver|shavedpussy|sploogemoose|spreadlegs|strapon|stripclub|styledoggy|suicidegirls|sultrywomen|taintedlove|tastemy|teabagging|tiedup|tightwhite|tongueina|tubgirl|twogirlsonecup|urethraplay|venusmound|violetwand|wetdream|whitepower|wrappingmen|wrinkledstarfish|yellowshowers'.split('|');
+const F_STEMS = 'nigg|fagg|cunt|whore|hitler|jævl|jævel|fuck|shit|bitch|porn'.split('|');
+// FAMILY-FILTER-END
+const F_LEET = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '@': 'a', '$': 's', '!': 'i' };
+const F_MARKS = new RegExp('[' + String.fromCharCode(768) + '-' + String.fromCharCode(879) + ']', 'g');
+function dirty(s) {
+  let base = String(s || '').toLowerCase();
+  try { base = base.normalize('NFD').replace(F_MARKS, ''); } catch (e) {}
+  base = base.replace(/[0134578@$!]/g, (c) => F_LEET[c] || c);
+  const squeezed = base.replace(/(.)\1{2,}/g, '$1');
+  for (const v of (base === squeezed ? [base] : [base, squeezed])) {
+    const collapsed = v.replace(/[^a-zæø]/g, '');
+    if (F_STEMS.some((w) => collapsed.includes(w))) return true;
+    if (F_PHRASES.some((p) => collapsed.includes(p))) return true;
+    const toks = v.split(/[^a-zæø]+/).filter(Boolean);
+    for (const tok of toks) { if (F_WORDS.has(tok)) return true; }
+    let run = '';
+    for (let i = 0; i <= toks.length; i++) {
+      const t = toks[i];
+      if (t && t.length === 1) { run += t; continue; }
+      if (run.length >= 3 && (F_WORDS.has(run) || F_STEMS.some((w) => run.includes(w)))) return true;
+      run = '';
+    }
+  }
+  return false;
+}
+
+// strike-list matching key: lowercase, de-accent, de-leet, letters only —
+// so a struck fragment catches respellings of the same stunt
+function normName(s) {
+  let b = String(s || '').toLowerCase();
+  try { b = b.normalize('NFD').replace(F_MARKS, ''); } catch (e) {}
+  return b.replace(/[0134578@$!]/g, (c) => F_LEET[c] || c).replace(/[^a-zæø]/g, '');
+}
+
+// ONE identity (Trym's call, 17 Jul): the pass name shows on the floor too.
+// Defense in depth: family filter + Trym's strike list; a name that fails
+// either simply doesn't travel — the banana falls back to its outfit-name.
+function sanitizeName(s, strikes) {
+  s = String(s || '').split('').filter((c) => {
+    const k = c.charCodeAt(0);
+    return k >= 32 && k !== 127;
+  }).join('').trim().slice(0, 24);
+  if (!s) return '';
+  if (dirty(s)) return '';
+  const n = normName(s);
+  if (strikes.some((k) => n.includes(k))) return '';
+  return s;
+}
+
 export class RaveRoom {
-  constructor(state) {
+  constructor(state, env) {
     this.state = state;
+    this.env = env; // RAVE_KEY gates the names/strike admin endpoints
     // auto-respond to pings without waking the object (hibernation-friendly)
     this.state.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')
@@ -211,6 +290,31 @@ export class RaveRoom {
       this.reapStale(); // the homepage door polls this — free periodic sweeps
       return new Response(JSON.stringify({ count: this.roster().length }));
     }
+    // ---- Banana Mail's rave-names desk (key-gated; fails closed until Trym
+    // sets the RAVE_KEY secret) ---------------------------------------------
+    if (url.pathname === '/names' || url.pathname === '/strike') {
+      const key = url.searchParams.get('key') || '';
+      if (!this.env || !this.env.RAVE_KEY || key !== this.env.RAVE_KEY) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 });
+      }
+      const strikes = (await this.state.storage.get('nameStrikes')) || [];
+      if (url.pathname === '/strike' && request.method === 'POST') {
+        let b = {};
+        try { b = JSON.parse(await request.text()); } catch (e) {}
+        const frag = normName(String(b.t || '')).slice(0, 24);
+        if (frag.length < 2) return new Response(JSON.stringify({ error: 'too short' }), { status: 400 });
+        const next = b.remove
+          ? strikes.filter((s) => s !== frag)
+          : [...new Set([...strikes, frag])].slice(-200);
+        await this.state.storage.put('nameStrikes', next);
+        if (!b.remove) this.scrubName(frag); // the QUICK SWIPE: live floor scrub
+        return new Response(JSON.stringify({ ok: true, strikes: next }));
+      }
+      const seen = (await this.state.storage.get('namesSeen')) || {};
+      const names = Object.entries(seen).sort((a, b) => b[1] - a[1]).map(([n, at]) => ({ n, at }));
+      const live = this.roster().filter((a) => a.name).map((a) => a.name);
+      return new Response(JSON.stringify({ live, names, strikes }));
+    }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
     }
@@ -248,8 +352,10 @@ export class RaveRoom {
 
     if (msg.t === 'hi' && !me) {
       this.reapStale(); // every join clears the zombies before the roster ships
+      const strikes = (await this.state.storage.get('nameStrikes')) || [];
       const p = {
         id: crypto.randomUUID().slice(0, 8),
+        name: sanitizeName(msg.name, strikes), // '' = the outfit-name speaks
         outfit: sanitizeOutfit(msg.outfit),
         joined: Date.now(),
         // floor time carried across reconnects: iOS re-sockets on every
@@ -272,6 +378,7 @@ export class RaveRoom {
       const itemWin = (await this.state.storage.get('itemWin')) ?? null;
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin, goldWin, itemWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
+      if (p.name) this.recordName(p.name); // the Banana Mail names-desk ledger
       return;
     }
 
@@ -439,12 +546,40 @@ export class RaveRoom {
     }
 
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
+      const strikes = (await this.state.storage.get('nameStrikes')) || [];
+      me.name = sanitizeName(msg.name !== undefined ? msg.name : me.name, strikes);
+      if (me.name) this.recordName(me.name);
       me.outfit = sanitizeOutfit(msg.outfit);
       if (msg.sober) { me.beer = false; me.fx = undefined; } // the water: a clean slate is a CLEAN slate
       if (me.beer) me.outfit.extras.beer = true; // the beer survives a wardrobe change
       ws.serializeAttachment(me);
-      this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit });
+      this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit, name: me.name || '' });
     }
+  }
+
+  // the QUICK SWIPE: a fresh strike sweeps the live floor — matching names
+  // vanish immediately (their bananas fall back to outfit-names)
+  scrubName(frag) {
+    for (const ws of this.state.getWebSockets()) {
+      let a = null;
+      try { a = ws.deserializeAttachment(); } catch (e) {}
+      if (a && !a.dead && a.name && normName(a.name).includes(frag)) {
+        a.name = '';
+        try { ws.serializeAttachment(a); } catch (e) {}
+        this.broadcast({ t: 'name', id: a.id, name: '' });
+      }
+    }
+  }
+
+  // rolling ledger of names seen on the floor (for the Banana Mail desk) —
+  // capped, newest-first, no other data attached
+  async recordName(name) {
+    try {
+      const seen = (await this.state.storage.get('namesSeen')) || {};
+      seen[name] = Date.now();
+      const entries = Object.entries(seen).sort((a, b) => b[1] - a[1]).slice(0, 300);
+      await this.state.storage.put('namesSeen', Object.fromEntries(entries));
+    } catch (e) {}
   }
 
   async webSocketClose(ws) {
@@ -463,6 +598,7 @@ function strip(p) {
     id: p.id, outfit: p.outfit, joined: p.joined, stage: !!p.stage, vinyl: !!p.vinyl, x: p.x, y: p.y,
     fx: p.fx && p.fx.until > Date.now() ? p.fx : undefined, // active effects survive a rejoin, expired ones don't travel
     lvl: p.lvl || undefined, // club level (REP) — titles show on the floor roster
+    name: p.name || undefined, // the pass name (ONE identity) — sanitized at entry
   };
 }
 const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 99 ? n : undefined; };
