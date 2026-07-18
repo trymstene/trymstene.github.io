@@ -576,6 +576,7 @@ function init() {
   }
   let saveT = null;
   function save() {
+    if (mode === 'items') return; // the autosaved draft is the EMOJI one — items never overwrites it
     clearTimeout(saveT);
     saveT = setTimeout(() => { try { localStorage.setItem('forge-draft', serialize()); } catch (e) {} }, 400);
   }
@@ -1090,12 +1091,24 @@ function init() {
     const c = mode === 'items' ? computeWear() : null;
     s.textContent = !c ? '↑ draw an item on the banana' : ('rides the ' + (c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor)));
   }
+  // each mode keeps its OWN drawing — Emoji (frames) and Items (one item) are
+  // separate documents, so a banana loaded in Emoji never leaks into Items.
+  const modeDocs = { emoji: null, items: null };
+  function freshDoc() { state.w = 32; state.h = 32; state.frames = [new Uint8Array(32 * 32)]; state.delays = [120]; state.cur = 0; state.cpal = []; }
   function setMode(m) {
     if (mode === m) return;
+    if (playing) stopPlay();
+    modeDocs[mode] = serialize();                 // stash the mode we're leaving
     mode = m;
+    const doc = modeDocs[m];
+    if (doc) deserialize(doc); else freshDoc();    // restore this mode's drawing (or a clean one)
+    state.undo = []; state.redo = [];
+    if (state.color >= PALETTE.length + state.cpal.length) state.color = 3; // banana yellow fallback
     document.body.classList.toggle('fg-mode-items', m === 'items');
     document.querySelectorAll('.fg-modetab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
-    if (playing) stopPlay();
+    fitCanvas();
+    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(state.w === state.h && +x.dataset.size === state.w)));
+    renderPalette(); setColor(state.color);
     refreshAll(); updateItemsStatus();
     track('forge_mode', { mode: m });
   }
