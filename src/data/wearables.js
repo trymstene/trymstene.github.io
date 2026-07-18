@@ -64,7 +64,7 @@ export const WEARABLE_PACKS = {
       // `flag`; `drop:true` lists it in DROPS (the catchable lineup); `by` credits
       // the maker (Barty's booth). seat pushes it down so the band caps the head
       // and the cyan cups reach ear level.
-      { id: 'djheadphones', label: 'DJ headphones', phrase: 'DJ headphones', art: 'djheadphones', side: 'djheadphonesSide', seat: 3, sideSeat: 8,
+      { id: 'djheadphones', label: 'DJ headphones', phrase: 'DJ headphones', art: 'djheadphones', side: 'djheadphonesSide', seat: 8, sideSeat: 8, behindFront: true,
         earned: 'rave', flag: 'rv-djheadphones', by: 'Barty', drop: true,
         lock: 'a rave drop: catch it on the dance floor — straight from Barty’s booth' },
     ],
