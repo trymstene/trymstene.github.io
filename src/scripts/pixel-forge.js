@@ -15,8 +15,8 @@ import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, FORGE_DIM_MAX, b64, forgeParse, forgeGridToSVG } from '../lib/forge-format.js';
 import { BANANA_REMIX } from '../data/banana-remix.js';
-// wearable mode ("dress the banana") — the dancing banana wears your drawing
-import { drawComposite as engineDraw, assetsReady as engineReady, NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE } from '../lib/banana-engine.js';
+// ITEMS WORKSHOP mode — the dancing banana wears what you draw, in place (WYSIWYG)
+import { drawComposite as engineDraw, assetsReady as engineReady, NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE, wearAnchor, FW as ENG_FW, FH as ENG_FH, FRAME_H_FRAC as ENG_HFRAC, FRAME_TOP_FRAC as ENG_TFRAC, PX as ENG_PX } from '../lib/banana-engine.js';
 
 const el = (id) => document.getElementById(id);
 const stage = el('fgCanvas');
@@ -200,10 +200,13 @@ function init() {
       ctx.fillStyle = (x + y) % 2 ? '#e8e4d8' : '#f4f1e8';
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
-    if (state.onion && state.cur > 0) drawGridInto(ctx, state.frames[state.cur - 1], cell, 0.3);
-    if (wear.on && wear.underlay) drawWearUnderlay(); // faint banana size/placement guide
+    if (state.onion && state.cur > 0 && mode !== 'items') drawGridInto(ctx, state.frames[state.cur - 1], cell, 0.3);
+    if (mode === 'items' && itemsReady) { // the banana IS the canvas here — draw the item on it
+      const bl = bananaLayer(); ctx.globalAlpha = 0.5; ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(bl, (stage.width - bl.width) / 2, (stage.height - bl.height) / 2); ctx.globalAlpha = 1;
+    }
     drawGridInto(ctx, frame(), cell, 1);
-    scheduleWearArt(); // the live "on the banana" preview follows your drawing (debounced)
+    if (mode === 'items') updateItemsStatus();
     // grid lines (light, every cell; stronger every 8)
     ctx.strokeStyle = 'rgba(17,17,17,0.08)';
     for (let i = 1; i < W; i++) {
@@ -357,6 +360,10 @@ function init() {
   let playing = false, playIdx = 0, playLast = 0;
   function drawPlayFrame() {
     ctx.clearRect(0, 0, stage.width, stage.height);
+    if (mode === 'items') { // dance the BANANA wearing what you drew — the preview IS this canvas
+      engineDraw(ctx, stage.width, playIdx % ENG_NFRAMES, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: computeWear() || undefined });
+      return;
+    }
     for (let y = 0; y < state.h; y++) for (let x = 0; x < state.w; x++) {
       ctx.fillStyle = (x + y) % 2 ? '#e8e4d8' : '#f4f1e8';
       ctx.fillRect(x * cell, y * cell, cell, cell);
@@ -365,6 +372,11 @@ function init() {
   }
   function playTick(now) {
     if (!playing) return;
+    if (mode === 'items') { // ride the banana's own 8-frame cadence
+      const cyc = ENG_CYCLE * 1000, idx = Math.floor((now % cyc) / (cyc / ENG_NFRAMES));
+      if (idx !== playIdx) { playIdx = idx; drawPlayFrame(); }
+      requestAnimationFrame(playTick); return;
+    }
     if (now - playLast >= state.delays[playIdx % state.frames.length]) {
       playLast = now;
       playIdx = (playIdx + 1) % state.frames.length;
@@ -372,22 +384,25 @@ function init() {
     }
     requestAnimationFrame(playTick);
   }
+  function setPlayLabel(on) {
+    el('fgPlay').textContent = on ? '⏸ Pause' : '▶ Play';
+    el('fgPlay').setAttribute('aria-pressed', String(on));
+    const ip = el('fgItemsPlay'); if (ip) { ip.textContent = on ? '⏸ Pause' : '▶ Play the dance'; ip.setAttribute('aria-pressed', String(on)); }
+  }
   function stopPlay() {
     if (!playing) return;
     playing = false;
-    el('fgPlay').textContent = '▶ Play';
-    el('fgPlay').setAttribute('aria-pressed', 'false');
+    setPlayLabel(false);
     drawEditor();
   }
   function togglePlay() {
     if (playing) { stopPlay(); return; }
     playing = true;
-    playIdx = state.cur; playLast = 0;
-    el('fgPlay').textContent = '⏸ Pause';
-    el('fgPlay').setAttribute('aria-pressed', 'true');
+    playIdx = mode === 'items' ? 0 : state.cur; playLast = 0;
+    setPlayLabel(true);
     drawPlayFrame();
     requestAnimationFrame(playTick);
-    track('forge_play');
+    track('forge_play', { mode });
   }
   el('fgPlay').onclick = togglePlay;
 
@@ -1025,71 +1040,65 @@ function init() {
     refreshUndoBtn();
   }
 
-  // ---- 🍌 DRESS THE BANANA (wearable mode) ----
-  // The user draws an accessory on the normal grid; here it rides the dancing
-  // banana at a chosen anchor (via the engine's runtime custom channel) and can
-  // be saved as a wearable. A faint banana on the canvas guides the size.
-  const wear = { on: false, uiAnchor: 'head', scale: 1, oy: 0, underlay: true };
-  let wearReady = false; engineReady().then(() => { wearReady = true; wearForce = 6; });
-  let wearArt = null, wearTimer = 0, wearForce = 0, lastWIdx = -1, underlayCv = null;
-  const wearPrevCv = el('fgWearPreview');
-  const wearPrevCtx = wearPrevCv && wearPrevCv.getContext('2d');
+  // ---- 🍌 ITEMS WORKSHOP (a MODE, not a second canvas) ----
+  // The main canvas shows the banana; you draw the item right where it goes and
+  // Play dances it wearing what you drew. Placement is read from WHERE you drew
+  // (offset from the nearest body part), so it can never drift from the drawing.
+  let mode = 'emoji';                         // 'emoji' | 'items'
+  let itemsReady = false; engineReady().then(() => { itemsReady = true; if (mode === 'items') refreshAll(); });
+  let underlayCv = null, underlayW = 0;
 
-  function buildWearArt() { wearArt = forgeGridToSVG(frame(), state.w, state.h, pal()); wearForce = 6; }
-  function scheduleWearArt() { clearTimeout(wearTimer); wearTimer = setTimeout(buildWearArt, 120); }
-  function currentCustom() {
-    if (!wearArt) return null;
-    const a = wear.uiAnchor, c = { art: wearArt.svg, scale: wear.scale, oy: wear.oy };
-    if (a === 'face') c.anchor = 'face';
-    else if (a === 'body') c.anchor = 'chest';
-    else if (a === 'feet') c.anchor = 'feet';
-    else if (a === 'hand-right') { c.anchor = 'hand'; c.hand = 'right'; }
-    else if (a === 'hand-left') { c.anchor = 'hand'; c.hand = 'left'; }
-    else c.anchor = 'head';
-    return c;
-  }
-  function drawWearUnderlay() {
-    if (!wearReady) return;
+  function bananaLayer() {                     // reference banana (frame 2), cached at canvas size
     const S = Math.min(stage.width, stage.height);
-    if (!underlayCv || underlayCv.width !== S) {
-      underlayCv = document.createElement('canvas'); underlayCv.width = underlayCv.height = S;
+    if (!underlayCv || underlayW !== S) {
+      underlayCv = document.createElement('canvas'); underlayCv.width = underlayCv.height = S; underlayW = S;
       engineDraw(underlayCv.getContext('2d'), S, 2, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
     }
-    ctx.globalAlpha = 0.2; ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(underlayCv, (stage.width - S) / 2, (stage.height - S) / 2);
-    ctx.globalAlpha = 1;
+    return underlayCv;
   }
-  function wearTick(now) {
-    requestAnimationFrame(wearTick);
-    if (!wear.on || !wearPrevCtx || !wearReady) return;
-    const cyc = ENG_CYCLE * 1000;
-    const idx = Math.floor((now % cyc) / (cyc / ENG_NFRAMES));
-    if (idx === lastWIdx && wearForce <= 0) return; // redraw on frame change or after an edit
-    lastWIdx = idx; if (wearForce > 0) wearForce--;
-    wearPrevCtx.clearRect(0, 0, wearPrevCv.width, wearPrevCv.height);
-    engineDraw(wearPrevCtx, wearPrevCv.width, idx, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: currentCustom() || undefined });
+  // your drawing → an engine custom accessory: the offset from the nearest body
+  // part + a scale so it renders the exact size you drew.
+  function computeWear() {
+    const out = forgeGridToSVG(frame(), state.w, state.h, pal());
+    if (!out) return null;
+    const S = Math.min(stage.width, stage.height);
+    const scaleB = (S * ENG_HFRAC) / ENG_FH, fxB = (S - ENG_FW * scaleB) / 2, fyB = S * ENG_TFRAC;
+    const cellPx = stage.width / state.w;
+    const toSprite = (cx, cy) => ({ x: (cx - fxB) / scaleB, y: (cy - fyB) / scaleB });
+    const center = toSprite((out.x + out.w / 2) * cellPx, (out.y + out.h / 2) * cellPx);
+    const tl = toSprite(out.x * cellPx, out.y * cellPx);
+    const cands = [['head', null], ['face', null], ['chest', null], ['hand', 'left'], ['hand', 'right'], ['feet', null]];
+    let best = ['head', null], bestD = Infinity, bestAp = wearAnchor(2, 'head');
+    for (const [k, h] of cands) { const ap = wearAnchor(2, k, h); const d = (ap.x - center.x) ** 2 + (ap.y - center.y) ** 2; if (d < bestD) { bestD = d; best = [k, h]; bestAp = ap; } }
+    return { art: out.svg, anchor: best[0], hand: best[1] || undefined, ox: (tl.x - bestAp.x) / ENG_PX, oy: (tl.y - bestAp.y) / ENG_PX, scale: ENG_FH / (state.w * ENG_PX * ENG_HFRAC) };
   }
-  if (wearPrevCtx) {
-    const panel = el('fgWearPanel');
-    if (panel) panel.addEventListener('toggle', () => { wear.on = panel.open; if (wear.on) { buildWearArt(); drawEditor(); } else drawEditor(); });
-    document.querySelectorAll('.fg-anchor').forEach((b) => b.addEventListener('click', () => {
-      wear.uiAnchor = b.dataset.anchor; wearForce = 6;
-      document.querySelectorAll('.fg-anchor').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    }));
-    const sc = el('fgWearScale'); if (sc) sc.addEventListener('input', () => { wear.scale = sc.value / 100; wearForce = 6; });
-    const dyi = el('fgWearDy'); if (dyi) dyi.addEventListener('input', () => { wear.oy = +dyi.value; wearForce = 6; });
-    const un = el('fgWearUnderlay'); if (un) un.addEventListener('change', () => { wear.underlay = un.checked; drawEditor(); });
-    el('fgWearSave').onclick = () => {
-      const btn = el('fgWearSave'), label = btn.textContent;
-      buildWearArt();
-      if (!wearArt) { btn.textContent = 'Draw something first 🎨'; setTimeout(() => { btn.textContent = label; }, 2000); return; }
-      shelfAdd({ kind: 'wearable', params: 'wear:' + JSON.stringify({ forge: serialize(), anchor: wear.uiAnchor, scale: wear.scale, oy: wear.oy }), data: null });
-      el('fgWearDone').hidden = false;
-      btn.textContent = 'Saved to your shelf 🍌'; setTimeout(() => { btn.textContent = label; }, 2500);
-      track('forge_wearable_save', { anchor: wear.uiAnchor });
-    };
-    requestAnimationFrame(wearTick);
+  const RIDE_LABEL = { head: 'head', face: 'face', chest: 'body', feet: 'feet' };
+  function updateItemsStatus() {
+    const s = el('fgItemsRiding'); if (!s) return;
+    const c = mode === 'items' ? computeWear() : null;
+    s.textContent = !c ? '↑ draw an item on the banana' : ('rides the ' + (c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor)));
   }
+  function setMode(m) {
+    if (mode === m) return;
+    mode = m;
+    document.body.classList.toggle('fg-mode-items', m === 'items');
+    document.querySelectorAll('.fg-modetab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    if (playing) stopPlay();
+    refreshAll(); updateItemsStatus();
+    track('forge_mode', { mode: m });
+  }
+  document.querySelectorAll('.fg-modetab').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  const itemsPlay = el('fgItemsPlay'); if (itemsPlay) itemsPlay.onclick = togglePlay;
+  const itemsSave = el('fgItemsSave');
+  if (itemsSave) itemsSave.onclick = () => {
+    const label = itemsSave.textContent;
+    const c = computeWear();
+    if (!c) { itemsSave.textContent = 'Draw an item first 🎨'; setTimeout(() => { itemsSave.textContent = label; }, 2000); return; }
+    shelfAdd({ kind: 'wearable', params: 'wear:' + JSON.stringify({ forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale }), data: null });
+    if (el('fgItemsDone')) el('fgItemsDone').hidden = false;
+    itemsSave.textContent = 'Saved to your shelf 🍌'; setTimeout(() => { itemsSave.textContent = label; }, 2500);
+    track('forge_item_save', { anchor: c.anchor });
+  };
 
   // ---- boot ----
   const pickId = new URLSearchParams(location.search).get('shelf');

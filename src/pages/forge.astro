@@ -117,21 +117,20 @@ const faqLD = {
     .fg-hiddeninput { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
     .fg-importnote { font-size: 0.72rem; opacity: 0.65; margin: 0.5rem 0 0; }
 
-    /* 🍌 DRESS THE BANANA — wearable mode */
-    .fg-wearprev { display: flex; justify-content: center; margin: 0.6rem 0; }
-    .fg-wearprev canvas {
-      width: 200px; height: 200px; image-rendering: pixelated;
-      border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
-      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e8e4d8 0% 50%) 0 0 / 20px 20px;
-    }
-    .fg-anchor {
-      border: 3px solid var(--ink); background: var(--paper); padding: 0.3rem 0.5rem;
-      font-weight: 700; cursor: pointer; font-size: 0.78rem;
+    /* 🍌 ITEMS WORKSHOP — a mode toggle that reuses the same canvas + tools */
+    .fg-modebar { display: flex; gap: 0.6rem; margin: 0 0 1.1rem; }
+    .fg-modetab {
+      flex: 1; border: 3px solid var(--ink); background: var(--paper); padding: 0.65rem 0.5rem;
+      font-weight: 800; font-size: 0.98rem; cursor: pointer; box-shadow: 4px 4px 0 var(--ink);
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
-    .fg-anchor[aria-pressed="true"] { background: var(--banana); box-shadow: inset 3px 3px 0 rgba(17,17,17,0.15); }
-    .fg-wearchk { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; margin: 0.6rem 0; font-weight: 600; }
-    #fgWearSave { width: 100%; }
+    .fg-modetab[aria-pressed="true"] { background: var(--banana); box-shadow: inset 3px 3px 0 rgba(17, 17, 17, 0.16); }
+    .fg-riding { font-size: 0.82rem; font-weight: 800; color: #0e9fb5; margin: 0.35rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    #fgItemsSave { width: 100%; }
+    /* which controls each mode shows */
+    .fg-itemsonly { display: none; }
+    body.fg-mode-items .fg-itemsonly { display: block; }
+    body.fg-mode-items .fg-emojionly { display: none; }
 
     /* the killer feature: your emoji at REAL chat size, live */
     .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
@@ -262,12 +261,17 @@ const faqLD = {
       </p>
     </div>
 
+    <div class="fg-modebar" role="tablist" aria-label="What do you want to make?">
+      <button class="fg-modetab" data-mode="emoji" aria-pressed="true" title="Make an emoji, emote or GIF">🎨 Emoji / GIF</button>
+      <button class="fg-modetab" data-mode="items" aria-pressed="false" title="Make a wearable item the banana can wear at the rave">🍌 Items Workshop</button>
+    </div>
+
     <div class="fg-grid">
       <div class="fg-stagecol">
         <div class="fg-stagecard">
           <canvas id="fgCanvas" width="512" height="512" aria-label="Pixel drawing canvas"></canvas>
         </div>
-        <div class="fg-framesrow">
+        <div class="fg-framesrow fg-emojionly">
           <div class="fg-frames" id="fgFrames"></div>
           <div class="fg-framectl">
             <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false">▶ Play</button>
@@ -324,7 +328,7 @@ const faqLD = {
           </div>
         </div>
 
-        <div class="fg-panel">
+        <div class="fg-panel fg-emojionly">
           <h3>Live at chat size</h3>
           <div class="fg-chat" aria-hidden="true">
             <div class="fg-chat__meta">banana_guy <span>today at 19:99</span></div>
@@ -349,28 +353,17 @@ const faqLD = {
           <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
         </details>
 
-        <details class="fg-panel" id="fgWearPanel">
-          <summary>🍌 Dress the banana</summary>
-          <p class="fg-importnote">Draw an accessory, pick where it sits, and watch the banana wear it as it dances. Save it to your shelf — the best ones become rave drops.</p>
-          <div class="fg-wearprev"><canvas id="fgWearPreview" width="220" height="220" aria-label="The dancing banana wearing your accessory"></canvas></div>
-          <div class="fg-tools" role="group" aria-label="Where the accessory sits">
-            <span class="fg-lab">on the</span>
-            <button class="fg-anchor" data-anchor="head" aria-pressed="true">Head</button>
-            <button class="fg-anchor" data-anchor="face">Face</button>
-            <button class="fg-anchor" data-anchor="body">Body</button>
-            <button class="fg-anchor" data-anchor="hand-right">Hand R</button>
-            <button class="fg-anchor" data-anchor="hand-left">Hand L</button>
-            <button class="fg-anchor" data-anchor="feet">Feet</button>
-          </div>
-          <div class="fg-tools"><label class="fg-lab" for="fgWearScale">size</label><input id="fgWearScale" type="range" min="30" max="220" value="100" style="flex:1;"></div>
-          <div class="fg-tools"><label class="fg-lab" for="fgWearDy">up / down</label><input id="fgWearDy" type="range" min="-40" max="40" value="0" style="flex:1;"></div>
-          <label class="fg-wearchk"><input type="checkbox" id="fgWearUnderlay" checked> banana guide on the drawing canvas</label>
-          <button class="btn btn--light" id="fgWearSave" title="Park this wearable on your shelf">🍌 Save wearable to shelf</button>
-          <div id="fgWearDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>. Submitting drops for review is coming next.</div>
-        </details>
+        <div class="fg-panel fg-itemsonly">
+          <h3>🍌 Items Workshop</h3>
+          <p class="fg-importnote">The banana's on the canvas — draw the item right where it goes (a hat on his head, something in his hand). Where you draw is where it sits. Hit <b>▶ Play</b> to watch it dance wearing it.</p>
+          <p class="fg-riding" id="fgItemsRiding">↑ draw an item on the banana</p>
+          <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false">▶ Play the dance</button>
+          <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
+          <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>. Submitting items for review is coming next.</div>
+        </div>
       </div>
 
-      <div class="fg-export">
+      <div class="fg-export fg-emojionly">
       <h3 class="fg-exphead">⚒ Forge it — transparent, chat-ready</h3>
       <div class="fg-exprow">
         <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="128">GIF 128px · Discord &amp; Slack</button>

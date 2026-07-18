@@ -227,6 +227,21 @@ const FEET_CX = 234, FEET_BOTTOM = 501;
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
 
+// 🍌 WEARABLE ANCHOR POINTS (sprite-px, per frame). The Forge's Items Workshop
+// and the runtime custom channel BOTH read this, so "where you drew it" and
+// "where it rides" agree by construction. A user-drawn item stores its offset
+// from one of these points at the reference frame, then rides that point as the
+// banana dances. Any stable point on the body part works — offset does the rest.
+export function wearAnchor(idx, kind, hand) {
+  const F = FRAMES[idx] || FRAMES[2];
+  if (kind === 'face') return { x: F.eyeCx, y: F.eyeCy };
+  if (kind === 'chest' || kind === 'body') return { x: F.btCx, y: F.eyeCy };
+  if (kind === 'feet') { const fX = F.feetX || [FEET_CX - 71, FEET_CX + 71]; return { x: (fX[0] + fX[1]) / 2, y: FEET_BOTTOM }; }
+  if (kind === 'hand') { const h = F.hands ? (hand === 'left' ? F.hands[0] : F.hands[1]) : [FEET_CX, 300]; return { x: h[0], y: h[1] }; }
+  return { x: F.hatCx, y: F.tipY }; // head (default)
+}
+export const WEAR_ANCHORS = ['head', 'face', 'chest', 'hand', 'feet'];
+
 // ---- effects: deterministic particle tables so the 8-frame GIF loops perfectly ----
 // positions are canvas fractions, kept near the banana so the emoji trim stays tight
 const SPARKS = [
@@ -438,30 +453,16 @@ function drawComposite(ctx, W, idx, o) {
   // constants. Same anchor math as the built-in accessories; no per-frame side
   // art (community sprites are single-view), so it rides but doesn't turn.
   if (o.custom && o.custom.art) {
+    // WYSIWYG placement: the item's TOP-LEFT sits at (anchor point + the offset
+    // captured when it was drawn). The anchor moves per frame → the item rides
+    // it. ox/oy are in sprite UNITS (PX-scaled). s scales the sprite to match
+    // the size it was drawn at.
     const c = o.custom, key = c.art, s = c.scale || 1;
     const cw = gridW(key) * unit * s, ch = gridH(key) * unit * s;
-    const oy = (c.oy || 0) * unit; // ONE vertical nudge, up-positive, any anchor
-    const a = c.anchor;
-    if (a === 'head' || a === 'hat') {
-      const hBottom = fy + F.tipY * scale + (HAT_OVERLAP + (c.seat || 0)) * unit;
-      drawAcc(bctx, key, fx + F.hatCx * scale - cw / 2, hBottom - ch - oy, cw, ch, false);
-    } else if (a === 'face' || a === 'eyes') {
-      const gx = fx + F.eyeCx * scale, gy = fy + (F.eyeCy + (c.dy || 0) * PX) * scale;
-      drawAcc(bctx, key, gx - cw / 2, gy - ch / 2 - oy, cw, ch, F.face === 'left');
-    } else if (a === 'chest' || a === 'body') {
-      const bx = fx + F.btCx * scale, by = fy + (F.eyeCy + (c.dy || 0) * PX) * scale;
-      drawAcc(bctx, key, bx - cw / 2, by - ch / 2 - oy, cw, ch, false);
-    } else if (a === 'feet') {
-      const fby = fy + FEET_BOTTOM * scale + (c.dy || 0) * unit;
-      const feetX = F.feetX || [FEET_CX - 71, FEET_CX + 71];
-      const sm = bctx.imageSmoothingEnabled; bctx.imageSmoothingEnabled = false;
-      feetX.forEach((cxu, fi) => drawAcc(bctx, key, fx + cxu * scale - cw / 2, fby - ch - oy, cw, ch, fi === 0));
-      bctx.imageSmoothingEnabled = sm;
-    } else if (a === 'hand' && F.hands) {
-      const [hx, hy] = c.hand === 'left' ? F.hands[0] : F.hands[1];
-      const grip = c.grip != null ? c.grip : gridH(key) * s / 2; // default: hand holds the sprite's middle
-      drawAcc(bctx, key, fx + hx * scale - cw / 2, fy + hy * scale - grip * unit - oy, cw, ch, false);
-    }
+    const ap = wearAnchor(idx, c.anchor, c.hand);
+    const px = fx + ap.x * scale + (c.ox || 0) * unit;
+    const py = fy + ap.y * scale + (c.oy || 0) * unit;
+    drawAcc(bctx, key, px, py, cw, ch, false);
   }
   bctx.filter = 'none';
   bctx.restore();

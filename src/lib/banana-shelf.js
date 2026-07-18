@@ -18,14 +18,9 @@ function wearCustomFrom(params) {
     const f = forgeParse(d.forge);
     const out = f && forgeGridToSVG(f.frames[0], f.w, f.h, f.palette);
     if (!out) return null;
-    const c = { art: out.svg, scale: d.scale || 1, oy: d.oy || 0 };
-    if (d.anchor === 'face') c.anchor = 'face';
-    else if (d.anchor === 'body') c.anchor = 'chest';
-    else if (d.anchor === 'feet') c.anchor = 'feet';
-    else if (d.anchor === 'hand-left') { c.anchor = 'hand'; c.hand = 'left'; }
-    else if (d.anchor === 'hand-right') { c.anchor = 'hand'; c.hand = 'right'; }
-    else c.anchor = 'head';
-    return c;
+    // offset-based (Items Workshop v2): anchor is the engine anchor already,
+    // ox/oy the captured offset, scale bakes the drawn size
+    return { art: out.svg, anchor: d.anchor || 'head', hand: d.hand, ox: d.ox || 0, oy: d.oy || 0, scale: d.scale || 1 };
   } catch (e) { return null; }
 }
 

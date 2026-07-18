@@ -102,7 +102,7 @@ export function forgeGridToSVG(frame, w, h, palette = FORGE_PALETTE) {
   const sw = bw * U, sh = bh * U;
   return {
     svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sw} ${sh}" width="${sw}" height="${sh}" shape-rendering="crispEdges">${rects.join('')}</svg>`,
-    w: bw, h: bh,
+    w: bw, h: bh, x: minX, y: minY, // x/y = painted bbox origin in GRID CELLS (for placement)
   };
 }
 
