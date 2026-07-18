@@ -432,9 +432,11 @@ function init() {
   // ---- tools + palette ----
   function setTool(t) {
     state.tool = t;
-    document.querySelectorAll('.fg-tool').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+    // only the actual tool buttons toggle pressed — action buttons (undo/redo/
+    // flip/nudge/brush/colour) share the .fg-tool class but carry no data-tool
+    document.querySelectorAll('.fg-tool[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
   }
-  document.querySelectorAll('.fg-tool').forEach((b) => { b.onclick = () => setTool(b.dataset.tool); });
+  document.querySelectorAll('.fg-tool[data-tool]').forEach((b) => { b.onclick = () => setTool(b.dataset.tool); });
 
   function setBrush(n) {
     state.brush = Math.max(1, Math.min(8, n | 0));
