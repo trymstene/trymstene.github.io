@@ -66,7 +66,7 @@ function init() {
   // ---- painting ----
   function paintCell(x, y, idx) {
     const B = state.brush;
-    const o = B === 3 ? -1 : 0; // 3px centres on the cursor, 2px extends right/down
+    const o = -Math.floor((B - 1) / 2); // centre the B×B block on the cursor (any size)
     for (let dy = 0; dy < B; dy++) {
       for (let dx = 0; dx < B; dx++) {
         const px = x + dx + o, py = y + dy + o;
@@ -437,11 +437,22 @@ function init() {
   document.querySelectorAll('.fg-tool').forEach((b) => { b.onclick = () => setTool(b.dataset.tool); });
 
   function setBrush(n) {
-    state.brush = n;
-    document.querySelectorAll('.fg-brush').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.brush === n)));
-    track('forge_brush', { px: n });
+    state.brush = Math.max(1, Math.min(8, n | 0));
+    const lbl = el('fgBrushLbl'), val = el('fgBrushVal');
+    if (lbl) lbl.textContent = state.brush;
+    if (val) val.textContent = state.brush;
+    track('forge_brush', { px: state.brush });
   }
-  document.querySelectorAll('.fg-brush').forEach((b) => { b.onclick = () => setBrush(+b.dataset.brush); });
+  // brush-size + colour POPOVERS (one compact button each, opens on click)
+  function closePops() { const bp = el('fgBrushPop'), cp = el('fgColorPop'); if (bp) bp.hidden = true; if (cp) cp.hidden = true; }
+  const brushBtn = el('fgBrushBtn'), brushPop = el('fgBrushPop'), brushRange = el('fgBrushRange');
+  if (brushBtn && brushPop) {
+    brushBtn.onclick = (e) => { e.stopPropagation(); const open = brushPop.hidden; closePops(); brushPop.hidden = !open; };
+    if (brushRange) brushRange.oninput = () => setBrush(+brushRange.value);
+  }
+  const colorBtn = el('fgColorBtn'), colorPop = el('fgColorPop');
+  if (colorBtn && colorPop) colorBtn.onclick = (e) => { e.stopPropagation(); const open = colorPop.hidden; closePops(); colorPop.hidden = !open; };
+  document.addEventListener('click', (e) => { if (!e.target.closest('.fg-pop, #fgBrushBtn, #fgColorBtn')) closePops(); });
 
   // Material-style palette UI over the FIXED indices (UI only — the shared
   // palette itself never changes): 8 hue mains, one shades strip for the
@@ -494,6 +505,7 @@ function init() {
       if (s) activeShades = s;
     }
     el('fgPalEdit').hidden = idx < PALETTE.length; // only YOUR colours are editable
+    const cb = el('fgColorBtn'); if (cb) cb.style.background = pal()[idx] || 'transparent'; // the one swatch shows the pick
     renderPalette();
   }
 
@@ -1113,7 +1125,7 @@ function init() {
   setTool('pencil');
   renderPalette();
   setColor(state.color);
-  document.querySelector('.fg-brush[data-brush="1"]').setAttribute('aria-pressed', 'true');
+  setBrush(1);
   el('fgOnion').setAttribute('aria-pressed', String(state.onion));
   refreshAll();
   requestAnimationFrame(previewTick);

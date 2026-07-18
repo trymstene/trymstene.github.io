@@ -80,10 +80,6 @@ const faqLD = {
 
     .fg-tools { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
     .fg-tools + .fg-tools, .fg-toolgrid + .fg-tools { margin-top: 0.65rem; }
-    /* symbol-only buttons slim down so full rows fit the sidebar without wrapping */
-    #fgUndo, #fgRedo, #fgFlipH, #fgFlipV, #fgShL, #fgShR, #fgShU, #fgShD { padding-left: 0.55rem; padding-right: 0.55rem; }
-    .fg-tools > button.fg-brush { padding-left: 0.5rem; padding-right: 0.5rem; }
-    #fgUndo { margin-left: 0.5rem; } /* brushes | history — two groups, not one mush */
     .fg-toolgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
     .fg-toolgrid > button {
       border: 3px solid var(--ink); background: var(--paper); padding: 0.5rem 0.4rem;
@@ -99,6 +95,31 @@ const faqLD = {
     .fg-tools > button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
     .fg-tools > button[disabled] { opacity: 0.4; cursor: default; }
     .fg-lab { flex-basis: 100%; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; }
+
+    /* COMPACT TOOLBAR — icon-only tools, popovers for brush + colour (MS-Paint-ish) */
+    .fg-bar { position: relative; padding: 0.7rem; }
+    .fg-toolrow { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+    .fg-tool {
+      width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+      border: 3px solid var(--ink); background: var(--paper); cursor: pointer; font-size: 1.05rem; padding: 0;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .fg-tool[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .fg-tool[disabled] { opacity: 0.4; cursor: default; }
+    .fg-tool--wide { width: auto; min-width: 50px; gap: 0.28rem; font-weight: 800; font-size: 0.9rem; padding: 0 0.4rem; }
+    .fg-brushdot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
+    .fg-colorbtn { background: #ffe135; box-shadow: inset 0 0 0 3px var(--paper); }
+    .fg-vsep { width: 3px; align-self: stretch; background: rgba(17, 17, 17, 0.14); margin: 3px 0.12rem; }
+    .fg-pop {
+      position: absolute; z-index: 20; left: 0.7rem; right: 0.7rem; margin-top: 0.5rem;
+      border: 3px solid var(--ink); background: var(--paper); box-shadow: 5px 5px 0 var(--ink); padding: 0.75rem;
+    }
+    .fg-pop[hidden] { display: none; }
+    .fg-pop > label { display: block; margin-bottom: 0.45rem; }
+    .fg-pop input[type="range"] { width: 100%; }
+    /* the un-boxed Items controls (the tab already says "Items Workshop") */
+    .fg-itemsbar { display: flex; flex-direction: column; gap: 0.6rem; }
+    .fg-itemsbar .btn { width: 100%; }
 
     /* PALETTE — material-style: 8 hue mains, one shades strip, your colours */
     .fg-mains { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
@@ -290,42 +311,41 @@ const faqLD = {
       </div>
 
       <div class="fg-side">
-        <div class="fg-panel">
-          <h3>Draw</h3>
-          <div class="fg-toolgrid" role="group" aria-label="Drawing tools">
-            <button class="fg-tool" data-tool="pencil" title="Pencil (B)">✏️ Pencil</button>
-            <button class="fg-tool" data-tool="eraser" title="Eraser (E)">🧽 Eraser</button>
-            <button class="fg-tool" data-tool="fill" title="Fill (F)">🪣 Fill</button>
-            <button class="fg-tool" data-tool="picker" title="Pick a colour (I)">💉 Pick</button>
+        <div class="fg-panel fg-bar">
+          <div class="fg-toolrow" role="toolbar" aria-label="Tools">
+            <button class="fg-tool" data-tool="pencil" title="Pencil (B)" aria-label="Pencil" aria-pressed="true">✏️</button>
+            <button class="fg-tool" data-tool="eraser" title="Eraser (E)" aria-label="Eraser">🧽</button>
+            <button class="fg-tool" data-tool="fill" title="Fill (F)" aria-label="Fill">🪣</button>
+            <button class="fg-tool" data-tool="picker" title="Pick a colour (I)" aria-label="Pick colour">💉</button>
+            <span class="fg-vsep"></span>
+            <button class="fg-tool fg-tool--wide" id="fgBrushBtn" title="Brush size" aria-label="Brush size"><span class="fg-brushdot"></span><b id="fgBrushLbl">1</b></button>
+            <button class="fg-tool fg-colorbtn" id="fgColorBtn" title="Colour — click to choose" aria-label="Choose a colour"></button>
+            <span class="fg-vsep"></span>
+            <button class="fg-tool" id="fgUndo" title="Undo (Ctrl+Z)" aria-label="Undo">↩</button>
+            <button class="fg-tool" id="fgRedo" title="Redo (Ctrl+Y)" aria-label="Redo">↪</button>
+            <button class="fg-tool" id="fgFlipH" title="Flip horizontally" aria-label="Flip horizontally">⇋</button>
+            <button class="fg-tool" id="fgFlipV" title="Flip vertically" aria-label="Flip vertically">⇵</button>
+            <button class="fg-tool" id="fgShL" title="Nudge left" aria-label="Nudge left">←</button>
+            <button class="fg-tool" id="fgShR" title="Nudge right" aria-label="Nudge right">→</button>
+            <button class="fg-tool" id="fgShU" title="Nudge up" aria-label="Nudge up">↑</button>
+            <button class="fg-tool" id="fgShD" title="Nudge down" aria-label="Nudge down">↓</button>
           </div>
-          <div class="fg-tools" role="group" aria-label="Brush size and history">
-            <button class="fg-brush" data-brush="1" title="1-pixel brush">1px</button>
-            <button class="fg-brush" data-brush="2" title="2-pixel brush">2px</button>
-            <button class="fg-brush" data-brush="3" title="3-pixel brush">3px</button>
-            <button id="fgUndo" title="Undo (Ctrl+Z)">↩</button>
-            <button id="fgRedo" title="Redo (Ctrl+Y)">↪</button>
-          </div>
-          <div class="fg-tools" role="group" aria-label="Flip and move the frame">
-            <span class="fg-lab">flip &amp; move</span>
-            <button id="fgFlipH" title="Flip horizontally">⇋</button>
-            <button id="fgFlipV" title="Flip vertically">⇵</button>
-            <button id="fgShL" title="Shift left (wraps around)">←</button>
-            <button id="fgShR" title="Shift right (wraps around)">→</button>
-            <button id="fgShU" title="Shift up (wraps around)">↑</button>
-            <button id="fgShD" title="Shift down (wraps around)">↓</button>
-          </div>
-        </div>
 
-        <div class="fg-panel">
-          <h3>Colours</h3>
-          <div class="fg-mains" id="fgMains" role="group" aria-label="Colour families"></div>
-          <div class="fg-shades" id="fgShades" role="group" aria-label="Shades of the picked family"></div>
-          <div class="fg-customs" id="fgCustomsRow" role="group" aria-label="Your colours">
-            <span id="fgCustoms" style="display:contents"></span>
-            <button class="fg-palbtn" id="fgPalAdd" title="Pick any colour — it joins your palette">＋ your colour</button>
-            <button class="fg-palbtn" id="fgPalEdit" title="Refine this custom colour" hidden>✎ tweak</button>
-            <input id="fgColorInput" type="color" class="fg-hiddeninput" aria-label="Custom colour picker">
+          <div class="fg-pop" id="fgBrushPop" hidden>
+            <label class="fg-lab" for="fgBrushRange">brush <b id="fgBrushVal">1</b> px</label>
+            <input id="fgBrushRange" type="range" min="1" max="8" value="1">
           </div>
+
+          <div class="fg-pop fg-colorpop" id="fgColorPop" hidden>
+            <div class="fg-mains" id="fgMains" role="group" aria-label="Colour families"></div>
+            <div class="fg-shades" id="fgShades" role="group" aria-label="Shades of the picked family"></div>
+            <div class="fg-customs" id="fgCustomsRow" role="group" aria-label="Your colours">
+              <span id="fgCustoms" style="display:contents"></span>
+              <button class="fg-palbtn" id="fgPalAdd" title="Pick any colour — it joins your palette">＋ your colour</button>
+              <button class="fg-palbtn" id="fgPalEdit" title="Refine this custom colour" hidden>✎ tweak</button>
+            </div>
+          </div>
+          <input id="fgColorInput" type="color" class="fg-hiddeninput" aria-label="Custom colour picker">
         </div>
 
         <div class="fg-panel fg-emojionly">
@@ -353,10 +373,8 @@ const faqLD = {
           <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
         </details>
 
-        <div class="fg-panel fg-itemsonly">
-          <h3>🍌 Items Workshop</h3>
-          <p class="fg-importnote">The banana's on the canvas — draw the item right where it goes (a hat on his head, something in his hand). Where you draw is where it sits. Hit <b>▶ Play</b> to watch it dance wearing it.</p>
-          <p class="fg-riding" id="fgItemsRiding">↑ draw an item on the banana</p>
+        <div class="fg-itemsonly fg-itemsbar">
+          <p class="fg-riding" id="fgItemsRiding">↑ draw the item on the banana, where it goes</p>
           <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false">▶ Play the dance</button>
           <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
           <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>. Submitting items for review is coming next.</div>
