@@ -1101,6 +1101,7 @@ function init() {
   }
   document.querySelectorAll('.fg-modetab').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
   const itemsPlay = el('fgItemsPlay'); if (itemsPlay) itemsPlay.onclick = togglePlay;
+  const itemsClear = el('fgItemsClear'); if (itemsClear) itemsClear.onclick = () => el('fgClear').click(); // reuse the confirm + wipe
   const itemsSave = el('fgItemsSave');
   if (itemsSave) itemsSave.onclick = () => {
     const label = itemsSave.textContent;
