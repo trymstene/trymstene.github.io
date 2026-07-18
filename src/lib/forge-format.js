@@ -68,6 +68,44 @@ export function forgeParse(str) {
   } catch (e) { return null; }
 }
 
+// THE BRIDGE (wearable mode): a Forge index-grid → the wearable engine's
+// rect-per-cell SVG string (10 svg-units per cell, run-length merged, crisp).
+// Crops to the painted bounding box so the sprite is TIGHT — the engine sizes &
+// anchors accessories by their own grid extent, so empty margins would offset it.
+// Returns { svg, w, h } in GRID cells, or null if nothing is painted.
+export function forgeGridToSVG(frame, w, h, palette = FORGE_PALETTE) {
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = frame[y * w + x];
+      if (idx && palette[idx]) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return null; // nothing painted
+  const bw = maxX - minX + 1, bh = maxY - minY + 1, U = 10;
+  const rects = [];
+  for (let y = minY; y <= maxY; y++) {
+    let x = minX;
+    while (x <= maxX) {
+      const idx = frame[y * w + x];
+      const col = idx && palette[idx];
+      if (!col) { x++; continue; }
+      let run = 1;
+      while (x + run <= maxX && frame[y * w + x + run] === idx) run++;
+      rects.push(`<rect x="${(x - minX) * U}" y="${(y - minY) * U}" width="${run * U}" height="${U}" fill="${col}"/>`);
+      x += run;
+    }
+  }
+  const sw = bw * U, sh = bh * U;
+  return {
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sw} ${sh}" width="${sw}" height="${sh}" shape-rendering="crispEdges">${rects.join('')}</svg>`,
+    w: bw, h: bh,
+  };
+}
+
 // draw one frame of index data into a 2d context at an integer scale;
 // pass the creation's own palette (from forgeParse) so custom colours render
 export function forgeDrawFrame(ctx, frame, w, h, scale, alpha = 1, palette = FORGE_PALETTE) {

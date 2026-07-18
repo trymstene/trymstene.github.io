@@ -432,6 +432,35 @@ function drawComposite(ctx, W, idx, o) {
   for (const gside of ['left', 'right']) {
     if (glove[gside] && !glove[gside].behind) drawHeld(gside, glove[gside]);
   }
+  // 🍌 RUNTIME CUSTOM accessory (the Forge's wearable mode): a user-drawn sprite
+  // (raw SVG string via forgeGridToSVG) rendered at a chosen anchor. This is the
+  // ONE runtime channel into the catalog's world — everything else is build-time
+  // constants. Same anchor math as the built-in accessories; no per-frame side
+  // art (community sprites are single-view), so it rides but doesn't turn.
+  if (o.custom && o.custom.art) {
+    const c = o.custom, key = c.art, s = c.scale || 1;
+    const cw = gridW(key) * unit * s, ch = gridH(key) * unit * s;
+    const a = c.anchor;
+    if (a === 'head' || a === 'hat') {
+      const hBottom = fy + F.tipY * scale + (HAT_OVERLAP + (c.seat || 0)) * unit;
+      drawAcc(bctx, key, fx + F.hatCx * scale - cw / 2, hBottom - ch, cw, ch, false);
+    } else if (a === 'face' || a === 'eyes') {
+      const gx = fx + F.eyeCx * scale, gy = fy + (F.eyeCy + (c.dy || 0) * PX) * scale;
+      drawAcc(bctx, key, gx - cw / 2, gy - ch / 2, cw, ch, F.face === 'left');
+    } else if (a === 'chest' || a === 'body') {
+      const bx = fx + F.btCx * scale, by = fy + (F.eyeCy + (c.dy || 0) * PX) * scale;
+      drawAcc(bctx, key, bx - cw / 2, by - ch / 2, cw, ch, false);
+    } else if (a === 'feet') {
+      const fby = fy + FEET_BOTTOM * scale + (c.dy || 0) * unit;
+      const feetX = F.feetX || [FEET_CX - 71, FEET_CX + 71];
+      const sm = bctx.imageSmoothingEnabled; bctx.imageSmoothingEnabled = false;
+      feetX.forEach((cxu, fi) => drawAcc(bctx, key, fx + cxu * scale - cw / 2, fby - ch, cw, ch, fi === 0));
+      bctx.imageSmoothingEnabled = sm;
+    } else if (a === 'hand' && F.hands) {
+      const [hx, hy] = c.hand === 'left' ? F.hands[0] : F.hands[1];
+      drawAcc(bctx, key, fx + hx * scale - cw / 2, fy + hy * scale - (c.grip || 0) * unit, cw, ch, false);
+    }
+  }
   bctx.filter = 'none';
   bctx.restore();
 
