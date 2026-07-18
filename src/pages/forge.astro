@@ -122,6 +122,13 @@ const faqLD = {
     }
     .fg-tool[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
     .fg-tool .pai { display: block; } /* pixelarticons UI icon — colour follows currentColor */
+    /* buttons/headings that pair a pixel icon with a text label — align on one line */
+    .btn:has(> .pai), .fg-palbtn:has(> .pai), .fg-modetab:has(> .pai),
+    .fg-framectl button:has(> .pai), .fg-exphead:has(> .pai) {
+      display: inline-flex; align-items: center; gap: 0.35rem; justify-content: center;
+    }
+    .fg-framectl button:has(> .pai) { gap: 0.25rem; }
+    .fg-toast .pai { vertical-align: -0.14em; }
     .fg-tool[disabled] { opacity: 0.4; cursor: default; }
     .fg-tool--wide { width: auto; min-width: 50px; gap: 0.28rem; font-weight: 800; font-size: 0.9rem; padding: 0 0.4rem; }
     .fg-brushdot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
@@ -300,8 +307,8 @@ const faqLD = {
     </div>
 
     <div class="fg-modebar" role="tablist" aria-label="What do you want to make?">
-      <button class="fg-modetab" data-mode="emoji" aria-pressed="true" title="Make an emoji, emote or GIF">🎨 Emoji / GIF</button>
-      <button class="fg-modetab" data-mode="items" aria-pressed="false" title="Make a wearable item the banana can wear at the rave">🍌 Items Workshop</button>
+      <button class="fg-modetab" data-mode="emoji" aria-pressed="true" title="Make an emoji, emote or GIF"><PixelArtIcon name="gif" size="20px" /> Emoji / GIF</button>
+      <button class="fg-modetab" data-mode="items" aria-pressed="false" title="Make a wearable item the banana can wear at the rave"><PixelArtIcon name="shirt" size="20px" /> Items Workshop</button>
     </div>
 
     <div class="fg-grid">
@@ -313,14 +320,14 @@ const faqLD = {
         <div class="fg-framesrow fg-emojionly">
           <div class="fg-frames" id="fgFrames"></div>
           <div class="fg-framectl">
-            <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false">▶ Play</button>
-            <button id="fgAdd" title="New empty frame">+ frame</button>
-            <button id="fgDup" title="Duplicate this frame">⧉</button>
-            <button id="fgDel" title="Delete this frame">🗑</button>
-            <button id="fgClear" title="Wipe this frame clean">🧹</button>
-            <button id="fgMoveL" title="Move this frame earlier">◀</button>
-            <button id="fgMoveR" title="Move this frame later">▶</button>
-            <button id="fgOnion" title="Ghost of the previous frame (O)">👻</button>
+            <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play</button>
+            <button id="fgAdd" title="New empty frame"><PixelArtIcon name="plus" size="18px" /> frame</button>
+            <button id="fgDup" title="Duplicate this frame" aria-label="Duplicate this frame"><PixelArtIcon name="duplicate" size="20px" /></button>
+            <button id="fgDel" title="Delete this frame" aria-label="Delete this frame"><PixelArtIcon name="trash" size="20px" /></button>
+            <button id="fgClear" title="Wipe this frame clean" aria-label="Wipe this frame clean"><PixelArtIcon name="eraser" size="20px" /></button>
+            <button id="fgMoveL" title="Move this frame earlier" aria-label="Move this frame earlier"><PixelArtIcon name="chevron-left" size="20px" /></button>
+            <button id="fgMoveR" title="Move this frame later" aria-label="Move this frame later"><PixelArtIcon name="chevron-right" size="20px" /></button>
+            <button id="fgOnion" title="Ghost of the previous frame (O)" aria-label="Onion skin — ghost of previous frame"><PixelArtIcon name="eye" size="20px" /></button>
             <label for="fgDelay" style="font-size:0.8rem;">delay</label>
             <input id="fgDelay" type="number" min="50" max="1000" step="10" value="120"> <span style="font-size:0.8rem;opacity:0.7;">ms</span>
             <span id="fgFrameInfo"></span>
@@ -359,8 +366,8 @@ const faqLD = {
             <div class="fg-shades" id="fgShades" role="group" aria-label="Shades of the picked family"></div>
             <div class="fg-customs" id="fgCustomsRow" role="group" aria-label="Your colours">
               <span id="fgCustoms" style="display:contents"></span>
-              <button class="fg-palbtn" id="fgPalAdd" title="Pick any colour — it joins your palette">＋ your colour</button>
-              <button class="fg-palbtn" id="fgPalEdit" title="Refine this custom colour" hidden>✎ tweak</button>
+              <button class="fg-palbtn" id="fgPalAdd" title="Pick any colour — it joins your palette"><PixelArtIcon name="plus" size="15px" /> your colour</button>
+              <button class="fg-palbtn" id="fgPalEdit" title="Refine this custom colour" hidden><PixelArtIcon name="edit" size="15px" /> tweak</button>
             </div>
           </div>
           <input id="fgColorInput" type="color" class="fg-hiddeninput" aria-label="Custom colour picker">
@@ -385,30 +392,30 @@ const faqLD = {
           <div class="fg-tools" role="group" aria-label="Import">
             <span class="fg-lab">start from</span>
             <button id="fgBanana" class="fg-emojionly" title="Load the 1999 dancing banana onto the grid and remix it">🍌 Remix the banana</button>
-            <button id="fgImportBtn" title="Pixelate an existing GIF or image onto the grid — draw an item, or bring one in from Photoshop">⬆ Import GIF / image</button>
+            <button id="fgImportBtn" title="Pixelate an existing GIF or image onto the grid — draw an item, or bring one in from Photoshop"><PixelArtIcon name="upload" size="18px" /> Import GIF / image</button>
           </div>
           <input id="fgImportFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg" class="fg-hiddeninput" aria-label="Import an image">
           <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
         </details>
 
         <div class="fg-itemsonly fg-itemsbar">
-          <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false">▶ Play the dance</button>
+          <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play the dance</button>
           <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
-          <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over">🧹 Clear &amp; start over</button>
+          <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over"><PixelArtIcon name="eraser" size="18px" /> Clear &amp; start over</button>
           <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>. Submitting items for review is coming next.</div>
         </div>
       </div>
 
       <div class="fg-export fg-emojionly">
-      <h3 class="fg-exphead">⚒ Forge it — transparent, chat-ready</h3>
+      <h3 class="fg-exphead"><PixelArtIcon name="zap" size="18px" /> Forge it — transparent, chat-ready</h3>
       <div class="fg-exprow">
         <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="128">GIF 128px · Discord &amp; Slack</button>
         <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="112">GIF 112px · Twitch</button>
         <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="512">GIF 512px · hi-res</button>
         <button class="btn btn--dark fg-exp" data-fmt="png" data-px="512">PNG 512px · this frame</button>
       </div>
-      <button class="btn btn--light" id="fgSave" title="Park this draft on your shelf and start another">🗄 Save to shelf</button>
-      <button class="btn btn--light" id="fgWallSubmit" title="The banana guy hangs the best ones on the wall">🖼 Submit to the Wall</button>
+      <button class="btn btn--light" id="fgSave" title="Park this draft on your shelf and start another"><PixelArtIcon name="save" size="18px" /> Save to shelf</button>
+      <button class="btn btn--light" id="fgWallSubmit" title="The banana guy hangs the best ones on the wall"><PixelArtIcon name="image" size="18px" /> Submit to the Wall</button>
       <div class="fg-signrow" id="fgSignRow" hidden>
         <input id="fgSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter">
         <button class="btn btn--dark" id="fgSignSend">Send to the Wall</button>

@@ -15,6 +15,7 @@ import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, FORGE_DIM_MAX, b64, forgeParse, forgeGridToSVG } from '../lib/forge-format.js';
 import { BANANA_REMIX } from '../data/banana-remix.js';
+import { iconSvg } from '../lib/pixel-icons.js';
 // ITEMS WORKSHOP mode — the dancing banana wears what you draw, in place (WYSIWYG)
 import { drawComposite as engineDraw, assetsReady as engineReady, NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE, wearAnchor, FW as ENG_FW, FH as ENG_FH, FRAME_H_FRAC as ENG_HFRAC, FRAME_TOP_FRAC as ENG_TFRAC, PX as ENG_PX } from '../lib/banana-engine.js';
 
@@ -385,9 +386,10 @@ function init() {
     requestAnimationFrame(playTick);
   }
   function setPlayLabel(on) {
-    el('fgPlay').textContent = on ? '⏸ Pause' : '▶ Play';
+    const ic = iconSvg(on ? 'pause' : 'play', { size: 18 });
+    el('fgPlay').innerHTML = ic + (on ? ' Pause' : ' Play');
     el('fgPlay').setAttribute('aria-pressed', String(on));
-    const ip = el('fgItemsPlay'); if (ip) { ip.textContent = on ? '⏸ Pause' : '▶ Play the dance'; ip.setAttribute('aria-pressed', String(on)); }
+    const ip = el('fgItemsPlay'); if (ip) { ip.innerHTML = ic + (on ? ' Pause' : ' Play the dance'); ip.setAttribute('aria-pressed', String(on)); }
   }
   function stopPlay() {
     if (!playing) return;
@@ -1092,9 +1094,9 @@ function init() {
   // invite is STICKY (stays until the first stroke); each "rides the …"
   // confirmation flashes up and fades on its own.
   let toastTimer = null, lastRide = '__init__';
-  function showToast(text, sticky) {
+  function showToast(text, sticky, icon) {
     const t = el('fgCanvasToast'); if (!t) return;
-    t.textContent = text;
+    t.innerHTML = (icon ? iconSvg(icon, { size: 16 }) + ' ' : '') + text;
     t.classList.add('is-on');
     t.classList.toggle('is-sticky', sticky);
     clearTimeout(toastTimer);
@@ -1107,9 +1109,9 @@ function init() {
     const key = !c ? '__empty__' : (c.anchor + (c.hand || ''));
     if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
     lastRide = key;
-    if (!c) { showToast('👆 draw your item on the banana, where it goes', true); return; }
+    if (!c) { showToast('draw your item on the banana, where it goes', true, 'edit'); return; }
     const label = c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor);
-    showToast('✨ rides the ' + label, false);
+    showToast('rides the ' + label, false, 'check');
   }
   // each mode keeps its OWN drawing — Emoji (frames) and Items (one item) are
   // separate documents, so a banana loaded in Emoji never leaks into Items.
