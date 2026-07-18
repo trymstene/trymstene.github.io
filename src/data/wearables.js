@@ -57,8 +57,8 @@ export const WEARABLE_PACKS = {
       { id: 'arrowthru', label: 'Arrow gag', phrase: 'an arrow through the head', art: 'arrowthru', seat: 3 },
       { id: 'fishbowl', label: 'Fishbowl helmet', phrase: 'a fishbowl helmet with a goldfish', art: 'fishbowl', seat: -1 },
       { id: 'devilhorns', label: 'Devil horns', phrase: 'devil horns', art: 'devilhorns', seat: 0 },
-      // ⏳ BATCH 4 PREVIEW (18 Jul, the goodnight pair — rides Giphy's evergreen 'goodnight' tag)
-      { id: 'nightcap', label: 'Nightcap', phrase: 'a cosy nightcap', art: 'nightcap', seat: -1, preview: true },
+      // BATCH 4 (18 Jul, the goodnight set — rides Giphy's evergreen 'goodnight' tag)
+      { id: 'nightcap', label: 'Nightcap', phrase: 'a cosy nightcap', art: 'nightcap', seat: -1 },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -96,10 +96,11 @@ export const WEARABLE_PACKS = {
       { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'body', dy: 3, art: 'coneofshame' },
       // replaced duckfloatie (yellow-on-yellow, killed round 2)
       { id: 'lifering', label: 'Life ring', phrase: 'a life preserver ring', anchor: 'chest', zone: 'body', dy: 10, art: 'lifering' },
-      // ⏳ BATCH 4 PREVIEW (18 Jul) — the nightshirt, first true BODY GARMENT
-      // (proves the renamed slot holds torso wear, not just neckwear); dy tuned
-      // low so it drapes the torso but the face + feet still show
-      { id: 'nightshirt', label: 'Nightshirt', phrase: 'a cosy nightshirt', anchor: 'chest', zone: 'body', dy: 15, art: 'nightshirt', preview: true },
+      // BATCH 4 (18 Jul) — the nightshirt, first true BODY GARMENT (proves the
+      // renamed slot holds torso wear, not just neckwear); A-line skirt flare so
+      // it reads as cloth; dy tuned low so it drapes the torso but the face +
+      // feet still show
+      { id: 'nightshirt', label: 'Nightshirt', phrase: 'a cosy nightshirt', anchor: 'chest', zone: 'body', dy: 15, art: 'nightshirt' },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
@@ -127,8 +128,8 @@ export const WEARABLE_PACKS = {
       // behind: true = drawn BEFORE the banana body (engine behind pass), so
       // the big board rides at head height PEEKING OUT behind the head
       { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 14, art: 'protestsign', behind: true },
-      // ⏳ BATCH 4 PREVIEW (18 Jul) — the bedtime chamberstick candle
-      { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 11, art: 'candle', preview: true },
+      // BATCH 4 (18 Jul) — the bedtime chamberstick candle
+      { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 11, art: 'candle' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the

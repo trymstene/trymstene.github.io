@@ -26,9 +26,9 @@
 // canonical order: edit wearables.js, then paste here. EXTRA_IDS === its
 // CLIENT_EXTRA_IDS export (non-raveOnly extras); raveOnly items (beer/cone/
 // vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
-const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns'];
+const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap'];
 const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi', 'potter', 'nerd', 'monocle', 'groucho', 'eyepatch', 'googlyeyes', 'cucumbers'];
-const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'glowstick', 'goldbanana'];
+const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'glowstick', 'goldbanana'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
 const ROOM_CAP = 200;
