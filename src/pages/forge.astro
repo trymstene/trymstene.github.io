@@ -71,8 +71,23 @@ const faqLD = {
       .fg-side { grid-column: 2; grid-row: 1 / span 2; }
     }
 
-    .fg-stagecard { border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 0.8rem; }
+    .fg-stagecard { position: relative; border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 0.8rem; }
     #fgCanvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
+    /* items-mode status as a quick toast pinned to the top of the canvas */
+    .fg-toast {
+      position: absolute; top: calc(0.8rem + 10px); left: 50%; z-index: 6;
+      transform: translate(-50%, -6px); pointer-events: none;
+      max-width: calc(100% - 2rem); text-align: center; text-wrap: balance;
+      padding: 0.4rem 0.85rem; border-radius: 14px;
+      font-weight: 800; font-size: 0.85rem; letter-spacing: 0.01em;
+      background: var(--ink); color: var(--paper); box-shadow: 0 5px 16px rgba(0,0,0,0.28);
+      opacity: 0; transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    .fg-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+    /* the "draw your item" invite is a standing prompt (banana yellow), the
+       "rides the …" confirmations flash by (ink) */
+    .fg-toast.is-sticky { background: var(--banana); color: var(--ink); box-shadow: 0 5px 16px rgba(0,0,0,0.16); }
+    @media (prefers-reduced-motion: reduce) { .fg-toast { transition: opacity 0.28s ease; transform: translate(-50%, 0); } }
 
     .fg-side { display: grid; gap: 1rem; align-content: start; }
     .fg-panel { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.9rem; }
@@ -290,6 +305,7 @@ const faqLD = {
     <div class="fg-grid">
       <div class="fg-stagecol">
         <div class="fg-stagecard">
+          <div class="fg-toast fg-itemsonly" id="fgCanvasToast" role="status" aria-live="polite"></div>
           <canvas id="fgCanvas" width="512" height="512" aria-label="Pixel drawing canvas"></canvas>
         </div>
         <div class="fg-framesrow fg-emojionly">
@@ -374,7 +390,6 @@ const faqLD = {
         </details>
 
         <div class="fg-itemsonly fg-itemsbar">
-          <p class="fg-riding" id="fgItemsRiding">↑ draw the item on the banana, where it goes</p>
           <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false">▶ Play the dance</button>
           <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
           <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over">🧹 Clear &amp; start over</button>

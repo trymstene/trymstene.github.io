@@ -1088,10 +1088,28 @@ function init() {
     return { art: out.svg, anchor: best[0], hand: best[1] || undefined, ox: (tl.x - bestAp.x) / ENG_PX, oy: (tl.y - bestAp.y) / ENG_PX, scale: ENG_FH / (state.w * ENG_PX * ENG_HFRAC) };
   }
   const RIDE_LABEL = { head: 'head', face: 'face', chest: 'body', feet: 'feet' };
+  // the status toast pinned to the top of the canvas. The "draw your item"
+  // invite is STICKY (stays until the first stroke); each "rides the …"
+  // confirmation flashes up and fades on its own.
+  let toastTimer = null, lastRide = '__init__';
+  function showToast(text, sticky) {
+    const t = el('fgCanvasToast'); if (!t) return;
+    t.textContent = text;
+    t.classList.add('is-on');
+    t.classList.toggle('is-sticky', sticky);
+    clearTimeout(toastTimer);
+    if (!sticky) toastTimer = setTimeout(() => { const x = el('fgCanvasToast'); if (x) x.classList.remove('is-on'); }, 1900);
+  }
+  function hideToast() { const t = el('fgCanvasToast'); if (t) t.classList.remove('is-on'); clearTimeout(toastTimer); }
   function updateItemsStatus() {
-    const s = el('fgItemsRiding'); if (!s) return;
-    const c = mode === 'items' ? computeWear() : null;
-    s.textContent = !c ? '↑ draw an item on the banana' : ('rides the ' + (c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor)));
+    if (mode !== 'items') { hideToast(); lastRide = '__init__'; return; }
+    const c = computeWear();
+    const key = !c ? '__empty__' : (c.anchor + (c.hand || ''));
+    if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
+    lastRide = key;
+    if (!c) { showToast('👆 draw your item on the banana, where it goes', true); return; }
+    const label = c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor);
+    showToast('✨ rides the ' + label, false);
   }
   // each mode keeps its OWN drawing — Emoji (frames) and Items (one item) are
   // separate documents, so a banana loaded in Emoji never leaks into Items.
