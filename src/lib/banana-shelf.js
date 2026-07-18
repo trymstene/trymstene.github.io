@@ -8,7 +8,26 @@
 // CLIENT-ONLY module (renders thumbnails via the engine — never import from
 // Astro frontmatter).
 import { drawComposite, assetsReady } from './banana-engine.js';
-import { forgeParse, forgeDrawFrame } from './forge-format.js';
+import { forgeParse, forgeDrawFrame, forgeGridToSVG } from './forge-format.js';
+
+// a saved 'wearable' (Forge dress-the-banana) → the engine's custom-accessory
+// object, so the shelf thumbnail shows the banana actually wearing it
+function wearCustomFrom(params) {
+  try {
+    const d = JSON.parse(params.replace(/^wear:/, ''));
+    const f = forgeParse(d.forge);
+    const out = f && forgeGridToSVG(f.frames[0], f.w, f.h, f.palette);
+    if (!out) return null;
+    const c = { art: out.svg, scale: d.scale || 1, oy: d.oy || 0 };
+    if (d.anchor === 'face') c.anchor = 'face';
+    else if (d.anchor === 'body') c.anchor = 'chest';
+    else if (d.anchor === 'feet') c.anchor = 'feet';
+    else if (d.anchor === 'hand-left') { c.anchor = 'hand'; c.hand = 'left'; }
+    else if (d.anchor === 'hand-right') { c.anchor = 'hand'; c.hand = 'right'; }
+    else c.anchor = 'head';
+    return c;
+  } catch (e) { return null; }
+}
 
 const KEY = 'shelf-v1';
 const CAP = 24; // oldest fall off the back — it's a shelf, not a warehouse
@@ -85,6 +104,12 @@ export async function renderShelf(host, { onPick, limit } = {}) {
         forgeDrawFrame(tctx, f.frames[0], f.w, f.h, k, 1, f.palette);
         tctx.restore();
       }
+    } else if (c.kind === 'wearable') {
+      drawComposite(cv.getContext('2d'), 96, 2, {
+        bg: 'transparent', captions: false,
+        hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', effect: 'none',
+        custom: wearCustomFrom(c.params) || undefined,
+      });
     } else {
       const o = outfitFrom(c.params);
       drawComposite(cv.getContext('2d'), 96, o.frame, {
@@ -93,7 +118,7 @@ export async function renderShelf(host, { onPick, limit } = {}) {
       });
     }
     cell.appendChild(cv);
-    if (c.kind !== 'emoji') {
+    if (c.kind !== 'emoji' && c.kind !== 'wearable') {
       // the shop door on every creation: bananas can become real stickers
       const t = document.createElement('a');
       t.className = 'shelf-tag';

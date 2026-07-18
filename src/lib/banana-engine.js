@@ -440,25 +440,27 @@ function drawComposite(ctx, W, idx, o) {
   if (o.custom && o.custom.art) {
     const c = o.custom, key = c.art, s = c.scale || 1;
     const cw = gridW(key) * unit * s, ch = gridH(key) * unit * s;
+    const oy = (c.oy || 0) * unit; // ONE vertical nudge, up-positive, any anchor
     const a = c.anchor;
     if (a === 'head' || a === 'hat') {
       const hBottom = fy + F.tipY * scale + (HAT_OVERLAP + (c.seat || 0)) * unit;
-      drawAcc(bctx, key, fx + F.hatCx * scale - cw / 2, hBottom - ch, cw, ch, false);
+      drawAcc(bctx, key, fx + F.hatCx * scale - cw / 2, hBottom - ch - oy, cw, ch, false);
     } else if (a === 'face' || a === 'eyes') {
       const gx = fx + F.eyeCx * scale, gy = fy + (F.eyeCy + (c.dy || 0) * PX) * scale;
-      drawAcc(bctx, key, gx - cw / 2, gy - ch / 2, cw, ch, F.face === 'left');
+      drawAcc(bctx, key, gx - cw / 2, gy - ch / 2 - oy, cw, ch, F.face === 'left');
     } else if (a === 'chest' || a === 'body') {
       const bx = fx + F.btCx * scale, by = fy + (F.eyeCy + (c.dy || 0) * PX) * scale;
-      drawAcc(bctx, key, bx - cw / 2, by - ch / 2, cw, ch, false);
+      drawAcc(bctx, key, bx - cw / 2, by - ch / 2 - oy, cw, ch, false);
     } else if (a === 'feet') {
       const fby = fy + FEET_BOTTOM * scale + (c.dy || 0) * unit;
       const feetX = F.feetX || [FEET_CX - 71, FEET_CX + 71];
       const sm = bctx.imageSmoothingEnabled; bctx.imageSmoothingEnabled = false;
-      feetX.forEach((cxu, fi) => drawAcc(bctx, key, fx + cxu * scale - cw / 2, fby - ch, cw, ch, fi === 0));
+      feetX.forEach((cxu, fi) => drawAcc(bctx, key, fx + cxu * scale - cw / 2, fby - ch - oy, cw, ch, fi === 0));
       bctx.imageSmoothingEnabled = sm;
     } else if (a === 'hand' && F.hands) {
       const [hx, hy] = c.hand === 'left' ? F.hands[0] : F.hands[1];
-      drawAcc(bctx, key, fx + hx * scale - cw / 2, fy + hy * scale - (c.grip || 0) * unit, cw, ch, false);
+      const grip = c.grip != null ? c.grip : gridH(key) * s / 2; // default: hand holds the sprite's middle
+      drawAcc(bctx, key, fx + hx * scale - cw / 2, fy + hy * scale - grip * unit - oy, cw, ch, false);
     }
   }
   bctx.filter = 'none';

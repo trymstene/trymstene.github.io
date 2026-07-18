@@ -117,6 +117,22 @@ const faqLD = {
     .fg-hiddeninput { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
     .fg-importnote { font-size: 0.72rem; opacity: 0.65; margin: 0.5rem 0 0; }
 
+    /* 🍌 DRESS THE BANANA — wearable mode */
+    .fg-wearprev { display: flex; justify-content: center; margin: 0.6rem 0; }
+    .fg-wearprev canvas {
+      width: 200px; height: 200px; image-rendering: pixelated;
+      border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e8e4d8 0% 50%) 0 0 / 20px 20px;
+    }
+    .fg-anchor {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.3rem 0.5rem;
+      font-weight: 700; cursor: pointer; font-size: 0.78rem;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .fg-anchor[aria-pressed="true"] { background: var(--banana); box-shadow: inset 3px 3px 0 rgba(17,17,17,0.15); }
+    .fg-wearchk { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; margin: 0.6rem 0; font-weight: 600; }
+    #fgWearSave { width: 100%; }
+
     /* the killer feature: your emoji at REAL chat size, live */
     .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
     .fg-chat__meta { font-weight: 700; color: #fffdf5; margin-bottom: 0.2rem; }
@@ -331,6 +347,26 @@ const faqLD = {
           </div>
           <input id="fgImportFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg" class="fg-hiddeninput" aria-label="Import an image">
           <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
+        </details>
+
+        <details class="fg-panel" id="fgWearPanel">
+          <summary>🍌 Dress the banana</summary>
+          <p class="fg-importnote">Draw an accessory, pick where it sits, and watch the banana wear it as it dances. Save it to your shelf — the best ones become rave drops.</p>
+          <div class="fg-wearprev"><canvas id="fgWearPreview" width="220" height="220" aria-label="The dancing banana wearing your accessory"></canvas></div>
+          <div class="fg-tools" role="group" aria-label="Where the accessory sits">
+            <span class="fg-lab">on the</span>
+            <button class="fg-anchor" data-anchor="head" aria-pressed="true">Head</button>
+            <button class="fg-anchor" data-anchor="face">Face</button>
+            <button class="fg-anchor" data-anchor="body">Body</button>
+            <button class="fg-anchor" data-anchor="hand-right">Hand R</button>
+            <button class="fg-anchor" data-anchor="hand-left">Hand L</button>
+            <button class="fg-anchor" data-anchor="feet">Feet</button>
+          </div>
+          <div class="fg-tools"><label class="fg-lab" for="fgWearScale">size</label><input id="fgWearScale" type="range" min="30" max="220" value="100" style="flex:1;"></div>
+          <div class="fg-tools"><label class="fg-lab" for="fgWearDy">up / down</label><input id="fgWearDy" type="range" min="-40" max="40" value="0" style="flex:1;"></div>
+          <label class="fg-wearchk"><input type="checkbox" id="fgWearUnderlay" checked> banana guide on the drawing canvas</label>
+          <button class="btn btn--light" id="fgWearSave" title="Park this wearable on your shelf">🍌 Save wearable to shelf</button>
+          <div id="fgWearDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>. Submitting drops for review is coming next.</div>
         </details>
       </div>
 

@@ -13,8 +13,10 @@ import { GIFEncoder } from 'gifenc';
 import { parseGIF, decompressFrames } from 'gifuct-js';
 import { shelfAdd, shelfList } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
-import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, FORGE_DIM_MAX, b64, forgeParse } from '../lib/forge-format.js';
+import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, FORGE_DIM_MAX, b64, forgeParse, forgeGridToSVG } from '../lib/forge-format.js';
 import { BANANA_REMIX } from '../data/banana-remix.js';
+// wearable mode ("dress the banana") — the dancing banana wears your drawing
+import { drawComposite as engineDraw, assetsReady as engineReady, NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE } from '../lib/banana-engine.js';
 
 const el = (id) => document.getElementById(id);
 const stage = el('fgCanvas');
@@ -199,7 +201,9 @@ function init() {
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
     if (state.onion && state.cur > 0) drawGridInto(ctx, state.frames[state.cur - 1], cell, 0.3);
+    if (wear.on && wear.underlay) drawWearUnderlay(); // faint banana size/placement guide
     drawGridInto(ctx, frame(), cell, 1);
+    scheduleWearArt(); // the live "on the banana" preview follows your drawing (debounced)
     // grid lines (light, every cell; stronger every 8)
     ctx.strokeStyle = 'rgba(17,17,17,0.08)';
     for (let i = 1; i < W; i++) {
@@ -1019,6 +1023,72 @@ function init() {
     drawEditor();
     drawFrames();
     refreshUndoBtn();
+  }
+
+  // ---- 🍌 DRESS THE BANANA (wearable mode) ----
+  // The user draws an accessory on the normal grid; here it rides the dancing
+  // banana at a chosen anchor (via the engine's runtime custom channel) and can
+  // be saved as a wearable. A faint banana on the canvas guides the size.
+  const wear = { on: false, uiAnchor: 'head', scale: 1, oy: 0, underlay: true };
+  let wearReady = false; engineReady().then(() => { wearReady = true; wearForce = 6; });
+  let wearArt = null, wearTimer = 0, wearForce = 0, lastWIdx = -1, underlayCv = null;
+  const wearPrevCv = el('fgWearPreview');
+  const wearPrevCtx = wearPrevCv && wearPrevCv.getContext('2d');
+
+  function buildWearArt() { wearArt = forgeGridToSVG(frame(), state.w, state.h, pal()); wearForce = 6; }
+  function scheduleWearArt() { clearTimeout(wearTimer); wearTimer = setTimeout(buildWearArt, 120); }
+  function currentCustom() {
+    if (!wearArt) return null;
+    const a = wear.uiAnchor, c = { art: wearArt.svg, scale: wear.scale, oy: wear.oy };
+    if (a === 'face') c.anchor = 'face';
+    else if (a === 'body') c.anchor = 'chest';
+    else if (a === 'feet') c.anchor = 'feet';
+    else if (a === 'hand-right') { c.anchor = 'hand'; c.hand = 'right'; }
+    else if (a === 'hand-left') { c.anchor = 'hand'; c.hand = 'left'; }
+    else c.anchor = 'head';
+    return c;
+  }
+  function drawWearUnderlay() {
+    if (!wearReady) return;
+    const S = Math.min(stage.width, stage.height);
+    if (!underlayCv || underlayCv.width !== S) {
+      underlayCv = document.createElement('canvas'); underlayCv.width = underlayCv.height = S;
+      engineDraw(underlayCv.getContext('2d'), S, 2, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+    }
+    ctx.globalAlpha = 0.2; ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(underlayCv, (stage.width - S) / 2, (stage.height - S) / 2);
+    ctx.globalAlpha = 1;
+  }
+  function wearTick(now) {
+    requestAnimationFrame(wearTick);
+    if (!wear.on || !wearPrevCtx || !wearReady) return;
+    const cyc = ENG_CYCLE * 1000;
+    const idx = Math.floor((now % cyc) / (cyc / ENG_NFRAMES));
+    if (idx === lastWIdx && wearForce <= 0) return; // redraw on frame change or after an edit
+    lastWIdx = idx; if (wearForce > 0) wearForce--;
+    wearPrevCtx.clearRect(0, 0, wearPrevCv.width, wearPrevCv.height);
+    engineDraw(wearPrevCtx, wearPrevCv.width, idx, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: currentCustom() || undefined });
+  }
+  if (wearPrevCtx) {
+    const panel = el('fgWearPanel');
+    if (panel) panel.addEventListener('toggle', () => { wear.on = panel.open; if (wear.on) { buildWearArt(); drawEditor(); } else drawEditor(); });
+    document.querySelectorAll('.fg-anchor').forEach((b) => b.addEventListener('click', () => {
+      wear.uiAnchor = b.dataset.anchor; wearForce = 6;
+      document.querySelectorAll('.fg-anchor').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    }));
+    const sc = el('fgWearScale'); if (sc) sc.addEventListener('input', () => { wear.scale = sc.value / 100; wearForce = 6; });
+    const dyi = el('fgWearDy'); if (dyi) dyi.addEventListener('input', () => { wear.oy = +dyi.value; wearForce = 6; });
+    const un = el('fgWearUnderlay'); if (un) un.addEventListener('change', () => { wear.underlay = un.checked; drawEditor(); });
+    el('fgWearSave').onclick = () => {
+      const btn = el('fgWearSave'), label = btn.textContent;
+      buildWearArt();
+      if (!wearArt) { btn.textContent = 'Draw something first 🎨'; setTimeout(() => { btn.textContent = label; }, 2000); return; }
+      shelfAdd({ kind: 'wearable', params: 'wear:' + JSON.stringify({ forge: serialize(), anchor: wear.uiAnchor, scale: wear.scale, oy: wear.oy }), data: null });
+      el('fgWearDone').hidden = false;
+      btn.textContent = 'Saved to your shelf 🍌'; setTimeout(() => { btn.textContent = label; }, 2500);
+      track('forge_wearable_save', { anchor: wear.uiAnchor });
+    };
+    requestAnimationFrame(wearTick);
   }
 
   // ---- boot ----
