@@ -57,6 +57,8 @@ export const WEARABLE_PACKS = {
       { id: 'arrowthru', label: 'Arrow gag', phrase: 'an arrow through the head', art: 'arrowthru', seat: 3 },
       { id: 'fishbowl', label: 'Fishbowl helmet', phrase: 'a fishbowl helmet with a goldfish', art: 'fishbowl', seat: -1 },
       { id: 'devilhorns', label: 'Devil horns', phrase: 'devil horns', art: 'devilhorns', seat: 0 },
+      // ⏳ BATCH 4 PREVIEW (18 Jul, the goodnight pair — rides Giphy's evergreen 'goodnight' tag)
+      { id: 'nightcap', label: 'Nightcap', phrase: 'a cosy nightcap', art: 'nightcap', seat: -1, preview: true },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -121,6 +123,8 @@ export const WEARABLE_PACKS = {
       // behind: true = drawn BEFORE the banana body (engine behind pass), so
       // the big board rides at head height PEEKING OUT behind the head
       { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 14, art: 'protestsign', behind: true },
+      // ⏳ BATCH 4 PREVIEW (18 Jul) — the bedtime chamberstick candle
+      { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 10, art: 'candle', preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
