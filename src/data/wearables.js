@@ -124,7 +124,7 @@ export const WEARABLE_PACKS = {
       // the big board rides at head height PEEKING OUT behind the head
       { id: 'protestsign', label: 'Protest sign', phrase: 'a GO BANANAS protest sign', anchor: 'hand', hand: 'right', grip: 14, art: 'protestsign', behind: true },
       // ⏳ BATCH 4 PREVIEW (18 Jul) — the bedtime chamberstick candle
-      { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 10, art: 'candle', preview: true },
+      { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 11, art: 'candle', preview: true },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
