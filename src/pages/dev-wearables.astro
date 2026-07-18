@@ -14,7 +14,7 @@ packs.forEach((p) => {
   (p.shades || []).filter((d) => d.preview).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'glasses', zone: 'Shades', art: d.front }));
   (p.extras || []).filter((d) => d.preview).forEach((d) => rows.push({
     id: d.id, label: d.label, slot: 'extra',
-    zone: d.zone === 'neck' ? 'Neck' : d.anchor === 'feet' ? 'Shoes' : d.anchor === 'hand' ? `Hand (${d.hand})` : 'Extra',
+    zone: d.zone === 'body' ? 'Body' : d.anchor === 'feet' ? 'Shoes' : d.anchor === 'hand' ? `Hand (${d.hand})` : 'Extra',
     art: d.front || d.art,
   }));
 });

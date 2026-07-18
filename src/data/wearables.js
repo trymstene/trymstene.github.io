@@ -81,21 +81,25 @@ export const WEARABLE_PACKS = {
     extras: [
       { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
       { id: 'fatstache', label: 'Fat moustache', phrase: 'a fat black moustache', anchor: 'face', dy: 4.0, sideDx: -1.2, front: 'fatstacheFront', side: 'fatstacheSide' },
-      // the NECK zone — chest-anchored items that all fight for the same few
-      // pixels (bow tie, ties, chains, scarves…), so the builder treats them
-      // as a mutually-exclusive group (zone is UI grouping only; the engine
-      // keeps drawing via the chest anchor + per-item dy).
-      { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', zone: 'neck', dy: 9.5, art: 'bowtie' },
-      { id: 'necktie',  label: 'Necktie',   phrase: 'a blue necktie',   anchor: 'chest', zone: 'neck', dy: 11.5, art: 'necktie' },
-      { id: 'goldchain', label: 'Gold chain', phrase: 'a gold chain',   anchor: 'chest', zone: 'neck', dy: 9.0, art: 'goldchain' },
-      { id: 'scarf',    label: 'Scarf',     phrase: 'a cosy red scarf', anchor: 'chest', zone: 'neck', dy: 8.5, art: 'scarf' },
+      // the BODY zone — chest-anchored garments + neckwear that all fight for
+      // the same torso pixels (bow tie, ties, chains, scarves, nightshirts…),
+      // so the builder treats them as a mutually-exclusive group (zone is UI
+      // grouping only; the engine keeps drawing via the chest anchor + per-item dy).
+      { id: 'bowtie',   label: 'Bow tie',   phrase: 'a bow tie',        anchor: 'chest', zone: 'body', dy: 9.5, art: 'bowtie' },
+      { id: 'necktie',  label: 'Necktie',   phrase: 'a blue necktie',   anchor: 'chest', zone: 'body', dy: 11.5, art: 'necktie' },
+      { id: 'goldchain', label: 'Gold chain', phrase: 'a gold chain',   anchor: 'chest', zone: 'body', dy: 9.0, art: 'goldchain' },
+      { id: 'scarf',    label: 'Scarf',     phrase: 'a cosy red scarf', anchor: 'chest', zone: 'body', dy: 8.5, art: 'scarf' },
       // id is coneofshame, NOT cone (the rave owns 'cone'
       // as the happy-hour traffic-cone grant); open middle so the face shows
       // dy 2 + tall solid art = the rim reaches the eyes and the face vanishes
       // into the cone (Trym: that IS the joke)
-      { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'neck', dy: 3, art: 'coneofshame' },
+      { id: 'coneofshame', label: 'Cone of shame', phrase: 'the cone of shame', anchor: 'chest', zone: 'body', dy: 3, art: 'coneofshame' },
       // replaced duckfloatie (yellow-on-yellow, killed round 2)
-      { id: 'lifering', label: 'Life ring', phrase: 'a life preserver ring', anchor: 'chest', zone: 'neck', dy: 10, art: 'lifering' },
+      { id: 'lifering', label: 'Life ring', phrase: 'a life preserver ring', anchor: 'chest', zone: 'body', dy: 10, art: 'lifering' },
+      // ⏳ BATCH 4 PREVIEW (18 Jul) — the nightshirt, first true BODY GARMENT
+      // (proves the renamed slot holds torso wear, not just neckwear); dy tuned
+      // low so it drapes the torso but the face + feet still show
+      { id: 'nightshirt', label: 'Nightshirt', phrase: 'a cosy nightshirt', anchor: 'chest', zone: 'body', dy: 15, art: 'nightshirt', preview: true },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },

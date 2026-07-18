@@ -25,9 +25,9 @@ const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // state.extras like other extras (so the outfit shape / URL / bb-last / worker
 // are all unchanged) but the builder + engine keep it mutually exclusive.
 const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly && !d.preview);
-// the NECK zone: chest-anchored neckwear (bow tie, ties, chains, scarves…) —
+// the BODY zone: chest-anchored garments + neckwear (bow tie, ties, chains, scarves…) —
 // mutually exclusive in the builder, same single-select pattern as the feet
-const NECK_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'neck' && !d.raveOnly && !d.preview);
+const BODY_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'body' && !d.raveOnly && !d.preview);
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -135,7 +135,7 @@ function init() {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
     if (d.preview) return; // review candidates live on /dev-wearables/ only
     if (d.anchor === 'feet') return; // shoes get their own single-select row below
-    if (d.zone === 'neck') return; // neckwear too — one thing on the neck at a time
+    if (d.zone === 'body') return; // body garments too — one garment on the body at a time
     const art = SVG[d.front || d.art];
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
@@ -175,18 +175,18 @@ function init() {
     });
   }
 
-  // NECK row — same single-select contract as the feet (bow tie OR chain OR
+  // BODY row — same single-select contract as the feet (bow tie OR chain OR
   // tie, never a pile of neckwear on ten pixels of banana)
-  const setNeck = (id) => { NECK_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
-  if (el('bbNeckChips') && NECK_DEFS.length) {
-    NECK_DEFS.forEach((d) => {
+  const setBody = (id) => { BODY_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
+  if (el('bbBodyChips') && BODY_DEFS.length) {
+    BODY_DEFS.forEach((d) => {
       const b = document.createElement('button');
       b.className = 'bb-chip bb-chip--icon';
       b.innerHTML = SVG[d.front || d.art];
-      b.dataset.neck = d.id;
+      b.dataset.body = d.id;
       b.title = d.label; b.setAttribute('aria-label', d.label);
-      b.onclick = () => setNeck(state.extras[d.id] ? null : d.id); // click the worn one = take it off
-      el('bbNeckChips').appendChild(b);
+      b.onclick = () => setBody(state.extras[d.id] ? null : d.id); // click the worn one = take it off
+      el('bbBodyChips').appendChild(b);
     });
   }
 
@@ -243,7 +243,7 @@ function init() {
     window.addEventListener('resize', sync);
     sync();
   }
-  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbNeckChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
 
   // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
   // PROXIES of the tray chips — clicks delegate to the real buttons, so every
@@ -485,18 +485,18 @@ function init() {
     // setFeet enforces) — at most one pair, so the chips can't show four
     // pressed shoes at once (Trym's catch)
     const feetIds = FEET_DEFS.map((d) => d.id);
-    const neckIds = NECK_DEFS.map((d) => d.id);
+    const bodyIds = BODY_DEFS.map((d) => d.id);
     const handDefs = EXTRA_DEFS.filter((d) => d.anchor === 'hand');
     const handIds = handDefs.map((d) => d.id);
     EXTRA_DEFS.forEach((d) => {
-      state.extras[d.id] = !d.raveOnly && !d.preview && !feetIds.includes(d.id) && !neckIds.includes(d.id)
+      state.extras[d.id] = !d.raveOnly && !d.preview && !feetIds.includes(d.id) && !bodyIds.includes(d.id)
         && !handIds.includes(d.id) && earnedUnlocked(d) && Math.random() < 0.3;
     });
     const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && earnedUnlocked(d));
     if (shoeable.length && Math.random() < 0.45) state.extras[pick(shoeable).id] = true;
     // neckwear is EXCLUSIVE too (bow tie OR chain OR tie OR scarf, never a pile)
-    const neckable = NECK_DEFS.filter((d) => earnedUnlocked(d));
-    if (neckable.length && Math.random() < 0.4) state.extras[pick(neckable).id] = true;
+    const bodyable = BODY_DEFS.filter((d) => earnedUnlocked(d));
+    if (bodyable.length && Math.random() < 0.4) state.extras[pick(bodyable).id] = true;
     // held items are exclusive PER GLOVE (Trym's catch: the independent roll
     // could double-fist one hand) — at most one item per glove; a left+right
     // pair (trophy + balloons) is legit, two mugs in one glove is not
@@ -831,7 +831,7 @@ function init() {
     document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
     const anyFeet = FEET_DEFS.some((d) => state.extras[d.id]); // 'none' lights up when no shoe is worn
     document.querySelectorAll('#bbFeetChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
-    document.querySelectorAll('#bbNeckChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.neck])));
+    document.querySelectorAll('#bbBodyChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.body])));
     document.querySelectorAll('.bb-frame').forEach((f) => f.setAttribute('aria-pressed', String(parseInt(f.dataset.frame, 10) === state.frame)));
     const pb = el('bbPause');
     pb.innerHTML = state.paused ? ICON_PLAY : ICON_PAUSE;
