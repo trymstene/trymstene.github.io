@@ -2,6 +2,7 @@
 // Canonical site navigation — the single source of truth for every page.
 // Banana-world verbs only; Trym-side links live in the footer + /me. Mobile = slide-in (js/main.js).
 import PixelIcon from './PixelIcon.astro';
+import PixelArtIcon from './PixelArtIcon.astro';
 ---
 <header class="nav">
   <a class="nav__brand" href="/">TRYM<span>STENE</span></a>
@@ -19,8 +20,12 @@ import PixelIcon from './PixelIcon.astro';
           Memes" (the query) — Trym's call, avoids gallery-vs-memes confusion */}
       <a href="/banana-memes/">Banana Gallery</a>
       <a href="/shop/">Banana Shop</a>
-      <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a>
+      <a class="nav__pass" href="/pass/" title="Your banana pass"><PixelArtIcon name="card" size="17px" /> My Pass</a>
     </div>
   </nav>
   <div class="nav__backdrop"></div>
 </header>
+<style>
+  /* pass link: keep the pixel icon on the same line as the label */
+  .nav__pass { display: inline-flex; align-items: center; gap: 0.35rem; }
+</style>
