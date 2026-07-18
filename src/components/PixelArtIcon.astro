@@ -1,0 +1,16 @@
+---
+// A UI icon from the purchased pixelarticons Pro pack (mono, currentColor).
+// Only the icons we actually use live in src/icons/pixelart/ (the full paid pack
+// is gitignored — never redistribute it on the public repo). Inlined at build so
+// `currentColor` follows the button state (e.g. banana on a pressed dark button).
+const modules = import.meta.glob('../icons/pixelart/*.svg', { query: '?raw', import: 'default', eager: true });
+const icons = Object.fromEntries(
+  Object.entries(modules).map(([p, src]) => [p.split('/').pop().replace('.svg', ''), src])
+);
+const { name, size = '24px', label } = Astro.props;
+let raw = icons[name];
+if (!raw) throw new Error(`PixelArtIcon: unknown icon "${name}" (add src/icons/pixelart/${name}.svg)`);
+const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true" focusable="false"';
+raw = raw.replace('<svg ', `<svg class="pai" width="${size}" height="${size}" shape-rendering="crispEdges" ${a11y} `);
+---
+<Fragment set:html={raw} />

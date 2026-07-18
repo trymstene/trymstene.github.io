@@ -25,6 +25,11 @@ giphy-tenor-pack/
 # in public/assets/gallery-bananas/, so these are duplicates we don't deploy
 public/assets/giphy-stickers/
 
+# pixelarticons Pro — PURCHASED pack (one-time licence). The repo is public, so
+# never commit the full set (that would redistribute a paid pack). Only the
+# handful we actually use is committed, in src/icons/pixelart/.
+public/assets/pixelarticons-pro-2.2.1/
+
 # Astro / Node
 node_modules/
 dist/

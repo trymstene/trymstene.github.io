@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
 
 const title = 'Emoji Maker & Animated GIF Maker — Free Pixel Emotes | Pixel Forge';
 const description = 'Free emoji maker & animated GIF maker in your browser: draw pixel art frame by frame, remix existing GIFs, preview at real chat size, export transparent GIFs and PNGs sized for Discord (128px), Twitch (112px), Slack and Telegram. No account, no watermark.';
@@ -120,6 +121,7 @@ const faqLD = {
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
     .fg-tool[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .fg-tool .pai { display: block; } /* pixelarticons UI icon — colour follows currentColor */
     .fg-tool[disabled] { opacity: 0.4; cursor: default; }
     .fg-tool--wide { width: auto; min-width: 50px; gap: 0.28rem; font-weight: 800; font-size: 0.9rem; padding: 0 0.4rem; }
     .fg-brushdot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
@@ -329,22 +331,22 @@ const faqLD = {
       <div class="fg-side">
         <div class="fg-panel fg-bar">
           <div class="fg-toolrow" role="toolbar" aria-label="Tools">
-            <button class="fg-tool" data-tool="pencil" title="Pencil (B)" aria-label="Pencil" aria-pressed="true">✏️</button>
-            <button class="fg-tool" data-tool="eraser" title="Eraser (E)" aria-label="Eraser">🧽</button>
-            <button class="fg-tool" data-tool="fill" title="Fill (F)" aria-label="Fill">🪣</button>
-            <button class="fg-tool" data-tool="picker" title="Pick a colour (I)" aria-label="Pick colour">💉</button>
+            <button class="fg-tool" data-tool="pencil" title="Pencil (B)" aria-label="Pencil" aria-pressed="true"><PixelArtIcon name="pencil" /></button>
+            <button class="fg-tool" data-tool="eraser" title="Eraser (E)" aria-label="Eraser"><PixelArtIcon name="eraser" /></button>
+            <button class="fg-tool" data-tool="fill" title="Fill (F)" aria-label="Fill"><PixelArtIcon name="paint-bucket" /></button>
+            <button class="fg-tool" data-tool="picker" title="Pick a colour (I)" aria-label="Pick colour"><PixelArtIcon name="pipette" /></button>
             <span class="fg-vsep"></span>
             <button class="fg-tool fg-tool--wide" id="fgBrushBtn" title="Brush size" aria-label="Brush size"><span class="fg-brushdot"></span><b id="fgBrushLbl">1</b></button>
             <button class="fg-tool fg-colorbtn" id="fgColorBtn" title="Colour — click to choose" aria-label="Choose a colour"></button>
             <span class="fg-vsep"></span>
-            <button class="fg-tool" id="fgUndo" title="Undo (Ctrl+Z)" aria-label="Undo">↩</button>
-            <button class="fg-tool" id="fgRedo" title="Redo (Ctrl+Y)" aria-label="Redo">↪</button>
-            <button class="fg-tool" id="fgFlipH" title="Flip horizontally" aria-label="Flip horizontally">⇋</button>
-            <button class="fg-tool" id="fgFlipV" title="Flip vertically" aria-label="Flip vertically">⇵</button>
-            <button class="fg-tool" id="fgShL" title="Nudge left" aria-label="Nudge left">←</button>
-            <button class="fg-tool" id="fgShR" title="Nudge right" aria-label="Nudge right">→</button>
-            <button class="fg-tool" id="fgShU" title="Nudge up" aria-label="Nudge up">↑</button>
-            <button class="fg-tool" id="fgShD" title="Nudge down" aria-label="Nudge down">↓</button>
+            <button class="fg-tool" id="fgUndo" title="Undo (Ctrl+Z)" aria-label="Undo"><PixelArtIcon name="undo" /></button>
+            <button class="fg-tool" id="fgRedo" title="Redo (Ctrl+Y)" aria-label="Redo"><PixelArtIcon name="redo" /></button>
+            <button class="fg-tool" id="fgFlipH" title="Flip horizontally" aria-label="Flip horizontally"><PixelArtIcon name="flip-horizontal" /></button>
+            <button class="fg-tool" id="fgFlipV" title="Flip vertically" aria-label="Flip vertically"><PixelArtIcon name="flip-vertical" /></button>
+            <button class="fg-tool" id="fgShL" title="Nudge left" aria-label="Nudge left"><PixelArtIcon name="arrow-left" /></button>
+            <button class="fg-tool" id="fgShR" title="Nudge right" aria-label="Nudge right"><PixelArtIcon name="arrow-right" /></button>
+            <button class="fg-tool" id="fgShU" title="Nudge up" aria-label="Nudge up"><PixelArtIcon name="arrow-up" /></button>
+            <button class="fg-tool" id="fgShD" title="Nudge down" aria-label="Nudge down"><PixelArtIcon name="arrow-down" /></button>
           </div>
 
           <div class="fg-pop" id="fgBrushPop" hidden>
