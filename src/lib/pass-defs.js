@@ -26,16 +26,21 @@ export const PATCHES = [
   { id: 'hype',      icon: 'bolt',     title: 'Full of Jelly',  hint: 'Fill the JELLY meter and drop the floor yourself.' },
   { id: 'night1',    icon: 'coffee',   title: 'The First Shift',hint: "Work Barty's welcome-night jobs, start to finish." },
   { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },
+  { id: 'collector', icon: 'sparkle',  title: 'Collector',      hint: 'Catch a wearable drop on the dance floor.' },
 ];
 
 // THE GEAR ROW — earned wearables, the pass's closet. `extra` is the engine
 // extras id it toggles on your banana (bb-last); proof of earning is either a
 // localStorage `flag` or a minted pass `patch`. PURE DATA.
+// a gear slot is `extra` (an extras id) OR `hat`/`glasses` (a head slot). `by`
+// credits the maker when the item is a community/booth drop.
 export const GEAR = [
   { id: 'glowstick', extra: 'glowstick', flag: 'rv-glowstick',
     title: 'The Glowstick', hint: 'Survive 30 minutes on the dance floor — yours forever.' },
   { id: 'goldbanana', extra: 'goldbanana', patch: 'golden',
     title: 'The Golden Banana', hint: 'Catch the rarest thing that ever hits the floor. Hold it forever.' },
+  { id: 'djheadphones', hat: 'djheadphones', flag: 'rv-djheadphones', by: 'Barty',
+    title: 'DJ Headphones', hint: 'Catch them on the dance floor at the rave — straight from Barty’s booth.' },
 ];
 
 // visitors before this date mint the OG patch automatically (set it to the

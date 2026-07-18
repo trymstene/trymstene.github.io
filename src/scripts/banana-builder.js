@@ -86,9 +86,33 @@ function init() {
   }
   // wearables show THEMSELVES — the asset art IS the button (Trym: takes up a
   // lot less space than words). 'none' = a dashed empty slot.
-  function iconChips(host, items, key, artFor) {
+  // earned accessories: unlocked at the rave, remembered forever — each item
+  // carries its OWN proof (a localStorage `flag`, or a minted pass `patch`).
+  // Generic on purpose: a SECOND earned:'rave' item (the DJ-headphones drop)
+  // must read ITS flag, not the glowstick's. Defined before iconChips runs.
+  const earnedUnlocked = (d) => {
+    if (!d.earned) return true;
+    try {
+      if (d.flag) return localStorage.getItem(d.flag) === '1';
+      if (d.patch) return !!((JSON.parse(localStorage.getItem('pass-v1') || '{}').patches || {})[d.patch]);
+    } catch (e) {}
+    return false;
+  };
+  function iconChips(host, items, key, artFor, defFor) {
     items.forEach(([val, label]) => {
       if (val === 'none') return; // no 'none' chip — click the worn item to take it off (like extras)
+      const def = defFor && defFor(val);
+      if (def && !earnedUnlocked(def)) {
+        // a locked drop is a DOOR: the chip links to where you catch it
+        const a = document.createElement('a');
+        a.className = 'bb-chip bb-chip--icon bb-chip--locked';
+        a.href = '/rave/'; a.dataset.place = 'builder-locked';
+        a.innerHTML = artFor(val) || label;
+        a.title = (def.label || label) + ' — ' + (def.lock || 'earned at the rave');
+        a.setAttribute('aria-label', (def.label || label) + ' (locked — catch it at the rave)');
+        el(host).appendChild(a);
+        return;
+      }
       const b = document.createElement('button');
       b.className = 'bb-chip bb-chip--icon';
       b.innerHTML = artFor(val);
@@ -99,19 +123,9 @@ function init() {
       el(host).appendChild(b);
     });
   }
-  iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; });
-  iconChips('bbHatChips', HATS, 'hat', (id) => { const d = HAT_BY_ID[id]; return d && SVG[d.art]; });
+  iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; }, (id) => SHADE_BY_ID[id]);
+  iconChips('bbHatChips', HATS, 'hat', (id) => { const d = HAT_BY_ID[id]; return d && SVG[d.art]; }, (id) => HAT_BY_ID[id]);
   chips('bbEffectChips', EFFECTS, 'effect'); // effects have no wearable art — words stay
-  // earned accessories: unlocked at the rave, remembered forever — each kind
-  // of `earned` knows where its proof lives (a flag, or a minted pass patch)
-  const earnedUnlocked = (d) => {
-    if (!d.earned) return true;
-    try {
-      if (d.earned === 'rave') return localStorage.getItem('rv-glowstick') === '1';
-      if (d.earned === 'golden') return !!((JSON.parse(localStorage.getItem('pass-v1') || '{}').patches || {}).golden);
-    } catch (e) {}
-    return false;
-  };
   // HANDS — two gloves, one item each. The engine's resolveHands() derives
   // who-holds-what from the equipped SET (identical on every surface — no
   // hand state in outfits). Here we only enforce CAPACITY: equipping a third
@@ -480,7 +494,11 @@ function init() {
     passPatch('chaos');
     const q = pick(quips);
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
-    state.glasses = pick(GLASSES)[0]; state.hat = pick(HATS)[0];
+    // surprise-me never rolls a LOCKED drop (an unearned earned:'rave' hat/shade
+    // like the DJ headphones) — you can only wear what you've caught
+    const hatOK = HATS.filter(([id]) => id === 'none' || !HAT_BY_ID[id] || earnedUnlocked(HAT_BY_ID[id]));
+    const shadeOK = GLASSES.filter(([id]) => id === 'none' || !SHADE_BY_ID[id] || earnedUnlocked(SHADE_BY_ID[id]));
+    state.glasses = pick(shadeOK)[0]; state.hat = pick(hatOK)[0];
     // non-feet extras roll independently; feet are EXCLUSIVE (same rule
     // setFeet enforces) — at most one pair, so the chips can't show four
     // pressed shoes at once (Trym's catch)
@@ -694,8 +712,11 @@ function init() {
       try {
         const saved = JSON.parse(localStorage.getItem('bb-last') || 'null');
         if (saved && typeof saved === 'object') {
-          if (HAT_BY_ID[saved.hat]) state.hat = saved.hat;
-          if (GLASSES.some(([v]) => v === saved.glasses)) state.glasses = saved.glasses;
+          // an earned hat/shade only restores where it's actually earned (the
+          // same gate the extras use below) — a synced outfit can't wear a drop
+          // you haven't caught on THIS device
+          if (HAT_BY_ID[saved.hat] && earnedUnlocked(HAT_BY_ID[saved.hat])) state.hat = saved.hat;
+          if (GLASSES.some(([v]) => v === saved.glasses) && earnedUnlocked(SHADE_BY_ID[saved.glasses] || {})) state.glasses = saved.glasses;
           EXTRA_DEFS.forEach((d) => {
             if (saved.extras && saved.extras[d.id] && !d.raveOnly && earnedUnlocked(d)) state.extras[d.id] = true;
           });

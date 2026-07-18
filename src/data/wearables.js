@@ -59,6 +59,14 @@ export const WEARABLE_PACKS = {
       { id: 'devilhorns', label: 'Devil horns', phrase: 'devil horns', art: 'devilhorns', seat: 0 },
       // BATCH 4 (18 Jul, the goodnight set — rides Giphy's evergreen 'goodnight' tag)
       { id: 'nightcap', label: 'Nightcap', phrase: 'a cosy nightcap', art: 'nightcap', seat: -1 },
+      // 🎧 THE FIRST RAVE DROP (18 Jul) — caught on the dance floor, never in the
+      // default builder (locked chip until you catch it). earned:'rave' + its own
+      // `flag`; `drop:true` lists it in DROPS (the catchable lineup); `by` credits
+      // the maker (Barty's booth). seat pushes it down so the band caps the head
+      // and the cyan cups reach ear level.
+      { id: 'djheadphones', label: 'DJ headphones', phrase: 'DJ headphones', art: 'djheadphones', seat: 3,
+        earned: 'rave', flag: 'rv-djheadphones', by: 'Barty', drop: true,
+        lock: 'a rave drop: catch it on the dance floor — straight from Barty’s booth' },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -134,11 +142,14 @@ export const WEARABLE_PACKS = {
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
       // art top to where the glove wraps it (here: the black cap).
-      { id: 'glowstick', label: 'Glowstick', anchor: 'hand', hand: 'right', grip: 8.5, art: 'glowstick', earned: 'rave',
+      // earned items carry their OWN proof: `flag` = a localStorage key, or
+      // `patch` = a minted pass patch. earnedUnlocked() reads these generically
+      // (a second earned:'rave' item must NOT unlock off the glowstick's flag).
+      { id: 'glowstick', label: 'Glowstick', anchor: 'hand', hand: 'right', grip: 8.5, art: 'glowstick', earned: 'rave', flag: 'rv-glowstick',
         lock: 'a rave souvenir: survive 30 minutes on the dance floor and it’s yours forever' },
       // the trophy: earned by catching the golden banana at the rave (patch
       // `golden` is the proof of the moment); worn from the pass or the builder
-      { id: 'goldbanana', label: 'Golden Banana', anchor: 'hand', hand: 'left', grip: 2, art: 'goldbanana', earned: 'golden',
+      { id: 'goldbanana', label: 'Golden Banana', anchor: 'hand', hand: 'left', grip: 2, art: 'goldbanana', earned: 'golden', patch: 'golden',
         lock: 'the trophy: catch the golden banana at the rave — it strikes every half hour' },
       // happy-hour trophy: lives for one rave session, granted by the worker (first
       // banana at the bar). raveOnly = never a builder chip, never randomized.
@@ -167,3 +178,15 @@ export const CLIENT_EXTRA_IDS = Object.values(WEARABLE_PACKS)
   .flatMap((p) => p.extras || [])
   .filter((e) => !e.raveOnly)
   .map((e) => e.id);
+
+// 🎁 THE DROP LINEUP — every wearable flagged `drop:true` is CATCHABLE on the
+// rave floor (curation IS the drop: approving an item = adding it here). Each
+// carries its slot ('hat'|'glasses'|'extra'), art key, proof `flag`, `by`
+// credit and label — the rave, builder and pass all read this one list so a
+// new drop never needs three edits. A dropped item is also `earned:'rave'`, so
+// it's already excluded from the default builder/daily and shown locked.
+export const DROPS = Object.values(WEARABLE_PACKS).flatMap((p) => [
+  ...(p.hats || []).filter((d) => d.drop).map((d) => ({ id: d.id, slot: 'hat', art: d.art, flag: d.flag, by: d.by, label: d.label })),
+  ...(p.shades || []).filter((d) => d.drop).map((d) => ({ id: d.id, slot: 'glasses', art: d.front, flag: d.flag, by: d.by, label: d.label })),
+  ...(p.extras || []).filter((d) => d.drop).map((d) => ({ id: d.id, slot: 'extra', art: d.art || d.front, flag: d.flag, by: d.by, label: d.label })),
+]);

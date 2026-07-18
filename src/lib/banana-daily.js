@@ -24,9 +24,14 @@ function pools(date) {
   const active = Object.values(WEARABLE_PACKS).filter((p) => packActive(p, date));
   const pair = (x) => [x.id, x.phrase];
   const live = (x) => !x.preview; // preview-flagged candidates never go public
+  // the daily banana wears only freely-available items — never earned/dropped
+  // souvenirs (glowstick, DJ headphones…), in ANY slot. Extras already gate on
+  // !earned below; hats + shades now do too (an earned hat would otherwise leak
+  // onto the daily banana the moment the first earned:'rave' HAT shipped).
+  const free = (x) => live(x) && !x.earned;
   return {
-    hats: [['none', 'no hat'], ...active.flatMap((p) => (p.hats || []).filter(live).map(pair))],
-    shades: [['none', 'no shades'], ...active.flatMap((p) => (p.shades || []).filter(live).map(pair))],
+    hats: [['none', 'no hat'], ...active.flatMap((p) => (p.hats || []).filter(free).map(pair))],
+    shades: [['none', 'no shades'], ...active.flatMap((p) => (p.shades || []).filter(free).map(pair))],
     // the daily only wears freely-available extras (never earned trophies, rave-granted
     // items, or FEET overlays — the daily keeps its own baked-in shoes)
     extras: active.flatMap((p) => (p.extras || []).filter((e) => live(e) && !e.earned && !e.raveOnly && e.anchor !== 'feet').map(pair)),

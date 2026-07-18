@@ -9,7 +9,8 @@
 // THE DROP: clock-synced shared moment — every 3 minutes, for 10 seconds,
 // the whole floor goes disco. Everyone sees it together because everyone
 // shares the same clock. Zero server involvement.
-import { drawComposite, assetsReady, NFRAMES, resolveHands, EXTRA_DEFS } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES, resolveHands, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
+import { DROPS } from '../data/wearables.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -38,6 +39,14 @@ const SPOT_PERIOD = 120, SPOT_LEN = 35, SPOT_OFFSET = 30, SPOT_R = 14; // second
 const VINYL_PERIOD = 420, VINYL_WAIT = 180, VINYL_OFFSET = 210;        // keep in sync with worker
 const SAUCE_PERIOD = 180, SAUCE_WAIT = 100, SAUCE_OFFSET = 60;          // hot sauce drop — keep in sync with worker
 const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE GOLDEN BANANA (rare) — keep in sync with worker
+// 🎧 THE DROP: a rave-EXCLUSIVE wearable lands on the floor; catch it and it's
+// yours FOREVER (equipped now + saved to bb-last + shown locked-until-caught in
+// the builder). CLIENT-AUTHORITATIVE like the glowstick — each raver earns their
+// OWN copy, no first-claim race — so it needs NO worker window mirror; the worker
+// only allowlists the item id + relays a one-line "NAME caught it" shout (t:grab).
+const GIFT_PERIOD = 210, GIFT_WAIT = 22, GIFT_OFFSET = 90;              // every 3.5 min, lives 22s (rarer + longer than a snack)
+const DROP = DROPS[0] || null;                                          // tonight's catchable drop (one for now; rotates as the lineup grows)
+function giftEarned() { if (!DROP) return true; try { return localStorage.getItem(DROP.flag) === '1'; } catch (e) { return true; } }
 // THE CONVEYOR: an item every 75s, forever, but each lives only FIVE SECONDS
 // on the floor before the smoke poof takes it (Trym: reflex, not patience).
 // The twinkle still announces 4s ahead. Keep in sync with worker (grace there).
@@ -116,6 +125,12 @@ function goldSpotFor(w) { // keep in sync with goldSpot() in worker-rave
 function itemSpotFor(w) { // keep in sync with itemSpot() in worker-rave
   let x = 12 + seedRand(0x17e6 + w * 2) * 70;
   let y = 26 + seedRand(0x17e6 + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+function giftSpotFor(w) { // the drop's landing spot — client-only (each raver catches their own)
+  let x = 14 + seedRand(0x9d1f + w * 2) * 66;
+  let y = 26 + seedRand(0x9d1f + w * 2 + 1) * 46;
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
@@ -1851,6 +1866,51 @@ function init() {
     }
   }
 
+  // 🎧 THE DROP: catch a rave-exclusive wearable — it's yours forever. Mirrors
+  // the glowstick unlock (flag → equip → broadcast → ride home to bb-last) but
+  // spatial: you walk onto it. The maker's credit rides the ceremony + the shout.
+  function claimGift() {
+    if (!DROP) return;
+    giftWinClaimed = Math.floor((Date.now() / 1000 - GIFT_OFFSET) / GIFT_PERIOD);
+    const gs = giftSpotFor(giftWinClaimed);
+    pickupPop(gs.x, gs.y);
+    let had = false;
+    try { had = localStorage.getItem(DROP.flag) === '1'; localStorage.setItem(DROP.flag, '1'); } catch (e) {}
+    // equip it right now, on the floor, for the whole room to see
+    const me = ravers.get(myId);
+    if (me) {
+      if (DROP.slot === 'hat') me.outfit.hat = DROP.id;
+      else if (DROP.slot === 'glasses') me.outfit.glasses = DROP.id;
+      else me.outfit.extras = { ...(me.outfit.extras || {}), [DROP.id]: true };
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+    }
+    // ride it home — the builder, pass, stickers and share cards all read bb-last
+    try {
+      const saved = JSON.parse(localStorage.getItem('bb-last') || '{}');
+      if (DROP.slot === 'hat') saved.hat = DROP.id;
+      else if (DROP.slot === 'glasses') saved.glasses = DROP.id;
+      else saved.extras = { ...(saved.extras || {}), [DROP.id]: true };
+      localStorage.setItem('bb-last', JSON.stringify(saved));
+    } catch (e) {}
+    bumpChain();
+    nightEvent('drop');
+    addHype(10);
+    confettiBurst();
+    if (audioOn) playDropAudio(); // the catch lands with the beat
+    // tell the floor — the maker's name rides the shout (recognition)
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'grab', item: DROP.id }));
+    const credit = DROP.by ? ' <span class="rv-by">by ' + DROP.by + '</span>' : '';
+    const toast = document.createElement('div');
+    toast.className = 'rv-glowtoast';
+    toast.innerHTML = had
+      ? '🎧 <b>' + DROP.label.toUpperCase() + '</b>' + credit + ' — already yours. Wear it loud.'
+      : '🎧 <b>' + DROP.label.toUpperCase() + '</b>' + credit + ' — CAUGHT! Yours forever, on your head and in the builder.';
+    (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
+    setTimeout(() => toast.remove(), 8000);
+    if (!had) passPatch('collector', { quiet: true }); // the toast IS the celebration
+    track('rave_drop_catch', { item: DROP.id });
+  }
+
   // timed effects (flames/daiquiri/fizz) — SERVER-GRANTED, worn until fx.until
   const fxActive = (r, now) => !!(r && r.fx && r.fx.until > now);
   function applyFx(id, fx, at) {
@@ -2017,6 +2077,23 @@ function init() {
       goEl.style.display = 'none';
       goldLive = null;
     }
+    // — 🎧 THE DROP: a rave-exclusive wearable lands; walk over it and it's yours
+    // forever. Shown only until YOU'VE caught it (client-gated by its flag), so
+    // the floor's veterans stop seeing it while newcomers still can —
+    const gfEl = el('rvGift');
+    if (gfEl && DROP && !giftEarned()) {
+      const gfPh = (((t - GIFT_OFFSET) % GIFT_PERIOD) + GIFT_PERIOD) % GIFT_PERIOD;
+      const gfWin = Math.floor((t - GIFT_OFFSET) / GIFT_PERIOD);
+      if (gfPh < GIFT_WAIT && giftWinClaimed !== gfWin && floorItems < MAX_FLOOR_ITEMS) {
+        const gs = giftSpotFor(gfWin);
+        floorItems++;
+        if (gfEl.dataset.item !== DROP.id) { gfEl.dataset.item = DROP.id; gfEl.innerHTML = SVG[DROP.art] || ''; }
+        gfEl.style.display = '';
+        gfEl.style.left = gs.x + '%';
+        gfEl.style.top = gs.y + '%';
+        giftLive = { x: gs.x, y: gs.y, win: gfWin };
+      } else { gfEl.style.display = 'none'; giftLive = null; }
+    } else if (gfEl) { gfEl.style.display = 'none'; giftLive = null; }
     // — THE CONVEYOR: a fresh item lands every 75 seconds, forever — the floor is
     // never dead (Trym's brief: solo visitors need a constant chase) —
     const itEl = el('rvItem');
@@ -2083,7 +2160,8 @@ function init() {
   // claims run at FRAME rate against what rhythmTick put on the floor — the old
   // 500ms tick + 2s retry cooldown meant you could walk clean OVER an item and
   // miss the window (Trym: "i can walk over them several times")
-  let vinylLive = null, goldLive = null, itemLive = null;
+  let vinylLive = null, goldLive = null, itemLive = null, giftLive = null;
+  let giftWinClaimed = -1, lastGiftTry = 0;
   function tryClaims(now) {
     if (tourActive) return; // hidden items can't be grabbed mid-tour
     const me = myId && ravers.get(myId);
@@ -2109,6 +2187,11 @@ function init() {
       const soloFx = { sauce: 'flames', zap: 'zap', fizz: 'fizz', balloon: 'balloon', ...MENU_FX }[itemLive.kind];
       if (ws && ws.readyState === 1) sendClaim('{"t":"item"}');
       else itemGrant(myId, itemLive.win, itemLive.kind, soloFx ? { id: soloFx, until: Date.now() + fxLen(soloFx) } : undefined);
+    }
+    // 🎧 the drop: client-authoritative — no server race, you catch YOUR own copy
+    if (giftLive && now - lastGiftTry > 800 && Math.hypot(me.x - giftLive.x, me.y - giftLive.y) < GRAB_R) {
+      lastGiftTry = now;
+      claimGift();
     }
     // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
     // rectangle — the solid counter's edge scales with the floor (x≈50% on
@@ -2291,6 +2374,12 @@ function init() {
       }
       else if (m.t === 'item') itemGrant(m.id, m.win, m.kind, m.fx);
       else if (m.t === 'gold') claimGold(m.id);
+      else if (m.t === 'grab' && m.id !== myId) {
+        // someone caught a drop — the whole floor sees WHO, and whose item it is
+        const r = ravers.get(m.id);
+        const d = DROPS.find((x) => x.id === m.item);
+        if (r && d) showBubble('🎧 ' + dispName(r) + ' caught the ' + d.label + (d.by ? ' (by ' + d.by + ')' : '') + '!', false, 5000);
+      }
       else if (m.t === 'vinyl') pickVinyl(m.id);
       else if (m.t === 'minidrop') deliverVinyl(m.id);
       else if (m.t === 'stage') {

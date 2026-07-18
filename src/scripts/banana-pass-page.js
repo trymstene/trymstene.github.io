@@ -168,7 +168,11 @@ async function init() {
     host.innerHTML = '';
     GEAR.forEach((def) => {
       const earned = gearEarned(def);
-      const wearing = earned && !!outfit.extras[def.extra];
+      // a gear slot is an extras id OR a head slot (hat/glasses)
+      const isWorn = () => def.extra ? !!outfit.extras[def.extra]
+        : def.hat ? outfit.hat === def.hat
+        : def.glasses ? outfit.glasses === def.glasses : false;
+      const wearing = earned && isWorn();
       const cell = document.createElement('div');
       cell.className = 'ps-gear__item' + (earned ? ' ps-gear__item--earned' : '');
       const cv = document.createElement('canvas');
@@ -180,18 +184,27 @@ async function init() {
       const p = document.createElement('p');
       p.textContent = def.hint;
       cell.appendChild(p);
+      if (def.by) { // creator credit rides the item — "by Barty"
+        const by = document.createElement('span');
+        by.className = 'ps-gear__by';
+        by.textContent = 'by ' + def.by;
+        cell.appendChild(by);
+      }
       if (earned) {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
         b.textContent = wearing ? '✓ wearing it' : 'wear it';
         b.addEventListener('click', () => {
-          outfit.extras[def.extra] = !outfit.extras[def.extra];
+          // toggle the item's slot (extras id, or a head slot)
+          if (def.extra) outfit.extras[def.extra] = !outfit.extras[def.extra];
+          else if (def.hat) outfit.hat = (outfit.hat === def.hat ? 'none' : def.hat);
+          else if (def.glasses) outfit.glasses = (outfit.glasses === def.glasses ? 'none' : def.glasses);
           saveOutfit();
           el('psName').textContent = autoName(outfit);
           lastIdx = -1; // the signature banana redraws on its next frame
           renderGear();
-          if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: !!outfit.extras[def.extra] });
+          if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: isWorn() });
         });
         cell.appendChild(b);
       }
@@ -201,7 +214,8 @@ async function init() {
       assetsReady().then(() => {
         drawComposite(cv.getContext('2d'), 168, 2, {
           bg: 'transparent', captions: false,
-          hat: 'none', glasses: 'none', extras: { [def.extra]: true }, top: '', bottom: '', effect: 'none',
+          hat: def.hat || 'none', glasses: def.glasses || 'none',
+          extras: def.extra ? { [def.extra]: true } : {}, top: '', bottom: '', effect: 'none',
         });
       });
     });

@@ -26,7 +26,10 @@
 // canonical order: edit wearables.js, then paste here. EXTRA_IDS === its
 // CLIENT_EXTRA_IDS export (non-raveOnly extras); raveOnly items (beer/cone/
 // vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
-const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap'];
+const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap', 'djheadphones'];
+// wearables catchable as a DROP on the floor — mirror of DROPS ids in
+// src/data/wearables.js. Used only to validate the cosmetic 'grab' shout.
+const DROP_IDS = ['djheadphones'];
 const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi', 'potter', 'nerd', 'monocle', 'groucho', 'eyepatch', 'googlyeyes', 'cucumbers'];
 const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'glowstick', 'goldbanana'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
@@ -488,6 +491,14 @@ export class RaveRoom {
       if (stored === win) return;
       await this.state.storage.put('goldWin', win);
       this.broadcast({ t: 'gold', id: me.id });
+      return;
+    }
+
+    if (msg.t === 'grab' && me) { // a raver caught a wearable DROP — a cosmetic
+      // floor-wide shout only (the catch itself is client-authoritative; the
+      // caught item rides in on the normal 'outfit' broadcast). No state, no race.
+      if (typeof msg.item !== 'string' || !DROP_IDS.includes(msg.item)) return;
+      this.broadcast({ t: 'grab', id: me.id, item: msg.item });
       return;
     }
 

@@ -347,6 +347,21 @@ const GUIDE = [
     .rv-item--tall { width: 26px; height: 39px; }
     .rv-item--gold { width: 28px; height: 49px; filter: drop-shadow(0 0 10px rgba(255, 225, 53, 0.85)) drop-shadow(0 0 3px #fffdf5); } /* 8:14 — the v3 upright banana with its pointy stem */
     .rv-item svg { width: 100%; height: 100%; }
+    /* 🎧 THE DROP: a rave-exclusive wearable, glowing cyan with a NEW flag so it
+       reads as "grab this, it's special" — never a snack. Sized to the DJ
+       headphones' 7:6; revisit if a taller drop ever leads the lineup. */
+    .rv-gift {
+      width: 50px; height: 43px;
+      filter: drop-shadow(0 0 9px rgba(34, 211, 238, 0.95)) drop-shadow(0 0 3px #fffdf5);
+      animation: rvGiftBob 0.7s steps(2) infinite; overflow: visible;
+    }
+    .rv-gift::after {
+      content: 'NEW'; position: absolute; left: 50%; top: -13px; transform: translateX(-50%);
+      font-family: inherit; font-size: 8px; font-weight: 900; letter-spacing: 0.06em; line-height: 1.4;
+      color: #06131a; background: #22d3ee; border: 1.5px solid #06131a; padding: 0 3px;
+      box-shadow: 0 0 6px rgba(34, 211, 238, 0.9);
+    }
+    @keyframes rvGiftBob { 50% { transform: translate(-50%, -60%) scale(1.12); } }
     /* conveyor item sizes by kind (sprites have different aspect ratios) */
     .rv-item[data-kind="sauce"], .rv-item[data-kind="fizz"], .rv-item[data-kind="balloon"] { width: 26px; height: 39px; }
     .rv-item[data-kind="zap"] { width: 28px; height: 39px; } /* the loose cable is 10:14 */
@@ -840,6 +855,7 @@ const GUIDE = [
        visitors either — the tutorial is about THE PLAYER and the staff, and a
        stranger dancing through "THIS IS YOU" breaks the premise (Trym) */
     .rv-floor.rv-tourclean #rvItem, .rv-floor.rv-tourclean #rvVinyl, .rv-floor.rv-tourclean #rvGold,
+    .rv-floor.rv-tourclean #rvGift,
     .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot,
     .rv-floor.rv-tourclean .rv-raver:not(.rv-raver--me),
     .rv-floor.rv-tourclean #rvChores, .rv-floor.rv-tourclean .rv-monkey { visibility: hidden; }
@@ -910,6 +926,7 @@ const GUIDE = [
       pointer-events: none;
     }
     .rv-glowtoast b { color: #39ff14; }
+    .rv-glowtoast .rv-by { color: #22d3ee; font-weight: 700; } /* the maker's credit rides the drop */
 
     .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
     /* YOUR banana echoes input at frame rate — the 0.18s glide (needed to
@@ -1134,6 +1151,7 @@ const GUIDE = [
             <svg class="rv-item rv-item--gold" id="rvGold" viewBox="0 0 8 14" shape-rendering="crispEdges" style="display:none;" aria-hidden="true">
               <rect x="4" y="0" width="1" height="1" fill="#5a3618"/><rect x="4" y="1" width="1" height="1" fill="#5a3618"/><rect x="4" y="2" width="2" height="1" fill="#5a3618"/><rect x="0" y="3" width="1" height="1" fill="#ffffff"/><rect x="3" y="3" width="1" height="1" fill="#d69a1e"/><rect x="4" y="3" width="2" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="1" fill="#d69a1e"/><rect x="3" y="4" width="1" height="1" fill="#d69a1e"/><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="6" y="4" width="1" height="1" fill="#d69a1e"/><rect x="2" y="5" width="1" height="1" fill="#d69a1e"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="2" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#d69a1e"/><rect x="2" y="6" width="1" height="1" fill="#d69a1e"/><rect x="3" y="6" width="3" height="1" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#d69a1e"/><rect x="2" y="7" width="1" height="1" fill="#d69a1e"/><rect x="3" y="7" width="3" height="1" fill="#ffe135"/><rect x="6" y="7" width="1" height="1" fill="#d69a1e"/><rect x="2" y="8" width="1" height="1" fill="#d69a1e"/><rect x="3" y="8" width="3" height="1" fill="#ffe135"/><rect x="6" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="9" width="1" height="1" fill="#d69a1e"/><rect x="3" y="9" width="3" height="1" fill="#ffe135"/><rect x="6" y="9" width="1" height="1" fill="#d69a1e"/><rect x="2" y="10" width="1" height="1" fill="#d69a1e"/><rect x="3" y="10" width="3" height="1" fill="#ffe135"/><rect x="6" y="10" width="1" height="1" fill="#d69a1e"/><rect x="1" y="11" width="1" height="1" fill="#d69a1e"/><rect x="2" y="11" width="3" height="1" fill="#ffe135"/><rect x="5" y="11" width="1" height="1" fill="#d69a1e"/><rect x="7" y="11" width="1" height="1" fill="#ffffff"/><rect x="1" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="12" width="2" height="1" fill="#ffe135"/><rect x="4" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="13" width="2" height="1" fill="#5a3618"/>
             </svg>
+            <div class="rv-item rv-gift" id="rvGift" style="display:none;" aria-hidden="true"></div>
             <div class="rv-bar" aria-hidden="true">
               <div class="rv-bubble" id="rvBubble" hidden></div>
               <div class="rv-special" id="rvSpecial" hidden></div>
