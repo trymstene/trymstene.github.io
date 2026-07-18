@@ -1128,9 +1128,12 @@ function init() {
 
   // ---- boot ----
   const pickId = new URLSearchParams(location.search).get('shelf');
-  const picked = pickId ? shelfList().find((c) => c.id === pickId && c.kind === 'emoji') : null;
-  if (picked) deserialize(picked.params);
-  else {
+  const pickedAny = pickId ? shelfList().find((c) => c.id === pickId) : null;
+  let bootItems = false;
+  if (pickedAny && pickedAny.kind === 'emoji') { deserialize(pickedAny.params); }
+  else if (pickedAny && pickedAny.kind === 'wearable') { // re-open a saved ITEM in Items mode
+    try { const wd = JSON.parse(pickedAny.params.replace(/^wear:/, '')); if (deserialize(wd.forge)) bootItems = true; } catch (e) {}
+  } else {
     const draft = (() => { try { return localStorage.getItem('forge-draft'); } catch (e) { return null; } })();
     if (draft) deserialize(draft);
   }
@@ -1141,7 +1144,13 @@ function init() {
   setColor(state.color);
   setBrush(1);
   el('fgOnion').setAttribute('aria-pressed', String(state.onion));
+  if (bootItems) { // start in Items mode with the re-opened item already loaded
+    mode = 'items';
+    document.body.classList.add('fg-mode-items');
+    document.querySelectorAll('.fg-modetab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === 'items')));
+  }
   refreshAll();
+  if (bootItems) updateItemsStatus();
   requestAnimationFrame(previewTick);
   track('forge_open');
   passVisit();

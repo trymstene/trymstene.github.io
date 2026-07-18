@@ -8,20 +8,31 @@
 // CLIENT-ONLY module (renders thumbnails via the engine — never import from
 // Astro frontmatter).
 import { drawComposite, assetsReady } from './banana-engine.js';
-import { forgeParse, forgeDrawFrame, forgeGridToSVG } from './forge-format.js';
+import { forgeParse, forgeDrawFrame } from './forge-format.js';
 
-// a saved 'wearable' (Forge dress-the-banana) → the engine's custom-accessory
-// object, so the shelf thumbnail shows the banana actually wearing it
-function wearCustomFrom(params) {
+// a saved 'wearable' → its ITEM sprite, cropped to the painted pixels and
+// centred, drawn into a 96px thumbnail. Shown ALONE (an item is an item, not a
+// banana) so the "My items" shelf never looks like the "My bananas" one.
+function drawItemThumb(cv, params) {
   try {
     const d = JSON.parse(params.replace(/^wear:/, ''));
     const f = forgeParse(d.forge);
-    const out = f && forgeGridToSVG(f.frames[0], f.w, f.h, f.palette);
-    if (!out) return null;
-    // offset-based (Items Workshop v2): anchor is the engine anchor already,
-    // ox/oy the captured offset, scale bakes the drawn size
-    return { art: out.svg, anchor: d.anchor || 'head', hand: d.hand, ox: d.ox || 0, oy: d.oy || 0, scale: d.scale || 1 };
-  } catch (e) { return null; }
+    if (!f) return;
+    const fr = f.frames[0];
+    let mnX = f.w, mnY = f.h, mxX = -1, mxY = -1;
+    for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) {
+      if (fr[y * f.w + x] && f.palette[fr[y * f.w + x]]) { if (x < mnX) mnX = x; if (x > mxX) mxX = x; if (y < mnY) mnY = y; if (y > mxY) mxY = y; }
+    }
+    if (mxX < 0) return;
+    const bw = mxX - mnX + 1, bh = mxY - mnY + 1, k = Math.max(1, Math.floor(80 / Math.max(bw, bh)));
+    const c = cv.getContext('2d'); c.save();
+    c.translate(((96 - bw * k) / 2) | 0, ((96 - bh * k) / 2) | 0);
+    for (let y = mnY; y <= mxY; y++) for (let x = mnX; x <= mxX; x++) {
+      const idx = fr[y * f.w + x]; if (!idx) continue; const col = f.palette[idx]; if (!col) continue;
+      c.fillStyle = col; c.fillRect((x - mnX) * k, (y - mnY) * k, k, k);
+    }
+    c.restore();
+  } catch (e) {}
 }
 
 const KEY = 'shelf-v1';
@@ -75,13 +86,15 @@ function outfitFrom(params) {
 // render the shelf strip into a host element; onPick(creation) on click.
 // opts.limit shows only the latest N (the tools show a strip; the full shelf
 // lives on the pass).
-export async function renderShelf(host, { onPick, limit } = {}) {
+export async function renderShelf(host, { onPick, limit, kinds, emptyMsg } = {}) {
   if (!host) return;
   await assetsReady();
-  const list = limit ? read().slice(0, limit) : read();
+  let list = read();
+  if (kinds) list = list.filter((c) => kinds.includes(c.kind)); // one shelf per KIND (bananas / items / emotes)
+  if (limit) list = list.slice(0, limit);
   host.innerHTML = '';
   if (!list.length) {
-    host.innerHTML = '<p class="shelf-empty">Empty so far — download, share or order a banana and it lands here.</p>';
+    host.innerHTML = '<p class="shelf-empty">' + (emptyMsg || 'Empty so far — download, share or order a banana and it lands here.') + '</p>';
     return;
   }
   list.forEach((c) => {
@@ -100,11 +113,7 @@ export async function renderShelf(host, { onPick, limit } = {}) {
         tctx.restore();
       }
     } else if (c.kind === 'wearable') {
-      drawComposite(cv.getContext('2d'), 96, 2, {
-        bg: 'transparent', captions: false,
-        hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', effect: 'none',
-        custom: wearCustomFrom(c.params) || undefined,
-      });
+      drawItemThumb(cv, c.params); // the item, alone
     } else {
       const o = outfitFrom(c.params);
       drawComposite(cv.getContext('2d'), 96, o.frame, {
@@ -129,7 +138,7 @@ export async function renderShelf(host, { onPick, limit } = {}) {
     x.textContent = '×';
     x.title = 'Take it off the shelf';
     x.setAttribute('aria-label', 'Remove from shelf');
-    x.onclick = (e) => { e.stopPropagation(); shelfRemove(c.id); renderShelf(host, { onPick }); };
+    x.onclick = (e) => { e.stopPropagation(); shelfRemove(c.id); renderShelf(host, { onPick, limit, kinds, emptyMsg }); };
     cell.appendChild(x);
     if (onPick) {
       cell.title = 'Bring this banana back';

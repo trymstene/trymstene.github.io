@@ -144,12 +144,14 @@ async function init() {
     el('psStats').innerHTML = rows.map(([n, label]) => `<span class="ps-stat"><b>${n}</b>${label}</span>`).join('');
   }
 
-  // — the shelf, at home —
-  renderShelf(el('psShelf'), {
-    onPick: (c) => {
-      location.href = c.kind === 'emoji' ? '/forge/?shelf=' + c.id : '/make-a-banana/?' + c.params;
-    },
-  });
+  // — creations, SPLIT BY KIND so it's not a junk drawer: bananas (characters)
+  //   open in the builder · items (wearables) + emotes open in the forge —
+  renderShelf(el('psBananas'), { kinds: ['banana'], emptyMsg: 'No bananas yet — build one in the workshop.',
+    onPick: (c) => { location.href = '/make-a-banana/?' + c.params; } });
+  renderShelf(el('psItems'), { kinds: ['wearable'], emptyMsg: 'No items yet — make one in the Items Workshop.',
+    onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
+  renderShelf(el('psEmotes'), { kinds: ['emoji'], emptyMsg: 'No emotes yet — draw one in the forge.',
+    onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
 
   // — THE GEAR ROW: earned wearables, toggled straight onto the banana.
   // bb-last is the toggle target (the rave, stickers and share cards all read
