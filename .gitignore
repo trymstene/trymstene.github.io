@@ -21,6 +21,9 @@ ROADMAP.md
 
 # Local-only upload pack for Giphy/Tenor (not for the website)
 giphy-tenor-pack/
+# Local-only Giphy upload staging — the gallery keeps its own tracked copies
+# in public/assets/gallery-bananas/, so these are duplicates we don't deploy
+public/assets/giphy-stickers/
 
 # Astro / Node
 node_modules/

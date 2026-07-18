@@ -79,4 +79,14 @@ export const TAGS = {
     q: 'payday meme',
     blurb: 'Rent is due, bills are bananas — money memes from a fruit with no bank account and no worries. Financial advice not included; dancing is.',
   },
+  celebrate: {
+    name: 'Celebrate Banana Stickers',
+    q: 'celebration gif',
+    blurb: 'Celebration stickers starring the dancing banana — trophies lifted, caps tossed, balloons everywhere. For wins, birthdays, graduations and every good-news group chat. Transparent, free, no watermark.',
+  },
+  silly: {
+    name: 'Silly Banana Stickers',
+    q: 'silly gif',
+    blurb: 'The goofiest corner of the gallery — googly eyes, rubber chickens, propeller beanies and a banana with a whole pigeon on its head. Transparent silly stickers for chats that don’t take themselves seriously.',
+  },
 };

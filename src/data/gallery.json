@@ -335,5 +335,463 @@
     "frames": 8,
     "kind": "sticker",
     "kb": 15
+  },
+  {
+    "id": "arrow",
+    "title": "Arrow Through the Head",
+    "caption": "Struck right in the feelings.",
+    "description": "The dancing banana with a cartoon arrow straight through its head — a transparent “ouch, I'm dead” reaction sticker for dramatic moments in any chat.",
+    "tags": [
+      "ouch",
+      "dramatic",
+      "im-dead",
+      "funny",
+      "silly",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-arrow-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 41
+  },
+  {
+    "id": "balloons",
+    "title": "Bunch of Balloons",
+    "caption": "Party incoming — bring the balloons.",
+    "description": "The dancing banana clutching a bright bunch of balloons — a free transparent sticker for birthdays, congrats and any celebration group chat.",
+    "tags": [
+      "balloons",
+      "birthday",
+      "celebrate",
+      "party",
+      "congratulations",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-balloons-trymstene.com.gif",
+    "w": 461,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 44
+  },
+  {
+    "id": "bananas",
+    "title": "Banana Rights",
+    "caption": "One banana, one vote.",
+    "description": "The dancing banana marching with a tiny protest sign — a goofy “make it make sense” sticker for hot takes, banana pride and playful protest energy.",
+    "tags": [
+      "protest",
+      "sign",
+      "funny",
+      "banana",
+      "mood",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-bananas-trymstene.com.gif",
+    "w": 480,
+    "h": 458,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 40
+  },
+  {
+    "id": "coffee",
+    "title": "But First, Coffee",
+    "caption": "Do not speak to me yet.",
+    "description": "The dancing banana cradling a hot cup — a transparent “need coffee” sticker for slow mornings, Monday moods and the pre-caffeine struggle.",
+    "tags": [
+      "coffee",
+      "morning",
+      "monday",
+      "need-coffee",
+      "mood",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-coffee-trymstene.com.gif",
+    "w": 479,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 38
+  },
+  {
+    "id": "cone",
+    "title": "Cone of Shame",
+    "caption": "I did something. I regret nothing.",
+    "description": "The dancing banana stuck in a vet cone of shame — a free transparent sticker for “I'm in trouble”, oops moments and pure comedic guilt.",
+    "tags": [
+      "cone-of-shame",
+      "oops",
+      "in-trouble",
+      "funny",
+      "silly",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-cone-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 35
+  },
+  {
+    "id": "cool",
+    "title": "Too Cool",
+    "caption": "Backwards cap, zero worries.",
+    "description": "The dancing banana in a backwards cap looking effortlessly cool — a transparent “chill”, “swag” and “too cool” sticker for any chat.",
+    "tags": [
+      "cool",
+      "chill",
+      "swag",
+      "mood",
+      "dancing",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-cool-trymstene.com.gif",
+    "w": 446,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 36
+  },
+  {
+    "id": "cucumber",
+    "title": "Spa Day",
+    "caption": "Treat yourself. You earned it.",
+    "description": "The dancing banana in full self-care mode — a transparent “spa day”, “relax” and “treat yourself” sticker for chill, cozy me-time chats.",
+    "tags": [
+      "spa-day",
+      "self-care",
+      "relax",
+      "chill",
+      "mood",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-cucumber-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 39
+  },
+  {
+    "id": "devil",
+    "title": "Little Devil",
+    "caption": "Up to no good, as usual.",
+    "description": "The dancing banana with tiny red devil horns — a transparent “mischievous”, “evil laugh” and “up to no good” sticker for cheeky chats.",
+    "tags": [
+      "devil",
+      "mischievous",
+      "evil-laugh",
+      "naughty",
+      "funny",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-devil-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 42
+  },
+  {
+    "id": "egg",
+    "title": "Good Egg",
+    "caption": "Sunny side up, always.",
+    "description": "The dancing banana wearing a fried egg like a hat — a silly transparent “breakfast” and “good egg” sticker for goofy morning chats.",
+    "tags": [
+      "egg",
+      "breakfast",
+      "good-egg",
+      "funny",
+      "silly",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-egg-trymstene.com.gif",
+    "w": 436,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 39
+  },
+  {
+    "id": "fish",
+    "title": "Something's Fishy",
+    "caption": "Caught one THIS big.",
+    "description": "The dancing banana proudly holding a big blue fish — a transparent “something's fishy” and “gone fishing” sticker for suspicious and silly moments.",
+    "tags": [
+      "fish",
+      "something-fishy",
+      "gone-fishing",
+      "funny",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-fish-trymstene.com.gif",
+    "w": 473,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 46
+  },
+  {
+    "id": "fishbowl",
+    "title": "Fishbowl Head",
+    "caption": "Just vibing underwater.",
+    "description": "The dancing banana with a whole fishbowl on its head — a surreal transparent “under the sea” sticker for weird, funny and dreamy chats.",
+    "tags": [
+      "fishbowl",
+      "under-the-sea",
+      "weird",
+      "funny",
+      "silly",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-fishbowl-trymstene.com.gif",
+    "w": 416,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 39
+  },
+  {
+    "id": "googly-eyes",
+    "title": "Googly Eyes",
+    "caption": "Everything's funnier with googly eyes.",
+    "description": "The dancing banana with giant googly eyes — a transparent “silly”, “goofy” and “funny face” sticker that makes any chat sillier.",
+    "tags": [
+      "googly-eyes",
+      "goofy",
+      "silly",
+      "funny",
+      "mood",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-googly-eyes-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 37
+  },
+  {
+    "id": "graduate",
+    "title": "We Did It, Grad",
+    "caption": "Cap tossed. Degree earned.",
+    "description": "The dancing banana in a graduation cap — a transparent “we did it” and “congrats grad” sticker for graduation season and big-win chats.",
+    "tags": [
+      "graduation",
+      "congrats-grad",
+      "we-did-it",
+      "celebrate",
+      "proud",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-graduate-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 37
+  },
+  {
+    "id": "holy",
+    "title": "Who, Me?",
+    "caption": "Completely innocent. Promise.",
+    "description": "The dancing banana with a glowing halo — a transparent “innocent”, “who me?” and “angel” sticker for playing it totally blameless.",
+    "tags": [
+      "angel",
+      "innocent",
+      "who-me",
+      "halo",
+      "blessed",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-holy-trymstene.com.gif",
+    "w": 383,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 32
+  },
+  {
+    "id": "jester",
+    "title": "Court Jester",
+    "caption": "Here to make you laugh.",
+    "description": "The dancing banana in a colorful jester hat — a transparent “silly”, “clown” and “fool” sticker for goofy, playful chats.",
+    "tags": [
+      "jester",
+      "clown",
+      "silly",
+      "funny",
+      "party",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-jester-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 40
+  },
+  {
+    "id": "patch",
+    "title": "Eyepatch",
+    "caption": "Arrr, matey.",
+    "description": "The dancing banana sporting a pirate eyepatch — a transparent “arrr” and “pirate” sticker for swashbuckling, cheeky chats.",
+    "tags": [
+      "eyepatch",
+      "pirate",
+      "arrr",
+      "funny",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-patch-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 35
+  },
+  {
+    "id": "pigeon",
+    "title": "Bird Friend",
+    "caption": "He lives here now.",
+    "description": "The dancing banana with a pigeon perched on its head — a transparent “bird” and “weird flex” sticker for random, funny chats.",
+    "tags": [
+      "pigeon",
+      "bird",
+      "weird",
+      "funny",
+      "silly",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-pigeon-trymstene.com.gif",
+    "w": 369,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 35
+  },
+  {
+    "id": "pirate",
+    "title": "Captain Banana",
+    "caption": "Ahoy — set sail.",
+    "description": "The dancing banana in a pirate captain's hat — a transparent “ahoy” and “pirate” sticker for adventurous, playful chats.",
+    "tags": [
+      "pirate",
+      "ahoy",
+      "captain",
+      "funny",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-pirate-trymstene.com.gif",
+    "w": 426,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 37
+  },
+  {
+    "id": "propeller",
+    "title": "Propeller Beanie",
+    "caption": "Certified goofball.",
+    "description": "The dancing banana in a spinning propeller beanie — a transparent “nerd”, “goofy” and “silly” sticker for playful, childish fun.",
+    "tags": [
+      "propeller",
+      "nerd",
+      "goofy",
+      "silly",
+      "funny",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-propeller-trymstene.com.gif",
+    "w": 426,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 36
+  },
+  {
+    "id": "rubber-chicken",
+    "title": "Rubber Chicken",
+    "caption": "The classic bit never dies.",
+    "description": "The dancing banana wielding a rubber chicken — a transparent “joke”, “silly” and “funny” sticker for pure slapstick comedy chats.",
+    "tags": [
+      "rubber-chicken",
+      "joke",
+      "silly",
+      "funny",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-rubber-chicken-trymstene.com.gif",
+    "w": 477,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 46
+  },
+  {
+    "id": "scarf",
+    "title": "Cozy Scarf",
+    "caption": "Bundled up and unbothered.",
+    "description": "The dancing banana wrapped in a red scarf — a transparent “cozy”, “cold” and “winter” sticker for chilly days and comfy-mood chats.",
+    "tags": [
+      "scarf",
+      "cozy",
+      "winter",
+      "cold",
+      "mood",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-scarf-trymstene.com.gif",
+    "w": 453,
+    "h": 480,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 37
+  },
+  {
+    "id": "trophy",
+    "title": "Winner Winner",
+    "caption": "First place, no contest.",
+    "description": "The dancing banana lifting a gold trophy — a transparent “winner”, “champion” and “victory” sticker for wins, congrats and celebration chats.",
+    "tags": [
+      "trophy",
+      "winner",
+      "champion",
+      "victory",
+      "celebrate",
+      "costume"
+    ],
+    "added": "2026-07-18",
+    "file": "dancing-banana-meme-trophy-trymstene.com.gif",
+    "w": 480,
+    "h": 450,
+    "frames": 8,
+    "kind": "sticker",
+    "kb": 41
   }
 ]
