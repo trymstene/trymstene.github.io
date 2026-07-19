@@ -10,6 +10,7 @@
 // real numbers — the daily banana-of-the-day rebuild keeps it fresh.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
+import PixelArtIcon from '../../components/PixelArtIcon.astro';
 import { loadGalleryItems } from '../../lib/gallery-items.js';
 import { TAGS, tagMeta, liveTagList } from '../../data/gallery-tags.js';
 
@@ -220,6 +221,14 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
     .gd-tags a:hover { background: var(--banana); }
     .gd-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
     .gd-actions .btn { flex: 1; min-width: 220px; }
+    .gd-merch { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center; margin-top: 0.7rem; }
+    .gd-merch__lbl { font-size: 0.82rem; font-weight: 800; opacity: 0.65; }
+    .gd-merch__btn {
+      display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;
+      font-size: 0.82rem; font-weight: 800; color: var(--ink); background: var(--paper);
+      border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 0.35rem 0.6rem;
+    }
+    .gd-merch__btn:hover { background: var(--banana); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
     .gd-note { font-size: 0.8rem; opacity: 0.7; margin-top: 1rem; }
     .gd-note a { color: var(--ink); }
     .gd-related { margin-top: 3rem; }
@@ -290,10 +299,22 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
         <a class="btn btn--dark" id="gdDownload" href={`/assets/gallery-bananas/${item.file}`} download={item.file}>
           <PixelIcon name="download" /> Download free
         </a>
-        <a class="btn btn--light" href="/make-a-banana/" data-place="gallery_detail">
-          <PixelIcon name="palette" /> Make your own →
+        <a class="btn btn--light" href={item.params ? `/make-a-banana/?${item.params}` : '/make-a-banana/'} data-place="gallery_detail">
+          <PixelIcon name="palette" /> {item.params ? 'Remix this banana →' : 'Make your own →'}
         </a>
       </div>
+
+      {item.params && (
+        <div class="gd-merch">
+          <span class="gd-merch__lbl">Want it for real?</span>
+          <a class="gd-merch__btn" href={`/make-a-banana/sticker/?${item.params}`} data-place="gallery_detail_merch" data-product="sticker">
+            <PixelArtIcon name="sticker" size="18px" /> Get it on a sticker
+          </a>
+          <a class="gd-merch__btn" href={`/make-a-banana/tee/?${item.params}`} data-place="gallery_detail_merch" data-product="tee">
+            <PixelArtIcon name="shirt" size="18px" /> Get it on a tee
+          </a>
+        </div>
+      )}
 
       <p class="gd-note">
         Made by <a href="/me/">Trym Stene</a>, creator of the original 1999 Dancing Banana.
