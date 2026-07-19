@@ -215,6 +215,8 @@ const description = 'Authorized banana personnel only.';
     // Trym's editorial items (baked at build; runtime overrides merge on top
     // in the live desk so the inputs always show the CURRENT values)
     import editorialBase from '../data/gallery.json';
+    import { parseDesign } from '../lib/sticker-core.js';
+    import { memeGif } from '../lib/meme-gif.js';
 
     const API = new URLSearchParams(location.search).get('api') || 'https://banana-contact.trymstene.workers.dev';
     const READ_KEY = 'inbox-read-v1';
@@ -589,9 +591,9 @@ const description = 'Authorized banana personnel only.';
       }));
       const comm = (ap || []).map((c) => ({
         lane: 'community', key: c.slug,
-        title: c.title, tags: c.tags || [], by: c.by || '',
+        title: c.title, tags: c.tags || [], by: c.by || '', params: c.params || '',
         kind: c.transparent ? 'sticker' : 'gif',
-        img: GAL + '/gallery/gif/' + c.slug + '.gif',
+        img: GAL + '/gallery/gif/' + c.slug + '.gif?v=' + (c.updated || c.approved || c.created || 0),
         href: '/banana-memes/by/' + c.slug + '/', ts: c.approved || 0,
       }));
       liveItems = [...comm, ...mine];
@@ -722,6 +724,34 @@ const description = 'Authorized banana personnel only.';
           save.disabled = false; save.textContent = '💾 save';
         };
         foot.appendChild(save);
+        // RE-RENDER: re-bake this item's GIF from its stored params with the
+        // current caption font (Anton) and overwrite it in R2. Pixel-identical
+        // to what visitors download (shared meme-gif renderer).
+        if (it.lane === 'community' && it.params) {
+          const rr = document.createElement('button');
+          rr.className = 'bm-btn'; rr.type = 'button'; rr.textContent = '🔁 re-render';
+          rr.title = 'Re-bake the GIF from stored params with the current font (Anton)';
+          rr.onclick = async () => {
+            rr.disabled = true; rr.textContent = 'rendering…';
+            try {
+              const st = parseDesign(new URLSearchParams(it.params));
+              const { blob } = await memeGif(st);
+              rr.textContent = 'uploading…';
+              const r = await fetch(GAL + '/gallery/replace?key=' + encodeURIComponent(gkey) + '&slug=' + encodeURIComponent(it.key), {
+                method: 'POST', headers: { 'Content-Type': 'image/gif' }, body: blob });
+              const d = await r.json();
+              if (d.ok) {
+                img.src = GAL + '/gallery/gif/' + it.key + '.gif?v=' + d.updated; // bust the preview
+                rr.textContent = '✓ re-rendered';
+                setTimeout(() => { rr.textContent = '🔁 re-render'; rr.disabled = false; }, 1500);
+                return;
+              }
+              rr.textContent = 'error: ' + (d.error || '?');
+            } catch (e) { console.error(e); rr.textContent = 'render failed'; }
+            setTimeout(() => { rr.textContent = '🔁 re-render'; rr.disabled = false; }, 2200);
+          };
+          foot.appendChild(rr);
+        }
         meta.appendChild(titleIn); meta.appendChild(row2); meta.appendChild(foot);
         row.appendChild(box); row.appendChild(meta);
         list.appendChild(row);

@@ -92,6 +92,7 @@ export default {
       if (url.pathname.startsWith('/gallery/pending/')) return handleGalleryPending(request, env, url);
       if (url.pathname === '/gallery/moderate') return handleGalleryModerate(request, env, url);
       if (url.pathname === '/gallery/edit') return handleGalleryEdit(request, env, url);
+      if (url.pathname === '/gallery/replace') return handleGalleryReplace(request, env, url);
       if (url.pathname === '/gallery/approved') return handleGalleryApproved(env);
       if (url.pathname === '/gallery/overrides') return handleGalleryOverrides(env);
       if (url.pathname.startsWith('/gallery/gif/')) return handleGalleryGif(env, url);
@@ -581,6 +582,37 @@ async function handleGalleryEdit(request, env, url) {
     httpMetadata: { contentType: 'application/json' },
   });
   return json({ ok: true, entry }, 200, cors);
+}
+
+// ---------- POST /gallery/replace?key=&slug= — swap an approved item's GIF ----
+// Body = the new GIF binary (the Banana Mail desk re-renders from the stored
+// params and posts the result). Stamps `updated` so the ?v= cache on the gallery
+// busts — the gif is served immutable, so without this the swap never shows.
+async function handleGalleryReplace(request, env, url) {
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403, cors);
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405, cors);
+  const slug = String(url.searchParams.get('slug') || '');
+  if (!/^[a-z0-9-]{1,60}$/.test(slug)) return json({ error: 'bad slug' }, 400, cors);
+
+  const idxObj = await env.SHARES.get('gallery-live/index.json');
+  let index = [];
+  if (idxObj) { try { index = await idxObj.json(); } catch (e) {} }
+  const entry = index.find((e) => e.slug === slug);
+  if (!entry) return json({ error: 'not found' }, 404, cors);
+
+  const body = await request.arrayBuffer();
+  if (body.byteLength > MAX_GALLERY_BYTES) return json({ error: 'too large' }, 413, cors);
+  const head = new Uint8Array(body.slice(0, 6));
+  const magic = String.fromCharCode(...head);
+  if (magic !== 'GIF87a' && magic !== 'GIF89a') return json({ error: 'not a gif' }, 400, cors);
+
+  await env.SHARES.put(`gallery-live/${slug}.gif`, body, { httpMetadata: { contentType: 'image/gif' } });
+  entry.kb = Math.round(body.byteLength / 1024);
+  entry.updated = Date.now();
+  await env.SHARES.put('gallery-live/index.json', JSON.stringify(index), { httpMetadata: { contentType: 'application/json' } });
+  return json({ ok: true, slug, kb: entry.kb, updated: entry.updated }, 200, cors);
 }
 
 // ---------- GET /gallery/approved — public, the build pulls this ----------

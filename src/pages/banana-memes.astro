@@ -40,7 +40,7 @@ const cards = items.map((i) => ({
 }));
 const commCards = community.map((c) => ({
   href: `/banana-memes/by/${c.slug}/`,
-  img: `${WORKER}/gallery/gif/${c.slug}.gif`,
+  img: `${WORKER}/gallery/gif/${c.slug}.gif?v=${c.updated || c.approved || c.created || 0}`,
   w: undefined, h: undefined,
   title: c.title,
   kind: c.transparent ? 'sticker' : 'gif',

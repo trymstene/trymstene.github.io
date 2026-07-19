@@ -42,7 +42,7 @@ export async function getStaticPaths() {
 const { item, related, liveTags, tally } = Astro.props;
 const SITE = 'https://trymstene.com';
 const pageUrl = `${SITE}/banana-memes/by/${item.slug}/`;
-const gifUrl = `${WORKER}/gallery/gif/${item.slug}.gif`;
+const gifUrl = `${WORKER}/gallery/gif/${item.slug}.gif?v=${item.updated || item.approved || item.created || 0}`;
 const creator = item.by || 'a banana fan';
 const kindWord = item.transparent ? 'Transparent Banana Sticker' : 'Banana Meme GIF';
 const title = `${item.title} — ${kindWord} by ${creator}`;
@@ -194,7 +194,7 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
         <div class="gd-relgrid">
           {related.map((x) => (
             <a class="gd-rel" href={`/banana-memes/by/${x.slug}/`}>
-              <img src={`${WORKER}/gallery/gif/${x.slug}.gif`} loading="lazy"
+              <img src={`${WORKER}/gallery/gif/${x.slug}.gif?v=${x.updated || x.approved || x.created || 0}`} loading="lazy"
                    alt={`${x.title} — a custom dancing banana by ${x.by || 'a banana fan'}`} />
               <span>{x.title}</span>
             </a>

@@ -94,7 +94,7 @@ const ld = [{
         {community.map((c) => (
           <a class="gc-card" href={`/banana-memes/by/${c.slug}/`}>
             <div class={`gc-img${c.transparent ? ' gc-img--sticker' : ''}`}>
-              <img src={`${WORKER}/gallery/gif/${c.slug}.gif`} loading="lazy"
+              <img src={`${WORKER}/gallery/gif/${c.slug}.gif?v=${c.updated || c.approved || c.created || 0}`} loading="lazy"
                    alt={`${c.title} — a custom dancing banana by ${c.by || 'a banana fan'}`} />
             </div>
             <h2>{c.title}</h2>
