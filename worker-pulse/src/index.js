@@ -473,7 +473,7 @@ function page() {
          padding:7px 9px; font-size:.68rem; font-weight:700; line-height:1.45; text-align:left;
          box-shadow:4px 4px 0 rgba(0,0,0,.6); white-space:normal; }
   .info:hover::after, .info.show::after{ display:block; }
-  .fbar{ height:16px; background:#0a0814; border:2px solid var(--line); position:relative; }
+  .fbar{ height:16px; background:#0a0814; border:2px solid var(--line); position:relative; overflow:hidden; }
   .fbar .fill{ height:100%; background:var(--nana); }
   .fbar.hotspot .fill{ background:var(--hot); box-shadow:0 0 10px var(--hot); }
   .fdrop{ font-size:.66rem; color:var(--dim); text-align:right; margin:2px 0 6px; }
@@ -1021,7 +1021,12 @@ function renderFunnel(el, steps){
     if(vals[i-1]>0 && rate<worstRate){ worstRate=rate; worst=i; } }
   var html='';
   for(var i=0;i<steps.length;i++){
-    var pct=vals[0]? Math.max(1.2,(vals[i]/vals[0])*100) : 0;
+    // clamp the BAR to its track: a later step can legitimately exceed step 0
+    // (GA4 counts events, not sessions — "banana danced" can fire more than
+    // once per visit, or carry over from a session that started earlier), which
+    // rendered a >100% fill that burst out of the panel. The honest % still
+    // prints in the drop-line below; only the drawn bar is capped.
+    var pct=vals[0]? Math.min(100,Math.max(1.2,(vals[i]/vals[0])*100)) : 0;
     var conv=i>0 ? (vals[i-1]? Math.round((vals[i]/vals[i-1])*100) : 0) : null;
     var lbl=steps[i][1].replace(' ⌁store-wide',' <span class="muted">(store-wide)</span>');
     if(steps[i][2]) lbl+=' <span class="info" data-tip="'+esc(steps[i][2])+'">i</span>';
