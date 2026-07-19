@@ -13,7 +13,8 @@
     "h": 220,
     "frames": 8,
     "kind": "sticker",
-    "kb": 15
+    "kb": 15,
+    "params": "g=threed"
   },
   {
     "id": "bills",
@@ -30,7 +31,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 57
+    "kb": 57,
+    "params": "bg=%23ffe135&t=BILLS%3F&b=BANANAS."
   },
   {
     "id": "boombox",
@@ -47,7 +49,8 @@
     "h": 213,
     "frames": 8,
     "kind": "sticker",
-    "kb": 16
+    "kb": 16,
+    "params": "g=dwi&ex=boombox"
   },
   {
     "id": "born-to-dance",
@@ -64,7 +67,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 81
+    "kb": 81,
+    "params": "bg=%23b388ff&h=tophat&g=shades&ex=bowtie&t=BORN+TO+DANCE&b=FORCED+TO+WORK"
   },
   {
     "id": "braincell",
@@ -82,7 +86,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 70
+    "kb": 70,
+    "params": "bg=%23ff4d6d&h=sombrero&t=MY+LAST&b=BRAINCELL"
   },
   {
     "id": "clown-shoes",
@@ -98,7 +103,8 @@
     "h": 220,
     "frames": 8,
     "kind": "sticker",
-    "kb": 16
+    "kb": 16,
+    "params": "ex=clownshoes"
   },
   {
     "id": "content",
@@ -115,7 +121,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 78
+    "kb": 78,
+    "params": "bg=%2337d67a&h=party&g=shades&ex=bowtie&e=confetti&t=EVERYTHING+IS&b=CONTENT"
   },
   {
     "id": "dance-first",
@@ -132,7 +139,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 65
+    "kb": 65,
+    "params": "bg=%23b388ff&t=DANCE+FIRST&b=THINK+LATER"
   },
   {
     "id": "emotional-support",
@@ -148,7 +156,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 74
+    "kb": 74,
+    "params": "bg=%23ffe135&g=hearts&t=EMOTIONAL&b=SUPPORT+BANANA"
   },
   {
     "id": "it-was-mid",
@@ -165,7 +174,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 73
+    "kb": 73,
+    "params": "bg=%23ff9f1c&t=TOUCHED+GRASS&b=IT+WAS+MID"
   },
   {
     "id": "monday-again",
@@ -183,7 +193,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 69
+    "kb": 69,
+    "params": "bg=%23ff9f1c&t=MONDAY+AGAIN&b=HOW.+WHY."
   },
   {
     "id": "not-thriving-but-vibing",
@@ -200,7 +211,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 76
+    "kb": 76,
+    "params": "bg=%2337d67a&h=sombrero&g=dwi&t=NOT+THRIVING&b=BUT+VIBING"
   },
   {
     "id": "on-mute",
@@ -216,7 +228,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 61
+    "kb": 61,
+    "params": "bg=%2337d67a&t=ON+MUTE&b=ON+PURPOSE"
   },
   {
     "id": "one-coffee",
@@ -233,7 +246,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 68
+    "kb": 68,
+    "params": "bg=%23ff9f1c&g=hearts&ex=boombox.sneakers&t=ME+AFTER&b=ONE+COFFEE"
   },
   {
     "id": "quiet-quitting",
@@ -250,7 +264,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 86
+    "kb": 86,
+    "params": "bg=%2337d67a&h=crown&g=dwi&ex=bowtie.boombox&e=confetti&t=QUIET+QUITTING&b=LOUD+DANCING"
   },
   {
     "id": "rent-is-due",
@@ -268,7 +283,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 76
+    "kb": 76,
+    "params": "bg=%23b388ff&h=crown&g=threed&t=RENT+IS+DUE&b=DANCE+IS+FREE"
   },
   {
     "id": "ripe",
@@ -284,7 +300,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 49
+    "kb": 49,
+    "params": "bg=%2337d67a&t=100%25&b=RIPE"
   },
   {
     "id": "sombrero",
@@ -301,7 +318,8 @@
     "h": 220,
     "frames": 8,
     "kind": "sticker",
-    "kb": 16
+    "kb": 16,
+    "params": "h=sombrero"
   },
   {
     "id": "this-is-fine",
@@ -318,7 +336,8 @@
     "h": 480,
     "frames": 8,
     "kind": "gif",
-    "kb": 54
+    "kb": 54,
+    "params": "bg=%23ff4d6d&g=potter&e=confetti&t=THIS+IS&b=FINE"
   },
   {
     "id": "viking",
@@ -334,7 +353,8 @@
     "h": 220,
     "frames": 8,
     "kind": "sticker",
-    "kb": 15
+    "kb": 15,
+    "params": "h=viking"
   },
   {
     "id": "arrow",
@@ -355,7 +375,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 41
+    "kb": 41,
+    "params": "h=arrowthru"
   },
   {
     "id": "balloons",
@@ -376,7 +397,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 44
+    "kb": 44,
+    "params": "ex=balloons"
   },
   {
     "id": "bananas",
@@ -397,7 +419,8 @@
     "h": 458,
     "frames": 8,
     "kind": "sticker",
-    "kb": 40
+    "kb": 40,
+    "params": "ex=protestsign"
   },
   {
     "id": "coffee",
@@ -418,7 +441,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 38
+    "kb": 38,
+    "params": "ex=mug"
   },
   {
     "id": "cone",
@@ -439,7 +463,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 35
+    "kb": 35,
+    "params": "ex=coneofshame"
   },
   {
     "id": "cool",
@@ -460,7 +485,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 36
+    "kb": 36,
+    "params": "h=backwardscap"
   },
   {
     "id": "cucumber",
@@ -481,7 +507,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 39
+    "kb": 39,
+    "params": "g=cucumbers"
   },
   {
     "id": "devil",
@@ -502,7 +529,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 42
+    "kb": 42,
+    "params": "h=devilhorns"
   },
   {
     "id": "egg",
@@ -523,7 +551,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 39
+    "kb": 39,
+    "params": "h=friedegg"
   },
   {
     "id": "fish",
@@ -543,7 +572,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 46
+    "kb": 46,
+    "params": "ex=bigfish"
   },
   {
     "id": "fishbowl",
@@ -564,7 +594,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 39
+    "kb": 39,
+    "params": "h=fishbowl"
   },
   {
     "id": "googly-eyes",
@@ -585,7 +616,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 37
+    "kb": 37,
+    "params": "g=googlyeyes"
   },
   {
     "id": "graduate",
@@ -606,7 +638,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 37
+    "kb": 37,
+    "params": "h=gradcap"
   },
   {
     "id": "holy",
@@ -627,7 +660,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 32
+    "kb": 32,
+    "params": "h=halo"
   },
   {
     "id": "jester",
@@ -648,7 +682,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 40
+    "kb": 40,
+    "params": "h=jester"
   },
   {
     "id": "patch",
@@ -668,7 +703,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 35
+    "kb": 35,
+    "params": "g=eyepatch"
   },
   {
     "id": "pigeon",
@@ -689,7 +725,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 35
+    "kb": 35,
+    "params": "h=pigeon"
   },
   {
     "id": "pirate",
@@ -709,7 +746,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 37
+    "kb": 37,
+    "params": "h=tricorn"
   },
   {
     "id": "propeller",
@@ -730,7 +768,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 36
+    "kb": 36,
+    "params": "h=beanieprop"
   },
   {
     "id": "rubber-chicken",
@@ -750,7 +789,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 46
+    "kb": 46,
+    "params": "ex=rubberchicken"
   },
   {
     "id": "scarf",
@@ -771,7 +811,8 @@
     "h": 480,
     "frames": 8,
     "kind": "sticker",
-    "kb": 37
+    "kb": 37,
+    "params": "ex=scarf"
   },
   {
     "id": "trophy",
@@ -792,6 +833,7 @@
     "h": 450,
     "frames": 8,
     "kind": "sticker",
-    "kb": 41
+    "kb": 41,
+    "params": "ex=trophy"
   }
 ]
