@@ -158,7 +158,29 @@ async function init() {
   ];
   if (el('psHeroStats')) {
     el('psHeroStats').innerHTML = hero.map(([e, n, l]) =>
-      `<div class="ps-herostat"><b><em>${e}</em>${n}</b><span>${l}</span></div>`).join('');
+      `<button type="button" class="ps-herostat" data-goto="stats" aria-label="${n} ${l} — see all your numbers"><b><em>${e}</em>${n}</b><span>${l}</span></button>`).join('');
+  }
+
+  // — STATS tab: every number we keep, shown in full (zeros included, so the
+  //   gaps read as gentle nudges rather than hidden features) —
+  if (el('psStats')) {
+    const statAll = [
+      [lv.level, 'level'],
+      [S.rep || 0, 'rep at the club'],
+      [S.raveMin || 0, 'rave minutes'],
+      [S.drops || 0, 'drops survived'],
+      [S.jelly || 0, 'jelly collected'],
+      [S.hypes || 0, 'jelly times'],
+      [S.fives || 0, 'fistbumps'],
+      [S.beers || 0, 'happy hours won'],
+      [S.vinyls || 0, 'records delivered'],
+      [S.builds || nBananas, 'bananas taken home'],
+      [S.forges || nEmotes, 'emojis forged'],
+      [nItems, 'items made'],
+      [earned.length, 'badges earned'],
+      [pass.days.length, 'days on the pass'],
+    ];
+    el('psStats').innerHTML = statAll.map(([n, l]) => `<div class="ps-stat"><b>${n}</b><span>${l}</span></div>`).join('');
   }
 
   // — OVERVIEW recent badges: the latest few earned, deep-linking to the tab —
@@ -341,8 +363,9 @@ function initTabs() {
     });
   });
 
-  // "See all →" links on the overview jump to the matching tab
-  document.querySelectorAll('.ps-seeall').forEach((b) => {
+  // anything with data-goto jumps to that tab: the overview's "See all →"
+  // links AND the three headline stat tiles (→ the full Stats tab)
+  document.querySelectorAll('[data-goto]').forEach((b) => {
     b.addEventListener('click', () => {
       select(b.dataset.goto);
       const p = panelOf(b.dataset.goto);

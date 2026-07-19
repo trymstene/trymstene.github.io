@@ -99,12 +99,22 @@ const description = 'Your membership card to the banana world: the badges you ha
        into the full tabs. */
     .ps-hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
     .ps-herostat {
+      font: inherit; color: var(--ink); cursor: pointer;
       border: var(--line); background: var(--banana); box-shadow: 5px 5px 0 var(--ink);
       padding: 0.9rem 0.8rem; text-align: center; min-width: 0;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
     }
+    .ps-herostat:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+    .ps-herostat:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
     .ps-herostat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.7rem; line-height: 1; }
     .ps-herostat span { display: block; margin-top: 0.35rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
     .ps-herostat em { font-style: normal; font-size: 1.05rem; margin-right: 0.15rem; }
+
+    /* the full numbers drawer — every stat the pass keeps */
+    .ps-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; }
+    .ps-stat { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.7rem 0.85rem; }
+    .ps-stat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.5rem; line-height: 1; }
+    .ps-stat span { display: block; margin-top: 0.3rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
 
     .ps-ov-block { margin-top: 2rem; }
     .ps-ov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; }
@@ -272,6 +282,7 @@ const description = 'Your membership card to the banana world: the badges you ha
     <!-- ── TAB BAR ── -->
     <div class="ps-tabs" role="tablist" aria-label="Your pass sections">
       <button class="ps-tab" role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+      <button class="ps-tab" role="tab" id="tab-stats" data-tab="stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Stats</button>
       <button class="ps-tab" role="tab" id="tab-badges" data-tab="badges" aria-controls="panel-badges" aria-selected="false" tabindex="-1">Badges <span class="ps-tab__count" id="cnt-badges"></span></button>
       <button class="ps-tab" role="tab" id="tab-gear" data-tab="gear" aria-controls="panel-gear" aria-selected="false" tabindex="-1">Gear <span class="ps-tab__count" id="cnt-gear"></span></button>
       <button class="ps-tab" role="tab" id="tab-bananas" data-tab="bananas" aria-controls="panel-bananas" aria-selected="false" tabindex="-1">Bananas <span class="ps-tab__count" id="cnt-bananas"></span></button>
@@ -308,6 +319,12 @@ const description = 'Your membership card to the banana world: the badges you ha
           </div>
           <div class="ps-shelf" id="psOvCreations"></div>
         </div>
+      </section>
+
+      <!-- STATS — every number the pass keeps -->
+      <section class="ps-panel" role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" tabindex="0" hidden>
+        <p class="ps-panel__lead">Every number the pass keeps. Gentle by design — nobody's ranking you.</p>
+        <div class="ps-stats" id="psStats"></div>
       </section>
 
       <!-- BADGES -->
