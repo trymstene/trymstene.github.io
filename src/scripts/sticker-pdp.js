@@ -9,6 +9,7 @@ import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
   bboxOf, pad, crop, renderPrintFile, renderApparelPrint, makeStickerMockup,
   localizedPrice, uploadAndCheckout, stickerCaptions, stickerEffect, TEE_QUADS,
+  ensureCaptionFont,
 } from '../lib/sticker-core.js';
 
 const el = (id) => document.getElementById(id);
@@ -256,6 +257,8 @@ async function boot() {
   }
   await assetsReady();
   paintMockup();
+  // once Anton decodes, repaint so the mockup matches what will print (no blocking)
+  ensureCaptionFont(state).then(() => { try { paintMockup(); } catch (e) {} });
   buildPosePicker();
   wireOptions();
   wireZoom();
@@ -282,6 +285,7 @@ if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
   el('pdpStock').textContent = '';
   track('sticker_pdp_checkout', withSecs({ product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
   try {
+    await ensureCaptionFont(state); // Anton must be decoded before we bake the print
     const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state, product), product, sel);
     // secs_since_prev here = upload+cart pipeline latency (ORDER click -> redirect)
     track('checkout_redirect', withSecs({ value: PRICE.amount, currency: PRICE.currency }));

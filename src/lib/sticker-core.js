@@ -106,6 +106,16 @@ export const stickerEffect = (state) =>
 // PNG — the DTG print is the design itself on the garment, so the bg square
 // never prints, and captions + confetti/sparkle DO print (no die-cut
 // constraint to cut them loose).
+// Captions bake into the print via the engine's Anton-first font stack. Anton is
+// self-hosted, so it must be DECODED before any (sync) print/mockup render or the
+// buyer's OS fallback font gets baked into a real product. Await this in every
+// async order/preview path before rendering. No-op once cached.
+export async function ensureCaptionFont(state) {
+  if (typeof document === 'undefined' || !document.fonts) return;
+  const text = (((state && state.top) || '') + ((state && state.bottom) || '')).toUpperCase() || 'A';
+  try { await document.fonts.load('64px "Anton"', text); } catch (e) {}
+}
+
 export function renderPrintFile(state, product = null) {
   if (product && product.options) return renderApparelPrint(state);
   const W = 2048;
