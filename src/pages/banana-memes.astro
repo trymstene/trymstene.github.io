@@ -138,7 +138,9 @@ const crumbLD = {
     .gm-card .gm-kind { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; }
     /* community byline: "by" stays a quiet label, the NAME gets the banana
        highlight — ink on yellow, unambiguous and high-contrast */
-    .gm-kind--by { opacity: 1; }
+    /* the community byline reads like the /by/ pages: normal case, no letter-
+       spacing (uppercase + tracking made the yellow chip look faded here) */
+    .gm-card .gm-kind--by { opacity: 1; text-transform: none; letter-spacing: 0; font-size: 0.72rem; }
     .gm-byname {
       display: inline-block; background: var(--banana); color: var(--ink);
       border: 2px solid var(--ink); padding: 0.05em 0.4em; margin-left: 0.15em;
