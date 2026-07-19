@@ -7,6 +7,7 @@ import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRe
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
+import { iconSvg } from '../lib/pixel-icons.js';
 
 const el = (id) => document.getElementById(id);
 if (el('psSig')) init();
@@ -535,12 +536,12 @@ function openShareModal(cv) {
     try {
       const blob = await toBlob();
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      el('psShareCopy').textContent = '✓ Copied — paste it anywhere';
+      el('psShareCopy').innerHTML = iconSvg('check', { size: 18 }) + ' Copied — paste it anywhere';
       if (window.gtag) window.gtag('event', 'pass_share', { method: 'copy' });
     } catch (e) {
       el('psShareCopy').textContent = 'Copy blocked — use download';
     }
-    setTimeout(() => { el('psShareCopy').textContent = '📋 Copy image'; }, 2500);
+    setTimeout(() => { el('psShareCopy').innerHTML = iconSvg('copy', { size: 18 }) + ' Copy image'; }, 2500);
   };
   el('psShareSys').onclick = async () => {
     const blob = await toBlob();
@@ -567,8 +568,8 @@ function initShare(outfit, pass, extra) {
   btn.addEventListener('click', async () => {
     if (busy) return;
     busy = true;
-    const was = btn.textContent;
-    btn.textContent = '📸 Developing…';
+    const was = btn.innerHTML;
+    btn.innerHTML = iconSvg('camera', { size: 18 }) + ' Developing…';
     try {
       const cv = await composeCard(outfit, pass, extra);
       openShareModal(cv);

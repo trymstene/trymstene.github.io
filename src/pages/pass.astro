@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
 import { PATCHES } from '../lib/pass-defs.js';
 
 const title = 'Your Banana Pass — badges, shelf and stats';
@@ -189,7 +190,7 @@ const description = 'Your membership card to the banana world: the badges you ha
         <div class="ps-official__meta">
           <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
             class="ps-nameedit" id="psNameEdit" type="button"
-            title="Write your own name on the pass" aria-label="Write your own name on the pass">✏️</button></p>
+            title="Write your own name on the pass" aria-label="Write your own name on the pass"><PixelArtIcon name="edit" size="16px" /></button></p>
           <p class="ps-card__since" id="psSince">member since tonight</p>
           <div id="psRank"></div>
           <div class="ps-card__patches" id="psCardPatches"></div>
@@ -202,14 +203,14 @@ const description = 'Your membership card to the banana world: the badges you ha
       <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
     </div>
     <div class="ps-actions">
-      <button class="btn btn--light" id="psShareCard" type="button">📸 Share my card</button>
+      <button class="btn btn--light" id="psShareCard" type="button"><PixelArtIcon name="camera" size="18px" /> Share my card</button>
     </div>
     <p class="ps-device">✏️ Tap the pencil to put your own name on the pass. Family-friendly names only —
       the club reserves the right to re-name rule-breakers 🍌</p>
 
     <!-- CLUB NOTICES — appears only when there is news about YOUR stuff -->
     <div class="ps-section" id="psNoticesSec" hidden>
-      <h2>📯 Club notices</h2>
+      <h2><PixelArtIcon name="bell" size="20px" /> Club notices</h2>
       <p>News about your stuff — never noise.</p>
       <div class="ps-notices-list" id="psNotices"></div>
     </div>
@@ -268,8 +269,8 @@ const description = 'Your membership card to the banana world: the badges you ha
           No email, no password, nothing to remember.
         </p>
         <div class="ps-sync__row">
-          <button class="btn btn--dark" id="psSave" type="button">💾 Save my pass</button>
-          <button class="btn btn--light" id="psRestore" type="button">📲 I already have a pass</button>
+          <button class="btn btn--dark" id="psSave" type="button"><PixelArtIcon name="save" size="18px" /> Save my pass</button>
+          <button class="btn btn--light" id="psRestore" type="button"><PixelArtIcon name="download" size="18px" /> I already have a pass</button>
         </div>
         <p class="ps-sync__note" id="psSyncNote"></p>
       </div>
@@ -285,12 +286,12 @@ const description = 'Your membership card to the banana world: the badges you ha
   <!-- share-card lightbox: our own reveal, the rave-card pattern in pass colours -->
   <div class="ps-sharemodal" id="psShareModal" hidden>
     <div class="ps-sharemodal__box">
-      <button class="ps-sharemodal__close" id="psShareClose" aria-label="Close">✕</button>
+      <button class="ps-sharemodal__close" id="psShareClose" aria-label="Close"><PixelArtIcon name="close" size="18px" /></button>
       <div class="ps-sharemodal__card" id="psShareSlot"></div>
       <div class="ps-sharemodal__row">
-        <button class="btn btn--dark" id="psShareDl">⬇ Download PNG</button>
-        <button class="btn btn--light" id="psShareCopy">📋 Copy image</button>
-        <button class="btn btn--light" id="psShareSys" hidden>📤 Share…</button>
+        <button class="btn btn--dark" id="psShareDl"><PixelArtIcon name="download" size="18px" /> Download PNG</button>
+        <button class="btn btn--light" id="psShareCopy"><PixelArtIcon name="copy" size="18px" /> Copy image</button>
+        <button class="btn btn--light" id="psShareSys" hidden><PixelArtIcon name="share" size="18px" /> Share…</button>
       </div>
     </div>
   </div>

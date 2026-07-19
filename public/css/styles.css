@@ -16,6 +16,12 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Pixel UI icons (pixelarticons, inlined) — colour follows currentColor.
+   Any button/link/heading that leads with one lines the icon up with its label. */
+.pai { flex: none; }
+:where(.btn, a, button, summary, label):has(> .pai:first-child) { display: inline-flex; align-items: center; gap: 0.4rem; }
+:where(h1, h2, h3, h4):has(> .pai:first-child) { display: flex; align-items: center; gap: 0.45rem; }
+
 /* buttons inherit our font + ink — otherwise iOS Safari paints its default
    blue button text on every <button> that doesn't set color explicitly */
 button { font: inherit; color: inherit; }
