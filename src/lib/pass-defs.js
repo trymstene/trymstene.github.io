@@ -24,7 +24,8 @@ export const PATCHES = [
   { id: 'golden',    icon: 'sparkle',  title: 'The Golden One', hint: 'Once in a golden while, something rare hits the floor. Be there.' },
   { id: 'chain',     icon: 'link',     title: 'Chain Chaser',   hint: 'Keep a ten-pickup chain alive on the dance floor.' },
   { id: 'hype',      icon: 'bolt',     title: 'Full of Jelly',  hint: 'Fill the JELLY meter and drop the floor yourself.' },
-  { id: 'night1',    icon: 'coffee',   title: 'The First Shift',hint: "Work Barty's welcome-night jobs, start to finish." },
+  // 'night1' (The First Shift) retired 19 Jul with the quest/nights mothball —
+  // it was the only night-only badge; revive it alongside Act One if nights return.
   { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },
   { id: 'collector', icon: 'sparkle',  title: 'Collector',      hint: 'Catch a wearable drop on the dance floor.' },
 ];

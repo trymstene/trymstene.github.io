@@ -2576,7 +2576,7 @@ function init() {
     () => { // who Barty is — the camera STAYS on him from his hello (a corner
       // pool skewed; the close-up IS the highlight)
       setTimeout(() => {
-        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'runs the bar, calls the happy hours — and always needs a hand with some little chore. help him out and he stamps your nightshift.', { noPool: true });
+        if (tourActive && tourStep === 3) tourBox(el('rvBarman'), 'BARTY, THE BARTENDER', 'runs the bar and calls the happy hours — when he shouts one, race to the counter. first banana there gets the round.', { noPool: true });
       }, 600);
     },
     () => { // the mixer: camera home; screen-space UI can't be zoomed, so the
@@ -2669,6 +2669,15 @@ function init() {
   // QUEST bubbles go yellow; the active job docks under the hype bar with a
   // pixel checkbox. ONE night per calendar day (closure + a reason to return).
   // ?nighttest=N previews night N without saving progress.
+  // 🌙 MOTHBALLED (19 Jul, Trym): the quests + nights loop is shelved. It was
+  // repetitive for veterans (an unfinished night re-served its opening sweep on
+  // every join), finite (5 authored nights, no Act Two), and felt mandatory on
+  // arrival — net-negative next to the endless floor loop, which is the actual
+  // game. Everything below stays intact + dormant so Act Two (a date-seeded
+  // rotation engine over these beats) is a REVIVE, not a rebuild: flip this to
+  // true. The single guard in nightInit() disables every entry point; the quest
+  // chip is only ever shown from inside the night flow, so it stays hidden.
+  const NIGHTS_ENABLED = false;
   const NIGHTS = [
     { n: 1, steps: [ // FIRST NIGHTSHIFT — Barty's humble ask (Trym's line), then the chores
       { tray: 'go to the bar — first one’s on the house', check: 'bar',
@@ -2727,6 +2736,7 @@ function init() {
       : 'all five shifts done — you’re a regular ⭐', true);
   }
   function nightInit() {
+    if (!NIGHTS_ENABLED) return; // 🌙 mothballed — see the flag above
     if (night) return; // a tour replay must not restart a night in progress
     const s = nightLoad();
     if (!NIGHT_TEST && s.lastStamp === localDay()) {
