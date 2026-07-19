@@ -174,8 +174,17 @@ const GUIDE = [
     .rv-speaker--r { right: calc(50% - 134px); }
     body.rv-drop .rv-speaker { animation: rvPump 0.24s steps(2) infinite; transform-origin: bottom center; }
     @keyframes rvPump { 50% { transform: scaleY(1.07) scaleX(1.05); } }
+    /* THE CONES: round drivers that thump like bass is pouring out — always
+       pulsing, the two per cabinet out of phase, L/R not quite synced. */
+    .rv-spkcone { transform-box: fill-box; transform-origin: center; animation: rvBass 0.46s ease-in-out infinite; }
+    .rv-spkcone circle { shape-rendering: geometricPrecision; }
+    .rv-spkcone--b { animation-delay: 0.23s; }
+    .rv-speaker--r .rv-spkcone { animation-delay: 0.12s; }
+    .rv-speaker--r .rv-spkcone--b { animation-delay: 0.34s; }
+    @keyframes rvBass { 0%, 100% { transform: scale(0.82); } 45% { transform: scale(1.12); } }
+    body.rv-drop .rv-spkcone { animation-duration: 0.19s; } /* the drop hits harder + faster */
     @media (prefers-reduced-motion: reduce) {
-      body.rv-drop .rv-speaker, .rv-mnote, .rv-beam, .rv-dropflash span { animation: none; }
+      body.rv-drop .rv-speaker, .rv-spkcone, .rv-mnote, .rv-beam, .rv-dropflash span { animation: none; }
       .rv-pyro { display: none !important; }
       .rv-mnote { opacity: 0.5; }
     }
@@ -1208,8 +1217,8 @@ const GUIDE = [
           <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div>
           <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
-            <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>
-            <rect x="3" y="9" width="6" height="6" fill="#2a1650"/><rect x="5" y="11" width="2" height="2" fill="#b388ff"/>
+            <g class="rv-spkcone"><circle cx="6" cy="5" r="3" fill="#2a1650"/><circle cx="6" cy="5" r="1.2" fill="#b388ff"/></g>
+            <g class="rv-spkcone rv-spkcone--b"><circle cx="6" cy="12" r="3" fill="#2a1650"/><circle cx="6" cy="12" r="1.2" fill="#b388ff"/></g>
           </svg>
           <div class="rv-djgroup">
             <canvas id="rvDj" width="200" height="200"></canvas>
@@ -1217,8 +1226,8 @@ const GUIDE = [
           </div>
           <svg class="rv-speaker rv-speaker--r" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
-            <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>
-            <rect x="3" y="9" width="6" height="6" fill="#2a1650"/><rect x="5" y="11" width="2" height="2" fill="#b388ff"/>
+            <g class="rv-spkcone"><circle cx="6" cy="5" r="3" fill="#2a1650"/><circle cx="6" cy="5" r="1.2" fill="#b388ff"/></g>
+            <g class="rv-spkcone rv-spkcone--b"><circle cx="6" cy="12" r="3" fill="#2a1650"/><circle cx="6" cy="12" r="1.2" fill="#b388ff"/></g>
           </svg>
         </div>
         <div class="rv-floor" id="rvFloor">
