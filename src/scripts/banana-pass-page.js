@@ -2,7 +2,7 @@
 // dancing on the shared wall clock), lights earned patches, fills the gentle
 // stats and hosts the Shelf in its true home. CLIENT-ONLY.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { renderShelf } from '../lib/banana-shelf.js';
+import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
@@ -126,7 +126,7 @@ async function init() {
     strip.innerHTML = '<span style="font-size:0.72rem;opacity:0.6;">no badges yet — the floor awaits</span>';
   }
 
-  // — gentle stats —
+  // — gentle stats (these feed the share card's proud one-liner) —
   const S = pass.stats || {};
   const rows = [
     [S.rep, 'rep at the club'],
@@ -141,8 +141,45 @@ async function init() {
     [S.forges, 'emojis forged'],
     [pass.days.length, 'days on the pass'],
   ].filter(([n]) => n > 0);
-  if (rows.length) {
-    el('psStats').innerHTML = rows.map(([n, label]) => `<span class="ps-stat"><b>${n}</b>${label}</span>`).join('');
+
+  // shelf counts — power the tab badges AND the overview
+  const all = shelfList();
+  const nBananas = all.filter((c) => c.kind === 'banana').length;
+  const nItems = all.filter((c) => c.kind === 'wearable').length;
+  const nEmotes = all.filter((c) => c.kind === 'emoji').length;
+
+  // — OVERVIEW hero: three headline tiles, the three pillars (create · rave ·
+  //   collect). Always three, even at zero — a full frontpage that gently
+  //   points at what's still to do. —
+  const hero = [
+    ['🍌', S.builds || nBananas, 'bananas built'],
+    ['🪩', S.raveMin || 0, 'rave minutes'],
+    ['🏅', earned.length, 'badges earned'],
+  ];
+  if (el('psHeroStats')) {
+    el('psHeroStats').innerHTML = hero.map(([e, n, l]) =>
+      `<div class="ps-herostat"><b><em>${e}</em>${n}</b><span>${l}</span></div>`).join('');
+  }
+
+  // — OVERVIEW recent badges: the latest few earned, deep-linking to the tab —
+  const ov = el('psOvBadges');
+  if (ov) {
+    const recent = earned.slice().sort((a, b) => pass.patches[b.id] - pass.patches[a.id]).slice(0, 4);
+    if (recent.length) {
+      ov.innerHTML = '';
+      recent.forEach((d) => {
+        const src = document.querySelector(`.ps-patch[data-patch="${d.id}"] svg`);
+        const cell = document.createElement('div');
+        cell.className = 'ps-ov-badge';
+        if (src) cell.appendChild(src.cloneNode(true));
+        const b = document.createElement('b');
+        b.textContent = d.title;
+        cell.appendChild(b);
+        ov.appendChild(cell);
+      });
+    } else {
+      ov.innerHTML = '<p class="ps-ov-empty">No badges yet — most of them hide on the dance floor. <a href="/rave/">Step onto the floor →</a></p>';
+    }
   }
 
   // — creations, SPLIT BY KIND so it's not a junk drawer: bananas (characters)
@@ -153,6 +190,19 @@ async function init() {
     onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
   renderShelf(el('psEmotes'), { kinds: ['emoji'], emptyMsg: 'No emotes yet — draw one in the forge.',
     onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
+
+  // — OVERVIEW latest creations: a mixed strip of the newest few, each routed
+  //   to its own tool (banana → builder, item/emote → forge) —
+  renderShelf(el('psOvCreations'), { limit: 4,
+    emptyMsg: 'Nothing yet — build a banana, forge an emoji or make an item and it lands here.',
+    onPick: (c) => { location.href = c.kind === 'banana' ? '/make-a-banana/?' + c.params : '/forge/?shelf=' + c.id; } });
+
+  // — tab counts —
+  const setCount = (id, n) => { const e = el(id); if (e) e.textContent = n; };
+  setCount('cnt-badges', earned.length + '/' + PATCHES.length);
+  setCount('cnt-bananas', nBananas);
+  setCount('cnt-items', nItems);
+  setCount('cnt-emotes', nEmotes);
 
   // — THE GEAR ROW: earned wearables, toggled straight onto the banana.
   // bb-last is the toggle target (the rave, stickers and share cards all read
@@ -224,6 +274,9 @@ async function init() {
     });
   }
   renderGear();
+  setCount('cnt-gear', GEAR.filter(gearEarned).length);
+
+  initTabs();
 
   // — the signature banana dances on the shared clock —
   const cv = el('psSig');
@@ -249,6 +302,57 @@ async function init() {
     rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
     stats: rows.filter(([, l]) => l !== 'rep at the club').slice(0, 3),
   });
+}
+
+// ---- THE DASHBOARD TABS -------------------------------------------------
+// The pass card is the persistent "avatar"; these tabs swap the content below
+// it (ARIA tab pattern + arrow-key nav + #hash deep-links). Canvases render on
+// init regardless of which panel is hidden — a canvas bitmap is independent of
+// layout — so nothing needs lazy re-drawing when a tab is first shown.
+function initTabs() {
+  const tabs = [...document.querySelectorAll('.ps-tab')];
+  if (!tabs.length) return;
+  const panelOf = (name) => document.getElementById('panel-' + name);
+  const names = tabs.map((t) => t.dataset.tab);
+
+  function select(name, focus) {
+    if (!names.includes(name)) name = 'overview';
+    tabs.forEach((t) => {
+      const on = t.dataset.tab === name;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      const p = panelOf(t.dataset.tab);
+      if (p) p.hidden = !on;
+      if (on && focus) t.focus();
+    });
+    try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; }
+    if (window.gtag) window.gtag('event', 'pass_tab', { tab: name });
+  }
+
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t.dataset.tab));
+    t.addEventListener('keydown', (e) => {
+      let j = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = tabs.length - 1;
+      if (j !== null) { e.preventDefault(); select(tabs[j].dataset.tab, true); }
+    });
+  });
+
+  // "See all →" links on the overview jump to the matching tab
+  document.querySelectorAll('.ps-seeall').forEach((b) => {
+    b.addEventListener('click', () => {
+      select(b.dataset.goto);
+      const p = panelOf(b.dataset.goto);
+      if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // open on the hash if the page was linked to a specific tab (#gear …)
+  const initial = (location.hash || '').replace('#', '');
+  if (initial && names.includes(initial)) select(initial);
 }
 
 // ---- the on-page barcode: same seeded pattern family as the share card ----

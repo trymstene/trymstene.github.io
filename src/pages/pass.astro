@@ -17,13 +17,18 @@ const description = 'Your membership card to the banana world: the badges you ha
   <style is:inline slot="head">
     .ps-wrap { max-width: 900px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
     .ps-head h1 { margin: 0 0 0.3rem; }
-    .ps-head p { margin: 0 0 1.4rem; opacity: 0.8; max-width: 60ch; }
+    .ps-head p { margin: 0 0 1.2rem; opacity: 0.8; max-width: 60ch; }
+
+    /* THE PROFILE HEADER — the pass is the dashboard's avatar: it stays put
+       while the tabs below swap. Card left, share + hint right on desktop. */
+    .ps-profile { display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: flex-start; }
+    .ps-profile__side { flex: 1 1 220px; min-width: 200px; }
 
     /* THE OFFICIAL CARD — the share-card's yellow identity, live on the page
        (banana-yellow face, ink header strip, punched hole, serial + barcode,
        red OFFICIAL stamp). The PNG people share IS this card. */
     .ps-official {
-      position: relative; max-width: 640px;
+      position: relative; flex: 1 1 380px; max-width: 640px;
       background: var(--banana); border: var(--line); box-shadow: 8px 8px 0 var(--ink);
     }
     .ps-official__head {
@@ -59,8 +64,65 @@ const description = 'Your membership card to the banana world: the badges you ha
     }
     .ps-stamp::before { content: ''; position: absolute; inset: 2px; border: 2px solid #e22020; }
 
-    .ps-actions { margin: 0.9rem 0 0; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .ps-actions { margin: 0 0 0; display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
+
+    /* ── THE TAB BAR ── chips in the site's ink/paper/banana language; a
+       horizontal scroller on phones so six tabs never wrap into a wall. */
+    .ps-tabs {
+      display: flex; gap: 0.5rem; margin: 1.8rem 0 0; padding-bottom: 4px;
+      overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      border-bottom: 3px solid var(--ink);
+    }
+    .ps-tabs::-webkit-scrollbar { display: none; }
+    .ps-tab {
+      flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.4rem;
+      font: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer;
+      background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
+      border-bottom: none; padding: 0.5rem 0.9rem; margin-bottom: -3px;
+      position: relative; white-space: nowrap;
+    }
+    .ps-tab:hover { background: #fffdf5; }
+    .ps-tab[aria-selected="true"] { background: var(--banana); box-shadow: 0 -3px 0 var(--ink) inset; }
+    .ps-tab__count {
+      font-size: 0.68rem; font-weight: 800; background: var(--ink); color: var(--banana);
+      padding: 0.05rem 0.4rem; min-width: 1.1rem; text-align: center;
+    }
+    .ps-tab[aria-selected="true"] .ps-tab__count { background: var(--paper); color: var(--ink); }
+    .ps-tab:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    .ps-panels { margin-top: 1.6rem; }
+    .ps-panel[hidden] { display: none; }
+    .ps-panel__lead { margin: 0 0 1rem; font-size: 0.9rem; opacity: 0.78; max-width: 62ch; }
+
+    /* OVERVIEW — the frontpage: 3 headline stats, then tastes that deep-link
+       into the full tabs. */
+    .ps-hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+    .ps-herostat {
+      border: var(--line); background: var(--banana); box-shadow: 5px 5px 0 var(--ink);
+      padding: 0.9rem 0.8rem; text-align: center; min-width: 0;
+    }
+    .ps-herostat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.7rem; line-height: 1; }
+    .ps-herostat span { display: block; margin-top: 0.35rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+    .ps-herostat em { font-style: normal; font-size: 1.05rem; margin-right: 0.15rem; }
+
+    .ps-ov-block { margin-top: 2rem; }
+    .ps-ov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; }
+    .ps-ov-head h2 { margin: 0; font-size: 1.1rem; }
+    .ps-seeall {
+      flex: none; font: inherit; font-weight: 800; font-size: 0.8rem; cursor: pointer;
+      background: none; border: none; color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; padding: 0;
+    }
+    .ps-seeall:hover { opacity: 0.7; }
+    .ps-ov-badges { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .ps-ov-badge {
+      display: flex; align-items: center; gap: 0.5rem; border: 3px solid var(--ink);
+      background: var(--banana); box-shadow: 3px 3px 0 var(--ink); padding: 0.4rem 0.7rem 0.4rem 0.5rem;
+    }
+    .ps-ov-badge svg { width: 1.4rem; height: 1.4rem; flex: none; }
+    .ps-ov-badge b { font-size: 0.82rem; }
+    .ps-ov-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
 
     /* CLUB NOTICES — verdicts on YOUR stuff, never system chatter. The
        section renders only when there is something to say (anti-fatigue). */
@@ -75,18 +137,17 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-notice__icon { font-size: 1.25rem; line-height: 1.2; }
     .ps-notice__body { font-size: 0.85rem; line-height: 1.45; min-width: 0; }
     .ps-notice__date { display: block; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; margin-top: 0.25rem; }
+    .ps-ov-block .ps-section { margin: 0; }
 
-    /* passkey sync panel (Phase 2) — plumbing, lives low on the page */
-    .ps-sync { margin: 0.9rem 0 0; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.8rem 0.95rem; max-width: 560px; }
+    /* passkey sync panel (Phase 2) — plumbing, lives in the footer */
+    .ps-sync { margin: 0; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.8rem 0.95rem; max-width: 560px; }
     .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
     .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.6rem; }
     .ps-sync__note { margin-top: 0.5rem !important; font-size: 0.74rem !important; opacity: 0.7; min-height: 1em; }
     .ps-sync--linked { border-color: var(--banana); }
     .ps-sync--linked .ps-sync__row { display: none; }
 
-    .ps-section { margin-top: 2.2rem; }
     .ps-section h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
-    .ps-section > p { margin: 0 0 1rem; font-size: 0.88rem; opacity: 0.75; }
 
     /* THE GEAR ROW: earned wearables — a banana models each item; unearned =
        grayscale silhouette (the closet doubles as a feature map) */
@@ -123,13 +184,6 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-patch--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
     .ps-patch--earned .ps-patch__date { display: block; }
 
-    .ps-stats { display: flex; flex-wrap: wrap; gap: 0.7rem; }
-    .ps-stat {
-      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
-      padding: 0.55rem 0.9rem; font-size: 0.82rem;
-    }
-    .ps-stat b { font-family: "Archivo Black", sans-serif; font-size: 1.05rem; margin-right: 0.35rem; }
-
     .ps-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; }
     .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
     .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.12s ease; }
@@ -138,7 +192,10 @@ const description = 'Your membership card to the banana world: the badges you ha
     .shelf-x { position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; line-height: 1; background: var(--ink); color: var(--paper); border: 2px solid var(--paper); font-weight: 800; cursor: pointer; }
     .shelf-x:hover { background: var(--hot, #ff4d6d); }
 
-    .ps-doors { margin-top: 2.4rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    /* persistent footer: settings + the doors out */
+    .ps-foot { margin-top: 2.6rem; padding-top: 1.6rem; border-top: 3px solid rgba(17,17,17,0.15); }
+    .ps-foot h2 { margin: 0 0 0.7rem; font-size: 1.05rem; }
+    .ps-doors { margin-top: 1.4rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
 
     /* share-card lightbox — the card revealed in website style (paper box,
        ink frame); the OS share sheet is an opt-in button, not the default */
@@ -166,6 +223,10 @@ const description = 'Your membership card to the banana world: the badges you ha
       .ps-official canvas#psSig { width: 104px; height: 104px; }
       .ps-card__name { font-size: 1.1rem; }
       .ps-official__head { font-size: 0.58rem; }
+      .ps-hero-stats { gap: 0.5rem; }
+      .ps-herostat { padding: 0.7rem 0.4rem; }
+      .ps-herostat b { font-size: 1.35rem; }
+      .ps-herostat span { font-size: 0.62rem; }
     }
   </style>
 
@@ -173,94 +234,124 @@ const description = 'Your membership card to the banana world: the badges you ha
     <div class="ps-head">
       <p class="kicker">Members only (everyone's a member)</p>
       <h1>your banana pass</h1>
-      <p>
-        Everything you've done in the banana world, pinned in one place. No account,
-        no password — the pass simply lives with you.
-      </p>
+      <p>Everything you've done in the banana world, in one place. No account, no password — the pass lives with you.</p>
     </div>
 
-    <!-- THE OFFICIAL CARD -->
-    <div class="ps-official">
-      <div class="ps-official__head">
-        <span>★ Banana World · Official Membership Pass</span>
-        <span class="ps-official__hole" aria-hidden="true"></span>
-      </div>
-      <div class="ps-official__body">
-        <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
-        <div class="ps-official__meta">
-          <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
-            class="ps-nameedit" id="psNameEdit" type="button"
-            title="Write your own name on the pass" aria-label="Write your own name on the pass"><PixelArtIcon name="edit" size="16px" /></button></p>
-          <p class="ps-card__since" id="psSince">member since tonight</p>
-          <div id="psRank"></div>
-          <div class="ps-card__patches" id="psCardPatches"></div>
+    <!-- ── PROFILE HEADER: the pass (always on) + share ── -->
+    <div class="ps-profile">
+      <div class="ps-official">
+        <div class="ps-official__head">
+          <span>★ Banana World · Official Membership Pass</span>
+          <span class="ps-official__hole" aria-hidden="true"></span>
         </div>
-      </div>
-      <div class="ps-official__foot">
-        <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
-        <span class="ps-serial" id="psSerial"></span>
-      </div>
-      <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
-    </div>
-    <div class="ps-actions">
-      <button class="btn btn--light" id="psShareCard" type="button"><PixelArtIcon name="camera" size="18px" /> Share my pass</button>
-    </div>
-    <p class="ps-device">✏️ Tap the pencil to put your own name on the pass. Family-friendly names only —
-      the club reserves the right to re-name rule-breakers 🍌</p>
-
-    <!-- CLUB NOTICES — appears only when there is news about YOUR stuff -->
-    <div class="ps-section" id="psNoticesSec" hidden>
-      <h2><PixelArtIcon name="bell" size="20px" /> Club notices</h2>
-      <p>News about your stuff — never noise.</p>
-      <div class="ps-notices-list" id="psNotices"></div>
-    </div>
-
-    <div class="ps-section">
-      <h2>Gear</h2>
-      <p>Earned on the floor, worn everywhere. Toggle it onto your banana — the rave, stickers and share cards all follow.</p>
-      <div class="ps-gear" id="psGear"></div>
-    </div>
-
-    <div class="ps-section">
-      <h2>Badges</h2>
-      <p>Moments, not points. The dark ones tell you where the fun is hiding.</p>
-      <div class="ps-patches">
-        {PATCHES.map((p) => (
-          <div class="ps-patch" data-patch={p.id}>
-            <PixelIcon name={p.icon} size="34px" />
-            <h3>{p.title}</h3>
-            <p>{p.hint}</p>
-            <span class="ps-patch__date"></span>
+        <div class="ps-official__body">
+          <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
+          <div class="ps-official__meta">
+            <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
+              class="ps-nameedit" id="psNameEdit" type="button"
+              title="Write your own name on the pass" aria-label="Write your own name on the pass"><PixelArtIcon name="edit" size="16px" /></button></p>
+            <p class="ps-card__since" id="psSince">member since tonight</p>
+            <div id="psRank"></div>
+            <div class="ps-card__patches" id="psCardPatches"></div>
           </div>
-        ))}
+        </div>
+        <div class="ps-official__foot">
+          <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
+          <span class="ps-serial" id="psSerial"></span>
+        </div>
+        <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
+      </div>
+      <div class="ps-profile__side">
+        <div class="ps-actions">
+          <button class="btn btn--light" id="psShareCard" type="button"><PixelArtIcon name="camera" size="18px" /> Share my pass</button>
+        </div>
+        <p class="ps-device">✏️ Tap the pencil to put your own name on the pass. Family-friendly names only — the club reserves the right to re-name rule-breakers 🍌</p>
       </div>
     </div>
 
-    <div class="ps-section">
-      <h2>Tonight's numbers</h2>
-      <p>Gentle stats. Nobody's ranking you.</p>
-      <div class="ps-stats" id="psStats"><span class="shelf-empty">Go do things — the numbers follow.</span></div>
+    <!-- ── TAB BAR ── -->
+    <div class="ps-tabs" role="tablist" aria-label="Your pass sections">
+      <button class="ps-tab" role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+      <button class="ps-tab" role="tab" id="tab-badges" data-tab="badges" aria-controls="panel-badges" aria-selected="false" tabindex="-1">Badges <span class="ps-tab__count" id="cnt-badges"></span></button>
+      <button class="ps-tab" role="tab" id="tab-gear" data-tab="gear" aria-controls="panel-gear" aria-selected="false" tabindex="-1">Gear <span class="ps-tab__count" id="cnt-gear"></span></button>
+      <button class="ps-tab" role="tab" id="tab-bananas" data-tab="bananas" aria-controls="panel-bananas" aria-selected="false" tabindex="-1">Bananas <span class="ps-tab__count" id="cnt-bananas"></span></button>
+      <button class="ps-tab" role="tab" id="tab-items" data-tab="items" aria-controls="panel-items" aria-selected="false" tabindex="-1">Items <span class="ps-tab__count" id="cnt-items"></span></button>
+      <button class="ps-tab" role="tab" id="tab-emotes" data-tab="emotes" aria-controls="panel-emotes" aria-selected="false" tabindex="-1">GIFs &amp; emotes <span class="ps-tab__count" id="cnt-emotes"></span></button>
     </div>
 
-    <div class="ps-section">
-      <h2>My bananas</h2>
-      <p>The bananas you built. Order one as a real sticker or magnet (🏷), or open it to keep dressing it up.</p>
-      <div class="ps-shelf" id="psBananas"></div>
+    <div class="ps-panels">
+      <!-- OVERVIEW -->
+      <section class="ps-panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
+        <div class="ps-hero-stats" id="psHeroStats"></div>
+
+        <!-- CLUB NOTICES — appears only when there is news about YOUR stuff -->
+        <div class="ps-ov-block" id="psNoticesSec" hidden>
+          <div class="ps-section">
+            <h2><PixelArtIcon name="bell" size="20px" /> Club notices</h2>
+            <p style="margin:0 0 1rem;font-size:0.88rem;opacity:0.75;">News about your stuff — never noise.</p>
+            <div class="ps-notices-list" id="psNotices"></div>
+          </div>
+        </div>
+
+        <div class="ps-ov-block">
+          <div class="ps-ov-head">
+            <h2>Recent badges</h2>
+            <button class="ps-seeall" type="button" data-goto="badges">See all →</button>
+          </div>
+          <div class="ps-ov-badges" id="psOvBadges"></div>
+        </div>
+
+        <div class="ps-ov-block">
+          <div class="ps-ov-head">
+            <h2>Latest creations</h2>
+            <button class="ps-seeall" type="button" data-goto="bananas">See all →</button>
+          </div>
+          <div class="ps-shelf" id="psOvCreations"></div>
+        </div>
+      </section>
+
+      <!-- BADGES -->
+      <section class="ps-panel" role="tabpanel" id="panel-badges" aria-labelledby="tab-badges" tabindex="0" hidden>
+        <p class="ps-panel__lead">Moments, not points. The dark ones tell you where the fun is hiding.</p>
+        <div class="ps-patches">
+          {PATCHES.map((p) => (
+            <div class="ps-patch" data-patch={p.id}>
+              <PixelIcon name={p.icon} size="34px" />
+              <h3>{p.title}</h3>
+              <p>{p.hint}</p>
+              <span class="ps-patch__date"></span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- GEAR -->
+      <section class="ps-panel" role="tabpanel" id="panel-gear" aria-labelledby="tab-gear" tabindex="0" hidden>
+        <p class="ps-panel__lead">Earned on the floor, worn everywhere. Toggle it onto your banana — the rave, stickers and share cards all follow.</p>
+        <div class="ps-gear" id="psGear"></div>
+      </section>
+
+      <!-- BANANAS -->
+      <section class="ps-panel" role="tabpanel" id="panel-bananas" aria-labelledby="tab-bananas" tabindex="0" hidden>
+        <p class="ps-panel__lead">The bananas you built. Order one as a real sticker or magnet (🏷), or open it to keep dressing it up.</p>
+        <div class="ps-shelf" id="psBananas"></div>
+      </section>
+
+      <!-- ITEMS -->
+      <section class="ps-panel" role="tabpanel" id="panel-items" aria-labelledby="tab-items" tabindex="0" hidden>
+        <p class="ps-panel__lead">Wearables you made in the Items Workshop. Open one to keep tweaking — soon you'll submit them to become rave drops.</p>
+        <div class="ps-shelf" id="psItems"></div>
+      </section>
+
+      <!-- GIFS & EMOTES -->
+      <section class="ps-panel" role="tabpanel" id="panel-emotes" aria-labelledby="tab-emotes" tabindex="0" hidden>
+        <p class="ps-panel__lead">Pixel emojis and GIFs from the forge. Open one to download it for any chat.</p>
+        <div class="ps-shelf" id="psEmotes"></div>
+      </section>
     </div>
 
-    <div class="ps-section">
-      <h2>My items</h2>
-      <p>Wearables you made in the Items Workshop. Open one to keep tweaking — soon you'll submit them to become rave drops.</p>
-      <div class="ps-shelf" id="psItems"></div>
-    </div>
-
-    <div class="ps-section">
-      <h2>My GIFs &amp; emotes</h2>
-      <p>Pixel emojis and GIFs from the forge. Open one to download it for any chat.</p>
-      <div class="ps-shelf" id="psEmotes"></div>
-    </div>
-
-    <div class="ps-section">
+    <!-- ── PERSISTENT FOOTER: set-once sync + the doors out ── -->
+    <div class="ps-foot">
       <h2>Take it everywhere</h2>
       <div class="ps-sync" id="psSync" hidden>
         <p id="psSyncLead">
@@ -275,11 +366,11 @@ const description = 'Your membership card to the banana world: the badges you ha
         <p class="ps-sync__note" id="psSyncNote"></p>
       </div>
       <p class="ps-device" id="psDevice">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
-    </div>
 
-    <div class="ps-doors">
-      <a class="btn btn--dark" href="/make-a-banana/">Make a banana →</a>
-      <a class="btn btn--light" href="/rave/">To the floor →</a>
+      <div class="ps-doors">
+        <a class="btn btn--dark" href="/make-a-banana/">Make a banana →</a>
+        <a class="btn btn--light" href="/rave/">To the floor →</a>
+      </div>
     </div>
   </div>
 
