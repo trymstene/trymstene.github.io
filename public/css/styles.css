@@ -19,7 +19,7 @@
 /* Pixel UI icons (pixelarticons, inlined) — colour follows currentColor.
    Any button/link/heading that leads with one lines the icon up with its label. */
 .pai { flex: none; vertical-align: -0.14em; } /* -align applies in inline (text) contexts; ignored inside inline-flex */
-:where(.btn, a, button, summary, label):has(> .pai:first-child) { display: inline-flex; align-items: center; gap: 0.4rem; }
+:where(.btn, a, button, summary, label):has(> .pai:first-child) { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
 :where(h1, h2, h3, h4):has(> .pai:first-child) { display: flex; align-items: center; gap: 0.45rem; }
 
 /* buttons inherit our font + ink — otherwise iOS Safari paints its default
