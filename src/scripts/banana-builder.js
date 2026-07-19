@@ -17,7 +17,7 @@ import {
 // preview + checkout since 9 Jul; the builder only picks products + previews)
 import {
   stickerCaptions, stickerEffect, captionsClean, localizedPrice,
-  makeStickerMockup as coreMockup,
+  makeStickerMockup as coreMockup, ensureCaptionFont,
 } from '../lib/sticker-core.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
@@ -576,6 +576,7 @@ function init() {
     let copied = plain, mode = 'plain';
     try {
       await assetsReady();
+      await ensureCaptionFont(state); // the OG card bakes the caption too — wait for Anton
       const blob = await new Promise((r) => renderShareCard().toBlob(r, 'image/png'));
       const res = await fetch(SHARE_BASE + '/share?p=' + encodeURIComponent(location.search.slice(1)), {
         method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob,
@@ -934,12 +935,7 @@ function init() {
   // use this, so what Trym reviews is pixel-identical to what visitors save
   async function renderMemeGif() {
     await assetsReady();
-    // captions bake into the GIF here, so Anton (self-hosted) MUST be decoded
-    // first — otherwise this device's OS fallback font gets baked in (the
-    // Impact-only-on-Win/Mac bug that hit a Linux/Android submitter).
-    if (state.top || state.bottom) {
-      try { await document.fonts.load('64px "Anton"', ((state.top || '') + (state.bottom || '')).toUpperCase()); } catch (e) {}
-    }
+    await ensureCaptionFont(state); // Anton must be decoded before captions bake in
     const isT = state.bg === 'transparent';
     const W = 480;
     const frames = [];
