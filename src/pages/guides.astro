@@ -46,7 +46,7 @@ const crumbLD = {
 <BaseLayout title={title} description={description}>
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
-  <main class="gh">
+  <section class="gh">
     <h1>The emoji &amp; emote size chart</h1>
     <p class="gh-sub">Every platform, one table — kept current by people who ship pixels for a living.
       Sizes below are the <strong>upload</strong> specs; chat usually renders them smaller.</p>
@@ -92,7 +92,7 @@ const crumbLD = {
       ))}
     </ul>
     <p class="gh-note">More platforms get their own guides as we go — the table above is always the complete picture.</p>
-  </main>
+  </section>
 </BaseLayout>
 
 <style>

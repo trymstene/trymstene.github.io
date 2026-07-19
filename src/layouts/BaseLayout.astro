@@ -58,9 +58,10 @@ const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
     <slot name="head" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <slot name="banner" />
     <Nav />
-    <main>
+    <main id="main" tabindex="-1">
       <slot />
     </main>
     {showFooter && <Footer />}

@@ -135,7 +135,7 @@ const description = 'Authorized banana personnel only.';
     <div class="bm-gate" id="bmGate" hidden>
       <p><b>🛂 SECURITY CHECKPOINT</b><br>Authorized banana personnel only. Present your credentials.</p>
       <div class="bm-gate__row">
-        <input id="bmToken" type="password" placeholder="inbox token" autocomplete="off" />
+        <input id="bmToken" type="password" placeholder="inbox token" autocomplete="off" aria-label="Inbox token" />
         <button class="bm-btn" id="bmClockIn" type="button">Clock in →</button>
       </div>
       <p class="bm-wrong" id="bmWrong" hidden>❌ Credentials rejected. The bouncer remembers faces.</p>
@@ -161,7 +161,7 @@ const description = 'Authorized banana personnel only.';
         <div class="bm-gkey" id="bmGkeyGate" hidden>
           <p><b>🖼 CURATION DESK</b><br>The gallery inbox needs its own key (it lives in tools/gallery.local.json).</p>
           <div class="bm-gate__row">
-            <input id="bmGkey" type="password" placeholder="gallery key" autocomplete="off" />
+            <input id="bmGkey" type="password" placeholder="gallery key" autocomplete="off" aria-label="Gallery key" />
             <button class="bm-btn" id="bmGkeySave" type="button">Unlock →</button>
           </div>
         </div>
@@ -178,7 +178,7 @@ const description = 'Authorized banana personnel only.';
 
         <div id="bmGalLive" hidden>
           <div class="bm-bar bm-livetools">
-            <input class="bm-livesearch" id="bmLiveQ" type="search" placeholder="🔍 search title / creator / tag / slug…" />
+            <input class="bm-livesearch" id="bmLiveQ" type="search" placeholder="🔍 search title / creator / tag / slug…" aria-label="Search submissions" />
             <span id="bmLiveChips"></span>
             <select class="bm-livesort" id="bmLiveSort" aria-label="Sort">
               <option value="new">newest first</option>
@@ -195,7 +195,7 @@ const description = 'Authorized banana personnel only.';
       <div id="bmPaneRave" hidden>
         <div class="bm-bar">
           <button class="bm-chip" id="bmRaveRefresh" type="button">↻ refresh</button>
-          <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word/fragment manually…" style="max-width:280px;" />
+          <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word/fragment manually…" style="max-width:280px;" aria-label="Word or fragment to strike" />
           <button class="bm-chip" id="bmStrikeAdd" type="button">🔨 strike</button>
         </div>
         <p class="bm-livenote">Names pass the family filter at the door; this desk is the backstop for the clever ones.

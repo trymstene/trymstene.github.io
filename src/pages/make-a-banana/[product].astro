@@ -90,7 +90,7 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
     <a href="/">Home</a><span>›</span><a href="/make-a-banana/">Make a Banana</a><span>›</span><b>Your {nameLc}</b>
   </nav>
 
-  <main class="pdp" id="pdpRoot" data-product={p.key}>
+  <section class="pdp" id="pdpRoot" data-product={p.key}>
     <div class="pdp__gallery">
       <div class="pdp-zoom" id="pdpZoom">
         <canvas id="pdpMock" class="pdp__main" width="900" height="900" aria-label={`Preview of your banana as a real ${nameLc}`}></canvas>
@@ -185,7 +185,7 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
         </details>
       )}
     </div>
-  </main>
+  </section>
 
   <section class="block">
     <p class="kicker">Keep going</p>

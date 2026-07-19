@@ -35,7 +35,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 <BaseLayout title={g.title} description={g.metaDescription}>
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
-  <main class="gd">
+  <section class="gd">
     <nav class="gd-crumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/guides/">Guides</a> › <span>{g.platform} emoji size</span></nav>
     <h1>{g.h1}</h1>
     <p class="gd-answer" set:html={answerHtml} />
@@ -70,7 +70,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       {others.map((o) => <a href={`/${o.slug}/`}> {o.platform} </a>)}
       · <a href="/guides/">the full cheat sheet</a>
     </p>
-  </main>
+  </section>
 </BaseLayout>
 
 <style>
