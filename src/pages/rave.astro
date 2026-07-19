@@ -122,12 +122,12 @@ const GUIDE = [
        his spot). The first up there takes the left slot; more fill in around
        him (he stays centred, z-index 2, over the line at z-index 1). */
     .rv-stage {
-      position: absolute; left: 0; right: 0; bottom: 42px;
+      position: absolute; left: 0; right: 0; bottom: 4px;
       display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
     }
     .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
-    .rv-stage__gap { flex: none; width: 104px; } /* the DJ stands here — keep the middle clear */
-    .rv-stage .rv-raver canvas { width: 58px !important; height: 58px !important; }
+    .rv-stage__gap { flex: none; width: 150px; } /* the DJ stands here — keep the middle clear (a bit wide so the first up there sits toward the speaker) */
+    .rv-stage .rv-raver canvas { width: 96px !important; height: 96px !important; } /* same size as the DJ */
     /* stage members glow under the rig — being up there has to LOOK special */
     .rv-stage .rv-raver canvas { filter: drop-shadow(0 0 7px #ffe135) !important; }
     .rv-djgroup { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 150px; z-index: 2; }
@@ -1150,9 +1150,9 @@ const GUIDE = [
       .rv-speaker { width: 34px; height: 48px; }
       .rv-speaker--l { left: calc(50% - 102px); }
       .rv-speaker--r { right: calc(50% - 102px); }
-      .rv-stage { bottom: 36px; gap: 6px; }
-      .rv-stage__gap { width: 84px; }
-      .rv-stage .rv-raver canvas { width: 46px !important; height: 46px !important; }
+      .rv-stage { bottom: 4px; gap: 6px; }
+      .rv-stage__gap { width: 120px; }
+      .rv-stage .rv-raver canvas { width: 78px !important; height: 78px !important; }
       /* emotes own the first row; the stage + tour buttons centre beneath as
          normal-sized peers (the full-width stage bar read as THE main feature) */
       .rv-emotes { flex: 1 1 100%; }
