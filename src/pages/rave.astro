@@ -118,12 +118,14 @@ const GUIDE = [
     /* the stage: Sentry-style DJ desk front-centre, speakers flanking,
        earned companions dancing on a line behind the DJ */
     .rv-booth { position: relative; background: #17121f; border-bottom: 4px solid #0d0b14; min-height: 164px; }
+    /* the stage line: joined bananas stack FROM THE LEFT and grow rightward,
+       passing BEHIND the centred DJ (he's z-index 2, they're z-index 1). */
     .rv-stage {
       position: absolute; left: 0; right: 0; bottom: 42px;
-      display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
+      display: flex; justify-content: flex-start; align-items: flex-end; gap: 10px; z-index: 1;
+      padding: 0 16px;
     }
     .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
-    .rv-stage__gap { flex: none; width: 104px; } /* the DJ stands here — keep the middle clear */
     .rv-stage .rv-raver canvas { width: 58px !important; height: 58px !important; }
     /* stage members glow under the rig — being up there has to LOOK special */
     .rv-stage .rv-raver canvas { filter: drop-shadow(0 0 7px #ffe135) !important; }
@@ -229,32 +231,61 @@ const GUIDE = [
       60% { transform: scaleY(1); }
       100% { transform: scaleY(0.8); }
     }
-    /* THE EQ WALL: pixel equalizer bars along the back wall — the dead space
-       behind the DJ becomes club dressing that dances (honest furniture, never
-       fake guests). Hard-stop gradient bands = pixel look; red + frantic on
-       the drop. */
-    .rv-eq {
-      position: absolute; left: 50%; transform: translateX(-50%); bottom: 46px;
-      width: min(420px, 76%); height: 44px; z-index: 0; pointer-events: none;
-      display: flex; align-items: flex-end; justify-content: center; gap: 6px; opacity: 0.9;
+    /* THE CLUB SCREEN: the big LED wall behind the DJ (replaces the old EQ
+       bars — movement for movement's sake). Tomorrowland-style backdrop that
+       blinks silly rave-culture lines and, every few slides, a CLICKABLE house
+       ad (forge / shop / pass / make-a-banana…). z 0 = the very back wall, so
+       the invite sign (z1), the DJ (z2), the stage crowd (z1), beams + pyro all
+       read in FRONT of it. The message rotation lives in banana-rave.js. */
+    .rv-screen {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: 8px; bottom: 38px; width: min(94%, 660px); z-index: 0;
+      display: block; text-decoration: none; overflow: hidden; color: inherit;
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 4px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 4px),
+        radial-gradient(130% 100% at 50% 15%, #241a38 0%, #150f22 65%, #0c0913 100%);
+      border: 3px solid #2f2250;
+      box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.6), 0 0 16px rgba(120,235,255,0.10);
+      -webkit-tap-highlight-color: transparent;
     }
-    .rv-eq span {
-      flex: 1; max-width: 10px; height: 100%; transform-origin: bottom;
-      background: linear-gradient(to top, #2f2250 0 45%, #b388ff 45% 78%, #78ebff 78% 100%);
-      animation: rvEq 0.8s steps(4) infinite;
+    .rv-screen__content {
+      position: absolute; inset: 0; display: flex; flex-direction: column; gap: 5px;
+      align-items: center; justify-content: center; text-align: center; padding: 6px 12px;
+      animation: rvScreenIn 0.5s ease;
     }
-    .rv-eq span:nth-child(2n) { animation-duration: 0.62s; background: linear-gradient(to top, #2f2250 0 50%, #4db8ff 50% 82%, #f0f0fa 82% 100%); }
-    .rv-eq span:nth-child(3n) { animation-delay: -0.25s; }
-    .rv-eq span:nth-child(4n) { animation-duration: 0.94s; animation-delay: -0.5s; }
-    .rv-eq span:nth-child(5n) { animation-delay: -0.65s; }
-    @keyframes rvEq {
-      0%, 100% { transform: scaleY(0.22); }
-      30% { transform: scaleY(0.8); }
-      55% { transform: scaleY(0.45); }
-      80% { transform: scaleY(1); }
+    .rv-screen__text {
+      font-family: "Archivo Black", sans-serif; text-transform: uppercase; line-height: 1.06;
+      font-size: clamp(0.6rem, 2.5vw, 1.02rem); letter-spacing: 0.01em; max-width: 24ch;
+      color: #78ebff; text-shadow: 0 0 8px rgba(120,235,255,0.55), 0 0 2px rgba(255,255,255,0.6);
     }
-    body.rv-drop .rv-eq span { animation-duration: 0.3s; background: linear-gradient(to top, #451d66 0 45%, #ff4d6d 45% 78%, #ffe135 78% 100%); }
-    @media (prefers-reduced-motion: reduce) { .rv-eq span { animation: none; transform: scaleY(0.45); } .rv-pyro svg { animation: none; } .rv-pyro__b { opacity: 0; } }
+    .rv-screen__cta {
+      font-weight: 800; font-size: clamp(0.5rem, 1.7vw, 0.68rem); letter-spacing: 0.07em;
+      text-transform: uppercase; color: #111; background: #ffe135; padding: 2px 9px;
+      box-shadow: 0 0 10px rgba(255,225,53,0.5);
+    }
+    @keyframes rvScreenIn { 0% { opacity: 0; } 35% { opacity: 0.35; } 55% { opacity: 0.9; } 68% { opacity: 0.5; } 100% { opacity: 1; } }
+    /* ad slides invite the tap (yellow, pointer); message slides are read-only */
+    .rv-screen--ad { cursor: pointer; }
+    .rv-screen--ad .rv-screen__text { color: #ffe135; text-shadow: 0 0 8px rgba(255,225,53,0.55), 0 0 2px rgba(255,255,255,0.5); }
+    .rv-screen--msg { cursor: default; }
+    @media (hover: hover) { .rv-screen--ad:hover { box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.5), 0 0 22px rgba(255,225,53,0.35); } }
+    /* THE DROP: the wall goes hot + frantic */
+    body.rv-drop .rv-screen {
+      border-color: #ff4d6d;
+      box-shadow: 0 0 0 2px #0d0b14, inset 0 0 26px rgba(255,77,109,0.25), 0 0 26px rgba(255,77,109,0.4);
+      animation: rvScreenDrop 0.3s steps(2) infinite;
+    }
+    body.rv-drop .rv-screen__text { color: #ffe135; }
+    @keyframes rvScreenDrop { 50% { filter: brightness(1.45) hue-rotate(-10deg); } }
+    @media (max-width: 640px) {
+      .rv-screen { top: 6px; bottom: 30px; width: 94%; border-width: 2px; }
+      .rv-screen__text { max-width: 18ch; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-screen__content, body.rv-drop .rv-screen { animation: none; }
+      .rv-pyro svg { animation: none; } .rv-pyro__b { opacity: 0; }
+    }
 
     .rv-floor { position: relative; height: min(62vh, 560px); overflow: hidden; background: #161022; }
     /* the world layer: ravers + checkerboard live here so the camera (translate+scale)
@@ -1071,8 +1102,7 @@ const GUIDE = [
       .rv-speaker { width: 34px; height: 48px; }
       .rv-speaker--l { left: calc(50% - 102px); }
       .rv-speaker--r { right: calc(50% - 102px); }
-      .rv-stage { bottom: 36px; gap: 6px; }
-      .rv-stage__gap { width: 84px; }
+      .rv-stage { bottom: 36px; gap: 6px; padding: 0 10px; }
       .rv-stage .rv-raver canvas { width: 46px !important; height: 46px !important; }
       /* emotes own the first row; the stage + tour buttons centre beneath as
          normal-sized peers (the full-width stage bar read as THE main feature) */
@@ -1106,6 +1136,12 @@ const GUIDE = [
     <div class="rv-stagewrap">
       <div class="rv-club">
         <div class="rv-booth">
+          <!-- THE CLUB SCREEN: the LED wall (back of the booth, z 0). Blinks
+               silly rave-culture lines + the odd clickable house ad. Filled by
+               initScreen() in banana-rave.js. -->
+          <a class="rv-screen rv-screen--msg" id="rvScreen" aria-label="Club screen">
+            <span class="rv-screen__content" id="rvScreenContent"></span>
+          </a>
           <!-- club wall decor that happens to work: click = copy the invite
                link. Barty spotlights it when the floor's been lonely a while. -->
           <button class="rv-sign" id="rvInvite" aria-label="Copy the rave invite link" title="Copy the invite link">INVITE<br/>A FRIEND</button>
@@ -1116,12 +1152,11 @@ const GUIDE = [
           <span class="rv-pyro rv-pyro--2" aria-hidden="true" set:html={PYRO_FRAMES}></span>
           <span class="rv-pyro rv-pyro--3" aria-hidden="true" set:html={PYRO_FRAMES}></span>
           <span class="rv-pyro rv-pyro--4" aria-hidden="true" set:html={PYRO_FRAMES}></span>
-          <div class="rv-eq" aria-hidden="true">{Array.from({ length: 14 }).map(() => <span></span>)}</div>
           <span class="rv-mnote rv-mnote--1" aria-hidden="true">♪</span>
           <span class="rv-mnote rv-mnote--2" aria-hidden="true">♫</span>
           <span class="rv-mnote rv-mnote--3" aria-hidden="true">♪</span>
           <span class="rv-mnote rv-mnote--4" aria-hidden="true">♫</span>
-          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div>
+          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"></div>
           <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
             <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>

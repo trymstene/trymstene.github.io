@@ -16,6 +16,36 @@ import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banan
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 
+// THE CLUB SCREEN content — the LED wall behind the DJ blinks these one-liners
+// and, every 4th slide, a clickable house ad. Copy is deliberately silly +
+// self-aware about rave culture / the banana / the one-song DJ (Trym's voice —
+// easy to reword: just edit these two lists). Declared up here (before the
+// init() call below) so init never touches them in the TDZ.
+const SCREEN_MSGS = [
+  'EVERY BANANA HERE IS REAL. LET THAT SINK IN.',
+  'THE DJ TAKES NO REQUESTS. THE DJ TAKES NO PRISONERS.',
+  'YOU’RE NOT LATE — THE PARTY STARTED WHEN YOU ARRIVED.',
+  'FEEL THAT BASS? THAT’S JUST YOUR PHONE BUZZING.',
+  'ONE SONG. ALL NIGHT. NO NOTES.',
+  'HYDRATE. BARTY IS BEGGING YOU.',
+  'SOMEWHERE A BANANA PEAKED TOO SOON. STAY STRONG.',
+  'HANDS UP! …YOU HAVE NO HANDS. VIBE ANYWAY.',
+  'A SAFE SPACE TO BE A FRUIT.',
+  'THE FLOOR IS JELLY. IT ALWAYS WAS.',
+  'TONIGHT’S HEADLINER: THE DJ. TOMORROW’S: ALSO HIM.',
+  'NO BAD DANCERS HERE. ONLY BRAVE ONES.',
+  'IF LOST, KEEP DANCING. WE’LL FIND YOU.',
+  'PEEL RESPONSIBLY.',
+];
+const SCREEN_ADS = [
+  { id: 'forge',   text: 'MAKE YOUR OWN EMOTE',          cta: 'the pixel forge →',      href: '/pixel-emoji-forge/' },
+  { id: 'sticker', text: 'PUT YOUR BANANA ON A STICKER', cta: 'make-a-banana →',         href: '/make-a-banana/' },
+  { id: 'pass',    text: 'CLAIM YOUR BANANA PASS',       cta: 'badges · gear · stats →', href: '/pass/' },
+  { id: 'shop',    text: 'OFFICIAL BANANA MERCH',        cta: 'the shop →',              href: '/shop/' },
+  { id: 'tee',     text: 'WEAR YOUR OWN BANANA',         cta: 'custom tee →',            href: '/make-a-banana/tee/' },
+  { id: 'gallery', text: 'MORE BANANAS, FRAMED',         cta: 'the meme gallery →',      href: '/banana-memes/' },
+];
+
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
 const MAX_VISIBLE = 60;
@@ -652,14 +682,9 @@ function init() {
     if (on) {
       r.cv.style.width = r.cv.style.height = ''; // stage size comes from CSS
       r.wrap.style.left = r.wrap.style.top = r.wrap.style.zIndex = '';
-      // balance the line around the centre gap (the DJ stands in the middle)
-      const stageEl = el('rvStage');
-      const gap = stageEl.querySelector('.rv-stage__gap');
-      const kids = [...stageEl.children];
-      const leftCount = kids.indexOf(gap);
-      const rightCount = kids.length - 1 - leftCount;
-      if (leftCount <= rightCount) stageEl.insertBefore(r.wrap, gap);
-      else stageEl.appendChild(r.wrap);
+      // stack FROM THE LEFT: join order fills left→right and simply passes
+      // BEHIND the centred DJ (he's z-index 2, the stage line is z-index 1).
+      el('rvStage').appendChild(r.wrap);
     } else {
       r.cv.style.width = r.cv.style.height = r.size + 'px';
       r.wrap.style.left = r.x + '%';
@@ -4182,6 +4207,59 @@ function init() {
   // (a no-op for anyone who already has it)
   try { if (localStorage.getItem('rv-tour-v1')) passPatch('raver'); } catch (e) { passPatch('raver'); }
   stoolRender(); // the regular's stool, for those who've earned it
+
+  // ---- THE CLUB SCREEN: rotate silly lines + the odd clickable house ad ----
+  (function initScreen() {
+    const screen = el('rvScreen');
+    const content = el('rvScreenContent');
+    if (!screen || !content) return;
+    let bag = [];
+    const refill = () => { // Fisher–Yates shuffle of the one-liners
+      const b = SCREEN_MSGS.slice();
+      for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
+      return b;
+    };
+    let adIdx = Math.floor(Math.random() * SCREEN_ADS.length);
+    let count = 0;
+    const nextSlide = () => {
+      if (count % 4 === 3) { const ad = SCREEN_ADS[adIdx % SCREEN_ADS.length]; adIdx++; return { type: 'ad', ...ad }; }
+      if (!bag.length) bag = refill();
+      return { type: 'msg', text: bag.pop() };
+    };
+    const render = (s) => {
+      content.innerHTML = '';
+      const t = document.createElement('span');
+      t.className = 'rv-screen__text';
+      t.textContent = s.text;
+      content.appendChild(t);
+      if (s.type === 'ad') {
+        const c = document.createElement('span');
+        c.className = 'rv-screen__cta';
+        c.textContent = s.cta;
+        content.appendChild(c);
+        screen.classList.add('rv-screen--ad');
+        screen.classList.remove('rv-screen--msg');
+        screen.setAttribute('href', s.href);
+        screen.dataset.ad = s.id;
+      } else {
+        screen.classList.remove('rv-screen--ad');
+        screen.classList.add('rv-screen--msg');
+        screen.removeAttribute('href');
+        delete screen.dataset.ad;
+      }
+      content.style.animation = 'none'; void content.offsetWidth; content.style.animation = ''; // retrigger the flicker-in
+    };
+    screen.addEventListener('click', (e) => {
+      if (!screen.classList.contains('rv-screen--ad')) { e.preventDefault(); return; } // messages don't navigate
+      if (window.gtag) window.gtag('event', 'rave_screen_ad', { ad: screen.dataset.ad || '' });
+      // the anchor's href handles the navigation
+    });
+    render(nextSlide()); count++;
+    setInterval(() => {
+      if (tourActive) return; // never pull focus during the lesson
+      render(nextSlide()); count++;
+    }, 4800);
+  })();
   // ?fxtest=<id> — preview any timed effect on yourself (local visual only,
   // never broadcast; the stagetest/nighttest pattern for fx work)
   const fxTest = new URLSearchParams(location.search).get('fxtest');
