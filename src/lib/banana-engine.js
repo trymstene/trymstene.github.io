@@ -534,7 +534,10 @@ function drawConfetti(ctx, W, idx) {
 function caption(ctx, W, text, top) {
   if (!text) return;
   let fs = Math.round(W * 0.095);
-  const font = (s) => '900 ' + s + 'px Impact, "Arial Black", "Franklin Gothic Bold", sans-serif';
+  // Anton (self-hosted, /fonts) FIRST so the baked-into-GIF caption is identical
+  // on every OS. Impact/Arial Black are system fallbacks (Anton is 400-only — no
+  // 900 weight, else the browser faux-bolds it). See fonts.css.
+  const font = (s) => s + 'px "Anton", Impact, "Arial Black", "Franklin Gothic Bold", sans-serif';
   ctx.font = font(fs);
   while (ctx.measureText(text.toUpperCase()).width > W * 0.92 && fs > 14) { fs -= 2; ctx.font = font(fs); }
   ctx.textAlign = 'center'; ctx.textBaseline = top ? 'top' : 'bottom';

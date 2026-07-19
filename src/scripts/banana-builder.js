@@ -934,6 +934,12 @@ function init() {
   // use this, so what Trym reviews is pixel-identical to what visitors save
   async function renderMemeGif() {
     await assetsReady();
+    // captions bake into the GIF here, so Anton (self-hosted) MUST be decoded
+    // first — otherwise this device's OS fallback font gets baked in (the
+    // Impact-only-on-Win/Mac bug that hit a Linux/Android submitter).
+    if (state.top || state.bottom) {
+      try { await document.fonts.load('64px "Anton"', ((state.top || '') + (state.bottom || '')).toUpperCase()); } catch (e) {}
+    }
     const isT = state.bg === 'transparent';
     const W = 480;
     const frames = [];
