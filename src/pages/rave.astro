@@ -118,14 +118,15 @@ const GUIDE = [
     /* the stage: Sentry-style DJ desk front-centre, speakers flanking,
        earned companions dancing on a line behind the DJ */
     .rv-booth { position: relative; background: #17121f; border-bottom: 4px solid #0d0b14; min-height: 164px; }
-    /* the stage line: joined bananas stack FROM THE LEFT and grow rightward,
-       passing BEHIND the centred DJ (he's z-index 2, they're z-index 1). */
+    /* the stage line: joined bananas dance BESIDE the DJ (a centre gap keeps
+       his spot). The first up there takes the left slot; more fill in around
+       him (he stays centred, z-index 2, over the line at z-index 1). */
     .rv-stage {
       position: absolute; left: 0; right: 0; bottom: 42px;
-      display: flex; justify-content: flex-start; align-items: flex-end; gap: 10px; z-index: 1;
-      padding: 0 16px;
+      display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
     }
     .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
+    .rv-stage__gap { flex: none; width: 104px; } /* the DJ stands here — keep the middle clear */
     .rv-stage .rv-raver canvas { width: 58px !important; height: 58px !important; }
     /* stage members glow under the rig — being up there has to LOOK special */
     .rv-stage .rv-raver canvas { filter: drop-shadow(0 0 7px #ffe135) !important; }
@@ -249,25 +250,73 @@ const GUIDE = [
       box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.6), 0 0 16px rgba(120,235,255,0.10);
       -webkit-tap-highlight-color: transparent;
     }
-    .rv-screen__content {
-      position: absolute; inset: 0; display: flex; flex-direction: column; gap: 5px;
-      align-items: center; justify-content: center; text-align: center; padding: 6px 12px;
-      animation: rvScreenIn 0.5s ease;
+    /* colours blink across the WHOLE panel: a shifting wash that hue-rotates.
+       Sits behind the text (content is z1) and never eats clicks. */
+    .rv-screen::after {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      mix-blend-mode: screen; opacity: 0.55;
+      background: linear-gradient(115deg, rgba(120,235,255,0.22), rgba(255,77,157,0.22) 40%, rgba(255,225,53,0.20) 70%, rgba(120,235,255,0.22));
+      background-size: 320% 320%;
+      animation: rvPanelWash 7s linear infinite;
     }
+    @keyframes rvPanelWash {
+      0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+      100% { background-position: 100% 50%; filter: hue-rotate(360deg); }
+    }
+    .rv-screen__content {
+      position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; gap: 4px;
+      align-items: center; justify-content: center; text-align: center; padding: 4px 10px;
+      animation: rvScreenIn 0.45s ease;
+    }
+    /* BASE text — each style below overrides font / size / colour / position so
+       no two slides look alike; big ones overflow and the frame clips them. */
     .rv-screen__text {
-      font-family: "Archivo Black", sans-serif; text-transform: uppercase; line-height: 1.06;
-      font-size: clamp(0.6rem, 2.5vw, 1.02rem); letter-spacing: 0.01em; max-width: 24ch;
+      font-family: "Archivo Black", sans-serif; text-transform: uppercase; line-height: 1.02;
+      font-size: clamp(0.62rem, 2.6vw, 1.05rem); letter-spacing: 0.01em; max-width: 26ch;
       color: #78ebff; text-shadow: 0 0 8px rgba(120,235,255,0.55), 0 0 2px rgba(255,255,255,0.6);
     }
+    /* per-word colours (JS wraps words in .w0–.w4 for the stack + multi styles) */
+    .rv-screen__text .w0 { color: #78ebff; } .rv-screen__text .w1 { color: #ffe135; }
+    .rv-screen__text .w2 { color: #ff4d9d; } .rv-screen__text .w3 { color: #37d67a; }
+    .rv-screen__text .w4 { color: #b388ff; }
+
+    /* ---- THE STYLE PRESETS ---- */
+    /* giant — one huge line, clips the sides */
+    .rv-s-giant .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.7rem,9vw,3.6rem); line-height: 0.84; letter-spacing: 0.01em; max-width: none; }
+    /* stack — each word on its own big line, per-word colours, left-anchored */
+    .rv-s-stack { align-items: flex-start; justify-content: center; padding-left: 12px; }
+    .rv-s-stack .rv-screen__text { font-family: "Archivo Black",sans-serif; font-size: clamp(1.1rem,5vw,2.1rem); line-height: 0.94; text-align: left; max-width: none; }
+    .rv-s-stack .rv-screen__text span { display: block; }
+    /* mono — small terminal readout, top-left corner, green */
+    .rv-s-mono { align-items: flex-start; justify-content: flex-start; }
+    .rv-s-mono .rv-screen__text { font-family: "Space Grotesk",ui-monospace,monospace; font-weight: 800; text-transform: none; font-size: clamp(0.6rem,2.4vw,0.9rem); color: #37d67a; text-align: left; letter-spacing: 0; text-shadow: 0 0 7px rgba(55,214,122,0.6); }
+    .rv-s-mono .rv-screen__text::before { content: '> '; opacity: 0.7; }
+    /* rotate — tilted marquee, magenta, clips a corner */
+    .rv-s-rotate .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.5rem,7vw,3rem); transform: rotate(-7deg); color: #ff4d9d; line-height: 0.88; max-width: none; text-shadow: 0 0 9px rgba(255,77,157,0.6); }
+    /* wide — airy tracked-out caps, yellow */
+    .rv-s-wide .rv-screen__text { font-family: "Space Grotesk",sans-serif; font-weight: 800; font-size: clamp(0.8rem,3.2vw,1.35rem); letter-spacing: 0.34em; color: #ffe135; text-shadow: 0 0 8px rgba(255,225,53,0.5); }
+    /* multi — mid-big, every word a different colour */
+    .rv-s-multi .rv-screen__text { font-family: "Archivo Black",sans-serif; font-size: clamp(1rem,4.6vw,2rem); line-height: 0.96; max-width: none; }
+    .rv-s-multi .rv-screen__text span { display: inline-block; }
+    /* outline — hollow neon letters, huge, clips the sides */
+    .rv-s-outline .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.9rem,10vw,4rem); color: transparent; -webkit-text-stroke: 2px #78ebff; text-shadow: none; line-height: 0.82; max-width: none; }
+    /* jumboR — huge, shoved to the bottom-right, overflows */
+    .rv-s-jumboR { align-items: flex-end; justify-content: flex-end; }
+    .rv-s-jumboR .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.6rem,8vw,3.4rem); color: #ffe135; text-align: right; line-height: 0.84; max-width: none; text-shadow: 0 0 9px rgba(255,225,53,0.5); }
+    /* blinkc — mid-big line that hard-blinks between two colours */
+    .rv-s-blinkc .rv-screen__text { font-family: "Archivo Black",sans-serif; font-size: clamp(1.1rem,5vw,2.1rem); animation: rvTextBlink 0.55s steps(1) infinite; line-height: 0.95; max-width: none; }
+    @keyframes rvTextBlink { 0%,49% { color: #78ebff; text-shadow: 0 0 9px rgba(120,235,255,0.6); } 50%,100% { color: #ff4d9d; text-shadow: 0 0 9px rgba(255,77,157,0.6); } }
+
     .rv-screen__cta {
       font-weight: 800; font-size: clamp(0.5rem, 1.7vw, 0.68rem); letter-spacing: 0.07em;
       text-transform: uppercase; color: #111; background: #ffe135; padding: 2px 9px;
-      box-shadow: 0 0 10px rgba(255,225,53,0.5);
+      box-shadow: 0 0 10px rgba(255,225,53,0.5); font-family: "Space Grotesk", sans-serif;
     }
     @keyframes rvScreenIn { 0% { opacity: 0; } 35% { opacity: 0.35; } 55% { opacity: 0.9; } 68% { opacity: 0.5; } 100% { opacity: 1; } }
-    /* ad slides invite the tap (yellow, pointer); message slides are read-only */
+    /* ad slides invite the tap (yellow headline, pointer); messages are read-only.
+       Placed AFTER the presets so the ad colour wins. */
     .rv-screen--ad { cursor: pointer; }
-    .rv-screen--ad .rv-screen__text { color: #ffe135; text-shadow: 0 0 8px rgba(255,225,53,0.55), 0 0 2px rgba(255,255,255,0.5); }
+    .rv-screen--ad .rv-screen__text { color: #ffe135 !important; -webkit-text-stroke: 0; text-shadow: 0 0 9px rgba(255,225,53,0.55), 0 0 2px rgba(255,255,255,0.5) !important; }
     .rv-screen--msg { cursor: default; }
     @media (hover: hover) { .rv-screen--ad:hover { box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.5), 0 0 22px rgba(255,225,53,0.35); } }
     /* THE DROP: the wall goes hot + frantic */
@@ -276,14 +325,13 @@ const GUIDE = [
       box-shadow: 0 0 0 2px #0d0b14, inset 0 0 26px rgba(255,77,109,0.25), 0 0 26px rgba(255,77,109,0.4);
       animation: rvScreenDrop 0.3s steps(2) infinite;
     }
-    body.rv-drop .rv-screen__text { color: #ffe135; }
-    @keyframes rvScreenDrop { 50% { filter: brightness(1.45) hue-rotate(-10deg); } }
+    body.rv-drop .rv-screen::after { opacity: 0.9; animation-duration: 2.5s; }
+    @keyframes rvScreenDrop { 50% { filter: brightness(1.4) hue-rotate(-10deg); } }
     @media (max-width: 640px) {
       .rv-screen { top: 6px; bottom: 30px; width: 94%; border-width: 2px; }
-      .rv-screen__text { max-width: 18ch; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .rv-screen__content, body.rv-drop .rv-screen { animation: none; }
+      .rv-screen__content, body.rv-drop .rv-screen, .rv-screen::after, .rv-s-blinkc .rv-screen__text { animation: none; }
       .rv-pyro svg { animation: none; } .rv-pyro__b { opacity: 0; }
     }
 
@@ -1102,7 +1150,8 @@ const GUIDE = [
       .rv-speaker { width: 34px; height: 48px; }
       .rv-speaker--l { left: calc(50% - 102px); }
       .rv-speaker--r { right: calc(50% - 102px); }
-      .rv-stage { bottom: 36px; gap: 6px; padding: 0 10px; }
+      .rv-stage { bottom: 36px; gap: 6px; }
+      .rv-stage__gap { width: 84px; }
       .rv-stage .rv-raver canvas { width: 46px !important; height: 46px !important; }
       /* emotes own the first row; the stage + tour buttons centre beneath as
          normal-sized peers (the full-width stage bar read as THE main feature) */
@@ -1156,7 +1205,7 @@ const GUIDE = [
           <span class="rv-mnote rv-mnote--2" aria-hidden="true">♫</span>
           <span class="rv-mnote rv-mnote--3" aria-hidden="true">♪</span>
           <span class="rv-mnote rv-mnote--4" aria-hidden="true">♫</span>
-          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"></div>
+          <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div>
           <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true">
             <rect width="12" height="16" fill="#241a38"/><rect x="1" y="1" width="10" height="14" fill="#0d0b14"/>
             <rect x="3" y="2" width="6" height="6" fill="#2a1650"/><rect x="5" y="4" width="2" height="2" fill="#b388ff"/>

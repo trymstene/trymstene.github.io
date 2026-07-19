@@ -682,9 +682,15 @@ function init() {
     if (on) {
       r.cv.style.width = r.cv.style.height = ''; // stage size comes from CSS
       r.wrap.style.left = r.wrap.style.top = r.wrap.style.zIndex = '';
-      // stack FROM THE LEFT: join order fills left→right and simply passes
-      // BEHIND the centred DJ (he's z-index 2, the stage line is z-index 1).
-      el('rvStage').appendChild(r.wrap);
+      // beside the DJ: the first up there takes the left slot, then the line
+      // fills in around the centre gap so the DJ stays put in the middle.
+      const stageEl = el('rvStage');
+      const gap = stageEl.querySelector('.rv-stage__gap');
+      const kids = [...stageEl.children];
+      const leftCount = kids.indexOf(gap);
+      const rightCount = kids.length - 1 - leftCount;
+      if (leftCount <= rightCount) stageEl.insertBefore(r.wrap, gap);
+      else stageEl.appendChild(r.wrap);
     } else {
       r.cv.style.width = r.cv.style.height = r.size + 'px';
       r.wrap.style.left = r.x + '%';
@@ -4226,11 +4232,34 @@ function init() {
       if (!bag.length) bag = refill();
       return { type: 'msg', text: bag.pop() };
     };
+    // every message gets a random look (font/size/position/colour) so no two
+    // slides read alike; ads stay on the big legible 'giant' style so the CTA
+    // reads. Big styles overflow — the LED frame clips them (overflow:hidden).
+    const MSG_STYLES = ['giant', 'stack', 'mono', 'rotate', 'wide', 'multi', 'outline', 'jumboR', 'blinkc'];
+    let lastStyle = null;
+    const pickStyle = () => {
+      let st, i = 0;
+      do { st = MSG_STYLES[Math.floor(Math.random() * MSG_STYLES.length)]; i++; } while (st === lastStyle && i < 8);
+      lastStyle = st; return st;
+    };
     const render = (s) => {
+      const style = s.type === 'ad' ? 'giant' : pickStyle();
+      content.className = 'rv-screen__content rv-s-' + style;
       content.innerHTML = '';
       const t = document.createElement('span');
       t.className = 'rv-screen__text';
-      t.textContent = s.text;
+      if (s.type === 'msg' && (style === 'stack' || style === 'multi')) {
+        // per-word colour: wrap each word in .w0–.w4
+        s.text.split(' ').forEach((w, i) => {
+          const sp = document.createElement('span');
+          sp.className = 'w' + (i % 5);
+          sp.textContent = w;
+          t.appendChild(sp);
+          if (style === 'multi') t.appendChild(document.createTextNode(' '));
+        });
+      } else {
+        t.textContent = s.text;
+      }
       content.appendChild(t);
       if (s.type === 'ad') {
         const c = document.createElement('span');
