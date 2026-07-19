@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
 import PRODUCTS from '../../shared/products.js';
 
 const title = "Make Your Own Dancing Banana | Trym Stene";
@@ -484,7 +485,7 @@ const appSchema = {
       <div class="bb-stagewrap">
         <div class="bb-stage bb-stage--transparent" id="bbStage">
           <canvas id="bbCanvas" width="720" height="720" aria-label="Your dancing banana"></canvas>
-          <button class="bb-pause" id="bbPause" aria-label="Pause the dance">⏸</button>
+          <button class="bb-pause" id="bbPause" aria-label="Pause the dance"><PixelArtIcon name="pause" size="18px" /></button>
         </div>
       </div>
 
@@ -574,7 +575,7 @@ const appSchema = {
         <div class="bb-card bb-card--buy" id="bbTakeHome">
           <h3><PixelIcon name="tag" size="1.5em" /> Buy this banana</h3>
           <p>Your design, printed and mailed to your door. Tap a product to buy:</p>
-          <p class="bb-ship">🌍 FREE WORLDWIDE SHIPPING</p>
+          <p class="bb-ship"><PixelArtIcon name="globe" size="16px" /> FREE WORLDWIDE SHIPPING</p>
           <!-- the card IS the picker: one tile per product (your banana previewed
                on each) → tap opens that product. Adding a product = one more tile,
                never a new button. -->
@@ -636,7 +637,7 @@ const appSchema = {
       <div class="bb-inv__head">
         <h3 id="bbInvTitle"></h3>
         <span class="bb-count" id="bbInvCount"></span>
-        <button type="button" class="bb-inv__close" id="bbInvClose" aria-label="Close">✕</button>
+        <button type="button" class="bb-inv__close" id="bbInvClose" aria-label="Close"><PixelArtIcon name="close" size="18px" /></button>
       </div>
       <div class="bb-inv__grid" id="bbInvGrid"></div>
       <p class="bb-inv__hint">tap to wear it — the banana tries it on instantly</p>
@@ -649,7 +650,7 @@ const appSchema = {
       <span class="bb-homebar__txt"><b>Buy your banana</b><small>sticker · magnet · tee · free shipping</small></span>
       <span class="bb-homebar__arrow" aria-hidden="true">→</span>
     </button>
-    <button type="button" class="bb-homebar__x" id="bbHomeBarX" aria-label="No thanks">✕</button>
+    <button type="button" class="bb-homebar__x" id="bbHomeBarX" aria-label="No thanks"><PixelArtIcon name="close" size="18px" /></button>
   </div>
 
   <script>
