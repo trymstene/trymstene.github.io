@@ -577,7 +577,7 @@ function initShare(outfit, pass, extra) {
     } catch (e) {
       passToast('That didn’t work — try again in a moment.');
     }
-    btn.textContent = was;
+    btn.innerHTML = was;
     busy = false;
   });
 }
