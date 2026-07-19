@@ -8,6 +8,7 @@
 // next build; Trym's own items are unaffected).
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PixelIcon from '../../../components/PixelIcon.astro';
+import PixelArtIcon from '../../../components/PixelArtIcon.astro';
 import { loadGalleryItems } from '../../../lib/gallery-items.js';
 import { liveTagList } from '../../../data/gallery-tags.js';
 
@@ -85,6 +86,10 @@ const crumbLD = {
   ],
 };
 const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-banana/';
+// merch: this EXACT banana, pre-built on the product PDP (community items store
+// params; a solid-bg meme prints the whole square, a transparent one die-cuts)
+const stickerHref = item.params ? `/make-a-banana/sticker/?${item.params}` : '/make-a-banana/sticker/';
+const teeHref = item.params ? `/make-a-banana/tee/?${item.params}` : '/make-a-banana/tee/';
 ---
 <BaseLayout title={title} description={description} ogType="article" ogImage={gifUrl}>
   <Fragment slot="head">
@@ -126,6 +131,15 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
     .gd-tags a:hover { background: var(--banana); }
     .gd-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
     .gd-actions .btn { flex: 1; min-width: 220px; }
+    /* "get it printed" — smaller, secondary merch row under the main actions */
+    .gd-merch { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center; margin-top: 0.7rem; }
+    .gd-merch__lbl { font-size: 0.82rem; font-weight: 800; opacity: 0.65; }
+    .gd-merch__btn {
+      display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;
+      font-size: 0.82rem; font-weight: 800; color: var(--ink); background: var(--paper);
+      border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 0.35rem 0.6rem;
+    }
+    .gd-merch__btn:hover { background: var(--banana); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
     .gd-note { font-size: 0.8rem; opacity: 0.7; margin-top: 1rem; }
     .gd-note a { color: var(--ink); }
     .gd-related { margin-top: 3rem; }
@@ -180,6 +194,16 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
       </a>
       <a class="btn btn--light" href={remixHref} data-place="gallery_community">
         <PixelIcon name="palette" /> Remix this banana →
+      </a>
+    </div>
+
+    <div class="gd-merch">
+      <span class="gd-merch__lbl">Want it for real?</span>
+      <a class="gd-merch__btn" href={stickerHref} data-place="gallery_community_merch" data-product="sticker">
+        <PixelArtIcon name="sticker" size="18px" /> Get it on a sticker
+      </a>
+      <a class="gd-merch__btn" href={teeHref} data-place="gallery_community_merch" data-product="tee">
+        <PixelArtIcon name="shirt" size="18px" /> Get it on a tee
       </a>
     </div>
 
