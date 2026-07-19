@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
 
 const title = 'The Banana Rave — everyone dances together';
 const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others.';
@@ -1225,7 +1226,7 @@ const GUIDE = [
         <ol id="rvBoard"><li><span>the floor awaits…</span></li></ol>
         <h2 class="rv-panel__h2">your night</h2>
         <div class="rv-stats" id="rvStats"></div>
-        <button class="rv-share-btn" id="rvShareNight">📸 share my night</button>
+        <button class="rv-share-btn" id="rvShareNight"><PixelArtIcon name="camera" size="18px" /> share my night</button>
         <div class="rv-door">
           <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
         </div>
@@ -1333,12 +1334,12 @@ const GUIDE = [
        sheet (previewless on Windows) is demoted to an opt-in button -->
   <div class="rv-sharemodal" id="rvShareModal" hidden>
     <div class="rv-sharemodal__box">
-      <button class="rv-sharemodal__close" id="rvShareClose" aria-label="Close">✕</button>
+      <button class="rv-sharemodal__close" id="rvShareClose" aria-label="Close"><PixelArtIcon name="close" size="18px" /></button>
       <div class="rv-sharemodal__card" id="rvShareSlot"></div>
       <div class="rv-sharemodal__row">
-        <button class="rv-share-btn" id="rvShareDl">⬇ download PNG</button>
-        <button class="rv-share-btn" id="rvShareCopy">📋 copy image</button>
-        <button class="rv-share-btn" id="rvShareSys" hidden>📤 share…</button>
+        <button class="rv-share-btn" id="rvShareDl"><PixelArtIcon name="download" size="18px" /> download PNG</button>
+        <button class="rv-share-btn" id="rvShareCopy"><PixelArtIcon name="copy" size="18px" /> copy image</button>
+        <button class="rv-share-btn" id="rvShareSys" hidden><PixelArtIcon name="share" size="18px" /> share…</button>
       </div>
     </div>
   </div>

@@ -14,6 +14,7 @@ import { DROPS } from '../data/wearables.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
+import { iconSvg } from '../lib/pixel-icons.js';
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
@@ -1756,11 +1757,11 @@ function init() {
       try {
         const blob = await toBlob();
         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        el('rvShareCopy').textContent = '✓ copied — paste it anywhere';
-        setTimeout(() => { el('rvShareCopy').textContent = '📋 copy image'; }, 2500);
+        el('rvShareCopy').innerHTML = iconSvg('check', { size: 18 }) + ' copied — paste it anywhere';
+        setTimeout(() => { el('rvShareCopy').innerHTML = iconSvg('copy', { size: 18 }) + ' copy image'; }, 2500);
       } catch (e) {
         el('rvShareCopy').textContent = 'copy blocked — use download';
-        setTimeout(() => { el('rvShareCopy').textContent = '📋 copy image'; }, 2500);
+        setTimeout(() => { el('rvShareCopy').innerHTML = iconSvg('copy', { size: 18 }) + ' copy image'; }, 2500);
       }
     };
     el('rvShareSys').onclick = async () => {
