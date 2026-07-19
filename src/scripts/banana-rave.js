@@ -682,15 +682,16 @@ function init() {
     if (on) {
       r.cv.style.width = r.cv.style.height = ''; // stage size comes from CSS
       r.wrap.style.left = r.wrap.style.top = r.wrap.style.zIndex = '';
-      // beside the DJ: the first up there takes the left slot, then the line
-      // fills in around the centre gap so the DJ stays put in the middle.
+      // symmetric outward stack around the centred DJ: #1 left (beside him),
+      // #2 right (opposite), #3 outside #1 on the left, #4 outside #2 on the
+      // right, and so on. Those already up there KEEP their spot — new arrivals
+      // go to the OUTER end of the shorter side (prepend left / append right).
       const stageEl = el('rvStage');
       const gap = stageEl.querySelector('.rv-stage__gap');
-      const kids = [...stageEl.children];
-      const leftCount = kids.indexOf(gap);
-      const rightCount = kids.length - 1 - leftCount;
-      if (leftCount <= rightCount) stageEl.insertBefore(r.wrap, gap);
-      else stageEl.appendChild(r.wrap);
+      const leftCount = [...stageEl.children].indexOf(gap);       // members before the DJ's gap
+      const rightCount = stageEl.children.length - 1 - leftCount; // members after it
+      if (leftCount <= rightCount) stageEl.insertBefore(r.wrap, stageEl.firstChild); // new outermost-left
+      else stageEl.appendChild(r.wrap);                                              // new outermost-right
     } else {
       r.cv.style.width = r.cv.style.height = r.size + 'px';
       r.wrap.style.left = r.x + '%';
