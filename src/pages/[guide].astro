@@ -24,8 +24,9 @@ const crumbLD = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Guides', item: 'https://trymstene.com/guides/' },
-    { '@type': 'ListItem', position: 2, name: g.platform + ' emoji size', item: `https://trymstene.com/${g.slug}/` },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://trymstene.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://trymstene.com/guides/' },
+    { '@type': 'ListItem', position: 3, name: g.platform + ' emoji size', item: `https://trymstene.com/${g.slug}/` },
   ],
 };
 // **bold** in the answer line → <strong>
@@ -35,7 +36,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <main class="gd">
-    <p class="gd-crumb"><a href="/guides/">← All emoji &amp; emote size guides</a></p>
+    <nav class="gd-crumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/guides/">Guides</a> › <span>{g.platform} emoji size</span></nav>
     <h1>{g.h1}</h1>
     <p class="gd-answer" set:html={answerHtml} />
 
@@ -74,7 +75,8 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
 <style>
   .gd { max-width: 760px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
-  .gd-crumb { font-size: 0.85rem; margin-bottom: 1rem; }
+  .gd-crumb { font-size: 0.85rem; margin-bottom: 1rem; opacity: 0.75; }
+  .gd-crumb a { color: var(--ink, #111); }
   .gd h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin-bottom: 0.9rem; }
   .gd-answer { font-size: 1.12rem; line-height: 1.55; background: var(--banana, #ffe135);
     border: 3px solid var(--ink, #111); box-shadow: 6px 6px 0 var(--ink, #111);

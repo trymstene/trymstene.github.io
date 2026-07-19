@@ -20,6 +20,14 @@ const collectionSchema = {
     })),
   },
 };
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://trymstene.com/" },
+    { "@type": "ListItem", "position": 2, "name": "Shop", "item": "https://trymstene.com/shop/" },
+  ],
+};
 ---
 <BaseLayout
   title="Shop — Dancing Banana Merch | Trym Stene"
@@ -30,6 +38,7 @@ const collectionSchema = {
 >
   <link rel="stylesheet" href="/css/shop.css" slot="head" />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(collectionSchema)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(breadcrumbSchema)} />
 
   <section class="hero shop-hero">
     <div class="hero__banana">

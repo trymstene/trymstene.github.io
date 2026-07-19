@@ -34,9 +34,18 @@ const faqLD = {
     { '@type': 'Question', name: 'Why do emotes need to be so small?', acceptedAnswer: { '@type': 'Answer', text: 'Emotes render inline with chat text, so platforms display them at 28–32 pixels. Designs with bold shapes and few colors — like pixel art — stay readable at that size.' } },
   ],
 };
+const crumbLD = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://trymstene.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://trymstene.com/guides/' },
+  ],
+};
 ---
 <BaseLayout title={title} description={description}>
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
+  <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <main class="gh">
     <h1>The emoji &amp; emote size chart</h1>
     <p class="gh-sub">Every platform, one table — kept current by people who ship pixels for a living.
