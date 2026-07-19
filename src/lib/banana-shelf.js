@@ -9,6 +9,7 @@
 // Astro frontmatter).
 import { drawComposite, assetsReady } from './banana-engine.js';
 import { forgeParse, forgeDrawFrame } from './forge-format.js';
+import { passPush } from './banana-pass.js';
 
 // a saved 'wearable' → its ITEM sprite, cropped to the painted pixels and
 // centred, drawn into a 96px thumbnail. Shown ALONE (an item is an item, not a
@@ -66,8 +67,80 @@ export function shelfAdd({ kind = 'banana', params = '', shareId = null }) {
   return item;
 }
 
+// ---- deletions that STICK (tombstones) ----------------------------------
+// A linked pass merges shelves by union, so a plain remove is resurrected on
+// the next pull. We keep a small ledger of deleted params (with the delete
+// time); the merge (here + in banana-pass.js + worker-pass) drops any item
+// whose params were tombstoned AFTER it was created. Re-making the exact same
+// banana later (newer created) beats its old tombstone, so nothing is trapped.
+const DEL_KEY = 'shelf-del-v1';
+const DEL_CAP = 200;
+function readDel() {
+  try { const o = JSON.parse(localStorage.getItem(DEL_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; }
+  catch (e) { return {}; }
+}
+function writeDel(map) {
+  const kept = Object.fromEntries(Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, DEL_CAP));
+  try { localStorage.setItem(DEL_KEY, JSON.stringify(kept)); } catch (e) {}
+}
+
 export function shelfRemove(id) {
-  write(read().filter((c) => c.id !== id));
+  const list = read();
+  const gone = list.find((c) => c.id === id);
+  write(list.filter((c) => c.id !== id));
+  if (gone && gone.params) { const d = readDel(); d[gone.params] = Date.now(); writeDel(d); }
+  passPush(); // the tombstone rides the sync blob so the delete sticks everywhere
+}
+
+// ---- the banana "are you sure?" — never the browser's confirm() ----------
+function ensureConfirmCss() {
+  if (document.getElementById('shelf-confirm-css')) return;
+  const s = document.createElement('style');
+  s.id = 'shelf-confirm-css';
+  s.textContent = `
+    .shelf-confirm { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center;
+      justify-content: center; background: rgba(17,17,17,0.6); padding: 1rem; }
+    .shelf-confirm__box { position: relative; max-width: min(90vw, 360px); width: 100%; text-align: center;
+      background: var(--paper, #faf6ee); border: 4px solid var(--ink, #111); box-shadow: 8px 8px 0 var(--ink, #111);
+      padding: 1.4rem 1.2rem 1.1rem; }
+    .shelf-confirm__peel { font-size: 2.4rem; line-height: 1; margin-bottom: 0.3rem;
+      display: inline-block; transform-origin: 50% 90%; animation: shelfWobble 1.4s ease-in-out infinite; }
+    @keyframes shelfWobble { 0%,100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+    @media (prefers-reduced-motion: reduce) { .shelf-confirm__peel { animation: none; } }
+    .shelf-confirm__box h3 { margin: 0 0 0.35rem; font-size: 1.2rem; }
+    .shelf-confirm__box p { margin: 0 0 1.1rem; font-size: 0.9rem; opacity: 0.8; line-height: 1.45; }
+    .shelf-confirm__row { display: flex; gap: 0.6rem; }
+    .shelf-confirm__row button { flex: 1; font: inherit; font-weight: 800; cursor: pointer;
+      border: 3px solid var(--ink, #111); padding: 0.6rem 0.5rem; }
+    .shelf-confirm__no { background: var(--paper, #faf6ee); color: var(--ink, #111); box-shadow: 3px 3px 0 var(--ink, #111); }
+    .shelf-confirm__yes { background: var(--hot, #ff4d6d); color: #fff; box-shadow: 3px 3px 0 var(--ink, #111); }
+    .shelf-confirm__row button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink, #111); }
+    .shelf-confirm__row button:focus-visible { outline: 3px solid var(--ink, #111); outline-offset: 2px; }
+  `;
+  document.head.appendChild(s);
+}
+function confirmBin(noun, onYes) {
+  ensureConfirmCss();
+  const ov = document.createElement('div');
+  ov.className = 'shelf-confirm';
+  ov.innerHTML = `
+    <div class="shelf-confirm__box" role="alertdialog" aria-modal="true" aria-labelledby="shelfConfirmTitle">
+      <span class="shelf-confirm__peel" aria-hidden="true">🍌</span>
+      <h3 id="shelfConfirmTitle">Toss this ${noun}?</h3>
+      <p>It leaves your shelf for good — there's no undo, on any device.</p>
+      <div class="shelf-confirm__row">
+        <button type="button" class="shelf-confirm__no">Keep it</button>
+        <button type="button" class="shelf-confirm__yes">Yes, bin it</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+  ov.querySelector('.shelf-confirm__no').addEventListener('click', close);
+  ov.querySelector('.shelf-confirm__yes').addEventListener('click', () => { close(); onYes(); });
+  ov.querySelector('.shelf-confirm__no').focus();
 }
 
 function outfitFrom(params) {
@@ -138,7 +211,11 @@ export async function renderShelf(host, { onPick, limit, kinds, emptyMsg } = {})
     x.textContent = '×';
     x.title = 'Take it off the shelf';
     x.setAttribute('aria-label', 'Remove from shelf');
-    x.onclick = (e) => { e.stopPropagation(); shelfRemove(c.id); renderShelf(host, { onPick, limit, kinds, emptyMsg }); };
+    x.onclick = (e) => {
+      e.stopPropagation();
+      const noun = c.kind === 'emoji' ? 'emote' : c.kind === 'wearable' ? 'item' : 'banana';
+      confirmBin(noun, () => { shelfRemove(c.id); renderShelf(host, { onPick, limit, kinds, emptyMsg }); });
+    };
     cell.appendChild(x);
     if (onPick) {
       cell.title = 'Bring this banana back';

@@ -129,10 +129,22 @@ function mergeBlob(oldB, newB) {
     created: Math.min(op.created || Date.now(), np.created || Date.now()),
     patches, stats, days,
   };
-  const seen = new Set();
-  out.shelf = [...(newB.shelf || []), ...(oldB.shelf || [])]
-    .filter((c) => c && c.params && !seen.has(c.params) && seen.add(c.params))
+  // shelf tombstones: union deletions (max ts), keep the newest copy per
+  // params, and drop anything tombstoned after it was made — so a delete on
+  // one device propagates instead of being resurrected by the union.
+  const del = { ...(oldB.shelfDel || {}) };
+  for (const [k, ts] of Object.entries(newB.shelfDel || {})) del[k] = Math.max(del[k] || 0, ts);
+  const byParams = new Map();
+  for (const c of [...(newB.shelf || []), ...(oldB.shelf || [])]) {
+    if (!c || !c.params) continue;
+    const ex = byParams.get(c.params);
+    if (!ex || (c.created || 0) > (ex.created || 0)) byParams.set(c.params, c);
+  }
+  out.shelf = [...byParams.values()]
+    .filter((c) => !(del[c.params] && (c.created || 0) <= del[c.params]))
+    .sort((a, b) => (b.created || 0) - (a.created || 0))
     .slice(0, 24);
+  out.shelfDel = Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200));
   if (oldB.glow === '1' || newB.glow === '1') out.glow = '1';
   if (!newB.bbLast && oldB.bbLast) out.bbLast = oldB.bbLast; // a fresh device must never erase the signature banana
   if (!newB.name && oldB.name) out.name = oldB.name; // …nor the name written on the pass

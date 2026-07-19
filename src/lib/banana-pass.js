@@ -31,9 +31,11 @@ export function collectBlob() {
   const g = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   let shelf = [];
   let bbLast = null;
+  let shelfDel = {};
   try { shelf = JSON.parse(g('shelf-v1') || '[]'); } catch (e) {}
   try { bbLast = JSON.parse(g('bb-last') || 'null'); } catch (e) {}
-  return { pass: read(), shelf, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '', name: (g('ps-name-v1') || '').slice(0, 24) };
+  try { const d = JSON.parse(g('shelf-del-v1') || '{}'); if (d && typeof d === 'object') shelfDel = d; } catch (e) {}
+  return { pass: read(), shelf, shelfDel, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '', name: (g('ps-name-v1') || '').slice(0, 24) };
 }
 
 let pushT = null;
@@ -71,11 +73,25 @@ export function applyBlob(blob) {
       created: Math.min(local.pass.created || Date.now(), (blob.pass && blob.pass.created) || Date.now()),
       patches, stats, days,
     }));
-    const seen = new Set();
-    const shelf = [...(blob.shelf || []), ...(local.shelf || [])]
-      .filter((c) => c && c.params && !seen.has(c.params) && seen.add(c.params))
+    // tombstones union (max ts) — a deleted shelf item stays deleted across
+    // devices; keep the newest copy per params, minus anything tombstoned after
+    // it was made (re-creating the same banana later beats its old tombstone)
+    let delLocal = {};
+    try { const d = JSON.parse(localStorage.getItem('shelf-del-v1') || '{}'); if (d && typeof d === 'object') delLocal = d; } catch (e) {}
+    const del = { ...delLocal };
+    for (const [k, ts] of Object.entries(blob.shelfDel || {})) del[k] = Math.max(del[k] || 0, ts);
+    const byParams = new Map();
+    for (const c of [...(blob.shelf || []), ...(local.shelf || [])]) {
+      if (!c || !c.params) continue;
+      const ex = byParams.get(c.params);
+      if (!ex || (c.created || 0) > (ex.created || 0)) byParams.set(c.params, c);
+    }
+    const shelf = [...byParams.values()]
+      .filter((c) => !(del[c.params] && (c.created || 0) <= del[c.params]))
+      .sort((a, b) => (b.created || 0) - (a.created || 0))
       .slice(0, 24);
     localStorage.setItem('shelf-v1', JSON.stringify(shelf));
+    localStorage.setItem('shelf-del-v1', JSON.stringify(Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200))));
     if (!local.bbLast && blob.bbLast) localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
     if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
     if (blob.name && !localStorage.getItem('ps-name-v1')) localStorage.setItem('ps-name-v1', String(blob.name).slice(0, 24));
