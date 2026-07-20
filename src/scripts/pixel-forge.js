@@ -1174,6 +1174,67 @@ function init() {
     track('forge_item_save', { anchor: c.anchor });
   };
 
+  // ---- 🎁 submit to the club: the item's journey into the catalog ----------
+  // POST the wear payload to worker-share's catalog inbox; the banana guy
+  // curates on his desk; the verdict comes back to the pass via cat-subs-v1
+  // (the gallery-submission pattern). Approved = a rave drop with your name.
+  const itemsSubmit = el('fgItemsSubmit');
+  if (itemsSubmit) itemsSubmit.onclick = () => {
+    const was = itemsSubmit.innerHTML; // icon buttons restore via innerHTML (doctrine)
+    if (!computeWear()) {
+      itemsSubmit.textContent = 'Draw an item first 🎨';
+      setTimeout(() => { itemsSubmit.innerHTML = was; }, 2000);
+      return;
+    }
+    const row = el('fgItemsSubRow');
+    row.hidden = !row.hidden;
+    if (!row.hidden) el('fgItemName').focus();
+  };
+  const itemSend = el('fgItemSend');
+  if (itemSend) itemSend.onclick = async () => {
+    const c = computeWear();
+    if (!c) return;
+    const title = el('fgItemName').value.trim().slice(0, 40);
+    const by = el('fgItemBy').value.trim().slice(0, 24);
+    if (!title) { el('fgItemName').placeholder = 'give it a name first 🍌'; el('fgItemName').focus(); return; }
+    itemSend.disabled = true;
+    const label = itemSend.textContent;
+    itemSend.textContent = 'Sending…';
+    const sid = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');
+    try {
+      const res = await fetch('https://banana-share.trymstene.workers.dev/catalog/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title, by, sid,
+          wear: { forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale },
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.ok) {
+        try { // the pass polls this record for the verdict (gallery pattern)
+          const subs = JSON.parse(localStorage.getItem('cat-subs-v1') || '[]');
+          subs.unshift({ sid, title, at: Date.now(), status: 'pending' });
+          localStorage.setItem('cat-subs-v1', JSON.stringify(subs.slice(0, 20)));
+        } catch (e) {}
+        el('fgItemsSubRow').hidden = true;
+        el('fgItemsSubDone').hidden = false;
+        track('forge_item_submit', { anchor: c.anchor });
+      } else if (res.status === 429) {
+        itemSend.textContent = 'easy there — try later';
+        setTimeout(() => { itemSend.textContent = label; }, 2500);
+      } else {
+        itemSend.textContent = d.error || 'didn’t go through — try again';
+        setTimeout(() => { itemSend.textContent = label; }, 2500);
+      }
+    } catch (e) {
+      itemSend.textContent = 'didn’t go through — try again';
+      setTimeout(() => { itemSend.textContent = label; }, 2500);
+    }
+    itemSend.disabled = false;
+    if (el('fgItemsSubDone') && !el('fgItemsSubDone').hidden) itemSend.textContent = label;
+  };
+
   // ---- boot ----
   const pickId = new URLSearchParams(location.search).get('shelf');
   const pickedAny = pickId ? shelfList().find((c) => c.id === pickId) : null;

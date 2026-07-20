@@ -756,14 +756,13 @@ async function handleCatalogModerate(request, env, url) {
   if (!metaObj) return json({ error: 'not found' }, 404, cors);
   const meta = await metaObj.json();
 
-  // verdicts ledger — the submitter's pass polls /catalog/status with its sid
+  // verdict — ONE object PER sid (no shared-file read-modify-write: a fast
+  // reject racing a slower approve lost the approve's verdict in testing;
+  // per-key puts can't clobber each other). The pass polls /catalog/status.
   const putVerdict = async (s, itemId) => {
     if (!meta.sid) return;
-    const vObj = await env.SHARES.get('catalog/verdicts.json');
-    let list = [];
-    if (vObj) { try { list = await vObj.json(); } catch (e) {} }
-    list.unshift({ sid: meta.sid, s, item: itemId || '', at: Date.now() });
-    await env.SHARES.put('catalog/verdicts.json', JSON.stringify(list.slice(0, 500)),
+    await env.SHARES.put('catalog-verdict/' + meta.sid,
+      JSON.stringify({ s, item: itemId || '', at: Date.now() }),
       { httpMetadata: { contentType: 'application/json' } });
   };
 
@@ -811,13 +810,10 @@ async function handleCatalogStatus(env, url) {
   const ids = String(url.searchParams.get('ids') || '')
     .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s)).slice(0, 20);
   const out = {};
-  if (ids.length) {
-    const obj = await env.SHARES.get('catalog/verdicts.json');
-    let list = [];
-    if (obj) { try { list = await obj.json(); } catch (e) {} }
-    for (const v of list) {
-      if (ids.includes(v.sid) && !(v.sid in out)) out[v.sid] = { s: v.s, item: v.item || '' };
-    }
+  for (const sid of ids) {
+    const obj = await env.SHARES.get('catalog-verdict/' + sid);
+    if (!obj) continue;
+    try { const v = await obj.json(); out[sid] = { s: v.s, item: v.item || '' }; } catch (e) {}
   }
   return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
 }

@@ -3,7 +3,7 @@
 // stats and hosts the Shelf in its true home. CLIENT-ONLY.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
@@ -105,6 +105,7 @@ async function init() {
   // about YOUR stuff). Renders only when there is something to say. —
   renderNotices();
   checkGalleryVerdicts({ force: true }).then(renderNotices);
+  checkCatalogVerdicts({ force: true }).then(renderNotices);
   setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
 
   // — patches: light the earned, pin the first few to the card —
@@ -399,17 +400,23 @@ function renderNotices() {
   const sec = el('psNoticesSec');
   if (!sec) return;
   const list = passNotices();
-  let pend = 0;
+  let pend = 0, catPend = 0;
   try {
     pend = (JSON.parse(localStorage.getItem('gal-subs-v1') || '[]') || [])
       .filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000).length;
   } catch (e) {}
-  if (!list.length && !pend) { sec.hidden = true; return; }
+  try {
+    catPend = (JSON.parse(localStorage.getItem('cat-subs-v1') || '[]') || [])
+      .filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000).length;
+  } catch (e) {}
+  if (!list.length && !pend && !catPend) { sec.hidden = true; return; }
   sec.hidden = false;
   const fmt = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   el('psNotices').innerHTML =
     (pend ? '<p class="ps-pendingline">⏳ ' + pend + (pend === 1 ? ' banana is' : ' bananas are')
       + ' with the banana guy for review — the verdict usually lands within 48 hours.</p>' : '')
+    + (catPend ? '<p class="ps-pendingline">🎁 ' + catPend + (catPend === 1 ? ' item is' : ' items are')
+      + ' with the club for review — approved items become rave drops.</p>' : '')
     + list.map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
       + '<span class="ps-notice__icon">' + n.icon + '</span>'
       + '<div class="ps-notice__body">' + n.text

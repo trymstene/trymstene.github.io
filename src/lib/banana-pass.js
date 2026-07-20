@@ -239,9 +239,60 @@ export async function checkGalleryVerdicts(opts = {}) {
   } catch (e) { /* offline is fine — next visit asks again */ }
 }
 
+// ---- 🎁 item-catalog submission verdicts -> notices ---------------------
+// The forge stores {sid, title, at} per club submission in cat-subs-v1; same
+// throttled polling pattern as the gallery verdicts above.
+const CAT_SUBS_KEY = 'cat-subs-v1';
+
+export async function checkCatalogVerdicts(opts = {}) {
+  let subs;
+  try { subs = JSON.parse(localStorage.getItem(CAT_SUBS_KEY) || '[]'); } catch (e) { return; }
+  if (!Array.isArray(subs)) return;
+  const open = subs.filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000);
+  if (!open.length) return;
+  try {
+    const last = parseInt(localStorage.getItem('cat-check-at') || '0', 10) || 0;
+    if (!opts.force && Date.now() - last < 6 * 3600000) return;
+    localStorage.setItem('cat-check-at', String(Date.now()));
+  } catch (e) {}
+  try {
+    const r = await fetch(SHARE_API + '/catalog/status?ids=' + open.map((s) => s.sid).join(','));
+    if (!r.ok) return;
+    const verdicts = await r.json();
+    const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let changed = false;
+    for (const s of subs) {
+      const v = verdicts[s.sid];
+      if (!v || s.status !== 'pending') continue;
+      s.status = v.s === 'ok' ? 'approved' : 'rejected';
+      changed = true;
+      const title = esc(s.title) || 'Your item';
+      if (v.s === 'ok') {
+        passNoticeAdd({
+          id: 'cat-' + s.sid,
+          icon: '🎁',
+          text: '<b>“' + title + '” made the catalog!</b> It’ll drop on the rave floor — with your name riding it.',
+          link: '/rave/',
+        });
+      } else {
+        passNoticeAdd({
+          id: 'cat-' + s.sid,
+          icon: '🔧',
+          text: '<b>“' + title + '”</b> didn’t make the catalog this time — the club hangs only a few. Back to the workshop!',
+          link: '/forge/',
+        });
+      }
+    }
+    if (changed) {
+      try { localStorage.setItem(CAT_SUBS_KEY, JSON.stringify(subs.slice(0, 20))); } catch (e) {}
+    }
+  } catch (e) { /* offline is fine — next visit asks again */ }
+}
+
 // ambient verdict check: any page that loads the pass lib (builder, rave,
 // pass…) quietly resolves pending submissions so the nav dot can light up
 checkGalleryVerdicts();
+checkCatalogVerdicts();
 
 // the one toast pattern for pass moments, shared by every page
 let toastT = null;

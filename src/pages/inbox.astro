@@ -146,6 +146,7 @@ const description = 'Authorized banana personnel only.';
         <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">✉ Mail room</button>
         <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery inbox<span class="bm-badge" id="bmGalBadge" hidden></span></button>
         <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">🪩 Rave names</button>
+        <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Item drops<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
       </div>
 
       <div id="bmPaneMail">
@@ -214,6 +215,19 @@ const description = 'Authorized banana personnel only.';
         <div id="bmRaveList"><p class="bm-livenote">Press refresh to load the ledger.</p></div>
       </div>
 
+      <!-- 🎁 ITEM DROPS — the ownership-stack curation desk: forge-made
+           wearables submitted to the club. Approve = it enters the catalog and
+           becomes a rave drop with the maker's name riding it. -->
+      <div id="bmPaneItems" hidden>
+        <div class="bm-bar"><span class="bm-count" id="bmItemsCount"></span>
+          <button class="bm-chip" id="bmItemsRefresh" type="button">↻ refresh</button></div>
+        <p class="bm-livenote">Submitted items previewed ON the banana. Approve = into the catalog → it drops at the rave,
+          the maker's name rides it. The catalog list below shows what's live — retire anything that's run its course.</p>
+        <div id="bmItemsList"><p class="bm-livenote">Loading…</p></div>
+        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">📦 In the catalog</h3>
+        <div id="bmCatList"><p class="bm-livenote">Loading…</p></div>
+      </div>
+
       <p class="bm-fine">
         BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
         Unauthorized peeling is prohibited and punishable by dance-off.<br>
@@ -228,6 +242,8 @@ const description = 'Authorized banana personnel only.';
     import editorialBase from '../data/gallery.json';
     import { parseDesign } from '../lib/sticker-core.js';
     import { memeGif } from '../lib/meme-gif.js';
+    import { drawComposite, assetsReady } from '../lib/banana-engine.js';
+    import { wearToCustom } from '../lib/wear-render.js';
 
     const API = new URLSearchParams(location.search).get('api') || 'https://banana-contact.trymstene.workers.dev';
     const READ_KEY = 'inbox-read-v1';
@@ -486,19 +502,134 @@ const description = 'Authorized banana personnel only.';
     try { gkey = localStorage.getItem('gallery-key') || ''; } catch (e) {}
     let galItems = null; // null = not loaded yet
 
-    function setTab(which) { // 'mail' | 'gal' | 'rave'
+    function setTab(which) { // 'mail' | 'gal' | 'rave' | 'items'
       el('bmTabMail').setAttribute('aria-selected', String(which === 'mail'));
       el('bmTabGal').setAttribute('aria-selected', String(which === 'gal'));
       el('bmTabRave').setAttribute('aria-selected', String(which === 'rave'));
+      el('bmTabItems').setAttribute('aria-selected', String(which === 'items'));
       el('bmPaneMail').hidden = which !== 'mail';
       el('bmPaneGal').hidden = which !== 'gal';
       el('bmPaneRave').hidden = which !== 'rave';
+      el('bmPaneItems').hidden = which !== 'items';
       if (which === 'gal') galBoot();
       if (which === 'rave') raveLoad();
+      if (which === 'items') itemsLoad();
     }
     el('bmTabMail').onclick = () => setTab('mail');
     el('bmTabGal').onclick = () => setTab('gal');
     el('bmTabRave').onclick = () => setTab('rave');
+    el('bmTabItems').onclick = () => setTab('items');
+
+    // ── 🎁 THE ITEM DROPS DESK — the ownership-stack curation gate ──
+    // Shares the gallery key. Pending items render ON a dancing banana (the
+    // engine's custom channel), approve/reject hit /catalog/moderate; the
+    // live-catalog list below supports retiring items.
+    const CAT_API = 'https://banana-share.trymstene.workers.dev';
+    function itemCard(it, { live } = {}) {
+      const card = document.createElement('article');
+      card.className = 'bm-mail';
+      const body = document.createElement('div');
+      body.style.cssText = 'display:flex;gap:0.9rem;padding:0.8rem;flex-wrap:wrap;align-items:center;';
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 220;
+      cv.style.cssText = 'width:130px;height:130px;image-rendering:pixelated;flex:none;background:#f4f1e8;border:3px solid var(--ink);';
+      const custom = wearToCustom(it.wear);
+      assetsReady().then(() => {
+        drawComposite(cv.getContext('2d'), 220, 2, {
+          hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
+          bg: 'transparent', captions: false, effect: 'none', custom: custom || undefined,
+        });
+      });
+      const meta = document.createElement('div');
+      meta.style.cssText = 'flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.4rem;';
+      const titleIn = document.createElement('input');
+      titleIn.value = it.title || '';
+      titleIn.placeholder = 'item name';
+      titleIn.maxLength = 40;
+      titleIn.style.cssText = 'font:inherit;font-weight:800;padding:0.35rem 0.5rem;border:3px solid var(--ink);';
+      const byIn = document.createElement('input');
+      byIn.value = it.by || '';
+      byIn.placeholder = 'maker credit (optional)';
+      byIn.maxLength = 24;
+      byIn.style.cssText = 'font:inherit;padding:0.35rem 0.5rem;border:3px solid var(--ink);';
+      const info = document.createElement('p');
+      info.className = 'bm-livenote';
+      info.style.margin = '0';
+      info.textContent = (live ? 'live since ' : 'rides the ' + (it.wear && it.wear.anchor === 'hand' ? (it.wear.hand || '') + ' hand' : (it.wear && it.wear.anchor) || '?') + ' · sent ')
+        + new Date(it.added || it.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;';
+      const mod = async (payload, btn) => {
+        btn.disabled = true;
+        try {
+          const r = await fetch(CAT_API + '/catalog/moderate?key=' + encodeURIComponent(gkey), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (d.ok) { card.remove(); itemsCount(); return; }
+          btn.textContent = d.error || 'failed'; btn.disabled = false;
+        } catch (e) { btn.textContent = 'failed — retry'; btn.disabled = false; }
+      };
+      if (live) {
+        const retire = document.createElement('button');
+        retire.className = 'bm-btn bm-btn--shred';
+        retire.type = 'button';
+        retire.textContent = '📦 retire from catalog';
+        retire.onclick = () => {
+          if (retire.dataset.arm !== '1') { retire.dataset.arm = '1'; retire.textContent = '⚠ retire, really?'; setTimeout(() => { retire.dataset.arm = ''; retire.textContent = '📦 retire from catalog'; }, 3000); return; }
+          mod({ id: it.id, action: 'remove' }, retire);
+        };
+        titleIn.disabled = true; byIn.disabled = true;
+        row.appendChild(retire);
+      } else {
+        const ok = document.createElement('button');
+        ok.className = 'bm-btn';
+        ok.type = 'button';
+        ok.textContent = '✓ into the catalog';
+        ok.onclick = () => mod({ id: it.id, action: 'ok', title: titleIn.value.trim(), by: byIn.value.trim() }, ok);
+        const no = document.createElement('button');
+        no.className = 'bm-btn bm-btn--shred';
+        no.type = 'button';
+        no.textContent = '✕ not this one';
+        no.onclick = () => mod({ id: it.id, action: 'no' }, no);
+        row.appendChild(ok); row.appendChild(no);
+      }
+      meta.appendChild(titleIn); meta.appendChild(byIn); meta.appendChild(info); meta.appendChild(row);
+      body.appendChild(cv); body.appendChild(meta);
+      card.appendChild(body);
+      return card;
+    }
+    function itemsCount() {
+      const n = el('bmItemsList').querySelectorAll('article').length;
+      el('bmItemsCount').textContent = '🎁 ' + n + ' item' + (n === 1 ? '' : 's') + ' awaiting review';
+      const b = el('bmItemsBadge');
+      if (b) { b.hidden = n === 0; b.textContent = n; }
+    }
+    async function itemsLoad() {
+      if (!gkey) {
+        el('bmItemsList').innerHTML = '<p class="bm-livenote">Unlock the gallery desk first — this desk shares its key.</p>';
+        el('bmCatList').innerHTML = '';
+        return;
+      }
+      el('bmItemsList').innerHTML = '<p class="bm-livenote">Opening the workshop…</p>';
+      try {
+        const r = await fetch(CAT_API + '/catalog/inbox?key=' + encodeURIComponent(gkey));
+        if (!r.ok) throw new Error(r.status);
+        const items = await r.json();
+        el('bmItemsList').textContent = '';
+        if (!items.length) el('bmItemsList').innerHTML = '<p class="bm-livenote">🏝 No items waiting. The workshops are quiet.</p>';
+        items.forEach((it) => el('bmItemsList').appendChild(itemCard(it)));
+        itemsCount();
+      } catch (e) { el('bmItemsList').innerHTML = '<p class="bm-livenote">Couldn’t open the inbox — try refresh.</p>'; }
+      try {
+        const r2 = await fetch(CAT_API + '/catalog/items.json', { cache: 'reload' });
+        const cat = await r2.json();
+        el('bmCatList').textContent = '';
+        if (!cat.length) el('bmCatList').innerHTML = '<p class="bm-livenote">Nothing in the catalog yet — approve something above, or submit from the Forge.</p>';
+        cat.forEach((it) => el('bmCatList').appendChild(itemCard(it, { live: true })));
+      } catch (e) { el('bmCatList').innerHTML = '<p class="bm-livenote">Couldn’t read the catalog.</p>'; }
+    }
+    el('bmItemsRefresh').onclick = itemsLoad;
 
     // ── 🪩 THE RAVE NAMES DESK — Trym's quick swipe on floor names ──
     // Uses the SAME key value as the gallery desk (set RAVE_KEY on worker-rave
@@ -844,6 +975,12 @@ const description = 'Authorized banana personnel only.';
 
     // preload the badge so the tab shows the pending count on arrival
     if (gkey) galLoad().then((ok) => { if (ok) galBadge(); }).catch(() => {});
+    if (gkey) { // 🎁 badge: pending item submissions at a glance
+      fetch(CAT_API + '/catalog/inbox?key=' + encodeURIComponent(gkey))
+        .then((r) => (r.ok ? r.json() : []))
+        .then((items) => { const b = el('bmItemsBadge'); if (b && items.length) { b.hidden = false; b.textContent = items.length; } })
+        .catch(() => {});
+    }
 
     boot();
   </script>

@@ -14,4 +14,4 @@ binding = "SHARES"
 bucket_name = "banana-shares"
 
 [vars]
-ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803,http://localhost:8802"

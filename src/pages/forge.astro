@@ -401,8 +401,15 @@ const faqLD = {
         <div class="fg-itemsonly fg-itemsbar">
           <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play the dance</button>
           <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
+          <button class="btn btn--light" id="fgItemsSubmit" title="Send it to the banana guy — approved items drop at the rave with your name on them"><PixelArtIcon name="upload" size="18px" /> Submit to the club</button>
           <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over"><PixelArtIcon name="eraser" size="18px" /> Clear &amp; start over</button>
-          <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>. Submitting items for review is coming next.</div>
+          <div class="fg-signrow" id="fgItemsSubRow" hidden>
+            <input id="fgItemName" maxlength="40" placeholder="name your item — e.g. Wizard Hat" aria-label="Item name">
+            <input id="fgItemBy" maxlength="24" placeholder="your name — optional" aria-label="Your name (optional)">
+            <button class="btn btn--dark" id="fgItemSend">Send it in</button>
+          </div>
+          <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>.</div>
+          <div id="fgItemsSubDone" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved items become <b>rave drops</b> with your name riding them.</div>
         </div>
       </div>
 
