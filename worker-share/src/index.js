@@ -96,6 +96,14 @@ export default {
       if (url.pathname === '/gallery/approved') return handleGalleryApproved(env);
       if (url.pathname === '/gallery/overrides') return handleGalleryOverrides(env);
       if (url.pathname.startsWith('/gallery/gif/')) return handleGalleryGif(env, url);
+      // 🎁 THE ITEM CATALOG (ownership stack phase 4): forge-made wearables
+      // travel submit → curate → catalog → rave drop. Same trust model as the
+      // gallery: Origin+throttle at the door, WALL_KEY for curation, human gate.
+      if (url.pathname === '/catalog/submit') return handleCatalogSubmit(request, env, url);
+      if (url.pathname === '/catalog/inbox') return handleCatalogInbox(request, env, url);
+      if (url.pathname === '/catalog/moderate') return handleCatalogModerate(request, env, url);
+      if (url.pathname === '/catalog/items.json') return handleCatalogItems(env);
+      if (url.pathname === '/catalog/status') return handleCatalogStatus(env, url);
       if (url.pathname === '/health') return handleHealth(env);
       return json({ error: 'not found' }, 404);
     } catch (e) {
@@ -655,6 +663,163 @@ async function handleGalleryGif(env, url) {
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
+}
+
+// ═══════════ 🎁 THE ITEM CATALOG (ownership stack phase 4) ═══════════
+// A forge wearable's journey: submit (below) → Trym curates (inbox/moderate)
+// → catalog/items.json (the ONE manifest the rave/builder/pass read) → it
+// drops on the rave floor with the maker's name riding it.
+
+// a submitted wear payload must be structurally sane before storage — the
+// renderer side (forgeParse) does the deep validation at draw time
+function wearOk(w) {
+  if (!w || typeof w !== 'object') return false;
+  if (typeof w.forge !== 'string' || !w.forge || w.forge.length > 40000) return false;
+  if (!['head', 'face', 'chest', 'hand', 'feet'].includes(w.anchor)) return false;
+  if (w.hand !== undefined && !['left', 'right'].includes(w.hand)) return false;
+  for (const k of ['ox', 'oy', 'scale']) {
+    if (typeof w[k] !== 'number' || !isFinite(w[k])) return false;
+  }
+  if (Math.abs(w.ox) > 400 || Math.abs(w.oy) > 400 || w.scale <= 0 || w.scale > 20) return false;
+  return true;
+}
+
+// ---------- POST /catalog/submit — a wearable into the inbox ----------
+async function handleCatalogSubmit(request, env, url) {
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+  if (!allowed.includes(request.headers.get('Origin') || '')) return json({ error: 'forbidden' }, 403);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (throttled(ip)) return json({ error: 'slow down' }, 429, cors);
+  const len = parseInt(request.headers.get('Content-Length') || '0', 10);
+  if (!len || len > 64 * 1024) return json({ error: 'too large' }, 413, cors);
+
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
+  const clean = (s, n) => String(s || '').split('').filter((ch) => { const k = ch.charCodeAt(0); return k >= 32 && k !== 127; }).join('').trim().slice(0, n);
+  const title = clean(body.title, 40);
+  const by = clean(body.by, 24);
+  if (dirty(title) || dirty(by)) return json({ error: 'family friendly only 🍌' }, 400, cors);
+  if (!wearOk(body.wear)) return json({ error: 'bad item' }, 400, cors);
+  const sid = /^[a-z0-9]{8,32}$/.test(body.sid || '') ? body.sid : '';
+
+  const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+  await env.SHARES.put(`catalog-inbox/${id}.json`,
+    JSON.stringify({ title, by, sid, wear: body.wear, created: Date.now() }),
+    { httpMetadata: { contentType: 'application/json' } });
+  return json({ ok: true, id }, 200, cors);
+}
+
+// ---------- GET /catalog/inbox?key= — pending submissions (curation) ----------
+async function handleCatalogInbox(request, env, url) {
+  const cors = corsHeaders(env, request);
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403, cors);
+  const list = await env.SHARES.list({ prefix: 'catalog-inbox/', limit: 200 });
+  const items = [];
+  for (const o of list.objects) {
+    if (!o.key.endsWith('.json')) continue;
+    const obj = await env.SHARES.get(o.key);
+    if (!obj) continue;
+    try { items.push({ id: o.key.slice('catalog-inbox/'.length, -'.json'.length), ...(await obj.json()) }); } catch (e) {}
+  }
+  items.sort((a, b) => a.created - b.created);
+  return json(items, 200, { ...cors, 'Cache-Control': 'no-store' });
+}
+
+// ---------- POST /catalog/moderate?key= {id, action, title?, by?} ----------
+async function handleCatalogModerate(request, env, url) {
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403, cors);
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
+  const id = String(b.id || '');
+
+  // 'remove' retires a LIVE catalog item (curation includes un-cataloguing —
+  // the inbox record is long gone by then, so handle before the inbox fetch)
+  if (b.action === 'remove') {
+    if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
+    const idxObj = await env.SHARES.get('catalog/items.json');
+    let items = [];
+    if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
+    const before = items.length;
+    items = items.filter((x) => x.id !== id);
+    await env.SHARES.put('catalog/items.json', JSON.stringify(items),
+      { httpMetadata: { contentType: 'application/json' } });
+    return json({ ok: true, removed: before - items.length }, 200, cors);
+  }
+
+  if (!/^[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
+  const metaObj = await env.SHARES.get(`catalog-inbox/${id}.json`);
+  if (!metaObj) return json({ error: 'not found' }, 404, cors);
+  const meta = await metaObj.json();
+
+  // verdicts ledger — the submitter's pass polls /catalog/status with its sid
+  const putVerdict = async (s, itemId) => {
+    if (!meta.sid) return;
+    const vObj = await env.SHARES.get('catalog/verdicts.json');
+    let list = [];
+    if (vObj) { try { list = await vObj.json(); } catch (e) {} }
+    list.unshift({ sid: meta.sid, s, item: itemId || '', at: Date.now() });
+    await env.SHARES.put('catalog/verdicts.json', JSON.stringify(list.slice(0, 500)),
+      { httpMetadata: { contentType: 'application/json' } });
+  };
+
+  if (b.action === 'no') {
+    await putVerdict('no');
+    await env.SHARES.delete(`catalog-inbox/${id}.json`);
+    return json({ ok: true }, 200, cors);
+  }
+  if (b.action !== 'ok') return json({ error: 'bad action' }, 400, cors);
+
+  const clean = (s, n) => String(s || '').split('').filter((ch) => { const k = ch.charCodeAt(0); return k >= 32 && k !== 127; }).join('').trim().slice(0, n);
+  const title = clean(b.title || meta.title, 40) || 'community item';
+  const by = clean(b.by !== undefined ? b.by : meta.by, 24);
+  if (dirty(title) || dirty(by)) return json({ error: 'family friendly only 🍌' }, 400, cors);
+
+  const idxObj = await env.SHARES.get('catalog/items.json');
+  let items = [];
+  if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
+  const itemId = 'c_' + id; // catalog ids are namespaced — never collide with curated wearables.js ids
+  items = items.filter((x) => x.id !== itemId);
+  items.push({ id: itemId, title, by, wear: meta.wear, added: Date.now() });
+  await env.SHARES.put('catalog/items.json', JSON.stringify(items),
+    { httpMetadata: { contentType: 'application/json' } });
+  await putVerdict('ok', itemId);
+  await env.SHARES.delete(`catalog-inbox/${id}.json`);
+  return json({ ok: true, id: itemId }, 200, cors);
+}
+
+// ---------- GET /catalog/items.json — THE public manifest ----------
+// Short cache: drops change on curation, clients (rave/builder/pass) refetch
+// within 5 min. This file is the single source every surface reads.
+async function handleCatalogItems(env) {
+  const obj = await env.SHARES.get('catalog/items.json');
+  return new Response(obj ? obj.body : '[]', {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=300',
+    },
+  });
+}
+
+// ---------- GET /catalog/status?ids= — sid → verdict (pass notices) ----------
+async function handleCatalogStatus(env, url) {
+  const ids = String(url.searchParams.get('ids') || '')
+    .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s)).slice(0, 20);
+  const out = {};
+  if (ids.length) {
+    const obj = await env.SHARES.get('catalog/verdicts.json');
+    let list = [];
+    if (obj) { try { list = await obj.json(); } catch (e) {} }
+    for (const v of list) {
+      if (ids.includes(v.sid) && !(v.sid in out)) out[v.sid] = { s: v.s, item: v.item || '' };
+    }
+  }
+  return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
 }
 
 // ---------- GET /health ----------
