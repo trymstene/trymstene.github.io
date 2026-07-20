@@ -450,19 +450,27 @@ function drawComposite(ctx, W, idx, o) {
   // 🍌 RUNTIME CUSTOM accessory (the Forge's wearable mode): a user-drawn sprite
   // (raw SVG string via forgeGridToSVG) rendered at a chosen anchor. This is the
   // ONE runtime channel into the catalog's world — everything else is build-time
-  // constants. Same anchor math as the built-in accessories; no per-frame side
-  // art (community sprites are single-view), so it rides but doesn't turn.
+  // constants. Same anchor math as the built-in accessories. Community sprites
+  // are single-view, so on turned-away frames the art MIRRORS like a real
+  // object (a gun drawn pointing outward keeps pointing outward when the
+  // banana turns) — the built-ins' F.face==='left' flip rule, no creator work.
   if (o.custom && o.custom.art) {
     // WYSIWYG placement: the item's TOP-LEFT sits at (anchor point + the offset
     // captured when it was drawn). The anchor moves per frame → the item rides
     // it. ox/oy are in sprite UNITS (PX-scaled). s scales the sprite to match
-    // the size it was drawn at.
+    // the size it was drawn at. When mirroring, the offset mirrors AROUND the
+    // anchor with the art (so it's still held, not just flipped in place).
+    // c.mirror = a future loadout seating the item in the opposite glove —
+    // XORs with the frame flip so opposite-hand + turned-frame cancels out.
     const c = o.custom, key = c.art, s = c.scale || 1;
     const cw = gridW(key) * unit * s, ch = gridH(key) * unit * s;
     const ap = wearAnchor(idx, c.anchor, c.hand);
-    const px = fx + ap.x * scale + (c.ox || 0) * unit;
+    const flip = (F.face === 'left') !== !!c.mirror;
+    const px = flip
+      ? fx + ap.x * scale - ((c.ox || 0) * unit + cw)
+      : fx + ap.x * scale + (c.ox || 0) * unit;
     const py = fy + ap.y * scale + (c.oy || 0) * unit;
-    drawAcc(bctx, key, px, py, cw, ch, false);
+    drawAcc(bctx, key, px, py, cw, ch, flip);
   }
   bctx.filter = 'none';
   bctx.restore();
