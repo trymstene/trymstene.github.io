@@ -276,6 +276,11 @@ const faqLD = {
       flex: 1; min-width: 0; padding: 0.55rem 0.7rem; border: 3px solid var(--ink);
       font-family: inherit; font-size: 0.95rem; background: var(--paper); border-radius: 2px;
     }
+    /* the ITEMS submit row: two inputs + a no-wrap button can never share the
+       300px side panel (the Wall row fits because it has ONE input) — stack it
+       like the rest of the items bar */
+    #fgItemsSubRow { flex-direction: column; }
+    #fgItemsSubRow input { flex: none; width: 100%; box-sizing: border-box; }
     #fgDone { margin-top: 0.8rem; border: 3px solid var(--ink); background: var(--banana); padding: 0.7rem 0.9rem; font-size: 0.9rem; }
     #fgDone a { font-weight: 700; }
 
