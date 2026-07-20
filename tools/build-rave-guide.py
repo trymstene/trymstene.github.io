@@ -62,6 +62,11 @@ for name in ['vinyl', 'goldbanana', 'broom', 'glowstick', 'beer']:
     raster(ogc.SVGS[name], target_h=120).save(os.path.join(OUT, name + '.png'), optimize=True)
     print('wrote', name + '.png')
 
+# tonight's drop card — the DJ headphones stand in for whatever item is
+# floating tonight (curated or community-made, the card explains both)
+raster(ogc.SVGS['djheadphones'], target_h=100).save(os.path.join(OUT, 'gift.png'), optimize=True)
+print('wrote gift.png')
+
 # Barty: frame 4 (left-facing) + bow tie + moustache, engine-exact
 barty = ogc.render_banana(4, bowtie=True)
 F = ogc.FRAMES[4]

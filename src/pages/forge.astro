@@ -36,6 +36,8 @@ const FAQ = [
     a: 'Yes. Import any GIF and it lands on the grid frame by frame, ready to redraw — including the original 1999 Dancing Banana, which is one click away.' },
   { q: 'Do I need an account or an app?',
     a: 'No. It runs entirely in your browser — nothing to install, no sign-up, no watermark. Finished pieces land on your Banana Pass so you can come back to them.' },
+  { q: 'What is the Items Workshop?',
+    a: 'The Forge’s second mode: draw a wearable item directly on the dancing banana — a hat, a sword, a rubber duck — and submit it to the banana club. Approved items become drops at the live rave: another visitor catches yours, wears it everywhere, and your name rides along as the maker.' },
   { q: 'Why pixel art for emotes?',
     a: 'Emotes render at 28–32 pixels in chat, where fine detail turns to mush. Pixel art drawn on a small grid stays crisp and readable — the same reason the 1999 Dancing Banana still works everywhere.' },
 ];
@@ -300,9 +302,14 @@ const faqLD = {
   <div class="fg-wrap">
     <div class="fg-head">
       <h1>the pixel forge — free emoji, emote &amp; GIF maker</h1>
-      <p>
+      <p class="fg-emojionly">
         In 1999 I drew a dancing banana in a tool about this simple — and it took over the internet.
         Here's that tool, rebuilt. Pencil, fill, frames, one great palette. <strong>Make the next one.</strong>
+      </p>
+      <p class="fg-itemsonly">
+        The banana runs <a href="/rave/">a club</a> — and the club takes submissions. <strong>Draw an item
+        right on him</strong> — a hat, a sword, a rubber duck — and send it in. If it makes the cut, it
+        becomes a rave drop: strangers catch it, wear it, dance in it, and <strong>your name rides it</strong> the whole way.
       </p>
     </div>
 
@@ -433,6 +440,16 @@ const faqLD = {
       </div>
       </div>
     </div>
+
+    <section class="fg-steps fg-itemsonly" aria-label="How the Items Workshop works">
+      <h2>How an item becomes a drop</h2>
+      <div class="fg-stepgrid">
+        <div class="fg-step"><b>1</b><span><strong>Draw it on him</strong> — the banana's already on the canvas. Where you draw is where it rides: head, hand, feet, wherever.</span></div>
+        <div class="fg-step"><b>2</b><span><strong>Play the dance</strong> — hit ▶ and watch him boogie wearing it. If it looks good mid-dance, it's good.</span></div>
+        <div class="fg-step"><b>3</b><span><strong>Submit to the club</strong> — name it, sign it, send it to the banana guy. The verdict lands on <a href="/pass/">your pass</a>.</span></div>
+        <div class="fg-step"><b>4</b><span><strong>It drops at <a href="/rave/">the rave</a></strong> — approved items float onto the floor. Whoever catches yours wears it everywhere, with your name riding along.</span></div>
+      </div>
+    </section>
 
     <section class="fg-story">
       <h2>An emoji maker that respects the pixel</h2>

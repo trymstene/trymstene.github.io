@@ -39,7 +39,8 @@ const SCREEN_MSGS = [
   'PEEL RESPONSIBLY.',
 ];
 const SCREEN_ADS = [
-  { id: 'forge',   text: 'MAKE YOUR OWN EMOTE',          cta: 'the pixel forge →',      href: '/pixel-emoji-forge/' },
+  { id: 'forge',   text: 'MAKE YOUR OWN EMOTE',          cta: 'the pixel forge →',      href: '/forge/' },
+  { id: 'items',   text: 'DRAW THE NEXT DROP',           cta: 'the items workshop →',   href: '/forge/' },
   { id: 'sticker', text: 'PUT YOUR BANANA ON A STICKER', cta: 'make-a-banana →',         href: '/make-a-banana/' },
   { id: 'pass',    text: 'CLAIM YOUR BANANA PASS',       cta: 'badges · gear · stats →', href: '/pass/' },
   { id: 'shop',    text: 'OFFICIAL BANANA MERCH',        cta: 'the shop →',              href: '/shop/' },
