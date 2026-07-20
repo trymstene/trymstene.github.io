@@ -155,6 +155,17 @@ const description = 'Authorized banana personnel only.';
           <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button>
         </div>
         <div id="bmList"></div>
+        <!-- 🗑 the spam quarantine — raw data for the once-in-a-while inspect,
+             never part of the daily mail. Lazy-loaded on first open. -->
+        <div style="margin-top:1.2rem;">
+          <button class="bm-chip bm-chip--ghost" id="bmSpamToggle" type="button">🗑 spam quarantine</button>
+          <div id="bmSpamPane" hidden>
+            <p class="bm-livenote">Messages the gates caught (fake “✓ sent” shown to the sender, raw data held here
+              30 days, newest 300). The tag says which trap fired — <b>honeypot</b> with a real-looking name/email
+              usually means a human’s autofill tripped it.</p>
+            <div id="bmSpamList"></div>
+          </div>
+        </div>
       </div>
 
       <div id="bmPaneGal" hidden>
@@ -344,6 +355,79 @@ const description = 'Authorized banana personnel only.';
       mails = await r.json();
       return true;
     }
+
+    // ---- 🗑 the spam quarantine: lazy-loaded raw data, inspected once in a
+    // while — reason tag says which gate fired (honeypot / too-fast / bad-origin)
+    let spamLoaded = false;
+    async function renderSpam() {
+      const list = el('bmSpamList');
+      list.textContent = 'opening the bin…';
+      let items = [];
+      try { items = await (await fetch(API + '/spam?token=' + encodeURIComponent(token))).json(); }
+      catch (e) { list.textContent = 'couldn’t open the bin — try again.'; return; }
+      list.textContent = '';
+      if (!items.length) {
+        list.innerHTML = '<p class="bm-livenote">🗑 the bin is empty — no gate has fired since the quarantine went live.</p>';
+        return;
+      }
+      items.forEach((m) => {
+        const card = document.createElement('article');
+        card.className = 'bm-mail';
+        const head = document.createElement('button');
+        head.className = 'bm-mail__head';
+        head.type = 'button';
+        const top = document.createElement('div');
+        top.className = 'bm-mail__top';
+        const stamp = document.createElement('span');
+        stamp.className = 'bm-stamp bm-stamp--licensing'; // red-ish = flagged
+        stamp.textContent = m.reason || 'spam';
+        top.appendChild(stamp);
+        top.appendChild(document.createTextNode(' caught ' + fmtDate(m.ts)));
+        const from = document.createElement('p');
+        from.className = 'bm-mail__from';
+        from.textContent = (m.name || 'no name') + (m.email ? ' <' + m.email + '>' : '');
+        const peek = document.createElement('p');
+        peek.className = 'bm-mail__peek';
+        peek.textContent = String(m.message || '').slice(0, 90);
+        head.appendChild(top); head.appendChild(from); head.appendChild(peek);
+        const body = document.createElement('div');
+        body.className = 'bm-mail__body';
+        body.hidden = true;
+        const msg = document.createElement('pre');
+        msg.className = 'bm-mail__msg';
+        msg.textContent = m.message || '';
+        const actions = document.createElement('div');
+        actions.className = 'bm-mail__actions';
+        if (m.email) {
+          const reply = document.createElement('a');
+          reply.className = 'bm-btn';
+          reply.href = 'mailto:' + encodeURIComponent(m.email) + '?subject=' + encodeURIComponent('Re: your message to the banana guy 🍌');
+          reply.textContent = '✉ reply (it was real!)';
+          actions.appendChild(reply);
+        }
+        const shred = document.createElement('button');
+        shred.className = 'bm-btn bm-btn--shred';
+        shred.type = 'button';
+        shred.textContent = '🗑 shred';
+        shred.onclick = async () => {
+          shred.disabled = true;
+          try {
+            const r = await fetch(API + '/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, keys: [m.key] }) });
+            if ((await r.json()).ok) card.remove(); else shred.disabled = false;
+          } catch (e) { shred.disabled = false; }
+        };
+        actions.appendChild(shred);
+        body.appendChild(msg); body.appendChild(actions);
+        head.onclick = () => { body.hidden = !body.hidden; };
+        card.appendChild(head); card.appendChild(body);
+        list.appendChild(card);
+      });
+    }
+    el('bmSpamToggle').onclick = () => {
+      const pane = el('bmSpamPane');
+      pane.hidden = !pane.hidden;
+      if (!pane.hidden && !spamLoaded) { spamLoaded = true; renderSpam(); }
+    };
 
     async function boot() {
       // token: URL fragment (from the old bookmark redirect) → localStorage → ask

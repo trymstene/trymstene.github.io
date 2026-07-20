@@ -12,8 +12,11 @@ const { topic = 'general' } = Astro.props;
   <label>the message
     <textarea name="message" required minlength="5" maxlength="4000" rows="6" placeholder="say hello, ask a thing, send a remix…"></textarea>
   </label>
-  <!-- bots: this one's for you -->
-  <input class="cform__hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+  <!-- bots: this one's for you. Named so browser AUTOFILL never recognises it —
+       it used to be name="website", which Chrome sometimes fills alongside
+       name/email despite autocomplete="off", silently spam-flagging real
+       humans. The wire key to the worker stays "website". -->
+  <input class="cform__hp" type="text" name="bnn_xtra" tabindex="-1" autocomplete="off" aria-hidden="true" />
   <button class="btn btn--dark cform__send" type="submit">Send it →</button>
   <p class="cform__note" hidden></p>
 </form>
@@ -54,7 +57,7 @@ const { topic = 'general' } = Astro.props;
             name: form.name.value,
             email: form.email.value,
             message: form.message.value,
-            website: form.website.value,
+            website: form.querySelector('.cform__hp').value,
             topic: form.dataset.topic,
             t: Date.now() - loadedAt,
           }),
