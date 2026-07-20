@@ -26,6 +26,14 @@
    blue button text on every <button> that doesn't set color explicitly */
 button { font: inherit; color: inherit; }
 
+/* BUTTON LABELS NEVER LINE-BREAK (Trym, 20 Jul: "i like buttons to not have
+   linebreaking on button text" — the forge's Items Workshop tab wrapped).
+   Content-CARD buttons (multi-line by design) opt back out below; explicit
+   <br> (the rave's INVITE sign) still breaks — that's intended.
+   When space runs out, the layout should wrap whole BUTTONS, not their text. */
+button, .btn { white-space: nowrap; }
+.bm-mail__head, .bb-ptile, .bb-homebar__go, .ps-herostat { white-space: normal; }
+
 html { scroll-behavior: smooth; }
 
 /* skip-to-content: hidden until a keyboard user tabs to it, then it drops in
