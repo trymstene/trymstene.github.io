@@ -1087,7 +1087,29 @@ function init() {
     const cands = [['head', null], ['face', null], ['chest', null], ['hand', 'left'], ['hand', 'right'], ['feet', null]];
     let best = ['head', null], bestD = Infinity, bestAp = wearAnchor(2, 'head');
     for (const [k, h] of cands) { const ap = wearAnchor(2, k, h); const d = (ap.x - center.x) ** 2 + (ap.y - center.y) ** 2; if (d < bestD) { bestD = d; best = [k, h]; bestAp = ap; } }
-    return { art: out.svg, anchor: best[0], hand: best[1] || undefined, ox: (tl.x - bestAp.x) / ENG_PX, oy: (tl.y - bestAp.y) / ENG_PX, scale: ENG_FH / (state.w * ENG_PX * ENG_HFRAC) };
+    // SPREAD CHECK (Trym's QA 20 Jul: bat-in-each-hand read as "rides the
+    // body"): every drawn pixel votes for its nearest anchor ZONE; if a real
+    // minority lives in a different zone than the winner, the drawing spans
+    // body parts that move independently through the dance — one sprite rides
+    // ONE anchor, so the toast should teach, not just say "body". Head+face
+    // count as one zone (they bob together, e.g. a helmet with a visor).
+    // Non-blocking by design: save still rides the nearest anchor.
+    const zoneAps = cands.map(([k, h]) => [(k === 'head' || k === 'face') ? 'head' : k + (h || ''), wearAnchor(2, k, h)]);
+    const votes = {};
+    let n = 0;
+    const g = frame();
+    for (let y = 0; y < state.h; y++) for (let x = 0; x < state.w; x++) {
+      if (!g[y * state.w + x]) continue;
+      const p = toSprite((x + 0.5) * cellPx, (y + 0.5) * cellPx);
+      let bz = null, bd = Infinity;
+      for (const [z, ap] of zoneAps) { const d = (ap.x - p.x) ** 2 + (ap.y - p.y) ** 2; if (d < bd) { bd = d; bz = z; } }
+      votes[bz] = (votes[bz] || 0) + 1; n++;
+    }
+    const topVotes = Math.max(0, ...Object.values(votes));
+    // share-based: a quick two-hand doodle (8 px, 50/50) must trip it, a wide
+    // sombrero whose brim-edge strays a few px into a hand zone must not
+    const spread = n >= 6 && (n - topVotes) >= Math.max(3, n * 0.25);
+    return { art: out.svg, anchor: best[0], hand: best[1] || undefined, spread, ox: (tl.x - bestAp.x) / ENG_PX, oy: (tl.y - bestAp.y) / ENG_PX, scale: ENG_FH / (state.w * ENG_PX * ENG_HFRAC) };
   }
   const RIDE_LABEL = { head: 'head', face: 'face', chest: 'body', feet: 'feet' };
   // the status toast pinned to the top of the canvas. The "draw your item"
@@ -1106,10 +1128,14 @@ function init() {
   function updateItemsStatus() {
     if (mode !== 'items') { hideToast(); lastRide = '__init__'; return; }
     const c = computeWear();
-    const key = !c ? '__empty__' : (c.anchor + (c.hand || ''));
+    const key = !c ? '__empty__' : (c.anchor + (c.hand || '') + (c.spread ? '!' : ''));
     if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
     lastRide = key;
     if (!c) { showToast('draw your item on the banana, where it goes', true, 'edit'); return; }
+    if (c.spread) { // spans zones that move independently — teach, don't block
+      showToast('an item rides ONE spot — want both hands? make two items 🍌', true, 'warning');
+      return;
+    }
     const label = c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor);
     showToast('rides the ' + label, false, 'check');
   }
