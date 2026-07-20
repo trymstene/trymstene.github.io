@@ -1,0 +1,175 @@
+---
+// 🍌🏪 THE BANANA STAND — Banana World's shop (banana-stand-plan).
+// S0 PREVIEW: noindexed, unlinked, absent from the sitemap allowlist.
+// A small dark room in the club's visual language, everything zoomed-in and
+// chunky (mobile-first, "videogame not website"): the tired shopkeeper banana
+// behind his counter, empty hooks awaiting stock, the coin board, and a door
+// back to the rave. Stock + coin drops + buying come in later stages.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { COIN_SVGS } from '../data/coin-art.js';
+
+const title = 'The Banana Stand';
+const description = 'There is always money in the banana stand.';
+---
+<BaseLayout title={title} description={description} showFooter={false}>
+  <meta name="robots" content="noindex" slot="head" />
+  <link rel="preload" as="image" href="/assets/banana-dance.png?v=6" slot="head" />
+  <style is:inline slot="head">
+    body { background: #0d0b14; }
+    /* ---- the room: one small zoomed-in space, mobile-first ---- */
+    .bs-room {
+      max-width: 560px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem;
+      color: #fffdf5;
+    }
+    /* neon sign — the club's lettering, humming above the kiosk */
+    .bs-sign {
+      font-family: "Archivo Black", sans-serif; text-align: center;
+      color: #ffe135; font-size: clamp(1.5rem, 7vw, 2.4rem); line-height: 1.05;
+      margin: 0.9rem 0 0.2rem; letter-spacing: 0.02em;
+      text-shadow: 0 0 12px rgba(255, 225, 53, 0.55), 0 0 30px rgba(255, 225, 53, 0.25);
+    }
+    .bs-sign .bs-flick { animation: bsFlicker 7s steps(1) infinite; }
+    @keyframes bsFlicker {
+      0%, 92%, 96% { opacity: 1; }
+      93%, 95% { opacity: 0.25; text-shadow: none; }
+    }
+    .bs-tag { text-align: center; margin: 0 0 1.1rem; font-size: 0.85rem; opacity: 0.65; }
+
+    /* the kiosk: wall, awning, shopkeeper window, counter */
+    .bs-kiosk { border: 4px solid #000; box-shadow: 8px 8px 0 #000; background: #17121f; }
+    .bs-awning { display: flex; height: 26px; }
+    .bs-awning span { flex: 1; }
+    .bs-awning span:nth-child(odd) { background: #ffe135; }
+    .bs-awning span:nth-child(even) { background: #241d33; }
+    .bs-window {
+      position: relative; background: linear-gradient(#241d33, #1b1526);
+      padding: 0.6rem 0.6rem 0;
+    }
+    .bs-keeper { display: block; width: min(320px, 72%); margin: 0 auto; }
+    .bs-keeper canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    /* the speech bubble — club toast styling, above the keeper's head */
+    .bs-bubble {
+      position: absolute; left: 50%; top: 6px; transform: translateX(-50%);
+      max-width: 88%; background: #fffdf5; color: #111; border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000; padding: 0.45rem 0.7rem; font-size: 0.88rem;
+      font-weight: 700; opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .bs-bubble.is-on { opacity: 1; }
+    .bs-bubble::after {
+      content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -5px;
+      border: 5px solid transparent; border-top-color: #000;
+    }
+    .bs-counter {
+      height: 40px; background: repeating-linear-gradient(90deg, #3a2b18 0 26px, #2c2113 26px 52px);
+      border-top: 4px solid #000; position: relative;
+    }
+    .bs-counter::before {
+      content: ''; position: absolute; inset: 0 0 auto; height: 7px;
+      background: #4a3820; border-bottom: 3px solid #000;
+    }
+
+    /* ---- the hooks: stock goes here later; every hook is tappable ---- */
+    .bs-hooks {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 1.2rem;
+    }
+    .bs-hook {
+      appearance: none; border: 3px solid #000; background: #17121f; color: #fffdf5;
+      box-shadow: 5px 5px 0 #000; cursor: pointer; padding: 0.7rem 0.4rem 0.55rem;
+      display: grid; justify-items: center; gap: 0.35rem; min-height: 86px;
+      font-family: inherit; transition: transform 0.08s ease;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .bs-hook:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+    .bs-hook svg { width: 22px; height: auto; image-rendering: pixelated; opacity: 0.85; }
+    .bs-hook small {
+      border: 2px solid #000; background: #ffe135; color: #111; font-weight: 800;
+      font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.1rem 0.4rem; transform: rotate(-2deg);
+    }
+    .bs-hook:nth-child(even) small { transform: rotate(2deg); }
+
+    /* ---- the coin board: WE ACCEPT — doubles as Trym's art review ---- */
+    .bs-board {
+      margin-top: 1.3rem; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      background: #241d33; padding: 0.9rem;
+    }
+    .bs-board h2 {
+      font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 1rem;
+      margin: 0 0 0.7rem; text-align: center; letter-spacing: 0.06em;
+    }
+    .bs-coins { display: flex; align-items: flex-end; justify-content: center; gap: 1rem 1.6rem; flex-wrap: wrap; }
+    .bs-coin { display: grid; justify-items: center; gap: 0.4rem; text-align: center; }
+    .bs-coin svg { image-rendering: pixelated; height: auto; }
+    .bs-coin--1 svg { width: 52px; }
+    .bs-coin--2 svg { width: 86px; }
+    .bs-coin--3 svg { width: 150px; }
+    .bs-coin b { font-size: 0.72rem; opacity: 0.8; font-weight: 700; }
+
+    /* wallet chip + the door out */
+    .bs-foot { display: flex; gap: 0.8rem; align-items: stretch; margin-top: 1.3rem; flex-wrap: wrap; }
+    .bs-wallet {
+      flex: 1 1 200px; border: 3px solid #000; background: #17121f; box-shadow: 5px 5px 0 #000;
+      padding: 0.6rem 0.8rem; display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem;
+    }
+    .bs-wallet svg { width: 30px; height: auto; image-rendering: pixelated; flex: none; }
+    .bs-wallet b { color: #ffe135; }
+    .bs-door {
+      flex: 1 1 160px; display: grid; place-items: center; text-align: center;
+      border: 3px solid #000; background: #ffe135; color: #111; font-weight: 800;
+      box-shadow: 5px 5px 0 #000; padding: 0.8rem; text-decoration: none;
+    }
+    .bs-door:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bs-sign .bs-flick { animation: none; }
+    }
+  </style>
+
+  <div class="bs-room">
+    <h1 class="bs-sign">THE BANANA <span class="bs-flick">STAND</span></h1>
+    <p class="bs-tag">there's always money in the banana stand</p>
+
+    <div class="bs-kiosk">
+      <div class="bs-awning" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="bs-window">
+        <div class="bs-bubble" id="bsBubble" role="status" aria-live="polite"></div>
+        <button class="bs-keeper" id="bsKeeper" style="appearance:none;background:none;border:0;padding:0;cursor:pointer;" aria-label="The shopkeeper">
+          <canvas id="bsKeeperCv" width="360" height="360" aria-hidden="true"></canvas>
+        </button>
+      </div>
+      <div class="bs-counter" aria-hidden="true"></div>
+    </div>
+
+    <div class="bs-hooks" id="bsHooks">
+      {[1, 2, 3, 4, 5, 6].map(() => (
+        <button class="bs-hook" type="button">
+          <svg viewBox="0 0 7 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="0" width="1" height="1" fill="#8a8296"/><rect x="2" y="1" width="1" height="1" fill="#8a8296"/><rect x="4" y="1" width="1" height="1" fill="#8a8296"/><rect x="2" y="2" width="1" height="1" fill="#8a8296"/><rect x="4" y="2" width="1" height="1" fill="#8a8296"/><rect x="4" y="3" width="1" height="1" fill="#8a8296"/><rect x="3" y="4" width="2" height="1" fill="#8a8296"/><rect x="2" y="5" width="1" height="1" fill="#8a8296"/><rect x="5" y="5" width="1" height="1" fill="#8a8296"/><rect x="3" y="6" width="2" height="1" fill="#8a8296"/></svg>
+          <small>soon</small>
+        </button>
+      ))}
+    </div>
+
+    <div class="bs-board">
+      <h2>WE ACCEPT</h2>
+      <div class="bs-coins">
+        <div class="bs-coin bs-coin--1"><Fragment set:html={COIN_SVGS.coin1} /><b>a bananacoin</b></div>
+        <div class="bs-coin bs-coin--2"><Fragment set:html={COIN_SVGS.coin2} /><b>a small stack</b></div>
+        <div class="bs-coin bs-coin--3"><Fragment set:html={COIN_SVGS.coin3} /><b>the big pile</b></div>
+      </div>
+    </div>
+
+    <div class="bs-foot">
+      <div class="bs-wallet">
+        <Fragment set:html={COIN_SVGS.coin1} />
+        <span>your pockets: <b>0 coins</b> — the club starts paying soon</span>
+      </div>
+      <a class="bs-door" href="/rave/" data-place="stand">🪩 back to the club →</a>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/banana-stand.js';
+  </script>
+</BaseLayout>
