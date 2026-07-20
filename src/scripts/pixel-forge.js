@@ -21,6 +21,13 @@ import { drawComposite as engineDraw, assetsReady as engineReady, NFRAMES as ENG
 
 const el = (id) => document.getElementById(id);
 const stage = el('fgCanvas');
+
+// ITEMS-MODE GRID: one canvas cell == ONE banana pixel unit, so drawn items
+// match the curated wearables' resolution exactly (Trym's QA: the 32-grid's
+// cells rendered ~45% fatter than the banana's own pixels — items came out
+// chunky and less detailed than the engine's). FH/(PX*HFRAC) ≈ 58.
+const ITEM_GRID = Math.round(ENG_FH / (ENG_PX * ENG_HFRAC));
+
 if (stage) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
@@ -1142,7 +1149,10 @@ function init() {
   // each mode keeps its OWN drawing — Emoji (frames) and Items (one item) are
   // separate documents, so a banana loaded in Emoji never leaks into Items.
   const modeDocs = { emoji: null, items: null };
-  function freshDoc() { state.w = 32; state.h = 32; state.frames = [new Uint8Array(32 * 32)]; state.delays = [120]; state.cur = 0; state.cpal = []; }
+  function freshDoc() {
+    const n = mode === 'items' ? ITEM_GRID : 32; // items draw at banana resolution
+    state.w = n; state.h = n; state.frames = [new Uint8Array(n * n)]; state.delays = [120]; state.cur = 0; state.cpal = [];
+  }
   function setMode(m) {
     if (mode === m) return;
     if (playing) stopPlay();
@@ -1150,6 +1160,9 @@ function init() {
     mode = m;
     const doc = modeDocs[m];
     if (doc) deserialize(doc); else freshDoc();    // restore this mode's drawing (or a clean one)
+    // an EMPTY items doc on the wrong grid (pre-upgrade stash / wiped canvas)
+    // silently upgrades to the banana-native grid — art is never touched
+    if (m === 'items' && state.w !== ITEM_GRID && !state.frames.some((f) => f.some((v) => v))) freshDoc();
     state.undo = []; state.redo = [];
     if (state.color >= PALETTE.length + state.cpal.length) state.color = 3; // banana yellow fallback
     document.body.classList.toggle('fg-mode-items', m === 'items');
@@ -1162,7 +1175,24 @@ function init() {
   }
   document.querySelectorAll('.fg-modetab').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
   const itemsPlay = el('fgItemsPlay'); if (itemsPlay) itemsPlay.onclick = togglePlay;
-  const itemsClear = el('fgItemsClear'); if (itemsClear) itemsClear.onclick = () => el('fgClear').click(); // reuse the confirm + wipe
+  // "start over" owns its reset (not fgClear's frame-wipe): a fresh item also
+  // returns to the banana-native grid, so an old 32-grid item upgrades here
+  const itemsClear = el('fgItemsClear');
+  if (itemsClear) itemsClear.onclick = async () => {
+    if (!frame().some((v) => v)) { // spotless — just fix the grid if it's stale
+      if (state.w !== ITEM_GRID) { freshDoc(); fitCanvas(); refreshAll(); save(); }
+      return;
+    }
+    const ok = await fgConfirm({
+      title: '🧹 Start the item over?',
+      body: 'The canvas gets hosed clean for a fresh item. This one is gone unless it lives on your shelf.',
+      yes: '🧹 Start over', no: 'Keep it',
+    });
+    if (!ok) return;
+    freshDoc(); fitCanvas();
+    state.undo = []; state.redo = [];
+    refreshAll(); save(); track('forge_frame_clear');
+  };
   const itemsSave = el('fgItemsSave');
   if (itemsSave) itemsSave.onclick = () => {
     const label = itemsSave.textContent;
