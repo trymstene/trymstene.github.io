@@ -15,6 +15,7 @@ import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { iconSvg } from '../lib/pixel-icons.js';
+import { wearToCustom } from '../lib/wear-render.js';
 
 // THE CLUB SCREEN content — the LED wall behind the DJ blinks these one-liners
 // and, every 4th slide, a clickable house ad. Copy is deliberately silly +
@@ -76,8 +77,45 @@ const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE G
 // OWN copy, no first-claim race — so it needs NO worker window mirror; the worker
 // only allowlists the item id + relays a one-line "NAME caught it" shout (t:grab).
 const GIFT_PERIOD = 210, GIFT_WAIT = 22, GIFT_OFFSET = 90;              // every 3.5 min, lives 22s (rarer + longer than a snack)
-const DROP = DROPS[0] || null;                                          // tonight's catchable drop (one for now; rotates as the lineup grows)
-function giftEarned() { if (!DROP) return true; try { return localStorage.getItem(DROP.flag) === '1'; } catch (e) { return true; } }
+// 🎁 TONIGHT'S DROP — date-seeded from the pool of curated DROPS + the
+// COMMUNITY CATALOG (worker-share catalog/items.json = the ownership-stack
+// manifest). Everyone on Earth sees the same item tonight; you stop seeing it
+// once it's yours. Until the catalog fetch lands, the curated fallback stands.
+let DROP = DROPS[0] || null;
+let CATALOG = [];                 // the public manifest, fetched once per load
+const CAT_CUSTOM = {};            // id -> engine custom payload (render cache)
+function catOwned() { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } }
+function catCustom(id) {
+  // ⚠️ never cache a MISS: the floor draws before the catalog fetch lands, and
+  // a cached null would hide the item forever (bit us in P4-D verification)
+  if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
+  const it = CATALOG.find((x) => x.id === id);
+  if (!it) return undefined;
+  CAT_CUSTOM[id] = wearToCustom(it.wear);
+  return CAT_CUSTOM[id] || undefined;
+}
+function pickTonightDrop() {
+  // stable pool order: curated drops first, then catalog by approval time
+  const pool = [
+    ...DROPS.map((d) => ({ ...d, catalog: false })),
+    ...CATALOG.slice().sort((a, b) => (a.added || 0) - (b.added || 0))
+      .map((it) => ({ id: it.id, label: it.title || 'community item', by: it.by || '', catalog: true, wear: it.wear })),
+  ];
+  if (!pool.length) return null;
+  const day = Math.floor(Date.now() / 86400000);
+  return pool[Math.floor(seedRand(0xd20b + day) * pool.length)] || pool[0];
+}
+fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
+  .then((r) => (r.ok ? r.json() : []))
+  .then((items) => { if (Array.isArray(items)) { CATALOG = items; DROP = pickTonightDrop() || DROP; } })
+  .catch(() => { /* offline/blocked: the curated fallback stands */ });
+function giftEarned() {
+  if (!DROP) return true;
+  try {
+    if (DROP.catalog) return !!catOwned()[DROP.id];
+    return localStorage.getItem(DROP.flag) === '1';
+  } catch (e) { return true; }
+}
 // THE CONVEYOR: an item every 75s, forever, but each lives only FIVE SECONDS
 // on the floor before the smoke poof takes it (Trym: reflex, not patience).
 // The twinkle still announces 4s ahead. Keep in sync with worker (grace there).
@@ -1908,11 +1946,22 @@ function init() {
     const gs = giftSpotFor(giftWinClaimed);
     pickupPop(gs.x, gs.y);
     let had = false;
-    try { had = localStorage.getItem(DROP.flag) === '1'; localStorage.setItem(DROP.flag, '1'); } catch (e) {}
+    try {
+      if (DROP.catalog) { // community item: ownership lives in the cat-own map
+        const own = catOwned();
+        had = !!own[DROP.id];
+        own[DROP.id] = Date.now();
+        localStorage.setItem('cat-own-v1', JSON.stringify(own));
+      } else {
+        had = localStorage.getItem(DROP.flag) === '1';
+        localStorage.setItem(DROP.flag, '1');
+      }
+    } catch (e) {}
     // equip it right now, on the floor, for the whole room to see
     const me = ravers.get(myId);
     if (me) {
-      if (DROP.slot === 'hat') me.outfit.hat = DROP.id;
+      if (DROP.catalog) me.outfit.c = DROP.id; // the one custom slot
+      else if (DROP.slot === 'hat') me.outfit.hat = DROP.id;
       else if (DROP.slot === 'glasses') me.outfit.glasses = DROP.id;
       else me.outfit.extras = { ...(me.outfit.extras || {}), [DROP.id]: true };
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
@@ -1920,7 +1969,8 @@ function init() {
     // ride it home — the builder, pass, stickers and share cards all read bb-last
     try {
       const saved = JSON.parse(localStorage.getItem('bb-last') || '{}');
-      if (DROP.slot === 'hat') saved.hat = DROP.id;
+      if (DROP.catalog) saved.c = DROP.id;
+      else if (DROP.slot === 'hat') saved.hat = DROP.id;
       else if (DROP.slot === 'glasses') saved.glasses = DROP.id;
       else saved.extras = { ...(saved.extras || {}), [DROP.id]: true };
       localStorage.setItem('bb-last', JSON.stringify(saved));
@@ -1932,12 +1982,15 @@ function init() {
     if (audioOn) playDropAudio(); // the catch lands with the beat
     // tell the floor — the maker's name rides the shout (recognition)
     if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'grab', item: DROP.id }));
-    const credit = DROP.by ? ' <span class="rv-by">by ' + DROP.by + '</span>' : '';
+    const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const credit = DROP.by ? ' <span class="rv-by">by ' + esc(DROP.by) + '</span>' : '';
+    const icon = DROP.catalog ? '🎁' : '🎧';
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
     toast.innerHTML = had
-      ? '🎧 <b>' + DROP.label.toUpperCase() + '</b>' + credit + ' — already yours. Wear it loud.'
-      : '🎧 <b>' + DROP.label.toUpperCase() + '</b>' + credit + ' — CAUGHT! Yours forever, on your head and in the builder.';
+      ? icon + ' <b>' + esc(DROP.label).toUpperCase() + '</b>' + credit + ' — already yours. Wear it loud.'
+      : icon + ' <b>' + esc(DROP.label).toUpperCase() + '</b>' + credit
+        + (DROP.catalog ? ' — CAUGHT! A one-of-a-kind made by a raver, yours forever.' : ' — CAUGHT! Yours forever, on your head and in the builder.');
     (el('rvToasts') || floor).appendChild(toast); // the stack: simultaneous pickups pile up, never overlap
     setTimeout(() => toast.remove(), 8000);
     if (!had) passPatch('collector', { quiet: true }); // the toast IS the celebration
@@ -2120,7 +2173,11 @@ function init() {
       if (gfPh < GIFT_WAIT && giftWinClaimed !== gfWin && floorItems < MAX_FLOOR_ITEMS) {
         const gs = giftSpotFor(gfWin);
         floorItems++;
-        if (gfEl.dataset.item !== DROP.id) { gfEl.dataset.item = DROP.id; gfEl.innerHTML = SVG[DROP.art] || ''; }
+        if (gfEl.dataset.item !== DROP.id) {
+          gfEl.dataset.item = DROP.id;
+          // curated drops have engine art; community items render their own svg
+          gfEl.innerHTML = DROP.catalog ? ((catCustom(DROP.id) || {}).art || '') : (SVG[DROP.art] || '');
+        }
         gfEl.style.display = '';
         gfEl.style.left = gs.x + '%';
         gfEl.style.top = gs.y + '%';
@@ -2410,8 +2467,11 @@ function init() {
       else if (m.t === 'grab' && m.id !== myId) {
         // someone caught a drop — the whole floor sees WHO, and whose item it is
         const r = ravers.get(m.id);
-        const d = DROPS.find((x) => x.id === m.item);
-        if (r && d) showBubble('🎧 ' + dispName(r) + ' caught the ' + d.label + (d.by ? ' (by ' + d.by + ')' : '') + '!', false, 5000);
+        const d = DROPS.find((x) => x.id === m.item)
+          || (String(m.item).startsWith('c_')
+            ? ((it) => it && { label: it.title || 'a community item', by: it.by })(CATALOG.find((x) => x.id === m.item))
+            : null);
+        if (r && d) showBubble((String(m.item).startsWith('c_') ? '🎁 ' : '🎧 ') + dispName(r) + ' caught the ' + d.label + (d.by ? ' (by ' + d.by + ')' : '') + '!', false, 5000);
       }
       else if (m.t === 'vinyl') pickVinyl(m.id);
       else if (m.t === 'minidrop') deliverVinyl(m.id);
@@ -3972,6 +4032,9 @@ function init() {
           top: '', bottom: '',
           effect: dropActive ? 'confetti' : o.effect,
           hue: dropActive ? hue : (o.effect === 'disco' ? (360 * idx / NFRAMES) : 0),
+          // a caught COMMUNITY item rides the engine's custom channel — every
+          // spectator resolves the id against the same public catalog manifest
+          custom: o.c ? catCustom(o.c) : undefined,
         });
         if (fxActive(r, now) && r.fx.id === 'vhs') vhsGlitch(r.cv, now); // worn-tape shear on the fresh frame
       }

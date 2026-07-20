@@ -8,6 +8,25 @@ import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js'
 import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
+import { wearToCustom } from '../lib/wear-render.js';
+
+// 🎁 community catalog (the ownership stack) — owned items show in GEAR and
+// can be worn; the manifest is public + cached, fetched once per page
+let CATALOG = [];
+const CAT_CUSTOM = {};
+const catCustomP = (id) => {
+  // never cache a miss — the sig canvas draws before the catalog fetch lands
+  if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
+  const it = CATALOG.find((x) => x.id === id);
+  if (!it) return undefined;
+  CAT_CUSTOM[id] = wearToCustom(it.wear);
+  return CAT_CUSTOM[id] || undefined;
+};
+const catOwnedP = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
+const catalogReady = fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
+  .then((r) => (r.ok ? r.json() : []))
+  .then((items) => { if (Array.isArray(items)) CATALOG = items; })
+  .catch(() => {});
 
 const el = (id) => document.getElementById(id);
 if (el('psSig')) init();
@@ -29,7 +48,7 @@ function signatureOutfit() {
   try {
     const saved = JSON.parse(localStorage.getItem('bb-last') || 'null');
     if (saved && typeof saved === 'object') {
-      return { hat: saved.hat || 'none', glasses: saved.glasses || 'none', extras: saved.extras || {}, effect: saved.effect || 'none' };
+      return { hat: saved.hat || 'none', glasses: saved.glasses || 'none', extras: saved.extras || {}, effect: saved.effect || 'none', c: saved.c || undefined };
     }
   } catch (e) {}
   return { hat: 'none', glasses: 'none', extras: {}, effect: 'none' };
@@ -236,7 +255,7 @@ async function init() {
     return false;
   }
   function saveOutfit() {
-    try { localStorage.setItem('bb-last', JSON.stringify({ hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, effect: outfit.effect })); } catch (e) {}
+    try { localStorage.setItem('bb-last', JSON.stringify({ hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, effect: outfit.effect, ...(outfit.c ? { c: outfit.c } : {}) })); } catch (e) {}
     passPush();
   }
   function renderGear() {
@@ -299,6 +318,67 @@ async function init() {
   renderGear();
   setCount('cnt-gear', GEAR.filter(gearEarned).length);
 
+  // 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
+  // ravers, the maker's credit riding each one. Wear-toggle drives the ONE
+  // custom slot (outfit.c) through the same bb-last pipe as everything else.
+  const mineButtons = []; // catalog wear-buttons repaint together on toggle
+  catalogReady.then(() => {
+    const own = catOwnedP();
+    const mine = CATALOG.filter((it) => own[it.id]);
+    if (!mine.length) return;
+    setCount('cnt-gear', GEAR.filter(gearEarned).length + mine.length);
+    const host = el('psGear');
+    mine.forEach((it) => {
+      const cell = document.createElement('div');
+      cell.className = 'ps-gear__item ps-gear__item--earned';
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 168;
+      cell.appendChild(cv);
+      const h = document.createElement('h3');
+      h.textContent = it.title || 'community item';
+      cell.appendChild(h);
+      const p = document.createElement('p');
+      p.textContent = 'Caught on the dance floor — a raver made this.';
+      cell.appendChild(p);
+      if (it.by) {
+        const by = document.createElement('span');
+        by.className = 'ps-gear__by';
+        by.textContent = 'by ' + it.by;
+        cell.appendChild(by);
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      const paint = () => {
+        const wearing = outfit.c === it.id;
+        b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
+        b.textContent = wearing ? '✓ wearing it' : 'wear it';
+      };
+      paint();
+      b.addEventListener('click', () => {
+        outfit.c = outfit.c === it.id ? undefined : it.id;
+        saveOutfit();
+        lastIdx = -1; // the signature banana redraws with/without it
+        mineButtons.forEach((fn) => fn());
+        if (window.gtag) window.gtag('event', 'gear_toggle', { gear: it.id, on: outfit.c === it.id });
+      });
+      mineButtons.push(paint);
+      cell.appendChild(b);
+      host.appendChild(cell);
+      assetsReady().then(() => {
+        // the item's svg Image decodes async and drawAcc skips until it's
+        // ready — re-draw a couple of beats later so the first paint of a
+        // one-shot canvas never misses the item
+        const draw = () => drawComposite(cv.getContext('2d'), 168, 2, {
+          bg: 'transparent', captions: false, hat: 'none', glasses: 'none',
+          extras: {}, top: '', bottom: '', effect: 'none', custom: catCustomP(it.id),
+        });
+        draw();
+        setTimeout(draw, 500);
+        setTimeout(draw, 1600);
+      });
+    });
+  });
+
   initTabs();
 
   // — the signature banana dances on the shared clock —
@@ -315,6 +395,7 @@ async function init() {
         bg: 'transparent', captions: false,
         hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, top: '', bottom: '',
         effect: outfit.effect,
+        custom: outfit.c ? catCustomP(outfit.c) : undefined, // a worn community item rides along
       });
     }
     requestAnimationFrame(tick);

@@ -535,10 +535,15 @@ const description = 'Authorized banana personnel only.';
       cv.style.cssText = 'width:130px;height:130px;image-rendering:pixelated;flex:none;background:#f4f1e8;border:3px solid var(--ink);';
       const custom = wearToCustom(it.wear);
       assetsReady().then(() => {
-        drawComposite(cv.getContext('2d'), 220, 2, {
+        // the item svg decodes async — re-draw so the one-shot card never
+        // shows a bare banana (drawAcc skips until the Image is ready)
+        const draw = () => drawComposite(cv.getContext('2d'), 220, 2, {
           hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
           bg: 'transparent', captions: false, effect: 'none', custom: custom || undefined,
         });
+        draw();
+        setTimeout(draw, 500);
+        setTimeout(draw, 1600);
       });
       const meta = document.createElement('div');
       meta.style.cssText = 'flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.4rem;';

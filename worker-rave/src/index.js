@@ -193,6 +193,10 @@ function sanitizeOutfit(o) {
     glasses: SHADE_IDS.includes(o.glasses) ? o.glasses : 'none',
     extras,
     effect: EFFECT_IDS.includes(o.effect) ? o.effect : 'none',
+    // 'c' = a caught COMMUNITY catalog item (worker-share catalog/items.json).
+    // Format-validated only: spectators render it from the public manifest, so
+    // an unknown id simply draws nothing — bounded string, no art risk here.
+    ...(/^c_[a-f0-9]{6,32}$/.test(o.c || '') ? { c: o.c } : {}),
   };
 }
 
@@ -497,7 +501,9 @@ export class RaveRoom {
     if (msg.t === 'grab' && me) { // a raver caught a wearable DROP — a cosmetic
       // floor-wide shout only (the catch itself is client-authoritative; the
       // caught item rides in on the normal 'outfit' broadcast). No state, no race.
-      if (typeof msg.item !== 'string' || !DROP_IDS.includes(msg.item)) return;
+      // curated drops validate against DROP_IDS; community catalog items are
+      // format-validated (clients resolve the label from the public manifest)
+      if (typeof msg.item !== 'string' || !(DROP_IDS.includes(msg.item) || /^c_[a-f0-9]{6,32}$/.test(msg.item))) return;
       this.broadcast({ t: 'grab', id: me.id, item: msg.item });
       return;
     }

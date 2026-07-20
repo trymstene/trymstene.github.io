@@ -700,8 +700,14 @@ function init() {
     if (state.spd !== BASE_CYCLE_S) p.set('s', state.spd);
     if (state.frame !== 0) p.set('f', state.frame);
     history.replaceState(null, '', p.toString() ? '?' + p.toString() : location.pathname);
-    // the rave (and future shelf) greet you with your latest banana
-    try { localStorage.setItem('bb-last', JSON.stringify({ hat: state.hat, glasses: state.glasses, extras: state.extras, effect: state.effect })); } catch (e) {}
+    // the rave (and future shelf) greet you with your latest banana. Fields the
+    // builder doesn't manage (the caught community item `c`) are PRESERVED —
+    // a builder visit must never silently undress a rave catch.
+    try {
+      let prev = {};
+      try { prev = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e2) {}
+      localStorage.setItem('bb-last', JSON.stringify({ ...prev, hat: state.hat, glasses: state.glasses, extras: state.extras, effect: state.effect }));
+    } catch (e) {}
   }
   function load() {
     const p = new URLSearchParams(location.search);
