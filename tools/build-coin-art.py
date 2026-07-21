@@ -175,21 +175,22 @@ def side_stack(w, n):
 def cluster(master):
     """several coins — the master itself, halved and clustered"""
     m = half(master)  # 22px
-    g = Grid(m.w * 2 - 2, m.h + 9)
+    g = Grid(m.w * 2, m.h + 10)  # sized to FIT all three (the 42px grid hard-clipped the right coin)
     g.blit(m, 0, 9)
     g.blit(m, m.w - 8, 0)
-    g.blit(m, m.w + 3 - 8 + 5, 10)
+    g.blit(m, m.w + 14 - 8, 10)
     return g
 
 
 def stack_scene(master):
-    """a stack (or two) behind, the coin itself in front, overflowing them"""
-    m = half(master)  # 22px
-    a, b = side_stack(15, 6), side_stack(13, 4)
-    g = Grid(34, 28)
+    """three stacks behind, THE coin itself — full size, no downscale — in
+    front, overflowing them"""
+    a, b, c = side_stack(15, 7), side_stack(13, 5), side_stack(15, 6)
+    g = Grid(58, 46)
     g.blit(a, 0, g.h - a.h)
     g.blit(b, 14, g.h - b.h)
-    g.blit(m, g.w - m.w - 1, g.h - m.h)  # the front coin, bottom-right
+    g.blit(c, 28, g.h - c.h)
+    g.blit(master, g.w - master.w, g.h - master.h)  # the front coin, bottom-right
     return g
 
 
