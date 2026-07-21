@@ -110,8 +110,113 @@ def big_coin(D, emblem_w):
     return g
 
 
+def crescent_px(w, sag, thick):
+    """TRUE banana crescent (tips up): the circle through tips + belly bottom
+    minus the same circle shifted up. Never freehand a banana."""
+    R = ((w / 2) ** 2 + sag ** 2) / (2 * sag)
+    cy_out, cy_in = sag - R, sag - R - thick
+    pts = []
+    for y in range(0, sag + thick + 1):
+        for x in range(-w // 2 - 1, w // 2 + 2):
+            if math.hypot(x, y - cy_out) <= R and math.hypot(x, y - cy_in) > R:
+                pts.append((x, y))
+    return pts
+
+
+def arc_px(w, sag, thick):
+    """Tiny-size crescent: a CONCENTRIC ring segment (smile band) — the
+    shifted-circle subtraction bites holes below ~12px, this can't."""
+    R = ((w / 2) ** 2 + sag ** 2) / (2 * sag)
+    cy = sag - R
+    pts = []
+    for y in range(0, sag + 1):
+        for x in range(-w // 2 - 1, w // 2 + 2):
+            d = math.hypot(x, y - cy)
+            if R - thick < d <= R:
+                pts.append((x, y))
+    return pts
+
+
+def small_coin(D):
+    """A little coin: outline, lit lip, a smile-crescent stamp, and the same
+    diagonal gloss as the master."""
+    g = Grid(D, D)
+    c = (D - 1) / 2
+    r = D / 2 - 0.85
+    filled = set()
+    for y in range(D):
+        for x in range(D):
+            if math.hypot(x - c, y - c) <= r:
+                filled.add((x, y))
+    for (x, y) in filled:
+        edge = any((x + dx, y + dy) not in filled for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        if edge:
+            g.set(x, y, OUT)
+        else:
+            d = math.hypot(x - c, y - c)
+            if d > r - 2:
+                g.set(x, y, HI if (x - c) + (y - c) < -r * 0.9 else SHADE)
+            else:
+                g.set(x, y, FACE)
+    # no stamp below ~24px — every crescent variant read as a bat at this
+    # scale; small coins stay clean gold, the banana identity lives in the
+    # master coin
+    GLOSS = {FACE: PALE, SHADE: FACE}
+    for (x, y), col in list(g.px.items()):
+        if -3 <= (x + y) - 2 * c <= -1 and col in GLOSS:
+            g.set(x, y, GLOSS[col])
+    return g
+
+
+def cluster():
+    """several coins — three small ones lying together, overlapping"""
+    g = Grid(38, 29)
+    for coin, ox, oy in ((small_coin(17), 0, 9), (small_coin(19), 10, 0), (small_coin(17), 20, 10)):
+        g.blit(coin, ox, oy)
+    return g
+
+
+def stack():
+    """a tidy pile: five coins from the side, topped with the classic
+    elliptical coin FACE (rim + crescent) looking back up at you"""
+    w, n, slab = 19, 5, 3
+    g = Grid(w, n * slab + 7)
+    h = g.h
+    c = (w - 1) / 2
+    for i in range(n):
+        yb = h - 1 - i * slab           # slab bottom row
+        off = i % 2                     # hand-stacked jitter
+        x0, x1 = 1 + off, w - 2 - (1 - off)
+        for x in range(x0, x1 + 1):
+            g.set(x, yb - 2, FACE)
+            g.set(x, yb - 1, SHADE)
+            g.set(x, yb, DEEP)
+        for yy in (yb - 2, yb - 1, yb):
+            g.set(x0 - 1, yy, OUT)
+            g.set(x1 + 1, yy, OUT)
+    # the top face: an ellipse lying on the pile
+    ey = h - n * slab - 3
+    rx, ry = (w - 5) / 2, 2.8
+    for y in range(h):
+        for x in range(w):
+            d = math.hypot((x - c) / rx, (y - ey) / ry)
+            if d <= 1.0:
+                g.set(x, y, OUT if d > 0.82 else FACE)
+    for x in range(3, 7):  # light catches the top rim
+        if g.px.get((x, ey - 2)) == OUT:
+            g.set(x, ey - 2, HI)
+    return g
+
+
+def _blit(self, other, dx, dy):
+    for (x, y), c in other.px.items():
+        self.set(x + dx, y + dy, c)
+
+
+Grid.blit = _blit
+
 COIN = big_coin(44, 30)  # 32 muddied the face — 30 keeps the smile readable
-VARIANTS = [('coin', COIN)]
+VARIANTS = [('coin', COIN), ('coins', cluster()), ('stack', stack())]
 
 
 def to_svg(g):
@@ -132,16 +237,21 @@ def to_svg(g):
             f'xmlns="http://www.w3.org/2000/svg">' + ''.join(rects) + '</svg>')
 
 
-# contact sheet: the big coin at 10x on the club's dark floor
+# contact sheet: all denominations at 10x on the club's dark floor
 K = 10
 PAD = 24
-g = COIN
-im = Image.new('RGBA', (g.w * K + PAD * 2, g.h * K + PAD * 2), (13, 11, 20, 255))
-for (gx, gy), c in g.px.items():
-    rgb = tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
-    for yy in range(K):
-        for xx in range(K):
-            im.putpixel((PAD + gx * K + xx, PAD + gy * K + yy), rgb + (255,))
+sheet_w = sum(g.w for _, g in VARIANTS) * K + PAD * (len(VARIANTS) + 1)
+sheet_h = max(g.h for _, g in VARIANTS) * K + PAD * 2
+im = Image.new('RGBA', (sheet_w, sheet_h), (13, 11, 20, 255))
+ox = PAD
+for _, g in VARIANTS:
+    oy = PAD + (sheet_h - PAD * 2 - g.h * K) // 2
+    for (gx, gy), c in g.px.items():
+        rgb = tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+        for yy in range(K):
+            for xx in range(K):
+                im.putpixel((ox + gx * K + xx, oy + gy * K + yy), rgb + (255,))
+    ox += g.w * K + PAD
 im.save(SHEET)
 print('sheet ->', SHEET)
 

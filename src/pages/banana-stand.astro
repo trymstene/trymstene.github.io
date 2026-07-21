@@ -53,6 +53,16 @@ const description = 'There is always money in the banana stand.';
       position: absolute; left: 50%; top: 24%; transform: translateX(-50%);
       width: 78%; height: auto; image-rendering: pixelated; z-index: 1;
     }
+    /* the readable sign — a tilted wooden board hung on the roof front
+       (pixel text is impossible at hut scale, so this one is DOM) */
+    .bs-stand__sign {
+      position: absolute; left: 50%; top: 9%; z-index: 3;
+      transform: translateX(-50%) rotate(-3deg);
+      background: #8a5a2b; border: 2px solid #000; color: #ffe135;
+      font-family: "Archivo Black", sans-serif; font-size: clamp(7px, 1.9vw, 10px);
+      letter-spacing: 0.05em; padding: 1px 5px; white-space: nowrap;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+    }
     /* the keeper's floor bubble — Barty-style call-outs over the kiosk */
     .bs-minibubble {
       position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
@@ -198,6 +208,23 @@ const description = 'There is always money in the banana stand.';
     .bs-btn--dark { background: #17121f; color: #fffdf5; }
     .bs-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
 
+    /* TEMP: the coin-draft review strip (remove after Trym's verdict) */
+    .bs-coindrafts {
+      margin-top: 1.6rem; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      background: #17121f; padding: 1rem;
+    }
+    .bs-coindrafts h2 {
+      font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 0.95rem;
+      margin: 0 0 0.8rem; text-align: center; letter-spacing: 0.05em;
+    }
+    .bs-coindrafts__row { display: flex; align-items: flex-end; justify-content: space-around; gap: 1rem; flex-wrap: wrap; }
+    .bs-coindrafts__row > div { display: grid; justify-items: center; gap: 0.5rem; }
+    .bs-coindrafts__row svg { image-rendering: pixelated; height: auto; }
+    .bs-coindrafts__row > div:nth-child(1) svg { width: 110px; }
+    .bs-coindrafts__row > div:nth-child(2) svg { width: 120px; }
+    .bs-coindrafts__row > div:nth-child(3) svg { width: 66px; }
+    .bs-coindrafts__row b { font-size: 0.75rem; opacity: 0.8; }
+
     /* the scene CUT: a hard black blink, like a cartridge game */
     .bs-cut {
       position: fixed; inset: 0; background: #000; z-index: 60; pointer-events: none;
@@ -225,6 +252,7 @@ const description = 'There is always money in the banana stand.';
             <div class="bs-stand__inner" aria-hidden="true"></div>
             <canvas id="bsMiniCv" width="150" height="150" aria-hidden="true"></canvas>
             <img src="/assets/banana-stand/hut.png" alt="" aria-hidden="true" />
+            <span class="bs-stand__sign" aria-hidden="true">BANANA STAND</span>
           </div>
         </div>
         <span class="bs-bird bs-bird--1" aria-hidden="true">
@@ -278,6 +306,17 @@ const description = 'There is always money in the banana stand.';
       <div class="bs-foot">
         <button class="bs-btn bs-btn--dark" id="bsBack" type="button">↓ step back from the counter</button>
         <a class="bs-btn" href="/rave/" data-place="stand">🪩 back to the club →</a>
+      </div>
+    </div>
+
+    <!-- TEMPORARY review strip for the banana guy: the three coin
+         denominations awaiting his verdict (remove once approved) -->
+    <div class="bs-coindrafts">
+      <h2>🪙 coin drafts — for the banana guy</h2>
+      <div class="bs-coindrafts__row">
+        <div><Fragment set:html={COIN_SVGS.coin} /><b>one coin</b></div>
+        <div><Fragment set:html={COIN_SVGS.coins} /><b>several coins</b></div>
+        <div><Fragment set:html={COIN_SVGS.stack} /><b>a stack</b></div>
       </div>
     </div>
   </div>

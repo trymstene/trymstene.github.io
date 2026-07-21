@@ -251,13 +251,30 @@ for y in range(6, 26):
         if 0 <= x < HW:
             edge = x in (HW // 2 - half, HW // 2 + half - 1) or y in (6, 25)
             hp[x, y] = ROOF_D if edge else (ROOF_L if y < 12 else ROOF)
-# the banana lying on the roof ridge
-for i, (dx, dy) in enumerate([(-8, 2), (-7, 1), (-6, 0), (-5, 0), (-4, -1), (-3, -1), (-2, -1), (-1, -1), (0, -1), (1, -1), (2, 0), (3, 0), (4, 1), (5, 2)]):
-    x, y = HW // 2 + dx, 4 + dy
-    hp[x, y] = NANA
-    hp[x, y + 1] = NANA_D
-hp[HW // 2 + 6, 6] = STEM
-hp[HW // 2 - 9, 5] = STEM
+
+
+def crescent_px(w, sag, thick):
+    """A TRUE banana crescent (tips up): the circle through both tips and the
+    belly bottom, minus the same circle shifted up — fat-bellied, taper-
+    tipped by construction. NEVER freehand a banana (the worm era is over)."""
+    R = ((w / 2) ** 2 + sag ** 2) / (2 * sag)
+    cy_out, cy_in = sag - R, sag - R - thick
+    pts = []
+    for y in range(0, sag + thick + 1):
+        for x in range(-w // 2 - 1, w // 2 + 2):
+            if math.hypot(x, y - cy_out) <= R and math.hypot(x, y - cy_in) > R:
+                pts.append((x, y))
+    return pts
+
+# the banana lying on the roof ridge — proper crescent, resting tips-up
+RIDGE = crescent_px(20, 6, 4)
+ridge_max_y = max(p[1] for p in RIDGE)
+for dx, dy in RIDGE:
+    x, y = HW // 2 + dx, dy
+    if 0 <= x < HW and 0 <= y < HH:
+        hp[x, y] = NANA_D if dy >= ridge_max_y - 1 else NANA
+hp[HW // 2 + 11, 1] = STEM
+hp[HW // 2 + 10, 2] = STEM
 
 # walls — SOLID all the way to the sprite's bottom row (a transparent gap at
 # the base let the keeper's feet peek through the building; Trym's catch)
@@ -283,31 +300,8 @@ for x in range(6, HW - 6):
     hp[x, HH - 3] = ROOF_D
     hp[x, HH - 2] = ROOF_D
 
-# the tilted SIGN on the outside wall (right of the window): a bigger yellow
-# plank with a proper banana on it, hung crooked — rows shift as it runs right
-SGN_X, SGN_Y, SGN_W, SGN_H = 56, 20, 30, 14
-for x in range(SGN_X, SGN_X + SGN_W):
-    tilt = (x - SGN_X) // 10  # +1px down every 10px = the crooked hang
-    for y in range(SGN_Y + tilt, SGN_Y + SGN_H + tilt):
-        if 0 <= x < HW and 0 <= y < HH:
-            edge = x in (SGN_X, SGN_X + SGN_W - 1) or y in (SGN_Y + tilt, SGN_Y + SGN_H + tilt - 1)
-            # dark wood plank so the yellow banana POPS off it
-            hp[x, y] = ROOF_D if edge else ROOF
-# nail + a 2px-thick banana crescent filling the plank
-hp[SGN_X + SGN_W // 2, SGN_Y - 1] = FRAME
-BAN = [(-8, 2), (-7, 1), (-6, 0), (-5, -1), (-4, -1), (-3, -2), (-2, -2), (-1, -2),
-       (0, -2), (1, -2), (2, -2), (3, -1), (4, -1), (5, 0), (6, 1), (7, 2)]
-for dx, dy in BAN:
-    x = SGN_X + 14 + dx
-    tilt = (x - SGN_X) // 10
-    y = SGN_Y + 6 - dy + tilt  # tips UP — a banana rests smiling, not frowning
-    if 0 <= x < HW and 0 <= y < HH:
-        hp[x, y] = NANA
-        if 0 <= y + 1 < HH:
-            hp[x, y + 1] = NANA_D
-# stem nub on the banana's right tip
-sx = SGN_X + 14 + 8
-hp[sx, SGN_Y + 3 + (sx - SGN_X) // 10] = STEM
+# (the readable "BANANA STAND" sign is a DOM board on the page — pixel text
+# at this sprite scale is impossible, and freehand banana glyphs are banned)
 
 hut.save(os.path.join(OUT, 'hut.png'), optimize=True)
 print('wrote hut.png')
