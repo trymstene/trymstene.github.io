@@ -199,7 +199,11 @@ a { color: inherit; }
 .nav.open .nav__backdrop { opacity: 1; visibility: visible; }
 
 /* ---- desktop: two-tone segmented bar, no panel ---- */
-@media (min-width: 900px) {
+/* the desktop row only turns on once it actually FITS: seven nowrap links +
+   the brand need ~1250px, and between 900px and that the row overflowed the
+   viewport (half the logo off-screen, My Pass cut — Trym caught it zoomed
+   in). Below the threshold everyone gets the burger, which always fits. */
+@media (min-width: 1260px) {
   .nav__toggle { display: none; }
   .nav__backdrop { display: none; }
   .nav__brand { font-size: 1.85rem; }
@@ -219,16 +223,13 @@ a { color: inherit; }
   .nav__group a {
     display: flex;
     align-items: center;
-    padding: 0.5rem 0.6rem;
+    padding: 0.5rem 0.9rem;
     border-top: none;
-    font-size: 0.92rem;
+    font-size: 1rem;
   }
   .nav__group--banana { border: 3px solid var(--ink); }
   .nav__group--banana a { color: var(--banana); }
   .nav__group--banana a:hover { background: var(--banana); color: var(--ink); }
-}
-@media (min-width: 1160px) {
-  .nav__group a { padding: 0.5rem 0.9rem; font-size: 1rem; }
 }
 
 /* ---------- hero ---------- */

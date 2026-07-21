@@ -188,6 +188,12 @@ export default {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
       });
     }
+    if (url.pathname === '/park-count') { // the HQ world desk's park headcount
+      const res = await env.PARK.get(env.PARK.idFromName('the-park')).fetch(new Request('https://room/count'));
+      return new Response(await res.text(), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
+      });
+    }
     return new Response('not found', { status: 404 });
   },
 };
@@ -719,6 +725,11 @@ export class ParkRoom {
   }
 
   async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/count') {
+      this.reapStale(); // headcount checks double as free sweeps
+      return new Response(JSON.stringify({ count: this.roster().length }));
+    }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
     }

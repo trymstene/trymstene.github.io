@@ -123,12 +123,21 @@ const description = 'Authorized banana personnel only.';
     .bm-live__save { margin-left: auto; }
     .bm-live--dirty { box-shadow: 3px 3px 0 var(--hot); }
     @media (max-width: 560px) { .bm-live { flex-wrap: wrap; } }
+
+    /* 🌍 the world desk: two big honest numbers */
+    .bm-worldcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin: 0 0 0.9rem; }
+    .bm-worldcard {
+      border: var(--line); background: var(--banana); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.9rem; text-align: center; display: grid; gap: 0.2rem;
+    }
+    .bm-worldcard b { font-size: 2rem; line-height: 1; }
+    .bm-worldcard span { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
   </style>
 
   <div class="bm-wrap">
     <header class="bm-letterhead">
       <h1>BANANA MAIL™</h1>
-      <p class="bm-sub">Executive correspondence system</p>
+      <p class="bm-sub">World administration &amp; executive correspondence</p>
       <p class="bm-est">First-class potassium post · est. 1999</p>
     </header>
 
@@ -147,6 +156,7 @@ const description = 'Authorized banana personnel only.';
         <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery inbox<span class="bm-badge" id="bmGalBadge" hidden></span></button>
         <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">🪩 Rave names</button>
         <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Item drops<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
+        <button class="bm-tab" id="bmTabWorld" role="tab" aria-selected="false" type="button">🌍 World</button>
       </div>
 
       <div id="bmPaneMail">
@@ -228,6 +238,32 @@ const description = 'Authorized banana personnel only.';
         <div id="bmCatList"><p class="bm-livenote">Loading…</p></div>
       </div>
 
+      <!-- 🌍 WORLD — the head-office window: live room headcounts + doors.
+           Deep analytics stay on Banana Pulse (Trym's token bookmark). -->
+      <div id="bmPaneWorld" hidden>
+        <div class="bm-bar">
+          <span class="bm-count">🌍 the world right now</span>
+          <button class="bm-chip" id="bmWorldRefresh" type="button">↻ refresh</button>
+        </div>
+        <div class="bm-worldcards">
+          <div class="bm-worldcard"><b id="bmWorldClub">–</b><span>🪩 on the floor</span></div>
+          <div class="bm-worldcard"><b id="bmWorldPark">–</b><span>🌳 in the park</span></div>
+        </div>
+        <p class="bm-livenote">Live headcounts straight from the rooms (auto-refreshes while this desk is open).
+          Traffic, funnels and money live on <b>Banana Pulse</b> — your bookmark.</p>
+        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🚪 doors</h3>
+        <div class="bm-bar" style="margin-top:0;">
+          <a class="bm-chip" href="/rave/">🪩 the club</a>
+          <a class="bm-chip" href="/banana-stand/">🍌 the stand</a>
+          <a class="bm-chip" href="/forge/">🎨 the forge</a>
+          <a class="bm-chip" href="/banana-memes/">🖼 the gallery</a>
+          <a class="bm-chip" href="/pass/">🎫 the pass</a>
+        </div>
+        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🗄 pass administration</h3>
+        <p class="bm-livenote">Coming: the PASS LEDGER — synced passes with their coins, gear and stats, read-only
+          first. It needs a new admin key on the pass worker (a secret only you can set) — queued as its own build.</p>
+      </div>
+
       <p class="bm-fine">
         BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
         Unauthorized peeling is prohibited and punishable by dance-off.<br>
@@ -242,7 +278,7 @@ const description = 'Authorized banana personnel only.';
     import editorialBase from '../data/gallery.json';
     import { parseDesign } from '../lib/sticker-core.js';
     import { memeGif } from '../lib/meme-gif.js';
-    import { drawComposite, assetsReady } from '../lib/banana-engine.js';
+    import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
     import { wearToCustom } from '../lib/wear-render.js';
 
     const API = new URLSearchParams(location.search).get('api') || 'https://banana-contact.trymstene.workers.dev';
@@ -502,29 +538,63 @@ const description = 'Authorized banana personnel only.';
     try { gkey = localStorage.getItem('gallery-key') || ''; } catch (e) {}
     let galItems = null; // null = not loaded yet
 
-    function setTab(which) { // 'mail' | 'gal' | 'rave' | 'items'
+    function setTab(which) { // 'mail' | 'gal' | 'rave' | 'items' | 'world'
       el('bmTabMail').setAttribute('aria-selected', String(which === 'mail'));
       el('bmTabGal').setAttribute('aria-selected', String(which === 'gal'));
       el('bmTabRave').setAttribute('aria-selected', String(which === 'rave'));
       el('bmTabItems').setAttribute('aria-selected', String(which === 'items'));
+      el('bmTabWorld').setAttribute('aria-selected', String(which === 'world'));
       el('bmPaneMail').hidden = which !== 'mail';
       el('bmPaneGal').hidden = which !== 'gal';
       el('bmPaneRave').hidden = which !== 'rave';
       el('bmPaneItems').hidden = which !== 'items';
+      el('bmPaneWorld').hidden = which !== 'world';
       if (which === 'gal') galBoot();
       if (which === 'rave') raveLoad();
       if (which === 'items') itemsLoad();
+      if (which === 'world') worldLoad();
     }
     el('bmTabMail').onclick = () => setTab('mail');
     el('bmTabGal').onclick = () => setTab('gal');
     el('bmTabRave').onclick = () => setTab('rave');
     el('bmTabItems').onclick = () => setTab('items');
+    el('bmTabWorld').onclick = () => setTab('world');
+
+    // ── 🌍 THE WORLD DESK — live headcounts from the rooms ──
+    const WORLD_API = 'https://banana-rave.trymstene.workers.dev';
+    async function worldLoad() {
+      const put = (id, v) => { el(id).textContent = v; };
+      try {
+        const r = await fetch(WORLD_API + '/count').then((x) => x.json());
+        put('bmWorldClub', r.count ?? '?');
+      } catch (e) { put('bmWorldClub', '?'); }
+      try {
+        const p = await fetch(WORLD_API + '/park-count').then((x) => x.json());
+        put('bmWorldPark', p.count ?? '?');
+      } catch (e) { put('bmWorldPark', '?'); }
+    }
+    el('bmWorldRefresh').onclick = worldLoad;
+    setInterval(() => { if (!el('bmPaneWorld').hidden && !document.hidden) worldLoad(); }, 30000);
 
     // ── 🎁 THE ITEM DROPS DESK — the ownership-stack curation gate ──
     // Shares the gallery key. Pending items render ON a dancing banana (the
     // engine's custom channel), approve/reject hit /catalog/moderate; the
     // live-catalog list below supports retiring items.
     const CAT_API = 'https://banana-share.trymstene.workers.dev';
+    // 🕺 LIVE approval previews (Trym: "I can't judge a wolf tail from a still")
+    // — every card's banana DANCES the full 8-frame cycle on the shared world
+    // beat, wearing the submitted item. The turned frames matter most: that's
+    // where the auto-mirror flips the art and placement sins show up.
+    const liveCards = new Set();
+    setInterval(() => {
+      if (document.hidden || !liveCards.size) return;
+      const cyc = BASE_CYCLE_S * 1000;
+      const f = Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
+      liveCards.forEach((c) => {
+        if (!c.cv.isConnected) { liveCards.delete(c); return; }
+        if (f !== c.lastF) { c.lastF = f; c.draw(f); }
+      });
+    }, 120);
     function itemCard(it, { live } = {}) {
       const card = document.createElement('article');
       card.className = 'bm-mail';
@@ -532,18 +602,20 @@ const description = 'Authorized banana personnel only.';
       body.style.cssText = 'display:flex;gap:0.9rem;padding:0.8rem;flex-wrap:wrap;align-items:center;';
       const cv = document.createElement('canvas');
       cv.width = cv.height = 220;
-      cv.style.cssText = 'width:130px;height:130px;image-rendering:pixelated;flex:none;background:#f4f1e8;border:3px solid var(--ink);';
+      cv.style.cssText = 'width:150px;height:150px;image-rendering:pixelated;flex:none;background:#f4f1e8;border:3px solid var(--ink);';
       const custom = wearToCustom(it.wear);
+      const outfit = {
+        hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
+        bg: 'transparent', captions: false, effect: 'none', custom: custom || undefined,
+      };
+      const draw = (f) => drawComposite(cv.getContext('2d'), 220, f, outfit);
       assetsReady().then(() => {
-        // the item svg decodes async — re-draw so the one-shot card never
-        // shows a bare banana (drawAcc skips until the Image is ready)
-        const draw = () => drawComposite(cv.getContext('2d'), 220, 2, {
-          hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
-          bg: 'transparent', captions: false, effect: 'none', custom: custom || undefined,
-        });
-        draw();
-        setTimeout(draw, 500);
-        setTimeout(draw, 1600);
+        // the item svg decodes async — early redraws so the card never shows
+        // a bare banana; then the beat ticker keeps it dancing
+        draw(2);
+        setTimeout(() => draw(2), 500);
+        setTimeout(() => draw(2), 1600);
+        liveCards.add({ cv, draw, lastF: -1 });
       });
       const meta = document.createElement('div');
       meta.style.cssText = 'flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.4rem;';
