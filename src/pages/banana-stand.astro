@@ -8,6 +8,7 @@
 //      big shopkeeper, upper body behind a wooden desk, options open.
 // Stock, coins on the floor and buying come in later stages.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 // coins are PNG SPRITES (tools/build-coin-art.py → /assets/banana-stand/) —
 // inline SVG rects bloated the HTML; display sizes stay INTEGER multiples
 // of the natural pixel size so the art scales crisp
@@ -174,6 +175,20 @@ const description = 'There is always money in the banana stand.';
       position: absolute; left: 4%; top: 54%; transform: translateY(-50%); z-index: 2;
       display: flex; align-items: center; gap: 0.5rem;
     }
+    /* the desk buttons: leave the counter / back to the club — compact banana
+       squares on the SAME row as the wallet (the foot row is gone) */
+    .bs-deskbtns {
+      position: absolute; right: 3%; top: 54%; transform: translateY(-50%); z-index: 2;
+      display: flex; gap: 0.55rem;
+    }
+    .bs-deskbtn {
+      appearance: none; display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 40px; padding: 0; cursor: pointer;
+      background: #ffe135; color: #111; border: 3px solid #000;
+      box-shadow: 3px 3px 0 #000; text-decoration: none;
+    }
+    .bs-deskbtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .bs-deskbtn svg { display: block; image-rendering: pixelated; }
     .bs-deskwallet img {
       height: auto; image-rendering: pixelated;
       filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.45));
@@ -328,6 +343,14 @@ const description = 'There is always money in the banana stand.';
             <img src="/assets/banana-stand/coin.png" width="44" alt="" aria-hidden="true" />
             <b id="bsDeskWallet">0</b>
           </div>
+          <div class="bs-deskbtns">
+            <button class="bs-deskbtn" id="bsBack" type="button" aria-label="Step back from the counter" title="step back — the park">
+              <svg viewBox="0 0 12 12" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="5" y="1" width="2" height="6" fill="#111"/><rect x="2" y="5" width="2" height="2" fill="#111"/><rect x="8" y="5" width="2" height="2" fill="#111"/><rect x="3" y="7" width="2" height="2" fill="#111"/><rect x="7" y="7" width="2" height="2" fill="#111"/><rect x="5" y="9" width="2" height="2" fill="#111"/></svg>
+            </button>
+            <a class="bs-deskbtn" href="/rave/" data-place="stand" aria-label="Back to the club" title="back to the club">
+              <PixelIcon name="mirrorball" size="22px" />
+            </a>
+          </div>
         </div>
       </div>
 
@@ -347,10 +370,6 @@ const description = 'There is always money in the banana stand.';
       <!-- the SHELF: every item in stock, built from the manifest -->
       <div class="bs-shelf" id="bsShelf" aria-label="The banana stand's stock"></div>
 
-      <div class="bs-foot">
-        <button class="bs-btn bs-btn--dark" id="bsBack" type="button">↓ step back from the counter</button>
-        <a class="bs-btn" href="/rave/" data-place="stand">🪩 back to the club →</a>
-      </div>
     </div>
   </div>
 
