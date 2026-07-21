@@ -1767,7 +1767,10 @@ function init() {
         floatPlus(p.x, p.y - 3, '+' + gain);
         if (p.kind === 'rainbow') {
           confettiBurst();
-          startNyan(me); // the NYAN BANANA flies for the lucky one
+          startNyan(me); // the NYAN BANANA flies for the lucky one…
+          // …and for EVERYONE ELSE too (Trym: the catcher's banana IS the
+          // nyan banana, floor-wide) — the server relays it like a grab shout
+          if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'nyan' }));
           if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('THE RAINBOW JELLY!! i’ve only seen three of those in my LIFE 🌈', true);
           track('rave_jelly_special', { kind: 'rainbow' });
         } else if (p.kind === 'gold') {
@@ -2617,6 +2620,19 @@ function init() {
       } else if (m.t === 'join') addRaver(m.p, false);
       else if (m.t === 'leave') dropRaver(m.id);
       else if (m.t === 'emote') floatEmote(m.id, m.k);
+      // 🌈 someone ELSE caught the rainbow jelly — their banana does the
+      // flyby on every floor (the catcher is the star, not just at home)
+      else if (m.t === 'nyan') {
+        const r = ravers.get(m.id);
+        if (r && m.id !== myId) {
+          startNyan(r);
+          const toast = document.createElement('div');
+          toast.className = 'rv-glowtoast';
+          toast.innerHTML = '🌈 <b>' + String(dispName(r) || 'a banana').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</b> caught the RAINBOW JELLY';
+          (el('rvToasts') || floor).appendChild(toast);
+          setTimeout(() => toast.remove(), 6000);
+        }
+      }
       else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) { r.outfit = m.outfit; if (m.name !== undefined) r.name = m.name; refreshHud(); } }
       // the QUICK SWIPE: Trym struck a name — it vanishes mid-dance, the
       // banana falls back to its outfit-name

@@ -451,6 +451,18 @@ export class RaveRoom {
       return;
     }
 
+    // 🌈 the rainbow-jelly flyby: cosmetic relay like the grab shout — the
+    // catcher's banana does the nyan run on EVERY floor. Rainbows are ~1/60
+    // jellies; the throttle just stops a devtools user painting the sky.
+    if (msg.t === 'nyan' && me) {
+      const now = Date.now();
+      if (now - (me.lastNyan || 0) < 20000) return;
+      me.lastNyan = now;
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'nyan', id: me.id }, ws);
+      return;
+    }
+
     if (msg.t === 'move' && me) { // walking: position relay, sender echoes locally
       const x = Number(msg.x), y = Number(msg.y);
       if (!Number.isFinite(x) || !Number.isFinite(y)) return;
