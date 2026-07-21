@@ -21,12 +21,14 @@ spec = importlib.util.spec_from_file_location('ogc', os.path.join(SITE, 'tools',
 ogc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ogc)
 
-# the gold family (NOT banana-yellow #ffe135 — a coin must never read as jelly)
+# the gold family (close to but NOT the banana body #ffe135 — a coin must
+# never read as banana flesh)
 OUT = '#7a4a21'   # dark bronze: outline, pupils, features
-FACE = '#ffd23f'  # coin face
+FACE = '#ffdc55'  # coin face — brightened (Trym: "a bit more yellow")
 SHADE = '#e6a817' # inner lip + the banana body, embossed a step darker
 DEEP = '#b8781b'  # mouth + deep shading
 HI = '#fff6c8'    # eye whites, gloves, sparkle
+PALE = '#fff0a0'  # the gloss band's lightest step
 
 
 class Grid:
@@ -91,12 +93,6 @@ def big_coin(D, emblem_w):
                 g.set(x, y, DEEP if (x - c) + (y - c) > r * 0.45 else SHADE)
             else:
                 g.set(x, y, FACE)
-    # the gleam: two diagonal light streaks across the upper-left field
-    for pts in ([(-10, -2), (-9, -3), (-8, -4), (-7, -5), (-6, -6)], [(-12, -6), (-11, -7)]):
-        for dx, dy in pts:
-            x, y = round(c) + dx, round(c) + dy
-            if g.px.get((x, y)) == FACE:
-                g.set(x, y, HI)
     em = emblem_from_frame(emblem_w)
     # bust framing: the body's crop-cut sits low, tucked toward the rim
     ox, oy = round(c - em.w / 2), round(c - em.h / 2) + 3
@@ -104,6 +100,13 @@ def big_coin(D, emblem_w):
         # stamp only onto the coin face — the rim stays clean
         if g.px.get((ox + x, oy + y)) in (FACE, SHADE, HI):
             g.set(ox + x, oy + y, col)
+    # THE SHINE: a diagonal gloss band sweeping "/" across the whole coin
+    # (over the emblem too — glass, not paint). A wide band + a thin echo.
+    GLOSS = {FACE: PALE, SHADE: FACE, DEEP: SHADE}
+    for lo, hi in ((-7, -3), (0, 1)):  # offsets from the centre anti-diagonal
+        for (x, y), col in list(g.px.items()):
+            if lo <= (x + y) - 2 * c <= hi and col in GLOSS:
+                g.set(x, y, GLOSS[col])
     return g
 
 
