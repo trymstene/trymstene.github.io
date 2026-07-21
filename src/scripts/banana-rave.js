@@ -11,6 +11,7 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES, resolveHands, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
 import { DROPS, ownsDropStat } from '../data/wearables.js';
+import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, POOF_FRAMES, worldSid } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -84,14 +85,9 @@ const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE G
 // OWN copy, no first-claim race — so it needs NO worker window mirror; the worker
 // only allowlists the item id + relays a one-line "NAME caught it" shout (t:grab).
 const GIFT_PERIOD = 210, GIFT_WAIT = 22, GIFT_OFFSET = 90;              // every 3.5 min, lives 22s (rarer + longer than a snack)
-// 🪙 BANANACOINS — the stand's currency, dropped in clock-synced windows.
-// CLIENT-AUTHORITATIVE like the drop/glowstick: everyone sees the same coins,
-// each raver catches their OWN copy (no first-claim race, no worker mirror).
-// The Trym-approved faucet: ~every 4 min, live 18s, 70% one / 25% three /
-// 5% five → EV ≈1.7/window ≈ 12 coins per active half-hour (catalog 10-120).
-// ?cointest = short windows for QA, the ?stagetest pattern.
-const COIN_TEST = location.search.includes('cointest');
-const COIN_PERIOD = COIN_TEST ? 30 : 240, COIN_WAIT = COIN_TEST ? 24 : 18, COIN_OFFSET = 150;
+// 🪙 BANANACOINS — the clock, odds and QA switch live in the world-lib now
+// (one faucet, every room). CLIENT-AUTHORITATIVE like the drop/glowstick:
+// everyone sees the same coins, each raver catches their OWN copy.
 // 🎁 TONIGHT'S DROP — date-seeded from the pool of curated DROPS + the
 // COMMUNITY CATALOG (worker-share catalog/items.json = the ownership-stack
 // manifest). Everyone on Earth sees the same item tonight; you stop seeing it
@@ -198,13 +194,7 @@ const MENU_FX = {
 };
 const GRAB_R = 12; // floor-item grab radius (was 8 — near-misses felt dead, esp. tap-steering on iOS)
 const FIVE_DIST = 8, FIVE_COOLDOWN = 90000;
-// deterministic 0..1 from an integer — same math as the worker (Math.imul is exact)
-function seedRand(n) {
-  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
-  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
-  x ^= x >>> 16;
-  return (x >>> 0) / 4294967296;
-}
+// seedRand comes from the world-lib — same math as the worker (Math.imul exact)
 function spotFor(w) {
   let x = 12 + seedRand(w * 2) * 70;
   let y = 16 + seedRand(w * 2 + 1) * 60;
@@ -247,10 +237,7 @@ function coinSpotFor(w) { // client-only, like the gift — same corner guard
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
 }
-function coinAmountFor(w) { // 70% one / 25% three / 5% five — seeded, same for everyone
-  const r = seedRand(0xc01e * 7 + w);
-  return r < 0.70 ? 1 : r < 0.95 ? 3 : 5;
-}
+// coinAmountFor comes from the world-lib (70/25/5, identical in every room)
 function itemTypeFor(w) { // keep weights in sync with itemType() in worker-rave
   const r = seedRand(0x7ab1e + w);
   // 22 kinds now — classics keep a slight edge; the R4.5 six close the table
@@ -336,8 +323,7 @@ Object.assign(ITEM_SVGS, {
   vhs: '<svg viewBox="0 0 12 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="12" height="1" fill="#1e182c"/><rect x="0" y="1" width="1" height="1" fill="#1e182c"/><rect x="1" y="1" width="10" height="1" fill="#111111"/><rect x="11" y="1" width="1" height="1" fill="#1e182c"/><rect x="0" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#111111"/><rect x="2" y="2" width="8" height="1" fill="#ff4d9d"/><rect x="10" y="2" width="1" height="1" fill="#111111"/><rect x="11" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="10" height="1" fill="#111111"/><rect x="11" y="3" width="1" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#3a304c"/><rect x="3" y="4" width="1" height="1" fill="#fffdf5"/><rect x="4" y="4" width="1" height="1" fill="#3a304c"/><rect x="5" y="4" width="2" height="1" fill="#111111"/><rect x="7" y="4" width="1" height="1" fill="#3a304c"/><rect x="8" y="4" width="1" height="1" fill="#fffdf5"/><rect x="9" y="4" width="1" height="1" fill="#3a304c"/><rect x="10" y="4" width="1" height="1" fill="#111111"/><rect x="11" y="4" width="1" height="1" fill="#1e182c"/><rect x="0" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="1" height="1" fill="#3a304c"/><rect x="3" y="5" width="1" height="1" fill="#111111"/><rect x="4" y="5" width="1" height="1" fill="#3a304c"/><rect x="5" y="5" width="2" height="1" fill="#111111"/><rect x="7" y="5" width="1" height="1" fill="#3a304c"/><rect x="8" y="5" width="1" height="1" fill="#111111"/><rect x="9" y="5" width="1" height="1" fill="#3a304c"/><rect x="10" y="5" width="1" height="1" fill="#111111"/><rect x="11" y="5" width="1" height="1" fill="#1e182c"/><rect x="0" y="6" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="10" height="1" fill="#111111"/><rect x="11" y="6" width="1" height="1" fill="#1e182c"/><rect x="0" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="7" width="2" height="1" fill="#111111"/><rect x="3" y="7" width="6" height="1" fill="#fffdf5"/><rect x="9" y="7" width="2" height="1" fill="#111111"/><rect x="11" y="7" width="1" height="1" fill="#1e182c"/><rect x="0" y="8" width="12" height="1" fill="#1e182c"/></svg>',
   star: '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="0" width="2" height="1" fill="#1e182c"/><rect x="4" y="1" width="1" height="1" fill="#1e182c"/><rect x="5" y="1" width="2" height="1" fill="#ffd23f"/><rect x="7" y="1" width="1" height="1" fill="#1e182c"/><rect x="4" y="2" width="1" height="1" fill="#1e182c"/><rect x="5" y="2" width="2" height="1" fill="#ffd23f"/><rect x="7" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="5" height="1" fill="#1e182c"/><rect x="5" y="3" width="2" height="1" fill="#ffd23f"/><rect x="7" y="3" width="5" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="10" height="1" fill="#ffd23f"/><rect x="11" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="5" width="8" height="1" fill="#ffd23f"/><rect x="10" y="5" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="1" height="1" fill="#1e182c"/><rect x="3" y="6" width="6" height="1" fill="#ffd23f"/><rect x="9" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="7" width="6" height="1" fill="#ffd23f"/><rect x="9" y="7" width="1" height="1" fill="#1e182c"/><rect x="1" y="8" width="1" height="1" fill="#1e182c"/><rect x="2" y="8" width="3" height="1" fill="#ffd23f"/><rect x="5" y="8" width="2" height="1" fill="#1e182c"/><rect x="7" y="8" width="3" height="1" fill="#ffd23f"/><rect x="10" y="8" width="1" height="1" fill="#1e182c"/><rect x="1" y="9" width="1" height="1" fill="#1e182c"/><rect x="2" y="9" width="1" height="1" fill="#ffd23f"/><rect x="3" y="9" width="1" height="1" fill="#e6a817"/><rect x="4" y="9" width="1" height="1" fill="#1e182c"/><rect x="7" y="9" width="1" height="1" fill="#1e182c"/><rect x="8" y="9" width="1" height="1" fill="#e6a817"/><rect x="9" y="9" width="1" height="1" fill="#ffd23f"/><rect x="10" y="9" width="1" height="1" fill="#1e182c"/><rect x="1" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="10" width="1" height="1" fill="#e6a817"/><rect x="3" y="10" width="1" height="1" fill="#1e182c"/><rect x="8" y="10" width="1" height="1" fill="#1e182c"/><rect x="9" y="10" width="1" height="1" fill="#e6a817"/><rect x="10" y="10" width="1" height="1" fill="#1e182c"/><rect x="2" y="11" width="1" height="1" fill="#1e182c"/><rect x="9" y="11" width="1" height="1" fill="#1e182c"/></svg>',
 });
-// the smoke poof: unclaimed items vanish with it; so do leaving ravers
-const POOF_FRAMES = ['<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="1" width="2" height="1" fill="#b8bcd0"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="4" y="2" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="3" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="4" width="2" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="1" fill="#b8bcd0"/><rect x="7" y="0" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="2" y="1" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="7" y="1" width="1" height="1" fill="#8890a8"/><rect x="8" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="0" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="2" width="1" height="1" fill="#8890a8"/><rect x="2" y="2" width="3" height="1" fill="#e8eaf2"/><rect x="5" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="2" width="1" height="1" fill="#8890a8"/><rect x="7" y="2" width="1" height="1" fill="#e8eaf2"/><rect x="8" y="2" width="1" height="1" fill="#8890a8"/><rect x="1" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="3" width="1" height="1" fill="#8890a8"/><rect x="5" y="3" width="3" height="1" fill="#e8eaf2"/><rect x="8" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="4" width="2" height="1" fill="#8890a8"/><rect x="4" y="4" width="1" height="1" fill="#b8bcd0"/><rect x="5" y="4" width="2" height="1" fill="#e8eaf2"/><rect x="7" y="4" width="1" height="1" fill="#8890a8"/><rect x="4" y="5" width="3" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="1" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="9" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="0" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="2" y="1" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="7" y="2" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="9" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="0" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="3" y="3" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="2" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="7" y="4" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="10" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/></svg>'];
+// the smoke poof (world-lib POOF_FRAMES): unclaimed items vanish with it; so do leaving ravers
 
 // flame trail: two flicker frames (Pillow-verified in scratchpad floor-items.py),
 // prerendered to tiny canvases and stamped per particle — a straight line of
@@ -2592,14 +2578,6 @@ function init() {
   // ---- websocket presence ----
   let ws = null;
   let lastPong = 0;
-  // the world-wide per-browser session id (the key name is historic — the
-  // park minted it first): a rejoin SUPERSEDES your own ghost sockets
-  // server-side, so quick park→club roundtrips can't stack copies of you
-  let worldSid = '';
-  try {
-    worldSid = localStorage.getItem('park-sid') || '';
-    if (!worldSid) { worldSid = crypto.randomUUID().slice(0, 12); localStorage.setItem('park-sid', worldSid); }
-  } catch (e) { worldSid = String(Math.random()).slice(2, 14); }
   function connect() {
     if (ws && ws.readyState <= 1) return; // already live or connecting — never stack sockets (a stacked one = an orphaned ghost)
     try { ws = new WebSocket(RAVE_WS); } catch (e) { return soloMode(); }
@@ -2610,7 +2588,8 @@ function init() {
       el('rvStatus').className = 'rv-live';
       // sess = floor time so far: iOS re-sockets on every background/foreground,
       // and the server's stage gate must not restart with the socket
-      ws.send(JSON.stringify({ t: 'hi', sid: worldSid, outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
+      // sid = worldSid() (world-lib): a rejoin SUPERSEDES your own ghosts server-side
+      ws.send(JSON.stringify({ t: 'hi', sid: worldSid(), outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }

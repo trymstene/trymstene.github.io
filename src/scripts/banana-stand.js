@@ -10,37 +10,22 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, SVG } from '../lib/b
 import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
 import { passStat, passGet, passPush } from '../lib/banana-pass.js';
 import { wearToCustom } from '../lib/wear-render.js';
+import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, poofInto, presenceRoom } from '../lib/world.js';
 
 const room = document.getElementById('bsRoom');
 if (room) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
-// 🪙 the SAME coin faucet as the club — identical clock, seeds and odds
-// (keep in sync with banana-rave.js: seedRand / COIN_* / coinAmountFor).
-// The claimed-window key `bc-win` is SHARED with the rave, so a window
-// caught in either room is caught everywhere — one faucet, no double-dip.
-const COIN_TEST = location.search.includes('cointest');
-const COIN_PERIOD = COIN_TEST ? 30 : 240, COIN_WAIT = COIN_TEST ? 24 : 18, COIN_OFFSET = 150;
-function seedRand(n) {
-  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
-  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
-  x ^= x >>> 16;
-  return (x >>> 0) / 4294967296;
-}
-function coinAmountFor(w) { // 70% one / 25% three / 5% five — same everywhere
-  const r = seedRand(0xc01e * 7 + w);
-  return r < 0.70 ? 1 : r < 0.95 ? 3 : 5;
-}
-function parkCoinSpotFor(w) { // own salt — the park isn't a mirror of the floor
+// 🪙 the coin faucet comes from the world-lib (one clock, one set of odds,
+// the shared `bc-win` claim key — no double-dipping). Only the SPOTS are
+// this room's own: a different salt so the park isn't a mirror of the floor.
+function parkCoinSpotFor(w) {
   const x = 12 + seedRand(0x9a4b + w * 2) * 76;
   const y = 28 + seedRand(0x9a4b + w * 2 + 1) * 64;
   return { x, y };
 }
 
-// the rave's three-frame smoke puff (copied from banana-rave.js POOF_FRAMES —
-// exporting it would drag the whole rave module in here; keep the art in sync)
-const POOF_FRAMES = ['<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="1" width="2" height="1" fill="#b8bcd0"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="4" y="2" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="3" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="4" width="2" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="1" fill="#b8bcd0"/><rect x="7" y="0" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="2" y="1" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="7" y="1" width="1" height="1" fill="#8890a8"/><rect x="8" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="0" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="2" width="1" height="1" fill="#8890a8"/><rect x="2" y="2" width="3" height="1" fill="#e8eaf2"/><rect x="5" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="2" width="1" height="1" fill="#8890a8"/><rect x="7" y="2" width="1" height="1" fill="#e8eaf2"/><rect x="8" y="2" width="1" height="1" fill="#8890a8"/><rect x="1" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="3" width="1" height="1" fill="#8890a8"/><rect x="5" y="3" width="3" height="1" fill="#e8eaf2"/><rect x="8" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="4" width="2" height="1" fill="#8890a8"/><rect x="4" y="4" width="1" height="1" fill="#b8bcd0"/><rect x="5" y="4" width="2" height="1" fill="#e8eaf2"/><rect x="7" y="4" width="1" height="1" fill="#8890a8"/><rect x="4" y="5" width="3" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="1" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="9" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="0" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="2" y="1" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="7" y="2" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="9" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="0" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="3" y="3" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="2" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="7" y="4" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="10" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/></svg>'];
 
 function init() {
   // ---- the keeper's outfit (shared by both scenes) ------------------------
@@ -256,15 +241,7 @@ function init() {
   const PARK_WS = 'wss://banana-rave.trymstene.workers.dev/park';
   const peers = new Map(); // id → { el, ctx, outfit, lastF }
   const crowdEl = document.getElementById('bsCrowd');
-  // a stable per-browser session id: rejoining SUPERSEDES your old socket in
-  // the room (quick park→club→park roundtrips left ghost copies of you
-  // standing around until the reaper — Trym counted three of himself)
-  let parkSid = '';
-  try {
-    parkSid = localStorage.getItem('park-sid') || '';
-    if (!parkSid) { parkSid = crypto.randomUUID().slice(0, 12); localStorage.setItem('park-sid', parkSid); }
-  } catch (e) { parkSid = String(Math.random()).slice(2, 14); }
-  let parkWs = null, myParkId = null, parkRetries = 0, parkSendAt = 0;
+  let myParkId = null, parkSendAt = 0;
   const lastSent = { x: -1, y: -1 };
   const myParkOutfit = () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: ME_DRAW.extras || {} });
   function refreshCrowd() {
@@ -320,18 +297,9 @@ function init() {
     }
   }
 
-  // gone in a puff, not a blink — same smoke as the rave floor
-  function poofPark(x, y) {
-    const d = document.createElement('div');
-    d.className = 'bs-poof';
-    d.style.left = x + '%';
-    d.style.top = (y - 4) + '%'; // peers anchor at their feet; smoke at the body
-    d.innerHTML = '<span class="bs-poof__1">' + POOF_FRAMES[0] + '</span>' +
-      '<span class="bs-poof__2">' + POOF_FRAMES[1] + '</span>' +
-      '<span class="bs-poof__3">' + POOF_FRAMES[2] + '</span>';
-    room.appendChild(d);
-    setTimeout(() => d.remove(), 750);
-  }
+  // gone in a puff, not a blink — the world-lib smoke (peers anchor at their
+  // feet, so the puff sits 4% up at the body)
+  function poofPark(x, y) { poofInto(room, 'bs-poof', x, y - 4); }
   function drawPeer(p, force) {
     const f = frameNow();
     if (!force && f === p.lastF) return;
@@ -354,17 +322,12 @@ function init() {
     drawPeer(peer, true);
     refreshCrowd();
   }
-  function parkConnect() {
-    let ws;
-    try { ws = new WebSocket(PARK_WS); } catch (e) { return; }
-    parkWs = ws;
-    ws.onopen = () => {
-      parkRetries = 0;
-      ws.send(JSON.stringify({ t: 'hi', sid: parkSid, outfit: myParkOutfit(), x: pos.x, y: pos.y, name: passName }));
-    };
-    ws.onmessage = (ev) => {
-      let m;
-      try { m = JSON.parse(ev.data); } catch (e) { return; }
+  // the world-lib presence room handles connect / hi{sid} / ping / retry /
+  // supersede-respect / pagehide goodbye — this page only speaks game events
+  const parkRoom = presenceRoom({
+    url: PARK_WS,
+    hi: () => ({ outfit: myParkOutfit(), x: pos.x, y: pos.y, name: passName }),
+    onMessage: (m) => {
       if (m.t === 'roster') { myParkId = m.you; (m.all || []).forEach(addPeer); refreshCrowd(); }
       else if (m.t === 'join') addPeer(m.p);
       else if (m.t === 'move') { const p = peers.get(m.id); if (p) { p.el.style.left = m.x + '%'; p.el.style.top = m.y + '%'; } }
@@ -378,33 +341,15 @@ function init() {
           refreshCrowd();
         }
       }
-    };
-    ws.onclose = (ev) => {
-      if (parkWs !== ws) return;
-      parkWs = null;
-      peers.forEach((p) => p.el.remove());
-      peers.clear();
-      refreshCrowd();
-      if (ev && ev.reason === 'superseded') return; // a newer you took over — don't fight it
-      if (parkRetries++ < 5) setTimeout(parkConnect, 4000 * parkRetries);
-    };
-    ws.onerror = () => { try { ws.close(); } catch (e) {} };
-  }
-  parkConnect();
-  // say goodbye on the way out — navigations otherwise leave the socket to
-  // linger (the reaper catches it, but only after two silent minutes)
-  addEventListener('pagehide', () => {
-    parkRetries = 99;
-    try { if (parkWs) parkWs.close(1000, 'bye'); } catch (e) {}
+    },
+    onDown: () => { peers.forEach((p) => p.el.remove()); peers.clear(); refreshCrowd(); },
   });
-  // the hibernation keepalive — the room auto-pongs without waking up
-  setInterval(() => { if (parkWs && parkWs.readyState === 1) parkWs.send('{"t":"ping"}'); }, 25000);
   function parkSendMove(now) {
-    if (!parkWs || parkWs.readyState !== 1 || now - parkSendAt < 150) return;
+    if (!parkRoom.live || now - parkSendAt < 150) return;
     if (Math.abs(pos.x - lastSent.x) < 0.3 && Math.abs(pos.y - lastSent.y) < 0.3) return;
     parkSendAt = now;
     lastSent.x = pos.x; lastSent.y = pos.y;
-    parkWs.send(JSON.stringify({ t: 'move', x: pos.x, y: pos.y }));
+    parkRoom.send({ t: 'move', x: pos.x, y: pos.y });
   }
 
   // the under-construction signs: unreadable scribble up close, the popup
@@ -601,7 +546,7 @@ function init() {
     } catch (e) {}
     wear(ME_DRAW); // the park banana wears it on the very next frame
     // …and so does everyone else's view of you
-    if (parkWs && parkWs.readyState === 1) parkWs.send(JSON.stringify({ t: 'outfit', outfit: myParkOutfit() }));
+    parkRoom.send({ t: 'outfit', outfit: myParkOutfit() });
   }
   const SOLD_LINES = [
     (l) => `SOLD. the ${l} is yours. wear it loud.`,
