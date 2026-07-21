@@ -15,6 +15,10 @@ if (room) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
+// the rave's three-frame smoke puff (copied from banana-rave.js POOF_FRAMES —
+// exporting it would drag the whole rave module in here; keep the art in sync)
+const POOF_FRAMES = ['<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="1" width="2" height="1" fill="#b8bcd0"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="4" y="2" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="3" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="4" width="2" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="1" fill="#b8bcd0"/><rect x="7" y="0" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="2" y="1" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="7" y="1" width="1" height="1" fill="#8890a8"/><rect x="8" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="0" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="2" width="1" height="1" fill="#8890a8"/><rect x="2" y="2" width="3" height="1" fill="#e8eaf2"/><rect x="5" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="2" width="1" height="1" fill="#8890a8"/><rect x="7" y="2" width="1" height="1" fill="#e8eaf2"/><rect x="8" y="2" width="1" height="1" fill="#8890a8"/><rect x="1" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="3" width="1" height="1" fill="#8890a8"/><rect x="5" y="3" width="3" height="1" fill="#e8eaf2"/><rect x="8" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="4" width="2" height="1" fill="#8890a8"/><rect x="4" y="4" width="1" height="1" fill="#b8bcd0"/><rect x="5" y="4" width="2" height="1" fill="#e8eaf2"/><rect x="7" y="4" width="1" height="1" fill="#8890a8"/><rect x="4" y="5" width="3" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="1" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="9" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="0" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="2" y="1" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="7" y="2" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="9" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="0" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="3" y="3" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="2" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="7" y="4" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="10" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/></svg>'];
+
 function init() {
   // ---- the keeper's outfit (shared by both scenes) ------------------------
   // Plain stock banana for now — Trym crafts the real shopkeeper look
@@ -231,6 +235,18 @@ function init() {
   function refreshCrowd() {
     if (crowdEl) crowdEl.textContent = peers.size ? `· ${peers.size + 1} in the park` : '';
   }
+  // gone in a puff, not a blink — same smoke as the rave floor
+  function poofPark(x, y) {
+    const d = document.createElement('div');
+    d.className = 'bs-poof';
+    d.style.left = x + '%';
+    d.style.top = (y - 4) + '%'; // peers anchor at their feet; smoke at the body
+    d.innerHTML = '<span class="bs-poof__1">' + POOF_FRAMES[0] + '</span>' +
+      '<span class="bs-poof__2">' + POOF_FRAMES[1] + '</span>' +
+      '<span class="bs-poof__3">' + POOF_FRAMES[2] + '</span>';
+    room.appendChild(d);
+    setTimeout(() => d.remove(), 750);
+  }
   function drawPeer(p, force) {
     const f = frameNow();
     if (!force && f === p.lastF) return;
@@ -268,7 +284,15 @@ function init() {
       else if (m.t === 'join') addPeer(m.p);
       else if (m.t === 'move') { const p = peers.get(m.id); if (p) { p.el.style.left = m.x + '%'; p.el.style.top = m.y + '%'; } }
       else if (m.t === 'outfit') { const p = peers.get(m.id); if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); } }
-      else if (m.t === 'leave') { const p = peers.get(m.id); if (p) { p.el.remove(); peers.delete(m.id); refreshCrowd(); } }
+      else if (m.t === 'leave') {
+        const p = peers.get(m.id);
+        if (p) {
+          poofPark(parseFloat(p.el.style.left) || 50, parseFloat(p.el.style.top) || 90);
+          p.el.remove();
+          peers.delete(m.id);
+          refreshCrowd();
+        }
+      }
     };
     ws.onclose = () => {
       if (parkWs !== ws) return;

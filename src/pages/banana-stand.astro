@@ -96,6 +96,14 @@ const description = 'There is always money in the banana stand.';
     }
     #bsCrowd { margin-left: 0.55rem; font-size: 0.68rem; opacity: 0.85; }
     #bsCrowd:empty { display: none; }
+    /* a leaver goes in a puff, not a blink — the rave's smoke, park edition */
+    .bs-poof { position: absolute; transform: translate(-50%, -50%); width: 44px; z-index: 4; pointer-events: none; }
+    .bs-poof span { position: absolute; inset: 0; opacity: 0; }
+    .bs-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .bs-poof__1 { animation: bsPoofStep 0.75s steps(1) forwards; }
+    .bs-poof__2 { animation: bsPoofStep 0.75s steps(1) 0.25s forwards; }
+    .bs-poof__3 { animation: bsPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes bsPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
     /* the under-construction signs at the road ends */
     .bs-roadsign {
       appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
