@@ -216,7 +216,7 @@ function init() {
     // redraw belt: mug + lids decode async, drawAcc skips silently
     setTimeout(() => { lastMe = -1; drawMe(); drawMini(); drawKeeper(); }, 500);
     setTimeout(() => { lastMe = -1; drawMe(); drawMini(); drawKeeper(); }, 1600);
-    setInterval(() => { drawMe(); peers.forEach((p) => drawPeer(p)); }, 120); // cheap: only redraws when the beat frame changes
+    setInterval(() => { if (document.hidden) return; drawMe(); peers.forEach((p) => drawPeer(p)); }, 120); // beat-frame redraws only, and never for a hidden tab
     requestAnimationFrame((t) => { last = t; step(t); });
   });
 
@@ -238,7 +238,7 @@ function init() {
   setTimeout(() => { if (!inShop) sayRoom(GREETING); }, 900);
   let callIdx = 0;
   setInterval(() => {
-    if (inShop) return;
+    if (inShop || document.hidden) return;
     sayRoom(LINES[callIdx % LINES.length]); callIdx++;
   }, 14000);
 

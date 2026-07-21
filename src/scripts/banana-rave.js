@@ -4580,6 +4580,7 @@ function init() {
     render(nextSlide()); count++;
     setInterval(() => {
       if (tourActive) return; // never pull focus during the lesson
+      if (document.hidden) return; // no DOM work for a screen nobody sees (battery)
       render(nextSlide()); count++;
     }, 4800);
   })();
