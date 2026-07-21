@@ -75,7 +75,7 @@ export const WEARABLE_PACKS = {
       { id: 'buckethat', label: 'Bucket', phrase: 'a bucket, worn confidently', art: 'buckethat', seat: 0, preview: true },
       { id: 'snailhat', label: 'Snail', phrase: 'a snail passenger', art: 'snailhat', seat: -1, preview: true },
       // tentacles hang DOWN the head: positive seat, the arrowthru trick
-      { id: 'squidhat', label: 'Squid hat', phrase: 'a squid hugging the head', art: 'squidhat', seat: 6, preview: true },
+      { id: 'squidhat', label: 'Squid hat', phrase: 'a squid hugging the head', art: 'squidhat', seat: 4, preview: true },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -121,7 +121,7 @@ export const WEARABLE_PACKS = {
       // feet still show
       { id: 'nightshirt', label: 'Nightshirt', phrase: 'a cosy nightshirt', anchor: 'chest', zone: 'body', dy: 15, art: 'nightshirt' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — body zone, on the desk
-      { id: 'flamingoring', label: 'Flamingo ring', phrase: 'a flamingo pool ring', art: 'flamingoring', anchor: 'chest', dy: 12, zone: 'body', preview: true },
+      { id: 'flamingoring', label: 'Flamingo ring', phrase: 'a flamingo pool ring', art: 'flamingoring', anchor: 'chest', dy: 10, zone: 'body', preview: true },
       { id: 'medal', label: 'Participation medal', phrase: 'a participation medal', art: 'medal', anchor: 'chest', dy: 11, zone: 'body', preview: true },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
