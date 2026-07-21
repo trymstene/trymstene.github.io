@@ -672,7 +672,21 @@ function init() {
     track('rave_coin', { n });
   }
 
-  // stepping out: black cartridge-cut, then the park (same blink the stand uses)
+  // stepping out: black cartridge-cut, then the park (same blink the stand
+  // uses). The door is a DESTINATION, not a teleport (Trym): clicking it sends
+  // your banana walking over, and the page only turns once you're actually
+  // standing in the doorway — the trigger zone is a few % around the door
+  // mouth, small on purpose.
+  let doorArmed = 0; // timestamp the click-intent expires (0 = not heading out)
+  const nearDoor = (r) => !!r && r.x <= doorSolid.x + 3 && r.y >= doorSolid.y - 3;
+  function exitToStand() {
+    track('rave_exit_stand', { via: 'door' });
+    const cut = el('rvCut');
+    if (cut && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      cut.classList.add('is-on');
+      setTimeout(() => { location.href = doorEl.href; }, 170);
+    } else location.href = doorEl.href;
+  }
   if (doorEl && STAND_OPEN) {
     const standGuide = el('rvStandGuide');
     if (standGuide) {
@@ -682,12 +696,15 @@ function init() {
     }
     doorEl.addEventListener('click', (e) => {
       e.preventDefault();
-      track('rave_exit_stand', { via: 'door' });
-      const cut = el('rvCut');
-      if (cut && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        cut.classList.add('is-on');
-        setTimeout(() => { location.href = doorEl.href; }, 170);
-      } else location.href = doorEl.href;
+      const me = myId && ravers.get(myId);
+      if (nearDoor(me)) { exitToStand(); return; } // already in the doorway
+      doorArmed = Date.now() + 30000;
+      walkTarget = { x: Math.min(doorSolid.x + 2, 96), y: Math.min(Math.max(doorSolid.y + 4, 70), 92) };
+      const toast = document.createElement('div');
+      toast.className = 'rv-glowtoast';
+      toast.innerHTML = '🚪 heading out — your banana walks to the door';
+      (el('rvToasts') || floor).appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
     });
   }
 
@@ -742,12 +759,13 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led')) return; // buttons, the quest chip, the JELLY meter + the LED strip are not walk orders (a charged-meter tap walked you INTO the corner — Trym, iOS + Chrome)
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led') || e.target.closest('.rv-exitdoor')) return; // buttons, the quest chip, the JELLY meter, the LED strip + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
     sitting = false; pendingSit = false; // clicking anywhere else stands you up
     const rect = floor.getBoundingClientRect();
     // undo the camera: screen point → world percent
+    doorArmed = 0; // a fresh floor tap means you changed your mind about leaving
     walkTarget = {
       x: clamp(((e.clientX - rect.left - cam.tx) / (rect.width * cam.s)) * 100, 4, 96),
       y: clamp(((e.clientY - rect.top - cam.ty) / (rect.height * cam.s)) * 100, topClamp, 92),
@@ -2434,6 +2452,11 @@ function init() {
     if (coinLive && now - lastCoinTry > 800 && Math.hypot(me.x - coinLive.x, me.y - coinLive.y) < GRAB_R) {
       lastCoinTry = now;
       claimCoin();
+    }
+    // 🚪 armed exit: you clicked the door — the page turns when you ARRIVE
+    if (doorArmed && Date.now() < doorArmed && nearDoor(me)) {
+      doorArmed = 0;
+      exitToStand();
     }
     // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
     // rectangle — the solid counter's edge scales with the floor (x≈50% on
