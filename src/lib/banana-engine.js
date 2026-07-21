@@ -9,7 +9,7 @@
 
 // the wearable catalog is PURE DATA, shared with the daily picker + the rave
 // worker. Only the pixel ART (the SVG dict below) is client-only.
-import { WEARABLE_PACKS as PACKS } from '../data/wearables.js';
+import { WEARABLE_PACKS as PACKS, ownsWearable } from '../data/wearables.js';
 
 // ---- authentic dance frames ----
 // ?v= busts stale browser caches: bump it whenever the sheet's pixels change,
@@ -211,9 +211,10 @@ const EXTRA_DEFS = ACTIVE_PACKS.flatMap((p) => p.extras || []);
 const HAT_BY_ID = Object.fromEntries(HAT_DEFS.map((h) => [h.id, h]));
 const SHADE_BY_ID = Object.fromEntries(SHADE_DEFS.map((s) => [s.id, s]));
 // preview-flagged items stay DRAWABLE (the BY_ID maps above keep them, so the
-// dev review page can render them) but never enter the SELECTABLE lists
-const HATS = [['none', 'None'], ...HAT_DEFS.filter((h) => !h.preview).map((h) => [h.id, h.label])];
-const GLASSES = [['none', 'None'], ...SHADE_DEFS.filter((s) => !s.preview).map((s) => [s.id, s.label])];
+// dev review page can render them) but only enter the SELECTABLE lists when
+// public — or when they're stand stock this visitor has BOUGHT (own_<id>)
+const HATS = [['none', 'None'], ...HAT_DEFS.filter((h) => ownsWearable(h)).map((h) => [h.id, h.label])];
+const GLASSES = [['none', 'None'], ...SHADE_DEFS.filter((s) => ownsWearable(s)).map((s) => [s.id, s.label])];
 
 // The banana sprite's pixel unit is 13 source px; the pixel SVGs use 10 svg-px
 // per unit. Sizing accessories in banana-pixels guarantees they match the

@@ -215,9 +215,19 @@ const description = 'There is always money in the banana stand.';
     .bs-price img { image-rendering: pixelated; }
     .bs-tile .bs-price { font-size: 0.78rem; }
     .bs-tile .bs-price img { width: 14px; }
-    /* the golden lock: not for sale just yet */
-    .bs-tile__lock { position: absolute; top: -7px; right: -6px; width: 18px; }
+    /* the golden lock now means "you can't afford this YET" (JS toggles
+       .is-locked from the wallet); owned tiles trade it for a YOURS chip */
+    .bs-tile__lock { position: absolute; top: -7px; right: -6px; width: 18px; display: none; }
+    .bs-tile.is-locked .bs-tile__lock { display: block; }
     .bs-tile__lock svg { width: 100%; height: auto; image-rendering: pixelated; display: block; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.6)); }
+    .bs-tile__own {
+      position: absolute; top: -8px; right: -6px; display: none;
+      background: #37d67a; color: #06220f; border: 2px solid #000;
+      font-size: 0.5rem; font-weight: 800; letter-spacing: 0.08em; padding: 0.1rem 0.3rem;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .bs-tile.is-owned .bs-tile__own { display: block; }
+    .bs-tile.is-owned .bs-tile__art { filter: drop-shadow(0 0 5px rgba(55, 214, 122, 0.45)); }
 
     /* ---- THE SPOTLIGHT: the tapped item takes the stage ---- */
     .bs-spot {
@@ -236,7 +246,9 @@ const description = 'There is always money in the banana stand.';
     .bs-spot__row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
     .bs-price--big { font-size: 1.15rem; }
     .bs-price--big img { width: 22px; }
-    .bs-btn--buy { flex: 0 1 auto; padding: 0.5rem 0.9rem; font-size: 0.85rem; background: #17121f; color: #fffdf5; opacity: 0.85; }
+    .bs-btn--buy { flex: 0 1 auto; padding: 0.5rem 0.9rem; font-size: 0.85rem; background: #ffe135; color: #111; opacity: 1; }
+    .bs-btn--buy.is-poor { background: #17121f; color: #fffdf5; opacity: 0.85; }
+    .bs-btn--buy.is-owned { background: #37d67a; color: #06220f; }
     @media (max-width: 420px) { .bs-spot { flex-wrap: wrap; } .bs-spot__meta { flex-basis: 100%; } }
 
     /* the buttons under each scene */
@@ -327,7 +339,7 @@ const description = 'There is always money in the banana stand.';
           <p id="bsSpotDesc"></p>
           <div class="bs-spot__row">
             <span class="bs-price bs-price--big"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><b id="bsSpotPrice"></b></span>
-            <button class="bs-btn bs-btn--buy" id="bsSpotBuy" type="button">🔒 the till opens soon</button>
+            <button class="bs-btn bs-btn--buy" id="bsSpotBuy" type="button">buy</button>
           </div>
         </div>
       </div>

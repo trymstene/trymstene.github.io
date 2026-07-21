@@ -202,6 +202,20 @@ export const CLIENT_EXTRA_IDS = Object.values(WEARABLE_PACKS)
   .filter((e) => !e.raveOnly)
   .map((e) => e.id);
 
+// 🏪 STAND OWNERSHIP — a purchase writes the pass stat `own_<id>` (monotonic,
+// max-merged by the sync blob like the coin counters, so ownership can never
+// be lost across devices). A def is visible to this visitor when it's public
+// (no preview flag) or it's stand stock they've BOUGHT; `preview: true` desk
+// candidates stay dev-only. Safe under SSR/Node: no localStorage → not owned.
+export function ownsWearable(d) {
+  if (!d.preview) return true;
+  if (d.preview !== 'stand') return false;
+  try {
+    const stats = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
+    return (stats['own_' + d.id] || 0) > 0;
+  } catch (e) { return false; }
+}
+
 // 🎁 THE DROP LINEUP — every wearable flagged `drop:true` is CATCHABLE on the
 // rave floor (curation IS the drop: approving an item = adding it here). Each
 // carries its slot ('hat'|'glasses'|'extra'), art key, proof `flag`, `by`

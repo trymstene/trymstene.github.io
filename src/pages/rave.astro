@@ -400,10 +400,18 @@ const GUIDE = [
     }
     .rv-coin--1 { width: 44px; height: 44px; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 264px 44px; animation: rvCoinSpin 0.9s steps(6) infinite; }
     @keyframes rvCoinSpin { to { background-position: -264px 0; } }
-    .rv-coin--3 { width: 49px; height: 31px; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 196px 31px; animation: rvCoinTw3 2s steps(4) infinite; }
+    /* the piles twinkle AND wiggle at rest (two animations: sprite steps on
+       background-position + a slow rock on transform — the centering
+       translate must ride inside the rock's keyframes) */
+    .rv-coin--3 { width: 49px; height: 31px; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 196px 31px; animation: rvCoinTw3 2s steps(4) infinite, rvCoinRock 2.3s ease-in-out infinite; }
     @keyframes rvCoinTw3 { to { background-position: -196px 0; } }
-    .rv-coin--5 { width: 59px; height: 43px; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 236px 43px; animation: rvCoinTw5 2.6s steps(4) infinite; }
+    .rv-coin--5 { width: 59px; height: 43px; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 236px 43px; animation: rvCoinTw5 2.6s steps(4) infinite, rvCoinRock 2.9s ease-in-out 0.5s infinite; }
     @keyframes rvCoinTw5 { to { background-position: -236px 0; } }
+    @keyframes rvCoinRock {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-50%, -54%) rotate(-3deg); }
+      75% { transform: translate(-50%, -52%) rotate(3deg); }
+    }
     @media (prefers-reduced-motion: reduce) { .rv-coin { animation: none; } }
     /* the wallet — a small chip docked on the jelly meter box */
     .rv-wallet {

@@ -5,6 +5,7 @@
 // frame-picker thumbnails and both exports, so what you see is what you get.
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
+import { ownsWearable } from '../data/wearables.js';
 import { shelfAdd } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
 import {
@@ -25,10 +26,10 @@ const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
 // state.extras like other extras (so the outfit shape / URL / bb-last / worker
 // are all unchanged) but the builder + engine keep it mutually exclusive.
-const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly && !d.preview);
+const FEET_DEFS = EXTRA_DEFS.filter((d) => d.anchor === 'feet' && !d.raveOnly && ownsWearable(d));
 // the BODY zone: chest-anchored garments + neckwear (bow tie, ties, chains, scarves…) —
 // mutually exclusive in the builder, same single-select pattern as the feet
-const BODY_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'body' && !d.raveOnly && !d.preview);
+const BODY_DEFS = EXTRA_DEFS.filter((d) => d.zone === 'body' && !d.raveOnly && ownsWearable(d));
 
 
 const BGS = ['transparent','#ffe135','#ff4d6d','#6c8cff','#37d67a','#ffffff','#111111','#ff9f1c','#b388ff'];
@@ -148,7 +149,7 @@ function init() {
   // extras = independent toggles, not a single-choice row (the art is the button)
   EXTRA_DEFS.forEach((d) => {
     if (d.raveOnly) return; // session trophies (the happy-hour beer) are earned AT the rave, never dressed on
-    if (d.preview) return; // review candidates live on /dev-wearables/ only
+    if (!ownsWearable(d)) return; // desk candidates + UNBOUGHT stand stock stay off the builder
     if (d.anchor === 'feet') return; // shoes get their own single-select row below
     if (d.zone === 'body') return; // body garments too — one garment on the body at a time
     const art = SVG[d.front || d.art];
@@ -508,7 +509,7 @@ function init() {
     const handDefs = EXTRA_DEFS.filter((d) => d.anchor === 'hand');
     const handIds = handDefs.map((d) => d.id);
     EXTRA_DEFS.forEach((d) => {
-      state.extras[d.id] = !d.raveOnly && !d.preview && !feetIds.includes(d.id) && !bodyIds.includes(d.id)
+      state.extras[d.id] = !d.raveOnly && ownsWearable(d) && !feetIds.includes(d.id) && !bodyIds.includes(d.id)
         && !handIds.includes(d.id) && earnedUnlocked(d) && Math.random() < 0.3;
     });
     const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && earnedUnlocked(d));
@@ -520,7 +521,7 @@ function init() {
     // could double-fist one hand) — at most one item per glove; a left+right
     // pair (trophy + balloons) is legit, two mugs in one glove is not
     for (const glove of ['left', 'right']) {
-      const holdable = handDefs.filter((d) => d.hand === glove && !d.raveOnly && earnedUnlocked(d));
+      const holdable = handDefs.filter((d) => d.hand === glove && !d.raveOnly && ownsWearable(d) && earnedUnlocked(d));
       if (holdable.length && Math.random() < 0.35) state.extras[pick(holdable).id] = true;
     }
     state.effect = pick(['none','none','disco','sparkle','confetti']);

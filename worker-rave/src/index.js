@@ -26,12 +26,13 @@
 // canonical order: edit wearables.js, then paste here. EXTRA_IDS === its
 // CLIENT_EXTRA_IDS export (non-raveOnly extras); raveOnly items (beer/cone/
 // vinyl/broom) are server-granted and MUST stay out so sanitize strips them.
-const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap', 'djheadphones'];
+// (+ the S2b BANANA STAND stock — bought with bananacoins, worn on the floor)
+const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap', 'djheadphones', 'duckhat', 'melticecream', 'watermelonhat', 'buckethat', 'snailhat', 'squidhat'];
 // wearables catchable as a DROP on the floor — mirror of DROPS ids in
 // src/data/wearables.js. Used only to validate the cosmetic 'grab' shout.
 const DROP_IDS = ['djheadphones'];
-const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi', 'potter', 'nerd', 'monocle', 'groucho', 'eyepatch', 'googlyeyes', 'cucumbers'];
-const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'glowstick', 'goldbanana'];
+const SHADE_IDS = ['none', 'shades', 'hearts', 'visor', 'threed', 'dwi', 'potter', 'nerd', 'monocle', 'groucho', 'eyepatch', 'googlyeyes', 'cucumbers', 'snorkelmask'];
+const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'glowstick', 'goldbanana', 'flamingoring', 'medal', 'sockssandals', 'balloondog', 'potato', 'cactuspot'];
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only
 const ROOM_CAP = 200;

@@ -8,6 +8,7 @@
 // half-lidded eyes fitted to the MEASURED eye whites of frame 3.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, SVG } from '../lib/banana-engine.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
+import { passStat, passGet, passPush } from '../lib/banana-pass.js';
 
 const room = document.getElementById('bsRoom');
 if (room) init();
@@ -34,20 +35,24 @@ function init() {
     ...myOutfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
 
-  // ---- the wallet: earned − spent, straight from the pass blob ------------
-  // (both stats are monotonic and max-merged by the sync — same numbers the
-  // rave's chip shows; S2b's spending goes through passStat('coins_spent'))
+  // ---- the wallet + the deed book: all pass stats -------------------------
+  // balance = coins_earned − coins_spent; ownership = own_<id> > 0. Every one
+  // of them is monotonic and max-merged by the sync blob, so cross-device
+  // balances and purchases can never be lost. passStat is the only writer.
+  const stats = () => passGet().stats || {};
   const coinBalance = () => {
-    try {
-      const s = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
-      return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
-    } catch (e) { return 0; }
+    const s = stats();
+    return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
   };
-  const balNow = coinBalance();
+  const isOwned = (id) => (stats()['own_' + id] || 0) > 0;
   const hudWallet = document.getElementById('bsWallet');
-  if (hudWallet) hudWallet.textContent = balNow;
   const deskWallet = document.getElementById('bsDeskWallet');
-  if (deskWallet) deskWallet.textContent = balNow;
+  function refreshWallets() {
+    const bal = coinBalance();
+    if (hudWallet) hudWallet.textContent = bal;
+    if (deskWallet) deskWallet.textContent = bal;
+  }
+  refreshWallets();
 
   const meEl = document.getElementById('bsMe');
   const meCtx = document.getElementById('bsMeCv').getContext('2d');
@@ -197,14 +202,14 @@ function init() {
     hint(false);
   });
 
-  // ---- scene 2: the counter ----------------------------------------------
-  const COUNTER_HELLO = "what can i get you? …oh. right. nothing's for sale yet.";
+  // ---- scene 2: the counter — THE TILL IS OPEN ----------------------------
+  const COUNTER_HELLO = 'what can i get you? everything on the wall is for sale. finally.';
   const LINES = [
-    "we're restocking. i've been dancing since 1999 — give me a minute.",
-    "that one's not for sale yet.",
-    'the grand opening is soon. probably.',
-    "the truck hasn't come. the truck never comes on time.",
-    "there's always money in the banana stand. just… not today.",
+    'the truck finally came. we are OPEN.',
+    'coins from the floor spend just fine here.',
+    "the squid is 120. nobody's bought the squid.",
+    "there's always money in the banana stand.",
+    "no refunds. we don't have the infrastructure.",
     'i used to dance, you know.',
   ];
   const bubble = document.getElementById('bsBubble');
@@ -243,16 +248,51 @@ function init() {
 
   const shelf = document.getElementById('bsShelf');
   const spot = document.getElementById('bsSpot');
-  let pickedId = null;
+  const buyBtn = document.getElementById('bsSpotBuy');
+  const tileById = new Map();
+  let picked = null;
+
+  // tile + spotlight states follow the wallet: owned = YOURS chip, too
+  // expensive = the golden lock stays on, affordable = clean price tag
+  function updateTileStates() {
+    const bal = coinBalance();
+    STOCK.forEach((item) => {
+      const tile = tileById.get(item.id);
+      if (!tile) return;
+      const owned = isOwned(item.id);
+      tile.classList.toggle('is-owned', owned);
+      tile.classList.toggle('is-locked', !owned && bal < item.price);
+      tile.setAttribute('aria-label', owned
+        ? `${item.label} — yours`
+        : `${item.label} — ${item.price} bananacoins${bal < item.price ? ' (not enough coins yet)' : ''}`);
+    });
+  }
+  function updateSpot(item) {
+    if (!item || !buyBtn) return;
+    const bal = coinBalance();
+    if (isOwned(item.id)) {
+      buyBtn.textContent = '✓ yours — worn with pride';
+      buyBtn.classList.add('is-owned');
+      buyBtn.classList.remove('is-poor');
+    } else if (bal >= item.price) {
+      buyBtn.textContent = `buy — 🪙 ${item.price}`;
+      buyBtn.classList.remove('is-owned', 'is-poor');
+    } else {
+      buyBtn.textContent = `🪙 ${item.price} — you have ${bal}`;
+      buyBtn.classList.add('is-poor');
+      buyBtn.classList.remove('is-owned');
+    }
+  }
   function pick(item, tile) {
     shelf.querySelectorAll('.bs-tile').forEach((t) => t.classList.remove('is-picked'));
     tile.classList.add('is-picked');
-    pickedId = item.id;
+    picked = item;
     track('stand_item_view', { item: item.id });
     document.getElementById('bsSpotArt').innerHTML = SVG[item.artKey] || '';
     document.getElementById('bsSpotName').textContent = item.label;
     document.getElementById('bsSpotDesc').textContent = DESC[item.id] || item.phrase;
     document.getElementById('bsSpotPrice').textContent = item.price;
+    updateSpot(item);
     spot.hidden = false;
   }
   if (shelf) {
@@ -260,22 +300,70 @@ function init() {
       const tile = document.createElement('button');
       tile.type = 'button';
       tile.className = 'bs-tile';
-      tile.setAttribute('aria-label', `${item.label} — ${item.price} bananacoins (not for sale yet)`);
       tile.innerHTML =
         `<span class="bs-tile__art">${SVG[item.artKey] || ''}</span>` +
         `<b>${item.label}</b>` +
         `<span class="bs-tile__slot">${item.slot}</span>` +
         `<span class="bs-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ${item.price}</span>` +
-        `<span class="bs-tile__lock" aria-hidden="true">${LOCK_SVG}</span>`;
+        `<span class="bs-tile__lock" aria-hidden="true">${LOCK_SVG}</span>` +
+        `<span class="bs-tile__own" aria-hidden="true">YOURS</span>`;
       tile.addEventListener('click', () => pick(item, tile));
+      tileById.set(item.id, tile);
       shelf.appendChild(tile);
     });
+    updateTileStates();
   }
-  const buyBtn = document.getElementById('bsSpotBuy');
+
+  // ---- the purchase: spend coins, record the deed, wear it out the door ----
+  // exclusivity mirrors the builder: one pair of shoes, one body garment
+  const FEET_IDS = [], BODY_IDS = [];
+  Object.values(WEARABLE_PACKS).forEach((p) => (p.extras || []).forEach((d) => {
+    if (d.anchor === 'feet') FEET_IDS.push(d.id);
+    if (d.zone === 'body') BODY_IDS.push(d.id);
+  }));
+  function equip(item) {
+    const wear = (o) => {
+      if (item.slot === 'hat') { o.hat = item.id; return o; }
+      if (item.slot === 'face') { o.glasses = item.id; return o; }
+      const ex = { ...(o.extras || {}) };
+      if (item.anchor === 'feet') FEET_IDS.forEach((id) => delete ex[id]);
+      if (item.zone === 'body') BODY_IDS.forEach((id) => delete ex[id]);
+      ex[item.id] = true;
+      o.extras = ex;
+      return o;
+    };
+    try {
+      const saved = wear(JSON.parse(localStorage.getItem('bb-last') || '{}'));
+      localStorage.setItem('bb-last', JSON.stringify(saved));
+      passPush(); // bb-last rides the sync blob — nudge a push
+    } catch (e) {}
+    wear(ME_DRAW); // the park banana wears it on the very next frame
+  }
+  const SOLD_LINES = [
+    (l) => `SOLD. the ${l} is yours. wear it loud.`,
+    (l) => `the ${l}. excellent taste. probably.`,
+    (l) => `one ${l}, no receipt. we don't do receipts.`,
+  ];
+  let soldIdx = 0;
   if (buyBtn) buyBtn.addEventListener('click', () => {
-    // pre-till purchase intent — the demand signal that prices S2b
-    track('stand_buy_try', { item: pickedId || '' });
-    say("the till isn't wired up yet. soon. probably.");
+    const item = picked;
+    if (!item) return;
+    if (isOwned(item.id)) { say('you already own that one.'); return; }
+    const bal = coinBalance();
+    if (bal < item.price) {
+      // still the demand list — now it means "wanted it, couldn't afford it"
+      track('stand_buy_try', { item: item.id });
+      say(`that's ${item.price}. you've got ${bal}. the floor pays in coins.`);
+      return;
+    }
+    passStat('coins_spent', item.price);
+    passStat('own_' + item.id, 1);
+    equip(item);
+    refreshWallets();
+    updateTileStates();
+    updateSpot(item);
+    say(SOLD_LINES[soldIdx++ % SOLD_LINES.length](item.label.toLowerCase()));
+    track('stand_buy', { item: item.id, price: item.price });
   });
 
   // ---- wall dressing: a FEW items at real wearable scale for the keeper

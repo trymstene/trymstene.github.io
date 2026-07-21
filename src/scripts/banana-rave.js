@@ -630,14 +630,38 @@ function init() {
   let coinLive = null, lastCoinTry = 0;
   let coinWinClaimed = -1;
   try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  // the pocket: a little coin arcs from the catch spot into the wallet chip,
+  // and the wallet bumps when it lands (skipped under reduced motion)
+  function coinFly() {
+    const cn = el('rvCoin');
+    try {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || !walletChip || walletChip.hidden || !cn) { renderWallet(true); return; }
+      const fr = floor.getBoundingClientRect();
+      const ce = cn.getBoundingClientRect(); // element rect survives camera zoom
+      const cr = walletChip.getBoundingClientRect();
+      const x0 = ce.left + ce.width / 2 - fr.left, y0 = ce.top + ce.height / 2 - fr.top;
+      const dx = (cr.left + cr.width / 2 - fr.left) - x0, dy = (cr.top + cr.height / 2 - fr.top) - y0;
+      const img = document.createElement('img');
+      img.src = '/assets/banana-stand/coin.png';
+      img.style.cssText = 'position:absolute;width:22px;image-rendering:pixelated;z-index:650;pointer-events:none;'
+        + 'left:' + x0 + 'px;top:' + y0 + 'px;transform:translate(-50%,-50%);';
+      floor.appendChild(img);
+      img.animate([
+        { transform: 'translate(-50%,-50%) scale(1.1)', opacity: 1 },
+        { transform: 'translate(calc(-50% + ' + dx * 0.5 + 'px), calc(-50% + ' + (dy * 0.5 - 46) + 'px)) scale(1.25)', opacity: 1, offset: 0.55 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(0.45)', opacity: 0.25 },
+      ], { duration: 620, easing: 'ease-in' }).onfinish = () => { img.remove(); renderWallet(true); };
+    } catch (e) { renderWallet(true); }
+  }
   function claimCoin() {
     if (!coinLive) return;
     const n = coinAmountFor(coinLive.win);
     coinWinClaimed = coinLive.win;
     try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
     pickupPop(coinLive.x, coinLive.y);
+    coinFly();
     passStat('coins_earned', n);
-    renderWallet(true);
+    if (audioOn) playCoinAudio();
     addHype(3);
     bumpChain();
     const toast = document.createElement('div');
@@ -4267,6 +4291,24 @@ function init() {
     }
     loopGain.gain.setValueAtTime(LOOP_LEVEL, t + AUDIO_DROP_S); // full level at the joint
     startLoopAt(t + AUDIO_DROP_S);
+  }
+
+  // 🪙 the coin chime: two quick square-wave notes a fourth apart (B5 → E6),
+  // whisper-quiet under the set — synthesized, nothing to download
+  function playCoinAudio() {
+    if (!audio || audio.ctx.state !== 'running') return;
+    const ctx = audio.ctx, t0 = ctx.currentTime;
+    [[988, 0], [1319, 0.085]].forEach(([f, dt]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.04, t0 + dt);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.22);
+      o.connect(g);
+      g.connect(audio.master);
+      o.start(t0 + dt);
+      o.stop(t0 + dt + 0.24);
+    });
   }
 
   async function audioStart() {
