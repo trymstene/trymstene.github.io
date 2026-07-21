@@ -9,10 +9,12 @@ import { WEARABLE_PACKS } from '../data/wearables.js';
 
 const packs = Object.values(WEARABLE_PACKS);
 const rows = [];
+// preview === true → on the desk; preview === 'stand' → APPROVED stand
+// stock, hidden from every surface until the banana stand sells it
 packs.forEach((p) => {
-  (p.hats || []).filter((d) => d.preview).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'hat', zone: 'Hat', art: d.art }));
-  (p.shades || []).filter((d) => d.preview).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'glasses', zone: 'Shades', art: d.front }));
-  (p.extras || []).filter((d) => d.preview).forEach((d) => rows.push({
+  (p.hats || []).filter((d) => d.preview === true).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'hat', zone: 'Hat', art: d.art }));
+  (p.shades || []).filter((d) => d.preview === true).forEach((d) => rows.push({ id: d.id, label: d.label, slot: 'glasses', zone: 'Shades', art: d.front }));
+  (p.extras || []).filter((d) => d.preview === true).forEach((d) => rows.push({
     id: d.id, label: d.label, slot: 'extra',
     zone: d.zone === 'body' ? 'Body' : d.anchor === 'feet' ? 'Shoes' : d.anchor === 'hand' ? `Hand (${d.hand})` : 'Extra',
     art: d.front || d.art,

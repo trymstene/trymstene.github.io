@@ -69,13 +69,13 @@ export const WEARABLE_PACKS = {
         lock: 'a rave drop: catch it on the dance floor — straight from Barty’s booth' },
       // 🍌🏪 STAND BATCH 1 (21 Jul, the absurd edition — banana-stand exclusives,
       // on the /dev-wearables/ desk awaiting Trym's verdicts)
-      { id: 'duckhat', label: 'Duck on your head', phrase: 'a duck passenger', art: 'duckhat', seat: -2, preview: true },
-      { id: 'melticecream', label: 'Melting ice cream', phrase: 'a melting ice cream scoop', art: 'melticecream', seat: 0, preview: true },
-      { id: 'watermelonhat', label: 'Watermelon helmet', phrase: 'half a watermelon, worn open side down', art: 'watermelonhat', seat: -1, preview: true },
-      { id: 'buckethat', label: 'Bucket', phrase: 'a bucket, worn confidently', art: 'buckethat', seat: 0, preview: true },
-      { id: 'snailhat', label: 'Snail', phrase: 'a snail passenger', art: 'snailhat', seat: -1, preview: true },
+      { id: 'duckhat', label: 'Duck on your head', phrase: 'a duck passenger', art: 'duckhat', seat: -2, preview: 'stand' },
+      { id: 'melticecream', label: 'Melting ice cream', phrase: 'a melting ice cream scoop', art: 'melticecream', seat: 0, preview: 'stand' },
+      { id: 'watermelonhat', label: 'Watermelon helmet', phrase: 'half a watermelon, worn open side down', art: 'watermelonhat', seat: -1, preview: 'stand' },
+      { id: 'buckethat', label: 'Bucket', phrase: 'a bucket, worn confidently', art: 'buckethat', seat: 0, preview: 'stand' },
+      { id: 'snailhat', label: 'Snail', phrase: 'a snail passenger', art: 'snailhat', seat: -1, preview: 'stand' },
       // tentacles hang DOWN the head: positive seat, the arrowthru trick
-      { id: 'squidhat', label: 'Squid hat', phrase: 'a squid hugging the head', art: 'squidhat', seat: 4, preview: true },
+      { id: 'squidhat', label: 'Squid hat', phrase: 'a squid hugging the head', art: 'squidhat', seat: 4, preview: 'stand' },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -92,7 +92,7 @@ export const WEARABLE_PACKS = {
       { id: 'googlyeyes', label: 'Googly eyes', phrase: 'giant googly eyes', front: 'googlyFront', side: 'googlySide' },
       { id: 'cucumbers', label: 'Cucumber slices', phrase: 'spa cucumber slices', front: 'cucumberFront', side: 'cucumberSide' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — on the desk (coineyes + xrayspecs killed round 2)
-      { id: 'snorkelmask', label: 'Snorkel & mask', phrase: 'a snorkel and mask', front: 'snorkelmaskFront', side: 'snorkelmaskSide', preview: true },
+      { id: 'snorkelmask', label: 'Snorkel & mask', phrase: 'a snorkel and mask', front: 'snorkelmaskFront', side: 'snorkelmaskSide', preview: 'stand' },
     ],
     // extras anchor to the FACE (eye anchor + dy, front/side art, mirrored on
     // left-facing frames), the CHEST (per-frame btCx body centre + dy), or a
@@ -121,8 +121,8 @@ export const WEARABLE_PACKS = {
       // feet still show
       { id: 'nightshirt', label: 'Nightshirt', phrase: 'a cosy nightshirt', anchor: 'chest', zone: 'body', dy: 15, art: 'nightshirt' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — body zone, on the desk
-      { id: 'flamingoring', label: 'Flamingo ring', phrase: 'a flamingo pool ring', art: 'flamingoring', anchor: 'chest', dy: 10, zone: 'body', preview: true },
-      { id: 'medal', label: 'Participation medal', phrase: 'a participation medal', art: 'medal', anchor: 'chest', dy: 11, zone: 'body', preview: true },
+      { id: 'flamingoring', label: 'Flamingo ring', phrase: 'a flamingo pool ring', art: 'flamingoring', anchor: 'chest', dy: 10, zone: 'body', preview: 'stand' },
+      { id: 'medal', label: 'Participation medal', phrase: 'a participation medal', art: 'medal', anchor: 'chest', dy: 11, zone: 'body', preview: 'stand' },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
@@ -136,7 +136,7 @@ export const WEARABLE_PACKS = {
       { id: 'flamekicks', label: 'Flame kicks', phrase: 'flaming sneakers', anchor: 'feet', art: 'flamekicks' },
       { id: 'flippers', label: 'Swim flippers', phrase: 'swim flippers', anchor: 'feet', art: 'flippers' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — the forbidden combo, on the desk
-      { id: 'sockssandals', label: 'Socks & sandals', phrase: 'socks with sandals', art: 'sockssandals', anchor: 'feet', preview: true },
+      { id: 'sockssandals', label: 'Socks & sandals', phrase: 'socks with sandals', art: 'sockssandals', anchor: 'feet', preview: 'stand' },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 6, art: 'mug' },
       { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 5, art: 'trophy' },
@@ -156,10 +156,9 @@ export const WEARABLE_PACKS = {
       { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 11, art: 'candle' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — hands, on the desk (banana-shaped items
       // derive from the circle-diff crescent, never freehand)
-      { id: 'foamfinger', label: 'Foam finger', phrase: 'a big blue foam finger', art: 'foamfinger', anchor: 'hand', grip: 15, hand: 'left', preview: true },
-      { id: 'balloondog', label: 'Balloon dog', phrase: 'a balloon dog', art: 'balloondog', anchor: 'hand', grip: 12, hand: 'right', preview: true },
-      { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', preview: true },
-      { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', preview: true },
+      { id: 'balloondog', label: 'Balloon dog', phrase: 'a balloon dog', art: 'balloondog', anchor: 'hand', grip: 12, hand: 'right', preview: 'stand' },
+      { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', preview: 'stand' },
+      { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', preview: 'stand' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.
       // anchor 'hand' rides the per-frame glove centres; grip = art grid-units from the
