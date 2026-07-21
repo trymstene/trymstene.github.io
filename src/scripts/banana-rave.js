@@ -49,10 +49,9 @@ const SCREEN_ADS = [
 ];
 
 // 🍌🏪 THE BANANA STAND entrance — the EXIT door by the bar, the LED house ad,
-// Barty's tip and the field-guide line all stay dormant until the flip.
-// ?standopen previews the whole stack on any build; make it `true ||` to open
-// for everyone (S1 coins should land in the same flip).
-const STAND_OPEN = location.search.includes('standopen');
+// Barty's tip and the field-guide line. OPEN since 21 Jul 2026 (Trym's call:
+// the place first, the coins after — window-shopping builds the want).
+const STAND_OPEN = true;
 if (STAND_OPEN) SCREEN_ADS.push({ id: 'stand', text: 'THERE’S ALWAYS MONEY IN THE BANANA STAND', cta: 'out back, through the exit →', href: '/banana-stand/' });
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
