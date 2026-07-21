@@ -34,6 +34,21 @@ function init() {
     ...myOutfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
 
+  // ---- the wallet: earned − spent, straight from the pass blob ------------
+  // (both stats are monotonic and max-merged by the sync — same numbers the
+  // rave's chip shows; S2b's spending goes through passStat('coins_spent'))
+  const coinBalance = () => {
+    try {
+      const s = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
+      return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
+    } catch (e) { return 0; }
+  };
+  const balNow = coinBalance();
+  const hudWallet = document.getElementById('bsWallet');
+  if (hudWallet) hudWallet.textContent = balNow;
+  const deskWallet = document.getElementById('bsDeskWallet');
+  if (deskWallet) deskWallet.textContent = balNow;
+
   const meEl = document.getElementById('bsMe');
   const meCtx = document.getElementById('bsMeCv').getContext('2d');
   const miniCtx = document.getElementById('bsMiniCv').getContext('2d');

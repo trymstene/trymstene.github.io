@@ -84,6 +84,14 @@ const GOLD_PERIOD = 1800, GOLD_WAIT = 240, GOLD_OFFSET = 660;           // THE G
 // OWN copy, no first-claim race — so it needs NO worker window mirror; the worker
 // only allowlists the item id + relays a one-line "NAME caught it" shout (t:grab).
 const GIFT_PERIOD = 210, GIFT_WAIT = 22, GIFT_OFFSET = 90;              // every 3.5 min, lives 22s (rarer + longer than a snack)
+// 🪙 BANANACOINS — the stand's currency, dropped in clock-synced windows.
+// CLIENT-AUTHORITATIVE like the drop/glowstick: everyone sees the same coins,
+// each raver catches their OWN copy (no first-claim race, no worker mirror).
+// The Trym-approved faucet: ~every 4 min, live 18s, 70% one / 25% three /
+// 5% five → EV ≈1.7/window ≈ 12 coins per active half-hour (catalog 10-120).
+// ?cointest = short windows for QA, the ?stagetest pattern.
+const COIN_TEST = location.search.includes('cointest');
+const COIN_PERIOD = COIN_TEST ? 30 : 240, COIN_WAIT = COIN_TEST ? 24 : 18, COIN_OFFSET = 150;
 // 🎁 TONIGHT'S DROP — date-seeded from the pool of curated DROPS + the
 // COMMUNITY CATALOG (worker-share catalog/items.json = the ownership-stack
 // manifest). Everyone on Earth sees the same item tonight; you stop seeing it
@@ -209,6 +217,16 @@ function giftSpotFor(w) { // the drop's landing spot — client-only (each raver
   let y = 26 + seedRand(0x9d1f + w * 2 + 1) * 46;
   if (x < 36 && y > 66) y -= 30;
   return { x, y };
+}
+function coinSpotFor(w) { // client-only, like the gift — same corner guard
+  let x = 14 + seedRand(0xc01e + w * 2) * 66;
+  let y = 26 + seedRand(0xc01e + w * 2 + 1) * 46;
+  if (x < 36 && y > 66) y -= 30;
+  return { x, y };
+}
+function coinAmountFor(w) { // 70% one / 25% three / 5% five — seeded, same for everyone
+  const r = seedRand(0xc01e * 7 + w);
+  return r < 0.70 ? 1 : r < 0.95 ? 3 : 5;
 }
 function itemTypeFor(w) { // keep weights in sync with itemType() in worker-rave
   const r = seedRand(0x7ab1e + w);
@@ -593,6 +611,42 @@ function init() {
   // pellets, drifters, flee hops, the monkey — the walk slide handles the
   // two rects separately so each edge slides correctly
   const blockedAt = (x, y) => insideBar(x, y) || insideDoor(x, y);
+
+  // 🪙 the wallet chip on the jelly mixer — balance = earned − spent, both
+  // monotonic pass stats (they only ever grow; the blob merges them as max,
+  // so cross-device sums can never lose coins)
+  const walletChip = el('rvWalletChip');
+  const coinBalance = () => {
+    const s = passGet().stats || {};
+    return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
+  };
+  const renderWallet = (bump) => {
+    if (!walletChip) return;
+    el('rvWallet').textContent = coinBalance();
+    if (bump) { walletChip.classList.remove('is-bump'); void walletChip.offsetWidth; walletChip.classList.add('is-bump'); }
+  };
+  if (walletChip && STAND_OPEN) { walletChip.hidden = false; renderWallet(); }
+  // coin window state — claimed windows persist so a reload can't re-farm one
+  let coinLive = null, lastCoinTry = 0;
+  let coinWinClaimed = -1;
+  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  function claimCoin() {
+    if (!coinLive) return;
+    const n = coinAmountFor(coinLive.win);
+    coinWinClaimed = coinLive.win;
+    try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
+    pickupPop(coinLive.x, coinLive.y);
+    passStat('coins_earned', n);
+    renderWallet(true);
+    addHype(3);
+    bumpChain();
+    const toast = document.createElement('div');
+    toast.className = 'rv-glowtoast';
+    toast.innerHTML = '🪙 <b>+' + n + ' BANANACOIN' + (n > 1 ? 'S' : '') + '</b> — the stand out back takes these.';
+    (el('rvToasts') || floor).appendChild(toast);
+    setTimeout(() => toast.remove(), 6000);
+    track('rave_coin', { n });
+  }
 
   // stepping out: black cartridge-cut, then the park (same blink the stand uses)
   if (doorEl && STAND_OPEN) {
@@ -2232,6 +2286,27 @@ function init() {
         giftLive = { x: gs.x, y: gs.y, win: gfWin };
       } else { gfEl.style.display = 'none'; giftLive = null; }
     } else if (gfEl) { gfEl.style.display = 'none'; giftLive = null; }
+    // — 🪙 bananacoins: the stand's faucet, open only while the stand is —
+    const cnEl = el('rvCoin');
+    if (cnEl && STAND_OPEN) {
+      const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
+      const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
+      if (cPh < COIN_WAIT && coinWinClaimed !== cWin && floorItems < MAX_FLOOR_ITEMS) {
+        const cs = coinSpotFor(cWin);
+        floorItems++;
+        cnEl.className = 'rv-coin rv-coin--' + coinAmountFor(cWin);
+        cnEl.style.display = '';
+        cnEl.style.left = cs.x + '%';
+        cnEl.style.top = cs.y + '%';
+        coinLive = { x: cs.x, y: cs.y, win: cWin };
+      } else {
+        // unclaimed coins vanish in a puff like the conveyor (claimed ones
+        // already left via the pickup pop — winClaimed equality skips this)
+        if (coinLive && coinWinClaimed !== coinLive.win && cnEl.style.display !== 'none') poofAt(coinLive.x, coinLive.y, 0.7);
+        cnEl.style.display = 'none';
+        coinLive = null;
+      }
+    } else if (cnEl) { cnEl.style.display = 'none'; coinLive = null; }
     // — THE CONVEYOR: a fresh item lands every 75 seconds, forever — the floor is
     // never dead (Trym's brief: solo visitors need a constant chase) —
     const itEl = el('rvItem');
@@ -2330,6 +2405,11 @@ function init() {
     if (giftLive && now - lastGiftTry > 800 && Math.hypot(me.x - giftLive.x, me.y - giftLive.y) < GRAB_R) {
       lastGiftTry = now;
       claimGift();
+    }
+    // 🪙 coins: client-authoritative like the drop — you pocket YOUR own copy
+    if (coinLive && now - lastCoinTry > 800 && Math.hypot(me.x - coinLive.x, me.y - coinLive.y) < GRAB_R) {
+      lastCoinTry = now;
+      claimCoin();
     }
     // the bar: "at the bar" = ADJACENT TO THE ACTUAL COUNTER, not a fixed
     // rectangle — the solid counter's edge scales with the floor (x≈50% on

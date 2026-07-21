@@ -603,7 +603,8 @@ var EV_LABEL = {
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop',
   rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
-  stand_item_view:'eyed stand gear', stand_buy_try:'tried to BUY at the stand 🔥' };
+  stand_item_view:'eyed stand gear', stand_buy_try:'tried to BUY at the stand 🔥',
+  rave_coin:'pocketed bananacoins 🪙' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -678,7 +679,8 @@ var EV_EXPLAIN = {
   rave_exit_stand:'left the club through the EXIT by the bar → the banana stand (via = door or field-guide link)',
   stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
   stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
-  stand_buy_try:'pressed the LOCKED buy button at the stand 🔥 purchase intent BEFORE the till exists — this list prices S2b (item = which)' };
+  stand_buy_try:'pressed the LOCKED buy button at the stand 🔥 purchase intent BEFORE the till exists — this list prices S2b (item = which)',
+  rave_coin:'walked into a bananacoin drop on the rave floor (n = how many; windows every ~4 min, 70% one / 25% three / 5% five)' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };

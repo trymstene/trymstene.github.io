@@ -391,6 +391,33 @@ const GUIDE = [
     .rv-exitdoor:hover .rv-exitdoor__sign,
     .rv-exitdoor:focus-visible .rv-exitdoor__sign { color: #86efac; text-shadow: 0 0 10px #4ade80; }
     .rv-exitdoor:focus-visible { outline: 3px solid #ffe135; outline-offset: 2px; }
+    /* 🪙 BANANACOINS on the floor — PNG sprite sheets at native pixel scale,
+       CSS steps() animation (spin for one, twinkles for the piles) */
+    .rv-coin {
+      position: absolute; transform: translate(-50%, -50%); z-index: 6;
+      image-rendering: pixelated; background-repeat: no-repeat; pointer-events: none;
+      filter: drop-shadow(0 0 9px rgba(255, 220, 85, 0.55));
+    }
+    .rv-coin--1 { width: 44px; height: 44px; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 264px 44px; animation: rvCoinSpin 0.9s steps(6) infinite; }
+    @keyframes rvCoinSpin { to { background-position: -264px 0; } }
+    .rv-coin--3 { width: 49px; height: 31px; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 196px 31px; animation: rvCoinTw3 2s steps(4) infinite; }
+    @keyframes rvCoinTw3 { to { background-position: -196px 0; } }
+    .rv-coin--5 { width: 59px; height: 43px; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 236px 43px; animation: rvCoinTw5 2.6s steps(4) infinite; }
+    @keyframes rvCoinTw5 { to { background-position: -236px 0; } }
+    @media (prefers-reduced-motion: reduce) { .rv-coin { animation: none; } }
+    /* the wallet — a small chip docked on the jelly meter box */
+    .rv-wallet {
+      position: absolute; right: 0; bottom: calc(100% + 4px);
+      display: flex; align-items: center; gap: 5px;
+      background: #17121f; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+      padding: 2px 8px 2px 5px;
+    }
+    .rv-wallet[hidden] { display: none; }
+    .rv-wallet img { display: block; image-rendering: pixelated; }
+    .rv-wallet b { font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; }
+    .rv-wallet.is-bump { animation: rvWalletBump 0.45s steps(3); }
+    @keyframes rvWalletBump { 30% { transform: translateY(-5px) scale(1.12); } 70% { transform: translateY(0) scale(1); } }
+
     /* stepping out: the same hard black cartridge-blink the stand uses */
     .rv-cut {
       position: fixed; inset: 0; background: #000; z-index: 200; pointer-events: none;
@@ -1287,6 +1314,7 @@ const GUIDE = [
               <rect x="4" y="0" width="1" height="1" fill="#5a3618"/><rect x="4" y="1" width="1" height="1" fill="#5a3618"/><rect x="4" y="2" width="2" height="1" fill="#5a3618"/><rect x="0" y="3" width="1" height="1" fill="#ffffff"/><rect x="3" y="3" width="1" height="1" fill="#d69a1e"/><rect x="4" y="3" width="2" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="1" fill="#d69a1e"/><rect x="3" y="4" width="1" height="1" fill="#d69a1e"/><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="6" y="4" width="1" height="1" fill="#d69a1e"/><rect x="2" y="5" width="1" height="1" fill="#d69a1e"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="2" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#d69a1e"/><rect x="2" y="6" width="1" height="1" fill="#d69a1e"/><rect x="3" y="6" width="3" height="1" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#d69a1e"/><rect x="2" y="7" width="1" height="1" fill="#d69a1e"/><rect x="3" y="7" width="3" height="1" fill="#ffe135"/><rect x="6" y="7" width="1" height="1" fill="#d69a1e"/><rect x="2" y="8" width="1" height="1" fill="#d69a1e"/><rect x="3" y="8" width="3" height="1" fill="#ffe135"/><rect x="6" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="9" width="1" height="1" fill="#d69a1e"/><rect x="3" y="9" width="3" height="1" fill="#ffe135"/><rect x="6" y="9" width="1" height="1" fill="#d69a1e"/><rect x="2" y="10" width="1" height="1" fill="#d69a1e"/><rect x="3" y="10" width="3" height="1" fill="#ffe135"/><rect x="6" y="10" width="1" height="1" fill="#d69a1e"/><rect x="1" y="11" width="1" height="1" fill="#d69a1e"/><rect x="2" y="11" width="3" height="1" fill="#ffe135"/><rect x="5" y="11" width="1" height="1" fill="#d69a1e"/><rect x="7" y="11" width="1" height="1" fill="#ffffff"/><rect x="1" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="12" width="2" height="1" fill="#ffe135"/><rect x="4" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="13" width="2" height="1" fill="#5a3618"/>
             </svg>
             <div class="rv-item rv-gift" id="rvGift" style="display:none;" aria-hidden="true"></div>
+            <div class="rv-coin" id="rvCoin" style="display:none;" aria-hidden="true"></div>
             <div class="rv-bar" aria-hidden="true">
               <!-- the way out back — dormant until the stand opens (STAND_OPEN);
                    accessible entrance = the field-guide link, this one is scenery -->
@@ -1333,6 +1361,10 @@ const GUIDE = [
             <div class="rv-quest__row"><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
           </div>
           <div class="rv-mixer" id="rvMixer" aria-hidden="true" title="the JELLY meter — fill it and it's jelly time">
+            <div class="rv-wallet" id="rvWalletChip" hidden title="your bananacoins — the stand out back takes these">
+              <img src="/assets/banana-stand/coin.png" width="18" height="18" alt="" />
+              <b id="rvWallet">0</b>
+            </div>
             <div class="rv-mixer__row"><span>JELLY</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div>
             <div class="rv-mixer__lvl" id="rvLvlRow"><span id="rvLvlN">LVL 1</span><span class="rv-mixer__lvlbar"><i id="rvLvlFill"></i></span></div>
           </div>
@@ -1444,6 +1476,7 @@ const GUIDE = [
           <li><strong>every 2 minutes</strong> — the spotlight wanders; dancing inside it is bonus jelly</li>
           <li><strong>every 3rd minute</strong> — THE DROP. Strobes, pyro, everybody peaks</li>
           <li><strong>every ~3½ minutes</strong> — tonight's wearable drop floats through, until you've caught it</li>
+          <li><strong>every ~4 minutes</strong> — 🪙 bananacoins glint on the floor. Usually one, sometimes a pile — walk into them and they're yours. The stand out back takes them; jelly stays jelly</li>
           <li><strong>every 5th minute</strong> — HAPPY HOUR at the bar (and specials in between)</li>
           <li><strong>every 7 minutes</strong> — the DJ loses a vinyl. Again.</li>
           <li><strong>every 8 minutes</strong> — THE WAVE. Barty yells, the floor ripples</li>
