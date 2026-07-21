@@ -90,13 +90,35 @@ for sx, sy, ln in [(244, 170, 4), (270, 184, 3), (256, 192, 4), (278, 172, 2), (
     for i in range(ln):
         px[sx + i, sy] = SPARK
 
-# ---- trees (canopy blob + trunk), parked at the edges ----------------------
-def tree(cx, cy, r):
-    # trunk first so the canopy overlaps it
-    for y in range(cy + r - 4, cy + r + 7):
-        for x in range(cx - 2, cx + 3):
+# ---- terrain variation: meadow patches + dry spots (before the trees) ------
+MEADOW = (72, 138, 50)
+DRY = (142, 168, 84)
+def patch(cx, cy, rx, ry, col, density=0.85):
+    for y in range(cy - ry, cy + ry + 1):
+        for x in range(cx - rx, cx + rx + 1):
+            if not (0 <= x < W and 0 <= y < H):
+                continue
+            if px[x, y][:3] not in (GRASS, GRASS_D, GRASS_L):
+                continue  # never paint over path/pond/anything built
+            d = math.hypot((x - cx) / rx, (y - cy) / ry)
+            if d <= 1.0 and rng.random() < density * (1.15 - d):
+                px[x, y] = col
+
+patch(80, 110, 34, 20, MEADOW)
+patch(238, 118, 26, 15, MEADOW)
+patch(120, 210, 30, 16, MEADOW)
+patch(210, 226, 22, 12, DRY, 0.5)
+patch(36, 190, 18, 10, DRY, 0.45)
+
+# ---- trees in three styles: oak (round), pine (stacked), sapling -----------
+def trunk(cx, y0, y1, w=2):
+    for y in range(y0, y1):
+        for x in range(cx - w, cx + w + 1):
             if 0 <= x < W and 0 <= y < H:
-                px[x, y] = TRUNK_D if abs(x - cx) == 2 else TRUNK
+                px[x, y] = TRUNK_D if abs(x - cx) == w else TRUNK
+
+def oak(cx, cy, r):
+    trunk(cx, cy + r - 4, cy + r + 7)
     for y in range(cy - r, cy + r + 1):
         for x in range(cx - r, cx + r + 1):
             if not (0 <= x < W and 0 <= y < H):
@@ -111,11 +133,98 @@ def tree(cx, cy, r):
                 else:
                     px[x, y] = CANOPY_D if wob else CANOPY
 
-tree(34, 42, 19)
-tree(287, 44, 17)
-tree(20, 148, 15)
-tree(300, 122, 13)
-tree(52, 224, 16)
+PINE = (45, 110, 51)
+PINE_D = (33, 84, 39)
+PINE_L = (62, 134, 66)
+def pine(cx, cy, h):
+    trunk(cx, cy + h // 2, cy + h // 2 + 6, 1)
+    tiers = 3
+    for t in range(tiers):
+        ty = cy - h // 2 + t * (h // tiers)
+        half = 4 + t * 3
+        for y in range(ty, ty + h // tiers + 2):
+            row_half = round(half * (y - ty + 2) / (h / tiers + 2))
+            for x in range(cx - row_half, cx + row_half + 1):
+                if 0 <= x < W and 0 <= y < H:
+                    edge = abs(x - cx) >= row_half - 1
+                    px[x, y] = PINE_D if edge else (PINE_L if x < cx - row_half // 2 else PINE)
+
+def sapling(cx, cy):
+    trunk(cx, cy + 3, cy + 8, 1)
+    for y in range(cy - 5, cy + 4):
+        for x in range(cx - 5, cx + 6):
+            if 0 <= x < W and 0 <= y < H and math.hypot(x - cx, (y - cy) * 1.2) <= 5:
+                d = math.hypot(x - cx, (y - cy) * 1.2)
+                px[x, y] = CANOPY_D if d > 3.8 else CANOPY
+
+oak(34, 42, 19)
+pine(287, 46, 26)
+oak(20, 148, 15)
+pine(304, 122, 22)
+oak(52, 224, 16)
+sapling(226, 154)
+sapling(96, 176)
+
+# ---- the picnic: checkered blanket, basket, two bananas hanging out --------
+BLANK_R = (232, 69, 69)
+BLANK_W = (255, 253, 245)
+BX, BY, BW2, BH2 = 62, 150, 30, 20
+for y in range(BY, BY + BH2):
+    for x in range(BX, BX + BW2):
+        check = ((x - BX) // 4 + (y - BY) // 4) % 2
+        edge = x in (BX, BX + BW2 - 1) or y in (BY, BY + BH2 - 1)
+        px[x, y] = (170, 48, 48, 255) if edge else ((BLANK_R if check else BLANK_W))
+# basket
+for y in range(BY + 5, BY + 11):
+    for x in range(BX + 12, BX + 19):
+        edge = x in (BX + 12, BX + 18) or y in (BY + 5, BY + 10)
+        px[x, y] = (95, 61, 28, 255) if edge else (138, 90, 43, 255)
+px[BX + 14, BY + 4] = (95, 61, 28, 255)
+px[BX + 16, BY + 4] = (95, 61, 28, 255)
+
+def mini_banana(cx, cy, flip=False):
+    """a wee banana sitting on the grass — crescent, eye, smile"""
+    BODY = (255, 225, 53)
+    BODY_D = (230, 168, 23)
+    INK = (17, 17, 17)
+    pts = [(0, -5), (1, -4), (2, -3), (2, -2), (2, -1), (2, 0), (1, 1), (0, 2), (-1, 2), (-2, 2)]
+    for dx, dy in pts:
+        fx = -dx if flip else dx
+        if 0 <= cx + fx < W and 0 <= cy + dy < H:
+            px[cx + fx, cy + dy] = BODY
+            if 0 <= cx + fx < W and 0 <= cy + dy + 1 < H and dy == 2:
+                px[cx + fx, cy + dy + 1] = BODY_D
+    sx = -1 if flip else 1
+    px[cx + sx * 0, cy - 6] = (122, 74, 33, 255)          # stem
+    px[cx + sx * 1, cy - 3] = INK                          # eye
+    px[cx + sx * 1, cy - 1] = (232, 59, 59, 255)           # a happy mouth px
+
+mini_banana(BX - 6, BY + 9)
+mini_banana(BX + BW2 + 5, BY + 11, flip=True)
+
+# ---- ducks on the pond -----------------------------------------------------
+def duck(cx, cy, flip=False):
+    B = (255, 253, 245)   # body
+    HD = (255, 225, 53)   # head — a banana-yellow duck, obviously
+    BEAK = (255, 145, 40)
+    INK = (17, 17, 17)
+    s = -1 if flip else 1
+    for dx in (-2, -1, 0, 1):
+        px[cx + s * dx, cy] = B
+    for dx in (-2, -1, 0):
+        px[cx + s * dx, cy - 1] = B
+    px[cx + s * 1, cy - 2] = HD
+    px[cx + s * 1, cy - 1] = HD
+    px[cx + s * 2, cy - 2] = BEAK
+    px[cx + s * 1, cy - 3] = INK
+    # wake ripple
+    for dx in (-4, 3):
+        if px[cx + s * dx, cy + 1][:3] in (WATER, WATER_L):
+            px[cx + s * dx, cy + 1] = SPARK
+
+duck(250, 172)
+duck(272, 186, flip=True)
+duck(262, 180)
 
 # ---- bushes + flowers ------------------------------------------------------
 def bush(cx, cy, r):

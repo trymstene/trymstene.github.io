@@ -12,21 +12,13 @@ const room = document.getElementById('bsRoom');
 if (room) init();
 
 function init() {
-  // ---- the keeper's face + outfit (shared by both scenes) -----------------
-  const LIDS =
-    '<svg viewBox="0 0 75 41" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">' +
-    '<rect x="0" y="0" width="32" height="19" fill="#ffe135"/>' +
-    '<rect x="41" y="0" width="34" height="19" fill="#ffe135"/>' +
-    '<rect x="0" y="19" width="32" height="4" fill="#111111"/>' +
-    '<rect x="41" y="19" width="34" height="4" fill="#111111"/>' +
-    '<rect x="8" y="34" width="18" height="6" fill="#9e94b8"/>' +
-    '<rect x="49" y="34" width="18" height="6" fill="#9e94b8"/>' +
-    '</svg>';
+  // ---- the keeper's outfit (shared by both scenes) ------------------------
+  // Face is STOCK for now — the tired-eyelid overlay didn't land (Trym's
+  // call 21 Jul); he'll craft a proper shopkeeper banana himself later.
   const KEEPER_OUTFIT = {
     hat: 'none', glasses: 'none', top: '', bottom: '', bg: 'transparent',
     captions: false, effect: 'none',
     extras: { mug: true }, // the coffee is load-bearing
-    custom: { art: LIDS, anchor: 'face', ox: -4.6, oy: -1.0, scale: 1 },
   };
   const KEEPER_FRAME = 3; // he stands STILL (Trym's call) — done dancing
 
