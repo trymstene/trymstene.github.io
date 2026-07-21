@@ -202,8 +202,10 @@ a { color: inherit; }
 /* the desktop row only turns on once it actually FITS: seven nowrap links +
    the brand need ~1250px, and between 900px and that the row overflowed the
    viewport (half the logo off-screen, My Pass cut — Trym caught it zoomed
-   in). Below the threshold everyone gets the burger, which always fits. */
-@media (min-width: 1260px) {
+   in). Below the threshold everyone gets the burger, which always fits —
+   and the row itself may WRAP as a last resort, never clip. */
+@media (min-width: 1360px) {
+  .nav { flex-wrap: wrap; row-gap: 0.4rem; }
   .nav__toggle { display: none; }
   .nav__backdrop { display: none; }
   .nav__brand { font-size: 1.85rem; }
@@ -212,6 +214,7 @@ a { color: inherit; }
     transform: none;
     height: auto;
     width: auto;
+    max-width: 100%;
     flex-direction: row;
     background: none;
     border-left: none;
@@ -219,6 +222,7 @@ a { color: inherit; }
     overflow: visible;
     box-shadow: var(--shadow-sm);
   }
+  .nav__group { flex-wrap: wrap; }
   .nav__group { flex-direction: row; align-items: stretch; }
   .nav__group a {
     display: flex;
