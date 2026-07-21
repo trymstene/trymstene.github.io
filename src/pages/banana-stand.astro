@@ -31,7 +31,7 @@ const description = 'There is always money in the banana stand.';
 
     /* ======= SCENE 1: the room (zoomed out) ======= */
     .bs-room {
-      position: relative; height: min(68vh, 540px); overflow: hidden;
+      position: relative; height: min(52vh, 420px); overflow: hidden;
       border: 4px solid #000; box-shadow: 8px 8px 0 #000; cursor: pointer;
       /* back wall up top, floorboards below */
       background:
@@ -44,20 +44,41 @@ const description = 'There is always money in the banana stand.';
       content: ''; position: absolute; inset: 0; pointer-events: none;
       background: radial-gradient(ellipse 90% 70% at 50% 22%, transparent 40%, rgba(0, 0, 0, 0.42));
     }
-    /* the little kiosk on the back wall */
+    /* the little kiosk on the back wall — DJ-booth style: the keeper's UPPER
+       BODY shows behind the desk (the window clips his legs), like the rave */
     .bs-mini {
-      position: absolute; left: 50%; top: 2%; transform: translateX(-50%);
-      width: min(46%, 210px); z-index: 2; text-align: center;
+      position: absolute; left: 50%; top: 3%; transform: translateX(-50%);
+      width: min(52%, 230px); z-index: 2; text-align: center;
     }
     .bs-mini__awn { display: flex; height: 12px; border: 3px solid #000; border-bottom: 0; }
     .bs-mini__awn span { flex: 1; }
     .bs-mini__awn span:nth-child(odd) { background: #ffe135; }
     .bs-mini__awn span:nth-child(even) { background: #241d33; }
-    .bs-mini__win { background: #1b1526; border: 3px solid #000; border-bottom: 0; padding: 2px 0 0; }
-    .bs-mini__win canvas { width: 58%; height: auto; image-rendering: pixelated; display: block; margin: 0 auto; }
+    .bs-mini__win {
+      background: #1b1526; border: 3px solid #000; border-bottom: 0;
+      height: clamp(58px, 13vw, 74px); overflow: hidden;
+    }
+    .bs-mini__win canvas { width: 78%; height: auto; image-rendering: pixelated; display: block; margin: -4% auto 0; }
     .bs-mini__desk {
-      height: 16px; border: 3px solid #000;
+      height: 20px; border: 3px solid #000; position: relative;
       background: repeating-linear-gradient(90deg, #3a2b18 0 18px, #2c2113 18px 36px);
+    }
+    .bs-mini__desk::before {
+      content: ''; position: absolute; inset: 0 0 auto; height: 5px;
+      background: #4a3820; border-bottom: 2px solid #000;
+    }
+    /* the keeper's floor bubble — Barty-style call-outs over the kiosk */
+    .bs-minibubble {
+      position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
+      width: max-content; max-width: 200%;
+      background: #fffdf5; color: #111; border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000; padding: 0.35rem 0.6rem; font-size: 0.8rem;
+      font-weight: 700; opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .bs-minibubble.is-on { opacity: 1; }
+    .bs-minibubble::after {
+      content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -5px;
+      border: 5px solid transparent; border-top-color: #000;
     }
     /* your banana */
     .bs-me { position: absolute; z-index: 3; width: 74px; margin-left: -37px; pointer-events: none; }
@@ -165,8 +186,9 @@ const description = 'There is always money in the banana stand.';
       <div class="bs-room" id="bsRoom">
         <div class="bs-hud"><Fragment set:html={COIN_SVGS.coin} /><span id="bsWallet">0</span></div>
         <div class="bs-mini" id="bsMini">
+          <div class="bs-minibubble" id="bsRoomBubble" role="status" aria-live="polite"></div>
           <div class="bs-mini__awn" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-          <div class="bs-mini__win"><canvas id="bsMiniCv" width="120" height="120" aria-hidden="true"></canvas></div>
+          <div class="bs-mini__win"><canvas id="bsMiniCv" width="150" height="150" aria-hidden="true"></canvas></div>
           <div class="bs-mini__desk" aria-hidden="true"></div>
         </div>
         <div class="bs-me" id="bsMe"><canvas id="bsMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
