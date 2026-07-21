@@ -137,55 +137,25 @@ def arc_px(w, sag, thick):
     return pts
 
 
-def small_coin(D):
-    """A little coin: outline, lit lip, a smile-crescent stamp, and the same
-    diagonal gloss as the master."""
-    g = Grid(D, D)
-    c = (D - 1) / 2
-    r = D / 2 - 0.85
-    filled = set()
-    for y in range(D):
-        for x in range(D):
-            if math.hypot(x - c, y - c) <= r:
-                filled.add((x, y))
-    for (x, y) in filled:
-        edge = any((x + dx, y + dy) not in filled for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-        if edge:
-            g.set(x, y, OUT)
-        else:
-            d = math.hypot(x - c, y - c)
-            if d > r - 2:
-                g.set(x, y, HI if (x - c) + (y - c) < -r * 0.9 else SHADE)
-            else:
-                g.set(x, y, FACE)
-    # no stamp below ~24px — every crescent variant read as a bat at this
-    # scale; small coins stay clean gold, the banana identity lives in the
-    # master coin
-    GLOSS = {FACE: PALE, SHADE: FACE}
-    for (x, y), col in list(g.px.items()):
-        if -3 <= (x + y) - 2 * c <= -1 and col in GLOSS:
-            g.set(x, y, GLOSS[col])
-    return g
+def half(g):
+    """the master at half size — clean 2:1 nearest-neighbour, no new art
+    (Trym: 'no need to generate new coins when we have the template')"""
+    out = Grid((g.w + 1) // 2, (g.h + 1) // 2)
+    for y in range(out.h):
+        for x in range(out.w):
+            c = g.px.get((x * 2, y * 2))
+            if c:
+                out.set(x, y, c)
+    return out
 
 
-def cluster():
-    """several coins — three small ones lying together, overlapping"""
-    g = Grid(38, 29)
-    for coin, ox, oy in ((small_coin(17), 0, 9), (small_coin(19), 10, 0), (small_coin(17), 20, 10)):
-        g.blit(coin, ox, oy)
-    return g
-
-
-def stack():
-    """a tidy pile: five coins from the side, topped with the classic
-    elliptical coin FACE (rim + crescent) looking back up at you"""
-    w, n, slab = 19, 5, 3
-    g = Grid(w, n * slab + 7)
+def side_stack(w, n):
+    """a pile of coins seen from the side (the background prop)"""
+    g = Grid(w, n * 3 + 1)
     h = g.h
-    c = (w - 1) / 2
     for i in range(n):
-        yb = h - 1 - i * slab           # slab bottom row
-        off = i % 2                     # hand-stacked jitter
+        yb = h - 1 - i * 3
+        off = i % 2
         x0, x1 = 1 + off, w - 2 - (1 - off)
         for x in range(x0, x1 + 1):
             g.set(x, yb - 2, FACE)
@@ -194,17 +164,32 @@ def stack():
         for yy in (yb - 2, yb - 1, yb):
             g.set(x0 - 1, yy, OUT)
             g.set(x1 + 1, yy, OUT)
-    # the top face: an ellipse lying on the pile
-    ey = h - n * slab - 3
-    rx, ry = (w - 5) / 2, 2.8
-    for y in range(h):
-        for x in range(w):
-            d = math.hypot((x - c) / rx, (y - ey) / ry)
-            if d <= 1.0:
-                g.set(x, y, OUT if d > 0.82 else FACE)
-    for x in range(3, 7):  # light catches the top rim
-        if g.px.get((x, ey - 2)) == OUT:
-            g.set(x, ey - 2, HI)
+    # the top coin catches the light
+    ty = h - 1 - (n - 1) * 3 - 2
+    for x in range(3, min(8, w - 3)):
+        if g.px.get((x, ty)) == FACE:
+            g.set(x, ty, HI)
+    return g
+
+
+def cluster(master):
+    """several coins — the master itself, halved and clustered"""
+    m = half(master)  # 22px
+    g = Grid(m.w * 2 - 2, m.h + 9)
+    g.blit(m, 0, 9)
+    g.blit(m, m.w - 8, 0)
+    g.blit(m, m.w + 3 - 8 + 5, 10)
+    return g
+
+
+def stack_scene(master):
+    """a stack (or two) behind, the coin itself in front, overflowing them"""
+    m = half(master)  # 22px
+    a, b = side_stack(15, 6), side_stack(13, 4)
+    g = Grid(34, 28)
+    g.blit(a, 0, g.h - a.h)
+    g.blit(b, 14, g.h - b.h)
+    g.blit(m, g.w - m.w - 1, g.h - m.h)  # the front coin, bottom-right
     return g
 
 
@@ -216,7 +201,7 @@ def _blit(self, other, dx, dy):
 Grid.blit = _blit
 
 COIN = big_coin(44, 30)  # 32 muddied the face — 30 keeps the smile readable
-VARIANTS = [('coin', COIN), ('coins', cluster()), ('stack', stack())]
+VARIANTS = [('coin', COIN), ('coins', cluster(COIN)), ('stack', stack_scene(COIN))]
 
 
 def to_svg(g):
