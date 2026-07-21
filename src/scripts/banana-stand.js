@@ -12,6 +12,8 @@ import { WEARABLE_PACKS } from '../data/wearables.js';
 const room = document.getElementById('bsRoom');
 if (room) init();
 
+function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
+
 function init() {
   // ---- the keeper's outfit (shared by both scenes) ------------------------
   // Plain stock banana for now — Trym crafts the real shopkeeper look
@@ -44,9 +46,12 @@ function init() {
   let inShop = false;
   let cutAt = 0; // trigger cooldown — no re-cut while a cut is mid-flight
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let counterTracked = false;
   function cutTo(showShop) {
     inShop = showShop;
     cutAt = performance.now();
+    // the park→counter funnel step: fired once per visit, on the first cut in
+    if (showShop && !counterTracked) { counterTracked = true; track('stand_counter'); }
     // reposition IMMEDIATELY, not inside the delayed swap: with the banana
     // still AT the counter, the very next walk frame re-fired the proximity
     // trigger and cut straight back into the shop (Trym's double-click bug)
@@ -223,9 +228,12 @@ function init() {
 
   const shelf = document.getElementById('bsShelf');
   const spot = document.getElementById('bsSpot');
+  let pickedId = null;
   function pick(item, tile) {
     shelf.querySelectorAll('.bs-tile').forEach((t) => t.classList.remove('is-picked'));
     tile.classList.add('is-picked');
+    pickedId = item.id;
+    track('stand_item_view', { item: item.id });
     document.getElementById('bsSpotArt').innerHTML = SVG[item.artKey] || '';
     document.getElementById('bsSpotName').textContent = item.label;
     document.getElementById('bsSpotDesc').textContent = DESC[item.id] || item.phrase;
@@ -249,7 +257,11 @@ function init() {
     });
   }
   const buyBtn = document.getElementById('bsSpotBuy');
-  if (buyBtn) buyBtn.addEventListener('click', () => say("the till isn't wired up yet. soon. probably."));
+  if (buyBtn) buyBtn.addEventListener('click', () => {
+    // pre-till purchase intent — the demand signal that prices S2b
+    track('stand_buy_try', { item: pickedId || '' });
+    say("the till isn't wired up yet. soon. probably.");
+  });
 
   // ---- wall dressing: a FEW items at real wearable scale for the keeper
   // (Trym: bigger beats many tiny ones) — % widths so they scale with the

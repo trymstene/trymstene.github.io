@@ -601,7 +601,9 @@ var EV_LABEL = {
   view_item:'viewed merch', license_click:'read the license',
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
-  shop_view:'browsed the shop' };
+  shop_view:'browsed the shop',
+  rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
+  stand_item_view:'eyed stand gear', stand_buy_try:'tried to BUY at the stand 🔥' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -661,7 +663,22 @@ var EV_EXPLAIN = {
   pass_view:'opened their Banana Pass',
   forge_start:'started drawing in the Pixel Forge',
   forge_export:'exported a creation from the Pixel Forge',
-  overlay_link_copy:'copied the OBS overlay link — a streamer!' };
+  overlay_link_copy:'copied the OBS overlay link — a streamer!',
+  rave_walk:'took their first steps on the dance floor (once per visit)',
+  rave_beer:'won a happy-hour round at Barty’s bar',
+  rave_snack:'caught a conveyor snack on the floor (kind = which one)',
+  rave_gold:'caught THE GOLDEN BANANA 🏆 — the 30-minute rarity',
+  rave_drop_catch:'caught tonight’s wearable drop — theirs forever (item = which)',
+  rave_vinyl_pickup:'picked up the DJ’s lost vinyl',
+  rave_vinyl_delivered:'carried the vinyl back to the booth — courier complete',
+  rave_shot:'fired a confetti popper at another banana',
+  rave_splat:'got splatted by a popper shot',
+  rave_sit:'sat down on their own bar stool (a five-nightshift regular)',
+  rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one)',
+  rave_exit_stand:'left the club through the EXIT by the bar → the banana stand (via = door or field-guide link)',
+  stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
+  stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
+  stand_buy_try:'pressed the LOCKED buy button at the stand 🔥 purchase intent BEFORE the till exists — this list prices S2b (item = which)' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };

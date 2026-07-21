@@ -597,10 +597,14 @@ function init() {
   // stepping out: black cartridge-cut, then the park (same blink the stand uses)
   if (doorEl && STAND_OPEN) {
     const standGuide = el('rvStandGuide');
-    if (standGuide) standGuide.hidden = false;
+    if (standGuide) {
+      standGuide.hidden = false;
+      const gLink = standGuide.querySelector('a');
+      if (gLink) gLink.addEventListener('click', () => track('rave_exit_stand', { via: 'guide' }));
+    }
     doorEl.addEventListener('click', (e) => {
       e.preventDefault();
-      track('rave_exit_stand');
+      track('rave_exit_stand', { via: 'door' });
       const cut = el('rvCut');
       if (cut && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         cut.classList.add('is-on');
