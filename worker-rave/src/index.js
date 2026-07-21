@@ -725,8 +725,26 @@ export class ParkRoom {
 
     if (msg.t === 'hi' && !me) {
       this.reapStale();
+      // SUPERSEDE: the same browser rejoining (park→club→park) kills its own
+      // ghost sockets immediately — without this, quick roundtrips stacked
+      // duplicate bananas until the reaper's 120s sweep
+      const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      if (sid) {
+        for (const other of this.state.getWebSockets()) {
+          if (other === ws) continue;
+          let a = null;
+          try { a = other.deserializeAttachment(); } catch (e) {}
+          if (a && !a.dead && a.sid === sid) {
+            a.dead = true;
+            try { other.serializeAttachment(a); } catch (e) {}
+            try { other.close(1000, 'superseded'); } catch (e) {}
+            this.broadcast({ t: 'leave', id: a.id }, other);
+          }
+        }
+      }
       const p = {
         id: crypto.randomUUID().slice(0, 8),
+        sid,
         name: sanitizeName(msg.name, []), // family filter, no strike list here
         outfit: sanitizeOutfit(msg.outfit),
         x: parkClampX(msg.x), y: parkClampY(msg.y),

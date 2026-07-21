@@ -256,6 +256,14 @@ function init() {
   const PARK_WS = 'wss://banana-rave.trymstene.workers.dev/park';
   const peers = new Map(); // id → { el, ctx, outfit, lastF }
   const crowdEl = document.getElementById('bsCrowd');
+  // a stable per-browser session id: rejoining SUPERSEDES your old socket in
+  // the room (quick park→club→park roundtrips left ghost copies of you
+  // standing around until the reaper — Trym counted three of himself)
+  let parkSid = '';
+  try {
+    parkSid = localStorage.getItem('park-sid') || '';
+    if (!parkSid) { parkSid = crypto.randomUUID().slice(0, 12); localStorage.setItem('park-sid', parkSid); }
+  } catch (e) { parkSid = String(Math.random()).slice(2, 14); }
   let parkWs = null, myParkId = null, parkRetries = 0, parkSendAt = 0;
   const lastSent = { x: -1, y: -1 };
   const myParkOutfit = () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: ME_DRAW.extras || {} });
@@ -352,7 +360,7 @@ function init() {
     parkWs = ws;
     ws.onopen = () => {
       parkRetries = 0;
-      ws.send(JSON.stringify({ t: 'hi', outfit: myParkOutfit(), x: pos.x, y: pos.y, name: passName }));
+      ws.send(JSON.stringify({ t: 'hi', sid: parkSid, outfit: myParkOutfit(), x: pos.x, y: pos.y, name: passName }));
     };
     ws.onmessage = (ev) => {
       let m;
@@ -371,17 +379,24 @@ function init() {
         }
       }
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       if (parkWs !== ws) return;
       parkWs = null;
       peers.forEach((p) => p.el.remove());
       peers.clear();
       refreshCrowd();
+      if (ev && ev.reason === 'superseded') return; // a newer you took over — don't fight it
       if (parkRetries++ < 5) setTimeout(parkConnect, 4000 * parkRetries);
     };
     ws.onerror = () => { try { ws.close(); } catch (e) {} };
   }
   parkConnect();
+  // say goodbye on the way out — navigations otherwise leave the socket to
+  // linger (the reaper catches it, but only after two silent minutes)
+  addEventListener('pagehide', () => {
+    parkRetries = 99;
+    try { if (parkWs) parkWs.close(1000, 'bye'); } catch (e) {}
+  });
   // the hibernation keepalive — the room auto-pongs without waking up
   setInterval(() => { if (parkWs && parkWs.readyState === 1) parkWs.send('{"t":"ping"}'); }, 25000);
   function parkSendMove(now) {
