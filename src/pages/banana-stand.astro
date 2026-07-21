@@ -8,7 +8,9 @@
 //      big shopkeeper, upper body behind a wooden desk, options open.
 // Stock, coins on the floor and buying come in later stages.
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { COIN_SVGS } from '../data/coin-art.js';
+// coins are PNG SPRITES (tools/build-coin-art.py → /assets/banana-stand/) —
+// inline SVG rects bloated the HTML; display sizes stay INTEGER multiples
+// of the natural pixel size so the art scales crisp
 
 const title = 'The Banana Stand';
 const description = 'There is always money in the banana stand.';
@@ -123,7 +125,7 @@ const description = 'There is always money in the banana stand.';
       background: rgba(0, 0, 0, 0.55); border: 2px solid #000;
       padding: 0.2rem 0.5rem; font-weight: 800; font-size: 0.85rem; color: #ffe135;
     }
-    .bs-hud svg { width: 20px; height: auto; image-rendering: pixelated; }
+    .bs-hud img { height: auto; image-rendering: pixelated; }
 
     /* ======= SCENE 2: the counter (zoomed in) ======= */
     .bs-shop[hidden] { display: none; }
@@ -172,8 +174,8 @@ const description = 'There is always money in the banana stand.';
       position: absolute; left: 4%; top: 54%; transform: translateY(-50%); z-index: 2;
       display: flex; align-items: center; gap: 0.5rem;
     }
-    .bs-deskwallet svg {
-      width: 42px; height: auto; image-rendering: pixelated;
+    .bs-deskwallet img {
+      height: auto; image-rendering: pixelated;
       filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.45));
     }
     .bs-deskwallet b {
@@ -219,10 +221,7 @@ const description = 'There is always money in the banana stand.';
     }
     .bs-coindrafts__row { display: flex; align-items: flex-end; justify-content: space-around; gap: 1rem; flex-wrap: wrap; }
     .bs-coindrafts__row > div { display: grid; justify-items: center; gap: 0.5rem; }
-    .bs-coindrafts__row svg { image-rendering: pixelated; height: auto; }
-    .bs-coindrafts__row > div:nth-child(1) svg { width: 110px; }
-    .bs-coindrafts__row > div:nth-child(2) svg { width: 114px; }
-    .bs-coindrafts__row > div:nth-child(3) svg { width: 150px; }
+    .bs-coindrafts__row img { image-rendering: pixelated; height: auto; }
     .bs-coindrafts__row b { font-size: 0.75rem; opacity: 0.8; }
 
     /* the scene CUT: a hard black blink, like a cartridge game */
@@ -245,7 +244,7 @@ const description = 'There is always money in the banana stand.';
     <!-- ======= SCENE 1: the room ======= -->
     <div id="bsScene1">
       <div class="bs-room" id="bsRoom">
-        <div class="bs-hud"><Fragment set:html={COIN_SVGS.coin} /><span id="bsWallet">0</span></div>
+        <div class="bs-hud"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><span id="bsWallet">0</span></div>
         <div class="bs-stand" id="bsMini">
           <div class="bs-minibubble" id="bsRoomBubble" role="status" aria-live="polite"></div>
           <div class="bs-stand__body">
@@ -288,7 +287,7 @@ const description = 'There is always money in the banana stand.';
         </div>
         <div class="bs-counter">
           <div class="bs-deskwallet" aria-label="Your bananacoins">
-            <Fragment set:html={COIN_SVGS.coin} />
+            <img src="/assets/banana-stand/coin.png" width="44" alt="" aria-hidden="true" />
             <b id="bsDeskWallet">0</b>
           </div>
         </div>
@@ -314,9 +313,9 @@ const description = 'There is always money in the banana stand.';
     <div class="bs-coindrafts">
       <h2>🪙 coin drafts — for the banana guy</h2>
       <div class="bs-coindrafts__row">
-        <div><Fragment set:html={COIN_SVGS.coin} /><b>one coin</b></div>
-        <div><Fragment set:html={COIN_SVGS.coins} /><b>several coins</b></div>
-        <div><Fragment set:html={COIN_SVGS.stack} /><b>a stack</b></div>
+        <div><img src="/assets/banana-stand/coin.png" width="132" alt="One bananacoin" /><b>one coin</b></div>
+        <div><img src="/assets/banana-stand/coins.png" width="147" alt="Several bananacoins" /><b>several coins</b></div>
+        <div><img src="/assets/banana-stand/stack.png" width="177" alt="A stack of bananacoins" /><b>a stack</b></div>
       </div>
     </div>
   </div>
