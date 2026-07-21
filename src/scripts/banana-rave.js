@@ -2592,6 +2592,14 @@ function init() {
   // ---- websocket presence ----
   let ws = null;
   let lastPong = 0;
+  // the world-wide per-browser session id (the key name is historic — the
+  // park minted it first): a rejoin SUPERSEDES your own ghost sockets
+  // server-side, so quick park→club roundtrips can't stack copies of you
+  let worldSid = '';
+  try {
+    worldSid = localStorage.getItem('park-sid') || '';
+    if (!worldSid) { worldSid = crypto.randomUUID().slice(0, 12); localStorage.setItem('park-sid', worldSid); }
+  } catch (e) { worldSid = String(Math.random()).slice(2, 14); }
   function connect() {
     if (ws && ws.readyState <= 1) return; // already live or connecting — never stack sockets (a stacked one = an orphaned ghost)
     try { ws = new WebSocket(RAVE_WS); } catch (e) { return soloMode(); }
@@ -2602,7 +2610,7 @@ function init() {
       el('rvStatus').className = 'rv-live';
       // sess = floor time so far: iOS re-sockets on every background/foreground,
       // and the server's stage gate must not restart with the socket
-      ws.send(JSON.stringify({ t: 'hi', outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
+      ws.send(JSON.stringify({ t: 'hi', sid: worldSid, outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -2699,7 +2707,10 @@ function init() {
         setTimeout(() => { el('rvMore').textContent = ''; }, 4000);
       }
     };
-    ws.onclose = () => { if (!online) soloMode(); else { el('rvStatus').textContent = 'reconnecting…'; setTimeout(connect, 3000 + Math.random() * 4000); } };
+    ws.onclose = (ev) => {
+      if (ev && ev.reason === 'superseded') { el('rvStatus').textContent = 'open in another tab'; return; } // a newer you took the floor — don't fight it
+      if (!online) soloMode(); else { el('rvStatus').textContent = 'reconnecting…'; setTimeout(connect, 3000 + Math.random() * 4000); }
+    };
     ws.onerror = () => {};
   }
   // say a clean goodbye when actually LEAVING (navigation / tab close) so the floor

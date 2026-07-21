@@ -369,9 +369,27 @@ export class RaveRoom {
 
     if (msg.t === 'hi' && !me) {
       this.reapStale(); // every join clears the zombies before the roster ships
+      // SUPERSEDE (same contract as ParkRoom): the same browser rejoining
+      // kills its own ghost sockets NOW — quick park→club roundtrips were
+      // stacking duplicate dancers until the reaper's sweep
+      const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      if (sid) {
+        for (const other of this.state.getWebSockets()) {
+          if (other === ws) continue;
+          let a = null;
+          try { a = other.deserializeAttachment(); } catch (e) {}
+          if (a && !a.dead && a.sid === sid) {
+            a.dead = true;
+            try { other.serializeAttachment(a); } catch (e) {}
+            try { other.close(1000, 'superseded'); } catch (e) {}
+            this.broadcast({ t: 'leave', id: a.id }, other);
+          }
+        }
+      }
       const strikes = (await this.state.storage.get('nameStrikes')) || [];
       const p = {
         id: crypto.randomUUID().slice(0, 8),
+        sid,
         name: sanitizeName(msg.name, strikes), // '' = the outfit-name speaks
         outfit: sanitizeOutfit(msg.outfit),
         joined: Date.now(),
