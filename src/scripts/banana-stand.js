@@ -15,6 +15,28 @@ if (room) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
+// 🪙 the SAME coin faucet as the club — identical clock, seeds and odds
+// (keep in sync with banana-rave.js: seedRand / COIN_* / coinAmountFor).
+// The claimed-window key `bc-win` is SHARED with the rave, so a window
+// caught in either room is caught everywhere — one faucet, no double-dip.
+const COIN_TEST = location.search.includes('cointest');
+const COIN_PERIOD = COIN_TEST ? 30 : 240, COIN_WAIT = COIN_TEST ? 24 : 18, COIN_OFFSET = 150;
+function seedRand(n) {
+  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+function coinAmountFor(w) { // 70% one / 25% three / 5% five — same everywhere
+  const r = seedRand(0xc01e * 7 + w);
+  return r < 0.70 ? 1 : r < 0.95 ? 3 : 5;
+}
+function parkCoinSpotFor(w) { // own salt — the park isn't a mirror of the floor
+  const x = 12 + seedRand(0x9a4b + w * 2) * 76;
+  const y = 28 + seedRand(0x9a4b + w * 2 + 1) * 64;
+  return { x, y };
+}
+
 // the rave's three-frame smoke puff (copied from banana-rave.js POOF_FRAMES —
 // exporting it would drag the whole rave module in here; keep the art in sync)
 const POOF_FRAMES = ['<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="1" width="2" height="1" fill="#b8bcd0"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="4" y="2" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="3" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="4" width="2" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="1" fill="#b8bcd0"/><rect x="7" y="0" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="2" y="1" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="7" y="1" width="1" height="1" fill="#8890a8"/><rect x="8" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="0" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="2" width="1" height="1" fill="#8890a8"/><rect x="2" y="2" width="3" height="1" fill="#e8eaf2"/><rect x="5" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="2" width="1" height="1" fill="#8890a8"/><rect x="7" y="2" width="1" height="1" fill="#e8eaf2"/><rect x="8" y="2" width="1" height="1" fill="#8890a8"/><rect x="1" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="3" width="1" height="1" fill="#8890a8"/><rect x="5" y="3" width="3" height="1" fill="#e8eaf2"/><rect x="8" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="4" width="2" height="1" fill="#8890a8"/><rect x="4" y="4" width="1" height="1" fill="#b8bcd0"/><rect x="5" y="4" width="2" height="1" fill="#e8eaf2"/><rect x="7" y="4" width="1" height="1" fill="#8890a8"/><rect x="4" y="5" width="3" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="1" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="9" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="0" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="2" y="1" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="7" y="2" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="9" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="0" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="3" y="3" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="2" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="7" y="4" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="10" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/></svg>'];
@@ -160,6 +182,7 @@ function init() {
       if (pos.y < 94) raveRoadArmed = true;
       if (raveRoadArmed && pos.y > 97.5 && Math.abs(pos.x - 50) < 9) exitToRave();
       parkSendMove(now); // tell the park where you walked (throttled)
+      coinTick();
     }
     requestAnimationFrame(step);
   }
@@ -235,6 +258,56 @@ function init() {
   function refreshCrowd() {
     if (crowdEl) crowdEl.textContent = peers.size ? `· ${peers.size + 1} in the park` : '';
   }
+  // ---- 🪙 coins drop HERE too (Trym: not just the club) -------------------
+  // Same windows, same odds, same wallet; the park just has its own spots.
+  const coinEl = document.createElement('div');
+  coinEl.className = 'bs-coin';
+  coinEl.style.display = 'none';
+  room.appendChild(coinEl);
+  let coinLive = null;
+  let coinWinClaimed = -1;
+  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  function coinFloat(x, y, n) {
+    const d = document.createElement('div');
+    d.className = 'bs-coinfloat';
+    d.textContent = '+' + n;
+    d.style.left = x + '%';
+    d.style.top = y + '%';
+    room.appendChild(d);
+    setTimeout(() => d.remove(), 900);
+  }
+  function coinTick() {
+    const t = Date.now() / 1000;
+    const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
+    const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
+    if (cPh < COIN_WAIT && coinWinClaimed !== cWin) {
+      const cs = parkCoinSpotFor(cWin);
+      if (inPond(cs.x, cs.y)) cs.x -= 34; // coins don't float
+      coinEl.className = 'bs-coin bs-coin--' + coinAmountFor(cWin);
+      coinEl.style.display = '';
+      coinEl.style.left = cs.x + '%';
+      coinEl.style.top = cs.y + '%';
+      coinLive = { x: cs.x, y: cs.y, win: cWin };
+    } else {
+      // unclaimed windows leave in the smoke; claimed ones already vanished
+      if (coinLive && coinWinClaimed !== coinLive.win && coinEl.style.display !== 'none') poofPark(coinLive.x, coinLive.y + 4);
+      coinEl.style.display = 'none';
+      coinLive = null;
+    }
+    // the catch: walk into it — yours, same monotonic wallet as the club
+    if (coinLive && Math.hypot(pos.x - coinLive.x, (pos.y - 4) - coinLive.y) < 8) {
+      const n = coinAmountFor(coinLive.win);
+      coinWinClaimed = coinLive.win;
+      try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
+      passStat('coins_earned', n);
+      refreshWallets();
+      coinFloat(coinLive.x, coinLive.y, n);
+      track('rave_coin', { n, at: 'park' });
+      coinEl.style.display = 'none';
+      coinLive = null;
+    }
+  }
+
   // gone in a puff, not a blink — same smoke as the rave floor
   function poofPark(x, y) {
     const d = document.createElement('div');

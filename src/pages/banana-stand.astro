@@ -96,6 +96,31 @@ const description = 'There is always money in the banana stand.';
     }
     #bsCrowd { margin-left: 0.55rem; font-size: 0.68rem; opacity: 0.85; }
     #bsCrowd:empty { display: none; }
+    /* 🪙 coins drop in the park too — same sprites as the club floor, native
+       pixel scale, spin/twinkle + a rock for the piles */
+    .bs-coin {
+      position: absolute; transform: translate(-50%, -50%); z-index: 2;
+      image-rendering: pixelated; background-repeat: no-repeat; pointer-events: none;
+      filter: drop-shadow(0 0 9px rgba(255, 220, 85, 0.55));
+    }
+    .bs-coin--1 { width: 44px; height: 44px; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 264px 44px; animation: bsCoinSpin 0.9s steps(6) infinite; }
+    @keyframes bsCoinSpin { to { background-position: -264px 0; } }
+    .bs-coin--3 { width: 49px; height: 31px; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 196px 31px; animation: bsCoinTw3 2s steps(4) infinite, bsCoinRock 2.3s ease-in-out infinite; }
+    @keyframes bsCoinTw3 { to { background-position: -196px 0; } }
+    .bs-coin--5 { width: 59px; height: 43px; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 236px 43px; animation: bsCoinTw5 2.6s steps(4) infinite, bsCoinRock 2.9s ease-in-out 0.5s infinite; }
+    @keyframes bsCoinTw5 { to { background-position: -236px 0; } }
+    @keyframes bsCoinRock {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-50%, -54%) rotate(-3deg); }
+      75% { transform: translate(-50%, -52%) rotate(3deg); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bs-coin { animation: none; } }
+    .bs-coinfloat {
+      position: absolute; transform: translate(-50%, -50%); z-index: 5; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 1rem; color: #ffe135;
+      text-shadow: 2px 2px 0 #000; animation: bsCoinFloat 0.9s ease-out forwards;
+    }
+    @keyframes bsCoinFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
     /* a leaver goes in a puff, not a blink — the rave's smoke, park edition */
     .bs-poof { position: absolute; transform: translate(-50%, -50%); width: 44px; z-index: 4; pointer-events: none; }
     .bs-poof span { position: absolute; inset: 0; opacity: 0; }
