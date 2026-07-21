@@ -249,13 +249,14 @@ function init() {
   const buyBtn = document.getElementById('bsSpotBuy');
   if (buyBtn) buyBtn.addEventListener('click', () => say("the till isn't wired up yet. soon. probably."));
 
-  // ---- wall dressing: a few items hung on the planks behind the keeper ----
+  // ---- wall dressing: a FEW items at real wearable scale for the keeper
+  // (Trym: bigger beats many tiny ones) — % widths so they scale with the
+  // window on every screen
   const DECOR = [
-    { id: 'buckethat', left: '6%', top: '14%', w: 34, rot: -4 },
-    { id: 'snorkelmask', left: '8%', top: '52%', w: 40, rot: 3 },
-    { id: 'duckhat', left: '82%', top: '12%', w: 38, rot: 4 },
-    { id: 'balloondog', left: '81%', top: '48%', w: 40, rot: -3 },
-    { id: 'cactuspot', left: '68%', top: '20%', w: 26, rot: 2 },
+    { id: 'buckethat', left: '2%', top: '8%', w: '21%', rot: -4 },
+    { id: 'snorkelmask', left: '1%', top: '52%', w: '25%', rot: 3 },
+    { id: 'duckhat', left: '76%', top: '6%', w: '23%', rot: 4 },
+    { id: 'balloondog', left: '75%', top: '48%', w: '24%', rot: -3 },
   ];
   const win = document.querySelector('.bs-window');
   if (win) DECOR.forEach((d) => {
@@ -263,7 +264,7 @@ function init() {
     if (!def) return;
     const el = document.createElement('span');
     el.className = 'bs-decor';
-    el.style.cssText = `left:${d.left};top:${d.top};width:${d.w}px;transform:rotate(${d.rot}deg);`;
+    el.style.cssText = `left:${d.left};top:${d.top};width:${d.w};transform:rotate(${d.rot}deg);`;
     el.setAttribute('aria-hidden', 'true');
     el.innerHTML = SVG[def.artKey] || '';
     win.appendChild(el);
