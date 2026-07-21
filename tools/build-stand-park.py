@@ -202,29 +202,7 @@ def mini_banana(cx, cy, flip=False):
 mini_banana(BX - 6, BY + 9)
 mini_banana(BX + BW2 + 5, BY + 11, flip=True)
 
-# ---- ducks on the pond -----------------------------------------------------
-def duck(cx, cy, flip=False):
-    B = (255, 253, 245)   # body
-    HD = (255, 225, 53)   # head — a banana-yellow duck, obviously
-    BEAK = (255, 145, 40)
-    INK = (17, 17, 17)
-    s = -1 if flip else 1
-    for dx in (-2, -1, 0, 1):
-        px[cx + s * dx, cy] = B
-    for dx in (-2, -1, 0):
-        px[cx + s * dx, cy - 1] = B
-    px[cx + s * 1, cy - 2] = HD
-    px[cx + s * 1, cy - 1] = HD
-    px[cx + s * 2, cy - 2] = BEAK
-    px[cx + s * 1, cy - 3] = INK
-    # wake ripple
-    for dx in (-4, 3):
-        if px[cx + s * dx, cy + 1][:3] in (WATER, WATER_L):
-            px[cx + s * dx, cy + 1] = SPARK
-
-duck(250, 172)
-duck(272, 186, flip=True)
-duck(262, 180)
+# (ducks are DOM sprites in the page — they drift back and forth in the pond)
 
 # ---- bushes + flowers ------------------------------------------------------
 def bush(cx, cy, r):
@@ -251,7 +229,7 @@ print('wrote park.png')
 # ============================================================================
 # the HUT — a real banana stand: yellow walls, brown roof, banana on top,
 # transparent WINDOW (the keeper's canvas sits behind it in the DOM)
-HW, HH = 88, 80
+HW, HH = 88, 86  # taller from the bottom — extra wall below the counter
 hut = Image.new('RGBA', (HW, HH), (0, 0, 0, 0))
 hp = hut.load()
 
@@ -281,10 +259,11 @@ for i, (dx, dy) in enumerate([(-8, 2), (-7, 1), (-6, 0), (-5, 0), (-4, -1), (-3,
 hp[HW // 2 + 6, 6] = STEM
 hp[HW // 2 - 9, 5] = STEM
 
-# walls
-for y in range(26, 74):
+# walls — SOLID all the way to the sprite's bottom row (a transparent gap at
+# the base let the keeper's feet peek through the building; Trym's catch)
+for y in range(26, HH):
     for x in range(6, HW - 6):
-        edge = x in (6, HW - 7) or y == 73
+        edge = x in (6, HW - 7) or y == HH - 1
         plank = (x - 6) % 10 == 9
         hp[x, y] = FRAME if edge else (WALL_D if plank else WALL)
 # window hole (transparent) + frame
@@ -301,8 +280,25 @@ for y in range(WY1 + 2, WY1 + 9):
         hp[x, y] = FRAME if y == WY1 + 8 or x in (WX0 - 4, WX1 + 3) else (SILL if y == WY1 + 2 else ROOF)
 # base shadow strip
 for x in range(6, HW - 6):
-    hp[x, 74] = ROOF_D
-    hp[x, 75] = ROOF_D
+    hp[x, HH - 3] = ROOF_D
+    hp[x, HH - 2] = ROOF_D
+
+# the tilted SIGN on the outside wall (right of the window): a yellow plank
+# with a banana on it, hung crooked — rows shift down as it runs right
+SGN_X, SGN_Y, SGN_W, SGN_H = 62, 24, 22, 9
+for x in range(SGN_X, SGN_X + SGN_W):
+    tilt = (x - SGN_X) // 8  # +1px down every 8px = the crooked hang
+    for y in range(SGN_Y + tilt, SGN_Y + SGN_H + tilt):
+        if 0 <= x < HW and 0 <= y < HH:
+            edge = x in (SGN_X, SGN_X + SGN_W - 1) or y in (SGN_Y + tilt, SGN_Y + SGN_H + tilt - 1)
+            hp[x, y] = FRAME if edge else WALL
+# nail + the banana glyph on the plank
+hp[SGN_X + SGN_W // 2, SGN_Y - 1] = FRAME
+for i, (dx, dy) in enumerate([(-5, 1), (-4, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 1), (2, 2)]):
+    x, y = SGN_X + 10 + dx, SGN_Y + 4 + (10 + dx) // 8
+    if 0 <= x < HW and 0 <= y < HH:
+        hp[x, y] = NANA_D
+hp[SGN_X + 12, SGN_Y + 3 + 1] = STEM
 
 hut.save(os.path.join(OUT, 'hut.png'), optimize=True)
 print('wrote hut.png')

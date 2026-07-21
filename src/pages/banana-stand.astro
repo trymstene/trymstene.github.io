@@ -46,7 +46,7 @@ const description = 'There is always money in the banana stand.';
     .bs-stand__body { position: relative; overflow: hidden; } /* clips the keeper's feet inside the hut (the bubble lives OUTSIDE this wrapper) */
     .bs-stand img { display: block; width: 100%; height: auto; image-rendering: pixelated; position: relative; z-index: 2; }
     .bs-stand__inner { /* the dark inside of the hut, seen through the window */
-      position: absolute; left: 22%; top: 38%; width: 56%; height: 33%;
+      position: absolute; left: 22%; top: 35%; width: 56%; height: 31%;
       background: #241d33; z-index: 0;
     }
     .bs-stand canvas {
@@ -69,19 +69,35 @@ const description = 'There is always money in the banana stand.';
     /* your banana */
     .bs-me { position: absolute; z-index: 3; width: 74px; margin-left: -37px; pointer-events: none; }
     .bs-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
-    /* birds flying by — pure decoration, hidden for reduced motion */
+    /* birds flying by — two wing frames flapping, hidden for reduced motion */
     .bs-bird { position: absolute; left: -10%; z-index: 4; pointer-events: none; }
-    .bs-bird svg { display: block; image-rendering: pixelated; }
-    .bs-bird--1 { top: 9%; width: 12px; animation: bsFly 17s linear infinite; }
-    .bs-bird--2 { top: 15%; width: 9px; animation: bsFly 23s linear 7s infinite; }
+    .bs-bird svg { display: block; width: 100%; height: auto; image-rendering: pixelated; animation: bsFlapA 0.44s steps(1) infinite; }
+    .bs-bird svg + svg { position: absolute; inset: 0; animation-name: bsFlapB; }
+    @keyframes bsFlapA { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    @keyframes bsFlapB { 0%, 49% { opacity: 0; } 50%, 100% { opacity: 1; } }
+    .bs-bird--1 { top: 9%; width: 16px; animation: bsFly 17s linear infinite; }
+    .bs-bird--2 { top: 15%; width: 12px; animation: bsFly 23s linear 7s infinite; }
     @keyframes bsFly {
       0% { left: -10%; transform: translateY(0); }
-      25% { transform: translateY(-6px); }
+      25% { transform: translateY(-7px); }
       50% { transform: translateY(3px); }
-      75% { transform: translateY(-5px); }
+      75% { transform: translateY(-6px); }
       100% { left: 110%; transform: translateY(0); }
     }
-    @media (prefers-reduced-motion: reduce) { .bs-bird { display: none; } }
+    /* the ducks: drifting back and forth across the pond, turning at the ends */
+    .bs-duck { position: absolute; z-index: 1; pointer-events: none; }
+    .bs-duck svg { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    .bs-duck--1 { left: 73%; top: 69%; width: 11px; animation: bsPaddle 11s ease-in-out infinite; }
+    .bs-duck--2 { left: 84%; top: 76%; width: 10px; animation: bsPaddle 14s ease-in-out 3s infinite reverse; }
+    .bs-duck--3 { left: 79%; top: 72%; width: 8px; animation: bsPaddle 9s ease-in-out 6s infinite; }
+    @keyframes bsPaddle {
+      0% { transform: translateX(0) scaleX(1); }
+      48% { transform: translateX(26px) scaleX(1); }
+      50% { transform: translateX(26px) scaleX(-1); }
+      98% { transform: translateX(0) scaleX(-1); }
+      100% { transform: translateX(0) scaleX(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bs-bird { display: none; } .bs-duck { animation: none; } }
     .bs-hint {
       position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); z-index: 4;
       background: rgba(0, 0, 0, 0.55); border: 2px solid #000; color: #fffdf5;
@@ -106,13 +122,6 @@ const description = 'There is always money in the banana stand.';
     .bs-awning span { flex: 1; }
     .bs-awning span:nth-child(odd) { background: #ffe135; }
     .bs-awning span:nth-child(even) { background: #241d33; }
-    /* the tilted sign nailed onto the stand */
-    .bs-signplate {
-      position: absolute; top: 12px; right: 5%; z-index: 3; transform: rotate(4deg);
-      background: #ffe135; color: #111; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
-      font-family: "Archivo Black", sans-serif; font-size: 0.78rem; letter-spacing: 0.04em;
-      padding: 0.18rem 0.55rem; white-space: nowrap;
-    }
     /* inside the stand: dark yellowish banana-stand planks behind the keeper */
     .bs-window {
       position: relative;
@@ -203,8 +212,17 @@ const description = 'There is always money in the banana stand.';
             <img src="/assets/banana-stand/hut.png" alt="" aria-hidden="true" />
           </div>
         </div>
-        <span class="bs-bird bs-bird--1" aria-hidden="true"><svg viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="1" width="1" height="1" fill="#2b2b2b"/><rect x="1" y="0" width="1" height="1" fill="#2b2b2b"/><rect x="2" y="1" width="1" height="1" fill="#2b2b2b"/><rect x="3" y="0" width="1" height="1" fill="#2b2b2b"/><rect x="4" y="1" width="1" height="1" fill="#2b2b2b"/></svg></span>
-        <span class="bs-bird bs-bird--2" aria-hidden="true"><svg viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="1" width="1" height="1" fill="#3a3a3a"/><rect x="1" y="0" width="1" height="1" fill="#3a3a3a"/><rect x="2" y="1" width="1" height="1" fill="#3a3a3a"/><rect x="3" y="0" width="1" height="1" fill="#3a3a3a"/><rect x="4" y="1" width="1" height="1" fill="#3a3a3a"/></svg></span>
+        <span class="bs-bird bs-bird--1" aria-hidden="true">
+          <svg viewBox="0 0 10 4" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="1" y="0" width="1" height="1" fill="#2b2b2b"/><rect x="8" y="0" width="1" height="1" fill="#2b2b2b"/><rect x="2" y="1" width="1" height="1" fill="#2b2b2b"/><rect x="7" y="1" width="1" height="1" fill="#2b2b2b"/><rect x="3" y="2" width="1" height="1" fill="#2b2b2b"/><rect x="6" y="2" width="1" height="1" fill="#2b2b2b"/><rect x="4" y="3" width="2" height="1" fill="#2b2b2b"/></svg>
+          <svg viewBox="0 0 10 4" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="4" y="0" width="2" height="1" fill="#2b2b2b"/><rect x="3" y="1" width="1" height="1" fill="#2b2b2b"/><rect x="6" y="1" width="1" height="1" fill="#2b2b2b"/><rect x="2" y="2" width="1" height="1" fill="#2b2b2b"/><rect x="7" y="2" width="1" height="1" fill="#2b2b2b"/><rect x="1" y="3" width="1" height="1" fill="#2b2b2b"/><rect x="8" y="3" width="1" height="1" fill="#2b2b2b"/></svg>
+        </span>
+        <span class="bs-bird bs-bird--2" aria-hidden="true">
+          <svg viewBox="0 0 10 4" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="1" y="0" width="1" height="1" fill="#3a3a3a"/><rect x="8" y="0" width="1" height="1" fill="#3a3a3a"/><rect x="2" y="1" width="1" height="1" fill="#3a3a3a"/><rect x="7" y="1" width="1" height="1" fill="#3a3a3a"/><rect x="3" y="2" width="1" height="1" fill="#3a3a3a"/><rect x="6" y="2" width="1" height="1" fill="#3a3a3a"/><rect x="4" y="3" width="2" height="1" fill="#3a3a3a"/></svg>
+          <svg viewBox="0 0 10 4" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="4" y="0" width="2" height="1" fill="#3a3a3a"/><rect x="3" y="1" width="1" height="1" fill="#3a3a3a"/><rect x="6" y="1" width="1" height="1" fill="#3a3a3a"/><rect x="2" y="2" width="1" height="1" fill="#3a3a3a"/><rect x="7" y="2" width="1" height="1" fill="#3a3a3a"/><rect x="1" y="3" width="1" height="1" fill="#3a3a3a"/><rect x="8" y="3" width="1" height="1" fill="#3a3a3a"/></svg>
+        </span>
+        <span class="bs-duck bs-duck--1" aria-hidden="true"><svg viewBox="0 0 8 5" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="2" width="1" height="1" fill="#fffdf5"/><rect x="1" y="2" width="5" height="2" fill="#fffdf5"/><rect x="5" y="0" width="2" height="2" fill="#ffe135"/><rect x="7" y="1" width="1" height="1" fill="#ff9128"/><rect x="6" y="0" width="1" height="1" fill="#111111"/></svg></span>
+        <span class="bs-duck bs-duck--2" aria-hidden="true"><svg viewBox="0 0 8 5" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="2" width="1" height="1" fill="#fffdf5"/><rect x="1" y="2" width="5" height="2" fill="#fffdf5"/><rect x="5" y="0" width="2" height="2" fill="#ffe135"/><rect x="7" y="1" width="1" height="1" fill="#ff9128"/><rect x="6" y="0" width="1" height="1" fill="#111111"/></svg></span>
+        <span class="bs-duck bs-duck--3" aria-hidden="true"><svg viewBox="0 0 8 5" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="2" width="1" height="1" fill="#fffdf5"/><rect x="1" y="2" width="5" height="2" fill="#fffdf5"/><rect x="5" y="0" width="2" height="2" fill="#ffe135"/><rect x="7" y="1" width="1" height="1" fill="#ff9128"/><rect x="6" y="0" width="1" height="1" fill="#111111"/></svg></span>
         <div class="bs-me" id="bsMe"><canvas id="bsMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bs-hint" id="bsHint">walk up to the stand — tap the grass or use WASD</div>
       </div>
@@ -219,7 +237,6 @@ const description = 'There is always money in the banana stand.';
         <div class="bs-awning" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
-        <div class="bs-signplate" aria-hidden="true">BANANA STAND</div>
         <div class="bs-window">
           <div class="bs-bubble" id="bsBubble" role="status" aria-live="polite"></div>
           <button class="bs-keeper" id="bsKeeper" aria-label="The shopkeeper">

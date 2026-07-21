@@ -13,12 +13,11 @@ if (room) init();
 
 function init() {
   // ---- the keeper's outfit (shared by both scenes) ------------------------
-  // Face is STOCK for now — the tired-eyelid overlay didn't land (Trym's
-  // call 21 Jul); he'll craft a proper shopkeeper banana himself later.
+  // Plain stock banana for now — Trym crafts the real shopkeeper look
+  // himself later (tired-lids and the coffee both retired, his call 21 Jul).
   const KEEPER_OUTFIT = {
     hat: 'none', glasses: 'none', top: '', bottom: '', bg: 'transparent',
-    captions: false, effect: 'none',
-    extras: { mug: true }, // the coffee is load-bearing
+    captions: false, effect: 'none', extras: {},
   };
   const KEEPER_FRAME = 3; // he stands STILL (Trym's call) — done dancing
 
