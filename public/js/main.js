@@ -26,7 +26,7 @@
   var isInternal = false;
   try { isInternal = localStorage.getItem('tt-internal') === '1'; } catch (e) {}
   if (!isInternal &&
-      /[?&](tourtest|fxtest|welcometest|hypetest|stagetest|nighttest)(?:=|&|$)/.test(qs)) {
+      /[?&](tourtest|fxtest|welcometest|hypetest|stagetest|nighttest|cointest|standopen|counter)(?:=|&|$)/.test(qs)) {
     isInternal = true; // a QA/debug param = us, this session
   }
   if (!isInternal && /^\/inbox\/?$/.test(location.pathname) && /[?&]token=/.test(qs)) {
