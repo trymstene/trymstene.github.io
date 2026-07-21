@@ -201,10 +201,11 @@ function init() {
 
   // ---- THE STOCK: every `preview: 'stand'` item, straight from the manifest
   const STOCK = [];
+  const extraSlot = (d) => (d.anchor === 'feet' ? 'shoes' : d.anchor === 'hand' ? 'hands' : 'body');
   Object.values(WEARABLE_PACKS).forEach((p) => {
-    (p.hats || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.art }); });
-    (p.shades || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.front }); });
-    (p.extras || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.art }); });
+    (p.hats || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.art, slot: 'hat' }); });
+    (p.shades || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.front, slot: 'face' }); });
+    (p.extras || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.art, slot: extraSlot(d) }); });
   });
   STOCK.sort((a, b) => (a.price || 0) - (b.price || 0)); // browse cheap → grail
 
@@ -213,7 +214,7 @@ function init() {
     potato: "it's a potato.",
     squidhat: "the squid. 120 coins. i don't make the rules. i am the rules.",
     medal: "you didn't participate in anything. congratulations.",
-    sockssandals: 'the forbidden combo. i legally have to warn you.',
+    sockssandals: 'open-toe. at a rave. bold.',
     buckethat: 'a bucket. worn confidently, it becomes a hat.',
     duckhat: 'the duck stays on your head at all times.',
     flamingoring: 'flotation certified. dance floor approved.',
@@ -240,6 +241,7 @@ function init() {
       tile.innerHTML =
         `<span class="bs-tile__art">${SVG[item.artKey] || ''}</span>` +
         `<b>${item.label}</b>` +
+        `<span class="bs-tile__slot">${item.slot}</span>` +
         `<span class="bs-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ${item.price}</span>` +
         `<span class="bs-tile__lock" aria-hidden="true">${LOCK_SVG}</span>`;
       tile.addEventListener('click', () => pick(item, tile));

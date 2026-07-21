@@ -136,7 +136,9 @@ export const WEARABLE_PACKS = {
       { id: 'flamekicks', label: 'Flame kicks', phrase: 'flaming sneakers', anchor: 'feet', art: 'flamekicks' },
       { id: 'flippers', label: 'Swim flippers', phrase: 'swim flippers', anchor: 'feet', art: 'flippers' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — the forbidden combo, on the desk
-      { id: 'sockssandals', label: 'Socks & sandals', phrase: 'socks with sandals', art: 'sockssandals', anchor: 'feet', price: 12, preview: 'stand' },
+      // renamed from "Socks & sandals" (the socks were cut from the art —
+      // the feet are already white); the ID stays, ids never rename
+      { id: 'sockssandals', label: 'Sandals', phrase: 'sandals', art: 'sockssandals', anchor: 'feet', price: 12, preview: 'stand' },
       { id: 'boombox', label: 'Boombox', phrase: 'a boombox', anchor: 'hand', hand: 'left', grip: 1, art: 'boombox' },
       { id: 'mug', label: 'Coffee mug', phrase: 'a coffee mug', anchor: 'hand', hand: 'left', grip: 6, art: 'mug' },
       { id: 'trophy', label: 'Trophy', phrase: 'a golden trophy', anchor: 'hand', hand: 'right', grip: 5, art: 'trophy' },
