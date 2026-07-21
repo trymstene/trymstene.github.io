@@ -48,6 +48,13 @@ const SCREEN_ADS = [
   { id: 'gallery', text: 'MORE BANANAS, FRAMED',         cta: 'the meme gallery →',      href: '/banana-memes/' },
 ];
 
+// 🍌🏪 THE BANANA STAND entrance — the EXIT door by the bar, the LED house ad,
+// Barty's tip and the field-guide line all stay dormant until the flip.
+// ?standopen previews the whole stack on any build; make it `true ||` to open
+// for everyone (S1 coins should land in the same flip).
+const STAND_OPEN = location.search.includes('standopen');
+if (STAND_OPEN) SCREEN_ADS.push({ id: 'stand', text: 'THERE’S ALWAYS MONEY IN THE BANANA STAND', cta: 'out back, through the exit →', href: '/banana-stand/' });
+
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
 const MAX_VISIBLE = 60;
@@ -401,6 +408,7 @@ const BAR_QUIPS = [
   ['thanks for helpin’ an old banana out!', { t: 'the young ones just dance right past.', mutter: true }],
   ['mind the loose cables, partner!', { t: 'the wiring’s older than me. nothing is older than me.', mutter: true }],
 ];
+if (STAND_OPEN) BAR_QUIPS.push(['the banana stand’s out back, partner! right through the exit!', { t: 'the keeper don’t talk much. we used to. anyway!', mutter: true }]);
 
 const el = (id) => document.getElementById(id);
 const floor = el('rvFloor');
@@ -551,6 +559,12 @@ function init() {
   // with the floor. Occupied corner = x < barSolid.x AND y > barSolid.y.
   const barEl = document.querySelector('.rv-bar');
   const barSolid = { x: 0, y: 100 };
+  // the EXIT door pokes ABOVE the counter, so it gets its own solid rect —
+  // measured live like the bar. While the stand is closed the door stays hidden
+  // and its rect stays {0,100} = a no-op.
+  const doorEl = el('rvExitDoor');
+  if (doorEl && STAND_OPEN) doorEl.hidden = false;
+  const doorSolid = { x: 0, y: 100 };
   const trailCv = el('rvTrails');
   const trailCtx = trailCv ? trailCv.getContext('2d') : null;
   // the sprite is a FIXED-px box while y is a floor-percent, so how high a banana
@@ -565,12 +579,36 @@ function init() {
     if (barEl && floorW && floorH) {
       barSolid.x = ((barEl.offsetWidth - 18) / floorW) * 100;       // 18px bleeds off the left
       barSolid.y = 100 - (((barEl.offsetHeight - 52) / floorH) * 100); // 52px bleeds off the bottom
+      if (doorEl && !doorEl.hidden) {
+        doorSolid.x = ((barEl.offsetLeft + doorEl.offsetLeft + doorEl.offsetWidth) / floorW) * 100;
+        doorSolid.y = ((floorH - (barEl.offsetHeight - 52) + doorEl.offsetTop) / floorH) * 100;
+      }
     }
     if (trailCv) { trailCv.width = floorW; trailCv.height = floorH; } // resize clears — trails restart, fine
   };
   measureFloor();
   addEventListener('resize', measureFloor);
   const insideBar = (x, y) => x < barSolid.x && y > barSolid.y;
+  const insideDoor = (x, y) => x < doorSolid.x && y > doorSolid.y;
+  // one predicate for everything that must never sit ON the door: jelly
+  // pellets, drifters, flee hops, the monkey — the walk slide handles the
+  // two rects separately so each edge slides correctly
+  const blockedAt = (x, y) => insideBar(x, y) || insideDoor(x, y);
+
+  // stepping out: black cartridge-cut, then the park (same blink the stand uses)
+  if (doorEl && STAND_OPEN) {
+    const standGuide = el('rvStandGuide');
+    if (standGuide) standGuide.hidden = false;
+    doorEl.addEventListener('click', (e) => {
+      e.preventDefault();
+      track('rave_exit_stand');
+      const cut = el('rvCut');
+      if (cut && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        cut.classList.add('is-on');
+        setTimeout(() => { location.href = doorEl.href; }, 170);
+      } else location.href = doorEl.href;
+    });
+  }
 
   const zoomBtn = el('rvZoom');
   // pixel magnifiers, Pillow-verified (scratchpad zoom-icons): + = zoom in on
@@ -698,6 +736,12 @@ function init() {
     }
     // the bar is solid: block ENTERING it (slide along the edge you hit); anyone
     // who spawned inside can still walk free
+    if (insideDoor(nx, ny) && !insideDoor(me.x, me.y)) {
+      if (me.x >= doorSolid.x) nx = doorSolid.x;      // bounced off the door's right edge
+      else if (me.y <= doorSolid.y) ny = doorSolid.y; // stopped at the doorstep from above
+      else { nx = me.x; ny = me.y; }
+      if (walkTarget && insideDoor(walkTarget.x, walkTarget.y)) walkTarget = null; // no dancing in the doorway
+    }
     if (insideBar(nx, ny) && !insideBar(me.x, me.y)) {
       if (me.x >= barSolid.x) nx = barSolid.x;      // hit the bar's right edge
       else if (me.y <= barSolid.y) ny = barSolid.y; // hit the countertop from above
@@ -1184,12 +1228,12 @@ function init() {
       for (let tries = 0; tries < 60 && !pts.length; tries++) {
         const cx = 18 + Math.random() * 64;
         const cy = topPct + 8 + Math.random() * (74 - topPct);
-        if (insideBar(cx, cy)) continue;
+        if (blockedAt(cx, cy)) continue;
         const ring = [];
         for (let i = 0; i < 7; i++) {
           const ang = (i / 7) * Math.PI * 2;
           const x = cx + Math.cos(ang) * 7, y = cy + Math.sin(ang) * 4.6;
-          if (x < 6 || x > 93 || y < topPct || y > 89 || insideBar(x, y)) { ring.length = 0; break; }
+          if (x < 6 || x > 93 || y < topPct || y > 89 || blockedAt(x, y)) { ring.length = 0; break; }
           ring.push(mkPellet(x, y, i * 0.06, 'plain'));
         }
         if (!ring.length) continue;
@@ -1205,7 +1249,7 @@ function init() {
       for (let tries = 0; tries < 140 && pts.length < 8; tries++) {
         const x = 7 + Math.random() * 86;
         const y = topPct + Math.random() * (88 - topPct);
-        if (insideBar(x, y)) continue;
+        if (blockedAt(x, y)) continue;
         if (pts.some((q) => Math.hypot(((q.x - x) / 100) * floorW, ((q.y - y) / 100) * floorH) < 56)) continue;
         pts.push(mkPellet(x, y, pts.length * 0.08));
       }
@@ -1228,7 +1272,7 @@ function init() {
       for (let tries = 0; tries < 40 && !mega; tries++) {
         const x = 16 + Math.random() * 68;
         const y = topClamp + 14 + Math.random() * (72 - topClamp);
-        if (insideBar(x, y)) continue;
+        if (blockedAt(x, y)) continue;
         const d = document.createElement('div');
         d.className = 'rv-mega';
         d.innerHTML = MEGA_JELLY_SVG;
@@ -1568,7 +1612,7 @@ function init() {
       if (p.drift) {
         const nx = p.x + Math.cos(p.drift.a + Math.sin(tSec * 0.9 + p.drift.ph) * 1.3) * 0.05;
         const ny = p.y + Math.sin(p.drift.a + Math.cos(tSec * 0.7 + p.drift.ph) * 1.1) * 0.033;
-        if (nx > 6 && nx < 93 && ny > topClamp + 5 && ny < 89 && !insideBar(nx, ny)) {
+        if (nx > 6 && nx < 93 && ny > topClamp + 5 && ny < 89 && !blockedAt(nx, ny)) {
           p.x = nx; p.y = ny;
           p.elm.style.left = nx + '%';
           p.elm.style.top = ny + '%';
@@ -1590,7 +1634,7 @@ function init() {
             : Math.atan2(50 - p.y, 50 - p.x);
           const ang = base + (Math.random() - 0.5) * 1.4;
           const nx = p.x + Math.cos(ang) * 16, ny = p.y + Math.sin(ang) * 10;
-          if (nx < 7 || nx > 92 || ny < topClamp + 6 || ny > 88 || insideBar(nx, ny)) continue;
+          if (nx < 7 || nx > 92 || ny < topClamp + 6 || ny > 88 || blockedAt(nx, ny)) continue;
           p.x = nx; p.y = ny;
           p.elm.style.left = nx + '%'; // .rv-pellet--flee carries the bouncy transition
           p.elm.style.top = ny + '%';
@@ -1635,7 +1679,7 @@ function init() {
       let added = 0;
       for (let tries = 0; tries < 60 && added < 5; tries++) {
         const x = 7 + Math.random() * 86, y = topPct + Math.random() * (88 - topPct);
-        if (insideBar(x, y)) continue;
+        if (blockedAt(x, y)) continue;
         const p2 = mkPellet(x, y, added * 0.1); // the top-up rains in staggered too
         el('rvRun').appendChild(p2.elm);
         run.pts.push(p2);
@@ -2965,12 +3009,12 @@ function init() {
         const ang = Math.atan2(monkey.y - me.y, monkey.x - me.x) + (Math.random() - 0.5) * 1.2;
         monkey.tx = clamp(monkey.x + Math.cos(ang) * 30, 8, 92);
         monkey.ty = clamp(monkey.y + Math.sin(ang) * 24, topClamp + 4, 86);
-        if (insideBar(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, barSolid.y - 8);
+        if (blockedAt(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, Math.min(barSolid.y, doorSolid.y) - 8);
       } else if (now - monkey.lastPick > 2600 && Math.hypot(monkey.tx - monkey.x, monkey.ty - monkey.y) < 2) {
         monkey.lastPick = now; // amble somewhere new
         monkey.tx = 12 + Math.random() * 76;
         monkey.ty = clamp(24 + Math.random() * 60, topClamp + 4, 86);
-        if (insideBar(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, barSolid.y - 8);
+        if (blockedAt(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, Math.min(barSolid.y, doorSolid.y) - 8);
       }
     }
     const dx = monkey.tx - monkey.x, dy = monkey.ty - monkey.y;
