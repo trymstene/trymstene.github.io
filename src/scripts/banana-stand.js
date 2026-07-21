@@ -6,7 +6,8 @@
 // desk — and the options open. "Step back" cuts back to the room.
 // The keeper is the dancing banana OFF DUTY: slow 3↔7 sway, coffee, tired
 // half-lidded eyes fitted to the MEASURED eye whites of frame 3.
-import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, SVG } from '../lib/banana-engine.js';
+import { WEARABLE_PACKS } from '../data/wearables.js';
 
 const room = document.getElementById('bsRoom');
 if (room) init();
@@ -195,10 +196,76 @@ function init() {
     clearTimeout(bubbleTimer);
     bubbleTimer = setTimeout(() => bubble.classList.remove('is-on'), 3200);
   }
-  document.getElementById('bsHooks').addEventListener('click', (e) => {
-    if (!e.target.closest('.bs-hook')) return;
-    say(LINES[lineIdx % LINES.length]); lineIdx++;
-  });
   document.getElementById('bsKeeper').addEventListener('click', () => say('*sips coffee*'));
   document.getElementById('bsBack').addEventListener('click', () => cutTo(false));
+
+  // ---- THE STOCK: every `preview: 'stand'` item, straight from the manifest
+  const STOCK = [];
+  Object.values(WEARABLE_PACKS).forEach((p) => {
+    (p.hats || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.art }); });
+    (p.shades || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.front }); });
+    (p.extras || []).forEach((d) => { if (d.preview === 'stand') STOCK.push({ ...d, artKey: d.art }); });
+  });
+  STOCK.sort((a, b) => (a.price || 0) - (b.price || 0)); // browse cheap → grail
+
+  // keeper flavor for the spotlight (fallback = the daily phrase)
+  const DESC = {
+    potato: "it's a potato.",
+    squidhat: "the squid. 120 coins. i don't make the rules. i am the rules.",
+    medal: "you didn't participate in anything. congratulations.",
+    sockssandals: 'the forbidden combo. i legally have to warn you.',
+    buckethat: 'a bucket. worn confidently, it becomes a hat.',
+    duckhat: 'the duck stays on your head at all times.',
+    flamingoring: 'flotation certified. dance floor approved.',
+  };
+  const LOCK_SVG = '<svg viewBox="0 0 8 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#b8781b"/><rect x="1" y="1" width="1" height="2" fill="#b8781b"/><rect x="6" y="1" width="1" height="2" fill="#b8781b"/><rect x="0" y="3" width="8" height="5" fill="#ffd23f"/><rect x="0" y="8" width="8" height="1" fill="#e6a817"/><rect x="3" y="4" width="2" height="2" fill="#7a4a21"/><rect x="3" y="6" width="1" height="1" fill="#7a4a21"/></svg>';
+
+  const shelf = document.getElementById('bsShelf');
+  const spot = document.getElementById('bsSpot');
+  function pick(item, tile) {
+    shelf.querySelectorAll('.bs-tile').forEach((t) => t.classList.remove('is-picked'));
+    tile.classList.add('is-picked');
+    document.getElementById('bsSpotArt').innerHTML = SVG[item.artKey] || '';
+    document.getElementById('bsSpotName').textContent = item.label;
+    document.getElementById('bsSpotDesc').textContent = DESC[item.id] || item.phrase;
+    document.getElementById('bsSpotPrice').textContent = item.price;
+    spot.hidden = false;
+  }
+  if (shelf) {
+    STOCK.forEach((item) => {
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'bs-tile';
+      tile.setAttribute('aria-label', `${item.label} — ${item.price} bananacoins (not for sale yet)`);
+      tile.innerHTML =
+        `<span class="bs-tile__art">${SVG[item.artKey] || ''}</span>` +
+        `<b>${item.label}</b>` +
+        `<span class="bs-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ${item.price}</span>` +
+        `<span class="bs-tile__lock" aria-hidden="true">${LOCK_SVG}</span>`;
+      tile.addEventListener('click', () => pick(item, tile));
+      shelf.appendChild(tile);
+    });
+  }
+  const buyBtn = document.getElementById('bsSpotBuy');
+  if (buyBtn) buyBtn.addEventListener('click', () => say("the till isn't wired up yet. soon. probably."));
+
+  // ---- wall dressing: a few items hung on the planks behind the keeper ----
+  const DECOR = [
+    { id: 'buckethat', left: '6%', top: '14%', w: 34, rot: -4 },
+    { id: 'snorkelmask', left: '8%', top: '52%', w: 40, rot: 3 },
+    { id: 'duckhat', left: '82%', top: '12%', w: 38, rot: 4 },
+    { id: 'balloondog', left: '81%', top: '48%', w: 40, rot: -3 },
+    { id: 'cactuspot', left: '68%', top: '20%', w: 26, rot: 2 },
+  ];
+  const win = document.querySelector('.bs-window');
+  if (win) DECOR.forEach((d) => {
+    const def = STOCK.find((s) => s.id === d.id);
+    if (!def) return;
+    const el = document.createElement('span');
+    el.className = 'bs-decor';
+    el.style.cssText = `left:${d.left};top:${d.top};width:${d.w}px;transform:rotate(${d.rot}deg);`;
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = SVG[def.artKey] || '';
+    win.appendChild(el);
+  });
 }

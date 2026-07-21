@@ -182,22 +182,58 @@ const description = 'There is always money in the banana stand.';
       font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 1.2rem;
       text-shadow: 2px 2px 0 #000;
     }
-    .bs-hooks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 1rem; }
-    .bs-hook {
-      appearance: none; border: 3px solid #000; background: #17121f; color: #fffdf5;
-      box-shadow: 5px 5px 0 #000; cursor: pointer; padding: 0.7rem 0.4rem 0.55rem;
-      display: grid; justify-items: center; gap: 0.35rem; min-height: 86px;
+    /* items hung on the planks behind the keeper — pure shop dressing */
+    .bs-decor {
+      position: absolute; z-index: 0; image-rendering: pixelated; pointer-events: none;
+      filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.35));
+    }
+    .bs-decor svg { width: 100%; height: auto; display: block; }
+    .bs-keeper { position: relative; z-index: 1; }
+
+    /* ---- THE SHELF: mobile-first tile grid, scales with the catalog ---- */
+    .bs-shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 1rem; }
+    @media (min-width: 560px) { .bs-shelf { grid-template-columns: repeat(4, 1fr); } }
+    .bs-tile {
+      appearance: none; position: relative; border: 3px solid #000; background: #17121f;
+      color: #fffdf5; box-shadow: 5px 5px 0 #000; cursor: pointer;
+      padding: 0.55rem 0.3rem 0.5rem; display: grid; justify-items: center; gap: 0.3rem;
       font-family: inherit; transition: transform 0.08s ease;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
-    .bs-hook:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
-    .bs-hook svg { width: 22px; height: auto; image-rendering: pixelated; opacity: 0.85; }
-    .bs-hook small {
-      border: 2px solid #000; background: #ffe135; color: #111; font-weight: 800;
-      font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
-      padding: 0.1rem 0.4rem; transform: rotate(-2deg);
+    .bs-tile:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+    .bs-tile.is-picked { outline: 3px solid #ffe135; outline-offset: 2px; }
+    .bs-tile__art { height: 52px; display: flex; align-items: center; justify-content: center; }
+    /* SVGs with only a viewBox collapse to 0 under width/height:auto — one
+       explicit dimension + the viewBox ratio sizes them properly */
+    .bs-tile__art svg { height: 48px; width: auto; max-width: 62px; image-rendering: pixelated; }
+    .bs-tile b { font-size: 0.62rem; font-weight: 700; text-align: center; line-height: 1.15; opacity: 0.9; }
+    .bs-price { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 800; color: #ffe135; }
+    .bs-price img { image-rendering: pixelated; }
+    .bs-tile .bs-price { font-size: 0.78rem; }
+    .bs-tile .bs-price img { width: 14px; }
+    /* the golden lock: not for sale just yet */
+    .bs-tile__lock { position: absolute; top: -7px; right: -6px; width: 18px; }
+    .bs-tile__lock svg { width: 100%; height: auto; image-rendering: pixelated; display: block; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.6)); }
+
+    /* ---- THE SPOTLIGHT: the tapped item takes the stage ---- */
+    .bs-spot {
+      display: flex; gap: 0.9rem; align-items: center; margin-top: 1rem;
+      border: 4px solid #000; box-shadow: 6px 6px 0 #000; background: #241d33; padding: 0.9rem;
     }
-    .bs-hook:nth-child(even) small { transform: rotate(2deg); }
+    .bs-spot[hidden] { display: none; }
+    .bs-spot__art {
+      flex: 0 0 96px; height: 96px; display: flex; align-items: center; justify-content: center;
+      border: 3px solid #000; background: #17121f;
+    }
+    .bs-spot__art svg { height: 76px; width: auto; max-width: 84px; image-rendering: pixelated; }
+    .bs-spot__meta { flex: 1; min-width: 0; }
+    .bs-spot__meta h2 { font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 1.05rem; margin: 0 0 0.2rem; }
+    .bs-spot__meta p { margin: 0 0 0.6rem; font-size: 0.85rem; opacity: 0.85; }
+    .bs-spot__row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .bs-price--big { font-size: 1.15rem; }
+    .bs-price--big img { width: 22px; }
+    .bs-btn--buy { flex: 0 1 auto; padding: 0.5rem 0.9rem; font-size: 0.85rem; background: #17121f; color: #fffdf5; opacity: 0.85; }
+    @media (max-width: 420px) { .bs-spot { flex-wrap: wrap; } .bs-spot__meta { flex-basis: 100%; } }
 
     /* the buttons under each scene */
     .bs-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -314,14 +350,21 @@ const description = 'There is always money in the banana stand.';
         </div>
       </div>
 
-      <div class="bs-hooks" id="bsHooks">
-        {[1, 2, 3, 4, 5, 6].map(() => (
-          <button class="bs-hook" type="button">
-            <svg viewBox="0 0 7 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="0" width="1" height="1" fill="#8a8296"/><rect x="2" y="1" width="1" height="1" fill="#8a8296"/><rect x="4" y="1" width="1" height="1" fill="#8a8296"/><rect x="2" y="2" width="1" height="1" fill="#8a8296"/><rect x="4" y="2" width="1" height="1" fill="#8a8296"/><rect x="4" y="3" width="1" height="1" fill="#8a8296"/><rect x="3" y="4" width="2" height="1" fill="#8a8296"/><rect x="2" y="5" width="1" height="1" fill="#8a8296"/><rect x="5" y="5" width="1" height="1" fill="#8a8296"/><rect x="3" y="6" width="2" height="1" fill="#8a8296"/></svg>
-            <small>soon</small>
-          </button>
-        ))}
+      <!-- the SPOTLIGHT: tap a shelf tile and the item takes the stage -->
+      <div class="bs-spot" id="bsSpot" hidden>
+        <div class="bs-spot__art" id="bsSpotArt"></div>
+        <div class="bs-spot__meta">
+          <h2 id="bsSpotName"></h2>
+          <p id="bsSpotDesc"></p>
+          <div class="bs-spot__row">
+            <span class="bs-price bs-price--big"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><b id="bsSpotPrice"></b></span>
+            <button class="bs-btn bs-btn--buy" id="bsSpotBuy" type="button">🔒 the till opens soon</button>
+          </div>
+        </div>
       </div>
+
+      <!-- the SHELF: every item in stock, built from the manifest -->
+      <div class="bs-shelf" id="bsShelf" aria-label="The banana stand's stock"></div>
 
       <div class="bs-foot">
         <button class="bs-btn bs-btn--dark" id="bsBack" type="button">↓ step back from the counter</button>
