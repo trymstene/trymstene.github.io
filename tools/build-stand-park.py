@@ -20,7 +20,11 @@ OUT = os.path.join(SITE, 'public', 'assets', 'banana-stand')
 os.makedirs(OUT, exist_ok=True)
 rng = random.Random(1999)  # the year, obviously
 
-W, H = 320, 240
+# v2 (Trym, 21 Jul): the park grew TALLER (club-sized) and the path became a
+# CROSSROAD — up = the stand, bottom edge = the road back to the rave,
+# left + right arms = not built yet (small DOM signs stand at their ends)
+W, H = 320, 420
+CROSS_Y = 300  # the horizontal road's centerline (passes UNDER the pond)
 
 # palette
 GRASS = (88, 168, 60)
@@ -49,20 +53,36 @@ for y in range(H):
         r = rng.random()
         px[x, y] = GRASS_D if r < 0.10 else GRASS_L if r < 0.17 else GRASS
 
-# ---- the dirt path: bottom entrance up to the stand ------------------------
+# ---- the dirt CROSSROAD ----------------------------------------------------
+# vertical spine: the rave entrance at the bottom edge up to the stand
 def path_half_width(y):
-    return 22 if y > 200 else 20 if y > 140 else 18
+    return 22 if y > H - 40 else 20 if y > 140 else 18
+
+def dirt(x, y):
+    if not (0 <= x < W and 0 <= y < H):
+        return
+    r = rng.random()
+    px[x, y] = PATH_S if r < 0.16 else PATH_D if r < 0.19 else PATH
 
 for y in range(58, H):
     cx = 160 + round(6 * math.sin(y / 46))
     hw = path_half_width(y)
     for x in range(cx - hw, cx + hw + 1):
-        d = abs(x - cx)
-        if d > hw - 1:
+        if abs(x - cx) > hw - 1:
             px[x, y] = PATH_D
         else:
-            r = rng.random()
-            px[x, y] = PATH_S if r < 0.16 else PATH_D if r < 0.19 else PATH
+            dirt(x, y)
+
+# the horizontal arms: left + right to the map edges (not built yet — the
+# little signs at each end say so), passing UNDER the pond on the right
+for x in range(0, W):
+    cy = CROSS_Y + round(4 * math.sin(x / 40))
+    for y in range(cy - 14, cy + 15):
+        if abs(y - cy) > 13:
+            if 0 <= x < W and 0 <= y < H and px[x, y][:3] not in (PATH, PATH_S, PATH_D):
+                px[x, y] = PATH_D
+        else:
+            dirt(x, y)
 
 # a widened dirt apron where the stand sits (it's a shop, feet wear the lawn)
 for y in range(58, 92):
@@ -72,7 +92,7 @@ for y in range(58, 92):
             px[x, y] = PATH_D if d_edge < 2 else (PATH_S if rng.random() < 0.15 else PATH)
 
 # ---- the pond (right side) with a sand rim + sparkles ----------------------
-PCX, PCY, PRX, PRY = 262, 178, 42, 27
+PCX, PCY, PRX, PRY = 258, 205, 42, 27  # above the right road arm
 for y in range(H):
     for x in range(W):
         d = math.hypot((x - PCX) / PRX, (y - PCY) / PRY)
@@ -86,7 +106,7 @@ for y in range(H):
         d = math.hypot((x - PCX) / PRX, (y - PCY) / PRY)
         if d <= 1.0 and (x - PCX) + (y - PCY) < -20:
             px[x, y] = WATER_L
-for sx, sy, ln in [(244, 170, 4), (270, 184, 3), (256, 192, 4), (278, 172, 2), (238, 186, 3)]:
+for sx, sy, ln in [(240, 197, 4), (266, 211, 3), (252, 219, 4), (274, 199, 2), (234, 213, 3)]:
     for i in range(ln):
         px[sx + i, sy] = SPARK
 
@@ -106,9 +126,12 @@ def patch(cx, cy, rx, ry, col, density=0.85):
 
 patch(80, 110, 34, 20, MEADOW)
 patch(238, 118, 26, 15, MEADOW)
-patch(120, 210, 30, 16, MEADOW)
-patch(210, 226, 22, 12, DRY, 0.5)
+patch(110, 240, 30, 16, MEADOW)
+patch(70, 350, 32, 18, MEADOW)
+patch(240, 370, 26, 14, MEADOW)
+patch(210, 258, 20, 11, DRY, 0.5)
 patch(36, 190, 18, 10, DRY, 0.45)
+patch(290, 330, 16, 9, DRY, 0.45)
 
 # ---- trees in three styles: oak (round), pine (stacked), sapling -----------
 def trunk(cx, y0, y1, w=2):
@@ -161,9 +184,16 @@ oak(34, 42, 19)
 pine(287, 46, 26)
 oak(20, 148, 15)
 pine(304, 122, 22)
-oak(52, 224, 16)
+oak(52, 244, 16)
 sapling(226, 154)
 sapling(96, 176)
+# the new lower half: the woods thicken toward the rave road
+oak(30, 352, 18)
+pine(296, 368, 26)
+oak(288, 262, 14)
+sapling(112, 330)
+sapling(212, 396)
+pine(70, 398, 22)
 
 # ---- the picnic: checkered blanket, basket, two bananas hanging out --------
 BLANK_R = (232, 69, 69)
@@ -213,8 +243,11 @@ def bush(cx, cy, r):
 
 bush(102, 62, 7)
 bush(224, 66, 6)
-bush(305, 214, 8)
+bush(306, 240, 7)
 bush(14, 84, 6)
+bush(58, 274, 6)   # just above the left arm
+bush(250, 332, 7)
+bush(120, 404, 6)
 
 FLOWERS = [(255, 255, 255), (255, 225, 53), (255, 154, 187)]
 for _ in range(46):

@@ -75,7 +75,7 @@ function init() {
     // reposition IMMEDIATELY, not inside the delayed swap: with the banana
     // still AT the counter, the very next walk frame re-fired the proximity
     // trigger and cut straight back into the shop (Trym's double-click bug)
-    if (!showShop) { pos.y = Math.max(pos.y, 54); tgt.x = pos.x; tgt.y = pos.y; }
+    if (!showShop) { pos.y = Math.max(pos.y, 30); tgt.x = pos.x; tgt.y = pos.y; }
     const swap = () => {
       scene1.hidden = showShop;
       scene2.hidden = !showShop;
@@ -87,19 +87,31 @@ function init() {
   }
 
   // ---- scene 1: walking ---------------------------------------------------
-  // positions in % of the room; feet at (x, y). The counter zone is where the
-  // little kiosk's desk ends (~26% down, centered).
-  const pos = { x: 50, y: 108 };  // walks IN from the park entrance below
-  const tgt = { x: 50, y: 84 };
-  // the hut sprite spans y 1.5%..35% — the counter zone sits just under it
+  // positions in % of the PARK v2 room (320×420 art): the crossroad — up is
+  // the stand, the bottom edge is the road back to the rave, left/right arms
+  // end at the under-construction signs.
+  const pos = { x: 50, y: 108 };  // walks IN from the rave road below
+  const tgt = { x: 50, y: 66 };   // up to the crossroad
   // ?counter = spawn a step from the desk (the rave's ?stagetest pattern —
   // lets tests and quick checks skip the walk)
-  if (location.search.includes('counter')) { pos.x = 50; pos.y = 44; tgt.x = 50; tgt.y = 36; }
-  const COUNTER = { x: 50, y: 38 };
+  if (location.search.includes('counter')) { pos.x = 50; pos.y = 26; tgt.x = 50; tgt.y = 23; }
+  const COUNTER = { x: 50, y: 22 };
   // the pond (park.png ellipse in room %) — bananas famously can't swim;
   // walking AROUND it is fine, so blocked moves slide along the shore
-  const POND = { x: 81.9, y: 74.2, rx: 14.5, ry: 12.5 };
+  const POND = { x: 80.6, y: 48.8, rx: 14.5, ry: 7.4 };
   const inPond = (x, y) => ((x - POND.x) / POND.rx) ** 2 + ((y - POND.y) / POND.ry) ** 2 < 1;
+  // 🪩 the rave road: walk off the BOTTOM of the map and you're back in the
+  // club. Armed only after you've been properly inside the park — the walk-in
+  // spawn passes through the zone and must not bounce straight back out.
+  let raveRoadArmed = false, leaving = false;
+  function exitToRave() {
+    if (leaving) return;
+    leaving = true;
+    track('stand_exit_rave');
+    if (REDUCED) { location.href = '/rave/'; return; }
+    cut.classList.add('is-on');
+    setTimeout(() => { location.href = '/rave/'; }, 170);
+  }
   const SPEED = 26; // %/s
   const keys = {};
   addEventListener('keydown', (e) => {
@@ -133,13 +145,17 @@ function init() {
         else if (!inPond(pos.x, ny)) pos.y = ny;
         else { tgt.x = pos.x; tgt.y = pos.y; }          // parked at the water's edge
       }
-      pos.x = Math.max(8, Math.min(92, pos.x));
-      pos.y = Math.max(32, Math.min(96, pos.y));
+      pos.x = Math.max(5, Math.min(95, pos.x));
+      pos.y = Math.max(24, Math.min(99, pos.y));
       meEl.style.left = pos.x + '%';
       meEl.style.top = pos.y + '%';
       meEl.style.transform = 'translateY(-100%)';
       // reached the counter → the scene cuts (cooldown: never mid-cut)
-      if (now - cutAt > 400 && Math.hypot(pos.x - COUNTER.x, pos.y - COUNTER.y) < 13) cutTo(true);
+      if (now - cutAt > 400 && Math.hypot(pos.x - COUNTER.x, pos.y - COUNTER.y) < 9) cutTo(true);
+      // the rave road: leaving out the bottom (armed once you're inside)
+      if (pos.y < 94) raveRoadArmed = true;
+      if (raveRoadArmed && pos.y > 97.5 && Math.abs(pos.x - 50) < 9) exitToRave();
+      parkSendMove(now); // tell the park where you walked (throttled)
     }
     requestAnimationFrame(step);
   }
@@ -169,7 +185,7 @@ function init() {
     // redraw belt: mug + lids decode async, drawAcc skips silently
     setTimeout(() => { lastMe = -1; drawMe(); drawMini(); drawKeeper(); }, 500);
     setTimeout(() => { lastMe = -1; drawMe(); drawMini(); drawKeeper(); }, 1600);
-    setInterval(drawMe, 120); // cheap: only redraws when the beat frame changes
+    setInterval(() => { drawMe(); peers.forEach((p) => drawPeer(p)); }, 120); // cheap: only redraws when the beat frame changes
     requestAnimationFrame((t) => { last = t; step(t); });
   });
 
@@ -201,6 +217,95 @@ function init() {
     tgt.x = COUNTER.x; tgt.y = COUNTER.y + 4;
     hint(false);
   });
+
+  // ---- 🌐 the park is MULTIPLAYER (S5) ------------------------------------
+  // A tiny presence room on worker-rave (/park): join, walk, outfit, leave —
+  // every banana here is a real visitor, same doctrine as the floor. Fails
+  // silently: no socket, no crowd, the park still works solo.
+  const PARK_WS = 'wss://banana-rave.trymstene.workers.dev/park';
+  const peers = new Map(); // id → { el, ctx, outfit, lastF }
+  const crowdEl = document.getElementById('bsCrowd');
+  let parkWs = null, myParkId = null, parkRetries = 0, parkSendAt = 0;
+  const lastSent = { x: -1, y: -1 };
+  const myParkOutfit = () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: ME_DRAW.extras || {} });
+  function refreshCrowd() {
+    if (crowdEl) crowdEl.textContent = peers.size ? `· ${peers.size + 1} in the park` : '';
+  }
+  function drawPeer(p, force) {
+    const f = frameNow();
+    if (!force && f === p.lastF) return;
+    p.lastF = f;
+    drawComposite(p.ctx, 150, f, { ...p.outfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+  }
+  function addPeer(p) {
+    if (!p || p.id === myParkId || peers.has(p.id)) return;
+    const el = document.createElement('div');
+    el.className = 'bs-peer';
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    el.appendChild(cv);
+    if (p.name) { const tag = document.createElement('span'); tag.textContent = p.name; el.appendChild(tag); }
+    el.style.left = (p.x ?? 50) + '%';
+    el.style.top = (p.y ?? 90) + '%';
+    room.appendChild(el);
+    const peer = { el, ctx: cv.getContext('2d'), outfit: p.outfit || {}, lastF: -1 };
+    peers.set(p.id, peer);
+    drawPeer(peer, true);
+    refreshCrowd();
+  }
+  function parkConnect() {
+    let ws;
+    try { ws = new WebSocket(PARK_WS); } catch (e) { return; }
+    parkWs = ws;
+    ws.onopen = () => {
+      parkRetries = 0;
+      ws.send(JSON.stringify({ t: 'hi', outfit: myParkOutfit(), x: pos.x, y: pos.y, name: passName }));
+    };
+    ws.onmessage = (ev) => {
+      let m;
+      try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.t === 'roster') { myParkId = m.you; (m.all || []).forEach(addPeer); refreshCrowd(); }
+      else if (m.t === 'join') addPeer(m.p);
+      else if (m.t === 'move') { const p = peers.get(m.id); if (p) { p.el.style.left = m.x + '%'; p.el.style.top = m.y + '%'; } }
+      else if (m.t === 'outfit') { const p = peers.get(m.id); if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); } }
+      else if (m.t === 'leave') { const p = peers.get(m.id); if (p) { p.el.remove(); peers.delete(m.id); refreshCrowd(); } }
+    };
+    ws.onclose = () => {
+      if (parkWs !== ws) return;
+      parkWs = null;
+      peers.forEach((p) => p.el.remove());
+      peers.clear();
+      refreshCrowd();
+      if (parkRetries++ < 5) setTimeout(parkConnect, 4000 * parkRetries);
+    };
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  }
+  parkConnect();
+  // the hibernation keepalive — the room auto-pongs without waking up
+  setInterval(() => { if (parkWs && parkWs.readyState === 1) parkWs.send('{"t":"ping"}'); }, 25000);
+  function parkSendMove(now) {
+    if (!parkWs || parkWs.readyState !== 1 || now - parkSendAt < 150) return;
+    if (Math.abs(pos.x - lastSent.x) < 0.3 && Math.abs(pos.y - lastSent.y) < 0.3) return;
+    parkSendAt = now;
+    lastSent.x = pos.x; lastSent.y = pos.y;
+    parkWs.send(JSON.stringify({ t: 'move', x: pos.x, y: pos.y }));
+  }
+
+  // the under-construction signs: unreadable scribble up close, the popup
+  // does the talking (stopPropagation — a sign tap is not a walk order)
+  const roadPopup = document.getElementById('bsRoadPopup');
+  document.querySelectorAll('.bs-roadsign').forEach((sign) => {
+    sign.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (roadPopup) roadPopup.hidden = false;
+      track('stand_sign');
+    });
+  });
+  if (roadPopup) {
+    roadPopup.addEventListener('click', (e) => {
+      if (e.target === roadPopup || e.target.id === 'bsRoadOk') { roadPopup.hidden = true; e.stopPropagation(); }
+    });
+  }
 
   // ---- scene 2: the counter — THE TILL IS OPEN ----------------------------
   const COUNTER_HELLO = 'what can i get you? everything on the wall is for sale. finally.';
@@ -270,16 +375,14 @@ function init() {
   function updateSpot(item) {
     if (!item || !buyBtn) return;
     const bal = coinBalance();
+    // price + wallet are already on screen — the button just says the verb
     if (isOwned(item.id)) {
-      buyBtn.textContent = '✓ yours — worn with pride';
+      buyBtn.textContent = '✓ yours';
       buyBtn.classList.add('is-owned');
       buyBtn.classList.remove('is-poor');
-    } else if (bal >= item.price) {
-      buyBtn.textContent = `buy — 🪙 ${item.price}`;
-      buyBtn.classList.remove('is-owned', 'is-poor');
     } else {
-      buyBtn.textContent = `🪙 ${item.price} — you have ${bal}`;
-      buyBtn.classList.add('is-poor');
+      buyBtn.textContent = 'get it';
+      buyBtn.classList.toggle('is-poor', bal < item.price);
       buyBtn.classList.remove('is-owned');
     }
   }
@@ -338,6 +441,8 @@ function init() {
       passPush(); // bb-last rides the sync blob — nudge a push
     } catch (e) {}
     wear(ME_DRAW); // the park banana wears it on the very next frame
+    // …and so does everyone else's view of you
+    if (parkWs && parkWs.readyState === 1) parkWs.send(JSON.stringify({ t: 'outfit', outfit: myParkOutfit() }));
   }
   const SOLD_LINES = [
     (l) => `SOLD. the ${l} is yours. wear it loud.`,

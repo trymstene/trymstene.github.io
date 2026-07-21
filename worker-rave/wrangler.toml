@@ -15,9 +15,17 @@ compatibility_date = "2026-06-01"
 name = "RAVE"
 class_name = "RaveRoom"
 
+[[durable_objects.bindings]]
+name = "PARK"
+class_name = "ParkRoom"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RaveRoom"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["ParkRoom"]
 
 [vars]
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"

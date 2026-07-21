@@ -34,7 +34,7 @@ const description = 'There is always money in the banana stand.';
 
     /* ======= SCENE 1: the park (outdoors, zoomed out) ======= */
     .bs-room {
-      position: relative; aspect-ratio: 4 / 3; max-height: 420px; overflow: hidden;
+      position: relative; aspect-ratio: 16 / 21; max-height: 660px; overflow: hidden;
       border: 4px solid #000; box-shadow: 8px 8px 0 #000; cursor: pointer;
       background: url('/assets/banana-stand/park.png') center / 100% 100% no-repeat;
       image-rendering: pixelated;
@@ -81,6 +81,47 @@ const description = 'There is always money in the banana stand.';
     }
     /* your banana */
     .bs-me { position: absolute; z-index: 3; width: 88px; margin-left: -44px; pointer-events: none; }
+    /* 🌐 other real visitors in the park (S5) — same sprite treatment as you,
+       one layer beneath; the transition smooths the 150ms move relay */
+    .bs-peer {
+      position: absolute; z-index: 2; width: 88px; margin-left: -44px;
+      pointer-events: none; transform: translateY(-100%);
+      transition: left 0.18s linear, top 0.18s linear;
+    }
+    .bs-peer canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .bs-peer span {
+      position: absolute; left: 50%; top: -12px; transform: translateX(-50%);
+      font-size: 0.55rem; font-weight: 800; letter-spacing: 0.05em;
+      color: #fffdf5; text-shadow: 1px 1px 0 #000; white-space: nowrap;
+    }
+    #bsCrowd { margin-left: 0.55rem; font-size: 0.68rem; opacity: 0.85; }
+    #bsCrowd:empty { display: none; }
+    /* the under-construction signs at the road ends */
+    .bs-roadsign {
+      appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+      position: absolute; width: 40px; z-index: 3;
+      filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.4));
+    }
+    .bs-roadsign svg { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    .bs-roadsign--left { left: 1.5%; top: 63.5%; }
+    .bs-roadsign--right { right: 1.5%; top: 63.5%; }
+    .bs-roadsign:hover, .bs-roadsign:focus-visible { transform: scale(1.08); }
+    /* the banana-themed construction popup */
+    .bs-roadpopup {
+      position: absolute; inset: 0; z-index: 10; display: grid; place-items: center;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .bs-roadpopup[hidden] { display: none; }
+    .bs-roadpopup__card {
+      background: #17121f; color: #fffdf5; border: 4px solid #000;
+      box-shadow: 6px 6px 0 #000; padding: 1rem 1.1rem; max-width: 78%;
+      text-align: center; display: grid; gap: 0.6rem; justify-items: center;
+    }
+    .bs-roadpopup__card b {
+      font-family: "Archivo Black", sans-serif; color: #ffe135;
+      font-size: 1rem; letter-spacing: 0.04em;
+    }
+    .bs-roadpopup__card p { margin: 0; font-size: 0.85rem; opacity: 0.9; }
     .bs-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     /* birds flying by — two wing frames flapping, hidden for reduced motion */
     .bs-bird { position: absolute; left: -10%; z-index: 4; pointer-events: none; }
@@ -100,9 +141,9 @@ const description = 'There is always money in the banana stand.';
     /* the ducks: drifting back and forth across the pond, turning at the ends */
     .bs-duck { position: absolute; z-index: 1; pointer-events: none; }
     .bs-duck svg { display: block; width: 100%; height: auto; image-rendering: pixelated; }
-    .bs-duck--1 { left: 73%; top: 69%; width: 11px; animation: bsPaddle 11s ease-in-out infinite; }
-    .bs-duck--2 { left: 84%; top: 76%; width: 10px; animation: bsPaddle 14s ease-in-out 3s infinite reverse; }
-    .bs-duck--3 { left: 79%; top: 72%; width: 8px; animation: bsPaddle 9s ease-in-out 6s infinite; }
+    .bs-duck--1 { left: 73%; top: 47%; width: 11px; animation: bsPaddle 11s ease-in-out infinite; }
+    .bs-duck--2 { left: 84%; top: 51%; width: 10px; animation: bsPaddle 14s ease-in-out 3s infinite reverse; }
+    .bs-duck--3 { left: 79%; top: 49%; width: 8px; animation: bsPaddle 9s ease-in-out 6s infinite; }
     @keyframes bsPaddle {
       0% { transform: translateX(0) scaleX(1); }
       48% { transform: translateX(26px) scaleX(1); }
@@ -297,7 +338,7 @@ const description = 'There is always money in the banana stand.';
     <!-- ======= SCENE 1: the room ======= -->
     <div id="bsScene1">
       <div class="bs-room" id="bsRoom">
-        <div class="bs-hud"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><span id="bsWallet">0</span></div>
+        <div class="bs-hud"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><span id="bsWallet">0</span><span id="bsCrowd"></span></div>
         <div class="bs-stand" id="bsMini">
           <div class="bs-minibubble" id="bsRoomBubble" role="status" aria-live="polite"></div>
           <div class="bs-stand__body">
@@ -319,6 +360,21 @@ const description = 'There is always money in the banana stand.';
         <span class="bs-duck bs-duck--2" aria-hidden="true"><svg viewBox="0 0 8 5" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="2" width="1" height="1" fill="#fffdf5"/><rect x="1" y="2" width="5" height="2" fill="#fffdf5"/><rect x="5" y="0" width="2" height="2" fill="#ffe135"/><rect x="7" y="1" width="1" height="1" fill="#ff9128"/><rect x="6" y="0" width="1" height="1" fill="#111111"/></svg></span>
         <span class="bs-duck bs-duck--3" aria-hidden="true"><svg viewBox="0 0 8 5" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="2" width="1" height="1" fill="#fffdf5"/><rect x="1" y="2" width="5" height="2" fill="#fffdf5"/><rect x="5" y="0" width="2" height="2" fill="#ffe135"/><rect x="7" y="1" width="1" height="1" fill="#ff9128"/><rect x="6" y="0" width="1" height="1" fill="#111111"/></svg></span>
         <div class="bs-me" id="bsMe"><canvas id="bsMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        <!-- the not-built-yet roads: a little sign at each end; the scribble
+             is deliberately unreadable — the popup does the talking -->
+        <button class="bs-roadsign bs-roadsign--left" type="button" aria-label="Road under construction">
+          <svg viewBox="0 0 20 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="18" height="9" fill="#8a5a2b"/><rect x="1" y="1" width="18" height="1" fill="#a97139"/><rect x="1" y="9" width="18" height="1" fill="#5a3618"/><rect x="0" y="1" width="1" height="9" fill="#5a3618"/><rect x="19" y="1" width="1" height="9" fill="#5a3618"/><rect x="3" y="3" width="7" height="1" fill="#3a2b18"/><rect x="12" y="3" width="4" height="1" fill="#3a2b18"/><rect x="3" y="5" width="11" height="1" fill="#3a2b18"/><rect x="3" y="7" width="5" height="1" fill="#3a2b18"/><rect x="9" y="10" width="2" height="6" fill="#6b4320"/><rect x="9" y="15" width="2" height="1" fill="#5a3618"/></svg>
+        </button>
+        <button class="bs-roadsign bs-roadsign--right" type="button" aria-label="Road under construction">
+          <svg viewBox="0 0 20 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="18" height="9" fill="#8a5a2b"/><rect x="1" y="1" width="18" height="1" fill="#a97139"/><rect x="1" y="9" width="18" height="1" fill="#5a3618"/><rect x="0" y="1" width="1" height="9" fill="#5a3618"/><rect x="19" y="1" width="1" height="9" fill="#5a3618"/><rect x="4" y="3" width="5" height="1" fill="#3a2b18"/><rect x="11" y="3" width="5" height="1" fill="#3a2b18"/><rect x="4" y="5" width="9" height="1" fill="#3a2b18"/><rect x="4" y="7" width="12" height="1" fill="#3a2b18"/><rect x="9" y="10" width="2" height="6" fill="#6b4320"/><rect x="9" y="15" width="2" height="1" fill="#5a3618"/></svg>
+        </button>
+        <div class="bs-roadpopup" id="bsRoadPopup" hidden>
+          <div class="bs-roadpopup__card" role="dialog" aria-label="Under construction">
+            <b>🚧 BANANA WORLD</b>
+            <p>this road isn't built yet. come back soon for more.</p>
+            <button class="bs-btn" id="bsRoadOk" type="button">ok</button>
+          </div>
+        </div>
         <div class="bs-hint" id="bsHint">walk up to the stand — tap the grass or use WASD</div>
       </div>
       <div class="bs-foot">

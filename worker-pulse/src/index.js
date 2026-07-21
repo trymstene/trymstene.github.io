@@ -604,7 +604,8 @@ var EV_LABEL = {
   shop_view:'browsed the shop',
   rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
   stand_item_view:'eyed stand gear', stand_buy_try:'wanted stand gear they can’t afford 🔥',
-  stand_buy:'BOUGHT stand gear 🤑', rave_coin:'pocketed bananacoins 🪙' };
+  stand_buy:'BOUGHT stand gear 🤑', rave_coin:'pocketed bananacoins 🪙',
+  stand_exit_rave:'walked the road back to the club', stand_sign:'read a road sign 🚧' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -681,7 +682,9 @@ var EV_EXPLAIN = {
   stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
   stand_buy_try:'pressed BUY at the stand without enough coins 🔥 the want-it-can’t-afford-it list — demand data for pricing (item = which)',
   stand_buy:'BOUGHT a stand item with bananacoins 🤑 — coins spent, deed written to the pass, worn out the door (item + price)',
-  rave_coin:'walked into a bananacoin drop on the rave floor (n = how many; windows every ~4 min, 70% one / 25% three / 5% five)' };
+  rave_coin:'walked into a bananacoin drop on the rave floor (n = how many; windows every ~4 min, 70% one / 25% three / 5% five)',
+  stand_exit_rave:'walked their banana out the BOTTOM of the park — the road back to the rave (the return leg of the door)',
+  stand_sign:'tapped an under-construction road sign in the park 🚧 — appetite for more banana world' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };

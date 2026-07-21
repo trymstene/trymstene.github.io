@@ -157,6 +157,15 @@ export default {
       }
       return room.fetch(request);
     }
+    // 🌳 the PARK outside the stand — its own tiny room (S5): presence +
+    // positions + outfits only, none of the floor's event machinery
+    if (url.pathname === '/park') {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      if (!allowed.includes(request.headers.get('Origin') || '')) {
+        return new Response('forbidden', { status: 403 });
+      }
+      return env.PARK.get(env.PARK.idFromName('the-park')).fetch(request);
+    }
     // the Banana Mail rave-names desk (browser fetches from trymstene.com)
     if (url.pathname === '/names' || url.pathname === '/strike') {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -643,5 +652,121 @@ function strip(p) {
     lvl: p.lvl || undefined, // club level (REP) — titles show on the floor roster
     name: p.name || undefined, // the pass name (ONE identity) — sanitized at entry
   };
+}
+
+// ============================================================================
+// 🌳 THE PARK — the room outside the banana stand (S5). Deliberately tiny:
+// join / move / outfit / leave, same hibernation + reaper + sanitizers as the
+// floor, NONE of the event machinery (no drops, no happy hour, no quests —
+// the park's life is client-side: ducks, birds, the keeper).
+const PARK_CAP = 40;
+
+export class ParkRoom {
+  constructor(state) {
+    this.state = state;
+    this.state.setWebSocketAutoResponse(
+      new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')
+    );
+  }
+
+  reapStale() {
+    const now = Date.now();
+    for (const ws of this.state.getWebSockets()) {
+      let last = 0;
+      try {
+        const t = this.state.getWebSocketAutoResponseTimestamp(ws);
+        if (t) last = t.getTime();
+      } catch (e) {}
+      let a = null;
+      try { a = ws.deserializeAttachment(); } catch (e) {}
+      if (a && a.joined > last) last = a.joined;
+      if (last && now - last > 120_000) {
+        if (a) { a.dead = true; try { ws.serializeAttachment(a); } catch (e) {} }
+        try { ws.close(1011, 'stale'); } catch (e) {}
+        if (a) this.broadcast({ t: 'leave', id: a.id }, ws);
+      }
+    }
+  }
+
+  roster() {
+    return this.state.getWebSockets()
+      .map((ws) => { try { return ws.deserializeAttachment(); } catch (e) { return null; } })
+      .filter((a) => a && !a.dead);
+  }
+
+  broadcast(msg, exceptWs) {
+    const s = JSON.stringify(msg);
+    for (const ws of this.state.getWebSockets()) {
+      if (ws === exceptWs) continue;
+      try { ws.send(s); } catch (e) {}
+    }
+  }
+
+  async fetch(request) {
+    if (request.headers.get('Upgrade') !== 'websocket') {
+      return new Response('expected websocket', { status: 426 });
+    }
+    this.reapStale();
+    if (this.roster().length >= PARK_CAP) {
+      return new Response('park full', { status: 503 });
+    }
+    const pair = new WebSocketPair();
+    this.state.acceptWebSocket(pair[1]);
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+
+  async webSocketMessage(ws, raw) {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (!msg || typeof msg !== 'object') return;
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && me.dead) return;
+
+    if (msg.t === 'hi' && !me) {
+      this.reapStale();
+      const p = {
+        id: crypto.randomUUID().slice(0, 8),
+        name: sanitizeName(msg.name, []), // family filter, no strike list here
+        outfit: sanitizeOutfit(msg.outfit),
+        x: parkClampX(msg.x), y: parkClampY(msg.y),
+        joined: Date.now(),
+      };
+      ws.serializeAttachment(p);
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(parkStrip) }));
+      this.broadcast({ t: 'join', p: parkStrip(p) }, ws);
+      return;
+    }
+    if (msg.t === 'move' && me) {
+      const now = Date.now();
+      if (now - (me.lastMove || 0) < 100) return; // client sends at 150ms
+      me.lastMove = now;
+      me.x = parkClampX(msg.x); me.y = parkClampY(msg.y);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'move', id: me.id, x: me.x, y: me.y }, ws);
+      return;
+    }
+    if (msg.t === 'outfit' && me) { // bought something at the stand mid-visit
+      me.outfit = sanitizeOutfit(msg.outfit);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
+    }
+  }
+
+  async webSocketClose(ws) {
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && !me.dead) this.broadcast({ t: 'leave', id: me.id }, ws);
+  }
+
+  async webSocketError(ws) {
+    return this.webSocketClose(ws);
+  }
+}
+
+function parkClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(95, Math.max(5, Math.round(n * 10) / 10)) : 50; }
+function parkClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(99, Math.max(20, Math.round(n * 10) / 10)) : 90; }
+function parkStrip(p) {
+  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, name: p.name || undefined };
 }
 const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 99 ? n : undefined; };
