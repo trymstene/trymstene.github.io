@@ -2631,6 +2631,8 @@ function init() {
           toast.innerHTML = '🌈 <b>' + String(dispName(r) || 'a banana').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</b> caught the RAINBOW JELLY';
           (el('rvToasts') || floor).appendChild(toast);
           setTimeout(() => toast.remove(), 6000);
+          // Barty spectates like everyone else (Trym's line)
+          if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('look at ' + (dispName(r) || 'that banana') + ' GO!! 🌈', false, 5000);
         }
       }
       else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) { r.outfit = m.outfit; if (m.name !== undefined) r.name = m.name; refreshHud(); } }
