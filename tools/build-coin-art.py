@@ -218,6 +218,109 @@ COIN = big_coin(44, 30)  # 32 muddied the face — 30 keeps the smile readable
 VARIANTS = [('coin', COIN), ('coins', cluster(COIN)), ('stack', stack_scene(COIN))]
 
 
+# ============================================================================
+# ANIMATION (Trym's roadmap step 2): the single coin SPINS (classic
+# videogame coin — face → tilt → edge → back → around); the cluster and the
+# stack TWINKLE (a sparkle wanders across the pile — spinning every coin in
+# a composition would be chaos).
+
+def squash(g, w):
+    """column-sample a grid to width w, centred on the 44 canvas"""
+    out = Grid(g.w, g.h)
+    off = (g.w - w) // 2
+    for x in range(w):
+        sx = min(g.w - 1, round(x * g.w / w))
+        for y in range(g.h):
+            c = g.px.get((sx, y))
+            if c:
+                out.set(off + x, y, c)
+    return out
+
+
+def ellipse_coin(w, D=44):
+    """a plain mid-spin coin: ellipse rim + lip + vertical gloss, no emblem
+    (classic spins simplify the tilted frames)"""
+    g = Grid(D, D)
+    c = (D - 1) / 2
+    rx, ry = w / 2 - 0.5, D / 2 - 0.6
+    filled = set()
+    for y in range(D):
+        for x in range(D):
+            if ((x - c) / rx) ** 2 + ((y - c) / ry) ** 2 <= 1:
+                filled.add((x, y))
+    for (x, y) in filled:
+        edge = any((x + dx, y + dy) not in filled for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        if edge:
+            g.set(x, y, OUT)
+        else:
+            inner = any((x + dx, y + dy) not in filled for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2)))
+            g.set(x, y, SHADE if inner else FACE)
+    # vertical gloss stripe left of centre
+    gx = round(c - w * 0.22)
+    for y in range(D):
+        for x in (gx, gx + 1):
+            if g.px.get((x, y)) == FACE:
+                g.set(x, y, PALE)
+    return g
+
+
+def edge_coin(D=44):
+    """the coin seen edge-on: a thin gold capsule"""
+    g = Grid(D, D)
+    c = (D - 1) / 2
+    cols = [OUT, SHADE, FACE, HI, FACE, SHADE, OUT]
+    x0 = round(c) - len(cols) // 2
+    ry = D / 2 - 0.6
+    for i, col in enumerate(cols):
+        for y in range(D):
+            if abs(y - c) <= ry - (0 if 0 < i < len(cols) - 1 else 1.5):
+                g.set(x0 + i, y, col)
+    return g
+
+
+def mirror(g):
+    out = Grid(g.w, g.h)
+    for (x, y), c in g.px.items():
+        out.set(g.w - 1 - x, y, c)
+    return out
+
+
+def spin_frames(master):
+    f0 = master                    # full face
+    f1 = squash(master, 30)        # tilting, emblem still riding
+    f2 = ellipse_coin(16)          # steep tilt, simplified
+    f3 = edge_coin()               # edge-on
+    return [f0, f1, f2, f3, mirror(f2), mirror(f1)]
+
+
+SPARK = '#fffdf5'
+def sparkle(base, cx, cy, small=False):
+    """the base art with a 4-point star glinting at (cx, cy)"""
+    g = Grid(base.w, base.h)
+    g.blit(base, 0, 0)
+    arms = 1 if small else 2
+    for d in range(-arms, arms + 1):
+        g.set(cx + d, cy, SPARK)
+        g.set(cx, cy + d, SPARK)
+    if not small:
+        for sx, sy in ((-1, -1), (1, 1), (-1, 1), (1, -1)):
+            g.set(cx + sx, cy + sy, HI)
+    return g
+
+
+def twinkle_frames(base, spots):
+    """base · glint@A · base · glint@B (small then big reads as a twinkle)"""
+    (ax, ay), (bx, by) = spots
+    return [base, sparkle(base, ax, ay), base, sparkle(base, bx, by, small=True)]
+
+
+ANIMS = [
+    ('coin-spin', spin_frames(COIN)),
+    ('coins-spark', twinkle_frames(cluster(COIN), ((13, 8), (38, 12)))),
+    ('stack-spark', twinkle_frames(stack_scene(COIN), ((44, 12), (7, 22)))),
+]
+
+
 def to_svg(g):
     rects = []
     for y in range(g.h):
@@ -236,21 +339,26 @@ def to_svg(g):
             f'xmlns="http://www.w3.org/2000/svg">' + ''.join(rects) + '</svg>')
 
 
-# contact sheet: all denominations at 10x on the club's dark floor
-K = 10
-PAD = 24
-sheet_w = sum(g.w for _, g in VARIANTS) * K + PAD * (len(VARIANTS) + 1)
-sheet_h = max(g.h for _, g in VARIANTS) * K + PAD * 2
-im = Image.new('RGBA', (sheet_w, sheet_h), (13, 11, 20, 255))
-ox = PAD
-for _, g in VARIANTS:
-    oy = PAD + (sheet_h - PAD * 2 - g.h * K) // 2
-    for (gx, gy), c in g.px.items():
-        rgb = tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
-        for yy in range(K):
-            for xx in range(K):
-                im.putpixel((ox + gx * K + xx, oy + gy * K + yy), rgb + (255,))
-    ox += g.w * K + PAD
+# contact sheet: denominations on row 1, EVERY animation frame on the rows
+# below (spin + both twinkles), 6x on the club's dark floor
+K = 6
+PAD = 16
+rows = [[g for _, g in VARIANTS]] + [frames for _, frames in ANIMS]
+row_w = [sum(g.w for g in r) * K + PAD * (len(r) + 1) for r in rows]
+row_h = [max(g.h for g in r) * K + PAD for r in rows]
+im = Image.new('RGBA', (max(row_w), sum(row_h) + PAD), (13, 11, 20, 255))
+oy = PAD
+for r, rh in zip(rows, row_h):
+    ox = PAD
+    for g in r:
+        gy0 = oy + (rh - PAD - g.h * K) // 2
+        for (gx, gy), c in g.px.items():
+            rgb = tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+            for yy in range(K):
+                for xx in range(K):
+                    im.putpixel((ox + gx * K + xx, gy0 + gy * K + yy), rgb + (255,))
+        ox += g.w * K + PAD
+    oy += rh
 im.save(SHEET)
 print('sheet ->', SHEET)
 
@@ -259,11 +367,28 @@ print('sheet ->', SHEET)
 # up by INTEGER factors with image-rendering: pixelated.
 OUT_DIR = os.path.join(SITE, 'public', 'assets', 'banana-stand')
 os.makedirs(OUT_DIR, exist_ok=True)
-for name, gr in VARIANTS:
+
+
+def grid_to_image(gr):
     im2 = Image.new('RGBA', (gr.w, gr.h), (0, 0, 0, 0))
     for (x, y), col in gr.px.items():
         rgb = tuple(int(col[i:i + 2], 16) for i in (1, 3, 5))
         im2.putpixel((x, y), rgb + (255,))
+    return im2
+
+
+for name, gr in VARIANTS:
     path = os.path.join(OUT_DIR, f'{name}.png')
-    im2.save(path, optimize=True)
+    grid_to_image(gr).save(path, optimize=True)
     print(f'{name}: {gr.w}x{gr.h} -> {path} ({os.path.getsize(path)} bytes)')
+
+# animation SHEETS: frames side by side, fixed cell = frame size — pages
+# animate with CSS steps() on background-position
+for name, frames in ANIMS:
+    fw, fh = frames[0].w, frames[0].h
+    sheet_im = Image.new('RGBA', (fw * len(frames), fh), (0, 0, 0, 0))
+    for i, fr in enumerate(frames):
+        sheet_im.paste(grid_to_image(fr), (i * fw, 0))
+    path = os.path.join(OUT_DIR, f'{name}.png')
+    sheet_im.save(path, optimize=True)
+    print(f'{name}: {len(frames)}x {fw}x{fh} -> {path} ({os.path.getsize(path)} bytes)')
