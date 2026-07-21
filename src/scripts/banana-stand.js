@@ -50,14 +50,19 @@ function init() {
   const scene2 = document.getElementById('bsScene2');
   const cut = document.getElementById('bsCut');
   let inShop = false;
+  let cutAt = 0; // trigger cooldown — no re-cut while a cut is mid-flight
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function cutTo(showShop) {
     inShop = showShop;
+    cutAt = performance.now();
+    // reposition IMMEDIATELY, not inside the delayed swap: with the banana
+    // still AT the counter, the very next walk frame re-fired the proximity
+    // trigger and cut straight back into the shop (Trym's double-click bug)
+    if (!showShop) { pos.y = Math.max(pos.y, 52); tgt.x = pos.x; tgt.y = pos.y; }
     const swap = () => {
       scene1.hidden = showShop;
       scene2.hidden = !showShop;
       if (showShop) { drawKeeper(); say(COUNTER_HELLO); }
-      else { pos.y = Math.max(pos.y, 52); tgt.x = pos.x; tgt.y = pos.y; } // step back out of the trigger zone
     };
     if (REDUCED) { swap(); return; }
     cut.classList.add('is-on');
@@ -69,6 +74,9 @@ function init() {
   // little kiosk's desk ends (~26% down, centered).
   const pos = { x: 50, y: 108 };  // walks IN from below the door
   const tgt = { x: 50, y: 84 };
+  // ?counter = spawn a step from the desk (the rave's ?stagetest pattern —
+  // lets tests and quick checks skip the walk)
+  if (location.search.includes('counter')) { pos.x = 50; pos.y = 44; tgt.x = 50; tgt.y = 36; }
   const COUNTER = { x: 50, y: 34 };
   const SPEED = 26; // %/s
   const keys = {};
@@ -104,8 +112,8 @@ function init() {
       meEl.style.left = pos.x + '%';
       meEl.style.top = pos.y + '%';
       meEl.style.transform = 'translateY(-100%)';
-      // reached the counter → the scene cuts
-      if (Math.hypot(pos.x - COUNTER.x, pos.y - COUNTER.y) < 13) cutTo(true);
+      // reached the counter → the scene cuts (cooldown: never mid-cut)
+      if (now - cutAt > 400 && Math.hypot(pos.x - COUNTER.x, pos.y - COUNTER.y) < 13) cutTo(true);
     }
     requestAnimationFrame(step);
   }
