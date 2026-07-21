@@ -102,7 +102,10 @@ function init() {
     // reposition IMMEDIATELY, not inside the delayed swap: with the banana
     // still AT the counter, the very next walk frame re-fired the proximity
     // trigger and cut straight back into the shop (Trym's double-click bug)
-    if (!showShop) { pos.y = Math.max(pos.y, 30); tgt.x = pos.x; tgt.y = pos.y; }
+    // step-back must land OUTSIDE the counter's re-trigger radius (COUNTER.y
+    // 22 + r 9 → anything above y 31 re-cuts you into the shop next frame;
+    // park v2's renumbering shrank the old margin and Trym hit the loop)
+    if (!showShop) { pos.y = Math.max(pos.y, 35); tgt.x = pos.x; tgt.y = pos.y; }
     const swap = () => {
       scene1.hidden = showShop;
       scene2.hidden = !showShop;
