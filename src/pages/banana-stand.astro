@@ -250,41 +250,6 @@ const description = 'There is always money in the banana stand.';
     .bs-btn--dark { background: #17121f; color: #fffdf5; }
     .bs-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
 
-    /* TEMP: the coin-draft review strip (remove after Trym's verdict) */
-    .bs-coindrafts {
-      margin-top: 1.6rem; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
-      background: #17121f; padding: 1rem;
-    }
-    .bs-coindrafts h2 {
-      font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 0.95rem;
-      margin: 0 0 0.8rem; text-align: center; letter-spacing: 0.05em;
-    }
-    .bs-coindrafts__row { display: flex; align-items: flex-end; justify-content: space-around; gap: 1rem; flex-wrap: wrap; }
-    .bs-coindrafts__row > div { display: grid; justify-items: center; gap: 0.5rem; }
-    /* sprite-sheet animation: CSS steps() over background-position; display
-       sizes are 3x the natural pixels so the art stays crisp */
-    .bs-anim { image-rendering: pixelated; background-repeat: no-repeat; }
-    .bs-anim--spin {
-      width: 132px; height: 132px;
-      background-image: url('/assets/banana-stand/coin-spin.png');
-      background-size: 792px 132px; animation: bsSpin 0.9s steps(6) infinite;
-    }
-    @keyframes bsSpin { to { background-position: -792px 0; } }
-    .bs-anim--coins {
-      width: 147px; height: 93px;
-      background-image: url('/assets/banana-stand/coins-spark.png');
-      background-size: 588px 93px; animation: bsSparkA 2s steps(4) infinite;
-    }
-    @keyframes bsSparkA { to { background-position: -588px 0; } }
-    .bs-anim--stack {
-      width: 177px; height: 129px;
-      background-image: url('/assets/banana-stand/stack-spark.png');
-      background-size: 708px 129px; animation: bsSparkB 2.6s steps(4) 0.7s infinite;
-    }
-    @keyframes bsSparkB { to { background-position: -708px 0; } }
-    @media (prefers-reduced-motion: reduce) { .bs-anim { animation: none; } }
-    .bs-coindrafts__row b { font-size: 0.75rem; opacity: 0.8; }
-
     /* the scene CUT: a hard black blink, like a cartridge game */
     .bs-cut {
       position: fixed; inset: 0; background: #000; z-index: 60; pointer-events: none;
@@ -373,17 +338,6 @@ const description = 'There is always money in the banana stand.';
       <div class="bs-foot">
         <button class="bs-btn bs-btn--dark" id="bsBack" type="button">↓ step back from the counter</button>
         <a class="bs-btn" href="/rave/" data-place="stand">🪩 back to the club →</a>
-      </div>
-    </div>
-
-    <!-- TEMPORARY review strip for the banana guy: the three coin
-         denominations awaiting his verdict (remove once approved) -->
-    <div class="bs-coindrafts">
-      <h2>🪙 coin drafts — for the banana guy</h2>
-      <div class="bs-coindrafts__row">
-        <div><div class="bs-anim bs-anim--spin" role="img" aria-label="One bananacoin, spinning"></div><b>one coin</b></div>
-        <div><div class="bs-anim bs-anim--coins" role="img" aria-label="Several bananacoins, glinting"></div><b>several coins</b></div>
-        <div><div class="bs-anim bs-anim--stack" role="img" aria-label="A stack of bananacoins, glinting"></div><b>a stack</b></div>
       </div>
     </div>
   </div>
