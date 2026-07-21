@@ -76,14 +76,27 @@ def big_coin(D, emblem_w):
     for (x, y) in filled:
         edge = any((x + dx, y + dy) not in filled for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
         if edge:
-            g.set(x, y, OUT)
+            # REEDED edge: the rim alternates dark/darker every ~22° like a
+            # real milled coin
+            seg = int(((math.atan2(y - c, x - c) + math.pi) / (math.pi / 8))) % 2
+            g.set(x, y, OUT if seg else DEEP)
         else:
-            inner = any((x + dx, y + dy) not in filled for dx, dy in
-                        ((2, 0), (-2, 0), (0, 2), (0, -2), (1, 1), (-1, -1), (1, -1), (-1, 1)))
-            if inner:
+            d = math.hypot(x - c, y - c)
+            if d > r - 2.1:
+                # the lip: lit top-left, shaded bottom-right
                 g.set(x, y, HI if (x - c) + (y - c) < -r * 0.95 else SHADE)
+            elif r - 3.6 < d <= r - 2.6:
+                # the GROOVE: a thin ring separating lip from field — deepens
+                # to shadow on the lower-right
+                g.set(x, y, DEEP if (x - c) + (y - c) > r * 0.45 else SHADE)
             else:
                 g.set(x, y, FACE)
+    # the gleam: two diagonal light streaks across the upper-left field
+    for pts in ([(-10, -2), (-9, -3), (-8, -4), (-7, -5), (-6, -6)], [(-12, -6), (-11, -7)]):
+        for dx, dy in pts:
+            x, y = round(c) + dx, round(c) + dy
+            if g.px.get((x, y)) == FACE:
+                g.set(x, y, HI)
     em = emblem_from_frame(emblem_w)
     # bust framing: the body's crop-cut sits low, tucked toward the rim
     ox, oy = round(c - em.w / 2), round(c - em.h / 2) + 3

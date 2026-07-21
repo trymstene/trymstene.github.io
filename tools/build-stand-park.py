@@ -283,22 +283,31 @@ for x in range(6, HW - 6):
     hp[x, HH - 3] = ROOF_D
     hp[x, HH - 2] = ROOF_D
 
-# the tilted SIGN on the outside wall (right of the window): a yellow plank
-# with a banana on it, hung crooked — rows shift down as it runs right
-SGN_X, SGN_Y, SGN_W, SGN_H = 62, 24, 22, 9
+# the tilted SIGN on the outside wall (right of the window): a bigger yellow
+# plank with a proper banana on it, hung crooked — rows shift as it runs right
+SGN_X, SGN_Y, SGN_W, SGN_H = 56, 20, 30, 14
 for x in range(SGN_X, SGN_X + SGN_W):
-    tilt = (x - SGN_X) // 8  # +1px down every 8px = the crooked hang
+    tilt = (x - SGN_X) // 10  # +1px down every 10px = the crooked hang
     for y in range(SGN_Y + tilt, SGN_Y + SGN_H + tilt):
         if 0 <= x < HW and 0 <= y < HH:
             edge = x in (SGN_X, SGN_X + SGN_W - 1) or y in (SGN_Y + tilt, SGN_Y + SGN_H + tilt - 1)
-            hp[x, y] = FRAME if edge else WALL
-# nail + the banana glyph on the plank
+            # dark wood plank so the yellow banana POPS off it
+            hp[x, y] = ROOF_D if edge else ROOF
+# nail + a 2px-thick banana crescent filling the plank
 hp[SGN_X + SGN_W // 2, SGN_Y - 1] = FRAME
-for i, (dx, dy) in enumerate([(-5, 1), (-4, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 1), (2, 2)]):
-    x, y = SGN_X + 10 + dx, SGN_Y + 4 + (10 + dx) // 8
+BAN = [(-8, 2), (-7, 1), (-6, 0), (-5, -1), (-4, -1), (-3, -2), (-2, -2), (-1, -2),
+       (0, -2), (1, -2), (2, -2), (3, -1), (4, -1), (5, 0), (6, 1), (7, 2)]
+for dx, dy in BAN:
+    x = SGN_X + 14 + dx
+    tilt = (x - SGN_X) // 10
+    y = SGN_Y + 6 - dy + tilt  # tips UP — a banana rests smiling, not frowning
     if 0 <= x < HW and 0 <= y < HH:
-        hp[x, y] = NANA_D
-hp[SGN_X + 12, SGN_Y + 3 + 1] = STEM
+        hp[x, y] = NANA
+        if 0 <= y + 1 < HH:
+            hp[x, y + 1] = NANA_D
+# stem nub on the banana's right tip
+sx = SGN_X + 14 + 8
+hp[sx, SGN_Y + 3 + (sx - SGN_X) // 10] = STEM
 
 hut.save(os.path.join(OUT, 'hut.png'), optimize=True)
 print('wrote hut.png')

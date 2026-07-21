@@ -70,6 +70,10 @@ function init() {
   // lets tests and quick checks skip the walk)
   if (location.search.includes('counter')) { pos.x = 50; pos.y = 44; tgt.x = 50; tgt.y = 36; }
   const COUNTER = { x: 50, y: 38 };
+  // the pond (park.png ellipse in room %) — bananas famously can't swim;
+  // walking AROUND it is fine, so blocked moves slide along the shore
+  const POND = { x: 81.9, y: 74.2, rx: 14.5, ry: 12.5 };
+  const inPond = (x, y) => ((x - POND.x) / POND.rx) ** 2 + ((y - POND.y) / POND.ry) ** 2 < 1;
   const SPEED = 26; // %/s
   const keys = {};
   addEventListener('keydown', (e) => {
@@ -97,7 +101,11 @@ function init() {
       const d = Math.hypot(dx, dy);
       if (d > 0.5) {
         const m = Math.min(d, SPEED * dt);
-        pos.x += (dx / d) * m; pos.y += (dy / d) * m;
+        const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
+        if (!inPond(nx, ny)) { pos.x = nx; pos.y = ny; }
+        else if (!inPond(nx, pos.y)) pos.x = nx;        // slide along the shore
+        else if (!inPond(pos.x, ny)) pos.y = ny;
+        else { tgt.x = pos.x; tgt.y = pos.y; }          // parked at the water's edge
       }
       pos.x = Math.max(8, Math.min(92, pos.x));
       pos.y = Math.max(32, Math.min(96, pos.y));
