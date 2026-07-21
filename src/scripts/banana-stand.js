@@ -7,8 +7,9 @@
 // The keeper is the dancing banana OFF DUTY: slow 3↔7 sway, coffee, tired
 // half-lidded eyes fitted to the MEASURED eye whites of frame 3.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, SVG } from '../lib/banana-engine.js';
-import { WEARABLE_PACKS } from '../data/wearables.js';
+import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
 import { passStat, passGet, passPush } from '../lib/banana-pass.js';
+import { wearToCustom } from '../lib/wear-render.js';
 
 const room = document.getElementById('bsRoom');
 if (room) init();
@@ -456,9 +457,10 @@ function init() {
 
   // tile + spotlight states follow the wallet: owned = YOURS chip, too
   // expensive = the golden lock stays on, affordable = clean price tag
+  const ALL_ITEMS = []; // stand stock + back-catalog entries (added async)
   function updateTileStates() {
     const bal = coinBalance();
-    STOCK.forEach((item) => {
+    ALL_ITEMS.forEach((item) => {
       const tile = tileById.get(item.id);
       if (!tile) return;
       const owned = isOwned(item.id);
@@ -483,36 +485,77 @@ function init() {
       buyBtn.classList.remove('is-owned');
     }
   }
+  function itemArt(item) { return item.artHtml || SVG[item.artKey] || ''; }
   function pick(item, tile) {
-    shelf.querySelectorAll('.bs-tile').forEach((t) => t.classList.remove('is-picked'));
+    document.querySelectorAll('.bs-tile').forEach((t) => t.classList.remove('is-picked'));
     tile.classList.add('is-picked');
     picked = item;
     track('stand_item_view', { item: item.id });
-    document.getElementById('bsSpotArt').innerHTML = SVG[item.artKey] || '';
+    document.getElementById('bsSpotArt').innerHTML = itemArt(item);
     document.getElementById('bsSpotName').textContent = item.label;
-    document.getElementById('bsSpotDesc').textContent = DESC[item.id] || item.phrase;
+    document.getElementById('bsSpotDesc').textContent = item.back ? item.desc : (DESC[item.id] || item.phrase);
     document.getElementById('bsSpotPrice').textContent = item.price;
     updateSpot(item);
     spot.hidden = false;
   }
+  function addTile(item, container) {
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'bs-tile';
+    tile.innerHTML =
+      `<span class="bs-tile__art">${itemArt(item)}</span>` +
+      `<b>${item.label}</b>` +
+      `<span class="bs-tile__slot">${item.back ? 'drop' : item.slot}</span>` +
+      `<span class="bs-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ${item.price}</span>` +
+      `<span class="bs-tile__lock" aria-hidden="true">${LOCK_SVG}</span>` +
+      `<span class="bs-tile__own" aria-hidden="true">YOURS</span>`;
+    tile.addEventListener('click', () => pick(item, tile));
+    tileById.set(item.id, tile);
+    ALL_ITEMS.push(item);
+    container.appendChild(tile);
+  }
   if (shelf) {
-    STOCK.forEach((item) => {
-      const tile = document.createElement('button');
-      tile.type = 'button';
-      tile.className = 'bs-tile';
-      tile.innerHTML =
-        `<span class="bs-tile__art">${SVG[item.artKey] || ''}</span>` +
-        `<b>${item.label}</b>` +
-        `<span class="bs-tile__slot">${item.slot}</span>` +
-        `<span class="bs-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ${item.price}</span>` +
-        `<span class="bs-tile__lock" aria-hidden="true">${LOCK_SVG}</span>` +
-        `<span class="bs-tile__own" aria-hidden="true">YOURS</span>`;
-      tile.addEventListener('click', () => pick(item, tile));
-      tileById.set(item.id, tile);
-      shelf.appendChild(tile);
-    });
+    STOCK.forEach((item) => addTile(item, shelf));
     updateTileStates();
   }
+
+  // ---- 🕰 S3: THE BACK-CATALOG — drop nights you missed, for coins --------
+  // Curated drops + approved community items you don't own yet, at a flat
+  // price ABOVE most floor gear: catching on the night stays the good deal.
+  const BACKCAT_PRICE = 50;
+  const backHead = document.getElementById('bsBackHead');
+  const backShelf = document.getElementById('bsBackShelf');
+  const catOwnedStand = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
+  function addBackItems(items) {
+    if (!items.length || !backShelf) return;
+    backHead.hidden = false;
+    backShelf.hidden = false;
+    items.forEach((it) => addTile(it, backShelf));
+    updateTileStates();
+  }
+  addBackItems(DROPS
+    .filter((d) => !((d.flag && localStorage.getItem(d.flag) === '1') || isOwned(d.id)))
+    .map((d) => ({
+      id: d.id, label: d.label, slot: d.slot === 'glasses' ? 'face' : d.slot,
+      price: BACKCAT_PRICE, back: true, flag: d.flag,
+      artHtml: SVG[d.art] || '',
+      desc: (d.by ? `from ${d.by}’s booth. ` : '') + 'you missed the drop night. money fixes that.',
+    })));
+  fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
+    .then((r) => (r.ok ? r.json() : []))
+    .then((items) => {
+      if (!Array.isArray(items)) return;
+      const own = catOwnedStand();
+      addBackItems(items
+        .filter((it) => !own[it.id] && !isOwned(it.id))
+        .map((it) => ({
+          id: it.id, label: it.title || 'community item', slot: 'c',
+          price: BACKCAT_PRICE, back: true,
+          artHtml: (wearToCustom(it.wear) || {}).art || '',
+          desc: (it.by ? `made by ${it.by}. ` : '') + 'you missed the drop night. money fixes that.',
+        })));
+    })
+    .catch(() => { /* offline: the curated back-catalog stands */ });
 
   // ---- the purchase: spend coins, record the deed, wear it out the door ----
   // exclusivity mirrors the builder: one pair of shoes, one body garment
@@ -523,6 +566,7 @@ function init() {
   }));
   function equip(item) {
     const wear = (o) => {
+      if (item.slot === 'c') { o.c = item.id; return o; } // community item: the one custom slot
       if (item.slot === 'hat') { o.hat = item.id; return o; }
       if (item.slot === 'face') { o.glasses = item.id; return o; }
       const ex = { ...(o.extras || {}) };
@@ -560,12 +604,24 @@ function init() {
     }
     passStat('coins_spent', item.price);
     passStat('own_' + item.id, 1);
+    if (item.back) {
+      // back-catalog buys also write the LEGACY ownership stores, so every
+      // flag/cat-own reader (rave gift gate, builder chips) unlocks at once
+      if (item.flag) { try { localStorage.setItem(item.flag, '1'); } catch (e) {} }
+      if (item.slot === 'c') {
+        try {
+          const ownM = catOwnedStand();
+          ownM[item.id] = Date.now();
+          localStorage.setItem('cat-own-v1', JSON.stringify(ownM));
+        } catch (e) {}
+      }
+    }
     equip(item);
     refreshWallets();
     updateTileStates();
     updateSpot(item);
     say(SOLD_LINES[soldIdx++ % SOLD_LINES.length](item.label.toLowerCase()));
-    track('stand_buy', { item: item.id, price: item.price });
+    track('stand_buy', { item: item.id, price: item.price, kind: item.back ? 'drop' : 'stand' });
   });
 
   // ---- wall dressing: a FEW items at real wearable scale for the keeper

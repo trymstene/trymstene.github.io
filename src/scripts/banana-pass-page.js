@@ -22,7 +22,17 @@ const catCustomP = (id) => {
   CAT_CUSTOM[id] = wearToCustom(it.wear);
   return CAT_CUSTOM[id] || undefined;
 };
-const catOwnedP = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
+const catOwnedP = () => {
+  try {
+    const m = JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {};
+    // synced own_c_<id> pass stats count too (a catch on another device)
+    const stats = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
+    for (const k of Object.keys(stats)) {
+      if (k.startsWith('own_c_') && stats[k] > 0 && !m[k.slice(4)]) m[k.slice(4)] = 1;
+    }
+    return m;
+  } catch (e) { return {}; }
+};
 const catalogReady = fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
   .then((r) => (r.ok ? r.json() : []))
   .then((items) => { if (Array.isArray(items)) CATALOG = items; })

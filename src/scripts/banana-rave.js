@@ -10,7 +10,7 @@
 // the whole floor goes disco. Everyone sees it together because everyone
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES, resolveHands, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
-import { DROPS } from '../data/wearables.js';
+import { DROPS, ownsDropStat } from '../data/wearables.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -124,9 +124,32 @@ fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
   .then((r) => (r.ok ? r.json() : []))
   .then((items) => { if (Array.isArray(items)) { CATALOG = items; DROP = pickTonightDrop() || DROP; } })
   .catch(() => { /* offline/blocked: the curated fallback stands */ });
+
+// 🔄 the ownership bridge, both directions, once per load: legacy per-device
+// flags publish themselves to the synced own_<id> stats, and stats that
+// arrived via the sync blob restore the local flags a fresh device is missing
+// (so every legacy flag-reader keeps working without knowing about stats).
+try {
+  const bStats = passGet().stats || {};
+  DROPS.forEach((d) => {
+    const has = localStorage.getItem(d.flag) === '1';
+    if (has && !((bStats['own_' + d.id] || 0) > 0)) passStat('own_' + d.id, 1);
+    else if (!has && (bStats['own_' + d.id] || 0) > 0) localStorage.setItem(d.flag, '1');
+  });
+  const bOwn = catOwned();
+  let bDirty = false;
+  Object.keys(bStats).forEach((k) => {
+    if (k.startsWith('own_c_') && bStats[k] > 0 && !bOwn[k.slice(4)]) { bOwn[k.slice(4)] = Date.now(); bDirty = true; }
+  });
+  Object.keys(bOwn).forEach((id) => {
+    if (/^c_/.test(id) && !((bStats['own_' + id] || 0) > 0)) passStat('own_' + id, 1);
+  });
+  if (bDirty) localStorage.setItem('cat-own-v1', JSON.stringify(bOwn));
+} catch (e) {}
 function giftEarned() {
   if (!DROP) return true;
   try {
+    if (ownsDropStat(DROP.id)) return true; // the synced truth (own_<id> pass stat)
     if (DROP.catalog) return !!catOwned()[DROP.id];
     return localStorage.getItem(DROP.flag) === '1';
   } catch (e) { return true; }
@@ -2119,6 +2142,9 @@ function init() {
       else saved.extras = { ...(saved.extras || {}), [DROP.id]: true };
       localStorage.setItem('bb-last', JSON.stringify(saved));
     } catch (e) {}
+    // the deed also lands on the pass (own_<id>, monotonic + max-merged) so
+    // the catch survives across devices — the local flag alone never synced
+    if (!had) passStat('own_' + DROP.id, 1);
     bumpChain();
     nightEvent('drop');
     addHype(10);

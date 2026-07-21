@@ -319,6 +319,10 @@ const description = 'There is always money in the banana stand.';
     .bs-tile.is-owned .bs-tile__own { display: block; }
     .bs-tile.is-owned .bs-tile__art { filter: drop-shadow(0 0 5px rgba(55, 214, 122, 0.45)); }
 
+    .bs-shelfhead {
+      font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 0.85rem;
+      letter-spacing: 0.06em; margin: 1.3rem 0 0.7rem; text-transform: lowercase;
+    }
     /* ---- THE SPOTLIGHT: the tapped item takes the stage ---- */
     .bs-spot {
       display: flex; gap: 0.9rem; align-items: center; margin-top: 1rem;
@@ -459,6 +463,11 @@ const description = 'There is always money in the banana stand.';
 
       <!-- the SHELF: every item in stock, built from the manifest -->
       <div class="bs-shelf" id="bsShelf" aria-label="The banana stand's stock"></div>
+
+      <!-- 🕰 S3 THE BACK-CATALOG: drop nights you missed, buyable for coins.
+           Hidden until there's something you actually missed. -->
+      <h2 class="bs-shelfhead" id="bsBackHead" hidden>missed drops — the back-catalog</h2>
+      <div class="bs-shelf" id="bsBackShelf" aria-label="Drops you missed" hidden></div>
 
     </div>
   </div>

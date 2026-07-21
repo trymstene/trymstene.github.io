@@ -681,7 +681,7 @@ var EV_EXPLAIN = {
   stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
   stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
   stand_buy_try:'pressed BUY at the stand without enough coins 🔥 the want-it-can’t-afford-it list — demand data for pricing (item = which)',
-  stand_buy:'BOUGHT a stand item with bananacoins 🤑 — coins spent, deed written to the pass, worn out the door (item + price)',
+  stand_buy:'BOUGHT with bananacoins 🤑 — coins spent, deed written to the pass, worn out the door (item + price; kind=drop means a missed drop from the back-catalog)',
   rave_coin:'walked into a bananacoin drop (n = how many; at = park when caught outside the club; windows every ~4 min, 70% one / 25% three / 5% five, one shared faucet)',
   stand_exit_rave:'walked their banana out the BOTTOM of the park — the road back to the rave (the return leg of the door)',
   stand_sign:'tapped an under-construction road sign in the park 🚧 — appetite for more banana world' };

@@ -5,7 +5,7 @@
 // frame-picker thumbnails and both exports, so what you see is what you get.
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { ownsWearable } from '../data/wearables.js';
+import { ownsWearable, ownsDropStat } from '../data/wearables.js';
 import { shelfAdd } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
 import {
@@ -95,7 +95,9 @@ function init() {
   const earnedUnlocked = (d) => {
     if (!d.earned) return true;
     try {
-      if (d.flag) return localStorage.getItem(d.flag) === '1';
+      // the synced own_<id> stat (drop catches + back-catalog buys) counts
+      // alongside the legacy per-device flag
+      if (d.flag) return localStorage.getItem(d.flag) === '1' || ownsDropStat(d.id);
       if (d.patch) return !!((JSON.parse(localStorage.getItem('pass-v1') || '{}').patches || {})[d.patch]);
     } catch (e) {}
     return false;

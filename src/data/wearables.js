@@ -216,6 +216,17 @@ export function ownsWearable(d) {
   } catch (e) { return false; }
 }
 
+// Drop catches sync the same way: catching (or back-catalog-buying) writes
+// `own_<id>` next to the legacy per-device flag, so ownership rides the pass
+// blob across devices. Readers check BOTH — the stat is the synced truth,
+// the flag keeps a decade of pre-stat catches honest.
+export function ownsDropStat(id) {
+  try {
+    const stats = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
+    return (stats['own_' + id] || 0) > 0;
+  } catch (e) { return false; }
+}
+
 // 🎁 THE DROP LINEUP — every wearable flagged `drop:true` is CATCHABLE on the
 // rave floor (curation IS the drop: approving an item = adding it here). Each
 // carries its slot ('hat'|'glasses'|'extra'), art key, proof `flag`, `by`
