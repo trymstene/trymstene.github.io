@@ -172,26 +172,39 @@ def side_stack(w, n):
     return g
 
 
+def crop(g):
+    """rebase a grid to its painted bounding box — compositions can never be
+    clipped again (two hand-sized grids in a row cut the third coin off)"""
+    xs = [p[0] for p in g.px]
+    ys = [p[1] for p in g.px]
+    x0, y0 = min(xs), min(ys)
+    out = Grid(max(xs) - x0 + 1, max(ys) - y0 + 1)
+    for (x, y), c in g.px.items():
+        out.set(x - x0, y - y0, c)
+    return out
+
+
 def cluster(master):
     """several coins — the master itself, halved and clustered"""
     m = half(master)  # 22px
-    g = Grid(m.w * 2, m.h + 10)  # sized to FIT all three (the 42px grid hard-clipped the right coin)
+    g = Grid(200, 200)  # oversized scratch; crop() sizes the result
     g.blit(m, 0, 9)
-    g.blit(m, m.w - 8, 0)
-    g.blit(m, m.w + 14 - 8, 10)
-    return g
+    g.blit(m, 14, 0)
+    g.blit(m, 28, 10)
+    return crop(g)
 
 
 def stack_scene(master):
     """three stacks behind, THE coin itself — full size, no downscale — in
     front, overflowing them"""
     a, b, c = side_stack(15, 7), side_stack(13, 5), side_stack(15, 6)
-    g = Grid(58, 46)
-    g.blit(a, 0, g.h - a.h)
-    g.blit(b, 14, g.h - b.h)
-    g.blit(c, 28, g.h - c.h)
-    g.blit(master, g.w - master.w, g.h - master.h)  # the front coin, bottom-right
-    return g
+    g = Grid(200, 200)
+    base = 60
+    g.blit(a, 0, base - a.h)
+    g.blit(b, 14, base - b.h)
+    g.blit(c, 28, base - c.h)
+    g.blit(master, 16, base - master.h)  # the front coin overflows the piles
+    return crop(g)
 
 
 def _blit(self, other, dx, dy):
