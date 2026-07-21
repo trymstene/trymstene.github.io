@@ -156,7 +156,7 @@ export const WEARABLE_PACKS = {
       { id: 'candle', label: 'Candle', phrase: 'a bedtime candle', anchor: 'hand', hand: 'left', grip: 11, art: 'candle' },
       // 🍌🏪 STAND BATCH 1 (21 Jul) — hands, on the desk (banana-shaped items
       // derive from the circle-diff crescent, never freehand)
-      { id: 'foamfinger', label: 'Foam finger', phrase: 'a big blue foam finger', art: 'foamfinger', anchor: 'hand', grip: 9, hand: 'left', preview: true },
+      { id: 'foamfinger', label: 'Foam finger', phrase: 'a big blue foam finger', art: 'foamfinger', anchor: 'hand', grip: 14, hand: 'left', preview: true },
       { id: 'balloondog', label: 'Balloon dog', phrase: 'a balloon dog', art: 'balloondog', anchor: 'hand', grip: 10, hand: 'right', preview: true },
       { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', preview: true },
       { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', preview: true },
