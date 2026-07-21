@@ -58,7 +58,7 @@ function init() {
     // reposition IMMEDIATELY, not inside the delayed swap: with the banana
     // still AT the counter, the very next walk frame re-fired the proximity
     // trigger and cut straight back into the shop (Trym's double-click bug)
-    if (!showShop) { pos.y = Math.max(pos.y, 52); tgt.x = pos.x; tgt.y = pos.y; }
+    if (!showShop) { pos.y = Math.max(pos.y, 54); tgt.x = pos.x; tgt.y = pos.y; }
     const swap = () => {
       scene1.hidden = showShop;
       scene2.hidden = !showShop;
@@ -72,12 +72,13 @@ function init() {
   // ---- scene 1: walking ---------------------------------------------------
   // positions in % of the room; feet at (x, y). The counter zone is where the
   // little kiosk's desk ends (~26% down, centered).
-  const pos = { x: 50, y: 108 };  // walks IN from below the door
+  const pos = { x: 50, y: 108 };  // walks IN from the park entrance below
   const tgt = { x: 50, y: 84 };
+  // the hut sprite spans y 1.5%..35% — the counter zone sits just under it
   // ?counter = spawn a step from the desk (the rave's ?stagetest pattern —
   // lets tests and quick checks skip the walk)
   if (location.search.includes('counter')) { pos.x = 50; pos.y = 44; tgt.x = 50; tgt.y = 36; }
-  const COUNTER = { x: 50, y: 34 };
+  const COUNTER = { x: 50, y: 38 };
   const SPEED = 26; // %/s
   const keys = {};
   addEventListener('keydown', (e) => {
@@ -108,7 +109,7 @@ function init() {
         pos.x += (dx / d) * m; pos.y += (dy / d) * m;
       }
       pos.x = Math.max(8, Math.min(92, pos.x));
-      pos.y = Math.max(28, Math.min(96, pos.y));
+      pos.y = Math.max(32, Math.min(96, pos.y));
       meEl.style.left = pos.x + '%';
       meEl.style.top = pos.y + '%';
       meEl.style.transform = 'translateY(-100%)';
