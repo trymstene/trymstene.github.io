@@ -1,0 +1,99 @@
+---
+// Privacy & cookies — the plain-language companion to the cookie banana.
+// Noindex utility page (linked from the banner's "what?" + the footer);
+// stays out of the sitemap automatically (explicit PAGES allowlist).
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Privacy & cookies — trymstene.com';
+const description = 'What this site counts, what it never collects, and how to change your cookie choice.';
+---
+<BaseLayout title={title} description={description} robots="noindex,follow">
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-transparent.gif" alt="The Dancing Banana" style="width:110px;height:auto;image-rendering:pixelated;">
+    </div>
+    <p class="kicker">The boring-but-honest page</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">privacy &amp; cookies</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">No accounts, no ads, no selling data. Here's the whole story.</p>
+  </section>
+
+  <section class="block">
+    <div class="pv">
+      <h2>What gets counted</h2>
+      <ul>
+        <li><strong>Google Analytics</strong> — counts visits and which pages people like, so I know
+          whether anyone actually uses the things I build. In Europe this only runs
+          <em>after you say yes</em> to the cookie banana.</li>
+        <li><strong>Microsoft Clarity</strong> — anonymized replays of how pages get used (where taps
+          miss, where layouts confuse). Same rule: Europe only after a yes.</li>
+        <li><strong>Cloudflare Analytics</strong> — a cookieless visit counter. It sets nothing on your
+          device and identifies no one, so it runs for everyone.</li>
+        <li><strong>The shop checkout</strong> runs on Shopify, which has its own
+          <a href="https://www.shopify.com/legal/privacy" target="_blank" rel="noopener">privacy policy</a> and
+          handles payment details — I never see card numbers.</li>
+      </ul>
+
+      <h2>What stays in your browser</h2>
+      <p>
+        Your built banana, bananacoins, badges, and pass live in your browser's own storage
+        (localStorage) — that's your save file, not tracking. It never leaves your device unless
+        you create a passkey to sync it, and even then it's only readable by you and me.
+      </p>
+
+      <h2>Your choice</h2>
+      <p id="pvState" class="pv__state">Checking your current choice…</p>
+      <div class="pv__row">
+        <button type="button" class="btn" id="pvYes">allow the crumbs 🍌</button>
+        <button type="button" class="btn btn--light" id="pvNo">no cookies</button>
+      </div>
+      <p class="pv__small">Changes apply from your next page load. The banner only appears for
+        visitors in Europe — that's where the cookie rules apply.</p>
+
+      <h2>Questions?</h2>
+      <p><a href="/contact/">Write to me</a> — it goes straight to the banana guy.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .pv { max-width: 62ch; margin: 0 auto; text-align: left; }
+  .pv h2 { font-size: 1.15rem; margin: 1.8rem 0 0.6rem; }
+  .pv ul { padding-left: 1.2rem; }
+  .pv li { margin-bottom: 0.6rem; line-height: 1.5; }
+  .pv__state { font-weight: 700; }
+  .pv__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.4rem 0 0.6rem; }
+  .pv__small { font-size: 0.85rem; opacity: 0.7; }
+</style>
+
+<script is:inline>
+  (function () {
+    var KEY = 'cookie-consent-v1';
+    var state = document.getElementById('pvState');
+    function paint() {
+      var c = null;
+      try { c = localStorage.getItem(KEY); } catch (e) {}
+      state.textContent =
+        c === 'y' ? 'Current choice: cookies allowed — the banana thanks you. 🍌' :
+        c === 'n' ? 'Current choice: no analytics cookies. Respected.' :
+        'No choice stored yet — outside Europe none is needed; in Europe the banner will ask.';
+    }
+    function set(v) {
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+      if (v === 'n') {
+        // withdrawing = also sweep the first-party analytics cookies already set
+        (document.cookie || '').split(';').forEach(function (c) {
+          var name = c.split('=')[0].trim();
+          if (/^(_ga|_gid|_gat|_clck|_clsk)/.test(name)) {
+            var gone = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            document.cookie = gone;
+            document.cookie = gone + '; domain=.trymstene.com';
+          }
+        });
+      }
+      paint();
+    }
+    document.getElementById('pvYes').addEventListener('click', function () { set('y'); });
+    document.getElementById('pvNo').addEventListener('click', function () { set('n'); });
+    paint();
+  })();
+</script>

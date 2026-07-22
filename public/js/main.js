@@ -1,5 +1,77 @@
 // Trym Stene — homepage interactions
 
+// ---- 🍪 Cookie consent (EEA only): one banana-sized choice gates GA4 + Clarity ----
+// The choice lives in localStorage 'cookie-consent-v1' ('y'/'n'). EEA detection
+// is a timezone heuristic (Europe/* + the EEA Atlantic zones) — no geo service,
+// zero friction for the ~85% non-EEA crowd, who never see a banner. Cloudflare's
+// beacon is cookieless (consent-exempt) and stays outside the gate as the
+// ground-truth pageview counter. QA: ?cookietest forces the banner anywhere —
+// and never tracks, because it's also in the internal QA-param list below.
+(function () {
+  var KEY = 'cookie-consent-v1';
+  var force = /[?&]cookietest(?:=|&|$)/.test(location.search);
+  var tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+  var eea = /^Europe\//.test(tz) ||
+    /^Atlantic\/(Reykjavik|Canary|Madeira|Azores|Faroe)/.test(tz);
+  var choice = null;
+  try { choice = localStorage.getItem(KEY); } catch (e) {}
+  if (force) { eea = true; choice = null; }
+
+  var cc = window.__cookieConsent = {
+    eea: eea,
+    allowed: !eea || choice === 'y',
+    denied: eea && choice === 'n',
+    onAccept: [], // tracker loaders park here until the visitor says yes
+  };
+
+  // Banner: only when a choice is actually needed — and only where real
+  // visitors are (production host); previews/localhost QA via ?cookietest.
+  if (!eea || choice) return;
+  var host = location.hostname;
+  if (host !== 'trymstene.com' && host !== 'www.trymstene.com' && !force) return;
+  if (/[?&]overlay=1/.test(location.search)) return; // OBS overlays = machines
+  var internal = false;
+  try { internal = localStorage.getItem('tt-internal') === '1'; } catch (e) {}
+  if (internal && !force) return; // flagged browsers track nothing anyway
+
+  var el = document.createElement('div');
+  el.className = 'ccb';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Cookie choice');
+  el.innerHTML =
+    '<img class="ccb__nana" src="/favicon.svg" alt="" width="52" height="52">' +
+    '<div class="ccb__bubble">' +
+      '<p class="ccb__say"><strong>cookies?</strong> i only eat jelly — but Google would like a crumb to count your visit.</p>' +
+      '<div class="ccb__row">' +
+        '<button type="button" class="ccb__btn ccb__btn--yes">sure 🍌</button>' +
+        '<button type="button" class="ccb__btn ccb__btn--no">no thanks</button>' +
+        '<a class="ccb__what" href="/privacy/">what?</a>' +
+      '</div>' +
+    '</div>';
+  function done(val) {
+    try { localStorage.setItem(KEY, val); } catch (e) {}
+    el.classList.add('ccb--out');
+    setTimeout(function () { el.remove(); }, 350);
+  }
+  el.querySelector('.ccb__btn--yes').addEventListener('click', function () {
+    done('y');
+    cc.allowed = true;
+    cc.denied = false;
+    if (window.gtag) gtag('consent', 'update', {
+      ad_storage: 'granted', ad_user_data: 'granted',
+      ad_personalization: 'granted', analytics_storage: 'granted',
+    });
+    cc.onAccept.forEach(function (f) { f(); });
+    cc.onAccept.length = 0;
+  });
+  el.querySelector('.ccb__btn--no').addEventListener('click', function () {
+    done('n');
+    cc.denied = true;
+  });
+  document.body.appendChild(el);
+})();
+
 // Google Analytics (GA4) — production only (skips github.io preview + localhost)
 (function () {
   var GA_ID = 'G-1C0QRT9SRK';
@@ -26,7 +98,7 @@
   var isInternal = false;
   try { isInternal = localStorage.getItem('tt-internal') === '1'; } catch (e) {}
   if (!isInternal &&
-      /[?&](tourtest|fxtest|welcometest|hypetest|stagetest|nighttest|cointest|standopen|counter)(?:=|&|$)/.test(qs)) {
+      /[?&](tourtest|fxtest|welcometest|hypetest|stagetest|nighttest|cointest|standopen|counter|cookietest)(?:=|&|$)/.test(qs)) {
     isInternal = true; // a QA/debug param = us, this session
   }
   if (!isInternal && /^\/inbox\/?$/.test(location.pathname) && /[?&]token=/.test(qs)) {
@@ -47,30 +119,50 @@
     return; // no gtag.js, no config, no Cloudflare beacon, no event wiring
   }
 
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
-  document.head.appendChild(s);
-  gtag('js', new Date());
-  gtag('config', GA_ID);
+  // Consent Mode v2: the default is pushed BEFORE gtag.js loads. EEA visitors
+  // without a stored yes start denied; everyone else (and stored-yes) starts
+  // granted. The cookie banner (module above) flips denied→granted live via
+  // gtag('consent','update') + the onAccept queue — no reload needed.
+  var cc = window.__cookieConsent;
+  gtag('consent', 'default', cc.allowed ? {
+    ad_storage: 'granted', ad_user_data: 'granted',
+    ad_personalization: 'granted', analytics_storage: 'granted',
+  } : {
+    ad_storage: 'denied', ad_user_data: 'denied',
+    ad_personalization: 'denied', analytics_storage: 'denied',
+  });
+
+  function loadTrackers() {
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    document.head.appendChild(s);
+    gtag('js', new Date());
+    gtag('config', GA_ID);
+
+    // Microsoft Clarity — session recordings + heatmaps (free, uncapped).
+    // Sits INSIDE the production + internal-flag + consent guards like GA:
+    // flagged browsers and consent-less EEA visitors record nothing.
+    // Recordings stop at the Shopify domain.
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+      t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
+      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+    })(window, document, 'clarity', 'script', 'xmja5x3h8h');
+    if (cc.eea) clarity('consent'); // consented European: tell Clarity cookies are OK
+  }
+  if (cc.allowed) loadTrackers();
+  else if (!cc.denied) cc.onAccept.push(loadTrackers);
 
   // Cloudflare Web Analytics — adblocker-resilient, server-side pageview truth
   // (GA4 is blocked for ~30-40% of visitors; this cross-checks the real total).
-  // Token is public (rides in the HTML).
+  // Cookieless by design = consent-exempt, so it loads regardless of the banner
+  // and keeps counting the decliners anonymously. Token is public.
   var cfb = document.createElement('script');
   cfb.defer = true;
   cfb.src = 'https://static.cloudflareinsights.com/beacon.min.js';
   cfb.setAttribute('data-cf-beacon', '{"token":"2ec40ec596fc44a19251c3d36b1f0abb"}');
   document.head.appendChild(cfb);
-
-  // Microsoft Clarity — session recordings + heatmaps (free, uncapped).
-  // Sits INSIDE the production + internal-flag guard like everything else:
-  // flagged browsers record nothing. Recordings stop at the Shopify domain.
-  (function (c, l, a, r, i, t, y) {
-    c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
-    t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
-    y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-  })(window, document, 'clarity', 'script', 'xmja5x3h8h');
 
   // Key conversion events. `placement` (data-place attr or the page path)
   // answers "which CTA earns its pixels" across every builder entry point.
