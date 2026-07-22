@@ -14,7 +14,9 @@ Outputs:
   public/assets/beach/beach.png      2400x1100 world plate
   public/assets/beach/sea-lines.png  tileable drift overlay for the water
   public/assets/beach/foam.png       4-frame shoreline wash
-  public/assets/beach/ball.png / crab.png / gull.png / shells.png
+  public/assets/beach/volleyball.png  8-frame spin strip (28px frames)
+  public/assets/beach/a-crab.png      10-frame walk strip (96px frames)
+  public/assets/beach/shells.png      29-frame collection strip
 ⚠️ GEOMETRY IS A CONTRACT with src/scripts/banana-beach.js — see GEO below.
 Run: python tools/build-beach-scene.py
 """
@@ -22,7 +24,7 @@ import math
 import os
 import random
 import sys
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from blockify import load_pack, blockify
@@ -495,19 +497,53 @@ for f in range(FN):
 foam.save(os.path.join(OUT, 'foam.png'), optimize=True)
 print('wrote foam.png')
 
-# ---- the volleyball, the crab, the gull -----------------------------------
+# ---- 🏐 THE VOLLEYBALL: an 8-frame SPIN strip -----------------------------
+# The pack has a lovely beach ball (ME_Singles_Camping_48x48_Ball_1) but NO
+# spin animation, and rotating it is a dead end: it's drawn as a squashed
+# ellipse, so turning it makes the silhouette wobble, and its fine interior
+# detail turns to speckle once quantised down to 28px. A ball that never
+# spins reads as a dead prop, so instead we take the pack's PALETTE (sampled
+# straight off that sprite) and draw the panels ourselves — crisp wedges that
+# rotate cleanly, in the pack's own colours so it still belongs to the set.
+# ⚠️ Same strip discipline as anim_strip(): lay the frames out at working
+# resolution, blockify the WHOLE strip ONCE (one shared quantised palette,
+# no per-frame outline pad), then crop the pad so frames stay exactly BALL_D
+# apart. See the frame-stepping note in beach.astro for why that matters.
+BALL_D, BALL_S, BALL_N = 28, 8, 8
+B_RED, B_WHT, B_BLU = (203, 42, 42), (235, 228, 242), (66, 128, 221)
+BALL_PANELS = [B_RED, B_WHT, B_BLU, B_WHT, B_RED, B_BLU]
+
+
+def ball_frame(a0):
+    n = BALL_D * BALL_S
+    f = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+    d = ImageDraw.Draw(f)
+    box = (2, 2, n - 3, n - 3)
+    step = 360.0 / len(BALL_PANELS)
+    for i, c in enumerate(BALL_PANELS):
+        d.pieslice(box, a0 + i * step, a0 + (i + 1) * step, fill=c + (255,))
+    r = n // 2
+    sh = Image.new('RGBA', (n, n), (0, 0, 0, 0))          # light from upper-left
+    ImageDraw.Draw(sh).ellipse((r * 0.5, r * 0.5, n - 3, n - 3), fill=(38, 26, 66, 74))
+    f.alpha_composite(sh)
+    hl = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+    ImageDraw.Draw(hl).ellipse((r * 0.36, r * 0.28, r * 0.72, r * 0.60), fill=(255, 255, 255, 80))
+    f.alpha_composite(hl)
+    m = Image.new('L', (n, n), 0)                          # a CONSTANT circle:
+    ImageDraw.Draw(m).ellipse(box, fill=255)               # only the pattern turns
+    f.putalpha(Image.composite(f.getchannel('A'), Image.new('L', (n, n), 0), m))
+    return f
+
+
+_bn = BALL_D * BALL_S
+_braw = Image.new('RGBA', (_bn * BALL_N, _bn), (0, 0, 0, 0))
+for i in range(BALL_N):
+    _braw.alpha_composite(ball_frame(-360.0 * i / BALL_N), (i * _bn, 0))
+ball = blockify(_braw, factor=BALL_S, colors=10, alpha_thresh=0.45, sat=1.2,
+                con=1.08, trim=False).crop((1, 1, 1 + BALL_D * BALL_N, 1 + BALL_D))
+ball.save(os.path.join(OUT, 'volleyball.png'), optimize=True)
+print('wrote volleyball.png (%d spin frames, %dpx)' % (BALL_N, BALL_D))
 RED, RED_D = (216, 60, 56), (168, 38, 36)
-ball = Image.new('RGBA', (18, 18), (0, 0, 0, 0))
-bp = ball.load()
-for y in range(18):
-    for x in range(18):
-        d = math.hypot(x - 8.5, y - 8.5)
-        if d <= 8.5:
-            band = RED if abs((x - 8.5) * 0.7 + (y - 8.5)) < 2.7 else WHITE
-            if d < 5.5 and (x - 8.5) + (y - 8.5) < -3:
-                band = (255, 255, 255) if band == WHITE else (240, 96, 92)
-            bp[x, y] = (17, 17, 17, 255) if d > 7.4 else band
-ball.save(os.path.join(OUT, 'ball.png'), optimize=True)
 
 if HAVE_PACK:
     crab = blockify(load_pack('21_Beach_48x48_Small_Red_Bucket_1.png'), factor=4, colors=4)

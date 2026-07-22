@@ -92,9 +92,16 @@ const description = 'The beach at the end of the park road. The sun never quite 
       content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -5px;
       border: 5px solid transparent; border-top-color: #000;
     }
+    /* 🏐 the volleyball — an 8-frame SPIN strip. Unlike the crab this is NOT
+       on a CSS animation: the frame is set from JS so the spin follows the
+       ball's actual travel (a ball whose spin ignores its speed reads as a
+       sliding sticker). Frame maths is the same though — frames sit at
+       multiples of 100/(N-1)%, see the stepping note below. */
     .bh-ball {
-      position: absolute; z-index: 5; width: 1.05%;
+      position: absolute; z-index: 5; width: 1.18%; aspect-ratio: 1;
       transform: translate(-50%, -50%); pointer-events: none; image-rendering: pixelated;
+      background-image: url('/assets/beach/volleyball.png');
+      background-size: 800% 100%; background-repeat: no-repeat;
     }
     .bh-ballshadow {
       position: absolute; z-index: 4; width: 1.05%; aspect-ratio: 2 / 1;
@@ -245,7 +252,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-sea bh-sea--2" aria-hidden="true"></div>
         <div class="bh-sea bh-sea--3" aria-hidden="true"></div>
         <div class="bh-ballshadow" id="bhBallShadow"></div>
-        <img class="bh-ball" id="bhBall" src="/assets/beach/ball.png" alt="" aria-hidden="true" />
+        <div class="bh-ball" id="bhBall" aria-hidden="true"></div>
         <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhCapBubble" role="status" aria-live="polite"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
@@ -254,7 +261,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <span class="bh-chip bh-chip--rally" id="bhRally"></span>
         <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
       </div>
-      <div class="bh-hint" id="bhHint">tap the sand to walk — kick the ball, comb the shoreline for shells</div>
+      <div class="bh-hint" id="bhHint">tap the sand to walk — bump the ball over the net, find shells</div>
 
       <div class="bh-panel" id="bhShellPanel" hidden>
         <div class="bh-card" role="dialog" aria-label="Shell collection">

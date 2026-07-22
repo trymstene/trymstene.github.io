@@ -243,7 +243,23 @@ function init() {
   // ---- 🏐 THE VOLLEYBALL: the ball has HEIGHT, and the net cares ----------
   const ballEl = document.getElementById('bhBall');
   const shadowEl = document.getElementById('bhBallShadow');
-  const ball = { x: 1080, y: 860, z: 0, vx: 0, vy: 0, vz: 0 };
+  // ⚠️ THE BALL NEVER LEAVES THE COURT. It is the volleyball, not the beach's
+  // loose toy — Trym: "that specific ball needs to stay exclusively inside the
+  // red volleyball border as its for playing volleyball and shouldnt escape".
+  // The red line is the wall, inset by the ball's radius so it visibly bounces
+  // off the line instead of clipping through it. Because nothing inside the
+  // court can obstruct it (audit_court() guarantees that at build time), the
+  // ball needs NO obstacle test and no world-edge fences at all.
+  const CT = { x0: 690, y0: 532, x1: 1170, y1: 1012 };   // = COURT in the generator
+  const BALL_R = 14;
+  const BX0 = CT.x0 + BALL_R, BX1 = CT.x1 - BALL_R;
+  const BY0 = CT.y0 + BALL_R, BY1 = CT.y1 - BALL_R;
+  const WALL_BOUNCE = 0.62;      // lively enough to stay in play, not pinball
+  const BALL_FRAMES = 8;
+  // how far off the net line counts as "in the net's dead zone" — a ball that
+  // stops here is unplayable, so it gets rolled out (see the anti-stick below)
+  const NET_DEAD = 36;
+  const ball = { x: 930, y: 660, z: 0, vx: 0, vy: 0, vz: 0, spin: 0 };
   // a beach ball FLOATS — light gravity and a high pop, so a kick from a
   // sensible distance clears the net (tuned in testing: at 300 it never did,
   // which made the court a wall instead of a game). The net still punishes
@@ -258,11 +274,25 @@ function init() {
     // the kick: walk into it. Kicks from behind the net send it high.
     const d = Math.hypot(pos.x - ball.x, (pos.y - 8) - ball.y);
     if (d < 22 && ball.z < 42 && now - lastKick > 320) {
-      const ang = Math.atan2(ball.y - (pos.y - 8), ball.x - pos.x) + (Math.random() - 0.5) * 0.35;
-      const power = 100 + Math.random() * 55;   // a court is 364 wide — keep it in play
-      ball.vx = Math.cos(ang) * power;
-      ball.vy = Math.sin(ang) * power * 0.72;
-      ball.vz = 140 + Math.random() * 30;
+      // A bump AIMS. Purely "away from the player" made the ball squirt off
+      // sideways as often as over the net, which doesn't read as volleyball.
+      // Blend the away-vector with an aim at a spot in the FAR half, then size
+      // the hop so the ball lands roughly there — near apex over the net.
+      const away = Math.atan2(ball.y - (pos.y - 8), ball.x - pos.x);
+      const far = pos.y >= NET_Y ? -1 : 1;
+      const tx = CT.x0 + 70 + Math.random() * (CT.x1 - CT.x0 - 140);
+      const ty = NET_Y + far * (100 + Math.random() * 90);
+      const aim = Math.atan2(ty - ball.y, tx - ball.x);
+      let dx = Math.cos(away) * 0.38 + Math.cos(aim) * 0.62;
+      let dy = Math.sin(away) * 0.38 + Math.sin(aim) * 0.62;
+      const dl = Math.hypot(dx, dy) || 1;
+      const dist = Math.hypot(tx - ball.x, ty - ball.y);
+      const power = Math.max(95, Math.min(205, dist * 1.15));
+      ball.vx = (dx / dl) * power;
+      ball.vy = (dy / dl) * power * 0.82;
+      // vz from the flight time it needs, so a deep hit hangs and a short one
+      // pops — but never under the net's clearance (GRAV 180 → apex 40 at 120)
+      ball.vz = Math.max(122, Math.min(205, GRAV * (dist / power) / 2));
       lastKick = now;
       ballEl.animate(
         [{ transform: 'translate(-50%,-50%) scale(1.35)' }, { transform: 'translate(-50%,-50%) scale(1)' }],
@@ -302,27 +332,26 @@ function init() {
         passStat('bh_volley', 1);
       }
     }
-    // the sand's edges (and the sea, which says no)
-    // the road corner is fenced off: a ball resting there drags you out of
-    // the world while you chase it (found in testing — an exit should be a
-    // decision, never an accident)
-    if (ball.y > 940 && ball.x < 300) { ball.x = 300; ball.vx = Math.abs(ball.vx) * 0.6; }
-    if (ball.x < 270) { ball.x = 270; ball.vx = Math.abs(ball.vx) * 0.6; }
-    if (ball.x > 2370) { ball.x = 2370; ball.vx = -Math.abs(ball.vx) * 0.6; }
-    if (ball.y < 340) { ball.y = 340; ball.vy = Math.abs(ball.vy) * 0.6; }
-    if (ball.y > 1080) { ball.y = 1080; ball.vy = -Math.abs(ball.vy) * 0.6; }
-    for (const r of OB_RECTS) {
-      if (ball.z < 40 && inRect(ball.x, ball.y, r)) {
-        const dl = ball.x - r[0], dr = r[2] - ball.x, dtp = ball.y - r[1], db = r[3] - ball.y;
-        const m = Math.min(dl, dr, dtp, db);
-        if (m === dl) { ball.x = r[0]; ball.vx = -Math.abs(ball.vx) * 0.6; }
-        else if (m === dr) { ball.x = r[2]; ball.vx = Math.abs(ball.vx) * 0.6; }
-        else if (m === dtp) { ball.y = r[1]; ball.vy = -Math.abs(ball.vy) * 0.6; }
-        else { ball.y = r[3]; ball.vy = Math.abs(ball.vy) * 0.6; }
-      }
+    // THE RED BORDER IS THE WALL. Clamp AFTER the net test so a wall bounce
+    // can never shunt the ball across the net line without being judged; the
+    // side walls are ~150px clear of it either way, so they never can.
+    if (ball.x < BX0) { ball.x = BX0; ball.vx = Math.abs(ball.vx) * WALL_BOUNCE; }
+    else if (ball.x > BX1) { ball.x = BX1; ball.vx = -Math.abs(ball.vx) * WALL_BOUNCE; }
+    if (ball.y < BY0) { ball.y = BY0; ball.vy = Math.abs(ball.vy) * WALL_BOUNCE; }
+    else if (ball.y > BY1) { ball.y = BY1; ball.vy = -Math.abs(ball.vy) * WALL_BOUNCE; }
+
+    const speed = Math.hypot(ball.vx, ball.vy);
+    // ⚠️ ANTI-STICK. A ball that trickles to a halt ON the net line is dead:
+    // you walk into it, the kick shoves it at the net, the net shoves it back,
+    // and it jitters there forever. So whenever it settles inside the net's
+    // dead zone, roll it out — to YOUR half, so the next hit is always on.
+    if (speed < 16 && ball.z === 0 && Math.abs(ball.y - NET_Y) < NET_DEAD) {
+      const side = pos.y >= NET_Y ? 1 : -1;
+      ball.y = NET_Y + side * NET_DEAD;
+      ball.vy = side * 30;
+      ball.vx *= 0.5;
     }
     // a rally dies when the ball comes to rest
-    const speed = Math.hypot(ball.vx, ball.vy);
     if (speed < 8 && ball.z === 0) {
       if (!restAt) restAt = now;
       // 3s, not 1.5: a banana crossing the court takes ~2.5s, and a rally
@@ -330,6 +359,12 @@ function init() {
       else if (now - restAt > 3000 && rally) { rally = 0; showRally(); }
     } else restAt = 0;
 
+    // SPIN follows travel, so the ball rolls instead of sliding. Frame index
+    // must land EXACTLY on a frame: for an N-frame strip the frames sit at
+    // multiples of 100/(N-1)%, never 100/N% — see beach.astro's stepping note.
+    ball.spin += (ball.vx * 0.72 + ball.vy * 0.42) * dt * 0.075;
+    const fr = ((Math.floor(ball.spin) % BALL_FRAMES) + BALL_FRAMES) % BALL_FRAMES;
+    ballEl.style.backgroundPositionX = (fr * (100 / (BALL_FRAMES - 1))) + '%';
     ballEl.style.left = pct(ball.x, W);
     ballEl.style.top = pct(ball.y - ball.z, H);
     shadowEl.style.left = pct(ball.x, W);
