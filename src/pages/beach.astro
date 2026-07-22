@@ -96,7 +96,14 @@ const description = 'The beach at the end of the park road. The sun never quite 
       background-size: 100% 100%; background-repeat: no-repeat;
     }
     .bh-chip--dig { opacity: 0.34; transition: opacity 0.2s ease; }
-    .bh-chip--dig.is-on { opacity: 1; }
+    /* pulses while you're stood on a patch, so the one moment it's usable is
+       the one moment it draws the eye */
+    .bh-chip--dig.is-on { opacity: 1; animation: bhDigPulse 1.1s ease-in-out infinite; }
+    @keyframes bhDigPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.09); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bh-chip--dig.is-on { animation: none; } }
     /* 🥅 THE NET, ON ITS OWN LAYER so things can pass BEHIND it.
        The net is a wall standing on the sand at NET.y but drawn rising ~138px
        up the screen, so its mesh is nowhere near the line you collide with.
@@ -330,7 +337,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
         <button class="bh-chip bh-chip--dig" id="bhDigBtn" type="button" aria-label="Dig here">⛏ dig</button>
       </div>
-      <div class="bh-hint" id="bhHint">tap to walk · tap the ball to play it · comb the shore for shells</div>
+      <div class="bh-hint" id="bhHint">tap to walk · tap the ball to play it · tap dark sand to dig</div>
 
       <div class="bh-panel" id="bhShellPanel" hidden>
         <div class="bh-card" role="dialog" aria-label="Shell collection">

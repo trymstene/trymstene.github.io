@@ -257,6 +257,18 @@ function init() {
       playBall();
       return;
     }
+    // ⛏ TAP A PATCH TO DIG IT — the same verb as tapping the ball. A dim chip
+    // in the corner of the HUD was not discoverable: Trym built this with me
+    // and still had to ask how to dig. Tapping the thing you want to interact
+    // with is the rule this whole beach already uses.
+    const tapPatch = patchAt(wx, wy);
+    if (tapPatch) {
+      seated = null; sitTarget = null;
+      meEl.classList.remove('is-sitting');
+      if (patchAt(pos.x, pos.y) === tapPatch) dig();   // stood on it → dig
+      else { nextTgt = null; tgt.x = wx; tgt.y = wy; } // otherwise walk over
+      return;
+    }
     // at the bar? tapping the wreck talks to the Captain instead of walking
     if (inRect(wx, wy, [1540, 590, 1866, 780])) {
       if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openTrade(); return; }
@@ -1036,8 +1048,14 @@ function init() {
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
   };
   let lastF = -1;
+  // 🪑 SITTING = a frozen frame, not a pose we have to draw. The engine's
+  // cycle already turns the banana: frames 0-1 face right, 2-3 front, 4-5
+  // left. Frame 4 is the LEFT-facing one at the lowest point of the bob, so
+  // holding it reads as settled into the chair — side-on and still, while
+  // everyone else keeps dancing. Costs one line and no new art.
+  const SIT_FRAME = 4;
   function drawMe() {
-    const f = frameNow();
+    const f = seated ? SIT_FRAME : frameNow();
     if (f === lastF) return;
     lastF = f;
     drawComposite(meCtx, 150, f, ME_DRAW);
