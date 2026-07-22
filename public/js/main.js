@@ -25,6 +25,37 @@
     onAccept: [], // tracker loaders park here until the visitor says yes
   };
 
+  // ---- Shopify checkout consent bridge (Phase 2) ----
+  // Checkout runs on shop.trymstene.com (same root domain, primary since
+  // 22 Jul). Headless means EEA buyers never see Shopify's own banner, so
+  // checkout analytics would stay consent-blocked forever. Writing the
+  // banner's yes into Shopify's _tracking_consent cookie on .trymstene.com
+  // lets checkout inherit it. Decliners get NO cookie — checkout then stays
+  // blocked-pending-consent, which is exactly right. Non-EEA needs no signal.
+  function syncShopify() {
+    var h = location.hostname;
+    if (h !== 'trymstene.com' && h !== 'www.trymstene.com') return;
+    if (/(^|; )_tracking_consent=/.test(document.cookie)) return; // already synced
+    var api = document.createElement('script');
+    api.async = true;
+    api.src = 'https://cdn.shopify.com/shopifycloud/consent-tracking-api/v0.1/consent-tracking-api.js';
+    api.onload = function () {
+      try {
+        window.Shopify.customerPrivacy.setTrackingConsent({
+          analytics: true, marketing: true, preferences: true, sale_of_data: true,
+          headlessStorefront: true,
+          checkoutRootDomain: 'shop.trymstene.com',
+          storefrontRootDomain: 'trymstene.com',
+          storefrontAccessToken: '1032480366b6bf67760ba73ace4fe0f8',
+        }, function () {});
+      } catch (e) {}
+    };
+    document.head.appendChild(api);
+  }
+  cc.syncShopify = syncShopify;
+  // Earlier accepters (or an expired cookie): re-assert on load
+  if (eea && choice === 'y') syncShopify();
+
   // Banner: only when a choice is actually needed — and only where real
   // visitors are (production host); previews/localhost QA via ?cookietest.
   if (!eea || choice) return;
@@ -58,6 +89,7 @@
     done('y');
     cc.allowed = true;
     cc.denied = false;
+    syncShopify(); // carry the yes into the shop.trymstene.com checkout
     if (window.gtag) gtag('consent', 'update', {
       ad_storage: 'granted', ad_user_data: 'granted',
       ad_personalization: 'granted', analytics_storage: 'granted',

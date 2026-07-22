@@ -79,6 +79,11 @@ const description = 'What this site counts, what it never collects, and how to c
     }
     function set(v) {
       try { localStorage.setItem(KEY, v); } catch (e) {}
+      // either direction: drop Shopify's checkout-consent cookie — a fresh yes
+      // re-syncs it on the next page load, a no leaves checkout consent-blocked
+      var tc = '_tracking_consent=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+      document.cookie = tc;
+      document.cookie = tc + '; domain=.trymstene.com';
       if (v === 'n') {
         // withdrawing = also sweep the first-party analytics cookies already set
         (document.cookie || '').split(';').forEach(function (c) {
