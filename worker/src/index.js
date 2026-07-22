@@ -68,7 +68,7 @@ export default {
   // abandoned alike — Printful drafts and order records don't need them, and
   // 72h keeps order-confirmation emails showing the design while it matters).
   async scheduled(event, env) {
-    if (!env.SHOPIFY_ADMIN_TOKEN) return;
+    if (!adminConfigured(env)) return;
     const cutoff = new Date(Date.now() - 72 * 3600e3).toISOString();
     const d = await adminGql(env,
       'query($q: String!) { products(first: 100, query: $q) { nodes { id } } }',
@@ -160,12 +160,45 @@ async function handleUpload(request, env) {
 // everything reads as "something's wrong" at the scariest step). Shopify's
 // cart API has no per-line image — a disposable product is the only way.
 
-const ADMIN_API = 'https://officialdancingbanana.myshopify.com/admin/api/2024-10/graphql.json';
+const SHOP_ADMIN = 'https://officialdancingbanana.myshopify.com';
+const ADMIN_API = SHOP_ADMIN + '/admin/api/2024-10/graphql.json';
+
+function adminConfigured(env) {
+  return Boolean(env.SHOPIFY_ADMIN_TOKEN || (env.SHOPIFY_CLIENT_ID && env.SHOPIFY_CLIENT_SECRET));
+}
+
+// The new dev dashboard issues no permanent shpat_ token — apps exchange their
+// client id+secret for short-lived Admin tokens (client credentials grant,
+// ~24h). Cached per isolate with a 5-min safety margin. A legacy
+// SHOPIFY_ADMIN_TOKEN secret, if ever set, takes precedence.
+let ADMIN_TOKEN = { value: null, exp: 0 };
+async function adminToken(env) {
+  if (env.SHOPIFY_ADMIN_TOKEN) return env.SHOPIFY_ADMIN_TOKEN;
+  if (ADMIN_TOKEN.value && Date.now() < ADMIN_TOKEN.exp) return ADMIN_TOKEN.value;
+  const res = await fetch(SHOP_ADMIN + '/admin/oauth/access_token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: env.SHOPIFY_CLIENT_ID,
+      client_secret: env.SHOPIFY_CLIENT_SECRET,
+      grant_type: 'client_credentials',
+    }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body.access_token) {
+    throw new Error('token grant failed ' + res.status + ': ' + JSON.stringify(body).slice(0, 200));
+  }
+  ADMIN_TOKEN = {
+    value: body.access_token,
+    exp: Date.now() + Math.max(60, (body.expires_in || 86400) - 300) * 1000,
+  };
+  return ADMIN_TOKEN.value;
+}
 
 async function adminGql(env, query, variables) {
   const res = await fetch(ADMIN_API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': env.SHOPIFY_ADMIN_TOKEN },
+    headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': await adminToken(env) },
     body: JSON.stringify({ query, variables }),
   });
   const body = await res.json().catch(() => ({}));
@@ -189,8 +222,8 @@ async function handleCheckout(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env, request) });
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
   const cors = corsHeaders(env, request);
-  // no Admin token yet = feature off; clients fall back to the shared variant
-  if (!env.SHOPIFY_ADMIN_TOKEN) return json({ error: 'not configured' }, 503, cors);
+  // no Admin credentials yet = feature off; clients fall back to the shared variant
+  if (!adminConfigured(env)) return json({ error: 'not configured' }, 503, cors);
 
   const { key, product } = await request.json().catch(() => ({}));
   if (!/^[a-f0-9-]{36}\.png$/.test(key || '')) return json({ error: 'bad key' }, 400, cors);
@@ -278,13 +311,13 @@ async function handleServe(request, env, url) {
 async function handleHealth(env) {
   const out = { variant_id: env.PRINTFUL_VARIANT_ID, variant_map: PRINTFUL_BY_SHOPIFY, printful: 'no token set' };
   // temp-product feature + cron hygiene at a glance
-  if (env.SHOPIFY_ADMIN_TOKEN) {
+  if (adminConfigured(env)) {
     try {
       const d = await adminGql(env, 'query { productsCount(query: "tag:custom-temp") { count } }');
       out.temp_products = d.productsCount.count;
     } catch (e) { out.temp_products = 'error: ' + e.message.slice(0, 120); }
   } else {
-    out.temp_products = 'no admin token set (checkout images off, fallback active)';
+    out.temp_products = 'no admin credentials set (checkout images off, fallback active)';
   }
   if (env.PRINTFUL_TOKEN) {
     const res = await fetch('https://api.printful.com/stores', {

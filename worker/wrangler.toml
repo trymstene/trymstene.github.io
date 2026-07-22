@@ -12,6 +12,9 @@ bucket_name = "banana-designs"
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # Printful catalog variant: Kiss-Cut Stickers (product 358), 3"x3", cost $2.25
 PRINTFUL_VARIANT_ID = "10163"
+# The "banana-fulfilment" dev-dashboard app's client id (public identifier;
+# pairs with the SHOPIFY_CLIENT_SECRET secret for the client-credentials grant)
+SHOPIFY_CLIENT_ID = "c9bd1c56d512f6498991f7a20a7d6f62"
 
 # Daily temp-product sweep (per-order checkout-image products, tag custom-temp)
 [triggers]
@@ -21,8 +24,12 @@ crons = ["17 3 * * *"]
 #   PRINTFUL_TOKEN          Printful API token (Printful -> Settings -> API)
 #   SHOPIFY_WEBHOOK_SECRET  Shopify webhook signing secret (shown in
 #                           Shopify admin -> Settings -> Notifications -> Webhooks)
-#   SHOPIFY_ADMIN_TOKEN     Admin API token of the "banana-fulfilment" custom app
-#                           (scopes: write_products, read_products,
-#                           write_publications, read_publications) — powers the
-#                           per-order checkout-image products; absent = feature
-#                           off, clients fall back to the shared variant
+#   SHOPIFY_CLIENT_SECRET   the "banana-fulfilment" dev-dashboard app's Secret
+#                           (Settings -> Credentials; scopes write_products,
+#                           read_products, write_publications,
+#                           read_publications) — the worker exchanges it for
+#                           short-lived Admin tokens (client-credentials grant)
+#                           to power per-order checkout-image products; absent =
+#                           feature off, clients fall back to the shared variant
+#   SHOPIFY_ADMIN_TOKEN     (legacy alternative: a permanent shpat_ Admin token;
+#                           takes precedence over the grant if ever set)
