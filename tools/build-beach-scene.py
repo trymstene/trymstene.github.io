@@ -115,13 +115,9 @@ if HAVE_PACK:
             y = r * T
             t = WATER_T if y < SHORE_ROW_Y else (SHORE_T if y == SHORE_ROW_Y else SAND_T)
             im.alpha_composite(t, (c * T, y))
-    # break the straight seam where deep water meets the shore tile: the tile's
-    # water is lighter than the open-sea tile, so the join read as a hard line
-    for y in range(SHORE_ROW_Y - 18, SHORE_ROW_Y):
-        p = (SHORE_ROW_Y - y) / 18.0
-        for x in range(W):
-            if rng.random() > p * 0.85:
-                px[x, y] = im.getpixel((x, SHORE_ROW_Y + 2))
+    # (no seam-dither needed: the shore tile's water and the open-water tile
+    # come from the SAME animation frame, so they match exactly. The line that
+    # used to be here was the colour grade's y-cutoff, now fixed above.)
 else:
     rect(0, 0, W, WATER_BOT, (63, 160, 189))
     rect(0, WATER_BOT, W, H, (236, 217, 168))
@@ -131,19 +127,30 @@ else:
 # Trym: the sand went "deep and red" — the pack's sand is a saturated orange
 # and my warm grade pushed it further. Blend the ground toward a BRIGHT cream
 # (our own sand colour) and leave the water alone but lift it slightly.
+# ⚠️ Grade by PIXEL COLOUR, never by y position. The first version keyed off
+# `y > WATER_BOT - 30`, so it creamed the WATER for 30px above the shore and
+# left a hard light-blue line where the grade switched on — the exact line
+# Trym kept seeing. Sand is red-dominant, water is blue-dominant; test that.
 SAND_TARGET = (252, 234, 190)
-for y in range(H):
-    ground = y > WATER_BOT - 30
-    k = 0.42 if ground else 0.0
-    for x in range(W):
-        r, g, b, a = px[x, y]
-        if k:
-            r = int(r * (1 - k) + SAND_TARGET[0] * k)
-            g = int(g * (1 - k) + SAND_TARGET[1] * k)
-            b = int(b * (1 - k) + SAND_TARGET[2] * k)
-        else:
-            r = min(255, int(r * 1.04)); g = min(255, int(g * 1.03))
-        px[x, y] = (min(255, r), min(255, g), min(255, b), a)
+
+
+def grade(p, w, h):
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = p[x, y]
+            if not a:
+                continue
+            if r > b + 18:                       # sandy → lift toward cream
+                k = 0.42
+                r = int(r * (1 - k) + SAND_TARGET[0] * k)
+                g = int(g * (1 - k) + SAND_TARGET[1] * k)
+                b = int(b * (1 - k) + SAND_TARGET[2] * k)
+            else:                                # watery → a small warm lift
+                r = min(255, int(r * 1.04)); g = min(255, int(g * 1.03))
+            p[x, y] = (min(255, r), min(255, g), min(255, b), a)
+
+
+grade(px, W, H)
 
 # glitter scattered on the open water (no sun disc — nothing to reflect in a
 # top-down view; it's just sparkle on the swell)
@@ -310,20 +317,9 @@ if HAVE_PACK:
         for y in range(0, SEA_BAND, T):
             t = frame_tile(1, 3, f) if y == 240 else frame_tile(1, 1, f)
             strip_f.alpha_composite(t, (0, y))
-        # match the plate's colour grade so the animation can't seam against it
-        sp2 = strip_f.load()
-        for y in range(SEA_BAND):
-            ground = y > WATER_BOT - 30
-            k = 0.42 if ground else 0.0
-            for x in range(T):
-                r, g, b, a = sp2[x, y]
-                if k:
-                    r = int(r * (1 - k) + SAND_TARGET[0] * k)
-                    g = int(g * (1 - k) + SAND_TARGET[1] * k)
-                    b = int(b * (1 - k) + SAND_TARGET[2] * k)
-                else:
-                    r = min(255, int(r * 1.04)); g = min(255, int(g * 1.03))
-                sp2[x, y] = (min(255, r), min(255, g), min(255, b), a)
+        # the SAME colour-keyed grade as the plate, so the animated layer can
+        # never seam against the baked art underneath it
+        grade(strip_f.load(), T, SEA_BAND)
         strip_f.save(os.path.join(OUT, 'sea-f%d.png' % f), optimize=True)
     print('wrote sea-f0..3.png (the pack\'s own water animation)')
 
