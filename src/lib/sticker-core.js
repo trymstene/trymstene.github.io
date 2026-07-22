@@ -391,6 +391,7 @@ export async function uploadAndCheckout(printCanvas, product = getProduct('stick
 
   const attributes = [
     { key: '_design_key', value: key },   // machine-readable, hidden in checkout
+    { key: '_product', value: product.key }, // fulfilment mapping (temp variants have unknown ids)
     { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
   ];
   if (selection && product.options) {
@@ -407,13 +408,30 @@ export async function uploadAndCheckout(printCanvas, product = getProduct('stick
     );
   }
 
+  // Per-order product first: the worker mints a disposable variant wearing THIS
+  // design as its image, so checkout shows the buyer's actual banana. Any
+  // failure (worker unconfigured, Admin API hiccup) falls back to the shared
+  // variant — checkout must never break over a thumbnail.
+  let merchandiseId = product.shopifyVariantGid;
+  try {
+    const co = await fetch(SHOP.workerBase + '/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, product: product.key }),
+    });
+    if (co.ok) {
+      const j = await co.json();
+      if (j && j.variantGid) merchandiseId = j.variantGid;
+    }
+  } catch (e) {}
+
   const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
   const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
     body: JSON.stringify({
       query: mutation,
-      variables: { lines: [{ merchandiseId: product.shopifyVariantGid, quantity: 1, attributes }] },
+      variables: { lines: [{ merchandiseId, quantity: 1, attributes }] },
     }),
   });
   const data = await res.json();

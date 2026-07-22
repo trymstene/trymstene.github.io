@@ -14,9 +14,18 @@
 //
 // Routes:
 //   POST /upload            (CORS: ALLOWED_ORIGIN)  body = image/png, max 8 MB
+//   POST /checkout          (CORS: ALLOWED_ORIGIN)  mint a per-order product so
+//                           checkout shows the buyer's ACTUAL design (needs
+//                           SHOPIFY_ADMIN_TOKEN; clients fall back to the
+//                           shared variant when this 503s/fails)
 //   GET  /d/<key>           serve a stored design (Printful fetches from here)
 //   POST /webhook/shopify   Shopify orders/paid webhook
 //   GET  /geo               visitor country code (for localized price display)
+//
+// Temp-product lifecycle: created ACTIVE + tagged 'custom-temp' + published to
+// the Headless channel only (invisible to browsing, sellable via Storefront
+// API). The daily cron deletes custom-temp products older than 72h — long
+// enough that order-confirmation emails keep their image while it matters.
 
 import PRODUCTS from '../../shared/products.js';
 
@@ -35,13 +44,16 @@ const PRODUCT_BY_SHOPIFY = Object.fromEntries(
 const PRINTFUL_BY_SHOPIFY = Object.fromEntries(
   Object.entries(PRODUCT_BY_SHOPIFY).map(([k, p]) => [k, p.printfulVariantId])
 );
+// manifest by slug — temp per-order products have unknown variant ids, so their
+// line items carry `_product` (the slug) and are mapped through here instead
+const PRODUCT_BY_KEY = Object.fromEntries(PRODUCTS.map((p) => [p.key, p]));
 
 // Resolve the Printful variant for a line item. Products with options (the
 // tee) carry _color/_size as line properties — price-neutral (every combo
 // sells at the same Shopify price), so trusting them only lets a buyer pick
 // which colour/size THEY get. Unknown values fall back to the product default.
 function printfulVariantFor(li, props, env) {
-  const p = PRODUCT_BY_SHOPIFY[String(li.variant_id)];
+  const p = PRODUCT_BY_KEY[props._product] || PRODUCT_BY_SHOPIFY[String(li.variant_id)];
   if (!p) return parseInt(env.PRINTFUL_VARIANT_ID, 10); // unmapped → default sticker
   if (p.options) {
     const color = p.options.colors.find((c) => c.id === props._color) || p.options.colors[0];
@@ -52,10 +64,30 @@ function printfulVariantFor(li, props, env) {
 }
 
 export default {
+  // Daily sweep: delete custom-temp products older than 72h (bought or
+  // abandoned alike — Printful drafts and order records don't need them, and
+  // 72h keeps order-confirmation emails showing the design while it matters).
+  async scheduled(event, env) {
+    if (!env.SHOPIFY_ADMIN_TOKEN) return;
+    const cutoff = new Date(Date.now() - 72 * 3600e3).toISOString();
+    const d = await adminGql(env,
+      'query($q: String!) { products(first: 100, query: $q) { nodes { id } } }',
+      { q: `tag:custom-temp created_at:<'${cutoff}'` });
+    for (const n of d.products.nodes || []) {
+      try {
+        await adminGql(env,
+          'mutation($input: ProductDeleteInput!) { productDelete(input: $input) { userErrors { message } } }',
+          { input: { id: n.id } });
+      } catch (e) { console.error('temp sweep failed for', n.id, e.message); }
+    }
+    if ((d.products.nodes || []).length) console.log('temp sweep: deleted', d.products.nodes.length);
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/upload') return handleUpload(request, env);
+      if (url.pathname === '/checkout') return handleCheckout(request, env, url);
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
       if (url.pathname === '/health') return handleHealth(env);
@@ -122,6 +154,109 @@ async function handleUpload(request, env) {
   return json({ key, url: `${base}/d/${key}` }, 200, corsHeaders(env, request));
 }
 
+// ---------- POST /checkout: mint the per-order product ----------
+// The buyer's design becomes the product image, so checkout shows THEIR
+// banana instead of the shared placeholder (Trym 22 Jul: same image for
+// everything reads as "something's wrong" at the scariest step). Shopify's
+// cart API has no per-line image — a disposable product is the only way.
+
+const ADMIN_API = 'https://officialdancingbanana.myshopify.com/admin/api/2024-10/graphql.json';
+
+async function adminGql(env, query, variables) {
+  const res = await fetch(ADMIN_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': env.SHOPIFY_ADMIN_TOKEN },
+    body: JSON.stringify({ query, variables }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.errors) {
+    throw new Error('admin api ' + res.status + ': ' + JSON.stringify(body.errors || body).slice(0, 400));
+  }
+  return body.data;
+}
+
+let HEADLESS_PUB = null; // per-isolate cache — the publication id never changes
+async function headlessPublicationId(env) {
+  if (HEADLESS_PUB) return HEADLESS_PUB;
+  const d = await adminGql(env, 'query { publications(first: 20) { nodes { id name } } }');
+  const hit = (d.publications.nodes || []).find((p) => /headless|hydrogen/i.test(p.name));
+  if (!hit) throw new Error('no headless publication found');
+  HEADLESS_PUB = hit.id;
+  return HEADLESS_PUB;
+}
+
+async function handleCheckout(request, env, url) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env, request) });
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+  const cors = corsHeaders(env, request);
+  // no Admin token yet = feature off; clients fall back to the shared variant
+  if (!env.SHOPIFY_ADMIN_TOKEN) return json({ error: 'not configured' }, 503, cors);
+
+  const { key, product } = await request.json().catch(() => ({}));
+  if (!/^[a-f0-9-]{36}\.png$/.test(key || '')) return json({ error: 'bad key' }, 400, cors);
+  const p = PRODUCT_BY_KEY[product];
+  if (!p || !p.live || !p.shopifyVariantGid) return json({ error: 'bad product' }, 400, cors);
+  if (!(await env.DESIGNS.head(key))) return json({ error: 'unknown design' }, 404, cors);
+
+  // the template variant's REAL title + price — Shopify stays the source of
+  // truth, so a price edit in admin flows straight through to temp products
+  const tpl = await adminGql(env,
+    'query($id: ID!) { node(id: $id) { ... on ProductVariant { price product { title } } } }',
+    { id: p.shopifyVariantGid });
+  if (!tpl.node) throw new Error('template variant not found');
+
+  const created = await adminGql(env, `
+    mutation($input: ProductInput!, $media: [CreateMediaInput!]) {
+      productCreate(input: $input, media: $media) {
+        product { id variants(first: 1) { nodes { id } } }
+        userErrors { field message }
+      }
+    }`, {
+    input: { title: tpl.node.product.title, status: 'ACTIVE', tags: ['custom-temp'] },
+    media: [{ originalSource: `${url.origin}/d/${key}`, mediaContentType: 'IMAGE', alt: 'Your custom banana design' }],
+  });
+  if (created.productCreate.userErrors.length) {
+    throw new Error('productCreate: ' + JSON.stringify(created.productCreate.userErrors));
+  }
+  const prodId = created.productCreate.product.id;
+  const variantGid = created.productCreate.product.variants.nodes[0].id;
+
+  // copy the price; the sku marks the product disposable (rides into order
+  // line items, so anyone reading an order can tell it was a temp product)
+  const upd = await adminGql(env, `
+    mutation($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        userErrors { field message }
+      }
+    }`, {
+    productId: prodId,
+    variants: [{ id: variantGid, price: tpl.node.price, inventoryItem: { sku: 'CUSTOM-TEMP-' + key } }],
+  });
+  if (upd.productVariantsBulkUpdate.userErrors.length) {
+    throw new Error('variantUpdate: ' + JSON.stringify(upd.productVariantsBulkUpdate.userErrors));
+  }
+
+  // headless channel ONLY: sellable via the Storefront API, invisible to browsing
+  const pub = await adminGql(env, `
+    mutation($id: ID!, $input: [PublicationInput!]!) {
+      publishablePublish(id: $id, input: $input) { userErrors { field message } }
+    }`, { id: prodId, input: [{ publicationId: await headlessPublicationId(env) }] });
+  if (pub.publishablePublish.userErrors.length) {
+    throw new Error('publish: ' + JSON.stringify(pub.publishablePublish.userErrors));
+  }
+
+  // give the image a beat to process so checkout doesn't render a placeholder
+  for (let i = 0; i < 3; i++) {
+    const st = await adminGql(env,
+      'query($id: ID!) { product(id: $id) { media(first: 1) { nodes { status } } } }', { id: prodId });
+    const m0 = st.product.media.nodes[0];
+    if (m0 && m0.status === 'READY') break;
+    await new Promise((r) => setTimeout(r, 800));
+  }
+
+  return json({ variantGid }, 200, cors);
+}
+
 // ---------- GET /d/<key> ----------
 
 async function handleServe(request, env, url) {
@@ -142,6 +277,15 @@ async function handleServe(request, env, url) {
 
 async function handleHealth(env) {
   const out = { variant_id: env.PRINTFUL_VARIANT_ID, variant_map: PRINTFUL_BY_SHOPIFY, printful: 'no token set' };
+  // temp-product feature + cron hygiene at a glance
+  if (env.SHOPIFY_ADMIN_TOKEN) {
+    try {
+      const d = await adminGql(env, 'query { productsCount(query: "tag:custom-temp") { count } }');
+      out.temp_products = d.productsCount.count;
+    } catch (e) { out.temp_products = 'error: ' + e.message.slice(0, 120); }
+  } else {
+    out.temp_products = 'no admin token set (checkout images off, fallback active)';
+  }
   if (env.PRINTFUL_TOKEN) {
     const res = await fetch('https://api.printful.com/stores', {
       headers: { Authorization: `Bearer ${env.PRINTFUL_TOKEN}` },

@@ -13,7 +13,16 @@ ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # Printful catalog variant: Kiss-Cut Stickers (product 358), 3"x3", cost $2.25
 PRINTFUL_VARIANT_ID = "10163"
 
+# Daily temp-product sweep (per-order checkout-image products, tag custom-temp)
+[triggers]
+crons = ["17 3 * * *"]
+
 # Secrets — set with `npx wrangler secret put <NAME>` (NEVER commit values):
 #   PRINTFUL_TOKEN          Printful API token (Printful -> Settings -> API)
 #   SHOPIFY_WEBHOOK_SECRET  Shopify webhook signing secret (shown in
 #                           Shopify admin -> Settings -> Notifications -> Webhooks)
+#   SHOPIFY_ADMIN_TOKEN     Admin API token of the "banana-fulfilment" custom app
+#                           (scopes: write_products, read_products,
+#                           write_publications, read_publications) — powers the
+#                           per-order checkout-image products; absent = feature
+#                           off, clients fall back to the shared variant
