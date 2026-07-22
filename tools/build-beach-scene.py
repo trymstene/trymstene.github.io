@@ -39,8 +39,19 @@ W, H = 2400, 1100
 # ---- GEO: the contract with banana-beach.js -------------------------------
 WATER_BOT = 260              # sea above this
 SHORE_BOT = 306              # shoreline band ends (walkable wet sand below)
-COURT = (640, 676, 1216, 1012)   # ⚠️ must stay a whole number of T tiles: 12 × 7
-NET_BASE = 844                   # y where the net's posts meet the sand (row 3)
+# ⚠️ COURT must stay a whole number of T tiles (now 10 × 10) — the line tiles
+# are laid on a grid and a partial tile crops a corner piece in half.
+# Two rules set these numbers, both from Trym's field read (22 Jul):
+#   · WIDTH: the side lines have to run UNDER the net poles. The net is 528
+#     wide and its posts sit ~26px inside each end, so a 480-wide court centred
+#     on the same axis puts each 12px line right beneath a pole.
+#   · HEIGHT: balance the court around the NET AS DRAWN, not around its ground
+#     line. The mesh rises 132px above the posts' feet, so measuring from
+#     NET_BASE left a sliver above the net and a field below it — "theres more
+#     space in the court on the downside, than the upside". Top line moved up
+#     so the gaps above the mesh and below the feet match.
+COURT = (690, 532, 1170, 1012)
+NET_BASE = 844                   # y where the net's posts meet the sand
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
 LIGHT = (2180, 470)
@@ -270,7 +281,7 @@ if HAVE_PACK:
 
     # 🌴 palms — native scale, so they tower over a 56px banana
     for cx, base, fl in ((330, 470, False), (520, 900, True), (1500, 520, False),
-                         (1330, 1040, True), (2010, 900, False), (760, 560, True),
+                         (1330, 1040, True), (2010, 900, False), (600, 528, True),
                          (2290, 640, False)):
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26)
     for cx, base in ((430, 372), (900, 366), (1600, 380), (2120, 372), (660, 362)):
@@ -342,7 +353,7 @@ if HAVE_PACK:
           factor=2, colors=12, sh=0.24)
 
     # ⛱ furniture
-    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1180, 560)
+    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548)
     place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020)  # off the court
     place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560)
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):

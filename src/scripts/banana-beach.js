@@ -126,8 +126,9 @@ function init() {
   // left→right, which is also how LimeZu's own beach screenshot uses them).
   // So the ball crosses it on the Y axis, not X.
   // ⚠️ KEEP IN SYNC with COURT / NET_BASE in tools/build-beach-scene.py.
-  // Court = 12 × 7 pack tiles at (640, 676); the net stands on tile row 3.
-  const NET_Y = 844, NET_X0 = 664, NET_X1 = 1192, NET_H = 18;
+  // Court = 10 × 10 pack tiles at (690, 532); the net's posts stand on its
+  // side lines, so NET_X0/X1 sit ~24px outside the painted court edges.
+  const NET_Y = 844, NET_X0 = 666, NET_X1 = 1194, NET_H = 18;
   const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
   const OB_RECTS = [
     // top-down blocking = the BASE of an object, not its full height: you walk
