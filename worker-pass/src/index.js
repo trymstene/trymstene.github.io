@@ -38,6 +38,7 @@ export default {
       if (url.pathname === '/assert') return assert_(request, env);
       if (url.pathname === '/push') return push(request, env);
       if (url.pathname === '/pull') return pull(request, env, url);
+      if (url.pathname === '/admin/ledger') return adminLedger(request, env, url);
       if (url.pathname === '/health') return json({ ok: true });
       return json({ error: 'not found' }, 404);
     } catch (e) {
@@ -154,6 +155,50 @@ function mergeBlob(oldB, newB) {
 async function loadRec(env, credId) {
   const obj = await env.PASSES.get(`pass/${await sha256Hex(credId)}.json`);
   return obj ? await obj.json() : null;
+}
+
+// ---------- 🗄 THE PASS LEDGER (Banana HQ's World desk) ----------
+// Read-only admin view over SYNCED passes: who linked a passkey, their coins,
+// gear, badges and rhythm. Key-gated by the PASS_ADMIN_KEY secret and FAILS
+// CLOSED (404, deny-as-nothing — the Pulse pattern) until Trym sets it.
+// LocalStorage-only visitors have no record here by design — this is the
+// ledger of the synced, not a user database.
+async function adminLedger(request, env, url) {
+  const key = url.searchParams.get('key') || '';
+  if (!env.PASS_ADMIN_KEY || key !== env.PASS_ADMIN_KEY) {
+    return new Response('not found', { status: 404 });
+  }
+  const list = await env.PASSES.list({ prefix: 'pass/', limit: 500 });
+  const passes = [];
+  for (const o of list.objects.slice(0, 100)) { // cost cap: 100 reads/call
+    let rec = null;
+    try { rec = await (await env.PASSES.get(o.key)).json(); } catch (e) { continue; }
+    if (!rec) continue;
+    const blob = rec.blob || {};
+    const stats = (blob.pass && blob.pass.stats) || {};
+    const gear = Object.keys(stats).filter((k) => k.startsWith('own_') && stats[k] > 0).map((k) => k.slice(4));
+    passes.push({
+      id: o.key.slice(5, 13), // stable pseudo-id (hash prefix) — never the credId
+      name: (blob.name || '').slice(0, 24),
+      updated: rec.updated || 0,
+      devices: Object.keys(rec.tokens || {}).length,
+      created: (blob.pass && blob.pass.created) || 0,
+      days: ((blob.pass && blob.pass.days) || []).length,
+      badges: Object.keys((blob.pass && blob.pass.patches) || {}).length,
+      shelf: (blob.shelf || []).length,
+      rep: stats.rep || 0,
+      jelly: stats.jelly || 0,
+      coinsEarned: stats.coins_earned || 0,
+      coinsSpent: stats.coins_spent || 0,
+      gear,
+      glow: blob.glow === '1',
+    });
+  }
+  passes.sort((a, b) => b.updated - a.updated);
+  return json({ total: list.objects.length, truncated: !!list.truncated, passes }, 200, {
+    ...cors(env, request),
+    'Cache-Control': 'no-store',
+  });
 }
 async function saveRec(env, credId, rec) {
   rec.updated = Date.now();

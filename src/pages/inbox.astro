@@ -259,9 +259,15 @@ const description = 'Authorized banana personnel only.';
           <a class="bm-chip" href="/banana-memes/">🖼 the gallery</a>
           <a class="bm-chip" href="/pass/">🎫 the pass</a>
         </div>
-        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🗄 pass administration</h3>
-        <p class="bm-livenote">Coming: the PASS LEDGER — synced passes with their coins, gear and stats, read-only
-          first. It needs a new admin key on the pass worker (a secret only you can set) — queued as its own build.</p>
+        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🗄 the pass ledger</h3>
+        <div class="bm-gate__row" style="max-width:420px;">
+          <input id="bmLedgerKey" type="password" placeholder="pass admin key" autocomplete="off" aria-label="Pass admin key" />
+          <button class="bm-btn" id="bmLedgerLoad" type="button">Open →</button>
+        </div>
+        <p class="bm-livenote">Synced passes only (passkey-linked) — coins, gear, badges, rhythm; read-only.
+          Gated by the <b>PASS_ADMIN_KEY</b> secret on the pass worker — yours to set once:
+          <code>cd worker-pass</code> then <code>npx wrangler secret put PASS_ADMIN_KEY</code>.</p>
+        <div id="bmLedgerList"></div>
       </div>
 
       <p class="bm-fine">
@@ -575,6 +581,58 @@ const description = 'Authorized banana personnel only.';
     }
     el('bmWorldRefresh').onclick = worldLoad;
     setInterval(() => { if (!el('bmPaneWorld').hidden && !document.hidden) worldLoad(); }, 30000);
+
+    // ── 🗄 THE PASS LEDGER — read-only administration of synced passes ──
+    // Renders with textContent ONLY (names are visitor input, same rule as
+    // the mail room). Fails closed until Trym sets PASS_ADMIN_KEY.
+    const PASS_ADMIN_API = 'https://banana-pass.trymstene.workers.dev';
+    const LKEY = 'pass-admin-key-v1';
+    try { el('bmLedgerKey').value = localStorage.getItem(LKEY) || ''; } catch (e) {}
+    async function ledgerLoad() {
+      const key = el('bmLedgerKey').value.trim();
+      const box = el('bmLedgerList');
+      if (!key) { box.textContent = 'The vault wants a key.'; return; }
+      try { localStorage.setItem(LKEY, key); } catch (e) {}
+      box.textContent = 'Opening the vault…';
+      try {
+        const r = await fetch(PASS_ADMIN_API + '/admin/ledger?key=' + encodeURIComponent(key));
+        if (!r.ok) throw new Error(r.status);
+        const d = await r.json();
+        box.textContent = '';
+        const head = document.createElement('p');
+        head.className = 'bm-livenote';
+        head.textContent = d.total + ' synced pass' + (d.total === 1 ? '' : 'es')
+          + (d.truncated || d.total > d.passes.length ? ' (showing ' + d.passes.length + ')' : '')
+          + ' — visitors who never linked a passkey live only in their own browser and are not listed.';
+        box.appendChild(head);
+        d.passes.forEach((p) => {
+          const card = document.createElement('article');
+          card.className = 'bm-mail';
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:0.7rem 0.9rem;display:flex;flex-wrap:wrap;gap:0.35rem 1.1rem;align-items:baseline;font-size:0.82rem;';
+          const nm = document.createElement('b');
+          nm.style.fontSize = '0.95rem';
+          nm.textContent = p.name || ('pass ' + p.id);
+          row.appendChild(nm);
+          const bits = [
+            '🪙 ' + Math.max(0, p.coinsEarned - p.coinsSpent) + ' (earned ' + p.coinsEarned + ' · spent ' + p.coinsSpent + ')',
+            '🎖 ' + p.badges + ' badge' + (p.badges === 1 ? '' : 's'),
+            '🍮 ' + p.jelly + ' jelly · rep ' + p.rep,
+            '📅 ' + p.days + ' day' + (p.days === 1 ? '' : 's') + ' · ' + p.devices + ' device' + (p.devices === 1 ? '' : 's'),
+            '🗄 ' + p.shelf + ' on the shelf' + (p.glow ? ' · 🥢 glowstick' : ''),
+            p.gear.length ? '🎁 ' + p.gear.join(', ') : '🎁 no bought/caught gear yet',
+            'seen ' + (p.updated ? new Date(p.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'),
+          ];
+          bits.forEach((t) => { const s = document.createElement('span'); s.textContent = t; row.appendChild(s); });
+          card.appendChild(row);
+          box.appendChild(card);
+        });
+        if (!d.passes.length) box.appendChild(Object.assign(document.createElement('p'), { className: 'bm-livenote', textContent: 'No synced passes yet — the ledger fills as visitors link passkeys.' }));
+      } catch (e) {
+        box.textContent = '❌ the vault says no — wrong key, or the PASS_ADMIN_KEY secret is not set on the worker yet.';
+      }
+    }
+    el('bmLedgerLoad').onclick = ledgerLoad;
 
     // ── 🎁 THE ITEM DROPS DESK — the ownership-stack curation gate ──
     // Shares the gallery key. Pending items render ON a dancing banana (the
