@@ -605,7 +605,10 @@ var EV_LABEL = {
   rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
   stand_item_view:'eyed stand gear', stand_buy_try:'wanted stand gear they can’t afford 🔥',
   stand_buy:'BOUGHT stand gear 🤑', rave_coin:'pocketed bananacoins 🪙',
-  stand_exit_rave:'walked the road back to the club', stand_sign:'read a road sign 🚧' };
+  stand_exit_rave:'walked the road back to the club', stand_sign:'read a road sign 🚧',
+  beach_join:'arrived at Banana Bay 🏖', beach_ball_kick:'kicked the beach ball ⚽',
+  beach_sit:'took a deck chair at the bay', beach_exit_park:'walked the beach road back to the park',
+  stand_exit_beach:'took the park road out to the beach 🏖' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -684,7 +687,12 @@ var EV_EXPLAIN = {
   stand_buy:'BOUGHT with bananacoins 🤑 — coins spent, deed written to the pass, worn out the door (item + price; kind=drop means a missed drop from the back-catalog)',
   rave_coin:'walked into a bananacoin drop (n = how many; at = park when caught outside the club; windows every ~4 min, 70% one / 25% three / 5% five, one shared faucet)',
   stand_exit_rave:'walked their banana out the BOTTOM of the park — the road back to the rave (the return leg of the door)',
-  stand_sign:'tapped an under-construction road sign in the park 🚧 — appetite for more banana world' };
+  stand_sign:'tapped an under-construction road sign in the park 🚧 — appetite for more banana world',
+  beach_join:'landed on Banana Bay 🏖 (via = park road or a direct/ad landing — the standalone-first check)',
+  beach_ball_kick:'kicked the beach ball — the one-tap toy hooked them (throttled: fires at most every 8s)',
+  beach_sit:'lounged in a deck chair at the bay (once per visit) — pure vibes engagement',
+  beach_exit_park:'walked the bottom-left beach road back to the park — the return leg',
+  stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };

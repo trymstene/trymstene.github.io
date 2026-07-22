@@ -110,6 +110,9 @@ function init() {
   // ?counter = spawn a step from the desk (the rave's ?stagetest pattern —
   // lets tests and quick checks skip the walk)
   if (location.search.includes('counter')) { pos.x = 50; pos.y = 26; tgt.x = 50; tgt.y = 23; }
+  // ?beach = you walked back in from Banana Bay: spawn on the right road arm
+  const fromBeach = /[?&]beach(?:=|&|$)/.test(location.search);
+  if (fromBeach) { pos.x = 103; pos.y = 72; tgt.x = 78; tgt.y = 71; }
   const COUNTER = { x: 50, y: 22 };
   // the pond (park.png ellipse in room %) — bananas famously can't swim;
   // walking AROUND it is fine, so blocked moves slide along the shore
@@ -126,6 +129,17 @@ function init() {
     if (REDUCED) { location.href = '/rave/'; return; }
     cut.classList.add('is-on');
     setTimeout(() => { location.href = '/rave/'; }, 170);
+  }
+  // 🏖 the RIGHT road arm is open now — it leads to Banana Bay. Armed only
+  // once you're properly inside (the ?beach walk-in spawn passes through it).
+  let beachRoadArmed = !fromBeach;
+  function exitToBeach() {
+    if (leaving) return;
+    leaving = true;
+    track('stand_exit_beach');
+    if (REDUCED) { location.href = '/beach/?park'; return; }
+    cut.classList.add('is-on');
+    setTimeout(() => { location.href = '/beach/?park'; }, 170);
   }
   const SPEED = 26; // %/s
   const keys = {};
@@ -170,6 +184,9 @@ function init() {
       // the rave road: leaving out the bottom (armed once you're inside)
       if (pos.y < 94) raveRoadArmed = true;
       if (raveRoadArmed && pos.y > 97.5 && Math.abs(pos.x - 50) < 9) exitToRave();
+      // 🏖 the beach road: walk off the RIGHT edge along the crossroad arm
+      if (pos.x < 88) beachRoadArmed = true;
+      if (beachRoadArmed && pos.x > 94 && pos.y > 63 && pos.y < 80) exitToBeach();
       parkSendMove(now); // tell the park where you walked (throttled)
       coinTick();
     }
@@ -352,15 +369,22 @@ function init() {
     parkRoom.send({ t: 'move', x: pos.x, y: pos.y });
   }
 
-  // the under-construction signs: unreadable scribble up close, the popup
-  // does the talking (stopPropagation — a sign tap is not a walk order)
+  // the under-construction sign (LEFT road only now): unreadable scribble up
+  // close, the popup does the talking. The RIGHT sign points to Banana Bay —
+  // tapping it walks you toward the beach road.
   const roadPopup = document.getElementById('bsRoadPopup');
-  document.querySelectorAll('.bs-roadsign').forEach((sign) => {
+  document.querySelectorAll('.bs-roadsign--left').forEach((sign) => {
     sign.addEventListener('click', (e) => {
       e.stopPropagation();
       if (roadPopup) roadPopup.hidden = false;
       track('stand_sign');
     });
+  });
+  const beachSign = document.querySelector('.bs-roadsign--right');
+  if (beachSign) beachSign.addEventListener('click', (e) => {
+    e.stopPropagation();
+    tgt.x = 99; tgt.y = 72;
+    hint(false);
   });
   if (roadPopup) {
     roadPopup.addEventListener('click', (e) => {

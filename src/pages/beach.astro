@@ -1,0 +1,113 @@
+---
+// 🏖 BANANA BAY — the beach (banana-beach-plan, B0 "the postcard").
+// STANDALONE-FIRST: lands cold, hooks solo, gets better with company later
+// (B1 adds the presence room). Noindexed, absent from the sitemap allowlist —
+// the park's right road is the front door.
+// The new engine trick: the world (760×420 art) is WIDER than the screen and
+// an X-axis camera follows your banana — the pier is discovered, not listed.
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Banana Bay';
+const description = 'The beach at the end of the park road. The sun never quite sets.';
+---
+<BaseLayout title={title} description={description} showFooter={false}>
+  <meta name="robots" content="noindex" slot="head" />
+  <link rel="preload" as="image" href="/assets/beach/beach.png" slot="head" />
+  <style is:inline slot="head">
+    body { background: #180f22; }
+    .bh-wrap { max-width: 860px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }
+    .bh-sign {
+      font-family: "Archivo Black", sans-serif; text-align: center;
+      color: #ffb347; font-size: clamp(1.4rem, 6.4vw, 2.2rem); line-height: 1.05;
+      margin: 0.7rem 0 0.15rem; letter-spacing: 0.02em;
+      text-shadow: 0 0 12px rgba(255, 179, 71, 0.5), 0 0 30px rgba(240, 106, 47, 0.3);
+    }
+    .bh-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
+
+    /* the VIEWPORT: a window onto the wider world; the camera pans the world */
+    .bh-view {
+      position: relative; height: min(72vh, 560px); overflow: hidden;
+      border: 4px solid #000; box-shadow: 8px 8px 0 #000; cursor: pointer;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      background: #5c2a52;
+    }
+    .bh-world {
+      position: absolute; left: 0; top: 0; height: 100%;
+      background: url('/assets/beach/beach.png') 0 0 / 100% 100% no-repeat;
+      image-rendering: pixelated; will-change: transform;
+    }
+    /* sprites live in the world and size in % OF the world → camera-safe */
+    .bh-me { position: absolute; z-index: 3; width: 7.4%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
+    .bh-ball {
+      position: absolute; z-index: 2; width: 2.4%;
+      transform: translate(-50%, -50%); pointer-events: none;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.25));
+      transition: scale 0.12s ease;
+    }
+    .bh-ball.is-kicked { scale: 1.25; }
+    .bh-crab {
+      position: absolute; z-index: 2; width: 2%;
+      transform: translate(-50%, -100%); pointer-events: none; image-rendering: pixelated;
+    }
+    .bh-crab img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .bh-kickfloat {
+      position: absolute; transform: translate(-50%, -50%); z-index: 5; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 0.9rem; color: #ffb347;
+      text-shadow: 2px 2px 0 #000; animation: bhFloat 0.8s ease-out forwards;
+    }
+    @keyframes bhFloat { to { transform: translate(-50%, calc(-50% - 30px)); opacity: 0; } }
+    .bh-hint {
+      position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); z-index: 4;
+      background: rgba(0, 0, 0, 0.55); border: 2px solid #000; color: #fffdf5;
+      font-size: 0.78rem; padding: 0.3rem 0.65rem; pointer-events: none; white-space: nowrap;
+      transition: opacity 0.4s ease;
+    }
+    .bh-hint.is-off { opacity: 0; }
+    .bh-hud {
+      position: absolute; top: 8px; right: 8px; z-index: 5;
+      background: rgba(0, 0, 0, 0.55); border: 2px solid #000;
+      padding: 0.2rem 0.5rem; font-weight: 800; font-size: 0.85rem; color: #ffb347;
+    }
+    .bh-hud:empty { display: none; }
+    .bh-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    .bh-btn {
+      flex: 1 1 160px; display: grid; place-items: center; text-align: center;
+      border: 3px solid #000; background: #17121f; color: #fffdf5; font-weight: 800;
+      box-shadow: 5px 5px 0 #000; padding: 0.8rem; text-decoration: none;
+      font-family: inherit; font-size: 1rem; cursor: pointer;
+    }
+    .bh-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+    .bh-cut {
+      position: fixed; inset: 0; background: #000; z-index: 60; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s steps(2);
+    }
+    .bh-cut.is-on { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .bh-cut { transition: none; } }
+  </style>
+
+  <div class="bh-wrap">
+    <h1 class="bh-sign">🏖 BANANA BAY</h1>
+    <p class="bh-tag">the sun never quite sets here</p>
+
+    <div class="bh-view" id="bhView">
+      <div class="bh-world" id="bhWorld">
+        <img class="bh-ball" id="bhBall" src="/assets/beach/ball.png" alt="" aria-hidden="true" />
+        <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
+      </div>
+      <div class="bh-hud" id="bhKicks"></div>
+      <div class="bh-hint" id="bhHint">tap the sand to walk — kick the ball, take a chair</div>
+    </div>
+    <div class="bh-foot">
+      <a class="bh-btn" href="/banana-stand/?beach" data-place="beach">🌳 back to the park</a>
+    </div>
+  </div>
+
+  <div class="bh-cut" id="bhCut" aria-hidden="true"></div>
+
+  <script>
+    import '../scripts/banana-beach.js';
+  </script>
+</BaseLayout>

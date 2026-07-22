@@ -140,6 +140,13 @@ const description = 'There is always money in the banana stand.';
     .bs-roadsign--left { left: 1.5%; top: 63.5%; }
     .bs-roadsign--right { right: 1.5%; top: 63.5%; }
     .bs-roadsign:hover, .bs-roadsign:focus-visible { transform: scale(1.08); }
+    /* the right sign is READABLE now — it points at Banana Bay */
+    .bs-roadsign--beach { position: absolute; }
+    .bs-roadsign__label {
+      position: absolute; left: 5%; top: 6%; width: 80%;
+      font-family: "Archivo Black", sans-serif; font-size: 8px; line-height: 1;
+      color: #ffe135; text-align: center; letter-spacing: 0.04em; pointer-events: none;
+    }
     /* the banana-themed construction popup */
     .bs-roadpopup {
       position: absolute; inset: 0; z-index: 10; display: grid; place-items: center;
@@ -403,8 +410,9 @@ const description = 'There is always money in the banana stand.';
         <button class="bs-roadsign bs-roadsign--left" type="button" aria-label="Road under construction">
           <svg viewBox="0 0 20 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="18" height="9" fill="#8a5a2b"/><rect x="1" y="1" width="18" height="1" fill="#a97139"/><rect x="1" y="9" width="18" height="1" fill="#5a3618"/><rect x="0" y="1" width="1" height="9" fill="#5a3618"/><rect x="19" y="1" width="1" height="9" fill="#5a3618"/><rect x="3" y="3" width="7" height="1" fill="#3a2b18"/><rect x="12" y="3" width="4" height="1" fill="#3a2b18"/><rect x="3" y="5" width="11" height="1" fill="#3a2b18"/><rect x="3" y="7" width="5" height="1" fill="#3a2b18"/><rect x="9" y="10" width="2" height="6" fill="#6b4320"/><rect x="9" y="15" width="2" height="1" fill="#5a3618"/></svg>
         </button>
-        <button class="bs-roadsign bs-roadsign--right" type="button" aria-label="Road under construction">
-          <svg viewBox="0 0 20 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="18" height="9" fill="#8a5a2b"/><rect x="1" y="1" width="18" height="1" fill="#a97139"/><rect x="1" y="9" width="18" height="1" fill="#5a3618"/><rect x="0" y="1" width="1" height="9" fill="#5a3618"/><rect x="19" y="1" width="1" height="9" fill="#5a3618"/><rect x="4" y="3" width="5" height="1" fill="#3a2b18"/><rect x="11" y="3" width="5" height="1" fill="#3a2b18"/><rect x="4" y="5" width="9" height="1" fill="#3a2b18"/><rect x="4" y="7" width="12" height="1" fill="#3a2b18"/><rect x="9" y="10" width="2" height="6" fill="#6b4320"/><rect x="9" y="15" width="2" height="1" fill="#5a3618"/></svg>
+        <button class="bs-roadsign bs-roadsign--right bs-roadsign--beach" type="button" aria-label="This way to Banana Bay">
+          <svg viewBox="0 0 20 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="16" height="9" fill="#8a5a2b"/><rect x="1" y="1" width="16" height="1" fill="#a97139"/><rect x="1" y="9" width="16" height="1" fill="#5a3618"/><rect x="0" y="1" width="1" height="9" fill="#5a3618"/><rect x="17" y="2" width="2" height="2" fill="#5a3618"/><rect x="17" y="7" width="2" height="2" fill="#5a3618"/><rect x="19" y="4" width="1" height="3" fill="#5a3618"/><rect x="17" y="4" width="2" height="3" fill="#8a5a2b"/><rect x="9" y="10" width="2" height="6" fill="#6b4320"/><rect x="9" y="15" width="2" height="1" fill="#5a3618"/></svg>
+          <span class="bs-roadsign__label" aria-hidden="true">BEACH</span>
         </button>
         <div class="bs-roadpopup" id="bsRoadPopup" hidden>
           <div class="bs-roadpopup__card" role="dialog" aria-label="Under construction">
