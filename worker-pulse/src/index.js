@@ -698,7 +698,7 @@ var EV_EXPLAIN = {
   beach_sit:'lounged in a deck chair at the bay (once per visit) — pure vibes engagement',
   beach_exit_park:'walked the bottom-left beach road back to the park — the return leg',
   stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door',
-  beach_dig:'dug a hole in a sand patch ⛏ — find = junk / shell / curio / TREASURE. Most digs are "just sand", by design: the patch is an area to search, not a prize. Five patches a night, date-seeded, and exactly one treasure — a run of finds without a treasure means they never found the map at the bar',
+  beach_dig:'dug a hole in a sand patch ⛏ — find = junk / shell / curio / bottle / TREASURE. Most digs are "just sand", by design: the patch is an area to search, not a prize. Five patches a night, date-seeded, and exactly one treasure — a run of finds without a treasure means they never found the map at the bar',
   beach_sandy:'walked onto the volleyball court and Sandy greeted them 🏐 — the solo rally partner. He returns everything on purpose, so a long rally is THEIR consistency, not his luck. Fires once per visit to the court (resets when they wander off)',
   beach_shell:'combed a shell off the tide line (shell = which of the 29; fresh=1 means it was a NEW one for them — the completionist hook firing)',
   beach_shells_open:'opened the 29-slot shell collection — the visible-gaps screen that drives return visits',

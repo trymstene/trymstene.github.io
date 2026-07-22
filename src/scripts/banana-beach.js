@@ -764,6 +764,21 @@ function init() {
   const DIG_JUNK = ['an old boot', 'a bent fork', 'one flip-flop', 'a rusted tin',
     'somebody’s lost sunglasses', 'a very annoyed crab', 'half a frisbee'];
   const DIG_CURIO = ['sea glass', 'a ship’s key', 'a worn doubloon', 'a shark’s tooth'];
+  // 🍾 ONE BOTTLE A DAY, and the whole world gets the SAME note — it's picked
+  // from the daily seed, so "what did yours say?" has an answer worth asking.
+  // ⚠️ Pre-written only. No user-authored notes, ever: an anonymous message
+  // anyone can bury and anyone can dig up is a moderation surface we are not
+  // building for a beach toy.
+  const BOTTLE_NOTES = [
+    'whoever finds this: the tide always comes back. so do you.',
+    'i buried a better one somewhere else. good luck. no clues.',
+    'if you are reading this, you dug. well done. most people just walk past.',
+    'do not ask the captain about the lighthouse keeper. there isn’t one.',
+    'p.s. the net is undefeated. it told me so itself.',
+    'gone fishing. back never. — a banana',
+    'this bottle has been round the world twice and learned absolutely nothing.',
+    'be kind to the crabs. they were here long before the volleyball.',
+  ];
   const digDay = Math.floor(Date.now() / 86400000);
   // ⚠️ seedRand(n) is ONE-SHOT — it maps a seed to a number, it is NOT a
   // generator (the shells call it once per spot with a stepped seed). Walking
@@ -780,6 +795,7 @@ function init() {
     }
     const chosen = pool.slice(0, DIG_PATCHES);
     const treasureIn = Math.floor(digRnd() * chosen.length);
+    const bottleIn = Math.floor(digRnd() * chosen.length);   // may share a patch
     chosen.forEach((site, i) => {
       const n = 4 + Math.floor(digRnd() * 3);         // 4-6 things buried here
       const spots = [];
@@ -787,8 +803,11 @@ function init() {
         spots.push({
           x: site.x + (digRnd() - 0.5) * (PATCH_W - 40),
           y: site.y + (digRnd() - 0.5) * (PATCH_H - 30),
+          // slot 0 is the treasure's, slot 1 the bottle's — n is 4-6 so both
+          // always exist, and exactly one of each is buried per day
           kind: i === treasureIn && k === 0 ? 'treasure'
-            : digRnd() < 0.34 ? 'shell' : digRnd() < 0.55 ? 'curio' : 'junk',
+            : i === bottleIn && k === 1 ? 'bottle'
+              : digRnd() < 0.34 ? 'shell' : digRnd() < 0.55 ? 'curio' : 'junk',
           got: false,
         });
       }
@@ -869,6 +888,13 @@ function init() {
       sandySay('you found it! that’s what the map was on about.', 5200);
       passStat('bh_treasure', 1);
       track('beach_dig', { find: 'treasure' });
+    } else if (best.kind === 'bottle') {
+      // a fortune deserves a beat, not a float that scrolls past in a second
+      float(pos.x, pos.y - 30, '🍾 a bottle!');
+      bottleText.textContent = BOTTLE_NOTES[digDay % BOTTLE_NOTES.length];
+      bottlePanel.hidden = false;
+      passStat('bh_bottle', 1);
+      track('beach_dig', { find: 'bottle' });
     } else if (best.kind === 'shell') {
       const id = SHELL_IDS[Math.floor(Math.random() * SHELL_IDS.length)];
       passStat('sh_' + id, 1);
@@ -888,6 +914,11 @@ function init() {
     if (p.spots.every((s) => s.got)) p.el.classList.add('is-spent');
     digSave();
   }
+  const bottlePanel = document.getElementById('bhBottlePanel');
+  const bottleText = document.getElementById('bhBottleText');
+  document.getElementById('bhBottleClose').addEventListener('click', () => {
+    bottlePanel.hidden = true;
+  });
   const digBtn = document.getElementById('bhDigBtn');
   digBtn.addEventListener('click', (e) => { e.stopPropagation(); dig(); });
   paintDigs();
@@ -1078,6 +1109,7 @@ function init() {
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
+      patches, dig, treasureClue: () => patches.treasureClue,
       // fake a second banana on the court so the B2 step-aside rule is
       // testable before multiplayer exists
       setPeers: (n) => { peersInCourt = n; } };
