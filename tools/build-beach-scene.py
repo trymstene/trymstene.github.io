@@ -258,6 +258,8 @@ _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
 COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
 NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
+OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
+PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 
 
 
@@ -270,7 +272,7 @@ PROP = 0.76
 
 
 def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
-          flip=False, shade=True, sh=0.30, scale=PROP, solid=None):
+          flip=False, shade=True, sh=0.30, scale=PROP, solid=None, layer=False):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
         _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
@@ -288,6 +290,15 @@ def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
            int(cx - s.width // 2) + s.width, int(base))
     im.alpha_composite(s, box[:2])
     PLACED.append((name, box))
+    # ⭐ layer=True ALSO exports the sprite for the page to redraw on a
+    # y-sorted layer. A prop baked only into the plate can never draw in front
+    # of anything, so you walked over palm crowns and through the lighthouse.
+    # Its BASE is what sorts — you pass in front of a trunk's roots and behind
+    # its canopy, which is the whole point. (Same fix as the net, generalised.)
+    if layer:
+        fn = 'ov-%d.png' % len(OVERLAYS)
+        s.save(os.path.join(OUT, fn), optimize=True)
+        OVERLAYS.append((fn, box[0], box[1], s.width, s.height, int(base)))
     # ⚠️ THE COLLIDER IS DECLARED HERE, ON THE PLACEMENT. It used to live in a
     # hand-kept list in banana-beach.js, and it drifted the moment a prop
     # moved: shifting the parasols for the bigger court left one invisible
@@ -378,6 +389,19 @@ export const OB_CIRCLES = [
 export const CHAIRS = [
 %s
 ];
+
+// ⭐ Y-SORTED PROP LAYER. Each of these is ALSO baked into the plate; the page
+// redraws it on top and sorts it against everything that walks by comparing
+// `base` (the prop's ground line) to the walker's y. That's what lets you pass
+// in FRONT of a palm's roots and BEHIND its canopy. A prop baked only into the
+// plate can never draw in front of anything.
+export const OVERLAYS = [
+%s
+];
+
+// the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
+// a floor must never occlude someone standing on it.
+export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
 ''' % (W, H, WATER_LINE,
        px0, px1, py0,
        px0, px1, py0, PLATFORM_BOT,
@@ -391,7 +415,10 @@ export const CHAIRS = [
        rows(rects), rows(circles),
        '\n'.join('  { rect: [%s], seat: { x: %d, y: %d } },   // %s'
                  % (', '.join(str(v) for v in c[0]), c[1][0], c[1][1], c[2])
-                 for c in chairs))
+                 for c in chairs),
+       '\n'.join("  { src: '%s', x: %d, y: %d, w: %d, h: %d, base: %d },"
+                 % o for o in OVERLAYS),
+       PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3])
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
         f.write(out)
@@ -445,7 +472,8 @@ if HAVE_PACK:
     for cx, base, fl in ((330, 470, False), (520, 900, True), (1500, 520, False),
                          (1330, 1040, True), (2010, 900, False), (600, 528, True),
                          (2290, 640, False)):
-        place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK)
+        place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
+              layer=True)
     for cx, base in ((430, 372), (900, 366), (1600, 380), (2120, 372), (660, 362)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False)
 
@@ -517,18 +545,18 @@ if HAVE_PACK:
 
     # 🚢 Captain Split's wreck
     place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34,
-          solid=WRECK)
+          solid=WRECK, layer=True)
     for i, sx in enumerate((BAR[0] - 150, BAR[0] - 50, BAR[0] + 50, BAR[0] + 150)):
         place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, BAR[1] + 200)
 
     # 🗼 the lighthouse — factor 2, or it would eat half the map
     place('21_Beach_48x48_Example_Lighthouse.png', LIGHT[0], LIGHT[1] + 300,
-          factor=2, colors=12, sh=0.24, solid=TOWER)
+          factor=2, colors=12, sh=0.24, solid=TOWER, layer=True)
 
     # ⛱ furniture
-    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548, solid=POLE)
-    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020, solid=POLE)
-    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560, solid=POLE)
+    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548, solid=POLE, layer=True)
+    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020, solid=POLE, layer=True)
+    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560, solid=POLE, layer=True)
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
         place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0,
               solid=SUNBED)
@@ -548,7 +576,6 @@ if HAVE_PACK:
     for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
     audit_court()
-    emit_geo()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
     # mystery object ("what's this brown thing at the beach?"). Now it has
@@ -569,6 +596,20 @@ if HAVE_PACK:
             rect(side, py, side + 11, py + 13, (86, 52, 22))
             rect(side, py, side + 4, py + 13, (128, 82, 38))
     rect(px0 - 6, py1 - 8, px1 + 6, py1, (108, 66, 28))  # the landing kerb
+    # ⚠️ THE DOCK HAS TO OUTRANK THE SEA. The animated water layers are OPAQUE
+    # and cover the world's top 288px — and the pier runs from y 60 to 306, so
+    # the water was being painted straight over the dock (Trym: "the water
+    # sprites are overflowing the dock"). Export the deck as its own sprite and
+    # the page redraws it ABOVE the sea but BELOW anything that walks, because
+    # a dock is a FLOOR, not a wall — it must never occlude a banana standing
+    # on it. Cropped off the finished plate, so the water it carries at its
+    # edges is identical to what sits underneath.
+    PIER_SPRITE.extend([px0 - 8, py0, (px1 + 8) - (px0 - 8), (py1 + 12) - py0])
+    im.crop((px0 - 8, py0, px1 + 8, py1 + 12)).save(
+        os.path.join(OUT, 'pier.png'), optimize=True)
+    # ⚠️ emit LAST — it needs NET_SPRITE, every OVERLAY and PIER_SPRITE, and
+    # the pier is drawn after the props. Emitting earlier read an empty list.
+    emit_geo()
 
     # 🔥 the bonfire ring — hand-drawn stones; the pack's sea rocks carry a
     # foam collar, so a ring of them read as a ring of bubbles on dry sand

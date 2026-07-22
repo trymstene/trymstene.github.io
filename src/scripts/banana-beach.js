@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, PIER_SPRITE,
 } from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -164,9 +164,38 @@ function init() {
     netEl.style.top = pct(NET.spriteY, H);
     netEl.style.width = pct(NET.spriteW, W);
     netEl.style.height = pct(NET.spriteH, H);
+    netEl.style.zIndex = String(100 + NET.y);   // same rule as everything else
   }
-  // feet past the net line → in FRONT of the net (z 6); otherwise behind (z 4)
-  const depth = (el, y) => { el.style.zIndex = y >= NET.y ? '6' : '4'; };
+  // ⭐ ONE PAINTER'S ALGORITHM FOR THE WHOLE BEACH.
+  // Everything that stands on the sand — bananas, crabs, the ball, the net,
+  // the palms, the lighthouse, the parasols, the wreck — takes a z-index from
+  // its GROUND LINE. Lower on the map = nearer the viewer = drawn on top. That
+  // one rule gives Trym's ask for free: you pass in FRONT of a palm's roots
+  // and BEHIND its canopy, because the canopy belongs to a trunk whose base is
+  // above you. It replaces the net's old two-value special case.
+  // Range 100..1200 — safely clear of the ground layers (patches 2, shells 3)
+  // and of the bubbles (1900+). All inside .bh-world, which has a transform
+  // and therefore its own stacking context, so the HUD is never in the fight.
+  const depth = (el, y) => { el.style.zIndex = String(100 + Math.round(y)); };
+
+  // the props, redrawn above the plate so they can occlude
+  OVERLAYS.forEach((o) => {
+    const d = document.createElement('div');
+    d.className = 'bh-ov';
+    d.style.left = pct(o.x, W); d.style.top = pct(o.y, H);
+    d.style.width = pct(o.w, W); d.style.height = pct(o.h, H);
+    d.style.backgroundImage = "url('/assets/beach/" + o.src + "')";
+    d.style.zIndex = String(100 + Math.round(o.base));
+    world.appendChild(d);
+  });
+  // …and the dock, which is a FLOOR: above the opaque sea, below every walker
+  const pierEl = document.createElement('div');
+  pierEl.className = 'bh-pier';
+  pierEl.style.left = pct(PIER_SPRITE.x, W);
+  pierEl.style.top = pct(PIER_SPRITE.y, H);
+  pierEl.style.width = pct(PIER_SPRITE.w, W);
+  pierEl.style.height = pct(PIER_SPRITE.h, H);
+  world.appendChild(pierEl);
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   function blocked(x, y) {
     if (x < 12 || x > WORLD.w - 12 || y > WORLD.h - 12) return true;
@@ -689,6 +718,7 @@ function init() {
     c.el.style.left = pct(c.x, W);
     c.el.style.top = pct(c.y, H);
     c.el.style.transform = 'translate(-50%,-100%)' + (c.face < 0 ? ' scaleX(-1)' : '');
+    depth(c.el, c.y);              // critters sort against the props too
   }
 
   // ---- ⛏ THE DIG ----------------------------------------------------------
@@ -1020,6 +1050,7 @@ function init() {
   // so the hull reads as being in front of him
   capEl.style.left = pct(1690, W);
   capEl.style.top = pct(688, H);
+  depth(capEl, 688);        // behind the wreck's hull (base 740) = behind his bar
   capBubble.style.left = pct(1690, W);
   capBubble.style.top = pct(610, H);
 

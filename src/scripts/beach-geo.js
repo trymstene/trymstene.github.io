@@ -53,3 +53,27 @@ export const CHAIRS = [
   { rect: [1296, 652, 1366, 706], seat: { x: 1330, y: 696 } },   // sunbed 5
   { rect: [366, 712, 436, 766], seat: { x: 400, y: 756 } },   // sunbed 9
 ];
+
+// ⭐ Y-SORTED PROP LAYER. Each of these is ALSO baked into the plate; the page
+// redraws it on top and sorts it against everything that walks by comparing
+// `base` (the prop's ground line) to the walker's y. That's what lets you pass
+// in FRONT of a palm's roots and BEHIND its canopy. A prop baked only into the
+// plate can never draw in front of anything.
+export const OVERLAYS = [
+  { src: 'ov-0.png', x: 262, y: 309, w: 136, h: 161, base: 470 },
+  { src: 'ov-1.png', x: 452, y: 739, w: 136, h: 161, base: 900 },
+  { src: 'ov-2.png', x: 1432, y: 359, w: 136, h: 161, base: 520 },
+  { src: 'ov-3.png', x: 1262, y: 879, w: 136, h: 161, base: 1040 },
+  { src: 'ov-4.png', x: 1942, y: 739, w: 136, h: 161, base: 900 },
+  { src: 'ov-5.png', x: 532, y: 367, w: 136, h: 161, base: 528 },
+  { src: 'ov-6.png', x: 2222, y: 479, w: 136, h: 161, base: 640 },
+  { src: 'ov-7.png', x: 1572, y: 563, w: 256, h: 177, base: 740 },
+  { src: 'ov-8.png', x: 2116, y: 488, w: 129, h: 282, base: 770 },
+  { src: 'ov-9.png', x: 1211, y: 408, w: 108, h: 140, base: 548 },
+  { src: 'ov-10.png', x: 376, y: 880, w: 108, h: 140, base: 1020 },
+  { src: 'ov-11.png', x: 1996, y: 420, w: 108, h: 140, base: 560 },
+];
+
+// the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
+// a floor must never occlude someone standing on it.
+export const PIER_SPRITE = { x: 1812, y: 60, w: 156, h: 258 };
