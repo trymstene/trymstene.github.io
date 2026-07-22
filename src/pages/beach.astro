@@ -101,23 +101,41 @@ const description = 'The beach at the end of the park road. The sun never quite 
       transform: translate(-50%, -50%); pointer-events: none;
       background: rgba(0, 0, 0, 0.22); border-radius: 50%;
     }
-    /* 🦀 FRAME-STEPPING A SPRITE STRIP — the technique, written down because
-       I got it wrong and everything flickered.
-       background-position in PERCENT is not pixels: 100% means "align the
-       image's right edge with the container's right edge". So for a strip N
-       frames wide (background-size: N00% 100%), the whole animation is
-       simply 0% → 100%, split by steps(N). Values like -1000% fling the
-       strip ~90 container-widths sideways, which is what caused the
-       microsecond blinking Trym saw on every animated object. */
+    /* 🦀 FRAME-STEPPING A SPRITE STRIP — the technique, written down properly
+       because I have now got it wrong TWICE.
+       background-position in PERCENT is not pixels. p% means "put the image
+       p% of the way through its overhang", i.e. offset = p × (imageW − boxW).
+       For an N-frame strip at background-size: N00%, the overhang is
+       (N − 1) box widths, so frame i sits at i/(N − 1) — the frames land on
+       multiples of 100/(N − 1)%, NOT 100/N%.
+         · animating 0% → 100% in steps(N) steps by 100/N%, so every frame
+           stops PART-WAY between two frames. That is why the crab appeared to
+           slide sideways inside its own box while the box walked.
+         · the correct end value is 100% × N / (N − 1).
+       For 10 frames: 0% → 111.1111%, steps(10) → 0, 11.11, 22.22 … 100%. ✅
+       (Earlier bug, kept as a warning: -1000% flings the strip ~90 box widths
+       sideways and everything strobes.) */
+    /* the crab's frames are 96×48 in the pack — so the BOX is 2:1, and the
+       crab art fills only the middle ~half of it. */
     .bh-crab {
-      position: absolute; z-index: 4; width: 2%; aspect-ratio: 1;
+      position: absolute; z-index: 4; width: 3%; aspect-ratio: 2 / 1;
       transform: translate(-50%, -100%); pointer-events: none;
       image-rendering: pixelated; background-repeat: no-repeat;
       background-image: url('/assets/beach/a-crab.png');
       background-size: 1000% 100%;              /* 10 frames */
-      animation: bhStrip 0.9s steps(10) infinite;
+      animation: bhStrip 0.75s steps(10) infinite;
     }
-    @keyframes bhStrip { from { background-position-x: 0%; } to { background-position-x: 100%; } }
+    .bh-crab::after {                           /* contact shadow — a crab with
+                                                   no shadow reads as floating */
+      content: ''; position: absolute; left: 50%; bottom: 9%; width: 30%;
+      aspect-ratio: 4 / 1; transform: translateX(-50%);
+      background: rgba(60, 40, 18, 0.26); border-radius: 50%; z-index: -1;
+    }
+    .bh-crab.is-still { animation-play-state: paused; }
+    @keyframes bhStrip {
+      from { background-position-x: 0%; }
+      to   { background-position-x: 111.1111%; }   /* = 100% × 10 / 9 */
+    }
     @media (prefers-reduced-motion: reduce) { .bh-crab { animation: none; } }
     @keyframes bhCross {
       0%   { left: -4%; transform: translateY(0) scaleX(1); }

@@ -39,8 +39,8 @@ W, H = 2400, 1100
 # ---- GEO: the contract with banana-beach.js -------------------------------
 WATER_BOT = 260              # sea above this
 SHORE_BOT = 306              # shoreline band ends (walkable wet sand below)
-COURT = (640, 680, 1240, 1000)
-NET_X = 940
+COURT = (640, 676, 1216, 1012)   # ⚠️ must stay a whole number of T tiles: 12 × 7
+NET_BASE = 844                   # y where the net's posts meet the sand (row 3)
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
 LIGHT = (2180, 470)
@@ -182,7 +182,7 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
         return 0
     sh = Image.open(p).convert('RGBA')
     n = frames or (sh.width // tw)
-    out = Image.new('RGBA', (tw * n, th), (0, 0, 0, 0))
+    raw = Image.new('RGBA', (tw * n, th), (0, 0, 0, 0))
     for i in range(n):
         cell = sh.crop((i * tw, row * th, (i + 1) * tw, (row + 1) * th))
         if dekey is not None:
@@ -192,12 +192,18 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
                     r, g, b, a = cp[x, y]
                     if a and abs(r - dekey[0]) < 26 and abs(g - dekey[1]) < 26 and abs(b - dekey[2]) < 26:
                         cp[x, y] = (0, 0, 0, 0)
-        cell = blockify(cell, factor=1, colors=colors, warm=warm, sat=1.1, con=1.05)
-        if scale != 1.0:
-            cell = cell.resize((max(1, int(cell.width * scale)),
-                                max(1, int(cell.height * scale))), Image.NEAREST)
-        out.alpha_composite(cell, (i * tw + (tw - cell.width) // 2,
-                                   max(0, th - cell.height)))
+        raw.alpha_composite(cell, (i * tw, 0))
+    # ⚠️ Blockify the WHOLE STRIP, once, with trim=False. Two rules an
+    # animation strip must obey, both of which I broke:
+    #   1. never trim a frame to its own bbox — a walk cycle's silhouette
+    #      changes every frame, so re-centring each one makes the sprite creep
+    #      around inside its own element while the element walks (exactly the
+    #      "sliding to the left" Trym saw on the crabs);
+    #   2. never outline frames individually — the 1px pad would shove every
+    #      frame off the grid. Outline the strip and crop the pad back off, so
+    #      each frame stays EXACTLY tw wide.
+    out = blockify(raw, factor=1, colors=colors, warm=warm, sat=1.1, con=1.05,
+                   trim=False).crop((1, 1, 1 + tw * n, 1 + th))
     out.save(os.path.join(OUT, out_name), optimize=True)
     print('  %s -> %s (%d frames)' % (name[:38], out_name, n))
     return n
@@ -205,6 +211,9 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
 
 # ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
+PLACED = []                  # every prop's footprint, for audit_court()
+
+
 
 
 # Props render at 76% of the pack's native size: at 1:1 the pack's own
@@ -229,8 +238,21 @@ def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
     if shade:
         shadow(cx + s.width * 0.06, base - s.height * 0.02,
                s.width * sh, max(4, s.height * 0.055))
-    im.alpha_composite(s, (int(cx - s.width // 2), int(base - s.height)))
+    box = (int(cx - s.width // 2), int(base - s.height),
+           int(cx - s.width // 2) + s.width, int(base))
+    im.alpha_composite(s, box[:2])
+    PLACED.append((name, box))
     return s.size
+
+
+def audit_court():
+    """⚠️ Nothing may sit on the volleyball court. A sandcastle and a parasol
+    once landed on the boundary lines and it read as broken art, not as
+    clutter. Cheap to check, so check it every build instead of eyeballing."""
+    cx0, cy0, cx1, cy1 = COURT
+    for name, (x0, y0, x1, y1) in PLACED:
+        if x0 < cx1 and x1 > cx0 and y0 < cy1 and y1 > cy0:
+            print('  ⚠️  ON THE COURT: %s at %s' % (name, (x0, y0, x1, y1)))
 
 
 if HAVE_PACK:
@@ -260,38 +282,55 @@ if HAVE_PACK:
     # ⚠️ The pack's field lines are RED-ORANGE by design — that is not a bug,
     # it's exactly what LimeZu's own beach screenshot shows.
     cx0, cy0, cx1, cy1 = COURT
-    # ⚠️ DRAWN, NOT TILED. The pack's court pieces fought us twice: its line
-    # tiles are whole 48px squares, so bottom-anchoring them stepped the line
-    # up and down like a fence; and Net_Left/Net_Right each carry their OWN
-    # mesh panel at a different height from Net_Middle, so a row of them drew
-    # floating net squares beside the real net. A court is four straight lines
-    # and a mesh band — trivial to draw, and it finally looks like a court.
-    LINE, LINE_D = (232, 92, 68), (188, 62, 44)
-    for x in range(cx0, cx1):                       # boundary, 5px, worn
-        for yy in (cy0, cy1 - 5):
-            if (x // 7) % 9 != 8:
-                rect(x, yy, x + 1, yy + 5, LINE)
-                put(x, yy + 4, LINE_D)
-    for y in range(cy0, cy1):
-        for xx in (cx0, cx1 - 5):
-            if (y // 7) % 9 != 8:
-                rect(xx, y, xx + 5, y + 1, LINE)
-                put(xx + 4, y, LINE_D)
-    NET_Y = (cy0 + cy1) // 2                        # the net, across the court
-    POST_X0, POST_X1 = cx0 + 36, cx1 - 36
-    for post in (POST_X0, POST_X1):                 # posts, with base shadows
-        shadow(post + 7, NET_Y + 34, 16, 8, 54)
-        rect(post - 6, NET_Y - 40, post + 6, NET_Y + 32, (108, 66, 28))
-        rect(post - 6, NET_Y - 40, post - 2, NET_Y + 32, (168, 116, 60))
-        rect(post - 8, NET_Y - 46, post + 8, NET_Y - 38, (86, 52, 22))
-    rect(POST_X0, NET_Y - 34, POST_X1, NET_Y - 28, WHITE)     # top tape
-    rect(POST_X0, NET_Y - 28, POST_X1, NET_Y + 6, (246, 243, 232))
-    for gx in range(POST_X0, POST_X1, 9):           # mesh
-        rect(gx, NET_Y - 28, gx + 2, NET_Y + 6, (196, 190, 172))
-    for gy in range(NET_Y - 28, NET_Y + 6, 9):
-        rect(POST_X0, gy, POST_X1, gy + 2, (196, 190, 172))
-    rect(POST_X0, NET_Y + 4, POST_X1, NET_Y + 8, (214, 208, 190))
-    rect(POST_X0, NET_Y + 8, POST_X1, NET_Y + 14, SHADE)      # cast shadow
+    LN = '21_Beach_48x48_Beach_Volley_Field_Line_%s.png'
+    NT = '21_Beach_48x48_Beach_Volley_Net_%s.png'
+
+    # THE LINES — a plain corner/edge tile set on a TOP-LEFT grid. My earlier
+    # attempt bottom-anchored them, which stepped every tile by its own sprite
+    # height and made the boundary zig-zag like a fence. They only ever wanted
+    # to be laid on the grid.  No ink outline: these are ground markings, and
+    # outlining thin cream lines turns the whole court black.
+    cols, rows = (cx1 - cx0) // T, (cy1 - cy0) // T
+    court = Image.new('RGBA', (cols * T, rows * T), (0, 0, 0, 0))
+    for r in range(rows):
+        for c in range(cols):
+            if r == 0:
+                n = 'Left_Up' if c == 0 else 'Right_Up' if c == cols - 1 else 'Middle_Up_Modular'
+            elif r == rows - 1:
+                n = 'Left_Down' if c == 0 else 'Right_Down' if c == cols - 1 else 'Middle_Down_Modular'
+            elif c == 0:
+                n = 'Left_Middle_Modular'
+            elif c == cols - 1:
+                n = 'Middle_Right_Modular'
+            else:
+                continue
+            court.alpha_composite(load_pack(LN % n), (c * T, r * T))
+    im.alpha_composite(blockify(court, factor=1, colors=8, warm=0.06,
+                                sat=1.1, con=1.05, outline=False, trim=False),
+                       (cx0, cy0))
+
+    # THE NET — the pack's own three pieces, TOP-ALIGNED on the same grid.
+    #   Net_Left  (2 tiles wide): post in its LEFT tile, mesh in its RIGHT
+    #   Net_Middle_Modular (1 tile): mesh
+    #   Net_Right (2 tiles wide): mesh in its LEFT tile, post in its RIGHT
+    # All three carry their mesh band at the SAME sprite y (6..63), so sharing
+    # a TOP edge lines them up perfectly. Bottom-anchoring them — a 144px post
+    # sprite against a 96px mesh sprite — is what hung those floating net
+    # squares beside the real net and made me give up and draw it by hand.
+    # ⚠️ Composed at native size and blockified ONCE: outlining each tile
+    # separately would ink a vertical bar down every seam in the mesh.
+    NET_MIDS = 7
+    net = Image.new('RGBA', (96 + NET_MIDS * T + 96, 144), (0, 0, 0, 0))
+    net.alpha_composite(load_pack(NT % 'Left'), (0, 0))
+    for i in range(NET_MIDS):
+        net.alpha_composite(load_pack(NT % 'Middle_Modular'), (96 + i * T, 0))
+    net.alpha_composite(load_pack(NT % 'Right'), (96 + NET_MIDS * T, 0))
+    net = blockify(net, factor=1, colors=12, warm=0.06, sat=1.12, con=1.06,
+                   trim=False)
+    # no contact shadow here: the pack draws the posts' own cast shadows into
+    # the sprites, and an ellipse under the net just reads as a dirty smudge.
+    NET_LEFT_X = (cx0 + cx1) // 2 - (96 + NET_MIDS * T + 96) // 2
+    im.alpha_composite(net, (NET_LEFT_X - 1, NET_BASE - 138 - 1))
 
     # 🚢 Captain Split's wreck
     place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34)
@@ -309,7 +348,7 @@ if HAVE_PACK:
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
         place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0)
     place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1450, 780, shade=False)
-    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 620, 1060, shade=False)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 520, 1074, shade=False)
     place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1900, 800, shade=False)
     place('21_Beach_48x48_Red_Float.png', 2240, 380)
     place('21_Beach_48x48_Green_Float.png', 300, 1020)
@@ -323,6 +362,7 @@ if HAVE_PACK:
         place('21_Beach_48x48_Purple_Small_Starfish.png', cx, base, shade=False)
     for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
+    audit_court()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
     # mystery object ("what's this brown thing at the beach?"). Now it has
@@ -375,7 +415,12 @@ for y in range(H - 150, H):
 if HAVE_PACK:
     print('animation strips:')
     WATER_KEY = (86, 178, 199)
-    anim_strip('Crabs_48x48.png', 'a-crab.png', row=0, frames=10)
+    # ⚠️ NOT every animated sheet is one tile per frame. The crab sheet is
+    # 960×192 = 10 frames of NINETY-SIX px (2 tiles) × 4 rows. Slicing it at 48
+    # cut every crab in half and put the halves in neighbouring frames, so the
+    # thing appeared to slide sideways as it played. Check the sheet's real
+    # frame width (bbox the candidate grids) before adding any new strip.
+    anim_strip('Crabs_48x48.png', 'a-crab.png', row=0, frames=10, tw=96)
     anim_strip('Beach_Seagull_Idle_Left_48x48.png', 'a-gull.png', row=0, frames=6)
     anim_strip('Buoy_1_48x48.png', 'a-buoy.png', frames=8, dekey=WATER_KEY)
     anim_strip('Floating_Separation_Buoys_1_48x48.png', 'a-ropebuoy.png',

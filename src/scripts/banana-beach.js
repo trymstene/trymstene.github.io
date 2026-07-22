@@ -125,7 +125,9 @@ function init() {
   // ⚠️ THE NET IS HORIZONTAL now (the pack's net pieces are drawn to be laid
   // left→right, which is also how LimeZu's own beach screenshot uses them).
   // So the ball crosses it on the Y axis, not X.
-  const NET_Y = 840, NET_X0 = 676, NET_X1 = 1204, NET_H = 18;
+  // ⚠️ KEEP IN SYNC with COURT / NET_BASE in tools/build-beach-scene.py.
+  // Court = 12 × 7 pack tiles at (640, 676); the net stands on tile row 3.
+  const NET_Y = 844, NET_X0 = 664, NET_X1 = 1192, NET_H = 18;
   const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
   const OB_RECTS = [
     // top-down blocking = the BASE of an object, not its full height: you walk
@@ -492,40 +494,61 @@ function init() {
   // then the rest come back one at a time once the technique is proven.)
 
   // ---- 🦀 crabs: locals who want NOTHING to do with you -------------------
+  // A crab is not a slow banana. It has a HOME it never really leaves, it
+  // moves in short sideways darts with long stillnesses between them, and it
+  // only sprints when you get close. Trym's read on the first version — "they
+  // float around weirdly and with the same speed as the banana" — was two
+  // faults: they picked targets anywhere on the whole map, so each one glided
+  // the full width of the beach in one smooth straight line; and their legs
+  // kept cycling while they stood still.
+  const CRAB_WANDER = 26, CRAB_FLEE = 96, CRAB_HOME_R = 150;   // banana = 168
   const crabs = [];
-  for (const start of [{ x: 700, y: 400 }, { x: 1300, y: 900 }, { x: 2000, y: 420 },
-                       { x: 460, y: 1000 }, { x: 1560, y: 380 }]) {
+  for (const home of [{ x: 700, y: 400 }, { x: 1300, y: 900 }, { x: 2000, y: 420 },
+                      { x: 460, y: 1000 }, { x: 1560, y: 380 }]) {
     const el = document.createElement('div');
-    el.className = 'bh-crab';          // the pack's 10-frame crab, CSS-stepped
-    el.style.animationDelay = (-Math.random() * 0.9) + 's';
+    el.className = 'bh-crab is-still';   // the pack's 10-frame crab, CSS-stepped
+    el.style.animationDelay = (-Math.random() * 0.75) + 's';
+    el.style.left = pct(home.x, W);
+    el.style.top = pct(home.y, H);
     world.appendChild(el);
-    crabs.push({ el, x: start.x, y: start.y, tx: start.x, ty: start.y, wait: Math.random() * 3 });
+    crabs.push({ el, hx: home.x, hy: home.y, x: home.x, y: home.y,
+                 tx: home.x, ty: home.y, wait: Math.random() * 3,
+                 flee: 0, face: 1, still: true });
+  }
+  function crabPick(c) {
+    // a dart: short, mostly sideways, and always back toward home if it drifted
+    const a = Math.random() * Math.PI * 2;
+    const r = 40 + Math.random() * 70;
+    let tx = c.x + Math.cos(a) * r, ty = c.y + Math.sin(a) * r * 0.5;
+    if (Math.hypot(tx - c.hx, ty - c.hy) > CRAB_HOME_R) { tx = c.hx; ty = c.hy; }
+    if (!blocked(tx, ty)) { c.tx = tx; c.ty = ty; }
   }
   function crabStep(c, dt) {
     const fear = Math.hypot(pos.x - c.x, pos.y - c.y);
-    if (fear < 44) {
-      const ang = Math.atan2(c.y - pos.y, c.x - pos.x) + (Math.random() - 0.5);
-      c.tx = c.x + Math.cos(ang) * 80;
-      c.ty = c.y + Math.sin(ang) * 40;
-      c.wait = 0;
+    if (fear < 60) {                     // bolt away, sideways, for a moment
+      const ang = Math.atan2(c.y - pos.y, c.x - pos.x);
+      c.tx = c.x + Math.cos(ang) * 110;
+      c.ty = c.y + Math.sin(ang) * 55;
+      c.flee = 0.9; c.wait = 0;
     }
-    if (c.wait > 0) { c.wait -= dt; return; }
+    c.flee = Math.max(0, c.flee - dt);
+    if (c.wait > 0) {
+      c.wait -= dt;
+      if (!c.still) { c.still = true; c.el.classList.add('is-still'); }
+      return;                            // legs stop when the crab does
+    }
     const dx = c.tx - c.x, dy = c.ty - c.y;
     const d = Math.hypot(dx, dy);
-    if (d < 2) {
-      c.wait = 1 + Math.random() * 3.5;
-      c.tx = 300 + Math.random() * 2000;
-      c.ty = 330 + Math.random() * 720;
-      if (blocked(c.tx, c.ty)) { c.tx = c.x; c.ty = c.y; }
-      return;
-    }
-    const sp = (fear < 44 ? 105 : 40) * dt;
+    if (d < 3) { c.wait = 1.4 + Math.random() * 4; crabPick(c); return; }
+    if (c.still) { c.still = false; c.el.classList.remove('is-still'); }
+    const sp = (c.flee > 0 ? CRAB_FLEE : CRAB_WANDER) * dt;
     const nx = c.x + (dx / d) * Math.min(d, sp);
     const ny = c.y + (dy / d) * Math.min(d, sp);
-    if (!blocked(nx, ny)) { c.x = nx; c.y = ny; } else { c.tx = c.x; c.ty = c.y; }
+    if (!blocked(nx, ny)) { c.x = nx; c.y = ny; } else { c.wait = 0.5; crabPick(c); return; }
+    if (Math.abs(dx) > 6) c.face = dx < 0 ? -1 : 1;   // don't flutter near dx≈0
     c.el.style.left = pct(c.x, W);
     c.el.style.top = pct(c.y, H);
-    c.el.style.transform = 'translate(-50%,-100%)' + (dx < 0 ? ' scaleX(-1)' : '');
+    c.el.style.transform = 'translate(-50%,-100%)' + (c.face < 0 ? ' scaleX(-1)' : '');
   }
 
   // ---- the loop -----------------------------------------------------------

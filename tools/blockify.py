@@ -128,11 +128,17 @@ def _outline(img, ink=INK):
 
 
 def blockify(img, factor=4, colors=6, alpha_thresh=0.45, sat=1.35, con=1.18,
-             warm=0.0, outline=True):
-    """the whole pipeline — a pack sprite in, a banana-world sprite out"""
-    bbox = img.getbbox()
-    if bbox:
-        img = img.crop(bbox)
+             warm=0.0, outline=True, trim=True):
+    """the whole pipeline — a pack sprite in, a banana-world sprite out.
+
+    ⚠️ trim=False is MANDATORY for ANIMATION FRAMES. Trimming crops each frame
+    to its own bounding box, so a walk cycle (whose silhouette changes every
+    frame as legs move) gets re-centred by a different amount each time and
+    the sprite creeps around inside its own box while playing."""
+    if trim:
+        bbox = img.getbbox()
+        if bbox:
+            img = img.crop(bbox)
     small = _downsample(img, factor, alpha_thresh)
     small = _quantise(small, colors)
     small = _punch(small, sat, con)
