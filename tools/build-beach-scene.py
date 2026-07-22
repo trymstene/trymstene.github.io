@@ -93,11 +93,23 @@ if HAVE_PACK:
     SAND_T = seatile(5, 1)                                  # pure sand
     WATER_T = seatile(1, 1)                                 # open water
     SHORE_T = seatile(1, 0).transpose(Image.FLIP_TOP_BOTTOM)  # water above, sand below
+    # ⚠️ EXACTLY ONE shore row. The old condition (`SHORE_T if y < SHORE_BOT`)
+    # made every row from 240 to 336 a shore tile, so TWO stacked shore tiles
+    # drew two sand edges with water between them — Trym: "doubled sand-edge
+    # with water in the middle, its a mess". A tile row is 48px; pick the row.
+    SHORE_ROW_Y = 240
     for r in range(0, H // T + 1):
         for c in range(0, W // T + 1):
             y = r * T
-            t = WATER_T if y + T <= WATER_BOT else (SHORE_T if y < SHORE_BOT else SAND_T)
+            t = WATER_T if y < SHORE_ROW_Y else (SHORE_T if y == SHORE_ROW_Y else SAND_T)
             im.alpha_composite(t, (c * T, y))
+    # break the straight seam where deep water meets the shore tile: the tile's
+    # water is lighter than the open-sea tile, so the join read as a hard line
+    for y in range(SHORE_ROW_Y - 18, SHORE_ROW_Y):
+        p = (SHORE_ROW_Y - y) / 18.0
+        for x in range(W):
+            if rng.random() > p * 0.85:
+                px[x, y] = im.getpixel((x, SHORE_ROW_Y + 2))
 else:
     rect(0, 0, W, WATER_BOT, (63, 160, 189))
     rect(0, WATER_BOT, W, H, (236, 217, 168))

@@ -44,8 +44,13 @@ const description = 'The beach at the end of the park road. The sun never quite 
       position: absolute; left: -12%; width: 124%;
       pointer-events: none; image-rendering: pixelated;
     }
+    /* ⚠️ the drift overlay stops at the WATER EDGE (y 258 of 1100). It used to
+       run to 28% and washed over the shore tile, which — together with the
+       separate foam strip — stacked THREE shorelines on top of each other.
+       The pack's shore tile already carries its own foam; it is the only
+       water→sand edge now. */
     .bh-sea {
-      top: 0; height: 28%;                        /* the sea band, y 0 → 308 */
+      top: 0; height: 21.4%;                      /* the open water, y 0 → 236 */
       background-image: url('/assets/beach/sea-lines.png');
       background-repeat: repeat;
       background-size: auto 100%;
@@ -225,7 +230,6 @@ const description = 'The beach at the end of the park road. The sun never quite 
       <div class="bh-world" id="bhWorld">
         <div class="bh-sea bh-sea--a" aria-hidden="true"></div>
         <div class="bh-sea bh-sea--b" aria-hidden="true"></div>
-        <div class="bh-foam" aria-hidden="true"></div>
         <div class="bh-ballshadow" id="bhBallShadow"></div>
         <img class="bh-ball" id="bhBall" src="/assets/beach/ball.png" alt="" aria-hidden="true" />
         <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>

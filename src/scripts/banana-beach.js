@@ -115,7 +115,7 @@ function init() {
   }
 
   // ---- geometry (art px) --------------------------------------------------
-  const WATER_Y = 306;                    // above this = sea (pier only)
+  const WATER_Y = 292;                    // above this = sea (pier only)
   const PIER = { x0: 1820, x1: 1960, y0: 60 };
   const PLATFORM = { x0: 1820, x1: 1960, y0: 60, y1: 308 };
   const PIER_MOUTH = { x: 1890, y: 348 };
@@ -352,7 +352,7 @@ function init() {
   const shells = [];
   for (let i = 0; i < SPOTS; i++) {
     const x = 300 + seedRand(DAY * 977 + i * 31) * 2000;
-    const y = 312 + seedRand(DAY * 977 + i * 31 + 1) * 26;
+    const y = 300 + seedRand(DAY * 977 + i * 31 + 1) * 30;
     const id = shellForRoll(seedRand(DAY * 977 + i * 31 + 2));
     const idx = SHELL_IDS.indexOf(id);
     if (claimed.indexOf(i) > -1) { shells.push(null); continue; }
