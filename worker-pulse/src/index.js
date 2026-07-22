@@ -608,7 +608,10 @@ var EV_LABEL = {
   stand_exit_rave:'walked the road back to the club', stand_sign:'read a road sign 🚧',
   beach_join:'arrived at Banana Bay 🏖', beach_ball_kick:'kicked the beach ball ⚽',
   beach_sit:'took a deck chair at the bay', beach_exit_park:'walked the beach road back to the park',
-  stand_exit_beach:'took the park road out to the beach 🏖' };
+  stand_exit_beach:'took the park road out to the beach 🏖',
+  beach_shell:'picked up a shell 🐚', beach_shells_open:'opened their shell collection',
+  beach_shells_complete:'COMPLETED the shell collection 🏆', beach_captain:'met Captain Split 🚢',
+  beach_trade_open:'opened the trading post', beach_trade:'traded duplicates for a new shell' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -692,7 +695,13 @@ var EV_EXPLAIN = {
   beach_ball_kick:'kicked the beach ball — the one-tap toy hooked them (throttled: fires at most every 8s)',
   beach_sit:'lounged in a deck chair at the bay (once per visit) — pure vibes engagement',
   beach_exit_park:'walked the bottom-left beach road back to the park — the return leg',
-  stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door' };
+  stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door',
+  beach_shell:'combed a shell off the tide line (shell = which of the 29; fresh=1 means it was a NEW one for them — the completionist hook firing)',
+  beach_shells_open:'opened the 29-slot shell collection — the visible-gaps screen that drives return visits',
+  beach_shells_complete:'found ALL 29 shells 🏆 — the rarest event on the site, expect roughly never',
+  beach_captain:'walked up to Captain Split at the shipwreck bar (once per approach)',
+  beach_trade_open:'opened the trading post — intent to swap duplicates',
+  beach_trade:'traded 3 duplicate shells for one they were missing (got = which shell). NOTE: pays in SHELLS, never coins — the world keeps exactly one coin faucet' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };

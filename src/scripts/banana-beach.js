@@ -1,91 +1,170 @@
-// 🏖 BANANA BAY — B0 "the postcard" (banana-beach-plan).
-// The world is 760×420 art px, WIDER than the screen: an X-axis camera
-// follows your banana (the new engine seam this area introduces). Solo-first:
-// walk, kick the ball, chase-proof crabs, take a deck chair, watch the sun
-// not set. The presence room (B1) plugs into the same coords later.
-// Movement runs in ART-PX (not %), so speed feels identical on every screen.
+// 🏖 BANANA BAY — B1 "The Resort" (banana-beach-plan).
+// The world is 1400×620 art px with a BOTH-AXIS camera. Three hooks, one of
+// each kind (never three of the same): the FIDGET (volleyball over a real net,
+// ball has height + shadow, rally counter), the COLLECTION (29 shells, tide-
+// seeded daily, visible gaps), the DAILY RITUAL (the tide lays a fresh set
+// every day). Captain Split trades duplicates — never coins, so the world's
+// one coin faucet stays untouched.
+// Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
+import { passStat, passGet } from '../lib/banana-pass.js';
+import { seedRand } from '../lib/world.js';
 
+// ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
+// touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
+// temporal dead zone until their line runs. Calling init() up here throws a
+// silent ReferenceError mid-init — the same TDZ trap that killed the rave
+// floor once. Module consts first, entry point last.
 const view = document.getElementById('bhView');
-if (view) init();
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
+// ---- the collection contract --------------------------------------------
+// ORDER MATCHES tools/build-beach-scene.py's SHELL_IDS → the sprite strip is
+// indexed by position. Never reorder; only append (and bump the strip).
+const SHELL_IDS = [];
+const FAMILIES = ['brown', 'grey', 'white', 'ice', 'pink', 'gold', 'goldblue'];
+const SHAPES = ['spiral', 'fan', 'cone'];
+FAMILIES.forEach((f) => SHAPES.forEach((s) => SHELL_IDS.push(f + '_' + s)));
+['blue', 'green', 'purple', 'yellow'].forEach((c) => {
+  SHELL_IDS.push('star_' + c + '_s');
+  SHELL_IDS.push('star_' + c + '_b');
+});
+const SHELL_W = { brown: 10, grey: 10, white: 9, ice: 6, pink: 6, gold: 2, goldblue: 1 };
+const SHAPE_NAME = { spiral: 'spiral', fan: 'scallop', cone: 'cone' };
+const FAM_NAME = { brown: 'brown', grey: 'grey', white: 'white', ice: 'ice-white', pink: 'pink', gold: 'gold', goldblue: 'blue-gold' };
+function shellName(id) {
+  if (id.indexOf('star_') === 0) {
+    const p = id.split('_');
+    return (p[2] === 'b' ? 'big ' : '') + p[1] + ' starfish';
+  }
+  const p = id.split('_');
+  return FAM_NAME[p[0]] + ' ' + SHAPE_NAME[p[1]];
+}
+// weighted draw table (gold/blue-gold are the grails)
+const SHELL_TABLE = [];
+SHELL_IDS.forEach((id) => {
+  let w;
+  if (id.indexOf('star_') === 0) w = id.endsWith('_b') ? 1.5 : 4;
+  else w = SHELL_W[id.split('_')[0]];
+  SHELL_TABLE.push({ id, w });
+});
+const SHELL_TOTAL_W = SHELL_TABLE.reduce((a, s) => a + s.w, 0);
+function shellForRoll(r) {
+  let acc = 0;
+  const t = r * SHELL_TOTAL_W;
+  for (const s of SHELL_TABLE) { acc += s.w; if (t <= acc) return s.id; }
+  return SHELL_TABLE[0].id;
+}
+
 function init() {
-  const W = 760, H = 420;
+  const W = 1400, H = 620, VIEW_ART_H = 420;
   const world = document.getElementById('bhWorld');
   const meEl = document.getElementById('bhMe');
   const meCtx = document.getElementById('bhMeCv').getContext('2d');
+  const capEl = document.getElementById('bhCap');
+  const capCtx = document.getElementById('bhCapCv').getContext('2d');
+  const capBubble = document.getElementById('bhCapBubble');
   const cutEl = document.getElementById('bhCut');
   const hintEl = document.getElementById('bhHint');
-  const kicksEl = document.getElementById('bhKicks');
+  const rallyEl = document.getElementById('bhRally');
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // your banana, dressed the way you left it
   let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
   try {
     const o = JSON.parse(localStorage.getItem('bb-last') || 'null');
     if (o) myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {} };
   } catch (e) {}
   const ME_DRAW = { ...myOutfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
+  // Captain Split: bucket hat + snorkel, because of course
+  const CAP_DRAW = {
+    hat: 'buckethat', glasses: 'snorkelmask', extras: {},
+    top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+  };
 
-  // ---- camera: the world pans, the banana leads ---------------------------
-  let scale = 1, viewW = 0, camX = 0;
+  const pct = (v, span) => (v / span * 100) + '%';
+
+  // ---- camera: pans BOTH axes, the banana leads ---------------------------
+  let scale = 1, viewW = 0, viewH = 0, camX = 0, camY = 0;
   function layout() {
     const r = view.getBoundingClientRect();
-    scale = r.height / H;
-    viewW = r.width;
+    viewW = r.width; viewH = r.height;
+    scale = viewH / VIEW_ART_H;          // a fixed zoom — NOT fit-to-height
     world.style.width = (W * scale) + 'px';
+    world.style.height = (H * scale) + 'px';
   }
   addEventListener('resize', layout);
   layout();
+  function camTarget() {
+    return {
+      x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), pos.x * scale - viewW / 2)),
+      y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)),
+    };
+  }
   function cam() {
-    const target = Math.max(0, Math.min(W * scale - viewW, pos.x * scale - viewW / 2));
-    camX += (target - camX) * 0.12;
-    world.style.transform = 'translateX(' + (-camX) + 'px)';
+    const t = camTarget();
+    camX += (t.x - camX) * 0.12;
+    camY += (t.y - camY) * 0.12;
+    world.style.transform = 'translate(' + (-camX) + 'px,' + (-camY) + 'px)';
   }
 
-  // ---- spawn: in from the park road, or up from the bottom (cold landing) --
-  const fromPark = /[?&]park(?:=|&|$)/.test(location.search);
-  const pos = fromPark ? { x: 20, y: 392 } : { x: 380, y: 412 };
-  const tgt = fromPark ? { x: 160, y: 356 } : { x: 308, y: 336 };
-  camX = Math.max(0, Math.min(W * scale - viewW, pos.x * scale - viewW / 2));
-  track('beach_join', { via: fromPark ? 'park' : 'direct' });
-
-  // ---- geometry (art px): where feet may go -------------------------------
-  // sand+boardwalk below the waterline; the pier is the one path over water
-  const PIER = { x0: 598, x1: 642, y0: 96 };
-  const PLATFORM = { x0: 578, x1: 662, y0: 90, y1: 134 };
+  // ---- geometry (art px) --------------------------------------------------
+  const WATER_Y = 266;                    // above this = sea (pier only)
+  const PIER = { x0: 1160, x1: 1226, y0: 172 };
+  const PLATFORM = { x0: 1126, x1: 1260, y0: 100, y1: 174 };
+  const PIER_MOUTH = { x: 1193, y: 300 };
+  // NET_H is deliberately LOW: a struck ball clears it, a dribbling one
+  // doesn't. The rally is about hustle (keep reaching it), not precision —
+  // which is the "fidget" hook this area needs, not a skill wall.
+  const NET_X = 582, NET_Y0 = 374, NET_Y1 = 616, NET_H = 18;
+  const BAR = { x: 974, y: 410, r: 74 };  // where the Captain notices you
   const OB_RECTS = [
-    [12, 202, 96, 276],    // radio shack
-    [14, 298, 100, 366],   // kiosk
-    [144, 286, 162, 304],  // palm 1 trunk
-    [514, 304, 532, 322],  // palm 2 trunk
+    [18, 300, 124, 390],      // radio shack
+    [878, 322, 1070, 384],    // the wrecked hull
+    [208, 380, 224, 394],     // palm trunks
+    [340, 458, 356, 472],
+    [812, 288, 828, 302],
+    [1116, 374, 1132, 390],
+    [1324, 458, 1340, 472],
   ];
   const OB_CIRCLES = [
-    [250, 332, 18],        // bonfire ring
-    [452, 336, 7],         // parasol pole
+    [262, 494, 22],           // bonfire ring
+    [975, 456, 9],            // parasol pole
+  ];
+  const OB_ELLIPSES = [
+    [1306, 366, 78, 34],      // the lighthouse headland
   ];
   const CHAIRS = [
-    { rect: [338, 320, 380, 358], seat: { x: 359, y: 342 } },
-    { rect: [390, 338, 432, 376], seat: { x: 411, y: 360 } },
+    { rect: [1092, 424, 1136, 458], seat: { x: 1114, y: 448 } },
+    { rect: [1150, 452, 1194, 486], seat: { x: 1172, y: 476 } },
+    { rect: [158, 460, 202, 494], seat: { x: 180, y: 484 } },
   ];
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   function blocked(x, y) {
-    if (x < 8 || x > 752 || y > 414) return true;
-    if (y < 200) {
+    if (x < 10 || x > 1390 || y > 610) return true;
+    if (y < WATER_Y) {
       const onPier = (x >= PIER.x0 && x <= PIER.x1 && y >= PIER.y0)
         || (x >= PLATFORM.x0 && x <= PLATFORM.x1 && y >= PLATFORM.y0 && y <= PLATFORM.y1);
-      if (!onPier) return true; // bananas famously can't swim
+      if (!onPier) return true;           // bananas famously can't swim
     }
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
-    for (const [cx, cy, cr] of OB_CIRCLES) if (Math.hypot(x - cx, y - cy) < cr) return true;
+    for (const c of OB_CIRCLES) if (Math.hypot(x - c[0], y - c[1]) < c[2]) return true;
+    for (const e of OB_ELLIPSES) {
+      if (((x - e[0]) / e[2]) ** 2 + ((y - e[1]) / e[3]) ** 2 < 1) return true;
+    }
     return false;
   }
 
-  // ---- walking: tap the world / WASD, chairs are sit targets ---------------
-  let seated = null; // the chair you're lounging in
-  const SPEED = 92;  // art px/s (matches the park's stride)
+  // ---- spawn --------------------------------------------------------------
+  const fromPark = /[?&]park(?:=|&|$)/.test(location.search);
+  const pos = fromPark ? { x: 40, y: 566 } : { x: 470, y: 520 };
+  const tgt = fromPark ? { x: 210, y: 520 } : { x: 470, y: 470 };
+  const c0 = camTarget(); camX = c0.x; camY = c0.y;
+  track('beach_join', { via: fromPark ? 'park' : 'direct' });
+
+  // ---- walking ------------------------------------------------------------
+  let seated = null, sitTarget = null, satOnce = false, nextTgt = null;
+  const SPEED = 116;                      // art px/s
   const keys = {};
   addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
@@ -94,28 +173,36 @@ function init() {
     }
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-  let sitTarget = null, satOnce = false, nextTgt = null;
-  // the pier is an L — a straight line into the water dead-ends in its corner,
-  // so any land↔pier walk routes through the pier MOUTH as a waypoint
+  // land↔pier walks route through the pier mouth (the pier is an L — a
+  // straight line into the water dead-ends against its side)
   function setTarget(wx, wy) {
-    const crossing = (pos.y < 198) !== (wy < 198);
-    if (crossing) { nextTgt = { x: wx, y: wy }; tgt.x = 620; tgt.y = 208; }
+    const crossing = (pos.y < WATER_Y + 10) !== (wy < WATER_Y + 10);
+    if (crossing) { nextTgt = { x: wx, y: wy }; tgt.x = PIER_MOUTH.x; tgt.y = PIER_MOUTH.y; }
     else { nextTgt = null; tgt.x = wx; tgt.y = wy; }
   }
   view.addEventListener('click', (e) => {
+    if (e.target.closest('.bh-panel') || e.target.closest('.bh-chip')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
-    const wy = (e.clientY - r.top) / scale;
+    const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
+    // at the bar? tapping the wreck talks to the Captain instead of walking
+    if (inRect(wx, wy, [862, 300, 1090, 412])) {
+      if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openTrade(); return; }
+      seated = null; sitTarget = null;
+      meEl.classList.remove('is-sitting');
+      setTarget(BAR.x, BAR.y);            // too far — walk over first
+      return;
+    }
     seated = null;
     meEl.classList.remove('is-sitting');
     const chair = CHAIRS.find((c) => inRect(wx, wy, c.rect));
-    if (chair) { sitTarget = chair; setTarget(chair.seat.x, chair.seat.y + 8); return; }
+    if (chair) { sitTarget = chair; setTarget(chair.seat.x, chair.seat.y + 10); return; }
     sitTarget = null;
     setTarget(wx, wy);
   });
 
-  // ---- the exit road (bottom-left) back to the park ------------------------
+  // ---- the road home (bottom-left) ---------------------------------------
   let roadArmed = false, leaving = false;
   function exitToPark() {
     if (leaving) return;
@@ -126,45 +213,89 @@ function init() {
     setTimeout(() => { location.href = '/banana-stand/?beach'; }, 170);
   }
 
-  // ---- the beach ball: B0's one-tap toy ------------------------------------
-  const ballEl = document.getElementById('bhBall');
-  const ball = { x: fromPark ? 220 : 330, y: 300, vx: 0, vy: 0 };
-  let kicks = 0, lastKickTrack = 0, kickAnim = 0;
-  function kickFloat(x, y) {
+  function float(x, y, text) {
     const d = document.createElement('div');
-    d.className = 'bh-kickfloat';
-    d.textContent = ['thwock!', 'boing', 'pow!', 'nice'][kicks % 4];
-    d.style.left = (x / W * 100) + '%';
-    d.style.top = (y / H * 100) + '%';
+    d.className = 'bh-float';
+    d.textContent = text;
+    d.style.left = pct(x, W);
+    d.style.top = pct(y, H);
     world.appendChild(d);
-    setTimeout(() => d.remove(), 800);
+    setTimeout(() => d.remove(), 900);
+  }
+
+  // ---- 🏐 THE VOLLEYBALL: the ball has HEIGHT, and the net cares ----------
+  const ballEl = document.getElementById('bhBall');
+  const shadowEl = document.getElementById('bhBallShadow');
+  const ball = { x: 470, y: 470, z: 0, vx: 0, vy: 0, vz: 0 };
+  // a beach ball FLOATS — light gravity and a high pop, so a kick from a
+  // sensible distance clears the net (tuned in testing: at 300 it never did,
+  // which made the court a wall instead of a game). The net still punishes
+  // weak contact and rolling balls, which is where the skill lives.
+  const GRAV = 180;
+  let rally = 0, bestRally = 0, restAt = 0, lastKick = 0, kickTrackAt = 0;
+  try { bestRally = parseInt(localStorage.getItem('bh-rally-best') || '0', 10) || 0; } catch (e) {}
+  function showRally() {
+    rallyEl.textContent = rally > 1 ? ('🏐 ' + rally + (bestRally > 1 ? ' · best ' + bestRally : '')) : '';
   }
   function ballStep(dt, now) {
-    // the kick: walk into it and it flies
-    const d = Math.hypot(pos.x - ball.x, (pos.y - 6) - ball.y);
-    if (d < 18 && now - kickAnim > 350) {
-      const ang = Math.atan2(ball.y - (pos.y - 6), ball.x - pos.x) + (Math.random() - 0.5) * 0.4;
-      const power = 150 + Math.random() * 60;
+    // the kick: walk into it. Kicks from behind the net send it high.
+    const d = Math.hypot(pos.x - ball.x, (pos.y - 8) - ball.y);
+    if (d < 22 && ball.z < 42 && now - lastKick > 320) {
+      const ang = Math.atan2(ball.y - (pos.y - 8), ball.x - pos.x) + (Math.random() - 0.5) * 0.35;
+      const power = 100 + Math.random() * 55;   // a court is 364 wide — keep it in play
       ball.vx = Math.cos(ang) * power;
-      ball.vy = Math.sin(ang) * power * 0.8;
-      kicks++;
-      kickAnim = now;
-      kickFloat(ball.x, ball.y - 10);
-      ballEl.classList.add('is-kicked');
-      setTimeout(() => ballEl.classList.remove('is-kicked'), 140);
-      if (kicksEl) kicksEl.textContent = '⚽ ' + kicks;
-      if (now - lastKickTrack > 8000) { lastKickTrack = now; track('beach_ball_kick'); }
+      ball.vy = Math.sin(ang) * power * 0.72;
+      ball.vz = 140 + Math.random() * 30;
+      lastKick = now;
+      ballEl.animate(
+        [{ transform: 'translate(-50%,-50%) scale(1.35)' }, { transform: 'translate(-50%,-50%) scale(1)' }],
+        { duration: 170, easing: 'ease-out' },
+      );
+      if (now - kickTrackAt > 8000) { kickTrackAt = now; track('beach_ball_kick'); }
     }
+    const px0 = ball.x;
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
-    const damp = Math.pow(0.25, dt);
-    ball.vx *= damp; ball.vy *= damp;
-    if (ball.x < 16) { ball.x = 16; ball.vx = Math.abs(ball.vx) * 0.65; }
-    if (ball.x > 744) { ball.x = 744; ball.vx = -Math.abs(ball.vx) * 0.65; }
-    if (ball.y < 204) { ball.y = 204; ball.vy = Math.abs(ball.vy) * 0.65; }
-    if (ball.y > 408) { ball.y = 408; ball.vy = -Math.abs(ball.vy) * 0.65; }
+    ball.z += ball.vz * dt;
+    ball.vz -= GRAV * dt;
+    if (ball.z <= 0) {                     // landed
+      ball.z = 0;
+      if (ball.vz < -30) ball.vz = -ball.vz * 0.46;
+      else ball.vz = 0;
+      const damp = Math.pow(0.12, dt);     // sand kills roll fast
+      ball.vx *= damp; ball.vy *= damp;
+    }
+    // THE NET: crossing it low bounces you back, crossing it high = a volley
+    const crossed = (px0 - NET_X) * (ball.x - NET_X) < 0;
+    if (crossed && ball.y > NET_Y0 && ball.y < NET_Y1) {
+      if (ball.z < NET_H) {
+        ball.x = px0 < NET_X ? NET_X - 7 : NET_X + 7;
+        ball.vx = -ball.vx * 0.55;
+        rally = 0;
+        showRally();
+        float(ball.x, ball.y - 14, 'net!');
+      } else {
+        rally++;
+        if (rally > bestRally) {
+          bestRally = rally;
+          try { localStorage.setItem('bh-rally-best', String(bestRally)); } catch (e) {}
+        }
+        showRally();
+        if (rally === 5 || rally === 10 || rally === 25) float(ball.x, ball.y - 16, 'rally ' + rally + '!');
+        passStat('bh_volley', 1);
+      }
+    }
+    // the sand's edges (and the sea, which says no)
+    // the road corner is fenced off: a ball resting there drags you out of
+    // the world while you chase it (found in testing — an exit should be a
+    // decision, never an accident)
+    if (ball.y > 520 && ball.x < 108) { ball.x = 108; ball.vx = Math.abs(ball.vx) * 0.6; }
+    if (ball.x < 24) { ball.x = 24; ball.vx = Math.abs(ball.vx) * 0.6; }
+    if (ball.x > 1376) { ball.x = 1376; ball.vx = -Math.abs(ball.vx) * 0.6; }
+    if (ball.y < 302) { ball.y = 302; ball.vy = Math.abs(ball.vy) * 0.6; }
+    if (ball.y > 604) { ball.y = 604; ball.vy = -Math.abs(ball.vy) * 0.6; }
     for (const r of OB_RECTS) {
-      if (inRect(ball.x, ball.y, r)) {
+      if (ball.z < 40 && inRect(ball.x, ball.y, r)) {
         const dl = ball.x - r[0], dr = r[2] - ball.x, dtp = ball.y - r[1], db = r[3] - ball.y;
         const m = Math.min(dl, dr, dtp, db);
         if (m === dl) { ball.x = r[0]; ball.vx = -Math.abs(ball.vx) * 0.6; }
@@ -173,13 +304,178 @@ function init() {
         else { ball.y = r[3]; ball.vy = Math.abs(ball.vy) * 0.6; }
       }
     }
-    ballEl.style.left = (ball.x / W * 100) + '%';
-    ballEl.style.top = (ball.y / H * 100) + '%';
+    // a rally dies when the ball comes to rest
+    const speed = Math.hypot(ball.vx, ball.vy);
+    if (speed < 8 && ball.z === 0) {
+      if (!restAt) restAt = now;
+      // 3s, not 1.5: a banana crossing the court takes ~2.5s, and a rally
+      // that dies while you're still sprinting for the ball feels unfair
+      else if (now - restAt > 3000 && rally) { rally = 0; showRally(); }
+    } else restAt = 0;
+
+    ballEl.style.left = pct(ball.x, W);
+    ballEl.style.top = pct(ball.y - ball.z, H);
+    shadowEl.style.left = pct(ball.x, W);
+    shadowEl.style.top = pct(ball.y + 3, H);
+    const s = Math.max(0.35, 1 - ball.z / 150);
+    shadowEl.style.opacity = String(0.1 + s * 0.28);
+    shadowEl.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
   }
 
-  // ---- crabs: two locals who want NOTHING to do with you -------------------
+  // ---- 🐚 THE SHELLS: the tide lays a fresh set every day -----------------
+  const stats = () => passGet().stats || {};
+  const held = (id) => Math.max(0, (stats()['sh_' + id] || 0) - (stats()['shx_' + id] || 0));
+  const haveCount = () => SHELL_IDS.filter((id) => held(id) > 0).length;
+  const dupeCount = () => SHELL_IDS.reduce((a, id) => a + Math.max(0, held(id) - 1), 0);
+  const missingIds = () => SHELL_IDS.filter((id) => held(id) === 0);
+  const DAY = Math.floor(Date.now() / 86400000);
+  const SPOTS = 16;
+  let claimed = [];
+  try {
+    const st = JSON.parse(localStorage.getItem('bh-shells-v1') || 'null');
+    if (st && st.day === DAY && Array.isArray(st.claimed)) claimed = st.claimed;
+  } catch (e) {}
+  function saveClaimed() {
+    try { localStorage.setItem('bh-shells-v1', JSON.stringify({ day: DAY, claimed })); } catch (e) {}
+  }
+  const shells = [];
+  for (let i = 0; i < SPOTS; i++) {
+    const x = 180 + seedRand(DAY * 977 + i * 31) * 1150;
+    const y = 270 + seedRand(DAY * 977 + i * 31 + 1) * 16;
+    const id = shellForRoll(seedRand(DAY * 977 + i * 31 + 2));
+    const idx = SHELL_IDS.indexOf(id);
+    if (claimed.indexOf(i) > -1) { shells.push(null); continue; }
+    const el = document.createElement('div');
+    el.className = 'bh-shell';
+    el.style.left = pct(x, W);
+    el.style.top = pct(y, H);
+    el.style.backgroundPosition = (idx / (SHELL_IDS.length - 1) * 100) + '% 0';
+    el.style.animationDelay = (i * 0.21) + 's';
+    world.appendChild(el);
+    shells.push({ el, x, y, id, i });
+  }
+  const shellChip = document.getElementById('bhShellChip');
+  const shellCountEl = document.getElementById('bhShellCount');
+  function refreshShellChip() { shellCountEl.textContent = haveCount() + '/' + SHELL_IDS.length; }
+  refreshShellChip();
+  function shellTick() {
+    for (let i = 0; i < shells.length; i++) {
+      const s = shells[i];
+      if (!s) continue;
+      if (Math.hypot(pos.x - s.x, (pos.y - 6) - s.y) < 20) {
+        const isNew = held(s.id) === 0;
+        passStat('sh_' + s.id, 1);
+        claimed.push(s.i);
+        saveClaimed();
+        s.el.remove();
+        shells[i] = null;
+        refreshShellChip();
+        float(s.x, s.y - 8, (isNew ? '★ NEW — ' : '+ ') + shellName(s.id));
+        track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0 });
+        if (isNew && haveCount() === SHELL_IDS.length) {
+          say('you found every last one. the sea has nothing left to hide from you.', 6000);
+          track('beach_shells_complete');
+        }
+      }
+    }
+  }
+
+  // the collection panel
+  const shellPanel = document.getElementById('bhShellPanel');
+  const shellGrid = document.getElementById('bhShellGrid');
+  const shellSub = document.getElementById('bhShellSub');
+  function slotHTML(id) {
+    const n = held(id);
+    const idx = SHELL_IDS.indexOf(id);
+    return '<div class="bh-slot' + (n ? '' : ' is-missing') + '" title="' + shellName(id) + '">'
+      + '<i style="background-position:' + (idx / (SHELL_IDS.length - 1) * 100) + '% 0"></i>'
+      + (n > 1 ? '<b>' + n + '</b>' : '') + '</div>';
+  }
+  function renderGrid(el) { el.innerHTML = SHELL_IDS.map(slotHTML).join(''); }
+  function openShells() {
+    renderGrid(shellGrid);
+    const left = shells.filter(Boolean).length;
+    shellSub.textContent = haveCount() + ' of ' + SHELL_IDS.length + ' found · '
+      + (left ? left + ' still out on the sand today' : 'today’s tide is picked clean — more tomorrow');
+    shellPanel.hidden = false;
+    track('beach_shells_open');
+  }
+  shellChip.addEventListener('click', (e) => { e.stopPropagation(); openShells(); });
+  document.getElementById('bhShellClose').addEventListener('click', () => { shellPanel.hidden = true; });
+
+  // ---- 🚢 CAPTAIN SPLIT ---------------------------------------------------
+  const CAP_LINES = [
+    'ahoy. mind the net, it’s undefeated.',
+    'i ran a ship once. now i run a bar. the ship is the bar.',
+    'tide brings shells in at dawn. every dawn. it’s very reliable, the tide.',
+    'got three of the same shell? i’ll swap you something you ain’t got.',
+    'no, we don’t take coins. what would a shipwreck do with coins.',
+    'the lighthouse still works. nobody knows who turns it on.',
+    'that gold shell? seen two in my life. one of ’em i lost betting.',
+  ];
+  let capTimer = null, capIdx = 0, capGreeted = false;
+  function say(text, ms) {
+    capBubble.textContent = text;
+    capBubble.classList.add('is-on');
+    clearTimeout(capTimer);
+    capTimer = setTimeout(() => capBubble.classList.remove('is-on'), ms || 4200);
+  }
+  function capTick(now) {
+    const near = Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r;
+    if (near && !capGreeted) {
+      capGreeted = true;
+      const n = dupeCount();
+      say(n >= 3
+        ? 'ahoy! ' + n + ' spare shells in that pocket. i can work with that.'
+        : CAP_LINES[capIdx++ % CAP_LINES.length]);
+      track('beach_captain');
+    } else if (!near && capGreeted && Math.hypot(pos.x - BAR.x, pos.y - BAR.y) > BAR.r + 40) {
+      capGreeted = false;                 // re-greets next time you wander back
+    }
+  }
+  // tapping the bar (or standing at it and tapping the Captain) opens trading
+  const tradePanel = document.getElementById('bhTradePanel');
+  const tradeGrid = document.getElementById('bhTradeGrid');
+  const tradeSay = document.getElementById('bhTradeSay');
+  const tradeDo = document.getElementById('bhTradeDo');
+  function refreshTrade() {
+    renderGrid(tradeGrid);
+    const d = dupeCount(), m = missingIds().length;
+    tradeDo.disabled = !(d >= 3 && m > 0);
+    tradeDo.textContent = m === 0
+      ? 'nothing left to want'
+      : (d >= 3 ? 'trade 3 duplicates → 1 new shell' : 'you need ' + (3 - d) + ' more duplicates');
+    tradeSay.textContent = m === 0
+      ? '"you’ve got the lot. i’ve nothing to sell a finished collector."'
+      : '"three you’ve got spare, one you ain’t got. that’s the deal. i don’t do money."';
+  }
+  function openTrade() {
+    refreshTrade();
+    tradePanel.hidden = false;
+    track('beach_trade_open');
+  }
+  tradeDo.addEventListener('click', () => {
+    const spares = SHELL_IDS.filter((id) => held(id) > 1)
+      .sort((a, b) => held(b) - held(a));
+    if (dupeCount() < 3) return;
+    let need = 3;
+    for (const id of spares) {
+      while (need > 0 && held(id) > 1) { passStat('shx_' + id, 1); need--; }
+      if (!need) break;
+    }
+    const miss = missingIds();
+    const got = miss[Math.floor(Math.random() * miss.length)];
+    passStat('sh_' + got, 1);
+    refreshShellChip();
+    refreshTrade();
+    tradeSay.textContent = '"there she is — a ' + shellName(got) + '. pleasure doing business."';
+    track('beach_trade', { got });
+  });
+  document.getElementById('bhTradeClose').addEventListener('click', () => { tradePanel.hidden = true; });
+
+  // ---- 🦀 crabs: locals who want NOTHING to do with you -------------------
   const crabs = [];
-  for (const start of [{ x: 300, y: 250 }, { x: 560, y: 380 }]) {
+  for (const start of [{ x: 420, y: 330 }, { x: 760, y: 560 }, { x: 1160, y: 420 }]) {
     const el = document.createElement('div');
     el.className = 'bh-crab';
     el.innerHTML = '<img src="/assets/beach/crab.png" alt="" aria-hidden="true">';
@@ -188,10 +484,10 @@ function init() {
   }
   function crabStep(c, dt) {
     const fear = Math.hypot(pos.x - c.x, pos.y - c.y);
-    if (fear < 34) { // scurry AWAY, sideways-ish, like a proper crab
+    if (fear < 44) {
       const ang = Math.atan2(c.y - pos.y, c.x - pos.x) + (Math.random() - 0.5);
-      c.tx = c.x + Math.cos(ang) * 60;
-      c.ty = c.y + Math.sin(ang) * 30;
+      c.tx = c.x + Math.cos(ang) * 80;
+      c.ty = c.y + Math.sin(ang) * 40;
       c.wait = 0;
     }
     if (c.wait > 0) { c.wait -= dt; return; }
@@ -199,29 +495,30 @@ function init() {
     const d = Math.hypot(dx, dy);
     if (d < 2) {
       c.wait = 1 + Math.random() * 3.5;
-      c.tx = 130 + Math.random() * 600;
-      c.ty = 210 + Math.random() * 195;
+      c.tx = 180 + Math.random() * 1100;
+      c.ty = 300 + Math.random() * 290;
       if (blocked(c.tx, c.ty)) { c.tx = c.x; c.ty = c.y; }
       return;
     }
-    const sp = (fear < 34 ? 85 : 34) * dt;
+    const sp = (fear < 44 ? 105 : 40) * dt;
     const nx = c.x + (dx / d) * Math.min(d, sp);
     const ny = c.y + (dy / d) * Math.min(d, sp);
     if (!blocked(nx, ny)) { c.x = nx; c.y = ny; } else { c.tx = c.x; c.ty = c.y; }
-    c.el.style.left = (c.x / W * 100) + '%';
-    c.el.style.top = (c.y / H * 100) + '%';
+    c.el.style.left = pct(c.x, W);
+    c.el.style.top = pct(c.y, H);
     c.el.querySelector('img').style.transform = dx < 0 ? 'scaleX(-1)' : '';
   }
 
-  // ---- the walk loop -------------------------------------------------------
+  // ---- the loop -----------------------------------------------------------
   let last = performance.now();
   function step(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
     if (kx || ky) {
-      tgt.x = pos.x + kx * 22; tgt.y = pos.y + ky * 22;
-      hint(false); seated = null; sitTarget = null; meEl.classList.remove('is-sitting');
+      tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30;
+      hint(false); seated = null; sitTarget = null; nextTgt = null;
+      meEl.classList.remove('is-sitting');
     }
     if (!seated) {
       const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
@@ -230,11 +527,10 @@ function init() {
         const m = Math.min(d, SPEED * dt);
         const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
         if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
-        else if (!blocked(nx, pos.y)) pos.x = nx;   // slide along edges
+        else if (!blocked(nx, pos.y)) pos.x = nx;
         else if (!blocked(pos.x, ny)) pos.y = ny;
         else {
-          // round obstacles (the bonfire): try stepping perpendicular, pick
-          // whichever side is open — walks AROUND instead of parking
+          // round obstacles: step perpendicular, whichever side is open
           const p1x = pos.x + (dy / d) * m, p1y = pos.y - (dx / d) * m;
           const p2x = pos.x - (dy / d) * m, p2y = pos.y + (dx / d) * m;
           if (!blocked(p1x, p1y)) { pos.x = p1x; pos.y = p1y; }
@@ -242,29 +538,29 @@ function init() {
           else { tgt.x = pos.x; tgt.y = pos.y; }
         }
       } else if (nextTgt) {
-        tgt.x = nextTgt.x; tgt.y = nextTgt.y; nextTgt = null; // waypoint cleared
+        tgt.x = nextTgt.x; tgt.y = nextTgt.y; nextTgt = null;
       } else if (sitTarget) {
-        seated = sitTarget;
-        sitTarget = null;
+        seated = sitTarget; sitTarget = null;
         pos.x = seated.seat.x; pos.y = seated.seat.y;
         meEl.classList.add('is-sitting');
         if (!satOnce) { satOnce = true; track('beach_sit'); }
       }
-      pos.y = Math.max(94, Math.min(414, pos.y));
-      pos.x = Math.max(8, Math.min(752, pos.x));
-      meEl.style.left = (pos.x / W * 100) + '%';
-      meEl.style.top = (pos.y / H * 100) + '%';
-      // the road home: bottom-left, armed once you're properly in
-      if (pos.x > 70) roadArmed = true;
-      if (roadArmed && pos.x < 24 && pos.y > 372) exitToPark();
+      pos.x = Math.max(10, Math.min(1390, pos.x));
+      pos.y = Math.max(104, Math.min(610, pos.y));
+      meEl.style.left = pct(pos.x, W);
+      meEl.style.top = pct(pos.y, H);
+      if (pos.x > 130) roadArmed = true;
+      if (roadArmed && pos.x < 24 && pos.y > 568) exitToPark();
     }
     ballStep(dt, now);
+    shellTick();
+    capTick(now);
     crabs.forEach((c) => crabStep(c, dt));
     cam();
     requestAnimationFrame(step);
   }
 
-  // dancing on the world beat, like everywhere in Banana World
+  // everyone in Banana World dances on the same wall clock
   const frameNow = () => {
     const cyc = BASE_CYCLE_S * 1000;
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
@@ -276,12 +572,29 @@ function init() {
     lastF = f;
     drawComposite(meCtx, 150, f, ME_DRAW);
   }
+  function drawCap() { drawComposite(capCtx, 150, 3, CAP_DRAW); }  // he stands still, like a barman does
   function hint(on) { if (hintEl) hintEl.classList.toggle('is-off', !on); }
 
+  // the Captain and his bubble sit at the bar, in world coords
+  capEl.style.left = pct(974, W);
+  capEl.style.top = pct(356, H);
+  capBubble.style.left = pct(974, W);
+  capBubble.style.top = pct(300, H);
+
+  // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
+  // and place the ball or the banana without playing your way there
+  if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
+    window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally };
+  }
+
   assetsReady().then(() => {
-    drawMe();
-    setTimeout(() => { lastF = -1; drawMe(); }, 600); // redraw belt: async accessory decodes
+    drawMe(); drawCap();
+    setTimeout(() => { lastF = -1; drawMe(); drawCap(); }, 700);   // redraw belt: accessories decode async
+    setTimeout(() => { lastF = -1; drawMe(); drawCap(); }, 1800);
     setInterval(() => { if (!document.hidden) drawMe(); }, 120);
     requestAnimationFrame((t) => { last = t; step(t); });
   });
 }
+
+// the entry point, AFTER every module const above it (see the TDZ note up top)
+if (view) init();

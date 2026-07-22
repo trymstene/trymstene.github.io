@@ -1,10 +1,10 @@
 ---
-// 🏖 BANANA BAY — the beach (banana-beach-plan, B0 "the postcard").
-// STANDALONE-FIRST: lands cold, hooks solo, gets better with company later
-// (B1 adds the presence room). Noindexed, absent from the sitemap allowlist —
-// the park's right road is the front door.
-// The new engine trick: the world (760×420 art) is WIDER than the screen and
-// an X-axis camera follows your banana — the pier is discovered, not listed.
+// 🏖 BANANA BAY — the beach (banana-beach-plan).
+// B1 "THE RESORT": the bay is 1400×620 with a BOTH-AXIS camera, a volleyball
+// court (the fidget), the 29-shell collection (the completionist itch, tide-
+// seeded daily) and Captain Split's shipwreck bar (dupe trading + personality).
+// STANDALONE-FIRST: everything here is solo-playable; multiplayer (B2) only
+// amplifies it. Noindexed — the park's right road is the front door.
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const title = 'Banana Bay';
@@ -15,7 +15,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
   <link rel="preload" as="image" href="/assets/beach/beach.png" slot="head" />
   <style is:inline slot="head">
     body { background: #180f22; }
-    .bh-wrap { max-width: 860px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }
+    .bh-wrap { max-width: 1000px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }
     .bh-sign {
       font-family: "Archivo Black", sans-serif; text-align: center;
       color: #ffb347; font-size: clamp(1.4rem, 6.4vw, 2.2rem); line-height: 1.05;
@@ -24,68 +24,135 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     .bh-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
 
-    /* the VIEWPORT: a window onto the wider world; the camera pans the world */
+    /* the VIEWPORT: a window onto a world bigger than it, both axes */
     .bh-view {
-      position: relative; height: min(72vh, 560px); overflow: hidden;
+      position: relative; height: min(74vh, 580px); overflow: hidden;
       border: 4px solid #000; box-shadow: 8px 8px 0 #000; cursor: pointer;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       background: #5c2a52;
     }
     .bh-world {
-      position: absolute; left: 0; top: 0; height: 100%;
+      position: absolute; left: 0; top: 0;
       background: url('/assets/beach/beach.png') 0 0 / 100% 100% no-repeat;
       image-rendering: pixelated; will-change: transform;
     }
-    /* sprites live in the world and size in % OF the world → camera-safe */
-    .bh-me { position: absolute; z-index: 3; width: 7.4%; transform: translate(-50%, -100%); pointer-events: none; }
+    /* sprites live IN the world and size in % of it → camera-safe */
+    .bh-me { position: absolute; z-index: 6; width: 4%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
+    /* Captain Split behind his counter */
+    .bh-cap { position: absolute; z-index: 3; width: 5.2%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-cap canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .bh-capbubble {
+      position: absolute; z-index: 8; transform: translate(-50%, -100%);
+      width: max-content; max-width: 210px;
+      background: #fffdf5; color: #111; border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000; padding: 0.3rem 0.55rem; font-size: 0.76rem;
+      font-weight: 700; opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .bh-capbubble.is-on { opacity: 1; }
+    .bh-capbubble::after {
+      content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -5px;
+      border: 5px solid transparent; border-top-color: #000;
+    }
     .bh-ball {
-      position: absolute; z-index: 2; width: 2.4%;
+      position: absolute; z-index: 5; width: 1.3%;
+      transform: translate(-50%, -50%); pointer-events: none; image-rendering: pixelated;
+    }
+    .bh-ballshadow {
+      position: absolute; z-index: 4; width: 1.3%; aspect-ratio: 2 / 1;
       transform: translate(-50%, -50%); pointer-events: none;
-      image-rendering: pixelated;
-      filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.25));
-      transition: scale 0.12s ease;
+      background: rgba(0, 0, 0, 0.22); border-radius: 50%;
     }
-    .bh-ball.is-kicked { scale: 1.25; }
-    .bh-crab {
-      position: absolute; z-index: 2; width: 2%;
-      transform: translate(-50%, -100%); pointer-events: none; image-rendering: pixelated;
-    }
+    .bh-crab { position: absolute; z-index: 4; width: 1.07%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-crab img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
-    .bh-kickfloat {
-      position: absolute; transform: translate(-50%, -50%); z-index: 5; pointer-events: none;
-      font-family: "Archivo Black", sans-serif; font-size: 0.9rem; color: #ffb347;
-      text-shadow: 2px 2px 0 #000; animation: bhFloat 0.8s ease-out forwards;
+    /* 🐚 shells waiting on the wet sand */
+    .bh-shell {
+      position: absolute; z-index: 3; width: 1.15%; aspect-ratio: 1;
+      transform: translate(-50%, -50%); pointer-events: none;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2900% 100%; background-repeat: no-repeat;
+      image-rendering: pixelated;
+      animation: bhShellGlint 2.6s ease-in-out infinite;
     }
-    @keyframes bhFloat { to { transform: translate(-50%, calc(-50% - 30px)); opacity: 0; } }
+    @keyframes bhShellGlint { 0%, 100% { filter: none; } 50% { filter: brightness(1.22); } }
+    .bh-float {
+      position: absolute; transform: translate(-50%, -50%); z-index: 9; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffb347;
+      text-shadow: 2px 2px 0 #000; white-space: nowrap;
+      animation: bhFloat 0.9s ease-out forwards;
+    }
+    @keyframes bhFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
     .bh-hint {
-      position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); z-index: 4;
+      position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); z-index: 7;
       background: rgba(0, 0, 0, 0.55); border: 2px solid #000; color: #fffdf5;
       font-size: 0.78rem; padding: 0.3rem 0.65rem; pointer-events: none; white-space: nowrap;
       transition: opacity 0.4s ease;
     }
     .bh-hint.is-off { opacity: 0; }
-    .bh-hud {
-      position: absolute; top: 8px; right: 8px; z-index: 5;
-      background: rgba(0, 0, 0, 0.55); border: 2px solid #000;
-      padding: 0.2rem 0.5rem; font-weight: 800; font-size: 0.85rem; color: #ffb347;
+    /* HUD: rally + shell count (the shell chip opens the collection) */
+    .bh-hud { position: absolute; top: 8px; right: 8px; z-index: 9; display: flex; gap: 0.4rem; }
+    .bh-chip {
+      appearance: none; font: inherit; background: rgba(0, 0, 0, 0.58); border: 2px solid #000;
+      padding: 0.2rem 0.5rem; font-weight: 800; font-size: 0.82rem; color: #ffb347;
+      cursor: pointer; display: flex; align-items: center; gap: 0.3rem;
     }
-    .bh-hud:empty { display: none; }
-    .bh-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    .bh-chip:active { transform: translate(1px, 1px); }
+    .bh-chip--rally { color: #fffdf5; cursor: default; }
+    .bh-chip--rally:empty { display: none; }
+    /* panels: the collection grid + the Captain's trade desk */
+    .bh-panel {
+      position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
+      background: rgba(0, 0, 0, 0.55); padding: 0.8rem;
+    }
+    .bh-panel[hidden] { display: none; }
+    .bh-card {
+      background: #17121f; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      padding: 0.9rem 1rem; max-width: 460px; width: 100%; max-height: 100%; overflow: auto;
+    }
+    .bh-card h2 {
+      font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem;
+      margin: 0 0 0.15rem; letter-spacing: 0.03em;
+    }
+    .bh-card p { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
+    .bh-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin-bottom: 0.8rem;
+    }
+    @media (min-width: 520px) { .bh-grid { grid-template-columns: repeat(8, 1fr); } }
+    .bh-slot {
+      position: relative; aspect-ratio: 1; border: 2px solid #000; background: #241d33;
+      display: grid; place-items: center;
+    }
+    .bh-slot i {
+      display: block; width: 78%; aspect-ratio: 1;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2900% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .bh-slot.is-missing i { filter: brightness(0) opacity(0.28); }
+    .bh-slot b {
+      position: absolute; right: -3px; bottom: -5px; font-size: 0.55rem; font-weight: 800;
+      background: #ffb347; color: #241505; border: 2px solid #000; padding: 0 0.15rem;
+    }
     .bh-btn {
-      flex: 1 1 160px; display: grid; place-items: center; text-align: center;
-      border: 3px solid #000; background: #17121f; color: #fffdf5; font-weight: 800;
-      box-shadow: 5px 5px 0 #000; padding: 0.8rem; text-decoration: none;
-      font-family: inherit; font-size: 1rem; cursor: pointer;
+      display: grid; place-items: center; text-align: center; width: 100%;
+      border: 3px solid #000; background: #ffb347; color: #241505; font-weight: 800;
+      box-shadow: 4px 4px 0 #000; padding: 0.6rem; text-decoration: none;
+      font-family: inherit; font-size: 0.9rem; cursor: pointer; margin-top: 0.4rem;
     }
-    .bh-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+    .bh-btn--dark { background: #17121f; color: #fffdf5; }
+    .bh-btn[disabled] { opacity: 0.45; cursor: not-allowed; box-shadow: 2px 2px 0 #000; }
+    .bh-btn:not([disabled]):active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+    .bh-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    .bh-foot .bh-btn { flex: 1 1 160px; width: auto; margin-top: 0; }
     .bh-cut {
       position: fixed; inset: 0; background: #000; z-index: 60; pointer-events: none;
       opacity: 0; transition: opacity 0.12s steps(2);
     }
     .bh-cut.is-on { opacity: 1; }
-    @media (prefers-reduced-motion: reduce) { .bh-cut { transition: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-cut { transition: none; }
+      .bh-shell { animation: none; }
+    }
   </style>
 
   <div class="bh-wrap">
@@ -94,11 +161,36 @@ const description = 'The beach at the end of the park road. The sun never quite 
 
     <div class="bh-view" id="bhView">
       <div class="bh-world" id="bhWorld">
+        <div class="bh-ballshadow" id="bhBallShadow"></div>
         <img class="bh-ball" id="bhBall" src="/assets/beach/ball.png" alt="" aria-hidden="true" />
+        <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        <div class="bh-capbubble" id="bhCapBubble" role="status" aria-live="polite"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
       </div>
-      <div class="bh-hud" id="bhKicks"></div>
-      <div class="bh-hint" id="bhHint">tap the sand to walk — kick the ball, take a chair</div>
+      <div class="bh-hud">
+        <span class="bh-chip bh-chip--rally" id="bhRally"></span>
+        <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
+      </div>
+      <div class="bh-hint" id="bhHint">tap the sand to walk — kick the ball, comb the shoreline for shells</div>
+
+      <div class="bh-panel" id="bhShellPanel" hidden>
+        <div class="bh-card" role="dialog" aria-label="Shell collection">
+          <h2>your shells</h2>
+          <p id="bhShellSub">washed up on the tide. the beach lays out a fresh set every day.</p>
+          <div class="bh-grid" id="bhShellGrid"></div>
+          <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
+        </div>
+      </div>
+
+      <div class="bh-panel" id="bhTradePanel" hidden>
+        <div class="bh-card" role="dialog" aria-label="Captain Split's trading post">
+          <h2>captain split's trading post</h2>
+          <p id="bhTradeSay">"three you've got spare, one you ain't got. that's the deal. i don't do money."</p>
+          <div class="bh-grid" id="bhTradeGrid"></div>
+          <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
+          <button class="bh-btn bh-btn--dark" id="bhTradeClose" type="button">leave the bar</button>
+        </div>
+      </div>
     </div>
     <div class="bh-foot">
       <a class="bh-btn" href="/banana-stand/?beach" data-place="beach">🌳 back to the park</a>
