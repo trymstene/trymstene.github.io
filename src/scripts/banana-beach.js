@@ -134,6 +134,24 @@ function init() {
   // left→right, which is also how LimeZu's own beach screenshot uses them),
   // so the ball crosses it on the Y axis, not X.
   const NET_Y = NET.y, NET_X0 = NET.x0, NET_X1 = NET.x1, NET_H = 18;
+
+  // ---- 🥅 the net's own layer, so things can pass BEHIND it ---------------
+  // The net stands on NET.y but is DRAWN rising ~138px up the screen. While it
+  // lived only in the background plate it could only ever draw behind the
+  // banana, so you walked visibly through the mesh and then stopped dead at an
+  // invisible line 75px lower (Trym drew exactly that on a screenshot). Depth
+  // sorting is what makes a top-down wall read as a wall.
+  // ⚠️ Below `pct`, never above it — a const used before its line is in the
+  // temporal dead zone and throws a silent ReferenceError mid-init.
+  const netEl = document.getElementById('bhNet');
+  if (netEl) {
+    netEl.style.left = pct(NET.spriteX, W);
+    netEl.style.top = pct(NET.spriteY, H);
+    netEl.style.width = pct(NET.spriteW, W);
+    netEl.style.height = pct(NET.spriteH, H);
+  }
+  // feet past the net line → in FRONT of the net (z 6); otherwise behind (z 4)
+  const depth = (el, y) => { el.style.zIndex = y >= NET.y ? '6' : '4'; };
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   function blocked(x, y) {
     if (x < 12 || x > WORLD.w - 12 || y > WORLD.h - 12) return true;
@@ -343,6 +361,7 @@ function init() {
     ballEl.style.backgroundPositionX = (fr * (100 / (BALL_FRAMES - 1))) + '%';
     ballEl.style.left = pct(ball.x, W);
     ballEl.style.top = pct(ball.y - ball.z, H);
+    depth(ballEl, ball.y);         // a ball in the far half passes behind the net
     shadowEl.style.left = pct(ball.x, W);
     shadowEl.style.top = pct(ball.y + 3, H);
     const s = Math.max(0.35, 1 - ball.z / 150);
@@ -603,6 +622,7 @@ function init() {
       pos.y = Math.max(64, Math.min(H - 12, pos.y));
       meEl.style.left = pct(pos.x, W);
       meEl.style.top = pct(pos.y, H);
+      depth(meEl, pos.y);            // behind the net when your feet are past it
       if (pos.x > 300) roadArmed = true;
       if (roadArmed && pos.x < 40 && pos.y > 1040) exitToPark();
     }

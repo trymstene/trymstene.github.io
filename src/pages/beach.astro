@@ -63,6 +63,22 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-sea--3 { background-image: url('/assets/beach/sea-f3.png'); animation-delay: -0.54s; }
     @keyframes bhSeaFlip { 0%, 24.99% { opacity: 1; } 25%, 100% { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .bh-sea { display: none; } }
+    /* 🥅 THE NET, ON ITS OWN LAYER so things can pass BEHIND it.
+       The net is a wall standing on the sand at NET.y but drawn rising ~138px
+       up the screen, so its mesh is nowhere near the line you collide with.
+       Baked only into the background plate it could only ever draw behind the
+       banana — you appeared to walk clean through the net and then stop dead
+       at nothing. Now the banana and ball flip between z 4 and 6 around this
+       layer's z 5, which is what makes a top-down wall read as a wall.
+       Position/size come from the generated beach-geo.js, set in JS.
+       ⭐ The 0.72 is a free trick, not a compromise: the SAME net is still
+       baked into the background plate underneath, so where nothing is between
+       them the two stack to a fully solid net — but a banana standing behind
+       shows faintly THROUGH the mesh, which is what a real volleyball net
+       does. Without it you lose sight of your own banana at the net. */
+    .bh-net { position: absolute; z-index: 5; pointer-events: none; opacity: 0.72;
+      image-rendering: pixelated; background-image: url('/assets/beach/net.png');
+      background-size: 100% 100%; background-repeat: no-repeat; }
     /* sprites live IN the world and size in % of it → camera-safe */
     /* sizes are % OF THE WORLD (2400×1100) so sprites ride the camera free.
        The banana runs ~86 art px (3.6%) — deliberately BIGGER than the pack's
@@ -251,6 +267,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-sea bh-sea--1" aria-hidden="true"></div>
         <div class="bh-sea bh-sea--2" aria-hidden="true"></div>
         <div class="bh-sea bh-sea--3" aria-hidden="true"></div>
+        <div class="bh-net" id="bhNet" aria-hidden="true"></div>
         <div class="bh-ballshadow" id="bhBallShadow"></div>
         <div class="bh-ball" id="bhBall" aria-hidden="true"></div>
         <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>

@@ -16,7 +16,11 @@ export const PIER = { x0: 1820, x1: 1960, y0: 60 };
 export const PLATFORM = { x0: 1820, x1: 1960, y0: 60, y1: 308 };
 export const PIER_MOUTH = { x: 1890, y: 348 };
 export const COURT = { x0: 690, y0: 532, x1: 1170, y1: 1012 };
-export const NET = { y: 844, x0: 666, x1: 1194 };
+// NET.y is the line the net STANDS on — what you collide with and what the
+// ball must clear. sprite* is where net.png is drawn: it rises ~138px ABOVE
+// that line, which is why the page must depth-sort against it.
+export const NET = { y: 844, x0: 666, x1: 1194,
+  spriteX: 665, spriteY: 705, spriteW: 530, spriteH: 146 };
 export const BAR = { x: 1700, y: 760, r: 104 };
 
 export const OB_RECTS = [

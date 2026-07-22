@@ -250,6 +250,7 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
 _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
 COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
+NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 
 
 
@@ -348,7 +349,11 @@ export const PIER = { x0: %d, x1: %d, y0: %d };
 export const PLATFORM = { x0: %d, x1: %d, y0: %d, y1: %d };
 export const PIER_MOUTH = { x: %d, y: %d };
 export const COURT = { x0: %d, y0: %d, x1: %d, y1: %d };
-export const NET = { y: %d, x0: %d, x1: %d };
+// NET.y is the line the net STANDS on — what you collide with and what the
+// ball must clear. sprite* is where net.png is drawn: it rises ~138px ABOVE
+// that line, which is why the page must depth-sort against it.
+export const NET = { y: %d, x0: %d, x1: %d,
+  spriteX: %d, spriteY: %d, spriteW: %d, spriteH: %d };
 export const BAR = { x: %d, y: %d, r: %d };
 
 export const OB_RECTS = [
@@ -368,6 +373,7 @@ export const CHAIRS = [
        PIER_MOUTH[0], PIER_MOUTH[1],
        COURT[0], COURT[1], COURT[2], COURT[3],
        NET_BASE, nx0, nx1,
+       NET_SPRITE[0], NET_SPRITE[1], NET_SPRITE[2], NET_SPRITE[3],
        BAR[0], BAR[1] + 140, BAR_NOTICE,
        rows(rects), rows(circles),
        '\n'.join('  { rect: [%s], seat: { x: %d, y: %d } },   // %s'
@@ -484,6 +490,17 @@ if HAVE_PACK:
     # the sprites, and an ellipse under the net just reads as a dirty smudge.
     NET_LEFT_X = (cx0 + cx1) // 2 - (96 + NET_MIDS * T + 96) // 2
     im.alpha_composite(net, (NET_LEFT_X - 1, NET_BASE - 138 - 1))
+    # ⚠️ AND AGAIN AS ITS OWN LAYER. The net is a WALL standing on the sand at
+    # NET_BASE, drawn rising UP the screen — its mesh sits ~75px above the line
+    # you actually collide with. Baked into the plate it can only ever draw
+    # BEHIND the banana, so you appear to walk straight through the net and
+    # then stop dead at nothing (Trym drew exactly that line on a screenshot).
+    # The page re-draws this sprite on its own layer and flips the banana in
+    # front of / behind it by comparing feet to NET_BASE, which is what makes
+    # a top-down wall read as a wall. Kept in the plate too, so the scene is
+    # still correct with no JS — the overlay lands on identical pixels.
+    net.save(os.path.join(OUT, 'net.png'), optimize=True)
+    NET_SPRITE.extend([NET_LEFT_X - 1, NET_BASE - 138 - 1, net.width, net.height])
 
     # 🚢 Captain Split's wreck
     place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34,
