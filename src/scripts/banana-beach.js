@@ -764,21 +764,32 @@ function init() {
   const DIG_JUNK = ['an old boot', 'a bent fork', 'one flip-flop', 'a rusted tin',
     'somebody’s lost sunglasses', 'a very annoyed crab', 'half a frisbee'];
   const DIG_CURIO = ['sea glass', 'a ship’s key', 'a worn doubloon', 'a shark’s tooth'];
-  // 🍾 ONE BOTTLE A DAY, and the whole world gets the SAME note — it's picked
-  // from the daily seed, so "what did yours say?" has an answer worth asking.
-  // ⚠️ Pre-written only. No user-authored notes, ever: an anonymous message
-  // anyone can bury and anyone can dig up is a moderation surface we are not
-  // building for a beach toy.
-  const BOTTLE_NOTES = [
-    'whoever finds this: the tide always comes back. so do you.',
-    'i buried a better one somewhere else. good luck. no clues.',
-    'if you are reading this, you dug. well done. most people just walk past.',
-    'do not ask the captain about the lighthouse keeper. there isn’t one.',
-    'p.s. the net is undefeated. it told me so itself.',
-    'gone fishing. back never. — a banana',
-    'this bottle has been round the world twice and learned absolutely nothing.',
-    'be kind to the crabs. they were here long before the volleyball.',
-  ];
+  // 🧰 THE CHEST — one a day, and it is often empty.
+  // ⚠️ THIS IS THE ONE PLACE OUTSIDE THE RAVE THAT MINTS COINS, and it only
+  // stays harmless because it is HARD-CAPPED AND DATE-SEEDED: a single chest
+  // per day, at most CHEST_MAX coins, contents fixed by the date so nobody can
+  // re-roll it. That is a bounded daily bonus, not a second faucet — the stand's
+  // 13 prices are balanced against the rave's drop rate, and an ungated dig
+  // payout would quietly devalue every one of them. Keep the cap load-bearing:
+  // if this ever becomes grindable or uncapped, the shop economy goes with it.
+  const CHEST_MAX = 20;
+  const CHEST_EMPTY_ODDS = 0.3;      // a third of chests are a joke, on purpose
+  // ⭐ Split the haul across SLOTS. 12 coins shown as 4 piles reads as a find;
+  // the same 12 as one number reads as a receipt. Same payout, more occasion.
+  function chestLoot() {
+    if (digRnd() < CHEST_EMPTY_ODDS) return [];
+    const slots = 2 + Math.floor(digRnd() * 3);          // 2-4 piles
+    const total = 6 + Math.floor(digRnd() * (CHEST_MAX - 5));
+    const cut = [];
+    let left = total;
+    for (let i = 0; i < slots; i++) {
+      const take = i === slots - 1 ? left : Math.max(1, Math.round(left / (slots - i) * (0.7 + digRnd() * 0.6)));
+      cut.push(Math.min(left, take));
+      left -= cut[i];
+      if (left <= 0) break;
+    }
+    return cut.filter((n) => n > 0);
+  }
   const digDay = Math.floor(Date.now() / 86400000);
   // ⚠️ seedRand(n) is ONE-SHOT — it maps a seed to a number, it is NOT a
   // generator (the shells call it once per spot with a stepped seed). Walking
@@ -806,7 +817,7 @@ function init() {
           // slot 0 is the treasure's, slot 1 the bottle's — n is 4-6 so both
           // always exist, and exactly one of each is buried per day
           kind: i === treasureIn && k === 0 ? 'treasure'
-            : i === bottleIn && k === 1 ? 'bottle'
+            : i === bottleIn && k === 1 ? 'chest'
               : digRnd() < 0.34 ? 'shell' : digRnd() < 0.55 ? 'curio' : 'junk',
           got: false,
         });
@@ -888,13 +899,9 @@ function init() {
       sandySay('you found it! that’s what the map was on about.', 5200);
       passStat('bh_treasure', 1);
       track('beach_dig', { find: 'treasure' });
-    } else if (best.kind === 'bottle') {
-      // a fortune deserves a beat, not a float that scrolls past in a second
-      float(pos.x, pos.y - 30, '🍾 a bottle!');
-      bottleText.textContent = BOTTLE_NOTES[digDay % BOTTLE_NOTES.length];
-      bottlePanel.hidden = false;
-      passStat('bh_bottle', 1);
-      track('beach_dig', { find: 'bottle' });
+    } else if (best.kind === 'chest') {
+      openChest();
+      track('beach_dig', { find: 'chest' });
     } else if (best.kind === 'shell') {
       const id = SHELL_IDS[Math.floor(Math.random() * SHELL_IDS.length)];
       passStat('sh_' + id, 1);
@@ -914,10 +921,44 @@ function init() {
     if (p.spots.every((s) => s.got)) p.el.classList.add('is-spent');
     digSave();
   }
-  const bottlePanel = document.getElementById('bhBottlePanel');
-  const bottleText = document.getElementById('bhBottleText');
-  document.getElementById('bhBottleClose').addEventListener('click', () => {
-    bottlePanel.hidden = true;
+  // 🧰 the chest popup: slots of coins you TAKE, or a chest full of nothing
+  const chestPanel = document.getElementById('bhChestPanel');
+  const chestSlots = document.getElementById('bhChestSlots');
+  const chestSub = document.getElementById('bhChestSub');
+  const chestBtn = document.getElementById('bhChestBtn');
+  let chestHaul = 0;
+  function openChest() {
+    const cut = chestLoot();
+    chestHaul = cut.reduce((a, c) => a + c, 0);
+    chestSlots.innerHTML = '';
+    if (!chestHaul) {
+      chestSub.textContent = 'sand. just sand, all the way down.';
+      chestSlots.innerHTML = '<div class="bh-slotempty">empty</div>';
+      chestBtn.textContent = 'well. that’s the sea for you';
+    } else {
+      chestSub.textContent = 'buried treasure, and it’s yours.';
+      cut.forEach((n) => {
+        const d = document.createElement('div');
+        d.className = 'bh-cslot';
+        d.innerHTML = '<img src="/assets/banana-stand/coin.png" width="30" alt="" />'
+          + '<b>' + n + '</b>';
+        chestSlots.appendChild(d);
+      });
+      chestBtn.textContent = 'take the ' + chestHaul + ' coins';
+    }
+    chestPanel.hidden = false;
+    float(pos.x, pos.y - 30, '🧰 a chest!');
+    passStat('bh_chest', 1);
+  }
+  chestBtn.addEventListener('click', () => {
+    if (chestHaul) {
+      // ⚠️ the wallet is a pass STAT pair: balance = coins_earned − coins_spent
+      passStat('coins_earned', chestHaul);
+      float(pos.x, pos.y - 34, '+' + chestHaul + ' coins');
+      track('beach_chest', { coins: chestHaul });
+      chestHaul = 0;
+    }
+    chestPanel.hidden = true;
   });
   const digBtn = document.getElementById('bhDigBtn');
   digBtn.addEventListener('click', (e) => { e.stopPropagation(); dig(); });
