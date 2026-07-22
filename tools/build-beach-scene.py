@@ -69,6 +69,13 @@ BAR_NOTICE = 104      # how close you get before the Captain greets you
 NET_SOLID_H = 10      # half-thickness of the net's WALK collider. The banana
                       # covers at most 8.4px per step (SPEED 168 × the 0.05s
                       # dt cap), so 20px total can never be tunnelled through.
+# The mesh band's rows inside the net sprite (verified by bboxing it): the
+# pack hangs the mesh from the top of the poles with a real GAP beneath, just
+# like a actual volleyball net. Emitted as heights above the base line so the
+# ball's physics can use the net that's actually DRAWN — it used to need only
+# z > 18 to "clear" a 133px net, which is why shots sailed straight through
+# the mesh and still counted.
+NET_MESH_ROWS = (6, 63)
 
 # ---- collider shapes, in coordinates LOCAL to a place()'s (cx, base) ------
 # Top-down blocking is the BASE of an object, never its full height: you walk
@@ -349,11 +356,15 @@ export const PIER = { x0: %d, x1: %d, y0: %d };
 export const PLATFORM = { x0: %d, x1: %d, y0: %d, y1: %d };
 export const PIER_MOUTH = { x: %d, y: %d };
 export const COURT = { x0: %d, y0: %d, x1: %d, y1: %d };
-// NET.y is the line the net STANDS on — what you collide with and what the
-// ball must clear. sprite* is where net.png is drawn: it rises ~138px ABOVE
-// that line, which is why the page must depth-sort against it.
+// NET.y is the line the net STANDS on — what you collide with. sprite* is
+// where net.png is drawn: it rises ~138px ABOVE that line, which is why the
+// page must depth-sort against it.
+// topZ / gapZ are the MESH band's height above the base line. The ball must
+// clear topZ; below gapZ it passes under the net through the gap the art
+// actually shows; in between it hits the mesh.
 export const NET = { y: %d, x0: %d, x1: %d,
-  spriteX: %d, spriteY: %d, spriteW: %d, spriteH: %d };
+  spriteX: %d, spriteY: %d, spriteW: %d, spriteH: %d,
+  topZ: %d, gapZ: %d };
 export const BAR = { x: %d, y: %d, r: %d };
 
 export const OB_RECTS = [
@@ -374,6 +385,8 @@ export const CHAIRS = [
        COURT[0], COURT[1], COURT[2], COURT[3],
        NET_BASE, nx0, nx1,
        NET_SPRITE[0], NET_SPRITE[1], NET_SPRITE[2], NET_SPRITE[3],
+       NET_BASE - (NET_SPRITE[1] + NET_MESH_ROWS[0]),
+       NET_BASE - (NET_SPRITE[1] + NET_MESH_ROWS[1]),
        BAR[0], BAR[1] + 140, BAR_NOTICE,
        rows(rects), rows(circles),
        '\n'.join('  { rect: [%s], seat: { x: %d, y: %d } },   // %s'

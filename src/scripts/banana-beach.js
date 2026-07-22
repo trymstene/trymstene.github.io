@@ -133,7 +133,7 @@ function init() {
   // ⚠️ THE NET IS HORIZONTAL (the pack's net pieces are drawn to be laid
   // left→right, which is also how LimeZu's own beach screenshot uses them),
   // so the ball crosses it on the Y axis, not X.
-  const NET_Y = NET.y, NET_X0 = NET.x0, NET_X1 = NET.x1, NET_H = 18;
+  const NET_Y = NET.y, NET_X0 = NET.x0, NET_X1 = NET.x1;
 
   // ---- 🥅 the net's own layer, so things can pass BEHIND it ---------------
   // The net stands on NET.y but is DRAWN rising ~138px up the screen. While it
@@ -181,6 +181,7 @@ function init() {
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
       keys[k] = true; e.preventDefault();
     }
+    if (k === ' ' || k === 'spacebar') { playBall(); e.preventDefault(); }
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
   // land↔pier walks route through the pier mouth (the pier is an L — a
@@ -196,6 +197,15 @@ function init() {
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
+    // 🎯 TAP THE BALL TO PLAY IT — checked first, and against the ball's
+    // SCREEN position (y − z), so a ball in mid-air is tappable where you can
+    // actually see it. In reach you bump; out of reach you go and fetch it.
+    if (Math.hypot(wx - ball.x, wy - (ball.y - ball.z)) < 46) {
+      seated = null; sitTarget = null;
+      meEl.classList.remove('is-sitting');
+      playBall();
+      return;
+    }
     // at the bar? tapping the wreck talks to the Captain instead of walking
     if (inRect(wx, wy, [1540, 590, 1866, 780])) {
       if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openTrade(); return; }
@@ -253,46 +263,98 @@ function init() {
   // stops here is unplayable, so it gets rolled out (see the anti-stick below)
   const NET_DEAD = 36;
   const ball = { x: 930, y: 660, z: 0, vx: 0, vy: 0, vz: 0, spin: 0 };
-  // a beach ball FLOATS — light gravity and a high pop, so a kick from a
-  // sensible distance clears the net (tuned in testing: at 300 it never did,
-  // which made the court a wall instead of a game). The net still punishes
-  // weak contact and rolling balls, which is where the skill lives.
-  const GRAV = 180;
+  // ⚠️ THE BALL MUST CLEAR THE NET THAT'S ACTUALLY DRAWN. It used to need
+  // only z > 18 against a mesh standing 133px tall — and its maximum apex was
+  // 117, so it *could not* get over the net yet every crossing counted. Shots
+  // sailed straight through the mesh (Trym: "looks like the net is
+  // overflowing the ball… think it needs more bounce").
+  //   NET.topZ (133) = top of the mesh   → clear this and it's a real volley
+  //   NET.gapZ  (76) = bottom of the mesh → below this you pass UNDER the net,
+  //                    through the gap the pack's art genuinely shows
+  // Gravity is up from 180 so the higher arc still lands in a readable time
+  // (apex 150 → ~1.7s of flight, not ~3s of floating).
+  const GRAV = 420;
+  // How hard a banana can pop a beach ball. This cap is what creates the
+  // skill: from mid-court the arc it needs sits well under the cap, but
+  // bumping from right against the net demands an apex the cap won't give.
+  const MAX_APEX = 265;
   let rally = 0, bestRally = 0, restAt = 0, lastKick = 0, kickTrackAt = 0;
   try { bestRally = parseInt(localStorage.getItem('bh-rally-best') || '0', 10) || 0; } catch (e) {}
   function showRally() {
     rallyEl.textContent = rally > 1 ? ('🏐 ' + rally + (bestRally > 1 ? ' · best ' + bestRally : '')) : '';
   }
-  function ballStep(dt, now) {
-    // the kick: walk into it. Kicks from behind the net send it high.
+  // A BUMP, SOLVED RATHER THAN GUESSED.
+  // For a projectile, the height at any point of its arc is
+  //     z(u) = 4 · apex · u · (1 − u),  u = fraction of the flight travelled.
+  // So if the net sits u of the way to where you're aiming, the apex you NEED
+  // to clear it is  apex = NET.topZ / (4·u·(1−u)).  Solving it gives the whole
+  // feel for free, straight out of the geometry:
+  //   · bump from mid-court and a normal arc clears comfortably;
+  //   · bump from right up against the net (u → 0) and the required apex goes
+  //     to infinity — it's capped at MAX_APEX, so the shot hits the mesh.
+  //     That's Trym's "if the shot is bad its not overflowing the net",
+  //     falling out of physics instead of a hand-tuned rule.
+  //   · ±12% noise on the apex, so shots near the limit sometimes just miss.
+  function bump(now) {
+    if (now - lastKick < 320) return false;
+    const far = pos.y >= NET_Y ? -1 : 1;          // aim at the OTHER half
+    const tx = CT.x0 + 70 + Math.random() * (CT.x1 - CT.x0 - 140);
+    const ty = NET_Y + far * (120 + Math.random() * 70);
+    const L = Math.max(24, Math.hypot(tx - ball.x, ty - ball.y));
+    const D = Math.abs(NET_Y - ball.y);
+    const u = Math.min(0.94, Math.max(0.03, D / L));
+    // ⚠️ Keep this margin SMALLER than the noise band, or it swallows it and
+    // every shot from open court clears — no misses, no tension. +13 against
+    // ±12% leaves roughly one bump in eight going into the mesh.
+    const need = (NET.topZ + 13) / (4 * u * (1 - u));
+    const apex = Math.min(MAX_APEX, need) * (0.88 + Math.random() * 0.24);
+    const vz = Math.sqrt(2 * GRAV * apex);
+    const P = L / (2 * vz / GRAV);                 // speed to land at the target
+    // mostly the aim, with a little "away from the banana" so it feels struck
+    let dx = (tx - ball.x) / L, dy = (ty - ball.y) / L;
+    const ax = ball.x - pos.x, ay = ball.y - (pos.y - 8);
+    const al = Math.hypot(ax, ay) || 1;
+    dx = dx * 0.8 + (ax / al) * 0.2;
+    dy = dy * 0.8 + (ay / al) * 0.2;
+    const nl = Math.hypot(dx, dy) || 1;
+    ball.vx = (dx / nl) * P;
+    ball.vy = (dy / nl) * P;                       // ⚠️ NOT foreshortened: the
+    ball.vz = vz;                                  // clearance maths needs the
+    lastKick = now;                                // real ground distance
+    ballEl.animate(
+      [{ transform: 'translate(-50%,-50%) scale(1.35)' }, { transform: 'translate(-50%,-50%) scale(1)' }],
+      { duration: 170, easing: 'ease-out' },
+    );
+    if (now - kickTrackAt > 8000) { kickTrackAt = now; track('beach_ball_kick'); }
+    return true;
+  }
+
+  // 🎯 PLAY THE BALL — one gesture that works on a phone and a mouse alike.
+  // Running into the ball at the right angle was the only way to hit it, which
+  // is fiddly on a touchscreen (Trym asked for something better). Now: tap the
+  // ball. In reach → you bump it. Out of reach → your banana goes and gets it,
+  // and the contact bump fires on arrival. Space does the same on a keyboard.
+  function playBall() {
     const d = Math.hypot(pos.x - ball.x, (pos.y - 8) - ball.y);
-    if (d < 22 && ball.z < 42 && now - lastKick > 320) {
-      // A bump AIMS. Purely "away from the player" made the ball squirt off
-      // sideways as often as over the net, which doesn't read as volleyball.
-      // Blend the away-vector with an aim at a spot in the FAR half, then size
-      // the hop so the ball lands roughly there — near apex over the net.
-      const away = Math.atan2(ball.y - (pos.y - 8), ball.x - pos.x);
-      const far = pos.y >= NET_Y ? -1 : 1;
-      const tx = CT.x0 + 70 + Math.random() * (CT.x1 - CT.x0 - 140);
-      const ty = NET_Y + far * (100 + Math.random() * 90);
-      const aim = Math.atan2(ty - ball.y, tx - ball.x);
-      let dx = Math.cos(away) * 0.38 + Math.cos(aim) * 0.62;
-      let dy = Math.sin(away) * 0.38 + Math.sin(aim) * 0.62;
-      const dl = Math.hypot(dx, dy) || 1;
-      const dist = Math.hypot(tx - ball.x, ty - ball.y);
-      const power = Math.max(95, Math.min(205, dist * 1.15));
-      ball.vx = (dx / dl) * power;
-      ball.vy = (dy / dl) * power * 0.82;
-      // vz from the flight time it needs, so a deep hit hangs and a short one
-      // pops — but never under the net's clearance (GRAV 180 → apex 40 at 120)
-      ball.vz = Math.max(122, Math.min(205, GRAV * (dist / power) / 2));
-      lastKick = now;
-      ballEl.animate(
-        [{ transform: 'translate(-50%,-50%) scale(1.35)' }, { transform: 'translate(-50%,-50%) scale(1)' }],
-        { duration: 170, easing: 'ease-out' },
-      );
-      if (now - kickTrackAt > 8000) { kickTrackAt = now; track('beach_ball_kick'); }
+    if (d < 68 && ball.z < 120) { bump(performance.now()); return; }
+    const bx = ball.x, by = Math.min(H - 20, ball.y + 14);
+    // ⚠️ Ball on the FAR side? Route around a pole, exactly like land↔pier
+    // routes via PIER_MOUTH. Walking straight at it would just grind your
+    // banana into the net until you noticed and steered around yourself.
+    if ((pos.y - NET_Y) * (by - NET_Y) < 0) {
+      nextTgt = { x: bx, y: by };
+      tgt.x = pos.x < (NET_X0 + NET_X1) / 2 ? NET_X0 - 26 : NET_X1 + 26;
+      tgt.y = NET_Y;
+      return;
     }
+    nextTgt = null;
+    tgt.x = bx; tgt.y = by;                                  // fetch it
+  }
+
+  function ballStep(dt, now) {
+    // contact bump: still just walk into it — the thing you discover for free
+    const d = Math.hypot(pos.x - ball.x, (pos.y - 8) - ball.y);
+    if (d < 26 && ball.z < 60) bump(now);
     const py0 = ball.y;
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
@@ -305,12 +367,21 @@ function init() {
       const damp = Math.pow(0.12, dt);     // sand kills roll fast
       ball.vx *= damp; ball.vy *= damp;
     }
-    // THE NET: crossing it low bounces you back, crossing it high = a volley
+    // THE NET, IN THE THREE BANDS THE ART ACTUALLY SHOWS:
+    //   below gapZ  → under the net, through the real gap beneath the mesh
+    //   gapZ..topZ  → into the mesh, bounced back
+    //   above topZ  → a clean volley
     const crossed = (py0 - NET_Y) * (ball.y - NET_Y) < 0;
     if (crossed && ball.x > NET_X0 && ball.x < NET_X1) {
-      if (ball.z < NET_H) {
+      if (ball.z < NET.gapZ) {
+        // a dribbling ball genuinely rolls under — no bounce, but no rally
+        // either. Only announce it if there was a rally worth losing, or a
+        // ball nudging back and forth would spam the floats.
+        if (rally) { rally = 0; showRally(); float(ball.x, ball.y - 14, 'under!'); }
+      } else if (ball.z <= NET.topZ) {
         ball.y = py0 < NET_Y ? NET_Y - 7 : NET_Y + 7;
         ball.vy = -ball.vy * 0.55;
+        ball.vz *= 0.4;                  // the mesh kills the arc, it drops
         rally = 0;
         showRally();
         float(ball.x, ball.y - 14, 'net!');
@@ -660,7 +731,8 @@ function init() {
   // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
   // and place the ball or the banana without playing your way there
   if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
-    window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally };
+    window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
+      bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; } };
   }
 
   assetsReady().then(() => {
