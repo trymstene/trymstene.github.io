@@ -63,6 +63,26 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-sea--3 { background-image: url('/assets/beach/sea-f3.png'); animation-delay: -0.54s; }
     @keyframes bhSeaFlip { 0%, 24.99% { opacity: 1; } 25%, 100% { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .bh-sea { display: none; } }
+    /* ⛏ THE DIG. Patches sit UNDER everything that walks (z 2) so your banana
+       and the holes read as being on top of the sand, not inside it. The
+       patch is a soft, ragged blob on purpose — a crisp rectangle of darker
+       sand reads as a UI overlay rather than turned-over ground. */
+    .bh-digs { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+    .bh-patch {
+      position: absolute; transform: translate(-50%, -50%);
+      background-image: url('/assets/beach/dig-patch.png');
+      background-size: 100% 100%; image-rendering: pixelated;
+      opacity: 0.85; transition: opacity 0.4s ease;
+    }
+    .bh-patch.is-spent { opacity: 0.4; }   /* dug out — nothing left here */
+    .bh-hole {
+      position: absolute; width: 0.92%; aspect-ratio: 22 / 16;
+      transform: translate(-50%, -60%); image-rendering: pixelated;
+      background-image: url('/assets/beach/dig-hole.png');
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    .bh-chip--dig { opacity: 0.34; transition: opacity 0.2s ease; }
+    .bh-chip--dig.is-on { opacity: 1; }
     /* 🥅 THE NET, ON ITS OWN LAYER so things can pass BEHIND it.
        The net is a wall standing on the sand at NET.y but drawn rising ~138px
        up the screen, so its mesh is nowhere near the line you collide with.
@@ -277,6 +297,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-sea bh-sea--1" aria-hidden="true"></div>
         <div class="bh-sea bh-sea--2" aria-hidden="true"></div>
         <div class="bh-sea bh-sea--3" aria-hidden="true"></div>
+        <div class="bh-digs" id="bhDigs" aria-hidden="true"></div>
         <div class="bh-net" id="bhNet" aria-hidden="true"></div>
         <div class="bh-ballshadow" id="bhBallShadow"></div>
         <div class="bh-ball" id="bhBall" aria-hidden="true"></div>
@@ -289,6 +310,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
       <div class="bh-hud">
         <span class="bh-chip bh-chip--rally" id="bhRally"></span>
         <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
+        <button class="bh-chip bh-chip--dig" id="bhDigBtn" type="button" aria-label="Dig here">⛏ dig</button>
       </div>
       <div class="bh-hint" id="bhHint">tap to walk · tap the ball to play it · comb the shore for shells</div>
 

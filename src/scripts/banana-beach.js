@@ -199,7 +199,11 @@ function init() {
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
       keys[k] = true; e.preventDefault();
     }
-    if (k === ' ' || k === 'spacebar') { playBall(); e.preventDefault(); }
+    // space is context-sensitive: dig if you're stood on a patch, else play
+    if (k === ' ' || k === 'spacebar') {
+      if (patchAt(pos.x, pos.y)) dig(); else playBall();
+      e.preventDefault();
+    }
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
   // land↔pier walks route through the pier mouth (the pier is an L — a
@@ -572,9 +576,14 @@ function init() {
     if (near && !capGreeted) {
       capGreeted = true;
       const n = dupeCount();
-      say(n >= 3
-        ? 'ahoy! ' + n + ' spare shells in that pocket. i can work with that.'
-        : CAP_LINES[capIdx++ % CAP_LINES.length]);
+      // 🗺 THE MAP lives on his counter and rolls with the patches every night,
+      // so the clue is always about TODAY's beach. It narrows the hunt to one
+      // landmark without handing the spot over — you still dig the patch out.
+      say(!treasureFound()
+        ? '🗺 map says the sea buried something good ' + patches.treasureClue + '. dig it out.'
+        : n >= 3
+          ? 'ahoy! ' + n + ' spare shells in that pocket. i can work with that.'
+          : CAP_LINES[capIdx++ % CAP_LINES.length], 6000);
       track('beach_captain');
     } else if (!near && capGreeted && Math.hypot(pos.x - BAR.x, pos.y - BAR.y) > BAR.r + 40) {
       capGreeted = false;                 // re-greets next time you wander back
@@ -681,6 +690,167 @@ function init() {
     c.el.style.top = pct(c.y, H);
     c.el.style.transform = 'translate(-50%,-100%)' + (c.face < 0 ? ' scaleX(-1)' : '');
   }
+
+  // ---- ⛏ THE DIG ----------------------------------------------------------
+  // Trym's shape: patches are VISIBLE (so a cold visitor sees one and digs
+  // within seconds — standalone-first), but a patch is an AREA to search, not
+  // a prize. "it cant be one dig, one find… big enough patches so you actually
+  // have to look for a while." So each patch holds several buried things at
+  // seeded spots inside it, and digging between them turns up nothing but
+  // sand. The empty holes ARE the content.
+  //
+  // ⚠️ PATCH SITES ARE HAND-PLACED, not random. Random points landed in the
+  // sea, on the pier and inside the court. Hand-placing also buys the treasure
+  // map its clue for free: every site already has a landmark name.
+  const DIG_SITES = [
+    { x: 402, y: 424, clue: 'where the wet sand remembers the tide' },
+    { x: 596, y: 1042, clue: 'south of the old fire ring' },
+    { x: 1298, y: 402, clue: 'up where the sea comes closest' },
+    { x: 1452, y: 906, clue: 'east of the court, past the towel' },
+    { x: 1912, y: 1014, clue: 'below the pier, where nobody looks' },
+    { x: 2166, y: 918, clue: 'in the lighthouse’s long shadow' },
+    { x: 2258, y: 430, clue: 'the far corner, where the rocks sit' },
+    { x: 906, y: 1064, clue: 'just south of the volley court' },
+    { x: 352, y: 706, clue: 'between the boardwalk and the palms' },
+  ];
+  const PATCH_W = 156, PATCH_H = 104;
+  const DIG_REACH = 46;            // how near a buried spot a dig has to land
+  const DIG_PATCHES = 5;           // sites the tide turns over each night
+  // 🏴 the loot. ⚠️ NO COINS, EVER — bananacoins are one faucet (the rave) and
+  // a diggable money source would inflate every price in the stand. The beach
+  // pays in collection and comedy, which is the whole point of it.
+  const DIG_JUNK = ['an old boot', 'a bent fork', 'one flip-flop', 'a rusted tin',
+    'somebody’s lost sunglasses', 'a very annoyed crab', 'half a frisbee'];
+  const DIG_CURIO = ['sea glass', 'a ship’s key', 'a worn doubloon', 'a shark’s tooth'];
+  const digDay = Math.floor(Date.now() / 86400000);
+  // ⚠️ seedRand(n) is ONE-SHOT — it maps a seed to a number, it is NOT a
+  // generator (the shells call it once per spot with a stepped seed). Walking
+  // a counter through it gives the deterministic STREAM this needs; calling
+  // the result threw and silently killed init on the first attempt.
+  let digSeq = 0;
+  const digRnd = () => seedRand(digDay * 7919 + 31 + (digSeq++) * 131);
+  const patches = [];
+  (() => {
+    const pool = DIG_SITES.slice();
+    for (let i = pool.length - 1; i > 0; i--) {      // seeded shuffle
+      const j = Math.floor(digRnd() * (i + 1));
+      const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    const chosen = pool.slice(0, DIG_PATCHES);
+    const treasureIn = Math.floor(digRnd() * chosen.length);
+    chosen.forEach((site, i) => {
+      const n = 4 + Math.floor(digRnd() * 3);         // 4-6 things buried here
+      const spots = [];
+      for (let k = 0; k < n; k++) {
+        spots.push({
+          x: site.x + (digRnd() - 0.5) * (PATCH_W - 40),
+          y: site.y + (digRnd() - 0.5) * (PATCH_H - 30),
+          kind: i === treasureIn && k === 0 ? 'treasure'
+            : digRnd() < 0.34 ? 'shell' : digRnd() < 0.55 ? 'curio' : 'junk',
+          got: false,
+        });
+      }
+      patches.push({ ...site, spots, holes: [], el: null });
+    });
+    // the map's clue points at the patch holding the day's treasure
+    patches.treasureClue = chosen[treasureIn].clue;
+  })();
+  const DIG_KEY = 'bh-dig-' + digDay;
+  try {                                              // holes persist for today
+    const saved = JSON.parse(localStorage.getItem(DIG_KEY) || 'null');
+    if (saved && saved.p) saved.p.forEach((h, i) => {
+      if (!patches[i]) return;
+      patches[i].holes = h.holes || [];
+      (h.got || []).forEach((k) => { if (patches[i].spots[k]) patches[i].spots[k].got = true; });
+    });
+  } catch (e) {}
+  function digSave() {
+    try {
+      localStorage.setItem(DIG_KEY, JSON.stringify({
+        p: patches.map((p) => ({
+          holes: p.holes,
+          got: p.spots.map((s, k) => (s.got ? k : -1)).filter((k) => k >= 0),
+        })),
+      }));
+    } catch (e) {}
+  }
+  const digWrap = document.getElementById('bhDigs');
+  function digHole(p, x, y) {
+    const h = document.createElement('div');
+    h.className = 'bh-hole';
+    h.style.left = pct(x, W);
+    h.style.top = pct(y, H);
+    digWrap.appendChild(h);
+  }
+  function paintDigs() {
+    patches.forEach((p) => {
+      const el = document.createElement('div');
+      el.className = 'bh-patch';
+      el.style.left = pct(p.x, W);
+      el.style.top = pct(p.y, H);
+      el.style.width = pct(PATCH_W, W);
+      el.style.height = pct(PATCH_H, H);
+      digWrap.appendChild(el);
+      p.el = el;
+      p.holes.forEach((h) => digHole(p, h[0], h[1]));
+      if (p.spots.every((s) => s.got)) el.classList.add('is-spent');
+    });
+  }
+  const patchAt = (x, y) => patches.find((p) =>
+    Math.abs(x - p.x) < PATCH_W / 2 && Math.abs(y - p.y) < PATCH_H / 2);
+  let digAt = 0;
+  function dig() {
+    const now = performance.now();
+    if (now - digAt < 420) return;
+    const p = patchAt(pos.x, pos.y);
+    if (!p) return;
+    digAt = now;
+    p.holes.push([Math.round(pos.x), Math.round(pos.y)]);
+    digHole(p, pos.x, pos.y);
+    meEl.animate([{ transform: 'translate(-50%,-100%) scale(1,0.86)' },
+      { transform: 'translate(-50%,-100%) scale(1,1)' }], { duration: 260, easing: 'ease-out' });
+    // the nearest thing still buried within reach — otherwise, just sand
+    let best = null, bd = DIG_REACH;
+    p.spots.forEach((s) => {
+      if (s.got) return;
+      const d = Math.hypot(s.x - pos.x, s.y - pos.y);
+      if (d < bd) { bd = d; best = s; }
+    });
+    if (!best) {
+      float(pos.x, pos.y - 26, 'just sand…');
+      digSave();
+      return;
+    }
+    best.got = true;
+    if (best.kind === 'treasure') {
+      float(pos.x, pos.y - 30, '🏴 THE TREASURE!');
+      sandySay('you found it! that’s what the map was on about.', 5200);
+      passStat('bh_treasure', 1);
+      track('beach_dig', { find: 'treasure' });
+    } else if (best.kind === 'shell') {
+      const id = SHELL_IDS[Math.floor(Math.random() * SHELL_IDS.length)];
+      passStat('sh_' + id, 1);
+      float(pos.x, pos.y - 30, '🐚 ' + shellName(id));
+      refreshShellChip();
+      track('beach_dig', { find: 'shell' });
+    } else if (best.kind === 'curio') {
+      const c = DIG_CURIO[Math.floor(Math.random() * DIG_CURIO.length)];
+      passStat('bh_curio', 1);
+      float(pos.x, pos.y - 30, '✨ ' + c);
+      track('beach_dig', { find: 'curio' });
+    } else {
+      float(pos.x, pos.y - 30, DIG_JUNK[Math.floor(Math.random() * DIG_JUNK.length)]);
+      track('beach_dig', { find: 'junk' });
+    }
+    passStat('bh_dug', 1);
+    if (p.spots.every((s) => s.got)) p.el.classList.add('is-spent');
+    digSave();
+  }
+  const digBtn = document.getElementById('bhDigBtn');
+  digBtn.addEventListener('click', (e) => { e.stopPropagation(); dig(); });
+  paintDigs();
+  const treasureFound = () => patches.some((p) =>
+    p.spots.some((s) => s.kind === 'treasure' && s.got));
 
   // ---- 🏐 SANDY, the court's resident -------------------------------------
   // The solo problem in one line: with a solid net, a lap around a pole is
@@ -825,6 +995,7 @@ function init() {
     capTick(now);
     crabs.forEach((c) => crabStep(c, dt));
     sandyTick(dt, now);
+    digBtn.classList.toggle('is-on', !!patchAt(pos.x, pos.y));
     cam();
     requestAnimationFrame(step);
   }

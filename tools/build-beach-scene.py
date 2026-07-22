@@ -716,6 +716,62 @@ ball = blockify(_braw, factor=BALL_S, colors=10, alpha_thresh=0.45, sat=1.2,
                 con=1.08, trim=False).crop((1, 1, 1 + BALL_D * BALL_N, 1 + BALL_D))
 ball.save(os.path.join(OUT, 'volleyball.png'), optimize=True)
 print('wrote volleyball.png (%d spin frames, %dpx)' % (BALL_N, BALL_D))
+# ---- ⛏ THE DIG: a churned patch and a dug hole ----------------------------
+# Both are drawn, not baked into the plate: the patches are DATE-SEEDED at
+# runtime, so the page places them itself. The patch is deliberately soft and
+# irregular — a hard-edged rectangle of darker sand reads as a UI element,
+# not as somewhere the tide turned the sand over.
+_dg = random.Random(4242)
+patch = Image.new('RGBA', (156, 104), (0, 0, 0, 0))
+pp = patch.load()
+for y in range(104):
+    for x in range(156):
+        # an ellipse with a wobbling edge, so no two lobes look machined
+        wob = (math.sin(x * 0.11) * 0.05 + math.sin(y * 0.17 + 1.3) * 0.05)
+        d = ((x - 78) / 76.0) ** 2 + ((y - 52) / 50.0) ** 2
+        if d > 1.0 + wob:
+            continue
+        edge = d > 0.74 + wob
+        r = _dg.random()
+        if edge and r < 0.42:
+            continue                       # ragged rim, never a clean outline
+        # churned sand: the same family as the plate's sand, a touch darker
+        # and mottled, with occasional turned-over clumps
+        # ⚠️ MUST BE CLEARLY DARKER THAN THE SAND. The first pass used tones
+        # within a few values of the plate's sand and the patches were
+        # invisible — you can't hunt for something you can't see.
+        if r < 0.14:
+            c = (186, 152, 100, 240)       # a clod turned up from underneath
+        elif r < 0.38:
+            c = (206, 176, 122, 232)
+        else:
+            c = (220, 192, 140, 222)
+        pp[x, y] = c
+patch.save(os.path.join(OUT, 'dig-patch.png'), optimize=True)
+
+# ---- the hole you leave behind --------------------------------------------
+# ⚠️ DRAWN, NOT PACK ART. The pack's "little pile of dirt" is a SHOVEL stuck
+# in a mound, so a dug-out patch read as fourteen planted shovels rather than
+# fourteen holes. A hole is a dark bowl with a bright rim and a little spoil
+# beside it — ten lines, and it actually reads as a hole.
+hole = Image.new('RGBA', (22, 16), (0, 0, 0, 0))
+hp = hole.load()
+for y in range(16):
+    for x in range(22):
+        d = ((x - 10.5) / 9.5) ** 2 + ((y - 8.0) / 6.0) ** 2
+        if d > 1.0:
+            continue
+        if d > 0.72:
+            hp[x, y] = (214, 182, 126, 255) if y < 8 else (250, 232, 190, 255)
+        elif d > 0.34:
+            hp[x, y] = (150, 116, 70, 255)
+        else:
+            hp[x, y] = (104, 76, 44, 255)          # the dark of the hole
+for sx, sy in ((1, 11), (2, 12), (19, 10), (20, 11), (3, 3), (18, 3)):
+    hp[sx, sy] = (226, 198, 146, 255)              # spoil flicked out
+hole.save(os.path.join(OUT, 'dig-hole.png'), optimize=True)
+print('wrote dig-patch.png + dig-hole.png')
+
 RED, RED_D = (216, 60, 56), (168, 38, 36)
 
 if HAVE_PACK:
