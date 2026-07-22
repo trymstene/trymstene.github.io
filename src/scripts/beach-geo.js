@@ -76,6 +76,7 @@ export const OVERLAYS = [
   { src: 'ov-13.png', x: 91, y: 466, w: 158, h: 134, base: 600 },
   { src: 'ov-14.png', x: 91, y: 626, w: 158, h: 134, base: 760 },
   { src: 'ov-15.png', x: 91, y: 786, w: 158, h: 134, base: 920 },
+  { src: 'ov-16.png', x: 1841, y: 84, w: 94, h: 152, base: 236 },
 ];
 
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
@@ -90,3 +91,7 @@ export const STALLS = [
   { x: 170, y: 760 },
   { x: 170, y: 920 },
 ];
+
+// 🕹 the claw machine at the seaward end of the pier — the midway's one
+// landmark and the only place tickets buy the grand prize.
+export const GRABBER = { x: 1888, y: 236 };

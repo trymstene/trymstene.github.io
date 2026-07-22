@@ -296,6 +296,39 @@ def build_stall(hue):
                     warm=0.05, trim=False)
 
 
+def build_grabber():
+    """🕹 THE GRABBER — the midway's one landmark, at the seaward end of the
+    pier so reaching it is a small pilgrimage. Glass cabinet, prizes you can
+    SEE before you can afford them (the whole reason it beat a lottery), and a
+    claw parked over them."""
+    K = 3
+    w, h = 92 * K, 150 * K
+    s = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    BODY, LIT, DRK = (208, 66, 72), (238, 118, 120), (150, 38, 48)
+    d.rectangle([0, 22 * K, w, h - 4 * K], fill=BODY)          # cabinet
+    d.rectangle([0, 22 * K, 6 * K, h - 4 * K], fill=LIT)
+    d.rectangle([w - 7 * K, 22 * K, w, h - 4 * K], fill=DRK)
+    d.rectangle([0, h - 16 * K, w, h - 4 * K], fill=DRK)       # plinth
+    d.rectangle([2 * K, 4 * K, w - 3 * K, 22 * K], fill=(252, 206, 70))   # marquee
+    d.rectangle([2 * K, 4 * K, w - 3 * K, 9 * K], fill=(255, 232, 138))
+    # the glass, and the prizes behind it
+    d.rectangle([8 * K, 30 * K, w - 9 * K, h - 22 * K], fill=(58, 84, 104))
+    for i, (px_, py_, c) in enumerate([
+            (16, 108, (250, 206, 62)), (40, 116, (232, 96, 96)),
+            (62, 106, (120, 190, 232)), (28, 96, (168, 128, 220)),
+            (52, 92, (250, 206, 62))]):
+        d.ellipse([px_ * K, py_ * K, (px_ + 16) * K, (py_ + 14) * K], fill=c)
+    d.rectangle([8 * K, 30 * K, w - 9 * K, 40 * K], fill=(96, 130, 152))  # glare
+    # the claw, parked
+    d.rectangle([44 * K, 34 * K, 48 * K, 58 * K], fill=(198, 198, 206))
+    for dx in (-10, 6):
+        d.polygon([((46 + dx) * K, 58 * K), ((46 + dx + 4) * K, 58 * K),
+                   ((46 + dx + (0 if dx < 0 else 4)) * K, 72 * K)], fill=(170, 170, 182))
+    return blockify(s, factor=K, colors=14, alpha_thresh=0.4, sat=1.1, con=1.06,
+                    warm=0.04, trim=False)
+
+
 # ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
@@ -304,6 +337,7 @@ NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 STALLS = []                  # (cx, base) of each midway stall, emitted for the page
+GRABBER = []                 # [cx, base] of the claw machine on the pier
 
 
 
@@ -452,6 +486,10 @@ export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
 export const STALLS = [
 %s
 ];
+
+// 🕹 the claw machine at the seaward end of the pier — the midway's one
+// landmark and the only place tickets buy the grand prize.
+export const GRABBER = { x: %d, y: %d };
 ''' % (W, H, WATER_LINE,
        px0, px1, py0,
        px0, px1, py0, PLATFORM_BOT,
@@ -469,7 +507,8 @@ export const STALLS = [
        '\n'.join("  { src: '%s', x: %d, y: %d, w: %d, h: %d, base: %d },"
                  % o for o in OVERLAYS),
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
-       '\n'.join('  { x: %d, y: %d },' % s for s in STALLS))
+       '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
+       GRABBER[0], GRABBER[1])
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
         f.write(out)
@@ -644,6 +683,7 @@ if HAVE_PACK:
         OVERLAYS.append((fn, box[0], box[1], st.width, st.height, int(base)))
         STALLS.append((cx, int(base)))
     print('  wrote %d midway stalls' % len(STALL_HUES))
+
     audit_court()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
@@ -673,6 +713,20 @@ if HAVE_PACK:
     # a dock is a FLOOR, not a wall — it must never occlude a banana standing
     # on it. Cropped off the finished plate, so the water it carries at its
     # edges is identical to what sits underneath.
+    # 🕹 THE GRABBER, at the SEAWARD end of the pier — the midway's landmark,
+    # so reaching it is a small pilgrimage down the jetty.
+    # ⚠️ MUST be placed AFTER the pier is drawn: the deck's planks are painted
+    # with rect() straight onto the plate, so a grabber placed with the other
+    # props got buried under them.
+    gr = build_grabber()
+    GRABBER.extend([1888, 236])
+    gbox = (GRABBER[0] - gr.width // 2, GRABBER[1] - gr.height)
+    im.alpha_composite(gr, gbox)
+    PLACED.append(('grabber', (gbox[0], gbox[1], gbox[0] + gr.width, GRABBER[1])))
+    _gfn = 'ov-%d.png' % len(OVERLAYS)
+    gr.save(os.path.join(OUT, _gfn), optimize=True)
+    OVERLAYS.append((_gfn, gbox[0], gbox[1], gr.width, gr.height, GRABBER[1]))
+    print('  wrote the grabber')
     PIER_SPRITE.extend([px0 - 8, py0, (px1 + 8) - (px0 - 8), (py1 + 12) - py0])
     im.crop((px0 - 8, py0, px1 + 8, py1 + 12)).save(
         os.path.join(OUT, 'pier.png'), optimize=True)

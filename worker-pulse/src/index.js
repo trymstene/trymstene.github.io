@@ -616,6 +616,8 @@ var EV_LABEL = {
   beach_chest:'took the coins from a buried chest 🧰',
   beach_stall:'stepped up to a midway stall 🎡', beach_stall_play:'paid to play a midway game 🎡',
   beach_stall_win:'won tickets on the midway 🎟',
+  beach_prize:'traded tickets for a prize 🏆', beach_grabber_open:'looked in the claw machine 🕹',
+  beach_grabber_win:'WON THE GIANT PLUSH 🍌🕹',
   beach_trade_open:'opened the trading post', beach_trade:'traded duplicates for a new shell' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
@@ -704,6 +706,9 @@ var EV_EXPLAIN = {
   beach_stall:'opened a midway stall on the boardwalk 🎡 (stall = which). Three of the four are "opening soon" placards for now, so a high count on those is appetite for the next game',
   beach_stall_play:'PAID COINS to play a midway game 🎡 (cost = how many). This is the beach\'s coin SINK — the counterweight to the buried chest. Watch it against beach_chest: if plays badly trail chests, the bay is minting more than it drains',
   beach_stall_win:'won TICKETS on the midway 🎟 (tickets = how many). ⚠️ Tickets are NOT coins and can never reach the stand — that separation is what lets midway payouts be tuned freely',
+  beach_prize:'spent tickets at the prize counter 🏆 (prize = which, tickets = cost). Prizes are TROPHIES, not fashion — the stand is what you choose to look like, the pier is proof of what you did',
+  beach_grabber_open:'walked the pier and looked in the claw machine 🕹. High opens with few wins = the grand prize is doing its job as a thing you keep looking at',
+  beach_grabber_win:'🍌🕹 WON THE GIANT PLUSH — 150 tickets, roughly 60 duck plays. ⚠️ GUARANTEED, never RNG: gamble small, guarantee big. Nobody should lose weeks of saving to a dice roll',
   beach_dig:'dug a hole in a sand patch ⛏ — find = junk / shell / curio / bottle / TREASURE. Most digs are "just sand", by design: the patch is an area to search, not a prize. Five patches a night, date-seeded, and exactly one treasure — a run of finds without a treasure means they never found the map at the bar',
   beach_chest:'dug up the day\'s buried chest and TOOK the coins 🧰 (coins = how many). ⚠️ The only coin source outside the rave: one chest a day, hard-capped at 20, date-seeded, ~30% empty — a bounded bonus, not a second faucet. If this number ever climbs, something has broken the cap and the stand\'s prices are being devalued',
   beach_sandy:'walked onto the volleyball court and Sandy greeted them 🏐 — the solo rally partner. He returns everything on purpose, so a long rally is THEIR consistency, not his luck. Fires once per visit to the court (resets when they wander off)',

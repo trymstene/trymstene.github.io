@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, PIER_SPRITE, STALLS,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -257,6 +257,7 @@ function init() {
       playBall();
       return;
     }
+    if (tapGrabber(wx, wy)) return;   // 🕹 the landmark, out on the pier
     if (tapStall(wx, wy)) return;     // 🎡 a stall counter takes priority
     // ⛏ TAP A PATCH TO DIG IT — the same verb as tapping the ball. A dim chip
     // in the corner of the HUD was not discoverable: Trym built this with me
@@ -1075,8 +1076,24 @@ function init() {
       blurb: 'pick a duck. the number underneath is yours.' },
     { id: 'crab', name: 'Whack-a-Crab', sign: '🦀', soon: true },
     { id: 'coco', name: 'Coconut Shy', sign: '🥥', soon: true },
-    { id: 'prize', name: 'The Prize Counter', sign: '🏆', soon: true },
+    { id: 'prize', name: 'The Prize Counter', sign: '🏆' },
   ];
+  // 🏆 PRIZES ARE TROPHIES, NOT FASHION. The stand is where you choose how you
+  // look; this is where you show what you did. That distinction is the entire
+  // reason tickets exist as a separate currency — a hat you bought says
+  // nothing, a giant plush says you played the pier for weeks.
+  const PRIZES = [
+    { id: 'pinwheel', name: 'paper pinwheel', icon: '🎡', tix: 8 },
+    { id: 'goldfish', name: 'goldfish in a bag', icon: '🐠', tix: 14 },
+    { id: 'sunhat', name: 'novelty sun hat', icon: '👒', tix: 22 },
+    { id: 'ring', name: 'inflatable ring', icon: '🛟', tix: 34 },
+    { id: 'shades', name: 'holiday shades', icon: '🕶️', tix: 48 },
+    { id: 'trophy', name: 'plastic trophy', icon: '🏆', tix: 70 },
+  ];
+  // the one on the top shelf. Deliberately far away — it's the thing you keep
+  // looking at, which is what gives the whole midway a direction.
+  const GRAND = { id: 'plush', name: 'THE GIANT PLUSH BANANA', icon: '🍌', tix: 150 };
+  const ownsPrize = (id) => ((passGet().stats || {})['prize_' + id] || 0) > 0;
   // 🎟 TICKETS — deliberately NOT coins. Coins are the world's one economy and
   // the stand's 13 prices are balanced against them; tickets can only ever be
   // spent here, so midway payouts can be tuned freely without touching that.
@@ -1130,7 +1147,77 @@ function init() {
       stallFoot.innerHTML = '';
       return;
     }
-    duckRound(false);
+    if (def.id === 'prize') prizeCounter();
+    else duckRound(false);
+  }
+
+  // ---- 🏆 the prize counter -----------------------------------------------
+  function prizeCounter() {
+    const tix = ticketBal();
+    stallBody.innerHTML = '<p class="bh-stallblurb">tickets only. no coins — '
+      + 'these have to be won.</p><div class="bh-prizes">'
+      + PRIZES.map((p) => {
+        const owned = ownsPrize(p.id);
+        return '<div class="bh-prize' + (owned ? ' is-owned' : '') + '">'
+          + '<i>' + p.icon + '</i><b>' + p.name + '</b>'
+          + (owned ? '<span class="bh-got">won</span>'
+            : '<button class="bh-take" data-p="' + p.id + '"'
+              + (tix < p.tix ? ' disabled' : '') + '>🎟 ' + p.tix + '</button>')
+          + '</div>';
+      }).join('') + '</div>';
+    stallFoot.innerHTML = '<span class="bh-stallhint">the big one is in the '
+      + 'claw machine, out at the end of the pier.</span>';
+    [...stallBody.querySelectorAll('.bh-take')].forEach((b2) => {
+      b2.addEventListener('click', () => {
+        const p = PRIZES.find((q) => q.id === b2.dataset.p);
+        if (!p || ticketBal() < p.tix || ownsPrize(p.id)) return;
+        passStat('tickets_spent', p.tix);
+        passStat('prize_' + p.id, 1);
+        track('beach_prize', { prize: p.id, tickets: p.tix });
+        paintTickets();
+        prizeCounter();
+      });
+    });
+  }
+
+  // ---- 🕹 THE GRABBER ------------------------------------------------------
+  // ⭐ GAMBLE SMALL, GUARANTEE BIG. The grab is THEATRE, not chance: you save,
+  // you pay, the claw descends, and you get the thing. Never let RNG eat weeks
+  // of saving — chance belongs in the 5-coin stalls where a loss costs nothing.
+  function openGrabber() {
+    openStallIdx = 99;
+    stallName.textContent = '🕹 The Grabber';
+    paintTickets();
+    stallPanel.hidden = false;
+    history.replaceState(null, '', '#grabber');
+    track('beach_grabber_open');
+    const has = ticketBal(), own = ownsPrize(GRAND.id);
+    const pct2 = Math.min(100, Math.round(has / GRAND.tix * 100));
+    stallBody.innerHTML = '<div class="bh-glass"><div class="bh-claw"></div>'
+      + '<div class="bh-grand">' + GRAND.icon + '</div></div>'
+      + '<p class="bh-grandname">' + GRAND.name + '</p>'
+      + (own ? '<p class="bh-odds">it’s yours. it barely fits through the door.</p>'
+        : '<div class="bh-bar"><span style="width:' + pct2 + '%"></span></div>'
+          + '<p class="bh-odds">' + has + ' of ' + GRAND.tix + ' tickets · '
+          + 'no luck involved — save enough and the claw never misses</p>');
+    stallFoot.innerHTML = own ? ''
+      : '<button class="bh-btn" id="bhGrab" type="button"'
+        + (has < GRAND.tix ? ' disabled' : '') + '>'
+        + (has < GRAND.tix ? 'not enough tickets yet' : 'GRAB IT — 🎟 ' + GRAND.tix)
+        + '</button>';
+    const g = document.getElementById('bhGrab');
+    if (g) g.addEventListener('click', () => {
+      if (ticketBal() < GRAND.tix || ownsPrize(GRAND.id)) return;
+      passStat('tickets_spent', GRAND.tix);
+      passStat('prize_' + GRAND.id, 1);
+      track('beach_grabber_win');
+      stallBody.querySelector('.bh-claw').classList.add('is-grabbing');
+      stallFoot.innerHTML = '<span class="bh-stallhint">…</span>';
+      setTimeout(() => {
+        paintTickets();
+        if (openStallIdx === 99) openGrabber();
+      }, 1900);
+    });
   }
 
   // ---- 🦆 hook-a-duck ------------------------------------------------------
@@ -1192,7 +1279,27 @@ function init() {
     sign.style.zIndex = String(100 + s.y + 1);   // rides with its stall
     world.appendChild(sign);
   });
+  // the grabber's own sign, out at the end of the pier
+  (() => {
+    const sign = document.createElement('div');
+    sign.className = 'bh-stallsign';
+    sign.textContent = '🕹 The Grabber';
+    sign.style.left = pct(GRABBER.x, W);
+    sign.style.top = pct(GRABBER.y - 158, H);
+    sign.style.zIndex = String(100 + GRABBER.y + 1);
+    world.appendChild(sign);
+  })();
+
   // tapping a stall: step up to the counter, or open it if you're already there
+  function tapGrabber(wx, wy) {
+    if (Math.abs(wx - GRABBER.x) < 60 && wy > GRABBER.y - 155 && wy < GRABBER.y + 20) {
+      // you have to walk the pier to it — that's the point of putting it there
+      if (Math.hypot(pos.x - GRABBER.x, pos.y - (GRABBER.y + 60)) < 130) openGrabber();
+      else { nextTgt = { x: GRABBER.x, y: GRABBER.y + 60 }; tgt.x = PIER_MOUTH.x; tgt.y = PIER_MOUTH.y; }
+      return true;
+    }
+    return false;
+  }
   function tapStall(wx, wy) {
     const i = STALLS.findIndex((s) => Math.abs(wx - s.x) < 82
       && wy > s.y - 140 && wy < s.y + 24);
