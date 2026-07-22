@@ -473,6 +473,16 @@ function init() {
   });
   document.getElementById('bhTradeClose').addEventListener('click', () => { tradePanel.hidden = true; });
 
+  // ---- 🕊 gulls: pure atmosphere, CSS does all the work -------------------
+  [[7, 26, 0], [12, 34, 9], [4, 41, 18]].forEach(([top, secs, delay]) => {
+    const g = document.createElement('div');
+    g.className = 'bh-gull';
+    g.style.top = top + '%';
+    g.style.animationDuration = '0.42s, ' + secs + 's';
+    g.style.animationDelay = '0s, -' + delay + 's';
+    world.appendChild(g);
+  });
+
   // ---- 🦀 crabs: locals who want NOTHING to do with you -------------------
   const crabs = [];
   for (const start of [{ x: 420, y: 330 }, { x: 760, y: 560 }, { x: 1160, y: 420 }]) {
