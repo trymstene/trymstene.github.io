@@ -95,15 +95,33 @@ const description = 'The beach at the end of the park road. The sun never quite 
       background-image: url('/assets/beach/dig-hole.png');
       background-size: 100% 100%; background-repeat: no-repeat;
     }
-    .bh-chip--dig { opacity: 0.34; transition: opacity 0.2s ease; }
-    /* pulses while you're stood on a patch, so the one moment it's usable is
-       the one moment it draws the eye */
-    .bh-chip--dig.is-on { opacity: 1; animation: bhDigPulse 1.1s ease-in-out infinite; }
+    /* 🎮 THE ACTION BAR — bottom centre, in thumb reach on a phone and under
+       the eye on desktop. Stats stay top-right; actions never mix in with
+       them. Sized as real buttons, not chips: these get pressed repeatedly. */
+    .bh-actions {
+      position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+      z-index: 9; display: flex; gap: 0.5rem; pointer-events: none;
+    }
+    .bh-act {
+      appearance: none; font: inherit; font-weight: 800; font-size: 0.95rem;
+      background: #ffb347; color: #241505; border: 3px solid #000;
+      box-shadow: 3px 3px 0 #000; padding: 0.55rem 1.15rem; cursor: pointer;
+      pointer-events: auto; line-height: 1; white-space: nowrap;
+      transition: opacity 0.2s ease, transform 0.08s ease;
+    }
+    .bh-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    /* dim and un-pressable until you're actually stood on a patch, then it
+       pulses — the one moment it's usable is the one moment it draws the eye */
+    .bh-act--dig { opacity: 0.3; pointer-events: none; }
+    .bh-act--dig.is-on {
+      opacity: 1; pointer-events: auto;
+      animation: bhDigPulse 1.1s ease-in-out infinite;
+    }
     @keyframes bhDigPulse {
       0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.09); }
+      50% { transform: scale(1.07); }
     }
-    @media (prefers-reduced-motion: reduce) { .bh-chip--dig.is-on { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .bh-act--dig.is-on { animation: none; } }
     /* 🥅 THE NET, ON ITS OWN LAYER so things can pass BEHIND it.
        The net is a wall standing on the sand at NET.y but drawn rising ~138px
        up the screen, so its mesh is nowhere near the line you collide with.
@@ -241,7 +259,8 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     @keyframes bhFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
     .bh-hint {
-      position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); z-index: 7;
+      /* clears the action bar below it (bottom 10px + ~42px tall) */
+      position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); z-index: 7;
       background: rgba(0, 0, 0, 0.55); border: 2px solid #000; color: #fffdf5;
       font-size: 0.78rem; padding: 0.3rem 0.65rem; pointer-events: none; white-space: nowrap;
       transition: opacity 0.4s ease;
@@ -335,7 +354,12 @@ const description = 'The beach at the end of the park road. The sun never quite 
       <div class="bh-hud">
         <span class="bh-chip bh-chip--rally" id="bhRally"></span>
         <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
-        <button class="bh-chip bh-chip--dig" id="bhDigBtn" type="button" aria-label="Dig here">⛏ dig</button>
+      </div>
+      <!-- 🎮 ACTIONS live at the BOTTOM, where a thumb already is; the top bar
+           is for SCORES ONLY. Mixing "what you've got" with "what you can do"
+           put the one usable control in the hardest corner to reach. -->
+      <div class="bh-actions">
+        <button class="bh-act bh-act--dig" id="bhDigBtn" type="button" aria-label="Dig here">⛏ dig</button>
       </div>
       <div class="bh-hint" id="bhHint">tap to walk · tap the ball to play it · tap dark sand to dig</div>
 
