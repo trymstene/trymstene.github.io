@@ -586,10 +586,12 @@ function init() {
   function hint(on) { if (hintEl) hintEl.classList.toggle('is-off', !on); }
 
   // the Captain and his bubble sit at the bar, in world coords
-  capEl.style.left = pct(974, W);
-  capEl.style.top = pct(356, H);
-  capBubble.style.left = pct(974, W);
-  capBubble.style.top = pct(300, H);
+  // he stands BEHIND the counter of the wreck — feet just above the bar top,
+  // so the hull reads as being in front of him
+  capEl.style.left = pct(958, W);
+  capEl.style.top = pct(384, H);
+  capBubble.style.left = pct(958, W);
+  capBubble.style.top = pct(322, H);
 
   // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
   // and place the ball or the banana without playing your way there

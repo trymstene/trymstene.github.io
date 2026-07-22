@@ -25,7 +25,15 @@ Run: python tools/build-beach-scene.py
 import math
 import os
 import random
+import sys
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from blockify import load_pack, blockify
+    HAVE_PACK = os.path.isdir(os.path.expanduser(r'~\OneDrive\banana-art-pack'))
+except Exception:
+    HAVE_PACK = False
 
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(SITE, 'public', 'assets', 'beach')
@@ -82,6 +90,33 @@ def ellipse(cx, cy, rx, ry, col, edge=None):
             d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
             if d <= 1.0:
                 put(x, y, edge if (edge and d > 0.72) else col)
+
+
+# ---- the pack bridge: blockified sprites, cached, bottom-centre anchored ---
+_cache = {}
+
+
+def sprite(name, factor=4, colors=6, warm=0.25, sat=1.22, con=1.12):
+    key = (name, factor, colors, warm, sat, con)
+    if key not in _cache:
+        _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
+                               warm=warm, sat=sat, con=con)
+    return _cache[key]
+
+
+def place(name, cx, base, factor=4, colors=6, warm=0.25, sat=1.22, con=1.12,
+          flip=False, shade=True, sx=1.0):
+    """paste a pack-derived sprite standing ON the sand at (cx, base)"""
+    s = sprite(name, factor, colors, warm, sat, con)
+    if flip:
+        s = s.transpose(Image.FLIP_LEFT_RIGHT)
+    if sx != 1.0:
+        s = s.resize((max(1, int(s.width * sx)), max(1, int(s.height * sx))), Image.NEAREST)
+    if shade:
+        shadow(cx + max(3, s.width // 7), base - 1, max(7, int(s.width * 0.52)),
+               max(3, int(s.height * 0.11)))
+    im.alpha_composite(s, (int(cx - s.width // 2), int(base - s.height)))
+    return s.size
 
 
 def shadow(cx, cy, rx, ry):
@@ -290,40 +325,32 @@ rect(NET_X + 5, CY0 - 26, NET_X + 9, CY1 + 24, SHADE)
 # ---- 🚢 CAPTAIN SPLIT'S SHIPWRECK BAR --------------------------------------
 HX, HY = 862, 330
 HULL, HULL_D, HULL_L = (128, 82, 40), (92, 56, 24), (162, 112, 60)
-shadow(HX + 112, HY + 80, 118, 16)
-for y in range(HY, HY + 84):
-    t = (y - HY) / 84.0
-    half = int(112 * math.sin(math.pi * (0.22 + 0.78 * t)) * 0.9)
-    for x in range(HX + 112 - half, HX + 112 + half):
-        edge = x <= HX + 112 - half + 2 or x >= HX + 112 + half - 3
-        plank = (y - HY) % 12 < 2
-        lit = x < HX + 112 - half + 8
-        put(x, y, HULL_D if (edge or y > HY + 78) else (HULL_L if (plank or lit) else HULL))
-rect(HX + 40, HY - 46, HX + 48, HY + 6, POST)
-rect(HX + 40, HY - 46, HX + 42, HY + 6, TRUNK_L)
-rect(HX + 20, HY - 46, HX + 92, HY - 38, (232, 226, 206))
-for i in range(6):
-    rect(HX + 24 + i * 12, HY - 38, HX + 30 + i * 12, HY - 30 + i % 3 * 4, (216, 210, 190))
-rect(HX + 34, HY - 58, HX + 56, HY - 48, RED)
-rect(HX + 34, HY - 58, HX + 56, HY - 56, (240, 96, 92))
-rect(HX + 30, HY + 30, HX + 194, HY + 44, WOOD_L)
-rect(HX + 30, HY + 30, HX + 194, HY + 33, (206, 154, 90))
-rect(HX + 30, HY + 44, HX + 194, HY + 48, WOOD_D)
-for sx in range(HX + 44, HX + 190, 36):
-    shadow(sx + 9, HY + 76, 12, 4)
-    rect(sx, HY + 54, sx + 18, HY + 60, WOOD)
-    rect(sx, HY + 54, sx + 18, HY + 56, WOOD_L)
-    rect(sx + 6, HY + 60, sx + 12, HY + 74, WOOD_D)
-for i, col in enumerate([(94, 168, 88), (196, 88, 60), (86, 128, 196), (222, 186, 74)]):
-    bx = HX + 52 + i * 34
-    rect(bx, HY + 18, bx + 7, HY + 30, col)
-    rect(bx, HY + 18, bx + 2, HY + 30, tuple(min(255, c + 45) for c in col))
-    rect(bx + 2, HY + 13, bx + 5, HY + 18, col)
-    put(bx + 2, HY + 11, WHITE)
-rect(HX + 168, HY - 14, HX + 172, HY + 2, POST)
-rect(HX + 160, HY + 2, HX + 180, HY + 18, (246, 206, 104))
-rect(HX + 160, HY + 2, HX + 180, HY + 5, (200, 152, 62))
-rect(HX + 166, HY + 7, HX + 174, HY + 14, (255, 246, 190))
+if HAVE_PACK:
+    # the pack's Ship_Bar IS a wrecked-ship bar — exactly Captain Split's place,
+    # and far better than the hull I hand-drew. Anchored so the counter lands
+    # where banana-beach.js expects to be talked to (BAR ≈ 974, 410).
+    place('21_Beach_48x48_Ship_Bar.png', 974, 416, factor=3, colors=9, warm=0.2, sat=1.15)
+    place('21_Beach_48x48_Ship_Bar_Bottle_1_Table.png', 916, 372, factor=3, colors=5, shade=False)
+    place('21_Beach_48x48_Ship_Bar_Cocktail_1_Table.png', 1032, 372, factor=3, colors=5, shade=False)
+    for i, sx in enumerate((904, 950, 996, 1042)):
+        place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, 446,
+              factor=3, colors=5, warm=0.2)
+if not HAVE_PACK:                    # the hand-drawn fallback hull
+    shadow(HX + 112, HY + 80, 118, 16)
+    for y in range(HY, HY + 84):
+        t = (y - HY) / 84.0
+        half = int(112 * math.sin(math.pi * (0.22 + 0.78 * t)) * 0.9)
+        for x in range(HX + 112 - half, HX + 112 + half):
+            edge = x <= HX + 112 - half + 2 or x >= HX + 112 + half - 3
+            plank = (y - HY) % 12 < 2
+            lit = x < HX + 112 - half + 8
+            put(x, y, HULL_D if (edge or y > HY + 78) else (HULL_L if (plank or lit) else HULL))
+    rect(HX + 30, HY + 30, HX + 194, HY + 44, WOOD_L)
+    rect(HX + 30, HY + 30, HX + 194, HY + 33, (206, 154, 90))
+    rect(HX + 30, HY + 44, HX + 194, HY + 48, WOOD_D)
+    for sx in range(HX + 44, HX + 190, 36):
+        rect(sx, HY + 54, sx + 18, HY + 60, WOOD)
+        rect(sx + 6, HY + 60, sx + 12, HY + 74, WOOD_D)
 
 # ---- 🗼 THE LIGHTHOUSE -----------------------------------------------------
 LCX, LBASE = 1306, 356
@@ -344,29 +371,21 @@ for y in range(LBASE - 28, LBASE + 22):
             (ROCK_L if lit else (ROCK_L if speck == 0 else (ROCK_M if speck < 5 else ROCK_D))))
 for gx in (LCX - 34, LCX + 6, LCX + 30):        # tufts clinging to the rock
     grass(gx, LBASE - 14, 4, 0.7)
-for y in range(LBASE - 128, LBASE - 26):       # tower
-    t = (y - (LBASE - 128)) / 102.0
-    hw = int(15 + 10 * t)
-    band = ((y - (LBASE - 128)) // 20) % 2 == 0
-    for x in range(LCX - hw, LCX + hw):
-        edge = abs(x - LCX) > hw - 3
-        lit = (x - LCX) < -hw * 0.35
-        base_col = (RED if band else WHITE)
-        if lit and not edge:
-            base_col = ((240, 96, 92) if band else (255, 255, 252))
-        put(x, y, ((140, 32, 30) if band else WHITE_D) if edge else base_col)
-rect(LCX - 26, LBASE - 138, LCX + 26, LBASE - 128, (86, 84, 78))
-for x in range(LCX - 24, LCX + 24, 6):
-    rect(x, LBASE - 146, x + 2, LBASE - 138, (72, 70, 64))
-rect(LCX - 16, LBASE - 172, LCX + 16, LBASE - 146, (250, 236, 170))
-rect(LCX - 16, LBASE - 172, LCX + 16, LBASE - 168, (86, 84, 78))
-rect(LCX - 9, LBASE - 164, LCX + 9, LBASE - 152, (255, 252, 224))
-rect(LCX - 7, LBASE - 182, LCX + 7, LBASE - 172, RED)
-put(LCX, LBASE - 184, RED_D)
-for i in range(4):                              # the beam, sweeping west
-    rect(LCX - 30 - i * 30, LBASE - 164 + i * 2, LCX - 16 - i * 26, LBASE - 154 - i, (255, 246, 200))
-rect(LCX - 8, LBASE - 56, LCX + 8, LBASE - 26, FRAME)
-rect(LCX - 6, LBASE - 52, LCX + 6, LBASE - 28, (52, 30, 12))
+if HAVE_PACK:
+    # the pack lighthouse has its own lamp room — no hand-drawn beam needed
+    # (mine read as floating white boxes stuck to the sky)
+    place('21_Beach_48x48_Example_Lighthouse.png', LCX, LBASE - 14,
+          factor=5, colors=9, warm=0.12, sat=1.08, shade=False)
+else:
+    for y in range(LBASE - 128, LBASE - 26):
+        t = (y - (LBASE - 128)) / 102.0
+        hw = int(15 + 10 * t)
+        band = ((y - (LBASE - 128)) // 20) % 2 == 0
+        for x in range(LCX - hw, LCX + hw):
+            edge = abs(x - LCX) > hw - 3
+            put(x, y, ((140, 32, 30) if band else WHITE_D) if edge else (RED if band else WHITE))
+    rect(LCX - 16, LBASE - 172, LCX + 16, LBASE - 146, (250, 236, 170))
+    rect(LCX - 8, LBASE - 56, LCX + 8, LBASE - 26, FRAME)
 
 
 # ---- palms: radiating fronds, ringed trunk, base mound, shadow -------------
@@ -446,13 +465,28 @@ def float_ring(cx, cy, col):
             ellipse(cx + i, cy, 2.4, 3.4, WHITE)
 
 
-umbrella(975, 404, RED)
-umbrella(430, 300, (246, 176, 60))
-towel(1016, 464, TEAL)
-towel(232, 556, (240, 153, 123), (255, 236, 214))
-towel(650, 330, (168, 128, 224))
-float_ring(1268, 300, (232, 96, 88))
-float_ring(122, 470, (96, 176, 232))
+if HAVE_PACK:
+    # 🌴 everything below is PACK-DERIVED (LimeZu Modern Exteriors → blockify)
+    for cx, base, f, fl in ((214, 400, 4, False), (346, 478, 5, True), (818, 306, 4, True),
+                            (1122, 394, 4, False), (486, 350, 5, False)):
+        place('21_Beach_48x48_Palm_Tree.png', cx, base, factor=f, colors=7, warm=0.3)
+    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 975, 462, factor=3, colors=5)
+    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 348, factor=3, colors=5)
+    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1036, 492, factor=3, colors=6, shade=False)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 252, 584, factor=3, colors=7, shade=False)
+    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 668, 358, factor=3, colors=6, shade=False)
+    place('21_Beach_48x48_Red_Float.png', 1268, 312, factor=3, colors=5)
+    place('21_Beach_48x48_Green_Float.png', 122, 486, factor=3, colors=5)
+    for cx, base in ((690, 478, ), (1188, 394, ), (322, 548, )):
+        place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base, factor=2, colors=5)
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 806, 534, factor=3, colors=7, warm=0.15)
+    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1064, 574, factor=3, colors=7, warm=0.15)
+    for cx, base in ((178, 308), (466, 292), (742, 304), (1128, 290)):
+        place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, factor=2, colors=4, shade=False)
+    place('21_Beach_48x48_Purple_Small_Starfish.png', 1290, 308, factor=2, colors=4, shade=False)
+    for cx, base, f in ((246, 318, 3), (392, 320, 4), (600, 324, 3),
+                        (930, 316, 4), (1012, 320, 3), (1286, 336, 4)):
+        place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, factor=f, colors=5, shade=False)
 
 
 def chair(x0, y0, c1, c2):
@@ -468,9 +502,16 @@ def chair(x0, y0, c1, c2):
     rect(x0, y0, x0 + 44, y0 + 2, WOOD_L)
 
 
-chair(1092, 424, (255, 225, 53), WHITE)
-chair(1150, 452, TEAL, WHITE)
-chair(158, 460, (244, 137, 178), WHITE)
+if HAVE_PACK:
+    # sunbeds from the pool set — these ARE the sit targets in banana-beach.js,
+    # so they must land on the same rects: (1092,424) (1150,452) (158,460)
+    for i, (x0, y0) in enumerate(((1092, 424), (1150, 452), (158, 460))):
+        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4),
+              x0 + 22, y0 + 34, factor=3, colors=6, warm=0.2)
+else:
+    chair(1092, 424, (255, 225, 53), WHITE)
+    chair(1150, 452, TEAL, WHITE)
+    chair(158, 460, (244, 137, 178), WHITE)
 
 # ---- the bonfire ring ------------------------------------------------------
 shadow(268, 500, 26, 9)
