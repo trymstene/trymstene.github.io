@@ -9,6 +9,15 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { seedRand } from '../lib/world.js';
+// 🔧 GENERATED GEOMETRY — every collider and world line comes from
+// tools/build-beach-scene.py, which declares each collider on the place()
+// call that draws the prop. Never hand-copy a coordinate in here again: the
+// hand-kept version drifted three times (two parasol poles and a palm trunk
+// left standing where their props used to be, one of them ON the court).
+import {
+  WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
+  OB_RECTS, OB_CIRCLES, CHAIRS,
+} from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
 // touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
@@ -61,7 +70,7 @@ function init() {
   // B2: a true TOP-DOWN map at the pack's native 48px scale (see the plan).
   // The banana is ~56 art px — about one tile — so palms and buildings tower
   // over it the way they do in the pack's own world.
-  const W = 2400, H = 1100, VIEW_ART_H = 820;   // ≈ art px shown ACROSS
+  const W = WORLD.w, H = WORLD.h, VIEW_ART_H = 820;   // ≈ art px shown ACROSS
   const world = document.getElementById('bhWorld');
   const meEl = document.getElementById('bhMe');
   const meCtx = document.getElementById('bhMeCv').getContext('2d');
@@ -115,60 +124,19 @@ function init() {
   }
 
   // ---- geometry (art px) --------------------------------------------------
-  const WATER_Y = 292;                    // above this = sea (pier only)
-  const PIER = { x0: 1820, x1: 1960, y0: 60 };
-  const PLATFORM = { x0: 1820, x1: 1960, y0: 60, y1: 308 };
-  const PIER_MOUTH = { x: 1890, y: 348 };
+  // All of it is imported from the GENERATED beach-geo.js. What stays here is
+  // only gameplay TUNING — numbers you'd change by feel, not by moving art.
+  //
   // NET_H is deliberately LOW: a struck ball clears it, a dribbling one
   // doesn't. The rally is about hustle (keep reaching it), not precision —
   // which is the "fidget" hook this area needs, not a skill wall.
-  // ⚠️ THE NET IS HORIZONTAL now (the pack's net pieces are drawn to be laid
-  // left→right, which is also how LimeZu's own beach screenshot uses them).
-  // So the ball crosses it on the Y axis, not X.
-  // ⚠️ KEEP IN SYNC with COURT / NET_BASE in tools/build-beach-scene.py.
-  // Court = 10 × 10 pack tiles at (690, 532); the net's posts stand on its
-  // side lines, so NET_X0/X1 sit ~24px outside the painted court edges.
-  const NET_Y = 844, NET_X0 = 666, NET_X1 = 1194, NET_H = 18;
-  const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
-  const OB_RECTS = [
-    // top-down blocking = the BASE of an object, not its full height: you walk
-    // BEHIND a palm's crown and a lighthouse's tower. Props render at 76%.
-    [0, 306, 250, 980],       // the boardwalk deck
-    [1580, 638, 1822, 748],   // the wreck's hull
-    [318, 434, 344, 470],     // palm trunks
-    [508, 864, 534, 900],
-    [1488, 484, 1514, 520],
-    [1318, 1004, 1344, 1040],
-    [1998, 864, 2024, 900],
-    [748, 524, 774, 560],
-    [2278, 604, 2304, 640],
-    [2122, 686, 2240, 778],   // the lighthouse's base
-    // 🏐 THE NET IS SOLID — you go AROUND the poles, never over or through.
-    // Spans the poles' full width, which is wider than the painted court, so
-    // the detour genuinely leaves the court the way it would in real life.
-    // 20px thick: the banana covers at most 8.4px per step (168 px/s × the
-    // 0.05s dt cap), so it can never tunnel through at a frame-rate spike.
-    [NET_X0, NET_Y - 10, NET_X1, NET_Y + 10],
-  ];
-  const OB_CIRCLES = [
-    [560, 640, 80],           // the bonfire ring
-    // ⚠️ umbrella poles — KEEP IN SYNC with the place() calls in the
-    // generator. These were left behind when the parasols moved for the
-    // bigger court, so one invisible pole was standing ON the court and
-    // another stood where no umbrella had been for two commits.
-    [1265, 548, 13],
-    [430, 1020, 13],
-    [2050, 560, 13],
-  ];
-  const OB_ELLIPSES = [];
-  const CHAIRS = [
-    { rect: [1206, 592, 1276, 646], seat: { x: 1240, y: 636 } },
-    { rect: [1296, 652, 1366, 706], seat: { x: 1330, y: 696 } },
-    { rect: [366, 712, 436, 766], seat: { x: 400, y: 756 } },
-  ];
+  // ⚠️ THE NET IS HORIZONTAL (the pack's net pieces are drawn to be laid
+  // left→right, which is also how LimeZu's own beach screenshot uses them),
+  // so the ball crosses it on the Y axis, not X.
+  const NET_Y = NET.y, NET_X0 = NET.x0, NET_X1 = NET.x1, NET_H = 18;
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   function blocked(x, y) {
-    if (x < 12 || x > 2388 || y > 1088) return true;
+    if (x < 12 || x > WORLD.w - 12 || y > WORLD.h - 12) return true;
     if (y < WATER_Y) {
       const onPier = (x >= PIER.x0 && x <= PIER.x1 && y >= PIER.y0)
         || (x >= PLATFORM.x0 && x <= PLATFORM.x1 && y >= PLATFORM.y0 && y <= PLATFORM.y1);
@@ -176,9 +144,6 @@ function init() {
     }
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
     for (const c of OB_CIRCLES) if (Math.hypot(x - c[0], y - c[1]) < c[2]) return true;
-    for (const e of OB_ELLIPSES) {
-      if (((x - e[0]) / e[2]) ** 2 + ((y - e[1]) / e[3]) ** 2 < 1) return true;
-    }
     return false;
   }
 
@@ -260,7 +225,7 @@ function init() {
   // off the line instead of clipping through it. Because nothing inside the
   // court can obstruct it (audit_court() guarantees that at build time), the
   // ball needs NO obstacle test and no world-edge fences at all.
-  const CT = { x0: 690, y0: 532, x1: 1170, y1: 1012 };   // = COURT in the generator
+  const CT = COURT;                       // from the generated beach-geo.js
   const BALL_R = 14;
   const BX0 = CT.x0 + BALL_R, BX1 = CT.x1 - BALL_R;
   const BY0 = CT.y0 + BALL_R, BY1 = CT.y1 - BALL_R;
@@ -634,8 +599,8 @@ function init() {
         meEl.classList.add('is-sitting');
         if (!satOnce) { satOnce = true; track('beach_sit'); }
       }
-      pos.x = Math.max(12, Math.min(2388, pos.x));
-      pos.y = Math.max(64, Math.min(1088, pos.y));
+      pos.x = Math.max(12, Math.min(W - 12, pos.x));
+      pos.y = Math.max(64, Math.min(H - 12, pos.y));
       meEl.style.left = pct(pos.x, W);
       meEl.style.top = pct(pos.y, H);
       if (pos.x > 300) roadArmed = true;

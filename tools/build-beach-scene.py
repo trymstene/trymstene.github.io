@@ -54,6 +54,30 @@ SHORE_BOT = 306              # shoreline band ends (walkable wet sand below)
 #     so the gaps above the mesh and below the feet match.
 COURT = (690, 532, 1170, 1012)
 NET_BASE = 844                   # y where the net's posts meet the sand
+NET_MIDS = 7                     # mesh tiles between the two post pieces
+
+# ---- 🧭 GAMEPLAY LINES: tuned, not derived from the art -------------------
+# Everything in this block plus every collider below is EMITTED into
+# src/scripts/beach-geo.js at the end of the build. banana-beach.js imports
+# that and holds no hand-copied coordinates of its own — see emit_geo().
+WATER_LINE = 292      # bananas can't swim past this (the art's shore is 306)
+PLATFORM_BOT = 308    # you may stand on the pier's platform down to here
+PIER_MOUTH = (1890, 348)   # land↔pier routes via this waypoint
+BONFIRE = (560, 640, 80)   # the ring's walk collider (tuned; the art is an
+                           # ellipse, but a circle is what feels right here)
+BAR_NOTICE = 104      # how close you get before the Captain greets you
+NET_SOLID_H = 10      # half-thickness of the net's WALK collider. The banana
+                      # covers at most 8.4px per step (SPEED 168 × the 0.05s
+                      # dt cap), so 20px total can never be tunnelled through.
+
+# ---- collider shapes, in coordinates LOCAL to a place()'s (cx, base) ------
+# Top-down blocking is the BASE of an object, never its full height: you walk
+# BEHIND a palm's crown and a lighthouse's tower.
+TRUNK = ('rect', -13, -36, 13, 0)          # a palm's trunk
+POLE = ('circle', 13)                      # a parasol's pole
+WRECK = ('rect', -120, -102, 122, 8)       # Captain Split's hull
+TOWER = ('rect', -58, -84, 60, 8)          # the lighthouse's base
+SUNBED = ('chair', -34, -48, 36, 6, -4)    # rect + where you sit
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
 LIGHT = (2180, 470)
@@ -225,6 +249,7 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
 # ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
+COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
 
 
 
@@ -237,7 +262,7 @@ PROP = 0.76
 
 
 def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
-          flip=False, shade=True, sh=0.30, scale=PROP):
+          flip=False, shade=True, sh=0.30, scale=PROP, solid=None):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
         _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
@@ -255,17 +280,133 @@ def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
            int(cx - s.width // 2) + s.width, int(base))
     im.alpha_composite(s, box[:2])
     PLACED.append((name, box))
+    # ⚠️ THE COLLIDER IS DECLARED HERE, ON THE PLACEMENT. It used to live in a
+    # hand-kept list in banana-beach.js, and it drifted the moment a prop
+    # moved: shifting the parasols for the bigger court left one invisible
+    # pole standing ON the volleyball court and another where no umbrella had
+    # been for two commits. A collider that isn't attached to its prop is a
+    # bug waiting for the next nudge.
+    if solid:
+        COLLIDERS.append((name, solid, int(cx), int(base)))
     return s.size
 
 
+def net_span():
+    """the net's x extent — posts included, which is WIDER than the court"""
+    cx0, _, cx1, _ = COURT
+    w = 96 + NET_MIDS * T + 96
+    x0 = (cx0 + cx1) // 2 - w // 2
+    return x0, x0 + w
+
+
+def emit_geo():
+    """🔧 CODEGEN: write src/scripts/beach-geo.js — the ONE source of the
+    beach's collision geometry. banana-beach.js imports this and keeps no
+    hand-copied coordinates, so a prop and its collider can no longer drift
+    apart. Same treatment the worker allowlists got (task #64)."""
+    def short(n):
+        return n.split('_48x48_')[-1].replace('.png', '').replace('_', ' ').lower()
+
+    rects, circles, chairs = [], [], []
+    bw0, bw1, by0, by1 = BOARDWALK
+    rects.append(([bw0, by0, bw1, by1], 'the boardwalk deck'))
+    for name, shape, cx, base in COLLIDERS:
+        if shape[0] == 'rect':
+            rects.append(([cx + shape[1], base + shape[2],
+                           cx + shape[3], base + shape[4]], short(name)))
+        elif shape[0] == 'circle':
+            circles.append(([cx, base, shape[1]], short(name)))
+        elif shape[0] == 'chair':
+            chairs.append(([cx + shape[1], base + shape[2],
+                            cx + shape[3], base + shape[4]],
+                           [cx, base + shape[5]], short(name)))
+    nx0, nx1 = net_span()
+    rects.append(([nx0, NET_BASE - NET_SOLID_H, nx1, NET_BASE + NET_SOLID_H],
+                  'THE NET — solid; you go AROUND the poles'))
+    circles.append((list(BONFIRE), 'the bonfire ring'))
+
+    def rows(items):
+        return '\n'.join('  [%s],%s' % (', '.join(str(v) for v in it[0]),
+                                        '   // ' + it[1] if it[1] else '')
+                         for it in items)
+    px0, px1, py0, py1 = PIER
+    out = '''// ⚠️⚠️ GENERATED FILE — DO NOT EDIT BY HAND. ⚠️⚠️
+// Written by tools/build-beach-scene.py. Re-run it after moving anything:
+//     python tools/build-beach-scene.py
+//
+// WHY THIS EXISTS: these numbers used to be hand-copied into
+// banana-beach.js beside a "keep in sync" comment, and they drifted the
+// first time a prop moved — shifting the parasols for the bigger volleyball
+// court left one invisible pole standing ON the court and another where no
+// umbrella had been for two commits. Colliders are now declared on the
+// place() call that draws the prop, so the art and the collision are one
+// edit. Top-down blocking is always the BASE of an object, never its full
+// height: you walk BEHIND a palm's crown and a lighthouse's tower.
+export const WORLD = { w: %d, h: %d };
+export const WATER_Y = %d;               // bananas famously can't swim
+export const PIER = { x0: %d, x1: %d, y0: %d };
+export const PLATFORM = { x0: %d, x1: %d, y0: %d, y1: %d };
+export const PIER_MOUTH = { x: %d, y: %d };
+export const COURT = { x0: %d, y0: %d, x1: %d, y1: %d };
+export const NET = { y: %d, x0: %d, x1: %d };
+export const BAR = { x: %d, y: %d, r: %d };
+
+export const OB_RECTS = [
+%s
+];
+
+export const OB_CIRCLES = [
+%s
+];
+
+export const CHAIRS = [
+%s
+];
+''' % (W, H, WATER_LINE,
+       px0, px1, py0,
+       px0, px1, py0, PLATFORM_BOT,
+       PIER_MOUTH[0], PIER_MOUTH[1],
+       COURT[0], COURT[1], COURT[2], COURT[3],
+       NET_BASE, nx0, nx1,
+       BAR[0], BAR[1] + 140, BAR_NOTICE,
+       rows(rects), rows(circles),
+       '\n'.join('  { rect: [%s], seat: { x: %d, y: %d } },   // %s'
+                 % (', '.join(str(v) for v in c[0]), c[1][0], c[1][1], c[2])
+                 for c in chairs))
+    p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
+    with open(p, 'w', encoding='utf-8') as f:
+        f.write(out)
+    print('  wrote src/scripts/beach-geo.js (%d rects, %d circles, %d chairs)'
+          % (len(rects), len(circles), len(chairs)))
+
+
 def audit_court():
-    """⚠️ Nothing may sit on the volleyball court. A sandcastle and a parasol
-    once landed on the boundary lines and it read as broken art, not as
-    clutter. Cheap to check, so check it every build instead of eyeballing."""
+    """⚠️ Nothing may sit on the volleyball court — neither art NOR collision.
+    A sandcastle and a parasol once landed on the boundary lines and read as
+    broken art; separately an invisible parasol POLE was left standing on the
+    court after its umbrella moved, which you could walk into mid-rally. The
+    second one is worse, because there's nothing to see. Check both, every
+    build, instead of eyeballing screenshots."""
     cx0, cy0, cx1, cy1 = COURT
+    hits = 0
     for name, (x0, y0, x1, y1) in PLACED:
         if x0 < cx1 and x1 > cx0 and y0 < cy1 and y1 > cy0:
-            print('  ⚠️  ON THE COURT: %s at %s' % (name, (x0, y0, x1, y1)))
+            print('  ⚠️  ART ON THE COURT: %s at %s' % (name, (x0, y0, x1, y1)))
+            hits += 1
+    for name, shape, cx, base in COLLIDERS:
+        if shape[0] == 'circle':
+            near = (max(cx0, min(cx, cx1)), max(cy0, min(base, cy1)))
+            on = math.hypot(cx - near[0], base - near[1]) < shape[1]
+        else:
+            x0, y0 = cx + shape[1], base + shape[2]
+            x1, y1 = cx + shape[3], base + shape[4]
+            on = x0 < cx1 and x1 > cx0 and y0 < cy1 and y1 > cy0
+        if on:
+            print('  ⚠️  COLLIDER ON THE COURT: %s at (%d, %d)' % (name, cx, base))
+            hits += 1
+    if hits:
+        print('  ⚠️  %d obstruction(s) on the court — move them or the rally '
+              'breaks on something invisible.' % hits)
 
 
 if HAVE_PACK:
@@ -285,7 +426,7 @@ if HAVE_PACK:
     for cx, base, fl in ((330, 470, False), (520, 900, True), (1500, 520, False),
                          (1330, 1040, True), (2010, 900, False), (600, 528, True),
                          (2290, 640, False)):
-        place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26)
+        place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK)
     for cx, base in ((430, 372), (900, 366), (1600, 380), (2120, 372), (660, 362)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False)
 
@@ -332,7 +473,6 @@ if HAVE_PACK:
     # squares beside the real net and made me give up and draw it by hand.
     # ⚠️ Composed at native size and blockified ONCE: outlining each tile
     # separately would ink a vertical bar down every seam in the mesh.
-    NET_MIDS = 7
     net = Image.new('RGBA', (96 + NET_MIDS * T + 96, 144), (0, 0, 0, 0))
     net.alpha_composite(load_pack(NT % 'Left'), (0, 0))
     for i in range(NET_MIDS):
@@ -346,20 +486,22 @@ if HAVE_PACK:
     im.alpha_composite(net, (NET_LEFT_X - 1, NET_BASE - 138 - 1))
 
     # 🚢 Captain Split's wreck
-    place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34)
+    place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34,
+          solid=WRECK)
     for i, sx in enumerate((BAR[0] - 150, BAR[0] - 50, BAR[0] + 50, BAR[0] + 150)):
         place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, BAR[1] + 200)
 
     # 🗼 the lighthouse — factor 2, or it would eat half the map
     place('21_Beach_48x48_Example_Lighthouse.png', LIGHT[0], LIGHT[1] + 300,
-          factor=2, colors=12, sh=0.24)
+          factor=2, colors=12, sh=0.24, solid=TOWER)
 
     # ⛱ furniture
-    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548)
-    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020)  # off the court
-    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560)
+    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548, solid=POLE)
+    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020, solid=POLE)
+    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560, solid=POLE)
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
-        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0)
+        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0,
+              solid=SUNBED)
     place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1450, 780, shade=False)
     place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 520, 1074, shade=False)
     place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1900, 800, shade=False)
@@ -376,6 +518,7 @@ if HAVE_PACK:
     for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
     audit_court()
+    emit_geo()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
     # mystery object ("what's this brown thing at the beach?"). Now it has
