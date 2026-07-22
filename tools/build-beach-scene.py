@@ -88,7 +88,10 @@ SUNBED = ('chair', -34, -48, 36, 6, -4)    # rect + where you sit
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
 LIGHT = (2180, 470)
-BOARDWALK = (0, 250, 306, 980)
+# the seafront PLAZA — widened from a 250px sliver to 430 so the midway can
+# sprawl instead of forming a rigid column (Trym: "too symmetric and mechanic…
+# should look more bohemic and beachy"). You still walk the sand at its edge.
+BOARDWALK = (0, 430, 306, 980)
 
 im = Image.new('RGBA', (W, H), (54, 132, 158, 255))
 px = im.load()
@@ -559,7 +562,8 @@ if HAVE_PACK:
     rect(bw0, by1 - 5, bw1, by1, (110, 68, 30))
 
     # 🌴 palms — native scale, so they tower over a 56px banana
-    for cx, base, fl in ((330, 470, False), (520, 900, True), (1500, 520, False),
+    # (the old (330,470) palm moved to (800,470) — the wider plaza reaches x430)
+    for cx, base, fl in ((800, 470, False), (520, 900, True), (1500, 520, False),
                          (1330, 1040, True), (2010, 900, False), (600, 528, True),
                          (2290, 640, False)):
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
@@ -666,40 +670,51 @@ if HAVE_PACK:
     for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
 
-    # 🎡 THE MIDWAY — a row of stalls down the BOARDWALK. The boardwalk is
-    # already a raised wooden deck you can't walk on (it's one OB_RECT), which
-    # is exactly right: the stalls sit ON it and you stand on the sand in front,
-    # the way a seaside promenade actually works. No new terrain, no new
-    # collider — the deck's existing rect covers all four.
-    # 🕹 THE GRABBER heads the promenade. ⚠️ NOT on the pier any more — it sat
-    # across the whole dock, and the dock is reserved for fishing and boat
-    # rides. Here it's the first thing you meet walking the boardwalk, which
-    # is a better job for a landmark anyway: you see the grand prize on your
-    # way IN, long before you can afford it.
-    gr = build_grabber()
-    GRABBER.extend([170, 400])
-    gbox = (GRABBER[0] - gr.width // 2, GRABBER[1] - gr.height)
-    shadow(GRABBER[0], GRABBER[1] - 4, gr.width * 0.36, 9, 54)
-    im.alpha_composite(gr, gbox)
-    PLACED.append(('grabber', (gbox[0], gbox[1], gbox[0] + gr.width, GRABBER[1])))
-    _gfn = 'ov-%d.png' % len(OVERLAYS)
-    gr.save(os.path.join(OUT, _gfn), optimize=True)
-    OVERLAYS.append((_gfn, gbox[0], gbox[1], gr.width, gr.height, GRABBER[1]))
-
-    # …then the four stalls below it. Spacing must be ≥ STALL_H (132) or they
-    # overlap; 140 fits all four plus the grabber inside the deck's 306→980.
-    for i, hue in enumerate(STALL_HUES):
-        st = build_stall(hue)
-        cx, base = 170, 550 + i * 140
-        box = (int(cx - st.width // 2), int(base - st.height))
-        shadow(cx, base - 4, st.width * 0.34, 9, 52)
-        im.alpha_composite(st, box)
-        PLACED.append(('stall-%d' % i, (box[0], box[1], box[0] + st.width, base)))
+    # 🎡 THE MIDWAY, laid out BOHEMIAN not mechanical. The deck is one OB_RECT
+    # you can't walk on; you comb the sand at its edge and step up to a stall.
+    # The game stalls run down the FRONT of the plaza (toward the sand) with
+    # jittered x and UNEVEN y so nothing lines up; the fruit carts and clutter
+    # fill the BACK (toward the water) so the promenade reads as lived-in.
+    def midway_overlay(spr, cx, base, sh=0.34):
+        box = (int(cx - spr.width // 2), int(base - spr.height))
+        shadow(cx, base - 4, spr.width * sh, 9, 52)
+        im.alpha_composite(spr, box)
         fn = 'ov-%d.png' % len(OVERLAYS)
-        st.save(os.path.join(OUT, fn), optimize=True)
-        OVERLAYS.append((fn, box[0], box[1], st.width, st.height, int(base)))
-        STALLS.append((cx, int(base)))
-    print('  wrote %d midway stalls' % len(STALL_HUES))
+        spr.save(os.path.join(OUT, fn), optimize=True)
+        OVERLAYS.append((fn, box[0], box[1], spr.width, spr.height, int(base)))
+        PLACED.append(('midway', (box[0], box[1], box[0] + spr.width, int(base))))
+
+    # 🕹 the grabber heads the promenade — first thing you meet, grand prize on
+    # show long before you can afford it.
+    gr = build_grabber()
+    GRABBER.extend([300, 402])
+    midway_overlay(gr, GRABBER[0], GRABBER[1], sh=0.36)
+
+    # the four game stalls, front band, staggered. (cx, base) hand-tuned, not
+    # a formula — a formula is exactly what read as mechanical.
+    STALL_POS = [(300, 556), (270, 690), (312, 824), (276, 958)]
+    for (cx, base), hue in zip(STALL_POS, STALL_HUES):
+        st = build_stall(hue)
+        midway_overlay(st, cx, base)
+        STALLS.append((cx, base))
+
+    # 🍎 FRUIT CARTS — the pack's own (Fruit_Flowers_Cart 2 & 3): a wagon with a
+    # striped parasol and crates of produce, tucked in the BACK of the plaza to
+    # break up the row. Decorative only — no STALLS entry, so nothing to tap.
+    for name, cx, base in (('2', 120, 486), ('3', 96, 726), ('2', 132, 946)):
+        place('ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_%s.png' % name, cx, base,
+              colors=14, sh=0.3, solid=('rect', -46, -30, 46, 0), layer=True)
+    # bohemian clutter — baskets, barrels, crates scattered through the gaps
+    for name, cx, base in (
+            ('ME_Singles_Camping_48x48_Pier_Barrel_1.png', 66, 566),
+            ('ME_Singles_Camping_48x48_Basket_1.png', 210, 470),
+            ('ME_Singles_Camping_48x48_Pier_Crates_2.png', 74, 654),
+            ('ME_Singles_Camping_48x48_Basket_2.png', 196, 758),
+            ('ME_Singles_Camping_48x48_Pier_Barrel_3.png', 60, 858),
+            ('ME_Singles_Camping_48x48_Pier_Crates_4.png', 214, 902)):
+        place(name, cx, base, colors=10, sh=0.28, solid=('circle', 15), layer=True)
+    print('  wrote the bohemian midway (grabber + %d stalls + carts + clutter)'
+          % len(STALL_POS))
 
     audit_court()
 

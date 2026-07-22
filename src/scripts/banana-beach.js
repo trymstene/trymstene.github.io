@@ -747,7 +747,7 @@ function init() {
   // sea, on the pier and inside the court. Hand-placing also buys the treasure
   // map its clue for free: every site already has a landmark name.
   const DIG_SITES = [
-    { x: 402, y: 424, clue: 'where the wet sand remembers the tide' },
+    { x: 540, y: 424, clue: 'where the wet sand remembers the tide' },
     { x: 596, y: 1042, clue: 'south of the old fire ring' },
     { x: 1298, y: 402, clue: 'up where the sea comes closest' },
     { x: 1452, y: 906, clue: 'east of the court, past the towel' },
@@ -755,7 +755,7 @@ function init() {
     { x: 2166, y: 918, clue: 'in the lighthouse’s long shadow' },
     { x: 2258, y: 430, clue: 'the far corner, where the rocks sit' },
     { x: 906, y: 1064, clue: 'just south of the volley court' },
-    { x: 352, y: 706, clue: 'between the boardwalk and the palms' },
+    { x: 560, y: 706, clue: 'between the boardwalk and the palms' },
   ];
   const PATCH_W = 156, PATCH_H = 104;
   const DIG_REACH = 46;            // how near a buried spot a dig has to land
@@ -1291,11 +1291,16 @@ function init() {
   })();
 
   // tapping a stall: step up to the counter, or open it if you're already there
+  // ⚠️ You stand on the SAND at the plaza's edge, not beside the stall. The
+  // deck (a widened OB_RECT) is unwalkable, so "in front of" a stall deep in
+  // the plaza is the sand just past its right edge, at the stall's own y.
+  const PLAZA_EDGE = 430;                 // = BOARDWALK x1 in the generator
+  const frontOf = (y) => ({ x: PLAZA_EDGE + 48, y });
   function tapGrabber(wx, wy) {
-    if (Math.abs(wx - GRABBER.x) < 60 && wy > GRABBER.y - 155 && wy < GRABBER.y + 20) {
-      // it heads the promenade now, so you just walk up to it like a stall
-      if (Math.hypot(pos.x - (GRABBER.x + 120), pos.y - GRABBER.y) < 150) openGrabber();
-      else { nextTgt = null; tgt.x = GRABBER.x + 120; tgt.y = GRABBER.y; }
+    if (Math.abs(wx - GRABBER.x) < 62 && wy > GRABBER.y - 155 && wy < GRABBER.y + 20) {
+      const f = frontOf(GRABBER.y);
+      if (Math.hypot(pos.x - f.x, pos.y - f.y) < 150) openGrabber();
+      else { nextTgt = null; tgt.x = f.x; tgt.y = f.y; }
       return true;
     }
     return false;
@@ -1304,9 +1309,9 @@ function init() {
     const i = STALLS.findIndex((s) => Math.abs(wx - s.x) < 82
       && wy > s.y - 140 && wy < s.y + 24);
     if (i < 0) return false;
-    const s = STALLS[i];
-    if (Math.hypot(pos.x - (s.x + 120), pos.y - s.y) < 150) openStall(i);
-    else { nextTgt = null; tgt.x = s.x + 120; tgt.y = s.y; }   // stand on the sand
+    const f = frontOf(STALLS[i].y);
+    if (Math.hypot(pos.x - f.x, pos.y - f.y) < 150) openStall(i);
+    else { nextTgt = null; tgt.x = f.x; tgt.y = f.y; }
     return true;
   }
 
