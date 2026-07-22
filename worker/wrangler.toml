@@ -26,8 +26,8 @@ crons = ["17 3 * * *"]
 #                           Shopify admin -> Settings -> Notifications -> Webhooks)
 #   SHOPIFY_CLIENT_SECRET   the "banana-fulfilment" dev-dashboard app's Secret
 #                           (Settings -> Credentials; scopes write_products,
-#                           read_products, write_publications,
-#                           read_publications) — the worker exchanges it for
+#                           read_products, write_publications, read_publications,
+#                           write_shipping, read_shipping) — the worker exchanges it for
 #                           short-lived Admin tokens (client-credentials grant)
 #                           to power per-order checkout-image products; absent =
 #                           feature off, clients fall back to the shared variant

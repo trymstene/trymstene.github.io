@@ -87,7 +87,15 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/upload') return handleUpload(request, env);
-      if (url.pathname === '/checkout') return handleCheckout(request, env, url);
+      if (url.pathname === '/checkout') {
+        // own catch: surface WHICH admin step failed (message only — gids and
+        // step names, nothing secret; clients treat any non-200 as fallback)
+        try { return await handleCheckout(request, env, url); }
+        catch (e) {
+          console.error('checkout mint failed:', e.message);
+          return json({ error: 'mint failed', detail: String(e.message).slice(0, 300) }, 500, corsHeaders(env, request));
+        }
+      }
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
       if (url.pathname === '/health') return handleHealth(env);
@@ -218,6 +226,21 @@ async function headlessPublicationId(env) {
   return HEADLESS_PUB;
 }
 
+// Free worldwide shipping lives in the "Stickers" delivery profile — a product
+// left in the DEFAULT profile charges real rates (the same checklist trap that
+// once hit the tee + magnet, now automated away). Association is MANDATORY:
+// if it fails, /checkout fails, and the client falls back to the shared
+// variant whose shipping is correct — wrong shipping must never reach a buyer.
+let STICKERS_PROFILE = null;
+async function stickersProfileId(env) {
+  if (STICKERS_PROFILE) return STICKERS_PROFILE;
+  const d = await adminGql(env, 'query { deliveryProfiles(first: 10) { nodes { id name } } }');
+  const hit = (d.deliveryProfiles.nodes || []).find((p) => /sticker/i.test(p.name));
+  if (!hit) throw new Error('no Stickers delivery profile found');
+  STICKERS_PROFILE = hit.id;
+  return STICKERS_PROFILE;
+}
+
 async function handleCheckout(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env, request) });
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
@@ -267,6 +290,16 @@ async function handleCheckout(request, env, url) {
   });
   if (upd.productVariantsBulkUpdate.userErrors.length) {
     throw new Error('variantUpdate: ' + JSON.stringify(upd.productVariantsBulkUpdate.userErrors));
+  }
+
+  // free-shipping profile — mandatory, see stickersProfileId (needs the
+  // write_shipping scope; without it this throws and the client falls back)
+  const ship = await adminGql(env, `
+    mutation($id: ID!, $profile: DeliveryProfileInput!) {
+      deliveryProfileUpdate(id: $id, profile: $profile) { userErrors { field message } }
+    }`, { id: await stickersProfileId(env), profile: { variantsToAssociate: [variantGid] } });
+  if (ship.deliveryProfileUpdate.userErrors.length) {
+    throw new Error('shippingProfile: ' + JSON.stringify(ship.deliveryProfileUpdate.userErrors));
   }
 
   // headless channel ONLY: sellable via the Storefront API, invisible to browsing
