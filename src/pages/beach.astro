@@ -73,9 +73,10 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     /* sprites live IN the world and size in % of it → camera-safe */
     /* sizes are % OF THE WORLD (2400×1100) so sprites ride the camera free.
-       The banana is ~56 art px = 2.33% — about one pack tile, which is the
-       scale the pack's own art is drawn against. */
-    .bh-me { position: absolute; z-index: 6; width: 2.33%; transform: translate(-50%, -100%); pointer-events: none; }
+       The banana runs ~86 art px (3.6%) — deliberately BIGGER than the pack's
+       own character scale, because at 1:1 it read as a doll among the
+       furniture. It's the star of the site; heroic beats technically correct. */
+    .bh-me { position: absolute; z-index: 6; width: 3.6%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-me::after {                     /* the contact shadow — without it a
                                            flat sprite floats over the sand */
       content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
@@ -85,7 +86,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
     /* Captain Split behind his counter */
-    .bh-cap { position: absolute; z-index: 3; width: 2.7%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-cap { position: absolute; z-index: 3; width: 4%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-cap canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-capbubble {
       position: absolute; z-index: 8; transform: translate(-50%, -100%);
@@ -100,15 +101,15 @@ const description = 'The beach at the end of the park road. The sun never quite 
       border: 5px solid transparent; border-top-color: #000;
     }
     .bh-ball {
-      position: absolute; z-index: 5; width: 0.78%;
+      position: absolute; z-index: 5; width: 1.05%;
       transform: translate(-50%, -50%); pointer-events: none; image-rendering: pixelated;
     }
     .bh-ballshadow {
-      position: absolute; z-index: 4; width: 0.78%; aspect-ratio: 2 / 1;
+      position: absolute; z-index: 4; width: 1.05%; aspect-ratio: 2 / 1;
       transform: translate(-50%, -50%); pointer-events: none;
       background: rgba(0, 0, 0, 0.22); border-radius: 50%;
     }
-    .bh-crab { position: absolute; z-index: 4; width: 0.62%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-crab { position: absolute; z-index: 4; width: 0.95%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-crab img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     /* 🕊 gulls crossing the bay — one sprite, two wing frames stepped */
     .bh-gull {

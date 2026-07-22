@@ -104,13 +104,22 @@ else:
 
 # a warm golden-hour grade over the whole map — the sunset survives as LIGHT,
 # not as a literal sky (there is no sky in a top-down world)
+# Trym: the sand went "deep and red" — the pack's sand is a saturated orange
+# and my warm grade pushed it further. Blend the ground toward a BRIGHT cream
+# (our own sand colour) and leave the water alone but lift it slightly.
+SAND_TARGET = (252, 234, 190)
 for y in range(H):
-    warm = 1.0 - (y / float(H)) * 0.25
+    ground = y > WATER_BOT - 30
+    k = 0.42 if ground else 0.0
     for x in range(W):
         r, g, b, a = px[x, y]
-        px[x, y] = (min(255, int(r * (1.0 + 0.045 * warm))),
-                    min(255, int(g * (1.0 + 0.012 * warm))),
-                    int(b * (1.0 - 0.055 * warm)), a)
+        if k:
+            r = int(r * (1 - k) + SAND_TARGET[0] * k)
+            g = int(g * (1 - k) + SAND_TARGET[1] * k)
+            b = int(b * (1 - k) + SAND_TARGET[2] * k)
+        else:
+            r = min(255, int(r * 1.04)); g = min(255, int(g * 1.03))
+        px[x, y] = (min(255, r), min(255, g), min(255, b), a)
 
 # glitter scattered on the open water (no sun disc — nothing to reflect in a
 # top-down view; it's just sparkle on the swell)
@@ -123,13 +132,23 @@ for _ in range(700):
 _cache = {}
 
 
-def place(name, cx, base, factor=1, colors=10, warm=0.16, sat=1.12, con=1.06,
-          flip=False, shade=True, sh=0.30):
+# Props render at 76% of the pack's native size: at 1:1 the pack's own
+# character scale made our banana look like a doll among the furniture, and the
+# banana is the star of this site (Trym: "everything is huge, the banana is
+# very tiny"). Slightly heroic proportions beat technically-correct ones.
+PROP = 0.76
+
+
+def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
+          flip=False, shade=True, sh=0.30, scale=PROP):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
         _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
                                warm=warm, sat=sat, con=con)
     s = _cache[key]
+    if scale != 1.0:
+        s = s.resize((max(1, int(s.width * scale)), max(1, int(s.height * scale))),
+                     Image.NEAREST)
     if flip:
         s = s.transpose(Image.FLIP_LEFT_RIGHT)
     if shade:

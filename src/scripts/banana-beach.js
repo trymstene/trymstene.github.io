@@ -125,8 +125,10 @@ function init() {
   const NET_X = 940, NET_Y0 = 690, NET_Y1 = 1034, NET_H = 18;
   const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
   const OB_RECTS = [
+    // top-down blocking = the BASE of an object, not its full height: you walk
+    // BEHIND a palm's crown and a lighthouse's tower. Props render at 76%.
     [0, 306, 250, 980],       // the boardwalk deck
-    [1560, 606, 1846, 744],   // the wreck
+    [1580, 638, 1822, 748],   // the wreck's hull
     [318, 434, 344, 470],     // palm trunks
     [508, 864, 534, 900],
     [1488, 484, 1514, 520],
@@ -134,7 +136,7 @@ function init() {
     [1998, 864, 2024, 900],
     [748, 524, 774, 560],
     [2278, 604, 2304, 640],
-    [2076, 470, 2284, 780],   // the lighthouse
+    [2122, 686, 2240, 778],   // the lighthouse's base
   ];
   const OB_CIRCLES = [
     [560, 640, 80],           // the bonfire ring
