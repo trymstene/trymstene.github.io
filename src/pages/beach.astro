@@ -40,42 +40,29 @@ const description = 'The beach at the end of the park road. The sun never quite 
        speeds over the water band, plus a stepped foam wash at the shoreline.
        The tiles are 160px wide, so translating exactly one tile loops
        seamlessly. Percentages are of the 1400×620 world plate. */
-    .bh-sea, .bh-foam {
-      position: absolute; left: -12%; width: 124%;
+    .bh-sea {
+      position: absolute; left: 0; width: 100%;
       pointer-events: none; image-rendering: pixelated;
     }
-    /* ⚠️ the drift overlay stops at the WATER EDGE (y 258 of 1100). It used to
-       run to 28% and washed over the shore tile, which — together with the
-       separate foam strip — stacked THREE shorelines on top of each other.
-       The pack's shore tile already carries its own foam; it is the only
-       water→sand edge now. */
+    /* 🌊 THE PACK'S OWN WATER ANIMATION. The sea tileset ships FOUR frames
+       (72 columns = 4 × 18); each is baked into a 48px-wide tileable strip
+       covering the water band AND the single shore row. We stack the four and
+       step their opacity — the same flip-book pattern as the rave's poof and
+       the park's birds. This layer is opaque and sits exactly over the plate's
+       own water, so with motion off the baked frame shows through unchanged. */
     .bh-sea {
-      top: 0; height: 21.4%;                      /* the open water, y 0 → 236 */
-      background-image: url('/assets/beach/sea-lines.png');
-      background-repeat: repeat;
-      background-size: auto 100%;
-    }
-    .bh-sea--a { animation: bhDriftA 19s linear infinite; opacity: 0.85; }
-    .bh-sea--b { animation: bhDriftB 31s linear infinite; opacity: 0.5; transform: scaleY(-1); }
-    @keyframes bhDriftA { to { background-position-x: -160px; } }
-    @keyframes bhDriftB { to { background-position-x: 160px; } }
-    .bh-foam {
-      top: 22.4%; height: 2.4%;                   /* the waterline, y 246 → 272 */
-      background-image: url('/assets/beach/foam.png');
+      top: 0; height: 26.18%;                     /* y 0 → 288: water + shore */
       background-repeat: repeat-x;
       background-size: auto 100%;
-      animation: bhWash 1.6s steps(1) infinite;
+      opacity: 0;
+      animation: bhSeaFlip 0.72s steps(1) infinite;
     }
-    /* four frames of foam creeping up the sand and sliding back */
-    @keyframes bhWash {
-      0%   { background-position: 0 0; }
-      25%  { background-position: -160px 0; }
-      50%  { background-position: -320px 0; }
-      75%  { background-position: -480px 0; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .bh-sea--a, .bh-sea--b, .bh-foam { animation: none; }
-    }
+    .bh-sea--0 { background-image: url('/assets/beach/sea-f0.png'); animation-delay: 0s; }
+    .bh-sea--1 { background-image: url('/assets/beach/sea-f1.png'); animation-delay: -0.18s; }
+    .bh-sea--2 { background-image: url('/assets/beach/sea-f2.png'); animation-delay: -0.36s; }
+    .bh-sea--3 { background-image: url('/assets/beach/sea-f3.png'); animation-delay: -0.54s; }
+    @keyframes bhSeaFlip { 0%, 24.99% { opacity: 1; } 25%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .bh-sea { display: none; } }
     /* sprites live IN the world and size in % of it → camera-safe */
     /* sizes are % OF THE WORLD (2400×1100) so sprites ride the camera free.
        The banana runs ~86 art px (3.6%) — deliberately BIGGER than the pack's
@@ -228,8 +215,10 @@ const description = 'The beach at the end of the park road. The sun never quite 
 
     <div class="bh-view" id="bhView">
       <div class="bh-world" id="bhWorld">
-        <div class="bh-sea bh-sea--a" aria-hidden="true"></div>
-        <div class="bh-sea bh-sea--b" aria-hidden="true"></div>
+        <div class="bh-sea bh-sea--0" aria-hidden="true"></div>
+        <div class="bh-sea bh-sea--1" aria-hidden="true"></div>
+        <div class="bh-sea bh-sea--2" aria-hidden="true"></div>
+        <div class="bh-sea bh-sea--3" aria-hidden="true"></div>
         <div class="bh-ballshadow" id="bhBallShadow"></div>
         <img class="bh-ball" id="bhBall" src="/assets/beach/ball.png" alt="" aria-hidden="true" />
         <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>

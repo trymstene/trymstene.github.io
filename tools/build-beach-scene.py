@@ -90,9 +90,21 @@ if HAVE_PACK:
     def seatile(c, r):
         return sea.crop((c * T, r * T, (c + 1) * T, (r + 1) * T))
 
-    SAND_T = seatile(5, 1)                                  # pure sand
-    WATER_T = seatile(1, 1)                                 # open water
-    SHORE_T = seatile(1, 0).transpose(Image.FLIP_TOP_BOTTOM)  # water above, sand below
+    # ⚠️ THE SHORE TILE IS (1,3), UNFLIPPED. It is the blob's bottom edge:
+    # water, a light foam rim, then sand — seamless when tiled, and exactly the
+    # transition LimeZu's own screenshots show. I had been FLIPPING tile (1,0),
+    # which is a sand-water-SAND tile, so flipping it produced a hard line
+    # against the deep water and a pale band with no rim on the sand side.
+    # ⚠️ The sheet is 72 cols = FOUR ANIMATION FRAMES of 18 columns (verified by
+    # diffing tile 0,0 against tile 18,0). frame(f) offsets by f * 18.
+    FRAMES, FCOLS = 4, 18
+
+    def frame_tile(c, r, f):
+        return seatile(c + f * FCOLS, r)
+
+    SAND_T = seatile(5, 1)
+    WATER_T = frame_tile(1, 1, 0)
+    SHORE_T = frame_tile(1, 3, 0)
     # ⚠️ EXACTLY ONE shore row. The old condition (`SHORE_T if y < SHORE_BOT`)
     # made every row from 240 to 336 a shore tile, so TWO stacked shore tiles
     # drew two sand edges with water between them — Trym: "doubled sand-edge
@@ -288,7 +300,33 @@ print('wrote beach.png (%dx%d) %.0f KB' % (W, H,
       os.path.getsize(os.path.join(OUT, 'beach.png')) / 1024.0))
 
 # ============================================================================
-# 🌊 the drifting water overlay + the shoreline wash
+# 🌊 THE REAL ANIMATED WATER: the pack's own 4 frames, baked into 4 tileable
+# column strips (48 wide x the whole water+shore band). The page stacks them
+# and steps their opacity — the established flip-book pattern in this codebase.
+SEA_BAND = 288                      # water rows 0..240 + the ONE shore row
+if HAVE_PACK:
+    for f in range(4):
+        strip_f = Image.new('RGBA', (T, SEA_BAND), (0, 0, 0, 0))
+        for y in range(0, SEA_BAND, T):
+            t = frame_tile(1, 3, f) if y == 240 else frame_tile(1, 1, f)
+            strip_f.alpha_composite(t, (0, y))
+        # match the plate's colour grade so the animation can't seam against it
+        sp2 = strip_f.load()
+        for y in range(SEA_BAND):
+            ground = y > WATER_BOT - 30
+            k = 0.42 if ground else 0.0
+            for x in range(T):
+                r, g, b, a = sp2[x, y]
+                if k:
+                    r = int(r * (1 - k) + SAND_TARGET[0] * k)
+                    g = int(g * (1 - k) + SAND_TARGET[1] * k)
+                    b = int(b * (1 - k) + SAND_TARGET[2] * k)
+                else:
+                    r = min(255, int(r * 1.04)); g = min(255, int(g * 1.03))
+                sp2[x, y] = (min(255, r), min(255, g), min(255, b), a)
+        strip_f.save(os.path.join(OUT, 'sea-f%d.png' % f), optimize=True)
+    print('wrote sea-f0..3.png (the pack\'s own water animation)')
+
 TW, TH = 192, WATER_BOT + 40
 lines = Image.new('RGBA', (TW, TH), (0, 0, 0, 0))
 lp = lines.load()
