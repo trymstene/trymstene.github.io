@@ -72,11 +72,11 @@ export const OVERLAYS = [
   { src: 'ov-9.png', x: 1211, y: 408, w: 108, h: 140, base: 548 },
   { src: 'ov-10.png', x: 376, y: 880, w: 108, h: 140, base: 1020 },
   { src: 'ov-11.png', x: 1996, y: 420, w: 108, h: 140, base: 560 },
-  { src: 'ov-12.png', x: 91, y: 306, w: 158, h: 134, base: 440 },
-  { src: 'ov-13.png', x: 91, y: 466, w: 158, h: 134, base: 600 },
-  { src: 'ov-14.png', x: 91, y: 626, w: 158, h: 134, base: 760 },
-  { src: 'ov-15.png', x: 91, y: 786, w: 158, h: 134, base: 920 },
-  { src: 'ov-16.png', x: 1841, y: 84, w: 94, h: 152, base: 236 },
+  { src: 'ov-12.png', x: 123, y: 248, w: 94, h: 152, base: 400 },
+  { src: 'ov-13.png', x: 91, y: 416, w: 158, h: 134, base: 550 },
+  { src: 'ov-14.png', x: 91, y: 556, w: 158, h: 134, base: 690 },
+  { src: 'ov-15.png', x: 91, y: 696, w: 158, h: 134, base: 830 },
+  { src: 'ov-16.png', x: 91, y: 836, w: 158, h: 134, base: 970 },
 ];
 
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
@@ -86,12 +86,12 @@ export const PIER_SPRITE = { x: 1812, y: 60, w: 156, h: 258 };
 // 🎡 the midway. Each entry is where a stall's COUNTER is — the page hangs a
 // sign above it and opens that stall's view when you tap it.
 export const STALLS = [
-  { x: 170, y: 440 },
-  { x: 170, y: 600 },
-  { x: 170, y: 760 },
-  { x: 170, y: 920 },
+  { x: 170, y: 550 },
+  { x: 170, y: 690 },
+  { x: 170, y: 830 },
+  { x: 170, y: 970 },
 ];
 
 // 🕹 the claw machine at the seaward end of the pier — the midway's one
 // landmark and the only place tickets buy the grand prize.
-export const GRABBER = { x: 1888, y: 236 };
+export const GRABBER = { x: 170, y: 400 };

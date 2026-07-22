@@ -671,9 +671,26 @@ if HAVE_PACK:
     # is exactly right: the stalls sit ON it and you stand on the sand in front,
     # the way a seaside promenade actually works. No new terrain, no new
     # collider — the deck's existing rect covers all four.
+    # 🕹 THE GRABBER heads the promenade. ⚠️ NOT on the pier any more — it sat
+    # across the whole dock, and the dock is reserved for fishing and boat
+    # rides. Here it's the first thing you meet walking the boardwalk, which
+    # is a better job for a landmark anyway: you see the grand prize on your
+    # way IN, long before you can afford it.
+    gr = build_grabber()
+    GRABBER.extend([170, 400])
+    gbox = (GRABBER[0] - gr.width // 2, GRABBER[1] - gr.height)
+    shadow(GRABBER[0], GRABBER[1] - 4, gr.width * 0.36, 9, 54)
+    im.alpha_composite(gr, gbox)
+    PLACED.append(('grabber', (gbox[0], gbox[1], gbox[0] + gr.width, GRABBER[1])))
+    _gfn = 'ov-%d.png' % len(OVERLAYS)
+    gr.save(os.path.join(OUT, _gfn), optimize=True)
+    OVERLAYS.append((_gfn, gbox[0], gbox[1], gr.width, gr.height, GRABBER[1]))
+
+    # …then the four stalls below it. Spacing must be ≥ STALL_H (132) or they
+    # overlap; 140 fits all four plus the grabber inside the deck's 306→980.
     for i, hue in enumerate(STALL_HUES):
         st = build_stall(hue)
-        cx, base = 170, 440 + i * 160
+        cx, base = 170, 550 + i * 140
         box = (int(cx - st.width // 2), int(base - st.height))
         shadow(cx, base - 4, st.width * 0.34, 9, 52)
         im.alpha_composite(st, box)
@@ -713,20 +730,6 @@ if HAVE_PACK:
     # a dock is a FLOOR, not a wall — it must never occlude a banana standing
     # on it. Cropped off the finished plate, so the water it carries at its
     # edges is identical to what sits underneath.
-    # 🕹 THE GRABBER, at the SEAWARD end of the pier — the midway's landmark,
-    # so reaching it is a small pilgrimage down the jetty.
-    # ⚠️ MUST be placed AFTER the pier is drawn: the deck's planks are painted
-    # with rect() straight onto the plate, so a grabber placed with the other
-    # props got buried under them.
-    gr = build_grabber()
-    GRABBER.extend([1888, 236])
-    gbox = (GRABBER[0] - gr.width // 2, GRABBER[1] - gr.height)
-    im.alpha_composite(gr, gbox)
-    PLACED.append(('grabber', (gbox[0], gbox[1], gbox[0] + gr.width, GRABBER[1])))
-    _gfn = 'ov-%d.png' % len(OVERLAYS)
-    gr.save(os.path.join(OUT, _gfn), optimize=True)
-    OVERLAYS.append((_gfn, gbox[0], gbox[1], gr.width, gr.height, GRABBER[1]))
-    print('  wrote the grabber')
     PIER_SPRITE.extend([px0 - 8, py0, (px1 + 8) - (px0 - 8), (py1 + 12) - py0])
     im.crop((px0 - 8, py0, px1 + 8, py1 + 12)).save(
         os.path.join(OUT, 'pier.png'), optimize=True)

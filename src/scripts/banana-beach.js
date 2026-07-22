@@ -1293,9 +1293,9 @@ function init() {
   // tapping a stall: step up to the counter, or open it if you're already there
   function tapGrabber(wx, wy) {
     if (Math.abs(wx - GRABBER.x) < 60 && wy > GRABBER.y - 155 && wy < GRABBER.y + 20) {
-      // you have to walk the pier to it — that's the point of putting it there
-      if (Math.hypot(pos.x - GRABBER.x, pos.y - (GRABBER.y + 60)) < 130) openGrabber();
-      else { nextTgt = { x: GRABBER.x, y: GRABBER.y + 60 }; tgt.x = PIER_MOUTH.x; tgt.y = PIER_MOUTH.y; }
+      // it heads the promenade now, so you just walk up to it like a stall
+      if (Math.hypot(pos.x - (GRABBER.x + 120), pos.y - GRABBER.y) < 150) openGrabber();
+      else { nextTgt = null; tgt.x = GRABBER.x + 120; tgt.y = GRABBER.y; }
       return true;
     }
     return false;
