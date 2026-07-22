@@ -614,6 +614,8 @@ var EV_LABEL = {
   beach_sandy:'stepped onto the volley court with Sandy 🏐',
   beach_dig:'dug the sand ⛏ (find = what came up)',
   beach_chest:'took the coins from a buried chest 🧰',
+  beach_stall:'stepped up to a midway stall 🎡', beach_stall_play:'paid to play a midway game 🎡',
+  beach_stall_win:'won tickets on the midway 🎟',
   beach_trade_open:'opened the trading post', beach_trade:'traded duplicates for a new shell' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
@@ -699,6 +701,9 @@ var EV_EXPLAIN = {
   beach_sit:'lounged in a deck chair at the bay (once per visit) — pure vibes engagement',
   beach_exit_park:'walked the bottom-left beach road back to the park — the return leg',
   stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door',
+  beach_stall:'opened a midway stall on the boardwalk 🎡 (stall = which). Three of the four are "opening soon" placards for now, so a high count on those is appetite for the next game',
+  beach_stall_play:'PAID COINS to play a midway game 🎡 (cost = how many). This is the beach\'s coin SINK — the counterweight to the buried chest. Watch it against beach_chest: if plays badly trail chests, the bay is minting more than it drains',
+  beach_stall_win:'won TICKETS on the midway 🎟 (tickets = how many). ⚠️ Tickets are NOT coins and can never reach the stand — that separation is what lets midway payouts be tuned freely',
   beach_dig:'dug a hole in a sand patch ⛏ — find = junk / shell / curio / bottle / TREASURE. Most digs are "just sand", by design: the patch is an area to search, not a prize. Five patches a night, date-seeded, and exactly one treasure — a run of finds without a treasure means they never found the map at the bar',
   beach_chest:'dug up the day\'s buried chest and TOOK the coins 🧰 (coins = how many). ⚠️ The only coin source outside the rave: one chest a day, hard-capped at 20, date-seeded, ~30% empty — a bounded bonus, not a second faucet. If this number ever climbs, something has broken the cap and the stand\'s prices are being devalued',
   beach_sandy:'walked onto the volleyball court and Sandy greeted them 🏐 — the solo rally partner. He returns everything on purpose, so a long rally is THEIR consistency, not his luck. Fires once per visit to the court (resets when they wander off)',

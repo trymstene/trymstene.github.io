@@ -72,8 +72,21 @@ export const OVERLAYS = [
   { src: 'ov-9.png', x: 1211, y: 408, w: 108, h: 140, base: 548 },
   { src: 'ov-10.png', x: 376, y: 880, w: 108, h: 140, base: 1020 },
   { src: 'ov-11.png', x: 1996, y: 420, w: 108, h: 140, base: 560 },
+  { src: 'ov-12.png', x: 91, y: 306, w: 158, h: 134, base: 440 },
+  { src: 'ov-13.png', x: 91, y: 466, w: 158, h: 134, base: 600 },
+  { src: 'ov-14.png', x: 91, y: 626, w: 158, h: 134, base: 760 },
+  { src: 'ov-15.png', x: 91, y: 786, w: 158, h: 134, base: 920 },
 ];
 
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
 // a floor must never occlude someone standing on it.
 export const PIER_SPRITE = { x: 1812, y: 60, w: 156, h: 258 };
+
+// 🎡 the midway. Each entry is where a stall's COUNTER is — the page hangs a
+// sign above it and opens that stall's view when you tap it.
+export const STALLS = [
+  { x: 170, y: 440 },
+  { x: 170, y: 600 },
+  { x: 170, y: 760 },
+  { x: 170, y: 920 },
+];

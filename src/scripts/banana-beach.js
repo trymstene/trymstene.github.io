@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, PIER_SPRITE,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, PIER_SPRITE, STALLS,
 } from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -257,6 +257,7 @@ function init() {
       playBall();
       return;
     }
+    if (tapStall(wx, wy)) return;     // 🎡 a stall counter takes priority
     // ⛏ TAP A PATCH TO DIG IT — the same verb as tapping the ball. A dim chip
     // in the corner of the HUD was not discoverable: Trym built this with me
     // and still had to ask how to dig. Tapping the thing you want to interact
@@ -1059,6 +1060,148 @@ function init() {
     sandyBubble.style.top = pct(sandy.y - 88, H);
   }
   function drawSandy() { drawComposite(sandyCtx, 150, frameNow(), SANDY_DRAW); }
+
+  // ---- 🎡 THE MIDWAY ------------------------------------------------------
+  // Stalls are VIEW STATES, not routes. A route per stall would re-parse a
+  // bundle and throw away the loaded assets, wallet and session every time you
+  // stepped up to a counter (see the per-surface JS budget doctrine). This
+  // swaps a panel in over the live world instead — instant, and the beach is
+  // still there behind you.
+  // ⭐ SAME FRAME, DIFFERENT GAME: every stall gets the identical shell —
+  // name, tickets, odds, cost, PLAY, leave — and only the middle changes. The
+  // second stall then teaches itself, and stall #6 costs almost nothing.
+  const STALL_DEFS = [
+    { id: 'duck', name: 'Hook-a-Duck', sign: '🦆', cost: 5,
+      blurb: 'pick a duck. the number underneath is yours.' },
+    { id: 'crab', name: 'Whack-a-Crab', sign: '🦀', soon: true },
+    { id: 'coco', name: 'Coconut Shy', sign: '🥥', soon: true },
+    { id: 'prize', name: 'The Prize Counter', sign: '🏆', soon: true },
+  ];
+  // 🎟 TICKETS — deliberately NOT coins. Coins are the world's one economy and
+  // the stand's 13 prices are balanced against them; tickets can only ever be
+  // spent here, so midway payouts can be tuned freely without touching that.
+  const ticketBal = () => {
+    const s = passGet().stats || {};
+    return Math.max(0, (s.tickets || 0) - (s.tickets_spent || 0));
+  };
+  const coinBal = () => {
+    const s = passGet().stats || {};
+    return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
+  };
+  // ⚖️ ODDS ARE POSTED, not hidden. A ticket only means something if you can
+  // see what it's worth — that's the line between an arcade and a slot machine.
+  const DUCK_TABLE = [
+    { n: 1, w: 40 }, { n: 2, w: 30 }, { n: 3, w: 18 }, { n: 6, w: 9 }, { n: 15, w: 3 },
+  ];
+  function rollDuck() {
+    let r = Math.random() * 100;
+    for (const row of DUCK_TABLE) { r -= row.w; if (r <= 0) return row.n; }
+    return 1;
+  }
+
+  const stallPanel = document.getElementById('bhStallPanel');
+  const stallName = document.getElementById('bhStallName');
+  const stallTickets = document.getElementById('bhStallTickets');
+  const stallBody = document.getElementById('bhStallBody');
+  const stallFoot = document.getElementById('bhStallFoot');
+  let openStallIdx = -1;
+
+  function closeStall() {
+    openStallIdx = -1;
+    stallPanel.hidden = true;
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  }
+  document.getElementById('bhStallClose').addEventListener('click', closeStall);
+
+  function paintTickets() { stallTickets.textContent = '🎟 ' + ticketBal(); }
+
+  function openStall(i) {
+    const def = STALL_DEFS[i];
+    if (!def) return;
+    openStallIdx = i;
+    stallName.textContent = def.sign + ' ' + def.name;
+    paintTickets();
+    stallPanel.hidden = false;
+    history.replaceState(null, '', '#' + def.id);   // linkable, back-button safe
+    track('beach_stall', { stall: def.id });
+    if (def.soon) {
+      stallBody.innerHTML = '<p class="bh-stallsoon">the boards are up but the '
+        + 'games aren’t in yet. come back.</p>';
+      stallFoot.innerHTML = '';
+      return;
+    }
+    duckRound(false);
+  }
+
+  // ---- 🦆 hook-a-duck ------------------------------------------------------
+  function duckRound(live) {
+    const def = STALL_DEFS[0];
+    stallBody.innerHTML = '<p class="bh-stallblurb">' + def.blurb + '</p>'
+      + '<div class="bh-pond" id="bhPond"></div>'
+      + '<p class="bh-odds">most ducks pay 1–3 · one in ten pays 6 · one in thirty pays 15</p>';
+    const pond = document.getElementById('bhPond');
+    for (let k = 0; k < 6; k++) {
+      const d = document.createElement('button');
+      d.type = 'button';
+      d.className = 'bh-duck' + (live ? ' is-live' : '');
+      d.style.animationDelay = (-k * 0.31) + 's';
+      d.disabled = !live;
+      d.setAttribute('aria-label', 'duck ' + (k + 1));
+      if (live) d.addEventListener('click', () => hookDuck(d), { once: true });
+      pond.appendChild(d);
+    }
+    const bal = coinBal();
+    stallFoot.innerHTML = live
+      ? '<span class="bh-stallhint">pick one…</span>'
+      : '<button class="bh-btn" id="bhStallPlay" type="button"'
+        + (bal < def.cost ? ' disabled' : '') + '>'
+        + (bal < def.cost ? 'you need ' + def.cost + ' coins' : 'play — ' + def.cost + ' coins')
+        + '</button>';
+    const play = document.getElementById('bhStallPlay');
+    if (play) play.addEventListener('click', () => {
+      if (coinBal() < def.cost) return;
+      passStat('coins_spent', def.cost);
+      track('beach_stall_play', { stall: def.id, cost: def.cost });
+      duckRound(true);
+    });
+  }
+
+  function hookDuck(el) {
+    const won = rollDuck();
+    el.classList.add('is-hooked');
+    el.innerHTML = '<b>' + won + '</b>';
+    [...document.querySelectorAll('.bh-duck')].forEach((d) => { d.disabled = true; });
+    passStat('tickets', won);
+    paintTickets();
+    track('beach_stall_win', { stall: 'duck', tickets: won });
+    stallFoot.innerHTML = '<span class="bh-stallhint">+' + won + ' tickets!</span>';
+    setTimeout(() => { if (openStallIdx === 0) duckRound(false); }, 1500);
+  }
+
+  // the signs, hung over each stall in the world
+  STALLS.forEach((s, i) => {
+    const def = STALL_DEFS[i];
+    if (!def) return;
+    const sign = document.createElement('div');
+    // ⚠️ NOT 'bh-sign' — that class is already the page's BANANA BAY title,
+    // and reusing it silently restyled the heading.
+    sign.className = 'bh-stallsign';
+    sign.textContent = def.sign + ' ' + def.name;
+    sign.style.left = pct(s.x, W);
+    sign.style.top = pct(s.y - 150, H);
+    sign.style.zIndex = String(100 + s.y + 1);   // rides with its stall
+    world.appendChild(sign);
+  });
+  // tapping a stall: step up to the counter, or open it if you're already there
+  function tapStall(wx, wy) {
+    const i = STALLS.findIndex((s) => Math.abs(wx - s.x) < 82
+      && wy > s.y - 140 && wy < s.y + 24);
+    if (i < 0) return false;
+    const s = STALLS[i];
+    if (Math.hypot(pos.x - (s.x + 120), pos.y - s.y) < 150) openStall(i);
+    else { nextTgt = null; tgt.x = s.x + 120; tgt.y = s.y; }   // stand on the sand
+    return true;
+  }
 
   // ---- the loop -----------------------------------------------------------
   let last = performance.now();

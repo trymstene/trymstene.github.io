@@ -310,6 +310,56 @@ const description = 'The beach at the end of the park road. The sun never quite 
       position: absolute; right: -3px; bottom: -5px; font-size: 0.55rem; font-weight: 800;
       background: #ffb347; color: #241505; border: 2px solid #000; padding: 0 0.15rem;
     }
+    /* 🎡 THE MIDWAY. Signs hang in the world and ride their stall's z-index so
+       a banana walking past passes in front of the sign, not through it. */
+    .bh-stallsign {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      background: #17121f; color: #ffd257; border: 3px solid #000;
+      box-shadow: 3px 3px 0 #000; padding: 0.18rem 0.45rem;
+      font-weight: 800; font-size: 0.62rem; white-space: nowrap;
+    }
+    .bh-card--stall { max-width: 420px; width: 92%; }
+    .bh-stallhead { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+    .bh-stallhead h3 { margin: 0; font-size: 1rem; flex: 1; }
+    .bh-tix {
+      background: #17121f; color: #ffd257; border: 2px solid #000;
+      padding: 0.15rem 0.4rem; font-weight: 800; font-size: 0.78rem;
+    }
+    .bh-x {
+      appearance: none; font: inherit; font-weight: 800; line-height: 1;
+      background: #ffb347; color: #241505; border: 3px solid #000;
+      box-shadow: 2px 2px 0 #000; width: 30px; height: 30px; cursor: pointer;
+    }
+    .bh-stallblurb { margin: 0 0 0.6rem; font-size: 0.82rem; opacity: 0.85; }
+    .bh-stallsoon { margin: 1.2rem 0; font-size: 0.85rem; opacity: 0.7; font-style: italic; }
+    /* ⚖️ the odds, posted in the stall. Not fine print — the whole point of a
+       ticket is that you can see what it's worth. */
+    .bh-odds { margin: 0.6rem 0 0; font-size: 0.68rem; opacity: 0.62; line-height: 1.4; }
+    .bh-pond {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+      background: linear-gradient(#2f7f94, #1f5f74); border: 3px solid #000;
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.08); padding: 0.7rem 0.5rem;
+    }
+    .bh-duck {
+      appearance: none; border: 0; background: transparent; cursor: default;
+      height: 46px; background-image: url('/assets/beach/duck.png');
+      background-size: 200% 100%; background-repeat: no-repeat;
+      background-position-x: 0%; image-rendering: pixelated;
+      animation: bhDuckBob 1.6s steps(2) infinite;
+      display: grid; place-items: center;
+    }
+    /* 2 frames → the strip's frames sit at 0% and 100% (i/(N-1)) */
+    @keyframes bhDuckBob { from { background-position-x: 0%; } to { background-position-x: 200%; } }
+    .bh-duck.is-live { cursor: pointer; }
+    .bh-duck.is-live:hover { transform: translateY(-3px); }
+    .bh-duck.is-hooked { animation: none; background-position-x: 100%; }
+    .bh-duck b {
+      background: #17121f; color: #ffd257; border: 2px solid #000;
+      padding: 0 0.3rem; font-size: 0.9rem;
+    }
+    .bh-stallfoot { margin-top: 0.7rem; }
+    .bh-stallhint { font-weight: 800; font-size: 0.9rem; color: #ffd257; }
+    @media (prefers-reduced-motion: reduce) { .bh-duck { animation: none; } }
     .bh-chesth { margin: 0 0 0.2rem; font-size: 0.95rem; }
     .bh-chestsub { margin: 0 0 0.6rem; font-size: 0.8rem; opacity: 0.8; }
     /* the piles. Wrapping keeps 4 slots readable on the narrowest phone. */
@@ -377,6 +427,21 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <button class="bh-act bh-act--dig" id="bhDigBtn" type="button" aria-label="Dig here">⛏ dig</button>
       </div>
       <div class="bh-hint" id="bhHint">tap to walk · tap the ball to play it · tap dark sand to dig</div>
+
+      <!-- 🎡 THE STALL VIEW — one frame, every stall. Name + tickets in the
+           header, the game in the middle, cost/PLAY in the footer. It's a
+           view state over the live beach, never a route. -->
+      <div class="bh-panel bh-panel--stall" id="bhStallPanel" hidden>
+        <div class="bh-card bh-card--stall" role="dialog" aria-label="Midway stall">
+          <div class="bh-stallhead">
+            <h3 id="bhStallName"></h3>
+            <span class="bh-tix" id="bhStallTickets">🎟 0</span>
+            <button class="bh-x" id="bhStallClose" type="button" aria-label="Leave the stall">×</button>
+          </div>
+          <div class="bh-stallbody" id="bhStallBody"></div>
+          <div class="bh-stallfoot" id="bhStallFoot"></div>
+        </div>
+      </div>
 
       <!-- 🧰 one chest a day. Often empty — the empties are what make the
            full ones land. Coins are shown as SLOTS, not a total: the same

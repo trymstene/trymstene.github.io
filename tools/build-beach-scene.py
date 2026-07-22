@@ -253,6 +253,49 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
     return n
 
 
+# ---- 🎡 THE MIDWAY STALLS -------------------------------------------------
+# ⚠️ DRAWN, and for once that is NOT a retreat — the pack simply has no midway.
+# Checked before deciding (scratchpad stall_sheet.py): its "Market_Big" sprites
+# are two-storey CITY SHOPFRONTS (brick, upper floors, doors) that would read as
+# a high street dropped on a beach, and the Kiosk_*_Shutter files are mid-shutter
+# animation frames. Only the camping tents come close. A stall is a canopy, two
+# posts, a counter and a sign — pure geometry, which generates cleanly and makes
+# Trym's plan literal: ONE stall, a HUE per pitch, the sign hung in the DOM.
+STALL_W, STALL_H = 156, 132
+STALL_HUES = [(206, 62, 58), (44, 150, 152), (146, 92, 190), (232, 150, 44)]
+
+
+def build_stall(hue):
+    """draw at 3× and blockify down — the same road every other prop takes,
+    which buys our chunk and the 1px ink outline for free"""
+    K = 3
+    w, h = STALL_W * K, STALL_H * K
+    s = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    cream = (246, 236, 208)
+    # the dark of the booth, so the canopy reads as shelter OVER something
+    d.rectangle([13 * K, 40 * K, w - 14 * K, h - 24 * K], fill=(62, 46, 40))
+    for sy in (56, 76):                       # shelves of unseen prizes
+        d.rectangle([21 * K, sy * K, w - 22 * K, (sy + 7) * K], fill=(98, 74, 54))
+    for pxl in (9, STALL_W - 18):             # posts, lit from the upper left
+        d.rectangle([pxl * K, 34 * K, (pxl + 9) * K, h - 6 * K], fill=(150, 104, 58))
+        d.rectangle([pxl * K, 34 * K, (pxl + 3) * K, h - 6 * K], fill=(190, 144, 88))
+    # ⭐ the canopy: stripes + a SCALLOPED hem. The scallop is the thing that
+    # says fairground — a straight-edged awning reads as a bus shelter.
+    for x in range(2 * K, w - 2 * K):
+        col = hue if (((x // K) // 13) % 2 == 0) else cream
+        hem = 34 + 7 * math.sin(math.pi * (((x // K) - 2) % 26) / 26.0)
+        for y in range(6 * K, int(hem * K)):
+            s.putpixel((x, y), col + (255,))
+        for y in range(max(6 * K, int(hem * K) - 2 * K), int(hem * K)):
+            s.putpixel((x, y), (int(col[0] * 0.72), int(col[1] * 0.72), int(col[2] * 0.72), 255))
+    d.rectangle([5 * K, (STALL_H - 28) * K, w - 6 * K, (STALL_H - 12) * K], fill=(170, 120, 68))
+    d.rectangle([5 * K, (STALL_H - 28) * K, w - 6 * K, (STALL_H - 24) * K], fill=(210, 162, 100))
+    d.rectangle([5 * K, (STALL_H - 16) * K, w - 6 * K, (STALL_H - 12) * K], fill=(118, 78, 44))
+    return blockify(s, factor=K, colors=14, alpha_thresh=0.4, sat=1.08, con=1.05,
+                    warm=0.05, trim=False)
+
+
 # ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
@@ -260,6 +303,7 @@ COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
 NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
+STALLS = []                  # (cx, base) of each midway stall, emitted for the page
 
 
 
@@ -402,6 +446,12 @@ export const OVERLAYS = [
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
 // a floor must never occlude someone standing on it.
 export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
+
+// 🎡 the midway. Each entry is where a stall's COUNTER is — the page hangs a
+// sign above it and opens that stall's view when you tap it.
+export const STALLS = [
+%s
+];
 ''' % (W, H, WATER_LINE,
        px0, px1, py0,
        px0, px1, py0, PLATFORM_BOT,
@@ -418,7 +468,8 @@ export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
                  for c in chairs),
        '\n'.join("  { src: '%s', x: %d, y: %d, w: %d, h: %d, base: %d },"
                  % o for o in OVERLAYS),
-       PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3])
+       PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
+       '\n'.join('  { x: %d, y: %d },' % s for s in STALLS))
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
         f.write(out)
@@ -575,6 +626,24 @@ if HAVE_PACK:
         place('21_Beach_48x48_Purple_Small_Starfish.png', cx, base, shade=False)
     for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
+
+    # 🎡 THE MIDWAY — a row of stalls down the BOARDWALK. The boardwalk is
+    # already a raised wooden deck you can't walk on (it's one OB_RECT), which
+    # is exactly right: the stalls sit ON it and you stand on the sand in front,
+    # the way a seaside promenade actually works. No new terrain, no new
+    # collider — the deck's existing rect covers all four.
+    for i, hue in enumerate(STALL_HUES):
+        st = build_stall(hue)
+        cx, base = 170, 440 + i * 160
+        box = (int(cx - st.width // 2), int(base - st.height))
+        shadow(cx, base - 4, st.width * 0.34, 9, 52)
+        im.alpha_composite(st, box)
+        PLACED.append(('stall-%d' % i, (box[0], box[1], box[0] + st.width, base)))
+        fn = 'ov-%d.png' % len(OVERLAYS)
+        st.save(os.path.join(OUT, fn), optimize=True)
+        OVERLAYS.append((fn, box[0], box[1], st.width, st.height, int(base)))
+        STALLS.append((cx, int(base)))
+    print('  wrote %d midway stalls' % len(STALL_HUES))
     audit_court()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
@@ -757,6 +826,33 @@ ball = blockify(_braw, factor=BALL_S, colors=10, alpha_thresh=0.45, sat=1.2,
                 con=1.08, trim=False).crop((1, 1, 1 + BALL_D * BALL_N, 1 + BALL_D))
 ball.save(os.path.join(OUT, 'volleyball.png'), optimize=True)
 print('wrote volleyball.png (%d spin frames, %dpx)' % (BALL_N, BALL_D))
+# ---- 🦆 HOOK-A-DUCK: the ducks -------------------------------------------
+# Drawn, obviously — no pack has rubber ducks. Two frames so they bob.
+def build_duck(bob):
+    K = 3
+    w, h = 30 * K, 26 * K
+    s = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    o = bob * K                                  # the whole duck rides up/down
+    BODY, LIT, SHD = (250, 206, 62), (255, 232, 132), (206, 156, 30)
+    d.ellipse([4 * K, (11 * K) + o, 25 * K, (22 * K) + o], fill=BODY)
+    d.ellipse([4 * K, (11 * K) + o, 18 * K, (17 * K) + o], fill=LIT)
+    d.ellipse([6 * K, (18 * K) + o, 24 * K, (22 * K) + o], fill=SHD)
+    d.ellipse([15 * K, (4 * K) + o, 27 * K, (15 * K) + o], fill=BODY)   # head
+    d.ellipse([15 * K, (4 * K) + o, 23 * K, (10 * K) + o], fill=LIT)
+    d.polygon([(26 * K, (8 * K) + o), (30 * K - 2, (10 * K) + o),
+               (26 * K, (12 * K) + o)], fill=(240, 138, 40))            # beak
+    d.ellipse([21 * K, (7 * K) + o, 24 * K, (10 * K) + o], fill=(28, 22, 20))
+    return blockify(s, factor=K, colors=8, alpha_thresh=0.42, sat=1.12,
+                    con=1.06, trim=False)
+
+
+_duck = Image.new('RGBA', (30 * 2 + 4, 26 + 2), (0, 0, 0, 0))
+for i, bob in enumerate((0, 2)):
+    _duck.alpha_composite(build_duck(bob), (i * (30 + 2), 0))
+_duck.save(os.path.join(OUT, 'duck.png'), optimize=True)
+print('wrote duck.png (2 bob frames)')
+
 # ---- ⛏ THE DIG: a churned patch and a dug hole ----------------------------
 # Both are drawn, not baked into the plate: the patches are DATE-SEEDED at
 # runtime, so the page places them itself. The patch is deliberately soft and
