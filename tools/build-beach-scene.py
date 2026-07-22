@@ -159,6 +159,50 @@ for _ in range(700):
     for i in range(rng.randrange(2, 6)):
         put(x + i, y, SPARK)
 
+# ---- animation strips: pull a row out of a pack sheet and re-emit it as a
+# horizontal strip we can step through in CSS (same trick as the rave's poof)
+ANIM = os.path.join(PACK, 'Animated_48x48', 'Animated_sheets_48x48')
+
+
+def anim_find(name):
+    for dp, _, fns in os.walk(ANIM):
+        if name in fns:
+            return os.path.join(dp, name)
+    return None
+
+
+def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
+               dekey=None, colors=10, warm=0.08):
+    """extract `frames` tiles from `row` of a pack sheet → our-style strip.
+    dekey = a background colour to knock out (the water sprites are baked on
+    an opaque water square, which we don't want over our own sea)."""
+    p = anim_find(name)
+    if not p:
+        print('  MISSING', name)
+        return 0
+    sh = Image.open(p).convert('RGBA')
+    n = frames or (sh.width // tw)
+    out = Image.new('RGBA', (tw * n, th), (0, 0, 0, 0))
+    for i in range(n):
+        cell = sh.crop((i * tw, row * th, (i + 1) * tw, (row + 1) * th))
+        if dekey is not None:
+            cp = cell.load()
+            for y in range(cell.height):
+                for x in range(cell.width):
+                    r, g, b, a = cp[x, y]
+                    if a and abs(r - dekey[0]) < 26 and abs(g - dekey[1]) < 26 and abs(b - dekey[2]) < 26:
+                        cp[x, y] = (0, 0, 0, 0)
+        cell = blockify(cell, factor=1, colors=colors, warm=warm, sat=1.1, con=1.05)
+        if scale != 1.0:
+            cell = cell.resize((max(1, int(cell.width * scale)),
+                                max(1, int(cell.height * scale))), Image.NEAREST)
+        out.alpha_composite(cell, (i * tw + (tw - cell.width) // 2,
+                                   max(0, th - cell.height)))
+    out.save(os.path.join(OUT, out_name), optimize=True)
+    print('  %s -> %s (%d frames)' % (name[:38], out_name, n))
+    return n
+
+
 # ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
 
@@ -210,32 +254,34 @@ if HAVE_PACK:
     for cx, base in ((430, 372), (900, 366), (1600, 380), (2120, 372), (660, 362)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False)
 
-    # 🏐 the volleyball court: real pack net + field lines
+    # 🏐 the volleyball court, built from the pack's own pieces.
+    # ⚠️ The net runs HORIZONTALLY (Left post + Middle × n + Right post) — I
+    # first stacked the modular pieces vertically and got a chain-link tower.
+    # ⚠️ The pack's field lines are RED-ORANGE by design — that is not a bug,
+    # it's exactly what LimeZu's own beach screenshot shows.
     cx0, cy0, cx1, cy1 = COURT
-    # the pack's modular net pieces are whole-tile panels — stacked they made
-    # a chain-link tower. A slim hand-drawn net reads correctly from above.
-    shadow(NET_X + 14, cy0 - 6, 22, 12, 50)
-    shadow(NET_X + 14, cy1 + 30, 22, 12, 50)
-    rect(NET_X - 5, cy0 - 34, NET_X + 5, cy0 + 6, (120, 76, 34))
-    rect(NET_X - 5, cy0 - 34, NET_X - 2, cy0 + 6, (176, 122, 64))
-    rect(NET_X - 5, cy1 - 6, NET_X + 5, cy1 + 34, (120, 76, 34))
-    rect(NET_X - 5, cy1 - 6, NET_X - 2, cy1 + 34, (176, 122, 64))
-    rect(NET_X - 6, cy0 - 28, NET_X + 6, cy1 + 28, (242, 238, 226))
-    for y in range(cy0 - 28, cy1 + 28, 7):
-        rect(NET_X - 4, y, NET_X + 4, y + 3, (206, 200, 186))
-    rect(NET_X - 8, cy0 - 34, NET_X + 8, cy0 - 28, WHITE)
-    rect(NET_X - 8, cy1 + 28, NET_X + 8, cy1 + 34, WHITE)
-    rect(NET_X + 6, cy0 - 28, NET_X + 11, cy1 + 28, SHADE)
-    # the pack's field-line tiles came out as solid orange planks against our
-    # warmer sand — a plain scuffed white line reads better from above anyway
-    for x in range(cx0, cx1):
-        for yy in (cy0, cy1):
-            if (x // 5) % 6 != 5:
-                put(x, yy, WHITE); put(x, yy + 1, (236, 230, 210))
-    for y in range(cy0, cy1):
-        for xx in (cx0, cx1 - 2):
-            if (y // 5) % 6 != 5:
-                put(xx, y, WHITE); put(xx + 1, y, (236, 230, 210))
+    for i in range((cx1 - cx0) // T):          # the RED boundary, pack tiles
+        x = cx0 + i * T + T // 2
+        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Up_Modular.png',
+              x, cy0 + T, shade=False, colors=4, scale=1.0)
+        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Down_Modular.png',
+              x, cy1 + T, shade=False, colors=4, scale=1.0)
+    for j in range((cy1 - cy0) // T):
+        y = cy0 + j * T + T
+        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Right_Modular.png',
+              cx0 + T // 2, y, shade=False, colors=4, scale=1.0)
+        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Right_Modular.png',
+              cx1 - T // 2, y, shade=False, colors=4, scale=1.0, flip=True)
+    NET_Y = (cy0 + cy1) // 2 + 30              # the net, laid ACROSS the court
+    place('21_Beach_48x48_Beach_Volley_Net_Left.png', cx0 + T + 24, NET_Y,
+          scale=1.0, sh=0.18)
+    # ⚠️ every net piece is anchored at the SAME baseline — the post sprite is
+    # 3 tiles tall and the mesh 2, so offsetting them drew two parallel nets
+    for i in range(1, (cx1 - cx0) // T - 2):
+        place('21_Beach_48x48_Beach_Volley_Net_Middle_Modular.png',
+              cx0 + T + 24 + i * T, NET_Y, scale=1.0, shade=False)
+    place('21_Beach_48x48_Beach_Volley_Net_Right.png',
+          cx0 + T + 24 + ((cx1 - cx0) // T - 2) * T, NET_Y, scale=1.0, sh=0.18)
 
     # 🚢 Captain Split's wreck
     place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34)
@@ -268,13 +314,25 @@ if HAVE_PACK:
     for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
 
-    # 🛟 the pier, planked out over the water
+    # 🛟 THE PIER — it used to be a featureless brown slab and read as a
+    # mystery object ("what's this brown thing at the beach?"). Now it has
+    # cross planks, dark rails down both sides, and posts standing in the
+    # water, so it reads as a jetty from above.
     px0, px1, py0, py1 = PIER
     for y in range(py0, py1):
         for x in range(px0, px1):
-            plank = (y // 16) % 2 == 0
-            edge = (y % 16) < 2 or x < px0 + 5 or x > px1 - 6
-            put(x, y, (110, 68, 30) if edge else ((172, 118, 60) if plank else (156, 104, 50)))
+            board = (y // 11) % 2 == 0
+            put(x, y, (176, 122, 62) if board else (158, 106, 50))
+        if (y % 11) == 0:                              # the gap between boards
+            rect(px0, y, px1, y + 2, (116, 72, 32))
+    rect(px0, py0, px0 + 7, py1, (108, 66, 28))        # rails
+    rect(px1 - 7, py0, px1, py1, (108, 66, 28))
+    rect(px0 + 7, py0, px0 + 10, py1, (196, 142, 78))  # lit inner edge
+    for py in range(py0 + 14, py1 - 10, 46):           # posts, both sides
+        for side in (px0 + 1, px1 - 12):
+            rect(side, py, side + 11, py + 13, (86, 52, 22))
+            rect(side, py, side + 4, py + 13, (128, 82, 38))
+    rect(px0 - 6, py1 - 8, px1 + 6, py1, (108, 66, 28))  # the landing kerb
 
     # 🔥 the bonfire ring — hand-drawn stones; the pack's sea rocks carry a
     # foam collar, so a ring of them read as a ring of bubbles on dry sand
@@ -300,6 +358,20 @@ for y in range(H - 150, H):
     for x in range(0, 150 - (H - y) // 3):
         r, g, b, a = px[x, y]
         put(x, y, (min(255, r + 12), min(255, g + 10), min(255, b + 6), a))
+
+# ---- ANIMATED PROPS: the pack animates far more than I'd been using -------
+# The water sprites are baked onto an opaque water square, so their background
+# is knocked out (dekey) before they're laid over our own sea.
+if HAVE_PACK:
+    print('animation strips:')
+    WATER_KEY = (86, 178, 199)
+    anim_strip('Crabs_48x48.png', 'a-crab.png', row=0, frames=10)
+    anim_strip('Beach_Seagull_Idle_Left_48x48.png', 'a-gull.png', row=0, frames=6)
+    anim_strip('Buoy_1_48x48.png', 'a-buoy.png', frames=8, dekey=WATER_KEY)
+    anim_strip('Floating_Separation_Buoys_1_48x48.png', 'a-ropebuoy.png',
+               frames=8, dekey=WATER_KEY)
+    anim_strip('Beach_Floating_Rock_1_48x48.png', 'a-rock.png', frames=8, dekey=WATER_KEY)
+    anim_strip('Floating_Ball_1_48x48.png', 'a-floatball.png', frames=6, dekey=WATER_KEY)
 
 im = im.convert('RGB')
 im.save(os.path.join(OUT, 'beach.png'), optimize=True)

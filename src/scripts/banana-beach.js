@@ -122,7 +122,10 @@ function init() {
   // NET_H is deliberately LOW: a struck ball clears it, a dribbling one
   // doesn't. The rally is about hustle (keep reaching it), not precision —
   // which is the "fidget" hook this area needs, not a skill wall.
-  const NET_X = 940, NET_Y0 = 690, NET_Y1 = 1034, NET_H = 18;
+  // ⚠️ THE NET IS HORIZONTAL now (the pack's net pieces are drawn to be laid
+  // left→right, which is also how LimeZu's own beach screenshot uses them).
+  // So the ball crosses it on the Y axis, not X.
+  const NET_Y = 870, NET_X0 = 712, NET_X1 = 1176, NET_H = 18;
   const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
   const OB_RECTS = [
     // top-down blocking = the BASE of an object, not its full height: you walk
@@ -264,7 +267,7 @@ function init() {
       );
       if (now - kickTrackAt > 8000) { kickTrackAt = now; track('beach_ball_kick'); }
     }
-    const px0 = ball.x;
+    const py0 = ball.y;
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
     ball.z += ball.vz * dt;
@@ -277,11 +280,11 @@ function init() {
       ball.vx *= damp; ball.vy *= damp;
     }
     // THE NET: crossing it low bounces you back, crossing it high = a volley
-    const crossed = (px0 - NET_X) * (ball.x - NET_X) < 0;
-    if (crossed && ball.y > NET_Y0 && ball.y < NET_Y1) {
+    const crossed = (py0 - NET_Y) * (ball.y - NET_Y) < 0;
+    if (crossed && ball.x > NET_X0 && ball.x < NET_X1) {
       if (ball.z < NET_H) {
-        ball.x = px0 < NET_X ? NET_X - 7 : NET_X + 7;
-        ball.vx = -ball.vx * 0.55;
+        ball.y = py0 < NET_Y ? NET_Y - 7 : NET_Y + 7;
+        ball.vy = -ball.vy * 0.55;
         rally = 0;
         showRally();
         float(ball.x, ball.y - 14, 'net!');
@@ -484,6 +487,32 @@ function init() {
   });
   document.getElementById('bhTradeClose').addEventListener('click', () => { tradePanel.hidden = true; });
 
+  // ---- 🛟 things bobbing in the bay: the pack animates all of these ------
+  // buoys, a marker-buoy rope line, floating rocks and a stray beach ball.
+  // Pure CSS frame-stepping, no JS cost beyond creating the element.
+  [
+    ['bh-buoy', 430, 150], ['bh-buoy', 1980, 118], ['bh-buoy', 1240, 84],
+    ['bh-rock', 180, 96], ['bh-rock', 760, 196], ['bh-rock', 1520, 132],
+    ['bh-rock', 2210, 186], ['bh-rock', 1050, 220],
+    ['bh-fball', 620, 208], ['bh-fball', 1700, 168],
+  ].forEach(([cls, x, y]) => {
+    const d = document.createElement('div');
+    d.className = 'bh-water-prop ' + cls;
+    d.style.left = pct(x, W);
+    d.style.top = pct(y, H);
+    d.style.animationDelay = (-Math.random() * 2) + 's';
+    world.appendChild(d);
+  });
+  // the swimmers' rope line strung across the shallows
+  for (let i = 0; i < 14; i++) {
+    const d = document.createElement('div');
+    d.className = 'bh-water-prop bh-rope';
+    d.style.left = pct(880 + i * 48, W);
+    d.style.top = pct(232, H);
+    d.style.animationDelay = (-i * 0.09) + 's';
+    world.appendChild(d);
+  }
+
   // ---- 🕊 gulls: pure atmosphere, CSS does all the work -------------------
   [[7, 26, 0], [12, 34, 9], [4, 41, 18]].forEach(([top, secs, delay]) => {
     const g = document.createElement('div');
@@ -499,8 +528,8 @@ function init() {
   for (const start of [{ x: 700, y: 400 }, { x: 1300, y: 900 }, { x: 2000, y: 420 },
                        { x: 460, y: 1000 }, { x: 1560, y: 380 }]) {
     const el = document.createElement('div');
-    el.className = 'bh-crab';
-    el.innerHTML = '<img src="/assets/beach/crab.png" alt="" aria-hidden="true">';
+    el.className = 'bh-crab';          // the pack's 10-frame crab, CSS-stepped
+    el.style.animationDelay = (-Math.random() * 0.9) + 's';
     world.appendChild(el);
     crabs.push({ el, x: start.x, y: start.y, tx: start.x, ty: start.y, wait: Math.random() * 3 });
   }
@@ -528,7 +557,7 @@ function init() {
     if (!blocked(nx, ny)) { c.x = nx; c.y = ny; } else { c.tx = c.x; c.ty = c.y; }
     c.el.style.left = pct(c.x, W);
     c.el.style.top = pct(c.y, H);
-    c.el.querySelector('img').style.transform = dx < 0 ? 'scaleX(-1)' : '';
+    c.el.style.transform = 'translate(-50%,-100%)' + (dx < 0 ? ' scaleX(-1)' : '');
   }
 
   // ---- the loop -----------------------------------------------------------

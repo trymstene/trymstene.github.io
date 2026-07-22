@@ -101,17 +101,50 @@ const description = 'The beach at the end of the park road. The sun never quite 
       transform: translate(-50%, -50%); pointer-events: none;
       background: rgba(0, 0, 0, 0.22); border-radius: 50%;
     }
-    .bh-crab { position: absolute; z-index: 4; width: 0.95%; transform: translate(-50%, -100%); pointer-events: none; }
-    .bh-crab img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
-    /* 🕊 gulls crossing the bay — one sprite, two wing frames stepped */
-    .bh-gull {
-      position: absolute; z-index: 7; width: 1.05%; aspect-ratio: 13 / 9;
-      pointer-events: none; image-rendering: pixelated;
-      background-image: url('/assets/beach/gull.png');
-      background-size: 200% 100%; background-repeat: no-repeat;
-      animation: bhFlap 0.42s steps(1) infinite, bhCross linear infinite;
+    /* 🦀🕊🛟 THE PACK'S OWN ANIMATIONS. Every one of these is a horizontal
+       frame strip pulled straight out of the pack's animated sheets and
+       stepped in CSS — no JS per-frame cost. `--n` is the frame count. */
+    .bh-anim {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-repeat: no-repeat;
+      background-size: calc(var(--n) * 100%) 100%;
+      animation: bhSteps var(--dur, 0.9s) steps(var(--n)) infinite;
     }
-    @keyframes bhFlap { 0%, 49% { background-position: 0 0; } 50%, 100% { background-position: 100% 0; } }
+    @keyframes bhSteps { to { background-position: calc(var(--n) * -100%) 0; } }
+
+    .bh-crab {
+      position: absolute; z-index: 4; width: 2%; aspect-ratio: 1;
+      transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+      background-image: url('/assets/beach/a-crab.png');
+      background-size: 1000% 100%;              /* 10 frames */
+      animation: bhCrab 0.9s steps(10) infinite;
+    }
+    @keyframes bhCrab { to { background-position: -1000% 0; } }
+    /* 🕊 gulls crossing the bay — the pack's 6-frame gull */
+    .bh-gull {
+      position: absolute; z-index: 7; width: 2%; aspect-ratio: 1;
+      pointer-events: none; image-rendering: pixelated;
+      background-image: url('/assets/beach/a-gull.png');
+      background-size: 600% 100%; background-repeat: no-repeat;
+      animation: bhFlap 0.6s steps(6) infinite, bhCross linear infinite;
+    }
+    @keyframes bhFlap { to { background-position: -600% 0; } }
+    /* things bobbing in the water */
+    .bh-water-prop {
+      position: absolute; z-index: 2; width: 2%; aspect-ratio: 1;
+      transform: translate(-50%, -50%); pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+    }
+    .bh-buoy { background-image: url('/assets/beach/a-buoy.png'); background-size: 800% 100%; animation: bh8 1.6s steps(8) infinite; }
+    .bh-rock { background-image: url('/assets/beach/a-rock.png'); background-size: 800% 100%; animation: bh8 2.1s steps(8) infinite; }
+    .bh-rope { background-image: url('/assets/beach/a-ropebuoy.png'); background-size: 800% 100%; animation: bh8 1.9s steps(8) infinite; }
+    .bh-fball { background-image: url('/assets/beach/a-floatball.png'); background-size: 600% 100%; animation: bh6 1.5s steps(6) infinite; }
+    @keyframes bh8 { to { background-position: -800% 0; } }
+    @keyframes bh6 { to { background-position: -600% 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-crab, .bh-gull, .bh-water-prop { animation: none; }
+    }
     @keyframes bhCross {
       0%   { left: -4%; transform: translateY(0) scaleX(1); }
       25%  { transform: translateY(-9px) scaleX(1); }
