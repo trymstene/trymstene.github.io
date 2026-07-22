@@ -143,12 +143,22 @@ function init() {
     [748, 524, 774, 560],
     [2278, 604, 2304, 640],
     [2122, 686, 2240, 778],   // the lighthouse's base
+    // 🏐 THE NET IS SOLID — you go AROUND the poles, never over or through.
+    // Spans the poles' full width, which is wider than the painted court, so
+    // the detour genuinely leaves the court the way it would in real life.
+    // 20px thick: the banana covers at most 8.4px per step (168 px/s × the
+    // 0.05s dt cap), so it can never tunnel through at a frame-rate spike.
+    [NET_X0, NET_Y - 10, NET_X1, NET_Y + 10],
   ];
   const OB_CIRCLES = [
     [560, 640, 80],           // the bonfire ring
-    [1180, 552, 13],          // umbrella poles
-    [700, 1002, 13],
-    [2050, 552, 13],
+    // ⚠️ umbrella poles — KEEP IN SYNC with the place() calls in the
+    // generator. These were left behind when the parasols moved for the
+    // bigger court, so one invisible pole was standing ON the court and
+    // another stood where no umbrella had been for two commits.
+    [1265, 548, 13],
+    [430, 1020, 13],
+    [2050, 560, 13],
   ];
   const OB_ELLIPSES = [];
   const CHAIRS = [
@@ -354,9 +364,10 @@ function init() {
     // a rally dies when the ball comes to rest
     if (speed < 8 && ball.z === 0) {
       if (!restAt) restAt = now;
-      // 3s, not 1.5: a banana crossing the court takes ~2.5s, and a rally
-      // that dies while you're still sprinting for the ball feels unfair
-      else if (now - restAt > 3000 && rally) { rally = 0; showRally(); }
+      // 6s, up from 3: a rally must never die while you're still sprinting for
+      // the ball. Now that the net is solid you have to run AROUND a pole to
+      // follow it — from mid-court that's ~730px, about 4.3s at SPEED 168.
+      else if (now - restAt > 6000 && rally) { rally = 0; showRally(); }
     } else restAt = 0;
 
     // SPIN follows travel, so the ball rolls instead of sliding. Frame index
