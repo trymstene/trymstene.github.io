@@ -45,7 +45,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
       pointer-events: none; image-rendering: pixelated;
     }
     .bh-sea {
-      top: 16.13%; height: 31.6%;                 /* y 100 → 296 */
+      top: 0; height: 28%;                        /* the sea band, y 0 → 308 */
       background-image: url('/assets/beach/sea-lines.png');
       background-repeat: repeat;
       background-size: auto 100%;
@@ -55,7 +55,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     @keyframes bhDriftA { to { background-position-x: -160px; } }
     @keyframes bhDriftB { to { background-position-x: 160px; } }
     .bh-foam {
-      top: 41.6%; height: 2.9%;                   /* the waterline, y 258 → 276 */
+      top: 22.4%; height: 2.4%;                   /* the waterline, y 246 → 272 */
       background-image: url('/assets/beach/foam.png');
       background-repeat: repeat-x;
       background-size: auto 100%;
@@ -72,11 +72,20 @@ const description = 'The beach at the end of the park road. The sun never quite 
       .bh-sea--a, .bh-sea--b, .bh-foam { animation: none; }
     }
     /* sprites live IN the world and size in % of it → camera-safe */
-    .bh-me { position: absolute; z-index: 6; width: 4%; transform: translate(-50%, -100%); pointer-events: none; }
+    /* sizes are % OF THE WORLD (2400×1100) so sprites ride the camera free.
+       The banana is ~56 art px = 2.33% — about one pack tile, which is the
+       scale the pack's own art is drawn against. */
+    .bh-me { position: absolute; z-index: 6; width: 2.33%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-me::after {                     /* the contact shadow — without it a
+                                           flat sprite floats over the sand */
+      content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
+      transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
+      border-radius: 50%; z-index: -1;
+    }
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
     /* Captain Split behind his counter */
-    .bh-cap { position: absolute; z-index: 3; width: 5.2%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-cap { position: absolute; z-index: 3; width: 2.7%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-cap canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-capbubble {
       position: absolute; z-index: 8; transform: translate(-50%, -100%);
@@ -91,15 +100,15 @@ const description = 'The beach at the end of the park road. The sun never quite 
       border: 5px solid transparent; border-top-color: #000;
     }
     .bh-ball {
-      position: absolute; z-index: 5; width: 1.3%;
+      position: absolute; z-index: 5; width: 0.78%;
       transform: translate(-50%, -50%); pointer-events: none; image-rendering: pixelated;
     }
     .bh-ballshadow {
-      position: absolute; z-index: 4; width: 1.3%; aspect-ratio: 2 / 1;
+      position: absolute; z-index: 4; width: 0.78%; aspect-ratio: 2 / 1;
       transform: translate(-50%, -50%); pointer-events: none;
       background: rgba(0, 0, 0, 0.22); border-radius: 50%;
     }
-    .bh-crab { position: absolute; z-index: 4; width: 1.07%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-crab { position: absolute; z-index: 4; width: 0.62%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-crab img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     /* 🕊 gulls crossing the bay — one sprite, two wing frames stepped */
     .bh-gull {
@@ -120,7 +129,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     @media (prefers-reduced-motion: reduce) { .bh-gull { display: none; } }
     /* 🐚 shells waiting on the wet sand */
     .bh-shell {
-      position: absolute; z-index: 3; width: 1.15%; aspect-ratio: 1;
+      position: absolute; z-index: 3; width: 0.67%; aspect-ratio: 1;
       transform: translate(-50%, -50%); pointer-events: none;
       background-image: url('/assets/beach/shells.png');
       background-size: 2900% 100%; background-repeat: no-repeat;

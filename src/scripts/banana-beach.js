@@ -58,7 +58,10 @@ function shellForRoll(r) {
 }
 
 function init() {
-  const W = 1400, H = 620, VIEW_ART_H = 420;
+  // B2: a true TOP-DOWN map at the pack's native 48px scale (see the plan).
+  // The banana is ~56 art px — about one tile — so palms and buildings tower
+  // over it the way they do in the pack's own world.
+  const W = 2400, H = 1100, VIEW_ART_H = 820;   // ≈ art px shown ACROSS
   const world = document.getElementById('bhWorld');
   const meEl = document.getElementById('bhMe');
   const meCtx = document.getElementById('bhMeCv').getContext('2d');
@@ -89,7 +92,10 @@ function init() {
   function layout() {
     const r = view.getBoundingClientRect();
     viewW = r.width; viewH = r.height;
-    scale = viewH / VIEW_ART_H;          // a fixed zoom — NOT fit-to-height
+    // zoom is driven by WIDTH, not height: a tall narrow phone viewport
+    // divided by a fixed art-height zoomed the map to a postage stamp.
+    // Aim to show ~VIEW_ART_H art px across, clamped so it never gets silly.
+    scale = Math.max(0.5, Math.min(1.15, viewW / VIEW_ART_H));
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
   }
@@ -109,39 +115,42 @@ function init() {
   }
 
   // ---- geometry (art px) --------------------------------------------------
-  const WATER_Y = 266;                    // above this = sea (pier only)
-  const PIER = { x0: 1160, x1: 1226, y0: 172 };
-  const PLATFORM = { x0: 1126, x1: 1260, y0: 100, y1: 174 };
-  const PIER_MOUTH = { x: 1193, y: 300 };
+  const WATER_Y = 306;                    // above this = sea (pier only)
+  const PIER = { x0: 1820, x1: 1960, y0: 60 };
+  const PLATFORM = { x0: 1820, x1: 1960, y0: 60, y1: 308 };
+  const PIER_MOUTH = { x: 1890, y: 348 };
   // NET_H is deliberately LOW: a struck ball clears it, a dribbling one
   // doesn't. The rally is about hustle (keep reaching it), not precision —
   // which is the "fidget" hook this area needs, not a skill wall.
-  const NET_X = 582, NET_Y0 = 374, NET_Y1 = 616, NET_H = 18;
-  const BAR = { x: 974, y: 410, r: 74 };  // where the Captain notices you
+  const NET_X = 940, NET_Y0 = 690, NET_Y1 = 1034, NET_H = 18;
+  const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
   const OB_RECTS = [
-    [18, 300, 124, 390],      // radio shack
-    [878, 322, 1070, 384],    // the wrecked hull
-    [208, 380, 224, 394],     // palm trunks
-    [340, 458, 356, 472],
-    [812, 288, 828, 302],
-    [1116, 374, 1132, 390],
-    [1324, 458, 1340, 472],
+    [0, 306, 250, 980],       // the boardwalk deck
+    [1560, 606, 1846, 744],   // the wreck
+    [318, 434, 344, 470],     // palm trunks
+    [508, 864, 534, 900],
+    [1488, 484, 1514, 520],
+    [1318, 1004, 1344, 1040],
+    [1998, 864, 2024, 900],
+    [748, 524, 774, 560],
+    [2278, 604, 2304, 640],
+    [2076, 470, 2284, 780],   // the lighthouse
   ];
   const OB_CIRCLES = [
-    [262, 494, 22],           // bonfire ring
-    [975, 456, 9],            // parasol pole
+    [560, 640, 80],           // the bonfire ring
+    [1180, 552, 13],          // umbrella poles
+    [700, 1002, 13],
+    [2050, 552, 13],
   ];
-  const OB_ELLIPSES = [
-    [1306, 366, 78, 34],      // the lighthouse headland
-  ];
+  const OB_ELLIPSES = [];
   const CHAIRS = [
-    { rect: [1092, 424, 1136, 458], seat: { x: 1114, y: 448 } },
-    { rect: [1150, 452, 1194, 486], seat: { x: 1172, y: 476 } },
-    { rect: [158, 460, 202, 494], seat: { x: 180, y: 484 } },
+    { rect: [1206, 592, 1276, 646], seat: { x: 1240, y: 636 } },
+    { rect: [1296, 652, 1366, 706], seat: { x: 1330, y: 696 } },
+    { rect: [366, 712, 436, 766], seat: { x: 400, y: 756 } },
   ];
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   function blocked(x, y) {
-    if (x < 10 || x > 1390 || y > 610) return true;
+    if (x < 12 || x > 2388 || y > 1088) return true;
     if (y < WATER_Y) {
       const onPier = (x >= PIER.x0 && x <= PIER.x1 && y >= PIER.y0)
         || (x >= PLATFORM.x0 && x <= PLATFORM.x1 && y >= PLATFORM.y0 && y <= PLATFORM.y1);
@@ -157,14 +166,14 @@ function init() {
 
   // ---- spawn --------------------------------------------------------------
   const fromPark = /[?&]park(?:=|&|$)/.test(location.search);
-  const pos = fromPark ? { x: 40, y: 566 } : { x: 470, y: 520 };
-  const tgt = fromPark ? { x: 210, y: 520 } : { x: 470, y: 470 };
+  const pos = fromPark ? { x: 70, y: 1040 } : { x: 860, y: 880 };
+  const tgt = fromPark ? { x: 330, y: 980 } : { x: 860, y: 820 };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('beach_join', { via: fromPark ? 'park' : 'direct' });
 
   // ---- walking ------------------------------------------------------------
   let seated = null, sitTarget = null, satOnce = false, nextTgt = null;
-  const SPEED = 116;                      // art px/s
+  const SPEED = 168;                      // art px/s — the map doubled
   const keys = {};
   addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
@@ -187,7 +196,7 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     // at the bar? tapping the wreck talks to the Captain instead of walking
-    if (inRect(wx, wy, [862, 300, 1090, 412])) {
+    if (inRect(wx, wy, [1540, 590, 1866, 780])) {
       if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openTrade(); return; }
       seated = null; sitTarget = null;
       meEl.classList.remove('is-sitting');
@@ -226,7 +235,7 @@ function init() {
   // ---- 🏐 THE VOLLEYBALL: the ball has HEIGHT, and the net cares ----------
   const ballEl = document.getElementById('bhBall');
   const shadowEl = document.getElementById('bhBallShadow');
-  const ball = { x: 470, y: 470, z: 0, vx: 0, vy: 0, vz: 0 };
+  const ball = { x: 1080, y: 860, z: 0, vx: 0, vy: 0, vz: 0 };
   // a beach ball FLOATS — light gravity and a high pop, so a kick from a
   // sensible distance clears the net (tuned in testing: at 300 it never did,
   // which made the court a wall instead of a game). The net still punishes
@@ -289,11 +298,11 @@ function init() {
     // the road corner is fenced off: a ball resting there drags you out of
     // the world while you chase it (found in testing — an exit should be a
     // decision, never an accident)
-    if (ball.y > 520 && ball.x < 108) { ball.x = 108; ball.vx = Math.abs(ball.vx) * 0.6; }
-    if (ball.x < 24) { ball.x = 24; ball.vx = Math.abs(ball.vx) * 0.6; }
-    if (ball.x > 1376) { ball.x = 1376; ball.vx = -Math.abs(ball.vx) * 0.6; }
-    if (ball.y < 302) { ball.y = 302; ball.vy = Math.abs(ball.vy) * 0.6; }
-    if (ball.y > 604) { ball.y = 604; ball.vy = -Math.abs(ball.vy) * 0.6; }
+    if (ball.y > 940 && ball.x < 300) { ball.x = 300; ball.vx = Math.abs(ball.vx) * 0.6; }
+    if (ball.x < 270) { ball.x = 270; ball.vx = Math.abs(ball.vx) * 0.6; }
+    if (ball.x > 2370) { ball.x = 2370; ball.vx = -Math.abs(ball.vx) * 0.6; }
+    if (ball.y < 340) { ball.y = 340; ball.vy = Math.abs(ball.vy) * 0.6; }
+    if (ball.y > 1080) { ball.y = 1080; ball.vy = -Math.abs(ball.vy) * 0.6; }
     for (const r of OB_RECTS) {
       if (ball.z < 40 && inRect(ball.x, ball.y, r)) {
         const dl = ball.x - r[0], dr = r[2] - ball.x, dtp = ball.y - r[1], db = r[3] - ball.y;
@@ -340,8 +349,8 @@ function init() {
   }
   const shells = [];
   for (let i = 0; i < SPOTS; i++) {
-    const x = 180 + seedRand(DAY * 977 + i * 31) * 1150;
-    const y = 270 + seedRand(DAY * 977 + i * 31 + 1) * 16;
+    const x = 300 + seedRand(DAY * 977 + i * 31) * 2000;
+    const y = 312 + seedRand(DAY * 977 + i * 31 + 1) * 26;
     const id = shellForRoll(seedRand(DAY * 977 + i * 31 + 2));
     const idx = SHELL_IDS.indexOf(id);
     if (claimed.indexOf(i) > -1) { shells.push(null); continue; }
@@ -485,7 +494,8 @@ function init() {
 
   // ---- 🦀 crabs: locals who want NOTHING to do with you -------------------
   const crabs = [];
-  for (const start of [{ x: 420, y: 330 }, { x: 760, y: 560 }, { x: 1160, y: 420 }]) {
+  for (const start of [{ x: 700, y: 400 }, { x: 1300, y: 900 }, { x: 2000, y: 420 },
+                       { x: 460, y: 1000 }, { x: 1560, y: 380 }]) {
     const el = document.createElement('div');
     el.className = 'bh-crab';
     el.innerHTML = '<img src="/assets/beach/crab.png" alt="" aria-hidden="true">';
@@ -505,8 +515,8 @@ function init() {
     const d = Math.hypot(dx, dy);
     if (d < 2) {
       c.wait = 1 + Math.random() * 3.5;
-      c.tx = 180 + Math.random() * 1100;
-      c.ty = 300 + Math.random() * 290;
+      c.tx = 300 + Math.random() * 2000;
+      c.ty = 330 + Math.random() * 720;
       if (blocked(c.tx, c.ty)) { c.tx = c.x; c.ty = c.y; }
       return;
     }
@@ -555,12 +565,12 @@ function init() {
         meEl.classList.add('is-sitting');
         if (!satOnce) { satOnce = true; track('beach_sit'); }
       }
-      pos.x = Math.max(10, Math.min(1390, pos.x));
-      pos.y = Math.max(104, Math.min(610, pos.y));
+      pos.x = Math.max(12, Math.min(2388, pos.x));
+      pos.y = Math.max(64, Math.min(1088, pos.y));
       meEl.style.left = pct(pos.x, W);
       meEl.style.top = pct(pos.y, H);
-      if (pos.x > 130) roadArmed = true;
-      if (roadArmed && pos.x < 24 && pos.y > 568) exitToPark();
+      if (pos.x > 300) roadArmed = true;
+      if (roadArmed && pos.x < 40 && pos.y > 1040) exitToPark();
     }
     ballStep(dt, now);
     shellTick();
@@ -588,10 +598,10 @@ function init() {
   // the Captain and his bubble sit at the bar, in world coords
   // he stands BEHIND the counter of the wreck — feet just above the bar top,
   // so the hull reads as being in front of him
-  capEl.style.left = pct(958, W);
-  capEl.style.top = pct(384, H);
-  capBubble.style.left = pct(958, W);
-  capBubble.style.top = pct(322, H);
+  capEl.style.left = pct(1690, W);
+  capEl.style.top = pct(688, H);
+  capBubble.style.left = pct(1690, W);
+  capBubble.style.top = pct(610, H);
 
   // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
   // and place the ball or the banana without playing your way there

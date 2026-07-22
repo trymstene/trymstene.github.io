@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
 """🏖 BANANA BAY — the beach scene art (banana-beach-plan).
 
-B1.5 "THE LOOKS PASS": everything is drawn in OUR chunky style, but the
-CONSTRUCTION is lifted from studying LimeZu's Modern Exteriors beach set
-(reference only — no pack pixels ship, see the art strategy in the plan):
-  · a contact SHADOW under every object, so things sit in the sand
-  · light comes from the UPPER LEFT — top-left edges light, lower-right dark
-  · three shade steps per object, not two
-  · palms/umbrellas/grass built from RADIATING BLADES, not blobs
+B2 "TOP-DOWN REBUILD" (22 Jul). The bay used to be drawn with a sky and a
+horizon — a SIDE view — while every pack sprite and the whole terrain tileset
+is TOP-DOWN. Two projections in one picture is why it read as pasted together.
+It's now a true top-down map, like the park: no sky, the sea is an area at the
+top of the MAP, and pack art runs at its NATIVE 48px scale so a palm towers
+over a banana the way it should. Our banana stays a flat front-facing sprite
+with a contact shadow — the Stardew/RPG-Maker convention, verified in
+tools/beach-angle-test.png.
+
 Outputs:
-  public/assets/beach/beach.png      1400x620 world plate
-  public/assets/beach/sea-lines.png  160x196 tileable wave overlay (drifts)
-  public/assets/beach/foam.png       160x18 tileable shoreline foam (4 frames)
-  public/assets/beach/ball.png       16x16 volleyball
-  public/assets/beach/crab.png       14x9 scuttler (faces right)
-  public/assets/beach/gull.png       26x9 seagull, 2 wing frames
-  public/assets/beach/shells.png     29-frame collection strip (16x16 each)
-⚠️ GAMEPLAY GEOMETRY IS A CONTRACT with src/scripts/banana-beach.js — the net
-(x582), court (400-764 / 404-584), bar hull (862+), pier (1160-1226),
-lighthouse headland (1306,366) and waterline (266/290) must not move here
-without moving there.
+  public/assets/beach/beach.png      2400x1100 world plate
+  public/assets/beach/sea-lines.png  tileable drift overlay for the water
+  public/assets/beach/foam.png       4-frame shoreline wash
+  public/assets/beach/ball.png / crab.png / gull.png / shells.png
+⚠️ GEOMETRY IS A CONTRACT with src/scripts/banana-beach.js — see GEO below.
 Run: python tools/build-beach-scene.py
 """
 import math
@@ -29,645 +25,289 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-try:
-    from blockify import load_pack, blockify
-    HAVE_PACK = os.path.isdir(os.path.expanduser(r'~\OneDrive\banana-art-pack'))
-except Exception:
-    HAVE_PACK = False
+from blockify import load_pack, blockify
 
+PACK = os.path.expanduser(r'~\OneDrive\banana-art-pack\Modern_Exteriors_48x48')
+HAVE_PACK = os.path.isdir(PACK)
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(SITE, 'public', 'assets', 'beach')
 os.makedirs(OUT, exist_ok=True)
 rng = random.Random(1999)
 
-W, H = 1400, 620
-SEA_TOP, SEA_BOT = 100, 262
-WET_BOT = 290
-im = Image.new('RGBA', (W, H))
+T = 48                       # the pack's tile — our world unit now
+W, H = 2400, 1100
+# ---- GEO: the contract with banana-beach.js -------------------------------
+WATER_BOT = 260              # sea above this
+SHORE_BOT = 306              # shoreline band ends (walkable wet sand below)
+COURT = (640, 680, 1240, 1000)
+NET_X = 940
+BAR = (1700, 620)            # the wreck's centre / where the Captain stands
+PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
+LIGHT = (2180, 470)
+BOARDWALK = (0, 250, 306, 980)
+
+im = Image.new('RGBA', (W, H), (54, 132, 158, 255))
 px = im.load()
 
-# ---- palette: three steps per material, golden-hour warm -------------------
-SKY = [(92, 42, 82), (163, 59, 52), (217, 106, 47), (240, 168, 60)]
-SUN, SUN_L = (255, 216, 61), (255, 240, 160)
-SEA_DEEP, SEA_MID, SEA_LIGHT = (31, 111, 143), (43, 135, 168), (63, 160, 189)
+SAND_TINT = (250, 226, 170)
 SPARK = (232, 246, 250)
-WET, WET_D = (217, 185, 138), (198, 166, 120)
-SAND, SAND_D, SAND_L = (236, 217, 168), (216, 190, 134), (246, 231, 190)
-SHADE = (206, 180, 126)        # the contact-shadow tone on sand
-SHADE_2 = (192, 165, 112)
-DUNE, DUNE_L = (228, 206, 152), (247, 233, 191)
-WOOD, WOOD_D, WOOD_L = (160, 106, 51), (120, 74, 32), (188, 132, 70)
-FRAME, POST = (74, 44, 18), (95, 61, 28)
-ROOF, ROOF_D = (208, 73, 27), (154, 50, 16)
-WALL = (179, 118, 47)
-RED, RED_D = (216, 60, 56), (168, 38, 36)
-WHITE, WHITE_D = (255, 253, 245), (222, 216, 198)
-TEAL = (63, 160, 189)
-LEAF, LEAF_L, LEAF_D = (46, 139, 52), (80, 186, 82), (28, 96, 38)
-TRUNK, TRUNK_L, TRUNK_D = (132, 90, 50), (166, 120, 70), (96, 62, 30)
-STONE, STONE_L, STONE_D = (128, 126, 116), (166, 164, 152), (92, 90, 82)
 INK = (17, 17, 17)
-NET_C = (238, 234, 220)
+WHITE = (255, 253, 245)
+SHADE = (198, 168, 116)
 
 
-def rect(x0, y0, x1, y1, col, p=None, w=W, h=H):
-    p = p or px
-    for y in range(y0, y1):
-        for x in range(x0, x1):
-            if 0 <= x < w and 0 <= y < h:
-                p[x, y] = col
+def rect(x0, y0, x1, y1, col):
+    for y in range(int(y0), int(y1)):
+        for x in range(int(x0), int(x1)):
+            if 0 <= x < W and 0 <= y < H:
+                px[x, y] = col
 
 
-def put(x, y, col, p=None, w=W, h=H):
-    p = p or px
-    if 0 <= x < w and 0 <= y < h:
-        p[x, y] = col
+def put(x, y, col):
+    if 0 <= x < W and 0 <= y < H:
+        px[x, y] = col
 
 
-def ellipse(cx, cy, rx, ry, col, edge=None):
+def shadow(cx, cy, rx, ry, a=64):
+    """the contact shadow that makes a flat sprite sit ON the ground"""
     for y in range(int(cy - ry), int(cy + ry + 1)):
         for x in range(int(cx - rx), int(cx + rx + 1)):
-            d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+            if not (0 <= x < W and 0 <= y < H):
+                continue
+            d = ((x - cx) / float(rx)) ** 2 + ((y - cy) / float(ry)) ** 2
             if d <= 1.0:
-                put(x, y, edge if (edge and d > 0.72) else col)
+                r, g, b, _ = px[x, y]
+                k = a / 255.0 * (1.0 - d * 0.45)
+                px[x, y] = (int(r * (1 - k) + 44 * k), int(g * (1 - k) + 30 * k),
+                            int(b * (1 - k) + 16 * k), 255)
 
 
-# ---- the pack bridge: blockified sprites, cached, bottom-centre anchored ---
+# ---- the terrain: real pack tiles -----------------------------------------
+if HAVE_PACK:
+    sea = Image.open(os.path.join(PACK, 'Animated_48x48', 'Animated_Terrains_48x48',
+                                  'Sea_Water_Tileset_48x48.png')).convert('RGBA')
+
+    def seatile(c, r):
+        return sea.crop((c * T, r * T, (c + 1) * T, (r + 1) * T))
+
+    SAND_T = seatile(5, 1)                                  # pure sand
+    WATER_T = seatile(1, 1)                                 # open water
+    SHORE_T = seatile(1, 0).transpose(Image.FLIP_TOP_BOTTOM)  # water above, sand below
+    for r in range(0, H // T + 1):
+        for c in range(0, W // T + 1):
+            y = r * T
+            t = WATER_T if y + T <= WATER_BOT else (SHORE_T if y < SHORE_BOT else SAND_T)
+            im.alpha_composite(t, (c * T, y))
+else:
+    rect(0, 0, W, WATER_BOT, (63, 160, 189))
+    rect(0, WATER_BOT, W, H, (236, 217, 168))
+
+# a warm golden-hour grade over the whole map — the sunset survives as LIGHT,
+# not as a literal sky (there is no sky in a top-down world)
+for y in range(H):
+    warm = 1.0 - (y / float(H)) * 0.25
+    for x in range(W):
+        r, g, b, a = px[x, y]
+        px[x, y] = (min(255, int(r * (1.0 + 0.045 * warm))),
+                    min(255, int(g * (1.0 + 0.012 * warm))),
+                    int(b * (1.0 - 0.055 * warm)), a)
+
+# glitter scattered on the open water (no sun disc — nothing to reflect in a
+# top-down view; it's just sparkle on the swell)
+for _ in range(700):
+    x, y = rng.randrange(0, W), rng.randrange(6, WATER_BOT - 14)
+    for i in range(rng.randrange(2, 6)):
+        put(x + i, y, SPARK)
+
+# ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
 
 
-def sprite(name, factor=4, colors=6, warm=0.25, sat=1.22, con=1.12):
+def place(name, cx, base, factor=1, colors=10, warm=0.16, sat=1.12, con=1.06,
+          flip=False, shade=True, sh=0.30):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
         _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
                                warm=warm, sat=sat, con=con)
-    return _cache[key]
-
-
-def place(name, cx, base, factor=4, colors=6, warm=0.25, sat=1.22, con=1.12,
-          flip=False, shade=True, sx=1.0):
-    """paste a pack-derived sprite standing ON the sand at (cx, base)"""
-    s = sprite(name, factor, colors, warm, sat, con)
+    s = _cache[key]
     if flip:
         s = s.transpose(Image.FLIP_LEFT_RIGHT)
-    if sx != 1.0:
-        s = s.resize((max(1, int(s.width * sx)), max(1, int(s.height * sx))), Image.NEAREST)
     if shade:
-        shadow(cx + max(3, s.width // 7), base - 1, max(7, int(s.width * 0.52)),
-               max(3, int(s.height * 0.11)))
+        shadow(cx + s.width * 0.06, base - s.height * 0.02,
+               s.width * sh, max(4, s.height * 0.055))
     im.alpha_composite(s, (int(cx - s.width // 2), int(base - s.height)))
     return s.size
 
 
-def shadow(cx, cy, rx, ry):
-    """the contact shadow — the single biggest 'it sits in the sand' trick,
-    two-toned and offset to the lower-RIGHT because the light is upper-left"""
-    for y in range(int(cy - ry), int(cy + ry + 1)):
-        for x in range(int(cx - rx), int(cx + rx + 1)):
-            if not (0 <= x < W and 0 <= y < H):
-                continue
-            if px[x, y][:3] not in (SAND, SAND_D, SAND_L, DUNE, DUNE_L, WET, WET_D):
-                continue
-            d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-            if d <= 1.0:
-                px[x, y] = SHADE_2 if d < 0.45 else SHADE
-
-
-# ---- sky + sun + clouds ----------------------------------------------------
-for col, y0, y1 in zip(SKY, [0, 32, 60, 82], [32, 60, 82, SEA_TOP]):
-    rect(0, y0, W, y1, col)
-for y in range(62, SEA_TOP + 1):
-    for x in range(W):
-        d = math.hypot(x - 700, (y - SEA_TOP) * 1.05)
-        if d <= 36:
-            put(x, y, SUN_L if d < 22 and y < SEA_TOP - 8 else SUN)
-# long thin sunset clouds
-for cy, cx, cw in ((26, 250, 120), (44, 900, 160), (18, 1150, 90), (56, 430, 70)):
-    for i in range(cw):
-        x = cx + i
-        t = i / cw
-        thick = 1 + int(2 * math.sin(math.pi * t))
-        for k in range(thick):
-            put(x, cy + k, (255, 205, 150) if k == 0 else (232, 150, 110))
-
-# ---- the sea ---------------------------------------------------------------
-rect(0, SEA_TOP, W, 160, SEA_DEEP)
-rect(0, 160, W, 215, SEA_MID)
-rect(0, 215, W, SEA_BOT, SEA_LIGHT)
-# a soft band boundary so the bands don't read as hard stripes
-for x in range(W):
-    if rng.random() < 0.5:
-        put(x, 159 + rng.randrange(0, 2), SEA_MID)
-    if rng.random() < 0.5:
-        put(x, 214 + rng.randrange(0, 2), SEA_LIGHT)
-# the sun's glitter road — a CONE that fans out toward the viewer, the way a
-# real one does; a narrow column reads as a waterfall
-for _ in range(520):
-    y = rng.randrange(SEA_TOP + 4, SEA_BOT - 4)
-    t = (y - SEA_TOP) / float(SEA_BOT - SEA_TOP)
-    spread = int(20 + 260 * t * t)
-    x = 700 + rng.randrange(-spread, spread)
-    if rng.random() > 1.0 - abs(x - 700) / float(spread + 1) * 0.7:
-        continue                                   # thinner toward the edges
-    for i in range(rng.randrange(2, 7)):
-        put(x + i, y, SPARK)
-
-
-def sea_rock(cx, cy, r):
-    """rounded rock with a lit top-left and a foam collar (pack technique)"""
-    for y in range(cy - r - 2, cy + r + 3):
-        for x in range(cx - r * 2, cx + r * 2 + 1):
-            d = math.hypot((x - cx) / 2.0, y - cy)
-            if d <= r:
-                lit = (x - cx) / 2.0 + (y - cy) < -r * 0.45
-                put(x, y, STONE_D if d > r - 1.3 else (STONE_L if lit else STONE))
-    for i in range(r * 4 + 2):                 # foam collar
-        x = cx - r * 2 - 1 + i
-        if rng.random() < 0.8:
-            put(x, cy + r, SPARK)
-        if rng.random() < 0.45:
-            put(x, cy + r + 1, SPARK)
-
-
-sea_rock(240, 236, 9)
-sea_rock(1046, 224, 7)
-sea_rock(392, 198, 5)
-sea_rock(880, 250, 6)
-
-# breaking foam at the waterline: three ragged rows, thickest at the edge
-for x in range(W):
-    wob = math.sin(x / 26.0) * 1.6 + math.sin(x / 9.0) * 0.9
-    base = SEA_BOT + int(wob)
-    put(x, base, SPARK)
-    if rng.random() < 0.72:
-        put(x, base + 1, SPARK)
-    if rng.random() < 0.3:
-        put(x, base - 1, SPARK)
-rect(0, SEA_BOT + 2, W, WET_BOT, WET)
-for x in range(W):                              # wet-sand sheen streaks
-    if rng.random() < 0.25:
-        put(x, SEA_BOT + 3 + rng.randrange(0, 3), WET_D)
-
-# ---- dry sand --------------------------------------------------------------
-for y in range(WET_BOT, H):
-    for x in range(W):
-        r = rng.random()
-        px[x, y] = SAND_D if r < 0.07 else SAND_L if r < 0.12 else SAND
-
-
-def dune(cx, cy, rx, ry):
-    """a RAISED mound: lit crest, mid body, and a shaded skirt along the
-    lower-right — without the skirt it reads as a bald patch, not a dune"""
-    for y in range(cy - ry, cy + ry + 2):
-        for x in range(cx - rx, cx + rx + 1):
-            if not (0 <= x < W and 0 <= y < H):
-                continue
-            d = math.hypot((x - cx) / rx, (y - cy) / ry)
-            ry_off = (y - cy) / float(ry)
-            if d <= 1.0:
-                if ry_off < -0.34:
-                    put(x, y, DUNE_L)
-                elif ry_off > 0.52:
-                    put(x, y, SHADE)               # the skirt in shadow
-                else:
-                    put(x, y, DUNE)
-            elif d <= 1.06 and ry_off > 0:
-                put(x, y, SHADE_2)
-    for i in range(int(rx * 1.1)):                 # wind ripples on the crest
-        x = cx - int(rx * 0.55) + i
-        if rng.random() < 0.4:
-            put(x, cy - int(ry * 0.45) + (i % 3), SAND_L)
-
-
-dune(300, 316, 78, 20)
-dune(560, 322, 62, 16)
-dune(980, 314, 90, 22)
-dune(1240, 330, 64, 18)
-
-
-def grass(cx, cy, n=6, size=1.0):
-    """dune grass: separate BLADES fanning out, not a green blob"""
-    for i in range(n):
-        a = -math.pi / 2 + (i - (n - 1) / 2) * 0.34 + rng.uniform(-0.06, 0.06)
-        ln = int((9 + rng.randrange(0, 6)) * size)
-        for t in range(ln):
-            bend = (t / ln) ** 2 * 3.2 * (1 if a > -math.pi / 2 else -1)
-            x = int(cx + math.cos(a) * t + bend)
-            y = int(cy + math.sin(a) * t)
-            put(x, y, LEAF_L if t < ln * 0.4 else LEAF)
-    put(cx, cy + 1, LEAF_D)
-
-
-for gx, gy in ((246, 306), (330, 312), (392, 308), (524, 316), (600, 314),
-               (930, 306), (1012, 308), (1064, 312), (1210, 322), (1286, 326)):
-    grass(gx, gy, 5 + rng.randrange(0, 3), 0.9 + rng.random() * 0.4)
-
-# ---- the exit road back to the park (bottom-left) --------------------------
-for y in range(536, 604):
-    for x in range(0, 74 - (y - 536) // 4):
-        if rng.random() > 0.12:
-            put(x, y, SAND_L)
-
-# ---- the BOARDWALK (west): deck + radio shack ------------------------------
-shadow(78, 530, 84, 10)
-rect(0, WET_BOT, 150, 528, WOOD)
-for x in range(0, 150, 16):                     # planks, lit top edge each
-    rect(x, WET_BOT, x + 1, 528, WOOD_D)
-    rect(x + 1, WET_BOT, x + 2, 528, WOOD_L)
-rect(146, WET_BOT, 150, 528, WOOD_D)
-rect(0, WET_BOT, 146, WET_BOT + 3, WOOD_L)
-rect(0, 524, 150, 528, WOOD_D)
-
-rect(18, 304, 122, 388, WALL)                   # radio shack
-for x in range(26, 122, 14):
-    rect(x, 322, x + 1, 388, (158, 102, 38))
-rect(18, 304, 20, 388, (200, 140, 66))          # lit left edge
-rect(18, 304, 122, 322, ROOF)
-rect(18, 304, 122, 308, (232, 96, 44))
-rect(18, 318, 122, 322, ROOF_D)
-rect(82, 342, 108, 388, FRAME)
-rect(84, 344, 106, 388, (52, 30, 12))
-rect(30, 338, 60, 358, TEAL)
-rect(30, 338, 60, 342, (120, 200, 226))         # glass glint
-for e in range(30, 60):
-    put(e, 337, FRAME); put(e, 358, FRAME)
-for e in range(337, 359):
-    put(29, e, FRAME); put(60, e, FRAME)
-rect(32, 366, 56, 382, (58, 36, 20))
-for y in range(369, 381, 4):
-    rect(35, y, 53, y + 1, INK)
-rect(66, 296, 69, 306, FRAME)
-put(67, 294, RED); put(68, 294, RED)
-
-# ---- 🏐 THE VOLLEYBALL COURT ----------------------------------------------
-CX0, CY0, CX1, CY1 = 400, 404, 764, 584
-NET_X = 582
-for x in range(CX0, CX1):
-    put(x, CY0, WHITE); put(x, CY0 + 1, SAND_D)
-    put(x, CY1, WHITE); put(x, CY1 - 1, SAND_D)
-for y in range(CY0, CY1):
-    put(CX0, y, WHITE); put(CX1 - 1, y, WHITE)
-shadow(NET_X + 10, CY0 - 8, 12, 8)
-shadow(NET_X + 10, CY1 + 6, 12, 8)
-rect(NET_X - 4, CY0 - 30, NET_X + 4, CY0 + 4, POST)
-rect(NET_X - 4, CY0 - 30, NET_X - 2, CY0 + 4, TRUNK_L)
-rect(NET_X - 4, CY1 - 4, NET_X + 4, CY1 + 28, POST)
-rect(NET_X - 4, CY1 - 4, NET_X - 2, CY1 + 28, TRUNK_L)
-rect(NET_X - 5, CY0 - 34, NET_X + 5, CY0 - 30, WOOD_D)
-rect(NET_X - 5, CY1 + 24, NET_X + 5, CY1 + 32, WOOD_D)
-rect(NET_X - 5, CY0 - 26, NET_X + 5, CY1 + 24, NET_C)
-for y in range(CY0 - 26, CY1 + 24, 6):
-    rect(NET_X - 3, y, NET_X + 3, y + 3, (204, 200, 188))
-rect(NET_X - 7, CY0 - 30, NET_X + 7, CY0 - 26, WHITE)
-rect(NET_X - 7, CY1 + 24, NET_X + 7, CY1 + 28, WHITE)
-rect(NET_X + 5, CY0 - 26, NET_X + 9, CY1 + 24, SHADE)
-
-# ---- 🚢 CAPTAIN SPLIT'S SHIPWRECK BAR --------------------------------------
-HX, HY = 862, 330
-HULL, HULL_D, HULL_L = (128, 82, 40), (92, 56, 24), (162, 112, 60)
 if HAVE_PACK:
-    # the pack's Ship_Bar IS a wrecked-ship bar — exactly Captain Split's place,
-    # and far better than the hull I hand-drew. Anchored so the counter lands
-    # where banana-beach.js expects to be talked to (BAR ≈ 974, 410).
-    place('21_Beach_48x48_Ship_Bar.png', 974, 416, factor=3, colors=9, warm=0.2, sat=1.15)
-    place('21_Beach_48x48_Ship_Bar_Bottle_1_Table.png', 916, 372, factor=3, colors=5, shade=False)
-    place('21_Beach_48x48_Ship_Bar_Cocktail_1_Table.png', 1032, 372, factor=3, colors=5, shade=False)
-    for i, sx in enumerate((904, 950, 996, 1042)):
-        place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, 446,
-              factor=3, colors=5, warm=0.2)
-if not HAVE_PACK:                    # the hand-drawn fallback hull
-    shadow(HX + 112, HY + 80, 118, 16)
-    for y in range(HY, HY + 84):
-        t = (y - HY) / 84.0
-        half = int(112 * math.sin(math.pi * (0.22 + 0.78 * t)) * 0.9)
-        for x in range(HX + 112 - half, HX + 112 + half):
-            edge = x <= HX + 112 - half + 2 or x >= HX + 112 + half - 3
-            plank = (y - HY) % 12 < 2
-            lit = x < HX + 112 - half + 8
-            put(x, y, HULL_D if (edge or y > HY + 78) else (HULL_L if (plank or lit) else HULL))
-    rect(HX + 30, HY + 30, HX + 194, HY + 44, WOOD_L)
-    rect(HX + 30, HY + 30, HX + 194, HY + 33, (206, 154, 90))
-    rect(HX + 30, HY + 44, HX + 194, HY + 48, WOOD_D)
-    for sx in range(HX + 44, HX + 190, 36):
-        rect(sx, HY + 54, sx + 18, HY + 60, WOOD)
-        rect(sx + 6, HY + 60, sx + 12, HY + 74, WOOD_D)
+    # 🛶 the boardwalk deck, laid from pack wood-floor tiles is overkill —
+    # a plain plank deck reads fine from above and stays cheap
+    bw0, bw1, by0, by1 = BOARDWALK
+    for y in range(by0, by1):
+        for x in range(bw0, bw1):
+            plank = (y // 14) % 2 == 0
+            edge = (y % 14) < 2
+            base = (172, 118, 60) if plank else (156, 104, 50)
+            put(x, y, (120, 76, 34) if edge else base)
+    rect(bw1 - 5, by0, bw1, by1, (110, 68, 30))
+    rect(bw0, by1 - 5, bw1, by1, (110, 68, 30))
 
-# ---- 🗼 THE LIGHTHOUSE -----------------------------------------------------
-LCX, LBASE = 1306, 356
-# headland: a low rocky outcrop with an IRREGULAR silhouette — a smooth
-# ellipse of dark stone reads as a hole in the sand, not a rock
-ROCK_L, ROCK_M, ROCK_D = (196, 186, 168), (162, 150, 132), (118, 108, 94)
-shadow(LCX + 14, LBASE + 20, 56, 12)
-for y in range(LBASE - 28, LBASE + 22):
-    for x in range(LCX - 60, LCX + 61):
-        ang = math.atan2((y - (LBASE + 2)) / 20.0, (x - LCX) / 54.0)
-        wob = 1.0 + 0.13 * math.sin(ang * 3.0) + 0.08 * math.sin(ang * 7.0 + 1.4)
-        d = math.hypot((x - LCX) / 54.0, (y - (LBASE + 2)) / 20.0) / wob
-        if d > 1.0:
-            continue
-        lit = (y - (LBASE + 2)) < -4 and (x - LCX) < 18
-        speck = (x * 5 + y * 3) % 7
-        put(x, y, ROCK_D if d > 0.9 else
-            (ROCK_L if lit else (ROCK_L if speck == 0 else (ROCK_M if speck < 5 else ROCK_D))))
-for gx in (LCX - 34, LCX + 6, LCX + 30):        # tufts clinging to the rock
-    grass(gx, LBASE - 14, 4, 0.7)
-if HAVE_PACK:
-    # the pack lighthouse has its own lamp room — no hand-drawn beam needed
-    # (mine read as floating white boxes stuck to the sky)
-    place('21_Beach_48x48_Example_Lighthouse.png', LCX, LBASE - 14,
-          factor=5, colors=9, warm=0.12, sat=1.08, shade=False)
-else:
-    for y in range(LBASE - 128, LBASE - 26):
-        t = (y - (LBASE - 128)) / 102.0
-        hw = int(15 + 10 * t)
-        band = ((y - (LBASE - 128)) // 20) % 2 == 0
-        for x in range(LCX - hw, LCX + hw):
-            edge = abs(x - LCX) > hw - 3
-            put(x, y, ((140, 32, 30) if band else WHITE_D) if edge else (RED if band else WHITE))
-    rect(LCX - 16, LBASE - 172, LCX + 16, LBASE - 146, (250, 236, 170))
-    rect(LCX - 8, LBASE - 56, LCX + 8, LBASE - 26, FRAME)
+    # 🌴 palms — native scale, so they tower over a 56px banana
+    for cx, base, fl in ((330, 470, False), (520, 900, True), (1500, 520, False),
+                         (1330, 1040, True), (2010, 900, False), (760, 560, True),
+                         (2290, 640, False)):
+        place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26)
+    for cx, base in ((430, 372), (900, 366), (1600, 380), (2120, 372), (660, 362)):
+        place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False)
 
+    # 🏐 the volleyball court: real pack net + field lines
+    cx0, cy0, cx1, cy1 = COURT
+    # the pack's modular net pieces are whole-tile panels — stacked they made
+    # a chain-link tower. A slim hand-drawn net reads correctly from above.
+    shadow(NET_X + 14, cy0 - 6, 22, 12, 50)
+    shadow(NET_X + 14, cy1 + 30, 22, 12, 50)
+    rect(NET_X - 5, cy0 - 34, NET_X + 5, cy0 + 6, (120, 76, 34))
+    rect(NET_X - 5, cy0 - 34, NET_X - 2, cy0 + 6, (176, 122, 64))
+    rect(NET_X - 5, cy1 - 6, NET_X + 5, cy1 + 34, (120, 76, 34))
+    rect(NET_X - 5, cy1 - 6, NET_X - 2, cy1 + 34, (176, 122, 64))
+    rect(NET_X - 6, cy0 - 28, NET_X + 6, cy1 + 28, (242, 238, 226))
+    for y in range(cy0 - 28, cy1 + 28, 7):
+        rect(NET_X - 4, y, NET_X + 4, y + 3, (206, 200, 186))
+    rect(NET_X - 8, cy0 - 34, NET_X + 8, cy0 - 28, WHITE)
+    rect(NET_X - 8, cy1 + 28, NET_X + 8, cy1 + 34, WHITE)
+    rect(NET_X + 6, cy0 - 28, NET_X + 11, cy1 + 28, SHADE)
+    # the pack's field-line tiles came out as solid orange planks against our
+    # warmer sand — a plain scuffed white line reads better from above anyway
+    for x in range(cx0, cx1):
+        for yy in (cy0, cy1):
+            if (x // 5) % 6 != 5:
+                put(x, yy, WHITE); put(x, yy + 1, (236, 230, 210))
+    for y in range(cy0, cy1):
+        for xx in (cx0, cx1 - 2):
+            if (y // 5) % 6 != 5:
+                put(xx, y, WHITE); put(xx + 1, y, (236, 230, 210))
 
-# ---- palms: radiating fronds, ringed trunk, base mound, shadow -------------
-def palm(cx, base, size=1.0):
-    h = int(58 * size)
-    shadow(cx + 14, base + 3, int(26 * size), int(8 * size))
-    ellipse(cx + 2, base, 13 * size, 5 * size, SAND_D)       # sand mound
-    for y in range(base - h, base):                          # trunk with rings
-        lean = round((base - y) / 8.5)
-        x0 = cx - 4 + lean
-        ring = ((base - y) // 7) % 2 == 0
-        rect(x0, y, x0 + 8, y + 1, TRUNK if ring else TRUNK_D)
-        put(x0, y, TRUNK_L)
-        put(x0 + 1, y, TRUNK_L)
-    top = (cx + round(h / 8.5), base - h)
-    for k, ang in enumerate((-2.75, -2.05, -1.35, -0.55, 0.25, 0.95, 1.65)):
-        ln = int((26 + (k % 3) * 5) * size)
-        for t in range(ln):                                  # one frond = a spine…
-            droop = (t / ln) ** 2 * 9 * size
-            fx = int(top[0] + math.cos(ang) * t)
-            fy = int(top[1] + math.sin(ang) * t * 0.55 + droop)
-            wid = max(1, int((1 - t / ln) * 4.5 * size) + 1)
-            for o in range(-wid, wid + 1):                   # …with blades either side
-                if (t + o) % 2 == 0:
-                    put(fx, fy + o, LEAF_D if abs(o) >= wid - 1 else
-                        (LEAF_L if (ang < -0.9 and abs(o) < wid - 1) else LEAF))
-        put(int(top[0] + math.cos(ang) * ln), int(top[1] + math.sin(ang) * ln * 0.55 + 9 * size), LEAF_D)
-    for dx, dy in ((-3, 4), (2, 5), (-1, 7)):                # coconuts
-        ellipse(top[0] + dx, top[1] + dy, 2.6, 2.4, (128, 80, 34), (92, 54, 20))
+    # 🚢 Captain Split's wreck
+    place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34)
+    for i, sx in enumerate((BAR[0] - 150, BAR[0] - 50, BAR[0] + 50, BAR[0] + 150)):
+        place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, BAR[1] + 200)
 
+    # 🗼 the lighthouse — factor 2, or it would eat half the map
+    place('21_Beach_48x48_Example_Lighthouse.png', LIGHT[0], LIGHT[1] + 300,
+          factor=2, colors=12, sh=0.24)
 
-palm(214, 392)
-palm(346, 470, 0.85)
-palm(818, 300, 1.1)
-palm(1122, 386)
-palm(1330, 470, 0.9)
-palm(486, 344, 0.8)
+    # ⛱ furniture
+    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1180, 560)
+    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 700, 1010)
+    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560)
+    for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
+        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0)
+    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1450, 780, shade=False)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 620, 1060, shade=False)
+    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1900, 800, shade=False)
+    place('21_Beach_48x48_Red_Float.png', 2240, 380)
+    place('21_Beach_48x48_Green_Float.png', 300, 1020)
+    for cx, base in ((1600, 900), (860, 1080), (2130, 1020)):
+        place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base)
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 1050, 1080)
+    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1780, 1010)
+    for cx, base in ((480, 330), (1120, 336), (1750, 330), (2260, 334)):
+        place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)
+    for cx, base in ((820, 334), (1400, 330)):
+        place('21_Beach_48x48_Purple_Small_Starfish.png', cx, base, shade=False)
+    for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
+        place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
 
+    # 🛟 the pier, planked out over the water
+    px0, px1, py0, py1 = PIER
+    for y in range(py0, py1):
+        for x in range(px0, px1):
+            plank = (y // 16) % 2 == 0
+            edge = (y % 16) < 2 or x < px0 + 5 or x > px1 - 6
+            put(x, y, (110, 68, 30) if edge else ((172, 118, 60) if plank else (156, 104, 50)))
 
-# ---- beach furniture: umbrella (wedges), towels (stripes+fringe), floats ---
-def umbrella(cx, top_y, col):
-    shadow(cx + 16, top_y + 52, 26, 8)
-    rect(cx - 2, top_y + 22, cx + 2, top_y + 52, POST)
-    rect(cx - 2, top_y + 22, cx - 1, top_y + 52, (140, 100, 56))
-    R = 30
-    for y in range(top_y, top_y + 24):
-        half = int(R * math.sin(math.pi * min(1.0, (y - top_y + 1) / 26.0)) * 0.98)
-        for x in range(cx - half, cx + half + 1):
-            a = math.atan2(y - top_y - 24, x - cx)
-            wedge = int((a + math.pi) / math.pi * 8) % 2 == 0
-            edge = abs(x - cx) >= half - 1 or y >= top_y + 22
-            c = col if wedge else WHITE
-            if edge:
-                c = tuple(int(v * 0.72) for v in c) if wedge else WHITE_D
-            put(x, y, c)
-    put(cx, top_y - 1, FRAME)
+    # 🔥 the bonfire ring — hand-drawn stones; the pack's sea rocks carry a
+    # foam collar, so a ring of them read as a ring of bubbles on dry sand
+    shadow(566, 646, 74, 46, 40)
+    for a in range(11):
+        ang = a / 11.0 * math.tau
+        sx, sy = 560 + int(math.cos(ang) * 62), 640 + int(math.sin(ang) * 40)
+        for yy in range(sy - 9, sy + 10):
+            for xx in range(sx - 12, sx + 13):
+                d = math.hypot((xx - sx) / 12.0, (yy - sy) / 9.0)
+                if d <= 1.0:
+                    lit = (yy - sy) < -3 and (xx - sx) < 3
+                    put(xx, yy, (108, 104, 96) if d > 0.86 else
+                        ((186, 182, 168) if lit else (146, 142, 130)))
+    for i in range(5):                       # charred logs in the middle
+        ang = i / 5.0 * math.tau
+        rect(560 + math.cos(ang) * 20 - 5, 640 + math.sin(ang) * 12 - 4,
+             560 + math.cos(ang) * 20 + 6, 640 + math.sin(ang) * 12 + 5, (74, 52, 32))
+    rect(544, 632, 578, 648, (52, 38, 24))
 
+# ---- the road home, worn into the sand (bottom-left) ----------------------
+for y in range(H - 150, H):
+    for x in range(0, 150 - (H - y) // 3):
+        r, g, b, a = px[x, y]
+        put(x, y, (min(255, r + 12), min(255, g + 10), min(255, b + 6), a))
 
-def towel(x0, y0, col, col2=WHITE):
-    shadow(x0 + 22, y0 + 20, 24, 6)
-    for y in range(y0, y0 + 18):
-        for x in range(x0, x0 + 40):
-            stripe = ((y - y0) // 3) % 2 == 0
-            put(x, y, col if stripe else col2)
-    for x in range(x0, x0 + 40, 3):                # fringe, both short ends
-        put(x, y0 - 1, col)
-        put(x, y0 + 18, col)
-    rect(x0, y0, x0 + 40, y0 + 1, tuple(int(v * 1.12) if v < 220 else v for v in col))
-
-
-def float_ring(cx, cy, col):
-    shadow(cx + 5, cy + 9, 15, 5)
-    ellipse(cx, cy, 15, 9, col, tuple(int(v * 0.72) for v in col))
-    ellipse(cx, cy, 7, 4, SAND)
-    for i in range(-13, 14, 6):                    # white bands
-        if abs(i) > 6:
-            ellipse(cx + i, cy, 2.4, 3.4, WHITE)
-
-
-if HAVE_PACK:
-    # 🌴 everything below is PACK-DERIVED (LimeZu Modern Exteriors → blockify)
-    for cx, base, f, fl in ((214, 400, 4, False), (346, 478, 5, True), (818, 306, 4, True),
-                            (1122, 394, 4, False), (486, 350, 5, False)):
-        place('21_Beach_48x48_Palm_Tree.png', cx, base, factor=f, colors=7, warm=0.3)
-    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 975, 462, factor=3, colors=5)
-    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 348, factor=3, colors=5)
-    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1036, 492, factor=3, colors=6, shade=False)
-    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 252, 584, factor=3, colors=7, shade=False)
-    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 668, 358, factor=3, colors=6, shade=False)
-    place('21_Beach_48x48_Red_Float.png', 1268, 312, factor=3, colors=5)
-    place('21_Beach_48x48_Green_Float.png', 122, 486, factor=3, colors=5)
-    for cx, base in ((690, 478, ), (1188, 394, ), (322, 548, )):
-        place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base, factor=2, colors=5)
-    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 806, 534, factor=3, colors=7, warm=0.15)
-    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1064, 574, factor=3, colors=7, warm=0.15)
-    for cx, base in ((178, 308), (466, 292), (742, 304), (1128, 290)):
-        place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, factor=2, colors=4, shade=False)
-    place('21_Beach_48x48_Purple_Small_Starfish.png', 1290, 308, factor=2, colors=4, shade=False)
-    for cx, base, f in ((246, 318, 3), (392, 320, 4), (600, 324, 3),
-                        (930, 316, 4), (1012, 320, 3), (1286, 336, 4)):
-        place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, factor=f, colors=5, shade=False)
-
-
-def chair(x0, y0, c1, c2):
-    shadow(x0 + 26, y0 + 32, 26, 7)
-    rect(x0, y0, x0 + 44, y0 + 12, WOOD_D)
-    for i, x in enumerate(range(x0 + 2, x0 + 42, 7)):
-        rect(x, y0 + 1, x + 7, y0 + 11, c1 if i % 2 == 0 else c2)
-    for i, x in enumerate(range(x0 + 2, x0 + 42, 7)):
-        rect(x, y0 + 12, x + 7, y0 + 28, c2 if i % 2 == 0 else c1)
-    rect(x0, y0 + 12, x0 + 2, y0 + 34, WOOD_D)
-    rect(x0 + 42, y0 + 12, x0 + 44, y0 + 34, WOOD_D)
-    rect(x0, y0 + 28, x0 + 44, y0 + 30, WOOD)
-    rect(x0, y0, x0 + 44, y0 + 2, WOOD_L)
-
-
-if HAVE_PACK:
-    # sunbeds from the pool set — these ARE the sit targets in banana-beach.js,
-    # so they must land on the same rects: (1092,424) (1150,452) (158,460)
-    for i, (x0, y0) in enumerate(((1092, 424), (1150, 452), (158, 460))):
-        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4),
-              x0 + 22, y0 + 34, factor=3, colors=6, warm=0.2)
-else:
-    chair(1092, 424, (255, 225, 53), WHITE)
-    chair(1150, 452, TEAL, WHITE)
-    chair(158, 460, (244, 137, 178), WHITE)
-
-# ---- the bonfire ring ------------------------------------------------------
-shadow(268, 500, 26, 9)
-for ang in range(9):
-    a = ang / 9 * math.tau
-    sx, sy = 262 + round(math.cos(a) * 19), 494 + round(math.sin(a) * 12)
-    ellipse(sx, sy, 4, 3, STONE if ang % 2 else STONE_L, STONE_D)
-rect(243, 488, 281, 498, (58, 44, 30))
-rect(244, 490, 280, 494, POST)
-rect(252, 484, 258, 500, POST)
-rect(266, 486, 272, 499, TRUNK_D)
-
-
-# ---- scattered beach dressing: buckets, castles, deco starfish -------------
-def bucket(cx, cy, col):
-    shadow(cx + 4, cy + 8, 8, 3)
-    for y in range(cy - 9, cy + 1):
-        t = (y - (cy - 9)) / 10.0
-        half = int(6 - 1.6 * t)
-        for x in range(cx - half, cx + half + 1):
-            edge = abs(x - cx) >= half
-            lit = x < cx - half + 2
-            put(x, y, tuple(int(v * 0.7) for v in col) if edge else (tuple(min(255, v + 40) for v in col) if lit else col))
-    rect(cx - 7, cy - 11, cx + 8, cy - 9, tuple(int(v * 0.8) for v in col))
-    for i in range(-6, 7):                          # handle
-        put(cx + i, cy - 15 + abs(i) // 2, (90, 88, 82))
-
-
-def sandcastle(cx, base):
-    shadow(cx + 8, base + 3, 22, 6)
-    for i, (dx, hgt, wid) in enumerate(((-13, 16, 6), (0, 22, 7), (13, 16, 6))):
-        for y in range(base - hgt, base):
-            for x in range(cx + dx - wid, cx + dx + wid + 1):
-                edge = abs(x - (cx + dx)) >= wid
-                lit = x < cx + dx - wid * 0.3
-                put(x, y, SAND_D if edge else (DUNE_L if lit else DUNE))
-        for x in range(cx + dx - wid - 1, cx + dx + wid + 2, 3):   # crenellations
-            rect(x, base - hgt - 3, x + 2, base - hgt, DUNE)
-    rect(cx - 20, base - 8, cx + 21, base, DUNE)                   # the wall
-    rect(cx - 20, base - 8, cx + 21, base - 6, DUNE_L)
-    rect(cx - 1, base - 34, cx + 1, base - 22, POST)               # flag
-    rect(cx + 1, base - 34, cx + 10, base - 28, RED)
-
-
-def deco_star(cx, cy, col):
-    for y in range(-5, 6):
-        for x in range(-5, 6):
-            d = math.hypot(x, y)
-            if d > 5.4:
-                continue
-            a = math.atan2(y, x) + math.pi / 2
-            k = (math.cos(a * 5) + 1) / 2
-            if d <= 2.0 + 3.4 * k:
-                put(cx + x, cy + y, col if d < 3.2 else tuple(int(v * 0.76) for v in col))
-
-
-bucket(690, 470, (232, 96, 88))
-bucket(1188, 386, (96, 176, 232))
-bucket(322, 540, (246, 206, 74))
-sandcastle(806, 520)
-sandcastle(1064, 560)
-for sx, sy in ((178, 300), (466, 284), (742, 296), (1128, 282), (1290, 300)):
-    deco_star(sx, sy, (246, 206, 74) if (sx // 7) % 2 else (240, 150, 175))
-for _ in range(50):                                  # tiny pebbles + shell bits
-    x, y = rng.randrange(160, W - 40), rng.randrange(WET_BOT + 4, H - 10)
-    if px[x, y][:3] in (SAND, SAND_D, SAND_L):
-        put(x, y, SAND_D if rng.random() < 0.6 else WHITE_D)
-
-# ---- the PIER --------------------------------------------------------------
-PX0, PX1 = 1160, 1226
-rect(PX0 - 34, 116, PX1 + 34, 172, WOOD)
-for y in range(116, 172, 13):
-    rect(PX0 - 34, y, PX1 + 34, y + 1, WOOD_D)
-    rect(PX0 - 34, y + 1, PX1 + 34, y + 2, WOOD_L)
-rect(PX0 - 34, 116, PX1 + 34, 120, WOOD_L)
-rect(PX0 - 34, 168, PX1 + 34, 172, WOOD_D)
-for rx in range(PX0 - 34, PX1 + 34, 14):
-    rect(rx, 106, rx + 4, 118, POST)
-rect(PX0 - 34, 104, PX1 + 34, 108, WOOD_L)
-rect(PX0, 172, PX1, 322, WOOD)
-for y in range(176, 322, 17):
-    rect(PX0, y, PX1, y + 1, WOOD_D)
-    rect(PX0, y + 1, PX1, y + 2, WOOD_L)
-rect(PX0, 172, PX0 + 4, 322, WOOD_D)
-rect(PX1 - 4, 172, PX1, 322, WOOD_D)
-for pxx, pyy in ((PX0 - 36, 172), (PX1 + 30, 172), (PX0, 322), (PX1 - 8, 322)):
-    rect(pxx, pyy, pxx + 8, pyy + 16, POST)
-    rect(pxx, pyy, pxx + 2, pyy + 16, TRUNK_L)
-
-# ---- the park signpost -----------------------------------------------------
-shadow(80, 574, 14, 4)
-rect(72, 546, 76, 572, POST)
-rect(72, 546, 73, 572, TRUNK_L)
-rect(56, 538, 96, 552, WOOD)
-rect(56, 538, 96, 541, WOOD_L)
-rect(52, 542, 58, 548, FRAME)
-for x in range(62, 92, 4):
-    rect(x, 543, x + 2, 546, FRAME)
-
+im = im.convert('RGB')
 im.save(os.path.join(OUT, 'beach.png'), optimize=True)
-print('wrote beach.png  (%dx%d)' % (W, H))
+print('wrote beach.png (%dx%d) %.0f KB' % (W, H,
+      os.path.getsize(os.path.join(OUT, 'beach.png')) / 1024.0))
 
 # ============================================================================
-# 🌊 THE ANIMATED WATER — two tileable overlays that DRIFT across the sea
-# (CSS translates them; a 160-wide tile loops seamlessly at -160px)
-TW, TH = 160, 196          # covers SEA_TOP..WET_BOT
+# 🌊 the drifting water overlay + the shoreline wash
+TW, TH = 192, WATER_BOT + 40
 lines = Image.new('RGBA', (TW, TH), (0, 0, 0, 0))
 lp = lines.load()
 lrng = random.Random(77)
-for _ in range(30):
-    y = lrng.randrange(4, TH - 30)
+for _ in range(34):
+    y = lrng.randrange(4, TH - 24)
     x = lrng.randrange(0, TW)
-    ln = lrng.randrange(5, 16)
-    a = int(70 + 90 * (y / TH))
+    ln = lrng.randrange(6, 20)
+    a = int(60 + 80 * (y / float(TH)))
     for i in range(ln):
-        xx = (x + i) % TW
-        lp[xx, y] = (SPARK[0], SPARK[1], SPARK[2], a)
+        lp[(x + i) % TW, y] = (SPARK[0], SPARK[1], SPARK[2], a)
         if i % 3 == 0 and y + 1 < TH:
-            lp[xx, y + 1] = (SPARK[0], SPARK[1], SPARK[2], a // 2)
+            lp[(x + i) % TW, y + 1] = (SPARK[0], SPARK[1], SPARK[2], a // 2)
 lines.save(os.path.join(OUT, 'sea-lines.png'), optimize=True)
 print('wrote sea-lines.png')
 
-# the shoreline wash: 4 frames of foam creeping up and back
-FW, FH, FN = 160, 18, 4
+FW, FH, FN = 192, 26, 4
 foam = Image.new('RGBA', (FW * FN, FH), (0, 0, 0, 0))
 fp = foam.load()
 frng = random.Random(303)
 for f in range(FN):
-    reach = (0, 2, 3, 1)[f]
+    reach = (0, 3, 5, 2)[f]
     for x in range(FW):
-        wob = math.sin((x + f * 12) / 13.0) * 1.5 + math.sin(x / 5.0) * 0.7
-        base = 7 + int(wob) - reach
+        wob = math.sin((x + f * 14) / 17.0) * 2.2 + math.sin(x / 6.0) * 1.0
+        base = 10 + int(wob) - reach
         for k in range(2 + reach):
-            a = 235 if k == 0 else 150 - k * 34
+            a = 225 if k == 0 else 150 - k * 26
             if a > 20:
                 fp[f * FW + x, max(0, min(FH - 1, base + k))] = (SPARK[0], SPARK[1], SPARK[2], a)
-        if frng.random() < 0.22:
-            fp[f * FW + x, max(0, min(FH - 1, base - 1))] = (SPARK[0], SPARK[1], SPARK[2], 120)
+        if frng.random() < 0.2:
+            fp[f * FW + x, max(0, min(FH - 1, base - 1))] = (SPARK[0], SPARK[1], SPARK[2], 110)
 foam.save(os.path.join(OUT, 'foam.png'), optimize=True)
-print('wrote foam.png (%d frames)' % FN)
+print('wrote foam.png')
 
-# ---- the volleyball --------------------------------------------------------
-ball = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+# ---- the volleyball, the crab, the gull -----------------------------------
+RED, RED_D = (216, 60, 56), (168, 38, 36)
+ball = Image.new('RGBA', (18, 18), (0, 0, 0, 0))
 bp = ball.load()
-for y in range(16):
-    for x in range(16):
-        d = math.hypot(x - 7.5, y - 7.5)
-        if d <= 7.5:
-            band = RED if abs((x - 7.5) * 0.7 + (y - 7.5)) < 2.4 else WHITE
-            if d < 5 and (x - 7.5) + (y - 7.5) < -3:
+for y in range(18):
+    for x in range(18):
+        d = math.hypot(x - 8.5, y - 8.5)
+        if d <= 8.5:
+            band = RED if abs((x - 8.5) * 0.7 + (y - 8.5)) < 2.7 else WHITE
+            if d < 5.5 and (x - 8.5) + (y - 8.5) < -3:
                 band = (255, 255, 255) if band == WHITE else (240, 96, 92)
-            bp[x, y] = (17, 17, 17, 255) if d > 6.5 else band
+            bp[x, y] = (17, 17, 17, 255) if d > 7.4 else band
 ball.save(os.path.join(OUT, 'ball.png'), optimize=True)
-print('wrote ball.png')
 
-# ---- the crab (14x9, facing right) -----------------------------------------
+if HAVE_PACK:
+    crab = blockify(load_pack('21_Beach_48x48_Small_Red_Bucket_1.png'), factor=4, colors=4)
 crab = Image.new('RGBA', (14, 9), (0, 0, 0, 0))
 cp = crab.load()
 for y in range(2, 7):
@@ -677,41 +317,35 @@ for x in range(4, 10):
     cp[x, 1] = (240, 96, 92, 255)
 for x in range(3, 11):
     cp[x, 6] = RED_D
-cp[5, 3] = (255, 255, 255, 255)
-cp[8, 3] = (255, 255, 255, 255)
-cp[5, 4] = (17, 17, 17, 255)
-cp[8, 4] = (17, 17, 17, 255)
+cp[5, 3] = (255, 255, 255, 255); cp[8, 3] = (255, 255, 255, 255)
+cp[5, 4] = (17, 17, 17, 255); cp[8, 4] = (17, 17, 17, 255)
 for lx in (2, 4, 9, 11):
-    cp[lx, 7] = (140, 30, 28, 255)
-    cp[lx, 8] = (140, 30, 28, 255)
+    cp[lx, 7] = (140, 30, 28, 255); cp[lx, 8] = (140, 30, 28, 255)
 cp[1, 1] = RED; cp[2, 0] = RED; cp[12, 1] = RED; cp[11, 0] = RED
 crab.save(os.path.join(OUT, 'crab.png'), optimize=True)
-print('wrote crab.png')
 
-# ---- the seagull: 2 wing frames side by side (13x9 each) -------------------
 GW, GH = 13, 9
 gull = Image.new('RGBA', (GW * 2, GH), (0, 0, 0, 0))
 gp = gull.load()
+
+
 def gull_frame(ox, up):
-    body = [(5, 5), (6, 5), (7, 5), (8, 5), (6, 4), (7, 4), (5, 6), (6, 6), (7, 6)]
-    for x, y in body:
+    for x, y in ((5, 5), (6, 5), (7, 5), (8, 5), (6, 4), (7, 4), (5, 6), (6, 6), (7, 6)):
         gp[ox + x, y] = (255, 253, 245, 255)
-    gp[ox + 9, 5] = (255, 253, 245, 255)          # tail
-    gp[ox + 4, 4] = (255, 253, 245, 255)          # head
-    gp[ox + 3, 4] = (246, 176, 60, 255)           # beak
-    gp[ox + 4, 3] = (60, 58, 54, 255)             # eye
-    if up:
-        for i, (x, y) in enumerate(((5, 2), (6, 1), (7, 1), (8, 2))):
-            gp[ox + x, y] = (255, 253, 245, 255)
-            gp[ox + x, y + 1] = (222, 216, 198, 255)
-    else:
-        for i, (x, y) in enumerate(((5, 7), (6, 8), (7, 8), (8, 7))):
-            gp[ox + x, y] = (255, 253, 245, 255)
-            gp[ox + x, y - 1] = (222, 216, 198, 255)
+    gp[ox + 9, 5] = (255, 253, 245, 255)
+    gp[ox + 4, 4] = (255, 253, 245, 255)
+    gp[ox + 3, 4] = (246, 176, 60, 255)
+    gp[ox + 4, 3] = (60, 58, 54, 255)
+    ys = ((5, 2), (6, 1), (7, 1), (8, 2)) if up else ((5, 7), (6, 8), (7, 8), (8, 7))
+    for x, y in ys:
+        gp[ox + x, y] = (255, 253, 245, 255)
+        gp[ox + x, y + (1 if up else -1)] = (222, 216, 198, 255)
+
+
 gull_frame(0, True)
 gull_frame(GW, False)
 gull.save(os.path.join(OUT, 'gull.png'), optimize=True)
-print('wrote gull.png (2 frames)')
+print('wrote ball / crab / gull')
 
 # ============================================================================
 # 🐚 THE SHELL STRIP — ORDER IS A CONTRACT with banana-beach.js's SHELL_IDS
@@ -769,8 +403,7 @@ def draw_fan(ox, base, light, dark):
             rim = (y <= 3 and (x % 2 == 0))
             edge = abs(x - 8) >= half
             sput(ox, x, y, dark if (edge or rim) else (light if rib else base))
-    sput(ox, 7, 14, dark)
-    sput(ox, 8, 14, dark)
+    sput(ox, 7, 14, dark); sput(ox, 8, 14, dark)
 
 
 def draw_cone(ox, base, light, dark):
@@ -784,18 +417,15 @@ def draw_cone(ox, base, light, dark):
 
 
 def draw_star(ox, base, light, dark, big):
-    r_out = 7.2 if big else 5.0
-    r_in = 3.0 if big else 2.1
-    cx = cy = 7.5
+    r_out, r_in = (7.2, 3.0) if big else (5.0, 2.1)
     for y in range(16):
         for x in range(16):
-            dx, dy = x - cx, y - cy
+            dx, dy = x - 7.5, y - 7.5
             d = math.hypot(dx, dy)
             if d > r_out:
                 continue
             a = math.atan2(dy, dx) + math.pi / 2
-            k = (math.cos(a * 5) + 1) / 2
-            edge_r = r_in + (r_out - r_in) * k
+            edge_r = r_in + (r_out - r_in) * (math.cos(a * 5) + 1) / 2
             if d <= edge_r:
                 sput(ox, x, y, dark if d > edge_r - 1.2 else (light if d < r_in * 0.8 else base))
 
@@ -810,11 +440,8 @@ for i, sid in enumerate(SHELL_IDS):
         fam, shape = sid.rsplit('_', 1)
         _, b, l, d = next(f for f in FAMILIES if f[0] == fam)
         {'spiral': draw_spiral, 'fan': draw_fan, 'cone': draw_cone}[shape](ox, b, l, d)
-
 strip.save(os.path.join(OUT, 'shells.png'), optimize=True)
 print('wrote shells.png (%d frames)' % len(SHELL_IDS))
 
-im.resize((W, H), Image.NEAREST).save(os.path.join(SITE, 'tools', 'beach-contact.png'))
-strip.resize((S * len(SHELL_IDS) * 3, S * 3), Image.NEAREST).save(
-    os.path.join(SITE, 'tools', 'beach-shells-contact.png'))
-print('wrote contact sheets')
+im.resize((W // 2, H // 2), Image.NEAREST).save(os.path.join(SITE, 'tools', 'beach-contact.png'))
+print('wrote tools/beach-contact.png')
