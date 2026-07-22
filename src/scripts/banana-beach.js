@@ -70,7 +70,10 @@ function init() {
   // B2: a true TOP-DOWN map at the pack's native 48px scale (see the plan).
   // The banana is ~56 art px — about one tile — so palms and buildings tower
   // over it the way they do in the pack's own world.
-  const W = WORLD.w, H = WORLD.h, VIEW_ART_H = 820;   // ≈ art px shown ACROSS
+  const W = WORLD.w, H = WORLD.h;
+  // The most art px we ever show on each axis. ⚠️ BOTH matter — see layout().
+  const VIEW_ART_W = 900, VIEW_ART_V = 760;
+  const COURT_FIT = 500;   // art px that must always fit across (court = 480)
   const world = document.getElementById('bhWorld');
   const meEl = document.getElementById('bhMe');
   const meCtx = document.getElementById('bhMeCv').getContext('2d');
@@ -101,10 +104,22 @@ function init() {
   function layout() {
     const r = view.getBoundingClientRect();
     viewW = r.width; viewH = r.height;
-    // zoom is driven by WIDTH, not height: a tall narrow phone viewport
-    // divided by a fixed art-height zoomed the map to a postage stamp.
-    // Aim to show ~VIEW_ART_H art px across, clamped so it never gets silly.
-    scale = Math.max(0.5, Math.min(1.15, viewW / VIEW_ART_H));
+    // ⚠️ ZOOM FROM BOTH AXES, taking whichever needs MORE zoom, so neither
+    // span can blow out. Width-only zoom (the old rule) let a tall pane show
+    // 1029 art px vertically against an 1100px world — you saw 94% of the
+    // map's height at once, so the sea filled the top and the banana read
+    // tiny at 8.4% of the view. Capping the VERTICAL span is what fixes it.
+    // (The original note here warned against height-ONLY zoom, which made a
+    //  narrow phone a postage stamp. Taking the max of the two avoids both.)
+    const want = Math.max(viewW / VIEW_ART_W, viewH / VIEW_ART_V);
+    // …and never zoom out past the world filling the view, or it letterboxes
+    const fill = Math.max(viewW / W, viewH / H);
+    // ⚠️ …but never zoom IN so far that the volley court stops fitting across.
+    // On a tall narrow phone the vertical cap alone wanted 423 art px across
+    // against a 480-wide court, so you could never see both sidelines. On
+    // those screens the horizontal floor wins and you accept more sea.
+    const maxIn = viewW / (COURT_FIT);
+    scale = Math.min(1.7, maxIn, Math.max(0.55, fill, want));
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
   }
