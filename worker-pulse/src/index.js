@@ -611,6 +611,7 @@ var EV_LABEL = {
   stand_exit_beach:'took the park road out to the beach 🏖',
   beach_shell:'picked up a shell 🐚', beach_shells_open:'opened their shell collection',
   beach_shells_complete:'COMPLETED the shell collection 🏆', beach_captain:'met Captain Split 🚢',
+  beach_sandy:'stepped onto the volley court with Sandy 🏐',
   beach_trade_open:'opened the trading post', beach_trade:'traded duplicates for a new shell' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
@@ -696,6 +697,7 @@ var EV_EXPLAIN = {
   beach_sit:'lounged in a deck chair at the bay (once per visit) — pure vibes engagement',
   beach_exit_park:'walked the bottom-left beach road back to the park — the return leg',
   stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door',
+  beach_sandy:'walked onto the volleyball court and Sandy greeted them 🏐 — the solo rally partner. He returns everything on purpose, so a long rally is THEIR consistency, not his luck. Fires once per visit to the court (resets when they wander off)',
   beach_shell:'combed a shell off the tide line (shell = which of the 29; fresh=1 means it was a NEW one for them — the completionist hook firing)',
   beach_shells_open:'opened the 29-slot shell collection — the visible-gaps screen that drives return visits',
   beach_shells_complete:'found ALL 29 shells 🏆 — the rarest event on the site, expect roughly never',

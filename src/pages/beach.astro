@@ -91,6 +91,16 @@ const description = 'The beach at the end of the park road. The sun never quite 
       transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
       border-radius: 50%; z-index: -1;
     }
+    /* 🏐 SANDY — the court's resident. Same build as your own banana (he IS
+       one), so he gets the same size and the same contact shadow; only his
+       z-index differs, because he depth-sorts against the net like you do. */
+    .bh-sandy { position: absolute; z-index: 6; width: 3.6%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-sandy::after {
+      content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
+      transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
+      border-radius: 50%; z-index: -1;
+    }
+    .bh-sandy canvas,
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
     /* Captain Split behind his counter */
@@ -272,6 +282,8 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-ball" id="bhBall" aria-hidden="true"></div>
         <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhCapBubble" role="status" aria-live="polite"></div>
+        <div class="bh-sandy" id="bhSandy"><canvas id="bhSandyCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        <div class="bh-capbubble" id="bhSandyBubble" role="status" aria-live="polite"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
       </div>
       <div class="bh-hud">

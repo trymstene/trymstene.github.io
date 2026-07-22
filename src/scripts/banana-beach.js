@@ -167,8 +167,11 @@ function init() {
 
   // ---- spawn --------------------------------------------------------------
   const fromPark = /[?&]park(?:=|&|$)/.test(location.search);
-  const pos = fromPark ? { x: 70, y: 1040 } : { x: 860, y: 880 };
-  const tgt = fromPark ? { x: 330, y: 980 } : { x: 860, y: 820 };
+  // ⚠️ The direct/ad landing now spawns in the TOP half — Sandy owns the near
+  // one. You arrive already facing him across the net with the ball at your
+  // feet, which is a much stronger cold-open than landing on empty sand.
+  const pos = fromPark ? { x: 70, y: 1040 } : { x: 898, y: 742 };
+  const tgt = fromPark ? { x: 330, y: 980 } : { x: 898, y: 720 };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('beach_join', { via: fromPark ? 'park' : 'direct' });
 
@@ -295,24 +298,29 @@ function init() {
   //     That's Trym's "if the shot is bad its not overflowing the net",
   //     falling out of physics instead of a hand-tuned rule.
   //   · ±12% noise on the apex, so shots near the limit sometimes just miss.
-  function bump(now) {
-    if (now - lastKick < 320) return false;
-    const far = pos.y >= NET_Y ? -1 : 1;          // aim at the OTHER half
+  // ⚠️ Keep `margin` SMALLER than `spread`, or it swallows the variation and
+  // every shot from open court clears — no misses, no tension.
+  const HIT_YOU = { margin: 13, maxApex: MAX_APEX, spread: 0.24 };
+  // Sandy is DELIBERATELY better than you. "Never lets a rally die on
+  // purpose" is his entire character, and a solo rally only exists at all
+  // because somebody on the far side keeps sending it back: a rival who beat
+  // you would end the loop, a partner who returns everything IS the loop.
+  const HIT_SANDY = { margin: 34, maxApex: 460, spread: 0.10 };
+
+  function bumpFrom(hx, hy, cfg) {
+    const far = hy >= NET_Y ? -1 : 1;              // always at the OTHER half
     const tx = CT.x0 + 70 + Math.random() * (CT.x1 - CT.x0 - 140);
     const ty = NET_Y + far * (120 + Math.random() * 70);
     const L = Math.max(24, Math.hypot(tx - ball.x, ty - ball.y));
     const D = Math.abs(NET_Y - ball.y);
     const u = Math.min(0.94, Math.max(0.03, D / L));
-    // ⚠️ Keep this margin SMALLER than the noise band, or it swallows it and
-    // every shot from open court clears — no misses, no tension. +13 against
-    // ±12% leaves roughly one bump in eight going into the mesh.
-    const need = (NET.topZ + 13) / (4 * u * (1 - u));
-    const apex = Math.min(MAX_APEX, need) * (0.88 + Math.random() * 0.24);
+    const need = (NET.topZ + cfg.margin) / (4 * u * (1 - u));
+    const apex = Math.min(cfg.maxApex, need) * (1 - cfg.spread / 2 + Math.random() * cfg.spread);
     const vz = Math.sqrt(2 * GRAV * apex);
     const P = L / (2 * vz / GRAV);                 // speed to land at the target
-    // mostly the aim, with a little "away from the banana" so it feels struck
+    // mostly the aim, with a little "away from the hitter" so it feels struck
     let dx = (tx - ball.x) / L, dy = (ty - ball.y) / L;
-    const ax = ball.x - pos.x, ay = ball.y - (pos.y - 8);
+    const ax = ball.x - hx, ay = ball.y - hy;
     const al = Math.hypot(ax, ay) || 1;
     dx = dx * 0.8 + (ax / al) * 0.2;
     dy = dy * 0.8 + (ay / al) * 0.2;
@@ -320,11 +328,17 @@ function init() {
     ball.vx = (dx / nl) * P;
     ball.vy = (dy / nl) * P;                       // ⚠️ NOT foreshortened: the
     ball.vz = vz;                                  // clearance maths needs the
-    lastKick = now;                                // real ground distance
-    ballEl.animate(
+    ballEl.animate(                                // real ground distance
       [{ transform: 'translate(-50%,-50%) scale(1.35)' }, { transform: 'translate(-50%,-50%) scale(1)' }],
       { duration: 170, easing: 'ease-out' },
     );
+    return true;
+  }
+
+  function bump(now) {
+    if (now - lastKick < 320) return false;
+    lastKick = now;
+    bumpFrom(pos.x, pos.y - 8, HIT_YOU);
     if (now - kickTrackAt > 8000) { kickTrackAt = now; track('beach_ball_kick'); }
     return true;
   }
@@ -653,6 +667,100 @@ function init() {
     c.el.style.transform = 'translate(-50%,-100%)' + (c.face < 0 ? ' scaleX(-1)' : '');
   }
 
+  // ---- 🏐 SANDY, the court's resident -------------------------------------
+  // The solo problem in one line: with a solid net, a lap around a pole is
+  // 4.2s, so you could never return your own shot — you served, watched, and
+  // jogged. Sandy IS the loop. He's written as a partner, not a rival: he
+  // returns almost everything (HIT_SANDY), keeps no score, and the rally
+  // counter climbs because of him. A rival who beat you would end the game.
+  const SANDY_DRAW = {
+    hat: 'none', glasses: 'visor', extras: {},
+    top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+  };
+  const SANDY_HOME = { x: 930, y: 946 };      // his half is the NEAR one
+  const SANDY_FIRE = { x: 566, y: 748 };      // beside the firepit, off court
+  const SANDY_SPEED = 152;                    // a shade under yours (168)
+  const sandyEl = document.getElementById('bhSandy');
+  const sandyCtx = document.getElementById('bhSandyCv').getContext('2d');
+  const sandyBubble = document.getElementById('bhSandyBubble');
+  const sandy = {
+    x: SANDY_HOME.x, y: SANDY_HOME.y, tx: SANDY_HOME.x, ty: SANDY_HOME.y,
+    last: 0, away: false, greeted: false, idx: 0, timer: 0,
+  };
+  const SANDY_LINES = [
+    'no score, no pressure. just keep it up with me a while.',
+    'send it anywhere. i’ll get it.',
+    'if it goes in the net that’s the net’s fault, not yours.',
+    'i’ve been out here since the tide went out. i’ll be here after it comes back.',
+    'nice one. i barely had to move.',
+  ];
+  function sandySay(text, ms) {
+    sandyBubble.textContent = text;
+    sandyBubble.classList.add('is-on');
+    clearTimeout(sandy.timer);
+    sandy.timer = setTimeout(() => sandyBubble.classList.remove('is-on'), ms || 4200);
+  }
+  // ⚠️ B2 HOOK: Sandy steps aside once the court is a TWO-banana court —
+  // Trym's rule. Multiplayer isn't built yet, so peers is always 0 and the
+  // rule is dormant; when the BeachRoom lands it only has to keep this number
+  // up to date. ?beachtest can set it, so the behaviour is testable today.
+  let peersInCourt = 0;
+  const inCourt = (x, y) => x > CT.x0 && x < CT.x1 && y > CT.y0 && y < CT.y1;
+  const courtBananas = () => (inCourt(pos.x, pos.y) ? 1 : 0) + peersInCourt;
+  // where the ball will touch down, so he moves to meet it instead of chasing
+  function ballLanding() {
+    const t = (ball.vz + Math.sqrt(Math.max(0, ball.vz * ball.vz + 2 * GRAV * ball.z))) / GRAV;
+    return { x: ball.x + ball.vx * t, y: ball.y + ball.vy * t };
+  }
+  function sandyTick(dt, now) {
+    const busy = courtBananas() >= 2;
+    if (busy !== sandy.away) {
+      sandy.away = busy;
+      sandySay(busy
+        ? 'two of you! i’ll be by the fire. shout if you want a third.'
+        : 'back then. whenever you’re ready.');
+    }
+    if (sandy.away) {
+      sandy.tx = SANDY_FIRE.x; sandy.ty = SANDY_FIRE.y;
+    } else if (ball.y > NET_Y - 10) {           // it's coming to his half
+      const lp = ballLanding();
+      const px = lp.y > NET_Y ? lp.x : ball.x;
+      const py = lp.y > NET_Y ? lp.y : ball.y;
+      sandy.tx = Math.max(CT.x0 + 34, Math.min(CT.x1 - 34, px));
+      sandy.ty = Math.max(NET_Y + 40, Math.min(CT.y1 - 30, py + 14));
+    } else {
+      sandy.tx = SANDY_HOME.x; sandy.ty = SANDY_HOME.y;
+    }
+    const dx = sandy.tx - sandy.x, dy = sandy.ty - sandy.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 2) {                                 // same axis-slide as you get
+      const m = Math.min(d, SANDY_SPEED * dt);
+      const nx = sandy.x + (dx / d) * m, ny = sandy.y + (dy / d) * m;
+      if (!blocked(nx, ny)) { sandy.x = nx; sandy.y = ny; }
+      else if (!blocked(nx, sandy.y)) sandy.x = nx;
+      else if (!blocked(sandy.x, ny)) sandy.y = ny;
+    }
+    if (!sandy.away && ball.y > NET_Y && ball.z < 60 && now - sandy.last > 340
+        && Math.hypot(sandy.x - ball.x, (sandy.y - 8) - ball.y) < 32) {
+      sandy.last = now;
+      bumpFrom(sandy.x, sandy.y - 8, HIT_SANDY);
+    }
+    // he greets you when you first step onto the court, then resets when you
+    // wander off, so he's pleased to see you rather than nagging
+    const onCourt = inCourt(pos.x, pos.y);
+    if (onCourt && !sandy.greeted && !sandy.away) {
+      sandy.greeted = true;
+      sandySay(SANDY_LINES[sandy.idx++ % SANDY_LINES.length]);
+      track('beach_sandy');
+    } else if (!onCourt && sandy.greeted) sandy.greeted = false;
+    sandyEl.style.left = pct(sandy.x, W);
+    sandyEl.style.top = pct(sandy.y, H);
+    depth(sandyEl, sandy.y);
+    sandyBubble.style.left = pct(sandy.x, W);
+    sandyBubble.style.top = pct(sandy.y - 88, H);
+  }
+  function drawSandy() { drawComposite(sandyCtx, 150, frameNow(), SANDY_DRAW); }
+
   // ---- the loop -----------------------------------------------------------
   let last = performance.now();
   function step(now) {
@@ -701,6 +809,7 @@ function init() {
     shellTick();
     capTick(now);
     crabs.forEach((c) => crabStep(c, dt));
+    sandyTick(dt, now);
     cam();
     requestAnimationFrame(step);
   }
@@ -732,14 +841,18 @@ function init() {
   // and place the ball or the banana without playing your way there
   if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
-      bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; } };
+      bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
+      sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
+      // fake a second banana on the court so the B2 step-aside rule is
+      // testable before multiplayer exists
+      setPeers: (n) => { peersInCourt = n; } };
   }
 
   assetsReady().then(() => {
-    drawMe(); drawCap();
-    setTimeout(() => { lastF = -1; drawMe(); drawCap(); }, 700);   // redraw belt: accessories decode async
-    setTimeout(() => { lastF = -1; drawMe(); drawCap(); }, 1800);
-    setInterval(() => { if (!document.hidden) drawMe(); }, 120);
+    drawMe(); drawCap(); drawSandy();
+    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); }, 700);   // redraw belt: accessories decode async
+    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); }, 1800);
+    setInterval(() => { if (!document.hidden) { drawMe(); drawSandy(); } }, 120);
     requestAnimationFrame((t) => { last = t; step(t); });
   });
 }
