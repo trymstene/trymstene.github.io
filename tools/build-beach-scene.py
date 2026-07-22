@@ -260,28 +260,38 @@ if HAVE_PACK:
     # ⚠️ The pack's field lines are RED-ORANGE by design — that is not a bug,
     # it's exactly what LimeZu's own beach screenshot shows.
     cx0, cy0, cx1, cy1 = COURT
-    for i in range((cx1 - cx0) // T):          # the RED boundary, pack tiles
-        x = cx0 + i * T + T // 2
-        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Up_Modular.png',
-              x, cy0 + T, shade=False, colors=4, scale=1.0)
-        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Down_Modular.png',
-              x, cy1 + T, shade=False, colors=4, scale=1.0)
-    for j in range((cy1 - cy0) // T):
-        y = cy0 + j * T + T
-        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Right_Modular.png',
-              cx0 + T // 2, y, shade=False, colors=4, scale=1.0)
-        place('21_Beach_48x48_Beach_Volley_Field_Line_Middle_Right_Modular.png',
-              cx1 - T // 2, y, shade=False, colors=4, scale=1.0, flip=True)
-    NET_Y = (cy0 + cy1) // 2 + 30              # the net, laid ACROSS the court
-    place('21_Beach_48x48_Beach_Volley_Net_Left.png', cx0 + T + 24, NET_Y,
-          scale=1.0, sh=0.18)
-    # ⚠️ every net piece is anchored at the SAME baseline — the post sprite is
-    # 3 tiles tall and the mesh 2, so offsetting them drew two parallel nets
-    for i in range(1, (cx1 - cx0) // T - 2):
-        place('21_Beach_48x48_Beach_Volley_Net_Middle_Modular.png',
-              cx0 + T + 24 + i * T, NET_Y, scale=1.0, shade=False)
-    place('21_Beach_48x48_Beach_Volley_Net_Right.png',
-          cx0 + T + 24 + ((cx1 - cx0) // T - 2) * T, NET_Y, scale=1.0, sh=0.18)
+    # ⚠️ DRAWN, NOT TILED. The pack's court pieces fought us twice: its line
+    # tiles are whole 48px squares, so bottom-anchoring them stepped the line
+    # up and down like a fence; and Net_Left/Net_Right each carry their OWN
+    # mesh panel at a different height from Net_Middle, so a row of them drew
+    # floating net squares beside the real net. A court is four straight lines
+    # and a mesh band — trivial to draw, and it finally looks like a court.
+    LINE, LINE_D = (232, 92, 68), (188, 62, 44)
+    for x in range(cx0, cx1):                       # boundary, 5px, worn
+        for yy in (cy0, cy1 - 5):
+            if (x // 7) % 9 != 8:
+                rect(x, yy, x + 1, yy + 5, LINE)
+                put(x, yy + 4, LINE_D)
+    for y in range(cy0, cy1):
+        for xx in (cx0, cx1 - 5):
+            if (y // 7) % 9 != 8:
+                rect(xx, y, xx + 5, y + 1, LINE)
+                put(xx + 4, y, LINE_D)
+    NET_Y = (cy0 + cy1) // 2                        # the net, across the court
+    POST_X0, POST_X1 = cx0 + 36, cx1 - 36
+    for post in (POST_X0, POST_X1):                 # posts, with base shadows
+        shadow(post + 7, NET_Y + 34, 16, 8, 54)
+        rect(post - 6, NET_Y - 40, post + 6, NET_Y + 32, (108, 66, 28))
+        rect(post - 6, NET_Y - 40, post - 2, NET_Y + 32, (168, 116, 60))
+        rect(post - 8, NET_Y - 46, post + 8, NET_Y - 38, (86, 52, 22))
+    rect(POST_X0, NET_Y - 34, POST_X1, NET_Y - 28, WHITE)     # top tape
+    rect(POST_X0, NET_Y - 28, POST_X1, NET_Y + 6, (246, 243, 232))
+    for gx in range(POST_X0, POST_X1, 9):           # mesh
+        rect(gx, NET_Y - 28, gx + 2, NET_Y + 6, (196, 190, 172))
+    for gy in range(NET_Y - 28, NET_Y + 6, 9):
+        rect(POST_X0, gy, POST_X1, gy + 2, (196, 190, 172))
+    rect(POST_X0, NET_Y + 4, POST_X1, NET_Y + 8, (214, 208, 190))
+    rect(POST_X0, NET_Y + 8, POST_X1, NET_Y + 14, SHADE)      # cast shadow
 
     # 🚢 Captain Split's wreck
     place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34)
@@ -294,7 +304,7 @@ if HAVE_PACK:
 
     # ⛱ furniture
     place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1180, 560)
-    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 700, 1010)
+    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020)  # off the court
     place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560)
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
         place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0)
@@ -305,7 +315,7 @@ if HAVE_PACK:
     place('21_Beach_48x48_Green_Float.png', 300, 1020)
     for cx, base in ((1600, 900), (860, 1080), (2130, 1020)):
         place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base)
-    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 1050, 1080)
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 1420, 1070)  # off the court
     place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1780, 1010)
     for cx, base in ((480, 330), (1120, 336), (1750, 330), (2260, 334)):
         place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)

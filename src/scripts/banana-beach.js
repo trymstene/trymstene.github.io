@@ -125,7 +125,7 @@ function init() {
   // ⚠️ THE NET IS HORIZONTAL now (the pack's net pieces are drawn to be laid
   // left→right, which is also how LimeZu's own beach screenshot uses them).
   // So the ball crosses it on the Y axis, not X.
-  const NET_Y = 870, NET_X0 = 712, NET_X1 = 1176, NET_H = 18;
+  const NET_Y = 840, NET_X0 = 676, NET_X1 = 1204, NET_H = 18;
   const BAR = { x: 1700, y: 760, r: 104 };  // where the Captain notices you
   const OB_RECTS = [
     // top-down blocking = the BASE of an object, not its full height: you walk
@@ -487,41 +487,9 @@ function init() {
   });
   document.getElementById('bhTradeClose').addEventListener('click', () => { tradePanel.hidden = true; });
 
-  // ---- 🛟 things bobbing in the bay: the pack animates all of these ------
-  // buoys, a marker-buoy rope line, floating rocks and a stray beach ball.
-  // Pure CSS frame-stepping, no JS cost beyond creating the element.
-  [
-    ['bh-buoy', 430, 150], ['bh-buoy', 1980, 118], ['bh-buoy', 1240, 84],
-    ['bh-rock', 180, 96], ['bh-rock', 760, 196], ['bh-rock', 1520, 132],
-    ['bh-rock', 2210, 186], ['bh-rock', 1050, 220],
-    ['bh-fball', 620, 208], ['bh-fball', 1700, 168],
-  ].forEach(([cls, x, y]) => {
-    const d = document.createElement('div');
-    d.className = 'bh-water-prop ' + cls;
-    d.style.left = pct(x, W);
-    d.style.top = pct(y, H);
-    d.style.animationDelay = (-Math.random() * 2) + 's';
-    world.appendChild(d);
-  });
-  // the swimmers' rope line strung across the shallows
-  for (let i = 0; i < 14; i++) {
-    const d = document.createElement('div');
-    d.className = 'bh-water-prop bh-rope';
-    d.style.left = pct(880 + i * 48, W);
-    d.style.top = pct(232, H);
-    d.style.animationDelay = (-i * 0.09) + 's';
-    world.appendChild(d);
-  }
-
-  // ---- 🕊 gulls: pure atmosphere, CSS does all the work -------------------
-  [[7, 26, 0], [12, 34, 9], [4, 41, 18]].forEach(([top, secs, delay]) => {
-    const g = document.createElement('div');
-    g.className = 'bh-gull';
-    g.style.top = top + '%';
-    g.style.animationDuration = '0.42s, ' + secs + 's';
-    g.style.animationDelay = '0s, -' + delay + 's';
-    world.appendChild(g);
-  });
+  // (the bobbing water props and the gulls are OUT for now — they were
+  // flickering, see the frame-stepping note in beach.astro. Crabs first,
+  // then the rest come back one at a time once the technique is proven.)
 
   // ---- 🦀 crabs: locals who want NOTHING to do with you -------------------
   const crabs = [];
