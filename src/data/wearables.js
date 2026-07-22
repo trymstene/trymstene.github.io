@@ -98,7 +98,7 @@ export const WEARABLE_PACKS = {
     // left-facing frames), the CHEST (per-frame btCx body centre + dy), or a
     // HAND (per-frame glove centre + grip).
     extras: [
-      { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 4.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
+      { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 2.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
       { id: 'fatstache', label: 'Fat moustache', phrase: 'a fat black moustache', anchor: 'face', dy: 4.0, sideDx: -1.2, front: 'fatstacheFront', side: 'fatstacheSide' },
       // the BODY zone — chest-anchored garments + neckwear that all fight for
       // the same torso pixels (bow tie, ties, chains, scarves, nightshirts…),
