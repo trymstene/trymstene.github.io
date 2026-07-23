@@ -1425,6 +1425,23 @@ function init() {
         bg: 'transparent', captions: false, effect: 'none' });
     assetsReady().then(() => { draw(); setTimeout(draw, 700); });
   }
+  // 📐 Size + place the keeper from the stage size + the banana's MEASURED bbox
+  // inside its 150² canvas (x 28..106, y 36..128 → fills ~52% wide, sits at 45%
+  // across / feet at 85% down). The canvas is displayed LARGE and shifted so
+  // the banana lands big + far-left with its WAIST at the counter top, legs
+  // clipped behind it. All the fiddly numbers live here, tuned by screenshot.
+  const COCO_BANANA = { bw: 0.52, cx: 0.447, waist: 0.60 };   // waist frac: tuned live
+  const COCO_COUNTER = 34;                                     // .bh-coco__desk height
+  function layoutCocoVendor() {
+    const stage = cocoPitch.parentElement;            // .bh-coco__stage
+    const v = document.querySelector('.bh-coco__vendor');
+    if (!stage || !v) return;
+    const sw = stage.clientWidth, sh = stage.clientHeight;
+    const S = (sw * 0.86) / COCO_BANANA.bw;           // canvas size → banana ≈ 86% of pitch (~2× old)
+    v.style.width = Math.round(S) + 'px';
+    v.style.left = Math.round(sw * 0.15 - COCO_BANANA.cx * S) + 'px';   // banana centre far-left
+    v.style.bottom = Math.round(COCO_COUNTER - S * (1 - COCO_BANANA.waist)) + 'px';  // waist at counter top
+  }
   function openCoco() {
     openStallIdx = 2;
     history.replaceState(null, '', '#coco');
@@ -1433,6 +1450,7 @@ function init() {
       cocoScene.hidden = false;      // shown FIRST so the pitch has a real size
       cocoPaintHud();
       drawCocoVendor();
+      layoutCocoVendor();
       cocoBuild(false);
     });
   }
@@ -1454,14 +1472,14 @@ function init() {
     // the rack sits in the MIDDLE-RIGHT — the keeper owns the left
     const rail = document.createElement('div');
     rail.className = 'bh-coco__rail';
-    rail.style.left = Math.round(W * 0.48) + 'px';
+    rail.style.left = Math.round(W * 0.58) + 'px';
     rail.style.right = 'auto';
-    rail.style.width = Math.round(W * 0.50) + 'px';
+    rail.style.width = Math.round(W * 0.40) + 'px';
     rail.style.top = railY + 'px';
     cocoPitch.appendChild(rail);
     const coconuts = [];
     for (let k = 0; k < COCO_COUNT; k++) {
-      const baseX = Math.round(W * (0.56 + 0.113 * k));
+      const baseX = Math.round(W * (0.63 + 0.10 * k));
       const cy = railY - 14;                        // resting on the rail
       const el = document.createElement('div');
       el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
@@ -1471,7 +1489,7 @@ function init() {
       coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
         amp: 9 + 2.5 * k, w: 1.0 + 0.3 * k, phase: k * 1.9 });
     }
-    const ox = Math.round(W * 0.42), oy = Math.round(H * 0.85);
+    const ox = Math.round(W * 0.46), oy = Math.round(H * 0.86);
     const ballEl = document.createElement('div');
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';

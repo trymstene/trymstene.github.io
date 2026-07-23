@@ -551,8 +551,12 @@ const description = 'The beach at the end of the park road. The sun never quite 
        sits at 45% across / feet at 85% down — so the canvas is displayed LARGE
        (~288px → a ~150px banana) and shifted left to land the banana far-left,
        feet behind the counter. Independent of the exterior CSS entirely. */
+    /* size + left + bottom are set in JS (layoutCocoVendor) from the stage
+       size and the banana's measured bbox, so the WAIST pins to the counter
+       top and the keeper is ~2× — the transparent canvas padding makes CSS %
+       sizing lie about the banana's real size, so JS drives it. */
     .bh-coco__vendor {
-      position: absolute; left: -20%; bottom: -20px; width: 84%; max-width: 300px; min-width: 240px;
+      position: absolute; left: 0; bottom: 0; width: 240px;
       z-index: 3; pointer-events: none;
     }
     .bh-coco__vendor canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
