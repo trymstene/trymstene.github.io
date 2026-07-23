@@ -1780,7 +1780,7 @@ function init() {
   // the first thing bananas see stepping onto the beach from the park. Purely
   // decorative (no collider); the banana spawns beneath it and walks through.
   (() => {
-    const AX = 55, AY = 762, AW = 520, AH = 322;   // its world bounding box
+    const AX = 75, AY = 770, AW = 280, AH = 180;   // its world bounding box
     const arch = document.createElement('div');
     arch.className = 'bh-arch';
     arch.setAttribute('aria-hidden', 'true');
@@ -1792,7 +1792,9 @@ function init() {
     arch.style.top = pct(AY, H);
     arch.style.width = pct(AW, W);
     arch.style.height = pct(AH, H);
-    arch.style.zIndex = String(100 + AY);          // behind the walking banana
+    arch.style.zIndex = String(100 + AY + AH);     // sorts by its feet — sits IN
+                                                   // FRONT of the scenery behind
+                                                   // it, behind the nearer banana
     world.appendChild(arch);
   })();
 
