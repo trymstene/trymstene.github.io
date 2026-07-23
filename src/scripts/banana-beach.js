@@ -1389,7 +1389,7 @@ function init() {
   const cocoFoot = document.getElementById('bhCocoFoot');
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
-  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
+  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 4;
   const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1050;
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
@@ -1450,26 +1450,28 @@ function init() {
   function cocoBuild(live) {
     cocoPitch.innerHTML = '';
     const W = cocoPitch.clientWidth, H = cocoPitch.clientHeight;
-    const railY = Math.round(H * 0.40);
+    const railY = Math.round(H * 0.38);
+    // the rack sits in the MIDDLE-RIGHT — the keeper owns the left
     const rail = document.createElement('div');
     rail.className = 'bh-coco__rail';
+    rail.style.left = Math.round(W * 0.48) + 'px';
+    rail.style.right = 'auto';
+    rail.style.width = Math.round(W * 0.50) + 'px';
     rail.style.top = railY + 'px';
     cocoPitch.appendChild(rail);
     const coconuts = [];
     for (let k = 0; k < COCO_COUNT; k++) {
-      const cx = Math.round(W * (0.20 + 0.15 * k));
-      const cy = railY - 15;                        // resting on the rail
-      const post = document.createElement('div');
-      post.className = 'bh-coco__post';
-      post.style.left = cx + 'px'; post.style.top = cy + 'px'; post.style.height = Math.round(H * 0.15) + 'px';
-      cocoPitch.appendChild(post);
+      const baseX = Math.round(W * (0.56 + 0.113 * k));
+      const cy = railY - 14;                        // resting on the rail
       const el = document.createElement('div');
       el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
-      el.style.left = cx + 'px'; el.style.top = cy + 'px';
+      el.style.left = baseX + 'px'; el.style.top = cy + 'px';
       cocoPitch.appendChild(el);
-      coconuts.push({ el, x: cx, y: cy, r: 17, alive: true, fly: false });
+      // 🎯 they DRIFT — a moving target so a nice reward isn't a gimme
+      coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
+        amp: 9 + 2.5 * k, w: 1.0 + 0.3 * k, phase: k * 1.9 });
     }
-    const ox = Math.round(W * 0.52), oy = Math.round(H * 0.84);
+    const ox = Math.round(W * 0.42), oy = Math.round(H * 0.85);
     const ballEl = document.createElement('div');
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
@@ -1478,7 +1480,7 @@ function init() {
     aim.className = 'bh-coco__aim'; aim.hidden = true;
     cocoPitch.appendChild(aim);
 
-    coco = { W, H, coconuts, ballEl, aim, ox, oy, live,
+    coco = { W, H, coconuts, ballEl, aim, ox, oy, live, t: 0,
       ball: { x: ox, y: oy, vx: 0, vy: 0, live: false },
       balls: live ? COCO_BALLS : 0, knocked: 0, aiming: false, dragStart: null };
 
@@ -1565,6 +1567,13 @@ function init() {
     cocoRAF = requestAnimationFrame(tick);
   }
   function cocoPhysics(dt) {
+    coco.t += dt;
+    // drift the standing coconuts side to side — a moving target
+    for (const c of coco.coconuts) {
+      if (!c.alive) continue;
+      c.x = c.baseX + c.amp * Math.sin(coco.t * c.w + c.phase);
+      c.el.style.left = c.x + 'px';
+    }
     const b = coco.ball;
     if (b.live) {
       b.age += dt;

@@ -545,14 +545,17 @@ const description = 'The beach at the end of the park road. The sun never quite 
       border-top: 3px dashed rgba(255, 225, 53, 0.9); transform-origin: left center;
     }
     .bh-coco__aim[hidden] { display: none; }
-    /* the keeper at his desk, off to the left */
+    /* the keeper — BIG and far left, so it reads as standing WITH him at the
+       counter (the banana-stand scale), not a doll in a giant shed */
     .bh-coco__vendor {
-      position: absolute; left: 1%; bottom: -6px; width: 116px; z-index: 3; pointer-events: none;
+      position: absolute; left: -5%; bottom: -18px; width: 46%; max-width: 210px; min-width: 150px;
+      z-index: 3; pointer-events: none;
     }
     .bh-coco__vendor canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    /* a full-width counter across the bottom; the keeper stands behind it */
     .bh-coco__desk {
-      position: absolute; left: -3%; width: 148px; bottom: 0; height: 30px; z-index: 4; pointer-events: none;
-      background: repeating-linear-gradient(90deg, #3a2b18 0 22px, #2c2113 22px 44px);
+      position: absolute; left: 0; right: 0; bottom: 0; height: 34px; z-index: 4; pointer-events: none;
+      background: repeating-linear-gradient(90deg, #3a2b18 0 24px, #2c2113 24px 48px);
       border-top: 5px solid #4a3820; box-shadow: inset 0 4px 0 rgba(0, 0, 0, 0.35);
     }
     .bh-coco__toast {
