@@ -409,11 +409,14 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-crabgrid {
       position: relative;
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+      align-content: center; aspect-ratio: 5 / 3.6; overflow: hidden;
       background: linear-gradient(#d8b478, #c69a58); border: 3px solid #000;
-      box-shadow: inset 0 0 0 3px rgba(120, 80, 30, 0.35); padding: 0.6rem;
+      box-shadow: inset 0 0 0 3px rgba(120, 80, 30, 0.35);
+      padding: 0.4rem 0.6rem 0.9rem;    /* heavier bottom nudges the holes up */
     }
     .bh-cwhole {
-      position: relative; aspect-ratio: 5 / 4; overflow: hidden;
+      position: relative; aspect-ratio: 5 / 4;
+      clip-path: inset(-80% -25% 0% -25%);   /* clip only the bottom — crabs pop up big, still duck into the hole */
     }
     .bh-cwhole::after {                 /* the hole itself */
       content: ''; position: absolute; left: 14%; right: 14%; bottom: 6%; height: 34%;
@@ -421,15 +424,15 @@ const description = 'The beach at the end of the park road. The sun never quite 
       box-shadow: 0 -2px 0 rgba(255, 240, 200, 0.18);
     }
     .bh-cwcrab {
-      position: absolute; left: 50%; bottom: 24%; width: 74%; aspect-ratio: 2 / 1;
-      transform: translate(-50%, 210%); transition: transform 0.13s ease;
+      position: absolute; left: 50%; bottom: 18%; width: 148%; aspect-ratio: 2 / 1;
+      transform: translate(-50%, 200%); transition: transform 0.13s ease;
       border: 0; padding: 0; background-color: transparent;
       background-image: url('/assets/beach/a-crab.png');
       background-size: 1000% 100%; background-position-x: 0%; background-repeat: no-repeat;
       image-rendering: pixelated; cursor: default; z-index: 1;
     }
-    .bh-cwcrab.is-up { transform: translate(-50%, -6%); cursor: pointer; }
-    .bh-cwcrab.is-bonked { transform: translate(-50%, 90%) scaleY(0.6); }
+    .bh-cwcrab.is-up { transform: translate(-50%, -8%); cursor: pointer; }
+    .bh-cwcrab.is-bonked { transform: translate(-50%, 100%) scaleY(0.6); }
     .bh-cwcount {                       /* the 3·2·1 countdown over the grid */
       position: absolute; inset: 0; display: grid; place-items: center;
       font-size: 3.2rem; font-weight: 900; color: #fff; letter-spacing: 0.02em;
