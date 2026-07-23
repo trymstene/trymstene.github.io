@@ -1446,13 +1446,15 @@ function init() {
   const COCO_CV = 360;         // keeper canvas resolution (matches beach.astro) — high, so it isn't upscaled to mush
   const COCO_WAIST = 0.60;     // fraction down the banana that counts as the "waist"
   const COCO_RAISE = 0;        // waist exactly at the counter so legs/feet stay BEHIND the desk
-  const COCO_WIDE = 0.58;      // banana width as a fraction of the pitch (upper body clears the desk, not a giant head)
+  const COCO_TALL = 0.65;      // banana HEIGHT as a fraction of the stage height — the stage
+                               // height is stable across viewports, its WIDTH is not, so
+                               // sizing off width made him gigantic on wide desktops.
   function layoutCocoVendor() {
     const stage = cocoPitch.parentElement;            // .bh-coco__stage
     const v = document.querySelector('.bh-coco__vendor');
     const cv = document.getElementById('bhCocoVendorCv');
     if (!stage || !v || !cv) return;
-    const sw = stage.clientWidth;
+    const sw = stage.clientWidth, sh = stage.clientHeight;
     // MEASURE the drawn banana's bbox in the 150² canvas so this works for any
     // frame/hat — hardcoding it broke every time the pose changed.
     const N = COCO_CV;
@@ -1466,7 +1468,7 @@ function init() {
     if (!found) { x0 = N * 0.19; x1 = N * 0.71; y0 = N * 0.24; y1 = N * 0.85; }   // rough fallback
     const bwFrac = (x1 - x0) / N, cxFrac = ((x0 + x1) / 2) / N;
     const topFrac = y0 / N, botFrac = y1 / N;
-    const S = (sw * COCO_WIDE) / bwFrac;               // canvas size → banana ≈ COCO_WIDE of pitch
+    const S = (sh * COCO_TALL) / (botFrac - topFrac);  // canvas size → banana ≈ COCO_TALL of the (stable) stage height
     const left = Math.round(sw * 0.15 - cxFrac * S);
     v.style.width = Math.round(S) + 'px';
     v.style.left = left + 'px';                         // banana centre far-left
