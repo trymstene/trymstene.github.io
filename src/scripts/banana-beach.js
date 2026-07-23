@@ -1390,9 +1390,9 @@ function init() {
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
   const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
-  // 🎯 tuned for a CATAPULT LOB, not an arrow: gentler gravity + a lower speed
-  // ceiling so the ball floats up in a tall arc and drops onto the shelf.
-  const COCO_G = 1100, COCO_KNOCK = 260, COCO_K = 5.0, COCO_VMAX = 950, COCO_BALL_R = 18;
+  // 🎯 tuned for a CATAPULT LOB, not an arrow: gentle gravity + a low speed
+  // ceiling so the ball floats up in a tall, hanging arc and drops onto the shelf.
+  const COCO_G = 900, COCO_KNOCK = 240, COCO_K = 5.0, COCO_VMAX = 900, COCO_BALL_R = 18;
   const COCO_KNOCK_D = 13;   // the ball's path must pass THIS close to a coconut's centre to knock it (else it bounces)
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
@@ -1623,6 +1623,12 @@ function init() {
     };
     cocoRAF = requestAnimationFrame(tick);
   }
+  // the ball recedes as it flies UP toward the far wall — full size near the
+  // thrower (bottom), smaller near the shelves, so it reads as thrown into depth.
+  const cocoDepth = (y) => {
+    const r = y / coco.oy;
+    return 0.66 + 0.34 * (r < 0 ? 0 : r > 1 ? 1 : r);
+  };
   // shortest distance from point (px,py) to the segment (ax,ay)→(bx,by)
   function segDist(ax, ay, bx, by, px, py) {
     const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
@@ -1662,13 +1668,14 @@ function init() {
         const nx = nx0 / nl, ny = ny0 / nl;
         b.x = c.x + nx * (COCO_BALL_R + c.r + 1); b.y = c.y + ny * (COCO_BALL_R + c.r + 1);
         const vn = b.vx * nx + b.vy * ny;
-        b.vx = (b.vx - 2 * vn * nx) * 0.72;    // bouncier than before (0.5 → 0.72)
-        b.vy = (b.vy - 2 * vn * ny) * 0.72;
+        b.vx = (b.vx - 2 * vn * nx) * 0.82;    // lively catapult ricochet
+        b.vy = (b.vy - 2 * vn * ny) * 0.82;
         break;
       }
       coco.ballEl.style.left = b.x + 'px';
       coco.ballEl.style.top = b.y + 'px';
-      coco.ballEl.style.transform = 'translate(-50%,-50%) rotate(' + Math.round(b.x * 4) + 'deg)';
+      coco.ballEl.style.transform = 'translate(-50%,-50%) rotate(' + Math.round(b.x * 4)
+        + 'deg) scale(' + cocoDepth(b.y).toFixed(3) + ')';
       // spent when it leaves the pitch OR after ~2.6s (a slow roll never traps the round)
       if (b.y > coco.H + 40 || b.x < -40 || b.x > coco.W + 40 || b.age > 2.6) {
         b.live = false; cocoReset();
