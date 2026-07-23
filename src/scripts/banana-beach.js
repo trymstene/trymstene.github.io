@@ -1332,11 +1332,11 @@ function init() {
         const h = down[Math.floor(Math.random() * down.length)];
         h.up = true; h.crab.disabled = false; h.crab.classList.remove('is-bonked');
         h.crab.classList.add('is-up');
-        const upFor = 620 + Math.random() * 460;
+        const upFor = 1150 + Math.random() * 750;
         crabTimers.push(setTimeout(() => { if (h.up) setDown(h); }, upFor));
       }
       // the pace quickens as the clock runs down
-      const gap = Math.max(300, 700 - (CRAB_ROUND_MS - remain) / 26);
+      const gap = Math.max(620, 1400 - (CRAB_ROUND_MS - remain) / 44);
       crabTimers.push(setTimeout(pop, gap));
     }
     function finish() {
