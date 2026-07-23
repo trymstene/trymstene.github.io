@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, PIER_SPRITE, STALLS, GRABBER,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -188,6 +188,43 @@ function init() {
     d.style.zIndex = String(100 + Math.round(o.base));
     world.appendChild(d);
   });
+
+  // ⛱ THE PARASOLS — tap one to open/close it; its ground shadow fades with the
+  // state. Solo-local for now (the folded state lives on the element); when the
+  // BeachRoom lands, broadcast {u: color, open} and call a peer's toggle here.
+  UMBRELLAS.forEach((u) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bh-umb is-open';
+    wrap.style.left = pct(u.x, W); wrap.style.top = pct(u.y, H);
+    wrap.style.width = pct(u.w, W); wrap.style.height = pct(u.h, H);
+    wrap.style.zIndex = String(100 + u.base);
+    const shadow = document.createElement('div');
+    shadow.className = 'bh-umb__shadow';
+    const canopy = document.createElement('div');
+    canopy.className = 'bh-umb__canopy';
+    wrap.appendChild(shadow); wrap.appendChild(canopy);
+    world.appendChild(wrap);
+    // the folded sprite is narrower/shorter — draw it at the SAME pixel scale,
+    // bottom-anchored, so it stands on the very spot the open pole did.
+    const cw = (u.cw / u.w * 100) + '%', ch = (u.ch / u.h * 100) + '%';
+    let open = true;
+    const apply = (animate) => {
+      wrap.classList.toggle('is-open', open);
+      canopy.style.backgroundImage = "url('/assets/beach/" + (open ? u.open : u.closed) + "')";
+      canopy.style.backgroundSize = open ? '100% 100%' : (cw + ' ' + ch);
+      if (animate) {
+        canopy.style.animation = 'none'; void canopy.offsetWidth;
+        canopy.style.animation = 'bhUmbPop 0.24s ease';
+      }
+    };
+    apply(false);
+    wrap.addEventListener('click', (e) => {
+      e.stopPropagation();                 // tap the parasol, don't walk there
+      open = !open; apply(true);
+      track('beach_parasol', { color: u.color, open: open ? 1 : 0 });
+    });
+  });
+
   // …and the dock, which is a FLOOR: above the opaque sea, below every walker
   const pierEl = document.createElement('div');
   pierEl.className = 'bh-pier';

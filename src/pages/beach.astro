@@ -74,6 +74,30 @@ const description = 'The beach at the end of the park road. The sun never quite 
       position: absolute; pointer-events: none; image-rendering: pixelated;
       background-size: 100% 100%; background-repeat: no-repeat;
     }
+    /* ⛱ clickable parasols: tap to open/close; the shadow fades with the state */
+    .bh-umb { position: absolute; cursor: pointer; }
+    .bh-umb__canopy {
+      position: absolute; inset: 0; pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+      background-position: 50% 100%; transform-origin: 50% 100%;
+    }
+    /* a soft pool of shade under an OPEN parasol, gone when it's folded */
+    .bh-umb__shadow {
+      position: absolute; left: 50%; bottom: 2%;
+      width: 150%; height: 30%; transform: translateX(-50%);
+      background: radial-gradient(ellipse at center,
+                  rgba(28,18,8,0.34) 0%, rgba(28,18,8,0) 70%);
+      transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none;
+    }
+    .bh-umb:not(.is-open) .bh-umb__shadow {
+      opacity: 0; transform: translateX(-50%) scale(0.35);
+    }
+    @keyframes bhUmbPop {
+      0% { transform: scale(1); }
+      45% { transform: scaleX(0.82) scaleY(1.05); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bh-umb__canopy { animation: none !important; } }
     /* the dock sits ABOVE the opaque animated sea (which was painting over it)
        but below anything that walks — a floor must not occlude who's on it. */
     .bh-pier {

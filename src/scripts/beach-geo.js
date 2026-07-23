@@ -51,9 +51,9 @@ export const OB_RECTS = [
 ];
 
 export const OB_CIRCLES = [
-  [1265, 548, 13],   // yellow beach umbrella opened
-  [430, 1020, 13],   // blue beach umbrella opened
-  [340, 620, 13],   // green beach umbrella opened
+  [1265, 548, 13],   // yellow parasol pole
+  [430, 1020, 13],   // blue parasol pole
+  [340, 620, 13],   // green parasol pole
   [2360, 690, 13],   // street food table 2
   [2500, 728, 13],   // street food table 4
   [2318, 704, 13],   // street food chair 1
@@ -81,26 +81,33 @@ export const OVERLAYS = [
   { src: 'ov-6.png', x: 292, y: 219, w: 136, h: 161, base: 380 },
   { src: 'ov-7.png', x: 1572, y: 563, w: 256, h: 177, base: 740 },
   { src: 'ov-8.png', x: 986, y: 138, w: 129, h: 282, base: 420 },
-  { src: 'ov-9.png', x: 1211, y: 408, w: 108, h: 140, base: 548 },
-  { src: 'ov-10.png', x: 376, y: 880, w: 108, h: 140, base: 1020 },
-  { src: 'ov-11.png', x: 286, y: 480, w: 108, h: 140, base: 620 },
-  { src: 'ov-12.png', x: 2061, y: 366, w: 158, h: 134, base: 500 },
-  { src: 'ov-13.png', x: 2057, y: 454, w: 166, h: 50, base: 503 },
-  { src: 'ov-14.png', x: 2351, y: 366, w: 158, h: 134, base: 500 },
-  { src: 'ov-15.png', x: 2347, y: 454, w: 166, h: 50, base: 503 },
-  { src: 'ov-16.png', x: 2061, y: 806, w: 158, h: 134, base: 940 },
-  { src: 'ov-17.png', x: 2057, y: 894, w: 166, h: 50, base: 943 },
-  { src: 'ov-18.png', x: 2351, y: 806, w: 158, h: 134, base: 940 },
-  { src: 'ov-19.png', x: 2347, y: 894, w: 166, h: 50, base: 943 },
-  { src: 'ov-20.png', x: 2601, y: 548, w: 94, h: 152, base: 700 },
-  { src: 'ov-21.png', x: 2231, y: 330, w: 119, h: 136, base: 466 },
-  { src: 'ov-22.png', x: 2551, y: 350, w: 119, h: 136, base: 486 },
-  { src: 'ov-23.png', x: 2229, y: 776, w: 123, h: 134, base: 910 },
-  { src: 'ov-24.png', x: 1956, y: 592, w: 128, h: 134, base: 726 },
-  { src: 'ov-25.png', x: 2508, y: 810, w: 105, h: 120, base: 930 },
-  { src: 'ov-26.png', x: 2341, y: 635, w: 38, h: 55, base: 690 },
-  { src: 'ov-27.png', x: 2481, y: 675, w: 38, h: 53, base: 728 },
-  { src: 'ov-28.png', x: 2303, y: 673, w: 31, h: 31, base: 704 },
+  { src: 'ov-9.png', x: 2061, y: 366, w: 158, h: 134, base: 500 },
+  { src: 'ov-10.png', x: 2057, y: 454, w: 166, h: 50, base: 503 },
+  { src: 'ov-11.png', x: 2351, y: 366, w: 158, h: 134, base: 500 },
+  { src: 'ov-12.png', x: 2347, y: 454, w: 166, h: 50, base: 503 },
+  { src: 'ov-13.png', x: 2061, y: 806, w: 158, h: 134, base: 940 },
+  { src: 'ov-14.png', x: 2057, y: 894, w: 166, h: 50, base: 943 },
+  { src: 'ov-15.png', x: 2351, y: 806, w: 158, h: 134, base: 940 },
+  { src: 'ov-16.png', x: 2347, y: 894, w: 166, h: 50, base: 943 },
+  { src: 'ov-17.png', x: 2601, y: 548, w: 94, h: 152, base: 700 },
+  { src: 'ov-18.png', x: 2231, y: 330, w: 119, h: 136, base: 466 },
+  { src: 'ov-19.png', x: 2551, y: 350, w: 119, h: 136, base: 486 },
+  { src: 'ov-20.png', x: 2229, y: 776, w: 123, h: 134, base: 910 },
+  { src: 'ov-21.png', x: 1956, y: 592, w: 128, h: 134, base: 726 },
+  { src: 'ov-22.png', x: 2508, y: 810, w: 105, h: 120, base: 930 },
+  { src: 'ov-23.png', x: 2341, y: 635, w: 38, h: 55, base: 690 },
+  { src: 'ov-24.png', x: 2481, y: 675, w: 38, h: 53, base: 728 },
+  { src: 'ov-25.png', x: 2303, y: 673, w: 31, h: 31, base: 704 },
+];
+
+// ⛱ CLICKABLE PARASOLS. NOT baked into the plate (a baked open one would show
+// through a folded one), NO baked shadow (the page fades a DOM shadow with the
+// state). Both sprites share a bottom-centre pole, so the page anchors there;
+// `w/h` size the OPEN box, `cw/ch` the folded sprite drawn at the same scale.
+export const UMBRELLAS = [
+  { color: 'yellow', open: 'umb-yellow-open.png', closed: 'umb-yellow-closed.png', x: 1211, y: 408, w: 108, h: 140, cw: 35, ch: 115, base: 548 },
+  { color: 'blue', open: 'umb-blue-open.png', closed: 'umb-blue-closed.png', x: 376, y: 880, w: 108, h: 140, cw: 35, ch: 115, base: 1020 },
+  { color: 'green', open: 'umb-green-open.png', closed: 'umb-green-closed.png', x: 286, y: 480, w: 108, h: 140, cw: 35, ch: 115, base: 620 },
 ];
 
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because

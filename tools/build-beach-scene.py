@@ -365,6 +365,7 @@ PLACED = []                  # every prop's footprint, for audit_court()
 COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
 NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
+UMBRELLAS = []               # clickable parasols — open/closed, NOT baked
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 STALLS = []                  # (cx, base) of each midway stall, emitted for the page
 GRABBER = []                 # [cx, base] of the claw machine on the pier
@@ -416,6 +417,29 @@ def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
     if solid:
         COLLIDERS.append((name, solid, int(cx), int(base)))
     return s.size
+
+
+def umbrella(color, cx, base):
+    """🏖 A CLICKABLE parasol. Unlike place(), it does NOT composite into the
+    plate — a baked-in open umbrella would show THROUGH when the page folds it
+    shut — and it bakes NO contact shadow, because its ground shadow is a DOM
+    element the page fades in/out with the open/closed state. It just exports
+    an OPEN and a CLOSED sprite and records geometry + a pole collider.
+    The pole sits at each sprite's bottom-centre, so the page anchors both
+    states there and the folded one stands on the same spot."""
+    def prep(state):
+        name = '21_Beach_48x48_%s_Beach_Umbrella_%s.png' % (color.capitalize(), state)
+        s = blockify(load_pack(name), factor=1, colors=10, warm=0.08, sat=1.1, con=1.05)
+        return s.resize((max(1, int(s.width * PROP)), max(1, int(s.height * PROP))),
+                        Image.NEAREST)
+    op, cl = prep('Opened'), prep('Closed')
+    fn_o, fn_c = 'umb-%s-open.png' % color, 'umb-%s-closed.png' % color
+    op.save(os.path.join(OUT, fn_o), optimize=True)
+    cl.save(os.path.join(OUT, fn_c), optimize=True)
+    x, y = int(cx - op.width // 2), int(base - op.height)
+    COLLIDERS.append(('%s parasol pole' % color, POLE, int(cx), int(base)))
+    UMBRELLAS.append((color, fn_o, fn_c, x, y, op.width, op.height,
+                      cl.width, cl.height, int(base)))
 
 
 def net_span():
@@ -507,6 +531,14 @@ export const OVERLAYS = [
 %s
 ];
 
+// ⛱ CLICKABLE PARASOLS. NOT baked into the plate (a baked open one would show
+// through a folded one), NO baked shadow (the page fades a DOM shadow with the
+// state). Both sprites share a bottom-centre pole, so the page anchors there;
+// `w/h` size the OPEN box, `cw/ch` the folded sprite drawn at the same scale.
+export const UMBRELLAS = [
+%s
+];
+
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
 // a floor must never occlude someone standing on it.
 export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
@@ -536,6 +568,9 @@ export const GRABBER = { x: %d, y: %d };
                  for c in chairs),
        '\n'.join("  { src: '%s', x: %d, y: %d, w: %d, h: %d, base: %d },"
                  % o for o in OVERLAYS),
+       '\n'.join(("  { color: '%s', open: '%s', closed: '%s', x: %d, y: %d,"
+                  " w: %d, h: %d, cw: %d, ch: %d, base: %d },") % u
+                 for u in UMBRELLAS),
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
        '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
        GRABBER[0], GRABBER[1])
@@ -676,9 +711,11 @@ if HAVE_PACK:
           factor=2, colors=12, sh=0.24, solid=TOWER, layer=True)
 
     # ⛱ furniture
-    place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548, solid=POLE, layer=True)
-    place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020, solid=POLE, layer=True)
-    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 340, 620, solid=POLE, layer=True)
+    # ⛱ CLICKABLE parasols — open/close on tap, ground shadow toggles with them.
+    # Exported as sprites (NOT baked), rendered + made interactive by the page.
+    umbrella('yellow', 1265, 548)
+    umbrella('blue', 430, 1020)
+    umbrella('green', 340, 620)
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
         place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0,
               solid=SUNBED)
