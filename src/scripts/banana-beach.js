@@ -1495,9 +1495,11 @@ function init() {
     // to roam (they stop bumping into each other) and adds a second height to
     // aim at. Upper shelf runs wall-to-wall above the keeper's cap; the lower
     // shelf only spans the right, clear of the keeper on the left.
+    // both shelves ride ABOVE the keeper's cap (its top is ~0.42H), so both run
+    // wall-to-wall; the lower row is offset so the two interleave.
     const shelves = [
       { y: Math.round(H * 0.19), x0: 0.03, x1: 0.97, cocos: [0.14, 0.48, 0.82], range: 46 },
-      { y: Math.round(H * 0.45), x0: 0.42, x1: 0.97, cocos: [0.52, 0.70, 0.88], range: 28 },
+      { y: Math.round(H * 0.36), x0: 0.03, x1: 0.97, cocos: [0.30, 0.64, 0.90], range: 46 },
     ];
     const coconuts = [];
     shelves.forEach((sh) => {
