@@ -1390,7 +1390,9 @@ function init() {
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
   const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
-  const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1320, COCO_BALL_R = 18;
+  // 🎯 tuned for a CATAPULT LOB, not an arrow: gentler gravity + a lower speed
+  // ceiling so the ball floats up in a tall arc and drops onto the shelf.
+  const COCO_G = 1100, COCO_KNOCK = 260, COCO_K = 5.0, COCO_VMAX = 950, COCO_BALL_R = 18;
   const COCO_KNOCK_D = 13;   // the ball's path must pass THIS close to a coconut's centre to knock it (else it bounces)
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
@@ -1526,7 +1528,7 @@ function init() {
       });
     });
     // the ball sits high + right, clear of the keeper on the left
-    const ox = Math.round(W * 0.63), oy = Math.round(H * 0.82);
+    const ox = Math.round(W * 0.63), oy = Math.round(H * 0.76);
     const ballEl = document.createElement('div');
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
