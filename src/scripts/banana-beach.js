@@ -1296,28 +1296,35 @@ function init() {
   })();
 
   // tapping a stall: step up to the counter, or open it if you're already there
-  // ⚠️ You stand on the SAND at the plaza's edge, not beside the stall. The
-  // deck (an OB_RECT) is unwalkable, and the plaza is now on the RIGHT of the
-  // map, so "in front of" a stall is the sand just LEFT of the plaza, at the
-  // stall's own y.
-  const PLAZA_EDGE = 1970;                // = BOARDWALK x0 in the generator
-  const frontOf = (y) => ({ x: PLAZA_EDGE - 48, y });
+  // ⚠️ The pier deck is WALKABLE now — you wander among the stalls. "In front
+  // of" a stall is just below its counter (stalls face south), on the deck.
+  const frontOf = (x, y) => ({ x, y: y + 46 });
+  // route to a stall's front, going AROUND it if you're behind it. Stalls are
+  // solid and face south, so approaching from the north wedges the banana on
+  // the collider's back; a side waypoint (same idea as the pier mouth) fixes
+  // it. Returns true if already there.
+  function walkToFront(cx, base) {
+    const f = frontOf(cx, base);
+    if (Math.hypot(pos.x - f.x, pos.y - f.y) < 150) return true;
+    if (pos.y < base + 6 && Math.abs(pos.x - cx) < 96) {
+      const side = pos.x <= cx ? -1 : 1;
+      nextTgt = f;                       // …then the counter
+      tgt.x = cx + side * 132; tgt.y = f.y;   // clear the stall's side first
+    } else { nextTgt = null; tgt.x = f.x; tgt.y = f.y; }
+    return false;
+  }
   function tapGrabber(wx, wy) {
-    if (Math.abs(wx - GRABBER.x) < 62 && wy > GRABBER.y - 155 && wy < GRABBER.y + 20) {
-      const f = frontOf(GRABBER.y);
-      if (Math.hypot(pos.x - f.x, pos.y - f.y) < 150) openGrabber();
-      else { nextTgt = null; tgt.x = f.x; tgt.y = f.y; }
+    if (Math.abs(wx - GRABBER.x) < 62 && wy > GRABBER.y - 155 && wy < GRABBER.y + 30) {
+      if (walkToFront(GRABBER.x, GRABBER.y)) openGrabber();
       return true;
     }
     return false;
   }
   function tapStall(wx, wy) {
     const i = STALLS.findIndex((s) => Math.abs(wx - s.x) < 82
-      && wy > s.y - 140 && wy < s.y + 24);
+      && wy > s.y - 140 && wy < s.y + 40);
     if (i < 0) return false;
-    const f = frontOf(STALLS[i].y);
-    if (Math.hypot(pos.x - f.x, pos.y - f.y) < 150) openStall(i);
-    else { nextTgt = null; tgt.x = f.x; tgt.y = f.y; }
+    if (walkToFront(STALLS[i].x, STALLS[i].y)) openStall(i);
     return true;
   }
 

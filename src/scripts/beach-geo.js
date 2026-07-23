@@ -10,7 +10,7 @@
 // place() call that draws the prop, so the art and the collision are one
 // edit. Top-down blocking is always the BASE of an object, never its full
 // height: you walk BEHIND a palm's crown and a lighthouse's tower.
-export const WORLD = { w: 2400, h: 1100 };
+export const WORLD = { w: 2760, h: 1100 };
 export const WATER_Y = 292;               // bananas famously can't swim
 export const PIER = { x0: 1820, x1: 1960, y0: 60 };
 export const PLATFORM = { x0: 1820, x1: 1960, y0: 60, y1: 308 };
@@ -28,7 +28,6 @@ export const NET = { y: 844, x0: 666, x1: 1194,
 export const BAR = { x: 1700, y: 760, r: 104 };
 
 export const OB_RECTS = [
-  [1970, 306, 2400, 980],   // the boardwalk deck
   [457, 864, 483, 900],   // palm tree
   [507, 684, 533, 720],   // palm tree
   [1487, 484, 1513, 520],   // palm tree
@@ -38,9 +37,16 @@ export const OB_RECTS = [
   [347, 344, 373, 380],   // palm tree
   [1580, 638, 1822, 748],   // ship bar
   [192, 716, 310, 808],   // example lighthouse
-  [2254, 456, 2346, 486],   // fruit flowers cart 2
-  [2280, 696, 2372, 726],   // fruit flowers cart 3
-  [2244, 916, 2336, 946],   // fruit flowers cart 2
+  [2094, 478, 2186, 506],   // midway
+  [2384, 478, 2476, 506],   // midway
+  [2094, 918, 2186, 946],   // midway
+  [2384, 918, 2476, 946],   // midway
+  [2608, 672, 2688, 704],   // midway
+  [2246, 442, 2334, 466],   // fruit flowers cart 2
+  [2566, 462, 2654, 486],   // fruit flowers cart 3
+  [2246, 886, 2334, 910],   // street food cart 5
+  [1976, 702, 2064, 726],   // street food cart 2
+  [2516, 906, 2604, 930],   // fruit flowers cart 2
   [666, 834, 1194, 854],   // THE NET — solid; you go AROUND the poles
 ];
 
@@ -48,12 +54,9 @@ export const OB_CIRCLES = [
   [1265, 548, 13],   // yellow beach umbrella opened
   [430, 1020, 13],   // blue beach umbrella opened
   [340, 620, 13],   // green beach umbrella opened
-  [2356, 566, 15],   // pier barrel 1
-  [2210, 470, 15],   // basket 1
-  [2348, 654, 15],   // pier crates 2
-  [2224, 758, 15],   // basket 2
-  [2362, 858, 15],   // pier barrel 3
-  [2206, 902, 15],   // pier crates 4
+  [2360, 690, 13],   // street food table 2
+  [2500, 728, 13],   // street food table 4
+  [2318, 704, 13],   // street food chair 1
   [560, 640, 80],   // the bonfire ring
 ];
 
@@ -81,20 +84,19 @@ export const OVERLAYS = [
   { src: 'ov-9.png', x: 1211, y: 408, w: 108, h: 140, base: 548 },
   { src: 'ov-10.png', x: 376, y: 880, w: 108, h: 140, base: 1020 },
   { src: 'ov-11.png', x: 286, y: 480, w: 108, h: 140, base: 620 },
-  { src: 'ov-12.png', x: 2013, y: 250, w: 94, h: 152, base: 402 },
-  { src: 'ov-13.png', x: 1981, y: 422, w: 158, h: 134, base: 556 },
-  { src: 'ov-14.png', x: 2013, y: 556, w: 158, h: 134, base: 690 },
-  { src: 'ov-15.png', x: 1971, y: 690, w: 158, h: 134, base: 824 },
-  { src: 'ov-16.png', x: 2007, y: 824, w: 158, h: 134, base: 958 },
-  { src: 'ov-17.png', x: 2245, y: 360, w: 110, h: 126, base: 486 },
-  { src: 'ov-18.png', x: 2271, y: 600, w: 110, h: 126, base: 726 },
-  { src: 'ov-19.png', x: 2235, y: 820, w: 110, h: 126, base: 946 },
-  { src: 'ov-20.png', x: 2341, y: 531, w: 31, h: 35, base: 566 },
-  { src: 'ov-21.png', x: 2191, y: 439, w: 38, h: 31, base: 470 },
-  { src: 'ov-22.png', x: 2329, y: 621, w: 38, h: 33, base: 654 },
-  { src: 'ov-23.png', x: 2205, y: 727, w: 38, h: 31, base: 758 },
-  { src: 'ov-24.png', x: 2333, y: 807, w: 58, h: 51, base: 858 },
-  { src: 'ov-25.png', x: 2174, y: 839, w: 65, h: 63, base: 902 },
+  { src: 'ov-12.png', x: 2061, y: 366, w: 158, h: 134, base: 500 },
+  { src: 'ov-13.png', x: 2351, y: 366, w: 158, h: 134, base: 500 },
+  { src: 'ov-14.png', x: 2061, y: 806, w: 158, h: 134, base: 940 },
+  { src: 'ov-15.png', x: 2351, y: 806, w: 158, h: 134, base: 940 },
+  { src: 'ov-16.png', x: 2601, y: 548, w: 94, h: 152, base: 700 },
+  { src: 'ov-17.png', x: 2231, y: 330, w: 119, h: 136, base: 466 },
+  { src: 'ov-18.png', x: 2551, y: 350, w: 119, h: 136, base: 486 },
+  { src: 'ov-19.png', x: 2229, y: 776, w: 123, h: 134, base: 910 },
+  { src: 'ov-20.png', x: 1956, y: 592, w: 128, h: 134, base: 726 },
+  { src: 'ov-21.png', x: 2508, y: 810, w: 105, h: 120, base: 930 },
+  { src: 'ov-22.png', x: 2341, y: 635, w: 38, h: 55, base: 690 },
+  { src: 'ov-23.png', x: 2481, y: 675, w: 38, h: 53, base: 728 },
+  { src: 'ov-24.png', x: 2303, y: 673, w: 31, h: 31, base: 704 },
 ];
 
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
@@ -104,12 +106,12 @@ export const PIER_SPRITE = { x: 1812, y: 60, w: 156, h: 258 };
 // 🎡 the midway. Each entry is where a stall's COUNTER is — the page hangs a
 // sign above it and opens that stall's view when you tap it.
 export const STALLS = [
-  { x: 2060, y: 556 },
-  { x: 2092, y: 690 },
-  { x: 2050, y: 824 },
-  { x: 2086, y: 958 },
+  { x: 2140, y: 500 },
+  { x: 2430, y: 500 },
+  { x: 2140, y: 940 },
+  { x: 2430, y: 940 },
 ];
 
 // 🕹 the claw machine at the seaward end of the pier — the midway's one
 // landmark and the only place tickets buy the grand prize.
-export const GRABBER = { x: 2060, y: 402 };
+export const GRABBER = { x: 2648, y: 700 };
