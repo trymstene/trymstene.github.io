@@ -740,13 +740,13 @@ if HAVE_PACK:
             ('Street_Food_Cart_5', 2290, 910, 0.92),     # burger + chef
             ('Street_Food_Cart_2', 2020, 726, 0.92),     # a wok stall
             ('Fruit_Flowers_Cart_2', 2560, 930, 0.72)):
-        place('ME_Singles_Vehicles_48x48_%s.png' % name, cx, base, colors=14,
+        place('ME_Singles_Vehicles_48x48_%s.png' % name, cx, base, colors=28,
               sh=0.3, solid=('rect', -44, -24, 44, 0), layer=True, scale=sc)
     # café tables + a chair down the aisle, so the walking space isn't barren
     for name, cx, base in (('Street_Food_Table_2', 2360, 690),
                            ('Street_Food_Table_4', 2500, 728),
                            ('Street_Food_Chair_1', 2318, 704)):
-        place('ME_Singles_Vehicles_48x48_%s.png' % name, cx, base, colors=12,
+        place('ME_Singles_Vehicles_48x48_%s.png' % name, cx, base, colors=20,
               sh=0.22, solid=('circle', 13), layer=True, scale=0.82)
     print('  wrote the PIER BAZAAR (2 rows x %d stalls + grabber + wagons)'
           % (len(STALL_POS) // 2))
