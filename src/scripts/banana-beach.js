@@ -1531,11 +1531,10 @@ function init() {
         el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
         el.style.left = baseX + 'px'; el.style.top = cy + 'px';
         cocoPitch.appendChild(el);
-        // 🎯 RANDOM wander — each eases to a fresh random spot in its stretch,
-        // at its own speed. Roomy now, so it actually crosses ground.
+        // 🎯 RANDOM wander across the WHOLE shelf — every coconut can target any
+        // spot end to end, so they make big traverses and pass each other.
         coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
-          lo: Math.max(lim0, baseX - sh.range), hi: Math.min(lim1, baseX + sh.range),
-          tx: baseX, spd: 40 + Math.random() * 55 });
+          lo: lim0, hi: lim1, tx: baseX, spd: 55 + Math.random() * 75 });
       });
     });
     // the ball sits high + right, clear of the keeper on the left
