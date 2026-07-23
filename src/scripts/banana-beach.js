@@ -1511,8 +1511,8 @@ function init() {
     // both shelves ride ABOVE the keeper's cap (its top is ~0.42H), so both run
     // wall-to-wall; the lower row is offset so the two interleave.
     const shelves = [
-      { y: Math.round(H * 0.19), x0: 0.03, x1: 0.97, cocos: [0.14, 0.48, 0.82], range: 46 },
-      { y: Math.round(H * 0.36), x0: 0.03, x1: 0.97, cocos: [0.30, 0.64, 0.90], range: 46 },
+      { y: Math.round(H * 0.19), x0: 0.03, x1: 0.97, cocos: [0.22, 0.70], range: 60 },
+      { y: Math.round(H * 0.36), x0: 0.03, x1: 0.97, cocos: [0.42, 0.90], range: 60 },
     ];
     const coconuts = [];
     shelves.forEach((sh) => {
