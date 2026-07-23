@@ -1391,6 +1391,7 @@ function init() {
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
   const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
   const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1320, COCO_BALL_R = 18;
+  const COCO_KNOCK_D = 13;   // the ball's path must pass THIS close to a coconut's centre to knock it (else it bounces)
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
     + '<rect x="1" y="2" width="10" height="2" fill="#6b4a2b"/><rect x="0" y="4" width="12" height="4" fill="#6b4a2b"/>'
@@ -1490,30 +1491,38 @@ function init() {
   function cocoBuild(live) {
     cocoPitch.innerHTML = '';
     const W = cocoPitch.clientWidth, H = cocoPitch.clientHeight;
-    // the shelf runs WALL TO WALL and rides high (above the keeper's cap) so the
-    // coconuts spread right across it instead of bunching into one hittable clump.
-    const railY = Math.round(H * 0.21);
-    const rail = document.createElement('div');
-    rail.className = 'bh-coco__rail';
-    rail.style.left = Math.round(W * 0.03) + 'px';
-    rail.style.right = 'auto';
-    rail.style.width = Math.round(W * 0.94) + 'px';
-    rail.style.top = railY + 'px';
-    cocoPitch.appendChild(rail);
+    // TWO shelves. Splitting the coconuts across rows gives each far more room
+    // to roam (they stop bumping into each other) and adds a second height to
+    // aim at. Upper shelf runs wall-to-wall above the keeper's cap; the lower
+    // shelf only spans the right, clear of the keeper on the left.
+    const shelves = [
+      { y: Math.round(H * 0.19), x0: 0.03, x1: 0.97, cocos: [0.14, 0.48, 0.82], range: 46 },
+      { y: Math.round(H * 0.45), x0: 0.42, x1: 0.97, cocos: [0.52, 0.70, 0.88], range: 28 },
+    ];
     const coconuts = [];
-    const RANGE = 30;                                       // how far each coconut wanders
-    for (let k = 0; k < COCO_COUNT; k++) {
-      const baseX = Math.round(W * (0.11 + 0.195 * k));     // spread across the whole shelf
-      const cy = railY - 14;                                // resting on the rail
-      const el = document.createElement('div');
-      el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
-      el.style.left = baseX + 'px'; el.style.top = cy + 'px';
-      cocoPitch.appendChild(el);
-      // 🎯 RANDOM wander — each eases to a fresh random spot in its own stretch,
-      // at its own speed, so the row never settles into an easy line.
-      coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
-        lo: baseX - RANGE, hi: baseX + RANGE, tx: baseX, spd: 38 + Math.random() * 46 });
-    }
+    shelves.forEach((sh) => {
+      const rail = document.createElement('div');
+      rail.className = 'bh-coco__rail';
+      rail.style.left = Math.round(W * sh.x0) + 'px';
+      rail.style.right = 'auto';
+      rail.style.width = Math.round(W * (sh.x1 - sh.x0)) + 'px';
+      rail.style.top = sh.y + 'px';
+      cocoPitch.appendChild(rail);
+      const lim0 = W * sh.x0 + 14, lim1 = W * sh.x1 - 14;
+      sh.cocos.forEach((fx) => {
+        const baseX = Math.round(W * fx);
+        const cy = sh.y - 14;                              // resting on the rail
+        const el = document.createElement('div');
+        el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
+        el.style.left = baseX + 'px'; el.style.top = cy + 'px';
+        cocoPitch.appendChild(el);
+        // 🎯 RANDOM wander — each eases to a fresh random spot in its stretch,
+        // at its own speed. Roomy now, so it actually crosses ground.
+        coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
+          lo: Math.max(lim0, baseX - sh.range), hi: Math.min(lim1, baseX + sh.range),
+          tx: baseX, spd: 40 + Math.random() * 55 });
+      });
+    });
     // the ball sits high + right, clear of the keeper on the left
     const ox = Math.round(W * 0.63), oy = Math.round(H * 0.82);
     const ballEl = document.createElement('div');
@@ -1610,6 +1619,14 @@ function init() {
     };
     cocoRAF = requestAnimationFrame(tick);
   }
+  // shortest distance from point (px,py) to the segment (ax,ay)→(bx,by)
+  function segDist(ax, ay, bx, by, px, py) {
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    if (l2 < 0.0001) return Math.hypot(px - ax, py - ay);
+    let t = ((px - ax) * dx + (py - ay) * dy) / l2;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  }
   function cocoPhysics(dt) {
     // wander each standing coconut toward a fresh random spot in its stretch —
     // an erratic target is far harder to lead than a steady sine.
@@ -1623,23 +1640,26 @@ function init() {
     const b = coco.ball;
     if (b.live) {
       b.age += dt;
+      const px = b.x, py = b.y;               // where the ball was — for continuous hit-testing
       b.vy += COCO_G * dt;
       b.x += b.vx * dt; b.y += b.vy * dt;
       for (const c of coco.coconuts) {
         if (!c.alive) continue;
-        const dx = b.x - c.x, dy = b.y - c.y, R = COCO_BALL_R + c.r;
-        const d = Math.hypot(dx, dy) || 0.001;
-        if (d >= R) continue;
-        if (Math.hypot(b.vx, b.vy) > COCO_KNOCK) { cocoKnock(c, b); break; }
-        // wobble: shove the ball back OUT along the normal so it can't re-hit
-        // this coconut every frame (that trap kept a ball "live" forever), and
-        // bounce its velocity off that normal.
+        // closest the ball's PATH this frame came to the coconut centre, so a fast
+        // ball can't tunnel straight past the small sweet spot between frames.
+        const d = segDist(px, py, b.x, b.y, c.x, c.y);
+        if (d >= COCO_BALL_R + c.r) continue;   // didn't touch it at all
+        // KNOCK only on a dead-centre strike; anything else is a glance.
+        if (d <= COCO_KNOCK_D && Math.hypot(b.vx, b.vy) > COCO_KNOCK) { cocoKnock(c, b); break; }
+        // a glancing hit — bounces off LIVELY and does NOT knock. You have to
+        // strike the sweet spot, not just throw in the right direction.
         cocoWobble(c);
-        const nx = dx / d, ny = dy / d;
-        b.x = c.x + nx * (R + 1); b.y = c.y + ny * (R + 1);
+        const nx0 = b.x - c.x, ny0 = b.y - c.y, nl = Math.hypot(nx0, ny0) || 0.001;
+        const nx = nx0 / nl, ny = ny0 / nl;
+        b.x = c.x + nx * (COCO_BALL_R + c.r + 1); b.y = c.y + ny * (COCO_BALL_R + c.r + 1);
         const vn = b.vx * nx + b.vy * ny;
-        b.vx = (b.vx - 2 * vn * nx) * 0.5;
-        b.vy = (b.vy - 2 * vn * ny) * 0.5;
+        b.vx = (b.vx - 2 * vn * nx) * 0.72;    // bouncier than before (0.5 → 0.72)
+        b.vy = (b.vy - 2 * vn * ny) * 0.72;
         break;
       }
       coco.ballEl.style.left = b.x + 'px';
