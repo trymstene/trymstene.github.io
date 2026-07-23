@@ -1389,7 +1389,7 @@ function init() {
   const cocoFoot = document.getElementById('bhCocoFoot');
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
-  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 4;
+  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
   const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1050, COCO_BALL_R = 18;
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
@@ -1490,28 +1490,30 @@ function init() {
   function cocoBuild(live) {
     cocoPitch.innerHTML = '';
     const W = cocoPitch.clientWidth, H = cocoPitch.clientHeight;
-    const railY = Math.round(H * 0.38);
-    // the rack sits in the MIDDLE-RIGHT — the keeper owns the left
+    // the rack rides HIGH on the wall and spreads wide — left over the keeper's
+    // head into the empty wall, right to the edge. Higher = longer arc = harder.
+    const railY = Math.round(H * 0.27);
     const rail = document.createElement('div');
     rail.className = 'bh-coco__rail';
-    rail.style.left = Math.round(W * 0.58) + 'px';
+    rail.style.left = Math.round(W * 0.40) + 'px';
     rail.style.right = 'auto';
-    rail.style.width = Math.round(W * 0.40) + 'px';
+    rail.style.width = Math.round(W * 0.56) + 'px';
     rail.style.top = railY + 'px';
     cocoPitch.appendChild(rail);
     const coconuts = [];
     for (let k = 0; k < COCO_COUNT; k++) {
-      const baseX = Math.round(W * (0.63 + 0.10 * k));
-      const cy = railY - 14;                        // resting on the rail
+      const baseX = Math.round(W * (0.44 + 0.115 * k));   // spread wide, well to the left
+      const cy = railY - 14;                              // resting on the rail
       const el = document.createElement('div');
       el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
       el.style.left = baseX + 'px'; el.style.top = cy + 'px';
       cocoPitch.appendChild(el);
-      // 🎯 they DRIFT — a moving target so a nice reward isn't a gimme
+      // 🎯 they DRIFT — faster + wider now, so a nice reward stays a skill shot
       coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
-        amp: 9 + 2.5 * k, w: 1.0 + 0.3 * k, phase: k * 1.9 });
+        amp: 11 + 2.5 * k, w: 1.35 + 0.35 * k, phase: k * 1.9 });
     }
-    const ox = Math.round(W * 0.54), oy = Math.round(H * 0.86);
+    // the ball sits high + right, clear of the keeper on the left
+    const ox = Math.round(W * 0.63), oy = Math.round(H * 0.82);
     const ballEl = document.createElement('div');
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
