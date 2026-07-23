@@ -345,6 +345,22 @@ const description = 'The beach at the end of the park road. The sun never quite 
       margin: 0 0 0.15rem; letter-spacing: 0.03em;
     }
     .bh-card p { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
+    .bh-panel__sub { opacity: 0.9; }
+    .bh-panel__sub b { color: #ffd98a; opacity: 1; }
+    /* the "how it works" strip — three short steps, so the loop reads at a glance */
+    .bh-how {
+      list-style: none; margin: 0 0 0.85rem; padding: 0.6rem 0.75rem;
+      display: grid; gap: 0.45rem; background: #221a30; border: 2px solid #000;
+      font-size: 0.76rem; line-height: 1.35; opacity: 0.95;
+    }
+    .bh-how li { position: relative; padding-left: 0; }
+    .bh-how b { color: #ffd98a; }
+    /* Captain's live tally — the numbers that make the trade concrete */
+    .bh-tradestat {
+      margin: -0.2rem 0 0.7rem !important; font-size: 0.82rem !important; opacity: 1 !important;
+      color: #cfe8ff;
+    }
+    .bh-tradestat b { color: #fff; }
     .bh-grid {
       display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin-bottom: 0.8rem;
     }
@@ -734,8 +750,13 @@ const description = 'The beach at the end of the park road. The sun never quite 
 
       <div class="bh-panel" id="bhShellPanel" hidden>
         <div class="bh-card" role="dialog" aria-label="Shell collection">
-          <h2>your shells</h2>
-          <p id="bhShellSub">washed up on the tide. the beach lays out a fresh set every day.</p>
+          <h2>your shell collection</h2>
+          <p id="bhShellSub" class="bh-panel__sub">washed up on the tide.</p>
+          <ol class="bh-how">
+            <li><b>🌊 the tide</b> lays a fresh scatter of shells on the sand every day — walk over one to pocket it.</li>
+            <li><b>🐚 29 kinds</b> to find in all. the gold &amp; star shells wash up far more rarely.</li>
+            <li><b>🚢 got doubles?</b> Captain Split at the shipwreck bar swaps <b>3 spare shells → 1 you're still missing</b>. shells only, never coins.</li>
+          </ol>
           <div class="bh-grid" id="bhShellGrid"></div>
           <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
         </div>
@@ -745,6 +766,8 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-card" role="dialog" aria-label="Captain Split's trading post">
           <h2>captain split's trading post</h2>
           <p id="bhTradeSay">"three you've got spare, one you ain't got. that's the deal. i don't do money."</p>
+          <p class="bh-panel__sub">hand him <b>3 shells you already have spare</b> and he gives back <b>1 kind you're still missing</b> — the fast way to finish the set. shells only.</p>
+          <p id="bhTradeStat" class="bh-tradestat"></p>
           <div class="bh-grid" id="bhTradeGrid"></div>
           <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
           <button class="bh-btn bh-btn--dark" id="bhTradeClose" type="button">leave the bar</button>

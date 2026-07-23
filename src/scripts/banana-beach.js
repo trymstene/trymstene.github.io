@@ -640,8 +640,9 @@ function init() {
   function openShells() {
     renderGrid(shellGrid);
     const left = shells.filter(Boolean).length;
-    shellSub.textContent = haveCount() + ' of ' + SHELL_IDS.length + ' found · '
-      + (left ? left + ' still out on the sand today' : 'today’s tide is picked clean — more tomorrow');
+    shellSub.innerHTML = '🐚 <b>' + haveCount() + '</b> of ' + SHELL_IDS.length + ' kinds found · <b>'
+      + dupeCount() + '</b> spare · '
+      + (left ? left + ' still on the sand today' : 'today’s tide is picked clean — back tomorrow');
     shellPanel.hidden = false;
     track('beach_shells_open');
   }
@@ -687,10 +688,13 @@ function init() {
   const tradePanel = document.getElementById('bhTradePanel');
   const tradeGrid = document.getElementById('bhTradeGrid');
   const tradeSay = document.getElementById('bhTradeSay');
+  const tradeStat = document.getElementById('bhTradeStat');
   const tradeDo = document.getElementById('bhTradeDo');
   function refreshTrade() {
     renderGrid(tradeGrid);
     const d = dupeCount(), m = missingIds().length;
+    tradeStat.innerHTML = '🐚 you have <b>' + d + '</b> spare shell' + (d === 1 ? '' : 's')
+      + ' · <b>' + m + '</b> kind' + (m === 1 ? '' : 's') + ' still missing';
     tradeDo.disabled = !(d >= 3 && m > 0);
     tradeDo.textContent = m === 0
       ? 'nothing left to want'
