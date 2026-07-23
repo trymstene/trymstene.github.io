@@ -90,9 +90,11 @@ TOWER = ('rect', -58, -84, 60, 8)          # the lighthouse's base
 SUNBED = ('chair', -34, -48, 36, 6, -4)    # rect + where you sit
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
-# the lighthouse moved from the far right (where the plaza now stands) to the
-# LEFT, so it greets you at the entrance — a landmark for the emptied side.
-LIGHT = (250, 500)
+# the lighthouse stands on the open shore above the volleyball court. It USED
+# to sit at the bottom-left entrance, but the WELCOME ARCH greets you there now
+# (built in banana-beach.js), so the lighthouse moved to a clean stretch of
+# coast where it reads as a scenic landmark instead of fighting the arch.
+LIGHT = (1050, 120)
 # 🎡 THE PIER BAZAAR — a big WALKABLE wooden deck on the far right, opposite
 # the bottom-left entrance. ⚠️ NOT a collider any more: you walk ON it, among
 # two rows of stalls and food/fruit wagons, with clear aisles (Trym: "space

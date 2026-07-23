@@ -327,6 +327,40 @@ const description = 'The beach at the end of the park road. The sun never quite 
     /* the vendor banana behind each counter */
     .bh-vendor { position: absolute; pointer-events: none; }
     .bh-vendor canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+
+    /* 🎪 the welcome arch at the park entrance — a wooden gateway; text sized
+       in container units so it always fills the board as the world scales */
+    .bh-arch { position: absolute; pointer-events: none; container-type: size; }
+    .bh-arch__post {
+      position: absolute; top: 47%; bottom: 0; width: 8%;
+      background: linear-gradient(90deg, #9c6a37 0%, #7a4f28 46%, #573818 100%);
+      border: 0.7cqw solid #3a230f; border-radius: 1cqw;
+      box-shadow: inset -1cqw 0 0 rgba(0,0,0,0.22);
+    }
+    .bh-arch__post--l { left: 9%; }
+    .bh-arch__post--r { right: 9%; }
+    .bh-arch__board {
+      position: absolute; left: 0; right: 0; top: 0; height: 47%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.6cqw;
+      /* faint plank grain layered OVER the brown board — one declaration so the
+         grain doesn't clobber the wood the way a stray background-image did */
+      background:
+        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px) 0 0 / 100% 1.8cqw,
+        linear-gradient(#b07d42, #7a4f28);
+      border: 1.1cqw solid #3a230f; border-radius: 4cqw 4cqw 1cqw 1cqw;
+      box-shadow: 1cqw 1.3cqw 0 rgba(0,0,0,0.4), inset 0 1cqw 0 rgba(255,220,150,0.22);
+    }
+    .bh-arch__sub {
+      font-family: "Archivo Black", sans-serif; color: #ffe7a0; white-space: nowrap;
+      font-size: 3.8cqw; line-height: 1; letter-spacing: 0.22em; text-transform: uppercase;
+      text-shadow: 0.25cqw 0.25cqw 0 #3a230f;
+    }
+    .bh-arch__title {
+      font-family: "Archivo Black", sans-serif; color: #ffe135; white-space: nowrap;
+      font-size: 10cqw; line-height: 0.95; letter-spacing: 0;
+      text-shadow: 0.5cqw 0.5cqw 0 #3a230f;
+    }
     .bh-card--stall { max-width: 420px; width: 92%; }
     .bh-stallhead { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
     .bh-stallhead h3 { margin: 0; font-size: 1rem; flex: 1; }

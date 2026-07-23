@@ -36,7 +36,7 @@ export const OB_RECTS = [
   [687, 492, 713, 528],   // palm tree
   [347, 344, 373, 380],   // palm tree
   [1580, 638, 1822, 748],   // ship bar
-  [192, 716, 310, 808],   // example lighthouse
+  [992, 336, 1110, 428],   // example lighthouse
   [2094, 478, 2186, 506],   // midway
   [2384, 478, 2476, 506],   // midway
   [2094, 918, 2186, 946],   // midway
@@ -80,7 +80,7 @@ export const OVERLAYS = [
   { src: 'ov-5.png', x: 632, y: 367, w: 136, h: 161, base: 528 },
   { src: 'ov-6.png', x: 292, y: 219, w: 136, h: 161, base: 380 },
   { src: 'ov-7.png', x: 1572, y: 563, w: 256, h: 177, base: 740 },
-  { src: 'ov-8.png', x: 186, y: 518, w: 129, h: 282, base: 800 },
+  { src: 'ov-8.png', x: 986, y: 138, w: 129, h: 282, base: 420 },
   { src: 'ov-9.png', x: 1211, y: 408, w: 108, h: 140, base: 548 },
   { src: 'ov-10.png', x: 376, y: 880, w: 108, h: 140, base: 1020 },
   { src: 'ov-11.png', x: 286, y: 480, w: 108, h: 140, base: 620 },
