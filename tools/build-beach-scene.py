@@ -366,6 +366,7 @@ COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
 NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
 UMBRELLAS = []               # clickable parasols — open/closed, NOT baked
+BEACON = []                  # [x, y] of the lighthouse lamp — the page pulses it
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 STALLS = []                  # (cx, base) of each midway stall, emitted for the page
 GRABBER = []                 # [cx, base] of the claw machine on the pier
@@ -539,6 +540,9 @@ export const UMBRELLAS = [
 %s
 ];
 
+// 🗼 where the page pulses the lighthouse's beacon glow (its lamp room).
+export const BEACON = { x: %d, y: %d };
+
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
 // a floor must never occlude someone standing on it.
 export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
@@ -571,6 +575,7 @@ export const GRABBER = { x: %d, y: %d };
        '\n'.join(("  { color: '%s', open: '%s', closed: '%s', x: %d, y: %d,"
                   " w: %d, h: %d, cw: %d, ch: %d, base: %d },") % u
                  for u in UMBRELLAS),
+       BEACON[0], BEACON[1],
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
        '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
        GRABBER[0], GRABBER[1])
@@ -707,8 +712,11 @@ if HAVE_PACK:
         place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, BAR[1] + 200)
 
     # 🗼 the lighthouse — factor 2, or it would eat half the map
-    place('21_Beach_48x48_Example_Lighthouse.png', LIGHT[0], LIGHT[1] + 300,
-          factor=2, colors=12, sh=0.24, solid=TOWER, layer=True)
+    _lw, _lh = place('21_Beach_48x48_Example_Lighthouse.png', LIGHT[0], LIGHT[1] + 300,
+                     factor=2, colors=12, sh=0.24, solid=TOWER, layer=True)
+    # the lamp room sits near the TOP of the tower — the page pulses a beacon
+    # glow there so the lighthouse visibly "still works" (Captain's line).
+    BEACON.extend([LIGHT[0], int(LIGHT[1] + 300 - _lh + _lh * 0.23)])
 
     # ⛱ furniture
     # ⛱ CLICKABLE parasols — open/close on tap, ground shadow toggles with them.

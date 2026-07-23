@@ -98,6 +98,35 @@ const description = 'The beach at the end of the park road. The sun never quite 
       100% { transform: scale(1); }
     }
     @media (prefers-reduced-motion: reduce) { .bh-umb__canopy { animation: none !important; } }
+
+    /* 🗼 the lighthouse beacon — a breathing lamp + a slow searchlight sweep */
+    .bh-beacon { position: absolute; pointer-events: none; }
+    .bh-beacon__core, .bh-beacon__beam {
+      position: absolute; left: 0; top: 0; border-radius: 50%;
+    }
+    .bh-beacon__core {
+      width: 48px; height: 48px; margin: -24px 0 0 -24px;
+      background: radial-gradient(circle, rgba(255,252,224,1) 0%,
+                  rgba(255,231,140,0.72) 32%, rgba(255,210,90,0) 72%);
+      animation: bhBeaconPulse 2.6s ease-in-out infinite;
+    }
+    .bh-beacon__beam {
+      width: 200px; height: 200px; margin: -100px 0 0 -100px;
+      background: conic-gradient(from -16deg, rgba(255,243,180,0.30) 0deg,
+                  rgba(255,243,180,0) 30deg, rgba(255,243,180,0) 180deg,
+                  rgba(255,243,180,0.30) 180deg, rgba(255,243,180,0) 210deg,
+                  rgba(255,243,180,0) 360deg);
+      animation: bhBeaconSweep 7s linear infinite;
+    }
+    @keyframes bhBeaconPulse {
+      0%, 100% { opacity: 0.55; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.14); }
+    }
+    @keyframes bhBeaconSweep { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-beacon__beam { animation: none; opacity: 0.5; }
+      .bh-beacon__core { animation: none; opacity: 0.85; }
+    }
     /* the dock sits ABOVE the opaque animated sea (which was painting over it)
        but below anything that walks — a floor must not occlude who's on it. */
     .bh-pier {

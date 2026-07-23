@@ -110,6 +110,9 @@ export const UMBRELLAS = [
   { color: 'green', open: 'umb-green-open.png', closed: 'umb-green-closed.png', x: 286, y: 480, w: 108, h: 140, cw: 35, ch: 115, base: 620 },
 ];
 
+// 🗼 where the page pulses the lighthouse's beacon glow (its lamp room).
+export const BEACON = { x: 1050, y: 202 };
+
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
 // a floor must never occlude someone standing on it.
 export const PIER_SPRITE = { x: 1812, y: 60, w: 156, h: 258 };

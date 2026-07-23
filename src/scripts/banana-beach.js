@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, PIER_SPRITE, STALLS, GRABBER,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BEACON, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -224,6 +224,19 @@ function init() {
       track('beach_parasol', { color: u.color, open: open ? 1 : 0 });
     });
   });
+
+  // 🗼 THE LIGHTHOUSE BEACON — a warm lamp that breathes and a slow beam sweep,
+  // so the tower visibly still works (the Captain swears someone turns it on).
+  // Cosmetic only; sits just above the tower sprite (base 420).
+  (() => {
+    const b = document.createElement('div');
+    b.className = 'bh-beacon';
+    b.style.left = pct(BEACON.x, W);
+    b.style.top = pct(BEACON.y, H);
+    b.style.zIndex = String(100 + 420 + 2);
+    b.innerHTML = '<div class="bh-beacon__beam"></div><div class="bh-beacon__core"></div>';
+    world.appendChild(b);
+  })();
 
   // …and the dock, which is a FLOOR: above the opaque sea, below every walker
   const pierEl = document.createElement('div');
