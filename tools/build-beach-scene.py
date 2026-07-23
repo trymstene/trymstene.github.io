@@ -87,11 +87,16 @@ TOWER = ('rect', -58, -84, 60, 8)          # the lighthouse's base
 SUNBED = ('chair', -34, -48, 36, 6, -4)    # rect + where you sit
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
-LIGHT = (2180, 470)
-# the seafront PLAZA — widened from a 250px sliver to 430 so the midway can
-# sprawl instead of forming a rigid column (Trym: "too symmetric and mechanic…
-# should look more bohemic and beachy"). You still walk the sand at its edge.
-BOARDWALK = (0, 430, 306, 980)
+# the lighthouse moved from the far right (where the plaza now stands) to the
+# LEFT, so it greets you at the entrance — a landmark for the emptied side.
+LIGHT = (250, 500)
+# the seafront PLAZA — a 430px wooden deck, now on the RIGHT edge of the map,
+# OPPOSITE the bottom-left park entrance (Trym: "move the dock with the stalls
+# to the opposite side… you want users to walk around the beach and see all
+# other activities before just heading to the stalls"). You enter far from it,
+# cross the whole bay past volleyball/shells/digging/Captain Split, and reach
+# the midway last. You approach each stall from the SAND at the plaza's LEFT.
+BOARDWALK = (1970, 2400, 306, 980)
 
 im = Image.new('RGBA', (W, H), (54, 132, 158, 255))
 px = im.load()
@@ -562,13 +567,14 @@ if HAVE_PACK:
     rect(bw0, by1 - 5, bw1, by1, (110, 68, 30))
 
     # 🌴 palms — native scale, so they tower over a 56px banana
-    # (the old (330,470) palm moved to (800,470) — the wider plaza reaches x430)
-    for cx, base, fl in ((800, 470, False), (520, 900, True), (1500, 520, False),
-                         (1330, 1040, True), (2010, 900, False), (600, 528, True),
-                         (2290, 640, False)):
+    # palms scattered — several pulled LEFT to populate the entrance side now
+    # that the plaza (and its old right-side palms) moved across the map.
+    for cx, base, fl in ((470, 900, False), (520, 720, True), (1500, 520, False),
+                         (1330, 1040, True), (150, 660, False), (700, 528, True),
+                         (360, 380, False)):
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
               layer=True)
-    for cx, base in ((430, 372), (900, 366), (1600, 380), (2120, 372), (660, 362)):
+    for cx, base in ((430, 372), (900, 366), (1600, 380), (230, 360), (660, 362)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False)
 
     # 🏐 the volleyball court, built from the pack's own pieces.
@@ -650,20 +656,20 @@ if HAVE_PACK:
     # ⛱ furniture
     place('21_Beach_48x48_Yellow_Beach_Umbrella_Opened.png', 1265, 548, solid=POLE, layer=True)
     place('21_Beach_48x48_Blue_Beach_Umbrella_Opened.png', 430, 1020, solid=POLE, layer=True)
-    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 2050, 560, solid=POLE, layer=True)
+    place('21_Beach_48x48_Green_Beach_Umbrella_Opened.png', 340, 620, solid=POLE, layer=True)
     for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
         place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0,
               solid=SUNBED)
     place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1450, 780, shade=False)
     place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 520, 1074, shade=False)
     place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1900, 800, shade=False)
-    place('21_Beach_48x48_Red_Float.png', 2240, 380)
+    place('21_Beach_48x48_Red_Float.png', 180, 380)
     place('21_Beach_48x48_Green_Float.png', 300, 1020)
-    for cx, base in ((1600, 900), (860, 1080), (2130, 1020)):
+    for cx, base in ((1600, 900), (860, 1080), (300, 1020)):
         place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base)
     place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 1420, 1070)  # off the court
     place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1780, 1010)
-    for cx, base in ((480, 330), (1120, 336), (1750, 330), (2260, 334)):
+    for cx, base in ((480, 330), (1120, 336), (1750, 330), (300, 334)):
         place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)
     for cx, base in ((820, 334), (1400, 330)):
         place('21_Beach_48x48_Purple_Small_Starfish.png', cx, base, shade=False)
@@ -684,34 +690,37 @@ if HAVE_PACK:
         OVERLAYS.append((fn, box[0], box[1], spr.width, spr.height, int(base)))
         PLACED.append(('midway', (box[0], box[1], box[0] + spr.width, int(base))))
 
+    # The plaza is on the RIGHT (x 1970-2400) and you approach from its LEFT,
+    # so the FRONT band (game stalls) sits at LOW x near 1970 and the fruit
+    # carts fill the BACK toward the map edge at 2400.
     # 🕹 the grabber heads the promenade — first thing you meet, grand prize on
     # show long before you can afford it.
     gr = build_grabber()
-    GRABBER.extend([300, 402])
+    GRABBER.extend([2060, 402])
     midway_overlay(gr, GRABBER[0], GRABBER[1], sh=0.36)
 
     # the four game stalls, front band, staggered. (cx, base) hand-tuned, not
     # a formula — a formula is exactly what read as mechanical.
-    STALL_POS = [(300, 556), (270, 690), (312, 824), (276, 958)]
+    STALL_POS = [(2060, 556), (2092, 690), (2050, 824), (2086, 958)]
     for (cx, base), hue in zip(STALL_POS, STALL_HUES):
         st = build_stall(hue)
         midway_overlay(st, cx, base)
         STALLS.append((cx, base))
 
     # 🍎 FRUIT CARTS — the pack's own (Fruit_Flowers_Cart 2 & 3): a wagon with a
-    # striped parasol and crates of produce, tucked in the BACK of the plaza to
-    # break up the row. Decorative only — no STALLS entry, so nothing to tap.
-    for name, cx, base in (('2', 120, 486), ('3', 96, 726), ('2', 132, 946)):
+    # striped parasol and crates of produce, in the BACK of the plaza to break
+    # up the row. Decorative only — no STALLS entry, so nothing to tap.
+    for name, cx, base in (('2', 2300, 486), ('3', 2326, 726), ('2', 2290, 946)):
         place('ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_%s.png' % name, cx, base,
               colors=14, sh=0.3, solid=('rect', -46, -30, 46, 0), layer=True)
     # bohemian clutter — baskets, barrels, crates scattered through the gaps
     for name, cx, base in (
-            ('ME_Singles_Camping_48x48_Pier_Barrel_1.png', 66, 566),
-            ('ME_Singles_Camping_48x48_Basket_1.png', 210, 470),
-            ('ME_Singles_Camping_48x48_Pier_Crates_2.png', 74, 654),
-            ('ME_Singles_Camping_48x48_Basket_2.png', 196, 758),
-            ('ME_Singles_Camping_48x48_Pier_Barrel_3.png', 60, 858),
-            ('ME_Singles_Camping_48x48_Pier_Crates_4.png', 214, 902)):
+            ('ME_Singles_Camping_48x48_Pier_Barrel_1.png', 2356, 566),
+            ('ME_Singles_Camping_48x48_Basket_1.png', 2210, 470),
+            ('ME_Singles_Camping_48x48_Pier_Crates_2.png', 2348, 654),
+            ('ME_Singles_Camping_48x48_Basket_2.png', 2224, 758),
+            ('ME_Singles_Camping_48x48_Pier_Barrel_3.png', 2362, 858),
+            ('ME_Singles_Camping_48x48_Pier_Crates_4.png', 2206, 902)):
         place(name, cx, base, colors=10, sh=0.28, solid=('circle', 15), layer=True)
     print('  wrote the bohemian midway (grabber + %d stalls + carts + clutter)'
           % len(STALL_POS))

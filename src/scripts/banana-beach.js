@@ -752,10 +752,10 @@ function init() {
     { x: 1298, y: 402, clue: 'up where the sea comes closest' },
     { x: 1452, y: 906, clue: 'east of the court, past the towel' },
     { x: 1912, y: 1014, clue: 'below the pier, where nobody looks' },
-    { x: 2166, y: 918, clue: 'in the lighthouse’s long shadow' },
-    { x: 2258, y: 430, clue: 'the far corner, where the rocks sit' },
+    { x: 360, y: 786, clue: 'in the lighthouse’s long shadow' },
+    { x: 1660, y: 402, clue: 'up past the wreck, near the waterline' },
     { x: 906, y: 1064, clue: 'just south of the volley court' },
-    { x: 560, y: 706, clue: 'between the boardwalk and the palms' },
+    { x: 560, y: 706, clue: 'among the west-side palms' },
   ];
   const PATCH_W = 156, PATCH_H = 104;
   const DIG_REACH = 46;            // how near a buried spot a dig has to land
@@ -1276,26 +1276,32 @@ function init() {
     sign.textContent = def.sign + ' ' + def.name;
     sign.style.left = pct(s.x, W);
     sign.style.top = pct(s.y - 150, H);
+    // ⚠️ hang toward the PLAYER side (left) — the plaza is jammed against the
+    // map's right edge, so a centred sign clips off. You always approach from
+    // the left, so a left-hanging sign stays on screen.
+    sign.style.transform = 'translate(-74%, -100%)';
     sign.style.zIndex = String(100 + s.y + 1);   // rides with its stall
     world.appendChild(sign);
   });
-  // the grabber's own sign, out at the end of the pier
+  // the grabber's own sign
   (() => {
     const sign = document.createElement('div');
     sign.className = 'bh-stallsign';
     sign.textContent = '🕹 The Grabber';
     sign.style.left = pct(GRABBER.x, W);
     sign.style.top = pct(GRABBER.y - 158, H);
+    sign.style.transform = 'translate(-74%, -100%)';
     sign.style.zIndex = String(100 + GRABBER.y + 1);
     world.appendChild(sign);
   })();
 
   // tapping a stall: step up to the counter, or open it if you're already there
   // ⚠️ You stand on the SAND at the plaza's edge, not beside the stall. The
-  // deck (a widened OB_RECT) is unwalkable, so "in front of" a stall deep in
-  // the plaza is the sand just past its right edge, at the stall's own y.
-  const PLAZA_EDGE = 430;                 // = BOARDWALK x1 in the generator
-  const frontOf = (y) => ({ x: PLAZA_EDGE + 48, y });
+  // deck (an OB_RECT) is unwalkable, and the plaza is now on the RIGHT of the
+  // map, so "in front of" a stall is the sand just LEFT of the plaza, at the
+  // stall's own y.
+  const PLAZA_EDGE = 1970;                // = BOARDWALK x0 in the generator
+  const frontOf = (y) => ({ x: PLAZA_EDGE - 48, y });
   function tapGrabber(wx, wy) {
     if (Math.abs(wx - GRABBER.x) < 62 && wy > GRABBER.y - 155 && wy < GRABBER.y + 20) {
       const f = frontOf(GRABBER.y);
