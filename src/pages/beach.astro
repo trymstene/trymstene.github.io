@@ -99,6 +99,48 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     @media (prefers-reduced-motion: reduce) { .bh-umb__canopy { animation: none !important; } }
 
+    /* 🎣 fishing — rod + line are world-length rotated segments; the bobber
+       floats in the sea and shakes on a bite */
+    .bh-fishrod {
+      position: absolute; height: 3px; margin-top: -1.5px; transform-origin: 0 50%;
+      background: linear-gradient(90deg, #6b4320, #b9823f);
+      border-radius: 2px; pointer-events: none;
+    }
+    .bh-fishline {
+      position: absolute; height: 1px; transform-origin: 0 50%;
+      background: rgba(255, 255, 255, 0.82); pointer-events: none;
+    }
+    .bh-bob {
+      position: absolute; width: 15px; height: 15px; margin: -8px 0 0 -8px;
+      border-radius: 50%; cursor: pointer;
+      background: radial-gradient(circle at 50% 34%, #ff5545 0 46%, #fff 48% 100%);
+      border: 2px solid #6d1509; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+      animation: bhBob 1.9s ease-in-out infinite;
+    }
+    .bh-bob.is-bite { animation: bhBobBite 0.26s ease-in-out infinite; }
+    .bh-bob.is-bite::after {
+      content: '!'; position: absolute; left: 50%; top: -19px; transform: translateX(-50%);
+      font: 800 14px/1 "Archivo Black", sans-serif; color: #ffe135;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000;
+    }
+    @keyframes bhBob { 0%, 100% { transform: translateY(-1.5px); } 50% { transform: translateY(2px); } }
+    @keyframes bhBobBite {
+      0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 3px); }
+      75% { transform: translate(2px, 4px); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bh-bob { animation: none; } }
+    /* the catch reveal card */
+    .bh-card--catch { max-width: 340px; text-align: center; }
+    .bh-catch { display: grid; gap: 0.5rem; place-items: center; margin: 0.4rem 0 0.9rem; }
+    .bh-catch p { margin: 0; font-size: 0.9rem; opacity: 0.95; }
+    .bh-catch b { color: #ffd98a; }
+    .bh-catch__big { font-size: 3rem; line-height: 1; }
+    .bh-catch__shell {
+      display: block; width: 64px; height: 64px;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2900% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+
     /* the dock sits ABOVE the opaque animated sea (which was painting over it)
        but below anything that walks — a floor must not occlude who's on it. */
     .bh-pier {
@@ -743,6 +785,16 @@ const description = 'The beach at the end of the park road. The sun never quite 
           <div class="bh-grid" id="bhTradeGrid"></div>
           <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
           <button class="bh-btn bh-btn--dark" id="bhTradeClose" type="button">leave the bar</button>
+        </div>
+      </div>
+
+      <!-- 🎣 the fishing catch reveal -->
+      <div class="bh-panel" id="bhFishCatch" hidden>
+        <div class="bh-card bh-card--catch" role="dialog" aria-label="Your catch">
+          <h2>on the line!</h2>
+          <div class="bh-catch" id="bhCatchBody"></div>
+          <button class="bh-btn" id="bhCatchGo" type="button">cast again</button>
+          <button class="bh-btn bh-btn--dark" id="bhCatchLeave" type="button">leave the dock</button>
         </div>
       </div>
 

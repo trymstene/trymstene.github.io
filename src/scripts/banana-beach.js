@@ -319,6 +319,10 @@ function init() {
     }
     seated = null;
     meEl.classList.remove('is-sitting');
+    stopFishing();
+    // 🎣 a dock fishing chair sits you down to cast (checked before sunbeds)
+    const fspot = FISH_SPOTS.find((f) => inRect(wx, wy, f.rect));
+    if (fspot) { sitTarget = fspot; setTarget(fspot.seat.x, fspot.seat.y + 8); return; }
     const chair = CHAIRS.find((c) => inRect(wx, wy, c.rect));
     if (chair) { sitTarget = chair; setTarget(chair.seat.x, chair.seat.y + 10); return; }
     sitTarget = null;
@@ -713,6 +717,143 @@ function init() {
     track('beach_trade', { got });
   });
   document.getElementById('bhTradeClose').addEventListener('click', () => { tradePanel.hidden = true; });
+
+  // ---- 🎣 FISHING off the dock -------------------------------------------
+  // Sit on a dock chair → a rod casts a bobber into the sea → when it dips,
+  // tap it to reel a catch. A PIER activity, so tickets fit the pier's walled
+  // economy; shells feed the beach collection; coins are RARE + small AND
+  // day-capped, because the shop leans on coins being scarce (the stand's
+  // one-faucet doctrine — an ungated coin source would devalue every price).
+  // ⚠️ seats/bobbers are hard-matched to the two Ship_Bar_Chairs the generator
+  // places on the dock end (build-beach-scene.py). dir picks which way to cast.
+  const FISH_SPOTS = [
+    { rect: [1798, 150, 1878, 236], seat: { x: 1836, y: 190 }, bob: { x: 1712, y: 168 }, fishing: true },
+    { rect: [1912, 150, 1992, 236], seat: { x: 1944, y: 190 }, bob: { x: 2064, y: 168 }, fishing: true },
+  ];
+  const FISH_COIN_CAP = 15;                 // coins fishing may mint per day
+  const fishCoinsLeft = () => {
+    let st = {};
+    try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
+    return st.day === DAY ? Math.max(0, FISH_COIN_CAP - (st.got || 0)) : FISH_COIN_CAP;
+  };
+  const addFishCoins = (n) => {
+    let st = {};
+    try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
+    if (st.day !== DAY) st = { day: DAY, got: 0 };
+    st.got = (st.got || 0) + n;
+    try { localStorage.setItem('bh-fishcoins-v1', JSON.stringify(st)); } catch (e) {}
+  };
+  let fishing = null, fishBite = false, fishTimer = null;
+  let fishRod = null, fishLine = null, fishBob = null;
+  const catchPanel = document.getElementById('bhFishCatch');
+  const catchBody = document.getElementById('bhCatchBody');
+  function stopFishing() {
+    if (!fishing) return;
+    fishing = null; fishBite = false;
+    clearTimeout(fishTimer); fishTimer = null;
+    [fishRod, fishLine, fishBob].forEach((e) => e && e.remove());
+    fishRod = fishLine = fishBob = null;
+  }
+  function scheduleBite() {
+    fishBite = false;
+    if (fishBob) fishBob.classList.remove('is-bite');
+    clearTimeout(fishTimer);
+    fishTimer = setTimeout(() => {
+      if (!fishing) return;
+      fishBite = true;
+      if (fishBob) fishBob.classList.add('is-bite');
+    }, 2600 + Math.random() * 5200);
+  }
+  function seg(cls, x, y, len, ang, z) {
+    const d = document.createElement('div');
+    d.className = cls;
+    d.style.left = pct(x, W); d.style.top = pct(y, H);
+    d.style.width = pct(len, W);
+    d.style.transform = 'rotate(' + ang + 'deg)';
+    d.style.zIndex = String(z);
+    world.appendChild(d);
+    return d;
+  }
+  function startFishing(spot) {
+    if (fishing === spot) return;
+    stopFishing();
+    fishing = spot;
+    const hx = spot.seat.x, hy = spot.seat.y - 26;   // roughly the banana's hands
+    const bx = spot.bob.x, by = spot.bob.y;
+    const ang = Math.atan2(by - hy, bx - hx) * 180 / Math.PI;
+    const zTop = 100 + spot.seat.y + 6;
+    const rodLen = 42;
+    fishRod = seg('bh-fishrod', hx, hy, rodLen, ang, zTop);
+    // the line runs from the rod TIP to the bobber
+    const tx = hx + Math.cos(ang * Math.PI / 180) * rodLen;
+    const ty = hy + Math.sin(ang * Math.PI / 180) * rodLen;
+    const len = Math.hypot(bx - tx, by - ty);
+    fishLine = seg('bh-fishline', tx, ty, len, Math.atan2(by - ty, bx - tx) * 180 / Math.PI, zTop);
+    fishBob = document.createElement('div');
+    fishBob.className = 'bh-bob';
+    fishBob.style.left = pct(bx, W); fishBob.style.top = pct(by, H);
+    fishBob.style.zIndex = String(zTop + 1);
+    fishBob.addEventListener('click', (e) => { e.stopPropagation(); reel(); });
+    world.appendChild(fishBob);
+    scheduleBite();
+    hint(false);
+    if (!fishing.greeted) { fishing.greeted = true; float(bx, by - 16, 'line’s in — wait for a bite'); }
+    track('beach_fish_start');
+  }
+  // 🎣 THE CATCH TABLE — shells for the collection, tickets for the pier, the
+  // odd small (capped) coin, and comic junk that's worth nothing but a laugh.
+  function rollCatch() {
+    const r = Math.random();
+    if (r < 0.52) return { kind: 'shell', id: shellForRoll(Math.random()) };
+    if (r < 0.84) return { kind: 'tickets', n: 1 + Math.floor(Math.random() * 3) };
+    if (r < 0.94) return { kind: 'coins', n: 2 + Math.floor(Math.random() * 4) };
+    return { kind: 'junk', text: DIG_JUNK[Math.floor(Math.random() * DIG_JUNK.length)] };
+  }
+  function reel() {
+    if (!fishing) return;
+    if (!fishBite) { float(fishing.bob.x, fishing.bob.y - 12, 'nothing yet…'); return; }
+    fishBite = false;
+    if (fishBob) fishBob.classList.remove('is-bite');
+    const c = rollCatch();
+    let body = '', isNew = false;
+    if (c.kind === 'shell') {
+      isNew = held(c.id) === 0;
+      passStat('sh_' + c.id, 1); refreshShellChip();
+      const idx = SHELL_IDS.indexOf(c.id);
+      body = '<i class="bh-catch__shell" style="background-position:'
+        + (idx / (SHELL_IDS.length - 1) * 100) + '% 0"></i>'
+        + '<p>' + (isNew ? '★ a <b>new</b> shell — ' : 'a ') + shellName(c.id) + '</p>';
+    } else if (c.kind === 'tickets') {
+      passStat('tickets', c.n);
+      body = '<div class="bh-catch__big">🎟</div><p>a knot of <b>' + c.n + ' ticket'
+        + (c.n === 1 ? '' : 's') + '</b> — spend them at the pier</p>';
+    } else if (c.kind === 'coins') {
+      const give = Math.min(c.n, fishCoinsLeft());
+      if (give > 0) { passStat('coins_earned', give); addFishCoins(give);
+        body = '<div class="bh-catch__big">🪙</div><p><b>' + give + ' bananacoin'
+          + (give === 1 ? '' : 's') + '</b> snagged on the hook</p>';
+      } else {
+        body = '<div class="bh-catch__big">🪙</div><p>a coin — but it slips off. '
+          + '(the sea’s given up its coins for today)</p>';
+      }
+    } else {
+      body = '<div class="bh-catch__big">🥾</div><p>just ' + c.text + '. throw it back.</p>';
+    }
+    catchBody.innerHTML = body;
+    catchPanel.hidden = false;
+    track('beach_fish_catch', { kind: c.kind });
+  }
+  document.getElementById('bhCatchGo').addEventListener('click', () => {
+    catchPanel.hidden = true;
+    if (fishing) scheduleBite();            // stay seated, cast again
+  });
+  document.getElementById('bhCatchLeave').addEventListener('click', () => {
+    catchPanel.hidden = true;
+    seated = null; sitTarget = null;
+    meEl.classList.remove('is-sitting');
+    stopFishing();
+    setTarget(1890, 360);                   // stand up and step off the dock
+  });
 
   // (the bobbing water props and the gulls are OUT for now — they were
   // flickering, see the frame-stepping note in beach.astro. Crabs first,
@@ -1920,7 +2061,7 @@ function init() {
     if (kx || ky) {
       tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30;
       hint(false); seated = null; sitTarget = null; nextTgt = null;
-      meEl.classList.remove('is-sitting');
+      meEl.classList.remove('is-sitting'); stopFishing();
     }
     if (!seated) {
       const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
@@ -1946,6 +2087,7 @@ function init() {
         pos.x = seated.seat.x; pos.y = seated.seat.y;
         meEl.classList.add('is-sitting');
         if (!satOnce) { satOnce = true; track('beach_sit'); }
+        if (seated.fishing) startFishing(seated);   // 🎣 sat on a dock chair
       }
       pos.x = Math.max(12, Math.min(W - 12, pos.x));
       pos.y = Math.max(64, Math.min(H - 12, pos.y));
