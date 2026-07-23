@@ -1389,7 +1389,7 @@ function init() {
   const cocoFoot = document.getElementById('bhCocoFoot');
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
-  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
+  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 2, COCO_COUNT = 5;
   // 🎯 a heavy CATAPULT lob: low gravity so the ball is flung in a long, high
   // arc — up out of frame, hanging in the air a beat, then dropping onto the
   // shelf. You must lead the moving coconuts, not point-and-shoot straight.
