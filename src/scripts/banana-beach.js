@@ -1265,35 +1265,53 @@ function init() {
     setTimeout(() => { if (openStallIdx === 0) duckRound(false); }, 1500);
   }
 
-  // the signs, hung over each stall in the world
+  // 🪧 a WOODEN SIGN nailed to each stall's roof — text only, no icon, and
+  // each tilted a different way so the row looks hand-made. It sits ON the
+  // canopy (base − 108), not floating above it.
+  function hangSign(name, cx, base, tilt) {
+    const sign = document.createElement('div');
+    sign.className = 'bh-stallsign';   // ⚠️ NOT 'bh-sign' (the page's H1 title)
+    sign.textContent = name;
+    sign.style.left = pct(cx, W);
+    sign.style.top = pct(base - 108, H);
+    sign.style.transform = 'translate(-50%, -50%) rotate(' + tilt + 'deg)';
+    sign.style.zIndex = String(100 + base + 2);   // over its own canopy
+    world.appendChild(sign);
+  }
+  const SIGN_TILT = [-5, 4, -3, 6];   // varied, so no two hang the same
   STALLS.forEach((s, i) => {
-    const def = STALL_DEFS[i];
-    if (!def) return;
-    const sign = document.createElement('div');
-    // ⚠️ NOT 'bh-sign' — that class is already the page's BANANA BAY title,
-    // and reusing it silently restyled the heading.
-    sign.className = 'bh-stallsign';
-    sign.textContent = def.sign + ' ' + def.name;
-    sign.style.left = pct(s.x, W);
-    sign.style.top = pct(s.y - 150, H);
-    // ⚠️ hang toward the PLAYER side (left) — the plaza is jammed against the
-    // map's right edge, so a centred sign clips off. You always approach from
-    // the left, so a left-hanging sign stays on screen.
-    sign.style.transform = 'translate(-74%, -100%)';
-    sign.style.zIndex = String(100 + s.y + 1);   // rides with its stall
-    world.appendChild(sign);
+    if (STALL_DEFS[i]) hangSign(STALL_DEFS[i].name, s.x, s.y, SIGN_TILT[i]);
   });
-  // the grabber's own sign
-  (() => {
-    const sign = document.createElement('div');
-    sign.className = 'bh-stallsign';
-    sign.textContent = '🕹 The Grabber';
-    sign.style.left = pct(GRABBER.x, W);
-    sign.style.top = pct(GRABBER.y - 158, H);
-    sign.style.transform = 'translate(-74%, -100%)';
-    sign.style.zIndex = String(100 + GRABBER.y + 1);
-    world.appendChild(sign);
-  })();
+  hangSign('The Grabber', GRABBER.x, GRABBER.y - 8, -4);
+
+  // 🍌 A VENDOR BANANA behind each stall's counter, frozen on a DIFFERENT
+  // dance frame so they don't look identical — one leans left, one faces
+  // front, etc. A couple wear a hat for extra variety. Frozen = one draw.
+  const VENDORS = [
+    { frame: 2, hat: 'none', glasses: 'none' },
+    { frame: 5, hat: 'sombrero', glasses: 'none' },
+    { frame: 3, hat: 'none', glasses: 'shades' },
+    { frame: 1, hat: 'tophat', glasses: 'none' },
+  ];
+  STALLS.forEach((s, i) => {
+    const v = VENDORS[i % VENDORS.length];
+    const wrap = document.createElement('div');
+    wrap.className = 'bh-vendor';
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    wrap.appendChild(cv);
+    wrap.style.left = pct(s.x, W);
+    wrap.style.top = pct(s.y - 32, H);        // feet just above the desk top
+    wrap.style.width = pct(58, W);            // a small vendor, in the booth
+    wrap.style.transform = 'translate(-50%, -100%)';
+    wrap.style.zIndex = String(100 + s.y + 1);   // in front of the dark booth
+    world.appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const draw = () => drawComposite(ctx, 150, v.frame,
+      { hat: v.hat, glasses: v.glasses, extras: {}, top: '', bottom: '',
+        bg: 'transparent', captions: false, effect: 'none' });
+    assetsReady().then(() => { draw(); setTimeout(draw, 800); setTimeout(draw, 1900); });
+  });
 
   // tapping a stall: step up to the counter, or open it if you're already there
   // ⚠️ The pier deck is WALKABLE now — you wander among the stalls. "In front

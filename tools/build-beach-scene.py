@@ -299,9 +299,15 @@ def build_stall(hue):
             s.putpixel((x, y), col + (255,))
         for y in range(max(6 * K, int(hem * K) - 2 * K), int(hem * K)):
             s.putpixel((x, y), (int(col[0] * 0.72), int(col[1] * 0.72), int(col[2] * 0.72), 255))
-    d.rectangle([5 * K, (STALL_H - 28) * K, w - 6 * K, (STALL_H - 12) * K], fill=(170, 120, 68))
-    d.rectangle([5 * K, (STALL_H - 28) * K, w - 6 * K, (STALL_H - 24) * K], fill=(210, 162, 100))
-    d.rectangle([5 * K, (STALL_H - 16) * K, w - 6 * K, (STALL_H - 12) * K], fill=(118, 78, 44))
+    # 🪵 THE DESK — a proper wooden counter the vendor banana stands behind,
+    # like the banana stand's keeper desk. Taller than a lip, with a lit top
+    # edge, a shadow underside and plank seams so it reads as a real desk.
+    dtop = STALL_H - 30
+    d.rectangle([4 * K, dtop * K, w - 5 * K, (STALL_H - 6) * K], fill=(162, 114, 62))
+    d.rectangle([4 * K, dtop * K, w - 5 * K, (dtop + 5) * K], fill=(208, 160, 98))
+    d.rectangle([4 * K, (STALL_H - 12) * K, w - 5 * K, (STALL_H - 6) * K], fill=(112, 74, 42))
+    for pxl in range(10, STALL_W - 10, 22):        # plank seams
+        d.rectangle([pxl * K, (dtop + 6) * K, (pxl + 1) * K, (STALL_H - 8) * K], fill=(132, 90, 50))
     return blockify(s, factor=K, colors=14, alpha_thresh=0.4, sat=1.08, con=1.05,
                     warm=0.05, trim=False)
 
