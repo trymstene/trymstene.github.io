@@ -66,8 +66,9 @@ NET_MIDS = 7                     # mesh tiles between the two post pieces
 WATER_LINE = 292      # bananas can't swim past this (the art's shore is 306)
 PLATFORM_BOT = 308    # you may stand on the pier's platform down to here
 PIER_MOUTH = (1890, 348)   # land↔pier routes via this waypoint
-BONFIRE = (560, 640, 80)   # the ring's walk collider (tuned; the art is an
-                           # ellipse, but a circle is what feels right here)
+BONFIRE = (1330, 900, 80)  # the ring's walk collider (tuned; the art is an
+                           # ellipse, but a circle is what feels right here).
+                           # 24 Jul: moved to a sheltered nook below the wreck.
 BAR_NOTICE = 104      # how close you get before the Captain greets you
 NET_SOLID_H = 10      # half-thickness of the net's WALK collider. The banana
                       # covers at most 8.4px per step (SPEED 168 × the 0.05s
@@ -540,9 +541,6 @@ export const UMBRELLAS = [
 %s
 ];
 
-// 🗼 where the page pulses the lighthouse's beacon glow (its lamp room).
-export const BEACON = { x: %d, y: %d };
-
 // the dock: drawn ABOVE the animated sea but BELOW anything that walks, because
 // a floor must never occlude someone standing on it.
 export const PIER_SPRITE = { x: %d, y: %d, w: %d, h: %d };
@@ -575,7 +573,6 @@ export const GRABBER = { x: %d, y: %d };
        '\n'.join(("  { color: '%s', open: '%s', closed: '%s', x: %d, y: %d,"
                   " w: %d, h: %d, cw: %d, ch: %d, base: %d },") % u
                  for u in UMBRELLAS),
-       BEACON[0], BEACON[1],
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
        '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
        GRABBER[0], GRABBER[1])
@@ -628,16 +625,20 @@ if HAVE_PACK:
     rect(bw1 - 5, by0, bw1, by1, (110, 68, 30))
     rect(bw0, by1 - 5, bw1, by1, (110, 68, 30))
 
-    # 🌴 palms — native scale, so they tower over a 56px banana
-    # palms scattered — several pulled LEFT to populate the entrance side now
-    # that the plaza (and its old right-side palms) moved across the map.
-    for cx, base, fl in ((470, 900, False), (520, 720, True), (1500, 520, False),
-                         (1330, 1040, True), (150, 660, False), (700, 528, True),
-                         (360, 380, False)):
+    # 🌴 PALMS — 24 Jul: placed in symmetric PAIRS that frame the three shore
+    # sun-stations, plus a couple of lower accents. A resort skyline, not a
+    # scatter. (Flip alternates so a pair leans away from its station's centre.)
+    for cx, base, fl in ((170, 500, False), (600, 508, True),      # frame left station
+                         (720, 506, False), (1118, 506, True),     # frame centre station
+                         (1236, 500, False), (1560, 508, True),    # frame right station
+                         (470, 1082, False), (1300, 968, True)):   # lower accents
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
               layer=True)
-    for cx, base in ((430, 372), (900, 366), (1600, 380), (230, 360), (660, 362)):
-        place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False)
+    # 🌿 BUSHES fringing the pier bazaar — a little green spilling over the seam
+    # where the wooden deck meets the sand, softening that hard edge (Trym's ask).
+    for cx, base in ((1966, 402), (1972, 524), (1960, 660), (1972, 800),
+                     (1964, 940), (2160, 1006), (2420, 1010), (2660, 1006)):
+        place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False, layer=True)
 
     # 🏐 the volleyball court, built from the pack's own pieces.
     # ⚠️ The net runs HORIZONTALLY (Left post + Middle × n + Right post) — I
@@ -711,37 +712,50 @@ if HAVE_PACK:
     for i, sx in enumerate((BAR[0] - 150, BAR[0] - 50, BAR[0] + 50, BAR[0] + 150)):
         place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, BAR[1] + 200)
 
-    # 🗼 the lighthouse — factor 2, or it would eat half the map
-    _lw, _lh = place('21_Beach_48x48_Example_Lighthouse.png', LIGHT[0], LIGHT[1] + 300,
-                     factor=2, colors=12, sh=0.24, solid=TOWER, layer=True)
-    # the lamp room sits near the TOP of the tower — the page pulses a beacon
-    # glow there so the lighthouse visibly "still works" (Captain's line).
-    BEACON.extend([LIGHT[0], int(LIGHT[1] + 300 - _lh + _lh * 0.23)])
+    # (🗼 the lighthouse was removed 24 Jul — Trym: "its in the way". Its beacon
+    #  glow and the BEACON export went with it.)
 
     # ⛱ furniture
     # ⛱ CLICKABLE parasols — open/close on tap, ground shadow toggles with them.
     # Exported as sprites (NOT baked), rendered + made interactive by the page.
-    umbrella('yellow', 1265, 548)
-    umbrella('blue', 430, 1020)
-    umbrella('green', 340, 620)
-    for i, (x0, y0) in enumerate(((1240, 640), (1330, 700), (400, 760))):
-        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + i * 4), x0, y0,
-              solid=SUNBED)
-    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 1450, 780, shade=False)
-    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 520, 1074, shade=False)
-    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1900, 800, shade=False)
-    place('21_Beach_48x48_Red_Float.png', 180, 380)
-    place('21_Beach_48x48_Green_Float.png', 300, 1020)
-    for cx, base in ((1600, 900), (860, 1080), (300, 1020)):
-        place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base)
-    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 1420, 1070)  # off the court
-    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1780, 1010)
-    for cx, base in ((480, 330), (1120, 336), (1750, 330), (300, 334)):
+    # ─── ⛱ THE TANNING ROW: three sun-stations facing the sea ────────────────
+    # Each station = a parasol (folds on tap) + a pair of loungers + a towel,
+    # sat under the framing palms above. Left / centre / right along the shore.
+    umbrella('green', 360, 452)
+    umbrella('yellow', 918, 452)
+    umbrella('blue', 1398, 458)
+    for i, (x0, y0) in enumerate(((250, 486), (470, 486),      # left station beds
+                                  (810, 486), (1026, 486),     # centre station beds
+                                  (1288, 492), (1508, 492))):  # right station beds
+        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + (i % 3) * 4),
+              x0, y0, solid=SUNBED)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 360, 516, shade=False)
+    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 918, 516, shade=False)
+    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1398, 522, shade=False)
+
+    # ─── 🪣 THE WATERLINE: toys at the wet sand, floats + rocks IN the sea ────
+    # ⚠️ Anything IN the water (y<288) must be layer=True — the animated sea
+    # overlay is opaque and paints over the baked plate, so a baked float there
+    # is invisible in-game. Overlays sit ABOVE the sea and show.
+    for cx, base in ((700, 322), (1150, 320), (1520, 322)):
+        place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base, shade=False, layer=True)
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 840, 336, shade=False, layer=True)
+    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1300, 340, shade=False, layer=True)
+    place('21_Beach_48x48_Red_Float.png', 520, 208, shade=False, layer=True)     # in the sea
+    place('21_Beach_48x48_Green_Float.png', 1120, 182, shade=False, layer=True)  # in the sea
+    for cx, base in ((300, 236), (1360, 176), (2360, 214), (780, 150)):
+        place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False, layer=True)
+    for cx, base in ((470, 330), (1600, 332)):
         place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)
-    for cx, base in ((820, 334), (1400, 330)):
-        place('21_Beach_48x48_Purple_Small_Starfish.png', cx, base, shade=False)
-    for cx, base in ((150, 200), (1300, 170), (2350, 230), (600, 120)):
-        place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False)
+    place('21_Beach_48x48_Purple_Small_Starfish.png', 1000, 334, shade=False)
+
+    # ─── 🔥 THE FIREPIT NOOK: chairs pulled up round the ring + a blanket ─────
+    # (the ring itself is hand-drawn at BONFIRE; a lower palm shelters it.)
+    fx, fy = BONFIRE[0], BONFIRE[1]
+    place('24_Additional_Houses_Modern_House_Deck_Chair_White_48x48.png', fx - 104, fy + 4, layer=True)
+    place('24_Additional_Houses_Modern_House_Deck_Chair_Grey_48x48.png', fx + 104, fy + 4, flip=True, layer=True)
+    place('21_Beach_48x48_Grey_Beach_Towel_1.png', fx, fy + 104, shade=False)
+    place('21_Beach_48x48_Small_Red_Bucket_1.png', fx + 60, fy + 96, shade=False, layer=True)
 
     # 🎡 THE PIER BAZAAR — a WALKABLE deck (BOARDWALK isn't a collider now). Two
     # rows of game stalls with a wide central aisle, food/fruit WAGONS between
@@ -835,11 +849,15 @@ if HAVE_PACK:
     emit_geo()
 
     # 🔥 the bonfire ring — hand-drawn stones; the pack's sea rocks carry a
-    # foam collar, so a ring of them read as a ring of bubbles on dry sand
-    shadow(566, 646, 74, 46, 40)
+    # foam collar, so a ring of them read as a ring of bubbles on dry sand.
+    # 24 Jul: moved to a sheltered nook (fcx,fcy) below the wreck, dressed with
+    # deck chairs + a blanket + a palm (placed in the furniture block). ⚠️ keep
+    # BONFIRE (the collider) at this same centre.
+    fcx, fcy = BONFIRE[0], BONFIRE[1]
+    shadow(fcx + 6, fcy + 6, 74, 46, 40)
     for a in range(11):
         ang = a / 11.0 * math.tau
-        sx, sy = 560 + int(math.cos(ang) * 62), 640 + int(math.sin(ang) * 40)
+        sx, sy = fcx + int(math.cos(ang) * 62), fcy + int(math.sin(ang) * 40)
         for yy in range(sy - 9, sy + 10):
             for xx in range(sx - 12, sx + 13):
                 d = math.hypot((xx - sx) / 12.0, (yy - sy) / 9.0)
@@ -849,9 +867,9 @@ if HAVE_PACK:
                         ((186, 182, 168) if lit else (146, 142, 130)))
     for i in range(5):                       # charred logs in the middle
         ang = i / 5.0 * math.tau
-        rect(560 + math.cos(ang) * 20 - 5, 640 + math.sin(ang) * 12 - 4,
-             560 + math.cos(ang) * 20 + 6, 640 + math.sin(ang) * 12 + 5, (74, 52, 32))
-    rect(544, 632, 578, 648, (52, 38, 24))
+        rect(fcx + math.cos(ang) * 20 - 5, fcy + math.sin(ang) * 12 - 4,
+             fcx + math.cos(ang) * 20 + 6, fcy + math.sin(ang) * 12 + 5, (74, 52, 32))
+    rect(fcx - 16, fcy - 8, fcx + 18, fcy + 8, (52, 38, 24))
 
 # ---- the road home, worn into the sand (bottom-left) ----------------------
 for y in range(H - 150, H):

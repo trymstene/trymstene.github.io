@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BEACON, PIER_SPRITE, STALLS, GRABBER,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -224,19 +224,6 @@ function init() {
       track('beach_parasol', { color: u.color, open: open ? 1 : 0 });
     });
   });
-
-  // 🗼 THE LIGHTHOUSE BEACON — a warm lamp that breathes and a slow beam sweep,
-  // so the tower visibly still works (the Captain swears someone turns it on).
-  // Cosmetic only; sits just above the tower sprite (base 420).
-  (() => {
-    const b = document.createElement('div');
-    b.className = 'bh-beacon';
-    b.style.left = pct(BEACON.x, W);
-    b.style.top = pct(BEACON.y, H);
-    b.style.zIndex = String(100 + 420 + 2);
-    b.innerHTML = '<div class="bh-beacon__beam"></div><div class="bh-beacon__core"></div>';
-    world.appendChild(b);
-  })();
 
   // …and the dock, which is a FLOOR: above the opaque sea, below every walker
   const pierEl = document.createElement('div');
@@ -656,7 +643,7 @@ function init() {
     'tide brings shells in at dawn. every dawn. it’s very reliable, the tide.',
     'got three of the same shell? i’ll swap you something you ain’t got.',
     'no, we don’t take coins. what would a shipwreck do with coins.',
-    'the lighthouse still works. nobody knows who turns it on.',
+    'best fishing’s off the end of the dock. pull up a chair, drop a line.',
     'that gold shell? seen two in my life. one of ’em i lost betting.',
   ];
   let capTimer = null, capIdx = 0, capGreeted = false;
@@ -801,16 +788,19 @@ function init() {
   // ⚠️ PATCH SITES ARE HAND-PLACED, not random. Random points landed in the
   // sea, on the pier and inside the court. Hand-placing also buys the treasure
   // map its clue for free: every site already has a landmark name.
+  // ⚠️ 24 Jul: re-placed with the beach re-zoning so no prop ever covers a
+  // patch (Trym's rule). All sit in open sand, clear of the court, wreck,
+  // bazaar, firepit, tanning row and the welcome arch.
   const DIG_SITES = [
-    { x: 540, y: 424, clue: 'where the wet sand remembers the tide' },
-    { x: 596, y: 1042, clue: 'south of the old fire ring' },
-    { x: 1298, y: 402, clue: 'up where the sea comes closest' },
-    { x: 1452, y: 906, clue: 'east of the court, past the towel' },
-    { x: 1912, y: 1014, clue: 'below the pier, where nobody looks' },
-    { x: 360, y: 786, clue: 'in the lighthouse’s long shadow' },
-    { x: 1660, y: 402, clue: 'up past the wreck, near the waterline' },
-    { x: 906, y: 1064, clue: 'just south of the volley court' },
-    { x: 560, y: 706, clue: 'among the west-side palms' },
+    { x: 320, y: 620, clue: 'in the western sands' },
+    { x: 340, y: 870, clue: 'down among the western dunes' },
+    { x: 560, y: 700, clue: 'midway up the west beach' },
+    { x: 620, y: 966, clue: 'south-west, just off the entrance path' },
+    { x: 1244, y: 662, clue: 'just east of the volley court' },
+    { x: 1520, y: 646, clue: 'east sands, out toward the wreck' },
+    { x: 1500, y: 900, clue: 'south-east, a stone’s throw from the firepit' },
+    { x: 902, y: 1066, clue: 'just south of the volley court' },
+    { x: 1150, y: 1066, clue: 'below the court’s south line' },
   ];
   const PATCH_W = 156, PATCH_H = 104;
   const DIG_REACH = 46;            // how near a buried spot a dig has to land
