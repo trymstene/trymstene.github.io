@@ -407,6 +407,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     @media (prefers-reduced-motion: reduce) { .bh-claw.is-grabbing { animation: none; } }
     /* 🦀 whack-a-crab — a grid of holes in the sand; crabs pop and duck */
     .bh-crabgrid {
+      position: relative;
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
       background: linear-gradient(#d8b478, #c69a58); border: 3px solid #000;
       box-shadow: inset 0 0 0 3px rgba(120, 80, 30, 0.35); padding: 0.6rem;
@@ -414,21 +415,38 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-cwhole {
       position: relative; aspect-ratio: 5 / 4; overflow: hidden;
     }
-    .bh-cwhole::after {                 /* the hole itself */
-      content: ''; position: absolute; left: 14%; right: 14%; bottom: 6%; height: 34%;
+    .bh-cwhole::after {                 /* the dark opening (back of the hole) */
+      content: ''; position: absolute; left: 12%; right: 12%; bottom: 14%; height: 30%;
       background: radial-gradient(#4a3418, #2c1e0e); border-radius: 50%;
-      box-shadow: 0 -2px 0 rgba(255, 240, 200, 0.18);
+      box-shadow: 0 -2px 0 rgba(255, 240, 200, 0.18); pointer-events: none;
+    }
+    .bh-cwhole::before {                /* the sand lip in front — crabs duck behind it */
+      content: ''; position: absolute; left: 6%; right: 6%; bottom: 5%; height: 26%;
+      background: linear-gradient(#cfa163, #b3873f); border-radius: 50%;
+      box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.3); z-index: 3; pointer-events: none;
     }
     .bh-cwcrab {
-      position: absolute; left: 50%; bottom: 2%; width: 74%; aspect-ratio: 2 / 1;
-      transform: translate(-50%, 130%); transition: transform 0.13s ease;
+      position: absolute; left: 50%; bottom: 18%; width: 74%; aspect-ratio: 2 / 1;
+      transform: translate(-50%, 135%); transition: transform 0.14s ease;
       border: 0; padding: 0; background-color: transparent;
       background-image: url('/assets/beach/a-crab.png');
       background-size: 1000% 100%; background-position-x: 0%; background-repeat: no-repeat;
-      image-rendering: pixelated; cursor: default; z-index: 1;
+      image-rendering: pixelated; cursor: default; z-index: 2;
     }
-    .bh-cwcrab.is-up { transform: translate(-50%, -2%); cursor: pointer; }
-    .bh-cwcrab.is-bonked { transform: translate(-50%, 40%) scaleY(0.6); }
+    .bh-cwcrab.is-up { transform: translate(-50%, -6%); cursor: pointer; }
+    .bh-cwcrab.is-bonked { transform: translate(-50%, 60%) scaleY(0.6); }
+    .bh-cwcount {                       /* the 3·2·1 countdown over the grid */
+      position: absolute; inset: 0; display: grid; place-items: center;
+      font-size: 3.2rem; font-weight: 900; color: #fff; letter-spacing: 0.02em;
+      text-shadow: 0 3px 0 #000, 0 0 14px rgba(0, 0, 0, 0.6);
+      pointer-events: none; z-index: 5;
+    }
+    .bh-cwcount.is-beat { animation: bhCount 0.5s ease; }
+    @keyframes bhCount {
+      0% { transform: scale(0.4); opacity: 0; }
+      40% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
     .bh-stallfoot { margin-top: 0.7rem; }
     .bh-stallhint { font-weight: 800; font-size: 0.9rem; color: #ffd257; }
     @media (prefers-reduced-motion: reduce) { .bh-duck { animation: none; } }

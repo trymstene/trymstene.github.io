@@ -1312,7 +1312,7 @@ function init() {
 
     // LIVE round
     let score = 0, ended = false;
-    const endAt = performance.now() + CRAB_ROUND_MS;
+    let endAt = 0;   // set when the crabs actually start, after the countdown
     const setDown = (h) => { h.up = false; h.crab.disabled = true; h.crab.classList.remove('is-up'); };
     function bonk(h) {
       if (!h.up || ended) return;
@@ -1351,8 +1351,30 @@ function init() {
         + score + ' tickets!</span>';
       crabTimers.push(setTimeout(() => { if (openStallIdx === 1) crabRound(false); }, 2400));
     }
-    stallFoot.innerHTML = '<span class="bh-stallhint">bonk!</span>';
-    pop();
+    // a quick 3·2·1 countdown before the crabs start surfacing
+    const count = document.createElement('div');
+    count.className = 'bh-cwcount';
+    grid.appendChild(count);
+    info.textContent = 'get ready…';
+    stallFoot.innerHTML = '<span class="bh-stallhint">get ready…</span>';
+    let n = 3;
+    const beat = (txt) => {
+      count.textContent = txt;
+      count.classList.remove('is-beat');
+      void count.offsetWidth;           // restart the pop animation
+      count.classList.add('is-beat');
+    };
+    const tick = () => {
+      if (ended) return;
+      if (n > 0) { beat(String(n)); n -= 1; crabTimers.push(setTimeout(tick, 700)); return; }
+      beat('go!');
+      crabTimers.push(setTimeout(() => count.remove(), 500));
+      info.textContent = 'bonk them!';
+      stallFoot.innerHTML = '<span class="bh-stallhint">bonk!</span>';
+      endAt = performance.now() + CRAB_ROUND_MS;
+      pop();
+    };
+    tick();
   }
 
   // 🪧 a WOODEN SIGN nailed to each stall's roof — text only, no icon, and
