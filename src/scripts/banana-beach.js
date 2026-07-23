@@ -1304,7 +1304,8 @@ function init() {
     wrap.style.left = pct(s.x, W);
     // feet LOW (base − 10) so the desk — drawn on its own higher layer —
     // overlaps the vendor's lower body and they read as standing BEHIND it.
-    wrap.style.top = pct(s.y - 8, H);
+    wrap.style.top = pct(s.y - 22, H);        // anchored higher — reaches up
+                                              // more behind the desk
     wrap.style.width = pct(88, W);            // bigger vendor
     wrap.style.transform = 'translate(-50%, -100%)';
     wrap.style.zIndex = String(100 + s.y + 1);   // over the booth, under the desk
