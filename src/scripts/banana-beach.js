@@ -1075,7 +1075,8 @@ function init() {
   const STALL_DEFS = [
     { id: 'duck', name: 'Hook-a-Duck', sign: '🦆', cost: 5,
       blurb: 'pick a duck. the number underneath is yours.' },
-    { id: 'crab', name: 'Whack-a-Crab', sign: '🦀', soon: true },
+    { id: 'crab', name: 'Whack-a-Crab', sign: '🦀', cost: 5,
+      blurb: 'bonk the crabs before they duck back. one crab, one ticket.' },
     { id: 'coco', name: 'Coconut Shy', sign: '🥥', soon: true },
     { id: 'prize', name: 'The Prize Counter', sign: '🏆' },
   ];
@@ -1124,8 +1125,11 @@ function init() {
   const stallFoot = document.getElementById('bhStallFoot');
   let openStallIdx = -1;
 
+  let crabTimers = [];
+  const crabClear = () => { crabTimers.forEach(clearTimeout); crabTimers = []; };
   function closeStall() {
     openStallIdx = -1;
+    crabClear();                 // stop any whack-a-crab round in progress
     stallPanel.hidden = true;
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
@@ -1149,6 +1153,7 @@ function init() {
       return;
     }
     if (def.id === 'prize') prizeCounter();
+    else if (def.id === 'crab') crabRound(false);
     else duckRound(false);
   }
 
@@ -1264,6 +1269,90 @@ function init() {
     track('beach_stall_win', { stall: 'duck', tickets: won });
     stallFoot.innerHTML = '<span class="bh-stallhint">+' + won + ' tickets!</span>';
     setTimeout(() => { if (openStallIdx === 0) duckRound(false); }, 1500);
+  }
+
+  // ---- 🦀 whack-a-crab — the SKILL game (hook-a-duck is the LUCK one) ------
+  // A 6-hole grid; crabs pop up for a beat, tap one while it's up to bonk it.
+  // One crab = one ticket. Reuses the beach crab sprite (a-crab.png, frame 0).
+  const CRAB_ROUND_MS = 12000;
+  function crabRound(live) {
+    crabClear();
+    const def = STALL_DEFS[1];
+    stallBody.innerHTML = '<p class="bh-stallblurb">' + def.blurb + '</p>'
+      + '<div class="bh-crabgrid" id="bhCrabGrid"></div>'
+      + '<p class="bh-odds" id="bhCrabInfo">a 12-second round — quick taps, more tickets</p>';
+    const grid = document.getElementById('bhCrabGrid');
+    const info = document.getElementById('bhCrabInfo');
+    const holes = [];
+    for (let k = 0; k < 6; k++) {
+      const cell = document.createElement('div');
+      cell.className = 'bh-cwhole';
+      const crab = document.createElement('button');
+      crab.type = 'button'; crab.className = 'bh-cwcrab'; crab.disabled = true;
+      crab.setAttribute('aria-label', 'crab');
+      cell.appendChild(crab); grid.appendChild(cell);
+      holes.push({ crab, up: false });
+    }
+
+    if (!live) {
+      const bal = coinBal();
+      stallFoot.innerHTML = '<button class="bh-btn" id="bhStallPlay" type="button"'
+        + (bal < def.cost ? ' disabled' : '') + '>'
+        + (bal < def.cost ? 'you need ' + def.cost + ' coins' : 'play — ' + def.cost + ' coins')
+        + '</button>';
+      const play = document.getElementById('bhStallPlay');
+      if (play) play.addEventListener('click', () => {
+        if (coinBal() < def.cost) return;
+        passStat('coins_spent', def.cost);
+        track('beach_stall_play', { stall: def.id, cost: def.cost });
+        crabRound(true);
+      });
+      return;
+    }
+
+    // LIVE round
+    let score = 0, ended = false;
+    const endAt = performance.now() + CRAB_ROUND_MS;
+    const setDown = (h) => { h.up = false; h.crab.disabled = true; h.crab.classList.remove('is-up'); };
+    function bonk(h) {
+      if (!h.up || ended) return;
+      score++;
+      h.crab.classList.add('is-bonked');
+      setDown(h);
+      info.textContent = score + (score === 1 ? ' crab!' : ' crabs!');
+      crabTimers.push(setTimeout(() => h.crab.classList.remove('is-bonked'), 220));
+    }
+    holes.forEach((h) => h.crab.addEventListener('click', () => bonk(h)));
+    function pop() {
+      if (ended) return;
+      const remain = endAt - performance.now();
+      if (remain <= 0) { finish(); return; }
+      const down = holes.filter((h) => !h.up);
+      if (down.length) {
+        const h = down[Math.floor(Math.random() * down.length)];
+        h.up = true; h.crab.disabled = false; h.crab.classList.remove('is-bonked');
+        h.crab.classList.add('is-up');
+        const upFor = 620 + Math.random() * 460;
+        crabTimers.push(setTimeout(() => { if (h.up) setDown(h); }, upFor));
+      }
+      // the pace quickens as the clock runs down
+      const gap = Math.max(300, 700 - (CRAB_ROUND_MS - remain) / 26);
+      crabTimers.push(setTimeout(pop, gap));
+    }
+    function finish() {
+      if (ended) return;
+      ended = true;
+      holes.forEach(setDown);
+      passStat('tickets', score);
+      paintTickets();
+      track('beach_stall_win', { stall: 'crab', tickets: score });
+      info.textContent = 'time! nice bonking.';
+      stallFoot.innerHTML = '<span class="bh-stallhint">' + score + ' crabs → '
+        + score + ' tickets!</span>';
+      crabTimers.push(setTimeout(() => { if (openStallIdx === 1) crabRound(false); }, 2400));
+    }
+    stallFoot.innerHTML = '<span class="bh-stallhint">bonk!</span>';
+    pop();
   }
 
   // 🪧 a WOODEN SIGN nailed to each stall's roof — text only, no icon, and
