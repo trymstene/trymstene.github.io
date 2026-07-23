@@ -1419,8 +1419,9 @@ function init() {
   function drawCocoVendor() {
     const cv = document.getElementById('bhCocoVendorCv');
     const ctx = cv.getContext('2d');
-    // the coconut keeper: sideways-RIGHT (frame 1), no glasses, white backwards cap
-    const draw = () => drawComposite(ctx, 150, 1,
+    // the coconut keeper: the OTHER side frame (5 = mirror of 1) so he faces
+    // toward the pitch, no glasses, white backwards cap
+    const draw = () => drawComposite(ctx, 150, 5,
       { hat: 'backwardscap', glasses: 'none', extras: {}, top: '', bottom: '',
         bg: 'transparent', captions: false, effect: 'none' });
     // relayout AFTER each draw — the bbox (and thus the size/waist maths) depends
