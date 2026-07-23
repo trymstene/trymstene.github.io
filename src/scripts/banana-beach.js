@@ -1077,7 +1077,7 @@ function init() {
       blurb: 'pick a duck. the number underneath is yours.' },
     { id: 'crab', name: 'Whack-a-Crab', sign: '🦀', cost: 5,
       blurb: 'bonk the crabs before they duck back. one crab, one ticket.' },
-    { id: 'coco', name: 'Coconut Shy', sign: '🥥', cost: 5,
+    { id: 'coco', name: 'Coconut Hut', sign: '🥥', cost: 5,
       blurb: 'drag back from the ball, let go, knock a coconut clean off its post.' },
     { id: 'prize', name: 'The Prize Counter', sign: '🏆' },
   ];
@@ -1482,8 +1482,10 @@ function init() {
     openStallIdx = 2;
     history.replaceState(null, '', '#coco');
     track('beach_stall', { stall: 'coco' });
+    const foot = document.getElementById('bhFoot');
     blink(() => {
       cocoScene.hidden = false;      // shown FIRST so the pitch has a real size
+      if (foot) foot.style.display = 'none';   // the stall has its own "back to the beach"
       cocoPaintHud();
       drawCocoVendor();
       layoutCocoVendor();
@@ -1494,10 +1496,12 @@ function init() {
     cocoOn = false;
     if (cocoRAF) { cancelAnimationFrame(cocoRAF); cocoRAF = 0; }
     openStallIdx = -1;
-    blink(() => { cocoScene.hidden = true; });
+    const foot = document.getElementById('bhFoot');
+    blink(() => { cocoScene.hidden = true; if (foot) foot.style.display = ''; });
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
   document.getElementById('bhCocoClose').addEventListener('click', closeCoco);
+  document.getElementById('bhCocoBack').addEventListener('click', closeCoco);
 
   // build the pitch: a rail of coconuts on posts + the ready ball. `live` false
   // shows the pay-to-play footer; true arms the throwing.

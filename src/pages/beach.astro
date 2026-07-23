@@ -579,6 +579,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     @keyframes bhCocoToast { to { transform: translate(-50%, -26px); opacity: 0; } }
     .bh-coco__foot { flex: 0 0 auto; padding: 0.55rem 0.8rem; display: grid; min-height: 44px; align-content: center; }
     .bh-coco__foot .bh-btn { margin-top: 0; width: 100%; }
+    .bh-coco__back { flex: 0 0 auto; width: auto; margin: 0 0.8rem 0.7rem; }
     @media (prefers-reduced-motion: reduce) {
       .bh-coco__coco.is-wobble { animation: none; }
       .bh-coco__toast { animation: none; }
@@ -667,7 +668,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
            over the beach (banana-stand's counter, pier edition): striped awning,
            the keeper at his desk on the left, the coconut pitch front-and-centre.
            Drag back from the ball and release to fling. -->
-      <div class="bh-coco" id="bhCoco" role="dialog" aria-label="Coconut Shy" hidden>
+      <div class="bh-coco" id="bhCoco" role="dialog" aria-label="Coconut Hut" hidden>
         <div class="bh-coco__awning" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
@@ -682,9 +683,10 @@ const description = 'The beach at the end of the park road. The sun never quite 
           <div class="bh-coco__desk" aria-hidden="true"></div>
         </div>
         <div class="bh-coco__foot" id="bhCocoFoot"></div>
+        <button class="bh-btn bh-coco__back" id="bhCocoBack" type="button">🏖 back to the beach</button>
       </div>
     </div>
-    <div class="bh-foot">
+    <div class="bh-foot" id="bhFoot">
       <a class="bh-btn" href="/banana-stand/?beach" data-place="beach">🌳 back to the park</a>
     </div>
   </div>
