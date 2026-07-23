@@ -1906,8 +1906,11 @@ function init() {
   capBubble.style.top = pct(610, H);
 
   // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
-  // and place the ball or the banana without playing your way there
+  // and place the ball or the banana without playing your way there. Also tops
+  // your coins up to 100 so the stalls are testable on a phone with no console
+  // (coins are XP, never real money — see the stand's one-faucet doctrine).
   if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
+    if (coinBal() < 100) passStat('coins_earned', 100 - coinBal());
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
