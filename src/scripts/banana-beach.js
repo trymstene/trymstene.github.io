@@ -1544,9 +1544,10 @@ function init() {
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
     cocoPitch.appendChild(ballEl);
-    // the drag-aim guide — a row of dots that trace the ball's CURVED flight
+    // the drag-aim guide — a row of dots that trace the ball's CURVED flight,
+    // up and over and down to where it lands
     const aimDots = [];
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 24; i++) {
       const dot = document.createElement('div');
       dot.className = 'bh-coco__aimdot'; dot.hidden = true;
       cocoPitch.appendChild(dot);
@@ -1682,12 +1683,16 @@ function init() {
       b.vy += COCO_G * dt;
       b.x += b.vx * dt; b.y += b.vy * dt;
       let hit = false;
-      for (const c of coco.coconuts) {
-        if (!c.alive) continue;
-        // continuous test so a fast ball can't tunnel past a coconut between frames.
-        // ANY solid contact knocks it — you hit it, it falls. No dead-centre pixel-hunt.
-        if (segDist(px, py, b.x, b.y, c.x, c.y) < COCO_BALL_R + c.r) {
-          cocoKnock(c, b); hit = true; break;   // one ball, one target — never bounce on
+      // ⬇️ only collide once the ball is DESCENDING (past its peak). It arcs UP
+      // and OVER the coconuts untouched, then lands on one at the end of its
+      // flight — like a lobbed stone, not an arrow that clips everything en route.
+      if (b.vy > 0) {
+        for (const c of coco.coconuts) {
+          if (!c.alive) continue;
+          // continuous test so a fast ball can't tunnel past a coconut between frames.
+          if (segDist(px, py, b.x, b.y, c.x, c.y) < COCO_BALL_R + c.r) {
+            cocoKnock(c, b); hit = true; break;   // one ball, one target
+          }
         }
       }
       // spent on the hit, on leaving the pitch bottom/sides, or after COCO_AIR
