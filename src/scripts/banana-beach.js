@@ -1390,9 +1390,11 @@ function init() {
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
   const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
-  // 🎯 tuned for a CATAPULT LOB, not an arrow: gentle gravity + a low speed
-  // ceiling so the ball floats up in a tall, hanging arc and drops onto the shelf.
-  const COCO_G = 900, COCO_KNOCK = 240, COCO_K = 5.0, COCO_VMAX = 900, COCO_BALL_R = 18;
+  // 🎯 a heavy CATAPULT lob: low gravity so the ball is flung in a long, high
+  // arc — up out of frame, hanging in the air a beat, then dropping onto the
+  // shelf. You must lead the moving coconuts, not point-and-shoot straight.
+  const COCO_G = 480, COCO_KNOCK = 240, COCO_K = 5.0, COCO_VMAX = 1000, COCO_BALL_R = 18;
+  const COCO_AIR = 4.5;   // max seconds a ball stays live (long arcs need the room)
   const COCO_KNOCK_D = 13;   // the ball's path must pass THIS close to a coconut's centre to knock it (else it bounces)
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
@@ -1472,8 +1474,9 @@ function init() {
     const left = Math.round(sw * 0.15 - cxFrac * S);
     v.style.width = Math.round(S) + 'px';
     v.style.left = left + 'px';                         // banana centre far-left
-    const waistFrac = topFrac + COCO_WAIST * (botFrac - topFrac);
-    v.style.bottom = Math.round(COCO_COUNTER - S * (1 - waistFrac) + COCO_RAISE) + 'px';   // waist ≈ counter top, raised
+    // vertical anchor: Trym's tuned values (feet drop below the frame, upper
+    // body clears the desk). Slightly lower on phones than desktop.
+    v.style.bottom = (window.innerWidth >= 700 ? -110 : -120) + 'px';
   }
   function openCoco() {
     openStallIdx = 2;
@@ -1541,11 +1544,16 @@ function init() {
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
     cocoPitch.appendChild(ballEl);
-    const aim = document.createElement('div');
-    aim.className = 'bh-coco__aim'; aim.style.display = 'none';
-    cocoPitch.appendChild(aim);
+    // the drag-aim guide — a row of dots that trace the ball's CURVED flight
+    const aimDots = [];
+    for (let i = 0; i < 16; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'bh-coco__aimdot'; dot.hidden = true;
+      cocoPitch.appendChild(dot);
+      aimDots.push(dot);
+    }
 
-    coco = { W, H, coconuts, ballEl, aim, ox, oy, live, t: 0,
+    coco = { W, H, coconuts, ballEl, aimDots, ox, oy, live, t: 0,
       ball: { x: ox, y: oy, vx: 0, vy: 0, live: false },
       balls: live ? COCO_BALLS : 0, knocked: 0, aiming: false, dragStart: null };
 
@@ -1593,25 +1601,32 @@ function init() {
     };
     pit.onpointerup = (e) => {
       if (!coco || !coco.aiming) return;
-      coco.aiming = false; coco.aim.style.display = 'none';
+      coco.aiming = false; cocoAimHide();
       const pt = localPt(e);
       cocoLaunch(coco.dragStart.x - pt.x, coco.dragStart.y - pt.y);
     };
-    pit.onpointercancel = () => { if (coco) { coco.aiming = false; coco.aim.style.display = 'none'; } };
+    pit.onpointercancel = () => { if (coco) { coco.aiming = false; cocoAimHide(); } };
   }
-  // the aim guide points OUT of the ball along the launch vector (opposite the
-  // drag) — a slingshot, so you pull away from where you want it to go. Toggled
-  // via display (not the `hidden` attribute) — iOS Safari sometimes fails to
-  // repaint a transformed element on an attribute change, leaving it stuck.
+  function cocoAimHide() { if (coco && coco.aimDots) for (const d of coco.aimDots) d.hidden = true; }
+  // plot the ACTUAL predicted arc: launch = the pull (slingshot, opposite the
+  // drag), then sample the same gravity flight the ball will take, so the dotted
+  // guide curves exactly like the shot — not a straight line.
   function cocoAimShow(px, py) {
-    const mag = Math.min(Math.hypot(px, py), 150);
-    const aim = coco.aim;
-    if (mag < 8) { aim.style.display = 'none'; return; }
-    aim.style.display = 'block';
-    aim.style.left = coco.ox + 'px';
-    aim.style.top = coco.oy + 'px';
-    aim.style.width = mag + 'px';
-    aim.style.transform = 'rotate(' + (Math.atan2(py, px) * 180 / Math.PI) + 'deg)';
+    if (Math.hypot(px, py) < 8) { cocoAimHide(); return; }
+    let vx = px * COCO_K, vy = py * COCO_K;
+    const sp = Math.hypot(vx, vy);
+    if (sp > COCO_VMAX) { vx *= COCO_VMAX / sp; vy *= COCO_VMAX / sp; }
+    const dots = coco.aimDots, step = 0.11;
+    for (let i = 0; i < dots.length; i++) {
+      const t = (i + 1) * step;
+      const x = coco.ox + vx * t;
+      const y = coco.oy + vy * t + 0.5 * COCO_G * t * t;
+      if (y > coco.H + 20 || x < -25 || x > coco.W + 25) { dots[i].hidden = true; continue; }
+      dots[i].hidden = false;
+      dots[i].style.left = x + 'px';
+      dots[i].style.top = y + 'px';
+      dots[i].style.opacity = String(Math.max(0.22, 1 - i / dots.length));
+    }
   }
   function cocoLaunch(px, py) {
     let vx = px * COCO_K, vy = py * COCO_K;
@@ -1648,9 +1663,9 @@ function init() {
     return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
   }
   function cocoPhysics(dt) {
-    // backstop: the aim guide only belongs on screen mid-drag. If a pointerup
-    // was ever missed (iOS touch), force it hidden here so it can't stick.
-    if (coco.aim && !coco.aiming && coco.aim.style.display !== 'none') coco.aim.style.display = 'none';
+    // backstop: the aim dots only belong on screen mid-drag. If a pointerup was
+    // ever missed (iOS touch), force them hidden here so they can't stick.
+    if (!coco.aiming && coco.aimDots && !coco.aimDots[0].hidden) cocoAimHide();
     // wander each standing coconut toward a fresh random spot in its stretch —
     // an erratic target is far harder to lead than a steady sine.
     for (const c of coco.coconuts) {
@@ -1675,8 +1690,9 @@ function init() {
           cocoKnock(c, b); hit = true; break;   // one ball, one target — never bounce on
         }
       }
-      // spent on the hit, on leaving the pitch, or after ~2.6s (never traps the round)
-      if (hit || b.y > coco.H + 40 || b.x < -40 || b.x > coco.W + 40 || b.age > 2.6) {
+      // spent on the hit, on leaving the pitch bottom/sides, or after COCO_AIR
+      // (it may fly UP out of frame and come back — only the bottom/sides end it)
+      if (hit || b.y > coco.H + 60 || b.x < -60 || b.x > coco.W + 60 || b.age > COCO_AIR) {
         b.live = false; cocoReset();
       } else {
         coco.ballEl.style.left = b.x + 'px';

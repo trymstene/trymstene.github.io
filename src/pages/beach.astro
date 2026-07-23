@@ -509,8 +509,12 @@ const description = 'The beach at the end of the park road. The sun never quite 
         linear-gradient(rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.04) 42%),
         repeating-linear-gradient(90deg, #6b5617 0 24px, #4a3a0d 24px 27px, #63500f 27px 51px, #4a3a0d 51px 54px);
     }
+    /* z-index 5 puts the pitch (and its ball / coconuts / aim children) ABOVE
+       the keeper canvas (z3) and the desk (z4). The keeper's big transparent
+       canvas overlays the whole pitch, so without this the ball sat behind it
+       and drags couldn't reach the pitch. */
     .bh-coco__pitch {
-      position: absolute; inset: 0; z-index: 2;
+      position: absolute; inset: 0; z-index: 5;
       touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent;
     }
     .bh-coco__pitch:active { cursor: grabbing; }
@@ -536,15 +540,16 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     .bh-coco__ball {
       position: absolute; width: 44px; height: 44px; transform: translate(-50%, -50%);
-      z-index: 4; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.4));
+      z-index: 6; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.4));
     }
     .bh-coco__ball svg { width: 100%; height: 100%; display: block; }
-    /* the drag-aim guide: a dashed launch line from the ball */
-    .bh-coco__aim {
-      position: absolute; height: 0; z-index: 3; pointer-events: none;
-      border-top: 3px dashed rgba(255, 225, 53, 0.9); transform-origin: left center;
+    /* the drag-aim guide: a row of dots tracing the ball's CURVED flight path */
+    .bh-coco__aimdot {
+      position: absolute; width: 9px; height: 9px; border-radius: 50%;
+      background: rgba(255, 225, 53, 0.92); transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 5; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
     }
-    .bh-coco__aim[hidden] { display: none; }
+    .bh-coco__aimdot[hidden] { display: none; }
     /* the keeper — BIG and far left, so it reads as standing WITH him at the
        counter (the banana-stand scale), not a doll in a giant shed. The drawn
        banana only fills ~52% of its square canvas (transparent padding), and
