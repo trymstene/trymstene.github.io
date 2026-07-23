@@ -1077,7 +1077,8 @@ function init() {
       blurb: 'pick a duck. the number underneath is yours.' },
     { id: 'crab', name: 'Whack-a-Crab', sign: '🦀', cost: 5,
       blurb: 'bonk the crabs before they duck back. one crab, one ticket.' },
-    { id: 'coco', name: 'Coconut Shy', sign: '🥥', soon: true },
+    { id: 'coco', name: 'Coconut Shy', sign: '🥥', cost: 5,
+      blurb: 'drag back from the ball, let go, knock a coconut clean off its post.' },
     { id: 'prize', name: 'The Prize Counter', sign: '🏆' },
   ];
   // 🏆 PRIZES ARE TROPHIES, NOT FASHION. The stand is where you choose how you
@@ -1140,6 +1141,7 @@ function init() {
   function openStall(i) {
     const def = STALL_DEFS[i];
     if (!def) return;
+    if (def.id === 'coco') { openCoco(); return; }   // steps INSIDE — its own scene, not the panel
     openStallIdx = i;
     stallName.textContent = def.sign + ' ' + def.name;
     paintTickets();
@@ -1375,6 +1377,270 @@ function init() {
       pop();
     };
     tick();
+  }
+
+  // ---- 🥥 COCONUT SHY — the step-inside stall ------------------------------
+  // Unlike the duck/crab popups, this stall opens a full interior SCENE over
+  // the beach (the banana-stand counter, pier edition): awning, the keeper at
+  // his desk on the left, and a coconut pitch you throw at. Drag back from the
+  // ball, let go, and a hard enough hit knocks a coconut off its post.
+  const cocoScene = document.getElementById('bhCoco');
+  const cocoPitch = document.getElementById('bhCocoPitch');
+  const cocoFoot = document.getElementById('bhCocoFoot');
+  const cocoTixEl = document.getElementById('bhCocoTix');
+  const cocoCoinsEl = document.getElementById('bhCocoCoins');
+  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
+  const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1050;
+  const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
+    + '<rect x="1" y="2" width="10" height="2" fill="#6b4a2b"/><rect x="0" y="4" width="12" height="4" fill="#6b4a2b"/>'
+    + '<rect x="1" y="8" width="10" height="2" fill="#5a3a1c"/><rect x="2" y="10" width="8" height="1" fill="#4a3018"/>'
+    + '<rect x="3" y="11" width="6" height="1" fill="#4a3018"/><rect x="2" y="2" width="3" height="2" fill="#7d5836"/>'
+    + '<rect x="4" y="5" width="1" height="1" fill="#2a1a0c"/><rect x="7" y="5" width="1" height="1" fill="#2a1a0c"/>'
+    + '<rect x="5" y="7" width="2" height="1" fill="#2a1a0c"/></svg>';
+  const CBALL_SVG = '<svg viewBox="0 0 10 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="3" y="0" width="4" height="1" fill="#b89a5e"/><rect x="1" y="1" width="8" height="1" fill="#d8c090"/>'
+    + '<rect x="0" y="2" width="10" height="6" fill="#d8c090"/><rect x="1" y="8" width="8" height="1" fill="#b89a5e"/>'
+    + '<rect x="3" y="9" width="4" height="1" fill="#b89a5e"/><rect x="2" y="2" width="3" height="2" fill="#efdcae"/>'
+    + '<rect x="6" y="5" width="2" height="2" fill="#a5854a"/></svg>';
+  let cocoRAF = 0, cocoOn = false, coco = null;
+
+  // the cartridge CUT — a hard black blink, like the park exit reuses.
+  function blink(mid) {
+    if (REDUCED || !cutEl) { mid(); return; }
+    cutEl.classList.add('is-on');
+    setTimeout(mid, 130);
+    setTimeout(() => cutEl.classList.remove('is-on'), 280);
+  }
+  function cocoPaintHud() {
+    cocoTixEl.textContent = '🎟 ' + ticketBal();
+    cocoCoinsEl.textContent = coinBal();
+  }
+  function drawCocoVendor() {
+    const cv = document.getElementById('bhCocoVendorCv');
+    const ctx = cv.getContext('2d');
+    const v = VENDORS[2];   // frame 3 + shades — the coconut keeper
+    const draw = () => drawComposite(ctx, 150, v.frame,
+      { hat: v.hat, glasses: v.glasses, extras: {}, top: '', bottom: '',
+        bg: 'transparent', captions: false, effect: 'none' });
+    assetsReady().then(() => { draw(); setTimeout(draw, 700); });
+  }
+  function openCoco() {
+    openStallIdx = 2;
+    history.replaceState(null, '', '#coco');
+    track('beach_stall', { stall: 'coco' });
+    blink(() => {
+      cocoScene.hidden = false;      // shown FIRST so the pitch has a real size
+      cocoPaintHud();
+      drawCocoVendor();
+      cocoBuild(false);
+    });
+  }
+  function closeCoco() {
+    cocoOn = false;
+    if (cocoRAF) { cancelAnimationFrame(cocoRAF); cocoRAF = 0; }
+    openStallIdx = -1;
+    blink(() => { cocoScene.hidden = true; });
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  }
+  document.getElementById('bhCocoClose').addEventListener('click', closeCoco);
+
+  // build the pitch: a rail of coconuts on posts + the ready ball. `live` false
+  // shows the pay-to-play footer; true arms the throwing.
+  function cocoBuild(live) {
+    cocoPitch.innerHTML = '';
+    const W = cocoPitch.clientWidth, H = cocoPitch.clientHeight;
+    const railY = Math.round(H * 0.40);
+    const rail = document.createElement('div');
+    rail.className = 'bh-coco__rail';
+    rail.style.top = railY + 'px';
+    cocoPitch.appendChild(rail);
+    const coconuts = [];
+    for (let k = 0; k < COCO_COUNT; k++) {
+      const cx = Math.round(W * (0.20 + 0.15 * k));
+      const cy = railY - 15;                        // resting on the rail
+      const post = document.createElement('div');
+      post.className = 'bh-coco__post';
+      post.style.left = cx + 'px'; post.style.top = cy + 'px'; post.style.height = Math.round(H * 0.15) + 'px';
+      cocoPitch.appendChild(post);
+      const el = document.createElement('div');
+      el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
+      el.style.left = cx + 'px'; el.style.top = cy + 'px';
+      cocoPitch.appendChild(el);
+      coconuts.push({ el, x: cx, y: cy, r: 17, alive: true, fly: false });
+    }
+    const ox = Math.round(W * 0.52), oy = Math.round(H * 0.84);
+    const ballEl = document.createElement('div');
+    ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
+    ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
+    cocoPitch.appendChild(ballEl);
+    const aim = document.createElement('div');
+    aim.className = 'bh-coco__aim'; aim.hidden = true;
+    cocoPitch.appendChild(aim);
+
+    coco = { W, H, coconuts, ballEl, aim, ox, oy, live,
+      ball: { x: ox, y: oy, vx: 0, vy: 0, live: false },
+      balls: live ? COCO_BALLS : 0, knocked: 0, aiming: false, dragStart: null };
+
+    if (!live) {
+      const bal = coinBal();
+      const def = STALL_DEFS[2];
+      cocoFoot.innerHTML = '<button class="bh-btn" id="bhCocoPlay" type="button"'
+        + (bal < COCO_COST ? ' disabled' : '') + '>'
+        + (bal < COCO_COST ? 'you need ' + COCO_COST + ' coins'
+          : 'play — ' + COCO_COST + ' coins · ' + COCO_BALLS + ' balls') + '</button>';
+      const p = document.getElementById('bhCocoPlay');
+      if (p) p.addEventListener('click', () => {
+        if (coinBal() < COCO_COST) return;
+        passStat('coins_spent', COCO_COST);
+        track('beach_stall_play', { stall: 'coco', cost: COCO_COST });
+        cocoPaintHud();
+        cocoBuild(true);
+      });
+      cocoFoot.title = def.blurb;
+    } else {
+      cocoFootBalls();
+      cocoBindThrow();
+      cocoLoop();
+    }
+  }
+  function cocoFootBalls() {
+    cocoFoot.innerHTML = '<span class="bh-stallhint">' + coco.balls + ' ball'
+      + (coco.balls === 1 ? '' : 's') + ' left · drag back from the ball and let go</span>';
+  }
+  function cocoBindThrow() {
+    const pit = cocoPitch;
+    const localPt = (e) => {
+      const r = pit.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    pit.onpointerdown = (e) => {
+      if (!coco || coco.ball.live || coco.balls <= 0) return;
+      coco.aiming = true; coco.dragStart = localPt(e);
+      try { pit.setPointerCapture(e.pointerId); } catch (_) {}
+    };
+    pit.onpointermove = (e) => {
+      if (!coco || !coco.aiming) return;
+      const pt = localPt(e);
+      cocoAimShow(coco.dragStart.x - pt.x, coco.dragStart.y - pt.y);
+    };
+    pit.onpointerup = (e) => {
+      if (!coco || !coco.aiming) return;
+      coco.aiming = false; coco.aim.hidden = true;
+      const pt = localPt(e);
+      cocoLaunch(coco.dragStart.x - pt.x, coco.dragStart.y - pt.y);
+    };
+    pit.onpointercancel = () => { if (coco) { coco.aiming = false; coco.aim.hidden = true; } };
+  }
+  // the aim guide points OUT of the ball along the launch vector (opposite the
+  // drag) — a slingshot, so you pull away from where you want it to go.
+  function cocoAimShow(px, py) {
+    const mag = Math.min(Math.hypot(px, py), 150);
+    const aim = coco.aim;
+    if (mag < 8) { aim.hidden = true; return; }
+    aim.hidden = false;
+    aim.style.left = coco.ox + 'px';
+    aim.style.top = coco.oy + 'px';
+    aim.style.width = mag + 'px';
+    aim.style.transform = 'rotate(' + (Math.atan2(py, px) * 180 / Math.PI) + 'deg)';
+  }
+  function cocoLaunch(px, py) {
+    let vx = px * COCO_K, vy = py * COCO_K;
+    const sp = Math.hypot(vx, vy);
+    if (sp < 70) return;                    // a tap, not a throw — keep the ball
+    if (sp > COCO_VMAX) { vx *= COCO_VMAX / sp; vy *= COCO_VMAX / sp; }
+    const b = coco.ball;
+    b.x = coco.ox; b.y = coco.oy; b.vx = vx; b.vy = vy; b.live = true; b.age = 0;
+    coco.balls -= 1;
+    cocoFootBalls();
+  }
+  function cocoLoop() {
+    cocoOn = true;
+    let prev = performance.now();
+    const tick = (now) => {
+      if (!cocoOn || cocoScene.hidden) { cocoOn = false; return; }
+      cocoPhysics(Math.min(0.04, (now - prev) / 1000)); prev = now;
+      cocoRAF = requestAnimationFrame(tick);
+    };
+    cocoRAF = requestAnimationFrame(tick);
+  }
+  function cocoPhysics(dt) {
+    const b = coco.ball;
+    if (b.live) {
+      b.age += dt;
+      b.vy += COCO_G * dt;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      for (const c of coco.coconuts) {
+        if (!c.alive) continue;
+        const dx = b.x - c.x, dy = b.y - c.y, R = 11 + c.r;
+        const d = Math.hypot(dx, dy) || 0.001;
+        if (d >= R) continue;
+        if (Math.hypot(b.vx, b.vy) > COCO_KNOCK) { cocoKnock(c, b); break; }
+        // wobble: shove the ball back OUT along the normal so it can't re-hit
+        // this coconut every frame (that trap kept a ball "live" forever), and
+        // bounce its velocity off that normal.
+        cocoWobble(c);
+        const nx = dx / d, ny = dy / d;
+        b.x = c.x + nx * (R + 1); b.y = c.y + ny * (R + 1);
+        const vn = b.vx * nx + b.vy * ny;
+        b.vx = (b.vx - 2 * vn * nx) * 0.5;
+        b.vy = (b.vy - 2 * vn * ny) * 0.5;
+        break;
+      }
+      coco.ballEl.style.left = b.x + 'px';
+      coco.ballEl.style.top = b.y + 'px';
+      coco.ballEl.style.transform = 'translate(-50%,-50%) rotate(' + Math.round(b.x * 4) + 'deg)';
+      // spent when it leaves the pitch OR after ~2.6s (a slow roll never traps the round)
+      if (b.y > coco.H + 40 || b.x < -40 || b.x > coco.W + 40 || b.age > 2.6) {
+        b.live = false; cocoReset();
+      }
+    }
+    for (const c of coco.coconuts) {
+      if (!c.fly) continue;
+      c.fvy += COCO_G * dt;
+      c.fx += c.fvx * dt; c.fy += c.fvy * dt;
+      c.el.style.left = c.fx + 'px'; c.el.style.top = c.fy + 'px';
+      c.el.style.transform = 'translate(-50%,-50%) rotate(' + Math.round(c.fx * 3) + 'deg)';
+      if (c.fy > coco.H + 60) { c.el.style.display = 'none'; c.fly = false; }
+    }
+  }
+  function cocoKnock(c, b) {
+    c.alive = false; c.fly = true;
+    c.fx = c.x; c.fy = c.y;
+    c.fvx = b.vx * 0.5 + (Math.random() * 80 - 40);
+    c.fvy = -Math.abs(b.vy) * 0.35 - 210;
+    coco.knocked += 1;
+    passStat('tickets', COCO_TIX);
+    cocoPaintHud();
+    cocoToast('+' + COCO_TIX + ' 🎟');
+    track('beach_stall_win', { stall: 'coco', tickets: COCO_TIX });
+    b.vx *= 0.22; b.vy = Math.abs(b.vy) * 0.2;   // the ball loses its punch
+  }
+  function cocoWobble(c) {
+    c.el.classList.remove('is-wobble'); void c.el.offsetWidth; c.el.classList.add('is-wobble');
+  }
+  function cocoToast(txt) {
+    const t = document.createElement('div');
+    t.className = 'bh-coco__toast'; t.textContent = txt;
+    cocoPitch.appendChild(t);
+    setTimeout(() => t.remove(), 900);
+  }
+  function cocoReset() {
+    if (!coco.coconuts.some((c) => c.alive) || coco.balls <= 0) { cocoFinish(); return; }
+    const b = coco.ball;
+    b.x = coco.ox; b.y = coco.oy; b.vx = 0; b.vy = 0;
+    coco.ballEl.style.left = coco.ox + 'px';
+    coco.ballEl.style.top = coco.oy + 'px';
+    coco.ballEl.style.transform = 'translate(-50%,-50%)';
+  }
+  function cocoFinish() {
+    cocoOn = false;
+    if (cocoRAF) { cancelAnimationFrame(cocoRAF); cocoRAF = 0; }
+    const n = coco.knocked;
+    cocoFoot.innerHTML = '<span class="bh-stallhint">'
+      + (n ? n + (n === 1 ? ' coconut' : ' coconuts') + ' down → ' + (n * COCO_TIX) + ' tickets!'
+        : 'no luck this time — have another go') + '</span>';
+    setTimeout(() => { if (!cocoScene.hidden && openStallIdx === 2) cocoBuild(false); }, 2400);
   }
 
   // 🪧 a WOODEN SIGN nailed to each stall's roof — text only, no icon, and
