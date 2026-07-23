@@ -1390,7 +1390,7 @@ function init() {
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
   const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 5;
-  const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1050, COCO_BALL_R = 18;
+  const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1320, COCO_BALL_R = 18;
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
     + '<rect x="1" y="2" width="10" height="2" fill="#6b4a2b"/><rect x="0" y="4" width="12" height="4" fill="#6b4a2b"/>'
@@ -1490,27 +1490,29 @@ function init() {
   function cocoBuild(live) {
     cocoPitch.innerHTML = '';
     const W = cocoPitch.clientWidth, H = cocoPitch.clientHeight;
-    // the rack rides HIGH on the wall and spreads wide — left over the keeper's
-    // head into the empty wall, right to the edge. Higher = longer arc = harder.
-    const railY = Math.round(H * 0.27);
+    // the shelf runs WALL TO WALL and rides high (above the keeper's cap) so the
+    // coconuts spread right across it instead of bunching into one hittable clump.
+    const railY = Math.round(H * 0.21);
     const rail = document.createElement('div');
     rail.className = 'bh-coco__rail';
-    rail.style.left = Math.round(W * 0.40) + 'px';
+    rail.style.left = Math.round(W * 0.03) + 'px';
     rail.style.right = 'auto';
-    rail.style.width = Math.round(W * 0.56) + 'px';
+    rail.style.width = Math.round(W * 0.94) + 'px';
     rail.style.top = railY + 'px';
     cocoPitch.appendChild(rail);
     const coconuts = [];
+    const RANGE = 30;                                       // how far each coconut wanders
     for (let k = 0; k < COCO_COUNT; k++) {
-      const baseX = Math.round(W * (0.44 + 0.115 * k));   // spread wide, well to the left
-      const cy = railY - 14;                              // resting on the rail
+      const baseX = Math.round(W * (0.11 + 0.195 * k));     // spread across the whole shelf
+      const cy = railY - 14;                                // resting on the rail
       const el = document.createElement('div');
       el.className = 'bh-coco__coco'; el.innerHTML = COCO_SVG;
       el.style.left = baseX + 'px'; el.style.top = cy + 'px';
       cocoPitch.appendChild(el);
-      // 🎯 they DRIFT — faster + wider now, so a nice reward stays a skill shot
+      // 🎯 RANDOM wander — each eases to a fresh random spot in its own stretch,
+      // at its own speed, so the row never settles into an easy line.
       coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
-        amp: 11 + 2.5 * k, w: 1.35 + 0.35 * k, phase: k * 1.9 });
+        lo: baseX - RANGE, hi: baseX + RANGE, tx: baseX, spd: 38 + Math.random() * 46 });
     }
     // the ball sits high + right, clear of the keeper on the left
     const ox = Math.round(W * 0.63), oy = Math.round(H * 0.82);
@@ -1609,11 +1611,13 @@ function init() {
     cocoRAF = requestAnimationFrame(tick);
   }
   function cocoPhysics(dt) {
-    coco.t += dt;
-    // drift the standing coconuts side to side — a moving target
+    // wander each standing coconut toward a fresh random spot in its stretch —
+    // an erratic target is far harder to lead than a steady sine.
     for (const c of coco.coconuts) {
       if (!c.alive) continue;
-      c.x = c.baseX + c.amp * Math.sin(coco.t * c.w + c.phase);
+      if (Math.abs(c.x - c.tx) < 2) c.tx = c.lo + Math.random() * (c.hi - c.lo);
+      const step = c.spd * dt;
+      c.x += Math.max(-step, Math.min(step, c.tx - c.x));
       c.el.style.left = c.x + 'px';
     }
     const b = coco.ball;
