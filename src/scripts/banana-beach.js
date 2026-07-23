@@ -1425,7 +1425,9 @@ function init() {
     // the coconut keeper: frame 4 faces the pitch (right) with arms DOWN and a
     // compact silhouette, so no raised hand pokes into the play area. No glasses,
     // white backwards cap.
-    const draw = () => drawComposite(ctx, 150, 4,
+    // 360² native so the big display size isn't a ~4× upscale (blurs the cap,
+    // fragments the mouth). COCO_CV must match the canvas width in beach.astro.
+    const draw = () => drawComposite(ctx, COCO_CV, 4,
       { hat: 'backwardscap', glasses: 'none', extras: {}, top: '', bottom: '',
         bg: 'transparent', captions: false, effect: 'none' });
     // relayout AFTER each draw — the bbox (and thus the size/waist maths) depends
@@ -1441,9 +1443,10 @@ function init() {
   // the banana lands big + far-left with its WAIST at the counter top, legs
   // clipped behind it. All the fiddly numbers live here, tuned by screenshot.
   const COCO_COUNTER = 34;     // .bh-coco__desk height
+  const COCO_CV = 360;         // keeper canvas resolution (matches beach.astro) — high, so it isn't upscaled to mush
   const COCO_WAIST = 0.60;     // fraction down the banana that counts as the "waist"
   const COCO_RAISE = 0;        // waist exactly at the counter so legs/feet stay BEHIND the desk
-  const COCO_WIDE = 0.86;      // banana width as a fraction of the pitch (~2× the old)
+  const COCO_WIDE = 0.58;      // banana width as a fraction of the pitch (upper body clears the desk, not a giant head)
   function layoutCocoVendor() {
     const stage = cocoPitch.parentElement;            // .bh-coco__stage
     const v = document.querySelector('.bh-coco__vendor');
@@ -1452,16 +1455,17 @@ function init() {
     const sw = stage.clientWidth;
     // MEASURE the drawn banana's bbox in the 150² canvas so this works for any
     // frame/hat — hardcoding it broke every time the pose changed.
-    let x0 = 150, y0 = 150, x1 = 0, y1 = 0, found = false;
+    const N = COCO_CV;
+    let x0 = N, y0 = N, x1 = 0, y1 = 0, found = false;
     try {
-      const d = cv.getContext('2d').getImageData(0, 0, 150, 150).data;
-      for (let y = 0; y < 150; y++) for (let x = 0; x < 150; x++) {
-        if (d[(y * 150 + x) * 4 + 3] > 25) { found = true; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      const d = cv.getContext('2d').getImageData(0, 0, N, N).data;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        if (d[(y * N + x) * 4 + 3] > 25) { found = true; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       }
     } catch (e) { /* tainted/blank — fall back below */ }
-    if (!found) { x0 = 28; x1 = 106; y0 = 36; y1 = 128; }   // frame-3 fallback
-    const bwFrac = (x1 - x0) / 150, cxFrac = ((x0 + x1) / 2) / 150;
-    const topFrac = y0 / 150, botFrac = y1 / 150;
+    if (!found) { x0 = N * 0.19; x1 = N * 0.71; y0 = N * 0.24; y1 = N * 0.85; }   // rough fallback
+    const bwFrac = (x1 - x0) / N, cxFrac = ((x0 + x1) / 2) / N;
+    const topFrac = y0 / N, botFrac = y1 / N;
     const S = (sw * COCO_WIDE) / bwFrac;               // canvas size → banana ≈ COCO_WIDE of pitch
     const left = Math.round(sw * 0.15 - cxFrac * S);
     v.style.width = Math.round(S) + 'px';
