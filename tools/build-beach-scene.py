@@ -312,14 +312,14 @@ def build_desk():
     the banana stand keeper's desk. One sprite, reused by every stall (the
     hue only lives in the canopy)."""
     K = 3
-    dw, dh = (STALL_W - 4), 38
+    dw, dh = (STALL_W + 8), 48
     s = Image.new('RGBA', (dw * K, dh * K), (0, 0, 0, 0))
     d = ImageDraw.Draw(s)
     d.rectangle([0, 0, dw * K, dh * K], fill=(162, 114, 62))              # body
-    d.rectangle([0, 0, dw * K, 6 * K], fill=(210, 162, 100))             # lit top
-    d.rectangle([0, (dh - 6) * K, dw * K, dh * K], fill=(112, 74, 42))   # shadow foot
-    for pxl in range(12, dw - 8, 22):                                    # plank seams
-        d.rectangle([pxl * K, 8 * K, (pxl + 1) * K, (dh - 7) * K], fill=(132, 90, 50))
+    d.rectangle([0, 0, dw * K, 7 * K], fill=(210, 162, 100))            # lit top
+    d.rectangle([0, (dh - 7) * K, dw * K, dh * K], fill=(112, 74, 42))   # shadow foot
+    for pxl in range(14, dw - 10, 24):                                   # plank seams
+        d.rectangle([pxl * K, 10 * K, (pxl + 1) * K, (dh - 8) * K], fill=(132, 90, 50))
     return blockify(s, factor=K, colors=10, alpha_thresh=0.4, sat=1.06,
                     con=1.05, warm=0.05, trim=False)
 

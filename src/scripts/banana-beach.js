@@ -248,6 +248,7 @@ function init() {
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
+    pendingOpen = null;   // any tap cancels a pending stall-open; tapStall re-sets it
     // 🎯 TAP THE BALL TO PLAY IT — checked first, and against the ball's
     // SCREEN position (y − z), so a ball in mid-air is tappable where you can
     // actually see it. In reach you bump; out of reach you go and fetch it.
@@ -1303,8 +1304,8 @@ function init() {
     wrap.style.left = pct(s.x, W);
     // feet LOW (base − 10) so the desk — drawn on its own higher layer —
     // overlaps the vendor's lower body and they read as standing BEHIND it.
-    wrap.style.top = pct(s.y - 10, H);
-    wrap.style.width = pct(76, W);            // a bit bigger than before (58)
+    wrap.style.top = pct(s.y - 8, H);
+    wrap.style.width = pct(88, W);            // bigger vendor
     wrap.style.transform = 'translate(-50%, -100%)';
     wrap.style.zIndex = String(100 + s.y + 1);   // over the booth, under the desk
     world.appendChild(wrap);
@@ -1316,35 +1317,39 @@ function init() {
   });
 
   // tapping a stall: step up to the counter, or open it if you're already there
-  // ⚠️ The pier deck is WALKABLE now — you wander among the stalls. "In front
-  // of" a stall is just below its counter (stalls face south), on the deck.
-  const frontOf = (x, y) => ({ x, y: y + 46 });
-  // route to a stall's front, going AROUND it if you're behind it. Stalls are
-  // solid and face south, so approaching from the north wedges the banana on
-  // the collider's back; a side waypoint (same idea as the pier mouth) fixes
-  // it. Returns true if already there.
-  function walkToFront(cx, base) {
+  // ⚠️ You must actually STAND AT THE DESK before a stall opens — tapping it
+  // sends the banana there, and the menu opens ON ARRIVAL, not on the tap.
+  // `frontOf` is the spot just below the counter (stalls face south).
+  const frontOf = (x, y) => ({ x, y: y + 40 });
+  const ARRIVE = 24;                      // how close = "at the desk"
+  let pendingOpen = null;                 // { fn, x, y } — opens when we arrive
+  // route to a stall's front, going AROUND it if you're behind it (stalls are
+  // solid + south-facing; from the north the banana wedges on the collider
+  // back, so it takes a side waypoint — same idea as the pier mouth).
+  function requestOpen(cx, base, openFn) {
     const f = frontOf(cx, base);
-    if (Math.hypot(pos.x - f.x, pos.y - f.y) < 150) return true;
+    if (Math.hypot(pos.x - f.x, pos.y - f.y) < ARRIVE) { pendingOpen = null; openFn(); return; }
+    pendingOpen = { fn: openFn, x: f.x, y: f.y };
     if (pos.y < base + 6 && Math.abs(pos.x - cx) < 96) {
       const side = pos.x <= cx ? -1 : 1;
-      nextTgt = f;                       // …then the counter
-      tgt.x = cx + side * 132; tgt.y = f.y;   // clear the stall's side first
+      nextTgt = f;                        // …then the counter
+      tgt.x = cx + side * 132; tgt.y = f.y;
     } else { nextTgt = null; tgt.x = f.x; tgt.y = f.y; }
-    return false;
   }
+  // ⚠️ TIGHT hit-test — only the stall body/desk itself, NOT the deck in front
+  // of it, so you can walk up and stand there without it snapping open.
   function tapGrabber(wx, wy) {
-    if (Math.abs(wx - GRABBER.x) < 62 && wy > GRABBER.y - 155 && wy < GRABBER.y + 30) {
-      if (walkToFront(GRABBER.x, GRABBER.y)) openGrabber();
+    if (Math.abs(wx - GRABBER.x) < 48 && wy > GRABBER.y - 150 && wy < GRABBER.y + 6) {
+      requestOpen(GRABBER.x, GRABBER.y, openGrabber);
       return true;
     }
     return false;
   }
   function tapStall(wx, wy) {
-    const i = STALLS.findIndex((s) => Math.abs(wx - s.x) < 82
-      && wy > s.y - 140 && wy < s.y + 40);
+    const i = STALLS.findIndex((s) => Math.abs(wx - s.x) < 64
+      && wy > s.y - 126 && wy < s.y + 8);
     if (i < 0) return false;
-    if (walkToFront(STALLS[i].x, STALLS[i].y)) openStall(i);
+    requestOpen(STALLS[i].x, STALLS[i].y, () => openStall(i));
     return true;
   }
 
@@ -1389,6 +1394,10 @@ function init() {
       meEl.style.left = pct(pos.x, W);
       meEl.style.top = pct(pos.y, H);
       depth(meEl, pos.y);            // behind the net when your feet are past it
+      // 🎡 a stall opens only once you've walked all the way to its desk
+      if (pendingOpen && Math.hypot(pos.x - pendingOpen.x, pos.y - pendingOpen.y) < ARRIVE) {
+        const fn = pendingOpen.fn; pendingOpen = null; fn();
+      }
       if (pos.x > 300) roadArmed = true;
       if (roadArmed && pos.x < 40 && pos.y > 1040) exitToPark();
     }
