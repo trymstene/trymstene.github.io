@@ -1390,7 +1390,7 @@ function init() {
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
   const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 4, COCO_COUNT = 4;
-  const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1050;
+  const COCO_G = 1650, COCO_KNOCK = 430, COCO_K = 6.2, COCO_VMAX = 1050, COCO_BALL_R = 18;
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
     + '<rect x="1" y="2" width="10" height="2" fill="#6b4a2b"/><rect x="0" y="4" width="12" height="4" fill="#6b4a2b"/>'
@@ -1419,28 +1419,49 @@ function init() {
   function drawCocoVendor() {
     const cv = document.getElementById('bhCocoVendorCv');
     const ctx = cv.getContext('2d');
-    const v = VENDORS[2];   // frame 3 + shades — the coconut keeper
-    const draw = () => drawComposite(ctx, 150, v.frame,
-      { hat: v.hat, glasses: v.glasses, extras: {}, top: '', bottom: '',
+    // the coconut keeper: sideways-RIGHT (frame 1), no glasses, white backwards cap
+    const draw = () => drawComposite(ctx, 150, 1,
+      { hat: 'backwardscap', glasses: 'none', extras: {}, top: '', bottom: '',
         bg: 'transparent', captions: false, effect: 'none' });
-    assetsReady().then(() => { draw(); setTimeout(draw, 700); });
+    // relayout AFTER each draw — the bbox (and thus the size/waist maths) depends
+    // on the actual pixels, which only exist once assets have decoded.
+    assetsReady().then(() => {
+      draw(); layoutCocoVendor();
+      setTimeout(() => { draw(); layoutCocoVendor(); }, 700);
+    });
   }
   // 📐 Size + place the keeper from the stage size + the banana's MEASURED bbox
   // inside its 150² canvas (x 28..106, y 36..128 → fills ~52% wide, sits at 45%
   // across / feet at 85% down). The canvas is displayed LARGE and shifted so
   // the banana lands big + far-left with its WAIST at the counter top, legs
   // clipped behind it. All the fiddly numbers live here, tuned by screenshot.
-  const COCO_BANANA = { bw: 0.52, cx: 0.447, waist: 0.60 };   // waist frac: tuned live
-  const COCO_COUNTER = 34;                                     // .bh-coco__desk height
+  const COCO_COUNTER = 34;     // .bh-coco__desk height
+  const COCO_WAIST = 0.60;     // fraction down the banana that counts as the "waist"
+  const COCO_RAISE = 26;       // nudge the keeper up a touch above the pinned waist
+  const COCO_WIDE = 0.86;      // banana width as a fraction of the pitch (~2× the old)
   function layoutCocoVendor() {
     const stage = cocoPitch.parentElement;            // .bh-coco__stage
     const v = document.querySelector('.bh-coco__vendor');
-    if (!stage || !v) return;
-    const sw = stage.clientWidth, sh = stage.clientHeight;
-    const S = (sw * 0.86) / COCO_BANANA.bw;           // canvas size → banana ≈ 86% of pitch (~2× old)
+    const cv = document.getElementById('bhCocoVendorCv');
+    if (!stage || !v || !cv) return;
+    const sw = stage.clientWidth;
+    // MEASURE the drawn banana's bbox in the 150² canvas so this works for any
+    // frame/hat — hardcoding it broke every time the pose changed.
+    let x0 = 150, y0 = 150, x1 = 0, y1 = 0, found = false;
+    try {
+      const d = cv.getContext('2d').getImageData(0, 0, 150, 150).data;
+      for (let y = 0; y < 150; y++) for (let x = 0; x < 150; x++) {
+        if (d[(y * 150 + x) * 4 + 3] > 25) { found = true; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+    } catch (e) { /* tainted/blank — fall back below */ }
+    if (!found) { x0 = 28; x1 = 106; y0 = 36; y1 = 128; }   // frame-3 fallback
+    const bwFrac = (x1 - x0) / 150, cxFrac = ((x0 + x1) / 2) / 150;
+    const topFrac = y0 / 150, botFrac = y1 / 150;
+    const S = (sw * COCO_WIDE) / bwFrac;               // canvas size → banana ≈ COCO_WIDE of pitch
     v.style.width = Math.round(S) + 'px';
-    v.style.left = Math.round(sw * 0.15 - COCO_BANANA.cx * S) + 'px';   // banana centre far-left
-    v.style.bottom = Math.round(COCO_COUNTER - S * (1 - COCO_BANANA.waist)) + 'px';  // waist at counter top
+    v.style.left = Math.round(sw * 0.15 - cxFrac * S) + 'px';   // banana centre far-left
+    const waistFrac = topFrac + COCO_WAIST * (botFrac - topFrac);
+    v.style.bottom = Math.round(COCO_COUNTER - S * (1 - waistFrac) + COCO_RAISE) + 'px';   // waist ≈ counter top, raised
   }
   function openCoco() {
     openStallIdx = 2;
@@ -1489,7 +1510,7 @@ function init() {
       coconuts.push({ el, baseX, x: baseX, y: cy, r: 16, alive: true, fly: false,
         amp: 9 + 2.5 * k, w: 1.0 + 0.3 * k, phase: k * 1.9 });
     }
-    const ox = Math.round(W * 0.46), oy = Math.round(H * 0.86);
+    const ox = Math.round(W * 0.54), oy = Math.round(H * 0.86);
     const ballEl = document.createElement('div');
     ballEl.className = 'bh-coco__ball'; ballEl.innerHTML = CBALL_SVG;
     ballEl.style.left = ox + 'px'; ballEl.style.top = oy + 'px';
@@ -1599,7 +1620,7 @@ function init() {
       b.x += b.vx * dt; b.y += b.vy * dt;
       for (const c of coco.coconuts) {
         if (!c.alive) continue;
-        const dx = b.x - c.x, dy = b.y - c.y, R = 11 + c.r;
+        const dx = b.x - c.x, dy = b.y - c.y, R = COCO_BALL_R + c.r;
         const d = Math.hypot(dx, dy) || 0.001;
         if (d >= R) continue;
         if (Math.hypot(b.vx, b.vy) > COCO_KNOCK) { cocoKnock(c, b); break; }
