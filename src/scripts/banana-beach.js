@@ -1301,10 +1301,12 @@ function init() {
     cv.width = 150; cv.height = 150;
     wrap.appendChild(cv);
     wrap.style.left = pct(s.x, W);
-    wrap.style.top = pct(s.y - 32, H);        // feet just above the desk top
-    wrap.style.width = pct(58, W);            // a small vendor, in the booth
+    // feet LOW (base − 10) so the desk — drawn on its own higher layer —
+    // overlaps the vendor's lower body and they read as standing BEHIND it.
+    wrap.style.top = pct(s.y - 10, H);
+    wrap.style.width = pct(76, W);            // a bit bigger than before (58)
     wrap.style.transform = 'translate(-50%, -100%)';
-    wrap.style.zIndex = String(100 + s.y + 1);   // in front of the dark booth
+    wrap.style.zIndex = String(100 + s.y + 1);   // over the booth, under the desk
     world.appendChild(wrap);
     const ctx = cv.getContext('2d');
     const draw = () => drawComposite(ctx, 150, v.frame,

@@ -299,17 +299,29 @@ def build_stall(hue):
             s.putpixel((x, y), col + (255,))
         for y in range(max(6 * K, int(hem * K) - 2 * K), int(hem * K)):
             s.putpixel((x, y), (int(col[0] * 0.72), int(col[1] * 0.72), int(col[2] * 0.72), 255))
-    # 🪵 THE DESK — a proper wooden counter the vendor banana stands behind,
-    # like the banana stand's keeper desk. Taller than a lip, with a lit top
-    # edge, a shadow underside and plank seams so it reads as a real desk.
-    dtop = STALL_H - 30
-    d.rectangle([4 * K, dtop * K, w - 5 * K, (STALL_H - 6) * K], fill=(162, 114, 62))
-    d.rectangle([4 * K, dtop * K, w - 5 * K, (dtop + 5) * K], fill=(208, 160, 98))
-    d.rectangle([4 * K, (STALL_H - 12) * K, w - 5 * K, (STALL_H - 6) * K], fill=(112, 74, 42))
-    for pxl in range(10, STALL_W - 10, 22):        # plank seams
-        d.rectangle([pxl * K, (dtop + 6) * K, (pxl + 1) * K, (STALL_H - 8) * K], fill=(132, 90, 50))
+    # ⚠️ NO desk here — the desk is a SEPARATE sprite (build_desk) drawn on its
+    # own layer IN FRONT of the vendor banana, so the vendor reads as standing
+    # BEHIND it. Baked into this back sprite it would sit behind the vendor.
     return blockify(s, factor=K, colors=14, alpha_thresh=0.4, sat=1.08, con=1.05,
                     warm=0.05, trim=False)
+
+
+def build_desk():
+    """🪵 the vendor's desk — a standalone wooden counter, drawn ABOVE the
+    vendor banana so it overlaps their lower body (they stand behind it), like
+    the banana stand keeper's desk. One sprite, reused by every stall (the
+    hue only lives in the canopy)."""
+    K = 3
+    dw, dh = (STALL_W - 4), 38
+    s = Image.new('RGBA', (dw * K, dh * K), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    d.rectangle([0, 0, dw * K, dh * K], fill=(162, 114, 62))              # body
+    d.rectangle([0, 0, dw * K, 6 * K], fill=(210, 162, 100))             # lit top
+    d.rectangle([0, (dh - 6) * K, dw * K, dh * K], fill=(112, 74, 42))   # shadow foot
+    for pxl in range(12, dw - 8, 22):                                    # plank seams
+        d.rectangle([pxl * K, 8 * K, (pxl + 1) * K, (dh - 7) * K], fill=(132, 90, 50))
+    return blockify(s, factor=K, colors=10, alpha_thresh=0.4, sat=1.06,
+                    con=1.05, warm=0.05, trim=False)
 
 
 def build_grabber():
@@ -688,13 +700,17 @@ if HAVE_PACK:
     # rows of game stalls with a wide central aisle, food/fruit WAGONS between
     # them, and café tables so it reads as a market you wander through. Each
     # stall and wagon is its own collider; the aisles stay clear.
-    def midway_overlay(spr, cx, base, sh=0.34, solid=None):
+    def midway_overlay(spr, cx, base, sh=0.34, solid=None, zbase=None):
         box = (int(cx - spr.width // 2), int(base - spr.height))
-        shadow(cx, base - 4, spr.width * sh, 9, 52)
+        if sh > 0:
+            shadow(cx, base - 4, spr.width * sh, 9, 52)
         im.alpha_composite(spr, box)
         fn = 'ov-%d.png' % len(OVERLAYS)
         spr.save(os.path.join(OUT, fn), optimize=True)
-        OVERLAYS.append((fn, box[0], box[1], spr.width, spr.height, int(base)))
+        # zbase overrides the y-sort key — the desk uses base+3 so it lands
+        # ABOVE the vendor canvas (which the page draws at z = stall base + 1).
+        OVERLAYS.append((fn, box[0], box[1], spr.width, spr.height,
+                         int(zbase if zbase is not None else base)))
         PLACED.append(('midway', (box[0], box[1], box[0] + spr.width, int(base))))
         if solid:                     # walkable deck → props must block
             COLLIDERS.append(('midway', solid, int(cx), int(base)))
@@ -703,10 +719,13 @@ if HAVE_PACK:
     # counter (on the walkable deck) to play.
     STALL_POS = [(2140, 500), (2430, 500),      # top row
                  (2140, 940), (2430, 940)]      # bottom row
+    desk = build_desk()
     for (cx, base), hue in zip(STALL_POS, STALL_HUES):
         st = build_stall(hue)
         midway_overlay(st, cx, base, solid=('rect', -46, -22, 46, 6))
         STALLS.append((cx, base))
+        # the desk, drawn OVER the vendor (zbase = base+3 > the vendor's base+1)
+        midway_overlay(desk, cx, base + 4, sh=0, zbase=base + 3)
 
     # 🕹 the grabber — the grand-prize claw at the deck's FAR (right) end, the
     # destination you walk the pier toward.
