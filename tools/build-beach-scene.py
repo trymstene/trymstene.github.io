@@ -66,9 +66,12 @@ NET_MIDS = 7                     # mesh tiles between the two post pieces
 WATER_LINE = 292      # bananas can't swim past this (the art's shore is 306)
 PLATFORM_BOT = 308    # you may stand on the pier's platform down to here
 PIER_MOUTH = (1890, 348)   # land↔pier routes via this waypoint
-BONFIRE = (1330, 900, 80)  # the ring's walk collider (tuned; the art is an
+BONFIRE = (215, 655, 74)   # the ring's walk collider (tuned; the art is an
                            # ellipse, but a circle is what feels right here).
-                           # 24 Jul: moved to a sheltered nook below the wreck.
+                           # 24 Jul: moved AGAIN — up above the welcome arch, on
+                           # its own, because the old nook was a mess: a palm
+                           # grew straight through the ring and the chairs faced
+                           # nowhere. Nothing else is placed inside this circle.
 BAR_NOTICE = 104      # how close you get before the Captain greets you
 NET_SOLID_H = 10      # half-thickness of the net's WALK collider. The banana
                       # covers at most 8.4px per step (SPEED 168 × the 0.05s
@@ -391,14 +394,17 @@ GRABBER = []                 # [cx, base] of the claw machine on the pier
 PROP = 0.76
 
 
-def sand_tint(im, lo=(198, 168, 118), hi=(252, 238, 198)):
+def sand_tint(im, lo=(170, 140, 94), hi=(228, 208, 162), ink=(112, 84, 52)):
     """🏰 RECOLOUR ONTO A SAND RAMP.
     ⚠️ The pack draws its sandcastles bright ORANGE — measured main colour
     (225,109,50) against our pale cream sand (250,226,170): about 120 short on
     BOTH green and blue. Desaturating cannot fix that (sat 0.62 still lands on
     (183,121,90), just muddier) because the SOURCE is orange, not over-saturated.
     So we remap LUMINANCE onto a beige ramp: identical shading, sand colour.
-    The dark ink outline is left alone or the sprite loses its edge."""
+    ⚠️ The OUTLINE is recoloured too, to a dark warm brown — NOT left as the
+    pack's near-black ink (Trym: "the outline can be a bit darker than that
+    again, not black outline"). Black reads as a sticker cut out of the beach;
+    a brown a couple of stops below the body reads as wet, packed sand."""
     im = im.copy()
     px = im.load()
     for y in range(im.height):
@@ -407,7 +413,8 @@ def sand_tint(im, lo=(198, 168, 118), hi=(252, 238, 198)):
             if not a:
                 continue
             lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
-            if lum < 0.20:          # keep the outline dark
+            if lum < 0.20:                      # the ink line → dark sand-brown
+                px[x, y] = (ink[0], ink[1], ink[2], a)
                 continue
             t = (lum - 0.20) / 0.80
             t = 0.0 if t < 0 else (1.0 if t > 1 else t)
@@ -498,7 +505,7 @@ def net_span():
 # patch is part of the beach; the towel lying on it should be on top).
 # ⚠️ An earlier in-browser check compared patches only against DOM overlays and
 # so missed every BAKED prop — exactly the ones that show the fault.
-DIG_SITES = [(320, 620), (340, 870), (560, 700), (620, 966), (1244, 662),
+DIG_SITES = [(1330, 900), (340, 870), (560, 700), (620, 966), (1244, 662),
              (1430, 640), (1620, 950), (902, 1066), (1150, 1066)]
 PATCH_W, PATCH_H = 156, 104
 
@@ -579,6 +586,9 @@ export const NET = { y: %d, x0: %d, x1: %d,
   spriteX: %d, spriteY: %d, spriteW: %d, spriteH: %d,
   topZ: %d, gapZ: %d };
 export const BAR = { x: %d, y: %d, r: %d };
+// 🔥 the fire circle's centre — the page stands an animated flame here and
+// pools warm light around it. Its walk collider is in OB_CIRCLES as usual.
+export const BONFIRE = { x: %d, y: %d };
 
 export const OB_RECTS = [
 %s
@@ -632,6 +642,7 @@ export const GRABBER = { x: %d, y: %d };
        NET_BASE - (NET_SPRITE[1] + NET_MESH_ROWS[0]),
        NET_BASE - (NET_SPRITE[1] + NET_MESH_ROWS[1]),
        BAR[0], BAR[1] + 140, BAR_NOTICE,
+       BONFIRE[0], BONFIRE[1],
        rows(rects), rows(circles),
        '\n'.join('  { rect: [%s], seat: { x: %d, y: %d } },   // %s'
                  % (', '.join(str(v) for v in c[0]), c[1][0], c[1][1], c[2])
@@ -699,7 +710,7 @@ if HAVE_PACK:
     for cx, base, fl in ((170, 500, False), (600, 508, True),      # frame left station
                          (720, 506, False), (1118, 506, True),     # frame centre station
                          (1236, 500, False), (1560, 508, True),    # frame right station
-                         (470, 1082, False), (1300, 968, True)):   # lower accents
+                         (470, 1082, False), (1480, 1060, True)):  # lower accents
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
               layer=True)
     # 🌿 BUSHES fringing the pier bazaar — a little green spilling over the seam
@@ -829,13 +840,19 @@ if HAVE_PACK:
         place('21_Beach_48x48_Ship_Bar_Chair_1.png', 1836, cy, layer=True)
         place('21_Beach_48x48_Ship_Bar_Chair_2.png', 1944, cy, flip=True, layer=True)
 
-    # ─── 🔥 THE FIREPIT NOOK: chairs pulled up round the ring + a blanket ─────
-    # (the ring itself is hand-drawn at BONFIRE; a lower palm shelters it.)
+    # ─── 🔥 THE FIRE CIRCLE, above the welcome arch ──────────────────────────
+    # FOUR chairs, two a side, all TURNED IN (the right pair is flipped) so the
+    # ring reads as somewhere people sit together of an evening. Nothing is
+    # placed inside the circle — the old nook failed because a palm grew through
+    # it. Vegetation and a blanket sit OUTSIDE the seating, framing it.
     fx, fy = BONFIRE[0], BONFIRE[1]
-    place('24_Additional_Houses_Modern_House_Deck_Chair_White_48x48.png', fx - 104, fy + 4, layer=True)
-    place('24_Additional_Houses_Modern_House_Deck_Chair_Grey_48x48.png', fx + 104, fy + 4, flip=True, layer=True)
-    place('21_Beach_48x48_Grey_Beach_Towel_1.png', fx, fy + 104, shade=False)
-    place('21_Beach_48x48_Small_Red_Bucket_1.png', fx + 60, fy + 96, shade=False, layer=True)
+    for cy in (fy - 26, fy + 44):
+        place('21_Beach_48x48_Ship_Bar_Chair_1.png', fx - 84, cy, layer=True)
+        place('21_Beach_48x48_Ship_Bar_Chair_2.png', fx + 84, cy, flip=True, layer=True)
+    place('21_Beach_48x48_Grey_Beach_Towel_1.png', fx + 4, fy + 112, shade=False)
+    place('21_Beach_48x48_Small_Red_Bucket_1.png', fx - 96, fy + 96, shade=False, layer=True)
+    for vx, vy in ((fx - 128, fy + 40), (fx + 132, fy - 44), (fx + 20, fy - 84)):
+        place('21_Beach_48x48_Big_Sprout_Vers_1.png', vx, vy, shade=False, layer=True)
 
     # 🎡 THE PIER BAZAAR — a WALKABLE deck (BOARDWALK isn't a collider now). Two
     # rows of game stalls with a wide central aisle, food/fruit WAGONS between
@@ -980,6 +997,12 @@ if HAVE_PACK:
     # fish-shaped SHADOWS painted in slightly darker shades of their own water,
     # so they need their own (darker) key and a TIGHT tolerance, or the dekey
     # eats the fish too. No outline: a shadow under water has no ink line.
+    # 🔥 THE BONFIRE'S FLAME — the pack's own 6-frame campfire, 48×96 per frame
+    # (it is TWO tiles tall because the fire rises out of its ring). Trym asked
+    # for "a glowing fire, medium sized, fit for a beach evening" — the sprite
+    # gives the flame, the page adds the warm light pooling around it.
+    anim_strip('Campfire_48x48.png', 'a-fire.png', frames=6, tw=48, th=96,
+               colors=12, warm=0.10)
     FISH_KEY = (60, 163, 178)
     anim_strip('Fishes_1_48x48gif.png', 'a-fish1.png', frames=12, dekey=FISH_KEY,
                keytol=8, outline=False, colors=5, warm=0.0)

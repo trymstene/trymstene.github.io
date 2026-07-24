@@ -26,6 +26,9 @@ export const NET = { y: 844, x0: 666, x1: 1194,
   spriteX: 665, spriteY: 705, spriteW: 530, spriteH: 146,
   topZ: 133, gapZ: 76 };
 export const BAR = { x: 1700, y: 760, r: 104 };
+// 🔥 the fire circle's centre — the page stands an animated flame here and
+// pools warm light around it. Its walk collider is in OB_CIRCLES as usual.
+export const BONFIRE = { x: 215, y: 655 };
 
 export const OB_RECTS = [
   [157, 464, 183, 500],   // palm tree
@@ -35,7 +38,7 @@ export const OB_RECTS = [
   [1223, 464, 1249, 500],   // palm tree
   [1547, 472, 1573, 508],   // palm tree
   [457, 1046, 483, 1082],   // palm tree
-  [1287, 932, 1313, 968],   // palm tree
+  [1467, 1024, 1493, 1060],   // palm tree
   [1580, 638, 1822, 748],   // ship bar
   [2094, 478, 2186, 506],   // midway
   [2384, 478, 2476, 506],   // midway
@@ -57,7 +60,7 @@ export const OB_CIRCLES = [
   [2360, 690, 13],   // street food table 2
   [2500, 728, 13],   // street food table 4
   [2318, 704, 13],   // street food chair 1
-  [1330, 900, 80],   // the bonfire ring
+  [215, 655, 74],   // the bonfire ring
 ];
 
 export const CHAIRS = [
@@ -82,7 +85,7 @@ export const OVERLAYS = [
   { src: 'ov-4.png', x: 1168, y: 339, w: 136, h: 161, base: 500 },
   { src: 'ov-5.png', x: 1492, y: 347, w: 136, h: 161, base: 508 },
   { src: 'ov-6.png', x: 402, y: 921, w: 136, h: 161, base: 1082 },
-  { src: 'ov-7.png', x: 1232, y: 807, w: 136, h: 161, base: 968 },
+  { src: 'ov-7.png', x: 1412, y: 899, w: 136, h: 161, base: 1060 },
   { src: 'ov-8.png', x: 1919, y: 335, w: 95, h: 67, base: 402 },
   { src: 'ov-9.png', x: 1925, y: 457, w: 95, h: 67, base: 524 },
   { src: 'ov-10.png', x: 1913, y: 593, w: 95, h: 67, base: 660 },
@@ -107,26 +110,31 @@ export const OVERLAYS = [
   { src: 'ov-29.png', x: 1933, y: 108, w: 22, h: 24, base: 132 },
   { src: 'ov-30.png', x: 1825, y: 188, w: 22, h: 24, base: 212 },
   { src: 'ov-31.png', x: 1933, y: 188, w: 22, h: 24, base: 212 },
-  { src: 'ov-32.png', x: 1205, y: 832, w: 42, h: 72, base: 904 },
-  { src: 'ov-33.png', x: 1413, y: 832, w: 42, h: 72, base: 904 },
-  { src: 'ov-34.png', x: 1376, y: 963, w: 28, h: 33, base: 996 },
-  { src: 'ov-35.png', x: 2061, y: 366, w: 158, h: 134, base: 500 },
-  { src: 'ov-36.png', x: 2057, y: 454, w: 166, h: 50, base: 503 },
-  { src: 'ov-37.png', x: 2351, y: 366, w: 158, h: 134, base: 500 },
-  { src: 'ov-38.png', x: 2347, y: 454, w: 166, h: 50, base: 503 },
-  { src: 'ov-39.png', x: 2061, y: 806, w: 158, h: 134, base: 940 },
-  { src: 'ov-40.png', x: 2057, y: 894, w: 166, h: 50, base: 943 },
-  { src: 'ov-41.png', x: 2351, y: 806, w: 158, h: 134, base: 940 },
-  { src: 'ov-42.png', x: 2347, y: 894, w: 166, h: 50, base: 943 },
-  { src: 'ov-43.png', x: 2601, y: 548, w: 94, h: 152, base: 700 },
-  { src: 'ov-44.png', x: 2231, y: 330, w: 119, h: 136, base: 466 },
-  { src: 'ov-45.png', x: 2551, y: 350, w: 119, h: 136, base: 486 },
-  { src: 'ov-46.png', x: 2229, y: 776, w: 123, h: 134, base: 910 },
-  { src: 'ov-47.png', x: 1956, y: 592, w: 128, h: 134, base: 726 },
-  { src: 'ov-48.png', x: 2508, y: 810, w: 105, h: 120, base: 930 },
-  { src: 'ov-49.png', x: 2341, y: 635, w: 38, h: 55, base: 690 },
-  { src: 'ov-50.png', x: 2481, y: 675, w: 38, h: 53, base: 728 },
-  { src: 'ov-51.png', x: 2303, y: 673, w: 31, h: 31, base: 704 },
+  { src: 'ov-32.png', x: 120, y: 605, w: 22, h: 24, base: 629 },
+  { src: 'ov-33.png', x: 288, y: 605, w: 22, h: 24, base: 629 },
+  { src: 'ov-34.png', x: 120, y: 675, w: 22, h: 24, base: 699 },
+  { src: 'ov-35.png', x: 288, y: 675, w: 22, h: 24, base: 699 },
+  { src: 'ov-36.png', x: 105, y: 718, w: 28, h: 33, base: 751 },
+  { src: 'ov-37.png', x: 40, y: 628, w: 95, h: 67, base: 695 },
+  { src: 'ov-38.png', x: 300, y: 544, w: 95, h: 67, base: 611 },
+  { src: 'ov-39.png', x: 188, y: 504, w: 95, h: 67, base: 571 },
+  { src: 'ov-40.png', x: 2061, y: 366, w: 158, h: 134, base: 500 },
+  { src: 'ov-41.png', x: 2057, y: 454, w: 166, h: 50, base: 503 },
+  { src: 'ov-42.png', x: 2351, y: 366, w: 158, h: 134, base: 500 },
+  { src: 'ov-43.png', x: 2347, y: 454, w: 166, h: 50, base: 503 },
+  { src: 'ov-44.png', x: 2061, y: 806, w: 158, h: 134, base: 940 },
+  { src: 'ov-45.png', x: 2057, y: 894, w: 166, h: 50, base: 943 },
+  { src: 'ov-46.png', x: 2351, y: 806, w: 158, h: 134, base: 940 },
+  { src: 'ov-47.png', x: 2347, y: 894, w: 166, h: 50, base: 943 },
+  { src: 'ov-48.png', x: 2601, y: 548, w: 94, h: 152, base: 700 },
+  { src: 'ov-49.png', x: 2231, y: 330, w: 119, h: 136, base: 466 },
+  { src: 'ov-50.png', x: 2551, y: 350, w: 119, h: 136, base: 486 },
+  { src: 'ov-51.png', x: 2229, y: 776, w: 123, h: 134, base: 910 },
+  { src: 'ov-52.png', x: 1956, y: 592, w: 128, h: 134, base: 726 },
+  { src: 'ov-53.png', x: 2508, y: 810, w: 105, h: 120, base: 930 },
+  { src: 'ov-54.png', x: 2341, y: 635, w: 38, h: 55, base: 690 },
+  { src: 'ov-55.png', x: 2481, y: 675, w: 38, h: 53, base: 728 },
+  { src: 'ov-56.png', x: 2303, y: 673, w: 31, h: 31, base: 704 },
 ];
 
 // ⛱ CLICKABLE PARASOLS. NOT baked into the plate (a baked open one would show

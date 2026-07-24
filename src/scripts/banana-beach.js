@@ -16,7 +16,7 @@ import { seedRand } from '../lib/world.js';
 // left standing where their props used to be, one of them ON the court).
 import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
-  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, PIER_SPRITE, STALLS, GRABBER,
+  OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 
@@ -230,6 +230,22 @@ function init() {
       track('beach_parasol', { color: u.color, open: open ? 1 : 0 });
     });
   });
+
+  // 🔥 THE BONFIRE — the pack's 6-frame flame standing in the ring, with a pool
+  // of warm light under it. The glow sits BELOW the flame and below the walkers
+  // (it's light on the sand, not an object), the flame sorts on the ring's line.
+  (() => {
+    const glow = document.createElement('div');
+    glow.className = 'bh-fireglow';
+    glow.style.left = pct(BONFIRE.x, W); glow.style.top = pct(BONFIRE.y, H);
+    glow.style.zIndex = '3';
+    world.appendChild(glow);
+    const f = document.createElement('div');
+    f.className = 'bh-fire';
+    f.style.left = pct(BONFIRE.x, W); f.style.top = pct(BONFIRE.y, H);
+    f.style.zIndex = String(100 + BONFIRE.y);
+    world.appendChild(f);
+  })();
 
   // 🐟 SHOALS UNDER THE SURFACE — the pack's "Fishes" sheets are fish-shaped
   // SHADOWS, so they read as shapes gliding below the water rather than sprites
@@ -1141,7 +1157,7 @@ function init() {
   // patch (Trym's rule). All sit in open sand, clear of the court, wreck,
   // bazaar, firepit, tanning row and the welcome arch.
   const DIG_SITES = [
-    { x: 320, y: 620, clue: 'in the western sands' },
+    { x: 1330, y: 900, clue: 'the flat sand where the old fire ring used to be' },
     { x: 340, y: 870, clue: 'down among the western dunes' },
     { x: 560, y: 700, clue: 'midway up the west beach' },
     { x: 620, y: 966, clue: 'south-west, just off the entrance path' },

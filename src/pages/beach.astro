@@ -153,6 +153,40 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     @media (prefers-reduced-motion: reduce) { .bh-bob { animation: none; } }
 
+    /* 🔥 THE BONFIRE. The pack's own 6-frame campfire (48×96 per frame, so the
+       box is 1:2), stood ON the ring's centre line, plus a pool of warm light.
+       Medium-sized on purpose: big enough to be the evening's focal point,
+       small enough that four chairs still frame it. */
+    .bh-fire {
+      position: absolute; width: 1.3%; aspect-ratio: 1 / 2;
+      transform: translate(-50%, -78%); pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+      background-image: url('/assets/beach/a-fire.png');
+      background-size: 600% 100%;                 /* 6 frames */
+      animation: bhFireStrip 0.6s steps(6) infinite;
+    }
+    @keyframes bhFireStrip {
+      from { background-position-x: 0%; }
+      to   { background-position-x: 120%; }       /* = 100% × 6 / 5 */
+    }
+    /* light on the sand — it breathes, so the fire feels alive from a distance */
+    .bh-fireglow {
+      position: absolute; width: 13%; aspect-ratio: 3 / 2;
+      transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
+      background: radial-gradient(ellipse at center,
+                  rgba(255, 176, 68, 0.34) 0%, rgba(255, 140, 40, 0.16) 42%,
+                  rgba(255, 120, 30, 0) 72%);
+      animation: bhFireGlow 2.4s ease-in-out infinite;
+    }
+    @keyframes bhFireGlow {
+      0%, 100% { opacity: 0.72; transform: translate(-50%, -50%) scale(0.95); }
+      50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.06); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-fire { animation: none; }
+      .bh-fireglow { animation: none; opacity: 0.85; }
+    }
+
     /* 🐟 SHOALS UNDER THE SURFACE. The pack's fish are SHADOWS painted in
        darker shades of the water, so they stay low-contrast and take no ink
        outline. Two animations at once, on different properties: the strip
