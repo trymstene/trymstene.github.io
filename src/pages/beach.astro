@@ -356,6 +356,43 @@ const description = 'The beach at the end of the park road. The sun never quite 
       transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
       border-radius: 50%; z-index: -1;
     }
+    /* 🏊 IN THE WATER: the sand ellipse switches off (a contact shadow in the
+       sea is nonsense) and a RIPPLE RING takes over — at the WATERLINE, not at
+       the feet, which are ~46 art px lower and would put a ring on the sand
+       behind the swimmer. --wet is the waterline as a % of the element height,
+       set by drawMe(). The wet TINT itself is painted into the canvas by
+       applySubmerge(); this is only the ring, because a CSS overlay would tint
+       the empty canvas beside the banana too. */
+    .bh-me.is-wet::after { display: none; }
+    .bh-me__ring { display: none; }
+    .bh-me.is-wet .bh-me__ring {
+      display: block; position: absolute; left: 50%;
+      bottom: calc(var(--wet, 14) * 1%);
+      width: 92%; aspect-ratio: 3 / 1; z-index: -1; pointer-events: none;
+      border: 2px solid rgba(140, 243, 230, 0.55);
+      border-radius: 50%; transform: translate(-50%, 50%);
+      animation: bhRipple 1.9s ease-out infinite;
+    }
+    @keyframes bhRipple {
+      0% { transform: translate(-50%, 50%) scale(0.55); opacity: 0.75; }
+      100% { transform: translate(-50%, 50%) scale(1.25); opacity: 0; }
+    }
+    /* 🏐🌊 THE WATER BALL — floats, so it has no z, no gravity and no shadow.
+       The sprite draws its own waterline collar. */
+    .bh-wball {
+      position: absolute; width: 2.1%; aspect-ratio: 1;
+      transform: translate(-50%, -90%); pointer-events: none;
+      image-rendering: pixelated;
+      background: url('/assets/beach/a-floatball.png') 0 0 / 600% 100% no-repeat;
+      animation: bhWBall 0.86s steps(6) infinite;
+    }
+    /* ⚠️ 120% = 100% × 6/5 — the frame-stepping rule from the crab note below */
+    @keyframes bhWBall { from { background-position-x: 0%; } to { background-position-x: 120%; } }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-me.is-wet .bh-me__ring { animation: none; opacity: 0.5; }
+      .bh-wball { animation: none; }
+    }
+
     /* 🏐 SANDY — the court's resident. Same build as your own banana (he IS
        one), so he gets the same size and the same contact shadow; only his
        z-index differs, because he depth-sorts against the net like you do. */
@@ -877,7 +914,9 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <!-- 🐚 SHELLY — keeps the shell board up the beach -->
         <div class="bh-cap bh-shelly" id="bhShelly"><canvas id="bhShellyCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhShellyBubble" role="status" aria-live="polite"></div>
-        <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        <!-- 🏐🌊 the beach ball that lives in the lagoon -->
+        <div class="bh-wball" id="bhWBall" aria-hidden="true"></div>
+        <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div>
       </div>
       <div class="bh-hud">
         <span class="bh-chip bh-chip--rally" id="bhRally"></span>

@@ -552,8 +552,11 @@ def net_span():
 # bottom line is y1012 and the world ends at 1100, so a patch there either
 # overlaps the lines or hangs off the map. That gap is why the south lawn is
 # deliberately bare.
-DIG_SITES = [(820, 368), (1080, 368), (490, 980), (300, 1046), (1280, 700),
-             (1290, 1040), (1450, 900), (1620, 900), (1800, 980)]
+# ⚠️ only TWO sites left in the tide band. Sunset Row spread across the shore
+# took the west half of it, and a 156px patch simply does not fit between two
+# sun pitches — the gaps are 126 and 142px wide. The third moved inland.
+DIG_SITES = [(400, 620), (730, 372), (1100, 380), (490, 980), (300, 1046),
+             (1290, 1040), (1560, 1010), (1620, 900), (1790, 1010)]
 PATCH_W, PATCH_H = 156, 104
 ARCH = (75, 770, 355, 950)     # the welcome arch's DOM box (banana-beach.js)
 
@@ -1048,11 +1051,23 @@ if HAVE_PACK:
         # frontage should look like) → the bazaar's sand gate.
         # ⚠️ the wreck's collider is [1580,638,1822,748]; the spine passes
         # WEST then SOUTH of it, never through.
+        # ⚠️ THE SHORE LEG DROPPED ~25px (was y456-486 through the court span).
+        # Sunset Row needs the band between the tide and the road, and three
+        # stations with beds and blankets don't fit in 90px. The ceiling is
+        # hard: audit_roads() trips if the centreline reaches COURT.y0 − hw =
+        # 510, and the wobble adds up to 10, so 492 is the deepest safe value.
         ([(0, 1050), (150, 1000), (300, 934), (420, 862), (486, 782), (516, 690),
-          (540, 596), (592, 526), (676, 486), (800, 464), (940, 456), (1090, 460),
-          (1220, 480), (1330, 530), (1440, 566), (1528, 598), (1540, 664),
+          (540, 596), (592, 534), (676, 492), (800, 480), (940, 476), (1090, 480),
+          (1220, 492), (1330, 534), (1440, 566), (1528, 598), (1540, 664),
           (1528, 742), (1580, 806), (1700, 830), (1840, 822), (1952, 782)],
          22, (False, False)),
+        # ── THE COURT'S TWO DOORS ──────────────────────────────────────────
+        # Trym asked for a little road to the volleyball court from the west
+        # (2) and again from the east (5). Both start INSIDE the spine and
+        # stop just short of the sidelines — the court's own red lines are the
+        # threshold, and painting sand over them would read as a mistake.
+        ([(506, 726), (580, 744), (656, 754)], 14, (False, True)),
+        ([(1266, 512), (1232, 566), (1206, 624)], 14, (False, True)),
         # ── THE DOCK BRANCH ────────────────────────────────────────────────
         # leaves the spine at ~(1548,620) — up and to the RIGHT of the old
         # junction and in genuinely open sand (Trym: "a bit more spacious…
@@ -1077,16 +1092,22 @@ if HAVE_PACK:
     # we can add them ones the zones are more clean". Planting comes back once
     # the rooms are legible — clearing first, dressing second.
     for cx, base, fl in ((120, 560, False), (196, 512, True),      # the west grove
-                         (1560, 476, True), (1636, 512, False)):   # the shell cove pair
+                         (1560, 476, True), (1636, 512, False),    # the shore pair
+                         (1418, 856, True)):                       # over Shelly's pitch
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
               layer=True)
 
     # 🌿 THE PIER FRINGE — two clumps with a gap where the spine arrives. It
     # used to be five copies of one sprite in a dead-straight column at 140px
     # pitch, i.e. a machine-planted hedge. A gap in a hedge is a gate.
+    # ⚠️ THE FOUR SURVIVORS ARE ALL ON SAND. Three of these bushes used to
+    # stand ON THE WOODEN DECK at (2160,1006) (2420,1010) (2660,1006), and
+    # Big_Sprout carries a pale SAND COLLAR baked into its base — so they were
+    # three sandy blobs on brown planks. The fourth was at cx1970, whose 95px
+    # sprite put 38px of that collar over the deck lip at x1980; it needs
+    # cx ≤ 1932 to clear, not the 8px nudge that looked like enough.
     for cx, base in ((1958, 452), (1934, 512),
-                     (1946, 946), (1970, 998),
-                     (2160, 1006), (2420, 1010), (2660, 1006)):
+                     (1930, 946), (1912, 998)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False, layer=True)
 
     # 🏐 the volleyball court, built from the pack's own pieces.
@@ -1184,18 +1205,32 @@ if HAVE_PACK:
     # the sunbathers on your left and the sea beyond them.
     # ⚠️ THREE beds, three DIFFERENT sprites — six beds from three sprites meant
     # every single one had a visible twin.
-    umbrella('yellow', 352, 436)
-    umbrella('green', 476, 462)
-    umbrella('blue', 604, 428)
-    for name, x0, y0 in (('Sunbed_5', 296, 478), ('Sunbed_1', 420, 500),
-                         ('Sunbed_9', 548, 470)):
-        place('ME_Singles_Swimming_Pool_48x48_%s.png' % name, x0, y0, solid=SUNBED)
-    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 358, 500, shade=False)
-    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 610, 486, shade=False)
+    # ⚠️ THREE SEPARATE PITCHES, not one clump. Trym: "spread the parasols a
+    # little out, put some sunbeds beside each parasol, and sometimes a blanket
+    # … parasols and tanning zone along the shore with some space inbetween."
+    # So each station is a parasol + its own bed(s) + sometimes a blanket, and
+    # they sit ~330px apart with bare sand between — the space IS the design.
+    # The row runs west→east across 900px of shore, all of it ABOVE the spine,
+    # so walking the road you have the sunbathers on your left and the sea
+    # beyond them.
+    # ⚠️ Every bed is a DIFFERENT sprite. Six beds from three sprites (the
+    # original) meant every single one had a visible twin.
+    umbrella('yellow', 250, 424)      # ── west pitch: one bed, one blanket
+    place('ME_Singles_Swimming_Pool_48x48_Sunbed_5.png', 190, 452, solid=SUNBED)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 306, 446, shade=False)
+
+    umbrella('green', 566, 444)       # ── centre pitch: a pair of beds
+    place('ME_Singles_Swimming_Pool_48x48_Sunbed_1.png', 504, 468, solid=SUNBED)
+    place('ME_Singles_Swimming_Pool_48x48_Sunbed_9.png', 628, 460, solid=SUNBED)
     # the ONE surviving bucket, parked touching a lounger so it belongs to
     # somebody. Three more stood evenly spaced along the waterline owned by
     # nothing at all.
-    place('21_Beach_48x48_Small_Red_Bucket_1.png', 466, 508, shade=False, layer=True)
+    place('21_Beach_48x48_Small_Red_Bucket_1.png', 570, 470, shade=False, layer=True)
+
+    umbrella('blue', 900, 420)        # ── east pitch: a bed and a blanket
+    place('ME_Singles_Swimming_Pool_48x48_Sunbed_2.png', 842, 442, solid=SUNBED)
+    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 958, 436, shade=False)
+    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 214, 486, shade=False)
 
     # ─── 🌊 Z1 THE TIDE — a NO-DECORATION strip, on purpose ──────────────────
     # ⚠️ NOTHING is placed in y292-362 any more. Sixteen collectible shells
@@ -1230,7 +1265,12 @@ if HAVE_PACK:
     # plate is something you walk straight through, which reads worse than the
     # tiny sign Trym complained about — the fix would have made it louder AND
     # more broken. Solid, they're objects; layered, you can pass in front.
-    place('21_Beach_48x48_White_Cartel.png', 1322, 452, scale=1.25, sh=0.26,
+    # ⚠️ SHELLY'S BOARD MOVED WITH HER, off the shore into the open field south
+    # of the road. Trym: "The shell-banana can move here, so that they dont
+    # occupy so much of the shore". Her keeping the tide clear matters twice
+    # over — the daily shells spawn in that same band, and she was the last
+    # thing standing in it.
+    place('21_Beach_48x48_White_Cartel.png', 1246, 812, scale=1.25, sh=0.26,
           layer=True, solid=('rect', -14, -6, 14, 0))    # 🐚 SHELLY'S BOARD 47x103
     place('21_Beach_48x48_Blue_Cartel_2.png', 1738, 424, scale=1.20, sh=0.26,
           layer=True, solid=('rect', -16, -6, 16, 0))    # 🎣 GIL'S BOARD 60x96
@@ -1257,6 +1297,15 @@ if HAVE_PACK:
     # at (1548,620), on open sand. Its old spot at (1286,726) had a dig patch,
     # two shrubs, a palm and a lane end inside 200px of it — the "much things
     # mushed together" Trym screenshotted.
+
+    # 🌿 SHELLY'S PITCH — a little shrubbery and a palm so the shell keeper
+    # stands somewhere rather than on bare sand (Trym: "maybe some shrubbery
+    # and palms. But always room for a digging patch or two" — DIG_SITES keeps
+    # (1280,700) and (1450,900) either side of her).
+    place('21_Beach_48x48_Big_Sprout_Vers_1.png', 1236, 884, shade=False, layer=True)
+    place('21_Beach_48x48_Small_Sprout_3_Vers_2.png', 1338, 894, flip=True,
+          shade=False, layer=True)
+    place('21_Beach_48x48_Big_Sprout_Vers_2.png', 1490, 786, shade=False, layer=True)
 
     # 🎣 FOUR FISHING CHAIRS on the dock — two rows of two, each pair facing
     # OUT over its own side of the water so the lines never cross. Sit to cast.
@@ -1353,12 +1402,87 @@ if HAVE_PACK:
             ('Fruit_Flowers_Cart_2', 2560, 930, 0.72)):
         place('ME_Singles_Vehicles_48x48_%s.png' % name, cx, base, colors=28,
               sh=0.3, solid=('rect', -44, -24, 44, 0), layer=True, scale=sc)
-    # café tables + a chair down the aisle, so the walking space isn't barren
-    for name, cx, base in (('Street_Food_Table_2', 2360, 690),
-                           ('Street_Food_Table_4', 2500, 728),
-                           ('Street_Food_Chair_1', 2318, 704)):
-        place('ME_Singles_Vehicles_48x48_%s.png' % name, cx, base, colors=20,
-              sh=0.22, solid=('circle', 13), layer=True, scale=0.82)
+    # ─── 🍔 THE FOOD COURT ──────────────────────────────────────────────────
+    # Trym: "the pier-court is a bit weird … now i think its half-sprites
+    # randomly just added there that doesnt make sense." He was looking at two
+    # tables and ONE chair, unpaired, floating in 340x300px of bare plank.
+    #
+    # ⚠️ AND THE TABLES WERE THE WRONG VARIANTS. Street_Food_Table_1 and _10
+    # have the far chair DRAWN INTO the sprite; _2 and _4 are the same tables
+    # with that chair removed, meant to be paired with a real one. The old
+    # block shipped _2 and _4 — the chairless twins — and then parked a single
+    # Chair_1 forty pixels to the SIDE of one. That is the whole bug.
+    #
+    # ⚠️ AND Camping_Chair_1..8 ARE ALL THE SAME FACING. Pixel-diffing their
+    # alpha channels: 1, 2 and 5 have IDENTICAL silhouettes — 1-4 vs 5-8 is a
+    # frame FINISH (brown vs white), not a direction. Only 9-12 (east) and
+    # 13-16 (west) are true rotations. So the four-top gets THREE chairs: a
+    # north seat facing the table, and one each side. A south seat would sit
+    # someone with their back to their own dinner.
+    U = 'ME_Singles_Swimming_Pool_48x48_'
+
+    # ── A · the picnic table under a parasol. Benched_Table_2 carries its own
+    #      benches, so there is nothing to pair and nothing to orphan.
+    #      (NOT _4 — that one has a grill on it and reads as a butcher's block.)
+    place(U + 'Umbrella_3.png', 2180, 648, colors=18, sh=0.20, scale=0.60,
+          layer=True, solid=POLE)
+    place('ME_Singles_Camping_48x48_Benched_Table_2.png', 2180, 712, colors=22,
+          sh=0.30, scale=0.86, layer=True, solid=('rect', -36, -26, 36, -2))
+
+    # ── B · the four-top. The chairs are deliberately NOT solid, the same call
+    #      the bonfire ring makes: with straight-line steering, a ring of
+    #      colliders round a table is a snag trap.
+    place('ME_Singles_Garden_48x48_Square_Bench.png', 2360, 690, colors=16,
+          sh=0.30, scale=0.82, layer=True, solid=('rect', -34, -22, 34, -2))
+    for chair, ccx, cbase in (('Chair_1', 2360, 638),     # north seat, faces in
+                              ('Chair_11', 2304, 702),    # west seat, faces east
+                              ('Chair_15', 2416, 702)):   # east seat, faces west
+        place('ME_Singles_Camping_48x48_%s.png' % chair, ccx, cbase, colors=16,
+              sh=0.20, scale=0.80, layer=True)
+
+    # ── C · the parasol two-top by the claw. Table_1 draws the FAR chair; the
+    #      loose Chair_1 is the NEAR one, seen from behind, and belongs just
+    #      below the table so it y-sorts in front of it.
+    place(U + 'Umbrella_2.png', 2552, 640, colors=18, sh=0.20, scale=0.60,
+          layer=True, solid=POLE)
+    place('ME_Singles_Vehicles_48x48_Street_Food_Table_1.png', 2540, 690,
+          colors=20, sh=0.24, scale=0.92, layer=True, solid=('circle', 15))
+    place('ME_Singles_Vehicles_48x48_Street_Food_Chair_1.png', 2540, 712,
+          colors=16, sh=0.20, scale=0.92, layer=True)
+
+    # ── chalkboard menus, on the customer side of the two hot-food carts
+    place('ME_Singles_Vehicles_48x48_Street_Food_Sign_2.png', 2016, 856,
+          colors=18, sh=0.24, scale=0.88, layer=True)     # the wok cart
+    place('ME_Singles_Vehicles_48x48_Street_Food_Sign_1.png', 2210, 800,
+          colors=18, sh=0.24, scale=0.88, layer=True)     # the burger cart
+
+    # ── bins, where litter actually happens. There is no wooden bin in the
+    #    pack; Trashbin_7/8/9 are the only ones with a warm slat panel.
+    for b, bcx, bbase in (('Trashbin_7', 2044, 786),
+                          ('Trashbin_9', 2236, 596),
+                          ('Trashbin_8', 2640, 890)):
+        place('ME_Singles_City_Props_48x48_%s.png' % b, bcx, bbase, colors=14,
+              sh=0.24, scale=0.86, layer=True, solid=('circle', 11))
+
+    # ── the pier's stores in the corners.
+    # ⚠️ POSITIONS CHECKED AGAINST THE STALLS' SCRIPTED WALK WAYPOINTS. Tapping
+    # a stall routes you to a point 132px to its side first, and a barrel at
+    # (2026,556) sat exactly on the top-left stall's west waypoint (2008,540):
+    # the banana would grind against it forever and the stall would never open.
+    # A collider is not just art — it can eat a whole interaction.
+    place('ME_Singles_Camping_48x48_Pier_Crates_4.png', 2028, 460, colors=16,
+          sh=0.28, scale=0.82, layer=True, solid=('rect', -35, -22, 35, -2))
+    place('ME_Singles_Camping_48x48_Pier_Barrel_3.png', 2026, 620, colors=16,
+          sh=0.28, scale=0.82, layer=True, solid=('rect', -31, -18, 31, -2))
+    place('ME_Singles_Camping_48x48_Pier_Barrel_4.png', 2090, 1000, colors=16,
+          sh=0.28, scale=0.82, layer=True, solid=('rect', -37, -16, 37, -2))
+    place('ME_Singles_Camping_48x48_Pier_Crates_5.png', 2612, 1004, colors=16,
+          sh=0.28, scale=0.82, layer=True, solid=('rect', -37, -20, 37, -2))
+    # (🏮 lanterns ON the stacks were tried and cut. A lantern's base is above
+    #  the stack's, so the stack's own y-sorted overlay repaints ITSELF over
+    #  the lantern every frame — baking it changes nothing, because the page
+    #  redraws every layer=True prop on top of the plate. All that survived
+    #  was a grey dome cap sitting on a crate.)
     print('  wrote the PIER BAZAAR (2 rows x %d stalls + grabber + wagons)'
           % (len(STALL_POS) // 2))
 
@@ -1467,7 +1591,13 @@ if HAVE_PACK:
     anim_strip('Floating_Separation_Buoys_1_48x48.png', 'a-ropebuoy.png',
                frames=8, dekey=WATER_KEY)
     anim_strip('Beach_Floating_Rock_1_48x48.png', 'a-rock.png', frames=8, dekey=WATER_KEY)
-    anim_strip('Floating_Ball_1_48x48.png', 'a-floatball.png', frames=6, dekey=WATER_KEY)
+    # 🏐🌊 the lagoon's beach ball. ⚠️ 96×96 PER FRAME (576×96 = 6 × 96), the
+    # same trap the crab note above warns about: the default 48 slice took the
+    # top-left quarter of every frame and threw the ball's waterline collar
+    # away, which is the one thing that makes it read as FLOATING.
+    # ⚠️ AND NO dekey. This sheet has no baked water square, and WATER_KEY at
+    # the default tolerance eats #47babd — the collar itself.
+    anim_strip('Floating_Ball_1_48x48.png', 'a-floatball.png', frames=6, tw=96, th=96)
     # 🐟 SHOALS UNDER THE SURFACE. These sheets are NOT fish sprites — they are
     # fish-shaped SHADOWS painted in slightly darker shades of their own water,
     # so they need their own (darker) key and a TIGHT tolerance, or the dekey

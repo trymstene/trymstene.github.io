@@ -87,7 +87,10 @@ function init() {
   };
   // 🐚 SHELLY, who keeps the shell board up the beach
   const SHELLY_DRAW = {
-    hat: 'strawhat', glasses: 'sunglasses', extras: {},
+    // ⚠️ 'shades' — 'sunglasses' was never an id (it's the *phrase* for the
+    // shades entry in src/data/wearables.js), so Shelly has been drawing with
+    // bare eyes since the day she was written. Unknown ids fail silently.
+    hat: 'strawhat', glasses: 'shades', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
 
@@ -271,12 +274,53 @@ function init() {
   pierEl.style.height = pct(PIER_SPRITE.h, H);
   world.appendChild(pierEl);
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
-  function blocked(x, y) {
+
+  // ---- 🏊 THE SWIM LAGOON --------------------------------------------------
+  // Trym: "Add swimming… the banana should get dark blue in his bottom half
+  // when going in the water… deeper and deeper the more you go out."
+  //
+  // A roped-off bathing area, not the whole ocean. The bounds are not taste:
+  //   x0 400  — clears the two floating ROCKS baked at x277-324 and x333-380.
+  //             They have no colliders, because until now nobody could reach
+  //             them; a swimmer would have swum straight through solid stone.
+  //   ySea 190 — clears the buoy at x1100 whose base is y182, same reason.
+  //   x1 1620 — 200px short of the dock, so the shoreline stays a straight
+  //             line and the water ball never has to bounce off the pier's
+  //             notch.
+  //   yShore 290 — the water's edge. WATER_Y is 292 and the painted shoreline
+  //             runs y270-278, but a banana's FEET render 13.5 art px above
+  //             pos.y, so at pos.y=290 they are already in the wet band. The
+  //             old wall was tuned to that same offset.
+  const SWIM = { x0: 400, x1: 1620, ySea: 190, yShore: 290 };
+  const WET_MAX = 0.50;    // most of the body we ever flood — see subAt()
+  // ⚠️ the dock is a FLOOR LAID OVER THE WATER. A banana at (1890,200) is
+  // standing on planks, not swimming. This is the same expression blocked()
+  // has always used, factored out, so the collider and the renderer physically
+  // cannot disagree about who is wet.
+  const onDock = (x, y) => x >= PLATFORM.x0 && x <= PLATFORM.x1
+    && y >= PLATFORM.y0 && y <= PLATFORM.y1;
+  const inLagoon = (x, y) => x >= SWIM.x0 && x <= SWIM.x1 && y >= SWIM.ySea;
+
+  // how much of a banana is under water at (x, y): 0 = dry, WET_MAX = chin.
+  // ⚠️ NOT called depth() — that name is already the z-index setter above.
+  function subAt(x, y) {
+    if (y >= SWIM.yShore || onDock(x, y)) return 0;
+    const d = Math.min(1, (SWIM.yShore - y) / (SWIM.yShore - SWIM.ySea));
+    return WET_MAX * d * (2 - d);         // ease-out: a real shelf drops fast
+  }
+  // ⚠️ WET_MAX IS CAPPED BY THE SPRITE'S OWN EYE LINE, not by taste. At 0.50
+  // the waterline sits at canvas y79.8 and the turned frames' eyes are at
+  // 74.1 — 5.7px of clearance. Past ~0.55 frames 0 and 4 drown, and a banana
+  // with its eyes under the surface reads as sinking, not swimming.
+
+  // `swimmer` opts in to the lagoon. ⚠️ blocked() is SHARED — the crabs
+  // (CRAB_HOME_R can already target y250) and Sandy call it too, and without
+  // the flag opening the sea would send them wading out to sea forever.
+  function blocked(x, y, swimmer) {
     if (x < 12 || x > WORLD.w - 12 || y > WORLD.h - 12) return true;
-    if (y < WATER_Y) {
-      const onPier = (x >= PIER.x0 && x <= PIER.x1 && y >= PIER.y0)
-        || (x >= PLATFORM.x0 && x <= PLATFORM.x1 && y >= PLATFORM.y0 && y <= PLATFORM.y1);
-      if (!onPier) return true;           // bananas famously can't swim
+    if (y < WATER_Y && !onDock(x, y)) {
+      if (!swimmer) return true;          // crabs, Sandy, everyone else
+      if (!inLagoon(x, y)) return true;   // the rope is the wall
     }
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
     for (const c of OB_CIRCLES) if (Math.hypot(x - c[0], y - c[1]) < c[2]) return true;
@@ -312,11 +356,24 @@ function init() {
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
   // land↔pier walks route through the pier mouth (the pier is an L — a
-  // straight line into the water dead-ends against its side)
+  // straight line into the water dead-ends against its side).
+  // ⚠️ THIS USED TO TEST `pos.y < WATER_Y + 10`, i.e. ANY land↔water crossing,
+  // and that was already a bug before swimming existed: tap the sea at x=400
+  // and your banana walked 1500px EAST to the dock. Only the PIER needs the
+  // detour, so only the pier tests for it.
   function setTarget(wx, wy) {
-    const crossing = (pos.y < WATER_Y + 10) !== (wy < WATER_Y + 10);
-    if (crossing) { nextTgt = { x: wx, y: wy }; tgt.x = PIER_MOUTH.x; tgt.y = PIER_MOUTH.y; }
-    else { nextTgt = null; tgt.x = wx; tgt.y = wy; }
+    if (onDock(pos.x, pos.y) !== onDock(wx, wy)) {
+      nextTgt = { x: wx, y: wy }; tgt.x = PIER_MOUTH.x; tgt.y = PIER_MOUTH.y;
+      return;
+    }
+    // a tap on open sea OUTSIDE the lagoon would otherwise send you grinding
+    // sideways along the shore forever — pull it back to the nearest water you
+    // can actually reach.
+    if (wy < WATER_Y && !onDock(wx, wy) && !inLagoon(wx, wy)) {
+      wx = Math.max(SWIM.x0 + 8, Math.min(SWIM.x1 - 8, wx));
+      wy = Math.max(SWIM.ySea + 4, wy);
+    }
+    nextTgt = null; tgt.x = wx; tgt.y = wy;
   }
   view.addEventListener('click', (e) => {
     if (e.target.closest('.bh-panel') || e.target.closest('.bh-chip')) return;
@@ -723,7 +780,11 @@ function init() {
   // in the panel, the board just says "a keeper stands here".
   // ⚠️ MOVED into the shell cove with the zoning pass, out of a spot where a
   // palm was literally drawn over her head — see the -74 note by shellyEl.
-  const SHELLY = { x: 1392, y: 436, r: 118 };
+  // ⚠️ MOVED OFF THE SHORE (Trym: "so that they dont occupy so much of the
+  // shore"). She now keeps her pitch in the open field south of the road,
+  // between two dig sites — which also clears the tide band she was standing
+  // in, the same 30px strip the daily shells spawn into.
+  const SHELLY = { x: 1320, y: 806, r: 118 };
   const shellyEl = document.getElementById('bhShelly');
   const shellyBubble = document.getElementById('bhShellyBubble');
   const shellyCtx = document.getElementById('bhShellyCv').getContext('2d');
@@ -1492,8 +1553,10 @@ function init() {
   // jogged. Sandy IS the loop. He's written as a partner, not a rival: he
   // returns almost everything (HIT_SANDY), keeps no score, and the rally
   // counter climbs because of him. A rival who beat you would end the game.
+  // ⚠️ 'shades', not 'visor' — Trym: "our volleyball NPC coach can have regular
+  // black shades on him, not the visors". The visor read as a tennis umpire.
   const SANDY_DRAW = {
-    hat: 'none', glasses: 'visor', extras: {},
+    hat: 'none', glasses: 'shades', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
   const SANDY_HOME = { x: 930, y: 946 };      // his half is the NEAR one
@@ -2406,17 +2469,24 @@ function init() {
       const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
       const d = Math.hypot(dx, dy);
       if (d > 1.5) {
-        const m = Math.min(d, SPEED * dt);
+        // 🏊 water is thick: 168 px/s on sand → 97 at the rope. That drag is
+        // what makes the far water feel far without putting a wall there, and
+        // it's why swimming out after the ball is a decision.
+        const wet = subAt(pos.x, pos.y) / WET_MAX;
+        const m = Math.min(d, SPEED * (1 - 0.42 * wet) * dt);
         const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
-        if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
-        else if (!blocked(nx, pos.y)) pos.x = nx;
-        else if (!blocked(pos.x, ny)) pos.y = ny;
+        // ⚠️ ALL FIVE blocked() calls pass swimmer=true. Miss the perpendicular
+        // pair and a swimmer who meets the rope at an angle stops dead (the
+        // else branch cancels the walk) instead of sliding along it.
+        if (!blocked(nx, ny, 1)) { pos.x = nx; pos.y = ny; }
+        else if (!blocked(nx, pos.y, 1)) pos.x = nx;
+        else if (!blocked(pos.x, ny, 1)) pos.y = ny;
         else {
           // round obstacles: step perpendicular, whichever side is open
           const p1x = pos.x + (dy / d) * m, p1y = pos.y - (dx / d) * m;
           const p2x = pos.x - (dy / d) * m, p2y = pos.y + (dx / d) * m;
-          if (!blocked(p1x, p1y)) { pos.x = p1x; pos.y = p1y; }
-          else if (!blocked(p2x, p2y)) { pos.x = p2x; pos.y = p2y; }
+          if (!blocked(p1x, p1y, 1)) { pos.x = p1x; pos.y = p1y; }
+          else if (!blocked(p2x, p2y, 1)) { pos.x = p2x; pos.y = p2y; }
           else { tgt.x = pos.x; tgt.y = pos.y; }
         }
       } else if (nextTgt) {
@@ -2449,6 +2519,7 @@ function init() {
       if (roadArmed && pos.x < 40 && pos.y > 1040) exitToPark();
     }
     ballStep(dt, now);
+    wballStep(dt, now);
     shellTick();
     capTick(now);
     gilTick();
@@ -2456,7 +2527,63 @@ function init() {
     crabs.forEach((c) => crabStep(c, dt));
     sandyTick(dt, now);
     cam();
+    prevX = pos.x; prevY = pos.y;
     requestAnimationFrame(step);
+  }
+
+  // ---- 🏐🌊 THE WATER BALL: a TOY, not a sport ------------------------------
+  // No z, no gravity, no shadow, no rally, no net. It floats, so the entire
+  // physics is 2D drift plus thick drag. It reuses the volleyball's wall
+  // reflect and its tap-or-fetch verb and NOTHING else — a floating ball that
+  // borrowed GRAV and vz would be the volleyball with extra steps.
+  const wballEl = document.getElementById('bhWBall');
+  const WBALL = { x: 900, y: 236, vx: 0, vy: 0 };
+  const WB_R = 22, WB_DRAG = 0.30, WB_WALL = 0.70, WB_PUSH = 190, WB_MAX = 300;
+  const WB_COOL = 240;
+  // ⚠️ THE PEN IS IN WATER ROWS, NOT FEET ROWS. SWIM.ySea/yShore are `pos.y`
+  // values, and a banana's feet draw 13.5px above pos.y — the ball has no
+  // feet. Fenced by the painted shoreline instead: the last water row is 269,
+  // so y1 = 269 − WB_R keeps the ball off the sand it would otherwise rest on.
+  const PEN = { x0: SWIM.x0 + WB_R, x1: SWIM.x1 - WB_R,
+                y0: SWIM.ySea - 13 + WB_R, y1: 269 - WB_R };
+  let lastShove = 0, prevX = pos.x, prevY = pos.y;
+
+  function wballStep(dt, now) {
+    // contact at pos.y − 8, the volleyball's own convention (:546). An earlier
+    // draft used the SCREEN-projected waterline drawn on the sprite, which
+    // slides ~45px seaward as you submerge — you could stand on the ball and
+    // not reach it.
+    if (now - lastShove > WB_COOL
+        && Math.hypot(pos.x - WBALL.x, (pos.y - 8) - WBALL.y) < WB_R + 34) {
+      lastShove = now;
+      const ax = WBALL.x - pos.x, ay = WBALL.y - (pos.y - 8);
+      const al = Math.hypot(ax, ay) || 1;
+      // mostly away from the banana, plus a splash of its own travel — so a
+      // running shove goes further than a standing poke. The only "skill"
+      // this toy needs.
+      WBALL.vx = (ax / al) * WB_PUSH + (pos.x - prevX) / Math.max(dt, 0.001) * 0.25;
+      WBALL.vy = (ay / al) * WB_PUSH + (pos.y - prevY) / Math.max(dt, 0.001) * 0.25;
+      const s = Math.hypot(WBALL.vx, WBALL.vy);
+      if (s > WB_MAX) { WBALL.vx *= WB_MAX / s; WBALL.vy *= WB_MAX / s; }
+      float(WBALL.x, WBALL.y - 20, 'splash!');
+    }
+    WBALL.x += WBALL.vx * dt; WBALL.y += WBALL.vy * dt;
+    const damp = Math.pow(WB_DRAG, dt);
+    WBALL.vx *= damp; WBALL.vy *= damp;
+    if (WBALL.x < PEN.x0) { WBALL.x = PEN.x0; WBALL.vx = Math.abs(WBALL.vx) * WB_WALL; }
+    else if (WBALL.x > PEN.x1) { WBALL.x = PEN.x1; WBALL.vx = -Math.abs(WBALL.vx) * WB_WALL; }
+    if (WBALL.y < PEN.y0) { WBALL.y = PEN.y0; WBALL.vy = Math.abs(WBALL.vy) * WB_WALL; }
+    else if (WBALL.y > PEN.y1) { WBALL.y = PEN.y1; WBALL.vy = -Math.abs(WBALL.vy) * WB_WALL; }
+    // ⚠️ ANTI-DEATH. A ball parked in a corner is a dead toy — the volleyball
+    // needed its own anti-stick for the same reason. Below a crawl the bay's
+    // own set walks it back to open water. No reset button, ever.
+    if (Math.hypot(WBALL.vx, WBALL.vy) < 26) {
+      WBALL.vx += ((SWIM.x0 + SWIM.x1) / 2 - WBALL.x) * 0.09 * dt;
+      WBALL.vy += ((PEN.y0 + PEN.y1) / 2 - WBALL.y) * 0.22 * dt;
+    }
+    wballEl.style.left = pct(WBALL.x, W);
+    wballEl.style.top = pct(WBALL.y, H);
+    depth(wballEl, WBALL.y);
   }
 
   // everyone in Banana World dances on the same wall clock
@@ -2464,7 +2591,6 @@ function init() {
     const cyc = BASE_CYCLE_S * 1000;
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
   };
-  let lastF = -1;
   // 🪑 SITTING = a frozen frame, not a pose we have to draw. The engine's cycle
   // already turns the banana, so holding one frame reads as settled into the
   // chair — side-on and still, while everyone else keeps dancing.
@@ -2476,11 +2602,98 @@ function init() {
   // A seat may override with its own `sitFrame` (the dock's fishing chairs do,
   // so each one faces the water it casts into).
   const SIT_FRAME = 4;                        // visually RIGHT-facing
-  function drawMe() {
+  // ---- 🌊 THE SUBMERGE PASS ------------------------------------------------
+  // ⚠️ THIS IS DELIBERATELY NOT INSIDE drawComposite(). That function draws
+  // EVERY banana on trymstene.com — the pass card, the builder preview, the
+  // shop panels, the OG cards. A tint leaked in there turns the whole site
+  // blue. The wet look is a SECOND pass, applied only by this file, and the
+  // save()/restore() pair guarantees globalCompositeOperation cannot outlive
+  // it and corrupt the next ordinary draw on the same context.
+  //
+  // 'source-atop' is the whole trick: it paints ONLY where the destination is
+  // already opaque, so the empty canvas either side of the banana stays empty.
+  // A CSS gradient over the element would tint a rectangle — including the
+  // nothing beside the sprite — which is exactly the failure that must not
+  // ship. (It is also why we don't just use filter: the rave learned the hard
+  // way never to CSS-animate filter on a banana canvas.)
+  const CV = 150;                       // every beach banana canvas
+  const HEAD_CV = CV * 0.20;            // 30.0  — FRAME_TOP_FRAC
+  const FEET_CV = HEAD_CV + 501 * (CV * 0.66 / 498);   // 129.6 — the feet line
+  const BODY_CV = FEET_CV - HEAD_CV;    // 99.6  — the floodable body
+  const ART_CV = CV / (0.036 * W);      // 1.51 canvas units per world px
+  // 🎨 SAMPLED, NOT INVENTED. Our sea is TEAL (#3c97b0), so a literal navy
+  // would fight the whole plate. But the pack's own floating props — the ball,
+  // the rocks — draw their waterline as #47babd over #22648d, which IS a dark
+  // blue and DOES belong to this art. Tint toward the pack's own answer.
+  const WET_RIM = 'rgba(71,186,189,';   // #47babd the collar
+  const WET_TOP = 'rgba(60,151,176,';   // #3c97b0 the sea's body
+  const WET_DEEP = 'rgba(34,100,141,';  // #22648d under the surface
+
+  // a rect with a STEPPED wavy top, quantised to whole art pixels — a smooth
+  // sine across a pixel sprite reads as anti-aliasing, not as water.
+  function wetPath(top, bot, phase, band) {
+    const p = new Path2D(), N = 6, w = CV / N;
+    const ys = [];
+    for (let i = 0; i < N; i++) {
+      ys.push(top + Math.round(Math.sin(phase + i * 1.7) * 1.2) * ART_CV);
+    }
+    p.moveTo(0, ys[0]);
+    for (let i = 0; i < N; i++) { p.lineTo(i * w, ys[i]); p.lineTo((i + 1) * w, ys[i]); }
+    if (band) {                     // a real BAND: wavy bottom too, same phase
+      for (let i = N - 1; i >= 0; i--) {
+        p.lineTo((i + 1) * w, ys[i] + band); p.lineTo(i * w, ys[i] + band);
+      }
+    } else {
+      p.lineTo(CV, bot); p.lineTo(0, bot);
+    }
+    p.closePath();
+    return p;
+  }
+
+  function applySubmerge(ctx, sub, phase) {
+    if (sub <= 0.001) return;
+    const cut = FEET_CV - sub * BODY_CV;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-atop';
+    const a = 0.30 + 0.34 * sub;              // shallow water is see-through
+    const g = ctx.createLinearGradient(0, cut, 0, FEET_CV);
+    g.addColorStop(0, WET_TOP + (a * 0.75).toFixed(3) + ')');
+    g.addColorStop(0.45, WET_TOP + (a * 1.35).toFixed(3) + ')');
+    g.addColorStop(1, WET_DEEP + Math.min(0.92, a * 2.4).toFixed(3) + ')');
+    ctx.fillStyle = g;
+    ctx.fill(wetPath(cut, CV, phase, 0));
+    // the bright collar where the surface cuts the body. ⚠️ a BAND (wavy top
+    // AND wavy bottom) — reusing the plain path twice made the rim 1.5px thick
+    // where the wave stepped up and 4.5px where it stepped down.
+    ctx.fillStyle = WET_RIM + '0.85)';
+    ctx.fill(wetPath(cut, 0, phase, 2 * ART_CV));
+    // the deepest slice DISSOLVES. Without it the banana still ends in two
+    // crisp feet and reads as standing in front of the sea, not in it.
+    ctx.globalCompositeOperation = 'destination-out';
+    const e = ctx.createLinearGradient(0, cut + BODY_CV * sub * 0.55, 0, FEET_CV + 4);
+    e.addColorStop(0, 'rgba(0,0,0,0)');
+    e.addColorStop(1, 'rgba(0,0,0,' + (0.25 + 0.5 * sub).toFixed(3) + ')');
+    ctx.fillStyle = e;
+    ctx.fillRect(0, cut, CV, CV - cut);
+    ctx.restore();                            // ⚠️ gco back to source-over
+  }
+
+  let lastKey = -1;                           // ⚠️ replaces lastF: the redraw
+  let swamOnce = false;                       // key must include DEPTH or the
+  function drawMe() {                         // early-return freezes the tint
     const f = seated ? (seated.sitFrame != null ? seated.sitFrame : SIT_FRAME) : frameNow();
-    if (f === lastF) return;
-    lastF = f;
-    drawComposite(meCtx, 150, f, ME_DRAW);
+    const q = Math.round(subAt(pos.x, pos.y) * 40);   // 2.5% steps = a redraw
+    const key = f * 64 + q;                           // budget, not a repaint
+    if (key === lastKey) return;
+    lastKey = key;
+    const sub = q / 40;
+    drawComposite(meCtx, CV, f, ME_DRAW);
+    applySubmerge(meCtx, sub, f * 0.9);
+    meEl.classList.toggle('is-wet', q > 0);
+    meEl.style.setProperty('--wet', ((CV - (FEET_CV - sub * BODY_CV)) / 1.5).toFixed(1));
+    if (q > 0 && !swamOnce) {
+      swamOnce = true; track('beach_swim'); passStat('bh_swim', 1);
+    }
   }
   function drawCap() { drawComposite(capCtx, 150, 3, CAP_DRAW); }  // he stands still, like a barman does
   // Gil faces the water (frame 0 = VISUALLY left — see the inverted-label note)
@@ -2520,8 +2733,8 @@ function init() {
 
   assetsReady().then(() => {
     drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly();
-    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 700);   // redraw belt: accessories decode async
-    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 1800);
+    setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 700);   // redraw belt: accessories decode async
+    setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 1800);
     setInterval(() => { if (!document.hidden) { drawMe(); drawSandy(); } }, 120);
     requestAnimationFrame((t) => { last = t; step(t); });
   });
