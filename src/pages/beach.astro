@@ -299,6 +299,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
       transform: translate(-50%, -60%); image-rendering: pixelated;
       background-image: url('/assets/beach/dig-hole.png');
       background-size: 100% 100%; background-repeat: no-repeat;
+      transition: opacity 0.9s ease;   /* the tide fills them in — see HOLE_LIFE */
     }
     /* 🎮 THE ACTION BAR — bottom centre, in thumb reach on a phone and under
        the eye on desktop. Stats stay top-right; actions never mix in with
@@ -388,6 +389,12 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     /* ⚠️ 120% = 100% × 6/5 — the frame-stepping rule from the crab note below */
     @keyframes bhWBall { from { background-position-x: 0%; } to { background-position-x: 120%; } }
+    /* the dip in the water the ball sits in — darker teal, not a sand shadow */
+    .bh-wballsh {
+      position: absolute; width: 1.8%; aspect-ratio: 5 / 2; pointer-events: none;
+      transform: translate(-50%, -50%); border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(26, 92, 128, 0.85), rgba(26, 92, 128, 0));
+    }
     @media (prefers-reduced-motion: reduce) {
       .bh-me.is-wet .bh-me__ring { animation: none; opacity: 0.5; }
       .bh-wball { animation: none; }
@@ -940,7 +947,8 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <!-- 🐚 SHELLY — keeps the shell board up the beach -->
         <div class="bh-cap bh-shelly" id="bhShelly"><canvas id="bhShellyCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhShellyBubble" role="status" aria-live="polite"></div>
-        <!-- 🏐🌊 the beach ball that lives in the lagoon -->
+        <!-- 🏐🌊 the beach ball that lives in the lagoon, and the dip it sits in -->
+        <div class="bh-wballsh" id="bhWBallShadow" aria-hidden="true"></div>
         <div class="bh-wball" id="bhWBall" aria-hidden="true"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div>
       </div>

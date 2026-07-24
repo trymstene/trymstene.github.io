@@ -38,7 +38,7 @@ export const OB_RECTS = [
   [1405, 820, 1431, 856],   // palm tree
   [1580, 638, 1822, 748],   // ship bar
   [1234, 806, 1258, 812],   // white cartel
-  [1725, 418, 1751, 424],   // blue cartel 2
+  [1735, 378, 1761, 384],   // blue cartel 2
   [2094, 478, 2186, 506],   // midway
   [2384, 478, 2476, 506],   // midway
   [2094, 918, 2186, 946],   // midway
@@ -102,7 +102,7 @@ export const OVERLAYS = [
   { src: 'ov-13.png', x: 277, y: 192, w: 47, h: 44, base: 236 },
   { src: 'ov-14.png', x: 333, y: 156, w: 47, h: 44, base: 200 },
   { src: 'ov-15.png', x: 1229, y: 734, w: 35, h: 78, base: 812 },
-  { src: 'ov-16.png', x: 1716, y: 352, w: 45, h: 72, base: 424 },
+  { src: 'ov-16.png', x: 1726, y: 312, w: 45, h: 72, base: 384 },
   { src: 'ov-17.png', x: 430, y: 692, w: 44, h: 62, base: 754 },
   { src: 'ov-18.png', x: 1448, y: 541, w: 44, h: 89, base: 630 },
   { src: 'ov-19.png', x: 1189, y: 817, w: 95, h: 67, base: 884 },
@@ -128,7 +128,7 @@ export const OVERLAYS = [
   { src: 'ov-39.png', x: 2057, y: 894, w: 166, h: 50, base: 943 },
   { src: 'ov-40.png', x: 2351, y: 806, w: 158, h: 134, base: 940 },
   { src: 'ov-41.png', x: 2347, y: 894, w: 166, h: 50, base: 943 },
-  { src: 'ov-42.png', x: 2601, y: 548, w: 94, h: 152, base: 700 },
+  { src: 'ov-42.png', x: 2599, y: 546, w: 98, h: 154, base: 700 },
   { src: 'ov-43.png', x: 2231, y: 330, w: 119, h: 136, base: 466 },
   { src: 'ov-44.png', x: 2551, y: 350, w: 119, h: 136, base: 486 },
   { src: 'ov-45.png', x: 2229, y: 776, w: 123, h: 134, base: 910 },

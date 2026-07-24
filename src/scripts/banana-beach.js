@@ -75,9 +75,16 @@ function init() {
     if (o) myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {} };
   } catch (e) {}
   const ME_DRAW = { ...myOutfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
-  // Captain Split: bucket hat + snorkel, because of course
+  // 🏴‍☠️ CAPTAIN SPLIT — the pirate tricorn and eye patch are the job title.
+  // He used to wear a bucket hat and a snorkel, which read as a holidaymaker,
+  // and he ran a shell-trading post 500px from Shelly's shell board — two
+  // shell surfaces and no keeper at all for the digging. Trym: "we need maybe
+  // an NPC for the digging, a banana with an eyepatch and pirate hat that we
+  // have in our wearables". So the wreck's keeper IS the digging keeper: he
+  // appraises what you turn up and holds the treasure map. Shells are Shelly's
+  // alone now.
   const CAP_DRAW = {
-    hat: 'buckethat', glasses: 'snorkelmask', extras: {},
+    hat: 'tricorn', glasses: 'eyepatch', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
   // 🎣 GIL, keeper of the ledger — the old hand at the foot of the dock
@@ -1000,7 +1007,12 @@ function init() {
         fishBob.classList.add('is-bite');
         if (big) fishBob.classList.add('is-bite--rare');
       }
-    }, 2600 + Math.random() * 5200);
+      // ⚠️ 7.2-12.4s, up from 2.6-7.8 (Trym: "add 4-5 more seconds to the
+      // fishing mechanic for waiting before the hook is shaking"). The wait IS
+      // the mechanic — a bite you barely had to sit still for isn't a catch,
+      // it's a button. Long enough that you look up at the sea; short enough
+      // that a legendary still feels like it came for you.
+    }, 7200 + Math.random() * 5200);
   }
   function seg(cls, x, y, len, ang, z) {
     const d = document.createElement('div');
@@ -1170,7 +1182,13 @@ function init() {
   // only his proximity circle sat at 1890. Removing the offset and moving the
   // constant to where he really stands keeps the art identical and puts the
   // greeting radius back on his own feet.
-  const GIL = { x: 1816, y: 372, r: 118 };
+  // ⚠️ SAME GROUND LINE AS HIS BOARD (Trym: "needs to stand closer to his
+  // sign"). They were only 78px apart in x, which sounds close — but the board
+  // also sat 52px lower, and Gil's 110px canvas holds ~55px of actual banana,
+  // so on screen it read as a sign abandoned down-left of a fisherman. Level
+  // with each other they read as one pitch. Still at the dock mouth, so every
+  // trip out passes him.
+  const GIL = { x: 1812, y: 384, r: 118 };
   const gilEl = document.getElementById('bhGil');
   const gilBubble = document.getElementById('bhGilBubble');
   const gilCtx = document.getElementById('bhGilCv').getContext('2d');
@@ -1416,11 +1434,21 @@ function init() {
     patches.treasureClue = chosen[treasureIn].clue;
   })();
   const DIG_KEY = 'bh-dig-' + digDay;
-  try {                                              // holes persist for today
+  // ⚠️ HOLES ARE NOT SAVED ANY MORE — only what you FOUND is.
+  // Trym found holes stranded at the crossroads, on bare sand miles from any
+  // patch. They were real: holes were stored as world coordinates against a
+  // patch INDEX, so when the dig sites moved with the re-zoning, yesterday's
+  // saved holes came back at yesterday's coordinates and sat there forever
+  // with no patch under them. Any future move would do it again.
+  // They also shouldn't persist on their own terms: sand fills itself in.
+  // Holes now fade out after HOLE_LIFE and are gone on reload; `got` (what you
+  // dug up) is the only state worth keeping, and it can't drift because it's
+  // indexed by spot, not by position.
+  const HOLE_LIFE = 30000;
+  try {
     const saved = JSON.parse(localStorage.getItem(DIG_KEY) || 'null');
     if (saved && saved.p) saved.p.forEach((h, i) => {
       if (!patches[i]) return;
-      patches[i].holes = h.holes || [];
       (h.got || []).forEach((k) => { if (patches[i].spots[k]) patches[i].spots[k].got = true; });
     });
   } catch (e) {}
@@ -1428,7 +1456,6 @@ function init() {
     try {
       localStorage.setItem(DIG_KEY, JSON.stringify({
         p: patches.map((p) => ({
-          holes: p.holes,
           got: p.spots.map((s, k) => (s.got ? k : -1)).filter((k) => k >= 0),
         })),
       }));
@@ -1441,6 +1468,14 @@ function init() {
     h.style.left = pct(x, W);
     h.style.top = pct(y, H);
     digWrap.appendChild(h);
+    // the tide fills it back in. ⚠️ one timer per hole, and it removes only
+    // its OWN element — the rave's doctrine about lone timers is about
+    // timers that outlive their subject, and this one takes its subject
+    // with it.
+    setTimeout(() => {
+      h.style.opacity = '0';
+      setTimeout(() => h.remove(), 900);
+    }, HOLE_LIFE);
   }
   function paintDigs() {
     patches.forEach((p) => {
@@ -1452,7 +1487,6 @@ function init() {
       el.style.height = pct(PATCH_H, H);
       digWrap.appendChild(el);
       p.el = el;
-      p.holes.forEach((h) => digHole(p, h[0], h[1]));
       if (p.spots.every((s) => s.got)) el.classList.add('is-spent');
     });
   }
@@ -2544,7 +2578,16 @@ function init() {
   // reflect and its tap-or-fetch verb and NOTHING else — a floating ball that
   // borrowed GRAV and vz would be the volleyball with extra steps.
   const wballEl = document.getElementById('bhWBall');
-  const WBALL = { x: 900, y: 236, vx: 0, vy: 0 };
+  const wballSh = document.getElementById('bhWBallShadow');
+  // ⚠️ IT HAS A HEIGHT NOW. Trym: "needs to bounce up from the water, like the
+  // volleyball, now its sliding along the water." The first version was pure
+  // 2D drift, which is what a ball nudged along a surface does — but a struck
+  // beach ball leaves the surface. Same shape as the volleyball: z, vz, a
+  // gravity, and a bounce that keeps most of the height. Water is a softer
+  // floor than sand, so the restitution is lower than the volleyball's and the
+  // ball settles after three or four hops instead of ringing on.
+  const WBALL = { x: 900, y: 236, z: 0, vx: 0, vy: 0, vz: 0 };
+  const WB_GRAV = 380, WB_HOP = 0.58;
   // ⚠️ BOUNCY, not soggy. Trym: "the water-ball must be more bouncy so that
   // one can bounce it a distance to eachother." The first pass had WB_DRAG
   // 0.30 — v is multiplied by pow(DRAG, dt), so 0.30 kills 70% of the speed
@@ -2577,10 +2620,19 @@ function init() {
       WBALL.vy = (ay / al) * WB_PUSH + (pos.y - prevY) / Math.max(dt, 0.001) * 0.25;
       const s = Math.hypot(WBALL.vx, WBALL.vy);
       if (s > WB_MAX) { WBALL.vx *= WB_MAX / s; WBALL.vy *= WB_MAX / s; }
+      WBALL.vz = 205;                       // it POPS — the hit lifts it out
       float(WBALL.x, WBALL.y - 20, 'splash!');
     }
     WBALL.x += WBALL.vx * dt; WBALL.y += WBALL.vy * dt;
-    const damp = Math.pow(WB_DRAG, dt);
+    WBALL.z += WBALL.vz * dt; WBALL.vz -= WB_GRAV * dt;
+    if (WBALL.z <= 0) {
+      WBALL.z = 0;
+      // ⚠️ the deadband is what stops it buzzing on the surface forever. Below
+      // ~52px/s of downward speed it just lands and stays landed.
+      WBALL.vz = WBALL.vz < -52 ? -WBALL.vz * WB_HOP : 0;
+    }
+    // in the air it barely slows; the water is what takes the speed out of it
+    const damp = Math.pow(WBALL.z > 1 ? 0.94 : WB_DRAG, dt);
     WBALL.vx *= damp; WBALL.vy *= damp;
     if (WBALL.x < PEN.x0) { WBALL.x = PEN.x0; WBALL.vx = Math.abs(WBALL.vx) * WB_WALL; }
     else if (WBALL.x > PEN.x1) { WBALL.x = PEN.x1; WBALL.vx = -Math.abs(WBALL.vx) * WB_WALL; }
@@ -2594,8 +2646,19 @@ function init() {
       WBALL.vy += ((PEN.y0 + PEN.y1) / 2 - WBALL.y) * 0.22 * dt;
     }
     wballEl.style.left = pct(WBALL.x, W);
-    wballEl.style.top = pct(WBALL.y, H);
-    depth(wballEl, WBALL.y);
+    wballEl.style.top = pct(WBALL.y - WBALL.z, H);
+    depth(wballEl, WBALL.y);          // sorts by where it FLOATS, not its apex
+    // the dip in the water under it: shrinks and fades as the ball rises, which
+    // is the whole reason the hop reads as height rather than as the ball just
+    // moving up the screen.
+    if (wballSh) {
+      const k = Math.max(0, 1 - WBALL.z / 150);
+      wballSh.style.left = pct(WBALL.x, W);
+      wballSh.style.top = pct(WBALL.y, H);
+      wballSh.style.opacity = (0.32 * k).toFixed(2);
+      wballSh.style.transform = 'translate(-50%,-50%) scale(' + (0.55 + 0.45 * k).toFixed(2) + ')';
+      depth(wballSh, WBALL.y - 1);
+    }
   }
 
   // everyone in Banana World dances on the same wall clock
@@ -2707,7 +2770,11 @@ function init() {
       swamOnce = true; track('beach_swim'); passStat('bh_swim', 1);
     }
   }
-  function drawCap() { drawComposite(capCtx, 150, 3, CAP_DRAW); }  // he stands still, like a barman does
+  // ⚠️ FRAME 2 — a FRONT frame with both hands up (Trym: "the front frame of
+  // the banana with the hands up"). 3 is front too but mid-drop; 2 holds the
+  // arms high, which is the pose that reads as a character presenting himself
+  // rather than one caught between steps.
+  function drawCap() { drawComposite(capCtx, 150, 2, CAP_DRAW); }
   // Gil faces the water (frame 0 = VISUALLY left — see the inverted-label note)
   function drawGil() { drawComposite(gilCtx, 150, 0, GIL_DRAW); }
   function hint(on) { if (hintEl) hintEl.classList.toggle('is-off', !on); }

@@ -349,32 +349,79 @@ def build_grabber():
     pier so reaching it is a small pilgrimage. Glass cabinet, prizes you can
     SEE before you can afford them (the whole reason it beat a lottery), and a
     claw parked over them."""
+    # ⚠️ REDRAWN 25 Jul to Trym's reference: a LAVENDER arcade cabinet with a
+    # black marquee panel, a big pale glass, the claw hung on a real cable from
+    # a rail, a red joystick on its own control shelf and a dark prize chute.
+    # The first version was a red box with a yellow strip and a claw floating
+    # in mid-air with nothing holding it — it read as a vending machine.
     K = 3
-    w, h = 92 * K, 150 * K
+    w, h = 96 * K, 152 * K
     s = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(s)
-    BODY, LIT, DRK = (208, 66, 72), (238, 118, 120), (150, 38, 48)
-    d.rectangle([0, 22 * K, w, h - 4 * K], fill=BODY)          # cabinet
-    d.rectangle([0, 22 * K, 6 * K, h - 4 * K], fill=LIT)
-    d.rectangle([w - 7 * K, 22 * K, w, h - 4 * K], fill=DRK)
-    d.rectangle([0, h - 16 * K, w, h - 4 * K], fill=DRK)       # plinth
-    d.rectangle([2 * K, 4 * K, w - 3 * K, 22 * K], fill=(252, 206, 70))   # marquee
-    d.rectangle([2 * K, 4 * K, w - 3 * K, 9 * K], fill=(255, 232, 138))
-    # the glass, and the prizes behind it
-    d.rectangle([8 * K, 30 * K, w - 9 * K, h - 22 * K], fill=(58, 84, 104))
-    for i, (px_, py_, c) in enumerate([
-            (16, 108, (250, 206, 62)), (40, 116, (232, 96, 96)),
-            (62, 106, (120, 190, 232)), (28, 96, (168, 128, 220)),
-            (52, 92, (250, 206, 62))]):
-        d.ellipse([px_ * K, py_ * K, (px_ + 16) * K, (py_ + 14) * K], fill=c)
-    d.rectangle([8 * K, 30 * K, w - 9 * K, 40 * K], fill=(96, 130, 152))  # glare
-    # the claw, parked
-    d.rectangle([44 * K, 34 * K, 48 * K, 58 * K], fill=(198, 198, 206))
-    for dx in (-10, 6):
-        d.polygon([((46 + dx) * K, 58 * K), ((46 + dx + 4) * K, 58 * K),
-                   ((46 + dx + (0 if dx < 0 else 4)) * K, 72 * K)], fill=(170, 170, 182))
-    return blockify(s, factor=K, colors=14, alpha_thresh=0.4, sat=1.1, con=1.06,
-                    warm=0.04, trim=False)
+    INKD = (58, 44, 78)                       # the cabinet's own dark outline
+    BODY, LIT, DRK = (207, 178, 226), (228, 208, 240), (168, 138, 194)
+    GLASS, GLASS_D = (238, 243, 250), (206, 218, 234)
+    BLACK, CYAN = (30, 28, 42), (159, 216, 238)
+
+    def box(x0, y0, x1, y1, fill):
+        d.rectangle([x0 * K, y0 * K, x1 * K, y1 * K], fill=fill)
+
+    box(0, 0, w // K, 152, INKD)                       # one silhouette, inked
+    # ── the marquee: black panel with a lit oval sign
+    box(3, 3, 93, 21, BLACK)
+    d.ellipse([16 * K, 6 * K, 80 * K, 18 * K], fill=(246, 246, 252))
+    d.ellipse([19 * K, 8 * K, 77 * K, 16 * K], fill=(210, 232, 244))
+    box(3, 21, 93, 29, CYAN)                           # the light bar under it
+    box(3, 21, 93, 24, (198, 236, 248))
+    # ── the glass. A pale, near-white cabinet interior is what makes the claw
+    #    and the prizes read; the old dark blue swallowed both.
+    box(3, 29, 93, 104, INKD)
+    box(6, 32, 90, 101, GLASS)
+    box(6, 32, 90, 40, GLASS_D)                        # the glare band
+    box(6, 32, 10, 101, (222, 231, 242))               # the near mullion
+    # the rail the claw hangs from, and the cable
+    box(12, 36, 84, 40, (108, 96, 132))
+    box(46, 40, 50, 58, (86, 78, 108))
+    # ── THE CLAW. A body, then three prongs splayed out of it — the shape is
+    #    the whole silhouette people recognise, so it gets real pixels.
+    box(40, 56, 56, 63, (118, 112, 140))
+    box(40, 56, 56, 58, (162, 158, 184))
+    for x0, x1, tip in ((36, 40, 33), (46, 50, 47), (56, 60, 62)):
+        d.polygon([(x0 * K, 63 * K), (x1 * K, 63 * K), ((tip + 2) * K, 76 * K),
+                   (tip * K, 76 * K)], fill=(96, 90, 122))
+    # ── the prize pile at the bottom of the glass
+    # ⚠️ the pile stays clear of the glass floor at y101 — at y92 the biggest
+    # prize spilled over the frame and merged with the joystick below it.
+    for cx_, cy_, rw, rh, c in ((20, 84, 15, 11, (250, 214, 96)),
+                                (40, 86, 17, 12, (238, 128, 148)),
+                                (60, 84, 15, 11, (140, 202, 240)),
+                                (76, 88, 13, 9, (250, 214, 96)),
+                                (32, 74, 13, 9, (186, 156, 232))):
+        d.ellipse([cx_ * K, cy_ * K, (cx_ + rw) * K, (cy_ + rh) * K], fill=c)
+    # ── the control shelf: joystick on a dark base, plus a coin slot
+    box(3, 104, 93, 124, BODY)
+    box(3, 104, 93, 108, LIT)
+    box(3, 120, 93, 124, DRK)
+    # ⚠️ THE WHOLE STICK SITS ON THE SHELF (y104-124). A first pass put the
+    # ball at y100, which is inside the GLASS — it read as a purple blob stuck
+    # to the cabinet door rather than a control you grip.
+    d.ellipse([38 * K, 115 * K, 58 * K, 123 * K], fill=(74, 66, 96))
+    box(46, 108, 50, 118, (58, 52, 78))                # the shaft
+    d.ellipse([40 * K, 104 * K, 56 * K, 114 * K], fill=(232, 60, 60))
+    d.ellipse([43 * K, 105 * K, 50 * K, 109 * K], fill=(255, 146, 146))
+    box(70, 111, 82, 115, (58, 52, 78))                # coin slot
+    # ── the front, the chute, the plinth
+    box(3, 124, 93, 144, BODY)
+    box(3, 124, 8, 144, LIT)
+    box(88, 124, 93, 144, DRK)
+    box(24, 128, 72, 141, (46, 40, 66))                # the prize chute
+    box(24, 128, 72, 131, (30, 26, 48))
+    box(0, 144, w // K, 152, (108, 88, 138))           # plinth
+    # ⚠️ colors=20, not 16 — the cabinet is mostly lavender, and at 16 the
+    # quantiser spent the whole palette on its shades and turned the red
+    # joystick purple.
+    return blockify(s, factor=K, colors=20, alpha_thresh=0.4, sat=1.06, con=1.05,
+                    warm=0.02, trim=False)
 
 
 # ---- the object layer: pack art at NATIVE scale ---------------------------
@@ -1276,7 +1323,11 @@ if HAVE_PACK:
     # thing standing in it.
     place('21_Beach_48x48_White_Cartel.png', 1246, 812, scale=0.94, sh=0.26,
           layer=True, solid=('rect', -12, -6, 12, 0))    # 🐚 SHELLY'S BOARD 36x78
-    place('21_Beach_48x48_Blue_Cartel_2.png', 1738, 424, scale=0.90, sh=0.26,
+    # ⚠️ ON GIL'S OWN GROUND LINE. It used to sit 52px lower than him as well
+    # as to his left, and the diagonal is what made them look unrelated — his
+    # canvas is 110px wide but the banana ink inside it is only ~55, so the
+    # gap on screen was much bigger than the coordinates suggested.
+    place('21_Beach_48x48_Blue_Cartel_2.png', 1748, 384, scale=0.90, sh=0.26,
           layer=True, solid=('rect', -13, -6, 13, 0))    # 🎣 GIL'S BOARD 45x72
     # Blue_Cartel_2 over _1: its red highlighted row and colour swatch read as
     # "today's catch", where _1's blank 2x2 grid reads as an empty timetable.
