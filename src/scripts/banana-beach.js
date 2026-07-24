@@ -1356,8 +1356,8 @@ function init() {
     }
     chestPanel.hidden = true;
   });
-  const digBtn = document.getElementById('bhDigBtn');
-  digBtn.addEventListener('click', (e) => { e.stopPropagation(); dig(); });
+  // (the ⛏ dig BUTTON is gone — tapping the patch is the verb now, same as
+  //  tapping the ball or a stall. One rule for the whole beach.)
   paintDigs();
   const treasureFound = () => patches.some((p) =>
     p.spots.some((s) => s.kind === 'treasure' && s.got));
@@ -2320,7 +2320,6 @@ function init() {
     gilTick();
     crabs.forEach((c) => crabStep(c, dt));
     sandyTick(dt, now);
-    digBtn.classList.toggle('is-on', !!patchAt(pos.x, pos.y));
     cam();
     requestAnimationFrame(step);
   }

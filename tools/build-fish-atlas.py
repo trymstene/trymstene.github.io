@@ -20,7 +20,7 @@ import os
 from PIL import Image
 
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PACK = os.path.join(SITE, 'public', 'assets', 'Pixel Gnome Fishing Pack',
+PACK = os.path.join(SITE, 'public', 'assets', '_packs', 'Pixel Gnome Fishing Pack',
                     'Pixel Gnome Fishing Pack')
 OUT = os.path.join(SITE, 'public', 'assets', 'beach')
 T = 16

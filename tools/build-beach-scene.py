@@ -391,13 +391,44 @@ GRABBER = []                 # [cx, base] of the claw machine on the pier
 PROP = 0.76
 
 
+def sand_tint(im, lo=(198, 168, 118), hi=(252, 238, 198)):
+    """🏰 RECOLOUR ONTO A SAND RAMP.
+    ⚠️ The pack draws its sandcastles bright ORANGE — measured main colour
+    (225,109,50) against our pale cream sand (250,226,170): about 120 short on
+    BOTH green and blue. Desaturating cannot fix that (sat 0.62 still lands on
+    (183,121,90), just muddier) because the SOURCE is orange, not over-saturated.
+    So we remap LUMINANCE onto a beige ramp: identical shading, sand colour.
+    The dark ink outline is left alone or the sprite loses its edge."""
+    im = im.copy()
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if not a:
+                continue
+            lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+            if lum < 0.20:          # keep the outline dark
+                continue
+            t = (lum - 0.20) / 0.80
+            t = 0.0 if t < 0 else (1.0 if t > 1 else t)
+            px[x, y] = (int(lo[0] + (hi[0] - lo[0]) * t),
+                        int(lo[1] + (hi[1] - lo[1]) * t),
+                        int(lo[2] + (hi[2] - lo[2]) * t), a)
+    return im
+
+
 def place(name, cx, base, factor=1, colors=10, warm=0.08, sat=1.1, con=1.05,
-          flip=False, shade=True, sh=0.30, scale=PROP, solid=None, layer=False):
+          flip=False, shade=True, sh=0.30, scale=PROP, solid=None, layer=False,
+          tint=None):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
         _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
                                warm=warm, sat=sat, con=con)
     s = _cache[key]
+    # ⚠️ tint AFTER the cache and on a COPY — mutating in place would poison the
+    # cached sprite for every later placement of the same file.
+    if tint:
+        s = tint(s)
     if scale != 1.0:
         s = s.resize((max(1, int(s.width * scale)), max(1, int(s.height * scale))),
                      Image.NEAREST)
@@ -776,8 +807,11 @@ if HAVE_PACK:
     # is invisible in-game. Overlays sit ABOVE the sea and show.
     for cx, base in ((700, 322), (1150, 320), (1520, 322)):
         place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base, shade=False, layer=True)
-    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 840, 336, shade=False, layer=True)
-    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1300, 340, shade=False, layer=True)
+    # 🏰 tinted to OUR sand — the pack's castles are orange (see sand_tint)
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 840, 336, shade=False,
+          layer=True, tint=sand_tint)
+    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1300, 340, shade=False,
+          layer=True, tint=sand_tint)
     place('21_Beach_48x48_Red_Float.png', 520, 208, shade=False, layer=True)     # in the sea
     place('21_Beach_48x48_Green_Float.png', 1120, 182, shade=False, layer=True)  # in the sea
     for cx, base in ((300, 236), (1360, 176), (2360, 214), (780, 150)):
