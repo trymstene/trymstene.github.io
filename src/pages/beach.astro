@@ -681,6 +681,25 @@ const description = 'The beach at the end of the park road. The sun never quite 
       color: #cfe8ff;
     }
     .bh-tradestat b { color: #fff; }
+    /* 🗺 the map clue — parchment, because it IS a map. Reading as a torn
+       scrap is what separates "today's treasure is over there" from another
+       line of UI copy. */
+    .bh-mapclue {
+      margin: 0 0 0.85rem !important; padding: 0.6rem 0.7rem;
+      background: linear-gradient(#e8d5a8, #d9c08a); color: #3a2b18;
+      border: 2px solid #000; font-size: 0.8rem !important; line-height: 1.35;
+      font-weight: 700; opacity: 1 !important;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+    }
+    /* the dig log — four counters, the "what have I actually turned up" view */
+    .bh-diglog {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-bottom: 0.85rem;
+    }
+    .bh-diglog div {
+      background: #241d33; border: 2px solid #000; padding: 0.45rem 0.2rem; text-align: center;
+    }
+    .bh-diglog b { display: block; font-size: 1.05rem; color: #ffd98a; line-height: 1.1; }
+    .bh-diglog span { font-size: 0.6rem; opacity: 0.85; }
     .bh-grid {
       display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin-bottom: 0.8rem;
     }
@@ -1090,19 +1109,34 @@ const description = 'The beach at the end of the park road. The sun never quite 
             <li><b>⭐ some are rare.</b> a <b style="color:#5cc8ff">conch</b> or a <b style="color:#ffd54a">nautilus</b> turns up far less often than a clam. Shelly keeps the board.</li>
           </ol>
           <div class="bh-grid" id="bhShellGrid"></div>
+          <!-- 🔁 THE TRADE LIVES HERE NOW, not at the wreck. It used to be a
+               second panel on Captain Split 500px away, which meant the bay had
+               TWO shell surfaces and the boathouse duplicated Shelly's whole
+               job. Swapping spares is part of completing the set, so it belongs
+               beside the set — one keeper, one collection, one screen. -->
+          <p id="bhTradeStat" class="bh-tradestat"></p>
+          <p id="bhTradeSay" class="bh-panel__sub"></p>
+          <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
           <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
         </div>
       </div>
 
-      <div class="bh-panel" id="bhTradePanel" hidden>
-        <div class="bh-card" role="dialog" aria-label="Captain Split's trading post">
-          <h2>captain split's trading post</h2>
-          <p id="bhTradeSay">"three you've got spare, one you ain't got. that's the deal. i don't do money."</p>
-          <p class="bh-panel__sub">hand him <b>3 shells you already have spare</b> and he gives back <b>1 kind you're still missing</b> — the fast way to finish the set. shells only.</p>
-          <p id="bhTradeStat" class="bh-tradestat"></p>
-          <div class="bh-grid" id="bhTradeGrid"></div>
-          <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
-          <button class="bh-btn bh-btn--dark" id="bhTradeClose" type="button">leave the bar</button>
+      <!-- 🏴‍☠️ THE SALVAGE DESK — what the wreck is FOR. Captain Split keeps
+           the treasure map and reads what the sand gives up; the shells are
+           Shelly's. This panel is also the only place the digging loop is
+           explained, which is the job the bay was missing a keeper for. -->
+      <div class="bh-panel" id="bhDigPanel" hidden>
+        <div class="bh-card" role="dialog" aria-label="Captain Split's salvage desk">
+          <h2>captain split's salvage desk</h2>
+          <p id="bhDigSay">"you dig, i'll tell you what you've got. that's the arrangement."</p>
+          <p class="bh-mapclue" id="bhDigClue"></p>
+          <ol class="bh-how">
+            <li><b>⛏ find the dark sand.</b> five patches a night, scattered across the bay. tap one to start digging.</li>
+            <li><b>🕳 a patch is a place to search, not a prize.</b> most holes are just sand — keep at it and the patch gives up what it's holding.</li>
+            <li><b>🧰 one chest a day is buried out there.</b> the map above says roughly where. everything resets on the tide.</li>
+          </ol>
+          <div class="bh-diglog" id="bhDigLog"></div>
+          <button class="bh-btn bh-btn--dark" id="bhDigClose" type="button">leave the wreck</button>
         </div>
       </div>
 

@@ -439,7 +439,7 @@ function init() {
     }
     // at the bar? tapping the wreck talks to the Captain instead of walking
     if (inRect(wx, wy, [1540, 590, 1866, 780])) {
-      if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openTrade(); return; }
+      if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openDig(); return; }
       seated = null; sitTarget = null;
       meEl.classList.remove('is-sitting');
       setTarget(BAR.x, BAR.y);            // too far — walk over first
@@ -783,6 +783,7 @@ function init() {
   function renderGrid(el) { el.innerHTML = SHELL_IDS.map(slotHTML).join(''); }
   function openShells() {
     renderGrid(shellGrid);
+    refreshTrade();                 // the swap is part of this panel now
     const left = shells.filter(Boolean).length;
     shellSub.innerHTML = '🐚 <b>' + haveCount() + '</b> of ' + SHELL_IDS.length + ' kinds found · <b>'
       + dupeCount() + '</b> spare · '
@@ -861,14 +862,17 @@ function init() {
   shellyBubble.style.top = pct(SHELLY.y - 78, H);
 
   // ---- 🚢 CAPTAIN SPLIT ---------------------------------------------------
+  // ⚠️ HIS LINES USED TO BE ABOUT SHELLS — which is exactly why the wreck read
+  // as a second Shelly. He talks about the SAND now: what's buried, where the
+  // map points, what a good dig looks like. Shells never come up.
   const CAP_LINES = [
-    'ahoy. mind the net, it’s undefeated.',
-    'i ran a ship once. now i run a bar. the ship is the bar.',
-    'tide brings shells in at dawn. every dawn. it’s very reliable, the tide.',
-    'got three of the same shell? i’ll swap you something you ain’t got.',
+    'ahoy. everything worth having on this beach is under it.',
+    'i ran a ship once. now i run a shovel. it’s a shorter commute.',
+    'dark sand means the tide turned something over. that’s where you dig.',
+    'one hole tells you nothing. six holes tell you a story.',
     'no, we don’t take coins. what would a shipwreck do with coins.',
-    'best fishing’s off the end of the dock. pull up a chair, drop a line.',
-    'that gold shell? seen two in my life. one of ’em i lost betting.',
+    'chest a day, that’s all the sea gives up. and some days it’s empty.',
+    'lost a good hat down a hole in ’99. still think about it.',
   ];
   let capTimer = null, capIdx = 0, capGreeted = false;
   function say(text, ms) {
@@ -881,28 +885,58 @@ function init() {
     const near = Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r;
     if (near && !capGreeted) {
       capGreeted = true;
-      const n = dupeCount();
       // 🗺 THE MAP lives on his counter and rolls with the patches every night,
       // so the clue is always about TODAY's beach. It narrows the hunt to one
       // landmark without handing the spot over — you still dig the patch out.
       say(!treasureFound()
         ? '🗺 map says the sea buried something good ' + patches.treasureClue + '. dig it out.'
-        : n >= 3
-          ? 'ahoy! ' + n + ' spare shells in that pocket. i can work with that.'
-          : CAP_LINES[capIdx++ % CAP_LINES.length], 6000);
+        : CAP_LINES[capIdx++ % CAP_LINES.length], 6000);
       track('beach_captain');
     } else if (!near && capGreeted && Math.hypot(pos.x - BAR.x, pos.y - BAR.y) > BAR.r + 40) {
       capGreeted = false;                 // re-greets next time you wander back
     }
   }
-  // tapping the bar (or standing at it and tapping the Captain) opens trading
-  const tradePanel = document.getElementById('bhTradePanel');
-  const tradeGrid = document.getElementById('bhTradeGrid');
+  // ---- 🏴‍☠️ THE SALVAGE DESK — what the wreck is FOR ----------------------
+  // Tapping the bar opens the DIGGING desk, not a shell counter. The bay had
+  // two shell surfaces (Shelly's board and his trading post 500px away) and no
+  // keeper at all for digging — the loop with the most to explain was the one
+  // loop nobody on this beach would talk to you about. Now: he holds the map,
+  // he explains the dig, and he reads back what the sand has given you.
+  const digPanel = document.getElementById('bhDigPanel');
+  const digSay = document.getElementById('bhDigSay');
+  const digClue = document.getElementById('bhDigClue');
+  const digLog = document.getElementById('bhDigLog');
+  function openDig() {
+    const s = passGet().stats || {};
+    const dug = s.bh_dug || 0;
+    // the map is the reason to come back to him daily — it's the only place
+    // today's clue is written down rather than said once and lost
+    digClue.innerHTML = treasureFound()
+      ? '🗺 <b>today’s treasure is up.</b> the map’s no use to you now — the tide draws a new one tonight.'
+      : '🗺 <b>the map:</b> something good is buried ' + patches.treasureClue + '.';
+    digSay.textContent = dug === 0
+      ? '“never held a spade? sand’s soft, go on.”'
+      : dug < 12
+        ? '“you’ve turned a bit of sand. keep at it.”'
+        : '“you dig like someone who’s lost something. i respect that.”';
+    digLog.innerHTML =
+      '<div><b>' + dug + '</b><span>holes dug</span></div>'
+      + '<div><b>' + (s.bh_treasure || 0) + '</b><span>treasures</span></div>'
+      + '<div><b>' + (s.bh_chest || 0) + '</b><span>chests</span></div>'
+      + '<div><b>' + (s.bh_curio || 0) + '</b><span>curios</span></div>';
+    digPanel.hidden = false;
+    track('beach_dig_desk');
+  }
+  document.getElementById('bhDigClose').addEventListener('click', () => { digPanel.hidden = true; });
+
+  // ---- 🐚 the shell SWAP — Shelly's, inside her own panel ------------------
   const tradeSay = document.getElementById('bhTradeSay');
   const tradeStat = document.getElementById('bhTradeStat');
   const tradeDo = document.getElementById('bhTradeDo');
   function refreshTrade() {
-    renderGrid(tradeGrid);
+    // ⚠️ No grid render here any more — the trade now lives INSIDE the shell
+    // panel, which already drew the one grid on the screen. Rendering again
+    // would rebuild it under itself.
     const d = dupeCount(), m = missingIds().length;
     tradeStat.innerHTML = '🐚 you have <b>' + d + '</b> spare shell' + (d === 1 ? '' : 's')
       + ' · <b>' + m + '</b> kind' + (m === 1 ? '' : 's') + ' still missing';
@@ -910,14 +944,11 @@ function init() {
     tradeDo.textContent = m === 0
       ? 'nothing left to want'
       : (d >= 3 ? 'trade 3 duplicates → 1 new shell' : 'you need ' + (3 - d) + ' more duplicates');
+    // Shelly's voice now, not the Captain's — she keeps the board, so she runs
+    // the swap.
     tradeSay.textContent = m === 0
-      ? '"you’ve got the lot. i’ve nothing to sell a finished collector."'
-      : '"three you’ve got spare, one you ain’t got. that’s the deal. i don’t do money."';
-  }
-  function openTrade() {
-    refreshTrade();
-    tradePanel.hidden = false;
-    track('beach_trade_open');
+      ? '“you’ve got every kind there is. nothing left for me to find you.”'
+      : '“three spares for one you’re missing — that’s how we finish a set. shells only, never coins.”';
   }
   tradeDo.addEventListener('click', () => {
     const spares = SHELL_IDS.filter((id) => held(id) > 1)
@@ -932,11 +963,11 @@ function init() {
     const got = miss[Math.floor(Math.random() * miss.length)];
     passStat('sh_' + got, 1);
     refreshShellChip();
+    renderGrid(shellGrid);          // the set just changed — redraw it
     refreshTrade();
-    tradeSay.textContent = '"there she is — a ' + shellName(got) + '. pleasure doing business."';
+    tradeSay.textContent = '“there it is — a ' + shellName(got) + '. onto the board it goes.”';
     track('beach_trade', { got });
   });
-  document.getElementById('bhTradeClose').addEventListener('click', () => { tradePanel.hidden = true; });
 
   // ---- 🎣 FISHING off the dock -------------------------------------------
   // Sit on a dock chair → a rod casts a bobber into the sea → when it dips,
