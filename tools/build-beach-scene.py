@@ -547,8 +547,13 @@ def net_span():
 # Digging stays scattered map-wide on purpose (Trym: "the digging activity can
 # be plastered around throughout the map and dont have to be in a 'zone'"), so
 # these are spread across every room rather than pooled in one.
-DIG_SITES = [(420, 392), (444, 990), (700, 368), (1150, 368), (1262, 966),
-             (1444, 984), (1540, 900), (1642, 992), (1790, 956)]
+# ⚠️ RE-SCATTERED AGAIN with the road/zone rework — a patch is 156x104 and the
+# ground under it moved. ⚠️ Nothing can sit directly BELOW the court: its
+# bottom line is y1012 and the world ends at 1100, so a patch there either
+# overlaps the lines or hangs off the map. That gap is why the south lawn is
+# deliberately bare.
+DIG_SITES = [(820, 368), (1080, 368), (490, 980), (300, 1046), (1280, 700),
+             (1290, 1040), (1450, 900), (1620, 900), (1800, 980)]
 PATCH_W, PATCH_H = 156, 104
 ARCH = (75, 770, 355, 950)     # the welcome arch's DOM box (banana-beach.js)
 
@@ -606,12 +611,19 @@ ROAD_SPINE = []               # every centreline point painted, for the audit
 _rrng = random.Random(4242)
 
 
-def road_pts(pts, hw):
+def road_pts(pts, hw, taper=(True, True)):
     """walk a polyline at 1px steps, wobbling the centreline as we go.
 
     The wobble is a function of ARC LENGTH, not of x or y, so a diagonal leg
     wanders exactly as much as a horizontal one — keying it to x made vertical
-    roads dead straight and horizontal ones snake."""
+    roads dead straight and horizontal ones snake.
+
+    ⚠️ `taper` IS PER-END, and getting that wrong is what made the first
+    network read as "tips of the ends of the roads touching each other"
+    (Trym). Thinning an end to 30% is right where a lane peters out in open
+    sand and completely wrong where it joins another lane: a branch that
+    arrives at 30% width meets the trunk as a point. Junction ends pass
+    taper=False and start their polyline INSIDE the trunk, so the two merge."""
     out, s = [], 0.0
     for i in range(len(pts) - 1):
         (x0, y0), (x1, y1) = pts[i], pts[i + 1]
@@ -625,31 +637,81 @@ def road_pts(pts, hw):
             out.append([int(x0 + nx * t + px_ * wob), int(y0 + ny * t + py_ * wob),
                         px_, py_, hw])
             s += 1
-    # thin the two ends. Junction ends get buried under a road_clearing anyway;
-    # the ones that finish in open sand now fade out instead of stopping dead.
     n = len(out)
     for i in range(min(ROAD_TAPER, n // 2)):
         k = 0.30 + 0.70 * (i / float(ROAD_TAPER))
-        out[i][4] = max(4, hw * k)
-        out[n - 1 - i][4] = max(4, hw * k)
+        if taper[0]:
+            out[i][4] = max(4, hw * k)
+        if taper[1]:
+            out[n - 1 - i][4] = max(4, hw * k)
     return [tuple(p) for p in out]
 
 
-def road_paint(spine):
-    """lay the track itself: speckled fill, then the worn shoulder"""
+# ⭐ THE WHOLE NETWORK IS PAINTED FROM ONE MASK, AND THAT IS THE FIX FOR
+# "it doesnt seamlessly blend into eachother… it looks like many tiny roads
+# patched together" (Trym). Painting road-by-road, each lane laid its own
+# darker SHOULDER — so at every junction one lane's rim got stamped straight
+# across the next lane's fill, drawing a seam exactly where the two were meant
+# to become one. Union the coverage first and the seams cannot exist: the rim
+# is only ever computed against the OUTSIDE of the whole shape, so a fork is
+# one continuous piece of ground that happens to split.
+#
+# The mask stores, per pixel, `hw + 2 - distance` maxed over every centreline
+# point — i.e. how far INSIDE the network that pixel is. ≥5 is fill, 1..4 is
+# the frayed shoulder, and the probability rises with depth so the edge stays
+# ragged. (Absolute colours, not deltas, so overlapping lanes can never stack
+# and blow out to white the way a brightening pass would.)
+_road_mask = None
+_road_box = [W, H, 0, 0]
+
+
+def road_mask_add(spine):
+    """union one lane's coverage into the network mask"""
+    global _road_mask
+    if _road_mask is None:
+        _road_mask = bytearray(W * H)
+    m = _road_mask
     for (cx, cy, _, _, hw) in spine:
-        hw = int(hw)
-        for dy in range(-hw - 4, hw + 5):
-            for dx in range(-hw - 4, hw + 5):
-                x, y = cx + dx, cy + dy
-                if not (0 <= x < W and 0 <= y < H):
+        r = int(hw) + 2
+        for dy in range(-r, r + 1):
+            y = cy + dy
+            if not (0 <= y < H):
+                continue
+            row = y * W
+            for dx in range(-r, r + 1):
+                x = cx + dx
+                if not (0 <= x < W):
                     continue
-                d = math.hypot(dx, dy)
-                if d <= hw - 3:
-                    px[x, y] = (ROAD_S if _rrng.random() < 0.20 else ROAD) + (255,)
-                elif d <= hw + 1 and _rrng.random() < 0.75 - 0.15 * (d - hw + 3):
-                    px[x, y] = ROAD_RIM + (255,)
+                v = int(hw + 2 - math.hypot(dx, dy))
+                if v > 0 and v > m[row + x]:
+                    m[row + x] = 255 if v > 255 else v
+        if cx - r < _road_box[0]:
+            _road_box[0] = max(0, cx - r)
+        if cy - r < _road_box[1]:
+            _road_box[1] = max(0, cy - r)
+        if cx + r > _road_box[2]:
+            _road_box[2] = min(W, cx + r + 1)
+        if cy + r > _road_box[3]:
+            _road_box[3] = min(H, cy + r + 1)
     ROAD_SPINE.extend(spine)
+
+
+def road_bake():
+    """paint the unioned mask onto the plate, once"""
+    if _road_mask is None:
+        return
+    m = _road_mask
+    x0, y0, x1, y1 = _road_box
+    for y in range(y0, y1):
+        row = y * W
+        for x in range(x0, x1):
+            v = m[row + x]
+            if not v:
+                continue
+            if v >= 5:
+                px[x, y] = (ROAD_S if _rrng.random() < 0.20 else ROAD) + (255,)
+            elif _rrng.random() < 0.18 * v:
+                px[x, y] = ROAD_RIM + (255,)
 
 
 # (🚫 THERE IS NO road_clearing(). I built one — a trodden disc stamped where
@@ -971,48 +1033,58 @@ if HAVE_PACK:
     # tgt and the banana walks a straight line with axis-slide. A lane can only
     # ever be a SUGGESTION, so it must never imply a route a collider blocks.
     # That is what audit_roads() enforces.
+    # ⭐ ONE ROAD, NOT SIX. Trym: "it doesnt HAVE to be a crossroad, as long as
+    # the sandy road is connected here and there in nice ways and fades into
+    # eachother so it actually looks like one road not many tiny roads patched
+    # together." So there is now a single continuous SPINE from the park road
+    # to the bazaar gate, and exactly two branches leave it — each one
+    # STARTING INSIDE the spine, not at its edge, with taper switched off at
+    # that end so it leaves at full width and the union reads as a split.
     ROADS = [
-        # the arrival lane, up from the park road to the gate fork
-        ([(0, 1048), (118, 1000), (240, 948), (360, 900), (468, 862)], 22),
-        # the fire spur — stops well short of the ring (BONFIRE r48 blocks)
-        ([(462, 830), (430, 762), (392, 716), (336, 694)], 16),
-        # THE PROMENADE: the spine. Climbs out of the gate, runs the shore
-        # ABOVE the court (the resort deck sits between it and the sea), then
-        # turns down the far side into the crossroads.
-        ([(468, 862), (484, 782), (504, 704), (530, 632), (566, 570), (614, 520),
-          (676, 486), (760, 468), (900, 462), (1040, 464), (1150, 472), (1244, 458),
-          (1312, 516), (1344, 634), (1352, 762)], 22),
-        # the court's east doorway — the court never had an entrance before
-        ([(1346, 776), (1276, 776), (1216, 776)], 16),
-        # the harbour lane, past the wreck to the bazaar's sand gate
-        ([(1358, 782), (1440, 796), (1540, 808), (1640, 820), (1740, 830),
-          (1840, 834), (1930, 828)], 20),
-        # the dock path, up to the pier mouth where Gil stands
-        ([(1360, 758), (1440, 700), (1530, 640), (1620, 580), (1710, 510),
-          (1800, 440), (1866, 380)], 18),
+        # ── THE SPINE ──────────────────────────────────────────────────────
+        # in under the arch → up the west side past the fire → east along the
+        # shore above the court → down the far side → round the FRONT of the
+        # wreck (its stools now sit on the road's verge, which is what a bar's
+        # frontage should look like) → the bazaar's sand gate.
+        # ⚠️ the wreck's collider is [1580,638,1822,748]; the spine passes
+        # WEST then SOUTH of it, never through.
+        ([(0, 1050), (150, 1000), (300, 934), (420, 862), (486, 782), (516, 690),
+          (540, 596), (592, 526), (676, 486), (800, 464), (940, 456), (1090, 460),
+          (1220, 480), (1330, 530), (1440, 566), (1528, 598), (1540, 664),
+          (1528, 742), (1580, 806), (1700, 830), (1840, 822), (1952, 782)],
+         22, (False, False)),
+        # ── THE DOCK BRANCH ────────────────────────────────────────────────
+        # leaves the spine at ~(1548,620) — up and to the RIGHT of the old
+        # junction and in genuinely open sand (Trym: "a bit more spacious…
+        # for example under fisherman banana"). It runs out under Gil's blue
+        # board to the pier mouth, so the fork points AT the fishing.
+        ([(1538, 654), (1548, 606), (1620, 552), (1700, 490), (1780, 430),
+          (1846, 384)], 18, (False, True)),
+        # ── THE FIRE BRANCH ────────────────────────────────────────────────
+        # ends well short of the ring: BONFIRE (215,655) r48 blocks, and a
+        # lane that runs into a wall is a lie the audit refuses.
+        ([(512, 726), (430, 706), (344, 690)], 16, (False, True)),
     ]
-    for pts, hw in ROADS:
-        road_paint(road_pts(pts, hw))
-    # THE GATE FORK is (468,862) and ⭐ THE CROSSROADS is (1352,776) — both are
-    # just shared waypoints, not painted features. See the road_clearing note.
+    for pts, hw, tp in ROADS:
+        road_mask_add(road_pts(pts, hw, taper=tp))
+    road_bake()
 
-    # 🌴 PALMS — 7, in FOUR GROVES. They used to be eight in one row across the
-    # shore at base 500-508, which is most of why the beach read as a stripe: a
-    # tree repeated at even pitch is a fence, not a landscape. Grouped, they
-    # give each room a canopy and leave the sand between rooms genuinely empty.
-    for cx, base, fl in ((120, 560, False), (196, 512, True),      # west grove …
-                         (268, 470, False),                        # … above the hollow
-                         (600, 1046, True),                        # the gate's south marker
-                         (1548, 486, True), (1608, 524, False),    # the shell cove pair
-                         (1900, 650, True)):                       # the bazaar gate
+    # 🌴 PALMS — FIVE, in three groves. Eight in one row across the shore at
+    # base 500-508 was most of why the beach read as a stripe: a tree repeated
+    # at even pitch is a fence, not a landscape.
+    # ⚠️ AND DELIBERATELY SPARSE NOW. Trym: "maybe you can remove some shrubs
+    # and palms also to make things a bit easier to rather see afterwards where
+    # we can add them ones the zones are more clean". Planting comes back once
+    # the rooms are legible — clearing first, dressing second.
+    for cx, base, fl in ((120, 560, False), (196, 512, True),      # the west grove
+                         (1560, 476, True), (1636, 512, False)):   # the shell cove pair
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
               layer=True)
 
-    # 🌿 THE PIER FRINGE — regrouped into TWO CLUMPS with a gap at y560-879,
-    # which is exactly where the harbour lane arrives. It used to be five
-    # copies of one sprite in a dead-straight column at 140px pitch, i.e. a
-    # machine-planted hedge. A gap in a hedge is a gate.
-    for cx, base in ((1958, 452), (1934, 512), (1968, 560),
+    # 🌿 THE PIER FRINGE — two clumps with a gap where the spine arrives. It
+    # used to be five copies of one sprite in a dead-straight column at 140px
+    # pitch, i.e. a machine-planted hedge. A gap in a hedge is a gate.
+    for cx, base in ((1958, 452), (1934, 512),
                      (1946, 946), (1970, 998),
                      (2160, 1006), (2420, 1010), (2660, 1006)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False, layer=True)
@@ -1091,49 +1163,39 @@ if HAVE_PACK:
     # blocks parked in open sand rather than seating at a bar.
     for i, (sx, sy) in enumerate(((1602, 774), (1682, 786), (1766, 778))):
         place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, sy)
-    # 🌿 the wreck's west screen — gives the hull a side instead of an edge
-    place('21_Beach_48x48_Big_Sprout_Vers_1.png', 1500, 730, shade=False, layer=True)
-    place('21_Beach_48x48_Big_Sprout_Vers_2.png', 1546, 782, flip=True, shade=False,
-          layer=True)
+    # (the wreck's west screen shrubs are gone — the spine now runs right
+    #  through where they stood, round the front of the hull.)
 
     # (🗼 the lighthouse was removed 24 Jul — Trym: "its in the way". Its beacon
     #  glow and the BEACON export went with it.)
 
-    # ─── ⛱ Z5 THE TERRACE MOUTH + Z6 THE RESORT DECK ────────────────────────
-    # The tanning furniture used to be THREE stations smeared across 1390px of
-    # shore, every piece sharing a 70px y-band. That belt is the single biggest
-    # reason the beach read as clutter: 19 objects at one height across the
-    # whole map is a conveyor, not a resort.
+    # ─── ⛱ SUNSET ROW: the tanning zone, ON THE SHORE ───────────────────────
+    # ⚠️ THE PARASOLS BELONG BY THE SEA. A previous pass clustered them beside
+    # the volleyball court because that's where the geometry was easiest —
+    # Trym, immediately: "three parasols sitting beside the volleyball-court
+    # that doesnt quite make sense, they should be along the shore… for
+    # bananas tanning and enjoying the sun." He's right, and it's the whole
+    # reason the zone exists. They're back on the wet-sand edge, west of the
+    # court where the shore is widest.
     #
-    # It is now TWO masses. The three parasols cluster into one beach-club
-    # clump in the terrace mouth (they are the loudest sprites we own — grouped
-    # they're a landmark, spread they're wallpaper). The loungers go NORTH OF
-    # THE COURT, and that placement is load-bearing: roughly half of all
-    # arrivals spawn at (898,742), INSIDE the court (banana-beach.js:291), and
-    # that camera used to show red lines and nothing else. Now it looks up at
-    # a resort deck.
-    # ⚠️ THREE beds, three DIFFERENT sprites. Six beds from three sprites meant
+    # The row still isn't a row: bases stagger across y 424-500 so it reads as
+    # a handful of pitches rather than the 70px conveyor belt this pass set out
+    # to kill. Everything sits ABOVE the spine, so walking the road you have
+    # the sunbathers on your left and the sea beyond them.
+    # ⚠️ THREE beds, three DIFFERENT sprites — six beds from three sprites meant
     # every single one had a visible twin.
-    # ⚠️ THE CLUMP IS BOXED IN ON BOTH SIDES and the spacing is what's left.
-    # East: a canopy is 108 wide, so cx must stay ≤636 or its art crosses
-    # COURT.x0 = 690 — and umbrella() doesn't append to PLACED, so audit_court()
-    # would never catch it. West: the promenade climbs past at x 566→504, and
-    # audit_roads() trips if a POLE lands within r13+hw-8 = 27px of the lane.
-    # That leaves a ~90px-wide corridor. First pass stacked them 58px apart in
-    # y and the middle canopy was almost entirely hidden; ~95px apart each one
-    # reads while the three still group as one mass.
-    umbrella('yellow', 618, 566)
-    umbrella('green', 600, 664)
-    umbrella('blue', 582, 758)
-    for name, x0, y0 in (('Sunbed_5', 846, 424), ('Sunbed_1', 944, 410),
-                         ('Sunbed_9', 1036, 430)):
+    umbrella('yellow', 352, 436)
+    umbrella('green', 476, 462)
+    umbrella('blue', 604, 428)
+    for name, x0, y0 in (('Sunbed_5', 296, 478), ('Sunbed_1', 420, 500),
+                         ('Sunbed_9', 548, 470)):
         place('ME_Singles_Swimming_Pool_48x48_%s.png' % name, x0, y0, solid=SUNBED)
-    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 890, 450, shade=False)
-    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 994, 402, shade=False)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 358, 500, shade=False)
+    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 610, 486, shade=False)
     # the ONE surviving bucket, parked touching a lounger so it belongs to
     # somebody. Three more stood evenly spaced along the waterline owned by
     # nothing at all.
-    place('21_Beach_48x48_Small_Red_Bucket_1.png', 1000, 444, shade=False, layer=True)
+    place('21_Beach_48x48_Small_Red_Bucket_1.png', 466, 508, shade=False, layer=True)
 
     # ─── 🌊 Z1 THE TIDE — a NO-DECORATION strip, on purpose ──────────────────
     # ⚠️ NOTHING is placed in y292-362 any more. Sixteen collectible shells
@@ -1168,9 +1230,9 @@ if HAVE_PACK:
     # plate is something you walk straight through, which reads worse than the
     # tiny sign Trym complained about — the fix would have made it louder AND
     # more broken. Solid, they're objects; layered, you can pass in front.
-    place('21_Beach_48x48_White_Cartel.png', 1310, 442, scale=1.25, sh=0.26,
+    place('21_Beach_48x48_White_Cartel.png', 1322, 452, scale=1.25, sh=0.26,
           layer=True, solid=('rect', -14, -6, 14, 0))    # 🐚 SHELLY'S BOARD 47x103
-    place('21_Beach_48x48_Blue_Cartel_2.png', 1720, 410, scale=1.20, sh=0.26,
+    place('21_Beach_48x48_Blue_Cartel_2.png', 1738, 424, scale=1.20, sh=0.26,
           layer=True, solid=('rect', -16, -6, 16, 0))    # 🎣 GIL'S BOARD 60x96
     # Blue_Cartel_2 over _1: its red highlighted row and colour swatch read as
     # "today's catch", where _1's blank 2x2 grid reads as an empty timetable.
@@ -1182,21 +1244,19 @@ if HAVE_PACK:
     # gate) and Small reads 1 LEFT / 3 RIGHT (left = the fire · right = the
     # rest). Their plank counts differ (5 vs 4) so the two silhouettes never
     # repeat.
-    place('21_Beach_48x48_Direction_Pole_Small.png', 524, 838, scale=1.32, sh=0.28,
-          layer=True, solid=POLE)                        # THE GATE FORK 77x109
-    place('21_Beach_48x48_Direction_Pole_Big.png', 1286, 726, scale=1.40, sh=0.28,
-          layer=True, solid=POLE)                        # ⭐ THE CROSSROADS 78x158
-
-    # 🌿 THE COURT'S EAST DOORWAY — two shrubs 124px apart, straight opposite
-    # the crossroads post. The court has never had an entrance; this gives the
-    # eye one. (Visual only — with no pathfinding, a solid "doorway" would be a
-    # trap you slide along instead of a gate you walk through.)
-    place('21_Beach_48x48_Big_Sprout_Vers_1.png', 1232, 748, shade=False, layer=True)
-    place('21_Beach_48x48_Big_Sprout_Vers_2.png', 1240, 872, flip=True, shade=False,
-          layer=True)
-    # 🐚 the shell cove's understory, under the palm pair
-    place('21_Beach_48x48_Small_Sprout_3_Vers_2.png', 1470, 512, flip=True,
-          shade=False, layer=True)
+    # ⚠️ SCALES CUT ~25% (Trym: "the roadcross-sign is very large also so can
+    # probably be a little smaller"). Big goes 1.40 → 1.05 (78x158 → 59x119),
+    # Small 1.32 → 1.00 (77x109 → 59x83). Still comfortably the tallest
+    # man-made things on the sand and still twice the board they replaced —
+    # at 1.40 the post was taller than the wreck.
+    place('21_Beach_48x48_Direction_Pole_Small.png', 452, 754, scale=1.00, sh=0.28,
+          layer=True, solid=POLE)                        # the gate fork 59x83
+    place('21_Beach_48x48_Direction_Pole_Big.png', 1470, 630, scale=1.05, sh=0.28,
+          layer=True, solid=POLE)                        # ⭐ THE FORK 59x119
+    # ⚠️ the big post stands in the gore of the dock branch, WEST of the split
+    # at (1548,620), on open sand. Its old spot at (1286,726) had a dig patch,
+    # two shrubs, a palm and a lane end inside 200px of it — the "much things
+    # mushed together" Trym screenshotted.
 
     # 🎣 FOUR FISHING CHAIRS on the dock — two rows of two, each pair facing
     # OUT over its own side of the water so the lines never cross. Sit to cast.
@@ -1235,14 +1295,16 @@ if HAVE_PACK:
     # (26,742) deliberately hangs off the west edge — Pillow clips a negative
     # paste box without raising, so the hedge runs out of frame instead of
     # stopping dead at x0.
+    # ⚠️ FOUR, not eight, and the two "gateposts" are gone. Trym: "the little
+    # crossroad by the firepit also looks very cramped". The hedge was closing
+    # a room that is already closed on its west by the world's edge and on its
+    # south by the arch, and the gateposts stood exactly where the fire branch
+    # leaves the spine — so the one junction here had bushes in the gore of it.
+    # It only needs to say "the ground rises to scrub behind the fire".
     for name, hx, hy, hf in (('Big_Sprout_Vers_2', 26, 742, False),
-                             ('Big_Sprout_Vers_1', 30, 650, False),
                              ('Small_Sprout_3_Vers_1', 66, 574, False),
                              ('Big_Sprout_Vers_1', 146, 536, False),
-                             ('Big_Sprout_Vers_2', 238, 524, True),
-                             ('Small_Sprout_1_Vers_2', 312, 548, False),
-                             ('Big_Sprout_Vers_1', 400, 600, True),    # N gatepost
-                             ('Big_Sprout_Vers_2', 410, 830, True)):   # S gatepost
+                             ('Big_Sprout_Vers_2', 254, 520, True)):
         place('21_Beach_48x48_%s.png' % name, hx, hy, flip=hf, shade=False, layer=True)
 
     # 🎡 THE PIER BAZAAR — a WALKABLE deck (BOARDWALK isn't a collider now). Two
