@@ -421,7 +421,18 @@ const description = 'The beach at the end of the park road. The sun never quite 
       position: absolute; z-index: 1900; transform: translate(-50%, -100%);
       width: max-content; max-width: 210px; min-width: 130px; text-align: center;
       background: #fffdf5; color: #111; border: 3px solid #111;
-      box-shadow: 3px 3px 0 #000; padding: 0.4rem 0.5rem;
+      /* ⭐ drop-shadow, NOT box-shadow — THIS is what the black line across the
+         tail was, for four rounds of "it's still there".
+         box-shadow draws a solid rectangle offset 3px below the BORDER BOX,
+         spanning the bubble's whole width. The tail hangs through exactly that
+         band, and the tail's cream only covers the bubble's own 3px border —
+         not the shadow underneath it. So a black bar cut straight across the
+         top of the tail, and no amount of redrawing the tail could ever have
+         fixed it, because the tail was never what was drawing it.
+         drop-shadow follows the element's real rendered SILHOUETTE, tail
+         included, so it hugs the point instead of slicing through it. */
+      filter: drop-shadow(3px 3px 0 #000);
+      padding: 0.4rem 0.5rem;
       /* 🍹 BARTY'S VOICE. Trym: "The NPC speechbubbles can be more like Bartys
          speechbubbles visually - Barty in the Rave." Matched to .rv-bubble in
          rave.astro: uppercase, letter-spaced, 800 weight, the same cream, the
