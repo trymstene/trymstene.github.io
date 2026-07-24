@@ -2427,10 +2427,16 @@ function init() {
   // 🍌 A VENDOR BANANA behind each stall's counter, frozen on a DIFFERENT
   // dance frame so they don't look identical — one leans left, one faces
   // front, etc. A couple wear a hat for extra variety. Frozen = one draw.
+  // ⚠️ INDEX 2 IS THE COCONUT HUT, AND HE IS THE SAME BANANA INSIDE AND OUT.
+  // He wore black shades out here and a white backwards cap in the stall's
+  // interior scene (drawCocoVendor), so stepping inside swapped his head for a
+  // stranger's. Trym spotted it: "make him have the white backwards-cap
+  // outside aswell." Any vendor with a step-inside scene has to match it —
+  // this list and that scene are one character in two places.
   const VENDORS = [
     { frame: 2, hat: 'none', glasses: 'none' },
     { frame: 5, hat: 'sombrero', glasses: 'none' },
-    { frame: 3, hat: 'none', glasses: 'shades' },
+    { frame: 3, hat: 'backwardscap', glasses: 'none' },   // 🥥 the coconut hut
     { frame: 1, hat: 'tophat', glasses: 'none' },
   ];
   STALLS.forEach((s, i) => {
@@ -2593,7 +2599,7 @@ function init() {
   // 0.30 — v is multiplied by pow(DRAG, dt), so 0.30 kills 70% of the speed
   // every second and the ball died about a banana-and-a-half away. 0.66 lets
   // a good shove carry ~500px, which is a real pass between two players.
-  const WB_R = 22, WB_DRAG = 0.66, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
+  const WB_R = 22, WB_DRAG = 0.10, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
   const WB_COOL = 240;
   // ⚠️ THE PEN IS IN WATER ROWS, NOT FEET ROWS. SWIM.ySea/yShore are `pos.y`
   // values, and a banana's feet draw 13.5px above pos.y — the ball has no
@@ -2631,7 +2637,13 @@ function init() {
       // ~52px/s of downward speed it just lands and stays landed.
       WBALL.vz = WBALL.vz < -52 ? -WBALL.vz * WB_HOP : 0;
     }
-    // in the air it barely slows; the water is what takes the speed out of it
+    // ⚠️ THE DISTANCE IS BOUGHT IN THE AIR, NOT ON THE WATER. Trym: "bounce is
+    // very nice now but when it lands it should slowly glide a little bit but
+    // stop really quick since its in the water." So airborne drag is almost
+    // nothing (0.94/s) and the ball flies its whole pass; the moment it touches
+    // down the water takes it — 0.10 kills 90% of the remaining speed every
+    // second, which is a short skid and then still. WB_DRAG at 0.66 let it keep
+    // sliding across the bay long after it had stopped bouncing.
     const damp = Math.pow(WBALL.z > 1 ? 0.94 : WB_DRAG, dt);
     WBALL.vx *= damp; WBALL.vy *= damp;
     if (WBALL.x < PEN.x0) { WBALL.x = PEN.x0; WBALL.vx = Math.abs(WBALL.vx) * WB_WALL; }

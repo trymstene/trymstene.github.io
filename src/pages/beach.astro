@@ -435,17 +435,28 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     /* the tail: two shrinking steps straight down, NO rotation — a rotated
        triangle anti-aliases and stops looking like pixel art */
-    /* ⚠️ CENTRED, unlike Barty's. His bubble is pinned at left:68% and offset
-       to point back at him; ours is translate(-50%) onto the NPC, so the tail
-       has to sit on the same centre line or it points at the sand beside them. */
+    /* 🗨 THE TAIL — two steps that TAPER, each with real cream inside.
+       ⚠️ TWO THINGS WERE WRONG AND BOTH MATTER.
+       1. box-sizing is border-box site-wide, so a 6px-wide step with a 3px
+          border each side has ZERO content: it renders as a solid black
+          square. That was Trym's "point which is not transparent and looks
+          ugly" — it wasn't a tail, it was a dot. Every step is now wide
+          enough that width − 2×border leaves visible cream.
+       2. at top:100% the tail begins BELOW the bubble's own bottom border, so
+          an unbroken black line ran across the top of it and the tail read as
+          a separate nub stuck under a box. The first step is pulled up 3px so
+          its cream overlaps that border and the shape flows OUT of the
+          bubble, which is what makes it a speech bubble at all.
+       ⚠️ CENTRED, unlike Barty's: his is pinned at left:68% and offset back
+       toward him, ours translate(-50%) onto the NPC. */
     .bh-capbubble::before {
-      content: ''; position: absolute; top: 100%; left: calc(50% - 7px);
-      width: 14px; height: 6px;
+      content: ''; position: absolute; top: calc(100% - 3px); left: calc(50% - 9px);
+      width: 18px; height: 8px;
       background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111;
     }
     .bh-capbubble::after {
-      content: ''; position: absolute; top: calc(100% + 6px); left: calc(50% - 3px);
-      width: 6px; height: 6px;
+      content: ''; position: absolute; top: calc(100% + 5px); left: calc(50% - 5px);
+      width: 10px; height: 7px;
       background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111;
       border-bottom: 3px solid #111;
     }
