@@ -2599,7 +2599,7 @@ function init() {
   // 0.30 — v is multiplied by pow(DRAG, dt), so 0.30 kills 70% of the speed
   // every second and the ball died about a banana-and-a-half away. 0.66 lets
   // a good shove carry ~500px, which is a real pass between two players.
-  const WB_R = 22, WB_DRAG = 0.10, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
+  const WB_R = 22, WB_DRAG = 0.02, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
   const WB_COOL = 240;
   // ⚠️ THE PEN IS IN WATER ROWS, NOT FEET ROWS. SWIM.ySea/yShore are `pos.y`
   // values, and a banana's feet draw 13.5px above pos.y — the ball has no
@@ -2637,13 +2637,14 @@ function init() {
       // ~52px/s of downward speed it just lands and stays landed.
       WBALL.vz = WBALL.vz < -52 ? -WBALL.vz * WB_HOP : 0;
     }
-    // ⚠️ THE DISTANCE IS BOUGHT IN THE AIR, NOT ON THE WATER. Trym: "bounce is
-    // very nice now but when it lands it should slowly glide a little bit but
-    // stop really quick since its in the water." So airborne drag is almost
-    // nothing (0.94/s) and the ball flies its whole pass; the moment it touches
-    // down the water takes it — 0.10 kills 90% of the remaining speed every
-    // second, which is a short skid and then still. WB_DRAG at 0.66 let it keep
-    // sliding across the bay long after it had stopped bouncing.
+    // ⚠️ THE DISTANCE IS BOUGHT IN THE AIR, NOT ON THE WATER. Trym: "when it
+    // lands it should slowly glide a little bit but stop really quick since
+    // its in the water" — then, after 0.10 wasn't enough: "still alot of
+    // glide… still too quick." So airborne drag is almost nothing (0.94/s) and
+    // the ball flies its whole pass; the moment it touches down the water
+    // takes it. 0.02 leaves ~14% of the speed after half a second: a short
+    // skid, then it only drifts. Tuned in three passes — 0.66 slid across the
+    // whole bay, 0.10 still coasted a banana's length past the splash.
     const damp = Math.pow(WBALL.z > 1 ? 0.94 : WB_DRAG, dt);
     WBALL.vx *= damp; WBALL.vy *= damp;
     if (WBALL.x < PEN.x0) { WBALL.x = PEN.x0; WBALL.vx = Math.abs(WBALL.vx) * WB_WALL; }
