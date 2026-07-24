@@ -631,6 +631,7 @@ function init() {
     if (now - lastKick < 320) return false;
     lastKick = now;
     bumpFrom(pos.x, pos.y - 8, HIT_YOU);
+    sendBall('v');                 // 🌐 your swing, out to the whole bay
     if (now - kickTrackAt > 8000) { kickTrackAt = now; track('beach_ball_kick'); }
     return true;
   }
@@ -1778,10 +1779,16 @@ function init() {
       else if (!blocked(nx, sandy.y)) sandy.x = nx;
       else if (!blocked(sandy.x, ny)) sandy.y = ny;
     }
+    // ⚠️ sandyOwnsBall() — every client runs a Sandy, so without this two
+    // browsers would both return the same ball and the rally would fork into
+    // two different arcs. Only the client he's actually rallying with swings;
+    // the others receive the return like any other hit.
     if (!sandy.away && ball.y > NET_Y && ball.z < 60 && now - sandy.last > 340
-        && Math.hypot(sandy.x - ball.x, (sandy.y - 8) - ball.y) < 32) {
+        && Math.hypot(sandy.x - ball.x, (sandy.y - 8) - ball.y) < 32
+        && sandyOwnsBall()) {
       sandy.last = now;
       bumpFrom(sandy.x, sandy.y - 8, HIT_SANDY);
+      sendBall('v');
     }
     // he greets you when you first step onto the court, then resets when you
     // wander off, so he's pleased to see you rather than nagging
@@ -2748,6 +2755,7 @@ function init() {
       if (s > WB_MAX) { WBALL.vx *= WB_MAX / s; WBALL.vy *= WB_MAX / s; }
       WBALL.vz = 205;                       // it POPS — the hit lifts it out
       float(WBALL.x, WBALL.y - 20, 'splash!');
+      sendBall('w');                        // 🌐 so it's the SAME ball out there
     }
     const prevZ = WBALL.z;                    // was it airborne last frame?
     WBALL.x += WBALL.vx * dt; WBALL.y += WBALL.vy * dt;
@@ -3022,6 +3030,26 @@ function init() {
   function refreshCrowd() {
     if (crowdEl) crowdEl.textContent = peers.size ? '🏖 ' + (peers.size + 1) + ' on the beach' : '';
   }
+  // 🏐 THE STEP-ASIDE RULE FINALLY HAS A NUMBER. sandyTick() has carried it
+  // since B1 — two bananas on the court and he heads for the firepit, one and
+  // he comes back — but `peersInCourt` was hard-wired to 0 with nothing to
+  // feed it. It's just a count of the peer positions we already receive, so
+  // this needs no protocol at all. Recomputed on roster/join/move/leave rather
+  // than per frame: it only changes when somebody moves.
+  function recountCourt() {
+    let n = 0;
+    peers.forEach((p) => { if (inCourt(p.x, p.y)) n++; });
+    peersInCourt = n;
+  }
+  // ⚖️ WHOSE SANDY SWINGS. Every client simulates him, so without a rule two
+  // browsers would both have him return the same ball and the rally would
+  // fork. He only ever rallies with the banana ON the court, so that client
+  // owns his swing; everyone else watches the ball arrive over the wire.
+  // Alone in the room there is no one to conflict with, so solo play is
+  // untouched — which is the standalone-first law, not an optimisation.
+  function sandyOwnsBall() {
+    return !bayRoom.live || peers.size === 0 || inCourt(pos.x, pos.y);
+  }
   function drawPeer(p, force) {
     // same redraw key as drawMe(): frame AND depth, because a peer wading out
     // changes tint without changing frame — key on frame alone and the tint
@@ -3061,6 +3089,29 @@ function init() {
     placePeer(p);
     drawPeer(p, true);
     refreshCrowd();
+    recountCourt();
+  }
+  // ---- 🏐 THE SHARED BALLS ------------------------------------------------
+  // ⚠️ ONE PACKET PER HIT. Both balls are pure physics from a known state, so
+  // a snapshot at the moment of contact is all anyone needs: every client
+  // integrates the same constants from the same numbers and draws the same
+  // arc. A rally costs about one message per bounce instead of sixty a
+  // second, and the next hit resyncs whatever drift crept in.
+  // ⚠️ Sub-pixel state is deliberately NOT sent — the room rounds everything.
+  // At these speeds a 1px seed difference is invisible within a single flight,
+  // and rounding halves the packet.
+  function sendBall(which) {
+    if (!bayRoom.live) return;
+    const b = which === 'w' ? WBALL : ball;
+    bayRoom.send({ t: 'ball', b: which, x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz });
+  }
+  function applyBall(m) {
+    const b = m.b === 'w' ? WBALL : ball;
+    b.x = m.x; b.y = m.y; b.z = m.z;
+    b.vx = m.vx; b.vy = m.vy; b.vz = m.vz;
+    // the volleyball's rally counter belongs to whoever is playing it, so a
+    // remote hit must not reset YOUR rest timer into a dead rally
+    if (m.b === 'w') float(WBALL.x, WBALL.y - 20, 'splash!');
   }
   const bayRoom = presenceRoom({
     url: BEACH_WS,
@@ -3068,12 +3119,14 @@ function init() {
     onMessage: (m) => {
       if (m.t === 'roster') { myBayId = m.you; (m.all || []).forEach(addPeer); refreshCrowd(); }
       else if (m.t === 'join') addPeer(m.p);
+      else if (m.t === 'ball') applyBall(m);
       else if (m.t === 'move') {
         const p = peers.get(m.id);
         if (p) {
           p.x = m.x; p.y = m.y; p.sit = !!m.sit;
           p.el.classList.toggle('is-sitting', p.sit);
           placePeer(p);
+          recountCourt();          // they may have just walked onto the court
         }
       } else if (m.t === 'outfit') {
         const p = peers.get(m.id);
@@ -3087,10 +3140,14 @@ function init() {
           p.el.remove();
           peers.delete(m.id);
           refreshCrowd();
+          recountCourt();          // the court may have just emptied out
         }
       }
     },
-    onDown: () => { peers.forEach((p) => p.el.remove()); peers.clear(); refreshCrowd(); },
+    onDown: () => {
+      peers.forEach((p) => p.el.remove()); peers.clear();
+      refreshCrowd(); recountCourt();   // socket died → Sandy comes back
+    },
   });
   function baySendMove(now) {
     if (!bayRoom.live || now - baySendAt < 150) return;

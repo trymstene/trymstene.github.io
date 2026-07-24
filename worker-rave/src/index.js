@@ -963,6 +963,28 @@ export class BeachRoom {
       me.outfit = sanitizeOutfit(msg.outfit);
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
+      return;
+    }
+    // 🏐 THE BALLS. ⚠️ ONE PACKET PER HIT, never a stream: the sender relays
+    // the state the ball leaves its hand in, and every client integrates the
+    // same physics from there. Two clients running identical constants from
+    // an identical snapshot draw the same arc, so a rally costs ~1 message a
+    // bounce instead of 60 a second — and the next hit resyncs any drift.
+    // The room does NOT simulate. It has no idea what a ball is; it fans out
+    // a validated blob. (Client-authoritative until real money — a beach toy
+    // is nobody's balance.)
+    if (msg.t === 'ball' && me) {
+      const now = Date.now();
+      if (now - (me.lastBall || 0) < 90) return;   // hit cooldowns are 240ms+
+      me.lastBall = now;
+      ws.serializeAttachment(me);
+      const b = msg.b === 'w' ? 'w' : 'v';
+      this.broadcast({
+        t: 'ball', b, id: me.id,
+        x: num(msg.x, 0, 2760), y: num(msg.y, 0, 1100), z: num(msg.z, 0, 900),
+        vx: num(msg.vx, -1600, 1600), vy: num(msg.vy, -1600, 1600),
+        vz: num(msg.vz, -1600, 1600),
+      }, ws);
     }
   }
 
@@ -975,6 +997,12 @@ export class BeachRoom {
   async webSocketError(ws) {
     return this.webSocketClose(ws);
   }
+}
+
+// a finite number inside [lo, hi], rounded — never NaN/Infinity onto the wire
+function num(v, lo, hi) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(Math.min(hi, Math.max(lo, n))) : 0;
 }
 
 // world pixels, rounded to whole px (the map is 2760×1100 and a banana is ~56
