@@ -96,5 +96,12 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
   return {
     send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); },
     get live() { return !!ws && ws.readyState === 1; },
+    // 🚪 leave NOW, don't wait for pagehide. Walking out a door runs a cut
+    // animation before navigating, and pagehide only fires when the nav
+    // actually happens — so the socket closes ~200ms late and other players
+    // watch you stand frozen for that beat. Closing here makes the poof land
+    // the instant you commit to leaving. (pagehide is still the backstop for
+    // tab-close and hard exits.)
+    leave() { closedForGood = true; clearInterval(pinger); try { if (ws) ws.close(1000, 'bye'); } catch (e) {} },
   };
 }

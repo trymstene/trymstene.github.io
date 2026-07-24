@@ -15,7 +15,7 @@ import { seedRand, presenceRoom, poofInto } from '../lib/world.js';
 // hand-kept version drifted three times (two parasol poles and a palm trunk
 // left standing where their props used to be, one of them ON the court).
 import {
-  WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
+  WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR, WRECK_WIN, WRECK_FRONT,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
@@ -519,6 +519,7 @@ function init() {
   function exitToPark() {
     if (leaving) return;
     leaving = true;
+    try { bayRoom.leave(); } catch (e) {}   // poof for everyone the instant you go
     track('beach_exit_park');
     if (REDUCED) { location.href = '/banana-stand/?beach'; return; }
     cutEl.classList.add('is-on');
@@ -2944,18 +2945,31 @@ function init() {
   // bar in front of him, and because nothing of him reaches below 668 he never
   // covers the counter itself. Same back < keeper < front read as the pier
   // stalls' vendor-and-desk sandwich, without having to split the sprite.
-  const CAP_X = 1690, CAP_FEET = 668;
-  // ⚠️ Derived, not hard-coded 841: whatever overlays he stands inside, he
-  // draws just above the frontmost of them. Re-bake the scene, move the wreck,
-  // change its base — he stays in the window instead of silently vanishing
-  // again. (`+ 2`, so a prop sharing the hull's base can't tie with him.)
-  const capOver = OVERLAYS.filter((o) => CAP_X > o.x && CAP_X < o.x + o.w
-    && CAP_FEET > o.y && CAP_FEET < o.y + o.h);
+  // ⭐ HE STANDS BEHIND HIS BAR. The open-top placement read as standing ON the
+  // boathouse (Trym), so he's lowered until his feet are down in the hull and
+  // the counter crosses his waist. The trick is the THREE layers: the wreck
+  // (opaque, z 840) draws behind him; he draws over it (z 841) so his head and
+  // chest show in the opening; then WRECK_FRONT — the counter cropped to its
+  // own sprite — redraws OVER his legs (z 842). Bartender, not a banana on the
+  // roof. FIXED z, not y-based: he sits at y≈700 which would sort him behind
+  // the hull on its own, and the wreck collider keeps players out of the
+  // counter's y-band so nobody real ever needs to sort against the front crop.
+  const CAP_X = 1690, CAP_FEET = 704;
+  const wreckZ = Math.max(...OVERLAYS
+    .filter((o) => CAP_X > o.x && CAP_X < o.x + o.w && 700 > o.y && 700 < o.y + o.h)
+    .map((o) => o.base), 740);
   capEl.style.left = pct(CAP_X, W);
-  capEl.style.top = pct(CAP_FEET + 15, H);   // +15: the canvas's empty sub-feet strip
-  depth(capEl, Math.max(CAP_FEET, ...capOver.map((o) => o.base)) + 2);
+  capEl.style.top = pct(CAP_FEET, H);
+  capEl.style.zIndex = String(100 + wreckZ + 1);   // over the hull, under the counter
+  // 🪵 the counter occluder — same layer family, one higher
+  const wf = document.getElementById('bhWreckFront');
+  wf.style.left = pct(WRECK_FRONT.x, W);
+  wf.style.top = pct(WRECK_FRONT.y, H);
+  wf.style.width = pct(WRECK_FRONT.w, W);
+  wf.style.zIndex = String(100 + wreckZ + 2);
+  // the bubble floats above the opening
   capBubble.style.left = pct(CAP_X, W);
-  capBubble.style.top = pct(568, H);          // clear of the wreck's roof rail
+  capBubble.style.top = pct(WRECK_WIN.y0 - 34, H);
 
   // 🎣 Gil stands beside the dock mouth, so every trip out passes him
   gilEl.style.left = pct(GIL.x, W);      // see the -74 note on shellyEl
