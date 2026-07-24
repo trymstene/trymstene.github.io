@@ -700,7 +700,10 @@ function init() {
           try { localStorage.setItem('bh-rally-best', String(bestRally)); } catch (e) {}
         }
         showRally();
-        if (rally === 5 || rally === 10 || rally === 25) float(ball.x, ball.y - 16, 'rally ' + rally + '!');
+        if (rally === 5 || rally === 10 || rally === 25) {
+          float(ball.x, ball.y - 16, 'rally ' + rally + '!');
+          track('beach_rally', { rally });
+        }
         passStat('bh_volley', 1);
       }
     }
@@ -3125,8 +3128,10 @@ function init() {
   function clearPeerRod(p) {
     if (p.rod) { p.rod.forEach((e) => e.remove()); p.rod = null; }
   }
+  let sawPeer = false;   // fire beach_multiplayer once — was the beach ever social for you?
   function addPeer(d) {
     if (!d || d.id === myBayId || peers.has(d.id)) return;
+    if (!sawPeer) { sawPeer = true; track('beach_multiplayer'); }
     const el = document.createElement('div');
     el.className = 'bh-peer';
     const cv = document.createElement('canvas');

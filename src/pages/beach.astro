@@ -7,12 +7,48 @@
 // amplifies it. Noindexed — the park's right road is the front door.
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const title = 'Banana Bay';
-const description = 'The beach at the end of the park road. The sun never quite sets.';
+// SEO (24 Jul): the park road is still the intended front door, but the beach
+// is now indexable and aimed at the real demand — "banana game" (40.5K/mo, low
+// comp) and "banana beach" (110K/mo) both fit the page literally; "dancing
+// banana" (12K) and "banana world" (1.6K) are our brand terms.
+const title = 'Banana Bay — a free banana beach game';
+const description = 'Play Banana Bay, a free banana game — your dancing banana hits the beach for volleyball, shell-hunting, fishing and the pier’s claw machine, with players from around the world.';
+
+// a browser game → WebApplication/GameApplication is the honest, rich-eligible type
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Banana Bay',
+  url: 'https://trymstene.com/beach/',
+  applicationCategory: 'GameApplication',
+  operatingSystem: 'Web',
+  browserRequirements: 'Requires JavaScript. No download.',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  description: 'A free browser beach world for custom dancing bananas — volleyball, seashells, fishing and a claw machine, with players worldwide.',
+};
+const faq = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'Is Banana Bay free to play?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Banana Bay is a free banana game you play right in your browser — no account, no download. Your custom dancing banana walks straight onto the sand.' } },
+    { '@type': 'Question', name: 'What can you do at Banana Bay?', acceptedAnswer: { '@type': 'Answer', text: 'Play beach volleyball, hunt the day’s seashells along the shore, fish off the pier, trade your duplicate shells with Captain Split, and win the giant plush banana from the pier’s claw machine.' } },
+    { '@type': 'Question', name: 'Can you play Banana Bay with other people?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The beach is live — other visitors’ bananas share the sand with you in real time, and you can pass the volleyball back and forth.' } },
+    { '@type': 'Question', name: 'How do you get to Banana Bay?', acceptedAnswer: { '@type': 'Answer', text: 'Banana Bay sits at the end of the park road. Dress your banana in the free builder, walk through the park, and follow the shore road down to the beach.' } },
+  ],
+};
 ---
-<BaseLayout title={title} description={description} showFooter={false}>
-  <meta name="robots" content="noindex" slot="head" />
+<BaseLayout
+  title={title}
+  description={description}
+  ogTitle="Banana Bay 🏖"
+  ogImage="https://trymstene.com/assets/og/beach.png"
+  showFooter={false}
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
   <link rel="preload" as="image" href="/assets/beach/beach.png" slot="head" />
+  <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">
     body { background: #180f22; }
     .bh-wrap { max-width: 1000px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }

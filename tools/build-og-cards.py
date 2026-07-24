@@ -108,6 +108,8 @@ CARDS = {
                      hat='party', glasses='hearts'),
     'shop':     dict(chip='OFFICIAL MERCH', title=['Dancing Banana', 'Shop'], pose=4,
                      hat='cowboy', bowtie=True),
+    'beach':    dict(chip='A FREE BANANA GAME', title=['Welcome to', 'Banana Bay'], pose=2,
+                     glasses='shades'),
 }
 
 BG, INK, PINK, PAPER = (255, 221, 40), (17, 17, 17), (255, 84, 112), (255, 253, 245)
