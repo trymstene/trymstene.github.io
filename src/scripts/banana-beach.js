@@ -2089,16 +2089,21 @@ function init() {
       if (ended) return;
       const remain = endAt - performance.now();
       if (remain <= 0) { finish(); return; }
+      const t = Math.min(1, (CRAB_ROUND_MS - remain) / CRAB_ROUND_MS);  // 0 → 1 over the round
       const down = holes.filter((h) => !h.up);
       if (down.length) {
         const h = down[Math.floor(Math.random() * down.length)];
         h.up = true; h.crab.disabled = false; h.crab.classList.remove('is-bonked');
         h.crab.classList.add('is-up');
-        const upFor = 1150 + Math.random() * 750;
+        // ~40% are QUICK poppers (short window — you have to be sharp), and
+        // every crab retracts a little sooner as the round heats up
+        const quick = Math.random() < 0.4;
+        const base = quick ? 500 + Math.random() * 300 : 820 + Math.random() * 520;
+        const upFor = Math.max(340, base - t * 260);
         crabTimers.push(setTimeout(() => { if (h.up) setDown(h); }, upFor));
       }
-      // the pace quickens as the clock runs down
-      const gap = Math.max(620, 1400 - (CRAB_ROUND_MS - remain) / 44);
+      // crabs surface faster and faster — early it's one at a time, late it's a scramble
+      const gap = Math.max(360, 1050 - t * 620);
       crabTimers.push(setTimeout(pop, gap));
     }
     function finish() {
