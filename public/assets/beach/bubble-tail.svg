@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="15" shape-rendering="crispEdges">
+  <!-- 🗨 THE NPC SPEECH-BUBBLE TAIL, drawn pixel by pixel.
+       Rows 24 → 18 → 12 wide closing on a 6px tip, with a 3px black edge down
+       both sides. The top 3px is CREAM ONLY: that band sits over the bubble's
+       own bottom border and breaks it, so the white runs straight out of the
+       bubble and the black edge continues from the bubble's edge. That is what
+       makes it ONE shape rather than a triangle glued underneath.
+       ⚠️ THE STEP IS 3x3, NOT 3x4. At 3 across per 4 down the staircase is
+       steeper than 45° and the pips only meet at a point, so the outline reads
+       as a dotted line of loose squares. 3x3 makes every corner touch.
+       ⚠️ A FILE, not a CSS data URI. The inline version silently failed to
+       parse — an <img> pointed at the same string never loaded — so what was
+       on screen was stale CSS, which is why this took four rounds. A real
+       asset can be opened on its own and checked. -->
+  <rect x="3" y="0" width="18" height="6" fill="#fffdf5"/>
+  <rect x="6" y="6" width="12" height="3" fill="#fffdf5"/>
+  <rect x="9" y="9" width="6" height="3" fill="#fffdf5"/>
+  <rect x="0" y="3" width="3" height="3" fill="#111111"/>
+  <rect x="21" y="3" width="3" height="3" fill="#111111"/>
+  <rect x="3" y="6" width="3" height="3" fill="#111111"/>
+  <rect x="18" y="6" width="3" height="3" fill="#111111"/>
+  <rect x="6" y="9" width="3" height="3" fill="#111111"/>
+  <rect x="15" y="9" width="3" height="3" fill="#111111"/>
+  <rect x="9" y="12" width="6" height="3" fill="#111111"/>
+</svg>
