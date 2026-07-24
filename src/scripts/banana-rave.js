@@ -55,6 +55,16 @@ const SCREEN_ADS = [
 const STAND_OPEN = true;
 if (STAND_OPEN) SCREEN_ADS.push({ id: 'stand', text: 'THERE’S ALWAYS MONEY IN THE BANANA STAND', cta: 'out back, through the exit →', href: '/banana-stand/' });
 
+// 🏖 BANANA BAY — the beach ad breaks the LED house style on purpose: its OWN
+// sunset typography (`adStyle`) over a darkened beach backdrop (`bg`), because
+// the screen loves variation and a new PLACE deserves to look unlike a product
+// plug. Click walks your banana in at the shore (?from=rave labels the arrival).
+const BEACH_OPEN = true;
+if (BEACH_OPEN) SCREEN_ADS.push({
+  id: 'beach', text: 'THE BEACH IS OPEN', cta: 'banana bay, past the park →',
+  href: '/beach/?from=rave', adStyle: 'beach', bg: '/assets/beach/rave-ad-bg.png',
+});
+
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
 const MAX_VISIBLE = 60;
@@ -4534,8 +4544,12 @@ function init() {
       lastStyle = st; return st;
     };
     const render = (s) => {
-      const style = s.type === 'ad' ? 'giant' : pickStyle();
+      const style = s.type === 'ad' ? (s.adStyle || 'giant') : pickStyle();
       content.className = 'rv-screen__content rv-s-' + style;
+      // a per-ad backdrop (only Banana Bay has one) — reset every slide so it
+      // never bleeds onto the next message
+      screen.classList.remove('rv-screen--bg');
+      screen.style.removeProperty('--ad-bg');
       content.innerHTML = '';
       const t = document.createElement('span');
       t.className = 'rv-screen__text';
@@ -4561,6 +4575,7 @@ function init() {
         screen.classList.remove('rv-screen--msg');
         screen.setAttribute('href', s.href);
         screen.dataset.ad = s.id;
+        if (s.bg) { screen.style.setProperty('--ad-bg', 'url(' + s.bg + ')'); screen.classList.add('rv-screen--bg'); }
       } else {
         screen.classList.remove('rv-screen--ad');
         screen.classList.add('rv-screen--msg');

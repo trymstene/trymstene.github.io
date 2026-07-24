@@ -381,6 +381,7 @@ function init() {
 
   // ---- spawn --------------------------------------------------------------
   const fromPark = /[?&]park(?:=|&|$)/.test(location.search);
+  const fromRave = /[?&]from=rave\b/.test(location.search);  // the rave's LED beach ad
   // 🎪 ONE FRONT DOOR, however you got here. The direct landing used to drop
   // you at (898, 742) — the middle of the volleyball court — on the theory
   // that opening across the net from Sandy was a strong cold-open. In
@@ -399,7 +400,7 @@ function init() {
   const pos = { x: 70, y: 1040 };
   const tgt = { x: 296, y: 924 };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
-  track('beach_join', { via: fromPark ? 'park' : 'direct' });
+  track('beach_join', { via: fromRave ? 'rave' : fromPark ? 'park' : 'direct' });
 
   // ---- walking ------------------------------------------------------------
   let seated = null, sitTarget = null, satOnce = false, nextTgt = null;

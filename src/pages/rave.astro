@@ -330,6 +330,32 @@ const GUIDE = [
     .rv-screen--ad .rv-screen__text { color: #ffe135 !important; -webkit-text-stroke: 0; text-shadow: 0 0 9px rgba(255,225,53,0.55), 0 0 2px rgba(255,255,255,0.5) !important; }
     .rv-screen--msg { cursor: default; }
     @media (hover: hover) { .rv-screen--ad:hover { box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.5), 0 0 22px rgba(255,225,53,0.35); } }
+
+    /* 🏖 THE BEACH AD — the one slide that breaks house style: a beach hero
+       backdrop + its own sunset headline. `--ad-bg` is set per-ad from JS.
+       ::before sits below the wash + text; only shows on --bg slides. */
+    .rv-screen::before {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: center/cover no-repeat var(--ad-bg, transparent);
+      opacity: 0; transition: opacity 0.5s ease;
+    }
+    .rv-screen--bg::before { opacity: 1; }
+    .rv-screen--bg { border-color: #6b4a2a;
+      box-shadow: 0 0 0 2px #0d0b14, inset 0 0 26px rgba(0,0,0,0.55), 0 0 18px rgba(255,180,90,0.28); }
+    .rv-screen--bg::after { opacity: 0.2; }  /* let the beach read through the club wash */
+    /* beach — left-anchored, sunset-gradient headline (placed after the --ad
+       override so the gradient wins; text-fill-color reveals the gradient) */
+    .rv-s-beach { align-items: flex-start; justify-content: center; padding-left: 16px; }
+    .rv-s-beach .rv-screen__text {
+      font-family: "Anton","Arial Black",sans-serif; text-align: left; max-width: 58%;
+      font-size: clamp(1.5rem, 7.4vw, 3.1rem); line-height: 0.86; letter-spacing: 0.015em;
+      background: linear-gradient(178deg, #fff6cf 0%, #ffd23f 40%, #ff9d3d 72%, #ff5d8a 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent !important;
+      text-shadow: none !important;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(255,170,70,0.45));
+    }
+    .rv-s-beach .rv-screen__cta { align-self: flex-start; margin-left: 2px; }
     /* THE DROP: the wall goes hot + frantic */
     body.rv-drop .rv-screen {
       border-color: #ff4d6d;
