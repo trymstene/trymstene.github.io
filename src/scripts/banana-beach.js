@@ -3054,7 +3054,7 @@ function init() {
     // same redraw key as drawMe(): frame AND depth, because a peer wading out
     // changes tint without changing frame — key on frame alone and the tint
     // freezes at whatever depth they were at when the frame last ticked.
-    const f = p.sit ? SIT_FRAME : frameNow();
+    const f = p.sit ? (p.fishFrame != null ? p.fishFrame : SIT_FRAME) : frameNow();
     const q = Math.round(subAt(p.x, p.y) * 40);
     const key = f * 64 + q;
     if (!force && key === p.key) return;
@@ -3070,6 +3070,48 @@ function init() {
     p.el.style.left = pct(p.x, W);
     p.el.style.top = pct(p.y, H);
     depth(p.el, p.y);          // sorts against the net and the palms like you
+  }
+  // ---- 🎣 A PEER'S FISHING ROD --------------------------------------------
+  // Needs NO new network state: a fishing seat is a fixed spot and a fishing
+  // banana sits exactly ON it, so a sitting peer whose position matches a dock
+  // chair IS fishing. We then draw the SAME static rod + line + float the local
+  // rod uses (startFishing's geometry, factored here) — no bite, no reel, no
+  // catch, just the rod, which is all Trym asked to see. The float keeps its
+  // idle bob; nothing here tracks the other player's actual catch.
+  function makePeerRod(spot) {
+    const bx = spot.bob.x, by = spot.bob.y;
+    const dir = bx >= spot.seat.x ? 1 : -1;
+    const hx = spot.seat.x + dir * 7, hy = spot.seat.y - 25;
+    const tipX = hx + dir * 40, tipY = hy - 34;
+    const zTop = 100 + spot.seat.y + 6;
+    const rod = seg('bh-fishrod', hx, hy, Math.hypot(tipX - hx, tipY - hy),
+      Math.atan2(tipY - hy, tipX - hx) * 180 / Math.PI, zTop);
+    const lineAng = Math.atan2(by - tipY, bx - tipX) * 180 / Math.PI;
+    const line = seg('bh-fishline', tipX, tipY, Math.hypot(bx - tipX, by - tipY), lineAng, zTop);
+    line.style.setProperty('--ang', lineAng.toFixed(2) + 'deg');
+    const bob = document.createElement('div');
+    bob.className = 'bh-bob';
+    bob.style.left = pct(bx, W); bob.style.top = pct(by, H); bob.style.zIndex = String(zTop + 1);
+    world.appendChild(bob);
+    return [rod, line, bob];
+  }
+  const peerFishSpot = (p) => (p.sit
+    ? FISH_SPOTS.find((s) => s.fishing && Math.hypot(s.seat.x - p.x, s.seat.y - p.y) < 24)
+    : null) || null;
+  function updatePeerRod(p) {
+    const spot = peerFishSpot(p);
+    if (spot && !p.rod) {
+      p.rod = makePeerRod(spot);
+      p.fishFrame = spot.sitFrame;       // face their own water, like the seat does
+      drawPeer(p, true);
+    } else if (!spot && p.rod) {
+      clearPeerRod(p);
+      p.fishFrame = null;
+      drawPeer(p, true);
+    }
+  }
+  function clearPeerRod(p) {
+    if (p.rod) { p.rod.forEach((e) => e.remove()); p.rod = null; }
   }
   function addPeer(d) {
     if (!d || d.id === myBayId || peers.has(d.id)) return;
@@ -3088,6 +3130,7 @@ function init() {
     peers.set(d.id, p);
     placePeer(p);
     drawPeer(p, true);
+    updatePeerRod(p);          // joined already fishing? show the rod
     refreshCrowd();
     recountCourt();
   }
@@ -3126,6 +3169,7 @@ function init() {
           p.x = m.x; p.y = m.y; p.sit = !!m.sit;
           p.el.classList.toggle('is-sitting', p.sit);
           placePeer(p);
+          updatePeerRod(p);        // sat down to fish, or got up and walked off
           recountCourt();          // they may have just walked onto the court
         }
       } else if (m.t === 'outfit') {
@@ -3137,6 +3181,7 @@ function init() {
           // the puff anchors at the BODY, not the feet — poofInto takes
           // percent, and a peer's y is its feet line
           poofInto(world, 'bh-poof', p.x / W * 100, (p.y - 26) / H * 100);
+          clearPeerRod(p);         // don't strand their rod on the dock
           p.el.remove();
           peers.delete(m.id);
           refreshCrowd();
@@ -3145,7 +3190,7 @@ function init() {
       }
     },
     onDown: () => {
-      peers.forEach((p) => p.el.remove()); peers.clear();
+      peers.forEach((p) => { clearPeerRod(p); p.el.remove(); }); peers.clear();
       refreshCrowd(); recountCourt();   // socket died → Sandy comes back
     },
   });
