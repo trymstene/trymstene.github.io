@@ -605,7 +605,10 @@ def net_span():
 DIG_SITES = [(400, 620), (730, 372), (1100, 380), (490, 980), (300, 1046),
              (1290, 1040), (1560, 1010), (1620, 900), (1790, 1010)]
 PATCH_W, PATCH_H = 156, 104
-ARCH = (75, 770, 355, 950)     # the welcome arch's DOM box (banana-beach.js)
+ARCH = (120, 770, 400, 950)    # the welcome arch's DOM box (banana-beach.js)
+                               # ⚠️ KEEP IN SYNC with AX/AY/AW/AH there. Moved
+                               # +45 on 24 Jul so the road runs centred between
+                               # the posts instead of hugging the right one.
 
 
 # ---- 🛣 THE SAND ROADS ----------------------------------------------------

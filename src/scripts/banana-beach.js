@@ -2416,7 +2416,15 @@ function init() {
   // the first thing bananas see stepping onto the beach from the park. Purely
   // decorative (no collider); the banana spawns beneath it and walks through.
   (() => {
-    const AX = 75, AY = 770, AW = 280, AH = 180;   // its world bounding box
+    // ⚠️ AX 120, not the original 75. The posts plant on y=950, and MEASURED
+    // off the baked plate the road runs x 209..310 on that row — centre 260,
+    // while the gap between the posts centred on 215. The road passed under
+    // the sign hugging the right pole. +45 puts the lane dead centre between
+    // them. (Aligned on the GROUND LINE, deliberately: everything above y=950
+    // is the sign's height drawn upward, not depth, so the feet are where the
+    // sign actually IS. Centring on the mid-post row instead would want +130
+    // and push the whole road out past the left pole down at the sand.)
+    const AX = 120, AY = 770, AW = 280, AH = 180;  // its world bounding box
     const arch = document.createElement('div');
     arch.className = 'bh-arch';
     arch.setAttribute('aria-hidden', 'true');
