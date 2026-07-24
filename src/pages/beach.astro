@@ -602,15 +602,32 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     @media (prefers-reduced-motion: reduce) { .bh-gull { display: none; } }
     /* 🐚 shells waiting on the wet sand */
+    /* ⚠️ 1.05%, not 0.67%. At 0.67 a shell rendered ~15px on screen against a
+       banana's ~80 — the ShoreThings art was there the whole time and simply
+       too small to read as a shell. 1.05% ≈ 29 art px, about a third of a
+       banana: spottable while combing, still clearly a thing on the sand
+       rather than a prop. */
     .bh-shell {
-      position: absolute; z-index: 3; width: 0.67%; aspect-ratio: 1;
+      position: absolute; z-index: 3; width: 1.05%; aspect-ratio: 1;
       transform: translate(-50%, -50%); pointer-events: none;
       background-image: url('/assets/beach/shells.png');
       background-size: 2400% 100%; background-repeat: no-repeat;
       image-rendering: pixelated;
+      /* ⭐ THE CONTACT SHADOW, the beach's oldest rule — every object on this
+         map has one so it sits IN the sand rather than on it. The shells were
+         the one thing that never got it, and half the ShoreThings species are
+         cream or white: pale art, on pale sand, with no edge. drop-shadow (not
+         box-shadow) follows the sprite's real silhouette. */
+      filter: drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5));
       animation: bhShellGlint 2.6s ease-in-out infinite;
     }
-    @keyframes bhShellGlint { 0%, 100% { filter: none; } 50% { filter: brightness(1.22); } }
+    /* ⚠️ the shadow has to be repeated in BOTH keyframes — the animation sets
+       `filter` outright, so a shadow declared only on the rule above would be
+       thrown away the moment the glint starts. */
+    @keyframes bhShellGlint {
+      0%, 100% { filter: drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5)); }
+      50% { filter: brightness(1.22) drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5)); }
+    }
     .bh-float {
       /* 1950: floats live INSIDE the world, so they must clear the y-sorted
          band (100..1200) too — otherwise a palm swallows your "🐚 found!" */

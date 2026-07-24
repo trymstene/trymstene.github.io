@@ -724,10 +724,41 @@ function init() {
   function saveClaimed() {
     try { localStorage.setItem('bh-shells-v1', JSON.stringify({ day: DAY, claimed })); } catch (e) {}
   }
+  // ---- WHERE THE TIDE LEAVES THEM -----------------------------------------
+  // ⚠️ THIS USED TO BE `y = 300 + rand * 30` — every shell in the bay landed
+  // in a 30px pinstripe along the waterline, so the whole collection was one
+  // thin line you either walked along or never saw at all. Trym: "cant say
+  // ive seen new sprites for seashells yet on the actual beach."
+  //
+  // Now they SCATTER, weighted to the shore: pow(r, 2.2) puts most of them in
+  // the wet sand near the water and trails the rest up the beach, which is
+  // both how a real tide line works and what makes combing a search rather
+  // than a walk. Measured spread: ~half within 90px of the shore, the tail
+  // reaching y~950.
+  const SHELL_Y0 = 302;            // the wet sand, just below the swim line
+  const SHELL_SPAN = 700;          // …up to y≈1000, the deep sand
+  // ⭐ AND THEY REJECT BAD GROUND. Same bug class that put three dig sites on
+  // the court and inside the welcome arch: a seeded point lands wherever it
+  // lands. A shell under a palm's collider or on the volleyball court can't be
+  // walked onto, and one on the bazaar's wooden deck isn't a beach at all. Up
+  // to 12 seeded candidates per spot, first clean one wins — still fully
+  // date-seeded, so the whole world still sees the same tide.
+  const PLAZA_X = 1960;            // keep them off the pier bazaar's decking
+  function shellSpot(i) {
+    for (let t = 0; t < 12; t++) {
+      const s = DAY * 977 + i * 31 + t * 7919;
+      const x = 300 + seedRand(s) * 2000;
+      const y = SHELL_Y0 + Math.pow(seedRand(s + 1), 2.2) * SHELL_SPAN;
+      if (x > PLAZA_X) continue;
+      if (inRect(x, y, [COURT.x0, COURT.y0, COURT.x1, COURT.y1])) continue;
+      if (blocked(x, y, 0)) continue;
+      return { x, y };
+    }
+    return { x: 300 + seedRand(DAY * 977 + i * 31) * 1400, y: SHELL_Y0 + 6 };
+  }
   const shells = [];
   for (let i = 0; i < SPOTS; i++) {
-    const x = 300 + seedRand(DAY * 977 + i * 31) * 2000;
-    const y = 300 + seedRand(DAY * 977 + i * 31 + 1) * 30;
+    const { x, y } = shellSpot(i);
     const id = shellForRoll(seedRand(DAY * 977 + i * 31 + 2));
     const idx = SHELL_IDS.indexOf(id);
     if (claimed.indexOf(i) > -1) { shells.push(null); continue; }
