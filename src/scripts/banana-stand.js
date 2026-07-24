@@ -139,9 +139,12 @@ function init() {
     if (leaving) return;
     leaving = true;
     track('stand_exit_beach');
-    if (REDUCED) { location.href = '/beach/'; return; }
+    // ?park so the bay knows you WALKED here — it's what beach_join's `via`
+    // reports, and the gate used to hand the bay a plain /beach/ and get
+    // counted as a cold ad landing.
+    if (REDUCED) { location.href = '/beach/?park'; return; }
     cut.classList.add('is-on');
-    setTimeout(() => { location.href = '/beach/'; }, 170);
+    setTimeout(() => { location.href = '/beach/?park'; }, 170);
   }
   const SPEED = 26; // %/s
   const keys = {};
@@ -376,7 +379,10 @@ function init() {
   // the under-construction signs: unreadable scribble up close, the popup
   // does the talking (stopPropagation — a sign tap is not a walk order)
   const roadPopup = document.getElementById('bsRoadPopup');
-  document.querySelectorAll('.bs-roadsign').forEach((sign) => {
+  // ⚠️ :not(#bsBeachGate) — the beach sign shares the plank, not the verdict.
+  // Without this the "road isn't built yet" popup would fire on a road that
+  // very much is, and it would swallow the walk before the gate handler ran.
+  document.querySelectorAll('.bs-roadsign:not(#bsBeachGate)').forEach((sign) => {
     sign.addEventListener('click', (e) => {
       e.stopPropagation();
       if (roadPopup) roadPopup.hidden = false;

@@ -343,13 +343,23 @@ function init() {
 
   // ---- spawn --------------------------------------------------------------
   const fromPark = /[?&]park(?:=|&|$)/.test(location.search);
-  // ⚠️ The direct/ad landing now spawns in the TOP half — Sandy owns the near
-  // one. You arrive already facing him across the net with the ball at your
-  // feet, which is a much stronger cold-open than landing on empty sand.
-  const pos = fromPark ? { x: 70, y: 1040 } : { x: 898, y: 742 };
-  // the park walk-in now heads UP THE ARRIVAL LANE rather than across bare
-  // sand beside it — you spend the first three seconds standing on a road.
-  const tgt = fromPark ? { x: 296, y: 924 } : { x: 898, y: 720 };
+  // 🎪 ONE FRONT DOOR, however you got here. The direct landing used to drop
+  // you at (898, 742) — the middle of the volleyball court — on the theory
+  // that opening across the net from Sandy was a strong cold-open. In
+  // practice it reads as being dumped into someone else's game with no idea
+  // where you are: no arrival, no sign, no sense of a place you entered.
+  //
+  // So everyone now spawns at the road's end and walks up under the WELCOME
+  // TO BANANA BAY arch (its world box is x 75–355, y 770–950, built below),
+  // which is the one thing on this map that says where you are. The path
+  // from (70, 1040) to (296, 924) runs along the spine road's first leg —
+  // you spend the first seconds on a road, arriving, and the court is
+  // something you then choose to walk to.
+  //
+  // `fromPark` survives for ANALYTICS only (beach_join's `via`) — the park
+  // gate appends ?park so a walk-in isn't logged as a cold ad landing.
+  const pos = { x: 70, y: 1040 };
+  const tgt = { x: 296, y: 924 };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('beach_join', { via: fromPark ? 'park' : 'direct' });
 
