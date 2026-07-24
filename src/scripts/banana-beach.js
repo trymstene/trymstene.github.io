@@ -18,6 +18,7 @@ import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
+import { WEARABLE_PACKS } from '../data/wearables.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
 
@@ -92,14 +93,51 @@ function init() {
     hat: 'buckethat', glasses: 'none', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
-  // 🐚 SHELLY, who keeps the shell board up the beach
+  // 🐚 SHELLY, who keeps the shell board up the beach.
+  // 🐌 THE SNAIL IS THE JOB TITLE (Trym's pick, and it's the right one): a
+  // snail is a shell that walks. Nothing else in the wardrobe says "this
+  // banana is about shells" in one glance.
+  // ⚠️ AND 'strawhat' WAS NEVER AN ID. This is the SECOND silent miss on this
+  // one NPC — the first was 'sunglasses' (the *phrase* for the shades entry,
+  // not its id), fixed a while back, and 'strawhat' had been failing exactly
+  // the same way ever since: no straw hat exists in src/data/wearables.js, so
+  // she has been rendering bare-headed in nothing but black shades. At map
+  // scale that dark bar across a hatless banana is what Trym read as an
+  // eyepatch. The shades go with it — the snail is the whole look.
+  // (See the ID GUARD below: unknown ids now warn in dev instead of vanishing.)
   const SHELLY_DRAW = {
-    // ⚠️ 'shades' — 'sunglasses' was never an id (it's the *phrase* for the
-    // shades entry in src/data/wearables.js), so Shelly has been drawing with
-    // bare eyes since the day she was written. Unknown ids fail silently.
-    hat: 'strawhat', glasses: 'shades', extras: {},
+    hat: 'snailhat', glasses: 'none', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
+
+  // ---- ⚠️ THE ID GUARD ----------------------------------------------------
+  // drawComposite ignores a wearable id it doesn't recognise — no throw, no
+  // warning, the item simply isn't there. That has now cost this ONE beach
+  // three bugs: Shelly's 'sunglasses' (the phrase, not the id), Shelly's
+  // 'strawhat' (no such hat exists at all — she stood there bare-headed for
+  // weeks), and Sandy's visor before that. You cannot see the bug on a 24px
+  // sprite; you can only see it if something tells you.
+  // Dev-only, costs nothing in prod, and it fires the first time you load the
+  // page after fat-fingering an id.
+  if (import.meta.env.DEV) {
+    // ⚠️ WEARABLE_PACKS is PACK → { label, always, hats[], shades[], extras[] },
+    // so the id lists have to be gathered across every pack, not read off the
+    // top level. (Assuming the flat shape is what broke this guard on its
+    // first run — the irony of a typo-catcher with a typo in it is noted.)
+    const ids = (k) => new Set(Object.values(WEARABLE_PACKS)
+      .flatMap((p) => p[k] || []).map((w) => w.id));
+    const HAT_OK = ids('hats'), SHADE_OK = ids('shades'), EXTRA_OK = ids('extras');
+    const checkDraw = (who, d) => {
+      if (d.hat && d.hat !== 'none' && !HAT_OK.has(d.hat)) console.warn('🍌 ' + who + ': unknown hat id "' + d.hat + '" — it will draw NOTHING');
+      if (d.glasses && d.glasses !== 'none' && !SHADE_OK.has(d.glasses)) console.warn('🍌 ' + who + ': unknown shades id "' + d.glasses + '" — it will draw NOTHING');
+      Object.keys(d.extras || {}).forEach((e) => {
+        if (!EXTRA_OK.has(e)) console.warn('🍌 ' + who + ': unknown extra id "' + e + '" — it will draw NOTHING');
+      });
+    };
+    checkDraw('Captain Split', CAP_DRAW);
+    checkDraw('Gil', GIL_DRAW);
+    checkDraw('Shelly', SHELLY_DRAW);
+  }
 
   const pct = (v, span) => (v / span * 100) + '%';
 
@@ -2885,14 +2923,31 @@ function init() {
   function drawGil() { drawComposite(gilCtx, 150, 0, GIL_DRAW); }
   function hint(on) { if (hintEl) hintEl.classList.toggle('is-off', !on); }
 
-  // the Captain and his bubble sit at the bar, in world coords
-  // he stands BEHIND the counter of the wreck — feet just above the bar top,
-  // so the hull reads as being in front of him
-  capEl.style.left = pct(1690, W);
-  capEl.style.top = pct(688, H);
-  depth(capEl, 688);        // behind the wreck's hull (base 740) = behind his bar
-  capBubble.style.left = pct(1690, W);
-  capBubble.style.top = pct(610, H);
+  // ---- 🏴‍☠️ THE CAPTAIN STANDS IN THE WRECK, not behind it -----------------
+  // Trym: "i dont see our Pirate NPC banana? is he behind the boathouse?" He
+  // was — completely. The old code put him at y688 with depth(688) → z788,
+  // against a hull overlay whose base is 740 → z840, so the sprite drew over
+  // every pixel of him. The comment above it claimed he stood "behind the
+  // counter"; the wreck is a SOLID painted sprite, so behind it means gone.
+  //
+  // ⭐ The fix uses the shape of the art. The hull's dark interior recess runs
+  // to world y≈668, where the counter top begins. Put his FEET on that line
+  // and draw him ABOVE the hull: he appears standing in the opening with the
+  // bar in front of him, and because nothing of him reaches below 668 he never
+  // covers the counter itself. Same back < keeper < front read as the pier
+  // stalls' vendor-and-desk sandwich, without having to split the sprite.
+  const CAP_X = 1690, CAP_FEET = 668;
+  // ⚠️ Derived, not hard-coded 841: whatever overlays he stands inside, he
+  // draws just above the frontmost of them. Re-bake the scene, move the wreck,
+  // change its base — he stays in the window instead of silently vanishing
+  // again. (`+ 2`, so a prop sharing the hull's base can't tie with him.)
+  const capOver = OVERLAYS.filter((o) => CAP_X > o.x && CAP_X < o.x + o.w
+    && CAP_FEET > o.y && CAP_FEET < o.y + o.h);
+  capEl.style.left = pct(CAP_X, W);
+  capEl.style.top = pct(CAP_FEET + 15, H);   // +15: the canvas's empty sub-feet strip
+  depth(capEl, Math.max(CAP_FEET, ...capOver.map((o) => o.base)) + 2);
+  capBubble.style.left = pct(CAP_X, W);
+  capBubble.style.top = pct(568, H);          // clear of the wreck's roof rail
 
   // 🎣 Gil stands beside the dock mouth, so every trip out passes him
   gilEl.style.left = pct(GIL.x, W);      // see the -74 note on shellyEl
