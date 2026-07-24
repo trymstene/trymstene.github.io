@@ -18,6 +18,7 @@ import {
   WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
+import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
 // touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
@@ -94,6 +95,11 @@ function init() {
   // Captain Split: bucket hat + snorkel, because of course
   const CAP_DRAW = {
     hat: 'buckethat', glasses: 'snorkelmask', extras: {},
+    top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+  };
+  // 🎣 GIL, keeper of the ledger — the old hand at the foot of the dock
+  const GIL_DRAW = {
+    hat: 'buckethat', glasses: 'none', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
 
@@ -329,6 +335,14 @@ function init() {
       seated = null; sitTarget = null;
       meEl.classList.remove('is-sitting');
       setTarget(BAR.x, BAR.y);            // too far — walk over first
+      return;
+    }
+    // 🎣 tapping GIL opens the ledger (walk to him first if you're far off)
+    if (inRect(wx, wy, [GIL.x - 150, GIL.y - 130, GIL.x + 10, GIL.y + 30])) {
+      if (Math.hypot(pos.x - GIL.x, pos.y - GIL.y) < GIL.r + 40) { openLedger(); return; }
+      seated = null; sitTarget = null; stopFishing();
+      meEl.classList.remove('is-sitting');
+      setTarget(GIL.x - 60, GIL.y + 20);
       return;
     }
     seated = null;
@@ -768,7 +782,7 @@ function init() {
     st.got = (st.got || 0) + n;
     try { localStorage.setItem('bh-fishcoins-v1', JSON.stringify(st)); } catch (e) {}
   };
-  let fishing = null, fishBite = false, fishTimer = null;
+  let fishing = null, fishBite = false, fishTimer = null, pendingCatch = null;
   let fishRod = null, fishLine = null, fishBob = null;
   const catchPanel = document.getElementById('bhFishCatch');
   const catchBody = document.getElementById('bhCatchBody');
@@ -780,13 +794,22 @@ function init() {
     fishRod = fishLine = fishBob = null;
   }
   function scheduleBite() {
-    fishBite = false;
-    if (fishBob) fishBob.classList.remove('is-bite');
+    fishBite = false; pendingCatch = null;
+    if (fishBob) fishBob.classList.remove('is-bite', 'is-bite--rare');
     clearTimeout(fishTimer);
     fishTimer = setTimeout(() => {
       if (!fishing) return;
+      // 🎣 THE CATCH IS ROLLED HERE, NOT ON THE REEL — so the float can
+      // TELEGRAPH it. A rare+ thrashes harder with a gold "!", which turns the
+      // wait into anticipation instead of a coin flip you only read afterwards.
+      pendingCatch = rollCatch();
       fishBite = true;
-      if (fishBob) fishBob.classList.add('is-bite');
+      const big = pendingCatch.kind === 'fish'
+        && (pendingCatch.fish.tier === 'rare' || pendingCatch.fish.tier === 'legendary');
+      if (fishBob) {
+        fishBob.classList.add('is-bite');
+        if (big) fishBob.classList.add('is-bite--rare');
+      }
     }, 2600 + Math.random() * 5200);
   }
   function seg(cls, x, y, len, ang, z) {
@@ -832,29 +855,99 @@ function init() {
     if (!fishing.greeted) { fishing.greeted = true; float(bx, by - 16, 'line’s in — wait for a bite'); }
     track('beach_fish_start');
   }
-  // 🎣 THE CATCH TABLE — shells for the collection, tickets for the pier, the
-  // odd small (capped) coin, and comic junk that's worth nothing but a laugh.
+  // ---- 🐟 THE FISH LEDGER -------------------------------------------------
+  // 25 tropical species, four tiers. Design rules this follows, all of them
+  // standard collector-loop practice:
+  //   · the first half of the ledger fills FAST (64% of catches are common) so
+  //     a new player is rewarded immediately; the tail is the real chase.
+  //   · every fish also rolls a SIZE, and the ledger keeps your personal best —
+  //     so a species you already own is still worth casting for. Two collectible
+  //     axes for the price of one.
+  //   · bad-luck protection (FISH_PITY) so a dry streak self-corrects.
+  //   · the BITE telegraphs the tier, so a big one is exciting before you reel.
+  //   · junk is a joke, never a punishment.
+  const fishHeld = (id) => stats()['fish_' + id] || 0;
+  const fishBest = (id) => stats()['fb_' + id] || 0;
+  const fishSpecies = () => FISH.filter((f) => fishHeld(f.id) > 0).length;
+  const tilePos = (i) => (i / (FISH_TILES - 1) * 100) + '% 0';
+
+  let fishPity = 0;                 // catches since the last rare-or-better
+  const FISH_PITY = 0.09;           // each one nudges rare/legendary weight +9%
+  function rollFish() {
+    const boost = 1 + fishPity * FISH_PITY;
+    const w = []; let tot = 0;
+    for (const f of FISH) {
+      const rare = f.tier === 'rare' || f.tier === 'legendary';
+      const v = TIERS[f.tier].w * (rare ? boost : 1);
+      w.push(v); tot += v;
+    }
+    let r = Math.random() * tot;
+    for (let i = 0; i < FISH.length; i++) { r -= w[i]; if (r <= 0) return FISH[i]; }
+    return FISH[0];
+  }
+  // sizes skew SMALL — an average fish should be average, so a monster is news
+  function rollSize(f) {
+    return Math.round(f.cm[0] + (f.cm[1] - f.cm[0]) * Math.pow(Math.random(), 1.7));
+  }
   function rollCatch() {
     const r = Math.random();
-    if (r < 0.52) return { kind: 'shell', id: shellForRoll(Math.random()) };
-    if (r < 0.84) return { kind: 'tickets', n: 1 + Math.floor(Math.random() * 3) };
-    if (r < 0.94) return { kind: 'coins', n: 2 + Math.floor(Math.random() * 4) };
-    return { kind: 'junk', text: DIG_JUNK[Math.floor(Math.random() * DIG_JUNK.length)] };
+    if (r < 0.72) return { kind: 'fish', fish: rollFish() };
+    if (r < 0.84) return { kind: 'thing', thing: TREASURE[Math.floor(Math.random() * TREASURE.length)] };
+    if (r < 0.95) return { kind: 'tickets', n: 1 + Math.floor(Math.random() * 3) };
+    return { kind: 'coins', n: 2 + Math.floor(Math.random() * 4) };
+  }
+  // 🏅 MILESTONES: there is always a next goal, and it always pays.
+  const FISH_MILES = [{ n: 5, t: 10 }, { n: 10, t: 25 }, { n: 15, t: 50 },
+                      { n: 20, t: 100 }, { n: 25, t: 250 }];
+  function claimFishMiles() {
+    let claimed = stats().fishmile || 0, have = fishSpecies(), won = 0;
+    while (claimed < FISH_MILES.length && have >= FISH_MILES[claimed].n) {
+      won += FISH_MILES[claimed].t; claimed++;
+      passStat('fishmile', 1);
+    }
+    if (won) { passStat('tickets', won); track('beach_fish_milestone', { have }); }
+    return won;
   }
   function reel() {
     if (!fishing) return;
     if (!fishBite) { float(fishing.bob.x, fishing.bob.y - 12, 'nothing yet…'); return; }
     fishBite = false;
-    if (fishBob) fishBob.classList.remove('is-bite');
-    const c = rollCatch();
-    let body = '', isNew = false;
-    if (c.kind === 'shell') {
-      isNew = held(c.id) === 0;
-      passStat('sh_' + c.id, 1); refreshShellChip();
-      const idx = SHELL_IDS.indexOf(c.id);
-      body = '<i class="bh-catch__shell" style="background-position:'
-        + (idx / (SHELL_IDS.length - 1) * 100) + '% 0"></i>'
-        + '<p>' + (isNew ? '★ a <b>new</b> shell — ' : 'a ') + shellName(c.id) + '</p>';
+    if (fishBob) fishBob.classList.remove('is-bite', 'is-bite--rare');
+    // the catch was decided AT BITE TIME so the float could telegraph its tier
+    const c = pendingCatch || rollCatch();
+    pendingCatch = null;
+    let body = '';
+    if (c.kind === 'fish') {
+      const f = c.fish, tier = TIERS[f.tier];
+      const cm = rollSize(f);
+      const isNew = fishHeld(f.id) === 0;
+      const prev = fishBest(f.id);
+      const record = cm > prev;
+      passStat('fish_' + f.id, 1);
+      // ⚠️ passStat takes a DELTA, so a "best" is stored by adding the difference
+      if (record) passStat('fb_' + f.id, cm - prev);
+      fishPity = (f.tier === 'rare' || f.tier === 'legendary') ? 0 : fishPity + 1;
+      const won = isNew ? claimFishMiles() : 0;
+      body = '<i class="bh-catch__fish" style="background-position:' + tilePos(f.i) + '"></i>'
+        + '<p class="bh-catch__tier" style="color:' + tier.color + '">'
+        + '★'.repeat(tier.stars) + ' ' + tier.label + '</p>'
+        + '<p><b>' + f.name + '</b> · ' + cm + ' cm</p>'
+        + (isNew ? '<p class="bh-catch__new">★ NEW — into the ledger it goes</p>'
+          : record ? '<p class="bh-catch__new">📏 personal best! (was ' + prev + ' cm)</p>'
+          : '<p class="bh-catch__note">you have ' + fishHeld(f.id) + ' · best '
+            + Math.max(prev, cm) + ' cm</p>')
+        + (won ? '<p class="bh-catch__new">🏅 ledger milestone — <b>+' + won
+                 + ' tickets</b></p>' : '');
+      refreshFishChip();
+    } else if (c.kind === 'thing') {
+      const t = c.thing;
+      const pays = { pearl: 25, coral: 8, sand_dollar: 6, seashell: 4 }[t.id] || 0;
+      if (pays) passStat('tickets', pays);
+      body = '<i class="bh-catch__fish" style="background-position:' + tilePos(t.i) + '"></i>'
+        + '<p><b>' + t.name + '</b></p>'
+        + (pays ? '<p class="bh-catch__new">🎟 Gil will take that — <b>+' + pays
+                  + ' tickets</b></p>'
+                : '<p class="bh-catch__note">worth nothing at all. throw it back.</p>');
     } else if (c.kind === 'tickets') {
       passStat('tickets', c.n);
       body = '<div class="bh-catch__big">🎟</div><p>a knot of <b>' + c.n + ' ticket'
@@ -868,17 +961,90 @@ function init() {
         body = '<div class="bh-catch__big">🪙</div><p>a coin — but it slips off. '
           + '(the sea’s given up its coins for today)</p>';
       }
-    } else {
-      body = '<div class="bh-catch__big">🥾</div><p>just ' + c.text + '. throw it back.</p>';
     }
     catchBody.innerHTML = body;
     catchPanel.hidden = false;
-    track('beach_fish_catch', { kind: c.kind });
+    track('beach_fish_catch', { kind: c.kind, id: c.fish ? c.fish.id : (c.thing ? c.thing.id : '') });
   }
   document.getElementById('bhCatchGo').addEventListener('click', () => {
     catchPanel.hidden = true;
     if (fishing) scheduleBite();            // stay seated, cast again
   });
+  // ---- 🎣 GIL, KEEPER OF THE LEDGER ---------------------------------------
+  // A collection needs somebody who CARES about it — that's what turns "a list
+  // of stats" into a thing you want to finish. Gil stands at the foot of the
+  // dock, so you pass him on the way to every cast, and he reacts to what
+  // you've brought in.
+  const GIL = { x: 1890, y: 372, r: 118 };
+  const gilEl = document.getElementById('bhGil');
+  const gilBubble = document.getElementById('bhGilBubble');
+  const gilCtx = document.getElementById('bhGilCv').getContext('2d');
+  const fishChip = document.getElementById('bhFishChip');
+  const fishCountEl = document.getElementById('bhFishCount');
+  const ledgerPanel = document.getElementById('bhLedger');
+  const fishGrid = document.getElementById('bhFishGrid');
+  function refreshFishChip() { fishCountEl.textContent = fishSpecies() + '/' + FISH.length; }
+  refreshFishChip();
+
+  let gilTimer = null, gilGreeted = false, gilIdx = 0;
+  const GIL_LINES = [
+    'the sea keeps her books. i just copy them out.',
+    'four kinds of fish out there. commons you\'ll get today. the rest… we\'ll see.',
+    'every fish has a size. i write down your best one. that\'s the fun of it.',
+    'pearls, coral, sand dollars — bring those to me, they\'re worth tickets.',
+    'a gold thrash on the float means something big. don\'t blink.',
+  ];
+  function gilSay(text, ms) {
+    gilBubble.textContent = text;
+    gilBubble.classList.add('is-on');
+    clearTimeout(gilTimer);
+    gilTimer = setTimeout(() => gilBubble.classList.remove('is-on'), ms || 5000);
+  }
+  function gilTick() {
+    const near = Math.hypot(pos.x - GIL.x, pos.y - GIL.y) < GIL.r;
+    if (near && !gilGreeted) {
+      gilGreeted = true;
+      const have = fishSpecies(), left = FISH.length - have;
+      gilSay(have === 0
+        ? 'first time? sit on a dock chair and cast. i\'ll keep the ledger.'
+        : have === FISH.length
+          ? 'every last one of them. nobody\'s done that before. nobody.'
+          : left <= 3
+            ? 'ledger\'s nearly full — ' + left + ' to go. i can taste it.'
+            : have + ' of ' + FISH.length + ' logged. ' + GIL_LINES[gilIdx++ % GIL_LINES.length],
+        6000);
+      track('beach_gil');
+    } else if (!near && gilGreeted
+               && Math.hypot(pos.x - GIL.x, pos.y - GIL.y) > GIL.r + 40) {
+      gilGreeted = false;
+    }
+  }
+  function renderLedger() {
+    fishGrid.innerHTML = FISH.map((f) => {
+      const n = fishHeld(f.id), best = fishBest(f.id), t = TIERS[f.tier];
+      const title = n ? f.name + ' — ' + t.label + ' · best ' + best + ' cm'
+                      : '??? — ' + t.label;
+      return '<div class="bh-fishslot' + (n ? '' : ' is-missing') + '" title="' + title
+        + '" style="border-bottom-color:' + (n ? t.color : '#000') + '">'
+        + '<i style="background-position:' + tilePos(f.i) + '"></i>'
+        + (n > 1 ? '<b>' + n + '</b>' : '') + '</div>';
+    }).join('');
+    const have = fishSpecies();
+    document.getElementById('bhLedgerSub').innerHTML =
+      '🐟 <b>' + have + '</b> of ' + FISH.length + ' species logged'
+      + ' · ' + FISH.filter((f) => fishBest(f.id) > 0).length + ' sized';
+    document.getElementById('bhLedgerFill').style.width = (have / FISH.length * 100) + '%';
+    const claimed = stats().fishmile || 0;
+    const next = FISH_MILES[Math.min(claimed, FISH_MILES.length - 1)];
+    document.getElementById('bhLedgerNext').innerHTML =
+      claimed >= FISH_MILES.length
+        ? '🏅 every milestone claimed. the ledger is complete.'
+        : '🏅 next reward at <b>' + next.n + '</b> species — <b>+' + next.t + ' tickets</b>';
+  }
+  function openLedger() { renderLedger(); ledgerPanel.hidden = false; track('beach_ledger_open'); }
+  fishChip.addEventListener('click', (e) => { e.stopPropagation(); openLedger(); });
+  document.getElementById('bhLedgerClose').addEventListener('click', () => { ledgerPanel.hidden = true; });
+
   document.getElementById('bhCatchLeave').addEventListener('click', () => {
     catchPanel.hidden = true;
     seated = null; sitTarget = null;
@@ -2136,6 +2302,7 @@ function init() {
     ballStep(dt, now);
     shellTick();
     capTick(now);
+    gilTick();
     crabs.forEach((c) => crabStep(c, dt));
     sandyTick(dt, now);
     digBtn.classList.toggle('is-on', !!patchAt(pos.x, pos.y));
@@ -2167,6 +2334,8 @@ function init() {
     drawComposite(meCtx, 150, f, ME_DRAW);
   }
   function drawCap() { drawComposite(capCtx, 150, 3, CAP_DRAW); }  // he stands still, like a barman does
+  // Gil faces the water (frame 0 = VISUALLY left — see the inverted-label note)
+  function drawGil() { drawComposite(gilCtx, 150, 0, GIL_DRAW); }
   function hint(on) { if (hintEl) hintEl.classList.toggle('is-off', !on); }
 
   // the Captain and his bubble sit at the bar, in world coords
@@ -2177,6 +2346,13 @@ function init() {
   depth(capEl, 688);        // behind the wreck's hull (base 740) = behind his bar
   capBubble.style.left = pct(1690, W);
   capBubble.style.top = pct(610, H);
+
+  // 🎣 Gil stands beside the dock mouth, so every trip out passes him
+  gilEl.style.left = pct(GIL.x - 74, W);
+  gilEl.style.top = pct(GIL.y, H);
+  depth(gilEl, GIL.y);
+  gilBubble.style.left = pct(GIL.x - 74, W);
+  gilBubble.style.top = pct(GIL.y - 78, H);
 
   // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
   // and place the ball or the banana without playing your way there. Also tops
@@ -2194,9 +2370,9 @@ function init() {
   }
 
   assetsReady().then(() => {
-    drawMe(); drawCap(); drawSandy();
-    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); }, 700);   // redraw belt: accessories decode async
-    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); }, 1800);
+    drawMe(); drawCap(); drawSandy(); drawGil();
+    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); drawGil(); }, 700);   // redraw belt: accessories decode async
+    setTimeout(() => { lastF = -1; drawMe(); drawCap(); drawSandy(); drawGil(); }, 1800);
     setInterval(() => { if (!document.hidden) { drawMe(); drawSandy(); } }, 120);
     requestAnimationFrame((t) => { last = t; step(t); });
   });

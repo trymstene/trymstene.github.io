@@ -30,6 +30,13 @@ public/assets/giphy-stickers/
 # handful we actually use is committed, in src/icons/pixelart/.
 public/assets/pixelarticons-pro-2.2.1/
 
+# Pixel Gnome Fishing Pack — PURCHASED pack, same rule. Its licence is explicit:
+# "You cannot resell, repackage, or redistribute the asset, even if modified."
+# This repo is public AND deploys to the live site, so the raw pack must reach
+# neither. tools/build-fish-atlas.py bakes ONLY the species we actually use into
+# public/assets/beach/fish.png (a derived game asset) — that is what ships.
+public/assets/Pixel Gnome Fishing Pack/
+
 # Astro / Node
 node_modules/
 dist/

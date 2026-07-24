@@ -129,6 +129,18 @@ const description = 'The beach at the end of the park road. The sun never quite 
       animation: bhBob 1.9s ease-in-out infinite;
     }
     .bh-bob.is-bite { animation: bhBobBite 0.26s ease-in-out infinite; }
+    /* a rare-or-better thrashes harder and flashes GOLD — you can feel it
+       coming before you reel, which is the whole anticipation beat */
+    .bh-bob.is-bite--rare {
+      animation: bhBobBiteBig 0.16s ease-in-out infinite;
+      box-shadow: 0 0 0 3px rgba(255, 213, 74, 0.55), 0 2px 4px rgba(0, 0, 0, 0.35);
+    }
+    .bh-bob.is-bite--rare::after { color: #ffd54a; font-size: 18px; top: -23px; }
+    @keyframes bhBobBiteBig {
+      0%, 100% { transform: translate(0, 0) scale(1.12); }
+      25% { transform: translate(-4px, 4px) scale(1.12); }
+      75% { transform: translate(4px, 6px) scale(1.12); }
+    }
     .bh-bob.is-bite::after {
       content: '!'; position: absolute; left: 50%; top: -19px; transform: translateX(-50%);
       font: 800 14px/1 "Archivo Black", sans-serif; color: #ffe135;
@@ -188,6 +200,45 @@ const description = 'The beach at the end of the park road. The sun never quite 
       background-image: url('/assets/beach/shells.png');
       background-size: 2900% 100%; background-repeat: no-repeat; image-rendering: pixelated;
     }
+    /* 🐟 one 16px tile of the 35-tile fish atlas, blown up */
+    .bh-catch__fish {
+      display: block; width: 96px; height: 96px;
+      background-image: url('/assets/beach/fish.png');
+      background-size: 3500% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .bh-catch__tier {
+      margin: 0 !important; font-family: "Archivo Black", sans-serif;
+      font-size: 0.72rem !important; letter-spacing: 0.14em;
+    }
+    .bh-catch__new { margin: 0 !important; font-size: 0.82rem !important; color: #ffe135; }
+    .bh-catch__note { margin: 0 !important; font-size: 0.78rem !important; opacity: 0.7; }
+
+    /* ---- 🐟 GIL'S LEDGER ---------------------------------------------- */
+    .bh-fishgrid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem;
+      margin-bottom: 0.85rem;
+    }
+    @media (min-width: 520px) { .bh-fishgrid { grid-template-columns: repeat(7, 1fr); } }
+    .bh-fishslot {
+      position: relative; aspect-ratio: 1; border: 2px solid #000; background: #241d33;
+      display: grid; place-items: center; border-bottom-width: 4px;
+    }
+    .bh-fishslot i {
+      display: block; width: 84%; aspect-ratio: 1;
+      background-image: url('/assets/beach/fish.png');
+      background-size: 3500% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    /* an uncaught fish is a SILHOUETTE, not a blank — you can see the shape of
+       what's missing, which is what makes a gap itch */
+    .bh-fishslot.is-missing i { filter: brightness(0) opacity(0.34); }
+    .bh-fishslot b {
+      position: absolute; right: -2px; bottom: -4px; font-size: 0.5rem; font-weight: 800;
+      background: #ffb347; color: #241505; border: 2px solid #000; padding: 0 0.15rem;
+    }
+    .bh-ledgerbar {
+      height: 10px; border: 2px solid #000; background: #241d33; margin: 0 0 0.4rem;
+    }
+    .bh-ledgerbar i { display: block; height: 100%; background: #6ee7a0; transition: width 0.4s ease; }
 
     /* the dock sits ABOVE the opaque animated sea (which was painting over it)
        but below anything that walks — a floor must not occlude who's on it. */
@@ -769,11 +820,15 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-capbubble" id="bhCapBubble" role="status" aria-live="polite"></div>
         <div class="bh-sandy" id="bhSandy"><canvas id="bhSandyCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhSandyBubble" role="status" aria-live="polite"></div>
+        <!-- 🎣 GIL — keeper of the fish ledger, stood at the foot of the dock -->
+        <div class="bh-cap bh-gil" id="bhGil"><canvas id="bhGilCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        <div class="bh-capbubble" id="bhGilBubble" role="status" aria-live="polite"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
       </div>
       <div class="bh-hud">
         <span class="bh-chip bh-chip--rally" id="bhRally"></span>
         <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
+        <button class="bh-chip" id="bhFishChip" type="button" aria-label="Your fish ledger">🐟 <span id="bhFishCount">0/25</span></button>
       </div>
       <!-- 🎮 ACTIONS live at the BOTTOM, where a thumb already is; the top bar
            is for SCORES ONLY. Mixing "what you've got" with "what you can do"
@@ -833,6 +888,25 @@ const description = 'The beach at the end of the park road. The sun never quite 
           <div class="bh-grid" id="bhTradeGrid"></div>
           <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
           <button class="bh-btn bh-btn--dark" id="bhTradeClose" type="button">leave the bar</button>
+        </div>
+      </div>
+
+      <!-- 🐟 GIL'S LEDGER — the fish collection. Silhouettes for what you
+           haven't caught (a visible gap is the whole engine of a collection),
+           rarity colour + your personal best on what you have. -->
+      <div class="bh-panel" id="bhLedger" hidden>
+        <div class="bh-card" role="dialog" aria-label="Gil's fish ledger">
+          <h2>gil’s ledger</h2>
+          <p id="bhLedgerSub" class="bh-panel__sub"></p>
+          <div class="bh-ledgerbar"><i id="bhLedgerFill"></i></div>
+          <p id="bhLedgerNext" class="bh-tradestat"></p>
+          <div class="bh-fishgrid" id="bhFishGrid"></div>
+          <ol class="bh-how">
+            <li><b>🎣 sit on a dock chair</b> to cast. when the float dips, tap it — a <b>gold thrash</b> means something big.</li>
+            <li><b>⭐ four tiers.</b> commons fill the ledger fast; <b style="color:#5cc8ff">rare</b> and <b style="color:#ffd54a">legendary</b> are the real chase.</li>
+            <li><b>📏 every fish has a size.</b> gil keeps your personal best, so even a fish you own is worth casting for.</li>
+          </ol>
+          <button class="bh-btn bh-btn--dark" id="bhLedgerClose" type="button">back to the beach</button>
         </div>
       </div>
 
