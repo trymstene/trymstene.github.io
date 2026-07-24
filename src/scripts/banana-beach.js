@@ -2599,7 +2599,8 @@ function init() {
   // 0.30 — v is multiplied by pow(DRAG, dt), so 0.30 kills 70% of the speed
   // every second and the ball died about a banana-and-a-half away. 0.66 lets
   // a good shove carry ~500px, which is a real pass between two players.
-  const WB_R = 22, WB_DRAG = 0.02, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
+  const WB_R = 22, WB_DRAG = 0.004, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
+  const WB_SPLASH = 0.62;      // horizontal speed kept through each splash-down
   const WB_COOL = 240;
   // ⚠️ THE PEN IS IN WATER ROWS, NOT FEET ROWS. SWIM.ySea/yShore are `pos.y`
   // values, and a banana's feet draw 13.5px above pos.y — the ball has no
@@ -2629,34 +2630,45 @@ function init() {
       WBALL.vz = 205;                       // it POPS — the hit lifts it out
       float(WBALL.x, WBALL.y - 20, 'splash!');
     }
+    const prevZ = WBALL.z;                    // was it airborne last frame?
     WBALL.x += WBALL.vx * dt; WBALL.y += WBALL.vy * dt;
     WBALL.z += WBALL.vz * dt; WBALL.vz -= WB_GRAV * dt;
     if (WBALL.z <= 0) {
       WBALL.z = 0;
-      // ⚠️ the deadband is what stops it buzzing on the surface forever. Below
-      // ~52px/s of downward speed it just lands and stays landed.
-      WBALL.vz = WBALL.vz < -52 ? -WBALL.vz * WB_HOP : 0;
+      // ⭐ EVERY SPLASH-DOWN EATS 38% OF THE RUN, and this — not the drag — is
+      // what finally stopped it sliding around. The ball is AIRBORNE for
+      // almost the whole bounce sequence, so a fierce water drag barely gets a
+      // chance to touch it: it only applies in the instants the ball is on the
+      // surface. Tuning that number three times (0.66 → 0.10 → 0.02) changed
+      // almost nothing, because it was never the thing carrying the ball
+      // across the bay. Hitting the water is. Four bounces now leave it with
+      // ~15% of the speed it was thrown at.
+      if (prevZ > 0) { WBALL.vx *= WB_SPLASH; WBALL.vy *= WB_SPLASH; }
+      // the deadband stops it buzzing on the surface forever
+      WBALL.vz = WBALL.vz < -60 ? -WBALL.vz * WB_HOP : 0;
     }
-    // ⚠️ THE DISTANCE IS BOUGHT IN THE AIR, NOT ON THE WATER. Trym: "when it
-    // lands it should slowly glide a little bit but stop really quick since
-    // its in the water" — then, after 0.10 wasn't enough: "still alot of
-    // glide… still too quick." So airborne drag is almost nothing (0.94/s) and
-    // the ball flies its whole pass; the moment it touches down the water
-    // takes it. 0.02 leaves ~14% of the speed after half a second: a short
-    // skid, then it only drifts. Tuned in three passes — 0.66 slid across the
-    // whole bay, 0.10 still coasted a banana's length past the splash.
+    // in the air it barely slows — the distance is bought up there, so a good
+    // pass still carries. On the surface the water takes what the splash left.
     const damp = Math.pow(WBALL.z > 1 ? 0.94 : WB_DRAG, dt);
     WBALL.vx *= damp; WBALL.vy *= damp;
     if (WBALL.x < PEN.x0) { WBALL.x = PEN.x0; WBALL.vx = Math.abs(WBALL.vx) * WB_WALL; }
     else if (WBALL.x > PEN.x1) { WBALL.x = PEN.x1; WBALL.vx = -Math.abs(WBALL.vx) * WB_WALL; }
     if (WBALL.y < PEN.y0) { WBALL.y = PEN.y0; WBALL.vy = Math.abs(WBALL.vy) * WB_WALL; }
     else if (WBALL.y > PEN.y1) { WBALL.y = PEN.y1; WBALL.vy = -Math.abs(WBALL.vy) * WB_WALL; }
-    // ⚠️ ANTI-DEATH. A ball parked in a corner is a dead toy — the volleyball
-    // needed its own anti-stick for the same reason. Below a crawl the bay's
-    // own set walks it back to open water. No reset button, ever.
-    if (Math.hypot(WBALL.vx, WBALL.vy) < 18) {
-      WBALL.vx += ((SWIM.x0 + SWIM.x1) / 2 - WBALL.x) * 0.09 * dt;
-      WBALL.vy += ((PEN.y0 + PEN.y1) / 2 - WBALL.y) * 0.22 * dt;
+    // ⚠️ ANTI-DEATH, BUT ONLY AT THE EDGES. A ball parked in a corner is a
+    // dead toy, so the bay's set walks it back out — but this used to run
+    // wherever the ball stopped, which meant a ball at rest in open water was
+    // never actually at rest: it crept toward the middle forever. That drift
+    // was half of what Trym was seeing as "it slides around too much". Now it
+    // only engages within reach of a wall, and gently.
+    const spd = Math.hypot(WBALL.vx, WBALL.vy);
+    const cornered = WBALL.x - PEN.x0 < 70 || PEN.x1 - WBALL.x < 70
+      || WBALL.y - PEN.y0 < 34 || PEN.y1 - WBALL.y < 34;
+    if (spd < 10 && cornered) {
+      WBALL.vx += ((SWIM.x0 + SWIM.x1) / 2 - WBALL.x) * 0.05 * dt;
+      WBALL.vy += ((PEN.y0 + PEN.y1) / 2 - WBALL.y) * 0.14 * dt;
+    } else if (spd < 3) {
+      WBALL.vx = 0; WBALL.vy = 0;             // properly still
     }
     wballEl.style.left = pct(WBALL.x, W);
     wballEl.style.top = pct(WBALL.y - WBALL.z, H);
