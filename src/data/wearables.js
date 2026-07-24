@@ -159,6 +159,15 @@ export const WEARABLE_PACKS = {
       // 🍌🏪 STAND BATCH 1 (21 Jul) — hands, on the desk (banana-shaped items
       // derive from the circle-diff crescent, never freehand)
       { id: 'balloondog', label: 'Balloon dog', phrase: 'a balloon dog', art: 'balloondog', anchor: 'hand', grip: 12, hand: 'right', price: 35, preview: 'stand' },
+      // 🍌 THE GIANT PLUSH BANANA — the pier claw-machine's 150-ticket grand
+      // prize: the mascot in miniature, held in the glove. The art IS the
+      // ORIGINAL hands-up banana PNG (banana-handsup.png), resized crisp by the
+      // engine — NO re-pixelating (that thickened limbs + dropped pupils).
+      // `gh` = height in banana grid-units (the only size dial); width follows
+      // the PNG's aspect. ⚠️ preview:true = on /dev-wearables/ for Trym's
+      // verdict; on approval it becomes a WON item (no coin price) gated on the
+      // prize_plush pass stat.
+      { id: 'plushbanana', label: 'Plush banana', phrase: 'a plush banana', art: 'plushbanana', anchor: 'hand', hand: 'right', gh: 22, grip: 11, preview: true },
       { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', price: 10, preview: 'stand' },
       { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', price: 40, preview: 'stand' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
