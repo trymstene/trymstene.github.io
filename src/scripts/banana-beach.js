@@ -225,6 +225,20 @@ function init() {
     });
   });
 
+  // 🐟 SHOALS UNDER THE SURFACE — the pack's "Fishes" sheets are fish-shaped
+  // SHADOWS, so they read as shapes gliding below the water rather than sprites
+  // sitting on it. Ambient only, never interactive. z 40 = above the animated
+  // sea (auto) but BELOW the dock (60), so they swim under the pier.
+  [[430, 148, 1], [780, 212, 2], [1180, 116, 3], [1512, 196, 2],
+   [2210, 158, 3], [2540, 208, 1]].forEach(([fx, fy, v]) => {
+    const f = document.createElement('div');
+    f.className = 'bh-fish bh-fish--' + v;
+    f.style.left = pct(fx, W); f.style.top = pct(fy, H);
+    f.style.zIndex = '40';
+    f.style.animationDelay = (-fx % 7) * 0.31 + 's, ' + (-fy % 5) * 1.7 + 's';
+    world.appendChild(f);
+  });
+
   // …and the dock, which is a FLOOR: above the opaque sea, below every walker
   const pierEl = document.createElement('div');
   pierEl.className = 'bh-pier';
@@ -733,11 +747,13 @@ function init() {
   // banana-dance.png. So west seats take 0, east seats take 4 — and that's the
   // bug Trym caught: the shared SIT_FRAME (4) had every sitter facing right.
   const F_LEFT = 0, F_RIGHT = 4;
+  // 🎣 the bobber sits OUT over the water and BELOW the raised rod tip, so the
+  // line visibly hangs down off the tip instead of running flat to it.
   const FISH_SPOTS = [
-    { rect: [1796, 88, 1876, 166], seat: { x: 1836, y: 144 }, bob: { x: 1706, y: 122 }, sitFrame: F_LEFT, fishing: true },
-    { rect: [1904, 88, 1984, 166], seat: { x: 1944, y: 144 }, bob: { x: 2070, y: 122 }, sitFrame: F_RIGHT, fishing: true },
-    { rect: [1796, 168, 1876, 246], seat: { x: 1836, y: 224 }, bob: { x: 1706, y: 202 }, sitFrame: F_LEFT, fishing: true },
-    { rect: [1904, 168, 1984, 246], seat: { x: 1944, y: 224 }, bob: { x: 2070, y: 202 }, sitFrame: F_RIGHT, fishing: true },
+    { rect: [1796, 88, 1876, 166], seat: { x: 1836, y: 144 }, bob: { x: 1706, y: 134 }, sitFrame: F_LEFT, fishing: true },
+    { rect: [1904, 88, 1984, 166], seat: { x: 1944, y: 144 }, bob: { x: 2074, y: 134 }, sitFrame: F_RIGHT, fishing: true },
+    { rect: [1796, 168, 1876, 246], seat: { x: 1836, y: 224 }, bob: { x: 1706, y: 214 }, sitFrame: F_LEFT, fishing: true },
+    { rect: [1904, 168, 1984, 246], seat: { x: 1944, y: 224 }, bob: { x: 2074, y: 214 }, sitFrame: F_RIGHT, fishing: true },
   ];
   const FISH_COIN_CAP = 15;                 // coins fishing may mint per day
   const fishCoinsLeft = () => {
@@ -787,17 +803,24 @@ function init() {
     if (fishing === spot) return;
     stopFishing();
     fishing = spot;
-    const hx = spot.seat.x, hy = spot.seat.y - 26;   // roughly the banana's hands
+    // ⚠️ THE ROD IS NOT AIMED AT THE BOBBER. A rod is HELD UP at an angle and
+    // the line HANGS DOWN off its tip — pointing the rod straight at the float
+    // made one flat line from banana to water (Trym's note). So: the rod rises
+    // up-and-out from the near hand, then the line drops from the tip to the
+    // float. `dir` mirrors the whole rig, so it reads right on BOTH dock sides.
     const bx = spot.bob.x, by = spot.bob.y;
-    const ang = Math.atan2(by - hy, bx - hx) * 180 / Math.PI;
+    const dir = bx >= spot.seat.x ? 1 : -1;
+    const hx = spot.seat.x + dir * 7, hy = spot.seat.y - 25;   // the near hand
+    const tipX = hx + dir * 40, tipY = hy - 34;                // rod tip, raised
     const zTop = 100 + spot.seat.y + 6;
-    const rodLen = 42;
-    fishRod = seg('bh-fishrod', hx, hy, rodLen, ang, zTop);
-    // the line runs from the rod TIP to the bobber
-    const tx = hx + Math.cos(ang * Math.PI / 180) * rodLen;
-    const ty = hy + Math.sin(ang * Math.PI / 180) * rodLen;
-    const len = Math.hypot(bx - tx, by - ty);
-    fishLine = seg('bh-fishline', tx, ty, len, Math.atan2(by - ty, bx - tx) * 180 / Math.PI, zTop);
+    fishRod = seg('bh-fishrod', hx, hy, Math.hypot(tipX - hx, tipY - hy),
+                  Math.atan2(tipY - hy, tipX - hx) * 180 / Math.PI, zTop);
+    // the line falls from the rod TIP out to the float
+    const lineAng = Math.atan2(by - tipY, bx - tipX) * 180 / Math.PI;
+    const len = Math.hypot(bx - tipX, by - tipY);
+    fishLine = seg('bh-fishline', tipX, tipY, len, lineAng, zTop);
+    // the sway animation rotates AROUND this base angle (see --ang in the CSS)
+    fishLine.style.setProperty('--ang', lineAng.toFixed(2) + 'deg');
     fishBob = document.createElement('div');
     fishBob.className = 'bh-bob';
     fishBob.style.left = pct(bx, W); fishBob.style.top = pct(by, H);

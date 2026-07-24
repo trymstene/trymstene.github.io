@@ -106,9 +106,20 @@ const description = 'The beach at the end of the park road. The sun never quite 
       background: linear-gradient(90deg, #6b4320, #b9823f);
       border-radius: 2px; pointer-events: none;
     }
+    /* the line hangs off the rod tip; it sways around its own base angle
+       (--ang, set from JS) in time with the float's bob so the two move as one */
     .bh-fishline {
       position: absolute; height: 1px; transform-origin: 0 50%;
       background: rgba(255, 255, 255, 0.82); pointer-events: none;
+      transform: rotate(var(--ang, 0deg));
+      animation: bhLineSway 1.9s ease-in-out infinite;
+    }
+    @keyframes bhLineSway {
+      0%, 100% { transform: rotate(calc(var(--ang, 0deg) - 0.9deg)); }
+      50%      { transform: rotate(calc(var(--ang, 0deg) + 1.1deg)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-fishline { animation: none; transform: rotate(var(--ang, 0deg)); }
     }
     .bh-bob {
       position: absolute; width: 15px; height: 15px; margin: -8px 0 0 -8px;
@@ -129,6 +140,43 @@ const description = 'The beach at the end of the park road. The sun never quite 
       75% { transform: translate(2px, 4px); }
     }
     @media (prefers-reduced-motion: reduce) { .bh-bob { animation: none; } }
+
+    /* 🐟 SHOALS UNDER THE SURFACE. The pack's fish are SHADOWS painted in
+       darker shades of the water, so they stay low-contrast and take no ink
+       outline. Two animations at once, on different properties: the strip
+       steps the frames, the drift walks them slowly across the water.
+       ⚠️ frame maths per the crab note above — end = 100% × N / (N − 1). */
+    .bh-fish {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      width: 1.74%; aspect-ratio: 1;           /* one 48px tile of the 2760 map */
+      background-repeat: no-repeat; opacity: 0.92;
+      /* ⚠️ the pack paints these barely a shade off ITS water: measured against
+         OUR sea the raw sprite is only a 38 total-channel delta — invisible.
+         brightness(0.78) takes that to ~105, which reads as a shadow under the
+         surface without turning into a black blob (0.70 was too heavy). */
+      filter: brightness(0.78) saturate(1.2);
+    }
+    .bh-fish--1 {
+      background-image: url('/assets/beach/a-fish1.png'); background-size: 1200% 100%;
+      animation: bhFish12 1.5s steps(12) infinite, bhFishDrift 27s ease-in-out infinite alternate;
+    }
+    .bh-fish--2 {
+      background-image: url('/assets/beach/a-fish2.png'); background-size: 1400% 100%;
+      animation: bhFish14 1.7s steps(14) infinite, bhFishDrift 34s ease-in-out infinite alternate;
+    }
+    .bh-fish--3 {
+      background-image: url('/assets/beach/a-fish3.png'); background-size: 1400% 100%;
+      animation: bhFish14 1.9s steps(14) infinite, bhFishDrift 41s ease-in-out infinite alternate;
+    }
+    @keyframes bhFish12 { from { background-position-x: 0%; } to { background-position-x: 109.0909%; } }
+    @keyframes bhFish14 { from { background-position-x: 0%; } to { background-position-x: 107.6923%; } }
+    @keyframes bhFishDrift {
+      from { transform: translate(-50%, -50%) translateX(-38px); }
+      to   { transform: translate(-50%, -50%) translateX(38px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-fish { animation: none; transform: translate(-50%, -50%); }
+    }
     /* the catch reveal card */
     .bh-card--catch { max-width: 340px; text-align: center; }
     .bh-catch { display: grid; gap: 0.5rem; place-items: center; margin: 0.4rem 0 0.9rem; }

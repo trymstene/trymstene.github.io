@@ -229,10 +229,15 @@ def anim_find(name):
 
 
 def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
-               dekey=None, colors=10, warm=0.08):
+               dekey=None, colors=10, warm=0.08, keytol=26, outline=True):
     """extract `frames` tiles from `row` of a pack sheet → our-style strip.
     dekey = a background colour to knock out (the water sprites are baked on
-    an opaque water square, which we don't want over our own sea)."""
+    an opaque water square, which we don't want over our own sea).
+    ⚠️ keytol matters: the FISH sheets are drawn ENTIRELY in shades of their own
+    water — every fish colour sits within ~19 of the background — so the default
+    26 erases the fish along with the sea. They need keytol≈8.
+    outline=False for the fish too: an ink line round a shadow under the surface
+    reads as a sticker, not a shadow."""
     p = anim_find(name)
     if not p:
         print('  MISSING', name)
@@ -247,7 +252,7 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
             for y in range(cell.height):
                 for x in range(cell.width):
                     r, g, b, a = cp[x, y]
-                    if a and abs(r - dekey[0]) < 26 and abs(g - dekey[1]) < 26 and abs(b - dekey[2]) < 26:
+                    if a and abs(r - dekey[0]) < keytol and abs(g - dekey[1]) < keytol and abs(b - dekey[2]) < keytol:
                         cp[x, y] = (0, 0, 0, 0)
         raw.alpha_composite(cell, (i * tw, 0))
     # ⚠️ Blockify the WHOLE STRIP, once, with trim=False. Two rules an
@@ -260,7 +265,11 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
     #      frame off the grid. Outline the strip and crop the pad back off, so
     #      each frame stays EXACTLY tw wide.
     out = blockify(raw, factor=1, colors=colors, warm=warm, sat=1.1, con=1.05,
-                   trim=False).crop((1, 1, 1 + tw * n, 1 + th))
+                   trim=False, outline=outline)
+    # _outline() pads the strip by 1px; crop it back so every frame stays
+    # EXACTLY tw wide. With outline=False there is no pad to crop.
+    if outline:
+        out = out.crop((1, 1, 1 + tw * n, 1 + th))
     out.save(os.path.join(OUT, out_name), optimize=True)
     print('  %s -> %s (%d frames)' % (name[:38], out_name, n))
     return n
@@ -904,6 +913,17 @@ if HAVE_PACK:
                frames=8, dekey=WATER_KEY)
     anim_strip('Beach_Floating_Rock_1_48x48.png', 'a-rock.png', frames=8, dekey=WATER_KEY)
     anim_strip('Floating_Ball_1_48x48.png', 'a-floatball.png', frames=6, dekey=WATER_KEY)
+    # 🐟 SHOALS UNDER THE SURFACE. These sheets are NOT fish sprites — they are
+    # fish-shaped SHADOWS painted in slightly darker shades of their own water,
+    # so they need their own (darker) key and a TIGHT tolerance, or the dekey
+    # eats the fish too. No outline: a shadow under water has no ink line.
+    FISH_KEY = (60, 163, 178)
+    anim_strip('Fishes_1_48x48gif.png', 'a-fish1.png', frames=12, dekey=FISH_KEY,
+               keytol=8, outline=False, colors=5, warm=0.0)
+    anim_strip('Fishes_2_48x48.png', 'a-fish2.png', frames=14, dekey=FISH_KEY,
+               keytol=8, outline=False, colors=5, warm=0.0)
+    anim_strip('Fishes_3_48x48.png', 'a-fish3.png', frames=14, dekey=FISH_KEY,
+               keytol=8, outline=False, colors=5, warm=0.0)
 
 im = im.convert('RGB')
 im.save(os.path.join(OUT, 'beach.png'), optimize=True)
