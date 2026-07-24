@@ -1,0 +1,847 @@
+/* ============================================================
+   Trym Stene — loud & maximalist, mobile-first
+   Neo-brutalist banana energy. Hand-built, no framework.
+   ============================================================ */
+
+:root {
+  --banana: #ffe135;
+  --banana-deep: #f5c400;
+  --ink: #111111;
+  --paper: #fffdf5;
+  --hot: #ff4d6d;
+  --line: 4px solid var(--ink);
+  --shadow: 8px 8px 0 var(--ink);
+  --shadow-sm: 4px 4px 0 var(--ink);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Pixel UI icons (pixelarticons, inlined) — colour follows currentColor.
+   Any button/link/heading that leads with one lines the icon up with its label. */
+.pai { flex: none; vertical-align: -0.14em; } /* -align applies in inline (text) contexts; ignored inside inline-flex */
+:where(.btn, a, button, summary, label):has(> .pai:first-child) { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
+:where(h1, h2, h3, h4):has(> .pai:first-child) { display: flex; align-items: center; gap: 0.45rem; }
+
+/* buttons inherit our font + ink — otherwise iOS Safari paints its default
+   blue button text on every <button> that doesn't set color explicitly */
+button { font: inherit; color: inherit; }
+
+/* BUTTON LABELS NEVER LINE-BREAK (Trym, 20 Jul: "i like buttons to not have
+   linebreaking on button text" — the forge's Items Workshop tab wrapped).
+   Content-CARD buttons (multi-line by design) opt back out below; explicit
+   <br> (the rave's INVITE sign) still breaks — that's intended.
+   When space runs out, the layout should wrap whole BUTTONS, not their text. */
+button, .btn { white-space: nowrap; }
+.bm-mail__head, .bb-ptile, .bb-homebar__go, .ps-herostat { white-space: normal; }
+
+html { scroll-behavior: smooth; }
+
+/* skip-to-content: hidden until a keyboard user tabs to it, then it drops in
+   as a banana-yellow chip (WCAG 2.4.1 Bypass Blocks) */
+.skip-link {
+  position: fixed; top: -100px; left: 12px; z-index: 5000;
+  background: var(--banana); color: var(--ink); border: var(--line);
+  box-shadow: var(--shadow-sm); font-weight: 800; text-decoration: none;
+  padding: 0.6rem 1rem; transition: top 0.15s ease;
+}
+.skip-link:focus { top: 12px; }
+#main:focus { outline: none; } /* the target is a programmatic focus stop, not a control */
+
+body {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 { font-family: "Archivo Black", system-ui, sans-serif; line-height: 0.95; }
+
+a { color: inherit; }
+
+/* ---------- marquee ---------- */
+.marquee {
+  background: var(--ink);
+  color: var(--banana);
+  overflow: hidden;
+  white-space: nowrap;
+  border-bottom: var(--line);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+.marquee__track {
+  display: inline-flex;
+  animation: scroll 80s linear infinite;
+  padding: 0.5rem 0;
+}
+.marquee__track span { padding-right: 1rem; }
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ---------- pixel icons (PixelIcon.astro + JS-inlined) ---------- */
+.pxi { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.22em; }
+
+/* nav burger/close swap (main.js toggles .open on .nav) */
+.nav__ic { display: inline-block; line-height: 1; }
+.nav__ic--close { display: none; }
+.nav.open .nav__ic--open { display: none; }
+.nav.open .nav__ic--close { display: inline-block; }
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  background: var(--banana);
+  border-bottom: var(--line);
+}
+.nav__brand {
+  font-family: "Nunito", sans-serif;
+  font-weight: 900;
+  font-size: 1.4rem;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.nav__brand span { color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); }
+
+.nav__toggle {
+  font-size: 1.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  color: var(--ink);
+  z-index: 70;
+}
+/* the open panel is ink-black behind the toggle — flip the X to banana
+   yellow or it disappears against it. And PIN it: left to the header's flow
+   it lands wherever the sticky bar happens to sit (read as misplaced on iOS,
+   Trym's catch) — pinned, it aligns with the panel rows' right padding and
+   centers in the panel's top band. */
+.nav.open .nav__toggle {
+  color: var(--banana);
+  position: fixed; top: 0.85rem; right: 1.4rem;
+  margin: 0; padding: 0; line-height: 0;
+}
+
+/* badge notification: iOS-style hot dot with the UNSEEN badge count — sits on
+   "My Pass" (desktop) and on the burger (mobile, where the links hide).
+   Rendered by main.js; visiting /pass/ clears it; earning pops it live. */
+.nav__pass, .nav__toggle { position: relative; }
+.nav-note {
+  position: absolute; top: -9px; right: -11px;
+  box-sizing: border-box;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--hot); color: #fff;
+  border: 2px solid var(--ink); border-radius: 999px;
+  /* system digits, like a real iOS badge — Space Grotesk numerals have
+     lopsided side-bearings, so counts sat visibly off-centre (Trym's catch) */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px; font-weight: 700; line-height: 1;
+  letter-spacing: 0;
+  animation: navNotePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.nav__toggle .nav-note { top: -6px; right: -8px; }
+/* menu OPEN: the panel's own My-Pass row carries the news — a count floating
+   on the close ✗ is noise (Trym's iOS screenshot) */
+.nav.open .nav__toggle .nav-note { display: none; }
+/* mobile panel: the row spans the full screen, so the absolute corner spot is
+   PAST the viewport edge — sit inline after "My Pass" like an iOS list badge */
+@media (max-width: 899.98px) {
+  .nav__pass .nav-note { position: static; display: inline-flex; margin-left: 0.5rem; vertical-align: 2px; }
+}
+@keyframes navNotePop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .nav-note { animation: none; } }
+
+.nav__group { display: flex; }
+.nav__group a { text-decoration: none; font-weight: 700; white-space: nowrap; }
+
+/* ---- mobile: slide-in panel from the right ---- */
+.nav__links {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: min(82vw, 320px);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink);
+  border-left: var(--line);
+  padding-top: 3.6rem;
+  overflow-y: auto;
+  z-index: 65;
+}
+.nav.open .nav__links { transform: translateX(0); }
+
+.nav__group { flex-direction: column; }
+.nav__group a { padding: 1rem 1.4rem; }
+.nav__group--banana { background: var(--ink); }
+.nav__group--banana a { color: var(--banana); border-top: 2px solid #333; }
+.nav__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+  z-index: 64;
+}
+.nav.open .nav__backdrop { opacity: 1; visibility: visible; }
+
+/* ---- desktop: two-tone segmented bar, no panel ---- */
+/* the desktop row only turns on once it actually FITS: seven nowrap links +
+   the brand need ~1250px, and between 900px and that the row overflowed the
+   viewport (half the logo off-screen, My Pass cut — Trym caught it zoomed
+   in). Below the threshold everyone gets the burger, which always fits —
+   and the row itself may WRAP as a last resort, never clip. */
+@media (min-width: 1360px) {
+  .nav { flex-wrap: wrap; row-gap: 0.4rem; }
+  .nav__toggle { display: none; }
+  .nav__backdrop { display: none; }
+  .nav__brand { font-size: 1.85rem; }
+  .nav__links {
+    position: static;
+    transform: none;
+    height: auto;
+    width: auto;
+    max-width: 100%;
+    flex-direction: row;
+    background: none;
+    border-left: none;
+    padding: 0;
+    overflow: visible;
+    box-shadow: var(--shadow-sm);
+  }
+  .nav__group { flex-wrap: wrap; }
+  .nav__group { flex-direction: row; align-items: stretch; }
+  .nav__group a {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.9rem;
+    border-top: none;
+    font-size: 1rem;
+  }
+  .nav__group--banana { border: 3px solid var(--ink); }
+  .nav__group--banana a { color: var(--banana); }
+  .nav__group--banana a:hover { background: var(--banana); color: var(--ink); }
+}
+
+/* ---------- hero ---------- */
+.hero {
+  text-align: center;
+  padding: 3rem 1.2rem 4rem;
+  background: #ffffff;
+}
+.hero__banana { margin: 0 auto 1.5rem; width: min(60vw, 240px); }
+.hero__banana img { width: 100%; height: auto; image-rendering: auto; }
+.banana-fallback {
+  font-size: min(40vw, 180px);
+  line-height: 1;
+  animation: bounce 0.9s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-14px) rotate(4deg); }
+}
+
+.hero__title {
+  font-size: clamp(2.6rem, 11vw, 6rem);
+  text-transform: lowercase;
+  letter-spacing: -0.02em;
+}
+.wobble {
+  display: inline-block;
+  background: var(--banana);
+  padding: 0 0.15em;
+  border: var(--line);
+  box-shadow: var(--shadow-sm);
+  transform: rotate(-2deg);
+}
+.hero__tag {
+  margin-top: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: clamp(0.8rem, 2.6vw, 1rem);
+}
+.hero__cta {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-block;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.85rem 1.5rem;
+  border: var(--line);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.btn--dark { background: var(--ink); color: var(--banana); }
+.btn--light { background: var(--paper); color: var(--ink); }
+
+/* ---------- content blocks ---------- */
+.block {
+  padding: 4rem 1.2rem;
+  position: relative;
+}
+
+/* organic banana separator — scattered bananas floating across each section boundary */
+.block::before {
+  content: "";
+  position: absolute;
+  top: -28px;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background-image: url('/assets/banana-icon.svg');
+  background-repeat: repeat-x;
+  background-position: center;
+  background-size: auto 50px;
+  pointer-events: none;
+}
+
+.block--yellow { background: var(--banana); }
+.block--dark { background: var(--ink); color: var(--paper); }
+.block--dark a { color: var(--banana); }
+
+.kicker {
+  display: inline-block;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  background: var(--hot);
+  color: var(--paper);
+  padding: 0.25rem 0.6rem;
+  border: 3px solid var(--ink);
+  transform: rotate(-1.5deg);
+  margin-bottom: 1rem;
+}
+.kicker--light { background: var(--banana); color: var(--ink); }
+
+.block h2 { font-size: clamp(2rem, 7vw, 3.5rem); margin-bottom: 1rem; }
+.lead { font-size: clamp(1rem, 2.6vw, 1.25rem); max-width: 60ch; margin-bottom: 1.5rem; }
+.block, .hero { max-width: 100%; }
+
+/* ---------- project cards ---------- */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+@media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+
+.card {
+  display: block;
+  text-decoration: none;
+  background: var(--paper);
+  border: var(--line);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.card:hover { transform: translate(-3px, -3px) rotate(-1deg); box-shadow: 11px 11px 0 var(--ink); }
+/* paper cards on DARK bands: reset the band's paper-white text back to ink
+   (white-on-white otherwise) and swap the invisible ink shadow for the
+   banana one — the same treatment .btn--light gets on dark */
+.block--dark .card { color: var(--ink); box-shadow: 6px 6px 0 var(--banana); }
+.block--dark .card:hover { box-shadow: 11px 11px 0 var(--banana); }
+.card h3 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+.card__go { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--hot); }
+
+/* ---------- split (image + text) ---------- */
+.split { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; }
+.split__media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: var(--line);
+  box-shadow: var(--shadow);
+}
+@media (min-width: 760px) {
+  .split { grid-template-columns: 1fr 1.2fr; gap: 3rem; }
+  .split--reverse .split__media { order: 2; }
+}
+
+/* ---------- project cards (with image) ---------- */
+.project-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  text-decoration: none;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+a.project-card:hover { transform: translate(-3px, -3px) rotate(-0.5deg); box-shadow: 11px 11px 0 var(--ink); }
+.project-card__img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-bottom: var(--line);
+  display: block;
+}
+.project-card__redacted {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-bottom: var(--line);
+  background: repeating-linear-gradient(45deg, var(--ink) 0 14px, #2b2b2b 14px 28px);
+  display: grid;
+  place-items: center;
+  color: var(--banana);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 1rem;
+}
+.project-card__body { padding: 1.3rem; flex: 1; display: flex; flex-direction: column; }
+.project-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+.project-card p { font-size: 0.98rem; margin-bottom: 1rem; }
+.project-card__go { margin-top: auto; font-weight: 700; color: var(--hot); }
+.project-card__tag { margin-top: auto; font-weight: 700; opacity: 0.6; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; }
+a.project-card:hover .project-card__go { text-decoration: underline; }
+
+/* ---------- socials / footer ---------- */
+.socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+.socials a {
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border: 3px solid var(--banana);
+  border-radius: 2px;
+}
+.socials a:hover { background: var(--banana); color: var(--ink); }
+.muted { opacity: 0.7; font-size: 0.9em; }
+.copyright { margin-top: 2rem; font-size: 0.8rem; opacity: 0.75; }
+
+/* ---------- FAQ ---------- */
+.faq__item { border-top: 3px solid var(--ink); padding: 1.3rem 0; max-width: 70ch; }
+.faq__item:last-child { border-bottom: 3px solid var(--ink); }
+.faq__item h3 { font-size: 1.15rem; margin-bottom: 0.4rem; }
+.faq__item p { font-size: 1.05rem; }
+.block--dark .faq__item { border-color: var(--banana); }
+
+/* ---------- press row ---------- */
+/* "As featured in" press belt — full-width paper band, real outlet logos at
+   a uniform height, evenly spaced and centred. */
+.press-belt {
+  background: var(--paper);
+  border-top: var(--line);
+  border-bottom: var(--line);
+  padding: 1.8rem 1.2rem 2rem;
+  text-align: center;
+}
+.press-belt__kicker {
+  margin: 0 0 1.3rem;
+  font-size: 0.8rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink); opacity: 0.55;
+}
+.press-belt__logos {
+  display: flex; flex-wrap: wrap;
+  justify-content: center; align-items: center;
+  gap: 1.6rem 3.5rem;
+}
+.press-belt__logos a, .press-belt__logos span { display: inline-flex; align-items: center; }
+.press-belt__logos img { height: 30px; width: auto; display: block; }
+/* stacked/compact marks need more height to sit at the same OPTICAL size */
+.press-belt__logos img[alt="Family Guy"] { height: 44px; }
+.press-belt__logos img[alt="Know Your Meme"] { height: 26px; }
+.press-belt__logos a { transition: transform 0.15s ease; }
+.press-belt__logos a:hover { transform: translateY(-3px); }
+@media (max-width: 480px) {
+  .press-belt__logos img { height: 24px; }
+  .press-belt__logos img[alt="Family Guy"] { height: 36px; }
+  .press-belt__logos img[alt="Know Your Meme"] { height: 21px; }
+  .press-belt__logos { gap: 1.2rem 2rem; }
+}
+
+/* ---------- grab-the-gif box ---------- */
+/* hub CTA: example customized bananas */
+.mkb-examples { display: flex; justify-content: center; align-items: flex-end; gap: clamp(0.8rem, 4vw, 2.2rem); margin: 1.6rem 0 0.4rem; }
+.mkb-examples img { height: clamp(110px, 18vw, 170px); width: auto; image-rendering: pixelated; }
+.mkb-examples img:nth-child(1) { transform: rotate(-4deg); }
+.mkb-examples img:nth-child(3) { transform: rotate(4deg); }
+.mkb-note { font-size: 0.85rem; opacity: 0.75; margin-top: 0.7rem; }
+
+.grab {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin: 1.5rem auto 0;
+  padding: 1.5rem;
+  max-width: 640px;
+  background: var(--paper);
+  border: var(--line);
+  box-shadow: var(--shadow);
+}
+.grab img { width: 150px; height: auto; margin-inline: auto; display: block; }
+/* desktop: the banana matches the button stack beside it instead of
+   floating tiny in the corner */
+@media (min-width: 760px) {
+  .grab { gap: 2rem; }
+  .grab img { width: 250px; margin-inline: auto; }
+}
+
+/* ---------- remix gallery placeholder ---------- */
+.remix-grid {
+  /* six fixed tiles, CENTRED — auto-fill grid left empty tracks on the right
+     and the row sat left-aligned on wide screens */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.remix-grid .slot {
+  width: 140px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 #000;
+}
+/* mobile: one tidy row of three — the button matters more than scroll-depth */
+@media (max-width: 640px) {
+  .remix-grid .slot { width: 96px; }
+  .remix-grid .slot:nth-child(n + 4) { display: none; }
+}
+
+/* ---------- desktop: center sections under the hero ---------- */
+@media (min-width: 760px) {
+  .block { padding: 5rem 2rem; text-align: center; }
+
+  /* center the simple content column */
+  .block > .kicker,
+  .block > h2,
+  .block > .lead,
+  .block > p,
+  .block > .btn { margin-left: auto; margin-right: auto; }
+  .block > .lead,
+  .block > p { max-width: 62ch; }
+
+  /* wide layout children: center the container, keep internal text readable */
+  .cards,
+  .remix-grid { max-width: 1100px; margin-inline: auto; }
+  .card { text-align: left; }
+
+  .grab,
+  .socials,
+  .press { justify-content: center; }
+
+  /* image+text splits stay two-column and left-aligned, just centered as a block */
+  .split { max-width: 1100px; margin-inline: auto; text-align: left; }
+
+  /* FAQ: centered column, but left-aligned text for readability */
+  .faq__item { margin-inline: auto; text-align: left; }
+}
+
+/* ---------- bullet lists ---------- */
+.bullets { list-style: none; max-width: 70ch; margin: 1.2rem auto 0; text-align: left; }
+.bullets li { position: relative; padding: 0.55rem 0 0.55rem 1.8rem; }
+.bullets li::before { content: "→"; position: absolute; left: 0; font-weight: 700; color: var(--hot); }
+.block--dark .bullets li::before { color: var(--banana); }
+
+/* ---------- factor chips ---------- */
+.factors { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.2rem; }
+.factors span { border: 3px solid currentColor; padding: 0.35rem 0.7rem; font-weight: 700; }
+
+/* ---------- callout box (verbatim notes) ---------- */
+.callout {
+  max-width: 75ch;
+  margin: 1.5rem auto 0;
+  padding: 1.2rem 1.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  font-size: 0.97rem;
+}
+.callout strong { font-family: "Archivo Black", sans-serif; display: block; margin-bottom: 0.4rem; }
+
+/* ---------- fine print ---------- */
+.fineprint { max-width: 75ch; margin: 1.5rem auto 0; font-size: 0.85rem; opacity: 0.8; text-align: left; }
+
+/* ---------- dark-section treatments (yellow accents) ---------- */
+/* white buttons on black: yellow border + yellow shadow, black text */
+.block--dark .btn--light { color: var(--ink); border-color: var(--banana); box-shadow: 4px 4px 0 var(--banana); }
+.block--dark .btn--light:hover { box-shadow: 6px 6px 0 var(--banana); }
+.block--dark .btn--light:active { box-shadow: 2px 2px 0 var(--banana); }
+
+/* images on black: thick yellow border, yellow shadow, playful tilt */
+.split__media img { transition: transform 0.25s ease; }
+.block--dark .split__media img {
+  border: 5px solid var(--banana);
+  box-shadow: 12px 12px 0 var(--banana);
+  transform: rotate(-2.5deg);
+}
+.block--dark .split--reverse .split__media img { transform: rotate(2.5deg); }
+.block--dark .split__media img:hover { transform: rotate(0); }
+
+/* ---------- download buttons + embed box ---------- */
+.dl-buttons { display: flex; flex-direction: column; gap: 0.7rem; }
+/* the post-download door — hidden until a download button is clicked (main.js) */
+.dl-door { display: none; margin-top: 1.1rem; font-weight: 700; }
+.dl-door.show { display: block; animation: dl-door-in 0.35s ease-out; }
+@keyframes dl-door-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.embed { max-width: 640px; margin: 2rem auto 0; text-align: left; }
+.embed label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+.embed textarea {
+  width: 100%;
+  border: 3px solid var(--ink);
+  border-radius: 2px;
+  padding: 0.7rem;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.82rem;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+}
+.embed .btn { margin-top: 0.7rem; }
+
+/* ---------- jump nav (in-page anchors) ---------- */
+.jumpnav { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 1.5rem; }
+.jumpnav a {
+  font-weight: 700;
+  text-decoration: none;
+  border: 3px solid var(--ink);
+  padding: 0.4rem 0.9rem;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.jumpnav a:hover { background: var(--ink); color: var(--banana); }
+
+/* ---------- accordion (native details) ---------- */
+details.story {
+  max-width: 70ch;
+  margin: 1.3rem auto 0;
+  text-align: left;
+  border-top: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+}
+details.story summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 1rem 0;
+  list-style: none;
+}
+details.story summary::-webkit-details-marker { display: none; }
+details.story summary::after { content: " +"; font-family: monospace; }
+details.story[open] summary::after { content: " –"; }
+details.story p { margin-bottom: 1rem; }
+
+/* offset in-page anchors so they clear the sticky nav */
+.block[id], .hero[id] { scroll-margin-top: 5rem; }
+
+/* ---------- language switcher ---------- */
+.langswitch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.langswitch a { color: inherit; text-decoration: underline; }
+.langswitch a[aria-current="true"] { color: var(--banana); text-decoration: none; }
+
+/* respect reduced motion */
+/* ---------- progressive disclosure: the pixel fold + the ⓘ popover ----------
+   Both are plain <details> — no JS, keyboard/screen-reader friendly for free. */
+.px-fold { margin: 0; }
+.px-fold > summary {
+  display: inline-block; cursor: pointer; list-style: none;
+  border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
+  font-weight: 700; font-size: 0.9rem; border-radius: 2px; user-select: none;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.px-fold > summary::-webkit-details-marker { display: none; }
+.px-fold > summary::before { content: '+ '; font-weight: 800; }
+.px-fold[open] > summary::before { content: '− '; }
+.px-fold[open] > summary { background: var(--ink); color: var(--banana); }
+.px-fold > .px-fold__body { margin-top: 0.8rem; }
+
+.px-info { display: inline-block; position: relative; vertical-align: middle; }
+.px-info > summary {
+  display: inline-grid; place-items: center; cursor: help; list-style: none;
+  width: 1.15rem; height: 1.15rem; border: 2px solid currentColor; border-radius: 50%;
+  font-size: 0.7rem; font-weight: 800; line-height: 1; opacity: 0.6; user-select: none;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.px-info > summary::-webkit-details-marker { display: none; }
+.px-info > summary:hover, .px-info[open] > summary { opacity: 1; }
+.px-info > .px-info__bubble {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(260px, 78vw); z-index: 60;
+  background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); padding: 0.5rem 0.65rem;
+  font-size: 0.78rem; font-weight: 400; line-height: 1.5; text-align: left;
+}
+.px-info > .px-info__bubble::after {
+  content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+  width: 10px; height: 7px; background: var(--paper);
+  border: 3px solid var(--ink); border-top: none;
+}
+
+/* ---------- the doors (homepage) ---------- */
+.doors {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  margin-top: 1.8rem;
+  text-align: left;
+  /* wide desktops: don't let the four doors stretch wall-to-wall */
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line);
+  box-shadow: var(--shadow);
+  padding: 1.2rem 1.2rem 1rem;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.door:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 var(--ink); }
+.door__verb { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; line-height: 1; }
+.door p { margin: 0; font-size: 0.92rem; line-height: 1.5; flex: 1; }
+.door__live {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.door--dance { background: var(--ink); color: var(--paper); }
+.door--dance .door__verb { color: var(--banana); }
+.door--dance .door__live { opacity: 1; color: #37d67a; display: flex; align-items: center; gap: 0.45rem; }
+.door__dot { width: 8px; height: 8px; background: #37d67a; animation: doorPulse 1.2s steps(2) infinite; }
+@keyframes doorPulse { 50% { opacity: 0.25; } }
+.doors__daily { margin-top: 1.6rem; font-size: 0.95rem; }
+
+/* ---------- the contact form (spam-safe inbox, no exposed email) ---------- */
+.cform { max-width: 560px; margin: 1.8rem auto 0; text-align: left; display: grid; gap: 0.9rem; }
+.cform label { display: grid; gap: 0.35rem; font-weight: 700; font-size: 0.85rem; }
+.cform input,
+.cform textarea {
+  border: 3px solid var(--ink); background: var(--paper); color: var(--ink);
+  font: inherit; padding: 0.55rem 0.7rem; border-radius: 0;
+}
+.cform textarea { resize: vertical; }
+.cform input:focus,
+.cform textarea:focus { outline: 3px solid var(--banana); outline-offset: 2px; }
+.cform__row { display: grid; gap: 0.9rem; grid-template-columns: 1fr 1fr; }
+@media (max-width: 640px) { .cform__row { grid-template-columns: 1fr; } }
+.cform__hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.cform__send { justify-self: start; }
+.cform__note { font-weight: 700; margin: 0; }
+
+/* footer host line */
+.footer__host { font-size: 0.95rem; opacity: 0.85; }
+
+/* ---------- the pass toast: one celebration pattern for every page ----------
+   a compact chip TOP-RIGHT under the nav (Trym: the bottom band is already
+   packed on the rave, and the old ink box covered too much screen) */
+.pass-toast {
+  position: fixed; top: 72px; right: 12px; transform: translateY(-8px); z-index: 900;
+  max-width: min(300px, calc(100vw - 24px));
+  background: var(--banana); color: var(--ink); border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45); padding: 0.35rem 0.65rem;
+  font-size: 0.78rem; line-height: 1.45;
+  opacity: 0; visibility: hidden; transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.pass-toast--show { opacity: 1; visibility: visible; transform: translateY(0); }
+
+/* the shelf's shop door: banana items carry a make-it-real corner tag
+   (global because the shelf renders on builder, forge, /make/ and /pass/) */
+.shelf-tag {
+  position: absolute; bottom: -12px; right: -12px; width: 24px; height: 24px;
+  display: grid; place-items: center; line-height: 1; font-size: 13px;
+  background: var(--banana); border: 2px solid var(--ink); text-decoration: none;
+  cursor: pointer;
+}
+.shelf-tag:hover { transform: scale(1.15); }
+.pass-toast b { color: var(--ink); }
+.pass-toast a { color: var(--ink); font-weight: 700; }
+
+/* ---------- 🍪 the cookie banana (EEA consent banner, injected by main.js) ----------
+   small bottom-left card: the pixel banana + a speech bubble with two equal
+   buttons. mobile: full-width bottom bar, still two thumb-sized buttons. */
+.ccb {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 3000;
+  display: flex; align-items: flex-end; gap: 6px;
+  max-width: 400px;
+  animation: ccbIn 0.4s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+@media (min-width: 600px) { .ccb { left: 18px; bottom: 18px; right: auto; } }
+.ccb--out { transition: transform 0.3s ease, opacity 0.3s ease; transform: translateY(140%); opacity: 0; }
+.ccb__nana { image-rendering: pixelated; flex: 0 0 auto; width: 52px; height: 52px; }
+.ccb__bubble {
+  background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: var(--shadow-sm);
+  border-radius: 10px; padding: 0.6rem 0.7rem;
+  position: relative; font-size: 0.86rem; line-height: 1.4;
+}
+.ccb__bubble::after { /* speech tail pointing at the banana */
+  content: ''; position: absolute; left: -8px; bottom: 16px;
+  width: 11px; height: 11px; background: var(--paper);
+  border-left: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+  transform: rotate(45deg);
+}
+.ccb__say { margin: 0 0 0.55rem; }
+.ccb__row { display: flex; align-items: center; gap: 0.45rem; }
+.ccb__btn {
+  font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  border: 3px solid var(--ink); border-radius: 8px;
+  padding: 0.42rem 0.7rem; background: var(--banana); color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.ccb__btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.ccb__btn--no { background: var(--paper); }
+.ccb__what { margin-left: auto; font-size: 0.78rem; color: var(--ink); opacity: 0.65; }
+@keyframes ccbIn { from { transform: translateY(140%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track, .banana-fallback, .door__dot { animation: none; }
+  .ccb { animation: none; }
+  html { scroll-behavior: auto; }
+}

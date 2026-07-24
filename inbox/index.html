@@ -1,0 +1,137 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="canonical" href="https://trymstene.com/inbox/"><title>BANANA MAIL™</title><meta name="description" content="Authorized banana personnel only."><meta name="robots" content="index,follow,max-image-preview:large"><meta name="google-site-verification" content="aI-qTkBS_ACkw7mXPWsadMKDL6ASRH6QY5dtVw-84lI"><meta property="og:type" content="website"><meta property="og:title" content="BANANA MAIL™"><meta property="og:description" content="Authorized banana personnel only."><meta property="og:url" content="https://trymstene.com/inbox/"><meta property="og:image" content="https://trymstene.com/assets/og/default.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="BANANA MAIL™"><meta property="og:site_name" content="Trym Stene — the banana guy"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><!-- self-hosted fonts: no third-party round trips (perf + GDPR) --><link rel="preload" href="/fonts/spacegrotesk-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/archivoblack-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/styles.css"><meta name="robots" content="noindex"><style>
+    .bm-wrap { max-width: 760px; margin: 0 auto; padding: 1.6rem 1rem 4rem; }
+    .bm-letterhead {
+      background: var(--ink); color: var(--paper); border: var(--line); box-shadow: var(--shadow);
+      padding: 1.1rem 1.2rem 1rem; text-align: center; position: relative; overflow: hidden;
+    }
+    .bm-letterhead::before, .bm-letterhead::after { content: '🍌'; position: absolute; top: 0.9rem; font-size: 1.4rem; }
+    .bm-letterhead::before { left: 1rem; } .bm-letterhead::after { right: 1rem; transform: scaleX(-1); }
+    .bm-letterhead h1 { margin: 0; font-size: clamp(1.5rem, 6vw, 2.2rem); color: var(--banana); letter-spacing: 0.02em; }
+    .bm-letterhead .bm-sub { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.75; margin: 0.35rem 0 0; }
+    .bm-letterhead .bm-est { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--banana); opacity: 0.9; margin: 0.2rem 0 0; }
+
+    /* the security checkpoint */
+    .bm-gate { margin-top: 1.2rem; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 1.1rem; text-align: center; }
+    .bm-gate p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+    .bm-gate .bm-gate__row { display: flex; gap: 0.6rem; max-width: 420px; margin-inline: auto; }
+    .bm-gate input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border: 3px solid var(--ink); font-family: inherit; font-size: 0.95rem; border-radius: 2px; }
+    .bm-gate .bm-wrong { color: var(--hot); font-weight: 700; font-size: 0.8rem; margin-top: 0.6rem; }
+
+    /* toolbar */
+    .bm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 1.2rem 0 0.9rem; }
+    .bm-count { font-weight: 800; font-size: 0.85rem; margin-right: auto; }
+    .bm-chip {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.28rem 0.6rem;
+      font-weight: 800; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; border-radius: 2px;
+    }
+    .bm-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+    .bm-chip--ghost { border-style: dashed; opacity: 0.75; }
+
+    /* mail cards */
+    .bm-mail { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); margin: 0 0 0.9rem; position: relative; }
+    .bm-mail--unread { box-shadow: 4px 4px 0 var(--hot); }
+    .bm-mail__head { width: 100%; display: block; text-align: left; background: none; border: none; font-family: inherit; padding: 0.8rem 0.9rem; cursor: pointer; }
+    .bm-mail__top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; }
+    .bm-stamp {
+      border: 2px solid var(--ink); padding: 0.1rem 0.4rem; border-radius: 2px; opacity: 1;
+      background: var(--banana); transform: rotate(2deg); font-size: 0.58rem;
+    }
+    .bm-stamp--licensing { background: var(--hot); color: #fff; transform: rotate(-2deg); }
+    .bm-mail__from { font-weight: 800; font-size: 0.98rem; margin: 0.35rem 0 0; word-break: break-word; }
+    .bm-mail__from .bm-dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; background: var(--hot); margin-right: 0.4rem; vertical-align: 1px; }
+    .bm-mail__peek { font-size: 0.82rem; opacity: 0.7; margin: 0.25rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bm-mail__body { padding: 0 0.9rem 0.9rem; }
+    .bm-mail__msg { white-space: pre-wrap; font-family: inherit; font-size: 0.92rem; line-height: 1.55; margin: 0.2rem 0 0.9rem; border-top: 3px dashed rgba(17,17,17,0.15); padding-top: 0.8rem; word-break: break-word; }
+    .bm-mail__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .bm-btn {
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.8rem;
+      font-weight: 800; font-size: 0.78rem; cursor: pointer; border-radius: 2px; text-decoration: none; color: var(--ink);
+    }
+    .bm-btn--shred { background: var(--hot); color: #fff; }
+    .bm-btn--shred[data-arm="1"] { background: #111; color: var(--hot); }
+    .bm-mail--shredding { transition: transform 0.35s ease, opacity 0.35s ease; transform: translateX(40px) rotate(2deg); opacity: 0; }
+
+    .bm-empty { text-align: center; padding: 2.5rem 1rem; border: 3px dashed rgba(17,17,17,0.3); border-radius: 4px; }
+    .bm-empty .bm-big { font-size: 2rem; }
+    .bm-empty p { margin: 0.4rem 0 0; font-weight: 700; opacity: 0.7; }
+
+    .bm-fine { text-align: center; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; margin-top: 2rem; line-height: 1.8; }
+    @media (max-width: 480px) { .bm-count { flex-basis: 100%; } }
+
+    /* DEPARTMENTS — mail | gallery inbox, one roof */
+    .bm-tabs { display: flex; gap: 0.5rem; margin-top: 1.2rem; }
+    .bm-tab {
+      flex: 1; border: var(--line); background: var(--paper); padding: 0.55rem 0.6rem;
+      font-family: inherit; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.06em;
+      text-transform: uppercase; cursor: pointer; border-radius: 2px;
+    }
+    .bm-tab[aria-selected="true"] { background: var(--ink); color: var(--banana); }
+    .bm-tab .bm-badge { display: inline-block; min-width: 1.2em; padding: 0 0.25em; border-radius: 999px; background: var(--hot); color: #fff; font-size: 0.72rem; margin-left: 0.3rem; }
+
+    /* gallery submission cards */
+    .bm-pend { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); margin: 0 0 0.9rem; padding: 0.8rem 0.9rem; display: flex; gap: 0.9rem; }
+    .bm-pend__img {
+      flex: 0 0 132px; width: 132px; height: 132px; border: 3px solid var(--ink);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 18px 18px;
+    }
+    .bm-pend__img img { max-width: 94%; max-height: 94%; }
+    .bm-pend__meta { flex: 1; min-width: 0; }
+    .bm-pend__meta input {
+      width: 100%; box-sizing: border-box; border: 3px solid var(--ink); padding: 0.45rem 0.55rem;
+      font-family: inherit; font-weight: 700; font-size: 0.9rem; border-radius: 2px;
+    }
+    .bm-pend__line { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6; margin: 0.4rem 0 0.6rem; }
+    .bm-btn--hang { background: var(--banana); }
+    .bm-gkey { margin-top: 1.2rem; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 1.1rem; text-align: center; }
+    .bm-gkey p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+    .bm-gkey .bm-gate__row { display: flex; gap: 0.6rem; max-width: 460px; margin-inline: auto; }
+    .bm-gkey input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border: 3px solid var(--ink); font-family: inherit; font-size: 0.95rem; border-radius: 2px; }
+    @media (max-width: 560px) { .bm-pend { flex-direction: column; } .bm-pend__img { width: 100%; flex-basis: auto; height: 180px; } }
+
+    /* the LIVE catalogue — compact rows, built for hundreds */
+    .bm-livetools { gap: 0.5rem; }
+    .bm-livesearch { flex: 1 1 220px; min-width: 0; border: 3px solid var(--ink); padding: 0.45rem 0.6rem; font-family: inherit; font-size: 0.85rem; border-radius: 2px; }
+    .bm-livesort { border: 3px solid var(--ink); padding: 0.4rem 0.45rem; font-family: inherit; font-weight: 700; font-size: 0.72rem; background: var(--paper); border-radius: 2px; }
+    .bm-livenote { font-size: 0.68rem; opacity: 0.6; font-weight: 700; margin: 0 0 0.8rem; }
+    .bm-live { display: flex; gap: 0.7rem; align-items: flex-start; border: var(--line); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); padding: 0.6rem 0.7rem; margin-bottom: 0.6rem; }
+    .bm-live__img {
+      flex: 0 0 72px; width: 72px; height: 72px; border: 2px solid var(--ink);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 14px 14px;
+    }
+    .bm-live__img img { max-width: 94%; max-height: 94%; }
+    .bm-live__meta { flex: 1; min-width: 0; display: grid; gap: 0.4rem; }
+    .bm-live__meta input { width: 100%; box-sizing: border-box; border: 2px solid var(--ink); padding: 0.35rem 0.5rem; font-family: inherit; font-size: 0.82rem; border-radius: 2px; }
+    .bm-live__row2 { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .bm-live__row2 input { flex: 1; min-width: 130px; }
+    .bm-live__foot { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.75; }
+    .bm-live__foot a { color: var(--ink); }
+    .bm-live__save { margin-left: auto; }
+    .bm-live--dirty { box-shadow: 3px 3px 0 var(--hot); }
+    @media (max-width: 560px) { .bm-live { flex-wrap: wrap; } }
+
+    /* 🌍 the world desk: two big honest numbers */
+    .bm-worldcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin: 0 0 0.9rem; }
+    .bm-worldcard {
+      border: var(--line); background: var(--banana); box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.9rem; text-align: center; display: grid; gap: 0.2rem;
+    }
+    .bm-worldcard b { font-size: 2rem; line-height: 1; }
+    .bm-worldcard span { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  </style><style>.ft-cols[data-astro-cid-sz7xmlte]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.6rem 2rem;max-width:880px;margin:1.8rem auto 1.6rem;text-align:left}.ft-col[data-astro-cid-sz7xmlte] h3[data-astro-cid-sz7xmlte]{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;opacity:.55;margin:0 0 .6rem}.ft-col[data-astro-cid-sz7xmlte] a[data-astro-cid-sz7xmlte]{display:block;margin-bottom:.45rem;line-height:1.35}@media(max-width:719px){.ft-cols[data-astro-cid-sz7xmlte]{grid-template-columns:repeat(2,minmax(0,1fr));max-width:26rem}}
+</style></head> <body> <a class="skip-link" href="#main">Skip to content</a>  <header class="nav"> <a class="nav__brand" href="/">TRYM<span>STENE</span></a> <button class="nav__toggle" aria-label="Menu" aria-expanded="false"> <span class="nav__ic nav__ic--open"><svg class="pxi" viewBox="0 0 90 80" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="90" height="10" fill="currentColor"></rect><rect x="0" y="10" width="90" height="10" fill="currentColor"></rect><rect x="0" y="30" width="90" height="10" fill="currentColor"></rect><rect x="0" y="40" width="90" height="10" fill="currentColor"></rect><rect x="0" y="60" width="90" height="10" fill="currentColor"></rect><rect x="0" y="70" width="90" height="10" fill="currentColor"></rect> </svg></span> <span class="nav__ic nav__ic--close"><svg class="pxi" viewBox="0 0 90 90" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="20" height="10" fill="currentColor"></rect><rect x="70" y="0" width="20" height="10" fill="currentColor"></rect><rect x="0" y="10" width="30" height="10" fill="currentColor"></rect><rect x="60" y="10" width="30" height="10" fill="currentColor"></rect><rect x="10" y="20" width="30" height="10" fill="currentColor"></rect><rect x="50" y="20" width="30" height="10" fill="currentColor"></rect><rect x="20" y="30" width="50" height="10" fill="currentColor"></rect><rect x="30" y="40" width="30" height="10" fill="currentColor"></rect><rect x="20" y="50" width="50" height="10" fill="currentColor"></rect><rect x="10" y="60" width="30" height="10" fill="currentColor"></rect><rect x="50" y="60" width="30" height="10" fill="currentColor"></rect><rect x="0" y="70" width="30" height="10" fill="currentColor"></rect><rect x="60" y="70" width="30" height="10" fill="currentColor"></rect><rect x="0" y="80" width="20" height="10" fill="currentColor"></rect><rect x="70" y="80" width="20" height="10" fill="currentColor"></rect> </svg></span> </button> <nav class="nav__links"> <div class="nav__group nav__group--banana"> <a href="/dancing-banana-gif-meme/">Download</a> <a href="/make-a-banana/" data-place="nav">Make a Banana</a> <a href="/forge/">Pixel Forge</a> <a href="/rave/">Join the Rave</a>  <a href="/banana-memes/">Banana Gallery</a> <a href="/shop/">Banana Shop</a> <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a> </div> </nav> <div class="nav__backdrop"></div> </header> <main id="main" tabindex="-1">    <div class="bm-wrap"> <header class="bm-letterhead"> <h1>BANANA MAIL™</h1> <p class="bm-sub">World administration &amp; executive correspondence</p> <p class="bm-est">First-class potassium post · est. 1999</p> </header> <div class="bm-gate" id="bmGate" hidden> <p><b>🛂 SECURITY CHECKPOINT</b><br>Authorized banana personnel only. Present your credentials.</p> <div class="bm-gate__row"> <input id="bmToken" type="password" placeholder="inbox token" autocomplete="off" aria-label="Inbox token"> <button class="bm-btn" id="bmClockIn" type="button">Clock in →</button> </div> <p class="bm-wrong" id="bmWrong" hidden>❌ Credentials rejected. The bouncer remembers faces.</p> </div> <div id="bmApp" hidden> <div class="bm-tabs" role="tablist" aria-label="Departments"> <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">✉ Mail room</button> <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery inbox<span class="bm-badge" id="bmGalBadge" hidden></span></button> <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">🪩 Rave names</button> <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Item drops<span class="bm-badge" id="bmItemsBadge" hidden></span></button> <button class="bm-tab" id="bmTabWorld" role="tab" aria-selected="false" type="button">🌍 World</button> </div> <div id="bmPaneMail"> <div class="bm-bar"> <span class="bm-count" id="bmCount"></span> <span id="bmChips"></span> <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button> </div> <div id="bmList"></div> <!-- 🗑 the spam quarantine — raw data for the once-in-a-while inspect,
+             never part of the daily mail. Lazy-loaded on first open. --> <div style="margin-top:1.2rem;"> <button class="bm-chip bm-chip--ghost" id="bmSpamToggle" type="button">🗑 spam quarantine</button> <div id="bmSpamPane" hidden> <p class="bm-livenote">Messages the gates caught (fake “✓ sent” shown to the sender, raw data held here
+              30 days, newest 300). The tag says which trap fired — <b>honeypot</b> with a real-looking name/email
+              usually means a human’s autofill tripped it.</p> <div id="bmSpamList"></div> </div> </div> </div> <div id="bmPaneGal" hidden> <div class="bm-gkey" id="bmGkeyGate" hidden> <p><b>🖼 CURATION DESK</b><br>The gallery inbox needs its own key (it lives in tools/gallery.local.json).</p> <div class="bm-gate__row"> <input id="bmGkey" type="password" placeholder="gallery key" autocomplete="off" aria-label="Gallery key"> <button class="bm-btn" id="bmGkeySave" type="button">Unlock →</button> </div> </div> <div class="bm-bar" id="bmGalModes" hidden> <button class="bm-chip" id="bmModePending" aria-pressed="true" type="button">📥 pending</button> <button class="bm-chip" id="bmModeLive" aria-pressed="false" type="button">🖼 live</button> </div> <div id="bmGalPending"> <div class="bm-bar"><span class="bm-count" id="bmGalCount"></span></div> <div id="bmGalList"></div> </div> <div id="bmGalLive" hidden> <div class="bm-bar bm-livetools"> <input class="bm-livesearch" id="bmLiveQ" type="search" placeholder="🔍 search title / creator / tag / slug…" aria-label="Search submissions"> <span id="bmLiveChips"></span> <select class="bm-livesort" id="bmLiveSort" aria-label="Sort"> <option value="new">newest first</option> <option value="old">oldest first</option> <option value="az">title A–Z</option> </select> </div> <p class="bm-livenote">Edits save instantly to the index — the live pages pick them up on the next site build (any push, or tonight's cron).</p> <div id="bmLiveList"></div> </div> </div> <!-- 🪩 RAVE NAMES — the strike desk (Trym's quick swipe on floor names) --> <div id="bmPaneRave" hidden> <div class="bm-bar"> <button class="bm-chip" id="bmRaveRefresh" type="button">↻ refresh</button> <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word/fragment manually…" style="max-width:280px;" aria-label="Word or fragment to strike"> <button class="bm-chip" id="bmStrikeAdd" type="button">🔨 strike</button> </div> <p class="bm-livenote">Names pass the family filter at the door; this desk is the backstop for the clever ones.
+          Striking hides the name floor-wide INSTANTLY (their banana falls back to its outfit-name) and blocks it going forward.</p> <div id="bmRaveList"><p class="bm-livenote">Press refresh to load the ledger.</p></div> </div> <!-- 🎁 ITEM DROPS — the ownership-stack curation desk: forge-made
+           wearables submitted to the club. Approve = it enters the catalog and
+           becomes a rave drop with the maker's name riding it. --> <div id="bmPaneItems" hidden> <div class="bm-bar"><span class="bm-count" id="bmItemsCount"></span> <button class="bm-chip" id="bmItemsRefresh" type="button">↻ refresh</button></div> <p class="bm-livenote">Submitted items previewed ON the banana. Approve = into the catalog → it drops at the rave,
+          the maker's name rides it. The catalog list below shows what's live — retire anything that's run its course.</p> <div id="bmItemsList"><p class="bm-livenote">Loading…</p></div> <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">📦 In the catalog</h3> <div id="bmCatList"><p class="bm-livenote">Loading…</p></div> </div> <!-- 🌍 WORLD — the head-office window: live room headcounts + doors.
+           Deep analytics stay on Banana Pulse (Trym's token bookmark). --> <div id="bmPaneWorld" hidden> <div class="bm-bar"> <span class="bm-count">🌍 the world right now</span> <button class="bm-chip" id="bmWorldRefresh" type="button">↻ refresh</button> </div> <div class="bm-worldcards"> <div class="bm-worldcard"><b id="bmWorldClub">–</b><span>🪩 on the floor</span></div> <div class="bm-worldcard"><b id="bmWorldPark">–</b><span>🌳 in the park</span></div> </div> <p class="bm-livenote">Live headcounts straight from the rooms (auto-refreshes while this desk is open).
+          Traffic, funnels and money live on <b>Banana Pulse</b> — your bookmark.</p> <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🚪 doors</h3> <div class="bm-bar" style="margin-top:0;"> <a class="bm-chip" href="/rave/">🪩 the club</a> <a class="bm-chip" href="/banana-stand/">🍌 the stand</a> <a class="bm-chip" href="/forge/">🎨 the forge</a> <a class="bm-chip" href="/banana-memes/">🖼 the gallery</a> <a class="bm-chip" href="/pass/">🎫 the pass</a> </div> <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🗄 the pass ledger</h3> <div class="bm-gate__row" style="max-width:420px;"> <input id="bmLedgerKey" type="password" placeholder="pass admin key" autocomplete="off" aria-label="Pass admin key"> <button class="bm-btn" id="bmLedgerLoad" type="button">Open →</button> </div> <p class="bm-livenote">Synced passes only (passkey-linked) — coins, gear, badges, rhythm; read-only.
+          Gated by the <b>PASS_ADMIN_KEY</b> secret on the pass worker — yours to set once:
+<code>cd worker-pass</code> then <code>npx wrangler secret put PASS_ADMIN_KEY</code>.</p> <div id="bmLedgerList"></div> </div> <p class="bm-fine">
+BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
+Unauthorized peeling is prohibited and punishable by dance-off.<br> <button class="bm-chip bm-chip--ghost" id="bmLogout" type="button" style="margin-top:0.5rem;">🚪 clock out</button> </p> </div> </div> <script type="module" src="/_astro/inbox.astro_astro_type_script_index_0_lang.2I0s3kff.js"></script>  </main>  <script src="/js/main.js"></script> </body> </html>

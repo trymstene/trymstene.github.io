@@ -1,0 +1,1 @@
+import{f as t,b as a}from"./forge-format.BXdV0KCU.js";function s(o){try{const r=typeof o=="string"?JSON.parse(o.replace(/^wear:/,"")):o;if(!r||!r.forge)return null;const e=t(r.forge);if(!e)return null;const n=a(e.frames[0],e.w,e.h,e.palette);return n?{art:n.svg,anchor:r.anchor,hand:r.hand||void 0,ox:r.ox||0,oy:r.oy||0,scale:r.scale||1}:null}catch{return null}}export{s as w};

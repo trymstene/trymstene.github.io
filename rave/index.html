@@ -1,0 +1,1212 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="canonical" href="https://trymstene.com/rave/"><title>The Banana Rave — everyone dances together</title><meta name="description" content="A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others."><meta name="robots" content="index,follow,max-image-preview:large"><meta name="google-site-verification" content="aI-qTkBS_ACkw7mXPWsadMKDL6ASRH6QY5dtVw-84lI"><meta property="og:type" content="website"><meta property="og:title" content="The Banana Rave 🪩"><meta property="og:description" content="Every visitor's banana, dancing together in perfect sync. Right now. Join the floor."><meta property="og:url" content="https://trymstene.com/rave/"><meta property="og:image" content="https://trymstene.com/assets/og/builder.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="The Banana Rave 🪩"><meta property="og:site_name" content="Trym Stene — the banana guy"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><!-- self-hosted fonts: no third-party round trips (perf + GDPR) --><link rel="preload" href="/fonts/spacegrotesk-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/archivoblack-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/styles.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"The Banana Rave","url":"https://trymstene.com/rave/","applicationCategory":"EntertainmentApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@id":"https://trymstene.com/#trym"},"description":"A realtime dance floor for custom dancing bananas, from the creator of the original 1999 GIF."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the banana rave really live?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every banana on the floor is a real visitor, right now. The only characters who are not visitors are staff — Barty the bartender and the DJ — and they have jobs."}},{"@type":"Question","name":"Why does everyone dance in perfect sync?","acceptedAnswer":{"@type":"Answer","text":"There is only one song and it never stops. Every banana on Earth dances on the same wall-clock beat — join from two devices and watch them match."}},{"@type":"Question","name":"Do I need an account to join the rave?","acceptedAnswer":{"@type":"Answer","text":"No account, no cost. Your banana walks in as you dressed it in the builder — or a fresh one is generated for you."}},{"@type":"Question","name":"What is a nightshift at the banana rave?","acceptedAnswer":{"@type":"Answer","text":"Barty always needs a hand with some little chore between the songs — sweeping peels, fetching the lost vinyl, calming the monkey. Finish his requests and he stamps your nightshift; five shifts make you a regular."}},{"@type":"Question","name":"What can I earn at the banana rave?","acceptedAnswer":{"@type":"Answer","text":"Badges on your banana pass, permanent gear like the glowstick (30 minutes on the floor) and the golden banana trophy, the fire emote from the stage, tonight’s wearable drop — one item per night, yours forever once caught — and, after five nightshifts, your own stool at the bar."}},{"@type":"Question","name":"Where do the rave’s wearable drops come from?","acceptedAnswer":{"@type":"Answer","text":"Visitors draw them. Anyone can draw an item on the banana in the site’s pixel Forge and submit it; approved items drop on the dance floor with the maker’s name attached, and catching one makes it yours forever."}}]}</script><link rel="preload" as="image" href="/assets/banana-dance.png?v=6"><link rel="preconnect" href="https://banana-rave.trymstene.workers.dev"><style>
+    /* the whole page lives in the dark — the guide sections below the floor
+       continue the hall, and no paper background can ever peek out the bottom */
+    body { background: #0d0b14; }
+    /* ---- the guide below the floor ---- */
+    .rvg { max-width: 880px; margin: 0 auto; padding: 1rem 0 3rem; color: #fffdf5; }
+    .rvg__block { margin-top: 3.2rem; }
+    .rvg__kicker { color: #ff4d9d; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
+    .rvg__block h2 { font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: clamp(1.4rem, 4vw, 2rem); margin: 0 0 0.9rem; }
+    .rvg__block p, .rvg__list li { line-height: 1.65; font-size: 0.98rem; }
+    .rvg__block a { color: #ffe135; }
+    .rvg__sub { opacity: 0.75; font-size: 0.9rem !important; }
+    .rvg__list { padding-left: 1.1rem; display: grid; gap: 0.55rem; }
+    .rvg__list--clock { list-style: none; padding-left: 0; }
+    .rvg__list--clock li { border-left: 4px solid #ffe135; padding-left: 0.8rem; }
+    .rvg__grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); margin-top: 1.4rem; }
+    .rvg__card { background: #17121f; border: 3px solid #ffe135; box-shadow: 6px 6px 0 #000; padding: 1rem; }
+    .rvg__thumb { height: 84px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.6rem; }
+    .rvg__thumb img { image-rendering: pixelated; max-height: 84px; max-width: 120px; width: auto; height: auto; }
+    .rvg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: #ffe135; margin: 0 0 0.4rem; text-align: center; }
+    .rvg__card p { margin: 0; font-size: 0.86rem; line-height: 1.55; opacity: 0.92; }
+    .rvg__faq h3 { font-family: "Archivo Black", sans-serif; font-size: 1rem; color: #ffe135; margin: 1.3rem 0 0.3rem; }
+    .rvg__faq p { margin: 0; }
+    .rvg__doors { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.2rem; }
+    .rvg__doors a { border: 3px solid #ffe135; padding: 0.6rem 0.9rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; color: #ffe135; background: #17121f; box-shadow: 4px 4px 0 #000; }
+    .rvg__doors a:hover { background: #ffe135; color: #111; }
+    @media (max-width: 940px) { .rvg { padding-inline: 1.2rem; } }
+    /* isolate = nothing inside the rave (raver z-indexes, drop flash) can ever
+       paint over the sticky nav / slide menu (iOS Safari bug Trym caught) */
+    .rv-hall { background: #0d0b14; color: #fffdf5; padding: 1.6rem 1rem 2.5rem; position: relative; isolation: isolate; z-index: 0; }
+    .rv-head { max-width: 1100px; margin: 0 auto 1rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem 1.4rem; }
+    .rv-head h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.6rem); color: #ffe135; }
+    .rv-live { color: #37d67a; font-weight: 700; }
+    .rv-status { font-size: 0.85rem; opacity: 0.85; }
+    .rv-sub { max-width: 1100px; margin: 0 auto 1.2rem; font-size: 0.92rem; opacity: 0.75; }
+
+    .rv-stagewrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 1rem; grid-template-columns: 1fr; }
+    @media (min-width: 980px) { .rv-stagewrap { grid-template-columns: 1fr 240px; align-items: start; } }
+
+    /* the floor: pixel checkerboard that pulses */
+    .rv-club { position: relative; border: 4px solid #ffe135; box-shadow: 8px 8px 0 #000; overflow: hidden; }
+    /* the stage: Sentry-style DJ desk front-centre, speakers flanking,
+       earned companions dancing on a line behind the DJ */
+    .rv-booth { position: relative; background: #17121f; border-bottom: 4px solid #0d0b14; min-height: 164px; }
+    /* the stage line: joined bananas dance BESIDE the DJ (a centre gap keeps
+       his spot). The first up there takes the left slot; more fill in around
+       him (he stays centred, z-index 2, over the line at z-index 1). */
+    .rv-stage {
+      position: absolute; left: 0; right: 0; bottom: 4px;
+      display: flex; justify-content: center; align-items: flex-end; gap: 10px; z-index: 1;
+    }
+    .rv-stage .rv-raver { position: relative; transform: none; left: auto; top: auto; }
+    .rv-stage__gap { flex: none; width: 150px; } /* the DJ stands here — keep the middle clear (a bit wide so the first up there sits toward the speaker) */
+    .rv-stage .rv-raver canvas { width: 96px !important; height: 96px !important; } /* same size as the DJ */
+    /* stage members glow under the rig — being up there has to LOOK special */
+    .rv-stage .rv-raver canvas { filter: drop-shadow(0 0 7px #ffe135) !important; }
+    .rv-djgroup { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 150px; z-index: 2; }
+    .rv-djgroup canvas { width: 96px; height: 96px; display: block; margin: 0 auto -36px; position: relative; z-index: 1; }
+    .rv-desk {
+      position: relative; z-index: 2; height: 40px;
+      background: #241a38; border: 3px solid #0d0b14; box-shadow: inset 0 4px 0 #2f2250;
+    }
+    .rv-desk::before, .rv-desk::after { content: ''; position: absolute; top: 7px; width: 6px; height: 6px; background: #b388ff; box-shadow: 0 10px 0 #37d67a; }
+    .rv-desk::before { left: 8px; }
+    .rv-desk::after { right: 8px; }
+    .rv-desk__label {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      background: #ffe135; color: #111; font-weight: 800; font-size: 0.58rem;
+      letter-spacing: 0.08em; padding: 0.18rem 0.45rem; text-transform: uppercase; white-space: nowrap;
+    }
+    /* the INVITE A FRIEND neon sign — wall decor that copies the invite link.
+       Flickers like cheap neon; pulses bright when Barty points at it.
+       z 1 = BEHIND the speakers/pyro (z 2) — tucked into the stage clutter
+       like a real club wall sign (Trym: "will look nice and natural"). */
+    .rv-sign {
+      position: absolute; top: 8px; right: 10px; z-index: 1;
+      background: rgba(13, 11, 20, 0.55); border: 3px solid #ff4d9d; color: #ff4d9d;
+      font: inherit; font-weight: 800; font-size: 0.72rem; line-height: 1.3;
+      letter-spacing: 0.12em; padding: 6px 10px; cursor: pointer;
+      transform: rotate(-4deg); text-shadow: 0 0 6px rgba(255, 77, 157, 0.8);
+      box-shadow: 0 0 10px rgba(255, 77, 157, 0.35), inset 0 0 8px rgba(255, 77, 157, 0.18);
+      animation: rvNeonFlicker 5s steps(1) infinite;
+    }
+    /* hover-capable pointers only — iOS keeps :hover stuck after a tap */
+    @media (hover: hover) { .rv-sign:hover { color: #ffd7e8; border-color: #ffd7e8; } }
+    .rv-sign--pulse { animation: rvNeonPulse 0.8s ease-in-out 6; }
+    @keyframes rvNeonFlicker {
+      0%, 100% { opacity: 0.85; } 7% { opacity: 0.5; } 9% { opacity: 0.85; }
+      54% { opacity: 0.85; } 55% { opacity: 0.55; } 57% { opacity: 0.85; }
+    }
+    @keyframes rvNeonPulse {
+      50% { color: #fff; border-color: #fff; transform: rotate(-4deg) scale(1.12);
+            box-shadow: 0 0 18px rgba(255, 77, 157, 0.9); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-sign, .rv-sign--pulse { animation: none; } }
+    .rv-speaker { position: absolute; bottom: 0; width: 50px; height: 68px; z-index: 2; shape-rendering: crispEdges; }
+    .rv-speaker--l { left: calc(50% - 134px); }
+    .rv-speaker--r { right: calc(50% - 134px); }
+    body.rv-drop .rv-speaker { animation: rvPump 0.24s steps(2) infinite; transform-origin: bottom center; }
+    @keyframes rvPump { 50% { transform: scaleY(1.07) scaleX(1.05); } }
+    /* THE CONES: round drivers that thump like bass is pouring out — always
+       pulsing, the two per cabinet out of phase, L/R not quite synced. */
+    .rv-spkcone { transform-box: fill-box; transform-origin: center; animation: rvBass 0.46s ease-in-out infinite; }
+    .rv-spkcone circle { shape-rendering: geometricPrecision; }
+    .rv-spkcone--b { animation-delay: 0.23s; }
+    .rv-speaker--r .rv-spkcone { animation-delay: 0.12s; }
+    .rv-speaker--r .rv-spkcone--b { animation-delay: 0.34s; }
+    @keyframes rvBass { 0%, 100% { transform: scale(0.82); } 45% { transform: scale(1.12); } }
+    body.rv-drop .rv-spkcone { animation-duration: 0.19s; } /* the drop hits harder + faster */
+    @media (prefers-reduced-motion: reduce) {
+      body.rv-drop .rv-speaker, .rv-spkcone, .rv-mnote, .rv-beam, .rv-dropflash span { animation: none; }
+      .rv-pyro { display: none !important; }
+      .rv-mnote { opacity: 0.5; }
+    }
+
+    /* stage production: notes drift from the speakers; beams sweep always;
+       pyro fountains fire during THE DROP (which now flashes ABOVE the DJ) */
+    .rv-mnote { /* NOT .rv-note — that's the panel's text note */
+      position: absolute; bottom: 44px; font-size: 0.95rem; color: #b388ff; opacity: 0;
+      z-index: 3; pointer-events: none; animation: rvNote 2.6s linear infinite;
+    }
+    .rv-mnote--1 { left: calc(50% - 152px); }
+    .rv-mnote--2 { left: calc(50% - 118px); color: #4db8ff; animation-delay: 1.2s; }
+    .rv-mnote--3 { right: calc(50% - 152px); animation-delay: 0.6s; }
+    .rv-mnote--4 { right: calc(50% - 118px); color: #4db8ff; animation-delay: 1.8s; }
+    @keyframes rvNote {
+      0% { transform: translateY(0); opacity: 0; }
+      15% { opacity: 1; }
+      100% { transform: translateY(-48px); opacity: 0; }
+    }
+    .rv-beam {
+      position: absolute; top: 0; width: 44px; height: 100%; z-index: 0; pointer-events: none;
+      background: linear-gradient(rgba(255, 225, 53, 0.14), transparent 80%);
+      clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+      transform-origin: 50% 0; animation: rvBeam 3.4s steps(7) infinite alternate;
+    }
+    .rv-beam--l { left: 16%; }
+    .rv-beam--r { right: 16%; animation-delay: 1.7s; }
+    body.rv-drop .rv-beam { animation-duration: 0.5s; background: linear-gradient(rgba(255, 77, 109, 0.3), transparent 80%); }
+    @keyframes rvBeam { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+    /* pyro fountains: two-frame pixel flames (the old 6px gradient columns
+       read as glitches, not fire — Trym). Frames flip = flicker; the whole
+       flame bursts up from the floor on the drop. */
+    .rv-pyro {
+      position: absolute; bottom: 0; width: 34px; height: 60px; z-index: 1; pointer-events: none;
+      display: none; transform-origin: bottom;
+      filter: drop-shadow(0 0 8px rgba(255, 145, 40, 0.55));
+    }
+    .rv-pyro svg { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+    .rv-pyro__a { animation: rvTwinkleFlip 0.26s steps(1) infinite; }
+    .rv-pyro__b { animation: rvTwinkleFlip 0.26s steps(1) infinite; animation-delay: -0.13s; }
+    body.rv-drop .rv-pyro { display: block; animation: rvPyro 0.5s steps(4) infinite; }
+    .rv-pyro--1 { left: 7%; }
+    /* the inner pair anchors just OUTSIDE the speakers (which are centre-
+       anchored) — %-positions put them BEHIND the speakers on narrow booths */
+    .rv-pyro--2 { left: calc(50% - 172px); animation-delay: 0.15s; }
+    .rv-pyro--3 { right: calc(50% - 172px); animation-delay: 0.3s; }
+    .rv-pyro--4 { right: 7%; animation-delay: 0.1s; }
+    @media (max-width: 640px) {
+      /* a 375px booth holds TWO flames comfortably — four is a crowd */
+      .rv-pyro--2, .rv-pyro--3 { display: none !important; }
+    }
+    @keyframes rvPyro {
+      0% { transform: scaleY(0.35); }
+      60% { transform: scaleY(1); }
+      100% { transform: scaleY(0.8); }
+    }
+    /* THE CLUB SCREEN: the big LED wall behind the DJ (replaces the old EQ
+       bars — movement for movement's sake). Tomorrowland-style backdrop that
+       blinks silly rave-culture lines and, every few slides, a CLICKABLE house
+       ad (forge / shop / pass / make-a-banana…). z 0 = the very back wall, so
+       the invite sign (z1), the DJ (z2), the stage crowd (z1), beams + pyro all
+       read in FRONT of it. The message rotation lives in banana-rave.js. */
+    .rv-screen {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: 8px; bottom: 38px; width: min(94%, 660px); z-index: 0;
+      display: block; text-decoration: none; overflow: hidden; color: inherit;
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 4px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 4px),
+        radial-gradient(130% 100% at 50% 15%, #241a38 0%, #150f22 65%, #0c0913 100%);
+      border: 3px solid #2f2250;
+      box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.6), 0 0 16px rgba(120,235,255,0.10);
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* colours blink across the WHOLE panel: a shifting wash that hue-rotates.
+       Sits behind the text (content is z1) and never eats clicks. */
+    .rv-screen::after {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      mix-blend-mode: screen; opacity: 0.55;
+      background: linear-gradient(115deg, rgba(120,235,255,0.22), rgba(255,77,157,0.22) 40%, rgba(255,225,53,0.20) 70%, rgba(120,235,255,0.22));
+      background-size: 320% 320%;
+      animation: rvPanelWash 7s linear infinite;
+    }
+    @keyframes rvPanelWash {
+      0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+      100% { background-position: 100% 50%; filter: hue-rotate(360deg); }
+    }
+    .rv-screen__content {
+      position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; gap: 4px;
+      align-items: center; justify-content: center; text-align: center; padding: 4px 10px;
+      animation: rvScreenIn 0.45s ease;
+    }
+    /* BASE text — each style below overrides font / size / colour / position so
+       no two slides look alike; big ones overflow and the frame clips them. */
+    .rv-screen__text {
+      font-family: "Archivo Black", sans-serif; text-transform: uppercase; line-height: 1.02;
+      font-size: clamp(0.62rem, 2.6vw, 1.05rem); letter-spacing: 0.01em; max-width: 26ch;
+      color: #78ebff; text-shadow: 0 0 8px rgba(120,235,255,0.55), 0 0 2px rgba(255,255,255,0.6);
+    }
+    /* per-word colours (JS wraps words in .w0–.w4 for the stack + multi styles) */
+    .rv-screen__text .w0 { color: #78ebff; } .rv-screen__text .w1 { color: #ffe135; }
+    .rv-screen__text .w2 { color: #ff4d9d; } .rv-screen__text .w3 { color: #37d67a; }
+    .rv-screen__text .w4 { color: #b388ff; }
+
+    /* ---- THE STYLE PRESETS ---- */
+    /* giant — one huge line, clips the sides */
+    .rv-s-giant .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.7rem,9vw,3.6rem); line-height: 0.84; letter-spacing: 0.01em; max-width: none; }
+    /* stack — each word on its own big line, per-word colours, left-anchored */
+    .rv-s-stack { align-items: flex-start; justify-content: center; padding-left: 12px; }
+    .rv-s-stack .rv-screen__text { font-family: "Archivo Black",sans-serif; font-size: clamp(1.1rem,5vw,2.1rem); line-height: 0.94; text-align: left; max-width: none; }
+    .rv-s-stack .rv-screen__text span { display: block; }
+    /* mono — small terminal readout, top-left corner, green */
+    .rv-s-mono { align-items: flex-start; justify-content: flex-start; }
+    .rv-s-mono .rv-screen__text { font-family: "Space Grotesk",ui-monospace,monospace; font-weight: 800; text-transform: none; font-size: clamp(0.6rem,2.4vw,0.9rem); color: #37d67a; text-align: left; letter-spacing: 0; text-shadow: 0 0 7px rgba(55,214,122,0.6); }
+    .rv-s-mono .rv-screen__text::before { content: '> '; opacity: 0.7; }
+    /* rotate — tilted marquee, magenta, clips a corner */
+    .rv-s-rotate .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.5rem,7vw,3rem); transform: rotate(-7deg); color: #ff4d9d; line-height: 0.88; max-width: none; text-shadow: 0 0 9px rgba(255,77,157,0.6); }
+    /* wide — airy tracked-out caps, yellow */
+    .rv-s-wide .rv-screen__text { font-family: "Space Grotesk",sans-serif; font-weight: 800; font-size: clamp(0.8rem,3.2vw,1.35rem); letter-spacing: 0.34em; color: #ffe135; text-shadow: 0 0 8px rgba(255,225,53,0.5); }
+    /* multi — mid-big, every word a different colour */
+    .rv-s-multi .rv-screen__text { font-family: "Archivo Black",sans-serif; font-size: clamp(1rem,4.6vw,2rem); line-height: 0.96; max-width: none; }
+    .rv-s-multi .rv-screen__text span { display: inline-block; }
+    /* outline — hollow neon letters, huge, clips the sides */
+    .rv-s-outline .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.9rem,10vw,4rem); color: transparent; -webkit-text-stroke: 2px #78ebff; text-shadow: none; line-height: 0.82; max-width: none; }
+    /* jumboR — huge, shoved to the bottom-right, overflows */
+    .rv-s-jumboR { align-items: flex-end; justify-content: flex-end; }
+    .rv-s-jumboR .rv-screen__text { font-family: "Anton","Arial Black",sans-serif; font-size: clamp(1.6rem,8vw,3.4rem); color: #ffe135; text-align: right; line-height: 0.84; max-width: none; text-shadow: 0 0 9px rgba(255,225,53,0.5); }
+    /* blinkc — mid-big line that hard-blinks between two colours */
+    .rv-s-blinkc .rv-screen__text { font-family: "Archivo Black",sans-serif; font-size: clamp(1.1rem,5vw,2.1rem); animation: rvTextBlink 0.55s steps(1) infinite; line-height: 0.95; max-width: none; }
+    @keyframes rvTextBlink { 0%,49% { color: #78ebff; text-shadow: 0 0 9px rgba(120,235,255,0.6); } 50%,100% { color: #ff4d9d; text-shadow: 0 0 9px rgba(255,77,157,0.6); } }
+
+    .rv-screen__cta {
+      font-weight: 800; font-size: clamp(0.5rem, 1.7vw, 0.68rem); letter-spacing: 0.07em;
+      text-transform: uppercase; color: #111; background: #ffe135; padding: 2px 9px;
+      box-shadow: 0 0 10px rgba(255,225,53,0.5); font-family: "Space Grotesk", sans-serif;
+    }
+    @keyframes rvScreenIn { 0% { opacity: 0; } 35% { opacity: 0.35; } 55% { opacity: 0.9; } 68% { opacity: 0.5; } 100% { opacity: 1; } }
+    /* ad slides invite the tap (yellow headline, pointer); messages are read-only.
+       Placed AFTER the presets so the ad colour wins. */
+    .rv-screen--ad { cursor: pointer; }
+    .rv-screen--ad .rv-screen__text { color: #ffe135 !important; -webkit-text-stroke: 0; text-shadow: 0 0 9px rgba(255,225,53,0.55), 0 0 2px rgba(255,255,255,0.5) !important; }
+    .rv-screen--msg { cursor: default; }
+    @media (hover: hover) { .rv-screen--ad:hover { box-shadow: 0 0 0 2px #0d0b14, inset 0 0 22px rgba(0,0,0,0.5), 0 0 22px rgba(255,225,53,0.35); } }
+    /* THE DROP: the wall goes hot + frantic */
+    body.rv-drop .rv-screen {
+      border-color: #ff4d6d;
+      box-shadow: 0 0 0 2px #0d0b14, inset 0 0 26px rgba(255,77,109,0.25), 0 0 26px rgba(255,77,109,0.4);
+      animation: rvScreenDrop 0.3s steps(2) infinite;
+    }
+    body.rv-drop .rv-screen::after { opacity: 0.9; animation-duration: 2.5s; }
+    @keyframes rvScreenDrop { 50% { filter: brightness(1.4) hue-rotate(-10deg); } }
+    @media (max-width: 640px) {
+      .rv-screen { top: 6px; bottom: 30px; width: 94%; border-width: 2px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-screen__content, body.rv-drop .rv-screen, .rv-screen::after, .rv-s-blinkc .rv-screen__text { animation: none; }
+      .rv-pyro svg { animation: none; } .rv-pyro__b { opacity: 0; }
+    }
+
+    .rv-floor { position: relative; height: min(62vh, 560px); overflow: hidden; background: #161022; }
+    /* the world layer: ravers + checkerboard live here so the camera (translate+scale)
+       moves the floor WITH the crowd; screen-space chrome (drop flash, zoom btn) stays outside */
+    .rv-world {
+      position: absolute; inset: 0; transform-origin: 0 0;
+      background:
+        repeating-conic-gradient(#161022 0% 25%, #1d1530 0% 50%) 0 0 / 96px 96px;
+      image-rendering: pixelated;
+      will-change: transform; /* the follow-cam pans this layer every frame — keep it on the compositor */
+    }
+    body.rv-drop .rv-world {
+      background:
+        repeating-conic-gradient(#2a1650 0% 25%, #451d66 0% 50%) 0 0 / 96px 96px;
+      animation: rvStrobe 0.24s steps(2) infinite;
+    }
+    @keyframes rvStrobe { 50% { filter: hue-rotate(140deg) brightness(1.25); } }
+    @media (prefers-reduced-motion: reduce) { body.rv-drop .rv-world { animation: none; } }
+    /* the bar, tucked into the BOTTOM-LEFT corner of the world — down = nearer, so
+       you "come up to the bar" by dancing toward the viewer. Only the top of the
+       countertop peeks in (the rest bleeds off the corner). Barty — full
+       bottom-of-floor dancer size — stands on the NEAR side of the counter,
+       mirrored to face the stage; the floor edge crops his lower half. */
+    /* z 300 > any raver (they cap at 100 + y = ~192): a banana overlapping the bar
+       is standing further away on the floor, so the counter must cover it */
+    /* extended to fit the EXIT door in the corner (205 → 268); Barty + drinks +
+       broom slid right so their physical spots on the desk stay the same */
+    .rv-bar { position: absolute; left: -18px; bottom: -52px; width: 268px; z-index: 300; pointer-events: none; }
+    /* the EXIT to the banana stand — in the corner, BEHIND the desk (z 1 under
+       the counter's z 2, same layering trick as Barty's feet). Dormant until
+       the stand opens: unhidden by JS when STAND_OPEN. It lives inside an
+       aria-hidden world, so the accessible entrance is the field-guide link. */
+    .rv-exitdoor {
+      position: absolute; left: 22px; top: -88px; width: 56px; z-index: 1;
+      pointer-events: auto; cursor: pointer; text-decoration: none; text-align: center;
+    }
+    .rv-exitdoor[hidden] { display: none; }
+    .rv-exitdoor__sign {
+      display: inline-block; margin-bottom: 2px; background: #0f2417; color: #4ade80;
+      border: 2px solid #000; font-family: "Archivo Black", sans-serif; font-size: 9px;
+      letter-spacing: 2px; padding: 1px 5px; text-shadow: 0 0 6px #4ade80;
+    }
+    .rv-exitdoor svg { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    .rv-exitdoor:hover .rv-exitdoor__sign,
+    .rv-exitdoor:focus-visible .rv-exitdoor__sign { color: #86efac; text-shadow: 0 0 10px #4ade80; }
+    .rv-exitdoor:focus-visible { outline: 3px solid #ffe135; outline-offset: 2px; }
+    /* 🪙 BANANACOINS on the floor — PNG sprite sheets at native pixel scale,
+       CSS steps() animation (spin for one, twinkles for the piles) */
+    .rv-coin {
+      position: absolute; transform: translate(-50%, -50%); z-index: 6;
+      image-rendering: pixelated; background-repeat: no-repeat; pointer-events: none;
+      filter: drop-shadow(0 0 9px rgba(255, 220, 85, 0.55));
+    }
+    .rv-coin--1 { width: 44px; height: 44px; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 264px 44px; animation: rvCoinSpin 0.9s steps(6) infinite; }
+    @keyframes rvCoinSpin { to { background-position: -264px 0; } }
+    /* the piles twinkle AND wiggle at rest (two animations: sprite steps on
+       background-position + a slow rock on transform — the centering
+       translate must ride inside the rock's keyframes) */
+    .rv-coin--3 { width: 49px; height: 31px; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 196px 31px; animation: rvCoinTw3 2s steps(4) infinite, rvCoinRock 0.9s ease-in-out infinite; }
+    @keyframes rvCoinTw3 { to { background-position: -196px 0; } }
+    .rv-coin--5 { width: 59px; height: 43px; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 236px 43px; animation: rvCoinTw5 2.6s steps(4) infinite, rvCoinRock 1.1s ease-in-out 0.2s infinite; }
+    @keyframes rvCoinTw5 { to { background-position: -236px 0; } }
+    /* the pile wiggle: quick and eager — "come get it" (Trym: more tempting) */
+    @keyframes rvCoinRock {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-50%, -56%) rotate(-4deg); }
+      75% { transform: translate(-50%, -53%) rotate(4deg); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-coin { animation: none; } }
+    /* the wallet — a small chip docked on the jelly meter box */
+    .rv-wallet {
+      position: absolute; right: 0; bottom: calc(100% + 4px);
+      display: flex; align-items: center; gap: 5px;
+      background: #17121f; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+      padding: 2px 8px 2px 5px;
+    }
+    .rv-wallet[hidden] { display: none; }
+    .rv-wallet img { display: block; image-rendering: pixelated; }
+    .rv-wallet b { font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; }
+    .rv-wallet.is-bump { animation: rvWalletBump 0.45s steps(3); }
+    @keyframes rvWalletBump { 30% { transform: translateY(-5px) scale(1.12); } 70% { transform: translateY(0) scale(1); } }
+
+    /* stepping out: the same hard black cartridge-blink the stand uses */
+    .rv-cut {
+      position: fixed; inset: 0; background: #000; z-index: 200; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s steps(2);
+    }
+    .rv-cut.is-on { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .rv-cut { transition: none; } }
+    .rv-counter { display: block; width: 100%; height: auto; position: relative; z-index: 2; }
+    /* Barty is ABSOLUTE — fully independent of the counter. He was in flow before,
+       so raising him shrank the bottom-anchored block and the DESK sank instead
+       (Trym caught it in devtools: the desk followed him). top adjusts ONLY him. */
+    #rvBarman {
+      position: absolute; top: -91px; left: 104px; width: 150px; height: 150px;
+      z-index: 3; image-rendering: pixelated;
+    }
+    /* beer at HALF size — 32px read as "a bucket of beer" next to Barty (Trym);
+       top keeps its bottom seated on the countertop band (nudged 2px up) */
+    .rv-counterbeer { position: absolute; width: 18px; height: auto; left: 81%; top: -10px; z-index: 4; }
+    .rv-counterbeer--quest { left: 67%; filter: drop-shadow(0 0 5px rgba(255, 225, 53, 0.6)); } /* the house pour glows a little — it's YOURS */
+    /* Barty's special of the window: the cocktail sits where the beer sits —
+       38% landed ON Barty and overflowed him (Trym, iOS). Beer + special never
+       show at the same time (happy hour vs specials window), so they share the
+       spot. NO bob — drinks on a counter SIT (only floor items dance). */
+    .rv-special { position: absolute; width: 26px; left: 81%; top: -28px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 6px rgba(120, 235, 255, 0.5)); }
+    .rv-special[hidden] { display: none; }
+    .rv-special svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .rv-bubble {
+      position: absolute; bottom: calc(100% + 54px); left: 68%; transform: translateX(-50%);
+      min-width: 150px; max-width: 210px; z-index: 5; text-align: center;
+      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
+      font-size: 0.58rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+      line-height: 1.5; padding: 0.4rem 0.5rem;
+    }
+    /* stepped pixel tail pointing down at Barty (two shrinking steps, no rotation) */
+    .rv-bubble::before {
+      content: ''; position: absolute; top: 100%; left: 30px; width: 14px; height: 6px;
+      background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111;
+    }
+    .rv-bubble::after {
+      content: ''; position: absolute; top: calc(100% + 6px); left: 34px; width: 6px; height: 6px;
+      background: #fffdf5; border-left: 3px solid #111; border-right: 3px solid #111; border-bottom: 3px solid #111;
+    }
+    /* quest bubbles go YELLOW — Barty means business; white stays chatter */
+    .rv-bubble--quest, .rv-bubble--quest::before, .rv-bubble--quest::after { background: #ffe135; }
+    /* the under-the-breath bubble: smaller, dimmer — the dark drip lands a
+       beat after the cheer, stand-up timing */
+    .rv-bubble--mutter { font-size: 0.5rem; color: #55524a; background: #eae7db; min-width: 110px; }
+    .rv-bubble--mutter::before, .rv-bubble--mutter::after { background: #eae7db; }
+    /* phones: Barty pipes down a notch — the bubbles ate too much floor */
+    @media (max-width: 640px) {
+      .rv-bubble { font-size: 0.52rem; max-width: 180px; }
+      .rv-bubble--mutter { font-size: 0.46rem; }
+    }
+
+    /* floor life: light trails, the wandering spotlight, the lost vinyl */
+    .rv-trails { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; image-rendering: pixelated; }
+    .rv-spot {
+      position: absolute; width: 200px; height: 160px; transform: translate(-50%, -50%);
+      z-index: 8; pointer-events: none;
+      background: radial-gradient(closest-side, rgba(255, 225, 53, 0.3), rgba(255, 225, 53, 0.12) 55%, transparent 72%);
+    }
+    .rv-spot[hidden] { display: none; }
+    .rv-lit canvas { filter: drop-shadow(0 0 10px #ffe135) drop-shadow(0 0 3px #fffdf5); }
+    .rv-raver--me.rv-lit canvas { filter: drop-shadow(0 0 6px #ffe135) drop-shadow(0 0 12px #fffdf5); }
+    /* floor items (vinyl, hot sauce): a soft glow + beat-bob so they beg to be grabbed */
+    .rv-item {
+      position: absolute; width: 36px; height: 36px; transform: translate(-50%, -50%);
+      z-index: 9; image-rendering: pixelated; pointer-events: none;
+      filter: drop-shadow(0 0 7px rgba(255, 225, 53, 0.45));
+      animation: rvItemBob 0.8s steps(2) infinite;
+    }
+    .rv-item--tall { width: 26px; height: 39px; }
+    .rv-item--gold { width: 28px; height: 49px; filter: drop-shadow(0 0 10px rgba(255, 225, 53, 0.85)) drop-shadow(0 0 3px #fffdf5); } /* 8:14 — the v3 upright banana with its pointy stem */
+    .rv-item svg { width: 100%; height: 100%; }
+    /* 🎧 THE DROP: a rave-exclusive wearable, glowing cyan with a NEW flag so it
+       reads as "grab this, it's special" — never a snack. Sized to the DJ
+       headphones' 7:6; revisit if a taller drop ever leads the lineup. */
+    .rv-gift {
+      width: 50px; height: 43px;
+      filter: drop-shadow(0 0 9px rgba(34, 211, 238, 0.95)) drop-shadow(0 0 3px #fffdf5);
+      animation: rvGiftBob 0.7s steps(2) infinite; overflow: visible;
+    }
+    .rv-gift::after {
+      content: 'NEW'; position: absolute; left: 50%; top: -13px; transform: translateX(-50%);
+      font-family: inherit; font-size: 8px; font-weight: 900; letter-spacing: 0.06em; line-height: 1.4;
+      color: #06131a; background: #22d3ee; border: 1.5px solid #06131a; padding: 0 3px;
+      box-shadow: 0 0 6px rgba(34, 211, 238, 0.9);
+    }
+    @keyframes rvGiftBob { 50% { transform: translate(-50%, -60%) scale(1.12); } }
+    /* conveyor item sizes by kind (sprites have different aspect ratios) */
+    .rv-item[data-kind="sauce"], .rv-item[data-kind="fizz"], .rv-item[data-kind="balloon"] { width: 26px; height: 39px; }
+    .rv-item[data-kind="zap"] { width: 28px; height: 39px; } /* the loose cable is 10:14 */
+    .rv-item[data-kind="candy"] { width: 38px; height: 26px; }
+    .rv-item[data-kind="pizza"] { width: 32px; height: 32px; }
+    .rv-item[data-kind="zap"] { filter: drop-shadow(0 0 8px rgba(120, 235, 255, 0.7)); }
+    /* the twinkle: the next item announces its spot 4s early — race it.
+       CYAN, not yellow: in pellet-gold it read as an uncollectable pellet */
+    /* the SPAWN TWINKLE: a real two-frame pixel star (✚ ↔ ✕ = the spin) with
+       a cyan glow and a grow-pulse — "something's landing HERE". CYAN so it
+       never impersonates a gold pellet. */
+    .rv-twinkle {
+      position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+      z-index: 8; pointer-events: none;
+      filter: drop-shadow(0 0 7px rgba(120, 235, 255, 0.85));
+      animation: rvTwinklePulse 0.9s steps(3) infinite;
+    }
+    .rv-twinkle[hidden] { display: none; }
+    .rv-twinkle svg { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+    .rv-twinkle__a { animation: rvTwinkleFlip 0.36s steps(1) infinite; }
+    .rv-twinkle__b { animation: rvTwinkleFlip 0.36s steps(1) infinite; animation-delay: -0.18s; }
+    @keyframes rvTwinkleFlip { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    @keyframes rvTwinklePulse { 50% { transform: scale(1.28); } }
+    /* THE NIGHT's chores: litter + puddles lie FLAT (no bob — they're mess,
+       not prizes); swept things spin away under the broom */
+    .rv-chore { position: absolute; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; }
+    .rv-chore svg { display: block; image-rendering: pixelated; }
+    .rv-chore--peel svg { width: 54px; height: auto; }
+    .rv-chore--puddle svg { width: 44px; height: 20px; opacity: 0.9; }
+    .rv-chore--swept { animation: rvSwept 0.5s steps(4) forwards; }
+    @keyframes rvSwept { 100% { transform: translate(-50%, -50%) scale(0.15) rotate(120deg); opacity: 0; } }
+    /* THE MONKEY: staff pet, theatrical guest — never a fake visitor */
+    .rv-monkey { position: absolute; transform: translate(-50%, -50%); width: 54px; pointer-events: none; }
+    .rv-monkey svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .rv-monkey--calm svg { filter: drop-shadow(0 0 6px #ffe135); }
+    .rv-monkey--off { transition: opacity 0.8s ease, transform 0.8s ease; opacity: 0; }
+    /* the regular's stool (N5's privilege) + the broom leaning on the counter */
+    .rv-stool { position: absolute; transform: translate(-50%, -50%); width: 34px; pointer-events: auto; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .rv-stool svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .rv-broomprop { position: absolute; width: 15px; left: 94%; top: -48px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 5px rgba(255, 214, 80, 0.5)); }
+    /* narrow phones: the jelly mixer's left edge reaches ~178px into a ~350px
+       floor, so the desk crew compresses into the strip between the EXIT door
+       and the meter (positions measured at 390px; wider floors keep the roomy
+       layout above) */
+    @media (max-width: 430px) {
+      #rvBarman { left: 40px; }
+      .rv-bubble { left: 42%; }
+      .rv-counterbeer { left: 58%; }
+      .rv-counterbeer--quest { left: 46%; }
+      .rv-special { left: 57%; }
+      .rv-broomprop { left: 62%; }
+    }
+    .rv-broomprop svg { width: 100%; height: auto; image-rendering: pixelated; }
+    /* THE WAVE hop (applied inline with per-banana delay) + chain glow + zap glow */
+    @keyframes rvWaveHop { 30% { transform: translateY(-20px); } 60% { transform: translateY(-3px); } }
+    /* TONIGHT's stats — the braggable, screenshottable numbers. The divider
+       gives the section its own room; it was breathing down the board's neck */
+    .rv-panel .rv-panel__h2 { margin-top: 1.5rem; padding-top: 1.1rem; border-top: 3px solid rgba(255, 225, 53, 0.3); } /* .rv-panel h2 outranks a lone class — this was WHY it sat squeezed */
+    .rv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 0.7rem; font-size: 0.78rem; }
+    .rv-stats span { color: #b8b3c7; }
+    .rv-stats b { color: #ffe135; font-size: 0.95rem; margin-right: 0.3rem; }
+    /* the club clock — the headline of the night, a row of its own */
+    .rv-stats .rv-stats__time { grid-column: 1 / -1; color: #ff4d9d; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.15rem; }
+    .rv-stats .rv-stats__time b { color: #ff4d9d; font-size: 1.05rem; }
+    .rv-share-btn {
+      margin-top: 0.7rem; width: 100%; background: #17121f; color: #ffe135;
+      border: 3px solid #ffe135; font-weight: 800; font-size: 0.8rem; padding: 0.5rem 0;
+      cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .rv-share-btn:hover { background: #ffe135; color: #111; }
+    .rv-sharemodal {
+      position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
+      background: rgba(6, 4, 12, 0.82); padding: 1rem;
+    }
+    .rv-sharemodal[hidden] { display: none; }
+    .rv-sharemodal__box {
+      position: relative; max-width: min(88vw, 520px); width: 100%;
+      background: #17121f; border: 4px solid #ffe135; box-shadow: 10px 10px 0 #000; padding: 0.9rem;
+    }
+    .rv-sharemodal__card canvas { display: block; width: 100%; height: auto; image-rendering: auto; border: 2px solid #000; }
+    .rv-sharemodal__row { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+    .rv-sharemodal__row .rv-share-btn { flex: 1; margin-top: 0; min-width: 130px; }
+    .rv-sharemodal__close {
+      position: absolute; top: -18px; right: -18px; width: 40px; height: 40px;
+      background: #ffe135; color: #111; border: 3px solid #111; font-weight: 800; font-size: 1rem; cursor: pointer;
+      box-shadow: 3px 3px 0 #000; touch-action: manipulation;
+    }
+    /* the +1 that floats off a picked jelly */
+    .rv-plus {
+      position: absolute; transform: translate(-50%, -50%); z-index: 400; pointer-events: none;
+      font-weight: 800; font-size: 0.95rem; color: #ffe135;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+      animation: rvPlusUp 0.9s ease-out forwards;
+    }
+    @keyframes rvPlusUp {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+      18% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); }
+      100% { opacity: 0; transform: translate(-50%, -190%) scale(1); }
+    }
+    .rv-raver.rv-chainglow canvas { filter: drop-shadow(0 0 8px #ffd23f) drop-shadow(0 0 16px #ff9128); }
+    .rv-raver.rv-zapfx canvas { filter: drop-shadow(0 0 7px #78ebff); }
+    /* THE BALLOON RIDE: sealed inside a big translucent balloon, frozen on the
+       calm frame, floating — the keyframes carry the centring translate so the
+       bob never fights the wrap's base transform */
+    .rv-raver.rv-balloonfx { animation: rvBalloonFloat 2.4s ease-in-out infinite; }
+    @keyframes rvBalloonFloat {
+      0%, 100% { transform: translate(-50%, -50%); }
+      50% { transform: translate(-50%, calc(-50% - 12px)); }
+    }
+    .rv-raver.rv-balloonfx::after {
+      content: ''; position: absolute; inset: -4% 10% 4% 10%; border-radius: 50%;
+      border: 3px solid rgba(255, 130, 180, 0.85);
+      background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.35) 0 9%, rgba(255, 140, 190, 0.14) 55%, rgba(255, 77, 157, 0.22));
+      pointer-events: none;
+    }
+    .rv-raver.rv-balloonfx::before {
+      /* the knot under the balloon */
+      content: ''; position: absolute; left: 50%; bottom: -2%; width: 10px; height: 10px;
+      background: rgba(255, 130, 180, 0.9); transform: translateX(-50%) rotate(45deg);
+      pointer-events: none;
+    }
+    /* BUBBLEGUM FIZZ: the whole banana goes on a bubbly spin cycle — a full
+       360 while it dances, inflating and deflating like gum mid-chew (Trym:
+       the bubbles alone were underwhelming). Transform only, on the CANVAS
+       so the wrap keeps its floor position. */
+    .rv-raver.rv-fizzfx canvas { animation: rvFizzSpin 1.9s linear infinite; }
+    @keyframes rvFizzSpin {
+      0%   { transform: rotate(0deg) scale(1); }
+      25%  { transform: rotate(90deg) scale(1.14); }
+      50%  { transform: rotate(180deg) scale(0.92); }
+      75%  { transform: rotate(270deg) scale(1.16); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-fizzfx canvas { animation: none; } }
+    /* MOON BOOTS: big lunar hops on the wrap — crouch, float up, squash the
+       landing (the keyframes carry the centring translate, balloon-style) */
+    .rv-raver.rv-bootsfx { animation: rvMoonHop 0.85s ease-in-out infinite; }
+    @keyframes rvMoonHop {
+      0%, 100% { transform: translate(-50%, -50%) scale(1, 1); }
+      12% { transform: translate(-50%, -50%) scale(1.1, 0.85); }
+      45% { transform: translate(-50%, calc(-50% - 42px)) scale(0.94, 1.1); }
+      78% { transform: translate(-50%, -50%) scale(1, 1); }
+      88% { transform: translate(-50%, -50%) scale(1.14, 0.82); }
+    }
+    /* JELLY LEGS: the whole banana wobbles like jello, anchored at the feet */
+    .rv-raver.rv-wobblefx canvas { transform-origin: 50% 92%; animation: rvJellyWobble 0.5s ease-in-out infinite; }
+    @keyframes rvJellyWobble {
+      0%, 100% { transform: skewX(-7deg) scaleY(0.97); }
+      50% { transform: skewX(7deg) scaleY(1.03); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-bootsfx, .rv-raver.rv-wobblefx canvas { animation: none; } }
+    /* ---- THE MENU's costume effects (one class per fx, 10s moments) ---- */
+    /* paparazzi: the flash keeps going off — BIGGER (Trym round 2): brighter
+       pop + a white radial flashbang behind the banana on the same clock */
+    .rv-raver.rv-flashfx canvas { animation: rvFlashPop 1.4s steps(1) infinite; }
+    @keyframes rvFlashPop { 0%, 88% { filter: none; } 89%, 100% { filter: brightness(3) drop-shadow(0 0 26px #ffffff); } }
+    .rv-raver.rv-flashfx::before {
+      content: ''; position: absolute; inset: -30%; pointer-events: none;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 14%, rgba(255, 255, 255, 0.25) 34%, transparent 55%);
+      opacity: 0; animation: rvFlashBang 1.4s steps(1) infinite;
+    }
+    @keyframes rvFlashBang { 0%, 88% { opacity: 0; } 89%, 100% { opacity: 1; } }
+    /* the off-menu milkshake: PROPERLY THICC now (Trym: "fun fat banana") —
+       half again as wide, jiggling on the hips */
+    .rv-raver.rv-thicc { animation: rvThicc 0.7s ease-in-out infinite; }
+    @keyframes rvThicc {
+      0%, 100% { transform: translate(-50%, -50%) scale(1.42, 0.96); }
+      50% { transform: translate(-50%, -50%) scale(1.55, 0.92); }
+    }
+    /* sugar rush: rapidly shaking off ALL the sugar (canvas jitter, transform only) */
+    .rv-raver.rv-sugarfx canvas { animation: rvSugarShake 0.12s steps(2) infinite; }
+    @keyframes rvSugarShake {
+      0%, 100% { transform: translate(-3px, 0) rotate(-3deg); }
+      50% { transform: translate(3px, -2px) rotate(3deg); }
+    }
+    /* flaming potassium: the flare-up glow — a STATIC filter class flipped by
+       JS on a flicker clock (never keyframe filter on banana canvases — iOS
+       bakes it; the shock-blink lesson) */
+    .rv-raver.rv-flamehot canvas { filter: drop-shadow(0 0 9px #ff9128) drop-shadow(0 0 20px #e8542c); }
+    @media (prefers-reduced-motion: reduce) { .rv-raver.rv-thicc, .rv-raver.rv-sugarfx canvas, .rv-raver.rv-flashfx::before { animation: none; } }
+    /* water: clean, clear, hydrated */
+    .rv-raver.rv-waterglow canvas { filter: drop-shadow(0 0 7px #e8f6ff); }
+    /* espresso martini: the caffeine jitter */
+    .rv-raver.rv-jitter { animation: rvJitter 0.16s steps(2) infinite; }
+    @keyframes rvJitter {
+      0%, 100% { transform: translate(calc(-50% - 2px), -50%); }
+      50% { transform: translate(calc(-50% + 2px), calc(-50% - 1px)); }
+    }
+    /* piña colada: the sway — the floor is a hammock */
+    .rv-raver.rv-sway { animation: rvSway 1.7s ease-in-out infinite; }
+    @keyframes rvSway {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-7deg); }
+      50% { transform: translate(-50%, -50%) rotate(7deg); }
+    }
+    /* THE SMOKE POOF: expired items + leaving ravers exit in a puff, never a blink */
+    .rv-poof { position: absolute; transform: translate(-50%, -50%); width: 36px; pointer-events: none; }
+    .rv-poof span { position: absolute; inset: 0; opacity: 0; }
+    .rv-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .rv-poof__1 { animation: rvPoofStep 0.75s steps(1) forwards; }
+    .rv-poof__2 { animation: rvPoofStep 0.75s steps(1) 0.25s forwards; }
+    .rv-poof__3 { animation: rvPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes rvPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
+    /* the cartoon electrocution: JS flips these STATIC classes — deliberately
+       NO keyframes: iOS baked the animation's black frame into the composited
+       layer and kept it long after the class was gone (the permanent-skeleton
+       bug); plain class flips end in a plain style change, nothing can stick */
+    .rv-raver.rv-shock canvas { filter: brightness(0) drop-shadow(0 0 5px #78ebff); }
+    .rv-raver.rv-shockflash canvas { filter: brightness(2.8) saturate(0) drop-shadow(0 0 14px #78ebff); }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-raver.rv-shock canvas, .rv-raver.rv-shockflash canvas { filter: drop-shadow(0 0 7px #78ebff); }
+    }
+    @keyframes rvItemBob { 50% { transform: translate(-50%, -62%) scale(1.1); } }
+    /* pickup juice: a pixel ring + four stars burst where the item was grabbed */
+    .rv-pop { position: absolute; width: 60px; height: 60px; transform: translate(-50%, -50%); z-index: 520; pointer-events: none; }
+    .rv-pop__ring {
+      position: absolute; inset: 16px; border: 4px solid #ffe135;
+      animation: rvPopRing 0.55s steps(4) forwards;
+    }
+    .rv-pop__s {
+      position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+      background: #fffdf5; box-shadow: 0 0 6px #ffe135;
+      animation: rvPopStar 0.75s steps(5) forwards;
+    }
+    @keyframes rvPopRing {
+      0% { transform: scale(0.35); opacity: 1; }
+      70% { transform: scale(1.15); opacity: 0.8; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+    @keyframes rvPopStar {
+      0% { transform: translate(0, 0); opacity: 1; }
+      100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+    }
+    /* the fistbump: two gloves slide in, BUMP (pixel spark), drift up and fade */
+    .rv-five { position: absolute; width: 74px; height: 40px; transform: translate(-50%, -50%); z-index: 500; pointer-events: none; animation: rvFiveWrap 1.5s steps(6) forwards; }
+    .rv-five span { position: absolute; left: 50%; top: 50%; width: 32px; line-height: 0; }
+    .rv-five svg { width: 100%; height: auto; image-rendering: pixelated; filter: drop-shadow(0 0 4px #ffe135); }
+    .rv-five__l { animation: rvBumpL 0.8s steps(4) forwards; }
+    .rv-five__r { animation: rvBumpR 0.8s steps(4) forwards; }
+    .rv-five::after { /* the impact star — a crisp pixel plus, no glyphs */
+      content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+      background: #ffe135; box-shadow: 0 -9px #ffe135, 0 9px #ffe135, -9px 0 #ffe135, 9px 0 #ffe135, 0 0 8px #ffe135;
+      opacity: 0; animation: rvBumpSpark 1.5s steps(3) forwards;
+    }
+    @keyframes rvBumpL {
+      0% { transform: translate(-34px, -50%); }
+      45% { transform: translate(-27px, -50%); }
+      55% { transform: translate(-30px, -50%); }
+      100% { transform: translate(-28px, -50%); }
+    }
+    @keyframes rvBumpR {
+      0% { transform: translate(6px, -50%) scaleX(-1); }
+      45% { transform: translate(-1px, -50%) scaleX(-1); }
+      55% { transform: translate(2px, -50%) scaleX(-1); }
+      100% { transform: translate(0px, -50%) scaleX(-1); }
+    }
+    @keyframes rvBumpSpark {
+      0%, 40% { opacity: 0; transform: scale(0.4); }
+      50% { opacity: 1; transform: scale(1.2); }
+      75% { opacity: 0.8; }
+      100% { opacity: 0; transform: scale(0.6); }
+    }
+    @keyframes rvFiveWrap {
+      0% { opacity: 0; transform: translate(-50%, -50%); }
+      10% { opacity: 1; }
+      65% { opacity: 1; transform: translate(-50%, -60%); }
+      100% { opacity: 0; transform: translate(-50%, -110%); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-item, .rv-five, .rv-pop *, .rv-twinkle, .rv-twinkle svg { animation: none; } .rv-twinkle .rv-twinkle__b { opacity: 0; } }
+
+    /* THE MIXER — hype meter + chain, docked in the dead space right of the bar
+       (Trym's placement: on the floor itself, no scrolling to see your numbers) */
+    .rv-mixer {
+      position: absolute; right: 8px; bottom: 8px; z-index: 600; pointer-events: none;
+      background: rgba(13, 11, 20, 0.88); border: 3px solid #2f2250; padding: 6px 8px;
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; color: #b388ff;
+    }
+    .rv-mixer__row { display: flex; align-items: center; gap: 6px; }
+    .rv-mixer__bar { display: flex; gap: 2px; }
+    .rv-mixer__seg { width: 7px; height: 13px; background: #241a38; }
+    .rv-mixer__seg.on { background: #b388ff; }
+    .rv-mixer__seg.on:nth-child(n+6) { background: #ffe135; }
+    .rv-mixer__seg.on:nth-child(n+10) { background: #ff4d9d; }
+    .rv-mixer--peak { border-color: #ffe135; animation: rvMixerPeak 0.5s steps(2) infinite; }
+    @keyframes rvMixerPeak { 50% { border-color: #ff4d9d; } }
+    /* CHARGED: the meter DISAPPEARS and the whole box becomes THE button —
+       a frozen full meter with a tiny TAP tag read as "why isn't the meter
+       working?" (Trym). Tap it, the drop fires, the meter comes back. */
+    .rv-mixer--charged {
+      border-color: #111; background: #ffe135; color: #111;
+      cursor: pointer; pointer-events: auto; touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent; user-select: none;
+      animation: rvTapNudge 0.8s ease-in-out infinite;
+    }
+    .rv-mixer--charged .rv-mixer__row, .rv-mixer--charged .rv-mixer__lvl { display: none; }
+    /* LEVEL: the lifetime bar under the jelly meter — REP fills it forever
+       (the WHY build: a bar that's always almost full is the oldest trick) */
+    .rv-mixer__lvl { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #ffe135; }
+    .rv-mixer__lvlbar { flex: 1; min-width: 60px; height: 7px; background: #241a38; overflow: hidden; }
+    .rv-mixer__lvlbar i { display: block; height: 100%; width: 0; background: #ffe135; transition: width 0.4s ease; }
+    .rv-mixer__lvl--pop { animation: rvLvlPop 0.9s steps(3); }
+    .rv-mixer__lvl--pop .rv-mixer__lvlbar { box-shadow: 0 0 6px #ffe135, 0 0 16px #ffe135; }
+    .rv-mixer__lvl--pop span:first-child { color: #fffdf5; text-shadow: 0 0 8px #ffe135; }
+    @keyframes rvLvlPop { 33% { transform: scale(1.3); } 66% { transform: scale(0.95); } }
+    /* the level-up moment: pixel arrow + LVL N riding up off YOUR banana */
+    .rv-lvlup {
+      position: absolute; transform: translate(-50%, -50%); z-index: 650; pointer-events: none;
+      display: flex; align-items: center; gap: 6px;
+      font-weight: 800; font-size: 1.1rem; color: #ffe135; letter-spacing: 0.04em;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000, 0 0 12px rgba(255, 225, 53, 0.8);
+      animation: rvLvlUpFloat 1.85s ease-out forwards;
+    }
+    .rv-lvlup svg { width: 22px; height: 25px; image-rendering: pixelated; filter: drop-shadow(0 0 6px rgba(255, 225, 53, 0.9)); animation: rvLvlArrow 0.4s steps(2) infinite; }
+    @keyframes rvLvlUpFloat {
+      0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+      12% { opacity: 1; transform: translate(-50%, -70%) scale(1.35); }
+      26% { transform: translate(-50%, -85%) scale(1); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -230%) scale(1); }
+    }
+    @keyframes rvLvlArrow { 50% { transform: translateY(-3px); } }
+    /* club titles on the roster — earned status, gold and quiet */
+    .rv-title { font-style: normal; color: #ffe135; font-size: 0.62rem; letter-spacing: 0.06em; margin-left: 6px; opacity: 0.85; }
+    .rv-mixer--charged::after { content: '🍌 JELLY TIME!'; display: block; padding: 4px 2px; font-size: 0.66rem; }
+    @keyframes rvTapNudge { 50% { transform: translateY(-3px); } }
+    /* the tour's close-up: screen-space UI can't be camera-zoomed, so the
+       meter itself steps forward — and UP, clear of the tap-to-continue band
+       (they shared the bottom row on mobile) */
+    .rv-mixer--tour { transform: translateY(-64px) scale(1.55); transform-origin: 100% 100%; transition: transform 0.45s ease; box-shadow: 0 0 26px rgba(255, 225, 53, 0.45); }
+    /* THE NIGHT: the quest log gets its own panel, top-left — the classic HUD
+       spot for "what am I doing?", away from the meter it merely feeds */
+    .rv-quest { /* same height as the zoom button opposite — the top row is symmetric */
+      position: absolute; top: 8px; left: 8px; z-index: 600; max-width: 190px;
+      box-sizing: border-box; min-height: 44px;
+      display: flex; flex-direction: column; justify-content: center;
+      background: rgba(13, 11, 20, 0.88); border: 3px solid #ffe135; padding: 6px 9px 7px;
+    }
+    .rv-quest[hidden] { display: none; }
+    .rv-quest__k { display: block; font-size: 0.54rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #ffe135; margin-bottom: 3px; }
+    .rv-quest__row { display: flex; align-items: center; gap: 6px; font-size: 0.66rem; font-weight: 800; color: #fffdf5; line-height: 1.35; }
+    /* progressive disclosure on small screens: a new job shows itself, then
+       tucks behind the TONIGHT chip — tap toggles. The floor view wins. */
+    .rv-quest--min .rv-quest__row { display: none; }
+    .rv-quest--min .rv-quest__k { margin-bottom: 0; }
+    @media (max-width: 640px) {
+      .rv-quest { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      .rv-quest__k::after { content: ' ▾'; }
+      .rv-quest--min .rv-quest__k::after { content: ' ▸'; }
+    }
+    /* desktop: one horizontal bar (TONIGHT · job) — exactly the zoom button's
+       44px, so the floor's top row is symmetric (Trym's rule) */
+    @media (min-width: 641px) {
+      .rv-quest { flex-direction: row; align-items: center; gap: 9px; max-width: none; }
+      .rv-quest__k { margin-bottom: 0; }
+      .rv-quest__row { white-space: nowrap; }
+    }
+    .rv-qbox { flex: none; width: 9px; height: 9px; border: 2px solid #ffe135; background: #241a38; }
+    .rv-qbox.done { background: #39ff14; border-color: #39ff14; }
+    /* hype mode: the whole floor sees you peak (effect travels the outfit pipe;
+       this glow is the local cherry) */
+    .rv-raver.rv-hypemode canvas { filter: drop-shadow(0 0 10px #ffe135) drop-shadow(0 0 18px #ff4d9d); }
+    /* sparkle runs: your personal pellet trail — pure chase fuel */
+    .rv-pellet { /* a JELLY DROP — spilled jelly, hoovered into the meter */
+      position: absolute; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
+      z-index: 8; pointer-events: none;
+      filter: drop-shadow(0 0 6px rgba(255, 77, 157, 0.75));
+      /* jelly RAINS from the rig (Trym: "where does the jelly come from?") —
+         each pellet falls in from above and lands with a squash, THEN jiggles.
+         --pd = the per-pellet stagger; the bob waits out its own landing. */
+      animation: rvPelletDrop 0.5s cubic-bezier(0.3, 0, 0.55, 1.2) var(--pd, 0s) backwards,
+                 rvPelletBob 0.7s steps(2) calc(var(--pd, 0s) + 0.5s) infinite;
+    }
+    .rv-pellet svg { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    @keyframes rvPelletDrop {
+      0% { opacity: 0; transform: translateY(-52px); }
+      12% { opacity: 1; }
+      68% { transform: translateY(0) scale(1, 1); }
+      84% { transform: scale(1.35, 0.65); }
+      100% { transform: scale(1, 1); }
+    }
+    @keyframes rvPelletBob { 50% { transform: scale(1.18, 0.88); } } /* jelly JIGGLES */
+    .rv-pellet--got { animation: rvPelletGot 0.4s steps(3) forwards; }
+    @keyframes rvPelletGot { 100% { transform: scale(2.1); opacity: 0; } }
+    /* JELLY VARIETY: rare kinds. Variants animate the INNER svg so the div's
+       drop/bob keeps running; glows are STATIC filters (never animate filter). */
+    .rv-pellet--gold { filter: drop-shadow(0 0 7px rgba(255, 225, 53, 0.95)); }
+    .rv-pellet--gold svg { animation: rvJellyProud 1.1s ease-in-out infinite; }
+    .rv-pellet--rainbow { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.95)); width: 18px; height: 18px; margin: -9px 0 0 -9px; }
+    .rv-pellet--rainbow svg { animation: rvJellyProud 0.6s ease-in-out infinite; }
+    @keyframes rvJellyProud { 50% { transform: scale(1.3); } }
+    .rv-pellet--spark svg { animation: rvJellyBlink 0.5s steps(2) infinite; }
+    @keyframes rvJellyBlink { 50% { opacity: 0.45; transform: scale(1.15); } }
+    .rv-pellet--flee { transition: left 0.38s cubic-bezier(0.3, 1.6, 0.5, 1), top 0.38s cubic-bezier(0.3, 1.6, 0.5, 1); }
+    /* NYAN BANANA — the rainbow-jelly flyby (the trail paints on the canvas) */
+    .rv-nyan { position: absolute; left: 0; top: 0; z-index: 500; pointer-events: none; }
+    .rv-nyan canvas { width: 96px; height: 96px; image-rendering: pixelated; display: block; }
+    /* THE MEGA JELLY — one enormous dumped pudding; heavy, slow jiggle */
+    .rv-mega {
+      position: absolute; width: 92px; height: 76px; margin: -38px 0 0 -46px;
+      z-index: 8; pointer-events: none;
+      filter: drop-shadow(0 0 12px rgba(255, 77, 157, 0.8));
+      animation: rvMegaDrop 0.6s cubic-bezier(0.3, 0, 0.55, 1.25) backwards,
+                 rvMegaBob 1.15s steps(2) 0.6s infinite;
+    }
+    .rv-mega svg { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    @keyframes rvMegaDrop {
+      0% { opacity: 0; transform: translateY(-110px); }
+      14% { opacity: 1; }
+      78% { transform: scale(1.14, 0.84); } /* a proper landing splat */
+      100% { transform: scale(1, 1); }
+    }
+    @keyframes rvMegaBob { 50% { transform: scale(1.06, 0.94); } } /* heavier mass, slower wobble */
+    .rv-mega--got { animation: rvMegaGot 0.55s steps(4) forwards; }
+    @keyframes rvMegaGot { 100% { transform: scale(1.9); opacity: 0; } }
+    /* THE LAGOON FISH — the Blue Lagoon takes you: banana hidden, a dopey
+       fish flops in your place (transform-only animation on the svg) */
+    .rv-fishfx canvas { visibility: hidden; }
+    .rv-fish { position: absolute; left: 50%; top: 34%; width: 96%; line-height: 0; transform: translate(-50%, -50%); pointer-events: none; }
+    .rv-fish svg { width: 100%; height: auto; image-rendering: pixelated; display: block;
+      filter: drop-shadow(0 0 8px rgba(77, 184, 255, 0.8));
+      animation: rvFishFlop 0.5s steps(2) infinite; }
+    @keyframes rvFishFlop {
+      0% { transform: rotate(-22deg) translateY(0); }
+      50% { transform: rotate(20deg) translateY(-8px); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-pellet, .rv-pellet svg, .rv-mega, .rv-fish svg, .rv-mixer--peak { animation: none; } }
+
+    .rv-zoom {
+      position: absolute; top: 8px; right: 8px; z-index: 600;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-sizing: border-box; min-height: 44px;
+      background: rgba(13, 11, 20, 0.85); color: #fffdf5; border: 3px solid #ffe135;
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; padding: 0.45rem 0.6rem;
+      cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .rv-zoom svg { width: 16px; height: auto; image-rendering: pixelated; display: block; }
+    .rv-zoom:hover { background: #ffe135; color: #111; }
+
+    /* THE TOUR — z 800 beats everything; the highlight's giant box-shadow IS
+       the dark overlay (clipped by the club's overflow:hidden). All controls
+       follow the site's yellow pixel-button language. */
+    .rv-tour { position: absolute; inset: 0; z-index: 800; cursor: pointer; }
+    /* the highlight is a SPOTLIGHT POOL: a round cutout with a feathered edge
+       (the blur on the giant dim shadow) that fades smoothly into the dark —
+       generous and soft, so dead-on centering stops mattering (Trym: the hard
+       square "highlights well when it's not symmetrical") */
+    .rv-tour__hl {
+      position: absolute; pointer-events: none;
+      border-radius: 50%;
+      box-shadow: 0 0 56px 9999px rgba(8, 6, 14, 0.82);
+      transition: all 0.45s ease;
+    }
+    .rv-tour__hl[hidden] { display: none; }
+    /* the big line rides an anchor set by JS: above YOUR banana on step 1,
+       centred over the floor on step 2 — never "somewhere in the club" */
+    .rv-tour__big {
+      position: absolute; transform: translateX(-50%); text-align: center;
+      pointer-events: none; max-width: 94%; width: max-content;
+    }
+    .rv-tour__big[hidden] { display: none; }
+    .rv-tour__big span {
+      display: block; font-family: "Archivo Black", sans-serif; font-size: clamp(1.5rem, 6vw, 2.9rem);
+      color: #ffe135; -webkit-text-stroke: 2px #111; text-shadow: 4px 4px 0 #000; line-height: 1.15;
+    }
+    .rv-tour__big small { display: block; margin-top: 0.5rem; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000; }
+    .rv-tour__box {
+      position: absolute; max-width: 250px; pointer-events: none;
+      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 4px 4px 0 #000;
+      padding: 0.6rem 0.8rem; font-size: 0.74rem; line-height: 1.5;
+    }
+    .rv-tour__box[hidden] { display: none; }
+    .rv-tour__box::before { /* the pixel arrow: side + x-position set per target by JS */
+      content: ''; position: absolute; left: var(--ax, 26px); width: 12px; height: 12px; background: #ffe135; border: 3px solid #111;
+    }
+    .rv-tour__box[data-side="below"]::before { top: -9px; }
+    .rv-tour__box[data-side="above"]::before { bottom: -9px; }
+    .rv-tour__box[data-side="none"]::before { display: none; }
+    .rv-tour__title { margin: 0 0 0.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; background: #ffe135; display: inline-block; padding: 0.08rem 0.35rem; }
+    .rv-tour__text { margin: 0; }
+    /* the control band: ONE centred row just above the HUD (bottom offset set
+       by JS) — "tap to continue" bounces, skip sits quietly beside it. House
+       yellow pixel buttons, never glued to a screen edge, can never overlap. */
+    .rv-tour__band {
+      position: absolute; left: 0; right: 0; bottom: 76px;
+      display: flex; justify-content: center; align-items: center; gap: 10px;
+      pointer-events: none;
+    }
+    .rv-tour__next {
+      margin: 0;
+      background: #ffe135; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.5rem 0.9rem;
+      animation: rvTourNext 1.4s steps(2) infinite;
+    }
+    @keyframes rvTourNext { 50% { transform: translateY(-4px); } }
+    .rv-tour__skip {
+      background: #fffdf5; color: #111; border: 3px solid #111; box-shadow: 3px 3px 0 #000;
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.5rem 0.6rem; cursor: pointer; pointer-events: auto;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .rv-tour__skip:hover { background: #ffe135; }
+    /* during the WHOLE tour: no chase-ables spawning mid-lesson, and no OTHER
+       visitors either — the tutorial is about THE PLAYER and the staff, and a
+       stranger dancing through "THIS IS YOU" breaks the premise (Trym) */
+    .rv-floor.rv-tourclean #rvItem, .rv-floor.rv-tourclean #rvVinyl, .rv-floor.rv-tourclean #rvGold,
+    .rv-floor.rv-tourclean #rvGift,
+    .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot,
+    .rv-floor.rv-tourclean .rv-raver:not(.rv-raver--me),
+    .rv-floor.rv-tourclean #rvChores, .rv-floor.rv-tourclean .rv-monkey { visibility: hidden; }
+    /* steps 1–2 only: meters off too — furniture and staff, nothing else */
+    .rv-floor.rv-tourfocus .rv-mixer, .rv-floor.rv-tourfocus .rv-quest, .rv-floor.rv-tourfocus .rv-led { visibility: hidden; }
+    .rv-world--tour { transition: transform 0.85s ease; }
+    /* THE BIG MOMENT: pixel type over the floor for session-defining beats
+       (the nightshift stamp-out) — same register as the tour's THIS IS YOU */
+    .rv-bigmoment {
+      position: absolute; left: 50%; top: 26%; transform: translateX(-50%); z-index: 650;
+      width: max-content; max-width: 94%; text-align: center; pointer-events: none;
+      animation: rvBigIn 0.3s steps(3);
+    }
+    .rv-bigmoment b {
+      display: block; font-family: "Archivo Black", sans-serif;
+      font-size: clamp(1.4rem, 5.5vw, 2.6rem); line-height: 1.15;
+      color: #ffe135; -webkit-text-stroke: 2px #111; text-shadow: 4px 4px 0 #000;
+    }
+    .rv-bigmoment small {
+      display: block; margin-top: 0.45rem; font-size: 0.8rem; font-weight: 800;
+      letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000;
+    }
+    .rv-bigmoment--out { animation: rvBigOut 0.5s steps(4) forwards; }
+    @keyframes rvBigIn { 0% { transform: translateX(-50%) scale(0.6); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+    @keyframes rvBigOut { 100% { transform: translateX(-50%) translateY(-24px); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .rv-bigmoment, .rv-bigmoment--out { animation: none; } }
+
+    /* pickup/earn banners: TOP BAND, between the quest chip and the zoom
+       button (Trym v3: the bottom stack covered the LVL meter + Barty's
+       bubbles). pointer-events: none throughout, so the old top-box
+       tap-eating bug (why they once moved down) cannot return. On phones the
+       centre gap up there is too narrow — they drop just below the row. */
+    .rv-toasts {
+      position: absolute; left: 50%; top: 48px; transform: translateX(-50%); z-index: 700;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      max-width: min(94%, calc(100% - 250px)); width: max-content; pointer-events: none;
+    }
+    @media (max-width: 640px) { .rv-toasts { top: 60px; max-width: 94%; } }
+    /* THE LED STRIP — a venue fixture, not a popup: slim, top-centre between
+       the quest chip and the zoom button, lit only while a call runs */
+    .rv-led {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 640;
+      max-width: min(72%, 430px); padding: 5px 12px 6px; box-sizing: border-box;
+      background: rgba(13, 11, 20, 0.92); border: 2px solid #ffe135;
+      box-shadow: 0 0 14px rgba(255, 225, 53, 0.35);
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; color: #ffe135;
+      text-align: center; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .rv-led--won { border-color: #58c05c; color: #58c05c; box-shadow: 0 0 14px rgba(88, 192, 92, 0.4); }
+    .rv-led__bar { display: block; height: 3px; background: #ffe135; margin-top: 4px; transition: width 0.2s linear; }
+    .rv-led--won .rv-led__bar { background: #58c05c; }
+    @media (max-width: 640px) { .rv-led { max-width: 56%; font-size: 0.6rem; } }
+    /* FOLLOW THE LIGHT: the call's own wandering spotlight */
+    .rv-ledlight {
+      position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px;
+      border-radius: 50%; z-index: 90; pointer-events: none;
+      background: radial-gradient(circle, rgba(255, 225, 53, 0.26) 0 30%, rgba(255, 225, 53, 0.1) 60%, transparent 70%);
+      border: 2px dashed rgba(255, 225, 53, 0.55);
+    }
+    .rv-ledlight--in {
+      background: radial-gradient(circle, rgba(88, 192, 92, 0.3) 0 30%, rgba(88, 192, 92, 0.12) 60%, transparent 70%);
+      border-color: rgba(88, 192, 92, 0.75);
+    }
+    .rv-glowtoast {
+      max-width: 100%; text-align: center; font-size: 0.72rem; line-height: 1.4;
+      background: rgba(23, 18, 31, 0.94); color: #fffdf5; border: 2px solid #39ff14;
+      box-shadow: 0 0 10px rgba(57, 255, 20, 0.4); padding: 0.35rem 0.75rem;
+      pointer-events: none;
+    }
+    .rv-glowtoast b { color: #39ff14; }
+    .rv-glowtoast .rv-by { color: #22d3ee; font-weight: 700; } /* the maker's credit rides the drop */
+
+    .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
+    /* YOUR banana echoes input at frame rate — the 0.18s glide (needed to
+       smooth remote 150ms packets) only added ~180ms of input lag here */
+    .rv-raver--me { transition: none; }
+    .rv-raver canvas { transition: transform 0.15s ease; }
+    .rv-floor { cursor: pointer; touch-action: manipulation; }
+    .rv-raver canvas { image-rendering: pixelated; }
+    .rv-raver--me canvas { filter: drop-shadow(0 0 6px #ffe135); }
+    .rv-emote {
+      position: absolute; left: 50%; top: 0; font-size: 1.5rem; line-height: 1;
+      animation: rvFloat 1.9s ease-out forwards; pointer-events: none;
+    }
+    .rv-emote--heart { color: #ff4d6d; }
+    .rv-emote--confetti { color: #4db8ff; }
+    .rv-emote--banana { font-size: 1.3rem; }
+    @keyframes rvFloat { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, -70px); opacity: 0; } }
+
+    /* THE DROP flashes above the DJ — it's the stage's moment */
+    .rv-dropflash {
+      position: absolute; left: 0; right: 0; top: 4px; display: grid; place-items: center;
+      pointer-events: none; z-index: 600;
+    }
+    .rv-dropflash[hidden] { display: none; } /* our display:grid beats the UA [hidden] rule — the text was stuck ON permanently */
+    .rv-dropflash span {
+      font-family: "Archivo Black", sans-serif; font-size: clamp(1.3rem, 4.5vw, 2.4rem);
+      color: #ffe135; -webkit-text-stroke: 2px #111; animation: rvDropPulse 0.5s steps(2) infinite;
+    }
+    @keyframes rvDropPulse { 50% { transform: scale(1.06) rotate(-2deg); color: #ff4d6d; } }
+
+    /* the HUD: ONE centred cluster — reactions, the stage, the tour replay.
+       The stage is a peer of the emotes now, not the marquee act (it looked
+       like the main feature and it isn't — Trym). */
+    .rv-hud {
+      position: relative;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      background: #17121f; border-top: 4px solid #ffe135; padding: 0.7rem 0.9rem; flex-wrap: wrap;
+      touch-action: manipulation; /* no iOS double-tap zoom when mashing emotes */
+    }
+    .rv-emotes { display: flex; gap: 0.5rem; }
+    .rv-emote-btn {
+      background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;
+      font-size: 1.2rem; line-height: 1; padding: 0.55rem 0.9rem; border-radius: 2px;
+      min-width: 48px; min-height: 48px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .rv-emote-btn:hover { background: #ffe135; }
+    .rv-emote-btn--fire { border-color: #ff9e2c; }
+    .rv-emote-btn--fire:hover { background: #ff9e2c; }
+    /* 🍌💨 the food fight — the throw button shares .rv-emote-btn's base look;
+       these only recolour it orange + handle the cooldown state */
+    .rv-throw-btn { border-color: #ff9e2c; }
+    .rv-throw-btn:hover:not([disabled]) { background: #ff9e2c; }
+    .rv-throw-btn[disabled] { opacity: 0.4; cursor: default; }
+    /* the shot = the golden-rain crescent, tumbling + glowing (Trym's ask) */
+    .rv-nade {
+      position: absolute; width: 26px; height: 16px; margin: -8px 0 0 -13px;
+      z-index: 350; pointer-events: none;
+    }
+    .rv-nade svg { width: 100%; height: 100%; filter: drop-shadow(0 0 3px #ffe135) drop-shadow(0 0 2px #fff6c8); animation: rvNadeSpin 0.5s linear infinite; }
+    @keyframes rvNadeSpin { to { transform: rotate(360deg); } }
+    /* the landing poof — a quick pixel pop, gone (no litter) */
+    .rv-nadepop { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; z-index: 340; pointer-events: none; }
+    .rv-nadepop svg { width: 100%; height: 100%; animation: rvNadePop 0.35s ease-out forwards; }
+    @keyframes rvNadePop { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+    /* 🎯 the target lock — four green CORNER brackets that breathe in/out
+       around the banana (subtle but clearly "locked"); child of the raver
+       wrap so it glides with them for free */
+    .rv-lock { position: absolute; inset: 14%; pointer-events: none; z-index: 200; animation: rvLockBreathe 1.5s ease-in-out infinite; }
+    .rv-lock i { position: absolute; width: 6px; height: 6px; border: 2px solid rgba(90, 224, 122, 0.85); }
+    .rv-lock i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+    .rv-lock i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+    .rv-lock i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+    .rv-lock i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+    @keyframes rvLockBreathe { 0%, 100% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.04); opacity: 1; } }
+    /* the banana splash on a splat */
+    .rv-splash { position: absolute; width: 58px; height: 58px; margin: -29px 0 0 -29px; z-index: 360; pointer-events: none; }
+    .rv-splash svg { width: 100%; height: 100%; animation: rvSplashPop 0.46s ease-out forwards; }
+    @keyframes rvSplashPop { 0% { transform: scale(0.35); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+    /* MY hit landed — a yellow confirm ring (did I hit? YES) */
+    .rv-hitring {
+      position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; z-index: 362;
+      border: 3px solid #ffe135; border-radius: 50%; pointer-events: none;
+      box-shadow: 0 0 8px rgba(255, 225, 53, 0.7);
+      animation: rvHitRing 0.5s ease-out forwards;
+    }
+    @keyframes rvHitRing { 0% { transform: scale(0.35); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+    /* floating combat number, red '-N' (gaming-style) */
+    .rv-dmg {
+      position: absolute; transform: translate(-50%, 0); z-index: 363; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: #ff4747;
+      -webkit-text-stroke: 3px #16121f; paint-order: stroke fill; white-space: nowrap;
+      animation: rvDmg 1s ease-out forwards;
+    }
+    .rv-dmg--good { color: #5ae07a; } /* +N when you scoop your spill back */
+    @keyframes rvDmg {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+      16% { opacity: 1; transform: translate(-50%, -4px) scale(1.18); }
+      100% { opacity: 0; transform: translate(-50%, -26px) scale(1); }
+    }
+    .rv-hitwiggle { animation: rvHitW 0.5s ease-out; }
+    @keyframes rvHitW { 0% { rotate: 0deg; } 20% { rotate: -14deg; } 45% { rotate: 11deg; } 70% { rotate: -6deg; } 100% { rotate: 0deg; } }
+    .rv-throwpop { animation: rvThrowP 0.25s ease-out; }
+    @keyframes rvThrowP { 40% { scale: 1.12; } 100% { scale: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-nade svg, .rv-splash svg, .rv-nadepop svg, .rv-hitring, .rv-dmg, .rv-hitwiggle, .rv-throwpop, .rv-lock { animation-duration: 0.01s; }
+    }
+    .rv-stage-btn {
+      background: #0d0b14; color: #fffdf5; border: 3px solid #ffe135; cursor: pointer;
+      font-weight: 800; font-size: 0.7rem; letter-spacing: 0.04em; padding: 0.55rem 0.8rem;
+      min-height: 48px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .rv-stage-btn:hover:not([disabled]) { background: #ffe135; color: #111; }
+    .rv-stage-btn[disabled] { color: #b388ff; border-color: #4a3b6b; cursor: default; }
+    /* inline-flex centring: the pixel ? is a display:block svg, and a block
+       box never text-align-centres in a button — on mobile the emote row's
+       zero horizontal padding parked it at the left edge (Trym's catch) */
+    .rv-tourbtn { flex: 0 0 auto !important; display: inline-flex; align-items: center; justify-content: center; border-color: #4a3b6b; opacity: 0.85; font-size: 0.95rem; }
+    /* the sound toggle: dim speaker when muted, gold + pulsing waves when live */
+    .rv-soundbtn svg { width: 16px; }
+    .rv-soundbtn:not(.rv-soundbtn--on) svg rect[class] { opacity: 0.25; }
+    .rv-soundbtn--on { border-color: #ffe135; opacity: 1; }
+    .rv-soundbtn--on svg rect { fill: #ffe135; }
+    .rv-soundbtn--on .rv-soundbtn__w1 { animation: rvWave1 0.8s steps(1) infinite; }
+    .rv-soundbtn--on .rv-soundbtn__w2 { animation: rvWave1 0.8s steps(1) 0.26s infinite; }
+    .rv-soundbtn--on .rv-soundbtn__w3 { animation: rvWave1 0.8s steps(1) 0.53s infinite; }
+    @keyframes rvWave1 { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.2; } }
+    .rv-tourbtn:hover { background: #b388ff; opacity: 1; }
+    .rv-tourbtn svg { width: 13px; height: auto; image-rendering: pixelated; display: block; }
+    .rv-more { position: absolute; right: 0.9rem; bottom: 0.3rem; font-size: 0.7rem; opacity: 0.6; }
+    /* the stage exclusive reads BIG — it's the point of being up there */
+    .rv-emote--fire { color: #ff9e2c; font-size: 2.3rem; }
+    .rv-emote svg { width: 24px; height: auto; image-rendering: pixelated; }
+
+    @media (max-width: 640px) {
+      .rv-booth { min-height: 138px; }
+      .rv-djgroup { width: 120px; }
+      .rv-djgroup canvas { width: 78px; height: 78px; margin-bottom: -30px; }
+      .rv-desk { height: 34px; }
+      .rv-speaker { width: 34px; height: 48px; }
+      .rv-speaker--l { left: calc(50% - 102px); }
+      .rv-speaker--r { right: calc(50% - 102px); }
+      .rv-stage { bottom: 4px; gap: 6px; }
+      .rv-stage__gap { width: 120px; }
+      .rv-stage .rv-raver canvas { width: 78px !important; height: 78px !important; }
+      /* emotes own the first row; the stage + tour buttons centre beneath as
+         normal-sized peers (the full-width stage bar read as THE main feature) */
+      .rv-emotes { flex: 1 1 100%; }
+      .rv-emote-btn { flex: 1; padding: 0.75rem 0; font-size: 1.4rem; }
+      /* icon-only camera toggle: a square tap target, no words */
+      .rv-zoom { font-size: 1.05rem; padding: 0.45rem 0.55rem; min-width: 44px; min-height: 44px; }
+    }
+
+    .rv-panel { border: 4px solid #ffe135; background: #17121f; box-shadow: 8px 8px 0 #000; padding: 1rem; }
+    .rv-panel h2 { margin: 0 0 0.6rem; font-size: 1rem; color: #ffe135; }
+    .rv-panel ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.45rem; font-size: 0.85rem; }
+    .rv-panel li { display: flex; justify-content: space-between; gap: 0.6rem; }
+    .rv-panel li b { color: #ffe135; }
+    .rv-panel li.rv-me span { color: #ffe135; }
+    .rv-panel .rv-door { margin-top: 1rem; }
+    .rv-door a { display: block; text-align: center; background: #ffe135; color: #111; font-weight: 800; padding: 0.7rem 0.6rem; text-decoration: none; border: 3px solid #111; }
+    .rv-door a:hover { transform: translateY(-2px); }
+    .rv-note { font-size: 0.75rem; opacity: 0.65; margin-top: 0.8rem; }
+  </style><style>.ft-cols[data-astro-cid-sz7xmlte]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.6rem 2rem;max-width:880px;margin:1.8rem auto 1.6rem;text-align:left}.ft-col[data-astro-cid-sz7xmlte] h3[data-astro-cid-sz7xmlte]{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;opacity:.55;margin:0 0 .6rem}.ft-col[data-astro-cid-sz7xmlte] a[data-astro-cid-sz7xmlte]{display:block;margin-bottom:.45rem;line-height:1.35}@media(max-width:719px){.ft-cols[data-astro-cid-sz7xmlte]{grid-template-columns:repeat(2,minmax(0,1fr));max-width:26rem}}
+</style></head> <body> <a class="skip-link" href="#main">Skip to content</a>  <header class="nav"> <a class="nav__brand" href="/">TRYM<span>STENE</span></a> <button class="nav__toggle" aria-label="Menu" aria-expanded="false"> <span class="nav__ic nav__ic--open"><svg class="pxi" viewBox="0 0 90 80" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="90" height="10" fill="currentColor"></rect><rect x="0" y="10" width="90" height="10" fill="currentColor"></rect><rect x="0" y="30" width="90" height="10" fill="currentColor"></rect><rect x="0" y="40" width="90" height="10" fill="currentColor"></rect><rect x="0" y="60" width="90" height="10" fill="currentColor"></rect><rect x="0" y="70" width="90" height="10" fill="currentColor"></rect> </svg></span> <span class="nav__ic nav__ic--close"><svg class="pxi" viewBox="0 0 90 90" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="20" height="10" fill="currentColor"></rect><rect x="70" y="0" width="20" height="10" fill="currentColor"></rect><rect x="0" y="10" width="30" height="10" fill="currentColor"></rect><rect x="60" y="10" width="30" height="10" fill="currentColor"></rect><rect x="10" y="20" width="30" height="10" fill="currentColor"></rect><rect x="50" y="20" width="30" height="10" fill="currentColor"></rect><rect x="20" y="30" width="50" height="10" fill="currentColor"></rect><rect x="30" y="40" width="30" height="10" fill="currentColor"></rect><rect x="20" y="50" width="50" height="10" fill="currentColor"></rect><rect x="10" y="60" width="30" height="10" fill="currentColor"></rect><rect x="50" y="60" width="30" height="10" fill="currentColor"></rect><rect x="0" y="70" width="30" height="10" fill="currentColor"></rect><rect x="60" y="70" width="30" height="10" fill="currentColor"></rect><rect x="0" y="80" width="20" height="10" fill="currentColor"></rect><rect x="70" y="80" width="20" height="10" fill="currentColor"></rect> </svg></span> </button> <nav class="nav__links"> <div class="nav__group nav__group--banana"> <a href="/dancing-banana-gif-meme/">Download</a> <a href="/make-a-banana/" data-place="nav">Make a Banana</a> <a href="/forge/">Pixel Forge</a> <a href="/rave/">Join the Rave</a>  <a href="/banana-memes/">Banana Gallery</a> <a href="/shop/">Banana Shop</a> <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a> </div> </nav> <div class="nav__backdrop"></div> </header> <main id="main" tabindex="-1">         <div class="rv-hall"> <div class="rv-head"> <h1>the banana rave</h1> <span class="rv-status"><span id="rvCount">0</span> on the floor · <span id="rvStatus">connecting…</span></span> </div> <p class="rv-sub">
+Every banana here is a real visitor, dancing in perfect sync — same beat, whole planet.
+</p> <div class="rv-stagewrap"> <div class="rv-club"> <div class="rv-booth"> <!-- THE CLUB SCREEN: the LED wall (back of the booth, z 0). Blinks
+               silly rave-culture lines + the odd clickable house ad. Filled by
+               initScreen() in banana-rave.js. --> <a class="rv-screen rv-screen--msg" id="rvScreen" aria-label="Club screen"> <span class="rv-screen__content" id="rvScreenContent"></span> </a> <!-- club wall decor that happens to work: click = copy the invite
+               link. Barty spotlights it when the floor's been lonely a while. --> <button class="rv-sign" id="rvInvite" aria-label="Copy the rave invite link" title="Copy the invite link">INVITE<br>A FRIEND</button> <div class="rv-dropflash" id="rvDropFlash" hidden><span>THE DROP</span></div> <span class="rv-beam rv-beam--l" aria-hidden="true"></span> <span class="rv-beam rv-beam--r" aria-hidden="true"></span> <span class="rv-pyro rv-pyro--1" aria-hidden="true"><svg class="rv-pyro__a" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="3" y="1" width="2" height="1" fill="#ffe135"/><rect x="3" y="2" width="1" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="2" height="1" fill="#ff9128"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="7" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="5" width="4" height="1" fill="#ff9128"/><rect x="6" y="5" width="2" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ff9128"/><rect x="3" y="6" width="1" height="1" fill="#fffdf5"/><rect x="4" y="6" width="3" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="1" height="1" fill="#ff9128"/><rect x="3" y="7" width="2" height="1" fill="#fffdf5"/><rect x="5" y="7" width="2" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="1" height="1" fill="#ff9128"/><rect x="2" y="8" width="3" height="1" fill="#fffdf5"/><rect x="5" y="8" width="3" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="1" height="1" fill="#ff9128"/><rect x="2" y="9" width="4" height="1" fill="#fffdf5"/><rect x="6" y="9" width="2" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="1" height="1" fill="#ff9128"/><rect x="2" y="10" width="4" height="1" fill="#fffdf5"/><rect x="6" y="10" width="2" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="11" width="4" height="1" fill="#fffdf5"/><rect x="6" y="11" width="2" height="1" fill="#ff9128"/><rect x="1" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="4" height="1" fill="#fffdf5"/><rect x="6" y="12" width="1" height="1" fill="#ff9128"/><rect x="1" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="13" width="4" height="1" fill="#fffdf5"/><rect x="6" y="13" width="1" height="1" fill="#e83b3b"/><rect x="1" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="14" width="2" height="1" fill="#fffdf5"/><rect x="5" y="14" width="2" height="1" fill="#e83b3b"/><rect x="2" y="15" width="4" height="1" fill="#e83b3b"/></svg><svg class="rv-pyro__b" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="5" y="2" width="1" height="1" fill="#ffe135"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="4" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="1" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="1" height="1" fill="#ffe135"/><rect x="4" y="4" width="2" height="1" fill="#ff9128"/><rect x="6" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="2" height="1" fill="#ffe135"/><rect x="3" y="5" width="4" height="1" fill="#ff9128"/><rect x="7" y="5" width="1" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="3" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffdf5"/><rect x="6" y="6" width="1" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="2" height="1" fill="#ff9128"/><rect x="4" y="7" width="2" height="1" fill="#fffdf5"/><rect x="6" y="7" width="1" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="3" height="1" fill="#ff9128"/><rect x="4" y="8" width="3" height="1" fill="#fffdf5"/><rect x="7" y="8" width="1" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="2" height="1" fill="#ff9128"/><rect x="3" y="9" width="4" height="1" fill="#fffdf5"/><rect x="7" y="9" width="1" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="2" height="1" fill="#ff9128"/><rect x="3" y="10" width="4" height="1" fill="#fffdf5"/><rect x="7" y="10" width="1" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="2" height="1" fill="#ff9128"/><rect x="3" y="11" width="4" height="1" fill="#fffdf5"/><rect x="7" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="1" height="1" fill="#ff9128"/><rect x="3" y="12" width="4" height="1" fill="#fffdf5"/><rect x="7" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="13" width="1" height="1" fill="#e83b3b"/><rect x="3" y="13" width="4" height="1" fill="#fffdf5"/><rect x="7" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="14" width="2" height="1" fill="#e83b3b"/><rect x="4" y="14" width="2" height="1" fill="#fffdf5"/><rect x="6" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="15" width="4" height="1" fill="#e83b3b"/></svg></span> <span class="rv-pyro rv-pyro--2" aria-hidden="true"><svg class="rv-pyro__a" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="3" y="1" width="2" height="1" fill="#ffe135"/><rect x="3" y="2" width="1" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="2" height="1" fill="#ff9128"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="7" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="5" width="4" height="1" fill="#ff9128"/><rect x="6" y="5" width="2" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ff9128"/><rect x="3" y="6" width="1" height="1" fill="#fffdf5"/><rect x="4" y="6" width="3" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="1" height="1" fill="#ff9128"/><rect x="3" y="7" width="2" height="1" fill="#fffdf5"/><rect x="5" y="7" width="2" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="1" height="1" fill="#ff9128"/><rect x="2" y="8" width="3" height="1" fill="#fffdf5"/><rect x="5" y="8" width="3" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="1" height="1" fill="#ff9128"/><rect x="2" y="9" width="4" height="1" fill="#fffdf5"/><rect x="6" y="9" width="2" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="1" height="1" fill="#ff9128"/><rect x="2" y="10" width="4" height="1" fill="#fffdf5"/><rect x="6" y="10" width="2" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="11" width="4" height="1" fill="#fffdf5"/><rect x="6" y="11" width="2" height="1" fill="#ff9128"/><rect x="1" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="4" height="1" fill="#fffdf5"/><rect x="6" y="12" width="1" height="1" fill="#ff9128"/><rect x="1" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="13" width="4" height="1" fill="#fffdf5"/><rect x="6" y="13" width="1" height="1" fill="#e83b3b"/><rect x="1" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="14" width="2" height="1" fill="#fffdf5"/><rect x="5" y="14" width="2" height="1" fill="#e83b3b"/><rect x="2" y="15" width="4" height="1" fill="#e83b3b"/></svg><svg class="rv-pyro__b" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="5" y="2" width="1" height="1" fill="#ffe135"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="4" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="1" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="1" height="1" fill="#ffe135"/><rect x="4" y="4" width="2" height="1" fill="#ff9128"/><rect x="6" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="2" height="1" fill="#ffe135"/><rect x="3" y="5" width="4" height="1" fill="#ff9128"/><rect x="7" y="5" width="1" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="3" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffdf5"/><rect x="6" y="6" width="1" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="2" height="1" fill="#ff9128"/><rect x="4" y="7" width="2" height="1" fill="#fffdf5"/><rect x="6" y="7" width="1" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="3" height="1" fill="#ff9128"/><rect x="4" y="8" width="3" height="1" fill="#fffdf5"/><rect x="7" y="8" width="1" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="2" height="1" fill="#ff9128"/><rect x="3" y="9" width="4" height="1" fill="#fffdf5"/><rect x="7" y="9" width="1" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="2" height="1" fill="#ff9128"/><rect x="3" y="10" width="4" height="1" fill="#fffdf5"/><rect x="7" y="10" width="1" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="2" height="1" fill="#ff9128"/><rect x="3" y="11" width="4" height="1" fill="#fffdf5"/><rect x="7" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="1" height="1" fill="#ff9128"/><rect x="3" y="12" width="4" height="1" fill="#fffdf5"/><rect x="7" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="13" width="1" height="1" fill="#e83b3b"/><rect x="3" y="13" width="4" height="1" fill="#fffdf5"/><rect x="7" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="14" width="2" height="1" fill="#e83b3b"/><rect x="4" y="14" width="2" height="1" fill="#fffdf5"/><rect x="6" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="15" width="4" height="1" fill="#e83b3b"/></svg></span> <span class="rv-pyro rv-pyro--3" aria-hidden="true"><svg class="rv-pyro__a" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="3" y="1" width="2" height="1" fill="#ffe135"/><rect x="3" y="2" width="1" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="2" height="1" fill="#ff9128"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="7" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="5" width="4" height="1" fill="#ff9128"/><rect x="6" y="5" width="2" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ff9128"/><rect x="3" y="6" width="1" height="1" fill="#fffdf5"/><rect x="4" y="6" width="3" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="1" height="1" fill="#ff9128"/><rect x="3" y="7" width="2" height="1" fill="#fffdf5"/><rect x="5" y="7" width="2" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="1" height="1" fill="#ff9128"/><rect x="2" y="8" width="3" height="1" fill="#fffdf5"/><rect x="5" y="8" width="3" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="1" height="1" fill="#ff9128"/><rect x="2" y="9" width="4" height="1" fill="#fffdf5"/><rect x="6" y="9" width="2" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="1" height="1" fill="#ff9128"/><rect x="2" y="10" width="4" height="1" fill="#fffdf5"/><rect x="6" y="10" width="2" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="11" width="4" height="1" fill="#fffdf5"/><rect x="6" y="11" width="2" height="1" fill="#ff9128"/><rect x="1" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="4" height="1" fill="#fffdf5"/><rect x="6" y="12" width="1" height="1" fill="#ff9128"/><rect x="1" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="13" width="4" height="1" fill="#fffdf5"/><rect x="6" y="13" width="1" height="1" fill="#e83b3b"/><rect x="1" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="14" width="2" height="1" fill="#fffdf5"/><rect x="5" y="14" width="2" height="1" fill="#e83b3b"/><rect x="2" y="15" width="4" height="1" fill="#e83b3b"/></svg><svg class="rv-pyro__b" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="5" y="2" width="1" height="1" fill="#ffe135"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="4" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="1" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="1" height="1" fill="#ffe135"/><rect x="4" y="4" width="2" height="1" fill="#ff9128"/><rect x="6" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="2" height="1" fill="#ffe135"/><rect x="3" y="5" width="4" height="1" fill="#ff9128"/><rect x="7" y="5" width="1" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="3" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffdf5"/><rect x="6" y="6" width="1" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="2" height="1" fill="#ff9128"/><rect x="4" y="7" width="2" height="1" fill="#fffdf5"/><rect x="6" y="7" width="1" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="3" height="1" fill="#ff9128"/><rect x="4" y="8" width="3" height="1" fill="#fffdf5"/><rect x="7" y="8" width="1" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="2" height="1" fill="#ff9128"/><rect x="3" y="9" width="4" height="1" fill="#fffdf5"/><rect x="7" y="9" width="1" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="2" height="1" fill="#ff9128"/><rect x="3" y="10" width="4" height="1" fill="#fffdf5"/><rect x="7" y="10" width="1" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="2" height="1" fill="#ff9128"/><rect x="3" y="11" width="4" height="1" fill="#fffdf5"/><rect x="7" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="1" height="1" fill="#ff9128"/><rect x="3" y="12" width="4" height="1" fill="#fffdf5"/><rect x="7" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="13" width="1" height="1" fill="#e83b3b"/><rect x="3" y="13" width="4" height="1" fill="#fffdf5"/><rect x="7" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="14" width="2" height="1" fill="#e83b3b"/><rect x="4" y="14" width="2" height="1" fill="#fffdf5"/><rect x="6" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="15" width="4" height="1" fill="#e83b3b"/></svg></span> <span class="rv-pyro rv-pyro--4" aria-hidden="true"><svg class="rv-pyro__a" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="3" y="1" width="2" height="1" fill="#ffe135"/><rect x="3" y="2" width="1" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="3" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="2" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="2" height="1" fill="#ff9128"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="7" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="1" height="1" fill="#ffe135"/><rect x="2" y="5" width="4" height="1" fill="#ff9128"/><rect x="6" y="5" width="2" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="1" height="1" fill="#ff9128"/><rect x="3" y="6" width="1" height="1" fill="#fffdf5"/><rect x="4" y="6" width="3" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="1" height="1" fill="#ff9128"/><rect x="3" y="7" width="2" height="1" fill="#fffdf5"/><rect x="5" y="7" width="2" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="1" height="1" fill="#ff9128"/><rect x="2" y="8" width="3" height="1" fill="#fffdf5"/><rect x="5" y="8" width="3" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="1" height="1" fill="#ff9128"/><rect x="2" y="9" width="4" height="1" fill="#fffdf5"/><rect x="6" y="9" width="2" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="1" height="1" fill="#ff9128"/><rect x="2" y="10" width="4" height="1" fill="#fffdf5"/><rect x="6" y="10" width="2" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="11" width="4" height="1" fill="#fffdf5"/><rect x="6" y="11" width="2" height="1" fill="#ff9128"/><rect x="1" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="4" height="1" fill="#fffdf5"/><rect x="6" y="12" width="1" height="1" fill="#ff9128"/><rect x="1" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="13" width="4" height="1" fill="#fffdf5"/><rect x="6" y="13" width="1" height="1" fill="#e83b3b"/><rect x="1" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="14" width="2" height="1" fill="#fffdf5"/><rect x="5" y="14" width="2" height="1" fill="#e83b3b"/><rect x="2" y="15" width="4" height="1" fill="#e83b3b"/></svg><svg class="rv-pyro__b" viewBox="0 0 9 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="0" width="1" height="1" fill="#ffe135"/><rect x="4" y="1" width="2" height="1" fill="#ffe135"/><rect x="4" y="2" width="1" height="1" fill="#ff9128"/><rect x="5" y="2" width="1" height="1" fill="#ffe135"/><rect x="2" y="3" width="1" height="1" fill="#ffe135"/><rect x="4" y="3" width="2" height="1" fill="#ff9128"/><rect x="6" y="3" width="1" height="1" fill="#ffe135"/><rect x="1" y="4" width="1" height="1" fill="#ffe135"/><rect x="3" y="4" width="1" height="1" fill="#ffe135"/><rect x="4" y="4" width="2" height="1" fill="#ff9128"/><rect x="6" y="4" width="1" height="1" fill="#ffe135"/><rect x="1" y="5" width="2" height="1" fill="#ffe135"/><rect x="3" y="5" width="4" height="1" fill="#ff9128"/><rect x="7" y="5" width="1" height="1" fill="#ffe135"/><rect x="1" y="6" width="1" height="1" fill="#ffe135"/><rect x="2" y="6" width="3" height="1" fill="#ff9128"/><rect x="5" y="6" width="1" height="1" fill="#fffdf5"/><rect x="6" y="6" width="1" height="1" fill="#ff9128"/><rect x="7" y="6" width="1" height="1" fill="#ffe135"/><rect x="1" y="7" width="1" height="1" fill="#ffe135"/><rect x="2" y="7" width="2" height="1" fill="#ff9128"/><rect x="4" y="7" width="2" height="1" fill="#fffdf5"/><rect x="6" y="7" width="1" height="1" fill="#ff9128"/><rect x="7" y="7" width="1" height="1" fill="#ffe135"/><rect x="0" y="8" width="1" height="1" fill="#ffe135"/><rect x="1" y="8" width="3" height="1" fill="#ff9128"/><rect x="4" y="8" width="3" height="1" fill="#fffdf5"/><rect x="7" y="8" width="1" height="1" fill="#ff9128"/><rect x="8" y="8" width="1" height="1" fill="#ffe135"/><rect x="0" y="9" width="1" height="1" fill="#ffe135"/><rect x="1" y="9" width="2" height="1" fill="#ff9128"/><rect x="3" y="9" width="4" height="1" fill="#fffdf5"/><rect x="7" y="9" width="1" height="1" fill="#ff9128"/><rect x="8" y="9" width="1" height="1" fill="#ffe135"/><rect x="0" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="10" width="2" height="1" fill="#ff9128"/><rect x="3" y="10" width="4" height="1" fill="#fffdf5"/><rect x="7" y="10" width="1" height="1" fill="#ff9128"/><rect x="8" y="10" width="1" height="1" fill="#ffe135"/><rect x="1" y="11" width="2" height="1" fill="#ff9128"/><rect x="3" y="11" width="4" height="1" fill="#fffdf5"/><rect x="7" y="11" width="1" height="1" fill="#ff9128"/><rect x="2" y="12" width="1" height="1" fill="#ff9128"/><rect x="3" y="12" width="4" height="1" fill="#fffdf5"/><rect x="7" y="12" width="1" height="1" fill="#ff9128"/><rect x="2" y="13" width="1" height="1" fill="#e83b3b"/><rect x="3" y="13" width="4" height="1" fill="#fffdf5"/><rect x="7" y="13" width="1" height="1" fill="#e83b3b"/><rect x="2" y="14" width="2" height="1" fill="#e83b3b"/><rect x="4" y="14" width="2" height="1" fill="#fffdf5"/><rect x="6" y="14" width="2" height="1" fill="#e83b3b"/><rect x="3" y="15" width="4" height="1" fill="#e83b3b"/></svg></span> <span class="rv-mnote rv-mnote--1" aria-hidden="true">♪</span> <span class="rv-mnote rv-mnote--2" aria-hidden="true">♫</span> <span class="rv-mnote rv-mnote--3" aria-hidden="true">♪</span> <span class="rv-mnote rv-mnote--4" aria-hidden="true">♫</span> <div class="rv-stage" id="rvStage" aria-label="Dancing on stage with the DJ"><div class="rv-stage__gap"></div></div> <svg class="rv-speaker rv-speaker--l" viewBox="0 0 12 16" aria-hidden="true"> <rect width="12" height="16" fill="#241a38"></rect><rect x="1" y="1" width="10" height="14" fill="#0d0b14"></rect> <g class="rv-spkcone"><circle cx="6" cy="5" r="3" fill="#2a1650"></circle><circle cx="6" cy="5" r="1.2" fill="#b388ff"></circle></g> <g class="rv-spkcone rv-spkcone--b"><circle cx="6" cy="12" r="3" fill="#2a1650"></circle><circle cx="6" cy="12" r="1.2" fill="#b388ff"></circle></g> </svg> <div class="rv-djgroup"> <canvas id="rvDj" width="200" height="200" aria-hidden="true"></canvas> <div class="rv-desk"><span class="rv-desk__label">tonight's DJ</span></div> </div> <svg class="rv-speaker rv-speaker--r" viewBox="0 0 12 16" aria-hidden="true"> <rect width="12" height="16" fill="#241a38"></rect><rect x="1" y="1" width="10" height="14" fill="#0d0b14"></rect> <g class="rv-spkcone"><circle cx="6" cy="5" r="3" fill="#2a1650"></circle><circle cx="6" cy="5" r="1.2" fill="#b388ff"></circle></g> <g class="rv-spkcone rv-spkcone--b"><circle cx="6" cy="12" r="3" fill="#2a1650"></circle><circle cx="6" cy="12" r="1.2" fill="#b388ff"></circle></g> </svg> </div> <div class="rv-floor" id="rvFloor"> <div class="rv-toasts" id="rvToasts" aria-live="polite"></div> <div class="rv-world" id="rvWorld"> <canvas class="rv-trails" id="rvTrails" aria-hidden="true"></canvas> <div class="rv-spot" id="rvSpot" hidden aria-hidden="true"></div> <svg class="rv-item" id="rvVinyl" viewBox="0 0 12 12" shape-rendering="crispEdges" style="display:none;" aria-hidden="true"> <rect x="3" y="0" width="6" height="1" fill="#52526a"></rect><rect x="2" y="1" width="1" height="1" fill="#52526a"></rect><rect x="3" y="1" width="6" height="1" fill="#101016"></rect><rect x="9" y="1" width="1" height="1" fill="#52526a"></rect><rect x="1" y="2" width="1" height="1" fill="#52526a"></rect><rect x="2" y="2" width="1" height="1" fill="#101016"></rect><rect x="3" y="2" width="2" height="1" fill="#f0f0fa"></rect><rect x="5" y="2" width="5" height="1" fill="#101016"></rect><rect x="10" y="2" width="1" height="1" fill="#52526a"></rect><rect x="1" y="3" width="1" height="1" fill="#52526a"></rect><rect x="2" y="3" width="2" height="1" fill="#f0f0fa"></rect><rect x="4" y="3" width="6" height="1" fill="#101016"></rect><rect x="10" y="3" width="1" height="1" fill="#52526a"></rect><rect x="0" y="4" width="1" height="1" fill="#52526a"></rect><rect x="1" y="4" width="1" height="1" fill="#101016"></rect><rect x="2" y="4" width="1" height="1" fill="#f0f0fa"></rect><rect x="3" y="4" width="2" height="1" fill="#101016"></rect><rect x="5" y="4" width="2" height="1" fill="#ff4d9d"></rect><rect x="7" y="4" width="3" height="1" fill="#101016"></rect><rect x="10" y="4" width="1" height="1" fill="#787894"></rect><rect x="11" y="4" width="1" height="1" fill="#52526a"></rect><rect x="0" y="5" width="1" height="1" fill="#52526a"></rect><rect x="1" y="5" width="3" height="1" fill="#101016"></rect><rect x="4" y="5" width="1" height="1" fill="#ff4d9d"></rect><rect x="5" y="5" width="2" height="1" fill="#ffe135"></rect><rect x="7" y="5" width="1" height="1" fill="#c62c74"></rect><rect x="8" y="5" width="2" height="1" fill="#101016"></rect><rect x="10" y="5" width="1" height="1" fill="#787894"></rect><rect x="11" y="5" width="1" height="1" fill="#52526a"></rect><rect x="0" y="6" width="1" height="1" fill="#52526a"></rect><rect x="1" y="6" width="3" height="1" fill="#101016"></rect><rect x="4" y="6" width="1" height="1" fill="#ff4d9d"></rect><rect x="5" y="6" width="2" height="1" fill="#ffe135"></rect><rect x="7" y="6" width="1" height="1" fill="#c62c74"></rect><rect x="8" y="6" width="2" height="1" fill="#101016"></rect><rect x="10" y="6" width="1" height="1" fill="#787894"></rect><rect x="11" y="6" width="1" height="1" fill="#52526a"></rect><rect x="0" y="7" width="1" height="1" fill="#52526a"></rect><rect x="1" y="7" width="4" height="1" fill="#101016"></rect><rect x="5" y="7" width="2" height="1" fill="#c62c74"></rect><rect x="7" y="7" width="3" height="1" fill="#101016"></rect><rect x="10" y="7" width="1" height="1" fill="#787894"></rect><rect x="11" y="7" width="1" height="1" fill="#52526a"></rect><rect x="1" y="8" width="1" height="1" fill="#52526a"></rect><rect x="2" y="8" width="6" height="1" fill="#101016"></rect><rect x="8" y="8" width="2" height="1" fill="#787894"></rect><rect x="10" y="8" width="1" height="1" fill="#52526a"></rect><rect x="1" y="9" width="1" height="1" fill="#52526a"></rect><rect x="2" y="9" width="8" height="1" fill="#101016"></rect><rect x="10" y="9" width="1" height="1" fill="#52526a"></rect><rect x="2" y="10" width="1" height="1" fill="#52526a"></rect><rect x="3" y="10" width="6" height="1" fill="#101016"></rect><rect x="9" y="10" width="1" height="1" fill="#52526a"></rect><rect x="3" y="11" width="6" height="1" fill="#52526a"></rect> </svg> <div class="rv-item" id="rvItem" style="display:none;" aria-hidden="true"></div> <div class="rv-twinkle" id="rvTwinkle" hidden aria-hidden="true"><svg class="rv-twinkle__a" viewBox="0 0 11 11" shape-rendering="crispEdges"><rect x="5" y="0" width="1" height="1" fill="#78ebff"></rect><rect x="5" y="1" width="1" height="1" fill="#78ebff"></rect><rect x="5" y="2" width="1" height="1" fill="#ffffff"></rect><rect x="5" y="3" width="1" height="1" fill="#ffffff"></rect><rect x="4" y="4" width="3" height="1" fill="#ffffff"></rect><rect x="0" y="5" width="2" height="1" fill="#78ebff"></rect><rect x="2" y="5" width="7" height="1" fill="#ffffff"></rect><rect x="9" y="5" width="2" height="1" fill="#78ebff"></rect><rect x="4" y="6" width="3" height="1" fill="#ffffff"></rect><rect x="5" y="7" width="1" height="1" fill="#ffffff"></rect><rect x="5" y="8" width="1" height="1" fill="#ffffff"></rect><rect x="5" y="9" width="1" height="1" fill="#78ebff"></rect><rect x="5" y="10" width="1" height="1" fill="#78ebff"></rect></svg><svg class="rv-twinkle__b" viewBox="0 0 11 11" shape-rendering="crispEdges"><rect x="0" y="0" width="1" height="1" fill="#78ebff"></rect><rect x="10" y="0" width="1" height="1" fill="#78ebff"></rect><rect x="1" y="1" width="1" height="1" fill="#78ebff"></rect><rect x="9" y="1" width="1" height="1" fill="#78ebff"></rect><rect x="2" y="2" width="1" height="1" fill="#ffffff"></rect><rect x="8" y="2" width="1" height="1" fill="#ffffff"></rect><rect x="3" y="3" width="1" height="1" fill="#ffffff"></rect><rect x="7" y="3" width="1" height="1" fill="#ffffff"></rect><rect x="4" y="4" width="1" height="1" fill="#ffffff"></rect><rect x="6" y="4" width="1" height="1" fill="#ffffff"></rect><rect x="5" y="5" width="1" height="1" fill="#ffffff"></rect><rect x="4" y="6" width="1" height="1" fill="#ffffff"></rect><rect x="6" y="6" width="1" height="1" fill="#ffffff"></rect><rect x="3" y="7" width="1" height="1" fill="#ffffff"></rect><rect x="7" y="7" width="1" height="1" fill="#ffffff"></rect><rect x="2" y="8" width="1" height="1" fill="#ffffff"></rect><rect x="8" y="8" width="1" height="1" fill="#ffffff"></rect><rect x="1" y="9" width="1" height="1" fill="#78ebff"></rect><rect x="9" y="9" width="1" height="1" fill="#78ebff"></rect><rect x="0" y="10" width="1" height="1" fill="#78ebff"></rect><rect x="10" y="10" width="1" height="1" fill="#78ebff"></rect></svg></div> <div id="rvRun" aria-hidden="true"></div> <div id="rvChores" aria-hidden="true"></div> <svg class="rv-item rv-item--gold" id="rvGold" viewBox="0 0 8 14" shape-rendering="crispEdges" style="display:none;" aria-hidden="true"> <rect x="4" y="0" width="1" height="1" fill="#5a3618"></rect><rect x="4" y="1" width="1" height="1" fill="#5a3618"></rect><rect x="4" y="2" width="2" height="1" fill="#5a3618"></rect><rect x="0" y="3" width="1" height="1" fill="#ffffff"></rect><rect x="3" y="3" width="1" height="1" fill="#d69a1e"></rect><rect x="4" y="3" width="2" height="1" fill="#ffe135"></rect><rect x="6" y="3" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="4" width="1" height="1" fill="#d69a1e"></rect><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"></rect><rect x="5" y="4" width="1" height="1" fill="#ffe135"></rect><rect x="6" y="4" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="5" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"></rect><rect x="4" y="5" width="2" height="1" fill="#ffe135"></rect><rect x="6" y="5" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="6" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="6" width="3" height="1" fill="#ffe135"></rect><rect x="6" y="6" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="7" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="7" width="3" height="1" fill="#ffe135"></rect><rect x="6" y="7" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="8" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="8" width="3" height="1" fill="#ffe135"></rect><rect x="6" y="8" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="9" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="9" width="3" height="1" fill="#ffe135"></rect><rect x="6" y="9" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="10" width="1" height="1" fill="#d69a1e"></rect><rect x="3" y="10" width="3" height="1" fill="#ffe135"></rect><rect x="6" y="10" width="1" height="1" fill="#d69a1e"></rect><rect x="1" y="11" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="11" width="3" height="1" fill="#ffe135"></rect><rect x="5" y="11" width="1" height="1" fill="#d69a1e"></rect><rect x="7" y="11" width="1" height="1" fill="#ffffff"></rect><rect x="1" y="12" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="12" width="2" height="1" fill="#ffe135"></rect><rect x="4" y="12" width="1" height="1" fill="#d69a1e"></rect><rect x="2" y="13" width="2" height="1" fill="#5a3618"></rect> </svg> <div class="rv-item rv-gift" id="rvGift" style="display:none;" aria-hidden="true"></div> <div class="rv-coin" id="rvCoin" style="display:none;" aria-hidden="true"></div> <div class="rv-bar" aria-hidden="true"> <!-- the way out back — dormant until the stand opens (STAND_OPEN);
+                   accessible entrance = the field-guide link, this one is scenery --> <a class="rv-exitdoor" id="rvExitDoor" href="/banana-stand/" hidden tabindex="-1"> <span class="rv-exitdoor__sign">EXIT</span> <svg viewBox="0 0 28 36" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="28" height="3" fill="#a97139"></rect> <rect x="0" y="3" width="28" height="1" fill="#111111"></rect> <rect x="0" y="4" width="2" height="32" fill="#5a3618"></rect> <rect x="26" y="4" width="2" height="32" fill="#5a3618"></rect> <rect x="2" y="4" width="11" height="32" fill="#241a2e"></rect> <rect x="15" y="4" width="11" height="32" fill="#241a2e"></rect> <rect x="13" y="4" width="2" height="32" fill="#000000"></rect> <rect x="11" y="4" width="2" height="32" fill="#1a1220"></rect> <rect x="24" y="4" width="2" height="32" fill="#1a1220"></rect> <rect x="9" y="19" width="2" height="2" fill="#ffe135"></rect> <rect x="17" y="19" width="2" height="2" fill="#ffe135"></rect> </svg> </a> <div class="rv-bubble" id="rvBubble" hidden></div> <div class="rv-special" id="rvSpecial" hidden></div> <svg class="rv-counterbeer" id="rvCounterBeer" viewBox="0 0 50 60" style="display:none;"> <rect x="10" y="0" width="30" height="10" fill="#fffdf5"></rect><rect x="0" y="10" width="10" height="40" fill="#111111"></rect><rect x="10" y="10" width="30" height="10" fill="#fffdf5"></rect><rect x="40" y="10" width="10" height="40" fill="#111111"></rect><rect x="10" y="20" width="30" height="30" fill="#f2c200"></rect><rect x="15" y="25" width="7" height="20" fill="#ffe135"></rect><rect x="10" y="50" width="30" height="10" fill="#111111"></rect> </svg> <!-- the FIRST NIGHTSHIFT's house pour: waits on the counter during
+                   step 1, then moves into the newcomer's glove (SVG quirk: inline
+                   display only — [hidden] doesn't work on svg) --> <svg class="rv-counterbeer rv-counterbeer--quest" id="rvQuestDrink" viewBox="0 0 50 60" style="display:none;"> <rect x="10" y="0" width="30" height="10" fill="#fffdf5"></rect><rect x="0" y="10" width="10" height="40" fill="#111111"></rect><rect x="10" y="10" width="30" height="10" fill="#fffdf5"></rect><rect x="40" y="10" width="10" height="40" fill="#111111"></rect><rect x="10" y="20" width="30" height="30" fill="#f2c200"></rect><rect x="15" y="25" width="7" height="20" fill="#ffe135"></rect><rect x="10" y="50" width="30" height="10" fill="#111111"></rect> </svg> <svg class="rv-counter" viewBox="0 0 222 60" shape-rendering="crispEdges"> <rect x="0" y="0" width="222" height="8" fill="#a97139"></rect> <rect x="0" y="8" width="222" height="4" fill="#111111"></rect> <rect x="0" y="12" width="222" height="48" fill="#5a3618"></rect> <rect x="14" y="12" width="4" height="48" fill="#6b4320"></rect><rect x="52" y="12" width="4" height="48" fill="#6b4320"></rect><rect x="90" y="12" width="4" height="48" fill="#6b4320"></rect><rect x="128" y="12" width="4" height="48" fill="#6b4320"></rect><rect x="166" y="12" width="4" height="48" fill="#6b4320"></rect><rect x="204" y="12" width="4" height="48" fill="#6b4320"></rect> </svg> <div class="rv-broomprop" id="rvBroomProp" style="display:none" aria-hidden="true"><svg viewBox="0 0 8 22" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="2" height="1" fill="#5a3618"></rect><rect x="3" y="1" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="2" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="3" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="4" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="5" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="6" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="7" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="8" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="9" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="10" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="11" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="12" width="2" height="1" fill="#8a5a2b"></rect><rect x="3" y="13" width="2" height="1" fill="#8a5a2b"></rect><rect x="2" y="14" width="1" height="1" fill="#111111"></rect><rect x="3" y="14" width="2" height="1" fill="#8a5a2b"></rect><rect x="5" y="14" width="1" height="1" fill="#111111"></rect><rect x="2" y="15" width="1" height="1" fill="#111111"></rect><rect x="3" y="15" width="2" height="1" fill="#ffd650"></rect><rect x="5" y="15" width="1" height="1" fill="#111111"></rect><rect x="1" y="16" width="1" height="1" fill="#111111"></rect><rect x="2" y="16" width="4" height="1" fill="#ffd650"></rect><rect x="6" y="16" width="1" height="1" fill="#111111"></rect><rect x="1" y="17" width="1" height="1" fill="#111111"></rect><rect x="2" y="17" width="2" height="1" fill="#ffd650"></rect><rect x="4" y="17" width="1" height="1" fill="#d6a024"></rect><rect x="5" y="17" width="1" height="1" fill="#ffd650"></rect><rect x="6" y="17" width="1" height="1" fill="#111111"></rect><rect x="0" y="18" width="1" height="1" fill="#111111"></rect><rect x="1" y="18" width="2" height="1" fill="#ffd650"></rect><rect x="3" y="18" width="1" height="1" fill="#d6a024"></rect><rect x="4" y="18" width="3" height="1" fill="#ffd650"></rect><rect x="7" y="18" width="1" height="1" fill="#111111"></rect><rect x="0" y="19" width="1" height="1" fill="#111111"></rect><rect x="1" y="19" width="1" height="1" fill="#ffd650"></rect><rect x="2" y="19" width="1" height="1" fill="#d6a024"></rect><rect x="3" y="19" width="2" height="1" fill="#ffd650"></rect><rect x="5" y="19" width="1" height="1" fill="#d6a024"></rect><rect x="6" y="19" width="1" height="1" fill="#ffd650"></rect><rect x="7" y="19" width="1" height="1" fill="#111111"></rect><rect x="0" y="20" width="1" height="1" fill="#111111"></rect><rect x="1" y="20" width="3" height="1" fill="#ffd650"></rect><rect x="4" y="20" width="1" height="1" fill="#d6a024"></rect><rect x="5" y="20" width="2" height="1" fill="#ffd650"></rect><rect x="7" y="20" width="1" height="1" fill="#111111"></rect><rect x="1" y="21" width="6" height="1" fill="#111111"></rect></svg></div> <canvas id="rvBarman" width="160" height="160" aria-hidden="true"></canvas> </div> </div> <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button> <div class="rv-quest" id="rvQuest" hidden> <span class="rv-quest__k">quest</span> <div class="rv-quest__row"><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div> </div> <div class="rv-mixer" id="rvMixer" aria-hidden="true" title="the JELLY meter — fill it and it's jelly time"> <div class="rv-wallet" id="rvWalletChip" hidden title="your bananacoins — the stand out back takes these"> <img src="/assets/banana-stand/coin.png" width="18" height="18" alt=""> <b id="rvWallet">0</b> </div> <div class="rv-mixer__row"><span>JELLY</span><span class="rv-mixer__bar" id="rvHypeBar"></span></div> <div class="rv-mixer__lvl" id="rvLvlRow"><span id="rvLvlN">LVL 1</span><span class="rv-mixer__lvlbar"><i id="rvLvlFill"></i></span></div> </div> <!-- THE LED STRIP: the club sign takes requests — dark until the DJ
+               calls something, one glance + one tap, pays REP, never punishes --> <div class="rv-led" id="rvLed" hidden><span id="rvLedTxt"></span><i class="rv-led__bar" id="rvLedBar"></i></div> </div> <!-- THE TOUR: first-visit cinematic — camera moves, big pixel type,
+             spotlight cutouts. Tap advances; the ❓ button replays it. --> <div class="rv-tour" id="rvTour" hidden> <div class="rv-tour__hl" id="rvTourHl" hidden></div> <div class="rv-tour__big" id="rvTourBig" hidden><span id="rvTourBigTxt"></span><small id="rvTourBigSub"></small></div> <div class="rv-tour__box" id="rvTourBox" hidden> <p class="rv-tour__title" id="rvTourTitle"></p> <p class="rv-tour__text" id="rvTourText"></p> </div> <div class="rv-tour__band" id="rvTourBand"> <p class="rv-tour__next" id="rvTourNext">tap to continue →</p> <button class="rv-tour__skip" id="rvTourSkip" type="button">skip ✕</button> </div> </div> <div class="rv-hud"> <div class="rv-emotes" role="group" aria-label="Send an emote"> <button class="rv-emote-btn" data-emote="heart" aria-label="Send a heart"><svg class="pxi" viewBox="0 0 140 120" style="width:1.5em;height:1.5em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="20" y="0" width="30" height="10" fill="#262233"></rect><rect x="80" y="0" width="30" height="10" fill="#262233"></rect><rect x="10" y="10" width="10" height="10" fill="#262233"></rect><rect x="20" y="10" width="30" height="10" fill="#ff6259"></rect><rect x="50" y="10" width="10" height="10" fill="#262233"></rect><rect x="70" y="10" width="10" height="10" fill="#262233"></rect><rect x="80" y="10" width="30" height="10" fill="#ff6259"></rect><rect x="110" y="10" width="10" height="10" fill="#262233"></rect><rect x="0" y="20" width="10" height="10" fill="#262233"></rect><rect x="10" y="20" width="10" height="10" fill="#ff6259"></rect><rect x="20" y="20" width="20" height="10" fill="#ffffff"></rect><rect x="40" y="20" width="20" height="10" fill="#ff6259"></rect><rect x="60" y="20" width="10" height="10" fill="#262233"></rect><rect x="70" y="20" width="50" height="10" fill="#ff6259"></rect><rect x="120" y="20" width="10" height="10" fill="#262233"></rect><rect x="0" y="30" width="10" height="10" fill="#262233"></rect><rect x="10" y="30" width="10" height="10" fill="#ff6259"></rect><rect x="20" y="30" width="10" height="10" fill="#ffffff"></rect><rect x="30" y="30" width="90" height="10" fill="#ff6259"></rect><rect x="120" y="30" width="10" height="10" fill="#262233"></rect><rect x="0" y="40" width="10" height="10" fill="#262233"></rect><rect x="10" y="40" width="110" height="10" fill="#ff6259"></rect><rect x="120" y="40" width="10" height="10" fill="#262233"></rect><rect x="0" y="50" width="10" height="10" fill="#262233"></rect><rect x="10" y="50" width="10" height="10" fill="#c73e4e"></rect><rect x="20" y="50" width="90" height="10" fill="#ff6259"></rect><rect x="110" y="50" width="10" height="10" fill="#c73e4e"></rect><rect x="120" y="50" width="10" height="10" fill="#262233"></rect><rect x="10" y="60" width="10" height="10" fill="#262233"></rect><rect x="20" y="60" width="10" height="10" fill="#c73e4e"></rect><rect x="30" y="60" width="70" height="10" fill="#ff6259"></rect><rect x="100" y="60" width="10" height="10" fill="#c73e4e"></rect><rect x="110" y="60" width="10" height="10" fill="#262233"></rect><rect x="20" y="70" width="10" height="10" fill="#262233"></rect><rect x="30" y="70" width="10" height="10" fill="#c73e4e"></rect><rect x="40" y="70" width="50" height="10" fill="#ff6259"></rect><rect x="90" y="70" width="10" height="10" fill="#c73e4e"></rect><rect x="100" y="70" width="10" height="10" fill="#262233"></rect><rect x="30" y="80" width="10" height="10" fill="#262233"></rect><rect x="40" y="80" width="10" height="10" fill="#c73e4e"></rect><rect x="50" y="80" width="30" height="10" fill="#ff6259"></rect><rect x="80" y="80" width="10" height="10" fill="#c73e4e"></rect><rect x="90" y="80" width="10" height="10" fill="#262233"></rect><rect x="40" y="90" width="10" height="10" fill="#262233"></rect><rect x="50" y="90" width="10" height="10" fill="#c73e4e"></rect><rect x="60" y="90" width="10" height="10" fill="#ff6259"></rect><rect x="70" y="90" width="10" height="10" fill="#c73e4e"></rect><rect x="80" y="90" width="10" height="10" fill="#262233"></rect><rect x="50" y="100" width="10" height="10" fill="#262233"></rect><rect x="60" y="100" width="10" height="10" fill="#c73e4e"></rect><rect x="70" y="100" width="10" height="10" fill="#262233"></rect><rect x="60" y="110" width="10" height="10" fill="#262233"></rect> </svg></button> <!-- the clap: the stock clap emoji pixelified FAITHFULLY, fingers and all (v1 free-styled it and was, memorably, misread; replaced the sparkle — Trym: "the weird star thingy"). Emote id stays 'confetti' — ids never rename. --> <button class="rv-emote-btn" data-emote="confetti" aria-label="Send a clap"><svg viewBox="0 0 14 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em"><rect x="2" y="0" width="1" height="1" fill="#fffdf5"></rect><rect x="6" y="0" width="2" height="1" fill="#fffdf5"></rect><rect x="11" y="0" width="1" height="1" fill="#fffdf5"></rect><rect x="3" y="1" width="1" height="1" fill="#fffdf5"></rect><rect x="5" y="1" width="1" height="1" fill="#fffdf5"></rect><rect x="8" y="1" width="1" height="1" fill="#fffdf5"></rect><rect x="10" y="1" width="1" height="1" fill="#fffdf5"></rect><rect x="1" y="3" width="4" height="1" fill="#111111"></rect><rect x="9" y="3" width="4" height="1" fill="#111111"></rect><rect x="0" y="4" width="1" height="1" fill="#111111"></rect><rect x="1" y="4" width="1" height="1" fill="#ffce4a"></rect><rect x="2" y="4" width="1" height="1" fill="#e5a43b"></rect><rect x="3" y="4" width="1" height="1" fill="#ffce4a"></rect><rect x="4" y="4" width="1" height="1" fill="#e5a43b"></rect><rect x="5" y="4" width="1" height="1" fill="#111111"></rect><rect x="8" y="4" width="1" height="1" fill="#111111"></rect><rect x="9" y="4" width="1" height="1" fill="#e5a43b"></rect><rect x="10" y="4" width="1" height="1" fill="#ffce4a"></rect><rect x="11" y="4" width="1" height="1" fill="#e5a43b"></rect><rect x="12" y="4" width="1" height="1" fill="#ffce4a"></rect><rect x="13" y="4" width="1" height="1" fill="#111111"></rect><rect x="0" y="5" width="1" height="1" fill="#111111"></rect><rect x="1" y="5" width="1" height="1" fill="#ffce4a"></rect><rect x="2" y="5" width="1" height="1" fill="#e5a43b"></rect><rect x="3" y="5" width="1" height="1" fill="#ffce4a"></rect><rect x="4" y="5" width="1" height="1" fill="#e5a43b"></rect><rect x="5" y="5" width="1" height="1" fill="#111111"></rect><rect x="8" y="5" width="1" height="1" fill="#111111"></rect><rect x="9" y="5" width="1" height="1" fill="#e5a43b"></rect><rect x="10" y="5" width="1" height="1" fill="#ffce4a"></rect><rect x="11" y="5" width="1" height="1" fill="#e5a43b"></rect><rect x="12" y="5" width="1" height="1" fill="#ffce4a"></rect><rect x="13" y="5" width="1" height="1" fill="#111111"></rect><rect x="0" y="6" width="1" height="1" fill="#111111"></rect><rect x="1" y="6" width="1" height="1" fill="#ffce4a"></rect><rect x="2" y="6" width="1" height="1" fill="#e5a43b"></rect><rect x="3" y="6" width="1" height="1" fill="#ffce4a"></rect><rect x="4" y="6" width="1" height="1" fill="#e5a43b"></rect><rect x="5" y="6" width="1" height="1" fill="#111111"></rect><rect x="8" y="6" width="1" height="1" fill="#111111"></rect><rect x="9" y="6" width="1" height="1" fill="#e5a43b"></rect><rect x="10" y="6" width="1" height="1" fill="#ffce4a"></rect><rect x="11" y="6" width="1" height="1" fill="#e5a43b"></rect><rect x="12" y="6" width="1" height="1" fill="#ffce4a"></rect><rect x="13" y="6" width="1" height="1" fill="#111111"></rect><rect x="0" y="7" width="1" height="1" fill="#111111"></rect><rect x="1" y="7" width="4" height="1" fill="#ffce4a"></rect><rect x="5" y="7" width="1" height="1" fill="#111111"></rect><rect x="8" y="7" width="1" height="1" fill="#111111"></rect><rect x="9" y="7" width="4" height="1" fill="#ffce4a"></rect><rect x="13" y="7" width="1" height="1" fill="#111111"></rect><rect x="0" y="8" width="1" height="1" fill="#111111"></rect><rect x="1" y="8" width="4" height="1" fill="#ffce4a"></rect><rect x="5" y="8" width="1" height="1" fill="#111111"></rect><rect x="8" y="8" width="1" height="1" fill="#111111"></rect><rect x="9" y="8" width="4" height="1" fill="#ffce4a"></rect><rect x="13" y="8" width="1" height="1" fill="#111111"></rect><rect x="1" y="9" width="1" height="1" fill="#111111"></rect><rect x="2" y="9" width="3" height="1" fill="#ffce4a"></rect><rect x="5" y="9" width="1" height="1" fill="#111111"></rect><rect x="8" y="9" width="1" height="1" fill="#111111"></rect><rect x="9" y="9" width="3" height="1" fill="#ffce4a"></rect><rect x="12" y="9" width="1" height="1" fill="#111111"></rect><rect x="1" y="10" width="1" height="1" fill="#111111"></rect><rect x="2" y="10" width="2" height="1" fill="#ffce4a"></rect><rect x="4" y="10" width="1" height="1" fill="#e5a43b"></rect><rect x="5" y="10" width="1" height="1" fill="#111111"></rect><rect x="8" y="10" width="1" height="1" fill="#111111"></rect><rect x="9" y="10" width="1" height="1" fill="#e5a43b"></rect><rect x="10" y="10" width="2" height="1" fill="#ffce4a"></rect><rect x="12" y="10" width="1" height="1" fill="#111111"></rect><rect x="2" y="11" width="4" height="1" fill="#111111"></rect><rect x="8" y="11" width="4" height="1" fill="#111111"></rect></svg></button> <!-- 🍌💨 THE FOOD FIGHT trigger — replaces the old banana emote
+                 (Trym's call). Pixel thrown-banana icon: a crescent mid-flight
+                 with motion dashes + spark = reads "throw/attack" instantly.
+                 NOT an emote (own class + wiring) — it fires a projectile. --> <button class="rv-emote-btn rv-throw-btn" id="rvThrowBtn" aria-label="Throw a banana (F)" title="throw a banana! (F) — tap a banana to lock on"><svg viewBox="0 0 14 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="1.6em" height="1.15em"><rect x="0" y="3" width="2" height="1" fill="#fffdf5"></rect><rect x="1" y="5" width="2" height="1" fill="#fffdf5"></rect><rect x="0" y="7" width="2" height="1" fill="#fffdf5"></rect><rect x="12" y="1" width="1" height="1" fill="#7a4a21"></rect><rect x="11" y="2" width="2" height="1" fill="#ffd23f"></rect><rect x="10" y="3" width="2" height="1" fill="#ffd23f"></rect><rect x="10" y="4" width="1" height="1" fill="#e6a817"></rect><rect x="9" y="4" width="1" height="1" fill="#ffd23f"></rect><rect x="8" y="5" width="2" height="1" fill="#ffd23f"></rect><rect x="8" y="6" width="1" height="1" fill="#e6a817"></rect><rect x="7" y="7" width="1" height="1" fill="#e6a817"></rect><rect x="13" y="0" width="1" height="1" fill="#ff9e2c"></rect><rect x="13" y="2" width="1" height="1" fill="#ff9e2c"></rect><rect x="12" y="5" width="1" height="1" fill="#ff9e2c"></rect></svg></button> <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button> </div> <button class="rv-stage-btn" id="rvStageBtn" hidden></button> <button class="rv-emote-btn rv-tourbtn rv-soundbtn" id="rvSoundBtn" aria-label="Toggle the music" aria-pressed="false" title="sound on — the set is live"><svg viewBox="0 0 12 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="3" width="2" height="4" fill="#fffdf5"></rect><rect x="2" y="2" width="1" height="6" fill="#fffdf5"></rect><rect x="3" y="1" width="1" height="8" fill="#fffdf5"></rect><rect x="4" y="0" width="1" height="10" fill="#fffdf5"></rect><rect x="6" y="3" width="1" height="4" fill="#fffdf5" class="rv-soundbtn__w1"></rect><rect x="8" y="2" width="1" height="6" fill="#fffdf5" class="rv-soundbtn__w2"></rect><rect x="10" y="1" width="1" height="8" fill="#fffdf5" class="rv-soundbtn__w3"></rect></svg></button> <button class="rv-emote-btn rv-tourbtn" id="rvTourBtn" aria-label="Replay the club tour" title="how does this club work?"><svg viewBox="0 0 8 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#fffdf5"></rect><rect x="1" y="1" width="6" height="1" fill="#fffdf5"></rect><rect x="1" y="2" width="2" height="1" fill="#fffdf5"></rect><rect x="5" y="2" width="2" height="1" fill="#fffdf5"></rect><rect x="5" y="3" width="2" height="1" fill="#fffdf5"></rect><rect x="4" y="4" width="2" height="1" fill="#fffdf5"></rect><rect x="3" y="5" width="2" height="1" fill="#fffdf5"></rect><rect x="3" y="6" width="2" height="1" fill="#fffdf5"></rect><rect x="3" y="8" width="2" height="1" fill="#fffdf5"></rect><rect x="3" y="9" width="2" height="1" fill="#fffdf5"></rect></svg></button> <span class="rv-more" id="rvMore"></span> </div> </div> <aside class="rv-panel"> <h2>on the floor</h2> <ol id="rvBoard"><li><span>the floor awaits…</span></li></ol> <h2 class="rv-panel__h2">your night</h2> <div class="rv-stats" id="rvStats"></div> <button class="rv-share-btn" id="rvShareNight"><svg class="pai" width="18px" height="18px" shape-rendering="crispEdges" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M20 21H4v-2h16v2ZM4 19H2V7h2v12Zm18 0h-2V7h2v12Zm-8-3h-4v-2h4v2Zm-4-2H8v-4h2v4Zm6 0h-2v-4h2v4Zm-2-4h-4V8h4v2ZM8 7H4V5h4v2Zm12 0h-4V5h4v2Zm-4-2H8V3h8v2Z"/></svg> share my night</button> <div class="rv-door"> <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a> </div> <p class="rv-note"><strong>Boogie with the arrow keys / WASD, or tap the floor.</strong> Everything else — Barty, the jelly, the drops — is in <a href="#what">the field guide below ↓</a></p> </aside> </div> <!-- ============ below the floor: what this place IS ============ --> <div class="rvg"> <section class="rvg__block" id="what"> <p class="rvg__kicker">the fine print, in neon</p> <h2>what is this place?</h2> <p>
+In 1999 I drew <a href="/dancing-banana-gif-meme/">a little banana that never stopped dancing</a>.
+          Twenty-seven years later, it has a club. <strong>Every banana on this floor is a real visitor</strong> —
+          no bots, no fakes. The only characters who aren't guests are staff: Barty behind the bar and
+          tonight's DJ in the booth. They have jobs.
+</p> <p>
+And here's the trick the whole place runs on: <strong>there is only one song, and it never
+          stops.</strong> Every banana on Earth dances on the same beat — open the rave on your phone and
+          your laptop and watch them match, frame for frame. Same beat, whole planet.
+</p> <p>No account. No cost. Your banana walks in <a href="/make-a-banana/">dressed the way you left it in the builder</a>, or a fresh one is generated at the door.</p> </section> <section class="rvg__block" id="do"> <p class="rvg__kicker">the loop</p> <h2>what do you actually do here?</h2> <ul class="rvg__list"> <li><strong>Boogie.</strong> Arrow keys, WASD, or tap the floor. The dance never stops — walking is just dancing with direction.</li> <li><strong>Chase what the floor spawns.</strong> Jelly drops, snacks, power-ups, the lost vinyl, the golden banana — being first is the sport. Everything you grab fills the <strong>JELLY meter</strong>; a full meter is yours to spend on a personal drop.</li> <li><strong>Catch tonight's drop.</strong> Once a night the club drops one wearable — walk into it and it's yours forever, worn everywhere your banana goes. Some drops were drawn by other visitors, and the maker's name rides along. <a href="/forge/">Draw an item in the Forge</a> and yours could be next.</li> <li><strong>Help Barty.</strong> He knows you're here to rave — but could you help an old banana with a few chores? Finish his requests and he stamps your <strong>nightshift</strong>. Five shifts make you a regular, with a regular's privileges.</li> <li id="rvStandGuide" hidden><strong>Slip out the EXIT by the bar.</strong> The banana stand is out back — a little shop in the park where the bananacoins you pick up on the floor buy stand-exclusive gear. Missed a drop night? The back-catalog's there too. <a href="/banana-stand/">Walk over →</a></li> <li><strong>Outlast everyone.</strong> Survive 5 minutes and the stage opens: dance behind the DJ, earn the &#128293; emote. Survive 30 and the glowstick is yours forever. The endurance board remembers.</li> <li><strong>Make a name.</strong> Everything you do pays into your club LEVEL — the gold bar by the JELLY meter, 1 to 99, forever. Climb the brackets and the roster shows your title in gold: On the List, The Regular, VIP… Legend of the Floor.</li> <li><strong>Collect the marks.</strong> Everything you earn here lands on <a href="/pass/">your banana pass</a> — badges, gear, level, stats. The rave writes your history.</li> </ul> </section> <section class="rvg__block" id="guide"> <p class="rvg__kicker">field guide</p> <h2>who &amp; what is on the floor</h2> <p class="rvg__sub">Everything below is the actual pixel art from the club, at actual chunkiness.</p> <div class="rvg__grid"> <article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/barty.png" alt="Barty, the bartender — banana rave pixel sprite" loading="lazy"></div> <h3>Barty, the bartender</h3> <p>Runs the bar, never sleeps. Calls HAPPY HOUR every 5th minute (first banana to the counter wins the beer), mixes specials in between — and always needs a hand with some little chore. Help him and he stamps your nightshift.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/jelly.png" alt="Jelly drops — banana rave pixel sprite" loading="lazy"></div> <h3>Jelly drops</h3> <p>It rains jelly on this floor — watch it fall from the rig, land with a wobble, and wait. Hoover it up to fill the JELLY meter; when she’s full, you know what time it is: your own personal drop, spent whenever you like.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/vinyl.png" alt="The lost vinyl — banana rave pixel sprite" loading="lazy"></div> <h3>The lost vinyl</h3> <p>The DJ keeps losing records. Every 7 minutes one lands somewhere on the floor — carry it back to the booth and the whole club gets a bonus drop, courtesy of you.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/goldbanana.png" alt="The golden banana — banana rave pixel sprite" loading="lazy"></div> <h3>The golden banana</h3> <p>Every half hour, once, somewhere: the golden one. The finder gets the trophy in their hand and “The Golden One” badge on their pass — and for the whole floor, it rains golden bananas.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/gift.png" alt="Tonight’s drop — banana rave pixel sprite" loading="lazy"></div> <h3>Tonight’s drop</h3> <p>Once a night the club drops ONE wearable. It floats through with a NEW tag every few minutes — walk into it and it’s yours forever, worn on the spot for the whole floor to see. And here’s the thing: some of these were drawn by visitors. Catch one and a real person’s name rides your outfit.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/beer.png" alt="Happy hour &#38; the specials — banana rave pixel sprite" loading="lazy"></div> <h3>Happy hour &amp; the specials</h3> <p>Every 5th minute Barty yells and pours ONE beer — first banana to the counter carries it for all to see. Between happy hours: rotating specials. The daiquiri gives you disco legs, the milkshake goes straight to the hips, and the water… the water takes EVERYTHING off. Barty insists.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/cable.png" alt="The loose cable — banana rave pixel sprite" loading="lazy"></div> <h3>The loose cable</h3> <p>The rig’s wiring is older than Barty (nothing is older than Barty). Grab the live end to tidy the hazard — you’ll shock-blink like a cartoon, and brushing past friends zaps them too.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/sauce.png" alt="Hot sauce — banana rave pixel sprite" loading="lazy"></div> <h3>Hot sauce</h3> <p>A bottle of the house burner lands on the floor every few minutes. Drink it and your footsteps catch fire for a while. Completely safe. Probably.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/pizza.png" alt="Club snacks — banana rave pixel sprite" loading="lazy"></div> <h3>Club snacks</h3> <p>The conveyor drops something chaseable every ~75 seconds. Grab a slice and your banana holds it high; the whole box rides the other glove (and pays a meal of jelly). Candy? A sugar rush — you’ll shake it off. Literally.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/balloon.png" alt="The balloon — banana rave pixel sprite" loading="lazy"></div> <h3>The balloon</h3> <p>Catch it and up you go: sealed inside, frozen mid-pose, drifting over the floor faster than anyone can dance. It deflates after a minute. Gravity is a rule, not a law.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/broom.png" alt="The broom &#38; the mess — banana rave pixel sprite" loading="lazy"></div> <h3>The broom &amp; the mess</h3> <p>Peels and puddles pile up on a nightshift. Grab the broom from the counter and sweep — every swept peel is jelly too. The floor remembers who cleans it.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/monkey.png" alt="The monkey — banana rave pixel sprite" loading="lazy"></div> <h3>The monkey</h3> <p>The staff pet. Shows up on certain nights, steals things (famously: the bottle), keeps its distance when chased. Theatrical, never malicious. Mostly.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/glowstick.png" alt="The glowstick — banana rave pixel sprite" loading="lazy"></div> <h3>The glowstick</h3> <p>Survive 30 minutes on the floor and the neon glowstick is yours forever — it pumps with the beat in your banana’s glove, here and in the builder.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/stool.png" alt="Your stool — banana rave pixel sprite" loading="lazy"></div> <h3>Your stool</h3> <p>Finish all five of Barty’s nightshifts and become a regular: your own stool at the counter’s end, forever. Click it, sit down, watch the floor. Nobody else gets one.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/star.png" alt="The gold star — banana rave pixel sprite" loading="lazy"></div> <h3>The gold star</h3> <p>Grab it and THE ENTOURAGE arrives: two copies of you replaying your every step, half a beat behind. A conga line of yourself. Stop moving and they walk right into you.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/boots.png" alt="Moon boots — banana rave pixel sprite" loading="lazy"></div> <h3>Moon boots</h3> <p>One small step for banana. Big lunar hops with a proper squash on every landing — fifteen seconds of low gravity on a crowded dance floor.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/gel.png" alt="The jello cube — banana rave pixel sprite" loading="lazy"></div> <h3>The jello cube</h3> <p>Eat the wobble, become the wobble: your whole banana goes jelly-legged, wobbling from the feet up. On this floor, that’s practically a religious experience.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/sparkler.png" alt="The sparkler — banana rave pixel sprite" loading="lazy"></div> <h3>The sparkler</h3> <p>Write your name on the night. A white-hot ribbon of light follows wherever you walk, spitting golden sparks as it burns out behind you.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/magnet.png" alt="The jelly magnet — banana rave pixel sprite" loading="lazy"></div> <h3>The jelly magnet</h3> <p>For twelve seconds the floor’s jelly wants YOU — every loose drop slides across the boards straight into your banana, and fresh jelly keeps raining. Pure harvest.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/vhs.png" alt="The VHS tape — banana rave pixel sprite" loading="lazy"></div> <h3>The VHS tape</h3> <p>Tracking error. Your banana glitches like a tape that’s been rewound one time too many — slices shear sideways, a white band rolls through, then it recovers. Then it doesn’t.</p> </article><article class="rvg__card"> <div class="rvg__thumb"><img src="/assets/rave-guide/mystery.png" alt="…and the rest — banana rave pixel sprite" loading="lazy"></div> <h3>…and the rest</h3> <p>Many other items and drinks turn up when they feel like it — mirror shards, lost phones, ice cubes, things Barty won’t put on the menu. Hang around and see. They don’t wait long: five seconds, then poof.</p> </article> </div> </section> <section class="rvg__block" id="clock"> <p class="rvg__kicker">the rhythm</p> <h2>the club runs on a clock</h2> <p>Nothing here is random — the whole planet shares one schedule. Stay long enough and you'll feel it:</p> <ul class="rvg__list rvg__list--clock"> <li><strong>every ~75 seconds</strong> — the conveyor drops something chaseable</li> <li><strong>every 2 minutes</strong> — the spotlight wanders; dancing inside it is bonus jelly</li> <li><strong>every 3rd minute</strong> — THE DROP. Strobes, pyro, everybody peaks</li> <li><strong>every ~3½ minutes</strong> — tonight's wearable drop floats through, until you've caught it</li> <li><strong>every ~4 minutes</strong> — 🪙 bananacoins glint on the floor. Usually one, sometimes a pile — walk into them and they're yours. The stand out back takes them; jelly stays jelly</li> <li><strong>every 5th minute</strong> — HAPPY HOUR at the bar (and specials in between)</li> <li><strong>every 7 minutes</strong> — the DJ loses a vinyl. Again.</li> <li><strong>every 8 minutes</strong> — THE WAVE. Barty yells, the floor ripples</li> <li><strong>every 30 minutes</strong> — the golden banana. Once. Somewhere.</li> </ul> </section> <section class="rvg__block" id="faq"> <p class="rvg__kicker">the usual questions</p> <h2>banana rave FAQ</h2> <div class="rvg__faq"> <h3>Is it really live?</h3> <p>Yes. Every banana is a real visitor, right now. When the floor is quiet, that's honesty, not failure — bring a friend.</p> <h3>Why is everyone in perfect sync?</h3> <p>One song, one wall clock, every banana on Earth on the same beat. It's the oldest trick in the club and it never misses.</p> <h3>Why does the club never close?</h3> <p>Somebody's always on shift. Finish your chores and Barty stamps you out — <em>"nightshift's done, back to clubbing"</em> — but the music was playing before you arrived and it'll play after you leave.</p> <h3>What's the JELLY meter?</h3> <p>The gauge of the night. Jelly drops, snacks, chores, the spotlight, surviving drops — it all fills it. Full meter = it starts flashing, and tapping it drops the floor — just for you.</p> <h3>What's my LEVEL?</h3> <p>Your standing at the club, 1 to 99 — the gold bar under the JELLY meter. Every jelly, pickup and chore pays into it, it syncs across your devices with <a href="/pass/">your pass</a>, and it never goes down. Titles land at the big levels, and the floor roster shows them in gold — the room knows who's a regular.</p> <h3>Where do the wearable drops come from?</h3> <p>People draw them. Anyone can open <a href="/forge/">the Forge's Items Workshop</a>, draw an item right on the banana — a hat, a sword, a rubber duck — and submit it to the club. The banana guy approves the good ones, and then they drop here with the maker's name riding them. Make it. The club drops it. Someone catches it. Your name rides it.</p> <h3>Do my things carry over?</h3> <p>Everything. Badges and stats live on <a href="/pass/">your pass</a>, earned gear like the glowstick follows your banana into <a href="/make-a-banana/">the builder</a>, and the stool waits for its regular.</p> </div> </section> <section class="rvg__block rvg__block--doors" id="doors"> <p class="rvg__kicker">more banana</p> <h2>before you go (or instead of going)</h2> <div class="rvg__doors"> <a href="/make-a-banana/" data-place="rave-guide">Dress your banana →</a> <a href="/pass/">Check your pass →</a> <a href="/dancing-banana-gif-meme/">Download the original GIF →</a> <a href="/dancing-banana-remixes/">The community remixes →</a> <a href="/wall/">The banana wall →</a> <a href="/shop/">The banana shop →</a> </div> </section> </div> </div>  <div class="rv-sharemodal" id="rvShareModal" hidden> <div class="rv-sharemodal__box"> <button class="rv-sharemodal__close" id="rvShareClose" aria-label="Close"><svg class="pai" width="18px" height="18px" shape-rendering="crispEdges" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M7 19H5v-2h2v2Zm12 0h-2v-2h2v2ZM9 15v2H7v-2h2Zm8 2h-2v-2h2v2Zm-6-2H9v-2h2v2Zm4 0h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-2-2H9V9h2v2Zm4 0h-2V9h2v2ZM9 9H7V7h2v2Zm8 0h-2V7h2v2ZM7 7H5V5h2v2Zm12 0h-2V5h2v2Z"/></svg></button> <div class="rv-sharemodal__card" id="rvShareSlot"></div> <div class="rv-sharemodal__row"> <button class="rv-share-btn" id="rvShareDl"><svg class="pai" width="18px" height="18px" shape-rendering="crispEdges" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M19 21H5v-2h14v2ZM5 19H3v-4h2v4Zm16 0h-2v-4h2v4Zm-8-8h4v2h-2v2h-2v2h-2v-2H9v-2H7v-2h4V3h2v8Z"/></svg> download PNG</button> <button class="rv-share-btn" id="rvShareCopy"><svg class="pai" width="18px" height="18px" shape-rendering="crispEdges" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M20 22H8v-2h12v2ZM8 20H6v-2H4v-2h2V8h2v12Zm14 0h-2V8h2v12ZM4 16H2V4h2v12ZM18 6h2v2H8V6h8V4h2v2Zm-2-2H4V2h12v2Z"/></svg> copy image</button> <button class="rv-share-btn" id="rvShareSys" hidden><svg class="pai" width="18px" height="18px" shape-rendering="crispEdges" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M20 22H4V20H20V22ZM4 20H2V14H4V20ZM22 20H20V14H22V20ZM13 4H15V6H17V8H13V18H11V8H7V6H9V4H11V2H13V4ZM9 14H4V12H9V14ZM20 14H15V12H20V14Z"/></svg> share…</button> </div> </div> </div> <script type="module" src="/_astro/rave.astro_astro_type_script_index_0_lang.DG0g_fXR.js"></script> <div class="rv-cut" id="rvCut" aria-hidden="true"></div>  </main> <footer class="block block--dark" data-astro-cid-sz7xmlte> <p class="kicker kicker--light" data-astro-cid-sz7xmlte>More banana</p> <h2 data-astro-cid-sz7xmlte>The banana lives here</h2> <div class="ft-cols" data-astro-cid-sz7xmlte> <nav class="ft-col" aria-label="The GIF" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>The GIF</h3> <a href="/dancing-banana-gif-meme/" data-astro-cid-sz7xmlte>The story &amp; the GIF</a><a href="/banana-memes/" data-astro-cid-sz7xmlte>Banana memes</a><a href="/dancing-banana-emoji/" data-astro-cid-sz7xmlte>Dancing banana emoji</a><a href="/peanut-butter-jelly-time/" data-astro-cid-sz7xmlte>Peanut Butter Jelly Time</a><a href="/dancing-banana-wallpaper/" data-astro-cid-sz7xmlte>Wallpapers</a><a href="/dancing-banana-remixes/" data-astro-cid-sz7xmlte>Community remixes</a> </nav><nav class="ft-col" aria-label="Make" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>Make</h3> <a href="/make-a-banana/" data-place="footer" data-astro-cid-sz7xmlte>Make your own</a><a href="/forge/" data-astro-cid-sz7xmlte>Forge an emoji</a><a href="/guides/" data-astro-cid-sz7xmlte>Emote size guides</a> </nav><nav class="ft-col" aria-label="The place" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>The place</h3> <a href="/rave/" data-astro-cid-sz7xmlte>Join the rave</a><a href="/wall/" data-astro-cid-sz7xmlte>The Wall</a><a href="/banana-of-the-day/" data-astro-cid-sz7xmlte>Banana of the day</a> </nav><nav class="ft-col" aria-label="The goods" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>The goods</h3> <a href="/shop/" data-astro-cid-sz7xmlte>Shop</a><a href="/license-the-dancing-banana/" data-astro-cid-sz7xmlte>License it</a> </nav> </div> <p class="lead footer__host" data-astro-cid-sz7xmlte>
+Your host:
+<a href="/me/" data-astro-cid-sz7xmlte>Me</a> ·
+<a href="/projects/" data-astro-cid-sz7xmlte>Projects</a> ·
+<a href="https://www.djsentry.com" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>Music ↗</a> ·
+<a href="/contact/" data-astro-cid-sz7xmlte>Contact</a> ·
+<a href="/privacy/" data-astro-cid-sz7xmlte>Privacy</a> ·
+<a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener" data-astro-cid-sz7xmlte><svg class="pxi" viewBox="0 0 140 130" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="30" y="0" width="10" height="10" fill="#a9b6c6"></rect><rect x="60" y="0" width="10" height="10" fill="#a9b6c6"></rect><rect x="20" y="10" width="10" height="10" fill="#a9b6c6"></rect><rect x="50" y="10" width="10" height="10" fill="#a9b6c6"></rect><rect x="30" y="20" width="10" height="10" fill="#a9b6c6"></rect><rect x="60" y="20" width="10" height="10" fill="#a9b6c6"></rect><rect x="10" y="30" width="90" height="10" fill="#262233"></rect><rect x="10" y="40" width="10" height="10" fill="#262233"></rect><rect x="20" y="40" width="20" height="10" fill="#6e4423"></rect><rect x="40" y="40" width="10" height="10" fill="#d9a066"></rect><rect x="50" y="40" width="40" height="10" fill="#6e4423"></rect><rect x="90" y="40" width="10" height="10" fill="#262233"></rect><rect x="10" y="50" width="10" height="10" fill="#262233"></rect><rect x="20" y="50" width="70" height="10" fill="#ffffff"></rect><rect x="90" y="50" width="30" height="10" fill="#262233"></rect><rect x="10" y="60" width="10" height="10" fill="#262233"></rect><rect x="20" y="60" width="70" height="10" fill="#ffffff"></rect><rect x="90" y="60" width="10" height="10" fill="#262233"></rect><rect x="110" y="60" width="10" height="10" fill="#262233"></rect><rect x="10" y="70" width="10" height="10" fill="#262233"></rect><rect x="20" y="70" width="70" height="10" fill="#ffffff"></rect><rect x="90" y="70" width="30" height="10" fill="#262233"></rect><rect x="10" y="80" width="10" height="10" fill="#262233"></rect><rect x="20" y="80" width="10" height="10" fill="#e9edf4"></rect><rect x="30" y="80" width="50" height="10" fill="#ffffff"></rect><rect x="80" y="80" width="10" height="10" fill="#e9edf4"></rect><rect x="90" y="80" width="10" height="10" fill="#262233"></rect><rect x="20" y="90" width="10" height="10" fill="#262233"></rect><rect x="30" y="90" width="50" height="10" fill="#e9edf4"></rect><rect x="80" y="90" width="10" height="10" fill="#262233"></rect><rect x="10" y="100" width="90" height="10" fill="#262233"></rect><rect x="0" y="110" width="10" height="10" fill="#262233"></rect><rect x="10" y="110" width="10" height="10" fill="#a9b6c6"></rect><rect x="20" y="110" width="70" height="10" fill="#e9edf4"></rect><rect x="90" y="110" width="10" height="10" fill="#a9b6c6"></rect><rect x="100" y="110" width="10" height="10" fill="#262233"></rect><rect x="10" y="120" width="90" height="10" fill="#262233"></rect> </svg> Tip</a> </p> <p class="copyright" data-astro-cid-sz7xmlte>© <span id="year" data-astro-cid-sz7xmlte>2026</span> Trym Stene · the banana guy <svg class="pxi" viewBox="0 0 140 140" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="100" y="0" width="30" height="10" fill="#262233"></rect><rect x="90" y="10" width="20" height="10" fill="#262233"></rect><rect x="110" y="10" width="10" height="10" fill="#6e4423"></rect><rect x="120" y="10" width="10" height="10" fill="#262233"></rect><rect x="80" y="20" width="10" height="10" fill="#262233"></rect><rect x="90" y="20" width="10" height="10" fill="#fff3b0"></rect><rect x="100" y="20" width="20" height="10" fill="#ffd23f"></rect><rect x="120" y="20" width="10" height="10" fill="#262233"></rect><rect x="80" y="30" width="10" height="10" fill="#262233"></rect><rect x="90" y="30" width="10" height="10" fill="#fff3b0"></rect><rect x="100" y="30" width="20" height="10" fill="#ffd23f"></rect><rect x="120" y="30" width="10" height="10" fill="#262233"></rect><rect x="70" y="40" width="10" height="10" fill="#262233"></rect><rect x="80" y="40" width="10" height="10" fill="#fff3b0"></rect><rect x="90" y="40" width="20" height="10" fill="#ffd23f"></rect><rect x="110" y="40" width="10" height="10" fill="#f5a623"></rect><rect x="120" y="40" width="10" height="10" fill="#262233"></rect><rect x="70" y="50" width="10" height="10" fill="#262233"></rect><rect x="80" y="50" width="10" height="10" fill="#fff3b0"></rect><rect x="90" y="50" width="20" height="10" fill="#ffd23f"></rect><rect x="110" y="50" width="10" height="10" fill="#f5a623"></rect><rect x="120" y="50" width="10" height="10" fill="#262233"></rect><rect x="60" y="60" width="10" height="10" fill="#262233"></rect><rect x="70" y="60" width="10" height="10" fill="#fff3b0"></rect><rect x="80" y="60" width="20" height="10" fill="#ffd23f"></rect><rect x="100" y="60" width="10" height="10" fill="#f5a623"></rect><rect x="110" y="60" width="10" height="10" fill="#262233"></rect><rect x="50" y="70" width="10" height="10" fill="#262233"></rect><rect x="60" y="70" width="10" height="10" fill="#fff3b0"></rect><rect x="70" y="70" width="30" height="10" fill="#ffd23f"></rect><rect x="100" y="70" width="10" height="10" fill="#f5a623"></rect><rect x="110" y="70" width="10" height="10" fill="#262233"></rect><rect x="40" y="80" width="10" height="10" fill="#262233"></rect><rect x="50" y="80" width="10" height="10" fill="#fff3b0"></rect><rect x="60" y="80" width="30" height="10" fill="#ffd23f"></rect><rect x="90" y="80" width="10" height="10" fill="#f5a623"></rect><rect x="100" y="80" width="10" height="10" fill="#262233"></rect><rect x="20" y="90" width="20" height="10" fill="#262233"></rect><rect x="40" y="90" width="10" height="10" fill="#fff3b0"></rect><rect x="50" y="90" width="30" height="10" fill="#ffd23f"></rect><rect x="80" y="90" width="10" height="10" fill="#f5a623"></rect><rect x="90" y="90" width="10" height="10" fill="#262233"></rect><rect x="10" y="100" width="10" height="10" fill="#262233"></rect><rect x="20" y="100" width="50" height="10" fill="#ffd23f"></rect><rect x="70" y="100" width="10" height="10" fill="#f5a623"></rect><rect x="80" y="100" width="10" height="10" fill="#262233"></rect><rect x="0" y="110" width="10" height="10" fill="#262233"></rect><rect x="10" y="110" width="40" height="10" fill="#ffd23f"></rect><rect x="50" y="110" width="20" height="10" fill="#f5a623"></rect><rect x="70" y="110" width="10" height="10" fill="#262233"></rect><rect x="0" y="120" width="10" height="10" fill="#262233"></rect><rect x="10" y="120" width="10" height="10" fill="#ffd23f"></rect><rect x="20" y="120" width="30" height="10" fill="#f5a623"></rect><rect x="50" y="120" width="10" height="10" fill="#262233"></rect><rect x="10" y="130" width="40" height="10" fill="#262233"></rect> </svg></p> </footer>  <script src="/js/main.js"></script> </body> </html>
