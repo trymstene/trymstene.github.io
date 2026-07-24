@@ -3095,7 +3095,7 @@ function init() {
     if (d.name) { const tag = document.createElement('span'); tag.textContent = d.name; el.appendChild(tag); }
     world.appendChild(el);
     const p = {
-      el, ctx: cv.getContext('2d'), outfit: d.outfit || {},
+      el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, name: d.name || '',
       x: d.x ?? 898, y: d.y ?? 742, sit: !!d.sit, key: -1,
     };
     el.classList.toggle('is-sitting', p.sit);
@@ -3171,6 +3171,171 @@ function init() {
     lastSent.x = pos.x; lastSent.y = pos.y; lastSent.sit = sit;
     bayRoom.send({ t: 'move', x: pos.x, y: pos.y, sit });
   }
+
+  // ---- 🏖 THE BEACH-DAY CARD ----------------------------------------------
+  // The bay's answer to the rave's side panel: who's here, your day's numbers,
+  // and a shareable postcard. Everything it shows already exists — shells, fish
+  // and tickets are pass stats, the roster is the peers we already track, the
+  // timer is this session. Refreshed on a 1s tick (cheap: a handful of nodes),
+  // which doubles as the clock and picks up roster/stat changes without
+  // threading a call through every handler.
+  const beachStart = Date.now();
+  function beachTime() {
+    const t = Math.max(0, Math.floor((Date.now() - beachStart) / 1000));
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+    return h ? h + 'h ' + m + 'm' : m ? m + 'm ' + s + 's' : s + 's';
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const rosterEl = document.getElementById('bhRoster');
+  const dayStatsEl = document.getElementById('bhDayStats');
+  function refreshSide() {
+    if (dayStatsEl) {
+      dayStatsEl.innerHTML =
+        '<span class="bh-daystats__time">⏱ <b>' + beachTime() + '</b> on the beach</span>'
+        + '<span>🐚 <b>' + haveCount() + '</b>/' + SHELL_IDS.length + ' shells</span>'
+        + '<span>🐟 <b>' + fishSpecies() + '</b>/' + FISH.length + ' fish</span>'
+        + '<span>🎟 <b>' + ticketBal() + '</b> tickets</span>'
+        + '<span>🏐 <b>' + bestRally + '</b> best rally</span>';
+    }
+    if (rosterEl) {
+      const me = '<li class="is-you"><span>' + esc(bayName || 'you')
+        + '</span><span class="bh-roster__tag">YOU</span></li>';
+      const others = [...peers.values()]
+        .map((p) => '<li><span>' + esc(p.name || 'a banana') + '</span></li>').join('');
+      rosterEl.innerHTML = me + others;
+    }
+  }
+  refreshSide();
+  setInterval(() => { if (!document.hidden) refreshSide(); }, 1000);
+
+  // ---- 📸 SHARE MY BEACH DAY: a 1080×1080 postcard rendered on the spot ----
+  // Same idea as the rave's share card — YOUR banana big and tilted, today's
+  // numbers beside it — but a beach postcard: a teal sea band up top, warm sand
+  // below, a low sun. Composed here so it captures the outfit and stats live.
+  async function shareBeach() {
+    try { await document.fonts.ready; } catch (e) {}
+    const S = 1080;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const c = cv.getContext('2d');
+    // sand ground (warm), a teal sea band across the top, a foam seam
+    const sand = c.createLinearGradient(0, S * 0.32, 0, S);
+    sand.addColorStop(0, '#f2d79b');
+    sand.addColorStop(1, '#e6be7c');
+    c.fillStyle = sand; c.fillRect(0, 0, S, S);
+    const sea = c.createLinearGradient(0, 0, 0, S * 0.34);
+    sea.addColorStop(0, '#2f8fa8');
+    sea.addColorStop(1, '#54b6c8');
+    c.fillStyle = sea; c.fillRect(0, 0, S, S * 0.34);
+    c.fillStyle = 'rgba(255,255,255,0.5)';
+    for (let x = 0; x < S; x += 20) c.fillRect(x, Math.round(S * 0.34) - 6 + (x % 40 ? 0 : 3), 14, 6);
+    // the low sun, top-right, and its glow
+    const sun = c.createRadialGradient(880, 150, 20, 880, 150, 320);
+    sun.addColorStop(0, 'rgba(255,236,150,0.9)');
+    sun.addColorStop(1, 'rgba(255,236,150,0)');
+    c.fillStyle = sun; c.fillRect(400, 0, S - 400, 500);
+    c.fillStyle = '#ffe89a'; c.beginPath(); c.arc(880, 150, 66, 0, Math.PI * 2); c.fill();
+    // faint checker-free sand speckle so the ground isn't flat
+    c.fillStyle = 'rgba(180,140,80,0.18)';
+    for (let i = 0; i < 90; i++) c.fillRect(((i * 733) % S), 360 + ((i * 379) % (S - 400)), 6, 6);
+    // your banana — hands-up frame, big, tilted, hugging the left edge
+    const bcv = document.createElement('canvas');
+    bcv.width = bcv.height = 1024;
+    drawComposite(bcv.getContext('2d'), 1024, 2, {
+      bg: 'transparent', captions: false, top: '', bottom: '',
+      hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: ME_DRAW.extras || {}, effect: 'none',
+    });
+    // a soft contact shadow on the sand under him
+    c.fillStyle = 'rgba(120,80,30,0.28)';
+    c.beginPath(); c.ellipse(255, 940, 190, 42, 0, 0, Math.PI * 2); c.fill();
+    c.save();
+    c.imageSmoothingEnabled = false;
+    c.translate(150, 640);
+    c.rotate(-9 * Math.PI / 180);
+    c.drawImage(bcv, -620, -620, 1240, 1240);
+    c.restore();
+    // type, right-aligned, the banana leans into it
+    c.textAlign = 'right';
+    c.fillStyle = '#3a2b18';
+    c.font = '800 44px "Archivo Black", sans-serif';
+    c.fillText('MY DAY AT', S - 60, 130);
+    c.fillStyle = '#0f6f86';
+    c.font = '800 82px "Archivo Black", sans-serif';
+    c.fillText('BANANA BAY', S - 60, 220);
+    c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 14;
+    c.fillStyle = '#e6712a';
+    c.font = '800 42px "Archivo Black", sans-serif';
+    c.fillText('SUNBATHED FOR ' + beachTime().toUpperCase(), S - 60, 292);
+    c.shadowBlur = 0;
+    const rows = [
+      [haveCount() + '/' + SHELL_IDS.length, 'SHELLS'],
+      [fishSpecies() + '/' + FISH.length, 'FISH'],
+      [String(ticketBal()), ticketBal() === 1 ? 'TICKET' : 'TICKETS'],
+      [String(bestRally), 'BEST RALLY'],
+    ];
+    let y = 400;
+    for (const [n, label] of rows) {
+      c.shadowColor = 'rgba(255,255,255,0.85)'; c.shadowBlur = 20;
+      c.fillStyle = '#7a3d12';
+      c.font = '800 96px "Archivo Black", sans-serif';
+      c.textAlign = 'right';
+      c.fillText(String(n), S - 470, y);
+      c.shadowBlur = 8;
+      c.fillStyle = '#3a2b18';
+      c.font = '800 34px "Archivo Black", sans-serif';
+      c.textAlign = 'left';
+      c.fillText(label, S - 445, y - 8);
+      c.textAlign = 'right';
+      c.shadowBlur = 0;
+      y += 132;
+    }
+    c.fillStyle = '#3a2b18';
+    c.font = '700 30px "Archivo Black", sans-serif';
+    c.fillText((bayName || 'a banana').toUpperCase(), S - 60, S - 116);
+    c.fillStyle = '#0f6f86';
+    c.font = '800 34px "Archivo Black", sans-serif';
+    c.fillText('trymstene.com', S - 60, S - 62);
+    track('beach_share_day');
+    openBeachShare(cv);
+  }
+  const BEACH_SHARE_FILE = 'my-day-banana-bay-trymstene.com.png';
+  function openBeachShare(cv) {
+    const modal = document.getElementById('bhShareModal');
+    document.getElementById('bhShareSlot').replaceChildren(cv);
+    modal.hidden = false;
+    document.getElementById('bhShareSys').hidden = !navigator.canShare;
+    const toBlob = () => new Promise((r) => cv.toBlob(r, 'image/png'));
+    document.getElementById('bhShareDl').onclick = async () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(await toBlob());
+      a.download = BEACH_SHARE_FILE; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    };
+    document.getElementById('bhShareCopy').onclick = async () => {
+      const btn = document.getElementById('bhShareCopy');
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': await toBlob() })]);
+        btn.textContent = '✓ copied';
+      } catch (e) { btn.textContent = 'copy blocked — download'; }
+      setTimeout(() => { btn.textContent = '⧉ copy image'; }, 2500);
+    };
+    document.getElementById('bhShareSys').onclick = async () => {
+      const file = new File([await toBlob()], BEACH_SHARE_FILE, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'My day at Banana Bay' }); } catch (e) {}
+      }
+    };
+  }
+  const closeBeachShare = () => { document.getElementById('bhShareModal').hidden = true; };
+  document.getElementById('bhShareDay').addEventListener('click', shareBeach);
+  document.getElementById('bhShareClose').addEventListener('click', closeBeachShare);
+  document.getElementById('bhShareModal').addEventListener('click', (e) => {
+    if (e.target.id === 'bhShareModal') closeBeachShare();
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('bhShareModal').hidden) closeBeachShare();
+  });
 
   assetsReady().then(() => {
     drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly();
