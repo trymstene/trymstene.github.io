@@ -724,11 +724,20 @@ function init() {
   // economy; shells feed the beach collection; coins are RARE + small AND
   // day-capped, because the shop leans on coins being scarce (the stand's
   // one-faucet doctrine — an ungated coin source would devalue every price).
-  // ⚠️ seats/bobbers are hard-matched to the two Ship_Bar_Chairs the generator
-  // places on the dock end (build-beach-scene.py). dir picks which way to cast.
+  // ⚠️ seats/bobbers are hard-matched to the four Ship_Bar_Chairs the generator
+  // places on the dock (build-beach-scene.py). Move one, move both.
+  // 🪑 sitFrame LOCKS the banana on a frame that FACES ITS OWN WATER — it must
+  // not dance while fishing. ⚠️ THE ENGINE'S `face` LABELS ARE INVERTED vs what
+  // you actually see: FRAMES[0].face says 'right' but frame 0 VISUALLY looks
+  // LEFT, and frame 4 (`face:'left'`) VISUALLY looks RIGHT. Verified by cropping
+  // banana-dance.png. So west seats take 0, east seats take 4 — and that's the
+  // bug Trym caught: the shared SIT_FRAME (4) had every sitter facing right.
+  const F_LEFT = 0, F_RIGHT = 4;
   const FISH_SPOTS = [
-    { rect: [1798, 150, 1878, 236], seat: { x: 1836, y: 190 }, bob: { x: 1712, y: 168 }, fishing: true },
-    { rect: [1912, 150, 1992, 236], seat: { x: 1944, y: 190 }, bob: { x: 2064, y: 168 }, fishing: true },
+    { rect: [1796, 88, 1876, 166], seat: { x: 1836, y: 144 }, bob: { x: 1706, y: 122 }, sitFrame: F_LEFT, fishing: true },
+    { rect: [1904, 88, 1984, 166], seat: { x: 1944, y: 144 }, bob: { x: 2070, y: 122 }, sitFrame: F_RIGHT, fishing: true },
+    { rect: [1796, 168, 1876, 246], seat: { x: 1836, y: 224 }, bob: { x: 1706, y: 202 }, sitFrame: F_LEFT, fishing: true },
+    { rect: [1904, 168, 1984, 246], seat: { x: 1944, y: 224 }, bob: { x: 2070, y: 202 }, sitFrame: F_RIGHT, fishing: true },
   ];
   const FISH_COIN_CAP = 15;                 // coins fishing may mint per day
   const fishCoinsLeft = () => {
@@ -2117,14 +2126,19 @@ function init() {
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
   };
   let lastF = -1;
-  // 🪑 SITTING = a frozen frame, not a pose we have to draw. The engine's
-  // cycle already turns the banana: frames 0-1 face right, 2-3 front, 4-5
-  // left. Frame 4 is the LEFT-facing one at the lowest point of the bob, so
-  // holding it reads as settled into the chair — side-on and still, while
-  // everyone else keeps dancing. Costs one line and no new art.
-  const SIT_FRAME = 4;
+  // 🪑 SITTING = a frozen frame, not a pose we have to draw. The engine's cycle
+  // already turns the banana, so holding one frame reads as settled into the
+  // chair — side-on and still, while everyone else keeps dancing.
+  // ⚠️⚠️ THE ENGINE'S `face` LABELS ARE INVERTED vs what you SEE. FRAMES[] in
+  // banana-engine.js calls 0-1 'right' and 4-5 'left', but cropping
+  // banana-dance.png proves the opposite: frame 0 VISUALLY faces LEFT and
+  // frame 4 VISUALLY faces RIGHT (2-3, 6-7 are front either way). Trust the
+  // pixels, not the label — this is what made every sitter face right.
+  // A seat may override with its own `sitFrame` (the dock's fishing chairs do,
+  // so each one faces the water it casts into).
+  const SIT_FRAME = 4;                        // visually RIGHT-facing
   function drawMe() {
-    const f = seated ? SIT_FRAME : frameNow();
+    const f = seated ? (seated.sitFrame != null ? seated.sitFrame : SIT_FRAME) : frameNow();
     if (f === lastF) return;
     lastF = f;
     drawComposite(meCtx, 150, f, ME_DRAW);

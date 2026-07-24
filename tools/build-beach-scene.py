@@ -749,11 +749,14 @@ if HAVE_PACK:
         place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)
     place('21_Beach_48x48_Purple_Small_Starfish.png', 1000, 334, shade=False)
 
-    # 🎣 FISHING CHAIRS at the seaward end of the dock — sit to cast a line.
-    # The page turns sitting here into the fishing mini-game; the seats + bobber
-    # spots are hard-matched in banana-beach.js FISH_SPOTS (keep them in sync).
-    place('21_Beach_48x48_Ship_Bar_Chair_1.png', 1836, 178, layer=True)
-    place('21_Beach_48x48_Ship_Bar_Chair_2.png', 1944, 178, flip=True, layer=True)
+    # 🎣 FOUR FISHING CHAIRS on the dock — two rows of two, each pair facing
+    # OUT over its own side of the water so the lines never cross. Sit to cast.
+    # ⚠️ seats + bobbers are hard-matched in banana-beach.js FISH_SPOTS — move
+    # one, move both. Kept in the DEEP half of the dock (y<240) so every bobber
+    # lands in open water rather than in the shore foam.
+    for cy in (132, 212):
+        place('21_Beach_48x48_Ship_Bar_Chair_1.png', 1836, cy, layer=True)
+        place('21_Beach_48x48_Ship_Bar_Chair_2.png', 1944, cy, flip=True, layer=True)
 
     # ─── 🔥 THE FIREPIT NOOK: chairs pulled up round the ring + a blanket ─────
     # (the ring itself is hand-drawn at BONFIRE; a lower palm shelters it.)
