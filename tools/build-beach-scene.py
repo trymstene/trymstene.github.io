@@ -537,14 +537,224 @@ def net_span():
 # patch is part of the beach; the towel lying on it should be on top).
 # ⚠️ An earlier in-browser check compared patches only against DOM overlays and
 # so missed every BAKED prop — exactly the ones that show the fault.
-DIG_SITES = [(1330, 900), (340, 870), (560, 700), (620, 966), (1244, 662),
-             (1430, 640), (1620, 950), (902, 1066), (1150, 1066)]
+# ⚠️ RE-SCATTERED 24 Jul. Three of the nine were broken and had shipped:
+#   (340,870)  overlapped the WELCOME ARCH by 93x104 — you dug under the gate
+#   (620,966)  put an 8x98 sliver ON the volleyball court
+#   (1244,662) put a 4x104 sliver ON the volleyball court
+# audit_digs() never caught any of them because it only compared patches
+# against PLACED (baked sprites) — it knew nothing about the court, the DOM
+# arch, the bonfire or the world bounds. It does now, see below.
+# Digging stays scattered map-wide on purpose (Trym: "the digging activity can
+# be plastered around throughout the map and dont have to be in a 'zone'"), so
+# these are spread across every room rather than pooled in one.
+DIG_SITES = [(420, 392), (444, 990), (700, 368), (1150, 368), (1262, 966),
+             (1444, 984), (1540, 900), (1642, 992), (1790, 956)]
 PATCH_W, PATCH_H = 156, 104
+ARCH = (75, 770, 355, 950)     # the welcome arch's DOM box (banana-beach.js)
+
+
+# ---- 🛣 THE SAND ROADS ----------------------------------------------------
+# Trym: "structure the beach up in zones better with some small sandy roads".
+#
+# ⚠️ PROCEDURAL, NOT TILES — and that IS the researched answer, not a shortcut.
+# The pack has no sand/dirt path autotile at all: 1_Terrains_and_Fences ships
+# Grass_1..4, Grass_Water, Deep_Water, Wall and Fence families and nothing
+# sandy, and a grass-path tile laid on a beach reads as turf. A hard-edged tile
+# road on soft sand looks pasted on anyway.
+#
+# What makes a track read from a top-down camera is THREE things, and I only
+# got there by rendering the candidates over a real crop of this plate
+# (scratchpad roadtest*.py):
+#   1. tone   — a bleached, walked-flat fill. Measured our graded sand at
+#               #ebbc7d; the old "road home" wedge only brightened it by
+#               +12/+10/+6, which is invisible. ROAD is a real step paler.
+#   2. TEXTURE— the fill REPLACES the sand tile's ripple. A path where the
+#               ripples stop reads as trodden even before you notice the tone.
+#   3. edges  — a darker kicked-up shoulder, then small props scattered just
+#               OUTSIDE it. The liners are what actually sell it: bare bands
+#               read as a smear, the same bands with sprouts and stones along
+#               them read as a road. (Round 2 randomised the liner offset on
+#               BOTH axes and dropped half of them in the middle of the road.
+#               The perpendicular offset alone picks the side.)
+ROAD = (250, 227, 178)        # bleached, walked-flat sand
+ROAD_S = (245, 218, 166)      # its speckle, so the fill isn't a flat slab
+ROAD_RIM = (206, 158, 96)     # the shoulder, kicked up at the edges. ⚠️ a first
+                              # pass used (219,175,113), only ~16 darker than
+                              # the sand — the shoulder simply wasn't there, so
+                              # the lane read as a pale smear with no edge.
+ROAD_TAPER = 44               # px over which a lane's ends thin out. Without
+                              # this every road stopped with a ROUND CAP, and a
+                              # 44px pale disc sitting in open sand reads as a
+                              # bald spot, not as a path petering out.
+# warm sandy stone clusters + beach tufts. ⚠️ NOT the Small_Sea_Rock set — those
+# are cold grey and carry a waterline foam collar (the same trap the firepit
+# ring fell into). Props_Dirt_* are the pack's warm land stones.
+# ⚠️ Props_Dirt ships the SAME 15 shapes twice: 1-15 in a cool pale tan, 16-30
+# in warm orange. Take the warm half — the pale half goes grey-blue on sand and
+# reads as gravel. And take only the PEBBLES (16/17 clusters, 20/21 singles),
+# never the drag-mark shapes (13/28/29): scattered beside a lane at half scale
+# those read as stray dark crescents floating on the beach, which is what the
+# first render showed.
+ROAD_LINERS = ['ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_16.png',
+               'ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_17.png',
+               'ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_20.png',
+               'ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_21.png',
+               '21_Beach_48x48_Small_Sprout_1_Vers_1.png',
+               '21_Beach_48x48_Small_Sprout_2_Vers_1.png',
+               '21_Beach_48x48_Small_Sprout_3_Vers_1.png']
+ROAD_SPINE = []               # every centreline point painted, for the audit
+_rrng = random.Random(4242)
+
+
+def road_pts(pts, hw):
+    """walk a polyline at 1px steps, wobbling the centreline as we go.
+
+    The wobble is a function of ARC LENGTH, not of x or y, so a diagonal leg
+    wanders exactly as much as a horizontal one — keying it to x made vertical
+    roads dead straight and horizontal ones snake."""
+    out, s = [], 0.0
+    for i in range(len(pts) - 1):
+        (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+        seg = math.hypot(x1 - x0, y1 - y0)
+        if seg < 1:
+            continue
+        nx, ny = (x1 - x0) / seg, (y1 - y0) / seg
+        px_, py_ = -ny, nx                      # the perpendicular
+        for t in range(int(seg)):
+            wob = 7.5 * math.sin(s / 88.0) + 2.4 * math.sin(s / 21.0)
+            out.append([int(x0 + nx * t + px_ * wob), int(y0 + ny * t + py_ * wob),
+                        px_, py_, hw])
+            s += 1
+    # thin the two ends. Junction ends get buried under a road_clearing anyway;
+    # the ones that finish in open sand now fade out instead of stopping dead.
+    n = len(out)
+    for i in range(min(ROAD_TAPER, n // 2)):
+        k = 0.30 + 0.70 * (i / float(ROAD_TAPER))
+        out[i][4] = max(4, hw * k)
+        out[n - 1 - i][4] = max(4, hw * k)
+    return [tuple(p) for p in out]
+
+
+def road_paint(spine):
+    """lay the track itself: speckled fill, then the worn shoulder"""
+    for (cx, cy, _, _, hw) in spine:
+        hw = int(hw)
+        for dy in range(-hw - 4, hw + 5):
+            for dx in range(-hw - 4, hw + 5):
+                x, y = cx + dx, cy + dy
+                if not (0 <= x < W and 0 <= y < H):
+                    continue
+                d = math.hypot(dx, dy)
+                if d <= hw - 3:
+                    px[x, y] = (ROAD_S if _rrng.random() < 0.20 else ROAD) + (255,)
+                elif d <= hw + 1 and _rrng.random() < 0.75 - 0.15 * (d - hw + 3):
+                    px[x, y] = ROAD_RIM + (255,)
+    ROAD_SPINE.extend(spine)
+
+
+# (🚫 THERE IS NO road_clearing(). I built one — a trodden disc stamped where
+#  the lanes meet, so a junction would read as a plaza — and it failed three
+#  times running. As a true circle it was a hard-edged pale coin dropped on the
+#  sand. Given a 3-lobe wobbled radius it became an organic blob, which is
+#  worse: it reads as a sand MOUND. Fraying its fill out over 14px so it
+#  matched the lanes' own dither still left a solid bright centre no lane has,
+#  because a 22px lane is narrow enough that its dither eats into the fill
+#  while an 88px disc keeps a clean middle. Every version read as a bald spot.
+#  The junction needs no help: four lanes converging IS a crossroads, and the
+#  signpost standing in it is what Trym actually asked for.)
+
+
+def road_liners(spine, every=120, chance=0.66):
+    """scatter small stones and tufts just OUTSIDE the shoulder.
+
+    ⚠️ The offset is applied along the stored PERPENDICULAR only. Jitter runs
+    ALONG the road. Randomising both axes (my first attempt) drops liners in
+    the middle of the track, which reads as litter on the path rather than
+    growth beside it. Placed with shade=False — a cast shadow under a 12px
+    pebble is just a smudge — but still through place(), so the dig and court
+    audits see them like any other prop."""
+    for i in range(60, len(spine), every):
+        cx, cy, pxx, pyy, hw = spine[i]
+        for side in (-1, 1):
+            if _rrng.random() > chance:
+                continue
+            off = hw + 13 + _rrng.randrange(0, 16)
+            jit = _rrng.randrange(-24, 25)
+            sx = cx + pxx * off * side - pyy * jit
+            sy = cy + pyy * off * side + pxx * jit
+            if not (40 < sx < W - 40 and WATER_LINE + 40 < sy < H - 20):
+                continue
+            # ⚠️ the same exclusions every other prop obeys. Without these the
+            # scatter lands stones on the volleyball court and inside dig
+            # patches — and a pebble baked under a patch reads backwards,
+            # because the patch is a z2 overlay drawn OVER the plate.
+            if COURT[0] < sx < COURT[2] and COURT[1] < sy < COURT[3]:
+                continue
+            if BOARDWALK[0] < sx < BOARDWALK[1] and BOARDWALK[2] < sy < BOARDWALK[3]:
+                continue
+            if PIER[0] - 20 < sx < PIER[1] + 20 and sy < PIER[3] + 20:
+                continue
+            if any(abs(sx - dx) < PATCH_W // 2 + 20 and abs(sy - dy) < PATCH_H // 2 + 20
+                   for (dx, dy) in DIG_SITES):
+                continue
+            place(ROAD_LINERS[_rrng.randrange(len(ROAD_LINERS))], int(sx), int(sy),
+                  colors=8, shade=False, scale=0.52)
+
+
+def audit_roads():
+    """⚠️ A ROAD IS A PROMISE. It says "walk here", so it must not run into
+    something you can't walk through, and it must not paint over the court's
+    markings or a dig patch (both of which are drawn on top and would look
+    like the road had been scribbled on).
+
+    Colliders are checked too: the click-to-walk mover slides along obstacles,
+    so a road that runs THROUGH a palm trunk sends the player into a wall at
+    exactly the spot the art told them to aim for."""
+    hits = 0
+    cx0, cy0, cx1, cy1 = COURT
+    on_court = sum(1 for (x, y, _, _, hw) in ROAD_SPINE
+                   if cx0 - hw < x < cx1 + hw and cy0 - hw < y < cy1 + hw)
+    if on_court:
+        print('  ⚠️  ROAD ON THE COURT: %d centreline px inside the lines' % on_court)
+        hits += 1
+    for (dx, dy) in DIG_SITES:
+        n = sum(1 for (x, y, _, _, hw) in ROAD_SPINE
+                if abs(x - dx) < PATCH_W // 2 + hw and abs(y - dy) < PATCH_H // 2 + hw)
+        if n > 40:
+            print('  ⚠️  ROAD CROSSES DIG PATCH (%d,%d): %d px' % (dx, dy, n))
+            hits += 1
+    for name, shape, ox, base in COLLIDERS:
+        for (x, y, _, _, hw) in ROAD_SPINE:
+            if shape[0] == 'circle':
+                on = math.hypot(x - ox, y - base) < shape[1] + hw - 8
+            else:
+                on = (ox + shape[1] - hw + 8 < x < ox + shape[3] + hw - 8
+                      and base + shape[2] - hw + 8 < y < base + shape[4] + hw - 8)
+            if on:
+                print('  ⚠️  ROAD RUNS INTO %s at (%d, %d)'
+                      % (name.split('_48x48_')[-1].replace('.png', ''), ox, base))
+                hits += 1
+                break
+    print('  road audit: %d conflict(s)' % hits)
 
 
 def audit_digs():
-    """warn when a dig patch lands on top of a prop's footprint"""
+    """warn when a dig patch lands on top of anything it shouldn't.
+
+    ⚠️ THIS USED TO COMPARE AGAINST `PLACED` AND NOTHING ELSE — i.e. only
+    baked sprites. It therefore had no idea about the volleyball court, the
+    welcome arch (which is DOM, built in banana-beach.js), the bonfire circle,
+    the parasols (also DOM) or the edge of the world, and three broken patches
+    shipped straight past it: one under the arch and two on the court. A patch
+    is a z2 overlay drawn OVER the plate, so whatever it lands on disappears.
+    The threshold is 200px², not 900 — a 30x30 corner of a prop swallowed by a
+    sand patch is visible, and 900 let exactly that through."""
     hits = 0
+    ZONES = [('the volleyball court', COURT),
+             ('the welcome arch', ARCH),
+             ('the pier bazaar deck', (BOARDWALK[0], BOARDWALK[2],
+                                       BOARDWALK[1], BOARDWALK[3])),
+             ('the dock', (PIER[0], PIER[2], PIER[1], PIER[3]))]
     for (dx, dy) in DIG_SITES:
         px0, py0 = dx - PATCH_W // 2, dy - PATCH_H // 2
         px1, py1 = dx + PATCH_W // 2, dy + PATCH_H // 2
@@ -552,11 +762,22 @@ def audit_digs():
             bx0, by0, bx1, by1 = box
             if bx0 < px1 and bx1 > px0 and by0 < py1 and by1 > py0:
                 ov = (min(px1, bx1) - max(px0, bx0)) * (min(py1, by1) - max(py0, by0))
-                if ov > 900:                       # ignore a few stray pixels
+                if ov > 200:
                     print('  ⚠️  DIG PATCH (%d,%d) covers %s  (%d px overlap)'
                           % (dx, dy, name.split('_48x48_')[-1].replace('.png', ''), ov))
                     hits += 1
-    print('  dig-patch audit: %d prop conflict(s)' % hits)
+        for label, (zx0, zy0, zx1, zy1) in ZONES:
+            if zx0 < px1 and zx1 > px0 and zy0 < py1 and zy1 > py0:
+                print('  ⚠️  DIG PATCH (%d,%d) lands on %s' % (dx, dy, label))
+                hits += 1
+        if math.hypot(dx - BONFIRE[0], dy - BONFIRE[1]) < BONFIRE[2] + 78:
+            print('  ⚠️  DIG PATCH (%d,%d) is inside the fire ring' % (dx, dy))
+            hits += 1
+        if px0 < 0 or py0 < WATER_LINE + 20 or px1 > W or py1 > H:
+            print('  ⚠️  DIG PATCH (%d,%d) hangs off the map or into the sea'
+                  % (dx, dy))
+            hits += 1
+    print('  dig-patch audit: %d conflict(s)' % hits)
 
 
 def emit_geo():
@@ -736,19 +957,64 @@ if HAVE_PACK:
     rect(bw1 - 5, by0, bw1, by1, (110, 68, 30))
     rect(bw0, by1 - 5, bw1, by1, (110, 68, 30))
 
-    # 🌴 PALMS — 24 Jul: placed in symmetric PAIRS that frame the three shore
-    # sun-stations, plus a couple of lower accents. A resort skyline, not a
-    # scatter. (Flip alternates so a pair leans away from its station's centre.)
-    for cx, base, fl in ((170, 500, False), (600, 508, True),      # frame left station
-                         (720, 506, False), (1118, 506, True),     # frame centre station
-                         (1236, 500, False), (1560, 508, True),    # frame right station
-                         (470, 1082, False), (1480, 1060, True)):  # lower accents
+    # ─── 🛣 THE LANES ────────────────────────────────────────────────────────
+    # ⚠️ PAINTED HERE, BEFORE EVERY PROP. The old "road home" wedge ran at the
+    # very END of the build and brightened whatever pixel was already there —
+    # including palm trunks and sunbeds. Ground goes down first.
+    #
+    # Widths are deliberately NARROW. The banana is ~33px across, so hw 22 is a
+    # 48px lane ≈ 1.4 character widths. A first pass at hw 38-46 covered 40% of
+    # the walkable sand: at that width a path stops being a path and becomes a
+    # terrace, which destroys the very negative space this pass is for.
+    #
+    # ⚠️ AND THE LANES ARE COSMETIC. There is no pathfinding here — a tap sets
+    # tgt and the banana walks a straight line with axis-slide. A lane can only
+    # ever be a SUGGESTION, so it must never imply a route a collider blocks.
+    # That is what audit_roads() enforces.
+    ROADS = [
+        # the arrival lane, up from the park road to the gate fork
+        ([(0, 1048), (118, 1000), (240, 948), (360, 900), (468, 862)], 22),
+        # the fire spur — stops well short of the ring (BONFIRE r48 blocks)
+        ([(462, 830), (430, 762), (392, 716), (336, 694)], 16),
+        # THE PROMENADE: the spine. Climbs out of the gate, runs the shore
+        # ABOVE the court (the resort deck sits between it and the sea), then
+        # turns down the far side into the crossroads.
+        ([(468, 862), (484, 782), (504, 704), (530, 632), (566, 570), (614, 520),
+          (676, 486), (760, 468), (900, 462), (1040, 464), (1150, 472), (1244, 458),
+          (1312, 516), (1344, 634), (1352, 762)], 22),
+        # the court's east doorway — the court never had an entrance before
+        ([(1346, 776), (1276, 776), (1216, 776)], 16),
+        # the harbour lane, past the wreck to the bazaar's sand gate
+        ([(1358, 782), (1440, 796), (1540, 808), (1640, 820), (1740, 830),
+          (1840, 834), (1930, 828)], 20),
+        # the dock path, up to the pier mouth where Gil stands
+        ([(1360, 758), (1440, 700), (1530, 640), (1620, 580), (1710, 510),
+          (1800, 440), (1866, 380)], 18),
+    ]
+    for pts, hw in ROADS:
+        road_paint(road_pts(pts, hw))
+    # THE GATE FORK is (468,862) and ⭐ THE CROSSROADS is (1352,776) — both are
+    # just shared waypoints, not painted features. See the road_clearing note.
+
+    # 🌴 PALMS — 7, in FOUR GROVES. They used to be eight in one row across the
+    # shore at base 500-508, which is most of why the beach read as a stripe: a
+    # tree repeated at even pitch is a fence, not a landscape. Grouped, they
+    # give each room a canopy and leave the sand between rooms genuinely empty.
+    for cx, base, fl in ((120, 560, False), (196, 512, True),      # west grove …
+                         (268, 470, False),                        # … above the hollow
+                         (600, 1046, True),                        # the gate's south marker
+                         (1548, 486, True), (1608, 524, False),    # the shell cove pair
+                         (1900, 650, True)):                       # the bazaar gate
         place('21_Beach_48x48_Palm_Tree.png', cx, base, flip=fl, sh=0.26, solid=TRUNK,
               layer=True)
-    # 🌿 BUSHES fringing the pier bazaar — a little green spilling over the seam
-    # where the wooden deck meets the sand, softening that hard edge (Trym's ask).
-    for cx, base in ((1966, 402), (1972, 524), (1960, 660), (1972, 800),
-                     (1964, 940), (2160, 1006), (2420, 1010), (2660, 1006)):
+
+    # 🌿 THE PIER FRINGE — regrouped into TWO CLUMPS with a gap at y560-879,
+    # which is exactly where the harbour lane arrives. It used to be five
+    # copies of one sprite in a dead-straight column at 140px pitch, i.e. a
+    # machine-planted hedge. A gap in a hedge is a gate.
+    for cx, base in ((1958, 452), (1934, 512), (1968, 560),
+                     (1946, 946), (1970, 998),
+                     (2160, 1006), (2420, 1010), (2660, 1006)):
         place('21_Beach_48x48_Big_Sprout_Vers_1.png', cx, base, shade=False, layer=True)
 
     # 🏐 the volleyball court, built from the pack's own pieces.
@@ -820,67 +1086,117 @@ if HAVE_PACK:
     # 🚢 Captain Split's wreck
     place('21_Beach_48x48_Ship_Bar.png', BAR[0], BAR[1] + 120, colors=12, sh=0.34,
           solid=WRECK, layer=True)
-    for i, sx in enumerate((BAR[0] - 150, BAR[0] - 50, BAR[0] + 50, BAR[0] + 150)):
-        place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, BAR[1] + 200)
+    # THREE stools, tucked against the hull. There used to be four at a
+    # ruler-perfect 100px pitch, 80px BELOW the hull's collider — a row of
+    # blocks parked in open sand rather than seating at a bar.
+    for i, (sx, sy) in enumerate(((1602, 774), (1682, 786), (1766, 778))):
+        place('21_Beach_48x48_Ship_Bar_Chair_%d.png' % (1 + i % 2), sx, sy)
+    # 🌿 the wreck's west screen — gives the hull a side instead of an edge
+    place('21_Beach_48x48_Big_Sprout_Vers_1.png', 1500, 730, shade=False, layer=True)
+    place('21_Beach_48x48_Big_Sprout_Vers_2.png', 1546, 782, flip=True, shade=False,
+          layer=True)
 
     # (🗼 the lighthouse was removed 24 Jul — Trym: "its in the way". Its beacon
     #  glow and the BEACON export went with it.)
 
-    # ⛱ furniture
-    # ⛱ CLICKABLE parasols — open/close on tap, ground shadow toggles with them.
-    # Exported as sprites (NOT baked), rendered + made interactive by the page.
-    # ─── ⛱ THE TANNING ROW: three sun-stations facing the sea ────────────────
-    # Each station = a parasol (folds on tap) + a pair of loungers + a towel,
-    # sat under the framing palms above. Left / centre / right along the shore.
-    umbrella('green', 360, 452)
-    umbrella('yellow', 918, 452)
-    umbrella('blue', 1398, 458)
-    for i, (x0, y0) in enumerate(((250, 486), (470, 486),      # left station beds
-                                  (810, 486), (1026, 486),     # centre station beds
-                                  (1288, 492), (1508, 492))):  # right station beds
-        place('ME_Singles_Swimming_Pool_48x48_Sunbed_%d.png' % (1 + (i % 3) * 4),
-              x0, y0, solid=SUNBED)
-    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 360, 516, shade=False)
-    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 918, 516, shade=False)
-    place('21_Beach_48x48_Yellow_Beach_Towel_2.png', 1398, 522, shade=False)
+    # ─── ⛱ Z5 THE TERRACE MOUTH + Z6 THE RESORT DECK ────────────────────────
+    # The tanning furniture used to be THREE stations smeared across 1390px of
+    # shore, every piece sharing a 70px y-band. That belt is the single biggest
+    # reason the beach read as clutter: 19 objects at one height across the
+    # whole map is a conveyor, not a resort.
+    #
+    # It is now TWO masses. The three parasols cluster into one beach-club
+    # clump in the terrace mouth (they are the loudest sprites we own — grouped
+    # they're a landmark, spread they're wallpaper). The loungers go NORTH OF
+    # THE COURT, and that placement is load-bearing: roughly half of all
+    # arrivals spawn at (898,742), INSIDE the court (banana-beach.js:291), and
+    # that camera used to show red lines and nothing else. Now it looks up at
+    # a resort deck.
+    # ⚠️ THREE beds, three DIFFERENT sprites. Six beds from three sprites meant
+    # every single one had a visible twin.
+    # ⚠️ THE CLUMP IS BOXED IN ON BOTH SIDES and the spacing is what's left.
+    # East: a canopy is 108 wide, so cx must stay ≤636 or its art crosses
+    # COURT.x0 = 690 — and umbrella() doesn't append to PLACED, so audit_court()
+    # would never catch it. West: the promenade climbs past at x 566→504, and
+    # audit_roads() trips if a POLE lands within r13+hw-8 = 27px of the lane.
+    # That leaves a ~90px-wide corridor. First pass stacked them 58px apart in
+    # y and the middle canopy was almost entirely hidden; ~95px apart each one
+    # reads while the three still group as one mass.
+    umbrella('yellow', 618, 566)
+    umbrella('green', 600, 664)
+    umbrella('blue', 582, 758)
+    for name, x0, y0 in (('Sunbed_5', 846, 424), ('Sunbed_1', 944, 410),
+                         ('Sunbed_9', 1036, 430)):
+        place('ME_Singles_Swimming_Pool_48x48_%s.png' % name, x0, y0, solid=SUNBED)
+    place('21_Beach_48x48_Multicolor_Beach_Towel_1.png', 890, 450, shade=False)
+    place('21_Beach_48x48_Blue_Beach_Towel_1.png', 994, 402, shade=False)
+    # the ONE surviving bucket, parked touching a lounger so it belongs to
+    # somebody. Three more stood evenly spaced along the waterline owned by
+    # nothing at all.
+    place('21_Beach_48x48_Small_Red_Bucket_1.png', 1000, 444, shade=False, layer=True)
 
-    # ─── 🪣 THE WATERLINE: toys at the wet sand, floats + rocks IN the sea ────
-    # ⚠️ Anything IN the water (y<288) must be layer=True — the animated sea
-    # overlay is opaque and paints over the baked plate, so a baked float there
-    # is invisible in-game. Overlays sit ABOVE the sea and show.
-    for cx, base in ((700, 322), (1150, 320), (1520, 322)):
-        place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base, shade=False, layer=True)
-    # 🏰 tinted to OUR sand — the pack's castles are orange (see sand_tint).
-    # 24 Jul: moved OFF the waterline (Trym) into open dry sand where they read
-    # as something somebody built and left, rather than debris in the surf.
-    # Both spots are deliberately clear of the court, the dig sites and the
-    # tanning row — the dig audit re-checks that every build.
-    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 480, 600, shade=False,
+    # ─── 🌊 Z1 THE TIDE — a NO-DECORATION strip, on purpose ──────────────────
+    # ⚠️ NOTHING is placed in y292-362 any more. Sixteen collectible shells
+    # spawn in that exact 30px band every day, and three starfish plus three
+    # buckets used to sit in it. Decoys in the one band you want players to
+    # scan is a gameplay bug wearing a decoration costume — that's why they're
+    # cut rather than moved.
+    # 🏰 ONE sandcastle, tinted to OUR sand (the pack's are orange, see
+    # sand_tint). The second stood 1350px away, which never read as a pair.
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 560, 400, shade=False,
           layer=True, tint=sand_tint)
-    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1830, 560, shade=False,
-          layer=True, tint=sand_tint)
-    place('21_Beach_48x48_Red_Float.png', 520, 208, shade=False, layer=True)     # in the sea
     place('21_Beach_48x48_Green_Float.png', 1120, 182, shade=False, layer=True)  # in the sea
-    for cx, base in ((300, 236), (1360, 176), (2360, 214), (780, 150)):
+    # TWO sea rocks off the west point, not four scattered. Anything past
+    # WATER_LINE is unreachable, so out there scatter is pure speckle.
+    for cx, base in ((300, 236), (356, 200)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False, layer=True)
-    for cx, base in ((470, 330), (1600, 332)):
-        place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)
-    place('21_Beach_48x48_Purple_Small_Starfish.png', 1000, 334, shade=False)
 
-    # 🪧 THE KEEPERS' BOARDS — one beside Shelly, one by the Captain's wreck.
-    # Both are PURELY decorative: they say "somebody keeps a tally here", and
-    # nothing else. (Shelly's was briefly a live peg-per-species grid in the
-    # DOM, which turned scenery into a second UI. Trym: "purely small and just
-    # cosmetic… doesn't need a headline". The collection lives in the panel.)
-    # Same wooden family so the two read as a pair, different sprites so they
-    # aren't clones. Rule for any future keeper: pick a sprite, don't build a
-    # panel.
-    # ⚠️ Shelly's sits BELOW her ground line, between the two framing palms —
-    # my first spot (1240,416) put it inside the right palm's canopy box, where
-    # the palm sorts in front and swallowed it. Down here it's trunk height:
-    # transparent palm, and the lower base sorts it in front of her.
-    place('ME_Singles_Camping_48x48_Sign_4.png', 1180, 500, sh=0.26, layer=True)
-    place('ME_Singles_Camping_48x48_Sign_6.png', 1498, 792, sh=0.26, layer=True)
+    # ─── 🪧 THE SIGNS ────────────────────────────────────────────────────────
+    # ⭐ THE PACK CALLS ITS BEACH SIGNS "CARTEL" (LimeZu is Italian; cartel =
+    # sign/poster). That one word is why every Sign/Board/Notice search through
+    # this pack came up with camping planks and military whiteboards, and why
+    # the boards on this beach were 27x43 wooden stubs for two commits. Trym
+    # found them by eye in the pack browser before I found them by name.
+    #
+    # Why the beach set beats the camping set here: every camping sign carries
+    # a GREEN GRASS TUFT baked into its base — wrong on sand, and the reason
+    # the two it replaces needed a tint they never got. Every Cartel and
+    # Direction_Pole ships its own pale SAND wedge instead. No unmoss(), no
+    # sand_tint(), nothing to strip.
+    #
+    # ⚠️ ALL FOUR ARE layer=True AND SOLID. A 78x158 signpost baked into the
+    # plate is something you walk straight through, which reads worse than the
+    # tiny sign Trym complained about — the fix would have made it louder AND
+    # more broken. Solid, they're objects; layered, you can pass in front.
+    place('21_Beach_48x48_White_Cartel.png', 1310, 442, scale=1.25, sh=0.26,
+          layer=True, solid=('rect', -14, -6, 14, 0))    # 🐚 SHELLY'S BOARD 47x103
+    place('21_Beach_48x48_Blue_Cartel_2.png', 1720, 410, scale=1.20, sh=0.26,
+          layer=True, solid=('rect', -16, -6, 16, 0))    # 🎣 GIL'S BOARD 60x96
+    # Blue_Cartel_2 over _1: its red highlighted row and colour swatch read as
+    # "today's catch", where _1's blank 2x2 grid reads as an empty timetable.
+
+    # 🧭 THE WAYFINDING POSTS — Trym: "a directional post sign can be in the
+    # middle of the beach crossroads cosmetically just to visualize that theres
+    # many places to go". Both are drawn UNFLIPPED and that is deliberate:
+    # Big reads 3 RIGHT / 2 LEFT (right = wreck, dock, bazaar · left = court,
+    # gate) and Small reads 1 LEFT / 3 RIGHT (left = the fire · right = the
+    # rest). Their plank counts differ (5 vs 4) so the two silhouettes never
+    # repeat.
+    place('21_Beach_48x48_Direction_Pole_Small.png', 524, 838, scale=1.32, sh=0.28,
+          layer=True, solid=POLE)                        # THE GATE FORK 77x109
+    place('21_Beach_48x48_Direction_Pole_Big.png', 1286, 726, scale=1.40, sh=0.28,
+          layer=True, solid=POLE)                        # ⭐ THE CROSSROADS 78x158
+
+    # 🌿 THE COURT'S EAST DOORWAY — two shrubs 124px apart, straight opposite
+    # the crossroads post. The court has never had an entrance; this gives the
+    # eye one. (Visual only — with no pathfinding, a solid "doorway" would be a
+    # trap you slide along instead of a gate you walk through.)
+    place('21_Beach_48x48_Big_Sprout_Vers_1.png', 1232, 748, shade=False, layer=True)
+    place('21_Beach_48x48_Big_Sprout_Vers_2.png', 1240, 872, flip=True, shade=False,
+          layer=True)
+    # 🐚 the shell cove's understory, under the palm pair
+    place('21_Beach_48x48_Small_Sprout_3_Vers_2.png', 1470, 512, flip=True,
+          shade=False, layer=True)
 
     # 🎣 FOUR FISHING CHAIRS on the dock — two rows of two, each pair facing
     # OUT over its own side of the water so the lines never cross. Sit to cast.
@@ -906,10 +1222,28 @@ if HAVE_PACK:
                          (fy + 48, 'Chair_11', 'Chair_10')):
         place('ME_Singles_Camping_48x48_%s.png' % lch, fx - 88, cy, layer=True)
         place('ME_Singles_Camping_48x48_%s.png' % rch, fx + 88, cy, flip=True, layer=True)
-    place('21_Beach_48x48_Grey_Beach_Towel_1.png', fx + 4, fy + 112, shade=False)
-    place('21_Beach_48x48_Small_Red_Bucket_1.png', fx - 96, fy + 96, shade=False, layer=True)
-    for vx, vy in ((fx - 128, fy + 40), (fx + 132, fy - 44), (fx + 20, fy - 84)):
-        place('21_Beach_48x48_Big_Sprout_Vers_1.png', vx, vy, shade=False, layer=True)
+    # 🌿 THE CRESCENT HEDGE — the hollow's fourth wall.
+    # This replaces a towel, a bucket and three copies of Big_Sprout_Vers_1
+    # dotted round the ring. Three bushes at 120px pitch is punctuation; eight
+    # in a sweep, using FIVE different sprout files, is a hedge — and a hedge
+    # with a gap in it is a doorway. The world's west edge is the other wall,
+    # which is free. The gap at (400,600)/(410,830) faces the gate fork, so the
+    # fire reads as somewhere you enter rather than somewhere props are.
+    # ⚠️ NO COLLIDERS on any of it: with straight-line steering plus axis-slide
+    # and no pathfinding, a solid gateway is a thing you get stuck on, not a
+    # thing you walk through.
+    # (26,742) deliberately hangs off the west edge — Pillow clips a negative
+    # paste box without raising, so the hedge runs out of frame instead of
+    # stopping dead at x0.
+    for name, hx, hy, hf in (('Big_Sprout_Vers_2', 26, 742, False),
+                             ('Big_Sprout_Vers_1', 30, 650, False),
+                             ('Small_Sprout_3_Vers_1', 66, 574, False),
+                             ('Big_Sprout_Vers_1', 146, 536, False),
+                             ('Big_Sprout_Vers_2', 238, 524, True),
+                             ('Small_Sprout_1_Vers_2', 312, 548, False),
+                             ('Big_Sprout_Vers_1', 400, 600, True),    # N gatepost
+                             ('Big_Sprout_Vers_2', 410, 830, True)):   # S gatepost
+        place('21_Beach_48x48_%s.png' % name, hx, hy, flip=hf, shade=False, layer=True)
 
     # 🎡 THE PIER BAZAAR — a WALKABLE deck (BOARDWALK isn't a collider now). Two
     # rows of game stalls with a wide central aisle, food/fruit WAGONS between
@@ -966,8 +1300,52 @@ if HAVE_PACK:
     print('  wrote the PIER BAZAAR (2 rows x %d stalls + grabber + wagons)'
           % (len(STALL_POS) // 2))
 
+    # 🔥 THE BONFIRE RING.
+    # ⚠️ THIS BLOCK USED TO RUN AFTER emit_geo(), and that was a silent bug: it
+    # appended OVERLAYS[59..68] to a list already written to disk, so ov-59…68
+    # existed as files but appeared nowhere in beach-geo.js. The near stones
+    # could therefore never draw in front of a banana — the whole reason they
+    # are layer=True. Anything that calls place(layer=True) must run BEFORE
+    # emit_geo().
+    # ⚠️ REAL STONE SPRITES, and NOT the beach set's Small_Sea_Rock — those
+    # carry a waterline FOAM collar, so a ring of them read as a ring of
+    # bubbles on dry sand. These are the camping boulders with their green
+    # moss repainted onto a stone ramp (see unmoss).
+    fcx, fcy = BONFIRE[0], BONFIRE[1]
+    # a wider, deeper scorch: the crescent hedge around the hollow was louder
+    # than the fire at its centre, which inverts the room.
+    shadow(fcx + 4, fcy + 6, 84, 52, 62)
+    RING = ['ME_Singles_Camping_48x48_Rock_1.png',
+            'ME_Singles_Camping_48x48_Rock_5.png',
+            'ME_Singles_Camping_48x48_Rock_9.png',
+            'ME_Singles_Camping_48x48_Rock_6.png',
+            'ME_Singles_Camping_48x48_Rock_4.png']
+    for a in range(10):
+        ang = a / 10.0 * math.tau + 0.16
+        sx = fcx + int(math.cos(ang) * 66)
+        sy = fcy + int(math.sin(ang) * 42)
+        place(RING[a % len(RING)], sx, sy, shade=False, scale=0.56,
+              colors=8, warm=0.02, sat=0.85, layer=True, tint=unmoss)
+
+    # 🌾 THE DUNE RIDGE — a foreground fringe along the world's bottom edge.
+    # Base 1096 is BELOW the walk clamp (pos.y maxes at H-12 = 1088), so these
+    # always sort in front of everyone: the frame gets a bottom. Three dense
+    # runs at ~66px pitch rather than a few specks spread over 2760px — spaced
+    # scatter is punctuation, which is the exact thing this pass removes.
+    for dx in (60, 112, 164,
+               772, 842, 912, 982, 1052, 1122,
+               1500, 1566, 1632, 1698, 1764, 1830):
+        name = ('Small_Sprout_Vers_1_Sand_Mountain' if (dx // 2) % 2 == 0
+                else 'Big_Sprout_Vers_2_Sand_Mountain')
+        place('21_Beach_48x48_%s.png' % name, dx, 1096, scale=1.1,
+              shade=False, layer=True)
+
+    # 🪨 the lanes' own scatter — stones and tufts just outside the shoulders
+    road_liners(ROAD_SPINE, every=210, chance=0.55)
+
     audit_court()
     audit_digs()
+    audit_roads()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
     # mystery object ("what's this brown thing at the beach?"). Now it has
@@ -1003,38 +1381,12 @@ if HAVE_PACK:
     # the pier is drawn after the props. Emitting earlier read an empty list.
     emit_geo()
 
-    # 🔥 the bonfire ring — hand-drawn stones; the pack's sea rocks carry a
-    # foam collar, so a ring of them read as a ring of bubbles on dry sand.
-    # 24 Jul: moved to a sheltered nook (fcx,fcy) below the wreck, dressed with
-    # deck chairs + a blanket + a palm (placed in the furniture block). ⚠️ keep
-    # BONFIRE (the collider) at this same centre.
-    # ⚠️ REAL STONE SPRITES now (Trym: the hand-drawn blobs "look a bit
-    # simple"). Uses the BEACH set's Small_Sea_Rock, NOT the camping Rock_*
-    # singles — those carry green MOSS, which reads as forest on a tropical
-    # beach. Four variants cycled so the ring isn't uniform, each a layer so you
-    # pass in FRONT of the near stones and BEHIND the far ones. The fire sprite
-    # fills the middle, so the old charred logs are gone.
-    fcx, fcy = BONFIRE[0], BONFIRE[1]
-    shadow(fcx + 4, fcy + 6, 72, 44, 38)
-    # camping boulders with the moss repainted as stone (see unmoss) — the sea
-    # rocks were the wrong call, they carry a waterline FOAM collar.
-    RING = ['ME_Singles_Camping_48x48_Rock_1.png',
-            'ME_Singles_Camping_48x48_Rock_5.png',
-            'ME_Singles_Camping_48x48_Rock_9.png',
-            'ME_Singles_Camping_48x48_Rock_6.png',
-            'ME_Singles_Camping_48x48_Rock_4.png']
-    for a in range(10):
-        ang = a / 10.0 * math.tau + 0.16
-        sx = fcx + int(math.cos(ang) * 66)
-        sy = fcy + int(math.sin(ang) * 42)
-        place(RING[a % len(RING)], sx, sy, shade=False, scale=0.44,
-              colors=8, warm=0.02, sat=0.85, layer=True, tint=unmoss)
-
-# ---- the road home, worn into the sand (bottom-left) ----------------------
-for y in range(H - 150, H):
-    for x in range(0, 150 - (H - y) // 3):
-        r, g, b, a = px[x, y]
-        put(x, y, (min(255, r + 12), min(255, g + 10), min(255, b + 6), a))
+# (🛣 the old "road home" wedge lived here and is gone. It brightened a
+#  triangle of the bottom-left corner by +12/+10/+6 — measurably BELOW the
+#  plate's own noise floor, since the sand tile's four quantised tones already
+#  vary by 15 in green, which is why nobody could see it. Worse, it ran after
+#  every place(), so it lightened whatever prop happened to be standing there.
+#  The arrival lane in the ROADS table replaces it, painted before the props.)
 
 # ---- ANIMATED PROPS: the pack animates far more than I'd been using -------
 # The water sprites are baked onto an opaque water square, so their background

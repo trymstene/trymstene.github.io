@@ -289,7 +289,9 @@ function init() {
   // one. You arrive already facing him across the net with the ball at your
   // feet, which is a much stronger cold-open than landing on empty sand.
   const pos = fromPark ? { x: 70, y: 1040 } : { x: 898, y: 742 };
-  const tgt = fromPark ? { x: 330, y: 980 } : { x: 898, y: 720 };
+  // the park walk-in now heads UP THE ARRIVAL LANE rather than across bare
+  // sand beside it — you spend the first three seconds standing on a road.
+  const tgt = fromPark ? { x: 296, y: 924 } : { x: 898, y: 720 };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('beach_join', { via: fromPark ? 'park' : 'direct' });
 
@@ -719,7 +721,9 @@ function init() {
   // not a DOM widget. It briefly mirrored the whole collection as a live peg
   // grid, which made a piece of scenery into a second UI — the collection lives
   // in the panel, the board just says "a keeper stands here".
-  const SHELLY = { x: 1128, y: 414, r: 118 };
+  // ⚠️ MOVED into the shell cove with the zoning pass, out of a spot where a
+  // palm was literally drawn over her head — see the -74 note by shellyEl.
+  const SHELLY = { x: 1392, y: 436, r: 118 };
   const shellyEl = document.getElementById('bhShelly');
   const shellyBubble = document.getElementById('bhShellyBubble');
   const shellyCtx = document.getElementById('bhShellyCv').getContext('2d');
@@ -757,10 +761,18 @@ function init() {
     }
   }
   function drawShelly() { drawComposite(shellyCtx, 150, 0, SHELLY_DRAW); }
-  shellyEl.style.left = pct(SHELLY.x - 74, W);
+  // ⚠️ NO `- 74` HERE ANY MORE, AND THAT WAS A REAL BUG. Both `.bh-cap` and
+  // `.bh-capbubble` already carry `transform: translate(-50%, -100%)`, so they
+  // self-centre on `left` — the -74 was a half-width nudge for something that
+  // needed none, copy-pasted onto both. Shelly's BODY was therefore drawn 74px
+  // left of SHELLY.x while her proximity circle stayed on it: she stood under
+  // the palm at 1118 with her greeting radius somewhere off to her right.
+  // "shelly disappears in all the clutter" was partly this. Same fix on Gil.
+  // (Sandy, the vendors and the player never had the offset — compare :1551.)
+  shellyEl.style.left = pct(SHELLY.x, W);
   shellyEl.style.top = pct(SHELLY.y, H);
   depth(shellyEl, SHELLY.y);
-  shellyBubble.style.left = pct(SHELLY.x - 74, W);
+  shellyBubble.style.left = pct(SHELLY.x, W);
   shellyBubble.style.top = pct(SHELLY.y - 78, H);
 
   // ---- 🚢 CAPTAIN SPLIT ---------------------------------------------------
@@ -1085,7 +1097,12 @@ function init() {
   // of stats" into a thing you want to finish. Gil stands at the foot of the
   // dock, so you pass him on the way to every cast, and he reacts to what
   // you've brought in.
-  const GIL = { x: 1890, y: 372, r: 118 };
+  // ⚠️ 1816, not 1890 — the number changed but Gil did NOT move. He was always
+  // DRAWN at 1816 because gilEl carried the same bogus `- 74` Shelly's did;
+  // only his proximity circle sat at 1890. Removing the offset and moving the
+  // constant to where he really stands keeps the art identical and puts the
+  // greeting radius back on his own feet.
+  const GIL = { x: 1816, y: 372, r: 118 };
   const gilEl = document.getElementById('bhGil');
   const gilBubble = document.getElementById('bhGilBubble');
   const gilCtx = document.getElementById('bhGilCv').getContext('2d');
@@ -1237,19 +1254,26 @@ function init() {
   // ⚠️ PATCH SITES ARE HAND-PLACED, not random. Random points landed in the
   // sea, on the pier and inside the court. Hand-placing also buys the treasure
   // map its clue for free: every site already has a landmark name.
-  // ⚠️ 24 Jul: re-placed with the beach re-zoning so no prop ever covers a
-  // patch (Trym's rule). All sit in open sand, clear of the court, wreck,
-  // bazaar, firepit, tanning row and the welcome arch.
+  // ⚠️ RE-SCATTERED with the zoning pass. THREE of the previous nine were
+  // broken and had shipped: (340,870) overlapped the welcome arch by 93×104 —
+  // you dug under the gateway — and (620,966) and (1244,662) each put a sliver
+  // ON the volleyball court. audit_digs() in the generator never caught them
+  // because it only compared patches against baked sprites; it knew nothing
+  // about the court, the DOM arch or the world's edge. It checks all of that
+  // now. ⚠️ KEEP IN SYNC with DIG_SITES in tools/build-beach-scene.py, which
+  // is what runs those audits.
+  // Digging stays deliberately scattered map-wide rather than zoned (Trym:
+  // "the digging activity can be plastered around throughout the map").
   const DIG_SITES = [
-    { x: 1330, y: 900, clue: 'the flat sand where the old fire ring used to be' },
-    { x: 340, y: 870, clue: 'down among the western dunes' },
-    { x: 560, y: 700, clue: 'midway up the west beach' },
-    { x: 620, y: 966, clue: 'south-west, just off the entrance path' },
-    { x: 1244, y: 662, clue: 'just east of the volley court' },
-    { x: 1430, y: 640, clue: 'east sands, out toward the wreck' },
-    { x: 1620, y: 950, clue: 'south-east, a stone’s throw from the firepit' },
-    { x: 902, y: 1066, clue: 'just south of the volley court' },
-    { x: 1150, y: 1066, clue: 'below the court’s south line' },
+    { x: 420, y: 392, clue: 'among the western dunes, up near the tide' },
+    { x: 444, y: 990, clue: 'just inside the welcome arch' },
+    { x: 700, y: 368, clue: 'the tide walk, west of the sunbeds' },
+    { x: 1150, y: 368, clue: 'wet sand at the top of the beach' },
+    { x: 1262, y: 966, clue: 'the green below the crossroads' },
+    { x: 1444, y: 984, clue: 'the south lawn, east of the court' },
+    { x: 1540, y: 900, clue: 'west of the wreck' },
+    { x: 1642, y: 992, clue: 'behind the Captain’s hull' },
+    { x: 1790, y: 956, clue: 'the east sands, outside the bazaar' },
   ];
   const PATCH_W = 156, PATCH_H = 104;
   const DIG_REACH = 46;            // how near a buried spot a dig has to land
@@ -1473,7 +1497,12 @@ function init() {
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
   const SANDY_HOME = { x: 930, y: 946 };      // his half is the NEAR one
-  const SANDY_FIRE = { x: 566, y: 748 };      // beside the firepit, off court
+  // ⚠️ 372,700 — beside the firepit, which is what this constant always
+  // CLAIMED. 566,748 was 350px away from the ring, out in bare sand between
+  // the hollow and the court. Now he actually stands in the fire hollow, which
+  // is the point of the west third: the gate signpost's left arm points at a
+  // banana rather than at four empty chairs.
+  const SANDY_FIRE = { x: 372, y: 700 };
   const SANDY_SPEED = 152;                    // a shade under yours (168)
   const sandyEl = document.getElementById('bhSandy');
   const sandyCtx = document.getElementById('bhSandyCv').getContext('2d');
@@ -2468,10 +2497,10 @@ function init() {
   capBubble.style.top = pct(610, H);
 
   // 🎣 Gil stands beside the dock mouth, so every trip out passes him
-  gilEl.style.left = pct(GIL.x - 74, W);
+  gilEl.style.left = pct(GIL.x, W);      // see the -74 note on shellyEl
   gilEl.style.top = pct(GIL.y, H);
   depth(gilEl, GIL.y);
-  gilBubble.style.left = pct(GIL.x - 74, W);
+  gilBubble.style.left = pct(GIL.x, W);
   gilBubble.style.top = pct(GIL.y - 78, H);
 
   // ?beachtest = the QA hook (same family as ?cointest / ?nyantest): reach in
