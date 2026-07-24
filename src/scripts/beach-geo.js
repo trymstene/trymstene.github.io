@@ -26,17 +26,6 @@ export const NET = { y: 844, x0: 666, x1: 1194,
   spriteX: 665, spriteY: 705, spriteW: 530, spriteH: 146,
   topZ: 133, gapZ: 76 };
 export const BAR = { x: 1700, y: 760, r: 104 };
-// 🪟 THE BOATHOUSE'S FRONT WINDOW — the framed glass pane on the wreck's
-// front-left wall, in WORLD px. Captain Split's head shows through it (the
-// page clips his canvas to this box over a dark recess), so he reads as
-// standing INSIDE the boathouse rather than on top of it. Derived from the
-// Ship_Bar overlay's placed box + the window's measured pixel offset inside
-// the sprite — so it follows the wreck if it ever moves.
-export const WRECK_WIN = { x0: 1602, y0: 607, x1: 1650, y1: 659 };
-// 🪵 the wreck's front counter, cropped to its own layer so the page can draw
-// it OVER the Captain — his legs hide behind the bar, his head shows in the
-// opening. src is drawn at (x,y) world, w×h.
-export const WRECK_FRONT = { src: 'wreck-front.png', x: 1572, y: 659, w: 256, h: 81 };
 // 🔥 the fire circle's centre — the page stands an animated flame here and
 // pools warm light around it. Its walk collider is in OB_CIRCLES as usual.
 export const BONFIRE = { x: 215, y: 655 };

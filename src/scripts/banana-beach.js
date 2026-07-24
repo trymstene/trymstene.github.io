@@ -15,7 +15,7 @@ import { seedRand, presenceRoom, poofInto } from '../lib/world.js';
 // hand-kept version drifted three times (two parasol poles and a palm trunk
 // left standing where their props used to be, one of them ON the court).
 import {
-  WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR, WRECK_WIN, WRECK_FRONT,
+  WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
@@ -2945,31 +2945,17 @@ function init() {
   // bar in front of him, and because nothing of him reaches below 668 he never
   // covers the counter itself. Same back < keeper < front read as the pier
   // stalls' vendor-and-desk sandwich, without having to split the sprite.
-  // ⭐ HE STANDS BEHIND HIS BAR. The open-top placement read as standing ON the
-  // boathouse (Trym), so he's lowered until his feet are down in the hull and
-  // the counter crosses his waist. The trick is the THREE layers: the wreck
-  // (opaque, z 840) draws behind him; he draws over it (z 841) so his head and
-  // chest show in the opening; then WRECK_FRONT — the counter cropped to its
-  // own sprite — redraws OVER his legs (z 842). Bartender, not a banana on the
-  // roof. FIXED z, not y-based: he sits at y≈700 which would sort him behind
-  // the hull on its own, and the wreck collider keeps players out of the
-  // counter's y-band so nobody real ever needs to sort against the front crop.
-  const CAP_X = 1690, CAP_FEET = 704;
-  const wreckZ = Math.max(...OVERLAYS
-    .filter((o) => CAP_X > o.x && CAP_X < o.x + o.w && 700 > o.y && 700 < o.y + o.h)
-    .map((o) => o.base), 740);
+  // ⭐ HE STANDS IN FRONT OF THE BOATHOUSE. The open-top placement read as
+  // standing ON it and the behind-the-counter split didn't land either (Trym),
+  // so he's simplest: a full-body NPC on the sand at the bar front, depth-
+  // sorted normally (z = 100 + y), full-size and fully visible — the wreck is
+  // his backdrop, not his costume.
+  const CAP_X = 1694, CAP_FEET = 772;
   capEl.style.left = pct(CAP_X, W);
   capEl.style.top = pct(CAP_FEET, H);
-  capEl.style.zIndex = String(100 + wreckZ + 1);   // over the hull, under the counter
-  // 🪵 the counter occluder — same layer family, one higher
-  const wf = document.getElementById('bhWreckFront');
-  wf.style.left = pct(WRECK_FRONT.x, W);
-  wf.style.top = pct(WRECK_FRONT.y, H);
-  wf.style.width = pct(WRECK_FRONT.w, W);
-  wf.style.zIndex = String(100 + wreckZ + 2);
-  // the bubble floats above the opening
+  depth(capEl, CAP_FEET);
   capBubble.style.left = pct(CAP_X, W);
-  capBubble.style.top = pct(WRECK_WIN.y0 - 34, H);
+  capBubble.style.top = pct(CAP_FEET - 98, H);
 
   // 🎣 Gil stands beside the dock mouth, so every trip out passes him
   gilEl.style.left = pct(GIL.x, W);      // see the -74 note on shellyEl
@@ -3230,12 +3216,35 @@ function init() {
     c.fillStyle = sea; c.fillRect(0, 0, S, S * 0.34);
     c.fillStyle = 'rgba(255,255,255,0.5)';
     for (let x = 0; x < S; x += 20) c.fillRect(x, Math.round(S * 0.34) - 6 + (x % 40 ? 0 : 3), 14, 6);
+    // ☀️ SUNBEAMS — Trym liked the rave card's spotlight stripes; here they
+    // RADIATE from the sun as god-rays. Each is a thin wedge with its apex at
+    // the sun that widens across the card, filled with a yellow gradient that
+    // fades to nothing — transparent stripes beaming down over the water and
+    // sand. Drawn UNDER the sun disc (its apex is hidden by the disc) and under
+    // everything else, so they're atmosphere, not clutter.
+    const SUNX = 880, SUNY = 150;
+    c.save();
+    c.translate(SUNX, SUNY);
+    for (let i = 0; i < 8; i++) {
+      c.save();
+      c.rotate((98 + i * 11.5) * Math.PI / 180);   // fan from straight-down to the left
+      const len = 1500, w0 = 6, w1 = 74 + (i % 2) * 34;   // uneven widths read as real light
+      const g = c.createLinearGradient(0, 0, len, 0);
+      g.addColorStop(0, 'rgba(255,236,150,0.16)');
+      g.addColorStop(1, 'rgba(255,236,150,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(0, -w0); c.lineTo(len, -w1); c.lineTo(len, w1); c.lineTo(0, w0);
+      c.closePath(); c.fill();
+      c.restore();
+    }
+    c.restore();
     // the low sun, top-right, and its glow
-    const sun = c.createRadialGradient(880, 150, 20, 880, 150, 320);
+    const sun = c.createRadialGradient(SUNX, SUNY, 20, SUNX, SUNY, 320);
     sun.addColorStop(0, 'rgba(255,236,150,0.9)');
     sun.addColorStop(1, 'rgba(255,236,150,0)');
     c.fillStyle = sun; c.fillRect(400, 0, S - 400, 500);
-    c.fillStyle = '#ffe89a'; c.beginPath(); c.arc(880, 150, 66, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#ffe89a'; c.beginPath(); c.arc(SUNX, SUNY, 66, 0, Math.PI * 2); c.fill();
     // faint checker-free sand speckle so the ground isn't flat
     c.fillStyle = 'rgba(180,140,80,0.18)';
     for (let i = 0; i < 90; i++) c.fillRect(((i * 733) % S), 360 + ((i * 379) % (S - 400)), 6, 6);

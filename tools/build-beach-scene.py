@@ -921,26 +921,6 @@ def emit_geo():
                   'THE NET — solid; you go AROUND the poles'))
     circles.append((list(BONFIRE), 'the bonfire ring'))
 
-    # 🚢 CAPTAIN SPLIT STANDS BEHIND HIS BAR. The wreck is one opaque sprite, so
-    # to seat a bartender behind the counter we split the sprite's FRONT (the
-    # bar top + front wall, sprite y>=FRONT_TOP) into its own layer. The page
-    # draws: wreck (back) < Captain < wreck-front. His legs vanish behind the
-    # counter, his head + chest show in the opening — a bartender, not a banana
-    # standing on the roof. WRECK_WIN keeps the head's target box; WRECK_FRONT
-    # is the counter occluder. Both are derived from the Ship_Bar overlay box.
-    FRONT_TOP = 96   # sprite px: the bar top begins here (measured off ov-N.png)
-    wreck_box = next((b for n, b in PLACED if n.endswith('Ship_Bar.png')), None)
-    wreck_ov = next((o for o in OVERLAYS
-                     if wreck_box and o[1] == wreck_box[0] and o[2] == wreck_box[1]), None)
-    if wreck_box and wreck_ov:
-        WIN = (wreck_box[0] + 30, wreck_box[1] + 44, wreck_box[0] + 78, wreck_box[1] + 96)
-        wf = Image.open(os.path.join(OUT, wreck_ov[0])).convert('RGBA')
-        front = wf.crop((0, FRONT_TOP, wf.width, wf.height))
-        front.save(os.path.join(OUT, 'wreck-front.png'), optimize=True)
-        WRECK_FRONT = (wreck_box[0], wreck_box[1] + FRONT_TOP, wf.width, wf.height - FRONT_TOP)
-    else:
-        WIN = (1602, 607, 1650, 659)
-        WRECK_FRONT = (1572, 659, 256, 81)
 
     def rows(items):
         return '\n'.join('  [%s],%s' % (', '.join(str(v) for v in it[0]),
@@ -975,17 +955,6 @@ export const NET = { y: %d, x0: %d, x1: %d,
   spriteX: %d, spriteY: %d, spriteW: %d, spriteH: %d,
   topZ: %d, gapZ: %d };
 export const BAR = { x: %d, y: %d, r: %d };
-// 🪟 THE BOATHOUSE'S FRONT WINDOW — the framed glass pane on the wreck's
-// front-left wall, in WORLD px. Captain Split's head shows through it (the
-// page clips his canvas to this box over a dark recess), so he reads as
-// standing INSIDE the boathouse rather than on top of it. Derived from the
-// Ship_Bar overlay's placed box + the window's measured pixel offset inside
-// the sprite — so it follows the wreck if it ever moves.
-export const WRECK_WIN = { x0: %d, y0: %d, x1: %d, y1: %d };
-// 🪵 the wreck's front counter, cropped to its own layer so the page can draw
-// it OVER the Captain — his legs hide behind the bar, his head shows in the
-// opening. src is drawn at (x,y) world, w×h.
-export const WRECK_FRONT = { src: 'wreck-front.png', x: %d, y: %d, w: %d, h: %d };
 // 🔥 the fire circle's centre — the page stands an animated flame here and
 // pools warm light around it. Its walk collider is in OB_CIRCLES as usual.
 export const BONFIRE = { x: %d, y: %d };
@@ -1042,8 +1011,6 @@ export const GRABBER = { x: %d, y: %d };
        NET_BASE - (NET_SPRITE[1] + NET_MESH_ROWS[0]),
        NET_BASE - (NET_SPRITE[1] + NET_MESH_ROWS[1]),
        BAR[0], BAR[1] + 140, BAR_NOTICE,
-       WIN[0], WIN[1], WIN[2], WIN[3],
-       WRECK_FRONT[0], WRECK_FRONT[1], WRECK_FRONT[2], WRECK_FRONT[3],
        BONFIRE[0], BONFIRE[1],
        rows(rects), rows(circles),
        '\n'.join('  { rect: [%s], seat: { x: %d, y: %d } },   // %s'

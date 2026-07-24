@@ -446,14 +446,9 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-sandy canvas,
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
-    /* Captain Split behind his counter — z is set in JS (between the wreck and
-       its front-counter crop), not here */
+    /* Captain Split, standing in front of his boathouse — z set in JS (his y) */
     .bh-cap { position: absolute; width: 4%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-cap canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
-    /* 🪵 the wreck's front counter, drawn OVER the Captain so his legs hide
-       behind the bar. Anchored top-left in world %; z set in JS. */
-    .bh-wreckfront { position: absolute; pointer-events: none; image-rendering: pixelated; }
-    .bh-wreckfront img { width: 100%; height: auto; display: block; image-rendering: pixelated; }
     .bh-capbubble {
       /* ⚠️ 1900: clear of the y-sorted band (100..1200), or a banana walking
          near the bottom of the map would draw over the speech bubbles. */
@@ -1129,8 +1124,6 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-ballshadow" id="bhBallShadow"></div>
         <div class="bh-ball" id="bhBall" aria-hidden="true"></div>
         <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div>
-        <!-- 🪵 the wreck's front counter, drawn over the Captain (bartender look) -->
-        <div class="bh-wreckfront" id="bhWreckFront" aria-hidden="true"><img src="/assets/beach/wreck-front.png" alt="" /></div>
         <div class="bh-capbubble" id="bhCapBubble" role="status" aria-live="polite"></div>
         <div class="bh-sandy" id="bhSandy"><canvas id="bhSandyCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhSandyBubble" role="status" aria-live="polite"></div>
