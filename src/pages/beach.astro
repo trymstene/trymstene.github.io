@@ -497,10 +497,16 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     .bh-capbubble.is-on { opacity: 1; }
     @media (max-width: 640px) { .bh-capbubble { font-size: 0.52rem; max-width: 180px; } }
-    .bh-capbubble::after {
-      content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -5px;
-      border: 5px solid transparent; border-top-color: #000;
-    }
+    /* ⚠️⚠️ THERE WAS A SECOND `.bh-capbubble::after` HERE and it is why five
+       rounds of "the black line is still there" went nowhere. It was the
+       original CSS border-triangle:
+           border: 5px solid transparent; border-top-color: #000;
+       Same selector, same specificity, declared AFTER the real tail four lines
+       above — so it won, every time. Every fix I made was to a rule that was
+       being overridden by a duplicate I never grepped for. Trym found it.
+       ⚠️ There is exactly ONE `.bh-capbubble::after` in this file now. If a
+       tail ever misbehaves again, grep the selector before touching geometry:
+       a duplicate later in the sheet beats correct code silently. */
     /* 🏐 the volleyball — an 8-frame SPIN strip. Unlike the crab this is NOT
        on a CSS animation: the frame is set from JS so the spin follows the
        ball's actual travel (a ball whose spin ignores its speed reads as a
