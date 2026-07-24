@@ -248,6 +248,7 @@ const description = 'Authorized banana personnel only.';
         <div class="bm-worldcards">
           <div class="bm-worldcard"><b id="bmWorldClub">–</b><span>🪩 on the floor</span></div>
           <div class="bm-worldcard"><b id="bmWorldPark">–</b><span>🌳 in the park</span></div>
+          <div class="bm-worldcard"><b id="bmWorldBeach">–</b><span>🏖 on the beach</span></div>
         </div>
         <p class="bm-livenote">Live headcounts straight from the rooms (auto-refreshes while this desk is open).
           Traffic, funnels and money live on <b>Banana Pulse</b> — your bookmark.</p>
@@ -578,6 +579,10 @@ const description = 'Authorized banana personnel only.';
         const p = await fetch(WORLD_API + '/park-count').then((x) => x.json());
         put('bmWorldPark', p.count ?? '?');
       } catch (e) { put('bmWorldPark', '?'); }
+      try {
+        const b = await fetch(WORLD_API + '/beach-count').then((x) => x.json());
+        put('bmWorldBeach', b.count ?? '?');
+      } catch (e) { put('bmWorldBeach', '?'); }
     }
     el('bmWorldRefresh').onclick = worldLoad;
     setInterval(() => { if (!el('bmPaneWorld').hidden && !document.hidden) worldLoad(); }, 30000);

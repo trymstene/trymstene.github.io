@@ -409,6 +409,40 @@ const description = 'The beach at the end of the park road. The sun never quite 
       transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
       border-radius: 50%; z-index: -1;
     }
+    /* 🌐 OTHER VISITORS. Same body as yours — same width, same anchor, same
+       contact shadow — because on this beach a peer IS a banana like you, and
+       any difference in build would read as a difference in kind. The
+       transition is what turns 150ms position packets into a walk instead of
+       a teleport; z-index is set inline by depth(), so peers sort against the
+       net and the palms exactly like you do. */
+    .bh-peer {
+      position: absolute; width: 3.6%; transform: translate(-50%, -100%);
+      pointer-events: none; transition: left 0.18s linear, top 0.18s linear;
+    }
+    .bh-peer::after {
+      content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
+      transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
+      border-radius: 50%; z-index: -1;
+    }
+    .bh-peer.is-wet::after { display: none; }   /* swimmers, same rule as you */
+    .bh-peer.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
+    .bh-peer span {
+      position: absolute; left: 50%; top: -14px; transform: translateX(-50%);
+      font-size: 0.5rem; font-weight: 800; letter-spacing: 0.05em;
+      color: #fffdf5; text-shadow: 1px 1px 0 #000; white-space: nowrap;
+    }
+    #bhCrowd { color: #fffdf5; cursor: default; }
+    #bhCrowd:empty { display: none; }
+    /* leavers go in a puff, never a blink — the world-lib smoke, worn by every
+       room in Banana World (rave, park, and now the bay) */
+    .bh-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }
+    .bh-poof span { position: absolute; inset: 0; opacity: 0; }
+    .bh-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .bh-poof__1 { animation: bhPoofStep 0.75s steps(1) forwards; }
+    .bh-poof__2 { animation: bhPoofStep 0.75s steps(1) 0.25s forwards; }
+    .bh-poof__3 { animation: bhPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes bhPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
+    .bh-peer canvas,
     .bh-sandy canvas,
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
@@ -1005,6 +1039,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div>
       </div>
       <div class="bh-hud">
+        <span class="bh-chip bh-chip--rally" id="bhCrowd"></span>
         <span class="bh-chip bh-chip--rally" id="bhRally"></span>
         <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
         <button class="bh-chip" id="bhFishChip" type="button" aria-label="Your fish ledger">🐟 <span id="bhFishCount">0/25</span></button>

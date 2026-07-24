@@ -164,6 +164,14 @@ export default {
       }
       return env.PARK.get(env.PARK.idFromName('the-park')).fetch(request);
     }
+    // 🏖 BANANA BAY — same deal, its own room
+    if (url.pathname === '/beach') {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      if (!allowed.includes(request.headers.get('Origin') || '')) {
+        return new Response('forbidden', { status: 403 });
+      }
+      return env.BEACH.get(env.BEACH.idFromName('banana-bay')).fetch(request);
+    }
     // the Banana Mail rave-names desk (browser fetches from trymstene.com)
     if (url.pathname === '/names' || url.pathname === '/strike') {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -190,6 +198,12 @@ export default {
     }
     if (url.pathname === '/park-count') { // the HQ world desk's park headcount
       const res = await env.PARK.get(env.PARK.idFromName('the-park')).fetch(new Request('https://room/count'));
+      return new Response(await res.text(), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
+      });
+    }
+    if (url.pathname === '/beach-count') { // …and its beach headcount
+      const res = await env.BEACH.get(env.BEACH.idFromName('banana-bay')).fetch(new Request('https://room/count'));
       return new Response(await res.text(), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
       });
@@ -694,6 +708,10 @@ function strip(p) {
 // floor, NONE of the event machinery (no drops, no happy hour, no quests —
 // the park's life is client-side: ducks, birds, the keeper).
 const PARK_CAP = 40;
+// The bay is 2760×1100 — nine times the park's pitch — so it can carry more
+// bananas before it reads as a crowd. Still well under the ~150/room ceiling
+// the cost model sets (banana-world-engineering).
+const BEACH_CAP = 60;
 
 export class ParkRoom {
   constructor(state) {
@@ -819,6 +837,152 @@ export class ParkRoom {
   async webSocketError(ws) {
     return this.webSocketClose(ws);
   }
+}
+
+// 🏖 BANANA BAY — the beach's own presence room. Structurally identical to
+// ParkRoom (same protocol, same sid-supersede contract, same reaper), because
+// the presence protocol is a CONTRACT, not a per-room invention — see the
+// world-engineering doctrine. What differs is only the coordinate space: the
+// park speaks PERCENT of a small pitch, the bay speaks WORLD PIXELS on a
+// 2760×1100 map (src/scripts/beach-geo.js WORLD), so it has its own clamps.
+//
+// Deliberately NOT reusing ParkRoom's DO: one room per place keeps the caps,
+// the headcounts and the blast radius separate, and a busy beach can never
+// push someone out of the park.
+export class BeachRoom {
+  constructor(state) {
+    this.state = state;
+    this.state.setWebSocketAutoResponse(
+      new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')
+    );
+  }
+
+  reapStale() {
+    const now = Date.now();
+    for (const ws of this.state.getWebSockets()) {
+      let last = 0;
+      try {
+        const t = this.state.getWebSocketAutoResponseTimestamp(ws);
+        if (t) last = t.getTime();
+      } catch (e) {}
+      let a = null;
+      try { a = ws.deserializeAttachment(); } catch (e) {}
+      if (a && a.joined > last) last = a.joined;
+      if (last && now - last > 120_000) {
+        if (a) { a.dead = true; try { ws.serializeAttachment(a); } catch (e) {} }
+        try { ws.close(1011, 'stale'); } catch (e) {}
+        if (a) this.broadcast({ t: 'leave', id: a.id }, ws);
+      }
+    }
+  }
+
+  roster() {
+    return this.state.getWebSockets()
+      .map((ws) => { try { return ws.deserializeAttachment(); } catch (e) { return null; } })
+      .filter((a) => a && !a.dead);
+  }
+
+  broadcast(msg, exceptWs) {
+    const s = JSON.stringify(msg);
+    for (const ws of this.state.getWebSockets()) {
+      if (ws === exceptWs) continue;
+      try { ws.send(s); } catch (e) {}
+    }
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/count') {
+      this.reapStale();
+      return new Response(JSON.stringify({ count: this.roster().length }));
+    }
+    if (request.headers.get('Upgrade') !== 'websocket') {
+      return new Response('expected websocket', { status: 426 });
+    }
+    this.reapStale();
+    if (this.roster().length >= BEACH_CAP) {
+      return new Response('beach full', { status: 503 });
+    }
+    const pair = new WebSocketPair();
+    this.state.acceptWebSocket(pair[1]);
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+
+  async webSocketMessage(ws, raw) {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (!msg || typeof msg !== 'object') return;
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && me.dead) return;
+
+    if (msg.t === 'hi' && !me) {
+      this.reapStale();
+      // SUPERSEDE — mandatory in every room (world-engineering doctrine): the
+      // same browser rejoining (beach→park→beach) kills its own ghosts now
+      // instead of leaving duplicates until the 120s sweep.
+      const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      if (sid) {
+        for (const other of this.state.getWebSockets()) {
+          if (other === ws) continue;
+          let a = null;
+          try { a = other.deserializeAttachment(); } catch (e) {}
+          if (a && !a.dead && a.sid === sid) {
+            a.dead = true;
+            try { other.serializeAttachment(a); } catch (e) {}
+            try { other.close(1000, 'superseded'); } catch (e) {}
+            this.broadcast({ t: 'leave', id: a.id }, other);
+          }
+        }
+      }
+      const p = {
+        id: crypto.randomUUID().slice(0, 8),
+        sid,
+        name: sanitizeName(msg.name, []),
+        outfit: sanitizeOutfit(msg.outfit),
+        x: bayClampX(msg.x), y: bayClampY(msg.y),
+        sit: msg.sit === true,
+        joined: Date.now(),
+      };
+      ws.serializeAttachment(p);
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(bayStrip) }));
+      this.broadcast({ t: 'join', p: bayStrip(p) }, ws);
+      return;
+    }
+    if (msg.t === 'move' && me) {
+      const now = Date.now();
+      if (now - (me.lastMove || 0) < 100) return; // client sends at 150ms
+      me.lastMove = now;
+      me.x = bayClampX(msg.x); me.y = bayClampY(msg.y);
+      me.sit = msg.sit === true;
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'move', id: me.id, x: me.x, y: me.y, sit: me.sit }, ws);
+      return;
+    }
+    if (msg.t === 'outfit' && me) {
+      me.outfit = sanitizeOutfit(msg.outfit);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
+    }
+  }
+
+  async webSocketClose(ws) {
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && !me.dead) this.broadcast({ t: 'leave', id: me.id }, ws);
+  }
+
+  async webSocketError(ws) {
+    return this.webSocketClose(ws);
+  }
+}
+
+// world pixels, rounded to whole px (the map is 2760×1100 and a banana is ~56
+// wide — sub-pixel precision would only inflate every frame on the wire)
+function bayClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(2748, Math.max(12, Math.round(n))) : 898; }
+function bayClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(1088, Math.max(64, Math.round(n))) : 742; }
+function bayStrip(p) {
+  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
 }
 
 function parkClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(95, Math.max(5, Math.round(n * 10) / 10)) : 50; }

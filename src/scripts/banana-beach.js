@@ -8,7 +8,7 @@
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
-import { seedRand } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto } from '../lib/world.js';
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
 // tools/build-beach-scene.py, which declares each collider on the place()
 // call that draws the prop. Never hand-copy a coordinate in here again: the
@@ -2573,6 +2573,7 @@ function init() {
     shellyTick();
     crabs.forEach((c) => crabStep(c, dt));
     sandyTick(dt, now);
+    baySendMove(now);              // 🌐 where you are, at most every 150ms
     cam();
     prevX = pos.x; prevY = pos.y;
     requestAnimationFrame(step);
@@ -2861,11 +2862,120 @@ function init() {
     }, 400);
   }
 
+  // ---- 🌐 B2: THE BAY IS MULTIPLAYER --------------------------------------
+  // A presence room on worker-rave (/beach), same protocol contract as the
+  // park and the floor: join, walk, outfit, leave. Nothing here is authorita-
+  // tive — the volleyball, the shells, the tide and the dig holes stay local,
+  // exactly as the doctrine says (client-authoritative until real money). What
+  // travels is only where you are and what you're wearing, which is all that
+  // "other people are on this beach" actually needs.
+  //
+  // ⚠️ Placed AFTER the submerge pass on purpose: peers are drawn through the
+  // very same applySubmerge()/subAt() you are, so a peer who swims out goes
+  // blue at the same depth you would. A peer drawn by a separate path would
+  // drift out of sync with the water the first time either changed.
+  //
+  // Fails silently by design: no socket, no crowd, the beach is still a beach.
+  const BEACH_WS = 'wss://banana-rave.trymstene.workers.dev/beach';
+  const peers = new Map();                      // id → { el, ctx, outfit, key }
+  const crowdEl = document.getElementById('bhCrowd');
+  let myBayId = null, baySendAt = 0;
+  const lastSent = { x: -1, y: -1, sit: null };
+  let bayName = '';
+  try { bayName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
+  const myBayOutfit = () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: ME_DRAW.extras || {} });
+  function refreshCrowd() {
+    if (crowdEl) crowdEl.textContent = peers.size ? '🏖 ' + (peers.size + 1) + ' on the beach' : '';
+  }
+  function drawPeer(p, force) {
+    // same redraw key as drawMe(): frame AND depth, because a peer wading out
+    // changes tint without changing frame — key on frame alone and the tint
+    // freezes at whatever depth they were at when the frame last ticked.
+    const f = p.sit ? SIT_FRAME : frameNow();
+    const q = Math.round(subAt(p.x, p.y) * 40);
+    const key = f * 64 + q;
+    if (!force && key === p.key) return;
+    p.key = key;
+    const sub = q / 40;
+    drawComposite(p.ctx, CV, f, {
+      ...p.outfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+    });
+    applySubmerge(p.ctx, sub, f * 0.9);
+    p.el.classList.toggle('is-wet', q > 0);
+  }
+  function placePeer(p) {
+    p.el.style.left = pct(p.x, W);
+    p.el.style.top = pct(p.y, H);
+    depth(p.el, p.y);          // sorts against the net and the palms like you
+  }
+  function addPeer(d) {
+    if (!d || d.id === myBayId || peers.has(d.id)) return;
+    const el = document.createElement('div');
+    el.className = 'bh-peer';
+    const cv = document.createElement('canvas');
+    cv.width = CV; cv.height = CV;
+    el.appendChild(cv);
+    if (d.name) { const tag = document.createElement('span'); tag.textContent = d.name; el.appendChild(tag); }
+    world.appendChild(el);
+    const p = {
+      el, ctx: cv.getContext('2d'), outfit: d.outfit || {},
+      x: d.x ?? 898, y: d.y ?? 742, sit: !!d.sit, key: -1,
+    };
+    el.classList.toggle('is-sitting', p.sit);
+    peers.set(d.id, p);
+    placePeer(p);
+    drawPeer(p, true);
+    refreshCrowd();
+  }
+  const bayRoom = presenceRoom({
+    url: BEACH_WS,
+    hi: () => ({ outfit: myBayOutfit(), x: pos.x, y: pos.y, sit: !!seated, name: bayName }),
+    onMessage: (m) => {
+      if (m.t === 'roster') { myBayId = m.you; (m.all || []).forEach(addPeer); refreshCrowd(); }
+      else if (m.t === 'join') addPeer(m.p);
+      else if (m.t === 'move') {
+        const p = peers.get(m.id);
+        if (p) {
+          p.x = m.x; p.y = m.y; p.sit = !!m.sit;
+          p.el.classList.toggle('is-sitting', p.sit);
+          placePeer(p);
+        }
+      } else if (m.t === 'outfit') {
+        const p = peers.get(m.id);
+        if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); }
+      } else if (m.t === 'leave') {
+        const p = peers.get(m.id);
+        if (p) {
+          // the puff anchors at the BODY, not the feet — poofInto takes
+          // percent, and a peer's y is its feet line
+          poofInto(world, 'bh-poof', p.x / W * 100, (p.y - 26) / H * 100);
+          p.el.remove();
+          peers.delete(m.id);
+          refreshCrowd();
+        }
+      }
+    },
+    onDown: () => { peers.forEach((p) => p.el.remove()); peers.clear(); refreshCrowd(); },
+  });
+  function baySendMove(now) {
+    if (!bayRoom.live || now - baySendAt < 150) return;
+    const sit = !!seated;
+    if (Math.abs(pos.x - lastSent.x) < 1 && Math.abs(pos.y - lastSent.y) < 1 && sit === lastSent.sit) return;
+    baySendAt = now;
+    lastSent.x = pos.x; lastSent.y = pos.y; lastSent.sit = sit;
+    bayRoom.send({ t: 'move', x: pos.x, y: pos.y, sit });
+  }
+
   assetsReady().then(() => {
     drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly();
     setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 700);   // redraw belt: accessories decode async
     setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 1800);
-    setInterval(() => { if (!document.hidden) { drawMe(); drawSandy(); } }, 120);
+    // beat-frame redraws only, and never for a hidden tab (perf doctrine)
+    setInterval(() => {
+      if (document.hidden) return;
+      drawMe(); drawSandy();
+      peers.forEach((p) => drawPeer(p));
+    }, 120);
     requestAnimationFrame((t) => { last = t; step(t); });
   });
 }

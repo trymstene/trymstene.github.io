@@ -121,7 +121,7 @@ function init() {
   // 🪩 the rave road: walk off the BOTTOM of the map and you're back in the
   // club. Armed only after you've been properly inside the park — the walk-in
   // spawn passes through the zone and must not bounce straight back out.
-  let raveRoadArmed = false, leaving = false;
+  let raveRoadArmed = false, beachRoadArmed = false, leaving = false;
   function exitToRave() {
     if (leaving) return;
     leaving = true;
@@ -130,12 +130,19 @@ function init() {
     cut.classList.add('is-on');
     setTimeout(() => { location.href = '/rave/'; }, 170);
   }
-  // 🏖 THE BEACH ROAD IS SHUT until Banana Bay is worth the walk (Trym's
-  // first rule of building this world: we open an area when it's READY, not
-  // when its door happens to work). /beach/ still exists, noindexed, for
-  // building and testing — the park just doesn't advertise it yet. To open
-  // it: restore the BEACH signpost + this exit, and flip the sign's handler
-  // back off the construction popup.
+  // 🏖 THE BEACH ROAD IS OPEN. It stayed shut while Banana Bay was still a
+  // building site — the first rule of this world is that an area opens when
+  // it's READY, not when its door happens to work — and the bay is now a
+  // place: volleyball, shells, fishing, digging, the midway, and other real
+  // bananas walking around in it. So the right arm gets its gate.
+  function exitToBeach() {
+    if (leaving) return;
+    leaving = true;
+    track('stand_exit_beach');
+    if (REDUCED) { location.href = '/beach/'; return; }
+    cut.classList.add('is-on');
+    setTimeout(() => { location.href = '/beach/'; }, 170);
+  }
   const SPEED = 26; // %/s
   const keys = {};
   addEventListener('keydown', (e) => {
@@ -179,6 +186,11 @@ function init() {
       // the rave road: leaving out the bottom (armed once you're inside)
       if (pos.y < 94) raveRoadArmed = true;
       if (raveRoadArmed && pos.y > 97.5 && Math.abs(pos.x - 50) < 9) exitToRave();
+      // 🏖 the beach road: out the RIGHT arm, under the gate. Armed the same
+      // way the rave road is — walk in from the bay at x=103 and you'd trip
+      // the exit on the first frame and bounce straight back out.
+      if (pos.x < 88) beachRoadArmed = true;
+      if (beachRoadArmed && pos.x > 93 && Math.abs(pos.y - 72) < 7) exitToBeach();
       parkSendMove(now); // tell the park where you walked (throttled)
       coinTick();
     }
@@ -374,6 +386,21 @@ function init() {
   if (roadPopup) {
     roadPopup.addEventListener('click', (e) => {
       if (e.target === roadPopup || e.target.id === 'bsRoadOk') { roadPopup.hidden = true; e.stopPropagation(); }
+    });
+  }
+  // 🏖 tapping the gate sets a WALK, it doesn't teleport. Every door in this
+  // world is walked through — the stand counter, the rave exit, the stalls on
+  // the pier — because the walk is what makes the map feel like a place.
+  // The step loop's own x>93 test then fires exitToBeach(), so tap and WASD
+  // reach the bay through exactly the same line of code.
+  const beachGate = document.getElementById('bsBeachGate');
+  if (beachGate) {
+    beachGate.addEventListener('click', (e) => {
+      e.stopPropagation();
+      beachRoadArmed = true;
+      tgt.x = 99; tgt.y = 72;
+      hint(false);
+      track('stand_sign_beach');
     });
   }
 
