@@ -424,6 +424,18 @@ const description = 'The beach at the end of the park road. The sun never quite 
       text-shadow: 2px 2px 0 #000; white-space: nowrap;
       animation: bhFloat 0.9s ease-out forwards;
     }
+    /* a RESULT you're meant to read: rises slower, then holds before fading */
+    .bh-float--hold {
+      font-size: 1rem; color: #ffe135;
+      animation: bhFloatHold 2.6s ease-out forwards;
+    }
+    @keyframes bhFloatHold {
+      0%   { opacity: 0; transform: translate(-50%, -20%) scale(0.9); }
+      12%  { opacity: 1; transform: translate(-50%, -70%) scale(1.06); }
+      22%  { transform: translate(-50%, -62%) scale(1); }
+      72%  { opacity: 1; transform: translate(-50%, -76%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -104%) scale(1); }
+    }
     @keyframes bhFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
     .bh-hint {
       /* clears the action bar below it (bottom 10px + ~42px tall) */

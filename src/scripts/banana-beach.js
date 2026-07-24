@@ -306,6 +306,7 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     pendingOpen = null;   // any tap cancels a pending stall-open; tapStall re-sets it
+    pendingDig = null;    // …and a pending walk-then-dig
     // 🎯 TAP THE BALL TO PLAY IT — checked first, and against the ball's
     // SCREEN position (y − z), so a ball in mid-air is tappable where you can
     // actually see it. In reach you bump; out of reach you go and fetch it.
@@ -325,8 +326,14 @@ function init() {
     if (tapPatch) {
       seated = null; sitTarget = null;
       meEl.classList.remove('is-sitting');
-      if (patchAt(pos.x, pos.y) === tapPatch) dig();   // stood on it → dig
-      else { nextTgt = null; tgt.x = wx; tgt.y = wy; } // otherwise walk over
+      // ⚠️ TAP WHERE YOU WANT THE HOLE — not "dig wherever I happen to stand".
+      // The old rule (already on this patch → dig at your feet) made it
+      // IMPOSSIBLE to move around inside a patch: every tap just re-dug the
+      // same spot, so you had to walk in from outside for each hole. Now a tap
+      // near you digs; a tap further off walks you there and digs ON ARRIVAL.
+      // One tap = one hole, anywhere on the patch — which IS the search loop.
+      if (Math.hypot(wx - pos.x, wy - pos.y) < 30) dig();
+      else { nextTgt = null; tgt.x = wx; tgt.y = wy; pendingDig = { x: wx, y: wy }; }
       return;
     }
     // at the bar? tapping the wreck talks to the Captain instead of walking
@@ -368,14 +375,17 @@ function init() {
     setTimeout(() => { location.href = '/banana-stand/?beach'; }, 170);
   }
 
-  function float(x, y, text) {
+  // ⚠️ 0.9s was too fast to READ — Trym dug and never knew what he'd found.
+  // Anything that reports a RESULT passes `hold`, which uses a slower rise with
+  // a pause at the top, so the words are legible before they go.
+  function float(x, y, text, hold) {
     const d = document.createElement('div');
-    d.className = 'bh-float';
+    d.className = 'bh-float' + (hold ? ' bh-float--hold' : '');
     d.textContent = text;
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
-    setTimeout(() => d.remove(), 900);
+    setTimeout(() => d.remove(), hold ? 2600 : 900);
   }
 
   // ---- 🏐 THE VOLLEYBALL: the ball has HEIGHT, and the net cares ----------
@@ -1136,8 +1146,8 @@ function init() {
     { x: 560, y: 700, clue: 'midway up the west beach' },
     { x: 620, y: 966, clue: 'south-west, just off the entrance path' },
     { x: 1244, y: 662, clue: 'just east of the volley court' },
-    { x: 1520, y: 646, clue: 'east sands, out toward the wreck' },
-    { x: 1500, y: 900, clue: 'south-east, a stone’s throw from the firepit' },
+    { x: 1430, y: 640, clue: 'east sands, out toward the wreck' },
+    { x: 1620, y: 950, clue: 'south-east, a stone’s throw from the firepit' },
     { x: 902, y: 1066, clue: 'just south of the volley court' },
     { x: 1150, y: 1066, clue: 'below the court’s south line' },
   ];
@@ -1275,13 +1285,13 @@ function init() {
       if (d < bd) { bd = d; best = s; }
     });
     if (!best) {
-      float(pos.x, pos.y - 26, 'just sand…');
+      float(pos.x, pos.y - 26, 'just sand…', true);
       digSave();
       return;
     }
     best.got = true;
     if (best.kind === 'treasure') {
-      float(pos.x, pos.y - 30, '🏴 THE TREASURE!');
+      float(pos.x, pos.y - 30, '🏴 THE TREASURE!', true);
       sandySay('you found it! that’s what the map was on about.', 5200);
       passStat('bh_treasure', 1);
       track('beach_dig', { find: 'treasure' });
@@ -1291,16 +1301,16 @@ function init() {
     } else if (best.kind === 'shell') {
       const id = SHELL_IDS[Math.floor(Math.random() * SHELL_IDS.length)];
       passStat('sh_' + id, 1);
-      float(pos.x, pos.y - 30, '🐚 ' + shellName(id));
+      float(pos.x, pos.y - 30, '🐚 ' + shellName(id), true);
       refreshShellChip();
       track('beach_dig', { find: 'shell' });
     } else if (best.kind === 'curio') {
       const c = DIG_CURIO[Math.floor(Math.random() * DIG_CURIO.length)];
       passStat('bh_curio', 1);
-      float(pos.x, pos.y - 30, '✨ ' + c);
+      float(pos.x, pos.y - 30, '✨ ' + c, true);
       track('beach_dig', { find: 'curio' });
     } else {
-      float(pos.x, pos.y - 30, DIG_JUNK[Math.floor(Math.random() * DIG_JUNK.length)]);
+      float(pos.x, pos.y - 30, '🥾 ' + DIG_JUNK[Math.floor(Math.random() * DIG_JUNK.length)], true);
       track('beach_dig', { find: 'junk' });
     }
     passStat('bh_dug', 1);
@@ -2220,6 +2230,7 @@ function init() {
   const frontOf = (x, y) => ({ x, y: y + 40 });
   const ARRIVE = 24;                      // how close = "at the desk"
   let pendingOpen = null;                 // { fn, x, y } — opens when we arrive
+  let pendingDig = null;                  // { x, y } — digs when we arrive
   // route to a stall's front, going AROUND it if you're behind it (stalls are
   // solid + south-facing; from the north the banana wedges on the collider
   // back, so it takes a side waypoint — same idea as the pier mouth).
@@ -2295,6 +2306,10 @@ function init() {
       // 🎡 a stall opens only once you've walked all the way to its desk
       if (pendingOpen && Math.hypot(pos.x - pendingOpen.x, pos.y - pendingOpen.y) < ARRIVE) {
         const fn = pendingOpen.fn; pendingOpen = null; fn();
+      }
+      // ⛏ walked to the spot you tapped on a patch → put the spade in
+      if (pendingDig && Math.hypot(pos.x - pendingDig.x, pos.y - pendingDig.y) < 20) {
+        pendingDig = null; dig();
       }
       if (pos.x > 300) roadArmed = true;
       if (roadArmed && pos.x < 40 && pos.y > 1040) exitToPark();

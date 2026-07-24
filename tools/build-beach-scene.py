@@ -461,6 +461,34 @@ def net_span():
     return x0, x0 + w
 
 
+# ⛏ THE DIG SITES — mirrored from banana-beach.js DIG_SITES so we can AUDIT
+# them. A patch is a z-index:2 overlay drawn OVER the plate, so any prop baked
+# into the plate underneath it gets covered — which reads backwards (the sand
+# patch is part of the beach; the towel lying on it should be on top).
+# ⚠️ An earlier in-browser check compared patches only against DOM overlays and
+# so missed every BAKED prop — exactly the ones that show the fault.
+DIG_SITES = [(320, 620), (340, 870), (560, 700), (620, 966), (1244, 662),
+             (1430, 640), (1620, 950), (902, 1066), (1150, 1066)]
+PATCH_W, PATCH_H = 156, 104
+
+
+def audit_digs():
+    """warn when a dig patch lands on top of a prop's footprint"""
+    hits = 0
+    for (dx, dy) in DIG_SITES:
+        px0, py0 = dx - PATCH_W // 2, dy - PATCH_H // 2
+        px1, py1 = dx + PATCH_W // 2, dy + PATCH_H // 2
+        for name, box in PLACED:
+            bx0, by0, bx1, by1 = box
+            if bx0 < px1 and bx1 > px0 and by0 < py1 and by1 > py0:
+                ov = (min(px1, bx1) - max(px0, bx0)) * (min(py1, by1) - max(py0, by0))
+                if ov > 900:                       # ignore a few stray pixels
+                    print('  ⚠️  DIG PATCH (%d,%d) covers %s  (%d px overlap)'
+                          % (dx, dy, name.split('_48x48_')[-1].replace('.png', ''), ov))
+                    hits += 1
+    print('  dig-patch audit: %d prop conflict(s)' % hits)
+
+
 def emit_geo():
     """🔧 CODEGEN: write src/scripts/beach-geo.js — the ONE source of the
     beach's collision geometry. banana-beach.js imports this and keeps no
@@ -831,6 +859,7 @@ if HAVE_PACK:
           % (len(STALL_POS) // 2))
 
     audit_court()
+    audit_digs()
 
     # 🛟 THE PIER — it used to be a featureless brown slab and read as a
     # mystery object ("what's this brown thing at the beach?"). Now it has
