@@ -374,6 +374,9 @@ function init() {
     // 🎣 a dock fishing chair sits you down to cast (checked before sunbeds)
     const fspot = FISH_SPOTS.find((f) => inRect(wx, wy, f.rect));
     if (fspot) { sitTarget = fspot; setTarget(fspot.seat.x, fspot.seat.y + 8); return; }
+    // 🔥 …and a chair round the fire seats you facing the flames
+    const fseat = FIRE_SEATS.find((s) => inRect(wx, wy, s.rect));
+    if (fseat) { sitTarget = fseat; setTarget(fseat.seat.x, fseat.seat.y + 8); return; }
     const chair = CHAIRS.find((c) => inRect(wx, wy, c.rect));
     if (chair) { sitTarget = chair; setTarget(chair.seat.x, chair.seat.y + 10); return; }
     sitTarget = null;
@@ -795,6 +798,21 @@ function init() {
     { rect: [1796, 168, 1876, 246], seat: { x: 1836, y: 224 }, bob: { x: 1706, y: 214 }, sitFrame: F_LEFT, fishing: true },
     { rect: [1904, 168, 1984, 246], seat: { x: 1944, y: 224 }, bob: { x: 2074, y: 214 }, sitFrame: F_RIGHT, fishing: true },
   ];
+  // 🔥 THE FIRE CIRCLE'S FOUR SEATS. Same sit system as the dock chairs, so a
+  // banana really sits down instead of standing in the chair — and each seat
+  // locks a frame FACING THE FLAMES (left-hand seats look right, right-hand
+  // seats look left). Offsets are derived from BONFIRE so they can never drift
+  // from where the generator actually draws the chairs.
+  const FIRE_SEATS = [
+    { dx: -88, dy: -22, f: F_RIGHT }, { dx: -88, dy: 48, f: F_RIGHT },
+    { dx: 88, dy: -22, f: F_LEFT }, { dx: 88, dy: 48, f: F_LEFT },
+  ].map((s) => ({
+    rect: [BONFIRE.x + s.dx - 32, BONFIRE.y + s.dy - 56,
+           BONFIRE.x + s.dx + 32, BONFIRE.y + s.dy + 18],
+    seat: { x: BONFIRE.x + s.dx, y: BONFIRE.y + s.dy + 12 },
+    sitFrame: s.f,
+  }));
+
   const FISH_COIN_CAP = 15;                 // coins fishing may mint per day
   const fishCoinsLeft = () => {
     let st = {};

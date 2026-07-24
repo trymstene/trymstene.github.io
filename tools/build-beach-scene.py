@@ -66,12 +66,17 @@ NET_MIDS = 7                     # mesh tiles between the two post pieces
 WATER_LINE = 292      # bananas can't swim past this (the art's shore is 306)
 PLATFORM_BOT = 308    # you may stand on the pier's platform down to here
 PIER_MOUTH = (1890, 348)   # land↔pier routes via this waypoint
-BONFIRE = (215, 655, 74)   # the ring's walk collider (tuned; the art is an
+BONFIRE = (215, 655, 48)   # the ring's walk collider (tuned; the art is an
                            # ellipse, but a circle is what feels right here).
                            # 24 Jul: moved AGAIN — up above the welcome arch, on
                            # its own, because the old nook was a mess: a palm
                            # grew straight through the ring and the chairs faced
                            # nowhere. Nothing else is placed inside this circle.
+                           # ⚠️ r48, NOT the old 74: with chairs pulled up close,
+                           # a 74 circle reached PAST them and wedged the banana
+                           # against an invisible wall when walking between the
+                           # two lower seats. Keep this near the stone ring's own
+                           # size (rx62 × ry40) or the seating becomes unusable.
 BAR_NOTICE = 104      # how close you get before the Captain greets you
 NET_SOLID_H = 10      # half-thickness of the net's WALK collider. The banana
                       # covers at most 8.4px per step (SPEED 168 × the 0.05s
@@ -845,10 +850,16 @@ if HAVE_PACK:
     # ring reads as somewhere people sit together of an evening. Nothing is
     # placed inside the circle — the old nook failed because a palm grew through
     # it. Vegetation and a blanket sit OUTSIDE the seating, framing it.
+    # ⚠️ NOT Ship_Bar_Chair — that sprite is a little orange CRATE, which is why
+    # the first pass read as four boxes. Camping Chair_9..14 are SIDE-VIEW
+    # chairs (backrest one side, seat the other), so unflipped they seat someone
+    # facing RIGHT. Left of the fire they go as-is, right of it they flip — so
+    # all four sitters look INTO the flames. Four different colours, on purpose.
     fx, fy = BONFIRE[0], BONFIRE[1]
-    for cy in (fy - 26, fy + 44):
-        place('21_Beach_48x48_Ship_Bar_Chair_1.png', fx - 84, cy, layer=True)
-        place('21_Beach_48x48_Ship_Bar_Chair_2.png', fx + 84, cy, flip=True, layer=True)
+    for cy, lch, rch in ((fy - 22, 'Chair_9', 'Chair_12'),
+                         (fy + 48, 'Chair_11', 'Chair_10')):
+        place('ME_Singles_Camping_48x48_%s.png' % lch, fx - 88, cy, layer=True)
+        place('ME_Singles_Camping_48x48_%s.png' % rch, fx + 88, cy, flip=True, layer=True)
     place('21_Beach_48x48_Grey_Beach_Towel_1.png', fx + 4, fy + 112, shade=False)
     place('21_Beach_48x48_Small_Red_Bucket_1.png', fx - 96, fy + 96, shade=False, layer=True)
     for vx, vy in ((fx - 128, fy + 40), (fx + 132, fy - 44), (fx + 20, fy - 84)):

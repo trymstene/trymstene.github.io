@@ -60,7 +60,7 @@ export const OB_CIRCLES = [
   [2360, 690, 13],   // street food table 2
   [2500, 728, 13],   // street food table 4
   [2318, 704, 13],   // street food chair 1
-  [215, 655, 74],   // the bonfire ring
+  [215, 655, 48],   // the bonfire ring
 ];
 
 export const CHAIRS = [
@@ -110,10 +110,10 @@ export const OVERLAYS = [
   { src: 'ov-29.png', x: 1933, y: 108, w: 22, h: 24, base: 132 },
   { src: 'ov-30.png', x: 1825, y: 188, w: 22, h: 24, base: 212 },
   { src: 'ov-31.png', x: 1933, y: 188, w: 22, h: 24, base: 212 },
-  { src: 'ov-32.png', x: 120, y: 605, w: 22, h: 24, base: 629 },
-  { src: 'ov-33.png', x: 288, y: 605, w: 22, h: 24, base: 629 },
-  { src: 'ov-34.png', x: 120, y: 675, w: 22, h: 24, base: 699 },
-  { src: 'ov-35.png', x: 288, y: 675, w: 22, h: 24, base: 699 },
+  { src: 'ov-32.png', x: 112, y: 589, w: 31, h: 44, base: 633 },
+  { src: 'ov-33.png', x: 288, y: 589, w: 31, h: 44, base: 633 },
+  { src: 'ov-34.png', x: 112, y: 659, w: 31, h: 44, base: 703 },
+  { src: 'ov-35.png', x: 288, y: 659, w: 31, h: 44, base: 703 },
   { src: 'ov-36.png', x: 105, y: 718, w: 28, h: 33, base: 751 },
   { src: 'ov-37.png', x: 40, y: 628, w: 95, h: 67, base: 695 },
   { src: 'ov-38.png', x: 300, y: 544, w: 95, h: 67, base: 611 },
