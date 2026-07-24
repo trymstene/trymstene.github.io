@@ -1999,9 +1999,13 @@ function init() {
       const d = document.createElement('button');
       d.type = 'button';
       d.className = 'bh-duck' + (live ? ' is-live' : '');
-      d.style.animationDelay = (-k * 0.31) + 's';
+      d.style.setProperty('--i', k);          // per-duck float phase
       d.disabled = !live;
       d.setAttribute('aria-label', 'duck ' + (k + 1));
+      d.innerHTML = '<span class="bh-duck__ripple"></span>'
+        + '<span class="bh-duck__hook"></span>'
+        + '<span class="bh-duck__sprite"></span>'
+        + '<span class="bh-duck__tag"></span>';
       if (live) d.addEventListener('click', () => hookDuck(d), { once: true });
       pond.appendChild(d);
     }
@@ -2024,13 +2028,37 @@ function init() {
   function hookDuck(el) {
     const won = rollDuck();
     el.classList.add('is-hooked');
-    el.innerHTML = '<b>' + won + '</b>';
-    [...document.querySelectorAll('.bh-duck')].forEach((d) => { d.disabled = true; });
+    if (won >= 15) el.classList.add('is-jackpot');
+    else if (won >= 6) el.classList.add('is-big');
+    el.querySelector('.bh-duck__tag').textContent = won;   // the number underneath, revealed on the lift
+    [...document.querySelectorAll('.bh-duck')].forEach((d) => {
+      d.disabled = true;
+      if (d !== el) d.classList.add('is-dim');
+    });
     passStat('tickets', won);
     paintTickets();
     track('beach_stall_win', { stall: 'duck', tickets: won });
-    stallFoot.innerHTML = '<span class="bh-stallhint">+' + won + ' tickets!</span>';
-    setTimeout(() => { if (openStallIdx === 0) duckRound(false); }, 1500);
+    // sparkle burst on the good ones, timed to the number reveal
+    if (won >= 6) setTimeout(() => { if (el.classList.contains('is-hooked')) duckSparkles(el, won >= 15 ? 14 : 7); }, 360);
+    const cheer = won >= 15 ? 'JACKPOT! +15 tickets'
+      : won >= 6 ? 'big one! +' + won + ' tickets'
+        : '+' + won + ' ticket' + (won === 1 ? '' : 's');
+    stallFoot.innerHTML = '<span class="bh-stallhint">' + cheer + '</span>';
+    setTimeout(() => { if (openStallIdx === 0) duckRound(false); }, 2300);
+  }
+  // a little firework of gold specks around a winning duck
+  function duckSparkles(el, n) {
+    for (let i = 0; i < n; i++) {
+      const sp = document.createElement('span');
+      sp.className = 'bh-spark';
+      const ang = (Math.PI * 2 * i) / n + Math.random() * 0.6;
+      const dist = 20 + Math.random() * 28;
+      sp.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(1) + 'px');
+      sp.style.setProperty('--dy', (Math.sin(ang) * dist - 12).toFixed(1) + 'px');
+      sp.style.animationDelay = (Math.random() * 0.12).toFixed(2) + 's';
+      el.appendChild(sp);
+      setTimeout(() => sp.remove(), 1000);
+    }
   }
 
   // ---- 🦀 whack-a-crab — the SKILL game (hook-a-duck is the LUCK one) ------

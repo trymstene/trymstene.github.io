@@ -839,27 +839,110 @@ const faq = {
     /* ⚖️ the odds, posted in the stall. Not fine print — the whole point of a
        ticket is that you can see what it's worth. */
     .bh-odds { margin: 0.6rem 0 0; font-size: 0.68rem; opacity: 0.62; line-height: 1.4; }
+    /* 🦆 THE POND — a little pool of shimmering water the ducks bob in */
     .bh-pond {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
-      background: linear-gradient(#2f7f94, #1f5f74); border: 3px solid #000;
-      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.08); padding: 0.7rem 0.5rem;
+      position: relative; overflow: hidden;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2rem 0.35rem;
+      padding: 0.85rem 0.55rem 0.6rem; border: 3px solid #000;
+      background: radial-gradient(120% 90% at 50% 0%, #47a0b3 0%, #2d7a8e 46%, #1b5468 100%);
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.08), inset 0 -14px 20px rgba(0,0,0,0.28);
     }
+    /* a slow diagonal light-band drifting across the surface (loops on one tile) */
+    .bh-pond::before {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: repeating-linear-gradient(114deg, rgba(255,255,255,0.055) 0 5px, transparent 5px 24px);
+      animation: bhPondShimmer 6s linear infinite;
+    }
+    @keyframes bhPondShimmer { to { transform: translateX(24px); } }
+
     .bh-duck {
-      appearance: none; border: 0; background: transparent; cursor: default;
-      height: 46px; background-image: url('/assets/beach/duck.png');
-      background-size: 200% 100%; background-repeat: no-repeat;
-      background-position-x: 0%; image-rendering: pixelated;
-      animation: bhDuckBob 1.6s steps(2) infinite;
+      position: relative; z-index: 1; appearance: none; border: 0; padding: 0;
+      background: transparent; cursor: default;
+      width: 100%; max-width: 92px; aspect-ratio: 1 / 1; justify-self: center;
       display: grid; place-items: center;
     }
-    /* 2 frames → the strip's frames sit at 0% and 100% (i/(N-1)) */
-    @keyframes bhDuckBob { from { background-position-x: 0%; } to { background-position-x: 200%; } }
+    /* the duck itself — floats + gently tilts, each on its own phase (--i) */
+    .bh-duck__sprite {
+      width: 74%; aspect-ratio: 36 / 32;
+      background: url('/assets/beach/duck.png') center/contain no-repeat;
+      image-rendering: pixelated; transform-origin: 50% 82%; z-index: 2;
+      filter: drop-shadow(0 2px 0 rgba(0,0,0,0.28));
+      animation: bhDuckFloat calc(2.5s + var(--i, 0) * 0.35s) ease-in-out infinite;
+      animation-delay: calc(var(--i, 0) * -0.5s); will-change: transform;
+    }
+    @keyframes bhDuckFloat {
+      0%, 100% { transform: translateY(2px) rotate(-3.5deg); }
+      50%      { transform: translateY(-3px) rotate(3.5deg); }
+    }
+    /* the ripple of water the duck sits in */
+    .bh-duck__ripple {
+      position: absolute; bottom: 22%; left: 50%; width: 52%; height: 11%;
+      transform: translateX(-50%); border-radius: 50%;
+      background: rgba(255,255,255,0.16); box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
+      animation: bhDuckRipple calc(2.5s + var(--i, 0) * 0.35s) ease-in-out infinite;
+      animation-delay: calc(var(--i, 0) * -0.5s);
+    }
+    @keyframes bhDuckRipple {
+      0%, 100% { transform: translateX(-50%) scaleX(0.88); opacity: 0.7; }
+      50%      { transform: translateX(-50%) scaleX(1.14); opacity: 0.42; }
+    }
+    /* the hook line that drops in when you pick one */
+    .bh-duck__hook {
+      position: absolute; left: 52%; bottom: 60%; width: 3px; height: 0;
+      transform: translateX(-50%); transform-origin: top; opacity: 0; z-index: 2;
+      background: linear-gradient(#e2e2ee, #a9a9bd);
+    }
+    .bh-duck__hook::after {
+      content: ''; position: absolute; left: -5px; bottom: -8px;
+      width: 12px; height: 12px; border: 3px solid #c4c4d4;
+      border-top-color: transparent; border-right-color: transparent;
+      border-bottom-left-radius: 12px;
+    }
+    /* the payout tag, hidden until the duck is lifted */
+    .bh-duck__tag {
+      position: absolute; top: 60%; left: 50%; transform: translate(-50%, 0) scale(0);
+      opacity: 0; z-index: 3; white-space: nowrap; line-height: 1;
+      font-family: "Archivo Black", sans-serif; font-size: 0.92rem;
+      color: #ffd257; background: #17121f; border: 2px solid #000;
+      padding: 0.18rem 0.42rem; box-shadow: 0 2px 0 #000;
+    }
     .bh-duck.is-live { cursor: pointer; }
-    .bh-duck.is-live:hover { transform: translateY(-3px); }
-    .bh-duck.is-hooked { animation: none; background-position-x: 100%; }
-    .bh-duck b {
-      background: #17121f; color: #ffd257; border: 2px solid #000;
-      padding: 0 0.3rem; font-size: 0.9rem;
+    .bh-duck.is-live:hover .bh-duck__sprite { animation: none; transform: translateY(-7px) scale(1.08); }
+    /* the pick: the chosen duck is hooked up out of the water */
+    .bh-duck.is-hooked .bh-duck__sprite { animation: bhDuckHooked 0.6s cubic-bezier(.2,1.3,.4,1) forwards; z-index: 3; }
+    @keyframes bhDuckHooked {
+      0%   { transform: translateY(0) rotate(0) scale(1); }
+      42%  { transform: translateY(-32%) rotate(-9deg) scale(1.3); }
+      64%  { transform: translateY(-27%) rotate(6deg) scale(1.28); }
+      100% { transform: translateY(-27%) rotate(0) scale(1.26); }
+    }
+    .bh-duck.is-hooked .bh-duck__ripple { animation: bhSplash 0.6s ease-out forwards; }
+    @keyframes bhSplash {
+      0%   { transform: translateX(-50%) scaleX(1); opacity: 0.75; }
+      100% { transform: translateX(-50%) scaleX(2.3); opacity: 0; }
+    }
+    .bh-duck.is-hooked .bh-duck__hook { opacity: 1; animation: bhHookDrop 0.38s ease-out forwards; }
+    @keyframes bhHookDrop { 0% { height: 0; } 100% { height: 44%; } }
+    .bh-duck.is-hooked .bh-duck__tag { animation: bhTagPop 0.42s 0.4s cubic-bezier(.2,1.5,.4,1) forwards; }
+    @keyframes bhTagPop { to { transform: translate(-50%, 0) scale(1); opacity: 1; } }
+    .bh-duck.is-dim { opacity: 0.4; }
+    .bh-duck.is-dim .bh-duck__sprite, .bh-duck.is-dim .bh-duck__ripple { animation-play-state: paused; }
+    /* payout tiers — a 6 is a nice hit, a 15 is the jackpot */
+    .bh-duck.is-big .bh-duck__tag { color: #241505; background: #ffb347; border-color: #7a4a10; }
+    .bh-duck.is-jackpot .bh-duck__tag {
+      color: #241505; background: linear-gradient(#fff1ac, #ffd257); border-color: #a9781a;
+      box-shadow: 0 2px 0 #000, 0 0 12px rgba(255,210,90,0.85);
+    }
+    .bh-spark {
+      position: absolute; top: 44%; left: 50%; width: 6px; height: 6px; margin: -3px;
+      pointer-events: none; z-index: 4; border-radius: 50%;
+      background: radial-gradient(#fff 0%, #ffd257 55%, transparent 72%);
+      animation: bhSpark 0.8s ease-out forwards;
+    }
+    @keyframes bhSpark {
+      0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }
+      20%  { opacity: 1; }
+      100% { transform: translate(var(--dx, 0), var(--dy, 0)) scale(1); opacity: 0; }
     }
     /* 🏆 the prize wall — visible from the counter, prices in plain numbers.
        A ticket only means something if you can see what it buys. */
@@ -942,7 +1025,9 @@ const faq = {
     }
     .bh-stallfoot { margin-top: 0.7rem; }
     .bh-stallhint { font-weight: 800; font-size: 0.9rem; color: #ffd257; }
-    @media (prefers-reduced-motion: reduce) { .bh-duck { animation: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-pond::before, .bh-duck__sprite, .bh-duck__ripple, .bh-spark { animation: none !important; }
+    }
     .bh-chesth { margin: 0 0 0.2rem; font-size: 0.95rem; }
     .bh-chestsub { margin: 0 0 0.6rem; font-size: 0.8rem; opacity: 0.8; }
     /* the piles. Wrapping keeps 4 slots readable on the narrowest phone. */
