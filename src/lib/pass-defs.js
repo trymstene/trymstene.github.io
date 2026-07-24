@@ -42,6 +42,8 @@ export const GEAR = [
     title: 'The Golden Banana', hint: 'Catch the rarest thing that ever hits the floor. Hold it forever.' },
   { id: 'djheadphones', hat: 'djheadphones', flag: 'rv-djheadphones', by: 'Barty',
     title: 'DJ Headphones', hint: 'Catch them on the dance floor at the rave — straight from Barty’s booth.' },
+  { id: 'plushbanana', extra: 'plushbanana', stat: 'prize_plush',
+    title: 'The Giant Plush Banana', hint: 'The pier’s grand prize — win it from the claw machine for 150 tickets.' },
 ];
 
 // visitors before this date mint the OG patch automatically (set it to the

@@ -260,6 +260,7 @@ async function init() {
   // bb-last is the toggle target (the rave, stickers and share cards all read
   // it) and it rides the sync blob — so gear follows you across devices. —
   function gearEarned(def) {
+    if (def.stat) return ((pass.stats || {})[def.stat] || 0) > 0; // 🍌 the pier plush: prize_plush
     if (def.flag) { try { return localStorage.getItem(def.flag) === '1'; } catch (e) { return false; } }
     if (def.patch) return !!pass.patches[def.patch];
     return false;

@@ -164,10 +164,12 @@ export const WEARABLE_PACKS = {
       // ORIGINAL hands-up banana PNG (banana-handsup.png), resized crisp by the
       // engine — NO re-pixelating (that thickened limbs + dropped pupils).
       // `gh` = height in banana grid-units (the only size dial); width follows
-      // the PNG's aspect. ⚠️ preview:true = on /dev-wearables/ for Trym's
-      // verdict; on approval it becomes a WON item (no coin price) gated on the
-      // prize_plush pass stat.
-      { id: 'plushbanana', label: 'Plush banana', phrase: 'a plush banana', art: 'plushbanana', anchor: 'hand', hand: 'right', gh: 22, grip: 11, preview: true },
+      // the PNG's aspect. WON, never bought: `earned:'pier'` keeps it out of the
+      // daily/default pools and shows it LOCKED in the builder; `stat` is the
+      // pass stat the grabber writes on the win (prize_plush). Same shape as the
+      // glowstick/golden-banana trophies — one manifest edit, every surface reads it.
+      { id: 'plushbanana', label: 'Plush banana', phrase: 'a plush banana', art: 'plushbanana', anchor: 'hand', hand: 'right', gh: 22, grip: 11, earned: 'pier', stat: 'prize_plush',
+        lock: 'the pier’s grand prize: win the giant plush from the claw machine — 150 tickets' },
       { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', price: 10, preview: 'stand' },
       { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', price: 40, preview: 'stand' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).

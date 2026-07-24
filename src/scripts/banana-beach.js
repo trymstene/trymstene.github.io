@@ -1961,7 +1961,19 @@ function init() {
     if (g) g.addEventListener('click', () => {
       if (ticketBal() < GRAND.tix || ownsPrize(GRAND.id)) return;
       passStat('tickets_spent', GRAND.tix);
-      passStat('prize_' + GRAND.id, 1);
+      passStat('prize_' + GRAND.id, 1);      // the win-gate every surface reads
+      // 🍌 WON = WORN: equip the plush on the spot (like a stand buy), persist
+      // it to bb-last so it rides to the builder/rave/park, and tell the beach
+      // peers so it appears in your glove for everyone here right now.
+      ME_DRAW.extras = ME_DRAW.extras || {};
+      ME_DRAW.extras.plushbanana = true;
+      try {
+        const bl = JSON.parse(localStorage.getItem('bb-last') || '{}');
+        bl.extras = { ...(bl.extras || {}), plushbanana: true };
+        localStorage.setItem('bb-last', JSON.stringify(bl));
+      } catch (e) {}
+      lastKey = -1; drawMe();
+      try { if (bayRoom.live) bayRoom.send({ t: 'outfit', outfit: myBayOutfit() }); } catch (e) {}
       track('beach_grabber_win');
       stallBody.querySelector('.bh-claw').classList.add('is-grabbing');
       stallFoot.innerHTML = '<span class="bh-stallhint">…</span>';

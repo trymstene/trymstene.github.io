@@ -29,7 +29,7 @@
 const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap', 'djheadphones', 'duckhat', 'melticecream', 'watermelonhat', 'buckethat', 'snailhat', 'squidhat'];
 const DROP_IDS = ['djheadphones'];
 const SHADE_IDS = ['none', 'shades', 'dwi', 'hearts', 'visor', 'threed', 'potter', 'nerd', 'monocle', 'groucho', 'eyepatch', 'googlyeyes', 'cucumbers', 'snorkelmask'];
-const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'flamingoring', 'medal', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'sockssandals', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'balloondog', 'potato', 'cactuspot', 'glowstick', 'goldbanana'];
+const EXTRA_IDS = ['mustache', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'flamingoring', 'medal', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'sockssandals', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'balloondog', 'plushbanana', 'potato', 'cactuspot', 'glowstick', 'goldbanana'];
 // ALLOWLISTS-END
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only

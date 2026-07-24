@@ -95,6 +95,8 @@ function init() {
   const earnedUnlocked = (d) => {
     if (!d.earned) return true;
     try {
+      // a pass STAT gate (the pier plush: prize_plush, written by the grabber)
+      if (d.stat) return (((JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {})[d.stat] || 0) > 0;
       // the synced own_<id> stat (drop catches + back-catalog buys) counts
       // alongside the legacy per-device flag
       if (d.flag) return localStorage.getItem(d.flag) === '1' || ownsDropStat(d.id);
@@ -102,6 +104,13 @@ function init() {
     } catch (e) {}
     return false;
   };
+  // a chip's art is normally an inline pixel-SVG string; a PNG-art item (the
+  // plush = the resized banana) needs an <img> instead of raw innerHTML.
+  const chipArt = (art) => (!art ? '' : art.charAt(0) === '<' ? art
+    : '<img src="' + art + '" alt="" style="max-width:100%;max-height:100%;image-rendering:pixelated" />');
+  // where a locked souvenir's DOOR sends you — the pier plush lives at the beach
+  const earnDoor = (d) => (d.earned === 'pier'
+    ? { href: '/beach/', at: 'the pier' } : { href: '/rave/', at: 'the rave' });
   function iconChips(host, items, key, artFor, defFor) {
     items.forEach(([val, label]) => {
       if (val === 'none') return; // no 'none' chip — click the worn item to take it off (like extras)
@@ -157,18 +166,19 @@ function init() {
     const art = SVG[d.front || d.art];
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
+      const dr = earnDoor(d);
       const a = document.createElement('a');
       a.className = 'bb-chip bb-chip--icon bb-chip--locked';
-      a.href = '/rave/'; a.dataset.place = 'builder-locked';
-      a.innerHTML = art || d.label;
-      a.title = d.label + ' — ' + (d.lock || 'earned at the rave');
-      a.setAttribute('aria-label', d.label + ' (locked — earn it at the rave)');
+      a.href = dr.href; a.dataset.place = 'builder-locked';
+      a.innerHTML = chipArt(art) || d.label;
+      a.title = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
+      a.setAttribute('aria-label', d.label + ' (locked — earn it at ' + dr.at + ')');
       el('bbExtrasChips').appendChild(a);
       return;
     }
     const b = document.createElement('button');
     b.className = 'bb-chip bb-chip--icon';
-    b.innerHTML = art || d.label;
+    b.innerHTML = chipArt(art) || d.label;
     b.dataset.val = d.id;
     b.title = d.label;
     b.setAttribute('aria-label', d.label);
