@@ -867,6 +867,21 @@ if HAVE_PACK:
         place('21_Beach_48x48_Yellow_Big_Starfish.png', cx, base, shade=False)
     place('21_Beach_48x48_Purple_Small_Starfish.png', 1000, 334, shade=False)
 
+    # 🪧 THE KEEPERS' BOARDS — one beside Shelly, one by the Captain's wreck.
+    # Both are PURELY decorative: they say "somebody keeps a tally here", and
+    # nothing else. (Shelly's was briefly a live peg-per-species grid in the
+    # DOM, which turned scenery into a second UI. Trym: "purely small and just
+    # cosmetic… doesn't need a headline". The collection lives in the panel.)
+    # Same wooden family so the two read as a pair, different sprites so they
+    # aren't clones. Rule for any future keeper: pick a sprite, don't build a
+    # panel.
+    # ⚠️ Shelly's sits BELOW her ground line, between the two framing palms —
+    # my first spot (1240,416) put it inside the right palm's canopy box, where
+    # the palm sorts in front and swallowed it. Down here it's trunk height:
+    # transparent palm, and the lower base sorts it in front of her.
+    place('ME_Singles_Camping_48x48_Sign_4.png', 1180, 500, sh=0.26, layer=True)
+    place('ME_Singles_Camping_48x48_Sign_6.png', 1498, 792, sh=0.26, layer=True)
+
     # 🎣 FOUR FISHING CHAIRS on the dock — two rows of two, each pair facing
     # OUT over its own side of the water so the lines never cross. Sit to cast.
     # ⚠️ seats + bobbers are hard-matched in banana-beach.js FISH_SPOTS — move

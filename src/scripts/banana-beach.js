@@ -625,12 +625,6 @@ function init() {
     shadowEl.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
   }
 
-  // ⚠️ FORWARD-DECLARED. refreshShellChip() runs during init and repaints the
-  // shell board, but the board itself is built further down in Shelly's block.
-  // As a `const` down there this was a TDZ ReferenceError that killed init()
-  // silently — `typeof` does NOT protect you from the temporal dead zone.
-  let boardGrid = null;
-
   // ---- 🐚 THE SHELLS: the tide lays a fresh set every day -----------------
   const stats = () => passGet().stats || {};
   const held = (id) => Math.max(0, (stats()['sh_' + id] || 0) - (stats()['shx_' + id] || 0));
@@ -665,10 +659,7 @@ function init() {
   }
   const shellChip = document.getElementById('bhShellChip');
   const shellCountEl = document.getElementById('bhShellCount');
-  function refreshShellChip() {
-    shellCountEl.textContent = haveCount() + '/' + SHELL_IDS.length;
-    if (typeof paintBoard === 'function') paintBoard();   // the board is live
-  }
+  function refreshShellChip() { shellCountEl.textContent = haveCount() + '/' + SHELL_IDS.length; }
   refreshShellChip();
   function shellTick() {
     for (let i = 0; i < shells.length; i++) {
@@ -724,31 +715,14 @@ function init() {
   // up by the waterline where you comb. The board is the collection made
   // physical — a peg per species, filled in as you find them — so your progress
   // is readable from across the sand without opening anything. Tap either.
+  // ⚠️ Her notice board is a PLACED SPRITE (Camping Sign_4) in the generator,
+  // not a DOM widget. It briefly mirrored the whole collection as a live peg
+  // grid, which made a piece of scenery into a second UI — the collection lives
+  // in the panel, the board just says "a keeper stands here".
   const SHELLY = { x: 1128, y: 414, r: 118 };
-  const BOARD = { x: 1268, y: 402, w: 216, h: 128 };
   const shellyEl = document.getElementById('bhShelly');
   const shellyBubble = document.getElementById('bhShellyBubble');
   const shellyCtx = document.getElementById('bhShellyCv').getContext('2d');
-  const boardEl = document.createElement('div');
-  boardEl.className = 'bh-board';
-  boardEl.style.left = pct(BOARD.x - BOARD.w / 2, W);
-  boardEl.style.top = pct(BOARD.y - BOARD.h, H);
-  boardEl.style.width = pct(BOARD.w, W);
-  boardEl.style.height = pct(BOARD.h, H);
-  boardEl.style.zIndex = String(100 + BOARD.y);
-  boardEl.style.containerType = 'size';       // so the header can size in cqw
-  boardEl.innerHTML = '<div class="bh-board__face"><div class="bh-board__head">shell board</div>'
-    + '<div class="bh-board__grid" id="bhBoardGrid"></div></div><div class="bh-board__legs"></div>';
-  world.appendChild(boardEl);
-  boardGrid = boardEl.querySelector('#bhBoardGrid');
-  function paintBoard() {
-    if (!boardGrid) return;                 // called before the board exists
-    boardGrid.innerHTML = SHELLS.map((s) =>
-      '<i class="' + (held(s.id) ? '' : 'is-missing') + '" style="background-position:'
-      + shellTile(s.i) + '"></i>').join('');
-  }
-  paintBoard();
-  boardEl.addEventListener('click', (e) => { e.stopPropagation(); openShells(); });
 
   let shellyTimer = null, shellyGreeted = false, shellyIdx = 0;
   const SHELLY_LINES = [

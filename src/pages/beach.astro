@@ -153,45 +153,10 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     @media (prefers-reduced-motion: reduce) { .bh-bob { animation: none; } }
 
-    /* 🐚 THE SHELL BOARD — a planked blackboard up the beach that Shelly keeps.
-       It is the collection made PHYSICAL: every species has a peg, and the ones
-       you've found are filled in while the rest stay silhouettes, so you can
-       read your progress from across the sand without opening a panel. */
-    .bh-board { position: absolute; cursor: pointer; }
-    .bh-board__face {
-      position: absolute; left: 0; right: 0; top: 0; bottom: 16%;
-      background:
-        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 100% 12%,
-        linear-gradient(#7a5330, #5d3d22);
-      border: 3px solid #33200f; border-radius: 3px;
-      box-shadow: 2px 3px 0 rgba(0,0,0,0.38), inset 0 2px 0 rgba(255,220,150,0.16);
-      display: flex; flex-direction: column; padding: 5% 5% 4%;
-    }
-    .bh-board__head {
-      font-family: "Archivo Black", sans-serif; color: #ffe7a0;
-      font-size: 8cqw; letter-spacing: 0.1em; text-align: center;
-      text-shadow: 1px 1px 0 #2a1a0c; margin-bottom: 4%;
-    }
-    .bh-board__grid {
-      flex: 1; display: grid; grid-template-columns: repeat(8, 1fr);
-      gap: 4%; align-content: start;
-    }
-    .bh-board__grid i {
-      display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated;
-      background-image: url('/assets/beach/shells.png');
-      background-size: 2400% 100%; background-repeat: no-repeat;
-    }
-    .bh-board__grid i.is-missing { filter: brightness(0) opacity(0.32); }
-    .bh-board__legs {
-      position: absolute; left: 12%; right: 12%; bottom: 0; height: 17%;
-    }
-    .bh-board__legs::before, .bh-board__legs::after {
-      content: ''; position: absolute; bottom: 0; width: 9%; height: 100%;
-      background: linear-gradient(90deg, #7a5330, #5d3d22);
-      border: 2px solid #33200f;
-    }
-    .bh-board__legs::before { left: 4%; }
-    .bh-board__legs::after { right: 4%; }
+    /* (🐚 Shelly's notice board is a PLACED SPRITE — Camping Sign_4 — not a DOM
+        widget. It was briefly a live peg-per-species grid here, which made
+        scenery into a second UI. Scenery signals the NPC; the panel holds the
+        collection. Same rule for the Captain's board.) */
 
     /* 🔥 THE BONFIRE. The pack's own 6-frame campfire (48×96 per frame, so the
        box is 1:2), stood ON the ring's centre line, plus a pool of warm light.
