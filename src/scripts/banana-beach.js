@@ -2823,6 +2823,32 @@ function init() {
       setPeers: (n) => { peersInCourt = n; } };
   }
 
+  // 🗨 ?bubbletest — PIN SANDY'S SPEECH BUBBLE OPEN, forever.
+  // The tail is 15px tall and every round of "the black line is still there"
+  // has been fought through screenshots of a bubble that times out after four
+  // seconds. This holds it still so it can be photographed and measured.
+  // Same family as ?beachtest / ?cointest / ?nyantest.
+  //   /beach/?bubbletest              → the default line
+  //   /beach/?bubbletest=some%20text  → your own line
+  if (/[?&]bubbletest(?:=|&|$)/.test(location.search)) {
+    const custom = decodeURIComponent(
+      (location.search.match(/[?&]bubbletest=([^&]*)/) || [])[1] || '');
+    const line = custom || 'send it anywhere. i’ll get it.';
+    // ⚠️ neutralise sandySay FIRST — sandyTick() calls it on every court entry
+    // and its 4.2s timeout would pull the bubble straight back down.
+    sandySay = () => {};
+    sandyBubble.textContent = line;
+    sandyBubble.classList.add('is-on');
+    sandyBubble.style.transition = 'none';
+    sandyBubble.style.opacity = '1';
+    // and keep it on, whatever else the page does to it
+    setInterval(() => {
+      if (sandyBubble.textContent !== line) sandyBubble.textContent = line;
+      sandyBubble.classList.add('is-on');
+      sandyBubble.style.opacity = '1';
+    }, 400);
+  }
+
   assetsReady().then(() => {
     drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly();
     setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 700);   // redraw belt: accessories decode async
