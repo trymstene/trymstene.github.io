@@ -291,7 +291,14 @@ function init() {
   //             runs y270-278, but a banana's FEET render 13.5 art px above
   //             pos.y, so at pos.y=290 they are already in the wet band. The
   //             old wall was tuned to that same offset.
-  const SWIM = { x0: 400, x1: 1620, ySea: 190, yShore: 290 };
+  // ⚠️ ySea 72 is HOW FAR OUT you may swim; yDeep 196 is where the depth ramp
+  // TOPS OUT. Trym: "i want to be able to go up more in the water, almost to
+  // the edge… doesnt have to be much deeper out there." Those are two
+  // different numbers and the first version conflated them — stretching one
+  // ramp across the whole sea would have made the near water a puddle. So the
+  // shelf drops over the first 94px and then the bay is simply open water you
+  // can swim across at chin depth. (72 clears the walk clamp at y=64.)
+  const SWIM = { x0: 400, x1: 1620, ySea: 72, yDeep: 196, yShore: 290 };
   const WET_MAX = 0.50;    // most of the body we ever flood — see subAt()
   // ⚠️ the dock is a FLOOR LAID OVER THE WATER. A banana at (1890,200) is
   // standing on planks, not swimming. This is the same expression blocked()
@@ -305,7 +312,7 @@ function init() {
   // ⚠️ NOT called depth() — that name is already the z-index setter above.
   function subAt(x, y) {
     if (y >= SWIM.yShore || onDock(x, y)) return 0;
-    const d = Math.min(1, (SWIM.yShore - y) / (SWIM.yShore - SWIM.ySea));
+    const d = Math.min(1, (SWIM.yShore - y) / (SWIM.yShore - SWIM.yDeep));
     return WET_MAX * d * (2 - d);         // ease-out: a real shelf drops fast
   }
   // ⚠️ WET_MAX IS CAPPED BY THE SPRITE'S OWN EYE LINE, not by taste. At 0.50
@@ -2538,7 +2545,12 @@ function init() {
   // borrowed GRAV and vz would be the volleyball with extra steps.
   const wballEl = document.getElementById('bhWBall');
   const WBALL = { x: 900, y: 236, vx: 0, vy: 0 };
-  const WB_R = 22, WB_DRAG = 0.30, WB_WALL = 0.70, WB_PUSH = 190, WB_MAX = 300;
+  // ⚠️ BOUNCY, not soggy. Trym: "the water-ball must be more bouncy so that
+  // one can bounce it a distance to eachother." The first pass had WB_DRAG
+  // 0.30 — v is multiplied by pow(DRAG, dt), so 0.30 kills 70% of the speed
+  // every second and the ball died about a banana-and-a-half away. 0.66 lets
+  // a good shove carry ~500px, which is a real pass between two players.
+  const WB_R = 22, WB_DRAG = 0.66, WB_WALL = 0.86, WB_PUSH = 330, WB_MAX = 520;
   const WB_COOL = 240;
   // ⚠️ THE PEN IS IN WATER ROWS, NOT FEET ROWS. SWIM.ySea/yShore are `pos.y`
   // values, and a banana's feet draw 13.5px above pos.y — the ball has no
@@ -2577,7 +2589,7 @@ function init() {
     // ⚠️ ANTI-DEATH. A ball parked in a corner is a dead toy — the volleyball
     // needed its own anti-stick for the same reason. Below a crawl the bay's
     // own set walks it back to open water. No reset button, ever.
-    if (Math.hypot(WBALL.vx, WBALL.vy) < 26) {
+    if (Math.hypot(WBALL.vx, WBALL.vy) < 18) {
       WBALL.vx += ((SWIM.x0 + SWIM.x1) / 2 - WBALL.x) * 0.09 * dt;
       WBALL.vy += ((PEN.y0 + PEN.y1) / 2 - WBALL.y) * 0.22 * dt;
     }

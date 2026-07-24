@@ -37,8 +37,8 @@ export const OB_RECTS = [
   [1623, 476, 1649, 512],   // palm tree
   [1405, 820, 1431, 856],   // palm tree
   [1580, 638, 1822, 748],   // ship bar
-  [1232, 806, 1260, 812],   // white cartel
-  [1722, 418, 1754, 424],   // blue cartel 2
+  [1234, 806, 1258, 812],   // white cartel
+  [1725, 418, 1751, 424],   // blue cartel 2
   [2094, 478, 2186, 506],   // midway
   [2384, 478, 2476, 506],   // midway
   [2094, 918, 2186, 946],   // midway
@@ -62,8 +62,8 @@ export const OB_CIRCLES = [
   [250, 424, 13],   // yellow parasol pole
   [566, 444, 13],   // green parasol pole
   [900, 420, 13],   // blue parasol pole
-  [452, 754, 13],   // direction pole small
-  [1470, 630, 13],   // direction pole big
+  [452, 754, 10],   // direction pole small
+  [1470, 630, 10],   // direction pole big
   [2180, 648, 13],   // umbrella 3
   [2552, 640, 13],   // umbrella 2
   [2540, 690, 15],   // street food table 1
@@ -98,13 +98,13 @@ export const OVERLAYS = [
   { src: 'ov-9.png', x: 1572, y: 563, w: 256, h: 177, base: 740 },
   { src: 'ov-10.png', x: 556, y: 437, w: 28, h: 33, base: 470 },
   { src: 'ov-11.png', x: 524, y: 328, w: 72, h: 72, base: 400 },
-  { src: 'ov-12.png', x: 1100, y: 119, w: 40, h: 63, base: 182 },
+  { src: 'ov-12.png', x: 212, y: 95, w: 40, h: 63, base: 158 },
   { src: 'ov-13.png', x: 277, y: 192, w: 47, h: 44, base: 236 },
   { src: 'ov-14.png', x: 333, y: 156, w: 47, h: 44, base: 200 },
-  { src: 'ov-15.png', x: 1223, y: 709, w: 47, h: 103, base: 812 },
-  { src: 'ov-16.png', x: 1708, y: 328, w: 60, h: 96, base: 424 },
-  { src: 'ov-17.png', x: 423, y: 671, w: 59, h: 83, base: 754 },
-  { src: 'ov-18.png', x: 1441, y: 512, w: 58, h: 118, base: 630 },
+  { src: 'ov-15.png', x: 1229, y: 734, w: 35, h: 78, base: 812 },
+  { src: 'ov-16.png', x: 1716, y: 352, w: 45, h: 72, base: 424 },
+  { src: 'ov-17.png', x: 430, y: 692, w: 44, h: 62, base: 754 },
+  { src: 'ov-18.png', x: 1448, y: 541, w: 44, h: 89, base: 630 },
   { src: 'ov-19.png', x: 1189, y: 817, w: 95, h: 67, base: 884 },
   { src: 'ov-20.png', x: 1313, y: 854, w: 51, h: 40, base: 894 },
   { src: 'ov-21.png', x: 1443, y: 719, w: 95, h: 67, base: 786 },

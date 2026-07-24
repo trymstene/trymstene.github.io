@@ -1242,9 +1242,13 @@ if HAVE_PACK:
     # sand_tint). The second stood 1350px away, which never read as a pair.
     place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 560, 400, shade=False,
           layer=True, tint=sand_tint)
-    place('21_Beach_48x48_Green_Float.png', 1120, 182, shade=False, layer=True)  # in the sea
-    # TWO sea rocks off the west point, not four scattered. Anything past
-    # WATER_LINE is unreachable, so out there scatter is pure speckle.
+    # ⚠️ EVERYTHING IN THE WATER MOVED WEST OF THE LAGOON (x < 400). The swim
+    # band now runs almost to the top of the map, so "nobody can reach it out
+    # there" stopped being true — a float or a rock inside the lagoon is a
+    # solid object you would swim straight through, and none of them carry
+    # colliders because none of them ever needed one. Grouped off the west
+    # point they read as a little reef instead of speckle.
+    place('21_Beach_48x48_Green_Float.png', 232, 158, shade=False, layer=True)
     for cx, base in ((300, 236), (356, 200)):
         place('21_Beach_48x48_Medium_Sea_Rock_1_Vers_1.png', cx, base, shade=False, layer=True)
 
@@ -1270,10 +1274,10 @@ if HAVE_PACK:
     # occupy so much of the shore". Her keeping the tide clear matters twice
     # over — the daily shells spawn in that same band, and she was the last
     # thing standing in it.
-    place('21_Beach_48x48_White_Cartel.png', 1246, 812, scale=1.25, sh=0.26,
-          layer=True, solid=('rect', -14, -6, 14, 0))    # 🐚 SHELLY'S BOARD 47x103
-    place('21_Beach_48x48_Blue_Cartel_2.png', 1738, 424, scale=1.20, sh=0.26,
-          layer=True, solid=('rect', -16, -6, 16, 0))    # 🎣 GIL'S BOARD 60x96
+    place('21_Beach_48x48_White_Cartel.png', 1246, 812, scale=0.94, sh=0.26,
+          layer=True, solid=('rect', -12, -6, 12, 0))    # 🐚 SHELLY'S BOARD 36x78
+    place('21_Beach_48x48_Blue_Cartel_2.png', 1738, 424, scale=0.90, sh=0.26,
+          layer=True, solid=('rect', -13, -6, 13, 0))    # 🎣 GIL'S BOARD 45x72
     # Blue_Cartel_2 over _1: its red highlighted row and colour swatch read as
     # "today's catch", where _1's blank 2x2 grid reads as an empty timetable.
 
@@ -1284,15 +1288,16 @@ if HAVE_PACK:
     # gate) and Small reads 1 LEFT / 3 RIGHT (left = the fire · right = the
     # rest). Their plank counts differ (5 vs 4) so the two silhouettes never
     # repeat.
-    # ⚠️ SCALES CUT ~25% (Trym: "the roadcross-sign is very large also so can
-    # probably be a little smaller"). Big goes 1.40 → 1.05 (78x158 → 59x119),
-    # Small 1.32 → 1.00 (77x109 → 59x83). Still comfortably the tallest
-    # man-made things on the sand and still twice the board they replaced —
-    # at 1.40 the post was taller than the wreck.
-    place('21_Beach_48x48_Direction_Pole_Small.png', 452, 754, scale=1.00, sh=0.28,
-          layer=True, solid=POLE)                        # the gate fork 59x83
-    place('21_Beach_48x48_Direction_Pole_Big.png', 1470, 630, scale=1.05, sh=0.28,
-          layer=True, solid=POLE)                        # ⭐ THE FORK 59x119
+    # ⚠️ SCALES CUT TWICE, ~25% each time (Trym: "the roadcross-sign is very
+    # large also so can probably be a little smaller" → then "signs can be even
+    # smaller, maybe 25% more"). Big 1.40 → 1.05 → 0.79 (78x158 → 44x89),
+    # Small 1.32 → 1.00 → 0.75 (77x109 → 44x62). Still 1.6x the 27x43 stub they
+    # replaced, but they now read as furniture beside a banana rather than
+    # landmarks competing with the wreck.
+    place('21_Beach_48x48_Direction_Pole_Small.png', 452, 754, scale=0.75, sh=0.28,
+          layer=True, solid=('circle', 10))              # the gate fork 44x62
+    place('21_Beach_48x48_Direction_Pole_Big.png', 1470, 630, scale=0.79, sh=0.28,
+          layer=True, solid=('circle', 10))              # ⭐ THE FORK 44x89
     # ⚠️ the big post stands in the gore of the dock branch, WEST of the split
     # at (1548,620), on open sand. Its old spot at (1286,726) had a dig patch,
     # two shrubs, a palm and a lane end inside 200px of it — the "much things
@@ -1498,9 +1503,12 @@ if HAVE_PACK:
     # bubbles on dry sand. These are the camping boulders with their green
     # moss repainted onto a stone ramp (see unmoss).
     fcx, fcy = BONFIRE[0], BONFIRE[1]
-    # a wider, deeper scorch: the crescent hedge around the hollow was louder
-    # than the fire at its centre, which inverts the room.
-    shadow(fcx + 4, fcy + 6, 84, 52, 62)
+    # ⚠️ THE SCORCH IS NOW CONCENTRIC WITH THE STONE RING, and 4px inside it.
+    # It used to be offset (+4,+6) AND bigger than the ring (84x52 vs the
+    # ring's 66x42), so the stones floated inside a burn mark that stuck out
+    # past them on the low side — Trym: "almost there, just a tiny adjustment".
+    # Same centre, radii 4px under the ring's, and the stones sit ON its rim.
+    shadow(fcx, fcy, 62, 38, 62)
     RING = ['ME_Singles_Camping_48x48_Rock_1.png',
             'ME_Singles_Camping_48x48_Rock_5.png',
             'ME_Singles_Camping_48x48_Rock_9.png',
