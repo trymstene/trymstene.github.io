@@ -399,7 +399,7 @@ GRABBER = []                 # [cx, base] of the claw machine on the pier
 PROP = 0.76
 
 
-def sand_tint(im, lo=(170, 140, 94), hi=(228, 208, 162), ink=(112, 84, 52)):
+def sand_tint(im, lo=(203, 154, 96), hi=(250, 212, 156), ink=(150, 106, 58)):
     """🏰 RECOLOUR ONTO A SAND RAMP.
     ⚠️ The pack draws its sandcastles bright ORANGE — measured main colour
     (225,109,50) against our pale cream sand (250,226,170): about 120 short on
@@ -426,6 +426,33 @@ def sand_tint(im, lo=(170, 140, 94), hi=(228, 208, 162), ink=(112, 84, 52)):
             px[x, y] = (int(lo[0] + (hi[0] - lo[0]) * t),
                         int(lo[1] + (hi[1] - lo[1]) * t),
                         int(lo[2] + (hi[2] - lo[2]) * t), a)
+    return im
+
+
+def unmoss(im, lo=(104, 98, 90), hi=(198, 192, 180)):
+    """🪨 REPAINT MOSS AS STONE.
+    ⚠️ The pack has exactly TWO rock families and neither suits a dry-sand fire
+    ring: the camping Rock_* singles carry GREEN MOSS (reads as forest), and the
+    beach's Small_Sea_Rock carries a WHITE FOAM collar because it is drawn for
+    the waterline (Trym spotted the water on them straight away — and the old
+    hand-drawn ring existed for this very reason). The camping boulders have far
+    the better shapes, so we keep those and repaint every green pixel onto a
+    neutral stone ramp, preserving its luminance so the moss's shading becomes
+    the rock's shading."""
+    im = im.copy()
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if not a:
+                continue
+            if g > r + 8 and g > b + 8:                 # green ⇒ moss
+                lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+                t = (lum - 0.10) / 0.72
+                t = 0.0 if t < 0 else (1.0 if t > 1 else t)
+                px[x, y] = (int(lo[0] + (hi[0] - lo[0]) * t),
+                            int(lo[1] + (hi[1] - lo[1]) * t),
+                            int(lo[2] + (hi[2] - lo[2]) * t), a)
     return im
 
 
@@ -823,10 +850,14 @@ if HAVE_PACK:
     # is invisible in-game. Overlays sit ABOVE the sea and show.
     for cx, base in ((700, 322), (1150, 320), (1520, 322)):
         place('21_Beach_48x48_Small_Red_Bucket_1.png', cx, base, shade=False, layer=True)
-    # 🏰 tinted to OUR sand — the pack's castles are orange (see sand_tint)
-    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 840, 336, shade=False,
+    # 🏰 tinted to OUR sand — the pack's castles are orange (see sand_tint).
+    # 24 Jul: moved OFF the waterline (Trym) into open dry sand where they read
+    # as something somebody built and left, rather than debris in the surf.
+    # Both spots are deliberately clear of the court, the dig sites and the
+    # tanning row — the dig audit re-checks that every build.
+    place('21_Beach_48x48_Sand_Castle_1_Vers_1.png', 480, 600, shade=False,
           layer=True, tint=sand_tint)
-    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1300, 340, shade=False,
+    place('21_Beach_48x48_Sand_Castle_2_Vers_1.png', 1830, 560, shade=False,
           layer=True, tint=sand_tint)
     place('21_Beach_48x48_Red_Float.png', 520, 208, shade=False, layer=True)     # in the sea
     place('21_Beach_48x48_Green_Float.png', 1120, 182, shade=False, layer=True)  # in the sea
@@ -962,23 +993,27 @@ if HAVE_PACK:
     # 24 Jul: moved to a sheltered nook (fcx,fcy) below the wreck, dressed with
     # deck chairs + a blanket + a palm (placed in the furniture block). ⚠️ keep
     # BONFIRE (the collider) at this same centre.
+    # ⚠️ REAL STONE SPRITES now (Trym: the hand-drawn blobs "look a bit
+    # simple"). Uses the BEACH set's Small_Sea_Rock, NOT the camping Rock_*
+    # singles — those carry green MOSS, which reads as forest on a tropical
+    # beach. Four variants cycled so the ring isn't uniform, each a layer so you
+    # pass in FRONT of the near stones and BEHIND the far ones. The fire sprite
+    # fills the middle, so the old charred logs are gone.
     fcx, fcy = BONFIRE[0], BONFIRE[1]
-    shadow(fcx + 6, fcy + 6, 74, 46, 40)
-    for a in range(11):
-        ang = a / 11.0 * math.tau
-        sx, sy = fcx + int(math.cos(ang) * 62), fcy + int(math.sin(ang) * 40)
-        for yy in range(sy - 9, sy + 10):
-            for xx in range(sx - 12, sx + 13):
-                d = math.hypot((xx - sx) / 12.0, (yy - sy) / 9.0)
-                if d <= 1.0:
-                    lit = (yy - sy) < -3 and (xx - sx) < 3
-                    put(xx, yy, (108, 104, 96) if d > 0.86 else
-                        ((186, 182, 168) if lit else (146, 142, 130)))
-    for i in range(5):                       # charred logs in the middle
-        ang = i / 5.0 * math.tau
-        rect(fcx + math.cos(ang) * 20 - 5, fcy + math.sin(ang) * 12 - 4,
-             fcx + math.cos(ang) * 20 + 6, fcy + math.sin(ang) * 12 + 5, (74, 52, 32))
-    rect(fcx - 16, fcy - 8, fcx + 18, fcy + 8, (52, 38, 24))
+    shadow(fcx + 4, fcy + 6, 72, 44, 38)
+    # camping boulders with the moss repainted as stone (see unmoss) — the sea
+    # rocks were the wrong call, they carry a waterline FOAM collar.
+    RING = ['ME_Singles_Camping_48x48_Rock_1.png',
+            'ME_Singles_Camping_48x48_Rock_5.png',
+            'ME_Singles_Camping_48x48_Rock_9.png',
+            'ME_Singles_Camping_48x48_Rock_6.png',
+            'ME_Singles_Camping_48x48_Rock_4.png']
+    for a in range(10):
+        ang = a / 10.0 * math.tau + 0.16
+        sx = fcx + int(math.cos(ang) * 66)
+        sy = fcy + int(math.sin(ang) * 42)
+        place(RING[a % len(RING)], sx, sy, shade=False, scale=0.44,
+              colors=8, warm=0.02, sat=0.85, layer=True, tint=unmoss)
 
 # ---- the road home, worn into the sand (bottom-left) ----------------------
 for y in range(H - 150, H):
@@ -1251,100 +1286,12 @@ gull.save(os.path.join(OUT, 'gull.png'), optimize=True)
 print('wrote ball / crab / gull')
 
 # ============================================================================
-# 🐚 THE SHELL STRIP — ORDER IS A CONTRACT with banana-beach.js's SHELL_IDS
-S = 16
-FAMILIES = [
-    ('brown', (150, 96, 44), (190, 134, 74), (108, 66, 28)),
-    ('grey', (150, 150, 145), (188, 188, 182), (104, 104, 100)),
-    ('white', (238, 232, 214), (255, 253, 245), (190, 182, 162)),
-    ('ice', (176, 224, 240), (216, 244, 252), (122, 176, 198)),
-    ('pink', (240, 150, 175), (255, 194, 212), (196, 102, 132)),
-    ('gold', (240, 190, 60), (255, 226, 122), (186, 136, 24)),
-    ('goldblue', (110, 190, 230), (176, 228, 252), (48, 120, 168)),
-]
-STARS = [
-    ('blue', (86, 140, 220), (140, 186, 246), (52, 96, 168)),
-    ('green', (94, 184, 96), (146, 220, 148), (56, 132, 60)),
-    ('purple', (168, 118, 224), (206, 168, 248), (118, 74, 168)),
-    ('yellow', (246, 206, 74), (255, 232, 142), (196, 158, 30)),
-]
-SHELL_IDS = []
-for fam, _, _, _ in FAMILIES:
-    for shape in ('spiral', 'fan', 'cone'):
-        SHELL_IDS.append(fam + '_' + shape)
-for col, _, _, _ in STARS:
-    SHELL_IDS.append('star_' + col + '_s')
-    SHELL_IDS.append('star_' + col + '_b')
-
-strip = Image.new('RGBA', (S * len(SHELL_IDS), S), (0, 0, 0, 0))
-sp = strip.load()
-
-
-def sput(ox, x, y, col):
-    if 0 <= x < S and 0 <= y < S:
-        sp[ox + x, y] = col
-
-
-def draw_spiral(ox, base, light, dark):
-    for y in range(2, 15):
-        for x in range(2, 14):
-            d = math.hypot((x - 7.5) / 5.6, (y - 8.4) / 6.0)
-            if d <= 1.0:
-                a = math.atan2(y - 8.4, x - 7.5)
-                swirl = (a * 2.2 + d * 7.0) % 2.4 < 1.1
-                sput(ox, x, y, dark if d > 0.86 else (light if swirl else base))
-    for x in range(6, 10):
-        sput(ox, x, 14, dark)
-
-
-def draw_fan(ox, base, light, dark):
-    for y in range(2, 15):
-        t = 1.0 - (y - 2) / 12.0
-        half = int(1.4 + 6.4 * math.sqrt(max(0.0, t)))
-        for x in range(8 - half, 8 + half + 1):
-            rib = (abs(x - 8) % 3 == 1)
-            rim = (y <= 3 and (x % 2 == 0))
-            edge = abs(x - 8) >= half
-            sput(ox, x, y, dark if (edge or rim) else (light if rib else base))
-    sput(ox, 7, 14, dark); sput(ox, 8, 14, dark)
-
-
-def draw_cone(ox, base, light, dark):
-    for y in range(1, 15):
-        t = (y - 1) / 13.0
-        half = int(0.6 + 5.4 * t)
-        for x in range(8 - half, 8 + half + 1):
-            band = ((y // 3) % 2 == 0)
-            edge = abs(x - 8) >= half
-            sput(ox, x, y, dark if edge or y == 14 else (light if band else base))
-
-
-def draw_star(ox, base, light, dark, big):
-    r_out, r_in = (7.2, 3.0) if big else (5.0, 2.1)
-    for y in range(16):
-        for x in range(16):
-            dx, dy = x - 7.5, y - 7.5
-            d = math.hypot(dx, dy)
-            if d > r_out:
-                continue
-            a = math.atan2(dy, dx) + math.pi / 2
-            edge_r = r_in + (r_out - r_in) * (math.cos(a * 5) + 1) / 2
-            if d <= edge_r:
-                sput(ox, x, y, dark if d > edge_r - 1.2 else (light if d < r_in * 0.8 else base))
-
-
-for i, sid in enumerate(SHELL_IDS):
-    ox = i * S
-    if sid.startswith('star_'):
-        col = sid.split('_')[1]
-        _, b, l, d = next(s for s in STARS if s[0] == col)
-        draw_star(ox, b, l, d, sid.endswith('_b'))
-    else:
-        fam, shape = sid.rsplit('_', 1)
-        _, b, l, d = next(f for f in FAMILIES if f[0] == fam)
-        {'spiral': draw_spiral, 'fan': draw_fan, 'cone': draw_cone}[shape](ox, b, l, d)
-strip.save(os.path.join(OUT, 'shells.png'), optimize=True)
-print('wrote shells.png (%d frames)' % len(SHELL_IDS))
+# 🐚 THE SHELLS MOVED OUT. They used to be GENERATED HERE by formula — a swirl
+# equation, an ellipse and a five-point star in 7 colour families — which is
+# exactly why they read as blobs. They are now real hand-drawn species baked
+# from the purchased ShoreThings pack by tools/build-shell-atlas.py, which
+# owns public/assets/beach/shells.png and emits src/scripts/shell-data.js.
+# ⚠️ DO NOT write shells.png from this file again — it would clobber the atlas.
 
 im.resize((W // 2, H // 2), Image.NEAREST).save(os.path.join(SITE, 'tools', 'beach-contact.png'))
 print('wrote tools/beach-contact.png')

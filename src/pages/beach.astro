@@ -153,6 +153,46 @@ const description = 'The beach at the end of the park road. The sun never quite 
     }
     @media (prefers-reduced-motion: reduce) { .bh-bob { animation: none; } }
 
+    /* 🐚 THE SHELL BOARD — a planked blackboard up the beach that Shelly keeps.
+       It is the collection made PHYSICAL: every species has a peg, and the ones
+       you've found are filled in while the rest stay silhouettes, so you can
+       read your progress from across the sand without opening a panel. */
+    .bh-board { position: absolute; cursor: pointer; }
+    .bh-board__face {
+      position: absolute; left: 0; right: 0; top: 0; bottom: 16%;
+      background:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 100% 12%,
+        linear-gradient(#7a5330, #5d3d22);
+      border: 3px solid #33200f; border-radius: 3px;
+      box-shadow: 2px 3px 0 rgba(0,0,0,0.38), inset 0 2px 0 rgba(255,220,150,0.16);
+      display: flex; flex-direction: column; padding: 5% 5% 4%;
+    }
+    .bh-board__head {
+      font-family: "Archivo Black", sans-serif; color: #ffe7a0;
+      font-size: 8cqw; letter-spacing: 0.1em; text-align: center;
+      text-shadow: 1px 1px 0 #2a1a0c; margin-bottom: 4%;
+    }
+    .bh-board__grid {
+      flex: 1; display: grid; grid-template-columns: repeat(8, 1fr);
+      gap: 4%; align-content: start;
+    }
+    .bh-board__grid i {
+      display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2400% 100%; background-repeat: no-repeat;
+    }
+    .bh-board__grid i.is-missing { filter: brightness(0) opacity(0.32); }
+    .bh-board__legs {
+      position: absolute; left: 12%; right: 12%; bottom: 0; height: 17%;
+    }
+    .bh-board__legs::before, .bh-board__legs::after {
+      content: ''; position: absolute; bottom: 0; width: 9%; height: 100%;
+      background: linear-gradient(90deg, #7a5330, #5d3d22);
+      border: 2px solid #33200f;
+    }
+    .bh-board__legs::before { left: 4%; }
+    .bh-board__legs::after { right: 4%; }
+
     /* 🔥 THE BONFIRE. The pack's own 6-frame campfire (48×96 per frame, so the
        box is 1:2), stood ON the ring's centre line, plus a pool of warm light.
        Medium-sized on purpose: big enough to be the evening's focal point,
@@ -232,7 +272,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-catch__shell {
       display: block; width: 64px; height: 64px;
       background-image: url('/assets/beach/shells.png');
-      background-size: 2900% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+      background-size: 2400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
     }
     /* 🐟 one 16px tile of the 35-tile fish atlas, blown up */
     .bh-catch__fish {
@@ -445,7 +485,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
       position: absolute; z-index: 3; width: 0.67%; aspect-ratio: 1;
       transform: translate(-50%, -50%); pointer-events: none;
       background-image: url('/assets/beach/shells.png');
-      background-size: 2900% 100%; background-repeat: no-repeat;
+      background-size: 2400% 100%; background-repeat: no-repeat;
       image-rendering: pixelated;
       animation: bhShellGlint 2.6s ease-in-out infinite;
     }
@@ -531,7 +571,7 @@ const description = 'The beach at the end of the park road. The sun never quite 
     .bh-slot i {
       display: block; width: 78%; aspect-ratio: 1;
       background-image: url('/assets/beach/shells.png');
-      background-size: 2900% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+      background-size: 2400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
     }
     .bh-slot.is-missing i { filter: brightness(0) opacity(0.28); }
     .bh-slot b {
@@ -869,6 +909,9 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <!-- 🎣 GIL — keeper of the fish ledger, stood at the foot of the dock -->
         <div class="bh-cap bh-gil" id="bhGil"><canvas id="bhGilCv" width="150" height="150" aria-hidden="true"></canvas></div>
         <div class="bh-capbubble" id="bhGilBubble" role="status" aria-live="polite"></div>
+        <!-- 🐚 SHELLY — keeps the shell board up the beach -->
+        <div class="bh-cap bh-shelly" id="bhShelly"><canvas id="bhShellyCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        <div class="bh-capbubble" id="bhShellyBubble" role="status" aria-live="polite"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
       </div>
       <div class="bh-hud">
@@ -912,10 +955,14 @@ const description = 'The beach at the end of the park road. The sun never quite 
         <div class="bh-card" role="dialog" aria-label="Shell collection">
           <h2>your shell collection</h2>
           <p id="bhShellSub" class="bh-panel__sub">washed up on the tide.</p>
+          <!-- ⚠️ KEPT SHORT ON PURPOSE. This used to be three dense bullets for
+               what is really "pick shells up off the sand" — Trym: "extremely
+               complicated explained… to really just a simple mechanic". Two
+               lines, and the rarity is shown by the tier colours in the grid
+               rather than described in a paragraph. -->
           <ol class="bh-how">
-            <li><b>🌊 the tide</b> lays a fresh scatter of shells on the sand every day — walk over one to pocket it.</li>
-            <li><b>🐚 29 kinds</b> to find in all. the gold &amp; star shells wash up far more rarely.</li>
-            <li><b>🚢 got doubles?</b> Captain Split at the shipwreck bar swaps <b>3 spare shells → 1 you're still missing</b>. shells only, never coins.</li>
+            <li><b>🌊 comb the wet sand.</b> the tide leaves shells along the shoreline — walk over one to pocket it.</li>
+            <li><b>⭐ some are rare.</b> a <b style="color:#5cc8ff">conch</b> or a <b style="color:#ffd54a">nautilus</b> turns up far less often than a clam. Shelly keeps the board.</li>
           </ol>
           <div class="bh-grid" id="bhShellGrid"></div>
           <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
