@@ -5,22 +5,27 @@
 // corporate-mailroom theme on purpose — it's the admin room of a banana empire.
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const title = 'BANANA MAIL™';
+const title = 'Banana HQ';
 const description = 'Authorized banana personnel only.';
 ---
 <BaseLayout title={title} description={description} showFooter={false}>
   <meta name="robots" content="noindex" slot="head" />
   <style is:inline slot="head">
-    .bm-wrap { max-width: 760px; margin: 0 auto; padding: 1.6rem 1rem 4rem; }
+    .bm-wrap { max-width: 820px; margin: 0 auto; padding: 1.1rem 0.9rem 4rem; }
+    /* form controls never below 16px → iOS won't zoom-jump on focus */
+    .bm-wrap input, .bm-wrap select, .bm-wrap textarea { font-size: 16px; }
     .bm-letterhead {
-      background: var(--ink); color: var(--paper); border: var(--line); box-shadow: var(--shadow);
-      padding: 1.1rem 1.2rem 1rem; text-align: center; position: relative; overflow: hidden;
+      background: var(--ink); color: var(--paper); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--banana);
+      padding: 0.95rem 1.05rem; border-radius: 4px; display: flex; align-items: center; gap: 0.85rem;
     }
-    .bm-letterhead::before, .bm-letterhead::after { content: '🍌'; position: absolute; top: 0.9rem; font-size: 1.4rem; }
-    .bm-letterhead::before { left: 1rem; } .bm-letterhead::after { right: 1rem; transform: scaleX(-1); }
-    .bm-letterhead h1 { margin: 0; font-size: clamp(1.5rem, 6vw, 2.2rem); color: var(--banana); letter-spacing: 0.02em; }
-    .bm-letterhead .bm-sub { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.75; margin: 0.35rem 0 0; }
-    .bm-letterhead .bm-est { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--banana); opacity: 0.9; margin: 0.2rem 0 0; }
+    .bm-letterhead__badge {
+      flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center;
+      background: var(--banana); border-radius: 10px; font-size: 1.6rem; line-height: 1; box-shadow: 0 0 0 3px var(--ink);
+    }
+    .bm-letterhead h1 { margin: 0; font-size: clamp(1.35rem, 6.5vw, 2rem); color: var(--banana); letter-spacing: 0.01em; line-height: 1.05; }
+    .bm-letterhead .bm-sub { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.7; margin: 0.3rem 0 0; }
+    .bm-letterhead .bm-est { font-size: 0.55rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--banana); opacity: 0.82; margin: 0.18rem 0 0; }
+    @media (max-width: 400px) { .bm-letterhead .bm-est { display: none; } }
 
     /* the security checkpoint */
     .bm-gate { margin-top: 1.2rem; border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 1.1rem; text-align: center; }
@@ -33,12 +38,13 @@ const description = 'Authorized banana personnel only.';
     .bm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 1.2rem 0 0.9rem; }
     .bm-count { font-weight: 800; font-size: 0.85rem; margin-right: auto; }
     .bm-chip {
-      border: 3px solid var(--ink); background: var(--paper); padding: 0.28rem 0.6rem;
-      font-weight: 800; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
-      cursor: pointer; border-radius: 2px;
+      display: inline-flex; align-items: center; gap: 0.3rem; min-height: 34px;
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.3rem 0.7rem;
+      font-family: inherit; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; border-radius: 999px; color: var(--ink); text-decoration: none;
     }
     .bm-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
-    .bm-chip--ghost { border-style: dashed; opacity: 0.75; }
+    .bm-chip--ghost { border-style: dashed; opacity: 0.72; }
 
     /* mail cards */
     .bm-mail { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); margin: 0 0 0.9rem; position: relative; }
@@ -57,8 +63,9 @@ const description = 'Authorized banana personnel only.';
     .bm-mail__msg { white-space: pre-wrap; font-family: inherit; font-size: 0.92rem; line-height: 1.55; margin: 0.2rem 0 0.9rem; border-top: 3px dashed rgba(17,17,17,0.15); padding-top: 0.8rem; word-break: break-word; }
     .bm-mail__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .bm-btn {
-      border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.8rem;
-      font-weight: 800; font-size: 0.78rem; cursor: pointer; border-radius: 2px; text-decoration: none; color: var(--ink);
+      display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.5rem 0.9rem;
+      font-family: inherit; font-weight: 800; font-size: 0.82rem; cursor: pointer; border-radius: 4px; text-decoration: none; color: var(--ink);
     }
     .bm-btn--shred { background: var(--hot); color: #fff; }
     .bm-btn--shred[data-arm="1"] { background: #111; color: var(--hot); }
@@ -71,15 +78,23 @@ const description = 'Authorized banana personnel only.';
     .bm-fine { text-align: center; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; margin-top: 2rem; line-height: 1.8; }
     @media (max-width: 480px) { .bm-count { flex-basis: 100%; } }
 
-    /* DEPARTMENTS — mail | gallery inbox, one roof */
-    .bm-tabs { display: flex; gap: 0.5rem; margin-top: 1.2rem; }
+    /* DEPARTMENTS — a horizontally-scrolling pill strip that can NEVER overflow
+       the viewport (the old flex:1 tabs ran off small screens sideways) */
+    .bm-tabs {
+      display: flex; gap: 0.45rem; margin: 1.2rem -0.9rem 0.5rem; padding: 0.15rem 0.9rem 0.75rem;
+      overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; border-bottom: 3px solid rgba(17, 17, 17, 0.1);
+    }
+    .bm-tabs::-webkit-scrollbar { display: none; }
     .bm-tab {
-      flex: 1; border: var(--line); background: var(--paper); padding: 0.55rem 0.6rem;
-      font-family: inherit; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.06em;
-      text-transform: uppercase; cursor: pointer; border-radius: 2px;
+      flex: 0 0 auto; scroll-snap-align: start; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      border: 3px solid var(--ink); background: var(--paper); padding: 0.5rem 0.9rem; min-height: 42px;
+      font-family: inherit; font-weight: 800; font-size: 0.82rem; letter-spacing: 0.01em;
+      cursor: pointer; border-radius: 999px; color: var(--ink);
     }
     .bm-tab[aria-selected="true"] { background: var(--ink); color: var(--banana); }
-    .bm-tab .bm-badge { display: inline-block; min-width: 1.2em; padding: 0 0.25em; border-radius: 999px; background: var(--hot); color: #fff; font-size: 0.72rem; margin-left: 0.3rem; }
+    .bm-tab .bm-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; height: 1.35em; padding: 0 0.3em; border-radius: 999px; background: var(--hot); color: #fff; font-size: 0.66rem; margin-left: 0.15rem; }
 
     /* gallery submission cards */
     .bm-pend { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); margin: 0 0 0.9rem; padding: 0.8rem 0.9rem; display: flex; gap: 0.9rem; }
@@ -136,9 +151,12 @@ const description = 'Authorized banana personnel only.';
 
   <div class="bm-wrap">
     <header class="bm-letterhead">
-      <h1>BANANA MAIL™</h1>
-      <p class="bm-sub">World administration &amp; executive correspondence</p>
-      <p class="bm-est">First-class potassium post · est. 1999</p>
+      <span class="bm-letterhead__badge" aria-hidden="true">🍌</span>
+      <div class="bm-letterhead__txt">
+        <h1>Banana HQ</h1>
+        <p class="bm-sub">Head office · Banana World</p>
+        <p class="bm-est">First-class potassium post · est. 1999</p>
+      </div>
     </header>
 
     <div class="bm-gate" id="bmGate" hidden>
@@ -152,10 +170,10 @@ const description = 'Authorized banana personnel only.';
 
     <div id="bmApp" hidden>
       <div class="bm-tabs" role="tablist" aria-label="Departments">
-        <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">✉ Mail room</button>
-        <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery inbox<span class="bm-badge" id="bmGalBadge" hidden></span></button>
-        <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">🪩 Rave names</button>
-        <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Item drops<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
+        <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">📥 Mail</button>
+        <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery<span class="bm-badge" id="bmGalBadge" hidden></span></button>
+        <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">📇 Names</button>
+        <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Items<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
         <button class="bm-tab" id="bmTabWorld" role="tab" aria-selected="false" type="button">🌍 World</button>
       </div>
 
@@ -213,15 +231,17 @@ const description = 'Authorized banana personnel only.';
         </div>
       </div>
 
-      <!-- 🪩 RAVE NAMES — the strike desk (Trym's quick swipe on floor names) -->
+      <!-- 📇 NAMES — the strike desk: moderate the display names people pick
+           (a person's banana keeps the same name wherever they go in the world) -->
       <div id="bmPaneRave" hidden>
         <div class="bm-bar">
           <button class="bm-chip" id="bmRaveRefresh" type="button">↻ refresh</button>
           <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word/fragment manually…" style="max-width:280px;" aria-label="Word or fragment to strike" />
           <button class="bm-chip" id="bmStrikeAdd" type="button">🔨 strike</button>
         </div>
-        <p class="bm-livenote">Names pass the family filter at the door; this desk is the backstop for the clever ones.
-          Striking hides the name floor-wide INSTANTLY (their banana falls back to its outfit-name) and blocks it going forward.</p>
+        <p class="bm-livenote">The names people give their banana — the same handle follows them wherever they go in the world.
+          They pass a family filter at sign-up; this desk is the backstop for the clever ones. Striking hides the name INSTANTLY
+          (the banana falls back to its outfit-name) and blocks it going forward.</p>
         <div id="bmRaveList"><p class="bm-livenote">Press refresh to load the ledger.</p></div>
       </div>
 
@@ -272,7 +292,7 @@ const description = 'Authorized banana personnel only.';
       </div>
 
       <p class="bm-fine">
-        BANANA MAIL™ is a wholly owned subsidiary of the Banana World.<br>
+        Banana HQ — head office of the Banana World.<br>
         Unauthorized peeling is prohibited and punishable by dance-off.<br>
         <button class="bm-chip bm-chip--ghost" id="bmLogout" type="button" style="margin-top:0.5rem;">🚪 clock out</button>
       </p>
@@ -788,7 +808,7 @@ const description = 'Authorized banana personnel only.';
       const fmt = (t) => new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       const live = new Set(d.live || []);
       el('bmRaveList').innerHTML =
-        '<p class="bm-count">' + (d.live || []).length + ' named on the floor now · ' + (d.names || []).length + ' visitors seen · ' + (d.strikes || []).length + ' struck</p>'
+        '<p class="bm-count">' + (d.live || []).length + ' named right now · ' + (d.names || []).length + ' seen recently · ' + (d.strikes || []).length + ' struck</p>'
         + ((d.strikes || []).length
           ? '<p class="bm-livenote">🔨 struck: ' + d.strikes.map((s) => rEsc(s) + ' <button class="bm-chip bm-chip--ghost" data-unstrike="' + rEsc(s) + '">undo</button>').join(' · ') + '</p>'
           : '')
