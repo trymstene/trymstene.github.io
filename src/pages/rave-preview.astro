@@ -70,6 +70,7 @@ const GUIDE = [
   ogImage="https://trymstene.com/assets/og/builder.png"
   robots="noindex"
 >
+  <script is:inline slot="head">window.__ravePreview = true;</script>
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(raveFaq)} />
   <!-- perf: the dance sheet is otherwise only discovered after the JS bundle
@@ -1292,9 +1293,9 @@ const GUIDE = [
     #rvStageBtn { display: none !important; }                         /* static stage button → becomes a popup (pass 2) */
     .rv-emote-btn[data-emote="confetti"] { display: none !important; } /* clap folds into the reaction picker (pass 2) */
 
-    /* pass 1b: the World HUD — level · coins · crowd, INSIDE the frame at top-left
-       (clear of the INVITE sign on the right); the JELLY meter stays alone in the mixer */
-    .rv-whud { position: absolute; top: 5px; left: 5px; z-index: 620; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 58px); pointer-events: none; }
+    /* pass 1b: the World HUD — level · coins · crowd, a bar ABOVE the LED screen
+       (top of the club frame); the JELLY meter stays alone in the mixer bottom-right */
+    .rv-whud { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; padding: 4px 7px; background: #120b22; border-bottom: 2px solid #2a1f4d; }
     .rv-whud > * { margin: 0; background: #1c1338; border: 2px solid #3a2d63; border-radius: 6px; padding: 3px 9px; font-weight: 800; font-size: 0.78rem; line-height: 1.25; color: #efe9ff; }
     .rv-whud .rv-mixer__lvl { display: flex; align-items: center; gap: 6px; color: #ffe135; border-color: #ffe135; }
     .rv-whud .rv-mixer__lvlbar { flex: 0 0 46px; min-width: 46px; height: 6px; }
@@ -1315,6 +1316,7 @@ const GUIDE = [
 
     <div class="rv-stagewrap">
       <div class="rv-club">
+        <div class="rv-whud" id="rvWhud" aria-hidden="true"></div>
         <div class="rv-booth">
           <!-- THE CLUB SCREEN: the LED wall (back of the booth, z 0). Blinks
                silly rave-culture lines + the odd clickable house ad. Filled by
@@ -1409,7 +1411,6 @@ const GUIDE = [
               <canvas id="rvBarman" width="160" height="160" aria-hidden="true"></canvas>
             </div>
           </div>
-          <div class="rv-whud" id="rvWhud" aria-hidden="true"></div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
           <div class="rv-quest" id="rvQuest" hidden>
             <span class="rv-quest__k">quest</span>

@@ -588,7 +588,7 @@ function init() {
   // first-timers keep follow-me — the welcome spotlight needs the close-up.
   // "been here before" = the tour marker (set on every first visit)
   const raveSeen = (() => { try { return !!localStorage.getItem('rv-tour-v1'); } catch (e) { return false; } })();
-  const cam = { on: matchMedia('(max-width: 640px)').matches && !raveSeen, s: 1, tx: 0, ty: 0 };
+  const cam = { on: window.__ravePreview ? false : (matchMedia('(max-width: 640px)').matches && !raveSeen), s: 1, tx: 0, ty: 0 };
   let floorW = 0, floorH = 0;
   // the bar is SOLID — bananas stop at it instead of moonwalking through the counter.
   // It's sized in px, so its world-percent rect depends on the floor size: re-measured
@@ -2932,6 +2932,7 @@ function init() {
     if (tourActive || !myId || !ravers.get(myId)) return;
     tourActive = true;
     tourStep = -1;
+    if (window.__ravePreview) cam.on = true; // preview: zoom defaults OUT, so the tour is the only thing that zooms in (endTour pulls back out)
     el('rvBubble').hidden = true; // Barty hushes mid-sentence — the tour has the floor
     world.classList.add('rv-world--tour');
     floor.classList.add('rv-tourclean'); // no chase-ables spawn mid-lesson, ever
