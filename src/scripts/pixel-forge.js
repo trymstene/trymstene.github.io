@@ -1018,29 +1018,29 @@ function init() {
 
   // ---- save to shelf without exporting (park a draft, keep several going) ----
   el('fgSave').onclick = () => {
-    const btn = el('fgSave'); const label = btn.textContent;
+    const btn = el('fgSave'); const label = btn.innerHTML;
     if (!state.frames.some((f) => f.some((v) => v))) {
       btn.textContent = 'Draw something first 🎨';
-      setTimeout(() => { btn.textContent = label; }, 2500);
+      setTimeout(() => { btn.innerHTML = label; }, 2500);
       return;
     }
     shelfAdd({ kind: 'emoji', params: 'forge:' + serialize(), data: null });
     btn.textContent = 'Saved to your shelf 🗄';
-    setTimeout(() => { btn.textContent = label; }, 2500);
+    setTimeout(() => { btn.innerHTML = label; }, 2500);
     track('forge_shelf_save', { size: Math.max(state.w, state.h), frames: state.frames.length });
   };
 
   // ---- submit to the Wall: first click reveals the optional signature ----
   // (free text is fine here — it rides Trym's human review gate)
   el('fgWallSubmit').onclick = () => {
-    const btn = el('fgWallSubmit'); const label = btn.textContent;
-    if (!state.frames.some((f) => f.some((v) => v))) { btn.textContent = 'Draw something first 🎨'; setTimeout(() => { btn.textContent = label; }, 2500); return; }
+    const btn = el('fgWallSubmit'); const label = btn.innerHTML;
+    if (!state.frames.some((f) => f.some((v) => v))) { btn.textContent = 'Draw something first 🎨'; setTimeout(() => { btn.innerHTML = label; }, 2500); return; }
     const row = el('fgSignRow');
     row.hidden = !row.hidden;
     if (!row.hidden) el('fgSignName').focus();
   };
   el('fgSignSend').onclick = async () => {
-    const btn = el('fgWallSubmit'); const label = btn.textContent;
+    const btn = el('fgWallSubmit'); const label = btn.innerHTML;
     const by = el('fgSignName').value.trim().slice(0, 24);
     el('fgSignRow').hidden = true;
     btn.disabled = true;
@@ -1054,7 +1054,7 @@ function init() {
       if (res.ok) passPatch('exhibitor');
     } catch (e) { btn.textContent = 'The wall is busy — try again later'; }
     track('wall_submit', { kind: 'emoji', signed: by ? 1 : 0, size: Math.max(state.w, state.h), frames: state.frames.length });
-    setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 4000);
+    setTimeout(() => { btn.innerHTML = label; btn.disabled = false; }, 4000);
   };
 
   // ---- the shelf strip on the forge ----

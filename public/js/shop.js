@@ -153,9 +153,14 @@
         window.location.href = url;
       } else {
         buyBtn.disabled = false; buyBtn.textContent = orig;
-        alert('Sorry — could not start checkout. Try again in a sec.');
+        stockEl.textContent = 'Couldn’t start checkout — please try again.';
+        stockEl.className = 'pdp-stock pdp-stock--no';
       }
-    }).catch(function () { buyBtn.disabled = false; buyBtn.textContent = orig; alert('Network hiccup — try again.'); });
+    }).catch(function () {
+      buyBtn.disabled = false; buyBtn.textContent = orig;
+      stockEl.textContent = 'Network hiccup — please try again.';
+      stockEl.className = 'pdp-stock pdp-stock--no';
+    });
   });
 
   // init: pick the first colour (nudges an explicit size choice); products with

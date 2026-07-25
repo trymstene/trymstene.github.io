@@ -204,6 +204,7 @@ const crumbLD = {
         </a>
       ))}
     </div>
+    <p class="gm-empty" id="gmEmpty" hidden style="text-align:center; opacity:0.7; font-weight:700; padding:2rem 1rem;">No bananas match that search — try another word 🍌</p>
 
     <div class="gm-cta">
       <h2>Want a banana that's 100% yours?</h2>
@@ -240,6 +241,7 @@ const crumbLD = {
     // keep their links) but clicks filter here + pushState the matching URL,
     // so refresh/share lands on the static page and back/forward just works
     const inp = document.getElementById('gmSearch');
+    const emptyEl = document.getElementById('gmEmpty');
     const cards = [...document.querySelectorAll('#gmGrid .gm-card')];
     const kindLinks = [...document.querySelectorAll('#gmKinds a')];
     const tagLinks = [...document.querySelectorAll('#gmTags a')];
@@ -253,6 +255,7 @@ const crumbLD = {
         const okT = !state.tag || c.dataset.tags.split(' ').includes(state.tag);
         c.style.display = okQ && okK && okT ? '' : 'none';
       });
+      if (emptyEl) emptyEl.hidden = cards.some((c) => c.style.display !== 'none');
       kindLinks.forEach((a) => {
         if ((a.dataset.kind || '') === state.kind && !state.tag) a.setAttribute('aria-current', 'page');
         else a.removeAttribute('aria-current');
