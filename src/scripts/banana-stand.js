@@ -229,27 +229,8 @@ function init() {
     requestAnimationFrame((t) => { last = t; step(t); });
   });
 
-  // ---- the keeper's floor call-outs (Barty-style) -------------------------
-  // He greets you BY NAME if you've signed your pass (ps-name-v1 rides the
-  // sync blob) — the little "this place knows me" beat.
   let passName = '';
   try { passName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
-  const roomBubble = document.getElementById('bsRoomBubble');
-  let roomTimer = null;
-  function sayRoom(text) {
-    if (!roomBubble) return;
-    roomBubble.textContent = text;
-    roomBubble.classList.add('is-on');
-    clearTimeout(roomTimer);
-    roomTimer = setTimeout(() => roomBubble.classList.remove('is-on'), 3600);
-  }
-  const GREETING = passName ? `welcome to the banana stand, ${passName}!` : 'welcome to the banana stand!';
-  setTimeout(() => { if (!inShop) sayRoom(GREETING); }, 900);
-  let callIdx = 0;
-  setInterval(() => {
-    if (inShop || document.hidden) return;
-    sayRoom(LINES[callIdx % LINES.length]); callIdx++;
-  }, 14000);
 
   // tapping the mini kiosk walks you there
   document.getElementById('bsMini').addEventListener('click', (e) => {
@@ -412,14 +393,6 @@ function init() {
 
   // ---- scene 2: the counter — THE TILL IS OPEN ----------------------------
   const COUNTER_HELLO = 'what can i get you? everything on the wall is for sale. finally.';
-  const LINES = [
-    'the truck finally came. we are OPEN.',
-    'coins from the floor spend just fine here.',
-    "the squid is 120. nobody's bought the squid.",
-    "there's always money in the banana stand.",
-    "no refunds. we don't have the infrastructure.",
-    'i used to dance, you know.',
-  ];
   const bubble = document.getElementById('bsBubble');
   let lineIdx = 0, bubbleTimer = null;
   function say(text) {
