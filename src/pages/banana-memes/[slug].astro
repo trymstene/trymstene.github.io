@@ -95,6 +95,17 @@ export async function getStaticPaths() {
 const { type, item, related, tally, tagKey, catKey, members, liveTags } = Astro.props;
 const SITE = 'https://trymstene.com';
 
+// server-render the rating from the build-time tally so the visible stars/count
+// MATCH the AggregateRating JSON-LD from first paint — no "be the first to rate"
+// flash, no injected-star content shift, no structured-data-vs-visible mismatch.
+// gallery-detail.js seeds off data-sum/data-count and hydrates these buttons.
+const rateCount = tally && tally[1] ? tally[1] : 0;
+const rateAvg = rateCount ? tally[0] / tally[1] : 0;
+const rateShown = rateCount ? Math.round(rateAvg) : 0;
+const rateLabel = rateCount
+  ? `${rateAvg.toFixed(1)} 🍌 · ${rateCount} ${rateCount === 1 ? 'vote' : 'votes'}`
+  : 'be the first to rate 🍌';
+
 // ---- per-type SEO assembly ----
 let title, description, pageUrl, ld = [], ogImage;
 
@@ -281,8 +292,13 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
 
       <h1 class="gd-title">{item.title}</h1>
       <div class="gd-rate">
-        <div class="gd-stars" role="group" aria-label={`Rate ${item.title} in bananas`}></div>
-        <p class="gd-count">be the first to rate 🍌</p>
+        <div class="gd-stars" role="group" aria-label={`Rate ${item.title} in bananas`}
+             data-sum={rateCount ? tally[0] : 0} data-count={rateCount}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <button type="button" class={s <= rateShown ? 'on' : undefined} title={`${s}/5 bananas`} aria-label={`${s} of 5 bananas`}>🍌</button>
+          ))}
+        </div>
+        <p class="gd-count">{rateLabel}</p>
       </div>
 
       <p class="gd-caption">{item.caption}</p>

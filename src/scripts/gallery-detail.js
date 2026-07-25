@@ -10,6 +10,10 @@ if (root) {
   let votes = {};
   try { votes = JSON.parse(localStorage.getItem('gal-votes') || '{}'); } catch (e) {}
   let tally = null; // [sum, count]
+  // seed from the server-rendered rating so the visible stars/count match the
+  // AggregateRating markup from first paint (no unrated flash); /ratings reconciles
+  const seedCount = +(starsEl.dataset.count || 0);
+  if (seedCount) tally = [+(starsEl.dataset.sum || 0), seedCount];
 
   const avg = () => (tally && tally[1] ? tally[0] / tally[1] : 0);
   function countText() {
@@ -36,14 +40,19 @@ if (root) {
     }).catch(() => {});
     if (window.gtag) gtag('event', 'gallery_rate', { item: root.dataset.id, stars });
   }
-  for (let s = 1; s <= 5; s++) {
-    const b = document.createElement('button');
-    b.textContent = '🍌';
-    b.title = s + '/5 bananas';
-    b.setAttribute('aria-label', s + ' of 5 bananas');
-    b.addEventListener('click', () => vote(s));
-    starsEl.appendChild(b);
+  // hydrate the server-rendered star buttons (fall back to building them if a
+  // stale cache served the old empty markup)
+  let starBtns = [...starsEl.querySelectorAll('button')];
+  if (!starBtns.length) {
+    for (let s = 1; s <= 5; s++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = '🍌';
+      b.title = s + '/5 bananas'; b.setAttribute('aria-label', s + ' of 5 bananas');
+      starsEl.appendChild(b);
+    }
+    starBtns = [...starsEl.querySelectorAll('button')];
   }
+  starBtns.forEach((b, i) => b.addEventListener('click', () => vote(i + 1)));
   paint();
   fetch(WORKER + '/ratings').then((r) => r.ok && r.json()).then((board) => {
     if (board && board[id]) { tally = board[id]; paint(); }
