@@ -295,6 +295,8 @@ a { color: inherit; }
 .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
 .btn--dark { background: var(--ink); color: var(--banana); }
 .btn--light { background: var(--paper); color: var(--ink); }
+/* the beach's own identity — an ocean/sky gradient beside the rave's dark chip */
+.btn--beach { background: linear-gradient(135deg, #7fd6f2 0%, #35a8e0 100%); color: var(--ink); }
 
 /* ---------- content blocks ---------- */
 .block {
