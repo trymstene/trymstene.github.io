@@ -21,6 +21,7 @@ import {
   makeStickerMockup as coreMockup, ensureCaptionFont,
 } from '../lib/sticker-core.js';
 import { memeGif } from '../lib/meme-gif.js';
+import { wearToCustom } from '../lib/wear-render.js'; // community-item wear payload → engine custom channel
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -59,6 +60,7 @@ function init() {
   const state = {
     bg: 'transparent', top: '', bottom: '', glasses: 'none', hat: 'none',
     extras: {}, effect: 'none', // extras keyed by def id, e.g. { mustache: true }
+    c: '', // the equipped community drop (outfit.c — one custom slot)
     spd: BASE_CYCLE_S, frame: 0, // frame = the sticker still
     paused: reducedMotion,
   };
@@ -68,7 +70,32 @@ function init() {
   // the engine draws from explicit outfit args; this page has ONE banana whose
   // outfit lives in `state`, so wrap it once and every old call site works.
   const drawComposite = (ctx, W, idx, o) =>
-    engineDraw(ctx, W, idx, { hat: state.hat, glasses: state.glasses, extras: state.extras, top: state.top, bottom: state.bottom, ...o });
+    engineDraw(ctx, W, idx, {
+      hat: state.hat, glasses: state.glasses, extras: state.extras,
+      top: state.top, bottom: state.bottom,
+      custom: state.c ? catCustom(state.c) : undefined, // the equipped community drop
+      ...o,
+    });
+
+  // 🎁 THE COMMUNITY CATALOG — visitor-made wearables that drop in the world.
+  // The builder is the ONE place you dress up, so they belong here too: owned =
+  // wearable, unearned = a locked chip that DOORS to where you catch it. One
+  // custom slot (outfit.c) — a banana wears one community item at a time (v1).
+  const CATALOG_URL = 'https://banana-share.trymstene.workers.dev/catalog/items.json';
+  let CATALOG = [];
+  const CAT_CUSTOM = {};
+  const catOwned = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
+  const catStats = () => { try { return (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {}; } catch (e) { return {}; } };
+  const ownsCatalog = (id) => { try { return !!catOwned()[id] || (catStats()['own_' + id] || 0) > 0; } catch (e) { return false; } };
+  function catCustom(id) {
+    // ⚠️ never cache a MISS (a draw can run before the fetch lands) — the same
+    // rule the rave learned in P4-D, or a cached null hides the item forever
+    if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
+    const it = CATALOG.find((x) => x.id === id);
+    if (!it) return undefined;
+    CAT_CUSTOM[id] = wearToCustom(it.wear);
+    return CAT_CUSTOM[id] || undefined;
+  }
 
   // ---- controls ----
   BGS.concat(BGS_MORE).forEach((c) => {
@@ -272,6 +299,55 @@ function init() {
     sync();
   }
   ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+
+  // 🎁 THE CLUB DROPS ROW — the community catalog, rendered once the manifest
+  // lands. Owned = a wearable chip; unearned = a locked DOOR to the rave (the
+  // aspiration: you SEE the item, so you know it's out there to catch). The row
+  // hides itself entirely when the catalog is empty.
+  function renderCatalog() {
+    const host = el('bbCatalogChips');
+    if (!host) return;
+    const row = host.closest('.bb-row');
+    host.innerHTML = '';
+    if (!CATALOG.length) { if (row) row.hidden = true; return; }
+    if (row) row.hidden = false;
+    // publish owned community items to the synced own_<id> stat so ownership
+    // (and thus "wearable in the builder") follows you to other devices, the
+    // same bridge the rave runs — a creator's own item shouldn't be stuck local
+    try {
+      const own = catOwned(); const st = catStats();
+      Object.keys(own).forEach((id) => { if (/^c_/.test(id) && !((st['own_' + id] || 0) > 0)) passStat('own_' + id, 1); });
+    } catch (e) {}
+    CATALOG.slice().sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
+      const art = (catCustom(it.id) || {}).art;
+      const name = it.title || 'community item';
+      const credit = it.by ? ' — by ' + it.by : '';
+      if (!ownsCatalog(it.id)) {
+        const a = document.createElement('a');
+        a.className = 'bb-chip bb-chip--icon bb-chip--locked';
+        a.href = '/rave/'; a.dataset.place = 'builder-locked';
+        a.innerHTML = chipArt(art) || name;
+        a.title = name + credit + ' — catch it at the rave';
+        a.setAttribute('aria-label', name + ' (locked — catch it at the rave)');
+        host.appendChild(a);
+        return;
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'bb-chip bb-chip--icon';
+      b.innerHTML = chipArt(art) || name;
+      b.dataset.val = it.id;
+      b.title = name + credit;
+      b.setAttribute('aria-label', name + credit);
+      b.onclick = () => { state.c = (state.c === it.id ? '' : it.id); onState(); };
+      host.appendChild(b);
+    });
+    trayify('bbCatalogChips');
+  }
+  fetch(CATALOG_URL)
+    .then((r) => (r.ok ? r.json() : []))
+    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); onState(); } })
+    .catch(() => { /* offline/blocked: the row just stays hidden */ });
 
   // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
   // PROXIES of the tray chips — clicks delegate to the real buttons, so every
@@ -713,13 +789,14 @@ function init() {
     if (state.spd !== BASE_CYCLE_S) p.set('s', state.spd);
     if (state.frame !== 0) p.set('f', state.frame);
     history.replaceState(null, '', p.toString() ? '?' + p.toString() : location.pathname);
-    // the rave (and future shelf) greet you with your latest banana. Fields the
-    // builder doesn't manage (the caught community item `c`) are PRESERVED —
-    // a builder visit must never silently undress a rave catch.
+    // the rave (and future shelf) greet you with your latest banana. The
+    // community item `c` is now MANAGED here too (the Club-drops row) — but it's
+    // always LOADED from bb-last first (below), so writing it back can never
+    // silently undress a rave catch; removing it in the row is a deliberate act.
     try {
       let prev = {};
       try { prev = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e2) {}
-      localStorage.setItem('bb-last', JSON.stringify({ ...prev, hat: state.hat, glasses: state.glasses, extras: state.extras, effect: state.effect }));
+      localStorage.setItem('bb-last', JSON.stringify({ ...prev, hat: state.hat, glasses: state.glasses, extras: state.extras, effect: state.effect, c: state.c || '' }));
     } catch (e) {}
   }
   function load() {
@@ -745,6 +822,13 @@ function init() {
         }
       } catch (e) {}
     }
+    // the community drop `c` always loads from bb-last (owned-gated), even with
+    // URL outfit params — a shared link must never undress your caught item, and
+    // it shows SELECTED in the Club-drops row so you can keep it or swap it off.
+    try {
+      const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
+      if (bl.c && ownsCatalog(bl.c)) state.c = bl.c;
+    } catch (e) {}
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
     if (hasOutfitParams) { // URL outfits win; a paramless open keeps the bb-last seed above
@@ -871,6 +955,7 @@ function init() {
       document.querySelectorAll('#' + host + ' .bb-chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.val === state[key]));
     });
     document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
+    document.querySelectorAll('#bbCatalogChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!c.dataset.val && c.dataset.val === state.c)));
     const anyFeet = FEET_DEFS.some((d) => state.extras[d.id]); // 'none' lights up when no shoe is worn
     document.querySelectorAll('#bbFeetChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
     document.querySelectorAll('#bbBodyChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.body])));
