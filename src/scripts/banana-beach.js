@@ -1868,6 +1868,13 @@ function init() {
   }
 
   const stallPanel = document.getElementById('bhStallPanel');
+  // 🛑 the stall panel is a full-view modal — NOTHING tapped inside it (a duck,
+  // a crab, the grabber) may reach the world beneath, or the same tap walks your
+  // banana off to where you clicked "on the map" and can open another stall.
+  // The .bh-panel guard in the view CLICK handler catches mouse clicks, but a
+  // touch fires pointer events too — stop them all at the panel to be sure.
+  ['click', 'pointerdown', 'pointerup', 'touchstart'].forEach((ev) =>
+    stallPanel.addEventListener(ev, (e) => e.stopPropagation()));
   const stallName = document.getElementById('bhStallName');
   const stallTickets = document.getElementById('bhStallTickets');
   const stallBody = document.getElementById('bhStallBody');
