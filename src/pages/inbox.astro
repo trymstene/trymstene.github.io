@@ -788,12 +788,18 @@ const description = 'Authorized banana personnel only.';
       const fmt = (t) => new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       const live = new Set(d.live || []);
       el('bmRaveList').innerHTML =
-        '<p class="bm-count">' + (d.live || []).length + ' named on the floor now · ' + (d.names || []).length + ' seen · ' + (d.strikes || []).length + ' struck</p>'
+        '<p class="bm-count">' + (d.live || []).length + ' named on the floor now · ' + (d.names || []).length + ' visitors seen · ' + (d.strikes || []).length + ' struck</p>'
         + ((d.strikes || []).length
           ? '<p class="bm-livenote">🔨 struck: ' + d.strikes.map((s) => rEsc(s) + ' <button class="bm-chip bm-chip--ghost" data-unstrike="' + rEsc(s) + '">undo</button>').join(' · ') + '</p>'
           : '')
-        + (d.names || []).map((x) => '<div class="bm-bar" style="justify-content:space-between;">'
-          + '<span>' + (live.has(x.n) ? '🟢 ' : '') + '<b>' + rEsc(x.n) + '</b> <span style="opacity:0.55;font-size:0.75rem;">' + fmt(x.at) + '</span></span>'
+        // ONE ROW PER VISITOR (keyed by sid on the worker) — a renamer no longer
+        // spams the list; ×N flags a name-cycler, and their past names still show
+        + (d.names || []).map((x) => '<div class="bm-bar" style="justify-content:space-between;align-items:flex-start;">'
+          + '<span>' + (live.has(x.n) ? '🟢 ' : '') + '<b>' + rEsc(x.n) + '</b> '
+          + (x.count > 1 ? '<span style="background:#ffe135;color:#111;font-weight:800;font-size:0.6rem;padding:1px 5px;border-radius:2px;vertical-align:middle;">×' + x.count + ' names</span> ' : '')
+          + '<span style="opacity:0.55;font-size:0.75rem;">' + fmt(x.at) + '</span>'
+          + ((x.vars && x.vars.length) ? '<br><span style="opacity:0.5;font-size:0.72rem;">also tried: ' + x.vars.map(rEsc).join(' · ') + '</span>' : '')
+          + '</span>'
           + '<button class="bm-chip" data-strike="' + rEsc(x.n) + '">🔨 strike</button></div>').join('')
         || '<p class="bm-livenote">No names seen yet — the floor is all outfit-names so far.</p>';
       el('bmRaveList').querySelectorAll('[data-strike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.strike, false); });

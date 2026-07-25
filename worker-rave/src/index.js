@@ -345,8 +345,11 @@ export class RaveRoom {
         if (!b.remove) this.scrubName(frag); // the QUICK SWIPE: live floor scrub
         return new Response(JSON.stringify({ ok: true, strikes: next }));
       }
-      const seen = (await this.state.storage.get('namesSeen')) || {};
-      const names = Object.entries(seen).sort((a, b) => b[1] - a[1]).map(([n, at]) => ({ n, at }));
+      const seen = (await this.state.storage.get('namesBySid')) || {};
+      const names = Object.values(seen).sort((a, b) => b.at - a.at).map((u) => ({
+        n: u.name, at: u.at, count: u.n || 1,
+        vars: (u.vars || []).filter((v) => normName(v) !== normName(u.name)).slice(0, 5),
+      }));
       const live = this.roster().filter((a) => a.name).map((a) => a.name);
       return new Response(JSON.stringify({ live, names, strikes }));
     }
@@ -431,7 +434,7 @@ export class RaveRoom {
       const itemWin = (await this.state.storage.get('itemWin')) ?? null;
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(strip), beerWin, vinylWin, sauceWin, cocktailWin, goldWin, itemWin }));
       this.broadcast({ t: 'join', p: strip(p) }, ws);
-      if (p.name) this.recordName(p.name); // the Banana Mail names-desk ledger
+      if (p.name) this.recordName(p.sid, p.name); // the Banana Mail names-desk ledger
       return;
     }
 
@@ -648,7 +651,7 @@ export class RaveRoom {
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       const strikes = (await this.state.storage.get('nameStrikes')) || [];
       me.name = sanitizeName(msg.name !== undefined ? msg.name : me.name, strikes);
-      if (me.name) this.recordName(me.name);
+      if (me.name) this.recordName(me.sid, me.name);
       me.outfit = sanitizeOutfit(msg.outfit);
       if (msg.sober) { me.beer = false; me.fx = undefined; } // the water: a clean slate is a CLEAN slate
       if (me.beer) me.outfit.extras.beer = true; // the beer survives a wardrobe change
@@ -671,14 +674,23 @@ export class RaveRoom {
     }
   }
 
-  // rolling ledger of names seen on the floor (for the Banana Mail desk) —
-  // capped, newest-first, no other data attached
-  async recordName(name) {
+  // rolling ledger of names seen on the floor (for the Banana Mail desk).
+  // ⚠️ Keyed by SID, not by the name string — a visitor who renames is the SAME
+  // visitor (the sid survives renames + reconnects), so one row per person, not
+  // one per name. We keep the current name, a count of genuinely different names
+  // they've worn, and the recent variations (a name-cycler is a moderation
+  // signal, and the previous names still get a look). Capped to 300 visitors.
+  async recordName(sid, name) {
+    if (!sid || !name) return;
     try {
-      const seen = (await this.state.storage.get('namesSeen')) || {};
-      seen[name] = Date.now();
-      const entries = Object.entries(seen).sort((a, b) => b[1] - a[1]).slice(0, 300);
-      await this.state.storage.put('namesSeen', Object.fromEntries(entries));
+      const seen = (await this.state.storage.get('namesBySid')) || {};
+      const cur = seen[sid] || { name: '', at: 0, n: 0, vars: [] };
+      const fresh = normName(name) !== normName(cur.name); // a real change, not re-decoration
+      let vars = cur.vars || [];
+      if (fresh && cur.name) vars = [cur.name, ...vars.filter((v) => normName(v) !== normName(cur.name))].slice(0, 6);
+      seen[sid] = { name, at: Date.now(), n: (cur.n || 0) + (fresh ? 1 : 0), vars };
+      const entries = Object.entries(seen).sort((a, b) => b[1].at - a[1].at).slice(0, 300);
+      await this.state.storage.put('namesBySid', Object.fromEntries(entries));
     } catch (e) {}
   }
 

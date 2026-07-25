@@ -817,7 +817,9 @@ function initSync() {
   const note = el('psSyncNote');
   const showLinked = () => {
     box.classList.add('ps-sync--linked');
-    el('psSyncLead').innerHTML = '<b>🔐 Pass saved.</b> Open <a href="/pass/">trymstene.com/pass</a> on any device, tap “I already have a pass”, and everything follows you.';
+    const title = el('psSyncTitle');
+    if (title) title.textContent = '🔐 Pass saved';
+    el('psSyncLead').innerHTML = 'Your login is set. Open <a href="/pass/">trymstene.com/pass</a> on any device, tap “I already have a pass”, and everything follows you.';
     note.textContent = '';
   };
   if (linked()) { showLinked(); return; }
