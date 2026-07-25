@@ -13,7 +13,7 @@ export const SITE = 'https://trymstene.com';
 // currency (most traffic is international/US; Shopify still charges each buyer
 // their own market currency at checkout).
 const QUERY = `query @inContext(country: US) { products(first: 50) { edges { node {
-  handle title descriptionHtml productType
+  handle title descriptionHtml productType tags
   featuredImage { url altText }
   images(first: 30) { edges { node { url altText } } }
   options { name values }
@@ -173,6 +173,20 @@ function model(node) {
 // broken image and all, since custom products have no Shopify product photos).
 const BUILDER_ONLY = new Set(['custom-banana-sticker', 'custom-banana-magnet', 'custom-banana-tee']);
 
+// The per-order checkout worker mints a temp product PER custom order — same
+// template title ("Custom Banana Tee"…) but a Shopify-suffixed handle
+// (custom-banana-tee-2…) and tagged 'custom-temp'. It's published to Headless
+// so the custom-checkout cart can read it, which means the shop build reads it
+// too. These MUST be excluded or every recent order shows up as a shop product.
+// Filter on the tag (canonical marker, also what the 72h cron sweep keys off),
+// plus the suffixed handle as a fallback in case a tag ever goes missing.
+function isCustom(node) {
+  if ((node.tags || []).includes('custom-temp')) return true;
+  if (BUILDER_ONLY.has(node.handle)) return true;
+  for (const h of BUILDER_ONLY) if (node.handle.startsWith(h + '-')) return true;
+  return false;
+}
+
 let _cache;
 export async function getProducts() {
   if (_cache) return _cache;
@@ -184,6 +198,6 @@ export async function getProducts() {
   if (!res.ok) throw new Error(`Shopify Storefront API ${res.status} at build time`);
   const json = await res.json();
   const nodes = (((json.data || {}).products || {}).edges || []).map((e) => e.node);
-  _cache = nodes.filter((n) => !BUILDER_ONLY.has(n.handle)).map(model);
+  _cache = nodes.filter((n) => !isCustom(n)).map(model);
   return _cache;
 }
