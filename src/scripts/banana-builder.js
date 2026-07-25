@@ -300,10 +300,12 @@ function init() {
   }
   ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
 
-  // 🎁 THE CLUB DROPS ROW — the community catalog, rendered once the manifest
-  // lands. Owned = a wearable chip; unearned = a locked DOOR to the rave (the
-  // aspiration: you SEE the item, so you know it's out there to catch). The row
-  // hides itself entirely when the catalog is empty.
+  // 🎁 THE COMMUNITY ROW — visitor-made wearables (the catalog), rendered once
+  // the manifest lands. Owned = a wearable chip; unearned = a locked DOOR to
+  // where they drop (the aspiration: you SEE the item, so you know it's out
+  // there to catch). ⚠️ NAMING: "Community" is place-agnostic ON PURPOSE — these
+  // drop across the whole world (rave now, everywhere soon), so the category
+  // must NOT borrow one place's name ("Club"). The row hides when empty.
   function renderCatalog() {
     const host = el('bbCatalogChips');
     if (!host) return;
@@ -790,7 +792,7 @@ function init() {
     if (state.frame !== 0) p.set('f', state.frame);
     history.replaceState(null, '', p.toString() ? '?' + p.toString() : location.pathname);
     // the rave (and future shelf) greet you with your latest banana. The
-    // community item `c` is now MANAGED here too (the Club-drops row) — but it's
+    // community item `c` is now MANAGED here too (the Community row) — but it's
     // always LOADED from bb-last first (below), so writing it back can never
     // silently undress a rave catch; removing it in the row is a deliberate act.
     try {
@@ -824,7 +826,7 @@ function init() {
     }
     // the community drop `c` always loads from bb-last (owned-gated), even with
     // URL outfit params — a shared link must never undress your caught item, and
-    // it shows SELECTED in the Club-drops row so you can keep it or swap it off.
+    // it shows SELECTED in the Community row so you can keep it or swap it off.
     try {
       const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
       if (bl.c && ownsCatalog(bl.c)) state.c = bl.c;
