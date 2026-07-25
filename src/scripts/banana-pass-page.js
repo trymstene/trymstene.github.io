@@ -307,7 +307,7 @@ async function init() {
           else if (def.hat) outfit.hat = (outfit.hat === def.hat ? 'none' : def.hat);
           else if (def.glasses) outfit.glasses = (outfit.glasses === def.glasses ? 'none' : def.glasses);
           saveOutfit();
-          el('psName').textContent = autoName(outfit);
+          renderName(); // honor a custom pass name; don't clobber it with autoName
           lastIdx = -1; // the signature banana redraws on its next frame
           renderGear();
           if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: isWorn() });

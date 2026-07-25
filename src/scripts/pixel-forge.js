@@ -1002,7 +1002,7 @@ function init() {
       track('forge_png_export', { size: Math.max(state.w, state.h), px });
     }, 'image/png');
   }
-  document.querySelectorAll('.fg-exp').forEach((b) => {
+  document.querySelectorAll('.fg-exprow .fg-exp').forEach((b) => {
     b.onclick = async () => {
       const label = b.textContent;
       b.disabled = true; b.textContent = 'Forging…';
