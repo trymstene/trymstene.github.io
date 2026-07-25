@@ -9,6 +9,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { seedRand, presenceRoom, poofInto } from '../lib/world.js';
+import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
 // tools/build-beach-scene.py, which declares each collider on the place()
 // call that draws the prop. Never hand-copy a coordinate in here again: the
@@ -73,9 +74,12 @@ function init() {
   let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
   try {
     const o = JSON.parse(localStorage.getItem('bb-last') || 'null');
-    if (o) myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {} };
+    if (o) myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {}, c: o.c };
   } catch (e) {}
   const ME_DRAW = { ...myOutfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
+  // 🎁 a caught community item lives in outfit.c — pull the catalog so it renders
+  // on the beach (self + peers), then redraw once it lands (never-cache-a-miss)
+  loadCatalog().then(() => { try { lastKey = -1; drawMe(); peers.forEach((p) => drawPeer(p, true)); } catch (e) {} });
   // 🏴‍☠️ CAPTAIN SPLIT — the pirate tricorn and eye patch are the job title.
   // He used to wear a bucket hat and a snorkel, which read as a holidaymaker,
   // and he ran a shell-trading post 500px from Shelly's shell board — two
@@ -2971,7 +2975,7 @@ function init() {
     if (key === lastKey) return;
     lastKey = key;
     const sub = q / 40;
-    drawComposite(meCtx, CV, f, ME_DRAW);
+    drawComposite(meCtx, CV, f, { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
     applySubmerge(meCtx, sub, f * 0.9);
     meEl.classList.toggle('is-wet', q > 0);
     meEl.style.setProperty('--wet', ((CV - (FEET_CV - sub * BODY_CV)) / 1.5).toFixed(1));
@@ -3082,7 +3086,7 @@ function init() {
   const lastSent = { x: -1, y: -1, sit: null };
   let bayName = '';
   try { bayName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
-  const myBayOutfit = () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: ME_DRAW.extras || {} });
+  const myBayOutfit = () => fullOutfit(ME_DRAW); // {hat, glasses, extras, c} — carries the community slot
   function refreshCrowd() {
     if (crowdEl) crowdEl.textContent = peers.size ? '🏖 ' + (peers.size + 1) + ' on the beach' : '';
   }
@@ -3118,6 +3122,7 @@ function init() {
     const sub = q / 40;
     drawComposite(p.ctx, CV, f, {
       ...p.outfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+      custom: p.outfit && p.outfit.c ? catCustom(p.outfit.c) : undefined,
     });
     applySubmerge(p.ctx, sub, f * 0.9);
     p.el.classList.toggle('is-wet', q > 0);
