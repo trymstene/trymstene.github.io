@@ -292,7 +292,6 @@ const JELLY_RAINBOW_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" x
 // flops in place of your banana for the fx duration. 17x11 pixel sprite.
 const FISH_SVG = '<svg viewBox="0 0 32 19" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="0" width="3" height="1" fill="#ffe135"/><rect x="13" y="1" width="3" height="1" fill="#ffe135"/><rect x="16" y="1" width="1" height="1" fill="#e0a428"/><rect x="17" y="1" width="1" height="1" fill="#ffe135"/><rect x="12" y="2" width="3" height="1" fill="#ffe135"/><rect x="15" y="2" width="2" height="1" fill="#e0a428"/><rect x="17" y="2" width="1" height="1" fill="#ffe135"/><rect x="8" y="3" width="4" height="1" fill="#111111"/><rect x="12" y="3" width="2" height="1" fill="#ffe135"/><rect x="14" y="3" width="2" height="1" fill="#e0a428"/><rect x="16" y="3" width="1" height="1" fill="#ffe135"/><rect x="17" y="3" width="2" height="1" fill="#111111"/><rect x="6" y="4" width="2" height="1" fill="#111111"/><rect x="8" y="4" width="4" height="1" fill="#4db8ff"/><rect x="12" y="4" width="1" height="1" fill="#111111"/><rect x="13" y="4" width="1" height="1" fill="#ffe135"/><rect x="14" y="4" width="1" height="1" fill="#e0a428"/><rect x="15" y="4" width="1" height="1" fill="#ffe135"/><rect x="16" y="4" width="1" height="1" fill="#111111"/><rect x="17" y="4" width="2" height="1" fill="#4db8ff"/><rect x="19" y="4" width="2" height="1" fill="#111111"/><rect x="5" y="5" width="1" height="1" fill="#111111"/><rect x="6" y="5" width="7" height="1" fill="#4db8ff"/><rect x="13" y="5" width="3" height="1" fill="#111111"/><rect x="16" y="5" width="5" height="1" fill="#4db8ff"/><rect x="21" y="5" width="1" height="1" fill="#111111"/><rect x="26" y="5" width="2" height="1" fill="#111111"/><rect x="4" y="6" width="1" height="1" fill="#111111"/><rect x="5" y="6" width="2" height="1" fill="#4db8ff"/><rect x="7" y="6" width="5" height="1" fill="#f0f0fa"/><rect x="12" y="6" width="10" height="1" fill="#4db8ff"/><rect x="22" y="6" width="1" height="1" fill="#111111"/><rect x="25" y="6" width="1" height="1" fill="#111111"/><rect x="26" y="6" width="2" height="1" fill="#2f8fe0"/><rect x="28" y="6" width="1" height="1" fill="#111111"/><rect x="3" y="7" width="1" height="1" fill="#111111"/><rect x="4" y="7" width="1" height="1" fill="#4db8ff"/><rect x="5" y="7" width="9" height="1" fill="#f0f0fa"/><rect x="14" y="7" width="9" height="1" fill="#4db8ff"/><rect x="23" y="7" width="1" height="1" fill="#111111"/><rect x="25" y="7" width="1" height="1" fill="#111111"/><rect x="26" y="7" width="3" height="1" fill="#2f8fe0"/><rect x="29" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="8" width="1" height="1" fill="#111111"/><rect x="3" y="8" width="1" height="1" fill="#4db8ff"/><rect x="4" y="8" width="3" height="1" fill="#f0f0fa"/><rect x="7" y="8" width="4" height="1" fill="#111111"/><rect x="11" y="8" width="3" height="1" fill="#f0f0fa"/><rect x="14" y="8" width="9" height="1" fill="#4db8ff"/><rect x="23" y="8" width="2" height="1" fill="#111111"/><rect x="25" y="8" width="4" height="1" fill="#2f8fe0"/><rect x="29" y="8" width="1" height="1" fill="#111111"/><rect x="1" y="9" width="1" height="1" fill="#111111"/><rect x="2" y="9" width="1" height="1" fill="#4db8ff"/><rect x="3" y="9" width="3" height="1" fill="#f0f0fa"/><rect x="6" y="9" width="6" height="1" fill="#111111"/><rect x="12" y="9" width="2" height="1" fill="#f0f0fa"/><rect x="14" y="9" width="9" height="1" fill="#4db8ff"/><rect x="23" y="9" width="1" height="1" fill="#2f8fe0"/><rect x="24" y="9" width="1" height="1" fill="#111111"/><rect x="25" y="9" width="5" height="1" fill="#2f8fe0"/><rect x="30" y="9" width="1" height="1" fill="#111111"/><rect x="1" y="10" width="1" height="1" fill="#111111"/><rect x="2" y="10" width="1" height="1" fill="#4db8ff"/><rect x="3" y="10" width="3" height="1" fill="#f0f0fa"/><rect x="6" y="10" width="6" height="1" fill="#111111"/><rect x="12" y="10" width="2" height="1" fill="#f0f0fa"/><rect x="14" y="10" width="8" height="1" fill="#4db8ff"/><rect x="22" y="10" width="2" height="1" fill="#2f8fe0"/><rect x="24" y="10" width="1" height="1" fill="#111111"/><rect x="25" y="10" width="5" height="1" fill="#2f8fe0"/><rect x="30" y="10" width="1" height="1" fill="#111111"/><rect x="0" y="11" width="1" height="1" fill="#111111"/><rect x="1" y="11" width="2" height="1" fill="#4db8ff"/><rect x="3" y="11" width="3" height="1" fill="#f0f0fa"/><rect x="6" y="11" width="6" height="1" fill="#111111"/><rect x="12" y="11" width="2" height="1" fill="#f0f0fa"/><rect x="14" y="11" width="7" height="1" fill="#4db8ff"/><rect x="21" y="11" width="3" height="1" fill="#2f8fe0"/><rect x="24" y="11" width="1" height="1" fill="#111111"/><rect x="25" y="11" width="5" height="1" fill="#2f8fe0"/><rect x="30" y="11" width="1" height="1" fill="#111111"/><rect x="0" y="12" width="1" height="1" fill="#111111"/><rect x="1" y="12" width="1" height="1" fill="#4db8ff"/><rect x="2" y="12" width="1" height="1" fill="#111111"/><rect x="3" y="12" width="4" height="1" fill="#f0f0fa"/><rect x="7" y="12" width="2" height="1" fill="#111111"/><rect x="9" y="12" width="4" height="1" fill="#f0f0fa"/><rect x="13" y="12" width="8" height="1" fill="#4db8ff"/><rect x="21" y="12" width="3" height="1" fill="#2f8fe0"/><rect x="24" y="12" width="1" height="1" fill="#111111"/><rect x="25" y="12" width="4" height="1" fill="#2f8fe0"/><rect x="29" y="12" width="1" height="1" fill="#111111"/><rect x="0" y="13" width="1" height="1" fill="#111111"/><rect x="1" y="13" width="2" height="1" fill="#4db8ff"/><rect x="3" y="13" width="9" height="1" fill="#f0f0fa"/><rect x="12" y="13" width="4" height="1" fill="#4db8ff"/><rect x="16" y="13" width="3" height="1" fill="#111111"/><rect x="19" y="13" width="2" height="1" fill="#4db8ff"/><rect x="21" y="13" width="3" height="1" fill="#2f8fe0"/><rect x="24" y="13" width="1" height="1" fill="#111111"/><rect x="25" y="13" width="4" height="1" fill="#2f8fe0"/><rect x="29" y="13" width="1" height="1" fill="#111111"/><rect x="0" y="14" width="1" height="1" fill="#111111"/><rect x="1" y="14" width="1" height="1" fill="#4db8ff"/><rect x="2" y="14" width="2" height="1" fill="#111111"/><rect x="4" y="14" width="11" height="1" fill="#4db8ff"/><rect x="15" y="14" width="1" height="1" fill="#111111"/><rect x="16" y="14" width="3" height="1" fill="#78ebff"/><rect x="19" y="14" width="1" height="1" fill="#111111"/><rect x="20" y="14" width="4" height="1" fill="#2f8fe0"/><rect x="24" y="14" width="1" height="1" fill="#111111"/><rect x="25" y="14" width="3" height="1" fill="#2f8fe0"/><rect x="28" y="14" width="1" height="1" fill="#111111"/><rect x="1" y="15" width="1" height="1" fill="#111111"/><rect x="2" y="15" width="2" height="1" fill="#4db8ff"/><rect x="4" y="15" width="3" height="1" fill="#111111"/><rect x="7" y="15" width="8" height="1" fill="#4db8ff"/><rect x="15" y="15" width="1" height="1" fill="#111111"/><rect x="16" y="15" width="2" height="1" fill="#78ebff"/><rect x="18" y="15" width="1" height="1" fill="#111111"/><rect x="19" y="15" width="5" height="1" fill="#2f8fe0"/><rect x="24" y="15" width="1" height="1" fill="#111111"/><rect x="25" y="15" width="2" height="1" fill="#2f8fe0"/><rect x="27" y="15" width="1" height="1" fill="#111111"/><rect x="2" y="16" width="1" height="1" fill="#111111"/><rect x="3" y="16" width="5" height="1" fill="#4db8ff"/><rect x="8" y="16" width="7" height="1" fill="#78ebff"/><rect x="15" y="16" width="3" height="1" fill="#111111"/><rect x="18" y="16" width="5" height="1" fill="#2f8fe0"/><rect x="23" y="16" width="2" height="1" fill="#111111"/><rect x="25" y="16" width="1" height="1" fill="#2f8fe0"/><rect x="26" y="16" width="1" height="1" fill="#111111"/><rect x="3" y="17" width="2" height="1" fill="#111111"/><rect x="5" y="17" width="2" height="1" fill="#4db8ff"/><rect x="7" y="17" width="7" height="1" fill="#78ebff"/><rect x="14" y="17" width="6" height="1" fill="#2f8fe0"/><rect x="20" y="17" width="3" height="1" fill="#111111"/><rect x="25" y="17" width="1" height="1" fill="#111111"/><rect x="5" y="18" width="4" height="1" fill="#111111"/><rect x="9" y="18" width="3" height="1" fill="#78ebff"/><rect x="12" y="18" width="4" height="1" fill="#2f8fe0"/><rect x="16" y="18" width="4" height="1" fill="#111111"/></svg>';
 const MEGA_JELLY_SVG = '<svg viewBox="0 0 28 23" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="0" width="8" height="1" fill="#111111"/><rect x="7" y="1" width="3" height="1" fill="#111111"/><rect x="10" y="1" width="8" height="1" fill="#ff4d9d"/><rect x="18" y="1" width="3" height="1" fill="#111111"/><rect x="5" y="2" width="2" height="1" fill="#111111"/><rect x="7" y="2" width="14" height="1" fill="#ff4d9d"/><rect x="21" y="2" width="2" height="1" fill="#111111"/><rect x="4" y="3" width="1" height="1" fill="#111111"/><rect x="5" y="3" width="2" height="1" fill="#ff4d9d"/><rect x="7" y="3" width="2" height="1" fill="#ff8ec4"/><rect x="9" y="3" width="14" height="1" fill="#ff4d9d"/><rect x="23" y="3" width="1" height="1" fill="#111111"/><rect x="3" y="4" width="1" height="1" fill="#111111"/><rect x="4" y="4" width="1" height="1" fill="#ff4d9d"/><rect x="5" y="4" width="2" height="1" fill="#ff8ec4"/><rect x="7" y="4" width="2" height="1" fill="#f0f0fa"/><rect x="9" y="4" width="2" height="1" fill="#ff8ec4"/><rect x="11" y="4" width="13" height="1" fill="#ff4d9d"/><rect x="24" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="1" height="1" fill="#111111"/><rect x="3" y="5" width="1" height="1" fill="#ff4d9d"/><rect x="4" y="5" width="2" height="1" fill="#ff8ec4"/><rect x="6" y="5" width="4" height="1" fill="#f0f0fa"/><rect x="10" y="5" width="2" height="1" fill="#ff8ec4"/><rect x="12" y="5" width="13" height="1" fill="#ff4d9d"/><rect x="25" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#111111"/><rect x="3" y="6" width="1" height="1" fill="#ff4d9d"/><rect x="4" y="6" width="1" height="1" fill="#ff8ec4"/><rect x="5" y="6" width="4" height="1" fill="#f0f0fa"/><rect x="9" y="6" width="2" height="1" fill="#ff8ec4"/><rect x="11" y="6" width="14" height="1" fill="#ff4d9d"/><rect x="25" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="7" width="2" height="1" fill="#ff8ec4"/><rect x="5" y="7" width="3" height="1" fill="#f0f0fa"/><rect x="8" y="7" width="2" height="1" fill="#ff8ec4"/><rect x="10" y="7" width="16" height="1" fill="#ff4d9d"/><rect x="26" y="7" width="1" height="1" fill="#111111"/><rect x="1" y="8" width="1" height="1" fill="#111111"/><rect x="2" y="8" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="8" width="2" height="1" fill="#ff8ec4"/><rect x="5" y="8" width="2" height="1" fill="#f0f0fa"/><rect x="7" y="8" width="2" height="1" fill="#ff8ec4"/><rect x="9" y="8" width="12" height="1" fill="#ff4d9d"/><rect x="21" y="8" width="2" height="1" fill="#f0f0fa"/><rect x="23" y="8" width="3" height="1" fill="#ff4d9d"/><rect x="26" y="8" width="1" height="1" fill="#111111"/><rect x="1" y="9" width="1" height="1" fill="#111111"/><rect x="2" y="9" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="9" width="5" height="1" fill="#ff8ec4"/><rect x="8" y="9" width="12" height="1" fill="#ff4d9d"/><rect x="20" y="9" width="2" height="1" fill="#f0f0fa"/><rect x="22" y="9" width="4" height="1" fill="#ff4d9d"/><rect x="26" y="9" width="1" height="1" fill="#111111"/><rect x="0" y="10" width="1" height="1" fill="#111111"/><rect x="1" y="10" width="2" height="1" fill="#ff4d9d"/><rect x="3" y="10" width="4" height="1" fill="#ff8ec4"/><rect x="7" y="10" width="20" height="1" fill="#ff4d9d"/><rect x="27" y="10" width="1" height="1" fill="#111111"/><rect x="0" y="11" width="1" height="1" fill="#111111"/><rect x="1" y="11" width="2" height="1" fill="#ff4d9d"/><rect x="3" y="11" width="3" height="1" fill="#ff8ec4"/><rect x="6" y="11" width="21" height="1" fill="#ff4d9d"/><rect x="27" y="11" width="1" height="1" fill="#111111"/><rect x="0" y="12" width="1" height="1" fill="#111111"/><rect x="1" y="12" width="2" height="1" fill="#ff4d9d"/><rect x="3" y="12" width="2" height="1" fill="#ff8ec4"/><rect x="5" y="12" width="22" height="1" fill="#ff4d9d"/><rect x="27" y="12" width="1" height="1" fill="#111111"/><rect x="0" y="13" width="1" height="1" fill="#111111"/><rect x="1" y="13" width="26" height="1" fill="#ff4d9d"/><rect x="27" y="13" width="1" height="1" fill="#111111"/><rect x="0" y="14" width="1" height="1" fill="#111111"/><rect x="1" y="14" width="1" height="1" fill="#c62c74"/><rect x="2" y="14" width="24" height="1" fill="#ff4d9d"/><rect x="26" y="14" width="1" height="1" fill="#c62c74"/><rect x="27" y="14" width="1" height="1" fill="#111111"/><rect x="0" y="15" width="1" height="1" fill="#111111"/><rect x="1" y="15" width="2" height="1" fill="#c62c74"/><rect x="3" y="15" width="22" height="1" fill="#ff4d9d"/><rect x="25" y="15" width="2" height="1" fill="#c62c74"/><rect x="27" y="15" width="1" height="1" fill="#111111"/><rect x="0" y="16" width="1" height="1" fill="#111111"/><rect x="1" y="16" width="3" height="1" fill="#c62c74"/><rect x="4" y="16" width="20" height="1" fill="#ff4d9d"/><rect x="24" y="16" width="3" height="1" fill="#c62c74"/><rect x="27" y="16" width="1" height="1" fill="#111111"/><rect x="1" y="17" width="1" height="1" fill="#111111"/><rect x="2" y="17" width="3" height="1" fill="#c62c74"/><rect x="5" y="17" width="18" height="1" fill="#ff4d9d"/><rect x="23" y="17" width="3" height="1" fill="#c62c74"/><rect x="26" y="17" width="1" height="1" fill="#111111"/><rect x="1" y="18" width="1" height="1" fill="#111111"/><rect x="2" y="18" width="1" height="1" fill="#8e1b52"/><rect x="3" y="18" width="4" height="1" fill="#c62c74"/><rect x="7" y="18" width="14" height="1" fill="#ff4d9d"/><rect x="21" y="18" width="4" height="1" fill="#c62c74"/><rect x="25" y="18" width="1" height="1" fill="#8e1b52"/><rect x="26" y="18" width="1" height="1" fill="#111111"/><rect x="2" y="19" width="1" height="1" fill="#111111"/><rect x="3" y="19" width="1" height="1" fill="#8e1b52"/><rect x="4" y="19" width="20" height="1" fill="#c62c74"/><rect x="24" y="19" width="1" height="1" fill="#8e1b52"/><rect x="25" y="19" width="1" height="1" fill="#111111"/><rect x="1" y="20" width="1" height="1" fill="#111111"/><rect x="2" y="20" width="1" height="1" fill="#8e1b52"/><rect x="3" y="20" width="2" height="1" fill="#c62c74"/><rect x="5" y="20" width="1" height="1" fill="#8e1b52"/><rect x="6" y="20" width="2" height="1" fill="#111111"/><rect x="8" y="20" width="12" height="1" fill="#c62c74"/><rect x="20" y="20" width="2" height="1" fill="#111111"/><rect x="22" y="20" width="1" height="1" fill="#8e1b52"/><rect x="23" y="20" width="2" height="1" fill="#c62c74"/><rect x="25" y="20" width="1" height="1" fill="#8e1b52"/><rect x="26" y="20" width="1" height="1" fill="#111111"/><rect x="0" y="21" width="1" height="1" fill="#111111"/><rect x="1" y="21" width="1" height="1" fill="#8e1b52"/><rect x="2" y="21" width="2" height="1" fill="#c62c74"/><rect x="4" y="21" width="1" height="1" fill="#8e1b52"/><rect x="5" y="21" width="1" height="1" fill="#111111"/><rect x="8" y="21" width="1" height="1" fill="#111111"/><rect x="9" y="21" width="1" height="1" fill="#8e1b52"/><rect x="10" y="21" width="8" height="1" fill="#c62c74"/><rect x="18" y="21" width="1" height="1" fill="#8e1b52"/><rect x="19" y="21" width="1" height="1" fill="#111111"/><rect x="22" y="21" width="1" height="1" fill="#111111"/><rect x="23" y="21" width="1" height="1" fill="#8e1b52"/><rect x="24" y="21" width="2" height="1" fill="#c62c74"/><rect x="26" y="21" width="1" height="1" fill="#8e1b52"/><rect x="27" y="21" width="1" height="1" fill="#111111"/><rect x="1" y="22" width="4" height="1" fill="#111111"/><rect x="9" y="22" width="10" height="1" fill="#111111"/><rect x="23" y="22" width="4" height="1" fill="#111111"/></svg>';
-const STOOL_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="0" width="6" height="1" fill="#111111"/><rect x="0" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="1" width="6" height="1" fill="#8a5a2b"/><rect x="7" y="1" width="1" height="1" fill="#111111"/><rect x="1" y="2" width="6" height="1" fill="#111111"/><rect x="1" y="3" width="1" height="1" fill="#111111"/><rect x="2" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="3" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="1" y="4" width="1" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="4" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="4" height="1" fill="#8a5a2b"/><rect x="6" y="5" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="1" height="1" fill="#111111"/><rect x="2" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="6" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="1" height="1" fill="#111111"/><rect x="2" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="5" y="7" width="1" height="1" fill="#8a5a2b"/><rect x="6" y="7" width="1" height="1" fill="#111111"/></svg>';
 // THE MENU (Trym-approved list, 7 Jul): 10 conveyor items + 8 counter
 // drinks — sprites authored in tools/floor-items-2.py on the banana grid.
 const MENU_SVGS = {
@@ -773,17 +772,15 @@ function init() {
     e.preventDefault(); // arrows must not scroll the hall
     keysDown.add(k);
     walkTarget = null;
-    sitting = false; pendingSit = false; // any step stands you up
   });
   addEventListener('keyup', (e) => { const k = KEYMAP[e.key]; if (k) keysDown.delete(k); });
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led') || e.target.closest('.rv-exitdoor') || e.target.closest('.rv-stagepop')) return; // buttons, the quest chip, the JELLY meter, the LED strip + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-exitdoor') || e.target.closest('.rv-stagepop')) return; // buttons, the quest chip, the JELLY meter + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
     const me = myId && ravers.get(myId);
     if (!me) return;
     if (me.stage) { setStageWant(false); return; } // on stage: tap the floor to come back down
-    sitting = false; pendingSit = false; // clicking anywhere else stands you up
     const rect = floor.getBoundingClientRect();
     // undo the camera: screen point → world percent
     doorArmed = 0; // a fresh floor tap means you changed your mind about leaving
@@ -808,16 +805,6 @@ function init() {
       const dist = Math.hypot(dx, dy);
       if (dist < 1) {
         walkTarget = null;
-        if (pendingSit) {
-          pendingSit = false;
-          sitting = true;
-          // anchor the BUM on the seat, not the eyes: both sprites are centre-
-          // anchored, so lift the banana by ~30% of its own height
-          setPos(me, stoolPos.x, stoolPos.y - ((me.size || 90) * 0.3 / floorH) * 100);
-          // the sitter OVERFLOWS the stool (Trym) — banana in front, chair
-          // peeking out behind him; the next real setPos (standing up) restores
-          me.wrap.style.zIndex = String(100 + Math.round(stoolPos.y) + 1);
-        }
         // report the RESTING spot — the throttle can eat the last step, and the
         // server verifies claims against its copy of your position
         if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'move', x: +me.x.toFixed(1), y: +me.y.toFixed(1) }));
@@ -3220,37 +3207,6 @@ function init() {
       monkey.el.style.transform = 'translate(-50%, -50%)' + (dx < 0 ? ' scaleX(-1)' : '');
     }
   }
-  // the regular's stool: N5's privilege — furniture that is YOURS, forever.
-  // It sits at the counter's edge, and it WORKS: click it, walk over, sit
-  // down (dance freezes on the resting pose); any move stands you back up.
-  let sitting = false, pendingSit = false, stoolPos = null;
-  function stoolRender() {
-    try { if (localStorage.getItem('rv-stool') !== '1') return; } catch (e) { return; }
-    if (document.getElementById('rvStool')) return;
-    // by the counter's right edge, just behind its top — device-aware like the
-    // bar zone itself (barSolid scales with the floor)
-    // at the counter's END — snug against its right edge, on the open-floor
-    // side (the counter-top already holds the drinks + broom, and mid-floor
-    // read as "a chair standing alone" — Trym). Clamped into the walkable
-    // floor: an unreachable stool is furniture-only.
-    stoolPos = { x: clamp(barSolid.x + 2, 10, 62), y: clamp(barSolid.y - 1, topClamp + 6, 91) };
-    const d = document.createElement('div');
-    d.id = 'rvStool';
-    d.className = 'rv-stool';
-    d.innerHTML = STOOL_SVG;
-    d.style.left = stoolPos.x + '%';
-    d.style.top = stoolPos.y + '%';
-    d.style.zIndex = String(100 + Math.round(stoolPos.y) - 1); // just under the sitter
-    d.addEventListener('click', (e) => {
-      e.stopPropagation(); // a stool click is a SIT order, not a walk order
-      const me = myId && ravers.get(myId);
-      if (!me || me.stage) return;
-      pendingSit = true;
-      walkTarget = { x: stoolPos.x, y: stoolPos.y };
-      track('rave_sit');
-    });
-    world.appendChild(d);
-  }
   function nightFrame(now) { // proximity checks at frame rate (the claims lesson)
     if (!night || night.step < 0) return;
     const st = night.def.steps[night.step];
@@ -3371,11 +3327,9 @@ function init() {
     nightReceipt(d.n);
     if (d.done.patch) passPatch(d.done.patch);
     if (d.n === NIGHTS.length) {
-      // THE REGULAR: five shifts = you're furniture now, in the good way
-      try { localStorage.setItem('rv-stool', '1'); } catch (e) {}
+      // THE REGULAR: five shifts and you're one of us
       setTimeout(() => {
-        bigMoment('YOU’RE A REGULAR ⭐', 'the stool by the bar is yours');
-        stoolRender();
+        bigMoment('YOU’RE A REGULAR ⭐', 'five nightshifts — one of us now');
         passPatch('regular');
       }, 4800);
     }
@@ -3410,7 +3364,6 @@ function init() {
       // champagne in hand: every emote is a little celebration (+2 jelly)
       const meC = myId && ravers.get(myId);
       if (meC && fxActive(meC, Date.now()) && meC.fx.id === 'champagne') addHype(2);
-      ledNoteEmote(k); // the sign might be asking for exactly this
       track('rave_emote', { k });
     });
   });
@@ -3532,7 +3485,6 @@ function init() {
   }, 600);
 
   function setStageWant(want) {
-    sitting = false; pendingSit = false; // no dancing on stage from a stool
     // ?stagetest (QA): client unlocks the stage in 5s but the server keeps the
     // 5-min gate — drive it locally so the join is testable without the wait.
     const testStage = location.search.includes('stagetest');
@@ -3585,150 +3537,6 @@ function init() {
       }, 250);
     }
   }
-
-  // ---- THE LED STRIP: the club sign takes requests (WHY build, phase 3) ----
-  // A slim diegetic ticker, top-centre of the floor. THE POLITE-DJ RULE: it
-  // only speaks into dead air — never over an item, a carry, a drop, or a
-  // peak. It teaches each call once (short copy after), asks one tap or one
-  // move, pays REP, and a miss just dims out: no punishment, ever.
-  const LED_CALLS = [
-    { id: 'freeze', teach: 'FREEZE! NOBODY MOVE — 3 SECONDS!', short: 'FREEZE!', secs: 9 },
-    { id: 'stage', teach: '📢 EVERYBODY STAGE SIDE — UP FRONT!', short: '📢 STAGE SIDE!', secs: 11, zone: (me) => me.y < 34 },
-    { id: 'bar', teach: '📢 EVERYBODY TO THE BAR — GO!', short: '📢 BAR SIDE!', secs: 11, zone: (me) => me.x < barSolid.x + 14 && me.y > 58 },
-    { id: 'left', teach: '📢 LEFT WALL — GO GO GO!', short: '📢 LEFT WALL!', secs: 10, zone: (me) => me.x < 18 },
-    { id: 'right', teach: '📢 RIGHT WALL — MOVE IT!', short: '📢 RIGHT WALL!', secs: 10, zone: (me) => me.x > 82 },
-    { id: 'heart', teach: 'GIVE US A ❤ — TAP HERE!', short: '❤ — TAP!', secs: 8, emote: 'heart' },
-    { id: 'clap', teach: 'A ROUND OF APPLAUSE — TAP HERE!', short: '👏 — TAP!', secs: 8, emote: 'confetti' },
-    { id: 'spin', teach: 'SPIN FOR ME — ONE FULL CIRCLE!', short: 'SPIN!', secs: 10 },
-    { id: 'run', teach: 'RUN IT OUT — CROSS THAT FLOOR!', short: 'RUN IT OUT!', secs: 10 },
-    { id: 'light', teach: 'FOLLOW THE LIGHT — STAY IN IT!', short: 'FOLLOW THE LIGHT!', secs: 12, light: true },
-  ];
-  const LED_REWARD = 50;
-  const ledTest = new URLSearchParams(location.search).get('ledtest'); // ?ledtest=<id> — QA: force a call, skip the gaps
-  let ledCall = null;
-  let ledNextAt = Date.now() + (ledTest ? 4000 : 45000); // the sign warms up ~45s into the night
-  let ledSeen = {};
-  try { ledSeen = JSON.parse(localStorage.getItem('rv-led-seen-v1') || '{}'); } catch (e) {}
-
-  function ledIdle(now) { // dead air ONLY — the strip must never compete with play
-    const me = myId && ravers.get(myId);
-    if (!me || me.stage) return false;
-    if (tourActive) return false;
-    if (itemLive || goldLive || vinylLive || barSpecialLive) return false;
-    if (me.vinyl || me.qvinyl || me.qbroom) return false;
-    if (hypeCharged || now < hypeModeUntil) return false;
-    if (((now / 1000) % DROP_PERIOD) < DROP_LEN || now < miniDropUntil) return false;
-    return true;
-  }
-  function ledStart(now) {
-    const pool = ledTest ? LED_CALLS.filter((c) => c.id === ledTest) : LED_CALLS;
-    const def = pool[Math.floor(Math.random() * pool.length)];
-    if (!def) return;
-    ledCall = { def, until: now + def.secs * 1000, start: now, spun: 0, lastAng: null, dist: 0, lightMs: 0, won: false };
-    if (def.light) ledSpawnLight(now, def.secs);
-    const led = el('rvLed');
-    led.hidden = false;
-    led.className = 'rv-led';
-    el('rvLedTxt').textContent = ledSeen[def.id] ? def.short : def.teach;
-    el('rvLedBar').style.width = '100%';
-    ledSeen[def.id] = 1;
-    try { localStorage.setItem('rv-led-seen-v1', JSON.stringify(ledSeen)); } catch (e) {}
-    track('rave_call', { id: def.id });
-  }
-  function ledWin(now) {
-    ledCall.won = true;
-    ledCall.until = now + 1800; // linger the win flash, then back to dark
-    el('rvLed').className = 'rv-led rv-led--won';
-    el('rvLedTxt').textContent = '✔ +' + LED_REWARD + ' REP';
-    el('rvLedBar').style.width = '100%';
-    earnRep(LED_REWARD);
-    addHype(10);
-    tonight.calls = (tonight.calls || 0) + 1;
-    track('rave_call_ok', { id: ledCall.def.id });
-    ledKillLight();
-  }
-  function ledEnd(now, missed) {
-    if (missed) track('rave_call_miss', { id: ledCall.def.id }); // silence for the player — no heckle, no loss
-    el('rvLed').hidden = true;
-    ledKillLight();
-    ledCall = null;
-    ledNextAt = now + (ledTest ? 4000 : 120000 + Math.random() * 60000); // 2–3 min of peace
-  }
-  function ledNoteEmote(kind) { // wired into the emote buttons
-    if (ledCall && !ledCall.won && ledCall.def.emote === kind) ledWin(Date.now());
-  }
-  // FOLLOW THE LIGHT (Trym's call): the sign's own little spotlight glides a
-  // path near you — stay inside it while it moves
-  let ledLightEl = null, ledLightPath = null;
-  function ledSpawnLight(now, secs) {
-    ledKillLight();
-    const me = ravers.get(myId);
-    const d = document.createElement('div');
-    d.className = 'rv-ledlight';
-    world.appendChild(d);
-    ledLightEl = d;
-    const p0 = { x: clamp((me ? me.x : 50) + 16, 12, 88), y: clamp((me ? me.y : 60) - 6, topClamp + 8, 84) };
-    const p1 = { x: clamp(p0.x > 50 ? p0.x - 52 : p0.x + 52, 10, 90), y: clamp(p0.y + (Math.random() > 0.5 ? 16 : -14), topClamp + 8, 84) };
-    ledLightPath = { p0, p1, t0: now, ms: secs * 1000 };
-  }
-  function ledKillLight() { if (ledLightEl) { ledLightEl.remove(); ledLightEl = null; ledLightPath = null; } }
-  function ledFrame(now, dtMs) {
-    if (!ledCall) {
-      if (now >= ledNextAt && myId && (ledTest || ledIdle(now))) ledStart(now);
-      return;
-    }
-    const c = ledCall;
-    if (now > c.until) { ledEnd(now, !c.won); return; }
-    if (c.won) return;
-    el('rvLedBar').style.width = Math.max(0, Math.round(((c.until - now) / (c.def.secs * 1000)) * 100)) + '%';
-    const me = myId && ravers.get(myId);
-    if (!me) return;
-    const d = c.def;
-    if (d.zone) { if (d.zone(me)) ledWin(now); return; }
-    if (d.id === 'freeze') {
-      // stand dead still for 3s (being still BEFORE the call counts — obedience is obedience)
-      if ((!me.lastMoveAt || now - me.lastMoveAt > 3000) && now - c.start > 3000) ledWin(now);
-      return;
-    }
-    if (d.id === 'spin' || d.id === 'run') {
-      if (c.px !== undefined) {
-        const ddx = me.x - c.px, ddy = me.y - c.py;
-        const dl = Math.hypot(ddx, ddy);
-        c.dist += dl;
-        if (dl > 0.05) {
-          const ang = Math.atan2(ddy, ddx);
-          if (c.lastAng !== null) {
-            let da = ang - c.lastAng;
-            while (da > Math.PI) da -= 2 * Math.PI;
-            while (da < -Math.PI) da += 2 * Math.PI;
-            c.spun += Math.abs(da);
-          }
-          c.lastAng = ang;
-        }
-      }
-      c.px = me.x; c.py = me.y;
-      if (d.id === 'spin' && c.spun > Math.PI * 1.7) ledWin(now);
-      if (d.id === 'run' && c.dist > 110) ledWin(now);
-      return;
-    }
-    if (d.light && ledLightPath && ledLightEl) {
-      const t = Math.min(1, (now - ledLightPath.t0) / ledLightPath.ms);
-      const lx = ledLightPath.p0.x + (ledLightPath.p1.x - ledLightPath.p0.x) * t;
-      const ly = ledLightPath.p0.y + (ledLightPath.p1.y - ledLightPath.p0.y) * t;
-      ledLightEl.style.left = lx + '%';
-      ledLightEl.style.top = ly + '%';
-      const inIt = Math.hypot(((me.x - lx) / 100) * floorW, ((me.y - ly) / 100) * floorH) < 80;
-      ledLightEl.classList.toggle('rv-ledlight--in', inIt);
-      if (inIt) { c.lightMs += dtMs; if (c.lightMs > 2400) ledWin(now); }
-    }
-  }
-  // tapping the strip IS the emote for emote calls — no hunting the bar below the fold
-  el('rvLed').addEventListener('click', () => {
-    if (ledCall && !ledCall.won && ledCall.def.emote) {
-      const b = document.querySelector('.rv-emote-btn[data-emote="' + ledCall.def.emote + '"]');
-      if (b) b.click();
-    }
-  });
 
   // ---- the render loop: everyone dances off the same clock ----
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -3843,7 +3651,6 @@ function init() {
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
     nightFrame(now); // quest proximity checks — same lesson again
-    ledFrame(now, dtMs); // the club sign — calls, countdowns, the wandering light
     monkeyTick(now, dtMs); // the bandit keeps its distance
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
@@ -4294,9 +4101,8 @@ function init() {
       const hue = dropActive ? Math.floor((now / 12) % 360) : 0;
       for (const r of [...ravers.values()].slice(0, MAX_VISIBLE)) {
         const o = r.outfit;
-        // seated on YOUR stool = the dance rests on the calm frame (local-only);
-        // sealed in a balloon = same calm frame — you float, you don't dance
-        const fIdx = ((r.id === myId && sitting) || (fxActive(r, now) && r.fx.id === 'balloon')) ? 0 : idx;
+        // sealed in a balloon = the calm frame — you float, you don't dance
+        const fIdx = (fxActive(r, now) && r.fx.id === 'balloon') ? 0 : idx;
         drawComposite(r.cv.getContext('2d'), 160, fIdx, {
           bg: 'transparent', captions: false,
           // held quest props ride the gloves via the engine's hand anchors
@@ -4579,7 +4385,6 @@ function init() {
   // the arrival toast pile was "too much noise", Trym); returners mint now
   // (a no-op for anyone who already has it)
   try { if (localStorage.getItem('rv-tour-v1')) passPatch('raver'); } catch (e) { passPatch('raver'); }
-  stoolRender(); // the regular's stool, for those who've earned it
 
   // ---- THE CLUB SCREEN: rotate silly lines + the odd clickable house ad ----
   (function initScreen() {
