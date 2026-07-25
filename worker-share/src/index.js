@@ -104,6 +104,8 @@ export default {
       if (url.pathname === '/catalog/moderate') return handleCatalogModerate(request, env, url);
       if (url.pathname === '/catalog/items.json') return handleCatalogItems(env);
       if (url.pathname === '/catalog/status') return handleCatalogStatus(env, url);
+      if (url.pathname === '/catalog/caught') return handleCatalogCaught(request, env, url);
+      if (url.pathname === '/catalog/catches') return handleCatalogCatches(env, url);
       if (url.pathname === '/health') return handleHealth(env);
       return json({ error: 'not found' }, 404);
     } catch (e) {
@@ -816,6 +818,50 @@ async function handleCatalogStatus(env, url) {
     try { const v = await obj.json(); out[sid] = { s: v.s, item: v.item || '' }; } catch (e) {}
   }
   return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
+}
+
+// ---------- POST /catalog/caught {id, sid} — the recognition tally ----------
+// A vanity "N bananas caught this" for the maker. The catch is client-side, so
+// this can't be perfectly trusted — Origin + throttle blunt scripting, and
+// dedup-by-sid (a banana owns an item FOREVER, so it only catches once) keeps
+// it honest up to a cap. Never economy-critical; it's a warm number.
+async function handleCatalogCaught(request, env, url) {
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+  if (!allowed.includes(request.headers.get('Origin') || '')) return json({ error: 'forbidden' }, 403);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (throttled(ip)) return json({ error: 'slow down' }, 429, cors);
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
+  const id = String(b.id || '');
+  const sid = String(b.sid || '');
+  if (!/^c_[a-f0-9]{6,32}$/.test(id) || !/^[a-z0-9]{8,32}$/.test(sid)) return json({ error: 'bad' }, 400, cors);
+  const key = 'catalog-catch/' + id + '.json';
+  let rec = { n: 0, seen: {} };
+  const obj = await env.SHARES.get(key);
+  if (obj) { try { rec = await obj.json(); } catch (e) {} }
+  if (!rec.seen) rec.seen = {};
+  if (!rec.seen[sid]) {
+    rec.n = (rec.n || 0) + 1;
+    if (Object.keys(rec.seen).length < 2000) rec.seen[sid] = 1; // cap storage; beyond it, count-only
+  }
+  await env.SHARES.put(key, JSON.stringify(rec), { httpMetadata: { contentType: 'application/json' } });
+  return json({ ok: true, n: rec.n }, 200, cors);
+}
+
+// ---------- GET /catalog/catches?ids= — the tallies (id → n) ----------
+async function handleCatalogCatches(env, url) {
+  const ids = String(url.searchParams.get('ids') || '')
+    .split(',').map((s) => s.trim()).filter((s) => /^c_[a-f0-9]{6,32}$/.test(s)).slice(0, 40);
+  const out = {};
+  for (const id of ids) {
+    const obj = await env.SHARES.get('catalog-catch/' + id + '.json');
+    if (!obj) continue;
+    try { const r = await obj.json(); out[id] = r.n || 0; } catch (e) {}
+  }
+  return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' });
 }
 
 // ---------- GET /health ----------

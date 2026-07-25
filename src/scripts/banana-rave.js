@@ -2144,6 +2144,17 @@ function init() {
     // the deed also lands on the pass (own_<id>, monotonic + max-merged) so
     // the catch survives across devices — the local flag alone never synced
     if (!had) passStat('own_' + DROP.id, 1);
+    // 🍌 recognition tally: tell the maker their community item was caught. Once
+    // only (you own it forever, so you catch it once); fire-and-forget, and it's
+    // a warm vanity number, never economy-critical.
+    if (!had && DROP.catalog) {
+      try {
+        fetch('https://banana-share.trymstene.workers.dev/catalog/caught', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: DROP.id, sid: worldSid() }),
+        }).catch(() => {});
+      } catch (e) {}
+    }
     bumpChain();
     nightEvent('drop');
     addHype(10);

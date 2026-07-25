@@ -306,6 +306,7 @@ function init() {
   // there to catch). ⚠️ NAMING: "Community" is place-agnostic ON PURPOSE — these
   // drop across the whole world (rave now, everywhere soon), so the category
   // must NOT borrow one place's name ("Club"). The row hides when empty.
+  let CAT_CATCHES = {}; // id -> caught-count (the recognition tally, from the worker)
   function renderCatalog() {
     const host = el('bbCatalogChips');
     if (!host) return;
@@ -314,41 +315,81 @@ function init() {
     if (!CATALOG.length) { if (row) row.hidden = true; return; }
     if (row) row.hidden = false;
     // publish owned community items to the synced own_<id> stat so ownership
-    // (and thus "wearable in the builder") follows you to other devices, the
-    // same bridge the rave runs — a creator's own item shouldn't be stuck local
+    // follows you to other devices, the same bridge the rave runs
     try {
       const own = catOwned(); const st = catStats();
       Object.keys(own).forEach((id) => { if (/^c_/.test(id) && !((st['own_' + id] || 0) > 0)) passStat('own_' + id, 1); });
     } catch (e) {}
     CATALOG.slice().sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
-      const art = (catCustom(it.id) || {}).art;
+      const owned = ownsCatalog(it.id);
       const name = it.title || 'community item';
-      const credit = it.by ? ' — by ' + it.by : '';
-      if (!ownsCatalog(it.id)) {
-        const a = document.createElement('a');
-        a.className = 'bb-chip bb-chip--icon bb-chip--locked';
-        a.href = '/rave/'; a.dataset.place = 'builder-locked';
-        a.innerHTML = chipArt(art) || name;
-        a.title = name + credit + ' — catch it at the rave';
-        a.setAttribute('aria-label', name + ' (locked — catch it at the rave)');
-        host.appendChild(a);
-        return;
-      }
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'bb-chip bb-chip--icon';
-      b.innerHTML = chipArt(art) || name;
-      b.dataset.val = it.id;
-      b.title = name + credit;
-      b.setAttribute('aria-label', name + credit);
-      b.onclick = () => { state.c = (state.c === it.id ? '' : it.id); onState(); };
+      b.className = 'bb-chip bb-chip--icon' + (owned ? '' : ' bb-chip--locked');
+      b.innerHTML = chipArt((catCustom(it.id) || {}).art) || name;
+      if (owned) b.dataset.val = it.id;
+      b.setAttribute('aria-label', name + (it.by ? ' by ' + it.by : '') + (owned ? '' : ' — locked, tap for info'));
+      // EVERY community chip opens the CARD (works on touch AND desktop, so the
+      // ~85% on mobile finally see the maker + caught count) — the card carries
+      // the wear / catch-it action itself.
+      b.onclick = () => communityCard(it);
       host.appendChild(b);
     });
     trayify('bbCatalogChips');
   }
+  // 🍌 THE COMMUNITY CARD — a banana-themed popover (replaces the stock browser
+  // tooltip, which only desktop saw): the item, its MAKER, how many bananas have
+  // caught it, and ONE action (wear it if it's yours, a door to catch it if not).
+  let cardPop = null;
+  function communityCard(it) {
+    if (!cardPop) {
+      cardPop = document.createElement('div');
+      cardPop.className = 'bb-cardpop'; cardPop.hidden = true;
+      cardPop.innerHTML = '<div class="bb-cardpop__bg"></div>'
+        + '<div class="bb-cardpop__card" role="dialog" aria-modal="true" aria-labelledby="bbCardName">'
+        + '<button class="bb-cardpop__x" type="button" aria-label="Close">×</button>'
+        + '<div class="bb-cardpop__art" id="bbCardArt"></div>'
+        + '<h3 class="bb-cardpop__name" id="bbCardName"></h3>'
+        + '<p class="bb-cardpop__by" id="bbCardBy"></p>'
+        + '<p class="bb-cardpop__count" id="bbCardCount"></p>'
+        + '<button class="bb-cardpop__action" id="bbCardAction" type="button"></button></div>';
+      document.body.appendChild(cardPop);
+      const close = () => { cardPop.hidden = true; };
+      cardPop.querySelector('.bb-cardpop__bg').onclick = close;
+      cardPop.querySelector('.bb-cardpop__x').onclick = close;
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cardPop && !cardPop.hidden) close(); });
+    }
+    const owned = ownsCatalog(it.id);
+    el('bbCardArt').innerHTML = chipArt((catCustom(it.id) || {}).art) || '';
+    el('bbCardName').textContent = it.title || 'community item';
+    el('bbCardBy').textContent = it.by ? 'by ' + it.by : 'by a banana';
+    const n = CAT_CATCHES[it.id] || 0;
+    el('bbCardCount').textContent = n > 0
+      ? ('🍌 caught by ' + n + (n === 1 ? ' banana' : ' bananas'))
+      : (owned ? '🍌 fresh out of the forge' : '🍌 nobody’s caught it yet — be first');
+    const action = el('bbCardAction');
+    if (owned) {
+      const worn = state.c === it.id;
+      action.className = 'bb-cardpop__action';
+      action.textContent = worn ? 'Take it off' : 'Wear it';
+      action.onclick = () => { state.c = worn ? '' : it.id; onState(); cardPop.hidden = true; };
+    } else {
+      action.className = 'bb-cardpop__action bb-cardpop__action--door';
+      action.textContent = 'Catch it at the rave →';
+      action.onclick = () => { location.href = '/rave/'; };
+    }
+    cardPop.hidden = false;
+  }
+  function fetchCatches() {
+    if (!CATALOG.length) return;
+    fetch('https://banana-share.trymstene.workers.dev/catalog/catches?ids=' + encodeURIComponent(CATALOG.map((x) => x.id).join(',')))
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((m) => { if (m && typeof m === 'object') CAT_CATCHES = m; })
+      .catch(() => {});
+  }
   fetch(CATALOG_URL)
     .then((r) => (r.ok ? r.json() : []))
-    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); onState(); } })
+    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); onState(); } })
     .catch(() => { /* offline/blocked: the row just stays hidden */ });
 
   // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
