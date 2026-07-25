@@ -381,11 +381,10 @@ function init() {
       if (owned || !td) { clock.hidden = true; return; }
       const st = dropStatus();
       const isThis = td.id === it.id;
-      const tonight = td.label || 'a wearable';
       clock.hidden = false;
-      clock.textContent = st.live
-        ? ('🎁 A drop is out right now! ' + (isThis ? '— it’s THIS one, go catch it!' : '— tonight it’s ' + tonight))
-        : ('🎁 next drop in ' + fmtClock(st.secsToNext) + (isThis ? ' — and it’s THIS one!' : ' · tonight: ' + tonight));
+      clock.textContent = isThis
+        ? (st.live ? '🎁 out now — grab it!' : '🎁 drops in ' + fmtClock(st.secsToNext))
+        : (st.live ? '🎁 a drop’s out · not this one' : '🎁 next drop ' + fmtClock(st.secsToNext) + ' · not this one');
     };
     paintClock();
     cardClockT = setInterval(paintClock, 1000);
