@@ -164,6 +164,9 @@ const faq = {
       border: 2px solid #6d1509; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
       animation: bhBob 1.9s ease-in-out infinite;
     }
+    /* invisible fingertip-sized tap pad so the ~15px float is easy to reel on a
+       phone (the visible dot stays 15px; the JS also reels near-miss taps) */
+    .bh-bob::before { content: ''; position: absolute; inset: -13px; border-radius: 50%; }
     .bh-bob.is-bite { animation: bhBobBite 0.26s ease-in-out infinite; }
     /* a rare-or-better thrashes harder and flashes GOLD — you can feel it
        coming before you reel, which is the whole anticipation beat */

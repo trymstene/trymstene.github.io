@@ -504,6 +504,11 @@ function init() {
       setTarget(GIL.x - 60, GIL.y + 20);
       return;
     }
+    // 🎣 near-miss forgiveness: while a line is cast, a tap within a fingertip
+    // of the float REELS instead of tearing the whole cast down — the float is a
+    // ~15px target and this is the payoff tap (esp. on mobile). Same 46-unit
+    // radius the volleyball uses; a tap clearly elsewhere still stands you up.
+    if (fishing && Math.hypot(wx - fishing.bob.x, wy - fishing.bob.y) < 46) { reel(); return; }
     seated = null;
     meEl.classList.remove('is-sitting');
     stopFishing();
