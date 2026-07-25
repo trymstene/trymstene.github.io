@@ -37,6 +37,20 @@ export function dropPhase(now = Date.now()) { return (now / 1000 - DROP_OFFSET) 
 export function dropLive(now = Date.now()) { const p = dropPhase(now); return p >= 0 && p < DROP_WAIT; }
 // unitless seeded spot for a window; the AREA scales {u,v}∈[0,1) into its own space + guards
 export function dropSpot(window, salt) { return { u: seedRand(salt + window * 2), v: seedRand(salt + window * 2 + 1) }; }
+// 🕒 THE DROP CLOCK a user can READ (Diablo world-boss ticker): are we LIVE
+// right now, how long left, and how long until the next one. Any surface — the
+// builder card, an in-world ticker — renders from this so a user is never left
+// hanging "is it 1 minute or a week away?".
+export function dropStatus(now = Date.now()) {
+  const phase = dropPhase(now);
+  const live = phase >= 0 && phase < DROP_WAIT;
+  return {
+    live,
+    secsLeft: live ? Math.ceil(DROP_WAIT - phase) : 0,        // seconds the current drop stays out
+    secsToNext: live ? 0 : Math.ceil(DROP_PERIOD - phase),    // seconds until the next window opens
+  };
+}
+export function fmtClock(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
 // ── The catalog layer (fetch once, cache, never-cache-a-miss) ──
 let CATALOG = [];

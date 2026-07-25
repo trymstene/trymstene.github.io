@@ -22,6 +22,7 @@ import {
 } from '../lib/sticker-core.js';
 import { memeGif } from '../lib/meme-gif.js';
 import { wearToCustom } from '../lib/wear-render.js'; // community-item wear payload → engine custom channel
+import { tonightDrop, dropStatus, fmtClock, loadCatalog as loadDropCatalog } from '../lib/drops.js'; // the readable drop clock
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -340,7 +341,8 @@ function init() {
   // 🍌 THE COMMUNITY CARD — a banana-themed popover (replaces the stock browser
   // tooltip, which only desktop saw): the item, its MAKER, how many bananas have
   // caught it, and ONE action (wear it if it's yours, a door to catch it if not).
-  let cardPop = null;
+  let cardPop = null, cardClockT = null;
+  loadDropCatalog(); // populate the shared drop clock's catalog so tonightDrop() knows the pool
   function communityCard(it) {
     if (!cardPop) {
       cardPop = document.createElement('div');
@@ -352,9 +354,10 @@ function init() {
         + '<h3 class="bb-cardpop__name" id="bbCardName"></h3>'
         + '<p class="bb-cardpop__by" id="bbCardBy"></p>'
         + '<p class="bb-cardpop__count" id="bbCardCount"></p>'
+        + '<p class="bb-cardpop__clock" id="bbCardClock" hidden></p>'
         + '<button class="bb-cardpop__action" id="bbCardAction" type="button"></button></div>';
       document.body.appendChild(cardPop);
-      const close = () => { cardPop.hidden = true; };
+      const close = () => { cardPop.hidden = true; clearInterval(cardClockT); };
       cardPop.querySelector('.bb-cardpop__bg').onclick = close;
       cardPop.querySelector('.bb-cardpop__x').onclick = close;
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cardPop && !cardPop.hidden) close(); });
@@ -367,6 +370,25 @@ function init() {
     el('bbCardCount').textContent = n > 0
       ? ('🍌 caught by ' + n + (n === 1 ? ' banana' : ' bananas'))
       : (owned ? '🍌 fresh out of the forge' : '🍌 nobody’s caught it yet — be first');
+    // 🕒 THE DROP CLOCK — a Diablo-boss-style countdown so an admirer of a locked
+    // item is never left guessing "is it 1 minute or a week away?". Community
+    // items drop ONE at a time on a daily rotation; this says when the next one
+    // lands and which item it is, live-ticking while the card is open.
+    const clock = el('bbCardClock');
+    clearInterval(cardClockT);
+    const paintClock = () => {
+      const td = tonightDrop();
+      if (owned || !td) { clock.hidden = true; return; }
+      const st = dropStatus();
+      const isThis = td.id === it.id;
+      const tonight = td.label || 'a wearable';
+      clock.hidden = false;
+      clock.textContent = st.live
+        ? ('🎁 A drop is out right now! ' + (isThis ? '— it’s THIS one, go catch it!' : '— tonight it’s ' + tonight))
+        : ('🎁 next drop in ' + fmtClock(st.secsToNext) + (isThis ? ' — and it’s THIS one!' : ' · tonight: ' + tonight));
+    };
+    paintClock();
+    cardClockT = setInterval(paintClock, 1000);
     const action = el('bbCardAction');
     if (owned) {
       const worn = state.c === it.id;
