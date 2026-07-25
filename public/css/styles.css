@@ -98,7 +98,15 @@ a { color: inherit; }
   padding: 0.9rem 1.2rem;
   background: var(--banana);
   border-bottom: var(--line);
+  transition: transform 0.28s ease;
+  will-change: transform;
 }
+/* scroll-aware nav (js in Nav.astro): slides up on scroll-DOWN, returns on a
+   deliberate scroll-UP (asymmetric hysteresis so minor adjusting doesn't pop
+   it). Never hides while the mobile menu is open. */
+.nav--hidden { transform: translateY(-100%); }
+.nav.open.nav--hidden { transform: none; }
+@media (prefers-reduced-motion: reduce) { .nav { transition: none; } }
 .nav__brand {
   font-family: "Nunito", sans-serif;
   font-weight: 900;
