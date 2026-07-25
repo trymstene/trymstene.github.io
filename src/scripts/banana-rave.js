@@ -588,7 +588,7 @@ function init() {
   // first-timers keep follow-me — the welcome spotlight needs the close-up.
   // "been here before" = the tour marker (set on every first visit)
   const raveSeen = (() => { try { return !!localStorage.getItem('rv-tour-v1'); } catch (e) { return false; } })();
-  const cam = { on: window.__ravePreview ? false : (matchMedia('(max-width: 640px)').matches && !raveSeen), s: 1, tx: 0, ty: 0 };
+  const cam = { on: false, s: 1, tx: 0, ty: 0 }; // starts zoomed OUT; the tour is the only thing that zooms in (endTour pulls back out)
   let floorW = 0, floorH = 0;
   // the bar is SOLID — bananas stop at it instead of moonwalking through the counter.
   // It's sized in px, so its world-percent rect depends on the floor size: re-measured
@@ -655,7 +655,8 @@ function init() {
     const cn = el('rvCoin');
     try {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches || !walletChip || walletChip.hidden || !cn) { renderWallet(true); return; }
-      const fr = floor.getBoundingClientRect();
+      const host = floor.closest('.rv-club') || floor; // the wallet chip lives in the HUD strip ABOVE the floor now — arc across the whole club so the coin isn't clipped by the floor's overflow
+      const fr = host.getBoundingClientRect();
       const ce = cn.getBoundingClientRect(); // element rect survives camera zoom
       const cr = walletChip.getBoundingClientRect();
       const x0 = ce.left + ce.width / 2 - fr.left, y0 = ce.top + ce.height / 2 - fr.top;
@@ -664,7 +665,7 @@ function init() {
       img.src = '/assets/banana-stand/coin.png';
       img.style.cssText = 'position:absolute;width:22px;image-rendering:pixelated;z-index:650;pointer-events:none;'
         + 'left:' + x0 + 'px;top:' + y0 + 'px;transform:translate(-50%,-50%);';
-      floor.appendChild(img);
+      host.appendChild(img);
       img.animate([
         { transform: 'translate(-50%,-50%) scale(1.1)', opacity: 1 },
         { transform: 'translate(calc(-50% + ' + dx * 0.5 + 'px), calc(-50% + ' + (dy * 0.5 - 46) + 'px)) scale(1.25)', opacity: 1, offset: 0.55 },
@@ -781,7 +782,7 @@ function init() {
     if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led') || e.target.closest('.rv-exitdoor') || e.target.closest('.rv-stagepop')) return; // buttons, the quest chip, the JELLY meter, the LED strip + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
     const me = myId && ravers.get(myId);
     if (!me) return;
-    if (me.stage) { if (window.__ravePreview) setStageWant(false); return; } // preview: tap the floor to come down off the stage
+    if (me.stage) { setStageWant(false); return; } // on stage: tap the floor to come back down
     sitting = false; pendingSit = false; // clicking anywhere else stands you up
     const rect = floor.getBoundingClientRect();
     // undo the camera: screen point → world percent
@@ -2933,7 +2934,7 @@ function init() {
     if (tourActive || !myId || !ravers.get(myId)) return;
     tourActive = true;
     tourStep = -1;
-    if (window.__ravePreview) cam.on = true; // preview: zoom defaults OUT, so the tour is the only thing that zooms in (endTour pulls back out)
+    cam.on = true; // the tour zooms in; endTour pulls back out to the default zoomed-out view
     el('rvBubble').hidden = true; // Barty hushes mid-sentence — the tour has the floor
     world.classList.add('rv-world--tour');
     floor.classList.add('rv-tourclean'); // no chase-ables spawn mid-lesson, ever
@@ -3448,8 +3449,7 @@ function init() {
       stageBtn.disabled = false;
       stageBtn.textContent = '⭐ join the stage';
     }
-    if (window.__ravePreview) { fireBtn.hidden = true; swapHeartFlame(onStage()); }
-    else fireBtn.hidden = !onStage();
+    fireBtn.hidden = true; swapHeartFlame(onStage()); // the reaction button becomes 🔥 on stage — no separate fire button
   }
   setInterval(refreshStageUi, 1000);
 
@@ -3533,10 +3533,9 @@ function init() {
 
   function setStageWant(want) {
     sitting = false; pendingSit = false; // no dancing on stage from a stool
-    // ?stagetest (preview QA only): the client unlocks the stage in 5s but the
-    // server keeps the real 5-min gate — so drive the stage locally in test,
-    // otherwise the popup would show but the join couldn't be exercised.
-    const testStage = window.__ravePreview && location.search.includes('stagetest');
+    // ?stagetest (QA): client unlocks the stage in 5s but the server keeps the
+    // 5-min gate — drive it locally so the join is testable without the wait.
+    const testStage = location.search.includes('stagetest');
     if (ws && ws.readyState === 1 && !testStage) ws.send(JSON.stringify({ t: 'stage', on: want }));
     else if (myId) { // solo mode / stagetest: the stage is all yours
       setStage(myId, want);
@@ -3544,7 +3543,7 @@ function init() {
         const sr = ravers.get(myId);
         if (sr) showBubble('⭐ ' + dispName(sr) + ' takes the stage!', false, 4000);
         el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        bigMoment('YOU’RE ON THE STAGE 🔥', window.__ravePreview ? 'dance behind the DJ — tap the floor to come down' : 'dance behind the DJ — tap ⭐ again to come down');
+        bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap the floor to come down');
       }
     }
     track(want ? 'rave_stage_join' : 'rave_stage_leave');
@@ -3554,10 +3553,10 @@ function init() {
     setStageWant(!onStage());
   });
 
-  // preview: the stage becomes an INVITATION, not a permanent button. Once
-  // unlocked, a "JOIN THE STAGE" popup rises beneath the DJ in short recurring
-  // windows (a 10s bar). Tap it to hop up; tap the floor to come back down.
-  if (window.__ravePreview) {
+  // The stage is an INVITATION, not a permanent button: once unlocked, a
+  // "JOIN THE STAGE" popup rises beneath the DJ in short recurring windows
+  // (a 10s bar). Tap it to hop up; tap the floor to come back down.
+  {
     const pop = el('rvStagePop');
     const popTxt = pop && pop.querySelector('.rv-stagepop__txt');
     const popBar = el('rvStagePopBar');
