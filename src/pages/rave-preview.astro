@@ -1310,6 +1310,10 @@ const GUIDE = [
        buttons clear Safari's toolbar-reveal band at the screen edge (needs the
        viewport-fit=cover this page opts into) */
     .rv-hud { padding-bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px) + 12px); }
+
+    /* shorter dancefloor → the whole frame is shorter and the emote/action bar
+       rises into view (Trym). Bananas + camera are %-based, so they adapt. */
+    .rv-floor { height: min(50vh, 440px); }
   </style>
 
   <div class="rv-hall">
