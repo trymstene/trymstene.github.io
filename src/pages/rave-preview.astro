@@ -1291,8 +1291,9 @@ const GUIDE = [
     .rv-sub { display: none; }                                        /* drop the 2-line intro above the frame */
     .rv-zoom { display: none !important; }                            /* zoom button removed */
     #rvTourBtn { display: none !important; }                          /* tutorial replay button removed */
-    #rvStageBtn { display: none !important; }                         /* static stage button → becomes a popup (pass 2) */
+    #rvStageBtn { display: none !important; }                         /* static stage button → replaced by the JOIN THE STAGE popup */
     .rv-emote-btn[data-emote="confetti"] { display: none !important; } /* clap folds into the reaction picker (pass 2) */
+    .rv-flameglyph { font-size: 1.5em; line-height: 1; }              /* the reaction button's 🔥 while on stage */
 
     /* pass 1b: the World HUD — level · coins · crowd, a bar ABOVE the LED screen
        (top of the club frame); the JELLY meter stays alone in the mixer bottom-right */
@@ -1314,6 +1315,31 @@ const GUIDE = [
     /* shorter dancefloor → the whole frame is shorter and the emote/action bar
        rises into view (Trym). Bananas + camera are %-based, so they adapt. */
     .rv-floor { height: min(50vh, 440px); }
+
+    /* THE STAGE INVITATION — a pulsing pill that rises just beneath the DJ in
+       recurring 10s windows; tap = hop on stage. It's a UI overlay (sibling of
+       the camera-transformed world) so it stays pinned to the floor top. */
+    .rv-stagepop {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 7;
+      flex-direction: column; align-items: center; gap: 4px; width: max-content; max-width: 78%;
+      padding: 7px 15px 6px; background: #1c1338; color: #ffe135;
+      border: 3px solid #ffe135; border-radius: 10px; box-shadow: 0 4px 0 #000, 0 0 16px rgba(255, 225, 53, 0.4);
+      font-weight: 900; font-size: 0.8rem; letter-spacing: 0.03em; cursor: pointer; white-space: nowrap;
+      animation: rvStagePopPulse 1.15s ease-in-out infinite;
+    }
+    .rv-stagepop[hidden] { display: none; }
+    .rv-stagepop__track { display: block; width: 100%; height: 4px; background: #4a3b6b; border-radius: 2px; overflow: hidden; }
+    .rv-stagepop__fill { display: block; height: 100%; width: 100%; background: #ffe135; }
+    .rv-stagepop--down {
+      color: #b9a6ff; border-color: #4a3b6b; box-shadow: 0 4px 0 #000;
+      font-size: 0.72rem; animation: none; cursor: pointer;
+    }
+    .rv-stagepop--down .rv-stagepop__track { display: none; }
+    @keyframes rvStagePopPulse {
+      0%, 100% { box-shadow: 0 4px 0 #000, 0 0 16px rgba(255, 225, 53, 0.4); transform: translateX(-50%) scale(1); }
+      50% { box-shadow: 0 4px 0 #000, 0 0 26px rgba(255, 225, 53, 0.8); transform: translateX(-50%) scale(1.04); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-stagepop { animation: none; } }
   </style>
 
   <div class="rv-hall">
@@ -1366,6 +1392,12 @@ const GUIDE = [
           </svg>
         </div>
         <div class="rv-floor" id="rvFloor">
+          <!-- the stage invitation — rises here beneath the DJ in recurring
+               windows (driven by the __ravePreview block in banana-rave.js) -->
+          <button class="rv-stagepop" id="rvStagePop" type="button" hidden>
+            <span class="rv-stagepop__txt">⭐ JOIN THE STAGE</span>
+            <i class="rv-stagepop__track"><i class="rv-stagepop__fill" id="rvStagePopBar"></i></i>
+          </button>
           <div class="rv-toasts" id="rvToasts" aria-live="polite"></div>
           <div class="rv-world" id="rvWorld">
             <canvas class="rv-trails" id="rvTrails" aria-hidden="true"></canvas>

@@ -778,9 +778,10 @@ function init() {
   addEventListener('blur', () => keysDown.clear());
 
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led') || e.target.closest('.rv-exitdoor')) return; // buttons, the quest chip, the JELLY meter, the LED strip + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
+    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-led') || e.target.closest('.rv-exitdoor') || e.target.closest('.rv-stagepop')) return; // buttons, the quest chip, the JELLY meter, the LED strip + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
     const me = myId && ravers.get(myId);
-    if (!me || me.stage) return;
+    if (!me) return;
+    if (me.stage) { if (window.__ravePreview) setStageWant(false); return; } // preview: tap the floor to come down off the stage
     sitting = false; pendingSit = false; // clicking anywhere else stands you up
     const rect = floor.getBoundingClientRect();
     // undo the camera: screen point → world percent
@@ -3418,6 +3419,20 @@ function init() {
   const fireBtn = document.querySelector('.rv-emote-btn--fire');
   const onStage = () => { const me = ravers.get(myId); return !!(me && me.stage); };
 
+  // preview: one reaction button that becomes 🔥 while you're on the stage
+  // (retires the separate fire button — the click handler reads data-emote fresh)
+  const reactBtn = document.querySelector('.rv-emote-btn[data-emote="heart"]');
+  const reactHeartHTML = reactBtn ? reactBtn.innerHTML : '';
+  let heartIsFlame = null;
+  function swapHeartFlame(on) {
+    if (!reactBtn || heartIsFlame === on) return;
+    heartIsFlame = on;
+    reactBtn.dataset.emote = on ? 'fire' : 'heart';
+    reactBtn.classList.toggle('rv-emote-btn--fire', on);
+    reactBtn.setAttribute('aria-label', on ? 'Send fire' : 'Send a heart');
+    reactBtn.innerHTML = on ? '<span class="rv-flameglyph">\u{1F525}</span>' : reactHeartHTML;
+  }
+
   function refreshStageUi() {
     if (!myId) return;
     const left = STAGE_UNLOCK_MS - (Date.now() - sessionStart);
@@ -3433,7 +3448,8 @@ function init() {
       stageBtn.disabled = false;
       stageBtn.textContent = '⭐ join the stage';
     }
-    fireBtn.hidden = !onStage();
+    if (window.__ravePreview) { fireBtn.hidden = true; swapHeartFlame(onStage()); }
+    else fireBtn.hidden = !onStage();
   }
   setInterval(refreshStageUi, 1000);
 
@@ -3515,22 +3531,61 @@ function init() {
     hiddenHeld = nowHidden;
   }, 600);
 
-  stageBtn.addEventListener('click', () => {
-    if (stageBtn.disabled) return;
+  function setStageWant(want) {
     sitting = false; pendingSit = false; // no dancing on stage from a stool
-    const want = !onStage();
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'stage', on: want }));
-    else if (myId) { // solo mode: the stage is all yours
+    // ?stagetest (preview QA only): the client unlocks the stage in 5s but the
+    // server keeps the real 5-min gate — so drive the stage locally in test,
+    // otherwise the popup would show but the join couldn't be exercised.
+    const testStage = window.__ravePreview && location.search.includes('stagetest');
+    if (ws && ws.readyState === 1 && !testStage) ws.send(JSON.stringify({ t: 'stage', on: want }));
+    else if (myId) { // solo mode / stagetest: the stage is all yours
       setStage(myId, want);
       if (want) {
         const sr = ravers.get(myId);
         if (sr) showBubble('⭐ ' + dispName(sr) + ' takes the stage!', false, 4000);
         el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap ⭐ again to come down');
+        bigMoment('YOU’RE ON THE STAGE 🔥', window.__ravePreview ? 'dance behind the DJ — tap the floor to come down' : 'dance behind the DJ — tap ⭐ again to come down');
       }
     }
     track(want ? 'rave_stage_join' : 'rave_stage_leave');
+  }
+  stageBtn.addEventListener('click', () => {
+    if (stageBtn.disabled) return;
+    setStageWant(!onStage());
   });
+
+  // preview: the stage becomes an INVITATION, not a permanent button. Once
+  // unlocked, a "JOIN THE STAGE" popup rises beneath the DJ in short recurring
+  // windows (a 10s bar). Tap it to hop up; tap the floor to come back down.
+  if (window.__ravePreview) {
+    const pop = el('rvStagePop');
+    const popTxt = pop && pop.querySelector('.rv-stagepop__txt');
+    const popBar = el('rvStagePopBar');
+    if (pop) {
+      const WIN_MS = 10000, GAP_MS = 30000;
+      let winUntil = 0, nextAt = 0;
+      pop.addEventListener('click', (e) => { e.stopPropagation(); setStageWant(!onStage()); winUntil = 0; });
+      setInterval(() => {
+        if (!myId) return;
+        const now = Date.now();
+        if (onStage()) {
+          pop.hidden = false; pop.classList.add('rv-stagepop--down');
+          if (popTxt) popTxt.textContent = '↩ tap the floor to come down';
+          if (popBar) popBar.style.width = '0%';
+          return;
+        }
+        pop.classList.remove('rv-stagepop--down');
+        if (STAGE_UNLOCK_MS - (now - sessionStart) > 0) { pop.hidden = true; winUntil = 0; nextAt = 0; return; }
+        if (!nextAt) nextAt = now + 4000; // first invite ~4s after the stage unlocks
+        if (!winUntil && now >= nextAt) winUntil = now + WIN_MS;
+        if (winUntil && now < winUntil) {
+          pop.hidden = false;
+          if (popTxt) popTxt.textContent = '⭐ JOIN THE STAGE';
+          if (popBar) popBar.style.width = (((winUntil - now) / WIN_MS) * 100).toFixed(1) + '%';
+        } else if (winUntil) { winUntil = 0; pop.hidden = true; nextAt = now + GAP_MS; }
+      }, 250);
+    }
+  }
 
   // ---- THE LED STRIP: the club sign takes requests (WHY build, phase 3) ----
   // A slim diegetic ticker, top-centre of the floor. THE POLITE-DJ RULE: it
