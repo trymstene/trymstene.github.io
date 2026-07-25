@@ -260,7 +260,7 @@ export async function checkCatalogVerdicts(opts = {}) {
     if (!r.ok) return;
     const verdicts = await r.json();
     const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    let changed = false;
+    let changed = false, equippedOwn = false;
     for (const s of subs) {
       const v = verdicts[s.sid];
       if (!v || s.status !== 'pending') continue;
@@ -268,10 +268,24 @@ export async function checkCatalogVerdicts(opts = {}) {
       changed = true;
       const title = esc(s.title) || 'Your item';
       if (v.s === 'ok') {
+        // 🎉 YOU MADE IT TO WEAR IT: the moment it's approved the item is YOURS
+        // and goes straight onto your banana (rides bb-last to the rave / pass
+        // card / share). No more "approved into a void" — instant payoff.
+        if (v.item && /^c_[a-f0-9]{6,32}$/.test(v.item)) {
+          try {
+            const own = JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {};
+            own[v.item] = 1;
+            localStorage.setItem('cat-own-v1', JSON.stringify(own));
+            const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
+            bl.c = v.item;
+            localStorage.setItem('bb-last', JSON.stringify(bl));
+            equippedOwn = true;
+          } catch (e) {}
+        }
         passNoticeAdd({
           id: 'cat-' + s.sid,
-          icon: '🎁',
-          text: '<b>“' + title + '” made the catalog!</b> It’ll drop on the rave floor — with your name riding it.',
+          icon: '🎉',
+          text: '<b>“' + title + '” made it in!</b> It’s dropping on the rave floor now — and it’s already on your banana. Strangers will catch it and dance in your design, your name riding along. Go show it off →',
           link: '/rave/',
         });
       } else {
@@ -286,6 +300,7 @@ export async function checkCatalogVerdicts(opts = {}) {
     if (changed) {
       try { localStorage.setItem(CAT_SUBS_KEY, JSON.stringify(subs.slice(0, 20))); } catch (e) {}
     }
+    if (equippedOwn) passPush(); // ride the newly-worn creation to their other devices
   } catch (e) { /* offline is fine — next visit asks again */ }
 }
 
