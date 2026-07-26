@@ -3541,7 +3541,7 @@ function init() {
     // contact never chain-pops the children.
     jboss: {
       led: '🫧 SOMETHING ESCAPED THE WALK-IN',
-      SIZES: [76, 48, 30],       // px by generation (big / medium / small)
+      SIZES: [96, 54, 32],       // px by generation (big / medium / small)
       SPEEDS: [9, 12.5, 16],     // %/s by generation — the smalls run
       enter() {
         this.blobs = [];
@@ -3553,7 +3553,11 @@ function init() {
           const d = me ? Math.hypot(s.x - me.x, s.y - me.y) : Math.random() * 100;
           if (d > best) { best = d; spot = s; }
         }
-        this.spawn(0, spot.x, spot.y, Math.random() * 6.28);
+        // 👑 BOSS ENTRANCE: it drops in from above the rig and lands with a
+        // triple splash + its own title card — untouchable until it lands
+        const b = this.spawn(0, spot.x, -7, Math.random() * 6.28);
+        b.drop = spot.y;
+        b.im = Date.now() + 9e9;
         qHint('🫧 a MEGA JELLY is loose! run into it — split it to bits');
         bartySay(['JELLY BOSS! 🫧 that thing’s been growin’ in my walk-in for WEEKS — run it down, partner!',
           { t: 'i fed it once. my mistake. i feed everything. my mistake.', mutter: true }], true);
@@ -3565,15 +3569,34 @@ function init() {
         d.innerHTML = JBOSS_SVG;
         d.style.width = this.SIZES[gen] + 'px';
         world.appendChild(d);
-        this.blobs.push({ el: d, gen, x, y,
+        const b = { el: d, gen, x, y,
           vx: Math.cos(ang) * this.SPEEDS[gen], vy: Math.sin(ang) * 0.7 * this.SPEEDS[gen],
-          im: Date.now() + 800 });
+          im: Date.now() + 800 };
+        this.blobs.push(b);
+        return b;
       },
       tick(now) {
         const dt = this.lastT ? Math.min(now - this.lastT, 100) / 1000 : 0.016;
         this.lastT = now;
         for (const b of this.blobs) {
-          let nx = b.x + b.vx * dt, ny = b.y + b.vy * dt;
+          if (b.drop != null) {
+            // the entrance fall — slow enough to READ as an entrance
+            b.y += 42 * dt;
+            if (b.y >= b.drop) {
+              b.y = b.drop;
+              b.drop = null;
+              b.im = Date.now() + 900;
+              pickupPop(b.x, b.y); pickupPop(b.x - 5, b.y + 2); pickupPop(b.x + 5, b.y + 2);
+              bigMoment('THE JELLY BOSS 🫧', 'run it down!');
+            }
+            b.el.style.left = b.x + '%';
+            b.el.style.top = b.y + '%';
+            b.el.style.zIndex = String(100 + Math.round(Math.max(0, b.y)));
+            continue;
+          }
+          // fresh children SCATTER-DASH before settling to their cruise speed
+          const mul = now < (b.burst || 0) ? 3.4 : 1;
+          let nx = b.x + b.vx * mul * dt, ny = b.y + b.vy * mul * dt;
           // bounce off the walls and everything solid (bar + door included)
           if (nx < 8 || nx > 92 || blockedAt(nx, b.y)) { b.vx = -b.vx; nx = b.x; }
           if (ny < topClamp + 6 || ny > 84 || blockedAt(b.x, ny)) { b.vy = -b.vy; ny = b.y; }
@@ -3587,7 +3610,7 @@ function init() {
         const t = Date.now();
         for (let i = this.blobs.length - 1; i >= 0; i--) {
           const b = this.blobs[i];
-          if (t < b.im) continue;                    // fresh split — immune a beat
+          if (b.drop != null || t < b.im) continue;  // mid-entrance or freshly split
           const rPx = (me.size || 90) * 0.5 + this.SIZES[b.gen] * 0.45;
           if (Math.hypot(((me.x - b.x) / 100) * floorW, ((me.y - b.y) / 100) * floorH) > rPx) continue;
           // an IDLE banana can't pop it — it just BOINGS off you (standing AFK
@@ -3603,10 +3626,13 @@ function init() {
           this.blobs.splice(i, 1);
           pickupPop(b.x, b.y);
           if (b.gen < 2) {
-            // burst apart: two children fleeing sideways-ish from the hit
+            // burst apart: THREE children scatter-dashing away across the
+            // floor (the dash outruns any banana — you hunt them down after)
             const away = Math.atan2(b.y - me.y, b.x - me.x);
-            this.spawn(b.gen + 1, b.x, b.y, away + 0.9);
-            this.spawn(b.gen + 1, b.x, b.y, away - 0.9);
+            for (let k = 0; k < 3; k++) {
+              const c = this.spawn(b.gen + 1, b.x, b.y, away + (k - 1) * 1.15 + (Math.random() - 0.5) * 0.4);
+              c.burst = t + 800;
+            }
           } else {
             addHype(2);                              // the smalls pop into jelly
             floatPlus(b.x, b.y - 4, '+2');
