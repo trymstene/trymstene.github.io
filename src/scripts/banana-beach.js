@@ -1029,7 +1029,6 @@ function init() {
     digLog.innerHTML =
       '<div><b>' + dug + '</b><span>holes dug</span></div>'
       + '<div><b>' + (s.bh_treasure || 0) + '</b><span>treasures</span></div>'
-      + '<div><b>' + (s.bh_chest || 0) + '</b><span>chests</span></div>'
       + '<div><b>' + (s.bh_curio || 0) + '</b><span>curios</span></div>';
     digPanel.hidden = false;
     track('beach_dig_desk');
@@ -3550,10 +3549,26 @@ function init() {
     if (e.key === 'Escape' && !document.getElementById('bhShareModal').hidden) closeBeachShare();
   });
 
+  // 🍌 the NPC portraits in their popups — a close-up, hands-up frame (the
+  // share-card pose); the CSS tilts + crops them to a waist-up peek. Static, so
+  // they ride the same async redraw belt as the scene NPCs (accessories decode
+  // late).
+  function drawPortraits() {
+    [['bhShellyPortrait', SHELLY_DRAW], ['bhGilPortrait', GIL_DRAW], ['bhCapPortrait', CAP_DRAW]].forEach(([id, DRAW]) => {
+      const cv = document.getElementById(id);
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.save();
+      ctx.scale(1.55, 1.55); ctx.translate(-cv.width * 0.17, -cv.height * 0.02);  // zoom to a close-up
+      drawComposite(ctx, cv.width, 2, DRAW);
+      ctx.restore();
+    });
+  }
   assetsReady().then(() => {
-    drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly();
-    setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 700);   // redraw belt: accessories decode async
-    setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); }, 1800);
+    drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); drawPortraits();
+    setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); drawPortraits(); }, 700);   // redraw belt: accessories decode async
+    setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); drawPortraits(); }, 1800);
     // beat-frame redraws only, and never for a hidden tab (perf doctrine)
     setInterval(() => {
       if (document.hidden) return;
