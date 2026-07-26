@@ -60,10 +60,12 @@ const faq = {
     }
     .bh-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
 
+    /* the FRAME (border + shadow) is on the stage so the action band can sit
+       BELOW the map inside it — the Rave's .rv-club shape. */
+    .bh-stage { border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
     /* the VIEWPORT: a window onto a world bigger than it, both axes */
     .bh-view {
-      position: relative; height: min(74vh, 580px); overflow: hidden;
-      border: 4px solid #000; box-shadow: 8px 8px 0 #000; cursor: pointer;
+      position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       background: #5c2a52;
     }
@@ -368,13 +370,6 @@ const faq = {
       background-size: 100% 100%; background-repeat: no-repeat;
     }
     .bh-digs { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-    .bh-patch {
-      position: absolute; transform: translate(-50%, -50%);
-      background-image: url('/assets/beach/dig-patch.png');
-      background-size: 100% 100%; image-rendering: pixelated;
-      opacity: 0.85; transition: opacity 0.4s ease;
-    }
-    .bh-patch.is-spent { opacity: 0.4; }   /* dug out — nothing left here */
     .bh-hole {
       position: absolute; width: 0.92%; aspect-ratio: 22 / 16;
       transform: translate(-50%, -60%); image-rendering: pixelated;
@@ -382,34 +377,25 @@ const faq = {
       background-size: 100% 100%; background-repeat: no-repeat;
       transition: opacity 0.9s ease;   /* the tide fills them in — see HOLE_LIFE */
     }
-    /* 🎮 THE ACTION BAR — bottom centre, in thumb reach on a phone and under
-       the eye on desktop. Stats stay top-right; actions never mix in with
-       them. Sized as real buttons, not chips: these get pressed repeatedly. */
+    /* 🎮 THE ACTION BAR — the Rave's control band (.rv-hud), beach edition. An
+       IN-FLOW band BELOW the map, never over the play area. React · 🪏 Dig ·
+       Sound, centred, on a dark strip that reads as part of the frame. */
     .bh-actions {
-      position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
-      z-index: 9; display: flex; gap: 0.5rem; pointer-events: none;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      background: #17121f; border-top: 4px solid #000; padding: 0.6rem 0.8rem;
+      flex-wrap: wrap; touch-action: manipulation;
     }
     .bh-act {
       appearance: none; font: inherit; font-weight: 800; font-size: 0.95rem;
-      background: #ffb347; color: #241505; border: 3px solid #000;
-      box-shadow: 3px 3px 0 #000; padding: 0.55rem 1.15rem; cursor: pointer;
-      pointer-events: auto; line-height: 1; white-space: nowrap;
-      transition: opacity 0.2s ease, transform 0.08s ease;
+      border: 3px solid #000; box-shadow: 3px 3px 0 #000; cursor: pointer;
+      line-height: 1; white-space: nowrap; display: inline-flex; align-items: center;
+      gap: 0.35rem; transition: transform 0.08s ease, box-shadow 0.08s ease;
     }
     .bh-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
-    /* HIDDEN entirely off a patch, not just dimmed — a permanently greyed-out
-       control is noise that teaches nothing. It appears only where it works,
-       which makes its arrival the thing that tells you you can dig here. */
-    .bh-act--dig { display: none; }
-    .bh-act--dig.is-on {
-      display: inline-block;
-      animation: bhDigPulse 1.1s ease-in-out infinite;
-    }
-    @keyframes bhDigPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.07); }
-    }
-    @media (prefers-reduced-motion: reduce) { .bh-act--dig.is-on { animation: none; } }
+    /* 🪏 Dig is the PRIMARY — big + yellow, the verb this beach is built on */
+    .bh-act--dig { background: #ffb347; color: #241505; padding: 0.55rem 1.15rem; }
+    /* react + sound are secondary — dark icon buttons, like the HUD pills */
+    .bh-act--icon { background: #241d33; color: #fffdf5; padding: 0.5rem 0.7rem; font-size: 1.1rem; min-width: 46px; justify-content: center; }
     /* 🥅 THE NET, ON ITS OWN LAYER so things can pass BEHIND it.
        The net is a wall standing on the sand at NET.y but drawn rising ~138px
        up the screen, so its mesh is nowhere near the line you collide with.
@@ -1346,6 +1332,9 @@ const faq = {
     <h1 class="bh-sign">🏖 BANANA BAY</h1>
     <p class="bh-tag">the sun never quite sets here</p>
 
+    <!-- the map + its action band in ONE bordered frame (the Rave's .rv-club
+         shape): the action bar is a band BELOW the map, never over the play. -->
+    <div class="bh-stage">
     <div class="bh-view" id="bhView">
       <div class="bh-world" id="bhWorld">
         <div class="bh-sea bh-sea--0" aria-hidden="true"></div>
@@ -1381,10 +1370,7 @@ const faq = {
         <span class="bh-whud__rally" id="bhRally"></span>
         <span class="bh-whud__crowd"><span aria-hidden="true">◍</span> <span id="bhCrowd">solo</span></span>
       </div>
-      <!-- (the ⛏ dig BUTTON was removed once tap-to-dig worked: tapping the
-           thing you want is already the rule for the ball, the stalls and the
-           chairs, so a separate button was one control too many.) -->
-      <div class="bh-hint" id="bhHint">tap to walk · tap the ball to play it · tap dark sand to dig</div>
+      <div class="bh-hint" id="bhHint">tap to walk · tap the ball · hit ⛏ Dig (or Space) to dig</div>
 
       <!-- 🎡 THE STALL VIEW — one frame, every stall. Name + tickets in the
            header, the game in the middle, cost/PLAY in the footer. It's a
@@ -1441,7 +1427,7 @@ const faq = {
           <p id="bhDigSay">"there's treasure buried on this bay, matey. dig it up."</p>
           <p class="bh-mapclue" id="bhDigClue"></p>
           <ol class="bh-how">
-            <li><b>⛏ tap the dark sand to dig.</b> one chest is buried out there each day — my map says roughly where.</li>
+            <li><b>⛏ hit Dig to dig at your feet.</b> one treasure is buried on the bay each day — walk the sand and dig around to hunt it down.</li>
           </ol>
           <div class="bh-diglog" id="bhDigLog"></div>
         </div>
@@ -1512,7 +1498,17 @@ const faq = {
         <div class="bh-coco__foot" id="bhCocoFoot"></div>
         <button class="bh-btn bh-coco__back" id="bhCocoBack" type="button">🏖 back to the beach</button>
       </div>
+    </div><!-- /.bh-view -->
+
+    <!-- 🎮 THE ACTION BAR — the Rave's control band, beach edition: an in-flow
+         band BELOW the map, inside the same frame. React · ⛏ Dig · Sound. -->
+    <div class="bh-actions" aria-label="beach actions">
+      <button class="bh-act bh-act--icon" id="bhEmote" type="button" aria-label="react">❤️</button>
+      <button class="bh-act bh-act--dig" id="bhDigBtn" type="button" aria-label="dig">⛏ Dig</button>
+      <button class="bh-act bh-act--icon" id="bhAudio" type="button" aria-label="sound" aria-pressed="false">🔇</button>
     </div>
+    </div><!-- /.bh-stage -->
+
     <!-- 🏖 THE BEACH-DAY CARD: who's on the beach, your day's stats, and a
          shareable postcard — the beach's version of the rave's side panel. -->
     <aside class="bh-side">
@@ -1522,7 +1518,7 @@ const faq = {
       <div class="bh-daystats" id="bhDayStats"></div>
       <button class="bh-sharebtn" id="bhShareDay" type="button">📸 share my beach day</button>
       <div class="bh-door"><a href="/make-a-banana/" data-place="beach">Dress your banana →</a></div>
-      <p class="bh-sidenote">Everyone here is a real visitor. Walk with the arrow keys / WASD or tap the sand — tap the ball to play it, tap dark sand to dig.</p>
+      <p class="bh-sidenote">Everyone here is a real visitor. Walk with the arrow keys / WASD or tap the sand — tap the ball to play it, hit ⛏ Dig to dig for treasure.</p>
     </aside>
 
     <div class="bh-foot" id="bhFoot">

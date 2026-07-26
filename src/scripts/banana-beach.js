@@ -419,10 +419,12 @@ function init() {
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
       keys[k] = true; e.preventDefault();
     }
-    // space is context-sensitive: dig if you're stood on a patch, else play
+    // space = dig at your feet (the keyboard twin of ⛏ Dig) — but NOT while a
+    // panel is open (would dig behind the backdrop) or a button is focused
+    // (let Space press it), matching how the click handler bails on panels.
     if (k === ' ' || k === 'spacebar') {
-      if (patchAt(pos.x, pos.y)) dig(); else playBall();
-      e.preventDefault();
+      const onBtn = e.target && e.target.closest && e.target.closest('button');
+      if (!onBtn && !document.querySelector('.bh-panel:not([hidden])')) { dig(); e.preventDefault(); }
     }
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
@@ -447,7 +449,7 @@ function init() {
     nextTgt = null; tgt.x = wx; tgt.y = wy;
   }
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.bh-panel') || e.target.closest('.bh-whud')) return;
+    if (e.target.closest('.bh-panel') || e.target.closest('.bh-whud') || e.target.closest('.bh-actions')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
@@ -466,24 +468,8 @@ function init() {
     }
     if (tapGrabber(wx, wy)) return;   // 🕹 the landmark, out on the pier
     if (tapStall(wx, wy)) return;     // 🎡 a stall counter takes priority
-    // ⛏ TAP A PATCH TO DIG IT — the same verb as tapping the ball. A dim chip
-    // in the corner of the HUD was not discoverable: Trym built this with me
-    // and still had to ask how to dig. Tapping the thing you want to interact
-    // with is the rule this whole beach already uses.
-    const tapPatch = patchAt(wx, wy);
-    if (tapPatch) {
-      seated = null; sitTarget = null;
-      meEl.classList.remove('is-sitting');
-      // ⚠️ TAP WHERE YOU WANT THE HOLE — not "dig wherever I happen to stand".
-      // The old rule (already on this patch → dig at your feet) made it
-      // IMPOSSIBLE to move around inside a patch: every tap just re-dug the
-      // same spot, so you had to walk in from outside for each hole. Now a tap
-      // near you digs; a tap further off walks you there and digs ON ARRIVAL.
-      // One tap = one hole, anywhere on the patch — which IS the search loop.
-      if (Math.hypot(wx - pos.x, wy - pos.y) < 30) dig();
-      else { nextTgt = null; tgt.x = wx; tgt.y = wy; pendingDig = { x: wx, y: wy }; }
-      return;
-    }
+    // ⛏ digging is the ⛏ Dig ACTION BUTTON now (dig anywhere at your feet) —
+    // tapping bare sand just walks you there, like the rest of the beach.
     // 🏴‍☠️ tapping CAPTAIN SABREFACE opens his desk — TIGHT to his sprite now
     // (like Shelly/Gil; the old box was the whole boathouse). A far tap walks
     // over and opens ON ARRIVAL, at a reachable point in FRONT of him (the wreck
@@ -1004,11 +990,10 @@ function init() {
     const near = Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r;
     if (near && !capGreeted) {
       capGreeted = true;
-      // 🗺 THE MAP lives on his counter and rolls with the patches every night,
-      // so the clue is always about TODAY's beach. It narrows the hunt to one
-      // landmark without handing the spot over — you still dig the patch out.
+      // 🗺 the treasure is buried somewhere on today's bay — his map pieces
+      // (next milestone) narrow it down; for now he just points you at the sand.
       say(!treasureFound()
-        ? '🗺 map says the sea buried something good ' + patches.treasureClue + '. dig it out.'
+        ? '🗺 there’s treasure buried on the bay today. dig around and find it.'
         : CAP_LINES[capIdx++ % CAP_LINES.length], 6000);
       track('beach_captain');
     } else if (!near && capGreeted && Math.hypot(pos.x - BAR.x, pos.y - BAR.y) > BAR.r + 40) {
@@ -1031,8 +1016,8 @@ function init() {
     // the map is the reason to come back to him daily — it's the only place
     // today's clue is written down rather than said once and lost
     digClue.innerHTML = treasureFound()
-      ? '🗺 <b>today’s treasure is up.</b> the map’s no use to you now — the tide draws a new one tonight.'
-      : '🗺 <b>the map:</b> something good is buried ' + patches.treasureClue + '.';
+      ? '🗺 <b>today’s treasure is up.</b> nothing left to find — the tide buries a new one tonight.'
+      : '🗺 <b>the map:</b> something’s buried out on the bay. dig around and hunt it down.';
     digSay.textContent = dug === 0
       ? '“never held a spade? sand’s soft, go on.”'
       : dug < 12
@@ -1502,41 +1487,14 @@ function init() {
     depth(c.el, c.y);              // critters sort against the props too
   }
 
-  // ---- ⛏ THE DIG ----------------------------------------------------------
-  // Trym's shape: patches are VISIBLE (so a cold visitor sees one and digs
-  // within seconds — standalone-first), but a patch is an AREA to search, not
-  // a prize. "it cant be one dig, one find… big enough patches so you actually
-  // have to look for a while." So each patch holds several buried things at
-  // seeded spots inside it, and digging between them turns up nothing but
-  // sand. The empty holes ARE the content.
-  //
-  // ⚠️ PATCH SITES ARE HAND-PLACED, not random. Random points landed in the
-  // sea, on the pier and inside the court. Hand-placing also buys the treasure
-  // map its clue for free: every site already has a landmark name.
-  // ⚠️ RE-SCATTERED with the zoning pass. THREE of the previous nine were
-  // broken and had shipped: (340,870) overlapped the welcome arch by 93×104 —
-  // you dug under the gateway — and (620,966) and (1244,662) each put a sliver
-  // ON the volleyball court. audit_digs() in the generator never caught them
-  // because it only compared patches against baked sprites; it knew nothing
-  // about the court, the DOM arch or the world's edge. It checks all of that
-  // now. ⚠️ KEEP IN SYNC with DIG_SITES in tools/build-beach-scene.py, which
-  // is what runs those audits.
-  // Digging stays deliberately scattered map-wide rather than zoned (Trym:
-  // "the digging activity can be plastered around throughout the map").
-  const DIG_SITES = [
-    { x: 420, y: 392, clue: 'among the western dunes, up near the tide' },
-    { x: 444, y: 990, clue: 'just inside the welcome arch' },
-    { x: 700, y: 368, clue: 'the tide walk, west of the sunbeds' },
-    { x: 1150, y: 368, clue: 'wet sand at the top of the beach' },
-    { x: 1262, y: 966, clue: 'the green below the crossroads' },
-    { x: 1444, y: 984, clue: 'the south lawn, east of the court' },
-    { x: 1540, y: 900, clue: 'west of the wreck' },
-    { x: 1642, y: 992, clue: 'behind the Captain’s hull' },
-    { x: 1790, y: 956, clue: 'the east sands, outside the bazaar' },
-  ];
-  const PATCH_W = 156, PATCH_H = 104;
-  const DIG_REACH = 46;            // how near a buried spot a dig has to land
-  const DIG_PATCHES = 5;           // sites the tide turns over each night
+  // ---- ⛏ THE DIG — Captain Sabreface's daily buried treasure --------------
+  // OVERHAULED 26 Jul (Trym): the visible patch grid is GONE — five dark blobs
+  // you cleared every day read as a to-do list, exciting only the first time.
+  // Now bare sand EVERYWHERE is diggable, ONE treasure is buried at a date-
+  // seeded spot, and you hunt it with the ⛏ DIG action button. The sand "feels
+  // packed" when you're close; map pieces (next milestone) narrow the area.
+  const DIG_REACH = 48;   // how near the buried X a dig must land to strike it
+  const DIG_WARM = 155;   // within this, a dig tells you you're close — the hunt
   // 🏴 the loot. ⚠️ NO COINS, EVER — bananacoins are one faucet (the rave) and
   // a diggable money source would inflate every price in the stand. The beach
   // pays in collection and comedy, which is the whole point of it.
@@ -1581,143 +1539,81 @@ function init() {
   // the result threw and silently killed init on the first attempt.
   let digSeq = 0;
   const digRnd = () => seedRand(digDay * 7919 + 31 + (digSeq++) * 131);
-  const patches = [];
-  (() => {
-    const pool = DIG_SITES.slice();
-    for (let i = pool.length - 1; i > 0; i--) {      // seeded shuffle
-      const j = Math.floor(digRnd() * (i + 1));
-      const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
-    }
-    const chosen = pool.slice(0, DIG_PATCHES);
-    const treasureIn = Math.floor(digRnd() * chosen.length);
-    const bottleIn = Math.floor(digRnd() * chosen.length);   // may share a patch
-    chosen.forEach((site, i) => {
-      const n = 4 + Math.floor(digRnd() * 3);         // 4-6 things buried here
-      const spots = [];
-      for (let k = 0; k < n; k++) {
-        spots.push({
-          x: site.x + (digRnd() - 0.5) * (PATCH_W - 40),
-          y: site.y + (digRnd() - 0.5) * (PATCH_H - 30),
-          // slot 0 is the treasure's, slot 1 the bottle's — n is 4-6 so both
-          // always exist, and exactly one of each is buried per day
-          kind: i === treasureIn && k === 0 ? 'treasure'
-            : i === bottleIn && k === 1 ? 'chest'
-              : digRnd() < 0.34 ? 'shell' : digRnd() < 0.55 ? 'curio' : 'junk',
-          got: false,
-        });
-      }
-      patches.push({ ...site, spots, holes: [], el: null });
-    });
-    // the map's clue points at the patch holding the day's treasure
-    patches.treasureClue = chosen[treasureIn].clue;
-  })();
-  const DIG_KEY = 'bh-dig-' + digDay;
-  // ⚠️ HOLES ARE NOT SAVED ANY MORE — only what you FOUND is.
-  // Trym found holes stranded at the crossroads, on bare sand miles from any
-  // patch. They were real: holes were stored as world coordinates against a
-  // patch INDEX, so when the dig sites moved with the re-zoning, yesterday's
-  // saved holes came back at yesterday's coordinates and sat there forever
-  // with no patch under them. Any future move would do it again.
-  // They also shouldn't persist on their own terms: sand fills itself in.
-  // Holes now fade out after HOLE_LIFE and are gone on reload; `got` (what you
-  // dug up) is the only state worth keeping, and it can't drift because it's
-  // indexed by spot, not by position.
-  const HOLE_LIFE = 30000;
-  try {
-    const saved = JSON.parse(localStorage.getItem(DIG_KEY) || 'null');
-    if (saved && saved.p) saved.p.forEach((h, i) => {
-      if (!patches[i]) return;
-      (h.got || []).forEach((k) => { if (patches[i].spots[k]) patches[i].spots[k].got = true; });
-    });
-  } catch (e) {}
-  function digSave() {
-    try {
-      localStorage.setItem(DIG_KEY, JSON.stringify({
-        p: patches.map((p) => ({
-          got: p.spots.map((s, k) => (s.got ? k : -1)).filter((k) => k >= 0),
-        })),
-      }));
-    } catch (e) {}
+  // 🗺 WHERE THE SEA BURIED IT TODAY — date-seeded, on BARE SAND only: off the
+  // map edges, off the water/court/boathouse/obstacles, off the east boardwalk.
+  // Rejection-sample the main beach until a point clears blocked() + the zones.
+  function validSpot(x, y) {
+    if (x < 170 || x > 1900) return false;                                    // main beach, not the pier/midway
+    if (y < WATER_Y + 90 || y > WORLD.h - 120) return false;                  // off the waterline + the south edge
+    if (blocked(x, y)) return false;                                          // water, palms, bushes, carts, the net
+    if (inRect(x, y, [COURT.x0, COURT.y0, COURT.x1, COURT.y1])) return false; // not the volleyball court
+    for (const c of CHAIRS) if (inRect(x, y, c.rect)) return false;           // not on a sunbed (it has no walk-collider)
+    if (Math.hypot(x - BAR.x, y - BAR.y) < BAR.r + 70) return false;          // not on/at the boathouse
+    return true;
   }
+  const treasureAt = (() => {
+    for (let i = 0; i < 600; i++) {
+      const x = 170 + digRnd() * (1900 - 170);
+      const y = (WATER_Y + 90) + digRnd() * ((WORLD.h - 120) - (WATER_Y + 90));
+      if (validSpot(x, y)) return { x: Math.round(x), y: Math.round(y) };
+    }
+    return { x: 430, y: 640 };   // fallback: open sand WEST of the court (validSpot-clean)
+  })();
+  // "found today" is a per-day localStorage flag (like the old dig state was) —
+  // the spot is the same for everyone, but each banana digs its own up once.
+  const TR_KEY = 'bh-treasure-' + digDay;
+  const treasureFound = () => { try { return localStorage.getItem(TR_KEY) === '1'; } catch (e) { return false; } };
+  const HOLE_LIFE = 30000;
   const digWrap = document.getElementById('bhDigs');
-  function digHole(p, x, y) {
+  function digHole(x, y) {
     const h = document.createElement('div');
     h.className = 'bh-hole';
     h.style.left = pct(x, W);
     h.style.top = pct(y, H);
     digWrap.appendChild(h);
-    // the tide fills it back in. ⚠️ one timer per hole, and it removes only
-    // its OWN element — the rave's doctrine about lone timers is about
-    // timers that outlive their subject, and this one takes its subject
-    // with it.
+    // the tide fills it back in — one timer per hole, removing only its OWN
+    // element (it takes its subject with it, so it's not a lone-timer leak).
     setTimeout(() => {
       h.style.opacity = '0';
       setTimeout(() => h.remove(), 900);
     }, HOLE_LIFE);
   }
-  function paintDigs() {
-    patches.forEach((p) => {
-      const el = document.createElement('div');
-      el.className = 'bh-patch';
-      el.style.left = pct(p.x, W);
-      el.style.top = pct(p.y, H);
-      el.style.width = pct(PATCH_W, W);
-      el.style.height = pct(PATCH_H, H);
-      digWrap.appendChild(el);
-      p.el = el;
-      if (p.spots.every((s) => s.got)) el.classList.add('is-spent');
-    });
-  }
-  const patchAt = (x, y) => patches.find((p) =>
-    Math.abs(x - p.x) < PATCH_W / 2 && Math.abs(y - p.y) < PATCH_H / 2);
   let digAt = 0;
+  // ⛏ DIG AT YOUR FEET — the ⛏ action button (and Space) call this anywhere on
+  // the sand. Strike the buried X → the day's treasure; near it → "packed sand"
+  // (the hunt's only cue); otherwise mostly sand, the odd scrap.
   function dig() {
     const now = performance.now();
     if (now - digAt < 420) return;
-    const p = patchAt(pos.x, pos.y);
-    if (!p) return;
     digAt = now;
-    p.holes.push([Math.round(pos.x), Math.round(pos.y)]);
-    digHole(p, pos.x, pos.y);
+    digHole(pos.x, pos.y);
     meEl.animate([{ transform: 'translate(-50%,-100%) scale(1,0.86)' },
       { transform: 'translate(-50%,-100%) scale(1,1)' }], { duration: 260, easing: 'ease-out' });
-    // the nearest thing still buried within reach — otherwise, just sand
-    let best = null, bd = DIG_REACH;
-    p.spots.forEach((s) => {
-      if (s.got) return;
-      const d = Math.hypot(s.x - pos.x, s.y - pos.y);
-      if (d < bd) { bd = d; best = s; }
-    });
-    if (!best) {
-      float(pos.x, pos.y - 26, 'just sand…', true);
-      digSave();
+    passStat('bh_dug', 1);
+    const d = Math.hypot(treasureAt.x - pos.x, treasureAt.y - pos.y);
+    if (!treasureFound() && d < DIG_REACH) {
+      openTreasure();   // the found-flag commits only when the haul is POCKETED
+      sandySay('you found it! X marks the spot.', 5200);
+      track('beach_dig', { find: 'treasure' });
       return;
     }
-    best.got = true;
-    if (best.kind === 'treasure') {
-      openTreasure();
-      sandySay('you found it! that’s what the map was on about.', 5200);
-      track('beach_dig', { find: 'treasure' });
-    } else if (best.kind === 'chest') {
-      openChest();
-      track('beach_dig', { find: 'chest' });
-    } else if (best.kind === 'shell') {
-      const id = SHELL_IDS[Math.floor(Math.random() * SHELL_IDS.length)];
-      passStat('sh_' + id, 1);
-      float(pos.x, pos.y - 30, '🐚 ' + shellName(id), true);
-      track('beach_dig', { find: 'shell' });
-    } else if (best.kind === 'curio') {
-      const c = DIG_CURIO[Math.floor(Math.random() * DIG_CURIO.length)];
+    if (!treasureFound() && d < DIG_WARM) {
+      float(pos.x, pos.y - 26, 'the sand’s packed here — close!', true);
+      track('beach_dig', { find: 'warm' });
+      return;
+    }
+    const r = Math.random();
+    if (r < 0.12) {
       passStat('bh_curio', 1);
-      float(pos.x, pos.y - 30, '✨ ' + c, true);
+      float(pos.x, pos.y - 30, '✨ ' + DIG_CURIO[Math.floor(Math.random() * DIG_CURIO.length)], true);
       track('beach_dig', { find: 'curio' });
-    } else {
+    } else if (r < 0.20) {
       float(pos.x, pos.y - 30, '🥾 ' + DIG_JUNK[Math.floor(Math.random() * DIG_JUNK.length)], true);
       track('beach_dig', { find: 'junk' });
+    } else {
+      float(pos.x, pos.y - 26, 'just sand…', true);
+      track('beach_dig', { find: 'sand' });
     }
-    passStat('bh_dug', 1);
-    if (p.spots.every((s) => s.got)) p.el.classList.add('is-spent');
-    digSave();
   }
   // 🧰🏴 the buried-reward popup: piles you TAKE. Two finds share it — the gamble
   // CHEST (world coins, often empty) and THE TREASURE (the map's prize, pays pier
@@ -1773,13 +1669,15 @@ function init() {
   function openTreasure() {
     renderReward('THE TREASURE!', treasureLoot(), 'the map led true — the sea buried this deep, and every last ticket is yours.', '', 'tickets');
     float(pos.x, pos.y - 30, '🏴 THE TREASURE!');
-    passStat('bh_treasure', 1);
   }
   chestBtn.addEventListener('click', () => {
     if (chestHaul) {
       if (chestCur === 'tickets') {
-        // tickets = the pier's own currency (balance = tickets − tickets_spent)
+        // the daily treasure counts as FOUND only once pocketed — a reload
+        // between striking the X and pocketing never eats the day's reward
         passStat('tickets', chestHaul);
+        passStat('bh_treasure', 1);
+        try { localStorage.setItem(TR_KEY, '1'); } catch (e) {}
         float(pos.x, pos.y - 34, '+' + chestHaul + ' tickets');
         track('beach_treasure', { tickets: chestHaul });
       } else {
@@ -1792,11 +1690,24 @@ function init() {
     }
     chestPanel.hidden = true;
   });
-  // (the ⛏ dig BUTTON is gone — tapping the patch is the verb now, same as
-  //  tapping the ball or a stall. One rule for the whole beach.)
-  paintDigs();
-  const treasureFound = () => patches.some((p) =>
-    p.spots.some((s) => s.kind === 'treasure' && s.got));
+
+  // 🎮 THE ACTION BAR — React · ⛏ Dig · Sound
+  document.getElementById('bhDigBtn').addEventListener('click', () => dig());
+  // a heart floats up from your banana (peer relay is a later add)
+  document.getElementById('bhEmote').addEventListener('click', () => {
+    float(pos.x, pos.y - 44, '❤️');
+    track('beach_emote');
+  });
+  // sound is a stub for now — the toggle works, the audio wires in later
+  (() => {
+    const btn = document.getElementById('bhAudio');
+    let on = false;
+    btn.addEventListener('click', () => {
+      on = !on;
+      btn.textContent = on ? '🔊' : '🔇';
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  })();
 
   // ---- 🏐 SANDY, the court's resident -------------------------------------
   // The solo problem in one line: with a solid net, a lap around a pole is
@@ -3123,7 +3034,7 @@ function init() {
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
-      patches, dig, treasureClue: () => patches.treasureClue,
+      dig, treasureAt, treasureFound,
       // fake a second banana on the court so the B2 step-aside rule is
       // testable before multiplayer exists
       setPeers: (n) => { peersInCourt = n; } };
