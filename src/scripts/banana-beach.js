@@ -880,15 +880,18 @@ function init() {
   // digging; each grab hands you the next piece (until the map's whole).
   const drifts = [];
   const MAX_DRIFTS = 3;
-  const DRIFT_EVERY = 11000;    // one floats in roughly this often — TUNABLE
-  const DRIFT_LIFE = 42000;     // …and drifts back out if not fished in
-  let driftSpawnAt = 6000;      // first one a few seconds after arrival
+  const DRIFT_EVERY = 9000;         // one floats in roughly this often — TUNABLE
+  const DRIFT_LIFE = 46000;         // …and drifts back out if not fished in
+  const DRIFT_SPEED = 21;           // px/sec, seaward → shore ("floats slowly in")
+  const DRIFT_TOP = 24;             // where it appears — the top edge of the ocean
+  const DRIFT_SHORE = WATER_Y - 18; // where it surfaces + becomes grabbable (~274)
+  let driftSpawnAt = 5000, driftLastT = 0;
   function driftSpot() {
-    for (let t = 0; t < 20; t++) {
-      const x = 320 + Math.random() * 1560;              // across the main-beach shore
-      const y = WATER_Y - 16 - Math.random() * 48;       // in the shallows, just past the waterline
-      if (blocked(x, y + 80, 0)) continue;               // reachable from dry sand right below it
-      return { x, y };
+    for (let t = 0; t < 24; t++) {
+      const x = 340 + Math.random() * 1500;
+      if (drifts.some((d) => Math.abs(d.x - x) < 280)) continue;   // spread out — never crowd another
+      if (blocked(x, WATER_Y + 60, 0)) continue;                   // dry sand below the shore point it'll reach
+      return { x, y: DRIFT_TOP + Math.random() * 30 };             // …born up at the top of the ocean
     }
     return null;
   }
@@ -899,12 +902,13 @@ function init() {
     const el = document.createElement('div');
     el.className = 'bh-drift';
     el.style.left = pct(spot.x, W);
-    el.style.top = pct(spot.y, H);
     world.appendChild(el);
-    drifts.push({ el, x: spot.x, y: spot.y, born: performance.now() });
+    drifts.push({ el, x: spot.x, y: spot.y, born: performance.now(), phase: Math.random() * 6.28 });
   }
   function driftTick() {
     const now = performance.now();
+    const dt = driftLastT ? Math.min(0.05, (now - driftLastT) / 1000) : 0.016;
+    driftLastT = now;
     if (now - driftSpawnAt > DRIFT_EVERY) { driftSpawnAt = now; spawnDrift(); }
     for (let i = drifts.length - 1; i >= 0; i--) {
       const d = drifts[i];
@@ -914,8 +918,15 @@ function init() {
         drifts.splice(i, 1);
         continue;
       }
-      // reach it in from the shore — a generous radius to cross the waterline
-      if (Math.hypot(pos.x - d.x, pos.y - d.y) < 78) {
+      // 🌊 float shoreward; the deeper it is the more it tips + goes dark-blue
+      if (d.y < DRIFT_SHORE) d.y = Math.min(DRIFT_SHORE, d.y + DRIFT_SPEED * dt);
+      const sub = Math.max(0, Math.min(1, (DRIFT_SHORE - d.y) / (DRIFT_SHORE - DRIFT_TOP)));  // 1 deep, 0 shore
+      const bob = Math.sin(now / 620 + d.phase) * (1.5 + 3 * (1 - sub));   // rolls more at the surface
+      d.el.style.top = pct(d.y + bob, H);
+      d.el.style.transform = 'translate(-50%,-50%) rotate(' + (-4 - 56 * sub).toFixed(1) + 'deg)';
+      d.el.style.setProperty('--sub', sub.toFixed(2));
+      // grab it from the shore once it's arrived (radius crosses the waterline)
+      if (Math.hypot(pos.x - d.x, pos.y - d.y) < 74) {
         d.el.remove();
         drifts.splice(i, 1);
         const wasX = haveXPiece();
