@@ -1165,15 +1165,22 @@ const GUIDE = [
     .rv-questbtn[hidden] { display: none !important; }
     .rv-questbtn:not([hidden]) { animation: rvQBtnIn 0.3s ease; }
     @keyframes rvQBtnIn { from { transform: translateY(10px); opacity: 0; } }
-    /* 📣 THE CHANT: the button pulses on the club's 0.46s bass beat (same
-       period as the speaker cones); hits flash green, misses shake it */
-    .rv-questbtn--pulse { animation: rvChantBeat 0.46s ease-out infinite; }
+    /* 🎯 the standing instruction line — between the floor and the action bar */
+    .rv-questhint {
+      background: #0d0b14; border: 3px solid #ffe135; border-top-width: 0;
+      color: #ffe135; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.05em;
+      text-transform: uppercase; text-align: center; padding: 0.4rem 0.6rem;
+    }
+    .rv-questhint[hidden] { display: none; }
+    /* 📣 THE CHANT: "tap it when it's LIT" — the button flashes WHITE on a
+       slow readable beat (every other cone-thump); a miss locks it a beat */
+    .rv-questbtn--pulse { animation: rvChantBeat 0.92s linear infinite; }
     @keyframes rvChantBeat {
-      0% { transform: scale(1.14); box-shadow: 0 0 0 0 rgba(255, 225, 53, 0.85); }
-      70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(255, 225, 53, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 225, 53, 0); }
+      0%, 32% { background: #fffdf5; transform: scale(1.16); box-shadow: 0 0 16px rgba(255, 253, 245, 0.95); }
+      42%, 100% { background: #ffe135; transform: scale(1); box-shadow: none; }
     }
     .rv-questbtn--hit { background: #59e0a2 !important; }
+    .rv-questbtn--locked { opacity: 0.4; }
     .rv-questbtn--miss { animation: rvChantMiss 0.3s ease; }
     @keyframes rvChantMiss { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
     @media (prefers-reduced-motion: reduce) { .rv-questbtn--pulse, .rv-questbtn--miss { animation: none; } }
@@ -1492,6 +1499,11 @@ const GUIDE = [
             <button class="rv-tour__skip" id="rvTourSkip" type="button">skip ✕</button>
           </div>
         </div>
+        <!-- 🎯 the quest hint: ONE calm line of standing instructions, pinned
+             OFF the floor (Barty's bubble + the LED announce get eaten by a
+             busy floor — first chant field test). Per-quest text, vanishes
+             with the quest. -->
+        <div class="rv-questhint" id="rvQuestHint" hidden></div>
         <div class="rv-hud">
           <div class="rv-emotes" role="group" aria-label="Send an emote">
             <!-- 🎯 THE QUEST TOOL — the dynamic action slot, LEFTMOST so it

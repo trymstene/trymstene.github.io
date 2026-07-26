@@ -3389,6 +3389,14 @@ function init() {
     Math.hypot(((me.x - p.x) / 100) * floorW, ((me.y - p.y) / 100) * floorH) < (me.size || 90) * mul;
   const qBtnShow = (label) => { if (questBtn) { questBtn.textContent = label; questBtn.hidden = false; } };
   const qBtnHide = () => { if (questBtn) questBtn.hidden = true; };
+  // the standing instruction line above the action bar — Barty's bubble and
+  // the LED get eaten by a busy floor, this one calmly stays (null hides it)
+  const questHintEl = el('rvQuestHint');
+  const qHint = (text) => {
+    if (!questHintEl) return;
+    if (text) { questHintEl.textContent = text; questHintEl.hidden = false; }
+    else questHintEl.hidden = true;
+  };
 
   // THE REGISTRY — each quest owns enter/frame/button/exit; the chassis owns
   // the schedule, the button, the LED call, the timeout and guaranteed cleanup.
@@ -3411,6 +3419,7 @@ function init() {
         });
         this.armed = false;
         el('rvBroomProp').style.display = '';
+        qHint('🧹 spillage! grab the mop at Barty’s bar');
         bartySay(['SPILLAGE! 🧹 five puddles on my floor — mop’s on the counter, partner. GO!',
           { t: 'thirty years i mopped this floor. now it’s your turn. that’s growth.', mutter: true }], true);
       },
@@ -3423,6 +3432,7 @@ function init() {
             el('rvBroomProp').style.display = 'none';
             pickupPop(me.x, me.y);
             qBtnShow('🧹 0/5');
+            qHint('stand on a puddle → hit the 🧹 button');
             bartySay(['that’s the good mop — stand ON a puddle and hit that 🧹!'], true);
           }
           return;
@@ -3469,21 +3479,29 @@ function init() {
     // (no-punishing doctrine), they just shake the button.
     chant: {
       led: '📣 THE FLOOR WANTS A CHANT',
-      BEAT: 460,   // ms — the speaker cones' rvBass period
-      LAG: 60,     // judge against a slightly late centre: mobile taps land late
-      WIN: 115,    // ±ms around the (lagged) beat that counts as ON it
+      // "tap it when it's LIT": a slow readable flash (every OTHER cone-thump —
+      // 460ms was a rhythm game nobody was told the rules of; first field test
+      // ended in mash-and-pray). A miss LOCKS the button a beat, so mashing is
+      // strictly worse than watching the flash — progress is never taken away.
+      BEAT: 920,
+      LAG: 60,       // judge a touch late: mobile taps land behind the eye
+      WIN: 160,      // ±ms around the (lagged) flash that counts
+      LOCK: 700,     // miss penalty: the button ignores presses this long
       enter() {
         this.hits = 0;
+        this.lockUntil = 0;
         qBtnShow('📣 0/8');
+        qHint('tap 📣 the moment it flashes WHITE');
         if (questBtn) {
           questBtn.classList.add('rv-questbtn--pulse');
           questBtn.style.animationDelay = -(Date.now() % this.BEAT) + 'ms'; // wall-clock phase
         }
-        bartySay(['CHANT TIME! 📣 hit that button ON the pulse — eight true beats and this floor WAVES.',
+        bartySay(['CHANT TIME! 📣 tap that button the moment it lights up — eight and this floor WAVES.',
           { t: 'i used to lead the chants. voice went in ’09. the beat stayed.', mutter: true }], true);
       },
       button(me) {
         if (!questBtn) return;
+        if (Date.now() < this.lockUntil) return;     // locked out from a miss
         const off = (((Date.now() - this.LAG) % this.BEAT) + this.BEAT) % this.BEAT;
         if (off <= this.WIN || off >= this.BEAT - this.WIN) {
           this.hits++;
@@ -3494,13 +3512,16 @@ function init() {
           qBtnShow('📣 ' + this.hits + '/8');
           if (this.hits >= 8) questDone();
         } else {
+          this.lockUntil = Date.now() + this.LOCK;
+          questBtn.classList.add('rv-questbtn--locked');
           questBtn.classList.remove('rv-questbtn--miss'); void questBtn.offsetWidth;
           questBtn.classList.add('rv-questbtn--miss');
+          setTimeout(() => questBtn.classList.remove('rv-questbtn--locked'), this.LOCK);
         }
       },
       exit() {
         if (questBtn) {
-          questBtn.classList.remove('rv-questbtn--pulse', 'rv-questbtn--hit', 'rv-questbtn--miss');
+          questBtn.classList.remove('rv-questbtn--pulse', 'rv-questbtn--hit', 'rv-questbtn--miss', 'rv-questbtn--locked');
           questBtn.style.animationDelay = '';
         }
       },
@@ -3525,6 +3546,7 @@ function init() {
     quest = null;
     def.exit(true);
     qBtnHide();
+    qHint(null);
     addHype(12);                                     // completion pay: XP + meter
     passStat('coins_earned', 6);
     renderWallet(true);
@@ -3542,6 +3564,7 @@ function init() {
     quest = null;
     def.exit(false);
     qBtnHide();
+    qHint(null);
     if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('eh, i’ll get the rest myself. thanks anyhow, partner.', false, 4200);
   }
   function questFrame(now) {
