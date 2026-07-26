@@ -470,8 +470,6 @@ const faq = {
       font-size: 0.5rem; font-weight: 800; letter-spacing: 0.05em;
       color: #fffdf5; text-shadow: 1px 1px 0 #000; white-space: nowrap;
     }
-    #bhCrowd { color: #fffdf5; cursor: default; }
-    #bhCrowd:empty { display: none; }
     /* leavers go in a puff, never a blink — the world-lib smoke, worn by every
        room in Banana World (rave, park, and now the bay) */
     .bh-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }
@@ -730,16 +728,35 @@ const faq = {
       transition: opacity 0.4s ease;
     }
     .bh-hint.is-off { opacity: 0; }
-    /* HUD: rally + shell count (the shell chip opens the collection) */
-    .bh-hud { position: absolute; top: 8px; right: 8px; z-index: 9; display: flex; gap: 0.4rem; }
-    .bh-chip {
-      appearance: none; font: inherit; background: rgba(0, 0, 0, 0.58); border: 2px solid #000;
-      padding: 0.2rem 0.5rem; font-weight: 800; font-size: 0.82rem; color: #ffb347;
-      cursor: pointer; display: flex; align-items: center; gap: 0.3rem;
+    /* 🌍 THE WORLD HUD — the same refined pill strip the rave floor uses (ported
+       26 Jul), themed for the bright bay: dark pills so they read over the sky.
+       LEVEL (gold, rep bar) · COINS · TICKETS · collection chips (open panels) ·
+       CROWD. Right-aligned, wraps on narrow phones like the rave's. */
+    .bh-whud {
+      position: absolute; top: 8px; right: 8px; z-index: 9;
+      display: flex; gap: 5px; align-items: center; justify-content: flex-end;
+      flex-wrap: wrap; max-width: calc(100% - 16px);
     }
-    .bh-chip:active { transform: translate(1px, 1px); }
-    .bh-chip--rally { color: #fffdf5; cursor: default; }
-    .bh-chip--rally:empty { display: none; }
+    .bh-whud > * {
+      margin: 0; height: 27px; box-sizing: border-box; display: flex; align-items: center;
+      gap: 5px; background: rgba(16, 18, 28, 0.82); border: 2px solid #000;
+      border-radius: 6px; padding: 0 9px; font-weight: 800; font-size: 0.76rem;
+      line-height: 1; color: #fffdf5;
+    }
+    .bh-whud button { appearance: none; font: inherit; cursor: pointer; }
+    .bh-whud button:active { transform: translate(1px, 1px); }
+    .bh-whud .bh-whud__lvl { color: #ffe135; border-color: #ffe135; }
+    .bh-whud__lvlbar {
+      flex: 0 0 42px; min-width: 42px; height: 6px; background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
+    }
+    .bh-whud__lvlbar i { display: block; height: 100%; width: 0; background: #ffe135; transition: width 0.5s ease; }
+    .bh-whud__coins img { display: block; image-rendering: pixelated; }
+    .bh-whud__coins b { color: #ffe135; }
+    .bh-whud__tix b { color: #ffd54a; }
+    .bh-whud__crowd { color: #8affc0; }
+    .bh-whud__rally { color: #fffdf5; }
+    .bh-whud__rally:empty { display: none; }
     /* panels: the collection grid + the Captain's trade desk */
     .bh-panel {
       position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
@@ -1303,11 +1320,16 @@ const faq = {
         <div class="bh-wball" id="bhWBall" aria-hidden="true"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div>
       </div>
-      <div class="bh-hud">
-        <span class="bh-chip bh-chip--rally" id="bhCrowd"></span>
-        <span class="bh-chip bh-chip--rally" id="bhRally"></span>
-        <button class="bh-chip" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/29</span></button>
-        <button class="bh-chip" id="bhFishChip" type="button" aria-label="Your fish ledger">🐟 <span id="bhFishCount">0/25</span></button>
+      <!-- 🌍 THE WORLD HUD — the same refined strip as the rave floor. LEVEL (rep
+           bar) · COINS · TICKETS · your collections · CROWD. Same one everywhere. -->
+      <div class="bh-whud" id="bhWhud">
+        <span class="bh-whud__lvl" id="bhLvlRow"><span id="bhLvlN">LVL 1</span><span class="bh-whud__lvlbar"><i id="bhLvlFill"></i></span></span>
+        <span class="bh-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="bhCoinN">0</b></span>
+        <span class="bh-whud__tix">🎟 <b id="bhTixN">0</b></span>
+        <button class="bh-whud__coll" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/24</span></button>
+        <button class="bh-whud__coll" id="bhFishChip" type="button" aria-label="Your fish ledger">🐟 <span id="bhFishCount">0/25</span></button>
+        <span class="bh-whud__rally" id="bhRally"></span>
+        <span class="bh-whud__crowd"><span aria-hidden="true">◍</span> <span id="bhCrowd">solo</span></span>
       </div>
       <!-- (the ⛏ dig BUTTON was removed once tap-to-dig worked: tapping the
            thing you want is already the rule for the ball, the stalls and the

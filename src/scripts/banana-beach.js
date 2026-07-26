@@ -8,6 +8,7 @@
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
+import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
@@ -443,7 +444,7 @@ function init() {
     nextTgt = null; tgt.x = wx; tgt.y = wy;
   }
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.bh-panel') || e.target.closest('.bh-chip')) return;
+    if (e.target.closest('.bh-panel') || e.target.closest('.bh-whud')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
@@ -826,6 +827,24 @@ function init() {
   const shellCountEl = document.getElementById('bhShellCount');
   function refreshShellChip() { shellCountEl.textContent = haveCount() + '/' + SHELL_IDS.length; }
   refreshShellChip();
+  // 🌍 THE WORLD HUD — the rave's refined strip, now on the bay. LEVEL rides the
+  // same world `rep`; COINS/TICKETS the same wallets the pier reads. Only ever
+  // CALLED at runtime (pickup + the 1s side-card interval), so coinBal/ticketBal
+  // below are already live — never call it at module-eval (TDZ).
+  const lvlNEl = document.getElementById('bhLvlN');
+  const lvlFillEl = document.getElementById('bhLvlFill');
+  const coinNEl = document.getElementById('bhCoinN');
+  const tixNEl = document.getElementById('bhTixN');
+  function refreshHud() {
+    const s = passGet().stats || {};
+    if (lvlNEl) {
+      const lv = levelFor(s.rep || 0);
+      lvlNEl.textContent = 'LVL ' + lv.level;
+      if (lvlFillEl) lvlFillEl.style.width = Math.round((lv.into / lv.need) * 100) + '%';
+    }
+    if (coinNEl) coinNEl.textContent = coinBal();
+    if (tixNEl) tixNEl.textContent = ticketBal();
+  }
   function shellTick() {
     const now = performance.now();
     if (now - shellSpawnAt > SPAWN_EVERY) { shellSpawnAt = now; spawnShell(); }
@@ -849,6 +868,7 @@ function init() {
         s.el.remove();
         shells.splice(i, 1);
         refreshShellChip();
+        refreshHud();                 // the XP lands on the LEVEL bar right away
         shellPickFloat(s.x, s.y - 8, shellName(s.id), xp, isNew, tier);
         track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0, xp });
         if (isNew && haveCount() === SHELL_IDS.length) {
@@ -3102,7 +3122,7 @@ function init() {
   try { bayName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
   const myBayOutfit = () => fullOutfit(ME_DRAW); // {hat, glasses, extras, c} — carries the community slot
   function refreshCrowd() {
-    if (crowdEl) crowdEl.textContent = peers.size ? '🏖 ' + (peers.size + 1) + ' on the beach' : '';
+    if (crowdEl) crowdEl.textContent = peers.size ? String(peers.size + 1) : 'solo';
   }
   // 🏐 THE STEP-ASIDE RULE FINALLY HAS A NUMBER. sandyTick() has carried it
   // since B1 — two bananas on the court and he heads for the firepit, one and
@@ -3315,7 +3335,10 @@ function init() {
     }
   }
   refreshSide();
-  setInterval(() => { if (!document.hidden) refreshSide(); }, 1000);
+  refreshHud();  // boot the World HUD once everything (coinBal/ticketBal) is defined
+  // one visibility-gated tick covers both the side card and the HUD wallets —
+  // coins/tickets change on discrete pier actions, so ≤1s latency is plenty
+  setInterval(() => { if (!document.hidden) { refreshSide(); refreshHud(); } }, 1000);
 
   // ---- 📸 SHARE MY BEACH DAY: a 1080×1080 postcard rendered on the spot ----
   // Same idea as the rave's share card — YOUR banana big and tilted, today's
