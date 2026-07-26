@@ -3650,7 +3650,115 @@ function init() {
       doneLed: 'THE BLOB HAS BEEN DEBLOBBED.',
       doneSay: ['HA! biggest jelly i’ve seen since the ’14 spill. good huntin’, partner!'],
     },
+    // 🎈 THE POP — the balloon rig lets go: fourteen balloons drift down in a
+    // stagger, sway on the way, settle into a gentle bob all over the floor.
+    // Walking through one pops it. Buttonless — the verb is the sweep, the
+    // hint counts them down, the last one earns a confetti burst.
+    pop: {
+      led: '🎈 THE BALLOON RIG LET GO',
+      COUNT: 14,
+      enter() {
+        this.balloons = [];
+        this.dropped = 0;
+        this.popped = 0;
+        this.nextAt = 0;
+        this.lastT = 0;
+        qHint('🎈 balloon drop! walk into them — pop all ' + this.COUNT);
+        bartySay(['the balloon rig LET GO! 🎈 pop every last one before they unionize, partner!',
+          { t: 'i blew those up myself. lips were numb for two days. pop away.', mutter: true }], true);
+      },
+      tick(now) {
+        const dt = this.lastT ? Math.min(now - this.lastT, 100) / 1000 : 0.016;
+        this.lastT = now;
+        // the stagger: one lets go from the rig every ~650ms
+        if (this.dropped < this.COUNT && now >= this.nextAt) {
+          this.nextAt = now + 650;
+          this.dropped++;
+          let x = 50, ty = 55;
+          for (let t = 0; t < 25; t++) {
+            x = 10 + Math.random() * 80;
+            ty = clamp(24 + Math.random() * 58, topClamp + 6, 84);
+            if (!blockedAt(x, ty) && this.balloons.every((o) => Math.abs(o.tx - x) > 7)) break;
+          }
+          const d = document.createElement('div');
+          d.className = 'rv-qballoon';
+          d.innerHTML = QBALLOON_SVGS[this.dropped % QBALLOON_SVGS.length];
+          world.appendChild(d);
+          this.balloons.push({ el: d, x, tx: x, y: -6, ty, phase: Math.random() * 6.28 });
+        }
+        for (const b of this.balloons) {
+          if (b.y < b.ty) {
+            b.y = Math.min(b.ty, b.y + 8.5 * dt);                  // the drift down
+            b.x = b.tx + Math.sin(now / 480 + b.phase) * 2.2;      // sway
+          } else {
+            b.x = b.tx + Math.sin(now / 900 + b.phase) * 0.7;      // settled bob
+          }
+          b.el.style.left = b.x + '%';
+          b.el.style.top = (b.y + (b.y >= b.ty ? Math.sin(now / 700 + b.phase) * 0.5 : 0)) + '%';
+          b.el.style.zIndex = String(100 + Math.round(Math.max(0, b.y)));
+        }
+      },
+      frame(me) {
+        for (let i = this.balloons.length - 1; i >= 0; i--) {
+          const b = this.balloons[i];
+          if (b.y < b.ty - 8) continue;              // still up in the air
+          if (Math.hypot(((me.x - b.x) / 100) * floorW, ((me.y - b.y) / 100) * floorH) > (me.size || 90) * 0.5 + 14) continue;
+          b.el.remove();
+          this.balloons.splice(i, 1);
+          pickupPop(b.x, b.y);
+          addHype(1);
+          this.popped++;
+          if (this.popped >= this.COUNT) { questDone(); return; }
+          qHint('🎈 pop them all! ' + (this.COUNT - this.popped) + ' left');
+        }
+      },
+      exit() {
+        (this.balloons || []).forEach((b) => b.el.remove());
+        this.balloons = [];
+      },
+      after() { confettiBurst(); },
+      doneBig: ['ALL POPPED 🎈', 'confetti forever'],
+      doneLed: 'ZERO BALLOONS SURVIVED.',
+      doneSay: ['every last one! 🤠 i’ll order more balloons. i always do.'],
+    },
   };
+  // 🎈 balloons at BANANA pixel density (20×30 grid): outline ring, body,
+  // two-depth INNER SHADOW bottom-right, white glints top-left, knot + a
+  // kinked string. One drawing, five colourways.
+  const qBalloonSvg = (body, dark, deep, lite) => {
+    const O = '#1a0b14', r = (x, y, w, h, f) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + (h || 1) + '" fill="' + f + '"/>';
+    return '<svg viewBox="0 0 20 30" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+      // outline silhouette
+      + r(7, 1, 6, 1, O) + r(5, 2, 10, 1, O) + r(4, 3, 12, 1, O) + r(3, 4, 14, 1, O)
+      + r(2, 5, 16, 2, O) + r(1, 7, 18, 6, O) + r(2, 13, 16, 2, O) + r(3, 15, 14, 1, O)
+      + r(4, 16, 12, 1, O) + r(5, 17, 10, 1, O) + r(6, 18, 8, 1, O) + r(8, 19, 4, 1, O)
+      // body
+      + r(6, 2, 8, 1, body) + r(5, 3, 10, 1, body) + r(4, 4, 12, 1, body)
+      + r(3, 5, 14, 2, body) + r(2, 7, 16, 6, body) + r(3, 13, 14, 2, body)
+      + r(4, 15, 12, 1, body) + r(5, 16, 10, 1, body) + r(6, 17, 8, 1, body) + r(7, 18, 6, 1, body)
+      // inner shadow — first depth, bottom-right rim
+      + r(16, 7, 1, 1, dark) + r(16, 8, 2, 5, dark) + r(15, 13, 2, 1, dark)
+      + r(14, 14, 3, 1, dark) + r(13, 15, 3, 1, dark) + r(11, 16, 4, 1, dark)
+      + r(9, 17, 5, 1, dark) + r(7, 18, 6, 1, dark)
+      // inner shadow — deeper core
+      + r(11, 17, 3, 1, deep) + r(9, 18, 4, 1, deep)
+      // glossy highlight + white glints, top-left
+      + r(6, 3, 3, 1, lite) + r(5, 4, 3, 1, lite) + r(4, 5, 2, 1, lite)
+      + r(4, 6, 2, 1, lite) + r(3, 7, 2, 2, lite)
+      + r(6, 4, 2, 1, '#fffdf5') + r(5, 5, 2, 1, '#fffdf5') + r(5, 6, 1, 1, '#fffdf5')
+      // knot + kinked string
+      + r(8, 20, 4, 1, dark) + r(7, 21, 6, 1, O)
+      + r(10, 22, 1, 1, '#8890a8') + r(11, 23, 1, 2, '#8890a8') + r(10, 25, 1, 1, '#8890a8')
+      + r(9, 26, 1, 2, '#8890a8') + r(10, 28, 1, 1, '#8890a8')
+      + '</svg>';
+  };
+  const QBALLOON_SVGS = [
+    qBalloonSvg('#ff5fa2', '#c23a78', '#8f2456', '#ff9ec9'),   // pink
+    qBalloonSvg('#ffe135', '#c99e13', '#96770d', '#fff394'),   // yellow
+    qBalloonSvg('#4db8ff', '#2c7fc0', '#1c5b8e', '#a3dcff'),   // cyan
+    qBalloonSvg('#59e0a2', '#35a271', '#217a52', '#a9f0cf'),   // green
+    qBalloonSvg('#b388ff', '#7e5cc4', '#5a3f96', '#d5c0ff'),   // purple
+  ];
   // the jelly boss at BANANA pixel density (28×24 grid): dark outline ring,
   // pink body, INNER SHADOW along the bottom-right rim (two depths), glossy
   // highlight + white glints top-left, and a little face — it's a boss

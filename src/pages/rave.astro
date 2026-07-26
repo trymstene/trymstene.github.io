@@ -1224,6 +1224,14 @@ const GUIDE = [
       50% { transform: translate(-50%, -50%) scale(1.07, 0.93); }
     }
     @media (prefers-reduced-motion: reduce) { .rv-jboss { animation: none; } }
+    /* 🎈 THE POP: banana-density balloons (20×30 grid) drift down from the
+       rig, sway, settle into a bob — walking through one pops it */
+    .rv-qballoon {
+      position: absolute; width: 34px; transform: translate(-50%, -50%);
+      pointer-events: none; image-rendering: pixelated;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+    }
+    .rv-qballoon svg { width: 100%; height: auto; display: block; }
     /* 🎯 the standing instruction line — between the floor and the action bar */
     .rv-questhint {
       background: #0d0b14; border: 3px solid #ffe135; border-top-width: 0;
