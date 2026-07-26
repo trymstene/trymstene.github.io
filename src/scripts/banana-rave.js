@@ -3476,7 +3476,73 @@ function init() {
     // looking at the button instead of having fun on the dancefloor." The
     // doctrine it left behind: the button is a TOOL you press while watching
     // the FLOOR — any quest that makes you watch the button itself is out.)
+    // ⚡ POWER CUT — the whole ROOM is the prop: the lights die under a
+    // blackout veil, the LED loses signal, and the one lit thing in the club
+    // is the breaker box glowing on the right wall. Walk to it and FLIP the
+    // lever back to life — four flips, each one sparks and teases the lights
+    // with a flicker. Eyes stay on the floor; the button is the hand on the
+    // lever (mashing AT the breaker is diegetic and fine).
+    power: {
+      led: '⚡ SIGNAL LOST',
+      SPOT: { x: 88, y: 38 },    // the breaker on the right wall — far from the exit
+      FLIPS: 4,
+      enter() {
+        const veil = document.createElement('div');
+        veil.className = 'rv-blackout';
+        world.appendChild(veil);
+        this.veil = veil;
+        const box = document.createElement('div');
+        box.className = 'rv-breaker';
+        box.innerHTML = BREAKER_SVG;
+        box.style.left = this.SPOT.x + '%';
+        box.style.top = this.SPOT.y + '%';
+        world.appendChild(box);
+        this.box = box;
+        this.flips = 0;
+        this.coolAt = 0;
+        el('rvScreen').classList.add('rv-screen--out');
+        qBtnShow('⚡ FLIP');
+        qHint('power’s out! get to the glowing breaker (right wall) → hit ⚡');
+        bartySay(['the POWER! ⚡ breaker’s on the right wall, partner — GO FLIP IT!',
+          { t: 'i pay the power bill in jelly. they keep sayin’ that’s not legal tender.', mutter: true }], true);
+      },
+      button(me) {
+        const now = Date.now();
+        if (now < this.coolAt) return;               // lever travel time
+        this.coolAt = now + 260;
+        if (!qNear(me, this.SPOT, 0.85)) {
+          floatNum(me.x, me.y - 8, 'get to the breaker!', '');
+          return;
+        }
+        this.flips++;
+        pickupPop(this.SPOT.x, this.SPOT.y);         // sparks punch through the dark
+        if (this.veil) { this.veil.classList.remove('rv-blackout--flicker'); void this.veil.offsetWidth; this.veil.classList.add('rv-blackout--flicker'); }
+        qBtnShow('⚡ ' + this.flips + '/' + this.FLIPS);
+        if (this.flips >= this.FLIPS) questDone();
+      },
+      exit() {
+        if (this.veil) this.veil.remove();
+        this.veil = null;
+        if (this.box) this.box.remove();
+        this.box = null;
+        el('rvScreen').classList.remove('rv-screen--out');
+      },
+      doneBig: ['AND THE LIGHTS CAME BACK ⚡', 'the rave never died!'],
+      doneLed: 'POWER RESTORED. NEVER IN DOUBT.',
+      doneSay: ['THAT’S my electrician! 🤠 this club runs on jelly and hope. mostly hope.'],
+    },
   };
+  // the breaker box: grey panel, yellow bolt, red lever — drawn inline like
+  // every floor sprite (no asset fetch)
+  const BREAKER_SVG = '<svg viewBox="0 0 12 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="0" y="0" width="12" height="16" fill="#111"/>'
+    + '<rect x="1" y="1" width="10" height="14" fill="#3a3f52"/>'
+    + '<rect x="2" y="2" width="8" height="9" fill="#262b3d"/>'
+    + '<rect x="6" y="3" width="2" height="2" fill="#ffe135"/><rect x="5" y="5" width="2" height="2" fill="#ffe135"/>'
+    + '<rect x="4" y="7" width="2" height="2" fill="#ffe135"/><rect x="6" y="7" width="1" height="1" fill="#e6a817"/>'
+    + '<rect x="2" y="12" width="5" height="2" fill="#191d2a"/>'
+    + '<rect x="8" y="11" width="2" height="4" fill="#ff4d4d"/><rect x="8" y="11" width="2" height="1" fill="#ff8a8a"/>'
+    + '</svg>';
 
   function startQuest(id) {
     const def = FLOOR_QUESTS[id];

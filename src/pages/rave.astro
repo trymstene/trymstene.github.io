@@ -1165,6 +1165,25 @@ const GUIDE = [
     .rv-questbtn[hidden] { display: none !important; }
     .rv-questbtn:not([hidden]) { animation: rvQBtnIn 0.3s ease; }
     @keyframes rvQBtnIn { from { transform: translateY(10px); opacity: 0; } }
+    /* ⚡ POWER CUT: the blackout veil darkens the whole world (dancers, bar,
+       Barty — everything but the glowing breaker and the spark pops above it);
+       each flip of the lever teases the lights with a flicker */
+    .rv-blackout { position: absolute; inset: -2%; background: #05040a; opacity: 0.82; z-index: 440; pointer-events: none; }
+    .rv-blackout--flicker { animation: rvFlick 0.35s steps(2); }
+    @keyframes rvFlick { 50% { opacity: 0.2; } }
+    .rv-breaker {
+      position: absolute; width: 44px; z-index: 460; transform: translate(-50%, -50%);
+      pointer-events: none; image-rendering: pixelated;
+      filter: drop-shadow(0 0 10px rgba(255, 225, 53, 0.85));
+    }
+    .rv-breaker svg { width: 100%; height: auto; display: block; }
+    /* the LED loses signal — content ghosts + stutters until power returns */
+    .rv-screen--out .rv-screen__content { opacity: 0.12; animation: rvScreenDead 0.9s steps(3) infinite; }
+    @keyframes rvScreenDead { 50% { opacity: 0.04; } }
+    @media (prefers-reduced-motion: reduce) {
+      .rv-blackout--flicker { animation: none; }
+      .rv-screen--out .rv-screen__content { animation: none; }
+    }
     /* 🎯 the standing instruction line — between the floor and the action bar */
     .rv-questhint {
       background: #0d0b14; border: 3px solid #ffe135; border-top-width: 0;
