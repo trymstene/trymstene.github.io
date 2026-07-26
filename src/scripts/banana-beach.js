@@ -488,8 +488,10 @@ function init() {
       setTarget(BAR.x, BAR.y);            // too far — walk over first
       return;
     }
-    // 🐚 tapping SHELLY opens the shell collection (walk over if you're far)
-    if (inRect(wx, wy, [SHELLY.x - 150, SHELLY.y - 130, SHELLY.x + 10, SHELLY.y + 30])) {
+    // 🐚 tapping SHELLY HERSELF opens the shell collection (walk over if you're
+    // far). Tight to her sprite (~4% wide, bottom-anchored at SHELLY.x/y) — the
+    // old box sprawled left over the sign + empty sand and ate walk-by taps.
+    if (inRect(wx, wy, [SHELLY.x - 50, SHELLY.y - 108, SHELLY.x + 50, SHELLY.y + 12])) {
       if (Math.hypot(pos.x - SHELLY.x, pos.y - SHELLY.y) < SHELLY.r + 40) { openShells(); return; }
       seated = null; sitTarget = null; stopFishing();
       meEl.classList.remove('is-sitting');
