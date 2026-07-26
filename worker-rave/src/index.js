@@ -188,7 +188,23 @@ export default {
         method: request.method,
         body: request.method === 'POST' ? await request.text() : undefined,
       }));
-      return new Response(await res.text(), { status: res.status, headers: cors });
+      let payload = await res.text();
+      // the Names desk covers the WHOLE world: fold the park + beach live rosters
+      // into `live` (their names already ride the shared ledger via /ingest)
+      if (url.pathname === '/names' && res.ok) {
+        try {
+          const data = JSON.parse(payload);
+          for (const [ns, id] of [[env.PARK, 'the-park'], [env.BEACH, 'banana-bay']]) {
+            try {
+              const rr = await ns.get(ns.idFromName(id)).fetch(new Request('https://room/rosternames'));
+              const jj = await rr.json();
+              if (Array.isArray(jj.names)) data.live = [...(data.live || []), ...jj.names];
+            } catch (e) {}
+          }
+          payload = JSON.stringify(data);
+        } catch (e) {}
+      }
+      return new Response(payload, { status: res.status, headers: cors });
     }
     if (url.pathname === '/count') {
       const res = await room.fetch(new Request('https://room/count'));
@@ -352,6 +368,18 @@ export class RaveRoom {
       }));
       const live = this.roster().filter((a) => a.name).map((a) => a.name);
       return new Response(JSON.stringify({ live, names, strikes }));
+    }
+    // internal (park + beach report every name they see here, so the Banana HQ
+    // Names desk aggregates the WHOLE world in one ledger): apply the shared
+    // strike list, record for the ledger, hand back the clean name (empty = struck)
+    if (url.pathname === '/ingest' && request.method === 'POST') {
+      let b = {};
+      try { b = JSON.parse(await request.text()); } catch (e) {}
+      const sid = typeof b.sid === 'string' ? b.sid.slice(0, 24) : '';
+      const strikes = (await this.state.storage.get('nameStrikes')) || [];
+      const name = sanitizeName(b.name, strikes);
+      if (sid && name) this.recordName(sid, name);
+      return new Response(JSON.stringify({ name: name || '' }));
     }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
@@ -726,8 +754,9 @@ const PARK_CAP = 40;
 const BEACH_CAP = 60;
 
 export class ParkRoom {
-  constructor(state) {
+  constructor(state, env) {
     this.state = state;
+    this.env = env; // RAVE binding — reports the names seen here to the shared HQ ledger
     this.state.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')
     );
@@ -772,6 +801,9 @@ export class ParkRoom {
       this.reapStale(); // headcount checks double as free sweeps
       return new Response(JSON.stringify({ count: this.roster().length }));
     }
+    if (url.pathname === '/rosternames') { // HQ Names desk: who's named here right now
+      return new Response(JSON.stringify({ names: this.roster().filter((a) => a.name).map((a) => a.name) }));
+    }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
     }
@@ -814,11 +846,21 @@ export class ParkRoom {
       const p = {
         id: crypto.randomUUID().slice(0, 8),
         sid,
-        name: sanitizeName(msg.name, []), // family filter, no strike list here
+        name: sanitizeName(msg.name, []), // family filter; the strike list is applied via /ingest below
         outfit: sanitizeOutfit(msg.outfit),
         x: parkClampX(msg.x), y: parkClampY(msg.y),
         joined: Date.now(),
       };
+      // report to the shared world names ledger + apply Trym's strike list (one
+      // handle follows a person into every area — the HQ Names desk sees them all)
+      if (this.env && p.name) {
+        try {
+          const r = await this.env.RAVE.get(this.env.RAVE.idFromName('main-floor'))
+            .fetch(new Request('https://room/ingest', { method: 'POST', body: JSON.stringify({ sid, name: p.name }) }));
+          const j = await r.json();
+          if (typeof j.name === 'string') p.name = j.name; // struck names come back empty
+        } catch (e) {}
+      }
       ws.serializeAttachment(p);
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(parkStrip) }));
       this.broadcast({ t: 'join', p: parkStrip(p) }, ws);
@@ -862,8 +904,9 @@ export class ParkRoom {
 // the headcounts and the blast radius separate, and a busy beach can never
 // push someone out of the park.
 export class BeachRoom {
-  constructor(state) {
+  constructor(state, env) {
     this.state = state;
+    this.env = env; // RAVE binding — reports the names seen here to the shared HQ ledger
     this.state.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')
     );
@@ -907,6 +950,9 @@ export class BeachRoom {
     if (url.pathname === '/count') {
       this.reapStale();
       return new Response(JSON.stringify({ count: this.roster().length }));
+    }
+    if (url.pathname === '/rosternames') { // HQ Names desk: who's named here right now
+      return new Response(JSON.stringify({ names: this.roster().filter((a) => a.name).map((a) => a.name) }));
     }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
@@ -956,6 +1002,16 @@ export class BeachRoom {
         sit: msg.sit === true,
         joined: Date.now(),
       };
+      // report to the shared world names ledger + apply Trym's strike list (one
+      // handle follows a person into every area — the HQ Names desk sees them all)
+      if (this.env && p.name) {
+        try {
+          const r = await this.env.RAVE.get(this.env.RAVE.idFromName('main-floor'))
+            .fetch(new Request('https://room/ingest', { method: 'POST', body: JSON.stringify({ sid, name: p.name }) }));
+          const j = await r.json();
+          if (typeof j.name === 'string') p.name = j.name; // struck names come back empty
+        } catch (e) {}
+      }
       ws.serializeAttachment(p);
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(bayStrip) }));
       this.broadcast({ t: 'join', p: bayStrip(p) }, ws);
