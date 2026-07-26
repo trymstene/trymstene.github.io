@@ -730,8 +730,8 @@ const faq = {
     .bh-hint.is-off { opacity: 0; }
     /* 🌍 THE WORLD HUD — the same refined pill strip the rave floor uses (ported
        26 Jul), themed for the bright bay: dark pills so they read over the sky.
-       LEVEL (gold, rep bar) · COINS · TICKETS · collection chips (open panels) ·
-       CROWD. Right-aligned, wraps on narrow phones like the rave's. */
+       LEVEL (gold, rep bar) · COINS · TICKETS · CROWD. Right-aligned, wraps on
+       narrow phones like the rave's. (Shell/fish stats live with their NPCs.) */
     .bh-whud {
       position: absolute; top: 8px; right: 8px; z-index: 9;
       display: flex; gap: 5px; align-items: center; justify-content: flex-end;
@@ -743,8 +743,6 @@ const faq = {
       border-radius: 6px; padding: 0 9px; font-weight: 800; font-size: 0.76rem;
       line-height: 1; color: #fffdf5;
     }
-    .bh-whud button { appearance: none; font: inherit; cursor: pointer; }
-    .bh-whud button:active { transform: translate(1px, 1px); }
     .bh-whud .bh-whud__lvl { color: #ffe135; border-color: #ffe135; }
     .bh-whud__lvlbar {
       flex: 0 0 42px; min-width: 42px; height: 6px; background: rgba(0, 0, 0, 0.5);
@@ -1321,13 +1319,12 @@ const faq = {
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div>
       </div>
       <!-- 🌍 THE WORLD HUD — the same refined strip as the rave floor. LEVEL (rep
-           bar) · COINS · TICKETS · your collections · CROWD. Same one everywhere. -->
+           bar) · COINS · TICKETS · CROWD. Shell/fish stats live with their NPCs
+           (Shelly & Gil) — walk up to them to see your collection. -->
       <div class="bh-whud" id="bhWhud">
         <span class="bh-whud__lvl" id="bhLvlRow"><span id="bhLvlN">LVL 1</span><span class="bh-whud__lvlbar"><i id="bhLvlFill"></i></span></span>
         <span class="bh-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="bhCoinN">0</b></span>
         <span class="bh-whud__tix">🎟 <b id="bhTixN">0</b></span>
-        <button class="bh-whud__coll" id="bhShellChip" type="button" aria-label="Your shell collection">🐚 <span id="bhShellCount">0/24</span></button>
-        <button class="bh-whud__coll" id="bhFishChip" type="button" aria-label="Your fish ledger">🐟 <span id="bhFishCount">0/25</span></button>
         <span class="bh-whud__rally" id="bhRally"></span>
         <span class="bh-whud__crowd"><span aria-hidden="true">◍</span> <span id="bhCrowd">solo</span></span>
       </div>

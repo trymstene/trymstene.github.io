@@ -823,10 +823,6 @@ function init() {
     shells.push({ el, x: spot.x, y: spot.y, id, born: performance.now() });
   }
   for (let n = 0; n < 5; n++) spawnShell(); // arrive to a stocked shore
-  const shellChip = document.getElementById('bhShellChip');
-  const shellCountEl = document.getElementById('bhShellCount');
-  function refreshShellChip() { shellCountEl.textContent = haveCount() + '/' + SHELL_IDS.length; }
-  refreshShellChip();
   // 🌍 THE WORLD HUD — the rave's refined strip, now on the bay. LEVEL rides the
   // same world `rep`; COINS/TICKETS the same wallets the pier reads. Only ever
   // CALLED at runtime (pickup + the 1s side-card interval), so coinBal/ticketBal
@@ -867,7 +863,6 @@ function init() {
         passStat('bh_shells', 1);     // lifetime combed
         s.el.remove();
         shells.splice(i, 1);
-        refreshShellChip();
         refreshHud();                 // the XP lands on the LEVEL bar right away
         shellPickFloat(s.x, s.y - 8, shellName(s.id), xp, isNew, tier);
         track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0, xp });
@@ -902,7 +897,6 @@ function init() {
     shellPanel.hidden = false;
     track('beach_shells_open');
   }
-  shellChip.addEventListener('click', (e) => { e.stopPropagation(); openShells(); });
   document.getElementById('bhShellClose').addEventListener('click', () => { shellPanel.hidden = true; });
 
   // ---- 🐚 SHELLY & THE SHELL BOARD ---------------------------------------
@@ -1256,7 +1250,6 @@ function init() {
             + Math.max(prev, cm) + ' cm</p>')
         + (won ? '<p class="bh-catch__new">🏅 ledger milestone — <b>+' + won
                  + ' tickets</b></p>' : '');
-      refreshFishChip();
     } else if (c.kind === 'thing') {
       const t = c.thing;
       const pays = { pearl: 25, coral: 8, sand_dollar: 6, seashell: 4 }[t.id] || 0;
@@ -1308,12 +1301,8 @@ function init() {
   const gilEl = document.getElementById('bhGil');
   const gilBubble = document.getElementById('bhGilBubble');
   const gilCtx = document.getElementById('bhGilCv').getContext('2d');
-  const fishChip = document.getElementById('bhFishChip');
-  const fishCountEl = document.getElementById('bhFishCount');
   const ledgerPanel = document.getElementById('bhLedger');
   const fishGrid = document.getElementById('bhFishGrid');
-  function refreshFishChip() { fishCountEl.textContent = fishSpecies() + '/' + FISH.length; }
-  refreshFishChip();
 
   let gilTimer = null, gilGreeted = false, gilIdx = 0;
   const GIL_LINES = [
@@ -1371,7 +1360,6 @@ function init() {
         : '🏅 next reward at <b>' + next.n + '</b> species — <b>+' + next.t + ' tickets</b>';
   }
   function openLedger() { renderLedger(); ledgerPanel.hidden = false; track('beach_ledger_open'); }
-  fishChip.addEventListener('click', (e) => { e.stopPropagation(); openLedger(); });
   document.getElementById('bhLedgerClose').addEventListener('click', () => { ledgerPanel.hidden = true; });
 
   document.getElementById('bhCatchLeave').addEventListener('click', () => {
@@ -1648,7 +1636,6 @@ function init() {
       const id = SHELL_IDS[Math.floor(Math.random() * SHELL_IDS.length)];
       passStat('sh_' + id, 1);
       float(pos.x, pos.y - 30, '🐚 ' + shellName(id), true);
-      refreshShellChip();
       track('beach_dig', { find: 'shell' });
     } else if (best.kind === 'curio') {
       const c = DIG_CURIO[Math.floor(Math.random() * DIG_CURIO.length)];
