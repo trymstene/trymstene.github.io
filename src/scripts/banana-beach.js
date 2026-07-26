@@ -3633,13 +3633,15 @@ function init() {
   // they ride the same async redraw belt as the scene NPCs (accessories decode
   // late).
   function drawPortraits() {
-    [['bhShellyPortrait', SHELLY_DRAW], ['bhGilPortrait', GIL_DRAW], ['bhCapPortrait', CAP_DRAW]].forEach(([id, DRAW]) => {
+    // per-NPC lift: taller hats (Gil's bucket, the Captain's tricorn) need more
+    // headroom than Shelly's shell or they flat-top against the canvas edge
+    [['bhShellyPortrait', SHELLY_DRAW, 0.16], ['bhGilPortrait', GIL_DRAW, 0.09], ['bhCapPortrait', CAP_DRAW, 0.09]].forEach(([id, DRAW, lift]) => {
       const cv = document.getElementById(id);
       if (!cv) return;
       const ctx = cv.getContext('2d');
       ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.save();
-      ctx.scale(1.55, 1.55); ctx.translate(-cv.width * 0.17, -cv.height * 0.02);  // zoom to a close-up
+      ctx.scale(1.5, 1.5); ctx.translate(-cv.width * 0.167, -cv.height * lift);  // zoom centered + lift: waist-up fills the frame
       drawComposite(ctx, cv.width, 2, DRAW);
       ctx.restore();
     });
