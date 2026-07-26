@@ -3,8 +3,8 @@
 // each kind (never three of the same): the FIDGET (volleyball over a real net,
 // ball has height + shadow, rally counter), the COLLECTION (29 shells, tide-
 // seeded daily, visible gaps), the DAILY RITUAL (the tide lays a fresh set
-// every day). Captain Split trades duplicates — never coins, so the world's
-// one coin faucet stays untouched.
+// every day). Captain Sabreface runs the daily buried-treasure hunt from his
+// boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
@@ -142,7 +142,7 @@ function init() {
         if (!EXTRA_OK.has(e)) console.warn('🍌 ' + who + ': unknown extra id "' + e + '" — it will draw NOTHING');
       });
     };
-    checkDraw('Captain Split', CAP_DRAW);
+    checkDraw('Captain Sabreface', CAP_DRAW);
     checkDraw('Gil', GIL_DRAW);
     checkDraw('Shelly', SHELLY_DRAW);
   }
@@ -484,12 +484,17 @@ function init() {
       else { nextTgt = null; tgt.x = wx; tgt.y = wy; pendingDig = { x: wx, y: wy }; }
       return;
     }
-    // at the bar? tapping the wreck talks to the Captain instead of walking
-    if (inRect(wx, wy, [1540, 590, 1866, 780])) {
+    // 🏴‍☠️ tapping CAPTAIN SABREFACE opens his desk — TIGHT to his sprite now
+    // (like Shelly/Gil; the old box was the whole boathouse). A far tap walks
+    // over and opens ON ARRIVAL, at a reachable point in FRONT of him (the wreck
+    // itself is solid, so we can't target it directly).
+    if (inRect(wx, wy, [CAP_X - 50, CAP_FEET - 108, CAP_X + 50, CAP_FEET + 12])) {
       if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openDig(); return; }
-      seated = null; sitTarget = null;
+      seated = null; sitTarget = null; stopFishing();
       meEl.classList.remove('is-sitting');
-      setTarget(BAR.x, BAR.y);            // too far — walk over first
+      const fx = CAP_X, fy = CAP_FEET + 42;
+      setTarget(fx, fy);
+      pendingOpen = { fn: openDig, x: fx, y: fy };
       return;
     }
     // 🐚 tapping SHELLY HERSELF opens the shell collection (walk over if you're
@@ -1042,6 +1047,7 @@ function init() {
     track('beach_dig_desk');
   }
   document.getElementById('bhDigClose').addEventListener('click', () => { digPanel.hidden = true; });
+  digPanel.addEventListener('click', (e) => { if (e.target === digPanel) digPanel.hidden = true; }); // click the backdrop to leave
 
   // (🐚 the "3 duplicates → 1 new shell" swap was removed 26 Jul — shells wash
   //  up continuously now, so completing the set is combing, not trading. The

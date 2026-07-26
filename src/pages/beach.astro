@@ -2,7 +2,7 @@
 // 🏖 BANANA BAY — the beach (banana-beach-plan).
 // B1 "THE RESORT": the bay is 1400×620 with a BOTH-AXIS camera, a volleyball
 // court (the fidget), the 29-shell collection (the completionist itch, tide-
-// seeded daily) and Captain Split's shipwreck bar (dupe trading + personality).
+// seeded daily) and Captain Sabreface's boathouse (the daily treasure hunt).
 // STANDALONE-FIRST: everything here is solo-playable; multiplayer (B2) only
 // amplifies it. Noindexed — the park's right road is the front door.
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -32,7 +32,7 @@ const faq = {
   '@type': 'FAQPage',
   mainEntity: [
     { '@type': 'Question', name: 'Is Banana Bay free to play?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Banana Bay is a free banana game you play right in your browser — no account, no download. Your custom dancing banana walks straight onto the sand.' } },
-    { '@type': 'Question', name: 'What can you do at Banana Bay?', acceptedAnswer: { '@type': 'Answer', text: 'Play beach volleyball, hunt the day’s seashells along the shore, fish off the pier, trade your duplicate shells with Captain Split, and win the giant plush banana from the pier’s claw machine.' } },
+    { '@type': 'Question', name: 'What can you do at Banana Bay?', acceptedAnswer: { '@type': 'Answer', text: 'Play beach volleyball, hunt the day’s seashells along the shore, fish off the pier, dig up Captain Sabreface’s daily buried treasure, and win the giant plush banana from the pier’s claw machine.' } },
     { '@type': 'Question', name: 'Can you play Banana Bay with other people?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The beach is live — other visitors’ bananas share the sand with you in real time, and you can pass the volleyball back and forth.' } },
     { '@type': 'Question', name: 'How do you get to Banana Bay?', acceptedAnswer: { '@type': 'Answer', text: 'Banana Bay sits at the end of the park road. Dress your banana in the free builder, walk through the park, and follow the shore road down to the beach.' } },
   ],
@@ -525,7 +525,7 @@ const faq = {
     .bh-sandy canvas,
     .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
-    /* Captain Split, standing in front of his boathouse — z set in JS (his y) */
+    /* Captain Sabreface, standing in front of his boathouse — z set in JS (his y) */
     .bh-cap { position: absolute; width: 4%; transform: translate(-50%, -100%); pointer-events: none; }
     .bh-cap canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     .bh-capbubble {
@@ -1432,22 +1432,18 @@ const faq = {
         </div>
       </div>
 
-      <!-- 🏴‍☠️ THE SALVAGE DESK — what the wreck is FOR. Captain Split keeps
-           the treasure map and reads what the sand gives up; the shells are
-           Shelly's. This panel is also the only place the digging loop is
-           explained, which is the job the bay was missing a keeper for. -->
+      <!-- 🏴‍☠️ CAPTAIN SABREFACE'S DESK — the buried-treasure hunt. Kept lean:
+           his map + one line, no wall of rules (the ✕ closes it, backdrop too). -->
       <div class="bh-panel" id="bhDigPanel" hidden>
-        <div class="bh-card" role="dialog" aria-label="Captain Split's salvage desk">
-          <h2>captain split's salvage desk</h2>
-          <p id="bhDigSay">"you dig, i'll tell you what you've got. that's the arrangement."</p>
+        <div class="bh-card" role="dialog" aria-label="Captain Sabreface's desk">
+          <button class="bh-cardx" id="bhDigClose" type="button" aria-label="close">✕</button>
+          <h2>captain sabreface</h2>
+          <p id="bhDigSay">"there's treasure buried on this bay, matey. dig it up."</p>
           <p class="bh-mapclue" id="bhDigClue"></p>
           <ol class="bh-how">
-            <li><b>⛏ find the dark sand.</b> five patches a night, scattered across the bay. tap one to start digging.</li>
-            <li><b>🕳 a patch is a place to search, not a prize.</b> most holes are just sand — keep at it and the patch gives up what it's holding.</li>
-            <li><b>🧰 one chest a day is buried out there.</b> the map above says roughly where. everything resets on the tide.</li>
+            <li><b>⛏ tap the dark sand to dig.</b> one chest is buried out there each day — my map says roughly where.</li>
           </ol>
           <div class="bh-diglog" id="bhDigLog"></div>
-          <button class="bh-btn bh-btn--dark" id="bhDigClose" type="button">leave the wreck</button>
         </div>
       </div>
 
