@@ -17,7 +17,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // communi
 // hand-kept version drifted three times (two parasol poles and a palm trunk
 // left standing where their props used to be, one of them ON the court).
 import {
-  WORLD, WATER_Y, PIER, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
+  WORLD, WATER_Y, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
 } from './beach-geo.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
@@ -181,10 +181,19 @@ function init() {
       y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)),
     };
   }
+  // ⚡ change-guards (here + the ball / water ball / Sandy / me below): a beach
+  // at rest used to burn ~25 layout-property style writes per FRAME just
+  // restating where everything already was — the single biggest idle cost on a
+  // phone. Each mover now writes only when its numbers actually changed.
+  let camWX = NaN, camWY = NaN;
   function cam() {
     const t = camTarget();
     camX += (t.x - camX) * 0.12;
     camY += (t.y - camY) * 0.12;
+    if (Math.abs(t.x - camX) < 0.2) camX = t.x;   // settle instead of lerping forever
+    if (Math.abs(t.y - camY) < 0.2) camY = t.y;
+    if (camX === camWX && camY === camWY) return;
+    camWX = camX; camWY = camY;
     world.style.transform = 'translate(' + (-camX) + 'px,' + (-camY) + 'px)';
   }
 
@@ -406,6 +415,7 @@ function init() {
   // `fromPark` survives for ANALYTICS only (beach_join's `via`) — the park
   // gate appends ?park so a walk-in isn't logged as a cold ad landing.
   const pos = { x: 70, y: 1040 };
+  let meWX = NaN, meWY = NaN;   // last WRITTEN position (change-guard)
   const tgt = { x: 296, y: 924 };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('beach_join', { via: fromRave ? 'rave' : fromPark ? 'park' : 'direct' });
@@ -455,7 +465,6 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     pendingOpen = null;   // any tap cancels a pending stall-open; tapStall re-sets it
-    pendingDig = null;    // …and a pending walk-then-dig
     pendingUmb = null;    // …and a pending walk-then-fold
     // 🎯 TAP THE BALL TO PLAY IT — checked first, and against the ball's
     // SCREEN position (y − z), so a ball in mid-air is tappable where you can
@@ -584,6 +593,7 @@ function init() {
   // stops here is unplayable, so it gets rolled out (see the anti-stick below)
   const NET_DEAD = 36;
   const ball = { x: 930, y: 660, z: 0, vx: 0, vy: 0, vz: 0, spin: 0 };
+  let ballWX = NaN, ballWY = NaN, ballWZ = NaN, ballWF = NaN;   // last WRITTEN state (change-guard)
   // ⚠️ THE BALL MUST CLEAR THE NET THAT'S ACTUALLY DRAWN. It used to need
   // only z > 18 against a mesh standing 133px tall — and its maximum apex was
   // 117, so it *could not* get over the net yet every crossing counted. Shots
@@ -765,6 +775,8 @@ function init() {
     // multiples of 100/(N-1)%, never 100/N% — see beach.astro's stepping note.
     ball.spin += (ball.vx * 0.72 + ball.vy * 0.42) * dt * 0.075;
     const fr = ((Math.floor(ball.spin) % BALL_FRAMES) + BALL_FRAMES) % BALL_FRAMES;
+    if (ball.x === ballWX && ball.y === ballWY && ball.z === ballWZ && fr === ballWF) return;
+    ballWX = ball.x; ballWY = ball.y; ballWZ = ball.z; ballWF = fr;
     ballEl.style.backgroundPositionX = (fr * (100 / (BALL_FRAMES - 1))) + '%';
     ballEl.style.left = pct(ball.x, W);
     ballEl.style.top = pct(ball.y - ball.z, H);
@@ -1046,7 +1058,7 @@ function init() {
     'dark sand means the tide turned something over. that’s where you dig.',
     'one hole tells you nothing. six holes tell you a story.',
     'no, we don’t take coins. what would a shipwreck do with coins.',
-    'chest a day, that’s all the sea gives up. and some days it’s empty.',
+    'one treasure a day, that’s all the sea gives up. the map knows where.',
     'lost a good hat down a hole in ’99. still think about it.',
   ];
   let capTimer = null, capIdx = 0, capGreeted = false;
@@ -1148,16 +1160,20 @@ function init() {
     sitFrame: s.f,
   }));
 
+  // 🪙 fishing is THE one place on the beach that mints world coins (the old
+  // dig chest is retired), and it only stays harmless because it is HARD-CAPPED
+  // per day. The stand's 13 prices are balanced against the rave's drop rate —
+  // an ungated payout here would quietly devalue every one of them.
   const FISH_COIN_CAP = 15;                 // coins fishing may mint per day
   const fishCoinsLeft = () => {
     let st = {};
     try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
-    return st.day === DAY ? Math.max(0, FISH_COIN_CAP - (st.got || 0)) : FISH_COIN_CAP;
+    return st.day === digDay ? Math.max(0, FISH_COIN_CAP - (st.got || 0)) : FISH_COIN_CAP;
   };
   const addFishCoins = (n) => {
     let st = {};
     try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
-    if (st.day !== DAY) st = { day: DAY, got: 0 };
+    if (st.day !== digDay) st = { day: digDay, got: 0 };
     st.got = (st.got || 0) + n;
     try { localStorage.setItem('bh-fishcoins-v1', JSON.stringify(st)); } catch (e) {}
   };
@@ -1575,37 +1591,13 @@ function init() {
   const DIG_JUNK = ['an old boot', 'a bent fork', 'one flip-flop', 'a rusted tin',
     'somebody’s lost sunglasses', 'a very annoyed crab', 'half a frisbee'];
   const DIG_CURIO = ['sea glass', 'a ship’s key', 'a worn doubloon', 'a shark’s tooth'];
-  // 🧰 THE CHEST — one a day, and it is often empty.
-  // ⚠️ THIS IS THE ONE PLACE OUTSIDE THE RAVE THAT MINTS COINS, and it only
-  // stays harmless because it is HARD-CAPPED AND DATE-SEEDED: a single chest
-  // per day, at most CHEST_MAX coins, contents fixed by the date so nobody can
-  // re-roll it. That is a bounded daily bonus, not a second faucet — the stand's
-  // 13 prices are balanced against the rave's drop rate, and an ungated dig
-  // payout would quietly devalue every one of them. Keep the cap load-bearing:
-  // if this ever becomes grindable or uncapped, the shop economy goes with it.
-  const CHEST_MAX = 20;
-  const CHEST_EMPTY_ODDS = 0.3;      // a third of chests are a joke, on purpose
-  // 🏴 THE TREASURE — the map's marquee daily find ALWAYS pays (unlike the gamble
-  // chest). It pays PIER TICKETS — the beach's own currency for the midway
-  // prizes — NOT world coins, so it can't inflate the stand. One per day, per
-  // person, date-seeded → an un-farmable, bounded faucet. Tune the range freely.
+  // 🏴 THE TREASURE — the map's marquee daily find ALWAYS pays. It pays PIER
+  // TICKETS — the beach's own currency for the midway prizes — NOT world
+  // coins, so it can't inflate the stand. One per day, per person, date-seeded
+  // → an un-farmable, bounded faucet. Tune the range freely.
+  // (The old gamble coin CHEST retired with the dig-anywhere rework; fishing
+  // is the bay's one coin trickle now, capped at FISH_COIN_CAP.)
   const TREASURE_MIN = 8, TREASURE_MAX = 16;
-  // ⭐ Split the haul across SLOTS. 12 coins shown as 4 piles reads as a find;
-  // the same 12 as one number reads as a receipt. Same payout, more occasion.
-  function chestLoot() {
-    if (digRnd() < CHEST_EMPTY_ODDS) return [];
-    const slots = 2;                                     // two coin STACKS
-    const total = 6 + Math.floor(digRnd() * (CHEST_MAX - 5));
-    const cut = [];
-    let left = total;
-    for (let i = 0; i < slots; i++) {
-      const take = i === slots - 1 ? left : Math.max(1, Math.round(left / (slots - i) * (0.7 + digRnd() * 0.6)));
-      cut.push(Math.min(left, take));
-      left -= cut[i];
-      if (left <= 0) break;
-    }
-    return cut.filter((n) => n > 0);
-  }
   const digDay = Math.floor(Date.now() / 86400000);
   // ⚠️ seedRand(n) is ONE-SHOT — it maps a seed to a number, it is NOT a
   // generator (the shells call it once per spot with a stepped seed). Walking
@@ -1732,10 +1724,11 @@ function init() {
   // the sand. Strike the buried X → the day's treasure; near it → "packed sand"
   // (the hunt's only cue); otherwise mostly sand, the odd scrap.
   function dig() {
-    // never dig behind an open panel — the Dig button + Space both reach here,
-    // and a panel (shell board / ledger / the desk / a stall / the reward) is a
-    // modal over the beach. Guarding at the source covers every entry point.
-    if (document.querySelector('.bh-panel:not([hidden])')) return;
+    // never dig behind an open overlay — the Dig button + Space both reach here,
+    // and a panel (shell board / ledger / the desk / a stall / the reward), the
+    // coco hut scene and the share modal all sit over the beach. Guarding at
+    // the source covers every entry point.
+    if (document.querySelector('.bh-panel:not([hidden]), #bhCoco:not([hidden]), #bhShareModal:not([hidden])')) return;
     const now = performance.now();
     if (now - digAt < 420) return;
     digAt = now;
@@ -1783,45 +1776,31 @@ function init() {
       track('beach_dig', { find: 'sand' });
     }
   }
-  // 🧰🏴 the buried-reward popup: piles you TAKE. Two finds share it — the gamble
-  // CHEST (world coins, often empty) and THE TREASURE (the map's prize, pays pier
-  // tickets, never empty).
+  // 🏴 the buried-reward popup: piles you TAKE — THE TREASURE only, now that
+  // the gamble coin chest is retired (the ids keep their historic chest names).
   const chestPanel = document.getElementById('bhChestPanel');
   const chestH = document.getElementById('bhChestH');
   const chestSlots = document.getElementById('bhChestSlots');
   const chestSub = document.getElementById('bhChestSub');
   const chestBtn = document.getElementById('bhChestBtn');
-  let chestHaul = 0, chestCur = 'coins';
-  function renderReward(title, cut, fullSub, emptySub, cur) {
-    chestCur = cur;
+  let chestHaul = 0;
+  function renderReward(title, cut, sub) {
     chestHaul = cut.reduce((a, c) => a + c, 0);
     if (chestH) chestH.textContent = title;
+    chestSub.textContent = sub;
     chestSlots.innerHTML = '';
-    if (!chestHaul) {
-      chestSub.textContent = emptySub;
-      chestSlots.innerHTML = '<div class="bh-slotempty">empty</div>';
-      chestBtn.textContent = 'well. that’s the sea for you';
-    } else {
-      chestSub.textContent = fullSub;
-      cut.forEach((n) => {
-        const d = document.createElement('div');
-        d.className = 'bh-cslot';
-        d.innerHTML = (cur === 'tickets'
-          ? '<img src="/assets/banana-stand/ticket.png" width="42" alt="" />'
-          : '<img src="/assets/banana-stand/coins.png" width="36" alt="" />')
-          + '<b>' + n + '</b>';
-        chestSlots.appendChild(d);
-      });
-      chestBtn.textContent = (cur === 'tickets' ? 'pocket the ' : 'take the ') + chestHaul + ' ' + cur;
-    }
+    cut.forEach((n) => {
+      const d = document.createElement('div');
+      d.className = 'bh-cslot';
+      d.innerHTML = '<img src="/assets/banana-stand/ticket.png" width="42" alt="" /><b>' + n + '</b>';
+      chestSlots.appendChild(d);
+    });
+    chestBtn.textContent = 'pocket the ' + chestHaul + ' tickets';
     chestPanel.hidden = false;
   }
-  function openChest() {
-    renderReward('a buried chest', chestLoot(), 'buried treasure, and it’s yours.', 'sand. just sand, all the way down.', 'coins');
-    float(pos.x, pos.y - 30, '🧰 a chest!');
-    passStat('bh_chest', 1);
-  }
-  // the map's prize ALWAYS pays — a bounded, date-seeded haul of pier tickets
+  // the map's prize ALWAYS pays — a bounded, date-seeded haul of pier tickets.
+  // ⭐ Split the haul across SLOTS: 12 tickets shown as piles reads as a find;
+  // the same 12 as one number reads as a receipt. Same payout, more occasion.
   function treasureLoot() {
     let seq = 0;
     const rnd = () => seedRand(digDay * 104729 + 17 + (seq++) * 97);
@@ -1835,25 +1814,18 @@ function init() {
     return cut.filter((n) => n > 0);
   }
   function openTreasure() {
-    renderReward('THE TREASURE!', treasureLoot(), 'the map led true — the sea buried this deep, and every last ticket is yours.', '', 'tickets');
+    renderReward('THE TREASURE!', treasureLoot(), 'the map led true — the sea buried this deep, and every last ticket is yours.');
     float(pos.x, pos.y - 30, '🏴 THE TREASURE!');
   }
   chestBtn.addEventListener('click', () => {
     if (chestHaul) {
-      if (chestCur === 'tickets') {
-        // the daily treasure counts as FOUND only once pocketed — a reload
-        // between striking the X and pocketing never eats the day's reward
-        passStat('tickets', chestHaul);
-        passStat('bh_treasure', 1);
-        try { localStorage.setItem(TR_KEY, '1'); } catch (e) {}
-        float(pos.x, pos.y - 34, '+' + chestHaul + ' tickets');
-        track('beach_treasure', { tickets: chestHaul });
-      } else {
-        // ⚠️ the wallet is a pass STAT pair: balance = coins_earned − coins_spent
-        passStat('coins_earned', chestHaul);
-        float(pos.x, pos.y - 34, '+' + chestHaul + ' coins');
-        track('beach_chest', { coins: chestHaul });
-      }
+      // the daily treasure counts as FOUND only once pocketed — a reload
+      // between striking the X and pocketing never eats the day's reward
+      passStat('tickets', chestHaul);
+      passStat('bh_treasure', 1);
+      try { localStorage.setItem(TR_KEY, '1'); } catch (e) {}
+      float(pos.x, pos.y - 34, '+' + chestHaul + ' tickets');
+      track('beach_treasure', { tickets: chestHaul });
       chestHaul = 0;
     }
     chestPanel.hidden = true;
@@ -1861,10 +1833,14 @@ function init() {
 
   // 🎮 THE ACTION BAR — React · ⛏ Dig · Sound
   document.getElementById('bhDigBtn').addEventListener('click', () => dig());
-  // a heart floats up from your banana (peer relay is a later add)
+  // a heart floats up from your banana (peer relay is a later add). The heart
+  // itself is mashable on purpose; only the GA4 event is throttled (house rule —
+  // same 8s as beach_ball_kick, so a mash reads as one act, not twenty events)
+  let emoteTrackAt = 0;
   document.getElementById('bhEmote').addEventListener('click', () => {
     float(pos.x, pos.y - 44, '❤️');
-    track('beach_emote');
+    const now = performance.now();
+    if (now - emoteTrackAt > 8000) { emoteTrackAt = now; track('beach_emote'); }
   });
   // sound is a stub for now — the toggle works, the audio wires in later
   (() => {
@@ -1904,6 +1880,7 @@ function init() {
     x: SANDY_HOME.x, y: SANDY_HOME.y, tx: SANDY_HOME.x, ty: SANDY_HOME.y,
     last: 0, away: false, greeted: false, idx: 0, timer: 0,
   };
+  let sandyWX = NaN, sandyWY = NaN;   // last WRITTEN position (change-guard)
   const SANDY_LINES = [
     'no score, no pressure. just keep it up with me a while.',
     'send it anywhere. i’ll get it.',
@@ -1976,6 +1953,8 @@ function init() {
       sandySay(SANDY_LINES[sandy.idx++ % SANDY_LINES.length]);
       track('beach_sandy');
     } else if (!onCourt && sandy.greeted) sandy.greeted = false;
+    if (sandy.x === sandyWX && sandy.y === sandyWY) return;   // change-guard: he mostly stands
+    sandyWX = sandy.x; sandyWY = sandy.y;
     sandyEl.style.left = pct(sandy.x, W);
     sandyEl.style.top = pct(sandy.y, H);
     depth(sandyEl, sandy.y);
@@ -2074,7 +2053,7 @@ function init() {
     stallName.textContent = def.sign + ' ' + def.name;
     paintTickets();
     stallPanel.hidden = false;
-    history.replaceState(null, '', '#' + def.id);   // linkable, back-button safe
+    history.replaceState(null, '', '#' + def.id);   // cosmetic URL note — nothing reads it back on load
     track('beach_stall', { stall: def.id });
     if (def.soon) {
       stallBody.innerHTML = '<p class="bh-stallsoon">the boards are up but the '
@@ -2362,13 +2341,12 @@ function init() {
   const cocoFoot = document.getElementById('bhCocoFoot');
   const cocoTixEl = document.getElementById('bhCocoTix');
   const cocoCoinsEl = document.getElementById('bhCocoCoins');
-  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 2, COCO_COUNT = 5;
+  const COCO_COST = 5, COCO_BALLS = 3, COCO_TIX = 2;
   // 🎯 a heavy CATAPULT lob: low gravity so the ball is flung in a long, high
   // arc — up out of frame, hanging in the air a beat, then dropping onto the
   // shelf. You must lead the moving coconuts, not point-and-shoot straight.
-  const COCO_G = 480, COCO_KNOCK = 240, COCO_K = 5.0, COCO_VMAX = 1000, COCO_BALL_R = 18;
+  const COCO_G = 480, COCO_K = 5.0, COCO_VMAX = 1000, COCO_BALL_R = 18;
   const COCO_AIR = 4.5;   // max seconds a ball stays live (long arcs need the room)
-  const COCO_KNOCK_D = 13;   // the ball's path must pass THIS close to a coconut's centre to knock it (else it bounces)
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
     + '<rect x="1" y="2" width="10" height="2" fill="#6b4a2b"/><rect x="0" y="4" width="12" height="4" fill="#6b4a2b"/>'
@@ -2703,9 +2681,6 @@ function init() {
     track('beach_stall_win', { stall: 'coco', tickets: COCO_TIX });
     b.vx *= 0.22; b.vy = Math.abs(b.vy) * 0.2;   // the ball loses its punch
   }
-  function cocoWobble(c) {
-    c.el.classList.remove('is-wobble'); void c.el.offsetWidth; c.el.classList.add('is-wobble');
-  }
   function cocoToast(txt) {
     const t = document.createElement('div');
     t.className = 'bh-coco__toast'; t.textContent = txt;
@@ -2824,12 +2799,14 @@ function init() {
   const frontOf = (x, y) => ({ x, y: y + 40 });
   const ARRIVE = 24;                      // how close = "at the desk"
   let pendingOpen = null;                 // { fn, x, y } — opens when we arrive
-  let pendingDig = null;                  // { x, y } — digs when we arrive
   let pendingUmb = null;                  // { x, y, toggle } — folds when we arrive
   // route to a stall's front, going AROUND it if you're behind it (stalls are
   // solid + south-facing; from the north the banana wedges on the collider
   // back, so it takes a side waypoint — same idea as the pier mouth).
   function requestOpen(cx, base, openFn) {
+    // stand up first — a seated (fishing) banana ignores tgt in step(), so a
+    // stall tap from a dock chair would otherwise be a silent no-op
+    seated = null; sitTarget = null; meEl.classList.remove('is-sitting'); stopFishing();
     const f = frontOf(cx, base);
     if (Math.hypot(pos.x - f.x, pos.y - f.y) < ARRIVE) { pendingOpen = null; openFn(); return; }
     pendingOpen = { fn: openFn, x: f.x, y: f.y };
@@ -2902,16 +2879,15 @@ function init() {
       }
       pos.x = Math.max(12, Math.min(W - 12, pos.x));
       pos.y = Math.max(64, Math.min(H - 12, pos.y));
-      meEl.style.left = pct(pos.x, W);
-      meEl.style.top = pct(pos.y, H);
-      depth(meEl, pos.y);            // behind the net when your feet are past it
+      if (pos.x !== meWX || pos.y !== meWY) {   // change-guard: write only on movement
+        meWX = pos.x; meWY = pos.y;
+        meEl.style.left = pct(pos.x, W);
+        meEl.style.top = pct(pos.y, H);
+        depth(meEl, pos.y);          // behind the net when your feet are past it
+      }
       // 🎡 a stall opens only once you've walked all the way to its desk
       if (pendingOpen && Math.hypot(pos.x - pendingOpen.x, pos.y - pendingOpen.y) < ARRIVE) {
         const fn = pendingOpen.fn; pendingOpen = null; fn();
-      }
-      // ⛏ walked to the spot you tapped on a patch → put the spade in
-      if (pendingDig && Math.hypot(pos.x - pendingDig.x, pos.y - pendingDig.y) < 20) {
-        pendingDig = null; dig();
       }
       // ⛱ …and walked to a parasol you tapped → fold or raise it
       if (pendingUmb && Math.hypot(pos.x - pendingUmb.x, pos.y - pendingUmb.y) < 26) {
@@ -2950,6 +2926,7 @@ function init() {
   // floor than sand, so the restitution is lower than the volleyball's and the
   // ball settles after three or four hops instead of ringing on.
   const WBALL = { x: 900, y: 236, z: 0, vx: 0, vy: 0, vz: 0 };
+  let wbWX = NaN, wbWY = NaN, wbWZ = NaN;   // last WRITTEN state (change-guard)
   const WB_GRAV = 380, WB_HOP = 0.58;
   // ⚠️ BOUNCY, not soggy. Trym: "the water-ball must be more bouncy so that
   // one can bounce it a distance to eachother." The first pass had WB_DRAG
@@ -3028,6 +3005,8 @@ function init() {
     } else if (spd < 3) {
       WBALL.vx = 0; WBALL.vy = 0;             // properly still
     }
+    if (WBALL.x === wbWX && WBALL.y === wbWY && WBALL.z === wbWZ) return;   // change-guard
+    wbWX = WBALL.x; wbWY = WBALL.y; wbWZ = WBALL.z;
     wballEl.style.left = pct(WBALL.x, W);
     wballEl.style.top = pct(WBALL.y - WBALL.z, H);
     depth(wballEl, WBALL.y);          // sorts by where it FLOATS, not its apex

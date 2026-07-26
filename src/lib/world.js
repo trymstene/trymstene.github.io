@@ -88,10 +88,18 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
   }
   connect();
   const pinger = setInterval(() => { if (ws && ws.readyState === 1) ws.send('{"t":"ping"}'); }, pingMs);
+  // navigation/tab-close backstop: close the socket but do NOT latch
+  // closedForGood — a bfcache/app-switch restore must be able to rejoin
+  // (a real unload destroys the page anyway, so nothing can reconnect-fight)
   addEventListener('pagehide', () => {
-    closedForGood = true;
-    clearInterval(pinger);
     try { if (ws) ws.close(1000, 'bye'); } catch (e) {}
+  });
+  // 📱 coming back from the background: mobile OSes kill idle sockets, and the
+  // retry budget may have burned out while hidden — without this a returning
+  // player reads "solo" until reload. Reset the budget and rejoin on return
+  // (the rave's own socket had this; now every presenceRoom room does).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !closedForGood && (!ws || ws.readyState > 1)) { tries = 0; connect(); }
   });
   return {
     send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); },
