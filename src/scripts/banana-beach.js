@@ -906,6 +906,7 @@ function init() {
     track('beach_shells_open');
   }
   document.getElementById('bhShellClose').addEventListener('click', () => { shellPanel.hidden = true; });
+  shellPanel.addEventListener('click', (e) => { if (e.target === shellPanel) shellPanel.hidden = true; }); // click the backdrop to leave
 
   // ---- 🐚 SHELLY & THE SHELL BOARD ---------------------------------------
   // The shell collection now has its OWN keeper and its own place on the beach,
@@ -1369,6 +1370,7 @@ function init() {
   }
   function openLedger() { renderLedger(); ledgerPanel.hidden = false; track('beach_ledger_open'); }
   document.getElementById('bhLedgerClose').addEventListener('click', () => { ledgerPanel.hidden = true; });
+  ledgerPanel.addEventListener('click', (e) => { if (e.target === ledgerPanel) ledgerPanel.hidden = true; }); // click the backdrop to leave
 
   // 🔎 THE SPECIMEN CARD — one tap-to-inspect popup shared by both boards. It
   // reads a species live (count, best size, rarity) + its keeper's note, and

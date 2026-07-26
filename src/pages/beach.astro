@@ -811,6 +811,16 @@ const faq = {
       font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem;
       margin: 0 0 0.15rem; letter-spacing: 0.03em;
     }
+    /* ✕ the pinned close on the SCROLLING collection popups (Shelly's board +
+       Gil's ledger) — replaced the "back to the beach" button. float+sticky so
+       it rides the top-right corner as the grid scrolls; the backdrop closes too. */
+    .bh-cardx {
+      position: sticky; top: 0; float: right; z-index: 3; margin: -0.2rem -0.3rem 0 0.4rem;
+      appearance: none; background: none; border: 0; line-height: 1;
+      color: #fffdf5; font-size: 1.25rem; font-weight: 800; cursor: pointer;
+      opacity: 0.7; padding: 4px 6px;
+    }
+    .bh-cardx:hover { opacity: 1; }
     .bh-card p { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
     .bh-panel__sub { opacity: 0.9; }
     .bh-panel__sub b { color: #ffd98a; opacity: 1; }
@@ -1406,6 +1416,7 @@ const faq = {
 
       <div class="bh-panel" id="bhShellPanel" hidden>
         <div class="bh-card" role="dialog" aria-label="Shell collection">
+          <button class="bh-cardx" id="bhShellClose" type="button" aria-label="close">✕</button>
           <h2>your shell collection</h2>
           <p id="bhShellSub" class="bh-panel__sub">washed up on the tide.</p>
           <!-- ⚠️ KEPT SHORT ON PURPOSE. This used to be three dense bullets for
@@ -1418,7 +1429,6 @@ const faq = {
             <li><b>⭐ some are rare.</b> a <b style="color:#ffd23b">tulip</b> or a <b style="color:#ff8f2e">nautilus</b> turns up far less often than a clam — the full set is a long hunt. Shelly keeps the board.</li>
           </ol>
           <div class="bh-grid" id="bhShellGrid"></div>
-          <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
         </div>
       </div>
 
@@ -1446,6 +1456,7 @@ const faq = {
            rarity colour + your personal best on what you have. -->
       <div class="bh-panel" id="bhLedger" hidden>
         <div class="bh-card" role="dialog" aria-label="Gil's fish ledger">
+          <button class="bh-cardx" id="bhLedgerClose" type="button" aria-label="close">✕</button>
           <h2>gil’s ledger</h2>
           <p id="bhLedgerSub" class="bh-panel__sub"></p>
           <div class="bh-ledgerbar"><i id="bhLedgerFill"></i></div>
@@ -1456,7 +1467,6 @@ const faq = {
             <li><b>⭐ four tiers.</b> commons fill the ledger fast; <b style="color:#ffd23b">rare</b> and <b style="color:#ff8f2e">legendary</b> are the real chase.</li>
             <li><b>📏 every fish has a size.</b> gil keeps your personal best, so even a fish you own is worth casting for.</li>
           </ol>
-          <button class="bh-btn bh-btn--dark" id="bhLedgerClose" type="button">back to the beach</button>
         </div>
       </div>
 
