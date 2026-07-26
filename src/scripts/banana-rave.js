@@ -533,7 +533,19 @@ function init() {
     // it doesn't also read as a walk order); your own banana isn't a target
     if (!isMe) {
       wrap.style.cursor = 'crosshair';
-      wrap.addEventListener('click', (e) => { e.stopPropagation(); setTarget(p.id); });
+      wrap.addEventListener('click', (e) => {
+        // TIGHT hit-test: only the banana's BODY locks on. The wrap box is much
+        // wider than the sprite, and its transparent corners were eating walk
+        // taps — you couldn't walk close past a banana to grab the mop or any
+        // floor item (Trym, first mop field test). A miss falls through to the
+        // floor handler and stays a plain walk order.
+        const b = wrap.getBoundingClientRect();
+        const nx = (e.clientX - b.left) / b.width - 0.5;
+        const ny = (e.clientY - b.top) / b.height - 0.5;
+        if (Math.abs(nx) > 0.22 || Math.abs(ny) > 0.42) return;
+        e.stopPropagation();
+        setTarget(p.id);
+      });
     }
     world.appendChild(wrap);
     ravers.set(p.id, { ...p, wrap, cv, x, y, size });
