@@ -3484,7 +3484,7 @@ function init() {
     // lever (mashing AT the breaker is diegetic and fine).
     power: {
       led: '⚡ SIGNAL LOST',
-      SPOT: { x: 88, y: 38 },    // the breaker on the right wall — far from the exit
+      SPOT: { x: 88, y: 28 },    // the breaker high on the right wall — far from the exit
       FLIPS: 4,
       enter() {
         const veil = document.createElement('div');
@@ -3501,6 +3501,7 @@ function init() {
         this.flips = 0;
         this.coolAt = 0;
         el('rvScreen').classList.add('rv-screen--out');
+        document.body.classList.add('rv-nopower');   // the ceiling beams go out
         qBtnShow('⚡ FLIP');
         qHint('power’s out! get to the glowing breaker (right wall) → hit ⚡');
         bartySay(['the POWER! ⚡ breaker’s on the right wall, partner — GO FLIP IT!',
@@ -3516,6 +3517,7 @@ function init() {
         }
         this.flips++;
         pickupPop(this.SPOT.x, this.SPOT.y);         // sparks punch through the dark
+        if (this.box) { this.box.classList.remove('rv-breaker--zap'); void this.box.offsetWidth; this.box.classList.add('rv-breaker--zap'); }
         if (this.veil) { this.veil.classList.remove('rv-blackout--flicker'); void this.veil.offsetWidth; this.veil.classList.add('rv-blackout--flicker'); }
         qBtnShow('⚡ ' + this.flips + '/' + this.FLIPS);
         if (this.flips >= this.FLIPS) questDone();
@@ -3526,22 +3528,36 @@ function init() {
         if (this.box) this.box.remove();
         this.box = null;
         el('rvScreen').classList.remove('rv-screen--out');
+        document.body.classList.remove('rv-nopower');
       },
       doneBig: ['AND THE LIGHTS CAME BACK ⚡', 'the rave never died!'],
       doneLed: 'POWER RESTORED. NEVER IN DOUBT.',
       doneSay: ['THAT’S my electrician! 🤠 this club runs on jelly and hope. mostly hope.'],
     },
   };
-  // the breaker box: grey panel, yellow bolt, red lever — drawn inline like
-  // every floor sprite (no asset fetch)
-  const BREAKER_SVG = '<svg viewBox="0 0 12 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="0" y="0" width="12" height="16" fill="#111"/>'
-    + '<rect x="1" y="1" width="10" height="14" fill="#3a3f52"/>'
-    + '<rect x="2" y="2" width="8" height="9" fill="#262b3d"/>'
-    + '<rect x="6" y="3" width="2" height="2" fill="#ffe135"/><rect x="5" y="5" width="2" height="2" fill="#ffe135"/>'
-    + '<rect x="4" y="7" width="2" height="2" fill="#ffe135"/><rect x="6" y="7" width="1" height="1" fill="#e6a817"/>'
-    + '<rect x="2" y="12" width="5" height="2" fill="#191d2a"/>'
-    + '<rect x="8" y="11" width="2" height="4" fill="#ff4d4d"/><rect x="8" y="11" width="2" height="1" fill="#ff8a8a"/>'
+  // the breaker box at BANANA pixel density (24×32 grid at 22px display):
+  // steel panel + corner screws, a status-light meter window, the yellow
+  // bolt warning label, a lever on its track, vents — no asset fetch
+  const BREAKER_SVG = '<svg viewBox="0 0 24 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="0" y="0" width="24" height="32" fill="#0b0d14"/>'
+    + '<rect x="1" y="1" width="22" height="30" fill="#444a61"/>'
+    + '<rect x="2" y="2" width="20" height="1" fill="#5a6180"/><rect x="2" y="2" width="1" height="28" fill="#5a6180"/>'
+    + '<rect x="3" y="3" width="18" height="26" fill="#262b3d"/>'
+    + '<rect x="2" y="2" width="1" height="1" fill="#8890a8"/><rect x="21" y="2" width="1" height="1" fill="#8890a8"/>'
+    + '<rect x="2" y="29" width="1" height="1" fill="#8890a8"/><rect x="21" y="29" width="1" height="1" fill="#8890a8"/>'
+    + '<rect x="5" y="5" width="14" height="5" fill="#10131c"/>'
+    + '<rect x="6" y="6" width="2" height="3" fill="#1d3a2a"/><rect x="9" y="6" width="2" height="3" fill="#1d3a2a"/>'
+    + '<rect x="12" y="6" width="2" height="3" fill="#4a3b12"/><rect x="15" y="6" width="3" height="3" fill="#ff4d4d"/>'
+    + '<rect x="12" y="11" width="4" height="2" fill="#ffe135"/>'
+    + '<rect x="10" y="13" width="4" height="2" fill="#ffe135"/>'
+    + '<rect x="8" y="15" width="6" height="2" fill="#ffe135"/><rect x="14" y="15" width="1" height="1" fill="#e6a817"/>'
+    + '<rect x="11" y="17" width="3" height="2" fill="#ffe135"/>'
+    + '<rect x="9" y="19" width="3" height="2" fill="#e6a817"/>'
+    + '<rect x="5" y="23" width="14" height="3" fill="#10131c"/>'
+    + '<rect x="6" y="24" width="8" height="1" fill="#191d2a"/>'
+    + '<rect x="14" y="21" width="4" height="7" fill="#ff4d4d"/><rect x="14" y="21" width="4" height="2" fill="#ff8a8a"/>'
+    + '<rect x="15" y="28" width="2" height="1" fill="#2a1518"/>'
+    + '<rect x="5" y="28" width="3" height="1" fill="#191d2a"/><rect x="9" y="28" width="3" height="1" fill="#191d2a"/>'
     + '</svg>';
 
   function startQuest(id) {

@@ -1172,17 +1172,39 @@ const GUIDE = [
     .rv-blackout--flicker { animation: rvFlick 0.35s steps(2); }
     @keyframes rvFlick { 50% { opacity: 0.2; } }
     .rv-breaker {
-      position: absolute; width: 44px; z-index: 460; transform: translate(-50%, -50%);
+      position: absolute; width: 22px; z-index: 460; transform: translate(-50%, -50%);
       pointer-events: none; image-rendering: pixelated;
-      filter: drop-shadow(0 0 10px rgba(255, 225, 53, 0.85));
+      filter: drop-shadow(0 0 9px rgba(255, 225, 53, 0.85));
     }
     .rv-breaker svg { width: 100%; height: auto; display: block; }
-    /* the LED loses signal — content ghosts + stutters until power returns */
-    .rv-screen--out .rv-screen__content { opacity: 0.12; animation: rvScreenDead 0.9s steps(3) infinite; }
-    @keyframes rvScreenDead { 50% { opacity: 0.04; } }
+    /* each lever flip = an ELECTRICAL BLITZ — the paparazzi flashbang, one-shot */
+    .rv-breaker::before {
+      content: ''; position: absolute; inset: -170%; pointer-events: none; opacity: 0;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 12%, rgba(200, 225, 255, 0.4) 30%, transparent 55%);
+    }
+    .rv-breaker--zap::before { animation: rvBreakerZap 0.45s steps(1); }
+    @keyframes rvBreakerZap {
+      0% { opacity: 1; } 20% { opacity: 0.1; } 40% { opacity: 0.9; }
+      60% { opacity: 0.15; } 80% { opacity: 0.8; } 100% { opacity: 0; }
+    }
+    /* the LED doesn't just dim — it GLITCHES: dark, jittering, the odd
+       bright static burst; content itself is gone to a ghost */
+    .rv-screen--out { animation: rvScreenGlitch 1.3s steps(1) infinite; }
+    .rv-screen--out .rv-screen__content { opacity: 0.06; }
+    @keyframes rvScreenGlitch {
+      0%, 100% { filter: brightness(0.35) contrast(1.4); transform: none; }
+      46% { filter: brightness(0.35) contrast(1.4); transform: none; }
+      48% { filter: brightness(1.7) contrast(2.2); transform: translateX(-3px) skewX(-4deg); }
+      50% { filter: brightness(0.15) contrast(1.4); transform: translateX(2px); }
+      53% { filter: brightness(0.35) contrast(1.4); transform: none; }
+    }
+    /* no power = no stage lights: the ceiling beams over the DJ go out
+       (body class like rv-drop — the beams live in .rv-hall, not the floor) */
+    body.rv-nopower .rv-beam { opacity: 0; }
     @media (prefers-reduced-motion: reduce) {
       .rv-blackout--flicker { animation: none; }
-      .rv-screen--out .rv-screen__content { animation: none; }
+      .rv-screen--out { animation: none; filter: brightness(0.3); }
+      .rv-breaker--zap::before { animation: none; }
     }
     /* 🎯 the standing instruction line — between the floor and the action bar */
     .rv-questhint {
