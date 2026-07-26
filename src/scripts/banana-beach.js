@@ -1505,6 +1505,11 @@ function init() {
   // if this ever becomes grindable or uncapped, the shop economy goes with it.
   const CHEST_MAX = 20;
   const CHEST_EMPTY_ODDS = 0.3;      // a third of chests are a joke, on purpose
+  // 🏴 THE TREASURE — the map's marquee daily find ALWAYS pays (unlike the gamble
+  // chest). It pays PIER TICKETS — the beach's own currency for the midway
+  // prizes — NOT world coins, so it can't inflate the stand. One per day, per
+  // person, date-seeded → an un-farmable, bounded faucet. Tune the range freely.
+  const TREASURE_MIN = 8, TREASURE_MAX = 16;
   // ⭐ Split the haul across SLOTS. 12 coins shown as 4 piles reads as a find;
   // the same 12 as one number reads as a receipt. Same payout, more occasion.
   function chestLoot() {
@@ -1642,9 +1647,8 @@ function init() {
     }
     best.got = true;
     if (best.kind === 'treasure') {
-      float(pos.x, pos.y - 30, '🏴 THE TREASURE!', true);
+      openTreasure();
       sandySay('you found it! that’s what the map was on about.', 5200);
-      passStat('bh_treasure', 1);
       track('beach_dig', { find: 'treasure' });
     } else if (best.kind === 'chest') {
       openChest();
@@ -1668,41 +1672,75 @@ function init() {
     if (p.spots.every((s) => s.got)) p.el.classList.add('is-spent');
     digSave();
   }
-  // 🧰 the chest popup: slots of coins you TAKE, or a chest full of nothing
+  // 🧰🏴 the buried-reward popup: piles you TAKE. Two finds share it — the gamble
+  // CHEST (world coins, often empty) and THE TREASURE (the map's prize, pays pier
+  // tickets, never empty).
   const chestPanel = document.getElementById('bhChestPanel');
+  const chestH = document.getElementById('bhChestH');
   const chestSlots = document.getElementById('bhChestSlots');
   const chestSub = document.getElementById('bhChestSub');
   const chestBtn = document.getElementById('bhChestBtn');
-  let chestHaul = 0;
-  function openChest() {
-    const cut = chestLoot();
+  let chestHaul = 0, chestCur = 'coins';
+  function renderReward(title, cut, fullSub, emptySub, cur) {
+    chestCur = cur;
     chestHaul = cut.reduce((a, c) => a + c, 0);
+    if (chestH) chestH.textContent = title;
     chestSlots.innerHTML = '';
     if (!chestHaul) {
-      chestSub.textContent = 'sand. just sand, all the way down.';
+      chestSub.textContent = emptySub;
       chestSlots.innerHTML = '<div class="bh-slotempty">empty</div>';
       chestBtn.textContent = 'well. that’s the sea for you';
     } else {
-      chestSub.textContent = 'buried treasure, and it’s yours.';
+      chestSub.textContent = fullSub;
       cut.forEach((n) => {
         const d = document.createElement('div');
         d.className = 'bh-cslot';
-        d.innerHTML = '<img src="/assets/banana-stand/coin.png" width="30" alt="" />'
+        d.innerHTML = (cur === 'tickets'
+          ? '<span style="font-size:26px;line-height:1">🎟</span>'
+          : '<img src="/assets/banana-stand/coin.png" width="30" alt="" />')
           + '<b>' + n + '</b>';
         chestSlots.appendChild(d);
       });
-      chestBtn.textContent = 'take the ' + chestHaul + ' coins';
+      chestBtn.textContent = (cur === 'tickets' ? 'pocket the ' : 'take the ') + chestHaul + ' ' + cur;
     }
     chestPanel.hidden = false;
+  }
+  function openChest() {
+    renderReward('🧰 a buried chest', chestLoot(), 'buried treasure, and it’s yours.', 'sand. just sand, all the way down.', 'coins');
     float(pos.x, pos.y - 30, '🧰 a chest!');
     passStat('bh_chest', 1);
   }
+  // the map's prize ALWAYS pays — a bounded, date-seeded haul of pier tickets
+  function treasureLoot() {
+    let seq = 0;
+    const rnd = () => seedRand(digDay * 104729 + 17 + (seq++) * 97);
+    const total = TREASURE_MIN + Math.floor(rnd() * (TREASURE_MAX - TREASURE_MIN + 1));
+    const slots = 2 + Math.floor(rnd() * 2); // 2-3 piles so it reads as treasure, not a receipt
+    const cut = []; let left = total;
+    for (let i = 0; i < slots; i++) {
+      const take = i === slots - 1 ? left : Math.max(1, Math.round(left / (slots - i) * (0.7 + rnd() * 0.6)));
+      cut.push(take); left -= take;
+    }
+    return cut.filter((n) => n > 0);
+  }
+  function openTreasure() {
+    renderReward('🏴 THE TREASURE!', treasureLoot(), 'the map led true — the sea buried this deep, and every last ticket is yours.', '', 'tickets');
+    float(pos.x, pos.y - 30, '🏴 THE TREASURE!');
+    passStat('bh_treasure', 1);
+  }
   chestBtn.addEventListener('click', () => {
     if (chestHaul) {
-      // ⚠️ the wallet is a pass STAT pair: balance = coins_earned − coins_spent
-      passStat('coins_earned', chestHaul);
-      float(pos.x, pos.y - 34, '+' + chestHaul + ' coins');
-      track('beach_chest', { coins: chestHaul });
+      if (chestCur === 'tickets') {
+        // tickets = the pier's own currency (balance = tickets − tickets_spent)
+        passStat('tickets', chestHaul);
+        float(pos.x, pos.y - 34, '+' + chestHaul + ' tickets');
+        track('beach_treasure', { tickets: chestHaul });
+      } else {
+        // ⚠️ the wallet is a pass STAT pair: balance = coins_earned − coins_spent
+        passStat('coins_earned', chestHaul);
+        float(pos.x, pos.y - 34, '+' + chestHaul + ' coins');
+        track('beach_chest', { coins: chestHaul });
+      }
       chestHaul = 0;
     }
     chestPanel.hidden = true;
