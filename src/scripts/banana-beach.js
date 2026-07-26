@@ -1514,7 +1514,7 @@ function init() {
   // the same 12 as one number reads as a receipt. Same payout, more occasion.
   function chestLoot() {
     if (digRnd() < CHEST_EMPTY_ODDS) return [];
-    const slots = 2 + Math.floor(digRnd() * 3);          // 2-4 piles
+    const slots = 2;                                     // two coin STACKS
     const total = 6 + Math.floor(digRnd() * (CHEST_MAX - 5));
     const cut = [];
     let left = total;
@@ -1696,8 +1696,8 @@ function init() {
         const d = document.createElement('div');
         d.className = 'bh-cslot';
         d.innerHTML = (cur === 'tickets'
-          ? '<span style="font-size:26px;line-height:1">🎟</span>'
-          : '<img src="/assets/banana-stand/coin.png" width="30" alt="" />')
+          ? '<img src="/assets/banana-stand/ticket.png" width="42" alt="" />'
+          : '<img src="/assets/banana-stand/coins.png" width="36" alt="" />')
           + '<b>' + n + '</b>';
         chestSlots.appendChild(d);
       });
@@ -1706,7 +1706,7 @@ function init() {
     chestPanel.hidden = false;
   }
   function openChest() {
-    renderReward('🧰 a buried chest', chestLoot(), 'buried treasure, and it’s yours.', 'sand. just sand, all the way down.', 'coins');
+    renderReward('a buried chest', chestLoot(), 'buried treasure, and it’s yours.', 'sand. just sand, all the way down.', 'coins');
     float(pos.x, pos.y - 30, '🧰 a chest!');
     passStat('bh_chest', 1);
   }
@@ -1715,7 +1715,7 @@ function init() {
     let seq = 0;
     const rnd = () => seedRand(digDay * 104729 + 17 + (seq++) * 97);
     const total = TREASURE_MIN + Math.floor(rnd() * (TREASURE_MAX - TREASURE_MIN + 1));
-    const slots = 2 + Math.floor(rnd() * 2); // 2-3 piles so it reads as treasure, not a receipt
+    const slots = 2; // two ticket stacks
     const cut = []; let left = total;
     for (let i = 0; i < slots; i++) {
       const take = i === slots - 1 ? left : Math.max(1, Math.round(left / (slots - i) * (0.7 + rnd() * 0.6)));
@@ -1724,7 +1724,7 @@ function init() {
     return cut.filter((n) => n > 0);
   }
   function openTreasure() {
-    renderReward('🏴 THE TREASURE!', treasureLoot(), 'the map led true — the sea buried this deep, and every last ticket is yours.', '', 'tickets');
+    renderReward('THE TREASURE!', treasureLoot(), 'the map led true — the sea buried this deep, and every last ticket is yours.', '', 'tickets');
     float(pos.x, pos.y - 30, '🏴 THE TREASURE!');
     passStat('bh_treasure', 1);
   }

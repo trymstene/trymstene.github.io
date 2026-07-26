@@ -1031,12 +1031,14 @@ const faq = {
     @media (prefers-reduced-motion: reduce) {
       .bh-pond::before, .bh-duck__sprite, .bh-duck__ripple, .bh-spark { animation: none !important; }
     }
-    .bh-chesth { margin: 0 0 0.2rem; font-size: 0.95rem; }
-    .bh-chestsub { margin: 0 0 0.6rem; font-size: 0.8rem; opacity: 0.8; }
-    /* the piles. Wrapping keeps 4 slots readable on the narrowest phone. */
-    .bh-cslots { display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: center; }
+    .bh-card--chest { text-align: center; }
+    .bh-chesthero { display: block; width: 88px; height: auto; margin: -0.2rem auto 0.5rem; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.3)); }
+    .bh-chesth { margin: 0 0 0.2rem; font-size: 1.05rem; }
+    .bh-chestsub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.8; }
+    /* the piles — two stacks, centred. */
+    .bh-cslots { display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: center; }
     .bh-cslot {
-      display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.55rem;
+      display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.65rem;
       background: #17121f; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
     }
     .bh-cslot img { image-rendering: pixelated; display: block; }
@@ -1297,8 +1299,9 @@ const faq = {
            full ones land. Coins are shown as SLOTS, not a total: the same
            haul split into piles reads as treasure instead of a receipt. -->
       <div class="bh-panel" id="bhChestPanel" hidden>
-        <div class="bh-card" role="dialog" aria-label="Treasure chest">
-          <h3 class="bh-chesth" id="bhChestH">🧰 a buried chest</h3>
+        <div class="bh-card bh-card--chest" role="dialog" aria-label="Treasure chest">
+          <img class="bh-chesthero" src="/assets/banana-stand/chest.png" width="88" alt="" aria-hidden="true" />
+          <h3 class="bh-chesth" id="bhChestH">a buried chest</h3>
           <p class="bh-chestsub" id="bhChestSub"></p>
           <div class="bh-cslots" id="bhChestSlots"></div>
           <button class="bh-btn" id="bhChestBtn" type="button"></button>
