@@ -697,6 +697,21 @@ const faq = {
        and recedes back under if it's left uncombed too long. */
     .bh-shell--rising { animation: bhShellRise 0.55s ease-out, bhShellGlint 2.6s ease-in-out infinite; }
     .bh-shell--receding { animation: bhShellRecede 0.5s ease-in forwards; }
+    /* 🍾 DRIFT BOTTLE — a sealed map piece bobbing in the shallows (C2). Inline
+       pixel bottle, so no asset is needed; bobs on the swell + casts a shadow. */
+    .bh-drift {
+      position: absolute; z-index: 3; width: 2.3%; aspect-ratio: 26 / 14;
+      transform: translate(-50%, -50%); pointer-events: none;
+      image-rendering: pixelated; transition: opacity 0.5s ease;
+      background: center/contain no-repeat
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='14' shape-rendering='crispEdges'%3E%3Crect x='2' y='3' width='19' height='8' fill='%235fa47a'/%3E%3Crect x='2' y='2' width='19' height='1' fill='%23000'/%3E%3Crect x='2' y='11' width='19' height='1' fill='%23000'/%3E%3Crect x='1' y='3' width='1' height='8' fill='%23000'/%3E%3Crect x='21' y='4' width='2' height='6' fill='%235fa47a'/%3E%3Crect x='23' y='4' width='2' height='6' fill='%237a4a21'/%3E%3Crect x='23' y='3' width='2' height='1' fill='%23000'/%3E%3Crect x='23' y='10' width='2' height='1' fill='%23000'/%3E%3Crect x='6' y='5' width='11' height='4' fill='%23efe2b8'/%3E%3Crect x='3' y='4' width='2' height='6' fill='%238fce9f'/%3E%3Crect x='7' y='6' width='9' height='1' fill='%23c9a15a'/%3E%3C/svg%3E");
+      filter: drop-shadow(0 3px 2px rgba(0, 20, 60, 0.4));
+      animation: bhBob 2.8s ease-in-out infinite;
+    }
+    @keyframes bhBob {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-3deg); }
+      50% { transform: translate(-50%, -62%) rotate(3deg); }
+    }
     @keyframes bhShellRise {
       0% { transform: translate(-50%, calc(-50% + 11px)) scale(0.5); opacity: 0; }
       55% { opacity: 1; }
@@ -1176,6 +1191,7 @@ const faq = {
     @media (prefers-reduced-motion: reduce) {
       .bh-cut { transition: none; }
       .bh-shell, .bh-shell--rising, .bh-shell--receding { animation: none; }
+      .bh-drift { animation: none; }
     }
 
     /* 🥥 COCONUT SHY — a full interior scene laid over the beach view. */

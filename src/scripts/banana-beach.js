@@ -873,6 +873,65 @@ function init() {
     }
   }
 
+  // ---- 🍾 DRIFT BOTTLES — map pieces wash in on the tide (Milestone C2) -----
+  // Sabreface's map didn't only tear over the sand: pieces float in sealed
+  // bottles too. They bob in the shallows just past the shoreline — walk the
+  // water's edge and reach one in. A SECOND source of map pieces alongside
+  // digging; each grab hands you the next piece (until the map's whole).
+  const drifts = [];
+  const MAX_DRIFTS = 3;
+  const DRIFT_EVERY = 11000;    // one floats in roughly this often — TUNABLE
+  const DRIFT_LIFE = 42000;     // …and drifts back out if not fished in
+  let driftSpawnAt = 6000;      // first one a few seconds after arrival
+  function driftSpot() {
+    for (let t = 0; t < 20; t++) {
+      const x = 320 + Math.random() * 1560;              // across the main-beach shore
+      const y = WATER_Y - 16 - Math.random() * 48;       // in the shallows, just past the waterline
+      if (blocked(x, y + 80, 0)) continue;               // reachable from dry sand right below it
+      return { x, y };
+    }
+    return null;
+  }
+  function spawnDrift() {
+    if (drifts.length >= MAX_DRIFTS || piecesGot() >= MAP_PIECES) return;   // no pieces left → no bottles
+    const spot = driftSpot();
+    if (!spot) return;
+    const el = document.createElement('div');
+    el.className = 'bh-drift';
+    el.style.left = pct(spot.x, W);
+    el.style.top = pct(spot.y, H);
+    world.appendChild(el);
+    drifts.push({ el, x: spot.x, y: spot.y, born: performance.now() });
+  }
+  function driftTick() {
+    const now = performance.now();
+    if (now - driftSpawnAt > DRIFT_EVERY) { driftSpawnAt = now; spawnDrift(); }
+    for (let i = drifts.length - 1; i >= 0; i--) {
+      const d = drifts[i];
+      if (now - d.born > DRIFT_LIFE) {
+        d.el.style.opacity = '0';
+        const el = d.el; setTimeout(() => el.remove(), 500);
+        drifts.splice(i, 1);
+        continue;
+      }
+      // reach it in from the shore — a generous radius to cross the waterline
+      if (Math.hypot(pos.x - d.x, pos.y - d.y) < 78) {
+        d.el.remove();
+        drifts.splice(i, 1);
+        const wasX = haveXPiece();
+        if (addMapPiece()) {
+          const n = piecesGot();
+          float(d.x, d.y - 10, '🗺 map piece! (' + n + '/' + MAP_PIECES + ')', true);
+          if (haveXPiece() && !wasX) sandySay('that’s the marker — the X is on the map now. see Sabreface.', 5200);
+          track('beach_drift', { find: 'mappiece', n });
+        } else {
+          float(d.x, d.y - 10, '🍾 an empty bottle', true);
+          track('beach_drift', { find: 'empty' });
+        }
+      }
+    }
+  }
+
   // the collection panel
   const shellPanel = document.getElementById('bhShellPanel');
   const shellGrid = document.getElementById('bhShellGrid');
@@ -2846,6 +2905,7 @@ function init() {
     ballStep(dt, now);
     wballStep(dt, now);
     shellTick();
+    driftTick();
     capTick(now);
     gilTick();
     shellyTick();
@@ -3125,7 +3185,7 @@ function init() {
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
-      dig, treasureAt, treasureFound, piecesGot, addMapPiece, mapX, xStrip, pieceOrder,
+      dig, treasureAt, treasureFound, piecesGot, addMapPiece, mapX, xStrip, pieceOrder, drifts, spawnDrift,
       // fake a second banana on the court so the B2 step-aside rule is
       // testable before multiplayer exists
       setPeers: (n) => { peersInCourt = n; } };
