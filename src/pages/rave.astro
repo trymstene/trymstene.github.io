@@ -29,8 +29,8 @@ const raveFaq = {
     { '@type': 'Question', name: 'Is the banana rave really live?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every banana on the floor is a real visitor, right now. The only characters who are not visitors are staff — Barty the bartender and the DJ — and they have jobs.' } },
     { '@type': 'Question', name: 'Why does everyone dance in perfect sync?', acceptedAnswer: { '@type': 'Answer', text: 'There is only one song and it never stops. Every banana on Earth dances on the same wall-clock beat — join from two devices and watch them match.' } },
     { '@type': 'Question', name: 'Do I need an account to join the rave?', acceptedAnswer: { '@type': 'Answer', text: 'No account, no cost. Your banana walks in as you dressed it in the builder — or a fresh one is generated for you.' } },
-    { '@type': 'Question', name: 'What is a nightshift at the banana rave?', acceptedAnswer: { '@type': 'Answer', text: 'Barty always needs a hand with some little chore between the songs — sweeping peels, fetching the lost vinyl, calming the monkey. Finish his requests and he stamps your nightshift; five shifts make you a regular.' } },
-    { '@type': 'Question', name: 'What can I earn at the banana rave?', acceptedAnswer: { '@type': 'Answer', text: 'Badges on your banana pass, permanent gear like the glowstick (30 minutes on the floor) and the golden banana trophy, the fire emote from the stage, tonight’s wearable drop — one item per night, yours forever once caught — and, after five nightshifts, your own stool at the bar.' } },
+    { '@type': 'Question', name: 'What is a nightshift at the banana rave?', acceptedAnswer: { '@type': 'Answer', text: 'Barty used to hand out little chores between the songs — sweeping peels, fetching the lost vinyl, calming the monkey — and stamp your nightshift for finishing them. The nightshifts are on a break right now while they are rebuilt, but they are coming back.' } },
+    { '@type': 'Question', name: 'What can I earn at the banana rave?', acceptedAnswer: { '@type': 'Answer', text: 'Badges on your banana pass, permanent gear like the glowstick (30 minutes on the floor) and the golden banana trophy, the fire emote from the stage, and tonight’s wearable drop — one item per night, yours forever once caught.' } },
     { '@type': 'Question', name: 'Where do the rave’s wearable drops come from?', acceptedAnswer: { '@type': 'Answer', text: 'Visitors draw them. Anyone can draw an item on the banana in the site’s pixel Forge and submit it; approved items drop on the dance floor with the maker’s name attached, and catching one makes it yours forever.' } },
   ],
 };
@@ -39,7 +39,7 @@ const raveFaq = {
 // tools/build-rave-guide.py straight from the source (rerun it if art changes)
 const G = '/assets/rave-guide/';
 const GUIDE = [
-  { img: 'barty', name: 'Barty, the bartender', text: 'Runs the bar, never sleeps. Calls HAPPY HOUR every 5th minute (first banana to the counter wins the beer), mixes specials in between — and always needs a hand with some little chore. Help him and he stamps your nightshift.' },
+  { img: 'barty', name: 'Barty, the bartender', text: 'Runs the bar, never sleeps. Calls HAPPY HOUR every 5th minute (first banana to the counter wins the beer) and mixes specials in between. He used to hand out little chores for a nightshift stamp, too — those are on a break while we rebuild them, and they’re coming back.' },
   { img: 'jelly', name: 'Jelly drops', text: 'It rains jelly on this floor — watch it fall from the rig, land with a wobble, and wait. Hoover it up to fill the JELLY meter; when she’s full, you know what time it is: your own personal drop, spent whenever you like.' },
   { img: 'vinyl', name: 'The lost vinyl', text: 'The DJ keeps losing records. Every 7 minutes one lands somewhere on the floor — carry it back to the booth and the whole club gets a bonus drop, courtesy of you.' },
   { img: 'goldbanana', name: 'The golden banana', text: 'Every half hour, once, somewhere: the golden one. The finder gets the trophy in their hand and “The Golden One” badge on their pass — and for the whole floor, it rains golden bananas.' },
@@ -49,10 +49,9 @@ const GUIDE = [
   { img: 'sauce', name: 'Hot sauce', text: 'A bottle of the house burner lands on the floor every few minutes. Drink it and your footsteps catch fire for a while. Completely safe. Probably.' },
   { img: 'pizza', name: 'Club snacks', text: 'The conveyor drops something chaseable every ~75 seconds. Grab a slice and your banana holds it high; the whole box rides the other glove (and pays a meal of jelly). Candy? A sugar rush — you’ll shake it off. Literally.' },
   { img: 'balloon', name: 'The balloon', text: 'Catch it and up you go: sealed inside, frozen mid-pose, drifting over the floor faster than anyone can dance. It deflates after a minute. Gravity is a rule, not a law.' },
-  { img: 'broom', name: 'The broom & the mess', text: 'Peels and puddles pile up on a nightshift. Grab the broom from the counter and sweep — every swept peel is jelly too. The floor remembers who cleans it.' },
-  { img: 'monkey', name: 'The monkey', text: 'The staff pet. Shows up on certain nights, steals things (famously: the bottle), keeps its distance when chased. Theatrical, never malicious. Mostly.' },
+  { img: 'broom', name: 'The broom & the mess', soon: true, text: 'On a nightshift, peels and puddles pile up — grab the broom from the counter and sweep, every swept peel is jelly too. Part of Barty’s nightshifts, which are paused for a rebuild; the broom comes back with them.' },
+  { img: 'monkey', name: 'The monkey', soon: true, text: 'The staff pet and the club’s chaos agent — turns up on a nightshift, steals things (famously: the bottle), and keeps its distance when chased. Theatrical, never malicious. Mostly. On a break with the nightshifts; back when they are.' },
   { img: 'glowstick', name: 'The glowstick', text: 'Survive 30 minutes on the floor and the neon glowstick is yours forever — it pumps with the beat in your banana’s glove, here and in the builder.' },
-  { img: 'stool', name: 'Your stool', text: 'Finish all five of Barty’s nightshifts and become a regular: your own stool at the counter’s end, forever. Click it, sit down, watch the floor. Nobody else gets one.' },
   { img: 'star', name: 'The gold star', text: 'Grab it and THE ENTOURAGE arrives: two copies of you replaying your every step, half a beat behind. A conga line of yourself. Stop moving and they walk right into you.' },
   { img: 'boots', name: 'Moon boots', text: 'One small step for banana. Big lunar hops with a proper squash on every landing — fifteen seconds of low gravity on a crowded dance floor.' },
   { img: 'gel', name: 'The jello cube', text: 'Eat the wobble, become the wobble: your whole banana goes jelly-legged, wobbling from the feet up. On this floor, that’s practically a religious experience.' },
@@ -98,6 +97,8 @@ const GUIDE = [
     .rvg__thumb img { image-rendering: pixelated; max-height: 84px; max-width: 120px; width: auto; height: auto; }
     .rvg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: #ffe135; margin: 0 0 0.4rem; text-align: center; }
     .rvg__card p { margin: 0; font-size: 0.86rem; line-height: 1.55; opacity: 0.92; }
+    .rvg__card--soon { border-style: dashed; opacity: 0.9; }
+    .rvg__soon { display: block; width: fit-content; margin: -0.1rem auto 0.55rem; padding: 2px 9px; background: #ffe135; color: #111; border-radius: 999px; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
     .rvg__faq h3 { font-family: "Archivo Black", sans-serif; font-size: 1rem; color: #ffe135; margin: 1.3rem 0 0.3rem; }
     .rvg__faq p { margin: 0; }
     .rvg__doors { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.2rem; }
@@ -1512,7 +1513,7 @@ const GUIDE = [
           <li><strong>Boogie.</strong> Arrow keys, WASD, or tap the floor. The dance never stops — walking is just dancing with direction.</li>
           <li><strong>Chase what the floor spawns.</strong> Jelly drops, snacks, power-ups, the lost vinyl, the golden banana — being first is the sport. Everything you grab fills the <strong>JELLY meter</strong>; a full meter is yours to spend on a personal drop.</li>
           <li><strong>Catch tonight's drop.</strong> Once a night the club drops one wearable — walk into it and it's yours forever, worn everywhere your banana goes. Some drops were drawn by other visitors, and the maker's name rides along. <a href="/forge/">Draw an item in the Forge</a> and yours could be next.</li>
-          <li><strong>Help Barty.</strong> He knows you're here to rave — but could you help an old banana with a few chores? Finish his requests and he stamps your <strong>nightshift</strong>. Five shifts make you a regular, with a regular's privileges.</li>
+          <li><strong>Barty's nightshifts — on a break.</strong> Barty used to hand out little chores between the songs — sweep the peels, catch the monkey, earn a <strong>nightshift</strong> stamp on the way to becoming a regular. We've pulled them for a rebuild (they cluttered the old floor), so if you don't spot a broom or a chore right now, that's why — not you. <strong>They're coming back</strong>, tidier.</li>
           <li id="rvStandGuide" hidden><strong>Slip out the EXIT by the bar.</strong> The banana stand is out back — a little shop in the park where the bananacoins you pick up on the floor buy stand-exclusive gear. Missed a drop night? The back-catalog's there too. <a href="/banana-stand/">Walk over →</a></li>
           <li><strong>Outlast everyone.</strong> Survive 5 minutes and the stage opens: dance behind the DJ, earn the &#128293; emote. Survive 30 and the glowstick is yours forever. The endurance board remembers.</li>
           <li><strong>Make a name.</strong> Everything you do pays into your club LEVEL — the gold bar by the JELLY meter, 1 to 99, forever. Climb the brackets and the roster shows your title in gold: On the List, The Regular, VIP… Legend of the Floor.</li>
@@ -1526,9 +1527,10 @@ const GUIDE = [
         <p class="rvg__sub">Everything below is the actual pixel art from the club, at actual chunkiness.</p>
         <div class="rvg__grid">
           {GUIDE.map((g) => (
-            <article class="rvg__card">
+            <article class={'rvg__card' + (g.soon ? ' rvg__card--soon' : '')}>
               <div class="rvg__thumb"><img src={G + g.img + '.png'} alt={g.name + ' — banana rave pixel sprite'} loading="lazy" /></div>
               <h3>{g.name}</h3>
+              {g.soon && <span class="rvg__soon">🚧 on a break — coming back</span>}
               <p>{g.text}</p>
             </article>
           ))}
@@ -1561,15 +1563,15 @@ const GUIDE = [
           <h3>Why is everyone in perfect sync?</h3>
           <p>One song, one wall clock, every banana on Earth on the same beat. It's the oldest trick in the club and it never misses.</p>
           <h3>Why does the club never close?</h3>
-          <p>Somebody's always on shift. Finish your chores and Barty stamps you out — <em>"nightshift's done, back to clubbing"</em> — but the music was playing before you arrived and it'll play after you leave.</p>
+          <p>Because the music never does. One song, one wall clock — it was playing before you arrived and it'll play after you leave. (Barty's between-song chores that stamped your <em>nightshift</em> are on a break right now, mid-rebuild — they'll be back.)</p>
           <h3>What's the JELLY meter?</h3>
-          <p>The gauge of the night. Jelly drops, snacks, chores, the spotlight, surviving drops — it all fills it. Full meter = it starts flashing, and tapping it drops the floor — just for you.</p>
+          <p>The gauge of the night. Jelly drops, snacks, the spotlight, surviving drops — it all fills it. Full meter = it starts flashing, and tapping it drops the floor — just for you.</p>
           <h3>What's my LEVEL?</h3>
-          <p>Your standing at the club, 1 to 99 — the gold bar under the JELLY meter. Every jelly, pickup and chore pays into it, it syncs across your devices with <a href="/pass/">your pass</a>, and it never goes down. Titles land at the big levels, and the floor roster shows them in gold — the room knows who's a regular.</p>
+          <p>Your standing at the club, 1 to 99 — the gold bar under the JELLY meter. Every jelly and pickup pays into it, it syncs across your devices with <a href="/pass/">your pass</a>, and it never goes down. Titles land at the big levels, and the floor roster shows them in gold — the room knows who's a regular.</p>
           <h3>Where do the wearable drops come from?</h3>
           <p>People draw them. Anyone can open <a href="/forge/">the Forge's Items Workshop</a>, draw an item right on the banana — a hat, a sword, a rubber duck — and submit it to the club. The banana guy approves the good ones, and then they drop here with the maker's name riding them. Make it. The club drops it. Someone catches it. Your name rides it.</p>
           <h3>Do my things carry over?</h3>
-          <p>Everything. Badges and stats live on <a href="/pass/">your pass</a>, earned gear like the glowstick follows your banana into <a href="/make-a-banana/">the builder</a>, and the stool waits for its regular.</p>
+          <p>Everything. Badges and stats live on <a href="/pass/">your pass</a>, and earned gear like the glowstick follows your banana into <a href="/make-a-banana/">the builder</a> and everywhere else it goes.</p>
         </div>
       </section>
 
