@@ -500,14 +500,19 @@ function init() {
       seated = null; sitTarget = null; stopFishing();
       meEl.classList.remove('is-sitting');
       setTarget(SHELLY.x - 60, SHELLY.y + 20);
+      pendingOpen = { fn: openShells, x: SHELLY.x - 60, y: SHELLY.y + 20 };
       return;
     }
-    // 🎣 tapping GIL opens the ledger (walk to him first if you're far off)
-    if (inRect(wx, wy, [GIL.x - 150, GIL.y - 130, GIL.x + 10, GIL.y + 30])) {
+    // 🎣 tapping GIL opens the ledger — now TIGHT to Gil's sprite, same box as
+    // Shelly (the old one sprawled 150px left over the dock + sand and ate
+    // walk-by taps). Far off, walk over and the ledger opens ON ARRIVAL
+    // (pendingOpen) instead of leaving you standing there needing a second tap.
+    if (inRect(wx, wy, [GIL.x - 50, GIL.y - 108, GIL.x + 50, GIL.y + 12])) {
       if (Math.hypot(pos.x - GIL.x, pos.y - GIL.y) < GIL.r + 40) { openLedger(); return; }
       seated = null; sitTarget = null; stopFishing();
       meEl.classList.remove('is-sitting');
       setTarget(GIL.x - 60, GIL.y + 20);
+      pendingOpen = { fn: openLedger, x: GIL.x - 60, y: GIL.y + 20 };
       return;
     }
     // 🎣 near-miss forgiveness: while a line is cast, a tap within a fingertip
