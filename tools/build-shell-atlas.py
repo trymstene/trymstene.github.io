@@ -15,6 +15,8 @@ Only astropecten / blue / common exported, so the starfish tier is small until
 those are exported.
 
 Run:  python tools/build-shell-atlas.py
+(The atlas re-bake is skipped automatically if the gitignored pack isn't on this
+ machine — the tier/weight table still regenerates shell-data.js either way.)
 """
 import os
 from PIL import Image
@@ -26,9 +28,14 @@ T = 16
 
 # ---- 🐚 THE BEACHCOMBING TABLE --------------------------------------------
 # tier drives the odds AND how a find is dressed. Weight is per SPECIES, so a
-# tier's real share is weight x how many species sit in it. Shells are the
-# gentler cousin of the fish ledger: commons are very common, because the point
-# of combing is a steady trickle you can do in 30 seconds, not a hunt.
+# tier's real share is weight x how many species sit in it.
+#
+# ⭐ REBALANCED 26 Jul (Trym): shells are now a CONTINUOUS XP pickup (they wash
+# up along the shore forever, each gives world XP), so the collection is the
+# long game on top. A STEEP curve: a small handful of generic commons you see
+# constantly, then ~half the set is genuinely rare, and the prettiest/unique
+# grails (conch, triton, paua, nautilus, junonia) are a multi-week chase. The
+# whole 24-shell set should take at least a month. WEIGHT is the tuning knob.
 #   file  = the sprite inside <pack>/shells/<folder>/ (or starfish/)
 SHELLS = [
     # id,            display,          tier,        folder,       file
@@ -37,38 +44,37 @@ SHELLS = [
     ('mussel',       'Mussel',         'common',    'mussel',     'mussel_1_16x16'),
     ('clam',         'Clam',           'common',    'clam',       'clam_1_16x16'),
     ('oyster',       'Oyster',         'common',    'oyster',     'oyster_16x16'),
-    ('slipper',      'Slipper Shell',  'common',    'slipper',    'slipper_16x16'),
-    ('scallop',      'Scallop',        'common',    'scallop',    'scallop_1_16x16'),
 
+    ('slipper',      'Slipper Shell',  'uncommon',  'slipper',    'slipper_16x16'),
+    ('scallop',      'Scallop',        'uncommon',  'scallop',    'scallop_1_16x16'),
     ('whelk',        'Whelk',          'uncommon',  'whelk',      'whelk_16x16'),
     ('auger',        'Auger',          'uncommon',  'auger',      'auger_16x16'),
-    ('sharkeye',     'Shark Eye',      'uncommon',  'sharkEye',   'sharkEye_16x16'),
     ('comrie',       'Comrie',         'uncommon',  'comrie',     'comrie_16x16'),
     ('sundial',      'Sundial',        'uncommon',  'sundial',    'sundial_1_16x16'),
-    ('tulip',        'Tulip Shell',    'uncommon',  'tulip',      'tulip_1_16x16'),
-    ('angelwing',    'Angel Wing',     'uncommon',  'angelWing',  'angelWing_16x16'),
 
-    ('conch',        'Conch',          'rare',      'conch',      'conch_1_16x16'),
+    ('sharkeye',     'Shark Eye',      'rare',      'sharkEye',   'sharkEye_16x16'),
+    ('tulip',        'Tulip Shell',    'rare',      'tulip',      'tulip_1_16x16'),
+    ('angelwing',    'Angel Wing',     'rare',      'angelWing',  'angelWing_16x16'),
     ('murex',        'Murex',          'rare',      'murex',      'murex_16x16'),
-    ('triton',       'Triton',         'rare',      'triton',     'triton_16x16'),
-    ('paua',         'Paua',           'rare',      'paua',       'paua_1_16x16'),
     ('kina',         'Kina Urchin',    'rare',      'kina',       'urchin_16x16'),
 
+    ('conch',        'Conch',          'legendary', 'conch',      'conch_1_16x16'),
+    ('triton',       'Triton',         'legendary', 'triton',     'triton_16x16'),
+    ('paua',         'Paua',           'legendary', 'paua',       'paua_1_16x16'),
     ('nautilus',     'Nautilus',       'legendary', 'nautilus',   'nautilus_16x16'),
     ('junonia',      'Junonia',        'legendary', 'junonia',    'junonia_16x16'),
 ]
 
 # the three starfish that actually exported as PNG
 STARS = [
-    ('star_common',  'Common Starfish', 'common',   'common',      'common_16x16'),
-    ('star_blue',    'Blue Starfish',   'uncommon', 'blue',        'blue_16x16'),
+    ('star_common',  'Common Starfish', 'uncommon', 'common',      'common_16x16'),
+    ('star_blue',    'Blue Starfish',   'rare',     'blue',        'blue_16x16'),
     ('star_astro',   'Astropecten',     'rare',     'astropecten', 'astropecten_1_16x16'),
 ]
 
-# ⚠️ softer tail than the FISH table on purpose. Fishing is a sit-down hunt, so
-# a 1-in-200 legendary is a chase you opt into. Combing is a 30-second pass on
-# the way past, so its grails have to be findable or nobody ever sees one.
-WEIGHT = {'common': 100, 'uncommon': 34, 'rare': 14, 'legendary': 6}
+# ⚠️ STEEP tail (Trym: ~1 month to complete the set). Commons carry the steady
+# XP trickle; the legendaries are the grail chase. Per-species odds below.
+WEIGHT = {'common': 240, 'uncommon': 80, 'rare': 18, 'legendary': 2}
 
 
 def load(kind, folder, file):
@@ -78,18 +84,14 @@ def load(kind, folder, file):
     return Image.open(p).convert('RGBA')
 
 
-def main():
-    if not os.path.isdir(PACK):
-        raise SystemExit('Pack not found at %s\n(gitignored — keep it local)' % PACK)
-    rows = list(SHELLS) + list(STARS)
+def bake_atlas(rows):
     tiles = []
-    for i, (sid, disp, tier, folder, file) in enumerate(rows):
+    for (sid, disp, tier, folder, file) in rows:
         kind = 'starfish' if sid.startswith('star_') else 'shells'
         im = load(kind, folder, file)
         if im.size != (T, T):
             im = im.resize((T, T), Image.NEAREST)
         tiles.append(im)
-
     atlas = Image.new('RGBA', (T * len(tiles), T), (0, 0, 0, 0))
     for i, im in enumerate(tiles):
         atlas.alpha_composite(im, (i * T, 0))
@@ -97,10 +99,18 @@ def main():
     print('wrote shells.png  %d tiles (%d shells + %d starfish)  %dx%d'
           % (len(tiles), len(SHELLS), len(STARS), atlas.width, atlas.height))
 
+
+def main():
+    rows = list(SHELLS) + list(STARS)
+    if os.path.isdir(PACK):
+        bake_atlas(rows)
+    else:
+        print('⚠️ pack not found at %s\n   → skipping atlas re-bake (keeping the existing shells.png); '
+              'writing shell-data.js from the table only.' % PACK)
+
     body = []
     for i, (sid, disp, tier, _f, _n) in enumerate(rows):
-        body.append("  { id: '%s', name: '%s', tier: '%s', i: %d },"
-                    % (sid, disp, tier, i))
+        body.append("  { id: '%s', name: '%s', tier: '%s', i: %d }," % (sid, disp, tier, i))
 
     js = '''// ⚠️⚠️ GENERATED FILE — DO NOT EDIT BY HAND. ⚠️⚠️
 // Written by tools/build-shell-atlas.py. Re-run after changing the table:
@@ -110,15 +120,12 @@ def main():
 // (only the species we use). The raw pack is gitignored — its licence forbids
 // redistributing it "as is OR transformed".
 //
-// These replaced 29 shells that were generated by FORMULA (a swirl equation and
-// an ellipse), which is why they read as blobs. Real named species now.
-//
 // `i` indexes the atlas: %d tiles in one row, so tile i sits at
 // background-position-x: i/(n-1) x 100%%.
 export const SHELL_TILES = %d;
 
-// tier → odds + dressing. Shells are the GENTLER cousin of the fish ledger:
-// commons are very common, because combing should pay in 30 seconds.
+// tier -> odds + dressing. Shells wash up CONTINUOUSLY and each pays world XP;
+// the tail is STEEP (a ~month-long set) so the grails stay grails.
 export const SHELL_TIERS = {
   common:    { w: %d, label: 'common',    color: '#cfd8e3', stars: 1 },
   uncommon:  { w: %d, label: 'uncommon',  color: '#6ee7a0', stars: 2 },
@@ -129,7 +136,7 @@ export const SHELL_TIERS = {
 export const SHELLS = [
 %s
 ];
-''' % (len(tiles), len(tiles), WEIGHT['common'], WEIGHT['uncommon'],
+''' % (len(rows), len(rows), WEIGHT['common'], WEIGHT['uncommon'],
        WEIGHT['rare'], WEIGHT['legendary'], '\n'.join(body))
     p = os.path.join(SITE, 'src', 'scripts', 'shell-data.js')
     with open(p, 'w', encoding='utf-8') as f:

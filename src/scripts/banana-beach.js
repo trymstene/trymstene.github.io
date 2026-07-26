@@ -761,87 +761,81 @@ function init() {
     shadowEl.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
   }
 
-  // ---- 🐚 THE SHELLS: the tide lays a fresh set every day -----------------
+  // ---- 🐚 THE SHELLS: they wash up along the shore FOREVER, and each pays
+  // world XP — the same `rep` stat the rave floor feeds, tiered by rarity but a
+  // calmer trickle (the rave stays the fastest XP). The daily-16 batch was
+  // retired 26 Jul: a steady spawner keeps the shore stocked so there's always
+  // something to comb, and the SPECIES roll makes the rare grails the long game
+  // (the 24-shell set ≈ a month). Client-side + ephemeral, like rave pellets.
   const stats = () => passGet().stats || {};
   const held = (id) => Math.max(0, (stats()['sh_' + id] || 0) - (stats()['shx_' + id] || 0));
   const haveCount = () => SHELL_IDS.filter((id) => held(id) > 0).length;
-  const dupeCount = () => SHELL_IDS.reduce((a, id) => a + Math.max(0, held(id) - 1), 0);
-  const missingIds = () => SHELL_IDS.filter((id) => held(id) === 0);
-  const DAY = Math.floor(Date.now() / 86400000);
-  const SPOTS = 16;
-  let claimed = [];
-  try {
-    const st = JSON.parse(localStorage.getItem('bh-shells-v1') || 'null');
-    if (st && st.day === DAY && Array.isArray(st.claimed)) claimed = st.claimed;
-  } catch (e) {}
-  function saveClaimed() {
-    try { localStorage.setItem('bh-shells-v1', JSON.stringify({ day: DAY, claimed })); } catch (e) {}
-  }
-  // ---- WHERE THE TIDE LEAVES THEM -----------------------------------------
-  // ⚠️ THIS USED TO BE `y = 300 + rand * 30` — every shell in the bay landed
-  // in a 30px pinstripe along the waterline, so the whole collection was one
-  // thin line you either walked along or never saw at all. Trym: "cant say
-  // ive seen new sprites for seashells yet on the actual beach."
-  //
-  // Now they SCATTER, weighted to the shore: pow(r, 2.2) puts most of them in
-  // the wet sand near the water and trails the rest up the beach, which is
-  // both how a real tide line works and what makes combing a search rather
-  // than a walk. Measured spread: ~half within 90px of the shore, the tail
-  // reaching y~950.
+  // XP per shell by tier — tunable. Rare-is-more, so a grail is doubly exciting.
+  const SHELL_XP = { common: 3, uncommon: 5, rare: 10, legendary: 20 };
   const SHELL_Y0 = 302;            // the wet sand, just below the swim line
   const SHELL_SPAN = 700;          // …up to y≈1000, the deep sand
-  // ⭐ AND THEY REJECT BAD GROUND. Same bug class that put three dig sites on
-  // the court and inside the welcome arch: a seeded point lands wherever it
-  // lands. A shell under a palm's collider or on the volleyball court can't be
-  // walked onto, and one on the bazaar's wooden deck isn't a beach at all. Up
-  // to 12 seeded candidates per spot, first clean one wins — still fully
-  // date-seeded, so the whole world still sees the same tide.
   const PLAZA_X = 1960;            // keep them off the pier bazaar's decking
-  function shellSpot(i) {
-    for (let t = 0; t < 12; t++) {
-      const s = DAY * 977 + i * 31 + t * 7919;
-      const x = 300 + seedRand(s) * 2000;
-      const y = SHELL_Y0 + Math.pow(seedRand(s + 1), 2.2) * SHELL_SPAN;
+  // scatter weighted to the shoreline (pow 2.2 = most near the water) and REJECT
+  // bad ground (palms/court/decking). Random now, not date-seeded — ephemeral.
+  function shellSpot() {
+    for (let t = 0; t < 24; t++) {
+      const x = 300 + Math.random() * 2000;
+      const y = SHELL_Y0 + Math.pow(Math.random(), 2.2) * SHELL_SPAN;
       if (x > PLAZA_X) continue;
       if (inRect(x, y, [COURT.x0, COURT.y0, COURT.x1, COURT.y1])) continue;
       if (blocked(x, y, 0)) continue;
       return { x, y };
     }
-    return { x: 300 + seedRand(DAY * 977 + i * 31) * 1400, y: SHELL_Y0 + 6 };
+    return null;
   }
   const shells = [];
-  for (let i = 0; i < SPOTS; i++) {
-    const { x, y } = shellSpot(i);
-    const id = shellForRoll(seedRand(DAY * 977 + i * 31 + 2));
-    const idx = SHELL_IDS.indexOf(id);
-    if (claimed.indexOf(i) > -1) { shells.push(null); continue; }
+  const MAX_SHELLS = 8;            // how many rest on the shore at once — TUNABLE
+  const SPAWN_EVERY = 5200;       // a fresh one washes up roughly this often — TUNABLE
+  const SHELL_LIFE = 90000;       // …and recedes if left uncombed this long
+  let shellSpawnAt = 0;
+  function spawnShell() {
+    if (shells.length >= MAX_SHELLS) return;
+    const spot = shellSpot();
+    if (!spot) return;
+    const id = shellForRoll(Math.random());
     const el = document.createElement('div');
-    el.className = 'bh-shell';
-    el.style.left = pct(x, W);
-    el.style.top = pct(y, H);
-    el.style.backgroundPosition = shellTile(idx);
-    el.style.animationDelay = (i * 0.21) + 's';
+    el.className = 'bh-shell bh-shell--rising';
+    el.style.left = pct(spot.x, W);
+    el.style.top = pct(spot.y, H);
+    el.style.backgroundPosition = shellTile((SHELL_BY[id] || SHELLS[0]).i);
     world.appendChild(el);
-    shells.push({ el, x, y, id, i });
+    shells.push({ el, x: spot.x, y: spot.y, id, born: performance.now() });
   }
+  for (let n = 0; n < 5; n++) spawnShell(); // arrive to a stocked shore
   const shellChip = document.getElementById('bhShellChip');
   const shellCountEl = document.getElementById('bhShellCount');
   function refreshShellChip() { shellCountEl.textContent = haveCount() + '/' + SHELL_IDS.length; }
   refreshShellChip();
   function shellTick() {
-    for (let i = 0; i < shells.length; i++) {
+    const now = performance.now();
+    if (now - shellSpawnAt > SPAWN_EVERY) { shellSpawnAt = now; spawnShell(); }
+    for (let i = shells.length - 1; i >= 0; i--) {
       const s = shells[i];
-      if (!s) continue;
+      // left uncombed too long → the tide takes it back under
+      if (now - s.born > SHELL_LIFE) {
+        s.el.classList.remove('bh-shell--rising');
+        s.el.classList.add('bh-shell--receding');
+        const el = s.el; setTimeout(() => el.remove(), 520);
+        shells.splice(i, 1);
+        continue;
+      }
       if (Math.hypot(pos.x - s.x, (pos.y - 6) - s.y) < 20) {
         const isNew = held(s.id) === 0;
+        const tier = (SHELL_BY[s.id] || {}).tier || 'common';
+        const xp = SHELL_XP[tier] || 3;
+        passStat('rep', xp);          // 🐚 = XP: the same world stat the rave floor feeds
         passStat('sh_' + s.id, 1);
-        claimed.push(s.i);
-        saveClaimed();
+        passStat('bh_shells', 1);     // lifetime combed
         s.el.remove();
-        shells[i] = null;
+        shells.splice(i, 1);
         refreshShellChip();
-        float(s.x, s.y - 8, (isNew ? '★ NEW — ' : '+ ') + shellName(s.id));
-        track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0 });
+        float(s.x, s.y - 8, (isNew ? '★ ' : '') + shellName(s.id) + '  +' + xp + ' XP');
+        track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0, xp });
         if (isNew && haveCount() === SHELL_IDS.length) {
           say('you found every last one. the sea has nothing left to hide from you.', 6000);
           track('beach_shells_complete');
@@ -867,11 +861,9 @@ function init() {
   function renderGrid(el) { el.innerHTML = SHELL_IDS.map(slotHTML).join(''); }
   function openShells() {
     renderGrid(shellGrid);
-    refreshTrade();                 // the swap is part of this panel now
-    const left = shells.filter(Boolean).length;
-    shellSub.innerHTML = '🐚 <b>' + haveCount() + '</b> of ' + SHELL_IDS.length + ' kinds found · <b>'
-      + dupeCount() + '</b> spare · '
-      + (left ? left + ' still on the sand today' : 'today’s tide is picked clean — back tomorrow');
+    const left = shells.length;
+    shellSub.innerHTML = '🐚 <b>' + haveCount() + '</b> of ' + SHELL_IDS.length + ' kinds found'
+      + (left ? ' · <b>' + left + '</b> washed up right now — go comb' : ' · comb the shore, they keep washing up');
     shellPanel.hidden = false;
     track('beach_shells_open');
   }
@@ -1013,45 +1005,9 @@ function init() {
   }
   document.getElementById('bhDigClose').addEventListener('click', () => { digPanel.hidden = true; });
 
-  // ---- 🐚 the shell SWAP — Shelly's, inside her own panel ------------------
-  const tradeSay = document.getElementById('bhTradeSay');
-  const tradeStat = document.getElementById('bhTradeStat');
-  const tradeDo = document.getElementById('bhTradeDo');
-  function refreshTrade() {
-    // ⚠️ No grid render here any more — the trade now lives INSIDE the shell
-    // panel, which already drew the one grid on the screen. Rendering again
-    // would rebuild it under itself.
-    const d = dupeCount(), m = missingIds().length;
-    tradeStat.innerHTML = '🐚 you have <b>' + d + '</b> spare shell' + (d === 1 ? '' : 's')
-      + ' · <b>' + m + '</b> kind' + (m === 1 ? '' : 's') + ' still missing';
-    tradeDo.disabled = !(d >= 3 && m > 0);
-    tradeDo.textContent = m === 0
-      ? 'nothing left to want'
-      : (d >= 3 ? 'trade 3 duplicates → 1 new shell' : 'you need ' + (3 - d) + ' more duplicates');
-    // Shelly's voice now, not the Captain's — she keeps the board, so she runs
-    // the swap.
-    tradeSay.textContent = m === 0
-      ? '“you’ve got every kind there is. nothing left for me to find you.”'
-      : '“three spares for one you’re missing — that’s how we finish a set. shells only, never coins.”';
-  }
-  tradeDo.addEventListener('click', () => {
-    const spares = SHELL_IDS.filter((id) => held(id) > 1)
-      .sort((a, b) => held(b) - held(a));
-    if (dupeCount() < 3) return;
-    let need = 3;
-    for (const id of spares) {
-      while (need > 0 && held(id) > 1) { passStat('shx_' + id, 1); need--; }
-      if (!need) break;
-    }
-    const miss = missingIds();
-    const got = miss[Math.floor(Math.random() * miss.length)];
-    passStat('sh_' + got, 1);
-    refreshShellChip();
-    renderGrid(shellGrid);          // the set just changed — redraw it
-    refreshTrade();
-    tradeSay.textContent = '“there it is — a ' + shellName(got) + '. onto the board it goes.”';
-    track('beach_trade', { got });
-  });
+  // (🐚 the "3 duplicates → 1 new shell" swap was removed 26 Jul — shells wash
+  //  up continuously now, so completing the set is combing, not trading. The
+  //  `shx_` dupes-spent stat is left in held() for back-compat; it just stays 0.)
 
   // ---- 🎣 FISHING off the dock -------------------------------------------
   // Sit on a dock chair → a rod casts a bobber into the sea → when it dips,

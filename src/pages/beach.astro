@@ -667,6 +667,18 @@ const faq = {
       0%, 100% { filter: drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5)); }
       50% { filter: brightness(1.22) drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5)); }
     }
+    /* ⭐ shells wash up CONTINUOUSLY now — each rises out of the sand on spawn,
+       and recedes back under if it's left uncombed too long. */
+    .bh-shell--rising { animation: bhShellRise 0.55s ease-out, bhShellGlint 2.6s ease-in-out infinite; }
+    .bh-shell--receding { animation: bhShellRecede 0.5s ease-in forwards; }
+    @keyframes bhShellRise {
+      0% { transform: translate(-50%, calc(-50% + 11px)) scale(0.5); opacity: 0; }
+      55% { opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes bhShellRecede {
+      to { transform: translate(-50%, calc(-50% + 8px)) scale(0.5); opacity: 0; }
+    }
     .bh-float {
       /* 1950: floats live INSIDE the world, so they must clear the y-sorted
          band (100..1200) too — otherwise a palm swallows your "🐚 found!" */
@@ -1065,7 +1077,7 @@ const faq = {
     .bh-cut.is-on { opacity: 1; }
     @media (prefers-reduced-motion: reduce) {
       .bh-cut { transition: none; }
-      .bh-shell { animation: none; }
+      .bh-shell, .bh-shell--rising, .bh-shell--receding { animation: none; }
     }
 
     /* 🥥 COCONUT SHY — a full interior scene laid over the beach view. */
@@ -1318,18 +1330,10 @@ const faq = {
                lines, and the rarity is shown by the tier colours in the grid
                rather than described in a paragraph. -->
           <ol class="bh-how">
-            <li><b>🌊 comb the wet sand.</b> the tide leaves shells along the shoreline — walk over one to pocket it.</li>
-            <li><b>⭐ some are rare.</b> a <b style="color:#5cc8ff">conch</b> or a <b style="color:#ffd54a">nautilus</b> turns up far less often than a clam. Shelly keeps the board.</li>
+            <li><b>🌊 comb the wet sand.</b> shells keep washing up along the shoreline — walk over one to pocket it, and each pays a little <b>XP</b>.</li>
+            <li><b>⭐ some are rare.</b> a <b style="color:#5cc8ff">conch</b> or a <b style="color:#ffd54a">nautilus</b> turns up far less often than a clam — the full set is a long hunt. Shelly keeps the board.</li>
           </ol>
           <div class="bh-grid" id="bhShellGrid"></div>
-          <!-- 🔁 THE TRADE LIVES HERE NOW, not at the wreck. It used to be a
-               second panel on Captain Split 500px away, which meant the bay had
-               TWO shell surfaces and the boathouse duplicated Shelly's whole
-               job. Swapping spares is part of completing the set, so it belongs
-               beside the set — one keeper, one collection, one screen. -->
-          <p id="bhTradeStat" class="bh-tradestat"></p>
-          <p id="bhTradeSay" class="bh-panel__sub"></p>
-          <button class="bh-btn" id="bhTradeDo" type="button">trade 3 duplicates → 1 new shell</button>
           <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
         </div>
       </div>
