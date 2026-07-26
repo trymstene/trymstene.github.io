@@ -550,6 +550,19 @@ function init() {
     world.appendChild(d);
     setTimeout(() => d.remove(), hold ? 2600 : 900);
   }
+  // 🐚 the shell pickup reward — a DARK chip so it reads on bright sand, holds
+  // ~2.1s, and makes the XP feel earned (green +N XP; rare/legendary get a glow).
+  function shellPickFloat(x, y, name, xp, isNew, tier) {
+    const d = document.createElement('div');
+    d.className = 'bh-shellpick' + (tier === 'rare' || tier === 'legendary' ? ' bh-shellpick--grail' : '');
+    d.innerHTML = (isNew ? '<i class="bh-shellpick__new">NEW</i>' : '')
+      + '<span class="bh-shellpick__name">🐚 ' + name + '</span>'
+      + '<b class="bh-shellpick__xp">+' + xp + ' XP</b>';
+    d.style.left = pct(x, W);
+    d.style.top = pct(y, H);
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 2100);
+  }
 
   // ---- 🏐 THE VOLLEYBALL: the ball has HEIGHT, and the net cares ----------
   const ballEl = document.getElementById('bhBall');
@@ -826,7 +839,7 @@ function init() {
         shells.splice(i, 1);
         continue;
       }
-      if (Math.hypot(pos.x - s.x, (pos.y - 6) - s.y) < 20) {
+      if (Math.hypot(pos.x - s.x, (pos.y - 6) - s.y) < 34) {
         const isNew = held(s.id) === 0;
         const tier = (SHELL_BY[s.id] || {}).tier || 'common';
         const xp = SHELL_XP[tier] || 3;
@@ -836,7 +849,7 @@ function init() {
         s.el.remove();
         shells.splice(i, 1);
         refreshShellChip();
-        float(s.x, s.y - 8, (isNew ? '★ ' : '') + shellName(s.id) + '  +' + xp + ' XP');
+        shellPickFloat(s.x, s.y - 8, shellName(s.id), xp, isNew, tier);
         track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0, xp });
         if (isNew && haveCount() === SHELL_IDS.length) {
           say('you found every last one. the sea has nothing left to hide from you.', 6000);
