@@ -3534,7 +3534,136 @@ function init() {
       doneLed: 'POWER RESTORED. NEVER IN DOUBT.',
       doneSay: ['THAT’S my electrician! 🤠 this club runs on jelly and hope. mostly hope.'],
     },
+    // 🫧 JELLY BOSS — a mega-jelly escapes the walk-in and BOUNCES around the
+    // floor. Run into it and it SPLITS: big → two mediums → four smalls → the
+    // smalls pop into jelly. No button at all — the verb is the chase, the
+    // hint carries the count. Fresh splits get a moment of immunity so one
+    // contact never chain-pops the children.
+    jboss: {
+      led: '🫧 SOMETHING ESCAPED THE WALK-IN',
+      SIZES: [76, 48, 30],       // px by generation (big / medium / small)
+      SPEEDS: [9, 12.5, 16],     // %/s by generation — the smalls run
+      enter() {
+        this.blobs = [];
+        // spawn in the corner FARTHEST from the player — the hunt starts honest
+        const me = myId && ravers.get(myId);
+        const spots = [{ x: 15, y: 25 }, { x: 85, y: 25 }, { x: 40, y: 72 }, { x: 82, y: 66 }];
+        let spot = spots[1], best = -1;
+        for (const s of spots) {
+          const d = me ? Math.hypot(s.x - me.x, s.y - me.y) : Math.random() * 100;
+          if (d > best) { best = d; spot = s; }
+        }
+        this.spawn(0, spot.x, spot.y, Math.random() * 6.28);
+        qHint('🫧 a MEGA JELLY is loose! run into it — split it to bits');
+        bartySay(['JELLY BOSS! 🫧 that thing’s been growin’ in my walk-in for WEEKS — run it down, partner!',
+          { t: 'i fed it once. my mistake. i feed everything. my mistake.', mutter: true }], true);
+        this.lastT = 0;
+      },
+      spawn(gen, x, y, ang) {
+        const d = document.createElement('div');
+        d.className = 'rv-jboss';
+        d.innerHTML = JBOSS_SVG;
+        d.style.width = this.SIZES[gen] + 'px';
+        world.appendChild(d);
+        this.blobs.push({ el: d, gen, x, y,
+          vx: Math.cos(ang) * this.SPEEDS[gen], vy: Math.sin(ang) * 0.7 * this.SPEEDS[gen],
+          im: Date.now() + 800 });
+      },
+      tick(now) {
+        const dt = this.lastT ? Math.min(now - this.lastT, 100) / 1000 : 0.016;
+        this.lastT = now;
+        for (const b of this.blobs) {
+          let nx = b.x + b.vx * dt, ny = b.y + b.vy * dt;
+          // bounce off the walls and everything solid (bar + door included)
+          if (nx < 8 || nx > 92 || blockedAt(nx, b.y)) { b.vx = -b.vx; nx = b.x; }
+          if (ny < topClamp + 6 || ny > 84 || blockedAt(b.x, ny)) { b.vy = -b.vy; ny = b.y; }
+          b.x = nx; b.y = ny;
+          b.el.style.left = b.x + '%';
+          b.el.style.top = b.y + '%';
+          b.el.style.zIndex = String(100 + Math.round(b.y));
+        }
+      },
+      frame(me, now) {
+        const t = Date.now();
+        for (let i = this.blobs.length - 1; i >= 0; i--) {
+          const b = this.blobs[i];
+          if (t < b.im) continue;                    // fresh split — immune a beat
+          const rPx = (me.size || 90) * 0.5 + this.SIZES[b.gen] * 0.45;
+          if (Math.hypot(((me.x - b.x) / 100) * floorW, ((me.y - b.y) / 100) * floorH) > rPx) continue;
+          // an IDLE banana can't pop it — it just BOINGS off you (standing AFK
+          // must never finish a boss; the verb of this quest is the chase)
+          if (!me.lastWalk || t - me.lastWalk > 400) {
+            const ang = Math.atan2(b.y - me.y, b.x - me.x);
+            b.vx = Math.cos(ang) * this.SPEEDS[b.gen];
+            b.vy = Math.sin(ang) * 0.7 * this.SPEEDS[b.gen];
+            b.im = t + 500;
+            continue;
+          }
+          b.el.remove();
+          this.blobs.splice(i, 1);
+          pickupPop(b.x, b.y);
+          if (b.gen < 2) {
+            // burst apart: two children fleeing sideways-ish from the hit
+            const away = Math.atan2(b.y - me.y, b.x - me.x);
+            this.spawn(b.gen + 1, b.x, b.y, away + 0.9);
+            this.spawn(b.gen + 1, b.x, b.y, away - 0.9);
+          } else {
+            addHype(2);                              // the smalls pop into jelly
+            floatPlus(b.x, b.y - 4, '+2');
+          }
+          const left = this.blobs.length;
+          if (!left) { questDone(); return; }
+          qHint('🫧 pieces left: ' + left + ' — run them down!');
+        }
+      },
+      exit() {
+        (this.blobs || []).forEach((b) => b.el.remove());
+        this.blobs = [];
+      },
+      doneBig: ['JELLY BOSS DOWN 🫧', 'the floor is sticky with victory'],
+      doneLed: 'THE BLOB HAS BEEN DEBLOBBED.',
+      doneSay: ['HA! biggest jelly i’ve seen since the ’14 spill. good huntin’, partner!'],
+    },
   };
+  // the jelly boss at BANANA pixel density (28×24 grid): dark outline ring,
+  // pink body, INNER SHADOW along the bottom-right rim (two depths), glossy
+  // highlight + white glints top-left, and a little face — it's a boss
+  const JBOSS_SVG = '<svg viewBox="0 0 28 24" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+    // outline silhouette
+    + '<rect x="11" y="1" width="6" height="1" fill="#1a0b14"/><rect x="9" y="2" width="10" height="1" fill="#1a0b14"/>'
+    + '<rect x="7" y="3" width="14" height="1" fill="#1a0b14"/><rect x="6" y="4" width="16" height="1" fill="#1a0b14"/>'
+    + '<rect x="5" y="5" width="18" height="1" fill="#1a0b14"/><rect x="4" y="6" width="20" height="1" fill="#1a0b14"/>'
+    + '<rect x="3" y="7" width="22" height="2" fill="#1a0b14"/><rect x="2" y="9" width="24" height="2" fill="#1a0b14"/>'
+    + '<rect x="1" y="11" width="26" height="2" fill="#1a0b14"/><rect x="0" y="13" width="28" height="4" fill="#1a0b14"/>'
+    + '<rect x="1" y="17" width="26" height="2" fill="#1a0b14"/><rect x="2" y="19" width="24" height="1" fill="#1a0b14"/>'
+    + '<rect x="3" y="20" width="22" height="1" fill="#1a0b14"/><rect x="4" y="21" width="20" height="1" fill="#1a0b14"/>'
+    + '<rect x="6" y="22" width="16" height="1" fill="#1a0b14"/>'
+    // body
+    + '<rect x="10" y="2" width="8" height="1" fill="#ff4d9d"/><rect x="8" y="3" width="12" height="1" fill="#ff4d9d"/>'
+    + '<rect x="7" y="4" width="14" height="1" fill="#ff4d9d"/><rect x="6" y="5" width="16" height="1" fill="#ff4d9d"/>'
+    + '<rect x="5" y="6" width="18" height="1" fill="#ff4d9d"/><rect x="4" y="7" width="20" height="2" fill="#ff4d9d"/>'
+    + '<rect x="3" y="9" width="22" height="2" fill="#ff4d9d"/><rect x="2" y="11" width="24" height="2" fill="#ff4d9d"/>'
+    + '<rect x="1" y="13" width="26" height="4" fill="#ff4d9d"/><rect x="2" y="17" width="24" height="2" fill="#ff4d9d"/>'
+    + '<rect x="3" y="19" width="22" height="1" fill="#ff4d9d"/><rect x="4" y="20" width="20" height="1" fill="#ff4d9d"/>'
+    + '<rect x="5" y="21" width="18" height="1" fill="#ff4d9d"/>'
+    // inner shadow, bottom-right rim (first depth)
+    + '<rect x="24" y="12" width="2" height="1" fill="#c22e75"/><rect x="25" y="13" width="2" height="3" fill="#c22e75"/>'
+    + '<rect x="24" y="16" width="2" height="1" fill="#c22e75"/><rect x="22" y="17" width="4" height="1" fill="#c22e75"/>'
+    + '<rect x="20" y="18" width="5" height="1" fill="#c22e75"/><rect x="17" y="19" width="7" height="1" fill="#c22e75"/>'
+    + '<rect x="13" y="20" width="10" height="1" fill="#c22e75"/><rect x="5" y="21" width="18" height="1" fill="#c22e75"/>'
+    // inner shadow, deeper core
+    + '<rect x="19" y="20" width="4" height="1" fill="#8f1f57"/><rect x="11" y="21" width="10" height="1" fill="#8f1f57"/>'
+    // glossy highlight + white glints, top-left
+    + '<rect x="9" y="3" width="3" height="1" fill="#ff9ec9"/><rect x="8" y="4" width="2" height="1" fill="#ff9ec9"/>'
+    + '<rect x="7" y="5" width="2" height="1" fill="#ff9ec9"/><rect x="6" y="6" width="2" height="1" fill="#ff9ec9"/>'
+    + '<rect x="5" y="7" width="2" height="2" fill="#ff9ec9"/><rect x="4" y="9" width="2" height="1" fill="#ff9ec9"/>'
+    + '<rect x="10" y="4" width="3" height="1" fill="#fffdf5"/><rect x="9" y="5" width="2" height="1" fill="#fffdf5"/>'
+    + '<rect x="8" y="6" width="1" height="1" fill="#fffdf5"/>'
+    // the face
+    + '<rect x="9" y="10" width="2" height="3" fill="#1a0b14"/><rect x="17" y="10" width="2" height="3" fill="#1a0b14"/>'
+    + '<rect x="11" y="13" width="1" height="1" fill="#1a0b14"/><rect x="16" y="13" width="1" height="1" fill="#1a0b14"/>'
+    + '<rect x="12" y="14" width="4" height="1" fill="#1a0b14"/>'
+    + '</svg>';
   // the breaker box at BANANA pixel density (24×32 grid at 22px display):
   // steel panel + corner screws, a status-light meter window, the yellow
   // bolt warning label, a lever on its track, vents — no asset fetch
@@ -3600,6 +3729,7 @@ function init() {
       if (Date.now() > quest.endAt) { questAbort(); return; }
       const me = myId && ravers.get(myId);
       if (!me || me.stage) return;
+      if (quest.def.tick) quest.def.tick(now);       // frame-rate motion (bosses bounce)
       if (now - questPollAt < 120) return;           // poll cadence (nightFrame's)
       questPollAt = now;
       if (quest.def.frame) quest.def.frame(me, now);

@@ -1211,6 +1211,19 @@ const GUIDE = [
       .rv-screen--out { animation: none; filter: brightness(0.3); }
       .rv-breaker--zap::before { animation: none; }
     }
+    /* 🫧 JELLY BOSS: a banana-density blob (28×24 grid) that bounces around
+       the floor and splits when you run into it — constant idle wobble, a
+       soft jelly glow, sizes by generation set inline */
+    .rv-jboss {
+      position: absolute; transform: translate(-50%, -50%); pointer-events: none;
+      image-rendering: pixelated; filter: drop-shadow(0 3px 7px rgba(255, 77, 157, 0.4));
+      animation: rvJbWob 0.9s ease-in-out infinite;
+    }
+    .rv-jboss svg { width: 100%; height: auto; display: block; }
+    @keyframes rvJbWob {
+      50% { transform: translate(-50%, -50%) scale(1.07, 0.93); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-jboss { animation: none; } }
     /* 🎯 the standing instruction line — between the floor and the action bar */
     .rv-questhint {
       background: #0d0b14; border: 3px solid #ffe135; border-top-width: 0;
