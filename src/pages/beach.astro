@@ -334,7 +334,7 @@ const faq = {
     }
     .bh-detailcard__x:hover { opacity: 1; }
     .bh-detailcard__art {
-      width: 132px; height: 132px; margin: 0.2rem auto 0.7rem; display: grid; place-items: center;
+      width: 132px; height: 132px; margin: 0.2rem auto 0; display: grid; place-items: center;
       background: #241d33; border: 3px solid var(--tier, #ffb347);
     }
     .bh-detailcard__art i {
@@ -346,11 +346,14 @@ const faq = {
        the colour carries it. Shared with the fishing catch reveal. */
     .bh-tierpill {
       display: inline-block; transform: rotate(-3.5deg); margin: 0 0 0.5rem;
-      background: var(--tier, #ffb347); color: #241505;
+      background: var(--tier, #ffb347); color: #241505; line-height: 1;
       font-family: "Archivo Black", sans-serif; font-size: 0.64rem; letter-spacing: 0.08em;
-      text-transform: uppercase; white-space: nowrap; padding: 3px 12px;
+      text-transform: uppercase; white-space: nowrap; padding: 5px 12px 4px;
       border: 2px solid #000; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
     }
+    /* in the card the pill straddles the bottom of the art — slapped-on like a
+       real sticker, and it saves the row it used to sit on */
+    .bh-detailcard .bh-tierpill { position: relative; margin-top: -0.85rem; }
     .bh-detailcard__name {
       font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1.05rem; margin: 0.1rem 0 0.35rem;
     }
