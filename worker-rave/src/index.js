@@ -508,6 +508,21 @@ export class RaveRoom {
       return;
     }
 
+    // 📸 PHOTO TIME's shared shot: the snapper broadcasts only the FRAME
+    // COORDS — every client composites the photo locally from its own roster,
+    // so no image ever crosses the wire (nothing arbitrary can reach the LED).
+    if (msg.t === 'photosnap' && me) {
+      const now = Date.now();
+      if (now - (me.lastSnap || 0) < 30000) return;   // one shot per snapper / 30s
+      me.lastSnap = now;
+      ws.serializeAttachment(me);
+      const c = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
+      this.broadcast({ t: 'photosnap', id: me.id,
+        x0: c(msg.x0, 0, 100), y0: c(msg.y0, 0, 100),
+        x1: c(msg.x1, 0, 100), y1: c(msg.y1, 0, 100) }, ws);
+      return;
+    }
+
     if (msg.t === 'move' && me) { // walking: position relay, sender echoes locally
       const x = Number(msg.x), y = Number(msg.y);
       if (!Number.isFinite(x) || !Number.isFinite(y)) return;

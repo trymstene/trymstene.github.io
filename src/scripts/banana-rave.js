@@ -2657,6 +2657,24 @@ function init() {
           if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('look at ' + (dispName(r) || 'that banana') + ' GO!! 🌈', false, 5000);
         }
       }
+      else if (m.t === 'photosnap') {
+        // 📸 someone's PHOTO TIME shot — the SAME photo goes up on every LED,
+        // composited locally from the coords (no image crosses the wire)
+        if (m.id !== myId) {
+          const fl = document.createElement('div');
+          fl.className = 'rv-photoflash';
+          floor.appendChild(fl);
+          setTimeout(() => fl.remove(), 700);
+          if (ledPhoto) ledPhoto(questPhotoRender({
+            x0: Number(m.x0) || 0, y0: Number(m.y0) || 0,
+            x1: Number(m.x1) || 100, y1: Number(m.y1) || 100 }));
+          const toast = document.createElement('div');
+          toast.className = 'rv-glowtoast';
+          toast.textContent = '📸 FLASH! tonight’s photo is up on the big screen';
+          (el('rvToasts') || floor).appendChild(toast);
+          setTimeout(() => toast.remove(), 6000);
+        }
+      }
       else if (m.t === 'outfit') { const r = ravers.get(m.id); if (r) { r.outfit = m.outfit; if (m.name !== undefined) r.name = m.name; refreshHud(); } }
       // the QUICK SWIPE: Trym struck a name — it vanishes mid-dance, the
       // banana falls back to its outfit-name
@@ -3778,36 +3796,15 @@ function init() {
       },
       snap() {
         this.count = -2;
+        const F = this.FRAME;
         const fl = document.createElement('div');
         fl.className = 'rv-photoflash';
         floor.appendChild(fl);
         setTimeout(() => fl.remove(), 700);
-        // whoever's in frame is IN THE PHOTO — painter's order, back to front
-        const F = this.FRAME;
-        const cast = [...ravers.values()].filter((r) => !r.stage && this.inFrame(r)).sort((a, b) => a.y - b.y);
-        const cv = document.createElement('canvas');
-        cv.width = 320; cv.height = 180;
-        const ctx = cv.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        ctx.fillStyle = '#241d33';
-        ctx.fillRect(0, 0, 320, 180);
-        ctx.fillStyle = '#2c2440';
-        for (let gy = 0; gy < 5; gy++) for (let gx = 0; gx < 8; gx++) if ((gx + gy) % 2) ctx.fillRect(gx * 40, gy * 40, 40, 40);
-        for (const r of cast) {
-          if (!r.cv) continue;
-          const fx = (r.x - F.x0) / (F.x1 - F.x0);
-          const fy = (r.y - F.y0) / (F.y1 - F.y0);
-          const s = 66 + fy * 40;                    // nearer = bigger, like the floor
-          ctx.drawImage(r.cv, 30 + fx * 260 - s / 2, 30 + fy * 110 - s + 40, s, s);
-        }
-        ctx.strokeStyle = '#fffdf5';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(3, 3, 314, 174);
-        ctx.fillStyle = '#fffdf5';
-        ctx.font = 'bold 11px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('TONIGHT AT THE BANANA RAVE', 160, 170);
-        if (ledPhoto) ledPhoto(cv.toDataURL());
+        if (ledPhoto) ledPhoto(questPhotoRender(F));
+        // 🌐 the shot is SHARED nyan-style: broadcast only the frame coords —
+        // every client composites the same photo from its own live roster
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'photosnap', x0: F.x0, y0: F.y0, x1: F.x1, y1: F.y1 }));
         questDone();
       },
       exit() {
@@ -3818,6 +3815,40 @@ function init() {
       doneSay: ['LOOK at that! 🤠 that one’s going on the screen — and maybe the fridge.'],
     },
   };
+  // 📸 the wall shot — shared by the photo quest AND the photosnap relay:
+  // composite everyone inside the frame at LED aspect (480×160, near-1:1 on
+  // the wall), bananas BIG (they're the photo), caption BIG (it's a headline)
+  function questPhotoRender(F) {
+    const cast = [...ravers.values()]
+      .filter((r) => !r.stage && r.x > F.x0 && r.x < F.x1 && r.y > F.y0 && r.y < F.y1)
+      .sort((a, b) => a.y - b.y);                    // painter's order, back to front
+    const cv = document.createElement('canvas');
+    cv.width = 480; cv.height = 160;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#241d33';
+    ctx.fillRect(0, 0, 480, 160);
+    ctx.fillStyle = '#2c2440';
+    for (let gy = 0; gy < 4; gy++) for (let gx = 0; gx < 12; gx++) if ((gx + gy) % 2) ctx.fillRect(gx * 40, gy * 40, 40, 40);
+    for (const r of cast) {
+      if (!r.cv) continue;
+      const fx = (r.x - F.x0) / (F.x1 - F.x0);
+      const fy = (r.y - F.y0) / (F.y1 - F.y0);
+      const s = 104 + fy * 36;                       // 65–88% of the wall tall
+      ctx.drawImage(r.cv, 34 + fx * 412 - s / 2, 156 - s - (1 - fy) * 12, s, s);
+    }
+    ctx.font = '800 24px "Arial Black", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#0d0b14';
+    ctx.strokeText('TONIGHT AT THE BANANA RAVE', 240, 32);
+    ctx.fillStyle = '#ffe135';
+    ctx.fillText('TONIGHT AT THE BANANA RAVE', 240, 32);
+    ctx.strokeStyle = '#fffdf5';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, 472, 152);
+    return cv.toDataURL();
+  }
   // 🎈 balloons at BANANA pixel density (20×30 grid): outline ring, body,
   // two-depth INNER SHADOW bottom-right, white glints top-left, knot + a
   // kinked string. One drawing, five colourways.
