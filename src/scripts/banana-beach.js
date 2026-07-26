@@ -1013,11 +1013,14 @@ function init() {
   function openDig() {
     const s = passGet().stats || {};
     const dug = s.bh_dug || 0;
-    // the map is the reason to come back to him daily — it's the only place
-    // today's clue is written down rather than said once and lost
+    drawMap(mapCanvas);                        // the torn map, filled to your pieces
+    // the map is the reason to come back to him daily — the pieces slot in here
+    const n = piecesGot();
     digClue.innerHTML = treasureFound()
       ? '🗺 <b>today’s treasure is up.</b> nothing left to find — the tide buries a new one tonight.'
-      : '🗺 <b>the map:</b> something’s buried out on the bay. dig around and hunt it down.';
+      : haveXPiece()
+        ? '🗺 <b>the X is marked!</b> head for the cross and dig the sand around it.'
+        : '🗺 <b>' + n + ' / ' + MAP_PIECES + ' map pieces.</b> keep digging the bay to turn up the rest.';
     digSay.textContent = dug === 0
       ? '“never held a spade? sand’s soft, go on.”'
       : dug < 12
@@ -1563,6 +1566,81 @@ function init() {
   // the spot is the same for everyone, but each banana digs its own up once.
   const TR_KEY = 'bh-treasure-' + digDay;
   const treasureFound = () => { try { return localStorage.getItem(TR_KEY) === '1'; } catch (e) { return false; } };
+
+  // 🗺 THE TORN TREASURE MAP — today's map is cut into MAP_PIECES vertical
+  // slices you collect by digging (water items join in C2). Collect a slice and
+  // it reveals its bit of a crude bay minimap; the X sits in ONE slice, fuzzed
+  // to an AREA (not the tile), and that slice is date-seeded to be found LATE —
+  // so the map only hands you the location near the end. Progress = a per-day
+  // count in localStorage.
+  const MAP_PIECES = 5;
+  const MAP_KEY = 'bh-mappieces-' + digDay;
+  const mapX = { x: treasureAt.x + (digRnd() - 0.5) * 180, y: treasureAt.y + (digRnd() - 0.5) * 160 };
+  const stripOf = (x) => Math.min(MAP_PIECES - 1, Math.max(0, Math.floor(x / WORLD.w * MAP_PIECES)));
+  const xStrip = stripOf(mapX.x);
+  // the order pieces are found in — a seeded shuffle, but the X's slice is forced
+  // to index 3 or 4, so the marker always comes among the LAST pieces.
+  const pieceOrder = (() => {
+    const rest = [0, 1, 2, 3, 4].filter((i) => i !== xStrip);
+    for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(digRnd() * (i + 1)); const t = rest[i]; rest[i] = rest[j]; rest[j] = t; }
+    rest.splice(digRnd() < 0.5 ? 3 : 4, 0, xStrip);
+    return rest;
+  })();
+  const piecesGot = () => { try { return Math.min(MAP_PIECES, +(localStorage.getItem(MAP_KEY) || 0)); } catch (e) { return 0; } };
+  const gotStrips = () => new Set(pieceOrder.slice(0, piecesGot()));
+  const haveXPiece = () => gotStrips().has(xStrip);
+  function addMapPiece() {
+    const n = piecesGot();
+    if (n >= MAP_PIECES) return false;
+    try { localStorage.setItem(MAP_KEY, String(n + 1)); } catch (e) {}
+    return true;
+  }
+  const mapCanvas = document.getElementById('bhDigMap');
+  // 🖌 the crude "pirate map" render — parchment, a rough bay, the dashed path +
+  // X, torn into vertical pieces; only collected slices show through.
+  function drawMap(cv) {
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const W2 = cv.width, H2 = cv.height;
+    const sx = W2 / WORLD.w, sy = H2 / WORLD.h;
+    const got = gotStrips(), xShown = haveXPiece();
+    ctx.clearRect(0, 0, W2, H2);
+    ctx.imageSmoothingEnabled = false;
+    for (let i = 0; i < MAP_PIECES; i++) {
+      const x0 = Math.round(i / MAP_PIECES * W2), x1 = Math.round((i + 1) / MAP_PIECES * W2);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, H2); ctx.clip();
+      if (got.has(i)) {
+        ctx.fillStyle = '#e7cd91'; ctx.fillRect(0, 0, W2, H2);                 // parchment sand
+        ctx.fillStyle = '#63b6d4'; ctx.fillRect(0, 0, W2, WATER_Y * sy);        // the sea band
+        ctx.strokeStyle = '#b9702f'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]);
+        ctx.strokeRect(COURT.x0 * sx, COURT.y0 * sy, (COURT.x1 - COURT.x0) * sx, (COURT.y1 - COURT.y0) * sy);
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#8a5a2b'; ctx.fillRect(1812 * sx, 0, 156 * sx, 320 * sy);   // the pier
+        ctx.fillStyle = '#7a4a21'; ctx.fillRect((BAR.x - 60) * sx, (BAR.y - 40) * sy, 120 * sx, 80 * sy);  // boathouse
+        ctx.fillStyle = '#3f7d3a';
+        [[160, 545], [1585, 460], [1418, 838]].forEach(([px, py]) => { ctx.beginPath(); ctx.arc(px * sx, py * sy, 9, 0, 7); ctx.fill(); });
+        if (xShown) {   // the trail + X only appear once the marker slice is in
+          ctx.strokeStyle = '#7a3b12'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(BAR.x * sx, BAR.y * sy);
+          ctx.lineTo((BAR.x + mapX.x) / 2 * sx, (BAR.y * 0.55 + mapX.y * 0.45) * sy);
+          ctx.lineTo(mapX.x * sx, mapX.y * sy); ctx.stroke(); ctx.setLineDash([]);
+          const fx = mapX.x * sx, fy = mapX.y * sy;
+          ctx.strokeStyle = '#c0261a'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(fx - 7, fy - 7); ctx.lineTo(fx + 7, fy + 7); ctx.moveTo(fx + 7, fy - 7); ctx.lineTo(fx - 7, fy + 7); ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = '#c3a866'; ctx.fillRect(0, 0, W2, H2);                 // a torn-away slice
+        ctx.fillStyle = 'rgba(90,60,20,0.3)';
+        ctx.font = 'bold ' + Math.round(H2 * 0.4) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('?', (x0 + x1) / 2, H2 / 2);
+      }
+      ctx.restore();
+      if (i < MAP_PIECES - 1) { ctx.fillStyle = 'rgba(70,45,15,0.5)'; ctx.fillRect(x1 - 1, 0, 2, H2); }  // tear seam
+    }
+    ctx.strokeStyle = '#5a3c14'; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, W2 - 3, H2 - 3);
+  }
+
   const HOLE_LIFE = 30000;
   const digWrap = document.getElementById('bhDigs');
   function digHole(x, y) {
@@ -1583,6 +1661,10 @@ function init() {
   // the sand. Strike the buried X → the day's treasure; near it → "packed sand"
   // (the hunt's only cue); otherwise mostly sand, the odd scrap.
   function dig() {
+    // never dig behind an open panel — the Dig button + Space both reach here,
+    // and a panel (shell board / ledger / the desk / a stall / the reward) is a
+    // modal over the beach. Guarding at the source covers every entry point.
+    if (document.querySelector('.bh-panel:not([hidden])')) return;
     const now = performance.now();
     if (now - digAt < 420) return;
     digAt = now;
@@ -1600,6 +1682,16 @@ function init() {
     if (!treasureFound() && d < DIG_WARM) {
       float(pos.x, pos.y - 26, 'the sand’s packed here — close!', true);
       track('beach_dig', { find: 'warm' });
+      return;
+    }
+    // 🗺 turn up a torn map piece (away from the treasure; until the map's whole)
+    if (piecesGot() < MAP_PIECES && Math.random() < 0.45) {
+      const wasX = haveXPiece();
+      addMapPiece();
+      const n = piecesGot();
+      float(pos.x, pos.y - 30, '🗺 map piece! (' + n + '/' + MAP_PIECES + ')', true);
+      if (haveXPiece() && !wasX) sandySay('that’s the marker — the X is on the map now. see Sabreface.', 5200);
+      track('beach_dig', { find: 'mappiece', n });
       return;
     }
     const r = Math.random();
@@ -3034,7 +3126,7 @@ function init() {
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
-      dig, treasureAt, treasureFound,
+      dig, treasureAt, treasureFound, piecesGot, addMapPiece, mapX, xStrip, pieceOrder,
       // fake a second banana on the court so the B2 step-aside rule is
       // testable before multiplayer exists
       setPeers: (n) => { peersInCourt = n; } };

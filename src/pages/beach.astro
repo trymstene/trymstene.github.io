@@ -827,6 +827,12 @@ const faq = {
     /* 🗺 the map clue — parchment, because it IS a map. Reading as a torn
        scrap is what separates "today's treasure is over there" from another
        line of UI copy. */
+    /* 🗺 the torn treasure map — a canvas the engine draws the daily bay + your
+       collected pieces onto. Pixelated so the crude minimap stays crisp. */
+    .bh-digmap {
+      display: block; width: 100%; height: auto; margin: 0 0 0.7rem;
+      image-rendering: pixelated; border: 3px solid #000; background: #c3a866;
+    }
     .bh-mapclue {
       margin: 0 0 0.85rem !important; padding: 0.6rem 0.7rem;
       background: linear-gradient(#e8d5a8, #d9c08a); color: #3a2b18;
@@ -1425,9 +1431,10 @@ const faq = {
           <button class="bh-cardx" id="bhDigClose" type="button" aria-label="close">✕</button>
           <h2>captain sabreface</h2>
           <p id="bhDigSay">"there's treasure buried on this bay, matey. dig it up."</p>
+          <canvas class="bh-digmap" id="bhDigMap" width="450" height="180" aria-label="the torn treasure map"></canvas>
           <p class="bh-mapclue" id="bhDigClue"></p>
           <ol class="bh-how">
-            <li><b>⛏ hit Dig to dig at your feet.</b> one treasure is buried on the bay each day — walk the sand and dig around to hunt it down.</li>
+            <li><b>⛏ dig the bay to turn up map pieces.</b> collect them and Sabreface's map marks the X — then dig the sand around the cross.</li>
           </ol>
           <div class="bh-diglog" id="bhDigLog"></div>
         </div>
