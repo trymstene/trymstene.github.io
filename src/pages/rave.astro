@@ -1165,6 +1165,18 @@ const GUIDE = [
     .rv-questbtn[hidden] { display: none !important; }
     .rv-questbtn:not([hidden]) { animation: rvQBtnIn 0.3s ease; }
     @keyframes rvQBtnIn { from { transform: translateY(10px); opacity: 0; } }
+    /* 📣 THE CHANT: the button pulses on the club's 0.46s bass beat (same
+       period as the speaker cones); hits flash green, misses shake it */
+    .rv-questbtn--pulse { animation: rvChantBeat 0.46s ease-out infinite; }
+    @keyframes rvChantBeat {
+      0% { transform: scale(1.14); box-shadow: 0 0 0 0 rgba(255, 225, 53, 0.85); }
+      70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(255, 225, 53, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 225, 53, 0); }
+    }
+    .rv-questbtn--hit { background: #59e0a2 !important; }
+    .rv-questbtn--miss { animation: rvChantMiss 0.3s ease; }
+    @keyframes rvChantMiss { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    @media (prefers-reduced-motion: reduce) { .rv-questbtn--pulse, .rv-questbtn--miss { animation: none; } }
     .rv-emote-btn--fire { border-color: #ff9e2c; }
     .rv-emote-btn--fire:hover { background: #ff9e2c; }
     /* 🍌💨 the food fight — the throw button shares .rv-emote-btn's base look;

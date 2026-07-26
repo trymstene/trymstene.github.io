@@ -3458,7 +3458,56 @@ function init() {
         const me = myId && ravers.get(myId);
         if (me) me.qbroom = false;                   // Barty takes the mop back
       },
+      doneBig: ['FLOOR SAVED 🧹', 'back to dancing!'],
+      doneLed: 'CRISIS OVER — CARRY ON 🍌',
       doneSay: ['SPOTLESS! 🧹 you’re a natural, partner — drinks stay in glasses from here on. probably.'],
+    },
+    // 📣 THE CHANT — the button IS the game: it pulses on the club's bass
+    // beat (epoch-aligned, same phase for every raver); land 8 presses ON
+    // the pulse and the whole floor does THE WAVE. Zero floor objects — the
+    // purest form of the dynamic-button idea. Misses never reset the count
+    // (no-punishing doctrine), they just shake the button.
+    chant: {
+      led: '📣 THE FLOOR WANTS A CHANT',
+      BEAT: 460,   // ms — the speaker cones' rvBass period
+      LAG: 60,     // judge against a slightly late centre: mobile taps land late
+      WIN: 115,    // ±ms around the (lagged) beat that counts as ON it
+      enter() {
+        this.hits = 0;
+        qBtnShow('📣 0/8');
+        if (questBtn) {
+          questBtn.classList.add('rv-questbtn--pulse');
+          questBtn.style.animationDelay = -(Date.now() % this.BEAT) + 'ms'; // wall-clock phase
+        }
+        bartySay(['CHANT TIME! 📣 hit that button ON the pulse — eight true beats and this floor WAVES.',
+          { t: 'i used to lead the chants. voice went in ’09. the beat stayed.', mutter: true }], true);
+      },
+      button(me) {
+        if (!questBtn) return;
+        const off = (((Date.now() - this.LAG) % this.BEAT) + this.BEAT) % this.BEAT;
+        if (off <= this.WIN || off >= this.BEAT - this.WIN) {
+          this.hits++;
+          questBtn.classList.add('rv-questbtn--hit');
+          setTimeout(() => questBtn.classList.remove('rv-questbtn--hit'), 140);
+          floatNum(me.x, me.y - 8, '📣', '');
+          addHype(1);
+          qBtnShow('📣 ' + this.hits + '/8');
+          if (this.hits >= 8) questDone();
+        } else {
+          questBtn.classList.remove('rv-questbtn--miss'); void questBtn.offsetWidth;
+          questBtn.classList.add('rv-questbtn--miss');
+        }
+      },
+      exit() {
+        if (questBtn) {
+          questBtn.classList.remove('rv-questbtn--pulse', 'rv-questbtn--hit', 'rv-questbtn--miss');
+          questBtn.style.animationDelay = '';
+        }
+      },
+      after() { wavers.add(myId); runWave(); },      // the payoff: the floor waves (staff always join)
+      doneBig: ['THE FLOOR HEARD YOU 📣', 'now WAVE!'],
+      doneLed: 'WHAT A CHANT. WHAT A FLOOR.',
+      doneSay: ['THAT’S a chant, partner! 🤠 feel that? the whole floor moved with ya.'],
     },
   };
 
@@ -3481,9 +3530,10 @@ function init() {
     renderWallet(true);
     const me = myId && ravers.get(myId);
     if (me) floatPlus(me.x, me.y - 10, '+6 🪙');
-    bigMoment('FLOOR SAVED 🧹', 'back to dancing!');
+    bigMoment(def.doneBig[0], def.doneBig[1]);
     if (def.doneSay) bartySay(def.doneSay, true);
-    if (ledNow) ledNow('CRISIS OVER — CARRY ON 🍌');
+    if (def.after) def.after();                      // quest-specific payoff (e.g. the wave)
+    if (ledNow && def.doneLed) ledNow(def.doneLed);
     track('rave_quest_done', { q: id });
   }
   function questAbort() {  // time's up — quiet pack-up, zero shame
