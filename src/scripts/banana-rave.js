@@ -3484,7 +3484,7 @@ function init() {
     // lever (mashing AT the breaker is diegetic and fine).
     power: {
       led: '⚡ SIGNAL LOST',
-      SPOT: { x: 88, y: 28 },    // the breaker high on the right wall — far from the exit
+      SPOT: { x: 92, y: 19 },    // the breaker in the TOP-RIGHT corner — far from the exit
       FLIPS: 4,
       enter() {
         const veil = document.createElement('div');
