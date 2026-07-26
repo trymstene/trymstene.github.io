@@ -1198,9 +1198,14 @@ const GUIDE = [
       50% { filter: brightness(0.15) contrast(1.4); transform: translateX(2px); }
       53% { filter: brightness(0.35) contrast(1.4); transform: none; }
     }
-    /* no power = no stage lights: the ceiling beams over the DJ go out
-       (body class like rv-drop — the beams live in .rv-hall, not the floor) */
+    /* no power = the whole STAGE goes dark: beams out, DJ + desk + speakers
+       dimmed to silhouettes (static filter — never ANIMATE filter on banana
+       canvases), the cones stop thumping, the notes stop drifting
+       (body class like rv-drop — the stage lives in .rv-hall, not the floor) */
     body.rv-nopower .rv-beam { opacity: 0; }
+    body.rv-nopower #rvDj, body.rv-nopower .rv-desk, body.rv-nopower .rv-speaker { filter: brightness(0.22); }
+    body.rv-nopower .rv-spkcone { animation-play-state: paused; }
+    body.rv-nopower .rv-mnote { visibility: hidden; }
     @media (prefers-reduced-motion: reduce) {
       .rv-blackout--flicker { animation: none; }
       .rv-screen--out { animation: none; filter: brightness(0.3); }
