@@ -3343,6 +3343,174 @@ function init() {
     }
   }
 
+  // ---- 🎯 FLOOR QUESTS (Quests 2.0) ----------------------------------------
+  // Born from the first fan mail ("bring back the mop"). The doctrine: the
+  // quest is a WORLD EVENT, the button is the TOOL, the floor is the UI.
+  // Something happens to the club → the dynamic #rvQuestActBtn appears in the
+  // action bar → you fix/play it → the room heals and every trace vanishes.
+  // No quest log, no chip, no static floor UI (chip clutter is why v1 died).
+  // 🚧 DORMANT until the pool is previewed: QUESTS_ENABLED gates the hourly
+  // scheduler. QA: ?questtest=<id> force-starts that quest ~3s after load.
+  const QUESTS_ENABLED = false;
+  const QUEST_TEST = new URLSearchParams(location.search).get('questtest');
+  const QUEST_TTL = 150000;      // unfinished quests quietly pack up
+  const questBtn = el('rvQuestActBtn');
+  let quest = null;              // { id, def, endAt }
+  let questPollAt = 0, questHourDone = 0;
+  let ledNow = null;             // assigned by initScreen — one-shot LED slide
+  // rejection-sampled floor spots — never on the bar, the door, or each other
+  function qSpots(n, minSep) {
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      let x = 50, y = 55;
+      for (let t = 0; t < 30; t++) {
+        x = 12 + Math.random() * 74;
+        y = clamp(26 + Math.random() * 58, topClamp + 6, 86);
+        if (!blockedAt(x, y) && pts.every((p) => Math.hypot(p.x - x, p.y - y) > minSep)) break;
+      }
+      pts.push({ x, y });
+    }
+    return pts;
+  }
+  // px-true proximity (percent space is anisotropic — the claims lesson)
+  const qNear = (me, p, mul) =>
+    Math.hypot(((me.x - p.x) / 100) * floorW, ((me.y - p.y) / 100) * floorH) < (me.size || 90) * mul;
+  const qBtnShow = (label) => { if (questBtn) { questBtn.textContent = label; questBtn.hidden = false; } };
+  const qBtnHide = () => { if (questBtn) questBtn.hidden = true; };
+
+  // THE REGISTRY — each quest owns enter/frame/button/exit; the chassis owns
+  // the schedule, the button, the LED call, the timeout and guaranteed cleanup.
+  const FLOOR_QUESTS = {
+    // 🧹 THE MOP — the one the fan mail asked for. Puddles hit the floor and
+    // are real HAZARDS (cross one and you skid); grab the mop off Barty's
+    // counter (it rides the glove), stand on a puddle, hit the 🧹 button.
+    mop: {
+      led: '🧹 SPILLAGE ON THE FLOOR',
+      enter() {
+        const host = el('rvQuestObjs');
+        this.spots = qSpots(5, 13).map((p) => {
+          const d = document.createElement('div');
+          d.className = 'rv-chore rv-chore--puddle';
+          d.innerHTML = PUDDLE_SVG;
+          d.style.left = p.x + '%';
+          d.style.top = p.y + '%';
+          host.appendChild(d);
+          return { x: p.x, y: p.y, elm: d, done: false, slipAt: 0 };
+        });
+        this.armed = false;
+        el('rvBroomProp').style.display = '';
+        bartySay(['SPILLAGE! 🧹 five puddles on my floor — mop’s on the counter, partner. GO!',
+          { t: 'thirty years i mopped this floor. now it’s your turn. that’s growth.', mutter: true }], true);
+      },
+      frame(me, now) {
+        if (!this.armed) {
+          // the mop comes off the counter like every bar visit — adjacency zone
+          if (me.x < Math.max(BAR_ZONE.x, barSolid.x + 4) && me.y > BAR_ZONE.y) {
+            this.armed = true;
+            me.qbroom = true;                        // rides the glove (engine)
+            el('rvBroomProp').style.display = 'none';
+            pickupPop(me.x, me.y);
+            qBtnShow('🧹 0/5');
+            bartySay(['that’s the good mop — stand ON a puddle and hit that 🧹!'], true);
+          }
+          return;
+        }
+        // unwiped puddles are hazards: cross one and you SKID
+        for (const c of this.spots) {
+          if (c.done || !qNear(me, c, 0.4) || now - c.slipAt < 2200) continue;
+          c.slipAt = now;
+          if (me.cv) { me.cv.classList.remove('rv-slipfx'); void me.cv.offsetWidth; me.cv.classList.add('rv-slipfx'); }
+          floatNum(me.x, me.y - 8, 'whoa!', '');
+        }
+      },
+      button(me) {
+        if (!this.armed) {
+          bartySay(['mop’s on my counter, partner — come grab it first!'], true);
+          return;
+        }
+        const c = this.spots.find((p) => !p.done && qNear(me, p, 0.62));
+        if (!c) { floatNum(me.x, me.y - 8, 'no puddle here', ''); return; }
+        c.done = true;
+        c.elm.classList.add('rv-chore--swept');
+        const gone = c.elm;
+        setTimeout(() => gone.remove(), 500);
+        pickupPop(c.x, c.y);
+        addHype(3);                                  // each wipe pays a little
+        const done = this.spots.filter((p) => p.done).length;
+        qBtnShow('🧹 ' + done + '/' + this.spots.length);
+        if (done === this.spots.length) questDone();
+      },
+      exit() {
+        el('rvQuestObjs').innerHTML = '';
+        el('rvBroomProp').style.display = 'none';
+        const me = myId && ravers.get(myId);
+        if (me) me.qbroom = false;                   // Barty takes the mop back
+      },
+      doneSay: ['SPOTLESS! 🧹 you’re a natural, partner — drinks stay in glasses from here on. probably.'],
+    },
+  };
+
+  function startQuest(id) {
+    const def = FLOOR_QUESTS[id];
+    if (quest || !def) return;
+    quest = { id, def, endAt: Date.now() + QUEST_TTL };
+    def.enter();
+    if (ledNow && def.led) ledNow(def.led);
+    track('rave_quest_start', { q: id });
+  }
+  function questDone() {
+    if (!quest) return;
+    const { id, def } = quest;
+    quest = null;
+    def.exit(true);
+    qBtnHide();
+    addHype(12);                                     // completion pay: XP + meter
+    passStat('coins_earned', 6);
+    renderWallet(true);
+    const me = myId && ravers.get(myId);
+    if (me) floatPlus(me.x, me.y - 10, '+6 🪙');
+    bigMoment('FLOOR SAVED 🧹', 'back to dancing!');
+    if (def.doneSay) bartySay(def.doneSay, true);
+    if (ledNow) ledNow('CRISIS OVER — CARRY ON 🍌');
+    track('rave_quest_done', { q: id });
+  }
+  function questAbort() {  // time's up — quiet pack-up, zero shame
+    if (!quest) return;
+    const def = quest.def;
+    quest = null;
+    def.exit(false);
+    qBtnHide();
+    if (!bubbleSticky && Date.now() > bartyBusyUntil) showBubble('eh, i’ll get the rest myself. thanks anyhow, partner.', false, 4200);
+  }
+  function questFrame(now) {
+    if (quest) {
+      if (Date.now() > quest.endAt) { questAbort(); return; }
+      const me = myId && ravers.get(myId);
+      if (!me || me.stage) return;
+      if (now - questPollAt < 120) return;           // poll cadence (nightFrame's)
+      questPollAt = now;
+      if (quest.def.frame) quest.def.frame(me, now);
+      return;
+    }
+    if (!QUESTS_ENABLED || QUEST_TEST) return;
+    // the hourly scheduler: date+hour seeded quest + minute — every raver on
+    // the floor gets the SAME event at the SAME moment (shared chaos), and a
+    // localStorage-free hour latch keeps it from restarting after completion
+    const hr = Math.floor(Date.now() / 3600000);
+    if (questHourDone === hr) return;
+    const ids = Object.keys(FLOOR_QUESTS);
+    const at = hr * 3600000 + Math.floor((8 + seedRand(hr * 31 + 9) * 42) * 60000);
+    if (Date.now() >= at && Date.now() < at + QUEST_TTL) {
+      questHourDone = hr;
+      startQuest(ids[Math.floor(seedRand(hr * 31 + 7) * ids.length)]);
+    }
+  }
+  if (questBtn) questBtn.addEventListener('click', () => {
+    const me = myId && ravers.get(myId);
+    if (quest && me && quest.def.button) quest.def.button(me);
+  });
+  if (QUEST_TEST && FLOOR_QUESTS[QUEST_TEST]) setTimeout(() => startQuest(QUEST_TEST), 3000);
+
   // ---- the throw button (the food fight's trigger) ----
   const throwBtn = el('rvThrowBtn');
   if (throwBtn) throwBtn.addEventListener('click', fireNade);
@@ -3651,6 +3819,7 @@ function init() {
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
     nightFrame(now); // quest proximity checks — same lesson again
+    questFrame(now); // 🎯 floor quests: hazards, tools, the hourly scheduler
     monkeyTick(now, dtMs); // the bandit keeps its distance
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
@@ -4455,6 +4624,11 @@ function init() {
       }
       content.style.animation = 'none'; void content.offsetWidth; content.style.animation = ''; // retrigger the flicker-in
     };
+    // 🎯 floor quests reach in here for one-shot announcements ("SPILLAGE ON
+    // THE FLOOR") — render is closure-private, so hand out a narrow door.
+    // holdUntil keeps the rotation from stomping the announce a beat later.
+    let holdUntil = 0;
+    ledNow = (text) => { if (!tourActive) { holdUntil = Date.now() + 6500; render({ type: 'msg', text }); } };
     screen.addEventListener('click', (e) => {
       if (!screen.classList.contains('rv-screen--ad')) { e.preventDefault(); return; } // messages don't navigate
       if (window.gtag) window.gtag('event', 'rave_screen_ad', { ad: screen.dataset.ad || '' });
@@ -4464,6 +4638,7 @@ function init() {
     setInterval(() => {
       if (tourActive) return; // never pull focus during the lesson
       if (document.hidden) return; // no DOM work for a screen nobody sees (battery)
+      if (Date.now() < holdUntil) return; // a quest announce owns the screen for a beat
       render(nextSlide()); count++;
     }, 4800);
   })();

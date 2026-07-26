@@ -575,6 +575,15 @@ const GUIDE = [
     .rv-chore--puddle svg { width: 44px; height: 20px; opacity: 0.9; }
     .rv-chore--swept { animation: rvSwept 0.5s steps(4) forwards; }
     @keyframes rvSwept { 100% { transform: translate(-50%, -50%) scale(0.15) rotate(120deg); opacity: 0; } }
+    /* 🎯 floor quests: the skid when you cross an unwiped puddle (transform
+       wiggle on the CANVAS — never animate filter on banana canvases) */
+    .rv-slipfx { animation: rvSlip 0.55s ease; }
+    @keyframes rvSlip {
+      25% { transform: rotate(-16deg) translateY(-3px); }
+      55% { transform: rotate(12deg); }
+      80% { transform: rotate(-6deg); }
+    }
+    @media (prefers-reduced-motion: reduce) { .rv-slipfx { animation: none; } }
     /* THE MONKEY: staff pet, theatrical guest — never a fake visitor */
     .rv-monkey { position: absolute; transform: translate(-50%, -50%); width: 54px; pointer-events: none; }
     .rv-monkey svg { width: 100%; height: auto; image-rendering: pixelated; }
@@ -1141,6 +1150,15 @@ const GUIDE = [
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
     .rv-emote-btn:hover { background: #ffe135; }
+    /* 🎯 the quest tool: deliberately LOUDER than its neighbours — it is the
+       temporary thing to press right now, then it's gone */
+    .rv-questbtn {
+      background: #ffe135; color: #0d0b14; border-color: #000;
+      font-weight: 800; font-family: inherit; font-size: 1rem; white-space: nowrap;
+    }
+    .rv-questbtn[hidden] { display: none !important; }
+    .rv-questbtn:not([hidden]) { animation: rvQBtnIn 0.3s ease; }
+    @keyframes rvQBtnIn { from { transform: translateY(10px); opacity: 0; } }
     .rv-emote-btn--fire { border-color: #ff9e2c; }
     .rv-emote-btn--fire:hover { background: #ff9e2c; }
     /* 🍌💨 the food fight — the throw button shares .rv-emote-btn's base look;
@@ -1382,6 +1400,7 @@ const GUIDE = [
             <div class="rv-twinkle" id="rvTwinkle" hidden aria-hidden="true"><svg class="rv-twinkle__a" viewBox="0 0 11 11" shape-rendering="crispEdges"><rect x="5" y="0" width="1" height="1" fill="#78ebff"/><rect x="5" y="1" width="1" height="1" fill="#78ebff"/><rect x="5" y="2" width="1" height="1" fill="#ffffff"/><rect x="5" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="4" width="3" height="1" fill="#ffffff"/><rect x="0" y="5" width="2" height="1" fill="#78ebff"/><rect x="2" y="5" width="7" height="1" fill="#ffffff"/><rect x="9" y="5" width="2" height="1" fill="#78ebff"/><rect x="4" y="6" width="3" height="1" fill="#ffffff"/><rect x="5" y="7" width="1" height="1" fill="#ffffff"/><rect x="5" y="8" width="1" height="1" fill="#ffffff"/><rect x="5" y="9" width="1" height="1" fill="#78ebff"/><rect x="5" y="10" width="1" height="1" fill="#78ebff"/></svg><svg class="rv-twinkle__b" viewBox="0 0 11 11" shape-rendering="crispEdges"><rect x="0" y="0" width="1" height="1" fill="#78ebff"/><rect x="10" y="0" width="1" height="1" fill="#78ebff"/><rect x="1" y="1" width="1" height="1" fill="#78ebff"/><rect x="9" y="1" width="1" height="1" fill="#78ebff"/><rect x="2" y="2" width="1" height="1" fill="#ffffff"/><rect x="8" y="2" width="1" height="1" fill="#ffffff"/><rect x="3" y="3" width="1" height="1" fill="#ffffff"/><rect x="7" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="4" width="1" height="1" fill="#ffffff"/><rect x="6" y="4" width="1" height="1" fill="#ffffff"/><rect x="5" y="5" width="1" height="1" fill="#ffffff"/><rect x="4" y="6" width="1" height="1" fill="#ffffff"/><rect x="6" y="6" width="1" height="1" fill="#ffffff"/><rect x="3" y="7" width="1" height="1" fill="#ffffff"/><rect x="7" y="7" width="1" height="1" fill="#ffffff"/><rect x="2" y="8" width="1" height="1" fill="#ffffff"/><rect x="8" y="8" width="1" height="1" fill="#ffffff"/><rect x="1" y="9" width="1" height="1" fill="#78ebff"/><rect x="9" y="9" width="1" height="1" fill="#78ebff"/><rect x="0" y="10" width="1" height="1" fill="#78ebff"/><rect x="10" y="10" width="1" height="1" fill="#78ebff"/></svg></div>
             <div id="rvRun" aria-hidden="true"></div>
             <div id="rvChores" aria-hidden="true"></div>
+            <div id="rvQuestObjs" aria-hidden="true"></div>
             <svg class="rv-item rv-item--gold" id="rvGold" viewBox="0 0 8 14" shape-rendering="crispEdges" style="display:none;" aria-hidden="true">
               <rect x="4" y="0" width="1" height="1" fill="#5a3618"/><rect x="4" y="1" width="1" height="1" fill="#5a3618"/><rect x="4" y="2" width="2" height="1" fill="#5a3618"/><rect x="0" y="3" width="1" height="1" fill="#ffffff"/><rect x="3" y="3" width="1" height="1" fill="#d69a1e"/><rect x="4" y="3" width="2" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="1" fill="#d69a1e"/><rect x="3" y="4" width="1" height="1" fill="#d69a1e"/><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="6" y="4" width="1" height="1" fill="#d69a1e"/><rect x="2" y="5" width="1" height="1" fill="#d69a1e"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="2" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#d69a1e"/><rect x="2" y="6" width="1" height="1" fill="#d69a1e"/><rect x="3" y="6" width="3" height="1" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#d69a1e"/><rect x="2" y="7" width="1" height="1" fill="#d69a1e"/><rect x="3" y="7" width="3" height="1" fill="#ffe135"/><rect x="6" y="7" width="1" height="1" fill="#d69a1e"/><rect x="2" y="8" width="1" height="1" fill="#d69a1e"/><rect x="3" y="8" width="3" height="1" fill="#ffe135"/><rect x="6" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="9" width="1" height="1" fill="#d69a1e"/><rect x="3" y="9" width="3" height="1" fill="#ffe135"/><rect x="6" y="9" width="1" height="1" fill="#d69a1e"/><rect x="2" y="10" width="1" height="1" fill="#d69a1e"/><rect x="3" y="10" width="3" height="1" fill="#ffe135"/><rect x="6" y="10" width="1" height="1" fill="#d69a1e"/><rect x="1" y="11" width="1" height="1" fill="#d69a1e"/><rect x="2" y="11" width="3" height="1" fill="#ffe135"/><rect x="5" y="11" width="1" height="1" fill="#d69a1e"/><rect x="7" y="11" width="1" height="1" fill="#ffffff"/><rect x="1" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="12" width="2" height="1" fill="#ffe135"/><rect x="4" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="13" width="2" height="1" fill="#5a3618"/>
             </svg>
@@ -1466,6 +1485,10 @@ const GUIDE = [
                  NOT an emote (own class + wiring) — it fires a projectile. -->
             <button class="rv-emote-btn rv-throw-btn" id="rvThrowBtn" aria-label="Throw a banana (F)" title="throw a banana! (F) — tap a banana to lock on"><svg viewBox="0 0 14 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="1.6em" height="1.15em"><rect x="0" y="3" width="2" height="1" fill="#fffdf5"/><rect x="1" y="5" width="2" height="1" fill="#fffdf5"/><rect x="0" y="7" width="2" height="1" fill="#fffdf5"/><rect x="12" y="1" width="1" height="1" fill="#7a4a21"/><rect x="11" y="2" width="2" height="1" fill="#ffd23f"/><rect x="10" y="3" width="2" height="1" fill="#ffd23f"/><rect x="10" y="4" width="1" height="1" fill="#e6a817"/><rect x="9" y="4" width="1" height="1" fill="#ffd23f"/><rect x="8" y="5" width="2" height="1" fill="#ffd23f"/><rect x="8" y="6" width="1" height="1" fill="#e6a817"/><rect x="7" y="7" width="1" height="1" fill="#e6a817"/><rect x="13" y="0" width="1" height="1" fill="#ff9e2c"/><rect x="13" y="2" width="1" height="1" fill="#ff9e2c"/><rect x="12" y="5" width="1" height="1" fill="#ff9e2c"/></svg></button>
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
+            <!-- 🎯 THE QUEST TOOL — the dynamic action slot. Exists only while a
+                 floor quest runs; each quest sets its own label + verb, then it
+                 vanishes. NOT an emote (no data-emote, own wiring). -->
+            <button class="rv-emote-btn rv-questbtn" id="rvQuestActBtn" hidden></button>
           </div>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>
           <button class="rv-emote-btn rv-tourbtn rv-soundbtn" id="rvSoundBtn" aria-label="Toggle the music" aria-pressed="false" title="sound on — the set is live"><svg viewBox="0 0 12 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="3" width="2" height="4" fill="#fffdf5"/><rect x="2" y="2" width="1" height="6" fill="#fffdf5"/><rect x="3" y="1" width="1" height="8" fill="#fffdf5"/><rect x="4" y="0" width="1" height="10" fill="#fffdf5"/><rect x="6" y="3" width="1" height="4" fill="#fffdf5" class="rv-soundbtn__w1"/><rect x="8" y="2" width="1" height="6" fill="#fffdf5" class="rv-soundbtn__w2"/><rect x="10" y="1" width="1" height="8" fill="#fffdf5" class="rv-soundbtn__w3"/></svg></button>
