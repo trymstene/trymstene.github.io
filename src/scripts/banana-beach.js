@@ -880,7 +880,7 @@ function init() {
   // digging; each grab hands you the next piece (until the map's whole).
   const drifts = [];
   const MAX_DRIFTS = 3;
-  const DRIFT_EVERY = 9000;         // one floats in roughly this often — TUNABLE
+  const DRIFT_EVERY = 22000;        // one floats in roughly this often — TUNABLE
   const DRIFT_LIFE = 46000;         // …and drifts back out if not fished in
   const DRIFT_SPEED = 21;           // px/sec, seaward → shore ("floats slowly in")
   const DRIFT_TOP = 24;             // where it appears — the top edge of the ocean
@@ -1567,6 +1567,8 @@ function init() {
   // packed" when you're close; map pieces (next milestone) narrow the area.
   const DIG_REACH = 48;   // how near the buried X a dig must land to strike it
   const DIG_WARM = 155;   // within this, a dig tells you you're close — the hunt
+  const BASE_PIECE = 0.05;  // base odds a dig turns up a map piece (most digs = sand)
+  const PIECE_PITY = 0.02;  // +this per dry dig since the last piece; resets on a find
   // 🏴 the loot. ⚠️ NO COINS, EVER — bananacoins are one faucet (the rave) and
   // a diggable money source would inflate every price in the stand. The beach
   // pays in collection and comedy, which is the whole point of it.
@@ -1725,7 +1727,7 @@ function init() {
       setTimeout(() => h.remove(), 900);
     }, HOLE_LIFE);
   }
-  let digAt = 0;
+  let digAt = 0, digDry = 0;
   // ⛏ DIG AT YOUR FEET — the ⛏ action button (and Space) call this anywhere on
   // the sand. Strike the buried X → the day's treasure; near it → "packed sand"
   // (the hunt's only cue); otherwise mostly sand, the odd scrap.
@@ -1753,15 +1755,20 @@ function init() {
       track('beach_dig', { find: 'warm' });
       return;
     }
-    // 🗺 turn up a torn map piece (away from the treasure; until the map's whole)
-    if (piecesGot() < MAP_PIECES && Math.random() < 0.45) {
-      const wasX = haveXPiece();
-      addMapPiece();
-      const n = piecesGot();
-      float(pos.x, pos.y - 30, '🗺 map piece! (' + n + '/' + MAP_PIECES + ')', true);
-      if (haveXPiece() && !wasX) sandySay('that’s the marker — the X is on the map now. see Sabreface.', 5200);
-      track('beach_dig', { find: 'mappiece', n });
-      return;
+    // 🗺 turn up a torn map piece — rare, with a pity ramp: every dry dig since
+    // the last piece nudges the odds up (≈7 digs/piece), a find resets them.
+    if (piecesGot() < MAP_PIECES) {
+      if (Math.random() < BASE_PIECE + PIECE_PITY * digDry) {
+        digDry = 0;
+        const wasX = haveXPiece();
+        addMapPiece();
+        const n = piecesGot();
+        float(pos.x, pos.y - 30, '🗺 map piece! (' + n + '/' + MAP_PIECES + ')', true);
+        if (haveXPiece() && !wasX) sandySay('that’s the marker — the X is on the map now. see Sabreface.', 5200);
+        track('beach_dig', { find: 'mappiece', n });
+        return;
+      }
+      digDry++;
     }
     const r = Math.random();
     if (r < 0.12) {
@@ -3197,6 +3204,7 @@ function init() {
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
       dig, treasureAt, treasureFound, piecesGot, addMapPiece, mapX, xStrip, pieceOrder, drifts, spawnDrift,
+      get digDry() { return digDry; },
       // fake a second banana on the court so the B2 step-aside rule is
       // testable before multiplayer exists
       setPeers: (n) => { peersInCourt = n; } };
