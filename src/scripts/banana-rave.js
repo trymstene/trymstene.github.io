@@ -3370,6 +3370,7 @@ function init() {
   let quest = null;              // { id, def, endAt }
   let questPollAt = 0, questHourDone = 0;
   let ledNow = null;             // assigned by initScreen — one-shot LED slide
+  let ledPhoto = null;           // assigned by initScreen — tonight's photo slide
   // rejection-sampled floor spots — never on the bar, the door, or each other
   function qSpots(n, minSep) {
     const pts = [];
@@ -3720,6 +3721,101 @@ function init() {
       doneBig: ['ALL POPPED 🎈', 'confetti forever'],
       doneLed: 'ZERO BALLOONS SURVIVED.',
       doneSay: ['every last one! 🤠 i’ll order more balloons. i always do.'],
+    },
+    // 📸 PHOTO TIME — the LED IS the camera. A taped frame appears on the
+    // floor tiles; step inside and the screen counts 3…2…1, the floor flashes
+    // white, and everyone who was in frame becomes an actual PHOTO that runs
+    // on the club screen for the rest of the hour. Solo = your portrait;
+    // crowded = a group shot. No doneLed — the photo owns the screen.
+    photo: {
+      led: '📸 PHOTO TIME — GET IN FRAME',
+      enter() {
+        // the frame lands AWAY from you — walking in must be a deliberate act
+        // (first preview: the QA banana spawned inside it → instant photo)
+        const me = myId && ravers.get(myId);
+        const rects = [
+          { x0: 14, y0: 34, x1: 50, y1: 66 },
+          { x0: 50, y0: 34, x1: 86, y1: 66 },
+          { x0: 32, y0: 20, x1: 68, y1: 52 },
+        ];
+        let best = -1;
+        for (const rc of rects) {
+          const d = me ? Math.hypot((rc.x0 + rc.x1) / 2 - me.x, (rc.y0 + rc.y1) / 2 - me.y) : Math.random() * 100;
+          if (d > best) { best = d; this.FRAME = rc; }
+        }
+        const f = document.createElement('div');
+        f.className = 'rv-photoframe';
+        f.style.left = this.FRAME.x0 + '%';
+        f.style.top = this.FRAME.y0 + '%';
+        f.style.width = (this.FRAME.x1 - this.FRAME.x0) + '%';
+        f.style.height = (this.FRAME.y1 - this.FRAME.y0) + '%';
+        world.appendChild(f);
+        this.frameEl = f;
+        this.count = -1;
+        this.nextTick = 0;
+        qHint('📸 photo time! get INSIDE the bright frame');
+        bartySay(['PHOTO TIME! 📸 get in that frame and look expensive — it goes up on the BIG SCREEN.',
+          { t: 'i haven’t been in a photo since ’99. wasn’t ready. never am.', mutter: true }], true);
+      },
+      inFrame(r) {
+        return r && r.x > this.FRAME.x0 && r.x < this.FRAME.x1 && r.y > this.FRAME.y0 && r.y < this.FRAME.y1;
+      },
+      frame(me) {
+        if (this.count === -1 && this.inFrame(me)) {
+          this.count = 3;
+          this.nextTick = Date.now() + 900;
+          if (ledNow) ledNow('3', 'giant');
+          qHint('📸 hold it… the camera’s counting!');
+        }
+      },
+      tick() {
+        if (this.count > 0 && Date.now() >= this.nextTick) {
+          this.count--;
+          this.nextTick = Date.now() + 900;
+          if (this.count > 0) { if (ledNow) ledNow(String(this.count), 'giant'); }
+          else this.snap();
+        }
+      },
+      snap() {
+        this.count = -2;
+        const fl = document.createElement('div');
+        fl.className = 'rv-photoflash';
+        floor.appendChild(fl);
+        setTimeout(() => fl.remove(), 700);
+        // whoever's in frame is IN THE PHOTO — painter's order, back to front
+        const F = this.FRAME;
+        const cast = [...ravers.values()].filter((r) => !r.stage && this.inFrame(r)).sort((a, b) => a.y - b.y);
+        const cv = document.createElement('canvas');
+        cv.width = 320; cv.height = 180;
+        const ctx = cv.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#241d33';
+        ctx.fillRect(0, 0, 320, 180);
+        ctx.fillStyle = '#2c2440';
+        for (let gy = 0; gy < 5; gy++) for (let gx = 0; gx < 8; gx++) if ((gx + gy) % 2) ctx.fillRect(gx * 40, gy * 40, 40, 40);
+        for (const r of cast) {
+          if (!r.cv) continue;
+          const fx = (r.x - F.x0) / (F.x1 - F.x0);
+          const fy = (r.y - F.y0) / (F.y1 - F.y0);
+          const s = 66 + fy * 40;                    // nearer = bigger, like the floor
+          ctx.drawImage(r.cv, 30 + fx * 260 - s / 2, 30 + fy * 110 - s + 40, s, s);
+        }
+        ctx.strokeStyle = '#fffdf5';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(3, 3, 314, 174);
+        ctx.fillStyle = '#fffdf5';
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('TONIGHT AT THE BANANA RAVE', 160, 170);
+        if (ledPhoto) ledPhoto(cv.toDataURL());
+        questDone();
+      },
+      exit() {
+        if (this.frameEl) this.frameEl.remove();
+        this.frameEl = null;
+      },
+      doneBig: ['WHAT A SHOT 📸', 'up on the big screen — all hour!'],
+      doneSay: ['LOOK at that! 🤠 that one’s going on the screen — and maybe the fridge.'],
     },
   };
   // 🎈 balloons at BANANA pixel density (20×30 grid): outline ring, body,
@@ -4945,7 +5041,10 @@ function init() {
     };
     let adIdx = Math.floor(Math.random() * SCREEN_ADS.length);
     let count = 0;
+    let photoSlide = null;   // 📸 tonight's quest photo — rides the rotation for an hour
     const nextSlide = () => {
+      if (photoSlide && Date.now() > photoSlide.until) photoSlide = null;
+      if (photoSlide && count % 3 === 1) return photoSlide;
       if (count % 4 === 3) { const ad = SCREEN_ADS[adIdx % SCREEN_ADS.length]; adIdx++; return { type: 'ad', ...ad }; }
       if (!bag.length) bag = refill();
       return { type: 'msg', text: bag.pop() };
@@ -4961,13 +5060,21 @@ function init() {
       lastStyle = st; return st;
     };
     const render = (s) => {
-      const style = s.type === 'ad' ? (s.adStyle || 'giant') : pickStyle();
+      const style = s.type === 'ad' ? (s.adStyle || 'giant')
+        : s.type === 'photo' ? 'photo'
+        : (s.forceStyle || pickStyle());
       content.className = 'rv-screen__content rv-s-' + style;
       // a per-ad backdrop (only Banana Bay has one) — reset every slide so it
       // never bleeds onto the next message
       screen.classList.remove('rv-screen--bg');
       screen.style.removeProperty('--ad-bg');
       content.innerHTML = '';
+      if (s.type === 'photo') {
+        const img = document.createElement('img');
+        img.src = s.src;
+        img.alt = 'tonight’s photo';
+        content.appendChild(img);
+      }
       const t = document.createElement('span');
       t.className = 'rv-screen__text';
       if (s.type === 'msg' && (style === 'stack' || style === 'multi')) {
@@ -5005,7 +5112,13 @@ function init() {
     // THE FLOOR") — render is closure-private, so hand out a narrow door.
     // holdUntil keeps the rotation from stomping the announce a beat later.
     let holdUntil = 0;
-    ledNow = (text) => { if (!tourActive) { holdUntil = Date.now() + 6500; render({ type: 'msg', text }); } };
+    ledNow = (text, style) => { if (!tourActive) { holdUntil = Date.now() + 6500; render({ type: 'msg', text, forceStyle: style }); } };
+    // 📸 the photo quest hands its shot in here: shown NOW, then it rides the
+    // rotation (every ~3rd slide) for the rest of the hour
+    ledPhoto = (src) => {
+      photoSlide = { type: 'photo', src, until: Date.now() + 3600000 };
+      if (!tourActive) { holdUntil = Date.now() + 7000; render(photoSlide); }
+    };
     screen.addEventListener('click', (e) => {
       if (!screen.classList.contains('rv-screen--ad')) { e.preventDefault(); return; } // messages don't navigate
       if (window.gtag) window.gtag('event', 'rave_screen_ad', { ad: screen.dataset.ad || '' });
