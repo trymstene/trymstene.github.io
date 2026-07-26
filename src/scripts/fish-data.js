@@ -13,12 +13,14 @@
 // background-position-x: i/(n-1) × 100%  (same maths as every strip here).
 export const FISH_TILES = 35;
 
-// tier → odds + how the catch is dressed. Weight is PER SPECIES.
+// tier → odds + colour. The colour IS the rarity (standard gaming ramp: grey
+// common · blue uncommon · yellow rare · orange legendary) — shown on the slot
+// border + the tilted sticker-pill. No star rating.
 export const TIERS = {
-  common:    { w: 100, label: 'common',    color: '#cfd8e3', stars: 1 },
-  uncommon:  { w: 42, label: 'uncommon',  color: '#6ee7a0', stars: 2 },
-  rare:      { w: 15, label: 'RARE',      color: '#5cc8ff', stars: 3 },
-  legendary: { w: 6, label: 'LEGENDARY', color: '#ffd54a', stars: 4 },
+  common:    { w: 100, label: 'common',    color: '#cfd8e3' },
+  uncommon:  { w: 42, label: 'uncommon',  color: '#4aa3ff' },
+  rare:      { w: 15, label: 'RARE',      color: '#ffd23b' },
+  legendary: { w: 6, label: 'LEGENDARY', color: '#ff8f2e' },
 };
 
 export const FISH = [

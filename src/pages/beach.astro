@@ -284,10 +284,6 @@ const faq = {
       background-image: url('/assets/beach/fish.png');
       background-size: 3500% 100%; background-repeat: no-repeat; image-rendering: pixelated;
     }
-    .bh-catch__tier {
-      margin: 0 !important; font-family: "Archivo Black", sans-serif;
-      font-size: 0.72rem !important; letter-spacing: 0.14em;
-    }
     .bh-catch__new { margin: 0 !important; font-size: 0.82rem !important; color: #ffe135; }
     .bh-catch__note { margin: 0 !important; font-size: 0.78rem !important; opacity: 0.7; }
 
@@ -299,8 +295,9 @@ const faq = {
     @media (min-width: 520px) { .bh-fishgrid { grid-template-columns: repeat(7, 1fr); } }
     .bh-fishslot {
       position: relative; aspect-ratio: 1; border: 2px solid #000; background: #241d33;
-      display: grid; place-items: center; border-bottom-width: 4px;
+      display: grid; place-items: center; border-bottom-width: 4px; cursor: pointer;
     }
+    .bh-fishslot:hover { outline: 2px solid #ffb347; outline-offset: 1px; }
     .bh-fishslot i {
       display: block; width: 84%; aspect-ratio: 1;
       background-image: url('/assets/beach/fish.png');
@@ -317,6 +314,48 @@ const faq = {
       height: 10px; border: 2px solid #000; background: #241d33; margin: 0 0 0.4rem;
     }
     .bh-ledgerbar i { display: block; height: 100%; background: #6ee7a0; transition: width 0.4s ease; }
+
+    /* 🔎 THE SPECIMEN CARD — the tap-to-inspect popup that replaced the dead
+       title= hovers. Sits above the collection grids; one card serves shells +
+       fish, its accent painted by the species' rarity (--tier, set in JS). */
+    /* doubled class so z-index:16 beats the base .bh-panel (z:12) declared later
+       in the sheet — puts the specimen card above the collection grids */
+    .bh-panel.bh-panel--detail { z-index: 16; }
+    .bh-detailcard {
+      position: relative; width: min(300px, 86vw); max-height: 100%; overflow: auto;
+      background: #17121f; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      padding: 1.1rem 1rem 1rem; text-align: center; animation: bhDetailPop 0.18s ease-out;
+    }
+    @keyframes bhDetailPop { from { transform: translateY(6px) scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+    .bh-detailcard__x {
+      position: absolute; top: 2px; right: 4px; appearance: none; background: none; border: 0;
+      color: #fffdf5; font-size: 1.15rem; font-weight: 800; line-height: 1; cursor: pointer;
+      opacity: 0.65; padding: 6px 9px;
+    }
+    .bh-detailcard__x:hover { opacity: 1; }
+    .bh-detailcard__art {
+      width: 132px; height: 132px; margin: 0.2rem auto 0.7rem; display: grid; place-items: center;
+      background: #241d33; border: 3px solid var(--tier, #ffb347);
+    }
+    .bh-detailcard__art i {
+      display: block; width: 92px; height: 92px; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .bh-detailcard.is-locked .bh-detailcard__art i { filter: brightness(0) opacity(0.32); }
+    /* 🏷 THE RARITY BADGE — a tilted sticker-pill whose COLOUR is the rarity
+       (grey common · blue uncommon · yellow rare · orange legendary). No stars;
+       the colour carries it. Shared with the fishing catch reveal. */
+    .bh-tierpill {
+      display: inline-block; transform: rotate(-3.5deg); margin: 0 0 0.5rem;
+      background: var(--tier, #ffb347); color: #241505;
+      font-family: "Archivo Black", sans-serif; font-size: 0.64rem; letter-spacing: 0.08em;
+      text-transform: uppercase; white-space: nowrap; padding: 3px 12px;
+      border: 2px solid #000; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+    }
+    .bh-detailcard__name {
+      font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1.05rem; margin: 0.1rem 0 0.35rem;
+    }
+    .bh-detailcard__have { margin: 0 0 0.55rem; font-size: 0.8rem; font-weight: 700; color: #ffd98a; }
+    .bh-detailcard__desc { margin: 0; font-size: 0.86rem; line-height: 1.45; opacity: 0.92; }
 
     /* the dock sits ABOVE the opaque animated sea (which was painting over it)
        but below anything that walks — a floor must not occlude who's on it. */
@@ -811,8 +850,9 @@ const faq = {
     @media (min-width: 520px) { .bh-grid { grid-template-columns: repeat(8, 1fr); } }
     .bh-slot {
       position: relative; aspect-ratio: 1; border: 2px solid #000; background: #241d33;
-      display: grid; place-items: center;
+      display: grid; place-items: center; cursor: pointer;
     }
+    .bh-slot:hover { outline: 2px solid #ffb347; outline-offset: 1px; }
     .bh-slot i {
       display: block; width: 78%; aspect-ratio: 1;
       background-image: url('/assets/beach/shells.png');
@@ -1372,7 +1412,7 @@ const faq = {
                rather than described in a paragraph. -->
           <ol class="bh-how">
             <li><b>🌊 comb the wet sand.</b> shells keep washing up along the shoreline — walk over one to pocket it, and each pays a little <b>XP</b>.</li>
-            <li><b>⭐ some are rare.</b> a <b style="color:#5cc8ff">conch</b> or a <b style="color:#ffd54a">nautilus</b> turns up far less often than a clam — the full set is a long hunt. Shelly keeps the board.</li>
+            <li><b>⭐ some are rare.</b> a <b style="color:#ffd23b">tulip</b> or a <b style="color:#ff8f2e">nautilus</b> turns up far less often than a clam — the full set is a long hunt. Shelly keeps the board.</li>
           </ol>
           <div class="bh-grid" id="bhShellGrid"></div>
           <button class="bh-btn bh-btn--dark" id="bhShellClose" type="button">back to the beach</button>
@@ -1410,10 +1450,25 @@ const faq = {
           <div class="bh-fishgrid" id="bhFishGrid"></div>
           <ol class="bh-how">
             <li><b>🎣 sit on a dock chair</b> to cast. when the float dips, tap it — a <b>gold thrash</b> means something big.</li>
-            <li><b>⭐ four tiers.</b> commons fill the ledger fast; <b style="color:#5cc8ff">rare</b> and <b style="color:#ffd54a">legendary</b> are the real chase.</li>
+            <li><b>⭐ four tiers.</b> commons fill the ledger fast; <b style="color:#ffd23b">rare</b> and <b style="color:#ff8f2e">legendary</b> are the real chase.</li>
             <li><b>📏 every fish has a size.</b> gil keeps your personal best, so even a fish you own is worth casting for.</li>
           </ol>
           <button class="bh-btn bh-btn--dark" id="bhLedgerClose" type="button">back to the beach</button>
+        </div>
+      </div>
+
+      <!-- 🔎 THE SPECIMEN CARD — tap any shell or fish to flip it up close.
+           Replaces the old title= hovers (dead on touch): a big pixel preview,
+           its rarity, how many you've found, and the keeper's note. ONE card,
+           shared by both boards, sits above the collection grids. -->
+      <div class="bh-panel bh-panel--detail" id="bhDetail" hidden>
+        <div class="bh-detailcard" role="dialog" aria-label="Specimen details">
+          <button class="bh-detailcard__x" id="bhDetailClose" type="button" aria-label="close">✕</button>
+          <div class="bh-detailcard__art"><i id="bhDetailSprite" aria-hidden="true"></i></div>
+          <span class="bh-tierpill" id="bhDetailTier"></span>
+          <h3 class="bh-detailcard__name" id="bhDetailName"></h3>
+          <p class="bh-detailcard__have" id="bhDetailHave"></p>
+          <p class="bh-detailcard__desc" id="bhDetailDesc"></p>
         </div>
       </div>
 

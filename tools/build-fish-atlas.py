@@ -112,19 +112,23 @@ def load(folder, name):
 
 
 def main():
-    if not os.path.isdir(PACK):
-        raise SystemExit('Pack not found at %s\n(it is gitignored — keep it local)' % PACK)
-    tiles = [load('Salt Water', FISH_FILE[f[0]]) for f in FISH]
-    tiles += [load('Misc', t[3]) for t in TREASURE]
-    n = len(tiles)
-    atlas = Image.new('RGBA', (T * n, T), (0, 0, 0, 0))
-    for i, im in enumerate(tiles):
-        if im.size != (T, T):
-            im = im.resize((T, T), Image.NEAREST)
-        atlas.alpha_composite(im, (i * T, 0))
-    atlas.save(os.path.join(OUT, 'fish.png'), optimize=True)
-    print('wrote fish.png  %d tiles (%d fish + %d misc)  %dx%d'
-          % (n, len(FISH), len(TREASURE), atlas.width, atlas.height))
+    # n = the atlas tile count; fixed by the table, so the data (FISH_TILES) can
+    # regenerate even when the gitignored pack isn't on this machine.
+    n = len(FISH) + len(TREASURE)
+    if os.path.isdir(PACK):
+        tiles = [load('Salt Water', FISH_FILE[f[0]]) for f in FISH]
+        tiles += [load('Misc', t[3]) for t in TREASURE]
+        atlas = Image.new('RGBA', (T * n, T), (0, 0, 0, 0))
+        for i, im in enumerate(tiles):
+            if im.size != (T, T):
+                im = im.resize((T, T), Image.NEAREST)
+            atlas.alpha_composite(im, (i * T, 0))
+        atlas.save(os.path.join(OUT, 'fish.png'), optimize=True)
+        print('wrote fish.png  %d tiles (%d fish + %d misc)  %dx%d'
+              % (n, len(FISH), len(TREASURE), atlas.width, atlas.height))
+    else:
+        print('⚠️ pack not found at %s\n   → skipping atlas re-bake (keeping the existing fish.png); '
+              'writing fish-data.js from the table only.' % PACK)
 
     rows = []
     for i, (fid, disp, tier, cm) in enumerate(FISH):
@@ -150,12 +154,14 @@ def main():
 // background-position-x: i/(n-1) × 100%%  (same maths as every strip here).
 export const FISH_TILES = %d;
 
-// tier → odds + how the catch is dressed. Weight is PER SPECIES.
+// tier → odds + colour. The colour IS the rarity (standard gaming ramp: grey
+// common · blue uncommon · yellow rare · orange legendary) — shown on the slot
+// border + the tilted sticker-pill. No star rating.
 export const TIERS = {
-  common:    { w: %d, label: 'common',    color: '#cfd8e3', stars: 1 },
-  uncommon:  { w: %d, label: 'uncommon',  color: '#6ee7a0', stars: 2 },
-  rare:      { w: %d, label: 'RARE',      color: '#5cc8ff', stars: 3 },
-  legendary: { w: %d, label: 'LEGENDARY', color: '#ffd54a', stars: 4 },
+  common:    { w: %d, label: 'common',    color: '#cfd8e3' },
+  uncommon:  { w: %d, label: 'uncommon',  color: '#4aa3ff' },
+  rare:      { w: %d, label: 'RARE',      color: '#ffd23b' },
+  legendary: { w: %d, label: 'LEGENDARY', color: '#ff8f2e' },
 };
 
 export const FISH = [

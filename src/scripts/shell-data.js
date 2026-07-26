@@ -12,11 +12,14 @@ export const SHELL_TILES = 24;
 
 // tier -> odds + dressing. Shells wash up CONTINUOUSLY and each pays world XP;
 // the tail is STEEP (a ~month-long set) so the grails stay grails.
+// color = the rarity, standard gaming ramp: grey common · blue uncommon ·
+// yellow rare · orange legendary. It's the only rarity signal now (the tilted
+// sticker-pill in the specimen card + the slot's bottom border) — no stars.
 export const SHELL_TIERS = {
-  common:    { w: 240, label: 'common',    color: '#cfd8e3', stars: 1 },
-  uncommon:  { w: 80, label: 'uncommon',  color: '#6ee7a0', stars: 2 },
-  rare:      { w: 18, label: 'RARE',      color: '#5cc8ff', stars: 3 },
-  legendary: { w: 2, label: 'LEGENDARY', color: '#ffd54a', stars: 4 },
+  common:    { w: 240, label: 'common',    color: '#cfd8e3' },
+  uncommon:  { w: 80, label: 'uncommon',  color: '#4aa3ff' },
+  rare:      { w: 18, label: 'RARE',      color: '#ffd23b' },
+  legendary: { w: 2, label: 'LEGENDARY', color: '#ff8f2e' },
 };
 
 export const SHELLS = [

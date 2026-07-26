@@ -23,6 +23,7 @@ import {
 import { WEARABLE_PACKS } from '../data/wearables.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
+import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
 // touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
@@ -44,6 +45,8 @@ SHELLS.forEach((s) => { SHELL_BY[s.id] = s; });
 const shellName = (id) => (SHELL_BY[id] ? SHELL_BY[id].name : id);
 const shellTier = (id) => SHELL_TIERS[(SHELL_BY[id] || SHELLS[0]).tier];
 const shellTile = (i) => (i / (SHELL_TILES - 1) * 100) + '% 0';
+const FISH_BY = {};
+FISH.forEach((f) => { FISH_BY[f.id] = f; });
 // weighted draw — the tier IS the rarity, so a Nautilus really is a find
 const SHELL_TOTAL_W = SHELLS.reduce((a, s) => a + SHELL_TIERS[s.tier].w, 0);
 function shellForRoll(r) {
@@ -883,7 +886,7 @@ function init() {
   function slotHTML(id) {
     const n = held(id), s = SHELL_BY[id], t = shellTier(id);
     return '<div class="bh-slot' + (n ? '' : ' is-missing')
-      + '" title="' + (n ? s.name + ' — ' + t.label : '??? — ' + t.label)
+      + '" data-id="' + id + '" aria-label="' + (n ? s.name + ' — ' + t.label : 'undiscovered — ' + t.label)
       + '" style="border-bottom:4px solid ' + (n ? t.color : '#000') + '">'
       + '<i style="background-position:' + shellTile(s.i) + '"></i>'
       + (n > 1 ? '<b>' + n + '</b>' : '') + '</div>';
@@ -1241,8 +1244,7 @@ function init() {
       fishPity = (f.tier === 'rare' || f.tier === 'legendary') ? 0 : fishPity + 1;
       const won = isNew ? claimFishMiles() : 0;
       body = '<i class="bh-catch__fish" style="background-position:' + tilePos(f.i) + '"></i>'
-        + '<p class="bh-catch__tier" style="color:' + tier.color + '">'
-        + '★'.repeat(tier.stars) + ' ' + tier.label + '</p>'
+        + '<span class="bh-tierpill" style="--tier:' + tier.color + '">' + tier.label + '</span>'
         + '<p><b>' + f.name + '</b> · ' + cm + ' cm</p>'
         + (isNew ? '<p class="bh-catch__new">★ NEW — into the ledger it goes</p>'
           : record ? '<p class="bh-catch__new">📏 personal best! (was ' + prev + ' cm)</p>'
@@ -1340,9 +1342,10 @@ function init() {
   function renderLedger() {
     fishGrid.innerHTML = FISH.map((f) => {
       const n = fishHeld(f.id), best = fishBest(f.id), t = TIERS[f.tier];
-      const title = n ? f.name + ' — ' + t.label + ' · best ' + best + ' cm'
-                      : '??? — ' + t.label;
-      return '<div class="bh-fishslot' + (n ? '' : ' is-missing') + '" title="' + title
+      const label = n ? f.name + ' — ' + t.label + ' · best ' + best + ' cm'
+                      : 'undiscovered — ' + t.label;
+      return '<div class="bh-fishslot' + (n ? '' : ' is-missing') + '" data-id="' + f.id
+        + '" aria-label="' + label
         + '" style="border-bottom-color:' + (n ? t.color : '#000') + '">'
         + '<i style="background-position:' + tilePos(f.i) + '"></i>'
         + (n > 1 ? '<b>' + n + '</b>' : '') + '</div>';
@@ -1361,6 +1364,59 @@ function init() {
   }
   function openLedger() { renderLedger(); ledgerPanel.hidden = false; track('beach_ledger_open'); }
   document.getElementById('bhLedgerClose').addEventListener('click', () => { ledgerPanel.hidden = true; });
+
+  // 🔎 THE SPECIMEN CARD — one tap-to-inspect popup shared by both boards. It
+  // reads a species live (count, best size, rarity) + its keeper's note, and
+  // works the same on touch as on a mouse — the point of replacing the hovers.
+  const detail = document.getElementById('bhDetail');
+  const dCard = detail.querySelector('.bh-detailcard');
+  const dSprite = document.getElementById('bhDetailSprite');
+  const dTier = document.getElementById('bhDetailTier');
+  const dName = document.getElementById('bhDetailName');
+  const dHave = document.getElementById('bhDetailHave');
+  const dDesc = document.getElementById('bhDetailDesc');
+  function openDetail(kind, id) {
+    let t, have, missing, img, tiles, i, name, haveLine, desc;
+    if (kind === 'fish') {
+      const f = FISH_BY[id]; if (!f) return;
+      t = TIERS[f.tier]; have = fishHeld(id); missing = have === 0;
+      img = 'fish.png'; tiles = FISH_TILES; i = f.i;
+      name = missing ? '???' : f.name;
+      haveLine = missing ? 'not in your ledger yet'
+                         : have + ' logged · best ' + fishBest(id) + ' cm';
+      desc = missing ? 'sit on a dock chair and cast — Gil logs the ones you land.' : (FISH_DESC[id] || '');
+    } else {
+      const s = SHELL_BY[id]; if (!s) return;
+      t = shellTier(id); have = held(id); missing = have === 0;
+      img = 'shells.png'; tiles = SHELL_TILES; i = s.i;
+      name = missing ? '???' : s.name;
+      haveLine = missing ? 'not on your shelf yet' : have + ' on your shelf';
+      desc = missing ? 'keep combing the wet sand — this one still eludes you.' : (SHELL_DESC[id] || '');
+    }
+    dCard.style.setProperty('--tier', t.color);
+    dCard.classList.toggle('is-locked', missing);
+    dTier.textContent = t.label;   // the pill's colour (--tier) carries the rarity
+    dName.textContent = name;
+    dHave.textContent = haveLine;
+    dDesc.textContent = desc;
+    dSprite.style.backgroundImage = "url('/assets/beach/" + img + "')";
+    dSprite.style.backgroundSize = (tiles * 100) + '% 100%';
+    dSprite.style.backgroundPosition = (i / (tiles - 1) * 100) + '% 0';
+    detail.hidden = false;
+    track('beach_specimen', { kind, id: missing ? 'locked' : id });
+  }
+  function closeDetail() { detail.hidden = true; }
+  document.getElementById('bhDetailClose').addEventListener('click', closeDetail);
+  detail.addEventListener('click', (e) => { if (e.target === detail) closeDetail(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !detail.hidden) closeDetail(); });
+  // delegate on the persistent grid containers — the slots are re-rendered each
+  // open, so per-slot listeners would leak; the container outlives every render
+  shellGrid.addEventListener('click', (e) => {
+    const slot = e.target.closest('.bh-slot'); if (slot && slot.dataset.id) openDetail('shell', slot.dataset.id);
+  });
+  fishGrid.addEventListener('click', (e) => {
+    const slot = e.target.closest('.bh-fishslot'); if (slot && slot.dataset.id) openDetail('fish', slot.dataset.id);
+  });
 
   document.getElementById('bhCatchLeave').addEventListener('click', () => {
     catchPanel.hidden = true;
