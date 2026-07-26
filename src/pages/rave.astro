@@ -1172,18 +1172,6 @@ const GUIDE = [
       text-transform: uppercase; text-align: center; padding: 0.4rem 0.6rem;
     }
     .rv-questhint[hidden] { display: none; }
-    /* 📣 THE CHANT: "tap it when it's LIT" — the button flashes WHITE on a
-       slow readable beat (every other cone-thump); a miss locks it a beat */
-    .rv-questbtn--pulse { animation: rvChantBeat 0.92s linear infinite; }
-    @keyframes rvChantBeat {
-      0%, 32% { background: #fffdf5; transform: scale(1.16); box-shadow: 0 0 16px rgba(255, 253, 245, 0.95); }
-      42%, 100% { background: #ffe135; transform: scale(1); box-shadow: none; }
-    }
-    .rv-questbtn--hit { background: #59e0a2 !important; }
-    .rv-questbtn--locked { opacity: 0.4; }
-    .rv-questbtn--miss { animation: rvChantMiss 0.3s ease; }
-    @keyframes rvChantMiss { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-    @media (prefers-reduced-motion: reduce) { .rv-questbtn--pulse, .rv-questbtn--miss { animation: none; } }
     .rv-emote-btn--fire { border-color: #ff9e2c; }
     .rv-emote-btn--fire:hover { background: #ff9e2c; }
     /* 🍌💨 the food fight — the throw button shares .rv-emote-btn's base look;
