@@ -1070,14 +1070,20 @@ const GUIDE = [
       width: max-content; max-width: 94%; text-align: center; pointer-events: none;
       animation: rvBigIn 0.3s steps(3);
     }
+    /* the LED-ad look (Anton, solid yellow): a stroke thins the glyphs from
+       inside — the outline is a ring of hard shadows instead, fill stays FAT */
     .rv-bigmoment b {
-      display: block; font-family: "Archivo Black", sans-serif;
-      font-size: clamp(1.4rem, 5.5vw, 2.6rem); line-height: 1.15;
-      color: #ffe135; -webkit-text-stroke: 2px #111; text-shadow: 4px 4px 0 #000;
+      display: block; font-family: "Anton", "Arial Black", sans-serif;
+      font-size: clamp(1.9rem, 7.5vw, 3.4rem); line-height: 0.92;
+      letter-spacing: 0.015em; text-transform: uppercase; color: #ffe135;
+      text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+        -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000,
+        5px 6px 0 #000;
     }
     .rv-bigmoment small {
-      display: block; margin-top: 0.45rem; font-size: 0.8rem; font-weight: 800;
-      letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000;
+      display: block; margin-top: 0.5rem; font-size: 0.82rem; font-weight: 800;
+      letter-spacing: 0.12em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000;
     }
     .rv-bigmoment--out { animation: rvBigOut 0.5s steps(4) forwards; }
     @keyframes rvBigIn { 0% { transform: translateX(-50%) scale(0.6); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
