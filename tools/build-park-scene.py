@@ -474,7 +474,9 @@ if HAVE_PACK:
     # they ARE the south-facing shores (grass below water shows its bank
     # face, exactly like the pack's reference ponds). Corner-sample at (2,2)
     # etc. — midpoints missed the small notches and broke rounds 4-5.
-    CLEAN_GW = (22, 2, 4, 6, 8, 1, 3, 5, 7, 15, 17, 18, 21, 23)
+    # 19/20 (diagonal bank corners) take the cliff→side handoff keys, NOT
+    # 5/7 — the straight-cliff pair stepped the side edges inward (Trym r11)
+    CLEAN_GW = (22, 2, 4, 6, 8, 1, 3, 19, 20, 15, 17, 18, 21, 23)
     # the family's own grass base (sampled off its full-grass tile 23)
     _t23 = load_pack('ME_Singles_Terrains_and_Fences_48x48_Grass_Water_1_23.png').convert('RGBA')
     _cnt = {}

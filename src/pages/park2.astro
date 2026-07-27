@@ -320,11 +320,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <div class="pk-bgrid" id="pkAtlasGrid"></div>
           </div>
         </div>
+
+        <!-- 🧃 THE MERCH CART — your banana, on the three real things -->
+        <div class="pk-panel" id="pkMerch" hidden>
+          <div class="pk-card" role="dialog" aria-label="The merch cart">
+            <button class="pk-cardx" id="pkMerchClose" type="button" aria-label="close">✕</button>
+            <h2>the merch cart</h2>
+            <p class="pk-panel__sub">your banana, exactly as it's dressed — tap one to see it up close.</p>
+            <div class="pk-mgrid" id="pkMerchGrid"></div>
+            <p class="pk-merchnote">🚚 free worldwide shipping</p>
+            <p class="pk-merchfoot">everything else in the park costs coins. this cart is the one real thing — printed and shipped to your door.</p>
+          </div>
+        </div>
       </div><!-- /.pk-view -->
 
-      <!-- 🎮 THE ACTION BAR — 🪙 toss (near the fountain) · React · Sound -->
+      <!-- 🎮 THE ACTION BAR — 🪙 toss · 🧃 browse (both proximity-gated) · React · Sound -->
       <div class="pk-actions" aria-label="park actions">
         <button class="pk-act pk-act--toss" id="pkToss" type="button" hidden>🪙 toss</button>
+        <button class="pk-act pk-act--toss" id="pkBrowse" type="button" hidden>🧃 browse</button>
         <button class="pk-act pk-act--icon" id="pkEmote" type="button" aria-label="react">❤️</button>
         <button class="pk-act pk-act--icon" id="pkAudio" type="button" aria-label="sound" aria-pressed="false">🔇</button>
       </div>

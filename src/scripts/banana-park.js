@@ -9,7 +9,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MEADOW, SWINGS, DOORS,
+  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MARKET, MEADOW, SWINGS, DOORS,
   OB_RECTS, OB_CIRCLES, OVERLAYS,
 } from './park-geo.js';
 
@@ -70,6 +70,14 @@ const SQ_SVG = SVG('14 10',
 const ACORN_SPOTS = [[300, 650], [1040, 300], [1215, 985], [1650, 265], [2480, 985],
   [900, 530], [1005, 345], [878, 572], [735, 1000], [2555, 330], [400, 558]];
 const TEST_ACORN_SPOTS = [[1300, 860], [1450, 870], [1360, 910]];
+
+// 🧃 THE MERCH CART — keys are the PDP slugs (/make-a-banana/<key>/, from
+// shared/products.js); prices are display hints, Shopify enforces the real one
+const MERCH_PRODUCTS = [
+  { key: 'sticker', name: 'die-cut sticker', price: '$14.99' },
+  { key: 'magnet', name: 'fridge magnet', price: '$16.99' },
+  { key: 'tee', name: 'tee', price: '$34.99' },
+];
 
 const WISHES = [
   'you wish for a sunny day. granted — look around.',
@@ -563,6 +571,69 @@ function init() {
     }, 720);
   });
 
+  // ---- 🧃 THE MERCH CART — the one real thing in the park -----------------
+  // The builder→merch bridge is dead; the cart IS merch's home now. Cards
+  // show YOUR banana; a tap lands on the real PDP with the exact outfit
+  // pre-built via the builder's own interchange params (h/g/ex/e — the same
+  // string the gallery's merch CTAs ride).
+  const CART_AT = { x: MARKET.cart[0], y: MARKET.cart[1] };
+  const browseBtn = document.getElementById('pkBrowse');
+  const merchPanel = document.getElementById('pkMerch');
+  const merchGrid = document.getElementById('pkMerchGrid');
+  let browseShown = false, cartViewTracked = false, sparkleAt = 0;
+  function merchParams() {
+    let o = {};
+    try { o = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e) {}
+    const p = new URLSearchParams();
+    if (o.hat && o.hat !== 'none') p.set('h', o.hat);
+    if (o.glasses && o.glasses !== 'none') p.set('g', o.glasses);
+    const ex = Object.keys(o.extras || {}).filter((k) => o.extras[k]);
+    if (ex.length) p.set('ex', ex.join('.'));
+    if (o.effect && o.effect !== 'none') p.set('e', o.effect);
+    return p.toString();
+  }
+  function openMerch() {
+    const q = merchParams();
+    merchGrid.innerHTML = MERCH_PRODUCTS.map((pr) =>
+      '<a class="pk-mcard pk-mcard--' + pr.key + '" href="/make-a-banana/' + pr.key + '/'
+      + (q ? '?' + q : '') + '" data-product="' + pr.key + '">'
+      + '<span class="pk-mcard__mock"><canvas width="150" height="150" aria-hidden="true"></canvas></span>'
+      + '<span class="pk-mcard__txt"><b>' + pr.name + '</b><i>' + pr.price + '</i></span>'
+      + '<span class="pk-mcard__go" aria-hidden="true">→</span>'
+      + '</a>').join('');
+    // your banana on every card — frame 2, the presenting pose
+    assetsReady().then(() => {
+      merchGrid.querySelectorAll('canvas').forEach((cv) => {
+        drawComposite(cv.getContext('2d'), 150, 2,
+          { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
+      });
+    });
+    merchGrid.querySelectorAll('.pk-mcard').forEach((a) => {
+      a.addEventListener('click', () => { track('stand_cart_click', { product: a.dataset.product }); });
+    });
+    merchPanel.hidden = false;
+    if (!cartViewTracked) { cartViewTracked = true; track('stand_cart_view'); }
+  }
+  browseBtn.addEventListener('click', openMerch);
+  document.getElementById('pkMerchClose').addEventListener('click', () => { merchPanel.hidden = true; });
+  merchPanel.addEventListener('click', (e) => { if (e.target === merchPanel) merchPanel.hidden = true; });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !merchPanel.hidden) merchPanel.hidden = true; });
+  // proximity + the idle ✦ (rides the rAF step, so a hidden tab sparkles nothing)
+  function cartTick(now) {
+    const near = Math.hypot(pos.x - CART_AT.x, pos.y - CART_AT.y) < 110;
+    if (near !== browseShown) { browseShown = near; browseBtn.hidden = !near; }
+    if (now > sparkleAt) {
+      sparkleAt = now + 6500 + Math.random() * 3000;
+      const s = document.createElement('div');
+      s.className = 'pk-sparkle';
+      s.textContent = '✦';
+      s.style.left = pct(CART_AT.x - 45 + Math.random() * 90, W);
+      s.style.top = pct(CART_AT.y - 60 - Math.random() * 55, H);
+      world.appendChild(s);
+      setTimeout(() => s.remove(), 1500);
+    }
+  }
+
   // ---- 🌍 THE WORLD HUD — the refined pill strip, park edition ------------
   const lvlNEl = document.getElementById('pkLvlN');
   const lvlFillEl = document.getElementById('pkLvlFill');
@@ -647,6 +718,7 @@ function init() {
     bflyTick(dt, now);
     squirrels.forEach((s) => sqStep(s, dt));
     tossTick();
+    cartTick(now);
     doorTick();
     parkSendMove(now);
     cam();
