@@ -1411,7 +1411,11 @@ const WEED_POLLINATE = 0.15;       // share of spawns that jump far instead
 const BLOOM_FLOOR = 5;             // launch-era floor (was 15) — properly dead, never hopeless
 const BLOOM_BASE_DRIFT = 0.3;      // per hour, always
 const BLOOM_WEED_DRAG = 0.05;      // per hour, per live weed
-const BLOOM_PULL = 3, BLOOM_WATER = 2, BLOOM_PLANT = 6;
+// ⚠️ retuned 29 Jul post-flip (Trym: "mowing bushes increases the health
+// percentage really fast") — 60 weeds × 3 = +180 meant one mowing session
+// ended the recovery arc. Pulling now mostly STOPS the decay (drag removal);
+// the healing comes from planting/watering/star-feeds over days.
+const BLOOM_PULL = 0.4, BLOOM_WATER = 2, BLOOM_PLANT = 6;
 // 🥚 W2 EGGS — laid near the hens' lawn, first tap wins. Cadence rides the
 // bloom band: below 40 nothing, 40+ rare, 60+ steady, 80+ often; the golden
 // egg only while the park sits at 95+. Rewards resolve server-side.
