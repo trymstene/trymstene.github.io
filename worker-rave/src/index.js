@@ -1299,11 +1299,14 @@ const BLOOM_STAR_FEED = 0.06;
 // top of a 0.4/h base drift; pulls/waterings/plantings push it back up. At
 // 3-5 active visitors/day (~2 pulls + 2 waterings + the odd planting each)
 // the meter holds 60-80; it sinks overnight but floors at 15 — never hopeless.
-const WEED_EVERY = 2 * 3600_000;
-const WEED_CAP = 10;
+// ⚠️ retuned 29 Jul (Trym: "i dont see much weeds on 70% bloom, should be
+// weeds to deal with") — the chore must ALWAYS be on the lawn: 3x faster
+// spawn, bigger cap, per-weed drag softened so total pressure stays sane
+const WEED_EVERY = 40 * 60_000;
+const WEED_CAP = 12;
 const BLOOM_FLOOR = 15;
-const BLOOM_BASE_DRIFT = 0.4;      // per hour, always
-const BLOOM_WEED_DRAG = 0.35;      // per hour, per live weed
+const BLOOM_BASE_DRIFT = 0.3;      // per hour, always
+const BLOOM_WEED_DRAG = 0.14;      // per hour, per live weed
 const BLOOM_PULL = 3, BLOOM_WATER = 2, BLOOM_PLANT = 6;
 // 🥚 W2 EGGS — laid near the hens' lawn, first tap wins. Cadence rides the
 // bloom band: below 40 nothing, 40+ rare, 60+ steady, 80+ often; the golden
