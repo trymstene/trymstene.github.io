@@ -21,6 +21,11 @@ if (bgBtns.length) {
 if (rows.length) init();
 
 function init() {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clockIdx = () => {
+    const cycleMs = BASE_CYCLE_S * 1000;
+    return reduced ? 2 : Math.floor((Date.now() % cycleMs) / (cycleMs / NFRAMES));
+  };
   const pieces = rows.map((row) => {
     const spriteBox = row.querySelector('.dw-sprite');
     const art = row.dataset.art;
@@ -35,17 +40,35 @@ function init() {
       extras: slot === 'extra' ? { [id]: true } : {},
       effect: 'none', top: '', bottom: '',
     };
-    return { ctx: cv.getContext('2d'), outfit };
+    const p = { ctx: cv.getContext('2d'), outfit, paused: false, frame: 0, drawn: -1 };
+    // ⏸/▶ + frame stepping — per tile, OUTSIDE the frame box (Trym's QoL:
+    // hold a dance frame and walk through all 8 to check anchors)
+    const ctrl = row.querySelector('.dw-ctrl');
+    const playBtn = ctrl.querySelector('.dw-play');
+    const frLabel = ctrl.querySelector('.dw-fr');
+    const showFrame = () => { frLabel.textContent = 'frame ' + (p.frame + 1) + '/' + NFRAMES; };
+    playBtn.addEventListener('click', () => {
+      p.paused = !p.paused;
+      if (p.paused) { p.frame = clockIdx(); showFrame(); }
+      ctrl.classList.toggle('is-paused', p.paused);
+      playBtn.textContent = p.paused ? '▶' : '⏸';
+      playBtn.setAttribute('aria-label', p.paused ? 'play' : 'pause');
+    });
+    ctrl.querySelectorAll('.dw-step').forEach((b) => b.addEventListener('click', () => {
+      p.frame = (p.frame + Number(b.dataset.step) + NFRAMES) % NFRAMES;
+      showFrame();
+    }));
+    return p;
   });
 
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let lastIdx = -1;
   function tick() {
-    const cycleMs = BASE_CYCLE_S * 1000;
-    const idx = reduced ? 2 : Math.floor((Date.now() % cycleMs) / (cycleMs / NFRAMES));
-    if (idx !== lastIdx) {
-      lastIdx = idx;
-      for (const p of pieces) drawComposite(p.ctx, 200, idx, p.outfit);
+    const idx = clockIdx();
+    for (const p of pieces) {
+      const want = p.paused ? p.frame : idx;
+      if (want !== p.drawn) {
+        p.drawn = want;
+        drawComposite(p.ctx, 200, want, p.outfit);
+      }
     }
     requestAnimationFrame(tick);
   }
