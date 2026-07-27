@@ -47,7 +47,7 @@ os.makedirs(OUT, exist_ok=True)
 for name, key in [('jelly', 'JELLY'), ('candy', 'CANDY'), ('pizza', 'PIZZA'),
                   ('balloon', 'BALLOON'), ('sauce', 'SAUCE'), ('cable', 'ZAP'),
                   ('fizz', 'FIZZ'), ('peel', 'PEEL'), ('puddle', 'PUDDLE'),
-                  ('monkey', 'MONKEY'), ('stool', 'STOOL')]:
+                  ('monkey', 'MONKEY')]:   # (the stool sprite left the game in a refactor)
     raster(RAVE_SVGS[key]).save(os.path.join(OUT, name + '.png'), optimize=True)
     print('wrote', name + '.png')
 
@@ -55,6 +55,19 @@ for name, key in [('jelly', 'JELLY'), ('candy', 'CANDY'), ('pizza', 'PIZZA'),
 for name in ['boots', 'gel', 'sparkler', 'magnet', 'vhs', 'star']:
     raster(KEYED_SVGS[name]).save(os.path.join(OUT, name + '.png'), optimize=True)
     print('wrote', name + '.png')
+
+
+# quest sprites are MULTI-LINE concatenations ('<svg…' + '<rect…' + …) with
+# comment lines between fragments — join every quoted fragment in the block
+def concat_svg(name):
+    start = RAVE.index("const %s_SVG = " % name)
+    end = RAVE.index("';", start) + 2
+    return ''.join(re.findall(r"'([^']*)'", RAVE[start:end]))
+
+
+for out_name, const in [('jboss', 'JBOSS'), ('breaker', 'BREAKER')]:
+    raster(concat_svg(const)).save(os.path.join(OUT, out_name + '.png'), optimize=True)
+    print('wrote', out_name + '.png')
 
 # engine accessories/props (grid = 10 svg-px per unit — raster handles it,
 # it just scales the viewBox)
