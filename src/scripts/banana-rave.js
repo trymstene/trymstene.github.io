@@ -3713,22 +3713,24 @@ function init() {
           this.club.appendChild(c);
           this.chutes.push({ el: c, x, ty, cy: -8, svg: this.dropped % QBALLOON_SVGS.length, phase: Math.random() * 6.28 });
         }
-        // the ceiling phase: past the LED and the DJ, same px/s as the floor fall
-        const chuteRate = 8.5 * ((floor.clientHeight || 400) / ((this.club && this.club.clientHeight) || 170));
+        // the ceiling phase is a QUICK entrance (v1 pace-matched it to the slow
+        // floor drift — 14 unpoppable balloons hung over the stage for ~9s and
+        // read as a separate "first batch you can't pop", Trym)
+        const chuteRate = 26;
         for (let i = this.chutes.length - 1; i >= 0; i--) {
           const c = this.chutes[i];
           c.cy += chuteRate * dt;
           c.el.style.top = c.cy + '%';
           c.el.style.left = (c.x + Math.sin(now / 480 + c.phase) * 2.2) + '%';
-          if (c.cy >= 104) {
-            // handoff: out of the stage block, into the floor world
+          if (c.cy >= 100) {
+            // handoff AT the floor's visible top — poppable almost immediately
             c.el.remove();
             this.chutes.splice(i, 1);
             const d = document.createElement('div');
             d.className = 'rv-qballoon';
             d.innerHTML = QBALLOON_SVGS[c.svg];
             world.appendChild(d);
-            this.balloons.push({ el: d, x: c.x, tx: c.x, y: -6, ty: c.ty, phase: c.phase });
+            this.balloons.push({ el: d, x: c.x, tx: c.x, y: topClamp - 2, ty: c.ty, phase: c.phase });
           }
         }
         for (const b of this.balloons) {
