@@ -65,11 +65,11 @@ const STAKE_SVG = SVG('7 12',
 
 // 🍌 OLD PEEL — the bench elder by the fountain, the park's ambient
 // commentator. A NORMAL engine banana (drawComposite) LOCKED to the first
-// standing frame — no dancing, too old — wearing the NPC drafts from
-// wearables.js: flat cap, round glasses, white beard, walking cane.
+// standing frame — no dancing, too old — round glasses + walking cane
+// (the cap/beard drafts were dropped; his look is glasses and cane).
 const OLD_NAME = 'old peel';
 const OLD_DRAW = {
-  hat: 'flatcap', glasses: 'potter', extras: { whitebeard: true, oldcane: true },
+  hat: 'none', glasses: 'potter', extras: { oldcane: true },
   top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
 };
 // his lines, a band per phase — grief → worry → cautious hope → warmth →
@@ -228,7 +228,8 @@ const ST_BACKCAT_PRICE = 50;
 // wait on a Trym batch review.
 const SEEDS = [
   { id: 'daisy', emoji: '🌼', name: 'daisy', stars: 1, price: 10, days: 2, wearable: 'daisypin', wearLabel: 'daisy pin' },
-  { id: 'sunflower', emoji: '🌻', name: 'sunflower', stars: 2, price: 25, days: 4, wearable: 'sunflowercrown', wearLabel: 'sunflower crown' },
+  // sunflower wearable TBD (round 4: the crown draft was dropped) — pays rep meanwhile
+  { id: 'sunflower', emoji: '🌻', name: 'sunflower', stars: 2, price: 25, days: 4 },
   { id: 'tulip', emoji: '🌷', name: 'midnight tulip', stars: 3, price: 60, days: 5, wearable: 'midnighttulip', wearLabel: 'midnight tulip', rare: true },
   { id: 'tomato', emoji: '🍅', name: 'tomato', stars: 3, price: 90, days: 4, crop: 1 },
   { id: 'pumpkin', emoji: '🎃', name: 'pumpkin', stars: 4, price: 160, days: 5, crop: 1 },
@@ -1946,7 +1947,7 @@ function init() {
           + '<span class="pk-seedrow__txt"><b>' + sd.name + (sd.rare ? ' <em>rare</em>' : '') + '</b>'
           + '<small>' + starStr(sd.stars) + ' · ' + sd.days + ' days → '
           + (locked ? '🔒 gardener lvl ' + lvlFor2(sd)
-            : sd.crop ? '+' + (sd.stars * 8) + ' rep' : 'the ' + sd.wearLabel) + '</small></span>'
+            : sd.wearable ? 'the ' + sd.wearLabel : '+' + (sd.stars * 8) + ' rep') + '</small></span>'
           + coinChip(sd.price) + '</button>';
       }).join('')
       + (bal < SEEDS[0].price ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
@@ -1993,8 +1994,8 @@ function init() {
       + '<p class="pk-gwater">💧 watered by ' + (s.waterers || 0) + ' visitor' + (s.waterers === 1 ? '' : 's') + '</p>'
       + (ready ? '' : '<button class="pk-btn pk-gbtn" id="pkWaterBtn" type="button">💧 water it'
         + (mine ? '' : ' <small>+2 rep</small>') + '</button>')
-      + (mine ? '<p class="pk-gsaved">' + (sd.crop
-        ? '🌾 harvest pays +' + (sd.stars * 8) + ' rep' : '💾 saved to your pass') + '</p>' : '');
+      + (mine ? '<p class="pk-gsaved">' + (sd.wearable
+        ? '💾 saved to your pass' : '🌾 harvest pays +' + (sd.stars * 8) + ' rep') + '</p>' : '');
     const wb = document.getElementById('pkWaterBtn');
     if (wb) wb.addEventListener('click', () => waterSlot(i));
     gardenPanel.hidden = false;
@@ -2035,7 +2036,7 @@ function init() {
     const before = gardenerLvl().lvl;
     passStat('garden_harvests', 1);      // the gardener level's ledger
     confettiAt(PLOTS[i][0], PLOTS[i][1]);
-    if (sd.crop) {                       // crops pay rep by stars — never coins
+    if (!sd.wearable) {                  // no wearable → rep by stars, never coins
       passStat('rep', sd.stars * 8);
       refreshHud();
       float(PLOTS[i][0], PLOTS[i][1] - 20, '+' + (sd.stars * 8));
