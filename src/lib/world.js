@@ -17,12 +17,16 @@ export function seedRand(n) {
 // The claimed-window key `bc-win` is shared, so a window caught anywhere is
 // caught everywhere (no double-dipping). Rooms roll their OWN spot salts.
 export const COIN_TEST = typeof location !== 'undefined' && location.search.includes('cointest');
-export const COIN_PERIOD = COIN_TEST ? 30 : 240;
+// ⚠️ retuned 29 Jul (Trym, HQ ledger read: "theres actually a shortage of
+// coins") — 240min windows at EV 1.6 paid a daily visitor ~2-3 coins against
+// 10-300 coin sinks. Hourly windows at EV ~4.8 → an active day pays 5-15:
+// snail hat in 2-3 days, squid in ~2 weeks, golden wheat = a real saga.
+export const COIN_PERIOD = COIN_TEST ? 30 : 60;
 export const COIN_WAIT = COIN_TEST ? 24 : 18;
 export const COIN_OFFSET = 150;
-export function coinAmountFor(w) { // 70% one / 25% three / 5% five
+export function coinAmountFor(w) { // 60% three / 30% six / 10% twelve
   const r = seedRand(0xc01e * 7 + w);
-  return r < 0.70 ? 1 : r < 0.95 ? 3 : 5;
+  return r < 0.60 ? 3 : r < 0.90 ? 6 : 12;
 }
 
 // the world-wide per-browser session id (localStorage key `park-sid` — the
