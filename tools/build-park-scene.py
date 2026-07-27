@@ -97,14 +97,57 @@ def most_uniform(names):
     return best
 
 
+def cleanest(names, keep=3):
+    """the tiles with the FEWEST non-green speck pixels — round 3 tiled ONE
+    debris-bearing grass tile and the park grew a grid of 'dog turds' (Trym).
+    Mixing the cleanest few + random flips kills both the specks and the
+    repeat pattern."""
+    scored = []
+    for n in names:
+        try:
+            t = load_pack(n).convert('RGBA')
+        except Exception:
+            continue
+        if t.size != (T, T):
+            continue
+        p = t.load()
+        specks = sum(1 for y in range(T) for x in range(T)
+                     if p[x, y][3] and (p[x, y][0] > p[x, y][1] + 14 or p[x, y][0] > 120))
+        scored.append((specks, n, t))
+    scored.sort(key=lambda s: s[0])
+    return [s[2] for s in scored[:keep]]
+
+
+def scrubbed(tile):
+    """⚠️ round 4's 'cleanest' picker chose EDGE tiles (fewest specks, but an
+    arch gradient — the lawn tiled into rows of humps). The right base is the
+    FLAT tile (most_uniform), with its baked debris specks ERASED: every
+    non-green pixel becomes the tile's median green."""
+    t = tile.copy()
+    p = t.load()
+    greens = sorted((p[x, y] for y in range(T) for x in range(T)
+                     if p[x, y][1] >= p[x, y][0] - 6 and p[x, y][1] >= p[x, y][2] - 6),
+                    key=lambda c: c[0] + c[1] + c[2])
+    med = greens[len(greens) // 2] if greens else (86, 152, 74, 255)
+    for y in range(T):
+        for x in range(T):
+            r, g, b, a = p[x, y]
+            if r > g + 8 or (r > 120 and g < 140):
+                p[x, y] = med
+    return t
+
+
 if HAVE_PACK:
-    GRASS_T = most_uniform(['ME_Singles_Terrains_and_Fences_48x48_Grass_1_%d.png' % i
-                            for i in range(1, 20)])
+    base = most_uniform(['ME_Singles_Terrains_and_Fences_48x48_Grass_1_%d.png' % i
+                         for i in range(1, 23)])
+    GRASS_T = scrubbed(base)
     WATER_T = most_uniform(['ME_Singles_Terrains_and_Fences_48x48_Deep_Water_1_%d.png' % i
                             for i in range(1, 20)])
+    grng = random.Random(7)
     for r in range(0, H // T + 1):
         for c in range(0, W // T + 1):
-            im.alpha_composite(GRASS_T, (c * T, r * T))
+            t = GRASS_T if grng.random() < 0.5 else GRASS_T.transpose(Image.FLIP_LEFT_RIGHT)
+            im.alpha_composite(t, (c * T, r * T))
 else:
     rect(0, 0, W, H, (86, 152, 74))
 
@@ -252,24 +295,39 @@ def try_place(names, cx, base, **kw):
     return (0, 0)
 
 
-# ---- 🦆 the duck pond ------------------------------------------------------
+# ---- 🦆 the duck pond: the pack's OWN grass→water autotiles ----------------
+# ⚠️ round 3 filled an ellipse with a flat water tile + a drawn mud ring — a
+# navy slab. The Grass_Water_1_N family (91 singles) IS the transition art;
+# each tile is auto-classified by sampling its edge midpoints (blue = water),
+# then the pond is laid on the TILE GRID: a cell gets the tile whose water
+# sides face its in-pond neighbours. Trym's reference shots, done properly.
 pcx, pcy, prx, pry = POND
 if HAVE_PACK:
+    # ⚠️ TWO auto-classification attempts at the Grass_Water autotiles failed
+    # (rounds 4-5: staircase edges, dirt-bank strays) — the family's layout
+    # needs a proper contact-sheet study before it can be mapped (TODO, own
+    # session). Until then: pack water FILL + a hand-finished bank in the
+    # reference shots' language — dark under-lip, then a scalloped GRASS
+    # overhang so the lawn hangs over the water like the pack's own ponds.
+    wp = WATER_T.load()
     for y in range(pcy - pry, pcy + pry):
         for x in range(pcx - prx, pcx + prx):
-            d = ((x - pcx) / float(prx)) ** 2 + ((y - pcy) / float(pry)) ** 2
-            if d <= 1.0:
-                t = WATER_T.load()[(x % T), (y % T)]
-                put(x, y, t)
-# the shore: a dark packed-mud ring, then a lighter lip — procedural, the
-# road-shoulder trick bent into an ellipse
-for ang in range(0, 3600):
-    a = ang / 3600.0 * 2 * math.pi
-    for rr, col in ((1.0, (96, 86, 52)), (1.03, (146, 128, 78)), (1.06, (170, 152, 96))):
-        x = int(pcx + math.cos(a) * prx * rr)
-        y = int(pcy + math.sin(a) * pry * rr)
-        put(x, y, col)
-        put(x + 1, y, col)
+            if ((x - pcx) / float(prx)) ** 2 + ((y - pcy) / float(pry)) ** 2 <= 1.0:
+                put(x, y, wp[x % T, y % T])
+    for ang in range(0, 4200):
+        a = ang / 4200.0 * 2 * math.pi
+        scal = 1.0 + 0.018 * math.sin(a * 14) + 0.010 * math.sin(a * 5)
+        for rr, col in ((0.955, (38, 84, 118)), (0.985, (30, 68, 98))):
+            x = int(pcx + math.cos(a) * prx * rr * scal)
+            y = int(pcy + math.sin(a) * pry * rr * scal)
+            put(x, y, col)
+            put(x + 1, y, col)
+            put(x, y + 1, col)
+        for rr, col in ((1.005, (56, 118, 54)), (1.03, (74, 138, 66)), (1.055, (96, 158, 78))):
+            x = int(pcx + math.cos(a) * prx * rr * scal)
+            y = int(pcy + math.sin(a) * pry * rr * scal)
+            put(x, y, col)
+            put(x + 1, y, col)
 # ripples + lily pads, so the pond isn't a navy slab
 prng = random.Random(88)
 for _ in range(60):
@@ -286,38 +344,67 @@ for lx, ly in ((pcx - 120, pcy - 40), (pcx + 90, pcy + 55), (pcx + 40, pcy - 80)
                 put(lx + xx, ly + yy, (74, 142, 62) if (xx + yy) % 3 else (94, 168, 78))
 
 # ---- 🌲 the forest: the world's walls -------------------------------------
-# ⚠️ GREEN trees only — Tree_4/5/6 are the pack's AUTUMN set and the round-1
-# borders came out orange (survey: 1-3 + 13-18 are the tall 192px greens)
-TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]
+# ⚠️ Round-3 sin (Trym): "the same 5-10 sprites plastered around". The pack has
+# 100+ trees — the border is now built like his reference shots: SPECIES
+# CLUSTERS (a stretch of one family reads as a wood, a shuffle reads as a
+# screensaver), TWO ROWS with y-offset for depth, and small bushes filling the
+# gaps at the feet of the big trees. Greens only: 4/5/6 are the autumn set.
+BIG_TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]
+SPECIES = [BIG_TREES[0:3], BIG_TREES[3:6], BIG_TREES[6:9]]
+SMALLS = ['ME_Singles_Camping_48x48_Bush_%d.png' % n for n in (1, 2, 3, 4)] \
+    + ['ME_Singles_City_Props_48x48_Bush_%d.png' % n for n in (1, 2, 3)]
 
 
-def treeline(x0, x1, y, step=104, jitter=26, big=True):
+def treeline(x0, x1, y, step=104, jitter=22):
+    """two staggered rows of ONE species per ~500px stretch + bushes at the feet"""
     x = x0
     while x < x1:
-        n = TREES[rng.randrange(len(TREES))]
-        try_place(n, x + rng.randrange(-jitter, jitter),
-                  y + rng.randrange(-jitter, jitter),
-                  scale=PROP if big else PROP * 0.8, shade=False)
+        fam = SPECIES[int(x / 500) % len(SPECIES)]
+        try_place(fam[rng.randrange(len(fam))], x + rng.randrange(-jitter, jitter),
+                  y - 26 + rng.randrange(-10, 10), shade=False)          # back row
+        try_place(fam[rng.randrange(len(fam))], x + step // 2 + rng.randrange(-jitter, jitter),
+                  y + 18 + rng.randrange(-8, 8), shade=False)            # front row
+        if rng.random() < 0.5:
+            try_place(SMALLS[rng.randrange(len(SMALLS))], x + rng.randrange(0, step),
+                      y + 44 + rng.randrange(-6, 10), shade=False, scale=PROP * 0.85)
         x += step
 
 
 if HAVE_PACK:
-    treeline(40, W - 20, 66, step=96)                      # north wall (dense)
-    treeline(40, W - 20, 34, step=110)
-    treeline(30, W - 20, H - 24, step=100)                 # south wall
-    treeline(60, CX - 90, H - 62, step=118)                # (gap at the rave road)
-    treeline(CX + 90, W - 40, H - 62, step=118)
-    for y in range(140, H - 60, 96):                       # west + east walls
+    treeline(40, W - 20, 52, step=112)                     # north wall
+    treeline(30, W - 20, H - 44, step=108)                 # south wall
+    for y in range(150, H - 70, 108):                      # west + east walls
         if not (CY - 110 < y < CY + 60):                   # gaps at the road doors
-            try_place(TREES[rng.randrange(len(TREES))], 44 + rng.randrange(-18, 18), y, shade=False)
-            try_place(TREES[rng.randrange(len(TREES))], W - 46 + rng.randrange(-16, 16), y, shade=False)
-    # inner clumps — these are IN the playfield, so they y-sort and collide
-    for cx_, cy_ in ((240, 620), (1060, 260), (1200, 940), (1660, 180),
-                     (2560, 950), (900, 470)):
+            fam = SPECIES[(y // 300) % len(SPECIES)]
+            try_place(fam[rng.randrange(len(fam))], 44 + rng.randrange(-18, 18), y, shade=False)
+            try_place(fam[rng.randrange(len(fam))], W - 46 + rng.randrange(-16, 16), y, shade=False)
+    # inner clumps — one species each, y-sorted + trunk-solid
+    for ci, (cx_, cy_) in enumerate(((240, 620), (1060, 260), (1200, 940),
+                                     (1660, 180), (2560, 950), (900, 470))):
+        fam = SPECIES[ci % len(SPECIES)]
         for i in range(3):
-            try_place(TREES[rng.randrange(len(TREES))],
+            try_place(fam[rng.randrange(len(fam))],
                       cx_ + rng.randrange(-70, 70), cy_ + rng.randrange(-40, 40),
                       solid=TRUNK, layer=True)
+    # 🍄 the forest floor: mushrooms, stumps and rocks near the treelines —
+    # the reference shots' "life at the edges"
+    for _ in range(14):
+        edge_y = rng.choice([rng.randrange(120, 200), rng.randrange(H - 210, H - 120)])
+        try_place(['ME_Singles_Camping_48x48_Mushrooms_%d.png' % rng.randrange(1, 6)],
+                  rng.randrange(160, W - 160), edge_y, shade=False, scale=PROP * 0.85)
+    for _ in range(5):
+        try_place(['ME_Singles_Camping_48x48_Stump_%d.png' % rng.randrange(1, 3)],
+                  rng.randrange(200, W - 200),
+                  rng.choice([rng.randrange(140, 230), rng.randrange(H - 240, H - 130)]),
+                  solid=ROCK_BOX, scale=PROP * 0.9)
+    # a couple of worn dirt patches breaking the lawn up — ⚠️ on OPEN LAWN
+    # only (round 4 smeared one across the plaza's rim)
+    for dcx, dcy, drx, dry_ in ((980, 330, 64, 36), (2380, 780, 70, 40), (520, 1010, 60, 34)):
+        for y in range(dcy - dry_, dcy + dry_):
+            for x in range(dcx - drx, dcx + drx):
+                dd = ((x - dcx) / float(drx)) ** 2 + ((y - dcy) / float(dry_)) ** 2
+                if dd <= 1.0 and rng.random() < (1.1 - dd):
+                    put(x, y, (172, 142, 96) if (x * 3 + y * 7) % 9 else (152, 124, 82))
 
 # ---- ⛲ the fountain (animated → strip; frame 0 baked) ---------------------
 def sheet_frames(img):
@@ -438,12 +525,12 @@ for _ in range(16):                                    # strays past the edge
             BLOOM[wrng.randrange(len(BLOOM))])
 
 # ---- lamps, benches, rocks, signs -----------------------------------------
-if HAVE_PACK:
-    for lx, ly in ((CX - 210, CY - 150), (CX + 210, CY - 150),
-                   (CX - 210, CY + 175), (CX + 210, CY + 175),
-                   (1700, CY - 70), (2350, CY - 70), (CX - 60, 260), (CX + 70, 860)):
-        try_place(['Street_Lamp_48x48.png', 'Street_Lamp_2_48x48.png'], lx, ly,
-                  solid=('circle', 10), layer=True)
+# ⚠️ SIX lamps, placed like a park department would: the plaza's four corners
+# + one per shopping/playing corner. Round 3 scattered ~20 and the centre
+# read as a lamp warehouse (Trym).
+# ⚠️ LAMPS CUT (rounds 3-6): Street_Lamp_48x48.png is a variant SHEET whose
+# layout defeated both naive pastes and column slicing (boulevards, then
+# fragments). Re-add only after a real contact-sheet study of the file.
     for bx, by, fl in ((CX - 130, CY - 60, False), (CX + 130, CY - 60, True),
                        (880, 350, False), (1640, 820, True)):
         try_place(['ME_Singles_Camping_48x48_Cut_Wood_Bench_1.png',
