@@ -137,17 +137,109 @@ def scrubbed(tile):
     return t
 
 
+def tile_stats(t):
+    """(specks, edge, texture): red-speck count, top/bottom+left/right mean
+    drift (high = an autotile EDGE tile — those tiled into arch rows in round
+    4), and inner variance (the actual blade detail we WANT)."""
+    p = t.load()
+    specks = sum(1 for y in range(0, T, 2) for x in range(0, T, 2)
+                 if p[x, y][0] > p[x, y][1] + 8)
+    rm = lambda y: sum(p[x, y][1] for x in range(T)) / float(T)
+    cm = lambda x: sum(p[x, y][1] for y in range(T)) / float(T)
+    edge = abs(rm(2) - rm(T - 3)) + abs(cm(2) - cm(T - 3))
+    vals = [p[x, y][1] for y in range(0, T, 3) for x in range(0, T, 3)]
+    mean = sum(vals) / float(len(vals))
+    tex = sum((v - mean) ** 2 for v in vals) / float(len(vals))
+    return specks, edge, tex
+
+
 if HAVE_PACK:
-    base = most_uniform(['ME_Singles_Terrains_and_Fences_48x48_Grass_1_%d.png' % i
-                         for i in range(1, 23)])
-    GRASS_T = scrubbed(base)
+    # ⚠️ contact-sheet study (round 8): the pack's REAL lawn texture is the
+    # Grass_Wall_1 family — dense leafy blades, zero debris. The Grass_1..4
+    # families are grass-vs-dirt AUTOTILES whose only full-grass members are
+    # the flat fills that read "very simple" (Trym). Flowered variants of the
+    # same texture become sparse accents.
+    def fam_tiles(fam, hi):
+        out = []
+        for i in range(1, hi):
+            try:                                       # GARDEN singles, not
+                t = load_pack('ME_Singles_Garden_48x48_%s_%d.png' % (fam, i)).convert('RGBA')
+            except Exception:                          # Terrains_and_Fences
+                continue
+            if t.size == (T, T):
+                sp, ed, tx = tile_stats(t)
+                out.append((ed, t))
+        return out
+
+    # ⚠️ the Grass_Wall/Flowered families are ALL hedge-wall pieces (shadow
+    # columns, burrow holes — they striped then polka-dotted the lawn). The
+    # pack's OWN scenes build lawns as flat base + scattered life, so: flat
+    # clean base + Grass_Tufts + Props_Grass patches + lifted flower pixels.
+    cand = []
+    for fam, hi in (('Grass_1', 23), ('Grass_2', 22), ('Grass_3', 22)):
+        for i in range(1, hi):
+            try:
+                t = load_pack('ME_Singles_Terrains_and_Fences_48x48_%s_%d.png' % (fam, i)).convert('RGBA')
+            except Exception:
+                continue
+            if t.size != (T, T):
+                continue
+            sp, ed, tx = tile_stats(t)
+            if sp <= 4 and ed < 10:
+                cand.append((tx, t))
+    cand.sort(key=lambda c: -c[0])
+    GRASSES = [scrubbed(t) for _, t in cand[:3]] or [Image.new('RGBA', (T, T), (86, 152, 74, 255))]
+    FLOWER_STAMPS = []
+    for ed, t in fam_tiles('Grass_Wall_1_Flowered', 15):
+        p = t.load()
+        st = [(x, y, p[x, y]) for y in range(T) for x in range(T)
+              if p[x, y][3] and sum(p[x, y][:3]) > 330
+              and not (p[x, y][1] > p[x, y][0] and p[x, y][1] > p[x, y][2])]
+        if 6 < len(st) < 260:
+            FLOWER_STAMPS.append(st)
+    print('grass: %d flat base, %d flower stamps' % (len(GRASSES), len(FLOWER_STAMPS)))
     WATER_T = most_uniform(['ME_Singles_Terrains_and_Fences_48x48_Deep_Water_1_%d.png' % i
                             for i in range(1, 20)])
     grng = random.Random(7)
     for r in range(0, H // T + 1):
         for c in range(0, W // T + 1):
-            t = GRASS_T if grng.random() < 0.5 else GRASS_T.transpose(Image.FLIP_LEFT_RIGHT)
+            t = GRASSES[grng.randrange(len(GRASSES))]
+            if grng.random() < 0.5:
+                t = t.transpose(Image.FLIP_LEFT_RIGHT)
             im.alpha_composite(t, (c * T, r * T))
+    # the LIFE pass, all off the tile grid so nothing reads as a pattern:
+    # tufts everywhere, soft green patches, loose flower clusters
+    try:
+        TUFT = load_pack('ME_Singles_Graveyard_48x48_Grass_Tufts.png').convert('RGBA')
+        tp = TUFT.load()          # graveyard tufts are dead-grey — retint to
+        for y in range(TUFT.height):                    # lawn greens by luma
+            for x in range(TUFT.width):
+                r0, g0, b0, a0 = tp[x, y]
+                if a0:
+                    k = (0.3 * r0 + 0.6 * g0 + 0.1 * b0) / 120.0
+                    tp[x, y] = (int(min(255, 62 * k)), int(min(255, 128 * k)),
+                                int(min(255, 56 * k)), a0)
+    except Exception:
+        TUFT = None
+    PATCHES = []
+    for i in (1, 2, 3, 8, 9):      # green patches ONLY — 12/13 are orange
+        try:
+            PATCHES.append(load_pack('ME_Singles_Terrains_and_Fences_48x48_Props_Grass_%d.png' % i).convert('RGBA'))
+        except Exception:
+            pass
+    for _ in range(70):
+        if not PATCHES:
+            break
+        pt = PATCHES[grng.randrange(len(PATCHES))]
+        im.alpha_composite(pt, (grng.randrange(20, W - 60), grng.randrange(20, H - 60)))
+    if TUFT:
+        for _ in range(340):
+            t2 = TUFT.transpose(Image.FLIP_LEFT_RIGHT) if grng.random() < 0.5 else TUFT
+            im.alpha_composite(t2, (grng.randrange(10, W - 58), grng.randrange(10, H - 58)))
+    for _ in range(34):
+        ox, oy = grng.randrange(60, W - 100), grng.randrange(60, H - 100)
+        for x, y, col in FLOWER_STAMPS[grng.randrange(len(FLOWER_STAMPS))] if FLOWER_STAMPS else []:
+            put(ox + x, oy + y, col)
 else:
     rect(0, 0, W, H, (86, 152, 74))
 
@@ -285,15 +377,10 @@ for y in range(CY - PLAZA_RY, CY + PLAZA_RY):
             j = frng.randrange(-8, 9)
             flag_tone[fk] = (PAVE[0] + j, PAVE[1] + j, PAVE[2] + j)
         put(x, y, PAVE_J if (x % 30 < 2 or y % 30 < 2) else flag_tone[fk])
-# entry aprons: wherever a lane's mask reaches into the plaza's outer band,
-# re-paint it road-coloured so each path flows into the circle at ITS OWN
-# angle (the old compass aprons assumed dead-straight roads)
-for y in range(CY - PLAZA_RY, CY + PLAZA_RY):
-    row = y * W
-    for x in range(CX - PLAZA_RX, CX + PLAZA_RX):
-        d = ((x - CX) / float(PLAZA_RX)) ** 2 + ((y - CY) / float(PLAZA_RY)) ** 2
-        if 0.62 <= d <= 1.0 and _road_mask[row + x] >= 5:
-            put(x, y, ROAD_S if (x * 7 + y * 13) % 11 == 0 else ROAD)
+# ⚠️ NO entry aprons: the circle OVERFLOWS the roads (Trym round 8 — the
+# apron re-paint made lanes "stop weird in the middle of the circle"). Lanes
+# start inside the ellipse and the plaza, painted after road_bake, buries
+# them; each path now dies cleanly at the rim.
 
 # ---- the object layer -----------------------------------------------------
 _cache = {}
@@ -486,7 +573,9 @@ if HAVE_PACK:
         strip = strip.resize((sw * n, int(sheet.height * PROP)), Image.NEAREST)
         strip.save(os.path.join(OUT, 'a-fountain.png'), optimize=True)
         f0 = strip.crop((0, 0, sw, strip.height))
-        fx, fbase = CX, CY + int(strip.height * 0.42)
+        # base at CY + ~14% of height puts the BASIN's centre on the plaza's
+        # centre (0.42 hung the whole statue low — Trym round 8)
+        fx, fbase = CX, CY + int(strip.height * 0.14)
         shadow(fx, fbase - 6, sw * 0.42, 10)
         im.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
         COLLIDERS.append(('fountain', ('circle', int(sw * 0.36)), fx, fbase - 20))
@@ -605,10 +694,9 @@ for i in range(0, len(ROAD_SPINE), 120):
 # fragments). Re-add only after a real contact-sheet study of the file.
 if HAVE_PACK:
     # benches live at the bends — a seat wherever the path turns and the view
-    # changes (plaza pair + west bend over the pond spur + east-road dip +
-    # south bend by the playground spur)
-    for bx, by, fl in ((CX - 130, CY - 60, False), (CX + 130, CY - 60, True),
-                       (768, 502, False), (1822, 618, True), (1285, 862, False)):
+    # changes. ⚠️ NONE inside the plaza: the log benches read as tree stumps
+    # on the pavement (Trym round 8).
+    for bx, by, fl in ((768, 502, False), (1822, 618, True), (1285, 862, False)):
         try_place(['ME_Singles_Camping_48x48_Cut_Wood_Bench_1.png',
                    'ME_Singles_Camping_48x48_Cut_Wood_Bench_2.png'],
                   bx, by, flip=fl, solid=BENCH_BOX)
