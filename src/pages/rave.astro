@@ -1232,8 +1232,10 @@ const GUIDE = [
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
     }
     .rv-qballoon svg { width: 100%; height: auto; display: block; }
-    /* the ceiling phase: falling INSIDE the stage block, over the LED + DJ */
-    .rv-qballoon--chute { z-index: 30; }
+    /* the ceiling phase: falling INSIDE the stage block, over the LED + DJ.
+       will-change keeps the fall composited — phones dropped frames on the
+       repaint path and the fall read as steps, not a glide */
+    .rv-qballoon--chute { z-index: 30; will-change: left, top; }
     /* 📸 PHOTO TIME: a taped frame ON the floor tiles (z under the dancers),
        the camera flash, and the LED slide that shows tonight's photo */
     .rv-photoframe {
