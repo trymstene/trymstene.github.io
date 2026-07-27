@@ -149,7 +149,10 @@ const EGG_LINES = [
   'the flock is thriving — at full bloom an egg can come out GOLDEN.',
 ];
 
-// 🌸 the bloom card's five honest phase lines — dead → perfect
+// 🌸 the bloom card IS the bar (Trym): five tappable phase segments, a
+// glyph each, wilted→lush ramp; a tap reveals that phase's line below
+const PHASE_GLYPHS = ['💀', '🍂', '🌱', '🌿', '🦋'];
+// the five honest phase lines — dead → perfect
 const PHASE_LINES = [
   '💀 the park is dead. dust, straw and bare branches.',
   '🍂 wilting badly — the straw is winning.',
@@ -1219,17 +1222,31 @@ function init() {
     tgt.y = e.y + 22;
     return true;
   }
+  // the card is mostly BAR: five phase segments, each its own fill slice,
+  // the live phase ringed; tapping a segment reveals that phase's lines
   bloomBtn.addEventListener('click', () => {
     const n = weeds.size;
+    const v = Math.max(0, bloomV);
     gardenBody.innerHTML = '<h2>🌸 the bloom</h2>'
-      + '<p class="pk-panel__sub">the park’s health — shared by everyone in it.</p>'
-      + '<div class="pk-bloombar"><i style="width:' + Math.max(0, bloomV) + '%"></i></div>'
-      + '<p class="pk-bloomnum">' + Math.max(0, bloomV) + '%'
-      + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : ' · no weeds right now') + '</p>'
-      + (phase >= 0 ? '<p class="' + (phase <= 1 ? 'pk-wilting' : 'pk-bloomnum') + '">'
-        + PHASE_LINES[phase] + '</p>' : '')
-      + (phase >= 0 ? '<p class="pk-panel__sub">' + EGG_LINES[phase] + '</p>' : '')
-      + '<p class="pk-panel__sub">weeds drag the park down. pull them. plant things. water what grows. the park remembers.</p>';
+      + '<div class="pk-bsegs">' + PHASE_GLYPHS.map((g, i) =>
+        '<button class="pk-bseg pk-bseg--' + i + (i === phase ? ' is-now' : '') + '" type="button"'
+        + ' data-p="' + i + '" aria-label="bloom phase ' + (i + 1) + ' of 5">'
+        + '<i style="width:' + Math.round(Math.max(0, Math.min(1, (v - PHASE_STARTS[i]) / 20)) * 100) + '%"></i>'
+        + '<span>' + g + '</span></button>').join('') + '</div>'
+      + '<p class="pk-bloomnum">' + v + '%'
+      + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : '') + '</p>'
+      + '<p id="pkBexp"></p><p class="pk-bexp--sub" id="pkBexp2"></p>';
+    const exp = document.getElementById('pkBexp'), exp2 = document.getElementById('pkBexp2');
+    const show = (i) => {
+      exp.className = 'pk-bexp' + (i <= 1 ? ' pk-bexp--sad' : '');
+      exp.textContent = PHASE_LINES[i];
+      exp2.textContent = EGG_LINES[i];
+      gardenBody.querySelectorAll('.pk-bseg').forEach((b) => b.classList.toggle('is-open', +b.dataset.p === i));
+    };
+    gardenBody.querySelectorAll('.pk-bseg').forEach((b) => {
+      b.addEventListener('click', () => show(+b.dataset.p));
+    });
+    show(Math.max(0, phase));
     gardenPanel.hidden = false;
   });
   function applyGarden(res) {

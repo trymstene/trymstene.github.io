@@ -58,7 +58,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       image-rendering: pixelated;
       opacity: 0; transition: opacity 0.8s ease;
     }
-    .pk-wilting { margin: 0 0 0.7rem; font-size: 0.8rem; font-weight: 800; color: #c9913a; }
     /* ⛲ the fountain — 6-frame strip; end = 100% × 6 / 5 (the stepping rule) */
     .pk-fountain {
       position: absolute; transform: translate(-50%, -100%); pointer-events: none;
@@ -418,11 +417,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-whud__bloom.is-mid b { color: #ffb347; }
     .pk-whud__bloom.is-low b { color: #9a9aa8; }
     .pk-whud__bloom.is-low { opacity: 0.8; }
-    .pk-bloombar {
-      height: 12px; border: 2px solid #000; background: #182a16;
-      border-radius: 6px; overflow: hidden; margin: 0.2rem 0 0.35rem;
+    /* the bloom card's segmented bar — five phase bands, wilted→lush ramp;
+       each segment carries its own fill slice, the live phase is ringed,
+       a tap opens that phase's line. ≥40px tall = a real tap target. */
+    .pk-bsegs { display: flex; gap: 3px; margin: 0.55rem 0 0.45rem; }
+    .pk-bseg {
+      position: relative; flex: 1; height: 44px; appearance: none; font: inherit;
+      cursor: pointer; background: #182a16; border: 2px solid #000; border-radius: 6px;
+      padding: 0; overflow: hidden; display: grid; place-items: center;
     }
-    .pk-bloombar i { display: block; height: 100%; background: linear-gradient(90deg, #4d9e4a, #8de08d); transition: width 0.4s ease; }
+    .pk-bseg i { position: absolute; left: 0; top: 0; bottom: 0; }
+    .pk-bseg--0 i { background: #8d8d99; }
+    .pk-bseg--1 i { background: #c9913a; }
+    .pk-bseg--2 i { background: #c0b652; }
+    .pk-bseg--3 i { background: #7cc465; }
+    .pk-bseg--4 i { background: #8de08d; }
+    .pk-bseg span { position: relative; z-index: 2; font-size: 15px; line-height: 1; filter: grayscale(0.5); opacity: 0.7; }
+    .pk-bseg.is-now { border-color: #ffe135; }
+    .pk-bseg.is-now span, .pk-bseg.is-open span { filter: none; opacity: 1; }
+    .pk-bseg.is-open { box-shadow: inset 0 0 0 2px rgba(255, 253, 245, 0.55); }
+    .pk-bexp { margin: 0 0 0.2rem; font-size: 0.8rem; font-weight: 800; color: #8de08d; }
+    .pk-bexp--sad { color: #c9913a; }
+    .pk-bexp--sub { margin: 0; font-size: 0.74rem; opacity: 0.85; }
     .pk-bloomnum { margin: 0 0 0.7rem; font-size: 0.8rem; font-weight: 800; color: #8de08d; }
     .pk-gwater { margin: 0 0 0.6rem; font-size: 0.78rem; color: #7db9ff; font-weight: 800; }
     .pk-gbtn { width: 100%; border: 3px solid #000; background: #7db9ff; color: #10240f;
