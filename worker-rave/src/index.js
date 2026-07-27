@@ -891,6 +891,32 @@ export class ParkRoom {
       weedsDirty = true;
     }
     if (now >= wd.nextAt) { wd.nextAt = now + WEED_EVERY; weedsDirty = true; }
+    // 🥚 W2 EGGS ride the same lazy read: expire the stale, lay by bloom band
+    const eg = (await this.state.storage.get('eggs')) || { list: [], nextAt: 0 };
+    let eggsDirty = false;
+    const alive = eg.list.filter((e) => now - e.bornAt < EGG_TTL);
+    if (alive.length !== eg.list.length) { eg.list = alive; eggsDirty = true; }
+    const eggEvery = bl.v >= 80 ? EGG_EVERY_4 : bl.v >= 60 ? EGG_EVERY_3 : bl.v >= 40 ? EGG_EVERY_2 : 0;
+    if (!eggEvery) {
+      if (eg.nextAt) { eg.nextAt = 0; eggsDirty = true; }   // park too sad to lay
+    } else if (!eg.nextAt) {
+      eg.nextAt = now + eggEvery;
+      eggsDirty = true;
+    } else if (now >= eg.nextAt) {
+      if (eg.list.length < EGG_CAP) {
+        const taken = new Set(eg.list.map((e) => e.x + ',' + e.y));
+        const free = EGG_SPOTS.filter((sp) => !taken.has(sp[0] + ',' + sp[1]));
+        if (free.length) {
+          const sp = free[Math.floor(Math.random() * free.length)];
+          eg.list.push({
+            id: crypto.randomUUID().slice(0, 8), x: sp[0], y: sp[1],
+            ...(bl.v >= EGG_GOLD_AT ? { g: 1 } : {}), bornAt: now,
+          });
+        }
+      }
+      eg.nextAt = now + eggEvery;
+      eggsDirty = true;
+    }
     const strip = (s) => (s ? {
       passShort: s.passShort, name: s.name, seed: s.seed,
       plantedAt: s.plantedAt, lastWater: s.lastWater,
@@ -900,15 +926,17 @@ export class ParkRoom {
       slots: slots.map(strip),
       bloom: Math.round(bl.v),
       weeds: wd.list.map((w2) => ({ id: w2.id, x: w2.x, y: w2.y })),
+      eggs: eg.list.map((e) => ({ id: e.id, x: e.x, y: e.y, ...(e.g ? { g: 1 } : {}) })),
       ...extra,
     });
     const persist = async () => {
       await this.state.storage.put('garden', slots);
       await this.state.storage.put('weeds', wd);
       await this.state.storage.put('bloom', bl);
+      await this.state.storage.put('eggs', eg);
     };
     if (url.pathname === '/garden' && request.method !== 'POST') {
-      if (dirty || weedsDirty || decayed) await persist();
+      if (dirty || weedsDirty || decayed || eggsDirty) await persist();
       return json(payload());
     }
     let b = null;
@@ -917,6 +945,17 @@ export class ParkRoom {
     const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
     const short = pass.slice(0, 8);
     if (!short) return json({ err: 'bad pass' }, 400);
+    // 🥚 first tap wins (the rave-drop pattern) — the egg's removal IS the verdict
+    if (url.pathname === '/garden/egg') {
+      const ei = eg.list.findIndex((e) => e.id === b.id);
+      if (ei < 0) return json(payload({ err: 'gone' }), 404);
+      const [e] = eg.list.splice(ei, 1);
+      const reward = e.g ? { coins: 25, tickets: 5, golden: 1 }
+        : Math.random() < 0.25 ? { tickets: 3 }
+          : { coins: 3 + Math.floor(Math.random() * 6) };
+      await persist();
+      return json(payload({ ok: 1, reward }));
+    }
     // 🌿 pull a weed — removing it IS the rate limit
     if (url.pathname === '/garden/weed') {
       const wi = wd.list.findIndex((w2) => w2.id === b.id);
@@ -1241,6 +1280,15 @@ const BLOOM_FLOOR = 15;
 const BLOOM_BASE_DRIFT = 0.4;      // per hour, always
 const BLOOM_WEED_DRAG = 0.35;      // per hour, per live weed
 const BLOOM_PULL = 3, BLOOM_WATER = 2, BLOOM_PLANT = 6;
+// 🥚 W2 EGGS — laid near the hens' lawn, first tap wins. Cadence rides the
+// bloom band: below 40 nothing, 40+ rare, 60+ steady, 80+ often; the golden
+// egg only while the park sits at 95+. Rewards resolve server-side.
+const EGG_TTL = 20 * 60_000;
+const EGG_CAP = 2;
+const EGG_EVERY_2 = 3 * 3600_000, EGG_EVERY_3 = 90 * 60_000, EGG_EVERY_4 = 45 * 60_000;
+const EGG_GOLD_AT = 95;
+// hen-lawn spots SW of the plaza — lawn only, clear of tables and roads
+const EGG_SPOTS = [[1060, 640], [1150, 706], [1270, 745], [1005, 715], [1180, 760]];
 // lawn spots only — clear of the plaza, roads, pond, plots and colliders.
 // ⚠️ keep in sync with the ?parktest shim's copy in src/scripts/banana-park.js
 const WEED_SPOTS = [

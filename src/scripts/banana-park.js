@@ -124,6 +124,31 @@ const GARDEN_API = 'https://banana-rave.trymstene.workers.dev/park-garden';
 // in worker-rave (keep in sync); two sprite variants picked by id hash
 const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1000], [1550, 950]];
 
+// 🐔 THE ANIMALS (W2) — farm-pack wanderers, out in every bloom; their MOOD
+// BUBBLE is the meter made visible (❤️ ≥3 · 😐 2 · 😢 ≤1). Strips = 6 walk
+// frames facing right, frame 0 doubles as the standing pose. kind = cell
+// shape: sq 36×36 (chickens) · tall 36×72 (rooster) · wide 72×72 (the
+// ducks/rabbit sheets use 96-wide pack cells). Ducks keep the pond bank.
+const ANIMALS = [
+  { strip: 'chicken1', kind: 'sq', home: [1120, 650], r: 120 },
+  { strip: 'chicken2', kind: 'sq', home: [1210, 730], r: 120 },
+  { strip: 'rooster', kind: 'tall', home: [1050, 760], r: 140 },
+  { strip: 'duck1', kind: 'wide', pond: true },
+  { strip: 'duck2', kind: 'wide', pond: true },
+  { strip: 'rabbit', kind: 'wide', home: [2050, 720], r: 150 },
+];
+// ?parktest gathers the land animals by the plaza spawn (ducks stay pond-side)
+const TEST_ANIMAL_HOMES = [[1270, 830], [1340, 890], [1440, 880], null, null, [1470, 820]];
+
+// 🥚 the bloom card's animals line, phase by phase (W2)
+const EGG_LINES = [
+  'the animals mope about, heads down. nobody lays anything.',
+  'the animals mope about, heads down. nobody lays anything.',
+  'the hens are unsettled — an egg turns up once in a while.',
+  'the animals are happy. eggs come steady — first tap gets them.',
+  'the flock is thriving — at full bloom an egg can come out GOLDEN.',
+];
+
 // 🌸 the bloom card's five honest phase lines — dead → perfect
 const PHASE_LINES = [
   '💀 the park is dead. dust, straw and bare branches.',
@@ -288,6 +313,7 @@ function init() {
     PROP_OVS.forEach((i) => fadeOv(i, p <= 1, 0));
     setSquirrels(p >= 3);                  // 🐿 life returns near the top…
     setBflies(p >= 4);                     // 🦋 …and only a perfect park has these
+    setAnimalMood(p);                      // 🐔 the flock's mood follows the bloom
   }
 
   // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire
@@ -397,8 +423,11 @@ function init() {
     pendingToss = false;
     pendingGarden = null;
     pendingWeed = null;
+    pendingEgg = null;
     if (riding) dismount();          // any tap off the ride hops you off
+    if (tapEgg(wx, wy)) return;
     if (tapBfly(wx, wy)) return;
+    if (tapAnimal(wx, wy)) return;
     if (tapWeed(wx, wy)) return;
     if (tapGarden(wx, wy)) return;
     if (tapRide(wx, wy)) return;
@@ -673,6 +702,122 @@ function init() {
     depth(s.el, s.y);
   }
 
+  // ---- 🐔 THE ANIMALS — the bloom made visible, on legs -------------------
+  // Squirrel movement (home orbit, pause-walk-pause) minus the flee — these
+  // are tame. Ducks orbit the POND BANK: targets are nearby angles on the
+  // shore ring, so the chords never cut the water. The mood bubble pops ONCE
+  // when an animal first walks into view, again on tap, and re-pops live
+  // when the bloom crosses a mood border.
+  const AN_SIZE = { sq: [36, 36], tall: [36, 72], wide: [72, 72] };
+  const MOOD_EMO = ['😢', '😐', '❤️'];
+  const bandFor = (p) => (p >= 3 ? 2 : p === 2 ? 1 : 0);
+  const animals = [];
+  let moodBand = -1;
+  const duckPoint = (a) => ({ x: POND.x + Math.cos(a) * (POND.rx + 30), y: POND.y + Math.sin(a) * (POND.ry + 26) });
+  function anPick(a) {
+    for (let t = 0; t < 8; t++) {
+      if (a.pond) {
+        const na = a.ang + (Math.random() * 1.2 - 0.6);
+        const p = duckPoint(na);
+        if (!blocked(p.x, p.y)) { a.ang = na; a.tx = p.x; a.ty = p.y; return; }
+        continue;
+      }
+      const q = Math.random() * Math.PI * 2;
+      const rr = 40 + Math.random() * a.r * 0.7;
+      let tx = a.x + Math.cos(q) * rr, ty = a.y + Math.sin(q) * rr * 0.6;
+      if (Math.hypot(tx - a.hx, ty - a.hy) > a.r) { tx = a.hx; ty = a.hy; }
+      if (!blocked(tx, ty) && !inPlaza(tx, ty)) { a.tx = tx; a.ty = ty; return; }
+    }
+  }
+  function anPlace(a) {
+    a.el.style.left = pct(a.x, W);
+    a.el.style.top = pct(a.y, H);
+    a.el.style.transform = 'translate(-50%,-100%)' + (a.face < 0 ? ' scaleX(-1)' : '');
+    depth(a.el, a.y);
+  }
+  function showMood(a) {
+    a.bub.textContent = MOOD_EMO[bandFor(phase)];
+    a.bub.classList.add('is-on');
+    clearTimeout(a.bubTimer);
+    a.bubTimer = setTimeout(() => a.bub.classList.remove('is-on'), 2500);
+  }
+  const onScreen = (a) => {
+    const sx = a.x * scale - camX, sy = a.y * scale - camY;
+    return sx > -30 && sx < viewW + 30 && sy > -30 && sy < viewH + 30;
+  };
+  function anStep(a, dt) {
+    if (a.wait > 0) {
+      a.wait -= dt;
+      if (!a.still) { a.still = true; a.el.classList.add('is-still'); }
+      return;
+    }
+    const dx = a.tx - a.x, dy = a.ty - a.y;
+    const d = Math.hypot(dx, dy);
+    const sad = moodBand === 0;                  // mopey = slower, longer sulks
+    if (d < 3) {
+      a.wait = (sad ? 3.5 : 1.5) + Math.random() * (sad ? 5 : 3.5);
+      anPick(a);
+      return;
+    }
+    if (a.still) { a.still = false; a.el.classList.remove('is-still'); }
+    const sp = (sad ? 26 : 46) * dt;
+    const nx = a.x + (dx / d) * Math.min(d, sp);
+    const ny = a.y + (dy / d) * Math.min(d, sp);
+    if (!blocked(nx, ny) && (a.pond || !inPlaza(nx, ny))) { a.x = nx; a.y = ny; }
+    else { a.wait = 0.6; anPick(a); return; }
+    if (Math.abs(dx) > 4 && (dx < 0) !== (a.face < 0)) {
+      a.face = dx < 0 ? -1 : 1;
+      // counter-flip the bubble so the emote never mirrors with the body
+      a.bub.style.transform = 'translate(-50%,-100%)' + (a.face < 0 ? ' scaleX(-1)' : '');
+    }
+    anPlace(a);
+  }
+  function animalTick(dt) {
+    for (const a of animals) {
+      anStep(a, dt);
+      if (!a.seen && phase >= 0 && onScreen(a)) { a.seen = true; showMood(a); }
+    }
+  }
+  function setAnimalMood(p) {
+    const b = bandFor(p);
+    if (b === moodBand) return;
+    moodBand = b;
+    animals.forEach((a) => {
+      a.el.classList.toggle('is-sad', b === 0);
+      if (a.seen && onScreen(a)) showMood(a);
+    });
+  }
+  function tapAnimal(wx, wy) {
+    const a = animals.find((q) => Math.abs(wx - q.x) < q.w * 0.7 && wy > q.y - q.h - 8 && wy < q.y + 10);
+    if (!a) return false;
+    showMood(a);
+    return true;
+  }
+  ANIMALS.forEach((sp, i) => {
+    const home = PARK_TEST && TEST_ANIMAL_HOMES[i] ? TEST_ANIMAL_HOMES[i] : sp.home;
+    const el = document.createElement('div');
+    el.className = 'pk-animal pk-animal--' + sp.kind + ' pk-animal--' + sp.strip + ' is-still';
+    const bub = document.createElement('span');
+    bub.className = 'pk-mood';
+    el.appendChild(bub);
+    world.appendChild(el);
+    const a = {
+      el, bub, pond: !!sp.pond,
+      hx: home ? home[0] : 0, hy: home ? home[1] : 0, r: sp.r || 130,
+      ang: Math.random() * 6.28, face: 1, still: true,
+      wait: Math.random() * 3, seen: false, bubTimer: null,
+      w: AN_SIZE[sp.kind][0], h: AN_SIZE[sp.kind][1],
+    };
+    if (a.pond) {   // land on a clear stretch of bank (the east shore has trees)
+      let p = duckPoint(a.ang);
+      for (let t = 0; t < 12 && blocked(p.x, p.y); t++) { a.ang = Math.random() * 6.28; p = duckPoint(a.ang); }
+      a.x = p.x; a.y = p.y;
+    } else { a.x = a.hx; a.y = a.hy; }
+    a.tx = a.x; a.ty = a.y;
+    anPlace(a);
+    animals.push(a);
+  });
+
   // ---- 🪙 THE FOUNTAIN COIN TOSS — an honest tiny sink, no payout ---------
   // ⚠️ NO action-bar button — the world grammar is TAP THE THING (beach
   // stalls, rides): tap the fountain to toss, walking over first if far
@@ -844,7 +989,10 @@ function init() {
   const gEls = PLOTS.map(() => ({ plant: null, chip: null, stage: '', chipKey: '' }));
   let pendingGarden = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
-  const gShim = { slots: Array(8).fill(null), weeds: [], bloom: 70 };   // the ?parktest stand-in server
+  const gShim = {   // the ?parktest stand-in server (pre-lays a plain + golden egg)
+    slots: Array(8).fill(null), weeds: [], bloom: 70,
+    eggs: [{ id: 'qa1', x: 1330, y: 876 }, { id: 'qa2', x: 1432, y: 866, g: 1 }],
+  };
   function shimGarden(path, body) {
     const now = Date.now();
     const strip = () => ({
@@ -852,8 +1000,17 @@ function init() {
       slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)),
       bloom: Math.round(gShim.bloom),
       weeds: gShim.weeds.map((w2) => ({ ...w2 })),
+      eggs: gShim.eggs.map((e) => ({ ...e })),
     });
     if (!body) return Promise.resolve(strip());
+    if (path === '/egg') {
+      const ei = gShim.eggs.findIndex((e) => e.id === body.id);
+      if (ei < 0) return Promise.resolve({ err: 'gone', ...strip() });
+      const [e] = gShim.eggs.splice(ei, 1);
+      const reward = e.g ? { coins: 25, tickets: 5, golden: 1 }
+        : Math.random() < 0.25 ? { tickets: 3 } : { coins: 3 + Math.floor(Math.random() * 6) };
+      return Promise.resolve({ reward, ...strip() });
+    }
     if (path === '/weed') {
       const wi = gShim.weeds.findIndex((w2) => w2.id === body.id);
       if (wi < 0) return Promise.resolve({ err: 'gone', ...strip() });
@@ -999,6 +1156,69 @@ function init() {
     tgt.y = hit.w2.y + 26;
     return true;
   }
+  // ---- 🥚 EGGS — laid on the hens' lawn, FIRST TAP WINS -------------------
+  // The rave-drop pattern: the server's removal is the verdict, so the egg
+  // stays put until the reply lands — no optimistic grab on a shared prize.
+  const eggs = new Map();                       // id → { el, x, y, g }
+  let pendingEgg = null, eggBusy = false, eggTracked = false;
+  function renderEggs(list) {
+    const seen = new Set();
+    (list || []).forEach((e) => {
+      seen.add(e.id);
+      if (eggs.has(e.id)) return;
+      const el = document.createElement('div');
+      el.className = 'pk-egg' + (e.g ? ' pk-egg--gold' : '');
+      el.style.left = pct(e.x, W);
+      el.style.top = pct(e.y, H);
+      depth(el, e.y);
+      world.appendChild(el);
+      eggs.set(e.id, { el, x: e.x, y: e.y, g: e.g ? 1 : 0 });
+    });
+    eggs.forEach((e, id) => {
+      if (!seen.has(id)) {
+        e.el.remove();
+        eggs.delete(id);
+        if (pendingEgg === id) pendingEgg = null;   // snapped up mid-walk
+      }
+    });
+  }
+  async function claimEgg(id) {
+    const e = eggs.get(id);
+    if (!e || eggBusy) return;
+    eggBusy = true;
+    const res = await gFetch('/egg', { id, pass: worldSid() });
+    eggBusy = false;
+    if (!res) return;
+    applyGarden(res);
+    if (res.err) { toast('🥚 someone got it first'); return; }
+    const r = res.reward || {};
+    if (r.coins) passStat('coins_earned', r.coins);
+    if (r.tickets) passStat('tickets', r.tickets);   // the bay's pier currency
+    refreshHud();
+    float(e.x, e.y - 14, r.golden ? '✨' : '+' + (r.coins || r.tickets));
+    if (r.golden) {
+      confettiAt(e.x, e.y);
+      toast('🥚✨ THE GOLDEN EGG — +' + r.coins + ' coins, +' + r.tickets + ' beach tickets!', 4600);
+    } else if (r.tickets) {
+      toast('🥚 ' + r.tickets + ' beach tickets in an egg?! the pier takes those', 4200);
+    } else {
+      toast('🥚 +' + r.coins + ' coins — fresh from the hens');
+    }
+    if (!eggTracked) { eggTracked = true; track('park_egg', { golden: r.golden ? 1 : 0 }); }
+  }
+  function tapEgg(wx, wy) {
+    let hit = null;
+    eggs.forEach((e, id) => {
+      if (Math.hypot(wx - e.x, wy - (e.y - 9)) < 26) hit = id;
+    });
+    if (hit == null) return false;
+    const e = eggs.get(hit);
+    if (Math.hypot(pos.x - e.x, pos.y - e.y) < 90) { claimEgg(hit); return true; }
+    pendingEgg = hit;                     // walk-then-claim, like everything else
+    tgt.x = e.x;
+    tgt.y = e.y + 22;
+    return true;
+  }
   bloomBtn.addEventListener('click', () => {
     const n = weeds.size;
     gardenBody.innerHTML = '<h2>🌸 the bloom</h2>'
@@ -1008,6 +1228,7 @@ function init() {
       + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : ' · no weeds right now') + '</p>'
       + (phase >= 0 ? '<p class="' + (phase <= 1 ? 'pk-wilting' : 'pk-bloomnum') + '">'
         + PHASE_LINES[phase] + '</p>' : '')
+      + (phase >= 0 ? '<p class="pk-panel__sub">' + EGG_LINES[phase] + '</p>' : '')
       + '<p class="pk-panel__sub">weeds drag the park down. pull them. plant things. water what grows. the park remembers.</p>';
     gardenPanel.hidden = false;
   });
@@ -1015,6 +1236,7 @@ function init() {
     if (!res) return;
     if (Array.isArray(res.slots)) { gSlots = res.slots; renderGarden(); }
     if (Array.isArray(res.weeds)) renderWeeds(res.weeds);
+    if (Array.isArray(res.eggs)) renderEggs(res.eggs);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
   }
   async function gardenPoll() {
@@ -1162,6 +1384,11 @@ function init() {
       if (!w2) pendingWeed = null;          // pulled by somebody else mid-walk
       else if (Math.hypot(pos.x - w2.x, pos.y - w2.y) < 90) { const id = pendingWeed; pendingWeed = null; pullWeed(id); }
     }
+    if (pendingEgg != null) {
+      const e = eggs.get(pendingEgg);
+      if (!e) pendingEgg = null;            // claimed by somebody else mid-walk
+      else if (Math.hypot(pos.x - e.x, pos.y - e.y) < 90) { const id = pendingEgg; pendingEgg = null; claimEgg(id); }
+    }
   }
 
   // ---- 🌍 THE WORLD HUD — the refined pill strip, park edition ------------
@@ -1246,6 +1473,7 @@ function init() {
     prevPX = pos.x; prevPY = pos.y;
     acornTick(now);
     bflyTick(dt, now);
+    animalTick(dt);
     squirrels.forEach((s) => sqStep(s, dt));
     tossTick();
     cartTick(now);
@@ -1358,7 +1586,17 @@ function init() {
   // coins, read the live rosters — nothing here exists in a normal session
   if (PARK_TEST) {
     window.__park = {
-      pos, tgt, acorns, bflys, squirrels, RIDES, PLOTS,
+      pos, tgt, acorns, bflys, squirrels, animals, eggs, RIDES, PLOTS,
+      // 🥚 egg QA: lay one at your feet (egg(1) = golden); steal() = somebody
+      // else claims the oldest — tap it after for the 'someone got it' path
+      egg: (g) => {
+        gShim.eggs.push({ id: 'qa' + Math.random().toString(36).slice(2, 6),
+          x: Math.round(pos.x) + 60, y: Math.round(pos.y), ...(g ? { g: 1 } : {}) });
+        gardenPoll();
+      },
+      steal: () => { gShim.eggs.shift(); gardenPoll(); },
+      // 🐔 mood QA: pop every animal's bubble right now
+      mood: () => animals.forEach((a) => showMood(a)),
       coins: (n) => { passStat('coins_earned', n); refreshHud(); },
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       // 🌱 garden QA: read state, fast-forward growth d days (shim store =

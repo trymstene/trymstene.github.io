@@ -909,6 +909,49 @@ if os.path.isdir(FARM):
     except Exception as e:
         print('  weed sprite failed', e)
 
+# ---- 🐔 W2 ANIMALS — farm-pack wanderers (client-side, no placement) -------
+# Each sheet's SIDE walk cycle = the walk band's first 6 contiguous frames,
+# facing RIGHT (client flips by direction; frame 0 doubles as the standing
+# pose). Chicken sheets are 48-tall rows; rooster/duck/rabbit are 96-tall
+# bands (head overhangs the upper row). Sliced from the band, blockified
+# once (trim=False — the animation-frame rule), saved at PROP scale.
+if os.path.isdir(FARM):
+    import glob as _glob
+
+    def farm_strip(fname, out_name, band_y, cell_w, cell_h):
+        try:
+            f = _glob.glob(os.path.join(FARM, 'Animals_48x48', '**', fname), recursive=True)[0]
+            band = Image.open(f).convert('RGBA').crop((0, band_y, cell_w * 6, band_y + cell_h))
+            s = blockify(band, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
+                         trim=False, outline=True)
+            s = s.crop((1, 1, 1 + band.width, 1 + band.height))
+            s = s.resize((int(cell_w * PROP) * 6, int(cell_h * PROP)), Image.NEAREST)
+            s.save(os.path.join(OUT, out_name), optimize=True)
+            print('  %s: 6f %dx%d' % (out_name, s.width // 6, s.height))
+        except Exception as e:
+            print('  animal strip failed', fname, e)
+
+    # chickens/roosters = 48-wide cells; ducks/rabbits = 96-wide cells
+    farm_strip('Chicken_Brown_48x48.png', 'a-chicken1.png', 48, 48, 48)
+    farm_strip('Chicken_White_48x48.png', 'a-chicken2.png', 48, 48, 48)
+    farm_strip('Rooster_Brown_48x48.png', 'a-rooster.png', 96, 48, 96)
+    farm_strip('Duck_Green_Head_48x48.png', 'a-duck1.png', 96, 96, 96)
+    farm_strip('Duck_White_48x48.png', 'a-duck2.png', 96, 96, 96)
+    farm_strip('Rabbit_Brown_48x48.png', 'a-rabbit.png', 96, 96, 96)
+
+    # 🥚 the egg pickups (trim=True — single sprites, tight box)
+    for fname, out_name in (('Egg_White_48x48.png', 'e-egg.png'),
+                            ('Egg_Golden_48x48.png', 'e-eggold.png')):
+        try:
+            f = _glob.glob(os.path.join(FARM, '**', fname), recursive=True)[0]
+            s = blockify(Image.open(f).convert('RGBA'), factor=1, colors=28,
+                         warm=0.0, sat=1.0, con=1.0)
+            s = s.resize((max(1, int(s.width * PROP)), max(1, int(s.height * PROP))), Image.NEAREST)
+            s.save(os.path.join(OUT, out_name), optimize=True)
+            print('  %s: %dx%d' % (out_name, s.width, s.height))
+        except Exception as e:
+            print('  egg sprite failed', fname, e)
+
 # ---- 🛝 the playground -----------------------------------------------------
 def sheet_strip(name, out_name, fw, fh=96):
     """⚠️ the playground files are each a FULL ANIMATION SHEET (Park_Swing_1 is

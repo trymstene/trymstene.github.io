@@ -229,6 +229,60 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     @keyframes pkRide8 { from { background-position-x: 0%; } to { background-position-x: 114.2857%; } }
     @media (prefers-reduced-motion: reduce) { .pk-ride--12, .pk-ride--8 { animation: none; } }
 
+    /* 🐔 THE ANIMALS — farm-pack strips: 6 walk frames, frame 0 = standing.
+       End value per the stepping rule: 100% × 6 / 5 = 120%. */
+    .pk-animal {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-repeat: no-repeat; background-size: 600% 100%;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
+      animation: pkWalk6 0.75s steps(6) infinite;
+    }
+    .pk-animal.is-still { animation: none; background-position-x: 0%; }
+    .pk-animal.is-sad { filter: saturate(0.6) brightness(0.92) drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35)); }
+    .pk-animal--sq { width: 1.3%; aspect-ratio: 1 / 1; }
+    .pk-animal--tall { width: 1.3%; aspect-ratio: 1 / 2; }
+    .pk-animal--wide { width: 2.6%; aspect-ratio: 1 / 1; }
+    .pk-animal--chicken1 { background-image: url('/assets/park/a-chicken1.png'); }
+    .pk-animal--chicken2 { background-image: url('/assets/park/a-chicken2.png'); }
+    .pk-animal--rooster { background-image: url('/assets/park/a-rooster.png'); }
+    .pk-animal--duck1 { background-image: url('/assets/park/a-duck1.png'); }
+    .pk-animal--duck2 { background-image: url('/assets/park/a-duck2.png'); }
+    .pk-animal--rabbit { background-image: url('/assets/park/a-rabbit.png'); }
+    @keyframes pkWalk6 { from { background-position-x: 0%; } to { background-position-x: 120%; } }
+    @media (prefers-reduced-motion: reduce) { .pk-animal { animation: none; } }
+    /* 💬 the mood bubble — pops once on first sight, again on tap; the tail
+       is centred so the parent's direction flip can't skew it */
+    .pk-mood {
+      position: absolute; left: 50%; top: -6px; transform: translate(-50%, -100%);
+      background: #fffdf5; border: 2px solid #000; border-radius: 6px;
+      padding: 2px 4px; font-size: 11px; line-height: 1; white-space: nowrap;
+      opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+    }
+    .pk-mood::after {
+      content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
+      border: 3px solid transparent; border-top: 5px solid #000; border-bottom: 0;
+    }
+    .pk-mood.is-on { opacity: 1; }
+
+    /* 🥚 eggs — first tap wins; the golden one glows */
+    .pk-egg {
+      position: absolute; width: 0.69%; aspect-ratio: 19 / 24;
+      transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated;
+      background: url('/assets/park/e-egg.png') 0 0 / 100% 100% no-repeat;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.45));
+      animation: pkEggRise 0.45s ease-out;
+    }
+    .pk-egg--gold {
+      background-image: url('/assets/park/e-eggold.png');
+      filter: drop-shadow(0 0 5px rgba(255, 214, 64, 0.9)) drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.45));
+    }
+    @keyframes pkEggRise {
+      0% { transform: translate(-50%, calc(-100% + 8px)) scale(0.5); opacity: 0; }
+      100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-egg { animation: none; } }
+
     /* 🪙 the tossed coin — left/top glide + an inner lift = the arc */
     .pk-coinfly {
       position: absolute; pointer-events: none;
