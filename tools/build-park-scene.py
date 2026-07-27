@@ -858,17 +858,20 @@ if HAVE_PACK:
     try_place(['ME_Singles_City_Props_48x48_Kiosk_Mushroom_1.png'],
               2300, 545, solid=SHOP_BOX, layer=True, colors=28)
 
-# ---- 🌱 THE GARDEN (P3b) — two soil beds, 4 slots each ---------------------
+# ---- 🌱 THE GARDEN (P3b/W3) — four soil beds, 4 slots each -----------------
 # The bed is the graveyard family's Dirt_Ditch_1 — a 3×3-tile patch of dug
 # earth with torn-grass edges (no farm/planter family exists in the pack; the
 # only true turned-soil rectangle lives here). Slots are marked with the
 # Terrains Props_Dirt speckles so each reads as its own patch. Baked, solid,
 # NOT layered — the growing plants are client overlays and must draw on top.
+# W3: site B (gx 288/426) mirrors site A west of the playground, tucked clear
+# of the swings. ⚠️ TUPLE ORDER IS THE SLOT CONTRACT: site A = slots 0-7,
+# site B = 8-15 — live production plants sit on 0-7, never reorder.
 PLOTS = []
 if HAVE_PACK:
     # each bed = TWO ditches side by side (the ditch soil is ~52px wide — one
     # slot column each, two rows), so every slot sits ON dug earth
-    for gx in (2270, 2408):
+    for gx in (2270, 2408, 288, 426):
         for sx in (gx - 30, gx + 30):
             place('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png', sx, 862,
                   solid=('rect', -28, -50, 28, 4), colors=28, sh=0.36)
@@ -908,6 +911,28 @@ if os.path.isdir(FARM):
         print('  w-weed1/2.png: %dx%d (Crop_Grain_Rotten)' % (s.width, s.height))
     except Exception as e:
         print('  weed sprite failed', e)
+
+# ---- 🌾 W3 CROP STAGES — farm-pack growth sheets, baked per stage ----------
+# Sheet grammar: 7 cols of 48px — col 0 sprout, 1-3 growing, 4-6 ripe; the
+# art fills the TOP HALF (a numbers band sits below). Four stages baked per
+# crop (cols 0/1/3/5) → c-<id>-1..4.png; client overlays only, no geometry.
+if os.path.isdir(FARM):
+    import glob as _glob
+    for cid, cropsheet in (('tomato', 'Tomato_Growth_Stages_48x48.png'),
+                           ('pumpkin', 'Pumpkin_Growth_Stages_48x48.png'),
+                           ('wheat', 'Wheat_Growth_Stages_48x48.png')):
+        try:
+            f = _glob.glob(os.path.join(FARM, '**', cropsheet), recursive=True)[0]
+            sheet = Image.open(f).convert('RGBA')
+            arth = sheet.height // 2
+            for n, col in enumerate((0, 1, 3, 5), 1):
+                cell = sheet.crop((col * 48, 0, col * 48 + 48, arth))
+                s = blockify(cell, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+                s = s.resize((max(1, int(s.width * PROP)), max(1, int(s.height * PROP))), Image.NEAREST)
+                s.save(os.path.join(OUT, 'c-%s-%d.png' % (cid, n)), optimize=True)
+                print('  c-%s-%d.png: %dx%d' % (cid, n, s.width, s.height))
+        except Exception as e:
+            print('  crop stages failed', cid, e)
 
 # ---- 🐔 W2 ANIMALS — farm-pack wanderers (client-side, no placement) -------
 # Each sheet's SIDE walk cycle = the walk band's first 6 contiguous frames,

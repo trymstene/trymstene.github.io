@@ -861,22 +861,30 @@ export class ParkRoom {
     });
     let slots = (await this.state.storage.get('garden')) || [];
     if (!Array.isArray(slots)) slots = [];
-    while (slots.length < 8) slots.push(null);
-    slots = slots.slice(0, 8);
+    // W3 grew the garden 8 → 16 (site B by the playground): stored arrays PAD
+    // to 16 — indices 0-7 (site A) must never reindex, live plants sit there
+    while (slots.length < GARDEN_SLOTS) slots.push(null);
+    slots = slots.slice(0, GARDEN_SLOTS);
     const now = Date.now();
-    // wilt sweep: unwatered 3+ days → the slot frees itself on the next read
+    // wilt sweep: unwatered too long → the slot frees itself on the next
+    // read; higher ⭐ holds out longer (3 + floor(stars/2) dry days)
     let dirty = false;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < GARDEN_SLOTS; i++) {
       const w = slots[i];
-      if (w && now - (w.lastWater || w.plantedAt || 0) > 3 * 86_400_000) { slots[i] = null; dirty = true; }
+      const allow = (3 + Math.floor(gardenSeed(w && w.seed).stars / 2)) * 86_400_000;
+      if (w && now - (w.lastWater || w.plantedAt || 0) > allow) { slots[i] = null; dirty = true; }
     }
-    // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns
+    // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns.
+    // ⭐ every living plant FEEDS the meter by its stars (post-wilt-sweep, so
+    // only plants that made it through count)
     const wd = (await this.state.storage.get('weeds')) || { list: [], nextAt: 0 };
     const bl = (await this.state.storage.get('bloom')) || { v: 70, at: now };
     const hrs = Math.max(0, (now - bl.at) / 3600_000);
     const decayed = hrs > 0.001;
     if (decayed) {
-      bl.v = Math.max(BLOOM_FLOOR, bl.v - hrs * (BLOOM_BASE_DRIFT + BLOOM_WEED_DRAG * wd.list.length));
+      const stars = slots.reduce((t, s2) => t + (s2 ? gardenSeed(s2.seed).stars : 0), 0);
+      bl.v = Math.min(100, Math.max(BLOOM_FLOOR,
+        bl.v - hrs * (BLOOM_BASE_DRIFT + BLOOM_WEED_DRAG * wd.list.length - BLOOM_STAR_FEED * stars)));
       bl.at = now;
     }
     if (!wd.nextAt || wd.nextAt < now - 86_400_000) wd.nextAt = now + WEED_EVERY;
@@ -966,7 +974,7 @@ export class ParkRoom {
       return json(payload({ ok: 1 }));
     }
     const i = Math.floor(Number(b.slot));
-    if (!(i >= 0 && i < 8)) return json({ err: 'bad slot' }, 400);
+    if (!(i >= 0 && i < GARDEN_SLOTS)) return json({ err: 'bad slot' }, 400);
     const s = slots[i];
     if (url.pathname === '/garden/plant') {
       if (s) return json(payload({ err: 'taken' }), 409);
@@ -992,7 +1000,7 @@ export class ParkRoom {
       if (!s) return json(payload({ err: 'empty' }), 404);
       if (s.passShort !== short) return json({ err: 'not yours' }, 403);
       const days = Math.floor((now - s.plantedAt) / 86_400_000);
-      if (days < GARDEN_SEEDS[s.seed]) return json(payload({ err: 'still growing' }), 409);
+      if (days < gardenSeed(s.seed).days) return json(payload({ err: 'still growing' }), 409);
       slots[i] = null;
     } else {
       return json({ err: 'not found' }, 404);
@@ -1266,8 +1274,25 @@ function bayStrip(p) {
   return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
 }
 
-// 🌱 growth days per seed — ⚠️ keep in sync with SEEDS in src/scripts/banana-park.js
-const GARDEN_SEEDS = { daisy: 2, sunflower: 4, tulip: 5 };
+// 🌱 THE seed catalog — ⚠️ keep in sync with SEEDS in src/scripts/banana-park.js
+// (one catalog, two runtimes). ⭐ stars: a living plant feeds the bloom by its
+// stars (BLOOM_STAR_FEED below) and wilts slower — dry-day allowance =
+// 3 + floor(stars / 2). Price is client-side display/spend only (coins are
+// client-authoritative), the server never charges it.
+const GARDEN_SEEDS = {
+  daisy: { days: 2, stars: 1, price: 10 },
+  sunflower: { days: 4, stars: 2, price: 25 },
+  tulip: { days: 5, stars: 3, price: 60 },
+  tomato: { days: 4, stars: 3, price: 90 },
+  pumpkin: { days: 5, stars: 4, price: 160 },
+  wheat: { days: 6, stars: 5, price: 300 },
+};
+const gardenSeed = (id) => GARDEN_SEEDS[id] || { days: 99, stars: 1 };
+// 16 slots: 0-7 = site A by the meadow, 8-15 = W3's site B by the playground
+const GARDEN_SLOTS = 16;
+// each living plant lifts the bloom +0.06/h per star: a full 8-slot garden of
+// ⭐2-3s (~1.2/h) carries the base drift plus roughly 2-3 weeds' drag
+const BLOOM_STAR_FEED = 0.06;
 
 // 🌿 W1 WEEDS + 🌸 THE BLOOM — the park's entropy loop. All tuning here:
 // weeds spawn ~1/2h to a cap of 10; each live weed drags the bloom 0.35/h on
@@ -1292,7 +1317,7 @@ const EGG_SPOTS = [[1060, 640], [1150, 706], [1270, 745], [1005, 715], [1180, 76
 // lawn spots only — clear of the plaza, roads, pond, plots and colliders.
 // ⚠️ keep in sync with the ?parktest shim's copy in src/scripts/banana-park.js
 const WEED_SPOTS = [
-  [380, 690], [450, 620], [300, 830], [420, 940], [680, 600], [250, 480],
+  [380, 690], [450, 620], [340, 750], [420, 940], [680, 600], [250, 480],
   [880, 260], [1180, 300], [760, 180], [1420, 150], [1180, 150],
   [1750, 320], [1900, 380], [2100, 300], [2550, 400], [2100, 250], [2600, 480],
   [960, 640], [1700, 560], [1650, 700], [1950, 700], [2050, 860],

@@ -381,6 +381,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-seedrow:not([disabled]):hover { outline: 2px solid #8de08d; outline-offset: 1px; }
     .pk-seedrow:not([disabled]):active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
     .pk-seedrow[disabled] { opacity: 0.45; cursor: not-allowed; }
+    /* 🔒 level-locked seeds stay listed (aspiration) — greyed, never hidden */
+    .pk-seedrow--lock { filter: grayscale(0.75); }
+    .pk-glvl { margin: -0.05rem 0 0.45rem; font-size: 0.72rem; font-weight: 800; color: #8de08d; }
     .pk-seedrow i { font-style: normal; font-size: 1.5rem; line-height: 1; }
     .pk-seedrow__txt { flex: 1; display: grid; gap: 0.15rem; min-width: 0; }
     .pk-seedrow b { font-size: 0.86rem; }
@@ -438,7 +441,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-bseg.is-open { box-shadow: inset 0 0 0 2px rgba(255, 253, 245, 0.55); }
     .pk-bexp { margin: 0 0 0.2rem; font-size: 0.8rem; font-weight: 800; color: #8de08d; }
     .pk-bexp--sad { color: #c9913a; }
-    .pk-bexp--sub { margin: 0; font-size: 0.74rem; opacity: 0.85; }
     .pk-bloomnum { margin: 0 0 0.7rem; font-size: 0.8rem; font-weight: 800; color: #8de08d; }
     .pk-gwater { margin: 0 0 0.6rem; font-size: 0.78rem; color: #7db9ff; font-weight: 800; }
     .pk-gbtn { width: 100%; border: 3px solid #000; background: #7db9ff; color: #10240f;
