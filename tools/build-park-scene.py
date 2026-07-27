@@ -162,48 +162,107 @@ for y in range(H):
                         int(g * (1 - k) + GRASS_TARGET[1] * k),
                         int(b * (1 - k) + GRASS_TARGET[2] * k), a)
 
-# ---- 🛣 THE PARK PATHS: packed dirt on grass (the beach's procedural road
-# doctrine — tone, TEXTURE-replacement, dark shoulder, taper) ----------------
+# ---- 🛣 THE PARK PATHS: the beach's curvy road system, dirt palette --------
+# Trym on the straight cross (round 6): "very symmetric, systemic, square and
+# boring — i want it more natural, curvy paths, room to make every meter a bit
+# interesting". Ported from build-beach-scene.py: arc-length wobble (verticals
+# wander as much as horizontals), per-end taper, and ONE unioned mask so
+# junctions blend seamlessly instead of stamping shoulders across each other.
 ROAD = (208, 178, 128)
 ROAD_S = (196, 166, 116)
 ROAD_RIM = (122, 108, 62)
+ROAD_TAPER = 44
+ROAD_SPINE = []
+_rrng = random.Random(4242)
+_road_mask = None
+_road_box = [W, H, 0, 0]
 
 
-def lane(x0, y0, x1, y1, taper_ends=()):
-    """an axis-aligned dirt lane with speckle + shoulders; taper_ends lists
-    'x0'/'x1'/'y0'/'y1' edges that thin out (the construction stubs)"""
-    for y in range(int(y0), int(y1)):
-        for x in range(int(x0), int(x1)):
-            if not (0 <= x < W and 0 <= y < H):
+def road_pts(pts, hw, taper=(True, True)):
+    out, s = [], 0.0
+    for i in range(len(pts) - 1):
+        (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+        seg = math.hypot(x1 - x0, y1 - y0)
+        if seg < 1:
+            continue
+        nx, ny = (x1 - x0) / seg, (y1 - y0) / seg
+        px_, py_ = -ny, nx
+        for t in range(int(seg)):
+            wob = 7.5 * math.sin(s / 88.0) + 2.4 * math.sin(s / 21.0)
+            out.append([int(x0 + nx * t + px_ * wob), int(y0 + ny * t + py_ * wob),
+                        px_, py_, hw])
+            s += 1
+    n = len(out)
+    for i in range(min(ROAD_TAPER, n // 2)):
+        k = 0.30 + 0.70 * (i / float(ROAD_TAPER))
+        if taper[0]:
+            out[i][4] = max(4, hw * k)
+        if taper[1]:
+            out[n - 1 - i][4] = max(4, hw * k)
+    return [tuple(p) for p in out]
+
+
+def road_mask_add(spine):
+    global _road_mask
+    if _road_mask is None:
+        _road_mask = bytearray(W * H)
+    m = _road_mask
+    for (cx_, cy_, _, _, hw) in spine:
+        r = int(hw) + 2
+        for dy in range(-r, r + 1):
+            y = cy_ + dy
+            if not (0 <= y < H):
                 continue
-            k = 1.0
-            if 'x0' in taper_ends:
-                k = min(k, (x - x0) / 44.0)
-            if 'x1' in taper_ends:
-                k = min(k, (x1 - x) / 44.0)
-            if 'y0' in taper_ends:
-                k = min(k, (y - y0) / 44.0)
-            if 'y1' in taper_ends:
-                k = min(k, (y1 - y) / 44.0)
-            if k <= 0 or rng.random() > k:
+            row = y * W
+            for dx in range(-r, r + 1):
+                x = cx_ + dx
+                if not (0 <= x < W):
+                    continue
+                v = int(hw + 2 - math.hypot(dx, dy))
+                if v > 0 and v > m[row + x]:
+                    m[row + x] = 255 if v > 255 else v
+        _road_box[0] = min(_road_box[0], max(0, cx_ - r))
+        _road_box[1] = min(_road_box[1], max(0, cy_ - r))
+        _road_box[2] = max(_road_box[2], min(W, cx_ + r + 1))
+        _road_box[3] = max(_road_box[3], min(H, cy_ + r + 1))
+    ROAD_SPINE.extend(spine)
+
+
+def road_bake():
+    m = _road_mask
+    x0, y0, x1, y1 = _road_box
+    for y in range(y0, y1):
+        row = y * W
+        for x in range(x0, x1):
+            v = m[row + x]
+            if not v:
                 continue
-            put(x, y, ROAD_S if (x * 7 + y * 13) % 11 == 0 else ROAD)
-    # shoulders on the long axis
-    horiz = (x1 - x0) > (y1 - y0)
-    for t in range(int(x0 if horiz else y0), int(x1 if horiz else y1)):
-        if rng.random() < 0.72:
-            if horiz:
-                put(t, int(y0) - 1, ROAD_RIM)
-                put(t, int(y1), ROAD_RIM)
-            else:
-                put(int(x0) - 1, t, ROAD_RIM)
-                put(int(x1), t, ROAD_RIM)
+            if v >= 5:
+                put(x, y, ROAD_S if _rrng.random() < 0.20 else ROAD)
+            elif _rrng.random() < 0.18 * v:
+                put(x, y, ROAD_RIM)
 
 
-lane(CX - ROAD_W // 2, CY, CX + ROAD_W // 2, H)                    # S → the rave
-lane(CX, CY - ROAD_W // 2, W, CY + ROAD_W // 2)                    # E → the beach
-lane(BOUND + 40, CY - ROAD_W // 2, CX, CY + ROAD_W // 2, ('x0',))  # W stub 🚧
-lane(CX - ROAD_W // 2, BOUND + 20, CX + ROAD_W // 2, CY, ('y0',))  # N stub 🚧
+# the network: every lane bends, junction ends start INSIDE the plaza
+# (taper=False there) so they merge with the paved circle, stub + spur ends
+# peter out (taper=True).
+HW = 30                        # main lanes ~60px wide (the old slab was 88)
+road_mask_add(road_pts([(1380, 640), (1305, 800), (1410, 930), (1380, 1100)],
+                       HW, taper=(False, False)))               # S → the rave
+road_mask_add(road_pts([(1560, 590), (1800, 660), (2080, 545), (2380, 625),
+                        (2760, 570)], HW, taper=(False, False)))  # E → the beach
+road_mask_add(road_pts([(1200, 580), (980, 625), (750, 545), (520, 605),
+                        (330, 565)], HW, taper=(False, True)))    # W stub 🚧
+road_mask_add(road_pts([(1385, 430), (1335, 310), (1420, 215), (1400, 140)],
+                       HW, taper=(False, True)))                  # N stub 🚧
+# little spurs — the "every meter interesting" walks
+road_mask_add(road_pts([(905, 610), (790, 500), (735, 450)],
+                       18, taper=(False, True)))                  # → pond bank
+road_mask_add(road_pts([(1330, 830), (1120, 862), (940, 825)],
+                       18, taper=(False, True)))                  # → playground
+road_mask_add(road_pts([(2085, 560), (2150, 700), (2255, 775)],
+                       18, taper=(False, True)))                  # → the meadow
+road_bake()
 
 # ---- ⛲ the plaza: warm sandstone flags over the crossroads ----------------
 # ⚠️ NOT a two-tone checker — at 24px checks it read as a PNG transparency
@@ -226,17 +285,15 @@ for y in range(CY - PLAZA_RY, CY + PLAZA_RY):
             j = frng.randrange(-8, 9)
             flag_tone[fk] = (PAVE[0] + j, PAVE[1] + j, PAVE[2] + j)
         put(x, y, PAVE_J if (x % 30 < 2 or y % 30 < 2) else flag_tone[fk])
-for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):        # the entry aprons
-    for k in range(60):
-        ex = CX + dx * (PLAZA_RX - k) if dx else 0
-        ey = CY + dy * (PLAZA_RY - k) if dy else 0
-        for t in range(-ROAD_W // 2, ROAD_W // 2):
-            x = (ex if dx else CX + t)
-            y = (ey if dy else CY + t)
-            if dx:
-                y = CY + t
-            if ((x - CX) / float(PLAZA_RX)) ** 2 + ((y - CY) / float(PLAZA_RY)) ** 2 <= 1.0:
-                put(x, y, ROAD_S if (x * 7 + y * 13) % 11 == 0 else ROAD)
+# entry aprons: wherever a lane's mask reaches into the plaza's outer band,
+# re-paint it road-coloured so each path flows into the circle at ITS OWN
+# angle (the old compass aprons assumed dead-straight roads)
+for y in range(CY - PLAZA_RY, CY + PLAZA_RY):
+    row = y * W
+    for x in range(CX - PLAZA_RX, CX + PLAZA_RX):
+        d = ((x - CX) / float(PLAZA_RX)) ** 2 + ((y - CY) / float(PLAZA_RY)) ** 2
+        if 0.62 <= d <= 1.0 and _road_mask[row + x] >= 5:
+            put(x, y, ROAD_S if (x * 7 + y * 13) % 11 == 0 else ROAD)
 
 # ---- the object layer -----------------------------------------------------
 _cache = {}
@@ -443,15 +500,17 @@ if HAVE_PACK:
 if HAVE_PACK:
     # the banana stand's future storefront spot — held by the biggest cart for
     # now (the stand building upgrade is its own later step)
-    MARKET['stand'] = (1980, MARKET_Y + 60)
+    # carts sit just off the beach road's north shoulder, following its dips
+    # (the road curves now — placement tracks the waypoints, not MARKET_Y)
+    MARKET['stand'] = (1975, 528)
     try_place(['ME_Singles_Vehicles_48x48_Street_Food_Cart_1.png',
                'ME_Singles_Vehicles_48x48_Street_Food_Cart_2.png'],
-              1980, MARKET_Y + 60, solid=CART_BOX, layer=True, colors=14)
+              1975, 528, solid=CART_BOX, layer=True, colors=14)
     # 🧃 THE MERCH CART — the whole point of Park 2.0
-    MARKET['cart'] = (2290, MARKET_Y + 52)
+    MARKET['cart'] = (2300, 545)
     try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_1.png',
                'ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'],
-              2290, MARKET_Y + 52, solid=CART_BOX, layer=True, colors=14)
+              2300, 545, solid=CART_BOX, layer=True, colors=14)
 
 # ---- 🛝 the playground -----------------------------------------------------
 def sheet_strip(name, out_name, fw, fh=96):
@@ -524,6 +583,20 @@ for _ in range(16):                                    # strays past the edge
     blossom(wrng.randrange(1480, mx0), wrng.randrange(680, 990),
             BLOOM[wrng.randrange(len(BLOOM))])
 
+# roadside tufts: little blossom clusters hugging the path shoulders, so the
+# walk itself has things to look at (Trym: "every meter a bit interesting")
+for i in range(0, len(ROAD_SPINE), 120):
+    sx_, sy_, px_, py_, hw = ROAD_SPINE[i]
+    if wrng.random() < 0.45:
+        continue
+    side = 1 if wrng.random() < 0.5 else -1
+    off = hw + wrng.randrange(10, 26)
+    bx_, by_ = int(sx_ + px_ * off * side), int(sy_ + py_ * off * side)
+    if BOUND + 40 < bx_ < W - BOUND - 40 and BOUND + 60 < by_ < H - BOUND - 40:
+        col = BLOOM[wrng.randrange(len(BLOOM))]
+        for _ in range(wrng.randrange(2, 5)):
+            blossom(bx_ + wrng.randrange(-14, 14), by_ + wrng.randrange(-9, 9), col)
+
 # ---- lamps, benches, rocks, signs -----------------------------------------
 # ⚠️ SIX lamps, placed like a park department would: the plaza's four corners
 # + one per shopping/playing corner. Round 3 scattered ~20 and the centre
@@ -532,8 +605,11 @@ for _ in range(16):                                    # strays past the edge
 # layout defeated both naive pastes and column slicing (boulevards, then
 # fragments). Re-add only after a real contact-sheet study of the file.
 if HAVE_PACK:
+    # benches live at the bends — a seat wherever the path turns and the view
+    # changes (plaza pair + west bend over the pond spur + east-road dip +
+    # south bend by the playground spur)
     for bx, by, fl in ((CX - 130, CY - 60, False), (CX + 130, CY - 60, True),
-                       (880, 350, False), (1640, 820, True)):
+                       (768, 502, False), (1822, 618, True), (1285, 862, False)):
         try_place(['ME_Singles_Camping_48x48_Cut_Wood_Bench_1.png',
                    'ME_Singles_Camping_48x48_Cut_Wood_Bench_2.png'],
                   bx, by, flip=fl, solid=BENCH_BOX)
@@ -563,7 +639,7 @@ if HAVE_PACK:
                         con=1.05, warm=0.02, trim=False)
 
     saw = build_sawhorse()
-    for sx, sy in ((BOUND + 120, CY - 4), (CX + 2, BOUND + 122)):
+    for sx, sy in ((332, 584), (1414, 236)):     # ON the stub ends' new curves
         shadow(sx, sy - 4, saw.width * 0.38, 7)
         im.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
         COLLIDERS.append(('sawhorse', ('rect', -44, -18, 44, 4), sx, sy))
