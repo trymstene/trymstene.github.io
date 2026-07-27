@@ -3702,6 +3702,7 @@ function init() {
           for (let t = 0; t < 25; t++) {
             x = 10 + Math.random() * 80;
             ty = clamp(24 + Math.random() * 58, topClamp + 6, 84);
+            if (x < 44) ty = Math.min(ty, 62);       // never past Barty's desk on the left
             if (!blockedAt(x, ty) && this.balloons.every((o) => Math.abs(o.tx - x) > 7) && this.chutes.every((o) => Math.abs(o.x - x) > 7)) break;
           }
           const c = document.createElement('div');
@@ -3745,7 +3746,7 @@ function init() {
       frame(me) {
         for (let i = this.balloons.length - 1; i >= 0; i--) {
           const b = this.balloons[i];
-          if (b.y < b.ty - 8) continue;              // still up in the air
+          if (b.y < topClamp + 2) continue;          // only unpoppable while still over the stage
           if (Math.hypot(((me.x - b.x) / 100) * floorW, ((me.y - b.y) / 100) * floorH) > (me.size || 90) * 0.5 + 14) continue;
           b.el.remove();
           this.balloons.splice(i, 1);
