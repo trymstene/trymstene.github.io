@@ -1276,7 +1276,7 @@ function init() {
       draw();
       setTimeout(draw, 700);
     });
-    blink(() => { shopEl.hidden = false; });
+    blink(() => { shopEl.hidden = false; document.body.classList.add('pk-inside'); });
     keeperSay(KEEPER_GREET, 6000);
     if (!cartViewTracked) { cartViewTracked = true; track('stand_cart_view'); }
   }
@@ -1284,7 +1284,7 @@ function init() {
     if (shopEl.hidden) return;
     clearTimeout(keeperTimer);
     keeperBubble.classList.remove('is-on');
-    blink(() => { shopEl.hidden = true; });
+    blink(() => { shopEl.hidden = true; document.body.classList.remove('pk-inside'); });
   }
   // tap the HUT itself to enter (walk-then-open — the beach stall grammar)
   function tapShop(wx, wy) {
@@ -1547,7 +1547,8 @@ function init() {
       draw();
       setTimeout(draw, 700);
     });
-    blink(() => { standEl.hidden = false; standEl.scrollTop = 0; });
+    // one place, one title: the stand's neon sign replaces the park heading
+    blink(() => { standEl.hidden = false; standEl.scrollTop = 0; document.body.classList.add('pk-inside'); });
     standSay(ST_HELLO);
     if (!standCounterTracked) { standCounterTracked = true; track('stand_counter'); }
   }
@@ -1555,7 +1556,7 @@ function init() {
     if (standEl.hidden) return;
     clearTimeout(standBubbleTimer);
     standBubble.classList.remove('is-on');
-    blink(() => { standEl.hidden = true; });
+    blink(() => { standEl.hidden = true; document.body.classList.remove('pk-inside'); });
   }
   document.getElementById('pkStandBack').addEventListener('click', closeStand);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !standEl.hidden) closeStand(); });
