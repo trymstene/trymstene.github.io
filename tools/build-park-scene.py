@@ -879,9 +879,11 @@ if HAVE_PACK:
     # untouched (no blockify/dedisc — it is already on-palette pixel art),
     # ×2 NEAREST so the chunky pixels stay true next to the heroic banana;
     # a dark inner rect backs the window cutout (the old page's DOM div).
-    # carts sit just off the beach road's north shoulder, following its dips
-    # (the road curves now — placement tracks the waypoints, not MARKET_Y)
-    MARKET['stand'] = (1975, 528)
+    # perched at the east road's northward crest (waypoint 2080,545 — Trym),
+    # hugging the north shoulder without spilling into the lane; the client's
+    # sparkle/tap/keeper-window all key off MARKET.stand, so this tuple is
+    # the ONE knob
+    MARKET['stand'] = (2090, 520)
     try:
         hut = Image.open(os.path.join(SITE, 'public', 'assets', 'banana-stand',
                                       'hut.png')).convert('RGBA')
@@ -892,7 +894,8 @@ if HAVE_PACK:
         back.alpha_composite(hut)
         hut = back.resize((hut.width * 2, hut.height * 2), Image.NEAREST)
         _cache[('bs-hut', 1, 28, 0.0, 1.0, 1.0)] = hut
-        place('bs-hut', 1975, 528, solid=STAND_BOX, layer=True, colors=28, scale=1.0)
+        place('bs-hut', MARKET['stand'][0], MARKET['stand'][1],
+              solid=STAND_BOX, layer=True, colors=28, scale=1.0)
         print('  stand hut placed (%dx%d)' % hut.size)
     except Exception as e:
         print('  stand hut failed', e)
