@@ -4,6 +4,20 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, SVG } from '../lib/banana-engine.js';
 
 const rows = [...document.querySelectorAll('.dw-row[data-id]')];
+// the preview background switcher — grey default so white gear stays visible
+const bgBtns = [...document.querySelectorAll('.dw-bg')];
+function setBg(hex) {
+  document.documentElement.style.setProperty('--dw-bg', hex);
+  bgBtns.forEach((b) => b.classList.toggle('is-on', b.dataset.bg === hex));
+  try { localStorage.setItem('dw-bg', hex); } catch (e) {}
+}
+if (bgBtns.length) {
+  let saved = '#888888';
+  try { saved = localStorage.getItem('dw-bg') || saved; } catch (e) {}
+  if (!bgBtns.some((b) => b.dataset.bg === saved)) saved = '#888888';
+  setBg(saved);
+  bgBtns.forEach((b) => b.addEventListener('click', () => setBg(b.dataset.bg)));
+}
 if (rows.length) init();
 
 function init() {

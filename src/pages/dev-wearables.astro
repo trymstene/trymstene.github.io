@@ -32,13 +32,22 @@ packs.forEach((p) => {
       border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
       padding: 0.9rem; margin-bottom: 1rem;
     }
+    /* the preview background is switchable (white gear on white = invisible;
+       Trym's catch) — JS sets --dw-bg from the swatch row, grey by default */
     .dw-sprite {
       flex: 0 0 150px; height: 150px; border: 3px solid var(--ink);
       display: flex; align-items: center; justify-content: center;
-      background: repeating-conic-gradient(#f4f1e8 0% 25%, #e4e0d2 0% 50%) 0 0 / 18px 18px;
+      background: var(--dw-bg, #888888);
     }
     .dw-sprite svg { max-width: 84%; max-height: 84%; width: auto; height: auto; image-rendering: pixelated; }
-    .dw-banana { flex: 0 0 170px; height: 170px; border: 3px solid var(--ink); background: #fff; }
+    .dw-banana { flex: 0 0 170px; height: 170px; border: 3px solid var(--ink); background: var(--dw-bg, #888888); }
+    .dw-bgs { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1.2rem; }
+    .dw-bgs span { font-size: 0.72rem; font-weight: 700; opacity: 0.7; }
+    .dw-bg {
+      width: 30px; height: 30px; border: 3px solid var(--ink); cursor: pointer; padding: 0;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .dw-bg.is-on { outline: 3px solid #e6b800; outline-offset: 2px; }
     .dw-banana canvas { width: 100%; height: 100%; display: block; }
     .dw-meta { flex: 1; min-width: 0; }
     .dw-meta h2 { margin: 0 0 0.15rem; font-size: 1.05rem; }
@@ -58,6 +67,13 @@ packs.forEach((p) => {
   <div class="dw-wrap">
     <h1>🧪 wearables review</h1>
     <p class="dw-sub">{rows.length} candidates awaiting the banana guy's verdict — item alone, and on the banana. Approve = the preview flag comes off.</p>
+    <div class="dw-bgs" aria-label="Preview background">
+      <span>bg:</span>
+      <button class="dw-bg" type="button" data-bg="#ffffff" style="background:#ffffff" aria-label="white"></button>
+      <button class="dw-bg" type="button" data-bg="#888888" style="background:#888888" aria-label="grey"></button>
+      <button class="dw-bg" type="button" data-bg="#1a1f1a" style="background:#1a1f1a" aria-label="dark"></button>
+      <button class="dw-bg" type="button" data-bg="#569a4a" style="background:#569a4a" aria-label="park green"></button>
+    </div>
     {rows.map((r) => (
       <article class="dw-row" data-id={r.id} data-slot={r.slot} data-art={r.art}>
         <div class="dw-sprite" aria-label={`${r.label} sprite`}></div>

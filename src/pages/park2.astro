@@ -311,15 +311,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       border: 3px solid transparent; border-top: 5px solid #000; border-bottom: 0;
     }
     .pk-mood.is-on { opacity: 1; }
-    /* 🍌 OLD PEEL — the bench elder: subtle breathing, a wordy mood bubble */
+    /* 🍌 OLD PEEL — the bench elder: an engine banana held on frame 0 (no
+       dancing, no breathing — too old), canvas clipped at the bench seat */
     .pk-old { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
-    .pk-old svg {
-      display: block; width: 100%; height: 100%;
-      animation: pkOldBreathe 3.4s ease-in-out infinite; transform-origin: 50% 100%;
-    }
-    @keyframes pkOldBreathe { 50% { transform: scaleY(0.985); } }
-    @media (prefers-reduced-motion: reduce) { .pk-old svg { animation: none; } }
+    .pk-old canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
     .pk-oldsay {
+      top: 29%; color: #111;   /* the stage text is light — his lines are not */
       white-space: normal; width: max-content; max-width: 150px; text-align: left;
       font-size: 10px; line-height: 1.35; padding: 4px 6px; font-weight: 800;
     }
@@ -346,6 +343,35 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
     }
     @media (prefers-reduced-motion: reduce) { .pk-egg { animation: none; } }
+
+    /* 🪙 THE COIN WINDOW — the world-clock coin, washed up on the fountain
+       rim (same sprites as the club floor, % sized for the world camera) */
+    .pk-coin {
+      position: absolute; transform: translate(-50%, -50%);
+      image-rendering: pixelated; background-repeat: no-repeat; pointer-events: none;
+      filter: drop-shadow(0 0 9px rgba(255, 220, 85, 0.55));
+    }
+    .pk-coin--5 { width: 1.6%; aspect-ratio: 1 / 1; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 600% 100%; animation: pkCoinSpin 0.9s steps(6) infinite; }
+    @keyframes pkCoinSpin { to { background-position-x: 120%; } }
+    .pk-coin--10 { width: 1.78%; aspect-ratio: 49 / 31; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 400% 100%; animation: pkCoinTw 2s steps(4) infinite; }
+    .pk-coin--20 { width: 2.14%; aspect-ratio: 59 / 43; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 400% 100%; animation: pkCoinTw 2.6s steps(4) infinite; }
+    @keyframes pkCoinTw { to { background-position-x: 133.34%; } }
+    @media (prefers-reduced-motion: reduce) { .pk-coin { animation: none; } }
+    /* the wash-up splash — three droplets, fountain-water blue */
+    .pk-splash { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
+    .pk-splash i {
+      position: absolute; width: 4px; height: 4px; background: #bfe8ff;
+      animation: pkSplashUp 0.7s ease-out forwards;
+    }
+    .pk-splash i:nth-child(1) { left: -9px; animation-delay: 0.05s; }
+    .pk-splash i:nth-child(2) { left: 0; height: 5px; background: #e8f7ff; }
+    .pk-splash i:nth-child(3) { left: 9px; animation-delay: 0.1s; }
+    @keyframes pkSplashUp {
+      0% { transform: translateY(0); opacity: 1; }
+      60% { transform: translateY(-14px); opacity: 1; }
+      100% { transform: translateY(-4px); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-splash { display: none; } }
 
     /* 🪙 the tossed coin — left/top glide + an inner lift = the arc */
     .pk-coinfly {
@@ -399,6 +425,29 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-cardx:hover { opacity: 1; }
     .pk-panel__sub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
     .pk-panel__sub b { color: #ffd98a; opacity: 1; }
+
+    /* 🍌 the NPC card — beach npcpop pattern, pk edition: tilted waist-up
+       portrait peeking over the corner, name beside it, question deck below */
+    .pk-card--npc { overflow: visible; position: relative; }
+    .pk-card--npc h2 { margin: 0 0 0.4rem; padding-left: 116px; min-height: 50px; display: flex; align-items: center; font-size: 1.15rem; }
+    .pk-npcpop {
+      position: absolute; top: -76px; left: -26px; z-index: 3; width: 180px; height: 180px;
+      transform: rotate(-8deg); transform-origin: center bottom; pointer-events: none;
+      clip-path: inset(0 0 26% 0);   /* waist-up only */
+      filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.4));
+    }
+    .pk-npcpop canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+    .pk-npcsay { min-height: 2.8em; font-size: 0.84rem; line-height: 1.45; margin: 0 0 0.7rem; }
+    .pk-npcq { display: flex; flex-direction: column; gap: 6px; }
+    .pk-npcq button {
+      appearance: none; text-align: left; font: inherit; font-size: 0.78rem; font-weight: 700;
+      background: #182a18; color: #fffdf5; border: 2px solid #000; padding: 0.45rem 0.6rem; cursor: pointer;
+    }
+    .pk-npcq button:hover { background: #234023; }
+    @media (max-width: 420px) {
+      .pk-npcpop { width: 156px; height: 156px; top: -64px; left: -20px; }
+      .pk-card--npc h2 { padding-left: 100px; min-height: 44px; }
+    }
 
     /* 🌱 THE GARDEN — plants grow on the plate's soil slots */
     /* 💧 the per-slot soil state, laid under the plant: dark = watered today */
@@ -673,6 +722,125 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       box-shadow: 4px 4px 0 #000; padding: 0.6rem; text-decoration: none;
       font-family: inherit; font-size: 0.9rem;
     }
+
+    /* 🍌🏪 THE BANANA STAND INTERIOR — the old /park/ counter scene, ported
+       as a park2 walk-in: dark stand chrome, yellow awning, gold planks,
+       shelf + spotlight below (the scene scrolls; commerce CSS = bs- port) */
+    .pk-stand {
+      position: absolute; inset: 0; z-index: 40; overflow-y: auto;
+      background: #0d0b14; color: #fffdf5; padding: 0 0.6rem 0.8rem;
+    }
+    .pk-stand[hidden] { display: none; }
+    .pk-stand__kiosk { position: relative; border: 4px solid #000; box-shadow: 6px 6px 0 #000; background: #17121f; margin-top: 0.6rem; }
+    .pk-stand__awning { display: flex; height: 20px; }
+    .pk-stand__awning span { flex: 1; }
+    .pk-stand__awning span:nth-child(odd) { background: #ffe135; }
+    .pk-stand__awning span:nth-child(even) { background: #241d33; }
+    .pk-stand__x {
+      position: absolute; top: 26px; right: 6px; z-index: 6;
+      appearance: none; font: inherit; font-weight: 800; line-height: 1;
+      background: #ffe135; color: #10240f; border: 3px solid #000;
+      box-shadow: 2px 2px 0 #000; width: 30px; height: 30px; cursor: pointer;
+    }
+    .pk-stand__window {
+      position: relative; overflow: hidden;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0.06) 45%),
+        repeating-linear-gradient(90deg, #6b5617 0 24px, #4a3a0d 24px 27px, #63500f 27px 51px, #4a3a0d 51px 54px);
+      height: clamp(150px, 34vw, 200px);
+    }
+    .pk-stand__keeper {
+      appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+      display: block; width: min(360px, 88%); margin: 0 auto; position: relative; z-index: 1;
+    }
+    .pk-stand__keeper canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; margin-top: -13%; }
+    .pk-stand__bubble {
+      position: absolute; right: 2.5%; top: 26px; z-index: 5;
+      max-width: 46%; background: #fffdf5; color: #111; border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000; padding: 0.32rem 0.55rem; font-size: 0.72rem;
+      font-weight: 700; opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .pk-stand__bubble.is-on { opacity: 1; }
+    .pk-stand__counter {
+      height: 52px; border-top: 4px solid #000; position: relative;
+      background: repeating-linear-gradient(90deg, #3a2b18 0 26px, #2c2113 26px 52px);
+    }
+    .pk-stand__counter::before {
+      content: ''; position: absolute; inset: 0 0 auto; height: 7px;
+      background: #4a3820; border-bottom: 3px solid #000;
+    }
+    .pk-stand__wallet {
+      position: absolute; left: 4%; top: 56%; transform: translateY(-50%); z-index: 2;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .pk-stand__wallet img { height: auto; image-rendering: pixelated; filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.45)); }
+    .pk-stand__wallet b { font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 1.05rem; text-shadow: 2px 2px 0 #000; }
+    .pk-stand__shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 0.9rem; }
+    @media (min-width: 560px) { .pk-stand__shelf { grid-template-columns: repeat(4, 1fr); } }
+    .pk-tile {
+      appearance: none; position: relative; border: 3px solid #000; background: #17121f;
+      color: #fffdf5; box-shadow: 4px 4px 0 #000; cursor: pointer;
+      padding: 0.5rem 0.3rem 0.45rem; display: grid; justify-items: center; gap: 0.28rem;
+      font-family: inherit; transition: transform 0.08s ease;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .pk-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+    .pk-tile.is-picked { outline: 3px solid #ffe135; outline-offset: 2px; }
+    .pk-tile__art { height: 48px; display: flex; align-items: center; justify-content: center; }
+    .pk-tile__art svg { height: 44px; width: auto; max-width: 58px; image-rendering: pixelated; }
+    .pk-tile b { font-size: 0.6rem; font-weight: 700; text-align: center; line-height: 1.15; opacity: 0.9; }
+    .pk-tile__slot {
+      font-size: 0.48rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #b9b2d0; border: 2px solid #000; background: #241d33; padding: 0.05rem 0.3rem;
+    }
+    .pk-price { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 800; color: #ffe135; }
+    .pk-price img { image-rendering: pixelated; }
+    .pk-tile .pk-price { font-size: 0.74rem; }
+    .pk-tile .pk-price img { width: 13px; }
+    .pk-tile__lock { position: absolute; top: -7px; right: -6px; width: 18px; display: none; }
+    .pk-tile.is-locked .pk-tile__lock { display: block; }
+    .pk-tile__lock svg { width: 100%; height: auto; image-rendering: pixelated; display: block; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.6)); }
+    .pk-tile__own {
+      position: absolute; top: -8px; right: -6px; display: none;
+      background: #37d67a; color: #06220f; border: 2px solid #000;
+      font-size: 0.48rem; font-weight: 800; letter-spacing: 0.08em; padding: 0.1rem 0.3rem;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .pk-tile.is-owned .pk-tile__own { display: block; }
+    .pk-tile.is-owned .pk-tile__art { filter: drop-shadow(0 0 5px rgba(55, 214, 122, 0.45)); }
+    .pk-stand__head {
+      font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 0.82rem;
+      letter-spacing: 0.06em; margin: 1.2rem 0 0.6rem; text-transform: lowercase;
+    }
+    .pk-stand__spot {
+      display: flex; gap: 0.8rem; align-items: center; margin-top: 0.9rem;
+      border: 4px solid #000; box-shadow: 5px 5px 0 #000; background: #241d33; padding: 0.8rem;
+    }
+    .pk-stand__spot[hidden] { display: none; }
+    .pk-stand__spotart {
+      flex: 0 0 88px; height: 88px; display: flex; align-items: center; justify-content: center;
+      border: 3px solid #000; background: #17121f;
+    }
+    .pk-stand__spotart svg { height: 70px; width: auto; max-width: 78px; image-rendering: pixelated; }
+    .pk-stand__spotmeta { flex: 1; min-width: 0; }
+    .pk-stand__spotmeta h2 { font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 1rem; margin: 0 0 0.2rem; }
+    .pk-stand__spotmeta p { margin: 0 0 0.55rem; font-size: 0.8rem; opacity: 0.85; }
+    .pk-stand__spotrow { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .pk-price--big { font-size: 1.1rem; }
+    .pk-price--big img { width: 20px; }
+    .pk-stand button.pk-btn--buy {
+      flex: 0 1 auto; padding: 0.45rem 0.85rem; font-size: 0.82rem; cursor: pointer;
+      border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+      background: #ffe135; color: #111; font-weight: 800; font-family: inherit;
+    }
+    .pk-stand button.pk-btn--buy.is-poor { background: #17121f; color: #fffdf5; opacity: 0.85; }
+    .pk-stand button.pk-btn--buy.is-owned { background: #37d67a; color: #06220f; }
+    @media (max-width: 420px) { .pk-stand__spot { flex-wrap: wrap; } .pk-stand__spotmeta { flex-basis: 100%; } }
+    .pk-stand button.pk-stand__back {
+      display: block; margin: 1rem auto 0.4rem; box-shadow: 3px 3px 0 #000;
+      padding: 0.5rem 0.9rem; font-size: 0.85rem; cursor: pointer; border: 3px solid #000;
+      background: #8de08d; color: #10240f; font-weight: 800; font-family: inherit;
+    }
   </style>
 
   <div class="pk-wrap">
@@ -706,6 +874,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
         </div>
 
+        <!-- 🍌 OLD PEEL — the park's first full RPG NPC: tilted waist-up
+             portrait + a question deck (future NPCs reuse pk-card--npc). -->
+        <div class="pk-panel" id="pkOldPanel" hidden>
+          <div class="pk-card pk-card--npc" role="dialog" aria-label="Old Peel">
+            <div class="pk-npcpop" aria-hidden="true"><canvas id="pkOldPortrait" width="390" height="390"></canvas></div>
+            <button class="pk-cardx" id="pkOldClose" type="button" aria-label="close">✕</button>
+            <h2>old peel</h2>
+            <p class="pk-npcsay" id="pkOldLine"></p>
+            <div class="pk-npcq" id="pkOldQs"></div>
+          </div>
+        </div>
+
         <!-- 🧃 THE MERCH SHOP — a real interior (the stand's counter scene,
              merch edition): goods hung on the back wall, Inka at the desk. -->
         <div class="pk-shop" id="pkShop" role="dialog" aria-label="The merch shop" hidden>
@@ -725,6 +905,50 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <span class="pk-shop__sign">everything else in the park costs coins. this is the one real thing — printed &amp; shipped to your door.</span>
           </div>
           <button class="pk-btn pk-shop__back" id="pkShopBack" type="button">🌳 back to the park</button>
+        </div>
+
+        <!-- 🍌🏪 THE BANANA STAND — the coin shop, ported from the old /park/
+             page (same commerce plumbing: shelf, locks, back-catalog, buy →
+             own_<id> pass stats + instant equip). Interior scene, scrolls. -->
+        <div class="pk-stand" id="pkStand" role="dialog" aria-label="The Banana Stand" hidden>
+          <div class="pk-stand__kiosk">
+            <div class="pk-stand__bubble" id="pkStandBubble" role="status" aria-live="polite"></div>
+            <button class="pk-stand__x" id="pkStandClose" type="button" aria-label="leave the stand">×</button>
+            <div class="pk-stand__awning" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="pk-stand__window">
+              <button class="pk-stand__keeper" id="pkStandKeeper" aria-label="The shopkeeper">
+                <canvas id="pkStandKeeperCv" width="360" height="360" aria-hidden="true"></canvas>
+              </button>
+            </div>
+            <div class="pk-stand__counter">
+              <div class="pk-stand__wallet" aria-label="Your bananacoins">
+                <img src="/assets/banana-stand/coin.png" width="34" alt="" aria-hidden="true" />
+                <b id="pkStandWallet">0</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- the SPOTLIGHT: tap a shelf tile and the item takes the stage -->
+          <div class="pk-stand__spot" id="pkStandSpot" hidden>
+            <div class="pk-stand__spotart" id="pkStandSpotArt"></div>
+            <div class="pk-stand__spotmeta">
+              <h2 id="pkStandSpotName"></h2>
+              <p id="pkStandSpotDesc"></p>
+              <div class="pk-stand__spotrow">
+                <span class="pk-price pk-price--big"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><b id="pkStandSpotPrice"></b></span>
+                <button class="pk-btn pk-btn--buy" id="pkStandBuy" type="button">buy</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- the SHELF: every item in stock, built from the manifest -->
+          <div class="pk-stand__shelf" id="pkStandShelf" aria-label="The banana stand's stock"></div>
+          <h2 class="pk-stand__head" id="pkStandBackHead" hidden>missed drops — the back-catalog</h2>
+          <div class="pk-stand__shelf" id="pkStandBackShelf" aria-label="Drops you missed" hidden></div>
+
+          <button class="pk-btn pk-stand__back" id="pkStandBack" type="button">🌳 back to the park</button>
         </div>
       </div><!-- /.pk-view -->
 

@@ -1,12 +1,16 @@
 // 🌳 THE PARK — Park 2.0 P2: the beach engine's chassis on the park scene
 // (park-2-plan). Walkable world, both-axis camera, doors to the rave (south)
 // and the bay (east), World HUD, presence room. Activities land in P3.
-import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet } from '../lib/banana-pass.js';
+// ⚠️ the engine's art dict imports as ART — this module already has a local
+// SVG() string helper (the acorn/stake pixel maps)
+import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, SVG as ART } from '../lib/banana-engine.js';
+import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
+import { passStat, passGet, passPush } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
-import { presenceRoom, poofInto, worldSid } from '../lib/world.js';
+import { presenceRoom, poofInto, worldSid, seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
+import { wearToCustom } from '../lib/wear-render.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
@@ -60,63 +64,14 @@ const STAKE_SVG = SVG('7 12',
   + R(3, 11, 1, 1, '#4a3018'));
 
 // 🍌 OLD PEEL — the bench elder by the fountain, the park's ambient
-// commentator. Banana-density pixel map (#111 outlines, inner shading, age
-// spots, flat cap, a cane against the bench). Rendered from the ASCII map so
-// the art stays editable.
+// commentator. A NORMAL engine banana (drawComposite) LOCKED to the first
+// standing frame — no dancing, too old — wearing the NPC drafts from
+// wearables.js: flat cap, round glasses, white beard, walking cane.
 const OLD_NAME = 'old peel';
-const OLD_PAL = {
-  K: '#111111', C: '#6e5a3a', c: '#55452c', e: '#8c744e',
-  Y: '#ffe135', H: '#fff8c9', S: '#d9b32a', A: '#a8742a',
-  W: '#f5f5f5', M: '#7a5c14', B: '#8a5a2b', b: '#6b4320', G: '#f5f2e8',
+const OLD_DRAW = {
+  hat: 'flatcap', glasses: 'potter', extras: { whitebeard: true, oldcane: true },
+  top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
 };
-const OLD_MAP = [
-  '........KKKKKKKK..........',
-  '.......KCCCCCCCCK.........',
-  '......KCeCCCCCCCcK........',
-  '.....KCeCCCCCCCCCcK.......',
-  '....KKKKKKKKKKKKKKKK......',
-  '.....KYHYYYYYYYSYK........',
-  '.....KYHYYYYYYYSYK........',
-  '.....KYKWWYYKWWYSK........',
-  '.....KYKWKYYKWKYSK........',
-  '.....KYYYYYYYYYYSK........',
-  '.....KYYYYYYYYYYSK........',
-  '.....KYYKMMMKYYYSK........',
-  '.....KYYYYYYYYYYSK........',
-  '......KYYYYYYYYSK.........',
-  '......KYYYYYYYYSK.........',
-  '.....KYYYYYYYYYYSK........',
-  '....KYYYAYYYYYYYYSK.......',
-  '....KYYYYYYYYAYYYSK..KK...',
-  '....KYYYYYYYYYYYYSK.KBBK..',
-  '....KYAYYYYYYYYYYSK..KBK..',
-  '....KYYYYYYYYYYYYSK..KbK..',
-  '....KGGKYYYYYYKGGSK..KbK..',
-  '....KKKKYYYYYYKKKKK..KbK..',
-  '.....KYYYYYYYYYYSK...KbK..',
-  '.....KKKKKKKKKKKKK...KbK..',
-  '......KYYK..KYYK.....KbK..',
-  '......KYYK..KYYK.....KbK..',
-  '......KYYK..KYYK....KKbKK.',
-  '.....KKKKKK.KKKKK.........',
-  '.....KBBBBK.KBBBK.........',
-  '.....KKKKKK.KKKKK.........',
-];
-const OLD_W = 26, OLD_H = OLD_MAP.length;
-const OLD_SVG = (() => {
-  let body = '';
-  OLD_MAP.forEach((row, y) => {
-    for (let x = 0; x < row.length;) {
-      const ch = row[x];
-      if (ch === '.' || !OLD_PAL[ch]) { x++; continue; }
-      let x2 = x + 1;
-      while (x2 < row.length && row[x2] === ch) x2++;   // merge runs
-      body += R(x, y, x2 - x, 1, OLD_PAL[ch]);
-      x = x2;
-    }
-  });
-  return SVG(OLD_W + ' ' + OLD_H, body);
-})();
 // his lines, a band per phase — grief → worry → cautious hope → warmth →
 // joy. Trym's lines verbatim where they fit; hints, never orders.
 const OLD_LINES = [
@@ -138,6 +93,40 @@ const OLD_LINES = [
     'butterflies! my missus loved the butterflies.',
     'this is how i remember it. exactly this.',
     'some days this bench is the best seat in the world.'],
+];
+// 💬 his DIALOGUE — the park's first full RPG NPC (the pattern the Gardener
+// reuses later). A topic answers with `byPhase` (index = health band 0-4),
+// one static `line`, or a `seq` of lore beats stepped per ask; `close` ends
+// the talk after the answer. Lowercase, warm, lean.
+const OLD_GREET = 'ah, company. sit a while — what’s on your mind?';
+const OLD_TOPICS = [
+  { id: 'park', q: 'what happened to the park?', byPhase: [
+    'she used to be the pride of banana world. then the footsteps stopped, and the weeds moved in.',
+    'she’s coming back from a rough patch. parks don’t heal alone, you know.',
+    'she’s half herself again. green in patches, like spring remembering the way.',
+    'look at her. nearly the park i first sat down in, all those years ago.',
+    'this is her. the real her. i knew she had it in her.',
+  ] },
+  { id: 'help', q: 'what can i do to help?', byPhase: [
+    'pull the weeds, pick up the rubbish. small hands make green grass.',
+    'keep weeding — and water anything anyone’s planted. she notices.',
+    'plant something. and water the thirsty ones, even a stranger’s flowers.',
+    'keep her watered and she’ll keep blooming. we’re nearly there.',
+    'you’ve done it, friend. sit down. enjoy her. that helps too.',
+  ] },
+  { id: 'lore', q: 'tell me about yourself', seq: [
+    'kept this park for forty years, i did. mowed her, planted her, knew every bench by its wobble.',
+    'my missus and i had our first picnic right here. she loved the butterflies — said they were flowers that got restless.',
+    'now i just sit. somebody else’s turn to keep her. maybe yours, eh?',
+  ] },
+  { id: 'shop', q: 'what’s that mushroom house?', line: 'inka’s little print shop, past the stand. everything else in this park costs coins — her wall is the one real thing. good sort, inka.' },
+  { id: 'bye', q: 'goodbye', byPhase: [
+    'mind the weeds on your way, friend.',
+    'come back soon. she needs the footsteps.',
+    'off you go. bring a watering can next time, eh?',
+    'lovely day for it. off you go.',
+    'enjoy her, friend. that’s what she’s for.',
+  ], close: true },
 ];
 
 // 🦋 the meadow's six — palette IS the species. Ambient life only (W1c):
@@ -209,6 +198,26 @@ function drawApron(ctx, S) {
   px(72, 102, 3, 6, '#ffe135'); px(75, 101, 3, 3, '#ffe135'); // pocket banana
   px(75, 107, 3, 2, '#c99a1e');
 }
+
+// 🍌🏪 THE BANANA STAND — the coin shop, ported from the old /park/ page
+// (banana-stand.js). Same manifest stock, same DESC voice, same lock art.
+const ST_HELLO = 'what can i get you? everything on the wall is for sale. finally.';
+const ST_DESC = {
+  potato: "it's a potato.",
+  squidhat: "the squid. 120 coins. i don't make the rules. i am the rules.",
+  medal: "you didn't participate in anything. congratulations.",
+  sockssandals: 'open-toe. at a rave. bold.',
+  buckethat: 'a bucket. worn confidently, it becomes a hat.',
+  duckhat: 'the duck stays on your head at all times.',
+  flamingoring: 'flotation certified. dance floor approved.',
+};
+const ST_SOLD = [
+  (l) => `SOLD. the ${l} is yours. wear it loud.`,
+  (l) => `the ${l}. excellent taste. probably.`,
+  (l) => `one ${l}, no receipt. we don't do receipts.`,
+];
+const ST_LOCK_SVG = '<svg viewBox="0 0 8 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#b8781b"/><rect x="1" y="1" width="1" height="2" fill="#b8781b"/><rect x="6" y="1" width="1" height="2" fill="#b8781b"/><rect x="0" y="3" width="8" height="5" fill="#ffd23f"/><rect x="0" y="8" width="8" height="1" fill="#e6a817"/><rect x="3" y="4" width="2" height="2" fill="#7a4a21"/><rect x="3" y="6" width="1" height="1" fill="#7a4a21"/></svg>';
+const ST_BACKCAT_PRICE = 50;
 
 // 🌱 THE GARDEN — the park's daily-return ritual (P3b).
 // ⚠️ THE seed catalog — stars/days/price must match GARDEN_SEEDS in
@@ -514,7 +523,9 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     pendingShop = false;
+    pendingStand = false;
     pendingToss = false;
+    pendingOld = false;
     pendingGarden = null;
     pendingWater = null;
     pendingWeed = null;
@@ -526,11 +537,12 @@ function init() {
     if (tapWeed(wx, wy)) return;
     if (tapGarden(wx, wy)) return;
     if (tapShop(wx, wy)) return;
+    if (tapStand(wx, wy)) return;
     if (tapFountain(wx, wy)) return;
     tgt.x = wx;
     tgt.y = wy;
   });
-  let pendingShop = false, pendingToss = false;
+  let pendingShop = false, pendingToss = false, pendingOld = false;
 
   // ---- 🚪 the doors: hysteresis, never an instant teleport ----------------
   // Arm only once you've been properly INSIDE the park (clear of both doors),
@@ -920,19 +932,41 @@ function init() {
   // Ambient commentator (the animal-bubble grammar, words instead of moods):
   // one line pops on first sight each session, a tap peeks the next line, a
   // phase change refreshes him mid-sit. No walking, no scene, no event.
-  const OLD_X = OLDBENCH[0] - 7, OLD_Y = OLDBENCH[1] - 4;   // seated on his bench
+  // A player-sized engine banana (frame 0, never redrawn) sat ON TOP of the
+  // plate's bench: full body visible, feet landing just past the seat's
+  // front edge — no clipping (Trym: he overflows the bench, never cut).
+  const OLD_X = OLDBENCH[0], OLD_Y = OLDBENCH[1];
+  const OLD_CW = 0.036 * W;              // the player size class (.pk-me)
+  const OLD_BOT = OLD_Y + 13;            // canvas bottom → feet at the bench front
   const oldEl = document.createElement('div');
   oldEl.className = 'pk-old';
-  oldEl.innerHTML = OLD_SVG;
+  const oldCv = document.createElement('canvas');
+  oldCv.width = 150; oldCv.height = 150;
+  oldEl.appendChild(oldCv);
   const oldBub = document.createElement('span');
   oldBub.className = 'pk-mood pk-oldsay';
   oldEl.appendChild(oldBub);
   oldEl.style.left = pct(OLD_X, W);
-  oldEl.style.top = pct(OLD_Y, H);
-  oldEl.style.width = pct(OLD_W, W);
-  oldEl.style.height = pct(OLD_H, H);
+  oldEl.style.top = pct(OLD_BOT, H);
+  oldEl.style.width = pct(OLD_CW, W);
   depth(oldEl, OLD_Y);
   world.appendChild(oldEl);
+  // portrait for his dialogue card: the SAME composite, drawn 2× for
+  // crispness and zoomed so the waist-up crop fills the frame (beach v2)
+  const oldPortraitCv = document.getElementById('pkOldPortrait');
+  assetsReady().then(() => {           // one still frame + the redraw belt
+    const drawOld = () => {
+      drawComposite(oldCv.getContext('2d'), 150, 0, OLD_DRAW);
+      const pc = oldPortraitCv.getContext('2d');
+      pc.clearRect(0, 0, 390, 390);
+      pc.save();
+      pc.scale(1.5, 1.5); pc.translate(-390 * 0.167, -390 * 0.22);
+      drawComposite(pc, 390, 0, OLD_DRAW);
+      pc.restore();
+    };
+    drawOld();
+    setTimeout(drawOld, 700);
+  });
   let oldSeen = false, oldIdx = 0, oldBand = -1, oldTimer = null;
   const oldOnScreen = () => {
     const sx = OLD_X * scale - camX, sy = OLD_Y * scale - camY;
@@ -954,10 +988,55 @@ function init() {
   function oldPhasePoke() {
     if (oldSeen && oldOnScreen()) oldSay();   // live phase → fresh words
   }
+  // 💬 the talk — walk-then-open (beach NPC grammar). The ambient bench
+  // bubble above stays untouched; the tap now opens the dialogue card.
+  const oldPanel = document.getElementById('pkOldPanel');
+  const oldLineEl = document.getElementById('pkOldLine');
+  const oldQsEl = document.getElementById('pkOldQs');
+  const OLD_TALK_AT = { x: OLD_X, y: OLD_Y + 46 };   // stand at the bench front
+  let oldLoreStep = 0, oldCloseTimer = null;
+  function oldAnswer(t) {
+    if (t.seq) { const s = t.seq[oldLoreStep % t.seq.length]; oldLoreStep++; return s; }
+    if (t.byPhase) return t.byPhase[Math.max(0, Math.min(4, phase))];
+    return t.line;
+  }
+  function openOld() {
+    clearTimeout(oldCloseTimer);
+    oldLineEl.textContent = OLD_GREET;
+    if (!oldQsEl.childElementCount) {
+      OLD_TOPICS.forEach((t) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = t.q;
+        b.addEventListener('click', () => {
+          oldLineEl.textContent = oldAnswer(t);
+          if (t.close) { clearTimeout(oldCloseTimer); oldCloseTimer = setTimeout(closeOld, 1700); }
+        });
+        oldQsEl.appendChild(b);
+      });
+    }
+    oldPanel.hidden = false;
+  }
+  function closeOld() {
+    clearTimeout(oldCloseTimer);
+    oldPanel.hidden = true;
+  }
+  document.getElementById('pkOldClose').addEventListener('click', closeOld);
+  oldPanel.addEventListener('click', (e) => { if (e.target === oldPanel) closeOld(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !oldPanel.hidden) closeOld(); });
   function tapOld(wx, wy) {
-    if (!(Math.abs(wx - OLD_X) < 30 && wy > OLD_Y - OLD_H - 10 && wy < OLD_Y + 12)) return false;
-    oldSay();                                 // a peek, no walking
+    if (!(Math.abs(wx - OLD_X) < 45 && wy > OLD_Y - 90 && wy < OLD_Y + 12)) return false;
+    if (Math.hypot(pos.x - OLD_TALK_AT.x, pos.y - OLD_TALK_AT.y) < 130) { openOld(); return true; }
+    pendingOld = true;                        // walk up first, then talk
+    tgt.x = OLD_TALK_AT.x;
+    tgt.y = OLD_TALK_AT.y;
     return true;
+  }
+  function oldWalkTick() {
+    if (pendingOld && Math.hypot(pos.x - OLD_TALK_AT.x, pos.y - OLD_TALK_AT.y) < 130) {
+      pendingOld = false;
+      openOld();
+    }
   }
 
   // ---- 🪙 THE FOUNTAIN COIN TOSS — an honest tiny sink, no payout ---------
@@ -1001,6 +1080,77 @@ function init() {
       toast('🪙 ' + WISHES[wishIdx++ % WISHES.length], 3400);
       tossBusy = false;
     }, 720);
+  }
+
+  // ---- 🪙 THE COIN WINDOW — the world clock, staged diegetically ----------
+  // Same clock, odds and `bc-win` claim key as the club floor / old stand /
+  // bay (world.js — no double-dipping). Only the STAGING is the park's own:
+  // the coin washes up on the FOUNTAIN'S RIM with a splash — a tossed wish
+  // come back. Park sick (phases 0-1) = the fountain is dry: no splash, the
+  // coin just glints in the dry bowl. Still walk-over to claim.
+  const coinWinEl = document.createElement('div');
+  coinWinEl.className = 'pk-coin';
+  coinWinEl.style.display = 'none';
+  world.appendChild(coinWinEl);
+  let coinLive = null, coinShownWin = -1;
+  let coinWinClaimed = -1;
+  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  function rimSpotFor(w2) {   // a spot on the basin's front rim, per window
+    return {
+      x: FOUNTAIN[0] - 52 + seedRand(0x51ab + w2 * 2) * 104,
+      y: FOUNTAIN[1] + 24 + seedRand(0x51ab + w2 * 2 + 1) * 12,
+    };
+  }
+  function coinSplash(x, y) {
+    if (phase < 2) return;   // dry bowl — nothing to splash with
+    const s = document.createElement('div');
+    s.className = 'pk-splash';
+    s.innerHTML = '<i></i><i></i><i></i>';
+    s.style.left = pct(x, W);
+    s.style.top = pct(y, H);
+    depth(s, y + 1);
+    world.appendChild(s);
+    setTimeout(() => s.remove(), 800);
+  }
+  function coinWinTick() {
+    const t = Date.now() / 1000;
+    const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
+    const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
+    if (cPh < COIN_WAIT && coinWinClaimed !== cWin) {
+      const cs = rimSpotFor(cWin);
+      coinWinEl.className = 'pk-coin pk-coin--' + coinAmountFor(cWin);
+      coinWinEl.style.display = '';
+      coinWinEl.style.left = pct(cs.x, W);
+      coinWinEl.style.top = pct(cs.y, H);
+      depth(coinWinEl, cs.y);
+      coinLive = { x: cs.x, y: cs.y, win: cWin };
+      if (coinShownWin !== cWin) {   // fresh window → the wash-up moment
+        coinShownWin = cWin;
+        coinSplash(cs.x, cs.y);
+        float(cs.x, cs.y - 14, '✦');
+      }
+    } else {
+      // unclaimed windows leave in the smoke; claimed ones already vanished
+      if (coinLive && coinWinClaimed !== coinLive.win && coinWinEl.style.display !== 'none') {
+        poofInto(world, 'pk-poof', coinLive.x / W * 100, coinLive.y / H * 100);
+      }
+      coinWinEl.style.display = 'none';
+      coinLive = null;
+    }
+    // the catch: walk into it — same monotonic wallet as everywhere
+    if (coinLive && Math.hypot(pos.x - coinLive.x, pos.y - coinLive.y) < 44) {
+      const n = coinAmountFor(coinLive.win);
+      coinWinClaimed = coinLive.win;
+      try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
+      passStat('coins_earned', n);
+      refreshHud();
+      float(coinLive.x, coinLive.y - 16, '+' + n);
+      toast(phase >= 2 ? '🪙 someone’s wish washed up — yours now'
+        : '🪙 an old wish in the dry bowl — yours now', 3000);
+      track('rave_coin', { n, at: 'park' });
+      coinWinEl.style.display = 'none';
+      coinLive = null;
+    }
   }
 
   // ---- 🧃 THE MERCH CART — the one real thing in the park -----------------
@@ -1112,6 +1262,253 @@ function init() {
       s.textContent = '✦';
       s.style.left = pct(CART_AT.x - 70 + Math.random() * 140, W);
       s.style.top = pct(CART_AT.y - 120 - Math.random() * 130, H);
+      world.appendChild(s);
+      setTimeout(() => s.remove(), 1500);
+    }
+  }
+
+  // ---- 🍌🏪 THE BANANA STAND — the coin shop, walk-in edition -------------
+  // Ported from banana-stand.js: the same manifest STOCK, lock/YOURS states,
+  // back-catalog (curated drops + community items) and the buy flow writing
+  // own_<id> pass stats + instant equip. LIVE COMMERCE — behavior identical
+  // to the old /park/ page by construction (only the chrome moved).
+  const STAND_AT = { x: MARKET.stand[0], y: MARKET.stand[1] };
+  const standEl = document.getElementById('pkStand');
+  const standBubble = document.getElementById('pkStandBubble');
+  const standKeeperCtx = document.getElementById('pkStandKeeperCv').getContext('2d');
+  const standWalletEl = document.getElementById('pkStandWallet');
+  const ST_KEEPER_DRAW = {
+    hat: 'none', glasses: 'none', extras: {},
+    top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+  };
+  const ST_KEEPER_FRAME = 3;   // he stands still — done dancing (Trym's call)
+  let pendingStand = false, standSparkleAt = 0, standCounterTracked = false;
+  let standBuilt = false, standBubbleTimer = null, soldIdx = 0;
+  const stStats = () => passGet().stats || {};
+  const stOwned = (id) => (stStats()['own_' + id] || 0) > 0;
+  function standSay(text) {
+    standBubble.textContent = text;
+    standBubble.classList.add('is-on');
+    clearTimeout(standBubbleTimer);
+    standBubbleTimer = setTimeout(() => standBubble.classList.remove('is-on'), 3200);
+  }
+  function refreshStandWallet() { standWalletEl.textContent = coinBal(); }
+
+  // THE STOCK: every `preview: 'stand'` item, straight from the manifest
+  const ST_STOCK = [];
+  const stExtraSlot = (d) => (d.anchor === 'feet' ? 'shoes' : d.anchor === 'hand' ? 'hands' : 'body');
+  Object.values(WEARABLE_PACKS).forEach((p) => {
+    (p.hats || []).forEach((d) => { if (d.preview === 'stand') ST_STOCK.push({ ...d, artKey: d.art, slot: 'hat' }); });
+    (p.shades || []).forEach((d) => { if (d.preview === 'stand') ST_STOCK.push({ ...d, artKey: d.front, slot: 'face' }); });
+    (p.extras || []).forEach((d) => { if (d.preview === 'stand') ST_STOCK.push({ ...d, artKey: d.art, slot: stExtraSlot(d) }); });
+  });
+  ST_STOCK.sort((a, b) => (a.price || 0) - (b.price || 0));   // browse cheap → grail
+
+  const standShelf = document.getElementById('pkStandShelf');
+  const standSpot = document.getElementById('pkStandSpot');
+  const standBuyBtn = document.getElementById('pkStandBuy');
+  const stTileById = new Map();
+  const ST_ALL = [];   // stand stock + back-catalog entries (added async)
+  let stPicked = null;
+  function stItemArt(item) { return item.artHtml || ART[item.artKey] || ''; }
+  function stUpdateTiles() {
+    const bal = coinBal();
+    ST_ALL.forEach((item) => {
+      const tile = stTileById.get(item.id);
+      if (!tile) return;
+      const owned = stOwned(item.id);
+      tile.classList.toggle('is-owned', owned);
+      tile.classList.toggle('is-locked', !owned && bal < item.price);
+      tile.setAttribute('aria-label', owned
+        ? item.label + ' — yours'
+        : item.label + ' — ' + item.price + ' bananacoins' + (bal < item.price ? ' (not enough coins yet)' : ''));
+    });
+  }
+  function stUpdateSpot(item) {
+    if (!item) return;
+    if (stOwned(item.id)) {
+      standBuyBtn.textContent = '✓ yours';
+      standBuyBtn.classList.add('is-owned');
+      standBuyBtn.classList.remove('is-poor');
+    } else {
+      standBuyBtn.textContent = 'get it';
+      standBuyBtn.classList.toggle('is-poor', coinBal() < item.price);
+      standBuyBtn.classList.remove('is-owned');
+    }
+  }
+  function stPick(item, tile) {
+    standEl.querySelectorAll('.pk-tile').forEach((t) => t.classList.remove('is-picked'));
+    tile.classList.add('is-picked');
+    stPicked = item;
+    track('stand_item_view', { item: item.id });
+    document.getElementById('pkStandSpotArt').innerHTML = stItemArt(item);
+    document.getElementById('pkStandSpotName').textContent = item.label;
+    document.getElementById('pkStandSpotDesc').textContent = item.back ? item.desc : (ST_DESC[item.id] || item.phrase);
+    document.getElementById('pkStandSpotPrice').textContent = item.price;
+    stUpdateSpot(item);
+    standSpot.hidden = false;
+  }
+  function stAddTile(item, container) {
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'pk-tile';
+    tile.innerHTML =
+      '<span class="pk-tile__art">' + stItemArt(item) + '</span>'
+      + '<b>' + item.label + '</b>'
+      + '<span class="pk-tile__slot">' + (item.back ? 'drop' : item.slot) + '</span>'
+      + '<span class="pk-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ' + item.price + '</span>'
+      + '<span class="pk-tile__lock" aria-hidden="true">' + ST_LOCK_SVG + '</span>'
+      + '<span class="pk-tile__own" aria-hidden="true">YOURS</span>';
+    tile.addEventListener('click', () => stPick(item, tile));
+    stTileById.set(item.id, tile);
+    ST_ALL.push(item);
+    container.appendChild(tile);
+  }
+  // 🕰 THE BACK-CATALOG — drop nights you missed, flat-priced above floor gear
+  const stCatOwned = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
+  function stAddBackItems(items) {
+    if (!items.length) return;
+    document.getElementById('pkStandBackHead').hidden = false;
+    const backShelf = document.getElementById('pkStandBackShelf');
+    backShelf.hidden = false;
+    items.forEach((it) => stAddTile(it, backShelf));
+    stUpdateTiles();
+  }
+  function buildStand() {   // lazy — the shelf exists once the door first opens
+    if (standBuilt) return;
+    standBuilt = true;
+    ST_STOCK.forEach((item) => stAddTile(item, standShelf));
+    stUpdateTiles();
+    stAddBackItems(DROPS
+      .filter((d) => !((d.flag && localStorage.getItem(d.flag) === '1') || stOwned(d.id)))
+      .map((d) => ({
+        id: d.id, label: d.label, slot: d.slot === 'glasses' ? 'face' : d.slot,
+        price: ST_BACKCAT_PRICE, back: true, flag: d.flag,
+        artHtml: ART[d.art] || '',
+        desc: (d.by ? 'from ' + d.by + '’s booth. ' : '') + 'you missed the drop night. money fixes that.',
+      })));
+    fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((items) => {
+        if (!Array.isArray(items)) return;
+        const own = stCatOwned();
+        stAddBackItems(items
+          .filter((it) => !own[it.id] && !stOwned(it.id))
+          .map((it) => ({
+            id: it.id, label: it.title || 'community item', slot: 'c',
+            price: ST_BACKCAT_PRICE, back: true,
+            artHtml: (wearToCustom(it.wear) || {}).art || '',
+            desc: (it.by ? 'made by ' + it.by + '. ' : '') + 'you missed the drop night. money fixes that.',
+          })));
+      })
+      .catch(() => { /* offline: the curated back-catalog stands */ });
+  }
+  // the purchase: spend coins, record the deed, wear it out the door.
+  // Exclusivity mirrors the builder: one pair of shoes, one body garment.
+  const ST_FEET_IDS = [], ST_BODY_IDS = [];
+  Object.values(WEARABLE_PACKS).forEach((p) => (p.extras || []).forEach((d) => {
+    if (d.anchor === 'feet') ST_FEET_IDS.push(d.id);
+    if (d.zone === 'body') ST_BODY_IDS.push(d.id);
+  }));
+  function stEquip(item) {
+    const wear = (o) => {
+      if (item.slot === 'c') { o.c = item.id; return o; }   // community: the one custom slot
+      if (item.slot === 'hat') { o.hat = item.id; return o; }
+      if (item.slot === 'face') { o.glasses = item.id; return o; }
+      const ex = { ...(o.extras || {}) };
+      if (item.anchor === 'feet') ST_FEET_IDS.forEach((id) => delete ex[id]);
+      if (item.zone === 'body') ST_BODY_IDS.forEach((id) => delete ex[id]);
+      ex[item.id] = true;
+      o.extras = ex;
+      return o;
+    };
+    try {
+      const saved = wear(JSON.parse(localStorage.getItem('bb-last') || '{}'));
+      localStorage.setItem('bb-last', JSON.stringify(saved));
+      passPush();   // bb-last rides the sync blob — nudge a push
+    } catch (e) {}
+    wear(ME_DRAW);   // the park banana wears it on the very next frame
+    lastF = -1;
+    parkRoom.send({ t: 'outfit', outfit: myParkOutfit() });   // everyone else's view too
+  }
+  standBuyBtn.addEventListener('click', () => {
+    const item = stPicked;
+    if (!item) return;
+    if (stOwned(item.id)) { standSay('you already own that one.'); return; }
+    const bal = coinBal();
+    if (bal < item.price) {
+      // still the demand list — "wanted it, couldn't afford it"
+      track('stand_buy_try', { item: item.id });
+      standSay('that’s ' + item.price + '. you’ve got ' + bal + '. the floor pays in coins.');
+      return;
+    }
+    passStat('coins_spent', item.price);
+    passStat('own_' + item.id, 1);
+    if (item.back) {
+      // back-catalog buys also write the LEGACY stores so every flag/cat-own
+      // reader (rave gift gate, builder chips) unlocks at once
+      if (item.flag) { try { localStorage.setItem(item.flag, '1'); } catch (e) {} }
+      if (item.slot === 'c') {
+        try {
+          const ownM = stCatOwned();
+          ownM[item.id] = Date.now();
+          localStorage.setItem('cat-own-v1', JSON.stringify(ownM));
+        } catch (e) {}
+      }
+    }
+    stEquip(item);
+    refreshHud();
+    refreshStandWallet();
+    stUpdateTiles();
+    stUpdateSpot(item);
+    standSay(ST_SOLD[soldIdx++ % ST_SOLD.length](item.label.toLowerCase()));
+    track('stand_buy', { item: item.id, price: item.price, kind: item.back ? 'drop' : 'stand' });
+  });
+  document.getElementById('pkStandKeeper').addEventListener('click', () => standSay('*polishes the counter*'));
+  function openStand() {
+    buildStand();
+    refreshStandWallet();
+    stUpdateTiles();
+    if (stPicked) stUpdateSpot(stPicked);
+    assetsReady().then(() => {
+      const draw = () => drawComposite(standKeeperCtx, 360, ST_KEEPER_FRAME, ST_KEEPER_DRAW);
+      draw();
+      setTimeout(draw, 700);
+    });
+    blink(() => { standEl.hidden = false; standEl.scrollTop = 0; });
+    standSay(ST_HELLO);
+    if (!standCounterTracked) { standCounterTracked = true; track('stand_counter'); }
+  }
+  function closeStand() {
+    if (standEl.hidden) return;
+    clearTimeout(standBubbleTimer);
+    standBubble.classList.remove('is-on');
+    blink(() => { standEl.hidden = true; });
+  }
+  document.getElementById('pkStandClose').addEventListener('click', closeStand);
+  document.getElementById('pkStandBack').addEventListener('click', closeStand);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !standEl.hidden) closeStand(); });
+  // tap the STAND BUILDING (tap-the-thing) → walk up → the counter cuts in
+  function tapStand(wx, wy) {
+    if (!(Math.abs(wx - STAND_AT.x) < 80 && STAND_AT.y - 130 < wy && wy < STAND_AT.y + 16)) return false;
+    if (Math.hypot(pos.x - STAND_AT.x, pos.y - STAND_AT.y) < 115) { openStand(); return true; }
+    pendingStand = true;
+    tgt.x = STAND_AT.x;
+    tgt.y = STAND_AT.y + 48;
+    return true;
+  }
+  function standTick(now) {
+    if (pendingStand && Math.hypot(pos.x - STAND_AT.x, pos.y - STAND_AT.y) < 115) {
+      pendingStand = false;
+      openStand();
+    }
+    if (now > standSparkleAt) {   // the kiosk's ✦ treatment, stand edition
+      standSparkleAt = now + 7000 + Math.random() * 3200;
+      const s = document.createElement('div');
+      s.className = 'pk-sparkle';
+      s.textContent = '✦';
+      s.style.left = pct(STAND_AT.x - 60 + Math.random() * 120, W);
+      s.style.top = pct(STAND_AT.y - 60 - Math.random() * 60, H);
       world.appendChild(s);
       setTimeout(() => s.remove(), 1500);
     }
@@ -1378,6 +1775,14 @@ function init() {
       w2.el.remove();
     }, 240);
     passStat('rep', 1);
+    // 🪙 ~8%: something under the roots — the chore is a tiny lottery
+    // (client-side roll, same as the world's other coin juice)
+    if (Math.random() < 0.08) {
+      const n = 1 + Math.floor(Math.random() * 3);
+      passStat('coins_earned', n);
+      float(w2.x + 18, w2.y - 34, '+' + n + ' 🪙');
+      toast('🪙 something under the roots — +' + n, 2600);
+    }
     refreshHud();
     float(w2.x, w2.y - 20, '+1');
     if (!weedTracked) { weedTracked = true; track('park_weed'); }
@@ -1811,11 +2216,14 @@ function init() {
     acornTick(now);
     trashTick();
     oldTick();
+    oldWalkTick();
     bflyTick(dt, now);
     animalTick(dt);
     squirrels.forEach((s) => sqStep(s, dt));
     tossTick();
+    coinWinTick();
     cartTick(now);
+    standTick(now);
     gardenTick();
     toolTick();
     doorTick();

@@ -82,6 +82,10 @@ export const WEARABLE_PACKS = {
       // own_<id>, so approval = delete the flag + extend the worker mirrors.)
       { id: 'sunflowercrown', label: 'Sunflower crown', phrase: 'a sunflower crown', art: 'sunflowercrown', seat: -1, preview: true,
         earned: 'garden', stat: 'own_sunflowercrown', lock: 'grown, never bought: plant a sunflower in the park garden and harvest it' },
+      // 🍌 OLD PEEL'S GEAR (P3 DRAFTS — NPC wardrobe for the park's bench
+      // elder; on the /dev-wearables desk, not earnable anywhere yet)
+      // id stays flatcap (ids never rename); the art became the 60s fedora
+      { id: 'flatcap', label: 'Brown fedora', phrase: 'a brown 60s fedora', art: 'flatcap', seat: -1, preview: true },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -105,6 +109,9 @@ export const WEARABLE_PACKS = {
     // HAND (per-frame glove centre + grip).
     extras: [
       { id: 'mustache', label: 'Moustache', phrase: 'a fine moustache', anchor: 'face',  dy: 2.0, sideDx: -1.2, front: 'mustacheFront', side: 'mustacheSide' },
+      // 🍌 OLD PEEL'S GEAR (P3 DRAFTS — see the flat cap note in hats)
+      { id: 'whitebeard', label: 'White beard', phrase: 'a long white beard', anchor: 'face', dy: 5.5, sideDx: 1.5, front: 'whitebeardFront', side: 'whitebeardSide', preview: true },
+      { id: 'oldcane', label: 'Walking cane', phrase: 'a wooden walking cane', anchor: 'hand', hand: 'right', grip: 1.2, art: 'oldcane', preview: true },
       { id: 'fatstache', label: 'Fat moustache', phrase: 'a fat black moustache', anchor: 'face', dy: 4.0, sideDx: -1.2, front: 'fatstacheFront', side: 'fatstacheSide' },
       // the BODY zone — chest-anchored garments + neckwear that all fight for
       // the same torso pixels (bow tie, ties, chains, scarves, nightshirts…),
