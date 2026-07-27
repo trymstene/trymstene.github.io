@@ -10,7 +10,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
   WORLD, BOUND, PLAZA, POND, FOUNTAIN, MARKET, MEADOW, SWINGS, PLOTS, DOORS,
-  OB_RECTS, OB_CIRCLES, OVERLAYS,
+  OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
@@ -33,8 +33,8 @@ const ACORN_SVG = SVG('11 13',
   + R(3, 5, 2, 3, '#e8b866') + R(2, 9, 7, 2, '#a8742a') + R(3, 11, 5, 1, '#8a5a2b')
   + R(5, 12, 1, 1, '#6b4320'));
 
-// 🦋 the meadow's six — palette IS the species. The Gardener + the full
-// 20-species atlas are a later pass; this array is built to grow.
+// 🦋 the meadow's six — palette IS the species. Ambient life only (W1c):
+// nothing is caught or kept, the variety is just so no two look alike.
 const BFLY = [
   { id: 'skipper', name: 'Lemon Skipper', a: '#ffe135', b: '#c99a1e' },
   { id: 'meadowblue', name: 'Meadow Blue', a: '#7db9ff', b: '#3a6fd6' },
@@ -124,6 +124,15 @@ const GARDEN_API = 'https://banana-rave.trymstene.workers.dev/park-garden';
 // in worker-rave (keep in sync); two sprite variants picked by id hash
 const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1000], [1550, 950]];
 
+// 🌸 the bloom card's five honest phase lines — dead → perfect
+const PHASE_LINES = [
+  '💀 the park is dead. dust, straw and bare branches.',
+  '🍂 wilting badly — the straw is winning.',
+  '🌾 patchy — green in places, straw in others. keep going.',
+  '🌿 nearly back — the squirrels returned.',
+  '🦋 in full bloom. the butterflies are out.',
+];
+
 const WISHES = [
   'you wish for a sunny day. granted — look around.',
   'you wish the rave never closes. it never has.',
@@ -205,33 +214,80 @@ function init() {
     ovEls.push(d);
   });
 
-  // 🍂 THE SAD LOOK — the whole plate follows THE BLOOM. A real second art
-  // set (park-sad + ov-sad twins, same geometry), lazy-loaded the first time
-  // the meter wilts, crossfaded 1.5s. Bands with hysteresis so it never flaps.
-  let sadOn = false, sadBuilt = false;
-  function buildSadLayers(then) {
-    if (sadBuilt) { then(); return; }
-    sadBuilt = true;
-    const plate = document.createElement('div');
-    plate.className = 'pk-sadlayer pk-sadplate';
-    world.insertBefore(plate, world.firstChild);
-    ovEls.forEach((d, i) => {
-      const s = document.createElement('div');
-      s.className = 'pk-sadlayer pk-sadov';
-      s.style.backgroundImage = "url('/assets/park/ov-sad-" + i + ".png')";
-      d.appendChild(s);
-    });
-    // fade only once the big plate has actually arrived — no mid-fade pop
-    const pre = new Image();
-    pre.onload = () => { plate.style.backgroundImage = "url('/assets/park/park-sad.png')"; requestAnimationFrame(then); };
-    pre.onerror = () => then();
-    pre.src = '/assets/park/park-sad.png';
+  // 🍂 THE FIVE BLOOM PHASES (W1c) — 0 dead … 4 perfect. Bands start at
+  // 0/20/40/60/80, ±3 hysteresis on every border so nothing flaps. Ground =
+  // three plates from ONE generator pass: sad (0-1) · mid (2-3) · lush (4,
+  // the world's own background). TREES green up one by one between them in a
+  // stable shuffled order — each tree crossfades 0.8s, ~100ms apart.
+  const PHASE_STARTS = [0, 20, 40, 60, 80];
+  const PHASE_GREEN = [0, 0.25, 0.5, 0.75, 1];
+  let phase = -1;
+  function phaseFor(v) {
+    let p = phase;
+    if (p < 0) { p = 0; while (p < 4 && v >= PHASE_STARTS[p + 1]) p++; return p; }
+    while (p < 4 && v >= PHASE_STARTS[p + 1] + 3) p++;
+    while (p > 0 && v <= PHASE_STARTS[p] - 3) p--;
+    return p;
   }
-  function setSad(on) {
-    if (on === sadOn) return;
-    sadOn = on;
-    if (on) buildSadLayers(() => world.classList.add('pk-sad'));
-    else world.classList.remove('pk-sad');
+  // the non-lush plates: lazy-built, preloaded before the fade — no mid-fade pop
+  const plates = {};
+  let plateWant = 'lush';
+  function plateShow(kind) {
+    plateWant = kind;
+    ['sad', 'mid'].forEach((k) => {
+      let el = plates[k];
+      if (!el) {
+        if (k !== kind) return;
+        el = plates[k] = document.createElement('div');
+        el.className = 'pk-plate';
+        world.insertBefore(el, world.firstChild);
+        const pre = new Image();
+        pre.onload = () => {
+          el.style.backgroundImage = "url('" + pre.src + "')";
+          el.dataset.ok = '1';
+          requestAnimationFrame(() => { el.style.opacity = plateWant === k ? '1' : '0'; });
+        };
+        pre.src = '/assets/park/park-' + k + '.png';
+        return;
+      }
+      if (el.dataset.ok) el.style.opacity = k === kind ? '1' : '0';
+    });
+  }
+  // every tree wilts/greens on its own sad-twin element; non-tree overlay
+  // props (cart, kiosk, tables) follow the plate — sad only at phases 0-1
+  const TREE_ORDER = TREE_OVS.slice().sort((a, b) =>
+    ((a * 2654435761) % 4093) - ((b * 2654435761) % 4093) || a - b);
+  const PROP_OVS = OVERLAYS.map((_, i) => i).filter((i) => TREE_OVS.indexOf(i) < 0);
+  const ovSads = {};
+  function fadeOv(i, sad, delay) {
+    let el = ovSads[i];
+    if (!el) {
+      if (!sad) return false;              // green + never wilted = nothing to do
+      el = ovSads[i] = document.createElement('div');
+      el.className = 'pk-ovsad';
+      el.style.backgroundImage = "url('/assets/park/ov-sad-" + i + ".png')";
+      ovEls[i].appendChild(el);
+    }
+    const want = sad ? '1' : '0';
+    if (el.dataset.want === want) return false;
+    el.dataset.want = want;
+    el.style.transitionDelay = delay + 'ms';
+    requestAnimationFrame(() => { el.style.opacity = want; });
+    return true;
+  }
+  function setTrees(p) {
+    const n = Math.round(PHASE_GREEN[p] * TREE_ORDER.length);
+    let k = 0;
+    TREE_ORDER.forEach((ov, idx) => { if (fadeOv(ov, idx >= n, k * 100)) k++; });
+  }
+  function setPhase(p) {
+    if (p === phase) return;
+    phase = p;
+    plateShow(p <= 1 ? 'sad' : p <= 3 ? 'mid' : 'lush');
+    setTrees(p);
+    PROP_OVS.forEach((i) => fadeOv(i, p <= 1, 0));
+    setSquirrels(p >= 3);                  // 🐿 life returns near the top…
+    setBflies(p >= 4);                     // 🦋 …and only a perfect park has these
   }
 
   // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire
@@ -452,16 +508,29 @@ function init() {
   acornSpawn(PARK_TEST ? TEST_ACORN_SPOTS : null);
   if (PARK_TEST) { acornSpawn(TEST_ACORN_SPOTS); acornSpawn(TEST_ACORN_SPOTS); }
 
-  // ---- 🦋 BUTTERFLIES + THE MEADOW (collection v1, keeper comes later) ----
-  // Three flit over the meadow, one wanders the park. Rush one and it darts
-  // off; walk up slowly (a tap near it stops you short) and tap it up close.
-  const bflyCol = () => { try { return JSON.parse(localStorage.getItem('pk_bfly') || '{}'); } catch (e) { return {}; } };
-  const bflyHave = () => { const c = bflyCol(); return BFLY.filter((s) => c[s.id] > 0).length; };
+  // ---- 🦋 BUTTERFLIES — phase-4 life, nothing kept ------------------------
+  // Only a PERFECT park has butterflies (they poof away if the bloom drops).
+  // Two flit over the meadow, one wanders. No catching, no atlas, no storage
+  // (Trym W1c): walk up slowly and tap one and it startles off with a
+  // sparkle. Rush one and it darts off too.
+  try { localStorage.removeItem('pk_bfly'); } catch (e) {}   // the old collection
   const M_AREA = { x0: MEADOW[0] + 40, y0: MEADOW[1] + 30, x1: MEADOW[2] - 40, y1: MEADOW[3] - 30 };
   const ALL_AREA = PARK_TEST
     ? { x0: 1240, y0: 740, x1: 1520, y1: 900 }
     : { x0: BOUND + 60, y0: BOUND + 60, x1: W - BOUND - 60, y1: H - BOUND - 60 };
-  const bflys = [{ area: M_AREA }, { area: M_AREA }, { area: M_AREA }, { area: ALL_AREA }];
+  const bflys = [{ area: M_AREA, gone: true }, { area: M_AREA, gone: true }, { area: ALL_AREA, gone: true }];
+  let bflyOn = false;
+  function setBflies(on) {
+    if (on === bflyOn) return;
+    bflyOn = on;
+    bflys.forEach((b) => {
+      if (on) { bflySpawn(b); return; }
+      if (b.gone) return;
+      poofInto(world, 'pk-poof', b.x / W * 100, (b.y - 26) / H * 100);
+      b.el.remove();
+      b.gone = true;
+    });
+  }
   function bflyAim(b) {
     b.tx = b.area.x0 + Math.random() * (b.area.x1 - b.area.x0);
     b.ty = b.area.y0 + Math.random() * (b.area.y1 - b.area.y0);
@@ -484,10 +553,10 @@ function init() {
     b.dir = 1;
     bflyAim(b);
   }
-  bflys.forEach(bflySpawn);
   function bflyTick(dt, now) {
+    if (!bflyOn) return;
     for (const b of bflys) {
-      if (b.gone) { if (now > b.respawnAt) bflySpawn(b); continue; }
+      if (b.gone) continue;
       const pd = Math.hypot(pos.x - b.x, pos.y - b.y);
       // barrelled at → it's off, well out of reach
       if (pd < 85 && pSpeed > 115 && !b.fleeing) {
@@ -516,77 +585,57 @@ function init() {
       b.el.style.transform = 'translate(-50%,-50%)' + (b.dir < 0 ? ' scaleX(-1)' : '');
     }
   }
-  function catchBfly(b) {
-    const sp = b.sp;
-    const col = bflyCol();
-    col[sp.id] = (col[sp.id] || 0) + 1;
-    try { localStorage.setItem('pk_bfly', JSON.stringify(col)); } catch (e) {}
-    b.el.remove();
-    b.gone = true;
-    b.respawnAt = performance.now() + 20000 + Math.random() * 15000;
-    float(b.x, b.y - 34, '🦋');
-    toast('🦋 ' + sp.name + ' caught!');
-    refreshBflyHud();
+  function startleBfly(b) {
+    float(b.x, b.y - 34, '✦');
+    const ang = Math.atan2(b.y - pos.y, b.x - pos.x) + (Math.random() - 0.5);
+    b.tx = Math.max(b.area.x0, Math.min(b.area.x1, b.x + Math.cos(ang) * 260));
+    b.ty = Math.max(b.area.y0, Math.min(b.area.y1, b.y + Math.sin(ang) * 170));
+    b.spd = 195;
+    b.fleeing = true;
+    b.perchUntil = 0;
   }
   function tapBfly(wx, wy) {
-    const b = bflys.find((q) => !q.gone && Math.hypot(wx - q.x, wy - (q.y - 26)) < 46);
+    const b = bflyOn && bflys.find((q) => !q.gone && Math.hypot(wx - q.x, wy - (q.y - 26)) < 46);
     if (!b) return false;
-    if (Math.hypot(pos.x - b.x, pos.y - b.y) < 78) { catchBfly(b); return true; }
+    if (Math.hypot(pos.x - b.x, pos.y - b.y) < 78) { startleBfly(b); return true; }
     // approach: stop SHORT of it, so the last steps are yours to take slowly
     const d = Math.hypot(b.x - pos.x, b.y - pos.y) || 1;
     tgt.x = b.x - ((b.x - pos.x) / d) * 55;
     tgt.y = b.y - ((b.y - pos.y) / d) * 55;
     return true;
   }
-  // the HUD pill + the atlas popup
-  const bflyBtn = document.getElementById('pkBflyBtn');
-  const bflyNEl = document.getElementById('pkBflyN');
-  const atlasPanel = document.getElementById('pkAtlas');
-  const atlasGrid = document.getElementById('pkAtlasGrid');
-  const atlasSub = document.getElementById('pkAtlasSub');
-  function refreshBflyHud() {
-    const n = bflyHave();
-    bflyBtn.classList.toggle('is-dim', n === 0);
-    bflyNEl.textContent = n ? n + '/' + BFLY.length : '—';
-  }
-  function openAtlas() {
-    const col = bflyCol();
-    atlasGrid.innerHTML = BFLY.map((s) => {
-      const n = col[s.id] || 0;
-      return '<div class="pk-bslot' + (n ? '' : ' is-missing')
-        + '" aria-label="' + (n ? s.name : 'not caught yet') + '">'
-        + bflySvg(s.a, s.b) + '<span>' + (n ? s.name : '???') + '</span>'
-        + (n > 1 ? '<b>' + n + '</b>' : '') + '</div>';
-    }).join('');
-    atlasSub.innerHTML = '🦋 <b>' + bflyHave() + '</b> of ' + BFLY.length
-      + ' kinds caught · walk up slowly, then tap';
-    atlasPanel.hidden = false;
-  }
-  bflyBtn.addEventListener('click', openAtlas);
-  document.getElementById('pkAtlasClose').addEventListener('click', () => { atlasPanel.hidden = true; });
-  atlasPanel.addEventListener('click', (e) => { if (e.target === atlasPanel) atlasPanel.hidden = true; });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !atlasPanel.hidden) atlasPanel.hidden = true; });
-  refreshBflyHud();
 
   // ---- 🐿 SQUIRRELS: locals, never interactive ----------------------------
   // The crab pattern: a home they orbit, darts with long stillnesses, a bolt
-  // when you get close — and they never set foot on the plaza.
+  // when you get close — and they never set foot on the plaza. Life
+  // indicators (W1c): they only live in a nearly-bloomed park (phase ≥3)
+  // and poof off if it drops.
   const inPlaza = (x, y) => {
     const ex = (x - PLAZA.x) / PLAZA.rx, ey = (y - PLAZA.y) / PLAZA.ry;
     return ex * ex + ey * ey < 1;
   };
   const SQ_HOMES = PARK_TEST ? [[1500, 880], [1180, 970]] : [[300, 640], [1180, 970]];
   const squirrels = [];
-  SQ_HOMES.forEach(([hx, hy]) => {
-    const el = document.createElement('div');
-    el.className = 'pk-squirrel is-still';
-    el.innerHTML = SQ_SVG;
-    el.style.left = pct(hx, W);
-    el.style.top = pct(hy, H);
-    world.appendChild(el);
-    squirrels.push({ el, hx, hy, x: hx, y: hy, tx: hx, ty: hy,
-      wait: Math.random() * 3, flee: 0, face: 1, still: true });
-  });
+  let sqOn = false;
+  function setSquirrels(on) {
+    if (on === sqOn) return;
+    sqOn = on;
+    if (!on) {
+      squirrels.forEach((s) => { poofInto(world, 'pk-poof', s.x / W * 100, (s.y - 8) / H * 100); s.el.remove(); });
+      squirrels.length = 0;
+      return;
+    }
+    SQ_HOMES.forEach(([hx, hy]) => {
+      const el = document.createElement('div');
+      el.className = 'pk-squirrel is-still';
+      el.innerHTML = SQ_SVG;
+      el.style.left = pct(hx, W);
+      el.style.top = pct(hy, H);
+      world.appendChild(el);
+      squirrels.push({ el, hx, hy, x: hx, y: hy, tx: hx, ty: hy,
+        wait: Math.random() * 3, flee: 0, face: 1, still: true });
+    });
+  }
   function sqPick(s) {
     const a = Math.random() * Math.PI * 2;
     const r2 = 50 + Math.random() * 90;
@@ -901,12 +950,10 @@ function init() {
     if (v === bloomV || typeof v !== 'number') return;
     bloomV = v;
     bloomNEl.textContent = v + '%';
-    bloomBtn.classList.toggle('is-mid', v <= 60 && v >= 30);
-    bloomBtn.classList.toggle('is-low', v < 30);
-    // the plate itself follows the meter: wilt under 40, recover at 45 (±5
-    // hysteresis so the crossfade never flaps around the line)
-    if (v < 40) setSad(true);
-    else if (v >= 45) setSad(false);
+    const p = phaseFor(v);                 // ±3 hysteresis lives in phaseFor
+    bloomBtn.classList.toggle('is-mid', p === 2 || p === 3);
+    bloomBtn.classList.toggle('is-low', p <= 1);
+    setPhase(p);
   }
   function renderWeeds(list) {
     const seen = new Set();
@@ -959,8 +1006,8 @@ function init() {
       + '<div class="pk-bloombar"><i style="width:' + Math.max(0, bloomV) + '%"></i></div>'
       + '<p class="pk-bloomnum">' + Math.max(0, bloomV) + '%'
       + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : ' · no weeds right now') + '</p>'
-      + (sadOn ? '<p class="pk-wilting">🍂 the park is wilting — nobody’s been tending it.</p>'
-        : bloomV >= 60 ? '<p class="pk-bloomnum">🌸 the park is thriving.</p>' : '')
+      + (phase >= 0 ? '<p class="' + (phase <= 1 ? 'pk-wilting' : 'pk-bloomnum') + '">'
+        + PHASE_LINES[phase] + '</p>' : '')
       + '<p class="pk-panel__sub">weeds drag the park down. pull them. plant things. water what grows. the park remembers.</p>';
     gardenPanel.hidden = false;
   });
@@ -970,7 +1017,10 @@ function init() {
     if (Array.isArray(res.weeds)) renderWeeds(res.weeds);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
   }
-  async function gardenPoll() { applyGarden(await gFetch('')); }
+  async function gardenPoll() {
+    applyGarden(await gFetch(''));
+    if (phase < 0) setPhase(4);   // no word from the server — the park at its best
+  }
   gardenPoll();
   setInterval(() => { if (!document.hidden) gardenPoll(); }, 60000);
   function closeGarden() { gardenPanel.hidden = true; gardenOpenSlot = -1; }
@@ -1316,6 +1366,9 @@ function init() {
       garden: () => gSlots,
       gShim,
       ff: (i, d2) => { const s = gShim.slots[i]; if (s) s.plantedAt -= d2 * 86400000; gardenPoll(); },
+      // 🌸 phase QA: force the shim's bloom, read the resolved phase
+      bloom: (v) => { gShim.bloom = v; gardenPoll(); },
+      phase: () => phase,
     };
   }
 

@@ -42,17 +42,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       position: absolute; pointer-events: none; image-rendering: pixelated;
       background-size: 100% 100%; background-repeat: no-repeat;
     }
-    /* 🍂 the sad twins — real art swap riding THE BLOOM, slow crossfade
-       (never a CSS filter on the world). Plate child sits over the lush
-       background, under every positioned walker/prop. */
-    .pk-sadlayer {
-      position: absolute; inset: 0; pointer-events: none;
+    /* 🍂 the bloom-phase twins — real art swaps riding THE BLOOM (never a
+       CSS filter on the world). Ground plates (sad 0-1 / mid 2-3) crossfade
+       1.5s over the lush background, under every positioned walker/prop;
+       each TREE's autumn twin rides its own 0.8s fade (JS staggers them). */
+    .pk-plate {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
       background-size: 100% 100%; background-repeat: no-repeat;
       image-rendering: pixelated;
       opacity: 0; transition: opacity 1.5s ease;
     }
-    .pk-sadplate { z-index: 0; }
-    .pk-sad .pk-sadlayer { opacity: 1; }
+    .pk-ovsad {
+      position: absolute; inset: 0; pointer-events: none;
+      background-size: 100% 100%; background-repeat: no-repeat;
+      image-rendering: pixelated;
+      opacity: 0; transition: opacity 0.8s ease;
+    }
     .pk-wilting { margin: 0 0 0.7rem; font-size: 0.8rem; font-weight: 800; color: #c9913a; }
     /* ⛲ the fountain — 6-frame strip; end = 100% × 6 / 5 (the stepping rule) */
     .pk-fountain {
@@ -182,20 +187,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     @media (prefers-reduced-motion: reduce) { .pk-acorn { animation: none; } }
 
-    /* 🦋 butterflies — two SVG frames stepped like the poof */
+    /* 🦋 butterflies — two SVG frames stepped like the poof; phase-4 life */
     .pk-bfly {
       position: absolute; width: 0.85%; aspect-ratio: 10 / 8;
       pointer-events: none;
       filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.3));
     }
-    .pk-bfly svg, .pk-bslot svg { width: 100%; height: 100%; display: block; }
-    .pk-bfly svg .f1, .pk-bslot svg .f1 { animation: pkFlapA 0.32s steps(1) infinite; }
-    .pk-bfly svg .f2, .pk-bslot svg .f2 { animation: pkFlapB 0.32s steps(1) infinite; }
+    .pk-bfly svg { width: 100%; height: 100%; display: block; }
+    .pk-bfly svg .f1 { animation: pkFlapA 0.32s steps(1) infinite; }
+    .pk-bfly svg .f2 { animation: pkFlapB 0.32s steps(1) infinite; }
     @keyframes pkFlapA { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
     @keyframes pkFlapB { 0%, 49% { opacity: 0; } 50%, 100% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) {
-      .pk-bfly svg .f1, .pk-bslot svg .f1 { animation: none; }
-      .pk-bfly svg .f2, .pk-bslot svg .f2 { animation: none; opacity: 0; }
+      .pk-bfly svg .f1 { animation: none; }
+      .pk-bfly svg .f2 { animation: none; opacity: 0; }
     }
 
     /* 🐿 squirrels — legs stop when the squirrel does (crab rule) */
@@ -253,7 +258,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     .pk-toast.is-on { opacity: 1; transform: translate(-50%, 0) scale(1); }
 
-    /* 🦋 the atlas popup (the bay's collection card, park edition) */
+    /* the popup cards (bloom / garden) */
     .pk-panel {
       position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
       background: rgba(0, 0, 0, 0.55); padding: 0.8rem;
@@ -276,23 +281,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-cardx:hover { opacity: 1; }
     .pk-panel__sub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
     .pk-panel__sub b { color: #ffd98a; opacity: 1; }
-    .pk-bgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
-    .pk-bslot {
-      position: relative; border: 2px solid #000; background: #182a16;
-      display: grid; place-items: center; gap: 0.25rem; padding: 0.55rem 0.25rem 0.45rem;
-    }
-    .pk-bslot svg { width: 60%; height: auto; aspect-ratio: 10 / 8; }
-    .pk-bslot span { font-size: 0.58rem; font-weight: 800; text-align: center; line-height: 1.2; }
-    .pk-bslot.is-missing svg { filter: brightness(0) opacity(0.35); }
-    .pk-bslot.is-missing span { opacity: 0.5; }
-    .pk-bslot b {
-      position: absolute; right: -2px; bottom: -4px; font-size: 0.55rem; font-weight: 800;
-      background: #8de08d; color: #10240f; border: 2px solid #000; padding: 0 0.15rem;
-    }
-    /* the HUD collection pill is a real button */
+    /* the HUD bloom pill is a real button */
     .pk-whud button { font-family: inherit; appearance: none; cursor: pointer; }
-    .pk-whud__col.is-dim { opacity: 0.55; }
-    .pk-whud__col b { color: #ffd98a; }
 
     /* 🌱 THE GARDEN — plants grow on the plate's soil slots */
     .pk-plant {
@@ -555,27 +545,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="pk-world" id="pkWorld">
           <div class="pk-me" id="pkMe"><canvas id="pkMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
         </div>
-        <!-- 🌍 THE WORLD HUD — LEVEL (rep bar) · COINS · collections (P3) · CROWD -->
+        <!-- 🌍 THE WORLD HUD — LEVEL (rep bar) · COINS · BLOOM · CROWD -->
         <div class="pk-whud" id="pkWhud">
           <span class="pk-whud__lvl"><span id="pkLvlN">LVL 1</span><span class="pk-whud__lvlbar"><i id="pkLvlFill"></i></span></span>
           <span class="pk-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="pkCoinN">0</b></span>
           <button class="pk-whud__bloom" id="pkBloomBtn" type="button" aria-label="the park's bloom">🌸 <b id="pkBloomN">—</b></button>
-          <button class="pk-whud__col is-dim" id="pkBflyBtn" type="button" aria-label="butterfly collection">🦋 <b id="pkBflyN">—</b></button>
           <span class="pk-whud__crowd"><span aria-hidden="true">◍</span> <span id="pkCrowd">solo</span></span>
         </div>
         <div class="pk-hint" id="pkHint">tap to walk · arrow keys / WASD work too</div>
         <div class="pk-exitstrip" id="pkExitStrip" role="status" aria-live="polite"></div>
         <div class="pk-toast" id="pkToast" role="status" aria-live="polite"></div>
-
-        <!-- 🦋 THE ATLAS — the meadow collection; silhouettes for the uncaught -->
-        <div class="pk-panel" id="pkAtlas" hidden>
-          <div class="pk-card" role="dialog" aria-label="Butterfly collection">
-            <button class="pk-cardx" id="pkAtlasClose" type="button" aria-label="close">✕</button>
-            <h2>the meadow's butterflies</h2>
-            <p id="pkAtlasSub" class="pk-panel__sub"></p>
-            <div class="pk-bgrid" id="pkAtlasGrid"></div>
-          </div>
-        </div>
 
         <!-- 🌱 THE GARDEN — seed picker / plant card, one panel, content per open -->
         <div class="pk-panel" id="pkGarden" hidden>

@@ -10,8 +10,10 @@ centre · duck pond NW · MARKET ROW lining the north side of the beach road
 with construction signs.
 
 Outputs:
-  public/assets/park/park.png        2760x1100 world plate
-  public/assets/park/ov-*.png        y-sorted overlay props
+  public/assets/park/park.png        2760x1100 world plate (lush — phase 4)
+  public/assets/park/park-mid.png    patchy half-recovered twin (phases 2-3)
+  public/assets/park/park-sad.png    autumn/neglect twin (phases 0-1)
+  public/assets/park/ov-*.png        y-sorted overlay props (+ ov-sad twins)
   public/assets/park/a-fountain.png  the plaza fountain, animated strip
   public/assets/park/a-swing.png     park swing, 2-frame strip
   public/assets/park/a-spring.png    spring rider, 2-frame strip
@@ -60,10 +62,14 @@ def rect(x0, y0, x1, y1, col):
                 px[x, y] = col if len(col) == 4 else col + (255,)
 
 
-# 🍂 W1b: the SAD twin plate. im2/px2 exist from the fork point on (after the
-# ground+pond are painted); everything placed later writes BOTH canvases from
-# the SAME placement pass, so the geometry contract is identical by construction.
+# 🍂 W1b/W1c: the twin plates. im2 (sad) and im3 (mid, patchy half-recovered)
+# exist from the fork point on (after the ground+pond are painted); everything
+# placed later writes ALL canvases from the SAME placement pass, so the
+# geometry contract is identical by construction. The mid plate keeps the lush
+# sprite art — only its GROUND is graded; trees are client overlays anyway.
 im2, px2 = None, None
+im3, px3 = None, None
+SKIP_MID = [False]     # a flower cluster the mid plate goes without
 
 
 def drab_col(col):
@@ -95,10 +101,12 @@ def put(x, y, col):
         px[x, y] = c
         if px2 is not None:
             px2[x, y] = drab_col(c)
+        if px3 is not None and not SKIP_MID[0]:
+            px3[x, y] = c
 
 
 def shadow(cx, cy, rx, ry, a=64):
-    for p in ([px, px2] if px2 is not None else [px]):
+    for p in [q for q in (px, px2, px3) if q is not None]:
         for y in range(int(cy - ry), int(cy + ry + 1)):
             for x in range(int(cx - rx), int(cx + rx + 1)):
                 if not (0 <= x < W and 0 <= y < H):
@@ -186,6 +194,7 @@ def tile_stats(t):
     return specks, edge, tex
 
 
+FLOWER_UNDO = []       # [(x, y, under-colour, stamped-colour), ...] per cluster
 if HAVE_PACK:
     # ⚠️ contact-sheet study (round 8): the pack's REAL lawn texture is the
     # Grass_Wall_1 family — dense leafy blades, zero debris. The Grass_1..4
@@ -269,23 +278,39 @@ if HAVE_PACK:
         for _ in range(340):
             t2 = TUFT.transpose(Image.FLIP_LEFT_RIGHT) if grng.random() < 0.5 else TUFT
             im.alpha_composite(t2, (grng.randrange(10, W - 58), grng.randrange(10, H - 58)))
+    # each cluster remembers what it painted over — the mid plate (W1c) drops
+    # most of them ("most flowers gone") by restoring the lawn underneath
     for _ in range(34):
         ox, oy = grng.randrange(60, W - 100), grng.randrange(60, H - 100)
+        undo = []
         for x, y, col in FLOWER_STAMPS[grng.randrange(len(FLOWER_STAMPS))] if FLOWER_STAMPS else []:
+            if 0 <= ox + x < W and 0 <= oy + y < H:
+                c = col if len(col) == 4 else col + (255,)
+                undo.append((ox + x, oy + y, px[ox + x, oy + y], c))
             put(ox + x, oy + y, col)
+        FLOWER_UNDO.append(undo)
 else:
     rect(0, 0, W, H, (86, 152, 74))
 
 # a soft afternoon grade — greens lifted warm, colour-keyed like the beach's
 GRASS_TARGET = (128, 186, 96)
+
+
+def warmgrade(c):
+    """the exact per-pixel grade below, as a function — the mid fork replays
+    it on the flower-undo colours so restored lawn matches its surroundings"""
+    r, g, b, a = c
+    if g > r - 10 and g > b:                     # grassy → lift toward warm green
+        k = 0.30
+        return (int(r * (1 - k) + GRASS_TARGET[0] * k),
+                int(g * (1 - k) + GRASS_TARGET[1] * k),
+                int(b * (1 - k) + GRASS_TARGET[2] * k), a)
+    return c
+
+
 for y in range(H):
     for x in range(W):
-        r, g, b, a = px[x, y]
-        if g > r - 10 and g > b:                 # grassy → lift toward warm green
-            k = 0.30
-            px[x, y] = (int(r * (1 - k) + GRASS_TARGET[0] * k),
-                        int(g * (1 - k) + GRASS_TARGET[1] * k),
-                        int(b * (1 - k) + GRASS_TARGET[2] * k), a)
+        px[x, y] = warmgrade(px[x, y])
 
 # ---- 🛣 THE PARK PATHS: the beach's curvy road system, dirt palette --------
 # Trym on the straight cross (round 6): "very symmetric, systemic, square and
@@ -420,7 +445,8 @@ _cache = {}
 PLACED = []
 COLLIDERS = []
 OVERLAYS = []
-SWINGS = []
+TREE_OVS = []          # overlay indices that are TREES — the client greens
+SWINGS = []            # these one by one across the bloom phases (W1c)
 SIGNS = []
 MARKET = {}
 
@@ -497,12 +523,16 @@ def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
     im.alpha_composite(s, box[:2])
     if s2 is not None:
         im2.alpha_composite(s2, box[:2])
+    if im3 is not None:
+        im3.alpha_composite(s, box[:2])    # the mid plate keeps lush props
     PLACED.append((name, box))
     if layer:
         fn = 'ov-%d.png' % len(OVERLAYS)
         s.save(os.path.join(OUT, fn), optimize=True)
         if s2 is not None:
             s2.save(os.path.join(OUT, 'ov-sad-%d.png' % len(OVERLAYS)), optimize=True)
+        if name in SAD_SUBS:
+            TREE_OVS.append(len(OVERLAYS))
         OVERLAYS.append((fn, box[0], box[1], s.width, s.height, int(base)))
     if solid:
         COLLIDERS.append((name, solid, int(cx), int(base)))
@@ -665,6 +695,53 @@ for _ in range(9):
             if dd <= 1.0 and _srng.random() < (1.0 - dd) and 0 <= x < W and 0 <= y < H:
                 px2[x, y] = (162, 132, 88, 255) if (x * 3 + y * 7) % 9 else (142, 114, 76, 255)
 
+# ---- 🌾 THE MID FORK (W1c): the patchy half-recovered ground ---------------
+# Phases 2-3's plate: lawn ~35% toward straw with irregular blotches pushed
+# further, pond only slightly murky, hard surfaces untouched, MOST of the
+# lawn's flower clusters gone. Sprites placed after the forks land on this
+# canvas in their LUSH art (put/shadow/place all write im3) — the recovering
+# park's props look fine, it's the ground that's still catching up.
+im3 = im.copy()
+px3 = im3.load()
+mrng = random.Random(555)
+for undo in FLOWER_UNDO:
+    if mrng.random() < 0.72:                   # this cluster never came back
+        for x, y, old, new in undo:
+            # only where the stamp actually survived (roads/plaza/pond may
+            # have buried it after) — warmgrade replays the afternoon pass
+            if px3[x, y] == warmgrade(new):
+                px3[x, y] = warmgrade(old)
+for y in range(H):
+    for x in range(W):
+        r, g, b, a = px3[x, y]
+        if b > g + 6:                              # pond water → a light murk
+            k = 0.25
+            px3[x, y] = (int(r * (1 - k) + MURK[0] * k), int(g * (1 - k) + MURK[1] * k),
+                         int(b * (1 - k) + MURK[2] * k), a)
+        elif g > r - 10 and g >= b:                # lawn → a third of the way to straw
+            k = 0.35
+            px3[x, y] = (int(r * (1 - k) + DRY_LAWN[0] * k), int(g * (1 - k) + DRY_LAWN[1] * k),
+                         int(b * (1 - k) + DRY_LAWN[2] * k), a)
+# irregular straw blotches — the patchiness that says "half-recovered"
+brng = random.Random(313)
+for _ in range(16):
+    bcx, bcy = brng.randrange(160, W - 160), brng.randrange(140, H - 140)
+    brx, bry = brng.randrange(50, 110), brng.randrange(30, 60)
+    if ((bcx - CX) / float(PLAZA_RX)) ** 2 + ((bcy - CY) / float(PLAZA_RY)) ** 2 < 1.4:
+        continue
+    if ((bcx - pcx) / float(prx)) ** 2 + ((bcy - pcy) / float(pry)) ** 2 < 1.4:
+        continue
+    for y in range(bcy - bry, bcy + bry):
+        for x in range(bcx - brx, bcx + brx):
+            dd = ((x - bcx) / float(brx)) ** 2 + ((y - bcy) / float(bry)) ** 2
+            if dd <= 1.0 and brng.random() < (1.0 - dd) * 0.9 and 0 <= x < W and 0 <= y < H:
+                r, g, b, a = px3[x, y]
+                if g > r - 24 and g >= b:          # lawn-ish (already part-straw)
+                    k = 0.5
+                    px3[x, y] = (int(r * (1 - k) + DRY_LAWN[0] * k),
+                                 int(g * (1 - k) + DRY_LAWN[1] * k),
+                                 int(b * (1 - k) + DRY_LAWN[2] * k), a)
+
 # ---- 🌲 the forest: the world's walls -------------------------------------
 # ⚠️ Round-3 sin (Trym): "the same 5-10 sprites plastered around". The pack has
 # 100+ trees — the border is now built like his reference shots: SPECIES
@@ -757,6 +834,7 @@ if HAVE_PACK:
         shadow(fx, fbase - 6, sw * 0.42, 10)
         im.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
         im2.alpha_composite(drab(f0), (fx - sw // 2, fbase - strip.height))
+        im3.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
         COLLIDERS.append(('fountain', ('circle', int(sw * 0.36)), fx, fbase - 20))
         FOUNTAIN = [fx, fbase, sw, strip.height, n]
         print('fountain: %d frames of %dpx' % (n, fw))
@@ -858,6 +936,7 @@ if HAVE_PACK:
             shadow(sx, sy - 4, sw0.width * 0.4, 8)
             im.alpha_composite(sw0, (sx - sw0.width // 2, sy - sw0.height))
             im2.alpha_composite(drab(sw0), (sx - sw0.width // 2, sy - sw0.height))
+            im3.alpha_composite(sw0, (sx - sw0.width // 2, sy - sw0.height))
             COLLIDERS.append(('swing', SWING_BOX, sx, sy))
             SWINGS.append((sx, sy, sw0.width, sw0.height))
     sp0 = sheet_strip('Spring_Swing_48x48_1.png', 'a-spring.png', 96)
@@ -866,6 +945,7 @@ if HAVE_PACK:
             shadow(sx, sy - 3, sp0.width * 0.45, 6)
             im.alpha_composite(sp0, (sx - sp0.width // 2, sy - sp0.height))
             im2.alpha_composite(drab(sp0), (sx - sp0.width // 2, sy - sp0.height))
+            im3.alpha_composite(sp0, (sx - sp0.width // 2, sy - sp0.height))
             COLLIDERS.append(('spring', ('circle', 18), sx, sy))
             SWINGS.append((sx, sy, sp0.width, sp0.height))
     # picnic corner: benched tables between the swings and the meadow
@@ -895,14 +975,19 @@ def blossom(bx, by, col):
     put(bx, by, (255, 253, 245))                       # the glint heart
 
 
+# SKIP_MID: most clusters sit the mid plate out ("most flowers gone" — W1c);
+# mrng is its own stream so the lush plate's wrng layout never shifts
 for _ in range(44):                                    # drifts, not confetti
     dx_, dy_ = wrng.randrange(mx0, mx1), wrng.randrange(my0, my1)
     col = BLOOM[wrng.randrange(len(BLOOM))]
+    SKIP_MID[0] = mrng.random() < 0.72
     for _ in range(wrng.randrange(6, 14)):
         blossom(dx_ + wrng.randrange(-52, 52), dy_ + wrng.randrange(-34, 34), col)
 for _ in range(16):                                    # strays past the edge
+    SKIP_MID[0] = mrng.random() < 0.72
     blossom(wrng.randrange(1480, mx0), wrng.randrange(680, 990),
             BLOOM[wrng.randrange(len(BLOOM))])
+SKIP_MID[0] = False
 
 # roadside tufts: little blossom clusters hugging the path shoulders, so the
 # walk itself has things to look at (Trym: "every meter a bit interesting")
@@ -915,8 +1000,10 @@ for i in range(0, len(ROAD_SPINE), 120):
     bx_, by_ = int(sx_ + px_ * off * side), int(sy_ + py_ * off * side)
     if BOUND + 40 < bx_ < W - BOUND - 40 and BOUND + 60 < by_ < H - BOUND - 40:
         col = BLOOM[wrng.randrange(len(BLOOM))]
+        SKIP_MID[0] = mrng.random() < 0.72
         for _ in range(wrng.randrange(2, 5)):
             blossom(bx_ + wrng.randrange(-14, 14), by_ + wrng.randrange(-9, 9), col)
+SKIP_MID[0] = False
 
 # ---- lamps, benches, rocks, signs -----------------------------------------
 # ⚠️ SIX lamps, placed like a park department would: the plaza's four corners
@@ -963,6 +1050,7 @@ if HAVE_PACK:
         shadow(sx, sy - 4, saw.width * 0.38, 7)
         im.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
         im2.alpha_composite(drab(saw), (sx - saw.width // 2, sy - saw.height))
+        im3.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
         COLLIDERS.append(('sawhorse', ('rect', -44, -18, 44, 4), sx, sy))
         SIGNS.append((sx, sy))
 
@@ -995,6 +1083,7 @@ def emit_geo():
     L.append('export const OB_RECTS = %s;' % [list(r) for r in ob_rects])
     L.append('export const OB_CIRCLES = %s;' % [list(c) for c in ob_circles])
     L.append('export const OVERLAYS = %s;' % [[o[0], o[1], o[2], o[3], o[4], o[5]] for o in OVERLAYS])
+    L.append('export const TREE_OVS = %s;' % list(TREE_OVS))
     path = os.path.join(SITE, 'src', 'scripts', 'park-geo.js')
     with open(path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(L) + '\n')
@@ -1003,9 +1092,16 @@ def emit_geo():
 
 
 emit_geo()
+# the geometry invariant: three plates, ONE placement pass, one canvas box
+assert im2 is None or im2.size == im.size
+assert im3 is None or im3.size == im.size
 im.convert('RGB').save(os.path.join(OUT, 'park.png'), optimize=True)
 print('wrote park.png (%dx%d) %.0f KB' % (W, H, os.path.getsize(os.path.join(OUT, 'park.png')) / 1024.0))
 if im2 is not None:
     im2.convert('RGB').save(os.path.join(OUT, 'park-sad.png'), optimize=True)
     print('wrote park-sad.png %.0f KB + %d ov-sad overlays'
           % (os.path.getsize(os.path.join(OUT, 'park-sad.png')) / 1024.0, len(OVERLAYS)))
+if im3 is not None:
+    im3.convert('RGB').save(os.path.join(OUT, 'park-mid.png'), optimize=True)
+    print('wrote park-mid.png %.0f KB (%d tree overlays marked)'
+          % (os.path.getsize(os.path.join(OUT, 'park-mid.png')) / 1024.0, len(TREE_OVS)))
