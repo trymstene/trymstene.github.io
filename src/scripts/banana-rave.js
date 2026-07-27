@@ -3678,6 +3678,8 @@ function init() {
       COUNT: 14,
       enter() {
         this.balloons = [];
+        this.chutes = [];
+        this.club = document.querySelector('.rv-club');
         this.dropped = 0;
         this.popped = 0;
         this.nextAt = 0;
@@ -3689,21 +3691,44 @@ function init() {
       tick(now) {
         const dt = this.lastT ? Math.min(now - this.lastT, 100) / 1000 : 0.016;
         this.lastT = now;
-        // the stagger: one lets go from the rig every ~650ms
-        if (this.dropped < this.COUNT && now >= this.nextAt) {
+        // the stagger: one lets go from the CEILING — the top of the LED —
+        // every ~650ms. Phase 1 falls inside the stage block (the world layer
+        // paints UNDER the stage, so the chute lives in .rv-club and hands
+        // off to the floor at the boundary).
+        if (this.dropped < this.COUNT && now >= this.nextAt && this.club) {
           this.nextAt = now + 650;
           this.dropped++;
           let x = 50, ty = 55;
           for (let t = 0; t < 25; t++) {
             x = 10 + Math.random() * 80;
             ty = clamp(24 + Math.random() * 58, topClamp + 6, 84);
-            if (!blockedAt(x, ty) && this.balloons.every((o) => Math.abs(o.tx - x) > 7)) break;
+            if (!blockedAt(x, ty) && this.balloons.every((o) => Math.abs(o.tx - x) > 7) && this.chutes.every((o) => Math.abs(o.x - x) > 7)) break;
           }
-          const d = document.createElement('div');
-          d.className = 'rv-qballoon';
-          d.innerHTML = QBALLOON_SVGS[this.dropped % QBALLOON_SVGS.length];
-          world.appendChild(d);
-          this.balloons.push({ el: d, x, tx: x, y: -6, ty, phase: Math.random() * 6.28 });
+          const c = document.createElement('div');
+          c.className = 'rv-qballoon rv-qballoon--chute';
+          c.innerHTML = QBALLOON_SVGS[this.dropped % QBALLOON_SVGS.length];
+          c.style.left = x + '%';
+          c.style.top = '-8%';
+          this.club.appendChild(c);
+          this.chutes.push({ el: c, x, ty, cy: -8, svg: this.dropped % QBALLOON_SVGS.length, phase: Math.random() * 6.28 });
+        }
+        // the ceiling phase: past the LED and the DJ, same px/s as the floor fall
+        const chuteRate = 8.5 * ((floor.clientHeight || 400) / ((this.club && this.club.clientHeight) || 170));
+        for (let i = this.chutes.length - 1; i >= 0; i--) {
+          const c = this.chutes[i];
+          c.cy += chuteRate * dt;
+          c.el.style.top = c.cy + '%';
+          c.el.style.left = (c.x + Math.sin(now / 480 + c.phase) * 2.2) + '%';
+          if (c.cy >= 104) {
+            // handoff: out of the stage block, into the floor world
+            c.el.remove();
+            this.chutes.splice(i, 1);
+            const d = document.createElement('div');
+            d.className = 'rv-qballoon';
+            d.innerHTML = QBALLOON_SVGS[c.svg];
+            world.appendChild(d);
+            this.balloons.push({ el: d, x: c.x, tx: c.x, y: -6, ty: c.ty, phase: c.phase });
+          }
         }
         for (const b of this.balloons) {
           if (b.y < b.ty) {
@@ -3733,7 +3758,9 @@ function init() {
       },
       exit() {
         (this.balloons || []).forEach((b) => b.el.remove());
+        (this.chutes || []).forEach((c) => c.el.remove());
         this.balloons = [];
+        this.chutes = [];
       },
       after() { confettiBurst(); },
       doneBig: ['ALL POPPED 🎈', 'confetti forever'],
