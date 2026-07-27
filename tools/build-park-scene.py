@@ -394,6 +394,7 @@ MARKET = {}
 TRUNK = ('rect', -13, -36, 13, 0)
 BASIN = ('circle', 60)
 CART_BOX = ('rect', -70, -46, 70, 6)
+SHOP_BOX = ('rect', -100, -58, 100, 6)
 BENCH_BOX = ('rect', -34, -18, 34, 4)
 TABLE_BOX = ('rect', -44, -30, 44, 6)
 SWING_BOX = ('rect', -52, -20, 52, 6)
@@ -674,11 +675,12 @@ if HAVE_PACK:
     try_place(['ME_Singles_Vehicles_48x48_Street_Food_Cart_1.png',
                'ME_Singles_Vehicles_48x48_Street_Food_Cart_2.png'],
               1975, 528, solid=CART_BOX, layer=True, colors=28)
-    # 🧃 THE MERCH CART — the whole point of Park 2.0
+    # 🧃 THE MERCH SHOP — the whole point of Park 2.0. Not a cart: a TINY SHOP
+    # HOUSE (Trym) — the pack's Mushroom Kiosk, a round shop hut with a real
+    # window. The food-branded kiosks (coffee cup / ice-cream cone) stay out.
     MARKET['cart'] = (2300, 545)
-    try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_1.png',
-               'ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'],
-              2300, 545, solid=CART_BOX, layer=True, colors=28)
+    try_place(['ME_Singles_City_Props_48x48_Kiosk_Mushroom_1.png'],
+              2300, 545, solid=SHOP_BOX, layer=True, colors=28)
 
 # ---- 🛝 the playground -----------------------------------------------------
 def sheet_strip(name, out_name, fw, fh=96):

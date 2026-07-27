@@ -296,49 +296,129 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     @media (prefers-reduced-motion: reduce) { .pk-sparkle { display: none; } }
 
-    /* 🧃 the merch popup — three rows, your banana starring on each mock.
-       Mocks stay FLAT (cards, borders, a tee rectangle) — the banana is the art. */
-    .pk-mgrid { display: grid; gap: 0.5rem; }
-    .pk-mcard {
-      display: flex; align-items: center; gap: 0.7rem; text-decoration: none;
-      color: #fffdf5; background: #182a16; border: 3px solid #000;
-      box-shadow: 3px 3px 0 #000; padding: 0.5rem 0.6rem; cursor: pointer;
+    /* 🧃 THE MERCH SHOP INTERIOR — the stand's counter scene, merch edition:
+       awning, plank back wall with the goods HUNG on it, Inka big behind the
+       desk. Mocks stay FLAT — the banana is the art. */
+    .pk-shop {
+      position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column;
+      background: #14100b; overflow: hidden;
     }
-    .pk-mcard:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
-    .pk-mcard:hover { outline: 2px solid #8de08d; outline-offset: 1px; }
-    .pk-mcard__mock {
-      flex: 0 0 84px; width: 84px; height: 84px; display: grid; place-items: center;
-      border: 2px solid #000; overflow: hidden;
+    .pk-shop[hidden] { display: none; }
+    .pk-shop__awning { display: flex; height: 20px; flex: 0 0 auto; border-bottom: 3px solid #000; }
+    .pk-shop__awning span { flex: 1; }
+    .pk-shop__awning span:nth-child(odd) { background: #c0261a; }
+    .pk-shop__awning span:nth-child(even) { background: #fdf6e6; }
+    .pk-shop__x {
+      position: absolute; top: 28px; right: 8px; z-index: 6;
+      appearance: none; font: inherit; font-weight: 800; line-height: 1;
+      background: #ffe135; color: #10240f; border: 3px solid #000;
+      box-shadow: 2px 2px 0 #000; width: 30px; height: 30px; cursor: pointer;
     }
-    .pk-mcard__mock canvas { width: 74px; height: 74px; image-rendering: pixelated; display: block; }
+    /* the back wall: warm dark planks (the stand's, shifted red-brown) */
+    .pk-shop__wall {
+      position: relative; flex: 1 1 auto; overflow: hidden;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.05) 45%),
+        repeating-linear-gradient(90deg, #5c4423 0 24px, #3f2e15 24px 27px, #543d1e 27px 51px, #3f2e15 51px 54px);
+    }
+    /* the goods, hung high on the planks — each on a nail with a string */
+    .pk-shop__goods {
+      position: absolute; left: 0; right: 0; top: 22px; z-index: 2;
+      display: flex; justify-content: space-evenly; align-items: flex-start;
+      padding: 0 4px;
+    }
+    .pk-hang {
+      position: relative; display: grid; justify-items: center; gap: 3px;
+      text-decoration: none; color: #fffdf5; padding-top: 14px; cursor: pointer;
+    }
+    .pk-hang::before {   /* the nail */
+      content: ''; position: absolute; top: 0; left: 50%; width: 5px; height: 5px;
+      transform: translateX(-50%); background: #1c1610; border-radius: 50%;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .pk-hang::after {    /* the string */
+      content: ''; position: absolute; top: 4px; left: 50%; width: 2px; height: 11px;
+      transform: translateX(-50%); background: rgba(240, 230, 200, 0.55);
+    }
+    .pk-hang:hover .pk-hang__mock, .pk-hang:focus-visible .pk-hang__mock { outline: 2px solid #ffe135; outline-offset: 1px; }
+    .pk-hang:active { transform: translateY(2px); }
+    .pk-hang__mock {
+      width: 78px; height: 78px; display: grid; place-items: center;
+      border: 3px solid #000; overflow: hidden;
+      box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.45);
+    }
+    .pk-hang__mock canvas { width: 66px; height: 66px; image-rendering: pixelated; display: block; }
     /* sticker: a white die-cut contour hugging the banana, on a light card */
-    .pk-mcard--sticker .pk-mcard__mock { background: #f4f1e8; }
-    .pk-mcard--sticker canvas {
+    .pk-hang--sticker .pk-hang__mock { background: #f4f1e8; }
+    .pk-hang--sticker canvas {
       filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
               drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
               drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.25));
     }
     /* magnet: same die-cut read, rounded dark border hints the fridge slab */
-    .pk-mcard--magnet .pk-mcard__mock {
+    .pk-hang--magnet .pk-hang__mock {
       background: #e8e4d8; border-radius: 10px;
-      box-shadow: inset 0 0 0 3px #2a2a33;
+      box-shadow: inset 0 0 0 3px #2a2a33, 3px 4px 0 rgba(0, 0, 0, 0.45);
     }
-    .pk-mcard--magnet canvas {
-      width: 64px; height: 64px;
+    .pk-hang--magnet canvas {
+      width: 56px; height: 56px;
       filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
               drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
     }
     /* tee: the banana printed small on a tee-coloured rectangle */
-    .pk-mcard--tee .pk-mcard__mock { background: #1c2233; }
-    .pk-mcard--tee canvas { width: 44px; height: 44px; }
-    .pk-mcard__txt { flex: 1; display: grid; gap: 0.15rem; min-width: 0; }
-    .pk-mcard__txt b { font-size: 0.86rem; }
-    .pk-mcard__txt i { font-style: normal; font-weight: 800; font-size: 0.78rem; color: #ffd98a; }
-    .pk-mcard__go { font-weight: 800; color: #8de08d; }
-    .pk-merchnote { margin: 0.6rem 0 0.2rem; font-size: 0.74rem; font-weight: 800; color: #8de08d; }
-    .pk-merchfoot {
-      margin: 0; padding-top: 0.45rem; border-top: 2px solid rgba(255, 253, 245, 0.12);
-      font-size: 0.72rem; line-height: 1.45; opacity: 0.8;
+    .pk-hang--tee .pk-hang__mock { background: #1c2233; }
+    .pk-hang--tee canvas { width: 40px; height: 40px; }
+    /* the price tag — a tilted paper chip clipped to the mock's corner */
+    .pk-hang__tag {
+      position: absolute; top: 8px; right: -7px; z-index: 2; font-style: normal;
+      background: #ffe135; color: #10240f; border: 2px solid #000;
+      font-weight: 800; font-size: 0.62rem; line-height: 1; padding: 2px 4px;
+      transform: rotate(6deg); box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
+    }
+    .pk-hang b { font-size: 0.6rem; font-weight: 800; text-align: center; line-height: 1.15; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+    .pk-shop__ship {
+      position: absolute; left: 50%; top: 168px; transform: translateX(-50%) rotate(-2deg); z-index: 1;
+      background: #8a5a2b; border: 2px solid #3a230f; color: #ffe135;
+      font-family: "Archivo Black", sans-serif; font-size: 0.56rem; letter-spacing: 0.04em;
+      padding: 2px 7px; white-space: nowrap; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+    }
+    /* Inka — big behind the counter, feet clipped by the wall's bottom edge */
+    .pk-shop__keeper {
+      appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+      position: absolute; left: 50%; bottom: -52px; transform: translateX(-50%);
+      width: min(250px, 62%); z-index: 3;
+    }
+    .pk-shop__keeper canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    .pk-shop__bubble {
+      position: absolute; left: 6px; bottom: 34%; z-index: 5;
+      max-width: 46%; background: #fffdf5; color: #111; border: 3px solid #000;
+      filter: drop-shadow(3px 3px 0 #000); padding: 0.35rem 0.5rem;
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; line-height: 1.5;
+      opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .pk-shop__bubble.is-on { opacity: 1; }
+    .pk-shop__counter {
+      flex: 0 0 64px; position: relative; border-top: 4px solid #000; z-index: 4;
+      background: repeating-linear-gradient(90deg, #3a2b18 0 26px, #2c2113 26px 52px);
+      display: grid; place-items: center; padding: 0 0.5rem;
+    }
+    .pk-shop__counter::before {
+      content: ''; position: absolute; inset: 0 0 auto; height: 8px;
+      background: #4a3820; border-bottom: 3px solid #000;
+    }
+    /* the honesty line lives ON the desk, not in a footer */
+    .pk-shop__sign {
+      background: #8a5a2b; border: 2px solid #3a230f; color: #ffe7a0;
+      font-size: 0.62rem; font-weight: 800; line-height: 1.4; text-align: center;
+      padding: 0.3rem 0.55rem; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+      transform: rotate(-0.5deg); max-width: 100%;
+    }
+    .pk-shop button.pk-shop__back {
+      flex: 0 0 auto; margin: 0.55rem 0.8rem 0.7rem; box-shadow: 3px 3px 0 #000;
+      padding: 0.5rem; font-size: 0.85rem; cursor: pointer; border: 3px solid #000;
+      background: #8de08d; color: #10240f; font-weight: 800; font-family: inherit;
     }
 
     .pk-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -380,23 +460,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
         </div>
 
-        <!-- 🧃 THE MERCH CART — your banana, on the three real things -->
-        <div class="pk-panel" id="pkMerch" hidden>
-          <div class="pk-card" role="dialog" aria-label="The merch cart">
-            <button class="pk-cardx" id="pkMerchClose" type="button" aria-label="close">✕</button>
-            <h2>the merch cart</h2>
-            <p class="pk-panel__sub">your banana, exactly as it's dressed — tap one to see it up close.</p>
-            <div class="pk-mgrid" id="pkMerchGrid"></div>
-            <p class="pk-merchnote">🚚 free worldwide shipping</p>
-            <p class="pk-merchfoot">everything else in the park costs coins. this cart is the one real thing — printed and shipped to your door.</p>
+        <!-- 🧃 THE MERCH SHOP — a real interior (the stand's counter scene,
+             merch edition): goods hung on the back wall, Inka at the desk. -->
+        <div class="pk-shop" id="pkShop" role="dialog" aria-label="The merch shop" hidden>
+          <div class="pk-shop__awning" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
+          <button class="pk-shop__x" id="pkShopClose" type="button" aria-label="leave the shop">×</button>
+          <div class="pk-shop__wall">
+            <div class="pk-shop__goods" id="pkGoods"></div>
+            <span class="pk-shop__ship">🚚 free worldwide shipping</span>
+            <div class="pk-shop__bubble" id="pkKeeperBubble" role="status" aria-live="polite"></div>
+            <button class="pk-shop__keeper" id="pkKeeper" type="button" aria-label="talk to Inka">
+              <canvas id="pkKeeperCv" width="360" height="360"></canvas>
+            </button>
+          </div>
+          <div class="pk-shop__counter">
+            <span class="pk-shop__sign">everything else in the park costs coins. this is the one real thing — printed &amp; shipped to your door.</span>
+          </div>
+          <button class="pk-btn pk-shop__back" id="pkShopBack" type="button">🌳 back to the park</button>
         </div>
       </div><!-- /.pk-view -->
 
       <!-- 🎮 THE ACTION BAR — 🪙 toss · 🧃 browse (both proximity-gated) · React · Sound -->
       <div class="pk-actions" aria-label="park actions">
         <button class="pk-act pk-act--toss" id="pkToss" type="button" hidden>🪙 toss</button>
-        <button class="pk-act pk-act--toss" id="pkBrowse" type="button" hidden>🧃 browse</button>
+        <button class="pk-act pk-act--toss" id="pkBrowse" type="button" hidden>🚪 enter</button>
         <button class="pk-act pk-act--icon" id="pkEmote" type="button" aria-label="react">❤️</button>
         <button class="pk-act pk-act--icon" id="pkAudio" type="button" aria-label="sound" aria-pressed="false">🔇</button>
       </div>

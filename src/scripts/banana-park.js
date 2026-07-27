@@ -71,13 +71,37 @@ const ACORN_SPOTS = [[300, 650], [1040, 300], [1215, 985], [1650, 265], [2480, 9
   [900, 530], [1005, 345], [878, 572], [735, 1000], [2555, 330], [400, 558]];
 const TEST_ACORN_SPOTS = [[1300, 860], [1450, 870], [1360, 910]];
 
-// 🧃 THE MERCH CART — keys are the PDP slugs (/make-a-banana/<key>/, from
+// 🧃 THE MERCH SHOP — keys are the PDP slugs (/make-a-banana/<key>/, from
 // shared/products.js); prices are display hints, Shopify enforces the real one
 const MERCH_PRODUCTS = [
   { key: 'sticker', name: 'die-cut sticker', price: '$14.99' },
   { key: 'magnet', name: 'fridge magnet', price: '$16.99' },
   { key: 'tee', name: 'tee', price: '$34.99' },
 ];
+// 🍌 INKA, keeper of the merch shop — monocle + a drawn print-shop apron
+// (banana NPCs are our own art; the apron is painted over the composite)
+const KEEPER_GREET = 'welcome in. everything on this wall is real — printed, packed and posted.';
+const KEEPER_LINES = [
+  'that wall is your banana, printed. tap one down and have a look.',
+  'no coins in here. real things cost real money — that is what makes them real.',
+  'stickers go everywhere. laptops, fridges, somebody’s forehead once.',
+  'free shipping, anywhere on earth. i checked twice.',
+];
+// the apron, painted in 3px blocks on the 150 grid (inner-shadowed hem + a
+// little banana on the pocket) — scaled to whatever canvas it lands on
+function drawApron(ctx, S) {
+  const u = S / 150;
+  const px = (x, y, w, h, f) => { ctx.fillStyle = f; ctx.fillRect(x * u, y * u, w * u, h * u); };
+  const BIB = '#3a5f8a', DARK = '#2a4668', HEM = '#22394f';
+  px(63, 78, 3, 6, DARK); px(84, 78, 3, 6, DARK);       // straps
+  px(63, 84, 24, 9, BIB);                                // bib
+  px(57, 93, 36, 24, BIB);                               // skirt
+  px(60, 117, 30, 5, DARK);                              // hem shadow
+  px(63, 120, 24, 3, HEM);
+  px(66, 99, 18, 12, DARK);                              // the pocket
+  px(72, 102, 3, 6, '#ffe135'); px(75, 101, 3, 3, '#ffe135'); // pocket banana
+  px(75, 107, 3, 2, '#c99a1e');
+}
 
 const WISHES = [
   'you wish for a sunny day. granted — look around.',
@@ -255,7 +279,7 @@ function init() {
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.pk-whud') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel')) return;
+    if (e.target.closest('.pk-whud') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel') || e.target.closest('.pk-shop')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
@@ -578,9 +602,16 @@ function init() {
   // string the gallery's merch CTAs ride).
   const CART_AT = { x: MARKET.cart[0], y: MARKET.cart[1] };
   const browseBtn = document.getElementById('pkBrowse');
-  const merchPanel = document.getElementById('pkMerch');
-  const merchGrid = document.getElementById('pkMerchGrid');
+  const shopEl = document.getElementById('pkShop');
+  const goodsEl = document.getElementById('pkGoods');
+  const keeperCtx = document.getElementById('pkKeeperCv').getContext('2d');
+  const keeperBubble = document.getElementById('pkKeeperBubble');
+  const KEEPER_DRAW = {
+    hat: 'none', glasses: 'monocle', extras: {},
+    top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+  };
   let browseShown = false, cartViewTracked = false, sparkleAt = 0;
+  let keeperTimer = null, keeperIdx = 0;
   function merchParams() {
     let o = {};
     try { o = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e) {}
@@ -592,33 +623,68 @@ function init() {
     if (o.effect && o.effect !== 'none') p.set('e', o.effect);
     return p.toString();
   }
-  function openMerch() {
+  function keeperSay(text, ms) {
+    keeperBubble.textContent = text;
+    keeperBubble.classList.add('is-on');
+    clearTimeout(keeperTimer);
+    keeperTimer = setTimeout(() => keeperBubble.classList.remove('is-on'), ms || 5200);
+  }
+  function drawKeeper() {
+    drawComposite(keeperCtx, 360, 2, KEEPER_DRAW);
+    drawApron(keeperCtx, 360);
+  }
+  // the cartridge CUT into the interior — the stand's own scene change
+  function blink(mid) {
+    if (REDUCED) { mid(); return; }
+    cutEl.classList.add('is-on');
+    setTimeout(mid, 130);
+    setTimeout(() => cutEl.classList.remove('is-on'), 280);
+  }
+  function openShop() {
+    if (!shopEl.hidden) return;
     const q = merchParams();
-    merchGrid.innerHTML = MERCH_PRODUCTS.map((pr) =>
-      '<a class="pk-mcard pk-mcard--' + pr.key + '" href="/make-a-banana/' + pr.key + '/'
+    goodsEl.innerHTML = MERCH_PRODUCTS.map((pr) =>
+      '<a class="pk-hang pk-hang--' + pr.key + '" href="/make-a-banana/' + pr.key + '/'
       + (q ? '?' + q : '') + '" data-product="' + pr.key + '">'
-      + '<span class="pk-mcard__mock"><canvas width="150" height="150" aria-hidden="true"></canvas></span>'
-      + '<span class="pk-mcard__txt"><b>' + pr.name + '</b><i>' + pr.price + '</i></span>'
-      + '<span class="pk-mcard__go" aria-hidden="true">→</span>'
+      + '<span class="pk-hang__mock"><canvas width="150" height="150" aria-hidden="true"></canvas></span>'
+      + '<i class="pk-hang__tag">' + pr.price + '</i>'
+      + '<b>' + pr.name + '</b>'
       + '</a>').join('');
-    // your banana on every card — frame 2, the presenting pose
-    assetsReady().then(() => {
-      merchGrid.querySelectorAll('canvas').forEach((cv) => {
-        drawComposite(cv.getContext('2d'), 150, 2,
-          { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
-      });
-    });
-    merchGrid.querySelectorAll('.pk-mcard').forEach((a) => {
+    goodsEl.querySelectorAll('.pk-hang').forEach((a) => {
       a.addEventListener('click', () => { track('stand_cart_click', { product: a.dataset.product }); });
     });
-    merchPanel.hidden = false;
+    // your banana on every wall good; the keeper behind the counter — with the
+    // redraw belt, accessories decode async
+    assetsReady().then(() => {
+      const draw = () => {
+        goodsEl.querySelectorAll('canvas').forEach((cv) => {
+          drawComposite(cv.getContext('2d'), 150, 2,
+            { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
+        });
+        drawKeeper();
+      };
+      draw();
+      setTimeout(draw, 700);
+    });
+    blink(() => { shopEl.hidden = false; });
+    keeperSay(KEEPER_GREET, 6000);
     if (!cartViewTracked) { cartViewTracked = true; track('stand_cart_view'); }
   }
-  browseBtn.addEventListener('click', openMerch);
-  document.getElementById('pkMerchClose').addEventListener('click', () => { merchPanel.hidden = true; });
-  merchPanel.addEventListener('click', (e) => { if (e.target === merchPanel) merchPanel.hidden = true; });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !merchPanel.hidden) merchPanel.hidden = true; });
-  // proximity + the idle ✦ (rides the rAF step, so a hidden tab sparkles nothing)
+  function closeShop() {
+    if (shopEl.hidden) return;
+    clearTimeout(keeperTimer);
+    keeperBubble.classList.remove('is-on');
+    blink(() => { shopEl.hidden = true; });
+  }
+  browseBtn.addEventListener('click', openShop);
+  document.getElementById('pkKeeper').addEventListener('click', () => {
+    keeperSay(KEEPER_LINES[keeperIdx++ % KEEPER_LINES.length]);
+  });
+  document.getElementById('pkShopClose').addEventListener('click', closeShop);
+  document.getElementById('pkShopBack').addEventListener('click', closeShop);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !shopEl.hidden) closeShop(); });
+  // proximity + the idle ✦ over the shop roof (rides the rAF step, so a
+  // hidden tab sparkles nothing)
   function cartTick(now) {
     const near = Math.hypot(pos.x - CART_AT.x, pos.y - CART_AT.y) < 110;
     if (near !== browseShown) { browseShown = near; browseBtn.hidden = !near; }
@@ -627,8 +693,8 @@ function init() {
       const s = document.createElement('div');
       s.className = 'pk-sparkle';
       s.textContent = '✦';
-      s.style.left = pct(CART_AT.x - 45 + Math.random() * 90, W);
-      s.style.top = pct(CART_AT.y - 60 - Math.random() * 55, H);
+      s.style.left = pct(CART_AT.x - 70 + Math.random() * 140, W);
+      s.style.top = pct(CART_AT.y - 120 - Math.random() * 130, H);
       world.appendChild(s);
       setTimeout(() => s.remove(), 1500);
     }
@@ -698,12 +764,12 @@ function init() {
       }
       pos.x = Math.max(12, Math.min(W - 12, pos.x));
       pos.y = Math.max(12, Math.min(H - 12, pos.y));
-      if (pos.x !== meWX || pos.y !== meWY) {
-        meWX = pos.x; meWY = pos.y;
-        meEl.style.left = pct(pos.x, W);
-        meEl.style.top = pct(pos.y, H);
-        depth(meEl, pos.y);
-      }
+    }
+    if (pos.x !== meWX || pos.y !== meWY) {   // outside the walk branch: a
+      meWX = pos.x; meWY = pos.y;             // direct pos set repaints too
+      meEl.style.left = pct(pos.x, W);
+      meEl.style.top = pct(pos.y, H);
+      depth(meEl, pos.y);
     }
     // walked all the way to a ride you tapped → hop on
     if (pendingRide && Math.hypot(pos.x - pendingRide.x, pos.y - pendingRide.y) < 24) {
