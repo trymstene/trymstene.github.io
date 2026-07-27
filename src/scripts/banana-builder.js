@@ -138,7 +138,10 @@ function init() {
     : '<img src="' + art + '" alt="" style="max-width:100%;max-height:100%;image-rendering:pixelated" />');
   // where a locked souvenir's DOOR sends you — the pier plush lives at the beach
   const earnDoor = (d) => (d.earned === 'pier'
-    ? { href: '/beach/', at: 'the pier' } : { href: '/rave/', at: 'the rave' });
+    ? { href: '/beach/', at: 'the pier' }
+    : d.earned === 'garden'
+      ? { href: '/park2/', at: 'the park garden' } // ⚠️ flip to /park/ at the P-flip
+      : { href: '/rave/', at: 'the rave' });
   function iconChips(host, items, key, artFor, defFor) {
     items.forEach(([val, label]) => {
       if (val === 'none') return; // no 'none' chip — click the worn item to take it off (like extras)

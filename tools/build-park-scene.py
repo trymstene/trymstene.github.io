@@ -682,6 +682,39 @@ if HAVE_PACK:
     try_place(['ME_Singles_City_Props_48x48_Kiosk_Mushroom_1.png'],
               2300, 545, solid=SHOP_BOX, layer=True, colors=28)
 
+# ---- 🌱 THE GARDEN (P3b) — two soil beds, 4 slots each ---------------------
+# The bed is the graveyard family's Dirt_Ditch_1 — a 3×3-tile patch of dug
+# earth with torn-grass edges (no farm/planter family exists in the pack; the
+# only true turned-soil rectangle lives here). Slots are marked with the
+# Terrains Props_Dirt speckles so each reads as its own patch. Baked, solid,
+# NOT layered — the growing plants are client overlays and must draw on top.
+PLOTS = []
+if HAVE_PACK:
+    # each bed = TWO ditches side by side (the ditch soil is ~52px wide — one
+    # slot column each, two rows), so every slot sits ON dug earth
+    for gx in (2270, 2408):
+        for sx in (gx - 30, gx + 30):
+            place('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png', sx, 862,
+                  solid=('rect', -28, -50, 28, 4), colors=28, sh=0.36)
+            for sy in (800, 838):
+                place('ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_1.png',
+                      sx, sy + 12, shade=False, scale=PROP * 0.9)
+                PLOTS.append((sx, sy))
+    # 🌼 the growth-stage sprites the client lays over the slots — pack art,
+    # same neutral processing as every prop, saved at PROP scale
+    for src, out in (('ME_Singles_Garden_48x48_Medium_Sprout_2.png', 'g-sprout1.png'),
+                     ('ME_Singles_Garden_48x48_Big_Sprout_2.png', 'g-sprout2.png'),
+                     ('ME_Singles_Garden_48x48_Medium_White_Flower.png', 'g-daisy.png'),
+                     ('ME_Singles_Garden_48x48_Medium_Sunflower.png', 'g-sunflower.png'),
+                     ('ME_Singles_Garden_48x48_Medium_Light_Blue_Flower.png', 'g-tulip.png')):
+        try:
+            s = blockify(load_pack(src), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+            s = s.resize((max(1, int(s.width * PROP)), max(1, int(s.height * PROP))), Image.NEAREST)
+            s.save(os.path.join(OUT, out), optimize=True)
+            print('  %s: %dx%d' % (out, s.width, s.height))
+        except Exception as e:
+            print('  garden sprite failed', src, e)
+
 # ---- 🛝 the playground -----------------------------------------------------
 def sheet_strip(name, out_name, fw, fh=96):
     """⚠️ the playground files are each a FULL ANIMATION SHEET (Park_Swing_1 is
@@ -837,6 +870,7 @@ def emit_geo():
     L.append('export const SWINGS = %s;' % [list(s) for s in SWINGS])
     L.append('export const SIGNS = %s;' % [list(s) for s in SIGNS])
     L.append('export const MEADOW = %s;' % list(MEADOW))
+    L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])
     L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d } };'
              % (CX, H - 40, W - 60, CY))
     L.append('export const OB_RECTS = %s;' % [list(r) for r in ob_rects])

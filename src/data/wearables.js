@@ -76,6 +76,12 @@ export const WEARABLE_PACKS = {
       { id: 'snailhat', label: 'Snail', phrase: 'a snail passenger', art: 'snailhat', seat: -1, price: 15, preview: 'stand' },
       // tentacles hang DOWN the head: positive seat, the arrowthru trick
       { id: 'squidhat', label: 'Squid hat', phrase: 'a squid hugging the head', art: 'squidhat', seat: 4, price: 120, preview: 'stand' },
+      // 🌱 GARDEN HARVEST BATCH (P3b DRAFTS — on the /dev-wearables desk for
+      // Trym's verdict; preview:true hides them from every public surface.
+      // The earned gate is live underneath: the park garden's harvest writes
+      // own_<id>, so approval = delete the flag + extend the worker mirrors.)
+      { id: 'sunflowercrown', label: 'Sunflower crown', phrase: 'a sunflower crown', art: 'sunflowercrown', seat: -1, preview: true,
+        earned: 'garden', stat: 'own_sunflowercrown', lock: 'grown, never bought: plant a sunflower in the park garden and harvest it' },
     ],
     shades: [
       { id: 'shades', label: 'Shades', phrase: 'sunglasses', front: 'shadesFront', side: 'shadesSide' },
@@ -123,6 +129,9 @@ export const WEARABLE_PACKS = {
       // 🍌🏪 STAND BATCH 1 (21 Jul) — body zone, on the desk
       { id: 'flamingoring', label: 'Flamingo ring', phrase: 'a flamingo pool ring', art: 'flamingoring', anchor: 'chest', dy: 10, zone: 'body', price: 80, preview: 'stand' },
       { id: 'medal', label: 'Participation medal', phrase: 'a participation medal', art: 'medal', anchor: 'chest', dy: 11, zone: 'body', price: 35, preview: 'stand' },
+      // 🌱 GARDEN HARVEST BATCH (P3b DRAFT — see the sunflower crown note)
+      { id: 'daisypin', label: 'Daisy pin', phrase: 'a daisy pinned to the chest', art: 'daisypin', anchor: 'chest', zone: 'body', dy: 9.5, preview: true,
+        earned: 'garden', stat: 'own_daisypin', lock: 'grown, never bought: plant a daisy in the park garden and harvest it' },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
       { id: 'sneakers',     label: 'Red sneakers',  phrase: 'red sneakers',  anchor: 'feet', art: 'sneakers' },
@@ -171,6 +180,9 @@ export const WEARABLE_PACKS = {
       { id: 'plushbanana', label: 'Plush banana', phrase: 'a plush banana', art: 'plushbanana', anchor: 'hand', hand: 'right', gh: 22, grip: 11, earned: 'pier', stat: 'prize_plush',
         lock: 'the pier’s grand prize: win the giant plush from the claw machine — 150 tickets' },
       { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', price: 10, preview: 'stand' },
+      // 🌱 GARDEN HARVEST BATCH (P3b DRAFT — the rare one; see the crown note)
+      { id: 'midnighttulip', label: 'Midnight tulip', phrase: 'a midnight tulip', art: 'midnighttulip', anchor: 'hand', hand: 'left', grip: 8, preview: true,
+        earned: 'garden', stat: 'own_midnighttulip', lock: 'grown, never bought: the rare midnight tulip — five days in the park garden' },
       { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', price: 40, preview: 'stand' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
       // NOT in the daily pools on purpose — the daily banana doesn't wear souvenirs it didn't earn.

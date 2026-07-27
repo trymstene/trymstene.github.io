@@ -282,6 +282,66 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-whud__col.is-dim { opacity: 0.55; }
     .pk-whud__col b { color: #ffd98a; }
 
+    /* 🌱 THE GARDEN — plants grow on the plate's soil slots */
+    .pk-plant {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
+    }
+    .pk-plant.is-ready { animation: pkReadyGlint 2.2s ease-in-out infinite; }
+    @keyframes pkReadyGlint {
+      0%, 100% { filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35)); }
+      50% { filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 225, 53, 0.7)); }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-plant.is-ready { animation: none; } }
+    /* the per-slot sign — fades in when you're actually at the garden */
+    .pk-plantsign {
+      position: absolute; transform: translate(-50%, 0); z-index: 1450; pointer-events: none;
+      background: rgba(16, 22, 14, 0.88); border: 2px solid #000; color: #fffdf5;
+      font-size: 0.44rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1;
+      padding: 2px 5px; white-space: nowrap;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .pk-neargarden .pk-plantsign { opacity: 1; }
+    /* the seed picker rows */
+    .pk-seedrow {
+      appearance: none; font-family: inherit; width: 100%; cursor: pointer;
+      display: flex; align-items: center; gap: 0.6rem; text-align: left;
+      background: #182a16; color: #fffdf5; border: 3px solid #000;
+      box-shadow: 3px 3px 0 #000; padding: 0.5rem 0.6rem; margin-bottom: 0.5rem;
+    }
+    .pk-seedrow:not([disabled]):hover { outline: 2px solid #8de08d; outline-offset: 1px; }
+    .pk-seedrow:not([disabled]):active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .pk-seedrow[disabled] { opacity: 0.45; cursor: not-allowed; }
+    .pk-seedrow i { font-style: normal; font-size: 1.5rem; line-height: 1; }
+    .pk-seedrow__txt { flex: 1; display: grid; gap: 0.15rem; min-width: 0; }
+    .pk-seedrow b { font-size: 0.86rem; }
+    .pk-seedrow b em { font-style: normal; font-size: 0.6rem; color: #b48ae0; letter-spacing: 0.06em; }
+    .pk-seedrow small { font-size: 0.68rem; opacity: 0.75; }
+    .pk-seedcost {
+      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+      font-weight: 800; font-size: 0.82rem; color: #ffe135;
+    }
+    .pk-seedcost img { image-rendering: pixelated; display: block; }
+    .pk-seedpoor { margin: 0.2rem 0 0; font-size: 0.72rem; opacity: 0.7; }
+    .pk-gwater { margin: 0 0 0.6rem; font-size: 0.78rem; color: #7db9ff; font-weight: 800; }
+    .pk-gbtn { width: 100%; border: 3px solid #000; background: #7db9ff; color: #10240f;
+      font-weight: 800; font-family: inherit; font-size: 0.9rem; padding: 0.55rem;
+      box-shadow: 3px 3px 0 #000; cursor: pointer; white-space: nowrap; }
+    .pk-gbtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .pk-gbtn small { font-size: 0.7rem; }
+    .pk-gsaved { margin: 0.6rem 0 0; font-size: 0.72rem; opacity: 0.75; }
+    .pk-confetti {
+      position: absolute; width: 7px; height: 7px; z-index: 1960; pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: pkConfetti 1.2s ease-in forwards;
+    }
+    @keyframes pkConfetti {
+      0% { opacity: 1; transform: translate(-50%, -50%) rotate(0); }
+      100% { opacity: 0; transform: translate(-50%, 40px) rotate(260deg); }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-confetti { display: none; } }
+
     /* 🧃 the cart's idle glint — reads as "something's here" from afar */
     .pk-sparkle {
       position: absolute; z-index: 1600; pointer-events: none;
@@ -457,6 +517,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <h2>the meadow's butterflies</h2>
             <p id="pkAtlasSub" class="pk-panel__sub"></p>
             <div class="pk-bgrid" id="pkAtlasGrid"></div>
+          </div>
+        </div>
+
+        <!-- 🌱 THE GARDEN — seed picker / plant card, one panel, content per open -->
+        <div class="pk-panel" id="pkGarden" hidden>
+          <div class="pk-card" role="dialog" aria-label="The garden">
+            <button class="pk-cardx" id="pkGardenClose" type="button" aria-label="close">✕</button>
+            <div id="pkGardenBody"></div>
           </div>
         </div>
 

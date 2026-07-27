@@ -218,6 +218,26 @@ export default {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
       });
     }
+    // 🌱 THE PARK GARDEN (P3b) — browser fetches from trymstene.com; the
+    // /names CORS pattern, forwarded to the ParkRoom's /garden routes
+    if (url.pathname === '/park-garden' || url.pathname.startsWith('/park-garden/')) {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      const origin = request.headers.get('Origin') || '';
+      const cors = {
+        'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : 'https://trymstene.com',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'content-type',
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json',
+      };
+      if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+      const sub = url.pathname.replace('/park-garden', '/garden');
+      const res = await env.PARK.get(env.PARK.idFromName('the-park')).fetch(new Request('https://room' + sub, {
+        method: request.method,
+        body: request.method === 'POST' ? await request.text() : undefined,
+      }));
+      return new Response(await res.text(), { status: res.status, headers: cors });
+    }
     if (url.pathname === '/beach-count') { // …and its beach headcount
       const res = await env.BEACH.get(env.BEACH.idFromName('banana-bay')).fetch(new Request('https://room/count'));
       return new Response(await res.text(), {
@@ -819,6 +839,7 @@ export class ParkRoom {
     if (url.pathname === '/rosternames') { // HQ Names desk: who's named here right now
       return new Response(JSON.stringify({ names: this.roster().filter((a) => a.name).map((a) => a.name) }));
     }
+    if (url.pathname.startsWith('/garden')) return this.garden(request, url);
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
     }
@@ -829,6 +850,72 @@ export class ParkRoom {
     const pair = new WebSocketPair();
     this.state.acceptWebSocket(pair[1]);
     return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+
+  // ---- 🌱 THE GARDEN (P3b) — 8 slots in DO storage, wall-clock growth ----
+  // Coins stay client-authoritative (no real money); the server only keeps
+  // the shared plot truth: who planted what, when, and who watered it.
+  async garden(request, url) {
+    const json = (o, status = 200) => new Response(JSON.stringify(o), {
+      status, headers: { 'Content-Type': 'application/json' },
+    });
+    let slots = (await this.state.storage.get('garden')) || [];
+    if (!Array.isArray(slots)) slots = [];
+    while (slots.length < 8) slots.push(null);
+    slots = slots.slice(0, 8);
+    const now = Date.now();
+    // wilt sweep: unwatered 3+ days → the slot frees itself on the next read
+    let dirty = false;
+    for (let i = 0; i < 8; i++) {
+      const w = slots[i];
+      if (w && now - (w.lastWater || w.plantedAt || 0) > 3 * 86_400_000) { slots[i] = null; dirty = true; }
+    }
+    const strip = (s) => (s ? {
+      passShort: s.passShort, name: s.name, seed: s.seed,
+      plantedAt: s.plantedAt, lastWater: s.lastWater,
+      waterers: (s.waterers || []).length,
+    } : null);
+    if (url.pathname === '/garden' && request.method !== 'POST') {
+      if (dirty) await this.state.storage.put('garden', slots);
+      return json({ slots: slots.map(strip) });
+    }
+    let b = null;
+    try { b = JSON.parse(await request.text()); } catch (e) {}
+    if (!b || typeof b !== 'object') return json({ err: 'bad body' }, 400);
+    const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
+    const short = pass.slice(0, 8);
+    const i = Math.floor(Number(b.slot));
+    if (!short || !(i >= 0 && i < 8)) return json({ err: 'bad slot' }, 400);
+    const s = slots[i];
+    if (url.pathname === '/garden/plant') {
+      if (s) return json({ err: 'taken', slots: slots.map(strip) }, 409);
+      if (!GARDEN_SEEDS[b.seed]) return json({ err: 'bad seed' }, 400);
+      slots[i] = {
+        passShort: short, name: sanitizeName(b.name, []) || '', seed: b.seed,
+        plantedAt: now, lastWater: now, waterers: [], wday: {},
+      };
+    } else if (url.pathname === '/garden/water') {
+      if (!s) return json({ err: 'empty', slots: slots.map(strip) }, 404);
+      const day = Math.floor(now / 86_400_000);
+      s.wday = s.wday || {};
+      if (s.wday[short] === day) return json({ err: 'watered today', slots: slots.map(strip) }, 429);
+      s.wday[short] = day;
+      const wk = Object.keys(s.wday);          // bounded — a busy slot can't grow forever
+      if (wk.length > 60) delete s.wday[wk[0]];
+      s.lastWater = now;
+      s.waterers = s.waterers || [];
+      if (!s.waterers.includes(short)) { s.waterers.push(short); if (s.waterers.length > 60) s.waterers.shift(); }
+    } else if (url.pathname === '/garden/harvest') {
+      if (!s) return json({ err: 'empty', slots: slots.map(strip) }, 404);
+      if (s.passShort !== short) return json({ err: 'not yours' }, 403);
+      const days = Math.floor((now - s.plantedAt) / 86_400_000);
+      if (days < GARDEN_SEEDS[s.seed]) return json({ err: 'still growing', slots: slots.map(strip) }, 409);
+      slots[i] = null;
+    } else {
+      return json({ err: 'not found' }, 404);
+    }
+    await this.state.storage.put('garden', slots);
+    return json({ ok: 1, slots: slots.map(strip) });
   }
 
   async webSocketMessage(ws, raw) {
@@ -1095,6 +1182,9 @@ function bayClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.mi
 function bayStrip(p) {
   return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
 }
+
+// 🌱 growth days per seed — ⚠️ keep in sync with SEEDS in src/scripts/banana-park.js
+const GARDEN_SEEDS = { daisy: 2, sunflower: 4, tulip: 5 };
 
 function parkClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(95, Math.max(5, Math.round(n * 10) / 10)) : 50; }
 function parkClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(99, Math.max(20, Math.round(n * 10) / 10)) : 90; }
