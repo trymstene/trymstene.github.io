@@ -468,31 +468,88 @@ def try_place(names, cx, base, **kw):
 # sides face its in-pond neighbours. Trym's reference shots, done properly.
 pcx, pcy, prx, pry = POND
 if HAVE_PACK:
-    # ⚠️ TWO auto-classification attempts at the Grass_Water autotiles failed
-    # (rounds 4-5: staircase edges, dirt-bank strays) — the family's layout
-    # needs a proper contact-sheet study before it can be mapped (TODO, own
-    # session). Until then: pack water FILL + a hand-finished bank in the
-    # reference shots' language — dark under-lip, then a scalloped GRASS
-    # overhang so the lawn hangs over the water like the pack's own ponds.
-    wp = WATER_T.load()
-    for y in range(pcy - pry, pcy + pry):
-        for x in range(pcx - prx, pcx + prx):
-            if ((x - pcx) / float(prx)) ** 2 + ((y - pcy) / float(pry)) ** 2 <= 1.0:
-                put(x, y, wp[x % T, y % T])
-    for ang in range(0, 4200):
-        a = ang / 4200.0 * 2 * math.pi
-        scal = 1.0 + 0.018 * math.sin(a * 14) + 0.010 * math.sin(a * 5)
-        for rr, col in ((0.955, (38, 84, 118)), (0.985, (30, 68, 98))):
-            x = int(pcx + math.cos(a) * prx * rr * scal)
-            y = int(pcy + math.sin(a) * pry * rr * scal)
-            put(x, y, col)
-            put(x + 1, y, col)
-            put(x, y + 1, col)
-        for rr, col in ((1.005, (56, 118, 54)), (1.03, (74, 138, 66)), (1.055, (96, 158, 78))):
-            x = int(pcx + math.cos(a) * prx * rr * scal)
-            y = int(pcy + math.sin(a) * pry * rr * scal)
-            put(x, y, col)
-            put(x + 1, y, col)
+    # ✅ contact-sheet study (round 10): Grass_Water_1 is 23 tiles, NOT 91.
+    # Soft grass-overhang pieces (1-4, 12-18) cover shores where grass is
+    # north/beside the water; the DIRT-CLIFF pieces (5-8) are not strays —
+    # they ARE the south-facing shores (grass below water shows its bank
+    # face, exactly like the pack's reference ponds). Corner-sample at (2,2)
+    # etc. — midpoints missed the small notches and broke rounds 4-5.
+    CLEAN_GW = (22, 2, 4, 6, 8, 1, 3, 5, 7, 15, 17, 18, 21, 23)
+    # the family's own grass base (sampled off its full-grass tile 23)
+    _t23 = load_pack('ME_Singles_Terrains_and_Fences_48x48_Grass_Water_1_23.png').convert('RGBA')
+    _cnt = {}
+    for _yy in range(T):
+        for _xx in range(T):
+            _c = _t23.load()[_xx, _yy]
+            if _c[3]:
+                _cnt[_c[:3]] = _cnt.get(_c[:3], 0) + 1
+    GW_BASE = max(_cnt, key=_cnt.get)
+    gw = {}
+    for i in CLEAN_GW:
+        try:
+            t = load_pack('ME_Singles_Terrains_and_Fences_48x48_Grass_Water_1_%d.png' % i).convert('RGBA')
+        except Exception:
+            continue
+        p = t.load()
+
+        def wat(xx, yy, p=p):
+            r, g, b, a = p[xx, yy]
+            return a > 0 and b > g + 6
+        key = (wat(2, 2), wat(45, 2), wat(45, 45), wat(2, 45))   # NW NE SE SW
+        gw.setdefault(key, t)
+    FULL_W = gw.get((True, True, True, True), WATER_T)
+    FULL_G = gw.get((False, False, False, False))
+
+    def in_pond(x_, y_):
+        # squircle, not ellipse — round tips at 48px cells grew one-cell
+        # water fingers; exponent 2.6 keeps the ends two cells tall
+        return (abs(x_ - pcx) / float(prx)) ** 2.6 + (abs(y_ - pcy) / float(pry)) ** 2.6 <= 1.0
+
+    missing = set()
+    c0, c1 = (pcx - prx) // T - 1, (pcx + prx) // T + 1
+    r0, r1 = (pcy - pry) // T - 1, (pcy + pry) // T + 1
+    for r in range(r0, r1 + 1):
+        for c in range(c0, c1 + 1):
+            x0, y0 = c * T, r * T
+            key = (in_pond(x0, y0), in_pond(x0 + T, y0),
+                   in_pond(x0 + T, y0 + T), in_pond(x0, y0 + T))
+            if not any(key):
+                continue
+            t = gw.get(key)
+            if t is None:
+                missing.add(key)
+                t = FULL_W if sum(key) >= 3 else FULL_G
+            if t is None:
+                continue
+            if not all(key):
+                # dry-grass pixels take the plate's OWN lawn beneath — any
+                # fixed re-tint left a faint tile-grid halo around the shore
+                t = t.copy()
+                tp = t.load()
+                for yy in range(T):
+                    for xx in range(T):
+                        r0, g0, b0, a0 = tp[xx, yy]
+                        if (a0 and not (b0 > g0 + 6) and g0 >= r0 and g0 >= b0
+                                and r0 + g0 + b0 > 170
+                                and 0 <= x0 + xx < W and 0 <= y0 + yy < H):
+                            tp[xx, yy] = px[x0 + xx, y0 + yy]
+            im.alpha_composite(t, (x0, y0))
+    if missing:
+        print('  pond: no tile for keys', sorted(missing))
+    # the tiles' grass ring went down AFTER the lawn's life pass, so it reads
+    # as a flat halo — re-scatter tufts + flowers onto the dry shore band
+    srng = random.Random(31)
+    for _ in range(90):
+        sx_ = srng.randrange(pcx - prx - 60, pcx + prx + 60)
+        sy_ = srng.randrange(pcy - pry - 60, pcy + pry + 60)
+        d_ = (abs(sx_ - pcx) / float(prx)) ** 2.6 + (abs(sy_ - pcy) / float(pry)) ** 2.6
+        if not (1.06 < d_ < 1.9):
+            continue
+        if TUFT and srng.random() < 0.75:
+            im.alpha_composite(TUFT, (sx_ - 24, sy_ - 24))
+        elif FLOWER_STAMPS:
+            for fx_, fy_, col in FLOWER_STAMPS[srng.randrange(len(FLOWER_STAMPS))]:
+                put(sx_ - 24 + fx_, sy_ - 24 + fy_, col)
 # ripples + lily pads, so the pond isn't a navy slab
 prng = random.Random(88)
 for _ in range(60):
