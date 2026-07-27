@@ -870,52 +870,96 @@ export class ParkRoom {
       const w = slots[i];
       if (w && now - (w.lastWater || w.plantedAt || 0) > 3 * 86_400_000) { slots[i] = null; dirty = true; }
     }
+    // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns
+    const wd = (await this.state.storage.get('weeds')) || { list: [], nextAt: 0 };
+    const bl = (await this.state.storage.get('bloom')) || { v: 70, at: now };
+    const hrs = Math.max(0, (now - bl.at) / 3600_000);
+    const decayed = hrs > 0.001;
+    if (decayed) {
+      bl.v = Math.max(BLOOM_FLOOR, bl.v - hrs * (BLOOM_BASE_DRIFT + BLOOM_WEED_DRAG * wd.list.length));
+      bl.at = now;
+    }
+    if (!wd.nextAt || wd.nextAt < now - 86_400_000) wd.nextAt = now + WEED_EVERY;
+    let weedsDirty = false;
+    while (now >= wd.nextAt && wd.list.length < WEED_CAP) {
+      const taken = new Set(wd.list.map((w2) => w2.x + ',' + w2.y));
+      const free = WEED_SPOTS.filter((sp) => !taken.has(sp[0] + ',' + sp[1]));
+      if (!free.length) break;
+      const sp = free[Math.floor(Math.random() * free.length)];
+      wd.list.push({ id: crypto.randomUUID().slice(0, 8), x: sp[0], y: sp[1], bornAt: now });
+      wd.nextAt += WEED_EVERY;
+      weedsDirty = true;
+    }
+    if (now >= wd.nextAt) { wd.nextAt = now + WEED_EVERY; weedsDirty = true; }
     const strip = (s) => (s ? {
       passShort: s.passShort, name: s.name, seed: s.seed,
       plantedAt: s.plantedAt, lastWater: s.lastWater,
       waterers: (s.waterers || []).length,
     } : null);
+    const payload = (extra) => ({
+      slots: slots.map(strip),
+      bloom: Math.round(bl.v),
+      weeds: wd.list.map((w2) => ({ id: w2.id, x: w2.x, y: w2.y })),
+      ...extra,
+    });
+    const persist = async () => {
+      await this.state.storage.put('garden', slots);
+      await this.state.storage.put('weeds', wd);
+      await this.state.storage.put('bloom', bl);
+    };
     if (url.pathname === '/garden' && request.method !== 'POST') {
-      if (dirty) await this.state.storage.put('garden', slots);
-      return json({ slots: slots.map(strip) });
+      if (dirty || weedsDirty || decayed) await persist();
+      return json(payload());
     }
     let b = null;
     try { b = JSON.parse(await request.text()); } catch (e) {}
     if (!b || typeof b !== 'object') return json({ err: 'bad body' }, 400);
     const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
     const short = pass.slice(0, 8);
+    if (!short) return json({ err: 'bad pass' }, 400);
+    // 🌿 pull a weed — removing it IS the rate limit
+    if (url.pathname === '/garden/weed') {
+      const wi = wd.list.findIndex((w2) => w2.id === b.id);
+      if (wi < 0) return json(payload({ err: 'gone' }), 404);
+      wd.list.splice(wi, 1);
+      bl.v = Math.min(100, bl.v + BLOOM_PULL);
+      await persist();
+      return json(payload({ ok: 1 }));
+    }
     const i = Math.floor(Number(b.slot));
-    if (!short || !(i >= 0 && i < 8)) return json({ err: 'bad slot' }, 400);
+    if (!(i >= 0 && i < 8)) return json({ err: 'bad slot' }, 400);
     const s = slots[i];
     if (url.pathname === '/garden/plant') {
-      if (s) return json({ err: 'taken', slots: slots.map(strip) }, 409);
+      if (s) return json(payload({ err: 'taken' }), 409);
       if (!GARDEN_SEEDS[b.seed]) return json({ err: 'bad seed' }, 400);
       slots[i] = {
         passShort: short, name: sanitizeName(b.name, []) || '', seed: b.seed,
         plantedAt: now, lastWater: now, waterers: [], wday: {},
       };
+      bl.v = Math.min(100, bl.v + BLOOM_PLANT);
     } else if (url.pathname === '/garden/water') {
-      if (!s) return json({ err: 'empty', slots: slots.map(strip) }, 404);
+      if (!s) return json(payload({ err: 'empty' }), 404);
       const day = Math.floor(now / 86_400_000);
       s.wday = s.wday || {};
-      if (s.wday[short] === day) return json({ err: 'watered today', slots: slots.map(strip) }, 429);
+      if (s.wday[short] === day) return json(payload({ err: 'watered today' }), 429);
       s.wday[short] = day;
       const wk = Object.keys(s.wday);          // bounded — a busy slot can't grow forever
       if (wk.length > 60) delete s.wday[wk[0]];
       s.lastWater = now;
       s.waterers = s.waterers || [];
       if (!s.waterers.includes(short)) { s.waterers.push(short); if (s.waterers.length > 60) s.waterers.shift(); }
+      bl.v = Math.min(100, bl.v + BLOOM_WATER);
     } else if (url.pathname === '/garden/harvest') {
-      if (!s) return json({ err: 'empty', slots: slots.map(strip) }, 404);
+      if (!s) return json(payload({ err: 'empty' }), 404);
       if (s.passShort !== short) return json({ err: 'not yours' }, 403);
       const days = Math.floor((now - s.plantedAt) / 86_400_000);
-      if (days < GARDEN_SEEDS[s.seed]) return json({ err: 'still growing', slots: slots.map(strip) }, 409);
+      if (days < GARDEN_SEEDS[s.seed]) return json(payload({ err: 'still growing' }), 409);
       slots[i] = null;
     } else {
       return json({ err: 'not found' }, 404);
     }
-    await this.state.storage.put('garden', slots);
-    return json({ ok: 1, slots: slots.map(strip) });
+    await persist();
+    return json(payload({ ok: 1 }));
   }
 
   async webSocketMessage(ws, raw) {
@@ -1185,6 +1229,28 @@ function bayStrip(p) {
 
 // 🌱 growth days per seed — ⚠️ keep in sync with SEEDS in src/scripts/banana-park.js
 const GARDEN_SEEDS = { daisy: 2, sunflower: 4, tulip: 5 };
+
+// 🌿 W1 WEEDS + 🌸 THE BLOOM — the park's entropy loop. All tuning here:
+// weeds spawn ~1/2h to a cap of 10; each live weed drags the bloom 0.35/h on
+// top of a 0.4/h base drift; pulls/waterings/plantings push it back up. At
+// 3-5 active visitors/day (~2 pulls + 2 waterings + the odd planting each)
+// the meter holds 60-80; it sinks overnight but floors at 15 — never hopeless.
+const WEED_EVERY = 2 * 3600_000;
+const WEED_CAP = 10;
+const BLOOM_FLOOR = 15;
+const BLOOM_BASE_DRIFT = 0.4;      // per hour, always
+const BLOOM_WEED_DRAG = 0.35;      // per hour, per live weed
+const BLOOM_PULL = 3, BLOOM_WATER = 2, BLOOM_PLANT = 6;
+// lawn spots only — clear of the plaza, roads, pond, plots and colliders.
+// ⚠️ keep in sync with the ?parktest shim's copy in src/scripts/banana-park.js
+const WEED_SPOTS = [
+  [380, 690], [450, 620], [300, 830], [420, 940], [680, 600], [250, 480],
+  [880, 260], [1180, 300], [760, 180], [1420, 150], [1180, 150],
+  [1750, 320], [1900, 380], [2100, 300], [2550, 400], [2100, 250], [2600, 480],
+  [960, 640], [1700, 560], [1650, 700], [1950, 700], [2050, 860],
+  [600, 1040], [900, 1000], [1100, 1040], [1550, 950], [1650, 1020],
+  [2000, 990], [2150, 940], [1250, 720],
+];
 
 function parkClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(95, Math.max(5, Math.round(n * 10) / 10)) : 50; }
 function parkClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(99, Math.max(20, Math.round(n * 10) / 10)) : 90; }

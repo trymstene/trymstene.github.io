@@ -715,6 +715,24 @@ if HAVE_PACK:
         except Exception as e:
             print('  garden sprite failed', src, e)
 
+# ---- 🌿 W1 WEEDS — the entropy sprite (Modern Farm pack, native 48px) ------
+# Trym's call: Crop_Grain_ROTTEN — the grey-brown withered bush beside the
+# golden ripe grain. Variant 2 is the SAME sprite mirrored (placement variety).
+# ⚠️ the golden Crop_Grain_Ripe stays reserved — it may become a W3 crop.
+FARM = os.path.expanduser(r'~\OneDrive\banana-art-pack\Modern_Farm_v1.2\48x48')
+if os.path.isdir(FARM):
+    import glob as _glob
+    try:
+        f = _glob.glob(os.path.join(FARM, '**', 'Crop_Grain_Rotten_48x48.png'), recursive=True)[0]
+        s = blockify(Image.open(f).convert('RGBA'), factor=1, colors=28,
+                     warm=0.0, sat=1.0, con=1.0)
+        s = s.resize((max(1, int(s.width * PROP)), max(1, int(s.height * PROP))), Image.NEAREST)
+        s.save(os.path.join(OUT, 'w-weed1.png'), optimize=True)
+        s.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(OUT, 'w-weed2.png'), optimize=True)
+        print('  w-weed1/2.png: %dx%d (Crop_Grain_Rotten)' % (s.width, s.height))
+    except Exception as e:
+        print('  weed sprite failed', e)
+
 # ---- 🛝 the playground -----------------------------------------------------
 def sheet_strip(name, out_name, fw, fh=96):
     """⚠️ the playground files are each a FULL ANIMATION SHEET (Park_Swing_1 is

@@ -338,6 +338,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-seedcost img { image-rendering: pixelated; display: block; }
     .pk-seedpoor { margin: 0.2rem 0 0; font-size: 0.72rem; opacity: 0.7; }
     .pk-gplant { margin: -0.1rem 0 0.35rem; font-size: 0.82rem; font-weight: 800; color: #8de08d; }
+
+    /* 🌿 weeds — server-placed entropy on the lawns; a pull shakes then poofs */
+    .pk-weed {
+      position: absolute; width: 1.12%; aspect-ratio: 31 / 38;
+      transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
+    }
+    .pk-weed--1 { background-image: url('/assets/park/w-weed1.png'); }
+    .pk-weed--2 { background-image: url('/assets/park/w-weed2.png'); }
+    .pk-weed.is-pulled { animation: pkWeedPull 0.24s ease-in forwards; }
+    @keyframes pkWeedPull {
+      0% { transform: translate(-50%, -100%) rotate(0); }
+      35% { transform: translate(-52%, -102%) rotate(-7deg); }
+      70% { transform: translate(-48%, -106%) rotate(7deg); }
+      100% { transform: translate(-50%, -130%) rotate(0); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-weed.is-pulled { animation: none; opacity: 0; } }
+
+    /* 🌸 the bloom pill — green healthy, amber 30-60, grey wilted */
+    .pk-whud__bloom b { color: #8de08d; }
+    .pk-whud__bloom.is-mid b { color: #ffb347; }
+    .pk-whud__bloom.is-low b { color: #9a9aa8; }
+    .pk-whud__bloom.is-low { opacity: 0.8; }
+    .pk-bloombar {
+      height: 12px; border: 2px solid #000; background: #182a16;
+      border-radius: 6px; overflow: hidden; margin: 0.2rem 0 0.35rem;
+    }
+    .pk-bloombar i { display: block; height: 100%; background: linear-gradient(90deg, #4d9e4a, #8de08d); transition: width 0.4s ease; }
+    .pk-bloomnum { margin: 0 0 0.7rem; font-size: 0.8rem; font-weight: 800; color: #8de08d; }
     .pk-gwater { margin: 0 0 0.6rem; font-size: 0.78rem; color: #7db9ff; font-weight: 800; }
     .pk-gbtn { width: 100%; border: 3px solid #000; background: #7db9ff; color: #10240f;
       font-weight: 800; font-family: inherit; font-size: 0.9rem; padding: 0.55rem;
@@ -517,6 +547,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="pk-whud" id="pkWhud">
           <span class="pk-whud__lvl"><span id="pkLvlN">LVL 1</span><span class="pk-whud__lvlbar"><i id="pkLvlFill"></i></span></span>
           <span class="pk-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="pkCoinN">0</b></span>
+          <button class="pk-whud__bloom" id="pkBloomBtn" type="button" aria-label="the park's bloom">🌸 <b id="pkBloomN">—</b></button>
           <button class="pk-whud__col is-dim" id="pkBflyBtn" type="button" aria-label="butterfly collection">🦋 <b id="pkBflyN">—</b></button>
           <span class="pk-whud__crowd"><span aria-hidden="true">◍</span> <span id="pkCrowd">solo</span></span>
         </div>

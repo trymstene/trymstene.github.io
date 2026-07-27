@@ -120,6 +120,9 @@ const STAGE_ART = {
   daisy: ['g-daisy.png', 26, 31], sunflower: ['g-sunflower.png', 31, 47], tulip: ['g-tulip.png', 31, 26],
 };
 const GARDEN_API = 'https://banana-rave.trymstene.workers.dev/park-garden';
+// 🌿 weed spots for the ?parktest shim only — the real list lives server-side
+// in worker-rave (keep in sync); two sprite variants picked by id hash
+const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1000], [1550, 950]];
 
 const WISHES = [
   'you wish for a sunny day. granted — look around.',
@@ -306,8 +309,10 @@ function init() {
     pendingShop = false;
     pendingToss = false;
     pendingGarden = null;
+    pendingWeed = null;
     if (riding) dismount();          // any tap off the ride hops you off
     if (tapBfly(wx, wy)) return;
+    if (tapWeed(wx, wy)) return;
     if (tapGarden(wx, wy)) return;
     if (tapRide(wx, wy)) return;
     if (tapShop(wx, wy)) return;
@@ -759,19 +764,33 @@ function init() {
   const gEls = PLOTS.map(() => ({ plant: null, chip: null, stage: '', chipKey: '' }));
   let pendingGarden = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
-  const gShim = { slots: Array(8).fill(null) };   // the ?parktest stand-in server
+  const gShim = { slots: Array(8).fill(null), weeds: [], bloom: 70 };   // the ?parktest stand-in server
   function shimGarden(path, body) {
     const now = Date.now();
-    const strip = () => ({ ok: 1, slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)) });
+    const strip = () => ({
+      ok: 1,
+      slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)),
+      bloom: Math.round(gShim.bloom),
+      weeds: gShim.weeds.map((w2) => ({ ...w2 })),
+    });
     if (!body) return Promise.resolve(strip());
+    if (path === '/weed') {
+      const wi = gShim.weeds.findIndex((w2) => w2.id === body.id);
+      if (wi < 0) return Promise.resolve({ err: 'gone', ...strip() });
+      gShim.weeds.splice(wi, 1);
+      gShim.bloom = Math.min(100, gShim.bloom + 3);
+      return Promise.resolve(strip());
+    }
     const i = body.slot, s = gShim.slots[i];
     if (path === '/plant') {
       if (s) return Promise.resolve({ err: 'taken', ...strip() });
       gShim.slots[i] = { passShort: myShort, name: body.name || '', seed: body.seed, plantedAt: now, lastWater: now, waterers: [] };
+      gShim.bloom = Math.min(100, gShim.bloom + 6);
     } else if (path === '/water') {
       if (!s) return Promise.resolve({ err: 'empty' });
       s.lastWater = now;
       if (!s.waterers.includes(body.pass.slice(0, 8))) s.waterers.push(body.pass.slice(0, 8));
+      gShim.bloom = Math.min(100, gShim.bloom + 2);
     } else if (path === '/harvest') {
       if (!s) return Promise.resolve({ err: 'empty' });
       if (Math.floor((now - s.plantedAt) / 86400000) < SEED_BY[s.seed].days) return Promise.resolve({ err: 'still growing' });
@@ -842,8 +861,77 @@ function init() {
       }
     });
   }
+  // ---- 🌿 WEEDS + 🌸 THE BLOOM — the shared entropy loop ------------------
+  const weeds = new Map();                      // id → { el, x, y }
+  let bloomV = -1, pendingWeed = null, weedTracked = false;
+  const bloomBtn = document.getElementById('pkBloomBtn');
+  const bloomNEl = document.getElementById('pkBloomN');
+  function refreshBloom(v) {
+    if (v === bloomV || typeof v !== 'number') return;
+    bloomV = v;
+    bloomNEl.textContent = v + '%';
+    bloomBtn.classList.toggle('is-mid', v <= 60 && v >= 30);
+    bloomBtn.classList.toggle('is-low', v < 30);
+  }
+  function renderWeeds(list) {
+    const seen = new Set();
+    (list || []).forEach((w2) => {
+      seen.add(w2.id);
+      if (weeds.has(w2.id)) return;
+      const el = document.createElement('div');
+      el.className = 'pk-weed pk-weed--' + (1 + (parseInt(w2.id, 36) || 0) % 2);
+      el.style.left = pct(w2.x, W);
+      el.style.top = pct(w2.y, H);
+      depth(el, w2.y);
+      world.appendChild(el);
+      weeds.set(w2.id, { el, x: w2.x, y: w2.y });
+    });
+    weeds.forEach((w2, id) => {
+      if (!seen.has(id)) { w2.el.remove(); weeds.delete(id); }   // pulled elsewhere
+    });
+  }
+  async function pullWeed(id) {
+    const w2 = weeds.get(id);
+    if (!w2) return;
+    weeds.delete(id);                       // optimistic — the poll reconciles
+    w2.el.classList.add('is-pulled');
+    setTimeout(() => {
+      poofInto(world, 'pk-poof', w2.x / W * 100, (w2.y - 14) / H * 100);
+      w2.el.remove();
+    }, 240);
+    passStat('rep', 1);
+    refreshHud();
+    float(w2.x, w2.y - 20, '+1');
+    if (!weedTracked) { weedTracked = true; track('park_weed'); }
+    applyGarden(await gFetch('/weed', { id, pass: worldSid() }));
+  }
+  function tapWeed(wx, wy) {
+    let hit = null;
+    weeds.forEach((w2, id) => {
+      if (Math.hypot(wx - w2.x, wy - (w2.y - 10)) < 30) hit = { id, w2 };
+    });
+    if (!hit) return false;
+    if (Math.hypot(pos.x - hit.w2.x, pos.y - hit.w2.y) < 90) { pullWeed(hit.id); return true; }
+    pendingWeed = hit.id;                   // walk-then-pull
+    tgt.x = hit.w2.x;
+    tgt.y = hit.w2.y + 26;
+    return true;
+  }
+  bloomBtn.addEventListener('click', () => {
+    const n = weeds.size;
+    gardenBody.innerHTML = '<h2>🌸 the bloom</h2>'
+      + '<p class="pk-panel__sub">the park’s health — shared by everyone in it.</p>'
+      + '<div class="pk-bloombar"><i style="width:' + Math.max(0, bloomV) + '%"></i></div>'
+      + '<p class="pk-bloomnum">' + Math.max(0, bloomV) + '%'
+      + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : ' · no weeds right now') + '</p>'
+      + '<p class="pk-panel__sub">weeds drag the park down. pull them. plant things. water what grows. the park remembers.</p>';
+    gardenPanel.hidden = false;
+  });
   function applyGarden(res) {
-    if (res && Array.isArray(res.slots)) { gSlots = res.slots; renderGarden(); }
+    if (!res) return;
+    if (Array.isArray(res.slots)) { gSlots = res.slots; renderGarden(); }
+    if (Array.isArray(res.weeds)) renderWeeds(res.weeds);
+    if (typeof res.bloom === 'number') refreshBloom(res.bloom);
   }
   async function gardenPoll() { applyGarden(await gFetch('')); }
   gardenPoll();
@@ -981,6 +1069,11 @@ function init() {
     if (pendingGarden != null) {
       const [sx, sy] = PLOTS[pendingGarden];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingGarden; pendingGarden = null; gardenAct(i); }
+    }
+    if (pendingWeed != null) {
+      const w2 = weeds.get(pendingWeed);
+      if (!w2) pendingWeed = null;          // pulled by somebody else mid-walk
+      else if (Math.hypot(pos.x - w2.x, pos.y - w2.y) < 90) { const id = pendingWeed; pendingWeed = null; pullWeed(id); }
     }
   }
 
