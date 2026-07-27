@@ -24,9 +24,11 @@ export const COIN_TEST = typeof location !== 'undefined' && location.search.incl
 export const COIN_PERIOD = COIN_TEST ? 30 : 60;
 export const COIN_WAIT = COIN_TEST ? 24 : 18;
 export const COIN_OFFSET = 150;
-export function coinAmountFor(w) { // 60% three / 30% six / 10% twelve
+// (bumped again same day — Trym: "rather have more coins, than too little,
+// i can always add things that cost money"; sinks are easy, faucets are hard)
+export function coinAmountFor(w) { // 60% five / 30% ten / 10% twenty
   const r = seedRand(0xc01e * 7 + w);
-  return r < 0.60 ? 3 : r < 0.90 ? 6 : 12;
+  return r < 0.60 ? 5 : r < 0.90 ? 10 : 20;
 }
 
 // the world-wide per-browser session id (localStorage key `park-sid` — the

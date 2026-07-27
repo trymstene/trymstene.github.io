@@ -1003,9 +1003,10 @@ export class ParkRoom {
       const ei = eg.list.findIndex((e) => e.id === b.id);
       if (ei < 0) return json(payload({ err: 'gone' }), 404);
       const [e] = eg.list.splice(ei, 1);
-      const reward = e.g ? { coins: 25, tickets: 5, golden: 1 }
-        : Math.random() < 0.25 ? { tickets: 3 }
-          : { coins: 3 + Math.floor(Math.random() * 6) };
+      // generous-faucet doctrine (Trym 29 Jul): sinks are easy, faucets hard
+      const reward = e.g ? { coins: 40, tickets: 8, golden: 1 }
+        : Math.random() < 0.25 ? { tickets: 5 }
+          : { coins: 6 + Math.floor(Math.random() * 7) };
       await persist();
       return json(payload({ ok: 1, reward }));
     }
