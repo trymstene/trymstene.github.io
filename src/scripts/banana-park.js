@@ -285,12 +285,17 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     pendingRide = null;
+    pendingShop = false;
+    pendingToss = false;
     if (riding) dismount();          // any tap off the ride hops you off
     if (tapBfly(wx, wy)) return;
     if (tapRide(wx, wy)) return;
+    if (tapShop(wx, wy)) return;
+    if (tapFountain(wx, wy)) return;
     tgt.x = wx;
     tgt.y = wy;
   });
+  let pendingShop = false, pendingToss = false;
 
   // ---- 🚪 the doors: hysteresis, never an instant teleport ----------------
   // Arm only once you've been properly INSIDE the park (clear of both doors),
@@ -564,15 +569,26 @@ function init() {
   }
 
   // ---- 🪙 THE FOUNTAIN COIN TOSS — an honest tiny sink, no payout ---------
+  // ⚠️ NO action-bar button — the world grammar is TAP THE THING (beach
+  // stalls, rides): tap the fountain to toss, walking over first if far
   const TOSS_AT = { x: FOUNTAIN[0], y: FOUNTAIN[1] + 10 };
-  const tossBtn = document.getElementById('pkToss');
-  let tossShown = false, tossTracked = false, tossBusy = false;
+  let tossTracked = false, tossBusy = false;
   let wishIdx = Math.floor(Math.random() * WISHES.length);
-  function tossTick() {
-    const near = Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120;
-    if (near !== tossShown) { tossShown = near; tossBtn.hidden = !near; }
+  function tapFountain(wx, wy) {
+    if (Math.hypot(wx - TOSS_AT.x, wy - TOSS_AT.y) > 80) return false;
+    if (Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120) { doToss(); return true; }
+    pendingToss = true;
+    tgt.x = TOSS_AT.x;
+    tgt.y = TOSS_AT.y + 92;
+    return true;
   }
-  tossBtn.addEventListener('click', () => {
+  function tossTick() {
+    if (pendingToss && Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120) {
+      pendingToss = false;
+      doToss();
+    }
+  }
+  function doToss() {
     if (tossBusy) return;
     if (coinBal() < 1) { toast('no coins — the rave floor drops them'); return; }
     passStat('coins_spent', 1);
@@ -593,7 +609,7 @@ function init() {
       toast('🪙 ' + WISHES[wishIdx++ % WISHES.length], 3400);
       tossBusy = false;
     }, 720);
-  });
+  }
 
   // ---- 🧃 THE MERCH CART — the one real thing in the park -----------------
   // The builder→merch bridge is dead; the cart IS merch's home now. Cards
@@ -601,7 +617,6 @@ function init() {
   // pre-built via the builder's own interchange params (h/g/ex/e — the same
   // string the gallery's merch CTAs ride).
   const CART_AT = { x: MARKET.cart[0], y: MARKET.cart[1] };
-  const browseBtn = document.getElementById('pkBrowse');
   const shopEl = document.getElementById('pkShop');
   const goodsEl = document.getElementById('pkGoods');
   const keeperCtx = document.getElementById('pkKeeperCv').getContext('2d');
@@ -610,7 +625,7 @@ function init() {
     hat: 'none', glasses: 'monocle', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
-  let browseShown = false, cartViewTracked = false, sparkleAt = 0;
+  let cartViewTracked = false, sparkleAt = 0;
   let keeperTimer = null, keeperIdx = 0;
   function merchParams() {
     let o = {};
@@ -676,7 +691,15 @@ function init() {
     keeperBubble.classList.remove('is-on');
     blink(() => { shopEl.hidden = true; });
   }
-  browseBtn.addEventListener('click', openShop);
+  // tap the HUT itself to enter (walk-then-open — the beach stall grammar)
+  function tapShop(wx, wy) {
+    if (!(Math.abs(wx - CART_AT.x) < 105 && CART_AT.y - 250 < wy && wy < CART_AT.y + 14)) return false;
+    if (Math.hypot(pos.x - CART_AT.x, pos.y - CART_AT.y) < 110) { openShop(); return true; }
+    pendingShop = true;
+    tgt.x = CART_AT.x;
+    tgt.y = CART_AT.y + 46;
+    return true;
+  }
   document.getElementById('pkKeeper').addEventListener('click', () => {
     keeperSay(KEEPER_LINES[keeperIdx++ % KEEPER_LINES.length]);
   });
@@ -686,8 +709,10 @@ function init() {
   // proximity + the idle ✦ over the shop roof (rides the rAF step, so a
   // hidden tab sparkles nothing)
   function cartTick(now) {
-    const near = Math.hypot(pos.x - CART_AT.x, pos.y - CART_AT.y) < 110;
-    if (near !== browseShown) { browseShown = near; browseBtn.hidden = !near; }
+    if (pendingShop && Math.hypot(pos.x - CART_AT.x, pos.y - CART_AT.y) < 110) {
+      pendingShop = false;
+      openShop();
+    }
     if (now > sparkleAt) {
       sparkleAt = now + 6500 + Math.random() * 3000;
       const s = document.createElement('div');
