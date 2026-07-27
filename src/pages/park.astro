@@ -855,6 +855,7 @@ import PixelIcon from '../components/PixelIcon.astro';
       box-shadow: 3px 3px 0 #000; text-decoration: none; font-family: inherit;
     }
     .pk-stand__deskbtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .pk-stand__deskbtn--leave { font-weight: 800; font-size: 0.82rem; line-height: 1; padding: 0 10px; white-space: nowrap; }
     .pk-stand__deskbtn svg { display: block; image-rendering: pixelated; }
     .pk-stand__shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 1rem; }
     @media (min-width: 560px) { .pk-stand__shelf { grid-template-columns: repeat(4, 1fr); } }
@@ -1012,9 +1013,7 @@ import PixelIcon from '../components/PixelIcon.astro';
                   <b id="pkStandWallet">0</b>
                 </div>
                 <div class="pk-stand__deskbtns">
-                  <button class="pk-stand__deskbtn" id="pkStandBack" type="button" aria-label="Step back from the counter" title="step back — the park">
-                    <svg viewBox="0 0 12 12" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="5" y="1" width="2" height="6" fill="#111"/><rect x="2" y="5" width="2" height="2" fill="#111"/><rect x="8" y="5" width="2" height="2" fill="#111"/><rect x="3" y="7" width="2" height="2" fill="#111"/><rect x="7" y="7" width="2" height="2" fill="#111"/><rect x="5" y="9" width="2" height="2" fill="#111"/></svg>
-                  </button>
+                  <button class="pk-stand__deskbtn pk-stand__deskbtn--leave" id="pkStandBack" type="button" aria-label="Leave the banana stand" title="leave — back to the park">Leave</button>
                   <a class="pk-stand__deskbtn" href="/rave/" data-place="stand" aria-label="Back to the club" title="back to the club">
                     <PixelIcon name="mirrorball" size="22px" />
                   </a>
