@@ -462,7 +462,7 @@ MARKET = {}
 
 TRUNK = ('rect', -13, -36, 13, 0)
 BASIN = ('circle', 60)
-CART_BOX = ('rect', -70, -46, 70, 6)
+STAND_BOX = ('rect', -84, -56, 84, 6)   # the ×2 hut's footprint (176×172)
 SHOP_BOX = ('rect', -100, -58, 100, 6)
 BENCH_BOX = ('rect', -34, -18, 34, 4)
 OLD_BENCH = (1583, 722)      # Old Peel's bench — just off the plaza's SE rim
@@ -874,14 +874,28 @@ if HAVE_PACK:
 
 # ---- 🧃 THE MARKET ROW (storefronts face the beach road) -------------------
 if HAVE_PACK:
-    # the banana stand's future storefront spot — held by the biggest cart for
-    # now (the stand building upgrade is its own later step)
+    # 🍌🏪 THE ORIGINAL STAND HUT — our own art from the old /park/ page
+    # (Trym: "the exact version"), NOT a pack sprite. Pre-seeded into _cache
+    # untouched (no blockify/dedisc — it is already on-palette pixel art),
+    # ×2 NEAREST so the chunky pixels stay true next to the heroic banana;
+    # a dark inner rect backs the window cutout (the old page's DOM div).
     # carts sit just off the beach road's north shoulder, following its dips
     # (the road curves now — placement tracks the waypoints, not MARKET_Y)
     MARKET['stand'] = (1975, 528)
-    try_place(['ME_Singles_Vehicles_48x48_Street_Food_Cart_1.png',
-               'ME_Singles_Vehicles_48x48_Street_Food_Cart_2.png'],
-              1975, 528, solid=CART_BOX, layer=True, colors=28)
+    try:
+        hut = Image.open(os.path.join(SITE, 'public', 'assets', 'banana-stand',
+                                      'hut.png')).convert('RGBA')
+        back = Image.new('RGBA', hut.size, (0, 0, 0, 0))
+        ImageDraw.Draw(back).rectangle(
+            (int(hut.width * 0.22), int(hut.height * 0.35),
+             int(hut.width * 0.78), int(hut.height * 0.66)), fill=(36, 29, 51, 255))
+        back.alpha_composite(hut)
+        hut = back.resize((hut.width * 2, hut.height * 2), Image.NEAREST)
+        _cache[('bs-hut', 1, 28, 0.0, 1.0, 1.0)] = hut
+        place('bs-hut', 1975, 528, solid=STAND_BOX, layer=True, colors=28, scale=1.0)
+        print('  stand hut placed (%dx%d)' % hut.size)
+    except Exception as e:
+        print('  stand hut failed', e)
     # 🧃 THE MERCH SHOP — the whole point of Park 2.0. Not a cart: a TINY SHOP
     # HOUSE (Trym) — the pack's Mushroom Kiosk, a round shop hut with a real
     # window. The food-branded kiosks (coffee cup / ice-cream cone) stay out.

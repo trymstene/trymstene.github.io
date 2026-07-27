@@ -989,30 +989,80 @@ function init() {
   function oldPhasePoke() {
     if (oldSeen && oldOnScreen()) oldSay();   // live phase → fresh words
   }
-  // 💬 the talk — walk-then-open (beach NPC grammar). The ambient bench
-  // bubble above stays untouched; the tap now opens the dialogue card.
+  // 💬 the talk — walk-then-open (beach NPC grammar). Console-RPG flow
+  // (Trym): tap a question → the deck hides and the answer TYPES into the
+  // box (~32ms/char, blinking ▌); a tap skips to the full text; ▼ steps
+  // lore beats / returns to the questions; goodbye closes after its line.
+  // Presentation only — OLD_TOPICS stays data-driven (the Gardener inherits).
   const oldPanel = document.getElementById('pkOldPanel');
   const oldLineEl = document.getElementById('pkOldLine');
   const oldQsEl = document.getElementById('pkOldQs');
+  const oldBox = document.getElementById('pkOldBox');
+  const oldBoxText = document.getElementById('pkOldBoxText');
   const OLD_TALK_AT = { x: OLD_X, y: OLD_Y + 46 };   // stand at the bench front
-  let oldLoreStep = 0, oldCloseTimer = null;
-  function oldAnswer(t) {
-    if (t.seq) { const s = t.seq[oldLoreStep % t.seq.length]; oldLoreStep++; return s; }
-    if (t.byPhase) return t.byPhase[Math.max(0, Math.min(4, phase))];
-    return t.line;
+  const RM_TYPE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let oldCloseTimer = null, typeTimer = null, typeText = '', typeAt = 0;
+  let oldSeq = null, oldSeqAt = 0, oldClosing = false;
+  function oldTypeDone() {
+    clearInterval(typeTimer);
+    typeTimer = null;
+    oldBoxText.textContent = typeText;
+    oldBox.classList.remove('is-typing');
+    oldBox.classList.add('is-done');
+    if (oldClosing) { clearTimeout(oldCloseTimer); oldCloseTimer = setTimeout(closeOld, 1700); }
+  }
+  function oldType(text) {
+    clearInterval(typeTimer);
+    typeText = text;
+    typeAt = 0;
+    oldBox.hidden = false;
+    oldQsEl.hidden = true;
+    oldLineEl.hidden = true;
+    oldBox.classList.remove('is-done');
+    if (RM_TYPE) { oldTypeDone(); return; }   // instant text, same flow
+    oldBox.classList.add('is-typing');
+    oldBoxText.textContent = '';
+    typeTimer = setInterval(() => {
+      typeAt += 1;
+      oldBoxText.textContent = typeText.slice(0, typeAt);
+      if (typeAt >= typeText.length) oldTypeDone();
+    }, 32);
+  }
+  function oldBackToQs() {
+    oldBox.hidden = true;
+    oldBox.classList.remove('is-typing', 'is-done');
+    oldSeq = null;
+    oldQsEl.hidden = false;
+    oldLineEl.hidden = false;
+  }
+  oldBox.addEventListener('click', () => {
+    if (typeTimer) { oldTypeDone(); return; }        // mid-type tap = skip
+    if (!oldBox.classList.contains('is-done')) return;
+    if (oldClosing) { closeOld(); return; }          // goodbye: tap = leave now
+    if (oldSeq && oldSeqAt < oldSeq.length - 1) {    // ▼ = the next lore beat
+      oldSeqAt += 1;
+      oldType(oldSeq[oldSeqAt]);
+      return;
+    }
+    oldBackToQs();                                   // ▼ = the question deck
+  });
+  function oldAsk(t) {
+    oldClosing = !!t.close;
+    if (t.seq) { oldSeq = t.seq; oldSeqAt = 0; oldType(t.seq[0]); return; }
+    oldSeq = null;
+    oldType(t.byPhase ? t.byPhase[Math.max(0, Math.min(4, phase))] : t.line);
   }
   function openOld() {
     clearTimeout(oldCloseTimer);
+    oldClosing = false;
+    oldBackToQs();
     oldLineEl.textContent = OLD_GREET;
     if (!oldQsEl.childElementCount) {
       OLD_TOPICS.forEach((t) => {
         const b = document.createElement('button');
         b.type = 'button';
         b.textContent = t.q;
-        b.addEventListener('click', () => {
-          oldLineEl.textContent = oldAnswer(t);
-          if (t.close) { clearTimeout(oldCloseTimer); oldCloseTimer = setTimeout(closeOld, 1700); }
-        });
+        b.addEventListener('click', () => oldAsk(t));
         oldQsEl.appendChild(b);
       });
     }
@@ -1020,6 +1070,8 @@ function init() {
   }
   function closeOld() {
     clearTimeout(oldCloseTimer);
+    clearInterval(typeTimer);
+    typeTimer = null;
     oldPanel.hidden = true;
   }
   document.getElementById('pkOldClose').addEventListener('click', closeOld);
@@ -1380,6 +1432,25 @@ function init() {
     standBuilt = true;
     ST_STOCK.forEach((item) => stAddTile(item, standShelf));
     stUpdateTiles();
+    // wall dressing — the old page's four hung items, verbatim (Trym: bigger
+    // beats many tiny ones); % widths so they scale with the window
+    const ST_DECOR = [
+      { id: 'buckethat', left: '2%', top: '8%', w: '21%', rot: -4 },
+      { id: 'snorkelmask', left: '1%', top: '52%', w: '25%', rot: 3 },
+      { id: 'duckhat', left: '76%', top: '6%', w: '23%', rot: 4 },
+      { id: 'balloondog', left: '75%', top: '48%', w: '24%', rot: -3 },
+    ];
+    const stWin = standEl.querySelector('.pk-stand__window');
+    if (stWin) ST_DECOR.forEach((d) => {
+      const def = ST_STOCK.find((s) => s.id === d.id);
+      if (!def) return;
+      const el = document.createElement('span');
+      el.className = 'pk-stand__decor';
+      el.style.cssText = 'left:' + d.left + ';top:' + d.top + ';width:' + d.w + ';transform:rotate(' + d.rot + 'deg);';
+      el.setAttribute('aria-hidden', 'true');
+      el.innerHTML = ART[def.artKey] || '';
+      stWin.appendChild(el);
+    });
     stAddBackItems(DROPS
       .filter((d) => !((d.flag && localStorage.getItem(d.flag) === '1') || stOwned(d.id)))
       .map((d) => ({
@@ -1486,7 +1557,6 @@ function init() {
     standBubble.classList.remove('is-on');
     blink(() => { standEl.hidden = true; });
   }
-  document.getElementById('pkStandClose').addEventListener('click', closeStand);
   document.getElementById('pkStandBack').addEventListener('click', closeStand);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !standEl.hidden) closeStand(); });
   // tap the STAND BUILDING (tap-the-thing) → walk up → the counter cuts in
