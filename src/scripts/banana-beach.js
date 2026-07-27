@@ -968,11 +968,14 @@ function init() {
     }
   }
 
-  // ---- 🍾 DRIFT BOTTLES — map pieces wash in on the tide (Milestone C2) -----
-  // Sabreface's map didn't only tear over the sand: pieces float in sealed
-  // bottles too. They bob in the shallows just past the shoreline — walk the
-  // water's edge and reach one in. A SECOND source of map pieces alongside
-  // digging; each grab hands you the next piece (until the map's whole).
+  // ---- 🍾 DRIFT BOTTLES — sealed surprises wash in on the tide -------------
+  // They bob in the shallows just past the shoreline — walk the water's edge
+  // and reach one in. REBALANCED (Trym: all-map-part bottles found the
+  // treasure in a minute): each bottle rolls a LOOT TABLE at spawn — coins,
+  // a shell, tickets, soggy junk, a small fish — and the map part is the 5%
+  // grail. The roll rides the bottle's own seed, so it can't be rerolled.
+  const BOTTLE_JUNK = ['someone’s old sandwich. gross.', 'a sock. just the one.',
+    'seaweed, artisanally tangled.', 'a to-do list. all unticked.', 'rainwater. vintage.'];
   const drifts = [];
   const MAX_DRIFTS = 3;
   const DRIFT_EVERY = 22000;        // one floats in roughly this often — TUNABLE
@@ -991,14 +994,16 @@ function init() {
     return null;
   }
   function spawnDrift() {
-    if (drifts.length >= MAX_DRIFTS || piecesGot() >= MAP_PIECES) return;   // no pieces left → no bottles
+    // bottles keep coming after the map's whole — the 5% slot falls to coins
+    if (drifts.length >= MAX_DRIFTS) return;
     const spot = driftSpot();
     if (!spot) return;
     const el = document.createElement('div');
     el.className = 'bh-drift';
     el.style.left = pct(spot.x, W);
     world.appendChild(el);
-    drifts.push({ el, x: spot.x, y: spot.y, born: performance.now(), phase: Math.random() * 6.28 });
+    drifts.push({ el, x: spot.x, y: spot.y, born: performance.now(), phase: Math.random() * 6.28,
+      seed: Math.floor(Math.random() * 0x7fffffff) });
   }
   function driftTick() {
     const now = performance.now();
@@ -1024,17 +1029,68 @@ function init() {
       if (Math.hypot(pos.x - d.x, pos.y - d.y) < 74) {
         d.el.remove();
         drifts.splice(i, 1);
-        const wasX = haveXPiece();
-        if (addMapPiece()) {
-          const n = piecesGot();
-          float(d.x, d.y - 10, '🗺 map piece! (' + n + '/' + MAP_PIECES + ')', true);
-          if (haveXPiece() && !wasX) sandySay('that’s the marker — the X is on the map now. see Sabreface.', 5200);
-          track('beach_drift', { find: 'mappiece', n });
-        } else {
-          float(d.x, d.y - 10, '🍾 an empty bottle', true);
-          track('beach_drift', { find: 'empty' });
-        }
+        openBottle(d);
       }
+    }
+  }
+  // 🍾 the table: 30% coins · 20% shell · 15% tickets · 20% junk (+1 rep) ·
+  // 10% small fish · 5% map part (falls through to coins once the map's whole)
+  function openBottle(d) {
+    const roll = seedRand(d.seed) * 100;
+    const r2 = seedRand(d.seed ^ 0x7ea5);   // the second roll: which/how many
+    if (roll < 5 && piecesGot() < MAP_PIECES) {
+      const wasX = haveXPiece();
+      addMapPiece();
+      const n = piecesGot();
+      float(d.x, d.y - 10, '🗺 map piece! (' + n + '/' + MAP_PIECES + ')', true);
+      if (haveXPiece() && !wasX) sandySay('that’s the marker — the X is on the map now. see Sabreface.', 5200);
+      track('beach_drift', { find: 'mappiece', n });
+    } else if (roll < 35) {
+      const n = 2 + Math.floor(r2 * 5);   // 2-6
+      passStat('coins_earned', n);
+      refreshHud();
+      float(d.x, d.y - 10, '🪙 +' + n + ' bananacoins', true);
+      track('beach_drift', { find: 'coins', n });
+    } else if (roll < 55) {
+      // a shell for the collection — the shore pickup's own award path
+      const id = shellForRoll(r2);
+      const isNew = held(id) === 0;
+      const tier = (SHELL_BY[id] || {}).tier || 'common';
+      const xp = SHELL_XP[tier] || 3;
+      passStat('rep', xp);
+      passStat('sh_' + id, 1);
+      passStat('bh_shells', 1);
+      refreshHud();
+      shellPickFloat(d.x, d.y - 10, shellName(id), xp, isNew, tier);
+      track('beach_drift', { find: 'shell', shell: id });
+      if (isNew && haveCount() === SHELL_IDS.length) {
+        say('you found every last one. the sea has nothing left to hide from you.', 6000);
+        track('beach_shells_complete');
+      }
+    } else if (roll < 70) {
+      const n = 1 + Math.floor(r2 * 3);   // 1-3
+      passStat('tickets', n);
+      refreshHud();
+      float(d.x, d.y - 10, '🎟 +' + n + ' ticket' + (n === 1 ? '' : 's'), true);
+      track('beach_drift', { find: 'tickets', n });
+    } else if (roll < 90) {
+      passStat('rep', 1);   // +1 rep for disposing responsibly
+      refreshHud();
+      float(d.x, d.y - 10, '🗑 ' + BOTTLE_JUNK[Math.floor(r2 * BOTTLE_JUNK.length)], true);
+      track('beach_drift', { find: 'junk' });
+    } else {
+      // a small fry for the ledger — commons only, the rare chase stays the rod's
+      const small = FISH.filter((f) => f.tier === 'common');
+      const f = small[Math.floor(r2 * small.length)] || FISH[0];
+      const cm = Math.round(f.cm[0] + (f.cm[1] - f.cm[0]) * Math.pow(r2, 1.7));
+      const isNew = fishHeld(f.id) === 0;
+      const prev = fishBest(f.id);
+      passStat('fish_' + f.id, 1);
+      if (cm > prev) passStat('fb_' + f.id, cm - prev);
+      const won = isNew ? claimFishMiles() : 0;
+      float(d.x, d.y - 10, '🐟 ' + f.name + ' · ' + cm + ' cm' + (isNew ? ' — NEW' : '')
+        + (won ? ' · +' + won + ' tickets' : ''), true);
+      track('beach_drift', { find: 'fish', id: f.id });
     }
   }
 
