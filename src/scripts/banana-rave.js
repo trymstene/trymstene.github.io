@@ -55,6 +55,13 @@ const SCREEN_ADS = [
 const STAND_OPEN = true;
 if (STAND_OPEN) SCREEN_ADS.push({ id: 'stand', text: 'THERE’S ALWAYS MONEY IN THE BANANA STAND', cta: 'out back, through the exit →', href: '/park/' });
 
+// 🧃 INKA'S PRINT SHOP — the mushroom kiosk in the park, the world's one
+// real-money room (park-2-plan P4). Honest voice, no hype; rave_screen_ad
+// {ad:'parkshop'} tracks the clicks. ⚠️ href = /park2/ (the QA scene) until
+// the park flip — swap to /park/ when the new scene takes the live slug.
+const PARKSHOP_OPEN = true;
+if (PARKSHOP_OPEN) SCREEN_ADS.push({ id: 'parkshop', text: 'INKA PRINTS YOUR BANANA ON REAL THINGS', cta: 'the mushroom shop in the park →', href: '/park2/' });
+
 // 🏖 BANANA BAY — the beach ad breaks the LED house style on purpose: its OWN
 // sunset typography (`adStyle`) over a darkened beach backdrop (`bg`), because
 // the screen loves variation and a new PLACE deserves to look unlike a product
