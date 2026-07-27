@@ -53,7 +53,7 @@ const SCREEN_ADS = [
 // Barty's tip and the field-guide line. OPEN since 21 Jul 2026 (Trym's call:
 // the place first, the coins after — window-shopping builds the want).
 const STAND_OPEN = true;
-if (STAND_OPEN) SCREEN_ADS.push({ id: 'stand', text: 'THERE’S ALWAYS MONEY IN THE BANANA STAND', cta: 'out back, through the exit →', href: '/banana-stand/' });
+if (STAND_OPEN) SCREEN_ADS.push({ id: 'stand', text: 'THERE’S ALWAYS MONEY IN THE BANANA STAND', cta: 'out back, through the exit →', href: '/park/' });
 
 // 🏖 BANANA BAY — the beach ad breaks the LED house style on purpose: its OWN
 // sunset typography (`adStyle`) over a darkened beach backdrop (`bg`), because

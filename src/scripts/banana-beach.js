@@ -542,9 +542,9 @@ function init() {
     leaving = true;
     try { bayRoom.leave(); } catch (e) {}   // poof for everyone the instant you go
     track('beach_exit_park');
-    if (REDUCED) { location.href = '/banana-stand/?beach'; return; }
+    if (REDUCED) { location.href = '/park/?beach'; return; }
     cutEl.classList.add('is-on');
-    setTimeout(() => { location.href = '/banana-stand/?beach'; }, 170);
+    setTimeout(() => { location.href = '/park/?beach'; }, 170);
   }
 
   // ⚠️ 0.9s was too fast to READ — Trym dug and never knew what he'd found.

@@ -15,5 +15,9 @@ export default defineConfig({
   // so the middle step is gone. Keep old links/bookmarks alive → the builder.
   redirects: {
     '/make/': '/make-a-banana/',
+    // Park 2.0: the PARK is the area, the BANANA STAND is the shop in it —
+    // the area page moved to /park/ (the old slug had spread through doors,
+    // LED ads and guides; those all point at /park/ now).
+    '/banana-stand/': '/park/',
   },
 });
