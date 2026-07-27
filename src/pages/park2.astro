@@ -311,6 +311,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       border: 3px solid transparent; border-top: 5px solid #000; border-bottom: 0;
     }
     .pk-mood.is-on { opacity: 1; }
+    /* 🍌 OLD PEEL — the bench elder: subtle breathing, a wordy mood bubble */
+    .pk-old { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
+    .pk-old svg {
+      display: block; width: 100%; height: 100%;
+      animation: pkOldBreathe 3.4s ease-in-out infinite; transform-origin: 50% 100%;
+    }
+    @keyframes pkOldBreathe { 50% { transform: scaleY(0.985); } }
+    @media (prefers-reduced-motion: reduce) { .pk-old svg { animation: none; } }
+    .pk-oldsay {
+      white-space: normal; width: max-content; max-width: 150px; text-align: left;
+      font-size: 10px; line-height: 1.35; padding: 4px 6px; font-weight: 800;
+    }
+    .pk-oldsay i {
+      display: block; font-style: normal; font-size: 8px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #8a6a2c; margin-bottom: 2px;
+    }
 
     /* 🥚 eggs — first tap wins; the golden one glows */
     .pk-egg {
@@ -398,34 +414,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
       filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
     }
+    /* ready = the glint alone now (the chips are gone), so it reads a touch stronger */
     .pk-plant.is-ready { animation: pkReadyGlint 2.2s ease-in-out infinite; }
     @keyframes pkReadyGlint {
       0%, 100% { filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35)); }
-      50% { filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 225, 53, 0.7)); }
+      50% { filter: brightness(1.35) drop-shadow(0 0 8px rgba(255, 225, 53, 0.85)); }
     }
     @media (prefers-reduced-motion: reduce) { .pk-plant.is-ready { animation: none; } }
-    /* the per-slot marker: a tiny emoji chip over the plant (HUD pill
-       language) — no lawn text, the words live in the tap card. Yellow ring
-       + dot = yours; ready pulses gently. Taps pass through to the slot. */
-    .pk-gchip {
-      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
-      width: 22px; height: 22px; border-radius: 999px; box-sizing: border-box;
-      display: grid; place-items: center;
-      background: rgba(16, 18, 28, 0.85); border: 2px solid #000;
-      font-size: 11px; line-height: 1;
-      box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.35);
-    }
-    .pk-gchip.is-mine { border-color: #ffe135; }
-    .pk-gchip.is-mine::after {
-      content: ''; position: absolute; top: -3px; right: -3px; width: 6px; height: 6px;
-      border-radius: 50%; background: #ffe135; box-shadow: 0 0 0 1px #000;
-    }
-    .pk-gchip.is-ready { animation: pkChipPulse 1.6s ease-in-out infinite; }
-    @keyframes pkChipPulse {
-      0%, 100% { transform: translate(-50%, -100%) scale(1); }
-      50% { transform: translate(-50%, -100%) scale(1.14); }
-    }
-    @media (prefers-reduced-motion: reduce) { .pk-gchip.is-ready { animation: none; } }
+    /* 🪧 the ownership stake — a quiet garden label on YOUR plants only */
+    .pk-gstake { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
+    .pk-gstake svg { display: block; width: 100%; height: 100%; }
     /* the seed picker rows */
     .pk-seedrow {
       appearance: none; font-family: inherit; width: 100%; cursor: pointer;
@@ -461,6 +459,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     .pk-weed--1 { background-image: url('/assets/park/w-weed1.png'); }
     .pk-weed--2 { background-image: url('/assets/park/w-weed2.png'); }
+    /* 🗑 litter — walk over it and it's gone (+2 rep, +1 health) */
+    .pk-trash {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
+    }
+    .pk-trash--1 { width: 0.69%; aspect-ratio: 19 / 17; background-image: url('/assets/park/t-litter1.png'); }
+    .pk-trash--2 { width: 0.69%; aspect-ratio: 19 / 17; background-image: url('/assets/park/t-litter2.png'); }
+    .pk-trash--3 { width: 0.62%; aspect-ratio: 1; background-image: url('/assets/park/t-litter3.png'); }
     .pk-weed.is-pulled { animation: pkWeedPull 0.24s ease-in forwards; }
     @keyframes pkWeedPull {
       0% { transform: translate(-50%, -100%) rotate(0); }

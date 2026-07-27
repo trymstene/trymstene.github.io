@@ -465,6 +465,7 @@ BASIN = ('circle', 60)
 CART_BOX = ('rect', -70, -46, 70, 6)
 SHOP_BOX = ('rect', -100, -58, 100, 6)
 BENCH_BOX = ('rect', -34, -18, 34, 4)
+OLD_BENCH = (1583, 722)      # Old Peel's bench — just off the plaza's SE rim
 TABLE_BOX = ('rect', -44, -30, 44, 6)
 ROCK_BOX = ('circle', 20)
 
@@ -705,16 +706,18 @@ for _ in range(9):
                 px2[x, y] = (162, 132, 88, 255) if (x * 3 + y * 7) % 9 else (142, 114, 76, 255)
 
 # ---- 🌾 THE MID FORK (W1c): the patchy half-recovered ground ---------------
-# Phases 2-3's plate: lawn ~35% toward straw with irregular blotches pushed
-# further, pond only slightly murky, hard surfaces untouched, MOST of the
-# lawn's flower clusters gone. Sprites placed after the forks land on this
-# canvas in their LUSH art (put/shadow/place all write im3) — the recovering
-# park's props look fine, it's the ground that's still catching up.
+# Phases 2-3's plate: lawn ~48% toward straw with irregular blotches pushed
+# further, pond murky-ish, hard surfaces untouched, nearly all of the lawn's
+# flower clusters gone. Sprites placed after the forks land on this canvas
+# in their LUSH art (put/shadow/place all write im3) — the recovering park's
+# props look fine, it's the ground that's still catching up. (Trym round 12:
+# the first cut read too healthy — pushed everything a step sadder, still
+# clearly better than the sad plate.)
 im3 = im.copy()
 px3 = im3.load()
 mrng = random.Random(555)
 for undo in FLOWER_UNDO:
-    if mrng.random() < 0.72:                   # this cluster never came back
+    if mrng.random() < 0.85:                   # this cluster never came back
         for x, y, old, new in undo:
             # only where the stamp actually survived (roads/plaza/pond may
             # have buried it after) — warmgrade replays the afternoon pass
@@ -724,16 +727,16 @@ for y in range(H):
     for x in range(W):
         r, g, b, a = px3[x, y]
         if b > g + 6:                              # pond water → a light murk
-            k = 0.25
+            k = 0.32
             px3[x, y] = (int(r * (1 - k) + MURK[0] * k), int(g * (1 - k) + MURK[1] * k),
                          int(b * (1 - k) + MURK[2] * k), a)
-        elif g > r - 10 and g >= b:                # lawn → a third of the way to straw
-            k = 0.35
+        elif g > r - 10 and g >= b:                # lawn → halfway to straw
+            k = 0.48
             px3[x, y] = (int(r * (1 - k) + DRY_LAWN[0] * k), int(g * (1 - k) + DRY_LAWN[1] * k),
                          int(b * (1 - k) + DRY_LAWN[2] * k), a)
 # irregular straw blotches — the patchiness that says "half-recovered"
 brng = random.Random(313)
-for _ in range(16):
+for _ in range(21):
     bcx, bcy = brng.randrange(160, W - 160), brng.randrange(140, H - 140)
     brx, bry = brng.randrange(50, 110), brng.randrange(30, 60)
     if ((bcx - CX) / float(PLAZA_RX)) ** 2 + ((bcy - CY) / float(PLAZA_RY)) ** 2 < 1.4:
@@ -1008,6 +1011,22 @@ if os.path.isdir(FARM):
     except Exception as e:
         print('  weed sprite failed', e)
 
+# ---- 🗑 LITTER PICKUPS — the city pack's own small trash pieces ------------
+# Crumpled paper / crushed milk carton / juice box (16-22px world after
+# scale). Walk-over pickups on the weed grid: client sprites only, no
+# placement, no geometry.
+if HAVE_PACK:
+    for src, out, sc in (('ME_Singles_City_Props_48x48_Paper_Trash.png', 't-litter1.png', PROP),
+                         ('ME_Singles_City_Props_48x48_Milk_Trash_1.png', 't-litter2.png', PROP * 0.72),
+                         ('ME_Singles_City_Props_48x48_Orange_Juice_Trash.png', 't-litter3.png', PROP * 0.72)):
+        try:
+            s = blockify(load_pack(src), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+            s = s.resize((max(1, int(s.width * sc)), max(1, int(s.height * sc))), Image.NEAREST)
+            s.save(os.path.join(OUT, out), optimize=True)
+            print('  %s: %dx%d' % (out, s.width, s.height))
+        except Exception as e:
+            print('  litter sprite failed', src, e)
+
 # ---- 🌾 W3 CROP STAGES — farm-pack growth sheets, baked per stage ----------
 # Sheet grammar: 7 cols of 48px — col 0 sprout, 1-3 growing, 4-6 ripe; the
 # art fills the TOP HALF (a numbers band sits below). Four stages baked per
@@ -1146,8 +1165,11 @@ SKIP_MID[0] = False
 if HAVE_PACK:
     # benches live at the bends — a seat wherever the path turns and the view
     # changes. ⚠️ NONE inside the plaza: the log benches read as tree stumps
-    # on the pavement (Trym round 8).
-    for bx, by, fl in ((768, 502, False), (1822, 618, True), (1285, 862, False)):
+    # on the pavement (Trym round 8). The 4th = OLD PEEL's bench, just off
+    # the plaza's SE rim looking at the fountain (the NPC overlay sits here —
+    # OLDBENCH rides the geo contract).
+    for bx, by, fl in ((768, 502, False), (1822, 618, True), (1285, 862, False),
+                       (OLD_BENCH[0], OLD_BENCH[1], False)):
         try_place(['ME_Singles_Camping_48x48_Cut_Wood_Bench_1.png',
                    'ME_Singles_Camping_48x48_Cut_Wood_Bench_2.png'],
                   bx, by, flip=fl, solid=BENCH_BOX)
@@ -1246,6 +1268,7 @@ def emit_geo():
     L.append('export const MARKET = %s;' % ('{ stand: %s, cart: %s }' %
              (list(MARKET.get('stand', ())), list(MARKET.get('cart', ())))))
     L.append('export const SIGNS = %s;' % [list(s) for s in SIGNS])
+    L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])
     L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d } };'

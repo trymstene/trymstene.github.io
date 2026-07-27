@@ -922,6 +922,26 @@ export class ParkRoom {
       weedsDirty = true;
     }
     if (now >= wd.nextAt) { wd.nextAt = now + weedEvery; weedsDirty = true; }
+    // 🗑 GARBAGE rides the weed infrastructure: same grid, own list, cap
+    // INVERTED by bloom (healthy park = near-spotless, dead park = littered),
+    // cadence 2× the weed beat. Pieces persist until somebody walks them off.
+    const tr = (await this.state.storage.get('trash')) || { list: [], nextAt: 0 };
+    let trashDirty = false;
+    const trashCap = bl.v >= 80 ? 2 : bl.v >= 60 ? 6 : bl.v >= 40 ? 9 : 12;
+    const trashEvery = Math.max(1, Math.floor(weedEvery / 2));
+    if (!tr.nextAt || tr.nextAt < now - 86_400_000) tr.nextAt = now + trashEvery;
+    const trashTaken = new Set([...tr.list, ...wd.list].map((t) => t.x + ',' + t.y));
+    while (now >= tr.nextAt && tr.list.length < trashCap) {
+      const g = WEED_GRID[Math.floor(Math.random() * WEED_GRID.length)];
+      if (!trashTaken.has(g[0] + ',' + g[1])) {
+        trashTaken.add(g[0] + ',' + g[1]);
+        tr.list.push({ id: crypto.randomUUID().slice(0, 8), x: g[0], y: g[1],
+          v: 1 + Math.floor(Math.random() * 3), bornAt: now });
+      }
+      tr.nextAt += trashEvery;
+      trashDirty = true;
+    }
+    if (now >= tr.nextAt) { tr.nextAt = now + trashEvery; trashDirty = true; }
     // 🥚 W2 EGGS ride the same lazy read: expire the stale, lay by bloom band
     const eg = (await this.state.storage.get('eggs')) || { list: [], nextAt: 0 };
     let eggsDirty = false;
@@ -957,17 +977,19 @@ export class ParkRoom {
       slots: slots.map(strip),
       bloom: Math.round(bl.v),
       weeds: wd.list.map((w2) => ({ id: w2.id, x: w2.x, y: w2.y })),
+      trash: tr.list.map((t) => ({ id: t.id, x: t.x, y: t.y, v: t.v })),
       eggs: eg.list.map((e) => ({ id: e.id, x: e.x, y: e.y, ...(e.g ? { g: 1 } : {}) })),
       ...extra,
     });
     const persist = async () => {
       await this.state.storage.put('garden', slots);
       await this.state.storage.put('weeds', wd);
+      await this.state.storage.put('trash', tr);
       await this.state.storage.put('bloom', bl);
       await this.state.storage.put('eggs', eg);
     };
     if (url.pathname === '/garden' && request.method !== 'POST') {
-      if (dirty || weedsDirty || decayed || eggsDirty) await persist();
+      if (dirty || weedsDirty || decayed || eggsDirty || trashDirty) await persist();
       return json(payload());
     }
     let b = null;
@@ -986,6 +1008,15 @@ export class ParkRoom {
           : { coins: 3 + Math.floor(Math.random() * 6) };
       await persist();
       return json(payload({ ok: 1, reward }));
+    }
+    // 🗑 pick up a piece of litter — first touch wins, +1 bloom says thanks
+    if (url.pathname === '/garden/trash') {
+      const ti = tr.list.findIndex((t) => t.id === b.id);
+      if (ti < 0) return json(payload({ err: 'gone' }), 404);
+      tr.list.splice(ti, 1);
+      bl.v = Math.min(100, bl.v + 1);
+      await persist();
+      return json(payload({ ok: 1 }));
     }
     // 🌿 pull a weed — removing it IS the rate limit
     if (url.pathname === '/garden/weed') {

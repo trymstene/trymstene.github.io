@@ -10,7 +10,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MARKET, MEADOW, PLOTS, DOORS,
+  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MARKET, MEADOW, PLOTS, DOORS, OLDBENCH,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 
@@ -46,6 +46,99 @@ const ACORN_SVG = SVG('11 13',
   + R(2, 2, 3, 1, '#a8742a') + R(2, 4, 7, 1, '#e0a84e') + R(1, 5, 9, 4, '#c9913a')
   + R(3, 5, 2, 3, '#e8b866') + R(2, 9, 7, 2, '#a8742a') + R(3, 11, 5, 1, '#8a5a2b')
   + R(5, 12, 1, 1, '#6b4320'));
+
+// 🪧 the ownership stake — a tiny garden-label stake (plank-wood palette,
+// banana-density) planted at the soil's front edge of YOUR plants only.
+// The chips it replaced "took up much of the visuals" (Trym): species = the
+// sprite, thirst = the soil, ready = the glint — only ownership needed art.
+const STAKE_SVG = SVG('7 12',
+  R(1, 0, 5, 1, '#3a2b18')
+  + R(0, 1, 1, 4, '#3a2b18') + R(6, 1, 1, 4, '#3a2b18')
+  + R(1, 1, 5, 3, '#b8834a') + R(1, 1, 5, 1, '#d9a860') + R(1, 1, 1, 3, '#d9a860')
+  + R(1, 4, 5, 1, '#8a5a2b') + R(1, 5, 5, 1, '#3a2b18')
+  + R(2, 6, 3, 5, '#8a5a2b') + R(4, 6, 1, 5, '#6b4320')
+  + R(3, 11, 1, 1, '#4a3018'));
+
+// 🍌 OLD PEEL — the bench elder by the fountain, the park's ambient
+// commentator. Banana-density pixel map (#111 outlines, inner shading, age
+// spots, flat cap, a cane against the bench). Rendered from the ASCII map so
+// the art stays editable.
+const OLD_NAME = 'old peel';
+const OLD_PAL = {
+  K: '#111111', C: '#6e5a3a', c: '#55452c', e: '#8c744e',
+  Y: '#ffe135', H: '#fff8c9', S: '#d9b32a', A: '#a8742a',
+  W: '#f5f5f5', M: '#7a5c14', B: '#8a5a2b', b: '#6b4320', G: '#f5f2e8',
+};
+const OLD_MAP = [
+  '........KKKKKKKK..........',
+  '.......KCCCCCCCCK.........',
+  '......KCeCCCCCCCcK........',
+  '.....KCeCCCCCCCCCcK.......',
+  '....KKKKKKKKKKKKKKKK......',
+  '.....KYHYYYYYYYSYK........',
+  '.....KYHYYYYYYYSYK........',
+  '.....KYKWWYYKWWYSK........',
+  '.....KYKWKYYKWKYSK........',
+  '.....KYYYYYYYYYYSK........',
+  '.....KYYYYYYYYYYSK........',
+  '.....KYYKMMMKYYYSK........',
+  '.....KYYYYYYYYYYSK........',
+  '......KYYYYYYYYSK.........',
+  '......KYYYYYYYYSK.........',
+  '.....KYYYYYYYYYYSK........',
+  '....KYYYAYYYYYYYYSK.......',
+  '....KYYYYYYYYAYYYSK..KK...',
+  '....KYYYYYYYYYYYYSK.KBBK..',
+  '....KYAYYYYYYYYYYSK..KBK..',
+  '....KYYYYYYYYYYYYSK..KbK..',
+  '....KGGKYYYYYYKGGSK..KbK..',
+  '....KKKKYYYYYYKKKKK..KbK..',
+  '.....KYYYYYYYYYYSK...KbK..',
+  '.....KKKKKKKKKKKKK...KbK..',
+  '......KYYK..KYYK.....KbK..',
+  '......KYYK..KYYK.....KbK..',
+  '......KYYK..KYYK....KKbKK.',
+  '.....KKKKKK.KKKKK.........',
+  '.....KBBBBK.KBBBK.........',
+  '.....KKKKKK.KKKKK.........',
+];
+const OLD_W = 26, OLD_H = OLD_MAP.length;
+const OLD_SVG = (() => {
+  let body = '';
+  OLD_MAP.forEach((row, y) => {
+    for (let x = 0; x < row.length;) {
+      const ch = row[x];
+      if (ch === '.' || !OLD_PAL[ch]) { x++; continue; }
+      let x2 = x + 1;
+      while (x2 < row.length && row[x2] === ch) x2++;   // merge runs
+      body += R(x, y, x2 - x, 1, OLD_PAL[ch]);
+      x = x2;
+    }
+  });
+  return SVG(OLD_W + ' ' + OLD_H, body);
+})();
+// his lines, a band per phase — grief → worry → cautious hope → warmth →
+// joy. Trym's lines verbatim where they fit; hints, never orders.
+const OLD_LINES = [
+  ['its so sad to see the park like this…',
+    'someone should clean up this mess…',
+    'i remember when this lawn was all green. long time ago now.',
+    'even the fountain gave up. dry as my elbows.'],
+  ['she’s hurting, this old park. weeds everywhere.',
+    'the hens won’t lay in a place like this, you know.',
+    'a little weeding would go a long way…'],
+  ['wish someone could tend to the plants',
+    'the soil’s still good, you know',
+    'green in patches. she’s trying, i can tell.',
+    'a bit of water works wonders. always has.'],
+  ['the squirrels came back. good sign, that.',
+    'she’s nearly herself again. keep at it.',
+    'sat here all morning. didn’t want to leave.'],
+  ['haven’t seen her this beautiful in years',
+    'butterflies! my missus loved the butterflies.',
+    'this is how i remember it. exactly this.',
+    'some days this bench is the best seat in the world.'],
+];
 
 // 🦋 the meadow's six — palette IS the species. Ambient life only (W1c):
 // nothing is caught or kept, the variety is just so no two look alike.
@@ -346,6 +439,7 @@ function init() {
     setBflies(p >= 4);                     // 🦋 …and only a perfect park has these
     setAnimalMood(p);                      // 🐔 the flock's mood follows the bloom
     setFountain(p <= 1);                   // ⛲ dead monument in a dead park
+    oldPhasePoke();                        // 🍌 Old Peel finds new words
   }
 
   // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire.
@@ -428,6 +522,7 @@ function init() {
     if (tapEgg(wx, wy)) return;
     if (tapBfly(wx, wy)) return;
     if (tapAnimal(wx, wy)) return;
+    if (tapOld(wx, wy)) return;
     if (tapWeed(wx, wy)) return;
     if (tapGarden(wx, wy)) return;
     if (tapShop(wx, wy)) return;
@@ -821,6 +916,50 @@ function init() {
     animals.push(a);
   });
 
+  // ---- 🍌 OLD PEEL — the bench elder, phase-aware -------------------------
+  // Ambient commentator (the animal-bubble grammar, words instead of moods):
+  // one line pops on first sight each session, a tap peeks the next line, a
+  // phase change refreshes him mid-sit. No walking, no scene, no event.
+  const OLD_X = OLDBENCH[0] - 7, OLD_Y = OLDBENCH[1] - 4;   // seated on his bench
+  const oldEl = document.createElement('div');
+  oldEl.className = 'pk-old';
+  oldEl.innerHTML = OLD_SVG;
+  const oldBub = document.createElement('span');
+  oldBub.className = 'pk-mood pk-oldsay';
+  oldEl.appendChild(oldBub);
+  oldEl.style.left = pct(OLD_X, W);
+  oldEl.style.top = pct(OLD_Y, H);
+  oldEl.style.width = pct(OLD_W, W);
+  oldEl.style.height = pct(OLD_H, H);
+  depth(oldEl, OLD_Y);
+  world.appendChild(oldEl);
+  let oldSeen = false, oldIdx = 0, oldBand = -1, oldTimer = null;
+  const oldOnScreen = () => {
+    const sx = OLD_X * scale - camX, sy = OLD_Y * scale - camY;
+    return sx > -30 && sx < viewW + 30 && sy > -30 && sy < viewH + 30;
+  };
+  function oldSay() {
+    const band = Math.max(0, phase);
+    if (band !== oldBand) { oldBand = band; oldIdx = 0; }
+    const lines = OLD_LINES[band];
+    oldBub.innerHTML = '<i>' + OLD_NAME + '</i>' + esc(lines[oldIdx++ % lines.length]);
+    oldBub.classList.add('is-on');
+    clearTimeout(oldTimer);
+    oldTimer = setTimeout(() => oldBub.classList.remove('is-on'), 5600);
+  }
+  function oldTick() {
+    if (oldSeen || phase < 0) return;
+    if (oldOnScreen()) { oldSeen = true; oldSay(); }
+  }
+  function oldPhasePoke() {
+    if (oldSeen && oldOnScreen()) oldSay();   // live phase → fresh words
+  }
+  function tapOld(wx, wy) {
+    if (!(Math.abs(wx - OLD_X) < 30 && wy > OLD_Y - OLD_H - 10 && wy < OLD_Y + 12)) return false;
+    oldSay();                                 // a peek, no walking
+    return true;
+  }
+
   // ---- 🪙 THE FOUNTAIN COIN TOSS — an honest tiny sink, no payout ---------
   // ⚠️ NO action-bar button — the world grammar is TAP THE THING (beach
   // stalls, rides): tap the fountain to toss, walking over first if far
@@ -990,11 +1129,11 @@ function init() {
   const gardenBody = document.getElementById('pkGardenBody');
   // 16 slots since W3 — 0-7 site A (meadow), 8-15 site B (playground)
   let gSlots = Array(16).fill(null);
-  const gEls = PLOTS.map(() => ({ plant: null, chip: null, stage: '', chipKey: '', soil: null, soilKey: '' }));
+  const gEls = PLOTS.map(() => ({ plant: null, stage: '', soil: null, soilKey: '', stake: null }));
   let pendingGarden = null, pendingWater = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
   const gShim = {   // the ?parktest stand-in server (pre-lays a plain + golden egg)
-    slots: Array(16).fill(null), weeds: [], bloom: 70,
+    slots: Array(16).fill(null), weeds: [], trash: [], bloom: 70,
     eggs: [{ id: 'qa1', x: 1330, y: 876 }, { id: 'qa2', x: 1432, y: 866, g: 1 }],
   };
   function shimGarden(path, body) {
@@ -1004,6 +1143,7 @@ function init() {
       slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)),
       bloom: Math.round(gShim.bloom),
       weeds: gShim.weeds.map((w2) => ({ ...w2 })),
+      trash: gShim.trash.map((t) => ({ ...t })),
       eggs: gShim.eggs.map((e) => ({ ...e })),
     });
     if (!body) return Promise.resolve(strip());
@@ -1014,6 +1154,13 @@ function init() {
       const reward = e.g ? { coins: 25, tickets: 5, golden: 1 }
         : Math.random() < 0.25 ? { tickets: 3 } : { coins: 3 + Math.floor(Math.random() * 6) };
       return Promise.resolve({ reward, ...strip() });
+    }
+    if (path === '/trash') {
+      const ti = gShim.trash.findIndex((t) => t.id === body.id);
+      if (ti < 0) return Promise.resolve({ err: 'gone', ...strip() });
+      gShim.trash.splice(ti, 1);
+      gShim.bloom = Math.min(100, gShim.bloom + 1);
+      return Promise.resolve(strip());
     }
     if (path === '/weed') {
       const wi = gShim.weeds.findIndex((w2) => w2.id === body.id);
@@ -1068,15 +1215,15 @@ function init() {
     while (l < GLVL_AT.length && n >= GLVL_AT[l]) l++;
     return { lvl: l, n, stars: GLVL_STARS[l - 1] };
   }
-  // no text signs on the lawn (they cramped instantly — Trym): the identifier
-  // is a tiny emoji CHIP above each plant; yellow ring + dot = yours. All the
-  // words live in the tap card.
+  // zero floating UI over the beds (Trym — signs cramped, then the emoji
+  // chips "took up the visuals" too): the sprite says species, the soil says
+  // thirst, the glint says ready, the stake says yours. Words = the tap card.
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
       const s = gSlots[i], el = gEls[i];
       if (!s) {
         if (el.plant) { el.plant.remove(); el.plant = null; el.stage = ''; }
-        if (el.chip) { el.chip.remove(); el.chip = null; el.chipKey = ''; }
+        if (el.stake) { el.stake.remove(); el.stake = null; }
         if (el.soil) { el.soil.remove(); el.soil = null; el.soilKey = ''; }
         return;
       }
@@ -1114,21 +1261,21 @@ function init() {
         el.plant.classList.toggle('is-ready', gReady(s));
         depth(el.plant, sy + 10);
       }
-      const sd = SEED_BY[s.seed] || SEEDS[0];
-      const ck = sd.emoji + (gMine(s) ? 'm' : '') + (gReady(s) ? '!' : '') + el.stage;
-      if (el.chipKey !== ck) {
-        el.chipKey = ck;
-        if (!el.chip) {
-          el.chip = document.createElement('div');
-          el.chip.className = 'pk-gchip';
-          world.appendChild(el.chip);
-        }
-        el.chip.textContent = sd.emoji;
-        el.chip.classList.toggle('is-mine', gMine(s));
-        el.chip.classList.toggle('is-ready', gReady(s));
-        el.chip.style.left = pct(sx, W);
-        el.chip.style.top = pct(sy + 10 - h2 - 4, H);   // floats just over the plant
-        el.chip.style.zIndex = String(100 + Math.round(sy) + 11);
+      // 🪧 ownership: the tiny stake at the soil's front edge, YOURS only
+      // (no floating UI over the beds — Trym; taps read the slot, not this)
+      if (gMine(s) && !el.stake) {
+        el.stake = document.createElement('div');
+        el.stake.className = 'pk-gstake';
+        el.stake.innerHTML = STAKE_SVG;
+        el.stake.style.left = pct(sx - 13, W);
+        el.stake.style.top = pct(sy + 21, H);
+        el.stake.style.width = pct(7, W);
+        el.stake.style.height = pct(12, H);
+        el.stake.style.zIndex = String(100 + Math.round(sy) + 12);
+        world.appendChild(el.stake);
+      } else if (!gMine(s) && el.stake) {
+        el.stake.remove();
+        el.stake = null;
       }
     });
   }
@@ -1167,6 +1314,42 @@ function init() {
       const num = document.getElementById('pkBnum');
       if (num) num.textContent = bloomStatus();
     }
+  }
+  // ---- 🗑 GARBAGE — litter on the lawn, walked over like acorns -----------
+  // Server truth on the garden read (cap inverted by bloom: a hurting park
+  // is littered). No tap, no tool: walking over it IS the pickup — poof,
+  // +2 rep, and the server says thanks with +1 health (first touch wins).
+  const trash = new Map();                      // id → { el, x, y }
+  let trashTracked = false;
+  function renderTrash(list) {
+    const seen = new Set();
+    (list || []).forEach((t) => {
+      seen.add(t.id);
+      if (trash.has(t.id)) return;
+      const el = document.createElement('div');
+      el.className = 'pk-trash pk-trash--' + (t.v === 2 ? 2 : t.v === 3 ? 3 : 1);
+      el.style.left = pct(t.x, W);
+      el.style.top = pct(t.y, H);
+      depth(el, t.y);
+      world.appendChild(el);
+      trash.set(t.id, { el, x: t.x, y: t.y });
+    });
+    trash.forEach((t, id) => {
+      if (!seen.has(id)) { t.el.remove(); trash.delete(id); }   // picked elsewhere
+    });
+  }
+  function trashTick() {
+    trash.forEach((t, id) => {
+      if (Math.hypot(pos.x - t.x, (pos.y - 6) - t.y) > 32) return;
+      trash.delete(id);                    // optimistic — the reply reconciles
+      poofInto(world, 'pk-poof', t.x / W * 100, (t.y - 10) / H * 100);
+      t.el.remove();
+      passStat('rep', 2);
+      refreshHud();
+      float(t.x, t.y - 14, '+2');
+      if (!trashTracked) { trashTracked = true; track('park_trash'); }
+      gFetch('/trash', { id, pass: worldSid() }).then(applyGarden);
+    });
   }
   function renderWeeds(list) {
     const seen = new Set();
@@ -1320,6 +1503,7 @@ function init() {
     if (!res) return;
     if (Array.isArray(res.slots)) { gSlots = res.slots; renderGarden(); }
     if (Array.isArray(res.weeds)) renderWeeds(res.weeds);
+    if (Array.isArray(res.trash)) renderTrash(res.trash);
     if (Array.isArray(res.eggs)) renderEggs(res.eggs);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
   }
@@ -1466,7 +1650,7 @@ function init() {
     openPlantCard(i);
   }
   function tapGarden(wx, wy) {
-    // an occupied slot's tap zone reaches UP over its plant + chip; among
+    // an occupied slot's tap zone reaches UP over its plant; among
     // overlapping hits the nearest visual middle wins (rows sit 38px apart)
     let best = -1, bd = 1e9;
     PLOTS.forEach(([sx, sy], i) => {
@@ -1625,6 +1809,8 @@ function init() {
     pSpeed = pSpeed * 0.8 + inst * 0.2;
     prevPX = pos.x; prevPY = pos.y;
     acornTick(now);
+    trashTick();
+    oldTick();
     bflyTick(dt, now);
     animalTick(dt);
     squirrels.forEach((s) => sqStep(s, dt));
@@ -1749,6 +1935,12 @@ function init() {
         gardenPoll();
       },
       steal: () => { gShim.eggs.shift(); gardenPoll(); },
+      // 🗑 litter QA: drop a piece just ahead — walk over it to test pickup
+      litter: (v) => {
+        gShim.trash.push({ id: 'qt' + Math.random().toString(36).slice(2, 6),
+          x: Math.round(pos.x) + 80, y: Math.round(pos.y), v: v || 1 + Math.floor(Math.random() * 3) });
+        gardenPoll();
+      },
       // 🧰 chore QA: lay a weed at your feet; dry(i) = slot i missed today
       weed: () => {
         gShim.weeds.push({ id: 'qw' + Math.random().toString(36).slice(2, 6),
