@@ -535,8 +535,19 @@ function init() {
     setTarget(wx, wy);
   });
 
-  // ---- the road home (bottom-left) ---------------------------------------
-  let roadArmed = false, leaving = false;
+  // ---- 🚪 the west road → the park (the park's door grammar) --------------
+  // ⚠️ The old trigger was a 28×48 corner box (x<40 AND y>1040) while the
+  // painted road leaves the map at x=0 y~1028-1072 — a banana walked to the
+  // road's visible end at, say, (14,1030) stood on the wall and nothing
+  // happened. Now it's a door POINT at the lane's mouth with the park's own
+  // hysteresis: arm once you're properly inside the bay, confirm strip in the
+  // zone, walking on to the door is the yes. GO is wider than the park's 36
+  // because no wall corridor funnels you here — the radius must cover the
+  // whole painted lane mouth on its own.
+  const PARK_DOOR = { x: 16, y: 1046 };   // the spine's centreline at the edge
+  const DOOR_ZONE = 130, DOOR_GO = 52, DOOR_ARM = 180;
+  let doorArmed = false, doorStripOn = false, leaving = false;
+  const exitEl = document.getElementById('bhExitStrip');
   function exitToPark() {
     if (leaving) return;
     leaving = true;
@@ -545,6 +556,20 @@ function init() {
     if (REDUCED) { location.href = '/park/?beach'; return; }
     cutEl.classList.add('is-on');
     setTimeout(() => { location.href = '/park/?beach'; }, 170);
+  }
+  function doorTick() {
+    const d = Math.hypot(pos.x - PARK_DOOR.x, pos.y - PARK_DOOR.y);
+    if (!doorArmed) { if (d > DOOR_ARM) doorArmed = true; return; }
+    if (d < DOOR_GO) { exitToPark(); return; }
+    const want = d < DOOR_ZONE;
+    if (want !== doorStripOn) {
+      doorStripOn = want;
+      if (want) hint(false);   // they share the bottom slot — the strip wins
+      if (exitEl) {
+        if (want) exitEl.textContent = 'keep walking ← to the park';
+        exitEl.classList.toggle('is-on', want);
+      }
+    }
   }
 
   // ⚠️ 0.9s was too fast to READ — Trym dug and never knew what he'd found.
@@ -3053,8 +3078,7 @@ function init() {
       if (pendingUmb && Math.hypot(pos.x - pendingUmb.x, pos.y - pendingUmb.y) < 26) {
         const t = pendingUmb.toggle; pendingUmb = null; t();
       }
-      if (pos.x > 300) roadArmed = true;
-      if (roadArmed && pos.x < 40 && pos.y > 1040) exitToPark();
+      doorTick();
     }
     ballStep(dt, now);
     wballStep(dt, now);

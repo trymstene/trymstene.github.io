@@ -801,6 +801,16 @@ const faq = {
       transition: opacity 0.4s ease;
     }
     .bh-hint.is-off { opacity: 0; }
+    /* 🚪 the exit confirm strip — comes on in the park-door zone, names where
+       the road goes; walking on to the door is the yes (park grammar) */
+    .bh-exitstrip {
+      position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); z-index: 8;
+      background: rgba(0, 0, 0, 0.78); border: 2px solid #ffe135; color: #ffe135;
+      font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.75rem;
+      pointer-events: none; white-space: nowrap;
+      opacity: 0; transition: opacity 0.25s ease;
+    }
+    .bh-exitstrip.is-on { opacity: 1; }
     /* 🌍 THE WORLD HUD — the same refined pill strip the rave floor uses (ported
        26 Jul), themed for the bright bay: dark pills so they read over the sky.
        LEVEL (gold, rep bar) · COINS · TICKETS · CROWD. Right-aligned, wraps on
@@ -1439,6 +1449,7 @@ const faq = {
         <span class="bh-whud__crowd"><span aria-hidden="true">◍</span> <span id="bhCrowd">solo</span></span>
       </div>
       <div class="bh-hint" id="bhHint">tap to walk · tap the ball · hit ⛏ Dig (or Space) to dig</div>
+      <div class="bh-exitstrip" id="bhExitStrip" role="status" aria-live="polite"></div>
 
       <!-- 🎡 THE STALL VIEW — one frame, every stall. Name + tickets in the
            header, the game in the middle, cost/PLAY in the footer. It's a
