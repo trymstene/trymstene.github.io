@@ -5,6 +5,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { presenceRoom, poofInto, worldSid } from '../lib/world.js';
+import { iconSvg } from '../lib/pixel-icons.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
@@ -31,7 +32,10 @@ const PHASE_FORCE = (() => {
   const m = location.search.match(/[?&]phase=([0-4])(?:&|$)/);
   return m ? +m[1] : -1;
 })();
-const PHASE_MID = [10, 30, 50, 70, 90];   // a mid-band % to show on the pill
+const PHASE_MID = [10, 30, 50, 70, 90];   // a mid-band % to show when pinned
+// the health bar's phase faces — real PixelIcon glyphs (pixelarticons Pro,
+// bundled via src/icons/pixelart/), dead → joy. Never stock-emoji faces.
+const PHASE_FACES = ['skull', 'frown', 'meh', 'smile', 'laugh'];
 
 const R = (x, y, w, h, f) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + f + '"/>';
 const SVG = (vb, body) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + vb + '" shape-rendering="crispEdges">' + body + '</svg>';
@@ -704,7 +708,9 @@ function init() {
   // when an animal first walks into view, again on tap, and re-pops live
   // when the bloom crosses a mood border.
   const AN_SIZE = { sq: [36, 36], tall: [36, 72], wide: [72, 72] };
-  const MOOD_EMO = ['😢', '😐', '❤️'];
+  // hearts-only mood language (Trym: no detailed stock-emoji faces in-world):
+  // 💔 hurting park · nothing at mid · ❤️ thriving
+  const MOOD_EMO = ['💔', '', '❤️'];
   const bandFor = (p) => (p >= 3 ? 2 : p === 2 ? 1 : 0);
   const animals = [];
   let moodBand = -1;
@@ -731,7 +737,9 @@ function init() {
     depth(a.el, a.y);
   }
   function showMood(a) {
-    a.bub.textContent = MOOD_EMO[bandFor(phase)];
+    const e = MOOD_EMO[bandFor(phase)];
+    if (!e) { a.bub.classList.remove('is-on'); return; }   // mid band = no bubble
+    a.bub.textContent = e;
     a.bub.classList.add('is-on');
     clearTimeout(a.bubTimer);
     a.bubTimer = setTimeout(() => a.bub.classList.remove('is-on'), 2500);
@@ -1127,16 +1135,30 @@ function init() {
   // ---- 🌿 WEEDS + 🌸 THE BLOOM — the shared entropy loop ------------------
   const weeds = new Map();                      // id → { el, x, y }
   let bloomV = -1, pendingWeed = null, weedTracked = false;
-  const bloomBtn = document.getElementById('pkBloomBtn');
-  const bloomNEl = document.getElementById('pkBloomN');
+  // 🌸 THE HEALTH BAR — bottom-docked (the jellymeter's spot in the rave):
+  // fill + % ride the live value, the face + whole palette ride the phase
+  const bloomBtn = document.getElementById('pkHBar');
+  const hFaceEl = document.getElementById('pkHFace');
+  const hFillEl = document.getElementById('pkHFill');
+  const hPctEl = document.getElementById('pkHPct');
+  let hbarPhase = -1;
+  function renderHBar(v, p) {
+    hFillEl.style.width = v + '%';
+    hPctEl.textContent = v + '%';
+    hPctEl.style.left = v + '%';
+    hPctEl.classList.toggle('is-out', v < 20);   // slim fill: % steps outside
+    if (hbarPhase !== p) {
+      hbarPhase = p;
+      bloomBtn.className = 'pk-hbar pk-hbar--p' + p;
+      hFaceEl.innerHTML = iconSvg(PHASE_FACES[p], { size: 20 });
+    }
+  }
   function refreshBloom(v) {
     if (PHASE_FORCE >= 0) v = PHASE_MID[PHASE_FORCE];   // pinned — polls no-op
     if (v === bloomV || typeof v !== 'number') return;
     bloomV = v;
-    bloomNEl.textContent = v + '%';
     const p = phaseFor(v);                 // ±3 hysteresis lives in phaseFor
-    bloomBtn.classList.toggle('is-mid', p === 2 || p === 3);
-    bloomBtn.classList.toggle('is-low', p <= 1);
+    renderHBar(Math.max(0, v), p);
     setPhase(p);
     const f = document.getElementById('pkBfill');
     if (f) {                               // the card is open — nudge it live

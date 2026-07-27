@@ -120,8 +120,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     @keyframes pkFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
 
-    .pk-hint {
-      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 7;
+    .pk-hint {   /* stacked clear of the health bar's bottom dock */
+      position: absolute; left: 50%; bottom: 54px; transform: translateX(-50%); z-index: 7;
       background: rgba(0, 0, 0, 0.55); border: 2px solid #000; color: #fffdf5;
       font-size: 0.78rem; padding: 0.3rem 0.65rem; pointer-events: none; white-space: nowrap;
       transition: opacity 0.4s ease;
@@ -130,13 +130,61 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     /* 🚪 the exit confirm strip — comes on in a door zone, names where the
        road goes; walking on to the door is the yes */
     .pk-exitstrip {
-      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 8;
+      position: absolute; left: 50%; bottom: 54px; transform: translateX(-50%); z-index: 8;
       background: rgba(0, 0, 0, 0.78); border: 2px solid #ffe135; color: #ffe135;
       font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.75rem;
       pointer-events: none; white-space: nowrap;
       opacity: 0; transition: opacity 0.25s ease;
     }
     .pk-exitstrip.is-on { opacity: 1; }
+
+    /* 🌸 THE PARK HEALTH BAR — bottom-docked, the rave jellymeter's language
+       (chunky dark box, hard border, bordered inner track). The WHOLE bar's
+       palette rides the current phase: dusty browns → olive → lush green.
+       Tap = the park-health card. */
+    .pk-hbar {
+      position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 8;
+      width: min(520px, calc(100% - 16px)); box-sizing: border-box;
+      display: flex; align-items: center; gap: 8px;
+      appearance: none; font: inherit; cursor: pointer;
+      background: rgba(13, 18, 11, 0.9); border: 3px solid #000; padding: 6px 8px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .pk-hbar__face { display: grid; place-items: center; width: 22px; height: 22px; flex: none; }
+    .pk-hbar__face .pai { display: block; }
+    .pk-hbar__track { position: relative; flex: 1; height: 16px; border: 2px solid #000; overflow: hidden; }
+    .pk-hbar__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width 0.5s ease; }
+    .pk-hbar__pct {
+      position: absolute; top: 50%; left: 0; transform: translate(-100%, -50%);
+      padding: 0 4px; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em;
+      white-space: nowrap; transition: left 0.5s ease; color: #0d120b;
+    }
+    .pk-hbar__pct.is-out { transform: translate(2px, -50%); color: #fffdf5; }
+    /* the five phase palettes — face colour, track tint, fill */
+    .pk-hbar--p0 { border-color: #1c140c; }
+    .pk-hbar--p0 .pk-hbar__face { color: #8a6a44; }
+    .pk-hbar--p0 .pk-hbar__track { background: #2a2118; }
+    .pk-hbar--p0 .pk-hbar__fill { background: #6b4a2c; }
+    .pk-hbar--p0 .pk-hbar__pct { color: #f0e2c8; }
+    .pk-hbar--p1 .pk-hbar__face { color: #b08a4a; }
+    .pk-hbar--p1 .pk-hbar__track { background: #322718; }
+    .pk-hbar--p1 .pk-hbar__fill { background: #8a6a38; }
+    .pk-hbar--p1 .pk-hbar__pct { color: #f5ecd8; }
+    .pk-hbar--p2 .pk-hbar__face { color: #c0c050; }
+    .pk-hbar--p2 .pk-hbar__track { background: #2a2c16; }
+    .pk-hbar--p2 .pk-hbar__fill { background: #a8a83a; }
+    .pk-hbar--p3 .pk-hbar__face { color: #7cc465; }
+    .pk-hbar--p3 .pk-hbar__track { background: #1c2a18; }
+    .pk-hbar--p3 .pk-hbar__fill { background: #5cb04a; }
+    .pk-hbar--p4 .pk-hbar__face { color: #6ff0a0; }
+    .pk-hbar--p4 .pk-hbar__track { background: #16281a; }
+    .pk-hbar--p4 .pk-hbar__fill { background: #35d97a; }
+    /* full bloom gets a quiet shine strip along the fill's top */
+    .pk-hbar--p4 .pk-hbar__fill::after {
+      content: ''; position: absolute; left: 0; right: 0; top: 2px; height: 3px;
+      background: rgba(255, 255, 255, 0.32);
+    }
+    .pk-hbar__pct.is-out { color: #fffdf5; }
 
     /* 🌍 THE WORLD HUD — the refined pill strip (rave/bay), park edition */
     .pk-whud {
@@ -335,8 +383,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-cardx:hover { opacity: 1; }
     .pk-panel__sub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
     .pk-panel__sub b { color: #ffd98a; opacity: 1; }
-    /* the HUD bloom pill is a real button */
-    .pk-whud button { font-family: inherit; appearance: none; cursor: pointer; }
 
     /* 🌱 THE GARDEN — plants grow on the plate's soil slots */
     /* 💧 the per-slot soil state, laid under the plant: dark = watered today */
@@ -425,10 +471,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     @media (prefers-reduced-motion: reduce) { .pk-weed.is-pulled { animation: none; opacity: 0; } }
 
     /* 🌸 the bloom pill — green healthy, amber 30-60, grey wilted */
-    .pk-whud__bloom b { color: #8de08d; }
-    .pk-whud__bloom.is-mid b { color: #ffb347; }
-    .pk-whud__bloom.is-low b { color: #9a9aa8; }
-    .pk-whud__bloom.is-low { opacity: 0.8; }
     /* the bloom card's bar — ONE continuous track (progress bar first,
        phases second): the wilted→lush ramp is the fill, the same ramp sits
        faint on the track behind it, ticks at 20/40/60/80, glyphs over their
@@ -639,9 +681,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="pk-whud" id="pkWhud">
           <span class="pk-whud__lvl"><span id="pkLvlN">LVL 1</span><span class="pk-whud__lvlbar"><i id="pkLvlFill"></i></span></span>
           <span class="pk-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="pkCoinN">0</b></span>
-          <button class="pk-whud__bloom" id="pkBloomBtn" type="button" aria-label="park health">🌸 <b id="pkBloomN">—</b></button>
           <span class="pk-whud__crowd"><span aria-hidden="true">◍</span> <span id="pkCrowd">solo</span></span>
         </div>
+        <button class="pk-hbar" id="pkHBar" type="button" aria-label="park health">
+          <span class="pk-hbar__face" id="pkHFace" aria-hidden="true"></span>
+          <span class="pk-hbar__track"><i class="pk-hbar__fill" id="pkHFill"></i><b class="pk-hbar__pct" id="pkHPct">—</b></span>
+        </button>
         <div class="pk-hint" id="pkHint">tap to walk · arrow keys / WASD work too</div>
         <div class="pk-exitstrip" id="pkExitStrip" role="status" aria-live="polite"></div>
         <div class="pk-toast" id="pkToast" role="status" aria-live="polite"></div>
