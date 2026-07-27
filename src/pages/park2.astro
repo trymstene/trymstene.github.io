@@ -294,15 +294,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       50% { filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 225, 53, 0.7)); }
     }
     @media (prefers-reduced-motion: reduce) { .pk-plant.is-ready { animation: none; } }
-    /* the per-slot sign — fades in when you're actually at the garden */
-    .pk-plantsign {
-      position: absolute; transform: translate(-50%, 0); z-index: 1450; pointer-events: none;
-      background: rgba(16, 22, 14, 0.88); border: 2px solid #000; color: #fffdf5;
-      font-size: 0.44rem; font-weight: 800; letter-spacing: 0.03em; line-height: 1;
-      padding: 2px 5px; white-space: nowrap;
-      opacity: 0; transition: opacity 0.3s ease;
+    /* the per-slot marker: a tiny emoji chip over the plant (HUD pill
+       language) — no lawn text, the words live in the tap card. Yellow ring
+       + dot = yours; ready pulses gently. Taps pass through to the slot. */
+    .pk-gchip {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      width: 22px; height: 22px; border-radius: 999px; box-sizing: border-box;
+      display: grid; place-items: center;
+      background: rgba(16, 18, 28, 0.85); border: 2px solid #000;
+      font-size: 11px; line-height: 1;
+      box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.35);
     }
-    .pk-neargarden .pk-plantsign { opacity: 1; }
+    .pk-gchip.is-mine { border-color: #ffe135; }
+    .pk-gchip.is-mine::after {
+      content: ''; position: absolute; top: -3px; right: -3px; width: 6px; height: 6px;
+      border-radius: 50%; background: #ffe135; box-shadow: 0 0 0 1px #000;
+    }
+    .pk-gchip.is-ready { animation: pkChipPulse 1.6s ease-in-out infinite; }
+    @keyframes pkChipPulse {
+      0%, 100% { transform: translate(-50%, -100%) scale(1); }
+      50% { transform: translate(-50%, -100%) scale(1.14); }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-gchip.is-ready { animation: none; } }
     /* the seed picker rows */
     .pk-seedrow {
       appearance: none; font-family: inherit; width: 100%; cursor: pointer;
@@ -324,6 +337,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     .pk-seedcost img { image-rendering: pixelated; display: block; }
     .pk-seedpoor { margin: 0.2rem 0 0; font-size: 0.72rem; opacity: 0.7; }
+    .pk-gplant { margin: -0.1rem 0 0.35rem; font-size: 0.82rem; font-weight: 800; color: #8de08d; }
     .pk-gwater { margin: 0 0 0.6rem; font-size: 0.78rem; color: #7db9ff; font-weight: 800; }
     .pk-gbtn { width: 100%; border: 3px solid #000; background: #7db9ff; color: #10240f;
       font-weight: 800; font-family: inherit; font-size: 0.9rem; padding: 0.55rem;

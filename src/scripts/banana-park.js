@@ -756,7 +756,7 @@ function init() {
   const gardenPanel = document.getElementById('pkGarden');
   const gardenBody = document.getElementById('pkGardenBody');
   let gSlots = Array(8).fill(null);
-  const gEls = PLOTS.map(() => ({ plant: null, sign: null, stage: '', text: '' }));
+  const gEls = PLOTS.map(() => ({ plant: null, chip: null, stage: '', chipKey: '' }));
   let pendingGarden = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
   const gShim = { slots: Array(8).fill(null) };   // the ?parktest stand-in server
@@ -796,18 +796,15 @@ function init() {
     const t = gDays(s) / sd.days;
     return t >= 1 ? STAGE_ART[s.seed] : t >= 0.4 ? STAGE_ART.sprout2 : STAGE_ART.sprout1;
   }
-  function gSignText(s) {
-    const sd = SEED_BY[s.seed] || SEEDS[0];
-    const who = gMine(s) ? 'your' : (s.name ? esc(s.name) + '’s' : 'somebody’s');
-    return gReady(s) ? '🌱 ' + who + ' ' + sd.name + ' — ready!'
-      : '🌱 ' + who + ' ' + sd.name + ' — day ' + Math.min(gDays(s) + 1, sd.days) + ' of ' + sd.days;
-  }
+  // no text signs on the lawn (they cramped instantly — Trym): the identifier
+  // is a tiny emoji CHIP above each plant; yellow ring + dot = yours. All the
+  // words live in the tap card.
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
       const s = gSlots[i], el = gEls[i];
       if (!s) {
         if (el.plant) { el.plant.remove(); el.plant = null; el.stage = ''; }
-        if (el.sign) { el.sign.remove(); el.sign = null; el.text = ''; }
+        if (el.chip) { el.chip.remove(); el.chip = null; el.chipKey = ''; }
         return;
       }
       const [img, w2, h2] = gStageArt(s);
@@ -827,17 +824,21 @@ function init() {
         el.plant.classList.toggle('is-ready', gReady(s));
         depth(el.plant, sy + 10);
       }
-      const txt = gSignText(s);
-      if (el.text !== txt) {
-        el.text = txt;
-        if (!el.sign) {
-          el.sign = document.createElement('div');
-          el.sign.className = 'pk-plantsign';
-          el.sign.style.left = pct(sx, W);
-          el.sign.style.top = pct(sy + 16, H);
-          world.appendChild(el.sign);
+      const sd = SEED_BY[s.seed] || SEEDS[0];
+      const ck = sd.emoji + (gMine(s) ? 'm' : '') + (gReady(s) ? '!' : '') + el.stage;
+      if (el.chipKey !== ck) {
+        el.chipKey = ck;
+        if (!el.chip) {
+          el.chip = document.createElement('div');
+          el.chip.className = 'pk-gchip';
+          world.appendChild(el.chip);
         }
-        el.sign.textContent = txt;
+        el.chip.textContent = sd.emoji;
+        el.chip.classList.toggle('is-mine', gMine(s));
+        el.chip.classList.toggle('is-ready', gReady(s));
+        el.chip.style.left = pct(sx, W);
+        el.chip.style.top = pct(sy + 10 - h2 - 4, H);   // floats just over the plant
+        el.chip.style.zIndex = String(100 + Math.round(sy) + 11);
       }
     });
   }
@@ -897,8 +898,11 @@ function init() {
     gardenOpenSlot = i;
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const mine = gMine(s), ready = gReady(s);
-    const who = mine ? 'your ' + sd.name : (s.name ? esc(s.name) + '’s ' + sd.name : 'somebody’s ' + sd.name);
-    gardenBody.innerHTML = '<h2>' + sd.emoji + ' ' + who + '</h2>'
+    // a stranger's plant is an OWNERSHIP popup: their name leads, big
+    gardenBody.innerHTML = (mine
+      ? '<h2>' + sd.emoji + ' your ' + sd.name + '</h2>'
+      : '<h2>' + esc(s.name || 'a mystery banana') + '</h2>'
+        + '<p class="pk-gplant">' + sd.emoji + ' their ' + sd.name + '</p>')
       + '<p class="pk-panel__sub">' + (ready
         ? (mine ? 'full-grown — tap it to harvest!' : 'ready to pick — only its grower can harvest it.')
         : 'day ' + Math.min(gDays(s) + 1, sd.days) + ' of ' + sd.days + ' · growing on real days')
@@ -954,12 +958,18 @@ function init() {
     openPlantCard(i);
   }
   function tapGarden(wx, wy) {
+    // an occupied slot's tap zone reaches UP over its plant + chip; among
+    // overlapping hits the nearest visual middle wins (rows sit 38px apart)
     let best = -1, bd = 1e9;
     PLOTS.forEach(([sx, sy], i) => {
-      const d2 = Math.hypot(wx - sx, wy - sy);
+      const hit = gSlots[i]
+        ? (Math.abs(wx - sx) < 24 && wy > sy - 76 && wy < sy + 18) || Math.hypot(wx - sx, wy - sy) < 34
+        : Math.hypot(wx - sx, wy - sy) < 34;
+      if (!hit) return;
+      const d2 = Math.hypot(wx - sx, wy - (sy - (gSlots[i] ? 24 : 0)));
       if (d2 < bd) { bd = d2; best = i; }
     });
-    if (bd > 34) return false;
+    if (best < 0) return false;
     const [sx, sy] = PLOTS[best];
     if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { gardenAct(best); return true; }
     pendingGarden = best;                 // walk-then-act, like everything else
@@ -967,15 +977,11 @@ function init() {
     tgt.y = 882;                          // the path along the beds' south edge
     return true;
   }
-  let gNearWX = -1;
   function gardenTick() {
     if (pendingGarden != null) {
       const [sx, sy] = PLOTS[pendingGarden];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingGarden; pendingGarden = null; gardenAct(i); }
     }
-    // the signs only fade in when you're actually at the garden
-    const near = Math.hypot(pos.x - 2339, pos.y - 820) < 330 ? 1 : 0;
-    if (near !== gNearWX) { gNearWX = near; world.classList.toggle('pk-neargarden', !!near); }
   }
 
   // ---- 🌍 THE WORLD HUD — the refined pill strip, park edition ------------
