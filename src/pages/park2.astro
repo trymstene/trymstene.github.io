@@ -614,6 +614,16 @@ import PixelIcon from '../components/PixelIcon.astro';
     }
     @media (prefers-reduced-motion: reduce) { .pk-sparkle { display: none; } }
 
+    /* 🍌 the stand keeper seen through the hut window, outdoors — the old
+       page's scene-1 look. The wrapper is the window cutout and clips him;
+       the canvas keeps the old geometry (64% of the hut, centred, top 26%)
+       re-expressed relative to the window rect. Set dressing, never a target. */
+    .pk-standnpc { position: absolute; overflow: hidden; pointer-events: none; }
+    .pk-standnpc canvas {
+      position: absolute; left: -7.1%; top: -29.1%; width: 114.3%;
+      image-rendering: pixelated;
+    }
+
     /* 🧃 THE MERCH SHOP INTERIOR — the stand's counter scene, merch edition:
        awning, plank back wall with the goods HUNG on it, Inka big behind the
        desk. Mocks stay FLAT — the banana is the art. */

@@ -1335,6 +1335,32 @@ function init() {
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
   const ST_KEEPER_FRAME = 3;   // he stands still — done dancing (Trym's call)
+  // 🍌 the keeper IN THE WINDOW, outdoors — the old page's scene-1 look
+  // (the same static frame-3 banana, chest-up behind the counter). Set
+  // dressing only: pointer-events none, the whole hut stays the tap target.
+  // The wrapper IS the window cutout (the generator's 22%/35%→78%/66%
+  // backing rect on the ×2 hut box) and clips him; z = one above the hut.
+  (() => {
+    const HW = 176, HH = 172;                      // the placed hut, ×2
+    const hutL = STAND_AT.x - HW / 2, hutT = STAND_AT.y - HH;
+    const w = document.createElement('div');
+    w.className = 'pk-standnpc';
+    w.style.left = pct(hutL + HW * 0.22, W);
+    w.style.top = pct(hutT + HH * 0.35, H);
+    w.style.width = pct(HW * 0.56, W);
+    w.style.height = pct(HH * 0.31, H);
+    w.style.zIndex = String(100 + Math.round(STAND_AT.y) + 1);
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    cv.setAttribute('aria-hidden', 'true');
+    w.appendChild(cv);
+    world.appendChild(w);
+    assetsReady().then(() => {
+      const draw = () => drawComposite(cv.getContext('2d'), 150, ST_KEEPER_FRAME, ST_KEEPER_DRAW);
+      draw();
+      setTimeout(draw, 700);
+    });
+  })();
   let pendingStand = false, standSparkleAt = 0, standCounterTracked = false;
   let standBuilt = false, standBubbleTimer = null, soldIdx = 0;
   const stStats = () => passGet().stats || {};
