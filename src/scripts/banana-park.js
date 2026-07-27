@@ -23,6 +23,16 @@ function track(name, params) { if (window.gtag) window.gtag('event', name, param
 // P3 features force-spawn near the plaza spawn, timers ignored.
 const PARK_TEST = typeof location !== 'undefined' && /[?&]parktest(?:=|&|$)/.test(location.search);
 
+// ?phase=0..4 — bookmarkable phase-view links (Trym): forces that phase's
+// full visual state (plates/trees/critters/fountain/pill) RENDER-ONLY; the
+// server data still flows (weeds/plants/eggs), only the phase is pinned.
+const PHASE_FORCE = (() => {
+  if (typeof location === 'undefined') return -1;
+  const m = location.search.match(/[?&]phase=([0-4])(?:&|$)/);
+  return m ? +m[1] : -1;
+})();
+const PHASE_MID = [10, 30, 50, 70, 90];   // a mid-band % to show on the pill
+
 const R = (x, y, w, h, f) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + f + '"/>';
 const SVG = (vb, body) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + vb + '" shape-rendering="crispEdges">' + body + '</svg>';
 
@@ -1120,6 +1130,7 @@ function init() {
   const bloomBtn = document.getElementById('pkBloomBtn');
   const bloomNEl = document.getElementById('pkBloomN');
   function refreshBloom(v) {
+    if (PHASE_FORCE >= 0) v = PHASE_MID[PHASE_FORCE];   // pinned — polls no-op
     if (v === bloomV || typeof v !== 'number') return;
     bloomV = v;
     bloomNEl.textContent = v + '%';
@@ -1292,7 +1303,10 @@ function init() {
   }
   async function gardenPoll() {
     applyGarden(await gFetch(''));
-    if (phase < 0) setPhase(4);   // no word from the server — the park at its best
+    if (phase < 0) {              // no word from the server — the park at its
+      if (PHASE_FORCE >= 0) refreshBloom(PHASE_MID[PHASE_FORCE]);
+      else setPhase(4);           // best (unless a ?phase link pins it)
+    }
   }
   gardenPoll();
   setInterval(() => { if (!document.hidden) gardenPoll(); }, 60000);
