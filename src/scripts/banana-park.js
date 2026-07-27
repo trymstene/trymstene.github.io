@@ -193,6 +193,7 @@ function init() {
   const depth = (el, y) => { el.style.zIndex = String(100 + Math.round(y)); };
 
   // the props, redrawn above the plate so they can occlude walkers
+  const ovEls = [];
   OVERLAYS.forEach((o) => {
     const d = document.createElement('div');
     d.className = 'pk-ov';
@@ -201,7 +202,37 @@ function init() {
     d.style.backgroundImage = "url('/assets/park/" + o[0] + "')";
     d.style.zIndex = String(100 + Math.round(o[5]));
     world.appendChild(d);
+    ovEls.push(d);
   });
+
+  // 🍂 THE SAD LOOK — the whole plate follows THE BLOOM. A real second art
+  // set (park-sad + ov-sad twins, same geometry), lazy-loaded the first time
+  // the meter wilts, crossfaded 1.5s. Bands with hysteresis so it never flaps.
+  let sadOn = false, sadBuilt = false;
+  function buildSadLayers(then) {
+    if (sadBuilt) { then(); return; }
+    sadBuilt = true;
+    const plate = document.createElement('div');
+    plate.className = 'pk-sadlayer pk-sadplate';
+    world.insertBefore(plate, world.firstChild);
+    ovEls.forEach((d, i) => {
+      const s = document.createElement('div');
+      s.className = 'pk-sadlayer pk-sadov';
+      s.style.backgroundImage = "url('/assets/park/ov-sad-" + i + ".png')";
+      d.appendChild(s);
+    });
+    // fade only once the big plate has actually arrived — no mid-fade pop
+    const pre = new Image();
+    pre.onload = () => { plate.style.backgroundImage = "url('/assets/park/park-sad.png')"; requestAnimationFrame(then); };
+    pre.onerror = () => then();
+    pre.src = '/assets/park/park-sad.png';
+  }
+  function setSad(on) {
+    if (on === sadOn) return;
+    sadOn = on;
+    if (on) buildSadLayers(() => world.classList.add('pk-sad'));
+    else world.classList.remove('pk-sad');
+  }
 
   // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire
   (() => {
@@ -872,6 +903,10 @@ function init() {
     bloomNEl.textContent = v + '%';
     bloomBtn.classList.toggle('is-mid', v <= 60 && v >= 30);
     bloomBtn.classList.toggle('is-low', v < 30);
+    // the plate itself follows the meter: wilt under 40, recover at 45 (±5
+    // hysteresis so the crossfade never flaps around the line)
+    if (v < 40) setSad(true);
+    else if (v >= 45) setSad(false);
   }
   function renderWeeds(list) {
     const seen = new Set();
@@ -924,6 +959,8 @@ function init() {
       + '<div class="pk-bloombar"><i style="width:' + Math.max(0, bloomV) + '%"></i></div>'
       + '<p class="pk-bloomnum">' + Math.max(0, bloomV) + '%'
       + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : ' · no weeds right now') + '</p>'
+      + (sadOn ? '<p class="pk-wilting">🍂 the park is wilting — nobody’s been tending it.</p>'
+        : bloomV >= 60 ? '<p class="pk-bloomnum">🌸 the park is thriving.</p>' : '')
       + '<p class="pk-panel__sub">weeds drag the park down. pull them. plant things. water what grows. the park remembers.</p>';
     gardenPanel.hidden = false;
   });

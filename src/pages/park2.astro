@@ -42,6 +42,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       position: absolute; pointer-events: none; image-rendering: pixelated;
       background-size: 100% 100%; background-repeat: no-repeat;
     }
+    /* 🍂 the sad twins — real art swap riding THE BLOOM, slow crossfade
+       (never a CSS filter on the world). Plate child sits over the lush
+       background, under every positioned walker/prop. */
+    .pk-sadlayer {
+      position: absolute; inset: 0; pointer-events: none;
+      background-size: 100% 100%; background-repeat: no-repeat;
+      image-rendering: pixelated;
+      opacity: 0; transition: opacity 1.5s ease;
+    }
+    .pk-sadplate { z-index: 0; }
+    .pk-sad .pk-sadlayer { opacity: 1; }
+    .pk-wilting { margin: 0 0 0.7rem; font-size: 0.8rem; font-weight: 800; color: #c9913a; }
     /* ⛲ the fountain — 6-frame strip; end = 100% × 6 / 5 (the stepping rule) */
     .pk-fountain {
       position: absolute; transform: translate(-50%, -100%); pointer-events: none;

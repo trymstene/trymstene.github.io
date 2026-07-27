@@ -60,22 +60,55 @@ def rect(x0, y0, x1, y1, col):
                 px[x, y] = col if len(col) == 4 else col + (255,)
 
 
+# 🍂 W1b: the SAD twin plate. im2/px2 exist from the fork point on (after the
+# ground+pond are painted); everything placed later writes BOTH canvases from
+# the SAME placement pass, so the geometry contract is identical by construction.
+im2, px2 = None, None
+
+
+def drab_col(col):
+    """one pixel toward neglect: desaturate, then brown the greens/blues"""
+    r, g, b = col[0], col[1], col[2]
+    grey = (r * 30 + g * 59 + b * 11) // 100
+    k = 0.35
+    r = int(r * (1 - k) + grey * k)
+    g = int((g * (1 - k) + grey * k) * 0.94)
+    b = int((b * (1 - k) + grey * k) * 0.86)
+    return (r, g, b) + tuple(col[3:])
+
+
+def drab(img):
+    """the sad grade for a placed sprite — same dims, outlines survive"""
+    s = img.copy()
+    p = s.load()
+    for y in range(s.height):
+        for x in range(s.width):
+            c = p[x, y]
+            if c[3]:
+                p[x, y] = drab_col(c)
+    return s
+
+
 def put(x, y, col):
     if 0 <= x < W and 0 <= y < H:
-        px[x, y] = col if len(col) == 4 else col + (255,)
+        c = col if len(col) == 4 else col + (255,)
+        px[x, y] = c
+        if px2 is not None:
+            px2[x, y] = drab_col(c)
 
 
 def shadow(cx, cy, rx, ry, a=64):
-    for y in range(int(cy - ry), int(cy + ry + 1)):
-        for x in range(int(cx - rx), int(cx + rx + 1)):
-            if not (0 <= x < W and 0 <= y < H):
-                continue
-            d = ((x - cx) / float(rx)) ** 2 + ((y - cy) / float(ry)) ** 2
-            if d <= 1.0:
-                r, g, b, _ = px[x, y]
-                k = a / 255.0 * (1.0 - d * 0.45)
-                px[x, y] = (int(r * (1 - k) + 24 * k), int(g * (1 - k) + 34 * k),
-                            int(b * (1 - k) + 18 * k), 255)
+    for p in ([px, px2] if px2 is not None else [px]):
+        for y in range(int(cy - ry), int(cy + ry + 1)):
+            for x in range(int(cx - rx), int(cx + rx + 1)):
+                if not (0 <= x < W and 0 <= y < H):
+                    continue
+                d = ((x - cx) / float(rx)) ** 2 + ((y - cy) / float(ry)) ** 2
+                if d <= 1.0:
+                    r, g, b, _ = p[x, y]
+                    k = a / 255.0 * (1.0 - d * 0.45)
+                    p[x, y] = (int(r * (1 - k) + 24 * k), int(g * (1 - k) + 34 * k),
+                               int(b * (1 - k) + 18 * k), 255)
 
 
 # ---- the terrain: the pack's grass ----------------------------------------
@@ -422,6 +455,13 @@ def dedisc(img):
     return img
 
 
+# 🍂 green tree → its autumn twin (contact-sheet: Camping 1-3 ↔ 4-6, 13-18 ↔
+# 19-24). Everything WITHOUT a twin gets the drab() grade instead.
+SAD_TREE = {1: 4, 2: 5, 3: 6, 13: 19, 14: 20, 15: 21, 16: 22, 17: 23, 18: 24}
+SAD_SUBS = {'ME_Singles_Camping_48x48_Tree_%d.png' % g:
+            'ME_Singles_Camping_48x48_Tree_%d.png' % a for g, a in SAD_TREE.items()}
+
+
 def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
           flip=False, shade=True, sh=0.30, scale=PROP, solid=None, layer=False):
     key = (name, factor, colors, warm, sat, con)
@@ -434,16 +474,35 @@ def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
                      Image.NEAREST)
     if flip:
         s = s.transpose(Image.FLIP_LEFT_RIGHT)
+    # the sad twin: autumn art where a twin exists (forced to the SAME dims so
+    # the one geometry serves both plates), the drab grade everywhere else
+    s2 = None
+    if im2 is not None:
+        if name in SAD_SUBS:
+            k2 = (SAD_SUBS[name], factor, colors, warm, sat, con)
+            if k2 not in _cache:
+                _cache[k2] = blockify(dedisc(load_pack(SAD_SUBS[name])), factor=factor,
+                                      colors=colors, warm=warm, sat=sat, con=con)
+            s2 = _cache[k2].resize(s.size, Image.NEAREST)
+            if flip:
+                s2 = s2.transpose(Image.FLIP_LEFT_RIGHT)
+        else:
+            s2 = drab(s)
+        assert s2.size == s.size   # the contract: one box, two arts
     if shade:
         shadow(cx + s.width * 0.06, base - s.height * 0.02,
                s.width * sh, max(4, s.height * 0.055))
     box = (int(cx - s.width // 2), int(base - s.height),
            int(cx - s.width // 2) + s.width, int(base))
     im.alpha_composite(s, box[:2])
+    if s2 is not None:
+        im2.alpha_composite(s2, box[:2])
     PLACED.append((name, box))
     if layer:
         fn = 'ov-%d.png' % len(OVERLAYS)
         s.save(os.path.join(OUT, fn), optimize=True)
+        if s2 is not None:
+            s2.save(os.path.join(OUT, 'ov-sad-%d.png' % len(OVERLAYS)), optimize=True)
         OVERLAYS.append((fn, box[0], box[1], s.width, s.height, int(base)))
     if solid:
         COLLIDERS.append((name, solid, int(cx), int(base)))
@@ -568,6 +627,44 @@ for lx, ly in ((pcx - 120, pcy - 40), (pcx + 90, pcy + 55), (pcx + 40, pcy - 80)
             if (xx / 9.0) ** 2 + (yy / 5.0) ** 2 <= 1.0 and not (xx > 4 and abs(yy) < 2):
                 put(lx + xx, ly + yy, (74, 142, 62) if (xx + yy) % 3 else (94, 168, 78))
 
+# ---- 🍂 THE FORK: the sad twin's ground -----------------------------------
+# The ground (lawn+roads+plaza+pond) is done — copy it and grade it toward
+# neglect: lawn to dry yellow-brown, pond to murk, pavements barely touched.
+# Everything placed after this line lands on BOTH canvases (put/shadow/place),
+# so park.png and park-sad.png share one placement pass = one geometry.
+DRY_LAWN = (176, 148, 80)
+MURK = (86, 104, 92)
+im2 = im.copy()
+px2 = im2.load()
+for y in range(H):
+    for x in range(W):
+        r, g, b, a = px2[x, y]
+        if b > g + 6:                              # pond water → murk
+            px2[x, y] = (int(r * 0.5 + MURK[0] * 0.5), int(g * 0.5 + MURK[1] * 0.5),
+                         int(b * 0.5 + MURK[2] * 0.5), a)
+        elif g > r - 10 and g >= b:                # lawn → dry straw
+            k = 0.72
+            px2[x, y] = (int(r * (1 - k) + DRY_LAWN[0] * k), int(g * (1 - k) + DRY_LAWN[1] * k),
+                         int(b * (1 - k) + DRY_LAWN[2] * k), a)
+        else:                                      # roads/plaza: a light fade
+            gr = (r * 30 + g * 59 + b * 11) // 100
+            px2[x, y] = (int(r * 0.92 + gr * 0.08), int(g * 0.92 + gr * 0.08),
+                         int(b * 0.92 + gr * 0.08), a)
+# neglect shows in the ground itself: extra bare-dirt blotches, sad plate only
+_srng = random.Random(99)
+for _ in range(9):
+    dcx, dcy = _srng.randrange(200, W - 200), _srng.randrange(200, H - 200)
+    if ((dcx - CX) / float(PLAZA_RX)) ** 2 + ((dcy - CY) / float(PLAZA_RY)) ** 2 < 1.4:
+        continue
+    if ((dcx - pcx) / float(prx)) ** 2 + ((dcy - pcy) / float(pry)) ** 2 < 1.4:
+        continue
+    drx, dry_ = _srng.randrange(34, 66), _srng.randrange(20, 38)
+    for y in range(dcy - dry_, dcy + dry_):
+        for x in range(dcx - drx, dcx + drx):
+            dd = ((x - dcx) / float(drx)) ** 2 + ((y - dcy) / float(dry_)) ** 2
+            if dd <= 1.0 and _srng.random() < (1.0 - dd) and 0 <= x < W and 0 <= y < H:
+                px2[x, y] = (162, 132, 88, 255) if (x * 3 + y * 7) % 9 else (142, 114, 76, 255)
+
 # ---- 🌲 the forest: the world's walls -------------------------------------
 # ⚠️ Round-3 sin (Trym): "the same 5-10 sprites plastered around". The pack has
 # 100+ trees — the border is now built like his reference shots: SPECIES
@@ -659,6 +756,7 @@ if HAVE_PACK:
         fx, fbase = CX, CY + int(strip.height * 0.14)
         shadow(fx, fbase - 6, sw * 0.42, 10)
         im.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
+        im2.alpha_composite(drab(f0), (fx - sw // 2, fbase - strip.height))
         COLLIDERS.append(('fountain', ('circle', int(sw * 0.36)), fx, fbase - 20))
         FOUNTAIN = [fx, fbase, sw, strip.height, n]
         print('fountain: %d frames of %dpx' % (n, fw))
@@ -759,6 +857,7 @@ if HAVE_PACK:
         for sx, sy in ((560, 800), (770, 800)):
             shadow(sx, sy - 4, sw0.width * 0.4, 8)
             im.alpha_composite(sw0, (sx - sw0.width // 2, sy - sw0.height))
+            im2.alpha_composite(drab(sw0), (sx - sw0.width // 2, sy - sw0.height))
             COLLIDERS.append(('swing', SWING_BOX, sx, sy))
             SWINGS.append((sx, sy, sw0.width, sw0.height))
     sp0 = sheet_strip('Spring_Swing_48x48_1.png', 'a-spring.png', 96)
@@ -766,6 +865,7 @@ if HAVE_PACK:
         for sx, sy in ((520, 920), (830, 910)):
             shadow(sx, sy - 3, sp0.width * 0.45, 6)
             im.alpha_composite(sp0, (sx - sp0.width // 2, sy - sp0.height))
+            im2.alpha_composite(drab(sp0), (sx - sp0.width // 2, sy - sp0.height))
             COLLIDERS.append(('spring', ('circle', 18), sx, sy))
             SWINGS.append((sx, sy, sp0.width, sp0.height))
     # picnic corner: benched tables between the swings and the meadow
@@ -862,6 +962,7 @@ if HAVE_PACK:
     for sx, sy in ((332, 584), (1414, 236)):     # ON the stub ends' new curves
         shadow(sx, sy - 4, saw.width * 0.38, 7)
         im.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
+        im2.alpha_composite(drab(saw), (sx - saw.width // 2, sy - saw.height))
         COLLIDERS.append(('sawhorse', ('rect', -44, -18, 44, 4), sx, sy))
         SIGNS.append((sx, sy))
 
@@ -904,3 +1005,7 @@ def emit_geo():
 emit_geo()
 im.convert('RGB').save(os.path.join(OUT, 'park.png'), optimize=True)
 print('wrote park.png (%dx%d) %.0f KB' % (W, H, os.path.getsize(os.path.join(OUT, 'park.png')) / 1024.0))
+if im2 is not None:
+    im2.convert('RGB').save(os.path.join(OUT, 'park-sad.png'), optimize=True)
+    print('wrote park-sad.png %.0f KB + %d ov-sad overlays'
+          % (os.path.getsize(os.path.join(OUT, 'park-sad.png')) / 1024.0, len(OVERLAYS)))
