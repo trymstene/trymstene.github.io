@@ -142,6 +142,11 @@ const GARDEN_API = 'https://banana-rave.trymstene.workers.dev/park-garden';
 // in worker-rave (keep in sync); two sprite variants picked by id hash
 const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1000], [1550, 950]];
 
+// 🧰 THE TOOL SLOT — tools for chores, taps for things (Trym): ONE morphing
+// action-bar button, live only while a chore is in range; press = do the
+// NEAREST one (walk the last step if needed). Tapping the thing still works.
+const TOOL_RANGE = 110;
+
 // 🐔 THE ANIMALS (W2) — farm-pack wanderers, out in every bloom; their MOOD
 // BUBBLE is the meter made visible (❤️ ≥3 · 😐 2 · 😢 ≤1). Strips = 6 walk
 // frames facing right, frame 0 doubles as the standing pose. kind = cell
@@ -151,8 +156,8 @@ const ANIMALS = [
   { strip: 'chicken1', kind: 'sq', home: [1120, 650], r: 120 },
   { strip: 'chicken2', kind: 'sq', home: [1210, 730], r: 120 },
   { strip: 'rooster', kind: 'tall', home: [1050, 760], r: 140 },
-  { strip: 'duck1', kind: 'wide', pond: true },
-  { strip: 'duck2', kind: 'wide', pond: true },
+  { strip: 'duck1', kind: 'wide', pond: true, w: 61, h: 61 },   // ducks at 0.85 (generator keeps in sync)
+  { strip: 'duck2', kind: 'wide', pond: true, w: 61, h: 61 },
   { strip: 'rabbit', kind: 'wide', home: [2050, 720], r: 150 },
 ];
 // ?parktest gathers the land animals by the plaza spawn (ducks stay pond-side)
@@ -167,7 +172,7 @@ const PHASE_LINES = [
   '🍂 wilting badly — keep pulling, keep planting.',
   '🌾 patchy, half straw — water what grows.',
   '🌿 nearly back — keep it watered and weeded.',
-  '🦋 in full bloom — hold it here and an egg can come out golden.',
+  '🦋 the park is thriving — hold it here and an egg can come out golden.',
 ];
 
 const WISHES = [
@@ -326,6 +331,7 @@ function init() {
     setSquirrels(p >= 3);                  // 🐿 life returns near the top…
     setBflies(p >= 4);                     // 🦋 …and only a perfect park has these
     setAnimalMood(p);                      // 🐔 the flock's mood follows the bloom
+    RIDES.forEach((q) => q.el.classList.toggle('is-sad', p <= 1));   // unbaked, so they grade here
   }
 
   // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire
@@ -340,9 +346,9 @@ function init() {
   })();
 
   // 🛝 THE RIDES — SWINGS[0..1] are the swing (12 frames), [2..3] the spring
-  // riders (8 frames). Each entry anchors bottom-centre at (x, y), 72×72 —
-  // frame 0 of the strip IS the baked pose, so the animated overlay lands
-  // pixel-exact over the plate and only shows while somebody's on it.
+  // riders (8 frames). Each entry anchors bottom-centre at (x, y), 72×72.
+  // The overlay IS the ride (never baked into the plate — a baked twin once
+  // double-drew): frame 0 idle, the strip animates while somebody's on.
   const RIDES = SWINGS.map((s, i) => ({
     x: s[0], y: s[1], w: s[2], h: s[3],
     strip: i < 2 ? 'a-swing.png' : 'a-spring.png', n: i < 2 ? 12 : 8,
@@ -361,14 +367,18 @@ function init() {
   function mountRide(q) {
     riding = q;
     q.el.classList.add('is-on');
-    meEl.style.display = 'none';   // locally only — peers still get your pos
+    // seated ON the ride, visible (Trym: hiding read as disappearing) — the
+    // banana lifts to the seat and bobs on the ride's own beat; pos stays at
+    // the mount point so peers/z-order don't change
+    meEl.classList.add(q.n === 12 ? 'pk-me--r12' : 'pk-me--r8');
+    meWX = NaN;                    // the loop writes the seat top (it owns meEl)
     tgt.x = pos.x; tgt.y = pos.y;
   }
   function dismount() {
     if (!riding) return;
     riding.el.classList.remove('is-on');
     riding = null;
-    meEl.style.display = '';
+    meEl.classList.remove('pk-me--r12', 'pk-me--r8');
     meWX = NaN;                    // force a position rewrite next frame
   }
   function tapRide(wx, wy) {
@@ -434,6 +444,7 @@ function init() {
     pendingShop = false;
     pendingToss = false;
     pendingGarden = null;
+    pendingWater = null;
     pendingWeed = null;
     pendingEgg = null;
     if (riding) dismount();          // any tap off the ride hops you off
@@ -818,7 +829,7 @@ function init() {
       hx: home ? home[0] : 0, hy: home ? home[1] : 0, r: sp.r || 130,
       ang: Math.random() * 6.28, face: 1, still: true,
       wait: Math.random() * 3, seen: false, bubTimer: null,
-      w: AN_SIZE[sp.kind][0], h: AN_SIZE[sp.kind][1],
+      w: sp.w || AN_SIZE[sp.kind][0], h: sp.h || AN_SIZE[sp.kind][1],
     };
     if (a.pond) {   // land on a clear stretch of bank (the east shore has trees)
       let p = duckPoint(a.ang);
@@ -999,8 +1010,8 @@ function init() {
   const gardenBody = document.getElementById('pkGardenBody');
   // 16 slots since W3 — 0-7 site A (meadow), 8-15 site B (playground)
   let gSlots = Array(16).fill(null);
-  const gEls = PLOTS.map(() => ({ plant: null, chip: null, stage: '', chipKey: '' }));
-  let pendingGarden = null, gardenOpenSlot = -1;
+  const gEls = PLOTS.map(() => ({ plant: null, chip: null, stage: '', chipKey: '', soil: null, soilKey: '' }));
+  let pendingGarden = null, pendingWater = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
   const gShim = {   // the ?parktest stand-in server (pre-lays a plain + golden egg)
     slots: Array(16).fill(null), weeds: [], bloom: 70,
@@ -1060,6 +1071,8 @@ function init() {
   const gDays = (s) => Math.floor((Date.now() - s.plantedAt) / 86400000);
   const gReady = (s) => s && gDays(s) >= (SEED_BY[s.seed] || { days: 99 }).days;
   const gMine = (s) => s && s.passShort === myShort;
+  // watered today? (UTC day, matching the server's wday math)
+  const gWet = (s) => s && Math.floor((s.lastWater || 0) / 86400000) === Math.floor(Date.now() / 86400000);
   function gStageArt(s) {
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const t = gDays(s) / sd.days;
@@ -1084,7 +1097,25 @@ function init() {
       if (!s) {
         if (el.plant) { el.plant.remove(); el.plant = null; el.stage = ''; }
         if (el.chip) { el.chip.remove(); el.chip = null; el.chipKey = ''; }
+        if (el.soil) { el.soil.remove(); el.soil = null; el.soilKey = ''; }
         return;
+      }
+      // 💧 the soil tells the state: dark wet = watered today, light dry = not
+      const wet = gWet(s) ? 'wet' : 'dry';
+      if (el.soilKey !== wet) {
+        el.soilKey = wet;
+        if (!el.soil) {
+          el.soil = document.createElement('div');
+          el.soil.className = 'pk-soil';
+          el.soil.style.left = pct(sx, W);
+          el.soil.style.top = pct(sy + 12, H);
+          el.soil.style.width = pct(39, W);
+          el.soil.style.height = pct(25, H);
+          el.soil.style.zIndex = String(100 + Math.round(sy));   // under the plant
+          world.appendChild(el.soil);
+        }
+        el.soil.classList.toggle('pk-soil--wet', wet === 'wet');
+        el.soil.classList.toggle('pk-soil--dry', wet === 'dry');
       }
       const [img, w2, h2] = gStageArt(s);
       const key = img + (gReady(s) ? '!' : '');
@@ -1134,6 +1165,13 @@ function init() {
     bloomBtn.classList.toggle('is-mid', p === 2 || p === 3);
     bloomBtn.classList.toggle('is-low', p <= 1);
     setPhase(p);
+    const f = document.getElementById('pkBfill');
+    if (f) {                               // the card is open — nudge it live
+      f.style.clipPath = 'inset(0 ' + (100 - Math.max(0, v)) + '% 0 0)';
+      gardenBody.querySelectorAll('.pk-bglyph').forEach((g, i) => g.classList.toggle('is-now', i === p));
+      const num = document.getElementById('pkBnum');
+      if (num) num.textContent = bloomStatus();
+    }
   }
   function renderWeeds(list) {
     const seen = new Set();
@@ -1244,27 +1282,40 @@ function init() {
   }
   // the card is mostly BAR: five phase segments, each its own fill slice,
   // the live phase ringed; tapping a segment reveals that phase's lines
-  bloomBtn.addEventListener('click', () => {
+  function bloomStatus() {
     const n = weeds.size;
     const v = Math.max(0, bloomV);
     const stars = gSlots.reduce((t, s) => t + ((SEED_BY[s && s.seed] || {}).stars || 0), 0);
-    gardenBody.innerHTML = '<h2>🌸 the bloom</h2>'
-      + '<div class="pk-bsegs">' + PHASE_GLYPHS.map((g, i) =>
-        '<button class="pk-bseg pk-bseg--' + i + (i === phase ? ' is-now' : '') + '" type="button"'
-        + ' data-p="' + i + '" aria-label="bloom phase ' + (i + 1) + ' of 5">'
-        + '<i style="width:' + Math.round(Math.max(0, Math.min(1, (v - PHASE_STARTS[i]) / 20)) * 100) + '%"></i>'
-        + '<span>' + g + '</span></button>').join('') + '</div>'
-      + '<p class="pk-bloomnum">' + v + '%'
+    return v + '%'
       + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : '')
-      + (stars ? ' · ' + starStr(Math.min(stars, 5)) + (stars > 5 ? '×' + stars : '') + ' feeding it' : '') + '</p>'
+      + (stars ? ' · ' + starStr(Math.min(stars, 5)) + (stars > 5 ? '×' + stars : '') + ' feeding it' : '');
+  }
+  // ONE continuous bar (Trym: progress first, chapters second): a single
+  // fill sliding over the faint ramp, ticks at the phase borders, glyphs
+  // over their zones, invisible per-phase tap zones for the line reveals.
+  // The fill + status track LIVE while the card is open (refreshBloom).
+  bloomBtn.addEventListener('click', () => {
+    const v = Math.max(0, bloomV);
+    gardenBody.innerHTML = '<h2>🌸 park health</h2>'
+      + '<div class="pk-bbar">'
+      + '<div class="pk-bglyphs">' + PHASE_GLYPHS.map((g, i) =>
+        '<span class="pk-bglyph' + (i === phase ? ' is-now' : '') + '">' + g + '</span>').join('') + '</div>'
+      + '<div class="pk-btrack"><i class="pk-bramp"></i>'
+      + '<i class="pk-bfill" id="pkBfill" style="clip-path:inset(0 ' + (100 - v) + '% 0 0)"></i>'
+      + PHASE_STARTS.slice(1).map((t) => '<i class="pk-btick" style="left:' + t + '%"></i>').join('') + '</div>'
+      + PHASE_GLYPHS.map((g, i) =>
+        '<button class="pk-bzone" type="button" data-p="' + i + '" style="left:' + (i * 20) + '%"'
+        + ' aria-label="park health phase ' + (i + 1) + ' of 5"></button>').join('')
+      + '</div>'
+      + '<p class="pk-bloomnum" id="pkBnum">' + bloomStatus() + '</p>'
       + '<p id="pkBexp"></p>';
     const exp = document.getElementById('pkBexp');
     const show = (i) => {
       exp.className = 'pk-bexp' + (i <= 1 ? ' pk-bexp--sad' : '');
       exp.textContent = PHASE_LINES[i];
-      gardenBody.querySelectorAll('.pk-bseg').forEach((b) => b.classList.toggle('is-open', +b.dataset.p === i));
+      gardenBody.querySelectorAll('.pk-bglyph').forEach((g, gi) => g.classList.toggle('is-open', gi === i));
     };
-    gardenBody.querySelectorAll('.pk-bseg').forEach((b) => {
+    gardenBody.querySelectorAll('.pk-bzone').forEach((b) => {
       b.addEventListener('click', () => show(+b.dataset.p));
     });
     show(Math.max(0, phase));
@@ -1299,7 +1350,7 @@ function init() {
     gardenBody.innerHTML = '<h2>an empty patch</h2>'
       + '<p class="pk-glvl">🧑‍🌾 gardener lvl ' + gl.lvl + ' · ' + gl.n + ' harvest' + (gl.n === 1 ? '' : 's') + '</p>'
       + '<p class="pk-panel__sub">plant a seed — it grows on real days, even while you’re gone. '
-      + 'water it or it wilts away (higher ⭐ holds out longer). ⭐ feed the bloom while it lives.</p>'
+      + 'water it or it wilts away (higher ⭐ holds out longer). ⭐ feed the park’s health while it lives.</p>'
       + SEEDS.map((sd) => {
         const locked = sd.stars > gl.stars;
         return '<button class="pk-seedrow' + (locked ? ' pk-seedrow--lock' : '') + '" type="button"'
@@ -1365,6 +1416,8 @@ function init() {
     const s = gSlots[i];
     if (!s) return;
     closeGarden();
+    s.lastWater = Date.now();   // the soil darkens right away; the reply reconciles
+    renderGarden();
     const res = await gFetch('/water', { slot: i, pass: worldSid() });
     if (res && res.err === 'watered today') { toast('already watered today — once a day per banana'); applyGarden(res); return; }
     if (res && res.err) { applyGarden(res); return; }
@@ -1439,6 +1492,10 @@ function init() {
       const [sx, sy] = PLOTS[pendingGarden];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingGarden; pendingGarden = null; gardenAct(i); }
     }
+    if (pendingWater != null) {   // the tool slot's walk-then-water
+      const [sx, sy] = PLOTS[pendingWater];
+      if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingWater; pendingWater = null; waterSlot(i); }
+    }
     if (pendingWeed != null) {
       const w2 = weeds.get(pendingWeed);
       if (!w2) pendingWeed = null;          // pulled by somebody else mid-walk
@@ -1450,6 +1507,51 @@ function init() {
       else if (Math.hypot(pos.x - e.x, pos.y - e.y) < 90) { const id = pendingEgg; pendingEgg = null; claimEgg(id); }
     }
   }
+
+  // ---- 🧰 THE TOOL SLOT — the one contextual chore button ----------------
+  // Scans every frame (≤10 weeds + 16 slots — cheap); DOM writes are
+  // change-guarded on the chore key. DRY plant = not watered today (anyone's);
+  // a ready plant is a harvest, not a chore. Press = act on the nearest,
+  // walking the last step first — the same pull/water paths as a direct tap.
+  const toolBtn = document.getElementById('pkTool');
+  let toolChore = null, toolKey = '';
+  function toolScan() {
+    let best = null, bd = TOOL_RANGE;
+    weeds.forEach((w2, id) => {
+      const d = Math.hypot(pos.x - w2.x, pos.y - w2.y);
+      if (d < bd) { bd = d; best = { kind: 'weed', id, x: w2.x, y: w2.y }; }
+    });
+    PLOTS.forEach(([sx, sy], i) => {
+      const s = gSlots[i];
+      if (!s || gWet(s) || gReady(s)) return;
+      const d = Math.hypot(pos.x - sx, pos.y - sy);
+      if (d < bd) { bd = d; best = { kind: 'water', i, x: sx, y: sy }; }
+    });
+    return best;
+  }
+  function toolTick() {
+    const c = toolScan();
+    toolChore = c;
+    const key = c ? c.kind + ':' + (c.kind === 'weed' ? c.id : c.i) : '';
+    if (key === toolKey) return;
+    toolKey = key;
+    if (!c) { toolBtn.hidden = true; return; }
+    toolBtn.textContent = c.kind === 'weed' ? '🌿 pull' : '💧 water';
+    toolBtn.hidden = false;
+  }
+  toolBtn.addEventListener('click', () => {
+    const c = toolChore;
+    if (!c) return;
+    if (c.kind === 'weed') {
+      if (Math.hypot(pos.x - c.x, pos.y - c.y) < 90) { pullWeed(c.id); return; }
+      pendingWeed = c.id;
+      tgt.x = c.x; tgt.y = c.y + 26;
+      return;
+    }
+    if (Math.hypot(pos.x - c.x, pos.y - c.y) < 95) { waterSlot(c.i); return; }
+    pendingWater = c.i;
+    tgt.x = c.x; tgt.y = 882;
+  });
 
   // ---- 🌍 THE WORLD HUD — the refined pill strip, park edition ------------
   const lvlNEl = document.getElementById('pkLvlN');
@@ -1519,7 +1621,8 @@ function init() {
     if (pos.x !== meWX || pos.y !== meWY) {   // outside the walk branch: a
       meWX = pos.x; meWY = pos.y;             // direct pos set repaints too
       meEl.style.left = pct(pos.x, W);
-      meEl.style.top = pct(pos.y, H);
+      // seated: lift to the ride's seat (pos + z stay at the mount point)
+      meEl.style.top = pct(riding ? riding.y - (riding.n === 12 ? 26 : 20) : pos.y, H);
       depth(meEl, pos.y);
     }
     // walked all the way to a ride you tapped → hop on
@@ -1538,6 +1641,7 @@ function init() {
     tossTick();
     cartTick(now);
     gardenTick();
+    toolTick();
     doorTick();
     parkSendMove(now);
     cam();
@@ -1655,6 +1759,13 @@ function init() {
         gardenPoll();
       },
       steal: () => { gShim.eggs.shift(); gardenPoll(); },
+      // 🧰 chore QA: lay a weed at your feet; dry(i) = slot i missed today
+      weed: () => {
+        gShim.weeds.push({ id: 'qw' + Math.random().toString(36).slice(2, 6),
+          x: Math.round(pos.x) - 70, y: Math.round(pos.y) });
+        gardenPoll();
+      },
+      dry: (i) => { const s = gShim.slots[i]; if (s) s.lastWater -= 86460000; gardenPoll(); },
       // 🐔 mood QA: pop every animal's bubble right now
       mood: () => animals.forEach((a) => showMood(a)),
       coins: (n) => { passStat('coins_earned', n); refreshHud(); },

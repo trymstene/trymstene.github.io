@@ -378,6 +378,19 @@ def road_mask_add(spine):
     ROAD_SPINE.extend(spine)
 
 
+def on_road(x, y, r=26):
+    """decor guard (Trym r12: stumps sat on the pond spur) — any road-mask
+    ink within r of the sprite's base? Coarse 6px stride is plenty."""
+    if _road_mask is None:
+        return False
+    for yy in range(max(0, int(y) - r), min(H, int(y) + r + 1), 6):
+        row = yy * W
+        for xx in range(max(0, int(x) - r), min(W, int(x) + r + 1), 6):
+            if _road_mask[row + xx]:
+                return True
+    return False
+
+
 def road_bake():
     m = _road_mask
     x0, y0, x1, y1 = _road_box
@@ -785,16 +798,24 @@ if HAVE_PACK:
     # 🍄 the forest floor: mushrooms + stumps at the FEET of the tree clumps
     # (with the border walls cut, edge placement would float on open lawn)
     CLUMPS = ((240, 620), (1060, 260), (1200, 940), (1660, 180), (2560, 950), (900, 470))
+    # ⚠️ rng draws stay in the original order and count (skip, never re-roll)
+    # so every placement after this loop keeps its seat
     for _ in range(12):
         cx_, cy_ = CLUMPS[rng.randrange(len(CLUMPS))]
-        try_place(['ME_Singles_Camping_48x48_Mushrooms_%d.png' % rng.randrange(1, 6)],
-                  cx_ + rng.randrange(-130, 130), cy_ + rng.randrange(40, 110),
-                  shade=False, scale=PROP * 0.85)
+        name = 'ME_Singles_Camping_48x48_Mushrooms_%d.png' % rng.randrange(1, 6)
+        px_ = cx_ + rng.randrange(-130, 130)
+        py_ = cy_ + rng.randrange(40, 110)
+        if on_road(px_, py_):
+            continue
+        try_place([name], px_, py_, shade=False, scale=PROP * 0.85)
     for _ in range(4):
         cx_, cy_ = CLUMPS[rng.randrange(len(CLUMPS))]
-        try_place(['ME_Singles_Camping_48x48_Stump_%d.png' % rng.randrange(1, 3)],
-                  cx_ + rng.randrange(-160, 160), cy_ + rng.randrange(60, 130),
-                  solid=ROCK_BOX, scale=PROP * 0.9)
+        name = 'ME_Singles_Camping_48x48_Stump_%d.png' % rng.randrange(1, 3)
+        px_ = cx_ + rng.randrange(-160, 160)
+        py_ = cy_ + rng.randrange(60, 130)
+        if on_road(px_, py_):
+            continue
+        try_place([name], px_, py_, solid=ROCK_BOX, scale=PROP * 0.9)
     # a couple of worn dirt patches breaking the lawn up — ⚠️ on OPEN LAWN
     # only (round 4 smeared one across the plaza's rim)
     for dcx, dcy, drx, dry_ in ((980, 330, 64, 36), (2380, 780, 70, 40), (520, 1010, 60, 34)):
@@ -854,7 +875,44 @@ if HAVE_PACK:
     # 🧃 THE MERCH SHOP — the whole point of Park 2.0. Not a cart: a TINY SHOP
     # HOUSE (Trym) — the pack's Mushroom Kiosk, a round shop hut with a real
     # window. The food-branded kiosks (coffee cup / ice-cream cone) stay out.
+    # 🪧 + a tilted SHOP sign perched on the cap (Trym): the farm pack's blank
+    # Sign_1 board, lettered in the plank style (cream caps, dark outline).
+    # Composed into the kiosk's _cache entry pre-place, so the plates, the
+    # drab twin and the overlay all ride place()'s one path — ONE image.
     MARKET['cart'] = (2300, 545)
+    try:
+        kname = 'ME_Singles_City_Props_48x48_Kiosk_Mushroom_1.png'
+        kkey = (kname, 1, 28, 0.0, 1.0, 1.0)
+        kk = blockify(dedisc(load_pack(kname)), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+        sgp = os.path.expanduser(r'~\OneDrive\banana-art-pack\Modern_Farm_v1.2\48x48'
+                                 r'\Single_Files_48x48\0_Complete_Tileset_48x48\Sign_1_48x48.png')
+        sg = blockify(Image.open(sgp).convert('RGBA'), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+        SIGN_FONT = {'S': ('###', '#..', '###', '..#', '###'), 'H': ('#.#', '#.#', '###', '#.#', '#.#'),
+                     'O': ('###', '#.#', '#.#', '#.#', '###'), 'P': ('###', '#.#', '###', '#..', '#..')}
+        sgd = ImageDraw.Draw(sg)
+        bs = 2
+        tx0 = (sg.width - (len('SHOP') * 4 * bs - bs)) // 2
+        ty0 = 9
+        for pass_col, off in (((58, 41, 24, 255), 1), ((255, 230, 168, 255), 0)):
+            for li, ch in enumerate('SHOP'):
+                for ry, rows in enumerate(SIGN_FONT[ch]):
+                    for rx, on in enumerate(rows):
+                        if on != '#':
+                            continue
+                        x0 = tx0 + li * 4 * bs + rx * bs
+                        y0 = ty0 + ry * bs
+                        sgd.rectangle((x0 - off, y0 - off, x0 + bs - 1 + off, y0 + bs - 1 + off),
+                                      fill=pass_col)
+        sg = sg.resize((int(sg.width * 1.5), int(sg.height * 1.5)), Image.NEAREST)
+        sg = sg.rotate(-10, resample=Image.NEAREST, expand=True)
+        pad = int(sg.height * 0.62)
+        comp = Image.new('RGBA', (kk.width, kk.height + pad), (0, 0, 0, 0))
+        comp.alpha_composite(kk, (0, pad))
+        comp.alpha_composite(sg, (int(kk.width * 0.52), 0))
+        _cache[kkey] = comp
+        print('  kiosk SHOP sign composed (%dx%d)' % comp.size)
+    except Exception as e:
+        print('  kiosk sign failed', e)
     try_place(['ME_Singles_City_Props_48x48_Kiosk_Mushroom_1.png'],
               2300, 545, solid=SHOP_BOX, layer=True, colors=28)
 
@@ -893,6 +951,37 @@ if HAVE_PACK:
             print('  %s: %dx%d' % (out, s.width, s.height))
         except Exception as e:
             print('  garden sprite failed', src, e)
+    # 💧 wet/dry soil patches — the farm pack only has square Soil_Wet fill
+    # tiles (wrong palette + shape for the ditch), so both states derive from
+    # the ditch's OWN soil pixels: same texture, wet = darker/cooler, dry =
+    # lighter/warmer. Same ragged ellipse mask on both so the flip never
+    # changes shape. Client lays one per PLANTED slot; empty soil = the plate.
+    # ⚠️ locals here must NOT shadow the plate globals (px/px2/px3) — an
+    # earlier draft bound px2 to the patch and broke every later plate write
+    try:
+        sdd = load_pack('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png').convert('RGBA')
+        scw, sch = 52, 34
+        sbase = sdd.crop(((sdd.width - scw) // 2, (sdd.height - sch) // 2,
+                          (sdd.width + scw) // 2, (sdd.height + sch) // 2))
+        for sout, smul in (('g-soil-wet.png', (0.66, 0.68, 0.78)),
+                           ('g-soil-dry.png', (1.24, 1.14, 0.94))):
+            srng2 = random.Random(77)
+            simg = sbase.copy()
+            spx = simg.load()
+            for sy_ in range(sch):
+                for sx_ in range(scw):
+                    r0, g0, b0, a0 = spx[sx_, sy_]
+                    sdist = ((sx_ - scw / 2) / (scw / 2)) ** 2 + ((sy_ - sch / 2) / (sch / 2)) ** 2
+                    if not a0 or sdist > 1.0 - srng2.random() * 0.24:
+                        spx[sx_, sy_] = (0, 0, 0, 0)
+                        continue
+                    spx[sx_, sy_] = (min(255, int(r0 * smul[0])), min(255, int(g0 * smul[1])),
+                                     min(255, int(b0 * smul[2])), a0)
+            simg = simg.resize((max(1, int(scw * PROP)), max(1, int(sch * PROP))), Image.NEAREST)
+            simg.save(os.path.join(OUT, sout), optimize=True)
+            print('  %s: %dx%d' % (sout, simg.width, simg.height))
+    except Exception as e:
+        print('  soil patch failed', e)
 
 # ---- 🌿 W1 WEEDS — the entropy sprite (Modern Farm pack, native 48px) ------
 # Trym's call: Crop_Grain_ROTTEN — the grey-brown withered bush beside the
@@ -943,25 +1032,27 @@ if os.path.isdir(FARM):
 if os.path.isdir(FARM):
     import glob as _glob
 
-    def farm_strip(fname, out_name, band_y, cell_w, cell_h):
+    def farm_strip(fname, out_name, band_y, cell_w, cell_h, scale=1.0):
         try:
             f = _glob.glob(os.path.join(FARM, 'Animals_48x48', '**', fname), recursive=True)[0]
             band = Image.open(f).convert('RGBA').crop((0, band_y, cell_w * 6, band_y + cell_h))
             s = blockify(band, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
                          trim=False, outline=True)
             s = s.crop((1, 1, 1 + band.width, 1 + band.height))
-            s = s.resize((int(cell_w * PROP) * 6, int(cell_h * PROP)), Image.NEAREST)
+            s = s.resize((int(cell_w * PROP * scale) * 6, int(cell_h * PROP * scale)), Image.NEAREST)
             s.save(os.path.join(OUT, out_name), optimize=True)
             print('  %s: 6f %dx%d' % (out_name, s.width // 6, s.height))
         except Exception as e:
             print('  animal strip failed', fname, e)
 
-    # chickens/roosters = 48-wide cells; ducks/rabbits = 96-wide cells
+    # chickens/roosters = 48-wide cells; ducks/rabbits = 96-wide cells.
+    # Ducks at 0.85 (Trym: they read big next to the world) — the client's
+    # duck box/CSS width shrink with them, keep in sync.
     farm_strip('Chicken_Brown_48x48.png', 'a-chicken1.png', 48, 48, 48)
     farm_strip('Chicken_White_48x48.png', 'a-chicken2.png', 48, 48, 48)
     farm_strip('Rooster_Brown_48x48.png', 'a-rooster.png', 96, 48, 96)
-    farm_strip('Duck_Green_Head_48x48.png', 'a-duck1.png', 96, 96, 96)
-    farm_strip('Duck_White_48x48.png', 'a-duck2.png', 96, 96, 96)
+    farm_strip('Duck_Green_Head_48x48.png', 'a-duck1.png', 96, 96, 96, scale=0.85)
+    farm_strip('Duck_White_48x48.png', 'a-duck2.png', 96, 96, 96, scale=0.85)
     farm_strip('Rabbit_Brown_48x48.png', 'a-rabbit.png', 96, 96, 96)
 
     # 🥚 the egg pickups (trim=True — single sprites, tight box)
@@ -998,22 +1089,19 @@ def sheet_strip(name, out_name, fw, fh=96):
 
 
 if HAVE_PACK:
+    # ⚠️ rides are NOT baked into the plates (Trym: the baked copy + the
+    # animated overlay double-drew) — only the ground shadow bakes; the
+    # client's .pk-ride overlay is the ONE image, frame 0 when idle.
     sw0 = sheet_strip('Park_Swing_48x48_1.png', 'a-swing.png', 96)
     if sw0:
         for sx, sy in ((560, 800), (770, 800)):
             shadow(sx, sy - 4, sw0.width * 0.4, 8)
-            im.alpha_composite(sw0, (sx - sw0.width // 2, sy - sw0.height))
-            im2.alpha_composite(drab(sw0), (sx - sw0.width // 2, sy - sw0.height))
-            im3.alpha_composite(sw0, (sx - sw0.width // 2, sy - sw0.height))
             COLLIDERS.append(('swing', SWING_BOX, sx, sy))
             SWINGS.append((sx, sy, sw0.width, sw0.height))
     sp0 = sheet_strip('Spring_Swing_48x48_1.png', 'a-spring.png', 96)
     if sp0:
         for sx, sy in ((520, 920), (830, 910)):
             shadow(sx, sy - 3, sp0.width * 0.45, 6)
-            im.alpha_composite(sp0, (sx - sp0.width // 2, sy - sp0.height))
-            im2.alpha_composite(drab(sp0), (sx - sp0.width // 2, sy - sp0.height))
-            im3.alpha_composite(sp0, (sx - sp0.width // 2, sy - sp0.height))
             COLLIDERS.append(('spring', ('circle', 18), sx, sy))
             SWINGS.append((sx, sy, sp0.width, sp0.height))
     # picnic corner: benched tables between the swings and the meadow
