@@ -531,6 +531,7 @@ for _ in range(16):                                    # strays past the edge
 # ⚠️ LAMPS CUT (rounds 3-6): Street_Lamp_48x48.png is a variant SHEET whose
 # layout defeated both naive pastes and column slicing (boulevards, then
 # fragments). Re-add only after a real contact-sheet study of the file.
+if HAVE_PACK:
     for bx, by, fl in ((CX - 130, CY - 60, False), (CX + 130, CY - 60, True),
                        (880, 350, False), (1640, 820, True)):
         try_place(['ME_Singles_Camping_48x48_Cut_Wood_Bench_1.png',
