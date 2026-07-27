@@ -3379,9 +3379,10 @@ function init() {
   // Something happens to the club → the dynamic #rvQuestActBtn appears in the
   // action bar → you fix/play it → the room heals and every trace vanishes.
   // No quest log, no chip, no static floor UI (chip clutter is why v1 died).
-  // 🚧 DORMANT until the pool is previewed: QUESTS_ENABLED gates the hourly
-  // scheduler. QA: ?questtest=<id> force-starts that quest ~3s after load.
-  const QUESTS_ENABLED = false;
+  // 🟢 LIVE (Trym, 28 Jul — the five-quest deck passed preview): the scheduler
+  // fires one quest per 30-MINUTE slot at a seeded minute, same quest + same
+  // moment for every raver on the floor. QA: ?questtest=<id> still force-starts.
+  const QUESTS_ENABLED = true;
   const QUEST_TEST = new URLSearchParams(location.search).get('questtest');
   const QUEST_TTL = 150000;      // unfinished quests quietly pack up
   const questBtn = el('rvQuestActBtn');
@@ -4030,16 +4031,24 @@ function init() {
       return;
     }
     if (!QUESTS_ENABLED || QUEST_TEST) return;
-    // the hourly scheduler: date+hour seeded quest + minute — every raver on
-    // the floor gets the SAME event at the SAME moment (shared chaos), and a
-    // localStorage-free hour latch keeps it from restarting after completion
-    const hr = Math.floor(Date.now() / 3600000);
-    if (questHourDone === hr) return;
+    // the scheduler: one quest per 30-MINUTE slot at a seeded minute — every
+    // raver gets the SAME event at the SAME moment (shared chaos). The pick is
+    // a seeded random WALK anchored at the day: each step advances 1..n-1, so
+    // the same quest NEVER runs twice in a row (per-client identical, ≤47
+    // cheap iterations). A slot latch keeps it from restarting after it runs.
+    const slot = Math.floor(Date.now() / 1800000);
+    if (questHourDone === slot) return;
     const ids = Object.keys(FLOOR_QUESTS);
-    const at = hr * 3600000 + Math.floor((8 + seedRand(hr * 31 + 9) * 42) * 60000);
+    const at = slot * 1800000 + Math.floor((4 + seedRand(slot * 31 + 9) * 21) * 60000);
     if (Date.now() >= at && Date.now() < at + QUEST_TTL) {
-      questHourDone = hr;
-      startQuest(ids[Math.floor(seedRand(hr * 31 + 7) * ids.length)]);
+      questHourDone = slot;
+      // one continuous walk from a fixed epoch slot — each step advances
+      // 1..n-1, so a back-to-back repeat is IMPOSSIBLE, with no day-boundary
+      // edge. Runs once per slot; ~5.7k cheap iterations today, +48/day.
+      const EPOCH = 986000;
+      let p = 0;
+      for (let s = EPOCH; s <= slot; s++) p = (p + 1 + Math.floor(seedRand(s * 131 + 5) * (ids.length - 1))) % ids.length;
+      startQuest(ids[p]);
     }
   }
   if (questBtn) questBtn.addEventListener('click', () => {

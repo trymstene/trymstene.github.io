@@ -625,7 +625,8 @@ var EV_LABEL = {
   beach_ledger_open:'opened the fish ledger', beach_specimen:'inspected a specimen card 🔎',
   beach_treasure:'DUG UP THE DAILY TREASURE 🏴‍☠️', beach_emote:'sent a beach heart ❤️',
   beach_swim:'went for a swim 🌊', beach_multiplayer:'saw another banana on the bay 👋',
-  beach_share_day:'shared their day at the bay 📸' };
+  beach_share_day:'shared their day at the bay 📸',
+  rave_quest_start:'a floor quest kicked off 🎯', rave_quest_done:'FINISHED a floor quest 🎯' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click'];
@@ -711,7 +712,7 @@ var EV_EXPLAIN = {
   beach_exit_park:'walked the bottom-left beach road back to the park — the return leg',
   stand_exit_beach:'walked the park’s RIGHT road out to Banana Bay — the beach door',
   beach_stall:'opened a midway stall on the boardwalk 🎡 (stall = which: duck / crab / coco / prize — all four are live games now)',
-  beach_stall_play:'PAID COINS to play a midway game 🎡 (cost = how many). This is the beach\'s coin SINK — the counterweight to the buried chest. Watch it against beach_chest: if plays badly trail chests, the bay is minting more than it drains',
+  beach_stall_play:'PAID COINS to play a midway game 🎡 (cost = how many). This is the beach’s coin SINK — the counterweight to the fishing trickle. If plays badly trail catches, the bay is minting more than it drains',
   beach_stall_win:'won TICKETS on the midway 🎟 (tickets = how many). ⚠️ Tickets are NOT coins and can never reach the stand — that separation is what lets midway payouts be tuned freely',
   beach_prize:'spent tickets at the prize counter 🏆 (prize = which, tickets = cost). Prizes are TROPHIES, not fashion — the stand is what you choose to look like, the pier is proof of what you did',
   beach_grabber_open:'walked the pier and looked in the claw machine 🕹. High opens with few wins = the grand prize is doing its job as a thing you keep looking at',
@@ -724,20 +725,22 @@ var EV_EXPLAIN = {
   beach_captain:'walked up to Captain Sabreface at the shipwreck boathouse (once per approach) — he talks sand and digging; opening his desk is its own event (beach_dig_desk)',
   beach_parasol:'walked to a parasol and flipped it ⛱ (color = which, open = up or folded) — a pure toy, no economy attached',
   beach_rally:'kept a volley going over the net 🏐 — fires only at rally 5, 10 and 25, so every count here is a real streak, not a tap',
-  beach_drift:'reached a drift bottle in from the shallows 🍾 (find = mappiece + n of 5, or empty once the map\'s whole) — the SECOND map-piece source alongside digging',
+  beach_drift:'reached a drift bottle in from the shallows 🍾 (find = mappiece + n of 5, or empty once the map’s whole) — the SECOND map-piece source alongside digging',
   beach_shelly:'walked up to Shelly at the shell board 🐚 (once per approach) — she reads your collection back at you',
-  beach_dig_desk:'tapped the shipwreck boathouse and opened Sabreface\'s salvage desk 🗺 — the torn map, their pieces, and their dig totals in one place',
-  beach_fish_start:'sat on a dock chair and the line went in 🎣 — the pier\'s slow loop begins',
-  beach_fish_catch:'reeled in a bite 🎣 (kind = fish / thing / tickets / coins, id = which). ⚠️ the coins kind is the bay\'s ONLY coin trickle (the old dig chest is retired) — small and day-capped; if it ever grows, the stand\'s prices are being devalued',
+  beach_dig_desk:'tapped the shipwreck boathouse and opened Sabreface’s salvage desk 🗺 — the torn map, their pieces, and their dig totals in one place',
+  beach_fish_start:'sat on a dock chair and the line went in 🎣 — the pier’s slow loop begins',
+  beach_fish_catch:'reeled in a bite 🎣 (kind = fish / thing / tickets / coins, id = which). ⚠️ the coins kind is the bay’s ONLY coin trickle (the old dig chest is retired) — small and day-capped; if it ever grows, the stand’s prices are being devalued',
   beach_fish_milestone:'filled the ledger to a milestone (have = species count: 5/10/15/20/25) and TICKETS paid out — there is always a next goal, and it always pays',
   beach_gil:'passed Gil at the foot of the dock (once per approach) — the keeper who turns a list of stats into a thing you want to finish',
   beach_ledger_open:'opened the 25-species fish ledger — the visible-gaps screen, same return-visit job as the shell board',
-  beach_specimen:'tapped a slot on a collection board for the close-up card 🔎 (kind = fish or shell; id = which, or "locked" for one they haven\'t found)',
-  beach_treasure:'followed the map to the X and POCKETED the daily treasure 🏴 (tickets = the haul). Once a day, date-seeded, NEVER empty — the map always pays, and it pays TICKETS, never coins, so it can\'t inflate the stand',
+  beach_specimen:'tapped a slot on a collection board for the close-up card 🔎 (kind = fish or shell; id = which, or "locked" for one they haven’t found)',
+  beach_treasure:'followed the map to the X and POCKETED the daily treasure 🏴 (tickets = the haul). Once a day, date-seeded, NEVER empty — the map always pays, and it pays TICKETS, never coins, so it can’t inflate the stand',
   beach_emote:'tapped the ❤️ button and a heart floated up — local-only for now, the peer relay comes later',
   beach_swim:'waded into the sea for the first time this visit 🌊 — pure play, nothing pays',
   beach_multiplayer:'saw ANOTHER REAL BANANA on the bay (once per visit) — was the beach ever social for them',
-  beach_share_day:'composed the my-day-at-Banana-Bay postcard — shells, fish, best rally, time on the beach — the organic-reach card, same idea as rave_share_night' };
+  beach_share_day:'composed the my-day-at-Banana-Bay postcard — shells, fish, best rally, time on the beach — the organic-reach card, same idea as rave_share_night',
+  rave_quest_start:'a FLOOR QUEST began on their floor 🎯 (q = which: mop / power / jboss / pop / photo). Every 30 min the whole floor gets the same event at the same seeded minute — start vs done is the engagement funnel',
+  rave_quest_done:'FINISHED a floor quest 🎯 (q = which) — pays +12 hype and 6 coins, hard-bounded per quest. Compare with rave_quest_start per q to see which quests actually get played to the end' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };
