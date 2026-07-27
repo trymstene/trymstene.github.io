@@ -3679,7 +3679,10 @@ function init() {
       enter() {
         this.balloons = [];
         this.chutes = [];
-        this.club = document.querySelector('.rv-club');
+        // ⚠️ the chute host must be the STAGE BLOCK (.rv-booth: LED + DJ +
+        // speakers) — .rv-club is the WHOLE club box, so chutes fell over
+        // Barty and the action bar (Trym's "first batch" all over the UI)
+        this.club = document.querySelector('.rv-booth');
         this.dropped = 0;
         this.popped = 0;
         this.nextAt = 0;
