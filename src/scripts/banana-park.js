@@ -9,7 +9,8 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, POND, FOUNTAIN, DOORS, OB_RECTS, OB_CIRCLES, OVERLAYS,
+  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MEADOW, SWINGS, DOORS,
+  OB_RECTS, OB_CIRCLES, OVERLAYS,
 } from './park-geo.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
@@ -17,6 +18,67 @@ import {
 const view = document.getElementById('pkView');
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
+
+// ?parktest = the QA hook (same family as ?beachtest / ?cointest): all five
+// P3 features force-spawn near the plaza spawn, timers ignored.
+const PARK_TEST = typeof location !== 'undefined' && /[?&]parktest(?:=|&|$)/.test(location.search);
+
+const R = (x, y, w, h, f) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + f + '"/>';
+const SVG = (vb, body) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + vb + '" shape-rendering="crispEdges">' + body + '</svg>';
+
+// 🌰 the acorn — cap, warm body, inner shadow (banana-density pixel style)
+const ACORN_SVG = SVG('11 13',
+  R(4, 0, 3, 1, '#4a3018') + R(2, 1, 7, 1, '#6b4320') + R(1, 2, 9, 2, '#8a5a2b')
+  + R(2, 2, 3, 1, '#a8742a') + R(2, 4, 7, 1, '#e0a84e') + R(1, 5, 9, 4, '#c9913a')
+  + R(3, 5, 2, 3, '#e8b866') + R(2, 9, 7, 2, '#a8742a') + R(3, 11, 5, 1, '#8a5a2b')
+  + R(5, 12, 1, 1, '#6b4320'));
+
+// 🦋 the meadow's six — palette IS the species. The Gardener + the full
+// 20-species atlas are a later pass; this array is built to grow.
+const BFLY = [
+  { id: 'skipper', name: 'Lemon Skipper', a: '#ffe135', b: '#c99a1e' },
+  { id: 'meadowblue', name: 'Meadow Blue', a: '#7db9ff', b: '#3a6fd6' },
+  { id: 'monarch', name: 'Ember Monarch', a: '#ff9d3a', b: '#c2571a' },
+  { id: 'snowcap', name: 'Snowcap White', a: '#f5f2e8', b: '#b8bcd0' },
+  { id: 'duskwing', name: 'Plum Duskwing', a: '#b48ae0', b: '#6b3fa0' },
+  { id: 'glasswing', name: 'Leaf Glasswing', a: '#9fe08d', b: '#4d9e4a' },
+];
+// two frames as .f1/.f2 groups — CSS steps() them, the poof pattern
+const bflySvg = (a, b) => SVG('10 8',
+  '<g class="f1">'
+  + R(0, 0, 3, 3, a) + R(1, 3, 2, 2, b) + R(1, 1, 1, 1, b)
+  + R(7, 0, 3, 3, a) + R(7, 3, 2, 2, b) + R(8, 1, 1, 1, b)
+  + R(3, 0, 1, 1, '#3a2b18') + R(6, 0, 1, 1, '#3a2b18') + R(4, 1, 2, 5, '#3a2b18')
+  + '</g><g class="f2">'
+  + R(2, 0, 2, 4, a) + R(2, 3, 2, 1, b) + R(6, 0, 2, 4, a) + R(6, 3, 2, 1, b)
+  + R(4, 1, 2, 5, '#3a2b18')
+  + '</g>');
+
+// 🐿 two frames, alternate legs
+const SQ_SVG = SVG('14 10',
+  '<g class="f1">'
+  + R(0, 1, 3, 5, '#6b4320') + R(1, 0, 2, 2, '#6b4320') + R(3, 3, 7, 4, '#8a5a2b')
+  + R(9, 2, 3, 3, '#8a5a2b') + R(10, 1, 1, 1, '#6b4320') + R(11, 3, 1, 1, '#1c120a')
+  + R(5, 6, 4, 1, '#c9a15a') + R(4, 7, 1, 2, '#6b4320') + R(8, 7, 1, 2, '#6b4320')
+  + '</g><g class="f2">'
+  + R(0, 1, 3, 5, '#6b4320') + R(1, 0, 2, 2, '#6b4320') + R(3, 3, 7, 4, '#8a5a2b')
+  + R(9, 2, 3, 3, '#8a5a2b') + R(10, 1, 1, 1, '#6b4320') + R(11, 3, 1, 1, '#1c120a')
+  + R(5, 6, 4, 1, '#c9a15a') + R(3, 7, 2, 1, '#6b4320') + R(9, 7, 2, 1, '#6b4320')
+  + '</g>');
+
+// 🌰 ground near the tree clumps + stumps — jittered + blocked()-tested on spawn
+const ACORN_SPOTS = [[300, 650], [1040, 300], [1215, 985], [1650, 265], [2480, 985],
+  [900, 530], [1005, 345], [878, 572], [735, 1000], [2555, 330], [400, 558]];
+const TEST_ACORN_SPOTS = [[1300, 860], [1450, 870], [1360, 910]];
+
+const WISHES = [
+  'you wish for a sunny day. granted — look around.',
+  'you wish the rave never closes. it never has.',
+  'you wish for the giant plush. the claw machine heard that.',
+  'you wish for more acorns. the trees will see what they can do.',
+  'you wish somebody walks up the road right now. keep watching it.',
+  'you keep this one to yourself. the fountain understands.',
+];
 
 function init() {
   const W = WORLD.w, H = WORLD.h;
@@ -99,6 +161,52 @@ function init() {
     world.appendChild(f);
   })();
 
+  // 🛝 THE RIDES — SWINGS[0..1] are the swing (12 frames), [2..3] the spring
+  // riders (8 frames). Each entry anchors bottom-centre at (x, y), 72×72 —
+  // frame 0 of the strip IS the baked pose, so the animated overlay lands
+  // pixel-exact over the plate and only shows while somebody's on it.
+  const RIDES = SWINGS.map((s, i) => ({
+    x: s[0], y: s[1], w: s[2], h: s[3],
+    strip: i < 2 ? 'a-swing.png' : 'a-spring.png', n: i < 2 ? 12 : 8,
+  }));
+  RIDES.forEach((q) => {
+    const el = document.createElement('div');
+    el.className = 'pk-ride pk-ride--' + q.n;
+    el.style.left = pct(q.x - q.w / 2, W); el.style.top = pct(q.y - q.h, H);
+    el.style.width = pct(q.w, W); el.style.height = pct(q.h, H);
+    el.style.backgroundImage = "url('/assets/park/" + q.strip + "')";
+    el.style.zIndex = String(100 + q.y);
+    world.appendChild(el);
+    q.el = el;
+  });
+  let riding = null, pendingRide = null;
+  function mountRide(q) {
+    riding = q;
+    q.el.classList.add('is-on');
+    meEl.style.display = 'none';   // locally only — peers still get your pos
+    tgt.x = pos.x; tgt.y = pos.y;
+  }
+  function dismount() {
+    if (!riding) return;
+    riding.el.classList.remove('is-on');
+    riding = null;
+    meEl.style.display = '';
+    meWX = NaN;                    // force a position rewrite next frame
+  }
+  function tapRide(wx, wy) {
+    const q = RIDES.find((r2) => Math.abs(wx - r2.x) < 40 && wy > r2.y - r2.h - 8 && wy < r2.y + 10);
+    if (!q) return false;
+    const sx = q.x, sy = q.y + 24;     // +24 clears the spring bases' colliders
+    if (Math.hypot(pos.x - sx, pos.y - sy) < 30) {
+      pos.x = sx; pos.y = sy; meWX = NaN;
+      mountRide(q);
+    } else {
+      tgt.x = sx; tgt.y = sy;
+      pendingRide = { q, x: sx, y: sy };
+    }
+    return true;
+  }
+
   // ---- geometry -----------------------------------------------------------
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   // the BOUND inset is the wall, except the two door corridors through it
@@ -139,11 +247,17 @@ function init() {
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.pk-whud') || e.target.closest('.pk-actions')) return;
+    if (e.target.closest('.pk-whud') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel')) return;
     const r = view.getBoundingClientRect();
-    tgt.x = (e.clientX - r.left + camX) / scale;
-    tgt.y = (e.clientY - r.top + camY) / scale;
+    const wx = (e.clientX - r.left + camX) / scale;
+    const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
+    pendingRide = null;
+    if (riding) dismount();          // any tap off the ride hops you off
+    if (tapBfly(wx, wy)) return;
+    if (tapRide(wx, wy)) return;
+    tgt.x = wx;
+    tgt.y = wy;
   });
 
   // ---- 🚪 the doors: hysteresis, never an instant teleport ----------------
@@ -191,6 +305,264 @@ function init() {
     setTimeout(() => d.remove(), 900);
   }
 
+  // the big-moment toast — one element, one timer that only toggles a class
+  const toastEl = document.getElementById('pkToast');
+  let toastTimer = null;
+  function toast(text, ms) {
+    toastEl.textContent = text;
+    toastEl.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), ms || 2400);
+  }
+
+  // ---- 🌰 ACORNS: the park's shells — a calm XP trickle -------------------
+  // Walk-over pickup, +2 rep (the same world stat the shells/floor feed).
+  // All clocks ride the rAF step loop, so a hidden tab spawns nothing.
+  const acorns = [];
+  const ACORN_MAX = 3;
+  let acornNextAt = 0, acornTracked = false;
+  function acornSpawn(spots) {
+    if (acorns.length >= ACORN_MAX) return;
+    const list = spots || ACORN_SPOTS;
+    for (let t = 0; t < 14; t++) {
+      const s = list[Math.floor(Math.random() * list.length)];
+      const x = s[0] + (Math.random() * 32 - 16), y = s[1] + (Math.random() * 24 - 12);
+      if (blocked(x, y)) continue;
+      if (acorns.some((a) => Math.hypot(a.x - x, a.y - y) < 60)) continue;
+      const el = document.createElement('div');
+      el.className = 'pk-acorn';
+      el.innerHTML = ACORN_SVG;
+      el.style.left = pct(x, W);
+      el.style.top = pct(y, H);
+      world.appendChild(el);
+      acorns.push({ el, x, y });
+      return;
+    }
+  }
+  function acornTick(now) {
+    if (now > acornNextAt) {
+      acornNextAt = now + 25000 + Math.random() * 15000;
+      acornSpawn(PARK_TEST ? TEST_ACORN_SPOTS : null);
+    }
+    for (let i = acorns.length - 1; i >= 0; i--) {
+      const a = acorns[i];
+      if (Math.hypot(pos.x - a.x, (pos.y - 6) - a.y) < 34) {
+        a.el.remove();
+        acorns.splice(i, 1);
+        passStat('rep', 2);
+        refreshHud();               // the XP lands on the LEVEL bar right away
+        float(a.x, a.y - 12, '+2');
+        if (!acornTracked) { acornTracked = true; track('park_acorn'); }
+      }
+    }
+  }
+  acornSpawn(PARK_TEST ? TEST_ACORN_SPOTS : null);
+  if (PARK_TEST) { acornSpawn(TEST_ACORN_SPOTS); acornSpawn(TEST_ACORN_SPOTS); }
+
+  // ---- 🦋 BUTTERFLIES + THE MEADOW (collection v1, keeper comes later) ----
+  // Three flit over the meadow, one wanders the park. Rush one and it darts
+  // off; walk up slowly (a tap near it stops you short) and tap it up close.
+  const bflyCol = () => { try { return JSON.parse(localStorage.getItem('pk_bfly') || '{}'); } catch (e) { return {}; } };
+  const bflyHave = () => { const c = bflyCol(); return BFLY.filter((s) => c[s.id] > 0).length; };
+  const M_AREA = { x0: MEADOW[0] + 40, y0: MEADOW[1] + 30, x1: MEADOW[2] - 40, y1: MEADOW[3] - 30 };
+  const ALL_AREA = PARK_TEST
+    ? { x0: 1240, y0: 740, x1: 1520, y1: 900 }
+    : { x0: BOUND + 60, y0: BOUND + 60, x1: W - BOUND - 60, y1: H - BOUND - 60 };
+  const bflys = [{ area: M_AREA }, { area: M_AREA }, { area: M_AREA }, { area: ALL_AREA }];
+  function bflyAim(b) {
+    b.tx = b.area.x0 + Math.random() * (b.area.x1 - b.area.x0);
+    b.ty = b.area.y0 + Math.random() * (b.area.y1 - b.area.y0);
+    b.spd = 45 + Math.random() * 30;
+    b.fleeing = false;
+  }
+  function bflySpawn(b) {
+    b.sp = BFLY[Math.floor(Math.random() * BFLY.length)];
+    const el = document.createElement('div');
+    el.className = 'pk-bfly';
+    el.innerHTML = bflySvg(b.sp.a, b.sp.b);
+    el.style.zIndex = '1500';
+    world.appendChild(el);
+    b.el = el;
+    b.gone = false;
+    b.phase = Math.random() * 6.28;
+    b.x = b.area.x0 + Math.random() * (b.area.x1 - b.area.x0);
+    b.y = b.area.y0 + Math.random() * (b.area.y1 - b.area.y0);
+    b.perchUntil = 0;
+    b.dir = 1;
+    bflyAim(b);
+  }
+  bflys.forEach(bflySpawn);
+  function bflyTick(dt, now) {
+    for (const b of bflys) {
+      if (b.gone) { if (now > b.respawnAt) bflySpawn(b); continue; }
+      const pd = Math.hypot(pos.x - b.x, pos.y - b.y);
+      // barrelled at → it's off, well out of reach
+      if (pd < 85 && pSpeed > 115 && !b.fleeing) {
+        const ang = Math.atan2(b.y - pos.y, b.x - pos.x);
+        b.tx = Math.max(b.area.x0, Math.min(b.area.x1, b.x + Math.cos(ang) * 190));
+        b.ty = Math.max(b.area.y0, Math.min(b.area.y1, b.y + Math.sin(ang) * 130));
+        b.spd = 175;
+        b.fleeing = true;
+        b.perchUntil = 0;
+      }
+      if (b.perchUntil > now) { /* settled — still flapping */ }
+      else {
+        const dx = b.tx - b.x, dy = b.ty - b.y;
+        const d = Math.hypot(dx, dy);
+        if (d < 4) { b.perchUntil = now + 800 + Math.random() * 2600; bflyAim(b); }
+        else {
+          const m = Math.min(d, b.spd * dt);
+          b.x += (dx / d) * m;
+          b.y += (dy / d) * m;
+          if (Math.abs(dx) > 4) b.dir = dx < 0 ? -1 : 1;
+        }
+      }
+      const bob = Math.sin(now / 300 + b.phase) * 4;
+      b.el.style.left = pct(b.x, W);
+      b.el.style.top = pct(b.y - 26 + bob, H);
+      b.el.style.transform = 'translate(-50%,-50%)' + (b.dir < 0 ? ' scaleX(-1)' : '');
+    }
+  }
+  function catchBfly(b) {
+    const sp = b.sp;
+    const col = bflyCol();
+    col[sp.id] = (col[sp.id] || 0) + 1;
+    try { localStorage.setItem('pk_bfly', JSON.stringify(col)); } catch (e) {}
+    b.el.remove();
+    b.gone = true;
+    b.respawnAt = performance.now() + 20000 + Math.random() * 15000;
+    float(b.x, b.y - 34, '🦋');
+    toast('🦋 ' + sp.name + ' caught!');
+    refreshBflyHud();
+  }
+  function tapBfly(wx, wy) {
+    const b = bflys.find((q) => !q.gone && Math.hypot(wx - q.x, wy - (q.y - 26)) < 46);
+    if (!b) return false;
+    if (Math.hypot(pos.x - b.x, pos.y - b.y) < 78) { catchBfly(b); return true; }
+    // approach: stop SHORT of it, so the last steps are yours to take slowly
+    const d = Math.hypot(b.x - pos.x, b.y - pos.y) || 1;
+    tgt.x = b.x - ((b.x - pos.x) / d) * 55;
+    tgt.y = b.y - ((b.y - pos.y) / d) * 55;
+    return true;
+  }
+  // the HUD pill + the atlas popup
+  const bflyBtn = document.getElementById('pkBflyBtn');
+  const bflyNEl = document.getElementById('pkBflyN');
+  const atlasPanel = document.getElementById('pkAtlas');
+  const atlasGrid = document.getElementById('pkAtlasGrid');
+  const atlasSub = document.getElementById('pkAtlasSub');
+  function refreshBflyHud() {
+    const n = bflyHave();
+    bflyBtn.classList.toggle('is-dim', n === 0);
+    bflyNEl.textContent = n ? n + '/' + BFLY.length : '—';
+  }
+  function openAtlas() {
+    const col = bflyCol();
+    atlasGrid.innerHTML = BFLY.map((s) => {
+      const n = col[s.id] || 0;
+      return '<div class="pk-bslot' + (n ? '' : ' is-missing')
+        + '" aria-label="' + (n ? s.name : 'not caught yet') + '">'
+        + bflySvg(s.a, s.b) + '<span>' + (n ? s.name : '???') + '</span>'
+        + (n > 1 ? '<b>' + n + '</b>' : '') + '</div>';
+    }).join('');
+    atlasSub.innerHTML = '🦋 <b>' + bflyHave() + '</b> of ' + BFLY.length
+      + ' kinds caught · walk up slowly, then tap';
+    atlasPanel.hidden = false;
+  }
+  bflyBtn.addEventListener('click', openAtlas);
+  document.getElementById('pkAtlasClose').addEventListener('click', () => { atlasPanel.hidden = true; });
+  atlasPanel.addEventListener('click', (e) => { if (e.target === atlasPanel) atlasPanel.hidden = true; });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !atlasPanel.hidden) atlasPanel.hidden = true; });
+  refreshBflyHud();
+
+  // ---- 🐿 SQUIRRELS: locals, never interactive ----------------------------
+  // The crab pattern: a home they orbit, darts with long stillnesses, a bolt
+  // when you get close — and they never set foot on the plaza.
+  const inPlaza = (x, y) => {
+    const ex = (x - PLAZA.x) / PLAZA.rx, ey = (y - PLAZA.y) / PLAZA.ry;
+    return ex * ex + ey * ey < 1;
+  };
+  const SQ_HOMES = PARK_TEST ? [[1500, 880], [1180, 970]] : [[300, 640], [1180, 970]];
+  const squirrels = [];
+  SQ_HOMES.forEach(([hx, hy]) => {
+    const el = document.createElement('div');
+    el.className = 'pk-squirrel is-still';
+    el.innerHTML = SQ_SVG;
+    el.style.left = pct(hx, W);
+    el.style.top = pct(hy, H);
+    world.appendChild(el);
+    squirrels.push({ el, hx, hy, x: hx, y: hy, tx: hx, ty: hy,
+      wait: Math.random() * 3, flee: 0, face: 1, still: true });
+  });
+  function sqPick(s) {
+    const a = Math.random() * Math.PI * 2;
+    const r2 = 50 + Math.random() * 90;
+    let tx = s.x + Math.cos(a) * r2, ty = s.y + Math.sin(a) * r2 * 0.6;
+    if (Math.hypot(tx - s.hx, ty - s.hy) > 140) { tx = s.hx; ty = s.hy; }
+    if (!blocked(tx, ty) && !inPlaza(tx, ty)) { s.tx = tx; s.ty = ty; }
+  }
+  function sqStep(s, dt) {
+    const fear = Math.hypot(pos.x - s.x, pos.y - s.y);
+    if (fear < 70) {
+      const ang = Math.atan2(s.y - pos.y, s.x - pos.x);
+      const tx = s.x + Math.cos(ang) * 130, ty = s.y + Math.sin(ang) * 65;
+      if (!inPlaza(tx, ty)) { s.tx = tx; s.ty = ty; }
+      s.flee = 0.9; s.wait = 0;
+    }
+    s.flee = Math.max(0, s.flee - dt);
+    if (s.wait > 0) {
+      s.wait -= dt;
+      if (!s.still) { s.still = true; s.el.classList.add('is-still'); }
+      return;
+    }
+    const dx = s.tx - s.x, dy = s.ty - s.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 3) { s.wait = 1.5 + Math.random() * 4; sqPick(s); return; }
+    if (s.still) { s.still = false; s.el.classList.remove('is-still'); }
+    const sp = (s.flee > 0 ? 170 : 55) * dt;
+    const nx = s.x + (dx / d) * Math.min(d, sp);
+    const ny = s.y + (dy / d) * Math.min(d, sp);
+    if (!blocked(nx, ny) && !inPlaza(nx, ny)) { s.x = nx; s.y = ny; }
+    else { s.wait = 0.5; sqPick(s); return; }
+    if (Math.abs(dx) > 5) s.face = dx < 0 ? -1 : 1;
+    s.el.style.left = pct(s.x, W);
+    s.el.style.top = pct(s.y, H);
+    s.el.style.transform = 'translate(-50%,-100%)' + (s.face < 0 ? ' scaleX(-1)' : '');
+    depth(s.el, s.y);
+  }
+
+  // ---- 🪙 THE FOUNTAIN COIN TOSS — an honest tiny sink, no payout ---------
+  const TOSS_AT = { x: FOUNTAIN[0], y: FOUNTAIN[1] + 10 };
+  const tossBtn = document.getElementById('pkToss');
+  let tossShown = false, tossTracked = false, tossBusy = false;
+  let wishIdx = Math.floor(Math.random() * WISHES.length);
+  function tossTick() {
+    const near = Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120;
+    if (near !== tossShown) { tossShown = near; tossBtn.hidden = !near; }
+  }
+  tossBtn.addEventListener('click', () => {
+    if (tossBusy) return;
+    if (coinBal() < 1) { toast('no coins — the rave floor drops them'); return; }
+    passStat('coins_spent', 1);
+    refreshHud();
+    if (!tossTracked) { tossTracked = true; track('park_toss'); }
+    tossBusy = true;
+    const c = document.createElement('div');
+    c.className = 'pk-coinfly';
+    c.innerHTML = '<img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" />';
+    c.style.left = pct(pos.x, W);
+    c.style.top = pct(pos.y - 34, H);
+    world.appendChild(c);
+    const bx = FOUNTAIN[0] + (Math.random() * 36 - 18), by = FOUNTAIN[1] - 32;
+    requestAnimationFrame(() => { c.style.left = pct(bx, W); c.style.top = pct(by, H); });
+    setTimeout(() => {          // the timer takes its own element with it
+      c.remove();
+      float(bx, by, '✦');
+      toast('🪙 ' + WISHES[wishIdx++ % WISHES.length], 3400);
+      tossBusy = false;
+    }, 720);
+  });
+
   // ---- 🌍 THE WORLD HUD — the refined pill strip, park edition ------------
   const lvlNEl = document.getElementById('pkLvlN');
   const lvlFillEl = document.getElementById('pkLvlFill');
@@ -227,14 +599,19 @@ function init() {
 
   // ---- the loop -----------------------------------------------------------
   let last = performance.now();
+  let pSpeed = 0, prevPX = 0, prevPY = 0;   // smoothed — the butterflies read it
   function step(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
-    if (kx || ky) { tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30; hint(false); }
+    if (kx || ky) {
+      tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30;
+      hint(false); pendingRide = null;
+      if (riding) dismount();
+    }
     const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
     const d = Math.hypot(dx, dy);
-    if (d > 1.5) {
+    if (d > 1.5 && !riding) {
       const m = Math.min(d, SPEED * dt);
       const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
       if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
@@ -257,6 +634,19 @@ function init() {
         depth(meEl, pos.y);
       }
     }
+    // walked all the way to a ride you tapped → hop on
+    if (pendingRide && Math.hypot(pos.x - pendingRide.x, pos.y - pendingRide.y) < 24) {
+      const pr = pendingRide; pendingRide = null;
+      pos.x = pr.x; pos.y = pr.y; meWX = NaN;
+      mountRide(pr.q);
+    }
+    const inst = Math.hypot(pos.x - prevPX, pos.y - prevPY) / Math.max(dt, 0.001);
+    pSpeed = pSpeed * 0.8 + inst * 0.2;
+    prevPX = pos.x; prevPY = pos.y;
+    acornTick(now);
+    bflyTick(dt, now);
+    squirrels.forEach((s) => sqStep(s, dt));
+    tossTick();
     doorTick();
     parkSendMove(now);
     cam();
@@ -359,6 +749,16 @@ function init() {
     parkSendAt = now;
     lastSent.x = pos.x; lastSent.y = pos.y;
     parkRoom.send({ t: 'move', x: toPctX(pos.x), y: toPctY(pos.y) });
+  }
+
+  // the QA reach-in (same family as ?beachtest): place the banana, top up
+  // coins, read the live rosters — nothing here exists in a normal session
+  if (PARK_TEST) {
+    window.__park = {
+      pos, tgt, acorns, bflys, squirrels, RIDES,
+      coins: (n) => { passStat('coins_earned', n); refreshHud(); },
+      warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
+    };
   }
 
   meEl.style.left = pct(pos.x, W);

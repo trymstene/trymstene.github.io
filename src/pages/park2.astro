@@ -132,7 +132,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-whud__lvlbar i { display: block; height: 100%; width: 0; background: #ffe135; transition: width 0.5s ease; }
     .pk-whud__coins img { display: block; image-rendering: pixelated; }
     .pk-whud__coins b { color: #ffe135; }
-    .pk-whud__col { opacity: 0.55; }   /* collections — placeholder until P3 */
     .pk-whud__crowd { color: #8affc0; }
 
     /* 🎮 THE ACTION BAR — an in-flow band BELOW the map: React · Sound */
@@ -157,6 +156,132 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-cut.is-on { opacity: 1; }
     @media (prefers-reduced-motion: reduce) { .pk-cut { transition: none; } }
 
+    /* 🌰 acorns on the grass — a rise-in like the bay's shells */
+    .pk-acorn {
+      position: absolute; z-index: 3; width: 0.75%; aspect-ratio: 11 / 13;
+      transform: translate(-50%, -50%); pointer-events: none;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.45));
+      animation: pkRise 0.45s ease-out;
+    }
+    .pk-acorn svg { width: 100%; height: 100%; display: block; }
+    @keyframes pkRise {
+      0% { transform: translate(-50%, calc(-50% + 10px)) scale(0.5); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-acorn { animation: none; } }
+
+    /* 🦋 butterflies — two SVG frames stepped like the poof */
+    .pk-bfly {
+      position: absolute; width: 0.85%; aspect-ratio: 10 / 8;
+      pointer-events: none;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.3));
+    }
+    .pk-bfly svg, .pk-bslot svg { width: 100%; height: 100%; display: block; }
+    .pk-bfly svg .f1, .pk-bslot svg .f1 { animation: pkFlapA 0.32s steps(1) infinite; }
+    .pk-bfly svg .f2, .pk-bslot svg .f2 { animation: pkFlapB 0.32s steps(1) infinite; }
+    @keyframes pkFlapA { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    @keyframes pkFlapB { 0%, 49% { opacity: 0; } 50%, 100% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .pk-bfly svg .f1, .pk-bslot svg .f1 { animation: none; }
+      .pk-bfly svg .f2, .pk-bslot svg .f2 { animation: none; opacity: 0; }
+    }
+
+    /* 🐿 squirrels — legs stop when the squirrel does (crab rule) */
+    .pk-squirrel {
+      position: absolute; width: 0.95%; aspect-ratio: 14 / 10;
+      transform: translate(-50%, -100%); pointer-events: none;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
+    }
+    .pk-squirrel svg { width: 100%; height: 100%; display: block; }
+    .pk-squirrel svg .f1 { animation: pkFlapA 0.22s steps(1) infinite; }
+    .pk-squirrel svg .f2 { animation: pkFlapB 0.22s steps(1) infinite; }
+    .pk-squirrel.is-still svg .f1 { animation: none; opacity: 1; }
+    .pk-squirrel.is-still svg .f2 { animation: none; opacity: 0; }
+
+    /* 🛝 the ride animation overlays — hidden until somebody's on; frame 0 of
+       each strip is the baked pose, so on/off never pops. End values per the
+       stepping rule: 100% × N / (N − 1). */
+    .pk-ride {
+      position: absolute; display: none; pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+    }
+    .pk-ride.is-on { display: block; }
+    .pk-ride--12 { background-size: 1200% 100%; animation: pkRide12 1.15s steps(12) infinite; }
+    .pk-ride--8 { background-size: 800% 100%; animation: pkRide8 0.95s steps(8) infinite; }
+    @keyframes pkRide12 { from { background-position-x: 0%; } to { background-position-x: 109.0909%; } }
+    @keyframes pkRide8 { from { background-position-x: 0%; } to { background-position-x: 114.2857%; } }
+    @media (prefers-reduced-motion: reduce) { .pk-ride--12, .pk-ride--8 { animation: none; } }
+
+    /* 🪙 the tossed coin — left/top glide + an inner lift = the arc */
+    .pk-coinfly {
+      position: absolute; pointer-events: none;
+      transition: left 0.7s linear, top 0.7s ease-in;
+    }
+    .pk-coinfly img {
+      display: block; image-rendering: pixelated;
+      animation: pkCoinArc 0.7s ease-out forwards;
+    }
+    @keyframes pkCoinArc {
+      0% { transform: translateY(0) rotate(0); }
+      45% { transform: translateY(-46px) rotate(180deg); }
+      100% { transform: translateY(0) rotate(360deg); }
+    }
+    .pk-act--toss { background: #ffe135; color: #10240f; padding: 0.55rem 1.05rem; }
+    .pk-act--toss[hidden] { display: none; }
+
+    /* the big-moment toast */
+    .pk-toast {
+      position: absolute; left: 50%; top: 18%; transform: translate(-50%, 0) scale(0.9);
+      z-index: 20; max-width: calc(100% - 32px); text-align: center;
+      background: #101a10; color: #ffe135; border: 3px solid #ffe135;
+      box-shadow: 4px 4px 0 #000; padding: 0.5rem 0.85rem;
+      font-weight: 800; font-size: 0.88rem; line-height: 1.35;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    .pk-toast.is-on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+    /* 🦋 the atlas popup (the bay's collection card, park edition) */
+    .pk-panel {
+      position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
+      background: rgba(0, 0, 0, 0.55); padding: 0.8rem;
+    }
+    .pk-panel[hidden] { display: none; }
+    .pk-card {
+      background: #101a10; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      padding: 0.9rem 1rem; max-width: 380px; width: 100%; max-height: 100%; overflow: auto;
+    }
+    .pk-card h2 {
+      font-family: "Archivo Black", sans-serif; color: #8de08d; font-size: 1rem;
+      margin: 0 0 0.15rem; letter-spacing: 0.03em;
+    }
+    .pk-cardx {
+      position: sticky; top: 0; float: right; z-index: 3; margin: -0.2rem -0.3rem 0 0.4rem;
+      appearance: none; background: none; border: 0; line-height: 1;
+      color: #fffdf5; font-size: 1.25rem; font-weight: 800; cursor: pointer;
+      opacity: 0.7; padding: 4px 6px;
+    }
+    .pk-cardx:hover { opacity: 1; }
+    .pk-panel__sub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
+    .pk-panel__sub b { color: #ffd98a; opacity: 1; }
+    .pk-bgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+    .pk-bslot {
+      position: relative; border: 2px solid #000; background: #182a16;
+      display: grid; place-items: center; gap: 0.25rem; padding: 0.55rem 0.25rem 0.45rem;
+    }
+    .pk-bslot svg { width: 60%; height: auto; aspect-ratio: 10 / 8; }
+    .pk-bslot span { font-size: 0.58rem; font-weight: 800; text-align: center; line-height: 1.2; }
+    .pk-bslot.is-missing svg { filter: brightness(0) opacity(0.35); }
+    .pk-bslot.is-missing span { opacity: 0.5; }
+    .pk-bslot b {
+      position: absolute; right: -2px; bottom: -4px; font-size: 0.55rem; font-weight: 800;
+      background: #8de08d; color: #10240f; border: 2px solid #000; padding: 0 0.15rem;
+    }
+    /* the HUD collection pill is a real button */
+    .pk-whud button { font-family: inherit; appearance: none; cursor: pointer; }
+    .pk-whud__col.is-dim { opacity: 0.55; }
+    .pk-whud__col b { color: #ffd98a; }
+
     .pk-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
     .pk-btn {
       display: grid; place-items: center; text-align: center; flex: 1 1 160px;
@@ -179,15 +304,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="pk-whud" id="pkWhud">
           <span class="pk-whud__lvl"><span id="pkLvlN">LVL 1</span><span class="pk-whud__lvlbar"><i id="pkLvlFill"></i></span></span>
           <span class="pk-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="pkCoinN">0</b></span>
-          <span class="pk-whud__col" title="collections — coming soon">🦋 —</span>
+          <button class="pk-whud__col is-dim" id="pkBflyBtn" type="button" aria-label="butterfly collection">🦋 <b id="pkBflyN">—</b></button>
           <span class="pk-whud__crowd"><span aria-hidden="true">◍</span> <span id="pkCrowd">solo</span></span>
         </div>
         <div class="pk-hint" id="pkHint">tap to walk · arrow keys / WASD work too</div>
         <div class="pk-exitstrip" id="pkExitStrip" role="status" aria-live="polite"></div>
+        <div class="pk-toast" id="pkToast" role="status" aria-live="polite"></div>
+
+        <!-- 🦋 THE ATLAS — the meadow collection; silhouettes for the uncaught -->
+        <div class="pk-panel" id="pkAtlas" hidden>
+          <div class="pk-card" role="dialog" aria-label="Butterfly collection">
+            <button class="pk-cardx" id="pkAtlasClose" type="button" aria-label="close">✕</button>
+            <h2>the meadow's butterflies</h2>
+            <p id="pkAtlasSub" class="pk-panel__sub"></p>
+            <div class="pk-bgrid" id="pkAtlasGrid"></div>
+          </div>
+        </div>
       </div><!-- /.pk-view -->
 
-      <!-- 🎮 THE ACTION BAR — React · Sound -->
+      <!-- 🎮 THE ACTION BAR — 🪙 toss (near the fountain) · React · Sound -->
       <div class="pk-actions" aria-label="park actions">
+        <button class="pk-act pk-act--toss" id="pkToss" type="button" hidden>🪙 toss</button>
         <button class="pk-act pk-act--icon" id="pkEmote" type="button" aria-label="react">❤️</button>
         <button class="pk-act pk-act--icon" id="pkAudio" type="button" aria-label="sound" aria-pressed="false">🔇</button>
       </div>

@@ -400,11 +400,29 @@ SWING_BOX = ('rect', -52, -20, 52, 6)
 ROCK_BOX = ('circle', 20)
 
 
+def dedisc(img):
+    """strip the pack's baked-in grass mound under trees/bushes/props — its
+    green never matches our lawn, so every tree stood on an off-shade disc
+    (Trym round 9). Bottom band only; greens go transparent, trunk browns and
+    outlines survive (mound greens all have g > r+30)."""
+    img = img.convert('RGBA')
+    p = img.load()
+    h = img.height
+    y0 = int(h * (0.84 if h >= 100 else 0.84))   # 0.74/0.80 nibbled the
+    # low-crowned purple-shadow species; 0.84 = below every crown
+    for y in range(y0, h):
+        for x in range(img.width):
+            r, g, b, a = p[x, y]
+            if a and g > r + 30 and g > 70:
+                p[x, y] = (0, 0, 0, 0)
+    return img
+
+
 def place(name, cx, base, factor=1, colors=10, warm=0.06, sat=1.08, con=1.05,
           flip=False, shade=True, sh=0.30, scale=PROP, solid=None, layer=False):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
-        _cache[key] = blockify(load_pack(name), factor=factor, colors=colors,
+        _cache[key] = blockify(dedisc(load_pack(name)), factor=factor, colors=colors,
                                warm=warm, sat=sat, con=con)
     s = _cache[key]
     if scale != 1.0:
