@@ -855,7 +855,7 @@ export class ParkRoom {
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
 
-  // ---- 🌱 THE GARDEN (P3b) — 8 slots in DO storage, wall-clock growth ----
+  // ---- 🌱 THE GARDEN (P3b) — shared slots in DO storage, wall-clock growth
   // Coins stay client-authoritative (no real money); the server only keeps
   // the shared plot truth: who planted what, when, and who watered it.
   async garden(request, url) {
@@ -864,8 +864,8 @@ export class ParkRoom {
     });
     let slots = (await this.state.storage.get('garden')) || [];
     if (!Array.isArray(slots)) slots = [];
-    // W3 grew the garden 8 → 16 (site B by the playground): stored arrays PAD
-    // to 16 — indices 0-7 (site A) must never reindex, live plants sit there
+    // the garden grew 8 → 16 (W3, site B) → 24 (site C NE): stored arrays PAD
+    // on read — low indices must never reindex, live plants sit there
     while (slots.length < GARDEN_SLOTS) slots.push(null);
     slots = slots.slice(0, GARDEN_SLOTS);
     const now = Date.now();
@@ -995,6 +995,48 @@ export class ParkRoom {
     let b = null;
     try { b = JSON.parse(await request.text()); } catch (e) {}
     if (!b || typeof b !== 'object') return json({ err: 'bad body' }, 400);
+    // 🚀 THE LAUNCH RESET — one-shot admin route for the go-live flip: the
+    // park opens DEAD (bloom at the floor, overrun with weeds, beds bare).
+    // Guarded by the LAUNCH_KEY secret (wrangler secret put LAUNCH_KEY);
+    // additive-only, no client ever calls it. POST /park-garden/launchreset
+    // { key } — 403 without the exact key.
+    if (url.pathname === '/garden/launchreset') {
+      if (!this.env || !this.env.LAUNCH_KEY || b.key !== this.env.LAUNCH_KEY) {
+        return json({ err: 'forbidden' }, 403);
+      }
+      for (let k = 0; k < GARDEN_SLOTS; k++) slots[k] = null;
+      bl.v = BLOOM_FLOOR;
+      bl.at = now;
+      // overgrown from minute one: fill to the dead-park cap in PATCHES —
+      // ~8 seed centers, then children beside living parents (the organism's
+      // own expansion rule), a few far jumps. Organic overgrowth, not confetti.
+      wd.list = [];
+      wd.nextAt = 0;
+      const rtaken = new Set();
+      const sprout = (pt) => {
+        rtaken.add(pt[0] + ',' + pt[1]);
+        wd.list.push({ id: crypto.randomUUID().slice(0, 8), x: pt[0], y: pt[1], bornAt: now });
+      };
+      let guard = 0;
+      while (wd.list.length < 60 && guard++ < 5000) {
+        if (wd.list.length < 8 || Math.random() < 0.06) {
+          const g = WEED_GRID[Math.floor(Math.random() * WEED_GRID.length)];
+          if (!rtaken.has(g[0] + ',' + g[1])) sprout(g);
+        } else {
+          const par = wd.list[Math.floor(Math.random() * wd.list.length)];
+          const near = WEED_GRID.filter((g) => !rtaken.has(g[0] + ',' + g[1])
+            && (g[0] - par.x) * (g[0] - par.x) + (g[1] - par.y) * (g[1] - par.y) <= WEED_NEAR * WEED_NEAR);
+          if (near.length) sprout(near[Math.floor(Math.random() * near.length)]);
+        }
+      }
+      tr.list = [];
+      tr.nextAt = 0;   // re-arms at the dead-park cadence on the next read
+      eg.list = [];
+      eg.nextAt = 0;   // bloom at the floor lays nothing anyway
+      await persist();
+      return json({ ok: 1, bloom: Math.round(bl.v), weeds: wd.list.length,
+        slotsCleared: GARDEN_SLOTS, trash: 0, eggs: 0 });
+    }
     const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
     const short = pass.slice(0, 8);
     if (!short) return json({ err: 'bad pass' }, 400);
@@ -1343,8 +1385,9 @@ const GARDEN_SEEDS = {
   wheat: { days: 6, stars: 5, price: 300 },
 };
 const gardenSeed = (id) => GARDEN_SEEDS[id] || { days: 99, stars: 1 };
-// 16 slots: 0-7 = site A by the meadow, 8-15 = W3's site B by the playground
-const GARDEN_SLOTS = 16;
+// 24 slots: 0-7 = site A by the meadow, 8-15 = W3's site B by the playground,
+// 16-23 = site C NE (the lawn the stand freed) — indices never reorder
+const GARDEN_SLOTS = 24;
 // each living plant lifts the bloom +0.06/h per star: a full 8-slot garden of
 // ⭐2-3s (~1.2/h) carries the base drift plus roughly 2-3 weeds' drag
 const BLOOM_STAR_FEED = 0.06;
@@ -1362,10 +1405,10 @@ const BLOOM_STAR_FEED = 0.06;
 //   60-79: cap 18 → ≤1.2/h ≈ 29/day — one visitor's chores cover it
 //   40-59: cap 28 → ≤1.7/h ≈ 41/day
 //   <40: cap 60 → ≤3.3/h ≈ 79/day — the overrun LOOK, but pulling the lot
-//   pays +180 bloom and kills the drag; the floor at 15 keeps it never-hopeless
+//   pays +180 bloom and kills the drag; the floor keeps it never-hopeless
 const WEED_NEAR = 110;             // a child sprouts this close to its parent
 const WEED_POLLINATE = 0.15;       // share of spawns that jump far instead
-const BLOOM_FLOOR = 15;
+const BLOOM_FLOOR = 5;             // launch-era floor (was 15) — properly dead, never hopeless
 const BLOOM_BASE_DRIFT = 0.3;      // per hour, always
 const BLOOM_WEED_DRAG = 0.05;      // per hour, per live weed
 const BLOOM_PULL = 3, BLOOM_WATER = 2, BLOOM_PLANT = 6;

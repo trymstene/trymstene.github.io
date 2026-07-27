@@ -292,13 +292,36 @@ const PHASE_LINES = [
   '🦋 the park is thriving — hold it here and an egg can come out golden.',
 ];
 
-const WISHES = [
-  'you wish for a sunny day. granted — look around.',
-  'you wish the rave never closes. it never has.',
-  'you wish for the giant plush. the claw machine heard that.',
-  'you wish for more acorns. the trees will see what they can do.',
-  'you wish somebody walks up the road right now. keep watching it.',
-  'you keep this one to yourself. the fountain understands.',
+// ⛲ the fountain's answers — banana-lore wisdom, 8-ball register: warm,
+// cryptic, a little absurd. Lowercase world voice. DRY lines join the pool
+// only while the fountain stands empty (phases 0-1).
+const WISDOM = [
+  'the peel remembers what the fruit forgets.',
+  'even the greenest banana ripens.',
+  'the bunch is stronger than the banana.',
+  'a banana never slips on its own peel. almost never.',
+  'brown spots are just stories the sun wrote.',
+  'you were not born yellow. you got there.',
+  'the sweetest fruit hangs from the tiredest tree.',
+  'dance like the floor is watching. it is.',
+  'what the rave takes, the park gives back.',
+  'a coin sinks. a wish floats. that is the trade.',
+  'the acorn does not hurry. and yet, the oak.',
+  'stand tall. bend when the wind says so.',
+  'the second banana is somebody’s first.',
+  'ripeness is not a race.',
+  'the pond asks no questions. that is why the ducks like it.',
+  'every peel opens from one end or the other. both are correct.',
+  'the weeds return. so do you. that is the whole arrangement.',
+  'somewhere a shell is missing you back.',
+  'the watered plant remembers who watered it.',
+  'this fountain has kept every wish ever tossed. yours is safe here.',
+];
+const DRY_WISDOM = [
+  'the water is gone but the wishing remains.',
+  'your coin lands in dust. the wish gets there anyway.',
+  'a dry fountain still listens. it just can’t splash back.',
+  'wish for rain first. the rest can wait.',
 ];
 
 function init() {
@@ -559,6 +582,7 @@ function init() {
   function exitTo(href) {
     if (leaving) return;
     leaving = true;
+    track('park_exit', { to: href.indexOf('/beach/') === 0 ? 'beach' : 'rave' });
     try { parkRoom.leave(); } catch (e) {}   // poof for everyone the instant you go
     if (REDUCED) { location.href = href; return; }
     cutEl.classList.add('is-on');
@@ -1002,7 +1026,7 @@ function init() {
   const OLD_TALK_AT = { x: OLD_X, y: OLD_Y + 46 };   // stand at the bench front
   const RM_TYPE = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let oldCloseTimer = null, typeTimer = null, typeText = '', typeAt = 0;
-  let oldSeq = null, oldSeqAt = 0, oldClosing = false;
+  let oldSeq = null, oldSeqAt = 0, oldClosing = false, oldNpcTracked = false;
   function oldTypeDone() {
     clearInterval(typeTimer);
     typeTimer = null;
@@ -1054,6 +1078,7 @@ function init() {
   }
   function openOld() {
     clearTimeout(oldCloseTimer);
+    if (!oldNpcTracked) { oldNpcTracked = true; track('park_npc', { who: 'oldpeel' }); }
     oldClosing = false;
     oldBackToQs();
     oldLineEl.textContent = OLD_GREET;
@@ -1092,15 +1117,22 @@ function init() {
     }
   }
 
-  // ---- 🪙 THE FOUNTAIN COIN TOSS — an honest tiny sink, no payout ---------
+  // ---- ⛲ THE WISHING FOUNTAIN — wish card → coin arc → the answer ---------
   // ⚠️ NO action-bar button — the world grammar is TAP THE THING (beach
-  // stalls, rides): tap the fountain to toss, walking over first if far
+  // stalls, rides): tap the fountain, walking over first if far. The WISH
+  // CARD is the accident guard (Trym: instant tosses fired too easily) —
+  // nothing spends until [make a wish]. The answer lands 8-ball style, and
+  // once in a while the fountain blesses back: coins, or a free-seed voucher.
   const TOSS_AT = { x: FOUNTAIN[0], y: FOUNTAIN[1] + 10 };
   let tossTracked = false, tossBusy = false;
-  let wishIdx = Math.floor(Math.random() * WISHES.length);
+  let wishIdx = Math.floor(Math.random() * WISDOM.length);
+  const VOUCHER_KEY = 'pk-seed-voucher';   // one at a time, spends on plant
+  const VOUCHER_MAX = 60;                  // the daisy/sunflower/tulip tier
+  const hasVoucher = () => { try { return localStorage.getItem(VOUCHER_KEY) === '1'; } catch (e) { return false; } };
+  const setVoucher = (on) => { try { if (on) localStorage.setItem(VOUCHER_KEY, '1'); else localStorage.removeItem(VOUCHER_KEY); } catch (e) {} };
   function tapFountain(wx, wy) {
     if (Math.hypot(wx - TOSS_AT.x, wy - TOSS_AT.y) > 80) return false;
-    if (Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120) { doToss(); return true; }
+    if (Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120) { openWishCard(); return true; }
     pendingToss = true;
     tgt.x = TOSS_AT.x;
     tgt.y = TOSS_AT.y + 92;
@@ -1109,10 +1141,22 @@ function init() {
   function tossTick() {
     if (pendingToss && Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120) {
       pendingToss = false;
-      doToss();
+      openWishCard();
     }
   }
-  function doToss() {
+  function openWishCard() {
+    if (tossBusy) return;
+    const bal = coinBal();
+    gardenBody.innerHTML = '<h2>⛲ the wishing fountain</h2>'
+      + (bal < 1
+        ? '<p class="pk-panel__sub">no coins — the rave floor drops them.</p>'
+        : '<p class="pk-panel__sub">toss a coin and make a wish? (you have ' + bal + ' 🪙)</p>'
+          + '<button class="pk-btn pk-gbtn" id="pkWishBtn" type="button">🪙 make a wish</button>');
+    const wb = document.getElementById('pkWishBtn');
+    if (wb) wb.addEventListener('click', () => { closeGarden(); doWish(); });
+    gardenPanel.hidden = false;
+  }
+  function doWish() {
     if (tossBusy) return;
     if (coinBal() < 1) { toast('no coins — the rave floor drops them'); return; }
     passStat('coins_spent', 1);
@@ -1129,10 +1173,43 @@ function init() {
     requestAnimationFrame(() => { c.style.left = pct(bx, W); c.style.top = pct(by, H); });
     setTimeout(() => {          // the timer takes its own element with it
       c.remove();
+      coinSplash(bx, by + 12);
       float(bx, by, '✦');
-      toast('🪙 ' + WISHES[wishIdx++ % WISHES.length], 3400);
       tossBusy = false;
+      wishAnswer();
     }, 720);
+  }
+  // the answer + the blessing roll: 72% wisdom only · 15% +4-10 🪙 · 10% a
+  // free-seed voucher (small seeds, one held at a time — falls through to
+  // coins while one is pending) · 3% jackpot +25 🪙. A mild sink still.
+  function wishAnswer() {
+    const pool = phase <= 1 ? WISDOM.concat(DRY_WISDOM) : WISDOM;
+    const line = pool[wishIdx++ % pool.length];
+    const r = Math.random();
+    let bless = '', result = 'wisdom';
+    if (r < 0.03) {
+      passStat('coins_earned', 25);
+      refreshHud();
+      bless = 'the fountain overflows — +25 🪙';
+      result = 'jackpot';
+    } else if (r < 0.13 && !hasVoucher()) {
+      setVoucher(true);
+      bless = '🎁 blessed — your next small seed is free';
+      result = 'seed';
+    } else if (r < 0.28) {
+      const n = 4 + Math.floor(Math.random() * 7);
+      passStat('coins_earned', n);
+      refreshHud();
+      bless = 'the fountain returns your kindness — +' + n + ' 🪙';
+      result = 'coins';
+    }
+    track('park_wish', { result });
+    gardenBody.innerHTML = '<h2>⛲ the fountain answers</h2>'
+      + '<p class="pk-wishline" id="pkWishLine">' + line + '</p>'
+      + (bless ? '<p class="pk-wishbless" id="pkWishBless">' + bless + '</p>' : '');
+    gardenPanel.hidden = false;
+    setTimeout(() => { const el = document.getElementById('pkWishLine'); if (el) el.classList.add('is-on'); }, 480);
+    if (bless) setTimeout(() => { const el = document.getElementById('pkWishBless'); if (el) el.classList.add('is-on'); }, 1500);
   }
 
   // ---- 🪙 THE COIN WINDOW — the world clock, staged diegetically ----------
@@ -1220,7 +1297,7 @@ function init() {
     hat: 'none', glasses: 'monocle', extras: {},
     top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
   };
-  let cartViewTracked = false, sparkleAt = 0;
+  let sparkleAt = 0;
   let keeperTimer = null, keeperIdx = 0;
   function merchParams() {
     let o = {};
@@ -1243,6 +1320,35 @@ function init() {
     drawComposite(keeperCtx, 360, 2, KEEPER_DRAW);
     drawApron(keeperCtx, 360);
   }
+  // 🍄 INKA IN THE KIOSK WINDOW, outdoors — the stand-keeper treatment on the
+  // shop hut: chest-up in the cylinder's window band between the frame posts.
+  // Set dressing only (pointer-events none — the hut stays the tap target),
+  // unchanged across phases (keepers keep working). The ov-19 kiosk sprite is
+  // 199×285 with its base on MARKET.cart, so the band derives from CART_AT.
+  (() => {
+    const KW = 199, KH = 285;
+    const kL = CART_AT.x - KW / 2, kT = CART_AT.y - KH;
+    const w = document.createElement('div');
+    w.className = 'pk-standnpc';
+    w.style.left = pct(kL + 68, W);
+    w.style.top = pct(kT + 196, H);
+    w.style.width = pct(64, W);
+    w.style.height = pct(44, H);
+    w.style.zIndex = String(100 + Math.round(CART_AT.y) + 1);
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    cv.setAttribute('aria-hidden', 'true');
+    w.appendChild(cv);
+    world.appendChild(w);
+    assetsReady().then(() => {
+      const draw = () => {
+        drawComposite(cv.getContext('2d'), 150, 2, KEEPER_DRAW);
+        drawApron(cv.getContext('2d'), 150);
+      };
+      draw();
+      setTimeout(draw, 700);
+    });
+  })();
   // the cartridge CUT into the interior — the stand's own scene change
   function blink(mid) {
     if (REDUCED) { mid(); return; }
@@ -1255,7 +1361,7 @@ function init() {
     const q = merchParams();
     goodsEl.innerHTML = MERCH_PRODUCTS.map((pr) =>
       '<a class="pk-hang pk-hang--' + pr.key + '" href="/make-a-banana/' + pr.key + '/'
-      + (q ? '?' + q : '') + '" data-product="' + pr.key + '">'
+      + '?' + (q ? q + '&' : '') + 'from=parkshop" data-product="' + pr.key + '">'
       + '<span class="pk-hang__mock"><canvas width="150" height="150" aria-hidden="true"></canvas></span>'
       + '<i class="pk-hang__tag">' + pr.price + '</i>'
       + '<b>' + pr.name + '</b>'
@@ -1278,7 +1384,9 @@ function init() {
     });
     blink(() => { shopEl.hidden = false; document.body.classList.add('pk-inside'); });
     keeperSay(KEEPER_GREET, 6000);
-    if (!cartViewTracked) { cartViewTracked = true; track('stand_cart_view'); }
+    // every open counts (Trym: visits ARE the metric — the money room's funnel
+    // reads view → click {product} → PDP ?from=parkshop → purchase)
+    track('stand_cart_view');
   }
   function closeShop() {
     if (shopEl.hidden) return;
@@ -1622,13 +1730,14 @@ function init() {
   const myShort = worldSid().slice(0, 8);
   const gardenPanel = document.getElementById('pkGarden');
   const gardenBody = document.getElementById('pkGardenBody');
-  // 16 slots since W3 — 0-7 site A (meadow), 8-15 site B (playground)
-  let gSlots = Array(16).fill(null);
+  // 24 slots — 0-7 site A (meadow), 8-15 site B (playground), 16-23 site C
+  // (NE, the lawn the stand freed). ⚠️ indices are the contract, never reorder.
+  let gSlots = Array(24).fill(null);
   const gEls = PLOTS.map(() => ({ plant: null, stage: '', soil: null, soilKey: '', stake: null }));
   let pendingGarden = null, pendingWater = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
   const gShim = {   // the ?parktest stand-in server (pre-lays a plain + golden egg)
-    slots: Array(16).fill(null), weeds: [], trash: [], bloom: 70,
+    slots: Array(24).fill(null), weeds: [], trash: [], bloom: 70,
     eggs: [{ id: 'qa1', x: 1330, y: 876 }, { id: 'qa2', x: 1432, y: 866, g: 1 }],
   };
   function shimGarden(path, body) {
@@ -2030,6 +2139,7 @@ function init() {
     gardenOpenSlot = i;
     const bal = coinBal();
     const gl = gardenerLvl();
+    const blessed = hasVoucher();   // ⛲ a fountain voucher: one small seed free
     // locked seeds stay VISIBLE (aspiration) — greyed, with the level they need
     const lvlFor2 = (sd) => 1 + GLVL_STARS.findIndex((mx) => sd.stars <= mx);
     gardenBody.innerHTML = '<h2>an empty patch</h2>'
@@ -2038,16 +2148,18 @@ function init() {
       + 'water it or it wilts away (higher ⭐ holds out longer). ⭐ feed the park’s health while it lives.</p>'
       + SEEDS.map((sd) => {
         const locked = sd.stars > gl.stars;
+        const free = blessed && !locked && sd.price <= VOUCHER_MAX;
         return '<button class="pk-seedrow' + (locked ? ' pk-seedrow--lock' : '') + '" type="button"'
-          + ' data-seed="' + sd.id + '"' + (locked || bal < sd.price ? ' disabled' : '') + '>'
+          + ' data-seed="' + sd.id + '"' + (locked || (!free && bal < sd.price) ? ' disabled' : '') + '>'
           + '<i>' + sd.emoji + '</i>'
           + '<span class="pk-seedrow__txt"><b>' + sd.name + (sd.rare ? ' <em>rare</em>' : '') + '</b>'
           + '<small>' + starStr(sd.stars) + ' · ' + sd.days + ' days → '
           + (locked ? '🔒 gardener lvl ' + lvlFor2(sd)
             : sd.wearable ? 'the ' + sd.wearLabel : '+' + (sd.stars * 8) + ' rep') + '</small></span>'
-          + coinChip(sd.price) + '</button>';
+          + (free ? '<span class="pk-seedcost pk-seedcost--free">🎁 blessed — free</span>' : coinChip(sd.price))
+          + '</button>';
       }).join('')
-      + (bal < SEEDS[0].price ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
+      + (bal < SEEDS[0].price && !blessed ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
     gardenBody.querySelectorAll('.pk-seedrow').forEach((b) => {
       b.addEventListener('click', () => plantSeed(i, b.dataset.seed));
     });
@@ -2055,14 +2167,24 @@ function init() {
   }
   async function plantSeed(i, seedId) {
     const sd = SEED_BY[seedId];
-    if (!sd || coinBal() < sd.price || sd.stars > gardenerLvl().stars) return;
-    passStat('coins_spent', sd.price);
-    refreshHud();
+    if (!sd || sd.stars > gardenerLvl().stars) return;
+    // ⛲ the fountain's voucher pays for small seeds; it spends HERE, on the
+    // plant itself — and comes back if somebody beat you to the patch
+    const free = hasVoucher() && sd.price <= VOUCHER_MAX;
+    if (!free && coinBal() < sd.price) return;
+    if (free) setVoucher(false);
+    else {
+      passStat('coins_spent', sd.price);
+      refreshHud();
+    }
     closeGarden();
     const res = await gFetch('/plant', { slot: i, seed: seedId, name: parkName, pass: worldSid() });
     if (res && res.err === 'taken') {
-      passStat('coins_spent', -sd.price);   // refund — somebody beat you to it
-      refreshHud();
+      if (free) setVoucher(true);           // the blessing survives the miss
+      else {
+        passStat('coins_spent', -sd.price); // refund — somebody beat you to it
+        refreshHud();
+      }
       toast('somebody beat you to this patch');
       applyGarden(res);
       return;
@@ -2194,7 +2316,7 @@ function init() {
   }
 
   // ---- 🧰 THE TOOL SLOT — the one contextual chore button ----------------
-  // Scans every frame (≤10 weeds + 16 slots — cheap); DOM writes are
+  // Scans every frame (≤10 weeds + 24 slots — cheap); DOM writes are
   // change-guarded on the chore key. DRY plant = not watered today (anyone's);
   // a ready plant is a harvest, not a chore. Press = act on the nearest,
   // walking the last step first — the same pull/water paths as a direct tap.

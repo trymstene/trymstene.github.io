@@ -5,9 +5,9 @@ Beach-template build (build-beach-scene.py is the constitution): true top-down
 map, pack art at PROP scale, colliders declared ON the placement and emitted
 into src/scripts/park-geo.js. The forest replaces the ocean as the world's
 walls. Zones (Trym's approved v2 zoning, 28 Jul): crossroads plaza + fountain
-centre · duck pond NW · MARKET ROW lining the north side of the beach road
-(storefronts face the walk) · meadow SE · playground SW · road stubs W + N
-with construction signs.
+centre · duck pond NW · THE BANANA STAND capping the north road · the merch
+kiosk on the beach road · meadow SE · playground SW · road stub W with a
+construction sign.
 
 Outputs:
   public/assets/park/park.png        2760x1100 world plate (lush — phase 4)
@@ -415,7 +415,7 @@ road_mask_add(road_pts([(1560, 590), (1800, 660), (2080, 545), (2380, 625),
 road_mask_add(road_pts([(1200, 580), (980, 625), (750, 545), (520, 605),
                         (330, 565)], HW, taper=(False, True)))    # W stub 🚧
 road_mask_add(road_pts([(1385, 430), (1335, 310), (1420, 215), (1400, 140)],
-                       HW, taper=(False, True)))                  # N stub 🚧
+                       HW, taper=(False, True)))                  # N → the stand
 # little spurs — the "every meter interesting" walks
 road_mask_add(road_pts([(905, 610), (790, 500), (735, 450)],
                        18, taper=(False, True)))                  # → pond bank
@@ -879,11 +879,11 @@ if HAVE_PACK:
     # untouched (no blockify/dedisc — it is already on-palette pixel art),
     # ×2 NEAREST so the chunky pixels stay true next to the heroic banana;
     # a dark inner rect backs the window cutout (the old page's DOM div).
-    # perched at the east road's northward crest (waypoint 2080,545 — Trym),
-    # hugging the north shoulder without spilling into the lane; the client's
-    # sparkle/tap/keeper-window all key off MARKET.stand, so this tuple is
-    # the ONE knob
-    MARKET['stand'] = (2090, 520)
+    # CAPS the north road (Trym): the road runs into its front, the last leg
+    # (1420,215 → 1400,140) tucks behind the ×2 hut (spans y 43-215), so no
+    # lane pokes past; the client's sparkle/tap/keeper-window all key off
+    # MARKET.stand, so this tuple is the ONE knob
+    MARKET['stand'] = (1408, 215)
     try:
         hut = Image.open(os.path.join(SITE, 'public', 'assets', 'banana-stand',
                                       'hut.png')).convert('RGBA')
@@ -950,17 +950,20 @@ if HAVE_PACK:
 # Terrains Props_Dirt speckles so each reads as its own patch. Baked, solid,
 # NOT layered — the growing plants are client overlays and must draw on top.
 # W3: site B (gx 288/426) mirrors site A west of the playground, tucked clear
-# of the swings. ⚠️ TUPLE ORDER IS THE SLOT CONTRACT: site A = slots 0-7,
-# site B = 8-15 — live production plants sit on 0-7, never reorder.
+# of the swings. Site C (NE) took the lawn the stand freed when it moved to
+# the north road. ⚠️ TUPLE ORDER IS THE SLOT CONTRACT: site A = slots 0-7,
+# site B = 8-15, site C = 16-23 — live production plants sit on the low
+# indices, never reorder.
 PLOTS = []
 if HAVE_PACK:
     # each bed = TWO ditches side by side (the ditch soil is ~52px wide — one
     # slot column each, two rows), so every slot sits ON dug earth
-    for gx in (2270, 2408, 288, 426):
+    for gx, gb in ((2270, 862), (2408, 862), (288, 862), (426, 862),
+                   (1980, 500), (2118, 500)):
         for sx in (gx - 30, gx + 30):
-            place('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png', sx, 862,
+            place('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png', sx, gb,
                   solid=('rect', -28, -50, 28, 4), colors=28, sh=0.36)
-            for sy in (800, 838):
+            for sy in (gb - 62, gb - 24):
                 place('ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_1.png',
                       sx, sy + 12, shade=False, scale=PROP * 0.9)
                 PLOTS.append((sx, sy))
@@ -1216,7 +1219,8 @@ if HAVE_PACK:
                         con=1.05, warm=0.02, trim=False)
 
     saw = build_sawhorse()
-    for sx, sy in ((332, 584), (1414, 236)):     # ON the stub ends' new curves
+    # (the north sawhorse fell 30 Jul — that road now leads TO the stand)
+    for sx, sy in ((332, 584),):                 # ON the west stub's end curve
         shadow(sx, sy - 4, saw.width * 0.38, 7)
         im.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
         im2.alpha_composite(drab(saw), (sx - saw.width // 2, sy - saw.height))
@@ -1229,7 +1233,8 @@ if HAVE_PACK:
 # clearance), colliders (+16px), the garden-bed zones, plaza + pond (+margin)
 # and the world border. The server grows weed patches across it.
 def build_weed_grid():
-    BED_ZONES = ((200, 750, 520, 900), (2180, 750, 2500, 900))
+    BED_ZONES = ((200, 750, 520, 900), (2180, 750, 2500, 900),
+                 (1890, 395, 2210, 520))   # site C — the old stand's lawn
 
     def ok(x, y):
         if on_road(x, y, 24):
