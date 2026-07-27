@@ -15,8 +15,6 @@ Outputs:
   public/assets/park/park-sad.png    autumn/neglect twin (phases 0-1)
   public/assets/park/ov-*.png        y-sorted overlay props (+ ov-sad twins)
   public/assets/park/a-fountain.png  the plaza fountain, animated strip
-  public/assets/park/a-swing.png     park swing, 2-frame strip
-  public/assets/park/a-spring.png    spring rider, 2-frame strip
   src/scripts/park-geo.js            ⚠️ THE CONTRACT with the park engine
 Run: python tools/build-park-scene.py
 """
@@ -458,8 +456,7 @@ _cache = {}
 PLACED = []
 COLLIDERS = []
 OVERLAYS = []
-TREE_OVS = []          # overlay indices that are TREES — the client greens
-SWINGS = []            # these one by one across the bloom phases (W1c)
+TREE_OVS = []          # tree overlays — client greens them one by one (W1c)
 SIGNS = []
 MARKET = {}
 
@@ -469,7 +466,6 @@ CART_BOX = ('rect', -70, -46, 70, 6)
 SHOP_BOX = ('rect', -100, -58, 100, 6)
 BENCH_BOX = ('rect', -34, -18, 34, 4)
 TABLE_BOX = ('rect', -44, -30, 44, 6)
-SWING_BOX = ('rect', -52, -20, 52, 6)
 ROCK_BOX = ('circle', 20)
 
 
@@ -849,12 +845,23 @@ if HAVE_PACK:
         strip = strip.resize((sw * n, int(sheet.height * PROP)), Image.NEAREST)
         strip.save(os.path.join(OUT, 'a-fountain.png'), optimize=True)
         f0 = strip.crop((0, 0, sw, strip.height))
+        # 💀 the DEAD fountain (Trym): the pack's Turn_Off sheet's LAST frame
+        # — jet gone, basin dry. Client swaps to it at phases 0-1; the sad
+        # plate bakes it too (dead monument in a dead park).
+        offsheet = load_pack('Garden_Fountain_3_Turn_Off_48x48.png').convert('RGBA')
+        ostrip = blockify(offsheet, factor=1, colors=28, warm=0.0, sat=1.0,
+                          con=1.0, trim=False, outline=True)
+        ostrip = ostrip.crop((1, 1, 1 + offsheet.width, 1 + offsheet.height))
+        nf = offsheet.width // fw
+        ostrip = ostrip.resize((sw * nf, int(offsheet.height * PROP)), Image.NEAREST)
+        foff = ostrip.crop((sw * (nf - 1), 0, sw * nf, ostrip.height))
+        foff.save(os.path.join(OUT, 'a-fountain-off.png'), optimize=True)
         # base at CY + ~14% of height puts the BASIN's centre on the plaza's
         # centre (0.42 hung the whole statue low — Trym round 8)
         fx, fbase = CX, CY + int(strip.height * 0.14)
         shadow(fx, fbase - 6, sw * 0.42, 10)
         im.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
-        im2.alpha_composite(drab(f0), (fx - sw // 2, fbase - strip.height))
+        im2.alpha_composite(drab(foff), (fx - sw // 2, fbase - strip.height))
         im3.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
         COLLIDERS.append(('fountain', ('circle', int(sw * 0.36)), fx, fbase - 20))
         FOUNTAIN = [fx, fbase, sw, strip.height, n]
@@ -1069,42 +1076,10 @@ if os.path.isdir(FARM):
             print('  egg sprite failed', fname, e)
 
 # ---- 🛝 the playground -----------------------------------------------------
-def sheet_strip(name, out_name, fw, fh=96):
-    """⚠️ the playground files are each a FULL ANIMATION SHEET (Park_Swing_1 is
-    1152x96 = 12 frames of 96) — round 1 pasted a whole sheet as one 'sprite'
-    and the plate grew a garland. Slice, blockify ONCE, bake frame 0."""
-    try:
-        sheet = load_pack(name).convert('RGBA')
-        n = sheet.width // fw
-        s = blockify(sheet, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
-                     trim=False, outline=True)
-        s = s.crop((1, 1, 1 + sheet.width, 1 + sheet.height))
-        s = s.resize((int(fw * PROP) * n, int(sheet.height * PROP)), Image.NEAREST)
-        s.save(os.path.join(OUT, out_name), optimize=True)
-        print('  %s: %d frames' % (out_name, n))
-        return s.crop((0, 0, s.width // n, s.height))
-    except Exception as e:
-        print('  strip failed', name, e)
-        return None
-
-
 if HAVE_PACK:
-    # ⚠️ rides are NOT baked into the plates (Trym: the baked copy + the
-    # animated overlay double-drew) — only the ground shadow bakes; the
-    # client's .pk-ride overlay is the ONE image, frame 0 when idle.
-    sw0 = sheet_strip('Park_Swing_48x48_1.png', 'a-swing.png', 96)
-    if sw0:
-        for sx, sy in ((560, 800), (770, 800)):
-            shadow(sx, sy - 4, sw0.width * 0.4, 8)
-            COLLIDERS.append(('swing', SWING_BOX, sx, sy))
-            SWINGS.append((sx, sy, sw0.width, sw0.height))
-    sp0 = sheet_strip('Spring_Swing_48x48_1.png', 'a-spring.png', 96)
-    if sp0:
-        for sx, sy in ((520, 920), (830, 910)):
-            shadow(sx, sy - 3, sp0.width * 0.45, 6)
-            COLLIDERS.append(('spring', ('circle', 18), sx, sy))
-            SWINGS.append((sx, sy, sp0.width, sp0.height))
-    # picnic corner: benched tables between the swings and the meadow
+    # (the swings + spring riders were CUT — Trym: "they glitch". The SW lawn
+    # stays open; future playground content is its own design conversation.)
+    # picnic corner: benched tables between the playground lawn and the meadow
     for tx, ty in ((1120, 760), (1000, 900)):
         try_place(['ME_Singles_Camping_48x48_Benched_Table_1.png',
                    'ME_Singles_Camping_48x48_Benched_Table_2.png'],
@@ -1230,7 +1205,6 @@ def emit_geo():
     L.append('export const FOUNTAIN = %s;' % (list(FOUNTAIN) or 'null'))
     L.append('export const MARKET = %s;' % ('{ stand: %s, cart: %s }' %
              (list(MARKET.get('stand', ())), list(MARKET.get('cart', ())))))
-    L.append('export const SWINGS = %s;' % [list(s) for s in SWINGS])
     L.append('export const SIGNS = %s;' % [list(s) for s in SIGNS])
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])

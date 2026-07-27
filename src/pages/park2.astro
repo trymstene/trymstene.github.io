@@ -71,6 +71,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       to   { background-position-x: 120%; }
     }
     @media (prefers-reduced-motion: reduce) { .pk-fountain { animation: none; } }
+    /* 💀 the dead fountain — the pack's Turn_Off end frame, crossfaded over
+       the running strip at phases 0-1 with the animals' sad grade */
+    .pk-fountain-off {
+      position: absolute; inset: 0; opacity: 0; pointer-events: none;
+      background-image: url('/assets/park/a-fountain-off.png');
+      background-size: 100% 100%; background-repeat: no-repeat;
+      filter: saturate(0.6) brightness(0.92);
+      transition: opacity 0.8s ease;
+    }
+    .pk-fountain-off.is-on { opacity: 1; }
 
     /* the banana — % of the world, so sprites ride the camera free */
     .pk-me { position: absolute; z-index: 6; width: 3.6%; transform: translate(-50%, -100%); pointer-events: none; }
@@ -216,31 +226,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .pk-squirrel svg .f2 { animation: pkFlapB 0.22s steps(1) infinite; }
     .pk-squirrel.is-still svg .f1 { animation: none; opacity: 1; }
     .pk-squirrel.is-still svg .f2 { animation: none; opacity: 0; }
-
-    /* 🛝 the rides — the overlay IS the ride (never baked into the plate, so
-       there's only ever ONE image): frame 0 idle, the strip plays while
-       somebody's on. End values per the stepping rule: 100% × N / (N − 1). */
-    .pk-ride {
-      position: absolute; pointer-events: none;
-      image-rendering: pixelated; background-repeat: no-repeat;
-    }
-    .pk-ride--12 { background-size: 1200% 100%; }
-    .pk-ride--8 { background-size: 800% 100%; }
-    .pk-ride--12.is-on { animation: pkRide12 1.15s steps(12) infinite; }
-    .pk-ride--8.is-on { animation: pkRide8 0.95s steps(8) infinite; }
-    .pk-ride.is-sad { filter: saturate(0.6) brightness(0.92); }
-    @keyframes pkRide12 { from { background-position-x: 0%; } to { background-position-x: 109.0909%; } }
-    @keyframes pkRide8 { from { background-position-x: 0%; } to { background-position-x: 114.2857%; } }
-    /* 🍌 seated: the banana stays visible ON the ride, bobbing on its beat */
-    .pk-me--r12 { animation: pkSeatBob 1.15s ease-in-out infinite; }
-    .pk-me--r8 { animation: pkSeatBob 0.95s ease-in-out infinite; }
-    @keyframes pkSeatBob {
-      0%, 100% { transform: translate(-50%, -100%); }
-      50% { transform: translate(-50%, calc(-100% - 4px)); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .pk-ride--12.is-on, .pk-ride--8.is-on, .pk-me--r12, .pk-me--r8 { animation: none; }
-    }
 
     /* 🐔 THE ANIMALS — farm-pack strips: 6 walk frames, frame 0 = standing.
        End value per the stepping rule: 100% × 6 / 5 = 120%. */

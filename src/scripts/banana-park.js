@@ -9,7 +9,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MARKET, MEADOW, SWINGS, PLOTS, DOORS,
+  WORLD, BOUND, PLAZA, POND, FOUNTAIN, MARKET, MEADOW, PLOTS, DOORS,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 
@@ -331,10 +331,13 @@ function init() {
     setSquirrels(p >= 3);                  // 🐿 life returns near the top…
     setBflies(p >= 4);                     // 🦋 …and only a perfect park has these
     setAnimalMood(p);                      // 🐔 the flock's mood follows the bloom
-    RIDES.forEach((q) => q.el.classList.toggle('is-sad', p <= 1));   // unbaked, so they grade here
+    setFountain(p <= 1);                   // ⛲ dead monument in a dead park
   }
 
-  // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire
+  // ⛲ the fountain — the pack's 6-frame strip, CSS-stepped like the bonfire.
+  // At phases 0-1 the pack's Turn_Off end frame crossfades over it (jet
+  // gone, basin dry) with the same sad grade the animals get.
+  let fountainEl = null, fountainOff = null;
   (() => {
     const [fx, fy, fw, fh] = FOUNTAIN;
     const f = document.createElement('div');
@@ -343,56 +346,18 @@ function init() {
     f.style.width = pct(fw, W); f.style.height = pct(fh, H);
     f.style.zIndex = String(100 + fy);
     world.appendChild(f);
+    fountainEl = f;
   })();
-
-  // 🛝 THE RIDES — SWINGS[0..1] are the swing (12 frames), [2..3] the spring
-  // riders (8 frames). Each entry anchors bottom-centre at (x, y), 72×72.
-  // The overlay IS the ride (never baked into the plate — a baked twin once
-  // double-drew): frame 0 idle, the strip animates while somebody's on.
-  const RIDES = SWINGS.map((s, i) => ({
-    x: s[0], y: s[1], w: s[2], h: s[3],
-    strip: i < 2 ? 'a-swing.png' : 'a-spring.png', n: i < 2 ? 12 : 8,
-  }));
-  RIDES.forEach((q) => {
-    const el = document.createElement('div');
-    el.className = 'pk-ride pk-ride--' + q.n;
-    el.style.left = pct(q.x - q.w / 2, W); el.style.top = pct(q.y - q.h, H);
-    el.style.width = pct(q.w, W); el.style.height = pct(q.h, H);
-    el.style.backgroundImage = "url('/assets/park/" + q.strip + "')";
-    el.style.zIndex = String(100 + q.y);
-    world.appendChild(el);
-    q.el = el;
-  });
-  let riding = null, pendingRide = null;
-  function mountRide(q) {
-    riding = q;
-    q.el.classList.add('is-on');
-    // seated ON the ride, visible (Trym: hiding read as disappearing) — the
-    // banana lifts to the seat and bobs on the ride's own beat; pos stays at
-    // the mount point so peers/z-order don't change
-    meEl.classList.add(q.n === 12 ? 'pk-me--r12' : 'pk-me--r8');
-    meWX = NaN;                    // the loop writes the seat top (it owns meEl)
-    tgt.x = pos.x; tgt.y = pos.y;
-  }
-  function dismount() {
-    if (!riding) return;
-    riding.el.classList.remove('is-on');
-    riding = null;
-    meEl.classList.remove('pk-me--r12', 'pk-me--r8');
-    meWX = NaN;                    // force a position rewrite next frame
-  }
-  function tapRide(wx, wy) {
-    const q = RIDES.find((r2) => Math.abs(wx - r2.x) < 40 && wy > r2.y - r2.h - 8 && wy < r2.y + 10);
-    if (!q) return false;
-    const sx = q.x, sy = q.y + 24;     // +24 clears the spring bases' colliders
-    if (Math.hypot(pos.x - sx, pos.y - sy) < 30) {
-      pos.x = sx; pos.y = sy; meWX = NaN;
-      mountRide(q);
-    } else {
-      tgt.x = sx; tgt.y = sy;
-      pendingRide = { q, x: sx, y: sy };
+  function setFountain(dead) {
+    if (!fountainOff) {
+      if (!dead) return;                     // running + never died = nothing to do
+      fountainOff = document.createElement('div');
+      fountainOff.className = 'pk-fountain-off';
+      fountainEl.appendChild(fountainOff);
+      requestAnimationFrame(() => fountainOff.classList.add('is-on'));
+      return;
     }
-    return true;
+    fountainOff.classList.toggle('is-on', dead);
   }
 
   // ---- geometry -----------------------------------------------------------
@@ -440,20 +405,17 @@ function init() {
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
-    pendingRide = null;
     pendingShop = false;
     pendingToss = false;
     pendingGarden = null;
     pendingWater = null;
     pendingWeed = null;
     pendingEgg = null;
-    if (riding) dismount();          // any tap off the ride hops you off
     if (tapEgg(wx, wy)) return;
     if (tapBfly(wx, wy)) return;
     if (tapAnimal(wx, wy)) return;
     if (tapWeed(wx, wy)) return;
     if (tapGarden(wx, wy)) return;
-    if (tapRide(wx, wy)) return;
     if (tapShop(wx, wy)) return;
     if (tapFountain(wx, wy)) return;
     tgt.x = wx;
@@ -1596,12 +1558,11 @@ function init() {
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
     if (kx || ky) {
       tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30;
-      hint(false); pendingRide = null;
-      if (riding) dismount();
+      hint(false);
     }
     const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
     const d = Math.hypot(dx, dy);
-    if (d > 1.5 && !riding) {
+    if (d > 1.5) {
       const m = Math.min(d, SPEED * dt);
       const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
       if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
@@ -1621,15 +1582,8 @@ function init() {
     if (pos.x !== meWX || pos.y !== meWY) {   // outside the walk branch: a
       meWX = pos.x; meWY = pos.y;             // direct pos set repaints too
       meEl.style.left = pct(pos.x, W);
-      // seated: lift to the ride's seat (pos + z stay at the mount point)
-      meEl.style.top = pct(riding ? riding.y - (riding.n === 12 ? 26 : 20) : pos.y, H);
+      meEl.style.top = pct(pos.y, H);
       depth(meEl, pos.y);
-    }
-    // walked all the way to a ride you tapped → hop on
-    if (pendingRide && Math.hypot(pos.x - pendingRide.x, pos.y - pendingRide.y) < 24) {
-      const pr = pendingRide; pendingRide = null;
-      pos.x = pr.x; pos.y = pr.y; meWX = NaN;
-      mountRide(pr.q);
     }
     const inst = Math.hypot(pos.x - prevPX, pos.y - prevPY) / Math.max(dt, 0.001);
     pSpeed = pSpeed * 0.8 + inst * 0.2;
@@ -1750,7 +1704,7 @@ function init() {
   // coins, read the live rosters — nothing here exists in a normal session
   if (PARK_TEST) {
     window.__park = {
-      pos, tgt, acorns, bflys, squirrels, animals, eggs, RIDES, PLOTS,
+      pos, tgt, acorns, bflys, squirrels, animals, eggs, PLOTS,
       // 🥚 egg QA: lay one at your feet (egg(1) = golden); steal() = somebody
       // else claims the oldest — tap it after for the 'someone got it' path
       egg: (g) => {
