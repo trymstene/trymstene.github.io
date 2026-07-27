@@ -408,17 +408,20 @@ def dedisc(img):
     img = img.convert('RGBA')
     p = img.load()
     h = img.height
-    y0 = int(h * (0.84 if h >= 100 else 0.84))   # 0.74/0.80 nibbled the
-    # low-crowned purple-shadow species; 0.84 = below every crown
+    if h < 100:            # bushes/mushrooms ARE green to the ground —
+        return img         # de-mounding them leaves grey husks
+    y0 = int(h * 0.84)     # 0.74/0.80 nibbled the low-crowned species
     for y in range(y0, h):
         for x in range(img.width):
             r, g, b, a = p[x, y]
-            if a and g > r + 30 and g > 70:
+            # BRIGHT lawn greens only — g>r+30 alone also ate the mossy
+            # trunks of the purple-shadow species (Trym round 9b)
+            if a and g > r + 38 and g > 108 and r < 92:
                 p[x, y] = (0, 0, 0, 0)
     return img
 
 
-def place(name, cx, base, factor=1, colors=10, warm=0.06, sat=1.08, con=1.05,
+def place(name, cx, base, factor=1, colors=16, warm=0.03, sat=1.03, con=1.02,
           flip=False, shade=True, sh=0.30, scale=PROP, solid=None, layer=False):
     key = (name, factor, colors, warm, sat, con)
     if key not in _cache:
