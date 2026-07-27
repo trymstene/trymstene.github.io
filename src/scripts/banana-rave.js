@@ -2373,7 +2373,10 @@ function init() {
       if (cPh < COIN_WAIT && coinWinClaimed !== cWin && floorItems < MAX_FLOOR_ITEMS) {
         const cs = coinSpotFor(cWin);
         floorItems++;
-        cnEl.className = 'rv-coin rv-coin--' + coinAmountFor(cWin);
+        // sprite tiers stayed 1/3/5 when payouts became 5/10/20 — map amount
+        // to the visual tier (small pile / mid / stack)
+        const cAmt = coinAmountFor(cWin);
+        cnEl.className = 'rv-coin rv-coin--' + (cAmt <= 5 ? 1 : cAmt <= 10 ? 3 : 5);
         cnEl.style.display = '';
         cnEl.style.left = cs.x + '%';
         cnEl.style.top = cs.y + '%';

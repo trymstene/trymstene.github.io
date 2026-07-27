@@ -760,6 +760,39 @@ const faq = {
       76%  { opacity: 1; transform: translate(-50%, -88%) scale(1); }
       100% { opacity: 0; transform: translate(-50%, -118%) scale(0.98); }
     }
+    /* 🪙 THE TIDE COIN — the stand pack's coin sprites at native art scale,
+       delivered onto the surf line by a foam wash (see coinTick). */
+    .bh-coin {
+      position: absolute; z-index: 3; transform: translate(-50%, -50%);
+      pointer-events: none; image-rendering: pixelated; background-repeat: no-repeat;
+      filter: drop-shadow(0 0 7px rgba(255, 220, 85, 0.55));
+      transition: opacity 0.3s steps(3);
+    }
+    .bh-coin--one { width: 1.6%; aspect-ratio: 1; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 600% 100%; animation: bhCoinSpin 0.9s steps(6) infinite; }
+    @keyframes bhCoinSpin { to { background-position-x: 120%; } }   /* 100% × 6 / 5 */
+    .bh-coin--pile { width: 1.78%; aspect-ratio: 49 / 31; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 400% 100%; animation: bhCoinTw 2s steps(4) infinite; }
+    .bh-coin--stack { width: 2.14%; aspect-ratio: 59 / 43; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 400% 100%; animation: bhCoinTw 2.6s steps(4) infinite; }
+    @keyframes bhCoinTw { to { background-position-x: 133.3333%; } }   /* 100% × 4 / 3 */
+    /* the wash: foam sweeps down from the waterline over the spot and recedes;
+       JS lifts the coin's opacity at the peak so the water leaves it behind */
+    .bh-coinwash {
+      position: absolute; z-index: 6; width: 9%; aspect-ratio: 19 / 2;
+      transform: translate(-50%, -50%); pointer-events: none; opacity: 0;
+      border-radius: 50%;
+      background: linear-gradient(180deg,
+        rgba(126, 190, 214, 0) 0%, rgba(126, 190, 214, 0.5) 30%,
+        rgba(214, 240, 248, 0.85) 55%, rgba(255, 255, 255, 0.95) 78%,
+        rgba(255, 255, 255, 0) 100%);
+      animation: bhCoinWash 1.3s ease-in-out forwards;
+    }
+    @keyframes bhCoinWash {
+      0%   { opacity: 0; transform: translate(-50%, -300%) scaleY(0.5); }
+      20%  { opacity: 0.95; }
+      45%  { transform: translate(-50%, -42%) scaleY(1); }
+      58%  { transform: translate(-50%, -56%); opacity: 0.9; }
+      100% { opacity: 0; transform: translate(-50%, -320%) scaleY(0.35); }
+    }
+    .bh-coinpick__n { color: #ffe135; }
     .bh-hint {
       /* clears the action bar below it (bottom 10px + ~42px tall) */
       position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); z-index: 7;
@@ -1194,6 +1227,8 @@ const faq = {
       .bh-cut { transition: none; }
       .bh-shell, .bh-shell--rising, .bh-shell--receding { animation: none; }
       .bh-drift { animation: none; }
+      .bh-coin { animation: none; transition: none; }
+      .bh-coinwash { display: none; }
     }
 
     /* 🥥 COCONUT SHY — a full interior scene laid over the beach view. */

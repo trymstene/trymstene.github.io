@@ -277,7 +277,8 @@ function init() {
     if (cPh < COIN_WAIT && coinWinClaimed !== cWin) {
       const cs = parkCoinSpotFor(cWin);
       if (inPond(cs.x, cs.y)) cs.x -= 34; // coins don't float
-      coinEl.className = 'bs-coin bs-coin--' + coinAmountFor(cWin);
+      const cAmt = coinAmountFor(cWin);   // payouts 5/10/20 → sprite tiers 1/3/5
+      coinEl.className = 'bs-coin bs-coin--' + (cAmt <= 5 ? 1 : cAmt <= 10 ? 3 : 5);
       coinEl.style.display = '';
       coinEl.style.left = cs.x + '%';
       coinEl.style.top = cs.y + '%';

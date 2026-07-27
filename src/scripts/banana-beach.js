@@ -9,7 +9,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
-import { seedRand, presenceRoom, poofInto } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
 // tools/build-beach-scene.py, which declares each collider on the place()
@@ -885,6 +885,89 @@ function init() {
     }
   }
 
+  // ---- 🪙 THE TIDE COIN — the world's one coin faucet, beach edition -------
+  // Same clock/odds/claim as every room (world.js; `bc-win` is shared, so a
+  // window caught anywhere is caught everywhere). Only the STAGING is the
+  // bay's own: a wave washes up the surf line and leaves the coin in the wet
+  // sand. Spots are window-seeded with the beach's own salt — every client
+  // sees the same wave land in the same place.
+  const coinEl = document.createElement('div');
+  coinEl.className = 'bh-coin';
+  coinEl.style.display = 'none';
+  world.appendChild(coinEl);
+  let coinLive = null, coinWinClaimed = -1;
+  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  const COIN_SALT = 0xbea1;
+  function coinSpotFor(win) {
+    // the lagoon's straight shoreline (x 340..1620), wet band just under the
+    // swim line — the same strip the shells wash into
+    for (let t = 0; t < 12; t++) {
+      const x = 340 + seedRand(COIN_SALT + win * 31 + t) * 1280;
+      const y = 295 + seedRand((COIN_SALT ^ 0x5eed) + win * 57 + t) * 9;
+      if (!blocked(x, y, 0)) return { x, y };
+    }
+    return { x: 900, y: 300 };
+  }
+  function coinPickFloat(x, y, n) {
+    const d = document.createElement('div');
+    d.className = 'bh-shellpick bh-coinpick';
+    d.innerHTML = '<span class="bh-shellpick__name">🌊 the tide brought you something</span>'
+      + '<b class="bh-coinpick__n">+' + n + ' 🪙</b>';
+    d.style.left = pct(x, W);
+    d.style.top = pct(y, H);
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 2100);
+  }
+  function coinTick() {
+    const t = Date.now() / 1000;
+    const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
+    const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
+    if (cPh < COIN_WAIT && coinWinClaimed !== cWin) {
+      if (!coinLive || coinLive.win !== cWin) {
+        const cs = coinSpotFor(cWin);
+        const n = coinAmountFor(cWin);
+        coinEl.className = 'bh-coin bh-coin--' + (n >= 20 ? 'stack' : n >= 10 ? 'pile' : 'one');
+        coinEl.style.left = pct(cs.x, W);
+        coinEl.style.top = pct(cs.y, H);
+        coinEl.style.display = '';
+        coinLive = { x: cs.x, y: cs.y, win: cWin };
+        if (!REDUCED) {
+          // the delivery: a foam wash sweeps down over the spot and recedes —
+          // the coin is glittering in the wet sand once the water pulls back
+          const wsh = document.createElement('div');
+          wsh.className = 'bh-coinwash';
+          wsh.style.left = pct(cs.x, W);
+          wsh.style.top = pct(cs.y, H);
+          world.appendChild(wsh);
+          setTimeout(() => wsh.remove(), 1400);
+          coinEl.style.opacity = '0';
+          const win = cWin;
+          setTimeout(() => { if (coinLive && coinLive.win === win) coinEl.style.opacity = ''; }, 560);
+        } else coinEl.style.opacity = '';  // motion off: it just appears (the glow is the glint)
+      }
+    } else {
+      // an unclaimed window goes back out with the tide — in the smoke
+      if (coinLive && coinWinClaimed !== coinLive.win && coinEl.style.display !== 'none') {
+        poofInto(world, 'bh-poof', coinLive.x / W * 100, coinLive.y / H * 100);
+      }
+      coinEl.style.display = 'none';
+      coinLive = null;
+    }
+    // the catch: walk into it — same monotonic wallet as every room
+    if (coinLive && coinEl.style.display !== 'none'
+        && Math.hypot(pos.x - coinLive.x, (pos.y - 6) - coinLive.y) < 34) {
+      const n = coinAmountFor(coinLive.win);
+      coinWinClaimed = coinLive.win;
+      try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
+      passStat('coins_earned', n);
+      refreshHud();
+      coinPickFloat(coinLive.x, coinLive.y - 10, n);
+      track('rave_coin', { n, at: 'beach' });
+      coinEl.style.display = 'none';
+      coinLive = null;
+    }
+  }
+
   // ---- 🍾 DRIFT BOTTLES — map pieces wash in on the tide (Milestone C2) -----
   // Sabreface's map didn't only tear over the sand: pieces float in sealed
   // bottles too. They bob in the shallows just past the shoreline — walk the
@@ -1160,11 +1243,11 @@ function init() {
     sitFrame: s.f,
   }));
 
-  // 🪙 fishing is THE one place on the beach that mints world coins (the old
-  // dig chest is retired), and it only stays harmless because it is HARD-CAPPED
-  // per day. The stand's 13 prices are balanced against the rave's drop rate —
-  // an ungated payout here would quietly devalue every one of them.
+  // 🪙 fishing mints world coins two ways — the coin catch and the shiny
+  // bycatch riding a fish — and both stay harmless because they share ONE
+  // hard day cap. Faucet retune: bump the cap before adding a third way.
   const FISH_COIN_CAP = 15;                 // coins fishing may mint per day
+  const BYCATCH_P = 0.12;                   // odds a landed fish also hooks coins
   const fishCoinsLeft = () => {
     let st = {};
     try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
@@ -1337,6 +1420,17 @@ function init() {
             + Math.max(prev, cm) + ' cm</p>')
         + (won ? '<p class="bh-catch__new">🏅 ledger milestone — <b>+' + won
                  + ' tickets</b></p>' : '');
+      // 🪙 the bycatch: sometimes coins come up tangled on the same line
+      if (Math.random() < BYCATCH_P) {
+        const by = Math.min(2 + Math.floor(Math.random() * 3), fishCoinsLeft());
+        if (by > 0) {
+          passStat('coins_earned', by); addFishCoins(by);
+          refreshHud();
+          body += '<p class="bh-catch__new">🪙 something shiny on the line — <b>+'
+            + by + ' bananacoin' + (by === 1 ? '' : 's') + '</b></p>';
+          track('beach_coins', { n: by, at: 'fish' });
+        }
+      }
     } else if (c.kind === 'thing') {
       const t = c.thing;
       const pays = { pearl: 25, coral: 8, sand_dollar: 6, seashell: 4 }[t.id] || 0;
@@ -1585,9 +1679,11 @@ function init() {
   const DIG_WARM = 155;   // within this, a dig tells you you're close — the hunt
   const BASE_PIECE = 0.05;  // base odds a dig turns up a map piece (most digs = sand)
   const PIECE_PITY = 0.02;  // +this per dry dig since the last piece; resets on a find
-  // 🏴 the loot. ⚠️ NO COINS, EVER — bananacoins are one faucet (the rave) and
-  // a diggable money source would inflate every price in the stand. The beach
-  // pays in collection and comedy, which is the whole point of it.
+  // 🏴 the loot. Digging pays collection and comedy first — but the faucet
+  // retune (Trym: sinks outnumber faucets) gives ordinary digs a small chance
+  // of loose coins on top. The marquee treasure still pays TICKETS, not coins.
+  const DIG_COIN_P = 0.16;   // odds a dig also turns up loose change
+  const digCoins = () => 2 + Math.floor(Math.random() * 4);   // 2-5
   const DIG_JUNK = ['an old boot', 'a bent fork', 'one flip-flop', 'a rusted tin',
     'somebody’s lost sunglasses', 'a very annoyed crab', 'half a frisbee'];
   const DIG_CURIO = ['sea glass', 'a ship’s key', 'a worn doubloon', 'a shark’s tooth'];
@@ -1595,8 +1691,8 @@ function init() {
   // TICKETS — the beach's own currency for the midway prizes — NOT world
   // coins, so it can't inflate the stand. One per day, per person, date-seeded
   // → an un-farmable, bounded faucet. Tune the range freely.
-  // (The old gamble coin CHEST retired with the dig-anywhere rework; fishing
-  // is the bay's one coin trickle now, capped at FISH_COIN_CAP.)
+  // (The old gamble coin CHEST retired with the dig-anywhere rework; the bay's
+  // coin trickles are now the tide coin, dig change and the fishing line.)
   const TREASURE_MIN = 8, TREASURE_MAX = 16;
   const digDay = Math.floor(Date.now() / 86400000);
   // ⚠️ seedRand(n) is ONE-SHOT — it maps a seed to a number, it is NOT a
@@ -1747,6 +1843,14 @@ function init() {
       float(pos.x, pos.y - 26, 'the sand’s packed here — close!', true);
       track('beach_dig', { find: 'warm' });
       return;
+    }
+    // 🪙 loose change rides an ordinary dig ON TOP of whatever else turns up
+    if (Math.random() < DIG_COIN_P) {
+      const n = digCoins();
+      passStat('coins_earned', n);
+      refreshHud();
+      float(pos.x, pos.y - 50, '🪙 beach change! +' + n, true);
+      track('beach_coins', { n, at: 'dig' });
     }
     // 🗺 turn up a torn map piece — rare, with a pity ramp: every dry dig since
     // the last piece nudges the odds up (≈7 digs/piece), a find resets them.
@@ -2899,6 +3003,7 @@ function init() {
     ballStep(dt, now);
     wballStep(dt, now);
     shellTick();
+    coinTick();
     driftTick();
     capTick(now);
     gilTick();
