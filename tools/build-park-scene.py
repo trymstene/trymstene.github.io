@@ -1,12 +1,12 @@
-﻿# -*- coding: utf-8 -*-
-"""ðŸŒ³ PARK 2.0 â€” the park scene art (park-2-plan).
+# -*- coding: utf-8 -*-
+"""🌳 PARK 2.0 — the park scene art (park-2-plan).
 
 Beach-template build (build-beach-scene.py is the constitution): true top-down
 map, pack art at PROP scale, colliders declared ON the placement and emitted
 into src/scripts/park-geo.js. The forest replaces the ocean as the world's
 walls. Zones (Trym's approved v2 zoning, 28 Jul): crossroads plaza + fountain
-centre Â· duck pond NW Â· MARKET ROW lining the north side of the beach road
-(storefronts face the walk) Â· meadow SE Â· playground SW Â· road stubs W + N
+centre · duck pond NW · MARKET ROW lining the north side of the beach road
+(storefronts face the walk) · meadow SE · playground SW · road stubs W + N
 with construction signs.
 
 Outputs:
@@ -15,7 +15,7 @@ Outputs:
   public/assets/park/a-fountain.png  the plaza fountain, animated strip
   public/assets/park/a-swing.png     park swing, 2-frame strip
   public/assets/park/a-spring.png    spring rider, 2-frame strip
-  src/scripts/park-geo.js            âš ï¸ THE CONTRACT with the park engine
+  src/scripts/park-geo.js            ⚠️ THE CONTRACT with the park engine
 Run: python tools/build-park-scene.py
 """
 import math
@@ -42,7 +42,7 @@ PROP = 0.76                  # the beach's heroic-banana scale rule
 CX, CY = 1380, 560           # the crossroads plaza centre
 ROAD_W = 88
 PLAZA_RX, PLAZA_RY = 250, 195
-BOUND = 96                   # walkable inset â€” the treeline is the wall
+BOUND = 96                   # walkable inset — the treeline is the wall
 POND = (555, 315, 265, 150)  # cx, cy, rx, ry (NW)
 MARKET_Y = 430               # the row's ground line (storefronts face the road)
 MEADOW = (1860, 640, 2500, 940)
@@ -98,7 +98,7 @@ def most_uniform(names):
 
 
 def cleanest(names, keep=3):
-    """the tiles with the FEWEST non-green speck pixels â€” round 3 tiled ONE
+    """the tiles with the FEWEST non-green speck pixels — round 3 tiled ONE
     debris-bearing grass tile and the park grew a grid of 'dog turds' (Trym).
     Mixing the cleanest few + random flips kills both the specks and the
     repeat pattern."""
@@ -119,8 +119,8 @@ def cleanest(names, keep=3):
 
 
 def scrubbed(tile):
-    """âš ï¸ round 4's 'cleanest' picker chose EDGE tiles (fewest specks, but an
-    arch gradient â€” the lawn tiled into rows of humps). The right base is the
+    """⚠️ round 4's 'cleanest' picker chose EDGE tiles (fewest specks, but an
+    arch gradient — the lawn tiled into rows of humps). The right base is the
     FLAT tile (most_uniform), with its baked debris specks ERASED: every
     non-green pixel becomes the tile's median green."""
     t = tile.copy()
@@ -139,7 +139,7 @@ def scrubbed(tile):
 
 def tile_stats(t):
     """(specks, edge, texture): red-speck count, top/bottom+left/right mean
-    drift (high = an autotile EDGE tile â€” those tiled into arch rows in round
+    drift (high = an autotile EDGE tile — those tiled into arch rows in round
     4), and inner variance (the actual blade detail we WANT)."""
     p = t.load()
     specks = sum(1 for y in range(0, T, 2) for x in range(0, T, 2)
@@ -154,8 +154,8 @@ def tile_stats(t):
 
 
 if HAVE_PACK:
-    # âš ï¸ contact-sheet study (round 8): the pack's REAL lawn texture is the
-    # Grass_Wall_1 family â€” dense leafy blades, zero debris. The Grass_1..4
+    # ⚠️ contact-sheet study (round 8): the pack's REAL lawn texture is the
+    # Grass_Wall_1 family — dense leafy blades, zero debris. The Grass_1..4
     # families are grass-vs-dirt AUTOTILES whose only full-grass members are
     # the flat fills that read "very simple" (Trym). Flowered variants of the
     # same texture become sparse accents.
@@ -171,8 +171,8 @@ if HAVE_PACK:
                 out.append((ed, t))
         return out
 
-    # âš ï¸ the Grass_Wall/Flowered families are ALL hedge-wall pieces (shadow
-    # columns, burrow holes â€” they striped then polka-dotted the lawn). The
+    # ⚠️ the Grass_Wall/Flowered families are ALL hedge-wall pieces (shadow
+    # columns, burrow holes — they striped then polka-dotted the lawn). The
     # pack's OWN scenes build lawns as flat base + scattered life, so: flat
     # clean base + Grass_Tufts + Props_Grass patches + lifted flower pixels.
     cand = []
@@ -211,7 +211,7 @@ if HAVE_PACK:
     # tufts everywhere, soft green patches, loose flower clusters
     try:
         TUFT = load_pack('ME_Singles_Graveyard_48x48_Grass_Tufts.png').convert('RGBA')
-        tp = TUFT.load()          # graveyard tufts are dead-grey â€” retint to
+        tp = TUFT.load()          # graveyard tufts are dead-grey — retint to
         for y in range(TUFT.height):                    # lawn greens by luma
             for x in range(TUFT.width):
                 r0, g0, b0, a0 = tp[x, y]
@@ -222,7 +222,7 @@ if HAVE_PACK:
     except Exception:
         TUFT = None
     PATCHES = []
-    for i in (1, 2, 3, 8, 9):      # green patches ONLY â€” 12/13 are orange
+    for i in (1, 2, 3, 8, 9):      # green patches ONLY — 12/13 are orange
         try:
             PATCHES.append(load_pack('ME_Singles_Terrains_and_Fences_48x48_Props_Grass_%d.png' % i).convert('RGBA'))
         except Exception:
@@ -243,20 +243,20 @@ if HAVE_PACK:
 else:
     rect(0, 0, W, H, (86, 152, 74))
 
-# a soft afternoon grade â€” greens lifted warm, colour-keyed like the beach's
+# a soft afternoon grade — greens lifted warm, colour-keyed like the beach's
 GRASS_TARGET = (128, 186, 96)
 for y in range(H):
     for x in range(W):
         r, g, b, a = px[x, y]
-        if g > r - 10 and g > b:                 # grassy â†’ lift toward warm green
+        if g > r - 10 and g > b:                 # grassy → lift toward warm green
             k = 0.30
             px[x, y] = (int(r * (1 - k) + GRASS_TARGET[0] * k),
                         int(g * (1 - k) + GRASS_TARGET[1] * k),
                         int(b * (1 - k) + GRASS_TARGET[2] * k), a)
 
-# ---- ðŸ›£ THE PARK PATHS: the beach's curvy road system, dirt palette --------
+# ---- 🛣 THE PARK PATHS: the beach's curvy road system, dirt palette --------
 # Trym on the straight cross (round 6): "very symmetric, systemic, square and
-# boring â€” i want it more natural, curvy paths, room to make every meter a bit
+# boring — i want it more natural, curvy paths, room to make every meter a bit
 # interesting". Ported from build-beach-scene.py: arc-length wobble (verticals
 # wander as much as horizontals), per-end taper, and ONE unioned mask so
 # junctions blend seamlessly instead of stamping shoulders across each other.
@@ -340,24 +340,24 @@ def road_bake():
 # peter out (taper=True).
 HW = 30                        # main lanes ~60px wide (the old slab was 88)
 road_mask_add(road_pts([(1380, 640), (1305, 800), (1410, 930), (1380, 1100)],
-                       HW, taper=(False, False)))               # S â†’ the rave
+                       HW, taper=(False, False)))               # S → the rave
 road_mask_add(road_pts([(1560, 590), (1800, 660), (2080, 545), (2380, 625),
-                        (2760, 570)], HW, taper=(False, False)))  # E â†’ the beach
+                        (2760, 570)], HW, taper=(False, False)))  # E → the beach
 road_mask_add(road_pts([(1200, 580), (980, 625), (750, 545), (520, 605),
-                        (330, 565)], HW, taper=(False, True)))    # W stub ðŸš§
+                        (330, 565)], HW, taper=(False, True)))    # W stub 🚧
 road_mask_add(road_pts([(1385, 430), (1335, 310), (1420, 215), (1400, 140)],
-                       HW, taper=(False, True)))                  # N stub ðŸš§
-# little spurs â€” the "every meter interesting" walks
+                       HW, taper=(False, True)))                  # N stub 🚧
+# little spurs — the "every meter interesting" walks
 road_mask_add(road_pts([(905, 610), (790, 500), (735, 450)],
-                       18, taper=(False, True)))                  # â†’ pond bank
+                       18, taper=(False, True)))                  # → pond bank
 road_mask_add(road_pts([(1330, 830), (1120, 862), (940, 825)],
-                       18, taper=(False, True)))                  # â†’ playground
+                       18, taper=(False, True)))                  # → playground
 road_mask_add(road_pts([(2085, 560), (2150, 700), (2255, 775)],
-                       18, taper=(False, True)))                  # â†’ the meadow
+                       18, taper=(False, True)))                  # → the meadow
 road_bake()
 
-# ---- â›² the plaza: warm sandstone flags over the crossroads ----------------
-# âš ï¸ NOT a two-tone checker â€” at 24px checks it read as a PNG transparency
+# ---- ⛲ the plaza: warm sandstone flags over the crossroads ----------------
+# ⚠️ NOT a two-tone checker — at 24px checks it read as a PNG transparency
 # checkerboard (round-1 plate). Flagstones = one warm fill, thin JOINT lines
 # on a 30px grid, per-flag tone jitter, a darker ring, and road-coloured entry
 # aprons at the four compass points so the lanes flow INTO the circle.
@@ -377,7 +377,7 @@ for y in range(CY - PLAZA_RY, CY + PLAZA_RY):
             j = frng.randrange(-8, 9)
             flag_tone[fk] = (PAVE[0] + j, PAVE[1] + j, PAVE[2] + j)
         put(x, y, PAVE_J if (x % 30 < 2 or y % 30 < 2) else flag_tone[fk])
-# âš ï¸ NO entry aprons: the circle OVERFLOWS the roads (Trym round 8 â€” the
+# ⚠️ NO entry aprons: the circle OVERFLOWS the roads (Trym round 8 — the
 # apron re-paint made lanes "stop weird in the middle of the circle"). Lanes
 # start inside the ellipse and the plaza, painted after road_bake, buries
 # them; each path now dies cleanly at the rim.
@@ -401,20 +401,20 @@ ROCK_BOX = ('circle', 20)
 
 
 def dedisc(img):
-    """strip the pack's baked-in grass mound under trees/bushes/props â€” its
+    """strip the pack's baked-in grass mound under trees/bushes/props — its
     green never matches our lawn, so every tree stood on an off-shade disc
     (Trym round 9). Bottom band only; greens go transparent, trunk browns and
     outlines survive (mound greens all have g > r+30)."""
     img = img.convert('RGBA')
     p = img.load()
     h = img.height
-    if h < 100:            # bushes/mushrooms ARE green to the ground â€”
+    if h < 100:            # bushes/mushrooms ARE green to the ground —
         return img         # de-mounding them leaves grey husks
     y0 = int(h * 0.84)     # 0.74/0.80 nibbled the low-crowned species
     for y in range(y0, h):
         for x in range(img.width):
             r, g, b, a = p[x, y]
-            # BRIGHT lawn greens only â€” g>r+30 alone also ate the mossy
+            # BRIGHT lawn greens only — g>r+30 alone also ate the mossy
             # trunks of the purple-shadow species (Trym round 9b)
             if a and g > r + 38 and g > 108 and r < 92:
                 p[x, y] = (0, 0, 0, 0)
@@ -450,7 +450,7 @@ def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
 
 
 def try_place(names, cx, base, **kw):
-    """first sprite that exists wins â€” pack filenames drift between versions"""
+    """first sprite that exists wins — pack filenames drift between versions"""
     for n in names if isinstance(names, (list, tuple)) else [names]:
         try:
             return place(n, cx, base, **kw)
@@ -460,19 +460,19 @@ def try_place(names, cx, base, **kw):
     return (0, 0)
 
 
-# ---- ðŸ¦† the duck pond: the pack's OWN grassâ†’water autotiles ----------------
-# âš ï¸ round 3 filled an ellipse with a flat water tile + a drawn mud ring â€” a
+# ---- 🦆 the duck pond: the pack's OWN grass→water autotiles ----------------
+# ⚠️ round 3 filled an ellipse with a flat water tile + a drawn mud ring — a
 # navy slab. The Grass_Water_1_N family (91 singles) IS the transition art;
 # each tile is auto-classified by sampling its edge midpoints (blue = water),
 # then the pond is laid on the TILE GRID: a cell gets the tile whose water
 # sides face its in-pond neighbours. Trym's reference shots, done properly.
 pcx, pcy, prx, pry = POND
 if HAVE_PACK:
-    # âš ï¸ TWO auto-classification attempts at the Grass_Water autotiles failed
-    # (rounds 4-5: staircase edges, dirt-bank strays) â€” the family's layout
+    # ⚠️ TWO auto-classification attempts at the Grass_Water autotiles failed
+    # (rounds 4-5: staircase edges, dirt-bank strays) — the family's layout
     # needs a proper contact-sheet study before it can be mapped (TODO, own
     # session). Until then: pack water FILL + a hand-finished bank in the
-    # reference shots' language â€” dark under-lip, then a scalloped GRASS
+    # reference shots' language — dark under-lip, then a scalloped GRASS
     # overhang so the lawn hangs over the water like the pack's own ponds.
     wp = WATER_T.load()
     for y in range(pcy - pry, pcy + pry):
@@ -508,9 +508,9 @@ for lx, ly in ((pcx - 120, pcy - 40), (pcx + 90, pcy + 55), (pcx + 40, pcy - 80)
             if (xx / 9.0) ** 2 + (yy / 5.0) ** 2 <= 1.0 and not (xx > 4 and abs(yy) < 2):
                 put(lx + xx, ly + yy, (74, 142, 62) if (xx + yy) % 3 else (94, 168, 78))
 
-# ---- ðŸŒ² the forest: the world's walls -------------------------------------
-# âš ï¸ Round-3 sin (Trym): "the same 5-10 sprites plastered around". The pack has
-# 100+ trees â€” the border is now built like his reference shots: SPECIES
+# ---- 🌲 the forest: the world's walls -------------------------------------
+# ⚠️ Round-3 sin (Trym): "the same 5-10 sprites plastered around". The pack has
+# 100+ trees — the border is now built like his reference shots: SPECIES
 # CLUSTERS (a stretch of one family reads as a wood, a shuffle reads as a
 # screensaver), TWO ROWS with y-offset for depth, and small bushes filling the
 # gaps at the feet of the big trees. Greens only: 4/5/6 are the autumn set.
@@ -535,12 +535,12 @@ def treeline(x0, x1, y, step=104, jitter=22):
         x += step
 
 
-# âš ï¸ NO BORDER TREE WALLS (Trym, round 7: "remove the trees around the map,
-# it looks weird to frame everything in like that for now") â€” the world edge
+# ⚠️ NO BORDER TREE WALLS (Trym, round 7: "remove the trees around the map,
+# it looks weird to frame everything in like that for now") — the world edge
 # is the engine's BOUND clamp, not a visual fence. treeline() is kept for
 # possible partial hedges later.
 if HAVE_PACK:
-    # inner clumps â€” one species each, y-sorted + trunk-solid
+    # inner clumps — one species each, y-sorted + trunk-solid
     for ci, (cx_, cy_) in enumerate(((240, 620), (1060, 260), (1200, 940),
                                      (1660, 180), (2560, 950), (900, 470))):
         fam = SPECIES[ci % len(SPECIES)]
@@ -548,7 +548,7 @@ if HAVE_PACK:
             try_place(fam[rng.randrange(len(fam))],
                       cx_ + rng.randrange(-70, 70), cy_ + rng.randrange(-40, 40),
                       solid=TRUNK, layer=True)
-    # ðŸ„ the forest floor: mushrooms + stumps at the FEET of the tree clumps
+    # 🍄 the forest floor: mushrooms + stumps at the FEET of the tree clumps
     # (with the border walls cut, edge placement would float on open lawn)
     CLUMPS = ((240, 620), (1060, 260), (1200, 940), (1660, 180), (2560, 950), (900, 470))
     for _ in range(12):
@@ -561,7 +561,7 @@ if HAVE_PACK:
         try_place(['ME_Singles_Camping_48x48_Stump_%d.png' % rng.randrange(1, 3)],
                   cx_ + rng.randrange(-160, 160), cy_ + rng.randrange(60, 130),
                   solid=ROCK_BOX, scale=PROP * 0.9)
-    # a couple of worn dirt patches breaking the lawn up â€” âš ï¸ on OPEN LAWN
+    # a couple of worn dirt patches breaking the lawn up — ⚠️ on OPEN LAWN
     # only (round 4 smeared one across the plaza's rim)
     for dcx, dcy, drx, dry_ in ((980, 330, 64, 36), (2380, 780, 70, 40), (520, 1010, 60, 34)):
         for y in range(dcy - dry_, dcy + dry_):
@@ -570,7 +570,7 @@ if HAVE_PACK:
                 if dd <= 1.0 and rng.random() < (1.1 - dd):
                     put(x, y, (172, 142, 96) if (x * 3 + y * 7) % 9 else (152, 124, 82))
 
-# ---- â›² the fountain (animated â†’ strip; frame 0 baked) ---------------------
+# ---- ⛲ the fountain (animated → strip; frame 0 baked) ---------------------
 def sheet_frames(img):
     for n in (8, 6, 4, 3, 2):
         if img.width % n == 0 and 0.4 <= (img.width / n) / img.height <= 1.6:
@@ -582,20 +582,20 @@ FOUNTAIN = []
 if HAVE_PACK:
     try:
         # Garden_Fountain_3: 864x288 = SIX frames of 144x288 (a tall statue
-        # fountain). âš ï¸ Round 2 sliced it as 3x288 and the plaza got TWO
-        # fountains standing side by side â€” one "frame" held two of them.
+        # fountain). ⚠️ Round 2 sliced it as 3x288 and the plaza got TWO
+        # fountains standing side by side — one "frame" held two of them.
         sheet = load_pack('Garden_Fountain_3_48x48.png').convert('RGBA')
         n = 6
         fw = sheet.width // n
-        strip = blockify(sheet, factor=1, colors=28, warm=0.04, sat=1.06,
-                         con=1.05, trim=False, outline=True)
+        strip = blockify(sheet, factor=1, colors=28, warm=0.0, sat=1.0,
+                         con=1.0, trim=False, outline=True)
         strip = strip.crop((1, 1, 1 + sheet.width, 1 + sheet.height))
         sw = int(fw * PROP)
         strip = strip.resize((sw * n, int(sheet.height * PROP)), Image.NEAREST)
         strip.save(os.path.join(OUT, 'a-fountain.png'), optimize=True)
         f0 = strip.crop((0, 0, sw, strip.height))
         # base at CY + ~14% of height puts the BASIN's centre on the plaza's
-        # centre (0.42 hung the whole statue low â€” Trym round 8)
+        # centre (0.42 hung the whole statue low — Trym round 8)
         fx, fbase = CX, CY + int(strip.height * 0.14)
         shadow(fx, fbase - 6, sw * 0.42, 10)
         im.alpha_composite(f0, (fx - sw // 2, fbase - strip.height))
@@ -605,26 +605,26 @@ if HAVE_PACK:
     except Exception as e:
         print('  fountain failed:', e)
 
-# ---- ðŸ§ƒ THE MARKET ROW (storefronts face the beach road) -------------------
+# ---- 🧃 THE MARKET ROW (storefronts face the beach road) -------------------
 if HAVE_PACK:
-    # the banana stand's future storefront spot â€” held by the biggest cart for
+    # the banana stand's future storefront spot — held by the biggest cart for
     # now (the stand building upgrade is its own later step)
     # carts sit just off the beach road's north shoulder, following its dips
-    # (the road curves now â€” placement tracks the waypoints, not MARKET_Y)
+    # (the road curves now — placement tracks the waypoints, not MARKET_Y)
     MARKET['stand'] = (1975, 528)
     try_place(['ME_Singles_Vehicles_48x48_Street_Food_Cart_1.png',
                'ME_Singles_Vehicles_48x48_Street_Food_Cart_2.png'],
               1975, 528, solid=CART_BOX, layer=True, colors=28)
-    # ðŸ§ƒ THE MERCH CART â€” the whole point of Park 2.0
+    # 🧃 THE MERCH CART — the whole point of Park 2.0
     MARKET['cart'] = (2300, 545)
     try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_1.png',
                'ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'],
               2300, 545, solid=CART_BOX, layer=True, colors=28)
 
-# ---- ðŸ› the playground -----------------------------------------------------
+# ---- 🛝 the playground -----------------------------------------------------
 def sheet_strip(name, out_name, fw, fh=96):
-    """âš ï¸ the playground files are each a FULL ANIMATION SHEET (Park_Swing_1 is
-    1152x96 = 12 frames of 96) â€” round 1 pasted a whole sheet as one 'sprite'
+    """⚠️ the playground files are each a FULL ANIMATION SHEET (Park_Swing_1 is
+    1152x96 = 12 frames of 96) — round 1 pasted a whole sheet as one 'sprite'
     and the plate grew a garland. Slice, blockify ONCE, bake frame 0."""
     try:
         sheet = load_pack(name).convert('RGBA')
@@ -662,15 +662,15 @@ if HAVE_PACK:
                    'ME_Singles_Camping_48x48_Benched_Table_2.png'],
                   tx, ty, solid=TABLE_BOX, layer=True)
 
-# ---- ðŸŒ¼ the meadow: WILDFLOWERS, not city planters -------------------------
-# âš ï¸ round 1 scattered the City_Props Flowers_N â€” those are FRAMED PLANTER
+# ---- 🌼 the meadow: WILDFLOWERS, not city planters -------------------------
+# ⚠️ round 1 scattered the City_Props Flowers_N — those are FRAMED PLANTER
 # BEDS and the meadow read as a garden centre. Wildflowers are procedural:
 # little 2-3px blossoms on a stem shadow, in drifts, plus a few flower BUSHES
 # (the round ones) for body. Planters can return beside the shops someday.
 mx0, my0, mx1, my1 = MEADOW
 BLOOM = [(255, 158, 196), (255, 224, 92), (250, 250, 245), (188, 150, 244), (255, 140, 92)]
 wrng = random.Random(1312)
-# âš ï¸ NO pack flowers at all in the meadow â€” Flowers_N AND Flower_Bush_N are
+# ⚠️ NO pack flowers at all in the meadow — Flowers_N AND Flower_Bush_N are
 # both FRAMED PLANTER BOXES (round 2 still had grey beds in the grass).
 # Wildflowers are drawn: a 3px blossom on a stem, in dense drifts.
 def blossom(bx, by, col):
@@ -707,15 +707,15 @@ for i in range(0, len(ROAD_SPINE), 120):
             blossom(bx_ + wrng.randrange(-14, 14), by_ + wrng.randrange(-9, 9), col)
 
 # ---- lamps, benches, rocks, signs -----------------------------------------
-# âš ï¸ SIX lamps, placed like a park department would: the plaza's four corners
+# ⚠️ SIX lamps, placed like a park department would: the plaza's four corners
 # + one per shopping/playing corner. Round 3 scattered ~20 and the centre
 # read as a lamp warehouse (Trym).
-# âš ï¸ LAMPS CUT (rounds 3-6): Street_Lamp_48x48.png is a variant SHEET whose
+# ⚠️ LAMPS CUT (rounds 3-6): Street_Lamp_48x48.png is a variant SHEET whose
 # layout defeated both naive pastes and column slicing (boulevards, then
 # fragments). Re-add only after a real contact-sheet study of the file.
 if HAVE_PACK:
-    # benches live at the bends â€” a seat wherever the path turns and the view
-    # changes. âš ï¸ NONE inside the plaza: the log benches read as tree stumps
+    # benches live at the bends — a seat wherever the path turns and the view
+    # changes. ⚠️ NONE inside the plaza: the log benches read as tree stumps
     # on the pavement (Trym round 8).
     for bx, by, fl in ((768, 502, False), (1822, 618, True), (1285, 862, False)):
         try_place(['ME_Singles_Camping_48x48_Cut_Wood_Bench_1.png',
@@ -724,8 +724,8 @@ if HAVE_PACK:
     for rx_, ry_ in ((360, 540), (2600, 300), (1520, 240), (700, 1010)):
         try_place(['ME_Singles_Camping_48x48_Rock_%d.png' % rng.randrange(1, 9)],
                   rx_, ry_, solid=ROCK_BOX, scale=PROP * 0.8)
-    # ðŸš§ the construction stubs â€” a DRAWN sawhorse barrier, striped like real
-    # roadworks. âš ï¸ NOT the pack's Signboards: they literally read "Camping"
+    # 🚧 the construction stubs — a DRAWN sawhorse barrier, striped like real
+    # roadworks. ⚠️ NOT the pack's Signboards: they literally read "Camping"
     # (round-1 plate had the park advertising a campsite in three places).
     def build_sawhorse():
         K = 3
@@ -763,7 +763,7 @@ def emit_geo():
         elif shape[0] == 'circle':
             ob_circles.append((cx, base, shape[1]))
     L = []
-    L.append('// GENERATED by tools/build-park-scene.py â€” DO NOT EDIT.')
+    L.append('// GENERATED by tools/build-park-scene.py — DO NOT EDIT.')
     L.append('// Every collider here was declared on the place() call that drew its prop.')
     L.append('export const WORLD = { w: %d, h: %d };' % (W, H))
     L.append('export const BOUND = %d;' % BOUND)
@@ -791,4 +791,3 @@ def emit_geo():
 emit_geo()
 im.convert('RGB').save(os.path.join(OUT, 'park.png'), optimize=True)
 print('wrote park.png (%dx%d) %.0f KB' % (W, H, os.path.getsize(os.path.join(OUT, 'park.png')) / 1024.0))
-
