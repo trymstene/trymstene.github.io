@@ -427,14 +427,11 @@ def treeline(x0, x1, y, step=104, jitter=22):
         x += step
 
 
+# ⚠️ NO BORDER TREE WALLS (Trym, round 7: "remove the trees around the map,
+# it looks weird to frame everything in like that for now") — the world edge
+# is the engine's BOUND clamp, not a visual fence. treeline() is kept for
+# possible partial hedges later.
 if HAVE_PACK:
-    treeline(40, W - 20, 52, step=112)                     # north wall
-    treeline(30, W - 20, H - 44, step=108)                 # south wall
-    for y in range(150, H - 70, 108):                      # west + east walls
-        if not (CY - 110 < y < CY + 60):                   # gaps at the road doors
-            fam = SPECIES[(y // 300) % len(SPECIES)]
-            try_place(fam[rng.randrange(len(fam))], 44 + rng.randrange(-18, 18), y, shade=False)
-            try_place(fam[rng.randrange(len(fam))], W - 46 + rng.randrange(-16, 16), y, shade=False)
     # inner clumps — one species each, y-sorted + trunk-solid
     for ci, (cx_, cy_) in enumerate(((240, 620), (1060, 260), (1200, 940),
                                      (1660, 180), (2560, 950), (900, 470))):
@@ -443,16 +440,18 @@ if HAVE_PACK:
             try_place(fam[rng.randrange(len(fam))],
                       cx_ + rng.randrange(-70, 70), cy_ + rng.randrange(-40, 40),
                       solid=TRUNK, layer=True)
-    # 🍄 the forest floor: mushrooms, stumps and rocks near the treelines —
-    # the reference shots' "life at the edges"
-    for _ in range(14):
-        edge_y = rng.choice([rng.randrange(120, 200), rng.randrange(H - 210, H - 120)])
+    # 🍄 the forest floor: mushrooms + stumps at the FEET of the tree clumps
+    # (with the border walls cut, edge placement would float on open lawn)
+    CLUMPS = ((240, 620), (1060, 260), (1200, 940), (1660, 180), (2560, 950), (900, 470))
+    for _ in range(12):
+        cx_, cy_ = CLUMPS[rng.randrange(len(CLUMPS))]
         try_place(['ME_Singles_Camping_48x48_Mushrooms_%d.png' % rng.randrange(1, 6)],
-                  rng.randrange(160, W - 160), edge_y, shade=False, scale=PROP * 0.85)
-    for _ in range(5):
+                  cx_ + rng.randrange(-130, 130), cy_ + rng.randrange(40, 110),
+                  shade=False, scale=PROP * 0.85)
+    for _ in range(4):
+        cx_, cy_ = CLUMPS[rng.randrange(len(CLUMPS))]
         try_place(['ME_Singles_Camping_48x48_Stump_%d.png' % rng.randrange(1, 3)],
-                  rng.randrange(200, W - 200),
-                  rng.choice([rng.randrange(140, 230), rng.randrange(H - 240, H - 130)]),
+                  cx_ + rng.randrange(-160, 160), cy_ + rng.randrange(60, 130),
                   solid=ROCK_BOX, scale=PROP * 0.9)
     # a couple of worn dirt patches breaking the lawn up — ⚠️ on OPEN LAWN
     # only (round 4 smeared one across the plaza's rim)
