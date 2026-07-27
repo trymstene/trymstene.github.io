@@ -140,7 +140,7 @@ function init() {
   const earnDoor = (d) => (d.earned === 'pier'
     ? { href: '/beach/', at: 'the pier' }
     : d.earned === 'garden'
-      ? { href: '/park2/', at: 'the park garden' } // ⚠️ flip to /park/ at the P-flip
+      ? { href: '/park/', at: 'the park garden' }
       : { href: '/rave/', at: 'the rave' });
   function iconChips(host, items, key, artFor, defFor) {
     items.forEach(([val, label]) => {

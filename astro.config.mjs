@@ -19,5 +19,7 @@ export default defineConfig({
     // the area page moved to /park/ (the old slug had spread through doors,
     // LED ads and guides; those all point at /park/ now).
     '/banana-stand/': '/park/',
+    // /park2/ was the Park 2.0 QA preview slug until the 29 Jul flip.
+    '/park2/': '/park/',
   },
 });
