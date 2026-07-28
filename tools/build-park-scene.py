@@ -943,23 +943,29 @@ if HAVE_PACK:
     try_place(['ME_Singles_City_Props_48x48_Kiosk_Mushroom_1.png'],
               2300, 545, solid=SHOP_BOX, layer=True, colors=28)
 
-# ---- 🌱 THE GARDEN (P3b/W3) — four soil beds, 4 slots each -----------------
+# ---- 🌱 THE GARDEN (P3b/W3) — soil beds, 4 slots each ----------------------
 # The bed is the graveyard family's Dirt_Ditch_1 — a 3×3-tile patch of dug
 # earth with torn-grass edges (no farm/planter family exists in the pack; the
 # only true turned-soil rectangle lives here). Slots are marked with the
 # Terrains Props_Dirt speckles so each reads as its own patch. Baked, solid,
 # NOT layered — the growing plants are client overlays and must draw on top.
-# W3: site B (gx 288/426) mirrors site A west of the playground, tucked clear
-# of the swings. Site C (NE) took the lawn the stand freed when it moved to
-# the north road. ⚠️ TUPLE ORDER IS THE SLOT CONTRACT: site A = slots 0-7,
-# site B = 8-15, site C = 16-23 — live production plants sit on the low
-# indices, never reorder.
+# ⚠️ TUPLE ORDER IS THE SLOT CONTRACT — new beds APPEND, never insert.
+# v1 pairs (LIVE production slots): site A (meadow) 0-7 · site B (playground)
+# 8-15 · site C (NE, the lawn the stand freed) 16-23. v2 pairs (the 31 Jul
+# doubling — each site gains a second pair beside its first): A2 24-31 south
+# of A · B2 32-39 south of B · C2 40-47 north of C. Site D (same pass): a
+# FOURTH site of two pairs on the pond's SE bank lawn, south of the W road,
+# slots 48-63.
 PLOTS = []
 if HAVE_PACK:
     # each bed = TWO ditches side by side (the ditch soil is ~52px wide — one
     # slot column each, two rows), so every slot sits ON dug earth
-    for gx, gb in ((2270, 862), (2408, 862), (288, 862), (426, 862),
-                   (1980, 500), (2118, 500)):
+    BEDS = ((2270, 862), (2408, 862), (288, 862), (426, 862),
+            (1980, 500), (2118, 500),                    # ← the v1 contract
+            (2200, 970), (2338, 970), (288, 970), (426, 970),
+            (1960, 390), (2098, 390),                    # ← v2 appends only
+            (650, 760), (788, 760), (650, 868), (788, 868))   # ← site D
+    for gx, gb in BEDS:
         for sx in (gx - 30, gx + 30):
             place('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png', sx, gb,
                   solid=('rect', -28, -50, 28, 4), colors=28, sh=0.36)
@@ -967,6 +973,16 @@ if HAVE_PACK:
                 place('ME_Singles_Terrains_and_Fences_48x48_Props_Dirt_1.png',
                       sx, sy + 12, shade=False, scale=PROP * 0.9)
                 PLOTS.append((sx, sy))
+    # the never-reindex assertion: slots 0-23 hold LIVE plants in production —
+    # their coordinates and order are frozen forever
+    assert PLOTS[:24] == [
+        (2240, 800), (2240, 838), (2300, 800), (2300, 838),
+        (2378, 800), (2378, 838), (2438, 800), (2438, 838),
+        (258, 800), (258, 838), (318, 800), (318, 838),
+        (396, 800), (396, 838), (456, 800), (456, 838),
+        (1950, 438), (1950, 476), (2010, 438), (2010, 476),
+        (2088, 438), (2088, 476), (2148, 438), (2148, 476)], 'v1 slots moved!'
+    assert len(PLOTS) == 64, 'PLOTS drifted: %d' % len(PLOTS)
     # 🌼 the growth-stage sprites the client lays over the slots — pack art,
     # same neutral processing as every prop, saved at PROP scale
     for src, out in (('ME_Singles_Garden_48x48_Medium_Sprout_2.png', 'g-sprout1.png'),
@@ -1012,6 +1028,21 @@ if HAVE_PACK:
             print('  %s: %dx%d' % (sout, simg.width, simg.height))
     except Exception as e:
         print('  soil patch failed', e)
+    # 🌼 ROADSIDE BORDER FLOWERS — the pack's Small_* flower singles: one
+    # stage, no watering, four colour kinds the client plants on BORDER_SPOTS
+    # (⚠️ ids must match BORDER_FLOWERS in park-garden.js + BORDER_KINDS in
+    # worker-rave/src/index.js)
+    for src, out in (('ME_Singles_Garden_48x48_Small_Yellow_Flower.png', 'b-marigold.png'),
+                     ('ME_Singles_Garden_48x48_Small_Red_Flower.png', 'b-poppy.png'),
+                     ('ME_Singles_Garden_48x48_Small_Light_Blue_Flower.png', 'b-bluebell.png'),
+                     ('ME_Singles_Garden_48x48_Small_Pink_Flower.png', 'b-primrose.png')):
+        try:
+            s = blockify(load_pack(src), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+            s = s.resize((max(1, int(s.width * PROP)), max(1, int(s.height * PROP))), Image.NEAREST)
+            s.save(os.path.join(OUT, out), optimize=True)
+            print('  %s: %dx%d' % (out, s.width, s.height))
+        except Exception as e:
+            print('  border flower failed', src, e)
 
 # ---- 🌿 W1 WEEDS — the entropy sprite (Modern Farm pack, native 48px) ------
 # Trym's call: Crop_Grain_ROTTEN — the grey-brown withered bush beside the
@@ -1228,13 +1259,71 @@ if HAVE_PACK:
         COLLIDERS.append(('sawhorse', ('rect', -44, -18, 44, 4), sx, sy))
         SIGNS.append((sx, sy))
 
+# ---- 🌼 BORDER_SPOTS — roadside single-flower micro-spots (31 Jul) ---------
+# ~24 spots on the road shoulders, picked off ROAD_SPINE like the blossom
+# tufts but SPACED (120px+) and emitted into the geo contract: the community
+# plants single 3-coin flowers here (server list rides the garden DO). A
+# small bare-soil dot is baked per spot so an empty one reads as plantable.
+# Runs AFTER every collider is declared (benches/rocks/sawhorse included).
+BORDER_SPOTS = []
+if HAVE_PACK:
+    bsr = random.Random(2727)
+
+    def border_clear(x, y):
+        if not (BOUND + 30 < x < W - BOUND - 30 and BOUND + 40 < y < H - BOUND - 30):
+            return False
+        # r=10: only reject a spot sitting ON road ink — shoulder spots HUG
+        # the lane (r=20 saw the lane edge from every shoulder and killed all)
+        if on_road(x, y, 10):
+            return False
+        ex, ey = (x - CX) / (PLAZA_RX + 30.0), (y - CY) / (PLAZA_RY + 30.0)
+        if ex * ex + ey * ey < 1:
+            return False
+        ex, ey = (x - pcx) / (prx + 40.0), (y - pcy) / (pry + 40.0)
+        if ex * ex + ey * ey < 1:
+            return False
+        for _n, shape, ccx, cby in COLLIDERS:
+            if shape[0] == 'circle':
+                if (x - ccx) ** 2 + (y - cby) ** 2 < (shape[1] + 24) ** 2:
+                    return False
+            else:
+                _, a, b2, c2, d2 = shape
+                if ccx + a - 24 <= x <= ccx + c2 + 24 and cby + b2 - 24 <= y <= cby + d2 + 24:
+                    return False
+        for sx_, sy_ in PLOTS:
+            if abs(x - sx_) < 60 and abs(y - sy_) < 60:
+                return False
+        return True
+
+    for i in range(0, len(ROAD_SPINE), 36):
+        if len(BORDER_SPOTS) >= 26:
+            break
+        sx_, sy_, pxn, pyn, hw = ROAD_SPINE[i]
+        side = 1 if (i // 36) % 2 == 0 else -1
+        off = hw + 18 + bsr.randrange(0, 10)
+        bx_, by_ = int(sx_ + pxn * off * side), int(sy_ + pyn * off * side)
+        if not border_clear(bx_, by_):
+            continue
+        if any((bx_ - qx) ** 2 + (by_ - qy) ** 2 < 120 * 120 for qx, qy in BORDER_SPOTS):
+            continue
+        BORDER_SPOTS.append((bx_, by_))
+        for yy in range(by_ - 5, by_ + 6):        # the baked bare-soil dot
+            for xx in range(bx_ - 8, bx_ + 9):
+                dd = ((xx - bx_) / 8.0) ** 2 + ((yy - by_) / 5.0) ** 2
+                if dd <= 1.0 and bsr.random() < (1.15 - dd):
+                    put(xx, yy, (172, 142, 96) if (xx * 3 + yy * 7) % 9 else (152, 124, 82))
+    assert 18 <= len(BORDER_SPOTS) <= 26, 'border spots drifted: %d' % len(BORDER_SPOTS)
+    print('border spots: %d' % len(BORDER_SPOTS))
+
 # ---- 🌿 WEED_GRID — the organism board (Weeds 2.0) -------------------------
 # Every lawn point a weed may claim: a 48px lattice rejecting roads (24px
 # clearance), colliders (+16px), the garden-bed zones, plaza + pond (+margin)
 # and the world border. The server grows weed patches across it.
 def build_weed_grid():
-    BED_ZONES = ((200, 750, 520, 900), (2180, 750, 2500, 900),
-                 (1890, 395, 2210, 520))   # site C — the old stand's lawn
+    BED_ZONES = ((200, 750, 520, 1005),      # sites B + B2 (SW, two bed rows)
+                 (2100, 750, 2500, 1005),    # sites A + A2 (meadow, two rows)
+                 (1870, 275, 2210, 520),     # sites C + C2 (NE, two rows)
+                 (560, 640, 880, 900))       # site D (pond bank, two rows)
 
     def ok(x, y):
         if on_road(x, y, 24):
@@ -1247,6 +1336,9 @@ def build_weed_grid():
             return False
         for bx0, by0, bx1, by1 in BED_ZONES:
             if bx0 <= x <= bx1 and by0 <= y <= by1:
+                return False
+        for qx, qy in BORDER_SPOTS:              # a weed on a flower spot
+            if (x - qx) ** 2 + (y - qy) ** 2 < 40 * 40:   # would read broken
                 return False
         for _n, shape, cx, base in COLLIDERS:
             if shape[0] == 'circle':
@@ -1293,6 +1385,7 @@ def emit_geo():
     L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])
+    L.append('export const BORDER_SPOTS = %s;' % [list(p) for p in BORDER_SPOTS])
     L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d } };'
              % (CX, H - 40, W - 60, CY))
     L.append('export const OB_RECTS = %s;' % [list(r) for r in ob_rects])
@@ -1308,9 +1401,10 @@ def emit_geo():
     with open(wpath, 'w', encoding='utf-8') as f:
         f.write('// GENERATED by tools/build-park-scene.py — the park weed lattice.\n'
                 '// DO NOT EDIT (twin of WEED_GRID in src/scripts/park-geo.js).\n'
-                'export const WEED_GRID = %s;\n' % grid_js)
-    print('wrote park-geo.js  (%d rects, %d circles, %d overlays, %d weed-grid pts)'
-          % (len(ob_rects), len(ob_circles), len(OVERLAYS), len(weed_grid)))
+                'export const WEED_GRID = %s;\n'
+                'export const BORDER_SPOTS_N = %d;\n' % (grid_js, len(BORDER_SPOTS)))
+    print('wrote park-geo.js  (%d rects, %d circles, %d overlays, %d weed-grid pts, %d border spots)'
+          % (len(ob_rects), len(ob_circles), len(OVERLAYS), len(weed_grid), len(BORDER_SPOTS)))
 
 
 emit_geo()

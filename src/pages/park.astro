@@ -557,6 +557,15 @@ import PixelIcon from '../components/PixelIcon.astro';
     .pk-trash--1 { width: 0.69%; aspect-ratio: 19 / 17; background-image: url('/assets/park/t-litter1.png'); }
     .pk-trash--2 { width: 0.69%; aspect-ratio: 19 / 17; background-image: url('/assets/park/t-litter2.png'); }
     .pk-trash--3 { width: 0.62%; aspect-ratio: 1; background-image: url('/assets/park/t-litter3.png'); }
+    /* 🌼 roadside border flowers — community-planted single blooms on the
+       baked soil dots; near the end of their ~7 days they visibly fade */
+    .pk-bflower {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
+      filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
+      transition: opacity 0.6s ease;
+    }
+    .pk-bflower.is-fading { opacity: 0.55; }
     .pk-weed.is-pulled { animation: pkWeedPull 0.24s ease-in forwards; }
     @keyframes pkWeedPull {
       0% { transform: translate(-50%, -100%) rotate(0); }

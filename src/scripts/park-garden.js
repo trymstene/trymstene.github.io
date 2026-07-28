@@ -4,7 +4,7 @@
 import { poofInto, worldSid } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { PLOTS } from './park-geo.js';
+import { PLOTS, BORDER_SPOTS } from './park-geo.js';
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
 import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
 
@@ -67,6 +67,23 @@ const STAGE_ART = {
   wheat1: ['c-wheat-1.png', 24, 12], wheat2: ['c-wheat-2.png', 24, 24],
   wheat3: ['c-wheat-3.png', 24, 26], wheat4: ['c-wheat-4.png', 31, 38],
 };
+// 🌼 BORDER FLOWERS — single-tap roadside decoration on the generator's
+// BORDER_SPOTS (bare-soil dots baked into the plate): 3 coins, one stage,
+// no watering, no stars, no harvest — ~7 days of life (server expires on
+// read), your name on the tap card. ⚠️ kind ids must match BORDER_KINDS in
+// worker-rave/src/index.js + the b-<id>.png sprites the generator bakes.
+const BORDER_FLOWERS = [
+  { id: 'marigold', name: 'marigold', emoji: '🌼' },
+  { id: 'poppy', name: 'poppy', emoji: '🌺' },
+  { id: 'bluebell', name: 'bluebell', emoji: '🪻' },
+  { id: 'primrose', name: 'primrose', emoji: '🌸' },
+];
+const BORDER_PRICE = 3;
+const BORDER_ART = {
+  marigold: ['b-marigold.png', 17, 15], poppy: ['b-poppy.png', 12, 15],
+  bluebell: ['b-bluebell.png', 17, 15], primrose: ['b-primrose.png', 17, 12],
+};
+
 const GARDEN_API = 'https://banana-rave.trymstene.workers.dev/park-garden';
 // 🌿 weed spots for the ?parktest shim only — the real list lives server-side
 // in worker-rave (keep in sync); two sprite variants picked by id hash
@@ -100,15 +117,19 @@ export function initGarden(ctx) {
   const myShort = worldSid().slice(0, 8);
   const gardenPanel = document.getElementById('pkGarden');
   const gardenBody = document.getElementById('pkGardenBody');
-  // 24 slots — 0-7 site A (meadow), 8-15 site B (playground), 16-23 site C
-  // (NE, the lawn the stand freed). ⚠️ indices are the contract, never reorder.
-  let gSlots = Array(24).fill(null);
+  // 64 slots — 0-7 site A (meadow), 8-15 site B (playground), 16-23 site C
+  // (NE, the lawn the stand freed); the 31 Jul expansion APPENDED 24-31 A2 ·
+  // 32-39 B2 · 40-47 C2 · 48-63 site D (the pond's SE bank). ⚠️ indices are
+  // the contract, never reorder.
+  let gSlots = Array(64).fill(null);
   const gEls = PLOTS.map(() => ({ plant: null, stage: '', soil: null, soilKey: '', stake: null }));
   let pendingGarden = null, pendingWater = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
   const gShim = {   // the ?parktest stand-in server (pre-lays a plain + golden egg)
-    slots: Array(24).fill(null), weeds: [], trash: [], bloom: 70,
+    slots: Array(64).fill(null), weeds: [], trash: [], bloom: 70,
     eggs: [{ id: 'qa1', x: 1330, y: 876 }, { id: 'qa2', x: 1432, y: 866, g: 1 }],
+    // one pre-planted border flower so the named tap card is testable at once
+    border: [{ spot: 1, kind: 'marigold', name: 'Inka', at: Date.now() - 3 * 86400000 }],
   };
   function shimGarden(path, body) {
     const now = Date.now();
@@ -119,6 +140,7 @@ export function initGarden(ctx) {
       weeds: gShim.weeds.map((w2) => ({ ...w2 })),
       trash: gShim.trash.map((t) => ({ ...t })),
       eggs: gShim.eggs.map((e) => ({ ...e })),
+      border: gShim.border.map((f) => ({ ...f })),
     });
     if (!body) return Promise.resolve(strip());
     if (path === '/egg') {
@@ -141,6 +163,11 @@ export function initGarden(ctx) {
       if (wi < 0) return Promise.resolve({ err: 'gone', ...strip() });
       gShim.weeds.splice(wi, 1);
       gShim.bloom = Math.min(100, gShim.bloom + 3);
+      return Promise.resolve(strip());
+    }
+    if (path === '/border') {
+      if (gShim.border.some((f) => f.spot === body.spot)) return Promise.resolve({ err: 'taken', ...strip() });
+      gShim.border.push({ spot: body.spot, kind: body.kind, name: body.name || '', at: now });
       return Promise.resolve(strip());
     }
     const i = body.slot, s = gShim.slots[i];
@@ -253,6 +280,108 @@ export function initGarden(ctx) {
       }
     });
   }
+  // ---- 🌼 BORDER FLOWERS — the road shoulders are the community's canvas --
+  // A baked soil dot marks every empty spot; a planted one is a single pack
+  // flower with its planter's name on the tap card. Pure decoration: no
+  // bloom feed, no watering — it lives ~7 days, fades near the end (client
+  // opacity), and the server sweeps it on read. First-come per spot.
+  let bSpots = Array(BORDER_SPOTS.length).fill(null);   // spot → entry | null
+  const bEls = BORDER_SPOTS.map(() => null);
+  let pendingBorder = null, borderTracked = false;
+  const borderKind = (id) => BORDER_FLOWERS.find((f) => f.id === id) || BORDER_FLOWERS[0];
+  function renderBorder(list) {
+    bSpots = Array(BORDER_SPOTS.length).fill(null);
+    (list || []).forEach((f) => {
+      if (f.spot >= 0 && f.spot < bSpots.length) bSpots[f.spot] = f;
+    });
+    BORDER_SPOTS.forEach(([sx, sy], i) => {
+      const f = bSpots[i];
+      let el = bEls[i];
+      if (!f) {
+        if (el) { el.remove(); bEls[i] = null; }   // faded out — soil dot again
+        return;
+      }
+      if (!el) {
+        el = bEls[i] = document.createElement('div');
+        el.className = 'pk-bflower';
+        el.style.left = pct(sx, W);
+        el.style.top = pct(sy + 3, H);
+        depth(el, sy);
+        world.appendChild(el);
+      }
+      if (el.dataset.kind !== f.kind) {
+        el.dataset.kind = f.kind;
+        const [img, w2, h2] = BORDER_ART[f.kind] || BORDER_ART.marigold;
+        el.style.backgroundImage = "url('/assets/park/" + img + "')";
+        el.style.width = pct(w2, W);
+        el.style.height = pct(h2, H);
+      }
+      // the last stretch of its ~7 days: it visibly wilts before it goes
+      el.classList.toggle('is-fading', Date.now() - (f.at || 0) > 6 * 86400000);
+    });
+  }
+  function openBorderSheet(i) {
+    const bal = coinBal();
+    gardenBody.innerHTML = '<h2>a bare road spot</h2>'
+      + '<p class="pk-panel__sub">plant a little flower here — pure prettiness, with your '
+      + 'name on it. it lives about a week, then the spot frees up for somebody else.</p>'
+      + BORDER_FLOWERS.map((f) =>
+        '<button class="pk-seedrow" type="button" data-kind="' + f.id + '"'
+        + (bal < BORDER_PRICE ? ' disabled' : '') + '>'
+        + '<i>' + f.emoji + '</i>'
+        + '<span class="pk-seedrow__txt"><b>' + f.name + '</b>'
+        + '<small>one flower · ~7 days</small></span>'
+        + coinChip(BORDER_PRICE) + '</button>').join('')
+      + (bal < BORDER_PRICE ? '<p class="pk-seedpoor">no coins — pull a few weeds, the roots sometimes pay</p>' : '');
+    gardenBody.querySelectorAll('.pk-seedrow').forEach((b) => {
+      b.addEventListener('click', () => plantBorder(i, b.dataset.kind));
+    });
+    gardenPanel.hidden = false;
+  }
+  async function plantBorder(i, kindId) {
+    if (coinBal() < BORDER_PRICE) return;
+    passStat('coins_spent', BORDER_PRICE);
+    refreshHud();
+    closeGarden();
+    const res = await gFetch('/border', { spot: i, kind: kindId, name: ctx.parkName, pass: worldSid() });
+    if (res && res.err === 'taken') {
+      passStat('coins_spent', -BORDER_PRICE);   // refund — beaten to the spot
+      refreshHud();
+      toast('somebody beat you to this spot');
+      applyGarden(res);
+      return;
+    }
+    applyGarden(res);
+    const kd = borderKind(kindId);
+    float(BORDER_SPOTS[i][0], BORDER_SPOTS[i][1] - 6, kd.emoji);
+    toast(kd.emoji + ' ' + kd.name + ' planted — the road just got prettier');
+    if (!borderTracked) { borderTracked = true; track('park_border', { kind: kindId }); }
+  }
+  function openBorderCard(i) {
+    const f = bSpots[i];
+    if (!f) { openBorderSheet(i); return; }
+    const kd = borderKind(f.kind);
+    gardenBody.innerHTML = '<h2>' + kd.emoji + ' '
+      + esc(f.name || 'a mystery banana') + '’s ' + kd.name + '</h2>'
+      + '<p class="pk-panel__sub">planted by the roadside to make the park prettier.</p>';
+    gardenPanel.hidden = false;
+  }
+  function borderAct(i) { if (bSpots[i]) openBorderCard(i); else openBorderSheet(i); }
+  function tapBorder(wx, wy) {
+    let best = -1, bd2 = 1e9;
+    BORDER_SPOTS.forEach(([sx, sy], i) => {
+      const d = Math.hypot(wx - sx, wy - (sy - (bSpots[i] ? 8 : 0)));
+      if (d < 26 && d < bd2) { bd2 = d; best = i; }
+    });
+    if (best < 0) return false;
+    const [sx, sy] = BORDER_SPOTS[best];
+    if (Math.hypot(pos.x - sx, pos.y - sy) < 90) { borderAct(best); return true; }
+    pendingBorder = best;                 // walk-then-act, like everything else
+    tgt.x = sx;
+    tgt.y = sy + 20;
+    return true;
+  }
+
   // ---- 🌿 WEEDS + 🌸 THE BLOOM — the shared entropy loop ------------------
   const weeds = new Map();                      // id → { el, x, y }
   let bloomV = -1, pendingWeed = null, weedTracked = false;
@@ -489,6 +618,7 @@ export function initGarden(ctx) {
     if (Array.isArray(res.weeds)) renderWeeds(res.weeds);
     if (Array.isArray(res.trash)) renderTrash(res.trash);
     if (Array.isArray(res.eggs)) renderEggs(res.eggs);
+    if (Array.isArray(res.border)) renderBorder(res.border);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
   }
   async function gardenPoll() {
@@ -663,7 +793,10 @@ export function initGarden(ctx) {
     if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { gardenAct(best); return true; }
     pendingGarden = best;                 // walk-then-act, like everything else
     tgt.x = sx;
-    tgt.y = 882;                          // the path along the beds' south edge
+    // just south of the bed's collider: rows alternate top (even i, gb-62)
+    // and bottom (odd i, gb-24), so both land on gb+16 — works at EVERY site
+    // (the old fixed 882 was sites A/B's line and never reached site C)
+    tgt.y = sy + (best % 2 ? 40 : 78);
     return true;
   }
   function gardenTick() {
@@ -684,6 +817,10 @@ export function initGarden(ctx) {
       const e = eggs.get(pendingEgg);
       if (!e) pendingEgg = null;            // claimed by somebody else mid-walk
       else if (Math.hypot(pos.x - e.x, pos.y - e.y) < 90) { const id = pendingEgg; pendingEgg = null; claimEgg(id); }
+    }
+    if (pendingBorder != null) {
+      const [sx, sy] = BORDER_SPOTS[pendingBorder];
+      if (Math.hypot(pos.x - sx, pos.y - sy) < 90) { const i = pendingBorder; pendingBorder = null; borderAct(i); }
     }
   }
 
@@ -729,16 +866,17 @@ export function initGarden(ctx) {
     }
     if (Math.hypot(pos.x - c.x, pos.y - c.y) < 95) { waterSlot(c.i); return; }
     pendingWater = c.i;
-    tgt.x = c.x; tgt.y = 882;
+    tgt.x = c.x;
+    tgt.y = c.y + (c.i % 2 ? 40 : 78);   // the bed's own south edge (see tapGarden)
   });
 
   return {
     trashTick, gardenTick, toolTick,
-    tapEgg, tapWeed, tapGarden,
+    tapEgg, tapWeed, tapGarden, tapBorder,
     closeGarden,
     gardenerLvl,
     bloomNow: () => bloomV,
-    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; },
+    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; },
     qa: {
       eggs,
       // 🥚 egg QA: lay one at your feet (egg(1) = golden); steal() = somebody

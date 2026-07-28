@@ -72,17 +72,25 @@ export function initShare(ctx, garden) {
       const r = 46 + ((i * 733) % 34);
       c.beginPath(); c.arc(x, EDGE - 14, r, 0, Math.PI * 2); c.fill();
     }
-    // 🌤 GOD-RAYS through the canopy — the bay card's sunbeam fan, gentler:
-    // no sun disc, lower alpha — light through leaves, not a spotlight.
-    const RAYX = 860, RAYY = 40;
+    // 🌤 GOD-RAYS v2 (Trym: "stronger sun-effect lines… from the corner of
+    // the card"): the apex sits JUST OFF the top-right corner and the fan
+    // sweeps the whole card — higher alpha, wider blades, plus a soft
+    // corner glow so the light has a source without a literal sun disc.
+    const RAYX = S + 26, RAYY = -26;
+    const glow = c.createRadialGradient(RAYX, RAYY, 0, RAYX, RAYY, 340);
+    glow.addColorStop(0, 'rgba(255,246,190,0.5)');
+    glow.addColorStop(1, 'rgba(255,246,190,0)');
+    c.fillStyle = glow;
+    c.fillRect(S - 380, 0, 380, 380);
     c.save();
     c.translate(RAYX, RAYY);
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 9; i++) {
       c.save();
-      c.rotate((100 + i * 12.5) * Math.PI / 180);   // fan from straight-down to the left
-      const len = 1500, w0 = 6, w1 = 66 + (i % 2) * 30;
+      c.rotate((97 + i * 10.4) * Math.PI / 180);   // fan: straight down → far left
+      const len = 1750, w0 = 8, w1 = 92 + (i % 2) * 44;
       const g = c.createLinearGradient(0, 0, len, 0);
-      g.addColorStop(0, 'rgba(255,246,180,0.11)');
+      g.addColorStop(0, 'rgba(255,246,180,0.30)');
+      g.addColorStop(0.55, 'rgba(255,246,180,0.16)');
       g.addColorStop(1, 'rgba(255,246,180,0)');
       c.fillStyle = g;
       c.beginPath();
@@ -105,6 +113,67 @@ export function initShare(ctx, garden) {
       c.fillStyle = petals[i % 3];
       c.fillRect(((i * 641) % S), 380 + ((i * 487) % (S - 420)), 7, 7);
     }
+    // ── v2 background details: the park itself gets on the card ──
+    // ⛲ the fountain, mid-distance in the treeline clearing — a simple
+    // two-tone silhouette with the water arcs
+    const drawFountain = (fx, fy, k) => {
+      const dark = '#33735c', lite = '#7fb98f';
+      c.fillStyle = dark; c.fillRect(fx - 52 * k, fy - 14 * k, 104 * k, 14 * k);
+      c.fillStyle = lite; c.fillRect(fx - 52 * k, fy - 20 * k, 104 * k, 6 * k);
+      c.fillStyle = dark; c.fillRect(fx - 7 * k, fy - 52 * k, 14 * k, 38 * k);
+      c.fillStyle = lite; c.fillRect(fx - 22 * k, fy - 58 * k, 44 * k, 8 * k);
+      c.strokeStyle = 'rgba(200,236,255,0.9)';
+      c.lineWidth = 5 * k;
+      c.lineCap = 'round';
+      c.beginPath(); c.moveTo(fx, fy - 58 * k);
+      c.quadraticCurveTo(fx - 30 * k, fy - 96 * k, fx - 40 * k, fy - 26 * k); c.stroke();
+      c.beginPath(); c.moveTo(fx, fy - 58 * k);
+      c.quadraticCurveTo(fx + 30 * k, fy - 96 * k, fx + 40 * k, fy - 26 * k); c.stroke();
+    };
+    drawFountain(640, 912, 1.0);   // the sunlit lawn, right of centre, under the stats
+    // 🌼 flower clusters — little drifts, bigger than the specks
+    const cluster = (cx2, cy2, col) => {
+      for (let i = 0; i < 6; i++) {
+        const fx = cx2 + ((i * 53) % 64) - 32, fy = cy2 + ((i * 37) % 40) - 20;
+        c.fillStyle = '#2c6b2c'; c.fillRect(fx + 3, fy + 8, 4, 12);
+        c.fillStyle = col;
+        c.fillRect(fx - 6, fy, 8, 8); c.fillRect(fx + 8, fy, 8, 8);
+        c.fillRect(fx + 1, fy - 7, 8, 8); c.fillRect(fx + 1, fy + 7, 8, 8);
+        c.fillStyle = '#fffdf0'; c.fillRect(fx + 2, fy + 1, 6, 6);
+      }
+    };
+    cluster(415, 585, '#ffd6e8');
+    cluster(860, 862, '#ffe135');
+    cluster(555, 1005, '#fffdf5');
+    // 🐔🐇 park animals strolling the lawn, a little ❤️ over each head —
+    // the ACTUAL farm-pack strips (frame 0), scaled small, pixelated
+    const loadImg = (src) => new Promise((res) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = src;
+    });
+    const [chick1, chick2, rabbit] = await Promise.all([
+      loadImg('/assets/park/a-chicken1.png'),
+      loadImg('/assets/park/a-chicken2.png'),
+      loadImg('/assets/park/a-rabbit.png'),
+    ]);
+    c.imageSmoothingEnabled = false;
+    const critter = (img, fx, fy, k, flip) => {
+      if (!img) return;                     // strip missing → just no cameo
+      const fw = Math.floor(img.width / 6), fh = img.height;
+      c.save();
+      c.translate(fx, fy);
+      if (flip) c.scale(-1, 1);
+      c.drawImage(img, 0, 0, fw, fh, -fw * k / 2, -fh * k, fw * k, fh * k);
+      c.restore();
+      c.textAlign = 'center';
+      c.font = '34px serif';
+      c.fillText('❤️', fx, fy - fh * k - 12);
+    };
+    critter(chick2, 505, 618, 1.8);         // strolling past the banana
+    critter(chick1, 540, 1020, 2.4, true);  // pecking near the front
+    critter(rabbit, 840, 902, 1.2);         // hopping under the stats
     // your banana — hands-up frame, big, tilted, hugging the left edge
     const bcv = document.createElement('canvas');
     bcv.width = bcv.height = 1024;
