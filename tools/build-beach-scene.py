@@ -605,7 +605,8 @@ def net_span():
 DIG_SITES = [(400, 620), (730, 372), (1100, 380), (490, 980), (300, 1046),
              (1290, 1040), (1560, 1010), (1620, 900), (1790, 1010)]
 PATCH_W, PATCH_H = 156, 104
-ARCH = (120, 770, 400, 950)    # the welcome arch's DOM box (banana-beach.js)
+ARCH = (219, 710, 499, 890)    # the welcome arch's DOM box (banana-beach.js)
+                               # ⚠️ moved up the lane 30 Jul — keep in sync
                                # ⚠️ KEEP IN SYNC with AX/AY/AW/AH there. Moved
                                # +45 on 24 Jul so the road runs centred between
                                # the posts instead of hugging the right one.
@@ -1603,13 +1604,15 @@ if HAVE_PACK:
     # beach's own junction markers (the fork, the gate fork) and reusing one
     # here would say "another fork" instead of "that way out". Blank planks
     # too — every Signboard in the pack is pre-lettered "Camping".
-    # SOUTH of the lane and EAST of the arch box (120,770-400,950). The first
-    # spot (330,992) sat between the arch's legs and its plank crowded the
-    # WELCOME board — two signs arguing in one glance. Out here it is the thing
-    # you pass on the way TO the arch, which is what a waypost is for.
-    PARK_SIGN = (455, 930)
+    # ⚠️ THIRD SPOT, and Trym's call: bottom-left, ABOVE the road, HALF SIZE.
+    # (330,992) sat between the arch's legs and crowded the WELCOME board; then
+    # (455,930) read as a second landmark beside it. Down here in the corner it
+    # is a small marker on the last stretch of sand before the road leaves the
+    # map — the arch is the landmark, this is just the label on the way out.
+    # x150 is WEST of the lane on every row it spans (lane x167-244 at y980).
+    PARK_SIGN = (150, 975)
     place('ME_Singles_Camping_48x48_Sign_7.png', PARK_SIGN[0], PARK_SIGN[1],
-          scale=0.86, sh=0.28, flip=True, layer=True, solid=('circle', 11))
+          scale=0.43, sh=0.28, flip=True, layer=True, solid=('circle', 6))
 
     # 🪨 the lanes' own scatter — stones and tufts just outside the shoulders
     road_liners(ROAD_SPINE, every=210, chance=0.55)

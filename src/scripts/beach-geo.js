@@ -70,7 +70,7 @@ export const OB_CIRCLES = [
   [2044, 786, 11],   // trashbin 7
   [2236, 596, 11],   // trashbin 9
   [2640, 890, 11],   // trashbin 8
-  [455, 930, 11],   // sign 7
+  [150, 975, 6],   // sign 7
   [215, 655, 48],   // the bonfire ring
 ];
 
@@ -178,7 +178,7 @@ export const OVERLAYS = [
   { src: 'ov-88.png', x: 1679, y: 1058, w: 38, h: 38, base: 1096 },
   { src: 'ov-89.png', x: 1745, y: 1074, w: 38, h: 22, base: 1096 },
   { src: 'ov-90.png', x: 1811, y: 1058, w: 38, h: 38, base: 1096 },
-  { src: 'ov-91.png', x: 437, y: 862, w: 37, h: 68, base: 930 },
+  { src: 'ov-91.png', x: 141, y: 941, w: 18, h: 34, base: 975 },
 ];
 
 // ⛱ CLICKABLE PARASOLS. NOT baked into the plate (a baked open one would show
@@ -209,4 +209,4 @@ export const STALLS = [
 export const GRABBER = { x: 2648, y: 700 };
 
 // 🧭 the waypost at the park lane — the DOM plank that names it hangs here
-export const PARK_SIGN = { x: 455, y: 930 };
+export const PARK_SIGN = { x: 150, y: 975 };

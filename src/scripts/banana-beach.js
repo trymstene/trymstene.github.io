@@ -452,17 +452,22 @@ function init() {
   // where you are: no arrival, no sign, no sense of a place you entered.
   //
   // So everyone now spawns at the road's end and walks up under the WELCOME
-  // TO BANANA BAY arch (its world box is x 75–355, y 770–950, built below),
+  // TO BANANA BAY arch (its world box is x 219–499, y 710–890, built below),
   // which is the one thing on this map that says where you are. The path
-  // from (70, 1040) to (296, 924) runs along the spine road's first leg —
+  // from (70, 1040) to (352, 884) runs along the spine road's first leg —
   // you spend the first seconds on a road, arriving, and the court is
   // something you then choose to walk to.
+  // ⚠️ THE TARGET IS THE ARCH'S GAP, so it moves whenever the arch does: the
+  // 30 Jul move up the lane left this at the old (296,924) for one build,
+  // which walked new arrivals to a patch of sand BESIDE the sign instead of
+  // through it — the arrival read as being dropped, which is the exact thing
+  // this spawn exists to fix.
   //
   // `fromPark` survives for ANALYTICS only (beach_join's `via`) — the park
   // gate appends ?park so a walk-in isn't logged as a cold ad landing.
   const pos = { x: 70, y: 1040 };
   let meWX = NaN, meWY = NaN;   // last WRITTEN position (change-guard)
-  const tgt = { x: 296, y: 924 };
+  const tgt = { x: 352, y: 884 };   // the arch's gap centre, on its feet row
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('beach_join', { via: fromRave ? 'rave' : fromPark ? 'park' : 'direct' });
 
@@ -2957,9 +2962,10 @@ function init() {
   // 🧭 the waypost by the park lane, the bay's half of the pair: the post is
   // pack art from the generator (PARK_SIGN rides the geo contract), mirrored
   // so its planks point LEFT — the way home. This is the plank that names it.
-  // (+24: hangSign hangs 108px above the base it is given, which is tuned for
-  // a stall canopy — this post is shorter, so the plank rides its top plank)
-  if (PARK_SIGN) hangSign('The Park', PARK_SIGN.x, PARK_SIGN.y + 24, -4);
+  // (+62: hangSign hangs 108px above the base it is given, tuned for a stall
+  // canopy — this post is HALF SIZE (~34px), so the plank rides its top plank
+  // rather than floating a canopy's height above a knee-high marker)
+  if (PARK_SIGN) hangSign('The Park', PARK_SIGN.x, PARK_SIGN.y + 62, -4);
 
   const SIGN_TILT = [-5, 4, -3, 6];   // varied, so no two hang the same
   STALLS.forEach((s, i) => {
@@ -2979,7 +2985,13 @@ function init() {
     // is the sign's height drawn upward, not depth, so the feet are where the
     // sign actually IS. Centring on the mid-post row instead would want +130
     // and push the whole road out past the left pole down at the sand.)
-    const AX = 120, AY = 770, AW = 280, AH = 180;  // its world bounding box
+    // ⚠️ MOVED UP THE LANE 30 Jul (Trym: "move the welcome to banana bay sign a
+    // bit higher up"). The rule above is what makes this non-trivial: the feet
+    // land on AY+AH and the post gap is centred on AX+AW/2, so the arch may
+    // only travel ALONG the road — measured off the plate, the lane's centre
+    // is x260 at row 950 (the old feet) and x359 at row 890 (the new ones), so
+    // the arch goes up 60 AND right 99 or the road stops running through it.
+    const AX = 219, AY = 710, AW = 280, AH = 180;  // its world bounding box
     const arch = document.createElement('div');
     arch.className = 'bh-arch';
     arch.setAttribute('aria-hidden', 'true');
