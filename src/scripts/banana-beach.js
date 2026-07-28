@@ -195,6 +195,47 @@ function init() {
     if (camX === camWX && camY === camWY) return;
     camWX = camX; camWY = camY;
     world.style.transform = 'translate(' + (-camX) + 'px,' + (-camY) + 'px)';
+    cullSweep();
+  }
+
+  // ---- ✂️ OFF-SCREEN CULLING (ported from the park, same audit) ------------
+  // The bay's cost is NOT O(movers) — it is O(movers × total children). One
+  // mover dirties the frame and Blink walks every positioned child in this
+  // layer to reassign layers and rebuild property trees, so the only thing
+  // that buys the frame back is taking children OUT of the tree. The bay
+  // carries 147 of them, 91 static props. Measured on the park: −39% with
+  // just the statics hidden, the movers still running.
+  // ⚠️ `display:none` is the ONLY culling that pays — visibility:hidden +
+  // animation:none measured 1.473ms against a 1.445 baseline, i.e. nothing.
+  // The sweep reads each child's OWN inline left/top, so nothing registers and
+  // nothing goes stale: a culled mover keeps writing its position (free on a
+  // display:none node) and reappears where it actually is. PERCENT ONLY — the
+  // stall mini-games position in px, and they must never be read as percent.
+  // Full-bleed children (no inline left) are skipped; an element that manages
+  // its own display sets `el.noCull`.
+  const onScreenPad = (x, y, pad) => {
+    const p = pad * scale;
+    const sx = x * scale - camX, sy = y * scale - camY;
+    return sx > -p && sx < viewW + p && sy > -p && sy < viewH + p;
+  };
+  function cullSweep() {
+    const kids = world.children;
+    for (let i = 0; i < kids.length; i++) {
+      const el = kids[i];
+      if (el.noCull) continue;
+      const l = el.style.left, t = el.style.top;
+      if (!l || !t || l.charCodeAt(l.length - 1) !== 37 || t.charCodeAt(t.length - 1) !== 37) continue;
+      if (el.cPad === undefined) {   // its own footprint, so tall art can't pop
+        el.cPad = Math.max(140, (parseFloat(el.style.width) / 100 * W || 0) + 60,
+          (parseFloat(el.style.height) / 100 * H || 0) + 60);
+      }
+      // wider band to STAY on than to come back = no flapping at the border
+      const on = onScreenPad(parseFloat(l) / 100 * W, parseFloat(t) / 100 * H,
+        el.cOff ? el.cPad : el.cPad + 90);
+      if (on === !el.cOff) continue;
+      el.cOff = !on;
+      el.style.display = on ? '' : 'none';
+    }
   }
 
   // ---- geometry (art px) --------------------------------------------------
@@ -918,6 +959,7 @@ function init() {
   // sees the same wave land in the same place.
   const coinEl = document.createElement('div');
   coinEl.className = 'bh-coin';
+  coinEl.noCull = true;         // owns its own display — the sweep keeps off it
   coinEl.style.display = 'none';
   world.appendChild(coinEl);
   let coinLive = null, coinWinClaimed = -1;
@@ -3019,8 +3061,20 @@ function init() {
   }
 
   // ---- the loop -----------------------------------------------------------
+  // ⚠️ GATED TO ~60Hz — see the park's copy for the full reasoning. rAF fires
+  // at the DISPLAY's rate (120Hz on a ProMotion iPhone, measured 161/s here),
+  // so ungated every cost in the bay is paid twice per 60Hz beat. 12ms, NOT
+  // 15.5: any threshold in (8.4, 16.6) skips alternate 120Hz frames, and 15.5
+  // leaves so little headroom that a jittered vsync on a plain 60Hz display
+  // drops that beat to 30fps. The rAF is scheduled BEFORE the early return, so
+  // the loop can never die.
+  const FRAME_MS = 12;
   let last = performance.now();
+  let gateAt = 0, sweepN = 0;
   function step(now) {
+    requestAnimationFrame(step);
+    if (now - gateAt < FRAME_MS) return;
+    gateAt = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
@@ -3093,7 +3147,9 @@ function init() {
     baySendMove(now);              // 🌐 where you are, at most every 150ms
     cam();
     prevX = pos.x; prevY = pos.y;
-    requestAnimationFrame(step);
+    // cam() sweeps whenever the camera moves; this catches the other case —
+    // a crab walking out of view while you stand still
+    if ((++sweepN & 7) === 0) cullSweep();
   }
 
   // ---- 🏐🌊 THE WATER BALL: a TOY, not a sport ------------------------------

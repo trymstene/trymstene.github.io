@@ -115,8 +115,8 @@ function init() {
     for (let i = 0; i < kids.length; i++) {
       const el = kids[i];
       if (el.noCull) continue;
-      const l = el.style.left, t = el.style.top;
-      if (!l || !t) continue;
+      const l = el.style.left, t = el.style.top;   // PERCENT only — never read px as %
+      if (!l || !t || l.charCodeAt(l.length - 1) !== 37 || t.charCodeAt(t.length - 1) !== 37) continue;
       if (el.cPad === undefined) {   // its own footprint, so tall art can't pop
         el.cPad = Math.max(140, (parseFloat(el.style.width) / 100 * W || 0) + 60,
           (parseFloat(el.style.height) / 100 * H || 0) + 60);
