@@ -885,7 +885,13 @@ export class ParkRoom {
     const hrs = Math.max(0, (now - bl.at) / 3600_000);
     const decayed = hrs > 0.001;
     if (decayed) {
-      const stars = slots.reduce((t, s2) => t + (s2 ? gardenSeed(s2.seed).stars : 0), 0);
+      // ⚠️ 30 Jul: only plants WATERED in the last 24h feed the bloom — a
+      // stocked garden otherwise beat max decay forever (16 plants = +1.38/h
+      // vs 0.9 worst-case sink; the park literally couldn't get sick). The
+      // daily watering round is now what keeps the park's engine running.
+      const stars = slots.reduce((t, s2) =>
+        t + (s2 && now - (s2.lastWater || s2.plantedAt || 0) < 24 * 3600_000
+          ? gardenSeed(s2.seed).stars : 0), 0);
       bl.v = Math.min(100, Math.max(BLOOM_FLOOR,
         bl.v - hrs * (BLOOM_BASE_DRIFT + BLOOM_WEED_DRAG * wd.list.length - BLOOM_STAR_FEED * stars)));
       bl.at = now;
