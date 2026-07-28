@@ -110,6 +110,8 @@ CARDS = {
                      hat='cowboy', bowtie=True),
     'beach':    dict(chip='A FREE BANANA GAME', title=['Welcome to', 'Banana Bay'], pose=2,
                      glasses='shades'),
+    'park':     dict(chip='A FREE COZY GARDEN GAME', title=['Welcome to', 'The Park'], pose=2,
+                     hat='sombrero'),   # the widest sun hat in the manifest = the gardener read
 }
 
 BG, INK, PINK, PAPER = (255, 221, 40), (17, 17, 17), (255, 84, 112), (255, 253, 245)

@@ -1,17 +1,58 @@
 ---
 // 🌳 THE PARK — Park 2.0, THE LIVE PARK (park-2-plan, flipped 29 Jul). The
 // walkable park on the beach engine's chassis; the old stand page is retired —
-// its interior lives on inside this world's stand. Still noindexed (the index
-// decision is open) and absent from the sitemap allowlist.
+// its interior lives on inside this world's stand.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+
+// 🔍 INDEXED 30 Jul. Keyword picks are DataForSEO volumes, and the pick is as
+// much about what NOT to chase: the bay already targets "banana game" (40.5K)
+// and two of our own pages fighting for it is the cannibalisation trap the
+// gallery taught us. So the park takes a cluster the bay can't:
+//   free browser game 60.5K LOW · cozy game 40.5K LOW · garden game 18.1K HIGH
+//   park game 12.1K MED · banana park 3.6K LOW · relaxing game online 3.6K LOW
+// "garden game" is HIGH competition so it rides in the body, not the title —
+// the title takes the two big LOW-comp phrases the page is literally true to.
+const title = 'The Park — a free cozy garden game';
+const description = 'Play The Park, a free cozy garden game in your browser — plant and water a shared banana park with visitors from around the world, pull the weeds, feed the birds and keep the whole place alive. No download, no account.';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'The Park',
+  url: 'https://trymstene.com/park/',
+  applicationCategory: 'GameApplication',
+  operatingSystem: 'Web',
+  browserRequirements: 'Requires JavaScript. No download.',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  description: 'A free browser garden world for custom dancing bananas — a shared park you plant, water and weed together, with players worldwide.',
+};
+// ⚠️ every one of these answers is also VISIBLE on the page below (the field
+// guide + FAQ block) — FAQ markup whose answers only exist in JSON is exactly
+// what Google's structured-data guidelines call out.
+const faq = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'Is The Park free to play?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Park is a free browser game — no account, no download, no install. Your custom dancing banana walks straight in through the gate.' } },
+    { '@type': 'Question', name: 'What do you do in The Park?', acceptedAnswer: { '@type': 'Answer', text: 'You keep a shared garden alive. Plant seeds in the beds, water what other people planted, pull weeds, pick up litter, skim the pond, spot the day’s birds and hunt for eggs — every one of those nudges the park’s health meter.' } },
+    { '@type': 'Question', name: 'What is park health?', acceptedAnswer: { '@type': 'Answer', text: 'One number, 0 to 100, shared by everyone in the park. It sinks on its own and every weed, algae patch and piece of litter holds it down, so a park nobody tends visibly dies — the grass goes straw, the trees turn, the animals mope. Watering, planting and tidying push it back up.' } },
+    { '@type': 'Question', name: 'Can you play The Park with other people?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every other banana you see is a real visitor, live. The garden is shared too — you can water a plant somebody else put in, and the health meter is the whole park’s score, not yours.' } },
+    { '@type': 'Question', name: 'How do you unlock better seeds?', acceptedAnswer: { '@type': 'Answer', text: 'By harvesting. Seeds are rated one to five stars, and your gardener level rises with every harvest: three harvests unlock three-star seeds, eight unlock four-star, fifteen unlock the five-star golden wheat. Better seeds feed the park harder and survive longer without water.' } },
+    { '@type': 'Question', name: 'How do you get to The Park?', acceptedAnswer: { '@type': 'Answer', text: 'Dress a banana in the free builder and walk in. The Park sits in the middle of Banana World: the rave is down the south road, Banana Bay is along the east road, and both shops are inside the park itself.' } },
+  ],
+};
 ---
 <BaseLayout
-  title="The Park"
-  description="The park — a walkable corner of Banana World."
-  robots="noindex"
+  title={title}
+  description={description}
+  ogTitle="The Park 🌳"
+  ogImage="https://trymstene.com/assets/og/park.png"
   showFooter={false}
 >
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
   <link rel="preload" as="image" href="/assets/park/park.png" slot="head" />
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">
@@ -62,6 +103,38 @@ import PixelIcon from '../components/PixelIcon.astro';
       position: absolute; pointer-events: none; image-rendering: pixelated;
       background-size: 100% 100%; background-repeat: no-repeat;
     }
+
+    /* ---- 📖 THE FIELD GUIDE — the indexable half of the page. Same shape
+       as the rave's guide block: real answers, visible, so the FAQ markup is
+       describing something a reader can actually see. ⚠️ this is what makes
+       the page tall, which is exactly why banana-park.js stands the world down
+       when the view scrolls out of sight. */
+    .pkg { max-width: 760px; margin: 3rem auto 0; padding: 0 0.2rem; }
+    .pkg__block { margin-top: 3rem; }
+    .pkg__kicker {
+      font-family: "Archivo Black", sans-serif; color: #8de08d; font-size: 0.7rem;
+      letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 0.35rem; opacity: 0.85;
+    }
+    .pkg__block h2 {
+      font-family: "Archivo Black", sans-serif; color: #b6f0b6;
+      font-size: clamp(1.3rem, 4vw, 1.9rem); margin: 0 0 0.9rem; line-height: 1.1;
+    }
+    .pkg__block h3 {
+      font-family: "Archivo Black", sans-serif; color: #ffe135;
+      font-size: 1rem; margin: 1.6rem 0 0.5rem;
+    }
+    .pkg__block p, .pkg__list li { line-height: 1.65; font-size: 0.98rem; }
+    .pkg__block p { margin: 0 0 0.8rem; }
+    .pkg__block a { color: #ffe135; }
+    .pkg__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+    .pkg__list li { padding-left: 1.1rem; position: relative; }
+    .pkg__list li::before { content: '\00B7'; position: absolute; left: 0.25rem; color: #8de08d; font-weight: 800; }
+    .pkg__seeds { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.4rem 0 0.9rem; }
+    .pkg__seeds th, .pkg__seeds td { text-align: left; padding: 0.4rem 0.6rem 0.4rem 0; border-bottom: 1px solid rgba(141, 224, 141, 0.18); }
+    .pkg__seeds th { color: #8de08d; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .pkg__faq dt { font-weight: 800; color: #ffe135; margin-top: 1.1rem; }
+    .pkg__faq dd { margin: 0.3rem 0 0; line-height: 1.65; font-size: 0.98rem; }
+
     /* 🧭 THE WAYPOST'S PLANK — the bay's stall-sign idiom, park edition.
        The lettering is DOM, not baked: a 48px pack board cannot carry a place
        name legibly at this scale. The sprite's arrow says WHICH WAY, this
@@ -1253,6 +1326,116 @@ import PixelIcon from '../components/PixelIcon.astro';
       <div class="pk-door"><a href="/make-a-banana/" data-place="park">Dress your banana →</a></div>
       <p class="pk-sidenote">Everyone here is a real visitor. Walk with the arrow keys / WASD or tap the grass — pull the weeds you find, and plant something in the shared beds.</p>
     </aside>
+
+    <!-- ===== below the park: what this place IS (the indexable half) ===== -->
+    <div class="pkg">
+      <section class="pkg__block" id="what">
+        <p class="pkg__kicker">the fine print, in green</p>
+        <h2>what is this place?</h2>
+        <p>
+          In 1999 I drew <a href="/dancing-banana-gif-meme/">a little banana that never stopped dancing</a>.
+          It has a park now. <strong>The Park is a free browser game</strong> &mdash; no account, no download,
+          no install &mdash; and every other banana walking around in it is a real visitor, live, right now.
+        </p>
+        <p>
+          It is also the one part of Banana World that <strong>can die</strong>. The park runs on a single
+          shared health meter, and it sinks on its own. Weeds spread, litter turns up, the pond scums over.
+          Left alone for a day the grass goes to straw, the trees turn, the animals mope about and the eggs
+          stop coming. Nobody owns the place, so it only stays green if the people passing through keep it green.
+        </p>
+        <p>
+          The night it opened I set it to 5% health and 60 weeds and left it there to see what would happen.
+          It was back to 100% by morning &mdash; two regulars had planted it out and pulled the lot.
+        </p>
+      </section>
+
+      <section class="pkg__block" id="do">
+        <p class="pkg__kicker">the loop</p>
+        <h2>what do you actually do here?</h2>
+        <ul class="pkg__list">
+          <li><strong>Plant something.</strong> There are 64 beds and 22 roadside spots. Seeds cost coins, take days to grow, and the one you plant carries your name on its stake.</li>
+          <li><strong>Water what somebody else planted.</strong> This is the part people miss. A plant only feeds the park while it has been watered in the last day, so the garden runs on strangers watering each other's beds.</li>
+          <li><strong>Pull the weeds.</strong> The free verb &mdash; no coins, no cost, just tap. Weeds spread in patches from living parents, so a patch left alone becomes a field.</li>
+          <li><strong>Tidy up.</strong> Litter on the grass, algae on the pond, leaf piles when things are grim. Every piece you clear lifts the meter a little, and every piece left holds it down.</li>
+          <li><strong>Spot the birds.</strong> Twelve species visit, from house finches up to a hummingbird that comes alone. What shows up depends on how healthy the park is, and everyone in the park sees the same birds at the same time. Your day's list is on the card beside the map.</li>
+          <li><strong>Find an egg.</strong> Healthy parks lay eggs; a park above 95% lays golden ones. First tap wins, and they pay coins and beach tickets.</li>
+          <li><strong>Shop, without leaving.</strong> Both shops are inside the world &mdash; the <strong>merch kiosk</strong> under the mushroom, and <strong>the Banana Stand</strong> at the top of the north road where coins buy gear.</li>
+          <li><strong>Talk to Old Peel.</strong> The old banana on the bench by the fountain has opinions about the state of the place, and they change as it changes.</li>
+        </ul>
+      </section>
+
+      <section class="pkg__block" id="health">
+        <p class="pkg__kicker">the meter</p>
+        <h2>how park health works</h2>
+        <p>
+          One number, 0 to 100, shared by everyone. It falls a little every hour on its own, and faster for
+          every weed and every patch of algae in the park. Watering, planting and clearing push it back.
+        </p>
+        <p>
+          <strong>Mess also holds down the ceiling.</strong> However well the garden is watered, the park
+          cannot read 100% while there is litter on the grass or scum on the pond &mdash; so a perfect score
+          means somebody actually tidied, not just that the plants are fed.
+        </p>
+        <p>
+          The meter is the whole park's face. Below 60 the colour drains out of the map, leaf piles appear and
+          the animals go quiet; below 40 it is properly overrun. Above 80 the butterflies and squirrels come
+          back, the rare birds start visiting and the eggs start appearing. There is a floor &mdash; it can get
+          grim, but it can never become hopeless.
+        </p>
+      </section>
+
+      <section class="pkg__block" id="guide">
+        <p class="pkg__kicker">field guide</p>
+        <h2>seeds, stars and the gardener's ladder</h2>
+        <p>
+          Every seed is rated <strong>one to five stars</strong>. Stars mean two things and nothing else: a
+          living plant feeds the park by its stars, and a starrier plant survives longer between waterings.
+        </p>
+        <table class="pkg__seeds">
+          <thead><tr><th>seed</th><th>stars</th><th>unlocked at</th></tr></thead>
+          <tbody>
+            <tr><td>daisy</td><td>&#9733;</td><td>from the start</td></tr>
+            <tr><td>sunflower</td><td>&#9733;&#9733;</td><td>from the start</td></tr>
+            <tr><td>midnight tulip &middot; tomato</td><td>&#9733;&#9733;&#9733;</td><td>gardener level 2 &mdash; 3 harvests</td></tr>
+            <tr><td>pumpkin</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>gardener level 3 &mdash; 8 harvests</td></tr>
+            <tr><td>golden wheat</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>gardener level 4 &mdash; 15 harvests</td></tr>
+          </tbody>
+        </table>
+        <h3>who lives here</h3>
+        <ul class="pkg__list">
+          <li><strong>The animals.</strong> Chickens, a rooster, two ducks on the pond bank and a rabbit. They wander, and the bubble over their head tells you what they make of the park's health.</li>
+          <li><strong>The birds.</strong> Twelve species on a shared rota, common to very rare. Build and stock a birdhouse and a family moves in &mdash; and a stocked house feeds the park a little every hour.</li>
+          <li><strong>Old Peel.</strong> The park's oldest resident, on the bench by the fountain. Ask him things.</li>
+          <li><strong>Inka</strong>, behind the counter in the mushroom kiosk, and <strong>the stand keeper</strong> up the north road.</li>
+        </ul>
+        <h3>the roads out</h3>
+        <p>
+          The park is the crossroads of Banana World. The <strong>south road</strong> goes down to
+          <a href="/rave/">the rave</a>, the dance floor that never stops. The <strong>east road</strong> runs
+          out to <a href="/beach/">Banana Bay</a> &mdash; volleyball, shells, fishing and the pier. Everything
+          you earn in any of them lands on <a href="/pass/">your banana pass</a>.
+        </p>
+      </section>
+
+      <section class="pkg__block" id="faq">
+        <p class="pkg__kicker">questions</p>
+        <h2>frequently asked</h2>
+        <dl class="pkg__faq">
+          <dt>Is The Park free to play?</dt>
+          <dd>Yes. The Park is a free browser game &mdash; no account, no download, no install. Your custom dancing banana walks straight in through the gate.</dd>
+          <dt>What do you do in The Park?</dt>
+          <dd>You keep a shared garden alive. Plant seeds in the beds, water what other people planted, pull weeds, pick up litter, skim the pond, spot the day's birds and hunt for eggs &mdash; every one of those nudges the park's health meter.</dd>
+          <dt>What is park health?</dt>
+          <dd>One number, 0 to 100, shared by everyone in the park. It sinks on its own and every weed, algae patch and piece of litter holds it down, so a park nobody tends visibly dies &mdash; the grass goes straw, the trees turn, the animals mope. Watering, planting and tidying push it back up.</dd>
+          <dt>Can you play The Park with other people?</dt>
+          <dd>Yes. Every other banana you see is a real visitor, live. The garden is shared too &mdash; you can water a plant somebody else put in, and the health meter is the whole park's score, not yours.</dd>
+          <dt>How do you unlock better seeds?</dt>
+          <dd>By harvesting. Seeds are rated one to five stars, and your gardener level rises with every harvest: three harvests unlock three-star seeds, eight unlock four-star, fifteen unlock the five-star golden wheat. Better seeds feed the park harder and survive longer without water.</dd>
+          <dt>How do you get to The Park?</dt>
+          <dd>Dress a banana in <a href="/make-a-banana/">the free builder</a> and walk in. The Park sits in the middle of Banana World: the rave is down the south road, Banana Bay is along the east road, and both shops are inside the park itself.</dd>
+        </dl>
+      </section>
+    </div>
 
   </div>
 

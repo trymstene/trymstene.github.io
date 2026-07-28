@@ -30,6 +30,17 @@ import { initShare } from './park-share.js';
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
 const view = document.getElementById('pkView');
+// 📜 …AND THE PARK STANDS DOWN WHEN YOU SCROLL PAST IT. The field guide below
+// the map (added with the SEO pass, 30 Jul) makes this page tall, which is
+// exactly the shape that caught the rave: `document.hidden` only covers a
+// switched-away TAB, never "the tab is visible, you are just reading". The
+// socket keeps running — only the drawing and the frame-rate ticks stop.
+// 120px rootMargin so it wakes just before it is seen.
+let parkSeen = true;
+if (view && 'IntersectionObserver' in window) {
+  new IntersectionObserver((es) => { parkSeen = es[es.length - 1].isIntersecting; },
+    { rootMargin: '120px' }).observe(view);
+}
 // an opaque shop interior is covering the whole view — the world behind it is
 // hidden by CSS (park.astro) and every loop that only feeds it stands down
 const inside = () => document.body.classList.contains('pk-inside');
@@ -527,7 +538,7 @@ function init() {
     if (now - gateAt < FRAME_MS) return;
     gateAt = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (inside()) return;   // an opaque interior covers the view — nothing to run
+    if (inside() || !parkSeen) return;   // covered by a shop, or scrolled past
     const kx =(keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
     if (kx || ky) {
@@ -689,7 +700,9 @@ function init() {
     setTimeout(() => { lastF = -1; drawMe(); }, 700);   // redraw belt: accessories decode async
     setTimeout(() => { lastF = -1; drawMe(); }, 1800);
     setInterval(() => {
-      if (document.hidden || inside()) return;
+      // ⚠️ the belt is its OWN interval, not part of step() — so it needs the
+      // same three gates or it keeps redrawing bananas nobody can see
+      if (document.hidden || inside() || !parkSeen) return;
       drawMe();
       peers.forEach((p) => drawPeer(p));
     }, 120);
