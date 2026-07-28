@@ -514,7 +514,6 @@ export function initGarden(ctx) {
   const bhEls = BIRD_SPOTS.map(() => null);
   let pendingPost = null, bhBuildTracked = false, bhStockTracked = false;
   const bhFed = (h) => h && Date.now() - (h.lastStock || 0) < 24 * 3600000;
-  const BIRD_N = 3;
   function renderHouses(list) {
     bHouses = Array(BIRD_SPOTS.length).fill(null);
     (list || []).forEach((h) => {
@@ -538,19 +537,9 @@ export function initGarden(ctx) {
         depth(el, sy);
         world.appendChild(el);
       }
-      const fed = bhFed(h);
-      if ((el.dataset.fed === '1') !== fed) {   // 🐦 the birds come and go
-        el.dataset.fed = fed ? '1' : '0';
-        el.querySelectorAll('.pk-bird').forEach((b2) => b2.remove());
-        if (fed) {
-          for (let k = 1; k <= BIRD_N; k++) {
-            const b2 = document.createElement('i');
-            b2.className = 'pk-bird pk-bird--' + k + (k === 2 ? ' pk-bird--flip' : '');
-            el.appendChild(b2);
-          }
-        }
-      }
     });
+    // 🐦 the residents live in park-birds.js — it moves them in and out
+    if (ctx.birds) ctx.birds.setStocked(BIRD_SPOTS.map((_, i) => bhFed(bHouses[i])));
   }
   function openPostSheet(i) {
     const bal = coinBal();
@@ -666,6 +655,9 @@ export function initGarden(ctx) {
     const p = ctx.phaseFor(v);             // ±3 hysteresis lives in phaseFor
     renderHBar(Math.max(0, v), p);
     ctx.setPhase(p);
+    // 🐦 the wild roster gates on the RAW band (no hysteresis) so every client
+    // in the park lands on the same species for the same 10-minute window
+    if (ctx.birds) ctx.birds.setBloom(Math.max(0, v));
     const f = document.getElementById('pkBfill');
     if (f) {                               // the card is open — nudge it live
       f.style.clipPath = 'inset(0 ' + (100 - Math.max(0, v)) + '% 0 0)';
@@ -917,7 +909,8 @@ export function initGarden(ctx) {
     applyGarden(await gFetch(''));
     if (ctx.phase() < 0) {        // no word from the server — the park at its
       if (PHASE_FORCE >= 0) refreshBloom(PHASE_MID[PHASE_FORCE]);
-      else ctx.setPhase(4);       // best (unless a ?phase link pins it)
+      else { ctx.setPhase(4); if (ctx.birds) ctx.birds.setBloom(90); }   // best
+
     }
   }
   gardenPoll();

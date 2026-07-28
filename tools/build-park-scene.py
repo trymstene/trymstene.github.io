@@ -1394,18 +1394,6 @@ if HAVE_PACK:
         post = blockify(post, factor=1, colors=14, warm=0.0, sat=1.0, con=1.0,
                         trim=False, outline=True).crop((1, 1, 49, 45))
         _cache[('bh-post', 1, 28, 0.0, 1.0, 1.0)] = post
-        # 🐦 the birds themselves — the pack's Crow idle cycle (the only bird
-        # in either pack at 48px), scaled small so it reads sparrow-sized
-        # next to the heroic banana. First 6 side frames, trim=False (the
-        # animation-frame rule), client flips by CSS.
-        band = load_pack('Crow_idle_Right_48x48.png').crop((0, 0, 48 * 6, 48))
-        bs2 = blockify(band, factor=1, colors=14, warm=0.0, sat=1.0, con=1.0,
-                       trim=False, outline=True)
-        bs2 = bs2.crop((1, 1, 1 + band.width, 1 + band.height))
-        bcell = max(1, int(48 * PROP * 0.7))
-        bs2 = bs2.resize((bcell * 6, bcell), Image.NEAREST)
-        bs2.save(os.path.join(OUT, 'a-bird.png'), optimize=True)
-        print('  a-bird.png: 6f %dx%d (Crow idle)' % (bcell, bcell))
     except Exception as e:
         print('  birdhouse sprites failed', e)
 
@@ -1467,6 +1455,36 @@ if HAVE_PACK:
         BIRD_SPOTS.append(seat)
     assert len(BIRD_SPOTS) == 4
     print('bird posts: %s' % BIRD_SPOTS)
+
+# ---- 🐦 THE BIRDS — the Garden Birds pack ----------------------------------
+# One 64x64 sheet per species = a 4x4 grid of 16x16 frames, EVERY FRAME
+# FACING LEFT (the client flips by CSS whenever a bird moves right).
+# ⭐ VERIFIED row map (frame bboxes + hashes, not guesswork):
+#   row 0 — FLY: a 4-frame flap, f1 == f3 (the ping-pong mid-stroke)
+#   row 1 — TAKEOFF: idle → crouch → wings spread → wings up (f4 == the idle
+#           pose that opens rows 2 and 3); exported but unused so far
+#   row 2 — PECK/FEED: the body lowers frame by frame and holds down (f10 ==
+#           f11), then snaps back up — the park's "sit and forage" idle
+#   row 3 — WALK/HOP: idle, step, idle, other step (f12 == f14 == the idle)
+# Exported WHOLE at NEAREST x2 (16px art -> 32px, small beside the ~99px
+# banana) with NO blockify: this pack is already tight, low-colour and
+# outlined, and the park's usual quantise+outline pass only muddies it.
+# The client picks a row with background-position-y and steps() the columns.
+BIRDS_PACK = os.path.expanduser(r'~\OneDrive\banana-art-pack\Garden Birds_Download'
+                                r'\Garden Birds_Download\Spritesheets')
+BIRD_SPECIES = []
+if os.path.isdir(BIRDS_PACK):
+    for fname in sorted(os.listdir(BIRDS_PACK)):
+        if not fname.startswith('spritesheet_') or not fname.endswith('.png'):
+            continue          # (the combined 'Spritesheet.png' is skipped)
+        slug = fname[12:-4].replace('_', '-').replace(' ', '-').replace("'", '')
+        s = Image.open(os.path.join(BIRDS_PACK, fname)).convert('RGBA')
+        assert s.size == (64, 64), '%s is %s — not a 4x4 grid of 16px frames' % (fname, s.size)
+        s.resize((128, 128), Image.NEAREST).save(
+            os.path.join(OUT, 'bird-%s.png' % slug), optimize=True)
+        BIRD_SPECIES.append(slug)
+    assert len(BIRD_SPECIES) == 12, 'expected 12 bird species, got %d' % len(BIRD_SPECIES)
+    print('birds: %d species (128x128, 4x4 @ x2) %s' % (len(BIRD_SPECIES), BIRD_SPECIES))
 
 # ---- 🌿 WEED_GRID — the organism board (Weeds 2.0) -------------------------
 # Every lawn point a weed may claim: a 48px lattice rejecting roads (24px
@@ -1541,6 +1559,9 @@ def emit_geo():
     L.append('export const BORDER_SPOTS = %s;' % [list(p) for p in BORDER_SPOTS])
     L.append('export const ALGAE_SPOTS = %s;' % [list(p) for p in ALGAE_SPOTS])
     L.append('export const BIRD_SPOTS = %s;' % [list(p) for p in BIRD_SPOTS])
+    # the species the client may pick from = exactly the sheets exported above
+    L.append('export const BIRD_SPECIES = [%s];'
+             % ','.join("'%s'" % s for s in BIRD_SPECIES))
     L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d } };'
              % (CX, H - 40, W - 60, CY))
     L.append('export const OB_RECTS = %s;' % [list(r) for r in ob_rects])

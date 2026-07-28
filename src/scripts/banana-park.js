@@ -20,6 +20,7 @@ import {
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
+import { initBirds } from './park-birds.js';
 import { initOldPeel } from './park-npc.js';
 import { initFountain } from './park-fountain.js';
 import { initShops } from './park-shops.js';
@@ -387,7 +388,11 @@ function init() {
   // init order = the original world-DOM append order (garden renders only on
   // its first poll): garden → critters (animals) → Old Peel → fountain (coin
   // window) → shops (keeper windows). The fountain gets the garden's API for
-  // the shared panel + closeGarden.
+  // the shared panel + closeGarden. 🐦 the birds append nothing at init (they
+  // arrive with a stocked house / the health band), so they go first and the
+  // garden can hand them both on its very first poll via ctx.birds.
+  const birds = initBirds(ctx);
+  ctx.birds = birds;
   const garden = initGarden(ctx);
   const critters = initCritters(ctx);
   const npc = initOldPeel(ctx);
@@ -405,6 +410,7 @@ function init() {
     npc.clearPending();
     garden.clearPending();
     if (garden.tapEgg(wx, wy)) return;
+    if (birds.tapBird(wx, wy)) return;      // 🔭 they fly above everything
     if (critters.tapBfly(wx, wy)) return;
     if (critters.tapAnimal(wx, wy)) return;
     if (npc.tapOld(wx, wy)) return;
@@ -464,6 +470,7 @@ function init() {
     npc.oldWalkTick();
     critters.bflyTick(dt, now);
     critters.animalTick(dt);
+    birds.birdTick(dt, now);
     critters.sqTick(dt);
     fountain.tossTick();
     fountain.coinWinTick();
@@ -568,6 +575,7 @@ function init() {
     window.__park = {
       pos, tgt, PLOTS,
       ...critters.qa,
+      ...birds.qa,
       ...garden.qa,
       coins: (n) => { passStat('coins_earned', n); refreshHud(); },
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },

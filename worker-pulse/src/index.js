@@ -636,6 +636,7 @@ var EV_LABEL = {
   park_border:'planted a roadside flower 🌼',
   park_algae:'skimmed scum off the pond 🫧', park_rake:'raked a leaf pile 🍂',
   park_birdhouse:'birdhouse business 🐦',
+  park_bird:'spotted a bird 🔭',
   park_share_day:'shared their day at the park 📸',
   stand_cart_view:'stepped into the merch shop 🧃', stand_cart_click:'tapped a real product 💰',
   rave_quest_start:'a floor quest kicked off 🎯', rave_quest_done:'FINISHED a floor quest 🎯' };
@@ -768,7 +769,8 @@ var EV_EXPLAIN = {
   park_algae:'skimmed a scum patch off the pond 🫧 (once per visit) — the weed grammar on water: patches drift in on their own beat and each one drags park health 0.02/h until somebody walks to the bank and skims it (+1 rep, +0.3 health back)',
   park_rake:'raked their first leaf pile of the visit 🍂 — piles only exist while park health sits under 60, so raking is recovery accelerant plus autumn texture, never a permanent chore (walk-over like litter; +1 rep, +0.4 health a pile)',
   park_birdhouse:'birdhouse business 🐦 (act = build or stock): build = 30 coins raises a named birdhouse on a bare post (first-come, name on the tap card forever); stock = the free once-a-day top-up that keeps 2-3 birds fluttering around it and the house feeding park health +0.04/h for 24h — all 4 posts stocked daily add at most +0.16/h, inside the decay budget',
-  park_share_day:'composed the my-day-at-the-park postcard — weeds pulled, harvests, eggs found, live park health, time tended — the organic-reach card, same idea as beach_share_day',
+  park_bird:'spotted a bird 🔭 (species + tier; first per session) — BIRDWATCHING is the park’s quiet collection loop: park health decides how many wild birds are about and how rare they may get (dead park 0-1 commons → thriving 4-6 with a shot at the hummingbird), and every stocked birdhouse adds its own residents and nudges the rarity ceiling. The wild roster is seeded per 10-minute window so everyone in the park sees the SAME birds at once. Tap one → it flutters off, the first sighting of that species today pays rep by tier (common 1 · uncommon 2 · rare 4 · very rare 8) and lands on the day card',
+  park_share_day:'composed the my-day-at-the-park postcard — weeds pulled, harvests, eggs found, live park health, time tended, plus today’s bird portraits — the organic-reach card, same idea as beach_share_day',
   stand_cart_view:'stepped into INKA’s merch shop — the money room. ⚠️ counts EVERY shop open since 30 Jul (was once per session): visits are the metric. The park merch shop’s till story: views → product taps (stand_cart_click) → the PDP (?from=parkshop landing sessions) → checkout_redirect → purchase',
   stand_cart_click:'tapped a hanging product in the merch shop 💰 (product = sticker / magnet / tee) — their OWN banana was drawn on it; the tap lands on the PDP pre-built, tagged ?from=parkshop for the landing report',
   rave_quest_start:'a FLOOR QUEST began on their floor 🎯 (q = which: mop / power / jboss / pop / photo). Every 30 min the whole floor gets the same event at the same seeded minute — start vs done is the engagement funnel',

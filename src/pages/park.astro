@@ -602,26 +602,36 @@ import PixelIcon from '../components/PixelIcon.astro';
     .pk-leaf--1 { background-image: url('/assets/park/l-leaf1.png'); }
     .pk-leaf--2 { background-image: url('/assets/park/l-leaf2.png'); }
     /* 🐦 birdhouses — the built house covers its baked post exactly;
-       stocked <24h = the birds flutter + hop around it */
+       stocked <24h = 2-3 residents move in (park-birds.js walks them) */
     .pk-bhouse {
       position: absolute; width: 1.304%; aspect-ratio: 1 / 2;
       transform: translate(-50%, -100%); pointer-events: none;
       image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
     }
-    .pk-bird {
-      position: absolute; width: 70%; aspect-ratio: 1 / 1;
-      image-rendering: pixelated; pointer-events: none;
-      background: url('/assets/park/a-bird.png') 0 0 / 600% 100% no-repeat;
-      animation: pkBirdFrames 1.1s steps(6) infinite, pkBirdHop 2.6s ease-in-out infinite;
+    /* 🐦 THE BIRDS — Garden Birds pack, one 4×4 sheet per species (16px frames
+       at ×2 = 32px). Rows pick with background-position-y: 0% fly · 33.334%
+       takeoff (spare) · 66.667% peck/sit · 100% walk. EVERY FRAME FACES LEFT,
+       so the engine appends scaleX(-1) to the inline transform whenever a
+       bird moves RIGHT. Stepping rule for 4 frames: 100% × 4/3 = 133.334%. */
+    .pk-gbird {
+      position: absolute; width: 1.16%; aspect-ratio: 1 / 1;
+      transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat; background-size: 400% 400%;
+      filter: drop-shadow(1px 1px 0 rgba(20, 40, 18, 0.3));
     }
-    .pk-bird--flip { transform: scaleX(-1); }
-    .pk-bird--1 { left: -64%; bottom: -5%; }
-    .pk-bird--2 { right: -60%; bottom: -2%; animation-delay: 0.35s, 0.9s; }
-    .pk-bird--3 { left: 15%; top: -15%; animation-delay: 0.6s, 1.7s; }
-    @keyframes pkBirdFrames { to { background-position-x: 120%; } }
-    @keyframes pkBirdHop { 0%, 100% { margin-bottom: 0; } 12% { margin-bottom: 5px; } 24% { margin-bottom: 0; } }
+    .pk-gbird.is-fly { background-position-y: 0%; animation: pkBird4 0.26s steps(4) infinite; }
+    .pk-gbird.is-sit { background-position-y: 66.667%; animation: pkBird4 2.4s steps(4) infinite; }
+    .pk-gbird.is-walk { background-position-y: 100%; animation: pkBird4 0.52s steps(4) infinite; }
+    @keyframes pkBird4 { from { background-position-x: 0%; } to { background-position-x: 133.334%; } }
+    /* the ground shadow under a bird in the air — the only thing that says
+       "this one is flying, not standing on a bush" */
+    .pk-gbshad {
+      position: absolute; width: 0.72%; aspect-ratio: 3 / 1;
+      transform: translate(-50%, -50%); pointer-events: none;
+      background: #182a14; border-radius: 50%;
+    }
     @media (prefers-reduced-motion: reduce) {
-      .pk-bird { animation: none; }
+      .pk-gbird { animation: none; }
       .pk-algae.is-skimmed { animation: none; opacity: 0; }
       .pk-ripple { display: none; }
     }
@@ -1006,6 +1016,15 @@ import PixelIcon from '../components/PixelIcon.astro';
       padding: 0.5rem 0.65rem; background: #1c2f16; border: 2px solid #000;
     }
     .pk-daystats b { color: #ffe135; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    /* 🔭 today's sightings — the species' own idle frame as a tiny portrait
+       (row 3 col 0 of its 4×4 sheet, kept at the art's native ×2) */
+    .pk-daystats__birds { grid-column: 1 / -1; align-items: center; flex-wrap: wrap; row-gap: 0.35rem; }
+    .pk-daystats__birds em { display: flex; flex-wrap: wrap; gap: 2px; margin-left: 0.1rem; }
+    .pk-daystats__birds small { color: #9db894; font-size: 0.76rem; }
+    .pk-bface {
+      display: block; width: 32px; height: 32px; image-rendering: pixelated;
+      background-repeat: no-repeat; background-size: 400% 400%; background-position: 0% 100%;
+    }
     .pk-sharebtn {
       appearance: none; width: 100%; margin-top: 0.95rem; cursor: pointer; font-family: inherit;
       background: #ffe135; color: #111; border: 3px solid #000; box-shadow: 3px 3px 0 #000;

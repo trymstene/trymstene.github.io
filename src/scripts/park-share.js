@@ -5,6 +5,7 @@
 import { drawComposite } from '../lib/banana-engine.js';
 import { passGet } from '../lib/banana-pass.js';
 import { track, esc } from './park-util.js';
+import { birdsToday, BIRD_NAMES } from './park-birds.js';
 
 const SHARE_FILE = 'my-day-the-park-trymstene.com.png';
 
@@ -22,16 +23,25 @@ export function initShare(ctx, garden) {
   const bloomStr = () => { const v = garden.bloomNow(); return v < 0 ? '—' : v + '%'; };
   const rosterEl = document.getElementById('pkRoster');
   const dayStatsEl = document.getElementById('pkDayStats');
+  // 🔭 today's sightings as little pack portraits (the idle frame of each
+  // species' own sheet — row 3 col 0, no extra asset)
+  const birdFace = (sp, cls) => '<i class="' + (cls || 'pk-bface') + '" title="' + esc(BIRD_NAMES[sp] || sp)
+    + '" style="background-image:url(/assets/park/bird-' + sp + '.png)"></i>';
   function refreshSide() {
     if (dayStatsEl) {
       const s = passGet().stats || {};
+      const seen = birdsToday();
       dayStatsEl.innerHTML =
         '<span class="pk-daystats__time">⏱ <b>' + parkTime() + '</b> in the park</span>'
         + '<span>🌿 <b>' + (s.weeds_pulled || 0) + '</b> weeds pulled</span>'
         + '<span>🌱 <b>' + (s.garden_harvests || 0) + '</b> harvests</span>'
         + '<span>🥚 <b>' + (s.eggs_found || 0) + '</b> eggs found</span>'
         + '<span>🧑‍🌾 <b>lvl ' + garden.gardenerLvl().lvl + '</b> gardener</span>'
-        + '<span>🌸 <b>' + bloomStr() + '</b> health</span>';   // 'park health' wrapped on 360px chips
+        + '<span>🌸 <b>' + bloomStr() + '</b> health</span>'   // 'park health' wrapped on 360px chips
+        + '<span class="pk-daystats__birds">🔭 <b>' + seen.length + '</b> bird'
+        + (seen.length === 1 ? '' : 's') + ' spotted today'
+        + (seen.length ? '<em>' + seen.map((sp) => birdFace(sp)).join('') + '</em>'
+          : '<small>none yet — tap a bird to spot it</small>') + '</span>';
     }
     if (rosterEl) {
       const me = '<li class="is-you"><span>' + esc(parkName || 'you')
@@ -203,6 +213,26 @@ export function initShare(ctx, garden) {
     c.font = '800 42px "Archivo Black", sans-serif';
     c.fillText('TENDED FOR ' + parkTime().toUpperCase(), S - 60, 292);
     c.shadowBlur = 0;
+    // 🔭 SPOTTED TODAY — a portrait strip under the header, right-aligned so
+    // it reads as part of the type block; the stats slide down to make room
+    // (nothing else on the card moves). Up to 6 portraits, the label carries
+    // the true count.
+    const seen = birdsToday();
+    if (seen.length) {
+      const faces = await Promise.all(seen.slice(0, 6)
+        .map((sp) => loadImg('/assets/park/bird-' + sp + '.png')));
+      c.textAlign = 'right';
+      c.fillStyle = '#1c3312';
+      c.font = '800 30px "Archivo Black", sans-serif';
+      c.fillText('SPOTTED TODAY · ' + seen.length, S - 60, 340);
+      const FW = 64, GAP = 8;
+      let fx = S - 60 - faces.length * (FW + GAP) + GAP;
+      c.imageSmoothingEnabled = false;
+      faces.forEach((img) => {
+        if (img) c.drawImage(img, 0, 96, 32, 32, fx, 354, FW, FW);   // row 3 col 0 = the idle pose
+        fx += FW + GAP;
+      });
+    }
     const s = passGet().stats || {};
     const v = garden.bloomNow();
     const rows = [
@@ -211,7 +241,8 @@ export function initShare(ctx, garden) {
       [String(s.eggs_found || 0), 'EGGS FOUND'],
       [v < 0 ? '—' : v + '%', 'PARK HEALTH'],
     ];
-    let y = 400;
+    let y = seen.length ? 508 : 400;
+    const gap = seen.length ? 122 : 132;
     for (const [n, label] of rows) {
       c.shadowColor = 'rgba(255,255,255,0.85)'; c.shadowBlur = 20;
       c.fillStyle = '#2f5514';
@@ -225,7 +256,7 @@ export function initShare(ctx, garden) {
       c.fillText(label, S - 445, y - 8);
       c.textAlign = 'right';
       c.shadowBlur = 0;
-      y += 132;
+      y += gap;
     }
     c.fillStyle = '#1c3312';
     c.font = '700 30px "Archivo Black", sans-serif';
