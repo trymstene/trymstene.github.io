@@ -116,7 +116,7 @@ function rosterFor(win, band, ceil) {
 }
 
 export function initBirds(ctx) {
-  const { W, H, world, pct, depth, blocked, float, toast, pos, refreshHud } = ctx;
+  const { W, H, world, pct, depth, blocked, float, toast, pos, refreshHud, place } = ctx;
 
   const inPlaza = (x, y) => {
     const ex = (x - PLAZA.x) / PLAZA.rx, ey = (y - PLAZA.y) / PLAZA.ry;
@@ -157,7 +157,7 @@ export function initBirds(ctx) {
       spot: o.spot, k: o.k || 0, n: o.n || 1, hx: o.hx, hy: o.hy, roam: o.roam,
       x: o.hx, y: o.hy, alt: 0, state: 'sit', wait: 1, right: false, goHome: false,
       fx: 0, fy: 0, fa: 0, tx: o.hx, ty: o.hy, ta: 0, ft: 0, fdur: 1, peak: 0,
-      nextHome: 0, wx: NaN, wy: NaN, wr: null, shOn: false,
+      nextHome: 0, wx: NaN, wy: NaN, wr: null, shOn: false, sx: NaN, sy: NaN,
     };
     birds.push(b);
     return b;
@@ -247,18 +247,19 @@ export function initBirds(ctx) {
     const ay = b.y - b.alt + bob;
     if (b.wx !== b.x || b.wy !== ay || b.wr !== b.right) {
       b.wx = b.x; b.wy = ay; b.wr = b.right;
-      b.el.style.left = pct(b.x, W);
-      b.el.style.top = pct(ay, H);
-      b.el.style.transform = 'translate(-50%,-100%)' + (b.right ? ' scaleX(-1)' : '');
+      place(b.el, b.x, ay, ' translate(-50%,-100%)' + (b.right ? ' scaleX(-1)' : ''));
       b.el.style.zIndex = air ? '1560' : String(100 + Math.round(b.y));
     }
     const on = b.state === 'fly' || b.state === 'leave';
     if (on !== b.shOn) { b.shOn = on; b.sh.style.display = on ? '' : 'none'; }
     if (on) {
-      b.sh.style.left = pct(b.x, W);
-      b.sh.style.top = pct(b.y, H);
+      // …and its own change-guard, which it never had
+      if (b.sx !== b.x || b.sy !== b.y) {
+        b.sx = b.x; b.sy = b.y;
+        place(b.sh, b.x, b.y, ' translate(-50%,-50%)');
+        depth(b.sh, b.y);
+      }
       b.sh.style.opacity = String(Math.max(0.07, 0.3 - b.alt / 340));
-      depth(b.sh, b.y);
     }
   }
   function stepBird(b, dt, now) {

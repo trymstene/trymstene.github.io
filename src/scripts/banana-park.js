@@ -40,6 +40,7 @@ function init() {
   const VIEW_ART_W = 900, VIEW_ART_V = 760;
   const PLAZA_FIT = 520;   // the plaza (500 wide) must always fit across
   const world = document.getElementById('pkWorld');
+  const base = document.getElementById('pkBase');   // the ground's own layer
   const meEl = document.getElementById('pkMe');
   const meCtx = document.getElementById('pkMeCv').getContext('2d');
   const cutEl = document.getElementById('pkCut');
@@ -69,6 +70,7 @@ function init() {
     scale = Math.min(1.7, maxIn, Math.max(0.55, fill, want));
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
+    replaceMovers();   // transform placement is in px — a new scale moves it
   }
   addEventListener('resize', layout);
   layout();
@@ -115,18 +117,49 @@ function init() {
     for (let i = 0; i < kids.length; i++) {
       const el = kids[i];
       if (el.noCull) continue;
-      const l = el.style.left, t = el.style.top;   // PERCENT only — never read px as %
-      if (!l || !t || l.charCodeAt(l.length - 1) !== 37 || t.charCodeAt(t.length - 1) !== 37) continue;
+      let x = el.cx, y = el.cy;                    // movers: placed by transform
+      if (x === undefined) {                       // statics: their own inline
+        const l = el.style.left, t = el.style.top; // PERCENT only — never read px as %
+        if (!l || !t || l.charCodeAt(l.length - 1) !== 37 || t.charCodeAt(t.length - 1) !== 37) continue;
+        x = parseFloat(l) / 100 * W; y = parseFloat(t) / 100 * H;
+      }
       if (el.cPad === undefined) {   // its own footprint, so tall art can't pop
         el.cPad = Math.max(140, (parseFloat(el.style.width) / 100 * W || 0) + 60,
           (parseFloat(el.style.height) / 100 * H || 0) + 60);
       }
       // wider band to STAY on than to come back = no flapping at the border
-      const on = onScreen(parseFloat(l) / 100 * W, parseFloat(t) / 100 * H,
-        el.cOff ? el.cPad : el.cPad + 90);
+      const on = onScreen(x, y, el.cOff ? el.cPad : el.cPad + 90);
       if (on === !el.cOff) continue;
       el.cOff = !on;
       el.style.display = on ? '' : 'none';
+    }
+  }
+
+  // ---- 📐 TRANSFORM PLACEMENT — for MOVERS only ---------------------------
+  // `left`/`top` are LAYOUT properties: a mover that writes them marks itself
+  // layout-dirty every frame. Measured at 38% dearer than transform for
+  // identical motion, so everything that moves EVERY FRAME places with one
+  // composited property instead. Statics keep left/top on purpose — they are
+  // written once, so there is nothing to save, and percentages survive a
+  // resize for free. Peers keep them too: their 0.18s left/top transition
+  // smooths the 150ms network beat, and moving that to `transform` would
+  // interpolate the facing flip as well — a banana squashing through zero.
+  // `tail` carries the element's own anchor (translate(-50%,-100%)) and any
+  // scaleX(-1) flip, applied AFTER the position.
+  // ⚠️ px, so it rides on `scale` — layout() re-places every mover.
+  // el.cx/el.cy are also what the cull sweep reads: these elements no longer
+  // carry a readable inline left/top.
+  const ME_ANCHOR = ' translate(-50%,-100%)';   // was .pk-me's CSS transform
+  function place(el, x, y, tail) {
+    el.cx = x; el.cy = y; el.cTail = tail || '';
+    el.style.transform = 'translate(' + (x * scale) + 'px,' + (y * scale) + 'px)' + el.cTail;
+  }
+  function replaceMovers() {
+    const kids = world ? world.children : [];
+    for (let i = 0; i < kids.length; i++) {
+      const el = kids[i];
+      if (el.cx === undefined) continue;
+      el.style.transform = 'translate(' + (el.cx * scale) + 'px,' + (el.cy * scale) + 'px)' + el.cTail;
     }
   }
 
@@ -172,7 +205,7 @@ function init() {
         if (k !== kind) return;
         el = plates[k] = document.createElement('div');
         el.className = 'pk-plate';
-        world.insertBefore(el, world.firstChild);
+        base.appendChild(el);   // ⬅ the ground layer, not the world
         const pre = new Image();
         pre.onload = () => {
           el.style.backgroundImage = "url('" + pre.src + "')";
@@ -412,7 +445,7 @@ function init() {
   // Stable refs (pos/tgt/ME_DRAW, helpers) cross as-is; live chassis state
   // (phase, pSpeed, the camera in onScreen) crosses as getter functions.
   const ctx = {
-    W, H, world, pct, depth, blocked, onScreen,
+    W, H, world, pct, depth, blocked, onScreen, place,
     pos, tgt, float, toast, blink,
     phase: () => phase, setPhase, phaseFor,
     pSpeed: () => pSpeed,
@@ -509,8 +542,7 @@ function init() {
     }
     if (pos.x !== meWX || pos.y !== meWY) {   // outside the walk branch: a
       meWX = pos.x; meWY = pos.y;             // direct pos set repaints too
-      meEl.style.left = pct(pos.x, W);
-      meEl.style.top = pct(pos.y, H);
+      place(meEl, pos.x, pos.y, ME_ANCHOR);
       depth(meEl, pos.y);
     }
     const inst = Math.hypot(pos.x - prevPX, pos.y - prevPY) / Math.max(dt, 0.001);
@@ -637,8 +669,7 @@ function init() {
     };
   }
 
-  meEl.style.left = pct(pos.x, W);
-  meEl.style.top = pct(pos.y, H);
+  place(meEl, pos.x, pos.y, ME_ANCHOR);
   depth(meEl, pos.y);
   assetsReady().then(() => {
     drawMe();

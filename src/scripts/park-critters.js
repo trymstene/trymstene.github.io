@@ -66,8 +66,11 @@ const ANIMALS = [
 // ?parktest gathers the land animals by the plaza spawn (ducks stay pond-side)
 const TEST_ANIMAL_HOMES = [[1270, 830], [1340, 890], [1440, 880], null, null, [1470, 820]];
 
+// the bottom-centre anchor the pack sprites share (was in their CSS)
+const SQ_ANCHOR = ' translate(-50%,-100%)';
+
 export function initCritters(ctx) {
-  const { W, H, world, pct, depth, blocked, onScreen, float, pos, tgt, refreshHud } = ctx;
+  const { W, H, world, pct, depth, blocked, onScreen, float, pos, tgt, refreshHud, place } = ctx;
 
   // ---- 🌰 ACORNS: the park's shells — a calm XP trickle -------------------
   // Walk-over pickup, +2 rep (the same world stat the shells/floor feed).
@@ -185,9 +188,7 @@ export function initCritters(ctx) {
         }
       }
       const bob = Math.sin(now / 300 + b.phase) * 4;
-      b.el.style.left = pct(b.x, W);
-      b.el.style.top = pct(b.y - 26 + bob, H);
-      b.el.style.transform = 'translate(-50%,-50%)' + (b.dir < 0 ? ' scaleX(-1)' : '');
+      place(b.el, b.x, b.y - 26 + bob, ' translate(-50%,-50%)' + (b.dir < 0 ? ' scaleX(-1)' : ''));
     }
   }
   function startleBfly(b) {
@@ -234,9 +235,8 @@ export function initCritters(ctx) {
       const el = document.createElement('div');
       el.className = 'pk-squirrel is-still';
       el.innerHTML = SQ_SVG;
-      el.style.left = pct(hx, W);
-      el.style.top = pct(hy, H);
       world.appendChild(el);
+      place(el, hx, hy, SQ_ANCHOR);
       squirrels.push({ el, hx, hy, x: hx, y: hy, tx: hx, ty: hy,
         wait: Math.random() * 3, flee: 0, face: 1, still: true });
     });
@@ -272,9 +272,7 @@ export function initCritters(ctx) {
     if (!blocked(nx, ny) && !inPlaza(nx, ny)) { s.x = nx; s.y = ny; }
     else { s.wait = 0.5; sqPick(s); return; }
     if (Math.abs(dx) > 5) s.face = dx < 0 ? -1 : 1;
-    s.el.style.left = pct(s.x, W);
-    s.el.style.top = pct(s.y, H);
-    s.el.style.transform = 'translate(-50%,-100%)' + (s.face < 0 ? ' scaleX(-1)' : '');
+    place(s.el, s.x, s.y, SQ_ANCHOR + (s.face < 0 ? ' scaleX(-1)' : ''));
     depth(s.el, s.y);
   }
   function sqTick(dt) { squirrels.forEach((s) => sqStep(s, dt)); }
@@ -308,10 +306,12 @@ export function initCritters(ctx) {
       if (!blocked(tx, ty) && !inPlaza(tx, ty)) { a.tx = tx; a.ty = ty; return; }
     }
   }
+  // ⚡ its own change-guard, which it never had: an animal at rest re-stated
+  // where it already was on every frame it was called
   function anPlace(a) {
-    a.el.style.left = pct(a.x, W);
-    a.el.style.top = pct(a.y, H);
-    a.el.style.transform = 'translate(-50%,-100%)' + (a.face < 0 ? ' scaleX(-1)' : '');
+    if (a.px === a.x && a.py === a.y && a.pf === a.face) return;
+    a.px = a.x; a.py = a.y; a.pf = a.face;
+    place(a.el, a.x, a.y, SQ_ANCHOR + (a.face < 0 ? ' scaleX(-1)' : ''));
     depth(a.el, a.y);
   }
   function showMood(a) {
