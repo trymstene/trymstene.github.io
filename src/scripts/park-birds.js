@@ -45,6 +45,7 @@ const WILD_N = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 6]];
 const WILD_CEIL = [0, 0, 1, 2, 3];
 const TIER_W = [1, 0.45, 0.16, 0.05];
 const WILD_WIN = 600000;              // 10 min — the shared roster window
+const SPECIES_EVERY = 5;              // …but WHO visits only changes every 5 (≈50 min)
 const WILD_SALT = 0x8bfa;
 
 const PER_HOUSE = (spot) => 2 + (spot % 2);   // 2-3 residents, stable per post
@@ -85,15 +86,31 @@ function pickTier(r, ceil) {
   for (let t = 0; t <= ceil; t++) { acc += TIER_W[t] / sum; if (r < acc) return t; }
   return 0;
 }
-// the SHARED roster: same window + same band + same ceiling → same species
+// the SHARED roster: same window + same band + same ceiling → same species.
+// ⚠️ BIRDS FLOCK (Trym, 30 Jul: "ive spotted 7 birds in 2 minutes… have more
+// of the same species show up instead of so many different birds at once, so
+// discovering new birds gets more exciting"). One window = ONE flock species
+// filling most slots; only sometimes does a single stray of another species
+// tag along — and a rarity above common always arrives ALONE, so a cardinal
+// or the hummingbird is an event, not one of five simultaneous firsts.
 function rosterFor(win, band, ceil) {
   const [lo, hi] = WILD_N[band];
   const n = lo + Math.floor(seedRand(WILD_SALT + win * 31 + band * 7 + ceil) * (hi - lo + 1));
-  const out = [];
-  for (let k = 0; k < n; k++) {
-    const t = pickTier(seedRand(WILD_SALT + win * 131 + k * 977 + ceil * 13), ceil);
-    const pool = BY_TIER[t].length ? BY_TIER[t] : BY_TIER[0];
-    out.push(pool[Math.floor(seedRand(WILD_SALT + win * 17 + k * 61 + t) * pool.length)]);
+  if (!n) return [];
+  // the flock's SPECIES changes far slower than its size: a species holds the
+  // park for ~45 min (4-5 count windows) so birds come and go while WHO is
+  // visiting stays put — that's what makes a new face feel like news
+  const sWin = Math.floor(win / SPECIES_EVERY);
+  const flockT = pickTier(seedRand(WILD_SALT + sWin * 131 + ceil * 13), ceil);
+  const fPool = BY_TIER[flockT].length ? BY_TIER[flockT] : BY_TIER[0];
+  const flock = fPool[Math.floor(seedRand(WILD_SALT + sWin * 17 + flockT * 61) * fPool.length)];
+  if (flockT > 0) return [flock];              // anything rarer travels alone
+  const out = new Array(n).fill(flock);
+  // ~35% of windows: one stray of another species keeps the lawn from
+  // looking cloned — same tier, so it stays a common companion
+  if (n > 1 && seedRand(WILD_SALT + sWin * 401 + band) < 0.35) {
+    const alt = fPool[Math.floor(seedRand(WILD_SALT + sWin * 733) * fPool.length)];
+    if (alt !== flock) out[n - 1] = alt;
   }
   return out;
 }
@@ -297,14 +314,14 @@ export function initBirds(ctx) {
   function moveIn(i, now) {
     const n = PER_HOUSE(i);
     const seats = houseSeats(i, n);
-    const taken = [];
     const day = Math.floor(Date.now() / 86400000);
+    // ⚠️ ONE FAMILY PER HOUSE (Trym, 30 Jul — mixed residents handed out four
+    // new species the moment you walked in): every resident of a house is the
+    // SAME species for the whole day. Four houses = at most four faces, and a
+    // house becomes "the chickadees' place" until tomorrow.
+    const houseSp = BIRD_SPECIES[Math.floor(seedRand(0x5eed + day * 97 + i * 31) * BIRD_SPECIES.length)];
     for (let k = 0; k < n; k++) {
-      // residents are seeded per (day · post · slot) too, so a house's little
-      // crowd is the same for everyone in the park and holds all day
-      const pool = BIRD_SPECIES.filter((s) => taken.indexOf(s) < 0);   // mixed species
-      const sp = pool[Math.floor(seedRand(0x5eed + day * 97 + i * 31 + k) * pool.length)];
-      taken.push(sp);
+      const sp = houseSp;
       const b = makeBird(sp, { spot: i, k, n, hx: seats[k].x, hy: seats[k].y, roam: HOUSE_ROAM });
       b.nextHome = now + rnd(HOME_EVERY);
       flyIn(b, seats[k].x, seats[k].y);
