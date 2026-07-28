@@ -100,9 +100,11 @@ SUNBED = ('chair', -34, -48, 36, 6, -4)    # rect + where you sit
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
 # the lighthouse stands on the open shore above the volleyball court. It USED
-# to sit at the bottom-left entrance, but the WELCOME ARCH greets you there now
-# (built in banana-beach.js), so the lighthouse moved to a clean stretch of
-# coast where it reads as a scenic landmark instead of fighting the arch.
+# to sit at the bottom-left entrance, but a big WELCOME ARCH greeted you there,
+# so the lighthouse moved to a clean stretch of coast where it reads as a
+# scenic landmark instead of fighting the gate. ⚠️ THE ARCH WAS REMOVED 30 Jul
+# (Trym) — the entrance is the waypost's lane now. The lighthouse stays here on
+# its own merits; don't move it back without deciding you want it there.
 LIGHT = (1050, 120)
 # 🎡 THE PIER BAZAAR — a big WALKABLE wooden deck on the far right, opposite
 # the bottom-left entrance. ⚠️ NOT a collider any more: you walk ON it, among
@@ -605,8 +607,6 @@ def net_span():
 DIG_SITES = [(400, 620), (730, 372), (1100, 380), (490, 980), (300, 1046),
              (1290, 1040), (1560, 1010), (1620, 900), (1790, 1010)]
 PATCH_W, PATCH_H = 156, 104
-ARCH = (219, 710, 499, 890)    # the welcome arch's DOM box (banana-beach.js)
-                               # ⚠️ moved up the lane 30 Jul — keep in sync
                                # ⚠️ KEEP IN SYNC with AX/AY/AW/AH there. Moved
                                # +45 on 24 Jul so the road runs centred between
                                # the posts instead of hugging the right one.
@@ -867,7 +867,6 @@ def audit_digs():
     sand patch is visible, and 900 let exactly that through."""
     hits = 0
     ZONES = [('the volleyball court', COURT),
-             ('the welcome arch', ARCH),
              ('the pier bazaar deck', (BOARDWALK[0], BOARDWALK[2],
                                        BOARDWALK[1], BOARDWALK[3])),
              ('the dock', (PIER[0], PIER[2], PIER[1], PIER[3]))]

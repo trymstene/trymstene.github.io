@@ -451,17 +451,15 @@ function init() {
   // practice it reads as being dumped into someone else's game with no idea
   // where you are: no arrival, no sign, no sense of a place you entered.
   //
-  // So everyone now spawns at the road's end and walks up under the WELCOME
-  // TO BANANA BAY arch (its world box is x 219–499, y 710–890, built below),
-  // which is the one thing on this map that says where you are. The path
-  // from (70, 1040) to (352, 884) runs along the spine road's first leg —
-  // you spend the first seconds on a road, arriving, and the court is
-  // something you then choose to walk to.
-  // ⚠️ THE TARGET IS THE ARCH'S GAP, so it moves whenever the arch does: the
-  // 30 Jul move up the lane left this at the old (296,924) for one build,
-  // which walked new arrivals to a patch of sand BESIDE the sign instead of
-  // through it — the arrival read as being dropped, which is the exact thing
-  // this spawn exists to fix.
+  // So everyone now spawns at the road's end and walks IN, up the park lane:
+  // (70, 1040) to (352, 884) is the spine road's first leg, so you spend the
+  // first seconds on a road arriving somewhere, and the court is something you
+  // then choose to walk to.
+  // ⚠️ The walk used to end under a big WELCOME TO BANANA BAY arch, which was
+  // removed 30 Jul (Trym). The WALK is the part that matters and it stays —
+  // being dropped in the middle of the map is what reads as "someone else's
+  // game". What the map lost with the arch is the only thing on it that said
+  // the bay's name; the page's own H1 above the frame carries that now.
   //
   // `fromPark` survives for ANALYTICS only (beach_join's `via`) — the park
   // gate appends ?park so a walk-in isn't logged as a cold ad landing.
@@ -2982,41 +2980,6 @@ function init() {
   });
   hangSign('The Grabber', GRABBER.x, GRABBER.y - 8, -4);
 
-  // 🎪 THE WELCOME ARCH — a big wooden gateway at the park entrance (far left),
-  // the first thing bananas see stepping onto the beach from the park. Purely
-  // decorative (no collider); the banana spawns beneath it and walks through.
-  (() => {
-    // ⚠️ AX 120, not the original 75. The posts plant on y=950, and MEASURED
-    // off the baked plate the road runs x 209..310 on that row — centre 260,
-    // while the gap between the posts centred on 215. The road passed under
-    // the sign hugging the right pole. +45 puts the lane dead centre between
-    // them. (Aligned on the GROUND LINE, deliberately: everything above y=950
-    // is the sign's height drawn upward, not depth, so the feet are where the
-    // sign actually IS. Centring on the mid-post row instead would want +130
-    // and push the whole road out past the left pole down at the sand.)
-    // ⚠️ MOVED UP THE LANE 30 Jul (Trym: "move the welcome to banana bay sign a
-    // bit higher up"). The rule above is what makes this non-trivial: the feet
-    // land on AY+AH and the post gap is centred on AX+AW/2, so the arch may
-    // only travel ALONG the road — measured off the plate, the lane's centre
-    // is x260 at row 950 (the old feet) and x359 at row 890 (the new ones), so
-    // the arch goes up 60 AND right 99 or the road stops running through it.
-    const AX = 219, AY = 710, AW = 280, AH = 180;  // its world bounding box
-    const arch = document.createElement('div');
-    arch.className = 'bh-arch';
-    arch.setAttribute('aria-hidden', 'true');
-    arch.innerHTML = '<div class="bh-arch__post bh-arch__post--l"></div>'
-      + '<div class="bh-arch__post bh-arch__post--r"></div>'
-      + '<div class="bh-arch__board"><span class="bh-arch__sub">welcome to</span>'
-      + '<span class="bh-arch__title">BANANA BAY</span></div>';
-    arch.style.left = pct(AX, W);
-    arch.style.top = pct(AY, H);
-    arch.style.width = pct(AW, W);
-    arch.style.height = pct(AH, H);
-    arch.style.zIndex = String(100 + AY + AH);     // sorts by its feet — sits IN
-                                                   // FRONT of the scenery behind
-                                                   // it, behind the nearer banana
-    world.appendChild(arch);
-  })();
 
   // 🍌 A VENDOR BANANA behind each stall's counter, frozen on a DIFFERENT
   // dance frame so they don't look identical — one leans left, one faces
