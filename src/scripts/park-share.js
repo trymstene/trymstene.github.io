@@ -20,7 +20,7 @@ export function initShare(ctx, garden) {
     return h ? h + 'h ' + m + 'm' : m ? m + 'm ' + s + 's' : s + 's';
   }
   // live bloom, '—' until the server has spoken
-  const bloomStr = () => { const v = garden.bloomNow(); return v < 0 ? '—' : v + '%'; };
+  const bloomStr = () => { const v = garden.bloomNow(); return v < 0 ? '—' : Math.round(v) + '%'; };
   const rosterEl = document.getElementById('pkRoster');
   const dayStatsEl = document.getElementById('pkDayStats');
   // 🔭 today's sightings as little pack portraits (the idle frame of each
@@ -239,7 +239,7 @@ export function initShare(ctx, garden) {
       [String(s.weeds_pulled || 0), 'WEEDS PULLED'],
       [String(s.garden_harvests || 0), 'HARVESTS'],
       [String(s.eggs_found || 0), 'EGGS FOUND'],
-      [v < 0 ? '—' : v + '%', 'PARK HEALTH'],
+      [v < 0 ? '—' : Math.round(v) + '%', 'PARK HEALTH'],
     ];
     let y = seen.length ? 508 : 400;
     const gap = seen.length ? 122 : 132;

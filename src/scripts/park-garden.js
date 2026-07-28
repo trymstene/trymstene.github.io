@@ -152,7 +152,12 @@ export function initGarden(ctx) {
     const strip = () => ({
       ok: 1,
       slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)),
-      bloom: Math.round(gShim.bloom),
+      // the shim mirrors the worker's wire: one decimal, and the same
+      // tidiness ceiling (0.3/weed · 0.6/algae · 0.8/litter) so ?parktest
+      // behaves like the live park instead of pinning at 100
+      bloom: Math.round(Math.min(gShim.bloom, 100
+        - (0.3 * gShim.weeds.length + 0.6 * gShim.algae.length
+          + 0.8 * gShim.trash.length)) * 10) / 10,
       weeds: gShim.weeds.map((w2) => ({ ...w2 })),
       trash: gShim.trash.map((t) => ({ ...t })),
       eggs: gShim.eggs.map((e) => ({ ...e })),
@@ -637,9 +642,11 @@ export function initGarden(ctx) {
   const hFillEl = document.getElementById('pkHFill');
   const hPctEl = document.getElementById('pkHPct');
   let hbarPhase = -1;
+  // ⚠️ the fill takes the RAW value (the server sends one decimal) so a single
+  // weed pulled visibly moves the bar; only the readout rounds
   function renderHBar(v, p) {
     hFillEl.style.width = v + '%';
-    hPctEl.textContent = v + '%';
+    hPctEl.textContent = Math.round(v) + '%';
     hPctEl.style.left = v + '%';
     hPctEl.classList.toggle('is-out', v < 20);   // slim fill: % steps outside
     if (hbarPhase !== p) {
@@ -858,7 +865,7 @@ export function initGarden(ctx) {
     const n = weeds.size;
     const v = Math.max(0, bloomV);
     const stars = gSlots.reduce((t, s) => t + ((SEED_BY[s && s.seed] || {}).stars || 0), 0);
-    return v + '%'
+    return Math.round(v) + '%'
       + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : '')
       + (stars ? ' · ' + starStr(Math.min(stars, 5)) + (stars > 5 ? '×' + stars : '') + ' feeding it' : '');
   }

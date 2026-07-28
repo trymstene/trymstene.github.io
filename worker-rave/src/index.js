@@ -884,6 +884,9 @@ export class ParkRoom {
     // 🫧 algae + 🐦 birdhouses load BEFORE the decay — live patches drag it,
     // freshly-stocked houses feed it
     const alg = (await this.state.storage.get('algae')) || { list: [], nextAt: 0 };
+    // 🗑 litter loads here too (its SPAWN block still runs below, where it can
+    // see the fresh bl.v) because the tidiness ceiling counts it
+    const tr = (await this.state.storage.get('trash')) || { list: [], nextAt: 0 };
     const hs = (await this.state.storage.get('houses')) || { list: [] };
     const bl = (await this.state.storage.get('bloom')) || { v: 70, at: now };
     const hrs = Math.max(0, (now - bl.at) / 3600_000);
@@ -902,7 +905,7 @@ export class ParkRoom {
       // 🐦 + stocked birdhouses (<24h, the daily ritual) at BH_FEED each
       const stocked = hs.list.filter((h2) => now - (h2.lastStock || 0) < 24 * 3600_000).length;
       const feed = BLOOM_FEED_MAX * stars / (stars + BLOOM_FEED_K) + BH_FEED * stocked;
-      bl.v = Math.min(100, Math.max(BLOOM_FLOOR,
+      bl.v = Math.min(tidyCeil(wd.list, alg.list, tr.list), Math.max(BLOOM_FLOOR,
         bl.v - hrs * (BLOOM_BASE_DRIFT + BLOOM_WEED_DRAG * wd.list.length
           + ALGAE_DRAG * alg.list.length - feed)));
       bl.at = now;
@@ -944,7 +947,6 @@ export class ParkRoom {
     // 🗑 GARBAGE rides the weed infrastructure: same grid, own list, cap
     // INVERTED by bloom (healthy park = near-spotless, dead park = littered),
     // cadence 2× the weed beat. Pieces persist until somebody walks them off.
-    const tr = (await this.state.storage.get('trash')) || { list: [], nextAt: 0 };
     let trashDirty = false;
     const trashCap = bl.v >= 80 ? 4 : bl.v >= 60 ? 12 : bl.v >= 40 ? 18 : 24;   // 2x, Trym 30 Jul
     const trashEvery = Math.max(1, Math.floor(weedEvery / 2));
@@ -1043,7 +1045,13 @@ export class ParkRoom {
     } : null);
     const payload = (extra) => ({
       slots: slots.map(strip),
-      bloom: Math.round(bl.v),
+      // the ceiling again, on the CURRENT lists: a chore's reply then shows
+      // the tidier number straight away instead of waiting for the next read.
+      // ⚠️ ONE DECIMAL, not a whole number (Trym: "the progress bar should
+      // weigh small things aswell, not just … phases and chunks"). One weed is
+      // worth 0.3 of the ceiling, so at integer resolution most single chores
+      // moved nothing at all. The BAR rides the decimal; every label rounds it.
+      bloom: Math.round(Math.min(bl.v, tidyCeil(wd.list, alg.list, tr.list)) * 10) / 10,
       weeds: wd.list.map((w2) => ({ id: w2.id, x: w2.x, y: w2.y })),
       trash: tr.list.map((t) => ({ id: t.id, x: t.x, y: t.y, v: t.v })),
       eggs: eg.list.map((e) => ({ id: e.id, x: e.x, y: e.y, ...(e.g ? { g: 1 } : {}) })),
@@ -1566,6 +1574,28 @@ const BH_FEED = 0.04;
 // Skim pays +0.3 bloom; a rake pays +0.4 (piles only exist below 60).
 const ALGAE_DRAG = 0.02;
 const BLOOM_SKIM = 0.3, BLOOM_RAKE = 0.4;
+
+// 🧹 THE TIDINESS CEILING (Trym, 30 Jul: "the park has been on 100% the whole
+// day … but theres algae in the pond and some weed, and garbage here and
+// there … it at least should be reduced some percent"). The drags were always
+// in the decay — but they are a RATE, and a watered 64-slot garden out-feeds
+// them, so the meter pins at 100 and mess stops registering the moment the
+// park is healthy. Raising the drags cannot fix that: a big enough feed still
+// wins and still pins. A ceiling is the honest shape — however hard you water,
+// THE PARK CANNOT READ PERFECT WHILE THERE IS LITTER IN IT.
+// Deliberately small and capped: this is a nudge to tidy up, not a second
+// decay. At the ≥80 band the caps are 20 weeds / 6 algae / 4 litter, so a
+// fully messy healthy park reads ~90 and a spotless one still reads 100 —
+// which is what keeps clearing it worth doing.
+// ⚠️ NO CAP, and that is the point: a cap means the first items you clear pay
+// NOTHING (you are still pinned to the cap), which is the same dead feedback
+// this whole change is fixing. Uncapped and small, every single item you clear
+// moves the bar. The ≥80 band's caps are 20 weeds / 6 algae / 4 litter, so the
+// worst a spotlessly-fed park can read is ~87 — comfortably above the 80 band
+// border, so tidiness alone can never push the park into a worse spawn band.
+const TIDY_WEED = 0.3, TIDY_ALGAE = 0.6, TIDY_LITTER = 0.8;
+const tidyCeil = (weeds, algae, litter) => 100
+  - (TIDY_WEED * weeds.length + TIDY_ALGAE * algae.length + TIDY_LITTER * litter.length);
 
 // 🌿 WEEDS 2.0 + 🌸 THE BLOOM — the park's entropy loop. Weeds are an
 // ORGANISM on WEED_GRID (park-weed-grid.js, generated): children sprout NEAR
