@@ -346,14 +346,14 @@ export function initGarden(ctx) {
       const f = bSpots[i];
       let el = bEls[i];
       if (!f) {
-        if (el) { el.remove(); bEls[i] = null; }   // faded out — soil dot again
+        if (el) { el.remove(); bEls[i] = null; }   // faded out — empty pot again
         return;
       }
       if (!el) {
         el = bEls[i] = document.createElement('div');
         el.className = 'pk-bflower';
         el.style.left = pct(sx, W);
-        el.style.top = pct(sy + 3, H);
+        el.style.top = pct(sy - 12, H);   // sits IN the planter's soil, not below it
         depth(el, sy);
         world.appendChild(el);
       }

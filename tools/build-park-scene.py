@@ -1267,8 +1267,25 @@ if HAVE_PACK:
 # small bare-soil dot is baked per spot so an empty one reads as plantable.
 # Runs AFTER every collider is declared (benches/rocks/sawhorse included).
 BORDER_SPOTS = []
+BORDER_POT = BORDER_POT_SAD = None
 if HAVE_PACK:
     bsr = random.Random(2727)
+    # the empty planter: the pack's sprout vase with its plant cropped off
+    try:
+        _v = load_pack('ME_Singles_Garden_48x48_Big_Sprout_Vase_2.png').convert('RGBA')
+        _pot = _v.crop((0, 64, 48, 96))
+        _pp = _pot.load()
+        for _y in range(_pot.height):          # scrub the last leaf specks
+            for _x in range(_pot.width):
+                _r, _g, _b, _a = _pp[_x, _y]
+                if _a and _g > _r + 10:
+                    _pp[_x, _y] = (92, 62, 38, _a)
+        _pot = _pot.crop(_pot.getbbox())
+        BORDER_POT = _pot.resize((int(_pot.width * PROP * 0.78),
+                                  int(_pot.height * PROP * 0.78)), Image.NEAREST)
+        BORDER_POT_SAD = drab(BORDER_POT)
+    except Exception as e:
+        print('  border pot failed:', e)
 
     def border_clear(x, y):
         if not (BOUND + 30 < x < W - BOUND - 30 and BOUND + 40 < y < H - BOUND - 30):
@@ -1308,11 +1325,19 @@ if HAVE_PACK:
         if any((bx_ - qx) ** 2 + (by_ - qy) ** 2 < 120 * 120 for qx, qy in BORDER_SPOTS):
             continue
         BORDER_SPOTS.append((bx_, by_))
-        for yy in range(by_ - 5, by_ + 6):        # the baked bare-soil dot
-            for xx in range(bx_ - 8, bx_ + 9):
-                dd = ((xx - bx_) / 8.0) ** 2 + ((yy - by_) / 5.0) ** 2
-                if dd <= 1.0 and bsr.random() < (1.15 - dd):
-                    put(xx, yy, (172, 142, 96) if (xx * 3 + yy * 7) % 9 else (152, 124, 82))
+        # ⚠️ was a faint bare-soil dot — Trym couldn't tell it was plantable
+        # ("not intuitive enough"). Now an EMPTY TERRACOTTA POT: the pack's
+        # Big_Sprout_Vase cropped to its pot (the plant above y=64 discarded,
+        # stray greens scrubbed to soil) — a pot with visible earth reads
+        # "put something in me" at a glance.
+        if BORDER_POT is not None:
+            shadow(bx_, by_ + 2, BORDER_POT.width * 0.42, 5)
+            im.alpha_composite(BORDER_POT, (bx_ - BORDER_POT.width // 2,
+                                            by_ - BORDER_POT.height + 4))
+            im2.alpha_composite(BORDER_POT_SAD, (bx_ - BORDER_POT.width // 2,
+                                                 by_ - BORDER_POT.height + 4))
+            im3.alpha_composite(BORDER_POT, (bx_ - BORDER_POT.width // 2,
+                                             by_ - BORDER_POT.height + 4))
     assert 18 <= len(BORDER_SPOTS) <= 26, 'border spots drifted: %d' % len(BORDER_SPOTS)
     print('border spots: %d' % len(BORDER_SPOTS))
 
