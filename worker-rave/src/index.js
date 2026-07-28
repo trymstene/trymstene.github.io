@@ -898,10 +898,13 @@ export class ParkRoom {
     }
     // 🌿 WEEDS 2.0 — cadence + cap by bloom band (the dead park is overrun),
     // growth = EXPAND near a parent / POLLINATE far / SEED an empty map
-    const [weedEvery, weedCap] = bl.v >= 80 ? [50 * 60_000, 12]
-      : bl.v >= 60 ? [35 * 60_000, 18]
-        : bl.v >= 40 ? [25 * 60_000, 28]
-          : [18 * 60_000, 60];
+    // ⚠️ 30 Jul retune (Trym: "weeds should be needed to tend every hour,
+    // weeds are very quick to fix") — healthy park grows ~6 weeds/hour so a
+    // returning visitor always has a quick round; drag softened to match
+    const [weedEvery, weedCap] = bl.v >= 80 ? [10 * 60_000, 16]
+      : bl.v >= 60 ? [8 * 60_000, 22]
+        : bl.v >= 40 ? [6 * 60_000, 34]
+          : [5 * 60_000, 70];
     if (!wd.nextAt || wd.nextAt < now - 86_400_000) wd.nextAt = now + weedEvery;
     let weedsDirty = false;
     const weedTaken = new Set(wd.list.map((w2) => w2.x + ',' + w2.y));
@@ -933,7 +936,7 @@ export class ParkRoom {
     // cadence 2× the weed beat. Pieces persist until somebody walks them off.
     const tr = (await this.state.storage.get('trash')) || { list: [], nextAt: 0 };
     let trashDirty = false;
-    const trashCap = bl.v >= 80 ? 2 : bl.v >= 60 ? 6 : bl.v >= 40 ? 9 : 12;
+    const trashCap = bl.v >= 80 ? 4 : bl.v >= 60 ? 12 : bl.v >= 40 ? 18 : 24;   // 2x, Trym 30 Jul
     const trashEvery = Math.max(1, Math.floor(weedEvery / 2));
     if (!tr.nextAt || tr.nextAt < now - 86_400_000) tr.nextAt = now + trashEvery;
     const trashTaken = new Set([...tr.list, ...wd.list].map((t) => t.x + ',' + t.y));
