@@ -91,21 +91,13 @@ NET_MESH_ROWS = (6, 63)
 
 # ---- collider shapes, in coordinates LOCAL to a place()'s (cx, base) ------
 # Top-down blocking is the BASE of an object, never its full height: you walk
-# BEHIND a palm's crown and a lighthouse's tower.
+# BEHIND a palm's crown and the wreck's mast.
 TRUNK = ('rect', -13, -36, 13, 0)          # a palm's trunk
 POLE = ('circle', 13)                      # a parasol's pole
 WRECK = ('rect', -120, -102, 122, 8)       # Captain Split's hull
-TOWER = ('rect', -58, -84, 60, 8)          # the lighthouse's base
 SUNBED = ('chair', -34, -48, 36, 6, -4)    # rect + where you sit
 BAR = (1700, 620)            # the wreck's centre / where the Captain stands
 PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
-# the lighthouse stands on the open shore above the volleyball court. It USED
-# to sit at the bottom-left entrance, but a big WELCOME ARCH greeted you there,
-# so the lighthouse moved to a clean stretch of coast where it reads as a
-# scenic landmark instead of fighting the gate. ⚠️ THE ARCH WAS REMOVED 30 Jul
-# (Trym) — the entrance is the waypost's lane now. The lighthouse stays here on
-# its own merits; don't move it back without deciding you want it there.
-LIGHT = (1050, 120)
 # 🎡 THE PIER BAZAAR — a big WALKABLE wooden deck on the far right, opposite
 # the bottom-left entrance. ⚠️ NOT a collider any more: you walk ON it, among
 # two rows of stalls and food/fruit wagons, with clear aisles (Trym: "space
@@ -189,8 +181,8 @@ else:
     rect(0, 0, W, WATER_BOT, (63, 160, 189))
     rect(0, WATER_BOT, W, H, (236, 217, 168))
 
-# a warm golden-hour grade over the whole map — the sunset survives as LIGHT,
-# not as a literal sky (there is no sky in a top-down world)
+# a warm golden-hour grade over the whole map — the sunset survives as light on
+# the ground, not as a literal sky (there is no sky in a top-down world)
 # Trym: the sand went "deep and red" — the pack's sand is a saturated orange
 # and my warm grade pushed it further. Blend the ground toward a BRIGHT cream
 # (our own sand colour) and leave the water alone but lift it slightly.
@@ -433,7 +425,6 @@ COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
 NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
 UMBRELLAS = []               # clickable parasols — open/closed, NOT baked
-BEACON = []                  # [x, y] of the lighthouse lamp — the page pulses it
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 STALLS = []                  # (cx, base) of each midway stall, emitted for the page
 GRABBER = []                 # [cx, base] of the claw machine on the pier
@@ -938,7 +929,7 @@ def emit_geo():
 // umbrella had been for two commits. Colliders are now declared on the
 // place() call that draws the prop, so the art and the collision are one
 // edit. Top-down blocking is always the BASE of an object, never its full
-// height: you walk BEHIND a palm's crown and a lighthouse's tower.
+// height: you walk BEHIND a palm's crown and the wreck's mast.
 export const WORLD = { w: %d, h: %d };
 export const WATER_Y = %d;               // bananas famously can't swim
 export const PIER = { x0: %d, x1: %d, y0: %d };
@@ -1243,7 +1234,9 @@ if HAVE_PACK:
     #  through where they stood, round the front of the hull.)
 
     # (🗼 the lighthouse was removed 24 Jul — Trym: "its in the way". Its beacon
-    #  glow and the BEACON export went with it.)
+    #  glow and the BEACON export went with it; the last of its constants —
+    #  LIGHT, TOWER, BEACON — followed 30 Jul, along with the note that still
+    #  said where it "stands".)
 
     # ─── ⛱ SUNSET ROW: the tanning zone, ON THE SHORE ───────────────────────
     # ⚠️ THE PARASOLS BELONG BY THE SEA. A previous pass clustered them beside

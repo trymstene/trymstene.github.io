@@ -273,7 +273,7 @@ function init() {
   }
   // ⭐ ONE PAINTER'S ALGORITHM FOR THE WHOLE BEACH.
   // Everything that stands on the sand — bananas, crabs, the ball, the net,
-  // the palms, the lighthouse, the parasols, the wreck — takes a z-index from
+  // the palms, the parasols, the wreck, the waypost — takes a z-index from
   // its GROUND LINE. Lower on the map = nearer the viewer = drawn on top. That
   // one rule gives Trym's ask for free: you pass in FRONT of a palm's roots
   // and BEHIND its canopy, because the canopy belongs to a trunk whose base is

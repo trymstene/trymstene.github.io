@@ -9,7 +9,7 @@
 // umbrella had been for two commits. Colliders are now declared on the
 // place() call that draws the prop, so the art and the collision are one
 // edit. Top-down blocking is always the BASE of an object, never its full
-// height: you walk BEHIND a palm's crown and a lighthouse's tower.
+// height: you walk BEHIND a palm's crown and the wreck's mast.
 export const WORLD = { w: 2760, h: 1100 };
 export const WATER_Y = 292;               // bananas famously can't swim
 export const PIER = { x0: 1820, x1: 1960, y0: 60 };
