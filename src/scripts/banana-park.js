@@ -16,7 +16,7 @@ import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS,
+  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
@@ -178,6 +178,19 @@ function init() {
     world.appendChild(d);
     ovEls.push(d);
   });
+
+  // 🧭 the waypost by the east road now says where the road goes. The post is
+  // pack art from the generator (ROAD_SIGN rides the geo contract); this is
+  // the plank that names it. Its mirrored twin stands at the bay's end.
+  if (ROAD_SIGN) {
+    const way = document.createElement('div');
+    way.className = 'pk-way';
+    way.textContent = 'Banana Bay';
+    way.style.left = pct(ROAD_SIGN.x, W);
+    way.style.top = pct(ROAD_SIGN.y - 74, H);   // clear of the post's top plank
+    way.style.zIndex = String(100 + ROAD_SIGN.y + 3);
+    world.appendChild(way);
+  }
 
   // 🍂 THE FIVE BLOOM PHASES (W1c) — 0 dead … 4 perfect. Bands start at
   // PHASE_STARTS (park-util.js), ±3 hysteresis on every border so nothing

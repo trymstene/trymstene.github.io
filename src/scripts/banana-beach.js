@@ -19,6 +19,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // communi
 import {
   WORLD, WATER_Y, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
+  PARK_SIGN,
 } from './beach-geo.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
@@ -2953,6 +2954,13 @@ function init() {
     sign.style.zIndex = String(100 + base + 2);   // over its own canopy
     world.appendChild(sign);
   }
+  // 🧭 the waypost by the park lane, the bay's half of the pair: the post is
+  // pack art from the generator (PARK_SIGN rides the geo contract), mirrored
+  // so its planks point LEFT — the way home. This is the plank that names it.
+  // (+24: hangSign hangs 108px above the base it is given, which is tuned for
+  // a stall canopy — this post is shorter, so the plank rides its top plank)
+  if (PARK_SIGN) hangSign('The Park', PARK_SIGN.x, PARK_SIGN.y + 24, -4);
+
   const SIGN_TILT = [-5, 4, -3, 6];   // varied, so no two hang the same
   STALLS.forEach((s, i) => {
     if (STALL_DEFS[i]) hangSign(STALL_DEFS[i].name, s.x, s.y, SIGN_TILT[i]);

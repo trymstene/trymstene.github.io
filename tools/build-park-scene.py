@@ -458,6 +458,7 @@ COLLIDERS = []
 OVERLAYS = []
 TREE_OVS = []          # tree overlays — client greens them one by one (W1c)
 SIGNS = []
+ROAD_SIGN = None                # 🧭 the waypost at the east road's end
 MARKET = {}
 
 TRUNK = ('rect', -13, -36, 13, 0)
@@ -1260,6 +1261,22 @@ if HAVE_PACK:
         COLLIDERS.append(('sawhorse', ('rect', -44, -18, 44, 4), sx, sy))
         SIGNS.append((sx, sy))
 
+    # 🧭 THE WAY TO THE BAY — the east road ran off the map saying nothing, so
+    # a waypost stands beside it (Trym, 30 Jul: "we need a sign to the beach by
+    # the end of the road to the right"). The pack's Camping Sign_7: two BLANK
+    # arrow planks — the only sign family in the set that isn't pre-lettered
+    # "Camping" (Signboard_1/2 literally are, which is why the west stub got a
+    # drawn sawhorse instead). Unflipped it points RIGHT, which is the way out.
+    # ⚠️ the LETTERING is a DOM plank (banana-park.js), not baked pixels: a
+    # 48px board cannot carry "Banana Bay" legibly at this scale, and the bay
+    # already labels its stalls exactly this way. The arrow carries direction,
+    # the plank carries the name.
+    # NORTH of the road (its own shoulder, clear of the door trigger at 2700)
+    # so a walker heading east passes it rather than bumps it.
+    ROAD_SIGN = (2586, 516)
+    place('ME_Singles_Camping_48x48_Sign_7.png', ROAD_SIGN[0], ROAD_SIGN[1],
+          scale=PROP * 1.15, layer=True, solid=('circle', 11))
+
 # ---- 🌼 BORDER_SPOTS — roadside single-flower micro-spots (31 Jul) ---------
 # ~24 spots on the road shoulders, picked off ROAD_SPINE like the blossom
 # tufts but SPACED (120px+) and emitted into the geo contract: the community
@@ -1578,6 +1595,8 @@ def emit_geo():
     L.append('export const MARKET = %s;' % ('{ stand: %s, cart: %s }' %
              (list(MARKET.get('stand', ())), list(MARKET.get('cart', ())))))
     L.append('export const SIGNS = %s;' % [list(s) for s in SIGNS])
+    L.append('export const ROAD_SIGN = %s;'
+             % ('{ x: %d, y: %d }' % ROAD_SIGN if ROAD_SIGN else 'null'))
     L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])

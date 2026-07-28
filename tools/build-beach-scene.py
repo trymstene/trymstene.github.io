@@ -1001,6 +1001,9 @@ export const STALLS = [
 // 🕹 the claw machine at the seaward end of the pier — the midway's one
 // landmark and the only place tickets buy the grand prize.
 export const GRABBER = { x: %d, y: %d };
+
+// 🧭 the waypost at the park lane — the DOM plank that names it hangs here
+export const PARK_SIGN = { x: %d, y: %d };
 ''' % (W, H, WATER_LINE,
        px0, px1, py0,
        px0, px1, py0, PLATFORM_BOT,
@@ -1023,7 +1026,8 @@ export const GRABBER = { x: %d, y: %d };
                  for u in UMBRELLAS),
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
        '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
-       GRABBER[0], GRABBER[1])
+       GRABBER[0], GRABBER[1],
+       PARK_SIGN[0], PARK_SIGN[1])
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
         f.write(out)
@@ -1353,6 +1357,7 @@ if HAVE_PACK:
           layer=True, solid=('circle', 10))              # the gate fork 44x62
     place('21_Beach_48x48_Direction_Pole_Big.png', 1470, 630, scale=0.79, sh=0.28,
           layer=True, solid=('circle', 10))              # ⭐ THE FORK 44x89
+
     # ⚠️ the big post stands in the gore of the dock branch, WEST of the split
     # at (1548,620), on open sand. Its old spot at (1286,726) had a dig patch,
     # two shrubs, a palm and a lane end inside 200px of it — the "much things
@@ -1588,6 +1593,23 @@ if HAVE_PACK:
                 else 'Big_Sprout_Vers_2_Sand_Mountain')
         place('21_Beach_48x48_%s.png' % name, dx, 1096, scale=1.1,
               shade=False, layer=True)
+
+    # 🧭 THE WAY TO THE PARK — the bay's half of the pair (Trym, 30 Jul: "the
+    # same on the beach, to the left saying 'The park'"). The SAME sprite as
+    # the park's east waypost, MIRRORED: unflipped its planks point right, so
+    # flipped they point left, which is the way home through the arch. One
+    # sprite, two ends of one road — that is the whole point of the pair.
+    # ⚠️ Camping Sign_7, not this folder's Direction_Pole: the poles are the
+    # beach's own junction markers (the fork, the gate fork) and reusing one
+    # here would say "another fork" instead of "that way out". Blank planks
+    # too — every Signboard in the pack is pre-lettered "Camping".
+    # SOUTH of the lane and EAST of the arch box (120,770-400,950). The first
+    # spot (330,992) sat between the arch's legs and its plank crowded the
+    # WELCOME board — two signs arguing in one glance. Out here it is the thing
+    # you pass on the way TO the arch, which is what a waypost is for.
+    PARK_SIGN = (455, 930)
+    place('ME_Singles_Camping_48x48_Sign_7.png', PARK_SIGN[0], PARK_SIGN[1],
+          scale=0.86, sh=0.28, flip=True, layer=True, solid=('circle', 11))
 
     # 🪨 the lanes' own scatter — stones and tufts just outside the shoulders
     road_liners(ROAD_SPINE, every=210, chance=0.55)
