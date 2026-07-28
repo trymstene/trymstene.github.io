@@ -69,10 +69,13 @@ import PixelIcon from '../components/PixelIcon.astro';
     .pk-way {
       position: absolute; pointer-events: none; white-space: nowrap;
       transform: translate(-50%, -100%);
-      background: #8a5a2b; border: 2px solid #3a230f; color: #ffe135;
-      box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45);
-      padding: 2px 7px; font-family: "Archivo Black", sans-serif;
-      font-size: 0.6rem; letter-spacing: 0.03em;
+      background: #8a5a2b; border: 1px solid #3a230f; color: #ffe135;
+      box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.45);
+      /* ⚠️ HALF the stall-sign plank (Trym) — at 0.6rem it out-shouted the
+         post it hangs on. The post is pack art at world scale; this is DOM at
+         fixed px, so the two only agree at one size and this is it. */
+      padding: 1px 4px; font-family: "Archivo Black", sans-serif;
+      font-size: 0.3rem; letter-spacing: 0.03em;
       background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
       background-size: 100% 5px;
     }

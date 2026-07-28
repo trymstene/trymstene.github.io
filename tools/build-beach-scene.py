@@ -1604,15 +1604,18 @@ if HAVE_PACK:
     # beach's own junction markers (the fork, the gate fork) and reusing one
     # here would say "another fork" instead of "that way out". Blank planks
     # too — every Signboard in the pack is pre-lettered "Camping".
-    # ⚠️ THIRD SPOT, and Trym's call: bottom-left, ABOVE the road, HALF SIZE.
-    # (330,992) sat between the arch's legs and crowded the WELCOME board; then
-    # (455,930) read as a second landmark beside it. Down here in the corner it
-    # is a small marker on the last stretch of sand before the road leaves the
-    # map — the arch is the landmark, this is just the label on the way out.
+    # ⚠️ THIRD SPOT (Trym): bottom-left, ABOVE the road. (330,992) sat between
+    # the arch's legs and crowded the WELCOME board; (455,930) then read as a
+    # second landmark beside it. Down here in the corner it is a small marker
+    # on the last stretch of sand before the road leaves the map — the arch is
+    # the landmark, this is just the label on the way out.
     # x150 is WEST of the lane on every row it spans (lane x167-244 at y980).
+    # ⚠️ THE POST STAYS FULL SIZE. It was briefly halved to 0.43 and that read
+    # as a stub under a floating label — Trym: "half the size … but the actual
+    # sign, not the post". What halves is the PLANK (.bh-stallsign--way).
     PARK_SIGN = (150, 975)
     place('ME_Singles_Camping_48x48_Sign_7.png', PARK_SIGN[0], PARK_SIGN[1],
-          scale=0.43, sh=0.28, flip=True, layer=True, solid=('circle', 6))
+          scale=0.86, sh=0.28, flip=True, layer=True, solid=('circle', 11))
 
     # 🪨 the lanes' own scatter — stones and tufts just outside the shoulders
     road_liners(ROAD_SPINE, every=210, chance=0.55)
