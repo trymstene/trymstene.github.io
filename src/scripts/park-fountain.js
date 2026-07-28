@@ -150,6 +150,7 @@ export function initFountain(ctx, garden) {
   // coin just glints in the dry bowl. Still walk-over to claim.
   const coinWinEl = document.createElement('div');
   coinWinEl.className = 'pk-coin';
+  coinWinEl.noCull = true;      // owns its own display — the sweep keeps off it
   coinWinEl.style.display = 'none';
   world.appendChild(coinWinEl);
   let coinLive = null, coinShownWin = -1;

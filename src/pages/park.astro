@@ -26,6 +26,12 @@ import PixelIcon from '../components/PixelIcon.astro';
     .pk-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
     /* inside a shop, the shop's own sign IS the title — the park heading yields */
     body.pk-inside .pk-sign, body.pk-inside .pk-tag { display: none; }
+    /* ⚠️ and the world STOPS. Both interiors are opaque and cover the whole
+       view, so every sprite behind them was painting for nobody. Nothing else
+       in the park sets `visibility`, and the only layout reads are on .pk-view
+       itself — never on a world child — so hiding the layer is safe. The JS
+       ticks stop too (see banana-park.js); the socket keeps itself alive. */
+    body.pk-inside .pk-world { visibility: hidden; }
 
     /* the frame is on the stage so the action band sits BELOW the map inside it */
     .pk-stage { border: 4px solid #000; box-shadow: 8px 8px 0 #000; }

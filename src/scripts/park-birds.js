@@ -149,6 +149,7 @@ export function initBirds(ctx) {
     world.appendChild(el);
     const sh = document.createElement('i');
     sh.className = 'pk-gbshad';
+    sh.noCull = true;           // shown only while airborne — its own display
     sh.style.display = 'none';
     world.appendChild(sh);
     const b = {

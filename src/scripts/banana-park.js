@@ -30,6 +30,9 @@ import { initShare } from './park-share.js';
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
 const view = document.getElementById('pkView');
+// an opaque shop interior is covering the whole view — the world behind it is
+// hidden by CSS (park.astro) and every loop that only feeds it stands down
+const inside = () => document.body.classList.contains('pk-inside');
 
 function init() {
   const W = WORLD.w, H = WORLD.h;
@@ -85,12 +88,47 @@ function init() {
     if (camX === camWX && camY === camWY) return;
     camWX = camX; camWY = camY;
     world.style.transform = 'translate(' + (-camX) + 'px,' + (-camY) + 'px)';
+    cullSweep();
   }
   // is a world point near the viewport? (the critters' + Old Peel's first-see)
-  const onScreen = (x, y) => {
+  const onScreen = (x, y, pad) => {
+    const p = pad == null ? 30 : pad * scale;
     const sx = x * scale - camX, sy = y * scale - camY;
-    return sx > -30 && sx < viewW + 30 && sy > -30 && sy < viewH + 30;
+    return sx > -p && sx < viewW + p && sy > -p && sy < viewH + p;
   };
+
+  // ---- ✂️ OFF-SCREEN CULLING ----------------------------------------------
+  // The park's cost model is NOT O(movers) — it is O(movers × total children).
+  // One mover dirties the frame and Blink walks every positioned child in this
+  // layer to reassign layers and rebuild property trees, so the only thing
+  // that buys the frame back is taking children OUT of the tree (measured:
+  // −39% with just the ~200 statics hidden, movers still running).
+  // ⚠️ `display:none` is the ONLY culling that pays: visibility:hidden +
+  // animation:none measured at 1.473ms vs 1.445 baseline — literally nothing.
+  // The sweep reads each child's OWN inline left/top, so nothing registers and
+  // nothing goes stale: a culled mover keeps writing its position (a CSSOM
+  // write on a display:none node costs no layout or paint) and reappears where
+  // it actually is. Full-bleed children (the plates) have no inline left and
+  // are skipped. An element that manages its own display sets `el.noCull`.
+  function cullSweep() {
+    const kids = world.children;
+    for (let i = 0; i < kids.length; i++) {
+      const el = kids[i];
+      if (el.noCull) continue;
+      const l = el.style.left, t = el.style.top;
+      if (!l || !t) continue;
+      if (el.cPad === undefined) {   // its own footprint, so tall art can't pop
+        el.cPad = Math.max(140, (parseFloat(el.style.width) / 100 * W || 0) + 60,
+          (parseFloat(el.style.height) / 100 * H || 0) + 60);
+      }
+      // wider band to STAY on than to come back = no flapping at the border
+      const on = onScreen(parseFloat(l) / 100 * W, parseFloat(t) / 100 * H,
+        el.cOff ? el.cPad : el.cPad + 90);
+      if (on === !el.cOff) continue;
+      el.cOff = !on;
+      el.style.display = on ? '' : 'none';
+    }
+  }
 
   // ⭐ one painter's algorithm for the whole park: z from the ground line
   const depth = (el, y) => { el.style.zIndex = String(100 + Math.round(y)); };
@@ -427,10 +465,24 @@ function init() {
   });
 
   // ---- the loop -----------------------------------------------------------
+  // ⚠️ GATED TO ~60Hz. rAF fires at the DISPLAY's rate — 120Hz on a ProMotion
+  // iPhone, 165Hz on a gaming monitor — and this loop drives 17 ticks whose
+  // style writes each re-run the whole rendering pipeline. Ungated, every cost
+  // in the park is multiplied by 2-2.7x (measured: renderer main thread 91.7%
+  // busy). 12ms, NOT 15.5: any threshold in (8.4, 16.6) skips alternate 120Hz
+  // frames, and 15.5 leaves so little headroom that a jittered vsync on a
+  // plain 60Hz display drops that beat to 30fps. The rAF is scheduled BEFORE
+  // the early return, so the loop can never die.
+  const FRAME_MS = 12;
   let last = performance.now();
+  let gateAt = 0, sweepN = 0;
   function step(now) {
+    requestAnimationFrame(step);
+    if (now - gateAt < FRAME_MS) return;
+    gateAt = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+    if (inside()) return;   // an opaque interior covers the view — nothing to run
+    const kx =(keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
     if (kx || ky) {
       tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30;
@@ -481,7 +533,9 @@ function init() {
     doorTick();
     parkSendMove(now);
     cam();
-    requestAnimationFrame(step);
+    // cam() sweeps whenever the camera moves; this catches the other case —
+    // a critter walking out of view while you stand still
+    if ((++sweepN & 7) === 0) cullSweep();
   }
 
   // ---- 🌐 the park is MULTIPLAYER ----------------------------------------
@@ -591,7 +645,7 @@ function init() {
     setTimeout(() => { lastF = -1; drawMe(); }, 700);   // redraw belt: accessories decode async
     setTimeout(() => { lastF = -1; drawMe(); }, 1800);
     setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || inside()) return;
       drawMe();
       peers.forEach((p) => drawPeer(p));
     }, 120);
