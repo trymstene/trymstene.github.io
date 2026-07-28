@@ -61,6 +61,79 @@ function seedRand(n) {
   x ^= x >>> 16;
   return (x >>> 0) / 4294967296;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌦 THE WEATHER CLOCK — a PURE FUNCTION OF TIME. No state, no cron, no sync
+// message: the client renders from it and the ParkRoom charges health from it,
+// and they agree because they run the same arithmetic over the same clock.
+// (The coin-window pattern, one level up.)
+// ⚠️⚠️ MIRRORED VERBATIM IN src/lib/world.js — CHANGE BOTH OR NEITHER.
+//
+// ⚠️ EVENTS PER DAY, NOT DICE PER WINDOW. Rolling weather every 20 minutes is
+// 72 draws a day, so even a 5% chance compounds to near-certainty and hand-
+// watering dies no matter how short the watering window is. The window length
+// was never the lever — the SHAPE of the rain is. Each DAY seeds its events,
+// so weather comes in FRONTS: dry days, changeable days, wet days, and real dry
+// stretches between them. Those dry stretches are why watering still matters.
+//
+// Simulated over 730 days before shipping (tools note, 30 Jul):
+//   heavy rain every 2.9 days · storms every 17.1 days
+//   drizzle on screen 7.3% of the time · heavy 0.49% · storm 0.04%
+// You will rarely catch a storm live — but you will often walk into what it
+// did, because the wreckage stays until somebody clears it. That asymmetry is
+// the design, not a side effect.
+const WEATHER_SALT = 0x7a1e;
+const WEATHER_DAY_MS = 86400000;
+const WEATHER_MINS = { drizzle: [30, 62], heavy: [15, 26], storm: [8, 13] };
+
+// one day of weather, from its day index alone
+function weatherDay(d) {
+  const r = seedRand(WEATHER_SALT + d * 7919);
+  const kind = r < 0.45 ? 'dry' : r < 0.80 ? 'changeable' : 'wet';
+  const nDrizzle = kind === 'dry' ? 1 : kind === 'changeable' ? 3 : 4;
+  const heavy = kind === 'wet' ? 1
+    : (kind === 'changeable' && seedRand(WEATHER_SALT + d * 401) < 0.40 ? 1 : 0);
+  const storm = kind === 'wet' && seedRand(WEATHER_SALT + d * 613) < 0.30 ? 1 : 0;
+  const types = [];
+  for (let i = 0; i < nDrizzle; i++) types.push('drizzle');
+  for (let i = 0; i < heavy; i++) types.push('heavy');
+  for (let i = 0; i < storm; i++) types.push('storm');
+  const n = types.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const type = types[i], [lo, hi] = WEATHER_MINS[type];
+    const ms = Math.round((lo + seedRand(WEATHER_SALT + d * 313 + i * 53) * (hi - lo)) * 60000);
+    // one slot each, so two events can never overlap
+    const slot = WEATHER_DAY_MS / n;
+    const at = Math.floor(i * slot + seedRand(WEATHER_SALT + d * 131 + i * 17) * Math.max(0, slot - ms));
+    out.push({ type, at, ms });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+// what is falling at t? → { type:'clear'|'drizzle'|'heavy'|'storm', since, left }
+function weatherAt(t) {
+  const d = Math.floor(t / WEATHER_DAY_MS);
+  const inDay = t - d * WEATHER_DAY_MS;
+  for (const e of weatherDay(d)) {
+    if (inDay >= e.at && inDay < e.at + e.ms) {
+      return { type: e.type, since: inDay - e.at, left: e.at + e.ms - inDay };
+    }
+  }
+  return { type: 'clear', since: 0, left: 0 };
+}
+
+// every event that STARTED in (from, to] — the ParkRoom walks this on its lazy
+// read, so weather nobody was present for still lands
+function weatherBetween(from, to) {
+  const out = [];
+  for (let d = Math.floor(from / WEATHER_DAY_MS); d <= Math.floor(to / WEATHER_DAY_MS); d++) {
+    for (const e of weatherDay(d)) {
+      const at = d * WEATHER_DAY_MS + e.at;
+      if (at > from && at <= to) out.push({ type: e.type, at, ms: e.ms });
+    }
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
 function vinylSpot(w) {
   let x = 12 + seedRand(0x5eed + w * 2) * 70;
   let y = 26 + seedRand(0x5eed + w * 2 + 1) * 46; // open floor only — high spawns near the stage edge were unreachable on iOS
@@ -887,6 +960,10 @@ export class ParkRoom {
     // 🗑 litter loads here too (its SPAWN block still runs below, where it can
     // see the fresh bl.v) because the tidiness ceiling counts it
     const tr = (await this.state.storage.get('trash')) || { list: [], nextAt: 0 };
+    // 🍂 leaves + 🌼 border flowers likewise — a storm wrecks both, and the
+    // weather pass runs before every spawner so the new bl.v picks the bands
+    const lv = (await this.state.storage.get('leaves')) || { list: [], nextAt: 0 };
+    const bd = (await this.state.storage.get('border')) || { list: [] };
     const hs = (await this.state.storage.get('houses')) || { list: [] };
     const bl = (await this.state.storage.get('bloom')) || { v: 70, at: now };
     const hrs = Math.max(0, (now - bl.at) / 3600_000);
@@ -896,7 +973,7 @@ export class ParkRoom {
       // stocked garden otherwise beat max decay forever; the daily watering
       // round is what keeps the park's engine running.
       const stars = slots.reduce((t, s2) =>
-        t + (s2 && now - (s2.lastWater || s2.plantedAt || 0) < 24 * 3600_000
+        t + (s2 && !s2.rot && now - (s2.lastWater || s2.plantedAt || 0) < 24 * 3600_000
           ? gardenSeed(s2.seed).stars : 0), 0);
       // ⭐ SATURATING FEED (31 Jul, w/ 64 slots the old linear feed would let
       // the boxes carry the park alone): feed = MAX·stars/(stars+K) — see
@@ -910,6 +987,37 @@ export class ParkRoom {
           + ALGAE_DRAG * alg.list.length - feed)));
       bl.at = now;
     }
+
+    // 🌦 WEATHER — walked across the elapsed window, so events nobody was
+    // present for still land. The clock above is a pure function of time and is
+    // mirrored in src/lib/world.js, so the client renders the very same rain.
+    // ⚠️ ONE-OFF HITS, NEVER A RATE: events run 8-26 minutes and this park's
+    // economy lives in ±1/h, so any sane rate over 20 minutes is invisible.
+    // ⚠️ the hit SCALES WITH CURRENT HEALTH, so a pristine park falls the whole
+    // way and a struggling one is not kicked while it is down.
+    const wxSeen = (await this.state.storage.get('wxAt')) || 0;
+    let wxDirty = !wxSeen, stormAt = (await this.state.storage.get('lastStormAt')) || 0;
+    if (wxSeen && now > wxSeen) {
+      for (const ev of weatherBetween(wxSeen, now)) {
+        if (ev.type === 'drizzle') continue;               // cosmetic, always
+        // ⭐ RAIN WATERS EVERY BED (Trym's Stardew rule). A GIFT that partly pays
+        // for the hit — a rain-watered garden feeds the bloom again for 24h. If
+        // the garden ever starts riding on weather instead of people, turn the
+        // 24h watering window DOWN; do not weaken the rain.
+        for (const s2 of slots) if (s2 && !s2.rot) { s2.lastWater = Math.max(s2.lastWater || 0, ev.at); dirty = true; }
+        const to = ev.type === 'storm' ? WX_STORM_TO : WX_HEAVY_TO;
+        // ⚠️ ONLY EVER DOWNWARD. The scaled pull reads v - (v-to)·(v/100), which
+        // pushes UP whenever v < to — so without this guard heavy rain would
+        // REVIVE a dying park to 50%. Weather damages; it never heals.
+        if (bl.v > to) bl.v = Math.max(BLOOM_FLOOR, bl.v - (bl.v - to) * (bl.v / 100));
+        if (ev.type === 'storm') { stormAt = ev.at; stormWreck(slots, bd, wd, tr, lv, hs, ev.at); }
+      }
+      wxDirty = true;
+      dirty = true;   // ⚠️ the other *Dirty flags are declared BELOW this block —
+                      // touching them here is a TDZ ReferenceError. wxDirty
+                      // covers the storm's weeds/litter/leaves/pots instead.
+    }
+
     // 🌿 WEEDS 2.0 — cadence + cap by bloom band (the dead park is overrun),
     // growth = EXPAND near a parent / POLLINATE far / SEED an empty map
     // ⚠️ 31 Jul: one notch harder again (more beds = more hands expected) —
@@ -987,7 +1095,6 @@ export class ParkRoom {
     // below 60 bloom (recovery accelerant + autumn dressing, never a
     // permanent chore) and sweep themselves once the park recovers past 65
     // (the 60/65 gap = hysteresis, no border flap)
-    const lv = (await this.state.storage.get('leaves')) || { list: [], nextAt: 0 };
     let leavesDirty = false;
     if (bl.v >= 65 && lv.list.length) { lv.list = []; lv.nextAt = 0; leavesDirty = true; }
     if (bl.v < 60) {
@@ -1034,13 +1141,13 @@ export class ParkRoom {
     }
     // 🌼 border flowers — pure decoration with a name on it; expiry on read
     // (~7 days) frees the spot for the next planter
-    const bd = (await this.state.storage.get('border')) || { list: [] };
+
     let borderDirty = false;
     const bAlive = bd.list.filter((f) => now - f.at < BORDER_TTL);
     if (bAlive.length !== bd.list.length) { bd.list = bAlive; borderDirty = true; }
     const strip = (s) => (s ? {
       passShort: s.passShort, name: s.name, seed: s.seed,
-      plantedAt: s.plantedAt, lastWater: s.lastWater,
+      plantedAt: s.plantedAt, lastWater: s.lastWater, ...(s.rot ? { rot: s.rot } : {}),
       waterers: (s.waterers || []).length,
     } : null);
     const payload = (extra) => ({
@@ -1055,9 +1162,11 @@ export class ParkRoom {
       weeds: wd.list.map((w2) => ({ id: w2.id, x: w2.x, y: w2.y })),
       trash: tr.list.map((t) => ({ id: t.id, x: t.x, y: t.y, v: t.v })),
       eggs: eg.list.map((e) => ({ id: e.id, x: e.x, y: e.y, ...(e.g ? { g: 1 } : {}) })),
-      border: bd.list.map((f) => ({ spot: f.spot, kind: f.kind, name: f.name, at: f.at })),
+      border: bd.list.map((f) => ({ spot: f.spot, kind: f.kind, name: f.name, at: f.at,
+        ...(f.rot ? { rot: f.rot } : {}) })),
       algae: alg.list.map((a2) => ({ id: a2.id, x: a2.x, y: a2.y })),
       leaves: lv.list.map((l2) => ({ id: l2.id, x: l2.x, y: l2.y })),
+      stormAt,
       houses: hs.list.map((h2) => ({ spot: h2.spot, name: h2.name,
         passShort: h2.passShort, builtAt: h2.builtAt, lastStock: h2.lastStock || 0,
         stockers: (h2.stockers || []).length })),
@@ -1073,10 +1182,12 @@ export class ParkRoom {
       await this.state.storage.put('algae', alg);
       await this.state.storage.put('leaves', lv);
       await this.state.storage.put('houses', hs);
+      await this.state.storage.put('wxAt', now);
+      if (stormAt) await this.state.storage.put('lastStormAt', stormAt);
     };
     if (url.pathname === '/garden' && request.method !== 'POST') {
       if (dirty || weedsDirty || decayed || eggsDirty || trashDirty || borderDirty
-        || algaeDirty || leavesDirty) await persist();
+        || algaeDirty || leavesDirty || wxDirty) await persist();
       return json(payload());
     }
     let b = null;
@@ -1151,6 +1262,28 @@ export class ParkRoom {
       if (ti < 0) return json(payload({ err: 'gone' }), 404);
       tr.list.splice(ti, 1);
       bl.v = Math.min(100, bl.v + 1);
+      await persist();
+      return json(payload({ ok: 1 }));
+    }
+    // 🥀 clear a ruined plant — the storm's cleanup chore. Frees the bed and
+    // pays a little back; the bed is then plantable by anyone, as before.
+    if (url.pathname === '/garden/clear') {
+      const i = Math.floor(Number(b.slot));
+      if (!(i >= 0 && i < slots.length) || !slots[i] || !slots[i].rot) return json(payload({ err: 'gone' }), 404);
+      slots[i] = null;
+      bl.v = Math.min(100, bl.v + BLOOM_CLEAR);
+      dirty = true;
+      await persist();
+      return json(payload({ ok: 1 }));
+    }
+    // 🌼 …and the same for a ruined roadside pot
+    if (url.pathname === '/garden/clearpot') {
+      const sp = Math.floor(Number(b.spot));
+      const fi = bd.list.findIndex((f) => f.spot === sp && f.rot);
+      if (fi < 0) return json(payload({ err: 'gone' }), 404);
+      bd.list.splice(fi, 1);
+      bl.v = Math.min(100, bl.v + BLOOM_CLEAR);
+      borderDirty = true;
       await persist();
       return json(payload({ ok: 1 }));
     }
@@ -1243,6 +1376,7 @@ export class ParkRoom {
       s.wday[short] = day;
       const wk = Object.keys(s.wday);          // bounded — a busy slot can't grow forever
       if (wk.length > 60) delete s.wday[wk[0]];
+      if (s.rot) return json(payload({ err: 'rot' }), 409);
       s.lastWater = now;
       s.waterers = s.waterers || [];
       if (!s.waterers.includes(short)) { s.waterers.push(short); if (s.waterers.length > 60) s.waterers.shift(); }
@@ -1574,6 +1708,56 @@ const BH_FEED = 0.04;
 // Skim pays +0.3 bloom; a rake pays +0.4 (piles only exist below 60).
 const ALGAE_DRAG = 0.02;
 const BLOOM_SKIM = 0.3, BLOOM_RAKE = 0.4;
+
+// 🌦 WEATHER DAMAGE (Trym's numbers, 30 Jul). Drizzle is free forever — if
+// all three tiers cost health then weather is just a tax with three animations,
+// and drizzle is the one that is actually on screen (7.3% of the time), so it
+// is the one selling "living park" rather than "here comes the bill".
+const WX_HEAVY_TO = 50;            // heavy rain pulls health toward 50%
+const WX_STORM_TO = 8;             // a storm flattens it to ~5-10%
+const WX_ROT_SHARE = 0.5;          // …and ruins HALF the planted beds + pots
+const BLOOM_CLEAR = 0.5;           // clearing one ruined plant pays this back
+// ⚠️ BIRDHOUSES ARE DESTROYED, and that is CLAIM RECYCLING rather than damage
+// (⭐ Trym's reasoning): posts are first-come with one name each, so permanent
+// houses would lock everyone who arrives later out of the feature forever. The
+// storm frees the posts. Consistent with border flowers fading at 7 days — the
+// park's rule is that nothing is forever, and birdhouses were the exception.
+function stormWreck(slots, bd, wd, tr, lv, hs, at) {
+  // 50% of PLANTED beds, chosen at random across the whole garden (Trym:
+  // "randomized plants across plant boxes", not a contiguous swathe)
+  const live = [];
+  slots.forEach((s2, i) => { if (s2 && !s2.rot) live.push(i); });
+  for (let i = live.length - 1; i > 0; i--) {          // Fisher-Yates
+    const j = Math.floor(Math.random() * (i + 1));
+    [live[i], live[j]] = [live[j], live[i]];
+  }
+  live.slice(0, Math.round(live.length * WX_ROT_SHARE)).forEach((i) => { slots[i].rot = at; });
+  // the roadside pots take the same share
+  const pots = bd.list.filter((f) => !f.rot);
+  for (let i = pots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pots[i], pots[j]] = [pots[j], pots[i]];
+  }
+  pots.slice(0, Math.round(pots.length * WX_ROT_SHARE)).forEach((f) => { f.rot = at; });
+  // …and the mess it leaves behind, on free grid points
+  const taken = new Set([...wd.list, ...tr.list, ...lv.list].map((t) => t.x + ',' + t.y));
+  const drop = (list, n, extra) => {
+    for (let k = 0; k < n; k++) {
+      for (let t = 0; t < 12; t++) {
+        const g = WEED_GRID[Math.floor(Math.random() * WEED_GRID.length)];
+        const key = g[0] + ',' + g[1];
+        if (taken.has(key)) continue;
+        taken.add(key);
+        list.push({ id: crypto.randomUUID().slice(0, 8), x: g[0], y: g[1], bornAt: at, ...extra });
+        break;
+      }
+    }
+  };
+  drop(wd.list, 6 + Math.floor(Math.random() * 5));
+  drop(tr.list, 3 + Math.floor(Math.random() * 3), { v: 1 + Math.floor(Math.random() * 3) });
+  drop(lv.list, 2 + Math.floor(Math.random() * 3));
+  hs.list.length = 0;                                   // every birdhouse down
+}
 
 // 🧹 THE TIDINESS CEILING (Trym, 30 Jul: "the park has been on 100% the whole
 // day … but theres algae in the pond and some weed, and garbage here and

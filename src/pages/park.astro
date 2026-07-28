@@ -135,6 +135,81 @@ const faq = {
     .pkg__faq dt { font-weight: 800; color: #ffe135; margin-top: 1.1rem; }
     .pkg__faq dd { margin: 0.3rem 0 0; line-height: 1.65; font-size: 0.98rem; }
 
+
+    /* ---- 🌦 WEATHER — four composited elements, whatever is falling.
+       Two tiling streak layers scrolled by transform + a scrim + a flash; no
+       canvas, no element per drop, nothing added to the rAF loop. They sit in
+       .pk-view (NOT .pk-world) because rain falls on the VIEWPORT, not on the
+       map — it must not pan with the camera.
+       ⚠️ transform/opacity only. Never animate `filter` on this page. */
+    .pk-wx { position: absolute; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+    .pk-wx__scrim, .pk-wx__rain, .pk-wx__flash {
+      position: absolute; inset: -30%; display: block; opacity: 0;
+      transition: opacity 2.4s ease;
+    }
+    .pk-wx__scrim { background: #16283a; inset: 0; }
+    .pk-wx__rain {
+      background-image: url('/assets/park/rain.png');
+      background-repeat: repeat; background-size: 256px 256px;
+      will-change: transform;
+    }
+    .pk-wx__flash { background: #eaf4ff; inset: 0; opacity: 0; }
+
+    /* the two layers run at different speeds — that parallax is the depth */
+    @keyframes pkRainFar  { from { transform: translate3d(0, 0, 0); }
+                            to   { transform: translate3d(-256px, 1024px, 0); } }
+    @keyframes pkRainNear { from { transform: translate3d(0, 0, 0); }
+                            to   { transform: translate3d(-512px, 1024px, 0); } }
+    .pk-wx__rain--far  { animation: pkRainFar 3.4s linear infinite; }
+    .pk-wx__rain--near { animation: pkRainNear 1.9s linear infinite; }
+
+    /* ☁ DRIZZLE — one thin layer, a hint of grey. Costs nothing, ever. */
+    .pk-wx.is-drizzle .pk-wx__scrim { opacity: 0.20; }
+    .pk-wx.is-drizzle .pk-wx__rain--far { opacity: 0.34; }
+
+    /* 🌧 HEAVY — both layers, faster, properly dark */
+    .pk-wx.is-heavy .pk-wx__scrim { opacity: 0.30; }
+    .pk-wx.is-heavy .pk-wx__rain--far { opacity: 0.5; animation-duration: 2.2s; }
+    .pk-wx.is-heavy .pk-wx__rain--near { opacity: 0.62; animation-duration: 1.25s; }
+    .pk-wx.is-heavy .pk-wx__rain { background-image: url('/assets/park/rain-hard.png'); }
+
+    /* ⛈ STORM — the hard sheet, wind-tilted, and the sky goes off */
+    .pk-wx.is-storm .pk-wx__scrim { opacity: 0.40; }
+    .pk-wx.is-storm .pk-wx__rain { background-image: url('/assets/park/rain-hard.png'); }
+    .pk-wx.is-storm .pk-wx__rain--far { opacity: 0.62; animation-duration: 1.5s; }
+    .pk-wx.is-storm .pk-wx__rain--near { opacity: 0.8; animation-duration: 0.8s; }
+    /* the WIND is the tilt: skew both sheets and they read as driven rain */
+    .pk-wx.is-storm .pk-wx__rain--far  { animation-name: pkRainGustFar; }
+    .pk-wx.is-storm .pk-wx__rain--near { animation-name: pkRainGustNear; }
+    @keyframes pkRainGustFar  { from { transform: translate3d(0, 0, 0) skewX(-9deg); }
+                                to   { transform: translate3d(-620px, 1024px, 0) skewX(-9deg); } }
+    @keyframes pkRainGustNear { from { transform: translate3d(0, 0, 0) skewX(-13deg); }
+                                to   { transform: translate3d(-980px, 1024px, 0) skewX(-13deg); } }
+    .pk-wx.is-storm .pk-wx__flash { animation: pkFlash 11s steps(1) infinite; }
+    @keyframes pkFlash {
+      0%, 3.2%, 100% { opacity: 0; }
+      1.4% { opacity: 0.62; }  1.8% { opacity: 0; }
+      2.2% { opacity: 0.44; }  2.6% { opacity: 0; }
+      41%  { opacity: 0.5; }   41.5% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pk-wx__rain { animation: none !important; }
+      .pk-wx__flash { animation: none !important; }
+    }
+
+    /* 💧 PUDDLES — they outlive the rain and fade; walk through one to
+       splash it away (rep only, never health — see park-weather.js) */
+    .pk-puddle {
+      position: absolute; width: 2.1%; aspect-ratio: 5 / 2; pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.4); opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      background: radial-gradient(ellipse at 50% 50%,
+        rgba(150, 196, 232, 0.62) 0%, rgba(120, 170, 210, 0.42) 55%, rgba(120, 170, 210, 0) 72%);
+      border-radius: 50%;
+    }
+    .pk-puddle.is-in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .pk-puddle.is-out { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+
     /* 🧭 THE WAYPOST'S PLANK — the bay's stall-sign idiom, park edition.
        The lettering is DOM, not baked: a 48px pack board cannot carry a place
        name legibly at this scale. The sprite's arrow says WHICH WAY, this

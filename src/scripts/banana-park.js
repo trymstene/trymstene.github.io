@@ -16,7 +16,7 @@ import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN,
+  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, WEED_GRID,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
@@ -26,6 +26,7 @@ import { initFountain } from './park-fountain.js';
 import { initShops } from './park-shops.js';
 import { initGarden } from './park-garden.js';
 import { initShare } from './park-share.js';
+import { initWeather } from './park-weather.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
@@ -470,6 +471,11 @@ function init() {
   // (phase, pSpeed, the camera in onScreen) crosses as getter functions.
   const ctx = {
     W, H, world, pct, depth, blocked, onScreen, place,
+    // 💧 puddles want ROADS, and the weed lattice is lawn-only by
+    // construction — so they sit just OFF a lawn point, which lands them on
+    // the path or its shoulder without needing a second generated lattice
+    puddleSpots: WEED_GRID.map((g) => [g[0] + 24, g[1] + 24]),
+    wxForce: null,
     pos, tgt, float, toast, blink,
     phase: () => phase, setPhase, phaseFor,
     pSpeed: () => pSpeed,
@@ -489,6 +495,7 @@ function init() {
   const birds = initBirds(ctx);
   ctx.birds = birds;
   const garden = initGarden(ctx);
+  const weather = initWeather(ctx);
   const critters = initCritters(ctx);
   const npc = initOldPeel(ctx);
   const fountain = initFountain(ctx, garden);
@@ -586,6 +593,7 @@ function init() {
     shops.standTick(now);
     garden.gardenTick();
     garden.toolTick();
+    weather.wxTick(now);
     doorTick();
     parkSendMove(now);
     cam();

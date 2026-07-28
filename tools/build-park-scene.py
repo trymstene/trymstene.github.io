@@ -1300,6 +1300,43 @@ if HAVE_PACK:
     place(_POLE, ROAD_SIGN[0], ROAD_SIGN[1], scale=1.0, sh=0.9,
           layer=True, solid=('circle', 8))
 
+
+# ---- 🌦 THE RAIN TILE --------------------------------------------------
+# ONE seamless tile, scrolled by CSS transform, is the whole rain engine: no
+# canvas, no element per drop, nothing for the rAF loop to do. Two copies at
+# different speeds and opacities give parallax; the storm just tilts and speeds
+# them up. Drawn rather than packed — rain is FX, not scenery (the same call as
+# the algae ellipses and the sawhorse), and a tile has to wrap perfectly, which
+# hand-placed pack art cannot.
+# ⚠️ SEAMLESS BY CONSTRUCTION: every streak that runs off an edge is drawn a
+# second time shifted by exactly one tile, so the wrap is invisible at any
+# offset. The tile is SQUARE and the streak angle divides it evenly, so the same
+# image tiles diagonally without a seam.
+def build_rain(px=256, n=110, seed=4242, length=26, slant=7, alpha=150):
+    import random as _r
+    rr = _r.Random(seed)
+    t = Image.new('RGBA', (px, px), (0, 0, 0, 0))
+    d = ImageDraw.Draw(t)
+    for _ in range(n):
+        x = rr.randrange(px)
+        y = rr.randrange(px)
+        ln = length + rr.randrange(-6, 7)
+        a = alpha + rr.randrange(-40, 41)
+        col = (208, 226, 246, max(40, min(235, a)))
+        for dx, dy in ((0, 0), (-px, 0), (px, 0), (0, -px), (0, px),
+                       (-px, -px), (px, -px), (-px, px), (px, px)):
+            d.line([(x + dx, y + dy), (x + dx + slant, y + dy + ln)], fill=col, width=1)
+    return t.crop((0, 0, px, px))
+
+
+if True:
+    _rain = build_rain()
+    _rain.save(os.path.join(OUT, 'rain.png'), optimize=True)
+    # the storm sheet is the same field, denser and more slanted (wind)
+    build_rain(n=190, seed=99, length=34, slant=13, alpha=175).save(
+        os.path.join(OUT, 'rain-hard.png'), optimize=True)
+    print('  rain.png + rain-hard.png (seamless %dx%d tiles)' % _rain.size)
+
 # ---- 🌼 BORDER_SPOTS — roadside single-flower micro-spots (31 Jul) ---------
 # ~24 spots on the road shoulders, picked off ROAD_SPINE like the blossom
 # tufts but SPACED (120px+) and emitted into the geo contract: the community

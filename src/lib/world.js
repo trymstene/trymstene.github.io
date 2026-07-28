@@ -119,3 +119,76 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     leave() { closedForGood = true; clearInterval(pinger); try { if (ws) ws.close(1000, 'bye'); } catch (e) {} },
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌦 THE WEATHER CLOCK — a PURE FUNCTION OF TIME. No state, no cron, no sync
+// message: the client renders from it and the ParkRoom charges health from it,
+// and they agree because they run the same arithmetic over the same clock.
+// (The coin-window pattern, one level up.)
+// ⚠️⚠️ MIRRORED VERBATIM IN worker-rave/src/index.js — CHANGE BOTH OR NEITHER.
+//
+// ⚠️ EVENTS PER DAY, NOT DICE PER WINDOW. Rolling weather every 20 minutes is
+// 72 draws a day, so even a 5% chance compounds to near-certainty and hand-
+// watering dies no matter how short the watering window is. The window length
+// was never the lever — the SHAPE of the rain is. Each DAY seeds its events,
+// so weather comes in FRONTS: dry days, changeable days, wet days, and real dry
+// stretches between them. Those dry stretches are why watering still matters.
+//
+// Simulated over 730 days before shipping (tools note, 30 Jul):
+//   heavy rain every 2.9 days · storms every 17.1 days
+//   drizzle on screen 7.3% of the time · heavy 0.49% · storm 0.04%
+// You will rarely catch a storm live — but you will often walk into what it
+// did, because the wreckage stays until somebody clears it. That asymmetry is
+// the design, not a side effect.
+export const WEATHER_SALT = 0x7a1e;
+export const WEATHER_DAY_MS = 86400000;
+const WEATHER_MINS = { drizzle: [30, 62], heavy: [15, 26], storm: [8, 13] };
+
+// one day of weather, from its day index alone
+export function weatherDay(d) {
+  const r = seedRand(WEATHER_SALT + d * 7919);
+  const kind = r < 0.45 ? 'dry' : r < 0.80 ? 'changeable' : 'wet';
+  const nDrizzle = kind === 'dry' ? 1 : kind === 'changeable' ? 3 : 4;
+  const heavy = kind === 'wet' ? 1
+    : (kind === 'changeable' && seedRand(WEATHER_SALT + d * 401) < 0.40 ? 1 : 0);
+  const storm = kind === 'wet' && seedRand(WEATHER_SALT + d * 613) < 0.30 ? 1 : 0;
+  const types = [];
+  for (let i = 0; i < nDrizzle; i++) types.push('drizzle');
+  for (let i = 0; i < heavy; i++) types.push('heavy');
+  for (let i = 0; i < storm; i++) types.push('storm');
+  const n = types.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const type = types[i], [lo, hi] = WEATHER_MINS[type];
+    const ms = Math.round((lo + seedRand(WEATHER_SALT + d * 313 + i * 53) * (hi - lo)) * 60000);
+    // one slot each, so two events can never overlap
+    const slot = WEATHER_DAY_MS / n;
+    const at = Math.floor(i * slot + seedRand(WEATHER_SALT + d * 131 + i * 17) * Math.max(0, slot - ms));
+    out.push({ type, at, ms });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+// what is falling at t? → { type:'clear'|'drizzle'|'heavy'|'storm', since, left }
+export function weatherAt(t) {
+  const d = Math.floor(t / WEATHER_DAY_MS);
+  const inDay = t - d * WEATHER_DAY_MS;
+  for (const e of weatherDay(d)) {
+    if (inDay >= e.at && inDay < e.at + e.ms) {
+      return { type: e.type, since: inDay - e.at, left: e.at + e.ms - inDay };
+    }
+  }
+  return { type: 'clear', since: 0, left: 0 };
+}
+
+// every event that STARTED in (from, to] — the ParkRoom walks this on its lazy
+// read, so weather nobody was present for still lands
+export function weatherBetween(from, to) {
+  const out = [];
+  for (let d = Math.floor(from / WEATHER_DAY_MS); d <= Math.floor(to / WEATHER_DAY_MS); d++) {
+    for (const e of weatherDay(d)) {
+      const at = d * WEATHER_DAY_MS + e.at;
+      if (at > from && at <= to) out.push({ type: e.type, at, ms: e.ms });
+    }
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
