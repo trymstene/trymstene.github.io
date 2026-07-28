@@ -4364,7 +4364,25 @@ function init() {
   const NYAN_BANDS = ['#ff4d4d', '#ff9f1c', '#ffe135', '#37d67a', '#4db8ff', '#b388ff'];
 
   let trailsDirtyUntil = 0;
-  function tick() {
+  // ⚠️ GATED TO ~60Hz (the park's and the bay's gate — same reasoning). rAF
+  // fires at the DISPLAY's rate: 120Hz on a ProMotion iPhone, 165Hz on a
+  // gaming monitor. Ungated, this loop drove stepMe/nadeTick/tickRun/claims/
+  // quests/monkey/a sweep over every raver AND the whole canvas pass twice per
+  // 60Hz beat — and unlike the park's, most of that cost is real DRAWING.
+  // 12ms, NOT 15.5: any threshold in (8.4, 16.6) skips alternate 120Hz frames,
+  // and 15.5 leaves so little headroom that a jittered vsync on a plain 60Hz
+  // display drops that beat to 30fps. rAF is scheduled BEFORE the early
+  // return, so the loop can never die.
+  // 🌈 SIDE EFFECT, and it is a FIX: the light-trail fade is PER FRAME
+  // (0.94^n), so it used to clear ~2.7× faster on a 165Hz screen than on a
+  // 60Hz one. Now every display gets the 60Hz look the 4s runway was written
+  // for — on a ProMotion phone the trails linger a little longer than before.
+  const FRAME_MS = 12;
+  let gateAt = 0;
+  function tick(ts) {
+    requestAnimationFrame(tick);
+    if (ts - gateAt < FRAME_MS) return;
+    gateAt = ts;
     const now = Date.now();
     const dtMs = lastTick ? Math.min(now - lastTick, 100) : 16;
     lastTick = now;
@@ -4864,7 +4882,6 @@ function init() {
       const extra = ravers.size - MAX_VISIBLE;
       el('rvMore').textContent = extra > 0 ? '+' + extra + ' more bananas in the back' : '';
     }
-    requestAnimationFrame(tick);
   }
 
   // ---- THE SOUND: Sentry's set (tools/RAVE-AUDIO-SPEC.md) ----
