@@ -487,13 +487,20 @@ import PixelIcon from '../components/PixelIcon.astro';
       image-rendering: pixelated; background-size: 100% 100%; background-repeat: no-repeat;
       filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35));
     }
-    /* ready = the glint alone now (the chips are gone), so it reads a touch stronger */
-    .pk-plant.is-ready { animation: pkReadyGlint 2.2s ease-in-out infinite; }
-    @keyframes pkReadyGlint {
-      0%, 100% { filter: drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35)); }
-      50% { filter: brightness(1.35) drop-shadow(0 0 8px rgba(255, 225, 53, 0.85)); }
+    /* ready = the glint alone now (the chips are gone), so it reads a touch
+       stronger. ⚠️ the glow is a SEPARATE child animating OPACITY only — the
+       old version animated `filter` between drop-shadows and an 8px blur,
+       which re-ran a multi-pass GPU blur every frame per ready plant, forever
+       (the never-animate-filter doctrine, broken here and now repaid). */
+    .pk-plant.is-ready::after {
+      content: ''; position: absolute; inset: -34%; pointer-events: none;
+      background: radial-gradient(circle, rgba(255, 225, 53, 0.6) 0%, rgba(255, 225, 53, 0) 68%);
+      animation: pkReadyGlint 2.2s ease-in-out infinite;
     }
-    @media (prefers-reduced-motion: reduce) { .pk-plant.is-ready { animation: none; } }
+    @keyframes pkReadyGlint { 0%, 100% { opacity: 0.18; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .pk-plant.is-ready::after { animation: none; opacity: 0.6; }
+    }
     /* 🪧 the ownership stake — a quiet garden label on YOUR plants only */
     .pk-gstake { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
     .pk-gstake svg { display: block; width: 100%; height: 100%; }
