@@ -661,7 +661,8 @@ for _ in range(60):
     y = int(pcy + math.sin(a) * pry * rr)
     for i in range(prng.randrange(4, 9)):
         put(x + i, y, (96, 152, 196))
-for lx, ly in ((pcx - 120, pcy - 40), (pcx + 90, pcy + 55), (pcx + 40, pcy - 80)):
+LILY = ((pcx - 120, pcy - 40), (pcx + 90, pcy + 55), (pcx + 40, pcy - 80))
+for lx, ly in LILY:
     for yy in range(-5, 6):
         for xx in range(-9, 10):
             if (xx / 9.0) ** 2 + (yy / 5.0) ** 2 <= 1.0 and not (xx > 4 and abs(yy) < 2):
@@ -1315,6 +1316,158 @@ if HAVE_PACK:
     assert 18 <= len(BORDER_SPOTS) <= 26, 'border spots drifted: %d' % len(BORDER_SPOTS)
     print('border spots: %d' % len(BORDER_SPOTS))
 
+# ---- 🫧 ALGAE_SPOTS — the weed lattice ON the pond surface -----------------
+# Scum patches spawn on these (server list rides the garden DO, ~half the
+# weed beat). Inset from the lip so a patch never touches the shore tiles;
+# the lily pads stay clear. Water-surface FX, nothing baked here.
+ALGAE_SPOTS = []
+for gy in range(pcy - pry + 36, pcy + pry - 35, 40):
+    for gx in range(pcx - prx + 44, pcx + prx - 43, 46):
+        if (abs(gx - pcx) / float(prx - 48)) ** 2.6 + (abs(gy - pcy) / float(pry - 40)) ** 2.6 > 1.0:
+            continue
+        if any((gx - lx) ** 2 + (gy - ly) ** 2 < 36 ** 2 for lx, ly in LILY):
+            continue
+        ALGAE_SPOTS.append((gx, gy))
+assert 20 <= len(ALGAE_SPOTS) <= 44, 'algae lattice drifted: %d' % len(ALGAE_SPOTS)
+print('algae spots: %d' % len(ALGAE_SPOTS))
+
+# ---- 🍂 LEAF PILE — the sad-phase rake pickup ------------------------------
+# ⚠️ neither pack has a leaf-pile prop (searched Leaf/Leaves/Pile in the
+# Exteriors themes + the farm pack — only clover groups and falling-leaf
+# vfx). DRAWN mound, but in the AUTUMN TREES' OWN palette: colours sampled
+# from the Camping autumn twins so the pile matches the wilted park exactly.
+if HAVE_PACK:
+    try:
+        at = load_pack('ME_Singles_Camping_48x48_Tree_19.png').convert('RGBA')
+        ap = at.load()
+        from collections import Counter
+        acnt = Counter()
+        for y in range(at.height):
+            for x in range(at.width):
+                c = ap[x, y]
+                # crown leaves only: warm autumn colours, no trunk darks
+                if c[3] and c[0] > c[1] and c[0] > 90 and c[0] + c[1] + c[2] > 220:
+                    acnt[c[:3]] += 1
+        APAL = [c for c, _ in acnt.most_common(5)] or [(196, 120, 52)]
+        lrng = random.Random(1717)
+        lw, lh = 42, 22
+        leaf = Image.new('RGBA', (lw, lh), (0, 0, 0, 0))
+        lp = leaf.load()
+        for y in range(lh):
+            for x in range(0, lw, 2):
+                dd = ((x - lw / 2) / (lw / 2 - 1.0)) ** 2 + ((y - (lh - 3)) / float(lh - 4)) ** 2
+                if dd <= 1.0 and lrng.random() < (1.18 - dd):
+                    col = APAL[lrng.randrange(len(APAL))]
+                    for ox in (0, 1):   # 2px blocks — the banana-density grid
+                        if x + ox < lw:
+                            lp[x + ox, y] = col + (255,)
+        # a few stray leaves flicked off the top of the mound
+        for _ in range(5):
+            sx_, sy_ = lrng.randrange(6, lw - 7), lrng.randrange(0, 6)
+            col = APAL[lrng.randrange(len(APAL))]
+            lp[sx_, sy_] = col + (255,)
+            lp[sx_ + 1, sy_] = col + (255,)
+        leaf = blockify(leaf, factor=1, colors=8, warm=0.0, sat=1.0, con=1.0)
+        leaf.save(os.path.join(OUT, 'l-leaf1.png'), optimize=True)
+        leaf.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(OUT, 'l-leaf2.png'), optimize=True)
+        print('  l-leaf1/2.png: %dx%d (drawn, autumn-tree palette)' % leaf.size)
+    except Exception as e:
+        print('  leaf pile failed', e)
+
+# ---- 🐦 BIRDHOUSES — 4 bare posts baked, houses are client overlays --------
+# The pack's Garden bird houses (48x96: house y0-51, pole y52-71, base
+# y72-95). The bare post = the pole+base rows with their own outline; the
+# built overlay = the FULL sprite at the same box, so it covers the baked
+# post exactly. Four colours, one per post (client picks by spot index).
+BIRD_SPOTS = []
+if HAVE_PACK:
+    try:
+        for ci, colr in enumerate(('Red', 'Blue', 'Brown', 'Pink')):
+            s = blockify(load_pack('ME_Singles_Garden_48x48_%s_Little_Bird_House.png' % colr),
+                         factor=1, colors=28, warm=0.0, sat=1.0, con=1.0,
+                         trim=False, outline=True)
+            s = s.crop((1, 1, 49, 97))
+            s = s.resize((max(1, int(48 * PROP)), max(1, int(96 * PROP))), Image.NEAREST)
+            s.save(os.path.join(OUT, 'bh-house-%d.png' % (ci + 1)), optimize=True)
+            print('  bh-house-%d.png: %dx%d' % (ci + 1, s.width, s.height))
+        post = load_pack('ME_Singles_Garden_48x48_Red_Little_Bird_House.png').crop((0, 52, 48, 96))
+        post = blockify(post, factor=1, colors=14, warm=0.0, sat=1.0, con=1.0,
+                        trim=False, outline=True).crop((1, 1, 49, 45))
+        _cache[('bh-post', 1, 28, 0.0, 1.0, 1.0)] = post
+        # 🐦 the birds themselves — the pack's Crow idle cycle (the only bird
+        # in either pack at 48px), scaled small so it reads sparrow-sized
+        # next to the heroic banana. First 6 side frames, trim=False (the
+        # animation-frame rule), client flips by CSS.
+        band = load_pack('Crow_idle_Right_48x48.png').crop((0, 0, 48 * 6, 48))
+        bs2 = blockify(band, factor=1, colors=14, warm=0.0, sat=1.0, con=1.0,
+                       trim=False, outline=True)
+        bs2 = bs2.crop((1, 1, 1 + band.width, 1 + band.height))
+        bcell = max(1, int(48 * PROP * 0.7))
+        bs2 = bs2.resize((bcell * 6, bcell), Image.NEAREST)
+        bs2.save(os.path.join(OUT, 'a-bird.png'), optimize=True)
+        print('  a-bird.png: 6f %dx%d (Crow idle)' % (bcell, bcell))
+    except Exception as e:
+        print('  birdhouse sprites failed', e)
+
+    def post_clear(x, y, why=None):
+        """a post must sit off roads/plaza/pond, clear of colliders, plots,
+        border spots — and its future HOUSE overlay must not hide behind a
+        tree crown (checked against the PLACED boxes, which are exact)."""
+        def no(reason):
+            if why is not None:
+                why.append('(%d,%d) %s' % (x, y, reason))
+            return False
+        if on_road(x, y, 26):
+            return no('road')
+        ex, ey = (x - CX) / (PLAZA_RX + 40.0), (y - CY) / (PLAZA_RY + 40.0)
+        if ex * ex + ey * ey < 1:
+            return no('plaza')
+        ex, ey = (x - pcx) / (prx + 50.0), (y - pcy) / (pry + 50.0)
+        if ex * ex + ey * ey < 1:
+            return no('pond')
+        for _n, shape, ccx, cby in COLLIDERS:
+            if shape[0] == 'circle':
+                if (x - ccx) ** 2 + (y - cby) ** 2 < (shape[1] + 26) ** 2:
+                    return no('collider %s' % _n)
+            else:
+                _, a, b2, c2, d2 = shape
+                if ccx + a - 26 <= x <= ccx + c2 + 26 and cby + b2 - 26 <= y <= cby + d2 + 26:
+                    return no('collider %s' % _n)
+        for sx_, sy_ in PLOTS:
+            if abs(x - sx_) < 60 and abs(y - sy_) < 60:
+                return no('plot')
+        for qx, qy in BORDER_SPOTS:
+            if (x - qx) ** 2 + (y - qy) ** 2 < 46 ** 2:
+                return no('border spot')
+        # the house overlay box (x±19, y-74..y): a tree crown over it would
+        # bury the built house (trees layer above the plate)
+        hx0, hy0, hx1, hy1 = x - 19, y - 74, x + 19, y
+        for name, (bx0, by0, bx1, by1) in PLACED:
+            if 'Tree_' in name and bx0 < hx1 and bx1 > hx0 and by0 < hy1 and by1 > hy0:
+                return no('tree box %s (%d,%d,%d,%d)' % (name, bx0, by0, bx1, by1))
+        return True
+
+    # near the tree clumps, visible from the paths — each post walks a short
+    # candidate spiral from its wanted seat until post_clear passes (trees are
+    # deterministic, so the resolved coords are stable run to run)
+    for wx_, wy_ in ((1060, 390), (1548, 302), (1076, 1000), (2470, 706)):
+        seat = None
+        for ox, oy in ((0, 0), (18, 0), (-18, 0), (0, 18), (0, -18), (26, 14),
+                       (-26, 14), (26, -14), (-26, -14), (40, 0), (-40, 0),
+                       (0, 34), (52, 20), (-52, 20), (64, 0), (0, -40), (64, 30),
+                       (78, -28), (96, -8), (96, 12), (-96, 0), (-80, -30),
+                       (110, -10), (0, -60), (30, -60), (-30, -60), (110, 20)):
+            why = []
+            if post_clear(wx_ + ox, wy_ + oy, why):
+                seat = (wx_ + ox, wy_ + oy)
+                break
+            print('  post cand rejected: %s' % why[0])
+        assert seat, 'no clear seat for bird post near (%d,%d)' % (wx_, wy_)
+        place('bh-post', seat[0], seat[1], solid=('circle', 12), sh=0.2)
+        BIRD_SPOTS.append(seat)
+    assert len(BIRD_SPOTS) == 4
+    print('bird posts: %s' % BIRD_SPOTS)
+
 # ---- 🌿 WEED_GRID — the organism board (Weeds 2.0) -------------------------
 # Every lawn point a weed may claim: a 48px lattice rejecting roads (24px
 # clearance), colliders (+16px), the garden-bed zones, plaza + pond (+margin)
@@ -1386,6 +1539,8 @@ def emit_geo():
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])
     L.append('export const BORDER_SPOTS = %s;' % [list(p) for p in BORDER_SPOTS])
+    L.append('export const ALGAE_SPOTS = %s;' % [list(p) for p in ALGAE_SPOTS])
+    L.append('export const BIRD_SPOTS = %s;' % [list(p) for p in BIRD_SPOTS])
     L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d } };'
              % (CX, H - 40, W - 60, CY))
     L.append('export const OB_RECTS = %s;' % [list(r) for r in ob_rects])
@@ -1402,9 +1557,14 @@ def emit_geo():
         f.write('// GENERATED by tools/build-park-scene.py — the park weed lattice.\n'
                 '// DO NOT EDIT (twin of WEED_GRID in src/scripts/park-geo.js).\n'
                 'export const WEED_GRID = %s;\n'
-                'export const BORDER_SPOTS_N = %d;\n' % (grid_js, len(BORDER_SPOTS)))
-    print('wrote park-geo.js  (%d rects, %d circles, %d overlays, %d weed-grid pts, %d border spots)'
-          % (len(ob_rects), len(ob_circles), len(OVERLAYS), len(weed_grid), len(BORDER_SPOTS)))
+                'export const BORDER_SPOTS_N = %d;\n'
+                'export const ALGAE_SPOTS = %s;\n'
+                'export const BIRD_SPOTS_N = %d;\n'
+                % (grid_js, len(BORDER_SPOTS),
+                   '[%s]' % ','.join('[%d,%d]' % p for p in ALGAE_SPOTS), len(BIRD_SPOTS)))
+    print('wrote park-geo.js  (%d rects, %d circles, %d overlays, %d weed-grid pts, %d border spots, %d algae, %d bird posts)'
+          % (len(ob_rects), len(ob_circles), len(OVERLAYS), len(weed_grid), len(BORDER_SPOTS),
+             len(ALGAE_SPOTS), len(BIRD_SPOTS)))
 
 
 emit_geo()

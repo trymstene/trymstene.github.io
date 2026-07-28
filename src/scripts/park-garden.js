@@ -4,7 +4,7 @@
 import { poofInto, worldSid } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { PLOTS, BORDER_SPOTS } from './park-geo.js';
+import { PLOTS, BORDER_SPOTS, ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
 import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
 
@@ -83,6 +83,17 @@ const BORDER_ART = {
   marigold: ['b-marigold.png', 17, 15], poppy: ['b-poppy.png', 12, 15],
   bluebell: ['b-bluebell.png', 17, 15], primrose: ['b-primrose.png', 17, 12],
 };
+// 🫧 POND ALGAE — the weed grammar ON the water. Neither pack has an
+// algae/lily-scum sprite (searched), so a patch is a tinted translucent
+// blob — water-surface FX under the FX exception, not a world object.
+// The skim walk targets the pond BANK nearest the patch (bananas can't
+// swim); the skim itself reaches across the water.
+const ALGAE_REACH = 60;             // close enough to the bank point to skim
+// 🐦 BIRDHOUSES — 4 bare pack posts baked by the generator; building hangs
+// the pack's Little_Bird_House over the post (colour by spot index) with
+// the builder's name on the tap card. Stocked <24h = the birds are in.
+const BH_PRICE = 30;
+const BH_ART = [36, 72];            // bh-house-N.png dims (covers the post)
 
 const GARDEN_API = 'https://banana-rave.trymstene.workers.dev/park-garden';
 // 🌿 weed spots for the ?parktest shim only — the real list lives server-side
@@ -130,6 +141,11 @@ export function initGarden(ctx) {
     eggs: [{ id: 'qa1', x: 1330, y: 876 }, { id: 'qa2', x: 1432, y: 866, g: 1 }],
     // one pre-planted border flower so the named tap card is testable at once
     border: [{ spot: 1, kind: 'marigold', name: 'Inka', at: Date.now() - 3 * 86400000 }],
+    // two scum patches + one built-and-stocked birdhouse, testable at once
+    algae: [{ id: 'qg1', x: ALGAE_SPOTS[2][0], y: ALGAE_SPOTS[2][1] },
+      { id: 'qg2', x: ALGAE_SPOTS[ALGAE_SPOTS.length - 3][0], y: ALGAE_SPOTS[ALGAE_SPOTS.length - 3][1] }],
+    leaves: [],
+    houses: [{ spot: 1, name: 'Inka', passShort: 'qashort', builtAt: Date.now() - 86400000, lastStock: Date.now() - 3600000, stockers: 2, sday: {} }],
   };
   function shimGarden(path, body) {
     const now = Date.now();
@@ -141,8 +157,40 @@ export function initGarden(ctx) {
       trash: gShim.trash.map((t) => ({ ...t })),
       eggs: gShim.eggs.map((e) => ({ ...e })),
       border: gShim.border.map((f) => ({ ...f })),
+      algae: gShim.algae.map((a2) => ({ ...a2 })),
+      leaves: gShim.leaves.map((l2) => ({ ...l2 })),
+      houses: gShim.houses.map((h2) => ({ ...h2 })),
     });
     if (!body) return Promise.resolve(strip());
+    if (path === '/algae') {
+      const ai = gShim.algae.findIndex((a2) => a2.id === body.id);
+      if (ai < 0) return Promise.resolve({ err: 'gone', ...strip() });
+      gShim.algae.splice(ai, 1);
+      gShim.bloom = Math.min(100, gShim.bloom + 0.3);
+      return Promise.resolve(strip());
+    }
+    if (path === '/rake') {
+      const li = gShim.leaves.findIndex((l2) => l2.id === body.id);
+      if (li < 0) return Promise.resolve({ err: 'gone', ...strip() });
+      gShim.leaves.splice(li, 1);
+      gShim.bloom = Math.min(100, gShim.bloom + 0.4);
+      return Promise.resolve(strip());
+    }
+    if (path === '/bhbuild') {
+      if (gShim.houses.some((h2) => h2.spot === body.spot)) return Promise.resolve({ err: 'taken', ...strip() });
+      gShim.houses.push({ spot: body.spot, name: body.name || '', passShort: myShort,
+        builtAt: now, lastStock: now, stockers: 1, sday: { [myShort]: Math.floor(now / 86400000) } });
+      return Promise.resolve(strip());
+    }
+    if (path === '/bhstock') {
+      const h2 = gShim.houses.find((x2) => x2.spot === body.spot);
+      if (!h2) return Promise.resolve({ err: 'empty', ...strip() });
+      if (h2.sday[myShort] === Math.floor(now / 86400000)) return Promise.resolve({ err: 'stocked today', ...strip() });
+      h2.sday[myShort] = Math.floor(now / 86400000);
+      h2.lastStock = now;
+      h2.stockers += 1;
+      return Promise.resolve(strip());
+    }
     if (path === '/egg') {
       const ei = gShim.eggs.findIndex((e) => e.id === body.id);
       if (ei < 0) return Promise.resolve({ err: 'gone', ...strip() });
@@ -382,6 +430,214 @@ export function initGarden(ctx) {
     return true;
   }
 
+  // ---- 🫧 POND ALGAE — the weed grammar on water --------------------------
+  // Server truth on the garden read (cadence ~half the weed beat). A patch
+  // is a translucent blob ON the water (surface FX, z under every walker);
+  // the tap walks you to the BANK nearest the patch, then the skim reaches
+  // across — ripple + poof + 1 rep, first touch wins.
+  const algae = new Map();                      // id → { el, x, y, bx, by }
+  let pendingAlgae = null, algaeTracked = false;
+  function bankPoint(x, y) {
+    // the shore point on the patch's ray from the pond's centre, just past
+    // the engine's pond collider (ellipse norm 1.13 — solid stops at 1)
+    let dx = (x - POND.x) / POND.rx, dy = (y - POND.y) / POND.ry;
+    const n = Math.hypot(dx, dy) || 1;
+    return { x: POND.x + (dx / n) * 1.13 * POND.rx, y: POND.y + (dy / n) * 1.13 * POND.ry };
+  }
+  function algaeSvg(seed) {
+    const r = (n) => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed % n; };
+    let bd2 = '';
+    for (let i = 0; i < 5; i++) {
+      bd2 += '<ellipse cx="' + (14 + r(20)) + '" cy="' + (9 + r(10)) + '" rx="' + (7 + r(7))
+        + '" ry="' + (4 + r(3)) + '" fill="' + (i % 2 ? '#1e4a26' : '#2a5e2e')
+        + '" opacity="0.5"/>';
+    }
+    return SVG('48 28', bd2);
+  }
+  function renderAlgae(list) {
+    const seen = new Set();
+    (list || []).forEach((a2) => {
+      seen.add(a2.id);
+      if (algae.has(a2.id)) return;
+      const el = document.createElement('div');
+      el.className = 'pk-algae';
+      el.innerHTML = algaeSvg((parseInt(a2.id, 36) || 7) >>> 0);
+      el.style.left = pct(a2.x, W);
+      el.style.top = pct(a2.y, H);
+      world.appendChild(el);
+      const b2 = bankPoint(a2.x, a2.y);
+      algae.set(a2.id, { el, x: a2.x, y: a2.y, bx: b2.x, by: b2.y });
+    });
+    algae.forEach((a2, id) => {
+      if (!seen.has(id)) { a2.el.remove(); algae.delete(id); }   // skimmed elsewhere
+    });
+  }
+  async function skimAlgae(id) {
+    const a2 = algae.get(id);
+    if (!a2) return;
+    algae.delete(id);                       // optimistic — the poll reconciles
+    a2.el.classList.add('is-skimmed');
+    setTimeout(() => a2.el.remove(), 420);
+    const rp = document.createElement('i');   // the skim ripple, on the water
+    rp.className = 'pk-ripple';
+    rp.style.left = pct(a2.x, W);
+    rp.style.top = pct(a2.y, H);
+    world.appendChild(rp);
+    setTimeout(() => rp.remove(), 900);
+    poofInto(world, 'pk-poof', a2.x / W * 100, (a2.y - 8) / H * 100);
+    passStat('rep', 1);
+    refreshHud();
+    float(a2.x, a2.y - 14, '+1');
+    if (!algaeTracked) { algaeTracked = true; track('park_algae'); }
+    applyGarden(await gFetch('/algae', { id, pass: worldSid() }));
+  }
+  function tapAlgae(wx, wy) {
+    let hit = null;
+    algae.forEach((a2, id) => {
+      if (Math.hypot(wx - a2.x, wy - a2.y) < 32) hit = id;
+    });
+    if (hit == null) return false;
+    const a2 = algae.get(hit);
+    if (Math.hypot(pos.x - a2.bx, pos.y - a2.by) < ALGAE_REACH) { skimAlgae(hit); return true; }
+    pendingAlgae = hit;                   // walk to the bank, then skim
+    tgt.x = a2.bx;
+    tgt.y = a2.by;
+    return true;
+  }
+
+  // ---- 🐦 BIRDHOUSES — build once (30 🪙), stock daily --------------------
+  // 4 bare posts baked by the generator (BIRD_SPOTS); a built house is a
+  // client overlay that covers its post exactly, with the builder's name on
+  // the tap card. Stocked in the last 24h = 2-3 birds flutter around it and
+  // the house feeds park health (+0.04/h, server-side).
+  let bHouses = Array(BIRD_SPOTS.length).fill(null);
+  const bhEls = BIRD_SPOTS.map(() => null);
+  let pendingPost = null, bhBuildTracked = false, bhStockTracked = false;
+  const bhFed = (h) => h && Date.now() - (h.lastStock || 0) < 24 * 3600000;
+  const BIRD_N = 3;
+  function renderHouses(list) {
+    bHouses = Array(BIRD_SPOTS.length).fill(null);
+    (list || []).forEach((h) => {
+      if (h.spot >= 0 && h.spot < bHouses.length) bHouses[h.spot] = h;
+    });
+    BIRD_SPOTS.forEach(([sx, sy], i) => {
+      const h = bHouses[i];
+      let el = bhEls[i];
+      if (!h) {
+        if (el) { el.remove(); bhEls[i] = null; }   // reset era — bare post again
+        return;
+      }
+      if (!el) {
+        el = bhEls[i] = document.createElement('div');
+        el.className = 'pk-bhouse';
+        el.style.backgroundImage = "url('/assets/park/bh-house-" + (1 + (i % 4)) + ".png')";
+        el.style.left = pct(sx, W);
+        el.style.top = pct(sy, H);
+        el.style.width = pct(BH_ART[0], W);
+        el.style.height = pct(BH_ART[1], H);
+        depth(el, sy);
+        world.appendChild(el);
+      }
+      const fed = bhFed(h);
+      if ((el.dataset.fed === '1') !== fed) {   // 🐦 the birds come and go
+        el.dataset.fed = fed ? '1' : '0';
+        el.querySelectorAll('.pk-bird').forEach((b2) => b2.remove());
+        if (fed) {
+          for (let k = 1; k <= BIRD_N; k++) {
+            const b2 = document.createElement('i');
+            b2.className = 'pk-bird pk-bird--' + k + (k === 2 ? ' pk-bird--flip' : '');
+            el.appendChild(b2);
+          }
+        }
+      }
+    });
+  }
+  function openPostSheet(i) {
+    const bal = coinBal();
+    gardenBody.innerHTML = '<h2>a bare post</h2>'
+      + '<p class="pk-panel__sub">raise a birdhouse here — your name on it forever. '
+      + 'any banana can stock it once a day, and a stocked house keeps 2-3 birds '
+      + 'around and feeds the park’s health.</p>'
+      + '<button class="pk-seedrow" type="button" id="pkBhBuild"'
+      + (bal < BH_PRICE ? ' disabled' : '') + '>'
+      + '<i>🐦</i><span class="pk-seedrow__txt"><b>raise a birdhouse</b>'
+      + '<small>built once · stocked daily</small></span>'
+      + coinChip(BH_PRICE) + '</button>'
+      + (bal < BH_PRICE ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
+    const bb = document.getElementById('pkBhBuild');
+    if (bb) bb.addEventListener('click', () => buildHouse(i));
+    gardenPanel.hidden = false;
+  }
+  async function buildHouse(i) {
+    if (coinBal() < BH_PRICE) return;
+    passStat('coins_spent', BH_PRICE);
+    refreshHud();
+    closeGarden();
+    const res = await gFetch('/bhbuild', { spot: i, name: ctx.parkName, pass: worldSid() });
+    if (res && res.err === 'taken') {
+      passStat('coins_spent', -BH_PRICE);   // refund — beaten to the post
+      refreshHud();
+      toast('somebody beat you to this post');
+      applyGarden(res);
+      return;
+    }
+    applyGarden(res);
+    float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🐦');
+    toast('🐦 birdhouse raised — the birds moved straight in. stock it daily to keep them.', 4600);
+    if (!bhBuildTracked) { bhBuildTracked = true; track('park_birdhouse', { act: 'build' }); }
+  }
+  async function stockHouse(i) {
+    const h = bHouses[i];
+    if (!h) return;
+    closeGarden();
+    const res = await gFetch('/bhstock', { spot: i, pass: worldSid() });
+    if (res && res.err === 'stocked today') { toast('already stocked today — once a day per banana'); applyGarden(res); return; }
+    if (res && res.err) { applyGarden(res); return; }
+    applyGarden(res);
+    float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🌾');
+    if (h.passShort !== myShort) { passStat('rep', 2); refreshHud(); }
+    toast('🌾 stocked — the birds are staying another day');
+    if (!bhStockTracked) { bhStockTracked = true; track('park_birdhouse', { act: 'stock' }); }
+  }
+  function openHouseCard(i) {
+    const h = bHouses[i];
+    if (!h) { openPostSheet(i); return; }
+    const mine = h.passShort === myShort;
+    const fed = bhFed(h);
+    gardenBody.innerHTML = '<h2>🐦 ' + (mine ? 'your birdhouse'
+      : esc(h.name || 'a mystery banana') + '’s birdhouse') + '</h2>'
+      + '<p class="pk-panel__sub">' + (fed
+        ? 'stocked — the birds are here, and the house is feeding the park’s health.'
+        : 'quiet up there — nobody has stocked it in a day, so the birds moved out.')
+      + '</p>'
+      + '<p class="pk-gwater">🌾 stocked by ' + (h.stockers || 0) + ' banana' + (h.stockers === 1 ? '' : 's') + '</p>'
+      + '<button class="pk-btn pk-gbtn" id="pkBhStock" type="button">🌾 stock it'
+      + (mine ? '' : ' <small>+2 rep</small>') + '</button>';
+    const sb = document.getElementById('pkBhStock');
+    if (sb) sb.addEventListener('click', () => stockHouse(i));
+    gardenPanel.hidden = false;
+  }
+  function postAct(i) { if (bHouses[i]) openHouseCard(i); else openPostSheet(i); }
+  function tapPost(wx, wy) {
+    // a built house's tap zone reaches up over the box; a bare post is small
+    let best = -1, bd2 = 1e9;
+    BIRD_SPOTS.forEach(([sx, sy], i) => {
+      const hit = bHouses[i]
+        ? (Math.abs(wx - sx) < 24 && wy > sy - 80 && wy < sy + 16) || Math.hypot(wx - sx, wy - sy) < 32
+        : Math.hypot(wx - sx, wy - (sy - 14)) < 30;
+      if (!hit) return;
+      const d = Math.hypot(wx - sx, wy - (sy - (bHouses[i] ? 34 : 0)));
+      if (d < bd2) { bd2 = d; best = i; }
+    });
+    if (best < 0) return false;
+    const [sx, sy] = BIRD_SPOTS[best];
+    if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { postAct(best); return true; }
+    pendingPost = best;                   // walk-then-act, like everything else
+    tgt.x = sx;
+    tgt.y = sy + 26;
+    return true;
+  }
+
   // ---- 🌿 WEEDS + 🌸 THE BLOOM — the shared entropy loop ------------------
   const weeds = new Map();                      // id → { el, x, y }
   let bloomV = -1, pendingWeed = null, weedTracked = false;
@@ -452,6 +708,39 @@ export function initGarden(ctx) {
       float(t.x, t.y - 14, '+2');
       if (!trashTracked) { trashTracked = true; track('park_trash'); }
       gFetch('/trash', { id, pass: worldSid() }).then(applyGarden);
+    });
+    // 🍂 leaf piles ride the same walk-over beat (they only exist while the
+    // park sits under 60 health — raking is recovery accelerant)
+    leaves.forEach((l2, id) => {
+      if (Math.hypot(pos.x - l2.x, (pos.y - 6) - l2.y) > 34) return;
+      leaves.delete(id);
+      poofInto(world, 'pk-poof', l2.x / W * 100, (l2.y - 10) / H * 100);
+      l2.el.remove();
+      passStat('rep', 1);
+      refreshHud();
+      float(l2.x, l2.y - 14, '🍂 +1');
+      if (!rakeTracked) { rakeTracked = true; track('park_rake'); }
+      gFetch('/rake', { id, pass: worldSid() }).then(applyGarden);
+    });
+  }
+  // ---- 🍂 LEAF PILES — sad-phase texture, raked by walking over -----------
+  const leaves = new Map();                     // id → { el, x, y }
+  let rakeTracked = false;
+  function renderLeaves(list) {
+    const seen = new Set();
+    (list || []).forEach((l2) => {
+      seen.add(l2.id);
+      if (leaves.has(l2.id)) return;
+      const el = document.createElement('div');
+      el.className = 'pk-leaf pk-leaf--' + (1 + (parseInt(l2.id, 36) || 0) % 2);
+      el.style.left = pct(l2.x, W);
+      el.style.top = pct(l2.y, H);
+      depth(el, l2.y);
+      world.appendChild(el);
+      leaves.set(l2.id, { el, x: l2.x, y: l2.y });
+    });
+    leaves.forEach((l2, id) => {
+      if (!seen.has(id)) { l2.el.remove(); leaves.delete(id); }   // raked elsewhere
     });
   }
   function renderWeeds(list) {
@@ -619,6 +908,9 @@ export function initGarden(ctx) {
     if (Array.isArray(res.trash)) renderTrash(res.trash);
     if (Array.isArray(res.eggs)) renderEggs(res.eggs);
     if (Array.isArray(res.border)) renderBorder(res.border);
+    if (Array.isArray(res.algae)) renderAlgae(res.algae);
+    if (Array.isArray(res.leaves)) renderLeaves(res.leaves);
+    if (Array.isArray(res.houses)) renderHouses(res.houses);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
   }
   async function gardenPoll() {
@@ -822,6 +1114,15 @@ export function initGarden(ctx) {
       const [sx, sy] = BORDER_SPOTS[pendingBorder];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 90) { const i = pendingBorder; pendingBorder = null; borderAct(i); }
     }
+    if (pendingAlgae != null) {
+      const a2 = algae.get(pendingAlgae);
+      if (!a2) pendingAlgae = null;         // skimmed by somebody else mid-walk
+      else if (Math.hypot(pos.x - a2.bx, pos.y - a2.by) < ALGAE_REACH) { const id = pendingAlgae; pendingAlgae = null; skimAlgae(id); }
+    }
+    if (pendingPost != null) {
+      const [sx, sy] = BIRD_SPOTS[pendingPost];
+      if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingPost; pendingPost = null; postAct(i); }
+    }
   }
 
   // ---- 🧰 THE TOOL SLOT — the one contextual chore button ----------------
@@ -843,16 +1144,22 @@ export function initGarden(ctx) {
       const d = Math.hypot(pos.x - sx, pos.y - sy);
       if (d < bd) { bd = d; best = { kind: 'water', i, x: sx, y: sy }; }
     });
+    // 🫧 a scum patch counts as in-range by its BANK point (you skim from
+    // the shore — a mid-pond patch would otherwise never light the tool)
+    algae.forEach((a2, id) => {
+      const d = Math.hypot(pos.x - a2.bx, pos.y - a2.by);
+      if (d < bd) { bd = d; best = { kind: 'algae', id, x: a2.bx, y: a2.by }; }
+    });
     return best;
   }
   function toolTick() {
     const c = toolScan();
     toolChore = c;
-    const key = c ? c.kind + ':' + (c.kind === 'weed' ? c.id : c.i) : '';
+    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.id) : '';
     if (key === toolKey) return;
     toolKey = key;
     if (!c) { toolBtn.hidden = true; return; }
-    toolBtn.textContent = c.kind === 'weed' ? '🌿 pull' : '💧 water';
+    toolBtn.textContent = c.kind === 'weed' ? '🌿 pull' : c.kind === 'algae' ? '🫧 skim' : '💧 water';
     toolBtn.hidden = false;
   }
   toolBtn.addEventListener('click', () => {
@@ -864,6 +1171,12 @@ export function initGarden(ctx) {
       tgt.x = c.x; tgt.y = c.y + 26;
       return;
     }
+    if (c.kind === 'algae') {   // c.x/c.y = the bank point
+      if (Math.hypot(pos.x - c.x, pos.y - c.y) < ALGAE_REACH) { skimAlgae(c.id); return; }
+      pendingAlgae = c.id;
+      tgt.x = c.x; tgt.y = c.y;
+      return;
+    }
     if (Math.hypot(pos.x - c.x, pos.y - c.y) < 95) { waterSlot(c.i); return; }
     pendingWater = c.i;
     tgt.x = c.x;
@@ -872,11 +1185,11 @@ export function initGarden(ctx) {
 
   return {
     trashTick, gardenTick, toolTick,
-    tapEgg, tapWeed, tapGarden, tapBorder,
+    tapEgg, tapWeed, tapGarden, tapBorder, tapAlgae, tapPost,
     closeGarden,
     gardenerLvl,
     bloomNow: () => bloomV,
-    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; },
+    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; pendingAlgae = null; pendingPost = null; },
     qa: {
       eggs,
       // 🥚 egg QA: lay one at your feet (egg(1) = golden); steal() = somebody
@@ -900,6 +1213,28 @@ export function initGarden(ctx) {
         gardenPoll();
       },
       dry: (i) => { const s = gShim.slots[i]; if (s) s.lastWater -= 86460000; gardenPoll(); },
+      // 🫧 algae QA: scatter n patches on free lattice spots; 🍂 a pile just
+      // ahead; 🐦 age a house's stocking h hours back (birds-gone at 24)
+      algae: (n) => {
+        const taken = new Set(gShim.algae.map((a2) => a2.x + ',' + a2.y));
+        for (let k = 0; k < (n || 3); k++) {
+          const sp = ALGAE_SPOTS[Math.floor(Math.random() * ALGAE_SPOTS.length)];
+          if (taken.has(sp[0] + ',' + sp[1])) continue;
+          taken.add(sp[0] + ',' + sp[1]);
+          gShim.algae.push({ id: 'qg' + Math.random().toString(36).slice(2, 6), x: sp[0], y: sp[1] });
+        }
+        gardenPoll();
+      },
+      leaf: () => {
+        gShim.leaves.push({ id: 'ql' + Math.random().toString(36).slice(2, 6),
+          x: Math.round(pos.x) + 84, y: Math.round(pos.y) });
+        gardenPoll();
+      },
+      stockAge: (spot, h) => {
+        const h2 = gShim.houses.find((x2) => x2.spot === spot);
+        if (h2) { h2.lastStock -= (h || 25) * 3600000; h2.sday = {}; }
+        gardenPoll();
+      },
       // 🧑‍🌾 gardener QA: set the harvest count / jump straight to a level
       harvests: (n) => { passStat('garden_harvests', n - ((passGet().stats || {}).garden_harvests || 0)); return gardenerLvl(); },
       lvl: (n) => { passStat('garden_harvests', GLVL_AT[Math.max(1, Math.min(GLVL_AT.length, n)) - 1] - ((passGet().stats || {}).garden_harvests || 0)); return gardenerLvl(); },

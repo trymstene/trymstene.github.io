@@ -411,6 +411,8 @@ function init() {
     if (garden.tapWeed(wx, wy)) return;
     if (garden.tapGarden(wx, wy)) return;
     if (garden.tapBorder(wx, wy)) return;
+    if (garden.tapAlgae(wx, wy)) return;
+    if (garden.tapPost(wx, wy)) return;
     if (shops.tapShop(wx, wy)) return;
     if (shops.tapStand(wx, wy)) return;
     if (fountain.tapFountain(wx, wy)) return;
