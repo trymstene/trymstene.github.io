@@ -4,7 +4,7 @@
 // P5 SPLIT: this file is the CHASSIS (camera, plates/phases, walking, doors,
 // HUD, the rAF loop, multiplayer, boot). The sections live in their own
 // modules — park-garden.js · park-critters.js · park-shops.js · park-npc.js ·
-// park-fountain.js — each exporting init<Section>(ctx) wired through ONE
+// park-fountain.js · park-share.js — each exporting init<Section>(ctx) wired through ONE
 // shared ctx object (live values like phase/pSpeed/camera cross as getters).
 // All imports are static → still one page bundle.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
@@ -24,6 +24,7 @@ import { initOldPeel } from './park-npc.js';
 import { initFountain } from './park-fountain.js';
 import { initShops } from './park-shops.js';
 import { initGarden } from './park-garden.js';
+import { initShare } from './park-share.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
@@ -381,6 +382,7 @@ function init() {
     invalidateMe: () => { lastF = -1; },
     sendOutfit: () => parkRoom.send({ t: 'outfit', outfit: myParkOutfit() }),
     parkName,
+    peersList: () => [...peers.values()],   // resolved lazily — peers is below
   };
   // init order = the original world-DOM append order (garden renders only on
   // its first poll): garden → critters (animals) → Old Peel → fountain (coin
@@ -552,6 +554,10 @@ function init() {
     lastSent.x = pos.x; lastSent.y = pos.y;
     parkRoom.send({ t: 'move', x: toPctX(pos.x), y: toPctY(pos.y) });
   }
+
+  // 📸 the park-day card (panel + postcard) — after the room wiring so its
+  // first roster paint can read the peers
+  initShare(ctx, garden);
 
   // the QA reach-in (same family as ?beachtest): place the banana, top up
   // coins, read the live rosters — nothing here exists in a normal session

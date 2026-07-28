@@ -633,6 +633,7 @@ var EV_LABEL = {
   park_weed:'pulled a weed 🌿', park_trash:'picked up park litter 🗑',
   park_water:'watered a plant 💧', park_plant:'planted a seed 🌱',
   park_harvest:'harvested their plant 🌾', park_egg:'found an egg 🥚',
+  park_share_day:'shared their day at the park 📸',
   stand_cart_view:'stepped into the merch shop 🧃', stand_cart_click:'tapped a real product 💰',
   rave_quest_start:'a floor quest kicked off 🎯', rave_quest_done:'FINISHED a floor quest 🎯' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
@@ -760,6 +761,7 @@ var EV_EXPLAIN = {
   park_plant:'planted a seed in a shared bed 🌱 (seed = which; once per visit) — coins spent (or a fountain blessing), growth on real wall-clock days',
   park_harvest:'harvested a full-grown plant 🌾 (seed = which, level = gardener level after; once per visit) — flowers pay wearables, crops pay rep',
   park_egg:'first-tapped an egg the park animals laid 🥚 (golden = 1 for the max-health golden egg; once per visit) — the shared-park payout moment',
+  park_share_day:'composed the my-day-at-the-park postcard — weeds pulled, harvests, eggs found, live park health, time tended — the organic-reach card, same idea as beach_share_day',
   stand_cart_view:'stepped into INKA’s merch shop — the money room. ⚠️ counts EVERY shop open since 30 Jul (was once per session): visits are the metric. The park merch shop’s till story: views → product taps (stand_cart_click) → the PDP (?from=parkshop landing sessions) → checkout_redirect → purchase',
   stand_cart_click:'tapped a hanging product in the merch shop 💰 (product = sticker / magnet / tee) — their OWN banana was drawn on it; the tap lands on the PDP pre-built, tagged ?from=parkshop for the landing report',
   rave_quest_start:'a FLOOR QUEST began on their floor 🎯 (q = which: mop / power / jboss / pop / photo). Every 30 min the whole floor gets the same event at the same seeded minute — start vs done is the engagement funnel',

@@ -352,6 +352,7 @@ export function initGarden(ctx) {
       w2.el.remove();
     }, 240);
     passStat('rep', 1);
+    passStat('weeds_pulled', 1);            // the park-day card's ledger
     // 🪙 ~8%: something under the roots — the chore is a tiny lottery
     // (client-side roll, same as the world's other coin juice)
     if (Math.random() < 0.08) {
@@ -412,6 +413,7 @@ export function initGarden(ctx) {
     if (!res) return;
     applyGarden(res);
     if (res.err) { toast('🥚 someone got it first'); return; }
+    passStat('eggs_found', 1);              // the park-day card's ledger
     const r = res.reward || {};
     if (r.coins) passStat('coins_earned', r.coins);
     if (r.tickets) passStat('tickets', r.tickets);   // the bay's pier currency
@@ -734,6 +736,8 @@ export function initGarden(ctx) {
     trashTick, gardenTick, toolTick,
     tapEgg, tapWeed, tapGarden,
     closeGarden,
+    gardenerLvl,
+    bloomNow: () => bloomV,
     clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; },
     qa: {
       eggs,
