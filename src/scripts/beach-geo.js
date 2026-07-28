@@ -70,7 +70,7 @@ export const OB_CIRCLES = [
   [2044, 786, 11],   // trashbin 7
   [2236, 596, 11],   // trashbin 9
   [2640, 890, 11],   // trashbin 8
-  [150, 975, 11],   // sign 7
+  [150, 975, 8],   //   waypost pole
   [215, 655, 48],   // the bonfire ring
 ];
 
@@ -178,7 +178,7 @@ export const OVERLAYS = [
   { src: 'ov-88.png', x: 1679, y: 1058, w: 38, h: 38, base: 1096 },
   { src: 'ov-89.png', x: 1745, y: 1074, w: 38, h: 22, base: 1096 },
   { src: 'ov-90.png', x: 1811, y: 1058, w: 38, h: 38, base: 1096 },
-  { src: 'ov-91.png', x: 132, y: 907, w: 37, h: 68, base: 975 },
+  { src: 'ov-91.png', x: 146, y: 911, w: 8, h: 64, base: 975 },
 ];
 
 // ⛱ CLICKABLE PARASOLS. NOT baked into the plate (a baked open one would show

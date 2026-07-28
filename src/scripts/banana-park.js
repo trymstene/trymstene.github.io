@@ -185,9 +185,9 @@ function init() {
   if (ROAD_SIGN) {
     const way = document.createElement('div');
     way.className = 'pk-way';
-    way.textContent = 'Banana Bay';
+    way.textContent = 'Banana Bay →';   // the arrow the old sprite's planks carried
     way.style.left = pct(ROAD_SIGN.x, W);
-    way.style.top = pct(ROAD_SIGN.y - 74, H);   // clear of the post's top plank
+    way.style.top = pct(ROAD_SIGN.y - 60, H);   // ON the pole's top (64px, 4 of overlap)
     way.style.zIndex = String(100 + ROAD_SIGN.y + 3);
     world.appendChild(way);
   }

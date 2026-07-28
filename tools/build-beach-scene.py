@@ -1614,8 +1614,31 @@ if HAVE_PACK:
     # as a stub under a floating label — Trym: "half the size … but the actual
     # sign, not the post". What halves is the PLANK (.bh-stallsign--way).
     PARK_SIGN = (150, 975)
-    place('ME_Singles_Camping_48x48_Sign_7.png', PARK_SIGN[0], PARK_SIGN[1],
-          scale=0.86, sh=0.28, flip=True, layer=True, solid=('circle', 11))
+
+    # 🪧 THE POLE — DRAWN, not pack art (Trym: "this looks very weird … just
+    # generate a thin pole as the post for both signs"). The pack's Camping
+    # Sign_7 was a fat stack of arrow planks, and with a DOM plank hanging over
+    # it the whole thing read as two signs stacked on each other. A signpost is
+    # a plank on a pole; the plank is the DOM one, so all the art owes us is
+    # the pole. Same drawn-prop route the west stub's sawhorse already takes
+    # when the pack has nothing honest to offer.
+    # Seeded into _cache under its own name so it rides place()'s ONE path —
+    # plate, drab/sad twin, mid plate, y-sorted overlay and collider.
+    def build_pole(h=62, w=6):
+        K = 3
+        s = Image.new('RGBA', (w * K, h * K), (0, 0, 0, 0))
+        d = ImageDraw.Draw(s)
+        d.rectangle([0, 0, w * K - 1, h * K - 1], fill=(52, 36, 21))            # outline
+        d.rectangle([K, K, (w - 1) * K - 1, h * K - K - 1], fill=(124, 86, 47))  # wood
+        d.rectangle([K, K, 2 * K - 1, h * K - K - 1], fill=(154, 108, 60))       # lit edge
+        for gy in range(7, h - 5, 11):                                           # grain
+            d.rectangle([2 * K, gy * K, (w - 2) * K - 1, gy * K + K - 1],
+                        fill=(99, 68, 37))
+        return blockify(s, factor=K, colors=6, alpha_thresh=0.4, trim=False)
+    _POLE = '__waypost_pole.png'
+    _cache[(_POLE, 1, 10, 0.08, 1.1, 1.05)] = build_pole()
+    place(_POLE, PARK_SIGN[0], PARK_SIGN[1], scale=1.0, sh=0.9,
+          layer=True, solid=('circle', 8))
 
     # 🪨 the lanes' own scatter — stones and tufts just outside the shoulders
     road_liners(ROAD_SPINE, every=210, chance=0.55)

@@ -963,7 +963,10 @@ const faq = {
        waypost takes this — the four stall signs keep their size. */
     .bh-stallsign--way {
       border-width: 1px; box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.45);
-      padding: 1px 4px; font-size: 0.3rem;
+      padding: 2px 6px; font-size: 0.45rem;
+      /* bottom-anchored, so it sits ON the pole's top rather than being
+         centred on a canopy's height above it like the stall signs */
+      transform: translate(-50%, -100%) rotate(-4deg);
     }
     /* the vendor banana behind each counter */
     .bh-vendor { position: absolute; pointer-events: none; }

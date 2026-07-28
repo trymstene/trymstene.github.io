@@ -1274,8 +1274,31 @@ if HAVE_PACK:
     # NORTH of the road (its own shoulder, clear of the door trigger at 2700)
     # so a walker heading east passes it rather than bumps it.
     ROAD_SIGN = (2586, 516)
-    place('ME_Singles_Camping_48x48_Sign_7.png', ROAD_SIGN[0], ROAD_SIGN[1],
-          scale=PROP * 1.15, layer=True, solid=('circle', 11))
+
+    # 🪧 THE POLE — DRAWN, not pack art (Trym: "this looks very weird … just
+    # generate a thin pole as the post for both signs"). The pack's Camping
+    # Sign_7 was a fat stack of arrow planks, and with a DOM plank hanging over
+    # it the whole thing read as two signs stacked on each other. A signpost is
+    # a plank on a pole; the plank is the DOM one, so all the art owes us is
+    # the pole. Same drawn-prop route the west stub's sawhorse already takes
+    # when the pack has nothing honest to offer.
+    # Seeded into _cache under its own name so it rides place()'s ONE path —
+    # plate, drab/sad twin, mid plate, y-sorted overlay and collider.
+    def build_pole(h=62, w=6):
+        K = 3
+        s = Image.new('RGBA', (w * K, h * K), (0, 0, 0, 0))
+        d = ImageDraw.Draw(s)
+        d.rectangle([0, 0, w * K - 1, h * K - 1], fill=(52, 36, 21))            # outline
+        d.rectangle([K, K, (w - 1) * K - 1, h * K - K - 1], fill=(124, 86, 47))  # wood
+        d.rectangle([K, K, 2 * K - 1, h * K - K - 1], fill=(154, 108, 60))       # lit edge
+        for gy in range(7, h - 5, 11):                                           # grain
+            d.rectangle([2 * K, gy * K, (w - 2) * K - 1, gy * K + K - 1],
+                        fill=(99, 68, 37))
+        return blockify(s, factor=K, colors=6, alpha_thresh=0.4, trim=False)
+    _POLE = '__waypost_pole.png'
+    _cache[(_POLE, 1, 28, 0.0, 1.0, 1.0)] = build_pole()
+    place(_POLE, ROAD_SIGN[0], ROAD_SIGN[1], scale=1.0, sh=0.9,
+          layer=True, solid=('circle', 8))
 
 # ---- 🌼 BORDER_SPOTS — roadside single-flower micro-spots (31 Jul) ---------
 # ~24 spots on the road shoulders, picked off ROAD_SPINE like the blossom

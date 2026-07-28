@@ -2962,11 +2962,18 @@ function init() {
   // 🧭 the waypost by the park lane, the bay's half of the pair: the post is
   // pack art from the generator (PARK_SIGN rides the geo contract), mirrored
   // so its planks point LEFT — the way home. This is the plank that names it.
-  // (+24: hangSign's 108px lift is tuned for a stall canopy; this post is
-  // shorter, so the plank rides its top plank instead of floating above it)
+  // ⚠️ NOT hangSign: its 108px lift is tuned for a stall canopy and would
+  // float this plank a canopy's height above a roadside pole. The waypost's
+  // plank sits ON the pole's top (the pole is 64px, 4 of overlap), which is
+  // what makes a pole and a plank read as one signpost.
   if (PARK_SIGN) {
-    hangSign('The Park', PARK_SIGN.x, PARK_SIGN.y + 24, -4);
-    world.lastChild.classList.add('bh-stallsign--way');   // the half-size plank
+    const way = document.createElement('div');
+    way.className = 'bh-stallsign bh-stallsign--way';
+    way.textContent = '← The Park';   // west, the way home
+    way.style.left = pct(PARK_SIGN.x, W);
+    way.style.top = pct(PARK_SIGN.y - 60, H);
+    way.style.zIndex = String(100 + PARK_SIGN.y + 3);
+    world.appendChild(way);
   }
 
   const SIGN_TILT = [-5, 4, -3, 6];   // varied, so no two hang the same
