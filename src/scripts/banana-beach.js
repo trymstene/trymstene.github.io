@@ -31,6 +31,10 @@ import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
 // silent ReferenceError mid-init — the same TDZ trap that killed the rave
 // floor once. Module consts first, entry point last.
 const view = document.getElementById('bhView');
+const FRAME_MS = 12;   // the ~60Hz gate — the bay's loop AND the coconut shy's
+// the coconut shy is opaque and covers the whole view — the bay behind it is
+// hidden by CSS (beach.astro) and every loop that only feeds it stands down
+const inside = () => document.body.classList.contains('bh-inside');
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
@@ -2663,6 +2667,7 @@ function init() {
     const foot = document.getElementById('bhFoot');
     blink(() => {
       cocoScene.hidden = false;      // shown FIRST so the pitch has a real size
+      document.body.classList.add('bh-inside');   // …and the bay behind it stops
       if (foot) foot.style.display = 'none';   // the stall has its own "back to the beach"
       cocoPaintHud();
       drawCocoVendor();
@@ -2675,7 +2680,7 @@ function init() {
     if (cocoRAF) { cancelAnimationFrame(cocoRAF); cocoRAF = 0; }
     openStallIdx = -1;
     const foot = document.getElementById('bhFoot');
-    blink(() => { cocoScene.hidden = true; if (foot) foot.style.display = ''; });
+    blink(() => { cocoScene.hidden = true; document.body.classList.remove('bh-inside'); if (foot) foot.style.display = ''; });
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
   document.getElementById('bhCocoClose').addEventListener('click', closeCoco);
@@ -2823,10 +2828,13 @@ function init() {
   function cocoLoop() {
     cocoOn = true;
     let prev = performance.now();
+    let gate = 0;
     const tick = (now) => {
       if (!cocoOn || cocoScene.hidden) { cocoOn = false; return; }
-      cocoPhysics(Math.min(0.04, (now - prev) / 1000)); prev = now;
       cocoRAF = requestAnimationFrame(tick);
+      if (now - gate < FRAME_MS) return;   // ~60Hz, the bay's own gate
+      gate = now;
+      cocoPhysics(Math.min(0.04, (now - prev) / 1000)); prev = now;
     };
     cocoRAF = requestAnimationFrame(tick);
   }
@@ -3068,7 +3076,6 @@ function init() {
   // leaves so little headroom that a jittered vsync on a plain 60Hz display
   // drops that beat to 30fps. The rAF is scheduled BEFORE the early return, so
   // the loop can never die.
-  const FRAME_MS = 12;
   let last = performance.now();
   let gateAt = 0, sweepN = 0;
   function step(now) {
@@ -3076,6 +3083,7 @@ function init() {
     if (now - gateAt < FRAME_MS) return;
     gateAt = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (inside()) return;   // the coconut shy covers the view — nothing to run
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
     if (kx || ky) {
@@ -3872,7 +3880,7 @@ function init() {
     setTimeout(() => { lastKey = -1; drawMe(); drawCap(); drawSandy(); drawGil(); drawShelly(); drawPortraits(); }, 1800);
     // beat-frame redraws only, and never for a hidden tab (perf doctrine)
     setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || inside()) return;
       drawMe(); drawSandy();
       peers.forEach((p) => drawPeer(p));
     }, 120);

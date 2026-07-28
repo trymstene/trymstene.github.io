@@ -4379,10 +4379,27 @@ function init() {
   // for — on a ProMotion phone the trails linger a little longer than before.
   const FRAME_MS = 12;
   let gateAt = 0;
+  // 📜 …AND THE FLOOR STANDS DOWN WHEN YOU SCROLL PAST IT. The club's guide
+  // runs 12,000px below the floor, so on a phone ~95% of this page's scroll
+  // range has the floor completely off-screen — and it was still drawing every
+  // banana, every trail and the whole canvas pass down there. `document.hidden`
+  // never covered this: the tab IS visible, you are just reading.
+  // The socket keeps running (state stays fresh, the crowd count keeps
+  // ticking); only the DRAWING and the frame-rate gameplay stop. Scroll back
+  // and the next pass paints the floor as it now is. ⚠️ that also means a drop
+  // is not auto-claimed while you are 8,000px down — you could neither see nor
+  // reach it anyway, the same trade the park makes behind its shop doors.
+  let floorSeen = true;
+  const floorEl = el('rvFloor');
+  if (floorEl && 'IntersectionObserver' in window) {
+    new IntersectionObserver((es) => { floorSeen = es[es.length - 1].isIntersecting; },
+      { rootMargin: '120px' }).observe(floorEl);
+  }
   function tick(ts) {
     requestAnimationFrame(tick);
     if (ts - gateAt < FRAME_MS) return;
     gateAt = ts;
+    if (!floorSeen) return;
     const now = Date.now();
     const dtMs = lastTick ? Math.min(now - lastTick, 100) : 16;
     lastTick = now;
