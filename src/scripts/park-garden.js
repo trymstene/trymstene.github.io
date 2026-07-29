@@ -4,7 +4,8 @@
 import { poofInto, worldSid } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { PLOTS, BEDS, CORE_BEDS, BORDER_SPOTS, ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
+import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
+  ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
 import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
 
@@ -108,6 +109,14 @@ const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1
 // action-bar button, live only while a chore is in range; press = do the
 // NEAREST one (walk the last step if needed). Tapping the thing still works.
 const TOOL_RANGE = 110;
+const BED_DIG_REP = 3;         // 🪓 per dig; the bed itself belongs to everyone
+// 💰 DYNAMIC SEED PRICE — base × (1 + held²/25), where held = the plants you
+// are ALREADY tending. Your first is always base price, six to eight stays
+// comfortable, twenty-eight costs 32×. ⭐ Trym's rule: it must never say NO.
+// A cap reads as a boundary; a price reads as ambition, and it lands on the
+// people sitting on half the garden instead of on somebody's first seed.
+// ⚠️ mirrored in worker-rave (seedMult) — change both or neither.
+const seedMult = (held) => 1 + (held * held) / 25;
 
 // 🌸 the bloom card IS the bar (Trym): five tappable phase segments, a
 // glyph each, wilted→lush ramp; a tap reveals that phase's line below
@@ -123,6 +132,7 @@ const PHASE_LINES = [
 
 export function initGarden(ctx) {
   const { W, H, world, pct, depth, float, toast, pos, tgt, coinBal, refreshHud } = ctx;
+  const BED_N = (BEDS[0] || []).length || 8;
 
   // ---- 🌱 THE GARDEN — plant · water · harvest ----------------------------
   // Server truth lives on the ParkRoom DO (/park-garden); the client renders
@@ -141,7 +151,11 @@ export function initGarden(ctx) {
   let pendingGarden = null, pendingWater = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
   const gShim = {   // the ?parktest stand-in server (pre-lays a plain + golden egg)
-    slots: Array(64).fill(null), weeds: [], trash: [], bloom: 70,
+    slots: Array(PLOTS.length).fill(null), weeds: [], trash: [], bloom: 70,
+    // 🪓 the shim opens the core beds and marks one patch of ground out, so
+    // the break-ground chore is testable the moment ?parktest loads
+    beds: BEDS.map((_, k) => k).slice(0, CORE_BEDS),
+    pending: { bed: CORE_BEDS, digs: 0, need: 3 },
     eggs: [{ id: 'qa1', x: 1330, y: 876 }, { id: 'qa2', x: 1432, y: 866, g: 1 }],
     // one pre-planted border flower so the named tap card is testable at once
     border: [{ spot: 1, kind: 'marigold', name: 'Inka', at: Date.now() - 3 * 86400000 }],
@@ -158,15 +172,28 @@ export function initGarden(ctx) {
     gShim.slots.forEach((s2, k) => {
       if (!s2 || s2.rot) return;
       const sd2 = SEED_BY[s2.seed] || { days: 99, stars: 1 };
-      if (now - (s2.plantedAt || 0) < sd2.days * 86400000 + 2 * 86400000) return;
+      // ⚠️ ripeness expires from READY, not from PLANTED — the room stamps
+      // readyAt the moment the last watered day lands. Keying this on plantedAt
+      // (as it did before growth became watered-days) composted plants that had
+      // never even finished growing.
+      if ((s2.grew || 0) < sd2.days) return;
+      if (!s2.readyAt) { s2.readyAt = now; return; }
+      if (now - s2.readyAt < 2 * 86400000) return;
       cN++;
       cStars += sd2.stars;
       gShim.slots[k] = null;
     });
+    // the shim mirrors the room's rules or ?parktest lies about the game
+    const shimReady = (s2) => s2 && !s2.rot
+      && (s2.grew != null ? s2.grew : 0) >= (SEED_BY[s2.seed] || { days: 99 }).days;
     const strip = () => ({
       ok: 1,
+      beds: { open: (gShim.beds || []).slice(), pending: gShim.pending || null },
       ...(cN ? { compost: { n: cN, stars: cStars } } : {}),
-      slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)),
+      slots: gShim.slots.map((s) => (s
+        ? { ...s, grew: s.grew || 0, ...(shimReady(s) ? { ready: 1 } : {}),
+            waterers: (s.waterers || []).length }
+        : null)),
       // the shim mirrors the worker's wire: one decimal, and the same
       // tidiness ceiling (0.3/weed · 0.6/algae · 0.8/litter) so ?parktest
       // behaves like the live park instead of pinning at 100
@@ -182,6 +209,18 @@ export function initGarden(ctx) {
       houses: gShim.houses.map((h2) => ({ ...h2 })),
     });
     if (!body) return Promise.resolve(strip());
+    if (path === '/bedbreak') {
+      const p = gShim.pending;
+      if (!p || Math.floor(Number(body.bed)) !== p.bed) return Promise.resolve({ err: 'gone', ...strip() });
+      p.digs++;
+      let opened = 0;
+      if (p.digs >= p.need) {
+        gShim.beds.push(p.bed);
+        gShim.pending = null;
+        opened = 1;
+      }
+      return Promise.resolve({ ok: 1, opened, ...strip() });
+    }
     if (path === '/algae') {
       const ai = gShim.algae.findIndex((a2) => a2.id === body.id);
       if (ai < 0) return Promise.resolve({ err: 'gone', ...strip() });
@@ -259,16 +298,23 @@ export function initGarden(ctx) {
     const i = body.slot, s = gShim.slots[i];
     if (path === '/plant') {
       if (s) return Promise.resolve({ err: 'taken', ...strip() });
-      gShim.slots[i] = { passShort: myShort, name: body.name || '', seed: body.seed, plantedAt: now, lastWater: now, waterers: [] };
+      if (!(gShim.beds || []).includes(Math.floor(i / BED_N))) return Promise.resolve({ err: 'not open', ...strip() });
+      gShim.slots[i] = { passShort: myShort, name: body.name || '', seed: body.seed,
+        plantedAt: now, lastWater: now, waterers: [], grew: 0, gday: Math.floor(now / 86400000) };
       gShim.bloom = Math.min(100, gShim.bloom + 6);
     } else if (path === '/water') {
       if (!s) return Promise.resolve({ err: 'empty' });
       s.lastWater = now;
+      const d2 = Math.floor(now / 86400000);      // ⭐ a watered day is a grown day
+      if (d2 > (s.gday == null ? Math.floor(s.plantedAt / 86400000) : s.gday)) {
+        s.grew = (s.grew || 0) + 1;
+        s.gday = d2;
+      }
       if (!s.waterers.includes(body.pass.slice(0, 8))) s.waterers.push(body.pass.slice(0, 8));
       gShim.bloom = Math.min(100, gShim.bloom + 2);
     } else if (path === '/harvest') {
       if (!s) return Promise.resolve({ err: 'empty' });
-      if (Math.floor((now - s.plantedAt) / 86400000) < SEED_BY[s.seed].days) return Promise.resolve({ err: 'still growing' });
+      if ((s.grew || 0) < SEED_BY[s.seed].days) return Promise.resolve({ err: 'still growing' });
       gShim.slots[i] = null;
     }
     return Promise.resolve(strip());
@@ -284,8 +330,13 @@ export function initGarden(ctx) {
       return await r.json();
     } catch (e) { return null; }   // no server, no garden — the park still works
   }
-  const gDays = (s) => Math.floor((Date.now() - s.plantedAt) / 86400000);
-  const gReady = (s) => s && !s.rot && gDays(s) >= (SEED_BY[s.seed] || { days: 99 }).days;
+  // ⭐ STAGES ARE EARNED IN WATERED DAYS, and only the room has counted them
+  // (`grew` on the wire). The wall-clock fallback is for a stale/offline reply
+  // only — never the source of truth, or a neglected plant would ripen anyway.
+  const gDays = (s) => (s && s.grew != null ? s.grew
+    : Math.floor((Date.now() - s.plantedAt) / 86400000));
+  const gReady = (s) => !!s && !s.rot
+    && (s.ready ? true : gDays(s) >= (SEED_BY[s.seed] || { days: 99 }).days);
   const gMine = (s) => s && s.passShort === myShort;
   // watered today? (UTC day, matching the server's wday math)
   const gWet = (s) => s && Math.floor((s.lastWater || 0) / 86400000) === Math.floor(Date.now() / 86400000);
@@ -330,7 +381,87 @@ export function initGarden(ctx) {
   // no seed sheet. Until the break-ground mechanic lands they are simply the
   // core beds — flipping THIS predicate to the room's open-bed list is the
   // whole client side of it. See [[park-beds-plan]].
-  const bedOpen = (i) => Math.floor(i / (BEDS[0] || [1]).length) < CORE_BEDS;
+  // 🪓 WHICH BEDS EXIST. Every plot position ships in the geo, but a bed
+  // nobody has broken open is plain lawn — no soil, no collider, no tap, no
+  // seed sheet. The room arbitrates; this is only the render.
+  let bedsOpen = new Set(BEDS.map((_, k) => k).slice(0, CORE_BEDS));
+  let bedPending = null;          // { bed, digs, need } — ground marked out
+  const bedEls = new Map();       // bed → [4 soil divs]
+  const bedOpen = (i) => bedsOpen.has(Math.floor(i / BED_N));
+  const bedMid = (b) => {
+    const d = GROW_DITCHES[b - CORE_BEDS] || [];
+    if (!d.length) return null;
+    return [d.reduce((t, p) => t + p[0], 0) / d.length, d[0][1]];
+  };
+  let bedsSeen = false;
+  function applyBeds(bs) {
+    if (Array.isArray(bs.open)) {
+      // a bed that grew over is the clearest read we get on whether the empty
+      // window is too short — fire it the moment the set shrinks
+      if (bedsSeen) {
+        const gone = [...bedsOpen].filter((b2) => !bs.open.includes(b2));
+        if (gone.length) track('park_bedrevert', { n: gone.length });
+      }
+      bedsSeen = true;
+      bedsOpen = new Set(bs.open);
+    }
+    bedPending = bs.pending || null;
+    renderBeds();
+  }
+  function renderBeds() {
+    GROW_DITCHES.forEach((ditches, k) => {
+      const b = CORE_BEDS + k;
+      const show = bedsOpen.has(b) || (bedPending && bedPending.bed === b);
+      const marked = !bedsOpen.has(b);          // still just marked-out ground
+      if (!show) {
+        (bedEls.get(b) || []).forEach((el) => el.remove());
+        bedEls.delete(b);
+        return;
+      }
+      let els = bedEls.get(b);
+      if (!els) {
+        els = ditches.map(([x, base]) => {
+          const el = document.createElement('div');
+          el.className = 'pk-bedsoil';
+          el.style.left = pct(x, W);
+          el.style.top = pct(base, H);
+          depth(el, base);
+          world.appendChild(el);
+          return el;
+        });
+        bedEls.set(b, els);
+      }
+      els.forEach((el) => el.classList.toggle('is-marked', marked));
+    });
+    // the walls of every OPEN bed, handed to the chassis in one go
+    const rects = [];
+    bedsOpen.forEach((b) => {
+      if (b < CORE_BEDS) return;                 // the core beds are in the plate
+      (GROW_DITCHES[b - CORE_BEDS] || []).forEach(([x, base]) => {
+        rects.push([x + BED_SOLID[0], base + BED_SOLID[1], x + BED_SOLID[2], base + BED_SOLID[3]]);
+      });
+    });
+    if (ctx.setSolids) ctx.setSolids(rects);
+  }
+  // 🪓 three digs and it is a bed — by any mix of people. The digger gets
+  // rep, never the bed: broken ground is public, which is the whole point.
+  let bedTracked = false;
+  async function breakGround() {
+    const p = bedPending;
+    if (!p) return;
+    const r = await gFetch('/bedbreak', { pass: myShort, bed: p.bed });
+    if (!r || r.err) { if (r && r.err) toast('the ground is already broken'); applyGarden(r); return; }
+    passStat('rep', BED_DIG_REP);
+    refreshHud();
+    const m = bedMid(p.bed);
+    if (m) float(m[0], m[1] - 20, '+' + BED_DIG_REP);
+    if (r.opened) toast('🪓 new ground broken — eight more beds for everyone', 5000);
+    else toast('🪓 you turned some earth — ' + (r.beds && r.beds.pending
+      ? r.beds.pending.digs + '/' + r.beds.pending.need : '') + ' done', 3400);
+    if (!bedTracked) { bedTracked = true; track('park_bedbreak'); }
+    if (r.opened) track('park_bedopen');
+    applyGarden(r);
+  }
 
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
@@ -971,6 +1102,8 @@ export function initGarden(ctx) {
     if (Array.isArray(res.algae)) renderAlgae(res.algae);
     if (Array.isArray(res.leaves)) renderLeaves(res.leaves);
     if (Array.isArray(res.houses)) renderHouses(res.houses);
+    if (res.beds) applyBeds(res.beds);
+    snapshot(res);
     if (res.compost) compostPaid(res.compost);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
     // 🌦 the storm's calling card, if there is still a mess to explain
@@ -993,6 +1126,30 @@ export function initGarden(ctx) {
     track('park_compost', { n: n });
   }
 
+  // 📊 THE TUNING SNAPSHOT — one per visit, taken on the first poll that has
+  // real numbers in it. Everything the next balance round needs and cannot get
+  // from the chore events: how FULL the garden is, how much of it one person is
+  // holding, and how much of the crop is standing ripe (the compost's backlog).
+  // ⚠️ once per session, never per poll — a 60s beat would drown GA4.
+  let snapped = false;
+  function snapshot(res) {
+    if (snapped || !Array.isArray(res.slots) || !res.slots.length) return;
+    snapped = true;
+    const open = bedsOpen.size * BED_N;
+    const live = res.slots.filter((s2, k) => s2 && bedOpen(k));
+    const mine = live.filter((s2) => s2.passShort === myShort).length;
+    const owners = new Set(live.map((s2) => s2.passShort));
+    track('park_garden', {
+      beds: bedsOpen.size,
+      full: open ? Math.round((live.length / open) * 100) : 0,
+      mine,
+      owners: owners.size,
+      ripe: live.filter((s2) => s2.ready).length,
+      rot: live.filter((s2) => s2.rot).length,
+      ground: bedPending ? 1 : 0,
+    });
+  }
+
   async function gardenPoll() {
     applyGarden(await gFetch(''));
     if (ctx.phase() < 0) {        // no word from the server — the park at its
@@ -1010,6 +1167,11 @@ export function initGarden(ctx) {
   function coinChip(n) {
     return '<span class="pk-seedcost"><img src="/assets/banana-stand/coin.png" width="14" height="14" alt="coins" /> ' + n + '</span>';
   }
+  // how many living plants are MINE right now — the price rides on this
+  const myPlants = () => gSlots.reduce(
+    (t, s2) => t + (s2 && s2.passShort === myShort && !s2.rot ? 1 : 0), 0);
+  const priceNow = (sd) => Math.round(sd.price * seedMult(myPlants()));
+
   function openSeedSheet(i) {
     gardenOpenSlot = i;
     const bal = coinBal();
@@ -1023,18 +1185,23 @@ export function initGarden(ctx) {
       + 'water it or it wilts away (higher ⭐ holds out longer). ⭐ feed the park’s health while it lives.</p>'
       + SEEDS.map((sd) => {
         const locked = sd.stars > gl.stars;
+        const cost = priceNow(sd);
         const free = blessed && !locked && sd.price <= VOUCHER_MAX;
         return '<button class="pk-seedrow' + (locked ? ' pk-seedrow--lock' : '') + '" type="button"'
-          + ' data-seed="' + sd.id + '"' + (locked || (!free && bal < sd.price) ? ' disabled' : '') + '>'
+          + ' data-seed="' + sd.id + '"' + (locked || (!free && bal < cost) ? ' disabled' : '') + '>'
           + '<i>' + sd.emoji + '</i>'
           + '<span class="pk-seedrow__txt"><b>' + sd.name + (sd.rare ? ' <em>rare</em>' : '') + '</b>'
           + '<small>' + starStr(sd.stars) + ' · ' + sd.days + ' days → '
           + (locked ? '🔒 gardener lvl ' + lvlFor2(sd)
             : sd.wearable ? 'the ' + sd.wearLabel : '+' + (sd.stars * 8) + ' rep') + '</small></span>'
-          + (free ? '<span class="pk-seedcost pk-seedcost--free">🎁 blessed — free</span>' : coinChip(sd.price))
+          + (free ? '<span class="pk-seedcost pk-seedcost--free">🎁 blessed — free</span>' : coinChip(cost))
           + '</button>';
       }).join('')
-      + (bal < SEEDS[0].price && !blessed ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
+      + (myPlants() > 1
+        ? '<p class="pk-seedtax">🌱 you are tending ' + myPlants() + ' plants — seeds cost ×'
+          + (Math.round(seedMult(myPlants()) * 10) / 10) + ' while you do. Harvest some and they get cheap again.</p>'
+        : '')
+      + (bal < priceNow(SEEDS[0]) && !blessed ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
     gardenBody.querySelectorAll('.pk-seedrow').forEach((b) => {
       b.addEventListener('click', () => plantSeed(i, b.dataset.seed));
     });
@@ -1045,11 +1212,12 @@ export function initGarden(ctx) {
     if (!sd || sd.stars > gardenerLvl().stars) return;
     // ⛲ the fountain's voucher pays for small seeds; it spends HERE, on the
     // plant itself — and comes back if somebody beat you to the patch
+    const cost = priceNow(sd);
     const free = hasVoucher() && sd.price <= VOUCHER_MAX;
-    if (!free && coinBal() < sd.price) return;
+    if (!free && coinBal() < cost) return;
     if (free) setVoucher(false);
     else {
-      passStat('coins_spent', sd.price);
+      passStat('coins_spent', cost);
       refreshHud();
     }
     closeGarden();
@@ -1057,7 +1225,7 @@ export function initGarden(ctx) {
     if (res && res.err === 'taken') {
       if (free) setVoucher(true);           // the blessing survives the miss
       else {
-        passStat('coins_spent', -sd.price); // refund — somebody beat you to it
+        passStat('coins_spent', -cost);      // refund — somebody beat you to it
         refreshHud();
       }
       toast('somebody beat you to this patch');
@@ -1067,7 +1235,12 @@ export function initGarden(ctx) {
     applyGarden(res);
     float(PLOTS[i][0], PLOTS[i][1] - 6, '🌱');
     toast(sd.emoji + ' ' + sd.name + ' planted — day 1 of ' + sd.days);
-    if (!plantTracked) { plantTracked = true; track('park_plant', { seed: seedId }); }
+    // 📊 held + paid ride the event: without them the price curve is
+    // invisible in GA4 and the next tuning round is guesswork
+    if (!plantTracked) {
+      plantTracked = true;
+      track('park_plant', { seed: seedId, held: myPlants(), paid: free ? 0 : cost });
+    }
   }
   function openPlantCard(i) {
     const s = gSlots[i];
@@ -1083,7 +1256,8 @@ export function initGarden(ctx) {
       + '<p class="pk-gplant">' + starStr(sd.stars) + '</p>'
       + '<p class="pk-panel__sub">' + (ready
         ? (mine ? 'full-grown — tap it to harvest!' : 'ready to pick — only its grower can harvest it.')
-        : 'day ' + Math.min(gDays(s) + 1, sd.days) + ' of ' + sd.days + ' · growing on real days')
+        : 'day ' + Math.min(gDays(s) + 1, sd.days) + ' of ' + sd.days
+          + ' · a day only counts if it was watered')
       + '</p>'
       + (s.rot ? '' : meterRow('💧', 'soil moisture',
         leftOf(s.lastWater || s.plantedAt), 'bone dry'))
@@ -1190,7 +1364,12 @@ export function initGarden(ctx) {
     tgt.y = sy + (best % 2 ? 40 : 78);
     return true;
   }
+  let pendingGround = false;
   function gardenTick() {
+    if (pendingGround && bedPending) {
+      const m = bedMid(bedPending.bed);
+      if (m && Math.hypot(pos.x - m[0], pos.y - m[1]) < 95) { pendingGround = false; breakGround(); }
+    }
     if (pendingGarden != null) {
       const [sx, sy] = PLOTS[pendingGarden];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingGarden; pendingGarden = null; gardenAct(i); }
@@ -1249,16 +1428,33 @@ export function initGarden(ctx) {
       const d = Math.hypot(pos.x - a2.bx, pos.y - a2.by);
       if (d < bd) { bd = d; best = { kind: 'algae', id, x: a2.bx, y: a2.by }; }
     });
+    // 🪓 marked-out ground is a chore like any other — same button, same
+    // walk-then-act. It is also the ONLY chore that ends in more garden.
+    if (bedPending) {
+      const m = bedMid(bedPending.bed);
+      if (m) {
+        const d = Math.hypot(pos.x - m[0], pos.y - m[1]);
+        if (d < bd) { bd = d; best = { kind: 'ground', id: bedPending.bed, x: m[0], y: m[1] }; }
+      }
+    }
     return best;
   }
   function toolTick() {
     const c = toolScan();
     toolChore = c;
-    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.id) : '';
+    // ⚠️ the DIG COUNT rides the key. The change-guard keys on the chore's id,
+    // and a bed's id does not move while you dig it — without this the button
+    // sat on "0/3" through all three digs.
+    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.id)
+      + (c.kind === 'ground' && bedPending ? ':' + bedPending.digs : '') : '';
     if (key === toolKey) return;
     toolKey = key;
     if (!c) { toolBtn.hidden = true; return; }
-    toolBtn.textContent = c.kind === 'weed' ? '🌿 pull' : c.kind === 'algae' ? '🫧 skim' : '💧 water';
+    toolBtn.textContent = c.kind === 'weed' ? '🌿 pull'
+      : c.kind === 'algae' ? '🫧 skim'
+      : c.kind === 'ground' ? '🪓 break ground '
+        + (bedPending ? bedPending.digs + '/' + bedPending.need : '')
+      : '💧 water';
     toolBtn.hidden = false;
   }
   toolBtn.addEventListener('click', () => {
@@ -1268,6 +1464,12 @@ export function initGarden(ctx) {
       if (Math.hypot(pos.x - c.x, pos.y - c.y) < 90) { pullWeed(c.id); return; }
       pendingWeed = c.id;
       tgt.x = c.x; tgt.y = c.y + 26;
+      return;
+    }
+    if (c.kind === 'ground') {
+      if (Math.hypot(pos.x - c.x, pos.y - c.y) < 95) { breakGround(); return; }
+      pendingGround = true;
+      tgt.x = c.x; tgt.y = c.y + 40;
       return;
     }
     if (c.kind === 'algae') {   // c.x/c.y = the bank point
@@ -1288,7 +1490,7 @@ export function initGarden(ctx) {
     closeGarden,
     gardenerLvl,
     bloomNow: () => bloomV,
-    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; pendingAlgae = null; pendingPost = null; },
+    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; pendingAlgae = null; pendingPost = null; pendingGround = false; },
     qa: {
       eggs,
       // 🥚 egg QA: lay one at your feet (egg(1) = golden); steal() = somebody
@@ -1341,7 +1543,24 @@ export function initGarden(ctx) {
       // this session's local stand-in server; render follows on next poll)
       garden: () => gSlots,
       gShim,
-      ff: (i, d2) => { const s = gShim.slots[i]; if (s) s.plantedAt -= d2 * 86400000; gardenPoll(); },
+      // ⚠️ ff() must credit WATERED DAYS now, not just age the plant — growth
+      // stopped being a function of wall clock, so shifting plantedAt alone
+      // would fast-forward nothing and QA would report the rule as broken
+      ff: (i, d2) => {
+        const s = gShim.slots[i];
+        if (s) {
+          s.plantedAt -= d2 * 86400000;
+          s.grew = (s.grew || 0) + d2;
+          s.gday = (s.gday || 0) + d2;
+        }
+        gardenPoll();
+      },
+      // 🪓 mark fresh ground out for breaking (or pass a bed index)
+      ground: (b2) => {
+        const next = b2 != null ? b2 : (gShim.beds || []).length;
+        gShim.pending = { bed: next, digs: 0, need: 3 };
+        gardenPoll();
+      },
       // 🌸 phase QA: force the shim's bloom, read the resolved phase
       bloom: (v) => { gShim.bloom = v; gardenPoll(); },
     },

@@ -263,6 +263,30 @@ const faq = {
     .pk-meter.is-out .pk-meter__track i { background: #ff5f5f; }
     .pk-meter.is-out .pk-meter__top em { color: #ff5f5f; }
 
+    /* 🪓 A BED THE PARK BROKE OPEN. The core beds are baked into the plate;
+       these are not, because unbroken ground has to read as plain lawn (see
+       [[park-beds-plan]]). Same sprite, same processing, so an opened bed is
+       indistinguishable from one that was always there.
+       .is-marked = ground somebody has MARKED OUT but not yet turned: the same
+       soil, faded and desaturated, so you can see what it will become. */
+    .pk-bedsoil {
+      position: absolute; width: 58px; height: 88px; transform: translate(-50%, -100%);
+      background: url('/assets/park/g-bed.png') no-repeat center / contain;
+      image-rendering: pixelated; pointer-events: none;
+    }
+    .pk-bedsoil.is-marked { opacity: 0.42; filter: grayscale(0.65); }
+    @media (prefers-reduced-motion: no-preference) {
+      .pk-bedsoil.is-marked { animation: pkGroundBreathe 2.6s ease-in-out infinite; }
+    }
+    /* ⚠️ opacity only — never animate filter on this map (our own doctrine) */
+    @keyframes pkGroundBreathe { 0%, 100% { opacity: 0.32; } 50% { opacity: 0.52; } }
+
+    /* 🌱 the garden tax, in the seed sheet */
+    .pk-seedtax {
+      margin: 0.5rem 0 0; font-size: 0.74rem; font-weight: 700; line-height: 1.4;
+      color: #ffc63f;
+    }
+
     /* ✨ THE POP — what a cleared chore does. ⚠️ NOT the smoke poof: that
        means "you MISSED it" everywhere else in the world (the rave uses it for
        items nobody caught), so using it for a chore you just DID read as a

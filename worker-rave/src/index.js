@@ -947,9 +947,28 @@ export class ParkRoom {
     // wilt sweep: unwatered too long → the slot frees itself on the next
     // read; higher ⭐ holds out longer (3 + floor(stars/2) dry days)
     let dirty = false;
+    // ⭐ GROWTH — pay out the watered days each plant earned since the last read.
+    // ⚠️ MIGRATION: anything planted under the old wall-clock rule banks the
+    // progress it already had, so nobody loses a crop the day this ships.
     for (let i = 0; i < GARDEN_SLOTS; i++) {
       const w = slots[i];
-      const allow = (3 + Math.floor(gardenSeed(w && w.seed).stars / 2)) * 86_400_000;
+      if (!w) continue;
+      if (w.grew == null) {
+        w.grew = Math.max(0, dayOf(now) - dayOf(w.plantedAt));
+        w.gday = dayOf(now);
+        dirty = true;
+      }
+      if (creditDay(w, now)) dirty = true;
+      // the moment it finishes, stamp it — RIPE_TTL counts from HERE, not from
+      // planting, or a slow-grown plant would be composted the day it ripened
+      if (!w.readyAt && isReady(w)) { w.readyAt = now; dirty = true; }
+    }
+    for (let i = 0; i < GARDEN_SLOTS; i++) {
+      const w = slots[i];
+      // ⚠️ 2 + ⌊stars/2⌋ dry days (was 3 +): tightened 29 Jul so a garden bigger
+      // than you can tend actually costs you. Humane only WITH a crowd — anyone
+      // may water anyone's plant for +2 rep, and rain waters the lot.
+      const allow = (2 + Math.floor(gardenSeed(w && w.seed).stars / 2)) * 86_400_000;
       if (w && now - (w.lastWater || w.plantedAt || 0) > allow) { slots[i] = null; dirty = true; }
     }
     // 🌾 RIPE EXPIRY — the OTHER way a slot frees itself, and the one that
@@ -965,8 +984,8 @@ export class ParkRoom {
     for (let i = 0; i < GARDEN_SLOTS; i++) {
       const w = slots[i];
       if (!w || w.rot) continue;                      // a storm's ruin is a CHORE, not a crop
+      if (!w.readyAt || now - w.readyAt < RIPE_TTL) continue;
       const sd = gardenSeed(w.seed);
-      if (now - (w.plantedAt || 0) < sd.days * 86_400_000 + RIPE_TTL) continue;
       const c = cmp[w.passShort] || { n: 0, stars: 0, at: 0 };
       c.n++;
       c.stars += sd.stars;
@@ -983,6 +1002,45 @@ export class ParkRoom {
         ck.sort((a, b) => cmp[a].at - cmp[b].at).slice(0, ck.length - 400).forEach((k) => delete cmp[k]);
       }
     }
+    // 🪓 THE BEDS — the garden grows with the crowd. Ground appears once the
+    // OPEN slots are ~90% taken, BED_DIGS digs open it, and an open bed left
+    // with nothing planted in it grows back over.
+    // ⚠️ THE CORE BEDS NEVER REVERT. Without that floor a quiet week shrinks
+    // the park to nothing and the next wave's first arrival finds a garden with
+    // no beds at all — a worse thirty seconds than finding it full.
+    // ⭐ reverting is the park's own rule, not an exception: border flowers fade
+    // at 7 days and storms recycle the birdhouse posts. It also makes breaking
+    // ground a RENEWABLE chore instead of a one-shot.
+    const bedState = (await this.state.storage.get('beds'))
+      || { open: Array.from({ length: CORE_BEDS }, (_, k) => k), pending: null, emptyAt: {} };
+    let bedsDirty = false;
+    const bedSlots = (b2) => slots.slice(b2 * BED_SLOTS, b2 * BED_SLOTS + BED_SLOTS);
+    for (const b2 of bedState.open.slice()) {
+      if (b2 < CORE_BEDS) continue;
+      if (bedSlots(b2).some(Boolean)) {           // one plant anywhere and it stays
+        if (bedState.emptyAt[b2]) { delete bedState.emptyAt[b2]; bedsDirty = true; }
+        continue;
+      }
+      if (!bedState.emptyAt[b2]) { bedState.emptyAt[b2] = now; bedsDirty = true; continue; }
+      if (now - bedState.emptyAt[b2] > BED_EMPTY_TTL) {
+        bedState.open = bedState.open.filter((x) => x !== b2);
+        delete bedState.emptyAt[b2];
+        bedsDirty = true;
+      }
+    }
+    const openSet = new Set(bedState.open);
+    const openSlots = bedState.open.length * BED_SLOTS;
+    const takenSlots = bedState.open.reduce((t, b2) => t + bedSlots(b2).filter(Boolean).length, 0);
+    if (!bedState.pending && bedState.open.length < TOTAL_BEDS
+        && openSlots && takenSlots / openSlots >= BED_FULL) {
+      const closed = [];
+      for (let b2 = CORE_BEDS; b2 < TOTAL_BEDS; b2++) if (!openSet.has(b2)) closed.push(b2);
+      if (closed.length) {
+        bedState.pending = { bed: closed[Math.floor(Math.random() * closed.length)], digs: 0, at: now };
+        bedsDirty = true;
+      }
+    }
+
     // who is asking — set here for a GET, re-set from the body on a POST
     let asking = (url.searchParams.get('pass') || '').slice(0, 8);
     // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns.
@@ -1183,6 +1241,9 @@ export class ParkRoom {
     const strip = (s) => (s ? {
       passShort: s.passShort, name: s.name, seed: s.seed,
       plantedAt: s.plantedAt, lastWater: s.lastWater, ...(s.rot ? { rot: s.rot } : {}),
+      // ⭐ the client no longer derives ripeness from wall-clock days — growth is
+      // WATERED days now, and only the room has counted them
+      grew: s.grew || 0, ...(isReady(s) ? { ready: 1 } : {}),
       waterers: (s.waterers || []).length,
     } : null);
     const payload = (extra) => ({
@@ -1202,6 +1263,12 @@ export class ParkRoom {
       algae: alg.list.map((a2) => ({ id: a2.id, x: a2.x, y: a2.y })),
       leaves: lv.list.map((l2) => ({ id: l2.id, x: l2.x, y: l2.y })),
       stormAt,
+      beds: {
+        open: bedState.open.slice(),
+        pending: bedState.pending
+          ? { bed: bedState.pending.bed, digs: bedState.pending.digs, need: BED_DIGS }
+          : null,
+      },
       houses: hs.list.map((h2) => ({ spot: h2.spot, name: h2.name,
         passShort: h2.passShort, builtAt: h2.builtAt, lastStock: h2.lastStock || 0,
         stockers: (h2.stockers || []).length })),
@@ -1222,6 +1289,7 @@ export class ParkRoom {
     const persist = async () => {
       await this.state.storage.put('garden', slots);
       await this.state.storage.put('compost', cmp);
+      await this.state.storage.put('beds', bedState);
       await this.state.storage.put('weeds', wd);
       await this.state.storage.put('trash', tr);
       await this.state.storage.put('bloom', bl);
@@ -1236,7 +1304,7 @@ export class ParkRoom {
     if (url.pathname === '/garden' && request.method !== 'POST') {
       const body = payload(compostFor());
       if (dirty || weedsDirty || decayed || eggsDirty || trashDirty || borderDirty
-        || algaeDirty || leavesDirty || wxDirty || cmpDirty) await persist();
+        || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty) await persist();
       return json(body);
     }
     let b = null;
@@ -1252,6 +1320,10 @@ export class ParkRoom {
         return json({ err: 'forbidden' }, 403);
       }
       for (let k = 0; k < GARDEN_SLOTS; k++) slots[k] = null;
+      bedState.open = Array.from({ length: CORE_BEDS }, (_, k) => k);
+      bedState.pending = null;
+      bedState.emptyAt = {};
+      bedsDirty = true;
       bl.v = BLOOM_FLOOR;
       bl.at = now;
       // overgrown from minute one: fill to the dead-park cap in PATCHES —
@@ -1406,15 +1478,39 @@ export class ParkRoom {
       await persist();
       return json(payload({ ok: 1 }));
     }
+    // 🪓 BREAK GROUND — a chore, not a purchase and not a spawn. Chores are
+    // the park's unlimited shared class (weeds, litter, algae, leaves), the only
+    // one a crowd can all do at once, and this one ends in being able to plant.
+    // ⚠️ the bed it opens is PUBLIC — the digger gets rep, not the bed.
+    if (url.pathname === '/garden/bedbreak') {
+      const p = bedState.pending;
+      if (!p) return json(payload({ err: 'no ground' }), 409);
+      if (Math.floor(Number(b.bed)) !== p.bed) return json(payload({ err: 'gone' }), 409);
+      p.digs = (p.digs || 0) + 1;
+      p.by = (p.by || []).concat(short).slice(-BED_DIGS);
+      bedsDirty = true;
+      let opened = 0;
+      if (p.digs >= BED_DIGS) {
+        bedState.open.push(p.bed);
+        bedState.emptyAt[p.bed] = now;            // its grow-over clock starts here
+        bedState.pending = null;
+        opened = 1;
+      }
+      await persist();
+      return json(payload({ ok: 1, opened }));
+    }
     const i = Math.floor(Number(b.slot));
     if (!(i >= 0 && i < GARDEN_SLOTS)) return json({ err: 'bad slot' }, 400);
     const s = slots[i];
     if (url.pathname === '/garden/plant') {
+      // 🪓 unbroken ground is lawn — you cannot plant in a bed nobody opened
+      if (!openSet.has(Math.floor(i / BED_SLOTS))) return json(payload({ err: 'not open' }), 409);
       if (s) return json(payload({ err: 'taken' }), 409);
       if (!GARDEN_SEEDS[b.seed]) return json({ err: 'bad seed' }, 400);
       slots[i] = {
         passShort: short, name: sanitizeName(b.name, []) || '', seed: b.seed,
         plantedAt: now, lastWater: now, waterers: [], wday: {},
+        grew: 0, gday: dayOf(now),      // ⭐ stages are earned in WATERED days now
       };
       bl.v = Math.min(100, bl.v + BLOOM_PLANT);
     } else if (url.pathname === '/garden/water') {
@@ -1427,14 +1523,15 @@ export class ParkRoom {
       if (wk.length > 60) delete s.wday[wk[0]];
       if (s.rot) return json(payload({ err: 'rot' }), 409);
       s.lastWater = now;
+      creditDay(s, now);                // your watering pays for today straight away
+      if (!s.readyAt && isReady(s)) s.readyAt = now;
       s.waterers = s.waterers || [];
       if (!s.waterers.includes(short)) { s.waterers.push(short); if (s.waterers.length > 60) s.waterers.shift(); }
       bl.v = Math.min(100, bl.v + BLOOM_WATER);
     } else if (url.pathname === '/garden/harvest') {
       if (!s) return json(payload({ err: 'empty' }), 404);
       if (s.passShort !== short) return json({ err: 'not yours' }, 403);
-      const days = Math.floor((now - s.plantedAt) / 86_400_000);
-      if (days < gardenSeed(s.seed).days) return json(payload({ err: 'still growing' }), 409);
+      if (!isReady(s)) return json(payload({ err: 'still growing' }), 409);
       slots[i] = null;
     } else {
       return json({ err: 'not found' }, 404);
@@ -1727,7 +1824,46 @@ const gardenSeed = (id) => GARDEN_SEEDS[id] || { days: 99, stars: 1 };
 // a second bed pair per site — 24-31 A2, 32-39 B2, 40-47 C2 — plus a fourth
 // site D on the pond's SE bank, 48-63. Indices never reorder; stored arrays
 // pad on read.
-const GARDEN_SLOTS = 64;
+// 🌱 the garden can GROW: 13 beds of 8, the first CORE_BEDS always open,
+// the rest broken open by hand when the park fills and left to grow over when
+// they sit empty. ⚠️ these must match park-geo.js BEDS/CORE_BEDS — the client
+// renders from the geo, the room arbitrates which of those beds exist.
+const BED_SLOTS = 8;
+const CORE_BEDS = 8;
+const TOTAL_BEDS = 13;
+const GARDEN_SLOTS = TOTAL_BEDS * BED_SLOTS;      // 104 positions, 64 open at launch
+const BED_FULL = 0.9;          // ground appears once this much of the OPEN garden is taken
+const BED_DIGS = 3;            // hands on a spade before it opens (any mix of people)
+const BED_EMPTY_TTL = 3 * 86_400_000;   // an OPEN bed with NOTHING in it grows over
+// ⭐ GROWTH IS PAID FOR IN WATERED DAYS (Trym, 29 Jul), not wall-clock days: a
+// plant advances one stage per calendar day it was WET, so neglect stalls a
+// garden instead of quietly ripening it. Rain counts, and so does a stranger.
+// ⚠️ `gday` is the last calendar day already credited and `grew` the number of
+// stages earned; both are stamped on the lazy read, so a park nobody visits
+// still settles up correctly on the next one.
+const dayOf = (t) => Math.floor((t || 0) / 86_400_000);
+// ⚠️ ONE STAGE PER WATERED DAY, NEVER A BACKLOG. `lastWater` is a single
+// timestamp, so it cannot prove the plant was wet on the days BEFORE it —
+// crediting the whole gap would hand a plant watered Monday and again Wednesday
+// a free Tuesday it spent bone dry. Called from the read tick AND from the
+// water route, so your own watering counts immediately instead of waiting for
+// the next visitor.
+function creditDay(w, now) {
+  if (!w || w.rot) return false;
+  const d = Math.min(dayOf(now), dayOf(w.lastWater || w.plantedAt));
+  if (d <= (w.gday == null ? dayOf(w.plantedAt) : w.gday)) return false;
+  w.grew = (w.grew || 0) + 1;
+  w.gday = d;
+  return true;
+}
+const grownDays = (w) => (w && w.grew != null ? w.grew : dayOf(Date.now()) - dayOf(w.plantedAt));
+const isReady = (w) => w && !w.rot && grownDays(w) >= gardenSeed(w.seed).days;
+// 💰 DYNAMIC SEED PRICE — what you pay rides on how many plants you are
+// ALREADY tending: base × (1 + held²/25). Your first is always base price, ~6-8
+// stays comfortable, and somebody sitting on 28 slots pays 32×. ⭐ Trym's rule:
+// it must never say NO, it just gets expensive — a cap reads as a boundary, a
+// price reads as ambition. Mirrored in park-garden.js (seedPrice).
+const seedMult = (held) => 1 + (held * held) / 25;
 // 🌾 RIPE TTL — how long a FINISHED plant waits for its grower before the
 // park picks it. Two days on top of its growing time. Short enough that a
 // crowd cannot silt the beds up with orphans, long enough that a weekend away

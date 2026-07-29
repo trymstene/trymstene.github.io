@@ -315,11 +315,16 @@ function init() {
   // the BOUND inset is the wall, except the two door corridors through it
   const inSouthDoorLane = (x, y) => Math.abs(x - DOORS.south.x) < 60 && y > H - BOUND && y < H - 14;
   const inEastDoorLane = (x, y) => Math.abs(y - DOORS.east.y) < 60 && x > W - BOUND && x < W - 14;
+  // 🪓 colliders that come and go — garden beds broken open by hand are not
+  // in the plate and so not in OB_RECTS. The garden owns this list and hands
+  // over the whole of it whenever the room's open-bed set changes.
+  let liveRects = [];
   function blocked(x, y) {
     if (x < BOUND || x > W - BOUND || y < BOUND || y > H - BOUND) {
       if (!inSouthDoorLane(x, y) && !inEastDoorLane(x, y)) return true;
     }
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
+    for (const r of liveRects) if (inRect(x, y, r)) return true;
     for (const c of OB_CIRCLES) if (Math.hypot(x - c[0], y - c[1]) < c[2]) return true;
     const px = (x - POND.x) / POND.rx, py = (y - POND.y) / POND.ry;
     if (px * px + py * py < 1) return true;   // bananas famously can't swim
@@ -706,6 +711,7 @@ function init() {
   if (PARK_TEST) {
     window.__park = {
       pos, tgt, PLOTS,
+      setSolids: (rects) => { liveRects = rects; },
       ...critters.qa,
       ...birds.qa,
       ...garden.qa,
