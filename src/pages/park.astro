@@ -668,6 +668,14 @@ const faq = {
     .pk-whud__crowd { color: #8affc0; }
 
     /* 🎮 THE ACTION BAR — an in-flow band BELOW the map: React · Sound */
+
+    /* ⚙ THE SOUND BUTTON IS A SETTING, NOT AN ACTION (Trym) — it is pinned to
+       the right and never moves, while the things you actually DO stay centred.
+       ⚠️ the ::before is a spacer the same width as the button: with an auto
+       margin on each side the free space splits evenly, so the middle group is
+       centred in the WHOLE bar rather than in what is left over. */
+    .pk-actions::before { content: ''; min-width: 46px; margin-right: auto; }
+    #pkAudio { margin-left: auto; }
     .pk-actions {
       display: flex; align-items: center; justify-content: center; gap: 0.6rem;
       background: #101a10; border-top: 4px solid #000; padding: 0.6rem 0.8rem;
@@ -1692,7 +1700,7 @@ const faq = {
       <!-- 🎮 THE ACTION BAR — 🪙 toss · 🧃 browse (both proximity-gated) · React · Sound -->
       <div class="pk-actions" aria-label="park actions">
         <button class="pk-act pk-act--tool" id="pkTool" type="button" hidden></button>
-        <button class="pk-act pk-act--icon" id="pkEmote" type="button" aria-label="react">❤️</button>
+        <button class="pk-act pk-act--icon" id="pkEmote" type="button" aria-label="react"><PixelIcon name="heart" size="1.25em" /></button>
         <button class="pk-act pk-act--icon" id="pkAudio" type="button" aria-label="sound" aria-pressed="false">🔇</button>
       </div>
     </div><!-- /.pk-stage -->

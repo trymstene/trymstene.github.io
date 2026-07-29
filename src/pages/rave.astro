@@ -1164,6 +1164,12 @@ const GUIDE = [
        Same black top rule, same hard-shadowed chunky buttons; the yellow that
        used to outline every button now belongs to the ones that MEAN something
        (the quest tool), which is what yellow is for everywhere else here. */
+    /* ⚙ THE SOUND BUTTON IS A SETTING, NOT AN ACTION (Trym) — pinned right and
+       never moving, while the things you actually DO stay centred. The ::before
+       is a spacer the same width, so the free space splits evenly and the
+       middle group is centred in the WHOLE bar, not in what is left over. */
+    .rv-hud::before { content: ''; min-width: 46px; margin-right: auto; }
+    #rvSoundBtn { margin-left: auto; }
     .rv-hud {
       position: relative;
       display: flex; align-items: center; justify-content: center; gap: 0.6rem;
@@ -1171,13 +1177,23 @@ const GUIDE = [
       touch-action: manipulation; /* no iOS double-tap zoom when mashing emotes */
     }
     .rv-emotes { display: flex; gap: 0.5rem; }
+    /* ⚠️ THE SAME METRICS AS .pk-act--icon AND .bh-act--icon, to the pixel:
+       0.5rem 0.7rem padding, 1.1rem type, 46px min. The club's buttons were
+       48px minimum with heavier padding AND a mobile rule that stretched them
+       to flex:1 at 1.4rem — they came out 107×63 against the park's 52×46, which
+       is what made the three bars look like three different games (Trym). */
     .rv-emote-btn {
+      appearance: none; font: inherit; font-weight: 800;
       background: #241d33; color: #fffdf5; border: 3px solid #000; cursor: pointer;
       box-shadow: 3px 3px 0 #000;
-      font-size: 1.2rem; line-height: 1; padding: 0.55rem 0.9rem; border-radius: 0;
-      min-width: 48px; min-height: 48px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+      font-size: 1.1rem; line-height: 1; padding: 0.5rem 0.7rem; border-radius: 0;
+      min-width: 46px; min-height: 46px; white-space: nowrap;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
     }
+    /* the pixel icons inside were sized for the old, bigger button */
+    .rv-emote-btn svg { width: 1.25em; height: 1.25em; }
     .rv-emote-btn:hover { background: #33294a; }
     .rv-emote-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
     /* 🎯 the quest tool: deliberately LOUDER than its neighbours — it is the
@@ -1387,8 +1403,10 @@ const GUIDE = [
       .rv-stage .rv-raver canvas { width: 78px !important; height: 78px !important; }
       /* emotes own the first row; the stage + tour buttons centre beneath as
          normal-sized peers (the full-width stage bar read as THE main feature) */
-      .rv-emotes { flex: 1 1 100%; }
-      .rv-emote-btn { flex: 1; padding: 0.75rem 0; font-size: 1.4rem; }
+      /* ⚠️ NO flex:1 STRETCH any more — the buttons keep their own size on a
+         phone exactly like the park's and the bay's do, so all three action
+         bars read as the same control surface. */
+      .rv-emotes { flex: 1 1 100%; justify-content: center; }
       /* icon-only camera toggle: a square tap target, no words */
       .rv-zoom { font-size: 1.05rem; padding: 0.45rem 0.55rem; min-width: 44px; min-height: 44px; }
     }
@@ -1516,6 +1534,7 @@ const GUIDE = [
             <span class="rv-stagepop__txt">⭐ JOIN THE STAGE</span>
             <i class="rv-stagepop__track"><i class="rv-stagepop__fill" id="rvStagePopBar"></i></i>
           </button>
+          <span id="rvFlameArt" hidden><PixelIcon name="flame" size="1.25em" /></span>
           <div class="rv-toasts" id="rvToasts" aria-live="polite"></div>
           <div class="rv-world" id="rvWorld">
             <canvas class="rv-trails" id="rvTrails" aria-hidden="true"></canvas>
@@ -1620,7 +1639,7 @@ const GUIDE = [
                  (Trym's call). Pixel thrown-banana icon: a crescent mid-flight
                  with motion dashes + spark = reads "throw/attack" instantly.
                  NOT an emote (own class + wiring) — it fires a projectile. -->
-            <button class="rv-emote-btn rv-throw-btn" id="rvThrowBtn" aria-label="Throw a banana (F)" title="throw a banana! (F) — tap a banana to lock on"><svg viewBox="0 0 14 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="1.6em" height="1.15em"><rect x="0" y="3" width="2" height="1" fill="#fffdf5"/><rect x="1" y="5" width="2" height="1" fill="#fffdf5"/><rect x="0" y="7" width="2" height="1" fill="#fffdf5"/><rect x="12" y="1" width="1" height="1" fill="#7a4a21"/><rect x="11" y="2" width="2" height="1" fill="#ffd23f"/><rect x="10" y="3" width="2" height="1" fill="#ffd23f"/><rect x="10" y="4" width="1" height="1" fill="#e6a817"/><rect x="9" y="4" width="1" height="1" fill="#ffd23f"/><rect x="8" y="5" width="2" height="1" fill="#ffd23f"/><rect x="8" y="6" width="1" height="1" fill="#e6a817"/><rect x="7" y="7" width="1" height="1" fill="#e6a817"/><rect x="13" y="0" width="1" height="1" fill="#ff9e2c"/><rect x="13" y="2" width="1" height="1" fill="#ff9e2c"/><rect x="12" y="5" width="1" height="1" fill="#ff9e2c"/></svg></button>
+            <button class="rv-emote-btn rv-throw-btn" id="rvThrowBtn" aria-label="Throw a banana (F)" title="throw a banana! (F) — tap a banana to lock on"><PixelIcon name="crosshair" size="1.25em" /></button>
             <button class="rv-emote-btn rv-emote-btn--fire" data-emote="fire" aria-label="Send fire (stage only)" hidden>&#128293;</button>
           </div>
           <button class="rv-stage-btn" id="rvStageBtn" hidden></button>

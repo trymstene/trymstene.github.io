@@ -560,13 +560,17 @@ export function initGarden(ctx) {
     if (hit) clodBurst(hit[0], hit[1] - 26, r.opened ? 5 : 9, r.opened ? 22 : 30);
     // …and the whole bed erupts when the last one lands
     if (r.opened) d4.forEach(([x, base]) => clodBurst(x, base - 26, 9, 40));
-    if (m) float(m[0], m[1] - 20, '+' + BED_DIG_REP);
-    if (r.opened) toast('🪓 the bed is open — eight new slots, for anyone', 5000);
-    else {
-      const p2 = r.beds && r.beds.pending;
-      const left = p2 ? p2.need - p2.digs : 0;
-      toast('🪓 one patch turned — ' + left + ' more and this is a bed', 3400);
+
+    // ⚠️ THE COUNT LIVES AT THE DIG, not on the button (Trym: "break ground
+    // 1/4" was too long a label). The button says the verb; the ground says how
+    // far along it is, right where you are looking.
+    const p2 = r.beds && r.beds.pending;
+    if (hit) {
+      pill(hit[0], hit[1] - 30,
+        r.opened ? '🪓 the bed is open' : '⛏ ' + (p2 ? p2.digs + '/' + p2.need : '') + ' turned',
+        '+' + BED_DIG_REP);
     }
+    if (r.opened) toast('🪓 the bed is open — eight new slots, for anyone', 5000);
     if (!bedTracked) { bedTracked = true; track('park_bedbreak'); }
     if (r.opened) track('park_bedopen');
     applyGarden(r);
@@ -1610,18 +1614,13 @@ export function initGarden(ctx) {
   function toolTick() {
     const c = toolScan();
     toolChore = c;
-    // ⚠️ the DIG COUNT rides the key. The change-guard keys on the chore's id,
-    // and a bed's id does not move while you dig it — without this the button
-    // sat on "0/3" through all three digs.
-    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.id)
-      + (c.kind === 'ground' && bedPending ? ':' + bedPending.digs : '') : '';
+    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.id) : '';
     if (key === toolKey) return;
     toolKey = key;
     if (!c) { toolBtn.hidden = true; return; }
     toolBtn.textContent = c.kind === 'weed' ? '🌿 pull'
       : c.kind === 'algae' ? '🫧 skim'
-      : c.kind === 'ground' ? '🪓 break ground '
-        + (bedPending ? bedPending.digs + '/' + bedPending.need : '')
+      : c.kind === 'ground' ? '⛏ dig'
       : '💧 water';
     toolBtn.hidden = false;
   }

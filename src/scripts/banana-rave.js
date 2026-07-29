@@ -4135,7 +4135,13 @@ function init() {
     reactBtn.dataset.emote = on ? 'fire' : 'heart';
     reactBtn.classList.toggle('rv-emote-btn--fire', on);
     reactBtn.setAttribute('aria-label', on ? 'Send fire' : 'Send a heart');
-    reactBtn.innerHTML = on ? '<span class="rv-flameglyph">\u{1F525}</span>' : reactHeartHTML;
+    // 🔥 our own pixel flame, not the stock emoji — every OS draws that one its
+    // own way. The art is parked hidden in the markup because PixelIcon is an
+    // Astro component and scripts cannot call it; same trick as reactHeartHTML.
+    const flameArt = el('rvFlameArt');
+    reactBtn.innerHTML = on
+      ? (flameArt ? flameArt.innerHTML : '<span class="rv-flameglyph">\u{1F525}</span>')
+      : reactHeartHTML;
   }
 
   function refreshStageUi() {
