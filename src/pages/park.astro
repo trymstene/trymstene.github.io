@@ -232,29 +232,36 @@ const faq = {
     .pk-leafblow.is-on { animation: pkLeafBlow linear infinite; }
     @media (prefers-reduced-motion: reduce) { .pk-leafblow { display: none; } }
 
-    /* 📏 THE LEVEL METERS — a thin vertical gauge beside a plant (water) or
-       a birdhouse (seed), so you can SEE it draining and know when it is worth
-       topping up (Trym). Both are the same 24h countdown, so one component.
-       ⚠️ they only appear BELOW HALF. A full garden with 64 permanent bars is
-       clutter, and a gauge that is always visible stops being information —
-       it showing up at all is the signal, and it is also exactly when you can
-       act. Fills from the BOTTOM and ramps green → amber → red as it empties.
-       Rides its parent (the plant / the house), so the cull sweep and the
-       painter's algorithm need to know nothing about it. */
-    .pk-meter {
-      position: absolute; left: 100%; bottom: 4%; margin-left: 1px;
-      width: 3px; height: 62%; pointer-events: none;
-      background: rgba(12, 20, 12, 0.62); border: 1px solid rgba(0, 0, 0, 0.65);
-      border-radius: 1px; overflow: hidden; opacity: 0;
-      transition: opacity 0.45s ease;
+    /* 📏 THE LEVEL METERS — water on a plant, seed in a birdhouse, both
+       the same 24h countdown, so one component.
+       ⚠️ THEY LIVE IN THE TAP CARD, NOT ON THE SPRITE (Trym). The garden's
+       grammar is that the sprite says species / thirst / ready / yours and the
+       WORDS live in the card you open — and 64 permanent gauges out on the map
+       is clutter, not information. The card is also where you already are when
+       you want the number: you tapped it to check. Horizontal, because that is
+       the bar idiom the park-health card already set. */
+    .pk-meter { margin: 0 0 0.65rem; }
+    .pk-meter__top {
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 0.5rem; margin-bottom: 0.26rem; font-size: 0.76rem; font-weight: 800;
     }
-    .pk-meter.is-on { opacity: 1; }
-    .pk-meter i {
-      position: absolute; left: 0; right: 0; bottom: 0; display: block;
-      background: #6fd46f; transition: height 0.6s linear, background-color 0.6s linear;
+    .pk-meter__top b { color: #cfe8cf; }
+    .pk-meter__top em {
+      font-style: normal; color: #6fd46f; font-variant-numeric: tabular-nums;
     }
-    .pk-meter.is-low i { background: #ffc63f; }
-    .pk-meter.is-out i { background: #ff5f5f; }
+    .pk-meter__track {
+      display: block; position: relative; height: 14px; overflow: hidden;
+      border: 2px solid #000; border-radius: 5px; background: #0c140c;
+    }
+    .pk-meter__track i {
+      position: absolute; left: 0; top: 0; bottom: 0; display: block;
+      background: #6fd46f; transition: width 0.5s ease, background-color 0.5s ease;
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-meter__track i { transition: none; } }
+    .pk-meter.is-low .pk-meter__track i { background: #ffc63f; }
+    .pk-meter.is-low .pk-meter__top em { color: #ffc63f; }
+    .pk-meter.is-out .pk-meter__track i { background: #ff5f5f; }
+    .pk-meter.is-out .pk-meter__top em { color: #ff5f5f; }
 
     /* ✨ THE POP — what a cleared chore does. ⚠️ NOT the smoke poof: that
        means "you MISSED it" everywhere else in the world (the rave uses it for

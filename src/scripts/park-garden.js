@@ -296,30 +296,20 @@ export function initGarden(ctx) {
   // chips "took up the visuals" too): the sprite says species, the soil says
   // thirst, the glint says ready, the stake says yours. Words = the tap card.
   // 📏 ONE gauge, two users: a plant's water and a birdhouse's seed are
-  // both a 24h countdown, so they share a component. It hangs off the sprite
-  // it belongs to, which means it moves, sorts and culls with its parent for
-  // free. Returns the element so callers can keep it and just re-fill it.
-  const METER_SHOW = 0.5;               // only appears once it is half gone
-  function meterOn(host) {
-    let m = host.querySelector('.pk-meter');
-    if (!m) {
-      m = document.createElement('span');
-      m.className = 'pk-meter';
-      m.innerHTML = '<i></i>';
-      host.appendChild(m);
-    }
-    return m;
-  }
-  function meterSet(host, frac) {
-    const m = meterOn(host);
-    const f = Math.max(0, Math.min(1, frac));
-    m.classList.toggle('is-on', f < METER_SHOW);
-    m.classList.toggle('is-low', f < 0.34);
-    m.classList.toggle('is-out', f <= 0.06);
-    m.firstChild.style.height = Math.round(f * 100) + '%';
-  }
+  // both a 24h countdown, so they share a component. It is a string, because
+  // it belongs in the TAP CARD — nothing new goes out on the map (see the CSS).
   // how much of the 24h window is LEFT, 1 → 0
   const leftOf = (at) => 1 - (Date.now() - (at || 0)) / 86400000;
+  function meterRow(icon, label, frac, dry) {
+    const f = Math.max(0, Math.min(1, frac));
+    const hrs = f * 24;
+    const cls = f <= 0.02 ? ' is-out' : f < 0.34 ? ' is-low' : '';
+    const say = f <= 0.02 ? dry : hrs < 1 ? 'under an hour left' : Math.round(hrs) + 'h left';
+    return '<div class="pk-meter' + cls + '">'
+      + '<span class="pk-meter__top"><b>' + icon + ' ' + label + '</b><em>' + say + '</em></span>'
+      + '<span class="pk-meter__track"><i style="width:' + Math.round(f * 100) + '%"></i></span>'
+      + '</div>';
+  }
 
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
@@ -364,7 +354,6 @@ export function initGarden(ctx) {
         el.plant.classList.toggle('is-ready', gReady(s));
         depth(el.plant, sy + 10);
       }
-      if (!s.rot) meterSet(el.plant, leftOf(s.lastWater || s.plantedAt));
       // 🪧 ownership: the tiny stake at the soil's front edge, YOURS only
       // (no floating UI over the beds — Trym; taps read the slot, not this)
       if (gMine(s) && !el.stake) {
@@ -593,7 +582,6 @@ export function initGarden(ctx) {
         depth(el, sy);
         world.appendChild(el);
       }
-      meterSet(el, leftOf(h.lastStock));   // 📏 the seed emptying
     });
     // 🐦 the residents live in park-birds.js — it moves them in and out
     if (ctx.birds) ctx.birds.setStocked(BIRD_SPOTS.map((_, i) => bhFed(bHouses[i])));
@@ -656,6 +644,7 @@ export function initGarden(ctx) {
         ? 'stocked — the birds are here, and the house is feeding the park’s health.'
         : 'quiet up there — nobody has stocked it in a day, so the birds moved out.')
       + '</p>'
+      + meterRow('🌾', 'seed in the feeder', leftOf(h.lastStock), 'empty')
       + '<p class="pk-gwater">🌾 stocked by ' + (h.stockers || 0) + ' banana' + (h.stockers === 1 ? '' : 's') + '</p>'
       + '<button class="pk-btn pk-gbtn" id="pkBhStock" type="button">🌾 stock it'
       + (mine ? '' : ' <small>+2 rep</small>') + '</button>';
@@ -1056,6 +1045,8 @@ export function initGarden(ctx) {
         ? (mine ? 'full-grown — tap it to harvest!' : 'ready to pick — only its grower can harvest it.')
         : 'day ' + Math.min(gDays(s) + 1, sd.days) + ' of ' + sd.days + ' · growing on real days')
       + '</p>'
+      + (s.rot ? '' : meterRow('💧', 'soil moisture',
+        leftOf(s.lastWater || s.plantedAt), 'bone dry'))
       + '<p class="pk-gwater">💧 watered by ' + (s.waterers || 0) + ' visitor' + (s.waterers === 1 ? '' : 's') + '</p>'
       + (ready ? '' : '<button class="pk-btn pk-gbtn" id="pkWaterBtn" type="button">💧 water it'
         + (mine ? '' : ' <small>+2 rep</small>') + '</button>')
@@ -1158,24 +1149,7 @@ export function initGarden(ctx) {
     tgt.y = sy + (best % 2 ? 40 : 78);
     return true;
   }
-  // 📏 the gauges drain in REAL TIME, but renderGarden only redraws when a
-  // sprite changes and the poll is 60s apart — so they get their own slow
-  // beat. 5s is far finer than a 24h countdown needs and costs nothing.
-  let meterAt = 0;
-  function meterTick() {
-    if (Date.now() < meterAt) return;
-    meterAt = Date.now() + 5000;
-    PLOTS.forEach((_, i) => {
-      const s2 = gSlots[i], el = gEls[i];
-      if (s2 && !s2.rot && el && el.plant) meterSet(el.plant, leftOf(s2.lastWater || s2.plantedAt));
-    });
-    BIRD_SPOTS.forEach((_, i) => {
-      if (bhEls[i] && bHouses[i]) meterSet(bhEls[i], leftOf(bHouses[i].lastStock));
-    });
-  }
-
   function gardenTick() {
-    meterTick();
     if (pendingGarden != null) {
       const [sx, sy] = PLOTS[pendingGarden];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingGarden; pendingGarden = null; gardenAct(i); }
