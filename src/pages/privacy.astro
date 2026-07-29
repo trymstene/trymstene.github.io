@@ -14,7 +14,8 @@ const description = 'What this site counts, what it never collects, and how to c
     </div>
     <p class="kicker">The boring-but-honest page</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">privacy &amp; cookies</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">No accounts, no ads, no selling data. Here's the whole story.</p>
+    <!-- ⚠️ said "No accounts" until the email login shipped (30 Jul). -->
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">No passwords, no ads, no selling data. Here's the whole story.</p>
   </section>
 
   <section class="block">
@@ -33,11 +34,31 @@ const description = 'What this site counts, what it never collects, and how to c
           handles payment details — I never see card numbers.</li>
       </ul>
 
+      <h2>If you log in</h2>
+      <p>
+        Logging in takes one email address, and it exists for exactly one job: sending you a link
+        to click. No password, and no mailing list — you will never get anything from me that you
+        didn't just ask for.
+      </p>
+      <ul>
+        <li><strong>Your address isn't stored.</strong> It's turned into a one-way code the second
+          you type it, and that code is all the site keeps. I can't read an address back out of it,
+          so I can't email you and there's nothing to spill.</li>
+        <li><strong>The mail itself goes out through <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener">Resend</a></strong>,
+          who deliver it on my behalf and see your address in order to do that. The link is
+          single-use and dies after 15 minutes.</li>
+        <li><strong>Whoever can open your inbox can open your pass.</strong> That's true of every
+          "email me a link" login — worth knowing rather than glossing over.</li>
+        <li><strong>Deleting it works the other way round.</strong> Tell me the address you log in
+          with and I can find that code and wipe the pass behind it. I just can't go from the code
+          back to you, which is the point.</li>
+      </ul>
+
       <h2>What stays in your browser</h2>
       <p>
         Your built banana, bananacoins, badges, and pass live in your browser's own storage
         (localStorage) — that's your save file, not tracking. It never leaves your device unless
-        you create a passkey to sync it, and even then it's only readable by you and me.
+        you log in to carry it elsewhere, and even then it's only readable by you and me.
       </p>
 
       <h2>Your choice</h2>
