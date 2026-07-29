@@ -400,7 +400,16 @@ async function sendLink(env, to, link) {
         + `Did not ask for this? Ignore it — nothing happens.\n`,
     }),
   });
-  return { ok: res.ok, why: res.ok ? '' : 'send failed' };
+  if (!res.ok) {
+    // ⚠️ A SILENT SEND FAILURE IS THE WORST OUTCOME HERE: the caller is told
+    // "check your inbox" (it must be, to stay non-enumerating) and nothing ever
+    // arrives. The provider's reason has to reach the logs or the only symptom
+    // is a user who cannot log in and no way to find out why. `wrangler tail`.
+    const why = await res.text().catch(() => '');
+    console.error('mail send failed', res.status, why.slice(0, 300));
+    return { ok: false, why: 'send failed' };
+  }
+  return { ok: true, why: '' };
 }
 
 // POST /mail/signin { email } → always { ok: true }
