@@ -3674,14 +3674,34 @@ function init() {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const rosterEl = document.getElementById('bhRoster');
   const dayStatsEl = document.getElementById('bhDayStats');
+  // 🎮 the park's day badges, ported (see park-share.js): icon + number in a
+  // content-sized pill, the words behind a TAP. ⚠️ refreshSide() rebuilds this
+  // every second, so the tapped badge has to survive the rebuild or the caption
+  // is gone before you have read it.
+  let statPick = -1;
+  const STAT_HINT = 'tap a badge to see what it counts';
   function refreshSide() {
     if (dayStatsEl) {
+      const stat = (icon, val, cap, cls) => '<button type="button" class="bh-stat'
+        + (cls ? ' ' + cls : '') + '" data-cap="' + esc(cap) + '">'
+        + '<i>' + icon + '</i><b>' + val + '</b></button>';
       dayStatsEl.innerHTML =
-        '<span class="bh-daystats__time">⏱ <b>' + beachTime() + '</b> on the beach</span>'
-        + '<span>🐚 <b>' + haveCount() + '</b>/' + SHELL_IDS.length + ' shells</span>'
-        + '<span>🐟 <b>' + fishSpecies() + '</b>/' + FISH.length + ' fish</span>'
-        + '<span>🎟 <b>' + ticketBal() + '</b> tickets</span>'
-        + '<span>🏐 <b>' + bestRally + '</b> best rally</span>';
+        stat('⏱', beachTime(), 'how long you have been on the beach today', 'is-time')
+        + stat('🐚', haveCount() + '/' + SHELL_IDS.length, 'shell species in your collection')
+        + stat('🐟', fishSpecies() + '/' + FISH.length, 'fish species in the ledger')
+        + stat('🎟', ticketBal(), 'tickets for the pier midway')
+        + stat('🏐', bestRally, 'your best volleyball rally')
+        + '<p class="bh-statcap" id="bhStatCap">' + STAT_HINT + '</p>';
+      const pills = [...dayStatsEl.querySelectorAll('.bh-stat')];
+      const cap = document.getElementById('bhStatCap');
+      const paint = () => {
+        pills.forEach((p2, k) => p2.classList.toggle('is-on', k === statPick));
+        if (cap) cap.textContent = statPick < 0 ? STAT_HINT : (pills[statPick] || {}).dataset.cap || STAT_HINT;
+      };
+      pills.forEach((btn, k) => {
+        btn.addEventListener('click', () => { statPick = statPick === k ? -1 : k; paint(); });
+      });
+      paint();
     }
     if (rosterEl) {
       const me = '<li class="is-you"><span>' + esc(bayName || 'you')

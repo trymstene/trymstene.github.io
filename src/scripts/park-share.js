@@ -27,21 +27,46 @@ export function initShare(ctx, garden) {
   // species' own sheet — row 3 col 0, no extra asset)
   const birdFace = (sp, cls) => '<i class="' + (cls || 'pk-bface') + '" title="' + esc(BIRD_NAMES[sp] || sp)
     + '" style="background-image:url(/assets/park/bird-' + sp + '.png)"></i>';
+  // ⚠️ refreshSide() rebuilds this markup EVERY SECOND (the park timer), so
+  // which badge you tapped has to survive the rebuild — otherwise the caption
+  // you just opened is gone within a second and the whole affordance is a lie.
+  let statPick = -1;
+  const STAT_HINT = 'tap a badge to see what it counts';
+
   function refreshSide() {
     if (dayStatsEl) {
       const s = passGet().stats || {};
       const seen = birdsToday();
+      // 🎮 BADGES, NOT A DASHBOARD (Trym). Each stat is an icon and a
+      // number in a content-sized pill — no full-width rows with a paragraph of
+      // label and a lake of empty space beside it on desktop. The words live
+      // behind a TAP rather than a title attribute, because a title is invisible
+      // on a phone and 85% of this world is on one.
+      const stat = (icon, val, cap, cls) => '<button type="button" class="pk-stat'
+        + (cls ? ' ' + cls : '') + '" data-cap="' + esc(cap) + '">'
+        + '<i>' + icon + '</i><b>' + val + '</b></button>';
       dayStatsEl.innerHTML =
-        '<span class="pk-daystats__time">⏱ <b>' + parkTime() + '</b> in the park</span>'
-        + '<span>🌿 <b>' + (s.weeds_pulled || 0) + '</b> weeds pulled</span>'
-        + '<span>🌱 <b>' + (s.garden_harvests || 0) + '</b> harvests</span>'
-        + '<span>🥚 <b>' + (s.eggs_found || 0) + '</b> eggs found</span>'
-        + '<span>🧑‍🌾 <b>lvl ' + garden.gardenerLvl().lvl + '</b> gardener</span>'
-        + '<span>🌸 <b>' + bloomStr() + '</b> health</span>'   // 'park health' wrapped on 360px chips
-        + '<span class="pk-daystats__birds">🔭 <b>' + seen.length + '</b> bird'
-        + (seen.length === 1 ? '' : 's') + ' spotted today'
-        + (seen.length ? '<em>' + seen.map((sp) => birdFace(sp)).join('') + '</em>'
-          : '<small>none yet — tap a bird to spot it</small>') + '</span>';
+        stat('⏱', parkTime(), 'how long you have been in the park today', 'is-time')
+        + stat('🌿', s.weeds_pulled || 0, 'weeds you have pulled')
+        + stat('🌱', s.garden_harvests || 0, 'crops you have harvested')
+        + stat('🥚', s.eggs_found || 0, 'eggs you have found')
+        + stat('🧑‍🌾', 'lvl ' + garden.gardenerLvl().lvl, 'your gardener level — it unlocks better seeds')
+        + stat('🌸', bloomStr(), 'park health right now — everybody shares this one')
+        + '<div class="pk-birds">' + (seen.length
+          ? '<span class="pk-birds__n">🔭 <b>' + seen.length + '</b></span>'
+            + seen.map((sp) => birdFace(sp)).join('')
+          : '<small>🔭 no birds spotted yet — tap one to add it</small>') + '</div>'
+        + '<p class="pk-statcap" id="pkStatCap">' + STAT_HINT + '</p>';
+      const pills = [...dayStatsEl.querySelectorAll('.pk-stat')];
+      const cap = document.getElementById('pkStatCap');
+      const paint = () => {
+        pills.forEach((p2, k) => p2.classList.toggle('is-on', k === statPick));
+        if (cap) cap.textContent = statPick < 0 ? STAT_HINT : (pills[statPick] || {}).dataset.cap || STAT_HINT;
+      };
+      pills.forEach((btn, k) => {
+        btn.addEventListener('click', () => { statPick = statPick === k ? -1 : k; paint(); });
+      });
+      paint();                              // survive the once-a-second rebuild
     }
     if (rosterEl) {
       const me = '<li class="is-you"><span>' + esc(parkName || 'you')
