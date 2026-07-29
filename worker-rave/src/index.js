@@ -307,7 +307,9 @@ export default {
         'Content-Type': 'application/json',
       };
       if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
-      const sub = url.pathname.replace('/park-garden', '/garden');
+      // ⚠️ the SEARCH goes through too — a GET read carries ?pass= so the
+      // room can hand back what the compost owes that grower (see RIPE_TTL).
+      const sub = url.pathname.replace('/park-garden', '/garden') + url.search;
       const res = await env.PARK.get(env.PARK.idFromName('the-park')).fetch(new Request('https://room' + sub, {
         method: request.method,
         body: request.method === 'POST' ? await request.text() : undefined,
@@ -950,6 +952,39 @@ export class ParkRoom {
       const allow = (3 + Math.floor(gardenSeed(w && w.seed).stars / 2)) * 86_400_000;
       if (w && now - (w.lastWater || w.plantedAt || 0) > allow) { slots[i] = null; dirty = true; }
     }
+    // 🌾 RIPE EXPIRY — the OTHER way a slot frees itself, and the one that
+    // actually matters at ad scale. A ready plant can only be harvested by its
+    // grower, so one planted by somebody who never comes back sits in a shared
+    // bed forever — and the +2 rep stranger-watering mechanic KEEPS IT ALIVE
+    // while it does, so the wilt sweep above never reaches it. Left alone, a
+    // busy park silts up with orphans and nobody can ever plant again.
+    // ⚠️ NOT A PUNISHMENT: the crop waits in `compost` and pays out the moment
+    // that grower next walks in. You lose the slot, never the harvest.
+    const cmp = (await this.state.storage.get('compost')) || {};
+    let cmpDirty = false;
+    for (let i = 0; i < GARDEN_SLOTS; i++) {
+      const w = slots[i];
+      if (!w || w.rot) continue;                      // a storm's ruin is a CHORE, not a crop
+      const sd = gardenSeed(w.seed);
+      if (now - (w.plantedAt || 0) < sd.days * 86_400_000 + RIPE_TTL) continue;
+      const c = cmp[w.passShort] || { n: 0, stars: 0, at: 0 };
+      c.n++;
+      c.stars += sd.stars;
+      c.at = now;
+      cmp[w.passShort] = c;
+      slots[i] = null;
+      dirty = true;
+      cmpDirty = true;
+    }
+    // bounded like every other per-pass map here — oldest debts drop first
+    if (cmpDirty) {
+      const ck = Object.keys(cmp);
+      if (ck.length > 400) {
+        ck.sort((a, b) => cmp[a].at - cmp[b].at).slice(0, ck.length - 400).forEach((k) => delete cmp[k]);
+      }
+    }
+    // who is asking — set here for a GET, re-set from the body on a POST
+    let asking = (url.searchParams.get('pass') || '').slice(0, 8);
     // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns.
     // ⭐ every living plant FEEDS the meter by its stars (post-wilt-sweep, so
     // only plants that made it through count)
@@ -1172,8 +1207,21 @@ export class ParkRoom {
         stockers: (h2.stockers || []).length })),
       ...extra,
     });
+    // 🌱 what the compost owes the asker, handed over once and cleared.
+    // ⚠️ THE READ ONLY, never a POST reply: payload() also builds ERROR bodies,
+    // and a 409 the client throws away would silently eat somebody's harvest.
+    // The poll runs on arrival anyway, so it lands the moment they walk in and
+    // find the bed empty — the only moment the message explains anything.
+    function compostFor() {
+      const c = asking && cmp[asking];
+      if (!c || !c.n) return {};
+      delete cmp[asking];
+      cmpDirty = true;
+      return { compost: { n: c.n, stars: c.stars } };
+    }
     const persist = async () => {
       await this.state.storage.put('garden', slots);
+      await this.state.storage.put('compost', cmp);
       await this.state.storage.put('weeds', wd);
       await this.state.storage.put('trash', tr);
       await this.state.storage.put('bloom', bl);
@@ -1186,9 +1234,10 @@ export class ParkRoom {
       if (stormAt) await this.state.storage.put('lastStormAt', stormAt);
     };
     if (url.pathname === '/garden' && request.method !== 'POST') {
+      const body = payload(compostFor());
       if (dirty || weedsDirty || decayed || eggsDirty || trashDirty || borderDirty
-        || algaeDirty || leavesDirty || wxDirty) await persist();
-      return json(payload());
+        || algaeDirty || leavesDirty || wxDirty || cmpDirty) await persist();
+      return json(body);
     }
     let b = null;
     try { b = JSON.parse(await request.text()); } catch (e) {}
@@ -1679,6 +1728,11 @@ const gardenSeed = (id) => GARDEN_SEEDS[id] || { days: 99, stars: 1 };
 // site D on the pond's SE bank, 48-63. Indices never reorder; stored arrays
 // pad on read.
 const GARDEN_SLOTS = 64;
+// 🌾 RIPE TTL — how long a FINISHED plant waits for its grower before the
+// park picks it. Two days on top of its growing time. Short enough that a
+// crowd cannot silt the beds up with orphans, long enough that a weekend away
+// never costs you anything (and it costs you nothing anyway — see `compost`).
+const RIPE_TTL = 2 * 86_400_000;
 // 🌼 BORDER FLOWERS — single roadside blooms on the generator's BORDER_SPOTS
 // (count rides park-weed-grid.js): pure decoration with a name, no bloom
 // feed, no watering. A flower lives ~7 days, then the read sweeps it — the

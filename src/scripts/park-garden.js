@@ -136,7 +136,7 @@ export function initGarden(ctx) {
   // (NE, the lawn the stand freed); the 31 Jul expansion APPENDED 24-31 A2 ·
   // 32-39 B2 · 40-47 C2 · 48-63 site D (the pond's SE bank). ⚠️ indices are
   // the contract, never reorder.
-  let gSlots = Array(64).fill(null);
+  let gSlots = Array(PLOTS.length).fill(null);
   const gEls = PLOTS.map(() => ({ plant: null, stage: '', soil: null, soilKey: '', stake: null }));
   let pendingGarden = null, pendingWater = null, gardenOpenSlot = -1;
   let plantTracked = false, waterTracked = false, harvestTracked = false;
@@ -153,8 +153,19 @@ export function initGarden(ctx) {
   };
   function shimGarden(path, body) {
     const now = Date.now();
+    // 🌾 the shim runs the ripe sweep too, so ?parktest behaves like the room
+    let cN = 0, cStars = 0;
+    gShim.slots.forEach((s2, k) => {
+      if (!s2 || s2.rot) return;
+      const sd2 = SEED_BY[s2.seed] || { days: 99, stars: 1 };
+      if (now - (s2.plantedAt || 0) < sd2.days * 86400000 + 2 * 86400000) return;
+      cN++;
+      cStars += sd2.stars;
+      gShim.slots[k] = null;
+    });
     const strip = () => ({
       ok: 1,
+      ...(cN ? { compost: { n: cN, stars: cStars } } : {}),
       slots: gShim.slots.map((s) => (s ? { ...s, waterers: (s.waterers || []).length } : null)),
       // the shim mirrors the worker's wire: one decimal, and the same
       // tidiness ceiling (0.3/weed · 0.6/algae · 0.8/litter) so ?parktest
@@ -265,7 +276,9 @@ export function initGarden(ctx) {
   async function gFetch(path, body) {
     if (PARK_TEST) return shimGarden(path, body);
     try {
-      const r = await fetch(GARDEN_API + path, body
+      // 🌱 the READ carries ?pass= — it is the only reply that settles the
+      // compost, so the room has to know whose beds it picked (see RIPE_TTL)
+      const r = await fetch(GARDEN_API + path + (body ? '' : '?pass=' + encodeURIComponent(myShort)), body
         ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
         : undefined);
       return await r.json();
@@ -949,10 +962,28 @@ export function initGarden(ctx) {
     if (Array.isArray(res.algae)) renderAlgae(res.algae);
     if (Array.isArray(res.leaves)) renderLeaves(res.leaves);
     if (Array.isArray(res.houses)) renderHouses(res.houses);
+    if (res.compost) compostPaid(res.compost);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
     // 🌦 the storm's calling card, if there is still a mess to explain
     if (res.stormAt && ctx.weather) ctx.weather.stormNote(res.stormAt, res.bloom);
   }
+  // 🌱 THE COMPOST — what the park owes you for the plants it picked while
+  // you were away (server-side RIPE_TTL). ⚠️ the slot goes, the HARVEST never
+  // does: same rep and the same gardener-level credit as picking it yourself.
+  // A plant you grew is yours whether or not you were there at the end.
+  function compostPaid(c) {
+    const n = Math.max(0, Math.min(64, c.n | 0));
+    if (!n) return;
+    const rep = Math.max(0, Math.min(400, (c.stars | 0) * 8));
+    passStat('garden_harvests', n);
+    if (rep) passStat('rep', rep);
+    refreshHud();
+    toast('🌱 ' + (n === 1 ? 'a plant of yours ripened' : n + ' of your plants ripened')
+      + ' while you were away — the park picked '
+      + (n === 1 ? 'it' : 'them') + ' for you' + (rep ? '. +' + rep + ' rep' : ''), 5200);
+    track('park_compost', { n: n });
+  }
+
   async function gardenPoll() {
     applyGarden(await gFetch(''));
     if (ctx.phase() < 0) {        // no word from the server — the park at its
