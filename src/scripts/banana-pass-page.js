@@ -5,7 +5,8 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
-import { passkeysSupported, linked, savePass, restorePass, pullLatest } from '../lib/pass-sync.js';
+import { passkeysSupported, linked, savePass, restorePass, pullLatest,
+  startLink, finishLink } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -808,6 +809,47 @@ function initShare(outfit, pass, extra) {
   });
 }
 
+// ---- 🔗 device linking: a code out one side, a code in the other --------
+function wireLink(note) {
+  const startBtn = el('psLinkStart');
+  if (startBtn) {
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      try {
+        const { code, mins } = await startLink();
+        el('psLinkCodeVal').textContent = code;
+        el('psLinkCodeHint').textContent = 'type this on the other device — good for ' + mins + ' min, once';
+        el('psLinkCode').hidden = false;
+      } catch (e) {
+        if (note) note.textContent = 'Could not make a code — try again in a moment.';
+      }
+      startBtn.disabled = false;
+    });
+  }
+  const go = el('psCodeGo'), inp = el('psCodeIn');
+  if (!go || !inp) return;
+  const run = async () => {
+    const code = inp.value.trim();
+    if (code.length < 6) { if (note) note.textContent = 'That code looks too short.'; return; }
+    go.disabled = true;
+    if (note) note.textContent = 'Your device will ask to confirm — that is this device’s own passkey…';
+    try {
+      await finishLink(code);
+      passToast('🔗 <b>DEVICE LINKED</b><br>Same pass, both devices.');
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      if (note) {
+        note.textContent = e && e.name === 'NotAllowedError'
+          ? 'No worries — nothing happened.'
+          : (e && e.message) || 'Could not link this device.';
+      }
+      go.disabled = false;
+    }
+  };
+  go.addEventListener('click', run);
+  inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') run(); });
+}
+
 // ---- passkey sync panel ------------------------------------------------
 function initSync() {
   const box = el('psSync');
@@ -819,9 +861,19 @@ function initSync() {
     box.classList.add('ps-sync--linked');
     const title = el('psSyncTitle');
     if (title) title.textContent = '🔐 Pass saved';
-    el('psSyncLead').innerHTML = 'Your login is set. Open <a href="/pass/">trymstene.com/pass</a> on any device, tap “I already have a pass”, and everything follows you.';
+    // ⚠️ the old line said "any device … everything follows you", which is only
+    // true if the passkey itself travels. Two routes, stated as two routes.
+    el('psSyncLead').innerHTML = 'Same passkey on the other device? Open <a href="/pass/">trymstene.com/pass</a> there and tap “I already have a pass”. If it cannot get there, link it with a code:';
     note.textContent = '';
+    const lk = el('psLink');
+    if (lk) lk.hidden = false;
+    const where = document.querySelector('.ps-where');
+    if (where) where.hidden = true;            // the choice is made; stop advising it
   };
+  // 🔗 the receiving side is offered to anyone who has NOT saved a pass here
+  const haveCode = el('psHaveCode');
+  if (haveCode && !linked()) haveCode.hidden = false;
+  wireLink(note);
   if (linked()) { showLinked(); return; }
 
   el('psSave').addEventListener('click', async () => {

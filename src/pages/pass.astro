@@ -160,9 +160,41 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-sync h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
     .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
     .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
-    .ps-sync__where {
-      margin: 0.5rem 0 0; padding: 0.5rem 0.65rem; font-size: 0.82rem; line-height: 1.45;
-      background: rgba(255, 225, 53, 0.1); border-left: 4px solid #ffe135;
+    /* ✂️ THE FORK, DRAWN AS A FORK — two outcomes side by side instead of a
+       sentence explaining both. Text nobody reads has a conversion rate, and it
+       is zero ([[copy-cro-doctrine]]). */
+    .ps-where {
+      list-style: none; margin: 0.55rem 0 0; padding: 0;
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+    }
+    .ps-where li {
+      flex: 1 1 190px; display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap;
+      padding: 0.45rem 0.6rem; border-radius: 999px; font-size: 0.8rem; line-height: 1.3;
+    }
+    .ps-where b { font-weight: 800; }
+    .ps-where span { opacity: 0.85; }
+    .ps-where--yes { background: rgba(47, 208, 106, 0.16); box-shadow: inset 0 0 0 2px rgba(47, 208, 106, 0.5); }
+    .ps-where--yes::before { content: 'F4F1'; }
+    .ps-where--no { background: rgba(255, 95, 95, 0.14); box-shadow: inset 0 0 0 2px rgba(255, 95, 95, 0.45); }
+    .ps-where--no::before { content: 'F4BB'; }
+    /* 🔗 the link row — a button, and a code only once you ask for one */
+    .ps-link { margin: 0.6rem 0 0; }
+    .ps-link__code {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      margin-top: 0.5rem; padding: 0.55rem 0.7rem;
+      background: rgba(255, 225, 53, 0.12); border: 2px dashed #ffe135;
+    }
+    .ps-link__code b {
+      font-size: 1.3rem; font-weight: 800; letter-spacing: 0.16em;
+      font-variant-numeric: tabular-nums;
+    }
+    .ps-link__code span { font-size: 0.76rem; opacity: 0.8; }
+    .ps-link__lbl { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .ps-link__row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ps-link__in {
+      flex: 1 1 160px; min-width: 0; padding: 0.5rem 0.6rem; font: inherit;
+      font-size: 1rem; letter-spacing: 0.12em; text-transform: uppercase;
+      border: 3px solid #000; background: #fffdf5; color: #111;
     }
     .ps-sync__note { margin: 0.5rem 0 0 !important; font-size: 0.74rem !important; opacity: 0.72; min-height: 1em; }
     /* linked = done: calm it right down to a slim confirmation, no buttons */
@@ -307,16 +339,14 @@ const description = 'Your membership card to the banana world: the badges you ha
               <b>No email, no password.</b> Save your pass with a passkey — Face&nbsp;ID,
               fingerprint or your device PIN.
             </p>
-            <!-- ⚠️ THE OLD COPY PROMISED "the same pass opens on every device you
-                 use", and a passkey saved to Windows Hello CANNOT do that — it is
-                 bound to that PC. A player wrote in stranded exactly that way.
-                 Where you save it decides where it works, so say so BEFORE the
-                 choice rather than apologising after it. -->
-            <p class="ps-sync__where">
-              📱 <b>Save it to your phone or password manager</b> and your pass opens
-              anywhere. Save it to this computer only — Windows Hello, say — and it
-              stays on this computer.
-            </p>
+            <!-- ⚠️ WHERE you save it decides WHERE it works, and a passkey saved
+                 to Windows Hello is bound to that PC — a player wrote in stranded
+                 exactly that way. Two lines, two outcomes, no paragraph: the
+                 choice is a fork, so it is drawn as one. -->
+            <ul class="ps-where">
+              <li class="ps-where--yes"><b>Phone or password manager</b><span>opens anywhere</span></li>
+              <li class="ps-where--no"><b>This computer only</b><span>stays here</span></li>
+            </ul>
           </div>
         </div>
         <div class="ps-sync__row">
@@ -324,6 +354,24 @@ const description = 'Your membership card to the banana world: the badges you ha
           <button class="btn btn--light" id="psRestore" type="button"><PixelArtIcon name="download" size="18px" /> I already have a pass</button>
         </div>
         <p class="ps-sync__note" id="psSyncNote"></p>
+        <!-- 🔗 LINK A DEVICE — the answer to a passkey that cannot travel
+             (Windows Hello). One row on each side, no explanation needed until
+             you press something. -->
+        <div class="ps-link" id="psLink" hidden>
+          <button class="btn btn--light" id="psLinkStart" type="button">🔗 Link another device</button>
+          <div class="ps-link__code" id="psLinkCode" hidden>
+            <b id="psLinkCodeVal">…</b>
+            <span id="psLinkCodeHint">type this on the other device</span>
+          </div>
+        </div>
+        <div class="ps-link" id="psHaveCode" hidden>
+          <label class="ps-link__lbl" for="psCodeIn">Got a code from your other device?</label>
+          <div class="ps-link__row">
+            <input class="ps-link__in" id="psCodeIn" type="text" inputmode="latin" autocomplete="off"
+                   spellcheck="false" maxlength="12" placeholder="ABCD2468" aria-label="Link code" />
+            <button class="btn btn--dark" id="psCodeGo" type="button">Link</button>
+          </div>
+        </div>
       </div>
       <p class="ps-device ps-device--id" id="psDevice">🎫 Your pass lives on this device for now — cross-device passes are coming.</p>
     </section>

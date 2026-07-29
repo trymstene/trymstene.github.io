@@ -36,6 +36,8 @@ export default {
       if (url.pathname === '/challenge') return challenge(request, env);
       if (url.pathname === '/register') return register(request, env);
       if (url.pathname === '/assert') return assert_(request, env);
+      if (url.pathname === '/link/start') return linkStart(request, env);
+      if (url.pathname === '/link/finish') return linkFinish(request, env);
       if (url.pathname === '/push') return push(request, env);
       if (url.pathname === '/pull') return pull(request, env, url);
       if (url.pathname === '/admin/ledger') return adminLedger(request, env, url);
@@ -156,6 +158,35 @@ async function loadRec(env, credId) {
   const obj = await env.PASSES.get(`pass/${await sha256Hex(credId)}.json`);
   return obj ? await obj.json() : null;
 }
+async function loadKey(env, key) {
+  const obj = await env.PASSES.get(`pass/${key}.json`);
+  return obj ? await obj.json() : null;
+}
+async function saveKey(env, key, rec) {
+  rec.updated = Date.now();
+  await env.PASSES.put(`pass/${key}.json`, JSON.stringify(rec),
+    { httpMetadata: { contentType: 'application/json' } });
+}
+
+// ⭐ ONE PASS, SEVERAL PASSKEYS. A record is either a PRIMARY (it holds the
+// blob) or a POINTER: its own pk/alg/tokens, plus `link` — the key of the
+// primary whose blob it shares. Nothing about existing records changes; every
+// pass written before this is simply a primary already, which is why this
+// needed no migration.
+// ⚠️ ONE HOP ONLY. A pointer's `link` must name a PRIMARY, never another
+// pointer — chains would be a loop waiting to happen and buy nothing.
+// ⚠️ THE KEY STAYS ON ITS OWN RECORD. Verification and tokens belong to the
+// credential that presented them; only the BLOB is shared. A device you unlink
+// later must not be able to keep asserting with somebody else's key.
+async function resolve(env, credId) {
+  const ownKey = await sha256Hex(credId);
+  const own = await loadKey(env, ownKey);
+  if (!own) return null;
+  if (!own.link) return { own, ownKey, home: own, homeKey: ownKey };
+  const home = await loadKey(env, own.link);
+  if (!home || home.link) return null;          // dangling or chained — refuse
+  return { own, ownKey, home, homeKey: own.link };
+}
 
 // ---------- 🗄 THE PASS LEDGER (Banana HQ's World desk) ----------
 // Read-only admin view over SYNCED passes: who linked a passkey, their coins,
@@ -174,6 +205,7 @@ async function adminLedger(request, env, url) {
     let rec = null;
     try { rec = await (await env.PASSES.get(o.key)).json(); } catch (e) { continue; }
     if (!rec) continue;
+    if (rec.link) continue;   // a linked device is not its own pass — one row per PASS
     const blob = rec.blob || {};
     const stats = (blob.pass && blob.pass.stats) || {};
     const gear = Object.keys(stats).filter((k) => k.startsWith('own_') && stats[k] > 0).map((k) => k.slice(4));
@@ -230,8 +262,22 @@ async function register(request, env) {
   if (blob && !blobOk(blob)) return json({ error: 'blob too large' }, 413, cors(env, request));
 
   const existing = await loadRec(env, credId);
-  const rec = existing || { pk, alg, tokens: {}, blob: null };
   if (existing && existing.pk !== pk) return json({ error: 'credential exists' }, 409, cors(env, request));
+  // ⚠️ RE-REGISTERING AN ALREADY-LINKED DEVICE must merge into its HOME, not
+  // onto the pointer. Writing a blob onto a pointer record creates a second,
+  // orphaned copy that resolve() never reads — the save would look like it
+  // worked and the data would be gone.
+  if (existing && existing.link) {
+    const R = await resolve(env, credId);
+    if (R) {
+      R.home.blob = mergeBlob(R.home.blob, blob || null);
+      const tk = await mintToken(R.own);
+      await saveKey(env, R.ownKey, R.own);
+      await saveKey(env, R.homeKey, R.home);
+      return json({ token: tk }, 200, cors(env, request));
+    }
+  }
+  const rec = existing || { pk, alg, tokens: {}, blob: null };
   rec.blob = mergeBlob(rec.blob, blob || null);
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
@@ -248,8 +294,9 @@ async function assert_(request, env) {
   if (!credId || !clientDataJSON || !authenticatorData || !signature) return json({ error: 'bad assert' }, 400, cors(env, request));
   if (!(await challengeOk(env, clientDataJSON))) return json({ error: 'stale challenge' }, 400, cors(env, request));
 
-  const rec = await loadRec(env, credId);
-  if (!rec) return json({ error: 'unknown pass' }, 404, cors(env, request));
+  const R = await resolve(env, credId);
+  if (!R) return json({ error: 'unknown pass' }, 404, cors(env, request));
+  const rec = R.own;                       // ← the KEY is always the credential's own
 
   // signedData = authenticatorData || SHA-256(clientDataJSON)
   const authData = b64uToBuf(authenticatorData);
@@ -269,10 +316,12 @@ async function assert_(request, env) {
   }
   if (!ok) return json({ error: 'bad signature' }, 403, cors(env, request));
 
-  if (blob && blobOk(blob)) rec.blob = mergeBlob(rec.blob, blob);
+  // …but the BLOB lives on the home record, which may be another device's
+  if (blob && blobOk(blob)) R.home.blob = mergeBlob(R.home.blob, blob);
   const token = await mintToken(rec);
-  await saveRec(env, credId, rec);
-  return json({ token, blob: rec.blob }, 200, cors(env, request));
+  await saveKey(env, R.ownKey, rec);
+  if (R.homeKey !== R.ownKey) await saveKey(env, R.homeKey, R.home);
+  return json({ token, blob: R.home.blob }, 200, cors(env, request));
 }
 
 // WebAuthn ECDSA signatures are DER; WebCrypto wants raw r||s (32+32)
@@ -294,12 +343,79 @@ function derToRaw(der) {
   return out;
 }
 
+// ---------- 🔗 LINK ANOTHER DEVICE ----------------------------------------
+// A pass used to belong to a PASSKEY, not to a person: save it to Windows Hello
+// and it was stranded on that PC forever, which is exactly what a player wrote
+// in about. Now the device that already works can invite another one.
+//
+// ⚠️ WHAT THIS IS NOT: a "reset my passkey". With no second factor, a reset
+// anyone can trigger is an account-takeover switch — name a pass, claim a pass.
+// The invite has to START on a device that can already prove it owns the pass.
+// ⚠️ The code is short-lived, single-use, and deleted the moment it is spent.
+// Guessing it means beating 32^8 through a 30-req/min IP throttle.
+const LINK_TTL = 10 * 60 * 1000;
+const LINK_ALPHABET = '234679ACDEFGHJKLMNPQRTUVWXYZ';   // no 0/O/1/I/5/S/8/B
+function linkCode() {
+  const r = crypto.getRandomValues(new Uint8Array(8));
+  return [...r].map((b) => LINK_ALPHABET[b % LINK_ALPHABET.length]).join('');
+}
+
+// POST /link/start { credId, token } → { code, mins }
+async function linkStart(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const R = await tokenRec(env, b.credId, b.token);
+  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  const code = linkCode();
+  await env.PASSES.put(`link/${await sha256Hex(code)}.json`,
+    JSON.stringify({ home: R.homeKey, exp: Date.now() + LINK_TTL }),
+    { httpMetadata: { contentType: 'application/json' } });
+  return json({ code, mins: Math.round(LINK_TTL / 60000) }, 200, cors(env, request));
+}
+
+// POST /link/finish { code, credId, pk, alg, clientDataJSON } → { token, blob }
+// The new device has just CREATED its own passkey; we file it as a pointer at
+// the inviting pass. It never receives the other device's key — only the blob.
+async function linkFinish(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const { code, credId, pk, alg, clientDataJSON } = b || {};
+  if (!code || !credId || !pk || !clientDataJSON || ![-7, -257].includes(alg)) {
+    return json({ error: 'bad link' }, 400, cors(env, request));
+  }
+  if (!(await challengeOk(env, clientDataJSON))) return json({ error: 'stale challenge' }, 400, cors(env, request));
+  const ticketKey = `link/${await sha256Hex(String(code).toUpperCase().replace(/[^A-Z0-9]/g, ''))}.json`;
+  const obj = await env.PASSES.get(ticketKey);
+  if (!obj) return json({ error: 'bad code' }, 404, cors(env, request));
+  const ticket = await obj.json();
+  await env.PASSES.delete(ticketKey);                       // single use, always
+  if (!ticket || ticket.exp < Date.now()) return json({ error: 'code expired' }, 410, cors(env, request));
+  const home = await loadKey(env, ticket.home);
+  if (!home || home.link) return json({ error: 'bad code' }, 404, cors(env, request));
+
+  const ownKey = await sha256Hex(credId);
+  if (ownKey === ticket.home) return json({ error: 'same device' }, 409, cors(env, request));
+  const existing = await loadKey(env, ownKey);
+  if (existing && existing.pk !== pk) return json({ error: 'credential exists' }, 409, cors(env, request));
+  const rec = existing || { pk, alg, tokens: {} };
+  rec.link = ticket.home;                                   // ← a pointer, not a copy
+  delete rec.blob;                                          // the home record owns it
+  const token = await mintToken(rec);
+  await saveKey(env, ownKey, rec);
+  return json({ token, blob: home.blob }, 200, cors(env, request));
+}
+
 // ---------- token-auth sync (no biometrics day-to-day) ----------
+// the token proves THIS credential; the blob it unlocks may live elsewhere
 async function tokenRec(env, credId, token) {
   if (!credId || !token) return null;
-  const rec = await loadRec(env, credId);
-  if (!rec || !rec.tokens || !rec.tokens[await sha256Hex(token)]) return null;
-  return rec;
+  const R = await resolve(env, credId);
+  if (!R || !R.own.tokens || !R.own.tokens[await sha256Hex(token)]) return null;
+  return R;
 }
 
 async function push(request, env) {
@@ -307,18 +423,18 @@ async function push(request, env) {
   if (bad) return bad;
   let b;
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
-  const rec = await tokenRec(env, b.credId, b.token);
-  if (!rec) return json({ error: 'not linked' }, 403, cors(env, request));
+  const R = await tokenRec(env, b.credId, b.token);
+  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
   if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
-  rec.blob = mergeBlob(rec.blob, b.blob);
-  await saveRec(env, b.credId, rec);
+  R.home.blob = mergeBlob(R.home.blob, b.blob);
+  await saveKey(env, R.homeKey, R.home);
   return json({ ok: true }, 200, cors(env, request));
 }
 
 async function pull(request, env, url) {
   const bad = guard(env, request);
   if (bad) return bad;
-  const rec = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
-  if (!rec) return json({ error: 'not linked' }, 403, cors(env, request));
-  return json({ blob: rec.blob, updated: rec.updated }, 200, cors(env, request));
+  const R = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
+  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  return json({ blob: R.home.blob, updated: R.home.updated }, 200, cors(env, request));
 }

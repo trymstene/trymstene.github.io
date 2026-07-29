@@ -65,6 +65,66 @@ export async function savePass() {
   return true;
 }
 
+// 🔗 LINK ANOTHER DEVICE — for the case a passkey cannot solve on its own:
+// saved to Windows Hello, it is bound to that PC and cannot travel. The device
+// that already HAS the pass invites the other one with a short code.
+// ⚠️ the invite must start on a device that can already prove it owns the pass
+// (its token). Anything that starts from the new device would be a takeover.
+export async function startLink() {
+  const link = linked();
+  if (!link) throw new Error('this device has no pass to share');
+  const res = await fetch(PASS_API + '/link/start', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credId: link.credId, token: link.token }),
+  });
+  if (!res.ok) throw new Error('could not make a code');
+  if (window.gtag) window.gtag('event', 'pass_link_start');
+  return res.json();                                     // { code, mins }
+}
+
+// …and on the NEW device: make its own passkey, hand over the code, and it
+// joins the SAME pass. It never receives the other device's key — only the pass.
+export async function finishLink(code) {
+  const challenge = await getChallenge();
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge,
+      rp: { name: 'the banana world', id: location.hostname },
+      user: {
+        id: crypto.getRandomValues(new Uint8Array(16)),
+        name: 'banana-pass',
+        displayName: 'Your banana pass',
+      },
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
+      timeout: 60000,
+    },
+  });
+  const pk = cred.response.getPublicKey && cred.response.getPublicKey();
+  if (!pk) throw new Error('no public key from authenticator');
+  const body = {
+    code: String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    credId: bufToB64u(cred.rawId),
+    pk: bufToB64u(pk),
+    alg: cred.response.getPublicKeyAlgorithm(),
+    clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+  };
+  const res = await fetch(PASS_API + '/link/finish', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error === 'code expired' ? 'that code has expired — make a new one'
+      : e.error === 'bad code' ? 'that code did not match'
+      : 'could not link this device');
+  }
+  const { token, blob } = await res.json();
+  setLink(body.credId, token);
+  if (blob) applyBlob(blob);
+  if (window.gtag) window.gtag('event', 'pass_link_finish');
+  return true;
+}
+
 // "I have a pass" — assert the passkey on this device and merge both worlds
 export async function restorePass() {
   const challenge = await getChallenge();
