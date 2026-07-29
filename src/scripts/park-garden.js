@@ -110,6 +110,12 @@ const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1
 // NEAREST one (walk the last step if needed). Tapping the thing still works.
 const TOOL_RANGE = 110;
 const BED_DIG_REP = 3;         // 🪓 per dig; the bed itself belongs to everyone
+// ⚠️ WORLD UNITS, NOT CSS PIXELS. g-bed.png is 58×88 in the same space the
+// map is 2760×1100 in — sized in px it stayed put while the map shrank, so on a
+// phone the four ditches of a bed grew into each other (Trym) while desktop
+// looked fine. Everything else in the park sizes with pct(); these do too now.
+const BED_ART = [58, 88];
+const CLOD_ART = 7;
 const BED_DIGS_UI = 4;         // ⚠️ mirrors BED_DIGS in worker-rave — the fade ramp
 const BED_FULL_UI = 0.9;       // ⚠️ mirrors BED_FULL — only to SAY how far off it is
 // 💰 DYNAMIC SEED PRICE — base × (1 + held²/25), where held = the plants you
@@ -408,14 +414,14 @@ export function initGarden(ctx) {
       + '</button>';
   }
 
-  function meterRow(icon, label, frac, dry) {
+  function meterRow(icon, label, frac, dry, kind) {
     const f = Math.max(0, Math.min(1, frac));
     const hrs = f * 24;
     const cls = f <= 0.02 ? ' is-out' : f < 0.34 ? ' is-low' : '';
     const say = f <= 0.02 ? dry : hrs < 1 ? 'under an hour left' : Math.round(hrs) + 'h left';
     // big = this is the card's whole point (moisture on a plant, seed in a
     // feeder), so it gets the size to match
-    return '<div class="pk-meter pk-meter--big' + cls + '">'
+    return '<div class="pk-meter pk-meter--big' + (kind ? ' pk-meter--' + kind : '') + cls + '">'
       + '<span class="pk-meter__top"><b>' + icon + ' ' + label + '</b><em>' + say + '</em></span>'
       + '<span class="pk-meter__track"><i style="width:' + Math.round(f * 100) + '%"></i></span>'
       + '</div>';
@@ -476,6 +482,8 @@ export function initGarden(ctx) {
           el.className = 'pk-bedsoil';
           el.style.left = pct(x, W);
           el.style.top = pct(base, H);
+          el.style.width = pct(BED_ART[0], W);
+          el.style.height = pct(BED_ART[1], H);
           // ⚠️ A BED IS GROUND, NOT AN OBJECT — no depth() here. Sorting it into
           // the walker band (100+y) made it swallow anyone standing behind it:
           // the sprite is 88px TALL but sorts on its BASE line, so a banana
@@ -521,10 +529,12 @@ export function initGarden(ctx) {
       c.className = 'pk-clod';
       c.style.left = pct(cx, W);
       c.style.top = pct(cy, H);
+      c.style.width = pct(CLOD_ART, W);
+      c.style.height = pct(CLOD_ART, H);
       c.style.setProperty('--cx', ((Math.random() * 2 - 1) * spread).toFixed(1) + 'px');
       c.style.setProperty('--cy', (-14 - Math.random() * spread * 0.8).toFixed(1) + 'px');
       c.style.setProperty('--cr', Math.round(Math.random() * 640 - 320) + 'deg');
-      c.style.backgroundPosition = (-7 * (k % 3)) + 'px 0';
+      c.style.backgroundPosition = (k % 3) * 50 + '% 0';   // 3 clods on one strip
       c.style.animationDuration = (0.46 + Math.random() * 0.28).toFixed(2) + 's';
       c.style.zIndex = String(100 + Math.round(cy) + 3);
       world.appendChild(c);
@@ -913,7 +923,7 @@ export function initGarden(ctx) {
         ? 'the birds are in — and the house is feeding the park’s health.'
         : 'quiet up there — nobody has stocked it in a day, so the birds moved out.')
       + '</p>'
-      + meterRow('🌾', 'seed in the feeder', leftOf(h.lastStock), 'empty')
+      + meterRow('🌾', 'seed in the feeder', leftOf(h.lastStock), 'empty', 'seed')
       + tallyBtn('pkWho', '🌾', h.stockers || 0, h.slast)
       + actionBtn('pkBhStock', '🌾 stock it', mine ? '' : '+2 REP');
     wireTally('pkWho');
@@ -1416,7 +1426,7 @@ export function initGarden(ctx) {
           : '✨ ready to pick — only its grower can harvest it') + '</p>'
         : '')
       + (s.rot ? '' : meterRow('💧', 'soil moisture',
-        leftOf(s.lastWater || s.plantedAt), 'bone dry'))
+        leftOf(s.lastWater || s.plantedAt), 'bone dry', 'water'))
       + tallyBtn('pkWho', '💧', s.waterers || 0, s.wlast)
       + (ready ? '' : actionBtn('pkWaterBtn', '💧 water it', mine ? '' : '+2 REP'))
       + (mine ? '<p class="pk-gsaved">' + (sd.wearable

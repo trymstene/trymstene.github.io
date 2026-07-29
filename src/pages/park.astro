@@ -258,9 +258,15 @@ const faq = {
       background: #6fd46f; transition: width 0.5s ease, background-color 0.5s ease;
     }
     @media (prefers-reduced-motion: reduce) { .pk-meter__track i { transition: none; } }
-    .pk-meter.is-low .pk-meter__track i { background: #ffc63f; }
+    .pk-meter.is-low .pk-meter__track i,
+    .pk-meter--water.is-low .pk-meter__track i,
+    .pk-meter--seed.is-low .pk-meter__track i { background: #ff9d2e; }
+    .pk-meter.is-low .pk-meter__track i::after,
+    .pk-meter.is-out .pk-meter__track i::after { opacity: 0.35; }
     .pk-meter.is-low .pk-meter__top em { color: #ffc63f; }
-    .pk-meter.is-out .pk-meter__track i { background: #ff5f5f; }
+    .pk-meter.is-out .pk-meter__track i,
+    .pk-meter--water.is-out .pk-meter__track i,
+    .pk-meter--seed.is-out .pk-meter__track i { background: #ff5f5f; }
     .pk-meter.is-out .pk-meter__top em { color: #ff5f5f; }
 
     /* 🪓 A BED THE PARK BROKE OPEN. The core beds are baked into the plate;
@@ -269,8 +275,11 @@ const faq = {
        indistinguishable from one that was always there.
        .is-marked = ground somebody has MARKED OUT but not yet turned: the same
        soil, faded and desaturated, so you can see what it will become. */
+    /* ⚠️ width/height come from JS in WORLD units (pct of the map), like every
+       other sprite here — fixed px did not shrink with the map and the ditches
+       ran into each other on a phone. */
     .pk-bedsoil {
-      position: absolute; width: 58px; height: 88px; transform: translate(-50%, -100%);
+      position: absolute; transform: translate(-50%, -100%);
       background: url('/assets/park/g-bed.png') no-repeat center / contain;
       image-rendering: pixelated; pointer-events: none;
     }
@@ -283,8 +292,8 @@ const faq = {
        soil by the generator, so a burst is the same dirt as the bed. Four per
        dig, and every patch erupts when the last dig lands. */
     .pk-clod {
-      position: absolute; width: 7px; height: 7px; pointer-events: none;
-      background: url('/assets/park/g-clod.png') no-repeat 0 0;
+      position: absolute; pointer-events: none;      /* sized in world units by JS */
+      background: url('/assets/park/g-clod.png') no-repeat 0 0 / 300% 100%;
       image-rendering: pixelated;
       animation: pkClod 0.6s cubic-bezier(0.2, 0.7, 0.5, 1) forwards;
     }
@@ -335,6 +344,34 @@ const faq = {
     .pk-meter--big .pk-meter__top { font-size: 0.86rem; margin-bottom: 0.4rem; }
     .pk-meter--big .pk-meter__track { height: 26px; border-radius: 7px; }
 
+    /* 💧 WATER and 🌾 SEED look like what they are. Both are one repeating
+       gradient on a ::after inside the fill, drifted with TRANSFORM (never
+       background-position) so it stays on the compositor and costs nothing.
+       ⚠️ the amber/red low+empty states still win — the texture is the healthy
+       read, the ramp is the warning, and the warning must never be prettier. */
+    .pk-meter__track i { overflow: hidden; }
+    .pk-meter__track i::after {
+      content: ''; position: absolute; inset: 0; left: -50%; width: 200%;
+    }
+    .pk-meter--water .pk-meter__track i { background: #2f8fe0; }
+    .pk-meter--water .pk-meter__track i::after {
+      background: repeating-linear-gradient(72deg,
+        rgba(255, 255, 255, 0.30) 0 3px, rgba(255, 255, 255, 0) 3px 11px);
+      animation: pkFlow 2.6s linear infinite;
+    }
+    .pk-meter--seed .pk-meter__track i { background: #e8b53a; }
+    .pk-meter--seed .pk-meter__track i::after {
+      background:
+        repeating-linear-gradient(38deg, rgba(90, 55, 0, 0.34) 0 2px, rgba(0, 0, 0, 0) 2px 5px),
+        repeating-linear-gradient(-52deg, rgba(255, 240, 190, 0.30) 0 2px, rgba(0, 0, 0, 0) 2px 6px);
+      animation: pkGrain 9s linear infinite;
+    }
+    @keyframes pkFlow { to { transform: translateX(11px); } }
+    @keyframes pkGrain { to { transform: translateX(6px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .pk-meter__track i::after { animation: none; }
+    }
+
     /* 💧 the tally: icon + number, nothing else. Tap for the names. */
     .pk-tally {
       display: inline-flex; align-items: center; gap: 6px;
@@ -361,17 +398,22 @@ const faq = {
     .pk-tallylist__none { opacity: 0.6; font-style: italic; }
 
     /* ⭐ the action: the verb big, the reward as a pill you can SEE coming */
+    /* 🍌 the main action is BANANA YELLOW everywhere — one colour means
+       "this is the thing to press" across every card in the world. */
     .pk-act {
       display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
       width: 100%; padding: 0.7rem 0.8rem; cursor: pointer;
-      border: 3px solid #000; background: #7db9ff; color: #10240f;
-      font-family: inherit; box-shadow: 3px 3px 0 #000;
+      border: 3px solid #000; color: #241c00; font-family: inherit;
+      background: linear-gradient(#ffe14d, #f2c012);
+      box-shadow: 3px 3px 0 #000;
     }
     .pk-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
     .pk-act__verb { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+    /* the reward reads as a badge PINNED to the button — dark on the yellow so
+       it is the second thing your eye lands on, never the first */
     .pk-act__rew {
-      padding: 4px 9px; border: 2px solid #10240f; border-radius: 999px;
-      background: #2fd06a; color: #06240f; white-space: nowrap;
+      padding: 4px 9px; border: 2px solid #000; border-radius: 999px;
+      background: #12331d; color: #6fe38a; white-space: nowrap;
       font-size: 0.78rem; font-weight: 800; letter-spacing: 0.4px;
       box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
     }
