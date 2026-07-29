@@ -1852,20 +1852,42 @@ function init() {
     const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
     return h ? h + 'h ' + m + 'm ' + sec + 's' : m ? m + 'm ' + sec + 's' : sec + 's';
   }
+  // 🎮 THE NIGHT BADGES — the park's and the bay's day badges, in the club's
+  // neon. Icon + number in a pill that is the size of its own content, and the
+  // WORDS behind a tap (a title attribute is invisible on a phone).
+  // ⚠️ the floor board above is deliberately NOT touched (Trym): it is an
+  // endurance ranking with status icons and club titles, not a roster, and that
+  // is the rave's own thing.
+  let statPick = -1;
+  const STAT_HINT = 'tap a badge to see what it counts';
   function refreshStats() {
     const s = el('rvStats');
     if (!s) return;
-    const one = (n, sing, plur) => '<span><b>' + n + '</b> ' + (n === 1 ? sing : plur) + '</span>';
+    const stat = (icon, val, cap, cls) => '<button type="button" class="rv-stat'
+      + (cls ? ' ' + cls : '') + '" data-cap="' + cap + '"><i>' + icon + '</i><b>' + val + '</b></button>';
     s.innerHTML =
-      '<span class="rv-stats__time" id="rvClubTime">⏱ <b>' + clubTime() + '</b> in the club</span>' +
-      '<span><b>' + tonight.jelly + '</b> jelly</span>' +
-      one(tonight.pickups, 'pickup', 'pickups') +
-      one(tonight.fives, 'fistbump', 'fistbumps') +
-      one(tonight.jellytimes, 'jelly time', 'jelly times');
+      stat('⏱', clubTime(), 'how long you have been on the floor', 'is-time')
+      + stat('🍮', tonight.jelly, 'jelly you have caught tonight — the floor’s own XP')
+      + stat('🎁', tonight.pickups, 'items you picked up off the floor')
+      + stat('👊', tonight.fives, 'fistbumps with other bananas')
+      + stat('🕺', tonight.jellytimes, 'jelly times you danced through')
+      + '<p class="rv-statcap" id="rvStatCap">' + STAT_HINT + '</p>';
+    const pills = [...s.querySelectorAll('.rv-stat')];
+    const cap = el('rvStatCap');
+    const paint = () => {
+      pills.forEach((p2, k) => p2.classList.toggle('is-on', k === statPick));
+      if (cap) cap.textContent = statPick < 0 ? STAT_HINT : (pills[statPick] || {}).dataset.cap || STAT_HINT;
+    };
+    pills.forEach((btn, k) => {
+      btn.addEventListener('click', () => { statPick = statPick === k ? -1 : k; paint(); });
+    });
+    paint();
   }
-  setInterval(() => { // the counter TICKS — watching it climb is the point
-    const t = el('rvClubTime');
-    if (t) t.innerHTML = '⏱ <b>' + clubTime() + '</b> in the club';
+  // ⚠️ the clock ticks IN PLACE — re-rendering the whole strip every second
+  // would throw away the badge you just tapped (and its caption with it)
+  setInterval(() => {
+    const t = el('rvStats') && el('rvStats').querySelector('.rv-stat.is-time b');
+    if (t) t.textContent = clubTime();
   }, 1000);
   // the little "+1" that makes a pickup FEEL counted — floats off the spot
   function floatPlus(x, y, text) {
