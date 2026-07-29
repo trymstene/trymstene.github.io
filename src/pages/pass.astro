@@ -19,10 +19,17 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-head h1 { margin: 0 0 0.3rem; }
     .ps-head p { margin: 0 0 1.2rem; opacity: 0.8; max-width: 60ch; }
 
-    /* THE PROFILE HEADER — the pass is the dashboard's avatar: it stays put
-       while the tabs below swap. Card left, share + hint right on desktop. */
-    .ps-profile { display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: flex-start; }
-    .ps-profile__side { flex: 1 1 220px; min-width: 200px; }
+    /* THE TOP — login left, the pass small on the right. Login first in the DOM
+       so it is also first on a phone, where the columns stack. */
+    .ps-top {
+      display: grid; gap: 1.5rem; align-items: start;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+      margin-bottom: 1.6rem;
+    }
+    @media (max-width: 780px) { .ps-top { grid-template-columns: 1fr; gap: 1.2rem; } }
+    .ps-top__main { min-width: 0; }
+    .ps-top__pass { min-width: 0; }
+    .ps-open { margin-top: 0.7rem; width: 100%; }
 
     /* THE OFFICIAL CARD — the share-card's yellow identity, live on the page
        (banana-yellow face, ink header strip, punched hole, serial + barcode,
@@ -63,6 +70,28 @@ const description = 'Your membership card to the banana world: the badges you ha
       pointer-events: none;
     }
     .ps-stamp::before { content: ''; position: absolute; inset: 2px; border: 2px solid #e22020; }
+
+    /* 🎫 THE MINI PASS — the same card, shrunk on purpose. ⚠️ these rules must
+       stay AFTER the base .ps-official ones: `canvas#psSig` ties on specificity,
+       so source order is what decides the size. */
+    .ps-official--mini { flex: none; max-width: 100%; box-shadow: 5px 5px 0 var(--ink); cursor: pointer; }
+    .ps-official--mini:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+    .ps-official--mini .ps-official__head { margin: 5px; padding: 0.34rem 0.55rem; font-size: 0.52rem; letter-spacing: 0.09em; }
+    .ps-official--mini .ps-official__hole { width: 10px; height: 10px; box-shadow: 0 0 0 2px var(--banana); }
+    .ps-official--mini .ps-official__body { padding: 0.45rem 0.6rem 0.25rem; gap: 0.55rem; }
+    .ps-official--mini canvas#psSig { width: 68px; height: 68px; }
+    .ps-official--mini .ps-card__name { font-size: 0.92rem; }
+    .ps-official--mini .ps-card__since { font-size: 0.55rem; margin-bottom: 0.3rem; }
+    .ps-official--mini .ps-rankchip { font-size: 0.62rem; padding: 0.18rem 0.4rem; }
+    .ps-official--mini .ps-rankbar { max-width: 140px; height: 5px; margin: 4px 0 2px; }
+    .ps-official--mini .ps-ranknote { font-size: 0.55rem; }
+    .ps-official--mini .ps-card__patches { display: none; }   /* the full card has them */
+    .ps-official--mini .ps-official__foot { padding: 0 0.6rem 0.5rem; }
+    .ps-official--mini #psBarcode { width: 84px; height: 15px; }
+    .ps-official--mini .ps-serial { font-size: 0.55rem; }
+    .ps-official--mini .ps-stamp { right: 8px; bottom: 26px; font-size: 0.58rem; padding: 2px 6px; border-width: 2px; }
+    .ps-official--mini .ps-stamp::before { inset: 1px; border-width: 1px; }
+    .ps-official--mini .ps-nameedit { font-size: 0.7rem; }
 
     .ps-actions { margin: 0 0 0; display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
@@ -149,17 +178,14 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-notice__date { display: block; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; margin-top: 0.25rem; }
     .ps-ov-block .ps-section { margin: 0; }
 
-    /* 🔑 YOUR LOGIN — the passkey identity strip. Sits right under the card and
-       is styled APART from the data panels (warm callout + key motif) so it
-       reads as "this is you / your sign-in", not another stats section. */
-    .ps-id { margin: 1.1rem 0 1.5rem; }
-    .ps-sync { margin: 0; border: var(--line); box-shadow: 5px 5px 0 var(--ink);
-      background: linear-gradient(180deg, #fff7d0, #ffefa6); padding: 0.95rem 1.05rem; max-width: 640px; }
-    .ps-sync__head { display: flex; gap: 0.7rem; align-items: flex-start; }
-    .ps-sync__key { font-size: 1.7rem; line-height: 1.1; flex: none; }
-    .ps-sync h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+    /* 🔑 YOUR LOGIN — ⚠️ NO BOX. This was a light-yellow callout tray, which is
+       right for a panel halfway down a page and wrong for the first thing on it:
+       the top of the page needs no container to say "start here". */
+    .ps-sync { margin: 0; max-width: 34rem; }
     .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
     .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    /* the kicker doubles as the status chip — pink while out, green once in */
+    .kicker.ps-kicker--in { background: #2fd06a; }
     /* ✂️ THE PERKS ARE PILLS, NOT PROSE — three glanceable words each. Text
        nobody reads has a conversion rate, and it is zero ([[copy-cro-doctrine]]). */
     .ps-perks {
@@ -211,8 +237,7 @@ const description = 'Your membership card to the banana world: the badges you ha
       border: 3px solid #000; background: #fffdf5; color: #111;
     }
     .ps-sync__note { margin: 0.5rem 0 0 !important; font-size: 0.74rem !important; opacity: 0.72; min-height: 1em; }
-    /* linked = done: calm it right down to a slim confirmation, no buttons */
-    .ps-sync--linked { background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.7rem 0.9rem; }
+    /* linked = done: nothing to do, so nothing shouts */
     .ps-sync--linked .ps-sync__row,
     .ps-sync--linked .ps-perks,
     .ps-sync--linked .ps-mail,
@@ -221,8 +246,6 @@ const description = 'Your membership card to the banana world: the badges you ha
        classes so it wins regardless of rule order. */
     .ps-sync--linked.ps-sync--addmail .ps-mail { display: flex; }
     .ps-out { margin-top: 0.7rem; }
-    .ps-sync--linked .ps-sync__key { font-size: 1.2rem; }
-    .ps-sync--linked h2 { font-size: 0.9rem; }
     .ps-device--id { margin: 0.6rem 0 0; }
 
     .ps-section h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
@@ -309,73 +332,34 @@ const description = 'Your membership card to the banana world: the badges you ha
   </style>
 
   <div class="ps-wrap">
-    <div class="ps-head">
-      <p class="kicker">Members only (everyone's a member)</p>
-      <h1>your banana pass</h1>
-      <!-- ⚠️ this used to say "no account, no password". Half of it is still
-           true and the other half stopped being true the day email shipped. -->
-      <p>Everything you've done in the banana world, in one place. Log in with your email — there's no password to remember.</p>
-    </div>
-
-    <!-- ── PROFILE HEADER: the pass (always on) + share ── -->
-    <div class="ps-profile">
-      <div class="ps-official">
-        <div class="ps-official__head">
-          <span>★ Banana World · Official Membership Pass</span>
-          <span class="ps-official__hole" aria-hidden="true"></span>
-        </div>
-        <div class="ps-official__body">
-          <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
-          <div class="ps-official__meta">
-            <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
-              class="ps-nameedit" id="psNameEdit" type="button"
-              title="Write your own name on the pass" aria-label="Write your own name on the pass"><PixelArtIcon name="edit" size="16px" /></button></p>
-            <p class="ps-card__since" id="psSince">member since tonight</p>
-            <div id="psRank"></div>
-            <div class="ps-card__patches" id="psCardPatches"></div>
-          </div>
-        </div>
-        <div class="ps-official__foot">
-          <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
-          <span class="ps-serial" id="psSerial"></span>
-        </div>
-        <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
-      </div>
-      <div class="ps-profile__side">
-        <div class="ps-actions">
-          <button class="btn btn--light" id="psShareCard" type="button"><PixelArtIcon name="camera" size="18px" /> Share my pass</button>
-        </div>
-        <p class="ps-device">✏️ Tap the pencil to put your own name on the pass. Family-friendly names only — the club reserves the right to re-name rule-breakers 🍌</p>
-      </div>
-    </div>
-
-    <!-- ── YOUR LOGIN: the pass IS the identity. Surfaced right under the card
-         so a first-time visitor meets the save/restore choice BEFORE the
-         dashboard — and styled apart from the data panels on purpose. ── -->
-    <section class="ps-id" aria-label="Log in">
-      <div class="ps-sync" id="psSync" hidden>
-        <div class="ps-sync__head">
-          <span class="ps-sync__key" aria-hidden="true">✉️</span>
-          <div>
-            <h2 id="psSyncTitle">Log in to Banana World</h2>
-            <!-- ⚠️ ONE SENTENCE, ONE FIELD, ONE BUTTON. This panel used to ask
-                 whether you had a pass and whether you wanted to save one —
-                 nobody thinks in those words. The benefits are pills, not
-                 prose ([[copy-cro-doctrine]]): shorter AND more read. -->
-            <p id="psSyncLead">Type your email and click the link we send you.</p>
-            <ul class="ps-perks" id="psPerks">
-              <li>No password</li>
-              <li>Any device</li>
-              <li>Keeps your bananas &amp; badges</li>
-            </ul>
-          </div>
-        </div>
-        <form class="ps-mail" id="psMailForm">
-          <input class="ps-mail__in" id="psMailIn" type="email" name="email" required
-                 autocomplete="email" inputmode="email" spellcheck="false" maxlength="160"
-                 placeholder="you@email.com" aria-label="Your email" />
-          <button class="btn btn--dark" id="psMailGo" type="submit">Log in</button>
-        </form>
+    <!-- ── THE TOP ─────────────────────────────────────────────────────────
+         Logging in IS the top of the page — no panel, no box, no light-yellow
+         tray halfway down. The pass sits alongside as the thing you are logging
+         in to: small by default, one tap to see it full size.
+         ⚠️ THE HEADING SWAPS WITH STATE. Logged out the page is a login page
+         ("log in to banana world"); logged in it is your pass. The page is
+         noindex, so nothing about that is an SEO decision. ── -->
+    <div class="ps-top">
+      <div class="ps-top__main ps-head">
+        <p class="kicker" id="psKicker">Members only (everyone's a member)</p>
+        <h1 id="psSyncTitle">log in to banana world</h1>
+        <p id="psSyncLead">Type your email — we send you a link to click.</p>
+        <div class="ps-sync" id="psSync" hidden>
+          <!-- ⚠️ ONE SENTENCE, ONE FIELD, ONE BUTTON. This used to ask whether
+               you had a pass and whether you wanted to save one — nobody thinks
+               in those words. The perks are pills, not prose
+               ([[copy-cro-doctrine]]): shorter AND more read. -->
+          <ul class="ps-perks" id="psPerks">
+            <li>No password</li>
+            <li>Any device</li>
+            <li>Keeps everything you've made</li>
+          </ul>
+          <form class="ps-mail" id="psMailForm">
+            <input class="ps-mail__in" id="psMailIn" type="email" name="email" required
+                   autocomplete="email" inputmode="email" spellcheck="false" maxlength="160"
+                   placeholder="you@email.com" aria-label="Your email" />
+            <button class="btn btn--dark" id="psMailGo" type="submit">Log in</button>
+          </form>
         <p class="ps-sync__note" id="psSyncNote"></p>
         <!-- passkeys are a SHORTCUT now, not a fork you have to understand -->
         <div class="ps-alt" id="psAlt" hidden>
@@ -405,12 +389,45 @@ const description = 'Your membership card to the banana world: the badges you ha
             <button class="btn btn--dark" id="psCodeGo" type="button">Link</button>
           </div>
         </div>
-        <div class="ps-out" id="psOut" hidden>
-          <button class="ps-alt__toggle" id="psLogout" type="button">Log out</button>
+          <div class="ps-out" id="psOut" hidden>
+            <button class="ps-alt__toggle" id="psLogout" type="button">Log out</button>
+          </div>
         </div>
+        <p class="ps-device ps-device--id" id="psDevice">🎫 Everything is saved on this device. Turn on JavaScript to log in and carry it anywhere.</p>
       </div>
-      <p class="ps-device ps-device--id" id="psDevice">🎫 Everything is saved on this device. Turn on JavaScript to log in and carry it anywhere.</p>
-    </section>
+
+      <!-- ── THE PASS, SMALL ────────────────────────────────────────────────
+           Secondary to the login and sized like it: header strip, banana, name,
+           rank. The barcode, patches and stamp belong to the FULL card, which is
+           one tap away — the same modal that shares it, so there is one "big
+           pass" in the product rather than two. -->
+      <aside class="ps-top__pass">
+        <div class="ps-official ps-official--mini" id="psCardMini" title="Open my pass">
+          <div class="ps-official__head">
+            <span>★ Banana World · Membership Pass</span>
+            <span class="ps-official__hole" aria-hidden="true"></span>
+          </div>
+          <div class="ps-official__body">
+            <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
+            <div class="ps-official__meta">
+              <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
+                class="ps-nameedit" id="psNameEdit" type="button"
+                title="Write your own name on the pass" aria-label="Write your own name on the pass"><PixelArtIcon name="edit" size="16px" /></button></p>
+              <p class="ps-card__since" id="psSince">member since tonight</p>
+              <div id="psRank"></div>
+              <div class="ps-card__patches" id="psCardPatches"></div>
+            </div>
+          </div>
+          <div class="ps-official__foot">
+            <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
+            <span class="ps-serial" id="psSerial"></span>
+          </div>
+          <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
+        </div>
+        <button class="btn btn--light ps-open" id="psShareCard" type="button"><PixelArtIcon name="card" size="18px" /> Open my pass</button>
+        <p class="ps-device">✏️ Tap the pencil to name it — family-friendly only 🍌</p>
+      </aside>
+    </div>
 
     <!-- ── TAB BAR ── -->
     <div class="ps-tabs" role="tablist" aria-label="Your pass sections">

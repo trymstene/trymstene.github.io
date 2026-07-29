@@ -787,6 +787,17 @@ function openShareModal(cv) {
 function initShare(outfit, pass, extra) {
   const btn = el('psShareCard');
   if (!btn) return;
+  // 🎫 the mini card IS the button for its own full-size version — one "big
+  // pass" in the product (the shareable one), reached two ways.
+  // ⚠️ not a <button> wrapper: the name-edit pencil lives inside the card, and
+  // a button inside a button is invalid and unclickable.
+  const mini = el('psCardMini');
+  if (mini) {
+    mini.addEventListener('click', (ev) => {
+      if (ev.target.closest('#psNameEdit') || ev.target.closest('#psNameInput')) return;
+      btn.click();
+    });
+  }
   const closeShare = () => { el('psShareModal').hidden = true; };
   if (el('psShareModal')) {
     el('psShareClose').addEventListener('click', closeShare);
@@ -798,7 +809,7 @@ function initShare(outfit, pass, extra) {
     if (busy) return;
     busy = true;
     const was = btn.innerHTML;
-    btn.innerHTML = iconSvg('camera', { size: 18 }) + ' Developing…';
+    btn.innerHTML = was.replace('Open my pass', 'Opening…');
     try {
       const cv = await composeCard(outfit, pass, extra);
       openShareModal(cv);
@@ -870,9 +881,17 @@ function initSync() {
   };
   const showLinked = () => {
     box.classList.add('ps-sync--linked');
+    // ⚠️ THE PAGE CHANGES WHAT IT IS. Logged out it is a login page; logged in
+    // the login is finished business, so the heading hands the page back to the
+    // pass and the status moves into the kicker chip.
     const title = el('psSyncTitle');
-    if (title) title.textContent = '✅ You’re logged in';
-    el('psSyncLead').textContent = 'Everything you make and win saves to your account automatically.';
+    if (title) title.textContent = 'your banana pass';
+    const kick = el('psKicker');
+    if (kick) {
+      kick.textContent = 'Logged in ✓';
+      kick.classList.add('ps-kicker--in');
+    }
+    el('psSyncLead').textContent = 'Everything you make and win saves automatically.';
     note.textContent = '';
     const lk = el('psLink');
     if (lk) lk.hidden = false;

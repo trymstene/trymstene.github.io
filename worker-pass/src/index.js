@@ -382,6 +382,43 @@ const MAIL_DAILY_CAP = 90;             // ⚠️ deliberately UNDER the provider
 const MAIL_RE = /^[^\s@]{1,64}@[^\s@.]+(\.[^\s@.]+)+$/;
 const normMail = (e) => String(e || '').trim().toLowerCase();
 
+// 🍌 THE LOGIN MAIL — it is the only piece of the world that arrives somewhere
+// we do not control, so it has to carry the brand on its own.
+// ⚠️ TABLES AND INLINE STYLES ON PURPOSE. Mail clients are not browsers: no
+// stylesheets, no flex/grid, no external CSS. This looks like 2003 markup
+// because that is what survives Gmail, Outlook and Apple Mail alike.
+// ⚠️ IT MUST READ FINE WITH IMAGES OFF — most clients block them by default,
+// so the banana is decoration with alt text and never the message.
+// ⚠️ AND THE PLAIN-TEXT PART STAYS. A mail with no text/plain alternative
+// looks like spam to filters, and the raw URL is the fallback when a button
+// cannot be tapped.
+const mailHtml = (link) => `<!doctype html>
+<html lang="en"><body style="margin:0;padding:0;background:#fdf9ec;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fdf9ec;">
+<tr><td align="center" style="padding:26px 14px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;background:#ffe135;border:4px solid #111111;">
+    <tr><td style="background:#111111;color:#ffe135;padding:9px 16px;font:bold 11px Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;">&#9733; Banana World</td></tr>
+    <tr><td align="center" style="padding:22px 24px 0;">
+      <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" width="88" height="88" alt="" style="display:block;border:0;">
+    </td></tr>
+    <tr><td align="center" style="padding:14px 24px 0;font:bold 23px/1.2 Arial,Helvetica,sans-serif;color:#111111;">Here&rsquo;s your way in</td></tr>
+    <tr><td align="center" style="padding:8px 24px 0;font:15px/1.5 Arial,Helvetica,sans-serif;color:#111111;">Tap the button and you&rsquo;re logged in &mdash; no password needed.</td></tr>
+    <tr><td align="center" style="padding:20px 24px 2px;">
+      <a href="${link}" style="display:inline-block;background:#111111;color:#ffe135;font:bold 16px Arial,Helvetica,sans-serif;padding:15px 28px;text-decoration:none;">Log me in &rarr;</a>
+    </td></tr>
+    <tr><td align="center" style="padding:16px 24px 22px;font:12px/1.55 Arial,Helvetica,sans-serif;color:#4a4326;">
+      Works once, for 15 minutes.<br>Did not ask for this? Ignore it &mdash; nothing happens.
+    </td></tr>
+  </table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;">
+    <tr><td style="padding:14px 4px 0;font:11px/1.6 Arial,Helvetica,sans-serif;color:#777777;">
+      Button not working? Paste this into your browser:<br>
+      <span style="word-break:break-all;color:#777777;">${link}</span>
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>`;
+
 // the sender is pluggable and FAILS CLOSED — no key, no mail, no pretending
 async function sendLink(env, to, link) {
   if (!env.RESEND_KEY || !env.MAIL_FROM) return { ok: false, why: 'not configured' };
@@ -395,7 +432,10 @@ async function sendLink(env, to, link) {
       // inbox — people DO reply to login mail, usually to ask for help.
       ...(env.MAIL_REPLY ? { reply_to: env.MAIL_REPLY } : {}),
       to: [to],
-      subject: 'Your link into Banana World',
+      // the subject names the thing they just pressed, so it is findable in a
+      // busy inbox and obviously not marketing
+      subject: 'Log in to Banana World',
+      html: mailHtml(link),
       text: `Tap to log in:\n\n${link}\n\nThe link works once and expires in 15 minutes.\n`
         + `Did not ask for this? Ignore it — nothing happens.\n`,
     }),
