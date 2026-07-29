@@ -11,7 +11,7 @@
 // canvas, no element per drop, and NOTHING added to the rAF loop.
 // ⚠️ They live in .pk-view, NOT .pk-world: rain falls on the viewport, not on
 // the map, so it must not pan with the camera.
-import { weatherAt } from '../lib/world.js';
+import { weatherAt, seedRand } from '../lib/world.js';
 import { passStat } from '../lib/banana-pass.js';
 import { track } from './park-util.js';
 
@@ -36,6 +36,10 @@ export function initWeather(ctx) {
 
   let kind = 'clear';
   const puddles = [];
+  // one seed per DAY per tier — the same rain leaves the same puddles for
+  // everybody, and they are still somewhere new tomorrow
+  const wxSeed = () => Math.floor(Date.now() / 86400000) * 7919
+    + { clear: 0, drizzle: 1, heavy: 2, storm: 3 }[kind] * 104729;
 
   // 🍂 the storm's debris: five leaves driven across the VIEW (not the map),
   // each on its own duration and delay so they never march in step. Built once
@@ -78,10 +82,19 @@ export function initWeather(ctx) {
   // a while afterwards. Walk through one to splash it away (the acorn
   // grammar). ⚠️ rep only, NEVER health — puddles appear in drizzle, and
   // drizzle costing health would make the cosmetic tier not cosmetic.
-  function puddleAdd() {
-    const g = ctx.puddleSpots[Math.floor(Math.random() * ctx.puddleSpots.length)];
+  // ⚠️ SEEDED, NOT RANDOM. These were Math.random() per client, so every
+  // visitor saw a different set and they jumped to new spots on every reload
+  // (Trym: "ponds move around for each refresh?"). The park is shared and the
+  // weather clock is a pure function of time — the puddles it leaves have to
+  // be too, or the same rain looks like a different park to each person.
+  function puddleAdd(n) {
+    const spots = ctx.puddleSpots;
+    let g = null;
+    for (let k = 0; k < 12 && !g; k++) {      // walk the seed until one sticks
+      const c = spots[Math.floor(seedRand(0x9d7 + wxSeed() + n * 977 + k * 31) * spots.length)];
+      if (c && !puddles.some((p) => Math.hypot(p.x - c[0], p.y - c[1]) < 90)) g = c;
+    }
     if (!g) return;
-    if (puddles.some((p) => Math.hypot(p.x - g[0], p.y - g[1]) < 90)) return;
     const el = document.createElement('div');
     el.className = 'pk-puddle';
     el.style.left = pct(g[0], W);
@@ -118,7 +131,7 @@ export function initWeather(ctx) {
     wrap.className = 'pk-wx' + (k === 'clear' ? '' : ' is-' + k);
     // puddles build up while it rains and are left behind when it stops
     const want = PUDDLES[k] || 0;
-    while (puddles.length < want) puddleAdd();
+    while (puddles.length < want) puddleAdd(puddles.length);
     // 🐔🐦🦋 the park reacts. Every one of these is an EXISTING state machine
     // being biased — shelter targets, a roster multiplier, the on/off switches
     // the bloom phases already drive — not new behaviour bolted on.

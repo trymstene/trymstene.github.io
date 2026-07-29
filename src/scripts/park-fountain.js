@@ -1,8 +1,7 @@
-// ⛲ THE WISHING FOUNTAIN + the 🪙 coin window it stages. Split from
+// ⛲ THE WISHING FOUNTAIN. Split from
 // banana-park.js (P5); wired through the shared ctx (+ the garden API for
 // the shared panel). The seed VOUCHER lives here (the fountain grants it,
 // the garden spends it — park-garden.js imports the helpers).
-import { poofInto, seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
 import { passStat } from '../lib/banana-pass.js';
 import { FOUNTAIN } from './park-geo.js';
 import { track } from './park-util.js';
@@ -61,7 +60,12 @@ export function initFountain(ctx, garden) {
   let tossTracked = false, tossBusy = false;
   let wishIdx = Math.floor(Math.random() * WISDOM.length);
   function tapFountain(wx, wy) {
-    if (Math.hypot(wx - TOSS_AT.x, wy - TOSS_AT.y) > 80) return false;
+    // ⚠️ THE BASIN, NOT AN 80px BUBBLE. The old radius reached halfway across
+    // the plaza, so walking past the fountain kept opening the wish card and
+    // you had to dismiss it every time (Trym). Now it is the bowl you can
+    // actually reach over — the statue's tall stone is not a tap target.
+    if (Math.abs(wx - TOSS_AT.x) > 46) return false;
+    if (wy < TOSS_AT.y - 30 || wy > TOSS_AT.y + 32) return false;
     if (Math.hypot(pos.x - TOSS_AT.x, pos.y - TOSS_AT.y) < 120) { openWishCard(); return true; }
     pendingToss = true;
     tgt.x = TOSS_AT.x;
@@ -145,73 +149,27 @@ export function initFountain(ctx, garden) {
   // ---- 🪙 THE COIN WINDOW — the world clock, staged diegetically ----------
   // Same clock, odds and `bc-win` claim key as the club floor / old stand /
   // bay (world.js — no double-dipping). Only the STAGING is the park's own:
-  // the coin washes up on the FOUNTAIN'S RIM with a splash — a tossed wish
-  // come back. Park sick (phases 0-1) = the fountain is dry: no splash, the
-  // coin just glints in the dry bowl. Still walk-over to claim.
-  const coinWinEl = document.createElement('div');
-  coinWinEl.className = 'pk-coin';
-  coinWinEl.noCull = true;      // owns its own display — the sweep keeps off it
-  coinWinEl.style.display = 'none';
-  world.appendChild(coinWinEl);
-  let coinLive = null, coinShownWin = -1;
-  let coinWinClaimed = -1;
-  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
-  function rimSpotFor(w2) {   // a spot on the basin's front rim, per window
-    return {
-      x: FOUNTAIN[0] - 52 + seedRand(0x51ab + w2 * 2) * 104,
-      y: FOUNTAIN[1] + 24 + seedRand(0x51ab + w2 * 2 + 1) * 12,
-    };
-  }
+  // 🪙 THE FOUNTAIN-RIM COIN WINDOW IS GONE (Trym: "the statue shouldnt drop
+  // coins"). It staged a claimable coin on the basin every window, which made
+  // the statue a faucet you could keep coming back to — and re-collect from,
+  // since the claim rides one shared localStorage key across the whole world.
+  // ⚠️ The park's coin income is now EGGS and weed roots only. If the park
+  // ever needs a faucet again, put it somewhere that is not scenery: a thing
+  // you find, not a thing you stand next to. The rave keeps its own window.
+  const coinWinTick = () => {};
+
+  // ✨ the splash a TOSSED wish makes — this is the fountain's own effect and
+  // stays; it was only ever housed next to the coin window.
   function coinSplash(x, y) {
     if (ctx.phase() < 2) return;   // dry bowl — nothing to splash with
-    const s = document.createElement('div');
-    s.className = 'pk-splash';
-    s.innerHTML = '<i></i><i></i><i></i>';
-    s.style.left = pct(x, W);
-    s.style.top = pct(y, H);
-    depth(s, y + 1);
-    world.appendChild(s);
-    setTimeout(() => s.remove(), 800);
-  }
-  function coinWinTick() {
-    const t = Date.now() / 1000;
-    const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
-    const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
-    if (cPh < COIN_WAIT && coinWinClaimed !== cWin) {
-      const cs = rimSpotFor(cWin);
-      coinWinEl.className = 'pk-coin pk-coin--' + coinAmountFor(cWin);
-      coinWinEl.style.display = '';
-      coinWinEl.style.left = pct(cs.x, W);
-      coinWinEl.style.top = pct(cs.y, H);
-      depth(coinWinEl, cs.y);
-      coinLive = { x: cs.x, y: cs.y, win: cWin };
-      if (coinShownWin !== cWin) {   // fresh window → the wash-up moment
-        coinShownWin = cWin;
-        coinSplash(cs.x, cs.y);
-        float(cs.x, cs.y - 14, '✦');
-      }
-    } else {
-      // unclaimed windows leave in the smoke; claimed ones already vanished
-      if (coinLive && coinWinClaimed !== coinLive.win && coinWinEl.style.display !== 'none') {
-        poofInto(world, 'pk-poof', coinLive.x / W * 100, coinLive.y / H * 100);
-      }
-      coinWinEl.style.display = 'none';
-      coinLive = null;
-    }
-    // the catch: walk into it — same monotonic wallet as everywhere
-    if (coinLive && Math.hypot(pos.x - coinLive.x, pos.y - coinLive.y) < 44) {
-      const n = coinAmountFor(coinLive.win);
-      coinWinClaimed = coinLive.win;
-      try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
-      passStat('coins_earned', n);
-      refreshHud();
-      float(coinLive.x, coinLive.y - 16, '+' + n);
-      toast(ctx.phase() >= 2 ? '🪙 someone’s wish washed up — yours now'
-        : '🪙 an old wish in the dry bowl — yours now', 3000);
-      track('rave_coin', { n, at: 'park' });
-      coinWinEl.style.display = 'none';
-      coinLive = null;
-    }
+    const sp = document.createElement('div');
+    sp.className = 'pk-splash';
+    sp.innerHTML = '<i></i><i></i><i></i>';
+    sp.style.left = pct(x, W);
+    sp.style.top = pct(y, H);
+    depth(sp, y + 1);
+    world.appendChild(sp);
+    setTimeout(() => sp.remove(), 800);
   }
 
   return {

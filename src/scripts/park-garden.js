@@ -517,6 +517,22 @@ export function initGarden(ctx) {
     applyGarden(r);
   }
 
+  // 🏷 THE CHORE PILL — a chore has to name itself. The litter sprites are
+  // tiny and the algae is a smudge on water: a bare "+2" told you something
+  // happened but not WHAT, so you could not learn the park from playing it
+  // (Trym). One element, one timer, gone in a second.
+  function pill(x, y, label, plus) {
+    const d = document.createElement('div');
+    d.className = 'pk-pill';
+    d.innerHTML = '<span>' + label + '</span>'
+      + (plus ? '<b>' + plus + '</b>' : '');
+    d.style.left = pct(x, W);
+    d.style.top = pct(y, H);
+    d.style.zIndex = String(100 + Math.round(y) + 40);
+    world.appendChild(d);
+    setTimeout(() => d.remove(), 1500);
+  }
+
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
       if (!bedOpen(i)) return;
@@ -739,7 +755,7 @@ export function initGarden(ctx) {
     poofInto(world, 'pk-poof', a2.x / W * 100, (a2.y - 8) / H * 100);
     passStat('rep', 1);
     refreshHud();
-    float(a2.x, a2.y - 14, '+1');
+    pill(a2.x, a2.y - 16, '🫧 algae skimmed', '+1');
     if (!algaeTracked) { algaeTracked = true; track('park_algae'); }
     applyGarden(await gFetch('/algae', { id, pass: worldSid() }));
   }
@@ -944,6 +960,15 @@ export function initGarden(ctx) {
       if (!seen.has(id)) { t.el.remove(); trash.delete(id); }   // picked elsewhere
     });
   }
+  // 🥚 AUTO-PICKUP. An egg is a FIND, not a chore — tapping one was an
+  // extra step between spotting it and getting it (Trym). Walk over it and it
+  // is yours; the tap path still works for anyone reaching across a bed.
+  function eggTick() {
+    if (eggBusy) return;
+    for (const [id, e] of eggs) {
+      if (Math.hypot(pos.x - e.x, (pos.y - 6) - e.y) < 34) { claimEgg(id); return; }
+    }
+  }
   function trashTick() {
     trash.forEach((t, id) => {
       if (Math.hypot(pos.x - t.x, (pos.y - 6) - t.y) > 32) return;
@@ -952,7 +977,7 @@ export function initGarden(ctx) {
       setTimeout(() => t.el.remove(), 360);
       passStat('rep', 2);
       refreshHud();
-      float(t.x, t.y - 14, '+2');
+      pill(t.x, t.y - 16, '🗑 litter cleared', '+2');
       if (!trashTracked) { trashTracked = true; track('park_trash'); }
       gFetch('/trash', { id, pass: worldSid() }).then(applyGarden);
     });
@@ -1452,6 +1477,7 @@ export function initGarden(ctx) {
   }
   let pendingGround = false;
   function gardenTick() {
+    eggTick();
     if (pendingGround && bedPending) {
       const m = bedMid(bedPending.bed);
       if (m && Math.hypot(pos.x - m[0], pos.y - m[1]) < 95) { pendingGround = false; breakGround(); }
