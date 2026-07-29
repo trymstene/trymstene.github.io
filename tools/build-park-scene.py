@@ -958,6 +958,17 @@ if HAVE_PACK:
 # of A · B2 32-39 south of B · C2 40-47 north of C. Site D (same pass): a
 # FOURTH site of two pairs on the pond's SE bank lawn, south of the W road,
 # slots 48-63.
+# 🌱 the six expansion sites live at MODULE scope — build_weed_grid()
+# rejects them too, and it runs whether or not the pack is present.
+# ⚠️ EVERY ONE OF THESE WAS MOVED after the first review plate: the free-lawn
+# scan alone is NOT enough. It passed a bed straight through the mushroom SHOP
+# and clipped the north tree line, because WEED_GRID only says "no weed here" —
+# it does not know about overlay ART, which is drawn from a base line and hangs
+# far above it (a canopy is 147x110 over a 26px trunk). Positions are now
+# checked against OB_RECTS + the overlay BOXES + every live slot + the world
+# border, with 60-90px of walking room between footprints.
+GROW_SITES = ((1790, 170), (2110, 170), (2420, 170),   # the north strip, above the trees
+              (1870, 780), (1550, 830))                # the lawn west of sites A/A2
 PLOTS = []
 if HAVE_PACK:
     # each bed = TWO ditches side by side (the ditch soil is ~52px wide — one
@@ -967,6 +978,18 @@ if HAVE_PACK:
             (2200, 970), (2338, 970), (288, 970), (426, 970),
             (1960, 390), (2098, 390),                    # ← v2 appends only
             (650, 760), (788, 760), (650, 868), (788, 868))   # ← site D
+    # 🌱 EXPANSION SITES (29 Jul) — six more 8-slot sites, slots 64-111.
+    # ⭐ They ship in the geo FROM DAY ONE and the ParkRoom decides which beds
+    # are OPEN; a closed bed is never plantable and never rendered. That is what
+    # keeps the never-reindex contract intact — growing the garden unlocks
+    # indices that already exist instead of appending new ones later, so no
+    # stored slot can ever shift under a live plant.
+    # Positions scanned against WEED_GRID (the generator's own free-lawn list,
+    # which already rejects roads / beds / plaza / pond / colliders), each with
+    # a clear 250x110 footprint, 80px of walking room between footprints and
+    # from every existing slot. Trym's constraint: nothing on the fountain or
+    # its surrounds — the open ground is the TOP RIGHT and the BOTTOM RIGHT,
+    # left of the existing boxes. The meadow is grazing, not a keep-out.
     for gx, gb in BEDS:
         for sx in (gx - 30, gx + 30):
             place('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png', sx, gb,
@@ -984,9 +1007,39 @@ if HAVE_PACK:
         (396, 800), (396, 838), (456, 800), (456, 838),
         (1950, 438), (1950, 476), (2010, 438), (2010, 476),
         (2088, 438), (2088, 476), (2148, 438), (2148, 476)], 'v1 slots moved!'
-    assert len(PLOTS) == 64, 'PLOTS drifted: %d' % len(PLOTS)
+    # ⚠️ NOT BAKED, and that is the whole point: an UNOPENED bed has to be
+    # plain lawn you walk over, so the expansion sites are CLIENT art — the
+    # ditch sprite (g-bed.png) and its collider are laid down only while the
+    # bed is open, and lifted again when it grows over. Baking them would put
+    # six permanent dirt rectangles in the park that nobody can plant in.
+    # Same tuple order rule as above: two ditch pairs per site, so the slots
+    # still group in clean eights.
+    GROW_DITCHES = []
+    for X, Y in GROW_SITES:
+        for gx in (X + 30, X + 168):
+            for sx in (gx - 30, gx + 30):
+                GROW_DITCHES.append((sx, Y + 62))     # x, BASE — as place() takes it
+                for sy in (Y, Y + 38):
+                    PLOTS.append((sx, sy))
+    # ⚠️ the v2 doubling is live too — slots 24-63 hold real plants
+    assert PLOTS[63] == (818, 844), 'v2 slots moved!'
+    assert len(GROW_DITCHES) == len(GROW_SITES) * 4
+    assert len(PLOTS) == 64 + len(GROW_SITES) * 8, 'PLOTS drifted: %d' % len(PLOTS)
+    # every site is exactly 8 slots, so BEDS groups PLOTS in eights
+    assert len(PLOTS) % 8 == 0
     # 🌼 the growth-stage sprites the client lays over the slots — pack art,
     # same neutral processing as every prop, saved at PROP scale
+    # 🛏 the bed itself, for the beds the client lays down (see GROW_DITCHES).
+    # Same file and the same processing as the baked ones, so an opened bed is
+    # pixel-identical to one that was always there.
+    try:
+        _b = blockify(dedisc(load_pack('ME_Singles_Graveyard_48x48_Dirt_Ditch_1.png')),
+                      factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+        _b = _b.resize((max(1, int(_b.width * PROP)), max(1, int(_b.height * PROP))), Image.NEAREST)
+        _b.save(os.path.join(OUT, 'g-bed.png'), optimize=True)
+        print('  g-bed.png: %dx%d (the client lays these for opened beds)' % (_b.width, _b.height))
+    except Exception as e:
+        print('  bed sprite failed', e)
     for src, out in (('ME_Singles_Garden_48x48_Medium_Sprout_2.png', 'g-sprout1.png'),
                      ('ME_Singles_Garden_48x48_Big_Sprout_2.png', 'g-sprout2.png'),
                      ('ME_Singles_Garden_48x48_Medium_White_Flower.png', 'g-daisy.png'),
@@ -1416,7 +1469,14 @@ if HAVE_PACK:
                 _, a, b2, c2, d2 = shape
                 if ccx + a - 24 <= x <= ccx + c2 + 24 and cby + b2 - 24 <= y <= cby + d2 + 24:
                     return False
-        for sx_, sy_ in PLOTS:
+        # ⚠️ THE CORE 64 ONLY. BORDER_SPOTS is a LIVE CONTRACT — the server
+        # stores each roadside flower by its spot INDEX, so a spot that moves
+        # teleports somebody's named flower to a different roadside. Testing
+        # against the expansion plots as well pushed spots 0/2/3 (the loop
+        # rejects one and then picks a different one downstream) and re-baked
+        # their pots into the plate. The expansion sites are checked against
+        # BORDER_SPOTS from the other side instead, where nothing is at stake.
+        for sx_, sy_ in PLOTS[:64]:
             if abs(x - sx_) < 60 and abs(y - sy_) < 60:
                 return False
         return True
@@ -1628,6 +1688,10 @@ def build_weed_grid():
                  (2100, 750, 2500, 1005),    # sites A + A2 (meadow, two rows)
                  (1870, 275, 2210, 520),     # sites C + C2 (NE, two rows)
                  (560, 640, 880, 900))       # site D (pond bank, two rows)
+    # 🌱 the six expansion sites, derived from the same coordinates so the
+    # zones can never drift out of step with the beds themselves
+    BED_ZONES = BED_ZONES + tuple(
+        (X - 46, Y - 76, X + 244, Y + 70) for X, Y in GROW_SITES)
 
     def ok(x, y):
         if on_road(x, y, 24):
@@ -1691,6 +1755,18 @@ def emit_geo():
     L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])
+    # 🌱 which slots make up each BED, and how many of those beds are CORE.
+    # The core beds are always open; the rest are the ones the park breaks open
+    # when it fills and lets grow over when they sit empty (see park-beds-plan).
+    L.append('export const BEDS = %s;'
+             % [list(range(i, i + 8)) for i in range(0, len(PLOTS), 8)])
+    L.append('export const CORE_BEDS = %d;' % (64 // 8))
+    # the four ditch sprites of each EXPANSION bed (x, base), in bed order from
+    # CORE_BEDS on, plus the collider every ditch carries. The client draws and
+    # blocks these only while the bed is open — nothing here is in the plate.
+    L.append('export const GROW_DITCHES = %s;'
+             % [[list(d) for d in GROW_DITCHES[i:i + 4]] for i in range(0, len(GROW_DITCHES), 4)])
+    L.append('export const BED_SOLID = [-28, -50, 28, 4];')
     L.append('export const BORDER_SPOTS = %s;' % [list(p) for p in BORDER_SPOTS])
     L.append('export const ALGAE_SPOTS = %s;' % [list(p) for p in ALGAE_SPOTS])
     L.append('export const BIRD_SPOTS = %s;' % [list(p) for p in BIRD_SPOTS])

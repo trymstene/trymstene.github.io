@@ -4,7 +4,7 @@
 import { poofInto, worldSid } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { PLOTS, BORDER_SPOTS, ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
+import { PLOTS, BEDS, CORE_BEDS, BORDER_SPOTS, ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
 import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
 
@@ -324,8 +324,17 @@ export function initGarden(ctx) {
       + '</div>';
   }
 
+  // 🌱 A SLOT ONLY EXISTS WHILE ITS BED IS OPEN. Every plot position ships
+  // in the geo from day one (that is what keeps slot indices frozen forever),
+  // but the expansion beds are ground nobody has broken yet: no sprite, no tap,
+  // no seed sheet. Until the break-ground mechanic lands they are simply the
+  // core beds — flipping THIS predicate to the room's open-bed list is the
+  // whole client side of it. See [[park-beds-plan]].
+  const bedOpen = (i) => Math.floor(i / (BEDS[0] || [1]).length) < CORE_BEDS;
+
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
+      if (!bedOpen(i)) return;
       const s = gSlots[i], el = gEls[i];
       if (!s) {
         if (el.plant) { el.plant.remove(); el.plant = null; el.stage = ''; }
@@ -1162,6 +1171,7 @@ export function initGarden(ctx) {
     // overlapping hits the nearest visual middle wins (rows sit 38px apart)
     let best = -1, bd = 1e9;
     PLOTS.forEach(([sx, sy], i) => {
+      if (!bedOpen(i)) return;          // unbroken ground is just lawn
       const hit = gSlots[i]
         ? (Math.abs(wx - sx) < 24 && wy > sy - 76 && wy < sy + 18) || Math.hypot(wx - sx, wy - sy) < 34
         : Math.hypot(wx - sx, wy - sy) < 34;
