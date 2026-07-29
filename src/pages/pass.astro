@@ -173,10 +173,15 @@ const description = 'Your membership card to the banana world: the badges you ha
     }
     .ps-where b { font-weight: 800; }
     .ps-where span { opacity: 0.85; }
+    .ps-where i { font-style: normal; }
     .ps-where--yes { background: rgba(47, 208, 106, 0.16); box-shadow: inset 0 0 0 2px rgba(47, 208, 106, 0.5); }
-    .ps-where--yes::before { content: 'F4F1'; }
     .ps-where--no { background: rgba(255, 95, 95, 0.14); box-shadow: inset 0 0 0 2px rgba(255, 95, 95, 0.45); }
-    .ps-where--no::before { content: 'F4BB'; }
+    /* ⚠️ ONE GUARD FOR THE WHOLE PAGE. `[hidden]` and a class have the same
+       specificity, so any `display:` rule written later silently un-hides the
+       element — which is how an empty code box shipped saying "type this on the
+       other device" before a code existed. Bitten twice in one day; ends here. */
+    [hidden] { display: none !important; }
+
     /* 🔗 the link row — a button, and a code only once you ask for one */
     .ps-link { margin: 0.6rem 0 0; }
     .ps-link__code {
@@ -344,8 +349,8 @@ const description = 'Your membership card to the banana world: the badges you ha
                  exactly that way. Two lines, two outcomes, no paragraph: the
                  choice is a fork, so it is drawn as one. -->
             <ul class="ps-where">
-              <li class="ps-where--yes"><b>Phone or password manager</b><span>opens anywhere</span></li>
-              <li class="ps-where--no"><b>This computer only</b><span>stays here</span></li>
+              <li class="ps-where--yes"><i aria-hidden="true">📱</i><b>Phone or password manager</b><span>opens anywhere</span></li>
+              <li class="ps-where--no"><i aria-hidden="true">💻</i><b>This computer only</b><span>stays here</span></li>
             </ul>
           </div>
         </div>
