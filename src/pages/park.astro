@@ -274,18 +274,35 @@ const faq = {
       background: url('/assets/park/g-bed.png') no-repeat center / contain;
       image-rendering: pixelated; pointer-events: none;
     }
-    .pk-bedsoil.is-marked { opacity: 0.42; filter: grayscale(0.65); }
-    /* 🪓 the patch you just turned lands with a thump, so the dig has a
-       RESULT in the world and not only a number on the button */
-    .pk-bedsoil.is-turned { animation: pkTurned 0.42s ease-out; }
-    @keyframes pkTurned {
-      0%   { transform: translate(-50%, -100%) scale(0.82); }
-      55%  { transform: translate(-50%, -100%) scale(1.09); }
-      100% { transform: translate(-50%, -100%) scale(1); }
+    /* ⚠️ opacity + grayscale are set INLINE per dig (the ground is the progress
+       bar) — the transition is what makes each dig read as a step. */
+    .pk-bedsoil.is-marked { opacity: 0.26; filter: grayscale(0.7); }
+    .pk-bedsoil { transition: opacity 0.45s ease, filter 0.45s ease; }
+
+    /* 🪓 THE EARTH A DIG THROWS UP. The clods are cut from the ditch's own
+       soil by the generator, so a burst is the same dirt as the bed. Four per
+       dig, and every patch erupts when the last dig lands. */
+    .pk-clod {
+      position: absolute; width: 7px; height: 7px; pointer-events: none;
+      background: url('/assets/park/g-clod.png') no-repeat 0 0;
+      image-rendering: pixelated;
+      animation: pkClod 0.6s cubic-bezier(0.2, 0.7, 0.5, 1) forwards;
     }
-    @media (prefers-reduced-motion: reduce) { .pk-bedsoil.is-turned { animation: none; } }
+    @keyframes pkClod {
+      0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      70%  { opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--cx)), calc(-50% + var(--cy) + 30px))
+               rotate(var(--cr)) scale(0.85); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pk-clod { display: none; }
+      .pk-bedsoil { transition: none; }
+    }
+    /* ⚠️ THE BREATHE ONLY RUNS ON UNTOUCHED GROUND (.is-fresh). It animates
+       OPACITY, and so does the per-dig ramp — left on .is-marked it overrode
+       every inline step and the ground pulsed instead of clearing. */
     @media (prefers-reduced-motion: no-preference) {
-      .pk-bedsoil.is-marked { animation: pkGroundBreathe 2.6s ease-in-out infinite; }
+      .pk-bedsoil.is-fresh { animation: pkGroundBreathe 2.6s ease-in-out infinite; }
     }
     /* ⚠️ opacity only — never animate filter on this map (our own doctrine) */
     @keyframes pkGroundBreathe { 0%, 100% { opacity: 0.32; } 50% { opacity: 0.52; } }

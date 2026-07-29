@@ -1083,6 +1083,30 @@ if HAVE_PACK:
             print('  %s: %dx%d' % (sout, simg.width, simg.height))
     except Exception as e:
         print('  soil patch failed', e)
+    # 🪓 DIRT CLODS — the flying earth of a dig. Sampled from the ditch's OWN
+    # soil so the burst is the same dirt as the bed, at the same 28 colours;
+    # 3 clod shapes on one strip, the client picks per particle.
+    try:
+        cw = 10
+        clods = Image.new('RGBA', (cw * 3, cw), (0, 0, 0, 0))
+        crng = random.Random(404)
+        src = sbase.resize((cw * 3, cw), Image.NEAREST)
+        spx2, cpx = src.load(), clods.load()
+        for ci in range(3):
+            for yy in range(cw):
+                for xx in range(cw):
+                    d2 = ((xx - cw / 2 + 0.5) / (cw / 2)) ** 2 + ((yy - cw / 2 + 0.5) / (cw / 2)) ** 2
+                    if d2 > 0.7 + crng.random() * 0.5:
+                        continue
+                    r0, g0, b0, a0 = spx2[ci * cw + xx, yy]
+                    if not a0:
+                        continue
+                    cpx[ci * cw + xx, yy] = (int(r0 * 0.9), int(g0 * 0.86), int(b0 * 0.8), 255)
+        clods = clods.resize((int(cw * 3 * PROP), int(cw * PROP)), Image.NEAREST)
+        clods.save(os.path.join(OUT, 'g-clod.png'), optimize=True)
+        print('  g-clod.png: %dx%d (3 clods, cut from the ditch soil)' % clods.size)
+    except Exception as e:
+        print('  clod strip failed', e)
     # 🌼 ROADSIDE BORDER FLOWERS — the pack's Small_* flower singles: one
     # stage, no watering, four colour kinds the client plants on BORDER_SPOTS
     # (⚠️ ids must match BORDER_FLOWERS in park-garden.js + BORDER_KINDS in

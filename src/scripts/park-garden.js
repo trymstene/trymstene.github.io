@@ -110,6 +110,7 @@ const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1
 // NEAREST one (walk the last step if needed). Tapping the thing still works.
 const TOOL_RANGE = 110;
 const BED_DIG_REP = 3;         // 🪓 per dig; the bed itself belongs to everyone
+const BED_DIGS_UI = 4;         // ⚠️ mirrors BED_DIGS in worker-rave — the fade ramp
 // 💰 DYNAMIC SEED PRICE — base × (1 + held²/25), where held = the plants you
 // are ALREADY tending. Your first is always base price, six to eight stays
 // comfortable, twenty-eight costs 32×. ⭐ Trym's rule: it must never say NO.
@@ -431,19 +432,17 @@ export function initGarden(ctx) {
         });
         bedEls.set(b, els);
       }
-      // ⭐ ONE DIG, ONE PATCH OF EARTH. The count on the button and the state of
-      // the ground are the same fact — without this the first digs turned
-      // nothing visible and the whole chore read as broken (Trym).
-      const done = marked ? (bedPending ? bedPending.digs : 0) : els.length;
-      els.forEach((el, k) => {
-        const wasMarked = el.classList.contains('is-marked');
-        const nowMarked = k >= done;
-        el.classList.toggle('is-marked', nowMarked);
-        if (wasMarked && !nowMarked) {          // this one just got turned
-          el.classList.remove('is-turned');
-          void el.offsetWidth;                  // restart the animation
-          el.classList.add('is-turned');
-        }
+      // ⭐ THE WHOLE BED CLEARS AS YOU DIG IT (Trym: one patch at a time read as
+      // "nothing happened"). Every dig lifts the fade and drains the grey off
+      // ALL FOUR patches, so the ground itself is the progress bar and you can
+      // see the bed arriving out of the grass.
+      const digs = marked ? (bedPending ? bedPending.digs : 0) : BED_DIGS_UI;
+      const t = Math.min(1, digs / BED_DIGS_UI);
+      els.forEach((el) => {
+        el.classList.toggle('is-marked', marked);
+        el.classList.toggle('is-fresh', marked && !digs);   // breathes until touched
+        el.style.opacity = marked ? (0.26 + 0.17 * digs).toFixed(2) : '';
+        el.style.filter = marked ? 'grayscale(' + (0.7 * (1 - t)).toFixed(2) + ')' : '';
       });
     });
     // the walls of every OPEN bed, handed to the chassis in one go
@@ -456,7 +455,27 @@ export function initGarden(ctx) {
     });
     if (ctx.setSolids) ctx.setSolids(rects);
   }
-  // 🪓 three digs and it is a bed — by any mix of people. The digger gets
+  // 🪓 the earth a dig throws up. Pack-true: the clods are cut from the
+  // ditch's OWN soil pixels by the generator, so a burst is the same dirt as
+  // the bed. ⚠️ transform + opacity only — nothing here animates filter.
+  function clodBurst(cx, cy, n, spread) {
+    for (let k = 0; k < n; k++) {
+      const c = document.createElement('i');
+      c.className = 'pk-clod';
+      c.style.left = pct(cx, W);
+      c.style.top = pct(cy, H);
+      c.style.setProperty('--cx', ((Math.random() * 2 - 1) * spread).toFixed(1) + 'px');
+      c.style.setProperty('--cy', (-14 - Math.random() * spread * 0.8).toFixed(1) + 'px');
+      c.style.setProperty('--cr', Math.round(Math.random() * 640 - 320) + 'deg');
+      c.style.backgroundPosition = (-7 * (k % 3)) + 'px 0';
+      c.style.animationDuration = (0.46 + Math.random() * 0.28).toFixed(2) + 's';
+      c.style.zIndex = String(100 + Math.round(cy) + 3);
+      world.appendChild(c);
+      setTimeout(() => c.remove(), 900);
+    }
+  }
+
+  // 🪓 four digs and it is a bed — by any mix of people. The digger gets
   // rep, never the bed: broken ground is public, which is the whole point.
   let bedTracked = false;
   async function breakGround() {
@@ -467,6 +486,12 @@ export function initGarden(ctx) {
     passStat('rep', BED_DIG_REP);
     refreshHud();
     const m = bedMid(p.bed);
+    // the earth flies where YOU dug — the patch this dig turned
+    const d4 = GROW_DITCHES[p.bed - CORE_BEDS] || [];
+    const hit = d4[Math.min(d4.length - 1, p.digs)] || (m ? [m[0], m[1]] : null);
+    if (hit) clodBurst(hit[0], hit[1] - 26, r.opened ? 5 : 9, r.opened ? 22 : 30);
+    // …and the whole bed erupts when the last one lands
+    if (r.opened) d4.forEach(([x, base]) => clodBurst(x, base - 26, 9, 40));
     if (m) float(m[0], m[1] - 20, '+' + BED_DIG_REP);
     if (r.opened) toast('🪓 the bed is open — eight new slots, for anyone', 5000);
     else {
