@@ -390,6 +390,10 @@ async function sendLink(env, to, link) {
     headers: { Authorization: `Bearer ${env.RESEND_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: env.MAIL_FROM,
+      // ⚠️ hello@send.… is a SENDING address with no mailbox behind it, so a
+      // reply would bounce. MAIL_REPLY (optional) points replies at a real
+      // inbox — people DO reply to login mail, usually to ask for help.
+      ...(env.MAIL_REPLY ? { reply_to: env.MAIL_REPLY } : {}),
       to: [to],
       subject: 'Your link into Banana World',
       text: `Tap to log in:\n\n${link}\n\nThe link works once and expires in 15 minutes.\n`
