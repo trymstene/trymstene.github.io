@@ -1833,7 +1833,11 @@ const CORE_BEDS = 8;
 const TOTAL_BEDS = 13;
 const GARDEN_SLOTS = TOTAL_BEDS * BED_SLOTS;      // 104 positions, 64 open at launch
 const BED_FULL = 0.9;          // ground appears once this much of the OPEN garden is taken
-const BED_DIGS = 3;            // hands on a spade before it opens (any mix of people)
+// ⚠️ FOUR digs, one per ditch — NOT three. A bed is four patches of earth, so
+// three digs meant the first two turned nothing you could SEE (Trym: "nothing
+// happened... i dont understand what happened"). One dig = one patch turned
+// makes the count on the button and the state of the ground the same fact.
+const BED_DIGS = 4;
 const BED_EMPTY_TTL = 3 * 86_400_000;   // an OPEN bed with NOTHING in it grows over
 // ⭐ GROWTH IS PAID FOR IN WATERED DAYS (Trym, 29 Jul), not wall-clock days: a
 // plant advances one stage per calendar day it was WET, so neglect stalls a

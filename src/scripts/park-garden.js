@@ -431,7 +431,20 @@ export function initGarden(ctx) {
         });
         bedEls.set(b, els);
       }
-      els.forEach((el) => el.classList.toggle('is-marked', marked));
+      // ⭐ ONE DIG, ONE PATCH OF EARTH. The count on the button and the state of
+      // the ground are the same fact — without this the first digs turned
+      // nothing visible and the whole chore read as broken (Trym).
+      const done = marked ? (bedPending ? bedPending.digs : 0) : els.length;
+      els.forEach((el, k) => {
+        const wasMarked = el.classList.contains('is-marked');
+        const nowMarked = k >= done;
+        el.classList.toggle('is-marked', nowMarked);
+        if (wasMarked && !nowMarked) {          // this one just got turned
+          el.classList.remove('is-turned');
+          void el.offsetWidth;                  // restart the animation
+          el.classList.add('is-turned');
+        }
+      });
     });
     // the walls of every OPEN bed, handed to the chassis in one go
     const rects = [];
@@ -455,9 +468,12 @@ export function initGarden(ctx) {
     refreshHud();
     const m = bedMid(p.bed);
     if (m) float(m[0], m[1] - 20, '+' + BED_DIG_REP);
-    if (r.opened) toast('🪓 new ground broken — eight more beds for everyone', 5000);
-    else toast('🪓 you turned some earth — ' + (r.beds && r.beds.pending
-      ? r.beds.pending.digs + '/' + r.beds.pending.need : '') + ' done', 3400);
+    if (r.opened) toast('🪓 the bed is open — eight new slots, for anyone', 5000);
+    else {
+      const p2 = r.beds && r.beds.pending;
+      const left = p2 ? p2.need - p2.digs : 0;
+      toast('🪓 one patch turned — ' + left + ' more and this is a bed', 3400);
+    }
     if (!bedTracked) { bedTracked = true; track('park_bedbreak'); }
     if (r.opened) track('park_bedopen');
     applyGarden(r);

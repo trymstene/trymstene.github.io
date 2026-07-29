@@ -275,6 +275,15 @@ const faq = {
       image-rendering: pixelated; pointer-events: none;
     }
     .pk-bedsoil.is-marked { opacity: 0.42; filter: grayscale(0.65); }
+    /* 🪓 the patch you just turned lands with a thump, so the dig has a
+       RESULT in the world and not only a number on the button */
+    .pk-bedsoil.is-turned { animation: pkTurned 0.42s ease-out; }
+    @keyframes pkTurned {
+      0%   { transform: translate(-50%, -100%) scale(0.82); }
+      55%  { transform: translate(-50%, -100%) scale(1.09); }
+      100% { transform: translate(-50%, -100%) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-bedsoil.is-turned { animation: none; } }
     @media (prefers-reduced-motion: no-preference) {
       .pk-bedsoil.is-marked { animation: pkGroundBreathe 2.6s ease-in-out infinite; }
     }
