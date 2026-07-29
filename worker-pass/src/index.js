@@ -447,8 +447,13 @@ async function mailSignin(request, env) {
   }
 
   const tok = bufToHex(crypto.getRandomValues(new Uint8Array(32)));
+  // ⚠️ THE TICKET STORES THE DERIVED KEY, NOT THE ADDRESS. A ticket that is
+  // never clicked is never deleted, so a plaintext address in here would be a
+  // plaintext address at rest forever. The key is all /mail/use ever needed —
+  // which means the site stores NO email addresses anywhere. Nothing to leak,
+  // nothing to enumerate, and no deletion desk to build ([[banana-id-plan]] §5).
   await env.PASSES.put(`mailtkt/${await sha256Hex(tok)}.json`,
-    JSON.stringify({ email, exp: Date.now() + MAIL_TTL }),
+    JSON.stringify({ k: 'm' + (await sha256Hex(email)), exp: Date.now() + MAIL_TTL }),
     { httpMetadata: { contentType: 'application/json' } });
   const base = (env.ALLOWED_ORIGIN || '').split(',')[0].trim() || 'https://trymstene.com';
   const sent = await sendLink(env, email, `${base}/pass/?in=${tok}`);
@@ -478,7 +483,10 @@ async function mailUse(request, env, url) {
   await env.PASSES.delete(tk);                       // single use, always
   if (!ticket || ticket.exp < Date.now()) return json({ error: 'link expired' }, 410, cors(env, request));
 
-  const key = 'm' + (await sha256Hex(ticket.email));
+  // `ticket.email` is the pre-hardening shape — honoured so links already in
+  // somebody's inbox still work, and removable once they have all expired
+  const key = ticket.k || (ticket.email ? 'm' + (await sha256Hex(ticket.email)) : '');
+  if (!key) return json({ error: 'bad link' }, 400, cors(env, request));
   const credId = 'm:' + key;
   let rec = await loadKey(env, key);
   if (!rec) rec = { mail: 1, tokens: {}, blob: null };   // a brand-new pass
