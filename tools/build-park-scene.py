@@ -1331,7 +1331,16 @@ if HAVE_PACK:
 # second time shifted by exactly one tile, so the wrap is invisible at any
 # offset. The tile is SQUARE and the streak angle divides it evenly, so the same
 # image tiles diagonally without a seam.
-def build_rain(px=256, n=110, seed=4242, length=26, slant=7, alpha=150):
+def build_rain(px=256, n=26, seed=4242, length=74, slant=26, alpha=120, width=1):
+    """Long, sparse, EVEN diagonal stripes — the Stardew read (Trym's ref shot).
+
+    ⚠️ REWRITTEN 31 Jul. The first tile drew 110-190 short strokes at random
+    lengths and jitter, which from a distance is NOISE — a grey static wash
+    rather than rain. Real pixel rain is a handful of LONG, THIN, EVENLY
+    ANGLED lines with plenty of dark between them; the eye reads the gaps as
+    much as the strokes. So: a quarter of the count, three times the length,
+    ONE angle for every stroke, and no width jitter.
+    """
     import random as _r
     rr = _r.Random(seed)
     t = Image.new('RGBA', (px, px), (0, 0, 0, 0))
@@ -1339,12 +1348,14 @@ def build_rain(px=256, n=110, seed=4242, length=26, slant=7, alpha=150):
     for _ in range(n):
         x = rr.randrange(px)
         y = rr.randrange(px)
-        ln = length + rr.randrange(-6, 7)
-        a = alpha + rr.randrange(-40, 41)
-        col = (208, 226, 246, max(40, min(235, a)))
+        a = alpha + rr.randrange(-25, 26)      # only the BRIGHTNESS varies
+        col = (198, 222, 248, max(55, min(210, a)))
+        # every stroke on the SAME diagonal, drawn nine times (self + the eight
+        # neighbours) so whatever runs off an edge arrives on the opposite one
         for dx, dy in ((0, 0), (-px, 0), (px, 0), (0, -px), (0, px),
                        (-px, -px), (px, -px), (-px, px), (px, px)):
-            d.line([(x + dx, y + dy), (x + dx + slant, y + dy + ln)], fill=col, width=1)
+            d.line([(x + dx, y + dy), (x + dx + slant, y + dy + length)],
+                   fill=col, width=width)
     return t.crop((0, 0, px, px))
 
 
@@ -1352,7 +1363,8 @@ if True:
     _rain = build_rain()
     _rain.save(os.path.join(OUT, 'rain.png'), optimize=True)
     # the storm sheet is the same field, denser and more slanted (wind)
-    build_rain(n=190, seed=99, length=34, slant=13, alpha=175).save(
+    # the storm sheet: same clean lines, just more of them and steeper
+    build_rain(n=54, seed=99, length=92, slant=40, alpha=150).save(
         os.path.join(OUT, 'rain-hard.png'), optimize=True)
     print('  rain.png + rain-hard.png (seamless %dx%d tiles)' % _rain.size)
 

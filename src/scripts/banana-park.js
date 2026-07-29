@@ -524,7 +524,13 @@ function init() {
     if (critters.tapBfly(wx, wy)) return;
     if (critters.tapAnimal(wx, wy)) return;
     if (npc.tapOld(wx, wy)) return;
-    if (garden.tapWeed(wx, wy)) return;
+    // ⚠️ NO tapWeed HERE (30 Jul). Weeds are a CHORE, and the park's grammar
+    // is TOOLS FOR CHORES, TAPS FOR THINGS — but a weed also had a 30px tap
+    // target, so a "walk over there" tap that happened to land near one pulled
+    // it instead. Trym: "sometimes i walk on weeds and they disappear,
+    // sometimes i must use the button". Both paths worked; that was the bug.
+    // Now: tapping a weed walks you to it (falls through to the ground tap) and
+    // the chore button lights up. Same three steps every single time.
     if (garden.tapGarden(wx, wy)) return;
     if (garden.tapBorder(wx, wy)) return;
     if (garden.tapAlgae(wx, wy)) return;

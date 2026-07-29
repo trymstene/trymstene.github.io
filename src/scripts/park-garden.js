@@ -295,6 +295,32 @@ export function initGarden(ctx) {
   // zero floating UI over the beds (Trym — signs cramped, then the emoji
   // chips "took up the visuals" too): the sprite says species, the soil says
   // thirst, the glint says ready, the stake says yours. Words = the tap card.
+  // 📏 ONE gauge, two users: a plant's water and a birdhouse's seed are
+  // both a 24h countdown, so they share a component. It hangs off the sprite
+  // it belongs to, which means it moves, sorts and culls with its parent for
+  // free. Returns the element so callers can keep it and just re-fill it.
+  const METER_SHOW = 0.5;               // only appears once it is half gone
+  function meterOn(host) {
+    let m = host.querySelector('.pk-meter');
+    if (!m) {
+      m = document.createElement('span');
+      m.className = 'pk-meter';
+      m.innerHTML = '<i></i>';
+      host.appendChild(m);
+    }
+    return m;
+  }
+  function meterSet(host, frac) {
+    const m = meterOn(host);
+    const f = Math.max(0, Math.min(1, frac));
+    m.classList.toggle('is-on', f < METER_SHOW);
+    m.classList.toggle('is-low', f < 0.34);
+    m.classList.toggle('is-out', f <= 0.06);
+    m.firstChild.style.height = Math.round(f * 100) + '%';
+  }
+  // how much of the 24h window is LEFT, 1 → 0
+  const leftOf = (at) => 1 - (Date.now() - (at || 0)) / 86400000;
+
   function renderGarden() {
     PLOTS.forEach(([sx, sy], i) => {
       const s = gSlots[i], el = gEls[i];
@@ -338,6 +364,7 @@ export function initGarden(ctx) {
         el.plant.classList.toggle('is-ready', gReady(s));
         depth(el.plant, sy + 10);
       }
+      if (!s.rot) meterSet(el.plant, leftOf(s.lastWater || s.plantedAt));
       // 🪧 ownership: the tiny stake at the soil's front edge, YOURS only
       // (no floating UI over the beds — Trym; taps read the slot, not this)
       if (gMine(s) && !el.stake) {
@@ -566,6 +593,7 @@ export function initGarden(ctx) {
         depth(el, sy);
         world.appendChild(el);
       }
+      meterSet(el, leftOf(h.lastStock));   // 📏 the seed emptying
     });
     // 🐦 the residents live in park-birds.js — it moves them in and out
     if (ctx.birds) ctx.birds.setStocked(BIRD_SPOTS.map((_, i) => bhFed(bHouses[i])));
@@ -724,8 +752,8 @@ export function initGarden(ctx) {
     trash.forEach((t, id) => {
       if (Math.hypot(pos.x - t.x, (pos.y - 6) - t.y) > 32) return;
       trash.delete(id);                    // optimistic — the reply reconciles
-      poofInto(world, 'pk-poof', t.x / W * 100, (t.y - 10) / H * 100);
-      t.el.remove();
+      t.el.classList.add('is-popped');     // ✨ popped, not poofed (see the CSS)
+      setTimeout(() => t.el.remove(), 360);
       passStat('rep', 2);
       refreshHud();
       float(t.x, t.y - 14, '+2');
@@ -787,11 +815,9 @@ export function initGarden(ctx) {
     const w2 = weeds.get(id);
     if (!w2) return;
     weeds.delete(id);                       // optimistic — the poll reconciles
+    // ✨ it POPS — the smoke poof means "you missed it" elsewhere in the world
     w2.el.classList.add('is-pulled');
-    setTimeout(() => {
-      poofInto(world, 'pk-poof', w2.x / W * 100, (w2.y - 14) / H * 100);
-      w2.el.remove();
-    }, 240);
+    setTimeout(() => w2.el.remove(), 360);
     passStat('rep', 1);
     passStat('weeds_pulled', 1);            // the park-day card's ledger
     // 🪙 ~8%: something under the roots — the chore is a tiny lottery
@@ -1132,7 +1158,24 @@ export function initGarden(ctx) {
     tgt.y = sy + (best % 2 ? 40 : 78);
     return true;
   }
+  // 📏 the gauges drain in REAL TIME, but renderGarden only redraws when a
+  // sprite changes and the poll is 60s apart — so they get their own slow
+  // beat. 5s is far finer than a 24h countdown needs and costs nothing.
+  let meterAt = 0;
+  function meterTick() {
+    if (Date.now() < meterAt) return;
+    meterAt = Date.now() + 5000;
+    PLOTS.forEach((_, i) => {
+      const s2 = gSlots[i], el = gEls[i];
+      if (s2 && !s2.rot && el && el.plant) meterSet(el.plant, leftOf(s2.lastWater || s2.plantedAt));
+    });
+    BIRD_SPOTS.forEach((_, i) => {
+      if (bhEls[i] && bHouses[i]) meterSet(bhEls[i], leftOf(bHouses[i].lastStock));
+    });
+  }
+
   function gardenTick() {
+    meterTick();
     if (pendingGarden != null) {
       const [sx, sy] = PLOTS[pendingGarden];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingGarden; pendingGarden = null; gardenAct(i); }
