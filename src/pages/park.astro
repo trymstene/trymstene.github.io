@@ -307,6 +307,75 @@ const faq = {
     /* ⚠️ opacity only — never animate filter on this map (our own doctrine) */
     @keyframes pkGroundBreathe { 0%, 100% { opacity: 0.32; } 50% { opacity: 0.52; } }
 
+    /* ── THE TAP CARDS (plant / birdhouse) ───────────────────────────
+       The THING is the headline, its maker is a sticker somebody stuck on, and
+       the meter is the hero. Trym's brief: less form, more game. */
+    .pk-cardtitle {
+      margin: 0 0 0.5rem; font-size: 1.25rem; line-height: 1.1; color: #ffe14d;
+      text-transform: lowercase;
+    }
+    .pk-stickerrow {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      margin: 0 0 0.85rem;
+    }
+    /* 🍌 the maker's label — banana yellow, tilted, stuck on */
+    .pk-sticker {
+      display: inline-block; transform: rotate(-2.5deg);
+      padding: 4px 10px; border: 2px solid #000; border-radius: 3px;
+      background: linear-gradient(#ffe14d, #f5c518); color: #241c00;
+      font-size: 0.8rem; font-weight: 800; line-height: 1.1;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+    }
+    .pk-sticker.is-mine { background: linear-gradient(#9ff09f, #6fd46f); }
+    .pk-stars { font-size: 0.8rem; letter-spacing: 1px; }
+    .pk-ready { margin: -0.35rem 0 0.7rem; font-size: 0.82rem; font-weight: 800; color: #ffe14d; }
+
+    /* the meter, at hero size — this is what the card is FOR */
+    .pk-meter--big { margin: 0 0 0.75rem; }
+    .pk-meter--big .pk-meter__top { font-size: 0.86rem; margin-bottom: 0.4rem; }
+    .pk-meter--big .pk-meter__track { height: 26px; border-radius: 7px; }
+
+    /* 💧 the tally: icon + number, nothing else. Tap for the names. */
+    .pk-tally {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; margin: 0 0 0.7rem; cursor: pointer;
+      border: 2px solid #000; border-radius: 999px; background: #17301f;
+      color: #dff3df; font-family: inherit; font-size: 0.86rem; font-weight: 800;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+    }
+    .pk-tally i { font-style: normal; font-size: 0.95rem; }
+    .pk-tally em { font-style: normal; opacity: 0.6; font-size: 0.7rem; transition: transform 0.2s ease; }
+    .pk-tally.is-open em { transform: rotate(180deg); }
+    .pk-tally:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5); }
+    .pk-tallylist {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      margin: -0.35rem 0 0.75rem;
+    }
+    /* ⚠️ a class beats [hidden] at equal specificity when it comes later —
+       without this the names hang open instead of waiting for the tap */
+    .pk-tallylist[hidden] { display: none; }
+    .pk-tallylist span {
+      padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.07);
+      font-size: 0.72rem; font-weight: 700; color: #cfe8cf;
+    }
+    .pk-tallylist__none { opacity: 0.6; font-style: italic; }
+
+    /* ⭐ the action: the verb big, the reward as a pill you can SEE coming */
+    .pk-act {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+      width: 100%; padding: 0.7rem 0.8rem; cursor: pointer;
+      border: 3px solid #000; background: #7db9ff; color: #10240f;
+      font-family: inherit; box-shadow: 3px 3px 0 #000;
+    }
+    .pk-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .pk-act__verb { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+    .pk-act__rew {
+      padding: 4px 9px; border: 2px solid #10240f; border-radius: 999px;
+      background: #2fd06a; color: #06240f; white-space: nowrap;
+      font-size: 0.78rem; font-weight: 800; letter-spacing: 0.4px;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+    }
+
     /* 🌱 the garden tax, in the seed sheet */
     .pk-seedtax {
       margin: 0.5rem 0 0; font-size: 0.74rem; font-weight: 700; line-height: 1.4;

@@ -366,12 +366,56 @@ export function initGarden(ctx) {
   // it belongs in the TAP CARD — nothing new goes out on the map (see the CSS).
   // how much of the 24h window is LEFT, 1 → 0
   const leftOf = (at) => 1 - (Date.now() - (at || 0)) / 86400000;
+  // 🍌 THE MAKER'S STICKER — whoever planted it / built it, on a tilted
+  // banana-yellow label. A name is the most human thing on these cards, so it
+  // gets to look like something somebody stuck on, not a field in a form.
+  function nameSticker(name, mine) {
+    return '<span class="pk-sticker' + (mine ? ' is-mine' : '') + '">'
+      + esc(mine ? 'you planted this' : name || 'a mystery banana') + '</span>';
+  }
+  function makerSticker(name, mine, verb) {
+    return '<span class="pk-sticker' + (mine ? ' is-mine' : '') + '">'
+      + esc(mine ? 'you ' + verb + ' this' : name || 'a mystery banana') + '</span>';
+  }
+  // 💧 the tally, as a BUTTON — icon and number only. Tap it and the last
+  // five names slide down. Trym: no other text on it.
+  function tallyBtn(id, icon, n, names) {
+    if (!n) return '';
+    return '<button class="pk-tally" type="button" id="' + id + '"'
+      + ' aria-label="' + n + ' bananas — show who">'
+      + '<i>' + icon + '</i><b>' + n + '</b><em>▾</em></button>'
+      + '<div class="pk-tallylist" id="' + id + 'L" hidden>'
+      + (names && names.length
+        ? names.slice().reverse().map((nm) => '<span>' + esc(nm) + '</span>').join('')
+        : '<span class="pk-tallylist__none">no names on record yet</span>')
+      + '</div>';
+  }
+  function wireTally(id) {
+    const b2 = document.getElementById(id), l = document.getElementById(id + 'L');
+    if (!b2 || !l) return;
+    b2.addEventListener('click', () => {
+      l.hidden = !l.hidden;
+      b2.classList.toggle('is-open', !l.hidden);
+    });
+  }
+  // ⭐ THE ACTION BUTTON — the verb big, and the reward as a PILL you can see
+  // coming. Trym: "+2 rep should be in a sticker-pill thing to symbolize
+  // something you get... so it actually is felt. not just a sidenote."
+  function actionBtn(id, label, reward) {
+    return '<button class="pk-act" id="' + id + '" type="button">'
+      + '<span class="pk-act__verb">' + label + '</span>'
+      + (reward ? '<span class="pk-act__rew">' + reward + '</span>' : '')
+      + '</button>';
+  }
+
   function meterRow(icon, label, frac, dry) {
     const f = Math.max(0, Math.min(1, frac));
     const hrs = f * 24;
     const cls = f <= 0.02 ? ' is-out' : f < 0.34 ? ' is-low' : '';
     const say = f <= 0.02 ? dry : hrs < 1 ? 'under an hour left' : Math.round(hrs) + 'h left';
-    return '<div class="pk-meter' + cls + '">'
+    // big = this is the card's whole point (moisture on a plant, seed in a
+    // feeder), so it gets the size to match
+    return '<div class="pk-meter pk-meter--big' + cls + '">'
       + '<span class="pk-meter__top"><b>' + icon + ' ' + label + '</b><em>' + say + '</em></span>'
       + '<span class="pk-meter__track"><i style="width:' + Math.round(f * 100) + '%"></i></span>'
       + '</div>';
@@ -847,7 +891,7 @@ export function initGarden(ctx) {
     const h = bHouses[i];
     if (!h) return;
     closeGarden();
-    const res = await gFetch('/bhstock', { spot: i, pass: worldSid() });
+    const res = await gFetch('/bhstock', { spot: i, pass: worldSid(), name: ctx.parkName });
     if (res && res.err === 'stocked today') { toast('already stocked today — once a day per banana'); applyGarden(res); return; }
     if (res && res.err) { applyGarden(res); return; }
     applyGarden(res);
@@ -861,16 +905,18 @@ export function initGarden(ctx) {
     if (!h) { openPostSheet(i); return; }
     const mine = h.passShort === myShort;
     const fed = bhFed(h);
-    gardenBody.innerHTML = '<h2>🐦 ' + (mine ? 'your birdhouse'
-      : esc(h.name || 'a mystery banana') + '’s birdhouse') + '</h2>'
+    // same shape as the plant card: the THING first, its maker on a sticker,
+    // then the one meter the card exists for
+    gardenBody.innerHTML = '<h2 class="pk-cardtitle">🐦 birdhouse</h2>'
+      + '<p class="pk-stickerrow">' + makerSticker(h.name, mine, 'built') + '</p>'
       + '<p class="pk-panel__sub">' + (fed
-        ? 'stocked — the birds are here, and the house is feeding the park’s health.'
+        ? 'the birds are in — and the house is feeding the park’s health.'
         : 'quiet up there — nobody has stocked it in a day, so the birds moved out.')
       + '</p>'
       + meterRow('🌾', 'seed in the feeder', leftOf(h.lastStock), 'empty')
-      + '<p class="pk-gwater">🌾 stocked by ' + (h.stockers || 0) + ' banana' + (h.stockers === 1 ? '' : 's') + '</p>'
-      + '<button class="pk-btn pk-gbtn" id="pkBhStock" type="button">🌾 stock it'
-      + (mine ? '' : ' <small>+2 rep</small>') + '</button>';
+      + tallyBtn('pkWho', '🌾', h.stockers || 0, h.slast)
+      + actionBtn('pkBhStock', '🌾 stock it', mine ? '' : '+2 REP');
+    wireTally('pkWho');
     const sb = document.getElementById('pkBhStock');
     if (sb) sb.addEventListener('click', () => stockHouse(i));
     gardenPanel.hidden = false;
@@ -1360,23 +1406,22 @@ export function initGarden(ctx) {
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const mine = gMine(s), ready = gReady(s);
     // a stranger's plant is an OWNERSHIP popup: their name leads, big
-    gardenBody.innerHTML = (mine
-      ? '<h2>' + sd.emoji + ' your ' + sd.name + '</h2>'
-      : '<h2>' + esc(s.name || 'a mystery banana') + '</h2>'
-        + '<p class="pk-gplant">' + sd.emoji + ' their ' + sd.name + '</p>')
-      + '<p class="pk-gplant">' + starStr(sd.stars) + '</p>'
-      + '<p class="pk-panel__sub">' + (ready
-        ? (mine ? 'full-grown — tap it to harvest!' : 'ready to pick — only its grower can harvest it.')
-        : 'day ' + Math.min(gDays(s) + 1, sd.days) + ' of ' + sd.days
-          + ' · a day only counts if it was watered')
-      + '</p>'
+    // ⭐ SPECIES FIRST, then who grew it, then the one number that matters.
+    // The growing-days line is gone (Trym) — the moisture bar IS the status.
+    gardenBody.innerHTML = '<h2 class="pk-cardtitle">' + sd.emoji + ' ' + esc(sd.name) + '</h2>'
+      + '<p class="pk-stickerrow">' + nameSticker(s.name, mine)
+      + '<span class="pk-stars">' + starStr(sd.stars) + '</span></p>'
+      + (ready
+        ? '<p class="pk-ready">' + (mine ? '✨ full-grown — tap it to harvest'
+          : '✨ ready to pick — only its grower can harvest it') + '</p>'
+        : '')
       + (s.rot ? '' : meterRow('💧', 'soil moisture',
         leftOf(s.lastWater || s.plantedAt), 'bone dry'))
-      + '<p class="pk-gwater">💧 watered by ' + (s.waterers || 0) + ' visitor' + (s.waterers === 1 ? '' : 's') + '</p>'
-      + (ready ? '' : '<button class="pk-btn pk-gbtn" id="pkWaterBtn" type="button">💧 water it'
-        + (mine ? '' : ' <small>+2 rep</small>') + '</button>')
+      + tallyBtn('pkWho', '💧', s.waterers || 0, s.wlast)
+      + (ready ? '' : actionBtn('pkWaterBtn', '💧 water it', mine ? '' : '+2 REP'))
       + (mine ? '<p class="pk-gsaved">' + (sd.wearable
         ? '💾 saved to your pass' : '🌾 harvest pays +' + (sd.stars * 8) + ' rep') + '</p>' : '');
+    wireTally('pkWho');
     const wb = document.getElementById('pkWaterBtn');
     if (wb) wb.addEventListener('click', () => waterSlot(i));
     gardenPanel.hidden = false;
@@ -1387,7 +1432,7 @@ export function initGarden(ctx) {
     closeGarden();
     s.lastWater = Date.now();   // the soil darkens right away; the reply reconciles
     renderGarden();
-    const res = await gFetch('/water', { slot: i, pass: worldSid() });
+    const res = await gFetch('/water', { slot: i, pass: worldSid(), name: ctx.parkName });
     if (res && res.err === 'watered today') { toast('already watered today — once a day per banana'); applyGarden(res); return; }
     if (res && res.err) { applyGarden(res); return; }
     applyGarden(res);

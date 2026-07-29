@@ -1245,6 +1245,7 @@ export class ParkRoom {
       // WATERED days now, and only the room has counted them
       grew: s.grew || 0, ...(isReady(s) ? { ready: 1 } : {}),
       waterers: (s.waterers || []).length,
+      wlast: (s.wlast || []).slice(-5),
     } : null);
     const payload = (extra) => ({
       slots: slots.map(strip),
@@ -1271,7 +1272,8 @@ export class ParkRoom {
       },
       houses: hs.list.map((h2) => ({ spot: h2.spot, name: h2.name,
         passShort: h2.passShort, builtAt: h2.builtAt, lastStock: h2.lastStock || 0,
-        stockers: (h2.stockers || []).length })),
+        stockers: (h2.stockers || []).length,
+        slast: (h2.slast || []).slice(-5) })),
       ...extra,
     });
     // 🌱 what the compost owes the asker, handed over once and cleared.
@@ -1461,6 +1463,13 @@ export class ParkRoom {
       const sk = Object.keys(h2.sday);         // bounded, like a plant's wday
       if (sk.length > 60) delete h2.sday[sk[0]];
       h2.lastStock = now;
+      // 🌾 the same roll of honour as a plant's waterers (see /garden/water)
+      const sn = sanitizeName(b.name, []) || '';
+      if (sn) {
+        h2.slast = (h2.slast || []).filter((n2) => n2 !== sn);
+        h2.slast.push(sn);
+        if (h2.slast.length > 5) h2.slast.shift();
+      }
       h2.stockers = h2.stockers || [];
       if (!h2.stockers.includes(short)) { h2.stockers.push(short); if (h2.stockers.length > 60) h2.stockers.shift(); }
       await persist();
@@ -1523,6 +1532,15 @@ export class ParkRoom {
       if (wk.length > 60) delete s.wday[wk[0]];
       if (s.rot) return json(payload({ err: 'rot' }), 409);
       s.lastWater = now;
+      // 💧 the last few names, so the card can say WHO kept it alive instead of
+      // only how many did. Bounded at 5 and no consecutive repeat — it is a
+      // roll of honour, not a log.
+      const wn = sanitizeName(b.name, []) || '';
+      if (wn) {
+        s.wlast = (s.wlast || []).filter((n2) => n2 !== wn);
+        s.wlast.push(wn);
+        if (s.wlast.length > 5) s.wlast.shift();
+      }
       creditDay(s, now);                // your watering pays for today straight away
       if (!s.readyAt && isReady(s)) s.readyAt = now;
       s.waterers = s.waterers || [];
