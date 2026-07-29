@@ -405,7 +405,12 @@ export function initGarden(ctx) {
         if (gone.length) track('park_bedrevert', { n: gone.length });
       }
       bedsSeen = true;
+      const changed = bs.open.length !== bedsOpen.size
+        || bs.open.some((b2) => !bedsOpen.has(b2));
       bedsOpen = new Set(bs.open);
+      // a bed opening or growing over changes which slots exist — the plants
+      // have to be redrawn for it, not just the soil
+      if (changed && gSlots.length) renderGarden();
     }
     bedPending = bs.pending || null;
     renderBeds();
@@ -1169,6 +1174,13 @@ export function initGarden(ctx) {
   });
   function applyGarden(res) {
     if (!res) return;
+    // ⚠️ BEDS BEFORE SLOTS, ALWAYS. renderGarden() skips every slot whose bed
+    // is closed, so applying the open set AFTER the slots meant a fresh load
+    // drew the garden while only the core beds were known — every plant in a
+    // grown bed was skipped and never came back, because nothing re-runs
+    // renderGarden until the next change. On screen that is "my plants
+    // suddenly vanished from the new bed" (Trym). The room had them all along.
+    if (res.beds) applyBeds(res.beds);
     if (Array.isArray(res.slots)) { gSlots = res.slots; renderGarden(); }
     if (Array.isArray(res.weeds)) renderWeeds(res.weeds);
     if (Array.isArray(res.trash)) renderTrash(res.trash);
@@ -1177,7 +1189,6 @@ export function initGarden(ctx) {
     if (Array.isArray(res.algae)) renderAlgae(res.algae);
     if (Array.isArray(res.leaves)) renderLeaves(res.leaves);
     if (Array.isArray(res.houses)) renderHouses(res.houses);
-    if (res.beds) applyBeds(res.beds);
     snapshot(res);
     if (res.compost) compostPaid(res.compost);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
