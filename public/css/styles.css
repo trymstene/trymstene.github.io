@@ -34,7 +34,16 @@ button { font: inherit; color: inherit; }
 button, .btn { white-space: nowrap; }
 .bm-mail__head, .bb-ptile, .bb-homebar__go, .ps-herostat { white-space: normal; }
 
-html { scroll-behavior: smooth; }
+/* ⚠️ CLIP, NOT HIDDEN, AND ON BOTH. The mobile nav parks off-screen right
+   (position:fixed + translateX(100%)), so the layout is ~300px wider than the
+   viewport and something has to stop that being pannable. `overflow-x: hidden`
+   on body alone did hold in Chromium — measured: window, body and html all
+   refuse to scroll — but it is the classic case that leaks on iOS Safari, where
+   root-overflow propagation differs, and ~half of this site's traffic is iOS.
+   `clip` creates NO scroll container, so there is nothing to scroll even
+   programmatically, and unlike `hidden` it does not force overflow-y to `auto`
+   — which is what keeps the sticky nav sticking to the viewport. */
+html { scroll-behavior: smooth; overflow-x: clip; }
 
 /* skip-to-content: hidden until a keyboard user tabs to it, then it drops in
    as a banana-yellow chip (WCAG 2.4.1 Bypass Blocks) */
@@ -52,7 +61,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   line-height: 1.5;
-  overflow-x: hidden;
+  overflow-x: clip;          /* see the note on html — clip, not hidden */
 }
 
 h1, h2, h3 { font-family: "Archivo Black", system-ui, sans-serif; line-height: 0.95; }
