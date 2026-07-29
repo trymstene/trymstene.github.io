@@ -372,6 +372,13 @@ function derToRaw(der) {
 // ⚠️ GDPR: the address is the ONLY personal datum stored, it is for sign-in
 // alone (never a mailing list), and it must stay deletable. See banana-id-plan.
 const MAIL_TTL = 15 * 60 * 1000;
+// ⚠️ THE QUOTA IS THE ATTACK SURFACE. Resend's free tier allows 100 mails a
+// DAY, so without these one bot could burn the lot in a minute and lock every
+// real login out until midnight. The generic 30/min IP throttle does not help:
+// a hundred addresses from one script is a hundred legitimate-looking requests.
+const MAIL_COOLDOWN = 2 * 60 * 1000;   // one link per address per 2 min
+const MAIL_DAILY_CAP = 90;             // ⚠️ deliberately UNDER the provider's 100
+
 const MAIL_RE = /^[^\s@]{1,64}@[^\s@.]+(\.[^\s@.]+)+$/;
 const normMail = (e) => String(e || '').trim().toLowerCase();
 
@@ -405,12 +412,39 @@ async function mailSignin(request, env) {
   if (!env.RESEND_KEY || !env.MAIL_FROM) {
     return json({ error: 'email not configured' }, 503, cors(env, request));
   }
+  // ⚠️ the cooldown answers ok:true and simply does not send — telling the
+  // caller "too soon" would confirm the address exists in a request that is
+  // otherwise carefully non-enumerating, and the user already has their link.
+  const cdKey = `mailcd/${await sha256Hex(email)}.json`;
+  const cdObj = await env.PASSES.get(cdKey);
+  if (cdObj) {
+    const cd = await cdObj.json().catch(() => null);
+    if (cd && Date.now() - cd.at < MAIL_COOLDOWN) return json({ ok: true }, 200, cors(env, request));
+  }
+  // the day's budget. ⚠️ read-modify-write on R2 is not atomic, so this drifts
+  // by a few under load — which is exactly why the cap sits under the real one
+  // rather than on it. It is a budget, not a lock.
+  const dayKey = `mailday/${new Date().toISOString().slice(0, 10)}.json`;
+  const dayObj = await env.PASSES.get(dayKey);
+  const day = dayObj ? await dayObj.json().catch(() => ({ n: 0 })) : { n: 0 };
+  if ((day.n || 0) >= MAIL_DAILY_CAP) {
+    // ⚠️ a DISTINCT error, so the page can say something true instead of
+    // "check your inbox" for a mail that is never coming
+    return json({ error: 'daily limit' }, 429, cors(env, request));
+  }
+
   const tok = bufToHex(crypto.getRandomValues(new Uint8Array(32)));
   await env.PASSES.put(`mailtkt/${await sha256Hex(tok)}.json`,
     JSON.stringify({ email, exp: Date.now() + MAIL_TTL }),
     { httpMetadata: { contentType: 'application/json' } });
   const base = (env.ALLOWED_ORIGIN || '').split(',')[0].trim() || 'https://trymstene.com';
-  await sendLink(env, email, `${base}/pass/?in=${tok}`);
+  const sent = await sendLink(env, email, `${base}/pass/?in=${tok}`);
+  if (sent.ok) {                       // only a mail that LEFT costs budget
+    await env.PASSES.put(dayKey, JSON.stringify({ n: (day.n || 0) + 1 }),
+      { httpMetadata: { contentType: 'application/json' } });
+    await env.PASSES.put(cdKey, JSON.stringify({ at: Date.now() }),
+      { httpMetadata: { contentType: 'application/json' } });
+  }
   // ⚠️ the SAME answer either way — never confirm whether an address is known
   return json({ ok: true }, 200, cors(env, request));
 }
