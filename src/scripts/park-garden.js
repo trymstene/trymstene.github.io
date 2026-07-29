@@ -427,7 +427,14 @@ export function initGarden(ctx) {
           el.className = 'pk-bedsoil';
           el.style.left = pct(x, W);
           el.style.top = pct(base, H);
-          depth(el, base);
+          // ⚠️ A BED IS GROUND, NOT AN OBJECT — no depth() here. Sorting it into
+          // the walker band (100+y) made it swallow anyone standing behind it:
+          // the sprite is 88px TALL but sorts on its BASE line, so a banana
+          // whose feet are a few px higher up drew UNDER 88px of soil (Trym:
+          // "the beds overflow my banana"). The 64 baked beds cannot do this
+          // because they are painted into the plate at z 0 — this pins the
+          // grown ones to the same layer so both behave identically.
+          el.style.zIndex = '2';
           world.appendChild(el);
           return el;
         });
