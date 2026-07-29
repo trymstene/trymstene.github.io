@@ -3,7 +3,7 @@
 import { poofInto } from '../lib/world.js';
 import { passStat } from '../lib/banana-pass.js';
 import { track, PARK_TEST, R, SVG } from './park-util.js';
-import { BOUND, PLAZA, POND, MEADOW } from './park-geo.js';
+import { BOUND, PLAZA, POND, MEADOW, TREE_OVS, OVERLAYS } from './park-geo.js';
 
 // 🌰 the acorn — cap, warm body, inner shadow (banana-density pixel style)
 const ACORN_SVG = SVG('11 13',
@@ -332,6 +332,8 @@ export function initCritters(ctx) {
     const d = Math.hypot(dx, dy);
     const sad = moodBand === 0;                  // mopey = slower, longer sulks
     if (d < 3) {
+      // ☔ under its tree it just stays there until the rain passes
+      if (a.shelter) { a.wait = 4; return; }
       a.wait = (sad ? 3.5 : 1.5) + Math.random() * (sad ? 5 : 3.5);
       anPick(a);
       return;
@@ -349,6 +351,46 @@ export function initCritters(ctx) {
     }
     anPlace(a);
   }
+  // 🌦 WEATHER: heavy rain sends every land animal to a tree — each to a
+  // DIFFERENT one, scattered, some caught out in the open (Trym). A storm
+  // takes them off the map entirely.
+  // ⚠️ they shelter slightly ABOVE the tree's ground line, so the canopy
+  // overlay (which sorts by its own base) draws OVER them. That overlap is the
+  // whole read: standing level with the trunk looks like standing NEXT to a
+  // tree, not under it.
+  let wxNow = 'clear', hidden = false;
+  function setWeather(k) {
+    if (k === wxNow) return;
+    const was = wxNow;
+    wxNow = k;
+    if (k === 'storm') {                       // gone
+      if (!hidden) {
+        hidden = true;
+        animals.forEach((a) => {
+          poofInto(world, 'pk-poof', a.x / W * 100, (a.y - 20) / H * 100);
+          a.el.style.display = 'none';
+        });
+      }
+      return;
+    }
+    if (hidden) { hidden = false; animals.forEach((a) => { a.el.style.display = ''; }); }
+    if (k === 'heavy') {
+      // one tree each, walked to in the normal way so it never teleports
+      const trees = TREE_OVS.map((i) => [OVERLAYS[i][1] + OVERLAYS[i][3] / 2, OVERLAYS[i][5]]);
+      animals.forEach((a, n) => {
+        if (a.pond) return;                    // ducks love it, they stay out
+        const t = trees[(n * 3 + 1) % trees.length];
+        if (!t) return;
+        a.tx = t[0] + (n % 2 ? 22 : -24);
+        a.ty = t[1] - 16;                      // ABOVE the ground line = under the canopy
+        a.wait = 0;
+        a.shelter = true;
+      });
+    } else if (was === 'heavy') {
+      animals.forEach((a) => { a.shelter = false; a.wait = 0.6 + Math.random() * 2; });
+    }
+  }
+
   function animalTick(dt) {
     for (const a of animals) {
       anStep(a, dt);
@@ -398,7 +440,7 @@ export function initCritters(ctx) {
   return {
     acornTick, bflyTick, tapBfly, setBflies,
     sqTick, setSquirrels,
-    animalTick, setAnimalMood, tapAnimal,
+    animalTick, setAnimalMood, tapAnimal, setWeather,
     qa: { acorns, bflys, squirrels, animals,
       // 🐔 mood QA: pop every animal's bubble right now
       mood: () => animals.forEach((a) => showMood(a)) },

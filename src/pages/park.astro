@@ -197,6 +197,41 @@ const faq = {
       .pk-wx__flash { animation: none !important; }
     }
 
+    /* 🌦 THE POST-STORM NOTICE — not an announcement. Nothing is broadcast
+       while a storm blows; this is for whoever walks in AFTERWARDS and finds
+       the mess. The rave's quest-call type, one size down (Trym), and it only
+       appears while the park is still under 30% — if the regulars already put
+       it back to 90 there is nothing to explain. */
+    .pk-stormnote {
+      position: absolute; top: 44px; left: 8px; z-index: 600; max-width: 176px;
+      box-sizing: border-box; background: rgba(13, 20, 13, 0.9);
+      border: 3px solid #ffe135; padding: 5px 8px 6px;
+      opacity: 0; transform: translateY(-6px); transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .pk-stormnote.is-on { opacity: 1; transform: none; }
+    .pk-stormnote[hidden] { display: none; }
+    .pk-stormnote b {
+      display: block; font-size: 0.5rem; font-weight: 800; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #ffe135; margin-bottom: 3px;
+    }
+    .pk-stormnote span { font-size: 0.6rem; font-weight: 800; color: #fffdf5; line-height: 1.35; }
+
+    /* 🍂 STORM DEBRIS — leaves torn off and driven across the view. Reuses
+       the leaf-pile sprites the sad phase already bakes, so it costs no art:
+       five elements, transform-animated, storm only. */
+    .pk-leafblow {
+      position: absolute; width: 1.5%; aspect-ratio: 42 / 22; pointer-events: none;
+      background: url('/assets/park/l-leaf1.png') center/contain no-repeat;
+      image-rendering: pixelated; opacity: 0; will-change: transform;
+    }
+    .pk-wx.is-storm ~ * .pk-leafblow, .pk-leafblow.is-on { opacity: 0.9; }
+    @keyframes pkLeafBlow {
+      from { transform: translate3d(-12vw, 0, 0) rotate(0deg); }
+      to   { transform: translate3d(112vw, 26vh, 0) rotate(720deg); }
+    }
+    .pk-leafblow.is-on { animation: pkLeafBlow linear infinite; }
+    @media (prefers-reduced-motion: reduce) { .pk-leafblow { display: none; } }
+
     /* 💧 PUDDLES — they outlive the rain and fade; walk through one to
        splash it away (rep only, never health — see park-weather.js) */
     .pk-puddle {

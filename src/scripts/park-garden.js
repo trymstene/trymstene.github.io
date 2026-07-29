@@ -66,6 +66,10 @@ const STAGE_ART = {
   pumpkin3: ['c-pumpkin-3.png', 38, 35], pumpkin4: ['c-pumpkin-4.png', 38, 51],
   wheat1: ['c-wheat-1.png', 24, 12], wheat2: ['c-wheat-2.png', 24, 24],
   wheat3: ['c-wheat-3.png', 24, 26], wheat4: ['c-wheat-4.png', 31, 38],
+  // 🥀 ONE corpse for every plant and every stage — the farm pack ships a
+  // single Rotten per crop with no growth phases, so "dead is dead" is both
+  // what the art supports and what Trym picked. A storm sets slot.rot.
+  rot: ['g-rot.png', 28, 31],
 };
 // 🌼 BORDER FLOWERS — single-tap roadside decoration on the generator's
 // BORDER_SPOTS (bare-soil dots baked into the plate): 3 coins, one stage,
@@ -211,6 +215,24 @@ export function initGarden(ctx) {
       gShim.bloom = Math.min(100, gShim.bloom + 1);
       return Promise.resolve(strip());
     }
+    // 🥀 the storm's cleanup, mirrored from the worker — a shim that does not
+    // implement an endpoint LIES to QA: the client toasts "cleared" while the
+    // bed stays rotten, which is exactly how this was caught.
+    if (path === '/clear') {
+      const i = Math.floor(Number(body.slot));
+      const s2 = gShim.slots[i];
+      if (!s2 || !s2.rot) return Promise.resolve({ err: 'gone', ...strip() });
+      gShim.slots[i] = null;
+      gShim.bloom = Math.min(100, gShim.bloom + 0.5);
+      return Promise.resolve(strip());
+    }
+    if (path === '/clearpot') {
+      const fi = gShim.border.findIndex((f) => f.spot === Math.floor(Number(body.spot)) && f.rot);
+      if (fi < 0) return Promise.resolve({ err: 'gone', ...strip() });
+      gShim.border.splice(fi, 1);
+      gShim.bloom = Math.min(100, gShim.bloom + 0.5);
+      return Promise.resolve(strip());
+    }
     if (path === '/weed') {
       const wi = gShim.weeds.findIndex((w2) => w2.id === body.id);
       if (wi < 0) return Promise.resolve({ err: 'gone', ...strip() });
@@ -250,11 +272,12 @@ export function initGarden(ctx) {
     } catch (e) { return null; }   // no server, no garden — the park still works
   }
   const gDays = (s) => Math.floor((Date.now() - s.plantedAt) / 86400000);
-  const gReady = (s) => s && gDays(s) >= (SEED_BY[s.seed] || { days: 99 }).days;
+  const gReady = (s) => s && !s.rot && gDays(s) >= (SEED_BY[s.seed] || { days: 99 }).days;
   const gMine = (s) => s && s.passShort === myShort;
   // watered today? (UTC day, matching the server's wday math)
   const gWet = (s) => s && Math.floor((s.lastWater || 0) / 86400000) === Math.floor(Date.now() / 86400000);
   function gStageArt(s) {
+    if (s.rot) return STAGE_ART.rot;      // the storm got it
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const t = gDays(s) / sd.days;
     if (sd.crop) {   // crops grow through their own four baked stages
@@ -299,7 +322,7 @@ export function initGarden(ctx) {
         el.soil.classList.toggle('pk-soil--dry', wet === 'dry');
       }
       const [img, w2, h2] = gStageArt(s);
-      const key = img + (gReady(s) ? '!' : '');
+      const key = img + (gReady(s) ? '!' : '') + (s.rot ? 'x' : '');
       if (el.stage !== key) {
         el.stage = key;
         if (!el.plant) {
@@ -362,9 +385,10 @@ export function initGarden(ctx) {
         depth(el, sy);
         world.appendChild(el);
       }
-      if (el.dataset.kind !== f.kind) {
-        el.dataset.kind = f.kind;
-        const [img, w2, h2] = BORDER_ART[f.kind] || BORDER_ART.marigold;
+      const bkey = f.kind + (f.rot ? '-rot' : '');
+      if (el.dataset.kind !== bkey) {
+        el.dataset.kind = bkey;
+        const [img, w2, h2] = f.rot ? STAGE_ART.rot : (BORDER_ART[f.kind] || BORDER_ART.marigold);
         el.style.backgroundImage = "url('/assets/park/" + img + "')";
         el.style.width = pct(w2, W);
         el.style.height = pct(h2, H);
@@ -911,6 +935,8 @@ export function initGarden(ctx) {
     if (Array.isArray(res.leaves)) renderLeaves(res.leaves);
     if (Array.isArray(res.houses)) renderHouses(res.houses);
     if (typeof res.bloom === 'number') refreshBloom(res.bloom);
+    // 🌦 the storm's calling card, if there is still a mess to explain
+    if (res.stormAt && ctx.weather) ctx.weather.stormNote(res.stormAt, res.bloom);
   }
   async function gardenPoll() {
     applyGarden(await gFetch(''));
@@ -1062,9 +1088,24 @@ export function initGarden(ctx) {
     if (gl.lvl > before) setTimeout(() => toast('🧑‍🌾 gardener lvl ' + gl.lvl + ' — new seeds in the sheet!', 4600), 1500);
     if (!harvestTracked) { harvestTracked = true; track('park_harvest', { seed: s.seed, level: gl.lvl }); }
   }
+  async function doClear(i) {
+    const s = gSlots[i];
+    if (!s || !s.rot) return;
+    const res = await gFetch('/clear', { slot: i, pass: worldSid() });
+    if (res && res.err) { applyGarden(res); toast('somebody already cleared it'); return; }
+    applyGarden(res);
+    poofInto(world, 'pk-poof', PLOTS[i][0] / W * 100, (PLOTS[i][1] - 12) / H * 100);
+    passStat('rep', 2);
+    refreshHud();
+    float(PLOTS[i][0], PLOTS[i][1] - 20, '+2');
+    if (!clearedOnce) { clearedOnce = true; track('park_clear'); }
+    toast('cleared — the bed is free to plant again', 3200);
+  }
+  let clearedOnce = false;
   function gardenAct(i) {
     const s = gSlots[i];
     if (!s) { openSeedSheet(i); return; }
+    if (s.rot) { doClear(i); return; }     // the storm's cleanup chore
     if (gReady(s) && gMine(s)) { doHarvest(i); return; }
     openPlantCard(i);
   }

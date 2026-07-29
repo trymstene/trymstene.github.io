@@ -37,6 +37,43 @@ export function initWeather(ctx) {
   let kind = 'clear';
   const puddles = [];
 
+  // 🍂 the storm's debris: five leaves driven across the VIEW (not the map),
+  // each on its own duration and delay so they never march in step. Built once
+  // and switched by class — nothing is created or destroyed per storm.
+  const leaves = [];
+  for (let i = 0; i < 5; i++) {
+    const l = document.createElement('i');
+    l.className = 'pk-leafblow';
+    l.style.top = (8 + i * 17) + '%';
+    l.style.animationDuration = (2.4 + i * 0.6) + 's';
+    l.style.animationDelay = (-i * 1.3) + 's';
+    if (i % 2) l.style.backgroundImage = "url('/assets/park/l-leaf2.png')";
+    wrap.appendChild(l);
+    leaves.push(l);
+  }
+
+  // 🌦 THE POST-STORM NOTICE. Deliberately NOT a broadcast during the storm
+  // — it is for the visitor who arrives later and finds a wrecked park with no
+  // explanation (Trym). ⚠️ only while health is STILL under 30%: if the
+  // regulars already restored it to 90 there is nothing to tell anyone, and a
+  // notice about a storm nobody can see is just noise. Once per visit.
+  const note = document.createElement('div');
+  note.className = 'pk-stormnote';
+  note.hidden = true;
+  note.innerHTML = '<b>the morning after</b><span>oh no — a storm came through. '
+    + 'Somebody has some tidying to do.</span>';
+  view.appendChild(note);
+  let noted = false;
+  function stormNote(stormAt, health) {
+    if (noted || !stormAt || health >= 30) return;
+    if (Date.now() - stormAt > 12 * 3600000) return;   // ancient history
+    noted = true;
+    note.hidden = false;
+    requestAnimationFrame(() => note.classList.add('is-on'));
+    setTimeout(() => { note.classList.remove('is-on'); setTimeout(() => { note.hidden = true; }, 600); }, 11000);
+    track('park_stormnote');
+  }
+
   // ---- 💧 puddles: they OUTLIVE the rain and fade, so the park stays wet for
   // a while afterwards. Walk through one to splash it away (the acorn
   // grammar). ⚠️ rep only, NEVER health — puddles appear in drizzle, and
@@ -82,6 +119,21 @@ export function initWeather(ctx) {
     // puddles build up while it rains and are left behind when it stops
     const want = PUDDLES[k] || 0;
     while (puddles.length < want) puddleAdd();
+    // 🐔🐦🦋 the park reacts. Every one of these is an EXISTING state machine
+    // being biased — shelter targets, a roster multiplier, the on/off switches
+    // the bloom phases already drive — not new behaviour bolted on.
+    if (ctx.critters && ctx.critters.setWeather) ctx.critters.setWeather(k);
+    if (ctx.birds && ctx.birds.setWeather) ctx.birds.setWeather(k);
+    if (ctx.critters) {
+      // butterflies and squirrels are fair-weather only; the phase system puts
+      // them back when it clears (setPhase re-asserts on the next band change,
+      // and we re-assert here so clearing skies bring them straight back)
+      const fair = k === 'clear' || k === 'drizzle';
+      ctx.critters.setBflies(fair && ctx.phase() >= 4);
+      ctx.critters.setSquirrels(fair && ctx.phase() >= 3);
+    }
+    leaves.forEach((l) => l.classList.toggle('is-on', k === 'storm'));
+    if (ctx.npc && ctx.npc.oldPhasePoke) ctx.npc.oldPhasePoke();   // he has a view on this
     if (k !== 'clear') track('park_weather', { kind: k });
   }
 
@@ -95,5 +147,5 @@ export function initWeather(ctx) {
     puddleTick();
   }
 
-  return { wxTick, now: () => kind, qa: { puddles, setKind } };
+  return { wxTick, stormNote, now: () => kind, qa: { puddles, setKind, note } };
 }

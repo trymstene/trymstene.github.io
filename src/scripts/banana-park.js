@@ -27,6 +27,7 @@ import { initShops } from './park-shops.js';
 import { initGarden } from './park-garden.js';
 import { initShare } from './park-share.js';
 import { initWeather } from './park-weather.js';
+import { weatherAt } from '../lib/world.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
@@ -495,9 +496,16 @@ function init() {
   const birds = initBirds(ctx);
   ctx.birds = birds;
   const garden = initGarden(ctx);
-  const weather = initWeather(ctx);
   const critters = initCritters(ctx);
+  // ⚠️ WEATHER GOES LAST of the three: it biases the critters' and the birds'
+  // existing state machines, so both must EXIST first — reading `critters`
+  // above its own const is the TDZ trap that killed the rave floor once.
+  ctx.critters = critters;
+  const weatherNow = () => weatherAt(Date.now()).type;
+  const weather = initWeather(ctx);
+  ctx.weather = weather;   // the garden poll hands it the storm stamp
   const npc = initOldPeel(ctx);
+  ctx.npc = npc;           // the weather gives him something to say
   const fountain = initFountain(ctx, garden);
   const shops = initShops(ctx);
 
@@ -698,6 +706,11 @@ function init() {
       coins: (n) => { passStat('coins_earned', n); refreshHud(); },
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       phase: () => phase,
+      // 🌦 weather QA: force a tier (the clock only rains a few % of the time,
+      // so waiting for real weather is not a test plan), and fire the
+      // post-storm notice on demand. wxForce sticks until you pass null.
+      wx: (k) => { ctx.wxForce = k; weather.qa.setKind(k || weatherNow()); },
+      stormNote: (health) => weather.stormNote(Date.now() - 60000, health == null ? 5 : health),
     };
   }
 

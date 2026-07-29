@@ -350,15 +350,32 @@ export function initBirds(ctx) {
     const b = makeBird(sp, { spot: null, k: birds.length % 5, n: 1, hx: p.x, hy: p.y, roam: WILD_ROAM });
     flyIn(b, p.x, p.y);
   }
+  // 🌦 how much of the roster the weather leaves in the sky. Rides the sync
+  // KEY, so the machinery that already handles a roster change does all the
+  // work: birds off the new list fly off properly, returns fly back in.
+  let wxCut = 1;
+  function setWeather(k) {
+    // 🏠 the HOUSES go quiet too (Trym: "empty around birdhouses in heavy
+    // rain"). Residents are not roster-managed — they belong to their post —
+    // so they are simply indoors until it passes. In a real storm the server
+    // destroys the houses anyway and the next poll removes them for good.
+    const indoors = k === 'heavy' || k === 'storm';
+    birds.forEach((b2) => { if (b2.spot != null) b2.el.style.display = indoors ? 'none' : ''; });
+    const cut = k === 'storm' ? 0 : k === 'heavy' ? 0.15 : k === 'drizzle' ? 0.7 : 1;
+    if (cut === wxCut) return;
+    wxCut = cut;
+    wildKey = '';                              // force the next sync to re-cast
+    wildSync();
+  }
   function wildSync() {
     if (band < 0) return;                      // no word on park health yet
     const win = Math.floor(Date.now() / WILD_WIN);
     // a stocked house pulls the ceiling up a notch (two houses, two notches)
     const ceil = Math.min(3, WILD_CEIL[band] + Math.min(2, stockedN));
-    const key = win + ':' + band + ':' + ceil;
+    const key = win + ':' + band + ':' + ceil + ':' + wxCut;
     if (key === wildKey) return;
     wildKey = key;
-    const want = rosterFor(win, band, ceil);
+    const want = rosterFor(win, band, ceil).slice(0, Math.round(rosterFor(win, band, ceil).length * wxCut));
     const pool = birds.filter((b) => b.spot == null && !b.qa && b.state !== 'leave');
     const need = [];
     want.forEach((s) => {                      // a species still on the roster STAYS
@@ -414,7 +431,7 @@ export function initBirds(ctx) {
   }
 
   return {
-    birdTick, tapBird, setStocked, setBloom,
+    birdTick, tapBird, setStocked, setBloom, setWeather,
     qa: {
       birds,
       // 🐦 bird QA: read the shared roster, or drop a species at your feet

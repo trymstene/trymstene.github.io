@@ -1102,6 +1102,25 @@ if os.path.isdir(FARM):
         except Exception as e:
             print('  crop stages failed', cid, e)
 
+# ---- 🥀 THE RUINED PLANT — one sprite for every dead plant --------------
+# A storm ruins half the beds, and the farm pack ships exactly one Rotten per
+# crop with NO growth phases — so one universal corpse is both what the art
+# supports and what Trym picked (strawberry). "Dead is dead" reads fine, and it
+# means the client needs a single lookup rather than a rot sprite per stage.
+# (Per-crop rot stays free if we ever want it: Tomato/Pumpkin/Grain all exist.)
+if os.path.isdir(FARM):
+    try:
+        import glob as _g2
+        f = _g2.glob(os.path.join(FARM, '**', 'Crop_Strawberry_Rotten_48x48.png'), recursive=True)[0]
+        s_rot = blockify(Image.open(f).convert('RGBA'), factor=1, colors=28,
+                         warm=0.0, sat=1.0, con=1.0)
+        s_rot = s_rot.resize((max(1, int(s_rot.width * PROP)),
+                              max(1, int(s_rot.height * PROP))), Image.NEAREST)
+        s_rot.save(os.path.join(OUT, 'g-rot.png'), optimize=True)
+        print('  g-rot.png: %dx%d (one corpse for every plant)' % s_rot.size)
+    except Exception as e:
+        print('  rot sprite failed', e)
+
 # ---- 🐔 W2 ANIMALS — farm-pack wanderers (client-side, no placement) -------
 # Each sheet's SIDE walk cycle = the walk band's first 6 contiguous frames,
 # facing RIGHT (client flips by direction; frame 0 doubles as the standing

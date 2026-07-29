@@ -15,6 +15,21 @@ const OLD_DRAW = {
 };
 // his lines, a band per phase — grief → worry → cautious hope → warmth →
 // joy. Trym's lines verbatim where they fit; hints, never orders.
+// 🌦 …and what he says about the WEATHER, which overrides the health band
+// while it is falling: the park's mood is the sky's for as long as it lasts.
+// He is the only one who never leaves the bench.
+const OLD_WX = {
+  drizzle: ['just a bit of drizzle. does the beds good.',
+    'nothing wrong with a soft day like this.',
+    'smell that? that’s the soil waking up.'],
+  heavy: ['proper rain, this. beds’ll drink well tonight.',
+    'the hens have all found a tree. sensible birds.',
+    'don’t mind me. i’ve sat through worse.'],
+  storm: ['now THIS is weather.',
+    'hold on to something, lad.',
+    'we’ll be picking this up for days, mark me.',
+    'the birds knew. they always know first.'],
+};
 const OLD_LINES = [
   ['its so sad to see the park like this…',
     'someone should clean up this mess…',
@@ -112,9 +127,11 @@ export function initOldPeel(ctx) {
   });
   let oldSeen = false, oldIdx = 0, oldBand = -1, oldTimer = null;
   function oldSay() {
+    // the weather takes precedence over the health band while it falls
+    const wx = ctx.weather && ctx.weather.now && ctx.weather.now();
     const band = Math.max(0, ctx.phase());
     if (band !== oldBand) { oldBand = band; oldIdx = 0; }
-    const lines = OLD_LINES[band];
+    const lines = (wx && OLD_WX[wx]) || OLD_LINES[band];
     oldBub.innerHTML = '<i>' + OLD_NAME + '</i>' + esc(lines[oldIdx++ % lines.length]);
     oldBub.classList.add('is-on');
     clearTimeout(oldTimer);
