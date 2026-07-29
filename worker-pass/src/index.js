@@ -36,6 +36,8 @@ export default {
       if (url.pathname === '/challenge') return challenge(request, env);
       if (url.pathname === '/register') return register(request, env);
       if (url.pathname === '/assert') return assert_(request, env);
+      if (url.pathname === '/mail/signin') return mailSignin(request, env);
+      if (url.pathname === '/mail/use') return mailUse(request, env, url);
       if (url.pathname === '/link/start') return linkStart(request, env);
       if (url.pathname === '/link/finish') return linkFinish(request, env);
       if (url.pathname === '/push') return push(request, env);
@@ -154,8 +156,17 @@ function mergeBlob(oldB, newB) {
   return out;
 }
 
+// ⭐ THE KEY SPACE IS SHARED. A passkey's key is the hash of its credential id;
+// an email's is 'm' + the hash of the address, handed to the client as an
+// OPAQUE credId ('m:<hash>'). One namespace means resolve(), tokens, push and
+// pull all work for an email identity with no second code path — and the
+// address itself never travels in a URL or sits in localStorage.
+async function keyFor(credId) {
+  const c = String(credId || '');
+  return c.startsWith('m:') ? c.slice(2) : await sha256Hex(c);
+}
 async function loadRec(env, credId) {
-  const obj = await env.PASSES.get(`pass/${await sha256Hex(credId)}.json`);
+  const obj = await env.PASSES.get(`pass/${await keyFor(credId)}.json`);
   return obj ? await obj.json() : null;
 }
 async function loadKey(env, key) {
@@ -179,7 +190,7 @@ async function saveKey(env, key, rec) {
 // credential that presented them; only the BLOB is shared. A device you unlink
 // later must not be able to keep asserting with somebody else's key.
 async function resolve(env, credId) {
-  const ownKey = await sha256Hex(credId);
+  const ownKey = await keyFor(credId);
   const own = await loadKey(env, ownKey);
   if (!own) return null;
   if (!own.link) return { own, ownKey, home: own, homeKey: ownKey };
@@ -234,7 +245,7 @@ async function adminLedger(request, env, url) {
 }
 async function saveRec(env, credId, rec) {
   rec.updated = Date.now();
-  await env.PASSES.put(`pass/${await sha256Hex(credId)}.json`, JSON.stringify(rec), {
+  await env.PASSES.put(`pass/${await keyFor(credId)}.json`, JSON.stringify(rec), {
     httpMetadata: { contentType: 'application/json' },
   });
 }
@@ -258,6 +269,9 @@ async function register(request, env) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const { credId, pk, alg, clientDataJSON, blob } = b || {};
   if (!credId || !pk || !clientDataJSON || ![-7, -257].includes(alg)) return json({ error: 'bad register' }, 400, cors(env, request));
+  // ⚠️ 'm:' is the EMAIL namespace — a WebAuthn path must never mint or claim
+  // a key in it, or the two rails could be made to collide
+  if (String(credId).startsWith('m:')) return json({ error: 'bad register' }, 400, cors(env, request));
   if (!(await challengeOk(env, clientDataJSON))) return json({ error: 'stale challenge' }, 400, cors(env, request));
   if (blob && !blobOk(blob)) return json({ error: 'blob too large' }, 413, cors(env, request));
 
@@ -297,6 +311,10 @@ async function assert_(request, env) {
   const R = await resolve(env, credId);
   if (!R) return json({ error: 'unknown pass' }, 404, cors(env, request));
   const rec = R.own;                       // ← the KEY is always the credential's own
+  // ⚠️ an EMAIL identity has no public key — it can never satisfy a WebAuthn
+  // assertion, and must be refused explicitly rather than fall through the
+  // verify below on an undefined key
+  if (!rec.pk) return json({ error: 'wrong rail' }, 400, cors(env, request));
 
   // signedData = authenticatorData || SHA-256(clientDataJSON)
   const authData = b64uToBuf(authenticatorData);
@@ -343,6 +361,87 @@ function derToRaw(der) {
   return out;
 }
 
+// ---------- ✉️ THE EMAIL RAIL — the only thing that survives a dead device ----
+// Device linking only helps while the OLD device still works. An address is
+// what makes a pass outlive the hardware, and a magic link is simpler than a
+// password for everyone: nothing to remember, nothing for us to store, no
+// device story to explain.
+// ⚠️ NO PASSWORDS, EVER — not as a fallback. Two rails is two attack surfaces.
+// ⚠️ NO ACCOUNT ENUMERATION: /mail/signin answers the same whether or not the
+// address is known. The inbox is the only channel that differs.
+// ⚠️ GDPR: the address is the ONLY personal datum stored, it is for sign-in
+// alone (never a mailing list), and it must stay deletable. See banana-id-plan.
+const MAIL_TTL = 15 * 60 * 1000;
+const MAIL_RE = /^[^\s@]{1,64}@[^\s@.]+(\.[^\s@.]+)+$/;
+const normMail = (e) => String(e || '').trim().toLowerCase();
+
+// the sender is pluggable and FAILS CLOSED — no key, no mail, no pretending
+async function sendLink(env, to, link) {
+  if (!env.RESEND_KEY || !env.MAIL_FROM) return { ok: false, why: 'not configured' };
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: env.MAIL_FROM,
+      to: [to],
+      subject: 'Your link into Banana World',
+      text: `Tap to log in:\n\n${link}\n\nThe link works once and expires in 15 minutes.\n`
+        + `Did not ask for this? Ignore it — nothing happens.\n`,
+    }),
+  });
+  return { ok: res.ok, why: res.ok ? '' : 'send failed' };
+}
+
+// POST /mail/signin { email } → always { ok: true }
+async function mailSignin(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const email = normMail(b && b.email);
+  if (!MAIL_RE.test(email) || email.length > 160) {
+    return json({ error: 'bad email' }, 400, cors(env, request));
+  }
+  if (!env.RESEND_KEY || !env.MAIL_FROM) {
+    return json({ error: 'email not configured' }, 503, cors(env, request));
+  }
+  const tok = bufToHex(crypto.getRandomValues(new Uint8Array(32)));
+  await env.PASSES.put(`mailtkt/${await sha256Hex(tok)}.json`,
+    JSON.stringify({ email, exp: Date.now() + MAIL_TTL }),
+    { httpMetadata: { contentType: 'application/json' } });
+  const base = (env.ALLOWED_ORIGIN || '').split(',')[0].trim() || 'https://trymstene.com';
+  await sendLink(env, email, `${base}/pass/?in=${tok}`);
+  // ⚠️ the SAME answer either way — never confirm whether an address is known
+  return json({ ok: true }, 200, cors(env, request));
+}
+
+// GET /mail/use?t=… → { credId, token, blob }
+// A first-time address BECOMES a pass (the record is its own primary); a known
+// one resolves like any other credential — including through a pointer if this
+// address was claimed by an existing passkey pass.
+async function mailUse(request, env, url) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  const t = url.searchParams.get('t') || '';
+  if (!t) return json({ error: 'bad link' }, 400, cors(env, request));
+  const tk = `mailtkt/${await sha256Hex(t)}.json`;
+  const obj = await env.PASSES.get(tk);
+  if (!obj) return json({ error: 'used or unknown' }, 404, cors(env, request));
+  const ticket = await obj.json();
+  await env.PASSES.delete(tk);                       // single use, always
+  if (!ticket || ticket.exp < Date.now()) return json({ error: 'link expired' }, 410, cors(env, request));
+
+  const key = 'm' + (await sha256Hex(ticket.email));
+  const credId = 'm:' + key;
+  let rec = await loadKey(env, key);
+  if (!rec) rec = { mail: 1, tokens: {}, blob: null };   // a brand-new pass
+  const token = await mintToken(rec);
+  await saveKey(env, key, rec);
+  const R = await resolve(env, credId);
+  return json({ credId, token, blob: (R && R.home.blob) || rec.blob || null },
+    200, cors(env, request));
+}
+
 // ---------- 🔗 LINK ANOTHER DEVICE ----------------------------------------
 // A pass used to belong to a PASSKEY, not to a person: save it to Windows Hello
 // and it was stranded on that PC forever, which is exactly what a player wrote
@@ -384,7 +483,8 @@ async function linkFinish(request, env) {
   let b;
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const { code, credId, pk, alg, clientDataJSON } = b || {};
-  if (!code || !credId || !pk || !clientDataJSON || ![-7, -257].includes(alg)) {
+  if (!code || !credId || !pk || !clientDataJSON || ![-7, -257].includes(alg)
+      || String(credId).startsWith('m:')) {          // ⚠️ never the email namespace
     return json({ error: 'bad link' }, 400, cors(env, request));
   }
   if (!(await challengeOk(env, clientDataJSON))) return json({ error: 'stale challenge' }, 400, cors(env, request));
