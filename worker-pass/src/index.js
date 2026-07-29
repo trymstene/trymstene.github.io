@@ -43,6 +43,10 @@ export default {
       if (url.pathname === '/push') return push(request, env);
       if (url.pathname === '/pull') return pull(request, env, url);
       if (url.pathname === '/admin/ledger') return adminLedger(request, env, url);
+      if (url.pathname === '/admin/find') return adminFind(request, env);
+      if (url.pathname === '/admin/grant') return adminGrant(request, env);
+      if (url.pathname === '/admin/erase') return adminErase(request, env);
+      if (url.pathname === '/admin/log') return adminLog(request, env, url);
       if (url.pathname === '/health') return json({ ok: true });
       return json({ error: 'not found' }, 404);
     } catch (e) {
@@ -205,44 +209,220 @@ async function resolve(env, credId) {
 // CLOSED (404, deny-as-nothing — the Pulse pattern) until Trym sets it.
 // LocalStorage-only visitors have no record here by design — this is the
 // ledger of the synced, not a user database.
-async function adminLedger(request, env, url) {
-  const key = url.searchParams.get('key') || '';
-  if (!env.PASS_ADMIN_KEY || key !== env.PASS_ADMIN_KEY) {
-    return new Response('not found', { status: 404 });
+// ---------- 🗄 THE ADMIN DESK (Banana HQ → Users) ----------------------
+// ⚠️ EVERY WRITE HERE FIGHTS mergeBlob(), AND THE MERGE WINS. Stats merge by
+// MAX and the name survives a blank, so:
+//   · GRANTING is durable    — raise a number, MAX keeps it
+//   · TAKING COINS is durable ONLY through coins_spent, because the balance is
+//     (earned − spent) and spent is MAX-merged too
+//   · lowering rep/jelly, revoking own_* gear and clearing a name are NOT: the
+//     player's own next push restores the higher (or older) value and the edit
+//     evaporates with no error anywhere.
+// Those three are therefore NOT OFFERED. A button that looks like it worked and
+// silently didn't is worse than no button; they need a tombstone rail like the
+// shelf's, and that is a separate build.
+// ⚠️ ERASE is the exception that IS durable — there is no record left to merge
+// into. It is also how a GDPR deletion request gets honoured (see /admin/find).
+const ADMIN_LIST = 1000;    // key names are cheap
+const ADMIN_READ = 250;     // record reads are the cost — report truncation honestly
+const GRANT_CAP = 100000;   // no fat fingers turning 100 into 100000000
+
+const adminOk = (env, key) => !!(env.PASS_ADMIN_KEY && key === env.PASS_ADMIN_KEY);
+const notFound = () => new Response('not found', { status: 404 });
+// ✉️ an email identity is keyed 'm' + hash; a passkey key is pure hex, and 'm'
+// is not a hex digit, so the prefix tells the two rails apart with no lookup
+const isMailKey = (k) => k.slice(5).startsWith('m');
+
+async function adminLog(request, env, url) {
+  if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
+  const list = await env.PASSES.list({ prefix: 'adminlog/', limit: 200 });
+  const keys = list.objects.map((o) => o.key).sort().reverse().slice(0, 60);
+  const rows = [];
+  for (const k of keys) {
+    try { rows.push(await (await env.PASSES.get(k)).json()); } catch (e) {}
   }
-  const list = await env.PASSES.list({ prefix: 'pass/', limit: 500 });
-  const passes = [];
-  for (const o of list.objects.slice(0, 100)) { // cost cap: 100 reads/call
-    let rec = null;
-    try { rec = await (await env.PASSES.get(o.key)).json(); } catch (e) { continue; }
-    if (!rec) continue;
-    if (rec.link) continue;   // a linked device is not its own pass — one row per PASS
+  return json({ rows }, 200, { ...cors(env, request), 'Cache-Control': 'no-store' });
+}
+// ⚠️ every write leaves a trace. An admin desk with no record of what it did
+// is indistinguishable from a compromised one.
+async function adminNote(env, act, id, detail) {
+  const at = Date.now();
+  await env.PASSES.put(`adminlog/${at}-${bufToHex(crypto.getRandomValues(new Uint8Array(3)))}.json`,
+    JSON.stringify({ at, act, id, detail }), { httpMetadata: { contentType: 'application/json' } });
+}
+
+// one sweep of the bucket: primaries become rows, and every POINTER folds into
+// the row it points at as a device count + whether that pass can be recovered
+async function adminScan(env) {
+  const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST });
+  let truncated = !!list.truncated;
+  const recs = new Map();
+  for (const o of list.objects) {
+    if (recs.size >= ADMIN_READ) { truncated = true; break; }
+    try {
+      const obj = await env.PASSES.get(o.key);
+      if (obj) recs.set(o.key, await obj.json());
+    } catch (e) {}
+  }
+  const extra = new Map();                       // homeKey → { devices, mail }
+  for (const [k, r] of recs) {
+    if (!r || !r.link) continue;
+    const e = extra.get(`pass/${r.link}.json`) || { devices: 0, mail: false };
+    e.devices += 1;
+    if (isMailKey(k)) e.mail = true;
+    extra.set(`pass/${r.link}.json`, e);
+  }
+  const rows = [];
+  for (const [k, rec] of recs) {
+    if (!rec || rec.link) continue;              // one row per PASS, not per credential
     const blob = rec.blob || {};
-    const stats = (blob.pass && blob.pass.stats) || {};
-    const gear = Object.keys(stats).filter((k) => k.startsWith('own_') && stats[k] > 0).map((k) => k.slice(4));
-    passes.push({
-      id: o.key.slice(5, 13), // stable pseudo-id (hash prefix) — never the credId
+    const p = blob.pass || {};
+    const stats = p.stats || {};
+    const ex = extra.get(k) || { devices: 0, mail: false };
+    const gear = Object.keys(stats).filter((x) => x.startsWith('own_') && stats[x] > 0).map((x) => x.slice(4));
+    const rep = stats.rep || 0;
+    rows.push({
+      id: k.slice(5, 13),                        // stable pseudo-id, never the credId
       name: (blob.name || '').slice(0, 24),
       updated: rec.updated || 0,
-      devices: Object.keys(rec.tokens || {}).length,
-      created: (blob.pass && blob.pass.created) || 0,
-      days: ((blob.pass && blob.pass.days) || []).length,
-      badges: Object.keys((blob.pass && blob.pass.patches) || {}).length,
+      created: p.created || 0,
+      // ⭐ THE COLUMN THE EMAIL RAIL MADE POSSIBLE: can this player get back in
+      // after losing the device? mail = yes, forever. devices only = only while
+      // the other one still works. neither = one dead phone from gone.
+      mail: ex.mail || isMailKey(k),
+      devices: Object.keys(rec.tokens || {}).length + ex.devices,
+      days: (p.days || []).length,
+      badges: Object.keys(p.patches || {}).length,
       shelf: (blob.shelf || []).length,
-      rep: stats.rep || 0,
+      rep,
+      level: 1 + Math.floor(Math.sqrt(rep / 15)),   // mirrors levelFor() closely enough for a list
       jelly: stats.jelly || 0,
+      coins: Math.max(0, (stats.coins_earned || 0) - (stats.coins_spent || 0)),
       coinsEarned: stats.coins_earned || 0,
       coinsSpent: stats.coins_spent || 0,
       gear,
       glow: blob.glow === '1',
     });
   }
-  passes.sort((a, b) => b.updated - a.updated);
-  return json({ total: list.objects.length, truncated: !!list.truncated, passes }, 200, {
-    ...cors(env, request),
-    'Cache-Control': 'no-store',
+  rows.sort((a, b) => b.updated - a.updated);
+  return { rows, truncated, scanned: recs.size, listed: list.objects.length };
+}
+
+async function adminLedger(request, env, url) {
+  if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
+  const { rows, truncated, scanned, listed } = await adminScan(env);
+  const week = Date.now() - 7 * 86400000;
+  const sum = {
+    passes: rows.length,
+    withMail: rows.filter((r) => r.mail).length,
+    activeWeek: rows.filter((r) => r.updated > week).length,
+    coins: rows.reduce((n, r) => n + r.coins, 0),
+    badges: rows.reduce((n, r) => n + r.badges, 0),
+    multiDevice: rows.filter((r) => r.devices > 1).length,
+  };
+  return json({ total: listed, scanned, truncated, sum, passes: rows }, 200, {
+    ...cors(env, request), 'Cache-Control': 'no-store',
   });
 }
+
+// resolve the 8-char pseudo-id the desk shows back to a real record
+async function adminKeyFor(env, id) {
+  const want = String(id || '').toLowerCase();
+  if (!/^[0-9a-f]{6,16}$|^m[0-9a-f]{5,15}$/.test(want)) return null;
+  const list = await env.PASSES.list({ prefix: 'pass/' + want, limit: 5 });
+  const hits = list.objects.map((o) => o.key);
+  if (hits.length !== 1) return null;            // ⚠️ ambiguous never guesses
+  return hits[0];
+}
+
+// POST /admin/find { key, email } → { id } | { found: false }
+// ⭐ THIS IS THE PRIVACY PAGE'S PROMISE, IMPLEMENTED. The site cannot turn a
+// stored record back into an address (one-way hash), but it CAN go the other
+// way — which is exactly enough to honour "delete the pass behind this email".
+async function adminFind(request, env) {
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  if (!adminOk(env, (b && b.key) || '')) return notFound();
+  const email = normMail(b.email);
+  if (!MAIL_RE.test(email)) return json({ error: 'bad email' }, 400, cors(env, request));
+  const mailKey = 'm' + (await sha256Hex(email));
+  const rec = await loadKey(env, mailKey);
+  if (!rec) return json({ found: false }, 200, cors(env, request));
+  const homeKey = rec.link || mailKey;
+  return json({ found: true, id: homeKey.slice(0, 8), viaMail: mailKey.slice(0, 8) },
+    200, cors(env, request));
+}
+
+// POST /admin/grant { key, id, coins?, take?, rep?, jelly?, gear? }
+async function adminGrant(request, env) {
+  if (throttled(request.headers.get('CF-Connecting-IP') || 'admin')) {
+    return json({ error: 'slow down' }, 429, cors(env, request));
+  }
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  if (!adminOk(env, (b && b.key) || '')) return notFound();
+  const k = await adminKeyFor(env, b.id);
+  if (!k) return json({ error: 'no such pass' }, 404, cors(env, request));
+  const rec = await (await env.PASSES.get(k)).json();
+  if (!rec || rec.link) return json({ error: 'not a primary' }, 409, cors(env, request));
+
+  const n = (v) => Math.min(GRANT_CAP, Math.max(0, Math.floor(Number(v) || 0)));
+  const blob = rec.blob || (rec.blob = {});
+  const p = blob.pass || (blob.pass = { created: Date.now(), patches: {}, stats: {}, days: [] });
+  const st = p.stats || (p.stats = {});
+  const did = [];
+  const add = (stat, amount, label) => {
+    if (!amount) return;
+    st[stat] = (st[stat] || 0) + amount;
+    did.push(label + ' +' + amount);
+  };
+  add('coins_earned', n(b.coins), 'coins');
+  // ⚠️ TAKING coins raises SPENT, never lowers EARNED — a lowered number loses
+  // to MAX on the player's next push and the deduction would just vanish.
+  add('coins_spent', n(b.take), 'coins taken');
+  add('rep', n(b.rep), 'rep');
+  add('jelly', n(b.jelly), 'jelly');
+  if (b.gear) {
+    const id = String(b.gear).replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
+    if (id) { st['own_' + id] = 1; did.push('gear ' + id); }
+  }
+  if (!did.length) return json({ error: 'nothing to do' }, 400, cors(env, request));
+  await env.PASSES.put(k, JSON.stringify({ ...rec, updated: Date.now() }),
+    { httpMetadata: { contentType: 'application/json' } });
+  await adminNote(env, 'grant', k.slice(5, 13), did.join(', '));
+  const coins = Math.max(0, (st.coins_earned || 0) - (st.coins_spent || 0));
+  return json({ ok: true, did, coins, rep: st.rep || 0, jelly: st.jelly || 0 },
+    200, cors(env, request));
+}
+
+// POST /admin/erase { key, id, confirm } → the pass and every credential for it
+// ⚠️ IRREVERSIBLE and deliberately awkward: `confirm` must be the id again.
+async function adminErase(request, env) {
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  if (!adminOk(env, (b && b.key) || '')) return notFound();
+  if (String(b.confirm || '') !== String(b.id || '')) {
+    return json({ error: 'confirm must repeat the id' }, 400, cors(env, request));
+  }
+  const k = await adminKeyFor(env, b.id);
+  if (!k) return json({ error: 'no such pass' }, 404, cors(env, request));
+  const home = k.slice(5, -5);
+  // sweep the pointers first — a pointer left behind resolves to nothing and
+  // would strand that device on a dangling link
+  const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST });
+  let gone = 0;
+  for (const o of list.objects.slice(0, ADMIN_READ)) {
+    if (o.key === k) continue;
+    try {
+      const r = await (await env.PASSES.get(o.key)).json();
+      if (r && r.link === home) { await env.PASSES.delete(o.key); gone++; }
+    } catch (e) {}
+  }
+  await env.PASSES.delete(k);
+  await adminNote(env, 'erase', k.slice(5, 13), gone + ' linked credential(s) too');
+  return json({ ok: true, credentials: gone + 1 }, 200, cors(env, request));
+}
+
 async function saveRec(env, credId, rec) {
   rec.updated = Date.now();
   await env.PASSES.put(`pass/${await keyFor(credId)}.json`, JSON.stringify(rec), {
