@@ -217,6 +217,10 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-sync--linked .ps-perks,
     .ps-sync--linked .ps-mail,
     .ps-sync--linked .ps-alt { display: none; }
+    /* …except when a logged-in-by-passkey pass is being offered an email. Two
+       classes so it wins regardless of rule order. */
+    .ps-sync--linked.ps-sync--addmail .ps-mail { display: flex; }
+    .ps-out { margin-top: 0.7rem; }
     .ps-sync--linked .ps-sync__key { font-size: 1.2rem; }
     .ps-sync--linked h2 { font-size: 0.9rem; }
     .ps-device--id { margin: 0.6rem 0 0; }
@@ -400,6 +404,9 @@ const description = 'Your membership card to the banana world: the badges you ha
                    spellcheck="false" maxlength="12" placeholder="ABCD2468" aria-label="Link code" />
             <button class="btn btn--dark" id="psCodeGo" type="button">Link</button>
           </div>
+        </div>
+        <div class="ps-out" id="psOut" hidden>
+          <button class="ps-alt__toggle" id="psLogout" type="button">Log out</button>
         </div>
       </div>
       <p class="ps-device ps-device--id" id="psDevice">🎫 Everything is saved on this device. Turn on JavaScript to log in and carry it anywhere.</p>

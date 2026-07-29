@@ -467,10 +467,21 @@ async function mailSignin(request, env) {
   return json({ ok: true }, 200, cors(env, request));
 }
 
-// GET /mail/use?t=… → { credId, token, blob }
-// A first-time address BECOMES a pass (the record is its own primary); a known
-// one resolves like any other credential — including through a pointer if this
-// address was claimed by an existing passkey pass.
+// GET /mail/use?t=…[&credId=…&token=…] → { credId, token, blob, attached }
+// A known address resolves like any other credential. A NEW one either becomes
+// a pass of its own, or — if the click comes from a device that already owns
+// one — ATTACHES to that pass as a pointer.
+// ⭐ ONE LINK, BOTH MEANINGS. "Log in" and "add my email" are the same journey
+// (type address → click link), so they are the same endpoint. Without this an
+// existing player who typed their address got a SECOND, empty pass and their
+// real one was orphaned — the copy-not-a-pointer mistake [[banana-id-plan]] §2
+// exists to prevent.
+// ⚠️ BOTH HALVES ARE PROVEN BEFORE ANYTHING ATTACHES: the device token proves
+// they hold the pass, and clicking the mailed link proves they hold the inbox.
+// Either one alone must never be enough.
+// ⚠️ AN ADDRESS THAT ALREADY EXISTS IS NEVER RE-POINTED. It simply logs in.
+// Silently moving a live address onto whatever pass happens to be open in the
+// browser would be a takeover dressed up as a convenience.
 async function mailUse(request, env, url) {
   const bad = guard(env, request);
   if (bad) return bad;
@@ -489,11 +500,20 @@ async function mailUse(request, env, url) {
   if (!key) return json({ error: 'bad link' }, 400, cors(env, request));
   const credId = 'm:' + key;
   let rec = await loadKey(env, key);
-  if (!rec) rec = { mail: 1, tokens: {}, blob: null };   // a brand-new pass
+  let attached = false;
+  if (!rec) {
+    const claim = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
+    if (claim) {
+      rec = { mail: 1, tokens: {}, link: claim.homeKey };  // ← a pointer, not a copy
+      attached = true;
+    } else {
+      rec = { mail: 1, tokens: {}, blob: null };           // a brand-new pass
+    }
+  }
   const token = await mintToken(rec);
   await saveKey(env, key, rec);
   const R = await resolve(env, credId);
-  return json({ credId, token, blob: (R && R.home.blob) || rec.blob || null },
+  return json({ credId, token, attached, blob: (R && R.home.blob) || rec.blob || null },
     200, cors(env, request));
 }
 

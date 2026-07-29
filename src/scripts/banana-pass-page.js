@@ -6,7 +6,7 @@ import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
-  startLink, finishLink, mailSignin, mailUse } from '../lib/pass-sync.js';
+  startLink, finishLink, mailSignin, mailUse, logout } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -864,6 +864,10 @@ function initSync() {
   box.hidden = false;
   el('psDevice').hidden = true;
   const note = el('psSyncNote');
+  const byMail = () => {
+    const l = linked();
+    return !!(l && String(l.credId || '').startsWith('m:'));
+  };
   const showLinked = () => {
     box.classList.add('ps-sync--linked');
     const title = el('psSyncTitle');
@@ -872,6 +876,17 @@ function initSync() {
     note.textContent = '';
     const lk = el('psLink');
     if (lk) lk.hidden = false;
+    const out = el('psOut');
+    if (out) out.hidden = false;
+    // 🪪 logged in by PASSKEY = no address on file yet, so offer one here. This
+    // is the same field and the same link as signing in — clicking it ATTACHES
+    // the address to this pass rather than starting a second one.
+    if (!byMail()) {
+      box.classList.add('ps-sync--addmail');
+      el('psSyncLead').textContent = 'Add your email and you can log in from anywhere — even if you lose this device.';
+      const go = el('psMailGo');
+      if (go) go.textContent = 'Add my email';
+    }
   };
   const haveCode = el('psHaveCode');
   wireLink(note);
@@ -889,6 +904,15 @@ function initSync() {
       row.hidden = !open;
       if (haveCode) haveCode.hidden = !open;
       tog.setAttribute('aria-expanded', String(open));
+    });
+  }
+  // ⚠️ logging out drops the CREDENTIAL, not the save file — see logout().
+  const outBtn = el('psLogout');
+  if (outBtn) {
+    outBtn.addEventListener('click', () => {
+      logout();
+      passToast('👋 <b>LOGGED OUT</b><br>Your bananas stay on this device.');
+      setTimeout(() => location.reload(), 900);
     });
   }
   if (linked()) { showLinked(); return; }
@@ -944,8 +968,10 @@ function wireMail(note) {
         const n = el(id);
         if (n) n.hidden = true;
       }
+      const adding = el('psSync').classList.contains('ps-sync--addmail');
       el('psSyncTitle').textContent = '📬 Check your inbox';
-      el('psSyncLead').innerHTML = 'We sent a link to <b>' + esc(email) + '</b> — click it and you’re in.';
+      el('psSyncLead').innerHTML = 'We sent a link to <b>' + esc(email) + '</b> — click it and '
+        + (adding ? 'it’s on your pass.' : 'you’re in.');
       const perks = el('psPerks');
       if (perks) perks.hidden = true;
       note.textContent = 'The link works once, for 15 minutes. Not there? Check spam.';
@@ -965,9 +991,11 @@ async function initMailLanding() {
   if (!t) return false;
   history.replaceState(null, '', location.pathname + location.hash);
   try {
-    await mailUse(t);
+    const { attached } = await mailUse(t);
     passPush();                    // this device's world joins the account
-    passToast('🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
+    passToast(attached
+      ? '✉️ <b>EMAIL ADDED</b><br>You can log in with it on any device now.'
+      : '🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
     return true;
   } catch (e) {
     passToast('⚠️ <b>' + esc((e && e.message) || 'That link didn’t work.') + '</b>');

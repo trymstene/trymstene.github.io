@@ -58,7 +58,14 @@ export async function mailSignin(email) {
 // retry it, and never leave the token sitting in the address bar (the caller
 // strips it immediately — it is a bearer credential in a URL).
 export async function mailUse(t) {
-  const res = await fetch(PASS_API + '/mail/use?t=' + encodeURIComponent(t));
+  // ⭐ if this device already holds a pass, hand over its token: a first-time
+  // address then ATTACHES to that pass instead of starting a second one. This
+  // is what makes "add my email" and "log me in" the same single journey.
+  const have = linked();
+  const proof = have
+    ? '&credId=' + encodeURIComponent(have.credId) + '&token=' + encodeURIComponent(have.token)
+    : '';
+  const res = await fetch(PASS_API + '/mail/use?t=' + encodeURIComponent(t) + proof);
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
     throw new Error(
@@ -66,12 +73,22 @@ export async function mailUse(t) {
       : e.error === 'used or unknown' ? 'That link was already used — send yourself a fresh one.'
       : 'That link didn’t work — send yourself a fresh one.');
   }
-  const { credId, token, blob } = await res.json();
+  const { credId, token, blob, attached } = await res.json();
   setLink(credId, token);
   // ⚠️ merge THEN push: a brand-new email pass arrives with no blob, and this
   // device's world would be lost on the next pull if we never sent it up.
   if (blob) applyBlob(blob);
-  if (window.gtag) window.gtag('event', 'pass_mail_login');
+  if (window.gtag) window.gtag('event', attached ? 'pass_mail_attached' : 'pass_mail_login');
+  return { attached: !!attached };
+}
+
+// ---- log out ------------------------------------------------------------
+// ⚠️ THE SAVE FILE STAYS. This drops the credential this browser logs in with,
+// nothing else: bananas, coins and badges are localStorage and wiping them
+// would be indistinguishable from losing them. Logging back in re-merges.
+export function logout() {
+  try { localStorage.removeItem(LINK_KEY); } catch (e) {}
+  if (window.gtag) window.gtag('event', 'pass_logout');
   return true;
 }
 
