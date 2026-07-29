@@ -6,7 +6,7 @@ import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
-  startLink, finishLink } from '../lib/pass-sync.js';
+  startLink, finishLink, mailSignin, mailUse } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -40,6 +40,7 @@ const catalogReady = fetch('https://banana-share.trymstene.workers.dev/catalog/i
   .catch(() => {});
 
 const el = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 if (el('psSig')) init();
 
 // same naming as the rave's endurance board — your outfit IS your name
@@ -68,6 +69,7 @@ function signatureOutfit() {
 async function init() {
   passVisit();
   if (window.gtag) window.gtag('event', 'pass_view');
+  await initMailLanding();          // ⚠️ spend ?in= BEFORE the panel or card draw
   initSync();
   if (linked()) await pullLatest(); // freshest world BEFORE we draw it
   const pass = passGet();
@@ -850,38 +852,54 @@ function wireLink(note) {
   inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') run(); });
 }
 
-// ---- passkey sync panel ------------------------------------------------
+// ---- login panel --------------------------------------------------------
+// ⚠️ EMAIL IS THE ONLY THING ANYONE HAS TO UNDERSTAND. This panel used to open
+// with "do you have a pass?" and "save my pass" — words nobody uses about
+// logging in, in front of a choice nobody could make correctly (a passkey in
+// Windows Hello strands the account on one PC). Now: type your email, click the
+// link. Passkeys live behind a text toggle for people who want the shortcut.
 function initSync() {
   const box = el('psSync');
-  if (!box || !passkeysSupported()) return; // unsupported → the old device note stands
+  if (!box) return;
   box.hidden = false;
   el('psDevice').hidden = true;
   const note = el('psSyncNote');
   const showLinked = () => {
     box.classList.add('ps-sync--linked');
     const title = el('psSyncTitle');
-    if (title) title.textContent = '🔐 Pass saved';
-    // ⚠️ the old line said "any device … everything follows you", which is only
-    // true if the passkey itself travels. Two routes, stated as two routes.
-    el('psSyncLead').innerHTML = 'Same passkey on the other device? Open <a href="/pass/">trymstene.com/pass</a> there and tap “I already have a pass”. If it cannot get there, link it with a code:';
+    if (title) title.textContent = '✅ You’re logged in';
+    el('psSyncLead').textContent = 'Everything you make and win saves to your account automatically.';
     note.textContent = '';
     const lk = el('psLink');
     if (lk) lk.hidden = false;
-    const where = document.querySelector('.ps-where');
-    if (where) where.hidden = true;            // the choice is made; stop advising it
   };
-  // 🔗 the receiving side is offered to anyone who has NOT saved a pass here
   const haveCode = el('psHaveCode');
-  if (haveCode && !linked()) haveCode.hidden = false;
   wireLink(note);
+  wireMail(note);
+  // the passkey shortcut only exists where the browser has one
+  // ⚠️ AND THE DEVICE-CODE BOX HIDES BEHIND THE SAME TOGGLE. A code from your
+  // other device only makes sense once you are in passkey-land; on its own,
+  // under the email field, it is a second unexplained way in.
+  const alt = el('psAlt');
+  if (alt && passkeysSupported() && !linked()) {
+    alt.hidden = false;
+    const tog = el('psAltToggle'), row = el('psAltRow');
+    tog.addEventListener('click', () => {
+      const open = row.hidden;
+      row.hidden = !open;
+      if (haveCode) haveCode.hidden = !open;
+      tog.setAttribute('aria-expanded', String(open));
+    });
+  }
   if (linked()) { showLinked(); return; }
+  if (!passkeysSupported()) return;
 
   el('psSave').addEventListener('click', async () => {
     note.textContent = 'Your device will ask to confirm — that’s the passkey being made…';
     try {
       await savePass();
       showLinked();
-      passToast('🔐 <b>PASS SAVED</b> — your badges and creations follow you across devices');
+      passToast('🔐 <b>SET UP</b> — Face ID or your fingerprint logs you in on this device now.');
     } catch (e) {
       note.textContent = e && e.name === 'NotAllowedError'
         ? 'No worries — nothing was saved. Try again whenever you like.'
@@ -893,12 +911,66 @@ function initSync() {
     note.textContent = 'Pick the banana-world passkey on your device…';
     try {
       await restorePass();
-      passToast('🎫 <b>WELCOME BACK</b><br>Your pass is on this device now.');
+      passToast('🎫 <b>WELCOME BACK</b><br>You’re logged in on this device now.');
       setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
     } catch (e) {
       note.textContent = e && e.name === 'NotAllowedError'
         ? 'No worries — nothing happened.'
-        : 'Couldn’t find that pass — did you save it on your other device first?';
+        : 'No passkey here yet — use your email instead and it works anywhere.';
     }
   });
+}
+
+// ---- ✉️ email login: one field, one button -----------------------------
+function wireMail(note) {
+  const form = el('psMailForm');
+  if (!form) return;
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const inp = el('psMailIn'), go = el('psMailGo');
+    const email = (inp.value || '').trim();
+    if (!email) return;
+    go.disabled = true;
+    note.textContent = 'Sending…';
+    try {
+      await mailSignin(email);
+      // ⚠️ NEVER "we found your account" / "that address is new" — /mail/signin
+      // deliberately answers the same either way so it cannot be used to test
+      // whether somebody is a member. The inbox is the only channel that knows.
+      // ⚠️ EVERY other way in goes away once the link is sent — the only next
+      // action is "open your inbox", so nothing else should be on screen.
+      form.hidden = true;
+      for (const id of ['psAlt', 'psHaveCode', 'psPerks']) {
+        const n = el(id);
+        if (n) n.hidden = true;
+      }
+      el('psSyncTitle').textContent = '📬 Check your inbox';
+      el('psSyncLead').innerHTML = 'We sent a link to <b>' + esc(email) + '</b> — click it and you’re in.';
+      const perks = el('psPerks');
+      if (perks) perks.hidden = true;
+      note.textContent = 'The link works once, for 15 minutes. Not there? Check spam.';
+    } catch (e) {
+      note.textContent = (e && e.message) || 'Couldn’t send that — try again in a moment.';
+      go.disabled = false;
+    }
+  });
+}
+
+// 🔗 the magic link lands here as /pass/?in=<ticket>
+// ⚠️ STRIP IT FROM THE URL IMMEDIATELY. It is a bearer credential; leaving it
+// in the address bar means it rides into history, referrers and screenshots —
+// and it is single-use, so a reload would spend it and look like a failure.
+async function initMailLanding() {
+  const t = new URLSearchParams(location.search).get('in');
+  if (!t) return false;
+  history.replaceState(null, '', location.pathname + location.hash);
+  try {
+    await mailUse(t);
+    passPush();                    // this device's world joins the account
+    passToast('🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
+    return true;
+  } catch (e) {
+    passToast('⚠️ <b>' + esc((e && e.message) || 'That link didn’t work.') + '</b>');
+    return false;
+  }
 }

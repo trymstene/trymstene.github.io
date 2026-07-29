@@ -29,6 +29,52 @@ async function getChallenge() {
   return new TextEncoder().encode(JSON.stringify(payload));
 }
 
+// ---- ✉️ THE EMAIL RAIL — the primary way in ----------------------------
+// A link in the inbox beats both a password (nothing to remember, nothing for
+// us to store) and a passkey on its own (a passkey saved to Windows Hello is
+// stranded on that PC). Passkeys stay, demoted to a shortcut.
+// ⚠️ /mail/signin answers the same whether or not the address is known, so the
+// UI must NEVER phrase the result as "found you" or "no such account" — the
+// only honest line is "we sent a link".
+export async function mailSignin(email) {
+  const res = await fetch(PASS_API + '/mail/signin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(
+      e.error === 'bad email' ? 'That address doesn’t look right — check it over?'
+      : e.error === 'slow down' ? 'Hold on a few seconds and try again.'
+      : e.error === 'daily limit' ? 'Too much login mail today — try again tomorrow, sorry!'
+      : 'Couldn’t send that — try again in a moment.');
+  }
+  if (window.gtag) window.gtag('event', 'pass_mail_signin');
+  return true;
+}
+
+// the link lands on /pass/?in=… — spend the ticket and BE logged in
+// ⚠️ single use: a failure here means the ticket is already gone, so never
+// retry it, and never leave the token sitting in the address bar (the caller
+// strips it immediately — it is a bearer credential in a URL).
+export async function mailUse(t) {
+  const res = await fetch(PASS_API + '/mail/use?t=' + encodeURIComponent(t));
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(
+      e.error === 'link expired' ? 'That link has expired — send yourself a fresh one.'
+      : e.error === 'used or unknown' ? 'That link was already used — send yourself a fresh one.'
+      : 'That link didn’t work — send yourself a fresh one.');
+  }
+  const { credId, token, blob } = await res.json();
+  setLink(credId, token);
+  // ⚠️ merge THEN push: a brand-new email pass arrives with no blob, and this
+  // device's world would be lost on the next pull if we never sent it up.
+  if (blob) applyBlob(blob);
+  if (window.gtag) window.gtag('event', 'pass_mail_login');
+  return true;
+}
+
 // "Save your pass" — create the passkey and upload this device's world
 export async function savePass() {
   const challenge = await getChallenge();
