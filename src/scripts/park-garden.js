@@ -111,6 +111,7 @@ const WEED_SPOTS_QA = [[380, 690], [960, 640], [1700, 560], [1650, 700], [900, 1
 const TOOL_RANGE = 110;
 const BED_DIG_REP = 3;         // 🪓 per dig; the bed itself belongs to everyone
 const BED_DIGS_UI = 4;         // ⚠️ mirrors BED_DIGS in worker-rave — the fade ramp
+const BED_FULL_UI = 0.9;       // ⚠️ mirrors BED_FULL — only to SAY how far off it is
 // 💰 DYNAMIC SEED PRICE — base × (1 + held²/25), where held = the plants you
 // are ALREADY tending. Your first is always base price, six to eight stays
 // comfortable, twenty-eight costs 32×. ⭐ Trym's rule: it must never say NO.
@@ -1092,6 +1093,31 @@ export function initGarden(ctx) {
     tgt.y = e.y + 22;
     return true;
   }
+  // 🌱 HOW FULL THE GARDEN IS — a SECOND number, and nothing on the HUD says
+  // it. ⚠️ Trym read the health bar's 90% as the garden's and reasonably
+  // expected fresh ground: "park is at 90%... cant dig any new beds?". Park
+  // health and garden occupancy are different quantities that both live in
+  // percent, so the one that gates the beds has to be somewhere you can see it,
+  // and it has to say what would change it.
+  function gardenLine() {
+    const open = bedsOpen.size * BED_N;
+    if (!open) return '';
+    const taken = gSlots.filter((s2, k) => s2 && bedOpen(k)).length;
+    const pctFull = Math.round((taken / open) * 100);
+    const short = Math.max(0, Math.ceil(open * BED_FULL_UI) - taken);
+    const all = bedsOpen.size >= BEDS.length;
+    return '<p class="pk-gardenline"><b>🌱 the garden</b> — ' + taken + ' of ' + open
+      + ' beds planted (' + pctFull + '%)<span>'
+      + (bedPending
+        ? '🪓 fresh ground is marked out somewhere — grab the spade'
+        : all
+          ? 'every bed in the park is open'
+          : short === 0
+            ? '🪓 new ground is due — it appears on the next visit'
+            : 'plant ' + short + ' more and the gardeners break new ground')
+      + '</span></p>';
+  }
+
   // the card is mostly BAR: five phase segments, each its own fill slice,
   // the live phase ringed; tapping a segment reveals that phase's lines
   function bloomStatus() {
@@ -1120,6 +1146,7 @@ export function initGarden(ctx) {
         + ' aria-label="park health phase ' + (i + 1) + ' of 5"></button>').join('')
       + '</div>'
       + '<p class="pk-bloomnum" id="pkBnum">' + bloomStatus() + '</p>'
+      + gardenLine()
       + '<p id="pkBexp"></p>';
     const exp = document.getElementById('pkBexp');
     const show = (i) => {
