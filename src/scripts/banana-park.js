@@ -28,6 +28,7 @@ import { initGarden } from './park-garden.js';
 import { initShare } from './park-share.js';
 import { initWeather } from './park-weather.js';
 import { weatherAt } from '../lib/world.js';
+import { initTravel } from './world-travel.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
@@ -444,6 +445,10 @@ function init() {
     float(pos.x, pos.y - 44, '❤️');
   });
   (() => {
+    // 🧭 fast travel sits in the bar with the other actions — the walked
+    // roads are still there, this is the shortcut (see world-travel.js)
+    initTravel({ here: 'park', mount: document.querySelector('.pk-actions'),
+      btnClass: 'pk-act pk-act--icon', track });
     const btn = document.getElementById('pkAudio');
     let on = false;
     btn.addEventListener('click', () => {

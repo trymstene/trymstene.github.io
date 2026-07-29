@@ -25,6 +25,7 @@ import { WEARABLE_PACKS } from '../data/wearables.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
 import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
+import { initTravel } from './world-travel.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
 // touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
@@ -2079,6 +2080,9 @@ function init() {
   });
   // sound is a stub for now — the toggle works, the audio wires in later
   (() => {
+    // 🧭 fast travel — the same door the park and the rave have
+    initTravel({ here: 'beach', mount: document.querySelector('.bh-actions'),
+      btnClass: 'bh-act bh-act--icon', track });
     const btn = document.getElementById('bhAudio');
     let on = false;
     btn.addEventListener('click', () => {

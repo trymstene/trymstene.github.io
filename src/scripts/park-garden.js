@@ -408,9 +408,10 @@ export function initGarden(ctx) {
   // coming. Trym: "+2 rep should be in a sticker-pill thing to symbolize
   // something you get... so it actually is felt. not just a sidenote."
   function actionBtn(id, label, reward) {
-    return '<button class="pk-act" id="' + id + '" type="button">'
-      + '<span class="pk-act__verb">' + label + '</span>'
-      + (reward ? '<span class="pk-act__rew">' + reward + '</span>' : '')
+    // ⚠️ pk-cta, never pk-act — .pk-act belongs to the ACTION BAR
+    return '<button class="pk-cta" id="' + id + '" type="button">'
+      + '<span class="pk-cta__verb">' + label + '</span>'
+      + (reward ? '<span class="pk-cta__rew">' + reward + '</span>' : '')
       + '</button>';
   }
 

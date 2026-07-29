@@ -398,20 +398,24 @@ const faq = {
     .pk-tallylist__none { opacity: 0.6; font-style: italic; }
 
     /* ⭐ the action: the verb big, the reward as a pill you can SEE coming */
-    /* 🍌 the main action is BANANA YELLOW everywhere — one colour means
-       "this is the thing to press" across every card in the world. */
-    .pk-act {
+    /* 🍌 THE CARD CTA — banana yellow everywhere, so one colour means "this
+       is the thing to press" across every card in the world.
+       ⚠️ NAMED pk-cta, NOT pk-act: .pk-act is the ACTION BAR's button class and
+       has been since the park was built. Calling this one .pk-act too put a
+       width:100% on every action-bar button and they stacked down the screen
+       instead of sitting in a row (Trym spotted it in the field). */
+    .pk-cta {
       display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
       width: 100%; padding: 0.7rem 0.8rem; cursor: pointer;
       border: 3px solid #000; color: #241c00; font-family: inherit;
       background: linear-gradient(#ffe14d, #f2c012);
       box-shadow: 3px 3px 0 #000;
     }
-    .pk-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
-    .pk-act__verb { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+    .pk-cta:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .pk-cta__verb { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
     /* the reward reads as a badge PINNED to the button — dark on the yellow so
        it is the second thing your eye lands on, never the first */
-    .pk-act__rew {
+    .pk-cta__rew {
       padding: 4px 9px; border: 2px solid #000; border-radius: 999px;
       background: #12331d; color: #6fe38a; white-space: nowrap;
       font-size: 0.78rem; font-weight: 800; letter-spacing: 0.4px;

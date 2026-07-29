@@ -17,6 +17,7 @@ import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banan
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
+import { initTravel } from './world-travel.js';
 
 // THE CLUB SCREEN content — the LED wall behind the DJ blinks these one-liners
 // and, every 4th slide, a clickable house ad. Copy is deliberately silly +
@@ -744,6 +745,11 @@ function init() {
       setTimeout(() => toast.remove(), 3500);
     });
   }
+
+  // 🧭 fast travel — the same door the park and the bay have, in the club's
+  // own button skin. Goes in .rv-emotes so it sits with the other round tools.
+  initTravel({ here: 'rave', mount: document.querySelector('.rv-emotes'),
+    btnClass: 'rv-emote-btn', track });
 
   const zoomBtn = el('rvZoom');
   // pixel magnifiers, Pillow-verified (scratchpad zoom-icons): + = zoom in on
