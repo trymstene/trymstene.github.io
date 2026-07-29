@@ -160,6 +160,10 @@ const description = 'Your membership card to the banana world: the badges you ha
     .ps-sync h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
     .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
     .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .ps-sync__where {
+      margin: 0.5rem 0 0; padding: 0.5rem 0.65rem; font-size: 0.82rem; line-height: 1.45;
+      background: rgba(255, 225, 53, 0.1); border-left: 4px solid #ffe135;
+    }
     .ps-sync__note { margin: 0.5rem 0 0 !important; font-size: 0.74rem !important; opacity: 0.72; min-height: 1em; }
     /* linked = done: calm it right down to a slim confirmation, no buttons */
     .ps-sync--linked { background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.7rem 0.9rem; }
@@ -301,7 +305,17 @@ const description = 'Your membership card to the banana world: the badges you ha
             <h2 id="psSyncTitle">This pass is your login</h2>
             <p id="psSyncLead">
               <b>No email, no password.</b> Save your pass with a passkey — Face&nbsp;ID,
-              fingerprint or your device PIN — and the same pass opens on every device you use.
+              fingerprint or your device PIN.
+            </p>
+            <!-- ⚠️ THE OLD COPY PROMISED "the same pass opens on every device you
+                 use", and a passkey saved to Windows Hello CANNOT do that — it is
+                 bound to that PC. A player wrote in stranded exactly that way.
+                 Where you save it decides where it works, so say so BEFORE the
+                 choice rather than apologising after it. -->
+            <p class="ps-sync__where">
+              📱 <b>Save it to your phone or password manager</b> and your pass opens
+              anywhere. Save it to this computer only — Windows Hello, say — and it
+              stays on this computer.
             </p>
           </div>
         </div>
