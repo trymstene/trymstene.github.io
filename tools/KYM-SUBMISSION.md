@@ -72,6 +72,68 @@ Disclose: "I'm the creator of the banana GIF — sources attached."
 
 ---
 
+## 🔎 Research log — 30 Jul 2026 (read before redoing any of this)
+
+Status: **PARKED by Trym** — "I find this more tedious than worth it, can't I
+just build my banana world." Fair: the site already carries the attribution
+(copy + CreativeWork schema + Giphy), and it compounds. These drafts keep. The
+findings below do not survive in anyone's head, so they live here.
+
+**Facts corrected by Trym (the drafts above are now WRONG on these):**
+- ❌ **"Tierra" is not his handle.** It is a music alias he took years later,
+  added to the wikis by someone else. He was correcting Tropedia on 30 Jul.
+- ❌ **Not an avatar.** It was always an emoticon (Tropedia says avatar).
+- 🟡 **Drawn ~1999, but NOT posted then** — made alongside a batch of other
+  GIFs (he also sold animated banner ads, ~$25 each). First posted later.
+- 🟡 He is genuinely unsure of the year and the board software. 25 years, and
+  he was a teenager. Stated uncertainty > false precision.
+
+**Wayback CDX findings (checked 30 Jul, via the index — not the calendar):**
+| | |
+|---|---|
+| iblis.nu on UBB (`cgi-bin/Ultimate.cgi`) | archived from 2000-10-27 |
+| iblis.nu on **vBulletin** (`/forum/`) | **from 2001-06-25** |
+| freakforum.nu | from 2002-06-03 |
+| freak.no | from 2001-04-01, **still live today** |
+
+- ⚠️ **NEVER place the first post on freakforum.nu.** It post-dates PBJT (early
+  2002), so that version of the story dates the banana AFTER the Flash and
+  destroys the whole claim. iblis.nu is the only safe answer.
+- ⚠️ **iblis.nu's July 2001 "show all smilies" page lists ONLY the 11 stock
+  vBulletin smilies — no banana.** So do not claim it was an installed smilie
+  THERE. The claim is that he POSTED it there; it became a `:banana:` smilie on
+  other boards later. The archive supports the second, not the first.
+- His "it was on vBB" memory fits iblis.nu from 25 Jun 2001 onward — OR the
+  vBulletin era is simply what he remembers of a board he used for years.
+- Swept 60 of 545 early thread captures for inline images: avatars, ad banners,
+  stock UBB icons. **No banana.** A `/ubb/avatars/custom/` dir exists, so user
+  images did. Wayback only ever caught a handful of threads from a whole board,
+  so absence here proves nothing either way.
+
+**Source strength, honestly:**
+- City A.M. — the only reference that would pass a Wikipedia reliability test,
+  and even it supports "Stene says", not "Stene did".
+- Tropedia / Ensemble Dark Horse / meme.fandom — user-generated, no editorial
+  oversight, and one carried a factual error about him. Colour, not evidence.
+- ⭐ The real asset: **25 years, no rival claimant, ever.** That is how
+  attribution actually gets settled when no file survives.
+
+**If it is ever picked up again, the two leads that would move it:**
+1. **freak.no is the same community and still alive.** Old members remembering
+   the banana publicly, or an admin with old DB backups / historical smilie
+   sets, beats every wiki combined. Costs one forum post.
+2. **A second independent publication** (NRK, VG, Kode24, Digi.no). "Norwegian
+   teenager drew one of the internet's first memes and never got credited" is a
+   real story. Being on KYM is itself the hook that makes a journalist bite.
+
+⚠️ Wiki-editing rules if he goes back: correcting a factual error about his own
+name is proper; ADDING creatorship claims to a wiki and then citing that wiki is
+circular, and is the same trap as writing his own Wikipedia article. Any link to
+the site goes in External Links, points at /dancing-banana-gif-meme/ (never the
+shop), on a separate day from any other edit, with the conflict disclosed.
+
+---
+
 ## Related follow-ups (not KYM)
 
 - **Wayback archaeology**: pre-2002 captures of the community's forums —
