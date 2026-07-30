@@ -21,6 +21,7 @@ import {
   makeStickerMockup as coreMockup, ensureCaptionFont,
 } from '../lib/sticker-core.js';
 import { memeGif } from '../lib/meme-gif.js';
+import { offerAfterDownload } from '../lib/make-it-real.js'; // 🛍 the moment the wish is granted
 import { wearToCustom } from '../lib/wear-render.js'; // community-item wear payload → engine custom channel
 import { tonightDrop, dropStatus, fmtClock, loadCatalog as loadDropCatalog } from '../lib/drops.js'; // the readable drop clock
 
@@ -1052,6 +1053,24 @@ function init() {
   }
   function download(href, name) { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 
+  // 🛍 THE DOWNLOAD MOMENT. 28 days of GA4: 336 gif_downloads, 9 product-tile
+  // clicks, 0 purchases — the free file granted the wish and the session ended.
+  // So we ask HERE, once per session, after the file is already saved: the same
+  // banana they just made, shown as the actual die-cut sticker. Never before
+  // the download, never twice, always skippable.
+  function offerIt(kind) {
+    sync(); // the design must be in the URL before we hand it to the PDP
+    const search = location.search;
+    offerAfterDownload({
+      outfit: { ...state },
+      head: kind === 'png' ? 'Want that as a real sticker?' : 'Want your banana on your laptop?',
+      cta: 'See it as a sticker →',
+      href: '/make-a-banana/sticker/' + search,
+      skipText: kind === 'png' ? 'no thanks, just the image' : 'no thanks, just the GIF',
+      onGo: () => track('offer_click', { from: 'download_' + kind, design: designStr() }),
+    }) && track('offer_shown', { from: 'download_' + kind, design: designStr() });
+  }
+
   // ---- emoji GIF export: ALWAYS transparent, tight-trimmed, no captions ----
   el('bbDownloadGif').onclick = async () => {
     const btn = el('bbDownloadGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Rendering…';
@@ -1094,6 +1113,7 @@ function init() {
       track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
       saveToShelf();
       passPatch('emoji'); passPatch('maker'); passStat('builds');
+      offerIt('gif');
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
@@ -1118,6 +1138,7 @@ function init() {
       track('gif_download', { file: 'builder-meme.gif', design: designStr() });
       saveToShelf();
       passPatch('maker'); passStat('builds');
+      offerIt('meme');
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
@@ -1141,6 +1162,7 @@ function init() {
     track('png_download', { file: 'builder-meme.png', design: designStr() });
     saveToShelf();
     passPatch('maker'); passStat('builds');
+    offerIt('png');
   };
 
   // ---- order it as a REAL printed sticker (Part B) ----
