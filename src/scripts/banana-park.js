@@ -448,6 +448,7 @@ function init() {
     // 🧭 fast travel sits in the bar with the other actions — the walked
     // roads are still there, this is the shortcut (see world-travel.js)
     initTravel({ here: 'park', mount: document.querySelector('.pk-actions'),
+      before: document.getElementById('pkAudio'),   // the speaker stays rightmost
       btnClass: 'pk-act pk-act--icon', track });
     const btn = document.getElementById('pkAudio');
     let on = false;

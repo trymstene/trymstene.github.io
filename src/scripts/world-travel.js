@@ -1,4 +1,4 @@
-// 🧭 FAST TRAVEL — the same door in all three worlds.
+// 🚪 FAST TRAVEL — the same door in all three worlds.
 //
 // The roads between areas stay: walking out of the park's east gate into the
 // bay is how the world is supposed to feel, and that is not going anywhere.
@@ -27,8 +27,24 @@ function hrefFor(to, from) {
   return '/rave/';
 }
 
+// 🚪 THE DOOR — pixelarticons Pro "door-open", INLINED rather than imported.
+// Every other icon in the world comes from pixel-icons.js, but that module
+// eager-globs the whole icon directory, and the beach does not otherwise carry
+// it: pulling ~70 inlined SVGs onto a game surface to draw ONE glyph is exactly
+// the per-surface budget this project watches ([[banana-world-engineering]]).
+// Self-contained is also what this module already is — it ships its own CSS for
+// the same reason.
+// ⚠️ `currentColor` on purpose: the trigger wears the HOST bar's button classes,
+// so the door recolours itself in the park's greens, the bay's sands and the
+// rave's neon without three copies of anything.
+const DOOR = '<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22" '
+  + 'shape-rendering="crispEdges" aria-hidden="true" focusable="false">'
+  + '<path d="M15 4h-4v16h4v2H9v-2H2v-2h2V6h2v12h3V6H6V4h3V2h6v2Zm4 14h3v2h-7v-2h2V6h-2V4h4v14Zm-5-6h-2v-2h2v2Z"/></svg>';
+
 const CSS = `
 .wt-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.35rem; }
+.wt-btn svg, .wt-card h2 svg { display:block; }
+.wt-card h2 { display:flex; align-items:center; gap:0.4rem; }
 .wt-veil {
   position:fixed; inset:0; z-index:70; display:grid; place-items:center;
   background:rgba(4,8,4,0.74); padding:1rem;
@@ -77,9 +93,15 @@ function injectCss() {
  * @param mount the action bar to put the button in
  * @param btnClass the HOST world's own button classes, so the trigger looks
  *        native to the bar it sits in (the panel is the shared part, not this)
+ * @param before an element to insert AHEAD of, or nothing to append.
+ *        ⚠️ THE SOUND BUTTON STAYS RIGHTMOST (Trym: it is a setting, not an
+ *        action). Each bar pins it with `margin-left:auto`, which only pushes
+ *        past what comes BEFORE it — so appending the door quietly landed it to
+ *        the right of the speaker in all three worlds. The bar knows its own
+ *        order; the shared module should not have to guess it.
  * @param track  the world's analytics fn
  */
-export function initTravel({ here, mount, btnClass, track }) {
+export function initTravel({ here, mount, before, btnClass, track }) {
   if (!mount) return;
   injectCss();
 
@@ -88,14 +110,14 @@ export function initTravel({ here, mount, btnClass, track }) {
   btn.className = (btnClass || '') + ' wt-btn';
   btn.id = 'wtBtn';
   btn.setAttribute('aria-label', 'travel to another area');
-  btn.innerHTML = '🧭';
+  btn.innerHTML = DOOR;
 
   const veil = document.createElement('div');
   veil.className = 'wt-veil';
   veil.hidden = true;
   const others = ORDER.filter((k) => k !== here);
   veil.innerHTML = '<div class="wt-card" role="dialog" aria-modal="true" aria-label="Travel">'
-    + '<h2>🧭 where to?</h2>'
+    + '<h2>' + DOOR + ' where to?</h2>'
     + '<p class="wt-sub">the roads still work — this is the shortcut.</p>'
     + '<div class="wt-list">'
     + others.map((k) => '<a class="wt-go" href="' + hrefFor(k, here) + '" data-to="' + k + '">'
@@ -121,7 +143,7 @@ export function initTravel({ here, mount, btnClass, track }) {
     });
   });
 
-  mount.appendChild(btn);
+  mount.insertBefore(btn, (before && before.parentNode === mount) ? before : null);
   document.body.appendChild(veil);
   return { open: () => { veil.hidden = false; }, close };
 }

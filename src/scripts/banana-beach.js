@@ -2082,6 +2082,7 @@ function init() {
   (() => {
     // 🧭 fast travel — the same door the park and the rave have
     initTravel({ here: 'beach', mount: document.querySelector('.bh-actions'),
+      before: document.getElementById('bhAudio'),   // the speaker stays rightmost
       btnClass: 'bh-act bh-act--icon', track });
     const btn = document.getElementById('bhAudio');
     let on = false;
