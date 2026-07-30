@@ -22,12 +22,12 @@ function fakeR2() {
 const env = {
   PASSES: fakeR2(), ALLOWED_ORIGIN: ORIGIN, PASS_HMAC: 't',
   RESEND_KEY: 'k', MAIL_FROM: 'Banana World <hello@send.trymstene.com>',
-  RESEND_AUDIENCE: 'aud_123',
+  NEWS_OPEN: '1',
 };
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   const u = String(url);
-  if (u.includes('/audiences/')) {
+  if (u.includes('api.resend.com/contacts')) {
     contacts.push({ url: u, body: JSON.parse(init.body) });
     return new Response(JSON.stringify({ id: 'c1' }), { status: 200 });
   }
@@ -68,7 +68,12 @@ console.log('\n2. the click is what subscribes');
   ok('confirm succeeds', r.status === 200, await r.text());
   ok('now the contact exists', contacts.length === 1 && contacts[0].body.email === 'fan@example.com', contacts);
   ok('…and is subscribed, not silently opted out', contacts[0].body.unsubscribed === false, contacts[0].body);
-  ok('it went to the configured audience', contacts[0].url.includes('aud_123'), contacts[0].url);
+  // ⚠️ Resend deprecated Audiences in favour of Segments and dropped the
+  // "create an audience" step, so contacts are account-level and there is no id
+  // to configure. Pin that here: a regression to /audiences/<id>/contacts would
+  // be building on something already on its way out.
+  ok('it uses the account-level endpoint, not a deprecated audience id',
+    contacts[0].url === 'https://api.resend.com/contacts', contacts[0].url);
   const receipt = env.PASSES._m.get(`newsok/${await sha('fan@example.com')}.json`);
   ok('⚠️ a consent receipt was written (GDPR: show it, do not assert it)', !!receipt, receipt);
   ok('…keyed by hash, so the receipt is not a second copy of the list',
@@ -106,14 +111,14 @@ console.log('\n4. the shape of the answers');
   ok('an unknown confirmation is a plain 404', stale.status === 404, stale.status);
 }
 
-console.log('\n5. it fails closed when unconfigured');
+console.log('\n5. it fails closed when switched off');
 {
-  const bare = { ...env, RESEND_AUDIENCE: '' };
+  const bare = { ...env, NEWS_OPEN: '' };
   const r = await worker.fetch(new Request('https://w.dev/news/join', {
     method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: 'x@example.com' }),
   }), bare, ctx);
-  ok('no audience configured → 503, never a silent pretend', r.status === 503, r.status);
+  ok('news switched off → 503, never a silent pretend', r.status === 503, r.status);
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

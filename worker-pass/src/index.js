@@ -777,7 +777,7 @@ async function newsJoin(request, env) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const email = normMail(b && b.email);
   if (!MAIL_RE.test(email) || email.length > 160) return json({ error: 'bad email' }, 400, cors(env, request));
-  if (!env.RESEND_KEY || !env.MAIL_FROM || !env.RESEND_AUDIENCE) {
+  if (!env.RESEND_KEY || !env.MAIL_FROM || !env.NEWS_OPEN) {
     return json({ error: 'news not configured' }, 503, cors(env, request));
   }
   const cdKey = `newscd/${await sha256Hex(email)}.json`;
@@ -823,7 +823,12 @@ async function newsConfirm(request, env, url) {
   await env.PASSES.delete(tk);
   if (!ticket || ticket.exp < Date.now()) return json({ error: 'link expired' }, 410, cors(env, request));
 
-  const res = await fetch(`https://api.resend.com/audiences/${env.RESEND_AUDIENCE}/contacts`, {
+  // ⚠️ ACCOUNT-LEVEL CONTACTS, NOT AN AUDIENCE. Resend has deprecated Audiences
+  // in favour of Segments, and there is no "create an audience" step in the
+  // dashboard any more — contacts simply belong to the account. So there is no
+  // id to configure and nothing to paste wrong. Segments/Topics can slice the
+  // list later without changing anything here.
+  const res = await fetch('https://api.resend.com/contacts', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: ticket.email, unsubscribed: false }),

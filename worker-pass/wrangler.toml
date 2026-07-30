@@ -18,3 +18,8 @@ ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # this site's threat model). Upgrade any time with:
 #   npx wrangler secret put PASS_HMAC   (the secret overrides this var)
 PASS_HMAC = "banana-world-challenge-stamp-v1"
+# 📣 the news list, on or off. A plain var, not a secret — there is nothing
+# sensitive in it, and it should be visible in the repo that a marketing rail
+# is switched on. Set to "" and /news/join refuses with 503 and the opt-in on
+# /pass/ says so, rather than quietly collecting addresses nobody can mail.
+NEWS_OPEN = "1"
