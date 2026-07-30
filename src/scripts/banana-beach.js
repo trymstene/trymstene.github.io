@@ -11,6 +11,7 @@ import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
+import { mountHud } from '../lib/world-hud.js';
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
 // tools/build-beach-scene.py, which declares each collider on the place()
 // call that draws the prop. Never hand-copy a coordinate in here again: the
@@ -78,7 +79,16 @@ function init() {
   const capBubble = document.getElementById('bhCapBubble');
   const cutEl = document.getElementById('bhCut');
   const hintEl = document.getElementById('bhHint');
-  const rallyEl = document.getElementById('bhRally');
+  // 🌍 the World HUD — one shared strip, tinted for the bay. The rally line
+  // rides its `slot` chip, which hides itself when empty.
+  const hud = mountHud({
+    mount: document.getElementById('bhView'),   // the CLIPPING view — .bh-stage
+                   // is position:static, so an overlay mounted there escapes to
+                   // the top of the page.
+    theme: { bg: 'rgba(16, 18, 28, 0.82)' },
+    chips: ['lvl', 'coins', 'tix', 'slot', 'crowd'],
+    values: { tix: () => ticketBal() },
+  });
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
@@ -509,7 +519,7 @@ function init() {
     nextTgt = null; tgt.x = wx; tgt.y = wy;
   }
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.bh-panel') || e.target.closest('.bh-whud') || e.target.closest('.bh-actions')) return;
+    if (e.target.closest('.bh-panel') || e.target.closest('.wh') || e.target.closest('.bh-actions')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
@@ -687,7 +697,7 @@ function init() {
   let rally = 0, bestRally = 0, restAt = 0, lastKick = 0, kickTrackAt = 0;
   try { bestRally = parseInt(localStorage.getItem('bh-rally-best') || '0', 10) || 0; } catch (e) {}
   function showRally() {
-    rallyEl.textContent = rally > 1 ? ('🏐 ' + rally + (bestRally > 1 ? ' · best ' + bestRally : '')) : '';
+    hud.setSlot(rally > 1 ? ('🏐 ' + rally + (bestRally > 1 ? ' · best ' + bestRally : '')) : '');
   }
   // A BUMP, SOLVED RATHER THAN GUESSED.
   // For a projectile, the height at any point of its arc is
@@ -913,20 +923,7 @@ function init() {
   // same world `rep`; COINS/TICKETS the same wallets the pier reads. Only ever
   // CALLED at runtime (pickup + the 1s side-card interval), so coinBal/ticketBal
   // below are already live — never call it at module-eval (TDZ).
-  const lvlNEl = document.getElementById('bhLvlN');
-  const lvlFillEl = document.getElementById('bhLvlFill');
-  const coinNEl = document.getElementById('bhCoinN');
-  const tixNEl = document.getElementById('bhTixN');
-  function refreshHud() {
-    const s = passGet().stats || {};
-    if (lvlNEl) {
-      const lv = levelFor(s.rep || 0);
-      lvlNEl.textContent = 'LVL ' + lv.level;
-      if (lvlFillEl) lvlFillEl.style.width = Math.round((lv.into / lv.need) * 100) + '%';
-    }
-    if (coinNEl) coinNEl.textContent = coinBal();
-    if (tixNEl) tixNEl.textContent = ticketBal();
-  }
+  const refreshHud = () => hud.refresh();
   function shellTick() {
     const now = performance.now();
     if (now - shellSpawnAt > SPAWN_EVERY) { shellSpawnAt = now; spawnShell(); }
@@ -3477,14 +3474,13 @@ function init() {
   // Fails silently by design: no socket, no crowd, the beach is still a beach.
   const BEACH_WS = 'wss://banana-rave.trymstene.workers.dev/beach';
   const peers = new Map();                      // id → { el, ctx, outfit, key }
-  const crowdEl = document.getElementById('bhCrowd');
   let myBayId = null, baySendAt = 0;
   const lastSent = { x: -1, y: -1, sit: null };
   let bayName = '';
   try { bayName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
   const myBayOutfit = () => fullOutfit(ME_DRAW); // {hat, glasses, extras, c} — carries the community slot
   function refreshCrowd() {
-    if (crowdEl) crowdEl.textContent = peers.size ? String(peers.size + 1) : 'solo';
+    hud.setCrowd(peers.size ? String(peers.size + 1) : 'solo');
   }
   // 🏐 THE STEP-ASIDE RULE FINALLY HAS A NUMBER. sandyTick() has carried it
   // since B1 — two bananas on the court and he heads for the firepit, one and

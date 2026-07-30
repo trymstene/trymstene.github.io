@@ -11,6 +11,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { presenceRoom, poofInto } from '../lib/world.js';
+import { mountHud } from '../lib/world-hud.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
@@ -420,25 +421,15 @@ function init() {
     setTimeout(() => cutEl.classList.remove('is-on'), 280);
   }
 
-  // ---- 🌍 THE WORLD HUD — the refined pill strip, park edition ------------
-  const lvlNEl = document.getElementById('pkLvlN');
-  const lvlFillEl = document.getElementById('pkLvlFill');
-  const coinNEl = document.getElementById('pkCoinN');
-  const coinBal = () => {
-    const s = passGet().stats || {};
-    return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
-  };
-  function refreshHud() {
-    const s = passGet().stats || {};
-    if (lvlNEl) {
-      const lv = levelFor(s.rep || 0);
-      lvlNEl.textContent = 'LVL ' + lv.level;
-      if (lvlFillEl) lvlFillEl.style.width = Math.round((lv.into / lv.need) * 100) + '%';
-    }
-    if (coinNEl) coinNEl.textContent = coinBal();
-  }
-  refreshHud();
-  setInterval(() => { if (!document.hidden) refreshHud(); }, 1000);
+  // ---- 🌍 THE WORLD HUD — one shared strip, tinted park-green -------------
+  const hud = mountHud({
+    mount: view,   // ⚠️ the CLIPPING view, not the stage: an overlay needs a
+                   // positioned ancestor and .pk-stage is static, so mounting
+                   // there sent the strip to the top of the PAGE.
+    theme: { bg: 'rgba(14, 22, 14, 0.82)' },
+    chips: ['lvl', 'coins', 'crowd'],
+  });
+  const refreshHud = () => hud && hud.refresh();
 
   // 🎮 the action bar — React · Sound
   document.getElementById('pkEmote').addEventListener('click', () => {
@@ -521,7 +512,7 @@ function init() {
   const shops = initShops(ctx);
 
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.pk-whud') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel') || e.target.closest('.pk-shop')) return;
+    if (e.target.closest('.wh') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel') || e.target.closest('.pk-shop')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
@@ -634,14 +625,13 @@ function init() {
   // Fails silently by design: no socket, no crowd, the park still works solo.
   const PARK_WS = 'wss://banana-rave.trymstene.workers.dev/park';
   const peers = new Map();                      // id → { el, ctx, outfit, x, y, lastF }
-  const crowdEl = document.getElementById('pkCrowd');
   let myParkId = null, parkSendAt = 0, sawPeer = false;
   const lastSent = { x: -1, y: -1 };
   const myParkOutfit = () => fullOutfit(ME_DRAW);
   const toPctX = (x) => x / W * 100, toPctY = (y) => y / H * 100;
   const fromPctX = (x) => (Number(x) || 50) / 100 * W, fromPctY = (y) => (Number(y) || 90) / 100 * H;
   function refreshCrowd() {
-    if (crowdEl) crowdEl.textContent = peers.size ? String(peers.size + 1) : 'solo';
+    if (hud) hud.setCrowd(peers.size ? String(peers.size + 1) : 'solo');
   }
   function drawPeer(p, force) {
     const f = frameNow();

@@ -646,26 +646,8 @@ const faq = {
     .pk-hbar__pct.is-out { color: #fffdf5; }
 
     /* 🌍 THE WORLD HUD — the refined pill strip (rave/bay), park edition */
-    .pk-whud {
-      position: absolute; top: 8px; right: 8px; z-index: 9;
-      display: flex; gap: 5px; align-items: center; justify-content: flex-end;
-      flex-wrap: wrap; max-width: calc(100% - 16px);
-    }
-    .pk-whud > * {
-      margin: 0; height: 27px; box-sizing: border-box; display: flex; align-items: center;
-      gap: 5px; background: rgba(14, 22, 14, 0.82); border: 2px solid #000;
-      border-radius: 6px; padding: 0 9px; font-weight: 800; font-size: 0.76rem;
-      line-height: 1; color: #fffdf5; white-space: nowrap;
-    }
-    .pk-whud .pk-whud__lvl { color: #ffe135; border-color: #ffe135; }
-    .pk-whud__lvlbar {
-      flex: 0 0 42px; min-width: 42px; height: 6px; background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
-    }
-    .pk-whud__lvlbar i { display: block; height: 100%; width: 0; background: #ffe135; transition: width 0.5s ease; }
-    .pk-whud__coins img { display: block; image-rendering: pixelated; }
-    .pk-whud__coins b { color: #ffe135; }
-    .pk-whud__crowd { color: #8affc0; }
+    /* 🌍 the World HUD's styles moved to src/lib/world-hud.js — the park tints
+       it with --wh-bg and nothing else. */
 
     /* 🎮 THE ACTION BAR — an in-flow band BELOW the map: React · Sound */
 
@@ -1585,12 +1567,10 @@ const faq = {
           <div class="pk-base" id="pkBase" aria-hidden="true"></div>
           <div class="pk-me" id="pkMe"><canvas id="pkMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
         </div>
-        <!-- 🌍 THE WORLD HUD — LEVEL (rep bar) · COINS · BLOOM · CROWD -->
-        <div class="pk-whud" id="pkWhud">
-          <span class="pk-whud__lvl"><span id="pkLvlN">LVL 1</span><span class="pk-whud__lvlbar"><i id="pkLvlFill"></i></span></span>
-          <span class="pk-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="pkCoinN">0</b></span>
-          <span class="pk-whud__crowd"><span aria-hidden="true">◍</span> <span id="pkCrowd">solo</span></span>
-        </div>
+        <!-- 🌍 THE WORLD HUD is built by src/lib/world-hud.js — markup, CSS and
+             the 1s clock all live there now, so the bay and the club and every
+             future area are the same strip instead of three lookalikes. -->
+
         <button class="pk-hbar" id="pkHBar" type="button" aria-label="park health">
           <span class="pk-hbar__face" id="pkHFace" aria-hidden="true"></span>
           <span class="pk-hbar__track"><i class="pk-hbar__fill" id="pkHFill"></i><b class="pk-hbar__pct" id="pkHPct">—</b></span>

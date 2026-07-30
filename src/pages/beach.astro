@@ -824,29 +824,8 @@ const faq = {
        26 Jul), themed for the bright bay: dark pills so they read over the sky.
        LEVEL (gold, rep bar) · COINS · TICKETS · CROWD. Right-aligned, wraps on
        narrow phones like the rave's. (Shell/fish stats live with their NPCs.) */
-    .bh-whud {
-      position: absolute; top: 8px; right: 8px; z-index: 9;
-      display: flex; gap: 5px; align-items: center; justify-content: flex-end;
-      flex-wrap: wrap; max-width: calc(100% - 16px);
-    }
-    .bh-whud > * {
-      margin: 0; height: 27px; box-sizing: border-box; display: flex; align-items: center;
-      gap: 5px; background: rgba(16, 18, 28, 0.82); border: 2px solid #000;
-      border-radius: 6px; padding: 0 9px; font-weight: 800; font-size: 0.76rem;
-      line-height: 1; color: #fffdf5;
-    }
-    .bh-whud .bh-whud__lvl { color: #ffe135; border-color: #ffe135; }
-    .bh-whud__lvlbar {
-      flex: 0 0 42px; min-width: 42px; height: 6px; background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
-    }
-    .bh-whud__lvlbar i { display: block; height: 100%; width: 0; background: #ffe135; transition: width 0.5s ease; }
-    .bh-whud__coins img { display: block; image-rendering: pixelated; }
-    .bh-whud__coins b { color: #ffe135; }
-    .bh-whud__tix b { color: #ffd54a; }
-    .bh-whud__crowd { color: #8affc0; }
-    .bh-whud__rally { color: #fffdf5; }
-    .bh-whud__rally:empty { display: none; }
+    /* 🌍 the World HUD's styles moved to src/lib/world-hud.js — the bay tints
+       it with --wh-bg and nothing else. */
     /* panels: the collection grid + the Captain's trade desk */
     .bh-panel {
       position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
@@ -1449,16 +1428,9 @@ const faq = {
         <div class="bh-wball" id="bhWBall" aria-hidden="true"></div>
         <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div>
       </div>
-      <!-- 🌍 THE WORLD HUD — the same refined strip as the rave floor. LEVEL (rep
-           bar) · COINS · TICKETS · CROWD. Shell/fish stats live with their NPCs
+      <!-- 🌍 THE WORLD HUD is built by src/lib/world-hud.js — LEVEL · COINS ·
+           TICKETS · rally · CROWD. Shell/fish stats stay with their NPCs
            (Shelly & Gil) — walk up to them to see your collection. -->
-      <div class="bh-whud" id="bhWhud">
-        <span class="bh-whud__lvl" id="bhLvlRow"><span id="bhLvlN">LVL 1</span><span class="bh-whud__lvlbar"><i id="bhLvlFill"></i></span></span>
-        <span class="bh-whud__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b id="bhCoinN">0</b></span>
-        <span class="bh-whud__tix">🎟 <b id="bhTixN">0</b></span>
-        <span class="bh-whud__rally" id="bhRally"></span>
-        <span class="bh-whud__crowd"><span aria-hidden="true">◍</span> <span id="bhCrowd">solo</span></span>
-      </div>
       <div class="bh-hint" id="bhHint">tap to walk · tap the ball · hit ⛏ Dig (or Space) to dig</div>
       <div class="bh-exitstrip" id="bhExitStrip" role="status" aria-live="polite"></div>
 

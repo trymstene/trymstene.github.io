@@ -1432,16 +1432,17 @@ const GUIDE = [
 
     /* the World HUD — level · coins · crowd, a strip above the LED screen
        (top of the club frame); the JELLY meter stays alone in the mixer */
-    .rv-whud { display: flex; gap: 5px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 4px 7px; background: #120b22; border-bottom: 2px solid #2a1f4d; }
-    .rv-whud > * { margin: 0; height: 27px; box-sizing: border-box; display: flex; align-items: center; background: #1c1338; border: 2px solid #3a2d63; border-radius: 6px; padding: 0 9px; font-weight: 800; font-size: 0.76rem; line-height: 1; color: #efe9ff; }
-    .rv-whud .rv-wallet img { width: 16px; height: 16px; }
-    .rv-whud .rv-mixer__lvl { display: flex; align-items: center; gap: 6px; color: #ffe135; border-color: #ffe135; }
-    .rv-whud .rv-mixer__lvlbar { flex: 0 0 46px; min-width: 46px; height: 6px; }
-    .rv-whud .rv-wallet { position: static; display: flex; align-items: center; gap: 5px; }
-    .rv-whud .rv-wallet[hidden] { display: none; }
-    .rv-whchip--crowd { display: flex; align-items: center; gap: 5px; color: #8affc0; }
+    /* 🌍 the strip itself is src/lib/world-hud.js (.wh / .wh--strip). Left here:
+       the club's own band chrome, and the shape of the two chips the HUD ADOPTS
+       rather than builds — the engine still owns those nodes. */
+    .rv-club > .wh--strip { background: #120b22; border-bottom: 2px solid #2a1f4d; }
+    .wh .rv-wallet img { width: 16px; height: 16px; }
+    .wh .rv-mixer__lvl { display: flex; align-items: center; gap: 6px; color: #ffe135; border-color: #ffe135 !important; }
+    .wh .rv-mixer__lvlbar { flex: 0 0 46px; min-width: 46px; height: 6px; }
+    .wh .rv-wallet { position: static; display: flex; align-items: center; gap: 5px; }
+    .wh .rv-wallet[hidden] { display: none; }
     .rv-whchip__sep { opacity: 0.4; }
-    .rv-whud #rvStatus { font-weight: 700; }  /* connection state rides in the crowd chip */
+    .wh #rvStatus { font-weight: 700; }  /* connection state rides in the crowd chip */
     .rv-head .rv-status { display: none; }   /* crowd + status now live in the World HUD */
 
     /* iOS Safari: inset the emote/action bar up by the bottom safe-area so its
@@ -1489,7 +1490,6 @@ const GUIDE = [
 
     <div class="rv-stagewrap">
       <div class="rv-club">
-        <div class="rv-whud" id="rvWhud" aria-hidden="true"></div>
         <div class="rv-booth">
           <!-- THE CLUB SCREEN: the LED wall (back of the booth, z 0). Blinks
                silly rave-culture lines + the odd clickable house ad. Filled by
@@ -1784,31 +1784,46 @@ const GUIDE = [
 
   <script>
     import '../scripts/banana-rave.js';
-    // move the World HUD (level · coins · crowd) into the strip at the top of the
-    // club frame; the JELLY meter stays alone in the bottom-right mixer. Nodes are
-    // MOVED (ids preserved) so the engine keeps updating the same elements.
+    import { mountHud } from '../lib/world-hud.js';
+    // 🌍 THE WORLD HUD, club edition. The park and the bay let world-hud.js BUILD
+    // their chips; the club hands it the ones it already has.
+    // ⚠️ WHY ADOPT INSTEAD OF BUILD: the floor engine owns rvLvlRow / rvWalletChip
+    // / rvCount / rvStatus and writes to them from six places, including the
+    // socket's reconnect paths. Taking that over would mean editing the most
+    // fragile file in the project to change nothing a visitor can see. So the HUD
+    // takes the NODES, not the job — same container, same stylesheet, same look,
+    // and the engine keeps updating the same ids it always did.
+    // ⚠️ 'strip' layout, not 'overlay': the dancefloor is short (min(50vh,440px))
+    // and an overlay would sit on the dancers' heads.
     (function () {
-      const whud = document.getElementById('rvWhud');
-      if (!whud) return;
-      const lvl = document.getElementById('rvLvlRow');
-      const wallet = document.getElementById('rvWalletChip');
+      const club = document.querySelector('.rv-club');
+      if (!club) return;
       const count = document.getElementById('rvCount');
-      if (lvl) whud.appendChild(lvl);
-      if (wallet) whud.appendChild(wallet);
+      const status = document.getElementById('rvStatus');
+      let crowd = null;
       if (count) {
-        const crowd = document.createElement('div');
-        crowd.className = 'rv-whchip--crowd';
+        crowd = document.createElement('span');
+        crowd.className = 'wh__crowd';
         crowd.innerHTML = '<span aria-hidden="true">◍</span>';
         crowd.appendChild(count);
-        // keep the connection status visible — the engine writes 'live' / 'reconnecting…' /
-        // 'solo mode…' / 'open in another tab' here; hiding the old .rv-status swallowed it
-        const status = document.getElementById('rvStatus');
+        // the engine writes 'live' / 'reconnecting…' / 'solo mode…' / 'open in
+        // another tab' into rvStatus — it rides the crowd chip or it is unseen
         if (status) {
           crowd.insertAdjacentHTML('beforeend', '<span aria-hidden="true" class="rv-whchip__sep">·</span>');
           crowd.appendChild(status);
         }
-        whud.appendChild(crowd);
       }
+      const hud = mountHud({
+        mount: club,
+        layout: 'strip',
+        theme: { bg: '#1c1338', border: '#3a2d63', text: '#efe9ff' },
+        chips: [],
+        adopt: [document.getElementById('rvLvlRow'),
+                document.getElementById('rvWalletChip'),
+                crowd],
+      });
+      // the strip belongs at the TOP of the club frame, above the booth
+      if (hud) club.insertBefore(hud.el, club.firstChild);
     })();
   </script>
   <div class="rv-cut" id="rvCut" aria-hidden="true"></div>
