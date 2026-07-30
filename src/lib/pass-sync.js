@@ -82,6 +82,38 @@ export async function mailUse(t) {
   return { attached: !!attached };
 }
 
+// ---- 📣 the news list — a SECOND rail, deliberately not this one ---------
+// ⚠️ We cannot reuse the address someone logged in with, and must not: it is
+// stored one-way hashed, it was given for sign-in, and marketing consent has to
+// be asked for separately to be freely given. So the box asks again, and the
+// confirm click is what proves the inbox AND records the consent.
+export async function newsJoin(email) {
+  const res = await fetch(PASS_API + '/news/join', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(
+      e.error === 'bad email' ? 'That address doesn’t look right — check it over?'
+      : e.error === 'busy day' ? 'Lots of post today — try again tomorrow and it’ll go through.'
+      : e.error === 'news not configured' ? 'The list isn’t open yet.'
+      : 'Couldn’t send that — try again in a moment.');
+  }
+  if (window.gtag) window.gtag('event', 'news_join');
+  return true;
+}
+export async function newsConfirm(t) {
+  const res = await fetch(PASS_API + '/news/confirm?t=' + encodeURIComponent(t));
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error === 'link expired' ? 'That link expired — ask for a new one.'
+      : 'That link was already used.');
+  }
+  if (window.gtag) window.gtag('event', 'news_confirmed');
+  return true;
+}
+
 // ---- log out ------------------------------------------------------------
 // ⚠️ THE SAVE FILE STAYS. This drops the credential this browser logs in with,
 // nothing else: bananas, coins and badges are localStorage and wiping them

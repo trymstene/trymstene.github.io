@@ -6,7 +6,8 @@ import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
-  startLink, finishLink, mailSignin, mailUse, logout } from '../lib/pass-sync.js';
+  startLink, finishLink, mailSignin, mailUse, logout,
+  newsJoin, newsConfirm } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -897,6 +898,11 @@ function initSync() {
     if (lk) lk.hidden = false;
     const out = el('psOut');
     if (out) out.hidden = false;
+    // 📣 the news opt-in appears only to people who are already in — never
+    // alongside the login, where consent would be bundled with the thing they
+    // actually came for
+    const news = el('psNews');
+    if (news) news.hidden = false;
     // 🪪 logged in by PASSKEY = no address on file yet, so offer one here. This
     // is the same field and the same link as signing in — clicking it ATTACHES
     // the address to this pass rather than starting a second one.
@@ -910,6 +916,7 @@ function initSync() {
   const haveCode = el('psHaveCode');
   wireLink(note);
   wireMail(note);
+  wireNews();
   // the passkey shortcut only exists where the browser has one
   // ⚠️ AND THE DEVICE-CODE BOX HIDES BEHIND THE SAME TOGGLE. A code from your
   // other device only makes sense once you are in passkey-land; on its own,
@@ -1001,12 +1008,52 @@ function wireMail(note) {
   });
 }
 
+// 📣 the news opt-in: ask, then let the inbox prove it
+function wireNews() {
+  const form = el('psNewsForm');
+  if (!form) return;
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const inp = el('psNewsIn'), go = el('psNewsGo'), note = el('psNewsNote');
+    const email = (inp.value || '').trim();
+    if (!email) return;
+    go.disabled = true;
+    note.textContent = 'Sending…';
+    try {
+      await newsJoin(email);
+      // ⚠️ "check your inbox", never "you're subscribed" — nobody is on the
+      // list until the click, and saying otherwise would be the lie that makes
+      // the double opt-in pointless
+      form.hidden = true;
+      el('psNews').querySelector('.ps-news__lead').innerHTML = '📬 <b>One more click</b>';
+      note.textContent = 'Confirm it from the mail we just sent to ' + esc(email)
+        + ' — until you do, you are not on any list.';
+    } catch (e) {
+      note.textContent = (e && e.message) || 'Couldn’t send that — try again in a moment.';
+      go.disabled = false;
+    }
+  });
+}
+
 // 🔗 the magic link lands here as /pass/?in=<ticket>
 // ⚠️ STRIP IT FROM THE URL IMMEDIATELY. It is a bearer credential; leaving it
 // in the address bar means it rides into history, referrers and screenshots —
 // and it is single-use, so a reload would spend it and look like a failure.
 async function initMailLanding() {
-  const t = new URLSearchParams(location.search).get('in');
+  const q = new URLSearchParams(location.search);
+  // 📣 the news confirmation lands here too — same strip-it-from-the-URL rule
+  const news = q.get('news');
+  if (news) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    try {
+      await newsConfirm(news);
+      passToast('📣 <b>YOU’RE ON THE LIST</b><br>Only when something big lands.');
+    } catch (e) {
+      passToast('⚠️ <b>' + esc((e && e.message) || 'That link didn’t work.') + '</b>');
+    }
+    return false;
+  }
+  const t = q.get('in');
   if (!t) return false;
   history.replaceState(null, '', location.pathname + location.hash);
   try {

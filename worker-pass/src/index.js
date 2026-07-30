@@ -38,6 +38,8 @@ export default {
       if (url.pathname === '/assert') return assert_(request, env);
       if (url.pathname === '/mail/signin') return mailSignin(request, env);
       if (url.pathname === '/mail/use') return mailUse(request, env, url);
+      if (url.pathname === '/news/join') return newsJoin(request, env);
+      if (url.pathname === '/news/confirm') return newsConfirm(request, env, url);
       if (url.pathname === '/link/start') return linkStart(request, env);
       if (url.pathname === '/link/finish') return linkFinish(request, env);
       if (url.pathname === '/push') return push(request, env);
@@ -572,7 +574,7 @@ const normMail = (e) => String(e || '').trim().toLowerCase();
 // ⚠️ AND THE PLAIN-TEXT PART STAYS. A mail with no text/plain alternative
 // looks like spam to filters, and the raw URL is the fallback when a button
 // cannot be tapped.
-const mailHtml = (link) => `<!doctype html>
+const mailHtml = (link, c = {}) => `<!doctype html>
 <html lang="en"><body style="margin:0;padding:0;background:#fdf9ec;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fdf9ec;">
 <tr><td align="center" style="padding:26px 14px;">
@@ -581,13 +583,13 @@ const mailHtml = (link) => `<!doctype html>
     <tr><td align="center" style="padding:22px 24px 0;">
       <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" width="88" height="88" alt="" style="display:block;border:0;">
     </td></tr>
-    <tr><td align="center" style="padding:14px 24px 0;font:bold 23px/1.2 Arial,Helvetica,sans-serif;color:#111111;">Here&rsquo;s your way in</td></tr>
-    <tr><td align="center" style="padding:8px 24px 0;font:15px/1.5 Arial,Helvetica,sans-serif;color:#111111;">Tap the button and you&rsquo;re logged in &mdash; no password needed.</td></tr>
+    <tr><td align="center" style="padding:14px 24px 0;font:bold 23px/1.2 Arial,Helvetica,sans-serif;color:#111111;">${c.head || 'Here&rsquo;s your way in'}</td></tr>
+    <tr><td align="center" style="padding:8px 24px 0;font:15px/1.5 Arial,Helvetica,sans-serif;color:#111111;">${c.line || 'Tap the button and you&rsquo;re logged in &mdash; no password needed.'}</td></tr>
     <tr><td align="center" style="padding:20px 24px 2px;">
-      <a href="${link}" style="display:inline-block;background:#111111;color:#ffe135;font:bold 16px Arial,Helvetica,sans-serif;padding:15px 28px;text-decoration:none;">Log me in &rarr;</a>
+      <a href="${link}" style="display:inline-block;background:#111111;color:#ffe135;font:bold 16px Arial,Helvetica,sans-serif;padding:15px 28px;text-decoration:none;">${c.cta || 'Log me in &rarr;'}</a>
     </td></tr>
     <tr><td align="center" style="padding:16px 24px 22px;font:12px/1.55 Arial,Helvetica,sans-serif;color:#4a4326;">
-      Works once, for 15 minutes.<br>Did not ask for this? Ignore it &mdash; nothing happens.
+      ${c.foot || 'Works once, for 15 minutes.<br>Did not ask for this? Ignore it &mdash; nothing happens.'}
     </td></tr>
   </table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;">
@@ -600,7 +602,7 @@ const mailHtml = (link) => `<!doctype html>
 </body></html>`;
 
 // the sender is pluggable and FAILS CLOSED — no key, no mail, no pretending
-async function sendLink(env, to, link) {
+async function sendLink(env, to, link, copy) {
   if (!env.RESEND_KEY || !env.MAIL_FROM) return { ok: false, why: 'not configured' };
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -614,10 +616,10 @@ async function sendLink(env, to, link) {
       to: [to],
       // the subject names the thing they just pressed, so it is findable in a
       // busy inbox and obviously not marketing
-      subject: 'Log in to Banana World',
-      html: mailHtml(link),
-      text: `Tap to log in:\n\n${link}\n\nThe link works once and expires in 15 minutes.\n`
-        + `Did not ask for this? Ignore it — nothing happens.\n`,
+      subject: (copy && copy.subject) || 'Log in to Banana World',
+      html: mailHtml(link, copy),
+      text: (copy && copy.text) || (`Tap to log in:\n\n${link}\n\nThe link works once and expires in 15 minutes.\n`
+        + `Did not ask for this? Ignore it — nothing happens.\n`),
     }),
   });
   if (!res.ok) {
@@ -735,6 +737,109 @@ async function mailUse(request, env, url) {
   const R = await resolve(env, credId);
   return json({ credId, token, attached, blob: (R && R.home.blob) || rec.blob || null },
     200, cors(env, request));
+}
+
+// ---------- 📣 THE NEWS LIST — a SECOND rail, never the login one ----------
+// ⚠️ THE LOGIN ADDRESSES ARE NOT AVAILABLE FOR THIS AND MUST NEVER BECOME SO.
+// They are stored one-way hashed, they were given for authentication, and the
+// privacy page promises in Trym's own words that they are not a mailing list.
+// Marketing needs its OWN freely-given consent, so this is its own opt-in with
+// its own store — the contacts live in a Resend AUDIENCE, which means the
+// plaintext sits with the processor (not in our bucket) and the legally
+// required one-click unsubscribe is theirs to honour, not ours to build.
+// ⚠️ DOUBLE OPT-IN, NOT BECAUSE IT IS NICE: anyone can type anyone's address
+// into a box. The confirm click is what proves the inbox belongs to the person
+// consenting — and it is the record that consent existed at all.
+// ⚠️ LOGIN OUTRANKS NEWS ON THE SHARED QUOTA. Both rails spend the same 100
+// mails/day, and a login link that never arrives locks somebody out of their
+// own pass, while a late newsletter confirmation costs nothing. News stops at
+// NEWS_CEILING so there is always headroom left for people getting in.
+const NEWS_TTL = 24 * 60 * 60 * 1000;   // a day to click; this is not urgent
+const NEWS_CEILING = 60;                // …of the day's 100, leaving 40 for logins
+
+async function newsSend(env, to, link) {
+  return sendLink(env, to, link, {
+    subject: 'One click and you are on the list',
+    head: 'Confirm the updates',
+    line: 'Tap once and I&rsquo;ll email you when a new area opens in Banana World. Nothing else, ever.',
+    cta: 'Yes, keep me posted &rarr;',
+    foot: 'Didn&rsquo;t ask for this? Ignore it &mdash; without this click you are not on any list.',
+    text: `Confirm you want updates from Banana World:\n\n${link}\n\n`
+      + `Without this click you are not on any list. The link lasts a day.\n`,
+  });
+}
+
+// POST /news/join { email } → always { ok: true } (never confirms who is known)
+async function newsJoin(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const email = normMail(b && b.email);
+  if (!MAIL_RE.test(email) || email.length > 160) return json({ error: 'bad email' }, 400, cors(env, request));
+  if (!env.RESEND_KEY || !env.MAIL_FROM || !env.RESEND_AUDIENCE) {
+    return json({ error: 'news not configured' }, 503, cors(env, request));
+  }
+  const cdKey = `newscd/${await sha256Hex(email)}.json`;
+  const cdObj = await env.PASSES.get(cdKey);
+  if (cdObj) {
+    const cd = await cdObj.json().catch(() => null);
+    if (cd && Date.now() - cd.at < MAIL_COOLDOWN) return json({ ok: true }, 200, cors(env, request));
+  }
+  const dayKey = `mailday/${new Date().toISOString().slice(0, 10)}.json`;
+  const dayObj = await env.PASSES.get(dayKey);
+  const day = dayObj ? await dayObj.json().catch(() => ({ n: 0 })) : { n: 0 };
+  if ((day.n || 0) >= NEWS_CEILING) {
+    return json({ error: 'busy day' }, 429, cors(env, request));   // ← logins keep the rest
+  }
+  const tok = bufToHex(crypto.getRandomValues(new Uint8Array(32)));
+  // ⚠️ the ticket holds the ADDRESS, unlike a login ticket, because the whole
+  // point is to hand it to Resend on confirmation. It is deleted on the click,
+  // and swept if never clicked (see the TTL check in newsConfirm).
+  await env.PASSES.put(`newstkt/${await sha256Hex(tok)}.json`,
+    JSON.stringify({ email, exp: Date.now() + NEWS_TTL }),
+    { httpMetadata: { contentType: 'application/json' } });
+  const base = (env.ALLOWED_ORIGIN || '').split(',')[0].trim() || 'https://trymstene.com';
+  const sent = await newsSend(env, email, `${base}/pass/?news=${tok}`);
+  if (sent.ok) {
+    await env.PASSES.put(dayKey, JSON.stringify({ n: (day.n || 0) + 1 }),
+      { httpMetadata: { contentType: 'application/json' } });
+    await env.PASSES.put(cdKey, JSON.stringify({ at: Date.now() }),
+      { httpMetadata: { contentType: 'application/json' } });
+  }
+  return json({ ok: true }, 200, cors(env, request));
+}
+
+// GET /news/confirm?t=… → the click that actually creates the subscription
+async function newsConfirm(request, env, url) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  const t = url.searchParams.get('t') || '';
+  if (!t) return json({ error: 'bad link' }, 400, cors(env, request));
+  const tk = `newstkt/${await sha256Hex(t)}.json`;
+  const obj = await env.PASSES.get(tk);
+  if (!obj) return json({ error: 'used or unknown' }, 404, cors(env, request));
+  const ticket = await obj.json();
+  await env.PASSES.delete(tk);
+  if (!ticket || ticket.exp < Date.now()) return json({ error: 'link expired' }, 410, cors(env, request));
+
+  const res = await fetch(`https://api.resend.com/audiences/${env.RESEND_AUDIENCE}/contacts`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: ticket.email, unsubscribed: false }),
+  });
+  if (!res.ok) {
+    const why = await res.text().catch(() => '');
+    console.error('news subscribe failed', res.status, why.slice(0, 300));
+    return json({ error: 'could not subscribe' }, 502, cors(env, request));
+  }
+  // ⚠️ THE CONSENT RECEIPT. GDPR asks you to SHOW consent was given, not just
+  // assert it: when, and by what route. Keyed by hash so this record cannot
+  // itself become a second copy of the mailing list.
+  await env.PASSES.put(`newsok/${await sha256Hex(ticket.email)}.json`,
+    JSON.stringify({ at: Date.now(), how: 'double opt-in click', src: 'pass' }),
+    { httpMetadata: { contentType: 'application/json' } });
+  return json({ ok: true }, 200, cors(env, request));
 }
 
 // ---------- 🔗 LINK ANOTHER DEVICE ----------------------------------------
