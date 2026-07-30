@@ -1047,7 +1047,7 @@ async function initMailLanding() {
     history.replaceState(null, '', location.pathname + location.hash);
     try {
       await newsConfirm(news);
-      passToast('📣 <b>YOU’RE ON THE LIST</b><br>Only when something big lands.');
+      passToast('📣 <b>YOU’RE ON THE LIST</b><br>You’ll hear when the world gets bigger.');
     } catch (e) {
       passToast('⚠️ <b>' + esc((e && e.message) || 'That link didn’t work.') + '</b>');
     }

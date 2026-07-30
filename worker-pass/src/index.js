@@ -585,6 +585,7 @@ const mailHtml = (link, c = {}) => `<!doctype html>
     </td></tr>
     <tr><td align="center" style="padding:14px 24px 0;font:bold 23px/1.2 Arial,Helvetica,sans-serif;color:#111111;">${c.head || 'Here&rsquo;s your way in'}</td></tr>
     <tr><td align="center" style="padding:8px 24px 0;font:15px/1.5 Arial,Helvetica,sans-serif;color:#111111;">${c.line || 'Tap the button and you&rsquo;re logged in &mdash; no password needed.'}</td></tr>
+    ${c.list ? `<tr><td align="center" style="padding:12px 24px 0;font:bold 13px/1.9 Arial,Helvetica,sans-serif;color:#111111;">${c.list}</td></tr>` : ''}
     <tr><td align="center" style="padding:20px 24px 2px;">
       <a href="${link}" style="display:inline-block;background:#111111;color:#ffe135;font:bold 16px Arial,Helvetica,sans-serif;padding:15px 28px;text-decoration:none;">${c.cta || 'Log me in &rarr;'}</a>
     </td></tr>
@@ -757,14 +758,23 @@ async function mailUse(request, env, url) {
 const NEWS_TTL = 24 * 60 * 60 * 1000;   // a day to click; this is not urgent
 const NEWS_CEILING = 60;                // …of the day's 100, leaving 40 for logins
 
+// ⚠️ THE SCOPE IS THE CONSENT. Whatever this mail promises is the whole of what
+// may ever be sent — "new areas only" here would make a later merch mail
+// something nobody agreed to. So the list names every kind of mail up front,
+// merch included, and it is a LIST rather than a paragraph: five promises in
+// the space prose spends on one ([[copy-cro-doctrine]]).
 async function newsSend(env, to, link) {
   return sendLink(env, to, link, {
     subject: 'One click and you are on the list',
     head: 'Confirm the updates',
-    line: 'Tap once and I&rsquo;ll email you when a new area opens in Banana World. Nothing else, ever.',
+    line: 'Tap once and I&rsquo;ll write when Banana World gets bigger:',
+    list: '🌍 new areas &nbsp;·&nbsp; ✨ new features<br>🎁 items &amp; wearables &nbsp;·&nbsp; 🔧 fixes<br>🛒 the odd bit of new merch',
     cta: 'Yes, keep me posted &rarr;',
-    foot: 'Didn&rsquo;t ask for this? Ignore it &mdash; without this click you are not on any list.',
+    foot: 'No schedule, no spam &mdash; and one click unsubscribes.<br>'
+      + 'Didn&rsquo;t ask for this? Ignore it &mdash; without this click you&rsquo;re on no list.',
     text: `Confirm you want updates from Banana World:\n\n${link}\n\n`
+      + `New areas, new features, items and wearables, fixes, and the odd bit of\n`
+      + `new merch. No schedule, and one click unsubscribes.\n\n`
       + `Without this click you are not on any list. The link lasts a day.\n`,
   });
 }
