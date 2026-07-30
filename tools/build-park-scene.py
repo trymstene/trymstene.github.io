@@ -894,6 +894,30 @@ if HAVE_PACK:
             (int(hut.width * 0.22), int(hut.height * 0.35),
              int(hut.width * 0.78), int(hut.height * 0.66)), fill=(36, 29, 51, 255))
         back.alpha_composite(hut)
+        # 🪧 THE BANANA STAND PLANK — the old /banana-stand/ page hung this over
+        # the hut as a DOM <span> (.bs-stand__sign), so the flip to a baked map
+        # dropped it silently: the art itself never had one. Painted back on
+        # here in the hut's OWN three colours, before the ×2, so the lettering
+        # doubles with everything else and stays on the pixel grid.
+        # ⚠️ NOT rotated. The original tilted -3deg as scalable CSS text; three
+        # degrees on a 10px-tall plank is stair-stepping, not charm.
+        # ⚠️ THE 'N' IS THE CORNER FORM ON PURPOSE — at 3px wide the obvious
+        # N ('#.#','###','###') reads as an M and the word came out "BAMAMA".
+        SF = {'B': ('##.', '#.#', '##.', '#.#', '##.'), 'A': ('.#.', '#.#', '###', '#.#', '#.#'),
+              'N': ('##.', '#.#', '#.#', '#.#', '#.#'), 'S': ('###', '#..', '###', '..#', '###'),
+              'T': ('###', '.#.', '.#.', '.#.', '.#.'), 'D': ('##.', '#.#', '#.#', '#.#', '##.'),
+              ' ': ('...', '...', '...', '...', '...')}
+        txt, spad = 'BANANA STAND', 3
+        sw_, sh_ = len(txt) * 4 - 1 + spad * 2, 5 + spad * 2 - 1
+        sign = Image.new('RGBA', (sw_, sh_), (0, 0, 0, 0))
+        ImageDraw.Draw(sign).rectangle((0, 0, sw_ - 1, sh_ - 1),
+                                       fill=(138, 90, 43, 255), outline=(58, 41, 24, 255))
+        for li, ch in enumerate(txt):
+            for ry, rw in enumerate(SF[ch]):
+                for rx, on in enumerate(rw):
+                    if on == '#':
+                        sign.putpixel((spad + li * 4 + rx, (sh_ - 5) // 2 + ry), (255, 225, 53, 255))
+        back.alpha_composite(sign, ((back.width - sw_) // 2, 16))   # on the roof face, above the eaves
         hut = back.resize((hut.width * 2, hut.height * 2), Image.NEAREST)
         _cache[('bs-hut', 1, 28, 0.0, 1.0, 1.0)] = hut
         place('bs-hut', MARKET['stand'][0], MARKET['stand'][1],
