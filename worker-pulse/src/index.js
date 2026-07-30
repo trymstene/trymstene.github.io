@@ -15,6 +15,7 @@ const LENS_EVENTS = [
   'sticker_pdp_view', 'sticker_pdp_checkout', 'checkout_redirect',
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
   'begin_checkout', 'purchase', 'shop_view',
+  'offer_shown', 'offer_click',   // 🛍 the make-it-real card, 30 Jul
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -232,7 +233,7 @@ async function apiRange(env, from, to) {
       dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: [
         'builder_boot', 'builder_start', 'product_tile_click', 'sticker_pdp_view',
         'sticker_pdp_checkout', 'checkout_redirect', 'shop_view', 'select_item',
-        'view_item', 'begin_checkout',
+        'view_item', 'begin_checkout', 'offer_shown', 'offer_click',
       ] } } },
       limit: 20,
     });
@@ -602,6 +603,7 @@ var EV_LABEL = {
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop',
+  offer_shown:'got the make-it-real card 🛍', offer_click:'took the offer 🛍',
   rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
   stand_item_view:'eyed stand gear', stand_buy_try:'wanted stand gear they can’t afford 🔥',
   stand_buy:'BOUGHT stand gear 🤑', rave_coin:'pocketed bananacoins 🪙',
@@ -767,7 +769,9 @@ var EV_EXPLAIN = {
   rave_shot:'fired a confetti popper at another banana',
   rave_splat:'got splatted by a popper shot',
   rave_sit:'sat down on their own bar stool (a five-nightshift regular)',
-  rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one)',
+  rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one; ad=sticker is the merch slide that paints THEIR banana as vinyl)',
+  offer_shown:'saw the make-it-real card 🛍 — their own banana rendered as a real sticker. from = where it appeared: download_gif / download_meme / download_png (right after a download, once per session) or pass_overview (bottom of the pass)',
+  offer_click:'took the make-it-real offer 🛍 and went to the custom product page with their design attached. Against offer_shown this is THE number that says whether asking at the moment of the download works (from = same places)',
   rave_exit_stand:'left the club through the EXIT by the bar → the banana stand (via = door or field-guide link)',
   stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
   stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
@@ -1229,7 +1233,24 @@ var FUNNELS=[
    ['view_item','Product page',
     'They opened a merch product page — mug, tee, and friends.'],
    ['transactions','Purchases 💰',
-    'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']]];
+    'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']],
+  // 🛍 THE ASK — added 30 Jul, the whole point of the CRO pass. Before it, 336
+  // downloads produced 9 product-tile clicks: the free file granted the wish and
+  // the session ended. This funnel is the verdict on moving the ask to the
+  // moment the wish is granted. Read offer_shown→offer_click FIRST; the rest is
+  // the same custom-product tail the builder funnel already measures.
+  [['gif_download','Grabbed a GIF',
+    'They downloaded a banana they had just made. The moment the wish is granted — and, before 30 Jul, the moment the session usually ended.'],
+   ['offer_shown','Got asked 🛍',
+    'The make-it-real card appeared, showing THEIR banana as a real die-cut sticker. Once per session, after the file was already saved. Counting starts 30 Jul. Lower than gif_download on purpose: a second download in the same session does not ask again.'],
+   ['offer_click','Took the offer',
+    'They tapped through to the custom product page with their design attached. offer_click ÷ offer_shown is the answer to "does asking here work?" — anything above a couple of percent beats the 2.7% the old product tiles got.'],
+   ['sticker_pdp_checkout','Hit ORDER',
+    'They clicked ORDER on that product page.'],
+   ['checkout_redirect','→ Shopify checkout',
+    'The design uploaded and the browser left for Shopify.'],
+   ['purchase','PAID 💰',
+    'Real money. Store-wide, and still tied to the Shopify→GA4 purchase link.']]];
 function fmtDur(s){
   if(s<90) return s+'s';
   return Math.floor(s/60)+'m '+(s%60)+'s';
