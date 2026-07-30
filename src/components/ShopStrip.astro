@@ -1,0 +1,122 @@
+---
+// 🛍 THE SHOP STRIP — real products, on the pages where the traffic already is.
+//
+// The GIF pages are the site's biggest organic doors and they have always been
+// dead ends for the official shop: everything on them routes to the builder, so
+// anyone who wants a banana thing WITHOUT designing one first has nowhere to go.
+// This is that door. Real Shopify photos and real prices at build time — a
+// hand-drawn "merch!" banner would be a promise the shop then has to keep.
+//
+// Drop it on any page: <ShopStrip place="gif_hub" />
+import { getProducts, money } from '../lib/shop.js';
+
+export interface Props {
+  place?: string;      // GA4 label, so we can tell which page's strip converts
+  kicker?: string;
+  heading?: string;
+  limit?: number;
+  tone?: 'light' | 'dark';
+}
+const { place = 'strip', kicker = 'Official merch', tone = 'light',
+        heading = 'Or skip the design step', limit = 6 } = Astro.props;
+
+// Never let a shop hiccup take a content page down with it — the strip is an
+// addition to the page, not the page.
+let products = [];
+try { products = (await getProducts()).slice(0, limit); } catch (e) { products = []; }
+---
+{products.length > 0 && (
+  <section class:list={['shopstrip', tone === 'dark' && 'shopstrip--dark']} data-place={place}>
+    <div class="shopstrip__head">
+      <div>
+        <p class="shopstrip__kicker">{kicker}</p>
+        <h2 class="shopstrip__h">{heading}</h2>
+      </div>
+      <a class="shopstrip__all" href="/shop/">See all →</a>
+    </div>
+    <div class="shopstrip__rail">
+      {products.map((p) => (
+        <a class="shopstrip__card" href={`/shop/${p.handle}/`} data-name={p.title}>
+          <span class="shopstrip__shot">
+            <img src={p.featured} alt={p.title} loading="lazy" width="600" height="600" />
+          </span>
+          <span class="shopstrip__name">{p.title}</span>
+          <span class="shopstrip__price">from {money(p.pmin, p.cur)}</span>
+        </a>
+      ))}
+    </div>
+    <p class="shopstrip__note">Printed on demand · ships worldwide · by the guy who made the meme</p>
+  </section>
+)}
+
+<style>
+  .shopstrip {
+    --ss-ink: #111; --ss-paper: #fffdf5;
+    margin: 2.5rem auto; max-width: 1100px; text-align: left;
+  }
+  .shopstrip--dark { --ss-ink: #fffdf5; --ss-paper: #16130c; }
+  .shopstrip__head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; margin-bottom: 0.9rem;
+  }
+  .shopstrip__kicker {
+    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 0 0 0.2rem; color: var(--ss-ink); opacity: 0.62;
+  }
+  .shopstrip__h {
+    font-family: "Archivo Black", sans-serif; font-size: clamp(1.2rem, 4vw, 1.85rem);
+    line-height: 1; margin: 0; color: var(--ss-ink);
+  }
+  .shopstrip__all {
+    font-weight: 800; font-size: 0.85rem; color: var(--ss-ink);
+    text-decoration: underline; text-underline-offset: 4px; white-space: nowrap;
+  }
+  /* a rail, not a grid: on a phone the row scrolls and the half-visible next
+     card is what says "there is more" — a wrapped grid just looks finished */
+  .shopstrip__rail {
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(146px, 1fr);
+    gap: 0.7rem; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+  }
+  .shopstrip__card {
+    scroll-snap-align: start; text-decoration: none; color: var(--ss-ink);
+    display: grid; gap: 0.3rem; align-content: start;
+  }
+  .shopstrip__shot {
+    display: block; aspect-ratio: 1; background: #efece2;
+    border: 3px solid #111; box-shadow: 4px 4px 0 #111; overflow: hidden; margin-bottom: 0.35rem;
+  }
+  .shopstrip--dark .shopstrip__shot { border-color: #ffe135; box-shadow: 4px 4px 0 #ffe135; }
+  .shopstrip__shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shopstrip__card:hover .shopstrip__shot { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #111; }
+  .shopstrip--dark .shopstrip__card:hover .shopstrip__shot { box-shadow: 6px 6px 0 #ffe135; }
+  .shopstrip__name { font-weight: 800; font-size: 0.82rem; line-height: 1.15; }
+  .shopstrip__price {
+    font-weight: 800; font-size: 0.74rem; letter-spacing: 0.02em;
+    background: #ffe135; color: #111; padding: 1px 7px; border-radius: 999px; justify-self: start;
+  }
+  .shopstrip__note {
+    margin: 0.6rem 0 0; font-size: 0.72rem; font-weight: 600;
+    color: var(--ss-ink); opacity: 0.6;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shopstrip__card:hover .shopstrip__shot { transform: none; }
+  }
+</style>
+
+<script>
+  // which strip, on which page, sent someone to a PDP — pairs with select_item
+  // on the shop's own PLP so Pulse can compare the doors
+  document.querySelectorAll('.shopstrip').forEach((strip) => {
+    const place = strip.dataset.place || 'strip';
+    strip.querySelectorAll('.shopstrip__card').forEach((card) => {
+      card.addEventListener('click', () => {
+        if (window.gtag) window.gtag('event', 'select_item', {
+          item_list_name: 'shopstrip_' + place,
+          items: [{ item_name: card.dataset.name || '' }],
+        });
+      });
+    });
+  });
+</script>
