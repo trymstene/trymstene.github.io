@@ -135,10 +135,37 @@ export function passPatch(id, opts = {}) {
   return true;
 }
 
+// ⚠️ mirrored from pass-defs.js (levelStep/levelFor). Importing that module
+// here would drag the whole patch + gear catalog into every page that touches
+// the pass, which is nearly all of them — the JS budget wins over DRY at this
+// seam ([[banana-world-engineering]]). Change both or neither.
+const lvlOf = (rep) => {
+  let n = 1, c = 0;
+  while (n < 99 && rep >= c + 150 + n * 45) { c += 150 + n * 45; n++; }
+  return n;
+};
+const areaOf = () => {
+  const p = (typeof location !== 'undefined' && location.pathname) || '';
+  return p.indexOf('/rave') === 0 ? 'rave' : p.indexOf('/park') === 0 ? 'park'
+    : p.indexOf('/beach') === 0 ? 'beach' : p.indexOf('/forge') === 0 ? 'forge' : 'site';
+};
+
 export function passStat(key, delta = 1) {
   const p = read();
-  p.stats[key] = (p.stats[key] || 0) + delta;
+  const was = p.stats[key] || 0;
+  p.stats[key] = was + delta;
   write(p);
+  // 🎖 LEVELS HAPPEN EVERYWHERE, BUT ONLY THE RAVE EVER SAID SO. rep is a world
+  // stat — the park waters it up, the beach digs it up — and every grant in
+  // every area passes through here, so the crossing is caught once rather than
+  // bolted onto each surface. Answers "does anyone level up in the park?",
+  // which was previously unanswerable.
+  // ⚠️ the rave ALSO fires its own older rave_levelup, so the two overlap on
+  // the floor — world_levelup is the superset, never add them together.
+  if (key === 'rep' && delta > 0 && typeof window !== 'undefined' && window.gtag) {
+    const b = lvlOf(p.stats[key]);
+    if (b > lvlOf(was)) window.gtag('event', 'world_levelup', { level: b, where: areaOf() });
+  }
   return p.stats[key];
 }
 
