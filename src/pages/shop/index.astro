@@ -2,8 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import { getProducts, money, colorHex } from '../../lib/shop.js';
+import CUSTOM from '../../../shared/products.js';
 
 const products = await getProducts();
+// the custom line is deliberately absent from getProducts() (a bare PDP would
+// sell a blank product) — it comes in through its own lane, design-first
+const custom = CUSTOM.filter((p) => p.live);
 
 const collectionSchema = {
   "@context": "https://schema.org",
@@ -88,12 +92,73 @@ const breadcrumbSchema = {
     <p class="shop-polline">Printed on demand · ships worldwide · <a href="/shop/policies/">shipping, returns &amp; policies</a></p>
   </section>
 
-  <section class="block">
-    <p class="kicker">Or make your own</p>
-    <h2>Design your own banana</h2>
-    <p class="lead">Different thing: in the builder you give the banana shades, a hat and a caption, then get <em>that</em> one-of-a-kind banana as a real die-cut vinyl sticker — shipped free worldwide.</p>
-    <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Open the banana builder →</a>
+  <!-- 🎨 THE CUSTOM LANE — the shop's second half. Same shop, not a detour:
+       same checkout, same free shipping. The one difference is that you design
+       it first, so the tiles say so and route into the builder rather than a
+       PDP (a bare custom PDP would sell a blank). -->
+  <section class="block shopcustom" id="shopCustom">
+    <p class="kicker">Your own banana</p>
+    <h2>Not the official one? Put <em>yours</em> on it</h2>
+    <p class="lead">Dress a banana — shades, hats, a caption, your own colours — and have that one
+    printed instead. Same shop, same free worldwide shipping. You just design it first.</p>
+    <div class="shop-grid shopcustom__grid">
+      {custom.map((p) => (
+        <a class="project-card shop-card shopcustom__card" href={`/make-a-banana/${p.key}/`} data-custom={p.key}>
+          <span class="shop-card__img shopcustom__shot" data-custom-preview></span>
+          <div class="project-card__body">
+            <h3>Your banana {p.name.toLowerCase()}</h3>
+            <p class="shopcustom__meta">{p.size} · {p.material}</p>
+            <div class="shop-card__foot">
+              <p class="shop-card__price price-tag price-tag--sm">${p.priceHint}</p>
+              <span class="shop-card__cta">Design it →</span>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+    <p class="shop-polline">
+      <span data-custom-yours hidden>That's <strong>your</strong> banana on the tiles. </span>
+      Free worldwide shipping · printed on demand · <a href="/make-a-banana/"><PixelIcon name="palette" /> open the full builder</a>
+    </p>
   </section>
+
+  <style>
+    /* the custom tiles read as siblings of the official ones (same card), with
+       the checkerboard ground saying "there is no photo yet — this is yours" */
+    .shopcustom__shot {
+      display: grid; place-items: center; aspect-ratio: 1; overflow: hidden;
+      background:
+        conic-gradient(from 90deg at 50% 50%, #f3efe2 0 25%, #e6e0cd 0 50%, #f3efe2 0 75%, #e6e0cd 0)
+        0 0 / 22px 22px;
+    }
+    .shopcustom__shot canvas { width: 82%; height: auto; image-rendering: pixelated; display: block; }
+    .shopcustom__meta { margin: 0.15rem 0 0.6rem; font-size: 0.76rem; opacity: 0.7; }
+    .shopcustom__card .shop-card__cta { font-weight: 800; }
+  </style>
+
+  <script>
+    // 🎨 the custom lane paints the visitor's own banana — but the sprite engine
+    // is a heavy import for a page that is otherwise nearly JS-free, so it only
+    // loads once the lane is actually about to be seen.
+    const lane = document.getElementById('shopCustom');
+    if (lane && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        import('../../scripts/shop-custom-lane.js')
+          .then((m) => m.paintLane(lane)).catch(() => {});
+      }, { rootMargin: '300px' });
+      io.observe(lane);
+    }
+    document.querySelectorAll('.shopcustom__card').forEach((card) => {
+      card.addEventListener('click', () => {
+        if (window.gtag) window.gtag('event', 'select_item', {
+          item_list_name: 'shop_custom_lane',
+          items: [{ item_name: 'custom ' + (card.dataset.custom || '') }],
+        });
+      });
+    });
+  </script>
 
   <script>
     // funnel step clock (same sessionStorage key as the builder/PDPs): each
