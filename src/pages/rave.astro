@@ -360,6 +360,32 @@ const GUIDE = [
       filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(255,170,70,0.45));
     }
     .rv-s-beach .rv-screen__cta { align-self: flex-start; margin-left: 2px; }
+
+    /* 🛍 merch — the only slide that holds up a PRODUCT, and the product is the
+       banana you are wearing this second (JS paints .rv-screen__art from your
+       live outfit). Grid, because the DOM order is text → art → cta but the art
+       belongs beside both. The die-cut white edge is a drop-shadow ring. */
+    .rv-s-merch {
+      /* the right ~20% of the wall is where the INVITE sign hangs — the art
+         column stops short of it rather than sliding under it */
+      display: grid; gap: 5px 10px; padding: 0 21% 0 16px;
+      grid-template-columns: minmax(0, 1fr) clamp(52px, 20%, 150px);
+      grid-template-rows: auto auto; align-items: center; justify-items: start;
+    }
+    .rv-s-merch .rv-screen__text {
+      grid-column: 1; grid-row: 1; text-align: left; max-width: none;
+      font-family: "Anton","Arial Black",sans-serif; line-height: 0.86;
+      font-size: clamp(1.25rem, 6vw, 2.6rem); letter-spacing: 0.01em;
+    }
+    .rv-s-merch .rv-screen__cta { grid-column: 1; grid-row: 2; }
+    .rv-s-merch .rv-screen__art {
+      grid-column: 2; grid-row: 1 / span 2; width: 100%; height: auto;
+      image-rendering: pixelated; transform: rotate(7deg);
+      filter:
+        drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+        drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+        drop-shadow(0 4px 6px rgba(0,0,0,0.55));
+    }
     /* THE DROP: the wall goes hot + frantic */
     body.rv-drop .rv-screen {
       border-color: #ff4d6d;

@@ -9,7 +9,7 @@
 // THE DROP: clock-synced shared moment — every 3 minutes, for 10 seconds,
 // the whole floor goes disco. Everyone sees it together because everyone
 // shares the same clock. Zero server involvement.
-import { drawComposite, assetsReady, NFRAMES, resolveHands, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
 import { DROPS, ownsDropStat } from '../data/wearables.js';
 import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, POOF_FRAMES, worldSid } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
@@ -43,7 +43,11 @@ const SCREEN_MSGS = [
 const SCREEN_ADS = [
   { id: 'forge',   text: 'MAKE YOUR OWN EMOTE',          cta: 'the pixel forge →',      href: '/forge/' },
   { id: 'items',   text: 'DRAW THE NEXT DROP',           cta: 'the items workshop →',   href: '/forge/' },
-  { id: 'sticker', text: 'PUT YOUR BANANA ON A STICKER', cta: 'make-a-banana →',         href: '/make-a-banana/' },
+  // 🛍 the one ad that shows the PRODUCT, and the product is THEIR banana — the
+  // floor is full of people who already dressed one up, so the screen just holds
+  // it up as vinyl. `art:'me'` makes render() paint the outfit they're wearing.
+  { id: 'sticker', text: 'YOUR BANANA. REAL VINYL.', cta: '$14.99 · free shipping →',
+    href: '/make-a-banana/sticker/', adStyle: 'merch', art: 'me' },
   { id: 'pass',    text: 'CLAIM YOUR BANANA PASS',       cta: 'badges · gear · stats →', href: '/pass/' },
   { id: 'shop',    text: 'OFFICIAL BANANA MERCH',        cta: 'the shop →',              href: '/shop/' },
   { id: 'tee',     text: 'WEAR YOUR OWN BANANA',         cta: 'custom tee →',            href: '/make-a-banana/tee/' },
@@ -71,6 +75,10 @@ if (BEACH_OPEN) SCREEN_ADS.push({
   id: 'beach', text: 'THE BEACH IS OPEN', cta: 'banana bay, past the park →',
   href: '/beach/?from=rave', adStyle: 'beach', bg: '/assets/beach/rave-ad-bg.png',
 });
+
+// ?adtest=<id> pins the LED screen to one ad — an ad surfaces roughly every
+// 19s and there are ten of them, so eyeballing one otherwise means waiting ~3min
+const ADTEST = new URLSearchParams(location.search).get('adtest') || '';
 
 const RAVE_WS = 'wss://banana-rave.trymstene.workers.dev/ws';
 const DROP_PERIOD = 180, DROP_LEN = 15; // seconds — 15 covers the full 12.8s musical drop with a strut-out (was 10; Trym: "wohoo")
@@ -5191,10 +5199,16 @@ function init() {
     };
     let adIdx = Math.floor(Math.random() * SCREEN_ADS.length);
     let count = 0;
+    // the banana the merch slide sells. `me` is a per-closure lookup everywhere
+    // in this file, never a module binding, and the screen renders before the
+    // socket joins — so fall back to the saved fit rather than skipping the art.
+    const adOutfit = () => ((myId && ravers.get(myId)) || {}).outfit || myOutfit();
+    const adOutfitParams = () => outfitParams(adOutfit()).toString();
     let photoSlide = null;   // 📸 tonight's quest photo — rides the rotation for an hour
     const nextSlide = () => {
       if (photoSlide && Date.now() > photoSlide.until) photoSlide = null;
       if (photoSlide && count % 3 === 1) return photoSlide;
+      if (ADTEST) return { type: 'ad', ...(SCREEN_ADS.find((a) => a.id === ADTEST) || SCREEN_ADS[0]) };
       if (count % 4 === 3) { const ad = SCREEN_ADS[adIdx % SCREEN_ADS.length]; adIdx++; return { type: 'ad', ...ad }; }
       if (!bag.length) bag = refill();
       return { type: 'msg', text: bag.pop() };
@@ -5240,6 +5254,27 @@ function init() {
         t.textContent = s.text;
       }
       content.appendChild(t);
+      // 🛍 art:'me' — the merch slide holds up the banana they are wearing RIGHT
+      // NOW, as vinyl. One 256px draw per appearance (~every 40s), so it costs
+      // nothing; the die-cut white edge is a CSS drop-shadow stack, not a second
+      // contour pass.
+      // ⚠️ guarded: a slide is decoration, and decoration must never be able to
+      // take the whole rotation down (an early throw here would freeze the LED
+      // wall on one frame for the rest of the night).
+      if (s.art === 'me') {
+        try {
+          const mine = adOutfit();
+          const cv = document.createElement('canvas');
+          cv.width = cv.height = 256;
+          cv.className = 'rv-screen__art';
+          drawComposite(cv.getContext('2d'), 256, 2, {
+            bg: 'transparent', captions: false, top: '', bottom: '',
+            hat: mine.hat, glasses: mine.glasses, extras: mine.extras || {},
+            c: mine.c, effect: 'none',
+          });
+          content.appendChild(cv);
+        } catch (e) { console.warn('led art', e); }
+      }
       if (s.type === 'ad') {
         const c = document.createElement('span');
         c.className = 'rv-screen__cta';
@@ -5247,7 +5282,9 @@ function init() {
         content.appendChild(c);
         screen.classList.add('rv-screen--ad');
         screen.classList.remove('rv-screen--msg');
-        screen.setAttribute('href', s.href);
+        // the merch slide showed THEIR banana — the product page must open on
+        // the same one, so the outfit rides the link
+        screen.setAttribute('href', s.art === 'me' ? s.href + '?' + adOutfitParams() : s.href);
         screen.dataset.ad = s.id;
         if (s.bg) { screen.style.setProperty('--ad-bg', 'url(' + s.bg + ')'); screen.classList.add('rv-screen--bg'); }
       } else {

@@ -1,7 +1,7 @@
 // 🧃🍌🏪 THE PARK'S SHOPS — Inka's merch kiosk (the one real-money thing)
 // and the Banana Stand coin shop. Split from banana-park.js (P5); wired
 // through the shared ctx (ME_DRAW/invalidateMe/sendOutfit = the equip seam).
-import { drawComposite, assetsReady, SVG as ART } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, outfitParams, SVG as ART } from '../lib/banana-engine.js';
 import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
 import { passStat, passGet, passPush } from '../lib/banana-pass.js';
 import { catCustom } from '../lib/drops.js';
@@ -84,13 +84,7 @@ export function initShops(ctx) {
   function merchParams() {
     let o = {};
     try { o = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e) {}
-    const p = new URLSearchParams();
-    if (o.hat && o.hat !== 'none') p.set('h', o.hat);
-    if (o.glasses && o.glasses !== 'none') p.set('g', o.glasses);
-    const ex = Object.keys(o.extras || {}).filter((k) => o.extras[k]);
-    if (ex.length) p.set('ex', ex.join('.'));
-    if (o.effect && o.effect !== 'none') p.set('e', o.effect);
-    return p.toString();
+    return outfitParams(o).toString();
   }
   function keeperSay(text, ms) {
     keeperBubble.textContent = text;

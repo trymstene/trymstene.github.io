@@ -335,6 +335,22 @@ function scratchCv(which, W) {
   return cv;
 }
 
+// An outfit → the builder's share-link params, the exact inverse of
+// sticker-core's parseDesign(). Lives here because this module owns the outfit
+// contract; every surface that hands a banana off to a product page (the rave's
+// LED merch slide, the park shop, the offer card) must encode it identically or
+// the visitor lands on a stranger's banana.
+function outfitParams(o) {
+  const p = new URLSearchParams();
+  if (!o) return p;
+  if (o.hat && o.hat !== 'none') p.set('h', o.hat);
+  if (o.glasses && o.glasses !== 'none') p.set('g', o.glasses);
+  const ex = Object.keys(o.extras || {}).filter((k) => o.extras[k]);
+  if (ex.length) p.set('ex', ex.join('.'));
+  if (o.effect && o.effect !== 'none') p.set('e', o.effect);
+  return p;
+}
+
 // ---- THE HAND RESOLVER: two gloves, one item each, forever ----
 // Outfits carry only item IDS (URLs, bb-last, rave broadcasts — no hand
 // state), so who-holds-what must be DERIVED from the equipped set alone.
@@ -623,5 +639,5 @@ export {
   PX, gridW, gridH, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
   SPARKS, CONFETTI,
   sheet, imgFor, assetsReady, drawComposite, drawAcc, drawSparks, drawConfetti, caption,
-  resolveHands,
+  resolveHands, outfitParams,
 };
