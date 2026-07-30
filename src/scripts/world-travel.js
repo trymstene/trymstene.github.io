@@ -27,23 +27,41 @@ function hrefFor(to, from) {
   return '/rave/';
 }
 
-// 🚪 THE DOOR — pixelarticons Pro "door-open", INLINED rather than imported.
-// Every other icon in the world comes from pixel-icons.js, but that module
-// eager-globs the whole icon directory, and the beach does not otherwise carry
-// it: pulling ~70 inlined SVGs onto a game surface to draw ONE glyph is exactly
-// the per-surface budget this project watches ([[banana-world-engineering]]).
-// Self-contained is also what this module already is — it ships its own CSS for
-// the same reason.
-// ⚠️ `currentColor` on purpose: the trigger wears the HOST bar's button classes,
-// so the door recolours itself in the park's greens, the bay's sands and the
-// rave's neon without three copies of anything.
-const DOOR = '<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22" '
-  + 'shape-rendering="crispEdges" aria-hidden="true" focusable="false">'
-  + '<path d="M15 4h-4v16h4v2H9v-2H2v-2h2V6h2v12h3V6H6V4h3V2h6v2Zm4 14h3v2h-7v-2h2V6h-2V4h4v14Zm-5-6h-2v-2h2v2Z"/></svg>';
+// 🚪 THE DOOR — drawn for this world, not borrowed from an icon pack (Trym: the
+// pack's door "is actually bad"). A closed wooden door: two recessed panels, a
+// brass-yellow handle, painted in the Banana Stand hut's OWN wood palette
+// (#3a2918 outline, #8a5a2b slab, #a6713a lit panel) so it belongs here.
+//
+// ⚠️ EXACT 2× OR IT LOOKS BROKEN. The art is an 8×15 pixel grid; drawn at 22px
+// (a 1.375× scale) some rows land on 1px and others on 2px, and the two panels
+// come out visibly different sizes — checked by rasterising all three options
+// side by side. viewBox is cropped to the door itself so there is no dead
+// margin, and 16×30 is a clean doubling.
+// ⚠️ NOT `currentColor` any more, and that is the trade: a brown door cannot
+// also recolour per world. It reads fine on every bar (checked against the
+// club's dark green and the bay's yellow), and "a brown door" was the ask.
+// ⚠️ INLINE, not from pixel-icons.js — that module eager-globs the whole icon
+// directory and the BEACH does not otherwise carry it; ~70 SVGs to draw one
+// glyph is exactly the per-surface budget this project watches
+// ([[banana-world-engineering]]). Self-contained is what this module already is.
+const DOOR = '<svg viewBox="0 0 8 15" width="16" height="30" shape-rendering="crispEdges"'
+  + ' class="wt-door" aria-hidden="true" focusable="false">'
+  + '<path fill="#3a2918" d="M0 0h8v1h-8zM0 1h1v1h-1zM7 1h1v1h-1zM0 2h1v1h-1zM7 2h1v1h-1zM0 3h1v1h-1zM7 3h1v1h-1zM0 4h1v1h-1zM7 4h1v1h-1zM0 5h1v1h-1zM7 5h1v1h-1zM0 6h1v1h-1zM7 6h1v1h-1zM0 7h1v1h-1zM7 7h1v1h-1zM0 8h1v1h-1zM7 8h1v1h-1zM0 9h1v1h-1zM7 9h1v1h-1zM0 10h1v1h-1zM7 10h1v1h-1zM0 11h1v1h-1zM7 11h1v1h-1zM0 12h1v1h-1zM7 12h1v1h-1zM0 13h1v1h-1zM7 13h1v1h-1zM0 14h8v1h-8z"/>'
+  + '<path fill="#5f3d1c" d="M2 2h4v1h-4zM2 3h1v1h-1zM5 3h1v1h-1zM2 4h1v1h-1zM5 4h1v1h-1zM2 5h4v1h-4zM2 9h4v1h-4zM2 10h1v1h-1zM5 10h1v1h-1zM2 11h1v1h-1zM5 11h1v1h-1zM2 12h4v1h-4z"/>'
+  + '<path fill="#8a5a2b" d="M1 1h6v1h-6zM1 2h1v1h-1zM6 2h1v1h-1zM1 3h1v1h-1zM6 3h1v1h-1zM1 4h1v1h-1zM6 4h1v1h-1zM1 5h1v1h-1zM6 5h1v1h-1zM1 6h6v1h-6zM1 7h4v1h-4zM6 7h1v1h-1zM1 8h6v1h-6zM1 9h1v1h-1zM6 9h1v1h-1zM1 10h1v1h-1zM6 10h1v1h-1zM1 11h1v1h-1zM6 11h1v1h-1zM1 12h1v1h-1zM6 12h1v1h-1zM1 13h6v1h-6z"/>'
+  + '<path fill="#a6713a" d="M3 3h2v1h-2zM3 4h2v1h-2zM3 10h2v1h-2zM3 11h2v1h-2z"/>'
+  + '<path fill="#ffe135" d="M5 7h1v1h-1z"/></svg>';
 
 const CSS = `
 .wt-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.35rem; }
 .wt-btn svg, .wt-card h2 svg { display:block; }
+/* ⚠️ THE DOOR'S SIZE IS NOT NEGOTIABLE. Host bars size their own icons — the
+   rave squares every button SVG with \`.rv-emote-btn svg { width:1.25em;
+   height:1.25em }\` — and an 8x15 door forced into a square is a squashed door.
+   Two classes + a type out-specifies any one-class host rule, so this wins
+   without !important and without the module knowing which bar it landed in.
+   16x30 is an exact 2x of the art; anything else lands rows on half-pixels. */
+.wt-btn svg.wt-door, .wt-card h2 svg.wt-door { width:16px; height:30px; }
 .wt-card h2 { display:flex; align-items:center; gap:0.4rem; }
 .wt-veil {
   position:fixed; inset:0; z-index:70; display:grid; place-items:center;
