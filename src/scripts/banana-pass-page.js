@@ -1,7 +1,8 @@
 // THE CARD — client side of /pass/: draws the signature banana (from bb-last,
 // dancing on the shared wall clock), lights earned patches, fills the gentle
 // stats and hosts the Shelf in its true home. CLIENT-ONLY.
-import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams } from '../lib/banana-engine.js';
+import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -252,6 +253,26 @@ async function init() {
   renderShelf(el('psOvCreations'), { limit: 4,
     emptyMsg: 'Nothing yet — build a banana, forge an emoji or make an item and it lands here.',
     onPick: (c) => { location.href = c.kind === 'banana' ? '/make-a-banana/?' + c.params : '/forge/?shelf=' + c.id; } });
+
+  // 🛍 the offer, at the BOTTOM of the overview — you have just scrolled past
+  // your badges and everything you have made, which is the one moment on this
+  // page where "have one for real" is a continuation and not an interruption.
+  // Same card as the download moment, so the pitch reads identically everywhere.
+  (() => {
+    const mount = el('psOffer');
+    if (!mount) return;
+    const fit = myOutfit();
+    mount.appendChild(offerCard({
+      kicker: 'Make it real',
+      head: 'Take your banana off the screen',
+      cta: 'See it as a sticker →',
+      href: '/make-a-banana/sticker/?' + outfitParams(fit).toString(),
+      outfit: fit,
+      flag: 'MADE BY YOU',
+      onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: 'pass_overview' }); },
+    }));
+    if (window.gtag) window.gtag('event', 'offer_shown', { from: 'pass_overview' });
+  })();
 
   // — tab counts —
   const setCount = (id, n) => { const e = el(id); if (e) e.textContent = n; };
