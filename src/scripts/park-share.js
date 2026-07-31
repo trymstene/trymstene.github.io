@@ -292,10 +292,35 @@ export function initShare(ctx, garden) {
     track('park_share_day');
     openShare(cv);
   }
+  // 🛍 THE PROUDEST MOMENT ON THE PAGE. You have just made a postcard of your own
+  // day and you are about to send it to someone — that is the one instant where
+  // "have it for real" continues the thought instead of interrupting it. Under
+  // the card, never over it, and once a session: a thank-you repeated is nagging.
+  let offered = false;
+  function mountOffer(box) {
+    if (offered) return;
+    offered = true;
+    import('../lib/make-it-real.js').then(({ offerCard, myOutfit }) => {
+      const fit = myOutfit();
+      import('../lib/banana-engine.js').then(({ outfitParams }) => {
+        box.appendChild(offerCard({
+          kicker: 'Make it real',
+          head: 'That banana, on a real sticker',
+          cta: 'See it as a sticker →',
+          href: '/make-a-banana/sticker/?' + outfitParams(fit).toString(),
+          outfit: fit,
+          onGo: () => track('offer_click', { from: 'park_share' }),
+        }));
+        track('offer_shown', { from: 'park_share' });
+      });
+    }).catch(() => {});
+  }
+
   function openShare(cv) {
     const modal = document.getElementById('pkShareModal');
     document.getElementById('pkShareSlot').replaceChildren(cv);
     modal.hidden = false;
+    mountOffer(modal.querySelector('.pk-sharemodal__box'));
     document.getElementById('pkShareSys').hidden = !navigator.canShare;
     const toBlob = () => new Promise((r) => cv.toBlob(r, 'image/png'));
     document.getElementById('pkShareDl').onclick = async () => {
