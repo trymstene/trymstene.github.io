@@ -250,10 +250,55 @@ export function initShops(ctx) {
   }
   function refreshStandWallet() { standWalletEl.textContent = coinBal(); }
 
-  // 🚪 the back door out of the coin shop — the busiest counter in the world
-  // (192 reached it last month) finally leads somewhere you can spend money
-  const realDoor = document.getElementById('pkStandRealDoor');
-  if (realDoor) realDoor.addEventListener('click', () => track('shop_door', { from: 'stand' }));
+  // 👕 THE HUNG TEE — the way out of the coin shop, wearing the visitor's OWN
+  // banana. It takes the wall's fourth hook so the door is part of the shop
+  // rather than a panel under it.
+  //
+  // ⚠️ DYNAMIC IMPORT. sticker-core is the shop's brain (~31KB with its product
+  // manifest and word filter) and the park is a game surface on a JS budget —
+  // but buildStand() only ever runs once somebody actually walks to the
+  // counter, so people who never shop never pay for it.
+  //
+  // ⚠️ RENDERED, NOT DRAWN. A hand-drawn shirt was the first attempt; the
+  // engine already makes this exact garment for the builder's product tiles,
+  // with the real banana on it. Reusing that means the wall can never disagree
+  // with the shop, and it wears whatever hat you are wearing.
+  function hangTheTee(stWin) {
+    const a = document.createElement('a');
+    a.className = 'pk-stand__tee';
+    a.href = '/shop/';
+    a.id = 'pkStandRealDoor';
+    a.style.cssText = 'left:70%;top:34%;width:28%;';   // the neighbours' weight
+    a.setAttribute('aria-label', 'The Banana Shop — your banana printed on real things');
+    const pill = document.createElement('span');
+    pill.className = 'pk-stand__tee-pill';
+    pill.textContent = 'REAL PRODUCT';
+    a.appendChild(pill);
+    stWin.appendChild(a);
+    a.addEventListener('click', () => track('shop_door', { from: 'stand_tee' }));
+
+    Promise.all([
+      import('../lib/sticker-core.js'),
+      import('../../shared/products.js'),
+    ]).then(([core, mod]) => {
+      const tee = (mod.default || []).find((p) => p.key === 'tee');
+      if (!tee) return;
+      let fit = {};
+      try { fit = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e) {}
+      const cv = core.productMockup({
+        hat: fit.hat || 'none', glasses: fit.glasses || 'none',
+        extras: fit.extras || {}, c: fit.c,
+        top: '', bottom: '', captions: false, effect: 'none',
+        bg: 'transparent', frame: 3,
+      }, tee, 360, { colorHex: '#ffffff', bare: true });
+      // ⚠️ CROP TO THE GARMENT. The mockup is a SQUARE with transparent space
+      // above and below the shirt — hung as-is, that dead space made the wall
+      // item look small and pushed the pill off the bottom edge of the window.
+      const W = cv.width;
+      const d = cv.getContext('2d').getImageData(0, 0, W, W).data;
+      a.insertBefore(core.crop(cv, core.bboxOf([d], W)), pill);
+    }).catch(() => { a.remove(); });   // no shirt is better than a broken hook
+  }
 
   // THE STOCK: every `preview: 'stand'` item, straight from the manifest
   const ST_STOCK = [];
@@ -346,7 +391,8 @@ export function initShops(ctx) {
       { id: 'buckethat', left: '2%', top: '8%', w: '21%', rot: -4 },
       { id: 'snorkelmask', left: '1%', top: '52%', w: '25%', rot: 3 },
       { id: 'duckhat', left: '76%', top: '6%', w: '23%', rot: 4 },
-      { id: 'balloondog', left: '75%', top: '48%', w: '24%', rot: -3 },
+      // ⚠️ the fourth hook now carries the TEE (below) — the way out to real
+      // merch, hung as scenery rather than announced in a panel
     ];
     const stWin = standEl.querySelector('.pk-stand__window');
     if (stWin) ST_DECOR.forEach((d) => {
@@ -359,6 +405,7 @@ export function initShops(ctx) {
       el.innerHTML = ART[def.artKey] || '';
       stWin.appendChild(el);
     });
+    if (stWin) hangTheTee(stWin);
     stAddBackItems(DROPS
       .filter((d) => !((d.flag && localStorage.getItem(d.flag) === '1') || stOwned(d.id)))
       .map((d) => ({
@@ -497,5 +544,8 @@ export function initShops(ctx) {
   return {
     cartTick, standTick, tapShop, tapStand,
     clearPending: () => { pendingShop = false; pendingStand = false; },
+    // the QA reach-in — the counter otherwise needs a walk + a tap on the hut,
+    // which is a lot of choreography to look at one shelf
+    qa: { stand: openStand, shop: openShop },
   };
 }

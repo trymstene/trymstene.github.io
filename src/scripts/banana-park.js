@@ -717,6 +717,7 @@ function init() {
       ...critters.qa,
       ...birds.qa,
       ...garden.qa,
+      ...(shops.qa || {}),
       coins: (n) => { passStat('coins_earned', n); refreshHud(); },
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       phase: () => phase,

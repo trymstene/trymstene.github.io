@@ -268,7 +268,7 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
   if (style === 'tee') {
     return (opts.photo && opts.photo.complete && opts.photo.naturalWidth)
       ? makeTeePhotoMockup(design, size, opts.photo, opts.quad)
-      : makeTeeMockup(design, size, opts.colorHex || '#ffffff');
+      : makeTeeMockup(design, size, opts.colorHex || '#ffffff', opts.bare);
   }
   if (style === 'mug') return makeMugMockup(design, size, state);
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
@@ -454,10 +454,13 @@ export const TEE_QUADS = {
 // the pixel tee: a step-polygon t-shirt on a 24-unit grid, filled with the
 // chosen garment colour, black pixel outline (the site's art language), a
 // simple shade under collar + hem, and the design scaled onto the chest.
-function makeTeeMockup(design, size, colorHex) {
+// `bare` drops the paper backdrop so the garment can hang on a wall instead of
+// sitting on a product card — the stand hangs one on its own wall, and a square
+// of paper there would read as a poster of a shirt rather than a shirt.
+function makeTeeMockup(design, size, colorHex, bare) {
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
-  ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // same paper backdrop
+  if (!bare) { ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); } // same paper backdrop
   const u = size / 24;
   // step-polygon outline (u-grid points), drawn clockwise from left collar
   const pts = [
