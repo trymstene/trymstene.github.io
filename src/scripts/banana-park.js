@@ -11,7 +11,13 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { presenceRoom, poofInto } from '../lib/world.js';
-import { mountHud } from '../lib/world-hud.js';
+// ⚠️ coinBalance rides along: the park hands `coinBal` to the garden, fountain
+// and shops through ctx. Extracting the HUD took the old inline definition with
+// it and the ctx reference was left dangling — a ReferenceError at ctx build
+// time, which killed every module AFTER the strip had already painted. The park
+// looked alive and was not. Never let ctx reference something the HUD owns
+// without importing it.
+import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
@@ -482,7 +488,7 @@ function init() {
     pos, tgt, float, toast, blink,
     phase: () => phase, setPhase, phaseFor,
     pSpeed: () => pSpeed,
-    coinBal, refreshHud,
+    coinBal: coinBalance, refreshHud,
     ME_DRAW,
     invalidateMe: () => { lastF = -1; },
     sendOutfit: () => parkRoom.send({ t: 'outfit', outfit: myParkOutfit() }),

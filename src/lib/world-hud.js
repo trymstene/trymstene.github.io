@@ -59,7 +59,11 @@ function injectCss() {
   document.head.appendChild(st);
 }
 
-const coinBalance = () => {
+// The wallet, derived not stored: coins can only ever be REMOVED by writing
+// coins_spent (see mergeBlob — stats merge by MAX, so a decrement would not
+// survive a sync). Exported because areas need the same number the strip shows;
+// a second reader is how a HUD and a shop start disagreeing about your money.
+export const coinBalance = () => {
   const s = passGet().stats || {};
   return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
 };
