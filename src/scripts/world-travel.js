@@ -94,6 +94,15 @@ const CSS = `
   font-weight:800; font-size:0.86rem; padding:0.5rem;
 }
 .wt-close:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+/* 🛍 THE SHOP is NOT an area — it is the way out of the world to a real thing,
+   so it sits under a rule and wears paper instead of the areas' yellow. Reading
+   it as a fourth place would blur the one line this project keeps sharp:
+   bananacoins buy cosmetics, money buys objects. */
+.wt-sep {
+  margin:0.85rem 0 0.6rem; border:0; border-top:2px dashed rgba(255,253,245,0.22);
+}
+.wt-go--shop { background:#fffdf5; color:#141414; }
+.wt-go--shop .wt-go__line { opacity:0.62; }
 @media (prefers-reduced-motion:reduce) { .wt-go, .wt-close { transition:none; } }
 `;
 
@@ -143,6 +152,17 @@ export function initTravel({ here, mount, before, btnClass, track }) {
       + '<span><span class="wt-go__name">' + AREAS[k].name + '</span>'
       + '<span class="wt-go__line">' + AREAS[k].line + '</span></span>'
       + '<span class="wt-go__arrow">→</span></a>').join('')
+    + '</div>'
+    // 🛍 the one door that leaves the world. 28 days of data: the walked door to
+    // the stand pulled 356, the LED billboard beside it pulled 24 — people go
+    // through doors and ignore posters, so the shop gets a door too.
+    + '<hr class="wt-sep">'
+    + '<div class="wt-list">'
+    + '<a class="wt-go wt-go--shop" href="/shop/" data-to="shop">'
+    + '<span class="wt-go__icon">🛍</span>'
+    + '<span><span class="wt-go__name">The Shop</span>'
+    + '<span class="wt-go__line">your banana on real things — not coins</span></span>'
+    + '<span class="wt-go__arrow">→</span></a>'
     + '</div>'
     + '<button class="wt-close" type="button">stay here</button>'
     + '</div>';
