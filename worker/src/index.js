@@ -365,6 +365,33 @@ async function handleHealth(env) {
       out.printful = `error ${res.status}`;
     }
   }
+  // 📘 Meta CAPI: prove the token can write to THIS dataset without ever
+  // putting a fake Purchase in it.
+  // ⚠️ NOT a read. A Conversions API token may only WRITE events, so
+  // GET /{dataset}?fields=name answers "(#100) Missing Permission" even when
+  // the token is perfect — which is exactly how this check lied the first time.
+  // Posting an EMPTY batch separates the two cases cleanly: a good token is
+  // refused for "param data must be non-empty" (validation, nothing written),
+  // a bad one for "Cannot parse access token" (auth).
+  out.meta = env.META_CAPI_TOKEN ? 'checking' : 'no token set (CAPI off)';
+  if (env.META_CAPI_TOKEN) {
+    const r = await fetch(`${META_API}/${env.META_DATASET_ID}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: [], access_token: env.META_CAPI_TOKEN }),
+    });
+    const b = await r.json().catch(() => ({}));
+    const msg = (b.error && b.error.message) || '';
+    // ⚠️ /health is PUBLIC — report the length of a bad token, never any of
+    // its characters. (A mangled secret is the likely failure and length alone
+    // identifies it: a stdin-piped `wrangler secret put` on Windows appended a
+    // CRLF and Meta answered "Cannot parse access token" for two deploys.
+    // `wrangler secret bulk <file.json>` + a redeploy is the reliable route.)
+    out.meta = /non-empty/.test(msg)
+      ? `ok — token writes to dataset ${env.META_DATASET_ID}`
+      : `error: ${msg.slice(0, 140) || 'unexpected ' + r.status}`
+        + ` [stored token length ${env.META_CAPI_TOKEN.length}]`;
+  }
   return json(out);
 }
 
@@ -382,6 +409,15 @@ async function handleWebhook(request, env, url) {
   console.log('webhook: HMAC verified OK');
 
   const order = JSON.parse(raw);
+
+  // 📘 Meta FIRST, and for EVERY paid order. The official-shop lane returns
+  // early below (no custom items to print) — but a mug is still a sale, and
+  // this is the only place that knows one happened.
+  try {
+    console.log('meta capi:', await sendMetaPurchase(order, env));
+  } catch (e) {
+    console.error('meta capi threw (order still fulfils)', e && e.message);
+  }
 
   // Collect custom-sticker line items (the cart attaches `_design_key`)
   const items = [];
@@ -431,6 +467,90 @@ async function handleWebhook(request, env, url) {
   }
   console.error('printful error', res.status, JSON.stringify(body));
   return json({ error: 'printful failed' }, 500); // non-200 makes Shopify retry
+}
+
+// ---------- 📘 META CONVERSIONS API — the server-side Purchase ----------
+// Sent from the one event that is definitionally true: Shopify says the money
+// moved. It can't be ad-blocked, it survives iOS, and it is the FIRST purchase
+// signal this business has ever had — four real orders shipped between 3 Jun
+// and 22 Jul 2026 and the browser reported exactly zero of them.
+//
+// ⚠️ WHY NOT A SHOPIFY CUSTOM PIXEL: those run in a sandboxed iframe on a
+// Shopify origin, so the _fbp we set on .trymstene.com is invisible to them —
+// you'd get Purchases that Meta can't tie to the click that earned them.
+// Here the cart carries _fbp/_fbc through as line attributes instead.
+//
+// ⚠️ THIS MUST NEVER THROW. A Meta outage returning non-200 would make Shopify
+// retry the webhook, i.e. re-drive FULFILMENT because of a tracking failure.
+const META_API = 'https://graph.facebook.com/v21.0';
+
+async function sha256Hex(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+// ⚠️ Meta normalises before hashing (trim + lowercase; digits only for phones,
+// no spaces in city/zip). Hash a raw string and it silently never matches —
+// the event is accepted, the attribution just quietly isn't there.
+async function hashed(v) {
+  const s = String(v == null ? '' : v).trim().toLowerCase();
+  return s ? [await sha256Hex(s)] : undefined;
+}
+const lineProps = (li) =>
+  Object.fromEntries((li.properties || []).map((p) => [p.name, p.value]));
+
+async function sendMetaPurchase(order, env) {
+  if (!env.META_CAPI_TOKEN) return 'no token — Meta CAPI off';
+  const lines = order.line_items || [];
+  const first = lineProps(lines[0] || {});
+  const s = order.shipping_address || order.billing_address || {};
+  const cd = order.client_details || {};
+
+  const user = {
+    em: await hashed(order.email || order.contact_email),
+    ph: await hashed(String(s.phone || order.phone || '').replace(/\D/g, '')),
+    fn: await hashed(s.first_name),
+    ln: await hashed(s.last_name),
+    ct: await hashed(String(s.city || '').replace(/\s/g, '')),
+    st: await hashed(s.province_code),
+    zp: await hashed(String(s.zip || '').replace(/\s/g, '')),
+    country: await hashed(s.country_code),
+    client_ip_address: cd.browser_ip || undefined,
+    client_user_agent: cd.user_agent || undefined,
+    fbp: first._fbp || undefined,   // carried from the cart (sticker-core)
+    fbc: first._fbc || undefined,
+  };
+  for (const k of Object.keys(user)) if (user[k] === undefined) delete user[k];
+
+  const payload = {
+    data: [{
+      event_name: 'Purchase',
+      // ⚠️ Meta rejects events older than 7 days — a replayed webhook from an
+      // ancient order is dropped on their side, not ours.
+      event_time: Math.floor(new Date(order.created_at || Date.now()).getTime() / 1000),
+      // ⚠️ THE DEDUP KEY. If a browser-side Purchase is ever added it MUST send
+      // this exact event_id or every sale is counted twice.
+      event_id: `shopify-${order.id}`,
+      action_source: 'website',
+      event_source_url: 'https://trymstene.com/',
+      user_data: user,
+      custom_data: {
+        currency: order.currency,
+        value: Number(order.total_price) || 0,
+        num_items: lines.reduce((n, li) => n + (li.quantity || 1), 0),
+        contents: lines.map((li) => ({
+          id: String(lineProps(li)._product || li.sku || li.variant_id || ''),
+          quantity: li.quantity || 1,
+        })),
+      },
+    }],
+  };
+
+  const res = await fetch(
+    `${META_API}/${env.META_DATASET_ID}/events?access_token=${env.META_CAPI_TOKEN}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const body = await res.json().catch(() => ({}));
+  return res.ok ? `sent (${body.events_received} received)`
+    : `FAILED ${res.status}: ${JSON.stringify(body).slice(0, 200)}`;
 }
 
 async function verifyShopifyHmac(rawBody, givenB64, secret) {

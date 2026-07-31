@@ -15,6 +15,9 @@ PRINTFUL_VARIANT_ID = "10163"
 # The "banana-fulfilment" dev-dashboard app's client id (public identifier;
 # pairs with the SHOPIFY_CLIENT_SECRET secret for the client-credentials grant)
 SHOPIFY_CLIENT_ID = "c9bd1c56d512f6498991f7a20a7d6f62"
+# 📘 Meta dataset "trymstene.com" — public identifier, pairs with the
+# META_CAPI_TOKEN secret. Same id the site's browser pixel inits with.
+META_DATASET_ID = "1486277956588056"
 
 # Daily temp-product sweep (per-order checkout-image products, tag custom-temp)
 [triggers]
@@ -31,5 +34,9 @@ crons = ["17 3 * * *"]
 #                           short-lived Admin tokens (client-credentials grant)
 #                           to power per-order checkout-image products; absent =
 #                           feature off, clients fall back to the shared variant
+#   META_CAPI_TOKEN         Meta Conversions API token (Events Manager -> the
+#                           dataset -> Settings -> Conversions API -> Generate
+#                           access token). Absent = CAPI off, orders still
+#                           fulfil normally — tracking never blocks the print.
 #   SHOPIFY_ADMIN_TOKEN     (legacy alternative: a permanent shpat_ Admin token;
 #                           takes precedence over the grant if ever set)

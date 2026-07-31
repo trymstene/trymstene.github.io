@@ -541,6 +541,28 @@ export async function localizedPrice(product = getProduct('sticker')) {
   } catch (e) { return null; }
 }
 
+// 📘 _fbp / _fbc — Meta's browser id and click id. Both are cookies the pixel
+// sets on .trymstene.com, so they're readable here and carry into the order as
+// line attributes; the fulfilment worker sends them with the server-side
+// Purchase. Without them a sale reaches Meta as an anonymous conversion that
+// can't be credited to any ad.
+// ⚠️ The fbclid fallback exists for the case the PDP IS the landing page: the
+// pixel writes _fbc from the URL, but on the very first pageview the cookie may
+// not be written yet when a fast visitor hits ORDER.
+function metaIds() {
+  const out = [];
+  const ck = (n) => (document.cookie.match('(^|; )' + n + '=([^;]*)') || [])[2];
+  const fbp = ck('_fbp');
+  let fbc = ck('_fbc');
+  if (!fbc) {
+    const id = new URLSearchParams(location.search).get('fbclid');
+    if (id) fbc = 'fb.1.' + Date.now() + '.' + id;
+  }
+  if (fbp) out.push({ key: '_fbp', value: fbp });
+  if (fbc) out.push({ key: '_fbc', value: fbc });
+  return out;
+}
+
 // ---- checkout -------------------------------------------------------------
 // Upload the print PNG to the Worker (→ R2), then create a Shopify cart with
 // the design attached as line-item attributes. Returns the checkoutUrl (the
@@ -557,6 +579,10 @@ export async function uploadAndCheckout(printCanvas, product = getProduct('stick
     { key: '_design_key', value: key },   // machine-readable, hidden in checkout
     { key: '_product', value: product.key }, // fulfilment mapping (temp variants have unknown ids)
     { key: 'Design', value: url },        // visible link so the customer sees THEIR banana
+    // 📘 the Meta browser + click ids, riding into the order so the worker's
+    // server-side Purchase can name the ad that earned it. Shopify hides
+    // underscore-prefixed attributes from the buyer.
+    ...metaIds(),
   ];
   if (selection && product.options) {
     // apparel: colour + size ride as attributes on the ONE Shopify variant.
