@@ -302,11 +302,14 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
   return cv;
 }
 
-// ☕ MUG mockup — drawn, not photographed: a white cylinder with a handle, the
-// design curved onto the face. The `design` here is the full wrap file, so only
-// its LEFT half is shown (that is the side pointing at you) and the curve is
-// faked by slicing it into vertical strips and squeezing them toward the edges
-// — a flat paste onto a cylinder is the tell that gives away a fake mockup.
+// ☕ MUG mockup — drawn, not photographed: the white ENAMEL CAMPER MUG we
+// actually sell (dark rolled rim, slightly flared body), with the design curved
+// onto the face. The `design` here is the full wrap file, so only its LEFT half
+// is shown (the side pointing at you) and the curve is faked by slicing it into
+// vertical strips eased toward the edges — a flat paste onto a cylinder is the
+// tell that gives away a fake mockup.
+const ENAMEL_RIM = '#1c2534';
+
 function makeMugMockup(design, size, state) {
   const cv = document.createElement('canvas'); cv.width = cv.height = size;
   const ctx = cv.getContext('2d');
@@ -332,10 +335,11 @@ function makeMugMockup(design, size, state) {
   body.addColorStop(0, '#dcd8cf'); body.addColorStop(0.18, '#ffffff');
   body.addColorStop(0.72, '#fbfaf7'); body.addColorStop(1, '#cfcabf');
   ctx.fillStyle = body;
+  const taper = bw * 0.045;                                        // camper flare
   ctx.beginPath();
   ctx.moveTo(bx, by);
-  ctx.lineTo(bx, by + bh);
-  ctx.ellipse(bx + rx, by + bh, rx, ry, 0, Math.PI, 0, true);      // rounded base
+  ctx.lineTo(bx + taper, by + bh);
+  ctx.ellipse(bx + rx, by + bh, rx - taper, ry * 0.85, 0, Math.PI, 0, true);
   ctx.lineTo(bx + bw, by);
   ctx.closePath();
   ctx.fill();
@@ -370,11 +374,17 @@ function makeMugMockup(design, size, state) {
   ctx.fillStyle = gloss;
   ctx.fillRect(bx, by + ry * 0.4, bw * 0.5, bh - ry * 0.4);
 
-  ctx.fillStyle = '#ffffff';
+  // THE ROLLED RIM — the one detail that says enamel camper and not ceramic:
+  // a dark band round the lip, drawn last so it caps the body and the gloss
+  const band = size * 0.019;
+  ctx.fillStyle = ENAMEL_RIM;
+  ctx.beginPath();
+  ctx.ellipse(bx + rx, by + band, rx, ry, 0, 0, Math.PI);           // band's lower edge
+  ctx.ellipse(bx + rx, by, rx, ry, 0, Math.PI, 0, true);            // …up over the lip
+  ctx.fill();
   ctx.beginPath(); ctx.ellipse(bx + rx, by, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.13)'; ctx.lineWidth = size * 0.004; ctx.stroke();
-  ctx.fillStyle = '#efece4';                                        // the inside
-  ctx.beginPath(); ctx.ellipse(bx + rx, by + ry * 0.12, rx * 0.86, ry * 0.72, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f6f4ef';                                        // the enamel inside
+  ctx.beginPath(); ctx.ellipse(bx + rx, by + ry * 0.14, rx * 0.84, ry * 0.70, 0, 0, Math.PI * 2); ctx.fill();
   return cv;
 }
 

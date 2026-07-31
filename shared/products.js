@@ -71,14 +71,17 @@ export default [
     // to the WRAP renderer — the design is placed twice, once per half, so it
     // reads whichever hand you drink with and nothing straddles the handle
     // seam. Captions always print (see renderMugPrint).
-    // Base: Printful White Glossy Mug 11oz (product 19, variant 1320, $6.50).
+    // ⚠️ SAME BLANK AS THE OFFICIAL MUG (Trym's call): Printful Enamel Mug
+    // (product 407, variant 11189, 12oz, cost $12.25) — the white camper mug
+    // with the dark rim, not the ceramic one. One mug in the line, two ways to
+    // get it: ours on it, or yours.
     key: 'mug',
     name: 'Mug',
     shopifyVariantGid: 'gid://shopify/ProductVariant/49051171586267', // Custom Banana Mug, $22.99
-    printfulVariantId: 1320,
+    printfulVariantId: 11189,
     print: 'mug',
-    size: '11 oz (0.33 l)',
-    material: 'glossy white ceramic, dishwasher + microwave safe',
+    size: '12 oz (0.35 l)',
+    material: 'white enamel camper mug with a rolled rim',
     priceHint: '22.99',
     live: false, // ⚠️ Printful fulfilment not linked yet — teaser until it is
   },
