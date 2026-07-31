@@ -380,10 +380,15 @@ function makeMugMockup(design, size, state) {
   const STRIPS = 48;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
+  // ⚠️ CURVATURE STRENGTH. Pure cosine easing is the physically-correct mapping
+  // for a full 180° wrap — and it looks WRONG, because its slope peaks at π/2 in
+  // the middle, stretching the centre ~1.6× horizontally. The banana lives in
+  // the middle, so it came out fat and flattened. Blending most of the way back
+  // to linear keeps the barrel readable at the edges without widening the art.
+  const BEND = 0.3;
+  const curve = (u) => u * (1 - BEND) + (0.5 - Math.cos(Math.PI * u) * 0.5) * BEND;
   for (let i = 0; i < STRIPS; i++) {
     const t = i / STRIPS, tn = (i + 1) / STRIPS;
-    // cosine easing pushes strips toward the silhouette edges = curvature
-    const curve = (u) => 0.5 - Math.cos(Math.PI * u) * 0.5;
     const x0 = dx + curve(t) * dw, x1 = dx + curve(tn) * dw;
     const shrink = 1 - Math.abs(t - 0.5) * 0.13;                   // top/bottom pinch
     ctx.drawImage(design,
