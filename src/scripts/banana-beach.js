@@ -20,7 +20,6 @@ import { mountHud } from '../lib/world-hud.js';
 import {
   WORLD, WATER_Y, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
-  SHOP_STALL,
   PARK_SIGN,
 } from './beach-geo.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
@@ -538,7 +537,6 @@ function init() {
     }
     if (tapGrabber(wx, wy)) return;   // 🕹 the landmark, out on the pier
     if (tapStall(wx, wy)) return;     // 🎡 a stall counter takes priority
-    if (tapShopStall(wx, wy)) return; // 🛍 …and so does the merch stall's
     // ⛏ digging is the ⛏ Dig ACTION BUTTON now (dig anywhere at your feet) —
     // tapping bare sand just walks you there, like the rest of the beach.
     // 🏴‍☠️ tapping CAPTAIN SABREFACE opens his desk — TIGHT to his sprite now
@@ -3061,21 +3059,6 @@ function init() {
       && wy > s.y - 126 && wy < s.y + 8);
     if (i < 0) return false;
     requestOpen(STALLS[i].x, STALLS[i].y, () => openStall(i));
-    return true;
-  }
-  // 🛍 THE MERCH STALL — the bay's door OUT to real products. You walk up to it
-  // like any pier counter, but it opens a page instead of a game: everything on
-  // the midway costs TICKETS, this one costs money, and that is exactly why it
-  // stands on the sand and not up there.
-  // ⚠️ 28 days of data: the walked door to the park's stand pulled 356 and the
-  // LED billboard beside it pulled 24 — so this is a thing you walk INTO.
-  function tapShopStall(wx, wy) {
-    if (!(Math.abs(wx - SHOP_STALL.x) < 64
-      && wy > SHOP_STALL.y - 126 && wy < SHOP_STALL.y + 8)) return false;
-    requestOpen(SHOP_STALL.x, SHOP_STALL.y, () => {
-      track('shop_door', { from: 'beach' });
-      location.href = '/shop/';
-    });
     return true;
   }
 
