@@ -30,6 +30,7 @@ const COLS = [
       ['/rave/', 'Join the rave'],
       ['/wall/', 'The Wall'],
       ['/banana-of-the-day/', 'Banana of the day'],
+      ['https://discord.gg/cuF6BHfZT4', 'The Discord ↗'],
     ],
   },
   {
@@ -49,7 +50,10 @@ const COLS = [
       <nav class="ft-col" aria-label={col.title}>
         <h3>{col.title}</h3>
         {col.links.map(([href, label]) => (
-          <a href={href} data-place={href === '/make-a-banana/' ? 'footer' : undefined}>{label}</a>
+          <a href={href}
+             data-place={href === '/make-a-banana/' ? 'footer' : href.startsWith('https://discord') ? 'footer_discord' : undefined}
+             target={href.startsWith('http') ? '_blank' : undefined}
+             rel={href.startsWith('http') ? 'noopener' : undefined}>{label}</a>
         ))}
       </nav>
     ))}
