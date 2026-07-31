@@ -89,6 +89,19 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
       }
       .pdp-ward__tray button svg { width: 100%; height: 100%; }
       .pdp-ward__none { font-size: 0.62rem; font-weight: 800; line-height: 1; opacity: 0.6; }
+      /* 🔒 a locked item is still SHOWN — seeing it is how you learn it exists.
+         Greyed, gold-edged, and it links to where you catch it. */
+      .pdp-ward__locked {
+        flex: 0 0 auto; scroll-snap-align: start; width: 52px; height: 52px; padding: 4px;
+        display: grid; place-items: center; position: relative; line-height: 0;
+        background: #f4f1e8; border: 3px solid #c9a227; filter: grayscale(1); opacity: 0.62;
+      }
+      .pdp-ward__locked svg, .pdp-ward__locked img { width: 100%; height: 100%; }
+      .pdp-ward__locked::after {
+        content: '🔒'; position: absolute; right: -4px; bottom: -4px;
+        font-size: 0.7rem; filter: grayscale(0);
+      }
+      .pdp-ward__locked:hover { opacity: 0.85; }
       .pdp-opts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.45rem; }
       .pdp-swatch {
         width: 40px; height: 40px; padding: 0; border: 3px solid var(--ink, #111);

@@ -6,7 +6,7 @@
 import {
   assetsReady, NFRAMES, HATS, GLASSES, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, SVG as ART,
 } from '../lib/banana-engine.js';
-import { ownsWearable } from '../data/wearables.js';
+import { ownsWearable, ownsDropStat } from '../data/wearables.js';
 import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
@@ -173,19 +173,34 @@ function wardrobeRow(host, kicker, chips) {
   tray.className = 'pdp-ward__tray';
   tray.setAttribute('role', 'group');
   tray.setAttribute('aria-label', kicker);
-  chips.forEach(({ art, label, on, pick }) => {
+  chips.forEach(({ art, label, on, pick, locked }) => {
+    // a LOCKED item is a door, not a dead chip: you can see the thing exists
+    // and tapping tells you where to go and get it
+    if (locked) {
+      const a = document.createElement('a');
+      a.className = 'pdp-ward__locked';
+      a.href = locked.href;
+      a.innerHTML = chipArt(art) || label;
+      a.title = label + ' — ' + locked.why;
+      a.setAttribute('aria-label', label + ' (locked — ' + locked.why + ')');
+      tray.appendChild(a);
+      return;
+    }
     const b = document.createElement('button');
     b.type = 'button';
     b.setAttribute('aria-label', label);
     b.setAttribute('aria-pressed', String(on()));
-    b.innerHTML = art || '<span class="pdp-ward__none">none</span>';
+    b.innerHTML = chipArt(art) || '<span class="pdp-ward__none">none</span>';
     b.onclick = () => {
       pick();
       // the poses show the outfit, so they have to be redrawn with it
       buildPosePicker();
       paintMockup();
       syncDesignUrl();
-      tray.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(chips[i].on())));
+      // ⚠️ index against the BUTTONS only — locked chips are <a>, so a naive
+      // children[i] would pair the wrong chip with the wrong state
+      const unlocked = chips.filter((c) => !c.locked);
+      tray.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(unlocked[i].on())));
       track('pdp_dress', { product: product.key, slot: kicker.toLowerCase(), item: label });
     };
     tray.appendChild(b);
@@ -200,24 +215,57 @@ function wardrobeRow(host, kicker, chips) {
 // showing the empty "none" placeholder.
 const artOf = (d) => (d && (ART[d.art] || ART[d.front])) || '';
 
+// ⚠️ NOT ALL ART IS SVG. Most wearables are an inline pixel-SVG string, but a
+// PNG-art item (the pier plush = the resized real banana) is a PATH — dropped
+// into innerHTML it renders as the literal text "/assets/…png".
+const chipArt = (art) => (!art ? '' : art.charAt(0) === '<' ? art
+  : '<img src="' + art + '" alt="" style="max-width:100%;max-height:100%;image-rendering:pixelated">');
+
+// ⚠️ TWO DIFFERENT GATES, and they behave oppositely — copied from the builder
+// so the shop and the workshop agree about what you may wear:
+//   ownsWearable  → STAND stock you have not bought: hidden entirely (it is for
+//                   sale over at the stand, not a thing you own)
+//   earned:       → drops you catch at the rave/pier/garden: SHOWN BUT LOCKED,
+//                   because seeing it is the whole point — you learn it exists
+const earnedUnlocked = (d) => {
+  if (!d.earned) return true;
+  try {
+    const pass = JSON.parse(localStorage.getItem('pass-v1') || '{}');
+    if (d.stat) return (((pass.stats) || {})[d.stat] || 0) > 0;
+    if (d.flag) return localStorage.getItem(d.flag) === '1' || ownsDropStat(d.id);
+    if (d.patch) return !!((pass.patches || {})[d.patch]);
+  } catch (e) {}
+  return false;
+};
+const earnDoor = (d) => (d.earned === 'pier' ? { href: '/beach/', at: 'the pier' }
+  : d.earned === 'garden' ? { href: '/park/', at: 'the park garden' }
+    : { href: '/rave/', at: 'the rave' });
+
 function buildWardrobe() {
   const host = el('pdpWardrobe');
   if (!host) return;
   host.replaceChildren();
+  const lockOf = (d) => {
+    if (!d || earnedUnlocked(d)) return null;
+    const door = earnDoor(d);
+    return { href: door.href, why: d.lock || ('catch it at ' + door.at) };
+  };
   wardrobeRow(host, 'Hat', HATS.map(([id, label]) => ({
     art: id === 'none' ? '' : artOf(HAT_BY_ID[id]),
-    label, on: () => state.hat === id, pick: () => { state.hat = id; },
+    label, locked: lockOf(HAT_BY_ID[id]),
+    on: () => state.hat === id, pick: () => { state.hat = id; },
   })));
   wardrobeRow(host, 'Shades', GLASSES.map(([id, label]) => ({
     art: id === 'none' ? '' : artOf(SHADE_BY_ID[id]),
-    label, on: () => state.glasses === id, pick: () => { state.glasses = id; },
+    label, locked: lockOf(SHADE_BY_ID[id]),
+    on: () => state.glasses === id, pick: () => { state.glasses = id; },
   })));
   // artOf() in the filter drops anything with no drawable chip — a tray of
   // blank "none" boxes is worse than a shorter tray
   const extras = EXTRA_DEFS.filter((d) => !d.raveOnly && ownsWearable(d) && artOf(d));
   if (extras.length) {
     wardrobeRow(host, 'Extras', extras.map((d) => ({
-      art: artOf(d), label: d.label,
+      art: artOf(d), label: d.label, locked: lockOf(d),
       on: () => !!state.extras[d.id],
       pick: () => { state.extras[d.id] = !state.extras[d.id]; },
     })));
