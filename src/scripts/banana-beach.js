@@ -6,7 +6,7 @@
 // every day). Captain Sabreface runs the daily buried-treasure hunt from his
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
-import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
@@ -20,7 +20,7 @@ import { mountHud } from '../lib/world-hud.js';
 import {
   WORLD, WATER_Y, PLATFORM, PIER_MOUTH, COURT, NET, BAR,
   OB_RECTS, OB_CIRCLES, CHAIRS, OVERLAYS, UMBRELLAS, BONFIRE, PIER_SPRITE, STALLS, GRABBER,
-  PARK_SIGN,
+  PARK_SIGN, HUT,
 } from './beach-geo.js';
 import { WEARABLE_PACKS } from '../data/wearables.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
@@ -537,6 +537,7 @@ function init() {
     }
     if (tapGrabber(wx, wy)) return;   // 🕹 the landmark, out on the pier
     if (tapStall(wx, wy)) return;     // 🎡 a stall counter takes priority
+    if (tapHut(wx, wy)) return;       // 🏖 the Beach Hut, by the road
     // ⛏ digging is the ⛏ Dig ACTION BUTTON now (dig anywhere at your feet) —
     // tapping bare sand just walks you there, like the rest of the beach.
     // 🏴‍☠️ tapping CAPTAIN SABREFACE opens his desk — TIGHT to his sprite now
@@ -2692,6 +2693,136 @@ function init() {
   document.getElementById('bhCocoClose').addEventListener('click', closeCoco);
   document.getElementById('bhCocoBack').addEventListener('click', closeCoco);
 
+  // ---- 🏖 THE BEACH HUT — the bay's one real-money room -------------------
+  // Everything else on this beach is earned: shells, fish, tickets, coins. The
+  // hut is the only door that leads to a real product, and it is a BUILDING
+  // you walk into rather than a banner over the sand — doors out-pull
+  // billboards in this world about 15:1 (rave_exit_stand 356 vs
+  // rave_screen_ad 24 over the same window).
+  const HUT_PRODUCTS = [
+    { key: 'sticker', name: 'die-cut sticker', price: '$14.99' },
+    { key: 'magnet', name: 'fridge magnet', price: '$16.99' },
+    { key: 'tee', name: 'tee', price: '$34.99' },
+  ];
+  // 🤠 PALMA, who keeps the hut. Trym asked for a straw sun hat and, failing
+  // that, "a hat the others dont use" — the wardrobe has no straw hat at all
+  // (see the ID GUARD above; that exact gap has bitten this beach before), so
+  // she wears the widest brim it does have. Nobody else in the bay wears it.
+  const PALMA_DRAW = {
+    hat: 'cowboy', glasses: 'none', extras: {},
+    top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+  };
+  const PALMA_HELLO = 'welcome in. everything on this wall is real — printed, packed and posted.';
+  const PALMA_LINES = [
+    'that wall is your banana, printed. tap one down and have a look.',
+    'no shells in here. real things cost real money — that is what makes them real.',
+    'stickers survive a beach bag. i have tested this.',
+    'free shipping, anywhere on earth. i checked twice.',
+  ];
+  const hutEl = document.getElementById('bhHut');
+  const hutGoods = document.getElementById('bhHutGoods');
+  const hutBubble = document.getElementById('bhHutBubble');
+  const hutKeeperCtx = document.getElementById('bhHutKeeperCv').getContext('2d');
+  let hutTimer = null, hutIdx = 0;
+  function hutSay(text, ms) {
+    hutBubble.textContent = text;
+    hutBubble.classList.add('is-on');
+    clearTimeout(hutTimer);
+    hutTimer = setTimeout(() => hutBubble.classList.remove('is-on'), ms || 5200);
+  }
+  // 🍹 PALMA IN THE WINDOW, outdoors. HUT.win is emitted by the generator in
+  // WORLD coordinates, so the canvas can never drift off the opening the art
+  // actually draws. Set dressing: the building stays the tap target.
+  (() => {
+    const w = document.createElement('div');
+    w.className = 'bh-hutnpc';
+    w.style.left = pct(HUT.win.x, W);
+    w.style.top = pct(HUT.win.y, H);
+    w.style.width = pct(HUT.win.w, W);
+    w.style.height = pct(HUT.win.h, H);
+    w.style.zIndex = String(100 + Math.round(HUT.y) + 1);
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    cv.setAttribute('aria-hidden', 'true');
+    w.appendChild(cv);
+    world.appendChild(w);
+    assetsReady().then(() => {
+      const draw = () => drawComposite(cv.getContext('2d'), 150, 2, PALMA_DRAW);
+      draw();
+      setTimeout(draw, 700);   // the redraw belt — accessories decode async
+    });
+  })();
+  // the wall's three goods, each wearing YOUR banana, each landing on the real
+  // PDP with that outfit pre-built (the same h/g/ex/c interchange the gallery's
+  // merch CTAs ride).
+  function hutParams() {
+    let o = {};
+    try { o = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e) {}
+    return outfitParams(o).toString();
+  }
+  function openHut() {
+    if (!hutEl.hidden) return;
+    const q = hutParams();
+    hutGoods.innerHTML = HUT_PRODUCTS.map((pr) =>
+      '<a class="bh-hang bh-hang--' + pr.key + '" href="/make-a-banana/' + pr.key + '/'
+      + '?' + (q ? q + '&' : '') + 'from=beachhut" data-product="' + pr.key + '">'
+      + '<span class="bh-hang__mock"><canvas width="150" height="150" aria-hidden="true"></canvas></span>'
+      + '<i class="bh-hang__tag">' + pr.price + '</i>'
+      + '<b>' + pr.name + '</b>'
+      + '</a>').join('');
+    hutGoods.querySelectorAll('.bh-hang').forEach((a) => {
+      // ⚠️ NOT shop_door — that one means "left the world for /shop/". These
+      // land on a PDP with the outfit pre-built, which is the park merch
+      // shop's story, so it gets the park's event shape: view → click → the
+      // ?from=beachhut landing → checkout_redirect → purchase.
+      a.addEventListener('click', () => track('beach_hut_click', { product: a.dataset.product }));
+    });
+    assetsReady().then(() => {
+      const draw = () => {
+        hutGoods.querySelectorAll('canvas').forEach((cv) => {
+          drawComposite(cv.getContext('2d'), 150, 2,
+            { ...myOutfit, custom: myOutfit.c ? catCustom(myOutfit.c) : undefined });
+        });
+        drawComposite(hutKeeperCtx, 360, 2, PALMA_DRAW);
+      };
+      draw();
+      setTimeout(draw, 700);
+    });
+    const foot = document.getElementById('bhFoot');
+    blink(() => {
+      hutEl.hidden = false;
+      document.body.classList.add('bh-inside');
+      if (foot) foot.style.display = 'none';   // the room has its own way out
+    });
+    hutSay(PALMA_HELLO, 6000);
+    track('beach_hut_view');
+  }
+  function closeHut() {
+    if (hutEl.hidden) return;
+    clearTimeout(hutTimer);
+    hutBubble.classList.remove('is-on');
+    const foot = document.getElementById('bhFoot');
+    blink(() => {
+      hutEl.hidden = true;
+      document.body.classList.remove('bh-inside');
+      if (foot) foot.style.display = '';
+    });
+  }
+  document.getElementById('bhHutKeeper').addEventListener('click', () => {
+    hutSay(PALMA_LINES[hutIdx++ % PALMA_LINES.length]);
+  });
+  document.getElementById('bhHutClose').addEventListener('click', closeHut);
+  document.getElementById('bhHutBack').addEventListener('click', closeHut);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !hutEl.hidden) closeHut(); });
+  // ⚠️ TIGHT to the building, like the stalls: the sand in front of it must
+  // stay walkable, or you can't stand at the counter without the room snapping
+  // open on you.
+  function tapHut(wx, wy) {
+    if (!(Math.abs(wx - HUT.x) < HUT.w / 2 && wy > HUT.y - HUT.h && wy < HUT.y + 8)) return false;
+    requestOpen(HUT.x, HUT.y, openHut);
+    return true;
+  }
+
   // build the pitch: a rail of coconuts on posts + the ready ball. `live` false
   // shows the pay-to-play footer; true arms the throwing.
   function cocoBuild(live) {
@@ -3429,7 +3560,9 @@ function init() {
       get digDry() { return digDry; },
       // fake a second banana on the court so the B2 step-aside rule is
       // testable before multiplayer exists
-      setPeers: (n) => { peersInCourt = n; } };
+      setPeers: (n) => { peersInCourt = n; },
+      // the hut otherwise needs a walk across the bay and a tap on the roof
+      hut: openHut };
   }
 
   // 🗨 ?bubbletest — PIN SANDY'S SPEECH BUBBLE OPEN, forever.

@@ -1309,6 +1309,130 @@ const faq = {
       .bh-coco__toast { animation: none; }
     }
 
+    /* ─── 🏖 THE BEACH HUT INTERIOR — the park merch shop's room, ported to
+       the bay. Same anatomy on purpose (Trym: "same shop-menu as the banana
+       stand"): striped awning, plank back wall with the goods HUNG on it, the
+       keeper big behind a counter. The palette is the hut's own exterior —
+       sea-teal awning over driftwood planks — so walking in feels like walking
+       into the building you just tapped. ── */
+    .bh-hut {
+      position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column;
+      background: #17110a; overflow: hidden;
+    }
+    .bh-hut[hidden] { display: none; }
+    .bh-hut__awning { display: flex; height: 20px; flex: 0 0 auto; border-bottom: 3px solid #000; }
+    .bh-hut__awning span { flex: 1; }
+    .bh-hut__awning span:nth-child(odd) { background: #2c8e8c; }
+    .bh-hut__awning span:nth-child(even) { background: #f7ebcd; }
+    /* ⚠️ THE × SITS IN THE AWNING, not over the wall: at the park's
+       top:28px/right:8px it landed straight on the third good's price tag,
+       which on a phone-width pane is only ~40px from the edge. */
+    .bh-hut__x { position: absolute; top: 0; right: 6px; width: 32px; height: 30px; z-index: 6; pointer-events: auto; }
+    .bh-hut__wall {
+      position: relative; flex: 1 1 auto; overflow: hidden;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.05) 45%),
+        repeating-linear-gradient(90deg, #6b5030 0 24px, #4a3620 24px 27px, #61492c 27px 51px, #4a3620 51px 54px);
+    }
+    /* the wares, hung high on the planks — each on a nail with a string */
+    .bh-hut__goods {
+      position: absolute; left: 0; right: 0; top: 40px; z-index: 2;
+      display: flex; justify-content: space-evenly; align-items: flex-start; padding: 0 4px;
+    }
+    .bh-hang {
+      position: relative; display: grid; justify-items: center; gap: 3px;
+      text-decoration: none; color: #fffdf5; padding-top: 14px; cursor: pointer;
+    }
+    .bh-hang::before {   /* the nail */
+      content: ''; position: absolute; top: 0; left: 50%; width: 5px; height: 5px;
+      transform: translateX(-50%); background: #1c1610; border-radius: 50%;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .bh-hang::after {    /* the string */
+      content: ''; position: absolute; top: 4px; left: 50%; width: 2px; height: 11px;
+      transform: translateX(-50%); background: rgba(240, 230, 200, 0.55);
+    }
+    .bh-hang:hover .bh-hang__mock, .bh-hang:focus-visible .bh-hang__mock { outline: 2px solid #ffe135; outline-offset: 1px; }
+    .bh-hang:active { transform: translateY(2px); }
+    .bh-hang__mock {
+      width: 78px; height: 78px; display: grid; place-items: center;
+      border: 3px solid #000; overflow: hidden; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.45);
+    }
+    .bh-hang__mock canvas { width: 66px; height: 66px; image-rendering: pixelated; display: block; }
+    .bh-hang--sticker .bh-hang__mock { background: #f4f1e8; }
+    .bh-hang--sticker canvas {
+      filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+              drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+              drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.25));
+    }
+    .bh-hang--magnet .bh-hang__mock {
+      background: #e8e4d8; border-radius: 10px;
+      box-shadow: inset 0 0 0 3px #2a2a33, 3px 4px 0 rgba(0, 0, 0, 0.45);
+    }
+    .bh-hang--magnet canvas {
+      width: 56px; height: 56px;
+      filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+              drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
+    }
+    .bh-hang--tee .bh-hang__mock { background: #1c2233; }
+    .bh-hang--tee canvas { width: 40px; height: 40px; }
+    .bh-hang__tag {
+      position: absolute; top: 8px; right: -7px; z-index: 2; font-style: normal;
+      background: #ffe135; color: #10240f; border: 2px solid #000;
+      font-weight: 800; font-size: 0.62rem; line-height: 1; padding: 2px 4px;
+      transform: rotate(6deg); box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.4); white-space: nowrap;
+    }
+    .bh-hang b { font-size: 0.6rem; font-weight: 800; text-align: center; line-height: 1.15; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+    /* ⚠️ NO SEPARATE SHIPPING STRIP on the wall. The park hangs one at a fixed
+       top:168px, which on this portrait pane lands inside the speech bubble's
+       band — and the wall is only ~400px tall here, so goods + strip + bubble
+       + a full-height keeper cannot all fit above her hat. The promise moved
+       onto the counter sign instead, which came out SHORTER for it. */
+    /* Palma — big behind the counter, feet clipped by the wall's bottom edge */
+    .bh-hut__keeper {
+      appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+      position: absolute; left: 50%; bottom: -74px; transform: translateX(-50%);
+      width: min(360px, 86%); z-index: 3;
+    }
+    .bh-hut__keeper canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    /* ⚠️ 34% is a FLOOR, not a preference: below it the bubble's box drops onto
+       Palma's hat brim. (It looked wrong at 34% until the shipping strip moved
+       down — the strip was the collision, not the bubble.) */
+    .bh-hut__bubble {
+      position: absolute; left: 6px; bottom: 34%; z-index: 5;
+      max-width: 46%; background: #fffdf5; color: #111; border: 3px solid #000;
+      filter: drop-shadow(3px 3px 0 #000); padding: 0.35rem 0.5rem;
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; line-height: 1.5;
+      opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .bh-hut__bubble.is-on { opacity: 1; }
+    .bh-hut__counter {
+      flex: 0 0 64px; position: relative; border-top: 4px solid #000; z-index: 4;
+      background: repeating-linear-gradient(90deg, #43331d 0 26px, #332616 26px 52px);
+      display: grid; place-items: center; padding: 0 0.5rem;
+    }
+    .bh-hut__counter::before {
+      content: ''; position: absolute; inset: 0 0 auto; height: 8px;
+      background: #a87c46; border-bottom: 3px solid #000;
+    }
+    .bh-hut__sign {
+      background: #8a5a2b; border: 2px solid #3a230f; color: #ffe7a0;
+      font-size: 0.62rem; font-weight: 800; line-height: 1.4; text-align: center;
+      padding: 0.3rem 0.55rem; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+      transform: rotate(-0.5deg); max-width: 100%;
+    }
+    .bh-hut__back { flex: 0 0 auto; width: auto; margin: 0.55rem 0.8rem 0.7rem; }
+
+    /* 🍹 PALMA IN THE WINDOW, outdoors — the stand-keeper treatment on the
+       hut's own opening. Set dressing only: the building stays the tap target,
+       so pointer-events are off and the box is clipped to HUT.win. */
+    .bh-hutnpc { position: absolute; overflow: hidden; pointer-events: none; }
+    .bh-hutnpc canvas {
+      display: block; width: 100%; height: auto;
+      image-rendering: pixelated; margin-top: -13%;
+    }
+
     /* ─── 🏖 THE BEACH-DAY CARD — who's here + your stats + share, the beach's
        answer to the rave's side panel. Warm sunset palette instead of club
        purple; sits below the view so it works in the bay's single column. ── */
@@ -1546,6 +1670,29 @@ const faq = {
         </div>
         <div class="bh-coco__foot" id="bhCocoFoot"></div>
         <button class="bh-btn bh-coco__back" id="bhCocoBack" type="button">🏖 back to the beach</button>
+      </div>
+
+      <!-- 🏖 THE BEACH HUT — the bay's one real-money room. Same interior the
+           park's merch shop uses (awning, plank wall with the goods HUNG on
+           it, the keeper big behind the counter), in the bay's key: Trym's
+           "same shop-menu as the banana stand… make the wares in the interior
+           stand out in the background of the shopkeeper". -->
+      <div class="bh-hut" id="bhHut" role="dialog" aria-label="The Beach Hut" hidden>
+        <div class="bh-hut__awning" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <button class="bh-x bh-hut__x" id="bhHutClose" type="button" aria-label="Leave the Beach Hut">×</button>
+        <div class="bh-hut__wall">
+          <div class="bh-hut__goods" id="bhHutGoods"></div>
+          <div class="bh-hut__bubble" id="bhHutBubble" role="status" aria-live="polite"></div>
+          <button class="bh-hut__keeper" id="bhHutKeeper" type="button" aria-label="talk to Palma">
+            <canvas id="bhHutKeeperCv" width="360" height="360"></canvas>
+          </button>
+        </div>
+        <div class="bh-hut__counter">
+          <span class="bh-hut__sign">🚚 free worldwide shipping · the one real thing on this bay, printed &amp; posted to your door</span>
+        </div>
+        <button class="bh-btn bh-hut__back" id="bhHutBack" type="button">🏖 back to the beach</button>
       </div>
     </div><!-- /.bh-view -->
 

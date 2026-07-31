@@ -104,6 +104,17 @@ PIER = (1820, 1960, 60, 306)  # x0, x1, y_top, y_bottom
 # between the rows… so bananas can walk around freely with a sense of space").
 # Each stall/wagon is its own collider; the deck itself is open floor.
 BOARDWALK = (1980, 2720, 330, 1012)
+# 🏖 THE BEACH HUT — the bay's real-merch shop. Trym put it "by the road along
+# the beach", and this is the one stretch that can hold a building: north of
+# the spine's east leg, where the road has already dropped away from the tide,
+# east of the court and west of the palms. Anywhere further west the band
+# between the shell line (y362) and the road is thinner than the hut is tall.
+# ⚠️ ONE KNOB. Move this tuple and the art, the collider, the keeper's window
+# and the tap box all follow — everything downstream reads HUT in beach-geo.js.
+# ⚠️ base 492 is a CEILING, not a preference: the road climbs west of here, and
+# at base 500 audit_roads() found the spine running into the hut's west corner.
+HUT_AT = (1390, 492)
+HUT_BOX = ('rect', -68, -34, 68, 6)
 
 im = Image.new('RGBA', (W, H), (54, 132, 158, 255))
 px = im.load()
@@ -418,6 +429,93 @@ def build_grabber():
                     warm=0.02, trim=False)
 
 
+# ---- 🏖 THE BEACH HUT — the bay's real-merch shop -------------------------
+# ⚠️ DRAWN, on Trym's instruction: "You can draw the shop for the beach, dont
+# think we have good assets, use the Banana Stand visuals as the template."
+# The pack's Market/Kiosk families are two-storey city shopfronts, same trap
+# the midway stalls hit. So this is the park's banana-stand hut rebuilt in the
+# bay's key — the SAME parts in the same order (pitched roof, plank walls, a
+# window with the keeper behind it, a counter under the sill, a lettered
+# plank), narrower and squatter, sea-teal over bleached cream.
+# ⚠️ NO BANANA ON THE RIDGE (Trym: "It should be given that the beach stand
+# doesnt have a banana at the top of the roof… The sign that says shop
+# something is enough").
+HUT_W, HUT_H = 160, 148
+HUT_WIN = (34, 58, 126, 100)   # the keeper's window, LOCAL to the drawn sprite
+HUT_TEXT = 'BEACH HUT'
+# 3x5 caps, 2px per module. Only the letters this one word needs exist.
+# ⚠️ THE 'B' IS THE CORNER FORM the park's plank uses — at this size the
+# obvious rounded shapes turn to mush.
+HUT_FONT = {
+    'A': ('.#.', '#.#', '###', '#.#', '#.#'),
+    'B': ('##.', '#.#', '##.', '#.#', '##.'),
+    'C': ('###', '#..', '#..', '#..', '###'),
+    'E': ('###', '#..', '###', '#..', '###'),
+    'H': ('#.#', '#.#', '###', '#.#', '#.#'),
+    'T': ('###', '.#.', '.#.', '.#.', '.#.'),
+    'U': ('#.#', '#.#', '#.#', '#.#', '###'),
+    ' ': ('...', '...', '...', '...', '...'),
+}
+
+
+def build_hut():
+    K = 3
+    s = Image.new('RGBA', (HUT_W * K, HUT_H * K), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    ROOF, ROOF_L, ROOF_M, ROOF_D = ((44, 142, 140), (78, 180, 172),
+                                    (34, 118, 120), (24, 88, 92))
+    WALL, WALL_D = (247, 235, 205), (221, 202, 164)
+    FRAME, FRAME_L, FRAME_D = (150, 108, 66), (188, 142, 92), (104, 72, 44)
+    SILL, SILL_L = (172, 124, 70), (212, 162, 100)
+    DARK = (42, 50, 60)
+
+    def box(x0, y0, x1, y1, fill):
+        d.rectangle([int(x0) * K, int(y0) * K, int(x1) * K - 1, int(y1) * K - 1],
+                    fill=fill)
+
+    ROOF_BOT = 44
+    # ── the roof: courses of boards widening from the apex, dark at each rim
+    for y in range(ROOF_BOT):
+        half = 10 + y * 1.62
+        x0, x1 = 80 - half, 80 + half
+        box(x0, y, x1, y + 1, ROOF_L if y < 12 else (ROOF if (y // 6) % 2 == 0 else ROOF_M))
+        box(x0, y, x0 + 2, y + 1, ROOF_D)
+        box(x1 - 2, y, x1, y + 1, ROOF_D)
+    box(4, ROOF_BOT - 5, HUT_W - 4, ROOF_BOT, ROOF_D)          # the eaves, overhanging
+    # ── the walls, with plank seams and a post at each corner
+    box(12, ROOF_BOT, HUT_W - 12, HUT_H, WALL)
+    for x in range(24, HUT_W - 24, 22):
+        box(x, ROOF_BOT + 4, x + 2, HUT_H - 8, WALL_D)
+    box(12, ROOF_BOT, 18, HUT_H, FRAME)
+    box(HUT_W - 18, ROOF_BOT, HUT_W - 12, HUT_H, FRAME)
+    box(12, HUT_H - 8, HUT_W - 12, HUT_H, FRAME_D)             # the ground line
+    # ── the window: a framed opening, dark inside. The keeper is a DOM canvas
+    #    laid over this band (see HUT.win in beach-geo.js) — the hole itself
+    #    stays OPAQUE so the page never has to composite a backing rect.
+    wx0, wy0, wx1, wy1 = HUT_WIN
+    box(wx0 - 4, wy0 - 4, wx1 + 4, wy1 + 4, FRAME)
+    box(wx0 - 4, wy0 - 4, wx1 + 4, wy0, FRAME_L)
+    box(wx0, wy0, wx1, wy1, DARK)
+    # ── the counter under the sill — where you'd be served
+    box(wx0 - 10, wy1 + 4, wx1 + 10, wy1 + 20, SILL)
+    box(wx0 - 10, wy1 + 4, wx1 + 10, wy1 + 9, SILL_L)
+    box(wx0 - 10, wy1 + 17, wx1 + 10, wy1 + 20, FRAME_D)
+    # ── the plank: hung across the roof face, the shop's whole announcement
+    sw = len(HUT_TEXT) * 8 - 2 + 6
+    sx0, sy0, sh = (HUT_W - sw) // 2, 24, 16
+    box(sx0, sy0, sx0 + sw, sy0 + sh, FRAME)
+    box(sx0, sy0, sx0 + sw, sy0 + 2, FRAME_L)
+    box(sx0, sy0 + sh - 2, sx0 + sw, sy0 + sh, FRAME_D)
+    for li, ch in enumerate(HUT_TEXT):
+        for ry, row in enumerate(HUT_FONT[ch]):
+            for rx, on in enumerate(row):
+                if on == '#':
+                    box(sx0 + 3 + li * 8 + rx * 2, sy0 + 3 + ry * 2,
+                        sx0 + 5 + li * 8 + rx * 2, sy0 + 5 + ry * 2, (255, 246, 222))
+    return blockify(s, factor=K, colors=18, alpha_thresh=0.4, sat=1.05, con=1.04,
+                    warm=0.03, trim=False)
+
+
 # ---- the object layer: pack art at NATIVE scale ---------------------------
 _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
@@ -428,6 +526,7 @@ UMBRELLAS = []               # clickable parasols — open/closed, NOT baked
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 STALLS = []                  # (cx, base) of each midway stall, emitted for the page
 GRABBER = []                 # [cx, base] of the claw machine on the pier
+HUT_SPRITE = []              # [w, h] of the Beach Hut as actually placed
 
 
 
@@ -995,6 +1094,14 @@ export const GRABBER = { x: %d, y: %d };
 
 // 🧭 the waypost at the park lane — the DOM plank that names it hangs here
 export const PARK_SIGN = { x: %d, y: %d };
+
+// 🏖 THE BEACH HUT. `x`/`y` is the ground line under its front (bottom-centre,
+// like every other prop). `win` is the keeper's window in WORLD coordinates —
+// the page lays a canvas over exactly that box, so the hut's art and the
+// banana standing in it can never drift apart. The building itself is already
+// in OVERLAYS (it y-sorts like a palm) and in OB_RECTS (you can't walk in).
+export const HUT = { x: %d, y: %d, w: %d, h: %d,
+  win: { x: %d, y: %d, w: %d, h: %d } };
 ''' % (W, H, WATER_LINE,
        px0, px1, py0,
        px0, px1, py0, PLATFORM_BOT,
@@ -1018,7 +1125,13 @@ export const PARK_SIGN = { x: %d, y: %d };
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
        '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
        GRABBER[0], GRABBER[1],
-       PARK_SIGN[0], PARK_SIGN[1])
+       PARK_SIGN[0], PARK_SIGN[1],
+       HUT_AT[0], HUT_AT[1], HUT_SPRITE[0], HUT_SPRITE[1],
+       # ⚠️ +1 on both axes: blockify's _outline pads the sprite by a 1px ink
+       # border, so everything drawn lands one pixel in from the sprite's edge.
+       HUT_AT[0] - HUT_SPRITE[0] // 2 + HUT_WIN[0] + 1,
+       HUT_AT[1] - HUT_SPRITE[1] + HUT_WIN[1] + 1,
+       HUT_WIN[2] - HUT_WIN[0], HUT_WIN[3] - HUT_WIN[1])
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
         f.write(out)
@@ -1237,6 +1350,13 @@ if HAVE_PACK:
     #  glow and the BEACON export went with it; the last of its constants —
     #  LIGHT, TOWER, BEACON — followed 30 Jul, along with the note that still
     #  said where it "stands".)
+
+    # 🏖 THE BEACH HUT — pre-seeded into _cache so it rides place()'s one path
+    # (contact shadow, plate, overlay export, collider) exactly like a pack
+    # sprite. Same trick the park plays with the stand's own hut art.
+    _cache[('bh-hut', 1, 10, 0.08, 1.1, 1.05)] = build_hut()
+    HUT_SPRITE.extend(place('bh-hut', HUT_AT[0], HUT_AT[1], scale=1.0, sh=0.34,
+                            solid=HUT_BOX, layer=True))
 
     # ─── ⛱ SUNSET ROW: the tanning zone, ON THE SHORE ───────────────────────
     # ⚠️ THE PARASOLS BELONG BY THE SEA. A previous pass clustered them beside
