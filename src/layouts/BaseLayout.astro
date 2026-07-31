@@ -34,6 +34,11 @@ const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="google-site-verification" content="aI-qTkBS_ACkw7mXPWsadMKDL6ASRH6QY5dtVw-84lI" />
+    {/* 📘 Meta domain verification. ⚠️ Must stay on EVERY page, not just the
+        homepage: it's also what lets the business portfolio configure
+        Aggregated Event Measurement, without which conversion events from
+        iOS opt-outs are unusable — and iOS is about half of this traffic. */}
+    <meta name="facebook-domain-verification" content="mb67oo0jrwn4y5cd5qt0wfte6v9cpx" />
 
     <meta property="og:type" content={ogType} />
     {ogLocale && <meta property="og:locale" content={ogLocale} />}
