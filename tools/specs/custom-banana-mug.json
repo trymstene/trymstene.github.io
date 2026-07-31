@@ -1,0 +1,10 @@
+{
+  "title": "Custom Banana Mug",
+  "productType": "Mug",
+  "vendor": "Trym Stene",
+  "tags": ["custom", "make-a-banana"],
+  "descriptionHtml": "<p>Your own dancing banana, printed on a glossy 11oz ceramic mug — the design wraps to both sides, so it reads whichever hand you drink with. Dress the banana in the builder, add a caption, and this is the one that gets made.</p><p>Dishwasher and microwave safe. Printed on demand, free worldwide shipping.</p>",
+  "variants": [
+    { "price": "22.99", "sku": "CUSTOM-MUG-11OZ" }
+  ]
+}

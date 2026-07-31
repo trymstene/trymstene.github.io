@@ -66,6 +66,23 @@ export default [
     live: true,
   },
   {
+    // ☕ THE MUG (31 Jul 2026). The official line already had one; this is the
+    // same object with YOUR banana on it. `print: 'mug'` routes the print file
+    // to the WRAP renderer — the design is placed twice, once per half, so it
+    // reads whichever hand you drink with and nothing straddles the handle
+    // seam. Captions always print (see renderMugPrint).
+    // Base: Printful White Glossy Mug 11oz (product 19, variant 1320, $6.50).
+    key: 'mug',
+    name: 'Mug',
+    shopifyVariantGid: 'gid://shopify/ProductVariant/49051171586267', // Custom Banana Mug, $22.99
+    printfulVariantId: 1320,
+    print: 'mug',
+    size: '11 oz (0.33 l)',
+    material: 'glossy white ceramic, dishwasher + microwave safe',
+    priceHint: '22.99',
+    live: false, // ⚠️ Printful fulfilment not linked yet — teaser until it is
+  },
+  {
     key: 'magnet',
     name: 'Magnet',
     shopifyVariantGid: 'gid://shopify/ProductVariant/48962172354779', // Custom Banana Magnet

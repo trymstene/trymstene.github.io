@@ -7,7 +7,7 @@ import { assetsReady, NFRAMES } from '../lib/banana-engine.js';
 import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
-  bboxOf, pad, crop, renderPrintFile, renderApparelPrint, makeStickerMockup,
+  bboxOf, pad, crop, renderPrintFile, renderApparelPrint, renderMugPrint, makeStickerMockup,
   localizedPrice, uploadAndCheckout, stickerCaptions, stickerEffect, TEE_QUADS,
   ensureCaptionFont,
 } from '../lib/sticker-core.js';
@@ -61,6 +61,9 @@ function designCanvas() {
   // apparel: the preview IS the print file (the full 12″×16″ area with the
   // design placed inside it) at preview res — WYSIWYG with the real print
   if (apparel) return renderApparelPrint(state, 512);
+  // mug: same deal — the preview IS the wrap print file, and the mockup shows
+  // the half of it that faces you
+  if (product.print === 'mug') return renderMugPrint(state, 1024);
   const W = 512;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W;
   const ctx = cv.getContext('2d');

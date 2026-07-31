@@ -117,6 +117,14 @@ CREATE = '''mutation($input: ProductInput!) {
 VARIANTS = '''mutation($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
   productVariantsBulkCreate(productId: $productId, variants: $variants) {
     productVariants { id title price } userErrors { field message } } }'''
+# ⚠️ Shopify gives every new product a free "Default Title" variant. For a
+# single-variant product that variant IS the product, so it must be UPDATED —
+# creating one collides ("The variant 'Default Title' already exists").
+VUPDATE = '''mutation($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+    productVariants { id title price } userErrors { field message } } }'''
+VLIST = '''query($id: ID!) { product(id: $id) {
+  variants(first: 5) { edges { node { id title } } } } }'''
 
 
 def cmd_create(spec_path, go):
@@ -150,12 +158,20 @@ def cmd_create(spec_path, go):
     if vs:
         names = [o['name'] for o in spec.get('options', [])]
         payload = [{'price': str(v['price']),
-                    'optionValues': [{'optionName': n, 'name': val}
-                                     for n, val in zip(names, v.get('optionValues', []))],
+                    **({'optionValues': [{'optionName': n, 'name': val}
+                                         for n, val in zip(names, v.get('optionValues', []))]}
+                       if names else {}),
                     **({'inventoryItem': {'sku': v['sku']}} if v.get('sku') else {})}
                    for v in vs]
-        made = ok(gql(VARIANTS, {'productId': prod['id'], 'variants': payload}, tok),
-                  'productVariantsBulkCreate')['productVariants']
+        if names:
+            made = ok(gql(VARIANTS, {'productId': prod['id'], 'variants': payload}, tok),
+                      'productVariantsBulkCreate')['productVariants']
+        else:
+            # single-variant product: price the Default Title that already exists
+            got = gql(VLIST, {'id': prod['id']}, tok)['product']['variants']['edges']
+            payload[0]['id'] = got[0]['node']['id']
+            made = ok(gql(VUPDATE, {'productId': prod['id'], 'variants': payload[:1]}, tok),
+                      'productVariantsBulkUpdate')['productVariants']
         for m in made:
             print('    %-26s %8s  %s' % (m['title'][:26], m['price'], m['id']))
         print('\nPut the variant GIDs in shared/products.js if this is a builder product.')
@@ -185,6 +201,25 @@ def cmd_publish(handle, channel, go):
        'publishablePublish')
     print('+ published %s to %s' % (p['title'], hit['name']))
     print('  (status is still %s — flip it to ACTIVE in Shopify when it is ready to sell)' % p['status'])
+
+
+def cmd_price(handle, amount, sku, go):
+    tok = token()
+    d = gql('''query($h:String!){ productByHandle(handle:$h){ id title
+      variants(first: 50) { edges { node { id title price } } } } }''', {'h': handle}, tok)
+    p = d.get('productByHandle')
+    if not p:
+        sys.exit('✗ no product with handle ' + handle)
+    vs = [e['node'] for e in p['variants']['edges']]
+    for v in vs:
+        print('  %-26s %8s → %s' % (v['title'][:26], v['price'], amount))
+    if not go:
+        print('\n%d variant(s) on "%s". Re-run with --yes.' % (len(vs), p['title']))
+        return
+    payload = [{'id': v['id'], 'price': str(amount),
+                **({'inventoryItem': {'sku': sku}} if sku and len(vs) == 1 else {})} for v in vs]
+    ok(gql(VUPDATE, {'productId': p['id'], 'variants': payload}, tok), 'productVariantsBulkUpdate')
+    print('\n✓ %s now %s across %d variant(s)' % (p['title'], amount, len(vs)))
 
 
 RENAME = '''mutation($input: ProductInput!) {
@@ -236,6 +271,8 @@ def main():
         cmd_list()
     elif cmd == 'show':
         cmd_show(a[1])
+    elif cmd == 'price':
+        cmd_price(a[1], a[2], (a[a.index('--sku') + 1] if '--sku' in a else None), go)
     elif cmd == 'tm':
         cmd_tm(go)
     elif cmd == 'create':

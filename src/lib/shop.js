@@ -171,7 +171,8 @@ function model(node) {
 // ⚠️ EVERY custom builder product added to Shopify needs its handle here, or it
 // leaks into the official shop grid (the magnet did — Trym caught it live,
 // broken image and all, since custom products have no Shopify product photos).
-const BUILDER_ONLY = new Set(['custom-banana-sticker', 'custom-banana-magnet', 'custom-banana-tee']);
+const BUILDER_ONLY = new Set(['custom-banana-sticker', 'custom-banana-magnet', 'custom-banana-tee',
+  'custom-banana-mug']);
 
 // The per-order checkout worker mints a temp product PER custom order — same
 // template title ("Custom Banana Tee"…) but a Shopify-suffixed handle

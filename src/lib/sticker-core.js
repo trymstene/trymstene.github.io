@@ -117,6 +117,7 @@ export async function ensureCaptionFont(state) {
 }
 
 export function renderPrintFile(state, product = null) {
+  if (product && product.print === 'mug') return renderMugPrint(state);
   if (product && product.options) return renderApparelPrint(state);
   const W = 2048;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
@@ -170,6 +171,40 @@ export function renderApparelPrint(state, W = 2048) {
   return cv;
 }
 
+// ☕ MUG print file: one WRAP that goes all the way round, so the design is
+// placed TWICE — once in each half — and reads whichever hand you drink with.
+// 2475×1155 at 300dpi is Printful's 11oz template; the handle interrupts the
+// wrap at one seam, which is exactly why nothing may straddle the halves.
+// ⚠️ Captions always print here. Unlike the die-cut sticker there is no contour
+// to cut them loose from, and unlike the tee there is no garment colour to
+// fight — a mug is the one product where the caption is the point.
+export function renderMugPrint(state, W = 2475) {
+  const H = Math.round(W * (1155 / 2475));
+  const src = 2048;
+  const raw = document.createElement('canvas'); raw.width = raw.height = src;
+  const rctx = raw.getContext('2d');
+  composite(rctx, src, state.frame, state, {
+    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
+    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+  });
+  const trimmed = crop(raw, pad(bboxOf([rctx.getImageData(0, 0, src, src).data], src), src));
+
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  // a coloured background fills the whole wrap; transparent leaves the ceramic
+  if (state.bg && state.bg !== 'transparent') {
+    ctx.fillStyle = state.bg; ctx.fillRect(0, 0, W, H);
+  }
+  ctx.imageSmoothingEnabled = false;
+  const half = W / 2;
+  const s = Math.min((half * 0.78) / trimmed.width, (H * 0.90) / trimmed.height);
+  const dw = trimmed.width * s, dh = trimmed.height * s;
+  for (const cx of [half * 0.5, half * 1.5]) {
+    ctx.drawImage(trimmed, cx - dw / 2, (H - dh) / 2, dw, dh);
+  }
+  return cv;
+}
+
 // If the artwork's FIRST content band (the top caption) is separated from the
 // rest by a fully-transparent gap, shrink that gap to ~3% of the height.
 function tightenTopGap(cv) {
@@ -209,6 +244,7 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
       ? makeTeePhotoMockup(design, size, opts.photo, opts.quad)
       : makeTeeMockup(design, size, opts.colorHex || '#ffffff');
   }
+  if (style === 'mug') return makeMugMockup(design, size, state);
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
@@ -263,6 +299,82 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
     ctx.drawImage(design, dx, dy, dw, dh);
     ctx.restore();
   }
+  return cv;
+}
+
+// ☕ MUG mockup — drawn, not photographed: a white cylinder with a handle, the
+// design curved onto the face. The `design` here is the full wrap file, so only
+// its LEFT half is shown (that is the side pointing at you) and the curve is
+// faked by slicing it into vertical strips and squeezing them toward the edges
+// — a flat paste onto a cylinder is the tell that gives away a fake mockup.
+function makeMugMockup(design, size, state) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size);      // same paper backdrop
+
+  const bw = size * 0.52, bh = size * 0.46;                        // the body
+  const bx = (size - bw) / 2 - size * 0.04, by = (size - bh) / 2;
+  const rx = bw * 0.5, ry = size * 0.045;                          // rim ellipse radii
+
+  // handle first, so the body overlaps its inner edge
+  ctx.save();
+  ctx.strokeStyle = '#f2efe8'; ctx.lineWidth = size * 0.045;
+  ctx.beginPath();
+  ctx.ellipse(bx + bw + size * 0.045, by + bh * 0.44, size * 0.075, size * 0.105, 0, -Math.PI * 0.62, Math.PI * 0.62);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.10)'; ctx.lineWidth = size * 0.006;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(17,17,17,0.25)'; ctx.shadowBlur = size * 0.035; ctx.shadowOffsetY = size * 0.014;
+  const body = ctx.createLinearGradient(bx, 0, bx + bw, 0);        // cylinder shading
+  body.addColorStop(0, '#dcd8cf'); body.addColorStop(0.18, '#ffffff');
+  body.addColorStop(0.72, '#fbfaf7'); body.addColorStop(1, '#cfcabf');
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx, by + bh);
+  ctx.ellipse(bx + rx, by + bh, rx, ry, 0, Math.PI, 0, true);      // rounded base
+  ctx.lineTo(bx + bw, by);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // the design: left half of the wrap, curved onto the face
+  const halfW = Math.floor(design.width / 2);
+  const availW = bw * 0.88, availH = bh * 0.72;
+  const s = Math.min(availW / halfW, availH / design.height);
+  const dw = halfW * s, dh = design.height * s;
+  const dx = bx + (bw - dw) / 2, dy = by + (bh - dh) / 2 + size * 0.012;
+  const STRIPS = 48;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  for (let i = 0; i < STRIPS; i++) {
+    const t = i / STRIPS, tn = (i + 1) / STRIPS;
+    // cosine easing pushes strips toward the silhouette edges = curvature
+    const curve = (u) => 0.5 - Math.cos(Math.PI * u) * 0.5;
+    const x0 = dx + curve(t) * dw, x1 = dx + curve(tn) * dw;
+    const shrink = 1 - Math.abs(t - 0.5) * 0.13;                   // top/bottom pinch
+    ctx.drawImage(design,
+      Math.floor(t * halfW), 0, Math.ceil(halfW / STRIPS) + 1, design.height,
+      x0, dy + dh * (1 - shrink) / 2, Math.max(1, x1 - x0) + 1, dh * shrink);
+  }
+  ctx.restore();
+
+  // gloss down the left third, and the rim last so it sits on top
+  const gloss = ctx.createLinearGradient(bx, 0, bx + bw * 0.5, 0);
+  gloss.addColorStop(0, 'rgba(255,255,255,0)');
+  gloss.addColorStop(0.55, 'rgba(255,255,255,0.32)');
+  gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gloss;
+  ctx.fillRect(bx, by + ry * 0.4, bw * 0.5, bh - ry * 0.4);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.ellipse(bx + rx, by, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.13)'; ctx.lineWidth = size * 0.004; ctx.stroke();
+  ctx.fillStyle = '#efece4';                                        // the inside
+  ctx.beginPath(); ctx.ellipse(bx + rx, by + ry * 0.12, rx * 0.86, ry * 0.72, 0, 0, Math.PI * 2); ctx.fill();
   return cv;
 }
 
