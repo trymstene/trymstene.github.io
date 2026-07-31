@@ -107,6 +107,7 @@
 // Google Analytics (GA4) — production only (skips github.io preview + localhost)
 (function () {
   var GA_ID = 'G-1C0QRT9SRK';
+  var META_ID = '1486277956588056';   // 📘 Meta dataset "trymstene.com"
   var host = location.hostname;
   if (host !== 'trymstene.com' && host !== 'www.trymstene.com') return;
   // OBS/stream overlays are machine views, not people — a streamer's browser
@@ -151,6 +152,59 @@
     return; // no gtag.js, no config, no Cloudflare beacon, no event wiring
   }
 
+  // ---- 📘 THE META MIRROR ----
+  // Every gtag('event', …) on this site passes through here on its way out, so
+  // Meta gets the same funnel without an fbq() call scattered through a dozen
+  // files. A new event reaches Meta by being added to a map below, nowhere else.
+  //
+  // ⚠️ STANDARD EVENTS ONLY WHERE THEY ARE HONEST. Meta's optimiser reads
+  // ViewContent → AddToCart → InitiateCheckout → Purchase as one funnel and
+  // learns from the shape; calling a free GIF download an AddToCart would teach
+  // it that our buyers are people who never pay. Everything world-side rides
+  // trackCustom instead — still fully usable for audiences and custom
+  // conversions, just not pretending to be commerce.
+  var META_STD = {
+    sticker_pdp_view: 'ViewContent',
+    view_item: 'ViewContent',
+    sticker_pdp_checkout: 'AddToCart',      // the ORDER button went down
+    checkout_redirect: 'InitiateCheckout',  // …and the cart actually minted
+  };
+  // The world half — this is the raw material for the destination test: who
+  // walked into which area, and who reached an ask.
+  var META_CUSTOM = {
+    gif_download: 'GifDownload',
+    builder_boot: 'BuilderOpen',   // NOT generator_click too — same person, twice
+    forge_open: 'ForgeOpen',
+    rave_join: 'RaveJoin',
+    park_join: 'ParkJoin',
+    beach_multiplayer: 'BeachJoin',
+    shop_view: 'ShopView',
+    shop_door: 'ShopDoor',
+    offer_click: 'OfferClick',
+    stand_cart_view: 'ShopRoom',
+    beach_hut_view: 'ShopRoom',
+  };
+  function metaParams(p) {
+    p = p || {};
+    var out = {};
+    if (p.value != null) out.value = p.value;
+    if (p.currency) out.currency = p.currency;
+    if (p.product) { out.content_ids = [p.product]; out.content_type = 'product'; }
+    return out;
+  }
+  var _gtag = window.gtag;
+  window.gtag = function () {
+    _gtag.apply(null, arguments);
+    // fbq only exists once loadTrackers has run, i.e. never for a consent-less
+    // EEA visitor — events before that are dropped, which is the point.
+    if (arguments[0] !== 'event' || !window.fbq) return;
+    var name = arguments[1];
+    try {
+      if (META_STD[name]) fbq('track', META_STD[name], metaParams(arguments[2]));
+      else if (META_CUSTOM[name]) fbq('trackCustom', META_CUSTOM[name], metaParams(arguments[2]));
+    } catch (e) {}
+  };
+
   // Consent Mode v2: the default is pushed BEFORE gtag.js loads. EEA visitors
   // without a stored yes start denied; everyone else (and stored-yes) starts
   // granted. The cookie banner (module above) flips denied→granted live via
@@ -182,6 +236,25 @@
       y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
     })(window, document, 'clarity', 'script', 'xmja5x3h8h');
     if (cc.eea) clarity('consent'); // consented European: tell Clarity cookies are OK
+
+    // 📘 Meta pixel — the vendor snippet, INSIDE this gate. It sets _fbp, so a
+    // consent-less EEA visitor and a flagged browser must never reach it.
+    // ⭐ _fbp lands on .trymstene.com, which means it carries to the
+    // shop.trymstene.com checkout by itself — a free consequence of the
+    // primary-domain move in July, and the reason browser-side attribution
+    // survives the checkout hop at all.
+    (function (f, b, e, v, n, t, s) {
+      if (f.fbq) return;
+      n = f.fbq = function () {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      };
+      if (!f._fbq) f._fbq = n;
+      n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+      t = b.createElement(e); t.async = true; t.src = v;
+      s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', META_ID);
+    fbq('track', 'PageView');
   }
   if (cc.allowed) loadTrackers();
   else if (!cc.denied) cc.onAccept.push(loadTrackers);
