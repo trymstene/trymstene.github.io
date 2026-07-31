@@ -4,6 +4,7 @@
     python tools/shopify-product.py scopes            # what this app may do
     python tools/shopify-product.py list              # handles, prices, variant GIDs
     python tools/shopify-product.py show <handle>     # one product in full
+    python tools/shopify-product.py tm [--yes]        # ™ on every official title
     python tools/shopify-product.py create spec.json  # DRY RUN — prints the mutation
     python tools/shopify-product.py create spec.json --yes
     python tools/shopify-product.py publish <handle> --channel Headless --yes
@@ -186,6 +187,43 @@ def cmd_publish(handle, channel, go):
     print('  (status is still %s — flip it to ACTIVE in Shopify when it is ready to sell)' % p['status'])
 
 
+RENAME = '''mutation($input: ProductInput!) {
+  productUpdate(input: $input) { product { id title } userErrors { field message } } }'''
+
+# ™ marks an UNREGISTERED mark and needs no filing — ® is the one that requires
+# an actual registration, so this only ever writes ™. Shopify titles are the
+# source of truth (the site renders them as-is), which is why this changes them
+# there rather than decorating at render time — the name on the site, the
+# checkout and the order confirmation must be the same name.
+BRAND = 'DANCING BANANA OFFICIAL'
+
+
+def cmd_tm(go):
+    tok = token()
+    d = gql('{ products(first: 50) { edges { node { id handle title } } } }', None, tok)
+    todo = []
+    for e in d['products']['edges']:
+        p = e['node']
+        t = p['title']
+        if BRAND not in t or (BRAND + '™') in t:
+            continue
+        todo.append((p, t.replace(BRAND, BRAND + '™', 1)))
+
+    if not todo:
+        print('Every official product already carries ™.')
+        return
+    for p, new in todo:
+        print('  %s\n    → %s' % (p['title'], new))
+    if not go:
+        print('\n%d to rename. Re-run with --yes.' % len(todo))
+        return
+    print('')
+    for p, new in todo:
+        ok(gql(RENAME, {'input': {'id': p['id'], 'title': new}}, tok), 'productUpdate')
+        print('  ✓ %s' % new)
+    print('\nRebuild the site to pull the new titles through (they sync at build time).')
+
+
 def main():
     a = sys.argv[1:]
     if not a:
@@ -198,6 +236,8 @@ def main():
         cmd_list()
     elif cmd == 'show':
         cmd_show(a[1])
+    elif cmd == 'tm':
+        cmd_tm(go)
     elif cmd == 'create':
         cmd_create(a[1], go)
     elif cmd == 'publish':
