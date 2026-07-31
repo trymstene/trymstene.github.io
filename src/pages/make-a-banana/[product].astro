@@ -67,6 +67,28 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
       }
       .pdp-zoomhint.fade { opacity: 0; }
       /* apparel options: colour swatches + size chips (tee) */
+      /* 👗 the wardrobe rows — one scrolling tray per slot, same chip language
+         as the pose strip so the two read as one control surface */
+      .pdp-wardrobe { display: grid; gap: 0.6rem; }
+      .pdp-ward__row { display: grid; gap: 0.3rem; }
+      .pdp-ward__k {
+        font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em;
+        text-transform: uppercase; opacity: 0.6;
+      }
+      .pdp-ward__tray {
+        display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.25rem;
+        scroll-snap-type: x proximity;
+      }
+      .pdp-ward__tray button {
+        flex: 0 0 auto; scroll-snap-align: start; cursor: pointer; line-height: 0;
+        width: 52px; height: 52px; padding: 4px; background: #fff;
+        border: 3px solid var(--ink, #111); display: grid; place-items: center;
+      }
+      .pdp-ward__tray button[aria-pressed="true"] {
+        border-color: var(--hot, #ff2e88); box-shadow: 3px 3px 0 var(--ink, #111);
+      }
+      .pdp-ward__tray button svg { width: 100%; height: 100%; }
+      .pdp-ward__none { font-size: 0.62rem; font-weight: 800; line-height: 1; opacity: 0.6; }
       .pdp-opts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.45rem; }
       .pdp-swatch {
         width: 40px; height: 40px; padding: 0; border: 3px solid var(--ink, #111);
@@ -105,6 +127,16 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
             <img src="/assets/tee/tee-flat-white.jpg" alt="" loading="lazy"></button>
         </div>
       )}
+      <!-- 👗 THE WARDROBE — because the shop's tile says "Design it" and, until
+           now, this page only let you pick a pose. Someone arriving from /shop/
+           may never have made a banana at all; sending them to a preview of one
+           they did not choose is a broken promise at the highest-intent click
+           in the shop. Everything here writes straight into the same `state`
+           the mockup and the PRINT FILE read, so what you dress is what ships. -->
+      <div class="pdp-poses__wrap">
+        <p class="pdp-poses__label"><strong>Dress it</strong> — this is the one that gets printed</p>
+        <div class="pdp-wardrobe" id="pdpWardrobe"></div>
+      </div>
       <div class="pdp-poses__wrap">
         <p class="pdp-poses__label"><strong>Pick your pose</strong> — the move that gets printed</p>
         <div class="pdp-poses" id="pdpPoses" role="group" aria-label="Pick your pose"></div>

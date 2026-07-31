@@ -3,7 +3,10 @@
 // rendered live from the design in the URL, and checkout runs the custom
 // pipeline. All the heavy lifting lives in ../lib/sticker-core.js (shared with
 // the builder) so config + render + checkout never drift between the two.
-import { assetsReady, NFRAMES } from '../lib/banana-engine.js';
+import {
+  assetsReady, NFRAMES, HATS, GLASSES, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, SVG as ART,
+} from '../lib/banana-engine.js';
+import { ownsWearable } from '../data/wearables.js';
 import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
@@ -136,6 +139,91 @@ function wireOptions() {
 
 // last-minute pose change, right on the product page (Trym: you shouldn't have
 // to go back to the editor just to pick a different move). state.frame feeds
+// 👗 THE WARDROBE — the shop's tile says "Design it", so this page has to let
+// you design. Before this it only offered a pose, which meant anyone arriving
+// from /shop/ was shown a banana they had never chosen and given no way to
+// change it: a broken promise at the highest-intent click in the shop.
+//
+// ⚠️ ONE STATE OBJECT. These write into the same `state` that paintMockup and
+// renderPrintFile read, so the preview, the print file and the checkout image
+// can never disagree about what you dressed.
+//
+// ⚠️ OWNERSHIP IS ALREADY BAKED IN: HATS/GLASSES are engine exports filtered by
+// ownsWearable, so caught-only drops never appear here for someone who has not
+// caught them. Extras are filtered the same way the builder does it.
+function syncDesignUrl() {
+  const q = new URLSearchParams(location.search);
+  const set = (k, v) => (v ? q.set(k, v) : q.delete(k));
+  set('h', state.hat !== 'none' ? state.hat : '');
+  set('g', state.glasses !== 'none' ? state.glasses : '');
+  set('ex', Object.keys(state.extras).filter((k) => state.extras[k]).join('.'));
+  history.replaceState(null, '', location.pathname + '?' + q.toString());
+  const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
+  document.querySelectorAll('[data-xsell]').forEach((a) => {
+    a.href = a.href.split('?')[0] + location.search;
+  });
+}
+
+function wardrobeRow(host, kicker, chips) {
+  const row = document.createElement('div');
+  row.className = 'pdp-ward__row';
+  const k = document.createElement('div');
+  k.className = 'pdp-ward__k'; k.textContent = kicker;
+  const tray = document.createElement('div');
+  tray.className = 'pdp-ward__tray';
+  tray.setAttribute('role', 'group');
+  tray.setAttribute('aria-label', kicker);
+  chips.forEach(({ art, label, on, pick }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', label);
+    b.setAttribute('aria-pressed', String(on()));
+    b.innerHTML = art || '<span class="pdp-ward__none">none</span>';
+    b.onclick = () => {
+      pick();
+      // the poses show the outfit, so they have to be redrawn with it
+      buildPosePicker();
+      paintMockup();
+      syncDesignUrl();
+      tray.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(chips[i].on())));
+      track('pdp_dress', { product: product.key, slot: kicker.toLowerCase(), item: label });
+    };
+    tray.appendChild(b);
+  });
+  row.append(k, tray);
+  host.appendChild(row);
+}
+
+// ⚠️ WEARABLES NAME THEIR ART TWO WAYS. Hats and held things carry a single
+// `art`; anything worn on the FACE (shades, moustaches) is drawn per facing and
+// carries `front`/`side` instead. Reading only `art` left every shade chip
+// showing the empty "none" placeholder.
+const artOf = (d) => (d && (ART[d.art] || ART[d.front])) || '';
+
+function buildWardrobe() {
+  const host = el('pdpWardrobe');
+  if (!host) return;
+  host.replaceChildren();
+  wardrobeRow(host, 'Hat', HATS.map(([id, label]) => ({
+    art: id === 'none' ? '' : artOf(HAT_BY_ID[id]),
+    label, on: () => state.hat === id, pick: () => { state.hat = id; },
+  })));
+  wardrobeRow(host, 'Shades', GLASSES.map(([id, label]) => ({
+    art: id === 'none' ? '' : artOf(SHADE_BY_ID[id]),
+    label, on: () => state.glasses === id, pick: () => { state.glasses = id; },
+  })));
+  // artOf() in the filter drops anything with no drawable chip — a tray of
+  // blank "none" boxes is worse than a shorter tray
+  const extras = EXTRA_DEFS.filter((d) => !d.raveOnly && ownsWearable(d) && artOf(d));
+  if (extras.length) {
+    wardrobeRow(host, 'Extras', extras.map((d) => ({
+      art: artOf(d), label: d.label,
+      on: () => !!state.extras[d.id],
+      pick: () => { state.extras[d.id] = !state.extras[d.id]; },
+    })));
+  }
+}
+
 // the mockup AND renderPrintFile, so what you pick here is what gets printed.
 function buildPosePicker() {
   const host = el('pdpPoses');
@@ -263,6 +351,7 @@ async function boot() {
   // once Anton decodes, repaint so the mockup matches what will print (no blocking)
   ensureCaptionFont(state).then(() => { try { paintMockup(); } catch (e) {} });
   buildPosePicker();
+  buildWardrobe();
   wireOptions();
   wireZoom();
   track('sticker_pdp_view', withSecs({ product: product.key, design: designStr(state) }));
