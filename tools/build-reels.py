@@ -74,6 +74,13 @@ CONF = [YELLOW, PINK, CYAN, GREEN]
 VP = (60, 560, 1020, 1400)          # x0, y0, x1, y1
 VPW, VPH = VP[2] - VP[0], VP[3] - VP[1]
 
+# ⚠️ ONE LAYOUT GRID FOR EVERY BEAT. Trym: the titles "are a bit clunky".
+# They were, because each scene picked its own y. Headlines sit on HEAD_Y and
+# captions on CAP_Y in every single beat, so the type never jumps between cuts
+# and nothing is left floating in the middle of the frame.
+HEAD_Y = 420                        # headline baseline (above the screen)
+CAP_Y = 1530                        # caption chip centre (below the screen)
+
 
 # ---------------------------------------------------------------- fonts
 def load_fonts():
@@ -234,23 +241,58 @@ def screen(img, inner, t=0.0, tilt=0.0, label=None):
     img.alpha_composite(lay)
 
 
-def plate_shot(name, cx, cy, t=0.0, pan=(0.0, 0.0), zoom=2.0):
-    """A VPW x VPH window onto the real world plate, at `zoom`, drifting by
-    `pan` px/s. NEAREST all the way — the whole point is that the pixels stay
-    the size the game draws them."""
+class Shot:
+    """A VPW x VPH window onto the real world plate, PLUS the world origin it
+    was cropped from — which is the whole fix for the float.
+
+    ⚠️⚠️ THE BUG THIS CLASS EXISTS TO KILL (Trym, 31 Jul): "when you simulate
+    the bananas walking in the areas, other objects around float along with the
+    banana." The old plate_shot returned bare pixels and the sprites were pasted
+    at VIEWPORT coordinates. So when the crop panned, the palms and the wreck
+    slid past a banana that never moved relative to the frame — the map floated
+    and the character was pinned. Exactly backwards from every top-down game.
+
+    Sprites are placed by WORLD coordinate now (at_world), so a banana standing
+    beside a palm STAYS beside that palm no matter where the camera goes.
+    """
+    __slots__ = ('img', 'x0', 'y0', 'z')
+
+    def __init__(self, img, x0, y0, z):
+        self.img, self.x0, self.y0, self.z = img, x0, y0, z
+
+
+def plate_shot(name, cx, cy, zoom=2.0):
+    """crop centred on a WORLD point. NEAREST all the way — the whole point is
+    that the pixels stay the size the game draws them."""
     p = plate(name)
     cw, ch = VPW / zoom, VPH / zoom
-    cx = cx + pan[0] * t
-    cy = cy + pan[1] * t
     x0 = min(max(cx - cw / 2, 0), p.width - cw)
     y0 = min(max(cy - ch / 2, 0), p.height - ch)
     crop = p.crop((int(x0), int(y0), int(x0 + cw), int(y0 + ch)))
-    return crop.resize((VPW, VPH), Image.NEAREST).convert('RGBA')
+    return Shot(crop.resize((VPW, VPH), Image.NEAREST).convert('RGBA'), int(x0), int(y0), zoom)
 
 
 def in_screen(inner, sprite, vx, vy):
-    """paste a sprite at viewport-local coords, bottom-centre anchored"""
+    """viewport-local placement, bottom-centre. Only for the DRAWN club floor,
+    which has no map to anchor to — every plate scene uses at_world()."""
     inner.alpha_composite(sprite, (int(vx - sprite.width / 2), int(vy - sprite.height)))
+
+
+def at_world(shot, sprite, wx, wy):
+    """place a sprite at WORLD (wx, wy), bottom-centre anchored — the same
+    contract the real game uses for every walker."""
+    vx = (wx - shot.x0) * shot.z
+    vy = (wy - shot.y0) * shot.z
+    shot.img.alpha_composite(sprite, (int(vx - sprite.width / 2), int(vy - sprite.height)))
+
+
+def walk(t, T, x0, x1, y):
+    """⭐ THE CAMERA FOLLOWS THE WALKER, which is what makes it read as a game
+    rather than a photo with a sticker on it. Returns the walker's world
+    position; the caller centres the crop on it, so the banana holds its place
+    in frame while the WORLD slides past — palms, nets and shells all moving
+    together at the same rate, because they are all anchored to the same map."""
+    return x0 + (x1 - x0) * ease_in_out(t / T), y
 
 
 def hud_strip(inner, lvl='LVL 4', coins='120', extra=None):
@@ -351,20 +393,35 @@ def led(inner, t, lines, y=126):
 
 
 # ================================================================ shared beats
-def beat_hook(t, T, line1, line2, sub=None, bg=YELLOW, set_name='bare'):
+def beat_hook(t, T, lines, sub=None, bg=YELLOW, set_name='bare'):
     """⚠️ THE FIRST SECOND IS THE WHOLE AD. It opens on the banana at full
     frame, because recognition is the hook — "what is this" is a question
-    people ask AFTER they have already stopped scrolling."""
+    people ask AFTER they have already stopped scrolling.
+
+    ⚠️⚠️ THE HEADLINE MUST BE A WHOLE SENTENCE (Trym, 31 Jul): the first cut
+    read "MAKE A BANANA. TAKE IT TO" in 96px and then finished the thought in a
+    54px chip 1000px further down — "so small that you cant quite pick it up".
+    A hook that needs the reader to hunt for its own verb is not a hook. `lines`
+    is now the COMPLETE sentence, every line set at the same weight, and `sub`
+    may only ever carry a SEPARATE supporting fact.
+    """
     img = Image.new('RGBA', (W, H), bg + (255,))
     confetti(img, 26, 3, alpha=64, size=14)
     pop = ease_out_back(t / 0.45)
-    size = int(880 * max(pop, 0.01))
+    size = int(760 * max(pop, 0.01))
     if size > 4:
-        paste_center(img, banana(set_name, t, size), W / 2, 1020)
-    center_text(img, line1, 420, 'archivo', 96, INK)
-    center_text(img, line2, 540, 'archivo', 96, INK)
-    if sub and t > 0.9:
-        pill(img, sub, 1520, px=54, bg=(255, 255, 255), pop=ease_out((t - 0.9) / 0.35))
+        paste_center(img, banana(set_name, t, size), W / 2, 1120)
+    # one type size for the whole sentence, chosen so the LONGEST line fits —
+    # mixed sizes inside one sentence is what made it read as two thoughts
+    px = 108
+    d = ImageDraw.Draw(img)
+    while px > 56 and max(d.textlength(l, font=font('archivo', px)) for l in lines) > 940:
+        px -= 4
+    y = HEAD_Y - (len(lines) - 1) * (px * 0.62)
+    for i, l in enumerate(lines):
+        center_text(img, l, y + i * px * 1.24, 'archivo', px, INK)
+    if sub and t > 0.8:
+        pill(img, sub, CAP_Y, px=56, bg=(255, 255, 255), pop=ease_out((t - 0.8) / 0.3))
     return img
 
 
@@ -416,35 +473,62 @@ def beat_end(t, T, cta='make your banana'):
     return img
 
 
-def area_beat(t, T, inner, caption, label=None, tilt=0.0, bg=None, sub=None):
-    """one world beat: the game screen + one chip. Deliberately ONE idea per
-    beat — two captions on a phone at arm's length is zero captions."""
+def area_beat(t, T, shot, caption, label=None, bg=None):
+    """one world beat, on the shared grid: PLACE NAME on HEAD_Y, the game
+    screen, one chip on CAP_Y.
+
+    ⚠️ THE PLACE NAME IS A HEADLINE, not a tag inside the screen. It used to
+    be a 38px chip in the viewport's corner, which left the whole top band of
+    the frame empty and made every area beat feel bottom-heavy — Trym's "the
+    headlines and sub-headlines… are a bit clunky". Promoting it fills the
+    grid, and it is finally big enough to read on a phone.”
+    ⚠️ Still ONE caption. Two captions at arm's length is zero captions."""
     img = Image.new('RGBA', (W, H), (bg or INK) + (255,))
     confetti(img, 16, 21, alpha=40, size=14)
-    screen(img, inner, t, tilt=tilt, label=label)
-    pill(img, caption, 1530, px=60, pop=ease_out(t / 0.28), rot=-1.5)
-    if sub:
-        center_text(img, sub, 460, 'archivo', 62, CREAM if (bg or INK) == INK else INK)
+    if label:
+        center_text(img, label, HEAD_Y, 'archivo', 92, YELLOW)
+    screen(img, shot.img if isinstance(shot, Shot) else shot, t)
+    pill(img, caption, CAP_Y, px=60, pop=ease_out(t / 0.28), rot=-1.5)
     return img
 
 
-# ================================================================ REEL 1 — THE WORLD
+def stage(name, cx, cy, zoom=2.8):
+    """⭐ THE CAMERA HOLDS STILL AND THE BANANA WALKS ACROSS IT.
+
+    ⚠⚠ This is the fix for Trym's "other objects around float along with the
+    banana". A panning crop with sprites pasted at VIEWPORT coordinates makes
+    the palms and the wreck slide past a character who never moves — the world
+    floats and the actor is pinned, which is backwards from every top-down game
+    and is exactly what it looked like.
+
+    A locked camera makes it unambiguous: the map is rock solid, and the only
+    thing moving is the banana. Every other sprite is placed by WORLD
+    coordinate (at_world), so it stays welded to the ground it stands on.
+
+    ⚠️ ZOOM 2.8, NOT THE GAME'S OWN 2.0. At true game scale the banana is
+    ~12% of the view — correct, and unreadable on a phone at arm's length. The
+    camera pushes in instead of the sprite growing, so the banana stays IN SCALE
+    with the palms and the net while filling far more of the frame. Sprite sizes
+    below are derived from it: a 56px world banana × 2.8 ≈ 157px on screen, and
+    the engine render is ~60% banana inside its square, so size ≈ 260."""
+    return plate_shot(name, cx, cy, zoom)
+
+
+# ================================================================ REEL 1 - THE WORLD
 def world_hook(t, T):
-    return beat_hook(t, T, 'THIS BANANA HAS', 'BEEN DANCING', 'since 1999 · you have seen it')
+    return beat_hook(t, T, ['THIS BANANA HAS BEEN', 'DANCING SINCE 1999'],
+                     'and now it has somewhere to go')
 
 
 def world_turn(t, T):
     img = Image.new('RGBA', (W, H), INK + (255,))
     confetti(img, 24, 4, alpha=90, size=14)
-    center_text(img, 'NOW IT IS', 340, 'archivo', 88, CREAM)
-    center_text(img, 'A PLACE', 460, 'archivo', 130, YELLOW)
-    inner = plate_shot('beach', 2240, 690, t, pan=(60, 0))
-    if t > 0.45:
-        sc = ease_out((t - 0.45) / 0.5)
-        sm = inner.resize((int(VPW * sc), int(VPH * sc)), Image.NEAREST) if sc < 0.999 else inner
-        pad = Image.new('RGBA', (VPW, VPH), (0, 0, 0, 0))
-        pad.alpha_composite(sm, ((VPW - sm.width) // 2, (VPH - sm.height) // 2))
-        screen(img, pad, t)
+    center_text(img, 'NOW IT IS A PLACE', HEAD_Y, 'archivo', 104, YELLOW)
+    x, y = walk(t, T, 2190, 2300, 700)
+    sh = stage('beach', 2250, 650)
+    at_world(sh, banana('beach2', t, 260), x, y)
+    hud_strip(sh.img, coins='140', extra=('TIX', '12'))
+    screen(img, sh.img, t)
     return img
 
 
@@ -465,21 +549,21 @@ def world_rave(t, T):
 
 
 def world_park(t, T):
-    inner = plate_shot('park', 700, 780, t, pan=(38, -10))
-    for nm, vx, vy, sz in (('park1', 430, 560, 240), ('park2', 690, 690, 250)):
-        if nm in RENDERS:
-            in_screen(inner, banana(nm, t, sz), vx, vy)
-    hud_strip(inner, coins='86', extra=('PLOTS', '12'))
-    return area_beat(t, T, inner, 'grow your own garden', label='THE PARK', bg=(24, 44, 22))
+    x, y = walk(t, T, 640, 750, 810)
+    sh = stage('park', 700, 755)
+    at_world(sh, banana('park1', t, 260), x, y)
+    at_world(sh, banana('park2', t + 0.5, 245), 800, 700)   # absolute: stays put
+    hud_strip(sh.img, coins='86', extra=('PLOTS', '12'))
+    return area_beat(t, T, sh, 'grow your own garden', label='THE PARK', bg=(24, 44, 22))
 
 
 def world_beach(t, T):
-    inner = plate_shot('beach', 560, 430, t, pan=(46, 0))
-    for nm, vx, vy, sz in (('beach1', 400, 600, 250), ('beach2', 660, 720, 240)):
-        if nm in RENDERS:
-            in_screen(inner, banana(nm, t, sz), vx, vy)
-    hud_strip(inner, coins='140', extra=('SHELLS', '7'))
-    return area_beat(t, T, inner, 'play on the beach', label='BANANA BAY', bg=(28, 48, 60))
+    x, y = walk(t, T, 840, 950, 830)
+    sh = stage('beach', 930, 780)
+    at_world(sh, banana('beach1', t, 260), x, y)
+    at_world(sh, banana('bare', t + 0.4, 245), 1010, 690)    # absolute: stays put
+    hud_strip(sh.img, coins='140', extra=('SHELLS', '7'))
+    return area_beat(t, T, sh, 'play on the beach', label='BANANA BAY', bg=(28, 48, 60))
 
 
 def world_free(t, T):
@@ -495,9 +579,10 @@ REEL_WORLD = [(3.0, world_hook), (2.8, world_turn), (4.4, world_dress),
               (1.8, world_free), (3.0, world_end)]
 
 
-# ================================================================ REEL 2 — THE BEACH
+# ================================================================ REEL 2 - THE BEACH
 def beach_hook(t, T):
-    return beat_hook(t, T, 'MAKE A BANANA.', 'TAKE IT TO', 'a real beach, in your browser', set_name='beach1')
+    return beat_hook(t, T, ['MAKE A BANANA', 'AND TAKE IT', 'TO THE BEACH'],
+                     'free · plays in your browser', set_name='beach1')
 
 
 BEACH_STEPS = [('dress1', 'pick a hat'), ('beach2', 'grab a flamingo ring'),
@@ -509,64 +594,64 @@ def beach_dress(t, T):
 
 
 def beach_arrive(t, T):
-    inner = plate_shot('beach', 1690, 700, t, pan=(60, -20), zoom=1.7)
-    if 'beach1' in RENDERS:
-        in_screen(inner, banana('beach1', t, 250), 470, 640)
-    hud_strip(inner, coins='0', extra=('SHELLS', '0'))
-    return area_beat(t, T, inner, 'a whole bay to walk around',
+    x, y = walk(t, T, 1580, 1760, 810)
+    sh = stage('beach', 1690, 730, zoom=2.2)
+    at_world(sh, banana('beach1', t, 210), x, y)
+    hud_strip(sh.img, coins='0', extra=('SHELLS', '0'))
+    return area_beat(t, T, sh, 'a whole bay to walk around',
                      label='BANANA BAY', bg=(28, 48, 60))
 
 
 def beach_volley(t, T):
-    inner = plate_shot('beach', 930, 760, t, pan=(0, -26))
-    if 'beach2' in RENDERS:
-        in_screen(inner, banana('beach2', t, 250), 340, 640)
-    if 'bare' in RENDERS:
-        in_screen(inner, banana('bare', t + 0.4, 230), 700, 560)
-    # the ball, arcing over the net
-    d = ImageDraw.Draw(inner)
-    bx = 340 + (t / T) * 380
-    by = 480 - math.sin(clamp01(t / T) * math.pi) * 210
-    d.ellipse([bx - 26, by - 26, bx + 26, by + 26], fill=(255, 255, 255), outline=INK, width=5)
-    hud_strip(inner, coins='30', extra=('RALLY', str(2 + int(t * 3))))
-    return area_beat(t, T, inner, 'volleyball with real people',
+    x, y = walk(t, T, 850, 940, 880)
+    sh = stage('beach', 950, 800)
+    at_world(sh, banana('beach2', t, 260), x, y)
+    at_world(sh, banana('bare', t + 0.4, 245), 1030, 700)    # absolute: stays put
+    # the ball arcs between them in WORLD space, so it flies over the real net
+    bx = 900 + (t / T) * 110
+    by = 760 - math.sin(clamp01(t / T) * math.pi) * 110
+    d = ImageDraw.Draw(sh.img)
+    vx, vy = (bx - sh.x0) * sh.z, (by - sh.y0) * sh.z
+    d.ellipse([vx - 24, vy - 24, vx + 24, vy + 24], fill=(255, 255, 255), outline=INK, width=5)
+    hud_strip(sh.img, coins='30', extra=('RALLY', str(2 + int(t * 3))))
+    return area_beat(t, T, sh, 'volleyball with real people',
                      label='THE COURT', bg=(28, 48, 60))
 
 
 def beach_shells(t, T):
-    inner = plate_shot('beach', 700, 400, t, pan=(60, 0))
-    if 'beach1' in RENDERS:
-        in_screen(inner, banana('beach1', t, 250), 470, 560)
-    d = ImageDraw.Draw(inner)
-    for i, (sx, sy) in enumerate(((250, 470), (640, 520), (810, 430))):
+    x, y = walk(t, T, 660, 770, 440)
+    sh = stage('beach', 730, 410)
+    d = ImageDraw.Draw(sh.img)
+    for i, (sx, sy) in enumerate(((650, 366), (780, 392), (840, 350))):
         tw = math.sin(t * 4 + i) * 0.5 + 0.5
-        d.ellipse([sx - 16, sy - 12, sx + 16, sy + 12],
+        vx, vy = (sx - sh.x0) * sh.z, (sy - sh.y0) * sh.z
+        d.ellipse([vx - 16, vy - 12, vx + 16, vy + 12],
                   fill=(255, 240, 220), outline=(190, 120, 90), width=4)
-        d.ellipse([sx - 6, sy - 5, sx + 4, sy + 4], fill=(255, 255, 255, int(120 + 120 * tw)))
-    hud_strip(inner, coins='30', extra=('SHELLS', str(7 + int(t * 2))))
-    return area_beat(t, T, inner, 'comb the tide for shells',
+        d.ellipse([vx - 6, vy - 5, vx + 4, vy + 4], fill=(255, 255, 255, int(120 + 120 * tw)))
+    at_world(sh, banana('beach1', t, 260), x, y)
+    hud_strip(sh.img, coins='30', extra=('SHELLS', str(7 + int(t * 2))))
+    return area_beat(t, T, sh, 'comb the tide for shells',
                      label='29 TO COLLECT', bg=(28, 48, 60))
 
 
 def beach_dig(t, T):
-    inner = plate_shot('beach', 1520, 900, t, pan=(-26, 0))
-    # ⚠️ the dig patches are DOM overlays in the real game, never baked into
-    # the plate — so the ad has to lay one in or the sand stays undisturbed.
+    x, y = walk(t, T, 1470, 1540, 960)
+    sh = stage('beach', 1545, 915)
     patch = Image.open(os.path.join(SITE, 'public', 'assets', 'beach', 'dig-patch.png')).convert('RGBA')
-    patch = patch.resize((patch.width * 2, patch.height * 2), Image.NEAREST)
-    inner.alpha_composite(patch, (int(470 - patch.width / 2), 560))
-    if 'beach3' in RENDERS:
-        in_screen(inner, banana('beach3', t, 260), 470, 640)
-    return area_beat(t, T, inner, 'dig up buried treasure',
+    patch = patch.resize((int(patch.width * sh.z), int(patch.height * sh.z)), Image.NEAREST)
+    pvx, pvy = (1600 - sh.x0) * sh.z, (975 - sh.y0) * sh.z
+    sh.img.alpha_composite(patch, (int(pvx - patch.width / 2), int(pvy - patch.height / 2)))
+    at_world(sh, banana('beach3', t, 260), x, y)
+    return area_beat(t, T, sh, 'dig up buried treasure',
                      label='X MARKS THE SPOT', bg=(28, 48, 60))
 
 
 def beach_pier(t, T):
-    inner = plate_shot('beach', 2280, 660, t, pan=(-46, 0))
-    if 'beach3' in RENDERS:
-        in_screen(inner, banana('beach3', t, 250), 430, 660)
-    hud_strip(inner, coins='140', extra=('TIX', '150'))
-    return area_beat(t, T, inner, 'win the giant plush at the pier',
+    x, y = walk(t, T, 2200, 2310, 730)
+    sh = stage('beach', 2260, 690)
+    at_world(sh, banana('beach3', t, 260), x, y)
+    hud_strip(sh.img, coins='140', extra=('TIX', '150'))
+    return area_beat(t, T, sh, 'win the giant plush at the pier',
                      label='THE MIDWAY', bg=(28, 48, 60))
 
 
@@ -583,9 +668,10 @@ REEL_BEACH = [(3.0, beach_hook), (3.6, beach_dress), (2.8, beach_arrive),
               (2.8, beach_pier), (1.8, beach_free), (3.0, beach_end)]
 
 
-# ================================================================ REEL 3 — THE RAVE
+# ================================================================ REEL 3 - THE RAVE
 def rave_hook(t, T):
-    return beat_hook(t, T, 'MAKE A BANANA.', 'TAKE IT TO', 'a live floor, in your browser', set_name='raver1')
+    return beat_hook(t, T, ['MAKE A BANANA', 'AND TAKE IT', 'TO THE RAVE'],
+                     'free · plays in your browser', set_name='raver1')
 
 
 def rave_dress(t, T):
@@ -607,19 +693,19 @@ def rave_drop(t, T):
 
 
 def rave_wear(t, T):
-    img = Image.new('RGBA', (W, H), CLUB + (255,))
     img = club_bg(t)
-    center_text(img, 'WEAR WHAT YOU CATCH', 470, 'archivo', 74, YELLOW)
+    center_text(img, 'WEAR WHAT YOU CATCH', HEAD_Y, 'archivo', 84, YELLOW)
     per = T / 3
     i = min(int(t / per), 2)
     nm = ['raver2', 'raver3', 'raver4'][i]
     lt = (t - i * per) / per
-    paste_center(img, banana(nm if nm in RENDERS else 'bare', t, int(880 * (1 + 0.05 * (1 - ease_out(lt / 0.3))))), W / 2, 1000)
-    # ⚠️ DO NOT name the item here. The sets rotate and the copy would end up
+    bump = 1 + 0.05 * (1 - ease_out(lt / 0.3))
+    paste_center(img, banana(nm if nm in RENDERS else 'bare', t, int(880 * bump)), W / 2, 1000)
+    # DO NOT name the item here. The sets rotate and the copy would end up
     # describing a hat the banana on screen is not wearing.
     pill(img, ['catch it once, keep it forever', 'nobody else has your banana',
                'it follows you everywhere'][i],
-         1450, px=58, pop=ease_out(lt / 0.22), rot=2)
+         CAP_Y, px=58, pop=ease_out(lt / 0.22), rot=2)
     return img
 
 
