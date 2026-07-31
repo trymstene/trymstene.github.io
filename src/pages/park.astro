@@ -1391,6 +1391,26 @@ const faq = {
     .pk-stand__deskbtn svg { display: block; image-rendering: pixelated; }
     .pk-stand__shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 1rem; }
     @media (min-width: 560px) { .pk-stand__shelf { grid-template-columns: repeat(4, 1fr); } }
+    /* 🚪 the back door — deliberately NOT dressed like the coin shelf above it:
+       daylight paper against the kiosk's night, so it reads as somewhere you
+       leave for rather than another thing to buy with coins */
+    .pk-backdoor {
+      display: grid; gap: 0.5rem; margin: 1.6rem 0 0.4rem; padding: 0.9rem 1rem;
+      background: #fffdf5; color: #141414; text-decoration: none;
+      border: 4px solid #000; box-shadow: 8px 8px 0 #000;
+    }
+    .pk-backdoor__k {
+      display: block; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.18em;
+      text-transform: uppercase; opacity: 0.55;
+    }
+    .pk-backdoor b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.15rem; line-height: 1.05; }
+    .pk-backdoor__line { display: block; margin-top: 0.3rem; font-size: 0.78rem; line-height: 1.45; opacity: 0.75; }
+    .pk-backdoor__go {
+      justify-self: start; background: #111; color: #ffe135; font-weight: 800;
+      font-size: 0.86rem; padding: 0.5rem 0.9rem; border: 3px solid #000;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.4);
+    }
+    .pk-backdoor:active .pk-backdoor__go { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.4); }
     .pk-tile {
       appearance: none; position: relative; border: 3px solid #000; background: #17121f;
       color: #fffdf5; box-shadow: 5px 5px 0 #000; cursor: pointer;
@@ -1673,6 +1693,24 @@ const faq = {
             <div class="pk-stand__shelf" id="pkStandShelf" aria-label="The banana stand's stock"></div>
             <h2 class="pk-stand__head" id="pkStandBackHead" hidden>missed drops — the back-catalog</h2>
             <div class="pk-stand__shelf" id="pkStandBackShelf" aria-label="Drops you missed" hidden></div>
+
+            <!-- 🚪 THE BACK DOOR — 356 people walked into this stand last month
+                 and 192 reached this counter, which makes it the busiest
+                 shopping moment in the whole world. The one thing it could not
+                 do was sell you something you can hold.
+                 ⚠️ IT IS A DOOR OUT, NOT A SECOND SHELF. Everything above is
+                 bought with coins you found; this leads somewhere else entirely
+                 and says so, because the day those two blur is the day the
+                 coins start feeling like money. -->
+            <a class="pk-backdoor" href="/shop/" id="pkStandRealDoor">
+              <span class="pk-backdoor__sign">
+                <span class="pk-backdoor__k">out the back</span>
+                <b>The Banana Shop</b>
+                <span class="pk-backdoor__line">Everything on the shelf is bought with coins. Through
+                here is the other kind — your banana printed on something real, paid for with money.</span>
+              </span>
+              <span class="pk-backdoor__go">take a look →</span>
+            </a>
           </div>
         </div>
       </div><!-- /.pk-view -->

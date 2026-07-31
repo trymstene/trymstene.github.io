@@ -250,6 +250,11 @@ export function initShops(ctx) {
   }
   function refreshStandWallet() { standWalletEl.textContent = coinBal(); }
 
+  // 🚪 the back door out of the coin shop — the busiest counter in the world
+  // (192 reached it last month) finally leads somewhere you can spend money
+  const realDoor = document.getElementById('pkStandRealDoor');
+  if (realDoor) realDoor.addEventListener('click', () => track('shop_door', { from: 'stand' }));
+
   // THE STOCK: every `preview: 'stand'` item, straight from the manifest
   const ST_STOCK = [];
   const stExtraSlot = (d) => (d.anchor === 'feet' ? 'shoes' : d.anchor === 'hand' ? 'hands' : 'body');

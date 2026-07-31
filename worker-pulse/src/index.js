@@ -16,6 +16,7 @@ const LENS_EVENTS = [
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
   'begin_checkout', 'purchase', 'shop_view',
   'offer_shown', 'offer_click',   // 🛍 the make-it-real card, 30 Jul
+  'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -691,7 +692,7 @@ var EV_LABEL = {
   shelf_sticker_click:'tapped a shelf sticker 🗄',
   shelf_sticker_land:'reopened a saved banana 🗄',
   travel_open:'opened fast travel 🚪',
-  travel_go:'fast-travelled 🚪',
+  travel_go:'fast-travelled 🚪', shop_door:'walked out to the shop 🚪🛍',
   rave_sound:'turned the music on 🔊',
   rave_glowstick_unlock:'earned the glowstick 🥢',
   rave_night_step:'a NIGHT step (retired) 🌙',
@@ -885,7 +886,8 @@ var EV_EXPLAIN = {
   shelf_sticker_click:'tapped one of their saved creations on the shelf',
   shelf_sticker_land:'a banana from their shelf landed back in the builder, ready to edit',
   travel_open:'opened the fast-travel window (from = the area they were standing in)',
-  travel_go:'actually jumped to another area. from → to tells you which routes people use',
+  travel_go:'actually jumped to another area. from → to tells you which routes people use (to=shop is the way OUT of the world to real merch)',
+  shop_door:'took a DOOR out of the world to /shop/ (from = which one: stand, beach…). ⭐ THE BRIDGE METRIC — 28 Jul-31 Jul baseline showed the walked door to the stand pulling 356 against the LED billboard’s 24, so doors are the bet and this is how we know if it paid',
   rave_sound:'switched the sound on at the rave — the floor is silent until somebody asks',
   rave_glowstick_unlock:'unlocked the glowstick at the rave',
   rave_night_step:'a step of the old story NIGHTS. ⚠ mothballed since 19 Jul — only appears in older date ranges',
