@@ -231,6 +231,32 @@ function tightenTopGap(cv) {
   return out;
 }
 
+// ---- "this design, as this product" — ONE path, every surface -------------
+// ⚠️ The PDP, the shop tiles and anything future must call these rather than
+// assembling their own. The shop lane briefly drew a bare banana on a
+// checkerboard while the product page showed a photo mockup of the same thing,
+// which reads as a placeholder next to real merch — nobody clicks a placeholder.
+export function productDesign(state, product) {
+  if (product.print === 'mug') return renderMugPrint(state, 1024);
+  if (product.options) return renderApparelPrint(state, 512);
+  const W = 512;
+  const cv = document.createElement('canvas'); cv.width = cv.height = W;
+  const ctx = cv.getContext('2d');
+  composite(ctx, W, state.frame, state, {
+    bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
+    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+  });
+  if (state.bg === 'transparent') {
+    return crop(cv, pad(bboxOf([ctx.getImageData(0, 0, W, W).data], W), W));
+  }
+  return cv;
+}
+
+export function productMockup(state, product, size = 900, opts = {}) {
+  const style = product.options ? 'tee' : product.key;   // apparel shares one shoot
+  return makeStickerMockup(state, productDesign(state, product), size, style, opts);
+}
+
 // ---- product MOCKUP (what the buyer sees) ---------------------------------
 // die-cut white contour for transparent designs, rounded white square for
 // coloured ones. product='magnet' adds a grey depth band = visible thickness.

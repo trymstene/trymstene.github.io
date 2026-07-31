@@ -125,13 +125,19 @@ const breadcrumbSchema = {
   <style>
     /* the custom tiles read as siblings of the official ones (same card), with
        the checkerboard ground saying "there is no photo yet — this is yours" */
+    /* the mockup fills the tile exactly like an official product photo — same
+       square, same edge — so the two lanes read as one shop */
     .shopcustom__shot {
       display: grid; place-items: center; aspect-ratio: 1; overflow: hidden;
-      background:
-        conic-gradient(from 90deg at 50% 50%, #f3efe2 0 25%, #e6e0cd 0 50%, #f3efe2 0 75%, #e6e0cd 0)
-        0 0 / 22px 22px;
+      background: #e8e4da;
     }
-    .shopcustom__shot canvas { width: 82%; height: auto; image-rendering: pixelated; display: block; }
+    /* ⚠️ :global — the canvas is created by JS at runtime, so it never gets
+       Astro's scoping attribute and a plain scoped rule silently misses it. It
+       then draws at its intrinsic 420px inside a 249px box and gets clipped,
+       which reads as a badly-cropped product shot rather than as a CSS bug. */
+    .shopcustom__shot :global(canvas) {
+      width: 100%; height: 100%; object-fit: contain; display: block;
+    }
     .shopcustom__meta { margin: 0.15rem 0 0.6rem; font-size: 0.76rem; opacity: 0.7; }
     .shopcustom__card .shop-card__cta { font-weight: 800; }
   </style>
