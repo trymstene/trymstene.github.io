@@ -5,6 +5,8 @@
     python tools/shopify-product.py list              # handles, prices, variant GIDs
     python tools/shopify-product.py show <handle>     # one product in full
     python tools/shopify-product.py tm [--yes]        # ™ on every official title
+    python tools/shopify-product.py price <handle> <amount> [--sku S] [--yes]
+    python tools/shopify-product.py status <handle> ACTIVE|DRAFT [--yes]
     python tools/shopify-product.py create spec.json  # DRY RUN — prints the mutation
     python tools/shopify-product.py create spec.json --yes
     python tools/shopify-product.py publish <handle> --channel Headless --yes
@@ -203,6 +205,29 @@ def cmd_publish(handle, channel, go):
     print('  (status is still %s — flip it to ACTIVE in Shopify when it is ready to sell)' % p['status'])
 
 
+# ⚠️ ACTIVE is what makes a thing buyable. It must be flipped together with
+# `live` in shared/products.js — a product live on the site but DRAFT in Shopify
+# offers a button that fails at checkout; the reverse sells something with no
+# page. Never change one alone.
+def cmd_status(handle, status, go):
+    status = status.upper()
+    if status not in ('ACTIVE', 'DRAFT', 'ARCHIVED'):
+        sys.exit('✗ status must be ACTIVE, DRAFT or ARCHIVED')
+    tok = token()
+    d = gql('query($h:String!){ productByHandle(handle:$h){ id title status } }', {'h': handle}, tok)
+    p = d.get('productByHandle')
+    if not p:
+        sys.exit('✗ no product with handle ' + handle)
+    print('  %s: %s → %s' % (p['title'], p['status'], status))
+    if not go:
+        print('\nRe-run with --yes.')
+        return
+    r = ok(gql('''mutation($input: ProductInput!) { productUpdate(input: $input) {
+      product { title status } userErrors { field message } } }''',
+               {'input': {'id': p['id'], 'status': status}}, tok), 'productUpdate')
+    print('\n✓ %s is now %s' % (r['product']['title'], r['product']['status']))
+
+
 def cmd_price(handle, amount, sku, go):
     tok = token()
     d = gql('''query($h:String!){ productByHandle(handle:$h){ id title
@@ -271,6 +296,8 @@ def main():
         cmd_list()
     elif cmd == 'show':
         cmd_show(a[1])
+    elif cmd == 'status':
+        cmd_status(a[1], a[2], go)
     elif cmd == 'price':
         cmd_price(a[1], a[2], (a[a.index('--sku') + 1] if '--sku' in a else None), go)
     elif cmd == 'tm':

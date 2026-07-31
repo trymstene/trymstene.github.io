@@ -86,7 +86,7 @@ export default [
     // unlike the official line which charges it at checkout) — hence 26.99, not
     // the 22.99 first costed against the cheaper ceramic mug.
     priceHint: '26.99',
-    live: false, // flip WITH Shopify DRAFT→ACTIVE, after one test order
+    live: true, // ⚠️ flipped WITH Shopify DRAFT→ACTIVE — the two must never disagree
   },
   {
     key: 'magnet',
