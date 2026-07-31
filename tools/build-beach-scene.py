@@ -287,6 +287,12 @@ def anim_strip(name, out_name, row=0, frames=None, tw=T, th=T, scale=1.0,
 # Trym's plan literal: ONE stall, a HUE per pitch, the sign hung in the DOM.
 STALL_W, STALL_H = 156, 132
 STALL_HUES = [(206, 62, 58), (44, 150, 152), (146, 92, 190), (232, 150, 44)]
+# 🛍 THE MERCH STALL wears the BRAND's yellow, and it is the only stall that
+# does. The four above are pitches on the pier where everything costs TICKETS;
+# this one stands on the sand by the road and takes money for real objects.
+# Colour is doing the same job the paper panel does at the Banana Stand: saying
+# "different kind of shop" before you read a word of it.
+SHOP_HUE = (247, 205, 55)
 
 
 def build_stall(hue):
@@ -428,6 +434,7 @@ UMBRELLAS = []               # clickable parasols — open/closed, NOT baked
 PIER_SPRITE = []             # [x, y, w, h] of pier.png — a floor above the sea
 STALLS = []                  # (cx, base) of each midway stall, emitted for the page
 GRABBER = []                 # [cx, base] of the claw machine on the pier
+SHOPSTALL = []               # [cx, base] of the merch stall on the sand
 
 
 
@@ -993,6 +1000,10 @@ export const STALLS = [
 // landmark and the only place tickets buy the grand prize.
 export const GRABBER = { x: %d, y: %d };
 
+// 🛍 the merch stall on the sand — the bay's door OUT to real products. Not on
+// the pier on purpose: the midway runs on tickets, this one takes money.
+export const SHOP_STALL = { x: %d, y: %d };
+
 // 🧭 the waypost at the park lane — the DOM plank that names it hangs here
 export const PARK_SIGN = { x: %d, y: %d };
 ''' % (W, H, WATER_LINE,
@@ -1018,6 +1029,7 @@ export const PARK_SIGN = { x: %d, y: %d };
        PIER_SPRITE[0], PIER_SPRITE[1], PIER_SPRITE[2], PIER_SPRITE[3],
        '\n'.join('  { x: %d, y: %d },' % s for s in STALLS),
        GRABBER[0], GRABBER[1],
+       SHOPSTALL[0], SHOPSTALL[1],
        PARK_SIGN[0], PARK_SIGN[1])
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
@@ -1448,6 +1460,23 @@ if HAVE_PACK:
     # 🕹 the grabber — the grand-prize claw at the deck's FAR (right) end, the
     # destination you walk the pier toward.
     gr = build_grabber()
+    # 🛍 THE MERCH STALL — on the SAND beside the road, deliberately NOT a fifth
+    # pitch on the midway. Everything up here trades tickets for trophies; put a
+    # money stall between Hook-a-Duck and the prize counter and it reads as a
+    # game. Placed from Trym's own mark on the map, in the gap between the towel
+    # cluster and the road (nearest furniture is a chair 190px west).
+    # It borrows midway_overlay purely for the sprite+collider plumbing — the
+    # helper is generic, only its name says pier.
+    # ⚠️ EAST OF THE MARK, AND THE SCENE DECIDED THAT. Trym marked ~(1035,430);
+    # the generator's own audit rejected it — the dig patch at (1100,380) is
+    # 156x104 and ate 9384px of the stall. Going WEST into the gap instead put
+    # the left post through a deck chair and the towel under the counter. Open
+    # sand starts past the patch, so the stall sits there: same road, same
+    # stretch, one stall-width east, and nothing crowded.
+    SHOPSTALL.extend([1290, 430])
+    midway_overlay(build_stall(SHOP_HUE), SHOPSTALL[0], SHOPSTALL[1],
+                   sh=0.34, solid=('rect', -46, -22, 46, 6))
+
     GRABBER.extend([2648, 700])
     midway_overlay(gr, GRABBER[0], GRABBER[1], sh=0.36, solid=('rect', -40, -28, 40, 4))
 
