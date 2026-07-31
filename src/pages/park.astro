@@ -1401,8 +1401,12 @@ const faq = {
        wall BEHIND the desk — the counter appears to cover its hem for free.
        Tilted like its neighbours (they sit at -4°…+4°) so the wall looks hung
        by hand rather than laid out on a grid. */
+    /* ⚠️ z-index ABOVE THE KEEPER. The shopkeeper is a <button> at z-index:1
+       spanning 92% of the window, so its box covers this corner even though its
+       canvas is transparent here — the shirt looked on top while every click
+       went to the keeper ("*polishes the counter*") instead of the shop. */
     .pk-stand__tee {
-      position: absolute; display: block; cursor: pointer; text-decoration: none;
+      position: absolute; z-index: 2; display: block; cursor: pointer; text-decoration: none;
       transform: rotate(var(--tilt, 0deg));
       filter: drop-shadow(3px 4px 0 rgba(0,0,0,0.45));
     }
