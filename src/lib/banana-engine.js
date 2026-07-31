@@ -348,6 +348,9 @@ function outfitParams(o) {
   const ex = Object.keys(o.extras || {}).filter((k) => o.extras[k]);
   if (ex.length) p.set('ex', ex.join('.'));
   if (o.effect && o.effect !== 'none') p.set('e', o.effect);
+  // 🎁 the community-item slot travels too — without it a caught item showed on
+  // the banana in the world and was gone the moment you sent it to the shop
+  if (o.c) p.set('c', o.c);
   return p;
 }
 

@@ -44,6 +44,7 @@ export function parseDesign(p) {
   const e = p.get('e') || p.get('m'); // old m=disco links still work
   if (EFFECTS.some(([v]) => v === e)) state.effect = e;
   const f = parseInt(p.get('f'), 10); if (f >= 0 && f < NFRAMES) state.frame = f;
+  if (p.get('c')) state.c = p.get('c');   // 🎁 the community item, by id
   return state;
 }
 
@@ -66,7 +67,14 @@ export function designStr(state) {
 export function composite(ctx, W, idx, state, o = {}) {
   return engineDraw(ctx, W, idx, {
     hat: state.hat, glasses: state.glasses, extras: state.extras,
-    top: state.top, bottom: state.bottom, ...o,
+    top: state.top, bottom: state.bottom,
+    // 🎁 the ONE community-item slot. `state.c` is just an id; the CALLER
+    // resolves it to a wear payload on `state.custom` (it needs the catalog,
+    // which is fetched). Without this line a community item rendered
+    // everywhere in the world and then silently vanished on the product page —
+    // preview, print file and checkout image all quietly dropped it.
+    custom: state.custom,
+    ...o,
   });
 }
 

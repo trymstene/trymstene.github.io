@@ -7,6 +7,7 @@ import {
   assetsReady, NFRAMES, HATS, GLASSES, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, SVG as ART,
 } from '../lib/banana-engine.js';
 import { ownsWearable, ownsDropStat } from '../data/wearables.js';
+import { wearToCustom } from '../lib/wear-render.js';
 import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
@@ -157,6 +158,7 @@ function syncDesignUrl() {
   set('h', state.hat !== 'none' ? state.hat : '');
   set('g', state.glasses !== 'none' ? state.glasses : '');
   set('ex', Object.keys(state.extras).filter((k) => state.extras[k]).join('.'));
+  set('c', state.c || '');
   history.replaceState(null, '', location.pathname + '?' + q.toString());
   const back = el('pdpBack'); if (back) back.href = '/make-a-banana/' + location.search;
   document.querySelectorAll('[data-xsell]').forEach((a) => {
@@ -241,6 +243,31 @@ const earnDoor = (d) => (d.earned === 'pier' ? { href: '/beach/', at: 'the pier'
   : d.earned === 'garden' ? { href: '/park/', at: 'the park garden' }
     : { href: '/rave/', at: 'the rave' });
 
+// 🎁 THE COMMUNITY TRACK — visitor-made wearables. These are NOT in the
+// wearables manifest: they are moderated into the catalog worker and ride the
+// engine's single `c` custom slot, which is what lets a new one appear with no
+// deploy. The builder has consumed them since P4-D; this page did not, so a
+// caught item vanished the moment you went to buy something with it on.
+const CATALOG_URL = 'https://banana-share.trymstene.workers.dev/catalog/items.json';
+let CATALOG = [];
+const CAT_CUSTOM = {};
+const catOwned = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
+const catStats = () => { try { return (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {}; } catch (e) { return {}; } };
+const ownsCatalog = (id) => { try { return !!catOwned()[id] || (catStats()['own_' + id] || 0) > 0; } catch (e) { return false; } };
+function catCustom(id) {
+  // ⚠️ NEVER CACHE A MISS — a draw can run before the fetch lands, and a cached
+  // null would hide the item forever (the rule the rave learned in P4-D)
+  if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
+  const it = CATALOG.find((x) => x.id === id);
+  if (!it) return undefined;
+  CAT_CUSTOM[id] = wearToCustom(it.wear);
+  return CAT_CUSTOM[id] || undefined;
+}
+// `state.c` is an id; the renderer needs the wear payload. Resolving it onto
+// state.custom is what makes the preview, the print file and the checkout
+// image all agree — they every one read composite(), which reads state.custom.
+function applyCustom() { state.custom = state.c ? catCustom(state.c) : undefined; }
+
 function buildWardrobe() {
   const host = el('pdpWardrobe');
   if (!host) return;
@@ -269,6 +296,24 @@ function buildWardrobe() {
       on: () => !!state.extras[d.id],
       pick: () => { state.extras[d.id] = !state.extras[d.id]; },
     })));
+  }
+  // 🎁 THE COMMUNITY ROW — hidden until the catalog lands, then owned items are
+  // wearable and the rest are locked doors to the rave. Only ONE can be worn at
+  // a time (the single `c` slot), so picking is exclusive, not a toggle-set.
+  if (CATALOG.length) {
+    wardrobeRow(host, 'Community', CATALOG.slice()
+      .sort((a, b) => (a.added || 0) - (b.added || 0))
+      .map((it) => {
+        const name = it.title || 'community item';
+        const owned = ownsCatalog(it.id);
+        return {
+          art: (catCustom(it.id) || {}).art,
+          label: name + (it.by ? ' by ' + it.by : ''),
+          locked: owned ? null : { href: '/rave/', why: 'catch it at the rave' },
+          on: () => state.c === it.id,
+          pick: () => { state.c = state.c === it.id ? '' : it.id; applyCustom(); },
+        };
+      }));
   }
 }
 
@@ -402,6 +447,20 @@ async function boot() {
   buildWardrobe();
   wireOptions();
   wireZoom();
+  // 🎁 the catalog lands late and never blocks the page: when it arrives the
+  // community row appears and, if the visitor already wears one, the mockup
+  // repaints WITH it (it was drawing without until now)
+  fetch(CATALOG_URL)
+    .then((r) => (r.ok ? r.json() : []))
+    .then((items) => {
+      if (!Array.isArray(items) || !items.length) return;
+      CATALOG = items;
+      applyCustom();
+      buildWardrobe();
+      buildPosePicker();
+      paintMockup();
+    })
+    .catch(() => {});
   track('sticker_pdp_view', withSecs({ product: product.key, design: designStr(state) }));
   const lp = await localizedPrice(product);
   if (lp) {
