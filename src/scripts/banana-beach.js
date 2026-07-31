@@ -519,6 +519,12 @@ function init() {
     nextTgt = null; tgt.x = wx; tgt.y = wy;
   }
   view.addEventListener('click', (e) => {
+    // ⚠️ inside() FIRST. The full-view rooms (the coconut hut, the Beach Hut)
+    // live INSIDE .bh-view and are not .bh-panel, so every drag in the coconut
+    // shy was also running the world tap: setting a walk target and arming a
+    // pending stall-open that fired the moment you left the room. Testing the
+    // STATE covers every future room; enumerating class names would not.
+    if (inside()) return;
     if (e.target.closest('.bh-panel') || e.target.closest('.wh') || e.target.closest('.bh-actions')) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
@@ -2584,7 +2590,9 @@ function init() {
   // arc — up out of frame, hanging in the air a beat, then dropping onto the
   // shelf. You must lead the moving coconuts, not point-and-shoot straight.
   const COCO_G = 480, COCO_K = 5.0, COCO_VMAX = 1000, COCO_BALL_R = 18;
-  const COCO_AIR = 4.5;   // max seconds a ball stays live (long arcs need the room)
+  const COCO_AIR = 2.6;   // max seconds a ball stays live. Was 4.5 for arcs that
+                          // flew off the top of the pitch; those are clamped now
+                          // (see cocoLaunch), so this is a backstop, not a wait.
   const COCO_SVG = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="3" y="0" width="6" height="1" fill="#5a3a1c"/><rect x="2" y="1" width="8" height="1" fill="#6b4a2b"/>'
     + '<rect x="1" y="2" width="10" height="2" fill="#6b4a2b"/><rect x="0" y="4" width="12" height="4" fill="#6b4a2b"/>'
@@ -2903,9 +2911,15 @@ function init() {
       cocoLoop();
     }
   }
-  function cocoFootBalls() {
-    cocoFoot.innerHTML = '<span class="bh-stallhint">' + coco.balls + ' ball'
-      + (coco.balls === 1 ? '' : 's') + ' left · drag back from the ball and let go</span>';
+  // ⚠️ THE AFFORDANCE MUST MATCH THE RULE. One ball flies at a time — that is
+  // a fair rule, but until it SAYS so a mid-flight drag is indistinguishable
+  // from a broken control.
+  function cocoFootBalls(inAir) {
+    cocoFoot.innerHTML = '<span class="bh-stallhint">' + (inAir
+      ? 'ball in the air…'
+      : coco.balls + ' ball' + (coco.balls === 1 ? '' : 's')
+        + ' left · drag back from the ball and let go') + '</span>';
+    cocoPitch.classList.toggle('is-waiting', !!inAir);
   }
   function cocoBindThrow() {
     const pit = cocoPitch;
@@ -2957,10 +2971,22 @@ function init() {
     const sp = Math.hypot(vx, vy);
     if (sp < 70) return;                    // a tap, not a throw — keep the ball
     if (sp > COCO_VMAX) { vx *= COCO_VMAX / sp; vy *= COCO_VMAX / sp; }
+    // ⚠️ CLAMP THE CLIMB, NOT JUST THE SPEED. COCO_VMAX caps |v|, so a steep
+    // pull spent all of it on height: vy ≈ -700 threw the ball ~700px ABOVE the
+    // pitch, where it was INVISIBLE for three seconds while `ball.live` silently
+    // swallowed every new drag. That is the whole of Trym's "sometimes the first
+    // one works and the second one does not" — it reads as a dead hitbox and is
+    // actually a lockout with no feedback.
+    // The top shelf is at 0.19H and the ball starts at 0.76H, so the lift needed
+    // to reach the HIGHEST target plus a little headroom is all the lift that can
+    // ever be useful. Anything beyond it only buys dead time.
+    const apex = coco.oy - coco.H * 0.19 + 70;
+    const maxUp = Math.sqrt(2 * COCO_G * apex);
+    if (vy < -maxUp) vy = -maxUp;
     const b = coco.ball;
     b.x = coco.ox; b.y = coco.oy; b.vx = vx; b.vy = vy; b.live = true; b.age = 0;
     coco.balls -= 1;
-    cocoFootBalls();
+    cocoFootBalls(true);
   }
   function cocoLoop() {
     cocoOn = true;
@@ -3063,6 +3089,7 @@ function init() {
     if (!coco.coconuts.some((c) => c.alive) || coco.balls <= 0) { cocoFinish(); return; }
     const b = coco.ball;
     b.x = coco.ox; b.y = coco.oy; b.vx = 0; b.vy = 0;
+    cocoFootBalls(false);              // the ball is back — you may throw again
     coco.ballEl.style.left = coco.ox + 'px';
     coco.ballEl.style.top = coco.oy + 'px';
     coco.ballEl.style.transform = 'translate(-50%,-50%)';
@@ -3562,7 +3589,12 @@ function init() {
       // testable before multiplayer exists
       setPeers: (n) => { peersInCourt = n; },
       // the hut otherwise needs a walk across the bay and a tap on the roof
-      hut: openHut };
+      hut: openHut,
+      // 🥥 the coconut shy is the FAR end of the pier plus 5 coins, which is a
+      // lot of choreography to test one drag. coco() opens it, coco(true) skips
+      // straight to a live round with balls in hand.
+      coco: (live) => { openCoco(); if (live) setTimeout(() => cocoBuild(true), 200); },
+      get cocoState() { return coco; } };
   }
 
   // 🗨 ?bubbletest — PIN SANDY'S SPEECH BUBBLE OPEN, forever.

@@ -1249,6 +1249,10 @@ const faq = {
       touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent;
     }
     .bh-coco__pitch:active { cursor: grabbing; }
+    /* one ball flies at a time — say so with the cursor too, or a mid-flight
+       drag is indistinguishable from a dead control */
+    .bh-coco__pitch.is-waiting,
+    .bh-coco__pitch.is-waiting:active { cursor: progress; }
     /* the shelf the coconuts sit on */
     .bh-coco__rail {
       position: absolute; left: 5%; right: 5%; height: 9px;
