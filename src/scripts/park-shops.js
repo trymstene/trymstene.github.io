@@ -268,7 +268,9 @@ export function initShops(ctx) {
     a.className = 'pk-stand__tee';
     a.href = '/shop/';
     a.id = 'pkStandRealDoor';
-    a.style.cssText = 'left:70%;top:34%;width:28%;';   // the neighbours' weight
+    // smaller than the duck it hangs beside, tilted, and low enough that the
+    // counter takes its hem
+    a.style.cssText = 'left:72%;top:52%;width:22%;--tilt:-6deg;';
     a.setAttribute('aria-label', 'The Banana Shop — your banana printed on real things');
     const pill = document.createElement('span');
     pill.className = 'pk-stand__tee-pill';

@@ -1396,20 +1396,26 @@ const faq = {
        the visitor's OWN banana, rendered by the same mockup the shop uses.
        ⚠️ A box of text below the shelf was the first attempt and it sat under
        the fold (Trym: "not just another box with text placed somewhere"). */
+    /* ⚠️ IT HANGS PAST THE BOTTOM ON PURPOSE. The window clips at exactly the
+       counter's top edge, so a shirt that overflows it reads as hanging on the
+       wall BEHIND the desk — the counter appears to cover its hem for free.
+       Tilted like its neighbours (they sit at -4°…+4°) so the wall looks hung
+       by hand rather than laid out on a grid. */
     .pk-stand__tee {
       position: absolute; display: block; cursor: pointer; text-decoration: none;
+      transform: rotate(var(--tilt, 0deg));
       filter: drop-shadow(3px 4px 0 rgba(0,0,0,0.45));
     }
     .pk-stand__tee canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
-    .pk-stand__tee:hover { transform: translateY(-2px); }
-    .pk-stand__tee:active { transform: translateY(1px); }
+    .pk-stand__tee:hover { transform: rotate(var(--tilt, 0deg)) translateY(-2px); }
+    .pk-stand__tee:active { transform: rotate(var(--tilt, 0deg)) translateY(1px); }
     /* the sticker-pill that separates it from everything else on the wall:
        those are coins, this one is money */
     /* ⚠️ ON the hem, not below the element: the mockup canvas is SQUARE with
        transparent space under the garment, so a `bottom:-6%` pill landed past
        the window's edge and got clipped away entirely. */
     .pk-stand__tee-pill {
-      position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%) rotate(-5deg);
+      position: absolute; left: 50%; bottom: 27%; transform: translateX(-50%) rotate(-5deg);
       white-space: nowrap; background: #e0322e; color: #fff;
       font-family: "Archivo Black", sans-serif; font-size: 0.52rem; letter-spacing: 0.1em;
       padding: 3px 7px; border: 2px solid #111; box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
