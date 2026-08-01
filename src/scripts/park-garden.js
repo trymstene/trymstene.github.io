@@ -1358,6 +1358,10 @@ export function initGarden(ctx) {
     gardenOpenSlot = i;
     const bal = coinBal();
     const gl = gardenerLvl();
+    // 🍄 the seed shop is a SHOP — count the browse, not only the buy.
+    // Without this, opening the seeds and walking away is invisible, so the
+    // one number that matters (how many look vs how many plant) cannot exist.
+    track('park_seedshop', { lvl: gl.lvl, coins: bal });
     const blessed = hasVoucher();   // ⛲ a fountain voucher: one small seed free
     // locked seeds stay VISIBLE (aspiration) — greyed, with the level they need
     const lvlFor2 = (sd) => 1 + GLVL_STARS.findIndex((mx) => sd.stars <= mx);

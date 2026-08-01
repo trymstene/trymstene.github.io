@@ -23,6 +23,10 @@ const LENS_EVENTS = [
   'begin_checkout', 'purchase', 'shop_view',
   'offer_shown', 'offer_click',   // 🛍 the make-it-real card, 30 Jul
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
+  // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
+  // deserve the map lens as much as any download does
+  'stand_counter', 'stand_buy', 'stand_cart_view',
+  'beach_hut_view', 'park_seedshop', 'rave_screen_ad',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -872,6 +876,11 @@ function page() {
   <div id="worldBody"></div>
   <p class="muted" style="margin-top:9px;">rave, park, bay and the forge share one room until one of them is busy enough to fill its own — an empty room reads worse than a short one</p>
 </div>
+
+<div class="panel">
+  <h2>🏪 The shops inside the world <i class="info" data-tip="Every storefront a banana can walk into, with its own till story. Some sell for bananacoins, some sell REAL merch — the row says which.">i</i></h2>
+  <div id="shopBody"></div>
+</div>
 </div>
 
 <p class="foot">🍌 private — token door, noindex, no links from anywhere · live refresh 30s · range refresh 5m</p>
@@ -937,6 +946,7 @@ var EV_LABEL = {
   park_share_day:'shared their day at the park 📸',
   stand_cart_view:'stepped into the merch shop 🧃', stand_cart_click:'tapped a real product 💰',
   beach_hut_view:'walked into the Beach Hut 🏖', beach_hut_click:'tapped a real product at the bay 💰',
+  park_seedshop:'opened the seed shop 🍄',
   rave_quest_start:'a floor quest kicked off 🎯', rave_quest_done:'FINISHED a floor quest 🎯',
   forge_open:'opened the Pixel Forge 🎨',
   forge_mode:'switched Forge mode 🔀',
@@ -1177,6 +1187,7 @@ var EV_EXPLAIN = {
   shelf_sticker_land:'a banana from their shelf landed back in the builder, ready to edit',
   travel_open:'opened the fast-travel window (from = the area they were standing in)',
   travel_go:'actually jumped to another area. from → to tells you which routes people use (to=shop is the way OUT of the world to real merch)',
+  park_seedshop:'opened the seed sheet on an empty patch — the park’s SEED SHOP, browsing. Added 1 Aug: until then only park_plant existed, so looking at seeds and walking away was invisible and the shop had no conversion rate at all. seedshop → park_plant is the till story.',
   beach_hut_view:'walked into the BEACH HUT — the bay’s only real-money room, by the road east of the volleyball court. Same till story as the park’s merch shop: views → product taps (beach_hut_click) → the PDP (?from=beachhut landing sessions) → checkout_redirect → purchase',
   beach_hut_click:'tapped a ware hanging on the Beach Hut’s wall 💰 (product = sticker / magnet / tee) — it was wearing THEIR banana, and the tap lands on the PDP pre-built, tagged ?from=beachhut',
   shop_door:'took a DOOR out of the world to /shop/ (from = which one: stand, beach…). ⭐ THE BRIDGE METRIC — 28 Jul-31 Jul baseline showed the walked door to the stand pulling 356 against the LED billboard’s 24, so doors are the bet and this is how we know if it paid',
@@ -1795,6 +1806,72 @@ function renderWorld(){
   var t=document.getElementById('tabWorld'); if(t) t.textContent=total?fmt(total):'';
 }
 
+// 🏪 EVERY STOREFRONT A BANANA CAN WALK INTO. Trym, 1 Aug: "we have several
+// in-game shops, i want to see visit data on all of them".
+// steps = [event, label] in till order; the real flag marks shops that take money.
+var SHOPS=[
+  // ⚠️ stand_buy_try is NOT a step before stand_buy — it fires when someone
+  // wanted an item and did not have the coins. Sequencing them printed
+  // "bought: 130% of the step above". It is a SIBLING of the buy, so it hangs
+  // off the side as the demand list it always was.
+  {name:'The Banana Stand', where:'off the rave floor', icon:'🏪', real:false,
+   steps:[['stand_counter','reached the counter'],['stand_item_view','looked at an item'],
+          ['stand_buy','bought one']],
+   aside:['stand_buy_try','wanted one but was short on coins']},
+  {name:'Inka’s merch cart', where:'the park', icon:'🧃', real:true,
+   steps:[['stand_cart_view','stepped in'],['stand_cart_click','tapped a product']]},
+  {name:'The Beach Hut', where:'Banana Bay', icon:'🏖', real:true,
+   steps:[['beach_hut_view','walked in'],['beach_hut_click','tapped a product']]},
+  {name:'The seed shop', where:'the park garden', icon:'🍄', real:false,
+   steps:[['park_seedshop','opened the seeds'],['park_plant','planted one']]},
+  {name:'The LED club screen', where:'the rave', icon:'📺', real:false,
+   steps:[['rave_screen_ad','clicked a house ad']]},
+];
+function renderShops(){
+  var host=document.getElementById('shopBody'); if(!host) return;
+  var R=state.range; if(!R){ host.innerHTML=''; return; }
+  var ev={}; R.events.forEach(function(e){ ev[e.name]=e.v; });
+  host.innerHTML=SHOPS.map(function(S){
+    var vals=S.steps.map(function(st){ return ev[st[0]]||0; });
+    var top=vals[0];
+    // ⚠️ scale by the BIGGEST step, not the first. A shop whose entrance event
+    // shipped later than its till (the seed shop, 1 Aug) reads 0 → 14, and
+    // dividing by 0 drew every bar as a stub.
+    var vmax=Math.max.apply(null,vals.concat([1]));
+    var head='<h3>'+S.icon+' '+S.name+' <span class="muted" style="letter-spacing:0;'
+      +'text-transform:none;">· '+S.where+(S.real?' · <b style="color:var(--hot);">real money</b>':'')
+      +'</span></h3>';
+    // ⚠️ a shop nobody entered gets ONE honest line, not a row of zeros
+    if(!top && !vals.some(function(v){ return v; })){
+      return '<div class="area dead">'+head
+        +'<div class="muted">nobody walked in during this window</div></div>';
+    }
+    var rows=S.steps.map(function(st,i){
+      var v=vals[i];
+      // a step-to-step rate needs 20 people at the top of it, same gate as
+      // everywhere else — 2 of 3 is two people, not 67%
+      // only call it a rate when the step above is both big enough AND actually
+      // bigger — anything else is not a funnel and must not be dressed as one
+      var pc=(i>0 && vals[i-1]>=20 && v<=vals[i-1]) ? ' <span class="muted">('
+        +Math.round((v/vals[i-1])*100)+'% of the step above)</span>' : '';
+      var w=Math.max(2,Math.round((v/vmax)*100));
+      return '<div class="fstep"><div class="row"><span>'+esc(st[1])+'</span>'
+        +'<span>'+fmt(v)+pc+'</span></div>'
+        +'<div class="fbar"><div class="fill" style="width:'+w+'%"></div></div></div>';
+    }).join('');
+    if(S.aside){
+      var av=ev[S.aside[0]]||0;
+      if(av) rows+='<div class="muted" style="margin:-2px 0 8px;">⤷ '+fmt(av)+' '
+        +esc(S.aside[1])+'</div>';
+    }
+    var last=vals[vals.length-1];
+    var note = (S.steps.length>1 && top>=20 && !last)
+      ? '<div class="muted" style="color:var(--hot);">⚠ '+top+' came in and nobody reached '
+        +'the last step — that is the shop to work on</div>' : '';
+    return '<div class="area">'+head+rows+note+'</div>';
+  }).join('');
+}
+
 // 🗂 the rooms. One at a time; the range picker and the live bar stay above
 // them because they drive every room.
 var paneNow='overview';
@@ -1841,6 +1918,7 @@ function renderRange(){
   }
   renderDownloads();
   renderWorld();
+  renderShops();
   var co=0; R.events.forEach(function(e){ if(e.name==='checkout_redirect') co+=e.v; });
   var ts=document.getElementById('tabShop'); if(ts) ts.textContent=co?fmt(co):'';
   renderDevices();
