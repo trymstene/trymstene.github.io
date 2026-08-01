@@ -38,6 +38,23 @@ export function collectBlob() {
   return { pass: read(), shelf, shelfDel, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '', name: (g('ps-name-v1') || '').slice(0, 24) };
 }
 
+// 🪪 THE WORLD ID. The pass worker mints a stable per-PERSON id (an HMAC
+// of the primary record's key — see worldGid there) and hands it back on every
+// push and pull. We keep it so the walkable world can tell one PERSON apart
+// from one BROWSER, which is what the garden always assumed it could do and
+// never could. Cleared on logout by pass-sync.
+// ⚠️ It is an identifier, not a credential — it proves nothing and gates
+// nothing that matters. Ownership of a plot is not a secret.
+export const GID_KEY = 'world-gid';
+function keepGid(d) {
+  try {
+    if (d && typeof d.gid === 'string' && /^[a-f0-9]{8,32}$/.test(d.gid)) {
+      localStorage.setItem(GID_KEY, d.gid);
+    }
+  } catch (e) {}
+  return d;
+}
+
 let pushT = null;
 function schedulePush() {
   let link = null;
@@ -49,7 +66,7 @@ function schedulePush() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credId: link.credId, token: link.token, blob: collectBlob() }),
-    }).catch(() => {});
+    }).then((r) => (r && r.ok ? r.json() : null)).then(keepGid).catch(() => {});
   }, 10000);
 }
 
@@ -112,7 +129,7 @@ export function applyBlob(blob) {
     localStorage.setItem('pass-pull-at', String(Date.now()));
     fetch(PASS_API + `/pull?credId=${encodeURIComponent(link.credId)}&token=${encodeURIComponent(link.token)}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d && d.blob) applyBlob(d.blob); })
+      .then((d) => { if (d && d.blob) applyBlob(d.blob); keepGid(d); })
       .catch(() => {});
   } catch (e) {}
 })();

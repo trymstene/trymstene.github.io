@@ -1,7 +1,7 @@
 // 🌱 THE GARDEN — the park's daily-return ritual (P3b) + the entropy loop
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
-import { poofInto, worldSid } from '../lib/world.js';
+import { poofInto, worldSid, worldOwner } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
@@ -147,7 +147,11 @@ export function initGarden(ctx) {
   // the plots from polled state, acts optimistically, and reconciles on the
   // reply. ?parktest swaps the fetch for a local shim so the whole flow runs
   // before the worker deploy (+ __park.ff() fast-forwards growth locally).
-  const myShort = worldSid().slice(0, 8);
+  // 🪪 WHO I AM IN THIS GARDEN. myShort is the PERSON (the pass's world id when
+  // signed in); myAlt is this browser's old per-device sid, kept so plots sown
+  // before the world had a person-id are still recognised as mine.
+  const myShort = worldOwner().slice(0, 8);
+  const myAlt = worldSid().slice(0, 8);
   const gardenPanel = document.getElementById('pkGarden');
   const gardenBody = document.getElementById('pkGardenBody');
   // 64 slots — 0-7 site A (meadow), 8-15 site B (playground), 16-23 site C
@@ -328,6 +332,11 @@ export function initGarden(ctx) {
     return Promise.resolve(strip());
   }
   async function gFetch(path, body) {
+    // ⭐ THE IDENTITY IS STAMPED HERE, NOT AT THE CALL SITES. Fourteen callers
+    // each passed `pass: worldSid()` by hand; every one of them was wrong in the
+    // same way, and any new caller would have copied the same mistake. Setting
+    // it in the one place they all go through makes it correct by construction.
+    if (body) { body.pass = worldOwner(); body.alt = worldSid(); }
     if (PARK_TEST) return shimGarden(path, body);
     try {
       // 🌱 the READ carries ?pass= — it is the only reply that settles the
@@ -345,7 +354,8 @@ export function initGarden(ctx) {
     : Math.floor((Date.now() - s.plantedAt) / 86400000));
   const gReady = (s) => !!s && !s.rot
     && (s.ready ? true : gDays(s) >= (SEED_BY[s.seed] || { days: 99 }).days);
-  const gMine = (s) => s && s.passShort === myShort;
+  const gMine = (s) => !!s && (s.passShort === myShort
+    || (myAlt !== myShort && s.passShort === myAlt));
   // watered today? (UTC day, matching the server's wday math)
   const gWet = (s) => s && Math.floor((s.lastWater || 0) / 86400000) === Math.floor(Date.now() / 86400000);
   function gStageArt(s) {
@@ -718,7 +728,7 @@ export function initGarden(ctx) {
     passStat('coins_spent', BORDER_PRICE);
     refreshHud();
     closeGarden();
-    const res = await gFetch('/border', { spot: i, kind: kindId, name: ctx.parkName, pass: worldSid() });
+    const res = await gFetch('/border', { spot: i, kind: kindId, name: ctx.parkName });
     if (res && res.err === 'taken') {
       passStat('coins_spent', -BORDER_PRICE);   // refund — beaten to the spot
       refreshHud();
@@ -816,7 +826,7 @@ export function initGarden(ctx) {
     refreshHud();
     pill(a2.x, a2.y - 16, '🫧 algae skimmed', '+1');
     if (!algaeTracked) { algaeTracked = true; track('park_algae'); }
-    applyGarden(await gFetch('/algae', { id, pass: worldSid() }));
+    applyGarden(await gFetch('/algae', { id }));
   }
   function tapAlgae(wx, wy) {
     let hit = null;
@@ -889,7 +899,7 @@ export function initGarden(ctx) {
     passStat('coins_spent', BH_PRICE);
     refreshHud();
     closeGarden();
-    const res = await gFetch('/bhbuild', { spot: i, name: ctx.parkName, pass: worldSid() });
+    const res = await gFetch('/bhbuild', { spot: i, name: ctx.parkName });
     if (res && res.err === 'taken') {
       passStat('coins_spent', -BH_PRICE);   // refund — beaten to the post
       refreshHud();
@@ -906,7 +916,7 @@ export function initGarden(ctx) {
     const h = bHouses[i];
     if (!h) return;
     closeGarden();
-    const res = await gFetch('/bhstock', { spot: i, pass: worldSid(), name: ctx.parkName });
+    const res = await gFetch('/bhstock', { spot: i, name: ctx.parkName });
     if (res && res.err === 'stocked today') { toast('already stocked today — once a day per banana'); applyGarden(res); return; }
     if (res && res.err) { applyGarden(res); return; }
     applyGarden(res);
@@ -1040,7 +1050,7 @@ export function initGarden(ctx) {
       refreshHud();
       pill(t.x, t.y - 16, '🗑 litter cleared', '+2');
       if (!trashTracked) { trashTracked = true; track('park_trash'); }
-      gFetch('/trash', { id, pass: worldSid() }).then(applyGarden);
+      gFetch('/trash', { id }).then(applyGarden);
     });
     // 🍂 leaf piles ride the same walk-over beat (they only exist while the
     // park sits under 60 health — raking is recovery accelerant)
@@ -1053,7 +1063,7 @@ export function initGarden(ctx) {
       refreshHud();
       float(l2.x, l2.y - 14, '🍂 +1');
       if (!rakeTracked) { rakeTracked = true; track('park_rake'); }
-      gFetch('/rake', { id, pass: worldSid() }).then(applyGarden);
+      gFetch('/rake', { id }).then(applyGarden);
     });
   }
   // ---- 🍂 LEAF PILES — sad-phase texture, raked by walking over -----------
@@ -1113,7 +1123,7 @@ export function initGarden(ctx) {
     refreshHud();
     float(w2.x, w2.y - 20, '+1');
     if (!weedTracked) { weedTracked = true; track('park_weed'); }
-    applyGarden(await gFetch('/weed', { id, pass: worldSid() }));
+    applyGarden(await gFetch('/weed', { id }));
   }
   function tapWeed(wx, wy) {
     let hit = null;
@@ -1157,7 +1167,7 @@ export function initGarden(ctx) {
     const e = eggs.get(id);
     if (!e || eggBusy) return;
     eggBusy = true;
-    const res = await gFetch('/egg', { id, pass: worldSid() });
+    const res = await gFetch('/egg', { id });
     eggBusy = false;
     if (!res) return;
     applyGarden(res);
@@ -1393,7 +1403,7 @@ export function initGarden(ctx) {
       refreshHud();
     }
     closeGarden();
-    const res = await gFetch('/plant', { slot: i, seed: seedId, name: ctx.parkName, pass: worldSid() });
+    const res = await gFetch('/plant', { slot: i, seed: seedId, name: ctx.parkName });
     if (res && res.err === 'taken') {
       if (free) setVoucher(true);           // the blessing survives the miss
       else {
@@ -1447,7 +1457,7 @@ export function initGarden(ctx) {
     closeGarden();
     s.lastWater = Date.now();   // the soil darkens right away; the reply reconciles
     renderGarden();
-    const res = await gFetch('/water', { slot: i, pass: worldSid(), name: ctx.parkName });
+    const res = await gFetch('/water', { slot: i, name: ctx.parkName });
     if (res && res.err === 'watered today') { toast('already watered today — once a day per banana'); applyGarden(res); return; }
     if (res && res.err) { applyGarden(res); return; }
     applyGarden(res);
@@ -1473,20 +1483,18 @@ export function initGarden(ctx) {
     // ⚠️ NEVER FAIL SILENTLY ON A TAP. These two used to `return` without a
     // word between them, which is exactly how Jade experienced it (1 Aug):
     // "I can't harvest the plants I planted" — the game simply did not answer.
-    // ⚠⚠ AND THE OWNERSHIP ONE IS A REAL BUG UNDERNEATH: the garden keys plots
-    // on worldSid(), a PER-BROWSER random id, so a plant sown on your phone is
-    // not yours on your laptop. Until the world has one identity per person,
-    // the very least it can do is SAY so instead of ignoring the tap.
-    if (!gMine(s)) { toast('planted on another device — only the banana that sowed it can pick it', 4600); return; }
+    // (The cause is fixed: ownership is per PERSON now, not per browser. This
+    // can still fire on somebody ELSE'S plant, and it must still say why.)
+    if (!gMine(s)) { toast('this one is somebody else’s — only its grower can pick it', 4600); return; }
     if (!gReady(s)) { toast('not ready yet — it grows on the days you water it'); return; }
     const sd = SEED_BY[s.seed] || SEEDS[0];
-    const res = await gFetch('/harvest', { slot: i, pass: worldSid() });
+    const res = await gFetch('/harvest', { slot: i });
     if (res && res.err) {
       // ⚠️ only apply a reply that actually CARRIES a garden — the 403 comes
       // back as a bare {err} with no slots, and applying that blanked the beds.
       if (res.slots) applyGarden(res);
       toast(res.err === 'still growing' ? 'not quite ready yet'
-        : res.err === 'not yours' ? 'planted on another device — only the banana that sowed it can pick it'
+        : res.err === 'not yours' ? 'this one is somebody else’s — only its grower can pick it'
         : 'the patch is bare', 4600);
       return;
     }
@@ -1510,7 +1518,7 @@ export function initGarden(ctx) {
   async function doClear(i) {
     const s = gSlots[i];
     if (!s || !s.rot) return;
-    const res = await gFetch('/clear', { slot: i, pass: worldSid() });
+    const res = await gFetch('/clear', { slot: i });
     if (res && res.err) { applyGarden(res); toast('somebody already cleared it'); return; }
     applyGarden(res);
     poofInto(world, 'pk-poof', PLOTS[i][0] / W * 100, (PLOTS[i][1] - 12) / H * 100);

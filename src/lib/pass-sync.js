@@ -120,6 +120,9 @@ export async function newsConfirm(t) {
 // would be indistinguishable from losing them. Logging back in re-merges.
 export function logout() {
   try { localStorage.removeItem(LINK_KEY); } catch (e) {}
+  // 🪪 the world id is part of the account, not the device — signing out
+  // hands the world back its anonymous per-browser identity
+  try { localStorage.removeItem('world-gid'); } catch (e) {}
   if (window.gtag) window.gtag('event', 'pass_logout');
   return true;
 }

@@ -1367,6 +1367,15 @@ export class ParkRoom {
     const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
     const short = pass.slice(0, 8);
     if (!short) return json({ err: 'bad pass' }, 400);
+    // 🪪 THE SECOND NAME YOU ANSWER TO. `pass` is now the world OWNER id — the
+    // same string on every device of one account. `alt` is that browser's old
+    // per-device sid, sent so plots sown BEFORE this existed are still yours.
+    // ⚠️ Both are accepted for reading ownership; only `short` is ever WRITTEN.
+    // Every touch migrates the plot forward, so the legacy id fades out on its
+    // own and no migration script was needed.
+    const alt = (typeof b.alt === 'string' ? b.alt.slice(0, 24) : '').slice(0, 8);
+    const isMine = (o) => !!o && (o.passShort === short || (!!alt && o.passShort === alt));
+    const claim = (o) => { if (o && o.passShort !== short) o.passShort = short; };
     // 🥚 first tap wins (the rave-drop pattern) — the egg's removal IS the verdict
     if (url.pathname === '/garden/egg') {
       const ei = eg.list.findIndex((e) => e.id === b.id);
@@ -1526,8 +1535,14 @@ export class ParkRoom {
       if (!s) return json(payload({ err: 'empty' }), 404);
       const day = Math.floor(now / 86_400_000);
       s.wday = s.wday || {};
-      if (s.wday[short] === day) return json(payload({ err: 'watered today' }), 429);
+      // ⚠️ CHECK BOTH NAMES. This is the half of Jade's bug that let a second
+      // device water the same plant again on the same day: the ledger is keyed
+      // by id, and her laptop's id was simply absent from it.
+      if (s.wday[short] === day || (alt && s.wday[alt] === day)) {
+        return json(payload({ err: 'watered today' }), 429);
+      }
       s.wday[short] = day;
+      if (alt && alt !== short) delete s.wday[alt];   // fold the old name in
       const wk = Object.keys(s.wday);          // bounded — a busy slot can't grow forever
       if (wk.length > 60) delete s.wday[wk[0]];
       if (s.rot) return json(payload({ err: 'rot' }), 409);
@@ -1541,6 +1556,7 @@ export class ParkRoom {
         s.wlast.push(wn);
         if (s.wlast.length > 5) s.wlast.shift();
       }
+      if (isMine(s)) claim(s);          // sown under the old per-device id? it is yours
       creditDay(s, now);                // your watering pays for today straight away
       if (!s.readyAt && isReady(s)) s.readyAt = now;
       s.waterers = s.waterers || [];
@@ -1551,7 +1567,7 @@ export class ParkRoom {
       // ⚠️ payload(), NOT a bare {err}: every other branch returns the garden
       // with its error, and the client applies whatever comes back. A bare
       // {err} blanked the beds on screen until the next poll.
-      if (s.passShort !== short) return json(payload({ err: 'not yours' }), 403);
+      if (!isMine(s)) return json(payload({ err: 'not yours' }), 403);
       if (!isReady(s)) return json(payload({ err: 'still growing' }), 409);
       slots[i] = null;
     } else {

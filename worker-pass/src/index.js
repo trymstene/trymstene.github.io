@@ -104,6 +104,22 @@ async function hmacHex(env, msg) {
   return bufToHex(await crypto.subtle.sign('HMAC', key, te.encode(msg)));
 }
 
+// ---------- 🪪 THE WORLD ID ----------
+// A stable, public, per-PERSON id for the walkable world — the thing the garden
+// needed and never had. Derived from the PRIMARY record's key, so every device
+// and every passkey on one pass gets the same answer.
+//
+// ⚠️⚠️ HMAC, NOT THE KEY ITSELF. The email rail's key IS the hash of the
+// address ('m:' + sha256(email)). Handing that to the client would let anyone
+// who guesses an address confirm it by hashing — which is exactly the property
+// the hash-keyed design exists to prevent. The HMAC uses PASS_HMAC, so the id
+// is stable, comparable, and reverses to nothing without the secret.
+// ⚠️ 16 hex chars. The garden stores an 8-char prefix and compares on that; a
+// longer id costs bytes in every plot for no extra safety at this scale.
+async function worldGid(env, homeKey) {
+  return (await hmacHex(env, 'world:' + homeKey)).slice(0, 16);
+}
+
 // ---------- POST /challenge ----------
 async function challenge(request, env) {
   const bad = guard(env, request);
@@ -943,7 +959,7 @@ async function push(request, env) {
   if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
   R.home.blob = mergeBlob(R.home.blob, b.blob);
   await saveKey(env, R.homeKey, R.home);
-  return json({ ok: true }, 200, cors(env, request));
+  return json({ ok: true, gid: await worldGid(env, R.homeKey) }, 200, cors(env, request));
 }
 
 async function pull(request, env, url) {
@@ -951,5 +967,6 @@ async function pull(request, env, url) {
   if (bad) return bad;
   const R = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-  return json({ blob: R.home.blob, updated: R.home.updated }, 200, cors(env, request));
+  return json({ blob: R.home.blob, updated: R.home.updated,
+    gid: await worldGid(env, R.homeKey) }, 200, cors(env, request));
 }
