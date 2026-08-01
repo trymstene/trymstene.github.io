@@ -127,16 +127,55 @@ const person = {
     .dl-formats { font-size: 0.88rem; opacity: 0.78; margin-top: 0.9rem; max-width: 60ch; margin-inline: auto; }
   </style>
 
-  <!-- hero -->
-  <section class="hero">
-    <div class="hero__banana">
-      <img src="/assets/dancing-banana-gif.gif" width="500" height="500" alt="The Dancing Banana — the original banana meme GIF, created by Trym Stene in 1999"
-           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+  {/* 🍌 SIDE BY SIDE, NOT STACKED. This page's job is the DOWNLOAD, and the
+      buttons used to sit a full screen below a 500px banana — the same opening
+      as the homepage and the shop, so all three read as one page.
+      ⚠️ THE BANANA STAYS BIG HERE, and that is not a contradiction: on this
+      page the banana IS the product. It just moves beside the ask instead of
+      on top of it, so 80-90% of this site's visitors can see the thing they
+      came for without scrolling. */}
+  <section class="hero gifhero">
+    <div class="gifhero__in">
+      <div class="hero__banana gifhero__nana">
+        <img src="/assets/dancing-banana-gif.gif" width="500" height="500" alt="The Dancing Banana — the original banana meme GIF, created by Trym Stene in 1999"
+             onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+      </div>
+      <div class="gifhero__say">
+        <p class="kicker">Free · since 1999</p>
+        <h1 class="hero__title gifhero__h1">the dancing<br>banana</h1>
+        <p class="hero__tag" style="text-transform:none;">A GIF I made in 1999 that never stopped dancing.</p>
+        {/* the real files, right here — the jump link was a step between the
+            visitor and the only thing most of them want */}
+        <div class="dl-buttons gifhero__dl">
+          <a class="btn btn--dark" href="/assets/dancing-banana-gif.gif" download="dancing-banana-trymstene.com.gif">Original GIF ↓</a>
+          <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download="dancing-banana-transparent-trymstene.com.gif">Transparent ↓</a>
+        </div>
+        <p class="gifhero__note">No sign-up, no watermark. <a href="#download">Every format ↓</a></p>
+      </div>
     </div>
-    <h1 class="hero__title">the dancing<br>banana</h1>
-    <p class="hero__tag">A GIF I made in 1999 that never stopped dancing</p>
-    <p class="hero__cta"><a class="btn btn--dark" href="#download"><PixelIcon name="download" /> Download the GIF ↓</a></p>
   </section>
+
+  <style>
+    .gifhero { padding: 2rem 1.2rem 2.2rem; }
+    .gifhero__in {
+      max-width: 1000px; margin: 0 auto; display: flex; align-items: center;
+      gap: clamp(1rem, 4vw, 2.6rem); text-align: left; flex-wrap: wrap;
+      justify-content: center;
+    }
+    .gifhero__nana { width: min(38vw, 260px); margin: 0; flex: 0 0 auto; }
+    .gifhero__say { flex: 1 1 320px; min-width: 0; }
+    .gifhero__h1 { text-align: left; margin: 0.1rem 0 0.4rem; }
+    .gifhero__dl { justify-content: flex-start; margin-top: 1rem; }
+    .gifhero__note { font-size: 0.86rem; opacity: 0.7; margin: 0.7rem 0 0; }
+    @media (max-width: 640px) {
+      /* on a phone the banana leads and the ask follows — same order as before,
+         just without a screenful of air between them */
+      .gifhero__in { flex-direction: column; text-align: center; }
+      .gifhero__nana { width: min(52vw, 200px); }
+      .gifhero__h1, .gifhero__say { text-align: center; }
+      .gifhero__dl { justify-content: center; }
+    }
+  </style>
 
   <!-- answer-first intro + jump menu -->
   <section class="block">
