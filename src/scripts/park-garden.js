@@ -8,6 +8,7 @@ import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
   ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
 import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
+import { askName } from '../lib/banana-id.js';   // 🪪 the naming moment
 
 // ?phase=0..4 — bookmarkable phase-view links (Trym): forces that phase's
 // full visual state (plates/trees/critters/fountain/pill) RENDER-ONLY; the
@@ -850,6 +851,23 @@ export function initGarden(ctx) {
   let bHouses = Array(BIRD_SPOTS.length).fill(null);
   const bhEls = BIRD_SPOTS.map(() => null);
   let pendingPost = null, bhBuildTracked = false, bhStockTracked = false;
+  // 🪪 THE NAMING MOMENT — see banana-id.js. Called AFTER the deed, never
+  // before it; askName() is silent if they are named or were already asked.
+  function offerName(why, at) {
+    return askName({
+      why,
+      // the engine is already loaded on this page, so the import is a cache hit
+      paint: (cv) => import('../lib/banana-engine.js').then((m) => {
+        m.drawComposite(cv.getContext('2d'), 72, 2, ctx.ME_DRAW);
+      }),
+      clean: (v) => import('../lib/sticker-core.js')
+        .then((m) => m.captionsClean({ top: v })).catch(() => true),
+    }).then((nm) => {
+      if (nm) { ctx.parkName = nm; track('id_named', { at }); }
+      return nm;
+    });
+  }
+
   const bhFed = (h) => h && Date.now() - (h.lastStock || 0) < 24 * 3600000;
   function renderHouses(list) {
     bHouses = Array(BIRD_SPOTS.length).fill(null);
@@ -913,6 +931,7 @@ export function initGarden(ctx) {
     float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🐦');
     toast('🐦 birdhouse raised — the birds moved straight in. stock it daily to keep them.', 4600);
     if (!bhBuildTracked) { bhBuildTracked = true; track('park_birdhouse', { act: 'build' }); }
+    offerName('Your birdhouse is up.', 'park_birdhouse');
   }
   async function stockHouse(i) {
     const h = bHouses[i];
@@ -1430,6 +1449,13 @@ export function initGarden(ctx) {
       plantTracked = true;
       track('park_plant', { seed: seedId, held: myPlants(), paid: free ? 0 : cost });
     }
+    // 🪪 THE NAMING MOMENT. Fires AFTER the seed is in — nothing is gated,
+    // so "not now" costs nothing. askName() is silent if they already have a
+    // name or have already been asked once, ever.
+    // ⚠️ this plant keeps whatever name it was sent with (usually none). The
+    // owner always reads "you sown this", so only strangers see it unsigned,
+    // and everything they make afterwards carries the name.
+    offerName('Your first seed is in.', 'park_plant');
   }
   function openPlantCard(i) {
     const s = gSlots[i];
@@ -1692,6 +1718,11 @@ export function initGarden(ctx) {
     clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; pendingAlgae = null; pendingPost = null; pendingGround = false; },
     qa: {
       eggs,
+      // 🪪 replay the naming moment (clears the once-ever flag AND the name)
+      askname: () => {
+        try { localStorage.removeItem('ps-name-asked-v1'); localStorage.removeItem('ps-name-v1'); } catch (e) {}
+        return offerName('Your first seed is in.', 'qa');
+      },
       // 🥚 egg QA: lay one at your feet (egg(1) = golden); steal() = somebody
       // else claims the oldest — tap it after for the 'someone got it' path
       egg: (g) => {
