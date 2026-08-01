@@ -462,7 +462,7 @@ const ANALYST_EVENTS = [
   'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
   'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
-  'rave_join', 'park_join', 'beach_multiplayer', 'forge_start', 'purchase',
+  'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
 ];
 
 async function gscRange(env, from, to) {
@@ -1759,10 +1759,10 @@ var AREAS=[
    q:'Do people STAY? — joins, and what they did once the music started'},
   {key:'park',  name:'The park',  icon:'🌳', door:'park_join',
    q:'Do they COME BACK? — gardening is the only loop that needs a return visit'},
-  // ⚠️ the bay has NO arrival event. beach_multiplayer only fires when two
-  // people are there AT ONCE, so using it as the door printed "1 visit" above
-  // 197 digs. No door = the card says so instead of lying quietly.
-  {key:'beach', name:'Banana Bay', icon:'🏖', door:null,
+  // ⚠️ the door is beach_join (fires once at spawn, like park_join) — NOT
+  // beach_multiplayer, which only fires when two people are here AT ONCE and
+  // printed "1 visit" above 197 digs when I first wired this.
+  {key:'beach', name:'Banana Bay', icon:'🏖', door:'beach_join',
    q:'Do they PROGRESS? — shells, tickets, digging: collection is the hook'},
   {key:'forge', name:'Pixel Forge', icon:'🎨', door:'forge_open',
    q:'Do they FINISH and SUBMIT? — an unfinished item helps nobody'},
