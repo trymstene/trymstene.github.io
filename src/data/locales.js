@@ -8,7 +8,16 @@
 
 export const locales = [
   {
-    code: 'nl', ogLocale: 'nl_NL', langName: 'Nederlands', langAria: 'Taal',
+    code: 'nl',
+    // 🛍 the download-moment offer, in their language — an English
+    // popup asking for money on a German page is worse than none.
+    offerKicker: 'Sinds 1999', offerHead: 'De originele banaan, op een echte mok', offerPills: ['Officiële merch', 'Gratis wereldwijde verzending'], offerCta: 'Bekijk de winkel →',
+    // 🌍 the world block — these pages were download-only while the site
+    // grew a rave, a park, a bay and a forge. ⚠️ machine-drafted, like the
+    // rest of this file: native review still owed.
+    worldKicker: 'De bananenwereld', worldHeading: 'Het is nu een plek', worldLead: 'De banaan is niet langer alleen een GIF — het is een wereld die je kunt binnenlopen. Gratis, in je browser.',
+    worldRave: 'Naar de rave', worldPark: 'Naar het park', worldBeach: 'Naar het strand',
+    worldForge: 'Maak een emoji', worldGallery: 'Bananen-galerij', worldShop: 'Winkel', ogLocale: 'nl_NL', langName: 'Nederlands', langAria: 'Taal',
     title: 'Dansende Banaan GIF — Gratis Download van het Origineel',
     description: 'De originele dansende banaan GIF — gratis te downloaden. Gemaakt in 1999 door Trym Stene, de maker van de meme. Download hem, maak je eigen, of licentieer hem.',
     ogDescription: 'De originele dansende banaan GIF, gratis te downloaden. Gemaakt in 1999 door Trym Stene.',
@@ -33,7 +42,16 @@ export const locales = [
     copyright: 'Trym Stene · de bananenman',
   },
   {
-    code: 'es', ogLocale: 'es_ES', langName: 'Español', langAria: 'Idioma',
+    code: 'es',
+    // 🛍 the download-moment offer, in their language — an English
+    // popup asking for money on a German page is worse than none.
+    offerKicker: 'Desde 1999', offerHead: 'El plátano original, en una taza de verdad', offerPills: ['Merch oficial', 'Envío gratis a todo el mundo'], offerCta: 'Ver la tienda →',
+    // 🌍 the world block — these pages were download-only while the site
+    // grew a rave, a park, a bay and a forge. ⚠️ machine-drafted, like the
+    // rest of this file: native review still owed.
+    worldKicker: 'El mundo del plátano', worldHeading: 'Ahora es un lugar', worldLead: 'El plátano ya no es solo un GIF — es un mundo por el que puedes pasear. Gratis, en tu navegador.',
+    worldRave: 'Ir al rave', worldPark: 'Ir al parque', worldBeach: 'Ir a la playa',
+    worldForge: 'Crea un emoji', worldGallery: 'Galería de memes', worldShop: 'Tienda', ogLocale: 'es_ES', langName: 'Español', langAria: 'Idioma',
     title: 'GIF del Plátano Bailando — Descarga Gratis el Original',
     description: 'El GIF original del plátano bailando — gratis para descargar. Creado en 1999 por Trym Stene, el autor del meme. Descárgalo, crea el tuyo, o licéncialo.',
     ogDescription: 'El GIF original del plátano bailando, gratis para descargar. Creado en 1999 por Trym Stene.',
@@ -58,7 +76,16 @@ export const locales = [
     copyright: 'Trym Stene · el de la banana',
   },
   {
-    code: 'pt', ogLocale: 'pt_BR', langName: 'Português', langAria: 'Idioma',
+    code: 'pt',
+    // 🛍 the download-moment offer, in their language — an English
+    // popup asking for money on a German page is worse than none.
+    offerKicker: 'Desde 1999', offerHead: 'A banana original, numa caneca a sério', offerPills: ['Merch oficial', 'Portes grátis para todo o mundo'], offerCta: 'Ver a loja →',
+    // 🌍 the world block — these pages were download-only while the site
+    // grew a rave, a park, a bay and a forge. ⚠️ machine-drafted, like the
+    // rest of this file: native review still owed.
+    worldKicker: 'O mundo da banana', worldHeading: 'Agora é um lugar', worldLead: 'A banana já não é só um GIF — é um mundo onde podes entrar. Grátis, no teu navegador.',
+    worldRave: 'Ir à rave', worldPark: 'Ir ao parque', worldBeach: 'Ir à praia',
+    worldForge: 'Cria um emoji', worldGallery: 'Galeria de memes', worldShop: 'Loja', ogLocale: 'pt_BR', langName: 'Português', langAria: 'Idioma',
     title: 'GIF da Banana Dançando — Baixe o Original Grátis',
     description: 'O GIF original da banana dançando — grátis para baixar. Criado em 1999 por Trym Stene, o autor do meme. Baixe, crie o seu, ou licencie.',
     ogDescription: 'O GIF original da banana dançando, grátis para baixar. Criado em 1999 por Trym Stene.',
@@ -83,7 +110,16 @@ export const locales = [
     copyright: 'Trym Stene · o cara da banana',
   },
   {
-    code: 'fr', ogLocale: 'fr_FR', langName: 'Français', langAria: 'Langue',
+    code: 'fr',
+    // 🛍 the download-moment offer, in their language — an English
+    // popup asking for money on a German page is worse than none.
+    offerKicker: 'Depuis 1999', offerHead: 'La banane originale, sur un vrai mug', offerPills: ['Merch officiel', 'Livraison gratuite dans le monde entier'], offerCta: 'Voir la boutique →',
+    // 🌍 the world block — these pages were download-only while the site
+    // grew a rave, a park, a bay and a forge. ⚠️ machine-drafted, like the
+    // rest of this file: native review still owed.
+    worldKicker: 'Le monde de la banane', worldHeading: "C'est un lieu, maintenant", worldLead: "La banane n'est plus seulement un GIF — c'est un monde où l'on peut se promener. Gratuit, dans ton navigateur.",
+    worldRave: 'Aller à la rave', worldPark: 'Aller au parc', worldBeach: 'Aller à la plage',
+    worldForge: 'Crée un emoji', worldGallery: 'Galerie de mèmes', worldShop: 'Boutique', ogLocale: 'fr_FR', langName: 'Français', langAria: 'Langue',
     title: "GIF de la Banane Qui Danse — Télécharge l'Original Gratuit",
     description: "Le GIF original de la banane qui danse — gratuit à télécharger. Créé en 1999 par Trym Stene, l'auteur du mème. Télécharge-le, crée le tien, ou obtiens une licence.",
     ogDescription: 'Le GIF original de la banane qui danse, gratuit à télécharger. Créé en 1999 par Trym Stene.',
@@ -108,7 +144,16 @@ export const locales = [
     copyright: 'Trym Stene · le gars de la banane',
   },
   {
-    code: 'de', ogLocale: 'de_DE', langName: 'Deutsch', langAria: 'Sprache',
+    code: 'de',
+    // 🛍 the download-moment offer, in their language — an English
+    // popup asking for money on a German page is worse than none.
+    offerKicker: 'Seit 1999', offerHead: 'Die originale Banane, auf einer echten Tasse', offerPills: ['Offizielles Merch', 'Weltweit kostenloser Versand'], offerCta: 'Zum Shop →',
+    // 🌍 the world block — these pages were download-only while the site
+    // grew a rave, a park, a bay and a forge. ⚠️ machine-drafted, like the
+    // rest of this file: native review still owed.
+    worldKicker: 'Die Bananenwelt', worldHeading: 'Jetzt ist sie ein Ort', worldLead: 'Die Banane ist nicht mehr nur ein GIF — sie ist eine Welt, durch die du laufen kannst. Kostenlos, im Browser.',
+    worldRave: 'Zum Rave', worldPark: 'Zum Park', worldBeach: 'Zum Strand',
+    worldForge: 'Emoji erstellen', worldGallery: 'Meme-Galerie', worldShop: 'Shop', ogLocale: 'de_DE', langName: 'Deutsch', langAria: 'Sprache',
     title: 'Tanzende Banane GIF — Lade das Original Kostenlos Herunter',
     description: 'Das originale Tanzende-Banane-GIF — kostenlos herunterladen. 1999 von Trym Stene erstellt, dem Schöpfer des Memes. Lade es herunter, mach dein eigenes, oder lizenziere es.',
     ogDescription: 'Das originale Tanzende-Banane-GIF, kostenlos herunterladen. 1999 von Trym Stene erstellt.',
@@ -133,7 +178,16 @@ export const locales = [
     copyright: 'Trym Stene · der Bananen-Typ',
   },
   {
-    code: 'ru', ogLocale: 'ru_RU', langName: 'Русский', langAria: 'Язык',
+    code: 'ru',
+    // 🛍 the download-moment offer, in their language — an English
+    // popup asking for money on a German page is worse than none.
+    offerKicker: 'С 1999 года', offerHead: 'Тот самый банан — на настоящей кружке', offerPills: ['Официальный мерч', 'Бесплатная доставка по всему миру'], offerCta: 'В магазин →',
+    // 🌍 the world block — these pages were download-only while the site
+    // grew a rave, a park, a bay and a forge. ⚠️ machine-drafted, like the
+    // rest of this file: native review still owed.
+    worldKicker: 'Мир банана', worldHeading: 'Теперь это место', worldLead: 'Банан больше не просто GIF — это мир, по которому можно ходить. Бесплатно, прямо в браузере.',
+    worldRave: 'На рейв', worldPark: 'В парк', worldBeach: 'На пляж',
+    worldForge: 'Сделать эмодзи', worldGallery: 'Галерея мемов', worldShop: 'Магазин', ogLocale: 'ru_RU', langName: 'Русский', langAria: 'Язык',
     title: 'Танцующий банан GIF — Скачать оригинал бесплатно',
     description: 'Оригинальный GIF с танцующим бананом — скачать бесплатно. Создан в 1999 году автором мема Trym Stene. Скачайте, создайте свой или лицензируйте.',
     ogDescription: 'Оригинальный GIF с танцующим бананом, скачать бесплатно. Создан в 1999 году автором Trym Stene.',

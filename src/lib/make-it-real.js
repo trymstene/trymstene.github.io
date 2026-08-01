@@ -20,6 +20,7 @@
 import {
   composite, makeStickerMockup, bboxOf, crop, pad, PRICE,
   stickerCaptions, stickerEffect, ensureCaptionFont,
+  productMockup, getProduct,
 } from './sticker-core.js';
 import { assetsReady } from './banana-engine.js';
 
@@ -149,12 +150,19 @@ export function offerCard({
   href = '/make-a-banana/sticker/',
   flag = 'MADE BY YOU',
   outfit = null,
+  product = 'sticker',
+  price = true,          // ⚠️ money() is the STICKER price. A mug card showing
+                         // $14.99 is a wrong price on a commerce card — worse
+                         // than no price. Product-aware below; off for the
+                         // official shop, which prices seven things itself.
+  bare = false,          // ⚠️ the OFFICIAL lane shows the CLASSIC banana, not
+                         // yours — it is what that shop actually sells
   onGo = null,
   onSkip = null,
   skipText = '',
 } = {}) {
   injectCss();
-  const o = outfit || myOutfit();
+  const o = bare ? { hat: 'none', glasses: 'none', extras: {} } : (outfit || myOutfit());
   const card = document.createElement('div');
   card.className = 'mir';
 
@@ -170,16 +178,19 @@ export function offerCard({
   // ⚠️ async and never blocking: the card is on screen immediately, the mockup
   // paints in when the sprite sheet is ready. A card that waits for a canvas is
   // a card the visitor has already scrolled past.
-  stickerShot(o, 420).then((cv) => { shot.appendChild(cv); }).catch(() => {});
+  productShot(o, product, 420).then((cv) => { shot.appendChild(cv); }).catch(() => {});
 
   const body = document.createElement('div');
   const k = document.createElement('p'); k.className = 'mir__kicker'; k.textContent = kicker;
   const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = head;
   const ps = document.createElement('div'); ps.className = 'mir__pills';
-  const price = document.createElement('span');
-  price.className = 'mir__pill mir__pill--price';
-  price.textContent = money();
-  ps.appendChild(price);
+  if (price) {
+    const pr = document.createElement('span');
+    pr.className = 'mir__pill mir__pill--price';
+    const def = product && product !== 'sticker' ? getProduct(product) : null;
+    pr.textContent = def && def.priceHint ? '$' + def.priceHint : money();
+    ps.appendChild(pr);
+  }
   pills.forEach((t) => {
     const s = document.createElement('span'); s.className = 'mir__pill'; s.textContent = t;
     ps.appendChild(s);
@@ -236,4 +247,111 @@ export function offerAfterDownload(opts = {}) {
   });
   document.body.appendChild(veil);
   return { el: veil, close };
+}
+
+
+// ⭐ ONE CARD, MANY MOMENTS — the offer table.
+//
+// Trym, 1 Aug: "should be everywhere doesnt it? … can have different headlines
+// and CRO-messaging in each case — but maybe front different products like
+// mugs, tees and stickers … and front different products in the two types of
+// shops we have custom and official".
+//
+// ⚠️ THE OFFER MUST MATCH WHAT THEY JUST TOOK. Someone who downloaded the
+// 1999 ORIGINAL has not made anything — pitching "your banana on a sticker" to
+// them is pitching a thing that does not exist yet, so those moments front the
+// OFFICIAL shop (the classic banana on real merch). Someone who downloaded a
+// banana THEY dressed gets the custom lane, because the card can show the exact
+// thing they just made. Same card, two shops, honest either way.
+//
+// ⚠️ ONE PER SESSION, GLOBALLY (offerAfterDownload). A thank-you repeated is
+// nagging — that rule is what keeps this from becoming a popup people hate.
+export const OFFERS = {
+  // ── CUSTOM LANE ── they made it, so we can show it
+  yours: {
+    kicker: 'Make it real', product: 'sticker',
+    head: 'That banana, as a real sticker',
+    pills: ['Die-cut vinyl', 'Free worldwide shipping'],
+    cta: 'See it as a sticker →', href: '/make-a-banana/sticker/', flag: 'MADE BY YOU',
+  },
+  yoursMug: {
+    kicker: 'Make it real', product: 'mug',
+    head: 'Your banana, on your morning coffee',
+    pills: ['11oz enamel camper mug', 'Free worldwide shipping'],
+    cta: 'See it on a mug →', href: '/make-a-banana/mug/', flag: 'MADE BY YOU',
+  },
+  yoursTee: {
+    kicker: 'Make it real', product: 'tee',
+    head: 'Your banana, on a t-shirt',
+    pills: ['Printed on demand', 'Free worldwide shipping'],
+    cta: 'See it on a tee →', href: '/make-a-banana/tee/', flag: 'MADE BY YOU',
+  },
+  // ── OFFICIAL LANE ── they took the original; there is nothing of theirs to print
+  original: {
+    price: false,
+    kicker: 'Since 1999', product: 'mug', bare: true,
+    head: 'The original banana, on a real mug',
+    pills: ['Official merch', 'Free worldwide shipping'],
+    cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
+  },
+  originalTee: {
+    price: false,
+    kicker: 'Since 1999', product: 'tee', bare: true,
+    head: 'Wear the banana that started it',
+    pills: ['Official tee', 'Free worldwide shipping'],
+    cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
+  },
+  // the wallpaper crowd took something for a SCREEN — offer the desk instead
+  wallpaper: {
+    price: false,
+    kicker: 'Off the screen', product: 'mug', bare: true,
+    head: 'It looks even better on a mug',
+    pills: ['Official merch', 'Free worldwide shipping'],
+    cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
+  },
+  // an emoji is a small thing for chat — a sticker is the small thing for life
+  emoji: {
+    price: false,
+    kicker: 'Make it real', product: 'sticker', bare: true,
+    head: 'A banana for your laptop, not just your chat',
+    pills: ['Die-cut vinyl', 'Free worldwide shipping'],
+    cta: 'Make your own sticker →', href: '/make-a-banana/', flag: 'THE ORIGINAL',
+  },
+};
+
+// render the banana onto the ACTUAL product the offer is fronting
+export async function productShot(outfit, key, size = 420) {
+  if (!key || key === 'sticker') return stickerShot(outfit, size);
+  await assetsReady();
+  const p = getProduct(key);
+  if (!p) return stickerShot(outfit, size);
+  const state = {
+    effect: 'none', bg: 'transparent', top: '', bottom: '', captions: false,
+    frame: 3, ...outfit, extras: (outfit && outfit.extras) || {},
+  };
+  await ensureCaptionFont(state);
+  return productMockup(state, p, size, { colorHex: '#ffffff' });
+}
+
+/**
+ * 🔗 Wire every download link inside `scope` to an offer.
+ *
+ * ⚠️ AFTER, NEVER INSTEAD. The listener does not preventDefault and does not
+ * await anything — the file is already on its way before the card exists. An
+ * offer that delays a free download would poison the one thing people came for.
+ * @param {string} key   which OFFERS entry to show
+ * @param {Element} scope defaults to the document
+ */
+export function wireDownloads(key, over, scope) {
+  const root = scope || document;
+  root.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[download], a[href$=".gif"], a[href$=".png"], a[href$=".webp"]');
+    if (!a) return;
+    const o = { ...(OFFERS[key] || OFFERS.yours), ...(over || {}) };
+    // a beat of air: let the browser start the file before anything appears
+    setTimeout(() => {
+      const shown = offerAfterDownload(o);
+      if (shown && window.gtag) window.gtag('event', 'offer_shown', { offer: key });
+    }, 700);
+  });
 }

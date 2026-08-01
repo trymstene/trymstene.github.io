@@ -65,6 +65,25 @@ const faqSchema = {
     <p class="lead" style="margin-top:2rem;" set:html={loc.tip}></p>
   </section>
 
+  <!-- 🌍 THE WORLD — these pages were download-only while the site grew a rave,
+       a park, a bay, a forge and a shop. A visitor who lands here from a Dutch
+       or Russian search saw a GIF and a FAQ and nothing else the site can do. -->
+  <section class="block block--yellow">
+    <p class="kicker">{loc.worldKicker}</p>
+    <h2>{loc.worldHeading}</h2>
+    <p class="lead" style="max-width:60ch;margin-inline:auto;">{loc.worldLead}</p>
+    <div class="hero__cta" style="margin-top:1.6rem;">
+      <a class="btn btn--dark" href="/rave/">🪩 {loc.worldRave} →</a>
+      <a class="btn btn--beach" href="/beach/">🏖 {loc.worldBeach} →</a>
+      <a class="btn btn--park" href="/park/">🌳 {loc.worldPark} →</a>
+    </div>
+    <div class="hero__cta" style="margin-top:0.8rem;">
+      <a class="btn btn--light" href="/forge/">🎨 {loc.worldForge} →</a>
+      <a class="btn btn--light" href="/banana-memes/">🖼 {loc.worldGallery} →</a>
+      <a class="btn btn--light" href="/shop/" data-place="intl">🛍 {loc.worldShop} →</a>
+    </div>
+  </section>
+
   <!-- FAQ -->
   <section class="block block--dark">
     <p class="kicker kicker--light">{loc.faqKicker}</p>
@@ -91,4 +110,14 @@ const faqSchema = {
     <LangSwitch current={loc.code} label={loc.langAria} />
     <p class="copyright">© <span id="year">2026</span> {loc.copyright}</p>
   </footer>
+
+  <script type="application/json" id="locOffer" set:html={JSON.stringify({
+    kicker: loc.offerKicker, head: loc.offerHead, pills: loc.offerPills, cta: loc.offerCta,
+  })} />
+  <script>
+    // 🛍 the download moment — the ask lands when the wish is granted, never
+    // before it. See OFFERS in make-it-real.js for why this page shows THIS one.
+    import { wireDownloads } from '../lib/make-it-real.js';
+    wireDownloads('original', JSON.parse(document.getElementById('locOffer').textContent));
+  </script>
 </BaseLayout>
