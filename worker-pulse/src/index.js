@@ -238,10 +238,13 @@ async function apiRange(env, from, to) {
   // ⚠️ ITS OWN CALL, NOT A 6TH BATCH ENTRY: GA4 caps batchRunReports at FIVE
   // requests and rejects the whole batch with a 400 if you add a sixth — which
   // takes the entire dashboard down, not just the new panel.
+  // ⚠️ date is in here so ONE call feeds both the per-surface table and the
+  // per-day shape. A generous limit because date × page × event multiplies fast
+  // on a 28-day window, and a truncated tail would silently bend the daily bars.
   const dlsP = gaPost(env, 'runReport', {
-    dateRanges, dimensions: [{ name: 'pagePath' }, { name: 'eventName' }],
-    metrics: [{ name: 'eventCount' }], limit: 600,
-    orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+    dateRanges,
+    dimensions: [{ name: 'date' }, { name: 'pagePath' }, { name: 'eventName' }],
+    metrics: [{ name: 'eventCount' }], limit: 20000,
     dimensionFilter: { filter: { fieldName: 'eventName',
       inListFilter: { values: DL_EVENTS } } },
   }).catch(() => null);
@@ -277,24 +280,31 @@ async function apiRange(env, from, to) {
   }
   const dls = await dlsP;
   const dlMap = {};
+  const dayMap = {};
+  const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
+    offer_shown: 'shown', offer_click: 'click' };
   for (const r of (dls ? rows(dls) : [])) {
-    const page = dim(r, 0);
+    const day = dim(r, 0); const page = dim(r, 1);
+    const key = DL_KEY[dim(r, 2)];
+    if (!key) continue;
+    const v = met(r, 0);
     const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0 });
-    const key = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
-      offer_shown: 'shown', offer_click: 'click' }[dim(r, 1)];
-    if (key) row[key] += met(r, 0);
+    row[key] += v;
+    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0 });
+    if (key === 'shown' || key === 'click') d[key] += v; else d.files += v;
   }
+  const dlDaily = Object.values(dayMap).sort((a, b) => (a.d < b.d ? -1 : 1));
   const downloads = Object.values(dlMap)
     .map((r) => ({ ...r, files: r.gif + r.png + r.wall }))
     // ⚠️ keep offer-only rows: a surface showing the card with NOTHING
     // downloaded is a wiring bug, and dropping it would hide exactly that.
     .filter((r) => r.files > 0 || r.shown > 0)
     .sort((a, b) => (b.files - a.files) || (b.shown - a.shown))
-    .slice(0, 14);
+    .slice(0, 40);
 
   const data = {
     at: Date.now(), from, to,
-    downloads,
+    downloads, dlDaily,
     kpis: {
       sessions: sum('sessions'), users: sum('users'), newUsers: sum('newUsers'),
       engagementRate: dailyRows.length
@@ -824,8 +834,24 @@ function page() {
 
 <div class="pane" data-pane="downloads" hidden>
 <div class="panel">
-  <h2>📥 Downloads — and what the offer did <i class="info" data-tip="Every surface that gives a file away, with the make-it-real card that follows it. TOOK = files handed over. SAW = the offer card appeared (once per visit, by design). CLICKED = they went to the product.">i</i></h2>
-  <div id="dlSum" class="muted" style="margin-bottom:10px;"></div>
+  <h2>📥 The download business <i class="info" data-tip="Giving files away IS the product here — this room is the volume side of the site. TOOK = files handed over. SAW = the make-it-real card appeared (once per visit, by design). CLICKED = they went to a product.">i</i></h2>
+  <div class="kpis" id="dlKpis"></div>
+  <div id="dlSum" class="muted" style="margin-top:10px;"></div>
+</div>
+
+<div class="panel">
+  <h2>📈 Files taken, day by day</h2>
+  <div id="dlDays"></div>
+</div>
+
+<div class="grid2">
+  <div class="panel"><h2>🌍 Who is taking them</h2><table id="dlGeo"></table></div>
+  <div class="panel"><h2>⏱ Just downloaded <span class="muted">(last 5 min)</span></h2>
+    <div id="dlLive" class="muted">nothing in the last five minutes</div></div>
+</div>
+
+<div class="panel">
+  <h2>📄 Every surface that hands a file over</h2>
   <div style="overflow-x:auto;"><table id="dlTable"></table></div>
   <p class="muted" style="margin-top:9px;">the card is capped at ONE per visit — SAW will always sit below TOOK, and that is the design, not a leak</p>
 </div>
@@ -1455,6 +1481,16 @@ function renderLive(){
     if(hot[cc]>=2 && msgs.length<4){ msgs.push(FLAG(cc)+' someone '+HOTTXT[hot[cc]]);
       if(hot[cc]>=4) anyGold=true; }
   });
+  // ⏱ the downloads room's own live feed — same /api/live payload, no new query
+  var dlv=document.getElementById('dlLive');
+  if(dlv){
+    var DLSET={gif_download:1,png_download:1,wallpaper_download:1,offer_shown:1,offer_click:1};
+    var got=(L.recent||[]).filter(function(e){ return DLSET[e.name]; });
+    dlv.innerHTML = got.length
+      ? got.map(function(e){ return '<div style="font-size:.78rem;margin-bottom:4px;">'
+          +FLAG(e.cc)+' '+esc(EV_LABEL[e.name]||e.name)+(e.v>1?' ×'+e.v:'')+'</div>'; }).join('')
+      : '<span class="muted">nothing in the last five minutes</span>';
+  }
   var nearN=0; Object.keys(hot).forEach(function(cc){ if(hot[cc]>=2) nearN++; });
   var lsHot=document.getElementById('lsHot');
   lsHot.hidden = !nearN;
@@ -1612,8 +1648,14 @@ function dlName(path){
     if(path.indexOf(pre)===0 && pre.length>best.length){ best=pre; label=DL_NAMES[i][1]; }
   }
   if(!label) return path==='/' ? 'The front page' : path;
-  // a deeper path than the prefix = one specific item inside that surface
-  return path.length>best.length ? label+' · item' : label;
+  if(path.length<=best.length) return label;
+  // one specific item inside that surface — name it, do not hide it behind
+  // "· item". Which remix and which gallery banana is the whole point.
+  // ⚠️ no regex literals in here — this whole page is a template literal and
+  // it eats the backslashes. See the trap that killed the boot earlier today.
+  var parts=path.split('/').filter(function(x){ return x; });
+  var slug=(parts[parts.length-1]||'').split('-').join(' ');
+  return label+' · '+slug;
 }
 function renderDownloads(){
   var D=(state.range&&state.range.downloads)||[];
@@ -1621,16 +1663,64 @@ function renderDownloads(){
   if(!D.length){
     sum.textContent='no downloads in this window';
     tb.innerHTML='';
+    document.getElementById('dlKpis').innerHTML='';
+    document.getElementById('dlDays').innerHTML='<p class="muted">nothing in this window</p>';
+    document.getElementById('dlGeo').innerHTML='';
     var t0=document.getElementById('tabDl'); if(t0) t0.textContent='';
     return;
   }
   var tf=0,ts=0,tc=0;
   D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; });
-  sum.innerHTML='<b style="color:var(--nana);font-size:1rem;">'+fmt(tf)+'</b> files taken · '
-    +'<b style="color:var(--nana);">'+fmt(ts)+'</b> offers shown · '
-    +'<b style="color:'+(tc?'var(--ok)':'var(--bad)')+';">'+fmt(tc)+'</b> clicked'
-    +(ts>=20 ? ' <span class="muted">('+Math.round((tc/ts)*100)+'% of the cards shown)</span>'
-            : ' <span class="muted">(too few cards yet to call a rate)</span>');
+  var sess=(state.range.kpis&&state.range.kpis.sessions)||0;
+  // ⚠️ per 100 sessions, not a raw total: it is the only download number that
+  // survives a traffic swing, and traffic here swings by 8× when an ad starts.
+  var per=sess? (tf/sess*100).toFixed(1) : '–';
+  document.getElementById('dlKpis').innerHTML=
+    dlk('Files taken',fmt(tf))+dlk('Per 100 visits',per)+
+    dlk('Offers shown',fmt(ts))+dlk('Offers clicked',fmt(tc))+
+    dlk('Card CTR', ts>=20 ? Math.round((tc/ts)*100)+'%' : '–');
+  function dlk(l,v){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; }
+  sum.innerHTML = ts<20
+    ? 'Not enough offer cards yet to judge the card itself — come back when a few '
+      +'hundred have been shown.'
+    : 'Of every 100 people shown the card, '+Math.round((tc/ts)*100)+' went to a product.';
+
+  // ── the daily shape ──
+  var days=state.range.dlDaily||[];
+  var dh=document.getElementById('dlDays');
+  if(dh){
+    if(!days.length){ dh.innerHTML='<p class="muted">nothing in this window</p>'; }
+    else{
+      var dmax=1; days.forEach(function(x){ if(x.files>dmax) dmax=x.files; });
+      dh.innerHTML='<div style="display:flex;align-items:flex-end;gap:3px;height:110px;">'
+        +days.map(function(x){
+          var h=Math.max(2,Math.round((x.files/dmax)*100));
+          var lbl=x.d.slice(6,8)+'.'+x.d.slice(4,6);
+          return '<div class="tt" data-tip="'+lbl+' — '+x.files+' files, '+x.shown
+            +' cards shown, '+x.click+' clicked" style="flex:1 1 0;display:flex;'
+            +'flex-direction:column;justify-content:flex-end;height:100%;border:0;">'
+            +'<div style="background:var(--nana);height:'+h+'%;"></div></div>';
+        }).join('')+'</div>'
+        +'<div class="muted" style="margin-top:5px;">'+days[0].d.slice(6,8)+'.'+days[0].d.slice(4,6)
+        +' → '+days[days.length-1].d.slice(6,8)+'.'+days[days.length-1].d.slice(4,6)
+        +' · peak '+dmax+' in a day · tap a bar for the detail</div>';
+    }
+  }
+
+  // ── who is taking them (rides the eventMap already fetched, zero extra cost) ──
+  var geo=document.getElementById('dlGeo');
+  if(geo){
+    var em=state.range.eventMap||{}; var by={};
+    ['gif_download','png_download','wallpaper_download'].forEach(function(n){
+      var m=em[n]||{}; Object.keys(m).forEach(function(cc){ by[cc]=(by[cc]||0)+m[cc]; });
+    });
+    var list=Object.keys(by).map(function(cc){ return {cc:cc,v:by[cc]}; })
+      .sort(function(a,b){ return b.v-a.v; }).slice(0,10);
+    geo.innerHTML = list.length
+      ? list.map(function(r){ return '<tr><td>'+FLAG(r.cc)+' '+esc(r.cc)+'</td>'
+          +'<td class="num">'+fmt(r.v)+'</td></tr>'; }).join('')
+      : '<tr><td class="muted">no country data in this window</td></tr>';
+  }
   var tb2=document.getElementById('tabDl'); if(tb2) tb2.textContent=tf?fmt(tf):'';
   var max=D[0].files||D[0].shown||1;
   tb.innerHTML='<tr><th>Surface</th><th class="num">Took</th><th class="num">Saw</th>'
