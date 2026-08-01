@@ -1548,7 +1548,10 @@ export class ParkRoom {
       bl.v = Math.min(100, bl.v + BLOOM_WATER);
     } else if (url.pathname === '/garden/harvest') {
       if (!s) return json(payload({ err: 'empty' }), 404);
-      if (s.passShort !== short) return json({ err: 'not yours' }, 403);
+      // ⚠️ payload(), NOT a bare {err}: every other branch returns the garden
+      // with its error, and the client applies whatever comes back. A bare
+      // {err} blanked the beds on screen until the next poll.
+      if (s.passShort !== short) return json(payload({ err: 'not yours' }), 403);
       if (!isReady(s)) return json(payload({ err: 'still growing' }), 409);
       slots[i] = null;
     } else {

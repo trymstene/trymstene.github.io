@@ -1469,10 +1469,27 @@ export function initGarden(ctx) {
   }
   async function doHarvest(i) {
     const s = gSlots[i];
-    if (!s || !gMine(s) || !gReady(s)) return;
+    if (!s) return;
+    // ⚠️ NEVER FAIL SILENTLY ON A TAP. These two used to `return` without a
+    // word between them, which is exactly how Jade experienced it (1 Aug):
+    // "I can't harvest the plants I planted" — the game simply did not answer.
+    // ⚠⚠ AND THE OWNERSHIP ONE IS A REAL BUG UNDERNEATH: the garden keys plots
+    // on worldSid(), a PER-BROWSER random id, so a plant sown on your phone is
+    // not yours on your laptop. Until the world has one identity per person,
+    // the very least it can do is SAY so instead of ignoring the tap.
+    if (!gMine(s)) { toast('planted on another device — only the banana that sowed it can pick it', 4600); return; }
+    if (!gReady(s)) { toast('not ready yet — it grows on the days you water it'); return; }
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const res = await gFetch('/harvest', { slot: i, pass: worldSid() });
-    if (res && res.err) { applyGarden(res); toast(res.err === 'still growing' ? 'not quite ready yet' : 'the patch is bare'); return; }
+    if (res && res.err) {
+      // ⚠️ only apply a reply that actually CARRIES a garden — the 403 comes
+      // back as a bare {err} with no slots, and applying that blanked the beds.
+      if (res.slots) applyGarden(res);
+      toast(res.err === 'still growing' ? 'not quite ready yet'
+        : res.err === 'not yours' ? 'planted on another device — only the banana that sowed it can pick it'
+        : 'the patch is bare', 4600);
+      return;
+    }
     applyGarden(res);
     const before = gardenerLvl().lvl;
     passStat('garden_harvests', 1);      // the gardener level's ledger
