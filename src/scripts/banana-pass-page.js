@@ -294,6 +294,16 @@ async function init() {
     try { localStorage.setItem('bb-last', JSON.stringify({ hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, effect: outfit.effect, ...(outfit.c ? { c: outfit.c } : {}) })); } catch (e) {}
     passPush();
   }
+  // ⚠⚠ renderGear() OWNS #psGear ENTIRELY — it wipes the host, so anything
+  // rendered into that host by SOMEBODY ELSE is destroyed the next time any
+  // gear is toggled and never comes back.
+  // That was the bug Trym hit (1 Aug): the community items were appended by a
+  // separate one-shot `catalogReady.then(...)` block, so clicking "wear it" on
+  // the Glowstick made Wolf Tail, Pink shoes and Cute pink bow vanish — while
+  // the tab counter still said 6, because the count was right and the DOM was
+  // not. A refresh "fixed" it because the one-shot block ran again.
+  // ⚠️ So BOTH lists are rendered here. If a third source of gear ever appears,
+  // it renders HERE too — never by appending to the host from outside.
   function renderGear() {
     const host = el('psGear');
     host.innerHTML = '';
@@ -350,21 +360,20 @@ async function init() {
         });
       });
     });
+    renderMine(host);
+    setCount('cnt-gear', GEAR.filter(gearEarned).length + ownedCatalog().length);
   }
-  renderGear();
-  setCount('cnt-gear', GEAR.filter(gearEarned).length);
 
   // 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
   // ravers, the maker's credit riding each one. Wear-toggle drives the ONE
   // custom slot (outfit.c) through the same bb-last pipe as everything else.
-  const mineButtons = []; // catalog wear-buttons repaint together on toggle
-  catalogReady.then(() => {
+  // Empty until the catalog fetch lands; renderGear() runs again when it does.
+  const ownedCatalog = () => {
     const own = catOwnedP();
-    const mine = CATALOG.filter((it) => own[it.id]);
-    if (!mine.length) return;
-    setCount('cnt-gear', GEAR.filter(gearEarned).length + mine.length);
-    const host = el('psGear');
-    mine.forEach((it) => {
+    return CATALOG.filter((it) => own[it.id]);
+  };
+  function renderMine(host) {
+    ownedCatalog().forEach((it) => {
       const cell = document.createElement('div');
       cell.className = 'ps-gear__item ps-gear__item--earned';
       const cv = document.createElement('canvas');
@@ -384,20 +393,16 @@ async function init() {
       }
       const b = document.createElement('button');
       b.type = 'button';
-      const paint = () => {
-        const wearing = outfit.c === it.id;
-        b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
-        b.textContent = wearing ? '✓ wearing it' : 'wear it';
-      };
-      paint();
+      const wearing = outfit.c === it.id;
+      b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
+      b.textContent = wearing ? '✓ wearing it' : 'wear it';
       b.addEventListener('click', () => {
         outfit.c = outfit.c === it.id ? undefined : it.id;
         saveOutfit();
-        lastIdx = -1; // the signature banana redraws with/without it
-        mineButtons.forEach((fn) => fn());
+        lastIdx = -1;      // the signature banana redraws with/without it
+        renderGear();      // ⚠️ the SAME repaint as manifest gear — one path
         if (window.gtag) window.gtag('event', 'gear_toggle', { gear: it.id, on: outfit.c === it.id });
       });
-      mineButtons.push(paint);
       cell.appendChild(b);
       host.appendChild(cell);
       assetsReady().then(() => {
@@ -413,7 +418,10 @@ async function init() {
         setTimeout(draw, 1600);
       });
     });
-  });
+  }
+
+  renderGear();
+  catalogReady.then(renderGear);   // the catalog landed — repaint the whole closet
 
   initTabs();
 
