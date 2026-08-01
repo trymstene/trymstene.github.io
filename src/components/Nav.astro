@@ -53,4 +53,33 @@ import PixelIcon from './PixelIcon.astro';
       if (!ticking) { ticking = true; requestAnimationFrame(tick); }
     }, { passive: true });
   })();
+
+  // 🪪 THE PASS LINK BECOMES YOU. Once someone has a name (and, after one
+  // visit to /pass/, a face), the generic door reads as their own.
+  // ⚠️ NO ENGINE HERE. This nav is on every page; the avatar is a data URL
+  // baked by /pass/ where the compositor already runs. Reading it is free.
+  (() => {
+    const a = document.querySelector('.nav__pass');
+    if (!a) return;
+    let name = '', av = '';
+    try {
+      name = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 18);
+      av = localStorage.getItem('ps-avatar-v1') || '';
+    } catch (e) { return; }
+    if (!name && !av) return;            // no pass yet — leave the door generic
+    a.classList.add('nav__pass--me');
+    a.title = name ? name + ' — your banana pass' : 'Your banana pass';
+    a.textContent = '';
+    if (av) {
+      const im = new Image(22, 22);
+      im.className = 'nav__pface'; im.src = av; im.alt = '';
+      a.appendChild(im);
+    } else {
+      a.appendChild(document.createTextNode('🎫 '));
+    }
+    // ⚠️ textContent, never innerHTML — the name is user-typed
+    const sp = document.createElement('span');
+    sp.textContent = name || 'My Pass';
+    a.appendChild(sp);
+  })();
 </script>

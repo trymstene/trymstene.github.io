@@ -211,6 +211,16 @@ a { color: inherit; }
 .nav__group--banana a.nav__shop {
   background: var(--banana); color: var(--ink); border-top-color: var(--ink);
 }
+/* 🪪 the pass link once it is YOURS — face + name instead of a ticket.
+   The face is a data URL baked by /pass/; the nav never loads the compositor. */
+.nav__pass--me { display: inline-flex; align-items: center; gap: 0.42rem; }
+.nav__pface {
+  width: 22px; height: 22px; flex: 0 0 auto;
+  image-rendering: pixelated;   /* it is a 48px sprite shown at 22 */
+}
+.nav__pass--me span { max-width: 9ch; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }   /* ⚠️ a long name must never wrap the nav */
+
 .nav__backdrop {
   position: fixed;
   inset: 0;

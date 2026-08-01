@@ -444,7 +444,23 @@ async function init() {
     }
     requestAnimationFrame(tick);
   }
-  assetsReady().then(() => requestAnimationFrame(tick));
+  // 🪪 bake a 48px still for the TOPNAV. The nav is on every page and must
+  // never load the compositor (see the Forge split, 1 Aug) — so the avatar is
+  // drawn HERE, where the engine is already running, and merely displayed there.
+  function bakeAvatar() {
+    try {
+      const a = document.createElement('canvas');
+      a.width = 48; a.height = 48;
+      drawComposite(a.getContext('2d'), 48, 2, {
+        bg: 'transparent', captions: false,
+        hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras,
+        top: '', bottom: '', effect: 'none',   // no effect: it must read at 22px
+        custom: outfit.c ? catCustomP(outfit.c) : undefined,
+      });
+      localStorage.setItem('ps-avatar-v1', a.toDataURL('image/png'));
+    } catch (e) { /* quota or a tainted canvas — the nav just stays generic */ }
+  }
+  assetsReady().then(() => { requestAnimationFrame(tick); bakeAvatar(); });
 
   initShare(outfit, pass, {
     rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
