@@ -44,6 +44,12 @@ export const GEAR = [
     title: 'DJ Headphones', hint: 'Catch them on the dance floor at the rave — straight from Barty’s booth.' },
   { id: 'plushbanana', extra: 'plushbanana', stat: 'prize_plush',
     title: 'The Giant Plush Banana', hint: 'The pier’s grand prize — win it from the claw machine for 150 tickets.' },
+  // 🌱 GROWN, NEVER BOUGHT — the park garden's two keepable prizes. Without
+  // these rows a harvested flower was a number in a stat and nothing else.
+  { id: 'daisypin', extra: 'daisypin', stat: 'own_daisypin',
+    title: 'The Daisy Pin', hint: 'Grown, never bought — plant a daisy in the park garden and harvest it.' },
+  { id: 'midnighttulip', extra: 'midnighttulip', stat: 'own_midnighttulip',
+    title: 'The Midnight Tulip', hint: 'The rare one — five watered days in the park garden.' },
 ];
 
 // visitors before this date mint the OG patch automatically (set it to the

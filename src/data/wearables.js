@@ -133,7 +133,7 @@ export const WEARABLE_PACKS = {
       { id: 'flamingoring', label: 'Flamingo ring', phrase: 'a flamingo pool ring', art: 'flamingoring', anchor: 'chest', dy: 10, zone: 'body', price: 80, preview: 'stand' },
       { id: 'medal', label: 'Participation medal', phrase: 'a participation medal', art: 'medal', anchor: 'chest', dy: 11, zone: 'body', price: 35, preview: 'stand' },
       // 🌱 GARDEN HARVEST BATCH (P3b DRAFT — see the sunflower crown note)
-      { id: 'daisypin', label: 'Daisy pin', phrase: 'a daisy pinned to the chest', art: 'daisypin', anchor: 'chest', zone: 'body', dy: 9.5, preview: true,
+      { id: 'daisypin', label: 'Daisy pin', phrase: 'a daisy pinned to the chest', art: 'daisypin', anchor: 'chest', zone: 'body', dy: 9.5,
         earned: 'garden', stat: 'own_daisypin', lock: 'grown, never bought: plant a daisy in the park garden and harvest it' },
       // the FEET slot — footwear rides the feet anchor; single-select (one pair
       // at a time), so these behave as a mutually-exclusive group in the builder.
@@ -184,7 +184,7 @@ export const WEARABLE_PACKS = {
         lock: 'the pier’s grand prize: win the giant plush from the claw machine — 150 tickets' },
       { id: 'potato', label: 'A potato', phrase: 'a potato', art: 'potato', anchor: 'hand', grip: 4, hand: 'right', price: 10, preview: 'stand' },
       // 🌱 GARDEN HARVEST BATCH (P3b DRAFT — the rare one; see the crown note)
-      { id: 'midnighttulip', label: 'Midnight tulip', phrase: 'a midnight tulip', art: 'midnighttulip', anchor: 'hand', hand: 'left', grip: 8, preview: true,
+      { id: 'midnighttulip', label: 'Midnight tulip', phrase: 'a midnight tulip', art: 'midnighttulip', anchor: 'hand', hand: 'left', grip: 8,
         earned: 'garden', stat: 'own_midnighttulip', lock: 'grown, never bought: the rare midnight tulip — five days in the park garden' },
       { id: 'cactuspot', label: 'Cactus in a pot', phrase: 'a potted cactus', art: 'cactuspot', anchor: 'hand', grip: 13, hand: 'left', price: 40, preview: 'stand' },
       // earned, never given: unlocked by surviving 30 min at the rave (builder shows a locked door chip).
@@ -233,6 +233,13 @@ export const CLIENT_EXTRA_IDS = Object.values(WEARABLE_PACKS)
 // be lost across devices). A def is visible to this visitor when it's public
 // (no preview flag) or it's stand stock they've BOUGHT; `preview: true` desk
 // candidates stay dev-only. Safe under SSR/Node: no localStorage → not owned.
+// ⚠⚠ `preview: true` MEANS UNRELEASED — it hides the item from the builder and
+// the closet FOREVER, whatever else it carries. The park garden's two prizes
+// (daisypin, midnighttulip) shipped still carrying it, so harvesting a flower
+// wrote `own_<id>` for an item nothing on the site would ever render: the
+// garden's only keepable rewards did not exist. Trym spotted it 1 Aug.
+// An item with a real `earned:` gate must NOT have `preview: true` — the gate
+// is what hides it, and it hides it in a way that shows the DOOR.
 export function ownsWearable(d) {
   if (!d.preview) return true;
   if (d.preview !== 'stand') return false;

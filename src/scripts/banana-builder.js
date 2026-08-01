@@ -240,6 +240,21 @@ function init() {
   const setBody = (id) => { BODY_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
   if (el('bbBodyChips') && BODY_DEFS.length) {
     BODY_DEFS.forEach((d) => {
+      // ⚠️ THE BODY ROW NEEDS THE EARNED GATE TOO. It only ever held freebies
+      // (bow tie, scarf, chain…) so it never asked — and the moment the park's
+      // daisy pin became visible here, it was wearable without ever growing
+      // one. A locked souvenir is a DOOR, in every row that can hold one.
+      if (!earnedUnlocked(d)) {
+        const dr = earnDoor(d);
+        const a = document.createElement('a');
+        a.className = 'bb-chip bb-chip--icon bb-chip--locked';
+        a.href = dr.href; a.dataset.place = 'builder-locked';
+        a.innerHTML = SVG[d.front || d.art] || d.label;
+        a.title = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
+        a.setAttribute('aria-label', d.label + ' (locked — earn it at ' + dr.at + ')');
+        el('bbBodyChips').appendChild(a);
+        return;
+      }
       const b = document.createElement('button');
       b.className = 'bb-chip bb-chip--icon';
       b.innerHTML = SVG[d.front || d.art];
