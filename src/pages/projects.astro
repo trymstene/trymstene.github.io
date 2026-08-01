@@ -48,7 +48,15 @@ const ogDescription = "Satirical web experiments, fake municipalities, and a cou
         <div class="project-card__redacted">█ ANONYMOUS █<br>2013–2015</div>
         <div class="project-card__body">
           <h3>Sosiale Medier-Eliten</h3>
-          <p>An anonymous meme project skewering social-media gurus and communication advisors. The Norwegian press dubbed it "bransjens Charlie Hebdo."</p>
+          <p>
+            An anonymous meme project skewering social-media gurus and communication advisors.
+            The Norwegian press dubbed it "bransjens Charlie Hebdo."
+            {/* the card stays a div — it is a dead, anonymous project with nowhere
+                to visit, so the press link lives INSIDE rather than swallowing the
+                whole card the way the visitable projects do. */}
+            <a href="https://www.m24.no/magasin-satire-somed2016/etter-ett-ars-tenkepause-gjor-trym-stene-na-for-alvor-comeback-med-satire-og-someliten/126851"
+               target="_blank" rel="noopener" hreflang="no" lang="no">m24 wrote about it &#8599;</a>
+          </p>
           <span class="project-card__tag">Anonymous · 2013–2015</span>
         </div>
       </div>
