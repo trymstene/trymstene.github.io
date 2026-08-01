@@ -283,6 +283,11 @@
       gtag('event', 'gif_download', { file: href.split('/').pop() });
     } else if (href.indexOf('make-a-banana') > -1) {
       gtag('event', 'generator_click', { placement: place });
+    } else if (/^\/shop\/?($|[?#])/.test(href)) {
+      // 🛍 which door earns the shop its visits. `shop_door` already means
+      // "took a door out of the world to /shop/" — the nav is one of them, and
+      // this is how we find out whether making it yellow was worth it.
+      gtag('event', 'shop_door', { from: place });
     } else if (href.indexOf('buymeacoffee') > -1) {
       gtag('event', 'tip_click', { placement: place });
     } else if (href.indexOf('license-the-dancing-banana') > -1) {

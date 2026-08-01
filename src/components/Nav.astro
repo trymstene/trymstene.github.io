@@ -18,7 +18,10 @@ import PixelIcon from './PixelIcon.astro';
       {/* nav says "Banana Gallery" (the place); SEO metadata keeps "Banana
           Memes" (the query) — Trym's call, avoids gallery-vs-memes confusion */}
       <a href="/banana-memes/">Banana Gallery</a>
-      <a href="/shop/">Banana Shop</a>
+      {/* 🛍 the ONE nav item that asks for money — inverted so it reads as a
+          door rather than the seventh of seven equal words. Label shortened to
+          "Shop" (Trym, 1 Aug); the old rule was only ever "not Sticker Shop". */}
+      <a class="nav__shop" href="/shop/" data-place="nav">Shop</a>
       <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a>
     </div>
   </nav>

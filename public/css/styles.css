@@ -204,6 +204,13 @@ a { color: inherit; }
 .nav__group a { padding: 1rem 1.4rem; }
 .nav__group--banana { background: var(--ink); }
 .nav__group--banana a { color: var(--banana); border-top: 2px solid #333; }
+/* 🛍 THE SHOP IS INVERTED. Every other nav item is yellow on black; this one
+   is black on yellow, because it is the only link that asks for money and it
+   was reading as one word among seven. Same treatment in the mobile panel and
+   the desktop bar — a door people can find is worth more than a tidy row. */
+.nav__group--banana a.nav__shop {
+  background: var(--banana); color: var(--ink); border-top-color: var(--ink);
+}
 .nav__backdrop {
   position: fixed;
   inset: 0;
@@ -251,6 +258,11 @@ a { color: inherit; }
   .nav__group--banana { border: 3px solid var(--ink); }
   .nav__group--banana a { color: var(--banana); }
   .nav__group--banana a:hover { background: var(--banana); color: var(--ink); }
+  /* ⚠️ the shop already LOOKS like the others' hover state, so hovering it
+     flips the other way — without this it is the one link that never
+     acknowledges the pointer. */
+  .nav__group--banana a.nav__shop { background: var(--banana); color: var(--ink); }
+  .nav__group--banana a.nav__shop:hover { background: var(--ink); color: var(--banana); }
 }
 
 /* ---------- hero ---------- */
