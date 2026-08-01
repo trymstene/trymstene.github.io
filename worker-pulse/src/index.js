@@ -5,6 +5,7 @@
 // Wrong token = a plain 404, indistinguishable from nothing existing.
 // ═══════════════════════════════════════════════════════════════════════
 import { MAP_W, MAP_H, LAND_HEX, CENTROIDS } from './mapdata.js';
+import { analyse } from './analyst.js';
 
 const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 
@@ -397,6 +398,103 @@ async function apiReport(env) {
 }
 
 // ── the page ─────────────────────────────────────────────────────────────
+// ── /api/analyst — yesterday, JUDGED against the trailing week ────────
+// Three GA4 reports + two Search Console calls, normalised into per-day
+// series so analyst.js can ask "is this outside the normal wobble?" instead
+// of the far weaker "is this bigger than yesterday?".
+//
+// ⚠️ 8 days, not 7: the last row is yesterday and the first seven ARE the
+// baseline. A baseline that contains the day being judged flattens exactly
+// the spike you are trying to detect.
+const ANALYST_EVENTS = [
+  'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
+  'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
+  'shop_door', 'view_item', 'offer_shown', 'offer_click',
+  'rave_join', 'park_join', 'beach_multiplayer', 'forge_start', 'purchase',
+];
+
+async function gscRange(env, from, to) {
+  const tok = await gaToken(env);
+  const r = await fetch('https://searchconsole.googleapis.com/webmasters/v3/sites/'
+    + encodeURIComponent(env.GSC_SITE) + '/searchAnalytics/query', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startDate: from, endDate: to, dataState: 'all', rowLimit: 1 }),
+  });
+  if (!r.ok) throw new Error('gsc ' + r.status);
+  const d = await r.json();
+  return (d.rows && d.rows[0]) || null;
+}
+
+async function apiAnalyst(env) {
+  const now = new Date();
+  const osloDay = (offset) => new Date(now.getTime() - offset * 86400000)
+    .toLocaleDateString('en-CA', { timeZone: 'Europe/Oslo' });
+  const yDate = osloDay(1);
+  const hit = rspCache.get('analyst:' + yDate);
+  if (hit && Date.now() - hit.t < 1800000) return hit.data;
+
+  const window8 = [{ startDate: '8daysAgo', endDate: 'yesterday' }];
+  const resp = await gaPost(env, 'batchRunReports', {
+    requests: [
+      { dateRanges: window8, dimensions: [{ name: 'date' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'newUsers' },
+          { name: 'engagementRate' }, { name: 'totalRevenue' }, { name: 'transactions' }],
+        orderBys: [{ dimension: { dimensionName: 'date' } }], limit: 30 },
+      { dateRanges: window8, dimensions: [{ name: 'date' }, { name: 'eventName' }],
+        metrics: [{ name: 'eventCount' }], limit: 2000,
+        dimensionFilter: { filter: { fieldName: 'eventName',
+          inListFilter: { values: ANALYST_EVENTS } } } },
+      { dateRanges: [{ startDate: 'yesterday', endDate: 'yesterday' }],
+        dimensions: [{ name: 'sessionCampaignName' }],
+        metrics: [{ name: 'sessions' }, { name: 'engagedSessions' },
+          { name: 'userEngagementDuration' }], limit: 10,
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }] },
+    ],
+  });
+  const [dailyR, evR, campR] = resp.reports || [];
+
+  const days = rows(dailyR).map((r) => ({
+    d: dim(r, 0), sessions: met(r, 0), users: met(r, 1), newUsers: met(r, 2),
+    eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5),
+  }));
+  const order = days.map((x) => x.d);
+  const idx = {};
+  order.forEach((d, i) => { idx[d] = i; });
+
+  // one zero-filled series per event — ⚠️ a day with no rows must read 0,
+  // not vanish, or the baseline silently averages over fewer days than it says.
+  const events = {};
+  for (const n of ANALYST_EVENTS) events[n] = order.map(() => 0);
+  for (const r of rows(evR)) {
+    const i = idx[dim(r, 0)];
+    const n = dim(r, 1);
+    if (i === undefined || !events[n]) continue;
+    events[n][i] = met(r, 0);
+  }
+
+  const campaigns = rows(campR).map((r) => ({
+    name: dim(r, 0), sessions: met(r, 0), engaged: met(r, 1), secs: met(r, 2),
+  }));
+
+  let gsc = null; let gscBase = null;
+  try {
+    const [a, b] = await Promise.all([
+      gscRange(env, yDate, yDate),
+      gscRange(env, osloDay(8), osloDay(2)),
+    ]);
+    gsc = a;
+    if (b) gscBase = { clicks: b.clicks / 7, impressions: b.impressions / 7, position: b.position };
+  } catch (e) { /* GSC lags a day or two — the analyst just skips search */ }
+
+  const out = analyse({ days, events, campaigns, gsc, gscBase });
+  const nice = new Date(yDate + 'T12:00:00').toLocaleDateString('en-GB',
+    { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
+  const data = { ...out, date: yDate, niceDate: nice, generatedAt: Date.now() };
+  rspCache.set('analyst:' + yDate, { t: Date.now(), data });
+  return data;
+}
+
 function page() {
   const mapJson = JSON.stringify({ w: MAP_W, h: MAP_H, land: LAND_HEX, cent: CENTROIDS });
   return `<!doctype html>
@@ -409,6 +507,9 @@ function page() {
   :root{ --bg:#0d0b16; --panel:#171326; --line:#4a3f14; --ink:#f4eeff; --dim:#9a9070;
          --nana:#ffe135; --hot:#ff5d8f; --ok:#5ee08a; --bad:#ff6b6b; --cool:#5ec8e0; }
   *{ box-sizing:border-box; margin:0; padding:0; }
+  /* ⚠️ the hidden ATTRIBUTE is only a UA rule, so ANY author display: beats
+     it and the element never hides. Bitten on the pass, on HQ, and here. */
+  [hidden]{ display:none !important; }
   html{ -webkit-text-size-adjust:100%; }
   body{ background:var(--bg); color:var(--ink);
         font-family:'Courier New',ui-monospace,monospace; font-weight:700;
@@ -490,14 +591,85 @@ function page() {
         margin-bottom:12px; }
   .muted{ color:var(--dim); font-size:.7rem; }
   a{ color:var(--cool); }
+
+  /* ── 📌 THE STICKY LIVE BAR ─────────────────────────────────
+     Trym reads Pulse on his phone, on the move. The live numbers are the
+     whole reason he opens it, so they ride the scroll instead of sitting at
+     the top waiting to be scrolled back to.
+     ⚠️ the bar shrinks on scroll rather than wrapping — a wrapping flex row
+     eats half a 667px-tall screen the moment a number gains a digit. */
+  .head{ position:sticky; top:0; z-index:40; margin:-14px -14px 14px; padding:10px 14px;
+         background:rgba(13,11,22,.94); border-bottom:3px solid var(--nana);
+         box-shadow:0 6px 0 rgba(0,0,0,.45); align-items:center; }
+  @supports (backdrop-filter:blur(6px)){ .head{ backdrop-filter:blur(6px); } }
+  .head .brand{ display:flex; align-items:center; gap:10px; }
+  .head .grow{ flex:1 1 auto; }
+  .strip{ display:flex; align-items:center; gap:14px; overflow-x:auto; scrollbar-width:none;
+          -webkit-overflow-scrolling:touch; }
+  .strip::-webkit-scrollbar{ display:none; }
+  .ls{ display:flex; align-items:baseline; gap:5px; white-space:nowrap; }
+  .ls b{ font-size:1.35rem; color:var(--nana); font-variant-numeric:tabular-nums; }
+  .ls i{ font-style:normal; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase;
+         color:var(--dim); }
+  .ls.hot b{ color:var(--hot); text-shadow:0 0 10px rgba(255,93,143,.55); }
+  /* ⚠️ no CSS transition on the numbers — they repaint every 60s and a fade
+     would read as flicker rather than as freshness. */
+  .head.tight .brand h1, .head.tight .brand img{ display:none; }
+  .head.tight{ padding:6px 14px; }
+  .head.tight .ls b{ font-size:1.1rem; }
+  /* 📱 two rows, never three: title + button share the top line and the
+     numbers get the whole width below. Once .tight drops the title, the
+     numbers and the button collapse back onto one line. */
+  @media(max-width:640px){
+    .head{ gap:8px 10px; }
+    .brand{ order:1; } #rptBtn{ order:2; margin-left:auto; }
+    .strip{ order:3; flex:1 1 100%; }
+    .head.tight .strip{ flex:1 1 auto; }
+    .brand h1{ font-size:1rem; }
+    .brand img{ width:30px; }
+    .ls b{ font-size:1.2rem; }
+    #rptBtn{ font-size:.62rem; padding:6px 8px; }
+  }
+
+  /* ── 🗣 the analyst ────────────────────────────────────── */
+  .verdict{ font-size:.6rem; letter-spacing:.18em; text-transform:uppercase;
+            padding:3px 8px; border:2px solid currentColor; display:inline-block; }
+  .verdict.notable{ color:var(--hot); } .verdict.quiet{ color:var(--ok); }
+  .verdict.thin, .verdict.nobase{ color:var(--dim); }
+  .an-head{ font-size:1.05rem; line-height:1.35; color:var(--nana); margin:8px 0 10px;
+            text-wrap:balance; }
+  .an-body{ font-size:.82rem; line-height:1.62; margin-bottom:9px; color:#e6dfd0; }
+  .an-read{ display:flex; gap:9px; font-size:.8rem; line-height:1.55; margin-bottom:9px;
+            padding-left:2px; }
+  .an-read .i{ flex:0 0 auto; }
+  .an-rec{ border-left:4px solid var(--nana); padding:2px 0 2px 10px; margin-bottom:11px; }
+  .an-rec .t{ font-size:.82rem; line-height:1.55; }
+  .an-rec .b{ font-size:.64rem; color:var(--dim); margin-top:3px; letter-spacing:.04em; }
+  .an-rule{ font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--dim);
+            border-top:2px solid var(--line); padding-top:9px; margin:14px 0 9px; }
+  details.numbers summary{ cursor:pointer; font-size:.68rem; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--dim); padding:6px 0; list-style:none; }
+  details.numbers summary::-webkit-details-marker{ display:none; }
+  details.numbers summary::before{ content:'▸ '; }
+  details.numbers[open] summary::before{ content:'▾ '; }
+
+  /* funnels: the bars were reading as a wall. Shorter, tighter, one glance. */
+  .fstep{ margin-bottom:5px; }
+  .fbar{ height:11px; }
 </style></head><body>
-<div class="head">
-  <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" alt="">
-  <h1>BANANA PULSE</h1>
-  <span class="live-dot"></span>
-  <span><span class="bignum" id="liveTotal">…</span> <span class="muted">on the site right now</span></span>
-  <canvas id="spark" width="120" height="26" style="image-rendering:pixelated;"></canvas>
-  <button class="chip" id="rptBtn" style="position:relative;">🍌📊 MORNING REPORT<span id="rptDot" hidden
+<div class="head" id="topbar">
+  <div class="brand">
+    <img src="https://trymstene.com/assets/dancing-banana-transparent.gif" alt="">
+    <h1>BANANA PULSE</h1>
+  </div>
+  <div class="strip grow">
+    <span class="ls"><span class="live-dot"></span>&nbsp;<b id="liveTotal">…</b><i>now</i></span>
+    <span class="ls"><b id="liveWorld">…</b><i>in world</i></span>
+    <span class="ls"><b id="liveToday">…</b><i>today</i></span>
+    <span class="ls hot" id="lsHot" hidden><b id="liveHot">0</b><i>near buying</i></span>
+    <canvas id="spark" width="120" height="26" style="image-rendering:pixelated;flex:0 0 auto;"></canvas>
+  </div>
+  <button class="chip" id="rptBtn" style="position:relative;flex:0 0 auto;">🍌📊 THE ANALYST<span id="rptDot" hidden
     style="position:absolute;top:-5px;right:-5px;width:11px;height:11px;background:var(--hot);
     border:2px solid #000;border-radius:0;box-shadow:0 0 8px var(--hot);"></span></button>
 </div>
@@ -515,11 +687,11 @@ function page() {
     </div>
     <div class="panel" style="margin-bottom:40px;">
       <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
-        <h2 style="margin-bottom:4px;">📊 Yesterday, <span id="rptDate">…</span></h2>
+        <h2 style="margin-bottom:4px;">🗣 The read — <span id="rptDate">…</span></h2>
         <button class="chip" id="rptClose" style="min-width:44px;min-height:38px;font-size:1rem;">✕</button>
       </div>
       <div id="rptBody" style="max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <p class="muted">the analyst banana is crunching…</p>
+        <p class="muted">the analyst banana is reading the week…</p>
       </div>
     </div>
   </div>
@@ -1160,9 +1332,19 @@ function tbl(el, rows){
     return '<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'</td></tr>'; }).join('');
 }
 var lastPurch=-1;
+// which live pageviews are IN the world (the areas, not the flat pages).
+// ⚠️ a plain list, NOT a regex: this whole page is a template literal, so a
+// regex literal loses its backslashes on the way out and throws at boot.
+var WORLD_AREAS=['/rave/','/park/','/beach/','/banana-stand/','/banana-world/'];
+function inWorld(path){
+  for(var i=0;i<WORLD_AREAS.length;i++){ if(path.indexOf(WORLD_AREAS[i])===0) return true; }
+  return false;
+}
 function renderLive(){
   var L=state.live; if(!L) return;
   document.getElementById('liveTotal').textContent = L.total;
+  var w=0; (L.pages||[]).forEach(function(p){ if(inWorld(p.page)) w+=p.v; });
+  document.getElementById('liveWorld').textContent = w;
   drawSpark();
   renderDevices(); // refresh the "on now" per device
   tbl(document.getElementById('livePages'), L.pages.map(function(p){ return [esc(p.page), p.v]; }));
@@ -1179,6 +1361,10 @@ function renderLive(){
     if(hot[cc]>=2 && msgs.length<4){ msgs.push(FLAG(cc)+' someone '+HOTTXT[hot[cc]]);
       if(hot[cc]>=4) anyGold=true; }
   });
+  var nearN=0; Object.keys(hot).forEach(function(cc){ if(hot[cc]>=2) nearN++; });
+  var lsHot=document.getElementById('lsHot');
+  lsHot.hidden = !nearN;
+  document.getElementById('liveHot').textContent = nearN;
   var hl=document.getElementById('hotLine');
   if(msgs.length){ hl.style.display='';
     hl.className='hotline'+(anyGold?' gold':'');
@@ -1428,15 +1614,50 @@ document.querySelectorAll('.chip[data-n]').forEach(function(c){
     wrap.style.display='flex';
     try{ localStorage.setItem('pulse-rpt-read', osloYesterday()); }catch(e){}
     refreshDot();
-    api('/api/report').then(function(r){
-      document.getElementById('rptDate').textContent=r.niceDate;
-      document.getElementById('rptBody').innerHTML =
-        r.lines.map(function(l){ return '<p style="margin:0 0 9px;font-size:.85rem;line-height:1.5;">'+l+'</p>'; }).join('')
-        + '<div style="border-top:2px solid var(--line);margin:12px 0 9px;"></div>'
-        + r.notes.map(function(n){ return '<p style="margin:0 0 9px;font-size:.85rem;line-height:1.5;color:var(--nana);">⭐ '+n+'</p>'; }).join('')
-        + '<p class="muted" style="margin-top:10px;">the analyst banana · numbers can still settle through the morning (GA4 processing lag)</p>';
+    // 🗣 the ANALYST first, the table of numbers second and folded away.
+    // Trym can read a number off the dashboard behind this panel; what he
+    // cannot get there is the verdict, so the verdict gets the daylight.
+    var VLABEL={ notable:'something happened', quiet:'nothing needed', thin:'too small to call',
+                 'no-baseline':'not enough history' };
+    Promise.all([ api('/api/analyst'), api('/api/report').catch(function(){ return null; }) ])
+      .then(function(res){
+      var a=res[0], r=res[1];
+      document.getElementById('rptDate').textContent=a.niceDate;
+      var h='<span class="verdict '+(a.verdict==='no-baseline'?'nobase':a.verdict)+'">'
+        +(VLABEL[a.verdict]||a.verdict)+'</span>'
+        + '<div class="an-head">'+esc(a.headline)+'</div>'
+        + (a.body||[]).map(function(t){ return '<p class="an-body">'+esc(t)+'</p>'; }).join('');
+      if((a.reads||[]).length){
+        h += '<div class="an-rule">'+(a.verdict==='notable'?'what stands out':'steady, for the record')+'</div>'
+          + a.reads.map(function(x){
+              return '<div class="an-read"><span class="i">'+x.icon+'</span><span>'+esc(x.text)+'</span></div>';
+            }).join('');
+      }
+      if((a.recs||[]).length){
+        h += '<div class="an-rule">what I would do</div>'
+          + a.recs.map(function(x){
+              return '<div class="an-rec"><div class="t">'+esc(x.text)+'</div>'
+                + '<div class="b">because: '+esc(x.because)+'</div></div>';
+            }).join('');
+      }
+      h += '<div class="an-rule">how much to trust this</div>'
+        + '<p class="an-body" style="margin-bottom:4px;">Sample: '+esc(a.confidence||'')+'.</p>'
+        + '<p class="muted">'
+        + (a.regime
+           ? 'Because the level changed mid-week, yesterday is judged against the THREE days '
+             + 'since the step, not the full seven — comparing it to the old level would just '
+             + 'repeat "down 80%" every day for a week.'
+           : 'Yesterday is judged against the seven days before it, not against the day before '
+             + '— one bad Sunday should not read as a crash.')
+        + ' Numbers can still settle through the morning (GA4 processing lag).</p>';
+      if(r && r.lines){
+        h += '<details class="numbers" style="margin-top:12px;"><summary>the numbers behind it</summary>'
+          + r.lines.map(function(l){ return '<p style="margin:0 0 8px;font-size:.78rem;line-height:1.5;">'+l+'</p>'; }).join('')
+          + '</details>';
+      }
+      document.getElementById('rptBody').innerHTML=h;
     }).catch(function(e){
-      document.getElementById('rptBody').innerHTML='<p class="muted">⚠ '+friendly(e,'report')+'</p>';
+      document.getElementById('rptBody').innerHTML='<p class="muted">⚠ '+friendly(e,'the analyst')+'</p>';
     });
   };
   document.getElementById('rptClose').onclick=function(){ wrap.style.display='none'; };
@@ -1454,6 +1675,25 @@ document.addEventListener('click', function(e){
 
 loadLive(); loadRange();
 setInterval(loadLive, 60000);
+function loadToday(){
+  if(document.hidden) return;
+  api('/api/range?from=today&to=today').then(function(d){
+    document.getElementById('liveToday').textContent = d.kpis.sessions;
+  }).catch(function(){ /* the strip just keeps its last number */ });
+}
+loadToday(); setInterval(loadToday, 300000);
+
+// the bar tightens once you are past the fold — on a phone that is the
+// difference between a live readout and a banner in the way.
+(function(){
+  var bar=document.getElementById('topbar'), on=false;
+  function sync(){
+    var want = scrollY > 90;
+    if(want!==on){ on=want; bar.classList.toggle('tight', on); }
+  }
+  addEventListener('scroll', sync, {passive:true});
+  sync(); // a reload that restores the scroll position starts tight, not tall
+})();
 setInterval(function(){ if(state.to==='today' && !document.hidden) loadRange(); }, 300000);
 document.addEventListener('visibilitychange', function(){
   if(!document.hidden){ loadLive(); if(state.to==='today') loadRange(); }
@@ -1471,6 +1711,11 @@ export default {
     try {
       if (url.pathname === '/api/live') {
         return new Response(JSON.stringify(await apiLive(env)), {
+          headers: noRobots({ 'Content-Type': 'application/json' }),
+        });
+      }
+      if (url.pathname === '/api/analyst') {
+        return new Response(JSON.stringify(await apiAnalyst(env)), {
           headers: noRobots({ 'Content-Type': 'application/json' }),
         });
       }
