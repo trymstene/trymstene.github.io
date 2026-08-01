@@ -1615,11 +1615,11 @@ if HAVE_PACK:
     except Exception as e:
         print('  leaf pile failed', e)
 
-# ---- 🐦 BIRDHOUSES — 4 bare posts baked, houses are client overlays --------
+# ---- 🐦 BIRDHOUSES — 5 bare posts baked, houses are client overlays --------
 # The pack's Garden bird houses (48x96: house y0-51, pole y52-71, base
 # y72-95). The bare post = the pole+base rows with their own outline; the
 # built overlay = the FULL sprite at the same box, so it covers the baked
-# post exactly. Four colours, one per post (client picks by spot index).
+# post exactly. Four house colours cycle across the posts (client: 1 + i%4).
 BIRD_SPOTS = []
 if HAVE_PACK:
     try:
@@ -1679,7 +1679,10 @@ if HAVE_PACK:
     # near the tree clumps, visible from the paths — each post walks a short
     # candidate spiral from its wanted seat until post_clear passes (trees are
     # deterministic, so the resolved coords are stable run to run)
-    for wx_, wy_ in ((1060, 390), (1548, 302), (1076, 1000), (2470, 706)):
+    # ⚠️ APPEND ONLY. The worker stores built houses keyed by SPOT INDEX, so
+    # inserting a seat would move somebody's birdhouse to another post.
+    # (300, 170) = Trym, 1 Aug: "top left corner by the pond".
+    for wx_, wy_ in ((1060, 390), (1548, 302), (1076, 1000), (2470, 706), (300, 170)):
         seat = None
         for ox, oy in ((0, 0), (18, 0), (-18, 0), (0, 18), (0, -18), (26, 14),
                        (-26, 14), (26, -14), (-26, -14), (40, 0), (-40, 0),
@@ -1694,7 +1697,7 @@ if HAVE_PACK:
         assert seat, 'no clear seat for bird post near (%d,%d)' % (wx_, wy_)
         place('bh-post', seat[0], seat[1], solid=('circle', 12), sh=0.2)
         BIRD_SPOTS.append(seat)
-    assert len(BIRD_SPOTS) == 4
+    assert len(BIRD_SPOTS) == 5
     print('bird posts: %s' % BIRD_SPOTS)
 
 # ---- 🐦 THE BIRDS — the Garden Birds pack ----------------------------------

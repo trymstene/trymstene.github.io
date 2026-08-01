@@ -843,7 +843,7 @@ export function initGarden(ctx) {
   }
 
   // ---- 🐦 BIRDHOUSES — build once (30 🪙), stock daily --------------------
-  // 4 bare posts baked by the generator (BIRD_SPOTS); a built house is a
+  // bare posts baked by the generator (BIRD_SPOTS); a built house is a
   // client overlay that covers its post exactly, with the builder's name on
   // the tap card. Stocked in the last 24h = 2-3 birds flutter around it and
   // the house feeds park health (+0.04/h, server-side).
