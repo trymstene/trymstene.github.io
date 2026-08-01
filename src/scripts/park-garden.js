@@ -881,9 +881,11 @@ export function initGarden(ctx) {
   function openPostSheet(i) {
     const bal = coinBal();
     gardenBody.innerHTML = '<h2>a bare post</h2>'
-      + '<p class="pk-panel__sub">raise a birdhouse here — your name on it forever. '
-      + 'any banana can stock it once a day, and a stocked house keeps 2-3 birds '
+      + '<p class="pk-panel__sub">raise a birdhouse here and your name goes on it. '
+      + 'any banana can stock it once a day — a stocked house keeps 2-3 birds '
       + 'around and feeds the park’s health.</p>'
+      + '<p class="pk-seedpoor">⛈ a storm takes every house in the park down and '
+      + 'frees the posts again — nothing here is forever.</p>'
       + '<button class="pk-seedrow" type="button" id="pkBhBuild"'
       + (bal < BH_PRICE ? ' disabled' : '') + '>'
       + '<i>🐦</i><span class="pk-seedrow__txt"><b>raise a birdhouse</b>'
@@ -936,7 +938,8 @@ export function initGarden(ctx) {
       + '<p class="pk-stickerrow">' + makerSticker(h.name, mine, 'built') + '</p>'
       + '<p class="pk-panel__sub">' + (fed
         ? 'the birds are in — and the house is feeding the park’s health.'
-        : 'quiet up there — nobody has stocked it in a day, so the birds moved out.')
+        : 'quiet up there — nobody has stocked it in a day, so the birds moved out. '
+          + 'stock it and they come straight back.')
       + '</p>'
       + meterRow('🌾', 'seed in the feeder', leftOf(h.lastStock), 'empty', 'seed')
       + tallyBtn('pkWho', '🌾', h.stockers || 0, h.slast)
