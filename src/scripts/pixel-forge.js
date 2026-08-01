@@ -1082,6 +1082,25 @@ function init() {
   }
   // your drawing → an engine custom accessory: the offset from the nearest body
   // part + a scale so it renders the exact size you drew.
+  // ⭐ THE SPOT IS A SUGGESTION, NOT A VERDICT (Jade, 1 Aug 2026). She was
+  // drawing a Phantom of the Opera mask: "if I go a little too far over onto
+  // the banana's left eye, it gets counted as body gear".
+  // ⚠️ AND IT IS THE CENTROID THAT DECIDES, not the lowest pixel — the anchor
+  // is whichever is nearest the drawing's BOUNDING-BOX CENTRE. A mask that
+  // hangs below the eyeline drags that centre down into the chest zone even
+  // though every human looking at it sees a mask. No amount of tuning fixes
+  // that in general: where a thing goes is authorial intent, and the drawing
+  // cannot always express it.
+  // So: `wearPick` is the override. null = trust the suggestion.
+  // ⚠️ ox/oy are measured FROM THE CHOSEN ANCHOR, so overriding re-measures
+  // them — the art stays exactly where it was drawn on the banana, it just
+  // rides a different part. Skip that and every override teleports the item.
+  let wearPick = null;
+  const WEAR_SPOTS = [['head', null, 'head'], ['face', null, 'face'], ['chest', null, 'body'],
+                      ['hand', 'left', 'left hand'], ['hand', 'right', 'right hand'],
+                      ['feet', null, 'feet']];
+  const pickKey = (k, h) => k + (h || '');
+
   function computeWear() {
     const out = forgeGridToSVG(frame(), state.w, state.h, pal());
     if (!out) return null;
@@ -1116,7 +1135,15 @@ function init() {
     // share-based: a quick two-hand doodle (8 px, 50/50) must trip it, a wide
     // sombrero whose brim-edge strays a few px into a hand zone must not
     const spread = n >= 6 && (n - topVotes) >= Math.max(3, n * 0.25);
-    return { art: out.svg, anchor: best[0], hand: best[1] || undefined, spread, ox: (tl.x - bestAp.x) / ENG_PX, oy: (tl.y - bestAp.y) / ENG_PX, scale: ENG_FH / (state.w * ENG_PX * ENG_HFRAC) };
+    const auto = [best[0], best[1]];
+    if (wearPick) {                       // the maker overruled the guess
+      const f = WEAR_SPOTS.find((w) => pickKey(w[0], w[1]) === wearPick);
+      if (f) { best = [f[0], f[1]]; bestAp = wearAnchor(2, f[0], f[1]); }
+    }
+    return { art: out.svg, anchor: best[0], hand: best[1] || undefined, spread,
+      auto: pickKey(auto[0], auto[1]), picked: !!wearPick,
+      ox: (tl.x - bestAp.x) / ENG_PX, oy: (tl.y - bestAp.y) / ENG_PX,
+      scale: ENG_FH / (state.w * ENG_PX * ENG_HFRAC) };
   }
   const RIDE_LABEL = { head: 'head', face: 'face', chest: 'body', feet: 'feet' };
   // the status toast pinned to the top of the canvas. The "draw your item"
@@ -1132,24 +1159,55 @@ function init() {
     if (!sticky) toastTimer = setTimeout(() => { const x = el('fgCanvasToast'); if (x) x.classList.remove('is-on'); }, 1900);
   }
   function hideToast() { const t = el('fgCanvasToast'); if (t) t.classList.remove('is-on'); clearTimeout(toastTimer); }
+  // the override row: six chips, the suggested one flagged so a maker can see
+  // what the drawing said before they disagree with it
+  function paintSpotPicker() {
+    const row = el('fgItemSpot');
+    if (!row) return;
+    const c = computeWear();
+    row.hidden = mode !== 'items' || !c;
+    if (row.hidden) return;
+    const cur = wearPick || (c.auto || 'head');
+    row.innerHTML = '<span class="fg-spotlabel">rides the</span>' + WEAR_SPOTS.map(([k, h, lab]) => {
+      const key = pickKey(k, h);
+      return '<button type="button" class="fg-spot' + (key === cur ? ' is-on' : '')
+        + '" data-spot="' + key + '">' + lab
+        + (key === c.auto ? '<i class="fg-spot__auto" title="what the drawing suggests">✦</i>' : '')
+        + '</button>';
+    }).join('');
+    row.querySelectorAll('.fg-spot').forEach((b2) => {
+      b2.onclick = () => {
+        // tapping the suggested one again clears the override entirely
+        wearPick = (b2.dataset.spot === wearPick) ? null : b2.dataset.spot;
+        lastRide = '__init__';
+        paintSpotPicker();
+        updateItemsStatus();
+        refreshAll();
+        track('forge_item_spot', { spot: wearPick || 'auto' });
+      };
+    });
+  }
+
   function updateItemsStatus() {
-    if (mode !== 'items') { hideToast(); lastRide = '__init__'; return; }
+    if (mode !== 'items') { hideToast(); lastRide = '__init__'; paintSpotPicker(); return; }
+    paintSpotPicker();
     const c = computeWear();
     const key = !c ? '__empty__' : (c.anchor + (c.hand || '') + (c.spread ? '!' : ''));
     if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
     lastRide = key;
     if (!c) { showToast('draw your item on the banana, where it goes', true, 'edit'); return; }
-    if (c.spread) { // spans zones that move independently — teach, don't block
+    if (c.spread && !c.picked) { // spans zones that move independently — teach, don't block
       showToast('an item rides ONE spot — want both hands? make two items 🍌', true, 'warning');
       return;
     }
     const label = c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor);
-    showToast('rides the ' + label, false, 'check');
+    showToast('rides the ' + label + (c.picked ? ' — your choice' : ''), false, 'check');
   }
   // each mode keeps its OWN drawing — Emoji (frames) and Items (one item) are
   // separate documents, so a banana loaded in Emoji never leaks into Items.
   const modeDocs = { emoji: null, items: null };
   function freshDoc() {
+    wearPick = null;                 // the override belongs to the drawing, not the session
     const n = mode === 'items' ? ITEM_GRID : 32; // items draw at banana resolution
     state.w = n; state.h = n; state.frames = [new Uint8Array(n * n)]; state.delays = [120]; state.cur = 0; state.cpal = [];
   }

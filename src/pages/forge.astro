@@ -270,6 +270,23 @@ const faqLD = {
     .fg-doors a:hover b { text-decoration: underline; }
     .fg-doors b { display: block; margin-bottom: 0.25rem; }
     .fg-doors span { font-size: 0.83rem; opacity: 0.75; line-height: 1.5; display: block; }
+    /* the spot picker — chips that wrap, because the side panel is 300px and a
+       six-item row never fits on one line there */
+    .fg-spots {
+      display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center;
+      margin-bottom: 0.6rem;
+    }
+    .fg-spots[hidden] { display: none; }
+    .fg-spotlabel { font-size: 0.78rem; font-weight: 800; opacity: 0.6; margin-right: 0.15rem; }
+    .fg-spot {
+      appearance: none; font: inherit; font-size: 0.78rem; font-weight: 800;
+      padding: 0.28rem 0.5rem; border: 2px solid var(--ink); background: var(--paper);
+      color: var(--ink); cursor: pointer; border-radius: 2px; line-height: 1.1;
+      display: inline-flex; align-items: center; gap: 0.22rem; white-space: nowrap;
+    }
+    .fg-spot:hover { transform: translateY(-1px); }
+    .fg-spot.is-on { background: var(--banana, #ffe135); box-shadow: 2px 2px 0 var(--ink); }
+    .fg-spot__auto { font-style: normal; font-size: 0.7em; opacity: 0.55; }
     .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
     .fg-signrow[hidden] { display: none; }
     .fg-signrow input {
@@ -413,6 +430,13 @@ const faqLD = {
         </details>
 
         <div class="fg-itemsonly fg-itemsbar">
+          <!-- ⭐ THE SPOT PICKER. The drawing SUGGESTS where an item rides (nearest
+               anchor to its centre) and that suggestion is right almost always —
+               but a Phantom mask that hangs past the eyeline pulls its own centre
+               into the chest zone and gets called body gear (Jade, 1 Aug). Where a
+               thing goes is authorial intent; the maker gets the last word. ✦ marks
+               what the drawing thinks, so disagreeing is informed. -->
+          <div class="fg-spots" id="fgItemSpot" hidden aria-label="Where this item rides"></div>
           <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play the dance</button>
           <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
           <button class="btn btn--light" id="fgItemsSubmit" title="Send it to the banana guy — approved items drop at the rave with your name on them"><PixelArtIcon name="upload" size="18px" /> Submit to the club</button>
