@@ -368,8 +368,14 @@ export function wireDownloads(key, over, scope) {
     const o = { ...(OFFERS[key] || OFFERS.yours), ...(over || {}) };
     // a beat of air: let the browser start the file before anything appears
     setTimeout(() => {
-      const shown = offerAfterDownload(o);
-      if (shown && window.gtag) window.gtag('event', 'offer_shown', { offer: key });
+      // ⚠️ `from`, NOT `offer` — the builder has fired offer_shown/offer_click
+      // with `from` since 30 Jul, and two names for one dimension would split
+      // the funnel in Pulse and quietly halve every number.
+      const shown = offerAfterDownload({
+        ...o,
+        onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: key }); },
+      });
+      if (shown && window.gtag) window.gtag('event', 'offer_shown', { from: key });
     }, 700);
   });
 }

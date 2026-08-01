@@ -772,7 +772,7 @@ var EV_EXPLAIN = {
   rave_splat:'got splatted by a popper shot',
   rave_sit:'sat down on their own bar stool (a five-nightshift regular)',
   rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one; ad=sticker is the merch slide that paints THEIR banana as vinyl)',
-  offer_shown:'saw the make-it-real card 🛍 — their own banana rendered as a real sticker. from = where it appeared: download_gif / download_meme / download_png (right after a download, once per session) or pass_overview (bottom of the pass)',
+  offer_shown:'saw the make-it-real card 🛍. from = WHICH MOMENT, and since 1 Aug that is every download on the site, not just the builder: download_gif / download_meme / download_png (the builder), original + originalTee (the 1999 GIF and PBJ), wallpaper, emoji, gallery (a meme page, links to the builder on THAT banana), remix (the official shop — community GIFs are not ours to sell), the six international pages send original too in their own language, and pass_overview. ⚠️ ONCE PER SESSION GLOBALLY, so this counts PEOPLE OFFERED, never impressions',
   offer_click:'took the make-it-real offer 🛍 and went to the custom product page with their design attached. Against offer_shown this is THE number that says whether asking at the moment of the download works (from = same places)',
   rave_exit_stand:'left the club through the EXIT by the bar → the banana stand (via = door or field-guide link)',
   stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
