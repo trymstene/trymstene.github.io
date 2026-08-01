@@ -7,7 +7,11 @@
 //
 // CLIENT-ONLY module (renders thumbnails via the engine — never import from
 // Astro frontmatter).
-import { drawComposite, assetsReady } from './banana-engine.js';
+// ⚡ NO STATIC ENGINE IMPORT. Only renderShelf() draws bananas; shelfAdd /
+// shelfList / shelfRemove are pure storage. A static import here dragged the
+// 200K sprite compositor into every page that merely SAVES something — which
+// is what silently defeated the Forge's own lazy-loading. It is fetched inside
+// renderShelf, which was already async.
 import { forgeParse, forgeDrawFrame } from './forge-format.js';
 import { passPush } from './banana-pass.js';
 
@@ -161,6 +165,7 @@ function outfitFrom(params) {
 // lives on the pass).
 export async function renderShelf(host, { onPick, limit, kinds, emptyMsg } = {}) {
   if (!host) return;
+  const { drawComposite, assetsReady } = await import('./banana-engine.js');
   await assetsReady();
   let list = read();
   if (kinds) list = list.filter((c) => kinds.includes(c.kind)); // one shelf per KIND (bananas / items / emotes)

@@ -17,7 +17,12 @@ import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_
 import { BANANA_REMIX } from '../data/banana-remix.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 // ITEMS WORKSHOP mode — the dancing banana wears what you draw, in place (WYSIWYG)
-import { drawComposite as engineDraw, assetsReady as engineReady, NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE, wearAnchor, FW as ENG_FW, FH as ENG_FH, FRAME_H_FRAC as ENG_HFRAC, FRAME_TOP_FRAC as ENG_TFRAC, PX as ENG_PX } from '../lib/banana-engine.js';
+// ⚡ THE BANANA COMPOSITOR IS LAZY. Only the Items Workshop needs it, but a
+// static import made every visitor arriving from “emoji maker gif” download the
+// whole sprite engine AND kick off its asset fetch on boot, for a feature they
+// never open. Geometry (seven numbers) stays static; the engine loads on the
+// first step into items mode.
+import { NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE, FW as ENG_FW, FH as ENG_FH, FRAME_H_FRAC as ENG_HFRAC, FRAME_TOP_FRAC as ENG_TFRAC, PX as ENG_PX } from '../lib/banana-geo.js';
 
 const el = (id) => document.getElementById(id);
 const stage = el('fgCanvas');
@@ -210,8 +215,11 @@ function init() {
     }
     if (state.onion && state.cur > 0 && mode !== 'items') drawGridInto(ctx, state.frames[state.cur - 1], cell, 0.3);
     if (mode === 'items' && itemsReady) { // the banana IS the canvas here — draw the item on it
-      const bl = bananaLayer(); ctx.globalAlpha = 0.5; ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(bl, (stage.width - bl.width) / 2, (stage.height - bl.height) / 2); ctx.globalAlpha = 1;
+      const bl = bananaLayer();
+      if (bl) {
+        ctx.globalAlpha = 0.5; ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(bl, (stage.width - bl.width) / 2, (stage.height - bl.height) / 2); ctx.globalAlpha = 1;
+      }
     }
     drawGridInto(ctx, frame(), cell, 1);
     if (mode === 'items') updateItemsStatus();
@@ -369,7 +377,8 @@ function init() {
   function drawPlayFrame() {
     ctx.clearRect(0, 0, stage.width, stage.height);
     if (mode === 'items') { // dance the BANANA wearing what you drew — the preview IS this canvas
-      engineDraw(ctx, stage.width, playIdx % ENG_NFRAMES, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: computeWear() || undefined });
+      if (!itemsReady) return;   // the banana has not arrived yet; the canvas stays clear
+      ENG.drawComposite(ctx, stage.width, playIdx % ENG_NFRAMES, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: computeWear() || undefined });
       return;
     }
     for (let y = 0; y < state.h; y++) for (let x = 0; x < state.w; x++) {
@@ -1069,14 +1078,26 @@ function init() {
   // Play dances it wearing what you drew. Placement is read from WHERE you drew
   // (offset from the nearest body part), so it can never drift from the drawing.
   let mode = 'emoji';                         // 'emoji' | 'items'
-  let itemsReady = false; engineReady().then(() => { itemsReady = true; if (mode === 'items') refreshAll(); });
+  // ⚠️ itemsReady now means BOTH “module fetched” and “sprites decoded”. Every
+  // synchronous ENG.* call below sits behind it — with a static import the
+  // module was simply always there; now it is not until someone asks for it.
+  let itemsReady = false, ENG = null, engLoading = false;
+  function ensureEngine() {
+    if (engLoading) return;
+    engLoading = true;
+    import('../lib/banana-engine.js')
+      .then((m) => { ENG = m; return m.assetsReady(); })
+      .then(() => { itemsReady = true; if (mode === 'items') refreshAll(); })
+      .catch(() => { engLoading = false; });   // let a flaky network be retried
+  }
   let underlayCv = null, underlayW = 0;
 
   function bananaLayer() {                     // reference banana (frame 2), cached at canvas size
+    if (!itemsReady) return null;
     const S = Math.min(stage.width, stage.height);
     if (!underlayCv || underlayW !== S) {
       underlayCv = document.createElement('canvas'); underlayCv.width = underlayCv.height = S; underlayW = S;
-      engineDraw(underlayCv.getContext('2d'), S, 2, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+      ENG.drawComposite(underlayCv.getContext('2d'), S, 2, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
     }
     return underlayCv;
   }
@@ -1102,6 +1123,7 @@ function init() {
   const pickKey = (k, h) => k + (h || '');
 
   function computeWear() {
+    if (!itemsReady) return null;   // anchors come from the engine; no engine, no placement
     const out = forgeGridToSVG(frame(), state.w, state.h, pal());
     if (!out) return null;
     const S = Math.min(stage.width, stage.height);
@@ -1111,8 +1133,8 @@ function init() {
     const center = toSprite((out.x + out.w / 2) * cellPx, (out.y + out.h / 2) * cellPx);
     const tl = toSprite(out.x * cellPx, out.y * cellPx);
     const cands = [['head', null], ['face', null], ['chest', null], ['hand', 'left'], ['hand', 'right'], ['feet', null]];
-    let best = ['head', null], bestD = Infinity, bestAp = wearAnchor(2, 'head');
-    for (const [k, h] of cands) { const ap = wearAnchor(2, k, h); const d = (ap.x - center.x) ** 2 + (ap.y - center.y) ** 2; if (d < bestD) { bestD = d; best = [k, h]; bestAp = ap; } }
+    let best = ['head', null], bestD = Infinity, bestAp = ENG.wearAnchor(2, 'head');
+    for (const [k, h] of cands) { const ap = ENG.wearAnchor(2, k, h); const d = (ap.x - center.x) ** 2 + (ap.y - center.y) ** 2; if (d < bestD) { bestD = d; best = [k, h]; bestAp = ap; } }
     // SPREAD CHECK (Trym's QA 20 Jul: bat-in-each-hand read as "rides the
     // body"): every drawn pixel votes for its nearest anchor ZONE; if a real
     // minority lives in a different zone than the winner, the drawing spans
@@ -1120,7 +1142,7 @@ function init() {
     // ONE anchor, so the toast should teach, not just say "body". Head+face
     // count as one zone (they bob together, e.g. a helmet with a visor).
     // Non-blocking by design: save still rides the nearest anchor.
-    const zoneAps = cands.map(([k, h]) => [(k === 'head' || k === 'face') ? 'head' : k + (h || ''), wearAnchor(2, k, h)]);
+    const zoneAps = cands.map(([k, h]) => [(k === 'head' || k === 'face') ? 'head' : k + (h || ''), ENG.wearAnchor(2, k, h)]);
     const votes = {};
     let n = 0;
     const g = frame();
@@ -1138,7 +1160,7 @@ function init() {
     const auto = [best[0], best[1]];
     if (wearPick) {                       // the maker overruled the guess
       const f = WEAR_SPOTS.find((w) => pickKey(w[0], w[1]) === wearPick);
-      if (f) { best = [f[0], f[1]]; bestAp = wearAnchor(2, f[0], f[1]); }
+      if (f) { best = [f[0], f[1]]; bestAp = ENG.wearAnchor(2, f[0], f[1]); }
     }
     return { art: out.svg, anchor: best[0], hand: best[1] || undefined, spread,
       auto: pickKey(auto[0], auto[1]), picked: !!wearPick,
@@ -1212,6 +1234,7 @@ function init() {
     state.w = n; state.h = n; state.frames = [new Uint8Array(n * n)]; state.delays = [120]; state.cur = 0; state.cpal = [];
   }
   function setMode(m) {
+    if (m === 'items') ensureEngine();   // first step in starts the fetch
     if (mode === m) return;
     if (playing) stopPlay();
     modeDocs[mode] = serialize();                 // stash the mode we're leaving
@@ -1342,6 +1365,7 @@ function init() {
   setBrush(1);
   el('fgOnion').setAttribute('aria-pressed', String(state.onion));
   if (bootItems) { // start in Items mode with the re-opened item already loaded
+    ensureEngine();
     mode = 'items';
     document.body.classList.add('fg-mode-items');
     document.querySelectorAll('.fg-modetab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === 'items')));

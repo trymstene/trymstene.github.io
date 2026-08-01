@@ -16,8 +16,9 @@ import { WEARABLE_PACKS as PACKS, ownsWearable } from '../data/wearables.js';
 // or old cached copies (e.g. the pre-fix sheet with white-filled arm gaps)
 // keep haunting returning visitors' previews and exports.
 const SHEET_SRC = '/assets/banana-dance.png?v=6'; // v6 = rebuilt from Trym's 2000px remasters (tools/build-banana-assets.py)
-const FW = 469, FH = 498, NFRAMES = 8;
-const BASE_CYCLE_S = 0.8; // 8 frames x 100ms = the original GIF timing
+// 📐 proportions live in banana-geo.js so a surface can know them WITHOUT
+// loading the sprite sheets. Re-exported below — one source of truth, one file down.
+import { FW, FH, NFRAMES, BASE_CYCLE_S, PX, FRAME_H_FRAC, FRAME_TOP_FRAC } from './banana-geo.js';
 
 // Per-frame anchors measured from the sprite pixels (Pillow-verified):
 // eye centre (glasses), tip Y + head centre AT BRIM DEPTH (hat — the stem curves
@@ -236,7 +237,7 @@ const GLASSES = [['none', 'None'], ...SHADE_DEFS.filter((s) => ownsWearable(s)).
 // The banana sprite's pixel unit is 13 source px; the pixel SVGs use 10 svg-px
 // per unit. Sizing accessories in banana-pixels guarantees they match the
 // sprite's resolution exactly (no mixed pixel densities).
-const PX = 13;
+
 const gridW = (key) => parseInt(key.match(/viewBox="0 0 (\d+)/)[1], 10) / 10;
 const gridH = (key) => parseInt(key.match(/viewBox="0 0 \d+ (\d+)/)[1], 10) / 10;
 // hat seating: deep enough to sit ON the head mass (not the stem peak); the
@@ -258,7 +259,7 @@ const SH_DY = -0.5;
 // FEET_CX is only a fallback centre if a frame lacks feetX.
 const FEET_CX = 234, FEET_BOTTOM = 501;
 // square-canvas layout: headroom above the frame so hats fit at the tall frames
-const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;
+
 
 // 🍌 WEARABLE ANCHOR POINTS (sprite-px, per frame). The Forge's Items Workshop
 // and the runtime custom channel BOTH read this, so "where you drew it" and
