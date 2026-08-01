@@ -381,4 +381,20 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
   {type === 'item' && <script>
     import '../../scripts/gallery-detail.js';
   </script>}
+
+  {/* ⚠️ THIS TEMPLATE ALSO RENDERS TAG AND CATEGORY LISTINGS, where `item` does
+      not exist — the offer is for the DETAIL page only. */}
+  {type === 'item' && (
+    <Fragment>
+      <script type="application/json" id="gdOffer" set:html={JSON.stringify({
+        href: item.params ? `/make-a-banana/sticker/?${item.params}` : '/make-a-banana/sticker/',
+      })} />
+      <script>
+        {/* 🛍 the download moment — the CUSTOM lane, and the link carries this
+            exact banana's params so the builder opens on the one they took. */}
+        import { wireDownloads } from '../../lib/make-it-real.js';
+        wireDownloads('gallery', JSON.parse(document.getElementById('gdOffer').textContent));
+      </script>
+    </Fragment>
+  )}
 </BaseLayout>

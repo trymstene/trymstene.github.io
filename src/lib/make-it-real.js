@@ -301,6 +301,24 @@ export const OFFERS = {
     pills: ['Official tee', 'Free worldwide shipping'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
+  // 🖼 THE GALLERY: these are OUR bananas and every item carries the exact
+  // params that rebuild it, so the ask can be specific — this one, printed.
+  gallery: {
+    kicker: 'Make it real', product: 'sticker',
+    head: 'This one can be a real sticker',
+    pills: ['Die-cut vinyl', 'Free worldwide shipping'],
+    cta: 'Make it a sticker →', href: '/make-a-banana/sticker/', flag: 'FREE TO MAKE',
+  },
+  // ⚠⚠ THE REMIXES ARE NOT OURS TO SELL. Community GIFs, credited to their
+  // makers (and some to nobody). Offering to print one would be offering to
+  // sell somebody else's work. The offer here is the ORIGINAL banana — the one
+  // thing on that page we actually own.
+  remix: {
+    price: false, kicker: 'Since 1999', product: 'mug', bare: true,
+    head: 'The banana they remixed, on a real mug',
+    pills: ['Official merch', 'Free worldwide shipping'],
+    cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
+  },
   // the wallpaper crowd took something for a SCREEN — offer the desk instead
   wallpaper: {
     price: false,
