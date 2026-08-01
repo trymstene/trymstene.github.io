@@ -17,12 +17,20 @@
 // postcard and the pass card: banana yellow, 4px ink border, hard offset
 // shadow, Archivo Black, and THE VISITOR'S OWN BANANA rendered as the actual
 // die-cut product — not a stock photo, not a generic banner.
-import {
-  composite, makeStickerMockup, bboxOf, crop, pad, PRICE,
-  stickerCaptions, stickerEffect, ensureCaptionFont,
-  productMockup, getProduct,
-} from './sticker-core.js';
-import { assetsReady } from './banana-engine.js';
+// ⚡ NOTHING HEAVY AT MODULE SCOPE. sticker-core.js imports banana-engine, so a
+// static import here dragged the ~200K compositor onto EVERY page that merely
+// WIRES a download — including /dancing-banana-gif-meme/, the top organic page.
+// The card only needs the engine once it actually SHOWS: after a download,
+// behind a timeout, at most once a session. So the shot functions (already
+// async) fetch it themselves, and the only thing left static is pure data.
+//
+// ⚠️ Same back-door that defeated the Forge's lazy import via banana-shelf.js.
+// Verify by MEASURING the built page, never by reading the import list.
+import PRODUCTS from '../../shared/products.js';   // plain catalog, no engine
+
+const PRICE = { amount: 14.99, currency: 'USD' };  // mirrors sticker-core's PRICE
+const getProduct = (key) => PRODUCTS.find((p) => p.key === key) || null;
+const core = () => import('./sticker-core.js');
 
 const CSS = `
 .mir {
@@ -115,6 +123,9 @@ export function myOutfit() {
 // product page uses — same die-cut contour, same paper backdrop. A cheaper
 // preview here would promise something the PDP then fails to match.
 export async function stickerShot(outfit, size = 420) {
+  const { composite, makeStickerMockup, bboxOf, crop, pad,
+    stickerCaptions, stickerEffect, ensureCaptionFont } = await core();
+  const { assetsReady } = await import('./banana-engine.js');
   await assetsReady();
   const state = {
     effect: 'none', bg: 'transparent', top: '', bottom: '', captions: false,
@@ -340,6 +351,8 @@ export const OFFERS = {
 // render the banana onto the ACTUAL product the offer is fronting
 export async function productShot(outfit, key, size = 420) {
   if (!key || key === 'sticker') return stickerShot(outfit, size);
+  const { productMockup, ensureCaptionFont } = await core();
+  const { assetsReady } = await import('./banana-engine.js');
   await assetsReady();
   const p = getProduct(key);
   if (!p) return stickerShot(outfit, size);
