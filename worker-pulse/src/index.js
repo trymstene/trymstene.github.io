@@ -9,6 +9,11 @@ import { analyse } from './analyst.js';
 
 const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 
+// 📥 the download family + the offer that rides it. Downloads are the
+// biggest thing that happens on this site; until now they were one number.
+const DL_EVENTS = ['gif_download', 'png_download', 'wallpaper_download',
+  'offer_shown', 'offer_click'];
+
 // events worth plotting on the map / showing in the ticker (the rest is noise)
 const LENS_EVENTS = [
   'gif_download', 'png_download', 'wallpaper_download', 'builder_boot', 'builder_start',
@@ -226,6 +231,21 @@ async function apiRange(env, from, to) {
   // avg seconds-from-previous-step per funnel event (client sends
   // secs_since_prev since 14 Jul). Separate call + swallow errors: until the
   // custom metric is registered in GA4 admin, the API rejects it.
+  // 📥 the downloads room: which SURFACE gave the file away, and what the
+  // offer did there. pagePath needs no custom dimension registered — the
+  // `from` param on offer_* would, so the page split carries this instead.
+  //
+  // ⚠️ ITS OWN CALL, NOT A 6TH BATCH ENTRY: GA4 caps batchRunReports at FIVE
+  // requests and rejects the whole batch with a 400 if you add a sixth — which
+  // takes the entire dashboard down, not just the new panel.
+  const dlsP = gaPost(env, 'runReport', {
+    dateRanges, dimensions: [{ name: 'pagePath' }, { name: 'eventName' }],
+    metrics: [{ name: 'eventCount' }], limit: 600,
+    orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+    dimensionFilter: { filter: { fieldName: 'eventName',
+      inListFilter: { values: DL_EVENTS } } },
+  }).catch(() => null);
+
   const stepTimes = {};
   try {
     const st = await gaPost(env, 'runReport', {
@@ -255,8 +275,26 @@ async function apiRange(env, from, to) {
     const cc = dim(r, 0); const ev = dim(r, 1);
     (evmapObj[ev] = evmapObj[ev] || {})[cc] = met(r, 0);
   }
+  const dls = await dlsP;
+  const dlMap = {};
+  for (const r of (dls ? rows(dls) : [])) {
+    const page = dim(r, 0);
+    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0 });
+    const key = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
+      offer_shown: 'shown', offer_click: 'click' }[dim(r, 1)];
+    if (key) row[key] += met(r, 0);
+  }
+  const downloads = Object.values(dlMap)
+    .map((r) => ({ ...r, files: r.gif + r.png + r.wall }))
+    // ⚠️ keep offer-only rows: a surface showing the card with NOTHING
+    // downloaded is a wiring bug, and dropping it would hide exactly that.
+    .filter((r) => r.files > 0 || r.shown > 0)
+    .sort((a, b) => (b.files - a.files) || (b.shown - a.shown))
+    .slice(0, 14);
+
   const data = {
     at: Date.now(), from, to,
+    downloads,
     kpis: {
       sessions: sum('sessions'), users: sum('users'), newUsers: sum('newUsers'),
       engagementRate: dailyRows.length
@@ -750,6 +788,13 @@ function page() {
     </div>
     <table id="events"></table>
   </div>
+</div>
+
+<div class="panel">
+  <h2>📥 Downloads — and what the offer did <i class="info" data-tip="Every surface that gives a file away, with the make-it-real card that follows it. TOOK = files handed over. SAW = the offer card appeared (once per visit, by design). CLICKED = they went to the product.">i</i></h2>
+  <div id="dlSum" class="muted" style="margin-bottom:10px;"></div>
+  <div style="overflow-x:auto;"><table id="dlTable"></table></div>
+  <p class="muted" style="margin-top:9px;">the card is capped at ONE per visit — SAW will always sit below TOOK, and that is the design, not a leak</p>
 </div>
 
 <div class="grid2">
@@ -1498,6 +1543,61 @@ function renderDevices(){
       '<div class="d" style="color:#6b5a00;">'+er+'% engaged'+(now?' · <b>'+now+' on now</b>':'')+'</div></div>';
   }).join('');
 }
+// 📥 name the surfaces the way Trym thinks of them, not the way the URL
+// spells them. Longest prefix wins, so /banana-memes/x beats /banana-memes/.
+var DL_NAMES=[
+  ['/dancing-banana-gif-meme/','The GIF page'],
+  ['/dancing-banana-wallpaper/','Wallpapers'],
+  ['/dancing-banana-remixes/','Remixes'],
+  ['/banana-memes/','The gallery'],
+  ['/make-a-banana/','The builder'],
+  ['/pixel-forge/','The Forge'],
+  ['/pass/','The pass'],
+  ['/nl/','🇳🇱 Dutch'], ['/es/','🇪🇸 Spanish'], ['/pt/','🇧🇷 Portuguese'],
+  ['/fr/','🇫🇷 French'], ['/de/','🇩🇪 German'], ['/ru/','🇷🇺 Russian'],
+];
+function dlName(path){
+  var best='', label='';
+  for(var i=0;i<DL_NAMES.length;i++){
+    var pre=DL_NAMES[i][0];
+    if(path.indexOf(pre)===0 && pre.length>best.length){ best=pre; label=DL_NAMES[i][1]; }
+  }
+  if(!label) return path==='/' ? 'The front page' : path;
+  // a deeper path than the prefix = one specific item inside that surface
+  return path.length>best.length ? label+' · item' : label;
+}
+function renderDownloads(){
+  var D=(state.range&&state.range.downloads)||[];
+  var sum=document.getElementById('dlSum'), tb=document.getElementById('dlTable');
+  if(!D.length){
+    sum.textContent='no downloads in this window';
+    tb.innerHTML=''; return;
+  }
+  var tf=0,ts=0,tc=0;
+  D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; });
+  sum.innerHTML='<b style="color:var(--nana);font-size:1rem;">'+fmt(tf)+'</b> files taken · '
+    +'<b style="color:var(--nana);">'+fmt(ts)+'</b> offers shown · '
+    +'<b style="color:'+(tc?'var(--ok)':'var(--bad)')+';">'+fmt(tc)+'</b> clicked'
+    +(ts>=20 ? ' <span class="muted">('+Math.round((tc/ts)*100)+'% of the cards shown)</span>'
+            : ' <span class="muted">(too few cards yet to call a rate)</span>');
+  var max=D[0].files||D[0].shown||1;
+  tb.innerHTML='<tr><th>Surface</th><th class="num">Took</th><th class="num">Saw</th>'
+    +'<th class="num">Clicked</th><th class="num">Rate</th></tr>'
+    +D.map(function(r){
+      // ⚠️ a rate needs at least 20 cards behind it — 3 of 5 is three clicks,
+      // not 60%. Same gate the analyst uses; the dashboard must not be looser.
+      var rate = r.shown>=20 ? Math.round((r.click/r.shown)*100)+'%' : '–';
+      var warn = (r.files>=20 && r.shown===0);
+      var w=Math.max(2,Math.round((r.files/max)*70));
+      return '<tr><td>'+esc(dlName(r.page))
+        +(warn?' <span style="color:var(--hot);" title="files went out here but the offer never appeared">⚠ no offer</span>':'')
+        +'<br><span class="minibar" style="width:'+w+'px"></span></td>'
+        +'<td class="num">'+fmt(r.files)+'</td>'
+        +'<td class="num">'+fmt(r.shown)+'</td>'
+        +'<td class="num" style="color:'+(r.click?'var(--ok)':'var(--dim)')+'">'+fmt(r.click)+'</td>'
+        +'<td class="num">'+rate+'</td></tr>';
+    }).join('');
+}
 function renderRange(){
   var R=state.range, P=state.prev; if(!R) return;
   var k=R.kpis, pk=P&&P.kpis;
@@ -1520,6 +1620,7 @@ function renderRange(){
       '⏳ GA4 hasn’t produced today’s report data yet (Google-side intraday lag, sometimes 12h+). '+
       'The LIVE map and ticker above are unaffected — today’s numbers will backfill on their own.</p>');
   }
+  renderDownloads();
   renderDevices();
   renderFunnel(document.getElementById('fun0'),FUNNELS[0]);
   renderFunnel(document.getElementById('fun1'),FUNNELS[1]);
