@@ -691,6 +691,28 @@ function page() {
   details.numbers summary::before{ content:'▸ '; }
   details.numbers[open] summary::before{ content:'▾ '; }
 
+  /* ── 🗂 THE ROOMS ──────────────────────────────────────────────
+     Four, not six. Each area is a different product with a different
+     definition of success, but an EMPTY room reads worse than a long scroll
+     — so rave/park/beach/forge share one room until one of them can fill
+     its own. Scrolls sideways on a phone rather than wrapping. */
+  .tabs{ display:flex; gap:6px; overflow-x:auto; scrollbar-width:none;
+         margin-bottom:16px; padding-bottom:2px; -webkit-overflow-scrolling:touch; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tabs .chip{ flex:0 0 auto; font-size:.72rem; padding:9px 13px; letter-spacing:.1em; }
+  @media(max-width:420px){ .tabs .chip{ font-size:.66rem; padding:9px 9px; letter-spacing:.04em; } }
+  .tabs .chip b{ color:var(--nana); font-weight:700; margin-left:5px;
+                 font-variant-numeric:tabular-nums; }
+  .tabs .chip.on b{ color:#111; }
+  .area{ margin-bottom:16px; }
+  .area h3{ font-size:.74rem; letter-spacing:.16em; text-transform:uppercase;
+            color:var(--nana); margin-bottom:2px; }
+  .area .q{ font-size:.66rem; color:var(--dim); margin-bottom:7px; }
+  .area .big{ font-size:1.5rem; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .area .big span{ font-size:.66rem; color:var(--dim); letter-spacing:.1em;
+                   text-transform:uppercase; }
+  .area.dead{ opacity:.5; }
+
   /* funnels: the bars were reading as a wall. Shorter, tighter, one glance. */
   .fstep{ margin-bottom:5px; }
   .fbar{ height:11px; }
@@ -735,6 +757,30 @@ function page() {
   </div>
 </div>
 
+<div class="tabs" id="tabs">
+  <button class="chip on" data-pane="overview">🌍 OVERVIEW</button>
+  <button class="chip" data-pane="downloads">📥 DOWNLOADS<b id="tabDl"></b></button>
+  <button class="chip" data-pane="shop">🛍 SHOP<b id="tabShop"></b></button>
+  <button class="chip" data-pane="world">🎠 WORLD<b id="tabWorld"></b></button>
+</div>
+
+<div class="panel">
+  <h2>📅 Time window <span class="muted">(drives every room)</span></h2>
+  <div class="chips" id="rangeChips">
+    <button class="chip on" data-r="today,today">TODAY</button>
+    <button class="chip" data-r="yesterday,yesterday">YESTERDAY</button>
+    <button class="chip" data-r="6daysAgo,today">7 DAYS</button>
+    <button class="chip" data-r="27daysAgo,today">28 DAYS</button>
+    <input type="date" id="dFrom"> <input type="date" id="dTo">
+    <button class="chip" id="dGo">GO</button>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="kpis" id="devRow" style="margin-top:10px;"></div>
+  <p class="muted" style="margin-top:8px;">deltas = vs the previous window of the same length ·
+     GA4 intraday lags ~4–8h, so “today” fills in through the day</p>
+</div>
+
+<div class="pane" data-pane="overview">
 <div class="panel">
   <h2>🌍 Pixel earth</h2>
   <div style="position:relative;">
@@ -758,27 +804,6 @@ function page() {
   <div class="ticker"><div class="in" id="ticker">warming up the decks…</div></div>
 </div>
 
-<div class="panel">
-  <h2>📅 Time window <span class="muted">(everything below the map)</span></h2>
-  <div class="chips" id="rangeChips">
-    <button class="chip on" data-r="today,today">TODAY</button>
-    <button class="chip" data-r="yesterday,yesterday">YESTERDAY</button>
-    <button class="chip" data-r="6daysAgo,today">7 DAYS</button>
-    <button class="chip" data-r="27daysAgo,today">28 DAYS</button>
-    <input type="date" id="dFrom"> <input type="date" id="dTo">
-    <button class="chip" id="dGo">GO</button>
-  </div>
-  <div class="kpis" id="kpis"></div>
-  <div class="kpis" id="devRow" style="margin-top:10px;"></div>
-  <p class="muted" style="margin-top:8px;">deltas = vs the previous window of the same length ·
-     GA4 intraday lags ~4–8h, so “today” fills in through the day</p>
-</div>
-
-<div class="grid2">
-  <div class="panel"><h2>🏷️ Custom banana funnel <span class="muted">(make-a-banana · tee/sticker/magnet)</span></h2><div id="fun0"></div></div>
-  <div class="panel"><h2>👕 Official merch funnel <span class="muted">(/shop/)</span></h2><div id="fun1"></div></div>
-</div>
-
 <div class="grid2">
   <div class="panel src"><h2>🚪 Where they came from</h2><div id="sources"></div></div>
   <div class="panel"><h2>⚡ Top events</h2>
@@ -790,6 +815,14 @@ function page() {
   </div>
 </div>
 
+<div class="grid2">
+  <div class="panel"><h2>📄 On screen right now</h2><table id="livePages"></table></div>
+  <div class="panel"><h2>🏙️ Cities visiting right now</h2><table id="liveCities"></table></div>
+</div>
+
+</div>
+
+<div class="pane" data-pane="downloads" hidden>
 <div class="panel">
   <h2>📥 Downloads — and what the offer did <i class="info" data-tip="Every surface that gives a file away, with the make-it-real card that follows it. TOOK = files handed over. SAW = the offer card appeared (once per visit, by design). CLICKED = they went to the product.">i</i></h2>
   <div id="dlSum" class="muted" style="margin-bottom:10px;"></div>
@@ -797,9 +830,22 @@ function page() {
   <p class="muted" style="margin-top:9px;">the card is capped at ONE per visit — SAW will always sit below TOOK, and that is the design, not a leak</p>
 </div>
 
+</div>
+
+<div class="pane" data-pane="shop" hidden>
 <div class="grid2">
-  <div class="panel"><h2>📄 On screen right now</h2><table id="livePages"></table></div>
-  <div class="panel"><h2>🏙️ Cities visiting right now</h2><table id="liveCities"></table></div>
+  <div class="panel"><h2>🏷️ Custom banana funnel <span class="muted">(make-a-banana · tee/sticker/magnet)</span></h2><div id="fun0"></div></div>
+  <div class="panel"><h2>👕 Official merch funnel <span class="muted">(/shop/)</span></h2><div id="fun1"></div></div>
+</div>
+
+</div>
+
+<div class="pane" data-pane="world" hidden>
+<div class="panel">
+  <h2>🎠 The world — one question per area <i class="info" data-tip="The areas are different products, so they get different questions. Each card shows the area’s headline number and everything that happened inside it in this window.">i</i></h2>
+  <div id="worldBody"></div>
+  <p class="muted" style="margin-top:9px;">rave, park, bay and the forge share one room until one of them is busy enough to fill its own — an empty room reads worse than a short one</p>
+</div>
 </div>
 
 <p class="foot">🍌 private — token door, noindex, no links from anywhere · live refresh 30s · range refresh 5m</p>
@@ -1278,7 +1324,10 @@ function drawMap(){
     : '● green = “'+(EV_LABEL[state.lens]||state.lens)+'” ('+state.lens+'), '+state.from+' → '+state.to+' ('+total+' total)';
 }
 // 60fps via rAF (idles with the tab) — the old 120ms interval read as lag
-(function mapLoop(){ if(!document.hidden) drawMap(); requestAnimationFrame(mapLoop); })();
+// ⚠️ also idle when the map's ROOM is closed — a display:none canvas still
+// costs a full draw every frame if you let it.
+(function mapLoop(){ if(!document.hidden && paneNow==='overview') drawMap();
+  requestAnimationFrame(mapLoop); })();
 var lastDots=[];
 
 // hover a pulse → who/where/what they're looking at (LIVE mode gets pages)
@@ -1571,7 +1620,9 @@ function renderDownloads(){
   var sum=document.getElementById('dlSum'), tb=document.getElementById('dlTable');
   if(!D.length){
     sum.textContent='no downloads in this window';
-    tb.innerHTML=''; return;
+    tb.innerHTML='';
+    var t0=document.getElementById('tabDl'); if(t0) t0.textContent='';
+    return;
   }
   var tf=0,ts=0,tc=0;
   D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; });
@@ -1580,6 +1631,7 @@ function renderDownloads(){
     +'<b style="color:'+(tc?'var(--ok)':'var(--bad)')+';">'+fmt(tc)+'</b> clicked'
     +(ts>=20 ? ' <span class="muted">('+Math.round((tc/ts)*100)+'% of the cards shown)</span>'
             : ' <span class="muted">(too few cards yet to call a rate)</span>');
+  var tb2=document.getElementById('tabDl'); if(tb2) tb2.textContent=tf?fmt(tf):'';
   var max=D[0].files||D[0].shown||1;
   tb.innerHTML='<tr><th>Surface</th><th class="num">Took</th><th class="num">Saw</th>'
     +'<th class="num">Clicked</th><th class="num">Rate</th></tr>'
@@ -1598,6 +1650,83 @@ function renderDownloads(){
         +'<td class="num">'+rate+'</td></tr>';
     }).join('');
 }
+// 🎠 THE WORLD ROOM. Each area gets the ONE question that decides whether
+// it is working — not every number it can produce. The headline event is the
+// door; everything else that happened inside is listed under it.
+var AREAS=[
+  {key:'rave',  name:'The rave',  icon:'🩩', door:'rave_join',
+   q:'Do people STAY? — joins, and what they did once the music started'},
+  {key:'park',  name:'The park',  icon:'🌳', door:'park_join',
+   q:'Do they COME BACK? — gardening is the only loop that needs a return visit'},
+  // ⚠️ the bay has NO arrival event. beach_multiplayer only fires when two
+  // people are there AT ONCE, so using it as the door printed "1 visit" above
+  // 197 digs. No door = the card says so instead of lying quietly.
+  {key:'beach', name:'Banana Bay', icon:'🏖', door:null,
+   q:'Do they PROGRESS? — shells, tickets, digging: collection is the hook'},
+  {key:'forge', name:'Pixel Forge', icon:'🎨', door:'forge_open',
+   q:'Do they FINISH and SUBMIT? — an unfinished item helps nobody'},
+  {key:'stand', name:'The Banana Stand', icon:'🏪', door:'stand_counter',
+   q:'Do they SPEND? — coins buy cosmetics, and the till is the proof'},
+];
+function renderWorld(){
+  var R=state.range; var host=document.getElementById('worldBody');
+  if(!R){ host.innerHTML=''; return; }
+  var total=0;
+  var html=AREAS.map(function(A){
+    // everything whose event name belongs to this area, door first
+    var mine=R.events.filter(function(e){ return e.name.indexOf(A.key+'_')===0 || e.name===A.door; });
+    var door=0; mine.forEach(function(e){ if(A.door && e.name===A.door) door=e.v; });
+    var acts=mine.filter(function(e){ return e.name!==A.door; })
+                 .sort(function(a,b){ return b.v-a.v; }).slice(0,6);
+    var sum=0; mine.forEach(function(e){ sum+=e.v; });
+    total+=door;
+    // ⚠️ say NOTHING HAPPENED plainly rather than drawing an empty chart —
+    // same rule the analyst follows, applied to the room.
+    if(!sum) return '<div class="area dead"><h3>'+A.icon+' '+A.name+'</h3>'+
+      '<div class="muted">nobody came in this window</div></div>';
+    return '<div class="area"><h3>'+A.icon+' '+A.name+'</h3>'+
+      '<div class="q">'+A.q+'</div>'+
+      (A.door
+        ? '<div class="big">'+fmt(door)+' <span>'+esc(EV_LABEL[A.door]||A.door)+'</span></div>'
+          +'<div class="muted">'+fmt(sum)+' things done inside</div>'
+        : '<div class="big">'+fmt(sum)+' <span>things done inside</span></div>'
+          +'<div class="muted" style="color:var(--hot);">⚠ no arrival event — this area '
+          +'cannot answer “how many came” until one is added</div>')+
+      (acts.length
+        ? '<table style="margin-top:7px;">'+acts.map(function(e){
+            return '<tr><td><span class="tt" data-tip="'+esc(explain(e.name))+'">'+
+              esc(EV_LABEL[e.name]||e.name)+'</span></td><td class="num">'+fmt(e.v)+'</td></tr>';
+          }).join('')+'</table>'
+        : '<div class="muted" style="margin-top:6px;">they arrived and did nothing else '+
+          '— the door works, the room does not</div>')+
+      '</div>';
+  }).join('');
+  host.innerHTML=html;
+  var t=document.getElementById('tabWorld'); if(t) t.textContent=total?fmt(total):'';
+}
+
+// 🗂 the rooms. One at a time; the range picker and the live bar stay above
+// them because they drive every room.
+var paneNow='overview';
+(function(){
+  var bar=document.getElementById('tabs');
+  try{ paneNow=localStorage.getItem('pulse-pane')||'overview'; }catch(e){}
+  function show(name){
+    paneNow=name;
+    try{ localStorage.setItem('pulse-pane', name); }catch(e){}
+    Array.prototype.forEach.call(document.querySelectorAll('.pane'), function(p){
+      p.hidden = p.dataset.pane!==name;
+    });
+    Array.prototype.forEach.call(bar.children, function(c){
+      c.classList.toggle('on', c.dataset.pane===name);
+    });
+  }
+  bar.addEventListener('click', function(e){
+    var b=e.target.closest('button[data-pane]'); if(b) show(b.dataset.pane);
+  });
+  show(paneNow); // a remembered room survives the reload
+})();
+
 function renderRange(){
   var R=state.range, P=state.prev; if(!R) return;
   var k=R.kpis, pk=P&&P.kpis;
@@ -1621,6 +1750,9 @@ function renderRange(){
       'The LIVE map and ticker above are unaffected — today’s numbers will backfill on their own.</p>');
   }
   renderDownloads();
+  renderWorld();
+  var co=0; R.events.forEach(function(e){ if(e.name==='checkout_redirect') co+=e.v; });
+  var ts=document.getElementById('tabShop'); if(ts) ts.textContent=co?fmt(co):'';
   renderDevices();
   renderFunnel(document.getElementById('fun0'),FUNNELS[0]);
   renderFunnel(document.getElementById('fun1'),FUNNELS[1]);
