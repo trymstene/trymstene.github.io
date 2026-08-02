@@ -1059,9 +1059,11 @@ function init() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: 'emoji', params: 'forge:' + serialize(), by }),
       });
-      btn.textContent = res.ok ? 'Submitted! 🖼 The banana guy hangs the best ones' : 'The wall is busy — try again later';
+      // ⚠️ the endpoint is still /wall/submit — legacy name, do NOT rename it
+      // server-side. It feeds the HQ queue and approvals publish to the GALLERY.
+      btn.textContent = res.ok ? 'Submitted! 🖼 The banana guy picks the best ones' : 'The gallery is busy — try again later';
       if (res.ok) passPatch('exhibitor');
-    } catch (e) { btn.textContent = 'The wall is busy — try again later'; }
+    } catch (e) { btn.textContent = 'The gallery is busy — try again later'; }
     track('wall_submit', { kind: 'emoji', signed: by ? 1 : 0, size: Math.max(state.w, state.h), frames: state.frames.length });
     setTimeout(() => { btn.innerHTML = label; btn.disabled = false; }, 4000);
   };

@@ -41,7 +41,6 @@ const PAGES = [
   // Google — built, linked, and in no sitemap. Adding a guide is one entry in
   // src/data/guides.js and nothing else, which is the whole point of having it.
   ...GUIDES.map((g) => ({ path: '/guides/' + g.slug + '/', images: [] })),
-  { path: '/wall/', images: [] },
   { path: '/banana-of-the-day/', images: [] },
   {
     path: '/dancing-banana-wallpaper/',

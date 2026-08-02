@@ -21,6 +21,13 @@ export default defineConfig({
     '/banana-stand/': '/park/',
     // /park2/ was the Park 2.0 QA preview slug until the 29 Jul flip.
     '/park2/': '/park/',
+    // 🧱 THE WALL retired 2 Aug 2026. It rendered FOUR HAND-WRITTEN entries
+    // from src/data/wall.json and never showed a single visitor submission — the
+    // live /wall/items.json endpoint returns 'not found'. Meanwhile /wall/submit
+    // was feeding the HQ queue all along, and approvals publish to the GALLERY.
+    // So the page was a static showcase orphaned from its own submit button.
+    // 23 impressions / 0 clicks in 90 days. The gallery does this job properly.
+    '/wall/': '/banana-memes/',
     // 📁 GUIDES MOVED UNDER /guides/ on 2 Aug. They were flat at root while
     // the breadcrumb already said Home › Guides › X — and the gallery and
     // remixes both nest, so flat guides were the odd one out. Moved while the
