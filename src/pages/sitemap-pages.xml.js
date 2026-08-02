@@ -3,6 +3,7 @@
 // channel for a GIF-seeking audience, so we tell it exactly which images
 // matter on each page.
 import { locales } from '../data/locales.js';
+import { GUIDES } from '../data/guides.js';
 import remixes from '../data/remixes.json';
 
 const SITE = 'https://trymstene.com';
@@ -35,8 +36,11 @@ const PAGES = [
   { path: '/park/', images: [['/assets/og/park.png', 'The Park — a free cozy garden game']] },
   { path: '/forge/', images: [] },
   { path: '/guides/', images: [] },
-  { path: '/discord-emoji-size/', images: [] },
-  { path: '/twitch-emote-size/', images: [] },
+  // ⚠️ GENERATED FROM THE REGISTRY, never listed by hand. The two guides that
+  // existed were hardcoded here, so three added on 2 Aug shipped INVISIBLE to
+  // Google — built, linked, and in no sitemap. Adding a guide is one entry in
+  // src/data/guides.js and nothing else, which is the whole point of having it.
+  ...GUIDES.map((g) => ({ path: '/' + g.slug + '/', images: [] })),
   { path: '/wall/', images: [] },
   { path: '/banana-of-the-day/', images: [] },
   {
