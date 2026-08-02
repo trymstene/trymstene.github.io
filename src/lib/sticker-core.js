@@ -262,7 +262,38 @@ export function productDesign(state, product) {
 
 export function productMockup(state, product, size = 900, opts = {}) {
   const style = product.options ? 'tee' : product.key;   // apparel shares one shoot
-  return makeStickerMockup(state, productDesign(state, product), size, style, opts);
+  // ⚠️ THE MUG MOCKUP USES A SINGLE-BANANA RENDER, NOT THE PRINT FILE.
+  // renderMugPrint draws the banana TWICE (one per half) because that is what a
+  // real wrap needs. The mockup used to slice columns 0..width/2 out of it to
+  // fake the visible face — a window that does not line up with either copy, so
+  // the neighbour bled in and the face showed one banana plus a sliced fragment
+  // of the next (Trym, 2 Aug: "a cut-in-half preview sticker on it").
+  // The print file is unchanged; only what the BUYER PREVIEW is built from.
+  const design = style === 'mug' ? mugFaceArt(state) : productDesign(state, product);
+  return makeStickerMockup(state, design, size, style, opts);
+}
+
+// one banana, trimmed, on a face-shaped canvas — what a buyer sees from the front
+function mugFaceArt(state) {
+  const src = 1024;
+  const raw = document.createElement('canvas'); raw.width = raw.height = src;
+  const rctx = raw.getContext('2d');
+  composite(rctx, src, state.frame, state, {
+    bg: 'transparent', captions: !!(state.top || state.bottom), effect: state.effect,
+    hue: state.effect === 'disco' ? (360 * state.frame / NFRAMES) : 0,
+  });
+  const trimmed = crop(raw, pad(bboxOf([rctx.getImageData(0, 0, src, src).data], src), src));
+  // the visible face is about half the wrap: keep that aspect so the curvature
+  // maths downstream still reads as a cylinder rather than a flat sticker
+  const W = 512, H = Math.round(W * (1155 / 2475) * 2);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  if (state.bg && state.bg !== 'transparent') { ctx.fillStyle = state.bg; ctx.fillRect(0, 0, W, H); }
+  ctx.imageSmoothingEnabled = false;
+  const sc = Math.min((W * 0.82) / trimmed.width, (H * 0.88) / trimmed.height);
+  const dw = trimmed.width * sc, dh = trimmed.height * sc;
+  ctx.drawImage(trimmed, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  return cv;
 }
 
 // ---- product MOCKUP (what the buyer sees) ---------------------------------
@@ -379,8 +410,9 @@ function makeMugMockup(design, size, state) {
   ctx.fill();
   ctx.restore();
 
-  // the design: left half of the wrap, curved onto the face
-  const halfW = Math.floor(design.width / 2);
+  // ⚠️ THE WHOLE design is the face now (see mugFaceArt) — this used to take
+  // design.width / 2 out of the two-up print file and sliced the neighbour in.
+  const halfW = design.width;
   const availW = bw * 0.88, availH = bh * 0.72;
   const s = Math.min(availW / halfW, availH / design.height);
   const dw = halfW * s, dh = design.height * s;
