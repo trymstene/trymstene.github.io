@@ -146,7 +146,7 @@ async function init() {
   el('psSerial').textContent = 'Nº ' + pass.created.toString(36).toUpperCase();
   drawBarcode(el('psBarcode'), pass.created);
 
-  // — 📯 club notices: verdicts on your gallery submissions (and future news
+  // — 📯 world notifications: verdicts on your gallery submissions (and future news
   // about YOUR stuff). Renders only when there is something to say. —
   renderNotices();
   checkGalleryVerdicts({ force: true }).then(renderNotices);
@@ -547,7 +547,7 @@ function drawBarcode(cv, seed) {
   }
 }
 
-// ---- 📯 club notices ------------------------------------------------------
+// ---- 📯 world notifications ---------------------------------------------
 function renderNotices() {
   const sec = el('psNoticesSec');
   if (!sec) return;

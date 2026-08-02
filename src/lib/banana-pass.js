@@ -231,7 +231,11 @@ export function noticeMultiItem() {
   });
 }
 
-// ---- CLUB NOTICES — the pass page's tiny timeline -----------------------
+// ---- WORLD NOTIFICATIONS — the pass page's tiny timeline ----------------
+// Renamed from “Club notices” 2 Aug 2026: “club” is RAVE vocabulary, and the
+// feed carries gallery verdicts, item approvals and world news — none of it
+// the rave's. ⚠️ the storage key stays `ps-notices-v1`: renaming it would
+// orphan every notice anyone is already holding.
 // Anti-fatigue doctrine (Trym's): a notice must carry VALUE — verdicts on
 // things YOU made, not system chatter. Device-local (like the pass itself);
 // the nav's badge dot counts unread notices alongside unseen badges.
