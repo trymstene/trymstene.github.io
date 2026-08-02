@@ -198,6 +198,37 @@ export function passVisit() {
   }
   if (p.days.length >= 5) passPatch('regular');
   if (today < OG_CUTOFF) passPatch('og', { quiet: true }); // quietly — it's a surprise for later
+  noticeMultiItem();
+}
+
+// 🧢 THE ONE FEATURE NOTICE. A visitor wrote in on 2 Aug asking to wear
+// three community items at once; it shipped the same morning, and telling the
+// people who asked is the whole point of having a timeline.
+//
+// ⚠️ BUT THE DOCTRINE BELOW SAYS NOTICES CARRY VALUE, NOT SYSTEM CHATTER — and
+// a shipping announcement IS chatter to someone with nothing to wear. So it is
+// GATED: only a banana that actually owns a community item ever sees it. For
+// them it is not news about the site, it is news about something they own.
+// Fires once, ever (fixed id), device-local like everything else here.
+function ownsAnyCatalogItem() {
+  try {
+    const own = JSON.parse(localStorage.getItem('cat-own-v1') || '{}');
+    if (own && typeof own === 'object' && Object.keys(own).length) return true;
+  } catch (e) {}
+  const st = read().stats || {};
+  return Object.keys(st).some((k) => k.indexOf('own_c_') === 0 && st[k] > 0);
+}
+
+export function noticeMultiItem() {
+  if (!ownsAnyCatalogItem()) return;
+  passNoticeAdd({
+    id: 'multi-item-2026-08',
+    icon: '🧢',
+    text: '<b>Your banana can wear more than one club item now.</b> Somebody wrote in and '
+      + 'asked — so: one item per spot, so a hat and a jacket and boots all fit at once. '
+      + 'Go and pile them on.',
+    link: '/make-a-banana/',
+  });
 }
 
 // ---- CLUB NOTICES — the pass page's tiny timeline -----------------------
