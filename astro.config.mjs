@@ -21,5 +21,16 @@ export default defineConfig({
     '/banana-stand/': '/park/',
     // /park2/ was the Park 2.0 QA preview slug until the 29 Jul flip.
     '/park2/': '/park/',
+    // 📁 GUIDES MOVED UNDER /guides/ on 2 Aug. They were flat at root while
+    // the breadcrumb already said Home › Guides › X — and the gallery and
+    // remixes both nest, so flat guides were the odd one out. Moved while the
+    // pages had ZERO impressions in 90 days: free now, costly at fifty pages.
+    // Root is finite — it belongs to the big things (/rave/, /park/, /shop/),
+    // not to fifty spec pages.
+    '/discord-emoji-size/': '/guides/discord-emoji-size/',
+    '/twitch-emote-size/': '/guides/twitch-emote-size/',
+    '/slack-emoji-size/': '/guides/slack-emoji-size/',
+    '/telegram-sticker-size/': '/guides/telegram-sticker-size/',
+    '/discord-sticker-size/': '/guides/discord-sticker-size/',
   },
 });

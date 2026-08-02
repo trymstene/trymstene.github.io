@@ -2,9 +2,9 @@
 // One spec-guide page per GUIDES entry (see src/data/guides.js) — the
 // answer-first pattern: featured-snippet bid up top, spec table behind it,
 // gotchas, FAQ schema, and the Forge/builder as the payoff.
-import BaseLayout from '../layouts/BaseLayout.astro';
-import PixelIcon from '../components/PixelIcon.astro';
-import { GUIDES } from '../data/guides.js';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+import { GUIDES } from '../../data/guides.js';
 
 export function getStaticPaths() {
   return GUIDES.map((g) => ({ params: { guide: g.slug }, props: { g } }));
@@ -26,7 +26,7 @@ const crumbLD = {
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://trymstene.com/' },
     { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://trymstene.com/guides/' },
-    { '@type': 'ListItem', position: 3, name: g.label, item: `https://trymstene.com/${g.slug}/` },
+    { '@type': 'ListItem', position: 3, name: g.label, item: `https://trymstene.com/guides/${g.slug}/` },
   ],
 };
 // **bold** in the answer line → <strong>
@@ -67,7 +67,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     ))}
 
     <p class="gd-more">More sizes:
-      {others.map((o) => <a href={`/${o.slug}/`}> {o.label} </a>)}
+      {others.map((o) => <a href={`/guides/${o.slug}/`}> {o.label} </a>)}
       · <a href="/guides/">the full cheat sheet</a>
     </p>
   </section>

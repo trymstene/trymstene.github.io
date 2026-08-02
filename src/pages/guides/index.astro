@@ -3,9 +3,9 @@
 // page must capture its own searches ("emoji size chart", "emote sizes"),
 // not just navigate. So the hub IS the cheat sheet: every platform in one
 // table, live actual-size banana demos, deep guides linked per row.
-import BaseLayout from '../layouts/BaseLayout.astro';
-import PixelIcon from '../components/PixelIcon.astro';
-import { GUIDES, CHEATSHEET_EXTRA } from '../data/guides.js';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+import { GUIDES, CHEATSHEET_EXTRA } from '../../data/guides.js';
 
 const title = 'Emoji & Emote Size Chart — Discord, Twitch, Slack & More (2026)';
 const description = 'Every emoji and emote size in one chart: Discord 128px, Twitch 28/56/112px, Slack 128px, Telegram 512px and more — with actual-size previews and free makers.';
@@ -14,7 +14,7 @@ const description = 'Every emoji and emote size in one chart: Discord 128px, Twi
 const rows = [
   ...GUIDES.map((g) => ({
     platform: g.platform, what: g.specs[0][0], size: g.specs[0][1],
-    file: g.specs[0][2], format: g.specs[0][3], href: `/${g.slug}/`,
+    file: g.specs[0][2], format: g.specs[0][3], href: `/guides/${g.slug}/`,
   })),
   ...CHEATSHEET_EXTRA.map(([platform, what, size, file, format]) => ({ platform, what, size, file, format })),
 ];
@@ -88,7 +88,7 @@ const crumbLD = {
     <h2>The deep guides</h2>
     <ul class="gh-list">
       {GUIDES.map((g) => (
-        <li><a href={`/${g.slug}/`}>{g.title.split(' — ')[0]}</a> — {g.metaDescription.split('.')[0]}.</li>
+        <li><a href={`/guides/${g.slug}/`}>{g.title.split(' — ')[0]}</a> — {g.metaDescription.split('.')[0]}.</li>
       ))}
     </ul>
     <p class="gh-note">More platforms get their own guides as we go — the table above is always the complete picture.</p>
