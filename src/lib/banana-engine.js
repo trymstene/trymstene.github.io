@@ -536,7 +536,15 @@ function drawComposite(ctx, W, idx, o) {
   // are single-view, so on turned-away frames the art MIRRORS like a real
   // object (a gun drawn pointing outward keeps pointing outward when the
   // banana turns) — the built-ins' F.face==='left' flip rule, no creator work.
-  if (o.custom && o.custom.art) {
+  // 🧢 ONE OR MANY. A banana wore exactly one community item until 2 Aug,
+  // when a visitor wrote in asking to wear three. `custom` now takes an ARRAY
+  // as well as a single object — old callers pass one and are untouched.
+  // ⚠️ the CALLER enforces one-item-per-spot; the engine just draws what it
+  // is handed, in order, so two head items would overlap. That is deliberate:
+  // placement rules belong with the loadout, not the renderer.
+  const customs = !o.custom ? [] : (Array.isArray(o.custom) ? o.custom : [o.custom]);
+  for (const cItem of customs) {
+  if (cItem && cItem.art) {
     // WYSIWYG placement: the item's TOP-LEFT sits at (anchor point + the offset
     // captured when it was drawn). The anchor moves per frame → the item rides
     // it. ox/oy are in sprite UNITS (PX-scaled). s scales the sprite to match
@@ -544,7 +552,7 @@ function drawComposite(ctx, W, idx, o) {
     // anchor with the art (so it's still held, not just flipped in place).
     // c.mirror = a future loadout seating the item in the opposite glove —
     // XORs with the frame flip so opposite-hand + turned-frame cancels out.
-    const c = o.custom, key = c.art, s = c.scale || 1;
+    const c = cItem, key = c.art, s = c.scale || 1;
     const cw = gridW(key) * unit * s, ch = gridH(key) * unit * s;
     const ap = wearAnchor(idx, c.anchor, c.hand);
     const flip = (F.face === 'left') !== !!c.mirror;
@@ -553,6 +561,7 @@ function drawComposite(ctx, W, idx, o) {
       : fx + ap.x * scale + (c.ox || 0) * unit;
     const py = fy + ap.y * scale + (c.oy || 0) * unit;
     drawAcc(bctx, key, px, py, cw, ch, flip);
+  }
   }
   bctx.filter = 'none';
   bctx.restore();

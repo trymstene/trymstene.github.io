@@ -64,12 +64,24 @@ export function loadCatalog() {                          // idempotent; returns 
   return _catPromise;
 }
 export function catalogItems() { return CATALOG; }
-export function catCustom(id) {                          // id -> engine custom payload {art,...}
-  if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ NEVER cache a miss (the P4-D bug)
-  const it = CATALOG.find((x) => x.id === id);
-  if (!it) return undefined;
-  CAT_CUSTOM[id] = wearToCustom(it.wear);
-  return CAT_CUSTOM[id] || undefined;
+export function catCustom(ids) {                          // id -> engine custom payload {art,...}
+  // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
+  // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
+  // the engine draws them in order.
+  // ⚠️ THERE ARE FIVE COPIES OF THIS RESOLVER. Every one must understand the
+  // comma form — one that cannot would leave that player wearing NOTHING in
+  // that area, which is worse than the single-item limit it replaced.
+  const one = (id) => {
+    if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
+    const it = CATALOG.find((x) => x.id === id);
+    if (!it) return undefined;
+    CAT_CUSTOM[id] = wearToCustom(it.wear);
+    return CAT_CUSTOM[id] || undefined;
+  };
+  const out = String(ids || '').split(',').map((t) => t.trim()).filter(Boolean)
+    .map(one).filter(Boolean);
+  return out.length ? out : undefined;
+
 }
 
 // ── Tonight's drop: date-seeded from DROPS + the catalog, identical on every client ──

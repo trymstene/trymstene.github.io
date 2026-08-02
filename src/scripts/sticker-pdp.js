@@ -254,14 +254,24 @@ const CAT_CUSTOM = {};
 const catOwned = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
 const catStats = () => { try { return (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {}; } catch (e) { return {}; } };
 const ownsCatalog = (id) => { try { return !!catOwned()[id] || (catStats()['own_' + id] || 0) > 0; } catch (e) { return false; } };
-function catCustom(id) {
-  // ⚠️ NEVER CACHE A MISS — a draw can run before the fetch lands, and a cached
-  // null would hide the item forever (the rule the rave learned in P4-D)
-  if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
-  const it = CATALOG.find((x) => x.id === id);
-  if (!it) return undefined;
-  CAT_CUSTOM[id] = wearToCustom(it.wear);
-  return CAT_CUSTOM[id] || undefined;
+function catCustom(ids) {
+  // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
+  // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
+  // the engine draws them in order.
+  // ⚠️ THERE ARE FIVE COPIES OF THIS RESOLVER. Every one must understand the
+  // comma form — one that cannot would leave that player wearing NOTHING in
+  // that area, which is worse than the single-item limit it replaced.
+  const one = (id) => {
+    if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
+    const it = CATALOG.find((x) => x.id === id);
+    if (!it) return undefined;
+    CAT_CUSTOM[id] = wearToCustom(it.wear);
+    return CAT_CUSTOM[id] || undefined;
+  };
+  const out = String(ids || '').split(',').map((t) => t.trim()).filter(Boolean)
+    .map(one).filter(Boolean);
+  return out.length ? out : undefined;
+
 }
 // `state.c` is an id; the renderer needs the wear payload. Resolving it onto
 // state.custom is what makes the preview, the print file and the checkout
@@ -307,7 +317,7 @@ function buildWardrobe() {
         const name = it.title || 'community item';
         const owned = ownsCatalog(it.id);
         return {
-          art: (catCustom(it.id) || {}).art,
+          art: ((catCustom(it.id) || [])[0] || {}).art,
           label: name + (it.by ? ' by ' + it.by : ''),
           locked: owned ? null : { href: '/rave/', why: 'catch it at the rave' },
           on: () => state.c === it.id,

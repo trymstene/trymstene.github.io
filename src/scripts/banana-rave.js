@@ -121,14 +121,24 @@ let DROP = DROPS[0] || null;
 let CATALOG = [];                 // the public manifest, fetched once per load
 const CAT_CUSTOM = {};            // id -> engine custom payload (render cache)
 function catOwned() { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } }
-function catCustom(id) {
-  // ⚠️ never cache a MISS: the floor draws before the catalog fetch lands, and
-  // a cached null would hide the item forever (bit us in P4-D verification)
-  if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
-  const it = CATALOG.find((x) => x.id === id);
-  if (!it) return undefined;
-  CAT_CUSTOM[id] = wearToCustom(it.wear);
-  return CAT_CUSTOM[id] || undefined;
+function catCustom(ids) {
+  // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
+  // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
+  // the engine draws them in order.
+  // ⚠️ THERE ARE FIVE COPIES OF THIS RESOLVER. Every one must understand the
+  // comma form — one that cannot would leave that player wearing NOTHING in
+  // that area, which is worse than the single-item limit it replaced.
+  const one = (id) => {
+    if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
+    const it = CATALOG.find((x) => x.id === id);
+    if (!it) return undefined;
+    CAT_CUSTOM[id] = wearToCustom(it.wear);
+    return CAT_CUSTOM[id] || undefined;
+  };
+  const out = String(ids || '').split(',').map((t) => t.trim()).filter(Boolean)
+    .map(one).filter(Boolean);
+  return out.length ? out : undefined;
+
 }
 function pickTonightDrop() {
   // stable pool order: curated drops first, then catalog by approval time
@@ -2399,7 +2409,7 @@ function init() {
         if (gfEl.dataset.item !== DROP.id) {
           gfEl.dataset.item = DROP.id;
           // curated drops have engine art; community items render their own svg
-          gfEl.innerHTML = DROP.catalog ? ((catCustom(DROP.id) || {}).art || '') : (SVG[DROP.art] || '');
+          gfEl.innerHTML = DROP.catalog ? (((catCustom(DROP.id) || [])[0] || {}).art || '') : (SVG[DROP.art] || '');
         }
         gfEl.style.display = '';
         gfEl.style.left = gs.x + '%';

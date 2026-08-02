@@ -89,14 +89,38 @@ function init() {
   const catOwned = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
   const catStats = () => { try { return (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {}; } catch (e) { return {}; } };
   const ownsCatalog = (id) => { try { return !!catOwned()[id] || (catStats()['own_' + id] || 0) > 0; } catch (e) { return false; } };
-  function catCustom(id) {
-    // ⚠️ never cache a MISS (a draw can run before the fetch lands) — the same
-    // rule the rave learned in P4-D, or a cached null hides the item forever
-    if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;
-    const it = CATALOG.find((x) => x.id === id);
-    if (!it) return undefined;
-    CAT_CUSTOM[id] = wearToCustom(it.wear);
-    return CAT_CUSTOM[id] || undefined;
+  // 🧢 THE EQUIPPED SET. A visitor wrote in on 2 Aug asking to wear three
+  // community items at once; before that it was strictly one.
+  // ⚠️ `state.c` stays a STRING — a comma list — so the multiplayer wire, the
+  // pass sync blob and every saved/shared banana keep their exact shape. No
+  // schema change anywhere; an old single id is just a one-item list.
+  const C_MAX = 5;                       // one per body spot, and there are five
+  const cList = () => String(state.c || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const cSet = (ids) => { state.c = ids.slice(0, C_MAX).join(','); };
+  // ⚠️ ONE ITEM PER SPOT — two head items would draw on top of each other, so
+  // equipping a second head item REPLACES the first. Exactly the rule the
+  // built-in hat and glasses slots already follow, so it reads as consistent
+  // rather than as a special case. The engine does NOT enforce this; the
+  // loadout does, because placement is a wardrobe decision, not a render one.
+  const spotOf = (id) => { const c = (catCustom(id) || [])[0]; return c ? String(c.anchor || '') + (c.hand || '') : ''; };
+  function catCustom(ids) {
+    // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
+    // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
+    // the engine draws them in order.
+    // ⚠️ THERE ARE FIVE COPIES OF THIS RESOLVER. Every one must understand the
+    // comma form — one that cannot would leave that player wearing NOTHING in
+    // that area, which is worse than the single-item limit it replaced.
+    const one = (id) => {
+      if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
+      const it = CATALOG.find((x) => x.id === id);
+      if (!it) return undefined;
+      CAT_CUSTOM[id] = wearToCustom(it.wear);
+      return CAT_CUSTOM[id] || undefined;
+    };
+    const out = String(ids || '').split(',').map((t) => t.trim()).filter(Boolean)
+      .map(one).filter(Boolean);
+    return out.length ? out : undefined;
+
   }
 
   // ---- controls ----
@@ -346,7 +370,7 @@ function init() {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'bb-chip bb-chip--icon' + (owned ? '' : ' bb-chip--locked');
-      b.innerHTML = chipArt((catCustom(it.id) || {}).art) || name;
+      b.innerHTML = chipArt(((catCustom(it.id) || [])[0] || {}).art) || name;
       if (owned) b.dataset.val = it.id;
       b.setAttribute('aria-label', name + (it.by ? ' by ' + it.by : '') + (owned ? '' : ' — locked, tap for info'));
       // EVERY community chip opens the CARD (works on touch AND desktop, so the
@@ -382,7 +406,7 @@ function init() {
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cardPop && !cardPop.hidden) close(); });
     }
     const owned = ownsCatalog(it.id);
-    el('bbCardArt').innerHTML = chipArt((catCustom(it.id) || {}).art) || '';
+    el('bbCardArt').innerHTML = chipArt(((catCustom(it.id) || [])[0] || {}).art) || '';
     el('bbCardName').textContent = it.title || 'community item';
     el('bbCardBy').textContent = it.by ? 'by ' + it.by : 'by a banana';
     const n = CAT_CATCHES[it.id] || 0;
@@ -409,10 +433,15 @@ function init() {
     cardClockT = setInterval(paintClock, 1000);
     const action = el('bbCardAction');
     if (owned) {
-      const worn = state.c === it.id;
+      const worn = cList().includes(it.id);
       action.className = 'bb-cardpop__action';
       action.textContent = worn ? 'Take it off' : 'Wear it';
-      action.onclick = () => { state.c = worn ? '' : it.id; onState(); cardPop.hidden = true; };
+      action.onclick = () => {
+        const list = cList();
+        if (worn) cSet(list.filter((x) => x !== it.id));
+        else { const sp = spotOf(it.id); cSet([...list.filter((x) => spotOf(x) !== sp), it.id]); }
+        onState(); cardPop.hidden = true;
+      };
     } else {
       action.className = 'bb-cardpop__action bb-cardpop__action--door';
       action.textContent = 'Catch it at the rave →';
@@ -910,7 +939,10 @@ function init() {
     // it shows SELECTED in the Community row so you can keep it or swap it off.
     try {
       const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
-      if (bl.c && ownsCatalog(bl.c)) state.c = bl.c;
+      // ⚠️ owned-gate each id separately now that this is a list — one
+      // un-owned id must not silently undress the rest
+      if (bl.c) state.c = String(bl.c).split(',').map((t) => t.trim())
+        .filter((id) => id && ownsCatalog(id)).slice(0, 5).join(',');
     } catch (e) {}
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
@@ -1038,7 +1070,10 @@ function init() {
       document.querySelectorAll('#' + host + ' .bb-chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.val === state[key]));
     });
     document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
-    document.querySelectorAll('#bbCatalogChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!c.dataset.val && c.dataset.val === state.c)));
+    // ⚠️ MEMBERSHIP, not equality — with two items equipped an equality test
+    // lights NEITHER chip, so the wardrobe silently looks empty.
+    document.querySelectorAll('#bbCatalogChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed',
+      String(!!c.dataset.val && cList().includes(c.dataset.val))));
     const anyFeet = FEET_DEFS.some((d) => state.extras[d.id]); // 'none' lights up when no shoe is worn
     document.querySelectorAll('#bbFeetChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
     document.querySelectorAll('#bbBodyChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.body])));
