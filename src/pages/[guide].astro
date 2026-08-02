@@ -26,7 +26,7 @@ const crumbLD = {
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://trymstene.com/' },
     { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://trymstene.com/guides/' },
-    { '@type': 'ListItem', position: 3, name: g.platform + ' emoji size', item: `https://trymstene.com/${g.slug}/` },
+    { '@type': 'ListItem', position: 3, name: g.label, item: `https://trymstene.com/${g.slug}/` },
   ],
 };
 // **bold** in the answer line → <strong>
@@ -36,7 +36,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <section class="gd">
-    <nav class="gd-crumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/guides/">Guides</a> › <span>{g.platform} emoji size</span></nav>
+    <nav class="gd-crumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/guides/">Guides</a> › <span>{g.label}</span></nav>
     <h1>{g.h1}</h1>
     <p class="gd-answer" set:html={answerHtml} />
 
@@ -51,9 +51,9 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
     <div class="gd-cta">
       <p><strong>Need one at exactly that size?</strong> The <a href="/forge/">Pixel Forge</a> is a free
-        pixel-emoji maker that exports transparent GIFs ready for {g.platform} — draw it, animate it, download it.
+        pixel maker that exports transparent GIFs at the size {g.platform} wants — draw it, animate it, download it.
         Or grab the <a href="/dancing-banana-emoji/">original dancing banana</a>, pre-cropped for every platform.</p>
-      <a class="btn btn--dark" href="/forge/"><PixelIcon name="palette" /> Make a free {g.platform} emote →</a>
+      <a class="btn btn--dark" href="/forge/"><PixelIcon name="palette" /> Make a free {g.platform} {g.asset} →</a>
     </div>
 
     <h2>The gotchas nobody tells you</h2>
@@ -67,7 +67,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     ))}
 
     <p class="gd-more">More sizes:
-      {others.map((o) => <a href={`/${o.slug}/`}> {o.platform} </a>)}
+      {others.map((o) => <a href={`/${o.slug}/`}> {o.label} </a>)}
       · <a href="/guides/">the full cheat sheet</a>
     </p>
   </section>
