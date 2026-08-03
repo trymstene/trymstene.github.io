@@ -68,7 +68,7 @@ function init() {
   loadCatalog().then(() => { try { lastF = -1; drawMe(); } catch (e) {} });
 
   // ---- camera (the park's, verbatim shape) --------------------------------
-  const VIEW_ART_W = 900, VIEW_ART_V = 760, YARD_FIT = 640;
+  const VIEW_ART_W = 900, VIEW_ART_V = 760, YARD_FIT = 520;   // 520 = the park's own phone cap
   let scale = 1, viewW = 0, viewH = 0, camX = 0, camY = 0;
   function layout() {
     const r = view.getBoundingClientRect();

@@ -15,7 +15,12 @@ import { WEARABLE_PACKS as PACKS, ownsWearable } from '../data/wearables.js';
 // ?v= busts stale browser caches: bump it whenever the sheet's pixels change,
 // or old cached copies (e.g. the pre-fix sheet with white-filled arm gaps)
 // keep haunting returning visitors' previews and exports.
-const SHEET_SRC = '/assets/banana-dance.png?v=6'; // v6 = rebuilt from Trym's 2000px remasters (tools/build-banana-assets.py)
+// v7 = boundary columns scrubbed: frames 2/6's arm tips touched their cell
+// edge and Chrome's sampler bled them 1px into the NEIGHBOUR frame — a
+// floating vertical line blinking beside the banana (Trym, 3 Aug). Every
+// frame's outer 2 columns are now guaranteed empty; keep it that way in
+// tools/build-banana-assets.py rebuilds.
+const SHEET_SRC = '/assets/banana-dance.png?v=7';
 // 📐 proportions live in banana-geo.js so a surface can know them WITHOUT
 // loading the sprite sheets. Re-exported below — one source of truth, one file down.
 import { FW, FH, NFRAMES, BASE_CYCLE_S, PX, FRAME_H_FRAC, FRAME_TOP_FRAC } from './banana-geo.js';
@@ -471,6 +476,8 @@ function drawComposite(ctx, W, idx, o) {
   }
   if (hatBehind) drawHat(hatDef); // brace tucks behind the stem
   bctx.imageSmoothingEnabled = false;
+  // (frame-boundary bleed is fixed in the ASSET — sheet v7 keeps every
+  // frame's outer 2 columns empty, so the sampler has nothing to leak)
   try { bctx.drawImage(sheet, idx * FW, 0, FW, FH, fx, fy, fw, fh); } catch (e) {}
   bctx.imageSmoothingEnabled = true;
 

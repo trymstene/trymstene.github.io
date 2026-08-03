@@ -53,7 +53,9 @@ const description = 'A clearing west of the park with your name on the sign: cla
       padding: 3px 7px; border-radius: 5px;
     }
     .hs-tentspot small { font-weight: 700; opacity: 0.8; }
-    .hs-me { position: absolute; left: 0; top: 0; width: 96px; pointer-events: none; }
+    /* ⚠️ % of the WORLD, like the park's 3.6% — a fixed px banana ignored the
+       zoom, towering over the fence on phones (why the yard "felt small") */
+    .hs-me { position: absolute; left: 0; top: 0; width: 5.5%; pointer-events: none; }
     .hs-me canvas { width: 100%; height: auto; display: block; }
 
     .hs-signname {

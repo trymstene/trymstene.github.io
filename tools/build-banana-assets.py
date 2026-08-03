@@ -208,6 +208,15 @@ def stage_sheet(write):
     for r in report:
         print(r)
     assert_clean(frames, 'sheet')
+    # ⚠️ GUTTER RULE (sheet v7, 3 Aug 2026): every frame's outer 2 COLUMNS must
+    # be empty — frames 2/6's arm tips touched their cell edge and Chrome's
+    # sampler bled them 1px into the NEIGHBOUR frame (a floating vertical line
+    # blinking beside every banana in the world). Scrub + assert, forever.
+    for f in frames:
+        f[:, :2, 3] = 0
+        f[:, -2:, 3] = 0
+    for i, f in enumerate(frames):
+        assert f[:, :2, 3].max() == 0 and f[:, -2:, 3].max() == 0, 'gutter dirty on frame %d' % i
     strip = np.concatenate(frames, axis=1)
     save_png(strip, os.path.join(ASSETS, 'banana-dance.png'), write)
     return frames
