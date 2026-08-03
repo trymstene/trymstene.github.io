@@ -47,6 +47,10 @@ function loadState() {
   } catch (e) {}
   return { v: 1, name: '', claimedAt: 0, stage: 0, items: [], shed: [], bed: [null, null, null, null] };
 }
+function withHome(s) {   // older saves have no home — the default is the old spot
+  if (!s.home) s.home = { x: TENT.x, y: TENT.y };
+  return s;
+}
 
 // 🧪 ?hstest=<scenario> — jump the homestead to any point of the journey and
 // LOOK at it (the park's ?parktest pattern). Overwrites hs-v1 for this device;
@@ -142,7 +146,7 @@ function init() {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pct = (v, span) => (v / span * 100) + '%';
 
-  const state = loadState();
+  const state = withHome(loadState());
   const save = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
   // ⚠️ TDZ: camTarget() reads these and is CALLED at spawn setup, so they
   // must live above the camera section (the rave-floor lesson)
@@ -248,31 +252,32 @@ function init() {
       if (!tentSpotEl) {
         tentSpotEl = document.createElement('div');
         tentSpotEl.className = 'hs-tentspot';
-        tentSpotEl.style.left = pct(TENT.x - 70, W);
-        tentSpotEl.style.top = pct(TENT.y - 74, H);
+        tentSpotEl.style.left = pct(state.home.x - 70, W);
+        tentSpotEl.style.top = pct(state.home.y - 74, H);
         tentSpotEl.style.width = pct(140, W);
         tentSpotEl.style.height = pct(74, H);
         tentSpotEl.innerHTML = '<span>⛺ a good tent spot<br><small>ask at the mailbox</small></span>';
-        depth(tentSpotEl, TENT.y - 40);
+        depth(tentSpotEl, state.home.y - 40);
         world.appendChild(tentSpotEl);
       }
       return;
     }
     if (tentSpotEl) { tentSpotEl.remove(); tentSpotEl = null; }
     const c = curStruct();
-    if (structKey === c.key) return;
+    const sig = c.key + ':' + state.home.x + ',' + state.home.y;
+    if (structKey === sig) return;
     if (structEl) structEl.remove();
     const d = STRUCTS[c.key];
     structEl = document.createElement('div');
     structEl.className = 'hs-ov';
-    structEl.style.left = pct(TENT.x - d.w / 2, W);
-    structEl.style.top = pct(TENT.y - d.h, H);
+    structEl.style.left = pct(state.home.x - d.w / 2, W);
+    structEl.style.top = pct(state.home.y - d.h, H);
     structEl.style.width = pct(d.w, W);
     structEl.style.height = pct(d.h, H);
     structEl.style.backgroundImage = "url('/assets/homestead/ov-" + c.key + ".png')";
-    depth(structEl, TENT.y);
+    depth(structEl, state.home.y);
     world.appendChild(structEl);
-    structKey = c.key;
+    structKey = sig;
   }
   refreshTent();
 
@@ -311,7 +316,7 @@ function init() {
     if (state.stage >= 1) {
       const d = structDims();
       const hw2 = Math.max(24, d.w * 0.42);
-      liveRects.push([TENT.x - hw2, TENT.y - Math.max(20, d.h * 0.2), TENT.x + hw2, TENT.y + 4]);
+      liveRects.push([state.home.x - hw2, state.home.y - Math.max(20, d.h * 0.2), state.home.x + hw2, state.home.y + 4]);
     }
     liveRects.push([BED[0] - 6, BED[1] - 6, BED[2] + 6, BED[3] + 6]);
   }
@@ -507,13 +512,8 @@ function init() {
       btn.textContent = coinBalance() >= TENT_PRICE ? '⛺ pitch it' : 'need ' + TENT_PRICE + ' 🪙 — you have ' + coinBalance();
       btn.disabled = coinBalance() < TENT_PRICE;
       btn.addEventListener('click', () => {
-        passStat('coins_spent', TENT_PRICE);
-        state.stage = 1;
-        save(); refreshTent(); rebuildSolids(); refreshHud();
-        toast('⛺ the tent is up — the catalog is open');
-        float(TENT.x, TENT.y - TENT.h - 8, '⛺');
-        track('homestead_tent');
-        renderShop();   // the tabs + catalog reveal on the spot
+        closeShop();
+        startPlacingHome('tent', { price: TENT_PRICE, toStage: 1 });
       });
       card.appendChild(btn);
       list.appendChild(card);
@@ -591,13 +591,8 @@ function init() {
           : 'need ' + next.price + ' 🪙 — you have ' + coinBalance();
         btn.disabled = coinBalance() < next.price;
         btn.addEventListener('click', () => {
-          passStat('coins_spent', next.price);
-          state.stage += 1;
-          save(); refreshTent(); rebuildSolids(); refreshHud();
-          toast(next.icon + ' ' + next.name.toLowerCase() + ' — done');
-          float(TENT.x, TENT.y - structDims().h - 8, next.icon);
-          track('homestead_upgrade', { to: next.key });
-          renderShop();
+          closeShop();
+          startPlacingHome(next.key, { price: next.price, toStage: state.stage + 1 });
         });
         card.appendChild(btn);
       } else {
@@ -647,7 +642,8 @@ function init() {
     // keep clear of the structure's FOOTPRINT only — the front yard below the
     // porch stays decoratable (the max stress test caught the old box banning it)
     const sd = structDims();
-    if (Math.abs(x - TENT.x) < sd.w * 0.52 + d.w * 0.3 && y > TENT.y - sd.h * 0.62 && y < TENT.y + 12) return false;
+    if (state.stage >= 1 && Math.abs(x - state.home.x) < sd.w * 0.52 + d.w * 0.3
+      && y > state.home.y - sd.h * 0.62 && y < state.home.y + 12) return false;
     if (Math.hypot(x - MAILBOX.x, y - MAILBOX.y) < 50) return false;
     for (const it of state.items) {
       if (placing && placing.moving === it) continue;
@@ -670,8 +666,81 @@ function init() {
     hint(false);
     toast('drag to look around · tap to try a spot — then ✓', 3600);
   }
+  // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
+  // validity, and anything under the confirmed footprint sweeps to the shed.
+  function homeOk(x, y) {
+    const d = STRUCTS[placing.key];
+    if (x - d.w / 2 < PLOT[0] - 2 || x + d.w / 2 > PLOT[2] + 2) return false;
+    if (y - d.h < PLOT[1] - 44 || y > PLOT[3] - 8) return false;
+    const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
+    if (foot[0] < BED[2] + 20 && foot[2] > BED[0] - 20 && foot[1] < BED[3] + 16 && foot[3] > BED[1] - 40) return false;
+    return true;
+  }
+  function startPlacingHome(key, opts) {
+    cancelPlacing();
+    const d = STRUCTS[key];
+    const el = document.createElement('div');
+    el.className = 'hs-it hs-it--ghost';
+    el.style.width = pct(d.w, W);
+    el.style.height = pct(d.h, H);
+    el.style.backgroundImage = "url('/assets/homestead/ov-" + key + ".png')";
+    world.appendChild(el);
+    placing = { home: true, key, x: state.home.x, y: state.home.y, el,
+      price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0 };
+    camFree = { x: placing.x, y: placing.y };
+    view.classList.add('is-placing');
+    updateGhost();
+    confirmEl.hidden = false;
+    hint(false);
+    toast('choose where it stands — drag to look, tap to try', 3600);
+  }
+  function confirmHome() {
+    const d = STRUCTS[placing.key];
+    const x = placing.x, y = placing.y;
+    // the sweep: items under the new footprint go safely to the shed
+    const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
+    const kept = [], swept = [];
+    state.items.forEach((it) => {
+      (it.x > foot[0] && it.x < foot[2] && it.y > foot[1] && it.y < foot[3] ? swept : kept).push(it);
+    });
+    if (swept.length) {
+      state.items = kept;
+      swept.forEach((it) => state.shed.push({ id: it.id }));
+      toast('🧰 ' + swept.length + ' thing' + (swept.length > 1 ? 's' : '') + ' moved to the shed to make room');
+    }
+    const key = placing.key;
+    if (placing.toStage) {   // this placement completes an UPGRADE
+      passStat('coins_spent', placing.price);
+      state.stage = placing.toStage;
+      const rung = STRUCT_LADDER[placing.toStage - 1];
+      track('homestead_upgrade', { to: rung.key });
+      if (!swept.length) toast(rung.icon + ' ' + rung.name.toLowerCase() + ' — done');
+    } else {
+      track('homestead_move_home');
+    }
+    state.home = { x, y };
+    placing.el.remove();
+    placing = null;
+    confirmEl.hidden = true;
+    camFree = null;
+    view.classList.remove('is-placing');
+    save();
+    refreshTent(); rebuildSolids(); refreshItems(); refreshHud();
+    float(x, y - STRUCTS[key].h - 8, '✓');
+  }
+
   function updateGhost() {
     if (!placing) return;
+    if (placing.home) {
+      const d = STRUCTS[placing.key];
+      placing.el.style.left = pct(placing.x - d.w / 2, W);
+      placing.el.style.top = pct(placing.y - d.h, H);
+      depth(placing.el, placing.y);
+      const ok = homeOk(placing.x, placing.y);
+      placing.el.classList.toggle('is-bad', !ok);
+      document.getElementById('hsPlaceGo').disabled = !ok;
+      return;
+    }
     const d = DEX[placing.id];
     placing.el.style.left = pct(placing.x - d.w / 2, W);
     placing.el.style.top = pct(placing.y - d.h, H);
@@ -685,6 +754,13 @@ function init() {
     view.classList.remove('is-placing');
     camFree = null;
     placing.el.remove();
+    if (placing.home) {   // an upgrade not yet paid for simply doesn't happen
+      const wasUpgrade = !!placing.toStage;
+      placing = null;
+      confirmEl.hidden = true;
+      if (wasUpgrade) toast('no rush — the offer stays at the mailbox');
+      return;
+    }
     if (placing.moving) state.items.push(placing.moving);   // it never left
     const wasBuy = !placing.moving;
     const backId = placing.id;
@@ -695,6 +771,7 @@ function init() {
   }
   document.getElementById('hsPlaceGo').addEventListener('click', () => {
     if (!placing) return;
+    if (placing.home) { confirmHome(); return; }
     view.classList.remove('is-placing');
     camFree = null;
     const it = { id: placing.id, x: placing.x, y: placing.y };
@@ -798,8 +875,14 @@ function init() {
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
-    placing.x = snap(Math.max(PLOT[0] + 12, Math.min(PLOT[2] - 12, wx)));
-    placing.y = snap(Math.max(PLOT[1] + 26, Math.min(PLOT[3] - 8, wy)));
+    if (placing.home) {
+      const d = STRUCTS[placing.key];
+      placing.x = snap(Math.max(PLOT[0] + d.w / 2, Math.min(PLOT[2] - d.w / 2, wx)));
+      placing.y = snap(Math.max(PLOT[1] + Math.min(d.h * 0.5, 120), Math.min(PLOT[3] - 10, wy)));
+    } else {
+      placing.x = snap(Math.max(PLOT[0] + 12, Math.min(PLOT[2] - 12, wx)));
+      placing.y = snap(Math.max(PLOT[1] + 26, Math.min(PLOT[3] - 8, wy)));
+    }
     updateGhost();
   }
   view.addEventListener('pointerdown', (e) => {
@@ -838,9 +921,9 @@ function init() {
       return;
     }
     // the tent spot (stage 0): near = the upgrades tab, far = walk over
-    if (state.stage < 1 && Math.abs(wx - TENT.x) < 76 && wy > TENT.y - 84 && wy < TENT.y + 8) {
-      if (Math.hypot(pos.x - TENT.x, pos.y - TENT.y) < 150) { openShop('up'); return; }
-      tgt.x = TENT.x; tgt.y = TENT.y + 40;
+    if (state.stage < 1 && Math.abs(wx - state.home.x) < 76 && wy > state.home.y - 84 && wy < state.home.y + 8) {
+      if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 150) { openShop('up'); return; }
+      tgt.x = state.home.x; tgt.y = state.home.y + 40;
       return;
     }
     // a bed slot
@@ -849,6 +932,27 @@ function init() {
       if (Math.hypot(wx - s[0], wy - (s[1] - 16)) < 32) {
         if (Math.hypot(pos.x - s[0], pos.y - s[1]) < 120) bedTap(i);
         else { tgt.x = s[0]; tgt.y = s[1] + 40; }
+        return;
+      }
+    }
+    // the structure: near = offer the move, far = walk over
+    if (state.stage >= 1) {
+      const sd = structDims();
+      if (Math.abs(wx - state.home.x) < sd.w / 2 && wy > state.home.y - sd.h && wy < state.home.y + 8) {
+        if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < sd.w / 2 + 90) {
+          clearChip();
+          itChip = document.createElement('div');
+          itChip.className = 'hs-chip';
+          const mv = document.createElement('button');
+          mv.className = 'hs-btn';
+          mv.textContent = '✥ move the ' + curStruct().key;
+          mv.addEventListener('click', () => { clearChip(); startPlacingHome(curStruct().key, {}); });
+          itChip.append(mv);
+          itChip.style.left = pct(state.home.x, W);
+          itChip.style.top = pct(state.home.y - sd.h - 12, H);
+          itChip.style.zIndex = '3000';
+          world.appendChild(itChip);
+        } else { tgt.x = state.home.x; tgt.y = state.home.y + 30; }
         return;
       }
     }
