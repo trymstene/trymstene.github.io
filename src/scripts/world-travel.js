@@ -11,10 +11,12 @@
 // that has to look the same in the park's greens, the bay's sands and the
 // rave's neon; three copies of the same rules in three .astro files is exactly
 // how it would stop looking the same. One <style>, injected once.
+// one line per row — Trym 3 Aug: the two-line rows read asymmetric, so the
+// descriptions went. The name + icon is the whole pitch.
 const AREAS = {
-  rave: { icon: '🪩', name: 'The Rave', line: 'the dance floor — always open' },
-  park: { icon: '🌳', name: 'The Park', line: 'the shared garden' },
-  beach: { icon: '🏖', name: 'Banana Bay', line: 'shells, fish and the pier' },
+  rave: { icon: '🪩', name: 'The Rave' },
+  park: { icon: '🌳', name: 'The Park' },
+  beach: { icon: '🏖', name: 'Banana Bay' },
 };
 const ORDER = ['rave', 'park', 'beach'];
 
@@ -84,9 +86,8 @@ const CSS = `
   font-family:inherit; text-align:left; text-decoration:none;
 }
 .wt-go:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
-.wt-go__icon { font-size:1.5rem; line-height:1; }
-.wt-go__name { display:block; font-size:1rem; font-weight:800; }
-.wt-go__line { display:block; font-size:0.74rem; font-weight:700; opacity:0.72; }
+.wt-go__icon { font-size:1.35rem; line-height:1; }
+.wt-go__name { font-size:1rem; font-weight:800; white-space:nowrap; }
 .wt-go__arrow { margin-left:auto; font-size:1.1rem; font-weight:800; }
 .wt-close {
   appearance:none; width:100%; margin-top:0.8rem; cursor:pointer; font-family:inherit;
@@ -102,7 +103,6 @@ const CSS = `
   margin:0.85rem 0 0.6rem; border:0; border-top:2px dashed rgba(255,253,245,0.22);
 }
 .wt-go--shop { background:#fffdf5; color:#141414; }
-.wt-go--shop .wt-go__line { opacity:0.62; }
 @media (prefers-reduced-motion:reduce) { .wt-go, .wt-close { transition:none; } }
 `;
 
@@ -149,8 +149,7 @@ export function initTravel({ here, mount, before, btnClass, track }) {
     + '<div class="wt-list">'
     + others.map((k) => '<a class="wt-go" href="' + hrefFor(k, here) + '" data-to="' + k + '">'
       + '<span class="wt-go__icon">' + AREAS[k].icon + '</span>'
-      + '<span><span class="wt-go__name">' + AREAS[k].name + '</span>'
-      + '<span class="wt-go__line">' + AREAS[k].line + '</span></span>'
+      + '<span class="wt-go__name">' + AREAS[k].name + '</span>'
       + '<span class="wt-go__arrow">→</span></a>').join('')
     + '</div>'
     // 🛍 the one door that leaves the world. 28 days of data: the walked door to
@@ -163,13 +162,11 @@ export function initTravel({ here, mount, before, btnClass, track }) {
     // beat posters here too: until now it only had the LED ad.
     + '<a class="wt-go wt-go--shop" href="/forge/items/" data-to="items">'
     + '<span class="wt-go__icon">🎁</span>'
-    + '<span><span class="wt-go__name">The Items Workshop</span>'
-    + '<span class="wt-go__line">draw a wearable — the best ones drop at the rave</span></span>'
+    + '<span class="wt-go__name">The Items Workshop</span>'
     + '<span class="wt-go__arrow">→</span></a>'
     + '<a class="wt-go wt-go--shop" href="/shop/" data-to="shop">'
     + '<span class="wt-go__icon">🛍</span>'
-    + '<span><span class="wt-go__name">The Shop</span>'
-    + '<span class="wt-go__line">your banana on real things — not coins</span></span>'
+    + '<span class="wt-go__name">The Shop</span>'
     + '<span class="wt-go__arrow">→</span></a>'
     + '</div>'
     + '<button class="wt-close" type="button">stay here</button>'
