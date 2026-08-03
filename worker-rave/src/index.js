@@ -2105,7 +2105,7 @@ export class YardRoom {
       if (typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v)) out.style[r] = v;
     });
     (Array.isArray(s.items) ? s.items.slice(0, YARD_ITEM_CAP) : []).forEach((it) => {
-      if (it && typeof it.id === 'string' && /^[a-z0-9]{1,24}$/.test(it.id)) {
+      if (it && typeof it.id === 'string' && /^([a-z0-9]{1,24}|c_[a-f0-9]{6,32})$/.test(it.id)) {
         out.items.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
       }
     });

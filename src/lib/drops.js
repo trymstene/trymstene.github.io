@@ -75,6 +75,7 @@ export function catCustom(ids) {                          // id -> engine custom
     if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
     const it = CATALOG.find((x) => x.id === id);
     if (!it) return undefined;
+    if (it.kind === 'decor') return undefined;   // a homestead piece is not worn
     CAT_CUSTOM[id] = wearToCustom(it.wear);
     return CAT_CUSTOM[id] || undefined;
   };
@@ -91,7 +92,7 @@ export function worldDay() { return Math.floor(Date.now() / 86400000); }
 export function tonightDrop({ custom = true, day = worldDay() } = {}) {
   const pool = [
     ...DROPS.map((d) => ({ ...d, catalog: false })),
-    ...(custom ? CATALOG.slice().sort((a, b) => (a.added || 0) - (b.added || 0))
+    ...(custom ? CATALOG.filter((it) => it.kind !== 'decor').sort((a, b) => (a.added || 0) - (b.added || 0))
       .map((it) => ({ id: it.id, label: it.title || 'community item', by: it.by || '', catalog: true, wear: it.wear })) : []),
   ];
   if (!pool.length) return null;

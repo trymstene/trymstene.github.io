@@ -390,7 +390,7 @@ function init() {
     ctx.clearRect(0, 0, stage.width, stage.height);
     if (mode === 'items') { // dance the BANANA wearing what you drew — the preview IS this canvas
       if (!itemsReady) return;   // the banana has not arrived yet; the canvas stays clear
-      ENG.drawComposite(ctx, stage.width, playIdx % ENG_NFRAMES, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: computeWear() || undefined });
+      ENG.drawComposite(ctx, stage.width, playIdx % ENG_NFRAMES, { hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none', custom: (() => { const cw = computeWear(); return cw && cw.anchor !== 'decor' ? cw : undefined; })() });
       return;
     }
     for (let y = 0; y < state.h; y++) for (let x = 0; x < state.w; x++) {
@@ -1133,7 +1133,9 @@ function init() {
   let wearPick = null;
   const WEAR_SPOTS = [['head', null, 'head'], ['face', null, 'face'], ['chest', null, 'body'],
                       ['hand', 'left', 'left hand'], ['hand', 'right', 'right hand'],
-                      ['feet', null, 'feet']];
+                      ['feet', null, 'feet'],
+                      // 🏡 not worn at all: a decoration for the Homestead's mailbox catalog
+                      ['decor', null, 'homestead']];
   const pickKey = (k, h) => k + (h || '');
 
   function computeWear() {
@@ -1172,6 +1174,10 @@ function init() {
     // sombrero whose brim-edge strays a few px into a hand zone must not
     const spread = n >= 6 && (n - topVotes) >= Math.max(3, n * 0.25);
     const auto = [best[0], best[1]];
+    if (wearPick === 'decor') {           // 🏡 a decoration — no body anchor at all
+      return { art: out.svg, anchor: 'decor', spread: false,
+        auto: pickKey(auto[0], auto[1]), picked: true, ox: 0, oy: 0, scale: 1 };
+    }
     if (wearPick) {                       // the maker overruled the guess
       const f = WEAR_SPOTS.find((w) => pickKey(w[0], w[1]) === wearPick);
       if (f) { best = [f[0], f[1]]; bestAp = ENG.wearAnchor(2, f[0], f[1]); }
@@ -1236,6 +1242,7 @@ function init() {
       showToast('an item rides ONE spot — want both hands? make two items 🍌', true, 'warning');
       return;
     }
+    if (c.anchor === 'decor') { showToast('a homestead decoration — lands in the mailbox catalog', false, 'check'); return; }
     const label = c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor);
     showToast('rides the ' + label + (c.picked ? ' — your choice' : ''), false, 'check');
   }

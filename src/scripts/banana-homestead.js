@@ -8,6 +8,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, buffGet, buffSet } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog } from '../lib/drops.js';
+import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
@@ -398,6 +399,22 @@ function init(visitDoc, visitMiss) {
   // ---- placed decor -------------------------------------------------------
   const DEX = {};
   DECOR.forEach((d) => { DEX[d.id] = d; });
+  // 🎁 COMMUNITY DECOR (M3b): forge-made pieces ride the catalog as inline
+  // SVG (kind 'decor', never worn) — they join the mailbox with maker credit,
+  // and a visitor's yard re-renders once the catalog lands.
+  loadCatalog().then((items) => {
+    let fresh = 0;
+    (items || []).forEach((it) => {
+      if (it.kind !== 'decor' || !it.wear || DEX[it.id]) return;
+      const cu = wearToCustom(it.wear);
+      if (!cu || !cu.art) return;
+      DEX[it.id] = { id: it.id, name: it.title || 'community piece', cat: 'community',
+        price: 20, stage: 1, w: 46, h: 46, surface: 'ground',
+        svg: cu.art, img: null, solid: null, maker: it.by || '' };
+      fresh++;
+    });
+    if (fresh) refreshItems();
+  });
   const itemEls = [];
   function itemDiv(it, ghost) {
     const d = DEX[it.id];
@@ -407,7 +424,8 @@ function init(visitDoc, visitMiss) {
     el.style.top = pct(it.y - d.h, H);
     el.style.width = pct(d.w, W);
     el.style.height = pct(d.h, H);
-    el.style.backgroundImage = "url('" + d.img + "')";
+    if (d.svg) el.innerHTML = d.svg;
+    else el.style.backgroundImage = "url('" + d.img + "')";
     depth(el, it.y);
     world.appendChild(el);
     return el;
@@ -862,14 +880,28 @@ function init(visitDoc, visitMiss) {
   // ---- 📬 the mailbox shop -------------------------------------------------
   const cap = () => CAPS[Math.min(state.stage, CAPS.length - 1)];
   const CAT_LABELS = { garden: '🌼 Garden', furniture: '🪑 Furniture', nature: '🌿 Nature',
-    lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun' };
+    lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community' };
   function shopTile(d, verb, cb) {
     const tile = document.createElement('div');
     tile.className = 'hs-tile';
-    const im = document.createElement('img');
-    im.src = d.img; im.alt = ''; im.loading = 'lazy';
+    let im;
+    if (d.svg) {   // a community piece — inline SVG, with the maker's name on it
+      im = document.createElement('span');
+      im.className = 'hs-tilesvg';
+      im.innerHTML = d.svg;
+    } else {
+      im = document.createElement('img');
+      im.src = d.img; im.alt = ''; im.loading = 'lazy';
+    }
     const nm = document.createElement('b');
     nm.textContent = d.name;
+    if (d.maker) {
+      const by = document.createElement('i');
+      by.className = 'hs-maker';
+      by.textContent = 'by ' + d.maker;
+      nm.appendChild(document.createElement('br'));
+      nm.appendChild(by);
+    }
     const pr = document.createElement('em');
     if (verb === 'buy') pr.innerHTML = d.price + ' ' + COIN;
     else pr.textContent = 'in the shed';

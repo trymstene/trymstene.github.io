@@ -364,7 +364,7 @@ function init() {
       const own = catOwned(); const st = catStats();
       Object.keys(own).forEach((id) => { if (/^c_/.test(id) && !((st['own_' + id] || 0) > 0)) passStat('own_' + id, 1); });
     } catch (e) {}
-    CATALOG.slice().sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
+    CATALOG.filter((it) => it.kind !== 'decor').sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
       const owned = ownsCatalog(it.id);
       const name = it.title || 'community item';
       const b = document.createElement('button');

@@ -677,7 +677,8 @@ async function handleGalleryGif(env, url) {
 function wearOk(w) {
   if (!w || typeof w !== 'object') return false;
   if (typeof w.forge !== 'string' || !w.forge || w.forge.length > 40000) return false;
-  if (!['head', 'face', 'chest', 'hand', 'feet'].includes(w.anchor)) return false;
+  // 'decor' = a HOMESTEAD piece, not worn — same forge payload, no body anchor
+  if (!['head', 'face', 'chest', 'hand', 'feet', 'decor'].includes(w.anchor)) return false;
   if (w.hand !== undefined && !['left', 'right'].includes(w.hand)) return false;
   for (const k of ['ox', 'oy', 'scale']) {
     if (typeof w[k] !== 'number' || !isFinite(w[k])) return false;
@@ -785,7 +786,8 @@ async function handleCatalogModerate(request, env, url) {
   if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
   const itemId = 'c_' + id; // catalog ids are namespaced — never collide with curated wearables.js ids
   items = items.filter((x) => x.id !== itemId);
-  items.push({ id: itemId, title, by, wear: meta.wear, added: Date.now() });
+  items.push({ id: itemId, title, by, wear: meta.wear, added: Date.now(),
+    ...(meta.wear && meta.wear.anchor === 'decor' ? { kind: 'decor' } : {}) });
   await env.SHARES.put('catalog/items.json', JSON.stringify(items),
     { httpMetadata: { contentType: 'application/json' } });
   await putVerdict('ok', itemId);
