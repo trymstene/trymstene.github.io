@@ -216,15 +216,45 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-confirm[hidden] { display: none; }
 
     .hs-about { margin-top: 1.6rem; max-width: 70ch; }
-    .hs-about h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
     .hs-about p { margin: 0 0 0.6rem; line-height: 1.6; font-size: 0.92rem; opacity: 0.85; }
+
+    /* 🪙 the REAL bananacoin rides every price (never the stock emoji) */
+    .hs-coin { width: 14px; height: 14px; image-rendering: pixelated; vertical-align: -2px; }
+
+    /* 👋 visiting someone else's homestead */
+    .hs-visit {
+      position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+      z-index: 25; display: flex; gap: 0.5rem; align-items: center;
+      max-width: calc(100% - 1.2rem); background: rgba(10, 16, 8, 0.9);
+      border: 3px solid #000; border-radius: 7px; padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+    }
+    .hs-visit b { color: #ffe135; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hs-visit .hs-btn { font-size: 0.72rem; padding: 0.3rem 0.5rem; text-decoration: none; }
+    .hs-visit[hidden] { display: none; }
+
+    /* 🪧 the guestbook at the sign */
+    .hs-share { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; }
+    .hs-share input {
+      flex: 1; min-width: 0; margin: 0; text-align: left; font-size: 0.78rem;
+      padding: 0.45rem 0.5rem;
+    }
+    .hs-share .hs-btn { flex: 0 0 auto; }
+    .hs-share[hidden] { display: none; }
+    .hs-guestlist { display: grid; gap: 0.45rem; max-height: min(38vh, 300px); overflow-y: auto; margin: 0 0 0.7rem; }
+    .hs-guest {
+      border: 2px solid #000; background: #fff; padding: 0.45rem 0.55rem;
+    }
+    .hs-guest b { display: block; font-size: 0.78rem; color: #6b5200; }
+    .hs-guest span { font-size: 0.85rem; line-height: 1.4; overflow-wrap: anywhere; }
+    .hs-signrow { display: flex; gap: 0.4rem; }
+    .hs-signrow input { flex: 1; min-width: 0; margin: 0; text-align: left; }
+    .hs-signrow .hs-btn { flex: 0 0 auto; }
+    .hs-signrow[hidden] { display: none; }
   </style>
 
   <div class="hs-wrap">
     <div class="hs-head">
       <h1>🏡 the homestead</h1>
-      <p>A clearing in the woods west of the park — <strong>yours</strong>. Claim it, put your
-        name on the sign, order things at the mailbox and make the place your own.</p>
     </div>
 
     <div class="hs-stage">
@@ -241,6 +271,10 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <button class="hs-btn hs-btn--ghost" id="hsPlaceNo">✕ not now</button>
         </div>
         <div class="hs-cut" id="hsCut" aria-hidden="true"></div>
+        <div class="hs-visit" id="hsVisit" hidden>
+          <b id="hsVisitName"></b>
+          <a class="hs-btn" href="/homestead/">🏡 yours</a>
+        </div>
       </div>
       <div class="hs-actions" aria-label="homestead actions">
         <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
@@ -255,6 +289,22 @@ const description = 'A clearing west of the park with your name on the sign: cla
           What should the sign say?</p>
         <input id="hsClaimName" maxlength="28" aria-label="Name your homestead">
         <button class="hs-btn" id="hsClaimGo">🏡 Claim it</button>
+      </div>
+    </div>
+
+    <div class="hs-veil" id="hsGuest" hidden>
+      <div class="hs-card">
+        <button class="hs-shopx" id="hsGuestClose" aria-label="Close">✕</button>
+        <h2 id="hsGuestTitle">🪧 The sign</h2>
+        <div class="hs-share" id="hsShare" hidden>
+          <input id="hsShareUrl" readonly aria-label="Your homestead address">
+          <button class="hs-btn" id="hsShareCopy">copy</button>
+        </div>
+        <div class="hs-guestlist" id="hsGuestList"></div>
+        <div class="hs-signrow" id="hsSignRow" hidden>
+          <input id="hsSignText" maxlength="80" placeholder="leave a note…" aria-label="Guestbook note">
+          <button class="hs-btn" id="hsSignGo">✍️ sign</button>
+        </div>
       </div>
     </div>
 
@@ -274,13 +324,9 @@ const description = 'A clearing west of the park with your name on the sign: cla
     </div>
 
     <section class="hs-about">
-      <h2>What is this place?</h2>
-      <p>The first personal space in Banana World: everyone's homestead is their own —
-        no shared slots, no racing anyone. Decorate it with things from the mailbox,
-        grow the bed, and pitch a tent when you've saved up. Bananacoins come from
-        playing anywhere in the world — <a href="/rave/">the rave</a>, <a href="/park/">the park</a>
-        and <a href="/beach/">the bay</a> all pay.</p>
-      <p>This corner is brand new — visiting each other's homesteads is on the way.</p>
+      <p>Your own corner of Banana World. Bananacoins come from playing anywhere —
+        <a href="/rave/">the rave</a>, <a href="/park/">the park</a> and
+        <a href="/beach/">the bay</a> all pay.</p>
     </section>
   </div>
 

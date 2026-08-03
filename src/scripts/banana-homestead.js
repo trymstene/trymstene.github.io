@@ -11,6 +11,7 @@ import { catCustom, loadCatalog } from '../lib/drops.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
+import { worldOwner, worldSid } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, OB_RECTS, OVERLAYS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
@@ -18,6 +19,30 @@ import { DECOR } from '../data/decor.js';
 const view = document.getElementById('hsView');
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
+
+// 🪙 prices wear the REAL bananacoin, never the stock emoji (Trym)
+const COIN = '<img class="hs-coin" src="/assets/banana-stand/coin.png" alt="bananacoins">';
+
+// 🏡 THE NEIGHBOURHOOD (M1): every claimed yard has a public mirror in the
+// YardRoom DO. worldOwner() owns it; the browser's hs-v1 stays the truth.
+const YARD_API = 'https://banana-rave.trymstene.workers.dev/yards';
+async function yFetch(path, body) {
+  const r = await fetch(YARD_API + path, body ? {
+    method: 'POST',
+    body: JSON.stringify({ ...body, pass: worldOwner(), alt: worldSid() }),
+  } : undefined);
+  if (!r.ok) throw new Error('yard ' + r.status);
+  return r.json();
+}
+// ?yard=trym today; /homestead/trym/ the day the apex goes orange-cloud
+const VISIT_SLUG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get('yard');
+    if (q) return q.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+    const m = location.pathname.match(/^\/homestead\/([a-z0-9-]{1,40})\/?$/);
+    return m ? m[1] : '';
+  } catch (e) { return ''; }
+})();
 
 const HS_KEY = 'hs-v1';
 // ⚠️ STRESS-TESTED 3 Aug (?hstest=full): 16 items on the 19×10-tile lawn read
@@ -146,7 +171,19 @@ const HS_TEST = typeof location !== 'undefined'
   && new URLSearchParams(location.search).get('hstest');
 if (HS_TEST) applyTestScenario(HS_TEST);
 
-function init() {
+// a visitor's "state": the neighbour's public doc wearing the local shape —
+// the whole render path (tent/items/bed/sign) reads it unchanged
+function visitState(d) {
+  return withHome({
+    v: 1, name: d.name || 'A Homestead', claimedAt: 1, slug: d.slug,
+    stage: d.stage || 0, style: d.style || {}, items: d.items || [], shed: [],
+    bed: Array.isArray(d.bed) ? d.bed : [null, null, null, null],
+    home: d.home, bedAt: d.bedAt, guest: d.guest || [], wtoday: !!d.wtoday,
+  });
+}
+
+function init(visitDoc, visitMiss) {
+  const visiting = !!visitDoc;
   const W = WORLD.w, H = WORLD.h;
   const world = document.getElementById('hsWorld');
   const meEl = document.getElementById('hsMe');
@@ -158,8 +195,25 @@ function init() {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pct = (v, span) => (v / span * 100) + '%';
 
-  const state = withHome(loadState());
-  const save = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
+  const state = visiting ? visitDoc : withHome(loadState());
+  // ⚠️ a visitor's save is a NO-OP twice over: never write their yard into
+  // hs-v1, never push their yard to the DO as ours
+  const save = visiting ? () => {} : () => {
+    try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {}
+    pushYard();
+  };
+  // debounced publish of the public snapshot (the yard the neighbours see)
+  let pushT = null;
+  function pushYard() {
+    if (visiting || !state.claimedAt || !state.slug) return;
+    clearTimeout(pushT);
+    pushT = setTimeout(() => {
+      yFetch('/save', { name: state.name, state: {
+        stage: state.stage, style: state.style, home: state.home,
+        bedAt: state.bedAt, items: state.items, bed: state.bed,
+      } }).catch(() => {});
+    }, 2500);
+  }
   // ⚠️ TDZ: camTarget() reads these and is CALLED at spawn setup, so they
   // must live above the camera section (the rave-floor lesson)
   let placing = null;   // { id, x, y, el, moving }
@@ -383,7 +437,7 @@ function init() {
   function float(x, y, text) {
     const d = document.createElement('div');
     d.className = 'hs-float';
-    d.textContent = text;
+    d.innerHTML = text;   // internal strings only — prices ride the real coin
     d.style.left = pct(x, W); d.style.top = pct(y, H);
     world.appendChild(d);
     setTimeout(() => d.remove(), 950);
@@ -406,6 +460,7 @@ function init() {
   const refreshHud = () => hud && hud.refresh();
   document.getElementById('hsEmote').addEventListener('click', () => float(pos.x, pos.y - 44, '❤️'));
   document.getElementById('hsBag').addEventListener('click', () => {
+    if (visiting) { toast('your shed lives at your own homestead'); return; }
     // ⚠️ the remote bag let an UNCLAIMED visitor buy the tent from the road,
     // and the claim veil then ambushed them mid-play (found by the QA harness)
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
@@ -457,8 +512,131 @@ function init() {
   // ---- panels -------------------------------------------------------------
   const claimEl = document.getElementById('hsClaim');
   const shopEl = document.getElementById('hsShop');
+  const guestEl = document.getElementById('hsGuest');
   const confirmEl = document.getElementById('hsConfirm');
-  const panelOpen = () => !claimEl.hidden || !shopEl.hidden;
+  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden;
+
+  // ---- 🪧 the guestbook at the sign (+ your address, once you have one) ----
+  const yardUrl = () => 'https://trymstene.com/homestead/?yard=' + state.slug;
+  let guestCache = visiting ? (state.guest || []) : null;
+  function renderGuest(entries) {
+    const list = document.getElementById('hsGuestList');
+    list.replaceChildren();
+    if (!entries || !entries.length) {
+      const p = document.createElement('p');
+      p.className = 'hs-note';
+      p.textContent = entries ? 'No notes yet — the first one is the best one.' : 'The book won’t open… try again in a bit.';
+      list.appendChild(p);
+      return;
+    }
+    entries.forEach((g) => {
+      const row = document.createElement('div');
+      row.className = 'hs-guest';
+      const b = document.createElement('b');
+      b.textContent = g.n || 'a banana';
+      const sp = document.createElement('span');
+      sp.textContent = g.x;
+      row.append(b, sp);
+      list.appendChild(row);
+    });
+  }
+  async function openGuest() {
+    document.getElementById('hsGuestTitle').textContent = '🪧 ' + (state.name || 'The sign');
+    document.getElementById('hsSignRow').hidden = !visiting;
+    const share = document.getElementById('hsShare');
+    share.hidden = visiting || !state.slug;
+    if (!share.hidden) document.getElementById('hsShareUrl').value = yardUrl();
+    guestEl.hidden = false;
+    track('homestead_guestbook', { visiting: visiting ? 1 : 0 });
+    if (!guestCache && state.slug) {
+      renderGuest([]);
+      try { guestCache = (await yFetch('/yard?slug=' + state.slug)).guest || []; } catch (e) { guestCache = null; }
+    }
+    renderGuest(guestCache || []);
+  }
+  document.getElementById('hsGuestClose').addEventListener('click', () => { guestEl.hidden = true; });
+  guestEl.addEventListener('click', (e) => { if (e.target === guestEl) guestEl.hidden = true; });
+  document.getElementById('hsShareCopy').addEventListener('click', () => {
+    const inp = document.getElementById('hsShareUrl');
+    try { navigator.clipboard.writeText(inp.value); } catch (e) { inp.select(); document.execCommand('copy'); }
+    toast('🔗 address copied — hand it to a friend');
+    track('homestead_share');
+  });
+  document.getElementById('hsSignGo').addEventListener('click', async () => {
+    const inp = document.getElementById('hsSignText');
+    const text = inp.value.trim().slice(0, 80);
+    if (!text) { inp.focus(); return; }
+    const btn = document.getElementById('hsSignGo');
+    btn.disabled = true;
+    let ok = true;   // ⚠️ AWAITED — a promise is always truthy
+    try { ok = await import('../lib/sticker-core.js').then((m) => m.captionsClean({ top: text })); } catch (e) {}
+    if (!ok) { btn.disabled = false; toast('let’s keep the book family friendly'); return; }
+    try {
+      const r = await yFetch('/sign', { slug: state.slug, name: myName, text });
+      guestCache = r.guest || guestCache;
+      inp.value = '';
+      renderGuest(guestCache);
+      toast('✍️ signed — ' + state.name + ' will find it');
+      track('homestead_sign');
+    } catch (e) { toast('the pen is out of ink — try again in a bit'); }
+    btn.disabled = false;
+  });
+
+  // ---- 👋 visiting: the banner + the doorbell ------------------------------
+  if (visiting) {
+    const bar = document.getElementById('hsVisit');
+    document.getElementById('hsVisitName').textContent = '👋 visiting ' + state.name;
+    bar.hidden = false;
+    yFetch('/visit', { slug: state.slug, name: myName }).catch(() => {});
+    track('homestead_visit', { slug: state.slug });
+  }
+  if (visitMiss) toast('that homestead isn’t on the map — the road home is east', 3600);
+
+  // ---- 📯 the owner's yard sync: address backfill + away-news --------------
+  async function yardBoot() {
+    if (visiting || !state.claimedAt) return;
+    try {
+      if (!state.slug) {
+        const r = await yFetch('/claim', { name: state.name });
+        if (!r || !r.slug) return;
+        state.slug = r.slug;
+      }
+      const n = await yFetch('/news', {});
+      state.wdays = state.wdays || [];
+      let watered = 0, wname = '';
+      (n.waters || []).forEach((w) => {
+        if (!w.d || state.wdays.includes(w.d)) return;
+        state.wdays.push(w.d);
+        state.bed.forEach((b) => {
+          if (b && cropStage(b) < 4 && b.last !== w.d && (b.planted || '') <= w.d) {
+            b.waters = (b.waters | 0) + 1;
+            if ((b.last || '') < w.d) b.last = w.d;
+            watered++;
+          }
+        });
+        if (w.n) wname = w.n;
+      });
+      state.wdays = state.wdays.slice(-14);
+      if (watered) refreshBed();
+      save();   // persists slug/wdays AND publishes the fresh snapshot
+      const msgs = [];
+      if (watered) msgs.push('💧 ' + (wname || 'a neighbour') + ' watered your beds while you were away');
+      if (n.signs && n.signs.length) {
+        msgs.push(n.signs.length === 1
+          ? '✍️ ' + (n.signs[0].n || 'someone') + ' signed your guestbook'
+          : '✍️ ' + n.signs.length + ' new notes in your guestbook');
+      }
+      const vc = n.visitCount || 0;
+      if (vc) {
+        msgs.push(vc === 1
+          ? '👋 ' + ((n.visits && n.visits[0]) || 'a banana') + ' came by while you were away'
+          : '👋 ' + vc + ' bananas came by while you were away');
+      }
+      msgs.forEach((m, i) => setTimeout(() => toast(m, 3200), 1200 + i * 3500));
+      if (msgs.length) track('homestead_news', { n: msgs.length });
+    } catch (e) {}
+  }
+  yardBoot();
 
   // ---- 🪧 THE CLAIM — once, when you first walk through the gate ----------
   let claimShown = false;
@@ -486,6 +664,10 @@ function init() {
     claimEl.hidden = true;
     toast('🏡 ' + v + ' — it’s yours');
     track('homestead_claim');
+    // mint the ADDRESS — the sign name becomes the slug (yardBoot retries if offline)
+    yFetch('/claim', { name: v }).then((r) => {
+      if (r && r.slug) { state.slug = r.slug; save(); }
+    }).catch(() => {});
     // the naming moment, AFTER the deed (silent if already named/asked)
     askName({
       why: 'Your clearing has a sign now.',
@@ -506,7 +688,8 @@ function init() {
     const nm = document.createElement('b');
     nm.textContent = d.name;
     const pr = document.createElement('em');
-    pr.textContent = verb === 'buy' ? d.price + ' 🪙' : 'in the shed';
+    if (verb === 'buy') pr.innerHTML = d.price + ' ' + COIN;
+    else pr.textContent = 'in the shed';
     const btn = document.createElement('button');
     btn.className = 'hs-btn';
     if (verb === 'buy' && d.stage > state.stage) {
@@ -560,12 +743,12 @@ function init() {
       const card = document.createElement('div');
       card.className = 'hs-up';
       card.innerHTML = '<div><b>First things first: pitch a tent</b>'
-        + '<span>' + TENT_PRICE + ' 🪙 — pick a colour, move in, and the whole decor'
+        + '<span>' + TENT_PRICE + ' ' + COIN + ' — pick a colour, move in, and the whole decor'
         + ' catalog opens up. Bananacoins come from playing anywhere in the world.</span></div>';
       const getStyle = stylePicker(1, card);
       const btn = document.createElement('button');
       btn.className = 'hs-btn';
-      btn.textContent = coinBalance() >= TENT_PRICE ? '⛺ pitch it' : 'need ' + TENT_PRICE + ' 🪙 — you have ' + coinBalance();
+      btn.innerHTML = coinBalance() >= TENT_PRICE ? '⛺ pitch it' : 'need ' + TENT_PRICE + ' ' + COIN + ' — you have ' + coinBalance();
       btn.disabled = coinBalance() < TENT_PRICE;
       btn.addEventListener('click', () => {
         closeShop();
@@ -638,13 +821,13 @@ function init() {
       const next = STRUCT_LADDER[state.stage];   // stage 1 → roof, 2 → house
       if (next) {
         card.innerHTML = '<div><b>' + next.icon + ' ' + next.name + '</b>'
-          + '<span>' + next.price + ' 🪙 — ' + next.pitch
+          + '<span>' + next.price + ' ' + COIN + ' — ' + next.pitch
           + ' The plot grows to ' + CAPS[state.stage + 1] + ' spots.</span></div>';
         const getStyle = stylePicker(state.stage + 1, card);
         const btn = document.createElement('button');
         btn.className = 'hs-btn';
-        btn.textContent = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
-          : 'need ' + next.price + ' 🪙 — you have ' + coinBalance();
+        btn.innerHTML = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
+          : 'need ' + next.price + ' ' + COIN + ' — you have ' + coinBalance();
         btn.disabled = coinBalance() < next.price;
         btn.addEventListener('click', () => {
           closeShop();
@@ -892,8 +1075,29 @@ function init() {
   // the bed, tapped: plant / water / harvest
   let bedChip = null;
   function clearBedChip() { if (bedChip) { bedChip.remove(); bedChip = null; } }
+  // 💧 the neighbour verb: water THEIR beds — once per yard per day, kindness
+  // lands as +1 growth day in the owner's away-news
+  function visitorWater() {
+    const wkey = 'hs-wd:' + state.slug;
+    let mine = '';
+    try { mine = localStorage.getItem(wkey) || ''; } catch (e) {}
+    if (state.wtoday || mine === dayStr()) { toast('these beds are watered for today 💧'); return; }
+    if (!state.bed.some((b) => b && cropStage(b) < 4)) { toast('nothing growing right now'); return; }
+    yFetch('/water', { slug: state.slug, name: myName }).then((r) => {
+      try { localStorage.setItem(wkey, dayStr()); } catch (e) {}
+      state.wtoday = true;
+      if (r.already) { toast('someone beat you to the watering can today'); return; }
+      state.bed.forEach((b, i) => {
+        if (b && cropStage(b) < 4) { const s = slotAt(i); float(s[0], s[1] - 44, '💧'); }
+      });
+      toast('💧 you watered ' + state.name + ' — it counts overnight');
+      track('homestead_neighbor_water');
+    }).catch(() => toast('the watering can is empty — try again in a bit'));
+  }
+
   function bedTap(i) {
     clearBedChip();
+    if (visiting) { visitorWater(); return; }
     const s = slotAt(i);
     const b = state.bed[i];
     if (!b) {
@@ -902,7 +1106,7 @@ function init() {
       CROPS.forEach((c) => {
         const btn = document.createElement('button');
         btn.className = 'hs-btn';
-        btn.textContent = c.name + ' · ' + c.seed + ' 🪙';
+        btn.innerHTML = c.name + ' · ' + c.seed + ' ' + COIN;
         btn.disabled = coinBalance() < c.seed;
         btn.addEventListener('click', () => {
           passStat('coins_spent', c.seed);
@@ -924,7 +1128,7 @@ function init() {
       passStat('coins_earned', c.pay);
       state.bed[i] = null;
       save(); refreshBed(); refreshHud();
-      float(s[0], s[1] - 46, '+' + c.pay + ' 🪙');
+      float(s[0], s[1] - 46, '+' + c.pay + ' ' + COIN);
       track('homestead_harvest', { crop: c.id });
       return;
     }
@@ -984,12 +1188,21 @@ function init() {
     if (placing) return;   // pointerdown/drag owns the ghost
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - MAILBOX.x, wy - (MAILBOX.y - 20)) < 46) {
-      if (Math.hypot(pos.x - MAILBOX.x, pos.y - MAILBOX.y) < 110) { openShop(); return; }
+      if (Math.hypot(pos.x - MAILBOX.x, pos.y - MAILBOX.y) < 110) {
+        if (visiting) { toast('📬 answers only to ' + state.name); return; }
+        openShop(); return;
+      }
       tgt.x = MAILBOX.x - 40; tgt.y = MAILBOX.y + 16;
       return;
     }
+    // 🪧 the sign: near = the guestbook, far = walk to it
+    if (Math.hypot(wx - SIGN.x, wy - (SIGN.y - 30)) < 56) {
+      if (Math.hypot(pos.x - SIGN.x, pos.y - SIGN.y) < 130) { openGuest(); return; }
+      tgt.x = SIGN.x - 44; tgt.y = SIGN.y + 6;
+      return;
+    }
     // the tent spot (stage 0): near = the upgrades tab, far = walk over
-    if (state.stage < 1 && Math.abs(wx - state.home.x) < 76 && wy > state.home.y - 84 && wy < state.home.y + 8) {
+    if (!visiting && state.stage < 1 && Math.abs(wx - state.home.x) < 76 && wy > state.home.y - 84 && wy < state.home.y + 8) {
       if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 150) { openShop('up'); return; }
       tgt.x = state.home.x; tgt.y = state.home.y + 40;
       return;
@@ -1006,6 +1219,7 @@ function init() {
     // the bed itself (off-slot): near = offer the move, far = walk over
     if (Math.abs(wx - state.bedAt.x) < BED.w / 2 && wy > state.bedAt.y - BED.h && wy < state.bedAt.y + 6) {
       if (Math.hypot(pos.x - state.bedAt.x, pos.y - state.bedAt.y) < BED.w / 2 + 90) {
+        if (visiting) { visitorWater(); return; }
         clearChip();
         itChip = document.createElement('div');
         itChip.className = 'hs-chip';
@@ -1026,6 +1240,7 @@ function init() {
       const sd = structDims();
       if (Math.abs(wx - state.home.x) < sd.w / 2 && wy > state.home.y - sd.h && wy < state.home.y + 8) {
         if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < sd.w / 2 + 90) {
+          if (visiting) return;   // their house is not furniture
           clearChip();
           itChip = document.createElement('div');
           itChip.className = 'hs-chip';
@@ -1047,6 +1262,7 @@ function init() {
       const it = state.items[i];
       const d = DEX[it.id];
       if (Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
+        if (visiting) { tgt.x = it.x; tgt.y = it.y + 30; return; }   // look, don't touch
         if (Math.hypot(pos.x - it.x, pos.y - it.y) < 150) itemChip(i);
         else { tgt.x = it.x; tgt.y = it.y + 30; }
         return;
@@ -1120,4 +1336,17 @@ function init() {
   });
 }
 
-if (view) init();
+// visiting: fetch the neighbour's yard BEFORE the scene builds; your own slug
+// in the URL just means "home" (shared links open your yard as theirs to see)
+async function boot() {
+  let doc = null, miss = false;
+  if (VISIT_SLUG) {
+    const mine = loadState();
+    if (mine.slug !== VISIT_SLUG) {
+      try { doc = visitState(await yFetch('/yard?slug=' + VISIT_SLUG)); }
+      catch (e) { miss = true; }
+    }
+  }
+  init(doc, miss);
+}
+if (view) boot();

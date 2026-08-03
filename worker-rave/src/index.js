@@ -316,6 +316,25 @@ export default {
       }));
       return new Response(await res.text(), { status: res.status, headers: cors });
     }
+    // 🏡 THE NEIGHBOURHOOD (Homestead M1) — /yards/* forwarded to the YardRoom
+    if (url.pathname === '/yards' || url.pathname.startsWith('/yards/')) {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      const origin = request.headers.get('Origin') || '';
+      const cors = {
+        'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : 'https://trymstene.com',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'content-type',
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json',
+      };
+      if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+      const sub = (url.pathname.replace('/yards', '') || '/') + url.search;
+      const res = await env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room' + sub, {
+        method: request.method,
+        body: request.method === 'POST' ? await request.text() : undefined,
+      }));
+      return new Response(await res.text(), { status: res.status, headers: cors });
+    }
     if (url.pathname === '/beach-count') { // …and its beach headcount
       const res = await env.BEACH.get(env.BEACH.idFromName('banana-bay')).fetch(new Request('https://room/count'));
       return new Response(await res.text(), {
@@ -2055,3 +2074,196 @@ function parkStrip(p) {
   return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, name: p.name || undefined };
 }
 const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 99 ? n : undefined; };
+
+// ---------------------------------------------------------------------------
+// 🏡 THE NEIGHBOURHOOD — every claimed homestead's public mirror (M1).
+// One singleton DO, keyed rows: y:<slug> doc, own:<gid> → slug, g:<slug>
+// guestbook, vis:<slug> visits, wat:<slug> neighbour waterings, seen:<slug>,
+// 'index' → the doors list. The OWNER's truth stays in their browser (hs-v1);
+// this room is the copy the neighbours see — a lost row costs one re-save.
+const YARD_ITEM_CAP = 64, GUEST_CAP = 40, VIS_CAP = 40, WAT_CAP = 20;
+const yStrip = (x, n) => String(x == null ? '' : x).replace(/[ -<>]/g, '').trim().slice(0, n);
+const yDay = () => new Date().toISOString().slice(0, 10);
+const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
+// "Trym's Homestead" → trym — the sign name IS the address (clean slugs)
+function ySlugBase(name) {
+  return yStrip(name, 40).toLowerCase()
+    .replace(/['’]s\s+homestead$/, '').replace(/\s+homestead$/, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'banana';
+}
+export class YardRoom {
+  constructor(state) { this.state = state; }
+
+  yardSan(s) {
+    s = s && typeof s === 'object' ? s : {};
+    const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
+    const out = { stage: num(s.stage, 0, 3), style: {}, items: [], bed: [null, null, null, null] };
+    if (s.home && Number.isFinite(Number(s.home.x))) out.home = { x: num(s.home.x, 0, 1800), y: num(s.home.y, 0, 1100) };
+    if (s.bedAt && Number.isFinite(Number(s.bedAt.x))) out.bedAt = { x: num(s.bedAt.x, 0, 1800), y: num(s.bedAt.y, 0, 1100) };
+    [1, 2, 3].forEach((r) => {
+      const v = s.style && s.style[r];
+      if (typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v)) out.style[r] = v;
+    });
+    (Array.isArray(s.items) ? s.items.slice(0, YARD_ITEM_CAP) : []).forEach((it) => {
+      if (it && typeof it.id === 'string' && /^[a-z0-9]{1,24}$/.test(it.id)) {
+        out.items.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
+      }
+    });
+    for (let i = 0; i < 4; i++) {
+      const b = Array.isArray(s.bed) ? s.bed[i] : null;
+      if (b && typeof b.crop === 'string' && /^[a-z]{1,12}$/.test(b.crop)) {
+        out.bed[i] = { crop: b.crop, waters: num(b.waters, 0, 9), last: yIso(b.last), planted: yIso(b.planted) };
+      }
+    }
+    return out;
+  }
+
+  async indexUpsert(doc) {
+    const idx = (await this.state.storage.get('index')) || [];
+    const rest = idx.filter((e) => e.slug !== doc.slug);
+    rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0, updated: doc.updated });
+    await this.state.storage.put('index', rest.slice(0, 400));
+  }
+
+  async ownSlug(pass, alt) {
+    let slug = pass ? await this.state.storage.get('own:' + pass) : null;
+    if (!slug && alt) slug = await this.state.storage.get('own:' + alt);
+    return slug || null;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const json = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
+    let body = {};
+    if (request.method === 'POST') { try { body = await request.json(); } catch (e) { return json({ err: 'bad json' }, 400); } }
+    const pass = yStrip(body.pass, 64), alt = yStrip(body.alt, 64);
+    const who = (pass || alt).slice(0, 8);
+    const name = yStrip(body.name, 28);
+
+    // 🪧 claim: mint the address once, keep it forever (renames keep the slug —
+    // repainting the sign must not move the house)
+    if (path === '/claim' && request.method === 'POST') {
+      if (!pass) return json({ err: 'no id' }, 400);
+      const cur = await this.ownSlug(pass, alt);
+      if (cur) {
+        const doc = await this.state.storage.get('y:' + cur);
+        if (doc) {
+          if (name && name !== doc.name) { doc.name = name; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
+          return json({ slug: cur });
+        }
+      }
+      const base = ySlugBase(name);
+      let slug = base;
+      for (let i = 2; i < 100 && await this.state.storage.get('y:' + slug); i++) slug = base + '-' + i;
+      if (await this.state.storage.get('y:' + slug)) return json({ err: 'crowded' }, 409);
+      const doc = { slug, name: name || 'A Homestead', pass, created: Date.now(), updated: Date.now(), state: null };
+      await this.state.storage.put('y:' + slug, doc);
+      await this.state.storage.put('own:' + pass, slug);
+      await this.indexUpsert(doc);
+      return json({ slug });
+    }
+
+    // 💾 save: publish the yard's public snapshot (sanitized, capped)
+    if (path === '/save' && request.method === 'POST') {
+      const slug = await this.ownSlug(pass, alt);
+      if (!slug) return json({ err: 'unclaimed' }, 404);
+      const doc = await this.state.storage.get('y:' + slug);
+      if (!doc) return json({ err: 'gone' }, 404);
+      doc.state = this.yardSan(body.state);
+      if (name) doc.name = name;
+      doc.updated = Date.now();
+      await this.state.storage.put('y:' + slug, doc);
+      await this.indexUpsert(doc);
+      return json({ ok: 1, slug });
+    }
+
+    // 👀 the public view — what a visitor's browser builds the yard from
+    if (path === '/yard' && request.method === 'GET') {
+      const slug = (url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'no such yard' }, 404);
+      const st = doc.state || {};
+      const guest = ((await this.state.storage.get('g:' + slug)) || []).slice(0, 12)
+        .map((g) => ({ n: g.n, x: g.x, t: g.t }));
+      const wat = (await this.state.storage.get('wat:' + slug)) || [];
+      return json({
+        slug, name: doc.name, updated: doc.updated,
+        stage: st.stage || 0, style: st.style || {}, home: st.home, bedAt: st.bedAt,
+        items: st.items || [], bed: st.bed || [null, null, null, null],
+        guest, wtoday: wat.some((w) => w.d === yDay()),
+      });
+    }
+
+    // 👋 a visit — one line per visitor per day, for the away-news
+    if (path === '/visit' && request.method === 'POST') {
+      const slug = yStrip(body.slug, 40).toLowerCase();
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'no such yard' }, 404);
+      if (doc.pass === pass) return json({ ok: 1, own: 1 });
+      const day = yDay();
+      const vis = (await this.state.storage.get('vis:' + slug)) || [];
+      if (!vis.some((v) => v.o === who && v.day === day)) {
+        vis.unshift({ n: yStrip(body.name, 24), o: who, day, t: Date.now() });
+        await this.state.storage.put('vis:' + slug, vis.slice(0, VIS_CAP));
+      }
+      return json({ ok: 1 });
+    }
+
+    // ✍️ the guestbook — one note per visitor per day (today's note is editable)
+    if (path === '/sign' && request.method === 'POST') {
+      const slug = yStrip(body.slug, 40).toLowerCase();
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'no such yard' }, 404);
+      const text = yStrip(body.text, 90);
+      if (!text) return json({ err: 'empty' }, 400);
+      const day = yDay();
+      let g = (await this.state.storage.get('g:' + slug)) || [];
+      g = g.filter((e) => !(e.o === who && e.day === day));
+      g.unshift({ n: yStrip(body.name, 24), o: who, x: text, day, t: Date.now() });
+      g = g.slice(0, GUEST_CAP);
+      await this.state.storage.put('g:' + slug, g);
+      return json({ ok: 1, guest: g.slice(0, 12).map((e) => ({ n: e.n, x: e.x, t: e.t })) });
+    }
+
+    // 💧 a neighbour waters the beds — once per yard per day, any neighbour
+    if (path === '/water' && request.method === 'POST') {
+      const slug = yStrip(body.slug, 40).toLowerCase();
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'no such yard' }, 404);
+      if (doc.pass === pass) return json({ err: 'own' }, 400);
+      const day = yDay();
+      const wat = (await this.state.storage.get('wat:' + slug)) || [];
+      if (wat.some((w) => w.d === day)) return json({ ok: 1, already: 1 });
+      wat.unshift({ n: yStrip(body.name, 24), o: who, d: day });
+      await this.state.storage.put('wat:' + slug, wat.slice(0, WAT_CAP));
+      return json({ ok: 1 });
+    }
+
+    // 📯 the owner's away-news: who came by, who signed, who watered
+    if (path === '/news' && request.method === 'POST') {
+      const slug = await this.ownSlug(pass, alt);
+      if (!slug) return json({ err: 'unclaimed' }, 404);
+      const doc = await this.state.storage.get('y:' + slug);
+      const seen = (await this.state.storage.get('seen:' + slug)) || (doc && doc.created) || 0;
+      const vis = ((await this.state.storage.get('vis:' + slug)) || []).filter((v) => v.t > seen);
+      const signs = ((await this.state.storage.get('g:' + slug)) || []).filter((e) => e.t > seen && e.o !== who);
+      const waters = ((await this.state.storage.get('wat:' + slug)) || []).slice(0, 10);
+      await this.state.storage.put('seen:' + slug, Date.now());
+      return json({
+        slug, name: doc ? doc.name : '',
+        visits: vis.map((v) => v.n).filter(Boolean).slice(0, 8), visitCount: vis.length,
+        signs: signs.slice(0, 5).map((e) => ({ n: e.n, x: e.x })),
+        waters: waters.map((w) => ({ n: w.n, d: w.d })),
+      });
+    }
+
+    // 🚪 the doors — the most recently lived-in homesteads (the signpost feed)
+    if (path === '/doors' && request.method === 'GET') {
+      const idx = (await this.state.storage.get('index')) || [];
+      return json({ doors: idx.slice(0, 8).map((e) => ({ slug: e.slug, name: e.name, stage: e.stage })) });
+    }
+
+    return json({ err: 'not found' }, 404);
+  }
+}

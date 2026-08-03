@@ -35,5 +35,13 @@ new_sqlite_classes = ["ParkRoom"]
 tag = "v3"
 new_sqlite_classes = ["BeachRoom"]
 
+[[durable_objects.bindings]]
+name = "YARDS"
+class_name = "YardRoom"
+
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["YardRoom"]
+
 [vars]
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
