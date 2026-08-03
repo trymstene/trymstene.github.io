@@ -1,0 +1,239 @@
+---
+// 🏡 THE HOMESTEAD — your own clearing west of the park (M0, task #106).
+// NOINDEXED + not in the sitemap: Rule Zero — the world advertises an area
+// when it's ready, and the park's west road stays shut until then. This page
+// exists for building and field-testing via the direct URL.
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'The Homestead — your own corner of Banana World';
+const description = 'A clearing west of the park with your name on the sign: claim it, pitch a tent, order decor at the mailbox and grow the garden bed.';
+---
+<BaseLayout
+  title={title}
+  description={description}
+  robots="noindex,nofollow"
+  ogTitle="The Homestead 🏡"
+  ogDescription="A clearing in Banana World with your name on the sign."
+>
+  <style is:inline slot="head">
+    .hs-wrap { max-width: 1100px; margin: 0 auto; padding: 1.2rem 1rem 2.5rem; }
+    .hs-head h1 { margin: 0 0 0.25rem; }
+    .hs-head p { margin: 0 0 1rem; opacity: 0.8; max-width: 64ch; }
+
+    .hs-stage { position: relative; border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
+    .hs-view {
+      position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      background: #10200c;
+    }
+    .hs-world { position: absolute; left: 0; top: 0; image-rendering: pixelated; will-change: transform; }
+    .hs-base {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: url('/assets/homestead/homestead.png') 0 0 / 100% 100% no-repeat;
+      image-rendering: pixelated;
+    }
+    .hs-ov, .hs-it, .hs-crop {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    .hs-it--ghost { opacity: 0.78; outline: 3px dashed #ffe135; outline-offset: 3px; }
+    .hs-it--ghost.is-bad { outline-color: #ff5f5f; filter: saturate(0.4); }
+    .hs-crop.is-ripe { animation: hsRipe 1.4s ease-in-out infinite; }
+    @keyframes hsRipe { 50% { transform: translateY(-3px); } }
+    @media (prefers-reduced-motion: reduce) { .hs-crop.is-ripe { animation: none; } }
+    .hs-me { position: absolute; left: 0; top: 0; width: 96px; pointer-events: none; }
+    .hs-me canvas { width: 100%; height: auto; display: block; }
+
+    .hs-signname {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      background: rgba(20, 14, 6, 0.85); color: #ffe135; border: 2px solid #000;
+      padding: 2px 7px; font-size: 11px; font-weight: 800; white-space: nowrap;
+      border-radius: 3px;
+    }
+    .hs-signname[hidden] { display: none; }
+    .hs-float {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      font-weight: 900; font-size: 15px; color: #fffdf5; z-index: 4000;
+      text-shadow: 0 2px 0 #000; animation: hsFloat 0.95s ease-out forwards;
+    }
+    @keyframes hsFloat { to { transform: translate(-50%, -220%); opacity: 0; } }
+
+    .hs-chip {
+      position: absolute; transform: translate(-50%, -100%); display: flex; gap: 6px;
+      background: rgba(10, 16, 8, 0.92); border: 3px solid #000; padding: 6px;
+      border-radius: 6px; box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    }
+    .hs-btn {
+      font: inherit; font-size: 0.8rem; font-weight: 800; cursor: pointer;
+      border: 3px solid #000; background: #ffe135; color: #1a1408;
+      padding: 0.4rem 0.6rem; white-space: nowrap;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .hs-btn[disabled] { opacity: 0.45; cursor: default; }
+    .hs-btn--ghost { background: #fffdf5; }
+
+    .hs-hint {
+      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+      z-index: 20; pointer-events: none; white-space: nowrap;
+      background: rgba(10, 16, 8, 0.8); color: #fffdf5; border: 2px solid #000;
+      padding: 0.35rem 0.7rem; font-size: 0.78rem; font-weight: 700; border-radius: 5px;
+      transition: opacity 0.4s ease;
+    }
+    .hs-hint.is-off { opacity: 0; }
+    .hs-toast {
+      position: absolute; left: 50%; top: 54px; transform: translateX(-50%);
+      z-index: 30; pointer-events: none; max-width: calc(100% - 2rem); text-align: center;
+      background: #ffe135; color: #1a1408; border: 3px solid #000;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.4); padding: 0.45rem 0.9rem;
+      font-size: 0.85rem; font-weight: 800; opacity: 0; transition: opacity 0.25s ease;
+    }
+    .hs-toast.is-on { opacity: 1; }
+    .hs-exit {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      z-index: 20; pointer-events: none; background: rgba(10, 16, 8, 0.85);
+      color: #ffe135; border: 2px solid #000; padding: 0.35rem 0.65rem;
+      font-size: 0.78rem; font-weight: 800; border-radius: 5px; opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .hs-exit.is-on { opacity: 1; }
+    .hs-cut { position: absolute; inset: 0; z-index: 60; background: #000; opacity: 0;
+      pointer-events: none; transition: opacity 0.16s ease; }
+    .hs-cut.is-on { opacity: 1; }
+
+    .hs-actions {
+      display: flex; gap: 0.5rem; align-items: center; justify-content: center;
+      background: #10200c; border-top: 4px solid #000; padding: 0.55rem;
+    }
+    .hs-act {
+      font: inherit; font-size: 1.05rem; cursor: pointer; border: 3px solid #000;
+      background: #ffe135; padding: 0.45rem 0.9rem; font-weight: 800;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .hs-act--icon { display: inline-flex; align-items: center; justify-content: center; }
+
+    /* panels: the claim + the mailbox */
+    .hs-veil {
+      position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+      padding: 1rem; background: rgba(6, 10, 4, 0.7);
+    }
+    .hs-veil[hidden] { display: none; }
+    .hs-card {
+      width: min(430px, 100%); background: #fffdf5; color: #1a1408;
+      border: 3px solid #000; box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+      padding: 1rem 1rem 1.1rem;
+    }
+    .hs-card h2 { margin: 0 0 0.3rem; font-size: 1.1rem; }
+    .hs-card > p { margin: 0 0 0.8rem; font-size: 0.86rem; line-height: 1.5; opacity: 0.85; }
+    .hs-card input {
+      width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem;
+      border: 3px solid #000; padding: 0.6rem 0.7rem; margin-bottom: 0.7rem;
+      text-align: center; background: #fff;
+    }
+    .hs-card .hs-btn { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
+    .hs-tabs { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; }
+    .hs-tabs button {
+      flex: 1; font: inherit; font-size: 0.8rem; font-weight: 800; cursor: pointer;
+      border: 3px solid #000; background: #fffdf5; padding: 0.45rem 0.3rem; white-space: nowrap;
+    }
+    .hs-tabs button[aria-pressed="true"] { background: #ffe135; }
+    .hs-list { display: grid; gap: 0.5rem; max-height: min(46vh, 380px); overflow-y: auto; }
+    .hs-row {
+      display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
+      background: #fff; padding: 0.45rem 0.55rem;
+    }
+    .hs-row img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; flex: 0 0 auto; }
+    .hs-row__meta { flex: 1; min-width: 0; }
+    .hs-row__meta b { display: block; font-size: 0.86rem; }
+    .hs-row__meta span { display: block; font-size: 0.74rem; opacity: 0.7; }
+    .hs-row .hs-btn { font-size: 0.74rem; padding: 0.4rem 0.55rem; }
+    .hs-note { margin: 0; font-size: 0.8rem; opacity: 0.75; }
+    .hs-up { display: grid; gap: 0.6rem; border: 2px solid #000; background: #fff; padding: 0.7rem; }
+    .hs-up img { width: 74px; height: auto; image-rendering: pixelated; }
+    .hs-up b { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .hs-up span { display: block; font-size: 0.8rem; line-height: 1.5; opacity: 0.8; }
+    .hs-shopx {
+      position: absolute; top: 8px; right: 8px; font: inherit; font-weight: 800;
+      border: 2px solid #000; background: #fffdf5; cursor: pointer; padding: 0.15rem 0.5rem;
+    }
+    #hsShop .hs-card { position: relative; }
+
+    /* the place/cancel confirm bar rides the bottom of the view */
+    .hs-confirm {
+      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+      z-index: 40; display: flex; gap: 0.5rem;
+      background: rgba(10, 16, 8, 0.92); border: 3px solid #000; padding: 0.5rem;
+      border-radius: 8px; box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    }
+    .hs-confirm[hidden] { display: none; }
+
+    .hs-about { margin-top: 1.6rem; max-width: 70ch; }
+    .hs-about h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
+    .hs-about p { margin: 0 0 0.6rem; line-height: 1.6; font-size: 0.92rem; opacity: 0.85; }
+  </style>
+
+  <div class="hs-wrap">
+    <div class="hs-head">
+      <h1>🏡 the homestead</h1>
+      <p>A clearing in the woods west of the park — <strong>yours</strong>. Claim it, put your
+        name on the sign, order things at the mailbox and make the place your own.</p>
+    </div>
+
+    <div class="hs-stage">
+      <div class="hs-view" id="hsView">
+        <div class="hs-world" id="hsWorld">
+          <div class="hs-base" aria-hidden="true"></div>
+          <div class="hs-me" id="hsMe"><canvas id="hsMeCv" width="150" height="150" aria-hidden="true"></canvas></div>
+        </div>
+        <div class="hs-hint" id="hsHint">tap to walk · arrow keys / WASD work too</div>
+        <div class="hs-toast" id="hsToast" role="status" aria-live="polite"></div>
+        <div class="hs-exit" id="hsExitStrip"></div>
+        <div class="hs-confirm" id="hsConfirm" hidden>
+          <button class="hs-btn" id="hsPlaceGo">✓ place it here</button>
+          <button class="hs-btn hs-btn--ghost" id="hsPlaceNo">✕ not now</button>
+        </div>
+        <div class="hs-cut" id="hsCut" aria-hidden="true"></div>
+      </div>
+      <div class="hs-actions" aria-label="homestead actions">
+        <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
+      </div>
+    </div>
+
+    <div class="hs-veil" id="hsClaim" hidden>
+      <div class="hs-card">
+        <h2>🪧 This clearing is yours.</h2>
+        <p>Every banana gets one — a patch of the world with your name on the sign.
+          What should the sign say?</p>
+        <input id="hsClaimName" maxlength="28" aria-label="Name your homestead">
+        <button class="hs-btn" id="hsClaimGo">🏡 Claim it</button>
+      </div>
+    </div>
+
+    <div class="hs-veil" id="hsShop" hidden data-tab="order">
+      <div class="hs-card">
+        <button class="hs-shopx" id="hsShopClose" aria-label="Close">✕</button>
+        <h2>📬 The mailbox</h2>
+        <p>Order from the catalog — cheap things arrive on the spot.</p>
+        <div class="hs-tabs">
+          <button type="button" data-tab="order" aria-pressed="true">🛒 Order</button>
+          <button type="button" data-tab="shed" aria-pressed="false">📦 Shed</button>
+          <button type="button" data-tab="up" aria-pressed="false">⛺ Upgrades</button>
+        </div>
+        <div class="hs-list" id="hsShopList"></div>
+      </div>
+    </div>
+
+    <section class="hs-about">
+      <h2>What is this place?</h2>
+      <p>The first personal space in Banana World: everyone's homestead is their own —
+        no shared slots, no racing anyone. Decorate it with things from the mailbox,
+        grow the bed, and pitch a tent when you've saved up. Bananacoins come from
+        playing anywhere in the world — <a href="/rave/">the rave</a>, <a href="/park/">the park</a>
+        and <a href="/beach/">the bay</a> all pay.</p>
+      <p>This corner is brand new — visiting each other's homesteads is on the way.</p>
+    </section>
+  </div>
+
+  <script>
+    import '../scripts/banana-homestead.js';
+  </script>
+</BaseLayout>
