@@ -51,9 +51,10 @@ function init() {
 
   const state = loadState();
   const save = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
-  // ⚠️ TDZ: camTarget() reads `placing` and is CALLED at spawn setup, so this
-  // declaration must live above the camera section (the rave-floor lesson)
+  // ⚠️ TDZ: camTarget() reads these and is CALLED at spawn setup, so they
+  // must live above the camera section (the rave-floor lesson)
   let placing = null;   // { id, x, y, el, moving }
+  let camFree = null;   // the placing camera: PANNED by drags, never chases the ghost
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -82,10 +83,11 @@ function init() {
   addEventListener('resize', layout);
   layout();
   function camTarget() {
-    // 🪴 while placing, the camera follows the GHOST — you can send it to any
-    // corner of the property without moving the banana (Trym: placement was
-    // trapped in the one screen around wherever you stood)
-    const foc = placing ? placing : pos;
+    // 🪴 while placing the camera is FREE: it glides to the ghost once at the
+    // start, then only DRAGS move it — a moving object must never yank the
+    // view around (Trym: "alot of camera jumping"). Tap = try the spot,
+    // drag = look around; two gestures, two jobs.
+    const foc = (placing && camFree) ? camFree : pos;
     return {
       x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), foc.x * scale - viewW / 2)),
       y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), foc.y * scale - viewH * 0.58)),
@@ -94,8 +96,9 @@ function init() {
   let camWX = NaN, camWY = NaN;
   function cam() {
     const t = camTarget();
-    camX += (t.x - camX) * 0.12;
-    camY += (t.y - camY) * 0.12;
+    const k = (placing && camFree) ? 0.3 : 0.12;   // panning wants a tighter leash
+    camX += (t.x - camX) * k;
+    camY += (t.y - camY) * k;
     if (Math.abs(t.x - camX) < 0.2) camX = t.x;
     if (Math.abs(t.y - camY) < 0.2) camY = t.y;
     if (camX === camWX && camY === camWY) return;
@@ -504,12 +507,13 @@ function init() {
     const x = snap(moving ? moving.x : Math.max(PLOT[0] + 60, Math.min(PLOT[2] - 60, pos.x)));
     const y = snap(moving ? moving.y : Math.max(PLOT[1] + 60, Math.min(PLOT[3] - 30, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null };
+    camFree = { x, y };   // one glide to the ghost — after this, only drags pan
     if (moving) { refreshItems(); }   // the original disappears while it moves
-    view.classList.add('is-placing');   // touch drags steer the ghost, not the page
+    view.classList.add('is-placing');   // touch drags steer the camera, not the page
     updateGhost();
     confirmEl.hidden = false;
     hint(false);
-    toast('tap or drag anywhere on the lawn — then ✓', 3200);
+    toast('drag to look around · tap to try a spot — then ✓', 3600);
   }
   function updateGhost() {
     if (!placing) return;
@@ -524,6 +528,7 @@ function init() {
   function cancelPlacing() {
     if (!placing) return;
     view.classList.remove('is-placing');
+    camFree = null;
     placing.el.remove();
     if (placing.moving) state.items.push(placing.moving);   // it never left
     const wasBuy = !placing.moving;
@@ -536,6 +541,7 @@ function init() {
   document.getElementById('hsPlaceGo').addEventListener('click', () => {
     if (!placing) return;
     view.classList.remove('is-placing');
+    camFree = null;
     const it = { id: placing.id, x: placing.x, y: placing.y };
     placing.el.remove();
     const moved = !!placing.moving;
@@ -630,9 +636,9 @@ function init() {
     track('homestead_water', { crop: b.crop });
   }
 
-  // 🖐 while placing, DRAGGING moves the ghost too — tap jumps it, drag
-  // fine-tunes it, and the camera follows either way (mobile-first)
-  let ghostDrag = false;
+  // 🖐 placing gestures: DRAG pans the camera, TAP tries the spot. Never both
+  // from one action — the pan threshold decides which one this gesture was.
+  let gest = null;   // { x0, y0, cam0x, cam0y, panning }
   function ghostTo(e) {
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
@@ -644,11 +650,21 @@ function init() {
   view.addEventListener('pointerdown', (e) => {
     if (!placing || panelOpen()) return;
     if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-confirm')) return;
-    ghostDrag = true;
-    ghostTo(e);
+    gest = { x0: e.clientX, y0: e.clientY, cam0x: camFree.x, cam0y: camFree.y, panning: false };
   });
-  view.addEventListener('pointermove', (e) => { if (ghostDrag && placing) ghostTo(e); });
-  addEventListener('pointerup', () => { ghostDrag = false; });
+  view.addEventListener('pointermove', (e) => {
+    if (!gest || !placing) return;
+    const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
+    if (!gest.panning && Math.hypot(dx, dy) < 9) return;   // still a tap so far
+    gest.panning = true;
+    // the world follows the finger: drag left = look right
+    camFree.x = Math.max(0, Math.min(W, gest.cam0x - dx / scale));
+    camFree.y = Math.max(0, Math.min(H, gest.cam0y - dy / scale));
+  });
+  addEventListener('pointerup', (e) => {
+    if (gest && placing && !gest.panning) ghostTo(e);   // a clean tap places
+    gest = null;
+  });
 
   // ---- taps ---------------------------------------------------------------
   view.addEventListener('click', (e) => {
