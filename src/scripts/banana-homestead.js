@@ -12,7 +12,7 @@ import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid } from '../lib/world.js';
-import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, STRUCTS, STRUCT_STYLES,
+import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, BED, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, OB_RECTS, OVERLAYS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -102,29 +102,26 @@ function applyTestScenario(kind) {
     return;
   }
   if (kind === 'claimed') s = base;
+  // ⚠️ 'tent'/'full' are stage 1 = the TIER-1 yard (x 864-1296, y 494-768,
+  // tent at 1000,560, bed at 1010,730) — every position must fit INSIDE it
   if (kind === 'tent') {
     s = { ...base, stage: 1,
-      items: [{ id: 'sunflower', x: 480, y: 520 }, { id: 'bench', x: 640, y: 380 }],
+      items: [{ id: 'sunflower', x: 900, y: 540 }, { id: 'bench', x: 1150, y: 530 }],
       shed: [{ id: 'lantern' }] };
   }
   if (kind === 'full') {
+    const ids = ['sunflower', 'redflower', 'blueflower', 'pinkvase', 'bush', 'bush2',
+      'stump', 'mushrooms', 'flowerbush', 'lantern', 'bench', 'table', 'chair',
+      'campfire', 'scarecrow', 'bananacrate'];
+    const spots = [
+      [880, 510], [1075, 510], [1130, 510], [1185, 510], [1240, 510],
+      [880, 560], [1080, 562], [1135, 560], [1190, 562], [1245, 560],
+      [880, 610], [935, 612], [990, 610], [1045, 612], [1100, 610], [1155, 612], [1210, 610], [1265, 612],
+      [1180, 660], [1235, 662], [1180, 712], [1240, 710],
+      [880, 762], [940, 760], [1000, 762], [1060, 760], [1120, 762], [1180, 760],
+    ];
     s = { ...base, stage: 1,
-      items: [
-        { id: 'statue', x: 430, y: 410 }, { id: 'bench', x: 620, y: 360 },
-        { id: 'table', x: 1050, y: 400 }, { id: 'campfire', x: 890, y: 580 },
-        { id: 'lantern', x: 990, y: 540 }, { id: 'lantern', x: 1180, y: 470 },
-        { id: 'sunflower', x: 400, y: 330 }, { id: 'redflower', x: 445, y: 340 },
-        { id: 'blueflower', x: 490, y: 330 }, { id: 'pinkvase', x: 545, y: 350 },
-        { id: 'bush', x: 1250, y: 350 }, { id: 'bush', x: 1230, y: 560 },
-        { id: 'stump', x: 960, y: 660 }, { id: 'scarecrow', x: 560, y: 540 },
-        { id: 'sunflower', x: 1120, y: 340 }, { id: 'redflower', x: 1165, y: 355 },
-        { id: 'blueflower', x: 600, y: 330 }, { id: 'pinkvase', x: 655, y: 345 },
-        { id: 'sunflower', x: 705, y: 330 }, { id: 'bush', x: 420, y: 480 },
-        { id: 'bush', x: 400, y: 630 }, { id: 'stump', x: 430, y: 730 },
-        { id: 'lantern', x: 1140, y: 720 }, { id: 'campfire', x: 1255, y: 700 },
-        { id: 'table', x: 910, y: 340 }, { id: 'bench', x: 1000, y: 320 },
-        { id: 'statue', x: 1255, y: 630 }, { id: 'scarecrow', x: 850, y: 710 },
-      ],
+      items: spots.map(([x, y], i) => ({ id: ids[i % ids.length], x, y })),
       shed: [{ id: 'bush' }, { id: 'stump' }, { id: 'pinkvase' }],
       bed: [
         { crop: 'tomato', waters: 0, last: '', planted: day },
@@ -156,7 +153,10 @@ function applyTestScenario(kind) {
     const fillers = ['bush', 'bush2', 'flowerbush', 'sunflower', 'redflower', 'blueflower'];
     let fi = 0;
     while (items.length < 56) { put2(fillers[fi % fillers.length], 980 + (fi % 5) * 68, 660 + Math.floor(fi / 5) * 52); fi++; }
+    // 'max' predates the land tiers: its layout was placed around the house at
+    // (760,430) and the bed at (610,700) — pin those spots explicitly
     s = { ...base, stage: 3, items,
+      home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
       shed: [{ id: 'statue' }, { id: 'fountain' }, { id: 'coop' }, { id: 'bananacrate' }],
       bed: [
         { crop: 'tomato', waters: 3, last: '', planted: day },
@@ -196,6 +196,14 @@ function init(visitDoc, visitMiss) {
   const pct = (v, span) => (v / span * 100) + '%';
 
   const state = visiting ? visitDoc : withHome(loadState());
+  {
+    // legacy fixup: saves minted before the land tiers may hold spots that
+    // now sit OUTSIDE the current fence — those come home to the defaults
+    const P = FENCE_TIERS[Math.max(1, Math.min(state.stage, 3))].plot;
+    const inP = (p) => p && p.x > P[0] - 60 && p.x < P[2] + 60 && p.y > P[1] - 60 && p.y < P[3] + 60;
+    if (!inP(state.home)) state.home = { x: TENT.x, y: TENT.y };
+    if (!inP(state.bedAt)) state.bedAt = { x: BED.def.x, y: BED.def.y };
+  }
   // ⚠️ a visitor's save is a NO-OP twice over: never write their yard into
   // hs-v1, never push their yard to the DO as ours
   const save = visiting ? () => {} : () => {
@@ -295,6 +303,33 @@ function init(visitDoc, visitMiss) {
     world.appendChild(d);
   });
 
+  // ---- 🌱 THE LAND GROWS WITH THE LADDER ----------------------------------
+  // tent = a cosy corner, a real roof pushes the fence out, the house takes
+  // the whole clearing (Trym). Two overlays per tier: the yard rows sit low,
+  // the south row y-sorts so the pickets overflow the banana.
+  const fenceTier = () => Math.max(1, Math.min(state.stage, 3));
+  const plotNow = () => FENCE_TIERS[fenceTier()].plot;
+  let fenceCols = [], fenceEls = [], fenceOn = 0;
+  function refreshFence() {
+    const t = fenceTier();
+    if (t === fenceOn) return;
+    fenceOn = t;
+    const ft = FENCE_TIERS[t];
+    fenceCols = ft.cols;
+    fenceEls.forEach((el) => el.remove());
+    fenceEls = [ft.yard, ft.south].map((o) => {
+      const d = document.createElement('div');
+      d.className = 'hs-ov';
+      d.style.left = pct(o[1], W); d.style.top = pct(o[2], H);
+      d.style.width = pct(o[3], W); d.style.height = pct(o[4], H);
+      d.style.backgroundImage = "url('/assets/homestead/" + o[0] + "')";
+      depth(d, o[5]);
+      world.appendChild(d);
+      return d;
+    });
+  }
+  refreshFence();
+
   // the sign carries the homestead's NAME — the whole point of the sign
   const signName = document.createElement('div');
   signName.className = 'hs-signname';
@@ -393,6 +428,7 @@ function init(visitDoc, visitMiss) {
     if (x < BOUND || y < BOUND || y > H - BOUND) return true;
     if (x > W - BOUND && !inRoadLane(y)) return true;      // east = the road out
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
+    for (const r of fenceCols) if (inRect(x, y, r)) return true;
     for (const r of liveRects) if (inRect(x, y, r)) return true;
     return false;
   }
@@ -875,8 +911,9 @@ function init(visitDoc, visitMiss) {
   // ---- 🪴 placing: the ghost + the confirm bar -----------------------------
   const snap = (v) => Math.round(v / 24) * 24;
   function spotOk(d, x, y) {
-    if (x - d.w / 2 < PLOT[0] || x + d.w / 2 > PLOT[2]) return false;
-    if (x < PLOT[0] + 10 || x > PLOT[2] - 10 || y < PLOT[1] + 24 || y > PLOT[3] - 6) return false;
+    const P = plotNow();
+    if (x - d.w / 2 < P[0] || x + d.w / 2 > P[2]) return false;
+    if (x < P[0] + 10 || x > P[2] - 10 || y < P[1] + 24 || y > P[3] - 6) return false;
     if (inRect(x, y, [state.bedAt.x - BED.w / 2 - 26, state.bedAt.y - BED.h - 46, state.bedAt.x + BED.w / 2 + 26, state.bedAt.y + 16])) return false;
     // keep clear of the structure's FOOTPRINT only — the front yard below the
     // porch stays decoratable (the max stress test caught the old box banning it)
@@ -894,8 +931,9 @@ function init(visitDoc, visitMiss) {
   function startPlacing(id, moving) {
     cancelPlacing();
     const d = DEX[id];
-    const x = snap(moving ? moving.x : Math.max(PLOT[0] + 60, Math.min(PLOT[2] - 60, pos.x)));
-    const y = snap(moving ? moving.y : Math.max(PLOT[1] + 60, Math.min(PLOT[3] - 30, pos.y)));
+    const P = plotNow();
+    const x = snap(moving ? moving.x : Math.max(P[0] + 60, Math.min(P[2] - 60, pos.x)));
+    const y = snap(moving ? moving.y : Math.max(P[1] + 60, Math.min(P[3] - 30, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null };
     camFree = { x, y };   // one glide to the ghost — after this, only drags pan
     if (moving) { refreshItems(); }   // the original disappears while it moves
@@ -910,8 +948,9 @@ function init(visitDoc, visitMiss) {
   const fixDims = () => placing.key === 'bed' ? { w: BED.w, h: BED.h } : STRUCTS[placing.key];
   function homeOk(x, y) {
     const d = fixDims();
-    if (x - d.w / 2 < PLOT[0] - 2 || x + d.w / 2 > PLOT[2] + 2) return false;
-    if (y - d.h < PLOT[1] - 44 || y > PLOT[3] - 8) return false;
+    const P = plotNow();
+    if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
+    if (y - d.h < P[1] - 44 || y > P[3] - 8) return false;
     const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
     if (placing.key !== 'bed') {   // structures keep off the bed…
       const b = [state.bedAt.x - BED.w / 2 - 20, state.bedAt.y - BED.h - 40, state.bedAt.x + BED.w / 2 + 20, state.bedAt.y + 16];
@@ -976,8 +1015,11 @@ function init(visitDoc, visitMiss) {
     camFree = null;
     view.classList.remove('is-placing');
     save();
+    const grew = fenceTier() !== fenceOn;
+    refreshFence();
     refreshTent(); refreshBed(); rebuildSolids(); refreshItems(); refreshHud();
     float(x, y - (key === 'bed' ? BED.h : STRUCTS[key].h) - 8, '✓');
+    if (grew) setTimeout(() => toast('🌱 the fence moved out — more land is yours'), 1400);
   }
 
   function updateGhost() {
@@ -1149,11 +1191,13 @@ function init(visitDoc, visitMiss) {
     const wy = (e.clientY - r.top + camY) / scale;
     if (placing.home) {
       const d = fixDims();
-      placing.x = snap(Math.max(PLOT[0] + d.w / 2, Math.min(PLOT[2] - d.w / 2, wx)));
-      placing.y = snap(Math.max(PLOT[1] + Math.min(d.h * 0.5, 120), Math.min(PLOT[3] - 10, wy)));
+      const P = plotNow();
+      placing.x = snap(Math.max(P[0] + d.w / 2, Math.min(P[2] - d.w / 2, wx)));
+      placing.y = snap(Math.max(P[1] + Math.min(d.h * 0.5, 120), Math.min(P[3] - 10, wy)));
     } else {
-      placing.x = snap(Math.max(PLOT[0] + 12, Math.min(PLOT[2] - 12, wx)));
-      placing.y = snap(Math.max(PLOT[1] + 26, Math.min(PLOT[3] - 8, wy)));
+      const P = plotNow();
+      placing.x = snap(Math.max(P[0] + 12, Math.min(P[2] - 12, wx)));
+      placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
     }
     updateGhost();
   }
@@ -1323,7 +1367,8 @@ function init(visitDoc, visitMiss) {
       depth(meEl, pos.y);
     }
     // stepping INTO the yard (through the south gate) triggers the claim
-    if (!state.claimedAt && pos.x > FENCE[0] && pos.x < FENCE[2] && pos.y < FENCE[3] - 26) offerClaim();
+    const F1 = FENCE_TIERS[1].fence;
+    if (!state.claimedAt && pos.x > F1[0] && pos.x < F1[2] && pos.y > F1[1] && pos.y < F1[3] - 26) offerClaim();
     drawMe();
     doorTick();
     cam();

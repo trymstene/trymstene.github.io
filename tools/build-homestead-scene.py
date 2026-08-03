@@ -50,15 +50,25 @@ BOUND = 96
 # (bushes + a sawhorse, the park's own under-construction language).
 ROAD_Y = 900                     # the bottom road's spine
 ROAD_HW = 44
-# fence rectangle on the TILE GRID (tiles, inclusive): the yard
-FX0, FY0, FX1, FY1 = 7, 5, 27, 16          # px 336..1344 x 240..816
+# 🌱 LAND GROWS WITH THE LADDER (Trym, 3 Aug): the tent gets a cosy corner,
+# a real roof pushes the fence out, the house takes the whole clearing.
+# Nested tile rects sharing the SOUTH-EAST corner and the ONE gate — growth
+# only ever ADDS land, so nothing placed can be orphaned by an upgrade.
+FENCE_TIERS = {1: (17, 9, 27, 16), 2: (12, 7, 27, 16), 3: (7, 5, 27, 16)}
+FX0, FY0, FX1, FY1 = FENCE_TIERS[3]        # the outer property line
 GATE_COLS = (23, 24)             # SOUTH-side gap → x 1104..1200 (walk up + in)
 GATE_X = (GATE_COLS[0] + 1) * T  # the gap's centre ≈ 1152
 FENCE_PX = (FX0 * T, FY0 * T, (FX1 + 1) * T, (FY1 + 1) * T)
-PLOT = (FX0 * T + T, FY0 * T + T + 14, (FX1 + 1) * T - T, (FY1 + 1) * T - T)
-BED = (470, 600, 750, 700)       # tilled soil rect (x0,y0,x1,y1)
-BED_SLOTS = [(520, 668), (590, 668), (660, 668), (730, 668)]
-TENT = (760, 430)                # (cx, base) — stage 1, client-drawn, faces south
+
+
+def tier_plot(t):
+    fx0, fy0, fx1, fy1 = FENCE_TIERS[t]
+    return (fx0 * T + T, fy0 * T + T + 14, (fx1 + 1) * T - T, (fy1 + 1) * T - T)
+
+
+PLOT = tier_plot(3)
+TENT = (1000, 560)               # (cx, base) — INSIDE the tier-1 yard
+BED_DEF = (1010, 730)            # ditto — the starter bed's home
 MAILBOX_AT = (1252, 850)         # OUTSIDE the fence, on the road by the gate
 SIGN_AT = (1010, 850)            # outside, on the road's north shoulder
 SAWHORSE_AT = (185, 886)         # the west end goes nowhere yet
@@ -197,62 +207,75 @@ def fence_kit():
     return kit
 
 
-fs_x0, fs_y0 = FX0 * T, FY1 * T - 4
-fence_south = Image.new('RGBA', ((FX1 + 1 - FX0) * T, T + 8), (0, 0, 0, 0))
+# 🌱 the fence is CLIENT-DRAWN per tier now, never baked: the engine swaps
+# ov-fyard<t> (north + verticals, low z) and ov-fsouth<t> (the south row,
+# y-sorted so it overflows the banana) when the land grows. Colliders ride
+# each tier's entry in FENCE_TIERS_OUT.
+FENCE_TIERS_OUT = {}
 
 
-def lay_fence():
-    kit = fence_kit()
-    if not kit['h'] or not kit['v_w']:
-        print('  no fence tiles — fence skipped')
-        return
+def lay_fence_tier(kit, tier):
+    fx0, fy0, fx1, fy1 = FENCE_TIERS[tier]
+    yard = Image.new('RGBA', ((fx1 + 1 - fx0) * T, (fy1 - fy0) * T), (0, 0, 0, 0))
+    south = Image.new('RGBA', ((fx1 + 1 - fx0) * T, T + 8), (0, 0, 0, 0))
 
     def stamp(tile, tx, ty):
-        if tile:
-            im.alpha_composite(tile, (tx * T, ty * T))
-            if ty == FY1:   # the south row ALSO lands on the occlusion overlay
-                fence_south.alpha_composite(tile, (tx * T - fs_x0, ty * T - fs_y0))
+        if not tile:
+            return
+        if ty == fy1:
+            south.alpha_composite(tile, ((tx - fx0) * T, ty * T - (fy1 * T - 4)))
+        else:
+            yard.alpha_composite(tile, ((tx - fx0) * T, (ty - fy0) * T))
     # north: end pieces carry the corners themselves
-    stamp(kit['endl'], FX0, FY0)
-    for tx in range(FX0 + 1, FX1):
-        stamp(kit['h'] if tx % 2 else kit['h2'], tx, FY0)
-    stamp(kit['endr'], FX1, FY0)
+    stamp(kit['endl'], fx0, fy0)
+    for tx in range(fx0 + 1, fx1):
+        stamp(kit['h'] if tx % 2 else kit['h2'], tx, fy0)
+    stamp(kit['endr'], fx1, fy0)
     # verticals live in the SAME columns as the run ends
-    for ty in range(FY0 + 1, FY1):
-        stamp(kit['v_w'], FX0, ty)
-        stamp(kit['v_e'], FX1, ty)
+    for ty in range(fy0 + 1, fy1):
+        stamp(kit['v_w'], fx0, ty)
+        stamp(kit['v_e'], fx1, ty)
     # south: junction ends (nub where the vertical arrives) + the gate posts
-    stamp(kit['jl'], FX0, FY1)
-    for tx in range(FX0 + 1, FX1):
+    stamp(kit['jl'], fx0, fy1)
+    for tx in range(fx0 + 1, fx1):
         if tx in GATE_COLS:
             continue
         if tx == GATE_COLS[0] - 1:
-            stamp(kit['gl'], tx, FY1)
+            stamp(kit['gl'], tx, fy1)
         elif tx == GATE_COLS[-1] + 1:
-            stamp(kit['gr'], tx, FY1)
+            stamp(kit['gr'], tx, fy1)
         else:
-            stamp(kit['h'] if tx % 2 else kit['h2'], tx, FY1)
-    stamp(kit['jr'], FX1, FY1)
+            stamp(kit['h'] if tx % 2 else kit['h2'], tx, fy1)
+    stamp(kit['jr'], fx1, fy1)
+    yard.save(os.path.join(OUT, 'ov-fyard%d.png' % tier), optimize=True)
+    south.save(os.path.join(OUT, 'ov-fsouth%d.png' % tier), optimize=True)
     # colliders from the measured post columns
     mid = 18
-    fy0, fy1 = FY0 * T + mid, FY1 * T + mid
-    COLLIDERS.append((FX0 * T, fy0, (FX1 + 1) * T, fy0 + 14))                  # north
-    # ⚠️ the south band is DEEPER (26px, not 14): a banana at y 800-816 stood
-    # visually ON the pickets (Trym's screenshot) — now it can't get there
-    COLLIDERS.append((FX0 * T, fy1, GATE_COLS[0] * T, fy1 + 26))               # south L of gate
-    COLLIDERS.append(((GATE_COLS[-1] + 1) * T, fy1, (FX1 + 1) * T, fy1 + 26))  # south R of gate
-    COLLIDERS.append((FX0 * T + 2, fy0, FX0 * T + 20, fy1))                    # west posts
-    COLLIDERS.append((FX1 * T + 24, fy0, FX1 * T + 44, fy1))                   # east posts
+    cy0, cy1 = fy0 * T + mid, fy1 * T + mid
+    cols = [
+        (fx0 * T, cy0, (fx1 + 1) * T, cy0 + 14),                   # north
+        # ⚠️ the south band is DEEPER (26px): a banana at the pickets' feet
+        # stood visually ON them (Trym's screenshot)
+        (fx0 * T, cy1, GATE_COLS[0] * T, cy1 + 26),                # south L of gate
+        ((GATE_COLS[-1] + 1) * T, cy1, (fx1 + 1) * T, cy1 + 26),   # south R of gate
+        (fx0 * T + 2, cy0, fx0 * T + 20, cy1),                     # west posts
+        (fx1 * T + 24, cy0, fx1 * T + 44, cy1),                    # east posts
+    ]
+    FENCE_TIERS_OUT[tier] = {
+        'fence': [fx0 * T, fy0 * T, (fx1 + 1) * T, (fy1 + 1) * T],
+        'plot': list(tier_plot(tier)),
+        'cols': [list(map(int, c)) for c in cols],
+        'yard': ['ov-fyard%d.png' % tier, fx0 * T, fy0 * T, yard.width, yard.height, fy0 * T + 32],
+        'south': ['ov-fsouth%d.png' % tier, fx0 * T, fy1 * T - 4, south.width, south.height, (fy1 + 1) * T],
+    }
+    print('  fence tier %d: ov-fyard%d + ov-fsouth%d' % (tier, tier, tier))
 
 
-FENCE_SOUTH_OV = None
 if HAVE_PACK:
-    lay_fence()
-    # saved AFTER lay_fence filled it; base = the fence row's foot line
-    _fsp = os.path.join(OUT, 'ov-fsouth.png')
-    fence_south.save(_fsp, optimize=True)
-    OVERLAYS.append(('ov-fsouth.png', FX0 * T, FY1 * T - 4, (FX1 + 1 - FX0) * T, T + 8, (FY1 + 1) * T))
-    print('  ov-fsouth.png (south-fence occlusion overlay)')
+    _kit = fence_kit()
+    if _kit['h'] and _kit['v_w']:
+        for _t in (1, 2, 3):
+            lay_fence_tier(_kit, _t)
 
 # ---- the tilled bed: a MOVABLE overlay sprite, never baked ----------------
 # (Trym, 3 Aug: the user decides where the patch lives — grass survives under
@@ -533,7 +556,9 @@ def emit():
     L.append('export const EXIT_EAST = { x: %d, y: %d, r: 60 };' % (W - 40, ROAD_Y))
     L.append('export const FENCE = %s;' % list(FENCE_PX))
     L.append('export const PLOT = %s;' % list(PLOT))
-    L.append('export const BED = { w: %d, h: %d, def: { x: 610, y: 700 }, slots: [[-90, -32], [-20, -32], [50, -32], [120, -32]] };' % (BED_W, BED_H))
+    L.append('// 🌱 land grows with the ladder: stage 0-1 → tier 1, 2 → 2, 3 → 3')
+    L.append('export const FENCE_TIERS = %s;' % __import__('json').dumps(FENCE_TIERS_OUT))
+    L.append('export const BED = { w: %d, h: %d, def: { x: %d, y: %d }, slots: [[-90, -32], [-20, -32], [50, -32], [120, -32]] };' % (BED_W, BED_H, BED_DEF[0], BED_DEF[1]))
     L.append('export const TENT = { x: %d, y: %d, w: %d, h: %d, solid: [-%d, -20, %d, 4] };'
              % (TENT[0], TENT[1], TENT_SIZE[0], TENT_SIZE[1],
                 max(20, TENT_SIZE[0] // 2 - 8), max(20, TENT_SIZE[0] // 2 - 8)))
