@@ -47,8 +47,9 @@ function loadState() {
   } catch (e) {}
   return { v: 1, name: '', claimedAt: 0, stage: 0, items: [], shed: [], bed: [null, null, null, null] };
 }
-function withHome(s) {   // older saves have no home — the default is the old spot
+function withHome(s) {   // older saves have no home/bedAt — defaults = old spots
   if (!s.home) s.home = { x: TENT.x, y: TENT.y };
+  if (!s.bedAt) s.bedAt = { x: BED.def.x, y: BED.def.y };
   return s;
 }
 
@@ -64,6 +65,15 @@ function applyTestScenario(kind) {
     items: [], shed: [], bed: [null, null, null, null] };
   let s = null;
   if (kind === 'fresh') { try { localStorage.removeItem(HS_KEY); } catch (e) {} return; }
+  if (kind === 'rich') {   // a test wallet: balance jumps to ~9999, state untouched
+    try {
+      const pv = JSON.parse(localStorage.getItem('pass-v1') || '{}');
+      pv.stats = pv.stats || {};
+      pv.stats.coins_earned = (pv.stats.coins_spent || 0) + 9999;
+      localStorage.setItem('pass-v1', JSON.stringify(pv));
+    } catch (e) {}
+    return;
+  }
   if (kind === 'claimed') s = base;
   if (kind === 'tent') {
     s = { ...base, stage: 1,
@@ -318,7 +328,7 @@ function init() {
       const hw2 = Math.max(24, d.w * 0.42);
       liveRects.push([state.home.x - hw2, state.home.y - Math.max(20, d.h * 0.2), state.home.x + hw2, state.home.y + 4]);
     }
-    liveRects.push([BED[0] - 6, BED[1] - 6, BED[2] + 6, BED[3] + 6]);
+    liveRects.push([state.bedAt.x - BED.w / 2 - 6, state.bedAt.y - BED.h - 6, state.bedAt.x + BED.w / 2 + 6, state.bedAt.y + 6]);
   }
   const inRect = (x, y, r) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
   const inRoadLane = (y) => Math.abs(y - ROAD.y) < ROAD.hw - 6;
@@ -332,20 +342,34 @@ function init() {
   rebuildSolids();
   refreshItems();
 
-  // ---- the bed ------------------------------------------------------------
+  // ---- the bed: a movable soil overlay + its crops ------------------------
+  const slotAt = (i) => [state.bedAt.x + BED.slots[i][0], state.bedAt.y + BED.slots[i][1]];
   const slotEls = [null, null, null, null];
+  let bedEl = null;
   function cropStage(b) { return !b ? 0 : Math.min(4, 1 + (b.waters | 0)); }
   function refreshBed() {
-    BED.slots.forEach((s, i) => {
+    if (!bedEl) {
+      bedEl = document.createElement('div');
+      bedEl.className = 'hs-ov';
+      bedEl.style.backgroundImage = "url('/assets/homestead/ov-bed.png')";
+      bedEl.style.zIndex = '60';   // flat tilled ground — under everything y-sorted
+      world.appendChild(bedEl);
+    }
+    bedEl.style.left = pct(state.bedAt.x - BED.w / 2, W);
+    bedEl.style.top = pct(state.bedAt.y - BED.h, H);
+    bedEl.style.width = pct(BED.w, W);
+    bedEl.style.height = pct(BED.h, H);
+    BED.slots.forEach((rel, i) => {
       if (slotEls[i]) { slotEls[i].remove(); slotEls[i] = null; }
       const b = state.bed[i];
       if (!b) return;
+      const sp = slotAt(i);
       const el = document.createElement('div');
       el.className = 'hs-crop' + (cropStage(b) >= 4 ? ' is-ripe' : '');
-      el.style.left = pct(s[0] - 18, W); el.style.top = pct(s[1] - 40, H);
+      el.style.left = pct(sp[0] - 18, W); el.style.top = pct(sp[1] - 40, H);
       el.style.width = pct(36, W); el.style.height = pct(40, H);
       el.style.backgroundImage = "url('/assets/park/c-" + b.crop + '-' + cropStage(b) + ".png')";
-      depth(el, s[1]);
+      depth(el, sp[1]);
       world.appendChild(el);
       slotEls[i] = el;
     });
@@ -638,7 +662,7 @@ function init() {
   function spotOk(d, x, y) {
     if (x - d.w / 2 < PLOT[0] || x + d.w / 2 > PLOT[2]) return false;
     if (x < PLOT[0] + 10 || x > PLOT[2] - 10 || y < PLOT[1] + 24 || y > PLOT[3] - 6) return false;
-    if (inRect(x, y, [BED[0] - 26, BED[1] - 46, BED[2] + 26, BED[3] + 16])) return false;
+    if (inRect(x, y, [state.bedAt.x - BED.w / 2 - 26, state.bedAt.y - BED.h - 46, state.bedAt.x + BED.w / 2 + 26, state.bedAt.y + 16])) return false;
     // keep clear of the structure's FOOTPRINT only — the front yard below the
     // porch stays decoratable (the max stress test caught the old box banning it)
     const sd = structDims();
@@ -668,24 +692,33 @@ function init() {
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
   // validity, and anything under the confirmed footprint sweeps to the shed.
+  const fixDims = () => placing.key === 'bed' ? { w: BED.w, h: BED.h } : STRUCTS[placing.key];
   function homeOk(x, y) {
-    const d = STRUCTS[placing.key];
+    const d = fixDims();
     if (x - d.w / 2 < PLOT[0] - 2 || x + d.w / 2 > PLOT[2] + 2) return false;
     if (y - d.h < PLOT[1] - 44 || y > PLOT[3] - 8) return false;
     const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
-    if (foot[0] < BED[2] + 20 && foot[2] > BED[0] - 20 && foot[1] < BED[3] + 16 && foot[3] > BED[1] - 40) return false;
+    if (placing.key !== 'bed') {   // structures keep off the bed…
+      const b = [state.bedAt.x - BED.w / 2 - 20, state.bedAt.y - BED.h - 40, state.bedAt.x + BED.w / 2 + 20, state.bedAt.y + 16];
+      if (foot[0] < b[2] && foot[2] > b[0] && foot[1] < b[3] && foot[3] > b[1]) return false;
+    } else if (state.stage >= 1) { // …and the bed keeps off the structure
+      const sd = STRUCTS[curStruct().key];
+      const h2 = [state.home.x - sd.w * 0.52 - 20, state.home.y - sd.h * 0.62 - 20, state.home.x + sd.w * 0.52 + 20, state.home.y + 24];
+      if (foot[0] < h2[2] && foot[2] > h2[0] && foot[1] < h2[3] && foot[3] > h2[1]) return false;
+    }
     return true;
   }
   function startPlacingHome(key, opts) {
     cancelPlacing();
-    const d = STRUCTS[key];
+    const d = key === 'bed' ? { w: BED.w, h: BED.h } : STRUCTS[key];
     const el = document.createElement('div');
     el.className = 'hs-it hs-it--ghost';
     el.style.width = pct(d.w, W);
     el.style.height = pct(d.h, H);
     el.style.backgroundImage = "url('/assets/homestead/ov-" + key + ".png')";
     world.appendChild(el);
-    placing = { home: true, key, x: state.home.x, y: state.home.y, el,
+    const from = key === 'bed' ? state.bedAt : state.home;
+    placing = { home: true, key, x: from.x, y: from.y, el,
       price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0 };
     camFree = { x: placing.x, y: placing.y };
     view.classList.add('is-placing');
@@ -695,7 +728,7 @@ function init() {
     toast('choose where it stands — drag to look, tap to try', 3600);
   }
   function confirmHome() {
-    const d = STRUCTS[placing.key];
+    const d = fixDims();
     const x = placing.x, y = placing.y;
     // the sweep: items under the new footprint go safely to the shed
     const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
@@ -718,21 +751,22 @@ function init() {
     } else {
       track('homestead_move_home');
     }
-    state.home = { x, y };
+    if (key === 'bed') state.bedAt = { x, y };
+    else state.home = { x, y };
     placing.el.remove();
     placing = null;
     confirmEl.hidden = true;
     camFree = null;
     view.classList.remove('is-placing');
     save();
-    refreshTent(); rebuildSolids(); refreshItems(); refreshHud();
-    float(x, y - STRUCTS[key].h - 8, '✓');
+    refreshTent(); refreshBed(); rebuildSolids(); refreshItems(); refreshHud();
+    float(x, y - (key === 'bed' ? BED.h : STRUCTS[key].h) - 8, '✓');
   }
 
   function updateGhost() {
     if (!placing) return;
     if (placing.home) {
-      const d = STRUCTS[placing.key];
+      const d = fixDims();
       placing.el.style.left = pct(placing.x - d.w / 2, W);
       placing.el.style.top = pct(placing.y - d.h, H);
       depth(placing.el, placing.y);
@@ -826,7 +860,7 @@ function init() {
   function clearBedChip() { if (bedChip) { bedChip.remove(); bedChip = null; } }
   function bedTap(i) {
     clearBedChip();
-    const s = BED.slots[i];
+    const s = slotAt(i);
     const b = state.bed[i];
     if (!b) {
       bedChip = document.createElement('div');
@@ -876,7 +910,7 @@ function init() {
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
     if (placing.home) {
-      const d = STRUCTS[placing.key];
+      const d = fixDims();
       placing.x = snap(Math.max(PLOT[0] + d.w / 2, Math.min(PLOT[2] - d.w / 2, wx)));
       placing.y = snap(Math.max(PLOT[1] + Math.min(d.h * 0.5, 120), Math.min(PLOT[3] - 10, wy)));
     } else {
@@ -928,12 +962,30 @@ function init() {
     }
     // a bed slot
     for (let i = 0; i < BED.slots.length; i++) {
-      const s = BED.slots[i];
+      const s = slotAt(i);
       if (Math.hypot(wx - s[0], wy - (s[1] - 16)) < 32) {
         if (Math.hypot(pos.x - s[0], pos.y - s[1]) < 120) bedTap(i);
         else { tgt.x = s[0]; tgt.y = s[1] + 40; }
         return;
       }
+    }
+    // the bed itself (off-slot): near = offer the move, far = walk over
+    if (Math.abs(wx - state.bedAt.x) < BED.w / 2 && wy > state.bedAt.y - BED.h && wy < state.bedAt.y + 6) {
+      if (Math.hypot(pos.x - state.bedAt.x, pos.y - state.bedAt.y) < BED.w / 2 + 90) {
+        clearChip();
+        itChip = document.createElement('div');
+        itChip.className = 'hs-chip';
+        const mv = document.createElement('button');
+        mv.className = 'hs-btn';
+        mv.textContent = '\u2725 move the bed';
+        mv.addEventListener('click', () => { clearChip(); startPlacingHome('bed', {}); });
+        itChip.append(mv);
+        itChip.style.left = pct(state.bedAt.x, W);
+        itChip.style.top = pct(state.bedAt.y - BED.h - 12, H);
+        itChip.style.zIndex = '3000';
+        world.appendChild(itChip);
+      } else { tgt.x = state.bedAt.x; tgt.y = state.bedAt.y + 34; }
+      return;
     }
     // the structure: near = offer the move, far = walk over
     if (state.stage >= 1) {

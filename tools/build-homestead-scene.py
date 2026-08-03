@@ -197,6 +197,10 @@ def fence_kit():
     return kit
 
 
+fs_x0, fs_y0 = FX0 * T, FY1 * T - 4
+fence_south = Image.new('RGBA', ((FX1 + 1 - FX0) * T, T + 8), (0, 0, 0, 0))
+
+
 def lay_fence():
     kit = fence_kit()
     if not kit['h'] or not kit['v_w']:
@@ -206,6 +210,8 @@ def lay_fence():
     def stamp(tile, tx, ty):
         if tile:
             im.alpha_composite(tile, (tx * T, ty * T))
+            if ty == FY1:   # the south row ALSO lands on the occlusion overlay
+                fence_south.alpha_composite(tile, (tx * T - fs_x0, ty * T - fs_y0))
     # north: end pieces carry the corners themselves
     stamp(kit['endl'], FX0, FY0)
     for tx in range(FX0 + 1, FX1):
@@ -231,29 +237,44 @@ def lay_fence():
     mid = 18
     fy0, fy1 = FY0 * T + mid, FY1 * T + mid
     COLLIDERS.append((FX0 * T, fy0, (FX1 + 1) * T, fy0 + 14))                  # north
-    COLLIDERS.append((FX0 * T, fy1, GATE_COLS[0] * T, fy1 + 14))               # south L of gate
-    COLLIDERS.append(((GATE_COLS[-1] + 1) * T, fy1, (FX1 + 1) * T, fy1 + 14))  # south R of gate
+    # ⚠️ the south band is DEEPER (26px, not 14): a banana at y 800-816 stood
+    # visually ON the pickets (Trym's screenshot) — now it can't get there
+    COLLIDERS.append((FX0 * T, fy1, GATE_COLS[0] * T, fy1 + 26))               # south L of gate
+    COLLIDERS.append(((GATE_COLS[-1] + 1) * T, fy1, (FX1 + 1) * T, fy1 + 26))  # south R of gate
     COLLIDERS.append((FX0 * T + 2, fy0, FX0 * T + 20, fy1))                    # west posts
     COLLIDERS.append((FX1 * T + 24, fy0, FX1 * T + 44, fy1))                   # east posts
 
 
+FENCE_SOUTH_OV = None
 if HAVE_PACK:
     lay_fence()
+    # saved AFTER lay_fence filled it; base = the fence row's foot line
+    _fsp = os.path.join(OUT, 'ov-fsouth.png')
+    fence_south.save(_fsp, optimize=True)
+    OVERLAYS.append(('ov-fsouth.png', FX0 * T, FY1 * T - 4, (FX1 + 1 - FX0) * T, T + 8, (FY1 + 1) * T))
+    print('  ov-fsouth.png (south-fence occlusion overlay)')
 
-# ---- the tilled bed: soil field + thin furrow LINES + clods ---------------
-for y in range(BED[1], BED[3]):
-    for x in range(BED[0], BED[2]):
-        edge = x < BED[0] + 5 or x >= BED[2] - 5 or y < BED[1] + 5 or y >= BED[3] - 5
+# ---- the tilled bed: a MOVABLE overlay sprite, never baked ----------------
+# (Trym, 3 Aug: the user decides where the patch lives — grass survives under
+# it because it is client-drawn like the structure, not painted into the plate)
+BED_W, BED_H = 280, 100
+bed_im = Image.new('RGBA', (BED_W, BED_H), (0, 0, 0, 0))
+bp = bed_im.load()
+for y in range(BED_H):
+    for x in range(BED_W):
+        edge = x < 5 or x >= BED_W - 5 or y < 5 or y >= BED_H - 5
         if edge:
-            put(x, y, (82, 62, 40))
+            bp[x, y] = (82, 62, 40, 255)
         else:
             j = rng.randrange(-8, 9)
-            c = (120 + j, 90 + j, 56 + j)
-            if ((x - BED[0]) % 14) < 2:           # a thin furrow line every 14px
-                c = (98, 74, 46)
+            c = (120 + j, 90 + j, 56 + j, 255)
+            if (x % 14) < 2:
+                c = (98, 74, 46, 255)
             elif rng.random() < 0.04:
-                c = (88, 66, 42)                  # the odd clod
-            put(x, y, c)
+                c = (88, 66, 42, 255)
+            bp[x, y] = c
+bed_im.save(os.path.join(OUT, 'ov-bed.png'), optimize=True)
+print('  ov-bed.png %dx%d' % (BED_W, BED_H))
 
 # ---- fixtures: mailbox + signpost (baked, layered, solid) ------------------
 def dedisc(img):
@@ -468,7 +489,7 @@ def emit():
     L.append('export const EXIT_EAST = { x: %d, y: %d, r: 60 };' % (W - 40, ROAD_Y))
     L.append('export const FENCE = %s;' % list(FENCE_PX))
     L.append('export const PLOT = %s;' % list(PLOT))
-    L.append('export const BED = { rect: %s, slots: %s };' % (list(BED), [list(s) for s in BED_SLOTS]))
+    L.append('export const BED = { w: %d, h: %d, def: { x: 610, y: 700 }, slots: [[-90, -32], [-20, -32], [50, -32], [120, -32]] };' % (BED_W, BED_H))
     L.append('export const TENT = { x: %d, y: %d, w: %d, h: %d, solid: [-%d, -20, %d, 4] };'
              % (TENT[0], TENT[1], TENT_SIZE[0], TENT_SIZE[1],
                 max(20, TENT_SIZE[0] // 2 - 8), max(20, TENT_SIZE[0] // 2 - 8)))
