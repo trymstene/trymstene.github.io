@@ -158,6 +158,14 @@ export function initTravel({ here, mount, before, btnClass, track }) {
     // through doors and ignore posters, so the shop gets a door too.
     + '<hr class="wt-sep">'
     + '<div class="wt-list">'
+    // 🎁 the workshop is a BENCH, not a place — paper like the shop. It feeds
+    // the whole community-item loop (draw → submit → rave drop), and doors
+    // beat posters here too: until now it only had the LED ad.
+    + '<a class="wt-go wt-go--shop" href="/forge/items/" data-to="items">'
+    + '<span class="wt-go__icon">🎁</span>'
+    + '<span><span class="wt-go__name">The Items Workshop</span>'
+    + '<span class="wt-go__line">draw a wearable — the best ones drop at the rave</span></span>'
+    + '<span class="wt-go__arrow">→</span></a>'
     + '<a class="wt-go wt-go--shop" href="/shop/" data-to="shop">'
     + '<span class="wt-go__icon">🛍</span>'
     + '<span><span class="wt-go__name">The Shop</span>'
