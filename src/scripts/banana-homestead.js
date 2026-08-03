@@ -20,7 +20,9 @@ const view = document.getElementById('hsView');
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
 const HS_KEY = 'hs-v1';
-const CAPS = [8, 16];            // placement spots per stage (the tent adds room)
+// ⚠️ STRESS-TESTED 3 Aug (?hstest=full): 16 items on the 19×10-tile lawn read
+// as ~15% furnished — "full" must LOOK like a lived-in yard, so the caps rose.
+const CAPS = [12, 28];           // placement spots per stage (the tent adds room)
 const CROPS = [
   { id: 'tomato', name: 'Tomato', seed: 3, pay: 6 },
   { id: 'pumpkin', name: 'Pumpkin', seed: 3, pay: 6 },
@@ -36,6 +38,56 @@ function loadState() {
   } catch (e) {}
   return { v: 1, name: '', claimedAt: 0, stage: 0, items: [], shed: [], bed: [null, null, null, null] };
 }
+
+// 🧪 ?hstest=<scenario> — jump the homestead to any point of the journey and
+// LOOK at it (the park's ?parktest pattern). Overwrites hs-v1 for this device;
+// touches no coins, no pass stats. Scenarios:
+//   fresh    the very first arrival        claimed  named, stage 0, empty
+//   tent     just moved in, a few things   full     stage 1 MAXED: 16/16 spots,
+//            every bed slot at a different growth stage, a stuffed shed
+function applyTestScenario(kind) {
+  const day = new Date().toISOString().slice(0, 10);
+  const base = { v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 0,
+    items: [], shed: [], bed: [null, null, null, null] };
+  let s = null;
+  if (kind === 'fresh') { try { localStorage.removeItem(HS_KEY); } catch (e) {} return; }
+  if (kind === 'claimed') s = base;
+  if (kind === 'tent') {
+    s = { ...base, stage: 1,
+      items: [{ id: 'sunflower', x: 480, y: 520 }, { id: 'bench', x: 640, y: 380 }],
+      shed: [{ id: 'lantern' }] };
+  }
+  if (kind === 'full') {
+    s = { ...base, stage: 1,
+      items: [
+        { id: 'statue', x: 430, y: 410 }, { id: 'bench', x: 620, y: 360 },
+        { id: 'table', x: 1050, y: 400 }, { id: 'campfire', x: 890, y: 580 },
+        { id: 'lantern', x: 990, y: 540 }, { id: 'lantern', x: 1180, y: 470 },
+        { id: 'sunflower', x: 400, y: 330 }, { id: 'redflower', x: 445, y: 340 },
+        { id: 'blueflower', x: 490, y: 330 }, { id: 'pinkvase', x: 545, y: 350 },
+        { id: 'bush', x: 1250, y: 350 }, { id: 'bush', x: 1230, y: 560 },
+        { id: 'stump', x: 960, y: 660 }, { id: 'scarecrow', x: 560, y: 540 },
+        { id: 'sunflower', x: 1120, y: 340 }, { id: 'redflower', x: 1165, y: 355 },
+        { id: 'blueflower', x: 600, y: 330 }, { id: 'pinkvase', x: 655, y: 345 },
+        { id: 'sunflower', x: 705, y: 330 }, { id: 'bush', x: 420, y: 480 },
+        { id: 'bush', x: 400, y: 630 }, { id: 'stump', x: 430, y: 730 },
+        { id: 'lantern', x: 1140, y: 720 }, { id: 'campfire', x: 1255, y: 700 },
+        { id: 'table', x: 910, y: 340 }, { id: 'bench', x: 1000, y: 320 },
+        { id: 'statue', x: 1255, y: 630 }, { id: 'scarecrow', x: 850, y: 710 },
+      ],
+      shed: [{ id: 'bush' }, { id: 'stump' }, { id: 'pinkvase' }],
+      bed: [
+        { crop: 'tomato', waters: 0, last: '', planted: day },
+        { crop: 'pumpkin', waters: 1, last: '', planted: day },
+        { crop: 'wheat', waters: 2, last: '', planted: day },
+        { crop: 'tomato', waters: 3, last: '', planted: day },
+      ] };
+  }
+  if (s) { try { localStorage.setItem(HS_KEY, JSON.stringify(s)); } catch (e) {} }
+}
+const HS_TEST = typeof location !== 'undefined'
+  && new URLSearchParams(location.search).get('hstest');
+if (HS_TEST) applyTestScenario(HS_TEST);
 
 function init() {
   const W = WORLD.w, H = WORLD.h;
@@ -352,21 +404,23 @@ function init() {
 
   // ---- 📬 the mailbox shop -------------------------------------------------
   const cap = () => CAPS[Math.min(state.stage, CAPS.length - 1)];
-  function shopRow(d, verb, cb) {
-    const row = document.createElement('div');
-    row.className = 'hs-row';
+  const CAT_LABELS = { garden: '🌼 Garden', furniture: '🪑 Furniture', nature: '🌿 Nature',
+    lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun' };
+  function shopTile(d, verb, cb) {
+    const tile = document.createElement('div');
+    tile.className = 'hs-tile';
     const im = document.createElement('img');
     im.src = d.img; im.alt = ''; im.loading = 'lazy';
-    const meta = document.createElement('div');
-    meta.className = 'hs-row__meta';
-    meta.innerHTML = '<b></b><span></span>';
-    meta.querySelector('b').textContent = d.name;
-    meta.querySelector('span').textContent = verb === 'buy' ? d.price + ' 🪙' : 'in the shed';
+    const nm = document.createElement('b');
+    nm.textContent = d.name;
+    const pr = document.createElement('em');
+    pr.textContent = verb === 'buy' ? d.price + ' 🪙' : 'in the shed';
     const btn = document.createElement('button');
     btn.className = 'hs-btn';
     if (verb === 'buy' && d.stage > state.stage) {
-      btn.textContent = '🔒 needs the tent';
+      btn.textContent = '🔒 tent first';
       btn.disabled = true;
+      tile.classList.add('is-locked');
     } else if (verb === 'buy') {
       btn.textContent = 'get it';
       btn.disabled = coinBalance() < d.price;
@@ -374,12 +428,14 @@ function init() {
       btn.textContent = 'place it';
     }
     btn.addEventListener('click', cb);
-    row.append(im, meta, btn);
-    return row;
+    tile.append(im, nm, pr, btn);
+    return tile;
   }
   function renderShop() {
     const list = document.getElementById('hsShopList');
+    const catsRow = document.getElementById('hsShopCats');
     list.replaceChildren();
+    catsRow.hidden = true;
     // ⛺ TENT FIRST (Trym): before you've moved in, the mailbox offers ONE
     // thing — the catalog stays behind the canvas until the tent is up.
     const tabsRow = shopEl.querySelector('.hs-tabs');
@@ -410,17 +466,30 @@ function init() {
     const tab = shopEl.dataset.tab || 'order';
     const full = state.items.length >= cap();
     if (tab === 'order') {
+      // category chips — the catalog reads as SHELVES, not a corridor
+      const cats = ['all', ...new Set(DECOR.map((d) => d.cat))];
+      const curCat = shopEl.dataset.cat || 'all';
+      catsRow.hidden = false;
+      catsRow.replaceChildren();
+      cats.forEach((c) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = c === 'all' ? 'All' : (CAT_LABELS[c] || c);
+        b.setAttribute('aria-pressed', String(c === curCat));
+        b.addEventListener('click', () => { shopEl.dataset.cat = c; renderShop(); });
+        catsRow.appendChild(b);
+      });
       if (full) {
         const p = document.createElement('p');
         p.className = 'hs-note';
-        p.textContent = state.stage < 1
-          ? 'Your plot is full (' + cap() + ' spots) — the tent adds room.'
-          : 'Your plot is full (' + cap() + ' spots) — pick something up to make space.';
+        p.textContent = 'Your plot is full (' + cap() + ' spots) — pick something up to make space.';
         list.appendChild(p);
       }
-      DECOR.forEach((d) => {
-        list.appendChild(shopRow(d, 'buy', () => {
-          if (full) { toast('the plot is full — ' + (state.stage < 1 ? 'the tent adds room' : 'put something away first')); return; }
+      const grid = document.createElement('div');
+      grid.className = 'hs-grid';
+      DECOR.filter((d) => curCat === 'all' || d.cat === curCat).forEach((d) => {
+        grid.appendChild(shopTile(d, 'buy', () => {
+          if (full) { toast('the plot is full — put something away first'); return; }
           if (d.stage > state.stage || coinBalance() < d.price) return;
           passStat('coins_spent', d.price);
           refreshHud();
@@ -429,6 +498,7 @@ function init() {
           startPlacing(d.id);
         }));
       });
+      list.appendChild(grid);
     } else if (tab === 'shed') {
       if (!state.shed.length) {
         const p = document.createElement('p');
@@ -436,10 +506,12 @@ function init() {
         p.textContent = 'Nothing in the shed — things you pick up land here.';
         list.appendChild(p);
       }
+      const grid = document.createElement('div');
+      grid.className = 'hs-grid';
       state.shed.forEach((s, i) => {
         const d = DEX[s.id];
         if (!d) return;
-        list.appendChild(shopRow(d, 'place', () => {
+        grid.appendChild(shopTile(d, 'place', () => {
           if (state.items.length >= cap()) { toast('the plot is full'); return; }
           state.shed.splice(i, 1);
           save();
@@ -447,6 +519,7 @@ function init() {
           startPlacing(d.id);
         }));
       });
+      list.appendChild(grid);
     } else {   // upgrades (stage ≥ 1 — the tent gate lives above)
       const card = document.createElement('div');
       card.className = 'hs-up';
