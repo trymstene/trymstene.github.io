@@ -122,8 +122,10 @@ const items = mode === 'items';
     flex: 1; border: 3px solid var(--ink); background: var(--paper); padding: 0.65rem 0.5rem;
     font-weight: 800; font-size: 0.98rem; cursor: pointer; box-shadow: 4px 4px 0 var(--ink);
     touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-    text-decoration: none; color: inherit; text-align: center;
+    text-decoration: none; color: inherit; text-align: center; white-space: nowrap;
   }
+  /* buttons never line-break (Trym's rule) — shrink before wrapping */
+  @media (max-width: 540px) { .fg-modetab { font-size: 0.84rem; padding: 0.65rem 0.25rem; } }
   .fg-modetab.is-here { background: var(--banana); box-shadow: inset 3px 3px 0 rgba(17, 17, 17, 0.16); cursor: default; }
   .fg-riding { font-size: 0.82rem; font-weight: 800; color: #0e9fb5; margin: 0.35rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
   #fgItemsSave { width: 100%; }

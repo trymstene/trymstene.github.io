@@ -30,12 +30,16 @@ const FAQ = [
     a: 'Yes. Draw up to 16 frames with per-frame timing and export a transparent animated GIF at 128×128 pixels — exactly what Discord custom emojis require.' },
   { q: 'Can I make Twitch emotes with it?',
     a: 'Yes. Export at 112×112 pixels with a transparent background and Twitch auto-generates the 56px and 28px sizes when you upload.' },
+  { q: 'What size does each platform need?',
+    a: 'Discord emoji: 128×128 (shown at 32×32 in chat). Twitch emotes: 28, 56 and 112 pixels. Slack: 128×128 under 128KB. Telegram stickers: 512×512. Discord stickers: 320×320 as APNG. The Forge exports the right sizes directly, and the full spec tables live in the emoji size guides.' },
   { q: 'Are the GIFs transparent?',
     a: 'Yes, every export supports transparency. Anything you leave unpainted stays see-through, so your emote floats over any chat background — no white box around it.' },
   { q: 'Can I import an existing GIF and remix it?',
     a: 'Yes. Import any GIF and it lands on the grid frame by frame, ready to redraw — including the original 1999 Dancing Banana, which is one click away.' },
   { q: 'Do I need an account or an app?',
     a: 'No. It runs entirely in your browser — nothing to install, no sign-up, no watermark. Finished pieces land on your Banana Pass so you can come back to them.' },
+  { q: 'Who built the Pixel Forge?',
+    a: 'Trym Stene — the Norwegian creator of the 1999 Dancing Banana GIF, one of the internet’s oldest living memes, still pulling over a million views a month on GIPHY. The Forge rebuilds the kind of frame-by-frame tool the banana was originally drawn in.' },
   { q: 'What is the Items Workshop?',
     a: 'The Forge’s second bench, at its own address: draw a wearable item directly on the dancing banana — a hat, a sword, a rubber duck — and submit it to the banana club. Approved items become drops at the live rave: another visitor catches yours, wears it everywhere, and your name rides along as the maker.' },
   { q: 'Why pixel art for emotes?',
@@ -49,6 +53,36 @@ const faqLD = {
     acceptedAnswer: { '@type': 'Answer', text: f.a },
   })),
 };
+
+// the true-size lineup: REAL render sizes from the guides' spec tables —
+// the same GIF at every size chat actually shows it
+const TRUE_SIZES = [
+  { px: 112, label: 'Twitch preview' },
+  { px: 56, label: 'Twitch retina' },
+  { px: 48, label: 'Discord jumbo' },
+  { px: 32, label: 'Discord chat' },
+  { px: 28, label: 'Twitch chat' },
+  { px: 22, label: 'Slack message' },
+];
+
+const TIMELINE = [
+  { y: '1987', t: 'CompuServe ships the GIF format', s: 'one image, 256 colours' },
+  { y: '1989', t: 'GIF89a adds animation + transparency', s: 'the emote format is born — and never replaced' },
+  { y: '1999', t: 'the Dancing Banana is drawn, frame by frame', s: 'in a simple pixel tool, by the guy who built this page' },
+  { y: '2000s', t: '"Peanut Butter Jelly Time" carries it worldwide', s: 'the banana becomes one of the oldest living memes' },
+  { y: '2015', t: 'Discord launches with custom server emoji', s: 'small pixel art suddenly matters to everyone again' },
+  { y: '2026', t: 'the Forge rebuilds the 1999 workflow', s: 'same craft, zero installs — it runs right up there ↑' },
+];
+
+const VS = [
+  ['What you start with', 'a blank pixel grid (or any GIF, remixable)', 'a video or a stack of photos'],
+  ['Draw frame by frame', 'yes — that is the whole tool', 'no, it only converts'],
+  ['True transparency', 'every export', 'rare, and often with broken halos'],
+  ['Watermark', 'never', 'common on free tiers'],
+  ['Account required', 'no', 'usually'],
+  ['Chat-ready presets', '128 · 112 · 512, transparent', 'generic video sizes'],
+  ['Price', 'free', '"free" with limits'],
+];
 ---
 <BaseLayout
   title={title}
@@ -59,6 +93,71 @@ const faqLD = {
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqLD)} />
+  <style is:inline slot="head">
+    /* ── credibility pills: real facts, one thin row above the tool ── */
+    .fg-cred { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1.3rem; }
+    .fg-cred span {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      border: 2px solid var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink);
+      padding: 0.3rem 0.6rem; font-size: 0.78rem; font-weight: 800;
+    }
+
+    /* ── the true-size lineup: the same GIF at real chat sizes ── */
+    .fg-true { margin-top: 2.4rem; }
+    .fg-true h2 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+    .fg-true > p { max-width: 74ch; line-height: 1.6; margin: 0 0 1.1rem; }
+    .fg-truerow {
+      display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: flex-end;
+      border: var(--line); background: var(--paper); box-shadow: var(--shadow);
+      padding: 1.1rem 1.2rem 0.9rem;
+    }
+    .fg-truebox { text-align: center; }
+    .fg-truebox .fg-cell {
+      display: grid; place-items: center; margin: 0 auto;
+      border: 2px dashed rgba(17,17,17,0.35); background: #f4f1e8;
+    }
+    .fg-truebox img { image-rendering: pixelated; display: block; }
+    .fg-truebox b { display: block; font-size: 0.9rem; margin-top: 0.35rem; }
+    .fg-truebox small { display: block; font-size: 0.68rem; opacity: 0.65; }
+    .fg-truenote { font-size: 0.78rem; opacity: 0.7; margin: 0.6rem 0 0; }
+
+    /* ── five rules: numbered fact boxes, not paragraphs ── */
+    .fg-rules { margin-top: 2.4rem; }
+    .fg-rules h2 { margin: 0 0 0.7rem; font-size: 1.25rem; }
+    .fg-rulegrid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .fg-rule {
+      border: var(--line); background: var(--ink); color: var(--paper);
+      box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.85rem 0.95rem;
+    }
+    .fg-rule b { display: block; color: var(--banana); font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .fg-rule span { font-size: 0.83rem; line-height: 1.5; }
+
+    /* ── the GIF timeline: year chips on a scrolling band ── */
+    .fg-time { margin-top: 2.4rem; }
+    .fg-time h2 { margin: 0 0 0.7rem; font-size: 1.25rem; }
+    .fg-timescroll { overflow-x: auto; }
+    .fg-timerow { display: flex; gap: 0.8rem; min-width: max-content; padding-bottom: 0.4rem; }
+    .fg-beat {
+      flex: 0 0 200px; border: var(--line); background: var(--paper);
+      box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.8rem 0.9rem;
+    }
+    .fg-beat b { display: block; font-size: 1.5rem; line-height: 1; color: var(--ink); }
+    .fg-beat strong { display: block; font-size: 0.85rem; margin: 0.4rem 0 0.2rem; line-height: 1.35; }
+    .fg-beat small { display: block; font-size: 0.72rem; opacity: 0.65; line-height: 1.45; }
+    .fg-beat--nana { background: var(--banana); }
+
+    /* ── the honest comparison table ── */
+    .fg-vs { margin-top: 2.4rem; }
+    .fg-vs h2 { margin: 0 0 0.7rem; font-size: 1.25rem; }
+    .fg-vswrap { overflow-x: auto; border: var(--line); background: var(--paper); box-shadow: var(--shadow); }
+    .fg-vs table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.86rem; }
+    .fg-vs th, .fg-vs td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 2px solid rgba(17,17,17,0.12); vertical-align: top; }
+    .fg-vs thead th { background: var(--ink); color: var(--paper); font-size: 0.8rem; letter-spacing: 0.03em; }
+    .fg-vs thead th:nth-child(2) { color: var(--banana); }
+    .fg-vs tbody th { font-weight: 800; width: 32%; }
+    .fg-vs td:first-of-type { font-weight: 700; }
+    .fg-vs tbody tr:last-child th, .fg-vs tbody tr:last-child td { border-bottom: 0; }
+  </style>
 
   <div class="fg-wrap">
     <div class="fg-head">
@@ -67,6 +166,11 @@ const faqLD = {
         In 1999 I drew a dancing banana in a tool about this simple — and it took over the internet.
         Here's that tool, rebuilt. Pencil, fill, frames, one great palette. <strong>Make the next one.</strong>
       </p>
+      <div class="fg-cred" aria-label="Why trust this tool">
+        <span>🍌 by the creator of the 1999 Dancing Banana</span>
+        <span>👀 his GIFs pull 1M+ views a month on GIPHY</span>
+        <span>🆓 free · no account · no watermark</span>
+      </div>
     </div>
 
     <ForgeStudio mode="emoji" />
@@ -83,13 +187,41 @@ const faqLD = {
       </p>
     </section>
 
+    <section class="fg-true" aria-label="Real emote sizes compared">
+      <h2>This is how big an emote really is</h2>
+      <p>
+        The same GIF, at the exact sizes chat platforms actually render it. Everything to the
+        right of the first box is what your audience sees — which is why you draw <em>for</em>
+        the small size instead of shrinking something detailed down to it.
+      </p>
+      <div class="fg-truerow">
+        {TRUE_SIZES.map((s) => (
+          <div class="fg-truebox">
+            <div class="fg-cell" style={`width:${s.px}px;height:${s.px}px`}>
+              <img src="/assets/dancing-banana-transparent.gif" alt="" loading="lazy"
+                width={Math.round(s.px * 0.63)} height={Math.round(s.px * 0.9)}
+                style={`height:${Math.round(s.px * 0.9)}px;width:auto`} />
+            </div>
+            <b>{s.px}px</b>
+            <small>{s.label}</small>
+          </div>
+        ))}
+      </div>
+      <p class="fg-truenote">
+        Sizes from the platforms' own specs — the full tables live in
+        <a href="/guides/">the emoji &amp; emote size guides</a>.
+      </p>
+    </section>
+
     <section class="fg-exports" aria-label="Export sizes per platform">
       <h2>Sized for your platform</h2>
       <div class="fg-expgrid">
-        <a href="/discord-emoji-size/" class="fg-exp"><b>128×128</b><span>Discord &amp; Slack</span><small>transparent GIF, under the caps</small></a>
-        <a href="/twitch-emote-size/" class="fg-exp"><b>112×112</b><span>Twitch</span><small>56px + 28px auto-generated</small></a>
-        <a href="/guides/" class="fg-exp"><b>512×512</b><span>Telegram &amp; hi-res</span><small>GIF or PNG</small></a>
-        <a href="/guides/" class="fg-exp"><b>every ⧉</b><span>All platforms</span><small>the emoji size chart →</small></a>
+        <a href="/guides/discord-emoji-size/" class="fg-exp"><b>128×128</b><span>Discord emoji</span><small>transparent GIF/PNG, ≤256KB</small></a>
+        <a href="/guides/twitch-emote-size/" class="fg-exp"><b>112×112</b><span>Twitch emote</span><small>56px + 28px auto-generated</small></a>
+        <a href="/guides/slack-emoji-size/" class="fg-exp"><b>128×128</b><span>Slack emoji</span><small>the ≤128KB trap, explained</small></a>
+        <a href="/guides/telegram-sticker-size/" class="fg-exp"><b>512×512</b><span>Telegram sticker</span><small>transparent, one side exactly 512</small></a>
+        <a href="/guides/discord-sticker-size/" class="fg-exp"><b>320×320</b><span>Discord sticker</span><small>APNG — not GIF</small></a>
+        <a href="/guides/" class="fg-exp"><b>every ⧉</b><span>All platforms</span><small>the full size cheatsheet →</small></a>
       </div>
     </section>
 
@@ -103,6 +235,17 @@ const faqLD = {
       </div>
     </section>
 
+    <section class="fg-rules" aria-label="Emote design rules">
+      <h2>Five rules for emotes that read at 28 pixels</h2>
+      <div class="fg-rulegrid">
+        <div class="fg-rule"><b>1 · Silhouette first</b><span>If the outline alone doesn't say what it is, no amount of colour will save it. Squint test everything.</span></div>
+        <div class="fg-rule"><b>2 · Thick lines win</b><span>A 1-pixel line at 128px vanishes at 28. On a 32-grid every line you draw is already thick enough — that's the trick.</span></div>
+        <div class="fg-rule"><b>3 · Three to five colours</b><span>Contrast beats shading at postage-stamp size. The banana is two yellows and an outline.</span></div>
+        <div class="fg-rule"><b>4 · Survive both themes</b><span>Chat is dark for some, light for others. Transparent background plus a real outline works on every wall.</span></div>
+        <div class="fg-rule"><b>5 · Judge at chat size</b><span>Never zoom in to admire it — the live preview shows your emote at 32px because that's the only truth.</span></div>
+      </div>
+    </section>
+
     <section class="fg-drawgif">
       <h2>Draw an animated GIF from scratch</h2>
       <p>
@@ -113,11 +256,35 @@ const faqLD = {
       </p>
     </section>
 
-    <section class="fg-facts" aria-label="Pixel facts">
-      <div class="fg-fact"><b>1989</b> GIFs learn to animate and go transparent (GIF89a) — your emotes ship in that same format</div>
-      <div class="fg-fact"><b>28 px</b> the size a Twitch emote actually renders in chat — draw for it, don't shrink to it</div>
-      <div class="fg-fact"><b>1999</b> the dancing banana is drawn in a tool this simple — 27 years later it's still everywhere</div>
-      <div class="fg-fact"><b>256</b> colours per GIF frame, plus one transparent — constraints are where style comes from</div>
+    <section class="fg-vs" aria-label="The Forge compared to converters">
+      <h2>Drawing tool vs converter — know which one you need</h2>
+      <div class="fg-vswrap">
+        <table>
+          <thead>
+            <tr><th></th><th>The Pixel Forge</th><th>a typical online GIF maker</th></tr>
+          </thead>
+          <tbody>
+            {VS.map((r) => (
+              <tr><th>{r[0]}</th><td>{r[1]}</td><td>{r[2]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="fg-time" aria-label="A short history of the GIF emote">
+      <h2>39 years of the GIF, in one strip</h2>
+      <div class="fg-timescroll">
+        <div class="fg-timerow">
+          {TIMELINE.map((b) => (
+            <div class={'fg-beat' + (b.y === '1999' ? ' fg-beat--nana' : '')}>
+              <b>{b.y}</b>
+              <strong>{b.t}</strong>
+              <small>{b.s}</small>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
 
     <section class="fg-faq" aria-label="Frequently asked questions">
