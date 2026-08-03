@@ -459,6 +459,8 @@ DECOR_DEF = [
     ('sprout', 'Big sprout', 'garden', 14, 2, ['ME_Singles_Garden_48x48_Big_Sprout_1.png'], False),
     ('sproutvase', 'Sprout vase', 'garden', 16, 2, ['ME_Singles_Garden_48x48_Big_Sprout_Vase_1.png'], True),
     # ── stage 3: the house ──
+    ('birdhouse', 'Little bird house', 'garden', 15, 1, ['ME_Singles_Garden_48x48_Red_Little_Bird_House.png'], True),
+    ('birdhouse2', 'Big bird house', 'garden', 30, 2, ['ME_Singles_Garden_48x48_Blue_Big_Bird_House.png'], True),
     ('fountain', 'Stone fountain', 'display', 80, 3, ['ME_Singles_Garden_48x48_Fountain_1_1.png'], True),
     ('sunvase', 'Sunflower vase', 'garden', 20, 3, ['ME_Singles_Garden_48x48_Big_Sunflower_Vase.png'], True),
     ('whitevase', 'White flower vase', 'garden', 20, 3, ['ME_Singles_Garden_48x48_Big_White_Flower_Vase.png'], True),
@@ -544,6 +546,26 @@ if HAVE_PACK:
     assert len(STRUCT_SIZES) >= 30, 'style wardrobe too thin: %d' % len(STRUCT_SIZES)
 TENT_SIZE = STRUCT_SIZES.get('tent1', (0, 0))
 
+# ---- 🐦 GARDEN BIRDS (M3) — the charm layer -------------------------------
+# Trym owns the Garden Birds pack: 64x64 sheets, 4x4 grid of 16px frames.
+# Grammar read off the contact sheet: row 0 = FLIGHT, row 2 = ground idle.
+# Exported as 64x16 strips at native res — the engine scales via world %.
+BIRDS_DIR = os.path.expanduser(r'~\OneDrive\banana-art-pack\Garden Birds_Download\Garden Birds_Download\Spritesheets')
+BIRD_SPECIES = ['cardinal', 'blue jay', 'chickadee', 'red robin', 'white_dove', 'magpie']
+BIRD_KEYS = []
+if os.path.isdir(BIRDS_DIR):
+    for sp in BIRD_SPECIES:
+        try:
+            sh = Image.open(os.path.join(BIRDS_DIR, 'spritesheet_%s.png' % sp)).convert('RGBA')
+        except Exception:
+            print('  MISSING bird', sp)
+            continue
+        key = sp.replace(' ', '').replace("'", '').replace('_', '')
+        sh.crop((0, 0, 64, 16)).save(os.path.join(OUT, 'b-%s-f.png' % key), optimize=True)
+        sh.crop((0, 32, 64, 48)).save(os.path.join(OUT, 'b-%s-g.png' % key), optimize=True)
+        BIRD_KEYS.append(key)
+    print('  birds:', ', '.join(BIRD_KEYS))
+
 # ---- emit the contract ----------------------------------------------------
 def emit():
     L = []
@@ -569,6 +591,7 @@ def emit():
     L.append('export const SIGN = { x: %d, y: %d };' % SIGN_AT)
     L.append('export const OB_RECTS = %s;' % [list(map(int, r)) for r in COLLIDERS])
     L.append('export const OVERLAYS = %s;' % [[o[0], o[1], o[2], o[3], o[4], o[5]] for o in OVERLAYS])
+    L.append('export const BIRDS = %s;' % str(BIRD_KEYS).replace("'", '"'))
     with open(os.path.join(SITE, 'src', 'scripts', 'homestead-geo.js'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(L) + '\n')
     print('wrote homestead-geo.js (%d colliders, %d overlays)' % (len(COLLIDERS), len(OVERLAYS)))

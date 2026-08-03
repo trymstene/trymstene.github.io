@@ -17,3 +17,4 @@ export const MAILBOX = { x: 1252, y: 850 };
 export const SIGN = { x: 1010, y: 850 };
 export const OB_RECTS = [[1238, 838, 1266, 852], [994, 840, 1026, 852], [141, 868, 229, 890]];
 export const OVERLAYS = [['ov-0.png', 1235, 808, 35, 42, 850], ['ov-1.png', 995, 819, 31, 31, 850]];
+export const BIRDS = ["cardinal", "bluejay", "chickadee", "redrobin", "whitedove", "magpie"];

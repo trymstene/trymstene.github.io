@@ -13,7 +13,7 @@ import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, BED, TENT, STRUCTS, STRUCT_STYLES,
-  MAILBOX, SIGN, OB_RECTS, OVERLAYS } from './homestead-geo.js';
+  MAILBOX, SIGN, OB_RECTS, OVERLAYS, BIRDS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
 const view = document.getElementById('hsView');
@@ -480,6 +480,89 @@ function init(visitDoc, visitMiss) {
     });
   }
   refreshBed();
+
+  // ---- 🐦 garden birds (M3): they come when the yard is LIVED-IN ----------
+  // Ambient, not a loop: an empty yard gets no birds, decor attracts them,
+  // bird houses attract more — and walking up close scares them off. The
+  // reward for furnishing is a yard that moves.
+  const birdsLive = [];
+  const birdTick = (() => {
+    if (REDUCED || !BIRDS.length) return () => {};
+    let nextAt = 6000 + Math.random() * 9000;
+    const birdCap = () => Math.min(3, 1 + state.items.filter((i) => i.id.indexOf('birdhouse') === 0).length);
+    function landSpot() {
+      const houses = state.items.filter((i) => i.id.indexOf('birdhouse') === 0);
+      const pool = (houses.length && Math.random() < 0.6) ? houses : state.items;
+      if (!pool.length) return null;
+      const it = pool[(Math.random() * pool.length) | 0];
+      const P = plotNow();
+      return {
+        x: Math.max(P[0] + 12, Math.min(P[2] - 12, it.x + (Math.random() * 90 - 45))),
+        y: Math.max(P[1] + 30, Math.min(P[3] - 6, it.y + 8 + Math.random() * 26)),
+      };
+    }
+    function setStrip(b, kind) {
+      b.strip = kind;
+      b.img.style.backgroundImage = "url('/assets/homestead/b-" + b.key + '-' + kind + ".png')";
+    }
+    function makeBird() {
+      const spot = landSpot();
+      if (!spot) return;
+      const el = document.createElement('div');
+      el.className = 'hs-bird';
+      const img = document.createElement('span');
+      el.appendChild(img);
+      world.appendChild(el);
+      const b = { el, img, key: BIRDS[(Math.random() * BIRDS.length) | 0],
+        x: Math.random() < 0.5 ? -30 : W + 30, y: Math.max(60, spot.y - 320),
+        tx: spot.x, ty: spot.y, mode: 'in', strip: '',
+        until: 0, frame: 0, frameAt: 0, hopAt: 0 };
+      setStrip(b, 'f');
+      birdsLive.push(b);
+    }
+    return (now, dt) => {
+      if (now > nextAt) {
+        if (birdsLive.length < birdCap()) makeBird();
+        nextAt = now + 16000 + Math.random() * 26000;
+      }
+      for (let i = birdsLive.length - 1; i >= 0; i--) {
+        const b = birdsLive[i];
+        const flying = b.mode !== 'ground';
+        if (now - b.frameAt > (flying ? 90 : 240)) {
+          b.frameAt = now;
+          b.frame = (b.frame + 1) % 4;
+          const want = flying ? 'f' : 'g';
+          if (b.strip !== want) setStrip(b, want);
+          b.img.style.backgroundPosition = (b.frame * 100 / 3) + '% 0';
+        }
+        if (flying) {
+          const dx = b.tx - b.x, dy = b.ty - b.y;
+          const d = Math.hypot(dx, dy);
+          if (d < 9) {
+            if (b.mode === 'out') { b.el.remove(); birdsLive.splice(i, 1); continue; }
+            b.mode = 'ground';
+            b.until = now + 12000 + Math.random() * 22000;
+            b.hopAt = now + 900;
+          } else {
+            b.x += dx / d * 300 * dt;
+            b.y += dy / d * 300 * dt;
+            if (Math.abs(dx) > 4) b.img.style.transform = dx < 0 ? 'scaleX(-1)' : '';
+          }
+        } else if (Math.hypot(pos.x - b.x, pos.y - b.y) < 80 || now > b.until) {
+          b.mode = 'out';   // scared (or bored) — off over the treeline
+          b.tx = b.x + (b.x > W / 2 ? 600 : -600);
+          b.ty = -80;
+        } else if (now > b.hopAt) {
+          b.hopAt = now + 1400 + Math.random() * 2600;
+          const P = plotNow();
+          b.x = Math.max(P[0] + 12, Math.min(P[2] - 12, b.x + (Math.random() * 44 - 22)));
+          if (Math.random() < 0.5) b.img.style.transform = Math.random() < 0.5 ? 'scaleX(-1)' : '';
+        }
+        place(b.el, b.x, b.y, ' translate(-50%,-100%)');
+        depth(b.el, b.y);
+      }
+    };
+  })();
 
   // ---- juice --------------------------------------------------------------
   function float(x, y, text) {
@@ -1443,6 +1526,7 @@ function init(visitDoc, visitMiss) {
     if (!state.claimedAt && pos.x > F1[0] && pos.x < F1[2] && pos.y > F1[1] && pos.y < F1[3] - 26) offerClaim();
     drawMe();
     doorTick();
+    birdTick(now, dt);
     cam();
   }
   assetsReady().then(() => {

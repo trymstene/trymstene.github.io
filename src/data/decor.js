@@ -32,6 +32,8 @@ export const DECOR = [
   { id: 'crate', name: 'Apple crate', cat: 'farm', price: 12, stage: 2, w: 72, h: 53, surface: 'ground', img: '/assets/homestead/d-crate.png', solid: [-27, -12, 27, 2] },
   { id: 'sprout', name: 'Big sprout', cat: 'garden', price: 14, stage: 2, w: 31, h: 26, surface: 'ground', img: '/assets/homestead/d-sprout.png', solid: null },
   { id: 'sproutvase', name: 'Sprout vase', cat: 'garden', price: 16, stage: 2, w: 35, h: 40, surface: 'ground', img: '/assets/homestead/d-sproutvase.png', solid: [-13, -12, 13, 2] },
+  { id: 'birdhouse', name: 'Little bird house', cat: 'garden', price: 15, stage: 1, w: 26, h: 74, surface: 'ground', img: '/assets/homestead/d-birdhouse.png', solid: [-10, -12, 10, 2] },
+  { id: 'birdhouse2', name: 'Big bird house', cat: 'garden', price: 30, stage: 2, w: 26, h: 92, surface: 'ground', img: '/assets/homestead/d-birdhouse2.png', solid: [-10, -12, 10, 2] },
   { id: 'fountain', name: 'Stone fountain', cat: 'display', price: 80, stage: 3, w: 51, h: 87, surface: 'ground', img: '/assets/homestead/d-fountain.png', solid: [-19, -12, 19, 2] },
   { id: 'sunvase', name: 'Sunflower vase', cat: 'garden', price: 20, stage: 3, w: 35, h: 74, surface: 'ground', img: '/assets/homestead/d-sunvase.png', solid: [-13, -12, 13, 2] },
   { id: 'whitevase', name: 'White flower vase', cat: 'garden', price: 20, stage: 3, w: 35, h: 60, surface: 'ground', img: '/assets/homestead/d-whitevase.png', solid: [-13, -12, 13, 2] },

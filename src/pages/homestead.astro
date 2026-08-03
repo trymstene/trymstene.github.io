@@ -57,6 +57,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
        zoom, towering over the fence on phones (why the yard "felt small") */
     .hs-me { position: absolute; left: 0; top: 0; width: 5.5%; pointer-events: none; }
     .hs-me canvas { width: 100%; height: auto; display: block; }
+    /* 🐦 garden birds — 16px frames on a 4-frame strip, world-scaled */
+    .hs-bird { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }
+    .hs-bird span {
+      display: block; width: 100%; aspect-ratio: 1;
+      background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
 
     .hs-signname {
       position: absolute; transform: translate(-50%, -100%); pointer-events: none;
