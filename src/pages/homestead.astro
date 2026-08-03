@@ -118,6 +118,9 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-exit.is-on { opacity: 1; }
     .hs-cut { position: absolute; inset: 0; z-index: 60; background: #000; opacity: 0;
       pointer-events: none; transition: opacity 0.16s ease; }
+    /* 🛋 indoors: the shade hides the yard under the floating room */
+    .hs-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
+    .hs-inshade[hidden] { display: none; }
     .hs-cut.is-on { opacity: 1; }
 
     .hs-actions {

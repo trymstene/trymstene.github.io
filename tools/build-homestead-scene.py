@@ -566,6 +566,71 @@ if os.path.isdir(BIRDS_DIR):
         BIRD_KEYS.append(key)
     print('  birds:', ', '.join(BIRD_KEYS))
 
+# ---- 🛋 INTERIORS (M4) — step inside the house ----------------------------
+# Modern Interiors Home_Designs ship as layer_1 (floor/under) + layer_2
+# (above): v1 composites both into ONE walkable plate — colliders keep the
+# banana in the lanes, so occlusion sins stay invisible. The room lives INSIDE
+# the outdoor world's coordinate space (over a shade layer) so the whole
+# camera/collision/tap machinery is reused verbatim.
+# Colliders + door + kitchen zones are EYEBALLED off the previews (local px,
+# offset to world at emit). Stage 2 = Generic_Home_1 (top door), stage 3 =
+# Japanese_Home_1 (genkan at the bottom — the shoes ARE the door).
+MI = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\6_Home_Designs')
+INTERIOR_DEF = {
+    2: {
+        'glob': 'Generic_Home_Designs/48x48/Generic_Home_1_*ayer_*48x48*.png',
+        'img': 'in-generic.png', 'at': (564, 229),
+        'spawn': (355, 165), 'exit': (325, 120, 385, 142), 'kitchen': (120, 410, 590, 545),
+        'cols': [
+            (0, 0, 325, 128), (385, 0, 672, 128),          # top walls, door lane open
+            (0, 0, 58, 642), (614, 0, 672, 642), (0, 592, 672, 642),
+            (135, 60, 335, 152), (375, 55, 565, 148),      # fireplace row · dresser+bunk
+            (130, 285, 235, 368), (475, 328, 575, 378),    # sewing corner · desk
+            (58, 375, 298, 405), (432, 375, 614, 405),     # the kitchen wall, lane open
+            (135, 428, 288, 532), (428, 428, 578, 532),    # counters
+        ],
+    },
+    3: {
+        'glob': 'Japanese_Interiors_Home_Designs/48x48/Japanese_Home_1_*ayer_*48x48*.png',
+        'img': 'in-japanese.png', 'at': (444, 229),
+        'spawn': (295, 560), 'exit': (200, 596, 390, 630), 'kitchen': (45, 325, 205, 415),
+        'cols': [
+            (0, 0, 912, 95),                               # top walls
+            (0, 0, 50, 642), (862, 0, 912, 642),
+            (0, 490, 185, 642), (400, 490, 912, 642),      # bottom walls, genkan open
+            (60, 30, 290, 145), (45, 95, 100, 190),        # cabinet row · zen corner
+            (325, 100, 435, 180),                          # kotatsu
+            (550, 60, 585, 295), (585, 282, 865, 305),     # bedroom walls
+            (615, 150, 860, 235), (575, 60, 625, 100),     # beds · appliance
+            (45, 195, 290, 218), (288, 196, 470, 292),     # tea-room wall · shoji row
+            (95, 255, 190, 312), (52, 335, 198, 408),      # tea table · irori hearth
+            (388, 336, 522, 422), (592, 388, 758, 468),    # dining · desk set
+            (668, 292, 865, 342),                          # right shoji band
+        ],
+    },
+}
+INTERIORS_OUT = {}
+if os.path.isdir(MI):
+    for tier, spec in INTERIOR_DEF.items():
+        layers = sorted(_glob.glob(os.path.join(MI, spec['glob'])))
+        layers = [f for f in layers if 'preview' not in f.lower()]
+        if not layers:
+            print('  MISSING interior', tier, spec['glob'])
+            continue
+        base = Image.open(layers[0]).convert('RGBA')
+        for extra in layers[1:]:
+            base.alpha_composite(Image.open(extra).convert('RGBA'))
+        base.save(os.path.join(OUT, spec['img']), optimize=True)
+        ox, oy = spec['at']
+        off = lambda r: [r[0] + ox, r[1] + oy, r[2] + ox, r[3] + oy]
+        INTERIORS_OUT[tier] = {
+            'img': spec['img'], 'box': [ox, oy, base.width, base.height],
+            'spawn': [spec['spawn'][0] + ox, spec['spawn'][1] + oy],
+            'exit': off(spec['exit']), 'kitchen': off(spec['kitchen']),
+            'cols': [off(c) for c in spec['cols']],
+        }
+        print('  %s %dx%d (%d layers, %d colliders)' % (spec['img'], base.width, base.height, len(layers), len(spec['cols'])))
+
 # ---- emit the contract ----------------------------------------------------
 def emit():
     L = []
@@ -592,6 +657,7 @@ def emit():
     L.append('export const OB_RECTS = %s;' % [list(map(int, r)) for r in COLLIDERS])
     L.append('export const OVERLAYS = %s;' % [[o[0], o[1], o[2], o[3], o[4], o[5]] for o in OVERLAYS])
     L.append('export const BIRDS = %s;' % str(BIRD_KEYS).replace("'", '"'))
+    L.append('export const INTERIORS = %s;' % __import__('json').dumps(INTERIORS_OUT))
     with open(os.path.join(SITE, 'src', 'scripts', 'homestead-geo.js'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(L) + '\n')
     print('wrote homestead-geo.js (%d colliders, %d overlays)' % (len(COLLIDERS), len(OVERLAYS)))

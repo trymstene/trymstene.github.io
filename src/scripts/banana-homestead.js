@@ -14,7 +14,7 @@ import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, BED, TENT, STRUCTS, STRUCT_STYLES,
-  MAILBOX, SIGN, OB_RECTS, OVERLAYS, BIRDS } from './homestead-geo.js';
+  MAILBOX, SIGN, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
 const view = document.getElementById('hsView');
@@ -396,6 +396,52 @@ function init(visitDoc, visitMiss) {
   }
   refreshTent();
 
+  // ---- 🛋 INTERIORS (M4): step inside — the room floats over a shade ------
+  // Same coordinate space, same camera, same collision machinery; the shade
+  // (z 2000) hides the yard and the banana rides z+2100 while indoors.
+  let inside = 0, inShade = null, inPlate = null, inPlateKey = '';
+  const IN_Z = 2100;
+  function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
+  function enterHome() {
+    const I = INTERIORS[state.stage >= 3 ? 3 : 2];
+    if (!I) return;
+    inside = state.stage >= 3 ? 3 : 2;
+    if (!inShade) {
+      inShade = document.createElement('div');
+      inShade.className = 'hs-inshade';
+      world.appendChild(inShade);
+    }
+    inShade.hidden = false;
+    if (!inPlate) {
+      inPlate = document.createElement('div');
+      inPlate.className = 'hs-ov';
+      inPlate.style.zIndex = '2010';
+      world.appendChild(inPlate);
+    }
+    if (inPlateKey !== I.img) {
+      inPlateKey = I.img;
+      inPlate.style.left = pct(I.box[0], W); inPlate.style.top = pct(I.box[1], H);
+      inPlate.style.width = pct(I.box[2], W); inPlate.style.height = pct(I.box[3], H);
+      inPlate.style.backgroundImage = "url('/assets/homestead/" + I.img + "')";
+    }
+    inPlate.hidden = false;
+    pos.x = I.spawn[0]; pos.y = I.spawn[1];
+    tgt.x = pos.x;
+    // nudge INTO the room — toward its centre, never back through the door
+    tgt.y = pos.y + (pos.y < I.box[1] + I.box[3] / 2 ? 34 : -34);
+    camSnap();
+    toast('🏠 home — the door takes you back out');
+    track('homestead_enter_home', { tier: inside });
+  }
+  function exitHome() {
+    inside = 0;
+    if (inShade) inShade.hidden = true;
+    if (inPlate) inPlate.hidden = true;
+    pos.x = state.home.x; pos.y = state.home.y + 34;
+    tgt.x = pos.x; tgt.y = pos.y + 30;
+    camSnap();
+  }
+
   // ---- placed decor -------------------------------------------------------
   const DEX = {};
   DECOR.forEach((d) => { DEX[d.id] = d; });
@@ -455,6 +501,13 @@ function init(visitDoc, visitMiss) {
   const inRect = (x, y, r) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
   const inRoadLane = (y) => Math.abs(y - ROAD.y) < ROAD.hw - 6;
   function blocked(x, y) {
+    if (inside) {
+      const I = INTERIORS[inside];
+      if (x < I.box[0] + 6 || x > I.box[0] + I.box[2] - 6
+        || y < I.box[1] + 6 || y > I.box[1] + I.box[3] - 6) return true;
+      for (const r of I.cols) if (inRect(x, y, r)) return true;
+      return false;
+    }
     if (x < BOUND || y < BOUND || y > H - BOUND) return true;
     if (x > W - BOUND && !inRoadLane(y)) return true;      // east = the road out
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
@@ -1410,6 +1463,14 @@ function init(visitDoc, visitMiss) {
     hint(false);
     clearChip(); clearBedChip();
     if (placing) return;   // pointerdown/drag owns the ghost
+    if (inside) {          // indoors: the stove answers, everything else walks
+      const I = INTERIORS[inside];
+      if (I.kitchen && wx > I.kitchen[0] && wx < I.kitchen[2] && wy > I.kitchen[1] && wy < I.kitchen[3]) {
+        if (Math.hypot(pos.x - wx, pos.y - wy) < 170) { openCook(); return; }
+      }
+      tgt.x = wx; tgt.y = wy;
+      return;
+    }
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - MAILBOX.x, wy - (MAILBOX.y - 20)) < 46) {
       if (Math.hypot(pos.x - MAILBOX.x, pos.y - MAILBOX.y) < 110) {
@@ -1479,6 +1540,13 @@ function init(visitDoc, visitMiss) {
             ck.textContent = '🍳 cook';
             ck.addEventListener('click', () => { clearChip(); openCook(); });
             itChip.prepend(ck);
+            if (INTERIORS[state.stage >= 3 ? 3 : 2]) {   // 🚪 and a front door
+              const go = document.createElement('button');
+              go.className = 'hs-btn';
+              go.textContent = '🚪 step inside';
+              go.addEventListener('click', () => { clearChip(); enterHome(); });
+              itChip.prepend(go);
+            }
           }
           itChip.style.left = pct(state.home.x, W);
           itChip.style.top = pct(state.home.y - sd.h - 12, H);
@@ -1551,7 +1619,11 @@ function init(visitDoc, visitMiss) {
     if (pos.x !== meWX || pos.y !== meWY) {
       meWX = pos.x; meWY = pos.y;
       place(meEl, pos.x, pos.y, ME_ANCHOR);
-      depth(meEl, pos.y);
+      meEl.style.zIndex = String((inside ? IN_Z : 100) + Math.round(pos.y));
+    }
+    if (inside) {
+      const I = INTERIORS[inside];
+      if (inRect(pos.x, pos.y, I.exit)) { exitHome(); return; }
     }
     // stepping INTO the yard (through the south gate) triggers the claim
     const F1 = FENCE_TIERS[1].fence;
