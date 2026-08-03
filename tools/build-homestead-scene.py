@@ -59,7 +59,7 @@ PLOT = (FX0 * T + T, FY0 * T + T + 14, (FX1 + 1) * T - T, (FY1 + 1) * T - T)
 BED = (470, 600, 750, 700)       # tilled soil rect (x0,y0,x1,y1)
 BED_SLOTS = [(520, 668), (590, 668), (660, 668), (730, 668)]
 TENT = (760, 430)                # (cx, base) — stage 1, client-drawn, faces south
-MAILBOX_AT = (1230, 752)         # just inside the fence, right of the gate
+MAILBOX_AT = (1252, 850)         # OUTSIDE the fence, on the road by the gate
 SIGN_AT = (1010, 850)            # outside, on the road's north shoulder
 SAWHORSE_AT = (185, 886)         # the west end goes nowhere yet
 SPAWN = (W - 150, ROAD_Y)        # arrive walking in from the park side
@@ -170,60 +170,71 @@ COLLIDERS = []                   # (shape) rects in world px
 OVERLAYS = []
 
 
-# ⚠️ INDICES READ OFF A CONTACT SHEET, not classified — the picket art touches
-# the tile's top edge on nearly every piece (the fence has height), so edge
-# connectivity can't tell a corner from an end cap. Sheet study, 3 Aug:
-#   7/2 = full horizontal runs · 9/10 = vertical runs (4/5 = post variants)
-#   1 = TL corner (stub turns down-left) · 3 = TR · 11 = BL · 12 = BR
-#   13 = right end cap (connects left) · 8 = left end cap (connects right)
-FENCE_IDX = {'h': 7, 'h2': 2, 'v': 9, 'v2': 10, 'tl': 1, 'tr': 3, 'bl': 11, 'br': 12,
-             'capr': 13, 'capl': 8}
+# 🪵 THE WOODEN FENCE — Modern Farm's Wooden_Fence_Type_1_Brown kit (Trym:
+# "the fence can be wooden"). Grammar MEASURED from post spans, and it is
+# elegant: zero pixel offsets anywhere.
+#   1 = left-end run (wide left post IS the corner) · 3 = right-end run
+#   2/6 = mid runs · 8 = WEST vertical (post x0-20 = the left-post column)
+#   4 = EAST vertical (post x24-44 = the right-post column) — verticals sit in
+#   the SAME tile column as the run ends, never one column outside
+#   7 = south-left junction (top nub over the left post) · 5 = south-right
+#   Single_1/2 = the gate's posts
+import glob as _glob
+
+
+def farm_sprite(name):
+    fs = _glob.glob(os.path.join(FARM, '**', name), recursive=True)
+    return Image.open(fs[0]).convert('RGBA') if fs else None
 
 
 def fence_kit():
     kit = {}
-    for k, i in FENCE_IDX.items():
-        try:
-            kit[k] = load_pack('ME_Singles_Terrains_and_Fences_48x48_Fence_1_%d.png' % i).convert('RGBA')
-        except Exception:
-            kit[k] = None
+    for k, n in (('h', '2'), ('h2', '6'), ('endl', '1'), ('endr', '3'),
+                 ('v_w', '8'), ('v_e', '4'), ('jl', '7'), ('jr', '5'),
+                 ('gl', 'Single_1'), ('gr', 'Single_2')):
+        kit[k] = farm_sprite('Wooden_Fence_Type_1_Brown_%s_48x48.png' % n)
     print('fence kit:', {k: ('ok' if v else 'MISSING') for k, v in kit.items()})
     return kit
 
 
 def lay_fence():
     kit = fence_kit()
-    if not kit['h'] or not kit['v']:
-        print('  no fence run tiles — fence skipped')
+    if not kit['h'] or not kit['v_w']:
+        print('  no fence tiles — fence skipped')
         return
 
     def stamp(tile, tx, ty):
-        im.alpha_composite(tile, (tx * T, ty * T))
-    # top run + SOUTH run with the gate gap (two variants alternate)
+        if tile:
+            im.alpha_composite(tile, (tx * T, ty * T))
+    # north: end pieces carry the corners themselves
+    stamp(kit['endl'], FX0, FY0)
     for tx in range(FX0 + 1, FX1):
-        stamp(kit['h'] if tx % 2 else (kit['h2'] or kit['h']), tx, FY0)
-        if tx not in GATE_COLS:
-            stamp(kit['h'] if tx % 2 else (kit['h2'] or kit['h']), tx, FY1)
-    # the gate's end caps
-    stamp(kit['capr'] or kit['h'], GATE_COLS[0] - 1, FY1)
-    stamp(kit['capl'] or kit['h'], GATE_COLS[-1] + 1, FY1)
-    # side runs — both full now (the gate is in the south)
+        stamp(kit['h'] if tx % 2 else kit['h2'], tx, FY0)
+    stamp(kit['endr'], FX1, FY0)
+    # verticals live in the SAME columns as the run ends
     for ty in range(FY0 + 1, FY1):
-        stamp(kit['v'] if ty % 2 else (kit['v2'] or kit['v']), FX0, ty)
-        stamp(kit['v'] if ty % 2 else (kit['v2'] or kit['v']), FX1, ty)
-    # corners
-    stamp(kit['tl'], FX0, FY0)
-    stamp(kit['tr'], FX1, FY0)
-    stamp(kit['bl'], FX0, FY1)
-    stamp(kit['br'], FX1, FY1)
-    # colliders: one thin rect per run, built from the SAME tile coordinates
-    mid = 18                     # the rail band the banana may not cross
+        stamp(kit['v_w'], FX0, ty)
+        stamp(kit['v_e'], FX1, ty)
+    # south: junction ends (nub where the vertical arrives) + the gate posts
+    stamp(kit['jl'], FX0, FY1)
+    for tx in range(FX0 + 1, FX1):
+        if tx in GATE_COLS:
+            continue
+        if tx == GATE_COLS[0] - 1:
+            stamp(kit['gl'], tx, FY1)
+        elif tx == GATE_COLS[-1] + 1:
+            stamp(kit['gr'], tx, FY1)
+        else:
+            stamp(kit['h'] if tx % 2 else kit['h2'], tx, FY1)
+    stamp(kit['jr'], FX1, FY1)
+    # colliders from the measured post columns
+    mid = 18
     fy0, fy1 = FY0 * T + mid, FY1 * T + mid
-    COLLIDERS.append((FX0 * T, fy0, (FX1 + 1) * T, fy0 + 14))                  # top
+    COLLIDERS.append((FX0 * T, fy0, (FX1 + 1) * T, fy0 + 14))                  # north
     COLLIDERS.append((FX0 * T, fy1, GATE_COLS[0] * T, fy1 + 14))               # south L of gate
     COLLIDERS.append(((GATE_COLS[-1] + 1) * T, fy1, (FX1 + 1) * T, fy1 + 14))  # south R of gate
-    COLLIDERS.append((FX0 * T + mid, fy0, FX0 * T + mid + 12, fy1))            # west
-    COLLIDERS.append((FX1 * T + mid, fy0, FX1 * T + mid + 12, fy1))            # east
+    COLLIDERS.append((FX0 * T + 2, fy0, FX0 * T + 20, fy1))                    # west posts
+    COLLIDERS.append((FX1 * T + 24, fy0, FX1 * T + 44, fy1))                   # east posts
 
 
 if HAVE_PACK:

@@ -369,6 +369,33 @@ function init() {
   function renderShop() {
     const list = document.getElementById('hsShopList');
     list.replaceChildren();
+    // ⛺ TENT FIRST (Trym): before you've moved in, the mailbox offers ONE
+    // thing — the catalog stays behind the canvas until the tent is up.
+    const tabsRow = shopEl.querySelector('.hs-tabs');
+    tabsRow.hidden = state.stage < 1;
+    if (state.stage < 1) {
+      const card = document.createElement('div');
+      card.className = 'hs-up';
+      card.innerHTML = '<img src="/assets/homestead/ov-tent.png" alt=""><div><b>First things first: pitch a tent</b>'
+        + '<span>' + TENT_PRICE + ' 🪙 — move in, and the whole decor catalog opens up.'
+        + ' Bananacoins come from playing anywhere in the world.</span></div>';
+      const btn = document.createElement('button');
+      btn.className = 'hs-btn';
+      btn.textContent = coinBalance() >= TENT_PRICE ? '⛺ pitch it' : 'need ' + TENT_PRICE + ' 🪙 — you have ' + coinBalance();
+      btn.disabled = coinBalance() < TENT_PRICE;
+      btn.addEventListener('click', () => {
+        passStat('coins_spent', TENT_PRICE);
+        state.stage = 1;
+        save(); refreshTent(); rebuildSolids(); refreshHud();
+        toast('⛺ the tent is up — the catalog is open');
+        float(TENT.x, TENT.y - TENT.h - 8, '⛺');
+        track('homestead_tent');
+        renderShop();   // the tabs + catalog reveal on the spot
+      });
+      card.appendChild(btn);
+      list.appendChild(card);
+      return;
+    }
     const tab = shopEl.dataset.tab || 'order';
     const full = state.items.length >= cap();
     if (tab === 'order') {
@@ -409,30 +436,10 @@ function init() {
           startPlacing(d.id);
         }));
       });
-    } else {   // upgrades
+    } else {   // upgrades (stage ≥ 1 — the tent gate lives above)
       const card = document.createElement('div');
       card.className = 'hs-up';
-      if (state.stage < 1) {
-        card.innerHTML = '<img src="/assets/homestead/ov-tent.png" alt=""><div><b>Pitch a tent</b>'
-          + '<span>' + TENT_PRICE + ' 🪙 — shelter, and the plot grows to ' + CAPS[1] + ' spots.'
-          + ' Campfires and statues start arriving in the catalog.</span></div>';
-        const btn = document.createElement('button');
-        btn.className = 'hs-btn';
-        btn.textContent = coinBalance() >= TENT_PRICE ? 'pitch it' : 'need ' + TENT_PRICE + ' 🪙';
-        btn.disabled = coinBalance() < TENT_PRICE;
-        btn.addEventListener('click', () => {
-          passStat('coins_spent', TENT_PRICE);
-          state.stage = 1;
-          save(); refreshTent(); rebuildSolids(); refreshHud();
-          closeShop();
-          toast('⛺ the tent is up — home');
-          float(TENT.x, TENT.y - TENT.h - 8, '⛺');
-          track('homestead_tent');
-        });
-        card.appendChild(btn);
-      } else {
-        card.innerHTML = '<div><b>⛺ The tent is up</b><span>The cabin is being drawn — next upgrade coming soon.</span></div>';
-      }
+      card.innerHTML = '<div><b>⛺ The tent is up</b><span>The cabin is being drawn — next upgrade coming soon.</span></div>';
       list.appendChild(card);
     }
   }
