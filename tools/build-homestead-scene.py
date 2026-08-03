@@ -24,7 +24,7 @@ Run: python tools/build-homestead-scene.py
 import os
 import random
 import sys
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from blockify import load_pack, blockify
@@ -43,18 +43,25 @@ PROP = 0.76                      # the world's heroic-banana scale rule
 BOUND = 96
 
 # ---- GEO: the contract ----------------------------------------------------
-ROAD_Y = 560                     # the east road's spine
+# ⚠️ THE ROAD RUNS ALONG THE BOTTOM (Trym, 3 Aug): the pack's buildings and
+# tents all FACE SOUTH, so the approach must be bottom-up — you walk PAST the
+# property and turn in through the south gate, never sideways into it. The
+# road crosses the whole map: east end = the park, west end = nowhere yet
+# (bushes + a sawhorse, the park's own under-construction language).
+ROAD_Y = 900                     # the bottom road's spine
 ROAD_HW = 44
 # fence rectangle on the TILE GRID (tiles, inclusive): the yard
-FX0, FY0, FX1, FY1 = 7, 6, 27, 19          # px 336..1344 x 288..960
-GATE_ROWS = (11, 12)             # east-side gap → y 528..624 (the road walks in)
+FX0, FY0, FX1, FY1 = 7, 5, 27, 16          # px 336..1344 x 240..816
+GATE_COLS = (23, 24)             # SOUTH-side gap → x 1104..1200 (walk up + in)
+GATE_X = (GATE_COLS[0] + 1) * T  # the gap's centre ≈ 1152
 FENCE_PX = (FX0 * T, FY0 * T, (FX1 + 1) * T, (FY1 + 1) * T)
 PLOT = (FX0 * T + T, FY0 * T + T + 14, (FX1 + 1) * T - T, (FY1 + 1) * T - T)
-BED = (480, 770, 760, 880)       # tilled soil rect (x0,y0,x1,y1)
-BED_SLOTS = [(530, 848), (600, 848), (670, 848), (740, 848)]
-TENT = (760, 460)                # (cx, base) — stage 1, client-drawn
-MAILBOX_AT = (1240, 500)         # just inside the fence, north of the gate
-SIGN_AT = (1420, 508)            # outside, hugging the road's north shoulder
+BED = (470, 600, 750, 700)       # tilled soil rect (x0,y0,x1,y1)
+BED_SLOTS = [(520, 668), (590, 668), (660, 668), (730, 668)]
+TENT = (760, 430)                # (cx, base) — stage 1, client-drawn, faces south
+MAILBOX_AT = (1230, 752)         # just inside the fence, right of the gate
+SIGN_AT = (1010, 850)            # outside, on the road's north shoulder
+SAWHORSE_AT = (185, 886)         # the west end goes nowhere yet
 SPAWN = (W - 150, ROAD_Y)        # arrive walking in from the park side
 
 im = Image.new('RGBA', (W, H), (86, 152, 74, 255))
@@ -140,13 +147,20 @@ for x in range(0, W):
         if g > r and g > b:                  # grass pixels only
             px[x, y] = (r, min(255, g + 3), b, a)
 
-# ---- the east road: packed dirt to the gate (the park's own recipe) -------
-GATE_X = (FX1 + 1) * T
+# ---- the bottom road: full width, dying into the woods at the west end ----
 for y in range(ROAD_Y - ROAD_HW, ROAD_Y + ROAD_HW):
-    for x in range(GATE_X - 10, W):
-        d = abs(y - ROAD_Y) / float(ROAD_HW)
+    for x in range(120, W):
+        hw = ROAD_HW if x > 340 else max(4, ROAD_HW * (x - 120) / 220.0)
+        d = abs(y - ROAD_Y) / float(hw)
         if d > 1.0:
             continue
+        if d > 0.82 and rng.random() < (d - 0.82) * 5:
+            continue
+        put(x, y, (172, 142, 96) if (x * 3 + y * 7) % 9 else (152, 124, 82))
+# the turn-in: a short path from the road up through the gate
+for y in range(FENCE_PX[3] - 8, ROAD_Y - ROAD_HW + 12):
+    for x in range(GATE_X - 34, GATE_X + 34):
+        d = abs(x - GATE_X) / 34.0
         if d > 0.82 and rng.random() < (d - 0.82) * 5:
             continue
         put(x, y, (172, 142, 96) if (x * 3 + y * 7) % 9 else (152, 124, 82))
@@ -161,7 +175,9 @@ OVERLAYS = []
 # connectivity can't tell a corner from an end cap. Sheet study, 3 Aug:
 #   7/2 = full horizontal runs · 9/10 = vertical runs (4/5 = post variants)
 #   1 = TL corner (stub turns down-left) · 3 = TR · 11 = BL · 12 = BR
-FENCE_IDX = {'h': 7, 'h2': 2, 'v': 9, 'v2': 10, 'tl': 1, 'tr': 3, 'bl': 11, 'br': 12}
+#   13 = right end cap (connects left) · 8 = left end cap (connects right)
+FENCE_IDX = {'h': 7, 'h2': 2, 'v': 9, 'v2': 10, 'tl': 1, 'tr': 3, 'bl': 11, 'br': 12,
+             'capr': 13, 'capl': 8}
 
 
 def fence_kit():
@@ -183,15 +199,18 @@ def lay_fence():
 
     def stamp(tile, tx, ty):
         im.alpha_composite(tile, (tx * T, ty * T))
-    # top + bottom runs (two run variants alternate — kills the repeat pattern)
+    # top run + SOUTH run with the gate gap (two variants alternate)
     for tx in range(FX0 + 1, FX1):
         stamp(kit['h'] if tx % 2 else (kit['h2'] or kit['h']), tx, FY0)
-        stamp(kit['h'] if tx % 2 else (kit['h2'] or kit['h']), tx, FY1)
-    # side runs — the EAST side leaves the gate rows open
+        if tx not in GATE_COLS:
+            stamp(kit['h'] if tx % 2 else (kit['h2'] or kit['h']), tx, FY1)
+    # the gate's end caps
+    stamp(kit['capr'] or kit['h'], GATE_COLS[0] - 1, FY1)
+    stamp(kit['capl'] or kit['h'], GATE_COLS[-1] + 1, FY1)
+    # side runs — both full now (the gate is in the south)
     for ty in range(FY0 + 1, FY1):
         stamp(kit['v'] if ty % 2 else (kit['v2'] or kit['v']), FX0, ty)
-        if ty not in GATE_ROWS:
-            stamp(kit['v'] if ty % 2 else (kit['v2'] or kit['v']), FX1, ty)
+        stamp(kit['v'] if ty % 2 else (kit['v2'] or kit['v']), FX1, ty)
     # corners
     stamp(kit['tl'], FX0, FY0)
     stamp(kit['tr'], FX1, FY0)
@@ -200,11 +219,11 @@ def lay_fence():
     # colliders: one thin rect per run, built from the SAME tile coordinates
     mid = 18                     # the rail band the banana may not cross
     fy0, fy1 = FY0 * T + mid, FY1 * T + mid
-    COLLIDERS.append((FX0 * T, fy0, (FX1 + 1) * T, fy0 + 14))            # top
-    COLLIDERS.append((FX0 * T, fy1, (FX1 + 1) * T, fy1 + 14))            # bottom
-    COLLIDERS.append((FX0 * T + mid, fy0, FX0 * T + mid + 12, fy1))      # west
-    COLLIDERS.append((FX1 * T + mid, fy0, FX1 * T + mid + 12, GATE_ROWS[0] * T))
-    COLLIDERS.append((FX1 * T + mid, (GATE_ROWS[-1] + 1) * T, FX1 * T + mid + 12, fy1))
+    COLLIDERS.append((FX0 * T, fy0, (FX1 + 1) * T, fy0 + 14))                  # top
+    COLLIDERS.append((FX0 * T, fy1, GATE_COLS[0] * T, fy1 + 14))               # south L of gate
+    COLLIDERS.append(((GATE_COLS[-1] + 1) * T, fy1, (FX1 + 1) * T, fy1 + 14))  # south R of gate
+    COLLIDERS.append((FX0 * T + mid, fy0, FX0 * T + mid + 12, fy1))            # west
+    COLLIDERS.append((FX1 * T + mid, fy0, FX1 * T + mid + 12, fy1))            # east
 
 
 if HAVE_PACK:
@@ -295,8 +314,8 @@ def tree(names, cx, base):
 
 
 if HAVE_PACK:
-    # north + south bands (two staggered rows, one species per stretch)
-    for y0, y1 in ((150, 60), (H + 40, H - 40)):
+    # north band + a south band BELOW the road (crowns peek along the bottom)
+    for y0, y1 in ((150, 60), (H + 60, H + 110)):
         x = 40
         while x < W - 60:
             fam = SPECIES[int(x / 460) % len(SPECIES)]
@@ -313,6 +332,36 @@ if HAVE_PACK:
         tree(fam[rng.randrange(3)], 50 + rng.randrange(-14, 14), y + rng.randrange(-10, 10))
         tree(fam[rng.randrange(3)], 118 + rng.randrange(-14, 14), y + 58 + rng.randrange(-10, 10))
         y += 118
+
+# ---- 🚧 the west end goes nowhere yet: sawhorse + bushes ------------------
+def build_sawhorse():
+    K = 3
+    w, h = 118 * K, 66 * K
+    s2 = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s2)
+    for lx in (6, 94):
+        d.polygon([(lx * K, 64 * K), ((lx + 8) * K, 64 * K), ((lx + 13) * K, 18 * K),
+                   ((lx + 9) * K, 18 * K)], fill=(122, 84, 46))
+        d.polygon([((lx + 10) * K, 64 * K), ((lx + 18) * K, 64 * K), ((lx + 13) * K, 18 * K),
+                   ((lx + 9) * K, 18 * K)], fill=(150, 104, 58))
+    d.rectangle([2 * K, 14 * K, 116 * K, 34 * K], fill=(240, 214, 74))
+    for i in range(-2, 12):
+        x0 = (2 + i * 12) * K
+        d.polygon([(x0, 34 * K), (x0 + 6 * K, 34 * K), (x0 + 14 * K, 14 * K),
+                   (x0 + 8 * K, 14 * K)], fill=(34, 32, 38))
+    d.rectangle([2 * K, 14 * K, 116 * K, 17 * K], fill=(252, 236, 140))
+    return blockify(s2, factor=K, colors=8, alpha_thresh=0.4, sat=1.05,
+                    con=1.05, warm=0.02, trim=False)
+
+
+if HAVE_PACK:
+    saw = build_sawhorse()
+    sx, sy = SAWHORSE_AT
+    shadow(sx, sy - 4, saw.width * 0.38, 7)
+    im.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
+    COLLIDERS.append((sx - 44, sy - 18, sx + 44, sy + 4))
+    for bx, by in ((110, 950), (150, 830), (250, 950), (95, 880)):
+        tree(BUSHES[rng.randrange(len(BUSHES))], bx, by)
 
 # (a tuft-scatter pass was tried and CUT — the Props_Grass singles carry baked
 # square backgrounds and read as postage stamps on our lawn. The mow lanes +
@@ -379,7 +428,8 @@ def emit():
     L.append('// GENERATED by tools/build-homestead-scene.py — DO NOT EDIT.')
     L.append('export const WORLD = { w: %d, h: %d };' % (W, H))
     L.append('export const BOUND = %d;' % BOUND)
-    L.append('export const ROAD = { y: %d, hw: %d, gateX: %d };' % (ROAD_Y, ROAD_HW, GATE_X))
+    L.append('export const ROAD = { y: %d, hw: %d };' % (ROAD_Y, ROAD_HW))
+    L.append('export const GATE = { x: %d, y: %d };' % (GATE_X, FENCE_PX[3]))
     L.append('export const SPAWN = { x: %d, y: %d };' % SPAWN)
     L.append('export const EXIT_EAST = { x: %d, y: %d, r: 60 };' % (W - 40, ROAD_Y))
     L.append('export const FENCE = %s;' % list(FENCE_PX))

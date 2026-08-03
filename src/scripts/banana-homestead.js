@@ -11,7 +11,7 @@ import { catCustom, loadCatalog } from '../lib/drops.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
-import { WORLD, BOUND, ROAD, SPAWN, FENCE, PLOT, BED, TENT, MAILBOX, SIGN,
+import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, MAILBOX, SIGN,
   OB_RECTS, OVERLAYS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -131,10 +131,25 @@ function init() {
   function refreshSign() { signName.textContent = state.name || ''; signName.hidden = !state.name; }
   refreshSign();
 
-  // ---- the tent (stage 1) -------------------------------------------------
-  let tentEl = null;
+  // ---- the tent (stage 1) — at stage 0 the SPOT itself invites the buy ----
+  let tentEl = null, tentSpotEl = null;
   function refreshTent() {
-    if (state.stage < 1) { if (tentEl) { tentEl.remove(); tentEl = null; } return; }
+    if (state.stage < 1) {
+      if (tentEl) { tentEl.remove(); tentEl = null; }
+      if (!tentSpotEl) {
+        tentSpotEl = document.createElement('div');
+        tentSpotEl.className = 'hs-tentspot';
+        tentSpotEl.style.left = pct(TENT.x - 70, W);
+        tentSpotEl.style.top = pct(TENT.y - 74, H);
+        tentSpotEl.style.width = pct(140, W);
+        tentSpotEl.style.height = pct(74, H);
+        tentSpotEl.innerHTML = '<span>⛺ a good tent spot<br><small>ask at the mailbox</small></span>';
+        depth(tentSpotEl, TENT.y - 40);
+        world.appendChild(tentSpotEl);
+      }
+      return;
+    }
+    if (tentSpotEl) { tentSpotEl.remove(); tentSpotEl = null; }
     if (tentEl) return;
     tentEl = document.createElement('div');
     tentEl.className = 'hs-ov';
@@ -421,7 +436,12 @@ function init() {
       list.appendChild(card);
     }
   }
-  function openShop() {
+  function openShop(tab) {
+    if (tab) {
+      shopEl.dataset.tab = tab;
+      shopEl.querySelectorAll('.hs-tabs button').forEach((b) =>
+        b.setAttribute('aria-pressed', String(b.dataset.tab === tab)));
+    }
     shopEl.hidden = false;
     renderShop();
     track('homestead_mailbox');
@@ -606,6 +626,12 @@ function init() {
       tgt.x = MAILBOX.x - 40; tgt.y = MAILBOX.y + 16;
       return;
     }
+    // the tent spot (stage 0): near = the upgrades tab, far = walk over
+    if (state.stage < 1 && Math.abs(wx - TENT.x) < 76 && wy > TENT.y - 84 && wy < TENT.y + 8) {
+      if (Math.hypot(pos.x - TENT.x, pos.y - TENT.y) < 150) { openShop('up'); return; }
+      tgt.x = TENT.x; tgt.y = TENT.y + 40;
+      return;
+    }
     // a bed slot
     for (let i = 0; i < BED.slots.length; i++) {
       const s = BED.slots[i];
@@ -679,7 +705,8 @@ function init() {
       place(meEl, pos.x, pos.y, ME_ANCHOR);
       depth(meEl, pos.y);
     }
-    if (!state.claimedAt && pos.x < ROAD.gateX - 24) offerClaim();
+    // stepping INTO the yard (through the south gate) triggers the claim
+    if (!state.claimedAt && pos.x > FENCE[0] && pos.x < FENCE[2] && pos.y < FENCE[3] - 26) offerClaim();
     drawMe();
     doorTick();
     cam();
