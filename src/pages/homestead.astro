@@ -150,6 +150,10 @@ const description = 'A clearing west of the park with your name on the sign: cla
       border: 3px solid #000; background: #fffdf5; padding: 0.45rem 0.3rem; white-space: nowrap;
     }
     .hs-tabs button[aria-pressed="true"] { background: #ffe135; }
+    /* the remote shed shows only your things — ordering stays at the mailbox */
+    #hsShop[data-remote="1"] .hs-tabs button:not([data-tab="shed"]) { display: none; }
+    /* touch drags steer the placement ghost, never the page */
+    .hs-view.is-placing { touch-action: none; }
     .hs-list { display: grid; gap: 0.5rem; max-height: min(46vh, 380px); overflow-y: auto; }
     .hs-row {
       display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
@@ -209,6 +213,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       </div>
       <div class="hs-actions" aria-label="homestead actions">
         <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
+        <button class="hs-act" id="hsBag" title="Your shed — place things from anywhere">📦</button>
       </div>
     </div>
 
@@ -225,8 +230,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
     <div class="hs-veil" id="hsShop" hidden data-tab="order">
       <div class="hs-card">
         <button class="hs-shopx" id="hsShopClose" aria-label="Close">✕</button>
-        <h2>📬 The mailbox</h2>
-        <p>Order from the catalog — cheap things arrive on the spot.</p>
+        <h2 id="hsShopTitle">📬 The mailbox</h2>
+        <p id="hsShopLead">Order from the catalog — cheap things arrive on the spot.</p>
         <div class="hs-tabs">
           <button type="button" data-tab="order" aria-pressed="true">🛒 Order</button>
           <button type="button" data-tab="shed" aria-pressed="false">📦 Shed</button>

@@ -51,6 +51,9 @@ function init() {
 
   const state = loadState();
   const save = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
+  // ⚠️ TDZ: camTarget() reads `placing` and is CALLED at spawn setup, so this
+  // declaration must live above the camera section (the rave-floor lesson)
+  let placing = null;   // { id, x, y, el, moving }
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -79,9 +82,13 @@ function init() {
   addEventListener('resize', layout);
   layout();
   function camTarget() {
+    // 🪴 while placing, the camera follows the GHOST — you can send it to any
+    // corner of the property without moving the banana (Trym: placement was
+    // trapped in the one screen around wherever you stood)
+    const foc = placing ? placing : pos;
     return {
-      x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), pos.x * scale - viewW / 2)),
-      y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)),
+      x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), foc.x * scale - viewW / 2)),
+      y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), foc.y * scale - viewH * 0.58)),
     };
   }
   let camWX = NaN, camWY = NaN;
@@ -256,6 +263,7 @@ function init() {
   });
   const refreshHud = () => hud && hud.refresh();
   document.getElementById('hsEmote').addEventListener('click', () => float(pos.x, pos.y - 44, '❤️'));
+  document.getElementById('hsBag').addEventListener('click', () => openShop('shed', true));
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
 
   // ---- spawn + walking ----------------------------------------------------
@@ -443,15 +451,24 @@ function init() {
       list.appendChild(card);
     }
   }
-  function openShop(tab) {
+  function openShop(tab, remote) {
     if (tab) {
       shopEl.dataset.tab = tab;
       shopEl.querySelectorAll('.hs-tabs button').forEach((b) =>
         b.setAttribute('aria-pressed', String(b.dataset.tab === tab)));
     }
+    // 📦 remote = the action-bar shed: your things, from anywhere. Ordering
+    // NEW things stays a walk to the mailbox — that's the place's job.
+    shopEl.dataset.remote = remote ? '1' : '';
+    const h = document.getElementById('hsShopTitle');
+    const p = document.getElementById('hsShopLead');
+    if (h) h.textContent = remote ? '📦 Your shed' : '📬 The mailbox';
+    if (p) p.textContent = remote
+      ? 'Things you own but haven’t placed. New things are ordered at the mailbox.'
+      : 'Order from the catalog — cheap things arrive on the spot.';
     shopEl.hidden = false;
     renderShop();
-    track('homestead_mailbox');
+    track(remote ? 'homestead_shed' : 'homestead_mailbox');
   }
   function closeShop() { shopEl.hidden = true; }
   shopEl.addEventListener('click', (e) => {
@@ -467,7 +484,6 @@ function init() {
   document.getElementById('hsShopClose').addEventListener('click', closeShop);
 
   // ---- 🪴 placing: the ghost + the confirm bar -----------------------------
-  let placing = null;   // { id, x, y, el, moving }
   const snap = (v) => Math.round(v / 24) * 24;
   function spotOk(d, x, y) {
     if (x - d.w / 2 < PLOT[0] || x + d.w / 2 > PLOT[2]) return false;
@@ -489,10 +505,11 @@ function init() {
     const y = snap(moving ? moving.y : Math.max(PLOT[1] + 60, Math.min(PLOT[3] - 30, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null };
     if (moving) { refreshItems(); }   // the original disappears while it moves
+    view.classList.add('is-placing');   // touch drags steer the ghost, not the page
     updateGhost();
     confirmEl.hidden = false;
     hint(false);
-    toast('tap the lawn to move it — then ✓', 3200);
+    toast('tap or drag anywhere on the lawn — then ✓', 3200);
   }
   function updateGhost() {
     if (!placing) return;
@@ -506,6 +523,7 @@ function init() {
   }
   function cancelPlacing() {
     if (!placing) return;
+    view.classList.remove('is-placing');
     placing.el.remove();
     if (placing.moving) state.items.push(placing.moving);   // it never left
     const wasBuy = !placing.moving;
@@ -517,6 +535,7 @@ function init() {
   }
   document.getElementById('hsPlaceGo').addEventListener('click', () => {
     if (!placing) return;
+    view.classList.remove('is-placing');
     const it = { id: placing.id, x: placing.x, y: placing.y };
     placing.el.remove();
     const moved = !!placing.moving;
@@ -611,6 +630,26 @@ function init() {
     track('homestead_water', { crop: b.crop });
   }
 
+  // 🖐 while placing, DRAGGING moves the ghost too — tap jumps it, drag
+  // fine-tunes it, and the camera follows either way (mobile-first)
+  let ghostDrag = false;
+  function ghostTo(e) {
+    const r = view.getBoundingClientRect();
+    const wx = (e.clientX - r.left + camX) / scale;
+    const wy = (e.clientY - r.top + camY) / scale;
+    placing.x = snap(Math.max(PLOT[0] + 12, Math.min(PLOT[2] - 12, wx)));
+    placing.y = snap(Math.max(PLOT[1] + 26, Math.min(PLOT[3] - 8, wy)));
+    updateGhost();
+  }
+  view.addEventListener('pointerdown', (e) => {
+    if (!placing || panelOpen()) return;
+    if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-confirm')) return;
+    ghostDrag = true;
+    ghostTo(e);
+  });
+  view.addEventListener('pointermove', (e) => { if (ghostDrag && placing) ghostTo(e); });
+  addEventListener('pointerup', () => { ghostDrag = false; });
+
   // ---- taps ---------------------------------------------------------------
   view.addEventListener('click', (e) => {
     if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-chip')) return;
@@ -620,13 +659,7 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     clearChip(); clearBedChip();
-    if (placing) {   // the ghost follows your taps
-      const d = DEX[placing.id];
-      placing.x = snap(Math.max(PLOT[0] + 12, Math.min(PLOT[2] - 12, wx)));
-      placing.y = snap(Math.max(PLOT[1] + 26, Math.min(PLOT[3] - 8, wy)));
-      updateGhost();
-      return;
-    }
+    if (placing) return;   // pointerdown/drag owns the ghost
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - MAILBOX.x, wy - (MAILBOX.y - 20)) < 46) {
       if (Math.hypot(pos.x - MAILBOX.x, pos.y - MAILBOX.y) < 110) { openShop(); return; }
