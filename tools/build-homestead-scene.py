@@ -458,24 +458,68 @@ if HAVE_PACK:
         print('  d-%s.png %dx%d' % (did, s.width, s.height))
     assert len(DECOR_OUT) >= 10, 'decor catalog too thin: %d' % len(DECOR_OUT)
 
-# ── 🏠 THE STRUCTURE LADDER — tent → cabin → house, client-drawn at TENT ──
-# (key, candidates, scale). The Country House is 864x768 native — the ladder's
-# scales are chosen so each rung visibly DWARFS the one before.
-STRUCT_DEF = [
-    ('tent', ['ME_Singles_Camping_48x48_Tent_1.png'], PROP),
-    ('cabin', [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Barn_Small_48x48.png')], 0.52),
-    ('house', ['24_Additional_Houses_Country_House_48x48.png'], 0.42),
-]
+# ── 🏠 THE STRUCTURE STYLES ── every rung is a WARDROBE (Trym: "build the
+# picker with all of them"). Each style exports ov-<key>.png; sizes are
+# measured and emitted, so the engine handles any footprint. Scales normalise
+# HEIGHT per rung so every option reads as the same tier.
+def _rung_scale(target_h):
+    def f(im):
+        return min(0.6, target_h / float(im.height))
+    return f
+
+
+FARMB = os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48')
+STRUCT_VARIANTS = {}
+STRUCT_VARIANTS[1] = [('tent%d' % i, ['ME_Singles_Camping_48x48_Tent_%d.png' % i], PROP)
+                      for i in range(1, 7)]
+STRUCT_VARIANTS[2] = (
+    [('mob%d' % i, ['ME_Singles_Camping_48x48_Mobile_House_Big_%d.png' % i], _rung_scale(200))
+     for i in range(1, 9)]
+    + [('mobm%d' % i, ['ME_Singles_Camping_48x48_Mobile_House_Medium_%d.png' % i], _rung_scale(185))
+       for i in range(1, 9)]
+    + [('barn', [os.path.join(FARMB, 'Barn_Small_48x48.png')], 0.52)]
+    + [('hloft%s' % c.lower(), [os.path.join(FARMB, 'Front_Hayloft_%s_48x48.png' % c)], _rung_scale(210))
+       for c in ('Green', 'Grey', 'Red', 'Yellow')]
+)
+STRUCT_VARIANTS[3] = (
+    [('country', ['24_Additional_Houses_Country_House_48x48.png'], 0.42),
+     ('haunted', ['24_Additional_Houses_Haunted_House_48x48.png'], _rung_scale(330)),
+     ('japanese', ['24_Additional_Houses_Japanese_House_48x48.png'], _rung_scale(330))]
+    + [('villa%d' % i, ['ME_Singles_Villas_48x48_Villa_%d.png' % i], _rung_scale(330))
+       for i in range(1, 6)]
+    + [('condoa', ['ME_Singles_Generic_Building_48x48_Condo_Example.png'], _rung_scale(340)),
+       ('condo6', ['ME_Singles_Generic_Building_48x48_Condo_6_Example.png'], _rung_scale(340)),
+       ('condo9', ['ME_Singles_Generic_Building_48x48_Condo_9_Example.png'], _rung_scale(320))]
+)
+
 STRUCT_SIZES = {}
+STRUCT_STYLES = {}
 if HAVE_PACK:
-    for key, cands, sc in STRUCT_DEF:
-        sp = sprite(cands, scale=sc)
-        if sp is None:
-            continue
-        sp.save(os.path.join(OUT, 'ov-%s.png' % key), optimize=True)
-        STRUCT_SIZES[key] = sp.size
-        print('  ov-%s.png %dx%d' % (key, sp.width, sp.height))
-TENT_SIZE = STRUCT_SIZES.get('tent', (0, 0))
+    for rung, variants in STRUCT_VARIANTS.items():
+        keys = []
+        for key, cands, sc in variants:
+            # measure first when the scale depends on the native size
+            probe = None
+            for n in cands:
+                try:
+                    probe = Image.open(n).convert('RGBA') if os.path.isabs(n) else load_pack(n)
+                    break
+                except Exception:
+                    continue
+            if probe is None:
+                print('  MISSING style', key, cands)
+                continue
+            scale = sc(probe) if callable(sc) else sc
+            sp = sprite(cands, scale=scale)
+            if sp is None:
+                continue
+            sp.save(os.path.join(OUT, 'ov-%s.png' % key), optimize=True)
+            STRUCT_SIZES[key] = sp.size
+            keys.append(key)
+            print('  ov-%s.png %dx%d' % (key, sp.width, sp.height))
+        STRUCT_STYLES[rung] = keys
+    assert len(STRUCT_SIZES) >= 30, 'style wardrobe too thin: %d' % len(STRUCT_SIZES)
+TENT_SIZE = STRUCT_SIZES.get('tent1', (0, 0))
 
 # ---- emit the contract ----------------------------------------------------
 def emit():
@@ -493,6 +537,7 @@ def emit():
     L.append('export const TENT = { x: %d, y: %d, w: %d, h: %d, solid: [-%d, -20, %d, 4] };'
              % (TENT[0], TENT[1], TENT_SIZE[0], TENT_SIZE[1],
                 max(20, TENT_SIZE[0] // 2 - 8), max(20, TENT_SIZE[0] // 2 - 8)))
+    L.append('export const STRUCT_STYLES = %s;' % str(STRUCT_STYLES).replace("'", '"'))
     L.append('export const STRUCTS = { %s };' % ', '.join(
         "%s: { w: %d, h: %d }" % (k, w, h) for k, (w, h) in STRUCT_SIZES.items()))
     L.append('export const MAILBOX = { x: %d, y: %d };' % MAILBOX_AT)

@@ -11,8 +11,8 @@ import { catCustom, loadCatalog } from '../lib/drops.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
-import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, STRUCTS, MAILBOX, SIGN,
-  OB_RECTS, OVERLAYS } from './homestead-geo.js';
+import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, STRUCTS, STRUCT_STYLES,
+  MAILBOX, SIGN, OB_RECTS, OVERLAYS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
 const view = document.getElementById('hsView');
@@ -23,15 +23,16 @@ const HS_KEY = 'hs-v1';
 // ⚠️ STRESS-TESTED 3 Aug (?hstest=full): 16 items on the 19×10-tile lawn read
 // as ~15% furnished — "full" must LOOK like a lived-in yard, so the caps rose.
 const CAPS = [12, 28, 42, 56];   // placement spots per stage — each rung adds room
-// 🏠 the structure ladder: stage n stands STRUCT_LADDER[n-1] at the TENT spot
+// 🏠 the ladder: every rung is a WARDROBE — pick a style, then place it
 const STRUCT_LADDER = [
-  { key: 'tent', price: 50, name: 'Pitch a tent', icon: '⛺',
-    pitch: 'move in, and the whole decor catalog opens up.' },
-  { key: 'cabin', price: 250, name: 'Raise the cabin', icon: '🛖',
-    pitch: 'a real roof — the plot grows and the fancier catalog unlocks.' },
-  { key: 'house', price: 600, name: 'Build the house', icon: '🏠',
-    pitch: 'the full homestead — the grandest things arrive in the catalog.' },
+  { price: 50, name: 'Pitch a tent', icon: '⛺',
+    pitch: 'pick a colour, move in — the whole decor catalog opens up.' },
+  { price: 250, name: 'Get a real roof', icon: '🛖',
+    pitch: 'a mobile home, a barn — your call. The plot grows and the fancier catalog unlocks.' },
+  { price: 600, name: 'Build the house', icon: '🏠',
+    pitch: 'country, villa, haunted, city — the full homestead, the grandest catalog.' },
 ];
+const STYLE_DEFAULTS = { 1: 'tent1', 2: 'barn', 3: 'country' };
 const CROPS = [
   { id: 'tomato', name: 'Tomato', seed: 3, pay: 6 },
   { id: 'pumpkin', name: 'Pumpkin', seed: 3, pay: 6 },
@@ -50,6 +51,7 @@ function loadState() {
 function withHome(s) {   // older saves have no home/bedAt — defaults = old spots
   if (!s.home) s.home = { x: TENT.x, y: TENT.y };
   if (!s.bedAt) s.bedAt = { x: BED.def.x, y: BED.def.y };
+  if (!s.style) s.style = {};
   return s;
 }
 
@@ -251,10 +253,11 @@ function init() {
   // ---- 🏠 the structure at the TENT spot: nothing → tent → cabin → house --
   const curStruct = () => state.stage >= 1
     ? STRUCT_LADDER[Math.min(state.stage, STRUCT_LADDER.length) - 1] : null;
-  const structDims = () => {
-    const c = curStruct();
-    return c ? STRUCTS[c.key] : { w: 140, h: 74 };
+  const curStyleKey = () => {
+    const r = Math.min(state.stage, 3);
+    return (state.style && state.style[r]) || STYLE_DEFAULTS[r];
   };
+  const structDims = () => state.stage >= 1 ? STRUCTS[curStyleKey()] : { w: 140, h: 74 };
   let structEl = null, structKey = '', tentSpotEl = null;
   function refreshTent() {
     if (state.stage < 1) {
@@ -273,18 +276,18 @@ function init() {
       return;
     }
     if (tentSpotEl) { tentSpotEl.remove(); tentSpotEl = null; }
-    const c = curStruct();
-    const sig = c.key + ':' + state.home.x + ',' + state.home.y;
+    const styleKey = curStyleKey();
+    const sig = styleKey + ':' + state.home.x + ',' + state.home.y;
     if (structKey === sig) return;
     if (structEl) structEl.remove();
-    const d = STRUCTS[c.key];
+    const d = STRUCTS[styleKey];
     structEl = document.createElement('div');
     structEl.className = 'hs-ov';
     structEl.style.left = pct(state.home.x - d.w / 2, W);
     structEl.style.top = pct(state.home.y - d.h, H);
     structEl.style.width = pct(d.w, W);
     structEl.style.height = pct(d.h, H);
-    structEl.style.backgroundImage = "url('/assets/homestead/ov-" + c.key + ".png')";
+    structEl.style.backgroundImage = "url('/assets/homestead/ov-" + styleKey + ".png')";
     depth(structEl, state.home.y);
     world.appendChild(structEl);
     structKey = sig;
@@ -402,7 +405,12 @@ function init() {
   });
   const refreshHud = () => hud && hud.refresh();
   document.getElementById('hsEmote').addEventListener('click', () => float(pos.x, pos.y - 44, '❤️'));
-  document.getElementById('hsBag').addEventListener('click', () => openShop('shed', true));
+  document.getElementById('hsBag').addEventListener('click', () => {
+    // ⚠️ the remote bag let an UNCLAIMED visitor buy the tent from the road,
+    // and the claim veil then ambushed them mid-play (found by the QA harness)
+    if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
+    openShop('shed', true);
+  });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
 
   // ---- spawn + walking ----------------------------------------------------
@@ -516,6 +524,29 @@ function init() {
     tile.append(im, nm, pr, btn);
     return tile;
   }
+  // 🎨 the style wardrobe: thumbnails, one selected, returns a getter
+  function stylePicker(rung, host) {
+    const keys = STRUCT_STYLES[rung] || [];
+    let chosen = STYLE_DEFAULTS[rung];
+    const row = document.createElement('div');
+    row.className = 'hs-stylepick';
+    keys.forEach((k) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'hs-stylebtn';
+      b.innerHTML = '<img src="/assets/homestead/ov-' + k + '.png" alt="" loading="lazy">';
+      b.setAttribute('aria-pressed', String(k === chosen));
+      b.addEventListener('click', () => {
+        chosen = k;
+        row.querySelectorAll('button').forEach((x) =>
+          x.setAttribute('aria-pressed', String(x === b)));
+      });
+      row.appendChild(b);
+    });
+    host.appendChild(row);
+    return () => chosen;
+  }
+
   function renderShop() {
     const list = document.getElementById('hsShopList');
     const catsRow = document.getElementById('hsShopCats');
@@ -528,16 +559,17 @@ function init() {
     if (state.stage < 1) {
       const card = document.createElement('div');
       card.className = 'hs-up';
-      card.innerHTML = '<img src="/assets/homestead/ov-tent.png" alt=""><div><b>First things first: pitch a tent</b>'
-        + '<span>' + TENT_PRICE + ' 🪙 — move in, and the whole decor catalog opens up.'
-        + ' Bananacoins come from playing anywhere in the world.</span></div>';
+      card.innerHTML = '<div><b>First things first: pitch a tent</b>'
+        + '<span>' + TENT_PRICE + ' 🪙 — pick a colour, move in, and the whole decor'
+        + ' catalog opens up. Bananacoins come from playing anywhere in the world.</span></div>';
+      const getStyle = stylePicker(1, card);
       const btn = document.createElement('button');
       btn.className = 'hs-btn';
       btn.textContent = coinBalance() >= TENT_PRICE ? '⛺ pitch it' : 'need ' + TENT_PRICE + ' 🪙 — you have ' + coinBalance();
       btn.disabled = coinBalance() < TENT_PRICE;
       btn.addEventListener('click', () => {
         closeShop();
-        startPlacingHome('tent', { price: TENT_PRICE, toStage: 1 });
+        startPlacingHome(getStyle(), { price: TENT_PRICE, toStage: 1 });
       });
       card.appendChild(btn);
       list.appendChild(card);
@@ -603,12 +635,12 @@ function init() {
     } else {   // upgrades (stage ≥ 1 — the tent gate lives above)
       const card = document.createElement('div');
       card.className = 'hs-up';
-      const next = STRUCT_LADDER[state.stage];   // stage 1 → cabin, 2 → house
+      const next = STRUCT_LADDER[state.stage];   // stage 1 → roof, 2 → house
       if (next) {
-        card.innerHTML = '<img src="/assets/homestead/ov-' + next.key + '.png" alt="">'
-          + '<div><b>' + next.icon + ' ' + next.name + '</b>'
+        card.innerHTML = '<div><b>' + next.icon + ' ' + next.name + '</b>'
           + '<span>' + next.price + ' 🪙 — ' + next.pitch
           + ' The plot grows to ' + CAPS[state.stage + 1] + ' spots.</span></div>';
+        const getStyle = stylePicker(state.stage + 1, card);
         const btn = document.createElement('button');
         btn.className = 'hs-btn';
         btn.textContent = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
@@ -616,7 +648,7 @@ function init() {
         btn.disabled = coinBalance() < next.price;
         btn.addEventListener('click', () => {
           closeShop();
-          startPlacingHome(next.key, { price: next.price, toStage: state.stage + 1 });
+          startPlacingHome(getStyle(), { price: next.price, toStage: state.stage + 1 });
         });
         card.appendChild(btn);
       } else {
@@ -702,7 +734,7 @@ function init() {
       const b = [state.bedAt.x - BED.w / 2 - 20, state.bedAt.y - BED.h - 40, state.bedAt.x + BED.w / 2 + 20, state.bedAt.y + 16];
       if (foot[0] < b[2] && foot[2] > b[0] && foot[1] < b[3] && foot[3] > b[1]) return false;
     } else if (state.stage >= 1) { // …and the bed keeps off the structure
-      const sd = STRUCTS[curStruct().key];
+      const sd = STRUCTS[curStyleKey()];
       const h2 = [state.home.x - sd.w * 0.52 - 20, state.home.y - sd.h * 0.62 - 20, state.home.x + sd.w * 0.52 + 20, state.home.y + 24];
       if (foot[0] < h2[2] && foot[2] > h2[0] && foot[1] < h2[3] && foot[3] > h2[1]) return false;
     }
@@ -745,8 +777,10 @@ function init() {
     if (placing.toStage) {   // this placement completes an UPGRADE
       passStat('coins_spent', placing.price);
       state.stage = placing.toStage;
+      state.style = state.style || {};
+      state.style[placing.toStage] = placing.key;
       const rung = STRUCT_LADDER[placing.toStage - 1];
-      track('homestead_upgrade', { to: rung.key });
+      track('homestead_upgrade', { to: placing.key });
       if (!swept.length) toast(rung.icon + ' ' + rung.name.toLowerCase() + ' — done');
     } else {
       track('homestead_move_home');
@@ -997,8 +1031,8 @@ function init() {
           itChip.className = 'hs-chip';
           const mv = document.createElement('button');
           mv.className = 'hs-btn';
-          mv.textContent = '✥ move the ' + curStruct().key;
-          mv.addEventListener('click', () => { clearChip(); startPlacingHome(curStruct().key, {}); });
+          mv.textContent = '✥ move it';
+          mv.addEventListener('click', () => { clearChip(); startPlacingHome(curStyleKey(), {}); });
           itChip.append(mv);
           itChip.style.left = pct(state.home.x, W);
           itChip.style.top = pct(state.home.y - sd.h - 12, H);
