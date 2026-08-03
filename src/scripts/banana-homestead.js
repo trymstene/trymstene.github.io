@@ -11,7 +11,7 @@ import { catCustom, loadCatalog } from '../lib/drops.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
-import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, MAILBOX, SIGN,
+import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE, PLOT, BED, TENT, STRUCTS, MAILBOX, SIGN,
   OB_RECTS, OVERLAYS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -22,7 +22,16 @@ function track(name, params) { if (window.gtag) window.gtag('event', name, param
 const HS_KEY = 'hs-v1';
 // ⚠️ STRESS-TESTED 3 Aug (?hstest=full): 16 items on the 19×10-tile lawn read
 // as ~15% furnished — "full" must LOOK like a lived-in yard, so the caps rose.
-const CAPS = [12, 28];           // placement spots per stage (the tent adds room)
+const CAPS = [12, 28, 42, 56];   // placement spots per stage — each rung adds room
+// 🏠 the structure ladder: stage n stands STRUCT_LADDER[n-1] at the TENT spot
+const STRUCT_LADDER = [
+  { key: 'tent', price: 50, name: 'Pitch a tent', icon: '⛺',
+    pitch: 'move in, and the whole decor catalog opens up.' },
+  { key: 'cabin', price: 250, name: 'Raise the cabin', icon: '🛖',
+    pitch: 'a real roof — the plot grows and the fancier catalog unlocks.' },
+  { key: 'house', price: 600, name: 'Build the house', icon: '🏠',
+    pitch: 'the full homestead — the grandest things arrive in the catalog.' },
+];
 const CROPS = [
   { id: 'tomato', name: 'Tomato', seed: 3, pay: 6 },
   { id: 'pumpkin', name: 'Pumpkin', seed: 3, pay: 6 },
@@ -81,6 +90,38 @@ function applyTestScenario(kind) {
         { crop: 'pumpkin', waters: 1, last: '', planted: day },
         { crop: 'wheat', waters: 2, last: '', planted: day },
         { crop: 'tomato', waters: 3, last: '', planted: day },
+      ] };
+  }
+  if (kind === 'max') {
+    // 🏠 THE END STATE: the house, 56/56 spots, every category represented.
+    // Positions dodge the house footprint (x 582-938, y up to 434) + the bed.
+    const items = [];
+    const put2 = (id, x, y) => items.push({ id, x, y });
+    // north rows, either side of the house
+    ['sunflower', 'redflower', 'blueflower'].forEach((id, i) => put2(id, 400 + i * 56, 330));
+    ['whiteflower', 'pinkvase', 'bluevase', 'sunvase', 'whitevase', 'sproutvase'].forEach((id, i) => put2(id, 965 + i * 56, 332));
+    // west column
+    ['statue', 'bush', 'flowerbush', 'bench', 'mushrooms', 'sprout'].forEach((id, i) => put2(id, 405 + (i % 2) * 62, 400 + Math.floor(i / 2) * 62));
+    // east column
+    ['statue2', 'coop', 'shelf', 'benchv', 'armchair', 'chair', 'bush2', 'flowerbush2'].forEach((id, i) => put2(id, 990 + (i % 3) * 100, 420 + Math.floor(i / 3) * 78));
+    // the front yard, below the house porch
+    ['fountain', 'table', 'campfire', 'marshfire', 'lantern', 'lantern2'].forEach((id, i) => put2(id, 590 + i * 62, 495));
+    // mid-band accents
+    ['bananacrate', 'crate', 'scarecrow', 'stump'].forEach((id, i) => put2(id, 800 + i * 92, 585));
+    // the south band, along the fence
+    ['bush', 'sunflower', 'chair', 'redflower', 'stump', 'blueflower', 'bush2', 'whiteflower',
+      'mushrooms', 'lantern', 'flowerbush', 'pinkvase'].forEach((id, i) => put2(id, 395 + i * 60, 738));
+    // fill the remainder to the 56 cap with a mixed hedge row
+    const fillers = ['bush', 'bush2', 'flowerbush', 'sunflower', 'redflower', 'blueflower'];
+    let fi = 0;
+    while (items.length < 56) { put2(fillers[fi % fillers.length], 980 + (fi % 5) * 68, 660 + Math.floor(fi / 5) * 52); fi++; }
+    s = { ...base, stage: 3, items,
+      shed: [{ id: 'statue' }, { id: 'fountain' }, { id: 'coop' }, { id: 'bananacrate' }],
+      bed: [
+        { crop: 'tomato', waters: 3, last: '', planted: day },
+        { crop: 'pumpkin', waters: 3, last: '', planted: day },
+        { crop: 'wheat', waters: 2, last: '', planted: day },
+        { crop: 'tomato', waters: 1, last: '', planted: day },
       ] };
   }
   if (s) { try { localStorage.setItem(HS_KEY, JSON.stringify(s)); } catch (e) {} }
@@ -193,11 +234,17 @@ function init() {
   function refreshSign() { signName.textContent = state.name || ''; signName.hidden = !state.name; }
   refreshSign();
 
-  // ---- the tent (stage 1) — at stage 0 the SPOT itself invites the buy ----
-  let tentEl = null, tentSpotEl = null;
+  // ---- 🏠 the structure at the TENT spot: nothing → tent → cabin → house --
+  const curStruct = () => state.stage >= 1
+    ? STRUCT_LADDER[Math.min(state.stage, STRUCT_LADDER.length) - 1] : null;
+  const structDims = () => {
+    const c = curStruct();
+    return c ? STRUCTS[c.key] : { w: 140, h: 74 };
+  };
+  let structEl = null, structKey = '', tentSpotEl = null;
   function refreshTent() {
     if (state.stage < 1) {
-      if (tentEl) { tentEl.remove(); tentEl = null; }
+      if (structEl) { structEl.remove(); structEl = null; structKey = ''; }
       if (!tentSpotEl) {
         tentSpotEl = document.createElement('div');
         tentSpotEl.className = 'hs-tentspot';
@@ -212,16 +259,20 @@ function init() {
       return;
     }
     if (tentSpotEl) { tentSpotEl.remove(); tentSpotEl = null; }
-    if (tentEl) return;
-    tentEl = document.createElement('div');
-    tentEl.className = 'hs-ov';
-    tentEl.style.left = pct(TENT.x - TENT.w / 2, W);
-    tentEl.style.top = pct(TENT.y - TENT.h, H);
-    tentEl.style.width = pct(TENT.w, W);
-    tentEl.style.height = pct(TENT.h, H);
-    tentEl.style.backgroundImage = "url('/assets/homestead/ov-tent.png')";
-    depth(tentEl, TENT.y);
-    world.appendChild(tentEl);
+    const c = curStruct();
+    if (structKey === c.key) return;
+    if (structEl) structEl.remove();
+    const d = STRUCTS[c.key];
+    structEl = document.createElement('div');
+    structEl.className = 'hs-ov';
+    structEl.style.left = pct(TENT.x - d.w / 2, W);
+    structEl.style.top = pct(TENT.y - d.h, H);
+    structEl.style.width = pct(d.w, W);
+    structEl.style.height = pct(d.h, H);
+    structEl.style.backgroundImage = "url('/assets/homestead/ov-" + c.key + ".png')";
+    depth(structEl, TENT.y);
+    world.appendChild(structEl);
+    structKey = c.key;
   }
   refreshTent();
 
@@ -257,7 +308,11 @@ function init() {
       const d = DEX[it.id];
       if (d && d.solid) liveRects.push([it.x + d.solid[0], it.y + d.solid[1], it.x + d.solid[2], it.y + d.solid[3]]);
     });
-    if (state.stage >= 1) liveRects.push([TENT.x + TENT.solid[0], TENT.y + TENT.solid[1], TENT.x + TENT.solid[2], TENT.y + TENT.solid[3]]);
+    if (state.stage >= 1) {
+      const d = structDims();
+      const hw2 = Math.max(24, d.w * 0.42);
+      liveRects.push([TENT.x - hw2, TENT.y - Math.max(20, d.h * 0.2), TENT.x + hw2, TENT.y + 4]);
+    }
     liveRects.push([BED[0] - 6, BED[1] - 6, BED[2] + 6, BED[3] + 6]);
   }
   const inRect = (x, y, r) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
@@ -418,7 +473,8 @@ function init() {
     const btn = document.createElement('button');
     btn.className = 'hs-btn';
     if (verb === 'buy' && d.stage > state.stage) {
-      btn.textContent = '🔒 tent first';
+      const need = STRUCT_LADDER[Math.min(d.stage, STRUCT_LADDER.length) - 1];
+      btn.textContent = '🔒 ' + (need ? need.key + ' first' : 'locked');
       btn.disabled = true;
       tile.classList.add('is-locked');
     } else if (verb === 'buy') {
@@ -523,7 +579,30 @@ function init() {
     } else {   // upgrades (stage ≥ 1 — the tent gate lives above)
       const card = document.createElement('div');
       card.className = 'hs-up';
-      card.innerHTML = '<div><b>⛺ The tent is up</b><span>The cabin is being drawn — next upgrade coming soon.</span></div>';
+      const next = STRUCT_LADDER[state.stage];   // stage 1 → cabin, 2 → house
+      if (next) {
+        card.innerHTML = '<img src="/assets/homestead/ov-' + next.key + '.png" alt="">'
+          + '<div><b>' + next.icon + ' ' + next.name + '</b>'
+          + '<span>' + next.price + ' 🪙 — ' + next.pitch
+          + ' The plot grows to ' + CAPS[state.stage + 1] + ' spots.</span></div>';
+        const btn = document.createElement('button');
+        btn.className = 'hs-btn';
+        btn.textContent = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
+          : 'need ' + next.price + ' 🪙 — you have ' + coinBalance();
+        btn.disabled = coinBalance() < next.price;
+        btn.addEventListener('click', () => {
+          passStat('coins_spent', next.price);
+          state.stage += 1;
+          save(); refreshTent(); rebuildSolids(); refreshHud();
+          toast(next.icon + ' ' + next.name.toLowerCase() + ' — done');
+          float(TENT.x, TENT.y - structDims().h - 8, next.icon);
+          track('homestead_upgrade', { to: next.key });
+          renderShop();
+        });
+        card.appendChild(btn);
+      } else {
+        card.innerHTML = '<div><b>🏠 Fully upgraded</b><span>The homestead stands complete — for now.</span></div>';
+      }
       list.appendChild(card);
     }
   }
@@ -565,7 +644,10 @@ function init() {
     if (x - d.w / 2 < PLOT[0] || x + d.w / 2 > PLOT[2]) return false;
     if (x < PLOT[0] + 10 || x > PLOT[2] - 10 || y < PLOT[1] + 24 || y > PLOT[3] - 6) return false;
     if (inRect(x, y, [BED[0] - 26, BED[1] - 46, BED[2] + 26, BED[3] + 16])) return false;
-    if (Math.abs(x - TENT.x) < TENT.w * 0.55 + d.w * 0.3 && Math.abs(y - TENT.y + TENT.h * 0.3) < TENT.h * 0.55) return false;
+    // keep clear of the structure's FOOTPRINT only — the front yard below the
+    // porch stays decoratable (the max stress test caught the old box banning it)
+    const sd = structDims();
+    if (Math.abs(x - TENT.x) < sd.w * 0.52 + d.w * 0.3 && y > TENT.y - sd.h * 0.62 && y < TENT.y + 12) return false;
     if (Math.hypot(x - MAILBOX.x, y - MAILBOX.y) < 50) return false;
     for (const it of state.items) {
       if (placing && placing.moving === it) continue;

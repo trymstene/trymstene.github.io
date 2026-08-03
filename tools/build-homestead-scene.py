@@ -381,35 +381,48 @@ if HAVE_PACK:
 # ---- 🎁 THE DECOR CATALOG — exported sprites + the GENERATED manifest ------
 # (id, display name, category, price, stage gate, candidates, solid?)
 DECOR_DEF = [
-    ('sunflower', 'Sunflower', 'garden', 8, 0,
-     ['ME_Singles_Garden_48x48_Big_Sunflower.png'], False),
-    ('redflower', 'Red flower', 'garden', 8, 0,
-     ['ME_Singles_Garden_48x48_Big_Red_Flower.png'], False),
-    ('blueflower', 'Blue flower', 'garden', 8, 0,
-     ['ME_Singles_Garden_48x48_Big_Light_Blue_Flower.png'], False),
-    ('pinkvase', 'Pink flower vase', 'garden', 12, 0,
-     ['ME_Singles_Garden_48x48_Big_Pink_Flower_Vase.png'], True),
-    ('bench', 'Garden bench', 'furniture', 18, 0,
-     ['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], True),
-    ('table', 'Picnic table', 'furniture', 22, 0,
-     ['ME_Singles_Camping_48x48_Benched_Table_1.png'], True),
-    ('bush', 'Bush', 'nature', 6, 0,
-     ['ME_Singles_Garden_48x48_Bush_1.png'], True),
-    ('stump', 'Stump seat', 'nature', 6, 0,
-     ['ME_Singles_Camping_48x48_Stump_1.png'], True),
-    ('lantern', 'Camp lantern', 'lighting', 10, 0,
-     ['ME_Singles_Camping_48x48_Lantern_1.png'], True),
-    ('campfire', 'Campfire', 'lighting', 15, 1,
-     ['ME_Singles_Camping_48x48_Campfire_1.png'], True),
-    ('statue', 'Angel statue', 'display', 40, 1,
-     ['ME_Singles_Garden_48x48_Angel_Statue_1.png'], True),
-    ('scarecrow', 'Scarecrow', 'garden', 25, 1,
-     [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Scarecrow_48x48.png')], True),
+    # ── stage 0: the starter shelf ──
+    ('sunflower', 'Sunflower', 'garden', 8, 0, ['ME_Singles_Garden_48x48_Big_Sunflower.png'], False),
+    ('redflower', 'Red flower', 'garden', 8, 0, ['ME_Singles_Garden_48x48_Big_Red_Flower.png'], False),
+    ('blueflower', 'Blue flower', 'garden', 8, 0, ['ME_Singles_Garden_48x48_Big_Light_Blue_Flower.png'], False),
+    ('whiteflower', 'White flower', 'garden', 8, 0, ['ME_Singles_Garden_48x48_Big_White_Flower.png'], False),
+    ('pinkvase', 'Pink flower vase', 'garden', 12, 0, ['ME_Singles_Garden_48x48_Big_Pink_Flower_Vase.png'], True),
+    ('bluevase', 'Blue flower vase', 'garden', 12, 0, ['ME_Singles_Garden_48x48_Big_Light_Blue_Flower_Vase.png'], True),
+    ('bush', 'Bush', 'nature', 6, 0, ['ME_Singles_Garden_48x48_Bush_1.png'], True),
+    ('bush2', 'Round bush', 'nature', 6, 0, ['ME_Singles_Garden_48x48_Bush_5.png'], True),
+    ('stump', 'Stump seat', 'nature', 6, 0, ['ME_Singles_Camping_48x48_Stump_1.png'], True),
+    ('mushrooms', 'Mushroom patch', 'nature', 7, 0, ['ME_Singles_Camping_48x48_Mushrooms_1.png'], False),
+    ('flowerbush', 'Flower bush', 'nature', 9, 0, ['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], True),
+    ('lantern', 'Camp lantern', 'lighting', 10, 0, ['ME_Singles_Camping_48x48_Lantern_1.png'], True),
+    # ── stage 1: the tent is up ──
+    ('bench', 'Garden bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], True),
+    ('benchv', 'Side bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Vertical.png'], True),
+    ('table', 'Picnic table', 'furniture', 22, 1, ['ME_Singles_Camping_48x48_Benched_Table_1.png'], True),
+    ('chair', 'Camp chair', 'furniture', 12, 1, ['ME_Singles_Camping_48x48_Chair_1.png'], True),
+    ('armchair', 'Armchair', 'furniture', 16, 1, ['ME_Singles_Camping_48x48_Armchair_1.png'], True),
+    ('campfire', 'Campfire', 'lighting', 15, 1, ['ME_Singles_Camping_48x48_Campfire_1.png'], True),
+    ('marshfire', 'Marshmallow fire', 'lighting', 20, 1, ['ME_Singles_Camping_48x48_Campfire_Marshmallow_1.png'], True),
+    ('lantern2', 'Tall lantern', 'lighting', 14, 1, ['ME_Singles_Camping_48x48_Lantern_2.png'], True),
+    ('scarecrow', 'Scarecrow', 'farm', 25, 1, [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Scarecrow_48x48.png')], True),
+    ('bananacrate', 'Banana crate', 'farm', 15, 1, [os.path.join(FARM, 'Single_Files_48x48', 'Fruit_Trees_48x48', 'Crate_Brown_Bananas_48x48.png')], True),
+    ('flowerbush2', 'Rose bush', 'nature', 11, 1, ['ME_Singles_City_Props_48x48_Flower_Bush_4.png'], True),
+    # ── stage 2: the cabin ──
+    ('statue', 'Angel statue', 'display', 40, 2, ['ME_Singles_Garden_48x48_Angel_Statue_1.png'], True),
+    ('statue2', 'Praying angel', 'display', 40, 2, ['ME_Singles_Garden_48x48_Angel_Statue_2.png'], True),
+    ('shelf', 'Garden shelf', 'display', 30, 2, ['ME_Singles_Garden_48x48_Big_Shelf.png'], True),
+    ('coop', 'Chicken coop', 'farm', 45, 2, [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Chicken_Coop_48x48.png')], True),
+    ('crate', 'Apple crate', 'farm', 12, 2, [os.path.join(FARM, 'Single_Files_48x48', 'Fruit_Trees_48x48', 'Crate_Brown_Apples_48x48.png')], True),
+    ('sprout', 'Big sprout', 'garden', 14, 2, ['ME_Singles_Garden_48x48_Big_Sprout_1.png'], False),
+    ('sproutvase', 'Sprout vase', 'garden', 16, 2, ['ME_Singles_Garden_48x48_Big_Sprout_Vase_1.png'], True),
+    # ── stage 3: the house ──
+    ('fountain', 'Stone fountain', 'display', 80, 3, ['ME_Singles_Garden_48x48_Fountain_1_1.png'], True),
+    ('sunvase', 'Sunflower vase', 'garden', 20, 3, ['ME_Singles_Garden_48x48_Big_Sunflower_Vase.png'], True),
+    ('whitevase', 'White flower vase', 'garden', 20, 3, ['ME_Singles_Garden_48x48_Big_White_Flower_Vase.png'], True),
 ]
 
 # the Angel statue is monument-sized at PROP (174px wide) — a lawn ornament,
 # not a cathedral piece, so it gets its own scale
-DECOR_SCALE = {'statue': 0.30}
+DECOR_SCALE = {'statue': 0.30, 'statue2': 0.30, 'coop': 0.42, 'fountain': 0.60, 'shelf': 0.55}
 
 DECOR_OUT = []
 if HAVE_PACK:
@@ -424,14 +437,24 @@ if HAVE_PACK:
         print('  d-%s.png %dx%d' % (did, s.width, s.height))
     assert len(DECOR_OUT) >= 10, 'decor catalog too thin: %d' % len(DECOR_OUT)
 
-# the tent — stage 1, drawn by the CLIENT at TENT (never baked)
-TENT_SIZE = (0, 0)
+# ── 🏠 THE STRUCTURE LADDER — tent → cabin → house, client-drawn at TENT ──
+# (key, candidates, scale). The Country House is 864x768 native — the ladder's
+# scales are chosen so each rung visibly DWARFS the one before.
+STRUCT_DEF = [
+    ('tent', ['ME_Singles_Camping_48x48_Tent_1.png'], PROP),
+    ('cabin', [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Barn_Small_48x48.png')], 0.52),
+    ('house', ['24_Additional_Houses_Country_House_48x48.png'], 0.42),
+]
+STRUCT_SIZES = {}
 if HAVE_PACK:
-    s = sprite(['ME_Singles_Camping_48x48_Tent_1.png'])
-    if s is not None:
-        s.save(os.path.join(OUT, 'ov-tent.png'), optimize=True)
-        TENT_SIZE = s.size
-        print('  ov-tent.png %dx%d' % s.size)
+    for key, cands, sc in STRUCT_DEF:
+        sp = sprite(cands, scale=sc)
+        if sp is None:
+            continue
+        sp.save(os.path.join(OUT, 'ov-%s.png' % key), optimize=True)
+        STRUCT_SIZES[key] = sp.size
+        print('  ov-%s.png %dx%d' % (key, sp.width, sp.height))
+TENT_SIZE = STRUCT_SIZES.get('tent', (0, 0))
 
 # ---- emit the contract ----------------------------------------------------
 def emit():
@@ -449,6 +472,8 @@ def emit():
     L.append('export const TENT = { x: %d, y: %d, w: %d, h: %d, solid: [-%d, -20, %d, 4] };'
              % (TENT[0], TENT[1], TENT_SIZE[0], TENT_SIZE[1],
                 max(20, TENT_SIZE[0] // 2 - 8), max(20, TENT_SIZE[0] // 2 - 8)))
+    L.append('export const STRUCTS = { %s };' % ', '.join(
+        "%s: { w: %d, h: %d }" % (k, w, h) for k, (w, h) in STRUCT_SIZES.items()))
     L.append('export const MAILBOX = { x: %d, y: %d };' % MAILBOX_AT)
     L.append('export const SIGN = { x: %d, y: %d };' % SIGN_AT)
     L.append('export const OB_RECTS = %s;' % [list(map(int, r)) for r in COLLIDERS])

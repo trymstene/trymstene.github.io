@@ -9,6 +9,7 @@ export const FENCE = [336, 240, 1344, 816];
 export const PLOT = [384, 302, 1296, 768];
 export const BED = { rect: [470, 600, 750, 700], slots: [[520, 668], [590, 668], [660, 668], [730, 668]] };
 export const TENT = { x: 760, y: 430, w: 140, h: 136, solid: [-62, -20, 62, 4] };
+export const STRUCTS = { tent: { w: 140, h: 136 }, cabin: { w: 188, h: 250 }, house: { w: 356, h: 322 } };
 export const MAILBOX = { x: 1252, y: 850 };
 export const SIGN = { x: 1010, y: 850 };
 export const OB_RECTS = [[336, 258, 1344, 272], [336, 786, 1104, 800], [1200, 786, 1344, 800], [338, 258, 356, 786], [1320, 258, 1340, 786], [1238, 838, 1266, 852], [994, 840, 1026, 852], [141, 868, 229, 890]];
