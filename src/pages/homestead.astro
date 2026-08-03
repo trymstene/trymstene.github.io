@@ -250,6 +250,23 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-signrow input { flex: 1; min-width: 0; margin: 0; text-align: left; }
     .hs-signrow .hs-btn { flex: 0 0 auto; }
     .hs-signrow[hidden] { display: none; }
+
+    /* 🍳 the kitchen */
+    .hs-pantry { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.55rem; }
+    .hs-pantry span {
+      border: 2px solid #000; background: #fff; border-radius: 999px;
+      padding: 0.2rem 0.55rem; font-size: 0.8rem; font-weight: 800;
+    }
+    #hsCook .hs-note { margin: 0 0 0.7rem; }
+    .hs-cooklist { display: grid; gap: 0.5rem; }
+    .hs-dish {
+      display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
+      background: #fff; padding: 0.5rem 0.6rem;
+    }
+    .hs-dish > div { flex: 1; min-width: 0; }
+    .hs-dish b { display: block; font-size: 0.9rem; }
+    .hs-dish span { display: block; font-size: 0.75rem; opacity: 0.75; line-height: 1.4; }
+    .hs-dish .hs-btn { flex: 0 0 auto; font-size: 0.74rem; padding: 0.4rem 0.55rem; }
   </style>
 
   <div class="hs-wrap">
@@ -289,6 +306,16 @@ const description = 'A clearing west of the park with your name on the sign: cla
           What should the sign say?</p>
         <input id="hsClaimName" maxlength="28" aria-label="Name your homestead">
         <button class="hs-btn" id="hsClaimGo">🏡 Claim it</button>
+      </div>
+    </div>
+
+    <div class="hs-veil" id="hsCook" hidden>
+      <div class="hs-card">
+        <button class="hs-shopx" id="hsCookClose" aria-label="Close">✕</button>
+        <h2>🍳 The kitchen</h2>
+        <div class="hs-pantry" id="hsPantry"></div>
+        <p class="hs-note" id="hsCookNote"></p>
+        <div class="hs-cooklist" id="hsCookList"></div>
       </div>
     </div>
 

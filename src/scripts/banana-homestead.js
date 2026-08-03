@@ -6,7 +6,7 @@
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat } from '../lib/banana-pass.js';
+import { passStat, buffGet, buffSet } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog } from '../lib/drops.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
@@ -59,9 +59,20 @@ const STRUCT_LADDER = [
 ];
 const STYLE_DEFAULTS = { 1: 'tent1', 2: 'barn', 3: 'country' };
 const CROPS = [
-  { id: 'tomato', name: 'Tomato', seed: 3, pay: 6 },
-  { id: 'pumpkin', name: 'Pumpkin', seed: 3, pay: 6 },
-  { id: 'wheat', name: 'Wheat', seed: 3, pay: 6 },
+  { id: 'tomato', name: 'Tomato', seed: 3 },
+  { id: 'pumpkin', name: 'Pumpkin', seed: 3 },
+  { id: 'wheat', name: 'Wheat', seed: 3 },
+];
+const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾' };
+// 🍳 THE SPINE (M2): crops → the pantry → dishes with WORLD-WIDE effects.
+// The multiplier enforces itself inside passStat — one choke point, every area.
+const DISHES = [
+  { id: 'stew', icon: '🍲', name: 'Campfire stew', need: { tomato: 2, wheat: 1 },
+    fx: 'coins2', mins: 45, blurb: 'every bananacoin pays double · 45 min · everywhere' },
+  { id: 'pie', icon: '🥧', name: 'Pumpkin pie', need: { pumpkin: 2, wheat: 1 },
+    fx: 'rep2', mins: 45, blurb: 'double XP from everything · 45 min · everywhere' },
+  { id: 'loaf', icon: '🍞', name: 'Golden loaf', need: { wheat: 3 },
+    pay: 25, blurb: 'bakes straight into 25 bananacoins' },
 ];
 const TENT_PRICE = 50;
 const dayStr = () => new Date().toISOString().slice(0, 10);
@@ -77,6 +88,7 @@ function withHome(s) {   // older saves have no home/bedAt — defaults = old sp
   if (!s.home) s.home = { x: TENT.x, y: TENT.y };
   if (!s.bedAt) s.bedAt = { x: BED.def.x, y: BED.def.y };
   if (!s.style) s.style = {};
+  if (!s.pantry) s.pantry = {};
   return s;
 }
 
@@ -549,8 +561,60 @@ function init(visitDoc, visitMiss) {
   const claimEl = document.getElementById('hsClaim');
   const shopEl = document.getElementById('hsShop');
   const guestEl = document.getElementById('hsGuest');
+  const cookEl = document.getElementById('hsCook');
   const confirmEl = document.getElementById('hsConfirm');
-  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden;
+  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden;
+
+  // ---- 🍳 the kitchen (stage 2+): the pantry becomes WORLD-WIDE effects ----
+  function renderCook() {
+    const pan = document.getElementById('hsPantry');
+    pan.replaceChildren();
+    CROPS.forEach((c) => {
+      const b = document.createElement('span');
+      b.textContent = CROP_EMO[c.id] + ' × ' + (state.pantry[c.id] || 0);
+      pan.appendChild(b);
+    });
+    const buff = buffGet();
+    const note = document.getElementById('hsCookNote');
+    note.textContent = buff
+      ? '✨ ' + (buff.fx === 'coins2' ? 'double coins' : 'double XP') + ' is on — '
+        + Math.max(1, Math.round((buff.until - Date.now()) / 60000)) + ' min left'
+      : 'grow it, cook it — the whole world pays out more.';
+    const list = document.getElementById('hsCookList');
+    list.replaceChildren();
+    DISHES.forEach((d) => {
+      const row = document.createElement('div');
+      row.className = 'hs-dish';
+      const needTxt = Object.entries(d.need).map(([k, n]) => CROP_EMO[k] + '×' + n).join('  ');
+      const meta = document.createElement('div');
+      meta.innerHTML = '<b>' + d.icon + ' ' + d.name + '</b><span>' + needTxt + ' → ' + d.blurb + '</span>';
+      const btn = document.createElement('button');
+      btn.className = 'hs-btn';
+      const can = Object.entries(d.need).every(([k, n]) => (state.pantry[k] || 0) >= n);
+      const busy = d.fx && buff;   // one pot, one simmer at a time
+      btn.textContent = busy ? 'pot’s busy' : 'cook it';
+      btn.disabled = !can || !!busy;
+      btn.addEventListener('click', () => {
+        Object.entries(d.need).forEach(([k, n]) => { state.pantry[k] -= n; });
+        if (d.fx) {
+          buffSet(d.fx, d.mins);
+          toast(d.icon + ' ' + d.blurb);
+        } else {
+          passStat('coins_earned', d.pay);
+          refreshHud();
+          toast(d.icon + ' +' + d.pay + ' bananacoins — fresh from the oven');
+        }
+        save();
+        track('homestead_cook', { dish: d.id });
+        renderCook();
+      });
+      row.append(meta, btn);
+      list.appendChild(row);
+    });
+  }
+  function openCook() { cookEl.hidden = false; renderCook(); track('homestead_kitchen'); }
+  document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; });
+  cookEl.addEventListener('click', (e) => { if (e.target === cookEl) cookEl.hidden = true; });
 
   // ---- 🪧 the guestbook at the sign (+ your address, once you have one) ----
   const yardUrl = () => 'https://trymstene.com/homestead/?yard=' + state.slug;
@@ -1166,12 +1230,13 @@ function init(visitDoc, visitMiss) {
       return;
     }
     if (cropStage(b) >= 4) {
-      const c = CROPS.find((x) => x.id === b.crop) || CROPS[0];
-      passStat('coins_earned', c.pay);
+      // 🧺 harvests fill the PANTRY, not the wallet — the kitchen is the value
+      state.pantry[b.crop] = (state.pantry[b.crop] || 0) + 1;
       state.bed[i] = null;
-      save(); refreshBed(); refreshHud();
-      float(s[0], s[1] - 46, '+' + c.pay + ' ' + COIN);
-      track('homestead_harvest', { crop: c.id });
+      save(); refreshBed();
+      float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[b.crop] || '🧺'));
+      track('homestead_harvest', { crop: b.crop });
+      if (state.stage < 2) toast('into the pantry — a real roof comes with a stove 🍳', 2800);
       return;
     }
     if (b.last === dayStr()) { float(s[0], s[1] - 44, '💤 tomorrow'); return; }
@@ -1293,6 +1358,13 @@ function init(visitDoc, visitMiss) {
           mv.textContent = '✥ move it';
           mv.addEventListener('click', () => { clearChip(); startPlacingHome(curStyleKey(), {}); });
           itChip.append(mv);
+          if (state.stage >= 2) {   // 🍳 a real roof comes with a stove
+            const ck = document.createElement('button');
+            ck.className = 'hs-btn';
+            ck.textContent = '🍳 cook';
+            ck.addEventListener('click', () => { clearChip(); openCook(); });
+            itChip.prepend(ck);
+          }
           itChip.style.left = pct(state.home.x, W);
           itChip.style.top = pct(state.home.y - sd.h - 12, H);
           itChip.style.zIndex = '3000';

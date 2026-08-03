@@ -167,7 +167,27 @@ const areaOf = () => {
     : p.indexOf('/beach') === 0 ? 'beach' : p.indexOf('/forge') === 0 ? 'forge' : 'site';
 };
 
+// 🍳 THE KITCHEN'S REACH (Homestead M2): a cooked dish buffs the WHOLE world
+// from this one crossing — every coin/rep grant in every area flows through
+// passStat, so the multiplier lives here and nowhere else. Spends never double.
+export function buffGet() {
+  try {
+    const b = JSON.parse(localStorage.getItem('hs-buff-v1') || 'null');
+    if (b && b.until > Date.now()) return b;
+  } catch (e) {}
+  return null;
+}
+export function buffSet(fx, mins) {
+  try {
+    localStorage.setItem('hs-buff-v1', JSON.stringify({ fx, until: Date.now() + mins * 60000 }));
+  } catch (e) {}
+}
+
 export function passStat(key, delta = 1) {
+  const b = (delta > 0 && (key === 'coins_earned' || key === 'rep')) ? buffGet() : null;
+  if (b && ((key === 'coins_earned' && b.fx === 'coins2') || (key === 'rep' && b.fx === 'rep2'))) {
+    delta *= 2;
+  }
   const p = read();
   const was = p.stats[key] || 0;
   p.stats[key] = was + delta;
