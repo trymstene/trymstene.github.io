@@ -162,7 +162,7 @@ export function initTravel({ here, mount, before, btnClass, track }) {
     // beat posters here too: until now it only had the LED ad.
     + '<a class="wt-go wt-go--shop" href="/forge/items/" data-to="items">'
     + '<span class="wt-go__icon">🎁</span>'
-    + '<span class="wt-go__name">The Items Workshop</span>'
+    + '<span class="wt-go__name">Items Workshop</span>'
     + '<span class="wt-go__arrow">→</span></a>'
     + '<a class="wt-go wt-go--shop" href="/shop/" data-to="shop">'
     + '<span class="wt-go__icon">🛍</span>'
