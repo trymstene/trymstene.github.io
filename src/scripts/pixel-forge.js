@@ -24,8 +24,19 @@ import { iconSvg } from '../lib/pixel-icons.js';
 // first step into items mode.
 import { NFRAMES as ENG_NFRAMES, BASE_CYCLE_S as ENG_CYCLE, FW as ENG_FW, FH as ENG_FH, FRAME_H_FRAC as ENG_HFRAC, FRAME_TOP_FRAC as ENG_TFRAC, PX as ENG_PX } from '../lib/banana-geo.js';
 
-const el = (id) => document.getElementById(id);
-const stage = el('fgCanvas');
+// The two benches ship different markup (task #102): the emoji page has no
+// items bar, the items page has no frames strip / export block. el() hands a
+// detached stub back for a control that isn't on this page, so the one shared
+// script wires everything without a hundred null guards — assignments and
+// listeners on a stub are inert. (A canvas, so .getContext() also works.)
+const _stubs = {};
+const el = (id) => document.getElementById(id)
+  || _stubs[id] || (_stubs[id] = document.createElement('canvas'));
+const stage = document.getElementById('fgCanvas');
+// THE PAGE DECLARES THE BENCH (task #102): /forge/ is the emoji maker,
+// /forge/items/ is the Items Workshop. One script, no runtime mode switching —
+// the tab for the other bench is a link, and each page ships only its own markup.
+const PAGE_MODE = stage && stage.dataset.mode === 'items' ? 'items' : 'emoji';
 
 // ITEMS-MODE GRID: one canvas cell == ONE banana pixel unit, so drawn items
 // match the curated wearables' resolution exactly (Trym's QA: the 32-grid's
@@ -237,6 +248,7 @@ function init() {
 
   // ---- frames strip ----
   function drawFrames() {
+    if (mode === 'items') return; // no frames strip at the items bench
     const host = el('fgFrames');
     host.innerHTML = '';
     state.frames.forEach((f, i) => {
@@ -1079,7 +1091,7 @@ function init() {
   // The main canvas shows the banana; you draw the item right where it goes and
   // Play dances it wearing what you drew. Placement is read from WHERE you drew
   // (offset from the nearest body part), so it can never drift from the drawing.
-  let mode = 'emoji';                         // 'emoji' | 'items'
+  const mode = PAGE_MODE;                     // fixed per page — see PAGE_MODE
   // ⚠️ itemsReady now means BOTH “module fetched” and “sprites decoded”. Every
   // synchronous ENG.* call below sits behind it — with a static import the
   // module was simply always there; now it is not until someone asks for it.
@@ -1227,36 +1239,13 @@ function init() {
     const label = c.anchor === 'hand' ? (c.hand === 'left' ? 'left hand' : 'right hand') : (RIDE_LABEL[c.anchor] || c.anchor);
     showToast('rides the ' + label + (c.picked ? ' — your choice' : ''), false, 'check');
   }
-  // each mode keeps its OWN drawing — Emoji (frames) and Items (one item) are
-  // separate documents, so a banana loaded in Emoji never leaks into Items.
-  const modeDocs = { emoji: null, items: null };
+  // each bench keeps its OWN document — the emoji draft autosaves under
+  // 'forge-draft' on /forge/ only, and an item never overwrites it.
   function freshDoc() {
     wearPick = null;                 // the override belongs to the drawing, not the session
     const n = mode === 'items' ? ITEM_GRID : 32; // items draw at banana resolution
     state.w = n; state.h = n; state.frames = [new Uint8Array(n * n)]; state.delays = [120]; state.cur = 0; state.cpal = [];
   }
-  function setMode(m) {
-    if (m === 'items') ensureEngine();   // first step in starts the fetch
-    if (mode === m) return;
-    if (playing) stopPlay();
-    modeDocs[mode] = serialize();                 // stash the mode we're leaving
-    mode = m;
-    const doc = modeDocs[m];
-    if (doc) deserialize(doc); else freshDoc();    // restore this mode's drawing (or a clean one)
-    // an EMPTY items doc on the wrong grid (pre-upgrade stash / wiped canvas)
-    // silently upgrades to the banana-native grid — art is never touched
-    if (m === 'items' && state.w !== ITEM_GRID && !state.frames.some((f) => f.some((v) => v))) freshDoc();
-    state.undo = []; state.redo = [];
-    if (state.color >= PALETTE.length + state.cpal.length) state.color = 3; // banana yellow fallback
-    document.body.classList.toggle('fg-mode-items', m === 'items');
-    document.querySelectorAll('.fg-modetab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
-    fitCanvas();
-    document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(state.w === state.h && +x.dataset.size === state.w)));
-    renderPalette(); setColor(state.color);
-    refreshAll(); updateItemsStatus();
-    track('forge_mode', { mode: m });
-  }
-  document.querySelectorAll('.fg-modetab').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
   const itemsPlay = el('fgItemsPlay'); if (itemsPlay) itemsPlay.onclick = togglePlay;
   // "start over" owns its reset (not fgClear's frame-wipe): a fresh item also
   // returns to the banana-native grid, so an old 32-grid item upgrades here
@@ -1351,11 +1340,24 @@ function init() {
   // ---- boot ----
   const pickId = new URLSearchParams(location.search).get('shelf');
   const pickedAny = pickId ? shelfList().find((c) => c.id === pickId) : null;
-  let bootItems = false;
-  if (pickedAny && pickedAny.kind === 'emoji') { deserialize(pickedAny.params); }
-  else if (pickedAny && pickedAny.kind === 'wearable') { // re-open a saved ITEM in Items mode
-    try { const wd = JSON.parse(pickedAny.params.replace(/^wear:/, '')); if (deserialize(wd.forge)) bootItems = true; } catch (e) {}
-  } else {
+  // a creation opens at ITS OWN bench — a cross-kind ?shelf= travels to the
+  // other page (old bookmarks and pre-split links keep working)
+  if (pickedAny && mode === 'emoji' && pickedAny.kind === 'wearable') {
+    location.replace('/forge/items/?shelf=' + encodeURIComponent(pickId));
+    return;
+  }
+  if (pickedAny && mode === 'items' && pickedAny.kind !== 'wearable') {
+    location.replace('/forge/?shelf=' + encodeURIComponent(pickId));
+    return;
+  }
+  if (mode === 'items') {
+    ensureEngine();
+    freshDoc(); // the banana-native grid, before any restore
+    if (pickedAny) { // re-open a saved item
+      try { const wd = JSON.parse(pickedAny.params.replace(/^wear:/, '')); deserialize(wd.forge); } catch (e) {}
+    }
+  } else if (pickedAny) { deserialize(pickedAny.params); }
+  else {
     const draft = (() => { try { return localStorage.getItem('forge-draft'); } catch (e) { return null; } })();
     if (draft) deserialize(draft);
   }
@@ -1365,16 +1367,11 @@ function init() {
   renderPalette();
   setColor(state.color);
   setBrush(1);
-  el('fgOnion').setAttribute('aria-pressed', String(state.onion));
-  if (bootItems) { // start in Items mode with the re-opened item already loaded
-    ensureEngine();
-    mode = 'items';
-    document.body.classList.add('fg-mode-items');
-    document.querySelectorAll('.fg-modetab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === 'items')));
-  }
+  const onionBtn = el('fgOnion'); // emoji bench only — items has no frames row
+  if (onionBtn) onionBtn.setAttribute('aria-pressed', String(state.onion));
   refreshAll();
-  if (bootItems) updateItemsStatus();
-  requestAnimationFrame(previewTick);
-  track('forge_open');
+  if (mode === 'items') updateItemsStatus();
+  if (mode === 'emoji') requestAnimationFrame(previewTick); // chat preview is emoji-bench only
+  track('forge_open', { bench: mode });
   passVisit();
 }

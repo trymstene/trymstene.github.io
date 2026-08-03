@@ -255,7 +255,7 @@ async function init() {
   renderShelf(el('psBananas'), { kinds: ['banana'], emptyMsg: 'No bananas yet — build one in the workshop.',
     onPick: (c) => { location.href = '/make-a-banana/?' + c.params; } });
   renderShelf(el('psItems'), { kinds: ['wearable'], emptyMsg: 'No items yet — make one in the Items Workshop.',
-    onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
+    onPick: (c) => { location.href = '/forge/items/?shelf=' + c.id; } });
   renderShelf(el('psEmotes'), { kinds: ['emoji'], emptyMsg: 'No emotes yet — draw one in the forge.',
     onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
 
@@ -263,7 +263,10 @@ async function init() {
   //   to its own tool (banana → builder, item/emote → forge) —
   renderShelf(el('psOvCreations'), { limit: 4,
     emptyMsg: 'Nothing yet — build a banana, forge an emoji or make an item and it lands here.',
-    onPick: (c) => { location.href = c.kind === 'banana' ? '/make-a-banana/?' + c.params : '/forge/?shelf=' + c.id; } });
+    onPick: (c) => {
+      location.href = c.kind === 'banana' ? '/make-a-banana/?' + c.params
+        : (c.kind === 'wearable' ? '/forge/items/?shelf=' : '/forge/?shelf=') + c.id;
+    } });
 
   // 🛍 the offer, at the BOTTOM of the overview — you have just scrolled past
   // your badges and everything you have made, which is the one moment on this

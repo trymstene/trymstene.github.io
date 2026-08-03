@@ -1,0 +1,52 @@
+---
+// 🎁 THE ITEMS WORKSHOP — the Forge's Banana-World bench at its own address.
+// Split out of /forge/ (task #102) so the emoji maker can court "emoji maker"
+// searchers undistracted while this page speaks pure world vocabulary.
+// Noindexed: the world's doors are its entrance, not Google.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ForgeStudio from '../../components/ForgeStudio.astro';
+
+const title = 'The Items Workshop — draw wearables for Banana World';
+const description = 'Draw an item right on the dancing banana — a hat, a sword, a rubber duck — and submit it to the club. Approved items drop at the live rave with your name riding them.';
+---
+<BaseLayout
+  title={title}
+  description={description}
+  robots="noindex,follow"
+  ogTitle="The Items Workshop 🎁"
+  ogDescription="Draw an item on the dancing banana and submit it to the club — approved items drop at the rave with your name riding them."
+  ogImage="https://trymstene.com/assets/og/builder.png"
+>
+  <div class="fg-wrap">
+    <div class="fg-head">
+      <h1>the items workshop</h1>
+      <p>
+        The banana runs <a href="/rave/">a club</a> — and the club takes submissions. <strong>Draw an item
+        right on him</strong> — a hat, a sword, a rubber duck — and send it in. If it makes the cut, it
+        becomes a rave drop: strangers catch it, wear it, dance in it, and <strong>your name rides it</strong> the whole way.
+      </p>
+    </div>
+
+    <ForgeStudio mode="items" />
+
+    <section class="fg-steps" aria-label="How the Items Workshop works">
+      <h2>How an item becomes a drop</h2>
+      <div class="fg-stepgrid">
+        <div class="fg-step"><b>1</b><span><strong>Draw it on him</strong> — the banana's already on the canvas. Where you draw is where it rides: head, hand, feet, wherever.</span></div>
+        <div class="fg-step"><b>2</b><span><strong>Play the dance</strong> — hit ▶ and watch him boogie wearing it. If it looks good mid-dance, it's good.</span></div>
+        <div class="fg-step"><b>3</b><span><strong>Submit to the club</strong> — name it, sign it, send it to the banana guy. The verdict lands on <a href="/pass/">your pass</a>.</span></div>
+        <div class="fg-step"><b>4</b><span><strong>It drops at <a href="/rave/">the rave</a></strong> — approved items float onto the floor. Whoever catches yours wears it everywhere, with your name riding along.</span></div>
+      </div>
+    </section>
+
+    <section class="fg-doorswrap" aria-label="More from Banana World">
+      <h2>More from the banana world</h2>
+      <div class="fg-doors">
+        <a href="/rave/" data-place="items-doors"><b>The Banana Rave 🪩</b><span>Where approved items drop — a live pixel dance floor where every banana is a real visitor.</span></a>
+        <a href="/pass/" data-place="items-doors"><b>Your Banana Pass 🎫</b><span>Your saved items live on your shelf, and submission verdicts land here.</span></a>
+        <a href="/make-a-banana/" data-place="items-doors"><b>Dress the banana 🍌</b><span>Build your own dancing banana — hats, shades, captions — and download it free.</span></a>
+        <a href="/forge/" data-place="items-doors"><b>The Pixel Forge 🎨</b><span>The other bench: draw emoji, emotes and animated GIFs from scratch, free.</span></a>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

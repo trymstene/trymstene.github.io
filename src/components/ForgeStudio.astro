@@ -1,0 +1,442 @@
+---
+// THE FORGE STUDIO — the shared editor both benches render.
+// One script (pixel-forge.js), two pages: /forge/ (emoji/GIF maker, the SEO
+// product) and /forge/items/ (the Banana-World Items Workshop, noindexed).
+// The PAGE declares the bench via data-mode on the canvas — the script never
+// switches modes at runtime anymore, so each page ships only its own markup
+// and only the items bench ever pulls the banana compositor.
+import PixelArtIcon from './PixelArtIcon.astro';
+
+const { mode } = Astro.props; // 'emoji' | 'items'
+const items = mode === 'items';
+---
+<style is:global>
+  .fg-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
+  .fg-head h1 { margin: 0 0 0.3rem; }
+  .fg-head p { margin: 0 0 1.4rem; opacity: 0.8; max-width: 62ch; }
+
+  /* LAYOUT — work on the left (canvas + frames), tools on the right,
+     ordered by how often a hand actually reaches for them */
+  .fg-grid { display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
+  @media (min-width: 920px) {
+    .fg-grid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+    .fg-stagecol { grid-column: 1; grid-row: 1; }
+    .fg-export { grid-column: 1; grid-row: 2; margin-top: 0; } /* hugs the frames — no void under wide imports */
+    .fg-side { grid-column: 2; grid-row: 1 / span 2; }
+  }
+
+  .fg-stagecard { position: relative; border: var(--line); background: var(--paper); box-shadow: var(--shadow); padding: 0.8rem; }
+  #fgCanvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
+  /* items-mode status as a quick toast pinned to the top of the canvas */
+  .fg-toast {
+    position: absolute; top: calc(0.8rem + 10px); left: 50%; z-index: 6;
+    transform: translate(-50%, -6px); pointer-events: none;
+    max-width: calc(100% - 2rem); text-align: center; text-wrap: balance;
+    padding: 0.4rem 0.85rem; border-radius: 14px;
+    font-weight: 800; font-size: 0.85rem; letter-spacing: 0.01em;
+    background: var(--ink); color: var(--paper); box-shadow: 0 5px 16px rgba(0,0,0,0.28);
+    opacity: 0; transition: opacity 0.28s ease, transform 0.28s ease;
+  }
+  .fg-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+  /* the "draw your item" invite is a standing prompt (banana yellow), the
+     "rides the …" confirmations flash by (ink) */
+  .fg-toast.is-sticky { background: var(--banana); color: var(--ink); box-shadow: 0 5px 16px rgba(0,0,0,0.16); }
+  @media (prefers-reduced-motion: reduce) { .fg-toast { transition: opacity 0.28s ease; transform: translate(-50%, 0); } }
+
+  .fg-side { display: grid; gap: 1rem; align-content: start; }
+  .fg-panel { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.9rem; }
+  .fg-panel h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+
+  .fg-tools { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .fg-tools + .fg-tools, .fg-toolgrid + .fg-tools { margin-top: 0.65rem; }
+  .fg-toolgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .fg-toolgrid > button {
+    border: 3px solid var(--ink); background: var(--paper); padding: 0.5rem 0.4rem;
+    font-weight: 700; cursor: pointer; font-size: 0.85rem;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .fg-toolgrid > button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+  .fg-tools > button {
+    border: 3px solid var(--ink); background: var(--paper); padding: 0.45rem 0.65rem;
+    font-weight: 700; cursor: pointer; font-size: 0.85rem;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .fg-tools > button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+  .fg-tools > button[disabled] { opacity: 0.4; cursor: default; }
+  .fg-lab { flex-basis: 100%; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; }
+
+  /* COMPACT TOOLBAR — icon-only tools, popovers for brush + colour (MS-Paint-ish) */
+  .fg-bar { position: relative; padding: 0.7rem; }
+  .fg-toolrow { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .fg-tool {
+    width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    border: 3px solid var(--ink); background: var(--paper); cursor: pointer; font-size: 1.05rem; padding: 0;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .fg-tool[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+  .fg-tool .pai { display: block; } /* pixelarticons UI icon — colour follows currentColor */
+  /* buttons/headings that pair a pixel icon with a text label — align on one line */
+  .btn:has(> .pai), .fg-palbtn:has(> .pai), .fg-modetab:has(> .pai),
+  .fg-framectl button:has(> .pai), .fg-exphead:has(> .pai) {
+    display: inline-flex; align-items: center; gap: 0.35rem; justify-content: center;
+  }
+  .fg-framectl button:has(> .pai) { gap: 0.25rem; }
+  .fg-toast .pai { vertical-align: -0.14em; }
+  .fg-tool[disabled] { opacity: 0.4; cursor: default; }
+  .fg-tool--wide { width: auto; min-width: 50px; gap: 0.28rem; font-weight: 800; font-size: 0.9rem; padding: 0 0.4rem; }
+  .fg-brushdot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
+  .fg-colorbtn { background: #ffe135; box-shadow: inset 0 0 0 3px var(--paper); }
+  .fg-vsep { width: 3px; align-self: stretch; background: rgba(17, 17, 17, 0.14); margin: 3px 0.12rem; }
+  .fg-pop {
+    position: absolute; z-index: 20; left: 0.7rem; right: 0.7rem; margin-top: 0.5rem;
+    border: 3px solid var(--ink); background: var(--paper); box-shadow: 5px 5px 0 var(--ink); padding: 0.75rem;
+  }
+  .fg-pop[hidden] { display: none; }
+  .fg-pop > label { display: block; margin-bottom: 0.45rem; }
+  .fg-pop input[type="range"] { width: 100%; }
+  /* the un-boxed Items controls (the tab already says "Items Workshop") */
+  .fg-itemsbar { display: flex; flex-direction: column; gap: 0.6rem; }
+  .fg-itemsbar .btn { width: 100%; }
+
+  /* PALETTE — material-style: 8 hue mains, one shades strip, your colours */
+  .fg-mains { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.4rem; }
+  .fg-swatch { aspect-ratio: 1; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
+  .fg-swatch[aria-pressed="true"] { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
+  .fg-main--active:not([aria-pressed="true"]) { outline: 3px dashed rgba(17, 17, 17, 0.4); outline-offset: 1px; }
+  .fg-shades { display: flex; gap: 0.35rem; margin-top: 0.55rem; min-height: 27px; }
+  .fg-shades .fg-swatch { flex: 0 0 27px; height: 27px; aspect-ratio: auto; border-width: 2px; }
+  .fg-customs { display: flex; gap: 0.35rem; margin-top: 0.55rem; flex-wrap: wrap; align-items: center; }
+  .fg-customs .fg-swatch { flex: 0 0 27px; height: 27px; aspect-ratio: auto; border-width: 2px; border-radius: 50%; } /* round = yours */
+  .fg-customs > button.fg-palbtn {
+    border: 3px solid var(--ink); background: var(--paper); padding: 0.3rem 0.55rem;
+    font-weight: 700; cursor: pointer; font-size: 0.78rem;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .fg-hiddeninput { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+  .fg-importnote { font-size: 0.72rem; opacity: 0.65; margin: 0.5rem 0 0; }
+
+  /* 🍌 THE TWO BENCHES — same look as the old mode tabs, but they are LINKS:
+     each bench is its own page now, and the tab for the other one is a door */
+  .fg-modebar { display: flex; gap: 0.6rem; margin: 0 0 1.1rem; }
+  .fg-modetab {
+    flex: 1; border: 3px solid var(--ink); background: var(--paper); padding: 0.65rem 0.5rem;
+    font-weight: 800; font-size: 0.98rem; cursor: pointer; box-shadow: 4px 4px 0 var(--ink);
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    text-decoration: none; color: inherit; text-align: center;
+  }
+  .fg-modetab.is-here { background: var(--banana); box-shadow: inset 3px 3px 0 rgba(17, 17, 17, 0.16); cursor: default; }
+  .fg-riding { font-size: 0.82rem; font-weight: 800; color: #0e9fb5; margin: 0.35rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  #fgItemsSave { width: 100%; }
+
+  /* the killer feature: your emoji at REAL chat size, live */
+  .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
+  .fg-chat__meta { font-weight: 700; color: #fffdf5; margin-bottom: 0.2rem; }
+  .fg-chat__meta span { font-weight: 400; font-size: 0.7rem; opacity: 0.55; margin-left: 0.4rem; }
+  .fg-chat p { margin: 0; display: flex; align-items: center; gap: 0.35rem; }
+  #fgPreview { image-rendering: pixelated; width: 32px; height: 32px; }
+
+  /* collapsed setup: once-per-session stuff stays out of the way */
+  details.fg-panel > summary { cursor: pointer; font-weight: 800; font-size: 0.95rem; list-style: none; }
+  details.fg-panel > summary::-webkit-details-marker { display: none; }
+  details.fg-panel > summary::after { content: '＋'; float: right; }
+  details.fg-panel[open] > summary::after { content: '−'; }
+  details.fg-panel[open] > summary { margin-bottom: 0.6rem; }
+
+  /* ANIMATE — frames live right under the canvas */
+  .fg-framesrow { margin-top: 1rem; }
+  .fg-frames { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .fg-frame { position: relative; border: 3px solid var(--ink); background: #f4f1e8; cursor: pointer; line-height: 0; }
+  .fg-frame canvas { width: 56px; height: 56px; image-rendering: pixelated; }
+  .fg-frame span { position: absolute; left: 2px; top: 2px; font-size: 0.6rem; font-weight: 800; line-height: 1; background: var(--paper); padding: 1px 3px; }
+  .fg-frame--cur { outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px; }
+  .fg-framectl { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
+  .fg-framectl button { border: 3px solid var(--ink); background: var(--paper); font-weight: 700; padding: 0.4rem 0.6rem; cursor: pointer; }
+  .fg-framectl button[disabled] { opacity: 0.4; cursor: default; }
+  .fg-framectl button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+  #fgDelay { width: 5rem; border: 3px solid var(--ink); padding: 0.35rem 0.4rem; font: inherit; }
+  #fgFrameInfo { font-size: 0.8rem; opacity: 0.7; }
+
+  .fg-export { margin-top: 1.6rem; }
+  .fg-exphead { margin: 0 0 0.5rem; font-size: 0.95rem; }
+  .fg-exprow { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  .fg-exprow .btn { font-size: 0.82rem; padding: 0.55rem 0.8rem; }
+  /* ── the under-tool landing sections: visual, wide, to the point ── */
+  .fg-story, .fg-exports, .fg-steps, .fg-drawgif, .fg-faq { margin-top: 2.4rem; }
+  .fg-story { border-top: var(--line); padding-top: 1.8rem; }
+  .fg-story h2, .fg-exports h2, .fg-steps h2, .fg-faq h2 { margin: 0 0 0.7rem; font-size: 1.25rem; }
+  .fg-story p { max-width: 74ch; line-height: 1.6; margin: 0; }
+
+  /* platform export cards — the size IS the headline */
+  .fg-expgrid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .fg-exp {
+    display: block; text-decoration: none; color: var(--ink);
+    border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink));
+    padding: 0.85rem 0.95rem;
+  }
+  .fg-exp:hover { background: var(--banana); }
+  .fg-exp b { display: block; font-size: 1.45rem; line-height: 1.1; }
+  .fg-exp span { display: block; font-weight: 800; font-size: 0.85rem; margin-top: 0.15rem; }
+  .fg-exp small { display: block; font-size: 0.74rem; opacity: 0.65; margin-top: 0.15rem; }
+
+  /* numbered step tiles — big pixel numbers, one line each */
+  .fg-stepgrid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .fg-step {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink));
+    padding: 0.85rem 0.95rem;
+  }
+  .fg-step b {
+    flex: 0 0 auto; width: 2rem; height: 2rem; display: grid; place-items: center;
+    background: var(--ink); color: var(--banana); font-size: 1.15rem;
+  }
+  .fg-step span { font-size: 0.88rem; line-height: 1.5; }
+
+  /* the draw-a-GIF callout — one loud banana band */
+  .fg-drawgif {
+    border: var(--line); background: var(--banana); box-shadow: var(--shadow);
+    padding: 1.2rem 1.4rem;
+  }
+  .fg-drawgif h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+  .fg-drawgif p { max-width: 74ch; line-height: 1.6; margin: 0; }
+
+  /* pixel-fact strip — ink cards, banana numbers */
+  .fg-facts { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-top: 2.4rem; }
+  .fg-fact { border: var(--line); background: var(--ink); color: var(--paper); box-shadow: var(--shadow); padding: 0.9rem 1rem; font-size: 0.85rem; line-height: 1.5; }
+  .fg-fact b { display: block; font-size: 1.7rem; color: var(--banana); margin-bottom: 0.25rem; }
+
+  /* visible FAQ — real content, same text the FAQPage markup carries */
+  .fg-faqgrid { display: grid; gap: 0.6rem; align-items: start; }
+  @media (min-width: 760px) { .fg-faqgrid { grid-template-columns: 1fr 1fr; } }
+  .fg-faq details { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.65rem 0.9rem; }
+  .fg-faq summary { font-weight: 800; cursor: pointer; font-size: 0.95rem; }
+  .fg-faq details > p { margin: 0.5rem 0 0.2rem; line-height: 1.6; font-size: 0.92rem; }
+
+  /* doors to the rest of the site */
+  .fg-doorswrap { margin-top: 2.4rem; border-top: var(--line); padding-top: 1.6rem; }
+  .fg-doorswrap h2 { margin: 0 0 0.9rem; font-size: 1.25rem; }
+  .fg-doors { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .fg-doors a { display: block; border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.8rem 0.9rem; text-decoration: none; color: inherit; }
+  .fg-doors a:hover b { text-decoration: underline; }
+  .fg-doors b { display: block; margin-bottom: 0.25rem; }
+  .fg-doors span { font-size: 0.83rem; opacity: 0.75; line-height: 1.5; display: block; }
+  /* the spot picker — chips that wrap, because the side panel is 300px and a
+     six-item row never fits on one line there */
+  .fg-spots {
+    display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center;
+    margin-bottom: 0.6rem;
+  }
+  .fg-spots[hidden] { display: none; }
+  .fg-spotlabel { font-size: 0.78rem; font-weight: 800; opacity: 0.6; margin-right: 0.15rem; }
+  .fg-spot {
+    appearance: none; font: inherit; font-size: 0.78rem; font-weight: 800;
+    padding: 0.28rem 0.5rem; border: 2px solid var(--ink); background: var(--paper);
+    color: var(--ink); cursor: pointer; border-radius: 2px; line-height: 1.1;
+    display: inline-flex; align-items: center; gap: 0.22rem; white-space: nowrap;
+  }
+  .fg-spot:hover { transform: translateY(-1px); }
+  .fg-spot.is-on { background: var(--banana, #ffe135); box-shadow: 2px 2px 0 var(--ink); }
+  .fg-spot__auto { font-style: normal; font-size: 0.7em; opacity: 0.55; }
+  .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+  .fg-signrow[hidden] { display: none; }
+  .fg-signrow input {
+    flex: 1; min-width: 0; padding: 0.55rem 0.7rem; border: 3px solid var(--ink);
+    font-family: inherit; font-size: 0.95rem; background: var(--paper); border-radius: 2px;
+  }
+  /* the ITEMS submit row: two inputs + a no-wrap button can never share the
+     300px side panel — stack it like the rest of the items bar */
+  #fgItemsSubRow { flex-direction: column; }
+  #fgItemsSubRow input { flex: none; width: 100%; box-sizing: border-box; }
+  #fgDone { margin-top: 0.8rem; border: 3px solid var(--ink); background: var(--banana); padding: 0.7rem 0.9rem; font-size: 0.9rem; }
+  #fgDone a { font-weight: 700; }
+
+  /* the banana-themed confirm — no stock dialogs in this house */
+  #fgModal { position: fixed; inset: 0; z-index: 60; background: rgba(17, 17, 17, 0.55);
+    display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  #fgModal[hidden] { display: none; }
+  .fg-modalcard { position: relative; background: var(--paper); border: 3px solid var(--ink);
+    border-top: 10px solid var(--banana); box-shadow: 8px 8px 0 var(--ink);
+    max-width: 360px; width: 100%; padding: 1.1rem 1.2rem; transform: rotate(-0.6deg); }
+  .fg-modalcard h3 { margin: 0 0 0.4rem; padding-right: 2.6rem; }
+  .fg-modalcard p { margin: 0 0 0.9rem; line-height: 1.5; font-size: 0.92rem; }
+  .fg-modalnana { position: absolute; top: -34px; right: 10px; width: 38px; height: auto;
+    image-rendering: pixelated; transform: rotate(6deg); }
+  .fg-modalrow { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  #fgModalAlt[hidden] { display: none; } /* .btn sets display — hidden must still win */
+
+  @media (max-width: 919px) {
+    .fg-frame canvas { width: 48px; height: 48px; }
+    .fg-panel { padding: 0.8rem; }
+  }
+</style>
+
+<div class="fg-modebar" aria-label="The Forge's two benches">
+  {items ? (
+    <>
+      <a class="fg-modetab" href="/forge/" title="Make an emoji, emote or GIF"><PixelArtIcon name="gif" size="20px" /> Emoji / GIF</a>
+      <span class="fg-modetab is-here" aria-current="page"><PixelArtIcon name="shirt" size="20px" /> Items Workshop</span>
+    </>
+  ) : (
+    <>
+      <span class="fg-modetab is-here" aria-current="page"><PixelArtIcon name="gif" size="20px" /> Emoji / GIF</span>
+      <a class="fg-modetab" href="/forge/items/" title="Make a wearable item the banana can wear at the rave"><PixelArtIcon name="shirt" size="20px" /> Items Workshop</a>
+    </>
+  )}
+</div>
+
+<div class="fg-grid">
+  <div class="fg-stagecol">
+    <div class="fg-stagecard">
+      {items && <div class="fg-toast" id="fgCanvasToast" role="status" aria-live="polite"></div>}
+      <canvas id="fgCanvas" width="512" height="512" data-mode={mode} aria-label="Pixel drawing canvas"></canvas>
+    </div>
+    {!items && (
+      <div class="fg-framesrow">
+        <div class="fg-frames" id="fgFrames"></div>
+        <div class="fg-framectl">
+          <button id="fgPlay" title="Play the animation on the big canvas (Space)" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play</button>
+          <button id="fgAdd" title="New empty frame"><PixelArtIcon name="plus" size="18px" /> frame</button>
+          <button id="fgDup" title="Duplicate this frame" aria-label="Duplicate this frame"><PixelArtIcon name="duplicate" size="20px" /></button>
+          <button id="fgDel" title="Delete this frame" aria-label="Delete this frame"><PixelArtIcon name="trash" size="20px" /></button>
+          <button id="fgClear" title="Wipe this frame clean" aria-label="Wipe this frame clean"><PixelArtIcon name="eraser" size="20px" /></button>
+          <button id="fgMoveL" title="Move this frame earlier" aria-label="Move this frame earlier"><PixelArtIcon name="chevron-left" size="20px" /></button>
+          <button id="fgMoveR" title="Move this frame later" aria-label="Move this frame later"><PixelArtIcon name="chevron-right" size="20px" /></button>
+          <button id="fgOnion" title="Ghost of the previous frame (O)" aria-label="Onion skin — ghost of previous frame"><PixelArtIcon name="eye" size="20px" /></button>
+          <label for="fgDelay" style="font-size:0.8rem;">delay</label>
+          <input id="fgDelay" type="number" min="50" max="1000" step="10" value="120"> <span style="font-size:0.8rem;opacity:0.7;">ms</span>
+          <span id="fgFrameInfo"></span>
+        </div>
+      </div>
+    )}
+  </div>
+
+  <div class="fg-side">
+    <div class="fg-panel fg-bar">
+      <div class="fg-toolrow" role="toolbar" aria-label="Tools">
+        <button class="fg-tool" data-tool="pencil" title="Pencil (B)" aria-label="Pencil" aria-pressed="true"><PixelArtIcon name="pencil" /></button>
+        <button class="fg-tool" data-tool="eraser" title="Eraser (E)" aria-label="Eraser"><PixelArtIcon name="eraser" /></button>
+        <button class="fg-tool" data-tool="fill" title="Fill (F)" aria-label="Fill"><PixelArtIcon name="paint-bucket" /></button>
+        <button class="fg-tool" data-tool="picker" title="Pick a colour (I)" aria-label="Pick colour"><PixelArtIcon name="pipette" /></button>
+        <span class="fg-vsep"></span>
+        <button class="fg-tool fg-tool--wide" id="fgBrushBtn" title="Brush size" aria-label="Brush size"><span class="fg-brushdot"></span><b id="fgBrushLbl">1</b></button>
+        <button class="fg-tool fg-colorbtn" id="fgColorBtn" title="Colour — click to choose" aria-label="Choose a colour"></button>
+        <span class="fg-vsep"></span>
+        <button class="fg-tool" id="fgUndo" title="Undo (Ctrl+Z)" aria-label="Undo"><PixelArtIcon name="undo" /></button>
+        <button class="fg-tool" id="fgRedo" title="Redo (Ctrl+Y)" aria-label="Redo"><PixelArtIcon name="redo" /></button>
+        <button class="fg-tool" id="fgFlipH" title="Flip horizontally" aria-label="Flip horizontally"><PixelArtIcon name="flip-horizontal" /></button>
+        <button class="fg-tool" id="fgFlipV" title="Flip vertically" aria-label="Flip vertically"><PixelArtIcon name="flip-vertical" /></button>
+        <button class="fg-tool" id="fgShL" title="Nudge left" aria-label="Nudge left"><PixelArtIcon name="arrow-left" /></button>
+        <button class="fg-tool" id="fgShR" title="Nudge right" aria-label="Nudge right"><PixelArtIcon name="arrow-right" /></button>
+        <button class="fg-tool" id="fgShU" title="Nudge up" aria-label="Nudge up"><PixelArtIcon name="arrow-up" /></button>
+        <button class="fg-tool" id="fgShD" title="Nudge down" aria-label="Nudge down"><PixelArtIcon name="arrow-down" /></button>
+      </div>
+
+      <div class="fg-pop" id="fgBrushPop" hidden>
+        <label class="fg-lab" for="fgBrushRange">brush <b id="fgBrushVal">1</b> px</label>
+        <input id="fgBrushRange" type="range" min="1" max="8" value="1">
+      </div>
+
+      <div class="fg-pop fg-colorpop" id="fgColorPop" hidden>
+        <div class="fg-mains" id="fgMains" role="group" aria-label="Colour families"></div>
+        <div class="fg-shades" id="fgShades" role="group" aria-label="Shades of the picked family"></div>
+        <div class="fg-customs" id="fgCustomsRow" role="group" aria-label="Your colours">
+          <span id="fgCustoms" style="display:contents"></span>
+          <button class="fg-palbtn" id="fgPalAdd" title="Pick any colour — it joins your palette"><PixelArtIcon name="plus" size="15px" /> your colour</button>
+          <button class="fg-palbtn" id="fgPalEdit" title="Refine this custom colour" hidden><PixelArtIcon name="edit" size="15px" /> tweak</button>
+        </div>
+      </div>
+      <input id="fgColorInput" type="color" class="fg-hiddeninput" aria-label="Custom colour picker">
+    </div>
+
+    {!items && (
+      <div class="fg-panel">
+        <h3>Live at chat size</h3>
+        <div class="fg-chat" aria-hidden="true">
+          <div class="fg-chat__meta">banana_guy <span>today at 19:99</span></div>
+          <p>my new emoji <canvas id="fgPreview" width="32" height="32"></canvas> just dropped</p>
+        </div>
+      </div>
+    )}
+
+    {!items && (
+      <details class="fg-panel">
+        <summary>Canvas &amp; import</summary>
+        <div class="fg-tools" role="group" aria-label="Canvas size">
+          <span class="fg-lab">grid</span>
+          <button class="fg-size" data-size="32">32</button>
+          <button class="fg-size" data-size="48">48</button>
+          <button class="fg-size" data-size="64">64</button>
+        </div>
+        <div class="fg-tools" role="group" aria-label="Import">
+          <span class="fg-lab">start from</span>
+          <button id="fgBanana" title="Load the 1999 dancing banana onto the grid and remix it">🍌 Remix the banana</button>
+          <button id="fgImportBtn" title="Pixelate an existing GIF or image onto the grid — draw an item, or bring one in from Photoshop"><PixelArtIcon name="upload" size="18px" /> Import GIF / image</button>
+        </div>
+        <input id="fgImportFile" type="file" accept="image/gif,image/png,image/webp,image/jpeg" class="fg-hiddeninput" aria-label="Import an image">
+        <p class="fg-importnote">Imports get pixelated onto the grid — colours it can't match join your palette.</p>
+      </details>
+    )}
+
+    {items && (
+      <div class="fg-itemsbar">
+        <!-- ⭐ THE SPOT PICKER. The drawing SUGGESTS where an item rides (nearest
+             anchor to its centre) and that suggestion is right almost always —
+             but a Phantom mask that hangs past the eyeline pulls its own centre
+             into the chest zone and gets called body gear (Jade, 1 Aug). Where a
+             thing goes is authorial intent; the maker gets the last word. ✦ marks
+             what the drawing thinks, so disagreeing is informed. -->
+        <div class="fg-spots" id="fgItemSpot" hidden aria-label="Where this item rides"></div>
+        <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play the dance</button>
+        <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
+        <button class="btn btn--light" id="fgItemsSubmit" title="Send it to the banana guy — approved items drop at the rave with your name on them"><PixelArtIcon name="upload" size="18px" /> Submit to the club</button>
+        <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over"><PixelArtIcon name="eraser" size="18px" /> Clear &amp; start over</button>
+        <div class="fg-signrow" id="fgItemsSubRow" hidden>
+          <input id="fgItemName" maxlength="40" placeholder="name your item — e.g. Wizard Hat" aria-label="Item name">
+          <input id="fgItemBy" maxlength="24" placeholder="your name — optional" aria-label="Your name (optional)">
+          <button class="btn btn--dark" id="fgItemSend">Send it in</button>
+        </div>
+        <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>.</div>
+        <div id="fgItemsSubDone" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved items become <b>rave drops</b> with your name riding them.</div>
+      </div>
+    )}
+  </div>
+
+  {!items && (
+    <div class="fg-export">
+      <h3 class="fg-exphead"><PixelArtIcon name="zap" size="18px" /> Forge it — transparent, chat-ready</h3>
+      <div class="fg-exprow">
+        <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="128">GIF 128px · Discord &amp; Slack</button>
+        <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="112">GIF 112px · Twitch</button>
+        <button class="btn btn--dark fg-exp" data-fmt="gif" data-px="512">GIF 512px · hi-res</button>
+        <button class="btn btn--dark fg-exp" data-fmt="png" data-px="512">PNG 512px · this frame</button>
+      </div>
+      <button class="btn btn--light" id="fgSave" title="Park this draft on your shelf and start another"><PixelArtIcon name="save" size="18px" /> Save to shelf</button>
+      <!-- legacy id (the Wall era) — the flow feeds the GALLERY via HQ approval -->
+      <button class="btn btn--light" id="fgWallSubmit" title="The banana guy hangs the best ones in the gallery"><PixelArtIcon name="image" size="18px" /> Submit to the gallery</button>
+      <div class="fg-signrow" id="fgSignRow" hidden>
+        <input id="fgSignName" maxlength="24" placeholder="sign it — optional, e.g. PixelPetter" aria-label="Sign your emoji before sending it to the gallery (optional)">
+        <button class="btn btn--dark" id="fgSignSend">Send it in</button>
+      </div>
+      <div id="fgDone" hidden>
+        🎉 Forged — and saved to <a href="/pass/">your pass</a>. Drop it straight into Discord, Slack or Twitch.
+        Feeling proud? <a href="/make-a-banana/" data-place="forge">The banana would love company →</a>
+      </div>
+    </div>
+  )}
+</div>
+
+<div id="fgModal" hidden role="dialog" aria-modal="true" aria-labelledby="fgModalTitle">
+  <div class="fg-modalcard">
+    <img class="fg-modalnana" src="/assets/dancing-banana-transparent.gif" alt="" width="38" height="54">
+    <h3 id="fgModalTitle"></h3>
+    <p id="fgModalBody"></p>
+    <div class="fg-modalrow">
+      <button class="btn btn--dark" id="fgModalYes"></button>
+      <button class="btn btn--light" id="fgModalAlt" hidden></button>
+      <button class="btn btn--light" id="fgModalNo"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import '../scripts/pixel-forge.js';
+</script>

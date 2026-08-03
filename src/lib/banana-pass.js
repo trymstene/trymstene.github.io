@@ -199,6 +199,7 @@ export function passVisit() {
   if (p.days.length >= 5) passPatch('regular');
   if (today < OG_CUTOFF) passPatch('og', { quiet: true }); // quietly — it's a surprise for later
   noticeMultiItem();
+  noticeItemsWorkshopMove();
 }
 
 // 🧢 THE ONE FEATURE NOTICE. A visitor wrote in on 2 Aug asking to wear
@@ -228,6 +229,34 @@ export function noticeMultiItem() {
       + 'asked — so: one item per spot, so a hat and a jacket and boots all fit at once. '
       + 'Go and pile them on.',
     link: '/make-a-banana/',
+  });
+}
+
+// 🔨 THE WORKSHOP MOVED (task #102, 3 Aug 2026). Same anti-fatigue gate as
+// above: only someone who has actually MADE an item — a wearable on the shelf
+// or a catalog submission — gets told the bench has its own address. Everyone
+// else never had a workshop to lose. Old /forge/?shelf= links self-redirect.
+function madeAnyItem() {
+  try {
+    const shelf = JSON.parse(localStorage.getItem('shelf-v1') || '[]');
+    if (Array.isArray(shelf) && shelf.some((c) => c && c.kind === 'wearable')) return true;
+  } catch (e) {}
+  try {
+    const subs = JSON.parse(localStorage.getItem('cat-subs-v1') || '[]');
+    if (Array.isArray(subs) && subs.length) return true;
+  } catch (e) {}
+  return false;
+}
+
+export function noticeItemsWorkshopMove() {
+  if (!madeAnyItem()) return;
+  passNoticeAdd({
+    id: 'items-workshop-move-2026-08',
+    icon: '🔨',
+    text: '<b>The Items Workshop has its own bench now.</b> It moved next door to '
+      + '<b>/forge/items/</b> — same canvas, same banana, same submit-to-the-club. '
+      + 'Your saved items open there automatically, and old links find their own way over.',
+    link: '/forge/items/',
   });
 }
 
@@ -372,7 +401,7 @@ export async function checkCatalogVerdicts(opts = {}) {
           id: 'cat-' + s.sid,
           icon: '🔧',
           text: '<b>“' + title + '”</b> didn’t make the catalog this time — the club hangs only a few. Back to the workshop!',
-          link: '/forge/',
+          link: '/forge/items/',
         });
       }
     }

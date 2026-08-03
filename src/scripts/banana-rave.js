@@ -42,7 +42,7 @@ const SCREEN_MSGS = [
 ];
 const SCREEN_ADS = [
   { id: 'forge',   text: 'MAKE YOUR OWN EMOTE',          cta: 'the pixel forge →',      href: '/forge/' },
-  { id: 'items',   text: 'DRAW THE NEXT DROP',           cta: 'the items workshop →',   href: '/forge/' },
+  { id: 'items',   text: 'DRAW THE NEXT DROP',           cta: 'the items workshop →',   href: '/forge/items/' },
   // 🛍 the one ad that shows the PRODUCT, and the product is THEIR banana — the
   // floor is full of people who already dressed one up, so the screen just holds
   // it up as vinyl. `art:'me'` makes render() paint the outfit they're wearing.
