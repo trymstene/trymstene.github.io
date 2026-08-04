@@ -391,44 +391,100 @@ if HAVE_PACK:
     if _kit['h'] and _kit['v_w']:
         for _t in (1, 2, 3):
             lay_fence_tier(_kit, _t)
-        # 🪵 PLAYER-BUILT FENCES (Trym: "fence is something you should be able
-        # to set up yourself"): the kit ships as loose 48px tiles, the ENGINE
-        # picks pieces by neighbour state — runs, ends, verticals, lone posts.
-        for _k, _tile in _kit.items():
-            if _tile:
-                _tile.save(os.path.join(OUT, 'f-%s.png' % _k.replace('_', '')), optimize=True)
-        print('  fence kit tiles: %s' % ', '.join(sorted(k.replace('_', '') for k, v in _kit.items() if v)))
+        # 🪵 PLAYER-BUILT FENCES — Type_2 (the pack promo's log-rail
+        # fence, Trym's pick): SIDE-VIEW rails, so every direction is the same
+        # family and corners are corner-proof by construction. Same engine
+        # grammar keys; verticals/ends just remap onto rail pieces.
+        _F2 = lambda n, v: 'Wooden_Fence_Type_2_Brown_%d_Vers_%d*48x48.png' % (n, v)
+        FENCE2 = {'endl': _F2(1, 1), 'h': _F2(2, 1), 'h2': _F2(2, 2), 'endr': _F2(2, 1),
+                  'jl': _F2(1, 1), 'jr': _F2(2, 1), 'vw': _F2(2, 1), 've': _F2(2, 2),
+                  'gl': _F2(6, 1), 'gr': _F2(6, 1)}
+        _fok = 0
+        for _k, _n in FENCE2.items():
+            _t2 = farm_sprite(_n)
+            if _t2 is not None:
+                _t2.save(os.path.join(OUT, 'f-%s.png' % _k), optimize=True)
+                _fok += 1
+        print('  fence kit tiles (Type_2): %d/10' % _fok)
 
-# ---- 🪏 ARABLE SOIL — the pack's OWN modular topsoil (Trym: the square
-# blocks "look like im putting down brown square blocks"). 16 pieces = a full
-# neighbour-mask autotile grammar: big 9-slice patches, 1-tall strips, 1-wide
-# columns, and the isolated single. The ENGINE picks by neighbours.
+# ---- 🪏 ORGANIC SOIL — the promo's terrain autotile (Trym: "we should
+# use these, looks way more organic"). The Godot sheet stacks 14 terrains of
+# 12x4 tiles; we pick the tilled-dirt block and EDGE-CLASSIFY its 48 tiles
+# (green fringe on a side = that side is an outer edge) to map our 16
+# neighbour masks. Engine keys unchanged — only the art swaps.
 BED_W, BED_H = 280, 100          # legacy geometry, kept for old-save migration
-SOIL_PIECES = {
-    'iso': 'Topsoil_Arable_Horizontal_Single_48x48.png',
-    'hl': 'Topsoil_Arable_Small_Horizontal_Modular_Left_48x48.png',
-    'hm': 'Topsoil_Arable_Small_Horizontal_Modular_Middle_48x48.png',
-    'hr': 'Topsoil_Arable_Small_Horizontal_Modular_Right_48x48.png',
-    'vu': 'Topsoil_Arable_Small_Vertical_Modular_Upper_48x48.png',
-    'vm': 'Topsoil_Arable_Small_Vertical_Modular_Middle_48x48.png',
-    'vb': 'Topsoil_Arable_Small_Vertical_Modular_Bottom_48x48.png',
-    'ul': 'Topsoil_Arable_Big_Modular_Upper_Left_48x48.png',
-    'um': 'Topsoil_Arable_Big_Modular_Upper_Middle_48x48.png',
-    'ur': 'Topsoil_Arable_Big_Modular_Upper_Right_48x48.png',
-    'ml': 'Topsoil_Arable_Big_Modular_Middle_Left_48x48.png',
-    'mc': 'Topsoil_Arable_Big_Modular_Middle_Central_48x48.png',
-    'mr': 'Topsoil_Arable_Big_Modular_Middle_Right_48x48.png',
-    'bl': 'Topsoil_Arable_Big_Modular_Bottom_Left_48x48.png',
-    'bm': 'Topsoil_Arable_Big_Modular_Bottom_Middle_48x48.png',
-    'br': 'Topsoil_Arable_Big_Modular_Bottom_Right_48x48.png',
-}
-_soil_ok = 0
-for _k, _n in SOIL_PIECES.items():
-    _t = farm_sprite(_n)
-    if _t is not None:
-        _t.save(os.path.join(OUT, 's-%s.png' % _k), optimize=True)
-        _soil_ok += 1
-print('  arable soil pieces: %d/16' % _soil_ok)
+SOIL_BLOCK = 8                   # the dark tilled field from the pack promo
+_auto = os.path.join(FARM, 'Autotiles_48x48', 'Autotiles_Godot_48x48.png')
+if os.path.isfile(_auto):
+    _sheet = Image.open(_auto).convert('RGBA')
+
+    def _tile(cx2, cy2):
+        return _sheet.crop((cx2 * T, SOIL_BLOCK * 4 * T + cy2 * T, cx2 * T + T, SOIL_BLOCK * 4 * T + cy2 * T + T))
+
+    def _edges(t):
+        """True per side = OUTER edge (fringe/transparent), False = connected."""
+        pt = t.load()
+        out = []
+        for side in range(4):
+            greenish = 0
+            for a in range(0, T, 2):
+                for b in range(0, 8, 2):
+                    x, y = ((a, b), (a, T - 1 - b), (b, a), (T - 1 - b, a))[side]
+                    r0, g0, b0, a0 = pt[x, y]
+                    if a0 < 128 or (g0 > r0 + 12 and g0 > b0 + 12):
+                        greenish += 1
+            out.append(greenish > 22)
+        return out   # [N, S, W, E]
+
+    _tiles = []
+    for _cy in range(4):
+        for _cx in range(12):
+            _t = _tile(_cx, _cy)
+            if _t.getextrema()[3][1] == 0:
+                continue
+            _n, _s2, _w2, _e2 = _edges(_t)
+            _tiles.append((_n, _s2, _w2, _e2, _t))
+    # our 16 keys: rows u/m/b × cols l/c(m)/r + strips + iso
+    def _want(key):
+        # (N-open, S-open, W-open, E-open) per key — open = fringe side
+        table = {
+            'iso': (1, 1, 1, 1), 'hl': (1, 1, 1, 0), 'hm': (1, 1, 0, 0), 'hr': (1, 1, 0, 1),
+            'vu': (1, 0, 1, 1), 'vm': (0, 0, 1, 1), 'vb': (0, 1, 1, 1),
+            'ul': (1, 0, 1, 0), 'um': (1, 0, 0, 0), 'ur': (1, 0, 0, 1),
+            'ml': (0, 0, 1, 0), 'mc': (0, 0, 0, 0), 'mr': (0, 0, 0, 1),
+            'bl': (0, 1, 1, 0), 'bm': (0, 1, 0, 0), 'br': (0, 1, 0, 1),
+        }
+        return table[key]
+    _found = 0
+    for _key in ('iso', 'hl', 'hm', 'hr', 'vu', 'vm', 'vb', 'ul', 'um', 'ur', 'ml', 'mc', 'mr', 'bl', 'bm', 'br'):
+        _wn, _ws, _ww, _we = _want(_key)
+        for _n, _s2, _w2, _e2, _t in _tiles:
+            if (_n, _s2, _w2, _e2) == (bool(_wn), bool(_ws), bool(_ww), bool(_we)):
+                _t.save(os.path.join(OUT, 's-%s.png' % _key), optimize=True)
+                _found += 1
+                break
+        else:
+            print('  SOIL MISSING mask', _key)
+    # the template has no 1-tall/1-wide strips — compose them from edge halves
+    def _compose(dst, a_key, b_key, vertical):
+        A = Image.open(os.path.join(OUT, 's-%s.png' % a_key)).convert('RGBA')
+        B = Image.open(os.path.join(OUT, 's-%s.png' % b_key)).convert('RGBA')
+        out2 = Image.new('RGBA', (T, T), (0, 0, 0, 0))
+        if vertical:   # top half of A over bottom half of B
+            out2.paste(A.crop((0, 0, T, T // 2)), (0, 0))
+            out2.paste(B.crop((0, T // 2, T, T)), (0, T // 2))
+        else:          # left half of A beside right half of B
+            out2.paste(A.crop((0, 0, T // 2, T)), (0, 0))
+            out2.paste(B.crop((T // 2, 0, T, T)), (T // 2, 0))
+        out2.save(os.path.join(OUT, 's-%s.png' % dst), optimize=True)
+    for _dst, _a, _b, _v in (('hl', 'ul', 'bl', True), ('hm', 'um', 'bm', True),
+                             ('hr', 'ur', 'br', True), ('vm', 'ml', 'mr', False)):
+        try:
+            _compose(_dst, _a, _b, _v)
+            _found += 1
+        except Exception as _e:
+            print('  SOIL compose failed', _dst, _e)
+    print('  organic soil pieces: %d/16 (block %d)' % (_found, SOIL_BLOCK))
 
 # ---- fixtures: mailbox + signpost (baked, layered, solid) ------------------
 def dedisc(img):
