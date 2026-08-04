@@ -134,6 +134,17 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     .hs-act--icon { display: inline-flex; align-items: center; justify-content: center; }
     .hs-act[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
+    /* 🪵 player fence pieces — y-sorted so they overflow the banana */
+    .hs-fpiece {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    .hs-mvfix {
+      margin-top: 0.6rem; font: inherit; font-size: 0.72rem; font-weight: 800;
+      border: 2px solid #000; background: #fffdf5; cursor: pointer; padding: 0.3rem 0.55rem;
+    }
+    .hs-mvfix[hidden] { display: none; }
+    #hsShop[data-remote="1"] #hsShopMove { display: none; }
     /* 🪏 dug soil cells — flat tilled ground, under everything y-sorted */
     .hs-soil {
       position: absolute; z-index: 60; pointer-events: none; image-rendering: pixelated;
@@ -315,6 +326,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       <div class="hs-actions" aria-label="homestead actions">
         <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
         <button class="hs-act" id="hsDig" title="Dig soil patches — any shape you like" aria-pressed="false">⛏️</button>
+        <button class="hs-act" id="hsFence" title="Build your fence — leave gaps for doors" aria-pressed="false">🪵</button>
         <button class="hs-act" id="hsBag" title="Your shed — place things from anywhere">📦</button>
       </div>
     </div>
@@ -348,6 +360,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <button class="hs-btn" id="hsShareCopy">copy</button>
         </div>
         <div class="hs-guestlist" id="hsGuestList"></div>
+        <button class="hs-mvfix" id="hsSignMove">✥ move the sign</button>
         <div class="hs-signrow" id="hsSignRow" hidden>
           <input id="hsSignText" maxlength="80" placeholder="leave a note…" aria-label="Guestbook note">
           <button class="hs-btn" id="hsSignGo">✍️ sign</button>
@@ -367,6 +380,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
         </div>
         <div class="hs-cats" id="hsShopCats" hidden></div>
         <div class="hs-list" id="hsShopList"></div>
+        <button class="hs-mvfix" id="hsShopMove">✥ move the mailbox</button>
       </div>
     </div>
 

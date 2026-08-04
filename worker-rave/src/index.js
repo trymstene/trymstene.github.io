@@ -2108,6 +2108,15 @@ export class YardRoom {
     const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
     const out = { stage: num(s.stage, 0, 3), style: {}, items: [], soil: [] };
     if (s.home && Number.isFinite(Number(s.home.x))) out.home = { x: num(s.home.x, 0, 1800), y: num(s.home.y, 0, 1100) };
+    // 🪵 player fence cells + movable fixtures
+    out.fence = [];
+    (Array.isArray(s.fence) ? s.fence.slice(0, 130) : []).forEach((c) => {
+      if (!c) return;
+      const fi = Math.round(Number(c.i)), fj = Math.round(Number(c.j));
+      if (fi >= 0 && fi <= 40 && fj >= 0 && fj <= 25) out.fence.push({ i: fi, j: fj });
+    });
+    if (s.mailAt && Number.isFinite(Number(s.mailAt.x))) out.mailAt = { x: num(s.mailAt.x, 0, 1800), y: num(s.mailAt.y, 0, 1100) };
+    if (s.signAt && Number.isFinite(Number(s.signAt.x))) out.signAt = { x: num(s.signAt.x, 0, 1800), y: num(s.signAt.y, 0, 1100) };
     // 🪏 dug soil cells: tile coords, optional crop riding each cell
     (Array.isArray(s.soil) ? s.soil.slice(0, 40) : []).forEach((c) => {
       if (!c) return;
@@ -2207,6 +2216,7 @@ export class YardRoom {
         slug, name: doc.name, updated: doc.updated,
         stage: st.stage || 0, style: st.style || {}, home: st.home, bedAt: st.bedAt,
         items: st.items || [], soil: st.soil || [], bed: st.bed,   // bed/bedAt: old snapshots, client migrates
+        fence: st.fence || [], mailAt: st.mailAt, signAt: st.signAt,
         guest, wtoday: wat.some((w) => w.d === yDay()),
       });
     }

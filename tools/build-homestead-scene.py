@@ -391,6 +391,13 @@ if HAVE_PACK:
     if _kit['h'] and _kit['v_w']:
         for _t in (1, 2, 3):
             lay_fence_tier(_kit, _t)
+        # 🪵 PLAYER-BUILT FENCES (Trym: "fence is something you should be able
+        # to set up yourself"): the kit ships as loose 48px tiles, the ENGINE
+        # picks pieces by neighbour state — runs, ends, verticals, lone posts.
+        for _k, _tile in _kit.items():
+            if _tile:
+                _tile.save(os.path.join(OUT, 'f-%s.png' % _k.replace('_', '')), optimize=True)
+        print('  fence kit tiles: %s' % ', '.join(sorted(k.replace('_', '') for k, v in _kit.items() if v)))
 
 # ---- 🪏 the soil CELL: dig-your-own patches (Trym: "dig your own brown
 # bed-patches, not locked to that flat basic square"). One 48px tile, darker
@@ -460,15 +467,19 @@ def fixture(names, cx, base, solid=None, sh=0.30):
         COLLIDERS.append((cx + a, base + b2, cx + c, base + d))
 
 
+# 📬🪧 the mailbox + sign are PLACEABLE now (Trym: "place the sign and
+# mailbox where you want it") — exported as movers, defaults at the old spots
+FIX_SIZES = {}
 if HAVE_PACK:
-    fixture(['22_Post_Office_48x48_Red_Mailbox_1_Side_1.png',
-             '22_Post_Office_48x48_Blue_Mailbox_1_Side_1.png',
-             '22_Post_Office_48x48_Big_Blue_Mailbox.png'],
-            MAILBOX_AT[0], MAILBOX_AT[1], solid=(-14, -12, 14, 2))
-    fixture(['ME_Singles_Camping_48x48_Wooden_Sign_1.png',
-             'ME_Singles_Camping_48x48_Sign_1.png',
-             'ME_Singles_City_Props_48x48_Sign_1.png'],
-            SIGN_AT[0], SIGN_AT[1], solid=(-16, -10, 16, 2))
+    for fid, cands in (('mail', ['22_Post_Office_48x48_Red_Mailbox_1_Side_1.png',
+                                 '22_Post_Office_48x48_Blue_Mailbox_1_Side_1.png']),
+                       ('sign', ['ME_Singles_Camping_48x48_Wooden_Sign_1.png',
+                                 'ME_Singles_Camping_48x48_Sign_1.png'])):
+        sp2 = sprite(cands)
+        if sp2 is not None:
+            sp2.save(os.path.join(OUT, 'm-%s.png' % fid), optimize=True)
+            FIX_SIZES[fid] = sp2.size
+            print('  m-%s.png %dx%d' % (fid, sp2.width, sp2.height))
 
 # ---- the forest ring: the clearing's walls (open on the road side) ---------
 BIG_TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]
@@ -773,8 +784,10 @@ def emit():
     L.append('export const STRUCT_STYLES = %s;' % str(STRUCT_STYLES).replace("'", '"'))
     L.append('export const STRUCTS = { %s };' % ', '.join(
         "%s: { w: %d, h: %d }" % (k, w, h) for k, (w, h) in STRUCT_SIZES.items()))
-    L.append('export const MAILBOX = { x: %d, y: %d };' % MAILBOX_AT)
-    L.append('export const SIGN = { x: %d, y: %d };' % SIGN_AT)
+    mw, mh = FIX_SIZES.get('mail', (35, 42))
+    sw2, sh2 = FIX_SIZES.get('sign', (31, 31))
+    L.append('export const MAILBOX = { x: %d, y: %d, w: %d, h: %d };' % (MAILBOX_AT[0], MAILBOX_AT[1], mw, mh))
+    L.append('export const SIGN = { x: %d, y: %d, w: %d, h: %d };' % (SIGN_AT[0], SIGN_AT[1], sw2, sh2))
     L.append('export const OB_RECTS = %s;' % [list(map(int, r)) for r in COLLIDERS])
     L.append('export const OVERLAYS = %s;' % [[o[0], o[1], o[2], o[3], o[4], o[5]] for o in OVERLAYS])
     L.append('export const BIRDS = %s;' % str(BIRD_KEYS).replace("'", '"'))

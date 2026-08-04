@@ -103,6 +103,9 @@ function withHome(s) {   // older saves have no home — defaults = old spots
     }
   }
   delete s.bed; delete s.bedAt;
+  if (!Array.isArray(s.fence)) s.fence = [];   // 🪵 player-built, cell by cell
+  if (!s.mailAt) s.mailAt = { x: MAILBOX.x, y: MAILBOX.y };
+  if (!s.signAt) s.signAt = { x: SIGN.x, y: SIGN.y };
   if (!s.style) s.style = {};
   if (!s.pantry) s.pantry = {};
   return s;
@@ -183,7 +186,13 @@ function applyTestScenario(kind) {
     while (items.length < 56) { put2(fillers[fi % fillers.length], 980 + (fi % 5) * 68, 660 + Math.floor(fi / 5) * 52); fi++; }
     // 'max' predates the land tiers: its layout was placed around the house at
     // (760,430) and the bed at (610,700) — pin those spots explicitly
-    s = { ...base, stage: 3, items,
+    const fence = [];
+    for (let i = 9; i <= 25; i++) {
+      fence.push({ i, j: 7 });
+      if (i !== 23 && i !== 24) fence.push({ i, j: 15 });
+    }
+    for (let j = 8; j <= 14; j++) { fence.push({ i: 9, j }); fence.push({ i: 25, j }); }
+    s = { ...base, stage: 3, items, fence,
       home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
       shed: [{ id: 'statue' }, { id: 'fountain' }, { id: 'coop' }, { id: 'bananacrate' }],
       bed: [
@@ -206,6 +215,8 @@ function visitState(d) {
     v: 1, name: d.name || 'A Homestead', claimedAt: 1, slug: d.slug,
     stage: d.stage || 0, style: d.style || {}, items: d.items || [], shed: [],
     soil: Array.isArray(d.soil) ? d.soil : [],
+    fence: Array.isArray(d.fence) ? d.fence : [],
+    mailAt: d.mailAt, signAt: d.signAt,
     bed: Array.isArray(d.bed) ? d.bed : undefined, bedAt: d.bedAt,   // old docs migrate in withHome
     home: d.home, guest: d.guest || [], wtoday: !!d.wtoday,
   });
@@ -247,7 +258,8 @@ function init(visitDoc, visitMiss) {
     pushT = setTimeout(() => {
       yFetch('/save', { name: state.name, state: {
         stage: state.stage, style: state.style, home: state.home,
-        items: state.items, soil: state.soil,
+        items: state.items, soil: state.soil, fence: state.fence,
+        mailAt: state.mailAt, signAt: state.signAt,
       } }).catch(() => {});
     }, 2500);
   }
@@ -332,39 +344,82 @@ function init(visitDoc, visitMiss) {
     world.appendChild(d);
   });
 
-  // ---- 🌱 THE LAND GROWS WITH THE LADDER ----------------------------------
-  // tent = a cosy corner, a real roof pushes the fence out, the house takes
-  // the whole clearing (Trym). Two overlays per tier: the yard rows sit low,
-  // the south row y-sorts so the pickets overflow the banana.
+  // ---- 🌱 THE DEED — invisible now, it still grows with the ladder --------
+  // (Trym: "fence is something you should be able to set up yourself") The
+  // tier rects only bound WHERE you may build/dig; the visible fence is yours.
   const fenceTier = () => Math.max(1, Math.min(state.stage, 3));
   const plotNow = () => FENCE_TIERS[fenceTier()].plot;
-  let fenceCols = [], fenceEls = [], fenceOn = 0;
-  function refreshFence() {
-    const t = fenceTier();
-    if (t === fenceOn) return;
-    fenceOn = t;
-    const ft = FENCE_TIERS[t];
-    fenceCols = ft.cols;
-    fenceEls.forEach((el) => el.remove());
-    fenceEls = [ft.yard, ft.south].map((o) => {
-      const d = document.createElement('div');
-      d.className = 'hs-ov';
-      d.style.left = pct(o[1], W); d.style.top = pct(o[2], H);
-      d.style.width = pct(o[3], W); d.style.height = pct(o[4], H);
-      d.style.backgroundImage = "url('/assets/homestead/" + o[0] + "')";
-      depth(d, o[5]);
-      world.appendChild(d);
-      return d;
+
+  // ---- 🪵 THE PLAYER FENCE: cells like soil, autotiled from the kit -------
+  const FENCE_CAP = 120;
+  const fenceHas = (i, j) => state.fence.some((c) => c.i === i && c.j === j);
+  function fencePieceFor(i, j) {
+    const L = fenceHas(i - 1, j), R2 = fenceHas(i + 1, j);
+    const U = fenceHas(i, j - 1), D = fenceHas(i, j + 1);
+    if (L || R2) return !L ? 'endl' : (!R2 ? 'endr' : (i % 2 ? 'h' : 'h2'));
+    if (U || D) return 'vw';
+    return 'gl';   // a lone post
+  }
+  const fpieceEls = new Map();
+  function refreshFenceB() {
+    const seen = new Set();
+    state.fence.forEach((c) => {
+      const key = c.i + ',' + c.j;
+      seen.add(key);
+      let el = fpieceEls.get(key);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'hs-fpiece';
+        el.style.left = pct(c.i * 48, W);
+        el.style.top = pct(c.j * 48, H);
+        el.style.width = pct(48, W);
+        el.style.height = pct(48, H);
+        depth(el, (c.j + 1) * 48 - 4);
+        world.appendChild(el);
+        fpieceEls.set(key, el);
+      }
+      const piece = fencePieceFor(c.i, c.j);
+      if (el.dataset.p !== piece) {
+        el.dataset.p = piece;
+        el.style.backgroundImage = "url('/assets/homestead/f-" + piece + ".png')";
+      }
+    });
+    fpieceEls.forEach((el, key) => {
+      if (!seen.has(key)) { el.remove(); fpieceEls.delete(key); }
     });
   }
-  refreshFence();
+  refreshFenceB();
+  let tierWas = fenceTier();
 
-  // the sign carries the homestead's NAME — the whole point of the sign
+  // 📬🪧 the fixtures are MOVERS now (Trym: "place the sign and mailbox
+  // where you want it") — drawn from state, colliders ride rebuildSolids
+  const mailEl = document.createElement('div');
+  mailEl.className = 'hs-ov';
+  mailEl.style.width = pct(MAILBOX.w, W);
+  mailEl.style.height = pct(MAILBOX.h, H);
+  mailEl.style.backgroundImage = "url('/assets/homestead/m-mail.png')";
+  world.appendChild(mailEl);
+  const signEl = document.createElement('div');
+  signEl.className = 'hs-ov';
+  signEl.style.width = pct(SIGN.w, W);
+  signEl.style.height = pct(SIGN.h, H);
+  signEl.style.backgroundImage = "url('/assets/homestead/m-sign.png')";
+  world.appendChild(signEl);
   const signName = document.createElement('div');
   signName.className = 'hs-signname';
-  signName.style.left = pct(SIGN.x, W); signName.style.top = pct(SIGN.y - 44, H);
-  depth(signName, SIGN.y + 200);       // reads above nearby props
   world.appendChild(signName);
+  function refreshFixtures() {
+    mailEl.style.left = pct(state.mailAt.x - MAILBOX.w / 2, W);
+    mailEl.style.top = pct(state.mailAt.y - MAILBOX.h, H);
+    depth(mailEl, state.mailAt.y);
+    signEl.style.left = pct(state.signAt.x - SIGN.w / 2, W);
+    signEl.style.top = pct(state.signAt.y - SIGN.h, H);
+    depth(signEl, state.signAt.y);
+    signName.style.left = pct(state.signAt.x, W);
+    signName.style.top = pct(state.signAt.y - SIGN.h - 12, H);
+    depth(signName, state.signAt.y + 200);
+  }
+  refreshFixtures();
   function refreshSign() { signName.textContent = state.name || ''; signName.hidden = !state.name; }
   refreshSign();
 
@@ -512,7 +567,9 @@ function init(visitDoc, visitMiss) {
       const hw2 = Math.max(24, d.w * 0.42);
       liveRects.push([state.home.x - hw2, state.home.y - Math.max(20, d.h * 0.2), state.home.x + hw2, state.home.y + 4]);
     }
-    // the bed is WALKABLE soil (Trym) — no collider; placement still keeps off it
+    // the soil is WALKABLE (Trym) — no collider; placement still keeps off it
+    liveRects.push([state.mailAt.x - 14, state.mailAt.y - 12, state.mailAt.x + 14, state.mailAt.y + 2]);
+    liveRects.push([state.signAt.x - 16, state.signAt.y - 10, state.signAt.x + 16, state.signAt.y + 2]);
   }
   const inRect = (x, y, r) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
   const inRoadLane = (y) => Math.abs(y - ROAD.y) < ROAD.hw - 6;
@@ -527,7 +584,9 @@ function init(visitDoc, visitMiss) {
     if (x < BOUND || y < BOUND || y > H - BOUND) return true;
     if (x > W - BOUND && !inRoadLane(y)) return true;      // east = the road out
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
-    for (const r of fenceCols) if (inRect(x, y, r)) return true;
+    for (const c of state.fence) {
+      if (x > c.i * 48 + 2 && x < c.i * 48 + 46 && y > c.j * 48 + 14 && y < c.j * 48 + 46) return true;
+    }
     for (const r of liveRects) if (inRect(x, y, r)) return true;
     return false;
   }
@@ -700,15 +759,26 @@ function init(visitDoc, visitMiss) {
     openShop('shed', true);
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
-  // 🪏 the shovel: a MODE, not a menu — tap lawn to till, tap soil to refill
-  let digging = false;
+  // 🪏🪵 the build modes — shovel and fence hammer, one at a time
+  let digging = false, fencing = false;
   const digBtn = document.getElementById('hsDig');
+  const fenceBtn = document.getElementById('hsFence');
+  function setModes(dig, fen) {
+    digging = dig; fencing = fen;
+    digBtn.setAttribute('aria-pressed', String(digging));
+    fenceBtn.setAttribute('aria-pressed', String(fencing));
+  }
   digBtn.addEventListener('click', () => {
     if (visiting) { toast('dig at your own homestead'); return; }
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
-    digging = !digging;
-    digBtn.setAttribute('aria-pressed', String(digging));
+    setModes(!digging, false);
     if (digging) toast('⛏️ tap your lawn to till a patch — tap soil to fill it back', 3400);
+  });
+  fenceBtn.addEventListener('click', () => {
+    if (visiting) { toast('build fences at your own homestead'); return; }
+    if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
+    setModes(false, !fencing);
+    if (fencing) toast('🪵 tap to raise a fence piece — tap one to take it down. Leave gaps for doors', 3800);
   });
 
   // ---- spawn + walking ----------------------------------------------------
@@ -838,6 +908,7 @@ function init(visitDoc, visitMiss) {
   async function openGuest() {
     document.getElementById('hsGuestTitle').textContent = '🪧 ' + (state.name || 'The sign');
     document.getElementById('hsSignRow').hidden = !visiting;
+    document.getElementById('hsSignMove').hidden = visiting || !state.claimedAt;
     const share = document.getElementById('hsShare');
     share.hidden = visiting || !state.slug;
     if (!share.hidden) document.getElementById('hsShareUrl').value = yardUrl();
@@ -1158,6 +1229,7 @@ function init(visitDoc, visitMiss) {
     // 📦 remote = the action-bar shed: your things, from anywhere. Ordering
     // NEW things stays a walk to the mailbox — that's the place's job.
     shopEl.dataset.remote = remote ? '1' : '';
+    document.getElementById('hsShopMove').hidden = visiting || !state.claimedAt;
     const h = document.getElementById('hsShopTitle');
     const p = document.getElementById('hsShopLead');
     if (h) h.textContent = remote ? '📦 Your shed' : '📬 The mailbox';
@@ -1195,7 +1267,11 @@ function init(visitDoc, visitMiss) {
     const sd = structDims();
     if (state.stage >= 1 && Math.abs(x - state.home.x) < sd.w * 0.52 + d.w * 0.3
       && y > state.home.y - sd.h * 0.62 && y < state.home.y + 12) return false;
-    if (Math.hypot(x - MAILBOX.x, y - MAILBOX.y) < 50) return false;
+    if (Math.hypot(x - state.mailAt.x, y - state.mailAt.y) < 50) return false;
+    if (Math.hypot(x - state.signAt.x, y - state.signAt.y) < 40) return false;
+    for (const c of state.fence) {
+      if (x > c.i * 48 - 14 && x < c.i * 48 + 62 && y > c.j * 48 - 8 && y < c.j * 48 + 56) return false;
+    }
     for (const it of state.items) {
       if (placing && placing.moving === it) continue;
       const o = DEX[it.id];
@@ -1220,12 +1296,17 @@ function init(visitDoc, visitMiss) {
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
   // validity, and anything under the confirmed footprint sweeps to the shed.
-  const fixDims = () => STRUCTS[placing.key];
+  const FIXD = { mail: { w: MAILBOX.w, h: MAILBOX.h }, sign: { w: SIGN.w, h: SIGN.h } };
+  const FIX_BOUNDS = [320, 270, 1400, 878];   // fixtures may live off-plot, by the road
+  const fixDims = () => FIXD[placing.key] || STRUCTS[placing.key];
   function homeOk(x, y) {
     const d = fixDims();
-    const P = plotNow();
+    const P = FIXD[placing.key] ? FIX_BOUNDS : plotNow();
     if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
     if (y - d.h < P[1] - 44 || y > P[3] - 8) return false;
+    for (const c of state.fence) {
+      if (x > c.i * 48 - 26 && x < c.i * 48 + 74 && y > c.j * 48 - 12 && y < c.j * 48 + 60) return false;
+    }
     const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
     for (const c of state.soil) {   // structures keep off the dug soil
       if (foot[0] < (c.i + 1) * 48 && foot[2] > c.i * 48 && foot[1] < (c.j + 1) * 48 && foot[3] > c.j * 48) return false;
@@ -1234,14 +1315,14 @@ function init(visitDoc, visitMiss) {
   }
   function startPlacingHome(key, opts) {
     cancelPlacing();
-    const d = STRUCTS[key];
+    const d = FIXD[key] || STRUCTS[key];
     const el = document.createElement('div');
     el.className = 'hs-it hs-it--ghost';
     el.style.width = pct(d.w, W);
     el.style.height = pct(d.h, H);
-    el.style.backgroundImage = "url('/assets/homestead/ov-" + key + ".png')";
+    el.style.backgroundImage = "url('/assets/homestead/" + (FIXD[key] ? 'm-' + key : 'ov-' + key) + ".png')";
     world.appendChild(el);
-    const from = state.home;
+    const from = key === 'mail' ? state.mailAt : key === 'sign' ? state.signAt : state.home;
     placing = { home: true, key, x: from.x, y: from.y, el,
       price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0 };
     camFree = { x: placing.x, y: placing.y };
@@ -1266,6 +1347,19 @@ function init(visitDoc, visitMiss) {
       toast('🧰 ' + swept.length + ' thing' + (swept.length > 1 ? 's' : '') + ' moved to the shed to make room');
     }
     const key = placing.key;
+    if (FIXD[key]) {   // 📬🪧 a fixture found its new spot
+      state[key === 'mail' ? 'mailAt' : 'signAt'] = { x, y };
+      placing.el.remove();
+      placing = null;
+      confirmEl.hidden = true;
+      camFree = null;
+      view.classList.remove('is-placing');
+      save();
+      refreshFixtures(); rebuildSolids();
+      float(x, y - 40, '✓');
+      track('homestead_move_fixture', { id: key });
+      return;
+    }
     if (placing.toStage) {   // this placement completes an UPGRADE
       passStat('coins_spent', placing.price);
       state.stage = placing.toStage;
@@ -1284,12 +1378,23 @@ function init(visitDoc, visitMiss) {
     camFree = null;
     view.classList.remove('is-placing');
     save();
-    const grew = fenceTier() !== fenceOn;
-    refreshFence();
+    const grew = fenceTier() !== tierWas;
+    tierWas = fenceTier();
     refreshTent(); refreshSoil(); rebuildSolids(); refreshItems(); refreshHud();
     float(x, y - STRUCTS[key].h - 8, '✓');
-    if (grew) setTimeout(() => toast('🌱 the fence moved out — more land is yours'), 1400);
+    if (grew) setTimeout(() => toast('🌱 the deed grew — more land to build on'), 1400);
   }
+  // the move buttons live INSIDE the panels the fixtures open
+  document.getElementById('hsShopMove').addEventListener('click', () => {
+    if (visiting) return;
+    closeShop();
+    startPlacingHome('mail', {});
+  });
+  document.getElementById('hsSignMove').addEventListener('click', () => {
+    if (visiting) return;
+    guestEl.hidden = true;
+    startPlacingHome('sign', {});
+  });
 
   function updateGhost() {
     if (!placing) return;
@@ -1467,7 +1572,7 @@ function init(visitDoc, visitMiss) {
     const wy = (e.clientY - r.top + camY) / scale;
     if (placing.home) {
       const d = fixDims();
-      const P = plotNow();
+      const P = FIXD[placing.key] ? FIX_BOUNDS : plotNow();   // fixtures may sit by the road
       placing.x = snap(Math.max(P[0] + d.w / 2, Math.min(P[2] - d.w / 2, wx)));
       placing.y = snap(Math.max(P[1] + Math.min(d.h * 0.5, 120), Math.min(P[3] - 10, wy)));
     } else {
@@ -1515,24 +1620,54 @@ function init(visitDoc, visitMiss) {
       return;
     }
     // the mailbox: near = open, far = walk to it
-    if (Math.hypot(wx - MAILBOX.x, wy - (MAILBOX.y - 20)) < 46) {
-      if (Math.hypot(pos.x - MAILBOX.x, pos.y - MAILBOX.y) < 110) {
+    if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
+      if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
         if (visiting) { toast('📬 answers only to ' + state.name); return; }
         openShop(); return;
       }
-      tgt.x = MAILBOX.x - 40; tgt.y = MAILBOX.y + 16;
+      tgt.x = state.mailAt.x - 40; tgt.y = state.mailAt.y + 16;
       return;
     }
     // 🪧 the sign: near = the guestbook, far = walk to it
-    if (Math.hypot(wx - SIGN.x, wy - (SIGN.y - 30)) < 56) {
-      if (Math.hypot(pos.x - SIGN.x, pos.y - SIGN.y) < 130) { openGuest(); return; }
-      tgt.x = SIGN.x - 44; tgt.y = SIGN.y + 6;
+    if (Math.hypot(wx - state.signAt.x, wy - (state.signAt.y - 30)) < 56) {
+      if (Math.hypot(pos.x - state.signAt.x, pos.y - state.signAt.y) < 130) { openGuest(); return; }
+      tgt.x = state.signAt.x - 44; tgt.y = state.signAt.y + 6;
       return;
     }
     // the tent spot (stage 0): near = the upgrades tab, far = walk over
     if (!visiting && state.stage < 1 && Math.abs(wx - state.home.x) < 76 && wy > state.home.y - 84 && wy < state.home.y + 8) {
       if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 150) { openShop('up'); return; }
       tgt.x = state.home.x; tgt.y = state.home.y + 40;
+      return;
+    }
+    // 🪵 fence mode: tap = raise a piece, tap a piece = take it down
+    if (fencing && !visiting) {
+      const i = Math.floor(wx / 48), j = Math.floor(wy / 48);
+      const F = FENCE_TIERS[fenceTier()].fence;
+      const cx = i * 48 + 24, cb = j * 48 + 48;
+      if (i * 48 < F[0] || (i + 1) * 48 > F[2] || j * 48 < F[1] || (j + 1) * 48 > F[3]) {
+        toast('the deed ends here — fence inside your land');
+        tgt.x = wx; tgt.y = wy;
+        return;
+      }
+      if (Math.hypot(pos.x - cx, pos.y - cb) > 170) { tgt.x = cx; tgt.y = cb + 10; return; }
+      const c = state.fence.find((s2) => s2.i === i && s2.j === j);
+      if (c) {
+        state.fence = state.fence.filter((s2) => s2 !== c);
+        float(cx, cb - 24, '🪵');
+      } else {
+        if (state.fence.length >= FENCE_CAP) { toast(FENCE_CAP + ' pieces is the whole lumber yard'); return; }
+        if (state.soil.some((s2) => s2.i === i && s2.j === j)) { toast('that ground is tilled — fill it first'); return; }
+        const sd = structDims();
+        if (state.stage >= 1 && cx > state.home.x - sd.w * 0.52 - 20 && cx < state.home.x + sd.w * 0.52 + 20
+          && cb > state.home.y - sd.h * 0.62 && cb < state.home.y + 30) { toast('not through the house'); return; }
+        if (Math.hypot(cx - state.mailAt.x, cb - state.mailAt.y) < 60
+          || Math.hypot(cx - state.signAt.x, cb - state.signAt.y) < 60) { toast('not on the mailbox or sign'); return; }
+        state.fence.push({ i, j });
+        float(cx, cb - 24, '🔨');
+        track('homestead_fence', { n: state.fence.length });
+      }
+      save(); refreshFenceB(); rebuildSolids();
       return;
     }
     // 🪏 dig mode: tap lawn = till a cell, tap empty soil = fill it back
@@ -1553,6 +1688,7 @@ function init(visitDoc, visitMiss) {
         float(cx, cb - 20, '🌿');
       } else {
         if (state.soil.length >= SOIL_CAP) { toast('that’s ' + SOIL_CAP + ' patches — a farm already'); return; }
+        if (fenceHas(i, j)) { toast('there’s a fence there'); return; }
         const sd = structDims();
         if (state.stage >= 1 && cx > state.home.x - sd.w * 0.52 - 20 && cx < state.home.x + sd.w * 0.52 + 20
           && cb > state.home.y - sd.h * 0.62 && cb < state.home.y + 30) { toast('not under the house'); return; }
