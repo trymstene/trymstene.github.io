@@ -834,6 +834,98 @@ if os.path.isdir(MI):
         }
         print('  %s %dx%d (%d layers, %d colliders)' % (spec['img'], base.width, base.height, len(layers), len(spec['cols'])))
 
+# ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
+# created") — a 22px banana-phone icon for the action bar. UI chrome is ours;
+# pack fidelity applies to world scenes.
+def build_phone_icon():
+    ph = Image.new('RGBA', (22, 22), (0, 0, 0, 0))
+    pp = ph.load()
+    BODY = (255, 225, 53, 255)
+    EDGE = (26, 20, 8, 255)
+    SCREEN = (42, 36, 56, 255)
+    GLOW = (140, 220, 130, 255)
+    STALK = (122, 84, 46, 255)
+    for y in range(2, 21):
+        for x in range(5, 17):
+            corner = (y in (2, 20) and x in (5, 16))
+            if corner:
+                continue
+            if x in (5, 16) or y in (2, 20):
+                pp[x, y] = EDGE
+            else:
+                pp[x, y] = BODY
+    for y in range(5, 15):
+        for x in range(7, 15):
+            pp[x, y] = SCREEN
+    # a tiny banana on screen
+    for x, y in ((9, 8), (10, 9), (11, 10), (12, 10), (13, 9)):
+        pp[x, y] = BODY
+    pp[9, 7] = STALK
+    # signal dot + home button
+    pp[8, 17] = EDGE; pp[9, 17] = EDGE; pp[12, 17] = GLOW; pp[13, 17] = GLOW
+    # the stalk nub on top — it IS a banana
+    pp[10, 1] = STALK; pp[11, 1] = STALK; pp[10, 0] = STALK
+    ph.save(os.path.join(OUT, 'phone.png'), optimize=True)
+    print('  phone.png 22x22')
+
+
+build_phone_icon()
+
+# ---- ⛺ INSIDE THE TENT (Trym: "whats the point to make a tent if not?") —
+# the humblest rung deserves the first "inside" moment. A tiny canvas room:
+# drawn tent-fabric walls, groundsheet floor, the pack's own sleeping bag,
+# backpack and lantern. One generic interior for all six tent colours (v1).
+TENT_W, TENT_H = 336, 288
+tent_room = Image.new('RGBA', (TENT_W, TENT_H), (0, 0, 0, 0))
+tp2 = tent_room.load()
+C_DARK = (146, 100, 42, 255)
+C_MID = (196, 146, 66, 255)
+C_LIT = (216, 168, 84, 255)
+C_SEAM = (110, 74, 30, 255)
+C_FLOOR = (176, 138, 92, 255)
+C_FLOORD = (158, 122, 78, 255)
+trng = random.Random(7)
+for y in range(TENT_H):
+    for x in range(TENT_W):
+        wall = y < 96 or x < 32 or x >= TENT_W - 32 or y >= TENT_H - 26
+        door = y >= TENT_H - 26 and 120 <= x < 216
+        if wall and not door:
+            panel = (x // 28) % 2
+            c = C_MID if panel else C_LIT
+            if y < 96 and y > 84:
+                c = C_DARK                     # the fold line where roof meets floor
+            if x % 28 == 0 or y in (0, 95) or x in (0, TENT_W - 1):
+                c = C_SEAM
+            tp2[x, y] = c
+        else:
+            j = trng.randrange(-6, 7)
+            c = (C_FLOOR[0] + j, C_FLOOR[1] + j, C_FLOOR[2] + j, 255)
+            if (y % 16) < 2:
+                c = C_FLOORD
+            tp2[x, y] = c
+for prop_name, px2, py2, sc in (('ME_Singles_Camping_48x48_Sleeping_Bag_1.png', 52, 116, 2 / 3.0),
+                                ('ME_Singles_Camping_48x48_Backpack_1.png', 262, 118, 2 / 3.0),
+                                ('ME_Singles_Camping_48x48_Lantern_1.png', 218, 128, 2 / 3.0)):
+    try:
+        sp3 = sprite([prop_name], scale=sc)
+        if sp3 is not None:
+            tent_room.alpha_composite(sp3, (px2 - sp3.width // 2, py2))
+    except Exception as e:
+        print('  tent prop failed', prop_name, e)
+tent_room.save(os.path.join(OUT, 'in-tent.png'), optimize=True)
+print('  in-tent.png %dx%d' % (TENT_W, TENT_H))
+TENT_AT = (732, 360)
+INTERIORS_OUT[1] = {
+    'img': 'in-tent.png', 'box': [TENT_AT[0], TENT_AT[1], TENT_W, TENT_H],
+    'spawn': [TENT_AT[0] + 168, TENT_AT[1] + 230],
+    'exit': [TENT_AT[0] + 124, TENT_AT[1] + TENT_H - 22, TENT_AT[0] + 212, TENT_AT[1] + TENT_H - 2],
+    'cols': [[TENT_AT[0] + a, TENT_AT[1] + b, TENT_AT[0] + c, TENT_AT[1] + d] for a, b, c, d in (
+        (0, 0, TENT_W, 100), (0, 0, 36, TENT_H), (TENT_W - 36, 0, TENT_W, TENT_H),
+        (0, TENT_H - 24, 120, TENT_H), (216, TENT_H - 24, TENT_W, TENT_H),
+        (40, 112, 96, 200), (238, 112, 292, 172),
+    )],
+}
+
 # ---- emit the contract ----------------------------------------------------
 def emit():
     L = []

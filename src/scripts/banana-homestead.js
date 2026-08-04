@@ -531,10 +531,11 @@ function init(visitDoc, visitMiss) {
   let inside = 0, inShade = null, inPlate = null, inPlateKey = '';
   const IN_Z = 2100;
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
+  const homeTier = () => state.stage >= 3 ? 3 : (state.stage >= 2 ? 2 : 1);
   function enterHome() {
-    const I = INTERIORS[state.stage >= 3 ? 3 : 2];
+    const I = INTERIORS[homeTier()];
     if (!I) return;
-    inside = state.stage >= 3 ? 3 : 2;
+    inside = homeTier();
     if (!inShade) {
       inShade = document.createElement('div');
       inShade.className = 'hs-inshade';
@@ -824,11 +825,9 @@ function init(visitDoc, visitMiss) {
   const refreshHud = () => hud && hud.refresh();
   document.getElementById('hsEmote').addEventListener('click', () => float(pos.x, pos.y - 44, '❤️'));
   document.getElementById('hsBag').addEventListener('click', () => {
-    if (visiting) { toast('your shed lives at your own homestead'); return; }
-    // ⚠️ the remote bag let an UNCLAIMED visitor buy the tent from the road,
-    // and the claim veil then ambushed them mid-play (found by the QA harness)
+    if (visiting) { toast('that’s ' + state.name + '’s number, not yours'); return; }
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
-    openShop('shed', true);
+    openShop('order');   // 🍌 the phone IS the store — no walking required
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
   // 🔨 THE PLANNER (Trym: "a separate mode where the camera zooms out and
@@ -1445,20 +1444,14 @@ function init(visitDoc, visitMiss) {
       shopEl.querySelectorAll('.hs-tabs button').forEach((b) =>
         b.setAttribute('aria-pressed', String(b.dataset.tab === tab)));
     }
-    // 📦 remote = the action-bar shed: your things, from anywhere. Ordering
-    // NEW things stays a walk to the mailbox — that's the place's job.
-    shopEl.dataset.remote = remote ? '1' : '';
-    document.getElementById('hsShopMove').hidden = visiting || !state.claimedAt;
-    const h = document.getElementById('hsShopTitle');
     const p = document.getElementById('hsShopLead');
-    if (h) h.textContent = remote ? '📦 Your shed' : '📬 The mailbox';
-    if (p) p.textContent = remote
-      ? 'Things you own but haven’t placed. New things are ordered at the mailbox.'
-      : 'Order from the catalog — cheap things arrive on the spot.';
+    if (p) p.textContent = (shopEl.dataset.tab === 'shed')
+      ? 'Your things, ready to place in 🔨 build mode.'
+      : 'Order online — the van delivers to your mailbox.';
     shopEl.hidden = false;
     syncLock();
     renderShop();
-    track(remote ? 'homestead_shed' : 'homestead_mailbox');
+    track('homestead_phone', { tab: shopEl.dataset.tab });
   }
   function closeShop() { shopEl.hidden = true; syncLock(); }
   shopEl.addEventListener('click', (e) => {
@@ -1468,6 +1461,10 @@ function init(visitDoc, visitMiss) {
       shopEl.dataset.tab = t.dataset.tab;
       shopEl.querySelectorAll('.hs-tabs button').forEach((b) =>
         b.setAttribute('aria-pressed', String(b.dataset.tab === t.dataset.tab)));
+      const p2 = document.getElementById('hsShopLead');
+      if (p2) p2.textContent = (t.dataset.tab === 'shed')
+        ? 'Your things, ready to place in 🔨 build mode.'
+        : 'Order online — the van delivers to your mailbox.';
       renderShop();
     }
   });
@@ -1606,12 +1603,8 @@ function init(visitDoc, visitMiss) {
     float(x, y - STRUCTS[key].h - 8, '✓');
     if (grew) setTimeout(() => toast('🌱 your land grew — more room to build, dig and decorate'), 1400);
   }
-  // the move buttons live INSIDE the panels the fixtures open
-  document.getElementById('hsShopMove').addEventListener('click', () => {
-    if (visiting) return;
-    closeShop();
-    startPlacingHome('mail', {});
-  });
+  // the sign's move button lives in the guestbook; the mailbox offers its
+  // own chip on tap (the phone replaced the shop-panel button)
   document.getElementById('hsSignMove').addEventListener('click', () => {
     if (visiting) return;
     guestEl.hidden = true;
@@ -1936,7 +1929,24 @@ function init(visitDoc, visitMiss) {
     if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
       if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
         if (visiting) { toast('📬 answers only to ' + state.name); return; }
-        openShop(); return;
+        checkOrders();
+        const nxt = state.orders.slice().sort((a, b) => a.at - b.at)[0];
+        toast(nxt
+          ? '🚚 ' + state.orders.length + ' on the way — next in ' + fmtShip(nxt.at - Date.now())
+          : '📭 nothing on the way — order from your 🍌 phone');
+        clearChip();
+        itChip = document.createElement('div');
+        itChip.className = 'hs-chip';
+        const mv2 = document.createElement('button');
+        mv2.className = 'hs-btn';
+        mv2.textContent = '✥ move it';
+        mv2.addEventListener('click', () => { clearChip(); startPlacingHome('mail', {}); });
+        itChip.append(mv2);
+        itChip.style.left = pct(state.mailAt.x, W);
+        itChip.style.top = pct(state.mailAt.y - MAILBOX.h - 12, H);
+        itChip.style.zIndex = '3000';
+        world.appendChild(itChip);
+        return;
       }
       tgt.x = state.mailAt.x - 40; tgt.y = state.mailAt.y + 16;
       return;
@@ -1982,13 +1992,13 @@ function init(visitDoc, visitMiss) {
             ck.textContent = '🍳 cook';
             ck.addEventListener('click', () => { clearChip(); openCook(); });
             itChip.prepend(ck);
-            if (INTERIORS[state.stage >= 3 ? 3 : 2]) {   // 🚪 and a front door
-              const go = document.createElement('button');
-              go.className = 'hs-btn';
-              go.textContent = '🚪 step inside';
-              go.addEventListener('click', () => { clearChip(); enterHome(); });
-              itChip.prepend(go);
-            }
+          }
+          if (INTERIORS[homeTier()]) {   // 🚪 every home has a door — even the tent
+            const go = document.createElement('button');
+            go.className = 'hs-btn';
+            go.textContent = '🚪 step inside';
+            go.addEventListener('click', () => { clearChip(); enterHome(); });
+            itChip.prepend(go);
           }
           itChip.style.left = pct(state.home.x, W);
           itChip.style.top = pct(state.home.y - sd.h - 12, H);

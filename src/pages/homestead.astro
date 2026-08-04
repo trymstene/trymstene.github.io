@@ -269,6 +269,37 @@ const description = 'A clearing west of the park with your name on the sign: cla
       border: 2px solid #000; background: #fffdf5; cursor: pointer; padding: 0.15rem 0.5rem;
     }
     #hsShop .hs-card { position: relative; }
+    /* 🍌 THE BANANA PHONE — the store + shed live in your pocket */
+    .hs-phoneshell {
+      background: #ffe135; border-radius: 26px;
+      padding: 1.7rem 0.85rem 1.9rem; box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+    }
+    .hs-phoneshell::before {
+      content: ''; position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+      width: 58px; height: 7px; background: #1a1408; border-radius: 4px;
+    }
+    .hs-phoneshell::after {
+      content: ''; position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%);
+      width: 15px; height: 15px; border: 3px solid #1a1408; border-radius: 50%;
+      background: #ffd21f; box-sizing: border-box;
+    }
+    .hs-phoneshell > h2, .hs-phoneshell > p, .hs-phoneshell > .hs-tabs,
+    .hs-phoneshell > .hs-cats, .hs-phoneshell > .hs-list {
+      background: #fffdf5;
+    }
+    .hs-phoneshell > h2 {
+      margin: 0; padding: 0.6rem 0.7rem 0.25rem; border: 3px solid #000; border-bottom: 0;
+      border-radius: 10px 10px 0 0; font-size: 1.02rem;
+    }
+    .hs-phoneshell > p { margin: 0; padding: 0 0.7rem 0.5rem; border-left: 3px solid #000; border-right: 3px solid #000; }
+    .hs-phoneshell > .hs-tabs { margin: 0; padding: 0 0.7rem 0.55rem; border-left: 3px solid #000; border-right: 3px solid #000; }
+    .hs-phoneshell > .hs-cats { margin: 0; padding: 0 0.7rem 0.55rem; border-left: 3px solid #000; border-right: 3px solid #000; }
+    .hs-phoneshell > .hs-cats[hidden] { display: none; }
+    .hs-phoneshell > .hs-list {
+      padding: 0 0.7rem 0.7rem; border: 3px solid #000; border-top: 0;
+      border-radius: 0 0 10px 10px;
+    }
+    .hs-phoneshell .hs-shopx { top: 1.9rem; right: 1.05rem; z-index: 5; }
 
     /* the place/cancel confirm bar rides the bottom of the view */
     .hs-confirm {
@@ -378,7 +409,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       <div class="hs-actions" aria-label="homestead actions">
         <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
         <button class="hs-act" id="hsBuild" title="Build mode — fence and soil" aria-pressed="false">🔨</button>
-        <button class="hs-act" id="hsBag" title="Your shed — place things from anywhere">📦</button>
+        <button class="hs-act hs-act--icon" id="hsBag" title="Your banana phone — order online, check the shed"><img src="/assets/homestead/phone.png" alt="" width="22" height="22" style="image-rendering:pixelated"></button>
       </div>
     </div>
 
@@ -420,9 +451,9 @@ const description = 'A clearing west of the park with your name on the sign: cla
     </div>
 
     <div class="hs-veil" id="hsShop" hidden data-tab="order">
-      <div class="hs-card">
+      <div class="hs-card hs-phoneshell">
         <button class="hs-shopx" id="hsShopClose" aria-label="Close">✕</button>
-        <h2 id="hsShopTitle">📬 The mailbox</h2>
+        <h2 id="hsShopTitle">🍌 Banana Phone</h2>
         <p id="hsShopLead">Order from the catalog — cheap things arrive on the spot.</p>
         <div class="hs-tabs">
           <button type="button" data-tab="order" aria-pressed="true">🛒 Order</button>
@@ -431,7 +462,6 @@ const description = 'A clearing west of the park with your name on the sign: cla
         </div>
         <div class="hs-cats" id="hsShopCats" hidden></div>
         <div class="hs-list" id="hsShopList"></div>
-        <button class="hs-mvfix" id="hsShopMove">✥ move the mailbox</button>
       </div>
     </div>
 
