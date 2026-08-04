@@ -268,7 +268,7 @@ function init(visitDoc, visitMiss) {
   let placing = null;   // { id, x, y, el, moving }
   let camFree = null;   // the placing camera: PANNED by drags, never chases the ghost
   // 🔨 planner state ALSO lives up here — layout() reads it (the TDZ lesson)
-  let digging = false, fencing = false, planner = false, hovEl = null, planEls = null;
+  let digging = false, fencing = false, clearing = false, planner = false, hovEl = null, planEls = null;
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -359,11 +359,26 @@ function init(visitDoc, visitMiss) {
   // ---- 🪵 THE PLAYER FENCE: cells like soil, autotiled from the kit -------
   const FENCE_CAP = 120;
   const fenceHas = (i, j) => state.fence.some((c) => c.i === i && c.j === j);
+  // ⚠️ THE CORNER LESSON (Trym's screenshot): the kit's verticals come in
+  // WEST-post and EAST-post flavours — a column must put its posts in the
+  // SAME tile column as the corner piece it hangs off, so we walk the column
+  // to its junction and read which side the horizontal run leaves from.
+  function fenceVSide(i, j) {
+    for (const dir of [-1, 1]) {
+      let k = j + dir;
+      while (fenceHas(i, k)) {
+        if (fenceHas(i - 1, k)) return 've';   // run to the west → east posts
+        if (fenceHas(i + 1, k)) return 'vw';   // run to the east → west posts
+        k += dir;
+      }
+    }
+    return 'vw';
+  }
   function fencePieceFor(i, j) {
     const L = fenceHas(i - 1, j), R2 = fenceHas(i + 1, j);
     const U = fenceHas(i, j - 1), D = fenceHas(i, j + 1);
     if (L || R2) return !L ? 'endl' : (!R2 ? 'endr' : (i % 2 ? 'h' : 'h2'));
-    if (U || D) return 'vw';
+    if (U || D) return fenceVSide(i, j);
     return 'gl';   // a lone post
   }
   const fpieceEls = new Map();
@@ -790,12 +805,15 @@ function init(visitDoc, visitMiss) {
   const planBar = document.getElementById('hsPlan');
   const toolF = document.getElementById('hsToolFence');
   const toolS = document.getElementById('hsToolSoil');
+  const toolC = document.getElementById('hsToolClear');
   function setTool(t) {
-    fencing = t === 'fence'; digging = t === 'soil';
+    fencing = t === 'fence'; digging = t === 'soil'; clearing = t === 'clear';
     toolF.setAttribute('aria-pressed', String(fencing));
     toolS.setAttribute('aria-pressed', String(digging));
+    toolC.setAttribute('aria-pressed', String(clearing));
     toast(fencing ? '🪵 tap the grid to raise fence — tap a piece to clear it. Gaps are doors'
-      : '⛏️ tap the grid to till soil — tap empty soil to fill it back', 3200);
+      : digging ? '⛏️ tap the grid to till soil — tap empty soil to fill it back'
+      : '🧹 tap anything to clear it — decor goes safely to the shed', 3200);
   }
   function planOverlay() {
     const F = FENCE_TIERS[fenceTier()].fence;
@@ -848,7 +866,7 @@ function init(visitDoc, visitMiss) {
   }
   function exitPlanner() {
     if (!planner && !digging && !fencing) return;
-    planner = false; digging = false; fencing = false;
+    planner = false; digging = false; fencing = false; clearing = false;
     buildBtn.setAttribute('aria-pressed', 'false');
     planBar.hidden = true;
     planShow(false);
@@ -865,6 +883,7 @@ function init(visitDoc, visitMiss) {
   });
   toolF.addEventListener('click', () => setTool('fence'));
   toolS.addEventListener('click', () => setTool('soil'));
+  toolC.addEventListener('click', () => setTool('clear'));
   document.getElementById('hsPlanDone').addEventListener('click', exitPlanner);
   // the hover cell: desktop sees exactly which tile a tap would hit
   view.addEventListener('pointermove', (e) => {
@@ -1729,6 +1748,38 @@ function init(visitDoc, visitMiss) {
     }
     // ✋ a camera pan must never also act — the doctrine's other half
     if (justPanned) { justPanned = false; return; }
+    // 🧹 clear mode: one demolish tool — decor → shed, fence down, soil filled
+    if (clearing && !visiting) {
+      for (let k = state.items.length - 1; k >= 0; k--) {
+        const it = state.items[k];
+        const d = DEX[it.id];
+        if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
+          state.items.splice(k, 1);
+          state.shed.push({ id: it.id });
+          save(); refreshItems();
+          float(it.x, it.y - 40, '📦');
+          track('homestead_pickup', { id: it.id, via: 'planner' });
+          return;
+        }
+      }
+      const fi = Math.floor(wx / 48), fj = Math.floor(wy / 48);
+      const fc = state.fence.find((s2) => s2.i === fi && s2.j === fj);
+      if (fc) {
+        state.fence = state.fence.filter((s2) => s2 !== fc);
+        save(); refreshFenceB(); rebuildSolids();
+        float(fi * 48 + 24, fj * 48 + 28, '🪵');
+        return;
+      }
+      const sc = state.soil.find((s2) => s2.i === fi && s2.j === fj);
+      if (sc) {
+        if (sc.crop) { toast('something grows here — harvest it first'); return; }
+        state.soil = state.soil.filter((s2) => s2 !== sc);
+        save(); refreshSoil();
+        float(fi * 48 + 24, fj * 48 + 28, '🌿');
+        return;
+      }
+      return;
+    }
     // 🪵 fence mode: tap = raise a piece, tap a piece = take it down
     if (fencing && !visiting) {
       const i = Math.floor(wx / 48), j = Math.floor(wy / 48);
