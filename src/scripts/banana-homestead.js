@@ -293,8 +293,10 @@ function init(visitDoc, visitMiss) {
     const want = Math.max(viewW / VIEW_ART_W, viewH / VIEW_ART_V);
     const fill = Math.max(viewW / W, viewH / H);
     scale = Math.min(1.7, viewW / YARD_FIT, Math.max(0.55, fill, want));
-    if (planner) {   // 🔨 build mode: fit the whole deed in view
-      const F = FENCE_TIERS[fenceTier()].fence;
+    if (planner) {   // 🔨 build mode: frame the WHOLE clearing (max deed), not the
+      // current tier — fit-to-deed made tier 1 and tier 3 fill the same screen,
+      // so upgrades didn't LOOK bigger (Trym's "my area didnt expand?")
+      const F = FENCE_TIERS[3].fence;
       scale = Math.min(1.2, viewW / (F[2] - F[0] + 120), viewH / (F[3] - F[1] + 120));
     }
     world.style.width = (W * scale) + 'px';
@@ -883,6 +885,17 @@ function init(visitDoc, visitMiss) {
     box(planEls.dims[2], 0, y0, x0, y1 - y0);
     box(planEls.dims[3], x1, y0, W - x1, y1 - y0);
     box(planEls.grid, x0, y0, x1 - x0, y1 - y0);
+    // dashed rings mark the land the NEXT rungs bring — aspiration, not clutter
+    (planEls.next || []).forEach((el) => el.remove());
+    planEls.next = [];
+    for (let t = fenceTier() + 1; t <= 3; t++) {
+      const N = FENCE_TIERS[t].fence;
+      const el = document.createElement('div');
+      el.className = 'hs-nextdeed';
+      world.appendChild(el);
+      box(el, N[0], N[1], N[2] - N[0], N[3] - N[1]);
+      planEls.next.push(el);
+    }
     planEls.grid.style.backgroundImage =
       'linear-gradient(to right, rgba(255,253,235,0.16) 1px, transparent 1px),'
       + 'linear-gradient(to bottom, rgba(255,253,235,0.16) 1px, transparent 1px)';
@@ -893,6 +906,7 @@ function init(visitDoc, visitMiss) {
     if (!planEls) return;
     planEls.dims.forEach((d) => { d.hidden = !on; });
     planEls.grid.hidden = !on;
+    (planEls.next || []).forEach((el) => { el.hidden = !on; });
   }
   function enterPlanner() {
     planner = true;
@@ -900,7 +914,7 @@ function init(visitDoc, visitMiss) {
     planBar.hidden = false;
     planOverlay();
     setTool('fence');
-    const F = FENCE_TIERS[fenceTier()].fence;
+    const F = FENCE_TIERS[3].fence;   // same frame at every tier — growth is visible
     camFree = { x: (F[0] + F[2]) / 2, y: (F[1] + F[3]) / 2 };
     view.classList.add('is-placing');
     layout();

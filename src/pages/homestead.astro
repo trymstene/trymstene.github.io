@@ -211,6 +211,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
       border: 2px solid #000; background: #fff; padding: 0.55rem 0.4rem 0.5rem;
       text-align: center;
     }
+    /* 🔨 planner: the land the next rungs bring, dashed in the dark */
+    .hs-nextdeed {
+      position: absolute; z-index: 1600; pointer-events: none;
+      border: 2px dashed rgba(255, 225, 53, 0.4); box-sizing: border-box;
+    }
+    .hs-nextdeed[hidden] { display: none; }
     .hs-stackn {
       position: absolute; top: 4px; right: 4px; z-index: 2;
       background: #1a1408; color: #ffe135; border-radius: 999px;
