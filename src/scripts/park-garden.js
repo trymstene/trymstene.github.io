@@ -2,7 +2,7 @@
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
 import { poofInto, worldSid, worldOwner } from '../lib/world.js';
-import { passStat, passGet } from '../lib/banana-pass.js';
+import { passStat, passGet, seedGain } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
   ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
@@ -1535,11 +1535,18 @@ export function initGarden(ctx) {
     const before = gardenerLvl().lvl;
     passStat('garden_harvests', 1);      // the gardener level's ledger
     confettiAt(PLOTS[i][0], PLOTS[i][1]);
+    // 🌱 crop harvests ALSO pocket a seed for the homestead bed (Trym:
+    // "plant on the bed myself, with seeds from the park")
+    if (sd.crop) {
+      seedGain(sd.id);
+      setTimeout(() => float(PLOTS[i][0], PLOTS[i][1] - 44, '+1 🌱'), 500);
+    }
     if (!sd.wearable) {                  // no wearable → rep by stars, never coins
       passStat('rep', sd.stars * 8);
       refreshHud();
       float(PLOTS[i][0], PLOTS[i][1] - 20, '+' + (sd.stars * 8));
-      toast(sd.emoji + ' ' + sd.name + ' harvested — +' + (sd.stars * 8) + ' rep!', 4200);
+      toast(sd.emoji + ' ' + sd.name + ' harvested — +' + (sd.stars * 8) + ' rep!'
+        + (sd.crop ? ' A seed for your homestead 🌱' : ''), 4200);
     } else {
       passStat('own_' + sd.wearable, 1); // the wearable's earned-gate proof
       toast(sd.emoji + ' ' + sd.wearLabel + ' harvested — saved to your pass!', 4200);

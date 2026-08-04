@@ -133,6 +133,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
     .hs-act--icon { display: inline-flex; align-items: center; justify-content: center; }
+    .hs-act[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
+    /* 🪏 dug soil cells — flat tilled ground, under everything y-sorted */
+    .hs-soil {
+      position: absolute; z-index: 60; pointer-events: none; image-rendering: pixelated;
+      background: url('/assets/homestead/s-soil.png') 0 0 / 100% 100%;
+    }
 
     /* panels: the claim + the mailbox */
     .hs-veil {
@@ -308,6 +314,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       </div>
       <div class="hs-actions" aria-label="homestead actions">
         <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
+        <button class="hs-act" id="hsDig" title="Dig soil patches — any shape you like" aria-pressed="false">⛏️</button>
         <button class="hs-act" id="hsBag" title="Your shed — place things from anywhere">📦</button>
       </div>
     </div>

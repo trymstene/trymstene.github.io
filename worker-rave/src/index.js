@@ -2106,9 +2106,22 @@ export class YardRoom {
   yardSan(s) {
     s = s && typeof s === 'object' ? s : {};
     const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
-    const out = { stage: num(s.stage, 0, 3), style: {}, items: [], bed: [null, null, null, null] };
+    const out = { stage: num(s.stage, 0, 3), style: {}, items: [], soil: [] };
     if (s.home && Number.isFinite(Number(s.home.x))) out.home = { x: num(s.home.x, 0, 1800), y: num(s.home.y, 0, 1100) };
-    if (s.bedAt && Number.isFinite(Number(s.bedAt.x))) out.bedAt = { x: num(s.bedAt.x, 0, 1800), y: num(s.bedAt.y, 0, 1100) };
+    // 🪏 dug soil cells: tile coords, optional crop riding each cell
+    (Array.isArray(s.soil) ? s.soil.slice(0, 40) : []).forEach((c) => {
+      if (!c) return;
+      const ci = Math.round(Number(c.i)), cj = Math.round(Number(c.j));
+      if (!(ci >= 0 && ci <= 40 && cj >= 0 && cj <= 25)) return;
+      const cell = { i: ci, j: cj };
+      if (typeof c.crop === 'string' && /^[a-z]{1,12}$/.test(c.crop)) {
+        cell.crop = c.crop;
+        cell.waters = num(c.waters, 0, 9);
+        cell.last = yIso(c.last);
+        cell.planted = yIso(c.planted);
+      }
+      out.soil.push(cell);
+    });
     [1, 2, 3].forEach((r) => {
       const v = s.style && s.style[r];
       if (typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v)) out.style[r] = v;
@@ -2118,12 +2131,6 @@ export class YardRoom {
         out.items.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
       }
     });
-    for (let i = 0; i < 4; i++) {
-      const b = Array.isArray(s.bed) ? s.bed[i] : null;
-      if (b && typeof b.crop === 'string' && /^[a-z]{1,12}$/.test(b.crop)) {
-        out.bed[i] = { crop: b.crop, waters: num(b.waters, 0, 9), last: yIso(b.last), planted: yIso(b.planted) };
-      }
-    }
     return out;
   }
 
@@ -2199,7 +2206,7 @@ export class YardRoom {
       return json({
         slug, name: doc.name, updated: doc.updated,
         stage: st.stage || 0, style: st.style || {}, home: st.home, bedAt: st.bedAt,
-        items: st.items || [], bed: st.bed || [null, null, null, null],
+        items: st.items || [], soil: st.soil || [], bed: st.bed,   // bed/bedAt: old snapshots, client migrates
         guest, wtoday: wat.some((w) => w.d === yDay()),
       });
     }

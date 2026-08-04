@@ -6,14 +6,14 @@
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, buffGet, buffSet } from '../lib/banana-pass.js';
+import { passStat, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid } from '../lib/world.js';
-import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, BED, TENT, STRUCTS, STRUCT_STYLES,
+import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -83,11 +83,26 @@ function loadState() {
     const s = JSON.parse(localStorage.getItem(HS_KEY) || 'null');
     if (s && s.v === 1) return s;
   } catch (e) {}
-  return { v: 1, name: '', claimedAt: 0, stage: 0, items: [], shed: [], bed: [null, null, null, null] };
+  return { v: 1, name: '', claimedAt: 0, stage: 0, items: [], shed: [], soil: [] };
 }
-function withHome(s) {   // older saves have no home/bedAt — defaults = old spots
+function withHome(s) {   // older saves have no home — defaults = old spots
   if (!s.home) s.home = { x: TENT.x, y: TENT.y };
-  if (!s.bedAt) s.bedAt = { x: BED.def.x, y: BED.def.y };
+  // 🪏 DIG-YOUR-OWN SOIL (Trym): no given bed, no fixed square — cells are
+  // tile coords {i,j}, dug freehand. The old 4-slot bed migrates into cells.
+  if (!Array.isArray(s.soil)) {
+    s.soil = [];
+    if (s.bedAt && Array.isArray(s.bed)) {
+      const slots = [[-90, -32], [-20, -32], [50, -32], [120, -32]];
+      s.bed.forEach((b, k) => {
+        const i = Math.floor((s.bedAt.x + slots[k][0]) / 48);
+        const j = Math.floor((s.bedAt.y + slots[k][1]) / 48);
+        if (!s.soil.some((c) => c.i === i && c.j === j)) {
+          s.soil.push({ i, j, ...(b ? { crop: b.crop, waters: b.waters | 0, last: b.last || '', planted: b.planted || '' } : {}) });
+        }
+      });
+    }
+  }
+  delete s.bed; delete s.bedAt;
   if (!s.style) s.style = {};
   if (!s.pantry) s.pantry = {};
   return s;
@@ -133,7 +148,7 @@ function applyTestScenario(kind) {
       [1180, 660], [1235, 662], [1180, 712], [1240, 710],
       [880, 762], [940, 760], [1000, 762], [1060, 760], [1120, 762], [1180, 760],
     ];
-    s = { ...base, stage: 1,
+    s = { ...base, stage: 1, bedAt: { x: 1010, y: 730 },
       items: spots.map(([x, y], i) => ({ id: ids[i % ids.length], x, y })),
       shed: [{ id: 'bush' }, { id: 'stump' }, { id: 'pinkvase' }],
       bed: [
@@ -190,8 +205,9 @@ function visitState(d) {
   return withHome({
     v: 1, name: d.name || 'A Homestead', claimedAt: 1, slug: d.slug,
     stage: d.stage || 0, style: d.style || {}, items: d.items || [], shed: [],
-    bed: Array.isArray(d.bed) ? d.bed : [null, null, null, null],
-    home: d.home, bedAt: d.bedAt, guest: d.guest || [], wtoday: !!d.wtoday,
+    soil: Array.isArray(d.soil) ? d.soil : [],
+    bed: Array.isArray(d.bed) ? d.bed : undefined, bedAt: d.bedAt,   // old docs migrate in withHome
+    home: d.home, guest: d.guest || [], wtoday: !!d.wtoday,
   });
 }
 
@@ -215,7 +231,7 @@ function init(visitDoc, visitMiss) {
     const P = FENCE_TIERS[Math.max(1, Math.min(state.stage, 3))].plot;
     const inP = (p) => p && p.x > P[0] - 60 && p.x < P[2] + 60 && p.y > P[1] - 60 && p.y < P[3] + 60;
     if (!inP(state.home)) state.home = { x: TENT.x, y: TENT.y };
-    if (!inP(state.bedAt)) state.bedAt = { x: BED.def.x, y: BED.def.y };
+    state.soil = (state.soil || []).filter((c) => inP({ x: c.i * 48 + 24, y: c.j * 48 + 24 }));
   }
   // ⚠️ a visitor's save is a NO-OP twice over: never write their yard into
   // hs-v1, never push their yard to the DO as ours
@@ -231,7 +247,7 @@ function init(visitDoc, visitMiss) {
     pushT = setTimeout(() => {
       yFetch('/save', { name: state.name, state: {
         stage: state.stage, style: state.style, home: state.home,
-        bedAt: state.bedAt, items: state.items, bed: state.bed,
+        items: state.items, soil: state.soil,
       } }).catch(() => {});
     }, 2500);
   }
@@ -496,7 +512,7 @@ function init(visitDoc, visitMiss) {
       const hw2 = Math.max(24, d.w * 0.42);
       liveRects.push([state.home.x - hw2, state.home.y - Math.max(20, d.h * 0.2), state.home.x + hw2, state.home.y + 4]);
     }
-    liveRects.push([state.bedAt.x - BED.w / 2 - 6, state.bedAt.y - BED.h - 6, state.bedAt.x + BED.w / 2 + 6, state.bedAt.y + 6]);
+    // the bed is WALKABLE soil (Trym) — no collider; placement still keeps off it
   }
   const inRect = (x, y, r) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
   const inRoadLane = (y) => Math.abs(y - ROAD.y) < ROAD.hw - 6;
@@ -518,39 +534,54 @@ function init(visitDoc, visitMiss) {
   rebuildSolids();
   refreshItems();
 
-  // ---- the bed: a movable soil overlay + its crops ------------------------
-  const slotAt = (i) => [state.bedAt.x + BED.slots[i][0], state.bedAt.y + BED.slots[i][1]];
-  const slotEls = [null, null, null, null];
-  let bedEl = null;
+  // ---- 🪏 the soil: DUG cell by cell, any shape (Trym) --------------------
+  // A cell is a 48px tile {i,j}; walkable, plantable, refillable. No collider
+  // — the only fence around a patch is the shape you dug it in.
+  const SOIL_CAP = 24;
+  const cellCx = (c) => c.i * 48 + 24;
+  const cellBase = (c) => c.j * 48 + 48;
+  const cellAt = (wx, wy) => state.soil.find((c) => c.i === Math.floor(wx / 48) && c.j === Math.floor(wy / 48));
   function cropStage(b) { return !b ? 0 : Math.min(4, 1 + (b.waters | 0)); }
-  function refreshBed() {
-    if (!bedEl) {
-      bedEl = document.createElement('div');
-      bedEl.className = 'hs-ov';
-      bedEl.style.backgroundImage = "url('/assets/homestead/ov-bed.png')";
-      bedEl.style.zIndex = '60';   // flat tilled ground — under everything y-sorted
-      world.appendChild(bedEl);
-    }
-    bedEl.style.left = pct(state.bedAt.x - BED.w / 2, W);
-    bedEl.style.top = pct(state.bedAt.y - BED.h, H);
-    bedEl.style.width = pct(BED.w, W);
-    bedEl.style.height = pct(BED.h, H);
-    BED.slots.forEach((rel, i) => {
-      if (slotEls[i]) { slotEls[i].remove(); slotEls[i] = null; }
-      const b = state.bed[i];
-      if (!b) return;
-      const sp = slotAt(i);
-      const el = document.createElement('div');
-      el.className = 'hs-crop' + (cropStage(b) >= 4 ? ' is-ripe' : '');
-      el.style.left = pct(sp[0] - 18, W); el.style.top = pct(sp[1] - 40, H);
-      el.style.width = pct(36, W); el.style.height = pct(40, H);
-      el.style.backgroundImage = "url('/assets/park/c-" + b.crop + '-' + cropStage(b) + ".png')";
-      depth(el, sp[1]);
-      world.appendChild(el);
-      slotEls[i] = el;
+  const soilEls = new Map();
+  function refreshSoil() {
+    const seen = new Set();
+    state.soil.forEach((c) => {
+      const key = c.i + ',' + c.j;
+      seen.add(key);
+      let e = soilEls.get(key);
+      if (!e) {
+        e = { soil: document.createElement('div'), crop: null, sig: '' };
+        e.soil.className = 'hs-soil';
+        e.soil.style.left = pct(c.i * 48, W);
+        e.soil.style.top = pct(c.j * 48, H);
+        e.soil.style.width = pct(48, W);
+        e.soil.style.height = pct(48, H);
+        world.appendChild(e.soil);
+        soilEls.set(key, e);
+      }
+      const st = c.crop ? cropStage(c) : 0;
+      const sig = (c.crop || '') + st;
+      if (e.sig !== sig) {
+        e.sig = sig;
+        if (e.crop) { e.crop.remove(); e.crop = null; }
+        if (c.crop) {
+          e.crop = document.createElement('div');
+          e.crop.className = 'hs-crop' + (st >= 4 ? ' is-ripe' : '');
+          e.crop.style.left = pct(cellCx(c) - 18, W);
+          e.crop.style.top = pct(cellBase(c) - 44, H);
+          e.crop.style.width = pct(36, W);
+          e.crop.style.height = pct(40, H);
+          e.crop.style.backgroundImage = "url('/assets/park/c-" + c.crop + '-' + st + ".png')";
+          depth(e.crop, cellBase(c) - 4);
+          world.appendChild(e.crop);
+        }
+      }
+    });
+    soilEls.forEach((e, key) => {
+      if (!seen.has(key)) { e.soil.remove(); if (e.crop) e.crop.remove(); soilEls.delete(key); }
     });
   }
-  refreshBed();
+  refreshSoil();
 
   // ---- 🐦 garden birds (M3): they come when the yard is LIVED-IN ----------
   // Ambient, not a loop: an empty yard gets no birds, decor attracts them,
@@ -669,6 +700,16 @@ function init(visitDoc, visitMiss) {
     openShop('shed', true);
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
+  // 🪏 the shovel: a MODE, not a menu — tap lawn to till, tap soil to refill
+  let digging = false;
+  const digBtn = document.getElementById('hsDig');
+  digBtn.addEventListener('click', () => {
+    if (visiting) { toast('dig at your own homestead'); return; }
+    if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
+    digging = !digging;
+    digBtn.setAttribute('aria-pressed', String(digging));
+    if (digging) toast('⛏️ tap your lawn to till a patch — tap soil to fill it back', 3400);
+  });
 
   // ---- spawn + walking ----------------------------------------------------
   const pos = { x: SPAWN.x, y: SPAWN.y };
@@ -861,8 +902,8 @@ function init(visitDoc, visitMiss) {
       (n.waters || []).forEach((w) => {
         if (!w.d || state.wdays.includes(w.d)) return;
         state.wdays.push(w.d);
-        state.bed.forEach((b) => {
-          if (b && cropStage(b) < 4 && b.last !== w.d && (b.planted || '') <= w.d) {
+        state.soil.forEach((b) => {
+          if (b.crop && cropStage(b) < 4 && b.last !== w.d && (b.planted || '') <= w.d) {
             b.waters = (b.waters | 0) + 1;
             if ((b.last || '') < w.d) b.last = w.d;
             watered++;
@@ -871,7 +912,7 @@ function init(visitDoc, visitMiss) {
         if (w.n) wname = w.n;
       });
       state.wdays = state.wdays.slice(-14);
-      if (watered) refreshBed();
+      if (watered) refreshSoil();
       save();   // persists slug/wdays AND publishes the fresh snapshot
       const msgs = [];
       if (watered) msgs.push('💧 ' + (wname || 'a neighbour') + ' watered your beds while you were away');
@@ -1146,7 +1187,9 @@ function init(visitDoc, visitMiss) {
     const P = plotNow();
     if (x - d.w / 2 < P[0] || x + d.w / 2 > P[2]) return false;
     if (x < P[0] + 10 || x > P[2] - 10 || y < P[1] + 24 || y > P[3] - 6) return false;
-    if (inRect(x, y, [state.bedAt.x - BED.w / 2 - 26, state.bedAt.y - BED.h - 46, state.bedAt.x + BED.w / 2 + 26, state.bedAt.y + 16])) return false;
+    for (const c of state.soil) {
+      if (x > c.i * 48 - 14 && x < c.i * 48 + 62 && y > c.j * 48 - 8 && y < c.j * 48 + 56) return false;
+    }
     // keep clear of the structure's FOOTPRINT only — the front yard below the
     // porch stays decoratable (the max stress test caught the old box banning it)
     const sd = structDims();
@@ -1177,33 +1220,28 @@ function init(visitDoc, visitMiss) {
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
   // validity, and anything under the confirmed footprint sweeps to the shed.
-  const fixDims = () => placing.key === 'bed' ? { w: BED.w, h: BED.h } : STRUCTS[placing.key];
+  const fixDims = () => STRUCTS[placing.key];
   function homeOk(x, y) {
     const d = fixDims();
     const P = plotNow();
     if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
     if (y - d.h < P[1] - 44 || y > P[3] - 8) return false;
     const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
-    if (placing.key !== 'bed') {   // structures keep off the bed…
-      const b = [state.bedAt.x - BED.w / 2 - 20, state.bedAt.y - BED.h - 40, state.bedAt.x + BED.w / 2 + 20, state.bedAt.y + 16];
-      if (foot[0] < b[2] && foot[2] > b[0] && foot[1] < b[3] && foot[3] > b[1]) return false;
-    } else if (state.stage >= 1) { // …and the bed keeps off the structure
-      const sd = STRUCTS[curStyleKey()];
-      const h2 = [state.home.x - sd.w * 0.52 - 20, state.home.y - sd.h * 0.62 - 20, state.home.x + sd.w * 0.52 + 20, state.home.y + 24];
-      if (foot[0] < h2[2] && foot[2] > h2[0] && foot[1] < h2[3] && foot[3] > h2[1]) return false;
+    for (const c of state.soil) {   // structures keep off the dug soil
+      if (foot[0] < (c.i + 1) * 48 && foot[2] > c.i * 48 && foot[1] < (c.j + 1) * 48 && foot[3] > c.j * 48) return false;
     }
     return true;
   }
   function startPlacingHome(key, opts) {
     cancelPlacing();
-    const d = key === 'bed' ? { w: BED.w, h: BED.h } : STRUCTS[key];
+    const d = STRUCTS[key];
     const el = document.createElement('div');
     el.className = 'hs-it hs-it--ghost';
     el.style.width = pct(d.w, W);
     el.style.height = pct(d.h, H);
     el.style.backgroundImage = "url('/assets/homestead/ov-" + key + ".png')";
     world.appendChild(el);
-    const from = key === 'bed' ? state.bedAt : state.home;
+    const from = state.home;
     placing = { home: true, key, x: from.x, y: from.y, el,
       price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0 };
     camFree = { x: placing.x, y: placing.y };
@@ -1239,8 +1277,7 @@ function init(visitDoc, visitMiss) {
     } else {
       track('homestead_move_home');
     }
-    if (key === 'bed') state.bedAt = { x, y };
-    else state.home = { x, y };
+    state.home = { x, y };
     placing.el.remove();
     placing = null;
     confirmEl.hidden = true;
@@ -1249,8 +1286,8 @@ function init(visitDoc, visitMiss) {
     save();
     const grew = fenceTier() !== fenceOn;
     refreshFence();
-    refreshTent(); refreshBed(); rebuildSolids(); refreshItems(); refreshHud();
-    float(x, y - (key === 'bed' ? BED.h : STRUCTS[key].h) - 8, '✓');
+    refreshTent(); refreshSoil(); rebuildSolids(); refreshItems(); refreshHud();
+    float(x, y - STRUCTS[key].h - 8, '✓');
     if (grew) setTimeout(() => toast('🌱 the fence moved out — more land is yours'), 1400);
   }
 
@@ -1356,41 +1393,47 @@ function init(visitDoc, visitMiss) {
     let mine = '';
     try { mine = localStorage.getItem(wkey) || ''; } catch (e) {}
     if (state.wtoday || mine === dayStr()) { toast('these beds are watered for today 💧'); return; }
-    if (!state.bed.some((b) => b && cropStage(b) < 4)) { toast('nothing growing right now'); return; }
+    if (!state.soil.some((c) => c.crop && cropStage(c) < 4)) { toast('nothing growing right now'); return; }
     yFetch('/water', { slug: state.slug, name: myName }).then((r) => {
       try { localStorage.setItem(wkey, dayStr()); } catch (e) {}
       state.wtoday = true;
       if (r.already) { toast('someone beat you to the watering can today'); return; }
-      state.bed.forEach((b, i) => {
-        if (b && cropStage(b) < 4) { const s = slotAt(i); float(s[0], s[1] - 44, '💧'); }
+      state.soil.forEach((c) => {
+        if (c.crop && cropStage(c) < 4) float(cellCx(c), cellBase(c) - 44, '💧');
       });
       toast('💧 you watered ' + state.name + ' — it counts overnight');
       track('homestead_neighbor_water');
     }).catch(() => toast('the watering can is empty — try again in a bit'));
   }
 
-  function bedTap(i) {
+  function cellTap(cell) {
     clearBedChip();
     if (visiting) { visitorWater(); return; }
-    const s = slotAt(i);
-    const b = state.bed[i];
+    const s = [cellCx(cell), cellBase(cell) - 16];
+    const b = cell.crop ? cell : null;
     if (!b) {
       bedChip = document.createElement('div');
       bedChip.className = 'hs-chip';
+      // 🌱 seeds are POCKETED AT THE PARK (crop harvests there), spent here
+      let anySeeds = false;
       CROPS.forEach((c) => {
+        const n = seedCount(c.id);
+        anySeeds = anySeeds || n > 0;
         const btn = document.createElement('button');
         btn.className = 'hs-btn';
-        btn.innerHTML = c.name + ' · ' + c.seed + ' ' + COIN;
-        btn.disabled = coinBalance() < c.seed;
+        btn.innerHTML = (CROP_EMO[c.id] || '') + ' ' + c.name + ' · 🌱×' + n;
+        btn.disabled = !n;
         btn.addEventListener('click', () => {
-          passStat('coins_spent', c.seed);
-          state.bed[i] = { crop: c.id, waters: 0, last: '', planted: dayStr() };
-          save(); refreshBed(); refreshHud(); clearBedChip();
+          if (!seedCount(c.id)) return;
+          seedUse(c.id);
+          cell.crop = c.id; cell.waters = 0; cell.last = ''; cell.planted = dayStr();
+          save(); refreshSoil(); clearBedChip();
           float(s[0], s[1] - 44, '🌱');
           track('homestead_plant', { crop: c.id });
         });
         bedChip.appendChild(btn);
       });
+      if (!anySeeds) toast('no seeds in the pouch — harvest crops in the park garden 🌱', 3600);
       bedChip.style.left = pct(s[0], W);
       bedChip.style.top = pct(s[1] - 52, H);
       bedChip.style.zIndex = '3000';
@@ -1400,8 +1443,8 @@ function init(visitDoc, visitMiss) {
     if (cropStage(b) >= 4) {
       // 🧺 harvests fill the PANTRY, not the wallet — the kitchen is the value
       state.pantry[b.crop] = (state.pantry[b.crop] || 0) + 1;
-      state.bed[i] = null;
-      save(); refreshBed();
+      delete cell.crop; delete cell.waters; delete cell.last; delete cell.planted;
+      save(); refreshSoil();
       float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[b.crop] || '🧺'));
       track('homestead_harvest', { crop: b.crop });
       if (state.stage < 2) toast('into the pantry — a real roof comes with a stove 🍳', 2800);
@@ -1410,7 +1453,7 @@ function init(visitDoc, visitMiss) {
     if (b.last === dayStr()) { float(s[0], s[1] - 44, '💤 tomorrow'); return; }
     b.last = dayStr();
     b.waters = (b.waters | 0) + 1;
-    save(); refreshBed();
+    save(); refreshSoil();
     float(s[0], s[1] - 44, '💧');
     track('homestead_water', { crop: b.crop });
   }
@@ -1492,33 +1535,42 @@ function init(visitDoc, visitMiss) {
       tgt.x = state.home.x; tgt.y = state.home.y + 40;
       return;
     }
-    // a bed slot
-    for (let i = 0; i < BED.slots.length; i++) {
-      const s = slotAt(i);
-      if (Math.hypot(wx - s[0], wy - (s[1] - 16)) < 32) {
-        if (Math.hypot(pos.x - s[0], pos.y - s[1]) < 120) bedTap(i);
-        else { tgt.x = s[0]; tgt.y = s[1] + 40; }
+    // 🪏 dig mode: tap lawn = till a cell, tap empty soil = fill it back
+    if (digging && !visiting) {
+      const i = Math.floor(wx / 48), j = Math.floor(wy / 48);
+      const P = plotNow();
+      const cx = i * 48 + 24, cb = j * 48 + 48;
+      if (i * 48 < P[0] || (i + 1) * 48 > P[2] || j * 48 < P[1] || (j + 1) * 48 > P[3]) {
+        toast('dig inside the fence');
+        tgt.x = wx; tgt.y = wy;
         return;
       }
-    }
-    // the bed itself (off-slot): near = offer the move, far = walk over
-    if (Math.abs(wx - state.bedAt.x) < BED.w / 2 && wy > state.bedAt.y - BED.h && wy < state.bedAt.y + 6) {
-      if (Math.hypot(pos.x - state.bedAt.x, pos.y - state.bedAt.y) < BED.w / 2 + 90) {
-        if (visiting) { visitorWater(); return; }
-        clearChip();
-        itChip = document.createElement('div');
-        itChip.className = 'hs-chip';
-        const mv = document.createElement('button');
-        mv.className = 'hs-btn';
-        mv.textContent = '\u2725 move the bed';
-        mv.addEventListener('click', () => { clearChip(); startPlacingHome('bed', {}); });
-        itChip.append(mv);
-        itChip.style.left = pct(state.bedAt.x, W);
-        itChip.style.top = pct(state.bedAt.y - BED.h - 12, H);
-        itChip.style.zIndex = '3000';
-        world.appendChild(itChip);
-      } else { tgt.x = state.bedAt.x; tgt.y = state.bedAt.y + 34; }
+      if (Math.hypot(pos.x - cx, pos.y - cb) > 150) { tgt.x = cx; tgt.y = cb + 10; return; }
+      const c = state.soil.find((s2) => s2.i === i && s2.j === j);
+      if (c) {
+        if (c.crop) { toast('something grows here — harvest it first'); return; }
+        state.soil = state.soil.filter((s2) => s2 !== c);
+        float(cx, cb - 20, '🌿');
+      } else {
+        if (state.soil.length >= SOIL_CAP) { toast('that’s ' + SOIL_CAP + ' patches — a farm already'); return; }
+        const sd = structDims();
+        if (state.stage >= 1 && cx > state.home.x - sd.w * 0.52 - 20 && cx < state.home.x + sd.w * 0.52 + 20
+          && cb > state.home.y - sd.h * 0.62 && cb < state.home.y + 30) { toast('not under the house'); return; }
+        state.soil.push({ i, j });
+        float(cx, cb - 20, '⛏️');
+        track('homestead_dig', { n: state.soil.length });
+      }
+      save(); refreshSoil();
       return;
+    }
+    // a soil cell: plant / water / harvest (visitors: water)
+    {
+      const c = cellAt(wx, wy);
+      if (c) {
+        if (Math.hypot(pos.x - cellCx(c), pos.y - cellBase(c)) < 130) cellTap(c);
+        else { tgt.x = cellCx(c); tgt.y = cellBase(c) + 10; }
+        return;
+      }
     }
     // the structure: near = offer the move, far = walk over
     if (state.stage >= 1) {

@@ -183,6 +183,17 @@ export function buffSet(fx, mins) {
   } catch (e) {}
 }
 
+// 🌱 THE SEED POUCH (Trym: "plant on the bed myself, with seeds from the
+// park"): park crop harvests pocket a seed, the homestead bed spends it.
+// Same additive ledger shape as the wallet — blob stats merge by MAX, so
+// both sides only ever increment and the pouch follows you across devices.
+export function seedGain(crop) { return passStat('seedg_' + crop, 1); }
+export function seedUse(crop) { return passStat('seedu_' + crop, 1); }
+export function seedCount(crop) {
+  const s = read().stats;
+  return Math.max(0, (s['seedg_' + crop] || 0) - (s['seedu_' + crop] || 0));
+}
+
 export function passStat(key, delta = 1) {
   const b = (delta > 0 && (key === 'coins_earned' || key === 'rep')) ? buffGet() : null;
   if (b && ((key === 'coins_earned' && b.fx === 'coins2') || (key === 'rep' && b.fx === 'rep2'))) {

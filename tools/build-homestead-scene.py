@@ -392,27 +392,27 @@ if HAVE_PACK:
         for _t in (1, 2, 3):
             lay_fence_tier(_kit, _t)
 
-# ---- the tilled bed: a MOVABLE overlay sprite, never baked ----------------
-# (Trym, 3 Aug: the user decides where the patch lives — grass survives under
-# it because it is client-drawn like the structure, not painted into the plate)
-BED_W, BED_H = 280, 100
-bed_im = Image.new('RGBA', (BED_W, BED_H), (0, 0, 0, 0))
-bp = bed_im.load()
-for y in range(BED_H):
-    for x in range(BED_W):
-        edge = x < 5 or x >= BED_W - 5 or y < 5 or y >= BED_H - 5
+# ---- 🪏 the soil CELL: dig-your-own patches (Trym: "dig your own brown
+# bed-patches, not locked to that flat basic square"). One 48px tile, darker
+# 2px rim — adjacent cells meet rim-to-rim and the seams read as furrows.
+BED_W, BED_H = 280, 100          # legacy geometry, kept for old-save migration
+soil_im = Image.new('RGBA', (T, T), (0, 0, 0, 0))
+sp_ = soil_im.load()
+for y in range(T):
+    for x in range(T):
+        edge = x < 2 or x >= T - 2 or y < 2 or y >= T - 2
         if edge:
-            bp[x, y] = (82, 62, 40, 255)
+            sp_[x, y] = (82, 62, 40, 255)
         else:
             j = rng.randrange(-8, 9)
             c = (120 + j, 90 + j, 56 + j, 255)
-            if (x % 14) < 2:
+            if (y % 12) < 2:
                 c = (98, 74, 46, 255)
             elif rng.random() < 0.04:
                 c = (88, 66, 42, 255)
-            bp[x, y] = c
-bed_im.save(os.path.join(OUT, 'ov-bed.png'), optimize=True)
-print('  ov-bed.png %dx%d' % (BED_W, BED_H))
+            sp_[x, y] = c
+soil_im.save(os.path.join(OUT, 's-soil.png'), optimize=True)
+print('  s-soil.png %dx%d' % (T, T))
 
 # ---- fixtures: mailbox + signpost (baked, layered, solid) ------------------
 def dedisc(img):
