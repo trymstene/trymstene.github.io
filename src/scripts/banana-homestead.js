@@ -267,6 +267,8 @@ function init(visitDoc, visitMiss) {
   // must live above the camera section (the rave-floor lesson)
   let placing = null;   // { id, x, y, el, moving }
   let camFree = null;   // the placing camera: PANNED by drags, never chases the ghost
+  // 🔨 planner state ALSO lives up here — layout() reads it (the TDZ lesson)
+  let digging = false, fencing = false, planner = false, hovEl = null, planEls = null;
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -288,6 +290,10 @@ function init(visitDoc, visitMiss) {
     const want = Math.max(viewW / VIEW_ART_W, viewH / VIEW_ART_V);
     const fill = Math.max(viewW / W, viewH / H);
     scale = Math.min(1.7, viewW / YARD_FIT, Math.max(0.55, fill, want));
+    if (planner) {   // 🔨 build mode: fit the whole deed in view
+      const F = FENCE_TIERS[fenceTier()].fence;
+      scale = Math.min(1.2, viewW / (F[2] - F[0] + 120), viewH / (F[3] - F[1] + 120));
+    }
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
     replaceMovers();
@@ -601,6 +607,18 @@ function init(visitDoc, visitMiss) {
   const cellBase = (c) => c.j * 48 + 48;
   const cellAt = (wx, wy) => state.soil.find((c) => c.i === Math.floor(wx / 48) && c.j === Math.floor(wy / 48));
   function cropStage(b) { return !b ? 0 : Math.min(4, 1 + (b.waters | 0)); }
+  // the pack's arable topsoil is a 16-piece neighbour grammar — a dug region
+  // reads as ONE organic patch, never stacked squares (Trym's screenshot)
+  function soilPieceFor(c) {
+    const has = (a, b) => state.soil.some((s2) => s2.i === a && s2.j === b);
+    const n = has(c.i, c.j - 1), s2 = has(c.i, c.j + 1);
+    const w2 = has(c.i - 1, c.j), e2 = has(c.i + 1, c.j);
+    if (!n && !s2) return (!w2 && !e2) ? 'iso' : (!w2 ? 'hl' : (e2 ? 'hm' : 'hr'));
+    if (!w2 && !e2) return !n ? 'vu' : (s2 ? 'vm' : 'vb');
+    const row = !n ? 'u' : (s2 ? 'm' : 'b');
+    const col = !w2 ? 'l' : (e2 ? (row === 'm' ? 'c' : 'm') : 'r');
+    return row + col;
+  }
   const soilEls = new Map();
   function refreshSoil() {
     const seen = new Set();
@@ -619,7 +637,11 @@ function init(visitDoc, visitMiss) {
         soilEls.set(key, e);
       }
       const st = c.crop ? cropStage(c) : 0;
-      const sig = (c.crop || '') + st;
+      const sig = (c.crop || '') + st + soilPieceFor(c);
+      if (e.pc !== soilPieceFor(c)) {
+        e.pc = soilPieceFor(c);
+        e.soil.style.backgroundImage = "url('/assets/homestead/s-" + e.pc + ".png')";
+      }
       if (e.sig !== sig) {
         e.sig = sig;
         if (e.crop) { e.crop.remove(); e.crop = null; }
@@ -759,31 +781,109 @@ function init(visitDoc, visitMiss) {
     openShop('shed', true);
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
-  // 🪏🪵 the build modes — shovel and fence hammer, one at a time
-  let digging = false, fencing = false;
-  const digBtn = document.getElementById('hsDig');
-  const fenceBtn = document.getElementById('hsFence');
-  function setModes(dig, fen) {
-    digging = dig; fencing = fen;
-    digBtn.setAttribute('aria-pressed', String(digging));
-    fenceBtn.setAttribute('aria-pressed', String(fencing));
-    // build modes borrow the PLACING camera: drag pans, tap acts — the
-    // banana is irrelevant while you edit (Stardew/ACNH convention)
-    if (digging || fencing) camFree = { x: pos.x, y: pos.y };
-    else if (!placing) camFree = null;
-    view.classList.toggle('is-placing', !!placing || digging || fencing);
+  // 🔨 THE PLANNER (Trym: "a separate mode where the camera zooms out and
+  // you get the whole map as a dark overlay grid") — building is rare, so it
+  // lives behind ONE button and gets a real editor: the deed lit and gridded,
+  // the rest of the world dimmed, taps instant, drag pans. The ACNH
+  // island-designer convention.
+  const buildBtn = document.getElementById('hsBuild');
+  const planBar = document.getElementById('hsPlan');
+  const toolF = document.getElementById('hsToolFence');
+  const toolS = document.getElementById('hsToolSoil');
+  function setTool(t) {
+    fencing = t === 'fence'; digging = t === 'soil';
+    toolF.setAttribute('aria-pressed', String(fencing));
+    toolS.setAttribute('aria-pressed', String(digging));
+    toast(fencing ? '🪵 tap the grid to raise fence — tap a piece to clear it. Gaps are doors'
+      : '⛏️ tap the grid to till soil — tap empty soil to fill it back', 3200);
   }
-  digBtn.addEventListener('click', () => {
-    if (visiting) { toast('dig at your own homestead'); return; }
+  function planOverlay() {
+    const F = FENCE_TIERS[fenceTier()].fence;
+    if (!planEls) {
+      planEls = {
+        dims: [0, 1, 2, 3].map(() => {
+          const d = document.createElement('div');
+          d.className = 'hs-dim';
+          world.appendChild(d);
+          return d;
+        }),
+        grid: document.createElement('div'),
+      };
+      planEls.grid.className = 'hs-gridov';
+      world.appendChild(planEls.grid);
+    }
+    const [x0, y0, x1, y1] = F;
+    const box = (el, a, b, w2, h2) => {
+      el.style.left = pct(a, W); el.style.top = pct(b, H);
+      el.style.width = pct(w2, W); el.style.height = pct(h2, H);
+    };
+    box(planEls.dims[0], 0, 0, W, y0);
+    box(planEls.dims[1], 0, y1, W, H - y1);
+    box(planEls.dims[2], 0, y0, x0, y1 - y0);
+    box(planEls.dims[3], x1, y0, W - x1, y1 - y0);
+    box(planEls.grid, x0, y0, x1 - x0, y1 - y0);
+    planEls.grid.style.backgroundImage =
+      'linear-gradient(to right, rgba(255,253,235,0.16) 1px, transparent 1px),'
+      + 'linear-gradient(to bottom, rgba(255,253,235,0.16) 1px, transparent 1px)';
+    planEls.grid.style.backgroundSize = (48 / (x1 - x0) * 100) + '% ' + (48 / (y1 - y0) * 100) + '%';
+    planShow(true);
+  }
+  function planShow(on) {
+    if (!planEls) return;
+    planEls.dims.forEach((d) => { d.hidden = !on; });
+    planEls.grid.hidden = !on;
+  }
+  function enterPlanner() {
+    planner = true;
+    buildBtn.setAttribute('aria-pressed', 'true');
+    planBar.hidden = false;
+    planOverlay();
+    setTool('fence');
+    const F = FENCE_TIERS[fenceTier()].fence;
+    camFree = { x: (F[0] + F[2]) / 2, y: (F[1] + F[3]) / 2 };
+    view.classList.add('is-placing');
+    layout();
+    camSnap();
+    track('homestead_planner');
+  }
+  function exitPlanner() {
+    if (!planner && !digging && !fencing) return;
+    planner = false; digging = false; fencing = false;
+    buildBtn.setAttribute('aria-pressed', 'false');
+    planBar.hidden = true;
+    planShow(false);
+    if (hovEl) hovEl.hidden = true;
+    if (!placing) camFree = null;
+    view.classList.toggle('is-placing', !!placing);
+    layout();
+    camSnap();
+  }
+  buildBtn.addEventListener('click', () => {
+    if (visiting) { toast('build at your own homestead'); return; }
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
-    setModes(!digging, false);
-    if (digging) toast('⛏️ tap your lawn to till a patch — tap soil to fill it back', 3400);
+    if (planner) exitPlanner(); else enterPlanner();
   });
-  fenceBtn.addEventListener('click', () => {
-    if (visiting) { toast('build fences at your own homestead'); return; }
-    if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
-    setModes(false, !fencing);
-    if (fencing) toast('🪵 tap to raise a fence piece — tap one to take it down. Leave gaps for doors', 3800);
+  toolF.addEventListener('click', () => setTool('fence'));
+  toolS.addEventListener('click', () => setTool('soil'));
+  document.getElementById('hsPlanDone').addEventListener('click', exitPlanner);
+  // the hover cell: desktop sees exactly which tile a tap would hit
+  view.addEventListener('pointermove', (e) => {
+    if (!planner || (gest && gest.panning)) { if (hovEl) hovEl.hidden = true; return; }
+    const r = view.getBoundingClientRect();
+    const wx = (e.clientX - r.left + camX) / scale;
+    const wy = (e.clientY - r.top + camY) / scale;
+    const i = Math.floor(wx / 48), j = Math.floor(wy / 48);
+    const F = FENCE_TIERS[fenceTier()].fence;
+    const ok = i * 48 >= F[0] && (i + 1) * 48 <= F[2] && j * 48 >= F[1] && (j + 1) * 48 <= F[3];
+    if (!hovEl) {
+      hovEl = document.createElement('div');
+      hovEl.className = 'hs-hovcell';
+      hovEl.style.width = pct(48, W);
+      hovEl.style.height = pct(48, H);
+      world.appendChild(hovEl);
+    }
+    hovEl.hidden = !ok;
+    if (ok) { hovEl.style.left = pct(i * 48, W); hovEl.style.top = pct(j * 48, H); }
   });
 
   // ---- spawn + walking ----------------------------------------------------
@@ -1285,7 +1385,7 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacing(id, moving) {
-    setModes(false, false);
+    exitPlanner();
     cancelPlacing();
     const d = DEX[id];
     const P = plotNow();
@@ -1320,7 +1420,7 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacingHome(key, opts) {
-    setModes(false, false);
+    exitPlanner();
     cancelPlacing();
     const d = FIXD[key] || STRUCTS[key];
     const el = document.createElement('div');
@@ -1660,10 +1760,10 @@ function init(visitDoc, visitMiss) {
     // 🪏 dig mode: tap lawn = till a cell, tap empty soil = fill it back
     if (digging && !visiting) {
       const i = Math.floor(wx / 48), j = Math.floor(wy / 48);
-      const P = plotNow();
+      const P = FENCE_TIERS[fenceTier()].fence;   // the SAME rect the grid lights
       const cx = i * 48 + 24, cb = j * 48 + 48;
       if (i * 48 < P[0] || (i + 1) * 48 > P[2] || j * 48 < P[1] || (j + 1) * 48 > P[3]) {
-        toast('dig inside your land');
+        toast('the deed ends here — the lit grid is your land');
         return;
       }
       const c = state.soil.find((s2) => s2.i === i && s2.j === j);

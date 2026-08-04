@@ -134,6 +134,27 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     .hs-act--icon { display: inline-flex; align-items: center; justify-content: center; }
     .hs-act[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
+    /* 🔨 THE PLANNER — build mode: zoomed-out land, dimmed world, lit grid */
+    .hs-planbar {
+      position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+      z-index: 2600; display: flex; gap: 0.4rem;
+      background: rgba(10, 16, 8, 0.92); border: 3px solid #000; border-radius: 7px;
+      padding: 0.3rem;
+    }
+    .hs-planbar button {
+      font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer;
+      border: 2px solid #000; background: #fffdf5; padding: 0.35rem 0.6rem;
+      white-space: nowrap; touch-action: manipulation;
+    }
+    .hs-planbar button[aria-pressed="true"] { background: #ffe135; }
+    #hsPlanDone { background: #1a1408; color: #ffe135; }
+    .hs-planbar[hidden] { display: none; }
+    .hs-dim { position: absolute; background: rgba(6, 8, 14, 0.55); z-index: 1500; pointer-events: none; }
+    .hs-gridov { position: absolute; z-index: 70; pointer-events: none; }
+    .hs-hovcell {
+      position: absolute; z-index: 1600; pointer-events: none;
+      outline: 2px dashed #ffe135; outline-offset: -2px;
+    }
     /* 🪵 player fence pieces — y-sorted so they overflow the banana */
     .hs-fpiece {
       position: absolute; pointer-events: none; image-rendering: pixelated;
@@ -148,7 +169,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
     /* 🪏 dug soil cells — flat tilled ground, under everything y-sorted */
     .hs-soil {
       position: absolute; z-index: 60; pointer-events: none; image-rendering: pixelated;
-      background: url('/assets/homestead/s-soil.png') 0 0 / 100% 100%;
+      background-size: 100% 100%; background-repeat: no-repeat;
     }
 
     /* panels: the claim + the mailbox */
@@ -318,6 +339,11 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <button class="hs-btn hs-btn--ghost" id="hsPlaceNo">✕ not now</button>
         </div>
         <div class="hs-cut" id="hsCut" aria-hidden="true"></div>
+        <div class="hs-planbar" id="hsPlan" hidden>
+          <button type="button" id="hsToolFence" aria-pressed="true">🪵 fence</button>
+          <button type="button" id="hsToolSoil" aria-pressed="false">⛏️ soil</button>
+          <button type="button" id="hsPlanDone">✓ done</button>
+        </div>
         <div class="hs-visit" id="hsVisit" hidden>
           <b id="hsVisitName"></b>
           <a class="hs-btn" href="/homestead/">🏡 yours</a>
@@ -325,8 +351,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       </div>
       <div class="hs-actions" aria-label="homestead actions">
         <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button>
-        <button class="hs-act" id="hsDig" title="Dig soil patches — any shape you like" aria-pressed="false">⛏️</button>
-        <button class="hs-act" id="hsFence" title="Build your fence — leave gaps for doors" aria-pressed="false">🪵</button>
+        <button class="hs-act" id="hsBuild" title="Build mode — fence and soil" aria-pressed="false">🔨</button>
         <button class="hs-act" id="hsBag" title="Your shed — place things from anywhere">📦</button>
       </div>
     </div>

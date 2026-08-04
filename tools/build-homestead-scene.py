@@ -399,27 +399,36 @@ if HAVE_PACK:
                 _tile.save(os.path.join(OUT, 'f-%s.png' % _k.replace('_', '')), optimize=True)
         print('  fence kit tiles: %s' % ', '.join(sorted(k.replace('_', '') for k, v in _kit.items() if v)))
 
-# ---- 🪏 the soil CELL: dig-your-own patches (Trym: "dig your own brown
-# bed-patches, not locked to that flat basic square"). One 48px tile, darker
-# 2px rim — adjacent cells meet rim-to-rim and the seams read as furrows.
+# ---- 🪏 ARABLE SOIL — the pack's OWN modular topsoil (Trym: the square
+# blocks "look like im putting down brown square blocks"). 16 pieces = a full
+# neighbour-mask autotile grammar: big 9-slice patches, 1-tall strips, 1-wide
+# columns, and the isolated single. The ENGINE picks by neighbours.
 BED_W, BED_H = 280, 100          # legacy geometry, kept for old-save migration
-soil_im = Image.new('RGBA', (T, T), (0, 0, 0, 0))
-sp_ = soil_im.load()
-for y in range(T):
-    for x in range(T):
-        edge = x < 2 or x >= T - 2 or y < 2 or y >= T - 2
-        if edge:
-            sp_[x, y] = (82, 62, 40, 255)
-        else:
-            j = rng.randrange(-8, 9)
-            c = (120 + j, 90 + j, 56 + j, 255)
-            if (y % 12) < 2:
-                c = (98, 74, 46, 255)
-            elif rng.random() < 0.04:
-                c = (88, 66, 42, 255)
-            sp_[x, y] = c
-soil_im.save(os.path.join(OUT, 's-soil.png'), optimize=True)
-print('  s-soil.png %dx%d' % (T, T))
+SOIL_PIECES = {
+    'iso': 'Topsoil_Arable_Horizontal_Single_48x48.png',
+    'hl': 'Topsoil_Arable_Small_Horizontal_Modular_Left_48x48.png',
+    'hm': 'Topsoil_Arable_Small_Horizontal_Modular_Middle_48x48.png',
+    'hr': 'Topsoil_Arable_Small_Horizontal_Modular_Right_48x48.png',
+    'vu': 'Topsoil_Arable_Small_Vertical_Modular_Upper_48x48.png',
+    'vm': 'Topsoil_Arable_Small_Vertical_Modular_Middle_48x48.png',
+    'vb': 'Topsoil_Arable_Small_Vertical_Modular_Bottom_48x48.png',
+    'ul': 'Topsoil_Arable_Big_Modular_Upper_Left_48x48.png',
+    'um': 'Topsoil_Arable_Big_Modular_Upper_Middle_48x48.png',
+    'ur': 'Topsoil_Arable_Big_Modular_Upper_Right_48x48.png',
+    'ml': 'Topsoil_Arable_Big_Modular_Middle_Left_48x48.png',
+    'mc': 'Topsoil_Arable_Big_Modular_Middle_Central_48x48.png',
+    'mr': 'Topsoil_Arable_Big_Modular_Middle_Right_48x48.png',
+    'bl': 'Topsoil_Arable_Big_Modular_Bottom_Left_48x48.png',
+    'bm': 'Topsoil_Arable_Big_Modular_Bottom_Middle_48x48.png',
+    'br': 'Topsoil_Arable_Big_Modular_Bottom_Right_48x48.png',
+}
+_soil_ok = 0
+for _k, _n in SOIL_PIECES.items():
+    _t = farm_sprite(_n)
+    if _t is not None:
+        _t.save(os.path.join(OUT, 's-%s.png' % _k), optimize=True)
+        _soil_ok += 1
+print('  arable soil pieces: %d/16' % _soil_ok)
 
 # ---- fixtures: mailbox + signpost (baked, layered, solid) ------------------
 def dedisc(img):
