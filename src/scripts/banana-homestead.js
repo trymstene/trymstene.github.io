@@ -372,12 +372,23 @@ function init(visitDoc, visitMiss) {
         k += dir;
       }
     }
-    return 'vw';
+    // free-standing column: side by which HALF of the deed it stands in, so a
+    // wall drawn one tile shy of its corner still leans the right way (Trym's
+    // right wall rendered left-posted and met nothing)
+    const F = FENCE_TIERS[fenceTier()].fence;
+    return i * 48 + 24 > (F[0] + F[2]) / 2 ? 've' : 'vw';
   }
   function fencePieceFor(i, j) {
     const L = fenceHas(i - 1, j), R2 = fenceHas(i + 1, j);
     const U = fenceHas(i, j - 1), D = fenceHas(i, j + 1);
-    if (L || R2) return !L ? 'endl' : (!R2 ? 'endr' : (i % 2 ? 'h' : 'h2'));
+    if (L || R2) {
+      // ⚠️ BOTTOM corners take the kit's SOUTH-JUNCTION pieces (jl/jr): the
+      // nub on top of the post is the art that closes the gap to a column
+      // arriving from the north — end-runs alone left a visible break (Trym)
+      if (!L) return U ? 'jl' : 'endl';
+      if (!R2) return U ? 'jr' : 'endr';
+      return i % 2 ? 'h' : 'h2';
+    }
     if (U || D) return fenceVSide(i, j);
     return 'gl';   // a lone post
   }
