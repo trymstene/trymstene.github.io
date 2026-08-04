@@ -2135,6 +2135,7 @@ export class YardRoom {
       const v = s.style && s.style[r];
       if (typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v)) out.style[r] = v;
     });
+    if (typeof s.look === 'string' && /^[a-z0-9]{1,16}$/.test(s.look)) out.look = s.look;
     (Array.isArray(s.items) ? s.items.slice(0, YARD_ITEM_CAP) : []).forEach((it) => {
       if (it && typeof it.id === 'string' && /^([a-z0-9]{1,24}|c_[a-f0-9]{6,32})$/.test(it.id)) {
         out.items.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
@@ -2214,7 +2215,7 @@ export class YardRoom {
       const wat = (await this.state.storage.get('wat:' + slug)) || [];
       return json({
         slug, name: doc.name, updated: doc.updated,
-        stage: st.stage || 0, style: st.style || {}, home: st.home, bedAt: st.bedAt,
+        stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home, bedAt: st.bedAt,
         items: st.items || [], soil: st.soil || [], bed: st.bed,   // bed/bedAt: old snapshots, client migrates
         fence: st.fence || [], mailAt: st.mailAt, signAt: st.signAt,
         guest, wtoday: wat.some((w) => w.d === yDay()),

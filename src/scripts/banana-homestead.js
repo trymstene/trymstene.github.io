@@ -109,6 +109,7 @@ function withHome(s) {   // older saves have no home — defaults = old spots
   if (!s.style) s.style = {};
   if (!s.pantry) s.pantry = {};
   if (!Array.isArray(s.orders)) s.orders = [];   // deliveries on the way
+  if (typeof s.look !== 'string') s.look = '';   // 🎨 worn style (wardrobe)
   return s;
 }
 
@@ -215,6 +216,7 @@ function visitState(d) {
   return withHome({
     v: 1, name: d.name || 'A Homestead', claimedAt: 1, slug: d.slug,
     stage: d.stage || 0, style: d.style || {}, items: d.items || [], shed: [],
+    look: typeof d.look === 'string' ? d.look : '',
     soil: Array.isArray(d.soil) ? d.soil : [],
     fence: Array.isArray(d.fence) ? d.fence : [],
     mailAt: d.mailAt, signAt: d.signAt,
@@ -258,7 +260,7 @@ function init(visitDoc, visitMiss) {
     clearTimeout(pushT);
     pushT = setTimeout(() => {
       yFetch('/save', { name: state.name, state: {
-        stage: state.stage, style: state.style, home: state.home,
+        stage: state.stage, style: state.style, look: state.look, home: state.home,
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
       } }).catch(() => {});
@@ -486,8 +488,13 @@ function init(visitDoc, visitMiss) {
   // ---- 🏠 the structure at the TENT spot: nothing → tent → cabin → house --
   const curStruct = () => state.stage >= 1
     ? STRUCT_LADDER[Math.min(state.stage, STRUCT_LADDER.length) - 1] : null;
+  const STYLE_RUNG = {};
+  Object.keys(STRUCT_STYLES).forEach((r) => STRUCT_STYLES[r].forEach((k) => { STYLE_RUNG[k] = Number(r); }));
+  // 🎨 progress never regresses; the LOOK is always your choice — a worn
+  // lower-rung style overrides the purchased one (tent on a house-sized deed)
   const curStyleKey = () => {
     const r = Math.min(state.stage, 3);
+    if (state.look && STYLE_RUNG[state.look] && STYLE_RUNG[state.look] <= r) return state.look;
     return (state.style && state.style[r]) || STYLE_DEFAULTS[r];
   };
   const structDims = () => state.stage >= 1 ? STRUCTS[curStyleKey()] : { w: 140, h: 74 };
@@ -533,7 +540,7 @@ function init(visitDoc, visitMiss) {
   let inside = 0, inShade = null, inPlate = null, inPlateKey = '';
   const IN_Z = 2100;
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
-  const homeTier = () => state.stage >= 3 ? 3 : (state.stage >= 2 ? 2 : 1);
+  const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   function enterHome() {
     const I = INTERIORS[homeTier()];
     if (!I) return;
@@ -1407,46 +1414,102 @@ function init(visitDoc, visitMiss) {
         p.textContent = 'Nothing in the shed — mailbox orders land here, ready to place.';
         list.appendChild(p);
       }
+      // duplicates STACK (Bush ×7, one tile); selling pays half, floor — the
+      // buff can at most break even, and unpriced trophies are memories, not
+      // merchandise (no sell button, never destroyed)
       const grid = document.createElement('div');
       grid.className = 'hs-grid';
-      state.shed.forEach((s, i) => {
-        const d = DEX[s.id];
-        if (!d) return;
-        grid.appendChild(shopTile(d, 'place', () => {
+      const counts = {};
+      state.shed.forEach((s) => { if (DEX[s.id]) counts[s.id] = (counts[s.id] || 0) + 1; });
+      Object.keys(counts).forEach((id) => {
+        const d = DEX[id];
+        const tile = shopTile(d, 'place', () => {
           if (state.items.length >= cap()) { toast('the plot is full'); return; }
+          const i = state.shed.findIndex((s) => s.id === id);
+          if (i < 0) return;
           state.shed.splice(i, 1);
           save();
           closeShop();
           startPlacing(d.id);
-        }));
+        });
+        if (counts[id] > 1) {
+          const n = document.createElement('span');
+          n.className = 'hs-stackn';
+          n.textContent = '×' + counts[id];
+          tile.appendChild(n);
+        }
+        const sale = Math.floor((d.price || 0) / 2);
+        if (sale > 0) {
+          const sell = document.createElement('button');
+          sell.className = 'hs-btn hs-btn--ghost';
+          sell.innerHTML = 'sell · ' + sale + ' ' + COIN;
+          sell.addEventListener('click', () => {
+            const i = state.shed.findIndex((s) => s.id === id);
+            if (i < 0) return;
+            state.shed.splice(i, 1);
+            passStat('coins_earned', sale);
+            save();
+            refreshHud();
+            shopNote('💰 sold — +' + sale + ' coins');
+            track('homestead_sell', { id: id, sale: sale });
+            shopHead();
+            renderShop();
+          });
+          tile.appendChild(sell);
+        }
+        grid.appendChild(tile);
       });
       list.appendChild(grid);
     } else {   // upgrades (stage ≥ 1 — the tent gate lives above)
       const card = document.createElement('div');
       card.className = 'hs-up';
       const next = STRUCT_LADDER[state.stage];   // stage 1 → roof, 2 → house
+      let cta = null;
       if (next) {
         card.innerHTML = '<div class="hs-uphead"><b>' + next.icon + ' ' + next.name + '</b>'
           + '<span class="hs-price">' + next.price + ' ' + COIN + '</span></div>'
           + '<span>' + next.pitch + ' Your land grows, and ' + CAPS[state.stage + 1] + ' decor spots open up.</span>';
         const getStyle = stylePicker(state.stage + 1, card);
-        const btn = document.createElement('button');
-        btn.className = 'hs-btn';
-        btn.innerHTML = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
+        cta = document.createElement('button');
+        cta.className = 'hs-btn hs-upcta';
+        cta.innerHTML = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
           : 'need ' + next.price + ' ' + COIN + ' — you have ' + coinBalance();
-        btn.disabled = coinBalance() < next.price;
-        btn.classList.add('hs-upcta');
-        btn.addEventListener('click', () => {
+        cta.disabled = coinBalance() < next.price;
+        cta.addEventListener('click', () => {
           closeShop();
           startPlacingHome(getStyle(), { price: next.price, toStage: state.stage + 1 });
         });
-        list.appendChild(card);
-        list.appendChild(btn);
-        return;
       } else {
         card.innerHTML = '<div><b>🏠 Fully upgraded</b><span>The homestead stands complete — for now.</span></div>';
       }
       list.appendChild(card);
+      // 🎨 THE WARDROBE — every rung you've earned stays wearable; a
+      // stage-3 tent on a house-sized deed is a flex, not a downgrade
+      const ward = document.createElement('div');
+      ward.className = 'hs-up';
+      ward.innerHTML = '<div class="hs-uphead"><b>🎨 Your look</b></div>'
+        + '<span>Anything you’ve earned — restyling is free.</span>';
+      const wgrid = document.createElement('div');
+      wgrid.className = 'hs-stylepick';
+      const worn = curStyleKey();
+      for (let r = 1; r <= Math.min(state.stage, 3); r++) {
+        (STRUCT_STYLES[r] || []).forEach((k) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'hs-stylebtn';
+          b.innerHTML = '<img src="/assets/homestead/ov-' + k + '.png" alt="" loading="lazy">';
+          b.setAttribute('aria-pressed', String(k === worn));
+          b.addEventListener('click', () => {
+            if (k === curStyleKey()) return;
+            closeShop();
+            startPlacingHome(k, { look: true });
+          });
+          wgrid.appendChild(b);
+        });
+      }
+      ward.appendChild(wgrid);
+      list.appendChild(ward);
+      if (cta) list.appendChild(cta);
     }
   }
   let pnTimer = null;
@@ -1585,7 +1648,8 @@ function init(visitDoc, visitMiss) {
     world.appendChild(el);
     const from = key === 'mail' ? state.mailAt : key === 'sign' ? state.signAt : state.home;
     placing = { home: true, key, x: from.x, y: from.y, el,
-      price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0 };
+      price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0,
+      look: !!(opts && opts.look) };
     camFree = { x: placing.x, y: placing.y };
     view.classList.add('is-placing');
     updateGhost();
@@ -1628,9 +1692,14 @@ function init(visitDoc, visitMiss) {
       state.stage = placing.toStage;
       state.style = state.style || {};
       state.style[placing.toStage] = placing.key;
+      state.look = '';   // a new roof is worn the day it lands
       const rung = STRUCT_LADDER[placing.toStage - 1];
       track('homestead_upgrade', { to: placing.key });
       if (!swept.length) toast(rung.icon + ' ' + rung.name.toLowerCase() + ' — done');
+    } else if (placing.look) {   // 🎨 the wardrobe, not the ladder
+      state.look = placing.key;
+      track('homestead_restyle', { key: placing.key });
+      if (!swept.length) toast('🎨 new look — the neighbours will notice');
     } else {
       track('homestead_move_home');
     }
@@ -2031,13 +2100,7 @@ function init(visitDoc, visitMiss) {
           mv.textContent = '✥ move it';
           mv.addEventListener('click', () => { clearChip(); startPlacingHome(curStyleKey(), {}); });
           itChip.append(mv);
-          if (state.stage >= 2) {   // 🍳 a real roof comes with a stove
-            const ck = document.createElement('button');
-            ck.className = 'hs-btn';
-            ck.textContent = '🍳 cook';
-            ck.addEventListener('click', () => { clearChip(); openCook(); });
-            itChip.prepend(ck);
-          }
+          // 🍳 cooking lives INSIDE now — tap the kitchen counters
           if (INTERIORS[homeTier()]) {   // 🚪 every home has a door — even the tent
             const go = document.createElement('button');
             go.className = 'hs-btn';
