@@ -21,6 +21,7 @@ Outputs:
   src/data/decor.js                       the decor manifest (generated)
 Run: python tools/build-homestead-scene.py
 """
+import math
 import os
 import random
 import sys
@@ -157,23 +158,134 @@ for x in range(0, W):
         if g > r and g > b:                  # grass pixels only
             px[x, y] = (r, min(255, g + 3), b, a)
 
-# ---- the bottom road: full width, dying into the woods at the west end ----
-for y in range(ROAD_Y - ROAD_HW, ROAD_Y + ROAD_HW):
-    for x in range(120, W):
-        hw = ROAD_HW if x > 340 else max(4, ROAD_HW * (x - 120) / 220.0)
-        d = abs(y - ROAD_Y) / float(hw)
-        if d > 1.0:
+# ---- 🌿 THE LIFE PASS (the park's recipe, Trym: "no variation… very basic")
+# tufts + green patches + lifted flower pixels, all OFF the tile grid so
+# nothing reads as a pattern. ⚠️ Props_Grass verdict corrected: 1/2/3/8/9 are
+# the clean GREEN patches the park itself scatters — 12/13 were the orange
+# baked-background ones that got the family banned here.
+grng = random.Random(7)
+if HAVE_PACK:
+    TUFT = None
+    try:
+        TUFT = load_pack('ME_Singles_Graveyard_48x48_Grass_Tufts.png').convert('RGBA')
+        tp = TUFT.load()          # graveyard tufts are dead-grey — retint by luma
+        for y in range(TUFT.height):
+            for x in range(TUFT.width):
+                r0, g0, b0, a0 = tp[x, y]
+                if a0:
+                    k = (0.3 * r0 + 0.6 * g0 + 0.1 * b0) / 120.0
+                    tp[x, y] = (int(min(255, 62 * k)), int(min(255, 128 * k)),
+                                int(min(255, 56 * k)), a0)
+    except Exception:
+        pass
+    PATCHES = []
+    for i in (1, 2, 3, 8, 9):
+        try:
+            PATCHES.append(load_pack('ME_Singles_Terrains_and_Fences_48x48_Props_Grass_%d.png' % i).convert('RGBA'))
+        except Exception:
+            pass
+    for _ in range(45):
+        if not PATCHES:
+            break
+        im.alpha_composite(PATCHES[grng.randrange(len(PATCHES))],
+                           (grng.randrange(20, W - 60), grng.randrange(20, H - 60)))
+    if TUFT:
+        for _ in range(220):
+            t2 = TUFT.transpose(Image.FLIP_LEFT_RIGHT) if grng.random() < 0.5 else TUFT
+            im.alpha_composite(t2, (grng.randrange(10, W - 58), grng.randrange(10, H - 58)))
+    FLOWER_STAMPS = []
+    for i in range(1, 16):
+        try:
+            t = load_pack('ME_Singles_Terrains_and_Fences_48x48_Grass_Wall_1_Flowered_%d.png' % i).convert('RGBA')
+        except Exception:
             continue
-        if d > 0.82 and rng.random() < (d - 0.82) * 5:
+        p = t.load()
+        st = [(x, y, p[x, y]) for y in range(t.height) for x in range(t.width)
+              if p[x, y][3] and sum(p[x, y][:3]) > 330
+              and not (p[x, y][1] > p[x, y][0] and p[x, y][1] > p[x, y][2])]
+        if 6 < len(st) < 260:
+            FLOWER_STAMPS.append(st)
+    for _ in range(22):
+        if not FLOWER_STAMPS:
+            break
+        ox, oy = grng.randrange(60, W - 100), grng.randrange(60, H - 100)
+        for x, y, col in FLOWER_STAMPS[grng.randrange(len(FLOWER_STAMPS))]:
+            put(ox + x, oy + y, col)
+
+# the park's soft afternoon grade — greens lifted warm
+GRASS_TARGET = (128, 186, 96)
+for y in range(H):
+    for x in range(W):
+        r, g, b, a = px[x, y]
+        if g > r - 10 and g > b:
+            k = 0.30
+            px[x, y] = (int(r * 0.7 + GRASS_TARGET[0] * k), int(g * 0.7 + GRASS_TARGET[1] * k),
+                        int(b * 0.7 + GRASS_TARGET[2] * k), a)
+
+# ---- 🛣 the bottom road: the park's wobble/taper/rim bake, not a flat band --
+ROAD_C, ROAD_S, ROAD_RIM = (208, 178, 128), (196, 166, 116), (122, 108, 62)
+_rrng = random.Random(4242)
+_road_mask = bytearray(W * H)
+
+
+def road_pts(pts, hw, taper=(True, True)):
+    out, s = [], 0.0
+    for i in range(len(pts) - 1):
+        (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+        seg = math.hypot(x1 - x0, y1 - y0)
+        if seg < 1:
             continue
-        put(x, y, (172, 142, 96) if (x * 3 + y * 7) % 9 else (152, 124, 82))
-# the turn-in: a short path from the road up through the gate
-for y in range(FENCE_PX[3] - 8, ROAD_Y - ROAD_HW + 12):
-    for x in range(GATE_X - 34, GATE_X + 34):
-        d = abs(x - GATE_X) / 34.0
-        if d > 0.82 and rng.random() < (d - 0.82) * 5:
+        nx, ny = (x1 - x0) / seg, (y1 - y0) / seg
+        px_, py_ = -ny, nx
+        for t in range(int(seg)):
+            wob = 7.5 * math.sin(s / 88.0) + 2.4 * math.sin(s / 21.0)
+            out.append([int(x0 + nx * t + px_ * wob), int(y0 + ny * t + py_ * wob),
+                        px_, py_, hw])
+            s += 1
+    n = len(out)
+    for i in range(min(44, n // 2)):
+        k = 0.30 + 0.70 * (i / 44.0)
+        if taper[0]:
+            out[i][4] = max(4, hw * k)
+        if taper[1]:
+            out[n - 1 - i][4] = max(4, hw * k)
+    return [tuple(p) for p in out]
+
+
+def road_mask_add(spine):
+    m = _road_mask
+    for (cx_, cy_, _, _, hw) in spine:
+        r = int(hw) + 2
+        for dy in range(-r, r + 1):
+            y = cy_ + dy
+            if not (0 <= y < H):
+                continue
+            row = y * W
+            for dx in range(-r, r + 1):
+                x = cx_ + dx
+                if not (0 <= x < W):
+                    continue
+                v = int(hw + 2 - math.hypot(dx, dy))
+                if v > 0 and v > m[row + x]:
+                    m[row + x] = 255 if v > 255 else v
+
+
+road_mask_add(road_pts([(120, ROAD_Y), (620, ROAD_Y - 8), (1150, ROAD_Y + 6), (1800, ROAD_Y - 4)],
+                       36, taper=(True, False)))                  # W dies in the woods, E = the park
+# the turn-in flows THROUGH the gate opening and feathers out on the lawn —
+# a blunt full-width end read as "a hard cut, no fading" (Trym's screenshot)
+road_mask_add(road_pts([(GATE_X, FENCE_PX[3] - 70), (GATE_X - 5, (FENCE_PX[3] + ROAD_Y) // 2), (GATE_X, ROAD_Y)],
+                       20, taper=(True, False)))
+for y in range(H):
+    row = y * W
+    for x in range(W):
+        v = _road_mask[row + x]
+        if not v:
             continue
-        put(x, y, (172, 142, 96) if (x * 3 + y * 7) % 9 else (152, 124, 82))
+        if v >= 5:
+            put(x, y, ROAD_S if _rrng.random() < 0.20 else ROAD_C)
+        elif _rrng.random() < 0.18 * v:
+            put(x, y, ROAD_RIM)
 
 # ---- the fence: Fence_1 autotiles, classified by edge connectivity --------
 COLLIDERS = []                   # (shape) rects in world px
@@ -254,10 +366,13 @@ def lay_fence_tier(kit, tier):
     cy0, cy1 = fy0 * T + mid, fy1 * T + mid
     cols = [
         (fx0 * T, cy0, (fx1 + 1) * T, cy0 + 14),                   # north
-        # ⚠️ the south band is DEEPER (26px): a banana at the pickets' feet
-        # stood visually ON them (Trym's screenshot)
-        (fx0 * T, cy1, GATE_COLS[0] * T, cy1 + 26),                # south L of gate
-        ((GATE_COLS[-1] + 1) * T, cy1, (fx1 + 1) * T, cy1 + 26),   # south R of gate
+        # ⚠️ the south band reaches BELOW the fence base (Trym ×2): stopping at
+        # the band's inner edge parked the banana's feet ON the pickets when
+        # approaching from the road — the outside stop line must sit past the
+        # art (feet ≥ base+4) so the walker halts IN FRONT of the fence, where
+        # the painter's order also draws it in front.
+        (fx0 * T, cy1, GATE_COLS[0] * T, cy1 + 34),                # south L of gate
+        ((GATE_COLS[-1] + 1) * T, cy1, (fx1 + 1) * T, cy1 + 34),   # south R of gate
         (fx0 * T + 2, cy0, fx0 * T + 20, cy1),                     # west posts
         (fx1 * T + 24, cy0, fx1 * T + 44, cy1),                    # east posts
     ]
