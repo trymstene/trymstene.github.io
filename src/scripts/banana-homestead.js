@@ -22,7 +22,7 @@ const view = document.getElementById('hsView');
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
 // 🪙 prices wear the REAL bananacoin, never the stock emoji (Trym)
-const COIN = '<img class="hs-coin" src="/assets/banana-stand/coin.png" alt="bananacoins">';
+const COIN = '<img class="hs-coin" src="/assets/homestead/coin16.png" width="14" height="14" alt="bananacoins">';
 
 // 🏡 THE NEIGHBOURHOOD (M1): every claimed yard has a public mirror in the
 // YardRoom DO. worldOwner() owns it; the browser's hs-v1 stays the truth.
@@ -987,6 +987,8 @@ function init(visitDoc, visitMiss) {
   const cookEl = document.getElementById('hsCook');
   const confirmEl = document.getElementById('hsConfirm');
   const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden;
+  // while any popup is open the PAGE must not scroll under it (Trym)
+  const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
 
   // ---- 🍳 the kitchen (stage 2+): the pantry becomes WORLD-WIDE effects ----
   function renderCook() {
@@ -1035,9 +1037,9 @@ function init(visitDoc, visitMiss) {
       list.appendChild(row);
     });
   }
-  function openCook() { cookEl.hidden = false; renderCook(); track('homestead_kitchen'); }
-  document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; });
-  cookEl.addEventListener('click', (e) => { if (e.target === cookEl) cookEl.hidden = true; });
+  function openCook() { cookEl.hidden = false; syncLock(); renderCook(); track('homestead_kitchen'); }
+  document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; syncLock(); });
+  cookEl.addEventListener('click', (e) => { if (e.target === cookEl) { cookEl.hidden = true; syncLock(); } });
 
   // ---- 🪧 the guestbook at the sign (+ your address, once you have one) ----
   const yardUrl = () => 'https://trymstene.com/homestead/?yard=' + state.slug;
@@ -1071,6 +1073,7 @@ function init(visitDoc, visitMiss) {
     share.hidden = visiting || !state.slug;
     if (!share.hidden) document.getElementById('hsShareUrl').value = yardUrl();
     guestEl.hidden = false;
+    syncLock();
     track('homestead_guestbook', { visiting: visiting ? 1 : 0 });
     if (!guestCache && state.slug) {
       renderGuest([]);
@@ -1078,8 +1081,8 @@ function init(visitDoc, visitMiss) {
     }
     renderGuest(guestCache || []);
   }
-  document.getElementById('hsGuestClose').addEventListener('click', () => { guestEl.hidden = true; });
-  guestEl.addEventListener('click', (e) => { if (e.target === guestEl) guestEl.hidden = true; });
+  document.getElementById('hsGuestClose').addEventListener('click', () => { guestEl.hidden = true; syncLock(); });
+  guestEl.addEventListener('click', (e) => { if (e.target === guestEl) { guestEl.hidden = true; syncLock(); } });
   document.getElementById('hsShareCopy').addEventListener('click', () => {
     const inp = document.getElementById('hsShareUrl');
     try { navigator.clipboard.writeText(inp.value); } catch (e) { inp.select(); document.execCommand('copy'); }
@@ -1170,6 +1173,7 @@ function init(visitDoc, visitMiss) {
     const inp = document.getElementById('hsClaimName');
     inp.value = myName ? myName + "'s Homestead" : 'My Homestead';
     claimEl.hidden = false;
+    syncLock();
     setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 40);
   }
   document.getElementById('hsClaimGo').addEventListener('click', async () => {
@@ -1186,6 +1190,7 @@ function init(visitDoc, visitMiss) {
     state.claimedAt = Date.now();
     save(); refreshSign();
     claimEl.hidden = true;
+    syncLock();
     toast('🏡 ' + v + ' — it’s yours');
     track('homestead_claim');
     // mint the ADDRESS — the sign name becomes the slug (yardBoot retries if offline)
@@ -1280,9 +1285,11 @@ function init(visitDoc, visitMiss) {
     if (state.stage < 1) {
       const card = document.createElement('div');
       card.className = 'hs-up';
-      card.innerHTML = '<div><b>First things first: pitch a tent</b>'
-        + '<span>' + TENT_PRICE + ' ' + COIN + ' — pick a colour, move in, and the whole decor'
-        + ' catalog opens up. Bananacoins come from playing anywhere in the world.</span></div>';
+      card.innerHTML = '<div class="hs-uphead"><b>⛺ Pitch a tent</b>'
+        + '<span class="hs-price">' + TENT_PRICE + ' ' + COIN + '</span></div>'
+        + '<span>pick a colour — the decor catalog opens when you move in.</span>'
+        + (coinBalance() < TENT_PRICE
+          ? '<span class="hs-note">bananacoins come from playing — the rave, park and bay all pay</span>' : '');
       const getStyle = stylePicker(1, card);
       const btn = document.createElement('button');
       btn.className = 'hs-btn';
@@ -1358,9 +1365,9 @@ function init(visitDoc, visitMiss) {
       card.className = 'hs-up';
       const next = STRUCT_LADDER[state.stage];   // stage 1 → roof, 2 → house
       if (next) {
-        card.innerHTML = '<div><b>' + next.icon + ' ' + next.name + '</b>'
-          + '<span>' + next.price + ' ' + COIN + ' — ' + next.pitch
-          + ' The plot grows to ' + CAPS[state.stage + 1] + ' spots.</span></div>';
+        card.innerHTML = '<div class="hs-uphead"><b>' + next.icon + ' ' + next.name + '</b>'
+          + '<span class="hs-price">' + next.price + ' ' + COIN + '</span></div>'
+          + '<span>' + next.pitch + ' Your land grows, and ' + CAPS[state.stage + 1] + ' decor spots open up.</span>';
         const getStyle = stylePicker(state.stage + 1, card);
         const btn = document.createElement('button');
         btn.className = 'hs-btn';
@@ -1395,10 +1402,11 @@ function init(visitDoc, visitMiss) {
       ? 'Things you own but haven’t placed. New things are ordered at the mailbox.'
       : 'Order from the catalog — cheap things arrive on the spot.';
     shopEl.hidden = false;
+    syncLock();
     renderShop();
     track(remote ? 'homestead_shed' : 'homestead_mailbox');
   }
-  function closeShop() { shopEl.hidden = true; }
+  function closeShop() { shopEl.hidden = true; syncLock(); }
   shopEl.addEventListener('click', (e) => {
     if (e.target === shopEl) closeShop();
     const t = e.target.closest('[data-tab]');
@@ -1553,6 +1561,7 @@ function init(visitDoc, visitMiss) {
   document.getElementById('hsSignMove').addEventListener('click', () => {
     if (visiting) return;
     guestEl.hidden = true;
+    syncLock();
     startPlacingHome('sign', {});
   });
 
