@@ -399,12 +399,23 @@ function init(visitDoc, visitMiss) {
   // (Trym). Precomputed here so blocked() stays a flat rect scan.
   let fenceRects = [];
   function buildFenceRects() {
-    fenceRects = state.fence.map((c) => [
-      c.i * 48 + (fenceHas(c.i - 1, c.j) ? 0 : 4),
-      c.j * 48 + (fenceHas(c.i, c.j - 1) ? 0 : 14),
-      c.i * 48 + 48 - (fenceHas(c.i + 1, c.j) ? 0 : 4),
-      c.j * 48 + 48 - (fenceHas(c.i, c.j + 1) ? 0 : 2),
-    ]);
+    // 🎯 Trym's three-wall tuning: hitboxes know their piece's ORIENTATION
+    // and which side you approach from. Coming from BELOW a wall you stop
+    // past its base (drawn in front of the rails); coming from ABOVE you walk
+    // deep enough that the fence overflows your legs (drawn behind). Vertical
+    // walls push sideways so the sprite never sits on the rails. Fused sides
+    // (a fence neighbour) stay flush so walls remain seamless.
+    fenceRects = state.fence.map((c) => {
+      const L = fenceHas(c.i - 1, c.j), R2 = fenceHas(c.i + 1, c.j);
+      const U = fenceHas(c.i, c.j - 1), D = fenceHas(c.i, c.j + 1);
+      const vert = (U || D) && !L && !R2;
+      return [
+        c.i * 48 + (L ? 0 : (vert ? -14 : 4)),
+        c.j * 48 + (U ? 0 : (vert ? 14 : 26)),
+        c.i * 48 + 48 - (R2 ? 0 : (vert ? -14 : 4)),
+        c.j * 48 + 48 - (D ? 0 : (vert ? 2 : -16)),
+      ];
+    });
   }
   function refreshFenceB() {
     buildFenceRects();
