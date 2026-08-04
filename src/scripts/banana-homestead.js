@@ -356,6 +356,8 @@ function init(visitDoc, visitMiss) {
   // tier rects only bound WHERE you may build/dig; the visible fence is yours.
   const fenceTier = () => Math.max(1, Math.min(state.stage, 3));
   const plotNow = () => FENCE_TIERS[fenceTier()].plot;
+  // an UPGRADE ghost roams the land it BRINGS — the deed expands with the roof
+  const placeBounds = () => FENCE_TIERS[Math.max(1, Math.min((placing && placing.toStage) || state.stage, 3))].plot;
 
   // ---- 🪵 THE PLAYER FENCE: cells like soil, autotiled from the kit -------
   const FENCE_CAP = 120;
@@ -1433,11 +1435,14 @@ function init(visitDoc, visitMiss) {
         btn.innerHTML = coinBalance() >= next.price ? next.icon + ' ' + next.name.toLowerCase()
           : 'need ' + next.price + ' ' + COIN + ' — you have ' + coinBalance();
         btn.disabled = coinBalance() < next.price;
+        btn.classList.add('hs-upcta');
         btn.addEventListener('click', () => {
           closeShop();
           startPlacingHome(getStyle(), { price: next.price, toStage: state.stage + 1 });
         });
-        card.appendChild(btn);
+        list.appendChild(card);
+        list.appendChild(btn);
+        return;
       } else {
         card.innerHTML = '<div><b>🏠 Fully upgraded</b><span>The homestead stands complete — for now.</span></div>';
       }
@@ -1465,6 +1470,8 @@ function init(visitDoc, visitMiss) {
     document.getElementById('hsShopTitle').textContent = hd[0];
     const p = document.getElementById('hsShopLead');
     if (p) p.textContent = hd[1];
+    const xb = document.getElementById('hsShopClose');
+    if (xb) xb.textContent = (shopEl.dataset.tab === 'home' || state.stage < 1) ? '✕' : '←';
     const bd = document.getElementById('hsShedBadge');
     if (bd) {
       const n = (state.shed || []).length;
@@ -1491,7 +1498,14 @@ function init(visitDoc, visitMiss) {
       renderShop();
     }
   });
-  document.getElementById('hsShopClose').addEventListener('click', closeShop);
+  document.getElementById('hsShopClose').addEventListener('click', () => {
+    if (state.stage >= 1 && shopEl.dataset.tab !== 'home') {
+      shopEl.dataset.tab = 'home';
+      shopHead();
+      return;
+    }
+    closeShop();
+  });
   document.getElementById('hsPhoneHome').addEventListener('click', () => {
     if (state.stage < 1) return;   // no home screen before the tent
     shopEl.dataset.tab = 'home';
@@ -1547,7 +1561,7 @@ function init(visitDoc, visitMiss) {
   const fixDims = () => FIXD[placing.key] || STRUCTS[placing.key];
   function homeOk(x, y) {
     const d = fixDims();
-    const P = FIXD[placing.key] ? FIX_BOUNDS : plotNow();
+    const P = FIXD[placing.key] ? FIX_BOUNDS : placeBounds();
     if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
     if (y - d.h < P[1] - 44 || y > P[3] - 8) return false;
     for (const c of state.fence) {
@@ -1577,7 +1591,9 @@ function init(visitDoc, visitMiss) {
     updateGhost();
     confirmEl.hidden = false;
     hint(false);
-    toast('choose where it stands — drag to look, tap to try', 3600);
+    toast(placing.toStage > state.stage
+      ? 'your land grows with it — place it anywhere on the new deed'
+      : 'choose where it stands — drag to look, tap to try', 3600);
   }
   function confirmHome() {
     const d = fixDims();
@@ -1816,7 +1832,7 @@ function init(visitDoc, visitMiss) {
     const wy = (e.clientY - r.top + camY) / scale;
     if (placing.home) {
       const d = fixDims();
-      const P = FIXD[placing.key] ? FIX_BOUNDS : plotNow();   // fixtures may sit by the road
+      const P = FIXD[placing.key] ? FIX_BOUNDS : placeBounds();   // fixtures may sit by the road
       placing.x = snap(Math.max(P[0] + d.w / 2, Math.min(P[2] - d.w / 2, wx)));
       placing.y = snap(Math.max(P[1] + Math.min(d.h * 0.5, 120), Math.min(P[3] - 10, wy)));
     } else {
