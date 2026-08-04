@@ -316,6 +316,16 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-signrow .hs-btn { flex: 0 0 auto; }
     .hs-signrow[hidden] { display: none; }
 
+    /* 🚚 orders on the way */
+    .hs-orders { display: grid; gap: 0.4rem; }
+    .hs-order {
+      display: flex; align-items: center; gap: 0.6rem; border: 2px dashed #000;
+      background: #fffbe0; padding: 0.4rem 0.55rem;
+    }
+    .hs-order img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+    .hs-order b { flex: 1; font-size: 0.82rem; }
+    .hs-order em { font-style: normal; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
+
     /* 🍳 the kitchen */
     .hs-pantry { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.55rem; }
     .hs-pantry span {
@@ -357,6 +367,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <button type="button" id="hsToolFence" aria-pressed="true">🪵 fence</button>
           <button type="button" id="hsToolSoil" aria-pressed="false">⛏️ soil</button>
           <button type="button" id="hsToolClear" aria-pressed="false">🧹 clear</button>
+          <button type="button" id="hsToolShed">📦 place</button>
           <button type="button" id="hsPlanDone">✓ done</button>
         </div>
         <div class="hs-visit" id="hsVisit" hidden>

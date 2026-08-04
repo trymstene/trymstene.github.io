@@ -108,6 +108,7 @@ function withHome(s) {   // older saves have no home — defaults = old spots
   if (!s.signAt) s.signAt = { x: SIGN.x, y: SIGN.y };
   if (!s.style) s.style = {};
   if (!s.pantry) s.pantry = {};
+  if (!Array.isArray(s.orders)) s.orders = [];   // deliveries on the way
   return s;
 }
 
@@ -918,6 +919,7 @@ function init(visitDoc, visitMiss) {
   toolF.addEventListener('click', () => setTool('fence'));
   toolS.addEventListener('click', () => setTool('soil'));
   toolC.addEventListener('click', () => setTool('clear'));
+  document.getElementById('hsToolShed').addEventListener('click', () => openShop('shed', true));
   document.getElementById('hsPlanDone').addEventListener('click', exitPlanner);
   // the hover cell: desktop sees exactly which tile a tap would hit
   view.addEventListener('pointermove', (e) => {
@@ -1209,6 +1211,31 @@ function init(visitDoc, visitMiss) {
   const cap = () => CAPS[Math.min(state.stage, CAPS.length - 1)];
   const CAT_LABELS = { garden: '🌼 Garden', furniture: '🪑 Furniture', nature: '🌿 Nature',
     lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community' };
+  // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
+  // statement pieces take a van — short waits (hours, never days), and the
+  // arrival is an EVENT. Community pieces ship instantly (maker-made).
+  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 0, lighting: 30, furniture: 60, display: 240 };
+  const shipMin = (d) => SHIP_MIN[d.cat] || 0;
+  const fmtShip = (ms) => {
+    const m = Math.max(1, Math.round(ms / 60000));
+    return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60 ? (m % 60) + 'm' : '') : m + 'm';
+  };
+  function checkOrders() {
+    if (visiting || !state.orders.length) return;
+    const now = Date.now();
+    const due = state.orders.filter((o) => o.at <= now);
+    if (!due.length) return;
+    state.orders = state.orders.filter((o) => o.at > now);
+    due.forEach((o) => state.shed.push({ id: o.id }));
+    save();
+    toast(due.length === 1
+      ? '📦 your ' + (DEX[due[0].id] ? DEX[due[0].id].name.toLowerCase() : 'order') + ' arrived — it’s in the shed'
+      : '📦 ' + due.length + ' orders arrived — they’re in the shed', 4200);
+    track('homestead_delivery', { n: due.length });
+    if (!shopEl.hidden) renderShop();
+  }
+  setInterval(checkOrders, 30000);
+  setTimeout(checkOrders, 1500);
   function shopTile(d, verb, cb) {
     const tile = document.createElement('div');
     tile.className = 'hs-tile';
@@ -1231,7 +1258,7 @@ function init(visitDoc, visitMiss) {
       nm.appendChild(by);
     }
     const pr = document.createElement('em');
-    if (verb === 'buy') pr.innerHTML = d.price + ' ' + COIN;
+    if (verb === 'buy') pr.innerHTML = d.price + ' ' + COIN + (shipMin(d) ? ' · 🚚 ' + fmtShip(shipMin(d) * 60000) : '');
     else pr.textContent = 'in the shed';
     const btn = document.createElement('button');
     btn.className = 'hs-btn';
@@ -1241,7 +1268,7 @@ function init(visitDoc, visitMiss) {
       btn.disabled = true;
       tile.classList.add('is-locked');
     } else if (verb === 'buy') {
-      btn.textContent = 'get it';
+      btn.textContent = shipMin(d) ? 'order it' : 'get it';
       btn.disabled = coinBalance() < d.price;
     } else {
       btn.textContent = 'place it';
@@ -1325,17 +1352,44 @@ function init(visitDoc, visitMiss) {
         p.textContent = 'Your plot is full (' + cap() + ' spots) — pick something up to make space.';
         list.appendChild(p);
       }
+      if (state.orders.length) {
+        const ow = document.createElement('div');
+        ow.className = 'hs-orders';
+        state.orders.slice().sort((a, b) => a.at - b.at).forEach((o) => {
+          const d = DEX[o.id];
+          if (!d) return;
+          const row = document.createElement('div');
+          row.className = 'hs-order';
+          const im2 = document.createElement('img');
+          im2.src = d.img; im2.alt = '';
+          const nm2 = document.createElement('b');
+          nm2.textContent = d.name;
+          const eta = document.createElement('em');
+          eta.textContent = '🚚 ' + fmtShip(o.at - Date.now());
+          row.append(im2, nm2, eta);
+          ow.appendChild(row);
+        });
+        list.appendChild(ow);
+      }
       const grid = document.createElement('div');
       grid.className = 'hs-grid';
       DECOR.filter((d) => curCat === 'all' || d.cat === curCat).forEach((d) => {
         grid.appendChild(shopTile(d, 'buy', () => {
-          if (full) { toast('the plot is full — put something away first'); return; }
           if (d.stage > state.stage || coinBalance() < d.price) return;
           passStat('coins_spent', d.price);
           refreshHud();
-          track('homestead_buy', { id: d.id, price: d.price });
-          closeShop();
-          startPlacing(d.id);
+          track('homestead_buy', { id: d.id, price: d.price, ship: shipMin(d) });
+          const mins = shipMin(d);
+          if (mins) {
+            state.orders.push({ id: d.id, at: Date.now() + mins * 60000 });
+            save();
+            toast('🚚 ordered — your ' + d.name.toLowerCase() + ' arrives in ' + fmtShip(mins * 60000));
+          } else {
+            state.shed.push({ id: d.id });
+            save();
+            toast('📦 into your shed — place it in 🔨 build mode');
+          }
+          renderShop();   // stay in the store — batch shopping is the point
         }));
       });
       list.appendChild(grid);
@@ -1343,7 +1397,7 @@ function init(visitDoc, visitMiss) {
       if (!state.shed.length) {
         const p = document.createElement('p');
         p.className = 'hs-note';
-        p.textContent = 'Nothing in the shed — things you pick up land here.';
+        p.textContent = 'Nothing in the shed — mailbox orders land here, ready to place.';
         list.appendChild(p);
       }
       const grid = document.createElement('div');
