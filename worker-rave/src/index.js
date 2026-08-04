@@ -345,6 +345,15 @@ export default {
   },
 };
 
+// the `c` slot holds a COMMA LIST since 2 Aug (a banana wears several
+// community items) — validate per token, cap 4. ⚠️ Jade's bug (4 Aug): the
+// old single-id regex failed the list and stripped the WHOLE slot, so
+// multi-wearers danced bare — visibly only in the rave, because the rave
+// echoes your own banana off the roster while park/beach draw yours locally.
+function sanitizeCList(v) {
+  const toks = String(v || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4);
+  return toks.length && toks.every((t) => /^c_[a-f0-9]{6,32}$/.test(t)) ? toks.join(',') : '';
+}
 function sanitizeOutfit(o) {
   o = o && typeof o === 'object' ? o : {};
   const extras = {};
@@ -357,7 +366,7 @@ function sanitizeOutfit(o) {
     // 'c' = a caught COMMUNITY catalog item (worker-share catalog/items.json).
     // Format-validated only: spectators render it from the public manifest, so
     // an unknown id simply draws nothing — bounded string, no art risk here.
-    ...(/^c_[a-f0-9]{6,32}$/.test(o.c || '') ? { c: o.c } : {}),
+    ...(sanitizeCList(o.c) ? { c: sanitizeCList(o.c) } : {}),
   };
 }
 
