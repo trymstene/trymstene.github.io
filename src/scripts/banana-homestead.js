@@ -845,9 +845,9 @@ function init(visitDoc, visitMiss) {
     toolF.setAttribute('aria-pressed', String(fencing));
     toolS.setAttribute('aria-pressed', String(digging));
     toolC.setAttribute('aria-pressed', String(clearing));
-    toast(fencing ? '🪵 tap the grid to raise fence — tap a piece to clear it. Gaps are doors'
-      : digging ? '⛏️ tap the grid to till soil — tap empty soil to fill it back'
-      : '🧹 tap anything to clear it — decor goes safely to the shed', 3200);
+    toast(fencing ? '🪵 tap your land (the lit grid) to build fence — tap a piece to take it down'
+      : digging ? '⛏️ tap your land to till soil — tap soil to fill it back'
+      : '🧹 tap anything to clear it — decor goes safely to the shed', 3400);
   }
   function planOverlay() {
     const F = FENCE_TIERS[fenceTier()].fence;
@@ -1542,7 +1542,7 @@ function init(visitDoc, visitMiss) {
     tierWas = fenceTier();
     refreshTent(); refreshSoil(); rebuildSolids(); refreshItems(); refreshHud();
     float(x, y - STRUCTS[key].h - 8, '✓');
-    if (grew) setTimeout(() => toast('🌱 the deed grew — more land to build on'), 1400);
+    if (grew) setTimeout(() => toast('🌱 your land grew — more room to build, dig and decorate'), 1400);
   }
   // the move buttons live INSIDE the panels the fixtures open
   document.getElementById('hsShopMove').addEventListener('click', () => {
@@ -1820,7 +1820,7 @@ function init(visitDoc, visitMiss) {
       const F = FENCE_TIERS[fenceTier()].fence;
       const cx = i * 48 + 24, cb = j * 48 + 48;
       if (i * 48 < F[0] || (i + 1) * 48 > F[2] || j * 48 < F[1] || (j + 1) * 48 > F[3]) {
-        toast('the deed ends here — fence inside your land');
+        toast('that’s outside your land — the lit grid is yours');
         return;
       }
       const c = state.fence.find((s2) => s2.i === i && s2.j === j);
@@ -1848,7 +1848,7 @@ function init(visitDoc, visitMiss) {
       const P = FENCE_TIERS[fenceTier()].fence;   // the SAME rect the grid lights
       const cx = i * 48 + 24, cb = j * 48 + 48;
       if (i * 48 < P[0] || (i + 1) * 48 > P[2] || j * 48 < P[1] || (j + 1) * 48 > P[3]) {
-        toast('the deed ends here — the lit grid is your land');
+        toast('that’s outside your land — the lit grid is yours');
         return;
       }
       const c = state.soil.find((s2) => s2.i === i && s2.j === j);
