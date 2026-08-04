@@ -299,7 +299,7 @@ function init(visitDoc, visitMiss) {
     // start, then only DRAGS move it — a moving object must never yank the
     // view around (Trym: "alot of camera jumping"). Tap = try the spot,
     // drag = look around; two gestures, two jobs.
-    const foc = (placing && camFree) ? camFree : pos;
+    const foc = ((placing || digging || fencing) && camFree) ? camFree : pos;
     return {
       x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), foc.x * scale - viewW / 2)),
       y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), foc.y * scale - viewH * 0.58)),
@@ -308,7 +308,7 @@ function init(visitDoc, visitMiss) {
   let camWX = NaN, camWY = NaN;
   function cam() {
     const t = camTarget();
-    const k = (placing && camFree) ? 0.3 : 0.12;   // panning wants a tighter leash
+    const k = ((placing || digging || fencing) && camFree) ? 0.3 : 0.12;   // panning wants a tighter leash
     camX += (t.x - camX) * k;
     camY += (t.y - camY) * k;
     if (Math.abs(t.x - camX) < 0.2) camX = t.x;
@@ -767,6 +767,11 @@ function init(visitDoc, visitMiss) {
     digging = dig; fencing = fen;
     digBtn.setAttribute('aria-pressed', String(digging));
     fenceBtn.setAttribute('aria-pressed', String(fencing));
+    // build modes borrow the PLACING camera: drag pans, tap acts — the
+    // banana is irrelevant while you edit (Stardew/ACNH convention)
+    if (digging || fencing) camFree = { x: pos.x, y: pos.y };
+    else if (!placing) camFree = null;
+    view.classList.toggle('is-placing', !!placing || digging || fencing);
   }
   digBtn.addEventListener('click', () => {
     if (visiting) { toast('dig at your own homestead'); return; }
@@ -1280,6 +1285,7 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacing(id, moving) {
+    setModes(false, false);
     cancelPlacing();
     const d = DEX[id];
     const P = plotNow();
@@ -1314,6 +1320,7 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacingHome(key, opts) {
+    setModes(false, false);
     cancelPlacing();
     const d = FIXD[key] || STRUCTS[key];
     const el = document.createElement('div');
@@ -1565,7 +1572,7 @@ function init(visitDoc, visitMiss) {
 
   // 🖐 placing gestures: DRAG pans the camera, TAP tries the spot. Never both
   // from one action — the pan threshold decides which one this gesture was.
-  let gest = null;   // { x0, y0, cam0x, cam0y, panning }
+  let gest = null, justPanned = false;   // { x0, y0, cam0x, cam0y, panning }
   function ghostTo(e) {
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
@@ -1583,12 +1590,12 @@ function init(visitDoc, visitMiss) {
     updateGhost();
   }
   view.addEventListener('pointerdown', (e) => {
-    if (!placing || panelOpen()) return;
+    if ((!placing && !digging && !fencing) || panelOpen()) return;
     if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-confirm')) return;
     gest = { x0: e.clientX, y0: e.clientY, cam0x: camFree.x, cam0y: camFree.y, panning: false };
   });
   view.addEventListener('pointermove', (e) => {
-    if (!gest || !placing) return;
+    if (!gest || (!placing && !digging && !fencing)) return;
     const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
     if (!gest.panning && Math.hypot(dx, dy) < 9) return;   // still a tap so far
     gest.panning = true;
@@ -1598,6 +1605,7 @@ function init(visitDoc, visitMiss) {
   });
   addEventListener('pointerup', (e) => {
     if (gest && placing && !gest.panning) ghostTo(e);   // a clean tap places
+    justPanned = !!(gest && gest.panning);   // a pan must never ALSO act
     gest = null;
   });
 
@@ -1619,27 +1627,8 @@ function init(visitDoc, visitMiss) {
       tgt.x = wx; tgt.y = wy;
       return;
     }
-    // the mailbox: near = open, far = walk to it
-    if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
-      if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
-        if (visiting) { toast('📬 answers only to ' + state.name); return; }
-        openShop(); return;
-      }
-      tgt.x = state.mailAt.x - 40; tgt.y = state.mailAt.y + 16;
-      return;
-    }
-    // 🪧 the sign: near = the guestbook, far = walk to it
-    if (Math.hypot(wx - state.signAt.x, wy - (state.signAt.y - 30)) < 56) {
-      if (Math.hypot(pos.x - state.signAt.x, pos.y - state.signAt.y) < 130) { openGuest(); return; }
-      tgt.x = state.signAt.x - 44; tgt.y = state.signAt.y + 6;
-      return;
-    }
-    // the tent spot (stage 0): near = the upgrades tab, far = walk over
-    if (!visiting && state.stage < 1 && Math.abs(wx - state.home.x) < 76 && wy > state.home.y - 84 && wy < state.home.y + 8) {
-      if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 150) { openShop('up'); return; }
-      tgt.x = state.home.x; tgt.y = state.home.y + 40;
-      return;
-    }
+    // ✋ a camera pan must never also act — the doctrine's other half
+    if (justPanned) { justPanned = false; return; }
     // 🪵 fence mode: tap = raise a piece, tap a piece = take it down
     if (fencing && !visiting) {
       const i = Math.floor(wx / 48), j = Math.floor(wy / 48);
@@ -1647,10 +1636,8 @@ function init(visitDoc, visitMiss) {
       const cx = i * 48 + 24, cb = j * 48 + 48;
       if (i * 48 < F[0] || (i + 1) * 48 > F[2] || j * 48 < F[1] || (j + 1) * 48 > F[3]) {
         toast('the deed ends here — fence inside your land');
-        tgt.x = wx; tgt.y = wy;
         return;
       }
-      if (Math.hypot(pos.x - cx, pos.y - cb) > 170) { tgt.x = cx; tgt.y = cb + 10; return; }
       const c = state.fence.find((s2) => s2.i === i && s2.j === j);
       if (c) {
         state.fence = state.fence.filter((s2) => s2 !== c);
@@ -1676,11 +1663,9 @@ function init(visitDoc, visitMiss) {
       const P = plotNow();
       const cx = i * 48 + 24, cb = j * 48 + 48;
       if (i * 48 < P[0] || (i + 1) * 48 > P[2] || j * 48 < P[1] || (j + 1) * 48 > P[3]) {
-        toast('dig inside the fence');
-        tgt.x = wx; tgt.y = wy;
+        toast('dig inside your land');
         return;
       }
-      if (Math.hypot(pos.x - cx, pos.y - cb) > 150) { tgt.x = cx; tgt.y = cb + 10; return; }
       const c = state.soil.find((s2) => s2.i === i && s2.j === j);
       if (c) {
         if (c.crop) { toast('something grows here — harvest it first'); return; }
@@ -1697,6 +1682,27 @@ function init(visitDoc, visitMiss) {
         track('homestead_dig', { n: state.soil.length });
       }
       save(); refreshSoil();
+      return;
+    }
+    // the mailbox: near = open, far = walk to it
+    if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
+      if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
+        if (visiting) { toast('📬 answers only to ' + state.name); return; }
+        openShop(); return;
+      }
+      tgt.x = state.mailAt.x - 40; tgt.y = state.mailAt.y + 16;
+      return;
+    }
+    // 🪧 the sign: near = the guestbook, far = walk to it
+    if (Math.hypot(wx - state.signAt.x, wy - (state.signAt.y - 30)) < 56) {
+      if (Math.hypot(pos.x - state.signAt.x, pos.y - state.signAt.y) < 130) { openGuest(); return; }
+      tgt.x = state.signAt.x - 44; tgt.y = state.signAt.y + 6;
+      return;
+    }
+    // the tent spot (stage 0): near = the upgrades tab, far = walk over
+    if (!visiting && state.stage < 1 && Math.abs(wx - state.home.x) < 76 && wy > state.home.y - 84 && wy < state.home.y + 8) {
+      if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 150) { openShop('up'); return; }
+      tgt.x = state.home.x; tgt.y = state.home.y + 40;
       return;
     }
     // a soil cell: plant / water / harvest (visitors: water)
