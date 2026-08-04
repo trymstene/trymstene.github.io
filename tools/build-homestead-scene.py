@@ -391,21 +391,18 @@ if HAVE_PACK:
     if _kit['h'] and _kit['v_w']:
         for _t in (1, 2, 3):
             lay_fence_tier(_kit, _t)
-        # 🪵 PLAYER-BUILT FENCES — Type_2 (the pack promo's log-rail
-        # fence, Trym's pick): SIDE-VIEW rails, so every direction is the same
-        # family and corners are corner-proof by construction. Same engine
-        # grammar keys; verticals/ends just remap onto rail pieces.
-        _F2 = lambda n, v: 'Wooden_Fence_Type_2_Brown_%d_Vers_%d*48x48.png' % (n, v)
-        FENCE2 = {'endl': _F2(1, 1), 'h': _F2(2, 1), 'h2': _F2(2, 2), 'endr': _F2(2, 1),
-                  'jl': _F2(1, 1), 'jr': _F2(2, 1), 'vw': _F2(2, 1), 've': _F2(2, 2),
-                  'gl': _F2(6, 1), 'gr': _F2(6, 1)}
-        _fok = 0
-        for _k, _n in FENCE2.items():
-            _t2 = farm_sprite(_n)
-            if _t2 is not None:
-                _t2.save(os.path.join(OUT, 'f-%s.png' % _k), optimize=True)
-                _fok += 1
-        print('  fence kit tiles (Type_2): %d/10' % _fok)
+        # 🪵 PLAYER-BUILT FENCES — the BROWN LOG fence, cropped from the
+        # pack's own composed sheet (2_Fences_48x48): true top-down verticals
+        # (rails drawn downward), corners = full-height end posts the columns
+        # run through. Tile coords read off the assembly (Trym's promo fence).
+        _fsheet = Image.open(os.path.join(FARM, '2_Fences_48x48.png')).convert('RGBA')
+        _FT = {'endl': (18, 11), 'endr': (24, 11), 'jl': (18, 11), 'jr': (24, 11),
+               'h': (19, 11), 'h2': (22, 11), 'vw': (24, 13), 've': (21, 13),
+               'vu': (18, 12), 'vb': (24, 14), 'gl': (25, 11), 'gr': (25, 11)}
+        for _k, (_tx, _ty) in _FT.items():
+            _fsheet.crop((_tx * T, _ty * T, _tx * T + T, _ty * T + T)).save(
+                os.path.join(OUT, 'f-%s.png' % _k), optimize=True)
+        print('  fence kit tiles (brown log): %d' % len(_FT))
 
 # ---- 🪏 ORGANIC SOIL — the promo's terrain autotile (Trym: "we should
 # use these, looks way more organic"). The Godot sheet stacks 14 terrains of
@@ -460,7 +457,16 @@ if os.path.isfile(_auto):
         _wn, _ws, _ww, _we = _want(_key)
         for _n, _s2, _w2, _e2, _t in _tiles:
             if (_n, _s2, _w2, _e2) == (bool(_wn), bool(_ws), bool(_ww), bool(_we)):
-                _t.save(os.path.join(OUT, 's-%s.png' % _key), optimize=True)
+                _tw = _t.copy()
+                _pw = _tw.load()
+                for _y2 in range(T):
+                    for _x2 in range(T):
+                        _r2, _g2, _b2, _a2 = _pw[_x2, _y2]
+                        if _a2 and _g2 > _r2 - 10 and _g2 > _b2:
+                            _pw[_x2, _y2] = (int(_r2 * 0.7 + GRASS_TARGET[0] * 0.3),
+                                             int(_g2 * 0.7 + GRASS_TARGET[1] * 0.3),
+                                             int(_b2 * 0.7 + GRASS_TARGET[2] * 0.3), _a2)
+                _tw.save(os.path.join(OUT, 's-%s.png' % _key), optimize=True)
                 _found += 1
                 break
         else:

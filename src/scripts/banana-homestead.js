@@ -389,7 +389,8 @@ function init(visitDoc, visitMiss) {
       if (!R2) return U ? 'jr' : 'endr';
       return i % 2 ? 'h' : 'h2';
     }
-    if (U || D) return fenceVSide(i, j);
+    // true top-down verticals now: dedicated top/bottom ends, mids alternate
+    if (U || D) return !U ? 'vu' : (!D ? 'vb' : (j % 2 ? 'vw' : 've'));
     return 'gl';   // a lone post
   }
   const fpieceEls = new Map();
