@@ -581,14 +581,20 @@ DECOR_DEF = [
     ('whitevase', 'White flower vase', 'garden', 20, 3, ['ME_Singles_Garden_48x48_Big_White_Flower_Vase.png'], True),
 ]
 
-# the Angel statue is monument-sized at PROP (174px wide) — a lawn ornament,
-# not a cathedral piece, so it gets its own scale
-DECOR_SCALE = {'statue': 0.30, 'statue2': 0.30, 'coop': 0.42, 'fountain': 0.60, 'shelf': 0.55}
+# 🔎 THE CRISP RULE (Trym: "scarecrow blurry, statue crisp"): both packs'
+# "48x48" art is 3×-CHUNKY — every art pixel is a 3×3 block (Farm files are
+# 144px). An export scale off the 1/3 grid shears those blocks unevenly and
+# bakes mud into the PNG. So decor lives ON the grid: 2/3 default (crisp, and
+# a notch smaller than the old 0.76 — the lanterns' "a bit large"), 1/3 for
+# the big builds. The statues keep Trym-approved 0.30 ("right size, crisp").
+DECOR_DEFAULT = 2 / 3.0
+DECOR_SCALE = {'statue': 0.30, 'statue2': 0.30, 'coop': 1 / 3.0,
+               'fountain': 2 / 3.0, 'shelf': 2 / 3.0}
 
 DECOR_OUT = []
 if HAVE_PACK:
     for did, name, cat, price, stage, cands, solid in DECOR_DEF:
-        s = sprite(cands, scale=DECOR_SCALE.get(did, PROP))
+        s = sprite(cands, scale=DECOR_SCALE.get(did, DECOR_DEFAULT))
         if s is None:
             continue
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
