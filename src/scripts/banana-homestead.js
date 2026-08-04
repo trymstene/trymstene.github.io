@@ -1228,11 +1228,11 @@ function init(visitDoc, visitMiss) {
     state.orders = state.orders.filter((o) => o.at > now);
     due.forEach((o) => state.shed.push({ id: o.id }));
     save();
-    toast(due.length === 1
+    shopNote(due.length === 1
       ? '📦 your ' + (DEX[due[0].id] ? DEX[due[0].id].name.toLowerCase() : 'order') + ' arrived — it’s in the shed'
       : '📦 ' + due.length + ' orders arrived — they’re in the shed', 4200);
     track('homestead_delivery', { n: due.length });
-    if (!shopEl.hidden) renderShop();
+    if (!shopEl.hidden) { shopHead(); renderShop(); }
   }
   setInterval(checkOrders, 30000);
   setTimeout(checkOrders, 1500);
@@ -1264,9 +1264,13 @@ function init(visitDoc, visitMiss) {
     btn.className = 'hs-btn';
     if (verb === 'buy' && d.stage > state.stage) {
       const need = STRUCT_LADDER[Math.min(d.stage, STRUCT_LADDER.length) - 1];
-      btn.textContent = '🔒 ' + (need ? need.key + ' first' : 'locked');
+      btn.textContent = 'get it';
       btn.disabled = true;
       tile.classList.add('is-locked');
+      const pill = document.createElement('span');
+      pill.className = 'hs-lockpill';
+      pill.textContent = '🔒 ' + (need && need.key ? need.key + ' first' : 'locked');
+      tile.appendChild(pill);
     } else if (verb === 'buy') {
       btn.textContent = shipMin(d) ? 'order it' : 'get it';
       btn.disabled = coinBalance() < d.price;
@@ -1384,11 +1388,11 @@ function init(visitDoc, visitMiss) {
           if (mins) {
             state.orders.push({ id: d.id, at: Date.now() + mins * 60000 });
             save();
-            toast('🚚 ordered — your ' + d.name.toLowerCase() + ' arrives in ' + fmtShip(mins * 60000));
+            shopNote('🚚 ordered — arrives in ' + fmtShip(mins * 60000));
           } else {
             state.shed.push({ id: d.id });
             save();
-            toast('📦 into your shed — place it in 🔨 build mode');
+            shopNote('📦 ' + d.name + ' → your shed');
           }
           renderShop();   // stay in the store — batch shopping is the point
         }));
@@ -1440,6 +1444,16 @@ function init(visitDoc, visitMiss) {
       list.appendChild(card);
     }
   }
+  let pnTimer = null;
+  function phoneNote(text) {
+    const n = document.getElementById('hsPhoneNote');
+    if (!n) return;
+    n.textContent = text;
+    n.classList.add('is-on');
+    clearTimeout(pnTimer);
+    pnTimer = setTimeout(() => n.classList.remove('is-on'), 2300);
+  }
+  const shopNote = (t, ms) => { if (shopEl.hidden) toast(t, ms); else phoneNote(t); };
   const SHOP_HEADS = {
     home: ['🍌 Banana Phone', ''],
     order: ['🛒 Order online', 'The van delivers to your mailbox.'],
@@ -1451,6 +1465,12 @@ function init(visitDoc, visitMiss) {
     document.getElementById('hsShopTitle').textContent = hd[0];
     const p = document.getElementById('hsShopLead');
     if (p) p.textContent = hd[1];
+    const bd = document.getElementById('hsShedBadge');
+    if (bd) {
+      const n = (state.shed || []).length;
+      bd.hidden = !n;
+      bd.textContent = n > 9 ? '9+' : n;
+    }
   }
   function openShop(tab, remote) {
     if (state.stage < 1) tab = 'order';   // tent-first: straight to the one offer
@@ -1828,7 +1848,8 @@ function init(visitDoc, visitMiss) {
 
   // ---- taps ---------------------------------------------------------------
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-chip')) return;
+    if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-chip')
+      || e.target.closest('.hs-confirm')) return;
     if (panelOpen()) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
