@@ -394,7 +394,20 @@ function init(visitDoc, visitMiss) {
     return 'gl';   // a lone post
   }
   const fpieceEls = new Map();
+  // ⚠️ colliders FUSE toward neighbouring cells — per-cell inset boxes left
+  // 16px seams between stacked pieces and the banana walked through the rails
+  // (Trym). Precomputed here so blocked() stays a flat rect scan.
+  let fenceRects = [];
+  function buildFenceRects() {
+    fenceRects = state.fence.map((c) => [
+      c.i * 48 + (fenceHas(c.i - 1, c.j) ? 0 : 4),
+      c.j * 48 + (fenceHas(c.i, c.j - 1) ? 0 : 14),
+      c.i * 48 + 48 - (fenceHas(c.i + 1, c.j) ? 0 : 4),
+      c.j * 48 + 48 - (fenceHas(c.i, c.j + 1) ? 0 : 2),
+    ]);
+  }
   function refreshFenceB() {
+    buildFenceRects();
     const seen = new Set();
     state.fence.forEach((c) => {
       const key = c.i + ',' + c.j;
@@ -617,9 +630,7 @@ function init(visitDoc, visitMiss) {
     if (x < BOUND || y < BOUND || y > H - BOUND) return true;
     if (x > W - BOUND && !inRoadLane(y)) return true;      // east = the road out
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
-    for (const c of state.fence) {
-      if (x > c.i * 48 + 2 && x < c.i * 48 + 46 && y > c.j * 48 + 14 && y < c.j * 48 + 46) return true;
-    }
+    for (const r of fenceRects) if (inRect(x, y, r)) return true;
     for (const r of liveRects) if (inRect(x, y, r)) return true;
     return false;
   }
