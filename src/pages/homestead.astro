@@ -196,7 +196,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
        every shop-row button over its own label (Trym's screenshot) */
     #hsClaim .hs-btn { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
     /* the mailbox is a CATALOG, not a corridor — wide card, tile grid */
-    #hsShop .hs-card { width: min(600px, 100%); }
+    #hsShop .hs-card { width: min(392px, 100%); }
     .hs-cats { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0 0 0.7rem; }
     .hs-cats button {
       font: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer;
@@ -210,7 +210,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       border: 2px solid #000; background: #fff; padding: 0.55rem 0.4rem 0.5rem;
       text-align: center;
     }
-    .hs-tile img { width: 52px; height: 52px; object-fit: contain; image-rendering: pixelated; }
+    .hs-tile > img { width: 52px; height: 52px; object-fit: contain; image-rendering: pixelated; }
     .hs-tilesvg { width: 52px; height: 52px; display: grid; place-items: center; }
     .hs-tilesvg svg { width: 100%; height: 100%; image-rendering: pixelated; }
     .hs-maker { font-style: normal; font-size: 0.66rem; font-weight: 700; opacity: 0.6; }
@@ -230,7 +230,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
     /* touch drags steer the placement ghost, never the page */
     .hs-view.is-placing { touch-action: none; }
     .hs-list { display: grid; gap: 0.5rem; max-height: min(46vh, 380px); overflow-y: auto;
-      overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+      overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .hs-row {
       display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
       background: #fff; padding: 0.45rem 0.55rem;
@@ -278,10 +278,31 @@ const description = 'A clearing west of the park with your name on the sign: cla
       content: ''; position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
       width: 58px; height: 7px; background: #1a1408; border-radius: 4px;
     }
-    .hs-phoneshell::after {
-      content: ''; position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%);
-      width: 15px; height: 15px; border: 3px solid #1a1408; border-radius: 50%;
-      background: #ffd21f; box-sizing: border-box;
+    .hs-homebtn {
+      position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+      width: 19px; height: 19px; border: 3px solid #1a1408; border-radius: 50%;
+      background: #ffd21f; box-sizing: border-box; cursor: pointer; padding: 0;
+    }
+    .hs-homebtn:active { background: #e8bd0f; }
+    /* the phone navigates by APPS — the tab row retires */
+    #hsShop .hs-tabs { display: none; }
+    #hsShopLead:empty { display: none; }
+    .hs-apps { display: none; }
+    #hsShop[data-tab="home"] .hs-apps {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+      padding: 1.1rem 0.8rem 1.4rem; background: #fffdf5;
+      border: 3px solid #000; border-top: 0; border-radius: 0 0 10px 10px;
+    }
+    #hsShop[data-tab="home"] .hs-cats, #hsShop[data-tab="home"] .hs-list { display: none; }
+    .hs-apps button {
+      font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer;
+      border: 0; background: none; padding: 0.2rem 0;
+      display: grid; justify-items: center; gap: 0.35rem; color: inherit;
+    }
+    .hs-appic {
+      width: 54px; height: 54px; display: grid; place-items: center;
+      font-size: 1.65rem; border: 3px solid #000; border-radius: 14px;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.22);
     }
     .hs-phoneshell > h2, .hs-phoneshell > p, .hs-phoneshell > .hs-tabs,
     .hs-phoneshell > .hs-cats, .hs-phoneshell > .hs-list {
@@ -300,6 +321,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
       border-radius: 0 0 10px 10px;
     }
     .hs-phoneshell .hs-shopx { top: 1.9rem; right: 1.05rem; z-index: 5; }
+    .hs-phoneshell .hs-list { max-height: min(62vh, 540px); }
 
     /* the place/cancel confirm bar rides the bottom of the view */
     .hs-confirm {
@@ -314,7 +336,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-about p { margin: 0 0 0.6rem; line-height: 1.6; font-size: 0.92rem; opacity: 0.85; }
 
     /* 🪙 the REAL bananacoin rides every price (never the stock emoji) */
-    .hs-coin { width: 14px; height: 14px; image-rendering: pixelated; vertical-align: -2px; }
+    /* ⚠️ armored: broad tile/card img rules keep catching the coin (3rd hit) */
+    .hs-coin { width: 14px !important; height: 14px !important; image-rendering: pixelated; vertical-align: -2px; }
 
     /* 👋 visiting someone else's homestead */
     .hs-visit {
@@ -450,11 +473,16 @@ const description = 'A clearing west of the park with your name on the sign: cla
       </div>
     </div>
 
-    <div class="hs-veil" id="hsShop" hidden data-tab="order">
+    <div class="hs-veil" id="hsShop" hidden data-tab="home">
       <div class="hs-card hs-phoneshell">
         <button class="hs-shopx" id="hsShopClose" aria-label="Close">✕</button>
         <h2 id="hsShopTitle">🍌 Banana Phone</h2>
-        <p id="hsShopLead">Order from the catalog — cheap things arrive on the spot.</p>
+        <p id="hsShopLead"></p>
+        <div class="hs-apps" id="hsApps">
+          <button type="button" data-tab="order"><span class="hs-appic" style="background:#dff1ff">🛒</span>Order</button>
+          <button type="button" data-tab="shed"><span class="hs-appic" style="background:#f3e6cf">📦</span>Shed</button>
+          <button type="button" data-tab="up"><span class="hs-appic" style="background:#e2f4d9">⛺</span>Upgrades</button>
+        </div>
         <div class="hs-tabs">
           <button type="button" data-tab="order" aria-pressed="true">🛒 Order</button>
           <button type="button" data-tab="shed" aria-pressed="false">📦 Shed</button>
@@ -462,6 +490,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
         </div>
         <div class="hs-cats" id="hsShopCats" hidden></div>
         <div class="hs-list" id="hsShopList"></div>
+        <button class="hs-homebtn" id="hsPhoneHome" aria-label="Home screen"></button>
       </div>
     </div>
 

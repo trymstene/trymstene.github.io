@@ -51,11 +51,11 @@ const HS_KEY = 'hs-v1';
 const CAPS = [12, 28, 42, 56];   // placement spots per stage — each rung adds room
 // 🏠 the ladder: every rung is a WARDROBE — pick a style, then place it
 const STRUCT_LADDER = [
-  { price: 50, name: 'Pitch a tent', icon: '⛺',
+  { key: 'tent', price: 50, name: 'Pitch a tent', icon: '⛺',
     pitch: 'pick a colour, move in — the whole decor catalog opens up.' },
-  { price: 250, name: 'Get a real roof', icon: '🛖',
+  { key: 'cabin', price: 250, name: 'Get a real roof', icon: '🛖',
     pitch: 'a mobile home, a barn — your call. The plot grows and the fancier catalog unlocks.' },
-  { price: 600, name: 'Build the house', icon: '🏠',
+  { key: 'house', price: 600, name: 'Build the house', icon: '🏠',
     pitch: 'country, villa, haunted, city — the full homestead, the grandest catalog.' },
 ];
 const STYLE_DEFAULTS = { 1: 'tent1', 2: 'barn', 3: 'country' };
@@ -827,7 +827,7 @@ function init(visitDoc, visitMiss) {
   document.getElementById('hsBag').addEventListener('click', () => {
     if (visiting) { toast('that’s ' + state.name + '’s number, not yours'); return; }
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
-    openShop('order');   // 🍌 the phone IS the store — no walking required
+    openShop('home');   // 🍌 the phone opens on its home screen
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
   // 🔨 THE PLANNER (Trym: "a separate mode where the camera zooms out and
@@ -1209,7 +1209,8 @@ function init(visitDoc, visitMiss) {
   // ---- 📬 the mailbox shop -------------------------------------------------
   const cap = () => CAPS[Math.min(state.stage, CAPS.length - 1)];
   const CAT_LABELS = { garden: '🌼 Garden', furniture: '🪑 Furniture', nature: '🌿 Nature',
-    lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community' };
+    lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community',
+    farm: '🌾 Farm' };
   // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
   // statement pieces take a van — short waits (hours, never days), and the
   // arrival is an EVENT. Community pieces ship instantly (maker-made).
@@ -1330,6 +1331,7 @@ function init(visitDoc, visitMiss) {
       return;
     }
     const tab = shopEl.dataset.tab || 'order';
+    if (tab === 'home') return;   // the app grid is pure CSS state
     const full = state.items.length >= cap();
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
@@ -1438,16 +1440,22 @@ function init(visitDoc, visitMiss) {
       list.appendChild(card);
     }
   }
-  function openShop(tab, remote) {
-    if (tab) {
-      shopEl.dataset.tab = tab;
-      shopEl.querySelectorAll('.hs-tabs button').forEach((b) =>
-        b.setAttribute('aria-pressed', String(b.dataset.tab === tab)));
-    }
+  const SHOP_HEADS = {
+    home: ['🍌 Banana Phone', ''],
+    order: ['🛒 Order online', 'The van delivers to your mailbox.'],
+    shed: ['📦 Your shed', 'Ready to place in 🔨 build mode.'],
+    up: ['⛺ Upgrades', ''],
+  };
+  function shopHead() {
+    const hd = SHOP_HEADS[shopEl.dataset.tab] || SHOP_HEADS.order;
+    document.getElementById('hsShopTitle').textContent = hd[0];
     const p = document.getElementById('hsShopLead');
-    if (p) p.textContent = (shopEl.dataset.tab === 'shed')
-      ? 'Your things, ready to place in 🔨 build mode.'
-      : 'Order online — the van delivers to your mailbox.';
+    if (p) p.textContent = hd[1];
+  }
+  function openShop(tab, remote) {
+    if (state.stage < 1) tab = 'order';   // tent-first: straight to the one offer
+    if (tab) shopEl.dataset.tab = tab;
+    shopHead();
     shopEl.hidden = false;
     syncLock();
     renderShop();
@@ -1459,16 +1467,16 @@ function init(visitDoc, visitMiss) {
     const t = e.target.closest('[data-tab]');
     if (t && t.tagName === 'BUTTON') {
       shopEl.dataset.tab = t.dataset.tab;
-      shopEl.querySelectorAll('.hs-tabs button').forEach((b) =>
-        b.setAttribute('aria-pressed', String(b.dataset.tab === t.dataset.tab)));
-      const p2 = document.getElementById('hsShopLead');
-      if (p2) p2.textContent = (t.dataset.tab === 'shed')
-        ? 'Your things, ready to place in 🔨 build mode.'
-        : 'Order online — the van delivers to your mailbox.';
+      shopHead();
       renderShop();
     }
   });
   document.getElementById('hsShopClose').addEventListener('click', closeShop);
+  document.getElementById('hsPhoneHome').addEventListener('click', () => {
+    if (state.stage < 1) return;   // no home screen before the tent
+    shopEl.dataset.tab = 'home';
+    shopHead();
+  });
 
   // ---- 🪴 placing: the ghost + the confirm bar -----------------------------
   const snap = (v) => Math.round(v / 24) * 24;
