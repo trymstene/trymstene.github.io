@@ -110,6 +110,7 @@ function withHome(s) {   // older saves have no home — defaults = old spots
   if (!s.pantry) s.pantry = {};
   if (!Array.isArray(s.orders)) s.orders = [];   // deliveries on the way
   if (typeof s.look !== 'string') s.look = '';   // 🎨 worn style (wardrobe)
+  if (!s.inItems || typeof s.inItems !== 'object' || Array.isArray(s.inItems)) s.inItems = {};
   return s;
 }
 
@@ -548,6 +549,13 @@ function init(visitDoc, visitMiss) {
   // (z 2000) hides the yard and the banana rides z+2100 while indoors.
   let inside = 0, inShade = null, inPlate = null, inPlateKey = '';
   const IN_Z = 2100;
+  // 🛋 M4.5: each room keeps its own furniture (state.inItems[tier])
+  const INCAP = { 1: 6, 2: 12, 3: 16 };
+  const inList = () => (state.inItems[inside] = state.inItems[inside] || []);
+  const roomBounds = (t = inside) => {
+    const I = INTERIORS[t];
+    return [I.box[0] + 34, I.box[1] + 116, I.box[0] + I.box[2] - 34, I.box[1] + I.box[3] - 12];
+  };
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   function enterHome() {
@@ -573,6 +581,7 @@ function init(visitDoc, visitMiss) {
       inPlate.style.backgroundImage = "url('/assets/homestead/" + I.img + "')";
     }
     inPlate.hidden = false;
+    refreshInItems();
     pos.x = I.spawn[0]; pos.y = I.spawn[1];
     tgt.x = pos.x;
     // nudge INTO the room — toward its centre, never back through the door
@@ -583,6 +592,8 @@ function init(visitDoc, visitMiss) {
   }
   function exitHome() {
     inside = 0;
+    refreshInItems();
+    clearChip();
     if (inShade) inShade.hidden = true;
     if (inPlate) inPlate.hidden = true;
     pos.x = state.home.x; pos.y = state.home.y + 34;
@@ -629,6 +640,36 @@ function init(visitDoc, visitMiss) {
     itemEls.length = 0;
     state.items.forEach((it) => { if (DEX[it.id]) itemEls.push(itemDiv(it)); });
     rebuildSolids();
+  }
+  const inEls = [];
+  function refreshInItems() {
+    inEls.forEach((el) => el.remove());
+    inEls.length = 0;
+    if (!inside) return;
+    (state.inItems[inside] || []).forEach((it) => {
+      if (!DEX[it.id]) return;
+      const el = itemDiv(it);
+      el.style.zIndex = String(IN_Z + Math.round(it.y));   // sorts with the banana
+      inEls.push(el);
+    });
+  }
+  function inSpotOk(d, x, y, t = inside) {
+    const I = INTERIORS[t];
+    if (!I) return false;
+    const B = roomBounds(t);
+    if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
+    if (I.kitchen && x + d.w / 2 > I.kitchen[0] - 8 && x - d.w / 2 < I.kitchen[2] + 8
+      && y > I.kitchen[1] - 20 && y - d.h < I.kitchen[3] + 8) return false;
+    if (I.exit && x + d.w / 2 > I.exit[0] - 20 && x - d.w / 2 < I.exit[2] + 20 && y > I.exit[1] - 90) return false;
+    for (const c of I.cols) {
+      if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 24 < c[3]) return false;
+    }
+    for (const it of (state.inItems[t] || [])) {
+      if (placing && placing.moving === it) continue;
+      const o = DEX[it.id];
+      if (o && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
+    }
+    return true;
   }
 
   // ---- collision ----------------------------------------------------------
@@ -947,6 +988,7 @@ function init(visitDoc, visitMiss) {
   }
   buildBtn.addEventListener('click', () => {
     if (visiting) { toast('build at your own homestead'); return; }
+    if (inside) { toast('step outside to work the land'); return; }
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
     if (planner) exitPlanner(); else enterPlanner();
   });
@@ -1246,11 +1288,11 @@ function init(visitDoc, visitMiss) {
   const cap = () => CAPS[Math.min(state.stage, CAPS.length - 1)];
   const CAT_LABELS = { garden: '🌼 Garden', furniture: '🪑 Furniture', nature: '🌿 Nature',
     lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community',
-    farm: '🌾 Farm' };
+    farm: '🌾 Farm', interior: '🛋 Interior' };
   // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
   // statement pieces take a van — short waits (hours, never days), and the
   // arrival is an EVENT. Community pieces ship instantly (maker-made).
-  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 0, lighting: 30, furniture: 60, display: 240 };
+  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 0, lighting: 30, furniture: 60, display: 240, interior: 45 };
   const shipMin = (d) => SHIP_MIN[d.cat] || 0;
   const fmtShip = (ms) => {
     const m = Math.max(1, Math.round(ms / 60000));
@@ -1375,9 +1417,10 @@ function init(visitDoc, visitMiss) {
     const full = state.items.length >= cap();
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
-      const cats = ['all', ...new Set(DECOR.map((d) => d.cat))];
+      const HERE = (d2) => (d2.cat === 'interior') === !!inside;
+      const cats = ['all', ...new Set(DECOR.filter(HERE).map((d) => d.cat))];
       const curCat = shopEl.dataset.cat || 'all';
-      catsRow.hidden = false;
+      catsRow.hidden = cats.length <= 2;   // one shelf needs no chips
       catsRow.replaceChildren();
       cats.forEach((c) => {
         const b = document.createElement('button');
@@ -1414,7 +1457,7 @@ function init(visitDoc, visitMiss) {
       }
       const grid = document.createElement('div');
       grid.className = 'hs-grid';
-      DECOR.filter((d) => curCat === 'all' || d.cat === curCat).forEach((d) => {
+      DECOR.filter(HERE).filter((d) => curCat === 'all' || d.cat === curCat).forEach((d) => {
         grid.appendChild(shopTile(d, 'buy', () => {
           if (d.stage > state.stage || coinBalance() < d.price) return;
           passStat('coins_spent', d.price);
@@ -1451,7 +1494,13 @@ function init(visitDoc, visitMiss) {
       Object.keys(counts).forEach((id) => {
         const d = DEX[id];
         const tile = shopTile(d, 'place', () => {
-          if (state.items.length >= cap()) { toast('the plot is full'); return; }
+          const indoorItem = d.cat === 'interior';
+          if (indoorItem && !inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
+          if (!indoorItem && inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
+          if (inside ? inList().length >= INCAP[inside] : state.items.length >= cap()) {
+            toast(inside ? 'this room is full (' + INCAP[inside] + ' spots)' : 'the plot is full');
+            return;
+          }
           const i = state.shed.findIndex((s) => s.id === id);
           if (i < 0) return;
           state.shed.splice(i, 1);
@@ -1631,10 +1680,11 @@ function init(visitDoc, visitMiss) {
   function startPlacing(id, moving) {
     cancelPlacing();
     const d = DEX[id];
-    const P = plotNow();
-    const x = snap(moving ? moving.x : Math.max(P[0] + 60, Math.min(P[2] - 60, pos.x)));
-    const y = snap(moving ? moving.y : Math.max(P[1] + 60, Math.min(P[3] - 30, pos.y)));
-    placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null };
+    const P = inside ? roomBounds() : plotNow();
+    const x = snap(moving ? moving.x : Math.max(P[0] + 40, Math.min(P[2] - 40, pos.x)));
+    const y = snap(moving ? moving.y : Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
+    placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null, room: inside };
+    if (inside) placing.el.style.zIndex = String(IN_Z + Math.round(y));
     camFree = { x, y };   // one glide to the ghost — after this, only drags pan
     if (moving) { refreshItems(); }   // the original disappears while it moves
     view.classList.add('is-placing');   // touch drags steer the camera, not the page
@@ -1778,7 +1828,9 @@ function init(visitDoc, visitMiss) {
     placing.el.style.left = pct(placing.x - d.w / 2, W);
     placing.el.style.top = pct(placing.y - d.h, H);
     depth(placing.el, placing.y);
-    const ok = spotOk(d, placing.x, placing.y);
+    if (placing.room) placing.el.style.zIndex = String(IN_Z + Math.round(placing.y));
+    const ok = placing.room ? inSpotOk(d, placing.x, placing.y, placing.room)
+      : spotOk(d, placing.x, placing.y);
     placing.el.classList.toggle('is-bad', !ok);
     document.getElementById('hsPlaceGo').disabled = !ok;
   }
@@ -1802,13 +1854,17 @@ function init(visitDoc, visitMiss) {
       plannerAfterPlace(keepX, keepY);
       return;
     }
-    if (placing.moving) state.items.push(placing.moving);   // it never left
+    if (placing.moving) {
+      (placing.room ? (state.inItems[placing.room] = state.inItems[placing.room] || []) : state.items)
+        .push(placing.moving);   // it never left
+    }
     const wasBuy = !placing.moving;
     const backId = placing.id;
     placing = null;
     confirmEl.hidden = true;
     if (wasBuy) { state.shed.push({ id: backId }); save(); toast('into the shed — place it any time'); }
     refreshItems();
+    refreshInItems();
     plannerAfterPlace(keepX, keepY);
   }
   document.getElementById('hsPlaceGo').addEventListener('click', () => {
@@ -1817,13 +1873,15 @@ function init(visitDoc, visitMiss) {
     view.classList.remove('is-placing');
     camFree = null;
     const it = { id: placing.id, x: placing.x, y: placing.y };
+    const room = placing.room;
     placing.el.remove();
     const moved = !!placing.moving;
     placing = null;
     confirmEl.hidden = true;
-    state.items.push(it);
+    (room ? (state.inItems[room] = state.inItems[room] || []) : state.items).push(it);
     save();
     refreshItems();
+    refreshInItems();
     float(it.x, it.y - (DEX[it.id].h || 30) - 6, '✓');
     plannerAfterPlace(it.x, it.y);
     track(moved ? 'homestead_move' : 'homestead_place', { id: it.id });
@@ -1953,7 +2011,7 @@ function init(visitDoc, visitMiss) {
       placing.x = snap(Math.max(P[0] - 46 + d.w / 2, Math.min(P[2] + 46 - d.w / 2, wx)));
       placing.y = snap(Math.max(P[1] + Math.min(d.h * 0.5, 120), Math.min(P[3] - 10, wy)));
     } else {
-      const P = plotNow();
+      const P = placing.room ? roomBounds(placing.room) : plotNow();
       placing.x = snap(Math.max(P[0] + 12, Math.min(P[2] - 12, wx)));
       placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
     }
@@ -1990,10 +2048,47 @@ function init(visitDoc, visitMiss) {
     hint(false);
     clearChip(); clearBedChip();
     if (placing) return;   // pointerdown/drag owns the ghost
-    if (inside) {          // indoors: the stove answers, everything else walks
+    if (inside) {          // indoors: the stove answers, furniture chats, else walks
       const I = INTERIORS[inside];
       if (I.kitchen && wx > I.kitchen[0] && wx < I.kitchen[2] && wy > I.kitchen[1] && wy < I.kitchen[3]) {
         if (Math.hypot(pos.x - wx, pos.y - wy) < 170) { openCook(); return; }
+      }
+      const L2 = state.inItems[inside] || [];
+      for (let k = L2.length - 1; k >= 0; k--) {
+        const it = L2[k];
+        const d2 = DEX[it.id];
+        if (d2 && Math.abs(wx - it.x) < Math.max(24, d2.w / 2) && wy > it.y - d2.h - 8 && wy < it.y + 10) {
+          if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
+            clearChip();
+            itChip = document.createElement('div');
+            itChip.className = 'hs-chip';
+            const mv3 = document.createElement('button');
+            mv3.className = 'hs-btn';
+            mv3.textContent = '✥ move';
+            mv3.addEventListener('click', () => {
+              clearChip();
+              L2.splice(k, 1);
+              startPlacing(it.id, it);
+            });
+            const aw = document.createElement('button');
+            aw.className = 'hs-btn hs-btn--ghost';
+            aw.textContent = '📦 put away';
+            aw.addEventListener('click', () => {
+              clearChip();
+              L2.splice(k, 1);
+              state.shed.push({ id: it.id });
+              save();
+              refreshInItems();
+              float(it.x, it.y - 30, '📦');
+            });
+            itChip.append(mv3, aw);
+            itChip.style.left = pct(it.x, W);
+            itChip.style.top = pct(it.y - (d2.h || 30) - 10, H);
+            itChip.style.zIndex = '3200';
+            world.appendChild(itChip);
+          } else { tgt.x = it.x; tgt.y = it.y + 26; }
+          return;
+        }
       }
       tgt.x = wx; tgt.y = wy;
       return;

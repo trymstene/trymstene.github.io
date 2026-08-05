@@ -688,6 +688,41 @@ if HAVE_PACK:
         print('  d-%s.png %dx%d' % (did, s.width, s.height))
     assert len(DECOR_OUT) >= 10, 'decor catalog too thin: %d' % len(DECOR_OUT)
 
+# 🛋 M4.5 THE INDOOR CATALOG — Modern Interiors Theme_Sorter singles,
+# chosen off the contact sheets (living room + bedroom). All stage 1: even the
+# tent deserves furnishing. cat 'interior' -> surface 'floor' in the manifest.
+TS = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\1_Interiors\48x48\Theme_Sorter_Singles_48x48')
+LIV = ('2_Living_Room_Singles_48x48', 'Living_Room_Singles_48x48')
+BEDS = ('4_Bedroom_Singles_48x48', 'Bedroom_Singles_48x48')
+
+
+def _ts(theme, n):
+    return os.path.join(TS, theme[0], '%s_%d.png' % (theme[1], n))
+
+
+INDOOR_DEF = [
+    ('sofa', 'Navy sofa', 30, _ts(LIV, 6)),
+    ('navychair', 'Navy armchair', 18, _ts(LIV, 7)),   # 'armchair' is the YARD one
+    ('teatable', 'Gilded table', 20, _ts(LIV, 3)),
+    ('wcabinet', 'Wood cabinet', 26, _ts(LIV, 39)),
+    ('gclock', 'Grandfather clock', 34, _ts(LIV, 89)),
+    ('readlamp', 'Reading lamp', 14, _ts(LIV, 86)),
+    ('telly', 'The telly', 40, _ts(LIV, 113)),
+    ('parlorplant', 'Parlor tree', 12, _ts(LIV, 13)),
+    ('pottedplant', 'Potted plant', 8, _ts(LIV, 16)),
+    ('cozybed', 'Cozy bed', 36, _ts(BEDS, 150)),
+    ('bunkbed', 'Bunk bed', 44, _ts(BEDS, 126)),
+    ('starryrug', 'Starry rug', 10, _ts(BEDS, 61)),
+]
+if HAVE_PACK:
+    for did, name, price, path in INDOOR_DEF:
+        s = sprite([path], scale=DECOR_DEFAULT)
+        if s is None:
+            continue
+        s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
+        DECOR_OUT.append((did, name, 'interior', price, 1, s.width, s.height, None))
+        print('  d-%s.png %dx%d (interior)' % (did, s.width, s.height))
+
 # ── 🏠 THE STRUCTURE STYLES ── every rung is a WARDROBE (Trym: "build the
 # picker with all of them"). Each style exports ov-<key>.png; sizes are
 # measured and emitted, so the engine handles any footprint. Scales normalise
@@ -968,8 +1003,9 @@ def emit():
     D.append('export const DECOR = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
         D.append("  { id: '%s', name: '%s', cat: '%s', price: %d, stage: %d,"
-                 " w: %d, h: %d, surface: 'ground', img: '/assets/homestead/d-%s.png', solid: %s },"
-                 % (did, name, cat, price, stage, w, h, did,
+                 " w: %d, h: %d, surface: '%s', img: '/assets/homestead/d-%s.png', solid: %s },"
+                 % (did, name, cat, price, stage, w, h,
+                    ('floor' if cat == 'interior' else 'ground'), did,
                     (str(box) if box else 'null')))
     D.append('];')
     with open(os.path.join(SITE, 'src', 'data', 'decor.js'), 'w', encoding='utf-8') as f:
