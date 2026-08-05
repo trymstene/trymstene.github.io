@@ -694,6 +694,9 @@ if HAVE_PACK:
 TS = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\1_Interiors\48x48\Theme_Sorter_Singles_48x48')
 LIV = ('2_Living_Room_Singles_48x48', 'Living_Room_Singles_48x48')
 BEDS = ('4_Bedroom_Singles_48x48', 'Bedroom_Singles_48x48')
+KIT = ('12_Kitchen_Singles_48x48', 'Kitchen_Singles_48x48')
+JAP = ('20_Japanese_Interiors_48x48', 'Japanese_Interiors_Singles_48x48')
+MUS = ('6_Music_and_Sport_48x48', 'Music_and_Sport_Singles_48x48')
 
 
 def _ts(theme, n):
@@ -713,6 +716,24 @@ INDOOR_DEF = [
     ('cozybed', 'Cozy bed', 36, _ts(BEDS, 150)),
     ('bunkbed', 'Bunk bed', 44, _ts(BEDS, 126)),
     ('starryrug', 'Starry rug', 10, _ts(BEDS, 61)),
+    # 🍳 kitchen — the placed STOVE grants cooking (the tent's kitchen)
+    ('stove', 'The stove', 42, _ts(KIT, 150)),
+    ('fridge', 'The fridge', 32, _ts(KIT, 161)),
+    ('kcounter', 'Kitchen counter', 18, _ts(KIT, 121)),
+    ('coffeemk', 'Coffee maker', 16, _ts(KIT, 178)),
+    # 🎋 japanese — for the Japanese house (or any room)
+    ('tatami', 'Tatami mat', 12, _ts(JAP, 5)),
+    ('lowtable', 'Low tea table', 22, _ts(JAP, 31)),
+    ('kotatsu', 'Kotatsu', 34, _ts(JAP, 52)),
+    ('bonsai', 'Bonsai', 16, _ts(JAP, 58)),
+    ('plantern', 'Paper lantern', 14, _ts(JAP, 17)),
+    ('futon', 'Futon', 30, _ts(JAP, 80)),
+    # 🎶 music — the DJ banana's corner
+    ('gpiano', 'Grand piano', 60, _ts(MUS, 31)),
+    ('drumkit', 'Drum kit', 38, _ts(MUS, 41)),
+    ('eguitar', 'Electric guitar', 24, _ts(MUS, 55)),
+    ('micstand', 'Mic stand', 12, _ts(MUS, 64)),
+    ('theamp', 'The amp', 20, _ts(MUS, 43)),
 ]
 if HAVE_PACK:
     for did, name, price, path in INDOOR_DEF:

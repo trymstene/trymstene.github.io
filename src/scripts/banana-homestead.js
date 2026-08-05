@@ -2062,6 +2062,13 @@ function init(visitDoc, visitMiss) {
             clearChip();
             itChip = document.createElement('div');
             itChip.className = 'hs-chip';
+            if (it.id === 'stove') {   // 🍳 a bought stove grants cooking
+              const ck2 = document.createElement('button');
+              ck2.className = 'hs-btn';
+              ck2.textContent = '🍳 cook';
+              ck2.addEventListener('click', () => { clearChip(); openCook(); });
+              itChip.append(ck2);
+            }
             const mv3 = document.createElement('button');
             mv3.className = 'hs-btn';
             mv3.textContent = '✥ move';
