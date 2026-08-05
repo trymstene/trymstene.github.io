@@ -926,8 +926,10 @@ function init(visitDoc, visitMiss) {
     track('homestead_planner');
   }
   function exitPlanner() {
-    if (!planner && !digging && !fencing) return;
-    planner = false; digging = false; fencing = false; clearing = false;
+    if (!planner && !digging && !fencing && !arranging) return;
+    // ⚠️ every tool flag resets here — a stuck flag eats all walk taps (the
+    // arranging leak: move tool survived 'done' and blocked tap-to-walk)
+    planner = false; digging = false; fencing = false; clearing = false; arranging = false;
     buildBtn.setAttribute('aria-pressed', 'false');
     planBar.hidden = true;
     planShow(false);
