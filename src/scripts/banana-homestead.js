@@ -271,7 +271,8 @@ function init(visitDoc, visitMiss) {
   let placing = null;   // { id, x, y, el, moving }
   let camFree = null;   // the placing camera: PANNED by drags, never chases the ghost
   // 🔨 planner state ALSO lives up here — layout() reads it (the TDZ lesson)
-  let digging = false, fencing = false, clearing = false, planner = false, hovEl = null, planEls = null;
+  let digging = false, fencing = false, clearing = false, arranging = false,
+    planner = false, hovEl = null, planEls = null;
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -851,14 +852,17 @@ function init(visitDoc, visitMiss) {
   const toolF = document.getElementById('hsToolFence');
   const toolS = document.getElementById('hsToolSoil');
   const toolC = document.getElementById('hsToolClear');
+  const toolM = document.getElementById('hsToolMove');
   function setTool(t) {
-    fencing = t === 'fence'; digging = t === 'soil'; clearing = t === 'clear';
+    fencing = t === 'fence'; digging = t === 'soil'; clearing = t === 'clear'; arranging = t === 'move';
     toolF.setAttribute('aria-pressed', String(fencing));
     toolS.setAttribute('aria-pressed', String(digging));
     toolC.setAttribute('aria-pressed', String(clearing));
+    toolM.setAttribute('aria-pressed', String(arranging));
     toast(fencing ? '🪵 tap your land (the lit grid) to build fence — tap a piece to take it down'
       : digging ? '⛏️ tap your land to till soil — tap soil to fill it back'
-      : '🧹 tap anything to clear it — decor goes safely to the shed', 3400);
+      : clearing ? '🧹 tap anything to clear it — decor goes safely to the shed'
+      : '✥ tap a thing to lift it — decor, house, mailbox or sign', 3400);
   }
   function planOverlay() {
     const F = FENCE_TIERS[fenceTier()].fence;
@@ -941,6 +945,7 @@ function init(visitDoc, visitMiss) {
   toolF.addEventListener('click', () => setTool('fence'));
   toolS.addEventListener('click', () => setTool('soil'));
   toolC.addEventListener('click', () => setTool('clear'));
+  toolM.addEventListener('click', () => setTool('move'));
   document.getElementById('hsToolShed').addEventListener('click', () => openShop('shed', true));
   document.getElementById('hsPlanDone').addEventListener('click', exitPlanner);
   // the hover cell: desktop sees exactly which tile a tap would hit
@@ -1616,7 +1621,6 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacing(id, moving) {
-    exitPlanner();
     cancelPlacing();
     const d = DEX[id];
     const P = plotNow();
@@ -1651,7 +1655,6 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacingHome(key, opts) {
-    exitPlanner();
     cancelPlacing();
     const d = FIXD[key] || STRUCTS[key];
     const el = document.createElement('div');
@@ -1699,6 +1702,7 @@ function init(visitDoc, visitMiss) {
       refreshFixtures(); rebuildSolids();
       float(x, y - 40, '✓');
       track('homestead_move_fixture', { id: key });
+      plannerAfterPlace(x, y);
       return;
     }
     if (placing.toStage) {   // this placement completes an UPGRADE
@@ -1728,6 +1732,7 @@ function init(visitDoc, visitMiss) {
     tierWas = fenceTier();
     refreshTent(); refreshSoil(); rebuildSolids(); refreshItems(); refreshHud();
     float(x, y - STRUCTS[key].h - 8, '✓');
+    plannerAfterPlace(x, y);
     if (grew) setTimeout(() => toast('🌱 your land grew — more room to build, dig and decorate'), 1400);
   }
   // the sign's move button lives in the guestbook; the mailbox offers its
@@ -1759,8 +1764,15 @@ function init(visitDoc, visitMiss) {
     placing.el.classList.toggle('is-bad', !ok);
     document.getElementById('hsPlaceGo').disabled = !ok;
   }
+  function plannerAfterPlace(x, y) {
+    if (!planner) return;
+    view.classList.add('is-placing');
+    camFree = { x, y };
+    planOverlay();
+  }
   function cancelPlacing() {
     if (!placing) return;
+    const keepX = placing.x, keepY = placing.y;
     view.classList.remove('is-placing');
     camFree = null;
     placing.el.remove();
@@ -1769,6 +1781,7 @@ function init(visitDoc, visitMiss) {
       placing = null;
       confirmEl.hidden = true;
       if (wasUpgrade) toast('no rush — the offer stays at the mailbox');
+      plannerAfterPlace(keepX, keepY);
       return;
     }
     if (placing.moving) state.items.push(placing.moving);   // it never left
@@ -1778,6 +1791,7 @@ function init(visitDoc, visitMiss) {
     confirmEl.hidden = true;
     if (wasBuy) { state.shed.push({ id: backId }); save(); toast('into the shed — place it any time'); }
     refreshItems();
+    plannerAfterPlace(keepX, keepY);
   }
   document.getElementById('hsPlaceGo').addEventListener('click', () => {
     if (!placing) return;
@@ -1793,6 +1807,7 @@ function init(visitDoc, visitMiss) {
     save();
     refreshItems();
     float(it.x, it.y - (DEX[it.id].h || 30) - 6, '✓');
+    plannerAfterPlace(it.x, it.y);
     track(moved ? 'homestead_move' : 'homestead_place', { id: it.id });
   });
   document.getElementById('hsPlaceNo').addEventListener('click', cancelPlacing);
@@ -1926,12 +1941,12 @@ function init(visitDoc, visitMiss) {
     updateGhost();
   }
   view.addEventListener('pointerdown', (e) => {
-    if ((!placing && !digging && !fencing) || panelOpen()) return;
+    if ((!placing && !digging && !fencing && !clearing && !arranging) || panelOpen()) return;
     if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-confirm')) return;
     gest = { x0: e.clientX, y0: e.clientY, cam0x: camFree.x, cam0y: camFree.y, panning: false };
   });
   view.addEventListener('pointermove', (e) => {
-    if (!gest || (!placing && !digging && !fencing)) return;
+    if (!gest || (!placing && !digging && !fencing && !clearing && !arranging)) return;
     const dx = e.clientX - gest.x0, dy = e.clientY - gest.y0;
     if (!gest.panning && Math.hypot(dx, dy) < 9) return;   // still a tap so far
     gest.panning = true;
@@ -1966,6 +1981,34 @@ function init(visitDoc, visitMiss) {
     }
     // ✋ a camera pan must never also act — the doctrine's other half
     if (justPanned) { justPanned = false; return; }
+    // ✥ move mode: lift a thing, set it down — batch rearranging (Trym:
+    // "better to reposition and move stuff in build mode")
+    if (arranging && !visiting) {
+      for (let k = state.items.length - 1; k >= 0; k--) {
+        const it = state.items[k];
+        const d = DEX[it.id];
+        if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
+          state.items.splice(k, 1);
+          startPlacing(it.id, it);
+          return;
+        }
+      }
+      if (Math.abs(wx - state.mailAt.x) < 30 && wy > state.mailAt.y - MAILBOX.h - 10 && wy < state.mailAt.y + 10) {
+        startPlacingHome('mail', {});
+        return;
+      }
+      if (Math.abs(wx - state.signAt.x) < 30 && wy > state.signAt.y - SIGN.h - 10 && wy < state.signAt.y + 10) {
+        startPlacingHome('sign', {});
+        return;
+      }
+      const sd2 = structDims();
+      if (state.stage >= 1 && Math.abs(wx - state.home.x) < sd2.w / 2
+        && wy > state.home.y - sd2.h && wy < state.home.y + 8) {
+        startPlacingHome(curStyleKey(), {});
+        return;
+      }
+      return;
+    }
     // 🧹 clear mode: one demolish tool — decor → shed, fence down, soil filled
     if (clearing && !visiting) {
       for (let k = state.items.length - 1; k >= 0; k--) {
