@@ -273,6 +273,7 @@ function init(visitDoc, visitMiss) {
   // 🔨 planner state ALSO lives up here — layout() reads it (the TDZ lesson)
   let digging = false, fencing = false, clearing = false, arranging = false,
     planner = false, hovEl = null, planEls = null;
+  let doorTgt = null;   // 🚪 walk-to-the-door intent: arriving steps inside
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -2161,33 +2162,20 @@ function init(visitDoc, visitMiss) {
         return;
       }
     }
-    // the structure: near = offer the move, far = walk over
+    // 🚪 the door lives at the BOTTOM of every building (top-down: the banana
+    // walks UP to things) — tap it and walk in; no chips, no buttons. Moving
+    // lives in the planner's ✥ tool now.
     if (state.stage >= 1) {
       const sd = structDims();
       if (Math.abs(wx - state.home.x) < sd.w / 2 && wy > state.home.y - sd.h && wy < state.home.y + 8) {
-        if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < sd.w / 2 + 90) {
-          if (visiting) return;   // their house is not furniture
-          clearChip();
-          itChip = document.createElement('div');
-          itChip.className = 'hs-chip';
-          const mv = document.createElement('button');
-          mv.className = 'hs-btn';
-          mv.textContent = '✥ move it';
-          mv.addEventListener('click', () => { clearChip(); startPlacingHome(curStyleKey(), {}); });
-          itChip.append(mv);
-          // 🍳 cooking lives INSIDE now — tap the kitchen counters
-          if (INTERIORS[homeTier()]) {   // 🚪 every home has a door — even the tent
-            const go = document.createElement('button');
-            go.className = 'hs-btn';
-            go.textContent = '🚪 step inside';
-            go.addEventListener('click', () => { clearChip(); enterHome(); });
-            itChip.prepend(go);
-          }
-          itChip.style.left = pct(state.home.x, W);
-          itChip.style.top = pct(state.home.y - sd.h - 12, H);
-          itChip.style.zIndex = '3000';
-          world.appendChild(itChip);
-        } else { tgt.x = state.home.x; tgt.y = state.home.y + 30; }
+        const doorish = Math.abs(wx - state.home.x) < sd.w * 0.32 && wy > state.home.y - 64;
+        if (doorish && !visiting && INTERIORS[homeTier()]) {
+          if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 130) { enterHome(); return; }
+          tgt.x = state.home.x; tgt.y = state.home.y + 24;
+          doorTgt = { x: tgt.x, y: tgt.y };   // arriving = stepping in
+          return;
+        }
+        tgt.x = state.home.x; tgt.y = state.home.y + 30;
         return;
       }
     }
@@ -2204,6 +2192,12 @@ function init(visitDoc, visitMiss) {
     }
     tgt.x = wx; tgt.y = wy;
   });
+  // 🚪 the door intent: any new target (tap, WASD) cancels it; arriving enters
+  setInterval(() => {
+    if (!doorTgt) return;
+    if (inside || placing || visiting || tgt.x !== doorTgt.x || tgt.y !== doorTgt.y) { doorTgt = null; return; }
+    if (Math.hypot(pos.x - doorTgt.x, pos.y - doorTgt.y) < 46) { doorTgt = null; enterHome(); }
+  }, 250);
 
   // ---- the banana ---------------------------------------------------------
   const frameNow = () => {
