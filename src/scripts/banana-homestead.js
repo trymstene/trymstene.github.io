@@ -2337,6 +2337,9 @@ function init(visitDoc, visitMiss) {
       if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
       else if (!blocked(nx, pos.y)) pos.x = nx;
       else if (!blocked(pos.x, ny)) pos.y = ny;
+      // wedged INSIDE a solid (corner-slide rounding): moves always succeed
+      // until you're out — stuck states self-heal
+      else if (blocked(pos.x, pos.y)) { pos.x = nx; pos.y = ny; }
       else {
         const p1x = pos.x + (dy / d) * m, p1y = pos.y - (dx / d) * m;
         const p2x = pos.x - (dy / d) * m, p2y = pos.y + (dx / d) * m;

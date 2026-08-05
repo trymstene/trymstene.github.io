@@ -838,6 +838,8 @@ if os.path.isdir(BIRDS_DIR):
 # Wall colliders are EYEBALLED off the layer_1 renders (local px, offset at
 # emit). Stage 2 = Generic_Home_1 (top door), stage 3 = Japanese_Home_1
 # (genkan at the bottom — the stone entry IS the door).
+MI_RETIRED = None  # Home_Designs retired — wooden rooms below
+'''
 MI = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\6_Home_Designs')
 INTERIOR_DEF = {
     2: {
@@ -889,6 +891,57 @@ if os.path.isdir(MI):
         if 'kitchen' in spec:
             INTERIORS_OUT[tier]['kitchen'] = off(spec['kitchen'])
         print('  %s %dx%d (%d layers, %d colliders)' % (spec['img'], base.width, base.height, len(layers), len(spec['cols'])))
+'''
+
+# ONE wooden interior language for every rung (Trym: "just have wooden
+# interior and homes for all level houses and make that good") — rooms are
+# COMPOSED from Room_Builder tiles: F(48,576) gold plank floor + W(912,576)
+# brown plank wall face, sized per tier, door at the BOTTOM like every other
+# building. No player walls (furniture + rugs do the zoning).
+RB = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\1_Interiors\48x48\Room_Builder_subfiles_48x48')
+INTERIORS_OUT = {}
+if os.path.isdir(RB):
+    _fl = Image.open(os.path.join(RB, 'Room_Builder_Floors_48x48.png')).convert('RGBA')
+    _wa = Image.open(os.path.join(RB, 'Room_Builder_Walls_48x48.png')).convert('RGBA')
+    FTILE = _fl.crop((48, 576, 96, 624))
+    WSEG = _wa.crop((912, 576, 960, 672))
+
+    def build_wood_room(tier, tw, th, at):
+        Wp, Hp = tw * 48, th * 48
+        room = Image.new('RGBA', (Wp, Hp), (0, 0, 0, 0))
+        for j in range(th):
+            for i in range(tw):
+                room.alpha_composite(FTILE, (i * 48, j * 48))
+        for i in range(tw):
+            room.alpha_composite(WSEG, (i * 48, 0))
+        dr2 = ImageDraw.Draw(room)
+        FR = (46, 34, 22, 255)
+        FRAME = 14
+        cx = Wp // 2
+        dr2.rectangle([0, 0, FRAME - 1, Hp - 1], fill=FR)
+        dr2.rectangle([Wp - FRAME, 0, Wp - 1, Hp - 1], fill=FR)
+        dr2.rectangle([0, Hp - FRAME, cx - 61, Hp - 1], fill=FR)
+        dr2.rectangle([cx + 60, Hp - FRAME, Wp - 1, Hp - 1], fill=FR)
+        img = 'in-wood%d.png' % tier
+        room.save(os.path.join(OUT, img), optimize=True)
+        ox, oy = at
+        INTERIORS_OUT[tier] = {
+            'img': img, 'box': [ox, oy, Wp, Hp],
+            'spawn': [ox + cx, oy + Hp - 56],
+            'exit': [ox + cx - 46, oy + Hp - 18, ox + cx + 46, oy + Hp],
+            'cols': [
+                [ox, oy, ox + Wp, oy + 100],
+                [ox, oy, ox + FRAME, oy + Hp],
+                [ox + Wp - FRAME, oy, ox + Wp, oy + Hp],
+                [ox, oy + Hp - FRAME, ox + cx - 60, oy + Hp],
+                [ox + cx + 60, oy + Hp - FRAME, ox + Wp, oy + Hp],
+            ],
+        }
+        print('  %s %dx%d (wood room)' % (img, Wp, Hp))
+
+    build_wood_room(2, 13, 9, (588, 300))
+    build_wood_room(3, 18, 12, (468, 260))
+
 
 # ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
 # created") — a 22px banana-phone icon for the action bar. UI chrome is ours;
