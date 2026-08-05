@@ -828,45 +828,40 @@ if os.path.isdir(BIRDS_DIR):
     print('  birds:', ', '.join(BIRD_KEYS))
 
 # ---- 🛋 INTERIORS (M4) — step inside the house ----------------------------
-# Modern Interiors Home_Designs ship as layer_1 (floor/under) + layer_2
-# (above): v1 composites both into ONE walkable plate — colliders keep the
-# banana in the lanes, so occlusion sins stay invisible. The room lives INSIDE
-# the outdoor world's coordinate space (over a shade layer) so the whole
-# camera/collision/tap machinery is reused verbatim.
-# Colliders + door + kitchen zones are EYEBALLED off the previews (local px,
-# offset to world at emit). Stage 2 = Generic_Home_1 (top door), stage 3 =
-# Japanese_Home_1 (genkan at the bottom — the shoes ARE the door).
+# Modern Interiors Home_Designs ship as layer_1 (floor/walls — the EMPTY
+# shell) + layer_2 (all the furniture). M4.5 made rooms furnishable, so the
+# showroom layer_2 RETIRED (Trym: "my regular user gets a house thats fully
+# decorated") — rooms are empty shells the player fills; colliders are WALLS
+# only, and the kitchen zones went with the baked counters: the placed STOVE
+# item is the kitchen everywhere. The room lives INSIDE the outdoor world's
+# coordinate space (over a shade layer) so camera/collision/taps are reused.
+# Wall colliders are EYEBALLED off the layer_1 renders (local px, offset at
+# emit). Stage 2 = Generic_Home_1 (top door), stage 3 = Japanese_Home_1
+# (genkan at the bottom — the stone entry IS the door).
 MI = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\6_Home_Designs')
 INTERIOR_DEF = {
     2: {
         'glob': 'Generic_Home_Designs/48x48/Generic_Home_1_*ayer_*48x48*.png',
         'img': 'in-generic.png', 'at': (564, 229),
-        'spawn': (355, 165), 'exit': (325, 120, 385, 142), 'kitchen': (120, 410, 590, 545),
+        'spawn': (355, 165), 'exit': (325, 120, 385, 142),
         'cols': [
             (0, 0, 325, 128), (385, 0, 672, 128),          # top walls, door lane open
             (0, 0, 58, 642), (614, 0, 672, 642), (0, 592, 672, 642),
-            (135, 60, 335, 152), (375, 55, 565, 148),      # fireplace row · dresser+bunk
-            (130, 285, 235, 368), (475, 328, 575, 378),    # sewing corner · desk
-            (58, 375, 298, 405), (432, 375, 614, 405),     # the kitchen wall, lane open
-            (135, 428, 288, 532), (428, 428, 578, 532),    # counters
+            (58, 375, 298, 405), (432, 375, 614, 405),     # the room wall, lane open
         ],
     },
     3: {
         'glob': 'Japanese_Interiors_Home_Designs/48x48/Japanese_Home_1_*ayer_*48x48*.png',
         'img': 'in-japanese.png', 'at': (444, 229),
-        'spawn': (295, 560), 'exit': (200, 596, 390, 630), 'kitchen': (45, 325, 205, 415),
+        'spawn': (295, 560), 'exit': (200, 596, 390, 630),
         'cols': [
             (0, 0, 912, 95),                               # top walls
             (0, 0, 50, 642), (862, 0, 912, 642),
             (0, 490, 185, 642), (400, 490, 912, 642),      # bottom walls, genkan open
-            (60, 30, 290, 145), (45, 95, 100, 190),        # cabinet row · zen corner
-            (325, 100, 435, 180),                          # kotatsu
-            (550, 60, 585, 295), (585, 282, 865, 305),     # bedroom walls
-            (615, 150, 860, 235), (575, 60, 625, 100),     # beds · appliance
-            (45, 195, 290, 218), (288, 196, 470, 292),     # tea-room wall · shoji row
-            (95, 255, 190, 312), (52, 335, 198, 408),      # tea table · irori hearth
-            (388, 336, 522, 422), (592, 388, 758, 468),    # dining · desk set
-            (668, 292, 865, 342),                          # right shoji band
+            (45, 195, 290, 270),                           # mid-left slate wall
+            (528, 55, 572, 140),                           # top-centre pillar
+            (480, 195, 532, 285),                          # centre slate wall
+            (535, 300, 668, 382),                          # mid-right slate wall
         ],
     },
 }
@@ -874,7 +869,8 @@ INTERIORS_OUT = {}
 if os.path.isdir(MI):
     for tier, spec in INTERIOR_DEF.items():
         layers = sorted(_glob.glob(os.path.join(MI, spec['glob'])))
-        layers = [f for f in layers if 'preview' not in f.lower()]
+        # layer_1 ONLY — the empty shell; layer_2 was the baked showroom
+        layers = [f for f in layers if 'layer_1' in f.lower()]
         if not layers:
             print('  MISSING interior', tier, spec['glob'])
             continue
@@ -887,9 +883,11 @@ if os.path.isdir(MI):
         INTERIORS_OUT[tier] = {
             'img': spec['img'], 'box': [ox, oy, base.width, base.height],
             'spawn': [spec['spawn'][0] + ox, spec['spawn'][1] + oy],
-            'exit': off(spec['exit']), 'kitchen': off(spec['kitchen']),
+            'exit': off(spec['exit']),
             'cols': [off(c) for c in spec['cols']],
         }
+        if 'kitchen' in spec:
+            INTERIORS_OUT[tier]['kitchen'] = off(spec['kitchen'])
         print('  %s %dx%d (%d layers, %d colliders)' % (spec['img'], base.width, base.height, len(layers), len(spec['cols'])))
 
 # ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
