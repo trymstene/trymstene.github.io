@@ -40,6 +40,13 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     .hs-it--ghost { opacity: 0.78; outline: 3px dashed #ffe135; outline-offset: 3px; }
     .hs-it--ghost.is-bad { outline-color: #ff5f5f; filter: saturate(0.4); }
+    /* 🏠 structure ghosts: the dashed ring marks the FLOOR, not the roof */
+    .hs-it--struct { outline: none; }
+    .hs-footring {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      border: 3px dashed #ffe135; box-sizing: border-box; pointer-events: none;
+    }
+    .hs-it--ghost.is-bad .hs-footring { border-color: #ff5f5f; }
     .hs-crop.is-ripe { animation: hsRipe 1.4s ease-in-out infinite; }
     @keyframes hsRipe { 50% { transform: translateY(-3px); } }
     @media (prefers-reduced-motion: reduce) { .hs-crop.is-ripe { animation: none; } }

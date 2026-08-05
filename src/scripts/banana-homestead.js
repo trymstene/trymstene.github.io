@@ -501,6 +501,11 @@ function init(visitDoc, visitMiss) {
     return (state.style && state.style[r]) || STYLE_DEFAULTS[r];
   };
   const structDims = () => state.stage >= 1 ? STRUCTS[curStyleKey()] : { w: 140, h: 74 };
+  // 🏠 tall sprites are mostly ELEVATION — the top ~3 rows are roof that
+  // ground (and the banana) pass BEHIND; only the FLOOR occupies ground rows
+  // (Trym: "the placement grid covers the roof / i go behind mid-house")
+  const roofOf = (h) => Math.min(144, Math.round(h * 0.45));
+  const floorOf = (h) => h - roofOf(h);
   let structEl = null, structKey = '', tentSpotEl = null;
   function refreshTent() {
     if (state.stage < 1) {
@@ -636,7 +641,7 @@ function init(visitDoc, visitMiss) {
     if (state.stage >= 1) {
       const d = structDims();
       const hw2 = Math.max(24, d.w * 0.42);
-      liveRects.push([state.home.x - hw2, state.home.y - Math.max(20, d.h * 0.2), state.home.x + hw2, state.home.y + 4]);
+      liveRects.push([state.home.x - hw2, state.home.y - floorOf(d.h), state.home.x + hw2, state.home.y + 4]);
     }
     // the soil is WALKABLE (Trym) — no collider; placement still keeps off it
     liveRects.push([state.mailAt.x - 14, state.mailAt.y - 12, state.mailAt.x + 14, state.mailAt.y + 2]);
@@ -1609,7 +1614,7 @@ function init(visitDoc, visitMiss) {
     // porch stays decoratable (the max stress test caught the old box banning it)
     const sd = structDims();
     if (state.stage >= 1 && Math.abs(x - state.home.x) < sd.w * 0.52 + d.w * 0.3
-      && y > state.home.y - sd.h * 0.62 && y < state.home.y + 12) return false;
+      && y > state.home.y - floorOf(sd.h) && y < state.home.y + 12) return false;
     if (Math.hypot(x - state.mailAt.x, y - state.mailAt.y) < 50) return false;
     if (Math.hypot(x - state.signAt.x, y - state.signAt.y) < 40) return false;
     for (const c of state.fence) {
@@ -1646,11 +1651,11 @@ function init(visitDoc, visitMiss) {
     const d = fixDims();
     const P = FIXD[placing.key] ? FIX_BOUNDS : placeBounds();
     if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
-    if (y - d.h < P[1] - 44 || y > P[3] - 8) return false;
+    if (y - floorOf(d.h) < P[1] - 2 || y > P[3] - 8) return false;
     for (const c of state.fence) {
       if (x > c.i * 48 - 26 && x < c.i * 48 + 74 && y > c.j * 48 - 12 && y < c.j * 48 + 60) return false;
     }
-    const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
+    const foot = [x - d.w * 0.52, y - floorOf(d.h), x + d.w * 0.52, y + 12];
     for (const c of state.soil) {   // structures keep off the dug soil
       if (foot[0] < (c.i + 1) * 48 && foot[2] > c.i * 48 && foot[1] < (c.j + 1) * 48 && foot[3] > c.j * 48) return false;
     }
@@ -1665,6 +1670,13 @@ function init(visitDoc, visitMiss) {
     el.style.height = pct(d.h, H);
     el.style.backgroundImage = "url('/assets/homestead/" + (FIXD[key] ? 'm-' + key : 'ov-' + key) + ".png')";
     world.appendChild(el);
+    if (!FIXD[key]) {
+      el.classList.add('hs-it--struct');
+      const fr = document.createElement('i');
+      fr.className = 'hs-footring';
+      fr.style.height = Math.round(100 * floorOf(d.h) / d.h) + '%';
+      el.appendChild(fr);
+    }
     const from = key === 'mail' ? state.mailAt : key === 'sign' ? state.signAt : state.home;
     placing = { home: true, key, x: from.x, y: from.y, el,
       price: (opts && opts.price) || 0, toStage: (opts && opts.toStage) || 0,
@@ -1682,7 +1694,7 @@ function init(visitDoc, visitMiss) {
     const d = fixDims();
     const x = placing.x, y = placing.y;
     // the sweep: items under the new footprint go safely to the shed
-    const foot = [x - d.w * 0.52, y - d.h * 0.62, x + d.w * 0.52, y + 12];
+    const foot = [x - d.w * 0.52, y - floorOf(d.h), x + d.w * 0.52, y + 12];
     const kept = [], swept = [];
     state.items.forEach((it) => {
       (it.x > foot[0] && it.x < foot[2] && it.y > foot[1] && it.y < foot[3] ? swept : kept).push(it);
@@ -2061,7 +2073,7 @@ function init(visitDoc, visitMiss) {
         if (state.soil.some((s2) => s2.i === i && s2.j === j)) { toast('that ground is tilled — fill it first'); return; }
         const sd = structDims();
         if (state.stage >= 1 && cx > state.home.x - sd.w * 0.52 - 20 && cx < state.home.x + sd.w * 0.52 + 20
-          && cb > state.home.y - sd.h * 0.62 && cb < state.home.y + 30) { toast('not through the house'); return; }
+          && cb > state.home.y - floorOf(sd.h) && cb < state.home.y + 30) { toast('not through the house'); return; }
         if (Math.hypot(cx - state.mailAt.x, cb - state.mailAt.y) < 60
           || Math.hypot(cx - state.signAt.x, cb - state.signAt.y) < 60) { toast('not on the mailbox or sign'); return; }
         state.fence.push({ i, j });
@@ -2090,7 +2102,7 @@ function init(visitDoc, visitMiss) {
         if (fenceHas(i, j)) { toast('there’s a fence there'); return; }
         const sd = structDims();
         if (state.stage >= 1 && cx > state.home.x - sd.w * 0.52 - 20 && cx < state.home.x + sd.w * 0.52 + 20
-          && cb > state.home.y - sd.h * 0.62 && cb < state.home.y + 30) { toast('not under the house'); return; }
+          && cb > state.home.y - floorOf(sd.h) && cb < state.home.y + 30) { toast('not under the house'); return; }
         state.soil.push({ i, j });
         float(cx, cb - 20, '⛏️');
         track('homestead_dig', { n: state.soil.length });
