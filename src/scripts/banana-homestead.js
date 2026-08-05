@@ -1651,7 +1651,9 @@ function init(visitDoc, visitMiss) {
     const d = fixDims();
     const P = FIXD[placing.key] ? FIX_BOUNDS : placeBounds();
     if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
-    if (y - floorOf(d.h) < P[1] - 2 || y > P[3] - 8) return false;
+    // the LIT grid includes the fence ring row (plot is inset ~62px) — let the
+    // back wall reach the fence line, or "it's on my land, why can't I?" (Trym)
+    if (y - floorOf(d.h) < P[1] - 56 || y > P[3] - 8) return false;
     for (const c of state.fence) {
       if (x > c.i * 48 - 26 && x < c.i * 48 + 74 && y > c.j * 48 - 12 && y < c.j * 48 + 60) return false;
     }
