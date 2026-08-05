@@ -591,6 +591,9 @@ function init(visitDoc, visitMiss) {
     track('homestead_enter_home', { tier: inside });
   }
   function exitHome() {
+    // ⚠️ WASD can carry you out MID-PLACEMENT — a stuck `placing` eats every
+    // walk tap forever (the arranging-leak lesson, door edition)
+    cancelPlacing();
     inside = 0;
     refreshInItems();
     clearChip();
