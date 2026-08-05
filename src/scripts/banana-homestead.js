@@ -1650,9 +1650,10 @@ function init(visitDoc, visitMiss) {
   function homeOk(x, y) {
     const d = fixDims();
     const P = FIXD[placing.key] ? FIX_BOUNDS : placeBounds();
-    if (x - d.w / 2 < P[0] - 2 || x + d.w / 2 > P[2] + 2) return false;
-    // the LIT grid includes the fence ring row (plot is inset ~62px) — let the
-    // back wall reach the fence line, or "it's on my land, why can't I?" (Trym)
+    // THE LIT GRID IS THE CONTRACT: it draws the FENCE rect, the plot is inset
+    // ~48-62px inside it — walls may reach the fence line on the north, east
+    // and west (Trym hit the invisible inset twice, 24px then 2px short)
+    if (x - d.w / 2 < P[0] - 58 || x + d.w / 2 > P[2] + 58) return false;
     if (y - floorOf(d.h) < P[1] - 56 || y > P[3] - 8) return false;
     for (const c of state.fence) {
       if (x > c.i * 48 - 26 && x < c.i * 48 + 74 && y > c.j * 48 - 12 && y < c.j * 48 + 60) return false;
@@ -1947,7 +1948,8 @@ function init(visitDoc, visitMiss) {
     if (placing.home) {
       const d = fixDims();
       const P = FIXD[placing.key] ? FIX_BOUNDS : placeBounds();   // fixtures may sit by the road
-      placing.x = snap(Math.max(P[0] + d.w / 2, Math.min(P[2] - d.w / 2, wx)));
+      // the drag clamp matches homeOk: walls may reach the fence line (±46)
+      placing.x = snap(Math.max(P[0] - 46 + d.w / 2, Math.min(P[2] + 46 - d.w / 2, wx)));
       placing.y = snap(Math.max(P[1] + Math.min(d.h * 0.5, 120), Math.min(P[3] - 10, wy)));
     } else {
       const P = plotNow();
