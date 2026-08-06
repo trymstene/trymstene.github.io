@@ -43,7 +43,7 @@ SHIP_MIN = {'garden': 0, 'nature': 0, 'farm': 0, 'fun': 0, 'community': 0,
             'lighting': 30, 'furniture': 60, 'display': 240, 'interior': 45}
 LADDER = [
     {'tier': 1, 'icon': '⛺', 'name': 'The tent', 'price': 50, 'style': 'tent1', 'room': 'in-tent.png'},
-    {'tier': 2, 'icon': '🛖', 'name': 'A real roof', 'price': 250, 'style': 'barn', 'room': 'in-wood2.png'},
+    {'tier': 2, 'icon': '🛖', 'name': 'A real roof', 'price': 250, 'style': 'mobm3', 'room': 'in-wood2.png'},
     {'tier': 3, 'icon': '🏠', 'name': 'The house', 'price': 600, 'style': 'country', 'room': 'in-wood3.png'},
 ]
 CAT_META = [

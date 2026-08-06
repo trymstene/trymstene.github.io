@@ -58,7 +58,7 @@ const STRUCT_LADDER = [
   { key: 'house', price: 600, name: 'Build the house', icon: '🏠',
     pitch: 'country, villa, haunted, city — the full homestead, the grandest catalog.' },
 ];
-const STYLE_DEFAULTS = { 1: 'tent1', 2: 'barn', 3: 'country' };
+const STYLE_DEFAULTS = { 1: 'tent1', 2: 'mobm3', 3: 'country' };
 const CROPS = [
   { id: 'tomato', name: 'Tomato', seed: 3 },
   { id: 'pumpkin', name: 'Pumpkin', seed: 3 },
@@ -500,7 +500,9 @@ function init(visitDoc, visitMiss) {
   const curStyleKey = () => {
     const r = Math.min(state.stage, 3);
     if (state.look && STYLE_RUNG[state.look] && STYLE_RUNG[state.look] <= r) return state.look;
-    return (state.style && state.style[r]) || STYLE_DEFAULTS[r];
+    // a stored style from a CULLED wardrobe falls back to the rung default
+    const k = state.style && state.style[r];
+    return (k && STYLE_RUNG[k] === r) ? k : STYLE_DEFAULTS[r];
   };
   const structDims = () => state.stage >= 1 ? STRUCTS[curStyleKey()] : { w: 140, h: 74 };
   // 🏠 tall sprites are mostly ELEVATION — the top ~3 rows are roof that

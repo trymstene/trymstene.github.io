@@ -756,27 +756,18 @@ def _rung_scale(target_h):
 
 FARMB = os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48')
 STRUCT_VARIANTS = {}
+# ⛺ Trym's cull (planner round 1): the three A-frames only — blue/green/sand
 STRUCT_VARIANTS[1] = [('tent%d' % i, ['ME_Singles_Camping_48x48_Tent_%d.png' % i], PROP)
-                      for i in range(1, 7)]
-STRUCT_VARIANTS[2] = (
-    [('mob%d' % i, ['ME_Singles_Camping_48x48_Mobile_House_Big_%d.png' % i], _rung_scale(200))
-     for i in range(1, 9)]
-    + [('mobm%d' % i, ['ME_Singles_Camping_48x48_Mobile_House_Medium_%d.png' % i], _rung_scale(185))
-       for i in range(1, 9)]
-    + [('barn', [os.path.join(FARMB, 'Barn_Small_48x48.png')], 0.52)]
-    + [('hloft%s' % c.lower(), [os.path.join(FARMB, 'Front_Hayloft_%s_48x48.png' % c)], _rung_scale(210))
-       for c in ('Green', 'Grey', 'Red', 'Yellow')]
-)
-STRUCT_VARIANTS[3] = (
-    [('country', ['24_Additional_Houses_Country_House_48x48.png'], 0.42),
-     ('haunted', ['24_Additional_Houses_Haunted_House_48x48.png'], _rung_scale(330)),
-     ('japanese', ['24_Additional_Houses_Japanese_House_48x48.png'], _rung_scale(330))]
-    + [('villa%d' % i, ['ME_Singles_Villas_48x48_Villa_%d.png' % i], _rung_scale(330))
-       for i in range(1, 6)]
-    + [('condoa', ['ME_Singles_Generic_Building_48x48_Condo_Example.png'], _rung_scale(340)),
-       ('condo6', ['ME_Singles_Generic_Building_48x48_Condo_6_Example.png'], _rung_scale(340)),
-       ('condo9', ['ME_Singles_Generic_Building_48x48_Condo_9_Example.png'], _rung_scale(320))]
-)
+                      for i in range(1, 4)]
+# 🛖 Trym's cull: one trailer without a porch, one with (planner circles)
+STRUCT_VARIANTS[2] = [
+    ('mobm3', ['ME_Singles_Camping_48x48_Mobile_House_Medium_3.png'], _rung_scale(185)),
+    ('mobm7', ['ME_Singles_Camping_48x48_Mobile_House_Medium_7.png'], _rung_scale(185)),
+]
+# 🏠 Trym's cull: ONE house — the country chalet (planner image 5)
+STRUCT_VARIANTS[3] = [
+    ('country', ['24_Additional_Houses_Country_House_48x48.png'], 0.42),
+]
 
 STRUCT_SIZES = {}
 STRUCT_STYLES = {}
@@ -804,7 +795,7 @@ if HAVE_PACK:
             keys.append(key)
             print('  ov-%s.png %dx%d' % (key, sp.width, sp.height))
         STRUCT_STYLES[rung] = keys
-    assert len(STRUCT_SIZES) >= 30, 'style wardrobe too thin: %d' % len(STRUCT_SIZES)
+    assert len(STRUCT_SIZES) >= 6, 'style wardrobe too thin: %d' % len(STRUCT_SIZES)
 TENT_SIZE = STRUCT_SIZES.get('tent1', (0, 0))
 
 # ---- 🐦 GARDEN BIRDS (M3) — the charm layer -------------------------------
@@ -903,10 +894,11 @@ INTERIORS_OUT = {}
 if os.path.isdir(RB):
     _fl = Image.open(os.path.join(RB, 'Room_Builder_Floors_48x48.png')).convert('RGBA')
     _wa = Image.open(os.path.join(RB, 'Room_Builder_Walls_48x48.png')).convert('RGBA')
-    FTILE = _fl.crop((48, 576, 96, 624))
-    WSEG = _wa.crop((912, 576, 960, 672))
+    def room_tiles(fx, fy, wx2, wy2):
+        return (_fl.crop((fx, fy, fx + 48, fy + 48)),
+                _wa.crop((wx2, wy2, wx2 + 48, wy2 + 96)))
 
-    def build_wood_room(tier, tw, th, at):
+    def build_wood_room(tier, tw, th, at, FTILE, WSEG):
         Wp, Hp = tw * 48, th * 48
         room = Image.new('RGBA', (Wp, Hp), (0, 0, 0, 0))
         for j in range(th):
@@ -939,8 +931,10 @@ if os.path.isdir(RB):
         }
         print('  %s %dx%d (wood room)' % (img, Wp, Hp))
 
-    build_wood_room(2, 13, 9, (588, 300))
-    build_wood_room(3, 18, 12, (468, 260))
+    # 🎼 level 2 = the music-room look: pale diagonal planks + grey wall (Trym img 2)
+    build_wood_room(2, 13, 9, (588, 300), *room_tiles(48, 1440, 48, 192))
+    # 🏨 level 3 = the lobby look: woven tan floor + warm wood wall (Trym img 3)
+    build_wood_room(3, 18, 12, (468, 260), *room_tiles(48, 960, 48, 1056))
 
 
 # ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
