@@ -798,7 +798,8 @@ INDOOR_DEF = [
     ('teatable', 'Gilded table', 'living', 20, 1, _ts(LIV, 3)),
     ('readlamp', 'Reading lamp', 'living', 14, 1, _ts(LIV, 86)),
     ('pottedplant', 'Potted plant', 'living', 8, 1, _ts(LIV, 16)),
-    ('starryrug', 'Starry rug', 'living', 10, 1, _ts(BEDS, 61)),
+    ('starryrug', 'Round rug', 'living', 10, 1, _ts(BEDS, 386)),
+    ('greyrug', 'Grey runner', 'living', 12, 1, _ts(BEDS, 359)),
     ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
@@ -811,6 +812,10 @@ INDOOR_DEF = [
     ('cozybed', 'Cozy bed', 'bedroom', 36, 1, _ts(BEDS, 150)),
     ('nightstand', 'Nightstand', 'bedroom', 12, 1, _ts(LIV, 63)),
     ('dresser', 'Chest of drawers', 'bedroom', 22, 1, _ts(LIV, 51)),
+    ('teddy', 'Teddy bear', 'bedroom', 10, 1, _ts(BEDS, 302)),
+    ('bunnyplush', 'Bunny plush', 'bedroom', 12, 1, _ts(BEDS, 305)),
+    ('whaleplush', 'Whale plush', 'bedroom', 14, 2, _ts(BEDS, 390)),
+    ('robottoy', 'Toy robot', 'bedroom', 20, 2, _ts(BEDS, 509)),
     ('dresserlamp', 'Dresser + lamp', 'bedroom', 30, 2, _ts(LIV, 58)),
     ('bunkbed', 'Bunk bed', 'bedroom', 44, 2, _ts(BEDS, 126)),
     ('vanity', 'Vanity table', 'bedroom', 24, 2, _ts(LIV, 21)),
@@ -838,11 +843,11 @@ INDOOR_DEF = [
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
-RUG_IDS = {'bathmat', 'starryrug', 'longrug'}
+RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug'}
 # counters render at 1.0 (they must READ as work surfaces — Trym: "the kitchen
 # counter must be larger"); rugs render big because the banana walks over them.
 IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
-            'starryrug': 4 / 3.0, 'longrug': 1.5}
+            'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.5}
 # accessory parts baked onto the K121 counter (native px, base-line y, x)
 IN_COMPOSE = {
     'coffeemk': [(_ts(KIT, 185), 26, 30)],
