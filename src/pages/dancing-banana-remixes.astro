@@ -218,5 +218,8 @@ const CATS = [
   <script type="application/json" id="rmxData" set:html={JSON.stringify(remixes)} />
   <script>
     import '../scripts/remix-gallery.js';
+    import { wireDownloads } from '../lib/make-it-real.js';
+    // the modal's ↓ button is a download moment too (the detail pages already ask)
+    wireDownloads('remix');
   </script>
 </BaseLayout>
