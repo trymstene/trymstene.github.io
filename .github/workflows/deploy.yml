@@ -1,16 +1,16 @@
 name: Deploy to GitHub Pages
 
-# Builds the Astro site and pushes the output to the `gh-pages` branch.
-# Requires: repo Settings → Pages → Build and deployment →
-#   Source = "Deploy from a branch", Branch = gh-pages / (root).
+# Builds the Astro site and deploys it via the Pages ARTIFACT path
+# (upload-pages-artifact + deploy-pages). Requires: repo Settings → Pages →
+# Source = "GitHub Actions" (flipped via API on 6 Aug).
 #
-# WHY branch-based: the artifact API path (upload-pages-artifact +
-# deploy-pages) failed 5 consecutive deploys on 3 Jul 2026 with a generic
-# backend "Deployment failed, try again later" (builds green, artifact fine,
-# no incident on githubstatus.com) — second such wave in two days. Pushing to
-# a branch and letting GitHub's own pages-build-deployment pipeline publish it
-# is the boring, battle-tested path. dist/ already contains CNAME + .nojekyll
-# (they live in public/), so no extra config here.
+# WHY artifact-based (again): the branch path's internal
+# "pages build and deployment" pipeline failed 6 consecutive deploys on
+# 6 Aug 2026 — deployments stuck in deployment_queued until timeout, Pages
+# API reporting status:errored, builds green, githubstatus.com silent.
+# Mirror image of 3 Jul 2026, when the ARTIFACT path failed the same way and
+# branch-based was the fix. The two paths fail in independent waves; when one
+# jams, switch to the other. dist/ carries CNAME + .nojekyll from public/.
 
 on:
   push:
@@ -23,7 +23,9 @@ on:
     - cron: '5 0 * * *'
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 # Latest push wins: cancel any in-progress deploy. (A Pages-side stall on
 # 2 Jul 2026 left a deploy job hung for 13h; with cancel-in-progress: false
@@ -34,7 +36,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,12 +50,21 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Publish dist to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          force_orphan: true
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       # IndexNow: tell Bing/DuckDuckGo/Seznam etc. the site changed (minutes
       # instead of weeks). Google ignores it; harmless if the ping fails.
