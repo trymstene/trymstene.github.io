@@ -703,6 +703,42 @@ def _ts(theme, n):
 
 
 BATH = ('3_Bathroom_Singles_48x48', 'Bathroom_Singles_48x48')
+BASE = ('14_Basement_Singles_48x48', 'Basement_Singles_48x48')
+
+# ⚠️ STANDING RULE (Trym): Theme_Sorter singles bake their theme FLOOR inside
+# the furniture silhouette (under/between legs). Strip the measured floor
+# palette before export or pieces carry a wrong-colour plinth onto our floors.
+FLOOR_PALETTE = [
+    ((0xa7, 0x97, 0x96), 14),   # mauve floor (living/bedroom/music)
+    ((0xb3, 0x9a, 0x98), 14),   # mauve, lit row
+    ((0xb4, 0x9c, 0x99), 14),   # mauve, lit row 2
+    ((0x6b, 0x50, 0x52), 10),   # mauve floor shadow
+    ((0x9c, 0x78, 0x6b), 8),    # warm floor under beds
+    ((0xf1, 0xce, 0x8e), 10),   # bathroom cream tile
+    ((0xe0, 0xb8, 0x70), 8),    # bathroom tile shading
+    ((0xda, 0xa4, 0x63), 8),    # bathroom tile shadow
+]
+
+
+def indoor_sprite(path, scale):
+    try:
+        img = Image.open(path).convert('RGBA')
+    except Exception:
+        print('  MISSING', path)
+        return None
+    p = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = p[x, y]
+            if not a:
+                continue
+            for (cr, cg, cb), tol in FLOOR_PALETTE:
+                if abs(r - cr) <= tol and abs(g - cg) <= tol and abs(b - cb) <= tol:
+                    p[x, y] = (0, 0, 0, 0)
+                    break
+    if scale != 1.0:
+        img = img.resize((max(1, int(img.width * scale)), max(1, int(img.height * scale))), Image.NEAREST)
+    return img
 # (id, name, cat, price, stage, file) — room-type shelves, all western.
 # stage: 1 = tent up, 2 = cabin up, 3 = house only (the balance lever).
 INDOOR_DEF = [
@@ -722,7 +758,8 @@ INDOOR_DEF = [
     ('starryrug', 'Starry rug', 'living', 10, 1, _ts(BEDS, 61)),
     ('sofa', 'Navy sofa', 'living', 30, 2, _ts(LIV, 6)),
     ('navychair', 'Navy armchair', 'living', 18, 2, _ts(LIV, 7)),
-    ('telly', 'The telly', 'living', 40, 2, _ts(LIV, 113)),
+    ('telly', 'The telly', 'living', 40, 2, _ts(BASE, 152)),
+    ('furnace', 'Old furnace', 'living', 26, 2, _ts(LIV, 113)),
     ('parlorplant', 'Parlor tree', 'living', 12, 3, _ts(LIV, 13)),
     # 🛏 bedroom
     ('cozybed', 'Cozy bed', 'bedroom', 36, 1, _ts(BEDS, 150)),
@@ -755,7 +792,7 @@ INDOOR_DEF = [
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
 if HAVE_PACK:
     for did, name, cat, price, stage, path in INDOOR_DEF:
-        s = sprite([path], scale=DECOR_DEFAULT)
+        s = indoor_sprite(path, DECOR_DEFAULT)
         if s is None:
             continue
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
