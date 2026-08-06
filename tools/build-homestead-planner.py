@@ -62,7 +62,8 @@ def b64(fn, missing_ok=False):
         if missing_ok:
             return None
         raise SystemExit('missing asset: ' + fn)
-    return 'data:image/png;base64,' + base64.b64encode(open(p, 'rb').read()).decode()
+    mime = 'image/gif' if fn.endswith('.gif') else 'image/png'
+    return 'data:%s;base64,' % mime + base64.b64encode(open(p, 'rb').read()).decode()
 
 COIN = b64('coin16.png')
 def coin(n):
@@ -195,7 +196,7 @@ for cat, label in CAT_META:
             for t in (1, 2, 3))
         H.append('<tr><td class="sprite"><img class="px" src="%s" alt=""></td>'
                  '<td>%s</td><td class="num">%s</td><td>%s</td>%s<td>%s</td></tr>'
-                 % (b64('d-%s.png' % d['id']), d['name'], coin(d['price']), ship(d['cat']),
+                 % ((b64('d-%s.png' % d['id'], missing_ok=True) or b64('d-%s.gif' % d['id'])), d['name'], coin(d['price']), ship(d['cat']),
                     marks, '🛋 room' if d['cat'] in INDOOR else '🌳 yard'))
 H.append('</table></div>')
 
