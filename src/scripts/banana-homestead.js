@@ -175,7 +175,7 @@ function applyTestScenario(kind) {
     // west column
     ['statue', 'bush', 'flowerbush', 'bench', 'mushrooms', 'sprout'].forEach((id, i) => put2(id, 405 + (i % 2) * 62, 400 + Math.floor(i / 2) * 62));
     // east column
-    ['statue2', 'coop', 'shelf', 'benchv', 'armchair', 'chair', 'bush2', 'flowerbush2'].forEach((id, i) => put2(id, 990 + (i % 3) * 100, 420 + Math.floor(i / 3) * 78));
+    ['statue', 'coop', 'shelf', 'benchv', 'armchair', 'chair', 'bush2', 'flowerbush2'].forEach((id, i) => put2(id, 990 + (i % 3) * 100, 420 + Math.floor(i / 3) * 78));
     // the front yard, below the house porch
     ['fountain', 'table', 'campfire', 'marshfire', 'lantern', 'lantern2'].forEach((id, i) => put2(id, 590 + i * 62, 495));
     // mid-band accents
@@ -654,7 +654,8 @@ function init(visitDoc, visitMiss) {
     (state.inItems[inside] || []).forEach((it) => {
       if (!DEX[it.id]) return;
       const el = itemDiv(it);
-      el.style.zIndex = String(IN_Z + Math.round(it.y));   // sorts with the banana
+      // rugs lie flat: always under the banana and any furniture on them
+      el.style.zIndex = String(DEX[it.id].rug ? IN_Z : IN_Z + Math.round(it.y));
       inEls.push(el);
     });
   }
@@ -665,14 +666,16 @@ function init(visitDoc, visitMiss) {
     if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
     if (I.kitchen && x + d.w / 2 > I.kitchen[0] - 8 && x - d.w / 2 < I.kitchen[2] + 8
       && y > I.kitchen[1] - 20 && y - d.h < I.kitchen[3] + 8) return false;
-    if (I.exit && x + d.w / 2 > I.exit[0] - 20 && x - d.w / 2 < I.exit[2] + 20 && y > I.exit[1] - 90) return false;
+    if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 20 && x - d.w / 2 < I.exit[2] + 20 && y > I.exit[1] - 90) return false;
     for (const c of I.cols) {
       if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 24 < c[3]) return false;
     }
-    for (const it of (state.inItems[t] || [])) {
-      if (placing && placing.moving === it) continue;
-      const o = DEX[it.id];
-      if (o && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
+    if (!d.rug) {
+      for (const it of (state.inItems[t] || [])) {
+        if (placing && placing.moving === it) continue;
+        const o = DEX[it.id];
+        if (o && !o.rug && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
+      }
     }
     return true;
   }
@@ -1683,7 +1686,7 @@ function init(visitDoc, visitMiss) {
     for (const it of state.items) {
       if (placing && placing.moving === it) continue;
       const o = DEX[it.id];
-      if (Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
+      if (o && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
     }
     return true;
   }
@@ -1694,7 +1697,7 @@ function init(visitDoc, visitMiss) {
     const x = snap(moving ? moving.x : Math.max(P[0] + 40, Math.min(P[2] - 40, pos.x)));
     const y = snap(moving ? moving.y : Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null, room: inside };
-    if (inside) placing.el.style.zIndex = String(IN_Z + Math.round(y));
+    if (inside) placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(y));
     camFree = { x, y };   // one glide to the ghost — after this, only drags pan
     if (moving) { refreshItems(); }   // the original disappears while it moves
     view.classList.add('is-placing');   // touch drags steer the camera, not the page
@@ -1838,7 +1841,7 @@ function init(visitDoc, visitMiss) {
     placing.el.style.left = pct(placing.x - d.w / 2, W);
     placing.el.style.top = pct(placing.y - d.h, H);
     depth(placing.el, placing.y);
-    if (placing.room) placing.el.style.zIndex = String(IN_Z + Math.round(placing.y));
+    if (placing.room) placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(placing.y));
     const ok = placing.room ? inSpotOk(d, placing.x, placing.y, placing.room)
       : spotOk(d, placing.x, placing.y);
     placing.el.classList.toggle('is-bad', !ok);
@@ -2295,7 +2298,7 @@ function init(visitDoc, visitMiss) {
     for (let i = state.items.length - 1; i >= 0; i--) {
       const it = state.items[i];
       const d = DEX[it.id];
-      if (Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
+      if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
         if (visiting) { tgt.x = it.x; tgt.y = it.y + 30; return; }   // look, don't touch
         if (Math.hypot(pos.x - it.x, pos.y - it.y) < 150) itemChip(i);
         else { tgt.x = it.x; tgt.y = it.y + 30; }

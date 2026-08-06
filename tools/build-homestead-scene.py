@@ -769,23 +769,39 @@ def indoor_sprite(path, scale, strip=True):
     if scale != 1.0:
         img = img.resize((max(1, int(img.width * scale)), max(1, int(img.height * scale))), Image.NEAREST)
     return img
+def compose_on(base_img, parts):
+    # paste native-resolution accessories with their BASE at `by` on the
+    # counter top — the pack's own showcase grammar (no fractional scaling).
+    head = 0
+    for pt, px_, by in parts:
+        head = max(head, pt.height - by)
+    cv = Image.new('RGBA', (base_img.width, base_img.height + head), (0, 0, 0, 0))
+    cv.paste(base_img, (0, head), base_img)
+    for pt, px_, by in parts:
+        cv.paste(pt, (px_, head + by - pt.height), pt)
+    return cv
+
+
 # (id, name, cat, price, stage, file) — room-type shelves, all western.
 # stage: 1 = tent up, 2 = cabin up, 3 = house only (the balance lever).
 INDOOR_DEF = [
     # 🍳 kitchen
     ('stove', 'The stove', 'kitchen', 42, 1, _ts(KIT, 150)),
-    ('coffeemk', 'Coffee maker', 'kitchen', 16, 1, _ts(KIT, 178)),
+    ('coffeemk', 'Coffee counter', 'kitchen', 26, 1, _ts(KIT, 121)),
     ('dinchair', 'Dining chair', 'kitchen', 10, 1, _ts(KIT, 284)),
     ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
-    ('kcounter', 'Kitchen counter', 'kitchen', 18, 2, _ts(KIT, 121)),
-    ('stockcounter', 'Stocked counter', 'kitchen', 26, 2, _ts(KIT, 127)),
-    ('dinette', 'Dinette table', 'kitchen', 20, 2, _ts(KIT, 272)),
+    ('kcounter', 'Kitchen counter', 'kitchen', 18, 1, _ts(KIT, 121)),
+    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, _ts(KIT, 121)),
+    ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
     ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
     # 🛋 living room
     ('teatable', 'Gilded table', 'living', 20, 1, _ts(LIV, 3)),
     ('readlamp', 'Reading lamp', 'living', 14, 1, _ts(LIV, 86)),
     ('pottedplant', 'Potted plant', 'living', 8, 1, _ts(LIV, 16)),
     ('starryrug', 'Starry rug', 'living', 10, 1, _ts(BEDS, 61)),
+    ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
+    ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
+    ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
     ('sofa', 'Navy sofa', 'living', 30, 2, _ts(LIV, 6)),
     ('navychair', 'Navy armchair', 'living', 18, 2, _ts(LIV, 7)),
     ('telly', 'The telly', 'living', 40, 2, _ts(BASE, 152)),
@@ -794,6 +810,8 @@ INDOOR_DEF = [
     # 🛏 bedroom
     ('cozybed', 'Cozy bed', 'bedroom', 36, 1, _ts(BEDS, 150)),
     ('nightstand', 'Nightstand', 'bedroom', 12, 1, _ts(LIV, 63)),
+    ('dresser', 'Chest of drawers', 'bedroom', 22, 1, _ts(LIV, 51)),
+    ('dresserlamp', 'Dresser + lamp', 'bedroom', 30, 2, _ts(LIV, 58)),
     ('bunkbed', 'Bunk bed', 'bedroom', 44, 2, _ts(BEDS, 126)),
     ('vanity', 'Vanity table', 'bedroom', 24, 2, _ts(LIV, 21)),
     ('deskset', 'Writing desk', 'bedroom', 22, 2, _ts(LIV, 26)),
@@ -820,12 +838,32 @@ INDOOR_DEF = [
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
+RUG_IDS = {'bathmat', 'starryrug', 'longrug'}
+# counters render at 1.0 (they must READ as work surfaces — Trym: "the kitchen
+# counter must be larger"); rugs render big because the banana walks over them.
+IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
+            'starryrug': 4 / 3.0, 'longrug': 1.5}
+# accessory parts baked onto the K121 counter (native px, base-line y, x)
+IN_COMPOSE = {
+    'coffeemk': [(_ts(KIT, 185), 26, 30)],
+    'stockcounter': [(_ts(LIV, 49), 2, 30), (_ts(KIT, 172), 42, 22)],
+}
 if HAVE_PACK:
-    NO_STRIP = {'bathmat', 'starryrug'}
+    NO_STRIP = RUG_IDS
     for did, name, cat, price, stage, path in INDOOR_DEF:
-        s = indoor_sprite(path, DECOR_DEFAULT, strip=did not in NO_STRIP)
+        sc = IN_SCALE.get(did, DECOR_DEFAULT)
+        s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP)
         if s is None:
             continue
+        parts = []
+        for ppath, px_, by in IN_COMPOSE.get(did, []):
+            pt = indoor_sprite(ppath, 1.0)
+            if pt is not None:
+                parts.append((pt, px_, by))
+        if parts:
+            s = compose_on(s, parts)
+        if sc != 1.0:
+            s = s.resize((max(1, int(s.width * sc)), max(1, int(s.height * sc))), Image.NEAREST)
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
         DECOR_OUT.append((did, name, cat, price, stage, s.width, s.height, None))
         print('  d-%s.png %dx%d (%s s%d)' % (did, s.width, s.height, cat, stage))
@@ -1142,9 +1180,10 @@ def emit():
     D.append('export const DECOR = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
         D.append("  { id: '%s', name: '%s', cat: '%s', price: %d, stage: %d,"
-                 " w: %d, h: %d, surface: '%s', img: '/assets/homestead/d-%s.png', solid: %s },"
+                 " w: %d, h: %d, surface: '%s',%s img: '/assets/homestead/d-%s.png', solid: %s },"
                  % (did, name, cat, price, stage, w, h,
-                    ('floor' if cat in ('kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music') else 'ground'), did,
+                    ('floor' if cat in ('kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music') else 'ground'),
+                    (' rug: 1,' if did in RUG_IDS else ''), did,
                     (str(box) if box else 'null')))
     D.append('];')
     with open(os.path.join(SITE, 'src', 'data', 'decor.js'), 'w', encoding='utf-8') as f:
