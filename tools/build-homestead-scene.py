@@ -898,12 +898,14 @@ if os.path.isdir(RB):
         return (_fl.crop((fx, fy, fx + 48, fy + 48)),
                 _wa.crop((wx2, wy2, wx2 + 48, wy2 + 96)))
 
-    def build_wood_room(tier, tw, th, at, FTILE, WSEG):
+    def build_wood_room(tier, tw, th, at, FTILE, WSEG, fscale=1):
         Wp, Hp = tw * 48, th * 48
         room = Image.new('RGBA', (Wp, Hp), (0, 0, 0, 0))
-        for j in range(th):
-            for i in range(tw):
-                room.alpha_composite(FTILE, (i * 48, j * 48))
+        step = 48 * fscale
+        ft = FTILE if fscale == 1 else FTILE.resize((step, step), Image.NEAREST)
+        for j in range(0, Hp, step):
+            for i in range(0, Wp, step):
+                room.alpha_composite(ft, (i, j))
         for i in range(tw):
             room.alpha_composite(WSEG, (i * 48, 0))
         dr2 = ImageDraw.Draw(room)
@@ -934,7 +936,7 @@ if os.path.isdir(RB):
     # 🎼 level 2 = the music-room look: pale diagonal planks + grey wall (Trym img 2)
     build_wood_room(2, 13, 9, (588, 300), *room_tiles(48, 1440, 48, 192))
     # 🏨 level 3 = the lobby look: woven tan floor + warm wood wall (Trym img 3)
-    build_wood_room(3, 18, 12, (468, 260), *room_tiles(48, 960, 48, 1056))
+    build_wood_room(3, 18, 12, (468, 260), *room_tiles(48, 960, 48, 1056), fscale=2)
 
 
 # ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
@@ -981,31 +983,16 @@ build_phone_icon()
 TENT_W, TENT_H = 336, 288
 tent_room = Image.new('RGBA', (TENT_W, TENT_H), (0, 0, 0, 0))
 tp2 = tent_room.load()
-C_DARK = (146, 100, 42, 255)
-C_MID = (196, 146, 66, 255)
-C_LIT = (216, 168, 84, 255)
-C_SEAM = (110, 74, 30, 255)
 C_FLOOR = (176, 138, 92, 255)
 C_FLOORD = (158, 122, 78, 255)
 trng = random.Random(7)
 for y in range(TENT_H):
     for x in range(TENT_W):
-        wall = y < 96 or x < 32 or x >= TENT_W - 32 or y >= TENT_H - 26
-        door = y >= TENT_H - 26 and 120 <= x < 216
-        if wall and not door:
-            panel = (x // 28) % 2
-            c = C_MID if panel else C_LIT
-            if y < 96 and y > 84:
-                c = C_DARK                     # the fold line where roof meets floor
-            if x % 28 == 0 or y in (0, 95) or x in (0, TENT_W - 1):
-                c = C_SEAM
-            tp2[x, y] = c
-        else:
-            j = trng.randrange(-6, 7)
-            c = (C_FLOOR[0] + j, C_FLOOR[1] + j, C_FLOOR[2] + j, 255)
-            if (y % 16) < 2:
-                c = C_FLOORD
-            tp2[x, y] = c
+        j = trng.randrange(-6, 7)
+        c = (C_FLOOR[0] + j, C_FLOOR[1] + j, C_FLOOR[2] + j, 255)
+        if (y % 16) < 2:
+            c = C_FLOORD
+        tp2[x, y] = c
 for prop_name, px2, py2, sc in (('ME_Singles_Camping_48x48_Sleeping_Bag_1.png', 52, 116, 2 / 3.0),
                                 ('ME_Singles_Camping_48x48_Backpack_1.png', 262, 118, 2 / 3.0),
                                 ('ME_Singles_Camping_48x48_Lantern_1.png', 218, 128, 2 / 3.0)):
@@ -1023,8 +1010,8 @@ INTERIORS_OUT[1] = {
     'spawn': [TENT_AT[0] + 168, TENT_AT[1] + 230],
     'exit': [TENT_AT[0] + 124, TENT_AT[1] + TENT_H - 22, TENT_AT[0] + 212, TENT_AT[1] + TENT_H - 2],
     'cols': [[TENT_AT[0] + a, TENT_AT[1] + b, TENT_AT[0] + c, TENT_AT[1] + d] for a, b, c, d in (
-        (0, 0, TENT_W, 100), (0, 0, 36, TENT_H), (TENT_W - 36, 0, TENT_W, TENT_H),
-        (0, TENT_H - 24, 120, TENT_H), (216, TENT_H - 24, TENT_W, TENT_H),
+        (0, 0, TENT_W, 16), (0, 0, 16, TENT_H), (TENT_W - 16, 0, TENT_W, TENT_H),
+        (0, TENT_H - 16, 120, TENT_H), (216, TENT_H - 16, TENT_W, TENT_H),
         (40, 112, 96, 200), (238, 112, 292, 172),
     )],
 }
