@@ -1714,11 +1714,12 @@ function init(visitDoc, visitMiss) {
     pnTimer = setTimeout(() => n.classList.remove('is-on'), 2300);
   }
   const shopNote = (t, ms) => { if (shopEl.hidden) toast(t, ms); else phoneNote(t); };
+  // no stock emojis in the phone chrome (Trym) — clean OS titles
   const SHOP_HEADS = {
-    home: ['🍌 Banana Phone', ''],
-    order: ['🛒 Order online', 'The van delivers to your mailbox.'],
-    shed: ['📦 Your shed', 'Ready to place in 🔨 build mode.'],
-    up: ['⛺ Upgrades', ''],
+    home: ['Banana Phone', ''],
+    order: ['Order online', 'The van delivers to your mailbox.'],
+    shed: ['Your shed', 'Ready to place in build mode.'],
+    up: ['Upgrades', ''],
   };
   function shopHead() {
     const hd = SHOP_HEADS[shopEl.dataset.tab] || SHOP_HEADS.order;
