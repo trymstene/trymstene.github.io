@@ -800,27 +800,27 @@ def compose_on(base_img, parts):
 # stage: 1 = tent up, 2 = cabin up, 3 = house only (the balance lever).
 INDOOR_DEF = [
     # 🍳 kitchen
-    ('stove', 'The stove', 'kitchen', 42, 1, _ts(KIT, 150)),
-    ('coffeemk', 'Coffee counter', 'kitchen', 26, 1, [_ts(KIT, 121)] * 3),
-    ('dinchair', 'Dining chair', 'kitchen', 10, 1, _ts(KIT, 284)),
-    ('dinchair2', 'Dining chair (right)', 'kitchen', 10, 1, _ts(KIT, 280)),
-    ('dinchair3', 'Dining chair (away)', 'kitchen', 10, 1, _ts(KIT, 279)),
+    ('stove', 'The stove', 'kitchen', 42, 2, _ts(KIT, 150)),
+    ('coffeemk', 'Coffee counter', 'kitchen', 26, 2, [_ts(KIT, 121)] * 3),
+    ('dinchair', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 284)),
+    ('dinchair2', 'Dining chair (right)', 'kitchen', 10, 2, _ts(KIT, 280)),
+    ('dinchair3', 'Dining chair (away)', 'kitchen', 10, 2, _ts(KIT, 279)),
     ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
-    ('kcounter', 'Kitchen counter', 'kitchen', 18, 1, [_ts(KIT, 121)] * 3),
+    ('kcounter', 'Kitchen counter', 'kitchen', 18, 2, [_ts(KIT, 121)] * 3),
     ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121)] * 3),
     ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
     ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
     # 🛋 living room
-    ('teatable', 'Gilded table', 'living', 20, 1, _ts(LIV, 3)),
-    ('readlamp', 'Reading lamp', 'living', 14, 1, _ts(LIV, 86)),
+    ('teatable', 'Gilded table', 'living', 20, 2, _ts(LIV, 3)),
+    ('readlamp', 'Reading lamp', 'living', 14, 2, _ts(LIV, 86)),
     ('pottedplant', 'Potted plant', 'living', 8, 1, _ts(LIV, 16)),
-    ('starryrug', 'Round rug', 'living', 10, 1, _ts(BEDS, 386)),
-    ('greyrug', 'Grey rug', 'living', 12, 1, [_ts(BEDS, 357), _ts(BEDS, 358), _ts(BEDS, 359)]),
+    ('starryrug', 'Round rug', 'living', 10, 2, _ts(BEDS, 386)),
+    ('greyrug', 'Grey rug', 'living', 12, 2, [_ts(BEDS, 357), _ts(BEDS, 358), _ts(BEDS, 359)]),
     ('ovalrug', 'Oval rug', 'living', 14, 2, [_ts(BEDS, 360), _ts(BEDS, 361), _ts(BEDS, 362)]),
-    ('orangerug', 'Orange rug', 'living', 12, 1, [_ts(BEDS, 366), _ts(BEDS, 367), _ts(BEDS, 368)]),
-    ('whitemat', 'White mat', 'living', 10, 1, [_ts(BEDS, 375), _ts(BEDS, 377)]),
+    ('orangerug', 'Orange rug', 'living', 12, 2, [_ts(BEDS, 366), _ts(BEDS, 367), _ts(BEDS, 368)]),
+    ('whitemat', 'White mat', 'living', 10, 2, [_ts(BEDS, 375), _ts(BEDS, 377)]),
     ('whiteoval', 'White oval rug', 'living', 14, 2, [_ts(BEDS, 378), _ts(BEDS, 379), _ts(BEDS, 380)]),
-    ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
+    ('longrug', 'Parlor rug', 'living', 14, 2, _ts(BEDS, 384)),
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
     ('tvset', 'Home cinema', 'living', 50, 3,
@@ -835,9 +835,9 @@ INDOOR_DEF = [
     ('furnace', 'Old furnace', 'living', 26, 2, _ts(LIV, 113)),
     ('parlorplant', 'Parlor tree', 'living', 12, 3, _ts(LIV, 13)),
     # 🛏 bedroom
-    ('cozybed', 'Cozy bed', 'bedroom', 36, 1, _ts(BEDS, 150)),
-    ('nightstand', 'Nightstand', 'bedroom', 12, 1, _ts(LIV, 63)),
-    ('dresser', 'Chest of drawers', 'bedroom', 22, 1, _ts(LIV, 51)),
+    ('cozybed', 'Cozy bed', 'bedroom', 36, 2, _ts(BEDS, 150)),
+    ('nightstand', 'Nightstand', 'bedroom', 12, 2, _ts(LIV, 63)),
+    ('dresser', 'Chest of drawers', 'bedroom', 22, 2, _ts(LIV, 51)),
     ('teddy', 'Teddy bear', 'bedroom', 10, 1, _ts(BEDS, 302)),
     ('bunnyplush', 'Bunny plush', 'bedroom', 12, 1, _ts(BEDS, 305)),
     ('whaleplush', 'Whale plush', 'bedroom', 14, 2, _ts(BEDS, 390)),
@@ -848,7 +848,7 @@ INDOOR_DEF = [
     ('deskset', 'Writing desk', 'bedroom', 22, 2, _ts(LIV, 26)),
     ('wardrobe', 'Wardrobe', 'bedroom', 38, 3, _ts(LIV, 37)),
     # 🛁 bathroom
-    ('bathmat', 'Bath mat', 'bathroom', 8, 1, _ts(BATH, 77)),
+    ('bathmat', 'Bath mat', 'bathroom', 8, 2, _ts(BATH, 77)),
     ('toilet', 'The toilet', 'bathroom', 20, 2, _ts(BATH, 21)),
     ('bvanity', 'Wash stand', 'bathroom', 28, 2, _ts(BATH, 5)),
     ('floormirror', 'Standing mirror', 'bathroom', 16, 2, _ts(BATH, 66)),
@@ -856,13 +856,13 @@ INDOOR_DEF = [
     ('washer', 'Washing machine', 'bathroom', 34, 2, _ts(BATH, 87)),
     ('bathtub', 'Bathtub', 'bathroom', 46, 3, _ts(BATH, 157)),
     # 🚪 hallway
-    ('hallchair', 'Hall chair', 'hallway', 10, 1, _ts(LIV, 92)),
+    ('hallchair', 'Hall chair', 'hallway', 10, 2, _ts(LIV, 92)),
     ('hallshelf', 'Hall shelf', 'hallway', 14, 2, _ts(LIV, 45)),
     ('wcabinet', 'Wood cabinet', 'hallway', 26, 2, _ts(LIV, 39)),
     ('gclock', 'Grandfather clock', 'hallway', 34, 3, _ts(LIV, 89)),
     ('displaycab', 'Display cabinet', 'hallway', 30, 3, _ts(LIV, 91)),
     # 🎸 music
-    ('micstand', 'Mic stand', 'music', 12, 1, _ts(MUS, 64)),
+    ('micstand', 'Mic stand', 'music', 12, 2, _ts(MUS, 64)),
     ('pooltable', 'Pool table', 'music', 60, 3, _ts(BASE, 244)),   # + racked balls
     ('bluepool', 'Blue pool table', 'music', 60, 3, _ts(BASE, 245)),
     ('pingpong', 'Ping pong table', 'music', 55, 3, _ts(BASE, 241)),
@@ -899,6 +899,12 @@ IN_COMPOSE = {
 if HAVE_PACK:
     NO_STRIP = RUG_IDS
     IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3}
+    HENS = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animals_48x48/Chickens_and_Roosters_48x48')
+    for hi, hname in enumerate(['Chicken_Brown_48x48.png', 'Chicken_White_48x48.png', 'Chicken_Golden_48x48.png']):
+        hsheet = Image.open(os.path.join(HENS, hname)).convert('RGBA')
+        strip = hsheet.crop((0, 48, 192, 96)).resize((128, 32), Image.NEAREST)
+        strip.save(os.path.join(OUT, 'c-hen%d.png' % hi), optimize=True)
+    print('  c-hen0..2.png (coop chickens)')
     import shutil
     ANIM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Exteriors_48x48/Animated_48x48/Animated_gifs_48x48')
     shutil.copy(os.path.join(ANIM, 'Campfire_48x48.gif'), os.path.join(OUT, 'campfire-lit.gif'))
@@ -1111,9 +1117,9 @@ if os.path.isdir(RB):
         print('  %s %dx%d (wood room)' % (img, Wp, Hp))
 
     # 🎼 level 2 = the music-room look: pale diagonal planks + grey wall (Trym img 2)
-    build_wood_room(2, 13, 9, (588, 300), *room_tiles(48, 1440, 48, 192))
+    build_wood_room(2, 7, 6, (732, 372), *room_tiles(48, 1488, 48, 192))
     # 🏨 level 3 = house 2's floor (Trym: "just reuse") + warm wood wall
-    build_wood_room(3, 18, 12, (468, 260), *room_tiles(48, 1440, 48, 1056))
+    build_wood_room(3, 13, 9, (588, 332), *room_tiles(48, 1488, 48, 1056))
 
 
 # ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
@@ -1157,7 +1163,7 @@ build_phone_icon()
 # the humblest rung deserves the first "inside" moment. A tiny canvas room:
 # drawn tent-fabric walls, groundsheet floor, the pack's own sleeping bag,
 # backpack and lantern. One generic interior for all six tent colours (v1).
-TENT_W, TENT_H = 336, 288
+TENT_W, TENT_H = 240, 192
 tent_room = Image.new('RGBA', (TENT_W, TENT_H), (0, 0, 0, 0))
 tp2 = tent_room.load()
 C_FLOOR = (176, 138, 92, 255)
@@ -1170,9 +1176,9 @@ for y in range(TENT_H):
         if (y % 16) < 2:
             c = C_FLOORD
         tp2[x, y] = c
-for prop_name, px2, py2, sc in (('ME_Singles_Camping_48x48_Sleeping_Bag_1.png', 52, 116, 2 / 3.0),
-                                ('ME_Singles_Camping_48x48_Backpack_1.png', 262, 118, 2 / 3.0),
-                                ('ME_Singles_Camping_48x48_Lantern_1.png', 218, 128, 2 / 3.0)):
+for prop_name, px2, py2, sc in (('ME_Singles_Camping_48x48_Sleeping_Bag_1.png', 52, 74, 2 / 3.0),
+                                ('ME_Singles_Camping_48x48_Backpack_1.png', 192, 76, 2 / 3.0),
+                                ('ME_Singles_Camping_48x48_Lantern_1.png', 154, 84, 2 / 3.0)):
     try:
         sp3 = sprite([prop_name], scale=sc)
         if sp3 is not None:
@@ -1181,15 +1187,15 @@ for prop_name, px2, py2, sc in (('ME_Singles_Camping_48x48_Sleeping_Bag_1.png', 
         print('  tent prop failed', prop_name, e)
 tent_room.save(os.path.join(OUT, 'in-tent.png'), optimize=True)
 print('  in-tent.png %dx%d' % (TENT_W, TENT_H))
-TENT_AT = (732, 360)
+TENT_AT = (780, 408)
 INTERIORS_OUT[1] = {
     'img': 'in-tent.png', 'box': [TENT_AT[0], TENT_AT[1], TENT_W, TENT_H],
-    'spawn': [TENT_AT[0] + 168, TENT_AT[1] + 230],
-    'exit': [TENT_AT[0] + 124, TENT_AT[1] + TENT_H - 22, TENT_AT[0] + 212, TENT_AT[1] + TENT_H - 2],
+    'spawn': [TENT_AT[0] + 120, TENT_AT[1] + 148],
+    'exit': [TENT_AT[0] + 78, TENT_AT[1] + TENT_H - 22, TENT_AT[0] + 162, TENT_AT[1] + TENT_H - 2],
     'cols': [[TENT_AT[0] + a, TENT_AT[1] + b, TENT_AT[0] + c, TENT_AT[1] + d] for a, b, c, d in (
         (0, 0, TENT_W, 16), (0, 0, 16, TENT_H), (TENT_W - 16, 0, TENT_W, TENT_H),
-        (0, TENT_H - 16, 120, TENT_H), (216, TENT_H - 16, TENT_W, TENT_H),
-        (40, 112, 96, 200), (238, 112, 292, 172),
+        (0, TENT_H - 16, 74, TENT_H), (166, TENT_H - 16, TENT_W, TENT_H),
+        (30, 72, 88, 128), (146, 74, 214, 120),
     )],
 }
 

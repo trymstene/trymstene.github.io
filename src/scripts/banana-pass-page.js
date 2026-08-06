@@ -27,7 +27,7 @@ const catCustomP = (ids) => {
   const one = (id) => {
     if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
     const it = CATALOG.find((x) => x.id === id);
-    if (!it) return undefined;
+    if (!it || it.kind === 'decor') return undefined;   // decor = homestead goods, never worn
     CAT_CUSTOM[id] = wearToCustom(it.wear);
     return CAT_CUSTOM[id] || undefined;
   };
@@ -384,7 +384,8 @@ async function init() {
   // Empty until the catalog fetch lands; renderGear() runs again when it does.
   const ownedCatalog = () => {
     const own = catOwnedP();
-    return CATALOG.filter((it) => own[it.id]);
+    // decor kind = homestead goods (forge decor plan) — never closet wearables
+    return CATALOG.filter((it) => own[it.id] && it.kind !== 'decor');
   };
   function renderMine(host) {
     ownedCatalog().forEach((it) => {

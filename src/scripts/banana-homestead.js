@@ -791,6 +791,52 @@ function init(visitDoc, visitMiss) {
   }
   refreshSoil();
 
+  // ---- 🐔 coop chickens: three hens stroll the property (Trym) -------------
+  const hens = [];
+  function henTick(now, dt) {
+    const hasCoop = state.items.some((i) => i.id === 'coop');
+    if (!hasCoop || REDUCED) {
+      while (hens.length) hens.pop().el.remove();
+      return;
+    }
+    while (hens.length < 3) {
+      const el = document.createElement('div');
+      el.className = 'hs-hen';
+      const img = document.createElement('span');
+      img.style.backgroundImage = "url('/assets/homestead/c-hen" + hens.length + ".png')";
+      el.appendChild(img);
+      world.appendChild(el);
+      const coop = state.items.find((i) => i.id === 'coop');
+      hens.push({ el, img, x: coop.x - 30 + hens.length * 30, y: coop.y + 20,
+        tx: coop.x, ty: coop.y + 40, waitUntil: 0, frame: 0, frameAt: 0 });
+    }
+    const P = plotNow();
+    for (const h of hens) {
+      const dx = h.tx - h.x, dy = h.ty - h.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 3) {
+        if (!h.waitUntil) h.waitUntil = now + 1500 + Math.random() * 5000;
+        if (now > h.waitUntil) {
+          h.waitUntil = 0;
+          h.tx = Math.max(P[0] + 16, Math.min(P[2] - 16, h.x + (Math.random() * 260 - 130)));
+          h.ty = Math.max(P[1] + 40, Math.min(P[3] - 10, h.y + (Math.random() * 160 - 80)));
+        }
+      } else {
+        h.x += dx / d * 34 * dt;
+        h.y += dy / d * 34 * dt;
+        if (Math.abs(dx) > 3) h.img.style.transform = dx > 0 ? 'scaleX(-1)' : '';
+        if (now - h.frameAt > 140) {
+          h.frameAt = now;
+          h.frame = (h.frame + 1) % 4;
+        }
+      }
+      h.img.style.backgroundPosition = (h.frame * 100 / 3) + '% 0';
+      h.el.style.left = pct(h.x - 16, W);
+      h.el.style.top = pct(h.y - 30, H);
+      h.el.style.zIndex = String(100 + Math.round(h.y));
+    }
+  }
+
   // ---- 🐦 garden birds (M3): they come when the yard is LIVED-IN ----------
   // Ambient, not a loop: an empty yard gets no birds, decor attracts them,
   // bird houses attract more — and walking up close scares them off. The
@@ -2420,6 +2466,7 @@ function init(visitDoc, visitMiss) {
     drawMe();
     doorTick();
     birdTick(now, dt);
+    henTick(now, dt);
     cam();
   }
   assetsReady().then(() => {

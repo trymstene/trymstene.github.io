@@ -264,7 +264,7 @@ function catCustom(ids) {
   const one = (id) => {
     if (id in CAT_CUSTOM) return CAT_CUSTOM[id] || undefined;   // ⚠️ never cache a MISS (P4-D)
     const it = CATALOG.find((x) => x.id === id);
-    if (!it) return undefined;
+    if (!it || it.kind === 'decor') return undefined;   // decor = homestead goods, never worn
     CAT_CUSTOM[id] = wearToCustom(it.wear);
     return CAT_CUSTOM[id] || undefined;
   };
