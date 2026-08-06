@@ -724,10 +724,14 @@ def indoor_sprite(path, scale, strip=True, overlap=0):
     # overlap: closed-ended modules (counters) merge their butted borders into
     # one divider; open-ended rug columns need exact abutment (overlap 0).
     try:
-        if isinstance(path, (list, tuple)):
+        if isinstance(path, tuple) and path and path[0] == 'crop':
+            img = Image.open(path[1]).convert('RGBA').crop(path[2])
+            img = img.crop(img.getbbox())
+        elif isinstance(path, (list, tuple)):
             parts = [Image.open(p2).convert('RGBA') for p2 in path]
-            if overlap:   # closed modules: crop phantom canvas padding first
-                parts = [p2.crop(p2.getbbox()) for p2 in parts]
+            # crop phantom canvas padding (no-op for rug columns — their
+            # pattern fills the canvas edge); overlap then merges borders
+            parts = [p2.crop(p2.getbbox()) for p2 in parts]
             img = Image.new('RGBA', (sum(p2.width for p2 in parts) - overlap * (len(parts) - 1),
                                      max(p2.height for p2 in parts)), (0, 0, 0, 0))
             x = 0
@@ -820,6 +824,11 @@ INDOOR_DEF = [
     ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
+    ('tvset', 'Home cinema', 'living', 50, 3, _ts(BASE, 195)),
+    ('tvback', 'Telly (back)', 'living', 44, 3, _ts(BASE, 163)),
+    ('whitechair', 'White armchair', 'living', 22, 3, _ts(BASE, 203)),
+    ('bigcouch', 'Big couch', 'living', 56, 3,
+     ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (290, 10, 428, 95))),
     ('sofa', 'Navy sofa', 'living', 30, 2, _ts(LIV, 6)),
     ('navychair', 'Navy armchair', 'living', 18, 2, _ts(LIV, 7)),
     ('telly', 'The telly', 'living', 40, 2, _ts(BASE, 152)),
@@ -855,6 +864,12 @@ INDOOR_DEF = [
     # 🎸 music
     ('micstand', 'Mic stand', 'music', 12, 1, _ts(MUS, 64)),
     ('sportball', 'Basketball', 'music', 8, 1, _ts(MUS, 77)),
+    ('pooltable', 'Pool table', 'music', 60, 3, _ts(BASE, 244)),
+    ('bluepool', 'Blue pool table', 'music', 60, 3, _ts(BASE, 245)),
+    ('pingpong', 'Ping pong table', 'music', 55, 3, _ts(BASE, 241)),
+    ('pingpong2', 'Green ping pong', 'music', 55, 3, _ts(BASE, 243)),
+    ('arcade', 'Arcade cabinet', 'music', 40, 3, _ts(BASE, 219)),
+    ('pinball', 'Pinball machine', 'music', 44, 3, _ts(BASE, 222)),
     ('unicycle', 'Unicycle', 'music', 16, 2, _ts(MUS, 61)),
     ('bballhoop', 'Basketball hoop', 'music', 22, 2, _ts(MUS, 76)),
     ('eguitar', 'Electric guitar', 'music', 24, 1, _ts(MUS, 55)),
