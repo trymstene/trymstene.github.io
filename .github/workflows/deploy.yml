@@ -65,6 +65,11 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # the 6 Aug wave: deployments crawl (10+ min in deployment_in_progress);
+          # the default 10-min timeout aborts deploys that would have landed
+          timeout: 1800000
+          error_count: 30
 
       # IndexNow: tell Bing/DuckDuckGo/Seznam etc. the site changed (minutes
       # instead of weeks). Google ignores it; harmless if the ping fails.
