@@ -651,7 +651,6 @@ DECOR_DEF = [
     ('flowerbush2', 'Rose bush', 'nature', 11, 1, ['ME_Singles_City_Props_48x48_Flower_Bush_4.png'], True),
     # ── stage 2: the cabin ──
     ('statue', 'Angel statue', 'display', 40, 2, ['ME_Singles_Garden_48x48_Angel_Statue_1.png'], True),
-    ('statue2', 'Praying angel', 'display', 40, 2, ['ME_Singles_Garden_48x48_Angel_Statue_2.png'], True),
     ('shelf', 'Garden shelf', 'display', 30, 2, ['ME_Singles_Garden_48x48_Big_Shelf.png'], True),
     ('coop', 'Chicken coop', 'farm', 45, 2, [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Chicken_Coop_48x48.png')], True),
     ('crate', 'Apple crate', 'farm', 12, 2, [os.path.join(FARM, 'Single_Files_48x48', 'Fruit_Trees_48x48', 'Crate_Brown_Apples_48x48.png')], True),
@@ -703,46 +702,65 @@ def _ts(theme, n):
     return os.path.join(TS, theme[0], '%s_%d.png' % (theme[1], n))
 
 
+BATH = ('3_Bathroom_Singles_48x48', 'Bathroom_Singles_48x48')
+# (id, name, cat, price, stage, file) — room-type shelves, all western.
+# stage: 1 = tent up, 2 = cabin up, 3 = house only (the balance lever).
 INDOOR_DEF = [
-    ('sofa', 'Navy sofa', 30, _ts(LIV, 6)),
-    ('navychair', 'Navy armchair', 18, _ts(LIV, 7)),   # 'armchair' is the YARD one
-    ('teatable', 'Gilded table', 20, _ts(LIV, 3)),
-    ('wcabinet', 'Wood cabinet', 26, _ts(LIV, 39)),
-    ('gclock', 'Grandfather clock', 34, _ts(LIV, 89)),
-    ('readlamp', 'Reading lamp', 14, _ts(LIV, 86)),
-    ('telly', 'The telly', 40, _ts(LIV, 113)),
-    ('parlorplant', 'Parlor tree', 12, _ts(LIV, 13)),
-    ('pottedplant', 'Potted plant', 8, _ts(LIV, 16)),
-    ('cozybed', 'Cozy bed', 36, _ts(BEDS, 150)),
-    ('bunkbed', 'Bunk bed', 44, _ts(BEDS, 126)),
-    ('starryrug', 'Starry rug', 10, _ts(BEDS, 61)),
-    # 🍳 kitchen — the placed STOVE grants cooking (the tent's kitchen)
-    ('stove', 'The stove', 42, _ts(KIT, 150)),
-    ('fridge', 'The fridge', 32, _ts(KIT, 161)),
-    ('kcounter', 'Kitchen counter', 18, _ts(KIT, 121)),
-    ('coffeemk', 'Coffee maker', 16, _ts(KIT, 178)),
-    # 🎋 japanese — for the Japanese house (or any room)
-    ('tatami', 'Tatami mat', 12, _ts(JAP, 5)),
-    ('lowtable', 'Low tea table', 22, _ts(JAP, 31)),
-    ('kotatsu', 'Kotatsu', 34, _ts(JAP, 52)),
-    ('bonsai', 'Bonsai', 16, _ts(JAP, 58)),
-    ('plantern', 'Paper lantern', 14, _ts(JAP, 17)),
-    ('futon', 'Futon', 30, _ts(JAP, 80)),
-    # 🎶 music — the DJ banana's corner
-    ('gpiano', 'Grand piano', 60, _ts(MUS, 31)),
-    ('drumkit', 'Drum kit', 38, _ts(MUS, 41)),
-    ('eguitar', 'Electric guitar', 24, _ts(MUS, 55)),
-    ('micstand', 'Mic stand', 12, _ts(MUS, 64)),
-    ('theamp', 'The amp', 20, _ts(MUS, 43)),
+    # 🍳 kitchen
+    ('stove', 'The stove', 'kitchen', 42, 1, _ts(KIT, 150)),
+    ('coffeemk', 'Coffee maker', 'kitchen', 16, 1, _ts(KIT, 178)),
+    ('dinchair', 'Dining chair', 'kitchen', 10, 1, _ts(KIT, 284)),
+    ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
+    ('kcounter', 'Kitchen counter', 'kitchen', 18, 2, _ts(KIT, 121)),
+    ('stockcounter', 'Stocked counter', 'kitchen', 26, 2, _ts(KIT, 127)),
+    ('dinette', 'Dinette table', 'kitchen', 20, 2, _ts(KIT, 272)),
+    ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
+    # 🛋 living room
+    ('teatable', 'Gilded table', 'living', 20, 1, _ts(LIV, 3)),
+    ('readlamp', 'Reading lamp', 'living', 14, 1, _ts(LIV, 86)),
+    ('pottedplant', 'Potted plant', 'living', 8, 1, _ts(LIV, 16)),
+    ('starryrug', 'Starry rug', 'living', 10, 1, _ts(BEDS, 61)),
+    ('sofa', 'Navy sofa', 'living', 30, 2, _ts(LIV, 6)),
+    ('navychair', 'Navy armchair', 'living', 18, 2, _ts(LIV, 7)),
+    ('telly', 'The telly', 'living', 40, 2, _ts(LIV, 113)),
+    ('parlorplant', 'Parlor tree', 'living', 12, 3, _ts(LIV, 13)),
+    # 🛏 bedroom
+    ('cozybed', 'Cozy bed', 'bedroom', 36, 1, _ts(BEDS, 150)),
+    ('nightstand', 'Nightstand', 'bedroom', 12, 1, _ts(LIV, 63)),
+    ('bunkbed', 'Bunk bed', 'bedroom', 44, 2, _ts(BEDS, 126)),
+    ('vanity', 'Vanity table', 'bedroom', 24, 2, _ts(LIV, 21)),
+    ('deskset', 'Writing desk', 'bedroom', 22, 2, _ts(LIV, 26)),
+    ('wardrobe', 'Wardrobe', 'bedroom', 38, 3, _ts(LIV, 37)),
+    # 🛁 bathroom
+    ('bathmat', 'Bath mat', 'bathroom', 8, 1, _ts(BATH, 77)),
+    ('toilet', 'The toilet', 'bathroom', 20, 2, _ts(BATH, 21)),
+    ('bvanity', 'Wash stand', 'bathroom', 28, 2, _ts(BATH, 5)),
+    ('floormirror', 'Standing mirror', 'bathroom', 16, 2, _ts(BATH, 66)),
+    ('towelrack', 'Towel rack', 'bathroom', 10, 2, _ts(BATH, 133)),
+    ('washer', 'Washing machine', 'bathroom', 34, 2, _ts(BATH, 87)),
+    ('bathtub', 'Bathtub', 'bathroom', 46, 3, _ts(BATH, 85)),
+    # 🚪 hallway
+    ('hallchair', 'Hall chair', 'hallway', 10, 1, _ts(LIV, 92)),
+    ('hallshelf', 'Hall shelf', 'hallway', 14, 2, _ts(LIV, 45)),
+    ('wcabinet', 'Wood cabinet', 'hallway', 26, 2, _ts(LIV, 39)),
+    ('gclock', 'Grandfather clock', 'hallway', 34, 3, _ts(LIV, 89)),
+    ('displaycab', 'Display cabinet', 'hallway', 30, 3, _ts(LIV, 91)),
+    # 🎸 music
+    ('micstand', 'Mic stand', 'music', 12, 1, _ts(MUS, 64)),
+    ('eguitar', 'Electric guitar', 'music', 24, 1, _ts(MUS, 55)),
+    ('theamp', 'The amp', 'music', 20, 2, _ts(MUS, 43)),
+    ('drumkit', 'Drum kit', 'music', 38, 3, _ts(MUS, 41)),
+    ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
+INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
 if HAVE_PACK:
-    for did, name, price, path in INDOOR_DEF:
+    for did, name, cat, price, stage, path in INDOOR_DEF:
         s = sprite([path], scale=DECOR_DEFAULT)
         if s is None:
             continue
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
-        DECOR_OUT.append((did, name, 'interior', price, 1, s.width, s.height, None))
-        print('  d-%s.png %dx%d (interior)' % (did, s.width, s.height))
+        DECOR_OUT.append((did, name, cat, price, stage, s.width, s.height, None))
+        print('  d-%s.png %dx%d (%s s%d)' % (did, s.width, s.height, cat, stage))
 
 # ── 🏠 THE STRUCTURE STYLES ── every rung is a WARDROBE (Trym: "build the
 # picker with all of them"). Each style exports ov-<key>.png; sizes are
@@ -935,8 +953,8 @@ if os.path.isdir(RB):
 
     # 🎼 level 2 = the music-room look: pale diagonal planks + grey wall (Trym img 2)
     build_wood_room(2, 13, 9, (588, 300), *room_tiles(48, 1440, 48, 192))
-    # 🏨 level 3 = the lobby look: woven tan floor + warm wood wall (Trym img 3)
-    build_wood_room(3, 18, 12, (468, 260), *room_tiles(48, 960, 48, 1056), fscale=2)
+    # 🏨 level 3 = house 2's floor (Trym: "just reuse") + warm wood wall
+    build_wood_room(3, 18, 12, (468, 260), *room_tiles(48, 1440, 48, 1056))
 
 
 # ---- 🍌 THE BANANA PHONE — drawn UI art (Trym commissioned: "needs to be
@@ -1058,7 +1076,7 @@ def emit():
         D.append("  { id: '%s', name: '%s', cat: '%s', price: %d, stage: %d,"
                  " w: %d, h: %d, surface: '%s', img: '/assets/homestead/d-%s.png', solid: %s },"
                  % (did, name, cat, price, stage, w, h,
-                    ('floor' if cat == 'interior' else 'ground'), did,
+                    ('floor' if cat in ('kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music') else 'ground'), did,
                     (str(box) if box else 'null')))
     D.append('];')
     with open(os.path.join(SITE, 'src', 'data', 'decor.js'), 'w', encoding='utf-8') as f:

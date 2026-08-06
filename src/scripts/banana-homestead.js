@@ -1293,11 +1293,16 @@ function init(visitDoc, visitMiss) {
   const cap = () => CAPS[Math.min(state.stage, CAPS.length - 1)];
   const CAT_LABELS = { garden: '🌼 Garden', furniture: '🪑 Furniture', nature: '🌿 Nature',
     lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community',
-    farm: '🌾 Farm', interior: '🛋 Interior' };
+    farm: '🌾 Farm', kitchen: '🍳 Kitchen', living: '🛋 Living room',
+    bedroom: '🛏 Bedroom', bathroom: '🛁 Bathroom', hallway: '🚪 Hallway',
+    music: '🎸 Music' };
+  // the room-type shelves live INDOORS; everything else is the yard
+  const INDOOR = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']);
   // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
   // statement pieces take a van — short waits (hours, never days), and the
   // arrival is an EVENT. Community pieces ship instantly (maker-made).
-  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 0, lighting: 30, furniture: 60, display: 240, interior: 45 };
+  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 0, lighting: 30, furniture: 60, display: 240,
+    kitchen: 45, living: 45, bedroom: 45, bathroom: 45, hallway: 45, music: 45 };
   const shipMin = (d) => SHIP_MIN[d.cat] || 0;
   const fmtShip = (ms) => {
     const m = Math.max(1, Math.round(ms / 60000));
@@ -1422,7 +1427,7 @@ function init(visitDoc, visitMiss) {
     const full = state.items.length >= cap();
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
-      const HERE = (d2) => (d2.cat === 'interior') === !!inside;
+      const HERE = (d2) => INDOOR.has(d2.cat) === !!inside;
       const cats = ['all', ...new Set(DECOR.filter(HERE).map((d) => d.cat))];
       const curCat = shopEl.dataset.cat || 'all';
       catsRow.hidden = cats.length <= 2;   // one shelf needs no chips
@@ -1499,7 +1504,7 @@ function init(visitDoc, visitMiss) {
       Object.keys(counts).forEach((id) => {
         const d = DEX[id];
         const tile = shopTile(d, 'place', () => {
-          const indoorItem = d.cat === 'interior';
+          const indoorItem = INDOOR.has(d.cat);
           if (indoorItem && !inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
           if (!indoorItem && inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
           if (inside ? inList().length >= INCAP[inside] : state.items.length >= cap()) {

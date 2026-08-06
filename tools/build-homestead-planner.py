@@ -40,7 +40,9 @@ INTERIORS = geo_json('INTERIORS')
 CAPS = [12, 28, 42, 56]
 INCAP = {1: 6, 2: 12, 3: 16}
 SHIP_MIN = {'garden': 0, 'nature': 0, 'farm': 0, 'fun': 0, 'community': 0,
-            'lighting': 30, 'furniture': 60, 'display': 240, 'interior': 45}
+            'lighting': 30, 'furniture': 60, 'display': 240,
+            'kitchen': 45, 'living': 45, 'bedroom': 45, 'bathroom': 45, 'hallway': 45, 'music': 45}
+INDOOR = {'kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music'}
 LADDER = [
     {'tier': 1, 'icon': '⛺', 'name': 'The tent', 'price': 50, 'style': 'tent1', 'room': 'in-tent.png'},
     {'tier': 2, 'icon': '🛖', 'name': 'A real roof', 'price': 250, 'style': 'mobm3', 'room': 'in-wood2.png'},
@@ -49,7 +51,9 @@ LADDER = [
 CAT_META = [
     ('garden', '🌼 Garden'), ('nature', '🌿 Nature'), ('farm', '🌾 Farm'),
     ('fun', '🎈 Fun'), ('lighting', '🏮 Lighting'), ('furniture', '🪑 Furniture'),
-    ('display', '🏆 Display'), ('interior', '🛋 Interior'),
+    ('display', '🏆 Display'),
+    ('kitchen', '🍳 Kitchen'), ('living', '🛋 Living room'), ('bedroom', '🛏 Bedroom'),
+    ('bathroom', '🛁 Bathroom'), ('hallway', '🚪 Hallway'), ('music', '🎸 Music'),
 ]
 
 def b64(fn, missing_ok=False):
@@ -192,7 +196,7 @@ for cat, label in CAT_META:
         H.append('<tr><td class="sprite"><img class="px" src="%s" alt=""></td>'
                  '<td>%s</td><td class="num">%s</td><td>%s</td>%s<td>%s</td></tr>'
                  % (b64('d-%s.png' % d['id']), d['name'], coin(d['price']), ship(d['cat']),
-                    marks, '🛋 room' if d['cat'] == 'interior' else '🌳 yard'))
+                    marks, '🛋 room' if d['cat'] in INDOOR else '🌳 yard'))
 H.append('</table></div>')
 
 H.append('<p class="foot">Community pieces (forge-made, 20 %s each, instant) join the yard shelves at every '
