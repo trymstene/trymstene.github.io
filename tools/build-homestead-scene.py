@@ -1165,37 +1165,25 @@ build_phone_icon()
 
 
 def draw_psign(tier):
-    bw = {1: 66, 2: 88, 3: 112}[tier]
-    bh = {1: 20, 2: 24, 3: 30}[tier]
-    ph = {1: 22, 2: 26, 3: 30}[tier]
+    # POLES ONLY — the board is a DOM plank (.hs-signname) that stretches with
+    # the property name (Trym: "the name should go on the actual sign").
+    stance = {1: 54, 2: 64, 3: 76}[tier]
+    ph = {1: 26, 2: 32, 3: 38}[tier]
     OL = (52, 36, 21, 255)
     WOOD = (124, 86, 47, 255)
     LIT = (154, 108, 60, 255)
-    GR = (99, 68, 37, 255)
-    FACE = (150, 104, 56, 255)
-    W2 = bw + 8
-    top = 6 if tier == 3 else 0
-    H2 = top + bh + ph
-    im2 = Image.new('RGBA', (W2, H2), (0, 0, 0, 0))
+    im2 = Image.new('RGBA', (stance, ph), (0, 0, 0, 0))
     d2 = ImageDraw.Draw(im2)
-    for px0 in (8, W2 - 14):
-        d2.rectangle([px0, top + bh - 6, px0 + 5, H2 - 1], fill=OL)
-        d2.rectangle([px0 + 1, top + bh - 5, px0 + 4, H2 - 2], fill=WOOD)
-        d2.rectangle([px0 + 1, top + bh - 5, px0 + 1, H2 - 2], fill=LIT)
-    if tier == 3:   # the house sign earns a little roof cap
-        d2.rectangle([0, 0, W2 - 1, 4], fill=OL)
-        d2.rectangle([1, 1, W2 - 2, 3], fill=LIT)
-    d2.rectangle([4, top, W2 - 5, top + bh - 1], fill=OL)
-    d2.rectangle([5, top + 1, W2 - 6, top + bh - 2], fill=FACE)
-    d2.rectangle([5, top + 1, W2 - 6, top + 2], fill=LIT)
-    for gx in range(12, W2 - 10, 9):
-        d2.rectangle([gx, top + 4, gx, top + bh - 4], fill=GR)
-    if tier >= 2:   # a lower rail on the fancier stands
-        d2.rectangle([6, top + bh + 4, W2 - 7, top + bh + 7], fill=OL)
-        d2.rectangle([7, top + bh + 5, W2 - 8, top + bh + 6], fill=WOOD)
+    for px0 in (6, stance - 12):
+        d2.rectangle([px0, 0, px0 + 5, ph - 1], fill=OL)
+        d2.rectangle([px0 + 1, 1, px0 + 4, ph - 2], fill=WOOD)
+        d2.rectangle([px0 + 1, 1, px0 + 1, ph - 2], fill=LIT)
+    if tier >= 2:   # a crossbar steadies the taller stands
+        d2.rectangle([4, ph - 12, stance - 5, ph - 9], fill=OL)
+        d2.rectangle([5, ph - 11, stance - 6, ph - 10], fill=WOOD)
     im2.save(os.path.join(OUT, 'm-psign%d.png' % tier), optimize=True)
-    print('  m-psign%d.png %dx%d' % (tier, W2, H2))
-    return {'w': W2, 'h': H2}
+    print('  m-psign%d.png %dx%d (poles)' % (tier, stance, ph))
+    return {'w': stance, 'h': ph}
 
 
 SIGNS_OUT = {t: draw_psign(t) for t in (1, 2, 3)}

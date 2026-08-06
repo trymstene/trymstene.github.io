@@ -489,7 +489,9 @@ function init(visitDoc, visitMiss) {
     signEl.style.top = pct(state.signAt.y - sd2.h, H);
     depth(signEl, state.signAt.y);
     signName.style.left = pct(state.signAt.x, W);
-    signName.style.top = pct(state.signAt.y - sd2.h - 12, H);
+    // the board IS the label: its bottom overlaps the pole tops
+    signName.style.top = pct(state.signAt.y - sd2.h + 7, H);
+    signName.dataset.tier = String(fenceTier());
     depth(signName, state.signAt.y + 200);
   }
   refreshFixtures();
