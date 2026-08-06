@@ -14,16 +14,18 @@
 // one line per row — Trym 3 Aug: the two-line rows read asymmetric, so the
 // descriptions went. The name + icon is the whole pitch.
 const AREAS = {
+  homestead: { icon: '🏡', name: 'The Homestead' },
   rave: { icon: '🪩', name: 'The Rave' },
   park: { icon: '🌳', name: 'The Park' },
   beach: { icon: '🏖', name: 'Banana Bay' },
 };
-const ORDER = ['rave', 'park', 'beach'];
+const ORDER = ['homestead', 'rave', 'park', 'beach'];   // home first — it's home
 
 // ⚠️ the arrival params are load-bearing: each world spawns you at the door you
 // came in by, so a fast travel has to say where it came FROM the same way the
 // walked doors do (park reads ?rave / ?beach, beach reads ?park / ?from=rave).
 function hrefFor(to, from) {
+  if (to === 'homestead') return '/homestead/?world';
   if (to === 'park') return '/park/?' + from;
   if (to === 'beach') return from === 'rave' ? '/beach/?from=rave' : '/beach/?park';
   return '/rave/';

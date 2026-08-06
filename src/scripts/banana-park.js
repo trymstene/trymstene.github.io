@@ -342,15 +342,18 @@ function init() {
   // ---- spawn: arrive through the door you came in by ----------------------
   const fromBeach = /[?&]beach(?:=|&|$)/.test(location.search);
   const fromRave = /[?&]rave(?:=|&|$)/.test(location.search);
+  const fromHomestead = /[?&]homestead(?:=|&|$)/.test(location.search);
   const pos = fromBeach ? { x: 2610, y: DOORS.east.y }
     : fromRave ? { x: DOORS.south.x, y: 1008 }
-      : { x: 1380, y: 820 };                       // the plaza's south edge
+      : fromHomestead ? { x: 150, y: DOORS.west.y }
+        : { x: 1380, y: 820 };                       // the plaza's south edge
   const tgt = fromBeach ? { x: 2480, y: DOORS.east.y }
     : fromRave ? { x: DOORS.south.x, y: 900 }
-      : { x: 1380, y: 740 };
+      : fromHomestead ? { x: 300, y: DOORS.west.y }
+        : { x: 1380, y: 740 };
   let meWX = NaN, meWY = NaN;   // change-guard
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
-  track('park_join', { via: fromBeach ? 'beach' : fromRave ? 'rave' : 'direct' });
+  track('park_join', { via: fromBeach ? 'beach' : fromRave ? 'rave' : fromHomestead ? 'homestead' : 'direct' });
 
   // ---- walking ------------------------------------------------------------
   const SPEED = 168;
@@ -371,13 +374,15 @@ function init() {
   const DOOR_DEFS = [
     { x: DOORS.south.x, y: DOORS.south.y, href: '/rave/', label: 'keep walking ↓ back to the rave' },
     { x: DOORS.east.x, y: DOORS.east.y, href: '/beach/?park', label: 'keep walking → to Banana Bay' },
+    { x: DOORS.west.x, y: DOORS.west.y, href: '/homestead/?park', label: 'keep walking ← to the Homestead' },
   ];
   const DOOR_ZONE = 130, DOOR_GO = 36, DOOR_ARM = 180;
   let doorArmed = false, leaving = false, stripOn = -1;
   function exitTo(href) {
     if (leaving) return;
     leaving = true;
-    track('park_exit', { to: href.indexOf('/beach/') === 0 ? 'beach' : 'rave' });
+    track('park_exit', { to: href.indexOf('/beach/') === 0 ? 'beach'
+      : href.indexOf('/homestead/') === 0 ? 'homestead' : 'rave' });
     try { parkRoom.leave(); } catch (e) {}   // poof for everyone the instant you go
     if (REDUCED) { location.href = href; return; }
     cutEl.classList.add('is-on');

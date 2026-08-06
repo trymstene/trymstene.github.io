@@ -413,7 +413,7 @@ road_mask_add(road_pts([(1380, 640), (1305, 800), (1410, 930), (1380, 1100)],
 road_mask_add(road_pts([(1560, 590), (1800, 660), (2080, 545), (2380, 625),
                         (2760, 570)], HW, taper=(False, False)))  # E → the beach
 road_mask_add(road_pts([(1200, 580), (980, 625), (750, 545), (520, 605),
-                        (330, 565)], HW, taper=(False, True)))    # W stub 🚧
+                        (330, 565), (50, 585)], HW, taper=(False, False)))  # W → the Homestead
 road_mask_add(road_pts([(1385, 430), (1335, 310), (1420, 215), (1400, 140)],
                        HW, taper=(False, True)))                  # N → the stand
 # little spurs — the "every meter interesting" walks
@@ -1372,8 +1372,9 @@ if HAVE_PACK:
                         con=1.05, warm=0.02, trim=False)
 
     saw = build_sawhorse()
-    # (the north sawhorse fell 30 Jul — that road now leads TO the stand)
-    for sx, sy in ((332, 584),):                 # ON the west stub's end curve
+    # (the north sawhorse fell 30 Jul → the stand; the WEST one fell 6 Aug →
+    #  the Homestead. The builder stays for whatever road is reserved next.)
+    for sx, sy in ():
         shadow(sx, sy - 4, saw.width * 0.38, 7)
         im.alpha_composite(saw, (sx - saw.width // 2, sy - saw.height))
         im2.alpha_composite(drab(saw), (sx - saw.width // 2, sy - saw.height))
@@ -1824,7 +1825,7 @@ def emit_geo():
     # the species the client may pick from = exactly the sheets exported above
     L.append('export const BIRD_SPECIES = [%s];'
              % ','.join("'%s'" % s for s in BIRD_SPECIES))
-    L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d } };'
+    L.append('export const DOORS = { south: { x: %d, y: %d }, east: { x: %d, y: %d }, west: { x: 60, y: 585 } };'
              % (CX, H - 40, W - 60, CY))
     L.append('export const OB_RECTS = %s;' % [list(r) for r in ob_rects])
     L.append('export const OB_CIRCLES = %s;' % [list(c) for c in ob_circles])

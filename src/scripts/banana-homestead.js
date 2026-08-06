@@ -1126,8 +1126,11 @@ function init(visitDoc, visitMiss) {
   });
 
   // ---- spawn + walking ----------------------------------------------------
-  const pos = { x: SPAWN.x, y: SPAWN.y };
-  const tgt = { x: SPAWN.x - 120, y: SPAWN.y };
+  // 🛣 arriving by ROAD (walked from the park, or fast travel) spawns you
+  // on the east road heading in — the same door you leave by
+  const byRoad = /[?&](park|world)(?:=|&|$)/.test(location.search);
+  const pos = byRoad ? { x: W - 90, y: ROAD.y } : { x: SPAWN.x, y: SPAWN.y };
+  const tgt = byRoad ? { x: W - 260, y: ROAD.y } : { x: SPAWN.x - 120, y: SPAWN.y };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('homestead_open', { claimed: state.claimedAt ? 1 : 0 });
 
