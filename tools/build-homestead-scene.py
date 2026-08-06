@@ -720,15 +720,20 @@ FLOOR_PALETTE = [
 ]
 
 
-def indoor_sprite(path, scale, strip=True):
+def indoor_sprite(path, scale, strip=True, overlap=0):
+    # overlap: closed-ended modules (counters) merge their butted borders into
+    # one divider; open-ended rug columns need exact abutment (overlap 0).
     try:
         if isinstance(path, (list, tuple)):
             parts = [Image.open(p2).convert('RGBA') for p2 in path]
-            img = Image.new('RGBA', (sum(p2.width for p2 in parts), max(p2.height for p2 in parts)), (0, 0, 0, 0))
+            if overlap:   # closed modules: crop phantom canvas padding first
+                parts = [p2.crop(p2.getbbox()) for p2 in parts]
+            img = Image.new('RGBA', (sum(p2.width for p2 in parts) - overlap * (len(parts) - 1),
+                                     max(p2.height for p2 in parts)), (0, 0, 0, 0))
             x = 0
             for p2 in parts:
                 img.paste(p2, (x, img.height - p2.height), p2)
-                x += p2.width
+                x += p2.width - overlap
         else:
             img = Image.open(path).convert('RGBA')
     except Exception:
@@ -795,11 +800,11 @@ def compose_on(base_img, parts):
 INDOOR_DEF = [
     # 🍳 kitchen
     ('stove', 'The stove', 'kitchen', 42, 1, _ts(KIT, 150)),
-    ('coffeemk', 'Coffee counter', 'kitchen', 26, 1, _ts(KIT, 121)),
+    ('coffeemk', 'Coffee counter', 'kitchen', 26, 1, [_ts(KIT, 121), _ts(KIT, 121)]),
     ('dinchair', 'Dining chair', 'kitchen', 10, 1, _ts(KIT, 284)),
     ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
-    ('kcounter', 'Kitchen counter', 'kitchen', 18, 1, _ts(KIT, 121)),
-    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, _ts(KIT, 121)),
+    ('kcounter', 'Kitchen counter', 'kitchen', 18, 1, [_ts(KIT, 121), _ts(KIT, 121)]),
+    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121), _ts(KIT, 121)]),
     ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
     ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
     # 🛋 living room
@@ -809,6 +814,9 @@ INDOOR_DEF = [
     ('starryrug', 'Round rug', 'living', 10, 1, _ts(BEDS, 386)),
     ('greyrug', 'Grey rug', 'living', 12, 1, [_ts(BEDS, 357), _ts(BEDS, 358), _ts(BEDS, 359)]),
     ('ovalrug', 'Oval rug', 'living', 14, 2, [_ts(BEDS, 360), _ts(BEDS, 361), _ts(BEDS, 362)]),
+    ('orangerug', 'Orange rug', 'living', 12, 1, [_ts(BEDS, 366), _ts(BEDS, 367), _ts(BEDS, 368)]),
+    ('whitemat', 'White mat', 'living', 10, 1, [_ts(BEDS, 375), _ts(BEDS, 377)]),
+    ('whiteoval', 'White oval rug', 'living', 14, 2, [_ts(BEDS, 378), _ts(BEDS, 379), _ts(BEDS, 380)]),
     ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
@@ -846,27 +854,32 @@ INDOOR_DEF = [
     ('displaycab', 'Display cabinet', 'hallway', 30, 3, _ts(LIV, 91)),
     # 🎸 music
     ('micstand', 'Mic stand', 'music', 12, 1, _ts(MUS, 64)),
+    ('sportball', 'Basketball', 'music', 8, 1, _ts(MUS, 77)),
+    ('unicycle', 'Unicycle', 'music', 16, 2, _ts(MUS, 61)),
+    ('bballhoop', 'Basketball hoop', 'music', 22, 2, _ts(MUS, 76)),
     ('eguitar', 'Electric guitar', 'music', 24, 1, _ts(MUS, 55)),
     ('theamp', 'The amp', 'music', 20, 2, _ts(MUS, 43)),
     ('drumkit', 'Drum kit', 'music', 38, 3, _ts(MUS, 41)),
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
-RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug'}
+RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug', 'orangerug', 'whitemat', 'whiteoval'}
 # counters render at 1.0 (they must READ as work surfaces — Trym: "the kitchen
 # counter must be larger"); rugs render big because the banana walks over them.
 IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
-            'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.0, 'ovalrug': 1.0}
+            'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.0, 'ovalrug': 1.0,
+            'orangerug': 1.0, 'whitemat': 1.0, 'whiteoval': 1.0}
 # accessory parts baked onto the K121 counter (native px, base-line y, x)
 IN_COMPOSE = {
-    'coffeemk': [(_ts(KIT, 185), 26, 30)],
-    'stockcounter': [(_ts(LIV, 49), 2, 30), (_ts(KIT, 172), 42, 22)],
+    'coffeemk': [(_ts(KIT, 185), 26, 28)],
+    'stockcounter': [(_ts(LIV, 49), 8, 28), (_ts(KIT, 172), 116, 20)],
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS
+    IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3}
     for did, name, cat, price, stage, path in INDOOR_DEF:
         sc = IN_SCALE.get(did, DECOR_DEFAULT)
-        s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP)
+        s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
         if s is None:
             continue
         parts = []
