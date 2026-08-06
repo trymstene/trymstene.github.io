@@ -824,14 +824,15 @@ INDOOR_DEF = [
     ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
-    ('tvset', 'Home cinema', 'living', 50, 3, _ts(BASE, 195)),
-    ('tvback', 'Telly (back)', 'living', 44, 3, _ts(BASE, 163)),
+    ('tvset', 'Home cinema', 'living', 50, 3,
+     ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (345, 2270, 500, 2400))),
+    ('tvback', 'Telly (back)', 'living', 44, 3, [_ts(BASE, 160), _ts(BASE, 161)]),
     ('whitechair', 'White armchair', 'living', 22, 3, _ts(BASE, 203)),
     ('bigcouch', 'Big couch', 'living', 56, 3,
      ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (290, 10, 428, 95))),
     ('sofa', 'Navy sofa', 'living', 30, 2, _ts(LIV, 6)),
     ('navychair', 'Navy armchair', 'living', 18, 2, _ts(LIV, 7)),
-    ('telly', 'The telly', 'living', 40, 2, _ts(BASE, 152)),
+    ('telly', 'The telly', 'living', 40, 2, [_ts(BASE, 157), _ts(BASE, 158)]),
     ('furnace', 'Old furnace', 'living', 26, 2, _ts(LIV, 113)),
     ('parlorplant', 'Parlor tree', 'living', 12, 3, _ts(LIV, 13)),
     # 🛏 bedroom
@@ -864,7 +865,7 @@ INDOOR_DEF = [
     # 🎸 music
     ('micstand', 'Mic stand', 'music', 12, 1, _ts(MUS, 64)),
     ('sportball', 'Basketball', 'music', 8, 1, _ts(MUS, 77)),
-    ('pooltable', 'Pool table', 'music', 60, 3, _ts(BASE, 244)),
+    ('pooltable', 'Pool table', 'music', 60, 3, _ts(BASE, 244)),   # + racked balls
     ('bluepool', 'Blue pool table', 'music', 60, 3, _ts(BASE, 245)),
     ('pingpong', 'Ping pong table', 'music', 55, 3, _ts(BASE, 241)),
     ('pingpong2', 'Green ping pong', 'music', 55, 3, _ts(BASE, 243)),
@@ -888,6 +889,12 @@ IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
 IN_COMPOSE = {
     'coffeemk': [(_ts(KIT, 185), 26, 28)],
     'stockcounter': [(_ts(LIV, 49), 8, 28), (_ts(KIT, 172), 116, 20)],
+    'telly': [(_ts(BASE, 164), 14, 26)],
+    'tvback': [(_ts(BASE, 163), 14, 26)],
+    'pooltable': [(_ts(BASE, 74), 32, 95)],
+    'bluepool': [(_ts(BASE, 73), 24, 125), (_ts(BASE, 75), 32, 65)],
+    'pingpong': [(_ts(BASE, 67), 20, 125), (_ts(BASE, 67), 34, 50)],
+    'pingpong2': [(_ts(BASE, 67), 34, 127), (_ts(BASE, 67), 16, 52)],
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS
