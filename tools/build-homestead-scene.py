@@ -720,22 +720,52 @@ FLOOR_PALETTE = [
 ]
 
 
-def indoor_sprite(path, scale):
+def indoor_sprite(path, scale, strip=True):
     try:
         img = Image.open(path).convert('RGBA')
     except Exception:
         print('  MISSING', path)
         return None
-    p = img.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            r, g, b, a = p[x, y]
+    # Trym round 2: raw colour-matching cut holes in furniture that shares the
+    # floor tones (piano lid, clock face). The floor patch always touches the
+    # BOTTOM of the sprite — so FLOOD from the bottom edge (and from silhouette
+    # edges in the lower half) through matching pixels; embedded look-alike
+    # pixels higher up stay.
+    if strip:
+        px = img.load()
+        W2, H2 = img.width, img.height
+        def is_floor(x, y):
+            r, g, b, a = px[x, y]
             if not a:
-                continue
+                return False
             for (cr, cg, cb), tol in FLOOR_PALETTE:
                 if abs(r - cr) <= tol and abs(g - cg) <= tol and abs(b - cb) <= tol:
-                    p[x, y] = (0, 0, 0, 0)
-                    break
+                    return True
+            return False
+        seen = set()
+        stack = []
+        for x in range(W2):
+            for y in (H2 - 1, H2 - 2):
+                if y >= 0 and is_floor(x, y):
+                    stack.append((x, y))
+        for y in range(H2 // 2, H2):
+            for x in range(W2):
+                if not is_floor(x, y):
+                    continue
+                for nx, ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
+                    if 0 <= nx < W2 and 0 <= ny < H2 and px[nx, ny][3] == 0:
+                        stack.append((x, y))
+                        break
+        while stack:
+            x, y = stack.pop()
+            if (x, y) in seen or not is_floor(x, y):
+                continue
+            seen.add((x, y))
+            for nx, ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
+                if 0 <= nx < W2 and 0 <= ny < H2 and (nx, ny) not in seen:
+                    stack.append((nx, ny))
+        for x, y in seen:
+            px[x, y] = (0, 0, 0, 0)
     if scale != 1.0:
         img = img.resize((max(1, int(img.width * scale)), max(1, int(img.height * scale))), Image.NEAREST)
     return img
@@ -791,8 +821,9 @@ INDOOR_DEF = [
 ]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
 if HAVE_PACK:
+    NO_STRIP = {'bathmat', 'starryrug'}
     for did, name, cat, price, stage, path in INDOOR_DEF:
-        s = indoor_sprite(path, DECOR_DEFAULT)
+        s = indoor_sprite(path, DECOR_DEFAULT, strip=did not in NO_STRIP)
         if s is None:
             continue
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
