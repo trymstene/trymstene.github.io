@@ -9,8 +9,13 @@
 // ⭐ THE INSIGHT THIS IS BUILT ON: the free download was not losing to the
 // product tile — it was SATISFYING THE SAME WISH FIRST and then the session
 // ended. Nothing at all happened after a download: a toast, a shelf save, done.
-// So the offer belongs at the moment the wish is freshly granted, not in a tile
-// competing with it.
+// So the offer belongs at the moment of the wish itself.
+//
+// ⭐⭐ ROUND 2 (Trym, 6 Aug): showing the card AFTER the file was already saved
+// earned literally zero offer clicks — the wish was granted before the ask.
+// So the card now comes FIRST: the download click opens the offer, and the
+// free file is the card's own secondary button ("no thanks, just the GIF").
+// Still once per session; after that every download flows free and instant.
 //
 // ⚠️ IT MUST LOOK LIKE THE SHARE CARDS, NOT LIKE AN AD (Trym: "every time we
 // pitch something it has to look good and punchy"). Same language as the park
@@ -75,15 +80,23 @@ const CSS = `
 }
 .mir__go:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 rgba(0,0,0,0.5); }
 .mir__go:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.45); }
+/* the free file lives HERE now — a real secondary button, not a shy link
+   (paper ghost of the primary: same shape, quieter voice, never line-breaks) */
 .mir__no {
-  display: block; margin-top: 0.45rem; background: none; border: 0; padding: 0; cursor: pointer;
-  font: inherit; font-size: 0.7rem; font-weight: 700; opacity: 0.6; text-decoration: underline;
-  text-underline-offset: 3px; color: inherit; text-align: inherit; width: 100%;
+  display: flex; align-items: center; justify-content: center; width: max-content;
+  margin-top: 0.55rem; cursor: pointer;
+  background: var(--mir-paper); color: var(--mir-ink);
+  border: 3px solid var(--mir-ink); box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
+  font: inherit; font-size: 0.8rem; font-weight: 800;
+  padding: 0.5rem 1rem; white-space: nowrap;
 }
+.mir__no:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 rgba(0,0,0,0.3); }
+.mir__no:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.25); }
 @media (max-width: 430px) {
   .mir { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .mir__shot { width: 60%; }
   .mir__pills { justify-content: center; }
+  .mir__no { margin-inline: auto; }
 }
 /* the post-download moment: the card arrives over the page, once */
 .mir-veil {
@@ -93,7 +106,7 @@ const CSS = `
 }
 .mir-veil[hidden] { display: none; }
 @keyframes mirIn { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .mir-veil { animation: none; } .mir__go:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mir-veil { animation: none; } .mir__go:hover, .mir__no:hover { transform: none; } }
 `;
 
 let styled = false;
@@ -223,22 +236,29 @@ export function offerCard({
 }
 
 /**
- * The post-download moment. Shows ONCE per session — the offer is a thank-you,
- * and a thank-you repeated is nagging.
- * ⚠️ It never blocks the download: call it AFTER the file is on its way.
+ * The download-moment card. Shows ONCE per session — the offer is a moment,
+ * and a moment repeated is nagging.
+ * ⭐ INVERTED 6 Aug (Trym): the ask comes FIRST now. Callers intercept the
+ * download, show this, and hand the actual file over as `onSkip` — the card's
+ * secondary button IS the download. Dismissing the veil skips the file too;
+ * the next click on the download button flows free (the session is marked).
  */
 let shownThisSession = false;
 // ⚠️ read at module load, not at call time — callers sync() the design into the
 // URL first, which rewrites the query string and would eat the flag.
 const QA = typeof location !== 'undefined' && location.search.includes('offertest');
+// the sync eligibility check — callers ask BEFORE intercepting a download, so
+// an ineligible click is never blocked in the first place
+export function offerWillShow() {
+  if (QA) return true;
+  if (shownThisSession) return false;
+  try { if (sessionStorage.getItem('mir-seen')) { shownThisSession = true; return false; } } catch (e) {}
+  return true;
+}
 export function offerAfterDownload(opts = {}) {
-  const qa = QA;   // QA handle, house pattern
-  if (shownThisSession && !qa) return null;
-  if (!qa) {
-    try {
-      if (sessionStorage.getItem('mir-seen')) { shownThisSession = true; return null; }
-      sessionStorage.setItem('mir-seen', '1');
-    } catch (e) {}
+  if (!offerWillShow()) return null;
+  if (!QA) {
+    try { sessionStorage.setItem('mir-seen', '1'); } catch (e) {}
     shownThisSession = true;
   }
   injectCss();
@@ -248,7 +268,7 @@ export function offerAfterDownload(opts = {}) {
   const card = offerCard({
     ...opts,
     skipText: opts.skipText || 'no thanks, just the GIF',
-    onSkip: close,
+    onSkip: () => { close(); if (opts.onSkip) opts.onSkip(); },
     onGo: (e) => { if (opts.onGo) opts.onGo(e); },
   });
   veil.appendChild(card);
@@ -364,31 +384,56 @@ export async function productShot(outfit, key, size = 420) {
   return productMockup(state, p, size, { colorHex: '#ffffff' });
 }
 
+// name the file the skip button hands over — the button must say what it gives
+function skipLabelFor(a) {
+  const name = (a.getAttribute('download') || a.pathname || '').toLowerCase();
+  const m = name.match(/\.(gif|png|webp|jpe?g)$/);
+  const ext = m ? m[1] : '';
+  return 'no thanks, just the ' + (ext === 'gif' ? 'GIF' : ext === 'png' ? 'PNG'
+    : ext === 'webp' ? 'WebP' : 'image');
+}
+
 /**
  * 🔗 Wire every download link inside `scope` to an offer.
  *
- * ⚠️ AFTER, NEVER INSTEAD. The listener does not preventDefault and does not
- * await anything — the file is already on its way before the card exists. An
- * offer that delays a free download would poison the one thing people came for.
+ * ⭐ FIRST, NOT AFTER (Trym, 6 Aug — the after-the-file card earned ZERO
+ * clicks): the first download click opens the CARD instead; its secondary
+ * button re-fires the link and the file flows. Once per session — after the
+ * card has been seen, every download is native and instant.
+ *
+ * ⚠️ CAPTURE + stopPropagation on the intercepted click: GA4's automatic
+ * file_download (and any page-level tracker, e.g. the gallery's own
+ * gallery_download) must not count a download that didn't happen. The skip
+ * re-fires the ORIGINAL anchor, so every tracker fires exactly once, at the
+ * moment the file actually flows.
+ * ⚠️ Modified clicks (ctrl/cmd/shift/middle) always flow free — power users
+ * saving into tabs are not an offer moment.
  * @param {string} key   which OFFERS entry to show
  * @param {Element} scope defaults to the document
  */
 export function wireDownloads(key, over, scope) {
   const root = scope || document;
+  const refired = new WeakSet();
   root.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[download], a[href$=".gif"], a[href$=".png"], a[href$=".webp"]');
     if (!a) return;
+    if (refired.has(a)) { refired.delete(a); return; }   // the skip button sent it — let it flow
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (!offerWillShow()) return;                        // card seen — files flow free
+    e.preventDefault();
+    e.stopPropagation();
+    const fire = () => { refired.add(a); a.click(); };
     const o = { ...(OFFERS[key] || OFFERS.yours), ...(over || {}) };
-    // a beat of air: let the browser start the file before anything appears
-    setTimeout(() => {
-      // ⚠️ `from`, NOT `offer` — the builder has fired offer_shown/offer_click
-      // with `from` since 30 Jul, and two names for one dimension would split
-      // the funnel in Pulse and quietly halve every number.
-      const shown = offerAfterDownload({
-        ...o,
-        onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: key }); },
-      });
-      if (shown && window.gtag) window.gtag('event', 'offer_shown', { from: key });
-    }, 700);
-  });
+    // ⚠️ `from`, NOT `offer` — the builder has fired offer_shown/offer_click
+    // with `from` since 30 Jul, and two names for one dimension would split
+    // the funnel in Pulse and quietly halve every number.
+    const shown = offerAfterDownload({
+      skipText: skipLabelFor(a),
+      ...o,
+      onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: key }); },
+      onSkip: () => { if (window.gtag) window.gtag('event', 'offer_skip', { from: key }); fire(); },
+    });
+    if (!shown) { fire(); return; }   // belt and braces: no card, no toll — the file flows
+    if (window.gtag) window.gtag('event', 'offer_shown', { from: key });
+  }, true);
 }

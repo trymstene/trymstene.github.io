@@ -1105,20 +1105,24 @@ function init() {
 
   // 🛍 THE DOWNLOAD MOMENT. 28 days of GA4: 336 gif_downloads, 9 product-tile
   // clicks, 0 purchases — the free file granted the wish and the session ended.
-  // So we ask HERE, once per session, after the file is already saved: the same
-  // banana they just made, shown as the actual die-cut sticker. Never before
-  // the download, never twice, always skippable.
-  function offerIt(kind) {
+  // ⭐ INVERTED 6 Aug (Trym — the after-the-file card earned ZERO clicks): the
+  // card comes FIRST now. The file is fully rendered, then handed over as
+  // `deliver` — the card's secondary button releases it. Once per session;
+  // after that (or if the card can't show) the file flows instantly.
+  function offerIt(kind, deliver) {
     sync(); // the design must be in the URL before we hand it to the PDP
     const search = location.search;
-    offerAfterDownload({
+    const shown = offerAfterDownload({
       outfit: { ...state },
       head: kind === 'png' ? 'Want that as a real sticker?' : 'Want your banana on your laptop?',
       cta: 'See it as a sticker →',
       href: '/make-a-banana/sticker/' + search,
       skipText: kind === 'png' ? 'no thanks, just the image' : 'no thanks, just the GIF',
       onGo: () => track('offer_click', { from: 'download_' + kind, design: designStr() }),
-    }) && track('offer_shown', { from: 'download_' + kind, design: designStr() });
+      onSkip: () => { track('offer_skip', { from: 'download_' + kind }); deliver(); },
+    });
+    if (!shown) { deliver(); return; }
+    track('offer_shown', { from: 'download_' + kind, design: designStr() });
   }
 
   // ---- emoji GIF export: ALWAYS transparent, tight-trimmed, no captions ----
@@ -1158,12 +1162,15 @@ function init() {
       }
       gif.finish();
       const blob = new Blob([gif.bytes()], { type: 'image/gif' });
-      download(URL.createObjectURL(blob), 'my-dancing-banana-trymstene.com.gif');
-      toast('Emoji GIF downloaded!');
-      track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
+      // making it counts now; the FILE is delivered by the offer card's answer
+      // (download events fire only when the file actually flows — Pulse honesty)
       saveToShelf();
       passPatch('emoji'); passPatch('maker'); passStat('builds');
-      offerIt('gif');
+      offerIt('gif', () => {
+        download(URL.createObjectURL(blob), 'my-dancing-banana-trymstene.com.gif');
+        toast('Emoji GIF downloaded!');
+        track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
+      });
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
@@ -1183,12 +1190,13 @@ function init() {
     const btn = el('bbDownloadMemeGif'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'Rendering…';
     try {
       const { blob } = await renderMemeGif();
-      download(URL.createObjectURL(blob), 'my-dancing-banana-meme-trymstene.com.gif');
-      toast('Meme GIF downloaded!');
-      track('gif_download', { file: 'builder-meme.gif', design: designStr() });
       saveToShelf();
       passPatch('maker'); passStat('builds');
-      offerIt('meme');
+      offerIt('meme', () => {
+        download(URL.createObjectURL(blob), 'my-dancing-banana-meme-trymstene.com.gif');
+        toast('Meme GIF downloaded!');
+        track('gif_download', { file: 'builder-meme.gif', design: designStr() });
+      });
     } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
@@ -1207,12 +1215,14 @@ function init() {
       const data = ctx.getImageData(0, 0, W, W).data;
       out = crop(cv, pad(bboxOf([data], W), W));
     }
-    download(out.toDataURL('image/png'), 'my-dancing-banana-trymstene.com.png');
-    toast('Image downloaded!');
-    track('png_download', { file: 'builder-meme.png', design: designStr() });
+    const png = out.toDataURL('image/png');
     saveToShelf();
     passPatch('maker'); passStat('builds');
-    offerIt('png');
+    offerIt('png', () => {
+      download(png, 'my-dancing-banana-trymstene.com.png');
+      toast('Image downloaded!');
+      track('png_download', { file: 'builder-meme.png', design: designStr() });
+    });
   };
 
   // ---- order it as a REAL printed sticker (Part B) ----
