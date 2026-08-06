@@ -582,9 +582,14 @@ function init(visitDoc, visitMiss) {
   // 🛋 M4.5: each room keeps its own furniture (state.inItems[tier])
   const INCAP = { 1: 6, 2: 12, 3: 16 };
   const inList = () => (state.inItems[inside] = state.inItems[inside] || []);
+  // per-room placement insets: the wood rooms wear a 96px wall band up top;
+  // the tent is groundsheet to the brim (the old one-size 116 top inset left
+  // the shrunken tent with almost no legal floor — everything read red)
+  const ROOM_INSETS = { 1: [24, 30, 12], 2: [34, 116, 12], 3: [34, 116, 12] };
   const roomBounds = (t = inside) => {
     const I = INTERIORS[t];
-    return [I.box[0] + 34, I.box[1] + 116, I.box[0] + I.box[2] - 34, I.box[1] + I.box[3] - 12];
+    const [ins, top, bot] = ROOM_INSETS[t] || [34, 116, 12];
+    return [I.box[0] + ins, I.box[1] + top, I.box[0] + I.box[2] - ins, I.box[1] + I.box[3] - bot];
   };
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
@@ -704,7 +709,7 @@ function init(visitDoc, visitMiss) {
     if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
     if (I.kitchen && x + d.w / 2 > I.kitchen[0] - 8 && x - d.w / 2 < I.kitchen[2] + 8
       && y > I.kitchen[1] - 20 && y - d.h < I.kitchen[3] + 8) return false;
-    if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 20 && x - d.w / 2 < I.exit[2] + 20 && y > I.exit[1] - 90) return false;
+    if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 20 && x - d.w / 2 < I.exit[2] + 20 && y > I.exit[1] - (t === 1 ? 36 : 90)) return false;
     for (const c of I.cols) {
       if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 24 < c[3]) return false;
     }
