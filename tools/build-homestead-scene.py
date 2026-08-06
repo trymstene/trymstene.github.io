@@ -636,7 +636,6 @@ DECOR_DEF = [
     ('stump', 'Stump seat', 'nature', 6, 0, ['ME_Singles_Camping_48x48_Stump_1.png'], True),
     ('mushrooms', 'Mushroom patch', 'nature', 7, 0, ['ME_Singles_Camping_48x48_Mushrooms_1.png'], False),
     ('flowerbush', 'Flower bush', 'nature', 9, 0, ['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], True),
-    ('lantern', 'Camp lantern', 'lighting', 10, 0, ['ME_Singles_Camping_48x48_Lantern_1.png'], True),
     # ── stage 1: the tent is up ──
     ('bench', 'Garden bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], True),
     ('benchv', 'Side bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Vertical.png'], True),
@@ -651,7 +650,6 @@ DECOR_DEF = [
     ('flowerbush2', 'Rose bush', 'nature', 11, 1, ['ME_Singles_City_Props_48x48_Flower_Bush_4.png'], True),
     # ── stage 2: the cabin ──
     ('statue', 'Angel statue', 'display', 40, 2, ['ME_Singles_Garden_48x48_Angel_Statue_1.png'], True),
-    ('shelf', 'Garden shelf', 'display', 30, 2, ['ME_Singles_Garden_48x48_Big_Shelf.png'], True),
     ('coop', 'Chicken coop', 'farm', 45, 2, [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Chicken_Coop_48x48.png')], True),
     ('crate', 'Apple crate', 'farm', 12, 2, [os.path.join(FARM, 'Single_Files_48x48', 'Fruit_Trees_48x48', 'Crate_Brown_Apples_48x48.png')], True),
     ('sprout', 'Big sprout', 'garden', 14, 2, ['ME_Singles_Garden_48x48_Big_Sprout_1.png'], False),
@@ -671,8 +669,7 @@ DECOR_DEF = [
 # a notch smaller than the old 0.76 — the lanterns' "a bit large"), 1/3 for
 # the big builds. The statues keep Trym-approved 0.30 ("right size, crisp").
 DECOR_DEFAULT = 2 / 3.0
-DECOR_SCALE = {'statue': 0.30, 'statue2': 0.30, 'coop': 1 / 3.0,
-               'fountain': 2 / 3.0, 'shelf': 2 / 3.0}
+DECOR_SCALE = {'statue': 0.30, 'statue2': 0.30, 'coop': 0.43, 'crate': 0.55, 'fountain': 2 / 3.0}
 
 DECOR_OUT = []
 if HAVE_PACK:
@@ -804,11 +801,13 @@ def compose_on(base_img, parts):
 INDOOR_DEF = [
     # 🍳 kitchen
     ('stove', 'The stove', 'kitchen', 42, 1, _ts(KIT, 150)),
-    ('coffeemk', 'Coffee counter', 'kitchen', 26, 1, [_ts(KIT, 121), _ts(KIT, 121)]),
+    ('coffeemk', 'Coffee counter', 'kitchen', 26, 1, [_ts(KIT, 121)] * 3),
     ('dinchair', 'Dining chair', 'kitchen', 10, 1, _ts(KIT, 284)),
+    ('dinchair2', 'Dining chair (right)', 'kitchen', 10, 1, _ts(KIT, 280)),
+    ('dinchair3', 'Dining chair (away)', 'kitchen', 10, 1, _ts(KIT, 279)),
     ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
-    ('kcounter', 'Kitchen counter', 'kitchen', 18, 1, [_ts(KIT, 121), _ts(KIT, 121)]),
-    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121), _ts(KIT, 121)]),
+    ('kcounter', 'Kitchen counter', 'kitchen', 18, 1, [_ts(KIT, 121)] * 3),
+    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121)] * 3),
     ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
     ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
     # 🛋 living room
@@ -825,14 +824,14 @@ INDOOR_DEF = [
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
     ('tvset', 'Home cinema', 'living', 50, 3,
-     ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (345, 2270, 500, 2400))),
-    ('tvback', 'Telly (back)', 'living', 44, 3, [_ts(BASE, 160), _ts(BASE, 161)]),
+     ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (330, 2270, 505, 2400))),
+    ('tvback', 'Telly (back)', 'living', 44, 3, [_ts(BASE, 160), _ts(BASE, 161), _ts(BASE, 162)]),
     ('whitechair', 'White armchair', 'living', 22, 3, _ts(BASE, 203)),
     ('bigcouch', 'Big couch', 'living', 56, 3,
      ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (290, 10, 428, 95))),
     ('sofa', 'Navy sofa', 'living', 30, 2, _ts(LIV, 6)),
     ('navychair', 'Navy armchair', 'living', 18, 2, _ts(LIV, 7)),
-    ('telly', 'The telly', 'living', 40, 2, [_ts(BASE, 157), _ts(BASE, 158)]),
+    ('telly', 'The telly', 'living', 40, 2, [_ts(BASE, 157), _ts(BASE, 158), _ts(BASE, 159)]),
     ('furnace', 'Old furnace', 'living', 26, 2, _ts(LIV, 113)),
     ('parlorplant', 'Parlor tree', 'living', 12, 3, _ts(LIV, 13)),
     # 🛏 bedroom
@@ -855,7 +854,7 @@ INDOOR_DEF = [
     ('floormirror', 'Standing mirror', 'bathroom', 16, 2, _ts(BATH, 66)),
     ('towelrack', 'Towel rack', 'bathroom', 10, 2, _ts(BATH, 133)),
     ('washer', 'Washing machine', 'bathroom', 34, 2, _ts(BATH, 87)),
-    ('bathtub', 'Bathtub', 'bathroom', 46, 3, _ts(BATH, 85)),
+    ('bathtub', 'Bathtub', 'bathroom', 46, 3, _ts(BATH, 157)),
     # 🚪 hallway
     ('hallchair', 'Hall chair', 'hallway', 10, 1, _ts(LIV, 92)),
     ('hallshelf', 'Hall shelf', 'hallway', 14, 2, _ts(LIV, 45)),
@@ -864,7 +863,6 @@ INDOOR_DEF = [
     ('displaycab', 'Display cabinet', 'hallway', 30, 3, _ts(LIV, 91)),
     # 🎸 music
     ('micstand', 'Mic stand', 'music', 12, 1, _ts(MUS, 64)),
-    ('sportball', 'Basketball', 'music', 8, 1, _ts(MUS, 77)),
     ('pooltable', 'Pool table', 'music', 60, 3, _ts(BASE, 244)),   # + racked balls
     ('bluepool', 'Blue pool table', 'music', 60, 3, _ts(BASE, 245)),
     ('pingpong', 'Ping pong table', 'music', 55, 3, _ts(BASE, 241)),
@@ -872,14 +870,16 @@ INDOOR_DEF = [
     ('arcade', 'Arcade cabinet', 'music', 40, 3, _ts(BASE, 219)),
     ('pinball', 'Pinball machine', 'music', 44, 3, _ts(BASE, 222)),
     ('unicycle', 'Unicycle', 'music', 16, 2, _ts(MUS, 61)),
-    ('bballhoop', 'Basketball hoop', 'music', 22, 2, _ts(MUS, 76)),
     ('eguitar', 'Electric guitar', 'music', 24, 1, _ts(MUS, 55)),
     ('theamp', 'The amp', 'music', 20, 2, _ts(MUS, 43)),
-    ('drumkit', 'Drum kit', 'music', 38, 3, _ts(MUS, 41)),
+    ('drumkit', 'Drum kit', 'music', 38, 3, [_ts(MUS, 41), _ts(MUS, 42)]),
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
 RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug', 'orangerug', 'whitemat', 'whiteoval'}
+SIT_DIRS = {'dinchair': 'l', 'dinchair2': 'r', 'dinchair3': 's', 'hallchair': 's',
+            'navychair': 's', 'whitechair': 's', 'sofa': 's', 'bigcouch': 's',
+            'bench': 's', 'benchv': 's', 'armchair': 's', 'chair': 's', 'stump': 's'}
 # counters render at 1.0 (they must READ as work surfaces — Trym: "the kitchen
 # counter must be larger"); rugs render big because the banana walks over them.
 IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
@@ -887,18 +887,22 @@ IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
             'orangerug': 1.0, 'whitemat': 1.0, 'whiteoval': 1.0}
 # accessory parts baked onto the K121 counter (native px, base-line y, x)
 IN_COMPOSE = {
-    'coffeemk': [(_ts(KIT, 185), 26, 28)],
-    'stockcounter': [(_ts(LIV, 49), 8, 28), (_ts(KIT, 172), 116, 20)],
+    'coffeemk': [(_ts(KIT, 185), 44, 30)],
+    'stockcounter': [(_ts(LIV, 49), 22, 30), (_ts(KIT, 172), 168, 24)],
     'telly': [(_ts(BASE, 164), 14, 26)],
     'tvback': [(_ts(BASE, 163), 14, 26)],
     'pooltable': [(_ts(BASE, 74), 32, 95)],
     'bluepool': [(_ts(BASE, 73), 24, 125), (_ts(BASE, 75), 32, 65)],
-    'pingpong': [(_ts(BASE, 67), 20, 125), (_ts(BASE, 67), 34, 50)],
-    'pingpong2': [(_ts(BASE, 67), 34, 127), (_ts(BASE, 67), 16, 52)],
+    'pingpong': [(_ts(BASE, 67), 20, 125), (('crop', _ts(BASE, 67), (18, 0, 64, 48)), 44, 50)],
+    'pingpong2': [(_ts(BASE, 67), 34, 127), (('crop', _ts(BASE, 67), (18, 0, 64, 48)), 20, 52)],
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS
     IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3}
+    import shutil
+    ANIM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Exteriors_48x48/Animated_48x48/Animated_gifs_48x48')
+    shutil.copy(os.path.join(ANIM, 'Campfire_48x48.gif'), os.path.join(OUT, 'campfire-lit.gif'))
+    shutil.copy(os.path.join(ANIM, 'Garden_Fountain_1_48x48.gif'), os.path.join(OUT, 'd-fountain.gif'))
     for did, name, cat, price, stage, path in INDOOR_DEF:
         sc = IN_SCALE.get(did, DECOR_DEFAULT)
         s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
@@ -1228,11 +1232,15 @@ def emit():
     D.append('// surface: ground-only in M0; stage = house-ladder gate (0 = from the plot).')
     D.append('export const DECOR = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
+        if did == 'fountain':
+            w, h = 64, 96
         D.append("  { id: '%s', name: '%s', cat: '%s', price: %d, stage: %d,"
-                 " w: %d, h: %d, surface: '%s',%s img: '/assets/homestead/d-%s.png', solid: %s },"
+                 " w: %d, h: %d, surface: '%s',%s%s img: '/assets/homestead/d-%s.%s', solid: %s },"
                  % (did, name, cat, price, stage, w, h,
                     ('floor' if cat in ('kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music') else 'ground'),
-                    (' rug: 1,' if did in RUG_IDS else ''), did,
+                    (' rug: 1,' if did in RUG_IDS else ''),
+                    ((" sit: '%s'," % SIT_DIRS[did]) if did in SIT_DIRS else ''), did,
+                    ('gif' if did == 'fountain' else 'png'),
                     (str(box) if box else 'null')))
     D.append('];')
     with open(os.path.join(SITE, 'src', 'data', 'decor.js'), 'w', encoding='utf-8') as f:

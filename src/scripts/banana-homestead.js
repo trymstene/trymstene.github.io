@@ -275,6 +275,7 @@ function init(visitDoc, visitMiss) {
   let digging = false, fencing = false, clearing = false, arranging = false,
     planner = false, hovEl = null, planEls = null;
   let doorTgt = null;   // 🚪 walk-to-the-door intent: arriving steps inside
+  let sitting = null;   // 🪑 parked on a chair/couch: frame locks, any move stands up
 
   let myName = '';
   try { myName = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
@@ -561,6 +562,7 @@ function init(visitDoc, visitMiss) {
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   function enterHome() {
+    standUp();
     const I = INTERIORS[homeTier()];
     if (!I) return;
     inside = homeTier();
@@ -593,6 +595,7 @@ function init(visitDoc, visitMiss) {
     track('homestead_enter_home', { tier: inside });
   }
   function exitHome() {
+    standUp();
     // ⚠️ WASD can carry you out MID-PLACEMENT — a stuck `placing` eats every
     // walk tap forever (the arranging-leak lesson, door edition)
     cancelPlacing();
@@ -636,6 +639,12 @@ function init(visitDoc, visitMiss) {
     el.style.height = pct(d.h, H);
     if (d.svg) el.innerHTML = d.svg;
     else el.style.backgroundImage = "url('" + d.img + "')";
+    if (it.id === 'campfire' && it.lit && !ghost) {
+      el.style.backgroundImage = "url('/assets/homestead/campfire-lit.gif')";
+      el.style.height = pct(d.h * 2, H);
+      el.style.top = pct(it.y - d.h * 2, H);
+      el.style.filter = 'drop-shadow(0 0 16px rgba(255,150,50,.7))';
+    }
     depth(el, it.y);
     world.appendChild(el);
     return el;
@@ -847,7 +856,7 @@ function init(visitDoc, visitMiss) {
           } else {
             b.x += dx / d * 300 * dt;
             b.y += dy / d * 300 * dt;
-            if (Math.abs(dx) > 4) b.img.style.transform = dx < 0 ? 'scaleX(-1)' : '';
+            if (Math.abs(dx) > 4) b.img.style.transform = dx > 0 ? 'scaleX(-1)' : '';
           }
         } else if (Math.hypot(pos.x - b.x, pos.y - b.y) < 80 || now > b.until) {
           b.mode = 'out';   // scared (or bored) — off over the treeline
@@ -1854,6 +1863,7 @@ function init(visitDoc, visitMiss) {
     planOverlay();
   }
   function cancelPlacing() {
+    standUp();
     if (!placing) return;
     const keepX = placing.x, keepY = placing.y;
     view.classList.remove('is-placing');
@@ -1909,6 +1919,19 @@ function init(visitDoc, visitMiss) {
     const d = DEX[it.id];
     itChip = document.createElement('div');
     itChip.className = 'hs-chip';
+    if (it.id === 'campfire') {
+      const fire = document.createElement('button');
+      fire.className = 'hs-btn';
+      fire.textContent = it.lit ? '\ud83d\udca8 put out' : '\ud83d\udd25 light';
+      fire.addEventListener('click', () => {
+        it.lit = it.lit ? 0 : 1;
+        save();
+        clearChip();
+        refreshItems();
+        float(it.x, it.y - 40, it.lit ? '\ud83d\udd25' : '\ud83d\udca8');
+      });
+      itChip.appendChild(fire);
+    }
     const mv = document.createElement('button');
     mv.className = 'hs-btn'; mv.textContent = '✥ move';
     const rm = document.createElement('button');
@@ -2072,6 +2095,7 @@ function init(visitDoc, visitMiss) {
         const d2 = DEX[it.id];
         if (d2 && Math.abs(wx - it.x) < Math.max(24, d2.w / 2) && wy > it.y - d2.h - 8 && wy < it.y + 10) {
           if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
+            if (d2.sit) sitOn(it, d2);
             clearChip();
             itChip = document.createElement('div');
             itChip.className = 'hs-chip';
@@ -2300,7 +2324,10 @@ function init(visitDoc, visitMiss) {
       const d = DEX[it.id];
       if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
         if (visiting) { tgt.x = it.x; tgt.y = it.y + 30; return; }   // look, don't touch
-        if (Math.hypot(pos.x - it.x, pos.y - it.y) < 150) itemChip(i);
+        if (Math.hypot(pos.x - it.x, pos.y - it.y) < 150) {
+          if (d.sit) sitOn(it, d);
+          itemChip(i);
+        }
         else { tgt.x = it.x; tgt.y = it.y + 30; }
         return;
       }
@@ -2320,8 +2347,22 @@ function init(visitDoc, visitMiss) {
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
   };
   let lastF = -1;
+  function standUp() {
+    if (!sitting) return;
+    sitting = null;
+    meCtx.canvas.style.transform = '';
+    lastF = -1;
+  }
+  function sitOn(it, d) {
+    pos.x = it.x;
+    pos.y = it.y - Math.max(6, Math.round(d.h * 0.22));
+    tgt.x = pos.x; tgt.y = pos.y;
+    sitting = it;
+    meCtx.canvas.style.transform = d.sit === 'r' ? 'scaleX(-1)' : '';
+    lastF = -1;
+  }
   function drawMe() {
-    const f = frameNow();
+    const f = sitting ? 7 : frameNow();
     if (f === lastF) return;
     lastF = f;
     drawComposite(meCtx, 150, f, { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
@@ -2344,6 +2385,7 @@ function init(visitDoc, visitMiss) {
     if (kx || ky) { tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30; hint(false); }
     const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
     const d = Math.hypot(dx, dy);
+    if (sitting && d > 1.5) standUp();
     if (d > 1.5) {
       const m = Math.min(d, SPEED * dt);
       const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
