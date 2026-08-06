@@ -701,6 +701,7 @@ def _ts(theme, n):
 
 BATH = ('3_Bathroom_Singles_48x48', 'Bathroom_Singles_48x48')
 BASE = ('14_Basement_Singles_48x48', 'Basement_Singles_48x48')
+CAMP = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Exteriors_48x48/ME_Theme_Sorter_48x48/11_Camping_Singles_48x48')
 
 # ⚠️ STANDING RULE (Trym): Theme_Sorter singles bake their theme FLOOR inside
 # the furniture silhouette (under/between legs). Strip the measured floor
@@ -811,6 +812,7 @@ INDOOR_DEF = [
     ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
     ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
     # 🛋 living room
+    ('tlantern', 'Camp lantern', 'living', 8, 1, os.path.join(CAMP, 'ME_Singles_Camping_48x48_Lantern_1.png')),
     ('teatable', 'Gilded table', 'living', 20, 2, _ts(LIV, 3)),
     ('readlamp', 'Reading lamp', 'living', 14, 2, _ts(LIV, 86)),
     ('pottedplant', 'Potted plant', 'living', 8, 1, _ts(LIV, 16)),
@@ -835,6 +837,7 @@ INDOOR_DEF = [
     ('furnace', 'Old furnace', 'living', 26, 2, _ts(LIV, 113)),
     ('parlorplant', 'Parlor tree', 'living', 12, 3, _ts(LIV, 13)),
     # 🛏 bedroom
+    ('sleepbag', 'Sleeping bag', 'bedroom', 8, 1, os.path.join(CAMP, 'ME_Singles_Camping_48x48_Sleeping_Bag_1.png')),
     ('cozybed', 'Cozy bed', 'bedroom', 36, 2, _ts(BEDS, 150)),
     ('nightstand', 'Nightstand', 'bedroom', 12, 2, _ts(LIV, 63)),
     ('dresser', 'Chest of drawers', 'bedroom', 22, 2, _ts(LIV, 51)),
@@ -856,6 +859,7 @@ INDOOR_DEF = [
     ('washer', 'Washing machine', 'bathroom', 34, 2, _ts(BATH, 87)),
     ('bathtub', 'Bathtub', 'bathroom', 46, 3, _ts(BATH, 157)),
     # 🚪 hallway
+    ('backpack', 'Backpack', 'hallway', 6, 1, os.path.join(CAMP, 'ME_Singles_Camping_48x48_Backpack_1.png')),
     ('hallchair', 'Hall chair', 'hallway', 10, 2, _ts(LIV, 92)),
     ('hallshelf', 'Hall shelf', 'hallway', 14, 2, _ts(LIV, 45)),
     ('wcabinet', 'Wood cabinet', 'hallway', 26, 2, _ts(LIV, 39)),
@@ -1159,6 +1163,43 @@ def build_phone_icon():
 
 build_phone_icon()
 
+
+def draw_psign(tier):
+    bw = {1: 66, 2: 88, 3: 112}[tier]
+    bh = {1: 20, 2: 24, 3: 30}[tier]
+    ph = {1: 22, 2: 26, 3: 30}[tier]
+    OL = (52, 36, 21, 255)
+    WOOD = (124, 86, 47, 255)
+    LIT = (154, 108, 60, 255)
+    GR = (99, 68, 37, 255)
+    FACE = (150, 104, 56, 255)
+    W2 = bw + 8
+    top = 6 if tier == 3 else 0
+    H2 = top + bh + ph
+    im2 = Image.new('RGBA', (W2, H2), (0, 0, 0, 0))
+    d2 = ImageDraw.Draw(im2)
+    for px0 in (8, W2 - 14):
+        d2.rectangle([px0, top + bh - 6, px0 + 5, H2 - 1], fill=OL)
+        d2.rectangle([px0 + 1, top + bh - 5, px0 + 4, H2 - 2], fill=WOOD)
+        d2.rectangle([px0 + 1, top + bh - 5, px0 + 1, H2 - 2], fill=LIT)
+    if tier == 3:   # the house sign earns a little roof cap
+        d2.rectangle([0, 0, W2 - 1, 4], fill=OL)
+        d2.rectangle([1, 1, W2 - 2, 3], fill=LIT)
+    d2.rectangle([4, top, W2 - 5, top + bh - 1], fill=OL)
+    d2.rectangle([5, top + 1, W2 - 6, top + bh - 2], fill=FACE)
+    d2.rectangle([5, top + 1, W2 - 6, top + 2], fill=LIT)
+    for gx in range(12, W2 - 10, 9):
+        d2.rectangle([gx, top + 4, gx, top + bh - 4], fill=GR)
+    if tier >= 2:   # a lower rail on the fancier stands
+        d2.rectangle([6, top + bh + 4, W2 - 7, top + bh + 7], fill=OL)
+        d2.rectangle([7, top + bh + 5, W2 - 8, top + bh + 6], fill=WOOD)
+    im2.save(os.path.join(OUT, 'm-psign%d.png' % tier), optimize=True)
+    print('  m-psign%d.png %dx%d' % (tier, W2, H2))
+    return {'w': W2, 'h': H2}
+
+
+SIGNS_OUT = {t: draw_psign(t) for t in (1, 2, 3)}
+
 # ---- ⛺ INSIDE THE TENT (Trym: "whats the point to make a tent if not?") —
 # the humblest rung deserves the first "inside" moment. A tiny canvas room:
 # drawn tent-fabric walls, groundsheet floor, the pack's own sleeping bag,
@@ -1172,19 +1213,14 @@ trng = random.Random(7)
 for y in range(TENT_H):
     for x in range(TENT_W):
         j = trng.randrange(-6, 7)
+        # the exit shows: outside the door gap the groundsheet stops at the
+        # frame band; through the gap a floor tongue reaches the edge
+        if y >= TENT_H - 16 and not (74 <= x <= 166):
+            continue
         c = (C_FLOOR[0] + j, C_FLOOR[1] + j, C_FLOOR[2] + j, 255)
         if (y % 16) < 2:
             c = C_FLOORD
         tp2[x, y] = c
-for prop_name, px2, py2, sc in (('ME_Singles_Camping_48x48_Sleeping_Bag_1.png', 52, 74, 2 / 3.0),
-                                ('ME_Singles_Camping_48x48_Backpack_1.png', 192, 76, 2 / 3.0),
-                                ('ME_Singles_Camping_48x48_Lantern_1.png', 154, 84, 2 / 3.0)):
-    try:
-        sp3 = sprite([prop_name], scale=sc)
-        if sp3 is not None:
-            tent_room.alpha_composite(sp3, (px2 - sp3.width // 2, py2))
-    except Exception as e:
-        print('  tent prop failed', prop_name, e)
 tent_room.save(os.path.join(OUT, 'in-tent.png'), optimize=True)
 print('  in-tent.png %dx%d' % (TENT_W, TENT_H))
 TENT_AT = (780, 408)
@@ -1195,7 +1231,6 @@ INTERIORS_OUT[1] = {
     'cols': [[TENT_AT[0] + a, TENT_AT[1] + b, TENT_AT[0] + c, TENT_AT[1] + d] for a, b, c, d in (
         (0, 0, TENT_W, 16), (0, 0, 16, TENT_H), (TENT_W - 16, 0, TENT_W, TENT_H),
         (0, TENT_H - 16, 74, TENT_H), (166, TENT_H - 16, TENT_W, TENT_H),
-        (30, 72, 88, 128), (146, 74, 214, 120),
     )],
 }
 
@@ -1226,6 +1261,7 @@ def emit():
     L.append('export const SIGN = { x: %d, y: %d, w: %d, h: %d };' % (SIGN_AT[0], SIGN_AT[1], sw2, sh2))
     L.append('export const OB_RECTS = %s;' % [list(map(int, r)) for r in COLLIDERS])
     L.append('export const OVERLAYS = %s;' % [[o[0], o[1], o[2], o[3], o[4], o[5]] for o in OVERLAYS])
+    L.append('export const SIGNS = %s;' % __import__('json').dumps(SIGNS_OUT))
     L.append('export const BIRDS = %s;' % str(BIRD_KEYS).replace("'", '"'))
     L.append('export const INTERIORS = %s;' % __import__('json').dumps(INTERIORS_OUT))
     with open(os.path.join(SITE, 'src', 'scripts', 'homestead-geo.js'), 'w', encoding='utf-8') as f:

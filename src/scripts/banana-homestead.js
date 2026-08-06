@@ -14,7 +14,7 @@ import { initTravel } from './world-travel.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
-  MAILBOX, SIGN, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
+  MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
 const view = document.getElementById('hsView');
@@ -363,6 +363,7 @@ function init(visitDoc, visitMiss) {
   // (Trym: "fence is something you should be able to set up yourself") The
   // tier rects only bound WHERE you may build/dig; the visible fence is yours.
   const fenceTier = () => Math.max(1, Math.min(state.stage, 3));
+  const signDims = () => (SIGNS && SIGNS[fenceTier()]) || SIGN;
   const plotNow = () => FENCE_TIERS[fenceTier()].plot;
   // an UPGRADE ghost roams the land it BRINGS — the deed expands with the roof
   const placeBounds = () => FENCE_TIERS[Math.max(1, Math.min((placing && placing.toStage) || state.stage, 3))].plot;
@@ -480,11 +481,15 @@ function init(visitDoc, visitMiss) {
     mailEl.style.left = pct(state.mailAt.x - MAILBOX.w / 2, W);
     mailEl.style.top = pct(state.mailAt.y - MAILBOX.h, H);
     depth(mailEl, state.mailAt.y);
-    signEl.style.left = pct(state.signAt.x - SIGN.w / 2, W);
-    signEl.style.top = pct(state.signAt.y - SIGN.h, H);
+    const sd2 = signDims();
+    signEl.style.width = pct(sd2.w, W);
+    signEl.style.height = pct(sd2.h, H);
+    signEl.style.backgroundImage = "url('/assets/homestead/m-psign" + fenceTier() + ".png')";
+    signEl.style.left = pct(state.signAt.x - sd2.w / 2, W);
+    signEl.style.top = pct(state.signAt.y - sd2.h, H);
     depth(signEl, state.signAt.y);
     signName.style.left = pct(state.signAt.x, W);
-    signName.style.top = pct(state.signAt.y - SIGN.h - 12, H);
+    signName.style.top = pct(state.signAt.y - sd2.h - 12, H);
     depth(signName, state.signAt.y + 200);
   }
   refreshFixtures();
@@ -511,24 +516,44 @@ function init(visitDoc, visitMiss) {
   // (Trym: "the placement grid covers the roof / i go behind mid-house")
   const roofOf = (h) => Math.min(144, Math.round(h * 0.45));
   const floorOf = (h) => h - roofOf(h);
-  let structEl = null, structKey = '', tentSpotEl = null;
+  let structEl = null, structKey = '', tentSpotEl = null, tentGhostEl = null;
   function refreshTent() {
     if (state.stage < 1) {
       if (structEl) { structEl.remove(); structEl = null; structKey = ''; }
       if (!tentSpotEl) {
+        // the DEED outline — the land itself is the invitation, no words
         tentSpotEl = document.createElement('div');
         tentSpotEl.className = 'hs-tentspot';
-        tentSpotEl.style.left = pct(state.home.x - 70, W);
-        tentSpotEl.style.top = pct(state.home.y - 74, H);
-        tentSpotEl.style.width = pct(140, W);
-        tentSpotEl.style.height = pct(74, H);
-        tentSpotEl.innerHTML = '<span>⛺ a good tent spot<br><small>ask at the mailbox</small></span>';
-        depth(tentSpotEl, state.home.y - 40);
+        const P1 = FENCE_TIERS[1].plot;
+        tentSpotEl.style.left = pct(P1[0], W);
+        tentSpotEl.style.top = pct(P1[1], H);
+        tentSpotEl.style.width = pct(P1[2] - P1[0], W);
+        tentSpotEl.style.height = pct(P1[3] - P1[1], H);
+        tentSpotEl.style.border = '3px dashed rgba(255,225,53,.5)';
+        tentSpotEl.style.borderRadius = '10px';
+        tentSpotEl.style.background = 'transparent';
+        depth(tentSpotEl, P1[1] + 4);
         world.appendChild(tentSpotEl);
+        // a dark ghost tent stands on it — tap it, the phone opens
+        tentGhostEl = document.createElement('div');
+        tentGhostEl.className = 'hs-ov';
+        const gd = STRUCTS.tent1;
+        tentGhostEl.style.left = pct(state.home.x - gd.w / 2, W);
+        tentGhostEl.style.top = pct(state.home.y - gd.h, H);
+        tentGhostEl.style.width = pct(gd.w, W);
+        tentGhostEl.style.height = pct(gd.h, H);
+        tentGhostEl.style.backgroundImage = "url('/assets/homestead/ov-tent1.png')";
+        tentGhostEl.style.filter = 'brightness(0.42) opacity(0.62)';
+        tentGhostEl.style.pointerEvents = 'auto';
+        tentGhostEl.style.cursor = 'pointer';
+        tentGhostEl.addEventListener('click', () => { if (!visiting) openShop('order'); });
+        depth(tentGhostEl, state.home.y);
+        world.appendChild(tentGhostEl);
       }
       return;
     }
     if (tentSpotEl) { tentSpotEl.remove(); tentSpotEl = null; }
+    if (tentGhostEl) { tentGhostEl.remove(); tentGhostEl = null; }
     const styleKey = curStyleKey();
     const sig = styleKey + ':' + state.home.x + ',' + state.home.y;
     if (structKey === sig) return;
@@ -563,6 +588,7 @@ function init(visitDoc, visitMiss) {
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   function enterHome() {
     standUp();
+    if (planner) exitPlanner();
     const I = INTERIORS[homeTier()];
     if (!I) return;
     inside = homeTier();
@@ -596,6 +622,7 @@ function init(visitDoc, visitMiss) {
   }
   function exitHome() {
     standUp();
+    if (planner) exitPlanner();
     // ⚠️ WASD can carry you out MID-PLACEMENT — a stuck `placing` eats every
     // walk tap forever (the arranging-leak lesson, door edition)
     cancelPlacing();
@@ -931,7 +958,8 @@ function init(visitDoc, visitMiss) {
   }
   let toastTimer = null;
   function toast(text, ms) {
-    toastEl.textContent = text;
+    if (String(text).indexOf('<img') >= 0) toastEl.innerHTML = text;
+    else toastEl.textContent = text;
     toastEl.classList.add('is-on');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), ms || 2400);
@@ -1026,6 +1054,15 @@ function init(visitDoc, visitMiss) {
     planner = true;
     buildBtn.setAttribute('aria-pressed', 'true');
     planBar.hidden = false;
+    if (inside) {
+      // indoors the room IS the grid — fence/soil/clear stay outside
+      toolF.style.display = toolS.style.display = toolC.style.display = 'none';
+      setTool('move');
+      view.classList.add('is-placing');
+      track('homestead_planner', { room: inside });
+      return;
+    }
+    toolF.style.display = toolS.style.display = toolC.style.display = '';
     planOverlay();
     setTool('fence');
     const F = FENCE_TIERS[3].fence;   // same frame at every tier — growth is visible
@@ -1040,6 +1077,7 @@ function init(visitDoc, visitMiss) {
     // ⚠️ every tool flag resets here — a stuck flag eats all walk taps (the
     // arranging leak: move tool survived 'done' and blocked tap-to-walk)
     planner = false; digging = false; fencing = false; clearing = false; arranging = false;
+    toolF.style.display = toolS.style.display = toolC.style.display = '';
     buildBtn.setAttribute('aria-pressed', 'false');
     planBar.hidden = true;
     planShow(false);
@@ -1051,8 +1089,7 @@ function init(visitDoc, visitMiss) {
   }
   buildBtn.addEventListener('click', () => {
     if (visiting) { toast('build at your own homestead'); return; }
-    if (inside) { toast('step outside to work the land'); return; }
-    if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
+    if (state.stage < 1) { toast('pitch your tent first — tap its shadow on the deed'); return; }
     if (planner) exitPlanner(); else enterPlanner();
   });
   toolF.addEventListener('click', () => setTool('fence'));
@@ -1308,15 +1345,18 @@ function init(visitDoc, visitMiss) {
   yardBoot();
 
   // ---- 🪧 THE CLAIM — once, when you first walk through the gate ----------
-  let claimShown = false;
-  function offerClaim() {
-    if (claimShown || state.claimedAt) return;
-    claimShown = true;
+  let claimShown = false, renaming = false;
+  function showNamePopup(prefill) {
     const inp = document.getElementById('hsClaimName');
-    inp.value = myName ? myName + "'s Homestead" : 'My Homestead';
+    inp.value = prefill;
     claimEl.hidden = false;
     syncLock();
     setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 40);
+  }
+  function offerClaim() {
+    if (claimShown || state.claimedAt) return;
+    claimShown = true;
+    showNamePopup(myName ? myName + "'s Homestead" : 'My Homestead');
   }
   document.getElementById('hsClaimGo').addEventListener('click', async () => {
     const inp = document.getElementById('hsClaimName');
@@ -1329,7 +1369,8 @@ function init(visitDoc, visitMiss) {
     btn.disabled = false;
     if (!ok) { toast('let’s keep the sign family friendly — try another name'); inp.focus(); return; }
     state.name = v;
-    state.claimedAt = Date.now();
+    if (renaming) { state.renames = (state.renames || 0) + 1; state.renamedAt = Date.now(); renaming = false; }
+    state.claimedAt = state.claimedAt || Date.now();
     save(); refreshSign();
     claimEl.hidden = true;
     syncLock();
@@ -1763,7 +1804,7 @@ function init(visitDoc, visitMiss) {
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
   // validity, and anything under the confirmed footprint sweeps to the shed.
-  const FIXD = { mail: { w: MAILBOX.w, h: MAILBOX.h }, sign: { w: SIGN.w, h: SIGN.h } };
+  const FIXD = { mail: { w: MAILBOX.w, h: MAILBOX.h }, get sign() { return signDims(); } };
   const FIX_BOUNDS = [320, 270, 1400, 878];   // fixtures may live off-plot, by the road
   const fixDims = () => FIXD[placing.key] || STRUCTS[placing.key];
   function homeOk(x, y) {
@@ -1790,7 +1831,8 @@ function init(visitDoc, visitMiss) {
     el.className = 'hs-it hs-it--ghost';
     el.style.width = pct(d.w, W);
     el.style.height = pct(d.h, H);
-    el.style.backgroundImage = "url('/assets/homestead/" + (FIXD[key] ? 'm-' + key : 'ov-' + key) + ".png')";
+    el.style.backgroundImage = "url('/assets/homestead/" + (FIXD[key]
+      ? 'm-' + (key === 'sign' ? 'psign' + fenceTier() : key) : 'ov-' + key) + ".png')";
     world.appendChild(el);
     if (!FIXD[key]) {
       el.classList.add('hs-it--struct');
@@ -1850,6 +1892,15 @@ function init(visitDoc, visitMiss) {
       const rung = STRUCT_LADDER[placing.toStage - 1];
       track('homestead_upgrade', { to: placing.key });
       if (!swept.length) toast(rung.icon + ' ' + rung.name.toLowerCase() + ' — done');
+      if (placing.toStage === 1) {
+        // move-in day: the tent comes furnished with its camp kit…
+        if (!(state.inItems[1] || []).length) {
+          state.inItems[1] = [{ id: 'sleepbag', x: 836, y: 560 },
+            { id: 'tlantern', x: 906, y: 552 }, { id: 'backpack', x: 962, y: 560 }];
+        }
+        // …and NOW the place asks for its name (after the deed, not before)
+        if (!state.claimedAt) setTimeout(offerClaim, 700);
+      }
     } else if (placing.look) {   // 🎨 the wardrobe, not the ladder
       state.look = placing.key;
       track('homestead_restyle', { key: placing.key });
@@ -1873,6 +1924,25 @@ function init(visitDoc, visitMiss) {
   }
   // the sign's move button lives in the guestbook; the mailbox offers its
   // own chip on tap (the phone replaced the shop-panel button)
+  (() => {   // ✏️ rename — a second chance, then the sign dries for 48h
+    const mv2 = document.getElementById('hsSignMove');
+    if (!mv2 || visiting) return;
+    const rn = document.createElement('button');
+    rn.className = mv2.className;
+    rn.textContent = '✏️ rename';
+    rn.addEventListener('click', () => {
+      const waited = Date.now() - (state.renamedAt || 0);
+      if ((state.renames || 0) >= 1 && waited < 48 * 3600e3) {
+        toast('the paint is still wet — rename again in ' + Math.ceil((48 * 3600e3 - waited) / 3600e3) + 'h');
+        return;
+      }
+      guestEl.hidden = true;
+      syncLock();
+      renaming = true;
+      showNamePopup(state.name || 'My Homestead');
+    });
+    mv2.parentNode.insertBefore(rn, mv2);
+  })();
   document.getElementById('hsSignMove').addEventListener('click', () => {
     if (visiting) return;
     guestEl.hidden = true;
@@ -2131,6 +2201,19 @@ function init(visitDoc, visitMiss) {
     clearChip(); clearBedChip();
     if (placing) return;   // pointerdown/drag owns the ghost
     if (inside) {          // indoors: the stove answers, furniture chats, else walks
+      if (arranging && !visiting) {   // ✥ build mode: tap a piece, lift it
+        const L3 = state.inItems[inside] || [];
+        for (let k3 = L3.length - 1; k3 >= 0; k3--) {
+          const it3 = L3[k3];
+          const d4 = DEX[it3.id];
+          if (d4 && Math.abs(wx - it3.x) < Math.max(24, d4.w / 2) && wy > it3.y - d4.h - 8 && wy < it3.y + 10) {
+            L3.splice(k3, 1);
+            startPlacing(it3.id, it3);
+            return;
+          }
+        }
+        // no piece under the tap — fall through, walking still works
+      }
       const I = INTERIORS[inside];
       if (I.kitchen && wx > I.kitchen[0] && wx < I.kitchen[2] && wy > I.kitchen[1] && wy < I.kitchen[3]) {
         if (Math.hypot(pos.x - wx, pos.y - wy) < 170) { openCook(); return; }
@@ -2308,7 +2391,7 @@ function init(visitDoc, visitMiss) {
         const nxt = state.orders.slice().sort((a, b) => a.at - b.at)[0];
         toast(nxt
           ? '🚚 ' + state.orders.length + ' on the way — next in ' + fmtShip(nxt.at - Date.now())
-          : '📭 nothing on the way — order from your 🍌 phone');
+          : 'nothing on the way — order on the <img class="hs-toastico" src="/assets/homestead/phone.png" alt="phone">');
         clearChip();
         itChip = document.createElement('div');
         itChip.className = 'hs-chip';
@@ -2460,9 +2543,6 @@ function init(visitDoc, visitMiss) {
       const I = INTERIORS[inside];
       if (inRect(pos.x, pos.y, I.exit)) { exitHome(); return; }
     }
-    // stepping INTO the yard (through the south gate) triggers the claim
-    const F1 = FENCE_TIERS[1].fence;
-    if (!state.claimedAt && pos.x > F1[0] && pos.x < F1[2] && pos.y > F1[1] && pos.y < F1[3] - 26) offerClaim();
     drawMe();
     doorTick();
     birdTick(now, dt);
