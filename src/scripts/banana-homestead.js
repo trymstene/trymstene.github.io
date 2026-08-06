@@ -53,9 +53,9 @@ const CAPS = [12, 28, 42, 56];   // placement spots per stage — each rung adds
 const STRUCT_LADDER = [
   { key: 'tent', price: 50, name: 'Pitch a tent', icon: '⛺',
     pitch: 'pick a colour, move in — the whole decor catalog opens up.' },
-  { key: 'cabin', price: 250, name: 'Get a real roof', icon: '🛖',
+  { key: 'cabin', price: 300, name: 'Get a real roof', icon: '🛖',
     pitch: 'a mobile home, a barn — your call. The plot grows and the fancier catalog unlocks.' },
-  { key: 'house', price: 600, name: 'Build the house', icon: '🏠',
+  { key: 'house', price: 900, name: 'Build the house', icon: '🏠',
     pitch: 'country, villa, haunted, city — the full homestead, the grandest catalog.' },
 ];
 const STYLE_DEFAULTS = { 1: 'tent1', 2: 'mobm3', 3: 'country' };
