@@ -221,18 +221,18 @@ const description = 'A clearing west of the park with your name on the sign: cla
     #hsClaim .hs-btn { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
     /* the mailbox is a CATALOG, not a corridor — wide card, tile grid */
     #hsShop .hs-card { width: min(392px, 100%); }
-    .hs-cats { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0 0 0.7rem; }
+    .hs-cats { display: flex; gap: 0.45rem; flex-wrap: wrap; margin: 0 0 0.7rem; }
     .hs-cats button {
-      font: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer;
-      border: 2px solid #000; background: #fffdf5; padding: 0.3rem 0.55rem;
+      font: inherit; font-size: 0.76rem; font-weight: 800; cursor: pointer;
+      border: 2px solid #000; background: #fffdf5; padding: 0.42rem 0.75rem;
       border-radius: 999px; white-space: nowrap;
     }
     .hs-cats button[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
-    .hs-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+    .hs-grid { display: grid; gap: 0.7rem; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
     .hs-tile {
       position: relative;
-      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-      border: 2px solid #000; background: #fff; padding: 0.55rem 0.4rem 0.5rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+      border: 2px solid #000; background: #fff; padding: 0.75rem 0.5rem 0.65rem;
       text-align: center;
     }
     /* 🔨 planner: the land the next rungs bring, dashed in the dark */
@@ -272,11 +272,11 @@ const description = 'A clearing west of the park with your name on the sign: cla
     #hsShop[data-remote="1"] .hs-tabs button:not([data-tab="shed"]) { display: none; }
     /* touch drags steer the placement ghost, never the page */
     .hs-view.is-placing { touch-action: none; }
-    .hs-list { display: grid; gap: 0.5rem; max-height: min(46vh, 380px); overflow-y: auto;
+    .hs-list { display: grid; gap: 0.8rem; max-height: min(46vh, 380px); overflow-y: auto;
       overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .hs-row {
-      display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
-      background: #fff; padding: 0.45rem 0.55rem;
+      display: flex; align-items: center; gap: 0.8rem; border: 2px solid #000;
+      background: #fff; padding: 0.65rem 0.75rem;
     }
     .hs-row img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; flex: 0 0 auto; }
     .hs-row__meta { flex: 1; min-width: 0; }
@@ -284,7 +284,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-row__meta span { display: block; font-size: 0.74rem; opacity: 0.7; }
     .hs-row .hs-btn { font-size: 0.74rem; padding: 0.4rem 0.55rem; }
     .hs-note { margin: 0; font-size: 0.8rem; opacity: 0.75; }
-    .hs-up { display: grid; gap: 0.6rem; border: 2px solid #000; background: #fff; padding: 0.7rem; }
+    .hs-up { display: grid; gap: 0.8rem; border: 2px solid #000; background: #fff; padding: 0.95rem; }
     .hs-uphead { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
     .hs-uphead b { font-size: 0.98rem; }
     .hs-price {
@@ -342,10 +342,10 @@ const description = 'A clearing west of the park with your name on the sign: cla
     #hsShopLead:empty { display: none; }
     .hs-apps { display: none; }
     #hsShop[data-tab="home"] .hs-apps {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem 0.6rem;
       flex: 1 1 auto; align-content: start;
-      padding: 1.1rem 0.8rem 1.4rem; background: #fffdf5;
-      border-radius: 0 0 12px 12px;
+      padding: 1.6rem 1rem 1.6rem; background: #fffdf5;
+      border-radius: 0 0 14px 14px;
     }
     #hsShop[data-tab="home"] .hs-cats, #hsShop[data-tab="home"] .hs-list { display: none; }
     .hs-apps button {
@@ -363,21 +363,34 @@ const description = 'A clearing west of the park with your name on the sign: cla
       background: #fffdf5;
     }
     .hs-phoneshell > h2 {
-      margin: 0; padding: 0.6rem 0.7rem 0.25rem;
-      border-radius: 12px 12px 0 0; font-size: 1.02rem;
+      margin: 0; padding: 1.05rem 3.2rem 0.4rem 1.15rem;
+      border-radius: 14px 14px 0 0; font-size: 1.08rem;
     }
-    .hs-phoneshell > p { margin: 0; padding: 0 0.7rem 0.5rem; }
-    .hs-phoneshell > .hs-tabs { margin: 0; padding: 0 0.7rem 0.55rem; }
-    .hs-phoneshell > .hs-cats { margin: 0; padding: 0 0.7rem 0.55rem; }
+    .hs-phoneshell > p { margin: 0; padding: 0 1.15rem 0.85rem; font-size: 0.85rem; line-height: 1.5; opacity: 0.78; }
+    .hs-phoneshell > .hs-tabs { margin: 0; padding: 0 1.15rem 0.7rem; }
+    .hs-phoneshell > .hs-cats { margin: 0; padding: 0.15rem 1.15rem 0.95rem; }
     .hs-phoneshell > .hs-cats[hidden] { display: none; }
     .hs-phoneshell > .hs-list {
-      padding: 0 0.7rem 0.7rem;
-      border-radius: 0 0 12px 12px;
+      padding: 0.3rem 0.85rem 1.15rem 1.15rem;
+      border-radius: 0 0 14px 14px;
+    }
+    /* 🍌 the yellow scrollbar — a phone deserves nice chrome */
+    .hs-phoneshell > .hs-list::-webkit-scrollbar { width: 11px; }
+    .hs-phoneshell > .hs-list::-webkit-scrollbar-track {
+      background: #f3edd9; border-radius: 999px; margin: 6px 0;
+    }
+    .hs-phoneshell > .hs-list::-webkit-scrollbar-thumb {
+      background: #ffd21f; border: 2px solid #1a1408; border-radius: 999px;
+    }
+    .hs-phoneshell > .hs-list::-webkit-scrollbar-thumb:hover { background: #ffe135; }
+    @supports (-moz-appearance: none) {
+      .hs-phoneshell > .hs-list { scrollbar-width: thin; scrollbar-color: #ffd21f #f3edd9; }
     }
     .hs-phoneshell .hs-shopx {
-      top: 5px; right: 14px; width: 27px; height: 27px; border-radius: 50%;
+      top: 2.45rem; right: 1.35rem; width: 32px; height: 32px; border-radius: 50%;
       border: 3px solid #1a1408; background: #ffd21f; padding: 0;
-      display: grid; place-items: center; font-size: 0.78rem; line-height: 1; z-index: 6;
+      display: grid; place-items: center; font-size: 0.85rem; line-height: 1; z-index: 6;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.18);
     }
     /* 📲 in-phone notification — world toasts hide behind the veil */
     .hs-pnote {
