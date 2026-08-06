@@ -722,7 +722,15 @@ FLOOR_PALETTE = [
 
 def indoor_sprite(path, scale, strip=True):
     try:
-        img = Image.open(path).convert('RGBA')
+        if isinstance(path, (list, tuple)):
+            parts = [Image.open(p2).convert('RGBA') for p2 in path]
+            img = Image.new('RGBA', (sum(p2.width for p2 in parts), max(p2.height for p2 in parts)), (0, 0, 0, 0))
+            x = 0
+            for p2 in parts:
+                img.paste(p2, (x, img.height - p2.height), p2)
+                x += p2.width
+        else:
+            img = Image.open(path).convert('RGBA')
     except Exception:
         print('  MISSING', path)
         return None
@@ -799,7 +807,8 @@ INDOOR_DEF = [
     ('readlamp', 'Reading lamp', 'living', 14, 1, _ts(LIV, 86)),
     ('pottedplant', 'Potted plant', 'living', 8, 1, _ts(LIV, 16)),
     ('starryrug', 'Round rug', 'living', 10, 1, _ts(BEDS, 386)),
-    ('greyrug', 'Grey runner', 'living', 12, 1, _ts(BEDS, 359)),
+    ('greyrug', 'Grey rug', 'living', 12, 1, [_ts(BEDS, 357), _ts(BEDS, 358), _ts(BEDS, 359)]),
+    ('ovalrug', 'Oval rug', 'living', 14, 2, [_ts(BEDS, 360), _ts(BEDS, 361), _ts(BEDS, 362)]),
     ('longrug', 'Parlor rug', 'living', 14, 1, _ts(BEDS, 384)),
     ('dressercurio', 'Curio dresser', 'living', 30, 2, _ts(LIV, 56)),
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
@@ -843,11 +852,11 @@ INDOOR_DEF = [
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
-RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug'}
+RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug'}
 # counters render at 1.0 (they must READ as work surfaces — Trym: "the kitchen
 # counter must be larger"); rugs render big because the banana walks over them.
 IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
-            'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.5}
+            'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.0, 'ovalrug': 1.0}
 # accessory parts baked onto the K121 counter (native px, base-line y, x)
 IN_COMPOSE = {
     'coffeemk': [(_ts(KIT, 185), 26, 30)],
