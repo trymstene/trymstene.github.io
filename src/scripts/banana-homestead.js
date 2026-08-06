@@ -11,6 +11,7 @@ import { catCustom, loadCatalog } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
+import { initWorldTutorial } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
@@ -2561,6 +2562,20 @@ function init(visitDoc, visitMiss) {
     cam();
   }
   assetsReady().then(() => {
+    // 🌍 the Banana World tour — once, on your first visit to the world's
+    // front door (skippable; ?bwtour replays it)
+    if (!visiting) {
+      initWorldTutorial({
+        force: /[?&]bwtour(?:=|&|$)/.test(location.search),
+        track,
+        paint: (cv) => {
+          try {
+            drawComposite(cv.getContext('2d'), 150, frameNow(),
+              { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
+          } catch (e) {}
+        },
+      });
+    }
     drawMe();
     place(meEl, pos.x, pos.y, ME_ANCHOR);
     depth(meEl, pos.y);
