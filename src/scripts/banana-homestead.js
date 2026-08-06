@@ -1150,7 +1150,14 @@ function init(visitDoc, visitMiss) {
   const pos = byRoad ? { x: W - 90, y: ROAD.y } : { x: SPAWN.x, y: SPAWN.y };
   const tgt = byRoad ? { x: W - 260, y: ROAD.y } : { x: SPAWN.x - 120, y: SPAWN.y };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
-  track('homestead_open', { claimed: state.claimedAt ? 1 : 0 });
+  track('homestead_open', {
+    claimed: state.claimedAt ? 1 : 0,
+    stage: state.stage || 0,
+    visit: visiting ? 1 : 0,
+    via: visiting ? 'yardlink'
+      : /[?&]park(?:=|&|$)/.test(location.search) ? 'park'
+        : /[?&]world(?:=|&|$)/.test(location.search) ? 'world' : 'direct',
+  });
 
   const SPEED = 168;
   const keys = {};
@@ -1399,13 +1406,14 @@ function init(visitDoc, visitMiss) {
     btn.disabled = false;
     if (!ok) { toast('let’s keep the sign family friendly — try another name'); inp.focus(); return; }
     state.name = v;
+    const wasRename = renaming;   // a repaint is not a founding — the funnel splits here
     if (renaming) { state.renames = (state.renames || 0) + 1; state.renamedAt = Date.now(); renaming = false; }
     state.claimedAt = state.claimedAt || Date.now();
     save(); refreshSign();
     claimEl.hidden = true;
     syncLock();
     toast('🏡 ' + v + ' — it’s yours');
-    track('homestead_claim');
+    track(wasRename ? 'homestead_rename' : 'homestead_claim');
     // mint the ADDRESS — the sign name becomes the slug (yardBoot retries if offline)
     yFetch('/claim', { name: v }).then((r) => {
       if (r && r.slug) { state.slug = r.slug; save(); }
@@ -1924,7 +1932,7 @@ function init(visitDoc, visitMiss) {
       state.style[placing.toStage] = placing.key;
       state.look = '';   // a new roof is worn the day it lands
       const rung = STRUCT_LADDER[placing.toStage - 1];
-      track('homestead_upgrade', { to: placing.key });
+      track('homestead_upgrade', { to: placing.key, stage: placing.toStage });
       if (!swept.length) toast(rung.icon + ' ' + rung.name.toLowerCase() + ' — done');
       if (placing.toStage === 1) {
         // move-in day: the tent comes furnished with its camp kit…

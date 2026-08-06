@@ -274,6 +274,10 @@
   document.addEventListener('click', function (e) {
     var a = e.target.closest ? e.target.closest('a') : null;
     if (!a) return;
+    // the builder's programmatic blob-anchors fire their OWN precise events —
+    // without this opt-out every builder save double-counted as gif_download
+    // (and PNG data-URLs logged a base64 blob as the file name)
+    if (a.hasAttribute('data-notrack')) return;
     var href = a.getAttribute('href') || '';
     var place = a.getAttribute('data-place') || location.pathname;
     if (href.indexOf('/assets/wallpapers/') > -1) {

@@ -1101,7 +1101,12 @@ function init() {
     const o = document.createElement('canvas'); o.width = bb.w; o.height = bb.h;
     o.getContext('2d').drawImage(cv, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h); return o;
   }
-  function download(href, name) { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  function download(href, name) {
+    const a = document.createElement('a');
+    a.href = href; a.download = name;
+    a.setAttribute('data-notrack', '1');   // main.js must not double-count these
+    document.body.appendChild(a); a.click(); a.remove();
+  }
 
   // 🛍 THE DOWNLOAD MOMENT. 28 days of GA4: 336 gif_downloads, 9 product-tile
   // clicks, 0 purchases — the free file granted the wish and the session ended.
