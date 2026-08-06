@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 56">
+  <defs>
+    <g id="ban" stroke="#111111" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M-2 -11 C 4 -7 7 1 5 9 C 4 13 0 16 -7 16 C -3 13 -1 8 -1 2 C -1 -4 -1 -8 -2 -11 Z" fill="#ffe135" stroke-width="2.4"/>
+      <path d="M-2 -11 L0 -14.5" stroke="#5a3a12" stroke-width="2.8" fill="none"/>
+    </g>
+  </defs>
+  <!-- LARGE (2x small) centred so it shows once on mobile; rest medium / in-between / small -->
+  <use href="#ban" transform="translate(55,30) rotate(-10) scale(0.8)"/>
+  <use href="#ban" transform="translate(120,26) rotate(18) scale(1)"/>
+  <use href="#ban" transform="translate(190,31) rotate(5) scale(0.78)"/>
+  <use href="#ban" transform="translate(255,27) rotate(-15) scale(1.26)"/>
+  <use href="#ban" transform="translate(330,30) rotate(9) scale(0.85)"/>
+  <use href="#ban" transform="translate(420,28) rotate(12) scale(1.6)"/>
+  <use href="#ban" transform="translate(510,30) rotate(-8) scale(0.8)"/>
+  <use href="#ban" transform="translate(580,27) rotate(20) scale(1.22)"/>
+  <use href="#ban" transform="translate(650,31) rotate(-12) scale(0.82)"/>
+  <use href="#ban" transform="translate(720,26) rotate(8) scale(1)"/>
+  <use href="#ban" transform="translate(790,30) rotate(16) scale(0.8)"/>
+</svg>

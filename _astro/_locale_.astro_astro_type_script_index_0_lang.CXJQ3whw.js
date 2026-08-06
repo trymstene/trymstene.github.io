@@ -1,0 +1,1 @@
+import{wireDownloads as o}from"./make-it-real.DB9mPqLj.js";import"./preload-helper.BlTxHScW.js";import"./products.B2Ex3UUy.js";o("original",JSON.parse(document.getElementById("locOffer").textContent));

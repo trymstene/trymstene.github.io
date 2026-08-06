@@ -1,0 +1,458 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="canonical" href="https://trymstene.com/homestead/"><title>The Homestead — your own corner of Banana World</title><meta name="description" content="A clearing west of the park with your name on the sign: claim it, pitch a tent, order decor at the mailbox and grow the garden bed."><meta name="robots" content="noindex,nofollow"><meta name="google-site-verification" content="aI-qTkBS_ACkw7mXPWsadMKDL6ASRH6QY5dtVw-84lI"><meta name="facebook-domain-verification" content="mb67oo0jrwn4y5cd5qt0wfte6v9cpx"><meta property="og:type" content="website"><meta property="og:title" content="The Homestead 🏡"><meta property="og:description" content="A clearing in Banana World with your name on the sign."><meta property="og:url" content="https://trymstene.com/homestead/"><meta property="og:image" content="https://trymstene.com/assets/og/default.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="The Homestead 🏡"><meta property="og:site_name" content="Trym Stene — the banana guy"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><!-- self-hosted fonts: no third-party round trips (perf + GDPR) --><link rel="preload" href="/fonts/spacegrotesk-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/archivoblack-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/styles.css"><style>
+    /* JS toggles hidden on flex/grid elements — the UA rule must always win */
+    .hs-wrap [hidden], .hs-veil[hidden], .hs-tabs[hidden] { display: none !important; }
+    .hs-wrap { max-width: 1100px; margin: 0 auto; padding: 1.2rem 1rem 2.5rem; }
+    .hs-head h1 { margin: 0 0 0.25rem; }
+    .hs-head p { margin: 0 0 1rem; opacity: 0.8; max-width: 64ch; }
+
+    .hs-stage { position: relative; border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
+    .hs-view {
+      position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      background: #10200c;
+    }
+    .hs-world { position: absolute; left: 0; top: 0; image-rendering: pixelated; will-change: transform; }
+    .hs-base {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: url('/assets/homestead/homestead.png') 0 0 / 100% 100% no-repeat;
+      image-rendering: pixelated;
+    }
+    .hs-ov, .hs-it, .hs-crop {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    .hs-it--ghost { opacity: 0.78; outline: 3px dashed #ffe135; outline-offset: 3px; }
+    .hs-it--ghost.is-bad { outline-color: #ff5f5f; filter: saturate(0.4); }
+    /* 🏠 structure ghosts: the dashed ring marks the FLOOR, not the roof */
+    .hs-it--struct { outline: none; }
+    .hs-footring {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      border: 3px dashed #ffe135; box-sizing: border-box; pointer-events: none;
+    }
+    .hs-it--ghost.is-bad .hs-footring { border-color: #ff5f5f; }
+    .hs-crop.is-ripe { animation: hsRipe 1.4s ease-in-out infinite; }
+    @keyframes hsRipe { 50% { transform: translateY(-3px); } }
+    @media (prefers-reduced-motion: reduce) { .hs-crop.is-ripe { animation: none; } }
+    .hs-tentspot {
+      position: absolute; pointer-events: none; display: grid; place-items: center;
+      border: 3px dashed rgba(255, 225, 53, 0.65); border-radius: 8px; text-align: center;
+    }
+    .hs-tentspot span {
+      font-size: 11px; font-weight: 800; color: #fffdf5; line-height: 1.3;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.7); background: rgba(10, 16, 8, 0.55);
+      padding: 3px 7px; border-radius: 5px;
+    }
+    .hs-tentspot small { font-weight: 700; opacity: 0.8; }
+    /* ⚠️ % of the WORLD, like the park's 3.6% — a fixed px banana ignored the
+       zoom, towering over the fence on phones (why the yard "felt small") */
+    .hs-me { position: absolute; left: 0; top: 0; width: 5.5%; pointer-events: none; }
+    .hs-me canvas { width: 100%; height: auto; display: block; }
+    /* 🐦 garden birds — 16px frames on a 4-frame strip, world-scaled */
+    .hs-bird { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }
+    .hs-hen { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }
+    .hs-toastico { width: 15px; height: 15px; vertical-align: -3px; image-rendering: pixelated; }
+    .hs-hen span {
+      display: block; width: 100%; aspect-ratio: 1;
+      background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .hs-bird span {
+      display: block; width: 100%; aspect-ratio: 1;
+      background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+
+    .hs-signname {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      background: rgba(20, 14, 6, 0.85); color: #ffe135; border: 2px solid #000;
+      padding: 2px 7px; font-size: 11px; font-weight: 800; white-space: nowrap;
+      border-radius: 3px;
+    }
+    .hs-signname[hidden] { display: none; }
+    .hs-float {
+      position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+      font-weight: 900; font-size: 15px; color: #fffdf5; z-index: 4000;
+      text-shadow: 0 2px 0 #000; animation: hsFloat 0.95s ease-out forwards;
+    }
+    @keyframes hsFloat { to { transform: translate(-50%, -220%); opacity: 0; } }
+
+    .hs-chip {
+      position: absolute; transform: translate(-50%, -100%); display: flex; gap: 6px;
+      background: rgba(10, 16, 8, 0.92); border: 3px solid #000; padding: 6px;
+      border-radius: 6px; box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    }
+    .hs-btn {
+      font: inherit; font-size: 0.8rem; font-weight: 800; cursor: pointer;
+      border: 3px solid #000; background: #ffe135; color: #1a1408;
+      padding: 0.4rem 0.6rem; white-space: nowrap;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .hs-btn[disabled] { opacity: 0.45; cursor: default; }
+    .hs-btn--ghost { background: #fffdf5; }
+
+    .hs-hint {
+      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+      z-index: 20; pointer-events: none; white-space: nowrap;
+      background: rgba(10, 16, 8, 0.8); color: #fffdf5; border: 2px solid #000;
+      padding: 0.35rem 0.7rem; font-size: 0.78rem; font-weight: 700; border-radius: 5px;
+      transition: opacity 0.4s ease;
+    }
+    .hs-hint.is-off { opacity: 0; }
+    .hs-toast {
+      position: absolute; left: 50%; top: 54px; transform: translateX(-50%);
+      z-index: 30; pointer-events: none; max-width: calc(100% - 2rem); text-align: center;
+      background: #ffe135; color: #1a1408; border: 3px solid #000;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.4); padding: 0.45rem 0.9rem;
+      font-size: 0.85rem; font-weight: 800; opacity: 0; transition: opacity 0.25s ease;
+    }
+    .hs-toast.is-on { opacity: 1; }
+    .hs-exit {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      z-index: 20; pointer-events: none; background: rgba(10, 16, 8, 0.85);
+      color: #ffe135; border: 2px solid #000; padding: 0.35rem 0.65rem;
+      font-size: 0.78rem; font-weight: 800; border-radius: 5px; opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .hs-exit.is-on { opacity: 1; }
+    .hs-cut { position: absolute; inset: 0; z-index: 60; background: #000; opacity: 0;
+      pointer-events: none; transition: opacity 0.16s ease; }
+    /* 🛋 indoors: the shade hides the yard under the floating room */
+    .hs-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
+    .hs-inshade[hidden] { display: none; }
+    .hs-cut.is-on { opacity: 1; }
+
+    .hs-actions {
+      display: flex; gap: 0.5rem; align-items: center; justify-content: center;
+      background: #10200c; border-top: 4px solid #000; padding: 0.55rem;
+    }
+    .hs-act {
+      font: inherit; font-size: 1.05rem; cursor: pointer; border: 3px solid #000;
+      background: #ffe135; padding: 0.45rem 0.9rem; font-weight: 800;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .hs-act--icon { display: inline-flex; align-items: center; justify-content: center; }
+    .hs-act[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
+    /* 🔨 THE PLANNER — build mode: zoomed-out land, dimmed world, lit grid */
+    .hs-planbar {
+      position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+      z-index: 2600; display: flex; gap: 0.4rem;
+      background: rgba(10, 16, 8, 0.92); border: 3px solid #000; border-radius: 7px;
+      padding: 0.3rem;
+    }
+    .hs-planbar button {
+      font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer;
+      border: 2px solid #000; background: #fffdf5; padding: 0.35rem 0.6rem;
+      white-space: nowrap; touch-action: manipulation;
+    }
+    .hs-planbar button[aria-pressed="true"] { background: #ffe135; }
+    #hsPlanDone { background: #1a1408; color: #ffe135; }
+    .hs-planbar[hidden] { display: none; }
+    .hs-dim { position: absolute; background: rgba(6, 8, 14, 0.55); z-index: 1500; pointer-events: none; }
+    .hs-gridov { position: absolute; z-index: 70; pointer-events: none; }
+    .hs-hovcell {
+      position: absolute; z-index: 1600; pointer-events: none;
+      outline: 2px dashed #ffe135; outline-offset: -2px;
+    }
+    /* 🪵 player fence pieces — y-sorted so they overflow the banana */
+    .hs-fpiece {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    .hs-mvfix {
+      margin-top: 0.6rem; font: inherit; font-size: 0.72rem; font-weight: 800;
+      border: 2px solid #000; background: #fffdf5; cursor: pointer; padding: 0.3rem 0.55rem;
+    }
+    .hs-mvfix[hidden] { display: none; }
+    #hsShop[data-remote="1"] #hsShopMove { display: none; }
+    /* 🪏 dug soil cells — flat tilled ground, under everything y-sorted */
+    .hs-soil {
+      position: absolute; z-index: 60; pointer-events: none; image-rendering: pixelated;
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+
+    /* panels: the claim + the mailbox */
+    .hs-veil {
+      position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+      padding: 1rem; background: rgba(6, 10, 4, 0.7);
+      overscroll-behavior: contain;
+    }
+    body.hs-lock { overflow: hidden; }
+    .hs-veil[hidden] { display: none; }
+    .hs-card {
+      width: min(430px, 100%); background: #fffdf5; color: #1a1408;
+      border: 3px solid #000; box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+      padding: 1rem 1rem 1.1rem;
+    }
+    .hs-card h2 { margin: 0 0 0.3rem; font-size: 1.1rem; }
+    .hs-card > p { margin: 0 0 0.8rem; font-size: 0.86rem; line-height: 1.5; opacity: 0.85; }
+    .hs-card input {
+      width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem;
+      border: 3px solid #000; padding: 0.6rem 0.7rem; margin-bottom: 0.7rem;
+      text-align: center; background: #fff;
+    }
+    /* ⚠️ scoped to the CLAIM card only — a bare .hs-card .hs-btn rule stretched
+       every shop-row button over its own label (Trym's screenshot) */
+    #hsClaim .hs-btn { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
+    /* the mailbox is a CATALOG, not a corridor — wide card, tile grid */
+    #hsShop .hs-card { width: min(392px, 100%); }
+    .hs-cats { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0 0 0.7rem; }
+    .hs-cats button {
+      font: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer;
+      border: 2px solid #000; background: #fffdf5; padding: 0.3rem 0.55rem;
+      border-radius: 999px; white-space: nowrap;
+    }
+    .hs-cats button[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
+    .hs-grid { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+    .hs-tile {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+      border: 2px solid #000; background: #fff; padding: 0.55rem 0.4rem 0.5rem;
+      text-align: center;
+    }
+    /* 🔨 planner: the land the next rungs bring, dashed in the dark */
+    .hs-nextdeed {
+      position: absolute; z-index: 1600; pointer-events: none;
+      border: 2px dashed rgba(255, 225, 53, 0.4); box-sizing: border-box;
+    }
+    .hs-nextdeed[hidden] { display: none; }
+    .hs-stackn {
+      position: absolute; top: 4px; right: 4px; z-index: 2;
+      background: #1a1408; color: #ffe135; border-radius: 999px;
+      font-size: 0.62rem; font-weight: 800; padding: 1px 7px;
+    }
+    .hs-lockpill {
+      position: absolute; top: 30px; left: 50%; transform: translateX(-50%) rotate(-6deg);
+      background: #ffe135; border: 2px solid #000; padding: 0.12rem 0.45rem;
+      font-size: 0.62rem; font-weight: 800; white-space: nowrap; z-index: 2;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    }
+    .hs-tile > img { width: 52px; height: 52px; object-fit: contain; image-rendering: pixelated; }
+    .hs-tilesvg { width: 52px; height: 52px; display: grid; place-items: center; }
+    .hs-tilesvg svg { width: 100%; height: 100%; image-rendering: pixelated; }
+    .hs-maker { font-style: normal; font-size: 0.66rem; font-weight: 700; opacity: 0.6; }
+    .hs-it svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    .hs-tile b { font-size: 0.78rem; line-height: 1.15; }
+    .hs-tile em { font-style: normal; font-size: 0.74rem; font-weight: 800; opacity: 0.75; }
+    .hs-tile .hs-btn { font-size: 0.72rem; padding: 0.35rem 0.5rem; width: 100%; box-sizing: border-box; }
+    .hs-tile.is-locked > img, .hs-tile.is-locked b, .hs-tile.is-locked em { opacity: 0.5; }
+    .hs-tile.is-locked .hs-btn { opacity: 0.45; }
+    .hs-tabs { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; }
+    .hs-tabs button {
+      flex: 1; font: inherit; font-size: 0.8rem; font-weight: 800; cursor: pointer;
+      border: 3px solid #000; background: #fffdf5; padding: 0.45rem 0.3rem; white-space: nowrap;
+    }
+    .hs-tabs button[aria-pressed="true"] { background: #ffe135; }
+    /* the remote shed shows only your things — ordering stays at the mailbox */
+    #hsShop[data-remote="1"] .hs-tabs button:not([data-tab="shed"]) { display: none; }
+    /* touch drags steer the placement ghost, never the page */
+    .hs-view.is-placing { touch-action: none; }
+    .hs-list { display: grid; gap: 0.5rem; max-height: min(46vh, 380px); overflow-y: auto;
+      overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .hs-row {
+      display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
+      background: #fff; padding: 0.45rem 0.55rem;
+    }
+    .hs-row img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; flex: 0 0 auto; }
+    .hs-row__meta { flex: 1; min-width: 0; }
+    .hs-row__meta b { display: block; font-size: 0.86rem; }
+    .hs-row__meta span { display: block; font-size: 0.74rem; opacity: 0.7; }
+    .hs-row .hs-btn { font-size: 0.74rem; padding: 0.4rem 0.55rem; }
+    .hs-note { margin: 0; font-size: 0.8rem; opacity: 0.75; }
+    .hs-up { display: grid; gap: 0.6rem; border: 2px solid #000; background: #fff; padding: 0.7rem; }
+    .hs-uphead { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .hs-uphead b { font-size: 0.98rem; }
+    .hs-price {
+      display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;
+      border: 2px solid #000; background: #fffbe0; padding: 0.15rem 0.5rem;
+      font-weight: 800; font-size: 0.85rem;
+    }
+    /* 🎨 the style wardrobe — thumbnails, the picked one glows banana */
+    .hs-stylepick {
+      display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content;
+      gap: 8px; padding: 2px;
+    }
+    /* the buy bar stays reachable while the wardrobe scrolls under it */
+    .hs-upcta {
+      position: sticky; bottom: 0; z-index: 3; width: 100%; box-sizing: border-box;
+      padding: 0.7rem; font-size: 0.95rem;
+      box-shadow: 0 -8px 12px rgba(255, 253, 245, 0.95);
+    }
+    /* ⚠️ auto-rows must be max-content: .hs-up's grid stretches this picker to a
+       definite height, and overflow:hidden cells (min-size 0) let auto rows
+       compress to fit it — every row squished to ~21px (Trym's "squeezed") */
+    .hs-stylebtn {
+      border: 2px solid #000; background: #fff;
+      padding: 5px; cursor: pointer; overflow: hidden;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .hs-stylebtn img { width: 100%; height: 84px; object-fit: contain; image-rendering: pixelated; display: block; }
+    .hs-stylebtn[aria-pressed="true"] { outline: 3px solid #ffe135; background: #fffbe0; }
+    .hs-up b { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .hs-up span { display: block; font-size: 0.8rem; line-height: 1.5; opacity: 0.8; }
+    .hs-shopx {
+      position: absolute; top: 8px; right: 8px; font: inherit; font-weight: 800;
+      border: 2px solid #000; background: #fffdf5; cursor: pointer; padding: 0.15rem 0.5rem;
+    }
+    #hsShop .hs-card { position: relative; }
+    /* 🍌 THE BANANA PHONE — the store + shed live in your pocket */
+    .hs-phoneshell {
+      background: #ffe135; border-radius: 26px;
+      padding: 1.7rem 0.85rem 1.9rem; box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+      display: flex; flex-direction: column;
+      height: min(74vh, 680px); box-sizing: border-box;
+    }
+    .hs-phoneshell::before {
+      content: ''; position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+      width: 58px; height: 7px; background: #1a1408; border-radius: 4px;
+    }
+    .hs-homebtn {
+      position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+      width: 19px; height: 19px; border: 3px solid #1a1408; border-radius: 50%;
+      background: #ffd21f; box-sizing: border-box; cursor: pointer; padding: 0;
+    }
+    .hs-homebtn:active { background: #e8bd0f; }
+    /* the phone navigates by APPS — the tab row retires */
+    #hsShop .hs-tabs { display: none; }
+    #hsShopLead:empty { display: none; }
+    .hs-apps { display: none; }
+    #hsShop[data-tab="home"] .hs-apps {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+      flex: 1 1 auto; align-content: start;
+      padding: 1.1rem 0.8rem 1.4rem; background: #fffdf5;
+      border-radius: 0 0 12px 12px;
+    }
+    #hsShop[data-tab="home"] .hs-cats, #hsShop[data-tab="home"] .hs-list { display: none; }
+    .hs-apps button {
+      font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer;
+      border: 0; background: none; padding: 0.2rem 0;
+      display: grid; justify-items: center; gap: 0.35rem; color: inherit;
+    }
+    .hs-appic {
+      width: 54px; height: 54px; display: grid; place-items: center;
+      font-size: 1.65rem; border: 3px solid #000; border-radius: 14px;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.22);
+    }
+    .hs-phoneshell > h2, .hs-phoneshell > p, .hs-phoneshell > .hs-tabs,
+    .hs-phoneshell > .hs-cats, .hs-phoneshell > .hs-list {
+      background: #fffdf5;
+    }
+    .hs-phoneshell > h2 {
+      margin: 0; padding: 0.6rem 0.7rem 0.25rem;
+      border-radius: 12px 12px 0 0; font-size: 1.02rem;
+    }
+    .hs-phoneshell > p { margin: 0; padding: 0 0.7rem 0.5rem; }
+    .hs-phoneshell > .hs-tabs { margin: 0; padding: 0 0.7rem 0.55rem; }
+    .hs-phoneshell > .hs-cats { margin: 0; padding: 0 0.7rem 0.55rem; }
+    .hs-phoneshell > .hs-cats[hidden] { display: none; }
+    .hs-phoneshell > .hs-list {
+      padding: 0 0.7rem 0.7rem;
+      border-radius: 0 0 12px 12px;
+    }
+    .hs-phoneshell .hs-shopx {
+      top: 5px; right: 14px; width: 27px; height: 27px; border-radius: 50%;
+      border: 3px solid #1a1408; background: #ffd21f; padding: 0;
+      display: grid; place-items: center; font-size: 0.78rem; line-height: 1; z-index: 6;
+    }
+    /* 📲 in-phone notification — world toasts hide behind the veil */
+    .hs-pnote {
+      position: absolute; top: 36px; left: 50%;
+      transform: translate(-50%, -14px); opacity: 0; pointer-events: none;
+      max-width: calc(100% - 3rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      background: #1a1408; color: #ffe135; border-radius: 10px;
+      padding: 0.45rem 0.75rem; font-size: 0.78rem; font-weight: 800; z-index: 7;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+    .hs-pnote.is-on { transform: translate(-50%, 0); opacity: 1; }
+    /* 🔴 shed badge on the home screen */
+    .hs-appbadge {
+      position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px;
+      border-radius: 999px; background: #e0342b; color: #fff; border: 2px solid #000;
+      font-size: 0.64rem; font-weight: 800; font-style: normal;
+      display: grid; place-items: center; padding: 0 3px; box-sizing: border-box;
+    }
+    .hs-appbadge[hidden] { display: none; }
+    .hs-phoneshell > .hs-list { flex: 1 1 auto; min-height: 0; max-height: none; }
+
+    /* the place/cancel confirm bar rides the bottom of the view */
+    .hs-confirm {
+      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+      z-index: 40; display: flex; gap: 0.5rem;
+      background: rgba(10, 16, 8, 0.92); border: 3px solid #000; padding: 0.5rem;
+      border-radius: 8px; box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    }
+    .hs-confirm[hidden] { display: none; }
+
+    .hs-about { margin-top: 1.6rem; max-width: 70ch; }
+    .hs-about p { margin: 0 0 0.6rem; line-height: 1.6; font-size: 0.92rem; opacity: 0.85; }
+
+    /* 🪙 the REAL bananacoin rides every price (never the stock emoji) */
+    /* ⚠️ armored: broad tile/card img rules keep catching the coin (3rd hit) */
+    .hs-coin { width: 14px !important; height: 14px !important; image-rendering: pixelated; vertical-align: -2px; }
+
+    /* 👋 visiting someone else's homestead */
+    .hs-visit {
+      position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+      z-index: 25; display: flex; gap: 0.5rem; align-items: center;
+      max-width: calc(100% - 1.2rem); background: rgba(10, 16, 8, 0.9);
+      border: 3px solid #000; border-radius: 7px; padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+    }
+    .hs-visit b { color: #ffe135; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hs-visit .hs-btn { font-size: 0.72rem; padding: 0.3rem 0.5rem; text-decoration: none; }
+    .hs-visit[hidden] { display: none; }
+
+    /* 🪧 the guestbook at the sign */
+    .hs-share { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; }
+    .hs-share input {
+      flex: 1; min-width: 0; margin: 0; text-align: left; font-size: 0.78rem;
+      padding: 0.45rem 0.5rem;
+    }
+    .hs-share .hs-btn { flex: 0 0 auto; }
+    .hs-share[hidden] { display: none; }
+    .hs-guestlist { display: grid; gap: 0.45rem; max-height: min(38vh, 300px); overflow-y: auto;
+      margin: 0 0 0.7rem; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .hs-guest {
+      border: 2px solid #000; background: #fff; padding: 0.45rem 0.55rem;
+    }
+    .hs-guest b { display: block; font-size: 0.78rem; color: #6b5200; }
+    .hs-guest span { font-size: 0.85rem; line-height: 1.4; overflow-wrap: anywhere; }
+    .hs-signrow { display: flex; gap: 0.4rem; }
+    .hs-signrow input { flex: 1; min-width: 0; margin: 0; text-align: left; }
+    .hs-signrow .hs-btn { flex: 0 0 auto; }
+    .hs-signrow[hidden] { display: none; }
+
+    /* 🚚 orders on the way */
+    .hs-orders { display: grid; gap: 0.4rem; }
+    .hs-order {
+      display: flex; align-items: center; gap: 0.6rem; border: 2px dashed #000;
+      background: #fffbe0; padding: 0.4rem 0.55rem;
+    }
+    .hs-order img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+    .hs-order b { flex: 1; font-size: 0.82rem; }
+    .hs-order em { font-style: normal; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
+
+    /* 🍳 the kitchen */
+    .hs-pantry { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.55rem; }
+    .hs-pantry span {
+      border: 2px solid #000; background: #fff; border-radius: 999px;
+      padding: 0.2rem 0.55rem; font-size: 0.8rem; font-weight: 800;
+    }
+    #hsCook .hs-note { margin: 0 0 0.7rem; }
+    .hs-cooklist { display: grid; gap: 0.5rem; }
+    .hs-dish {
+      display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
+      background: #fff; padding: 0.5rem 0.6rem;
+    }
+    .hs-dish > div { flex: 1; min-width: 0; }
+    .hs-dish b { display: block; font-size: 0.9rem; }
+    .hs-dish span { display: block; font-size: 0.75rem; opacity: 0.75; line-height: 1.4; }
+    .hs-dish .hs-btn { flex: 0 0 auto; font-size: 0.74rem; padding: 0.4rem 0.55rem; }
+  </style><style>.ft-cols[data-astro-cid-sz7xmlte]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.6rem 2rem;max-width:880px;margin:1.8rem auto 1.6rem;text-align:left}.ft-col[data-astro-cid-sz7xmlte] h3[data-astro-cid-sz7xmlte]{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;opacity:.55;margin:0 0 .6rem}.ft-col[data-astro-cid-sz7xmlte] a[data-astro-cid-sz7xmlte]{display:block;margin-bottom:.45rem;line-height:1.35}@media(max-width:719px){.ft-cols[data-astro-cid-sz7xmlte]{grid-template-columns:repeat(2,minmax(0,1fr));max-width:26rem}}
+</style></head> <body> <a class="skip-link" href="#main">Skip to content</a>  <header class="nav"> <a class="nav__brand" href="/">TRYM<span>STENE</span></a> <button class="nav__toggle" aria-label="Menu" aria-expanded="false"> <span class="nav__ic nav__ic--open"><svg class="pxi" viewBox="0 0 90 80" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="90" height="10" fill="currentColor"></rect><rect x="0" y="10" width="90" height="10" fill="currentColor"></rect><rect x="0" y="30" width="90" height="10" fill="currentColor"></rect><rect x="0" y="40" width="90" height="10" fill="currentColor"></rect><rect x="0" y="60" width="90" height="10" fill="currentColor"></rect><rect x="0" y="70" width="90" height="10" fill="currentColor"></rect> </svg></span> <span class="nav__ic nav__ic--close"><svg class="pxi" viewBox="0 0 90 90" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="20" height="10" fill="currentColor"></rect><rect x="70" y="0" width="20" height="10" fill="currentColor"></rect><rect x="0" y="10" width="30" height="10" fill="currentColor"></rect><rect x="60" y="10" width="30" height="10" fill="currentColor"></rect><rect x="10" y="20" width="30" height="10" fill="currentColor"></rect><rect x="50" y="20" width="30" height="10" fill="currentColor"></rect><rect x="20" y="30" width="50" height="10" fill="currentColor"></rect><rect x="30" y="40" width="30" height="10" fill="currentColor"></rect><rect x="20" y="50" width="50" height="10" fill="currentColor"></rect><rect x="10" y="60" width="30" height="10" fill="currentColor"></rect><rect x="50" y="60" width="30" height="10" fill="currentColor"></rect><rect x="0" y="70" width="30" height="10" fill="currentColor"></rect><rect x="60" y="70" width="30" height="10" fill="currentColor"></rect><rect x="0" y="80" width="20" height="10" fill="currentColor"></rect><rect x="70" y="80" width="20" height="10" fill="currentColor"></rect> </svg></span> </button> <nav class="nav__links"> <div class="nav__group nav__group--banana"> <a href="/dancing-banana-gif-meme/">Download</a> <a href="/make-a-banana/" data-place="nav">Make a Banana</a> <a href="/forge/">Pixel Forge</a>  <a class="nav__shop" href="/shop/" data-place="nav">Shop</a> <a href="/rave/">Join the Rave</a>  <a href="/banana-memes/">Banana Gallery</a> <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a> </div> </nav> <div class="nav__backdrop"></div> </header> <script type="module">(()=>{const e=document.querySelector(".nav");if(!e)return;const a=10,s=-48,c=64;let t=Math.max(0,window.scrollY),n=0,i=!1;function l(){i=!1;const r=Math.max(0,window.scrollY),o=r-t;if(t=r,e.classList.contains("open")){n=0;return}if(r<c){e.classList.remove("nav--hidden"),n=0;return}o>0!=n>0&&(n=0),n+=o,n>a?e.classList.add("nav--hidden"):n<s&&e.classList.remove("nav--hidden")}addEventListener("scroll",()=>{i||(i=!0,requestAnimationFrame(l))},{passive:!0})})();(()=>{const e=document.querySelector(".nav__pass");if(!e)return;let a="",s="";try{a=(localStorage.getItem("ps-name-v1")||"").trim().slice(0,18),s=localStorage.getItem("ps-avatar-v1")||""}catch{return}if(!a&&!s)return;if(e.classList.add("nav__pass--me"),e.title=a?a+" — your banana pass":"Your banana pass",e.textContent="",s){const t=new Image(22,22);t.className="nav__pface",t.src=s,t.alt="",e.appendChild(t)}else e.appendChild(document.createTextNode("🎫 "));const c=document.createElement("span");c.textContent=a||"My Pass",e.appendChild(c)})();</script> <main id="main" tabindex="-1">   <div class="hs-wrap"> <div class="hs-head"> <h1>🏡 the homestead</h1> </div> <div class="hs-stage"> <div class="hs-view" id="hsView"> <div class="hs-world" id="hsWorld"> <div class="hs-base" aria-hidden="true"></div> <div class="hs-me" id="hsMe"><canvas id="hsMeCv" width="150" height="150" aria-hidden="true"></canvas></div> </div> <div class="hs-hint" id="hsHint">tap to walk · arrow keys / WASD work too</div> <div class="hs-toast" id="hsToast" role="status" aria-live="polite"></div> <div class="hs-exit" id="hsExitStrip"></div> <div class="hs-confirm" id="hsConfirm" hidden> <button class="hs-btn" id="hsPlaceGo">✓ place it here</button> <button class="hs-btn hs-btn--ghost" id="hsPlaceNo">✕ not now</button> </div> <div class="hs-cut" id="hsCut" aria-hidden="true"></div> <div class="hs-planbar" id="hsPlan" hidden> <button type="button" id="hsToolFence" aria-pressed="true">🪵 fence</button> <button type="button" id="hsToolSoil" aria-pressed="false">⛏️ soil</button> <button type="button" id="hsToolMove" aria-pressed="false">✥ move</button> <button type="button" id="hsToolClear" aria-pressed="false">🧹 clear</button> <button type="button" id="hsToolShed">📦 place</button> <button type="button" id="hsPlanDone">✓ done</button> </div> <div class="hs-visit" id="hsVisit" hidden> <b id="hsVisitName"></b> <a class="hs-btn" href="/homestead/">🏡 yours</a> </div> </div> <div class="hs-actions" aria-label="homestead actions"> <button class="hs-act" id="hsEmote" title="Send a heart">❤️</button> <button class="hs-act" id="hsBuild" title="Build mode — fence and soil" aria-pressed="false">🔨</button> <button class="hs-act hs-act--icon" id="hsBag" title="Your banana phone — order online, check the shed"><img src="/assets/homestead/phone.png" alt="" width="22" height="22" style="image-rendering:pixelated"></button> </div> </div> <div class="hs-veil" id="hsClaim" hidden> <div class="hs-card"> <h2>🪧 This clearing is yours.</h2> <p>Every banana gets one — a patch of the world with your name on the sign.
+          What should the sign say?</p> <input id="hsClaimName" maxlength="28" aria-label="Name your homestead"> <button class="hs-btn" id="hsClaimGo">🏡 Claim it</button> </div> </div> <div class="hs-veil" id="hsCook" hidden> <div class="hs-card"> <button class="hs-shopx" id="hsCookClose" aria-label="Close">✕</button> <h2>🍳 The kitchen</h2> <div class="hs-pantry" id="hsPantry"></div> <p class="hs-note" id="hsCookNote"></p> <div class="hs-cooklist" id="hsCookList"></div> </div> </div> <div class="hs-veil" id="hsGuest" hidden> <div class="hs-card"> <button class="hs-shopx" id="hsGuestClose" aria-label="Close">✕</button> <h2 id="hsGuestTitle">🪧 The sign</h2> <div class="hs-share" id="hsShare" hidden> <input id="hsShareUrl" readonly aria-label="Your homestead address"> <button class="hs-btn" id="hsShareCopy">copy</button> </div> <div class="hs-guestlist" id="hsGuestList"></div> <button class="hs-mvfix" id="hsSignMove">✥ move the sign</button> <div class="hs-signrow" id="hsSignRow" hidden> <input id="hsSignText" maxlength="80" placeholder="leave a note…" aria-label="Guestbook note"> <button class="hs-btn" id="hsSignGo">✍️ sign</button> </div> </div> </div> <div class="hs-veil" id="hsShop" hidden data-tab="home"> <div class="hs-card hs-phoneshell"> <button class="hs-shopx" id="hsShopClose" aria-label="Close">✕</button> <div class="hs-pnote" id="hsPhoneNote" aria-live="polite"></div> <h2 id="hsShopTitle">🍌 Banana Phone</h2> <p id="hsShopLead"></p> <div class="hs-apps" id="hsApps"> <button type="button" data-tab="order"><span class="hs-appic" style="background:#dff1ff">🛒</span>Order</button> <button type="button" data-tab="shed"><span class="hs-appic" style="background:#f3e6cf;position:relative">📦<i class="hs-appbadge" id="hsShedBadge" hidden></i></span>Shed</button> <button type="button" data-tab="up"><span class="hs-appic" style="background:#e2f4d9">⛺</span>Upgrades</button> </div> <div class="hs-tabs"> <button type="button" data-tab="order" aria-pressed="true">🛒 Order</button> <button type="button" data-tab="shed" aria-pressed="false">📦 Shed</button> <button type="button" data-tab="up" aria-pressed="false">⛺ Upgrades</button> </div> <div class="hs-cats" id="hsShopCats" hidden></div> <div class="hs-list" id="hsShopList"></div> <button class="hs-homebtn" id="hsPhoneHome" aria-label="Home screen"></button> </div> </div> <section class="hs-about"> <p>Your own corner of Banana World. Bananacoins come from playing anywhere —
+<a href="/rave/">the rave</a>, <a href="/park/">the park</a> and
+<a href="/beach/">the bay</a> all pay.</p> </section> </div> <script type="module" src="/_astro/homestead.astro_astro_type_script_index_0_lang.THlvipjN.js"></script>  </main> <footer class="block block--dark" data-astro-cid-sz7xmlte> <p class="kicker kicker--light" data-astro-cid-sz7xmlte>More banana</p> <h2 data-astro-cid-sz7xmlte>The banana lives here</h2> <div class="ft-cols" data-astro-cid-sz7xmlte> <nav class="ft-col" aria-label="The GIF" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>The GIF</h3> <a href="/dancing-banana-gif-meme/" data-astro-cid-sz7xmlte>The story &amp; the GIF</a><a href="/banana-memes/" data-astro-cid-sz7xmlte>Banana memes</a><a href="/dancing-banana-emoji/" data-astro-cid-sz7xmlte>Dancing banana emoji</a><a href="/peanut-butter-jelly-time/" data-astro-cid-sz7xmlte>Peanut Butter Jelly Time</a><a href="/dancing-banana-wallpaper/" data-astro-cid-sz7xmlte>Wallpapers</a><a href="/dancing-banana-remixes/" data-astro-cid-sz7xmlte>Community remixes</a> </nav><nav class="ft-col" aria-label="Make" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>Make</h3> <a href="/make-a-banana/" data-place="footer" data-astro-cid-sz7xmlte>Make your own</a><a href="/forge/" data-astro-cid-sz7xmlte>Forge an emoji</a><a href="/guides/" data-astro-cid-sz7xmlte>Emote size guides</a> </nav><nav class="ft-col" aria-label="The place" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>The place</h3> <a href="/rave/" data-astro-cid-sz7xmlte>Join the rave</a><a href="/beach/" data-astro-cid-sz7xmlte>Join the beach</a><a href="/park/" data-astro-cid-sz7xmlte>Join the park</a><a href="/banana-of-the-day/" data-astro-cid-sz7xmlte>Banana of the day</a><a href="https://discord.gg/cuF6BHfZT4" data-place="footer_discord" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>The Discord ↗</a> </nav><nav class="ft-col" aria-label="The goods" data-astro-cid-sz7xmlte> <h3 data-astro-cid-sz7xmlte>The goods</h3> <a href="/shop/" data-astro-cid-sz7xmlte>Shop</a><a href="/license-the-dancing-banana/" data-astro-cid-sz7xmlte>License it</a> </nav> </div> <p class="lead footer__host" data-astro-cid-sz7xmlte>
+Your host:
+<a href="/me/" data-astro-cid-sz7xmlte>Me</a> ·
+<a href="/projects/" data-astro-cid-sz7xmlte>Projects</a> ·
+<a href="https://www.djsentry.com" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>Music ↗</a> ·
+<a href="/contact/" data-astro-cid-sz7xmlte>Contact</a> ·
+<a href="/privacy/" data-astro-cid-sz7xmlte>Privacy</a> ·
+<a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener" data-astro-cid-sz7xmlte><svg class="pxi" viewBox="0 0 140 130" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="30" y="0" width="10" height="10" fill="#a9b6c6"></rect><rect x="60" y="0" width="10" height="10" fill="#a9b6c6"></rect><rect x="20" y="10" width="10" height="10" fill="#a9b6c6"></rect><rect x="50" y="10" width="10" height="10" fill="#a9b6c6"></rect><rect x="30" y="20" width="10" height="10" fill="#a9b6c6"></rect><rect x="60" y="20" width="10" height="10" fill="#a9b6c6"></rect><rect x="10" y="30" width="90" height="10" fill="#262233"></rect><rect x="10" y="40" width="10" height="10" fill="#262233"></rect><rect x="20" y="40" width="20" height="10" fill="#6e4423"></rect><rect x="40" y="40" width="10" height="10" fill="#d9a066"></rect><rect x="50" y="40" width="40" height="10" fill="#6e4423"></rect><rect x="90" y="40" width="10" height="10" fill="#262233"></rect><rect x="10" y="50" width="10" height="10" fill="#262233"></rect><rect x="20" y="50" width="70" height="10" fill="#ffffff"></rect><rect x="90" y="50" width="30" height="10" fill="#262233"></rect><rect x="10" y="60" width="10" height="10" fill="#262233"></rect><rect x="20" y="60" width="70" height="10" fill="#ffffff"></rect><rect x="90" y="60" width="10" height="10" fill="#262233"></rect><rect x="110" y="60" width="10" height="10" fill="#262233"></rect><rect x="10" y="70" width="10" height="10" fill="#262233"></rect><rect x="20" y="70" width="70" height="10" fill="#ffffff"></rect><rect x="90" y="70" width="30" height="10" fill="#262233"></rect><rect x="10" y="80" width="10" height="10" fill="#262233"></rect><rect x="20" y="80" width="10" height="10" fill="#e9edf4"></rect><rect x="30" y="80" width="50" height="10" fill="#ffffff"></rect><rect x="80" y="80" width="10" height="10" fill="#e9edf4"></rect><rect x="90" y="80" width="10" height="10" fill="#262233"></rect><rect x="20" y="90" width="10" height="10" fill="#262233"></rect><rect x="30" y="90" width="50" height="10" fill="#e9edf4"></rect><rect x="80" y="90" width="10" height="10" fill="#262233"></rect><rect x="10" y="100" width="90" height="10" fill="#262233"></rect><rect x="0" y="110" width="10" height="10" fill="#262233"></rect><rect x="10" y="110" width="10" height="10" fill="#a9b6c6"></rect><rect x="20" y="110" width="70" height="10" fill="#e9edf4"></rect><rect x="90" y="110" width="10" height="10" fill="#a9b6c6"></rect><rect x="100" y="110" width="10" height="10" fill="#262233"></rect><rect x="10" y="120" width="90" height="10" fill="#262233"></rect> </svg> Tip</a> </p> <p class="copyright" data-astro-cid-sz7xmlte>© <span id="year" data-astro-cid-sz7xmlte>2026</span> Trym Stene · the banana guy <svg class="pxi" viewBox="0 0 140 140" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="100" y="0" width="30" height="10" fill="#262233"></rect><rect x="90" y="10" width="20" height="10" fill="#262233"></rect><rect x="110" y="10" width="10" height="10" fill="#6e4423"></rect><rect x="120" y="10" width="10" height="10" fill="#262233"></rect><rect x="80" y="20" width="10" height="10" fill="#262233"></rect><rect x="90" y="20" width="10" height="10" fill="#fff3b0"></rect><rect x="100" y="20" width="20" height="10" fill="#ffd23f"></rect><rect x="120" y="20" width="10" height="10" fill="#262233"></rect><rect x="80" y="30" width="10" height="10" fill="#262233"></rect><rect x="90" y="30" width="10" height="10" fill="#fff3b0"></rect><rect x="100" y="30" width="20" height="10" fill="#ffd23f"></rect><rect x="120" y="30" width="10" height="10" fill="#262233"></rect><rect x="70" y="40" width="10" height="10" fill="#262233"></rect><rect x="80" y="40" width="10" height="10" fill="#fff3b0"></rect><rect x="90" y="40" width="20" height="10" fill="#ffd23f"></rect><rect x="110" y="40" width="10" height="10" fill="#f5a623"></rect><rect x="120" y="40" width="10" height="10" fill="#262233"></rect><rect x="70" y="50" width="10" height="10" fill="#262233"></rect><rect x="80" y="50" width="10" height="10" fill="#fff3b0"></rect><rect x="90" y="50" width="20" height="10" fill="#ffd23f"></rect><rect x="110" y="50" width="10" height="10" fill="#f5a623"></rect><rect x="120" y="50" width="10" height="10" fill="#262233"></rect><rect x="60" y="60" width="10" height="10" fill="#262233"></rect><rect x="70" y="60" width="10" height="10" fill="#fff3b0"></rect><rect x="80" y="60" width="20" height="10" fill="#ffd23f"></rect><rect x="100" y="60" width="10" height="10" fill="#f5a623"></rect><rect x="110" y="60" width="10" height="10" fill="#262233"></rect><rect x="50" y="70" width="10" height="10" fill="#262233"></rect><rect x="60" y="70" width="10" height="10" fill="#fff3b0"></rect><rect x="70" y="70" width="30" height="10" fill="#ffd23f"></rect><rect x="100" y="70" width="10" height="10" fill="#f5a623"></rect><rect x="110" y="70" width="10" height="10" fill="#262233"></rect><rect x="40" y="80" width="10" height="10" fill="#262233"></rect><rect x="50" y="80" width="10" height="10" fill="#fff3b0"></rect><rect x="60" y="80" width="30" height="10" fill="#ffd23f"></rect><rect x="90" y="80" width="10" height="10" fill="#f5a623"></rect><rect x="100" y="80" width="10" height="10" fill="#262233"></rect><rect x="20" y="90" width="20" height="10" fill="#262233"></rect><rect x="40" y="90" width="10" height="10" fill="#fff3b0"></rect><rect x="50" y="90" width="30" height="10" fill="#ffd23f"></rect><rect x="80" y="90" width="10" height="10" fill="#f5a623"></rect><rect x="90" y="90" width="10" height="10" fill="#262233"></rect><rect x="10" y="100" width="10" height="10" fill="#262233"></rect><rect x="20" y="100" width="50" height="10" fill="#ffd23f"></rect><rect x="70" y="100" width="10" height="10" fill="#f5a623"></rect><rect x="80" y="100" width="10" height="10" fill="#262233"></rect><rect x="0" y="110" width="10" height="10" fill="#262233"></rect><rect x="10" y="110" width="40" height="10" fill="#ffd23f"></rect><rect x="50" y="110" width="20" height="10" fill="#f5a623"></rect><rect x="70" y="110" width="10" height="10" fill="#262233"></rect><rect x="0" y="120" width="10" height="10" fill="#262233"></rect><rect x="10" y="120" width="10" height="10" fill="#ffd23f"></rect><rect x="20" y="120" width="30" height="10" fill="#f5a623"></rect><rect x="50" y="120" width="10" height="10" fill="#262233"></rect><rect x="10" y="130" width="40" height="10" fill="#262233"></rect> </svg></p> </footer>  <script src="/js/main.js"></script> </body> </html>

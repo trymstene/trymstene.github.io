@@ -1,0 +1,1496 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="canonical" href="https://trymstene.com/beach/"><title>Banana Bay — a free banana beach game</title><meta name="description" content="Play Banana Bay, a free banana game — your dancing banana hits the beach for volleyball, shell-hunting, fishing and the pier’s claw machine, with players from around the world."><meta name="robots" content="index,follow,max-image-preview:large"><meta name="google-site-verification" content="aI-qTkBS_ACkw7mXPWsadMKDL6ASRH6QY5dtVw-84lI"><meta name="facebook-domain-verification" content="mb67oo0jrwn4y5cd5qt0wfte6v9cpx"><meta property="og:type" content="website"><meta property="og:title" content="Banana Bay 🏖"><meta property="og:description" content="Play Banana Bay, a free banana game — your dancing banana hits the beach for volleyball, shell-hunting, fishing and the pier’s claw machine, with players from around the world."><meta property="og:url" content="https://trymstene.com/beach/"><meta property="og:image" content="https://trymstene.com/assets/og/beach.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Banana Bay 🏖"><meta property="og:site_name" content="Trym Stene — the banana guy"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><!-- self-hosted fonts: no third-party round trips (perf + GDPR) --><link rel="preload" href="/fonts/spacegrotesk-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/archivoblack-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/styles.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Banana Bay","url":"https://trymstene.com/beach/","applicationCategory":"GameApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript. No download.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@id":"https://trymstene.com/#trym"},"description":"A free browser beach world for custom dancing bananas — volleyball, seashells, fishing and a claw machine, with players worldwide."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Banana Bay free to play?","acceptedAnswer":{"@type":"Answer","text":"Yes. Banana Bay is a free banana game you play right in your browser — no account, no download. Your custom dancing banana walks straight onto the sand."}},{"@type":"Question","name":"What can you do at Banana Bay?","acceptedAnswer":{"@type":"Answer","text":"Play beach volleyball, hunt the day’s seashells along the shore, fish off the pier, dig up Captain Sabreface’s daily buried treasure, and win the giant plush banana from the pier’s claw machine."}},{"@type":"Question","name":"Can you play Banana Bay with other people?","acceptedAnswer":{"@type":"Answer","text":"Yes. The beach is live — other visitors’ bananas share the sand with you in real time, and you can pass the volleyball back and forth."}},{"@type":"Question","name":"How do you get to Banana Bay?","acceptedAnswer":{"@type":"Answer","text":"Banana Bay sits at the end of the park road. Dress your banana in the free builder, walk through the park, and follow the shore road down to the beach."}}]}</script><link rel="preload" as="image" href="/assets/beach/beach.png"><link rel="preconnect" href="https://banana-rave.trymstene.workers.dev"><style>
+    body { background: #180f22; }
+    .bh-wrap { max-width: 1000px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }
+    .bh-sign {
+      font-family: "Archivo Black", sans-serif; text-align: center;
+      color: #ffb347; font-size: clamp(1.4rem, 6.4vw, 2.2rem); line-height: 1.05;
+      margin: 0.7rem 0 0.15rem; letter-spacing: 0.02em;
+      text-shadow: 0 0 12px rgba(255, 179, 71, 0.5), 0 0 30px rgba(240, 106, 47, 0.3);
+    }
+    .bh-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
+
+    /* the FRAME (border + shadow) is on the stage so the action band can sit
+       BELOW the map inside it — the Rave's .rv-club shape. */
+    .bh-stage { border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
+    /* the VIEWPORT: a window onto a world bigger than it, both axes */
+    .bh-view {
+      position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      background: #5c2a52;
+    }
+    .bh-world {
+      position: absolute; left: 0; top: 0;
+      background: url('/assets/beach/beach.png') 0 0 / 100% 100% no-repeat;
+      image-rendering: pixelated; will-change: transform;
+    }
+    /* 🌊 THE LIVING SEA — two tileable wave layers drifting at different
+       speeds over the water band, plus a stepped foam wash at the shoreline.
+       The tiles are 160px wide, so translating exactly one tile loops
+       seamlessly. Percentages are of the 1400×620 world plate. */
+    .bh-sea {
+      position: absolute; left: 0; width: 100%;
+      pointer-events: none; image-rendering: pixelated;
+    }
+    /* 🌊 THE PACK'S OWN WATER ANIMATION. The sea tileset ships FOUR frames
+       (72 columns = 4 × 18); each is baked into a 48px-wide tileable strip
+       covering the water band AND the single shore row. We stack the four and
+       step their opacity — the same flip-book pattern as the rave's poof and
+       the park's birds. This layer is opaque and sits exactly over the plate's
+       own water, so with motion off the baked frame shows through unchanged. */
+    .bh-sea {
+      top: 0; height: 26.18%;                     /* y 0 → 288: water + shore */
+      background-repeat: repeat-x;
+      background-size: auto 100%;
+      opacity: 0;
+      animation: bhSeaFlip 0.72s steps(1) infinite;
+    }
+    .bh-sea--0 { background-image: url('/assets/beach/sea-f0.png'); animation-delay: 0s; }
+    .bh-sea--1 { background-image: url('/assets/beach/sea-f1.png'); animation-delay: -0.18s; }
+    .bh-sea--2 { background-image: url('/assets/beach/sea-f2.png'); animation-delay: -0.36s; }
+    .bh-sea--3 { background-image: url('/assets/beach/sea-f3.png'); animation-delay: -0.54s; }
+    @keyframes bhSeaFlip { 0%, 24.99% { opacity: 1; } 25%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .bh-sea { display: none; } }
+    /* ⛏ THE DIG. Patches sit UNDER everything that walks (z 2) so your banana
+       and the holes read as being on top of the sand, not inside it. The
+       patch is a soft, ragged blob on purpose — a crisp rectangle of darker
+       sand reads as a UI overlay rather than turned-over ground. */
+    /* ⭐ the y-sorted prop layer. NO z-index here — each prop gets its own
+       from its ground line in JS, and they must compete in .bh-world's
+       stacking context, not inside a wrapper's. */
+    .bh-ov {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    /* ⛱ clickable parasols: tap to open/close; the shadow fades with the state */
+    .bh-umb { position: absolute; cursor: pointer; }
+    .bh-umb__canopy {
+      position: absolute; inset: 0; pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+      background-position: 50% 100%; transform-origin: 50% 100%;
+    }
+    /* a soft pool of shade under an OPEN parasol, gone when it's folded */
+    .bh-umb__shadow {
+      position: absolute; left: 50%; bottom: 2%;
+      width: 150%; height: 30%; transform: translateX(-50%);
+      background: radial-gradient(ellipse at center,
+                  rgba(28,18,8,0.34) 0%, rgba(28,18,8,0) 70%);
+      transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none;
+    }
+    .bh-umb:not(.is-open) .bh-umb__shadow {
+      opacity: 0; transform: translateX(-50%) scale(0.35);
+    }
+    @keyframes bhUmbPop {
+      0% { transform: scale(1); }
+      45% { transform: scaleX(0.82) scaleY(1.05); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bh-umb__canopy { animation: none !important; } }
+
+    /* 🎣 fishing — rod + line are world-length rotated segments; the bobber
+       floats in the sea and shakes on a bite */
+    .bh-fishrod {
+      position: absolute; height: 3px; margin-top: -1.5px; transform-origin: 0 50%;
+      background: linear-gradient(90deg, #6b4320, #b9823f);
+      border-radius: 2px; pointer-events: none;
+    }
+    /* the line hangs off the rod tip; it sways around its own base angle
+       (--ang, set from JS) in time with the float's bob so the two move as one */
+    .bh-fishline {
+      position: absolute; height: 1px; transform-origin: 0 50%;
+      background: rgba(255, 255, 255, 0.82); pointer-events: none;
+      transform: rotate(var(--ang, 0deg));
+      animation: bhLineSway 1.9s ease-in-out infinite;
+    }
+    @keyframes bhLineSway {
+      0%, 100% { transform: rotate(calc(var(--ang, 0deg) - 0.9deg)); }
+      50%      { transform: rotate(calc(var(--ang, 0deg) + 1.1deg)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-fishline { animation: none; transform: rotate(var(--ang, 0deg)); }
+    }
+    .bh-bob {
+      position: absolute; width: 15px; height: 15px; margin: -8px 0 0 -8px;
+      border-radius: 50%; cursor: pointer;
+      background: radial-gradient(circle at 50% 34%, #ff5545 0 46%, #fff 48% 100%);
+      border: 2px solid #6d1509; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+      animation: bhBob 1.9s ease-in-out infinite;
+    }
+    /* invisible fingertip-sized tap pad so the ~15px float is easy to reel on a
+       phone (the visible dot stays 15px; the JS also reels near-miss taps) */
+    .bh-bob::before { content: ''; position: absolute; inset: -13px; border-radius: 50%; }
+    .bh-bob.is-bite { animation: bhBobBite 0.26s ease-in-out infinite; }
+    /* a rare-or-better thrashes harder and flashes GOLD — you can feel it
+       coming before you reel, which is the whole anticipation beat */
+    .bh-bob.is-bite--rare {
+      animation: bhBobBiteBig 0.16s ease-in-out infinite;
+      box-shadow: 0 0 0 3px rgba(255, 213, 74, 0.55), 0 2px 4px rgba(0, 0, 0, 0.35);
+    }
+    .bh-bob.is-bite--rare::after { color: #ffd54a; font-size: 18px; top: -23px; }
+    @keyframes bhBobBiteBig {
+      0%, 100% { transform: translate(0, 0) scale(1.12); }
+      25% { transform: translate(-4px, 4px) scale(1.12); }
+      75% { transform: translate(4px, 6px) scale(1.12); }
+    }
+    .bh-bob.is-bite::after {
+      content: '!'; position: absolute; left: 50%; top: -19px; transform: translateX(-50%);
+      font: 800 14px/1 "Archivo Black", sans-serif; color: #ffe135;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000;
+    }
+    @keyframes bhBob { 0%, 100% { transform: translateY(-1.5px); } 50% { transform: translateY(2px); } }
+    @keyframes bhBobBite {
+      0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 3px); }
+      75% { transform: translate(2px, 4px); }
+    }
+    @media (prefers-reduced-motion: reduce) { .bh-bob { animation: none; } }
+
+    /* (🐚 Shelly's notice board is a PLACED SPRITE — Camping Sign_4 — not a DOM
+        widget. It was briefly a live peg-per-species grid here, which made
+        scenery into a second UI. Scenery signals the NPC; the panel holds the
+        collection. Same rule for the Captain's board.) */
+
+    /* 🔥 THE BONFIRE. The pack's own 6-frame campfire (48×96 per frame, so the
+       box is 1:2), stood ON the ring's centre line, plus a pool of warm light.
+       Medium-sized on purpose: big enough to be the evening's focal point,
+       small enough that four chairs still frame it. */
+    .bh-fire {
+      position: absolute; width: 1.3%; aspect-ratio: 1 / 2;
+      transform: translate(-50%, -78%); pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+      background-image: url('/assets/beach/a-fire.png');
+      background-size: 600% 100%;                 /* 6 frames */
+      animation: bhFireStrip 0.6s steps(6) infinite;
+    }
+    @keyframes bhFireStrip {
+      from { background-position-x: 0%; }
+      to   { background-position-x: 120%; }       /* = 100% × 6 / 5 */
+    }
+    /* light on the sand — it breathes, so the fire feels alive from a distance */
+    .bh-fireglow {
+      position: absolute; width: 13%; aspect-ratio: 3 / 2;
+      transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
+      background: radial-gradient(ellipse at center,
+                  rgba(255, 176, 68, 0.34) 0%, rgba(255, 140, 40, 0.16) 42%,
+                  rgba(255, 120, 30, 0) 72%);
+      animation: bhFireGlow 2.4s ease-in-out infinite;
+    }
+    @keyframes bhFireGlow {
+      0%, 100% { opacity: 0.72; transform: translate(-50%, -50%) scale(0.95); }
+      50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.06); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-fire { animation: none; }
+      .bh-fireglow { animation: none; opacity: 0.85; }
+    }
+
+    /* 🐟 SHOALS UNDER THE SURFACE. The pack's fish are SHADOWS painted in
+       darker shades of the water, so they stay low-contrast and take no ink
+       outline. Two animations at once, on different properties: the strip
+       steps the frames, the drift walks them slowly across the water.
+       ⚠️ frame maths per the crab note above — end = 100% × N / (N − 1). */
+    .bh-fish {
+      position: absolute; pointer-events: none; image-rendering: pixelated;
+      width: 1.74%; aspect-ratio: 1;           /* one 48px tile of the 2760 map */
+      background-repeat: no-repeat; opacity: 0.92;
+      /* ⚠️ the pack paints these barely a shade off ITS water: measured against
+         OUR sea the raw sprite is only a 38 total-channel delta — invisible.
+         brightness(0.78) takes that to ~105, which reads as a shadow under the
+         surface without turning into a black blob (0.70 was too heavy). */
+      filter: brightness(0.78) saturate(1.2);
+    }
+    .bh-fish--1 {
+      background-image: url('/assets/beach/a-fish1.png'); background-size: 1200% 100%;
+      animation: bhFish12 1.5s steps(12) infinite, bhFishDrift 27s ease-in-out infinite alternate;
+    }
+    .bh-fish--2 {
+      background-image: url('/assets/beach/a-fish2.png'); background-size: 1400% 100%;
+      animation: bhFish14 1.7s steps(14) infinite, bhFishDrift 34s ease-in-out infinite alternate;
+    }
+    .bh-fish--3 {
+      background-image: url('/assets/beach/a-fish3.png'); background-size: 1400% 100%;
+      animation: bhFish14 1.9s steps(14) infinite, bhFishDrift 41s ease-in-out infinite alternate;
+    }
+    @keyframes bhFish12 { from { background-position-x: 0%; } to { background-position-x: 109.0909%; } }
+    @keyframes bhFish14 { from { background-position-x: 0%; } to { background-position-x: 107.6923%; } }
+    @keyframes bhFishDrift {
+      from { transform: translate(-50%, -50%) translateX(-38px); }
+      to   { transform: translate(-50%, -50%) translateX(38px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-fish { animation: none; transform: translate(-50%, -50%); }
+    }
+    /* the catch reveal card */
+    .bh-card--catch { max-width: 340px; text-align: center; }
+    .bh-catch { display: grid; gap: 0.5rem; place-items: center; margin: 0.4rem 0 0.9rem; }
+    .bh-catch p { margin: 0; font-size: 0.9rem; opacity: 0.95; }
+    .bh-catch b { color: #ffd98a; }
+    .bh-catch__big { font-size: 3rem; line-height: 1; }
+    .bh-catch__shell {
+      display: block; width: 64px; height: 64px;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    /* 🐟 one 16px tile of the 35-tile fish atlas, blown up */
+    .bh-catch__fish {
+      display: block; width: 96px; height: 96px;
+      background-image: url('/assets/beach/fish.png');
+      background-size: 3500% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .bh-catch__new { margin: 0 !important; font-size: 0.82rem !important; color: #ffe135; }
+    .bh-catch__note { margin: 0 !important; font-size: 0.78rem !important; opacity: 0.7; }
+
+    /* ---- 🐟 GIL'S LEDGER ---------------------------------------------- */
+    .bh-fishgrid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem;
+      margin-bottom: 0.85rem;
+    }
+    @media (min-width: 520px) { .bh-fishgrid { grid-template-columns: repeat(7, 1fr); } }
+    .bh-fishslot {
+      position: relative; aspect-ratio: 1; border: 2px solid #000; background: #241d33;
+      display: grid; place-items: center; border-bottom-width: 4px; cursor: pointer;
+    }
+    .bh-fishslot:hover { outline: 2px solid #ffb347; outline-offset: 1px; }
+    .bh-fishslot i {
+      display: block; width: 84%; aspect-ratio: 1;
+      background-image: url('/assets/beach/fish.png');
+      background-size: 3500% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    /* an uncaught fish is a SILHOUETTE, not a blank — you can see the shape of
+       what's missing, which is what makes a gap itch */
+    .bh-fishslot.is-missing i { filter: brightness(0) opacity(0.34); }
+    .bh-fishslot b {
+      position: absolute; right: -2px; bottom: -4px; font-size: 0.5rem; font-weight: 800;
+      background: #ffb347; color: #241505; border: 2px solid #000; padding: 0 0.15rem;
+    }
+    .bh-ledgerbar {
+      height: 10px; border: 2px solid #000; background: #241d33; margin: 0 0 0.4rem;
+    }
+    .bh-ledgerbar i { display: block; height: 100%; background: #6ee7a0; transition: width 0.4s ease; }
+
+    /* 🔎 THE SPECIMEN CARD — the tap-to-inspect popup that replaced the dead
+       title= hovers. Sits above the collection grids; one card serves shells +
+       fish, its accent painted by the species' rarity (--tier, set in JS). */
+    /* doubled class so z-index:16 beats the base .bh-panel (z:12) declared later
+       in the sheet — puts the specimen card above the collection grids */
+    .bh-panel.bh-panel--detail { z-index: 16; }
+    .bh-detailcard {
+      position: relative; width: min(300px, 86vw); max-height: 100%; overflow: auto;
+      background: #17121f; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      padding: 1.1rem 1rem 1rem; text-align: center; animation: bhDetailPop 0.18s ease-out;
+    }
+    @keyframes bhDetailPop { from { transform: translateY(6px) scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+    .bh-detailcard__x {
+      position: absolute; top: 2px; right: 4px; appearance: none; background: none; border: 0;
+      color: #fffdf5; font-size: 1.15rem; font-weight: 800; line-height: 1; cursor: pointer;
+      opacity: 0.65; padding: 6px 9px;
+    }
+    .bh-detailcard__x:hover { opacity: 1; }
+    .bh-detailcard__art {
+      width: 132px; height: 132px; margin: 0.2rem auto 0; display: grid; place-items: center;
+      background: #241d33; border: 3px solid var(--tier, #ffb347);
+    }
+    .bh-detailcard__art i {
+      display: block; width: 92px; height: 92px; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .bh-detailcard.is-locked .bh-detailcard__art i { filter: brightness(0) opacity(0.32); }
+    /* 🏷 THE RARITY BADGE — a tilted sticker-pill whose COLOUR is the rarity
+       (grey common · blue uncommon · yellow rare · orange legendary). No stars;
+       the colour carries it. Shared with the fishing catch reveal. */
+    .bh-tierpill {
+      display: inline-block; transform: rotate(-3.5deg); margin: 0 0 0.5rem;
+      background: var(--tier, #ffb347); color: #241505; line-height: 1;
+      font-family: "Archivo Black", sans-serif; font-size: 0.64rem; letter-spacing: 0.08em;
+      text-transform: uppercase; white-space: nowrap; padding: 5px 12px 4px;
+      border: 2px solid #000; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+    }
+    /* in the card the pill straddles the bottom of the art — slapped-on like a
+       real sticker, and it saves the row it used to sit on */
+    .bh-detailcard .bh-tierpill { position: relative; margin-top: -0.85rem; }
+    .bh-detailcard__name {
+      font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1.05rem; margin: 0.1rem 0 0.35rem;
+    }
+    .bh-detailcard__have { margin: 0 0 0.55rem; font-size: 0.8rem; font-weight: 700; color: #ffd98a; }
+    .bh-detailcard__desc { margin: 0; font-size: 0.86rem; line-height: 1.45; opacity: 0.92; }
+
+    /* the dock sits ABOVE the opaque animated sea (which was painting over it)
+       but below anything that walks — a floor must not occlude who's on it. */
+    .bh-pier {
+      position: absolute; z-index: 60; pointer-events: none;
+      image-rendering: pixelated; background-image: url('/assets/beach/pier.png');
+      background-size: 100% 100%; background-repeat: no-repeat;
+    }
+    .bh-digs { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+    .bh-hole {
+      position: absolute; width: 0.92%; aspect-ratio: 22 / 16;
+      transform: translate(-50%, -60%); image-rendering: pixelated;
+      background-image: url('/assets/beach/dig-hole.png');
+      background-size: 100% 100%; background-repeat: no-repeat;
+      transition: opacity 0.9s ease;   /* the tide fills them in — see HOLE_LIFE */
+    }
+    /* 🎮 THE ACTION BAR — the Rave's control band (.rv-hud), beach edition. An
+       IN-FLOW band BELOW the map, never over the play area. React · 🪏 Dig ·
+       Sound, centred, on a dark strip that reads as part of the frame. */
+
+    /* ⚙ THE SOUND BUTTON IS A SETTING, NOT AN ACTION (Trym) — it is pinned to
+       the right and never moves, while the things you actually DO stay centred.
+       ⚠️ the ::before is a spacer the same width as the button: with an auto
+       margin on each side the free space splits evenly, so the middle group is
+       centred in the WHOLE bar rather than in what is left over. */
+    .bh-actions::before { content: ''; min-width: 46px; margin-right: auto; }
+    #bhAudio { margin-left: auto; }
+    .bh-actions {
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      background: #17121f; border-top: 4px solid #000; padding: 0.6rem 0.8rem;
+      flex-wrap: wrap; touch-action: manipulation;
+    }
+    .bh-act {
+      appearance: none; font: inherit; font-weight: 800; font-size: 0.95rem;
+      border: 3px solid #000; box-shadow: 3px 3px 0 #000; cursor: pointer;
+      line-height: 1; white-space: nowrap; display: inline-flex; align-items: center;
+      gap: 0.35rem; transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .bh-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    /* 🪏 Dig is the PRIMARY — big + yellow, the verb this beach is built on */
+    .bh-act--dig { background: #ffb347; color: #241505; padding: 0.55rem 1.15rem; }
+    /* react + sound are secondary — dark icon buttons, like the HUD pills */
+    .bh-act--icon { background: #241d33; color: #fffdf5; padding: 0.5rem 0.7rem; font-size: 1.1rem; min-width: 46px; justify-content: center; }
+    /* 🥅 THE NET, ON ITS OWN LAYER so things can pass BEHIND it.
+       The net is a wall standing on the sand at NET.y but drawn rising ~138px
+       up the screen, so its mesh is nowhere near the line you collide with.
+       Baked only into the background plate it could only ever draw behind the
+       banana — you appeared to walk clean through the net and then stop dead
+       at nothing. Now the banana and ball flip between z 4 and 6 around this
+       layer's z 5, which is what makes a top-down wall read as a wall.
+       Position/size come from the generated beach-geo.js, set in JS.
+       ⭐ The 0.72 is a free trick, not a compromise: the SAME net is still
+       baked into the background plate underneath, so where nothing is between
+       them the two stack to a fully solid net — but a banana standing behind
+       shows faintly THROUGH the mesh, which is what a real volleyball net
+       does. Without it you lose sight of your own banana at the net. */
+    .bh-net { position: absolute; z-index: 5; pointer-events: none; opacity: 0.72;
+      image-rendering: pixelated; background-image: url('/assets/beach/net.png');
+      background-size: 100% 100%; background-repeat: no-repeat; }
+    /* sprites live IN the world and size in % of it → camera-safe */
+    /* sizes are % OF THE WORLD (2400×1100) so sprites ride the camera free.
+       The banana runs ~86 art px (3.6%) — deliberately BIGGER than the pack's
+       own character scale, because at 1:1 it read as a doll among the
+       furniture. It's the star of the site; heroic beats technically correct. */
+    .bh-me { position: absolute; z-index: 6; width: 3.6%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-me::after {                     /* the contact shadow — without it a
+                                           flat sprite floats over the sand */
+      content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
+      transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
+      border-radius: 50%; z-index: -1;
+    }
+    /* 🏊 IN THE WATER: the sand ellipse switches off (a contact shadow in the
+       sea is nonsense) and a RIPPLE RING takes over — at the WATERLINE, not at
+       the feet, which are ~46 art px lower and would put a ring on the sand
+       behind the swimmer. --wet is the waterline as a % of the element height,
+       set by drawMe(). The wet TINT itself is painted into the canvas by
+       applySubmerge(); this is only the ring, because a CSS overlay would tint
+       the empty canvas beside the banana too. */
+    .bh-me.is-wet::after { display: none; }
+    .bh-me__ring { display: none; }
+    .bh-me.is-wet .bh-me__ring {
+      display: block; position: absolute; left: 50%;
+      bottom: calc(var(--wet, 14) * 1%);
+      width: 92%; aspect-ratio: 3 / 1; z-index: -1; pointer-events: none;
+      border: 2px solid rgba(140, 243, 230, 0.55);
+      border-radius: 50%; transform: translate(-50%, 50%);
+      animation: bhRipple 1.9s ease-out infinite;
+    }
+    @keyframes bhRipple {
+      0% { transform: translate(-50%, 50%) scale(0.55); opacity: 0.75; }
+      100% { transform: translate(-50%, 50%) scale(1.25); opacity: 0; }
+    }
+    /* 🏐🌊 THE WATER BALL — floats, so it has no z, no gravity and no shadow.
+       The sprite draws its own waterline collar. */
+    .bh-wball {
+      position: absolute; width: 2.1%; aspect-ratio: 1;
+      transform: translate(-50%, -90%); pointer-events: none;
+      image-rendering: pixelated;
+      background: url('/assets/beach/a-floatball.png') 0 0 / 600% 100% no-repeat;
+      animation: bhWBall 0.86s steps(6) infinite;
+    }
+    /* ⚠️ 120% = 100% × 6/5 — the frame-stepping rule from the crab note below */
+    @keyframes bhWBall { from { background-position-x: 0%; } to { background-position-x: 120%; } }
+    /* the dip in the water the ball sits in — darker teal, not a sand shadow */
+    .bh-wballsh {
+      position: absolute; width: 1.8%; aspect-ratio: 5 / 2; pointer-events: none;
+      transform: translate(-50%, -50%); border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(26, 92, 128, 0.85), rgba(26, 92, 128, 0));
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-me.is-wet .bh-me__ring { animation: none; opacity: 0.5; }
+      .bh-wball { animation: none; }
+    }
+
+    /* 🏐 SANDY — the court's resident. Same build as your own banana (he IS
+       one), so he gets the same size and the same contact shadow; only his
+       z-index differs, because he depth-sorts against the net like you do. */
+    .bh-sandy { position: absolute; z-index: 6; width: 3.6%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-sandy::after {
+      content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
+      transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
+      border-radius: 50%; z-index: -1;
+    }
+    /* 🌐 OTHER VISITORS. Same body as yours — same width, same anchor, same
+       contact shadow — because on this beach a peer IS a banana like you, and
+       any difference in build would read as a difference in kind. The
+       transition is what turns 150ms position packets into a walk instead of
+       a teleport; z-index is set inline by depth(), so peers sort against the
+       net and the palms exactly like you do. */
+    .bh-peer {
+      position: absolute; width: 3.6%; transform: translate(-50%, -100%);
+      pointer-events: none; transition: left 0.18s linear, top 0.18s linear;
+    }
+    .bh-peer::after {
+      content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
+      transform: translateX(-50%); background: rgba(60, 40, 18, 0.28);
+      border-radius: 50%; z-index: -1;
+    }
+    .bh-peer.is-wet::after { display: none; }   /* swimmers, same rule as you */
+    .bh-peer.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
+    .bh-peer span {
+      position: absolute; left: 50%; top: -14px; transform: translateX(-50%);
+      font-size: 0.5rem; font-weight: 800; letter-spacing: 0.05em;
+      color: #fffdf5; text-shadow: 1px 1px 0 #000; white-space: nowrap;
+    }
+    /* leavers go in a puff, never a blink — the world-lib smoke, worn by every
+       room in Banana World (rave, park, and now the bay) */
+    .bh-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }
+    .bh-poof span { position: absolute; inset: 0; opacity: 0; }
+    .bh-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .bh-poof__1 { animation: bhPoofStep 0.75s steps(1) forwards; }
+    .bh-poof__2 { animation: bhPoofStep 0.75s steps(1) 0.25s forwards; }
+    .bh-poof__3 { animation: bhPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes bhPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
+    .bh-peer canvas,
+    .bh-sandy canvas,
+    .bh-me canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .bh-me.is-sitting { transform: translate(-50%, -100%) rotate(-6deg); }
+    /* Captain Sabreface, standing in front of his boathouse — z set in JS (his y) */
+    .bh-cap { position: absolute; width: 4%; transform: translate(-50%, -100%); pointer-events: none; }
+    .bh-cap canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .bh-capbubble {
+      /* ⚠️ 1900: clear of the y-sorted band (100..1200), or a banana walking
+         near the bottom of the map would draw over the speech bubbles. */
+      position: absolute; z-index: 1900; transform: translate(-50%, -100%);
+      width: max-content; max-width: 210px; min-width: 130px; text-align: center;
+      background: #fffdf5; color: #111; border: 3px solid #111;
+      /* ⭐ drop-shadow, NOT box-shadow — THIS is what the black line across the
+         tail was, for four rounds of "it's still there".
+         box-shadow draws a solid rectangle offset 3px below the BORDER BOX,
+         spanning the bubble's whole width. The tail hangs through exactly that
+         band, and the tail's cream only covers the bubble's own 3px border —
+         not the shadow underneath it. So a black bar cut straight across the
+         top of the tail, and no amount of redrawing the tail could ever have
+         fixed it, because the tail was never what was drawing it.
+         drop-shadow follows the element's real rendered SILHOUETTE, tail
+         included, so it hugs the point instead of slicing through it. */
+      filter: drop-shadow(3px 3px 0 #000);
+      padding: 0.4rem 0.5rem;
+      /* 🍹 BARTY'S VOICE. Trym: "The NPC speechbubbles can be more like Bartys
+         speechbubbles visually - Barty in the Rave." Matched to .rv-bubble in
+         rave.astro: uppercase, letter-spaced, 800 weight, the same cream, the
+         same hard 3px offset shadow — and the stepped pixel TAIL below, which
+         is the part that actually makes it a speech bubble instead of a card.
+         The staff of Banana World should sound like they work for the same
+         company. */
+      font-size: 0.58rem; font-weight: 800; letter-spacing: 0.05em;
+      text-transform: uppercase; line-height: 1.5;
+      opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    /* the tail: two shrinking steps straight down, NO rotation — a rotated
+       triangle anti-aliases and stops looking like pixel art */
+    /* 🗨 THE TAIL — a symmetric stepped POINT, not a notch.
+       ⚠️ BUILT WITH GRADIENT BARS, NOT BORDERS, and that is the whole fix.
+       A bordered box can only ever be a rectangle, so the old tail was two
+       stacked rectangles: a cream slot punched through the bubble's black
+       bottom edge with a nub under it. Worse, box-sizing is border-box
+       site-wide, so the lower step — 6px wide with a 3px border each side —
+       had a ZERO content box and rendered as a solid black square. Trym:
+       "the bubble now has a point which is not transparent and looks ugly."
+       It wasn't a point; it was a dot.
+       Now: ::before paints the BLACK silhouette as four bars, 24/18/12/6 wide,
+       and ::after paints the CREAM as three bars inset 3px inside it. The
+       last black bar has no cream over it — that IS the tip. Both start 3px
+       ABOVE the bubble's bottom edge so the cream is continuous with the
+       bubble's interior; a tail that starts below the border reads as a
+       separate object stuck underneath.
+       ⚠️ CENTRED, unlike Barty's: his is pinned at left:68% and offset back
+       toward him, ours translate(-50%) onto the NPC. */
+    /* 🗨 THE TAIL IS ONE INLINE SVG, and that is the fix after three failed
+       attempts with CSS boxes. Trym had to say it four times.
+       WHAT KEPT GOING WRONG:
+         · A bordered box can only be a RECTANGLE, so the first tails were a
+           cream slot punched through the bubble's black edge with a nub under
+           it. And with box-sizing: border-box site-wide, a 6px step with 3px
+           borders has a ZERO content box — it rendered as a solid black dot.
+         · Rebuilt as stacked full-width gradient bars, the widest bar ran
+           straight across the join: the black line he circled.
+         · Rebuilt again as separate black-pip and cream layers on ::before and
+           ::after, the two pseudo-elements did NOT composite the way the
+           computed styles said they should — tinting the cream layer red
+           proved it was painting BELOW the black instead of over it.
+       So: one element, one image, every pixel explicit. No stacking order to
+       get wrong, no box model to fight, and crispEdges keeps it pixel art.
+       THE SHAPE: rows 24 → 18 → 12 wide closing on a 6px tip, with a 3px
+       black edge down both sides — and a CREAM BRIDGE across the top 3px that
+       covers the bubble's own bottom border. That bridge is the whole point:
+       the outline continues from the bubble's outline and the white runs
+       straight through, so it reads as one shape rather than a triangle
+       glued underneath. (Trym: "it should be white at the bottom so it glides
+       in with the speechbubble, thats how you get a white bubble with a white
+       pointed part.")
+       ⚠️ VERIFY THIS AT 6x PAGE ZOOM ON THE REAL PAGE, never by eye in the
+       game — it is 19px tall and I "fixed" it twice against a screenshot of
+       something else. */
+    .bh-capbubble::after {
+      content: ''; position: absolute; top: calc(100% - 3px); left: 50%;
+      transform: translateX(-50%); width: 24px; height: 15px;
+      image-rendering: pixelated;
+      background: url('/assets/beach/bubble-tail.svg') 0 0 / 24px 15px no-repeat;
+    }
+    .bh-capbubble.is-on { opacity: 1; }
+    @media (max-width: 640px) { .bh-capbubble { font-size: 0.52rem; max-width: 180px; } }
+    /* ⚠️⚠️ THERE WAS A SECOND `.bh-capbubble::after` HERE and it is why five
+       rounds of "the black line is still there" went nowhere. It was the
+       original CSS border-triangle:
+           border: 5px solid transparent; border-top-color: #000;
+       Same selector, same specificity, declared AFTER the real tail four lines
+       above — so it won, every time. Every fix I made was to a rule that was
+       being overridden by a duplicate I never grepped for. Trym found it.
+       ⚠️ There is exactly ONE `.bh-capbubble::after` in this file now. If a
+       tail ever misbehaves again, grep the selector before touching geometry:
+       a duplicate later in the sheet beats correct code silently. */
+    /* 🏐 the volleyball — an 8-frame SPIN strip. Unlike the crab this is NOT
+       on a CSS animation: the frame is set from JS so the spin follows the
+       ball's actual travel (a ball whose spin ignores its speed reads as a
+       sliding sticker). Frame maths is the same though — frames sit at
+       multiples of 100/(N-1)%, see the stepping note below. */
+    .bh-ball {
+      position: absolute; z-index: 5; width: 1.18%; aspect-ratio: 1;
+      transform: translate(-50%, -50%); pointer-events: none; image-rendering: pixelated;
+      background-image: url('/assets/beach/volleyball.png');
+      background-size: 800% 100%; background-repeat: no-repeat;
+    }
+    .bh-ballshadow {
+      position: absolute; z-index: 4; width: 1.05%; aspect-ratio: 2 / 1;
+      transform: translate(-50%, -50%); pointer-events: none;
+      background: rgba(0, 0, 0, 0.22); border-radius: 50%;
+    }
+    /* 🦀 FRAME-STEPPING A SPRITE STRIP — the technique, written down properly
+       because I have now got it wrong TWICE.
+       background-position in PERCENT is not pixels. p% means "put the image
+       p% of the way through its overhang", i.e. offset = p × (imageW − boxW).
+       For an N-frame strip at background-size: N00%, the overhang is
+       (N − 1) box widths, so frame i sits at i/(N − 1) — the frames land on
+       multiples of 100/(N − 1)%, NOT 100/N%.
+         · animating 0% → 100% in steps(N) steps by 100/N%, so every frame
+           stops PART-WAY between two frames. That is why the crab appeared to
+           slide sideways inside its own box while the box walked.
+         · the correct end value is 100% × N / (N − 1).
+       For 10 frames: 0% → 111.1111%, steps(10) → 0, 11.11, 22.22 … 100%. ✅
+       (Earlier bug, kept as a warning: -1000% flings the strip ~90 box widths
+       sideways and everything strobes.) */
+    /* the crab's frames are 96×48 in the pack — so the BOX is 2:1, and the
+       crab art fills only the middle ~half of it. */
+    .bh-crab {
+      position: absolute; z-index: 4; width: 3%; aspect-ratio: 2 / 1;
+      transform: translate(-50%, -100%); pointer-events: none;
+      image-rendering: pixelated; background-repeat: no-repeat;
+      background-image: url('/assets/beach/a-crab.png');
+      background-size: 1000% 100%;              /* 10 frames */
+      animation: bhStrip 0.75s steps(10) infinite;
+    }
+    .bh-crab::after {                           /* contact shadow — a crab with
+                                                   no shadow reads as floating */
+      content: ''; position: absolute; left: 50%; bottom: 9%; width: 30%;
+      aspect-ratio: 4 / 1; transform: translateX(-50%);
+      background: rgba(60, 40, 18, 0.26); border-radius: 50%; z-index: -1;
+    }
+    .bh-crab.is-still { animation-play-state: paused; }
+    @keyframes bhStrip {
+      from { background-position-x: 0%; }
+      to   { background-position-x: 111.1111%; }   /* = 100% × 10 / 9 */
+    }
+    @media (prefers-reduced-motion: reduce) { .bh-crab { animation: none; } }
+    /* 🐚 shells waiting on the wet sand */
+    /* ⚠️ 1.05%, not 0.67%. At 0.67 a shell rendered ~15px on screen against a
+       banana's ~80 — the ShoreThings art was there the whole time and simply
+       too small to read as a shell. 1.05% ≈ 29 art px, about a third of a
+       banana: spottable while combing, still clearly a thing on the sand
+       rather than a prop. */
+    .bh-shell {
+      position: absolute; z-index: 3; width: 1.05%; aspect-ratio: 1;
+      transform: translate(-50%, -50%); pointer-events: none;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2400% 100%; background-repeat: no-repeat;
+      image-rendering: pixelated;
+      /* ⭐ THE CONTACT SHADOW, the beach's oldest rule — every object on this
+         map has one so it sits IN the sand rather than on it. The shells were
+         the one thing that never got it, and half the ShoreThings species are
+         cream or white: pale art, on pale sand, with no edge. drop-shadow (not
+         box-shadow) follows the sprite's real silhouette. */
+      filter: drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5));
+      animation: bhShellGlint 2.6s ease-in-out infinite;
+    }
+    /* ⚠️ the shadow has to be repeated in BOTH keyframes — the animation sets
+       `filter` outright, so a shadow declared only on the rule above would be
+       thrown away the moment the glint starts. */
+    @keyframes bhShellGlint {
+      0%, 100% { filter: drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5)); }
+      50% { filter: brightness(1.22) drop-shadow(1px 2px 0 rgba(60, 40, 18, 0.5)); }
+    }
+    /* ⭐ shells wash up CONTINUOUSLY now — each rises out of the sand on spawn,
+       and recedes back under if it's left uncombed too long. */
+    .bh-shell--rising { animation: bhShellRise 0.55s ease-out, bhShellGlint 2.6s ease-in-out infinite; }
+    .bh-shell--receding { animation: bhShellRecede 0.5s ease-in forwards; }
+    /* 🍾 DRIFT ITEM — a sealed map piece floating in from the deep (C2). Inline
+       pixel bottle (no asset). JS drifts it shoreward, tips + tints it by depth;
+       the ::before masks the banana's own underwater blue (WET_DEEP #22648d) onto
+       the bottle shape, faded by --sub (1 deep → 0 at the shore). Half the old
+       size. */
+    .bh-drift {
+      --bottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='14' shape-rendering='crispEdges'%3E%3Crect x='2' y='3' width='19' height='8' fill='%235fa47a'/%3E%3Crect x='2' y='2' width='19' height='1' fill='%23000'/%3E%3Crect x='2' y='11' width='19' height='1' fill='%23000'/%3E%3Crect x='1' y='3' width='1' height='8' fill='%23000'/%3E%3Crect x='21' y='4' width='2' height='6' fill='%235fa47a'/%3E%3Crect x='23' y='4' width='2' height='6' fill='%237a4a21'/%3E%3Crect x='23' y='3' width='2' height='1' fill='%23000'/%3E%3Crect x='23' y='10' width='2' height='1' fill='%23000'/%3E%3Crect x='6' y='5' width='11' height='4' fill='%23efe2b8'/%3E%3Crect x='3' y='4' width='2' height='6' fill='%238fce9f'/%3E%3Crect x='7' y='6' width='9' height='1' fill='%23c9a15a'/%3E%3C/svg%3E");
+      --sub: 0;
+      position: absolute; z-index: 3; width: 1.05%; aspect-ratio: 26 / 14;
+      transform: translate(-50%, -50%); pointer-events: none; will-change: transform, top;
+      image-rendering: pixelated; transition: opacity 0.5s ease;
+      background: center/contain no-repeat var(--bottle);
+      filter: drop-shadow(0 2px 2px rgba(0, 20, 60, 0.4));
+    }
+    .bh-drift::before {
+      content: ''; position: absolute; inset: 0; background: #22648d;
+      mix-blend-mode: multiply; opacity: var(--sub);
+      -webkit-mask: center/contain no-repeat var(--bottle);
+      mask: center/contain no-repeat var(--bottle);
+    }
+    @keyframes bhShellRise {
+      0% { transform: translate(-50%, calc(-50% + 11px)) scale(0.5); opacity: 0; }
+      55% { opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes bhShellRecede {
+      to { transform: translate(-50%, calc(-50% + 8px)) scale(0.5); opacity: 0; }
+    }
+    .bh-float {
+      /* 1950: floats live INSIDE the world, so they must clear the y-sorted
+         band (100..1200) too — otherwise a palm swallows your "🐚 found!" */
+      position: absolute; transform: translate(-50%, -50%); z-index: 1950; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffb347;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 2px 2px 0 #000; white-space: nowrap;
+      animation: bhFloat 0.9s ease-out forwards;
+    }
+    /* a RESULT you're meant to read: rises slower, then holds before fading */
+    .bh-float--hold {
+      font-size: 1rem; color: #ffe135;
+      animation: bhFloatHold 2.6s ease-out forwards;
+    }
+    @keyframes bhFloatHold {
+      0%   { opacity: 0; transform: translate(-50%, -20%) scale(0.9); }
+      12%  { opacity: 1; transform: translate(-50%, -70%) scale(1.06); }
+      22%  { transform: translate(-50%, -62%) scale(1); }
+      72%  { opacity: 1; transform: translate(-50%, -76%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -104%) scale(1); }
+    }
+    @keyframes bhFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
+    /* 🐚 the shell pickup chip — DARK so it reads on yellow sand; XP in green,
+       holds ~2.1s, and rare/legendary shells get a gold glow. */
+    .bh-shellpick {
+      position: absolute; transform: translate(-50%, -50%); z-index: 1950; pointer-events: none; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: "Archivo Black", sans-serif; font-size: 0.8rem; line-height: 1;
+      background: rgba(22, 15, 26, 0.92); border: 2px solid #000; border-radius: 999px;
+      padding: 4px 11px; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
+      animation: bhShellPick 2.1s cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+    }
+    .bh-shellpick__name { color: #fffdf5; }
+    .bh-shellpick__xp { color: #6ee7a0; }
+    .bh-shellpick__new { color: #ffd54a; font-size: 0.66rem; letter-spacing: 0.08em; }
+    .bh-shellpick--grail { border-color: #ffd54a; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 213, 74, 0.6); }
+    .bh-shellpick--grail .bh-shellpick__name { color: #ffe98a; }
+    @keyframes bhShellPick {
+      0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
+      14%  { opacity: 1; transform: translate(-50%, -84%) scale(1.08); }
+      26%  { transform: translate(-50%, -74%) scale(1); }
+      76%  { opacity: 1; transform: translate(-50%, -88%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -118%) scale(0.98); }
+    }
+    /* 🪙 THE TIDE COIN — the stand pack's coin sprites at native art scale,
+       delivered onto the surf line by a foam wash (see coinTick). */
+    .bh-coin {
+      position: absolute; z-index: 3; transform: translate(-50%, -50%);
+      pointer-events: none; image-rendering: pixelated; background-repeat: no-repeat;
+      filter: drop-shadow(0 0 7px rgba(255, 220, 85, 0.55));
+      transition: opacity 0.3s steps(3);
+    }
+    .bh-coin--one { width: 1.6%; aspect-ratio: 1; background-image: url('/assets/banana-stand/coin-spin.png'); background-size: 600% 100%; animation: bhCoinSpin 0.9s steps(6) infinite; }
+    @keyframes bhCoinSpin { to { background-position-x: 120%; } }   /* 100% × 6 / 5 */
+    .bh-coin--pile { width: 1.78%; aspect-ratio: 49 / 31; background-image: url('/assets/banana-stand/coins-spark.png'); background-size: 400% 100%; animation: bhCoinTw 2s steps(4) infinite; }
+    .bh-coin--stack { width: 2.14%; aspect-ratio: 59 / 43; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 400% 100%; animation: bhCoinTw 2.6s steps(4) infinite; }
+    @keyframes bhCoinTw { to { background-position-x: 133.3333%; } }   /* 100% × 4 / 3 */
+    /* the wash: foam sweeps down from the waterline over the spot and recedes;
+       JS lifts the coin's opacity at the peak so the water leaves it behind */
+    .bh-coinwash {
+      position: absolute; z-index: 6; width: 9%; aspect-ratio: 19 / 2;
+      transform: translate(-50%, -50%); pointer-events: none; opacity: 0;
+      border-radius: 50%;
+      background: linear-gradient(180deg,
+        rgba(126, 190, 214, 0) 0%, rgba(126, 190, 214, 0.5) 30%,
+        rgba(214, 240, 248, 0.85) 55%, rgba(255, 255, 255, 0.95) 78%,
+        rgba(255, 255, 255, 0) 100%);
+      animation: bhCoinWash 1.3s ease-in-out forwards;
+    }
+    @keyframes bhCoinWash {
+      0%   { opacity: 0; transform: translate(-50%, -300%) scaleY(0.5); }
+      20%  { opacity: 0.95; }
+      45%  { transform: translate(-50%, -42%) scaleY(1); }
+      58%  { transform: translate(-50%, -56%); opacity: 0.9; }
+      100% { opacity: 0; transform: translate(-50%, -320%) scaleY(0.35); }
+    }
+    .bh-coinpick__n { color: #ffe135; }
+    .bh-hint {
+      /* clears the action bar below it (bottom 10px + ~42px tall) */
+      position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); z-index: 7;
+      background: rgba(0, 0, 0, 0.55); border: 2px solid #000; color: #fffdf5;
+      font-size: 0.78rem; padding: 0.3rem 0.65rem; pointer-events: none; white-space: nowrap;
+      transition: opacity 0.4s ease;
+    }
+    .bh-hint.is-off { opacity: 0; }
+    /* 🚪 the exit confirm strip — comes on in the park-door zone, names where
+       the road goes; walking on to the door is the yes (park grammar) */
+    .bh-exitstrip {
+      position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); z-index: 8;
+      background: rgba(0, 0, 0, 0.78); border: 2px solid #ffe135; color: #ffe135;
+      font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.75rem;
+      pointer-events: none; white-space: nowrap;
+      opacity: 0; transition: opacity 0.25s ease;
+    }
+    .bh-exitstrip.is-on { opacity: 1; }
+    /* 🌍 THE WORLD HUD — the same refined pill strip the rave floor uses (ported
+       26 Jul), themed for the bright bay: dark pills so they read over the sky.
+       LEVEL (gold, rep bar) · COINS · TICKETS · CROWD. Right-aligned, wraps on
+       narrow phones like the rave's. (Shell/fish stats live with their NPCs.) */
+    /* 🌍 the World HUD's styles moved to src/lib/world-hud.js — the bay tints
+       it with --wh-bg and nothing else. */
+    /* panels: the collection grid + the Captain's trade desk */
+    .bh-panel {
+      position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
+      background: rgba(0, 0, 0, 0.55); padding: 0.8rem;
+    }
+    .bh-panel[hidden] { display: none; }
+    .bh-card {
+      background: #17121f; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000;
+      padding: 0.9rem 1rem; max-width: 460px; width: 100%; max-height: 100%; overflow: auto;
+    }
+    .bh-card h2 {
+      font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem;
+      margin: 0 0 0.15rem; letter-spacing: 0.03em;
+    }
+    /* ✕ the pinned close on the SCROLLING collection popups (Shelly's board +
+       Gil's ledger) — replaced the "back to the beach" button. float+sticky so
+       it rides the top-right corner as the grid scrolls; the backdrop closes too. */
+    .bh-cardx {
+      position: sticky; top: 0; float: right; z-index: 3; margin: -0.2rem -0.3rem 0 0.4rem;
+      appearance: none; background: none; border: 0; line-height: 1;
+      color: #fffdf5; font-size: 1.25rem; font-weight: 800; cursor: pointer;
+      opacity: 0.7; padding: 4px 6px;
+    }
+    .bh-cardx:hover { opacity: 1; }
+    /* 🍌 NPC PORTRAIT — a tilted, waist-up close-up of the keeper peeking over
+       the popup's top-left corner (the share-card look), so it reads as talking
+       to Shelly / Gil / the Captain, not a config panel. The card goes
+       overflow:visible so the portrait can stick OUT; the grid scrolls on its
+       own (flex column), and the ✕ pins absolute since the card no longer scrolls. */
+    .bh-card--npc { overflow: visible; position: relative; display: flex; flex-direction: column; }
+    .bh-card--npc > .bh-grid, .bh-card--npc > .bh-fishgrid { flex: 1 1 auto; min-height: 0; overflow: auto; margin-bottom: 0; }
+    .bh-card--npc .bh-cardx { position: absolute; top: 2px; right: 6px; float: none; margin: 0; }
+    .bh-card--npc h2 { padding-left: 128px; min-height: 56px; display: flex; align-items: center; margin-bottom: 0.35rem; }
+    .bh-npcpop {
+      position: absolute; top: -92px; left: -30px; z-index: 3; width: 195px; height: 195px;
+      transform: rotate(-8deg); transform-origin: center bottom; pointer-events: none;
+      clip-path: inset(0 0 26% 0);   /* waist-up only */
+      filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.4));
+    }
+    .bh-npcpop canvas { display: block; width: 195px; height: 195px; image-rendering: pixelated; }
+    @media (max-width: 640px) {
+      .bh-npcpop { width: 168px; height: 168px; top: -78px; left: -24px; }
+      .bh-npcpop canvas { width: 168px; height: 168px; }
+      .bh-card--npc h2 { padding-left: 112px; min-height: 48px; }
+    }
+    .bh-card p { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
+    .bh-panel__sub { opacity: 0.9; }
+    .bh-panel__sub b { color: #ffd98a; opacity: 1; }
+    /* the "how it works" strip — three short steps, so the loop reads at a glance */
+    .bh-how {
+      list-style: none; margin: 0 0 0.85rem; padding: 0.6rem 0.75rem;
+      display: grid; gap: 0.45rem; background: #221a30; border: 2px solid #000;
+      font-size: 0.76rem; line-height: 1.35; opacity: 0.95;
+    }
+    .bh-how li { position: relative; padding-left: 0; }
+    .bh-how b { color: #ffd98a; }
+    /* Captain's live tally — the numbers that make the trade concrete */
+    .bh-tradestat {
+      margin: -0.2rem 0 0.7rem !important; font-size: 0.82rem !important; opacity: 1 !important;
+      color: #cfe8ff;
+    }
+    .bh-tradestat b { color: #fff; }
+    /* 🗺 the map clue — parchment, because it IS a map. Reading as a torn
+       scrap is what separates "today's treasure is over there" from another
+       line of UI copy. */
+    /* 🗺 the torn treasure map — a canvas the engine draws the daily bay + your
+       collected pieces onto. Pixelated so the crude minimap stays crisp. */
+    .bh-digmap {
+      display: block; width: 100%; height: auto; margin: 0 0 0.7rem;
+      image-rendering: pixelated; border: 3px solid #000; background: #c3a866;
+    }
+    .bh-mapclue {
+      margin: 0 0 0.85rem !important; padding: 0.6rem 0.7rem;
+      background: linear-gradient(#e8d5a8, #d9c08a); color: #3a2b18;
+      border: 2px solid #000; font-size: 0.8rem !important; line-height: 1.35;
+      font-weight: 700; opacity: 1 !important;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+    }
+    /* the dig log — four counters, the "what have I actually turned up" view */
+    .bh-diglog {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-bottom: 0.85rem;
+    }
+    .bh-diglog div {
+      background: #241d33; border: 2px solid #000; padding: 0.45rem 0.2rem; text-align: center;
+    }
+    .bh-diglog b { display: block; font-size: 1.05rem; color: #ffd98a; line-height: 1.1; }
+    .bh-diglog span { font-size: 0.6rem; opacity: 0.85; }
+    .bh-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin-bottom: 0.8rem;
+    }
+    @media (min-width: 520px) { .bh-grid { grid-template-columns: repeat(8, 1fr); } }
+    .bh-slot {
+      position: relative; aspect-ratio: 1; border: 2px solid #000; background: #241d33;
+      display: grid; place-items: center; cursor: pointer;
+    }
+    .bh-slot:hover { outline: 2px solid #ffb347; outline-offset: 1px; }
+    .bh-slot i {
+      display: block; width: 78%; aspect-ratio: 1;
+      background-image: url('/assets/beach/shells.png');
+      background-size: 2400% 100%; background-repeat: no-repeat; image-rendering: pixelated;
+    }
+    .bh-slot.is-missing i { filter: brightness(0) opacity(0.28); }
+    .bh-slot b {
+      position: absolute; right: -3px; bottom: -5px; font-size: 0.55rem; font-weight: 800;
+      background: #ffb347; color: #241505; border: 2px solid #000; padding: 0 0.15rem;
+    }
+    /* 🎡 A WOODEN SIGN nailed to the stall roof — same board as the banana
+       stand's (#8a5a2b plank, yellow lettering), NOT a button. It sits ON the
+       striped canopy and each is tilted a different way (set per-sign in JS)
+       so the row reads hand-made, not stamped out. Rides its stall's z-index. */
+    .bh-stallsign {
+      position: absolute; pointer-events: none; white-space: nowrap;
+      background: #8a5a2b; border: 2px solid #3a230f; color: #ffe135;
+      box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45);
+      padding: 2px 7px; font-family: "Archivo Black", sans-serif;
+      font-size: 0.6rem; letter-spacing: 0.03em;
+      /* a hint of plank grain */
+      background-image: linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 100% 5px;
+    }
+    /* 🧭 …and the WAYPOST's plank is half that (Trym): a stall canopy is a
+       big thing to label, a knee-high marker beside the road is not. Only the
+       waypost takes this — the four stall signs keep their size. */
+    .bh-stallsign--way {
+      border-width: 1px; box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.45);
+      padding: 2px 6px; font-size: 0.45rem;
+      /* bottom-anchored, so it sits ON the pole's top rather than being
+         centred on a canopy's height above it like the stall signs */
+      transform: translate(-50%, -100%) rotate(-4deg);
+    }
+    /* the vendor banana behind each counter */
+    .bh-vendor { position: absolute; pointer-events: none; }
+    .bh-vendor canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+
+    .bh-card--stall { max-width: 420px; width: 92%; }
+    .bh-stallhead { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+    .bh-stallhead h3 { margin: 0; font-size: 1rem; flex: 1; }
+    .bh-tix {
+      background: #17121f; color: #ffd257; border: 2px solid #000;
+      padding: 0.15rem 0.4rem; font-weight: 800; font-size: 0.78rem;
+    }
+    .bh-x {
+      appearance: none; font: inherit; font-weight: 800; line-height: 1;
+      background: #ffb347; color: #241505; border: 3px solid #000;
+      box-shadow: 2px 2px 0 #000; width: 30px; height: 30px; cursor: pointer;
+    }
+    .bh-stallblurb { margin: 0 0 0.6rem; font-size: 0.82rem; opacity: 0.85; }
+    .bh-stallsoon { margin: 1.2rem 0; font-size: 0.85rem; opacity: 0.7; font-style: italic; }
+    /* ⚖️ the odds, posted in the stall. Not fine print — the whole point of a
+       ticket is that you can see what it's worth. */
+    .bh-odds { margin: 0.6rem 0 0; font-size: 0.68rem; opacity: 0.62; line-height: 1.4; }
+    /* 🦆 THE POND — a little pool of shimmering water the ducks bob in */
+    .bh-pond {
+      position: relative; overflow: hidden;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2rem 0.35rem;
+      padding: 0.85rem 0.55rem 0.6rem; border: 3px solid #000;
+      background: radial-gradient(120% 90% at 50% 0%, #47a0b3 0%, #2d7a8e 46%, #1b5468 100%);
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.08), inset 0 -14px 20px rgba(0,0,0,0.28);
+    }
+    /* a slow diagonal light-band drifting across the surface (loops on one tile) */
+    .bh-pond::before {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: repeating-linear-gradient(114deg, rgba(255,255,255,0.055) 0 5px, transparent 5px 24px);
+      animation: bhPondShimmer 6s linear infinite;
+    }
+    @keyframes bhPondShimmer { to { transform: translateX(24px); } }
+
+    .bh-duck {
+      position: relative; z-index: 1; appearance: none; border: 0; padding: 0;
+      background: transparent; cursor: default;
+      width: 100%; max-width: 92px; aspect-ratio: 1 / 1; justify-self: center;
+      display: grid; place-items: center;
+    }
+    /* the duck itself — floats + gently tilts, each on its own phase (--i) */
+    .bh-duck__sprite {
+      width: 74%; aspect-ratio: 36 / 32;
+      background: url('/assets/beach/duck.png') center/contain no-repeat;
+      image-rendering: pixelated; transform-origin: 50% 82%; z-index: 2;
+      filter: drop-shadow(0 2px 0 rgba(0,0,0,0.28));
+      animation: bhDuckFloat calc(2.5s + var(--i, 0) * 0.35s) ease-in-out infinite;
+      animation-delay: calc(var(--i, 0) * -0.5s); will-change: transform;
+    }
+    @keyframes bhDuckFloat {
+      0%, 100% { transform: translateY(2px) rotate(-3.5deg); }
+      50%      { transform: translateY(-3px) rotate(3.5deg); }
+    }
+    /* the ripple of water the duck sits in */
+    .bh-duck__ripple {
+      position: absolute; bottom: 22%; left: 50%; width: 52%; height: 11%;
+      transform: translateX(-50%); border-radius: 50%;
+      background: rgba(255,255,255,0.16); box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
+      animation: bhDuckRipple calc(2.5s + var(--i, 0) * 0.35s) ease-in-out infinite;
+      animation-delay: calc(var(--i, 0) * -0.5s);
+    }
+    @keyframes bhDuckRipple {
+      0%, 100% { transform: translateX(-50%) scaleX(0.88); opacity: 0.7; }
+      50%      { transform: translateX(-50%) scaleX(1.14); opacity: 0.42; }
+    }
+    /* the hook line that drops in when you pick one */
+    .bh-duck__hook {
+      position: absolute; left: 52%; bottom: 60%; width: 3px; height: 0;
+      transform: translateX(-50%); transform-origin: top; opacity: 0; z-index: 2;
+      background: linear-gradient(#e2e2ee, #a9a9bd);
+    }
+    .bh-duck__hook::after {
+      content: ''; position: absolute; left: -5px; bottom: -8px;
+      width: 12px; height: 12px; border: 3px solid #c4c4d4;
+      border-top-color: transparent; border-right-color: transparent;
+      border-bottom-left-radius: 12px;
+    }
+    /* the payout tag, hidden until the duck is lifted */
+    .bh-duck__tag {
+      position: absolute; top: 60%; left: 50%; transform: translate(-50%, 0) scale(0);
+      opacity: 0; z-index: 3; white-space: nowrap; line-height: 1;
+      font-family: "Archivo Black", sans-serif; font-size: 0.92rem;
+      color: #ffd257; background: #17121f; border: 2px solid #000;
+      padding: 0.18rem 0.42rem; box-shadow: 0 2px 0 #000;
+    }
+    .bh-duck.is-live { cursor: pointer; }
+    .bh-duck.is-live:hover .bh-duck__sprite { animation: none; transform: translateY(-7px) scale(1.08); }
+    /* the pick: the chosen duck is hooked up out of the water */
+    .bh-duck.is-hooked .bh-duck__sprite { animation: bhDuckHooked 0.6s cubic-bezier(.2,1.3,.4,1) forwards; z-index: 3; }
+    @keyframes bhDuckHooked {
+      0%   { transform: translateY(0) rotate(0) scale(1); }
+      42%  { transform: translateY(-32%) rotate(-9deg) scale(1.3); }
+      64%  { transform: translateY(-27%) rotate(6deg) scale(1.28); }
+      100% { transform: translateY(-27%) rotate(0) scale(1.26); }
+    }
+    .bh-duck.is-hooked .bh-duck__ripple { animation: bhSplash 0.6s ease-out forwards; }
+    @keyframes bhSplash {
+      0%   { transform: translateX(-50%) scaleX(1); opacity: 0.75; }
+      100% { transform: translateX(-50%) scaleX(2.3); opacity: 0; }
+    }
+    .bh-duck.is-hooked .bh-duck__hook { opacity: 1; animation: bhHookDrop 0.38s ease-out forwards; }
+    @keyframes bhHookDrop { 0% { height: 0; } 100% { height: 44%; } }
+    .bh-duck.is-hooked .bh-duck__tag { animation: bhTagPop 0.42s 0.4s cubic-bezier(.2,1.5,.4,1) forwards; }
+    @keyframes bhTagPop { to { transform: translate(-50%, 0) scale(1); opacity: 1; } }
+    .bh-duck.is-dim { opacity: 0.4; }
+    .bh-duck.is-dim .bh-duck__sprite, .bh-duck.is-dim .bh-duck__ripple { animation-play-state: paused; }
+    /* payout tiers — a 6 is a nice hit, a 15 is the jackpot */
+    .bh-duck.is-big .bh-duck__tag { color: #241505; background: #ffb347; border-color: #7a4a10; }
+    .bh-duck.is-jackpot .bh-duck__tag {
+      color: #241505; background: linear-gradient(#fff1ac, #ffd257); border-color: #a9781a;
+      box-shadow: 0 2px 0 #000, 0 0 12px rgba(255,210,90,0.85);
+    }
+    .bh-spark {
+      position: absolute; top: 44%; left: 50%; width: 6px; height: 6px; margin: -3px;
+      pointer-events: none; z-index: 4; border-radius: 50%;
+      background: radial-gradient(#fff 0%, #ffd257 55%, transparent 72%);
+      animation: bhSpark 0.8s ease-out forwards;
+    }
+    @keyframes bhSpark {
+      0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }
+      20%  { opacity: 1; }
+      100% { transform: translate(var(--dx, 0), var(--dy, 0)) scale(1); opacity: 0; }
+    }
+    /* 🏆 the prize wall — visible from the counter, prices in plain numbers.
+       A ticket only means something if you can see what it buys. */
+    .bh-prizes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+    .bh-prize {
+      display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.4rem;
+      background: #17121f; border: 3px solid #000; box-shadow: 2px 2px 0 #000;
+    }
+    .bh-prize i { font-style: normal; font-size: 1.15rem; }
+    .bh-prize b { flex: 1; font-size: 0.66rem; line-height: 1.15; }
+    .bh-prize.is-owned { opacity: 0.62; }
+    .bh-got { font-size: 0.62rem; font-weight: 800; color: #8de08d; }
+    .bh-take {
+      appearance: none; font: inherit; font-weight: 800; font-size: 0.66rem;
+      background: #ffb347; color: #241505; border: 2px solid #000;
+      padding: 0.2rem 0.35rem; cursor: pointer; white-space: nowrap;
+    }
+    .bh-take[disabled] { opacity: 0.4; cursor: not-allowed; }
+    /* 🕹 the grabber's glass — the grand prize is VISIBLE long before you can
+       afford it. That's the whole reason it beat a lottery. */
+    .bh-glass {
+      position: relative; height: 132px; background: linear-gradient(#4d6b80, #33485c);
+      border: 3px solid #000; box-shadow: inset 0 0 0 3px rgba(255,255,255,0.08);
+      display: grid; place-items: end center; padding-bottom: 0.6rem; overflow: hidden;
+    }
+    .bh-grand { font-size: 2.6rem; line-height: 1; }
+    .bh-claw {
+      position: absolute; top: 0; left: 50%; width: 4px; height: 30px;
+      margin-left: -2px; background: #c8c8d0;
+      box-shadow: -9px 26px 0 0 #aaaab6, 9px 26px 0 0 #aaaab6;
+    }
+    .bh-claw.is-grabbing { animation: bhClaw 1.9s ease-in-out forwards; }
+    @keyframes bhClaw {
+      0% { height: 30px; } 45% { height: 92px; }
+      60% { height: 92px; } 100% { height: 30px; }
+    }
+    .bh-grandname { margin: 0.5rem 0 0.4rem; font-size: 0.8rem; font-weight: 800; color: #ffd257; }
+    .bh-bar { height: 14px; background: #17121f; border: 3px solid #000; }
+    .bh-bar span { display: block; height: 100%; background: #ffd257; }
+    @media (prefers-reduced-motion: reduce) { .bh-claw.is-grabbing { animation: none; } }
+    /* 🦀 whack-a-crab — a grid of holes in the sand; crabs pop and duck */
+    .bh-crabgrid {
+      position: relative;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+      align-content: center; aspect-ratio: 5 / 3.6; overflow: hidden;
+      background: linear-gradient(#d8b478, #c69a58); border: 3px solid #000;
+      box-shadow: inset 0 0 0 3px rgba(120, 80, 30, 0.35);
+      padding: 0.4rem 0.6rem 0.9rem;    /* heavier bottom nudges the holes up */
+    }
+    .bh-cwhole {
+      position: relative; aspect-ratio: 5 / 4;
+      clip-path: inset(-80% -25% 0% -25%);   /* clip only the bottom — crabs pop up big, still duck into the hole */
+    }
+    .bh-cwhole::after {                 /* the hole itself */
+      content: ''; position: absolute; left: 14%; right: 14%; bottom: 6%; height: 34%;
+      background: radial-gradient(#4a3418, #2c1e0e); border-radius: 50%;
+      box-shadow: 0 -2px 0 rgba(255, 240, 200, 0.18);
+    }
+    .bh-cwcrab {
+      position: absolute; left: 50%; bottom: 18%; width: 148%; aspect-ratio: 2 / 1;
+      transform: translate(-50%, 200%); transition: transform 0.13s ease;
+      border: 0; padding: 0; background-color: transparent;
+      background-image: url('/assets/beach/a-crab.png');
+      background-size: 1000% 100%; background-position-x: 0%; background-repeat: no-repeat;
+      image-rendering: pixelated; cursor: default; z-index: 1;
+    }
+    .bh-cwcrab.is-up { transform: translate(-50%, -8%); cursor: pointer; }
+    .bh-cwcrab.is-bonked { transform: translate(-50%, 100%) scaleY(0.6); }
+    .bh-cwcount {                       /* the 3·2·1 countdown over the grid */
+      position: absolute; inset: 0; display: grid; place-items: center;
+      font-size: 3.2rem; font-weight: 900; color: #fff; letter-spacing: 0.02em;
+      text-shadow: 0 3px 0 #000, 0 0 14px rgba(0, 0, 0, 0.6);
+      pointer-events: none; z-index: 5;
+    }
+    .bh-cwcount.is-beat { animation: bhCount 0.5s ease; }
+    @keyframes bhCount {
+      0% { transform: scale(0.4); opacity: 0; }
+      40% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .bh-stallfoot { margin-top: 0.7rem; }
+    .bh-stallhint { font-weight: 800; font-size: 0.9rem; color: #ffd257; }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-pond::before, .bh-duck__sprite, .bh-duck__ripple, .bh-spark { animation: none !important; }
+    }
+    .bh-card--chest { text-align: center; }
+    .bh-chesthero { display: block; width: 88px; height: auto; margin: -0.2rem auto 0.5rem; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.3)); }
+    .bh-chesth { margin: 0 0 0.2rem; font-size: 1.05rem; }
+    .bh-chestsub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.8; }
+    /* the piles — two stacks, centred. */
+    .bh-cslots { display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: center; }
+    .bh-cslot {
+      display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.65rem;
+      background: #17121f; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+    }
+    .bh-cslot img { image-rendering: pixelated; display: block; }
+    .bh-cslot b { font-size: 1rem; color: #ffd257; }
+    .bh-slotempty {
+      padding: 0.7rem 1.1rem; border: 3px dashed #000; opacity: 0.55;
+      font-weight: 800; font-size: 0.85rem;
+    }
+    .bh-btn {
+      display: grid; place-items: center; text-align: center; width: 100%;
+      border: 3px solid #000; background: #ffb347; color: #241505; font-weight: 800;
+      box-shadow: 4px 4px 0 #000; padding: 0.6rem; text-decoration: none;
+      font-family: inherit; font-size: 0.9rem; cursor: pointer; margin-top: 0.4rem;
+    }
+    .bh-btn--dark { background: #17121f; color: #fffdf5; }
+    .bh-btn[disabled] { opacity: 0.45; cursor: not-allowed; box-shadow: 2px 2px 0 #000; }
+    .bh-btn:not([disabled]):active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+    .bh-foot { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    .bh-foot .bh-btn { flex: 1 1 160px; width: auto; margin-top: 0; }
+    .bh-cut {
+      position: fixed; inset: 0; background: #000; z-index: 60; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s steps(2);
+    }
+    .bh-cut.is-on { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-cut { transition: none; }
+      .bh-shell, .bh-shell--rising, .bh-shell--receding { animation: none; }
+      .bh-drift { animation: none; }
+      .bh-coin { animation: none; transition: none; }
+      .bh-coinwash { display: none; }
+    }
+
+    /* ⚠️ …and while you are inside it, THE BAY STOPS. The scene is opaque and
+       covers the whole view, so every sprite behind it was drawing for nobody
+       — and the shy runs its OWN loop on top, so that was two worlds at once.
+       Nothing else on this page sets `visibility`, and the only layout reads
+       are on .bh-view itself, so hiding the layer is safe. The JS ticks stand
+       down too (banana-beach.js); the presence socket keeps its own beat. */
+    body.bh-inside .bh-world { visibility: hidden; }
+
+    /* 🥥 COCONUT SHY — a full interior scene laid over the beach view. */
+    .bh-coco {
+      position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column;
+      background: #17110a; overflow: hidden;
+    }
+    .bh-coco[hidden] { display: none; }
+    .bh-coco__awning { display: flex; height: 20px; flex: 0 0 auto; border-bottom: 3px solid #000; }
+    .bh-coco__awning span { flex: 1; }
+    .bh-coco__awning span:nth-child(odd) { background: #e23b3b; }
+    .bh-coco__awning span:nth-child(even) { background: #fdf6e6; }
+    .bh-coco__hud {
+      position: absolute; top: 28px; left: 8px; right: 8px; z-index: 6;
+      display: flex; align-items: center; gap: 0.45rem; pointer-events: none;
+    }
+    .bh-coco__hud .bh-tix,
+    .bh-coco__coins {
+      background: rgba(0, 0, 0, 0.5); border: 2px solid #000; padding: 0.14rem 0.45rem;
+      font-weight: 800; font-size: 0.82rem; color: #ffe135;
+    }
+    .bh-coco__hud .bh-x { margin-left: auto; pointer-events: auto; }
+    .bh-coco__stage {
+      position: relative; flex: 1 1 auto; overflow: hidden;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.04) 42%),
+        repeating-linear-gradient(90deg, #6b5617 0 24px, #4a3a0d 24px 27px, #63500f 27px 51px, #4a3a0d 51px 54px);
+    }
+    /* z-index 5 puts the pitch (and its ball / coconuts / aim children) ABOVE
+       the keeper canvas (z3) and the desk (z4). The keeper's big transparent
+       canvas overlays the whole pitch, so without this the ball sat behind it
+       and drags couldn't reach the pitch. */
+    .bh-coco__pitch {
+      position: absolute; inset: 0; z-index: 5;
+      touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent;
+    }
+    .bh-coco__pitch:active { cursor: grabbing; }
+    /* one ball flies at a time — say so with the cursor too, or a mid-flight
+       drag is indistinguishable from a dead control */
+    .bh-coco__pitch.is-waiting,
+    .bh-coco__pitch.is-waiting:active { cursor: progress; }
+    /* the shelf the coconuts sit on */
+    .bh-coco__rail {
+      position: absolute; left: 5%; right: 5%; height: 9px;
+      background: #4a3820; border: 2px solid #000; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+    }
+    .bh-coco__post {
+      position: absolute; width: 7px; transform: translateX(-50%);
+      background: linear-gradient(#7a5a2e, #543a1a); border: 2px solid #000; z-index: 1;
+    }
+    .bh-coco__coco {
+      position: absolute; width: 36px; height: 36px; transform: translate(-50%, -50%);
+      z-index: 2; image-rendering: pixelated; will-change: transform, left, top;
+    }
+    .bh-coco__coco svg { width: 100%; height: 100%; display: block; }
+    .bh-coco__ball {
+      position: absolute; width: 44px; height: 44px; transform: translate(-50%, -50%);
+      z-index: 6; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.4));
+    }
+    .bh-coco__ball svg { width: 100%; height: 100%; display: block; }
+    /* the drag-aim guide: a row of dots tracing the ball's CURVED flight path */
+    .bh-coco__aimdot {
+      position: absolute; width: 9px; height: 9px; border-radius: 50%;
+      background: rgba(255, 225, 53, 0.92); transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 5; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    }
+    .bh-coco__aimdot[hidden] { display: none; }
+    /* the keeper — BIG and far left, so it reads as standing WITH him at the
+       counter (the banana-stand scale), not a doll in a giant shed. The drawn
+       banana only fills ~52% of its square canvas (transparent padding), and
+       sits at 45% across / feet at 85% down — so the canvas is displayed LARGE
+       (~288px → a ~150px banana) and shifted left to land the banana far-left,
+       feet behind the counter. Independent of the exterior CSS entirely. */
+    /* size + left + bottom are set in JS (layoutCocoVendor) from the stage
+       size and the banana's measured bbox, so the WAIST pins to the counter
+       top and the keeper is ~2× — the transparent canvas padding makes CSS %
+       sizing lie about the banana's real size, so JS drives it. */
+    .bh-coco__vendor {
+      position: absolute; left: 0; bottom: 0; width: 240px;
+      z-index: 3; pointer-events: none;
+    }
+    .bh-coco__vendor canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    /* a full-width counter across the bottom; the keeper stands behind it */
+    .bh-coco__desk {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 34px; z-index: 4; pointer-events: none;
+      background: repeating-linear-gradient(90deg, #3a2b18 0 24px, #2c2113 24px 48px);
+      border-top: 5px solid #4a3820; box-shadow: inset 0 4px 0 rgba(0, 0, 0, 0.35);
+    }
+    .bh-coco__toast {
+      position: absolute; left: 50%; top: 12%; transform: translateX(-50%); z-index: 7;
+      font-family: "Archivo Black", sans-serif; font-size: 1.15rem; color: #ffe135;
+      text-shadow: 2px 2px 0 #000; pointer-events: none; animation: bhCocoToast 0.9s ease-out forwards;
+    }
+    @keyframes bhCocoToast { to { transform: translate(-50%, -26px); opacity: 0; } }
+    .bh-coco__foot { flex: 0 0 auto; padding: 0.55rem 0.8rem; display: grid; min-height: 44px; align-content: center; }
+    .bh-coco__foot .bh-btn { margin-top: 0; width: 100%; }
+    .bh-coco__back { flex: 0 0 auto; width: auto; margin: 0 0.8rem 0.7rem; }
+    @media (prefers-reduced-motion: reduce) {
+      .bh-coco__toast { animation: none; }
+    }
+
+    /* ─── 🏖 THE BEACH HUT INTERIOR — the park merch shop's room, ported to
+       the bay. Same anatomy on purpose (Trym: "same shop-menu as the banana
+       stand"): striped awning, plank back wall with the goods HUNG on it, the
+       keeper big behind a counter. The palette is the hut's own exterior —
+       sea-teal awning over driftwood planks — so walking in feels like walking
+       into the building you just tapped. ── */
+    .bh-hut {
+      position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column;
+      background: #17110a; overflow: hidden;
+    }
+    .bh-hut[hidden] { display: none; }
+    .bh-hut__awning { display: flex; height: 20px; flex: 0 0 auto; border-bottom: 3px solid #000; }
+    .bh-hut__awning span { flex: 1; }
+    .bh-hut__awning span:nth-child(odd) { background: #2c8e8c; }
+    .bh-hut__awning span:nth-child(even) { background: #f7ebcd; }
+    /* ⚠️ THE × SITS IN THE AWNING, not over the wall: at the park's
+       top:28px/right:8px it landed straight on the third good's price tag,
+       which on a phone-width pane is only ~40px from the edge. */
+    .bh-hut__x { position: absolute; top: 0; right: 6px; width: 32px; height: 30px; z-index: 6; pointer-events: auto; }
+    .bh-hut__wall {
+      position: relative; flex: 1 1 auto; overflow: hidden;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.05) 45%),
+        repeating-linear-gradient(90deg, #6b5030 0 24px, #4a3620 24px 27px, #61492c 27px 51px, #4a3620 51px 54px);
+    }
+    /* the wares, hung high on the planks — each on a nail with a string */
+    .bh-hut__goods {
+      position: absolute; left: 0; right: 0; top: 40px; z-index: 2;
+      display: flex; justify-content: space-evenly; align-items: flex-start; padding: 0 4px;
+    }
+    .bh-hang {
+      position: relative; display: grid; justify-items: center; gap: 3px;
+      text-decoration: none; color: #fffdf5; padding-top: 14px; cursor: pointer;
+    }
+    .bh-hang::before {   /* the nail */
+      content: ''; position: absolute; top: 0; left: 50%; width: 5px; height: 5px;
+      transform: translateX(-50%); background: #1c1610; border-radius: 50%;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .bh-hang::after {    /* the string */
+      content: ''; position: absolute; top: 4px; left: 50%; width: 2px; height: 11px;
+      transform: translateX(-50%); background: rgba(240, 230, 200, 0.55);
+    }
+    .bh-hang:hover .bh-hang__mock, .bh-hang:focus-visible .bh-hang__mock { outline: 2px solid #ffe135; outline-offset: 1px; }
+    .bh-hang:active { transform: translateY(2px); }
+    .bh-hang__mock {
+      width: 78px; height: 78px; display: grid; place-items: center;
+      border: 3px solid #000; overflow: hidden; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.45);
+    }
+    .bh-hang__mock canvas { width: 66px; height: 66px; image-rendering: pixelated; display: block; }
+    .bh-hang--sticker .bh-hang__mock { background: #f4f1e8; }
+    .bh-hang--sticker canvas {
+      filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+              drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+              drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.25));
+    }
+    .bh-hang--magnet .bh-hang__mock {
+      background: #e8e4d8; border-radius: 10px;
+      box-shadow: inset 0 0 0 3px #2a2a33, 3px 4px 0 rgba(0, 0, 0, 0.45);
+    }
+    .bh-hang--magnet canvas {
+      width: 56px; height: 56px;
+      filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+              drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
+    }
+    .bh-hang--tee .bh-hang__mock { background: #1c2233; }
+    .bh-hang--tee canvas { width: 40px; height: 40px; }
+    .bh-hang__tag {
+      position: absolute; top: 8px; right: -7px; z-index: 2; font-style: normal;
+      background: #ffe135; color: #10240f; border: 2px solid #000;
+      font-weight: 800; font-size: 0.62rem; line-height: 1; padding: 2px 4px;
+      transform: rotate(6deg); box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.4); white-space: nowrap;
+    }
+    .bh-hang b { font-size: 0.6rem; font-weight: 800; text-align: center; line-height: 1.15; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+    /* ⚠️ NO SEPARATE SHIPPING STRIP on the wall. The park hangs one at a fixed
+       top:168px, which on this portrait pane lands inside the speech bubble's
+       band — and the wall is only ~400px tall here, so goods + strip + bubble
+       + a full-height keeper cannot all fit above her hat. The promise moved
+       onto the counter sign instead, which came out SHORTER for it. */
+    /* Palma — big behind the counter, feet clipped by the wall's bottom edge */
+    .bh-hut__keeper {
+      appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+      position: absolute; left: 50%; bottom: -74px; transform: translateX(-50%);
+      width: min(360px, 86%); z-index: 3;
+    }
+    .bh-hut__keeper canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    /* ⚠️ 34% is a FLOOR, not a preference: below it the bubble's box drops onto
+       Palma's hat brim. (It looked wrong at 34% until the shipping strip moved
+       down — the strip was the collision, not the bubble.) */
+    .bh-hut__bubble {
+      position: absolute; left: 6px; bottom: 34%; z-index: 5;
+      max-width: 46%; background: #fffdf5; color: #111; border: 3px solid #000;
+      filter: drop-shadow(3px 3px 0 #000); padding: 0.35rem 0.5rem;
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; line-height: 1.5;
+      opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+    }
+    .bh-hut__bubble.is-on { opacity: 1; }
+    .bh-hut__counter {
+      flex: 0 0 64px; position: relative; border-top: 4px solid #000; z-index: 4;
+      background: repeating-linear-gradient(90deg, #43331d 0 26px, #332616 26px 52px);
+      display: grid; place-items: center; padding: 0 0.5rem;
+    }
+    .bh-hut__counter::before {
+      content: ''; position: absolute; inset: 0 0 auto; height: 8px;
+      background: #a87c46; border-bottom: 3px solid #000;
+    }
+    .bh-hut__sign {
+      background: #8a5a2b; border: 2px solid #3a230f; color: #ffe7a0;
+      font-size: 0.62rem; font-weight: 800; line-height: 1.4; text-align: center;
+      padding: 0.3rem 0.55rem; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+      transform: rotate(-0.5deg); max-width: 100%;
+    }
+    .bh-hut__back { flex: 0 0 auto; width: auto; margin: 0.55rem 0.8rem 0.7rem; }
+
+    /* 🍹 PALMA IN THE WINDOW, outdoors — the stand-keeper treatment on the
+       hut's own opening. Set dressing only: the building stays the tap target,
+       so pointer-events are off and the box is clipped to HUT.win. */
+    .bh-hutnpc { position: absolute; overflow: hidden; pointer-events: none; }
+    .bh-hutnpc canvas {
+      display: block; width: 100%; height: auto;
+      image-rendering: pixelated; margin-top: -13%;
+    }
+
+    /* ─── 🏖 THE BEACH-DAY CARD — who's here + your stats + share, the beach's
+       answer to the rave's side panel. Warm sunset palette instead of club
+       purple; sits below the view so it works in the bay's single column. ── */
+    .bh-side {
+      margin-top: 1rem; background: #1e1408; border: 3px solid #000;
+      box-shadow: 6px 6px 0 #000; padding: 0.9rem 1rem 1.1rem; color: #fffdf5;
+    }
+    .bh-side h2 {
+      margin: 0 0 0.55rem; font-size: 0.95rem; color: #ffd98a; letter-spacing: 0.02em;
+    }
+    /* ⚠️ who is here and what YOU did are two different things — they were
+       running together into one wall of boxes (Trym: cramped) */
+    .bh-side__h2 {
+      margin-top: 1.5rem; padding-top: 1.1rem;
+      border-top: 2px solid rgba(255, 255, 255, 0.08);
+    }
+    .bh-roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.32rem; }
+    .bh-roster li {
+      display: flex; justify-content: space-between; gap: 0.6rem; align-items: center;
+      font-size: 0.82rem; font-weight: 700; padding: 0.3rem 0.55rem;
+      background: #2a1c0c; border: 2px solid #000;
+    }
+    .bh-roster li.is-you { color: #ffe135; }
+    .bh-roster__tag { font-size: 0.6rem; opacity: 0.8; font-weight: 800; letter-spacing: 0.04em; }
+    /* 🎮 THE DAY BADGES — the park's, in the bay's sands. Content-sized
+       pills that wrap, so the card is as big as its numbers instead of a
+       two-column grid of full-width rows with a lake of space on desktop.
+       ⚠️ the label is behind a TAP, never a title attribute (invisible on a
+       phone, and this world is 85% phones). */
+    .bh-daystats { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.1rem; }
+    .bh-stat {
+      display: inline-flex; align-items: center; gap: 0.42rem; cursor: pointer;
+      padding: 0.44rem 0.72rem; border: 2px solid #000; border-radius: 999px;
+      background: #2a1c0c; color: #ffe9cf; font-family: inherit;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+    }
+    .bh-stat i { font-style: normal; font-size: 1rem; line-height: 1; }
+    .bh-stat b { color: #ffe135; font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+    .bh-stat.is-time b { color: #ff9d4d; }
+    .bh-stat:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); }
+    .bh-stat.is-on { background: #45300f; border-color: #ff9d4d; }
+    .bh-statcap {
+      flex: 1 0 100%; margin: 0.5rem 0 0; min-height: 1.05rem;
+      font-size: 0.76rem; font-weight: 700; color: #c8a887;
+    }
+    .bh-sharebtn {
+      appearance: none; width: 100%; margin-top: 0.95rem; cursor: pointer; font-family: inherit;
+      background: #ffe135; color: #111; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+      font-weight: 800; font-size: 0.92rem; padding: 0.6rem;
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .bh-sharebtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .bh-door { margin-top: 0.7rem; }
+    .bh-door a {
+      display: block; text-align: center; padding: 0.55rem; font-weight: 800; font-size: 0.9rem;
+      color: #fffdf5; background: #2a1c0c; border: 3px solid #000; text-decoration: none;
+    }
+    .bh-door a:hover { background: #38260f; }
+    .bh-sidenote { margin: 0.75rem 0 0; font-size: 0.72rem; opacity: 0.82; line-height: 1.45; }
+    .bh-sidenote a { color: #ffd98a; }
+
+    /* the share-card lightbox — same pattern as the rave's, beach-dressed */
+    .bh-sharemodal {
+      position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center;
+      justify-content: center; background: rgba(8, 5, 2, 0.82); padding: 1rem;
+    }
+    .bh-sharemodal[hidden] { display: none; }
+    .bh-sharemodal__box {
+      position: relative; max-width: min(88vw, 520px); width: 100%;
+      background: #1e1408; border: 4px solid #ffe135; box-shadow: 10px 10px 0 #000; padding: 0.9rem;
+    }
+    .bh-sharemodal__card canvas { display: block; width: 100%; height: auto; border: 2px solid #000; }
+    .bh-sharemodal__row { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+    .bh-sharemodal__row button {
+      flex: 1; min-width: 130px; appearance: none; cursor: pointer; font-family: inherit;
+      font-weight: 800; font-size: 0.82rem; padding: 0.5rem; gap: 0.35rem;
+      background: #ffe135; color: #111; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bh-sharemodal__row button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .bh-sharemodal__close {
+      position: absolute; top: -18px; right: -18px; width: 40px; height: 40px;
+      background: #ffe135; color: #111; border: 3px solid #111; font-weight: 800;
+      font-size: 1.2rem; cursor: pointer;
+    }
+  </style><style>.ft-cols[data-astro-cid-sz7xmlte]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.6rem 2rem;max-width:880px;margin:1.8rem auto 1.6rem;text-align:left}.ft-col[data-astro-cid-sz7xmlte] h3[data-astro-cid-sz7xmlte]{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;opacity:.55;margin:0 0 .6rem}.ft-col[data-astro-cid-sz7xmlte] a[data-astro-cid-sz7xmlte]{display:block;margin-bottom:.45rem;line-height:1.35}@media(max-width:719px){.ft-cols[data-astro-cid-sz7xmlte]{grid-template-columns:repeat(2,minmax(0,1fr));max-width:26rem}}
+</style></head> <body> <a class="skip-link" href="#main">Skip to content</a>  <header class="nav"> <a class="nav__brand" href="/">TRYM<span>STENE</span></a> <button class="nav__toggle" aria-label="Menu" aria-expanded="false"> <span class="nav__ic nav__ic--open"><svg class="pxi" viewBox="0 0 90 80" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="90" height="10" fill="currentColor"></rect><rect x="0" y="10" width="90" height="10" fill="currentColor"></rect><rect x="0" y="30" width="90" height="10" fill="currentColor"></rect><rect x="0" y="40" width="90" height="10" fill="currentColor"></rect><rect x="0" y="60" width="90" height="10" fill="currentColor"></rect><rect x="0" y="70" width="90" height="10" fill="currentColor"></rect> </svg></span> <span class="nav__ic nav__ic--close"><svg class="pxi" viewBox="0 0 90 90" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="0" y="0" width="20" height="10" fill="currentColor"></rect><rect x="70" y="0" width="20" height="10" fill="currentColor"></rect><rect x="0" y="10" width="30" height="10" fill="currentColor"></rect><rect x="60" y="10" width="30" height="10" fill="currentColor"></rect><rect x="10" y="20" width="30" height="10" fill="currentColor"></rect><rect x="50" y="20" width="30" height="10" fill="currentColor"></rect><rect x="20" y="30" width="50" height="10" fill="currentColor"></rect><rect x="30" y="40" width="30" height="10" fill="currentColor"></rect><rect x="20" y="50" width="50" height="10" fill="currentColor"></rect><rect x="10" y="60" width="30" height="10" fill="currentColor"></rect><rect x="50" y="60" width="30" height="10" fill="currentColor"></rect><rect x="0" y="70" width="30" height="10" fill="currentColor"></rect><rect x="60" y="70" width="30" height="10" fill="currentColor"></rect><rect x="0" y="80" width="20" height="10" fill="currentColor"></rect><rect x="70" y="80" width="20" height="10" fill="currentColor"></rect> </svg></span> </button> <nav class="nav__links"> <div class="nav__group nav__group--banana"> <a href="/dancing-banana-gif-meme/">Download</a> <a href="/make-a-banana/" data-place="nav">Make a Banana</a> <a href="/forge/">Pixel Forge</a>  <a class="nav__shop" href="/shop/" data-place="nav">Shop</a> <a href="/rave/">Join the Rave</a>  <a href="/banana-memes/">Banana Gallery</a> <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a> </div> </nav> <div class="nav__backdrop"></div> </header> <script type="module">(()=>{const e=document.querySelector(".nav");if(!e)return;const a=10,s=-48,c=64;let t=Math.max(0,window.scrollY),n=0,i=!1;function l(){i=!1;const r=Math.max(0,window.scrollY),o=r-t;if(t=r,e.classList.contains("open")){n=0;return}if(r<c){e.classList.remove("nav--hidden"),n=0;return}o>0!=n>0&&(n=0),n+=o,n>a?e.classList.add("nav--hidden"):n<s&&e.classList.remove("nav--hidden")}addEventListener("scroll",()=>{i||(i=!0,requestAnimationFrame(l))},{passive:!0})})();(()=>{const e=document.querySelector(".nav__pass");if(!e)return;let a="",s="";try{a=(localStorage.getItem("ps-name-v1")||"").trim().slice(0,18),s=localStorage.getItem("ps-avatar-v1")||""}catch{return}if(!a&&!s)return;if(e.classList.add("nav__pass--me"),e.title=a?a+" — your banana pass":"Your banana pass",e.textContent="",s){const t=new Image(22,22);t.className="nav__pface",t.src=s,t.alt="",e.appendChild(t)}else e.appendChild(document.createTextNode("🎫 "));const c=document.createElement("span");c.textContent=a||"My Pass",e.appendChild(c)})();</script> <main id="main" tabindex="-1">       <div class="bh-wrap"> <h1 class="bh-sign">🏖 BANANA BAY</h1> <p class="bh-tag">the sun never quite sets here</p> <!-- the map + its action band in ONE bordered frame (the Rave's .rv-club
+         shape): the action bar is a band BELOW the map, never over the play. --> <div class="bh-stage"> <div class="bh-view" id="bhView"> <div class="bh-world" id="bhWorld"> <div class="bh-sea bh-sea--0" aria-hidden="true"></div> <div class="bh-sea bh-sea--1" aria-hidden="true"></div> <div class="bh-sea bh-sea--2" aria-hidden="true"></div> <div class="bh-sea bh-sea--3" aria-hidden="true"></div> <div class="bh-digs" id="bhDigs" aria-hidden="true"></div> <div class="bh-net" id="bhNet" aria-hidden="true"></div> <div class="bh-ballshadow" id="bhBallShadow"></div> <div class="bh-ball" id="bhBall" aria-hidden="true"></div> <div class="bh-cap" id="bhCap"><canvas id="bhCapCv" width="150" height="150" aria-hidden="true"></canvas></div> <div class="bh-capbubble" id="bhCapBubble" role="status" aria-live="polite"></div> <div class="bh-sandy" id="bhSandy"><canvas id="bhSandyCv" width="150" height="150" aria-hidden="true"></canvas></div> <div class="bh-capbubble" id="bhSandyBubble" role="status" aria-live="polite"></div> <!-- 🎣 GIL — keeper of the fish ledger, stood at the foot of the dock --> <div class="bh-cap bh-gil" id="bhGil"><canvas id="bhGilCv" width="150" height="150" aria-hidden="true"></canvas></div> <div class="bh-capbubble" id="bhGilBubble" role="status" aria-live="polite"></div> <!-- 🐚 SHELLY — keeps the shell board up the beach --> <div class="bh-cap bh-shelly" id="bhShelly"><canvas id="bhShellyCv" width="150" height="150" aria-hidden="true"></canvas></div> <div class="bh-capbubble" id="bhShellyBubble" role="status" aria-live="polite"></div> <!-- 🏐🌊 the beach ball that lives in the lagoon, and the dip it sits in --> <div class="bh-wballsh" id="bhWBallShadow" aria-hidden="true"></div> <div class="bh-wball" id="bhWBall" aria-hidden="true"></div> <div class="bh-me" id="bhMe"><canvas id="bhMeCv" width="150" height="150" aria-hidden="true"></canvas><i class="bh-me__ring" aria-hidden="true"></i></div> </div> <!-- 🌍 THE WORLD HUD is built by src/lib/world-hud.js — LEVEL · COINS ·
+           TICKETS · rally · CROWD. Shell/fish stats stay with their NPCs
+           (Shelly & Gil) — walk up to them to see your collection. --> <div class="bh-hint" id="bhHint">tap to walk · tap the ball · hit ⛏ Dig (or Space) to dig</div> <div class="bh-exitstrip" id="bhExitStrip" role="status" aria-live="polite"></div> <!-- 🎡 THE STALL VIEW — one frame, every stall. Name + tickets in the
+           header, the game in the middle, cost/PLAY in the footer. It's a
+           view state over the live beach, never a route. --> <div class="bh-panel bh-panel--stall" id="bhStallPanel" hidden> <div class="bh-card bh-card--stall" role="dialog" aria-label="Midway stall"> <div class="bh-stallhead"> <h3 id="bhStallName"></h3> <span class="bh-tix" id="bhStallTickets">🎟 0</span> <button class="bh-x" id="bhStallClose" type="button" aria-label="Leave the stall">×</button> </div> <div class="bh-stallbody" id="bhStallBody"></div> <div class="bh-stallfoot" id="bhStallFoot"></div> </div> </div> <!-- 🏴 THE TREASURE reward panel (historic chest ids). Tickets are shown
+           as SLOTS, not a total: the same haul split into piles reads as
+           treasure instead of a receipt. --> <div class="bh-panel" id="bhChestPanel" hidden> <div class="bh-card bh-card--chest" role="dialog" aria-label="Treasure chest"> <img class="bh-chesthero" src="/assets/banana-stand/chest.png" width="88" alt="" aria-hidden="true"> <h3 class="bh-chesth" id="bhChestH">a buried chest</h3> <p class="bh-chestsub" id="bhChestSub"></p> <div class="bh-cslots" id="bhChestSlots"></div> <button class="bh-btn" id="bhChestBtn" type="button"></button> </div> </div> <div class="bh-panel" id="bhShellPanel" hidden> <div class="bh-card bh-card--npc" role="dialog" aria-label="Shelly's shell collection"> <div class="bh-npcpop" aria-hidden="true"><canvas id="bhShellyPortrait" width="195" height="195"></canvas></div> <button class="bh-cardx" id="bhShellClose" type="button" aria-label="close">✕</button> <h2>shelly</h2> <p id="bhShellSub" class="bh-panel__sub">washed up on the tide.</p> <div class="bh-grid" id="bhShellGrid"></div> </div> </div> <!-- 🏴‍☠️ CAPTAIN SABREFACE'S DESK — the buried-treasure hunt. Kept lean:
+           his map + one line, no wall of rules (the ✕ closes it, backdrop too). --> <div class="bh-panel" id="bhDigPanel" hidden> <div class="bh-card bh-card--npc" role="dialog" aria-label="Captain Sabreface's desk"> <div class="bh-npcpop" aria-hidden="true"><canvas id="bhCapPortrait" width="195" height="195"></canvas></div> <button class="bh-cardx" id="bhDigClose" type="button" aria-label="close">✕</button> <h2>captain sabreface</h2> <p id="bhDigSay">"treasure's buried on this bay, matey."</p> <canvas class="bh-digmap" id="bhDigMap" width="450" height="180" aria-label="the torn treasure map"></canvas> <p class="bh-mapclue" id="bhDigClue"></p> <div class="bh-diglog" id="bhDigLog"></div> </div> </div> <!-- 🐟 GIL'S LEDGER — the fish collection. Silhouettes for what you
+           haven't caught (a visible gap is the whole engine of a collection),
+           rarity colour + your personal best on what you have. --> <div class="bh-panel" id="bhLedger" hidden> <div class="bh-card bh-card--npc" role="dialog" aria-label="Gil's fish ledger"> <div class="bh-npcpop" aria-hidden="true"><canvas id="bhGilPortrait" width="195" height="195"></canvas></div> <button class="bh-cardx" id="bhLedgerClose" type="button" aria-label="close">✕</button> <h2>gil’s ledger</h2> <p id="bhLedgerSub" class="bh-panel__sub"></p> <div class="bh-ledgerbar"><i id="bhLedgerFill"></i></div> <p id="bhLedgerNext" class="bh-tradestat"></p> <div class="bh-fishgrid" id="bhFishGrid"></div> </div> </div> <!-- 🔎 THE SPECIMEN CARD — tap any shell or fish to flip it up close.
+           Replaces the old title= hovers (dead on touch): a big pixel preview,
+           its rarity, how many you've found, and the keeper's note. ONE card,
+           shared by both boards, sits above the collection grids. --> <div class="bh-panel bh-panel--detail" id="bhDetail" hidden> <div class="bh-detailcard" role="dialog" aria-label="Specimen details"> <button class="bh-detailcard__x" id="bhDetailClose" type="button" aria-label="close">✕</button> <div class="bh-detailcard__art"><i id="bhDetailSprite" aria-hidden="true"></i></div> <span class="bh-tierpill" id="bhDetailTier"></span> <h3 class="bh-detailcard__name" id="bhDetailName"></h3> <p class="bh-detailcard__have" id="bhDetailHave"></p> <p class="bh-detailcard__desc" id="bhDetailDesc"></p> </div> </div> <!-- 🎣 the fishing catch reveal --> <div class="bh-panel" id="bhFishCatch" hidden> <div class="bh-card bh-card--catch" role="dialog" aria-label="Your catch"> <h2>on the line!</h2> <div class="bh-catch" id="bhCatchBody"></div> <button class="bh-btn" id="bhCatchGo" type="button">cast again</button> <button class="bh-btn bh-btn--dark" id="bhCatchLeave" type="button">leave the dock</button> </div> </div> <!-- 🥥 COCONUT SHY — the one stall you step INSIDE. A full interior scene
+           over the beach (banana-stand's counter, pier edition): striped awning,
+           the keeper at his desk on the left, the coconut pitch front-and-centre.
+           Drag back from the ball and release to fling. --> <div class="bh-coco" id="bhCoco" role="dialog" aria-label="Coconut Hut" hidden> <div class="bh-coco__awning" aria-hidden="true"> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span> </div> <div class="bh-coco__hud"> <span class="bh-tix" id="bhCocoTix">🎟 0</span> <span class="bh-coco__coins">🪙 <span id="bhCocoCoins">0</span></span> <button class="bh-x" id="bhCocoClose" type="button" aria-label="Leave the stall">×</button> </div> <div class="bh-coco__stage"> <div class="bh-coco__pitch" id="bhCocoPitch"></div> <div class="bh-coco__vendor" aria-hidden="true"><canvas id="bhCocoVendorCv" width="360" height="360"></canvas></div> <div class="bh-coco__desk" aria-hidden="true"></div> </div> <div class="bh-coco__foot" id="bhCocoFoot"></div> <button class="bh-btn bh-coco__back" id="bhCocoBack" type="button">🏖 back to the beach</button> </div> <!-- 🏖 THE BEACH HUT — the bay's one real-money room. Same interior the
+           park's merch shop uses (awning, plank wall with the goods HUNG on
+           it, the keeper big behind the counter), in the bay's key: Trym's
+           "same shop-menu as the banana stand… make the wares in the interior
+           stand out in the background of the shopkeeper". --> <div class="bh-hut" id="bhHut" role="dialog" aria-label="The Beach Hut" hidden> <div class="bh-hut__awning" aria-hidden="true"> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span> </div> <button class="bh-x bh-hut__x" id="bhHutClose" type="button" aria-label="Leave the Beach Hut">×</button> <div class="bh-hut__wall"> <div class="bh-hut__goods" id="bhHutGoods"></div> <div class="bh-hut__bubble" id="bhHutBubble" role="status" aria-live="polite"></div> <button class="bh-hut__keeper" id="bhHutKeeper" type="button" aria-label="talk to Palma"> <canvas id="bhHutKeeperCv" width="360" height="360"></canvas> </button> </div> <div class="bh-hut__counter"> <span class="bh-hut__sign">🚚 free worldwide shipping · the one real thing on this bay, printed &amp; posted to your door</span> </div> <button class="bh-btn bh-hut__back" id="bhHutBack" type="button">🏖 back to the beach</button> </div> </div><!-- /.bh-view --> <!-- 🎮 THE ACTION BAR — the Rave's control band, beach edition: an in-flow
+         band BELOW the map, inside the same frame. React · ⛏ Dig · Sound. --> <div class="bh-actions" aria-label="beach actions"> <button class="bh-act bh-act--icon" id="bhEmote" type="button" aria-label="react"><svg class="pxi" viewBox="0 0 140 120" style="width:1.25em;height:1.25em;" shape-rendering="crispEdges" aria-hidden="true"> <rect x="20" y="0" width="30" height="10" fill="#262233"></rect><rect x="80" y="0" width="30" height="10" fill="#262233"></rect><rect x="10" y="10" width="10" height="10" fill="#262233"></rect><rect x="20" y="10" width="30" height="10" fill="#ff6259"></rect><rect x="50" y="10" width="10" height="10" fill="#262233"></rect><rect x="70" y="10" width="10" height="10" fill="#262233"></rect><rect x="80" y="10" width="30" height="10" fill="#ff6259"></rect><rect x="110" y="10" width="10" height="10" fill="#262233"></rect><rect x="0" y="20" width="10" height="10" fill="#262233"></rect><rect x="10" y="20" width="10" height="10" fill="#ff6259"></rect><rect x="20" y="20" width="20" height="10" fill="#ffffff"></rect><rect x="40" y="20" width="20" height="10" fill="#ff6259"></rect><rect x="60" y="20" width="10" height="10" fill="#262233"></rect><rect x="70" y="20" width="50" height="10" fill="#ff6259"></rect><rect x="120" y="20" width="10" height="10" fill="#262233"></rect><rect x="0" y="30" width="10" height="10" fill="#262233"></rect><rect x="10" y="30" width="10" height="10" fill="#ff6259"></rect><rect x="20" y="30" width="10" height="10" fill="#ffffff"></rect><rect x="30" y="30" width="90" height="10" fill="#ff6259"></rect><rect x="120" y="30" width="10" height="10" fill="#262233"></rect><rect x="0" y="40" width="10" height="10" fill="#262233"></rect><rect x="10" y="40" width="110" height="10" fill="#ff6259"></rect><rect x="120" y="40" width="10" height="10" fill="#262233"></rect><rect x="0" y="50" width="10" height="10" fill="#262233"></rect><rect x="10" y="50" width="10" height="10" fill="#c73e4e"></rect><rect x="20" y="50" width="90" height="10" fill="#ff6259"></rect><rect x="110" y="50" width="10" height="10" fill="#c73e4e"></rect><rect x="120" y="50" width="10" height="10" fill="#262233"></rect><rect x="10" y="60" width="10" height="10" fill="#262233"></rect><rect x="20" y="60" width="10" height="10" fill="#c73e4e"></rect><rect x="30" y="60" width="70" height="10" fill="#ff6259"></rect><rect x="100" y="60" width="10" height="10" fill="#c73e4e"></rect><rect x="110" y="60" width="10" height="10" fill="#262233"></rect><rect x="20" y="70" width="10" height="10" fill="#262233"></rect><rect x="30" y="70" width="10" height="10" fill="#c73e4e"></rect><rect x="40" y="70" width="50" height="10" fill="#ff6259"></rect><rect x="90" y="70" width="10" height="10" fill="#c73e4e"></rect><rect x="100" y="70" width="10" height="10" fill="#262233"></rect><rect x="30" y="80" width="10" height="10" fill="#262233"></rect><rect x="40" y="80" width="10" height="10" fill="#c73e4e"></rect><rect x="50" y="80" width="30" height="10" fill="#ff6259"></rect><rect x="80" y="80" width="10" height="10" fill="#c73e4e"></rect><rect x="90" y="80" width="10" height="10" fill="#262233"></rect><rect x="40" y="90" width="10" height="10" fill="#262233"></rect><rect x="50" y="90" width="10" height="10" fill="#c73e4e"></rect><rect x="60" y="90" width="10" height="10" fill="#ff6259"></rect><rect x="70" y="90" width="10" height="10" fill="#c73e4e"></rect><rect x="80" y="90" width="10" height="10" fill="#262233"></rect><rect x="50" y="100" width="10" height="10" fill="#262233"></rect><rect x="60" y="100" width="10" height="10" fill="#c73e4e"></rect><rect x="70" y="100" width="10" height="10" fill="#262233"></rect><rect x="60" y="110" width="10" height="10" fill="#262233"></rect> </svg></button> <button class="bh-act bh-act--dig" id="bhDigBtn" type="button" aria-label="dig">⛏ Dig</button> <button class="bh-act bh-act--icon" id="bhAudio" type="button" aria-label="sound" aria-pressed="false">🔇</button> </div> </div><!-- /.bh-stage --> <!-- 🏖 THE BEACH-DAY CARD: who's on the beach, your day's stats, and a
+         shareable postcard — the beach's version of the rave's side panel. --> <aside class="bh-side"> <h2>🏖 on the beach</h2> <ol class="bh-roster" id="bhRoster"><li class="is-you"><span>you</span><span class="bh-roster__tag">YOU</span></li></ol> <h2 class="bh-side__h2">your beach day</h2> <div class="bh-daystats" id="bhDayStats"></div> <button class="bh-sharebtn" id="bhShareDay" type="button">📸 share my beach day</button> <div class="bh-door"><a href="/make-a-banana/" data-place="beach">Dress your banana →</a></div> <p class="bh-sidenote">Everyone here is a real visitor. Walk with the arrow keys / WASD or tap the sand — tap the ball to play it, hit ⛏ Dig to dig for treasure.</p> </aside> <div class="bh-foot" id="bhFoot"> <a class="bh-btn" href="/park/?beach" data-place="beach">🌳 back to the park</a> </div> </div>  <div class="bh-sharemodal" id="bhShareModal" hidden> <div class="bh-sharemodal__box"> <button class="bh-sharemodal__close" id="bhShareClose" aria-label="Close">×</button> <div class="bh-sharemodal__card" id="bhShareSlot"></div> <div class="bh-sharemodal__row"> <button id="bhShareDl">⬇ download</button> <button id="bhShareCopy">⧉ copy image</button> <button id="bhShareSys" hidden>share…</button> </div> </div> </div> <div class="bh-cut" id="bhCut" aria-hidden="true"></div> <script type="module" src="/_astro/beach.astro_astro_type_script_index_0_lang.BYGGDlbr.js"></script>  </main>  <script src="/js/main.js"></script> </body> </html>
