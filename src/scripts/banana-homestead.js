@@ -7,13 +7,13 @@
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
-import { catCustom, loadCatalog } from '../lib/drops.js';
+import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { initWorldTutorial } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
-import { worldOwner, worldSid } from '../lib/world.js';
+import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
@@ -600,6 +600,9 @@ function init(visitDoc, visitMiss) {
     const I = INTERIORS[homeTier()];
     if (!I) return;
     inside = homeTier();
+    // ⚡ the shade covers the whole yard — a CSS class stops painting it
+    // (items, critters, the animated fountain/campfire GIFs) while indoors
+    world.classList.add('is-inside');
     if (!inShade) {
       inShade = document.createElement('div');
       inShade.className = 'hs-inshade';
@@ -608,7 +611,7 @@ function init(visitDoc, visitMiss) {
     inShade.hidden = false;
     if (!inPlate) {
       inPlate = document.createElement('div');
-      inPlate.className = 'hs-ov';
+      inPlate.className = 'hs-ov hs-ov--room';   // exempt from the is-inside hide
       inPlate.style.zIndex = '2010';
       world.appendChild(inPlate);
     }
@@ -635,6 +638,7 @@ function init(visitDoc, visitMiss) {
     // walk tap forever (the arranging-leak lesson, door edition)
     cancelPlacing();
     inside = 0;
+    world.classList.remove('is-inside');
     refreshInItems();
     clearChip();
     if (inShade) inShade.hidden = true;
@@ -698,6 +702,7 @@ function init(visitDoc, visitMiss) {
     (state.inItems[inside] || []).forEach((it) => {
       if (!DEX[it.id]) return;
       const el = itemDiv(it);
+      el.classList.add('hs-it--in');   // indoor pieces survive the is-inside hide
       // rugs lie flat: always under the banana and any furniture on them
       el.style.zIndex = String(DEX[it.id].rug ? IN_Z : IN_Z + Math.round(it.y));
       inEls.push(el);
@@ -859,16 +864,24 @@ function init(visitDoc, visitMiss) {
       } else {
         h.x += dx / d * 34 * dt;
         h.y += dy / d * 34 * dt;
-        if (Math.abs(dx) > 3) h.img.style.transform = dx > 0 ? 'scaleX(-1)' : '';
+        const fl = dx > 0 ? 'scaleX(-1)' : '';
+        if (h.fl !== fl) { h.fl = fl; h.img.style.transform = fl; }
         if (now - h.frameAt > 140) {
           h.frameAt = now;
           h.frame = (h.frame + 1) % 4;
         }
       }
-      h.img.style.backgroundPosition = (h.frame * 100 / 3) + '% 0';
-      h.el.style.left = pct(h.x - 16, W);
-      h.el.style.top = pct(h.y - 30, H);
-      h.el.style.zIndex = String(100 + Math.round(h.y));
+      // ⚡ write-on-change only — an idle hen costs zero DOM
+      if (h.pf !== h.frame) {
+        h.pf = h.frame;
+        h.img.style.backgroundPosition = (h.frame * 100 / 3) + '% 0';
+      }
+      if (h.px !== h.x || h.py !== h.y) {
+        h.px = h.x; h.py = h.y;
+        h.el.style.left = pct(h.x - 16, W);
+        h.el.style.top = pct(h.y - 30, H);
+        h.el.style.zIndex = String(100 + Math.round(h.y));
+      }
     }
   }
 
@@ -949,8 +962,12 @@ function init(visitDoc, visitMiss) {
           b.x = Math.max(P[0] + 12, Math.min(P[2] - 12, b.x + (Math.random() * 44 - 22)));
           if (Math.random() < 0.5) b.img.style.transform = Math.random() < 0.5 ? 'scaleX(-1)' : '';
         }
-        place(b.el, b.x, b.y, ' translate(-50%,-100%)');
-        depth(b.el, b.y);
+        // ⚡ a bird standing between hops writes nothing
+        if (b.px !== b.x || b.py !== b.y) {
+          b.px = b.x; b.py = b.y;
+          place(b.el, b.x, b.y, ' translate(-50%,-100%)');
+          depth(b.el, b.y);
+        }
       }
     };
   })();
@@ -978,7 +995,7 @@ function init(visitDoc, visitMiss) {
   const hud = mountHud({
     mount: view,
     theme: { bg: 'rgba(16, 24, 12, 0.82)' },
-    chips: ['lvl', 'coins'],
+    chips: ['lvl', 'coins', 'crowd'],
   });
   const refreshHud = () => hud && hud.refresh();
   document.getElementById('hsEmote').addEventListener('click', () => float(pos.x, pos.y - 44, '❤️'));
@@ -1153,6 +1170,8 @@ function init(visitDoc, visitMiss) {
   function exitTo(href) {
     if (leaving) return;
     leaving = true;
+    // leave NOW so neighbours see the poof the instant you commit (world.js)
+    if (yardRoom) yardRoom.leave();
     track('homestead_exit', { to: 'park' });
     if (REDUCED) { location.href = href; return; }
     cutEl.classList.add('is-on');
@@ -1419,7 +1438,7 @@ function init(visitDoc, visitMiss) {
     return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60 ? (m % 60) + 'm' : '') : m + 'm';
   };
   function checkOrders() {
-    if (visiting || !state.orders.length) return;
+    if (document.hidden || visiting || !state.orders.length) return;
     const now = Date.now();
     const due = state.orders.filter((o) => o.at <= now);
     if (!due.length) return;
@@ -1805,7 +1824,10 @@ function init(visitDoc, visitMiss) {
     const x = snap(moving ? moving.x : Math.max(P[0] + 40, Math.min(P[2] - 40, pos.x)));
     const y = snap(moving ? moving.y : Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null, room: inside };
-    if (inside) placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(y));
+    if (inside) {
+      placing.el.classList.add('hs-it--in');
+      placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(y));
+    }
     camFree = { x, y };   // one glide to the ghost — after this, only drags pan
     if (moving) { refreshItems(); }   // the original disappears while it moves
     view.classList.add('is-placing');   // touch drags steer the camera, not the page
@@ -2482,6 +2504,78 @@ function init(visitDoc, visitMiss) {
     if (Math.hypot(pos.x - doorTgt.x, pos.y - doorTgt.y) < 46) { doorTgt = null; enterHome(); }
   }, 250);
 
+  // ---- 🌐 the yard is MULTIPLAYER (M5) ------------------------------------
+  // One tiny presence room PER HOMESTEAD — slug-keyed YardRoom instances on
+  // worker-rave (/yard?slug=…), the same room contract as the park and the
+  // bay. The wire speaks WORLD PIXELS. No slug yet (fresh, unclaimed) means
+  // no socket: a yard nobody can visit has no crowd. Fails silently by design.
+  const peers = new Map();          // id → { el, ctx, outfit, x, y, sit, lastF }
+  let myYardId = null, hsSendAt = 0, sawNeighbour = false;
+  const lastSent = { x: -1, y: -1, sit: false };
+  function refreshCrowd() { if (hud) hud.setCrowd(peers.size ? String(peers.size + 1) : 'solo'); }
+  function drawPeer(p, force) {
+    const f = p.sit ? 7 : frameNow();
+    if (!force && f === p.lastF) return;
+    p.lastF = f;
+    drawComposite(p.ctx, 150, f, { ...p.outfit, top: '', bottom: '', bg: 'transparent',
+      captions: false, effect: 'none',
+      custom: p.outfit && p.outfit.c ? catCustom(p.outfit.c) : undefined });
+  }
+  function placePeer(p) {
+    place(p.el, p.x, p.y, ME_ANCHOR);
+    p.el.style.zIndex = String(100 + Math.round(p.y));
+  }
+  function addPeer(d) {
+    if (!d || d.id === myYardId || peers.has(d.id)) return;
+    if (!sawNeighbour) { sawNeighbour = true; track('homestead_multiplayer'); }
+    const el = document.createElement('div');
+    el.className = 'hs-peer';
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    el.appendChild(cv);
+    if (d.name) { const tag = document.createElement('span'); tag.textContent = d.name; el.appendChild(tag); }
+    world.appendChild(el);
+    const p = { el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, sit: d.sit === true,
+      x: Number(d.x) || 900, y: Number(d.y) || 700, lastF: -1 };
+    peers.set(d.id, p);
+    placePeer(p);
+    drawPeer(p, true);
+    refreshCrowd();
+  }
+  const yardRoom = !state.slug ? null : presenceRoom({
+    url: 'wss://banana-rave.trymstene.workers.dev/yard?slug=' + encodeURIComponent(state.slug),
+    hi: () => ({ outfit: fullOutfit(ME_DRAW), x: pos.x, y: pos.y, sit: !!sitting, name: myName }),
+    onMessage: (m) => {
+      if (m.t === 'roster') { myYardId = m.you; (m.all || []).forEach(addPeer); refreshCrowd(); }
+      else if (m.t === 'join') addPeer(m.p);
+      else if (m.t === 'move') {
+        const p = peers.get(m.id);
+        if (p) { p.x = Number(m.x) || p.x; p.y = Number(m.y) || p.y; p.sit = m.sit === true; placePeer(p); }
+      } else if (m.t === 'outfit') {
+        const p = peers.get(m.id);
+        if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); }
+      } else if (m.t === 'leave') {
+        const p = peers.get(m.id);
+        if (p) {
+          poofInto(world, 'hs-poof', p.x / W * 100, (p.y - 26) / H * 100);
+          p.el.remove();
+          peers.delete(m.id);
+          refreshCrowd();
+        }
+      }
+    },
+    onDown: () => { peers.forEach((p) => p.el.remove()); peers.clear(); refreshCrowd(); },
+  });
+  function hsSendMove(now) {
+    // indoors you're invisible to the yard — freeze at the door, send nothing
+    if (!yardRoom || !yardRoom.live || inside || now - hsSendAt < 150) return;
+    const sit = !!sitting;
+    if (Math.abs(pos.x - lastSent.x) < 1 && Math.abs(pos.y - lastSent.y) < 1 && sit === lastSent.sit) return;
+    hsSendAt = now;
+    lastSent.x = pos.x; lastSent.y = pos.y; lastSent.sit = sit;
+    yardRoom.send({ t: 'move', x: pos.x, y: pos.y, sit });
+  }
+
   // ---- the banana ---------------------------------------------------------
   const frameNow = () => {
     const cyc = BASE_CYCLE_S * 1000;
@@ -2557,10 +2651,26 @@ function init(visitDoc, visitMiss) {
     }
     drawMe();
     doorTick();
-    birdTick(now, dt);
-    henTick(now, dt);
+    // ⚡ indoors the yard is under the shade — its critters neither move nor
+    // paint until you step back out ("what nobody sees doesn't run")
+    if (!inside) {
+      birdTick(now, dt);
+      henTick(now, dt);
+      peers.forEach((p) => drawPeer(p));
+    }
+    hsSendMove(now);
     cam();
   }
+  // the QA reach-in (the park's ?parktest pattern) — nothing here exists in a
+  // normal session
+  if (HS_TEST) {
+    window.__hs = {
+      pos, tgt, peers,
+      warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
+      room: () => yardRoom,
+    };
+  }
+
   assetsReady().then(() => {
     // 🌍 the Banana World tour — once, on your first visit to the world's
     // front door (skippable; ?bwtour replays it)

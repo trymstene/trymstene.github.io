@@ -64,6 +64,32 @@ const description = 'A clearing west of the park with your name on the sign: cla
        zoom, towering over the fence on phones (why the yard "felt small") */
     .hs-me { position: absolute; left: 0; top: 0; width: 5.5%; pointer-events: none; }
     .hs-me canvas { width: 100%; height: auto; display: block; }
+    /* 🌐 neighbours in the yard (M5) — the park's peer look, homestead-scaled.
+       place() moves them by transform, so the glide transitions transform. */
+    .hs-peer {
+      position: absolute; left: 0; top: 0; width: 5.5%; pointer-events: none;
+      transition: transform 0.18s linear;
+    }
+    .hs-peer canvas { width: 100%; height: auto; display: block; }
+    .hs-peer span {
+      position: absolute; left: 50%; top: -12px; transform: translateX(-50%);
+      font-size: 0.5rem; font-weight: 800; letter-spacing: 0.05em;
+      color: #fffdf5; text-shadow: 1px 1px 0 #000; white-space: nowrap;
+    }
+    /* leavers go in a puff, never a blink — the world-lib smoke */
+    .hs-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }
+    .hs-poof span { position: absolute; inset: 0; opacity: 0; }
+    .hs-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .hs-poof__1 { animation: hsPoofStep 0.75s steps(1) forwards; }
+    .hs-poof__2 { animation: hsPoofStep 0.75s steps(1) 0.25s forwards; }
+    .hs-poof__3 { animation: hsPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes hsPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
+    /* ⚡ indoors the shade covers the whole yard — stop PAINTING it too:
+       visibility keeps layout but skips paint and animated-GIF compositing
+       (fountain, lit campfire). The room plate + indoor pieces are exempt. */
+    .hs-world.is-inside :is(.hs-it:not(.hs-it--in), .hs-ov:not(.hs-ov--room),
+      .hs-bird, .hs-hen, .hs-soil, .hs-crop, .hs-signname, .hs-fpiece,
+      .hs-tentspot, .hs-peer) { visibility: hidden; }
     /* 🐦 garden birds — 16px frames on a 4-frame strip, world-scaled */
     .hs-bird { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }
     .hs-hen { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }

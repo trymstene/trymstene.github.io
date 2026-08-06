@@ -316,6 +316,18 @@ export default {
       }));
       return new Response(await res.text(), { status: res.status, headers: cors });
     }
+    // 🏡 a yard's PRESENCE room (M5) — one tiny room PER HOMESTEAD, keyed by
+    // slug ('ws:<slug>' instances of YardRoom; the REST neighbourhood below
+    // stays 'the-neighbourhood'). Same contract as /park and /beach.
+    if (url.pathname === '/yard') {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      if (!allowed.includes(request.headers.get('Origin') || '')) {
+        return new Response('forbidden', { status: 403 });
+      }
+      const slug = (url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      if (!slug) return new Response('no slug', { status: 400 });
+      return env.YARDS.get(env.YARDS.idFromName('ws:' + slug)).fetch(request);
+    }
     // 🏡 THE NEIGHBOURHOOD (Homestead M1) — /yards/* forwarded to the YardRoom
     if (url.pathname === '/yards' || url.pathname.startsWith('/yards/')) {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -2091,6 +2103,14 @@ const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 9
 // 'index' → the doors list. The OWNER's truth stays in their browser (hs-v1);
 // this room is the copy the neighbours see — a lost row costs one re-save.
 const YARD_ITEM_CAP = 64, GUEST_CAP = 40, VIS_CAP = 40, WAT_CAP = 20;
+// a yard is a garden party, not a festival — the cap matches the guestbook's
+const YARD_CAP = 12;
+// the yard speaks WORLD PIXELS on the 1800×1100 homestead map
+function hsClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(1788, Math.max(12, Math.round(n))) : 900; }
+function hsClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(1088, Math.max(40, Math.round(n))) : 700; }
+function yardPStrip(p) {
+  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
+}
 const yStrip = (x, n) => String(x == null ? '' : x).replace(/[ -<>]/g, '').trim().slice(0, n);
 const yDay = () => new Date().toISOString().slice(0, 10);
 const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
@@ -2101,7 +2121,124 @@ function ySlugBase(name) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'banana';
 }
 export class YardRoom {
-  constructor(state) { this.state = state; }
+  constructor(state, env) {
+    this.state = state;
+    this.env = env; // RAVE binding — presence names ride the shared HQ ledger
+    this.state.setWebSocketAutoResponse(
+      new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')
+    );
+  }
+
+  // ---- 🌐 yard presence (M5) — the room contract, verbatim from the bay.
+  // Only the slug-keyed 'ws:*' instances ever see sockets; the REST
+  // neighbourhood instance never receives an Upgrade header.
+  reapStale() {
+    const now = Date.now();
+    for (const ws of this.state.getWebSockets()) {
+      let last = 0;
+      try {
+        const t = this.state.getWebSocketAutoResponseTimestamp(ws);
+        if (t) last = t.getTime();
+      } catch (e) {}
+      let a = null;
+      try { a = ws.deserializeAttachment(); } catch (e) {}
+      if (a && a.joined > last) last = a.joined;
+      if (last && now - last > 120_000) {
+        if (a) { a.dead = true; try { ws.serializeAttachment(a); } catch (e) {} }
+        try { ws.close(1011, 'stale'); } catch (e) {}
+        if (a) this.broadcast({ t: 'leave', id: a.id }, ws);
+      }
+    }
+  }
+
+  roster() {
+    return this.state.getWebSockets()
+      .map((ws) => { try { return ws.deserializeAttachment(); } catch (e) { return null; } })
+      .filter((a) => a && !a.dead);
+  }
+
+  broadcast(msg, exceptWs) {
+    const s = JSON.stringify(msg);
+    for (const ws of this.state.getWebSockets()) {
+      if (ws === exceptWs) continue;
+      try { ws.send(s); } catch (e) {}
+    }
+  }
+
+  async webSocketMessage(ws, raw) {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (!msg || typeof msg !== 'object') return;
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && me.dead) return;
+
+    if (msg.t === 'hi' && !me) {
+      this.reapStale();
+      // SUPERSEDE — mandatory in every room (world-engineering doctrine)
+      const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      if (sid) {
+        for (const other of this.state.getWebSockets()) {
+          if (other === ws) continue;
+          let a = null;
+          try { a = other.deserializeAttachment(); } catch (e) {}
+          if (a && !a.dead && a.sid === sid) {
+            a.dead = true;
+            try { other.serializeAttachment(a); } catch (e) {}
+            try { other.close(1000, 'superseded'); } catch (e) {}
+            this.broadcast({ t: 'leave', id: a.id }, other);
+          }
+        }
+      }
+      const p = {
+        id: crypto.randomUUID().slice(0, 8),
+        sid,
+        name: sanitizeName(msg.name, []),
+        outfit: sanitizeOutfit(msg.outfit),
+        x: hsClampX(msg.x), y: hsClampY(msg.y),
+        sit: msg.sit === true,
+        joined: Date.now(),
+      };
+      // report to the shared world names ledger + apply Trym's strike list
+      if (this.env && p.name) {
+        try {
+          const r = await this.env.RAVE.get(this.env.RAVE.idFromName('main-floor'))
+            .fetch(new Request('https://room/ingest', { method: 'POST', body: JSON.stringify({ sid, name: p.name }) }));
+          const j = await r.json();
+          if (typeof j.name === 'string') p.name = j.name; // struck names come back empty
+        } catch (e) {}
+      }
+      ws.serializeAttachment(p);
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(yardPStrip) }));
+      this.broadcast({ t: 'join', p: yardPStrip(p) }, ws);
+      return;
+    }
+    if (msg.t === 'move' && me) {
+      const now = Date.now();
+      if (now - (me.lastMove || 0) < 100) return; // client sends at 150ms
+      me.lastMove = now;
+      me.x = hsClampX(msg.x); me.y = hsClampY(msg.y);
+      me.sit = msg.sit === true;
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'move', id: me.id, x: me.x, y: me.y, sit: me.sit }, ws);
+      return;
+    }
+    if (msg.t === 'outfit' && me) {
+      me.outfit = sanitizeOutfit(msg.outfit);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
+    }
+  }
+
+  async webSocketClose(ws) {
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && !me.dead) this.broadcast({ t: 'leave', id: me.id }, ws);
+  }
+
+  async webSocketError(ws) {
+    return this.webSocketClose(ws);
+  }
 
   yardSan(s) {
     s = s && typeof s === 'object' ? s : {};
@@ -2159,6 +2296,16 @@ export class YardRoom {
 
   async fetch(request) {
     const url = new URL(request.url);
+    // 🌐 the presence upgrade — before any REST parsing
+    if (request.headers.get('Upgrade') === 'websocket') {
+      this.reapStale();
+      if (this.roster().length >= YARD_CAP) {
+        return new Response('yard full', { status: 503 });
+      }
+      const pair = new WebSocketPair();
+      this.state.acceptWebSocket(pair[1]);
+      return new Response(null, { status: 101, webSocket: pair[0] });
+    }
     const path = url.pathname;
     const json = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
     let body = {};
