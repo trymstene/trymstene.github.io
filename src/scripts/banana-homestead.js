@@ -1881,6 +1881,9 @@ function init(visitDoc, visitMiss) {
     return true;
   }
   function startPlacingHome(key, opts) {
+    // structures rise in the YARD — buying an upgrade (or a restyle) from the
+    // phone while indoors walks you out first, then hands you the ghost
+    if (inside) exitHome();
     cancelPlacing();
     const d = FIXD[key] || STRUCTS[key];
     const el = document.createElement('div');
