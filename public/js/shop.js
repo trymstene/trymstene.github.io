@@ -141,14 +141,28 @@
       body: JSON.stringify({ query: query, variables: variables || {} })
     }).then(function (r) { return r.json(); });
   }
-  var CART_M = 'mutation cartCreate($id: ID!) { cartCreate(input: { lines: [{ merchandiseId: $id, quantity: 1 }] }) { cart { checkoutUrl } userErrors { message } } }';
+  // the line carries the tracking ids into the order, so the fulfilment
+  // worker's server-side Purchase can credit the right GA4 user and Meta ad.
+  // The custom lane already did this (sticker-core metaIds); this lane didn't.
+  // exactly the shape sticker-core.js has been shipping for weeks — pass the
+  // whole line as a typed variable rather than inlining an attribute list.
+  var CART_M = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
+  function trackIds() {
+    var out = [];
+    var ck = function (n) { return (document.cookie.match('(^|; )' + n + '=([^;]*)') || [])[2]; };
+    var ga = ck('_ga');
+    if (ga) { var cid = ga.split('.').slice(-2).join('.'); if (cid) out.push({ key: '_ga_cid', value: cid }); }
+    var fbp = ck('_fbp'); if (fbp) out.push({ key: '_fbp', value: fbp });
+    var fbc = ck('_fbc'); if (fbc) out.push({ key: '_fbc', value: fbc });
+    return out;
+  }
 
   buyBtn.addEventListener('click', function () {
     var v = variantFor(selColor, selSize);
     if (!v || !v.available) return;
     buyBtn.disabled = true;
     var orig = buyBtn.textContent; buyBtn.textContent = 'Opening checkout…';
-    gql(CART_M, { id: v.id }).then(function (res) {
+    gql(CART_M, { lines: [{ merchandiseId: v.id, quantity: 1, attributes: trackIds() }] }).then(function (res) {
       var url = res && res.data && res.data.cartCreate && res.data.cartCreate.cart && res.data.cartCreate.cart.checkoutUrl;
       if (url) {
         if (window.gtag) gtag('event', 'begin_checkout', withSecs({ items: [{ item_name: DATA.title, item_variant: selColor + ' / ' + selSize }] }));

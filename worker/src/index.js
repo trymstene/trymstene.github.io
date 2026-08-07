@@ -447,6 +447,15 @@ async function handleWebhook(request, env, url) {
   } catch (e) {
     console.error('meta capi threw (order still fulfils)', e && e.message);
   }
+  // 📊 …and GA4, the same way and for the same reason. GA4 has never recorded
+  // a purchase for ANYONE — the browser funnel stops at checkout_redirect and
+  // the Shopify sales-channel link that was supposed to cover the rest never
+  // fired, including for real paid orders. This makes the sale land regardless.
+  try {
+    console.log('ga4 mp:', await sendGa4Purchase(order, env));
+  } catch (e) {
+    console.error('ga4 mp threw (order still fulfils)', e && e.message);
+  }
 
   // Collect custom-sticker line items (the cart attaches `_design_key`)
   const items = [];
@@ -580,6 +589,55 @@ async function sendMetaPurchase(order, env) {
   const body = await res.json().catch(() => ({}));
   return res.ok ? `sent (${body.events_received} received)`
     : `FAILED ${res.status}: ${JSON.stringify(body).slice(0, 200)}`;
+}
+
+// 📊 GA4 Measurement Protocol purchase — the server-side twin of the Meta call
+// above. Needs the GA4_API_SECRET secret (GA4 Admin → Data Streams → the web
+// stream → Measurement Protocol API secrets). Without it this is a no-op, so
+// deploying ahead of the secret is safe.
+const GA4_ID = 'G-1C0QRT9SRK';
+
+async function sendGa4Purchase(order, env) {
+  if (!env.GA4_API_SECRET) return 'no secret — GA4 MP off';
+  const lines = order.line_items || [];
+  // the real browser client id rides in as a line attribute (sticker-core /
+  // shop.js read it off the _ga cookie). Without it GA4 still COUNTS the sale
+  // but credits it to a new user and no campaign — so fall back, don't skip.
+  const cid = lineProps(lines[0] || {})._ga_cid || `shopify.${order.id}`;
+
+  const payload = {
+    client_id: cid,
+    // GA4 dedups on this; if a browser-side purchase is ever added it must
+    // send the same transaction_id or every sale counts twice.
+    events: [{
+      name: 'purchase',
+      params: {
+        transaction_id: String(order.order_number || order.id),
+        value: Number(order.total_price) || 0,
+        currency: order.currency,
+        shipping: Number(order.total_shipping_price_set?.shop_money?.amount) || 0,
+        tax: Number(order.total_tax) || 0,
+        items: lines.map((li) => {
+          const pr = lineProps(li);
+          return {
+            item_id: String(pr._product || li.sku || li.variant_id || ''),
+            item_name: li.title || li.name || 'banana',
+            item_variant: [pr._color, pr._size].filter(Boolean).join(' / ') || undefined,
+            price: Number(li.price) || 0,
+            quantity: li.quantity || 1,
+          };
+        }),
+      },
+    }],
+  };
+
+  const res = await fetch(
+    `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_ID}&api_secret=${env.GA4_API_SECRET}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  // ⚠️ MP answers 204 with NO body even for a malformed event — it never tells
+  // you an event was rejected. Use the /debug/mp/collect endpoint to validate.
+  return res.ok ? `sent (${res.status}, cid ${cid === `shopify.${order.id}` ? 'FALLBACK' : 'real'})`
+    : `FAILED ${res.status}`;
 }
 
 async function verifyShopifyHmac(rawBody, givenB64, secret) {

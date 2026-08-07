@@ -592,6 +592,16 @@ function metaIds() {
   }
   if (fbp) out.push({ key: '_fbp', value: fbp });
   if (fbc) out.push({ key: '_fbc', value: fbc });
+  // 📊 …and GA4's client id, for exactly the same reason. GA4 has never
+  // recorded a single purchase (the Shopify sales-channel link never worked),
+  // so the worker now sends one via the Measurement Protocol — but without
+  // this the sale lands as a brand-new user and credits no campaign. The _ga
+  // cookie is GA1.1.<a>.<b>; the client id is the "<a>.<b>" tail.
+  const ga = ck('_ga');
+  if (ga) {
+    const cid = ga.split('.').slice(-2).join('.');
+    if (cid) out.push({ key: '_ga_cid', value: cid });
+  }
   return out;
 }
 
