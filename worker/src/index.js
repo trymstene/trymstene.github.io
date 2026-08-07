@@ -387,12 +387,41 @@ async function handleHealth(env) {
     });
     const body = await res.json().catch(() => ({}));
     if (res.ok) {
-      const stores = body.result || [];
+      // ⚠️ COUNT, not the store list — /health is unauthenticated, and the ids
+      // and names were free recon for anyone who guessed the URL.
       out.printful = 'ok';
-      out.stores = stores.map((s) => ({ id: s.id, name: s.name, type: s.type }));
+      out.stores = (body.result || []).length;
     } else {
       out.printful = `error ${res.status}`;
     }
+  }
+  // 📊 GA4: prove the Measurement Protocol secret actually works, without
+  // waiting for a real sale. This hits the DEBUG endpoint, which validates the
+  // payload and returns what's wrong with it — the live endpoint answers 204
+  // with an empty body even for a malformed event, so it can't tell you this.
+  // ⚠️ value 0 + a marked transaction_id on purpose: the debug endpoint does
+  // not record events, but if that ever changed, a 0-value "ga4-healthcheck"
+  // sale is obvious and filterable rather than silently polluting revenue.
+  if (env.GA4_API_SECRET) {
+    try {
+      const probe = {
+        client_id: '1234567890.1234567890',
+        events: [{ name: 'purchase', params: {
+          transaction_id: 'ga4-healthcheck', value: 0, currency: 'USD',
+          items: [{ item_id: 'sticker', item_name: 'Custom Banana Sticker', price: 0, quantity: 1 }],
+        } }],
+      };
+      const r = await fetch(
+        `https://www.google-analytics.com/debug/mp/collect?measurement_id=${GA4_ID}&api_secret=${env.GA4_API_SECRET}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(probe) });
+      const b = await r.json().catch(() => ({}));
+      const msgs = b.validationMessages || [];
+      out.ga4 = msgs.length
+        ? msgs.map((m) => m.description || m.validationCode)
+        : `ok — ${GA4_ID} accepted the purchase payload`;
+    } catch (e) { out.ga4 = 'error: ' + String(e && e.message).slice(0, 120); }
+  } else {
+    out.ga4 = 'no GA4_API_SECRET set — server-side purchase is OFF';
   }
   // 📘 Meta CAPI: prove the token can write to THIS dataset without ever
   // putting a fake Purchase in it.
