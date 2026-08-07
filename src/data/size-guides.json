@@ -224,5 +224,90 @@
         "32"
       ]
     }
+  },
+  "849": {
+    "product": "Women's T-Shirt | Gildan 64000L",
+    "unit": "inches",
+    "kind": "product_measure",
+    "note": "Flat garment measurements (from the Printful catalog).",
+    "cols": [
+      "Length",
+      "Width"
+    ],
+    "rows": {
+      "S": [
+        "25.5",
+        "17"
+      ],
+      "M": [
+        "26",
+        "19"
+      ],
+      "L": [
+        "27",
+        "21"
+      ],
+      "XL": [
+        "28",
+        "23"
+      ],
+      "2XL": [
+        "28.5",
+        "25"
+      ]
+    }
+  },
+  "145": {
+    "product": "Crewneck Sweatshirt | Gildan 18000",
+    "unit": "inches",
+    "kind": "product_measure",
+    "note": "Flat garment measurements (from the Printful catalog).",
+    "cols": [
+      "Length",
+      "Width",
+      "Sleeve length"
+    ],
+    "rows": {
+      "S": [
+        "27",
+        "20",
+        "33.5"
+      ],
+      "M": [
+        "28",
+        "22",
+        "34.5"
+      ],
+      "L": [
+        "29",
+        "24",
+        "35.5"
+      ],
+      "XL": [
+        "30",
+        "26",
+        "36.5"
+      ],
+      "2XL": [
+        "31",
+        "28",
+        "37.5"
+      ],
+      "3XL": [
+        "32",
+        "30",
+        "38.5"
+      ],
+      "4XL": [
+        "33",
+        "32",
+        "39.5"
+      ],
+      "5XL": [
+        "34",
+        "34",
+        "40.5"
+      ]
+    }
   }
 }

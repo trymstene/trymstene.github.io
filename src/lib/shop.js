@@ -35,6 +35,13 @@ const COLOR_HEX = {
   'military green': '#7e8560', navy: '#131928', orange: '#ff5723',
   purple: '#4a1c7d', red: '#da0a1a', royal: '#1d50a4', sand: '#e7d3b3',
   'sport grey': '#9b969c', white: '#ffffff', natural: '#efe7d2',
+  // the live tee has carried nine grey swatches since launch — these colours
+  // exist on Gildan 5000 and were never mapped, so the fallback swallowed them
+  cardinal: '#c21b3a', daisy: '#ffc946', 'ice grey': '#e9dddc', lime: '#a3e05a',
+  sapphire: '#007ab3', sky: '#8ee0ff', 'tropical blue': '#00a0b3',
+  'turf green': '#187532', 'yellow haze': '#ffd99c',
+  // joining with the slate: women's tee (64000L) + crewneck (18000)
+  'rs sport grey': '#bebbba', 'heather deep royal': '#6898f2',
 };
 export const colorHex = (name) => COLOR_HEX[(name || '').trim().toLowerCase()] || '#cccccc';
 
@@ -66,9 +73,14 @@ export function firstSentence(html, limit = 140) {
 // (re-run it + add the catalog id below when a new garment joins the shop).
 import GUIDES from '../data/size-guides.json';
 
+// FIRST match wins, so the order is load-bearing: "women" outranks "tee" so a
+// women's tee can't take the unisex chart, and "hoodie" outranks "sweatshirt"
+// so a hooded sweatshirt isn't measured as a crewneck.
 const GUIDE_MATCH = [ // Shopify title substring -> Printful catalog id
+  ["women", '849'],
   ['classic tee', '438'],
   ['hoodie', '146'],
+  ['sweatshirt', '145'],
   ['crop top', '200'],
   ['short sleeve', '108'],
 ];

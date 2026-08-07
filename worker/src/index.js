@@ -99,7 +99,8 @@ export default {
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
       if (url.pathname === '/health') {
-        return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1');
+        return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1',
+          url.searchParams.get('buyable') === '1');
       }
       // visitor country (Cloudflare provides it on every request) — the
       // builder uses it to show Shopify's localized price for that country
@@ -372,8 +373,51 @@ async function handleServe(request, env, url) {
 // ---------- GET /health ----------
 // Verifies the Printful token + config without exposing anything sensitive.
 
-async function handleHealth(env, ship, store) {
+async function handleHealth(env, ship, store, buyable) {
   const out = { variant_id: env.PRINTFUL_VARIANT_ID, variant_map: PRINTFUL_BY_SHOPIFY, printful: 'no token set' };
+  // 🛒 CAN ANYONE ACTUALLY BUY IT? (/health?buyable=1)
+  // Found 8 Aug: every variant of BOTH official products reported
+  // availableForSale:false on the Storefront API — 100 tee variants and the
+  // mug — while every builder product was fine. A product can look perfect on
+  // the PDP and simply refuse to sell, and nothing else in the stack notices.
+  // Printful-synced products don't need Shopify inventory at all; tracked +
+  // 0 on hand + policy DENY is the combination that silently blocks a sale.
+  if (buyable) {
+    if (!adminConfigured(env)) {
+      out.buyable = 'no admin credentials set';
+    } else try {
+      const d = await adminGql(env, `query { products(first: 30) { nodes {
+        handle status tags
+        variants(first: 100) { nodes { title inventoryPolicy inventoryQuantity
+          inventoryItem { tracked } } } } } }`);
+      out.buyable = {};
+      for (const p of d.products.nodes) {
+        if ((p.tags || []).includes('custom-temp')) continue;
+        const vs = p.variants.nodes;
+        const blocked = vs.filter((v) => v.inventoryItem.tracked
+          && v.inventoryPolicy === 'DENY' && (v.inventoryQuantity || 0) <= 0);
+        out.buyable[p.handle] = blocked.length
+          ? `❌ ${blocked.length}/${vs.length} variants blocked — tracked, 0 on hand, policy DENY`
+          : (p.status === 'ACTIVE' ? `ok (${vs.length})` : `status ${p.status}`);
+      }
+      // ⚠️ AND THE ONE THAT ACTUALLY BIT US: a product whose delivery profile
+      // has no zone covering a country is availableForSale:FALSE in that
+      // market — while still true with no @inContext at all. Inventory looks
+      // perfect, the PDP renders, and nobody can buy. Left behind by the
+      // free-shipping experiment's profile juggling.
+      const dp = await adminGql(env, `query { deliveryProfiles(first: 10) { nodes {
+        name default productVariantsCount { count }
+        profileLocationGroups { locationGroupZones(first: 20) { nodes {
+          zone { name countries { code { countryCode } } }
+          methodDefinitions(first: 5) { nodes { name active } } } } } } } }`);
+      out.delivery = dp.deliveryProfiles.nodes.map((p) => {
+        const zones = p.profileLocationGroups.flatMap((g) => g.locationGroupZones.nodes);
+        const rates = zones.reduce((n, z) => n + z.methodDefinitions.nodes.filter((m) => m.active).length, 0);
+        return `${p.default ? '(default) ' : ''}${p.name}: ${p.productVariantsCount.count} variants, ` +
+          `${zones.length} zones, ${rates} active rates${rates ? '' : '  ❌ NOTHING CAN SHIP'}`;
+      });
+    } catch (e) { out.buyable = 'error: ' + e.message.slice(0, 200); }
+  }
   // temp-product feature + cron hygiene at a glance
   if (adminConfigured(env)) {
     try {

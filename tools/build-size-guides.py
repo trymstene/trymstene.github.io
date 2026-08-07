@@ -22,6 +22,8 @@ GARMENTS = {
     "200": "All-Over Print Crop Top",                   # crop top
     "108": "Men's Fitted T-Shirt | Next Level 3600",    # short sleeve t-shirt
     "71":  "Unisex Staple T-Shirt | Bella+Canvas 3001", # CUSTOM banana tee
+    "849": "Women's T-Shirt | Gildan 64000L",           # women's tee (the slate)
+    "145": "Crewneck Sweatshirt | Gildan 18000",        # crewneck (the slate)
 }
 
 
