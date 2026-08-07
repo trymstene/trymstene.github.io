@@ -34,14 +34,17 @@ export default [
     // Base garment: Bella+Canvas 3001 (Printful product 71, $13.50 all colors).
     // NO black/dark grounds (the banana's outline is black) and NO yellows
     // (banana camouflage) — Trym's call: colored/white, banana shines.
-    // ⚠️ ONE FLAT PRICE ACROSS EVERY COLOUR AND SIZE, and Printful's cost is
-    // NOT flat — it climbs with size. The OFFICIAL tee had exactly this and
-    // 5XL was losing ~$9 a sale (Trym caught it at checkout, 7 Aug); that one
-    // is now size-tiered $20.99-$30.99. This one is unaudited: it needs the
-    // per-size Bella+Canvas 3001 costs before anyone trusts $24.99 on a 5XL.
+    // ⚠️ ONE FLAT PRICE ACROSS EVERY COLOUR AND SIZE, while Printful's cost
+    // CLIMBS WITH SIZE — Bella+Canvas 3001, checked 7 Aug: S-XL $11.95,
+    // 2XL $13.69, then 3XL $15.69 / 4XL $17.69 / 5XL $19.69. The official tee
+    // had the same shape and 5XL was losing ~$9 a sale before it got tiered.
+    // ⭐ This one is SAFE ONLY BECAUSE `sizes` STOPS AT 2XL. $26.99 covers the
+    // dearest offered size in the dearest market (2XL to Norway, +$1.44).
+    // ⚠️ ADDING 3XL+ TO `sizes` WITHOUT RE-PRICING PUTS IT UNDERWATER AGAIN —
+    // a 5XL at $26.99 loses money. Price the size, or don't offer it.
     key: 'tee',
     name: 'Tee',
-    shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee, $34.99 (USD store since 15 Jul)
+    shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee
     printfulVariantId: 4012, // fallback = White / M (never used once options resolve)
     options: {
       sizeGuideId: '71', // Printful catalog id → src/data/size-guides.json (build-size-guides.py)
@@ -57,7 +60,7 @@ export default [
     },
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
-    priceHint: '24.99',
+    priceHint: '26.99',
     live: true,
   },
   {

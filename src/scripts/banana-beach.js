@@ -2712,7 +2712,7 @@ function init() {
   const HUT_PRODUCTS = [
     { key: 'sticker', name: 'kiss-cut sticker', price: '$11.99' },
     { key: 'mug', name: 'mug', price: '$22.99' },
-    { key: 'tee', name: 'tee', price: '$24.99' },
+    { key: 'tee', name: 'tee', price: '$26.99' },
   ];
   // 🤠 PALMA, who keeps the hut. Trym asked for a straw sun hat and, failing
   // that, "a hat the others dont use" — the wardrobe has no straw hat at all

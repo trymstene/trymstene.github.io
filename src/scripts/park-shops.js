@@ -14,7 +14,7 @@ import { track, esc } from './park-util.js';
 const MERCH_PRODUCTS = [
   { key: 'sticker', name: 'kiss-cut sticker', price: '$11.99' },
   { key: 'mug', name: 'mug', price: '$22.99' },
-  { key: 'tee', name: 'tee', price: '$24.99' },
+  { key: 'tee', name: 'tee', price: '$26.99' },
 ];
 // 🍌 INKA, keeper of the merch shop — monocle + a drawn print-shop apron
 // (banana NPCs are our own art; the apron is painted over the composite)
