@@ -1231,16 +1231,10 @@ const faq = {
               drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
               drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.25));
     }
-    /* magnet: same die-cut read, rounded dark border hints the fridge slab */
-    .pk-hang--magnet .pk-hang__mock {
-      background: #e8e4d8; border-radius: 10px;
-      box-shadow: inset 0 0 0 3px #2a2a33, 3px 4px 0 rgba(0, 0, 0, 0.45);
-    }
-    .pk-hang--magnet canvas {
-      width: 56px; height: 56px;
-      filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
-              drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
-    }
+    /* mug: makeMugMockup already draws the whole ceramic, so the frame just
+       gives it a shelf to sit on — no contour, or it'd outline the mug body */
+    .pk-hang--mug .pk-hang__mock { background: #f4f1e8; }
+    .pk-hang--mug canvas { width: 62px; height: 62px; }
     /* tee: the banana printed small on a tee-coloured rectangle */
     .pk-hang--tee .pk-hang__mock { background: #1c2233; }
     .pk-hang--tee canvas { width: 40px; height: 40px; }

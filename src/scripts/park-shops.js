@@ -12,9 +12,9 @@ import { track, esc } from './park-util.js';
 // 🧃 THE MERCH SHOP — keys are the PDP slugs (/make-a-banana/<key>/, from
 // shared/products.js); prices are display hints, Shopify enforces the real one
 const MERCH_PRODUCTS = [
-  { key: 'sticker', name: 'die-cut sticker', price: '$14.99' },
-  { key: 'magnet', name: 'fridge magnet', price: '$16.99' },
-  { key: 'tee', name: 'tee', price: '$34.99' },
+  { key: 'sticker', name: 'kiss-cut sticker', price: '$11.99' },
+  { key: 'mug', name: 'mug', price: '$22.99' },
+  { key: 'tee', name: 'tee', price: '$24.99' },
 ];
 // 🍌 INKA, keeper of the merch shop — monocle + a drawn print-shop apron
 // (banana NPCs are our own art; the apron is painted over the composite)

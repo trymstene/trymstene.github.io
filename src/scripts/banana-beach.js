@@ -2707,10 +2707,12 @@ function init() {
   // you walk into rather than a banner over the sand — doors out-pull
   // billboards in this world about 15:1 (rave_exit_stand 356 vs
   // rave_screen_ad 24 over the same window).
+  // ⚠️ prices are hardcoded here for the hut sign — they must track
+  // shared/products.js priceHint by hand. Magnet retired 7 Aug.
   const HUT_PRODUCTS = [
-    { key: 'sticker', name: 'die-cut sticker', price: '$14.99' },
-    { key: 'magnet', name: 'fridge magnet', price: '$16.99' },
-    { key: 'tee', name: 'tee', price: '$34.99' },
+    { key: 'sticker', name: 'kiss-cut sticker', price: '$11.99' },
+    { key: 'mug', name: 'mug', price: '$22.99' },
+    { key: 'tee', name: 'tee', price: '$24.99' },
   ];
   // 🤠 PALMA, who keeps the hut. Trym asked for a straw sun hat and, failing
   // that, "a hat the others dont use" — the wardrobe has no straw hat at all

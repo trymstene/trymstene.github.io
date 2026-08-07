@@ -88,14 +88,9 @@ export default [
     priceHint: '22.99',
     live: true, // ⚠️ flipped WITH Shopify DRAFT→ACTIVE — the two must never disagree
   },
-  {
-    key: 'magnet',
-    name: 'Magnet',
-    shopifyVariantGid: 'gid://shopify/ProductVariant/48962172354779', // Custom Banana Magnet
-    printfulVariantId: 16366,   // Die-Cut Magnets (product 656), 3″×3″, cost $3.32
-    size: '3″×3″ (7.5 cm)',
-    material: 'flexible fridge magnet',
-    priceHint: '14.99',
-    live: true,
-  },
 ];
+// ✂️ THE MAGNET WAS RETIRED 7 Aug 2026 (Trym's call). Die-Cut Magnets, product
+// 656 / variant 16366, $3.32 to print — but the worst shipper in the catalog by
+// a distance: $10.99 to the UK, dearer than a t-shirt, with no cheaper rate
+// offered. That pinned it near $15 while the sticker went to $11.99, so it read
+// as the expensive twin of a better product. Its Shopify product is archived.
