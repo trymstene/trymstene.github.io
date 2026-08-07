@@ -428,38 +428,47 @@ async function handleHealth(env, ship, store) {
   // 🏷 the OFFICIAL line's real economics (/health?store=1). Those products are
   // Printful-synced rather than manifest-driven, so their cost lives only in
   // Printful — which is why they were priced by feel and never re-checked.
-  if (store && env.PRINTFUL_TOKEN) {
-    const pf = (path) => fetch('https://api.printful.com' + path, {
-      headers: { Authorization: `Bearer ${env.PRINTFUL_TOKEN}` },
-    }).then((r) => r.json()).catch(() => ({}));
+  if (store) {
+    // PRINTFUL_TOKEN is scoped to "Banana API" — the native store that takes
+    // the custom lane's orders, which has NO synced products and therefore
+    // cannot see the official line's cost. PRINTFUL_TOKEN_SHOP is the second,
+    // optional token for the Shopify-connected store. Both are tried and
+    // reported separately, so it's obvious which one can see what.
     // ⚠️ ONE representative variant per product, not all of them. The hoodie
     // alone has 80 sync variants and the classic tee 100 — walking them all
     // blows Cloudflare's 50-subrequest cap and the whole worker throws 1101.
-    // Colour/size rarely move Printful's price, so the first row is enough to
-    // price a line; check a specific variant by hand if one looks off.
-    try {
-      const list = await pf('/store/products');
-      if (!list.result) {
-        out.store = 'printful said: ' + JSON.stringify(list).slice(0, 200);
-      } else {
-        out.store = [];
+    out.store = {};
+    for (const [label, tok] of [['api', env.PRINTFUL_TOKEN], ['shop', env.PRINTFUL_TOKEN_SHOP]]) {
+      if (!tok) { out.store[label] = 'no token set'; continue; }
+      const pf = (path) => fetch('https://api.printful.com' + path, {
+        headers: { Authorization: `Bearer ${tok}` },
+      }).then((r) => r.json()).catch((e) => ({ _err: String(e && e.message) }));
+      try {
+        const stores = await pf('/stores');
+        const seen = (stores.result || []).map((s) => `${s.id}:${s.name}(${s.type})`);
+        const list = await pf('/store/products');
+        if (!list.result) {
+          out.store[label] = { stores: seen, error: JSON.stringify(list).slice(0, 160) };
+          continue;
+        }
+        const rows = [];
         for (const p of list.result.slice(0, 12)) {
           const d = await pf('/store/products/' + p.id);
           const sv = ((d.result || {}).sync_variants || [])[0];
           if (!sv) continue;
           const cvid = sv.product && sv.product.variant_id;
           const cv = cvid ? await pf('/products/variant/' + cvid) : null;
-          out.store.push({
+          rows.push({
             product: p.name,
             variants: ((d.result || {}).sync_variants || []).length,
-            variant: sv.name,
             retail: sv.retail_price,
             cost: cv && cv.result && cv.result.variant ? cv.result.variant.price : null,
           });
         }
+        out.store[label] = { stores: seen, products: rows.length, rows };
+      } catch (e) {
+        out.store[label] = 'threw: ' + String(e && e.message).slice(0, 160);
       }
-    } catch (e) {
-      out.store = 'threw: ' + String(e && e.message).slice(0, 200);
     }
   }
   // 🚚 real shipping cost per product, on demand (/health?ship=1). Shipping is
