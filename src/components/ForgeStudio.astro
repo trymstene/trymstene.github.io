@@ -144,6 +144,10 @@ const items = mode === 'items';
   .fg-kind__btn[aria-selected="true"] {
     background: var(--nana, #ffe135); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
   }
+  /* the where-does-it-go line under the submit button — never a tooltip */
+  .fg-itemsnote {
+    margin: -2px 0 0; font-size: 0.72rem; line-height: 1.45; opacity: 0.8;
+  }
   /* the furniture context previews */
   .fg-decorprev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .fg-decorprev figure { margin: 0; }
@@ -411,10 +415,10 @@ const items = mode === 'items';
              canvas underlay, placement row, preview and submit all follow. -->
         <div class="fg-kind" id="fgKind" role="tablist" aria-label="What are you making?">
           <button type="button" class="fg-kind__btn" data-kind="wear" role="tab" aria-selected="true">
-            Wearable gear<small>the banana wears it — drops at the rave</small>
+            Wearable gear<small>the banana wears it — sold at the Banana Stand</small>
           </button>
           <button type="button" class="fg-kind__btn" data-kind="decor" role="tab" aria-selected="false">
-            Homestead furniture<small>stands in a yard or room</small>
+            Homestead furniture<small>stands in a yard or room — sold on the banana phone</small>
           </button>
         </div>
         <!-- ⭐ THE SPOT PICKER. The drawing SUGGESTS where an item rides (nearest
@@ -432,7 +436,10 @@ const items = mode === 'items';
         </div>
         <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play the dance</button>
         <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
-        <button class="btn btn--light" id="fgItemsSubmit" title="Send it in — approved items drop at the Banana Rave with your name on them"><PixelArtIcon name="upload" size="18px" /> Submit to the rave</button>
+        <button class="btn btn--light" id="fgItemsSubmit"><PixelArtIcon name="upload" size="18px" /> Submit it</button>
+        <!-- ⚠️ VISIBLE, not a title= tooltip: phones never show those, and this
+             is the sentence that tells a maker where their item ends up -->
+        <p class="fg-itemsnote" id="fgSubNote">Send it in — approved gear goes on sale at the <b>Banana Stand</b>, your name on the label.</p>
         <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over"><PixelArtIcon name="eraser" size="18px" /> Clear &amp; start over</button>
         <div class="fg-signrow" id="fgItemsSubRow" hidden>
           <input id="fgItemName" maxlength="40" placeholder="name your item — e.g. Wizard Hat" aria-label="Item name">
@@ -440,8 +447,8 @@ const items = mode === 'items';
           <button class="btn btn--dark" id="fgItemSend">Send it in</button>
         </div>
         <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>.</div>
-        <div id="fgItemsSubDone" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved items become <b>rave drops</b> with your name riding them.</div>
-        <div id="fgItemsSubDoneDecor" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved furniture reaches every homestead's <b>Community shelf</b> with your name on it.</div>
+        <div id="fgItemsSubDone" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved gear goes on sale in the <a href="/park/"><b>Banana Stand</b></a>'s back-catalog, your name on the label.</div>
+        <div id="fgItemsSubDoneDecor" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved furniture reaches every <a href="/homestead/"><b>homestead</b></a>'s phone store, your name on the label.</div>
       </div>
     )}
   </div>

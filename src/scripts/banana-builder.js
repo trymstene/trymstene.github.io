@@ -23,7 +23,7 @@ import {
 import { memeGif } from '../lib/meme-gif.js';
 import { offerAfterDownload } from '../lib/make-it-real.js'; // 🛍 the moment the wish is granted
 import { wearToCustom } from '../lib/wear-render.js'; // community-item wear payload → engine custom channel
-import { tonightDrop, dropStatus, fmtClock, loadCatalog as loadDropCatalog } from '../lib/drops.js'; // the readable drop clock
+import { loadCatalog as loadDropCatalog } from '../lib/drops.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -385,7 +385,7 @@ function init() {
   // tooltip, which only desktop saw): the item, its MAKER, how many bananas have
   // caught it, and ONE action (wear it if it's yours, a door to catch it if not).
   let cardPop = null, cardClockT = null;
-  loadDropCatalog(); // populate the shared drop clock's catalog so tonightDrop() knows the pool
+  loadDropCatalog(); // the shared catalog cache the community cards read from
   function communityCard(it) {
     if (!cardPop) {
       cardPop = document.createElement('div');
@@ -413,24 +413,14 @@ function init() {
     el('bbCardCount').textContent = n > 0
       ? ('🍌 caught by ' + n + (n === 1 ? ' banana' : ' bananas'))
       : (owned ? '🍌 fresh out of the forge' : '🍌 nobody’s caught it yet — be first');
-    // 🕒 THE DROP CLOCK — a Diablo-boss-style countdown so an admirer of a locked
-    // item is never left guessing "is it 1 minute or a week away?". Community
-    // items drop ONE at a time on a daily rotation; this says when the next one
-    // lands and which item it is, live-ticking while the card is open.
+    // ⭐ NO MORE DROP CLOCK (Trym, 7 Aug). Community gear used to wait for a
+    // once-a-night rotation, so this card counted down to "maybe tonight,
+    // maybe not this one" — a countdown to a coin flip. Every approved piece
+    // now simply sits in the Banana Stand's back-catalog, always buyable.
     const clock = el('bbCardClock');
     clearInterval(cardClockT);
-    const paintClock = () => {
-      const td = tonightDrop();
-      if (owned || !td) { clock.hidden = true; return; }
-      const st = dropStatus();
-      const isThis = td.id === it.id;
-      clock.hidden = false;
-      clock.textContent = isThis
-        ? (st.live ? '🎁 out now — grab it!' : '🎁 drops in ' + fmtClock(st.secsToNext))
-        : (st.live ? '🎁 a drop’s out · not this one' : '🎁 next drop ' + fmtClock(st.secsToNext) + ' · not this one');
-    };
-    paintClock();
-    cardClockT = setInterval(paintClock, 1000);
+    clock.hidden = owned;
+    if (!owned) clock.textContent = '🏪 on sale at the Banana Stand · 50 coins';
     const action = el('bbCardAction');
     if (owned) {
       const worn = cList().includes(it.id);
@@ -444,8 +434,8 @@ function init() {
       };
     } else {
       action.className = 'bb-cardpop__action bb-cardpop__action--door';
-      action.textContent = 'Catch it at the rave →';
-      action.onclick = () => { location.href = '/rave/'; };
+      action.textContent = 'Buy it at the Banana Stand →';
+      action.onclick = () => { location.href = '/park/'; };
     }
     cardPop.hidden = false;
   }

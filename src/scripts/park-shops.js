@@ -7,7 +7,7 @@ import { passStat, passGet, passPush } from '../lib/banana-pass.js';
 import { catCustom } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { MARKET } from './park-geo.js';
-import { track } from './park-util.js';
+import { track, esc } from './park-util.js';
 
 // 🧃 THE MERCH SHOP — keys are the PDP slugs (/make-a-banana/<key>/, from
 // shared/products.js); prices are display hints, Shopify enforces the real one
@@ -359,11 +359,14 @@ export function initShops(ctx) {
   function stAddTile(item, container) {
     const tile = document.createElement('button');
     tile.type = 'button';
-    tile.className = 'pk-tile';
+    tile.className = 'pk-tile' + (item.back ? ' is-back' : '');
     tile.innerHTML =
       '<span class="pk-tile__art">' + stItemArt(item) + '</span>'
       + '<b>' + item.label + '</b>'
-      + '<span class="pk-tile__slot">' + (item.back ? 'drop' : item.slot) + '</span>'
+      // a community piece wears its MAKER where stock items wear their slot —
+      // the credit is the point of the shelf
+      + '<span class="pk-tile__slot">' + (item.made ? 'by ' + esc(item.made)
+        : item.back ? 'drop' : item.slot) + '</span>'
       + '<span class="pk-price"><img src="/assets/banana-stand/coin.png" width="14" alt=""> ' + item.price + '</span>'
       + '<span class="pk-tile__lock" aria-hidden="true">' + ST_LOCK_SVG + '</span>'
       + '<span class="pk-tile__own" aria-hidden="true">YOURS</span>';
@@ -420,14 +423,19 @@ export function initShops(ctx) {
       .then((r) => (r.ok ? r.json() : []))
       .then((items) => {
         if (!Array.isArray(items)) return;
-        const own = stCatOwned();
+        // ⭐ 7 Aug: EVERY approved community wearable lives here, newest first,
+        // and the ones you already own STAY on the shelf greyed out (Trym: the
+        // wall of what the community made is the point — and a rave drop was a
+        // coin flip most makers never saw land). Furniture sells at the phone.
         stAddBackItems(items
-          .filter((it) => !own[it.id] && !stOwned(it.id))
+          .filter((it) => it.kind !== 'decor')
+          .sort((a, b) => (b.added || 0) - (a.added || 0))
           .map((it) => ({
             id: it.id, label: it.title || 'community item', slot: 'c',
-            price: ST_BACKCAT_PRICE, back: true,
+            price: ST_BACKCAT_PRICE, back: true, made: it.by || '',
             artHtml: (wearToCustom(it.wear) || {}).art || '',
-            desc: (it.by ? 'made by ' + it.by + '. ' : '') + 'you missed the drop night. money fixes that.',
+            desc: (it.by ? 'made by ' + it.by + ', drawn in the forge. ' : 'drawn in the forge by a visitor. ')
+              + 'approved by the banana guy — yours for coins.',
           })));
       })
       .catch(() => { /* offline: the curated back-catalog stands */ });

@@ -1357,12 +1357,12 @@ function init() {
     const prev = el('fgDecorPrev');
     if (prev) prev.hidden = k !== 'decor';   // …furniture gets context cards instead
     drawDecorPreviews();
-    const sub = el('fgItemsSubmit');
-    if (sub) {
-      if (!sub.dataset.orig) sub.dataset.orig = sub.innerHTML;
-      sub.innerHTML = k === 'decor'
-        ? sub.dataset.orig.replace(/Submit to the rave/i, 'Submit to the Homestead')
-        : sub.dataset.orig;
+    // the destination line under the button — VISIBLE copy, never a tooltip
+    const note = el('fgSubNote');
+    if (note) {
+      note.innerHTML = k === 'decor'
+        ? 'Send it in — approved furniture goes on sale in every homestead’s <b>phone store</b>, your name on the label.'
+        : 'Send it in — approved gear goes on sale at the <b>Banana Stand</b>, your name on the label.';
     }
     paintSpotPicker();
     updateItemsStatus();
@@ -1439,7 +1439,8 @@ function init() {
   // ---- 🎁 submit to the club: the item's journey into the catalog ----------
   // POST the wear payload to worker-share's catalog inbox; the banana guy
   // curates on his desk; the verdict comes back to the pass via cat-subs-v1
-  // (the gallery-submission pattern). Approved = a rave drop with your name.
+  // (the gallery-submission pattern). Approved = on sale with your name:
+  // gear in the Banana Stand back-catalog, furniture in the homestead phone.
   const itemsSubmit = el('fgItemsSubmit');
   if (itemsSubmit) itemsSubmit.onclick = () => {
     const was = itemsSubmit.innerHTML; // icon buttons restore via innerHTML (doctrine)

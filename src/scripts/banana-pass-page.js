@@ -572,7 +572,7 @@ function renderNotices() {
     (pend ? '<p class="ps-pendingline">⏳ ' + pend + (pend === 1 ? ' banana is' : ' bananas are')
       + ' with the banana guy for review — the verdict usually lands within 48 hours.</p>' : '')
     + (catPend ? '<p class="ps-pendingline">🎁 ' + catPend + (catPend === 1 ? ' item is' : ' items are')
-      + ' with the club for review — approved items become rave drops.</p>' : '')
+      + ' with the club for review — approved pieces go on sale with your name on them.</p>' : '')
     + list.map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
       + '<span class="ps-notice__icon">' + n.icon + '</span>'
       + '<div class="ps-notice__body">' + n.text

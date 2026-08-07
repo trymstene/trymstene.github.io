@@ -160,7 +160,7 @@ export function initTravel({ here, mount, before, btnClass, track }) {
     + '<hr class="wt-sep">'
     + '<div class="wt-list">'
     // 🎁 the workshop is a BENCH, not a place — paper like the shop. It feeds
-    // the whole community-item loop (draw → submit → rave drop), and doors
+    // the whole community-item loop (draw → submit → on sale), and doors
     // beat posters here too: until now it only had the LED ad.
     + '<a class="wt-go wt-go--shop" href="/forge/items/" data-to="items">'
     + '<span class="wt-go__icon">🎁</span>'

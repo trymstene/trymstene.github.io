@@ -141,13 +141,13 @@ function catCustom(ids) {
 
 }
 function pickTonightDrop() {
-  // stable pool order: curated drops first, then catalog by approval time
-  const pool = [
-    ...DROPS.map((d) => ({ ...d, catalog: false })),
-    ...CATALOG.filter((it) => it.kind !== 'decor')   // decor sells at the Stand, never drops
-      .sort((a, b) => (a.added || 0) - (b.added || 0))
-      .map((it) => ({ id: it.id, label: it.title || 'community item', by: it.by || '', catalog: true, wear: it.wear })),
-  ];
+  // ⭐ CURATED DROPS ONLY (Trym, 7 Aug). Community-made items USED to ride
+  // this pool, and it was the wrong shelf for them: a maker waits days for
+  // approval, then their item appears on one random night to whoever happens
+  // to be standing on the floor — most makers never see their own piece land.
+  // Every approved wearable now sits in the Banana Stand's back-catalogue,
+  // buyable whenever, and furniture sits in the homestead phone store.
+  const pool = DROPS.map((d) => ({ ...d, catalog: false }));
   if (!pool.length) return null;
   const day = Math.floor(Date.now() / 86400000);
   return pool[Math.floor(seedRand(0xd20b + day) * pool.length)] || pool[0];

@@ -1456,6 +1456,10 @@ const faq = {
     }
     .pk-tile.is-owned .pk-tile__own { display: block; }
     .pk-tile.is-owned .pk-tile__art { filter: drop-shadow(0 0 5px rgba(55, 214, 122, 0.45)); }
+    /* an already-bought community piece stays on the shelf, quieted down —
+       the wall of what the community made is worth seeing either way */
+    .pk-tile.is-owned.is-back { opacity: 0.55; }
+    .pk-tile.is-owned.is-back .pk-price { display: none; }
     .pk-stand__head {
       font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 0.85rem;
       letter-spacing: 0.06em; margin: 1.3rem 0 0.7rem; text-transform: lowercase;
@@ -1705,7 +1709,7 @@ const faq = {
 
             <!-- the SHELF: every item in stock, built from the manifest -->
             <div class="pk-stand__shelf" id="pkStandShelf" aria-label="The banana stand's stock"></div>
-            <h2 class="pk-stand__head" id="pkStandBackHead" hidden>missed drops — the back-catalog</h2>
+            <h2 class="pk-stand__head" id="pkStandBackHead" hidden>the back-catalog — made by visitors</h2>
             <div class="pk-stand__shelf" id="pkStandBackShelf" aria-label="Drops you missed" hidden></div>
 
           </div>
