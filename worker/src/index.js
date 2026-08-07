@@ -98,7 +98,9 @@ export default {
       }
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
-      if (url.pathname === '/health') return handleHealth(env, url.searchParams.get('ship') === '1');
+      if (url.pathname === '/health') {
+        return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1');
+      }
       // visitor country (Cloudflare provides it on every request) — the
       // builder uses it to show Shopify's localized price for that country
       if (url.pathname === '/geo') {
@@ -370,7 +372,7 @@ async function handleServe(request, env, url) {
 // ---------- GET /health ----------
 // Verifies the Printful token + config without exposing anything sensitive.
 
-async function handleHealth(env, ship) {
+async function handleHealth(env, ship, store) {
   const out = { variant_id: env.PRINTFUL_VARIANT_ID, variant_map: PRINTFUL_BY_SHOPIFY, printful: 'no token set' };
   // temp-product feature + cron hygiene at a glance
   if (adminConfigured(env)) {
@@ -422,6 +424,43 @@ async function handleHealth(env, ship) {
     } catch (e) { out.ga4 = 'error: ' + String(e && e.message).slice(0, 120); }
   } else {
     out.ga4 = 'no GA4_API_SECRET set — server-side purchase is OFF';
+  }
+  // 🏷 the OFFICIAL line's real economics (/health?store=1). Those products are
+  // Printful-synced rather than manifest-driven, so their cost lives only in
+  // Printful — which is why they were priced by feel and never re-checked.
+  if (store && env.PRINTFUL_TOKEN) {
+    const pf = (path) => fetch('https://api.printful.com' + path, {
+      headers: { Authorization: `Bearer ${env.PRINTFUL_TOKEN}` },
+    }).then((r) => r.json()).catch(() => ({}));
+    // ⚠️ ONE representative variant per product, not all of them. The hoodie
+    // alone has 80 sync variants and the classic tee 100 — walking them all
+    // blows Cloudflare's 50-subrequest cap and the whole worker throws 1101.
+    // Colour/size rarely move Printful's price, so the first row is enough to
+    // price a line; check a specific variant by hand if one looks off.
+    try {
+      const list = await pf('/store/products');
+      if (!list.result) {
+        out.store = 'printful said: ' + JSON.stringify(list).slice(0, 200);
+      } else {
+        out.store = [];
+        for (const p of list.result.slice(0, 12)) {
+          const d = await pf('/store/products/' + p.id);
+          const sv = ((d.result || {}).sync_variants || [])[0];
+          if (!sv) continue;
+          const cvid = sv.product && sv.product.variant_id;
+          const cv = cvid ? await pf('/products/variant/' + cvid) : null;
+          out.store.push({
+            product: p.name,
+            variants: ((d.result || {}).sync_variants || []).length,
+            variant: sv.name,
+            retail: sv.retail_price,
+            cost: cv && cv.result && cv.result.variant ? cv.result.variant.price : null,
+          });
+        }
+      }
+    } catch (e) {
+      out.store = 'threw: ' + String(e && e.message).slice(0, 200);
+    }
   }
   // 🚚 real shipping cost per product, on demand (/health?ship=1). Shipping is
   // baked into every price here, so it IS the margin on a cheap item — and it
