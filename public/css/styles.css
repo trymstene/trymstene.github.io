@@ -134,6 +134,9 @@ a { color: inherit; }
   line-height: 1;
   color: var(--ink);
   z-index: 70;
+  /* the glyph stays 1.6rem; the TAP TARGET is a full 44px (it was 32) */
+  width: 44px; height: 44px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 /* the open panel is ink-black behind the toggle — flip the X to banana
    yellow or it disappears against it. And PIN it: left to the header's flow
@@ -825,6 +828,18 @@ details.story p { margin-bottom: 1rem; }
   content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
   width: 10px; height: 7px; background: var(--paper);
   border: 3px solid var(--ink); border-top: none;
+}
+/* ⚠️ centred on its trigger, this bubble hangs off the right edge when the (i)
+   sits near it — and body{overflow-x:clip} then CROPS the text with no
+   scrollbar to reveal it. On a phone, detach it into a centred card instead:
+   always fully on screen, which is the whole point of a tappable (i). */
+@media (max-width: 34rem) {
+  .px-info > .px-info__bubble {
+    position: fixed; left: 50%; top: 50%; bottom: auto;
+    transform: translate(-50%, -50%);
+    max-width: min(320px, 88vw); font-size: 0.85rem;
+  }
+  .px-info > .px-info__bubble::after { display: none; }
 }
 
 /* ---------- the doors (homepage) ---------- */

@@ -10,8 +10,18 @@ export async function getStaticPaths() {
 
 const { m } = Astro.props;
 
-const titleTag = `${m.title} — official Dancing Banana merch | Trym Stene`;
-const descMeta = `${firstSentence(m.descHtml, 100)} From ${money(m.pmin, m.cur)}, made on demand and shipped worldwide.`;
+// Shopify titles already open with "DANCING BANANA OFFICIAL™ …", so the old
+// suffix said the brand twice and pushed these tags to 77-94 chars — long
+// enough that Google truncates and rewrites them. Strip the prefix, say it once.
+const branded = /^DANCING BANANA OFFICIAL/i.test(m.title);
+const bare = branded ? m.title.replace(/^DANCING BANANA OFFICIAL[™\s]*/i, '').trim() : m.title;
+const titleTag = branded
+  ? `Dancing Banana ${bare} — Official Merch | Trym Stene`
+  : `${bare} — official Dancing Banana merch | Trym Stene`;
+// the Shopify/Printful blurb never mentions a banana ("every happy camper needs
+// a mug…"), so someone searching "dancing banana mug" saw a snippet about
+// camping. Lead with what it actually is.
+const descMeta = `Dancing Banana ${bare.toLowerCase()} — ${firstSentence(m.descHtml, 90)} From ${money(m.pmin, m.cur)}, shipped worldwide.`;
 const mainImg = m.colors.length ? m.colorImage[m.colors[0]] : m.featured;
 const sizeGuide = sizeTableHtml(m); // null = no chart for this product → section hidden
 

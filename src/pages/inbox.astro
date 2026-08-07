@@ -8,8 +8,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const title = 'Banana HQ';
 const description = 'Authorized banana personnel only.';
 ---
-<BaseLayout title={title} description={description} showFooter={false}>
-  <meta name="robots" content="noindex" slot="head" />
+<BaseLayout title={title} description={description} showFooter={false} robots="noindex">
   <style is:inline slot="head">
     .bm-wrap { max-width: 820px; margin: 0 auto; padding: 1.1rem 0.9rem 4rem; }
     /* form controls never below 16px → iOS won't zoom-jump on focus */

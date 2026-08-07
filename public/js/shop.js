@@ -33,7 +33,9 @@
 
   function money(amount) {
     var n = parseFloat(amount);
-    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: DATA.currency, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n); }
+    // ⚠️ 'en-US', never undefined — the browser locale would rewrite the
+    // server-rendered "$18.99" to "18,99 USD" on load. Same fix as sticker-core.
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: DATA.currency, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n); }
     catch (e) { return n + ' ' + DATA.currency; }
   }
   function key(c, s) { return c + '||' + s; }

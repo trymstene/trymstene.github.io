@@ -4,8 +4,8 @@ import PixelIcon from '../components/PixelIcon.astro';
 import PixelArtIcon from '../components/PixelArtIcon.astro';
 import PRODUCTS from '../../shared/products.js';
 
-const title = "Make Your Own Dancing Banana | Trym Stene";
-const description = "Customize the original Dancing Banana — add shades, hats, captions and dance moves, then download it or share your creation. Free banana builder by the guy who made the meme.";
+const title = "Make Your Own Dancing Banana — Sticker, Tee or Magnet | Trym Stene";
+const description = "Customize the original Dancing Banana — shades, hats, captions, dance moves. Download it free, or get it printed on a sticker, tee, mug or magnet.";
 const ogDescription = "Add shades, hats, captions and dance moves to the original Dancing Banana, then download or share it.";
 
 // the builder is a free web app (with an optional physical sticker offer)
@@ -144,7 +144,11 @@ const appSchema = {
     .bb-swatches::-webkit-scrollbar { display: none; }
     .bb-swatches > * { flex: 0 0 auto; scroll-snap-align: start; }
     .bb-row:has(.bb-swatches) { position: relative; }
-    .bb-swatch { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
+    /* 40, not 34 — the palette is the most-tapped thing in the builder and 34
+       is well under a thumb. ⚠️ an ::after tap-target does NOT work here: the
+       .bb-swatches tray is overflow-x:auto, so overflow-y computes to auto and
+       clips anything that reaches past the chip. The box itself has to grow. */
+    .bb-swatch { width: 40px; height: 40px; border: 3px solid var(--ink); border-radius: 2px; cursor: pointer; padding: 0; }
     .bb-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--hot); }
     /* SLOT TRAYS (#7 ownership stack): each category is ONE non-wrapping,
        horizontally scrollable tray — constant height per slot no matter how

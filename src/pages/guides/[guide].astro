@@ -54,6 +54,11 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         pixel maker that exports transparent GIFs at the size {g.platform} wants — draw it, animate it, download it.
         Or grab the <a href="/dancing-banana-emoji/">original dancing banana</a>, pre-cropped for every platform.</p>
       <a class="btn btn--dark" href="/forge/"><PixelIcon name="palette" /> Make a free {g.platform} {g.asset} →</a>
+      {/* someone who just read the exact spec for a digital sticker is the most
+          likely person on the site to want a real one — there was no direct
+          route here at all, only a two-hop one via the Forge. */}
+      <p class="gd-cta__alt">Want it as a real one? <a href="/make-a-banana/">Dress your own dancing banana</a> and
+        get it printed as a vinyl sticker, magnet or tee.</p>
     </div>
 
     <h2>The gotchas nobody tells you</h2>
@@ -88,6 +93,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   .gd-table tr:nth-child(even) td { background: rgba(255, 225, 53, 0.18); }
   .gd-cta { border: 3px dashed var(--ink, #111); padding: 1rem 1.1rem; margin-bottom: 2rem; }
   .gd-cta .btn { margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .gd-cta__alt { margin: 0.8rem 0 0; font-size: 0.9rem; }
   .gd h2 { margin: 1.6rem 0 0.8rem; }
   .gd-gotcha { margin-bottom: 1rem; }
   .gd-gotcha h3 { font-size: 1.02rem; margin-bottom: 0.25rem; }

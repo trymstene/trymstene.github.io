@@ -22,7 +22,7 @@ const remixes = remixesBase.map((r) => {
 // (retitled 16 Jul: "Banana Memes" now belongs to /banana-memes/ — Trym's own
 // gallery; this page owns "remixes / by the internet". Two galleries, two intents.)
 const title = `${remixes.length} Dancing Banana Remixes — Banana GIFs by the Internet`;
-const description = `${remixes.length} dancing banana remixes the internet has made since 1999 — warrior bananas, Mario, Homer, dancing tacos. Browse, rate and download the community's banana memes free.`;
+const description = `${remixes.length} dancing banana remixes made since 1999 — warrior bananas, Mario, Homer, dancing tacos. Browse, rate and download them free.`;
 const counts = remixes.reduce((a, r) => { a[r.cat] = (a[r.cat] || 0) + 1; return a; }, {});
 // SSR every card as a real <img> so crawlers + Google Images (and no-JS
 // visitors) see actual banana-meme content, not an empty grid — the whole
