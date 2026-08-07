@@ -1197,7 +1197,9 @@ function init(visitDoc, visitMiss) {
   function doorTick() {
     const d = Math.hypot(pos.x - DOOR.x, pos.y - DOOR.y);
     if (!doorArmed) { if (d > DOOR_ARM) doorArmed = true; return; }
-    if (d < DOOR_GO) { exitTo('/park/'); return; }
+    // ?homestead = the park spawns you at ITS west door + park_join logs the
+    // via — without it you arrive at the default gate as a 'direct' visitor
+    if (d < DOOR_GO) { exitTo('/park/?homestead'); return; }
     const want = d < DOOR_ZONE;
     if (want !== stripOn) {
       stripOn = want;

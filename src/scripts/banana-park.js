@@ -23,7 +23,7 @@ import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, WEED_GRID,
+  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, ROAD_SIGN_W, WEED_GRID,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
@@ -210,6 +210,15 @@ function init() {
     way.style.left = pct(ROAD_SIGN.x, W);
     way.style.top = pct(ROAD_SIGN.y - 60, H);   // ON the pole's top (64px, 4 of overlap)
     way.style.zIndex = String(100 + ROAD_SIGN.y + 3);
+    world.appendChild(way);
+  }
+  if (ROAD_SIGN_W) {   // the west twin — home is that way
+    const way = document.createElement('div');
+    way.className = 'pk-way';
+    way.textContent = '← The Homestead';
+    way.style.left = pct(ROAD_SIGN_W.x, W);
+    way.style.top = pct(ROAD_SIGN_W.y - 60, H);
+    way.style.zIndex = String(100 + ROAD_SIGN_W.y + 3);
     world.appendChild(way);
   }
 

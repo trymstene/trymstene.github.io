@@ -459,6 +459,7 @@ OVERLAYS = []
 TREE_OVS = []          # tree overlays — client greens them one by one (W1c)
 SIGNS = []
 ROAD_SIGN = None                # 🧭 the waypost at the east road's end
+ROAD_SIGN_W = None              # 🧭 …and the west road's (→ the Homestead)
 MARKET = {}
 
 TRUNK = ('rect', -13, -36, 13, 0)
@@ -1428,6 +1429,11 @@ if HAVE_PACK:
     _cache[(_POLE, 1, 28, 0.0, 1.0, 1.0)] = build_pole()
     place(_POLE, ROAD_SIGN[0], ROAD_SIGN[1], scale=1.0, sh=0.9,
           layer=True, solid=('circle', 8))
+    # 🧭 …and its WEST twin (Trym, 7 Aug: "a sign is missing for Homestead").
+    # North shoulder of the west road, clear of the door lane at x<96.
+    ROAD_SIGN_W = (330, 528)
+    place(_POLE, ROAD_SIGN_W[0], ROAD_SIGN_W[1], scale=1.0, sh=0.9,
+          layer=True, solid=('circle', 8))
 
 
 # ---- 🌦 THE RAIN TILE --------------------------------------------------
@@ -1812,6 +1818,8 @@ def emit_geo():
     L.append('export const SIGNS = %s;' % [list(s) for s in SIGNS])
     L.append('export const ROAD_SIGN = %s;'
              % ('{ x: %d, y: %d }' % ROAD_SIGN if ROAD_SIGN else 'null'))
+    L.append('export const ROAD_SIGN_W = %s;'
+             % ('{ x: %d, y: %d }' % ROAD_SIGN_W if ROAD_SIGN_W else 'null'))
     L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])
