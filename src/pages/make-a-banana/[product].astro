@@ -8,6 +8,7 @@
 // Transient per-design page → noindex.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
+import PressBelt from '../../components/PressBelt.astro';
 import PRODUCTS from '../../../shared/products.js';
 import { sizeTableForGuideId } from '../../lib/shop.js';
 
@@ -228,6 +229,10 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
         <li>Free replacement if it arrives wrong — <a href="/shop/policies/">shipping &amp; returns</a></li>
         <li>Made by the creator of the original 1999 Dancing Banana</li>
       </ul>
+      {/* the creator line above was the ONLY credibility signal in the whole
+          commerce funnel, and it corroborated itself. These outlets already
+          exist on /dancing-banana-gif-meme/ — they belong where money is. */}
+      <PressBelt compact label="As featured in" />
 
       {sizeGuide && (
         <details id="size-guide" class="pdp-details">

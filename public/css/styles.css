@@ -970,3 +970,11 @@ details.story p { margin-bottom: 1rem; }
   .ccb { animation: none; }
   html { scroll-behavior: auto; }
 }
+
+/* 🗞 the press belt, compact — inside a product page it SUPPORTS the buy
+   button rather than being its own section, so no kicker and a tighter row.
+   (Extracted to src/components/PressBelt.astro 8 Aug; the audit found the
+   commerce funnel had no social proof at all while the site owned this.) */
+.press-belt--compact { padding: 0.7rem 0 0; margin: 0.6rem 0 0; border-top: 2px solid rgba(17, 17, 17, 0.12); }
+.press-belt--compact .press-belt__logos { gap: 1rem; opacity: 0.62; justify-content: flex-start; }
+.press-belt--compact img { filter: grayscale(1); }

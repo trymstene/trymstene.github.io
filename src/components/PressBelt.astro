@@ -1,0 +1,35 @@
+---
+// 🗞 THE PRESS BELT — the outlets that covered the banana.
+//
+// Lived only on /dancing-banana-gif-meme/ until 8 Aug. The audit's finding:
+// the commerce funnel had ZERO social proof — no reviews, no ratings, no
+// order counts — while the site owned a genuine press belt and never showed
+// it to anyone deciding whether to hand over a card. Extracted to a component
+// so the shop and the PDPs can carry it without a second copy drifting.
+//
+// `compact` drops the kicker and shrinks the logos, for use inside a product
+// page where it supports the buy button rather than being its own section.
+const { compact = false, label = 'As featured in' } = Astro.props;
+const OUTLETS = [
+  { href: 'https://eu.usatoday.com/story/news/nation-now/2014/04/02/peanut-butter-jelly-time/7194151/',
+    src: '/assets/press/usatoday.svg', alt: 'USA Today', h: 30, title: 'USA Today on Peanut Butter Jelly Time' },
+  { href: 'https://meme.fandom.com/wiki/Dancing_Banana',
+    src: '/assets/press/fandom.svg', alt: 'Fandom', h: 30, title: 'Dancing Banana on Fandom' },
+  { href: 'https://www.cityam.com/who-killed-the-gif-how-the-dancing-banana-got-peeled/',
+    src: '/assets/press/cityam.svg', alt: 'City A.M.', h: 30, title: 'City A.M.: Who killed the GIF?' },
+  { href: 'https://familyguy.fandom.com/wiki/Peanut_Butter_Jelly_Time',
+    src: '/assets/press/familyguy.svg', alt: 'Family Guy', h: 34, title: "Family Guy: Brian's Peanut Butter Jelly Time (2005)" },
+  { href: 'https://knowyourmeme.com/memes/peanut-butter-jelly-time',
+    src: '/assets/press/kym.svg', alt: 'Know Your Meme', h: 26, title: 'Peanut Butter Jelly Time on Know Your Meme' },
+];
+---
+<section class={compact ? 'press-belt press-belt--compact' : 'press-belt'} aria-label={label}>
+  {!compact && <p class="press-belt__kicker">{label}</p>}
+  <div class="press-belt__logos">
+    {OUTLETS.map((o) => (
+      <a href={o.href} target="_blank" rel="noopener" title={o.title}>
+        <img src={o.src} alt={o.alt} height={compact ? Math.round(o.h * 0.72) : o.h} loading="lazy" />
+      </a>
+    ))}
+  </div>
+</section>

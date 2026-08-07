@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PressBelt from '../../components/PressBelt.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import { getProducts, money, colorHex, firstSentence, sizeTableHtml, SITE } from '../../lib/shop.js';
 
@@ -100,6 +101,7 @@ const breadcrumbSchema = {
         <p class="pdp__price price-tag"><small>from</small> {money(m.pmin, m.cur)}</p>
       </div>
       <p class="pdp__note">Tax included where applicable · shipping calculated at checkout</p>
+      <PressBelt compact label="As featured in" />
 
       {m.colors.length > 0 && (
         <div class="pdp-field">
