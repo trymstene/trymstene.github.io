@@ -320,16 +320,17 @@ function init() {
 
   // ---- geometry -----------------------------------------------------------
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
-  // the BOUND inset is the wall, except the two door corridors through it
+  // the BOUND inset is the wall, except the three door corridors through it
   const inSouthDoorLane = (x, y) => Math.abs(x - DOORS.south.x) < 60 && y > H - BOUND && y < H - 14;
   const inEastDoorLane = (x, y) => Math.abs(y - DOORS.east.y) < 60 && x > W - BOUND && x < W - 14;
+  const inWestDoorLane = (x, y) => Math.abs(y - DOORS.west.y) < 60 && x < BOUND && x > 14;
   // 🪓 colliders that come and go — garden beds broken open by hand are not
   // in the plate and so not in OB_RECTS. The garden owns this list and hands
   // over the whole of it whenever the room's open-bed set changes.
   let liveRects = [];
   function blocked(x, y) {
     if (x < BOUND || x > W - BOUND || y < BOUND || y > H - BOUND) {
-      if (!inSouthDoorLane(x, y) && !inEastDoorLane(x, y)) return true;
+      if (!inSouthDoorLane(x, y) && !inEastDoorLane(x, y) && !inWestDoorLane(x, y)) return true;
     }
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
     for (const r of liveRects) if (inRect(x, y, r)) return true;

@@ -10,6 +10,17 @@ import PixelIcon from '../components/PixelIcon.astro';
   description="That page slipped on a peel. The dancing banana lives at trymstene.com."
   robots="noindex,follow"
 >
+  <Fragment slot="head">
+    <script is:inline>
+      // 🏡 clean yard addresses on GitHub Pages: /homestead/<slug>/ has no
+      // file, so Pages serves THIS page — hop to the engine before paint.
+      // (The engine rewrites the address bar back to the clean form.)
+      (function () {
+        var m = location.pathname.match(/^\/homestead\/([a-z0-9-]{1,40})\/?$/);
+        if (m) location.replace('/homestead/?yard=' + m[1]);
+      })();
+    </script>
+  </Fragment>
   <section class="hero" style="padding-bottom:4rem;">
     <div class="hero__banana">
       <img src="/assets/dancing-banana-transparent.gif" alt="The Dancing Banana, still dancing"

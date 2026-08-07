@@ -1258,7 +1258,9 @@ function init(visitDoc, visitMiss) {
   cookEl.addEventListener('click', (e) => { if (e.target === cookEl) { cookEl.hidden = true; syncLock(); } });
 
   // ---- 🪧 the guestbook at the sign (+ your address, once you have one) ----
-  const yardUrl = () => 'https://trymstene.com/homestead/?yard=' + state.slug;
+  // the CLEAN address — /homestead/<slug>/ rides the 404-page hop on Pages
+  // (404.astro redirects it into ?yard=; the engine rewrites the bar back)
+  const yardUrl = () => 'https://trymstene.com/homestead/' + state.slug + '/';
   let guestCache = visiting ? (state.guest || []) : null;
   function renderGuest(entries) {
     const list = document.getElementById('hsGuestList');
@@ -1330,6 +1332,8 @@ function init(visitDoc, visitMiss) {
     const bar = document.getElementById('hsVisit');
     document.getElementById('hsVisitName').textContent = '👋 visiting ' + state.name;
     bar.hidden = false;
+    // show the CLEAN address in the bar — what a visitor copies is the share URL
+    try { history.replaceState(null, '', '/homestead/' + state.slug + '/'); } catch (e) {}
     yFetch('/visit', { slug: state.slug, name: myName }).catch(() => {});
     track('homestead_visit', { slug: state.slug });
   }

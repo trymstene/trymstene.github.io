@@ -789,16 +789,24 @@ def treeline(x0, x1, y, step=104, jitter=22):
 # possible partial hedges later.
 if HAVE_PACK:
     # inner clumps — one species each, y-sorted + trunk-solid
-    for ci, (cx_, cy_) in enumerate(((240, 620), (1060, 260), (1200, 940),
+    # ⚠️ (240,620) moved to (250,720) when the west road opened (6 Aug): the
+    # clump's ±70/±40 scatter straddled the new lane and three trees stood ON
+    # the road. The on_road skip below is the backstop for future lanes —
+    # draws stay in order and count (skip, never re-roll), so every placement
+    # after this loop keeps its seat.
+    for ci, (cx_, cy_) in enumerate(((250, 720), (1060, 260), (1200, 940),
                                      (1660, 180), (2560, 950), (900, 470))):
         fam = SPECIES[ci % len(SPECIES)]
         for i in range(3):
-            try_place(fam[rng.randrange(len(fam))],
-                      cx_ + rng.randrange(-70, 70), cy_ + rng.randrange(-40, 40),
-                      solid=TRUNK, layer=True)
+            name = fam[rng.randrange(len(fam))]
+            px_ = cx_ + rng.randrange(-70, 70)
+            py_ = cy_ + rng.randrange(-40, 40)
+            if on_road(px_, py_, 30):
+                continue
+            try_place(name, px_, py_, solid=TRUNK, layer=True)
     # 🍄 the forest floor: mushrooms + stumps at the FEET of the tree clumps
     # (with the border walls cut, edge placement would float on open lawn)
-    CLUMPS = ((240, 620), (1060, 260), (1200, 940), (1660, 180), (2560, 950), (900, 470))
+    CLUMPS = ((250, 720), (1060, 260), (1200, 940), (1660, 180), (2560, 950), (900, 470))
     # ⚠️ rng draws stay in the original order and count (skip, never re-roll)
     # so every placement after this loop keeps its seat
     for _ in range(12):

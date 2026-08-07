@@ -12,7 +12,7 @@ const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 // 📥 the download family + the offer that rides it. Downloads are the
 // biggest thing that happens on this site; until now they were one number.
 const DL_EVENTS = ['gif_download', 'png_download', 'wallpaper_download',
-  'offer_shown', 'offer_click'];
+  'offer_shown', 'offer_click', 'offer_skip'];
 
 // events worth plotting on the map / showing in the ticker (the rest is noise)
 const LENS_EVENTS = [
@@ -21,7 +21,8 @@ const LENS_EVENTS = [
   'sticker_pdp_view', 'sticker_pdp_checkout', 'checkout_redirect',
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
   'begin_checkout', 'purchase', 'shop_view',
-  'offer_shown', 'offer_click',   // 🛍 the make-it-real card, 30 Jul
+  'offer_shown', 'offer_click', 'offer_skip',   // 🛍 the make-it-real card (offer-FIRST since 6 Aug)
+  'homestead_open',               // 🏡 the home area's door, 6 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
   // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
   // deserve the map lens as much as any download does
@@ -286,16 +287,16 @@ async function apiRange(env, from, to) {
   const dlMap = {};
   const dayMap = {};
   const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
-    offer_shown: 'shown', offer_click: 'click' };
+    offer_shown: 'shown', offer_click: 'click', offer_skip: 'skip' };
   for (const r of (dls ? rows(dls) : [])) {
     const day = dim(r, 0); const page = dim(r, 1);
     const key = DL_KEY[dim(r, 2)];
     if (!key) continue;
     const v = met(r, 0);
-    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0 });
+    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0 });
     row[key] += v;
-    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0 });
-    if (key === 'shown' || key === 'click') d[key] += v; else d.files += v;
+    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0 });
+    if (key === 'shown' || key === 'click' || key === 'skip') d[key] += v; else d.files += v;
   }
   const dlDaily = Object.values(dayMap).sort((a, b) => (a.d < b.d ? -1 : 1));
   const downloads = Object.values(dlMap)
@@ -903,6 +904,24 @@ var EV_LABEL = {
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop',
   offer_shown:'got the make-it-real card 🛍', offer_click:'took the offer 🛍',
+  offer_skip:'said no thanks, took the file 🛍',
+  homestead_open:'came home to the Homestead 🏡', homestead_claim:'CLAIMED a homestead 🪧',
+  homestead_rename:'repainted their sign ✏️', homestead_upgrade:'UPGRADED their home 🏠',
+  homestead_buy:'bought decor from the phone 🛋', homestead_sell:'sold a piece from the shed 🪙',
+  homestead_delivery:'a furniture delivery arrived 🚚', homestead_enter_home:'stepped inside their home 🚪',
+  homestead_exit:'walked the road out of the homestead', homestead_phone:'opened the banana phone 📱',
+  homestead_planner:'opened build mode 🔨', homestead_fence:'worked the fence 🪵',
+  homestead_dig:'dug soil on their plot ⛏', homestead_plant:'planted a seed at home 🌱',
+  homestead_water:'watered their crops 💧', homestead_harvest:'harvested their crops 🌾',
+  homestead_cook:'cooked a dish 🍳', homestead_kitchen:'opened the kitchen 🍳',
+  homestead_pickup:'picked up their compost crops 🌱',
+  homestead_guestbook:'opened the guestbook ✍️', homestead_sign:'signed a neighbour’s guestbook ✍️',
+  homestead_visit:'visited a neighbour’s homestead 👋', homestead_share:'copied their yard address 🔗',
+  homestead_neighbor_water:'watered a neighbour’s beds 💧', homestead_news:'read their away-news 📬',
+  homestead_move_fixture:'moved their mailbox or sign ✥', homestead_move_home:'moved their whole house ✥',
+  homestead_restyle:'restyled their home 🎨', homestead_multiplayer:'saw another banana in their yard 👋',
+  bwtour_open:'started the Banana World tour 🌍', bwtour_step:'walked a tour step 🌍',
+  bwtour_skip:'skipped the tour', bwtour_done:'FINISHED the world tour 🌍',
   rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
   stand_item_view:'eyed stand gear', stand_buy_try:'wanted stand gear they can’t afford 🔥',
   stand_buy:'BOUGHT stand gear 🤑', rave_coin:'pocketed bananacoins 🪙',
@@ -1002,7 +1021,7 @@ var EV_LABEL = {
   world_levelup:'levelled up 🎖' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
-  'wallpaper_download','license_click'];
+  'wallpaper_download','license_click','homestead_open'];
 // what each event MEANS — hover any event name to see what the visitor did
 var EV_EXPLAIN = {
   page_view:'loaded any page on the site (GA4 auto)',
@@ -1012,9 +1031,9 @@ var EV_EXPLAIN = {
   scroll:'scrolled 90% of the way down a page (GA4 auto)',
   click:'clicked an outbound link (GA4 auto)',
   file_download:'downloaded a file via a direct link (GA4 auto)',
-  gif_download:'downloaded the dancing banana GIF — the classic grab',
-  png_download:'downloaded their custom banana as a full-size meme image',
-  wallpaper_download:'downloaded a wallpaper from the wallpaper page',
+  gif_download:'downloaded a banana GIF — the classic grab. ⚠️ Since 6 Aug this counts DELIVERED files only: the first download click of a session opens the offer card instead, and this fires when the file actually leaves (via the card’s no-thanks button, or freely once the card has been seen). Also 6 Aug: builder downloads no longer double-fire this — expect the trend line to step DOWN for both reasons; the old numbers were inflated, not the new ones low',
+  png_download:'downloaded their custom banana as a full-size meme image (builder). Same 6 Aug rule: delivered files only, counted once',
+  wallpaper_download:'downloaded a wallpaper from the wallpaper page — delivered files only since 6 Aug, same as the GIFs',
   builder_boot:'the make-a-banana page finished loading and the banana danced on their screen — the TRUE page-load signal (counting starts 14 Jul)',
   builder_start:'made their FIRST customization in the builder — an interaction, NOT a page load (⚠ was misread as "builder loaded" until 14 Jul; passive watchers never fire it)',
   generator_click:'clicked a make-your-own-banana link somewhere on the site',
@@ -1071,8 +1090,9 @@ var EV_EXPLAIN = {
   rave_splat:'got splatted by a popper shot',
   rave_sit:'sat down on their own bar stool (a five-nightshift regular)',
   rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one; ad=sticker is the merch slide that paints THEIR banana as vinyl)',
-  offer_shown:'saw the make-it-real card 🛍. from = WHICH MOMENT, and since 1 Aug that is every download on the site, not just the builder: download_gif / download_meme / download_png (the builder), original + originalTee (the 1999 GIF and PBJ), wallpaper, emoji, gallery (a meme page, links to the builder on THAT banana), remix (the official shop — community GIFs are not ours to sell), the six international pages send original too in their own language, and pass_overview. ⚠️ ONCE PER SESSION GLOBALLY, so this counts PEOPLE OFFERED, never impressions',
-  offer_click:'took the make-it-real offer 🛍 and went to the custom product page with their design attached. Against offer_shown this is THE number that says whether asking at the moment of the download works (from = same places)',
+  offer_shown:'saw the make-it-real card 🛍. ⭐ INVERTED 6 Aug: the card now opens INSTEAD of the auto-download — the ask comes first, and the file is the card’s own no-thanks button. from = WHICH MOMENT: download_gif / download_meme / download_png (the builder), original + originalTee (the 1999 GIF and PBJ), wallpaper, emoji, gallery, remix (the official shop — community GIFs are not ours to sell), the international pages, and pass_overview. ⚠️ ONCE PER SESSION GLOBALLY, so this counts PEOPLE OFFERED, never impressions',
+  offer_click:'took the make-it-real offer 🛍 and went to the product page — WITHOUT downloading first, which is the whole point of the 6 Aug inversion. offer_click ÷ offer_shown is THE number this change lives or dies by (it was ZERO under download-first)',
+  offer_skip:'pressed “no thanks, just the GIF/PNG” on the card and the file delivered 🛍 (from = same moments as offer_shown). click + skip + dismissals = shown; a skip is still a served visitor, never a loss — but if skip is ~100% of shown, the card copy or the product is the problem',
   rave_exit_stand:'left the club through the EXIT by the bar → the banana stand (via = door or field-guide link)',
   stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
   stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
@@ -1197,7 +1217,40 @@ var EV_EXPLAIN = {
   rave_night_complete:'completed an old story NIGHT. ⚠ mothballed since 19 Jul — historical only',
   stand_sign_beach:'tapped the signpost pointing down the road to Banana Bay',
   sticker_pdp_boot_fail:'⚠ a custom-product page threw before it could show anything. Any of these is worth chasing — it is a sale that could not even start',
-  world_levelup:'⭐ crossed a level ANYWHERE in the world — where says which area. Levels come from rep, which the park waters up and the beach digs up, not just the dance floor. ⚠ the rave also fires its own older rave_levelup, so never add the two together' };
+  world_levelup:'⭐ crossed a level ANYWHERE in the world — where says which area. Levels come from rep, which the park waters up and the beach digs up, not just the dance floor. ⚠ the rave also fires its own older rave_levelup, so never add the two together',
+  homestead_open:'arrived at THE HOMESTEAD 🏡 — the area’s door event, once per load. via = park (walked the west road), world (fast travel), yardlink (opened a neighbour’s shared address), direct (typed/search). claimed + stage say how settled they already are; visit=1 means it was somebody ELSE’s yard',
+  homestead_claim:'🪧 CLAIMED their homestead — named the sign, minted the address slug. Fires ONCE per person ever; this is the area’s real conversion. claims ÷ unclaimed homestead_open arrivals = does the ghost-tent onboarding work',
+  homestead_rename:'repainted the sign ✏️ — a name change, NOT a new claim (one free retry, then a 48h cooldown; split out 6 Aug so renames stop inflating homestead_claim)',
+  homestead_upgrade:'🏠 UPGRADED the home (to = the style key, stage = 1 tent / 2 cabin / 3 house). The coin ladder is 50 / 300 / 900 — this is where the area’s whole economy points',
+  homestead_buy:'bought decor from the phone shop 🛋 (id + price + ship = delivery minutes; ship>0 means it arrives later as homestead_delivery). The main coin SINK of the whole world',
+  homestead_sell:'sold a shed piece back at half price 🪙 — decluttering, not churn',
+  homestead_delivery:'🚚 an ordered piece arrived at the shed — the return-visit hook firing (they came back after the wait)',
+  homestead_enter_home:'stepped INSIDE their home 🚪 (tier = which room). Interiors are the stage-2+ reward; low numbers here mean the door or the reason to enter is weak',
+  homestead_exit:'walked the east road out toward the park — the return leg of the west-road door',
+  homestead_phone:'opened the banana phone 📱 — the area’s whole UI lives in it (shop, orders, upgrades, kitchen)',
+  homestead_planner:'opened build mode 🔨 (room = indoors) — fence, soil, move and clear tools',
+  homestead_fence:'placed or removed fence cells 🪵 — yard EXPRESSION, the thing visitors see',
+  homestead_dig:'tilled soil cells on their own plot ⛏ — the farming loop’s first step',
+  homestead_plant:'planted a seed in home soil 🌱 (seeds come ONLY from park-garden harvests — this event is the park→home bridge working)',
+  homestead_water:'watered their own crops 💧 — growth is watered-days, so this is the daily-return habit itself',
+  homestead_harvest:'harvested home crops into the pantry 🌾 — feeds cooking, not coins',
+  homestead_cook:'🍳 cooked a dish (dish = which). Buffs multiply coin/rep earnings WORLD-WIDE — the homestead paying out into every other area',
+  homestead_kitchen:'opened the kitchen panel (stove or counter) — cooking intent, before the dish',
+  homestead_pickup:'collected crops the yard finished while they were away 🌱',
+  homestead_guestbook:'opened the guestbook panel (their own or a neighbour’s)',
+  homestead_sign:'✍️ WROTE in a neighbour’s guestbook — the strongest social act the area has',
+  homestead_visit:'👋 stood in a NEIGHBOUR’s yard (slug = whose). The whole point of the address system — watch this against homestead_share',
+  homestead_share:'🔗 copied their own yard address to hand to someone — shares OUT; homestead_visit is shares that LANDED',
+  homestead_neighbor_water:'💧 watered a NEIGHBOUR’s beds (once per yard per day, pays rep) — the kindness loop',
+  homestead_news:'read the away-news on arrival 📬 — visits, waterings and deliveries that happened while they were gone',
+  homestead_move_fixture:'moved their mailbox or property sign ✥',
+  homestead_move_home:'moved the whole house to a new spot ✥',
+  homestead_restyle:'changed the home’s look from the wardrobe 🎨 (free, same rung)',
+  homestead_multiplayer:'👋 SAW another live banana in a yard — the M5 presence rooms working (one room per homestead, owner + visitors together)',
+  bwtour_open:'🌍 the Banana World tour opened — fires once per new visitor at the homestead (the world’s front door), or on ?bwtour replay',
+  bwtour_step:'walked to a tour step (step = 0-7: welcome, homestead, tools, HUD, road map, areas, mechanics, always-growing)',
+  bwtour_skip:'left the tour early (step = where it lost them — a cliff at one step means THAT card is the boring one)',
+  bwtour_done:'🌍 finished all 8 tour steps — oriented and released into the world' };
 function explain(name){ return EV_EXPLAIN[name] || (EV_LABEL[name] ? 'a visitor '+EV_LABEL[name] : 'raw GA4 event — no explainer written for it yet'); }
 var state = { mode:'live', lens:'gif_download', from:'today', to:'today',
               topN:10, live:null, range:null, prev:null };
@@ -1466,7 +1519,7 @@ var lastPurch=-1;
 // which live pageviews are IN the world (the areas, not the flat pages).
 // ⚠️ a plain list, NOT a regex: this whole page is a template literal, so a
 // regex literal loses its backslashes on the way out and throws at boot.
-var WORLD_AREAS=['/rave/','/park/','/beach/','/banana-stand/','/banana-world/'];
+var WORLD_AREAS=['/rave/','/park/','/beach/','/banana-stand/','/banana-world/','/homestead/'];
 function inWorld(path){
   for(var i=0;i<WORLD_AREAS.length;i++){ if(path.indexOf(WORLD_AREAS[i])===0) return true; }
   return false;
@@ -1495,7 +1548,7 @@ function renderLive(){
   // ⏱ the downloads room's own live feed — same /api/live payload, no new query
   var dlv=document.getElementById('dlLive');
   if(dlv){
-    var DLSET={gif_download:1,png_download:1,wallpaper_download:1,offer_shown:1,offer_click:1};
+    var DLSET={gif_download:1,png_download:1,wallpaper_download:1,offer_shown:1,offer_click:1,offer_skip:1};
     var got=(L.recent||[]).filter(function(e){ return DLSET[e.name]; });
     dlv.innerHTML = got.length
       ? got.map(function(e){ return '<div style="font-size:.78rem;margin-bottom:4px;">'
@@ -1566,17 +1619,14 @@ var FUNNELS=[
     'They opened a merch product page — mug, tee, and friends.'],
    ['transactions','Purchases 💰',
     'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']],
-  // 🛍 THE ASK — added 30 Jul, the whole point of the CRO pass. Before it, 336
-  // downloads produced 9 product-tile clicks: the free file granted the wish and
-  // the session ended. This funnel is the verdict on moving the ask to the
-  // moment the wish is granted. Read offer_shown→offer_click FIRST; the rest is
-  // the same custom-product tail the builder funnel already measures.
-  [['gif_download','Grabbed a GIF',
-    'They downloaded a banana they had just made. The moment the wish is granted — and, before 30 Jul, the moment the session usually ended.'],
-   ['offer_shown','Got asked 🛍',
-    'The make-it-real card appeared, showing THEIR banana as a real die-cut sticker. Once per session, after the file was already saved. Counting starts 30 Jul. Lower than gif_download on purpose: a second download in the same session does not ask again.'],
+  // 🛍 THE ASK — added 30 Jul, INVERTED 6 Aug. The after-the-file card earned
+  // ZERO clicks (the wish was granted before the ask), so the card now opens
+  // INSTEAD of the auto-download and the file is its no-thanks button. The
+  // funnel starts at the card because the card now comes first.
+  [['offer_shown','Got asked 🛍',
+    'The download click opened the make-it-real card BEFORE any file moved — their own banana as the real product. Once per session, every download surface on the site. Inverted 6 Aug: before that the file auto-saved first, and zero people ever clicked the card.'],
    ['offer_click','Took the offer',
-    'They tapped through to the custom product page with their design attached. offer_click ÷ offer_shown is the answer to "does asking here work?" — anything above a couple of percent beats the 2.7% the old product tiles got.'],
+    'They tapped through to the product page — without taking the free file first. offer_click ÷ offer_shown is THE number the 6 Aug inversion lives or dies by. The rest of shown split into offer_skip (took the file via the no-thanks button — still a happily served visitor) and plain dismissals.'],
    ['sticker_pdp_checkout','Hit ORDER',
     'They clicked ORDER on that product page.'],
    ['checkout_redirect','→ Shopify checkout',
@@ -1680,8 +1730,8 @@ function renderDownloads(){
     var t0=document.getElementById('tabDl'); if(t0) t0.textContent='';
     return;
   }
-  var tf=0,ts=0,tc=0;
-  D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; });
+  var tf=0,ts=0,tc=0,tk=0;
+  D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; tk+=(r.skip||0); });
   var sess=(state.range.kpis&&state.range.kpis.sessions)||0;
   // ⚠️ per 100 sessions, not a raw total: it is the only download number that
   // survives a traffic swing, and traffic here swings by 8× when an ad starts.
@@ -1689,6 +1739,7 @@ function renderDownloads(){
   document.getElementById('dlKpis').innerHTML=
     dlk('Files taken',fmt(tf))+dlk('Per 100 visits',per)+
     dlk('Offers shown',fmt(ts))+dlk('Offers clicked',fmt(tc))+
+    dlk('No-thanks',fmt(tk))+
     dlk('Card CTR', ts>=20 ? Math.round((tc/ts)*100)+'%' : '–');
   function dlk(l,v){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; }
   sum.innerHTML = ts<20
@@ -1735,7 +1786,7 @@ function renderDownloads(){
   var tb2=document.getElementById('tabDl'); if(tb2) tb2.textContent=tf?fmt(tf):'';
   var max=D[0].files||D[0].shown||1;
   tb.innerHTML='<tr><th>Surface</th><th class="num">Took</th><th class="num">Saw</th>'
-    +'<th class="num">Clicked</th><th class="num">Rate</th></tr>'
+    +'<th class="num">Clicked</th><th class="num">No-thx</th><th class="num">Rate</th></tr>'
     +D.map(function(r){
       // ⚠️ a rate needs at least 20 cards behind it — 3 of 5 is three clicks,
       // not 60%. Same gate the analyst uses; the dashboard must not be looser.
@@ -1748,6 +1799,7 @@ function renderDownloads(){
         +'<td class="num">'+fmt(r.files)+'</td>'
         +'<td class="num">'+fmt(r.shown)+'</td>'
         +'<td class="num" style="color:'+(r.click?'var(--ok)':'var(--dim)')+'">'+fmt(r.click)+'</td>'
+        +'<td class="num">'+fmt(r.skip||0)+'</td>'
         +'<td class="num">'+rate+'</td></tr>';
     }).join('');
 }
@@ -1764,6 +1816,9 @@ var AREAS=[
   // printed "1 visit" above 197 digs when I first wired this.
   {key:'beach', name:'Banana Bay', icon:'🏖', door:'beach_join',
    q:'Do they PROGRESS? — shells, tickets, digging: collection is the hook'},
+  // 🏡 the door carries via/claimed/stage; homestead_claim is the conversion
+  {key:'homestead', name:'The Homestead', icon:'🏡', door:'homestead_open',
+   q:'Do they SETTLE? — claim a sign, furnish, and come home again tomorrow'},
   {key:'forge', name:'Pixel Forge', icon:'🎨', door:'forge_open',
    q:'Do they FINISH and SUBMIT? — an unfinished item helps nobody'},
   {key:'stand', name:'The Banana Stand', icon:'🏪', door:'stand_counter',

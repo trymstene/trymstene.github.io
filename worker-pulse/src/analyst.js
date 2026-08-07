@@ -319,7 +319,7 @@ export function analyse(d) {
 
   // ── 9. the world ────────────────────────────────────────────────────────
   const worlds = [['rave_join', 'the rave'], ['park_join', 'the park'],
-    ['beach_join', 'the bay']];
+    ['beach_join', 'the bay'], ['homestead_open', 'the homestead']];
   const wUp = worlds.map(([n, label]) => ({ label, n: ev(n), z: evZ(n) }))
     .filter((x) => x.n >= 15 && Math.abs(x.z) >= 2.2);
   if (wUp.length) {
