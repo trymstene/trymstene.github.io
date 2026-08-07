@@ -34,6 +34,11 @@ export default [
     // Base garment: Bella+Canvas 3001 (Printful product 71, $13.50 all colors).
     // NO black/dark grounds (the banana's outline is black) and NO yellows
     // (banana camouflage) — Trym's call: colored/white, banana shines.
+    // ⚠️ ONE FLAT PRICE ACROSS EVERY COLOUR AND SIZE, and Printful's cost is
+    // NOT flat — it climbs with size. The OFFICIAL tee had exactly this and
+    // 5XL was losing ~$9 a sale (Trym caught it at checkout, 7 Aug); that one
+    // is now size-tiered $20.99-$30.99. This one is unaudited: it needs the
+    // per-size Bella+Canvas 3001 costs before anyone trusts $24.99 on a 5XL.
     key: 'tee',
     name: 'Tee',
     shopifyVariantGid: 'gid://shopify/ProductVariant/48971119526107', // Custom Banana Tee, $34.99 (USD store since 15 Jul)
