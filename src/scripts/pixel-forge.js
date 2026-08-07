@@ -225,11 +225,21 @@ function init() {
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
     if (state.onion && state.cur > 0 && mode !== 'items') drawGridInto(ctx, state.frames[state.cur - 1], cell, 0.3);
-    if (mode === 'items' && itemsReady) { // the banana IS the canvas here — draw the item on it
-      const bl = bananaLayer();
-      if (bl) {
-        ctx.globalAlpha = 0.5; ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(bl, (stage.width - bl.width) / 2, (stage.height - bl.height) / 2); ctx.globalAlpha = 1;
+    if (mode === 'items' && itemsReady) {
+      if (wearPick === 'decor') {
+        // 🏡 furniture isn't worn — the easel is a FLOOR, not a banana: a warm
+        // ground band at the base (decor is base-anchored at the homestead)
+        const gh = Math.max(2, Math.round(H / 8)) * cell;
+        ctx.fillStyle = 'rgba(124, 86, 47, 0.16)';
+        ctx.fillRect(0, stage.height - gh, stage.width, gh);
+        ctx.fillStyle = 'rgba(52, 36, 21, 0.4)';
+        ctx.fillRect(0, stage.height - gh, stage.width, 2);
+      } else { // the banana IS the canvas here — draw the item on it
+        const bl = bananaLayer();
+        if (bl) {
+          ctx.globalAlpha = 0.5; ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(bl, (stage.width - bl.width) / 2, (stage.height - bl.height) / 2); ctx.globalAlpha = 1;
+        }
       }
     }
     drawGridInto(ctx, frame(), cell, 1);
@@ -1225,16 +1235,23 @@ function init() {
     const row = el('fgItemSpot');
     if (!row) return;
     const c = computeWear();
-    row.hidden = mode !== 'items' || !c;
+    // the row shows BEFORE the first stroke — a chair maker picks homestead
+    // decor first and never draws on a banana (Trym: "it's not a wearable")
+    row.hidden = mode !== 'items';
     if (row.hidden) return;
-    const cur = wearPick || (c.auto || 'head');
-    row.innerHTML = '<span class="fg-spotlabel">rides the</span>' + WEAR_SPOTS.map(([k, h, lab]) => {
+    const cur = wearPick || (c ? c.auto : '');
+    const chip = ([k, h, lab]) => {
       const key = pickKey(k, h);
       return '<button type="button" class="fg-spot' + (key === cur ? ' is-on' : '')
         + '" data-spot="' + key + '">' + lab
-        + (key === c.auto ? '<i class="fg-spot__auto" title="what the drawing suggests">✦</i>' : '')
+        + (c && key === c.auto ? '<i class="fg-spot__auto" title="what the drawing suggests">✦</i>' : '')
         + '</button>';
-    }).join('');
+    };
+    // decor is NOT a body spot — it stands apart from the rides-the list
+    row.innerHTML = '<span class="fg-spotlabel">rides the</span>'
+      + WEAR_SPOTS.slice(0, 6).map(chip).join('')
+      + '<span class="fg-spotlabel">· or</span>'
+      + chip(['decor', null, 'homestead decor']);
     row.querySelectorAll('.fg-spot').forEach((b2) => {
       b2.onclick = () => {
         // tapping the suggested one again clears the override entirely
@@ -1249,12 +1266,15 @@ function init() {
     // 🏡 decor extras: which store shelf it belongs on + the tile footprint
     // (Trym: makers must see how their piece lands in build mode)
     if (cur === 'decor') {
-      const tw = Math.max(1, Math.ceil(c.fw / 16)), th = Math.max(1, Math.ceil(c.fh / 16));
+      const tiles = c ? (() => {
+        const tw = Math.max(1, Math.ceil(c.fw / 16)), th = Math.max(1, Math.ceil(c.fh / 16));
+        return '<span class="fg-spotlabel">covers ' + tw + '×' + th + (tw * th === 1 ? ' tile' : ' tiles') + '</span>';
+      })() : '';
       row.insertAdjacentHTML('beforeend',
         '<span class="fg-spotlabel">goes</span>'
         + '<button type="button" class="fg-spot' + (decorWhere === 'yard' ? ' is-on' : '') + '" data-where="yard">the yard</button>'
         + '<button type="button" class="fg-spot' + (decorWhere === 'indoor' ? ' is-on' : '') + '" data-where="indoor">indoors</button>'
-        + '<span class="fg-spotlabel">covers ' + tw + '×' + th + (tw * th === 1 ? ' tile' : ' tiles') + '</span>');
+        + tiles);
       row.querySelectorAll('[data-where]').forEach((b2) => {
         b2.onclick = () => {
           decorWhere = b2.dataset.where;
@@ -1262,6 +1282,16 @@ function init() {
           track('forge_item_where', { where: decorWhere });
         };
       });
+    }
+    // the loudest wearable-ism: the SUBMIT button — furniture goes to the
+    // Homestead, not the rave
+    const sub = el('fgItemsSubmit');
+    if (sub) {
+      if (!sub.dataset.orig) sub.dataset.orig = sub.innerHTML;
+      const want = cur === 'decor'
+        ? sub.dataset.orig.replace(/Submit to the rave/i, 'Submit to the Homestead')
+        : sub.dataset.orig;
+      if (sub.innerHTML !== want) sub.innerHTML = want;
     }
   }
 
@@ -1272,7 +1302,12 @@ function init() {
     const key = !c ? '__empty__' : (c.anchor + (c.hand || '') + (c.spread ? '!' : ''));
     if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
     lastRide = key;
-    if (!c) { showToast('draw your item on the banana, where it goes', true, 'edit'); return; }
+    if (!c) {
+      showToast(wearPick === 'decor'
+        ? 'draw your decoration — the warm band at the bottom is the ground'
+        : 'draw your item on the banana, where it goes', true, 'edit');
+      return;
+    }
     if (c.spread && !c.picked) { // spans zones that move independently — teach, don't block
       showToast('an item rides ONE spot — want both hands? make two items 🍌', true, 'warning');
       return;
