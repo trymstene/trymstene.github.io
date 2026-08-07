@@ -63,3 +63,6 @@ ad-pack/
 .wrangler/
 
 banana-3d/
+
+# Printful upload files — regenerate with tools/build-shop-art.py, never deploy
+print-files/
