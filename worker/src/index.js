@@ -98,7 +98,7 @@ export default {
       }
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
-      if (url.pathname === '/health') return handleHealth(env);
+      if (url.pathname === '/health') return handleHealth(env, url.searchParams.get('ship') === '1');
       // visitor country (Cloudflare provides it on every request) — the
       // builder uses it to show Shopify's localized price for that country
       if (url.pathname === '/geo') {
@@ -370,7 +370,7 @@ async function handleServe(request, env, url) {
 // ---------- GET /health ----------
 // Verifies the Printful token + config without exposing anything sensitive.
 
-async function handleHealth(env) {
+async function handleHealth(env, ship) {
   const out = { variant_id: env.PRINTFUL_VARIANT_ID, variant_map: PRINTFUL_BY_SHOPIFY, printful: 'no token set' };
   // temp-product feature + cron hygiene at a glance
   if (adminConfigured(env)) {
@@ -422,6 +422,35 @@ async function handleHealth(env) {
     } catch (e) { out.ga4 = 'error: ' + String(e && e.message).slice(0, 120); }
   } else {
     out.ga4 = 'no GA4_API_SECRET set — server-side purchase is OFF';
+  }
+  // 🚚 real shipping cost per product, on demand (/health?ship=1). Shipping is
+  // baked into every price here, so it IS the margin on a cheap item — and it
+  // was the one number we kept having to guess. Off by default: it's several
+  // Printful calls and nobody needs it on a routine health check.
+  if (ship && env.PRINTFUL_TOKEN) {
+    const dests = {
+      US: { address1: '1600 Pennsylvania Ave NW', city: 'Washington', state_code: 'DC', country_code: 'US', zip: '20500' },
+      DE: { address1: 'Pariser Platz 1', city: 'Berlin', country_code: 'DE', zip: '10117' },
+      NO: { address1: 'Karl Johans gate 1', city: 'Oslo', country_code: 'NO', zip: '0154' },
+    };
+    out.shipping = {};
+    for (const p of PRODUCTS.filter((x) => x.printfulVariantId)) {
+      out.shipping[p.key] = { price: p.priceHint };
+      for (const [cc, recipient] of Object.entries(dests)) {
+        try {
+          const r = await fetch('https://api.printful.com/shipping/rates', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${env.PRINTFUL_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipient, items: [{ variant_id: p.printfulVariantId, quantity: 1 }] }),
+          });
+          const b = await r.json().catch(() => ({}));
+          const cheapest = (b.result || [])[0];
+          out.shipping[p.key][cc] = cheapest
+            ? `${cheapest.rate} ${cheapest.currency} (${cheapest.name})`
+            : `no rate (${b.error && b.error.message ? b.error.message.slice(0, 80) : r.status})`;
+        } catch (e) { out.shipping[p.key][cc] = 'error'; }
+      }
+    }
   }
   // 📘 Meta CAPI: prove the token can write to THIS dataset without ever
   // putting a fake Purchase in it.
