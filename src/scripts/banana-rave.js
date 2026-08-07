@@ -662,7 +662,7 @@ function init() {
   const insideBar = (x, y) => x < barSolid.x && y > barSolid.y;
   const insideDoor = (x, y) => x < doorSolid.x && y > doorSolid.y;
   // one predicate for everything that must never sit ON the door: jelly
-  // pellets, drifters, flee hops, the monkey — the walk slide handles the
+  // pellets, drifters, flee hops, quest props — the walk slide handles the
   // two rects separately so each edge slides correctly
   const blockedAt = (x, y) => insideBar(x, y) || insideDoor(x, y);
 
@@ -4051,7 +4051,7 @@ function init() {
   // ⚠️ GATED TO ~60Hz (the park's and the bay's gate — same reasoning). rAF
   // fires at the DISPLAY's rate: 120Hz on a ProMotion iPhone, 165Hz on a
   // gaming monitor. Ungated, this loop drove stepMe/nadeTick/tickRun/claims/
-  // quests/monkey/a sweep over every raver AND the whole canvas pass twice per
+  // quests/a sweep over every raver AND the whole canvas pass twice per
   // 60Hz beat — and unlike the park's, most of that cost is real DRAWING.
   // 12ms, NOT 15.5: any threshold in (8.4, 16.6) skips alternate 120Hz frames,
   // and 15.5 leaves so little headroom that a jittered vsync on a plain 60Hz
