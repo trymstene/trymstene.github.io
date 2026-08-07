@@ -169,7 +169,7 @@ const money = () => '$' + PRICE.amount.toFixed(2);
 export function offerCard({
   kicker = 'Make it real',
   head = 'Your banana, as a real sticker',
-  pills = ['Die-cut vinyl', 'Free worldwide shipping'],
+  pills = ['Die-cut vinyl', 'Ships worldwide'],
   cta = 'See it as a sticker →',
   href = '/make-a-banana/sticker/',
   flag = 'MADE BY YOU',
@@ -302,19 +302,19 @@ export const OFFERS = {
   yours: {
     kicker: 'Make it real', product: 'sticker',
     head: 'That banana, as a real sticker',
-    pills: ['Die-cut vinyl', 'Free worldwide shipping'],
+    pills: ['Die-cut vinyl', 'Ships worldwide'],
     cta: 'See it as a sticker →', href: '/make-a-banana/sticker/', flag: 'MADE BY YOU',
   },
   yoursMug: {
     kicker: 'Make it real', product: 'mug',
     head: 'Your banana, on your morning coffee',
-    pills: ['11oz enamel camper mug', 'Free worldwide shipping'],
+    pills: ['11oz enamel camper mug', 'Ships worldwide'],
     cta: 'See it on a mug →', href: '/make-a-banana/mug/', flag: 'MADE BY YOU',
   },
   yoursTee: {
     kicker: 'Make it real', product: 'tee',
     head: 'Your banana, on a t-shirt',
-    pills: ['Printed on demand', 'Free worldwide shipping'],
+    pills: ['Printed on demand', 'Ships worldwide'],
     cta: 'See it on a tee →', href: '/make-a-banana/tee/', flag: 'MADE BY YOU',
   },
   // ── OFFICIAL LANE ── they took the original; there is nothing of theirs to print
@@ -322,14 +322,14 @@ export const OFFERS = {
     price: false,
     kicker: 'Since 1999', product: 'mug', bare: true,
     head: 'The original banana, on a real mug',
-    pills: ['Official merch', 'Free worldwide shipping'],
+    pills: ['Official merch', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
   originalTee: {
     price: false,
     kicker: 'Since 1999', product: 'tee', bare: true,
     head: 'Wear the banana that started it',
-    pills: ['Official tee', 'Free worldwide shipping'],
+    pills: ['Official tee', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
   // 🖼 THE GALLERY: these are OUR bananas and every item carries the exact
@@ -337,7 +337,7 @@ export const OFFERS = {
   gallery: {
     kicker: 'Make it real', product: 'sticker',
     head: 'This one can be a real sticker',
-    pills: ['Die-cut vinyl', 'Free worldwide shipping'],
+    pills: ['Die-cut vinyl', 'Ships worldwide'],
     cta: 'Make it a sticker →', href: '/make-a-banana/sticker/', flag: 'FREE TO MAKE',
   },
   // ⚠⚠ THE REMIXES ARE NOT OURS TO SELL. Community GIFs, credited to their
@@ -347,7 +347,7 @@ export const OFFERS = {
   remix: {
     price: false, kicker: 'Since 1999', product: 'mug', bare: true,
     head: 'The banana they remixed, on a real mug',
-    pills: ['Official merch', 'Free worldwide shipping'],
+    pills: ['Official merch', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
   // the wallpaper crowd took something for a SCREEN — offer the desk instead
@@ -355,7 +355,7 @@ export const OFFERS = {
     price: false,
     kicker: 'Off the screen', product: 'mug', bare: true,
     head: 'It looks even better on a mug',
-    pills: ['Official merch', 'Free worldwide shipping'],
+    pills: ['Official merch', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
   // an emoji is a small thing for chat — a sticker is the small thing for life
@@ -363,7 +363,7 @@ export const OFFERS = {
     price: false,
     kicker: 'Make it real', product: 'sticker', bare: true,
     head: 'A banana for your laptop, not just your chat',
-    pills: ['Die-cut vinyl', 'Free worldwide shipping'],
+    pills: ['Die-cut vinyl', 'Ships worldwide'],
     cta: 'Make your own sticker →', href: '/make-a-banana/', flag: 'THE ORIGINAL',
   },
 };

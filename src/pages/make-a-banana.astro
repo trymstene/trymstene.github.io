@@ -22,7 +22,7 @@ const appSchema = {
   "creator": { "@id": "https://trymstene.com/#trym", "@type": "Person", "name": "Trym Stene", "url": "https://trymstene.com/" },
   "offers": [
     { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Free animated emoji GIF and meme image downloads" },
-    { "@type": "Offer", "price": "14.99", "priceCurrency": "USD", "description": "Your custom banana as a 3″×3″ vinyl sticker, free worldwide shipping" }
+    { "@type": "Offer", "price": "4.99", "priceCurrency": "USD", "description": "Your custom banana as a 3″×3″ vinyl sticker" }
   ]
 };
 ---
@@ -447,7 +447,7 @@ const appSchema = {
     .bb-ptile__mock canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
     .bb-ptile__name { font-weight: 800; font-size: 0.95rem; margin-top: 0.45rem; }
     .bb-ptile__price { font-weight: 800; font-size: 0.85rem; color: var(--hot); margin: 0.05rem 0 0.5rem; }
-    /* free shipping gets the supermarket-banner treatment (Trym: highlight it) */
+    /* the shipping line gets the supermarket-banner treatment (Trym: highlight it) */
     .bb-ship {
       display: inline-block; background: var(--hot); color: #fff;
       font-weight: 800; font-size: 0.78rem; letter-spacing: 0.06em;
@@ -618,7 +618,7 @@ const appSchema = {
         <div class="bb-card bb-card--buy" id="bbTakeHome">
           <h3><PixelIcon name="tag" size="1.5em" /> Buy this banana</h3>
           <p>Your design, printed and mailed to your door. Tap a product to buy:</p>
-          <p class="bb-ship"><PixelArtIcon name="globe" size="16px" /> FREE WORLDWIDE SHIPPING</p>
+          <p class="bb-ship"><PixelArtIcon name="globe" size="16px" /> SHIPS WORLDWIDE</p>
           <!-- the card IS the picker: one tile per product (your banana previewed
                on each) → tap opens that product. Adding a product = one more tile,
                never a new button. -->
@@ -690,7 +690,7 @@ const appSchema = {
   <div class="bb-homebar" id="bbHomeBar">
     <button type="button" class="bb-homebar__go" id="bbHomeBarGo">
       <span class="bb-homebar__stage"><canvas id="bbHomeBarCv" width="72" height="72" aria-hidden="true"></canvas></span>
-      <span class="bb-homebar__txt"><b>Buy your banana</b><small>sticker · mug · tee · free shipping</small></span>
+      <span class="bb-homebar__txt"><b>Buy your banana</b><small>sticker · mug · tee · from $4.99</small></span>
       <span class="bb-homebar__arrow" aria-hidden="true">→</span>
     </button>
     <button type="button" class="bb-homebar__x" id="bbHomeBarX" aria-label="No thanks"><PixelArtIcon name="close" size="18px" /></button>

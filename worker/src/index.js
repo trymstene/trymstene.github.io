@@ -323,15 +323,15 @@ async function handleCheckout(request, env, url) {
     throw new Error('variantUpdate: ' + JSON.stringify(upd.productVariantsBulkUpdate.userErrors));
   }
 
-  // free-shipping profile — mandatory, see stickersProfileId (needs the
-  // write_shipping scope; without it this throws and the client falls back)
-  const ship = await adminGql(env, `
-    mutation($id: ID!, $profile: DeliveryProfileInput!) {
-      deliveryProfileUpdate(id: $id, profile: $profile) { userErrors { field message } }
-    }`, { id: await stickersProfileId(env), profile: { variantsToAssociate: [variantGid] } });
-  if (ship.deliveryProfileUpdate.userErrors.length) {
-    throw new Error('shippingProfile: ' + JSON.stringify(ship.deliveryProfileUpdate.userErrors));
-  }
+  // ✂️ FREE SHIPPING IS OFF (Trym, 7 Aug) — shipping is charged at checkout on
+  // both lanes now, so the per-order product must NOT be attached to the
+  // free-shipping profile. It inherits the General profile, same as everything
+  // else. Trym's reasoning: baking postage in meant pricing every product
+  // per MARKET (Printful shipping varies 2.4x across ours), i.e. two rule sets
+  // instead of one. Charging it leaves a single rule — minimum margin — and it
+  // is what makes a $4.99 sticker possible at all.
+  // ⚠️ stickersProfileId() is kept just below: reversing this is a one-line
+  // restore, and the profile still exists (empty) in Shopify.
 
   // headless channel ONLY: sellable via the Storefront API, invisible to browsing
   const pub = await adminGql(env, `

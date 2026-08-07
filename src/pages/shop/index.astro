@@ -35,7 +35,7 @@ const breadcrumbSchema = {
 ---
 <BaseLayout
   title="Shop — Dancing Banana Merch | Trym Stene"
-  description="Official Dancing Banana merch from the creator of the meme — the tee and the camper mug, printed on demand with free worldwide shipping."
+  description="Official Dancing Banana merch from the creator of the meme — the tee and the camper mug, printed on demand and shipped worldwide."
   ogTitle="Shop — Dancing Banana Merch"
   ogImage="https://trymstene.com/assets/og/shop.png"
   ogDescription="Official Dancing Banana merch from the creator of the meme."
@@ -63,7 +63,7 @@ const breadcrumbSchema = {
         <p class="shopbar__tag">The original meme, on things you can actually own — printed and posted by the guy who drew it.</p>
       </div>
       <ul class="shopbar__trust">
-        <li>🚚 Free worldwide shipping</li>
+        <li>🚚 Ships worldwide</li>
         <li>🖨 Printed on demand</li>
         <li>🔒 Secure checkout</li>
       </ul>
@@ -102,14 +102,14 @@ const breadcrumbSchema = {
   </section>
 
   <!-- 🎨 THE CUSTOM LANE — the shop's second half. Same shop, not a detour:
-       same checkout, same free shipping. The one difference is that you design
+       same checkout, same printer. The one difference is that you design
        it first, so the tiles say so and route into the builder rather than a
        PDP (a bare custom PDP would sell a blank). -->
   <section class="block shopcustom" id="shopCustom">
     <p class="kicker">Your own banana</p>
     <h2>Not the official one? Put <em>yours</em> on it</h2>
     <p class="lead">Dress a banana — shades, hats, a caption, your own colours — and have that one
-    printed instead. Same shop, same free worldwide shipping. You just design it first.</p>
+    printed instead. Same shop, same printer. You just design it first.</p>
     <div class="shop-grid shopcustom__grid">
       {custom.map((p) => (
         <a class="project-card shop-card shopcustom__card" href={`/make-a-banana/${p.key}/`} data-custom={p.key}>
@@ -127,7 +127,7 @@ const breadcrumbSchema = {
     </div>
     <p class="shop-polline">
       <span data-custom-yours hidden>That's <strong>your</strong> banana on the tiles. </span>
-      Free worldwide shipping · printed on demand · <a href="/make-a-banana/"><PixelIcon name="palette" /> open the full builder</a>
+      Ships worldwide · printed on demand · <a href="/make-a-banana/"><PixelIcon name="palette" /> open the full builder</a>
     </p>
   </section>
 
