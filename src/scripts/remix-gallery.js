@@ -17,7 +17,12 @@ const BATCH = 60;
 
 const grid = document.getElementById('rmxGrid');
 if (grid) {
-  const ALL = JSON.parse(document.getElementById('rmxData').textContent);
+  // ⚠️ the only unguarded JSON.parse left in the codebase — if #rmxData ever
+  // goes missing or malforms, an uncaught throw here kills the WHOLE gallery's
+  // JS: filtering, voting and lazy thumbnails all die silently with it.
+  let ALL = [];
+  try { ALL = JSON.parse(document.getElementById('rmxData').textContent) || []; }
+  catch (e) { ALL = []; }
   let ratings = {}; // slug -> [sum, count]
   let votes = {};
   try { votes = JSON.parse(localStorage.getItem('rmx-votes') || '{}'); } catch (e) {}

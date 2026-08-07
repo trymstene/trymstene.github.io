@@ -75,7 +75,10 @@ const GUIDE = [
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(raveFaq)} />
   <!-- perf: the dance sheet is otherwise only discovered after the JS bundle
        parses (a full network waterfall); ?v must match SHEET_SRC in banana-engine.js -->
-  <link rel="preload" as="image" href="/assets/banana-dance.png?v=6" slot="head" />
+  {/* ⚠️ the ?v MUST match SHEET_SRC in banana-engine.js — it was v=6 here and
+      v=7 there, so this preloaded a file nothing ever used: a wasted download
+      on the heaviest page, and the "preloaded but not used" console warning. */}
+  <link rel="preload" as="image" href="/assets/banana-dance.png?v=7" slot="head" />
   <!-- perf: warm DNS+TCP+TLS to the presence worker before the WS handshake -->
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">
@@ -748,8 +751,10 @@ const GUIDE = [
     /* ---- THE MENU's costume effects (one class per fx, 10s moments) ---- */
     /* paparazzi: the flash keeps going off — BIGGER (Trym round 2): brighter
        pop + a white radial flashbang behind the banana on the same clock */
-    .rv-raver.rv-flashfx canvas { animation: rvFlashPop 1.4s steps(1) infinite; }
-    @keyframes rvFlashPop { 0%, 88% { filter: none; } 89%, 100% { filter: brightness(3) drop-shadow(0 0 26px #ffffff); } }
+    /* ⚠️ NO filter keyframes on the canvas — iOS bakes them (the shock-blink
+       lesson, and the rule stated 20 lines below). rv-flamehot was rewritten
+       for exactly this; rv-flashfx never was. The ::before flashbang beneath
+       already carries the pop, and it animates OPACITY on a div, which is safe. */
     .rv-raver.rv-flashfx::before {
       content: ''; position: absolute; inset: -30%; pointer-events: none;
       background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 14%, rgba(255, 255, 255, 0.25) 34%, transparent 55%);
