@@ -583,10 +583,13 @@ function init(visitDoc, visitMiss) {
   // 🛋 M4.5: each room keeps its own furniture (state.inItems[tier])
   const INCAP = { 1: 6, 2: 12, 3: 16 };
   const inList = () => (state.inItems[inside] = state.inItems[inside] || []);
-  // per-room placement insets: the wood rooms wear a 96px wall band up top;
-  // the tent is groundsheet to the brim (the old one-size 116 top inset left
-  // the shrunken tent with almost no legal floor — everything read red)
-  const ROOM_INSETS = { 1: [24, 30, 12], 2: [34, 116, 12], 3: [34, 116, 12] };
+  // per-room placement insets: the wood rooms wear a ~100px wall band up top;
+  // the tent is groundsheet to the brim. ⚠️ THE VISIBLE FLOOR IS THE PROMISE
+  // (Trym, 7 Aug — third red-ghost round): every inset here must map to
+  // something the eye can SEE. Tent walls are invisible → near-zero insets;
+  // wood walls are 14px → 18 sides; tops sit just under the wall face so
+  // furniture can stand AGAINST the back wall like the pack rooms do.
+  const ROOM_INSETS = { 1: [6, 20, 6], 2: [18, 104, 8], 3: [18, 104, 8] };
   const roomBounds = (t = inside) => {
     const I = INTERIORS[t];
     const [ins, top, bot] = ROOM_INSETS[t] || [34, 116, 12];
@@ -715,9 +718,16 @@ function init(visitDoc, visitMiss) {
     if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
     if (I.kitchen && x + d.w / 2 > I.kitchen[0] - 8 && x - d.w / 2 < I.kitchen[2] + 8
       && y > I.kitchen[1] - 20 && y - d.h < I.kitchen[3] + 8) return false;
-    if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 20 && x - d.w / 2 < I.exit[2] + 20 && y > I.exit[1] - (t === 1 ? 36 : 90)) return false;
-    for (const c of I.cols) {
-      if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 24 < c[3]) return false;
+    // the DOOR CORRIDOR only — the gap's own width (+4), never the floor
+    // beside it: standing a lamp NEXT to the door is what real rooms do
+    if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 4 && x - d.w / 2 < I.exit[2] + 4 && y > I.exit[1] - (t === 1 ? 36 : 90)) return false;
+    // wall colliders gate placement only where walls are VISIBLE (wood rooms);
+    // the tent's frame is invisible — vetoing on it reads as arbitrary red.
+    // `y - 8`: a base 8px under the wall face = standing against the wall.
+    if (t !== 1) {
+      for (const c of I.cols) {
+        if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 8 < c[3]) return false;
+      }
     }
     if (!d.rug) {
       for (const it of (state.inItems[t] || [])) {
@@ -2680,6 +2690,9 @@ function init(visitDoc, visitMiss) {
       pos, tgt, peers,
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,
+      // the validity-grid probe (round-15 doctrine: verify the grid, not a spot)
+      inOk: (id, x, y, t) => !!DEX[id] && inSpotOk(DEX[id], x, y, t),
+      geo: { INTERIORS, roomBounds },
     };
   }
 
