@@ -171,9 +171,15 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
       <div class="pdp-field">
         <div class="pdp-field__label">What you get</div>
         <p id="pdpCut" style="margin:0;font-weight:500;">
+          {/* ⚠️ branch on WHAT IT IS, not on whether it has size options — the
+              mug has neither colours nor sizes and was landing in the sticker
+              branch, telling buyers a ceramic mug is "die-cut along your
+              design's outline" (Trym spotted it on the live PDP). */}
           {p.options
             ? `${p.material} — your banana printed big on the front`
-            : `${p.size} ${p.material}, die-cut along your design’s outline`}
+            : p.print === 'mug'
+              ? `${p.size} ${p.material} — your banana wrapped around it`
+              : `${p.size} ${p.material}, die-cut along your design’s outline`}
         </p>
         <p id="pdpHint" hidden style="margin:0.5rem 0 0;font-size:0.85rem;font-weight:700;color:var(--hot);"></p>
       </div>

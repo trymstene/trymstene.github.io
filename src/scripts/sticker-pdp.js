@@ -430,7 +430,12 @@ function wireZoom() {
 }
 
 async function boot() {
-  if (!apparel) {
+  // ⚠️ the mug is neither apparel nor a cut sheet — without this it inherited
+  // the sticker line and told buyers a ceramic mug was die-cut to their outline.
+  // Its shape never changes with the background, so it says one thing always.
+  if (product.print === 'mug') {
+    el('pdpCut').textContent = `${product.size} ${product.material} — your banana wrapped around it`;
+  } else if (!apparel) {
     el('pdpCut').textContent = state.bg === 'transparent'
       ? `${product.size} ${product.material}, die-cut along your design’s outline`
       : `${product.size} ${product.material}, square with your design`;

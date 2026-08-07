@@ -77,14 +77,13 @@ export default [
     // get it: ours on it, or yours.
     key: 'mug',
     name: 'Mug',
-    shopifyVariantGid: 'gid://shopify/ProductVariant/49051171586267', // Custom Banana Mug, $26.99
+    shopifyVariantGid: 'gid://shopify/ProductVariant/49051171586267', // Custom Banana Mug
     printfulVariantId: 11189,
     print: 'mug',
     size: '12 oz (0.35 l)',
     material: 'white enamel camper mug with a rolled rim',
-    // $12.25 blank + ~$5-12 shipping (free-shipping is baked into custom prices,
-    // unlike the official line which charges it at checkout) — hence 26.99, not
-    // the 22.99 first costed against the cheaper ceramic mug.
+    // $12.25 blank + $4.49 US / $9.99 NO shipping, both measured 7 Aug via
+    // /health?ship=1. Free shipping is baked in on BOTH lanes now.
     priceHint: '22.99',
     live: true, // ⚠️ flipped WITH Shopify DRAFT→ACTIVE — the two must never disagree
   },
