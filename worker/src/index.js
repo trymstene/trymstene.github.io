@@ -446,11 +446,27 @@ async function handleHealth(env, ship, store) {
       try {
         const stores = await pf('/stores');
         const seen = (stores.result || []).map((s) => `${s.id}:${s.name}(${s.type})`);
-        const list = await pf('/store/products');
-        if (!list.result) {
-          out.store[label] = { stores: seen, error: JSON.stringify(list).slice(0, 160) };
-          continue;
-        }
+        // ⚠️ /store/products lists SYNCED products only. A product created in
+        // Shopify by hand (rather than pushed from Printful) shows up as
+        // "ignored" and never appears here — so report what Printful actually
+        // said, including the ignored count, instead of a bare zero.
+        // ⚠️ Printful puts its ERROR MESSAGE in `result` as a plain string, so
+        // `result` being truthy proves nothing — always check it's an array.
+        // (An invalid status= value returns exactly that, and .slice().map then
+        // dies with a message that names neither the endpoint nor the reason.)
+        const grab = async (q) => {
+          const r = await pf('/store/products' + q);
+          return Array.isArray(r.result) ? r.result : { _said: JSON.stringify(r).slice(0, 140) };
+        };
+        const synced = await grab('?limit=50');
+        const ignored = await grab('?status=ignored&limit=50');
+        out.store[label + '_counts'] = {
+          synced: Array.isArray(synced) ? synced.length : synced,
+          ignored: Array.isArray(ignored) ? ignored.length : ignored,
+          names: (Array.isArray(synced) ? synced : []).concat(Array.isArray(ignored) ? ignored : [])
+            .slice(0, 12).map((p) => p.name),
+        };
+        const list = { result: Array.isArray(synced) ? synced : [] };
         const rows = [];
         for (const p of list.result.slice(0, 12)) {
           const d = await pf('/store/products/' + p.id);
