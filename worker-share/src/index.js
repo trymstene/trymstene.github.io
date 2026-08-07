@@ -259,7 +259,7 @@ async function handleWallSubmit(request, env, url) {
   // the optional signature — free text is acceptable ONLY because every entry
   // passes Trym's human gate before publication (he reads name + art together)
   const by = body && typeof body.by === 'string'
-    ? body.by.replace(/[\\u0000-\\u001f\\u007f]/g, '').trim().slice(0, 24)
+    ? body.by.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 24)
     : '';
   if (!['banana', 'emoji'].includes(kind) || !params) {
     return json({ error: 'bad submission' }, 400, corsHeaders(env, request));

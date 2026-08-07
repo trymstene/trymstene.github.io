@@ -108,7 +108,8 @@ a { color: inherit; }
   background: var(--banana);
   border-bottom: var(--line);
   transition: transform 0.28s ease;
-  will-change: transform;
+  /* ⚠️ never will-change:transform here — it makes .nav a containing block for
+     the fixed .nav__backdrop, which then sizes to the header, not the screen. */
 }
 /* scroll-aware nav (js in Nav.astro): slides up on scroll-DOWN, returns on a
    deliberate scroll-UP (asymmetric hysteresis so minor adjusting doesn't pop
