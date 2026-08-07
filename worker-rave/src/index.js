@@ -307,6 +307,9 @@ export default {
         'Content-Type': 'application/json',
       };
       if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+      // the Origin was only ever used to PICK a CORS header — a non-browser
+      // caller sailed straight past it. /yard (singular, below) rejects; match it.
+      if (!allowed.includes(origin)) return new Response('{"error":"forbidden"}', { status: 403, headers: cors });
       // ⚠️ the SEARCH goes through too — a GET read carries ?pass= so the
       // room can hand back what the compost owes that grower (see RIPE_TTL).
       const sub = url.pathname.replace('/park-garden', '/garden') + url.search;
@@ -340,6 +343,7 @@ export default {
         'Content-Type': 'application/json',
       };
       if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+      if (!allowed.includes(origin)) return new Response('{"error":"forbidden"}', { status: 403, headers: cors });
       const sub = (url.pathname.replace('/yards', '') || '/') + url.search;
       const res = await env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room' + sub, {
         method: request.method,

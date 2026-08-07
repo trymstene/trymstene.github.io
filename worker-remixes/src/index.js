@@ -14,6 +14,21 @@
 
 const SLUG_RE = /^[a-z0-9-]{2,64}$/;
 
+// ⚠️ the voter id is SHA-256(ip + User-Agent) — and User-Agent is entirely
+// client-controlled, so rotating it mints unlimited voters from one IP. The
+// fingerprint stops honest double-voting, not a script. This per-IP throttle
+// is what actually costs an attacker something. Same shape as worker-share.
+const ipHits = new Map();
+function throttled(ip) {
+  const now = Date.now();
+  const rec = ipHits.get(ip) || { n: 0, t: now };
+  if (now - rec.t > 60000) { rec.n = 0; rec.t = now; }
+  rec.n++;
+  ipHits.set(ip, rec);
+  if (ipHits.size > 5000) ipHits.clear();
+  return rec.n > 20; // browsing and rating a gallery is nowhere near 20/min
+}
+
 function corsHeaders(env, origin) {
   const allowed = (env.ALLOWED_ORIGIN || '').split(',');
   const ok = allowed.includes(origin) ? origin : allowed[0];
@@ -49,6 +64,7 @@ export default {
       }
       // light per-client fingerprint: ip + ua, hashed — re-votes replace
       const ip = request.headers.get('CF-Connecting-IP') || '?';
+      if (throttled(ip)) return new Response('slow down', { status: 429, headers: cors });
       const ua = request.headers.get('User-Agent') || '?';
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + '|' + ua));
       const voter = [...new Uint8Array(buf)].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('');

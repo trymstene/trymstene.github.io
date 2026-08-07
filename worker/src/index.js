@@ -136,11 +136,37 @@ function corsHeaders(env, request) {
   };
 }
 
+// ---------- the door: Origin + per-IP throttle ----------
+// /upload writes to R2 and /checkout mints real Shopify products and burns
+// Admin-API + Printful call volume. Both were open to any caller anywhere.
+// Same shape as worker-share's proven guard: best-effort across isolates,
+// but it blunts scripted abuse to a trickle.
+const ipHits = new Map();
+function throttled(ip, perMin) {
+  const now = Date.now();
+  const rec = ipHits.get(ip) || { n: 0, t: now };
+  if (now - rec.t > 60000) { rec.n = 0; rec.t = now; }
+  rec.n++;
+  ipHits.set(ip, rec);
+  if (ipHits.size > 5000) ipHits.clear();
+  return rec.n > perMin;
+}
+
+function originOk(env, request) {
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+  return allowed.includes(request.headers.get('Origin') || '');
+}
+
 // ---------- POST /upload ----------
 
 async function handleUpload(request, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env, request) });
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+
+  if (!originOk(env, request)) return json({ error: 'forbidden' }, 403);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  // a buyer uploads one design per order; 10/min is far above any real flow
+  if (throttled(ip, 10)) return json({ error: 'slow down' }, 429, corsHeaders(env, request));
 
   const len = parseInt(request.headers.get('Content-Length') || '0', 10);
   if (!len || len > MAX_UPLOAD_BYTES) return json({ error: 'file too large' }, 413, corsHeaders(env, request));
@@ -245,6 +271,9 @@ async function handleCheckout(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env, request) });
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
   const cors = corsHeaders(env, request);
+  if (!originOk(env, request)) return json({ error: 'forbidden' }, 403);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (throttled(ip, 10)) return json({ error: 'slow down' }, 429, cors);
   // no Admin credentials yet = feature off; clients fall back to the shared variant
   if (!adminConfigured(env)) return json({ error: 'not configured' }, 503, cors);
 
