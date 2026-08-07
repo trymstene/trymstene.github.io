@@ -428,9 +428,16 @@ async function handleHealth(env, ship) {
   // was the one number we kept having to guess. Off by default: it's several
   // Printful calls and nobody needs it on a routine health check.
   if (ship && env.PRINTFUL_TOKEN) {
+    // the destinations that actually buy — GA4's top session countries, not a
+    // tidy sample. Shipping varies 2.5x across them, so a single global price
+    // either loses money somewhere or stays high; this is how you find out which.
     const dests = {
       US: { address1: '1600 Pennsylvania Ave NW', city: 'Washington', state_code: 'DC', country_code: 'US', zip: '20500' },
+      GB: { address1: '10 Downing St', city: 'London', country_code: 'GB', zip: 'SW1A 2AA' },
+      CA: { address1: '80 Wellington St', city: 'Ottawa', state_code: 'ON', country_code: 'CA', zip: 'K1A 0A2' },
+      AU: { address1: '1 Macquarie St', city: 'Sydney', state_code: 'NSW', country_code: 'AU', zip: '2000' },
       DE: { address1: 'Pariser Platz 1', city: 'Berlin', country_code: 'DE', zip: '10117' },
+      NL: { address1: 'Dam 1', city: 'Amsterdam', country_code: 'NL', zip: '1012 JS' },
       NO: { address1: 'Karl Johans gate 1', city: 'Oslo', country_code: 'NO', zip: '0154' },
     };
     out.shipping = {};
@@ -444,9 +451,12 @@ async function handleHealth(env, ship) {
             body: JSON.stringify({ recipient, items: [{ variant_id: p.printfulVariantId, quantity: 1 }] }),
           });
           const b = await r.json().catch(() => ({}));
-          const cheapest = (b.result || [])[0];
-          out.shipping[p.key][cc] = cheapest
-            ? `${cheapest.rate} ${cheapest.currency} (${cheapest.name})`
+          const rates = b.result || [];
+          // ⚠️ take the MINIMUM, don't trust result[0] to be sorted — a magnet
+          // quoting dearer than a t-shirt is exactly how you'd notice you were
+          // reading whichever rate Printful happened to list first.
+          out.shipping[p.key][cc] = rates.length
+            ? rates.map((x) => `${x.rate} ${x.currency}`).join(' | ')
             : `no rate (${b.error && b.error.message ? b.error.message.slice(0, 80) : r.status})`;
         } catch (e) { out.shipping[p.key][cc] = 'error'; }
       }

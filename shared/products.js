@@ -52,7 +52,7 @@ export default [
     },
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
-    priceHint: '34.99',
+    priceHint: '24.99',
     live: true,
   },
   {
@@ -62,7 +62,7 @@ export default [
     printfulVariantId: 10163,   // Kiss-Cut Stickers (product 358), 3″×3″, cost $2.50
     size: '3″×3″ (7.5 cm)',
     material: 'durable weatherproof vinyl',
-    priceHint: '14.99',
+    priceHint: '11.99',
     live: true,
   },
   {
@@ -85,7 +85,7 @@ export default [
     // $12.25 blank + ~$5-12 shipping (free-shipping is baked into custom prices,
     // unlike the official line which charges it at checkout) — hence 26.99, not
     // the 22.99 first costed against the cheaper ceramic mug.
-    priceHint: '26.99',
+    priceHint: '22.99',
     live: true, // ⚠️ flipped WITH Shopify DRAFT→ACTIVE — the two must never disagree
   },
   {
@@ -95,7 +95,7 @@ export default [
     printfulVariantId: 16366,   // Die-Cut Magnets (product 656), 3″×3″, cost $3.32
     size: '3″×3″ (7.5 cm)',
     material: 'flexible fridge magnet',
-    priceHint: '16.99',
+    priceHint: '14.99',
     live: true,
   },
 ];
