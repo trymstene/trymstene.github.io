@@ -174,11 +174,12 @@ function init() {
       if (def && !earnedUnlocked(def)) {
         // a locked drop is a DOOR: the chip links to where you catch it
         const a = document.createElement('a');
+        const door = earnDoor(def);
         a.className = 'bb-chip bb-chip--icon bb-chip--locked';
-        a.href = '/rave/'; a.dataset.place = 'builder-locked';
+        a.href = door.href; a.dataset.place = 'builder-locked';
         a.innerHTML = artFor(val) || label;
-        a.title = (def.label || label) + ' — ' + (def.lock || 'earned at the rave');
-        a.setAttribute('aria-label', (def.label || label) + ' (locked — catch it at the rave)');
+        a.title = (def.label || label) + ' — ' + (def.lock || 'earned at ' + door.at);
+        a.setAttribute('aria-label', (def.label || label) + ' (locked — earn it at ' + door.at + ')');
         el(host).appendChild(a);
         return;
       }

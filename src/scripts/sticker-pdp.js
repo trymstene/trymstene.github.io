@@ -308,8 +308,10 @@ function buildWardrobe() {
     })));
   }
   // 🎁 THE COMMUNITY ROW — hidden until the catalog lands, then owned items are
-  // wearable and the rest are locked doors to the rave. Only ONE can be worn at
-  // a time (the single `c` slot), so picking is exclusive, not a toggle-set.
+  // wearable and the rest are locked doors to the Banana Stand, where every
+  // approved community piece is on sale (7 Aug: they no longer wait for a
+  // rave drop). Only ONE can be worn at a time (the single `c` slot), so
+  // picking is exclusive, not a toggle-set.
   if (CATALOG.length) {
     wardrobeRow(host, 'Community', CATALOG.slice()
       .sort((a, b) => (a.added || 0) - (b.added || 0))
@@ -319,7 +321,7 @@ function buildWardrobe() {
         return {
           art: ((catCustom(it.id) || [])[0] || {}).art,
           label: name + (it.by ? ' by ' + it.by : ''),
-          locked: owned ? null : { href: '/rave/', why: 'catch it at the rave' },
+          locked: owned ? null : { href: '/park/', why: 'buy it at the Banana Stand' },
           on: () => state.c === it.id,
           pick: () => { state.c = state.c === it.id ? '' : it.id; applyCustom(); },
         };

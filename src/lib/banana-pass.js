@@ -424,8 +424,8 @@ export async function checkCatalogVerdicts(opts = {}) {
         passNoticeAdd({
           id: 'cat-' + s.sid,
           icon: '🎉',
-          text: '<b>“' + title + '” made it in!</b> It’s dropping on the rave floor now — and it’s already on your banana. Strangers will catch it and dance in your design, your name riding along. Go show it off →',
-          link: '/rave/',
+          text: '<b>“' + title + '” made it in!</b> It’s on the shelf at the Banana Stand now, your name on the label — and it’s already on your banana. Every visitor can buy it and wear your design across the world. Go see it on sale →',
+          link: '/park/',
         });
       } else {
         passNoticeAdd({
