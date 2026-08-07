@@ -244,6 +244,20 @@ function init() {
       ctx.lineWidth = i % 8 === 0 ? 2 : 1;
       ctx.beginPath(); ctx.moveTo(0, i * cell + 0.5); ctx.lineTo(stage.width, i * cell + 0.5); ctx.stroke();
     }
+    // 🏡 decor mode: dashed banana lines mark HOMESTEAD TILES (16 forge px =
+    // one 48px build-mode tile at the 3× render) — the maker sees the footprint
+    if (mode === 'items' && wearPick === 'decor') {
+      ctx.strokeStyle = 'rgba(245,196,0,0.65)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      for (let i = 16; i < W; i += 16) {
+        ctx.beginPath(); ctx.moveTo(i * cell + 0.5, 0); ctx.lineTo(i * cell + 0.5, stage.height); ctx.stroke();
+      }
+      for (let i = 16; i < H; i += 16) {
+        ctx.beginPath(); ctx.moveTo(0, i * cell + 0.5); ctx.lineTo(stage.width, i * cell + 0.5); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
   }
 
   // ---- frames strip ----
@@ -1131,6 +1145,7 @@ function init() {
   // them — the art stays exactly where it was drawn on the banana, it just
   // rides a different part. Skip that and every override teleports the item.
   let wearPick = null;
+  let decorWhere = 'yard';   // 🏡 decor only: which homestead store shelf (yard | indoor)
   const WEAR_SPOTS = [['head', null, 'head'], ['face', null, 'face'], ['chest', null, 'body'],
                       ['hand', 'left', 'left hand'], ['hand', 'right', 'right hand'],
                       ['feet', null, 'feet'],
@@ -1175,8 +1190,11 @@ function init() {
     const spread = n >= 6 && (n - topVotes) >= Math.max(3, n * 0.25);
     const auto = [best[0], best[1]];
     if (wearPick === 'decor') {           // 🏡 a decoration — no body anchor at all
+      // where + the art's pixel bbox ride the payload: the homestead renders
+      // forge pixels at 3× (48px tiles = 16 forge px), so fw/fh ARE the size
       return { art: out.svg, anchor: 'decor', spread: false,
-        auto: pickKey(auto[0], auto[1]), picked: true, ox: 0, oy: 0, scale: 1 };
+        auto: pickKey(auto[0], auto[1]), picked: true, ox: 0, oy: 0, scale: 1,
+        where: decorWhere, fw: out.w, fh: out.h };
     }
     if (wearPick) {                       // the maker overruled the guess
       const f = WEAR_SPOTS.find((w) => pickKey(w[0], w[1]) === wearPick);
@@ -1228,6 +1246,23 @@ function init() {
         track('forge_item_spot', { spot: wearPick || 'auto' });
       };
     });
+    // 🏡 decor extras: which store shelf it belongs on + the tile footprint
+    // (Trym: makers must see how their piece lands in build mode)
+    if (cur === 'decor') {
+      const tw = Math.max(1, Math.ceil(c.fw / 16)), th = Math.max(1, Math.ceil(c.fh / 16));
+      row.insertAdjacentHTML('beforeend',
+        '<span class="fg-spotlabel">goes</span>'
+        + '<button type="button" class="fg-spot' + (decorWhere === 'yard' ? ' is-on' : '') + '" data-where="yard">the yard</button>'
+        + '<button type="button" class="fg-spot' + (decorWhere === 'indoor' ? ' is-on' : '') + '" data-where="indoor">indoors</button>'
+        + '<span class="fg-spotlabel">covers ' + tw + '×' + th + (tw * th === 1 ? ' tile' : ' tiles') + '</span>');
+      row.querySelectorAll('[data-where]').forEach((b2) => {
+        b2.onclick = () => {
+          decorWhere = b2.dataset.where;
+          paintSpotPicker();
+          track('forge_item_where', { where: decorWhere });
+        };
+      });
+    }
   }
 
   function updateItemsStatus() {
@@ -1277,7 +1312,8 @@ function init() {
     const label = itemsSave.textContent;
     const c = computeWear();
     if (!c) { itemsSave.textContent = 'Draw an item first 🎨'; setTimeout(() => { itemsSave.textContent = label; }, 2000); return; }
-    shelfAdd({ kind: 'wearable', params: 'wear:' + JSON.stringify({ forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale }), data: null });
+    shelfAdd({ kind: 'wearable', params: 'wear:' + JSON.stringify({ forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale,
+      ...(c.anchor === 'decor' ? { where: c.where, fw: c.fw, fh: c.fh } : {}) }), data: null });
     if (el('fgItemsDone')) el('fgItemsDone').hidden = false;
     itemsSave.textContent = 'Saved to your shelf 🍌'; setTimeout(() => { itemsSave.textContent = label; }, 2500);
     track('forge_item_save', { anchor: c.anchor });
@@ -1316,7 +1352,8 @@ function init() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title, by, sid,
-          wear: { forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale },
+          wear: { forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale,
+            ...(c.anchor === 'decor' ? { where: c.where, fw: c.fw, fh: c.fh } : {}) },
         }),
       });
       const d = await res.json().catch(() => ({}));

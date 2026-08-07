@@ -1035,12 +1035,19 @@ const description = 'Authorized banana personnel only.';
       // 🏡 a DECOR submission isn't worn — show the piece itself
       const isDecor = it.wear && it.wear.anchor === 'decor';
       if (isDecor) {
+        // 🏡 DECOR reads differently at a glance (Trym: separate from
+        // wearables in the queue): green frame + a corner ribbon + where/tiles
+        card.style.borderLeft = '6px solid #2e7d32';
         cv.style.display = 'none';
         const box = document.createElement('div');
-        box.style.cssText = 'width:150px;height:150px;flex:none;display:grid;place-items:center;background:#f4f1e8;border:3px solid var(--ink);';
+        box.style.cssText = 'position:relative;width:150px;height:150px;flex:none;display:grid;place-items:center;background:#e8f0e2;border:3px solid #2e7d32;';
         box.innerHTML = (custom && custom.art) || '—';
         const sv = box.querySelector('svg');
         if (sv) { sv.style.width = '120px'; sv.style.height = '120px'; }
+        const rib = document.createElement('span');
+        rib.textContent = '🏡 DECOR';
+        rib.style.cssText = 'position:absolute;top:-12px;left:-8px;background:#2e7d32;color:#fff;font-size:0.6rem;font-weight:800;letter-spacing:0.08em;padding:2px 8px;transform:rotate(-4deg);';
+        box.appendChild(rib);
         body.appendChild(box);
       }
       const outfit = {
@@ -1072,7 +1079,11 @@ const description = 'Authorized banana personnel only.';
       const info = document.createElement('p');
       info.className = 'bm-livenote';
       info.style.margin = '0';
-      info.textContent = (live ? 'live since ' : 'rides the ' + (it.wear && it.wear.anchor === 'hand' ? (it.wear.hand || '') + ' hand' : (it.wear && it.wear.anchor) || '?') + ' · sent ')
+      const spotTxt = isDecor
+        ? '🏡 ' + (it.wear.where === 'indoor' ? 'indoor' : 'yard') + ' decor'
+          + (it.wear.fw ? ' · ' + Math.max(1, Math.ceil(it.wear.fw / 16)) + '×' + Math.max(1, Math.ceil((it.wear.fh || 16) / 16)) + ' tiles' : '')
+        : 'rides the ' + (it.wear && it.wear.anchor === 'hand' ? (it.wear.hand || '') + ' hand' : (it.wear && it.wear.anchor) || '?');
+      info.textContent = (live ? 'live since ' : spotTxt + ' · sent ')
         + new Date(it.added || it.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;';

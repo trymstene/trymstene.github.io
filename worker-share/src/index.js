@@ -684,6 +684,12 @@ function wearOk(w) {
     if (typeof w[k] !== 'number' || !isFinite(w[k])) return false;
   }
   if (Math.abs(w.ox) > 400 || Math.abs(w.oy) > 400 || w.scale <= 0 || w.scale > 20) return false;
+  // decor extras (7 Aug): the maker's shelf choice + the art's pixel bbox —
+  // the homestead derives world size and store placement from these
+  if (w.where !== undefined && !['yard', 'indoor'].includes(w.where)) return false;
+  for (const k of ['fw', 'fh']) {
+    if (w[k] !== undefined && !(Number.isInteger(w[k]) && w[k] >= 1 && w[k] <= 64)) return false;
+  }
   return true;
 }
 

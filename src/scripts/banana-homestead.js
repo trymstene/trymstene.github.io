@@ -663,9 +663,17 @@ function init(visitDoc, visitMiss) {
       if (it.kind !== 'decor' || !it.wear || DEX[it.id]) return;
       const cu = wearToCustom(it.wear);
       if (!cu || !cu.art) return;
+      // size from the maker's pixel bbox (3× render, like the pack's chunky
+      // grid); older entries without fw/fh keep the classic 46 square
+      const cw = Math.min(192, Math.max(18, (it.wear.fw | 0) * 3 || 46));
+      const ch = Math.min(192, Math.max(18, (it.wear.fh | 0) * 3 || 46));
       DEX[it.id] = { id: it.id, name: it.title || 'community piece', cat: 'community',
-        price: 20, stage: 1, w: 46, h: 46, surface: 'ground',
+        price: 20, stage: 1, w: cw, h: ch, surface: 'ground',
+        indoor: it.wear.where === 'indoor',   // the maker's shelf choice
         svg: cu.art, img: null, solid: null, maker: it.by || '' };
+      // ⚠️ the SHOP reads DECOR, not DEX — without this push the Community
+      // shelf stayed empty forever (found 7 Aug wiring the maker pipeline)
+      DECOR.push(DEX[it.id]);
       fresh++;
     });
     if (fresh) refreshItems();
@@ -1451,10 +1459,12 @@ function init(visitDoc, visitMiss) {
     music: '🎸 Music' };
   // the room-type shelves live INDOORS; everything else is the yard
   const INDOOR = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']);
+  // community pieces carry the MAKER's indoor/yard choice; built-ins go by cat
+  const isIndoorItem = (d) => d.cat === 'community' ? !!d.indoor : INDOOR.has(d.cat);
   // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
   // statement pieces take a van — short waits (hours, never days), and the
-  // arrival is an EVENT. Community pieces ship instantly (maker-made).
-  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 0, lighting: 30, furniture: 60, display: 240,
+  // arrival is an EVENT. Community pieces ride the van too (Trym, 7 Aug).
+  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 60, lighting: 30, furniture: 60, display: 240,
     kitchen: 45, living: 45, bedroom: 45, bathroom: 45, hallway: 45, music: 45 };
   const shipMin = (d) => SHIP_MIN[d.cat] || 0;
   const fmtShip = (ms) => {
@@ -1589,7 +1599,7 @@ function init(visitDoc, visitMiss) {
     const full = state.items.length >= cap();
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
-      const HERE = (d2) => INDOOR.has(d2.cat) === !!inside;
+      const HERE = (d2) => isIndoorItem(d2) === !!inside;
       const cats = ['all', ...new Set(DECOR.filter(HERE).map((d) => d.cat))];
       const curCat = shopEl.dataset.cat || 'all';
       catsRow.hidden = cats.length <= 2;   // one shelf needs no chips
@@ -1666,7 +1676,7 @@ function init(visitDoc, visitMiss) {
       Object.keys(counts).forEach((id) => {
         const d = DEX[id];
         const tile = shopTile(d, 'place', () => {
-          const indoorItem = INDOOR.has(d.cat);
+          const indoorItem = isIndoorItem(d);
           if (indoorItem && !inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
           if (!indoorItem && inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
           if (inside ? inList().length >= INCAP[inside] : state.items.length >= cap()) {
