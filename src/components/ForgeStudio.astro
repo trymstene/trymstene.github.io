@@ -144,6 +144,16 @@ const items = mode === 'items';
   .fg-kind__btn[aria-selected="true"] {
     background: var(--nana, #ffe135); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
   }
+  /* the furniture context previews */
+  .fg-decorprev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fg-decorprev figure { margin: 0; }
+  .fg-decorprev canvas {
+    display: block; width: 100%; height: auto; image-rendering: pixelated;
+    border: 3px solid var(--ink); background: #14100a;
+  }
+  .fg-decorprev figcaption {
+    font-size: 0.66rem; font-weight: 700; opacity: 0.75; text-align: center; margin-top: 3px;
+  }
 
   /* the killer feature: your emoji at REAL chat size, live */
   .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
@@ -414,6 +424,12 @@ const items = mode === 'items';
              thing goes is authorial intent; the maker gets the last word. ✦ marks
              what the drawing thinks, so disagreeing is informed. -->
         <div class="fg-spots" id="fgItemSpot" hidden aria-label="Where this item rides"></div>
+        <!-- 🖼 furniture previews: the piece in the yard and indoors, a banana
+             for scale — tiny and static, just size and look before submitting -->
+        <div class="fg-decorprev" id="fgDecorPrev" hidden>
+          <figure><canvas id="fgPrevYard" width="220" height="160"></canvas><figcaption>in the yard</figcaption></figure>
+          <figure><canvas id="fgPrevRoom" width="220" height="160"></canvas><figcaption>indoors</figcaption></figure>
+        </div>
         <button class="btn btn--dark" id="fgItemsPlay" title="Watch the banana dance wearing your item" aria-pressed="false"><PixelArtIcon name="play" size="18px" /> Play the dance</button>
         <button class="btn btn--light" id="fgItemsSave" title="Park this item on your shelf">🍌 Save item to shelf</button>
         <button class="btn btn--light" id="fgItemsSubmit" title="Send it in — approved items drop at the Banana Rave with your name on them"><PixelArtIcon name="upload" size="18px" /> Submit to the rave</button>

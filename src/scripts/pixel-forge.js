@@ -1280,6 +1280,70 @@ function init() {
     });
   }
 
+  // 🖼 furniture context previews (Trym: see size and look before you submit,
+  // tiny and static) — the piece on the REAL homestead lawn and against the
+  // REAL cabin wall, with a banana for scale. One shared world scale so the
+  // two cards compare honestly.
+  const PREV_S = 0.55;                     // preview px per homestead world px
+  const prevImgs = {};
+  function prevImg(key, src) {
+    if (prevImgs[key]) return prevImgs[key];
+    const im = new Image();
+    im.onload = () => drawDecorPreviews();
+    im.src = src;
+    prevImgs[key] = im;
+    return im;
+  }
+  let prevBanana = null;
+  function drawDecorPreviews() {
+    if (mode !== 'items' || itemKind !== 'decor') return;
+    const yard = el('fgPrevYard'), room = el('fgPrevRoom');
+    if (!yard || !room) return;
+    const out = forgeGridToSVG(frame(), state.w, state.h, pal());
+    if (!prevBanana && itemsReady) {
+      prevBanana = document.createElement('canvas');
+      prevBanana.width = prevBanana.height = 150;
+      ENG.drawComposite(prevBanana.getContext('2d'), 150, 2, { hat: 'none', glasses: 'none',
+        extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+    }
+    const cell = 3 * PREV_S;               // one forge px = 3 world px at the homestead
+    const bw = 99 * PREV_S;                // the banana stands ~99 world px tall
+    const piece = (c2, bx, by) => {        // base-center of the piece at (bx, by)
+      if (!out) return;
+      c2.save();
+      c2.translate(bx - (out.x + out.w / 2) * cell, by - (out.y + out.h) * cell);
+      drawGridInto(c2, frame(), cell, 1);
+      c2.restore();
+    };
+    const nana = (c2, bx, by) => {
+      if (!prevBanana) return;
+      c2.imageSmoothingEnabled = false;
+      c2.drawImage(prevBanana, bx - bw / 2, by - bw, bw, bw);
+    };
+    { // the yard — a lawn patch off the world-tour postcard
+      const c2 = yard.getContext('2d');
+      c2.imageSmoothingEnabled = false;
+      const g = prevImg('grass', '/assets/world/tour-home.jpg');
+      if (g.complete && g.naturalWidth) c2.drawImage(g, 20, 120, 180, 130, 0, 0, yard.width, yard.height);
+      else { c2.fillStyle = '#569a4a'; c2.fillRect(0, 0, yard.width, yard.height); }
+      piece(c2, 70, 128);
+      nana(c2, 158, 132);
+    }
+    { // indoors — the cabin plate at true scale, dark beyond its edge
+      const c2 = room.getContext('2d');
+      c2.imageSmoothingEnabled = false;
+      c2.fillStyle = '#14100a';
+      c2.fillRect(0, 0, room.width, room.height);
+      const r = prevImg('room', '/assets/homestead/in-wood2.png');
+      if (r.complete && r.naturalWidth) {
+        c2.drawImage(r, 0, 0, r.naturalWidth, r.naturalHeight,
+          0, 0, r.naturalWidth * PREV_S, r.naturalHeight * PREV_S);
+      } else { c2.fillStyle = '#caa66c'; c2.fillRect(0, 0, room.width, room.height); }
+      piece(c2, 64, 64);                   // backed against the wall
+      nana(c2, 150, 120);                  // mid-floor for scale
+    }
+  }
+
   // ⭐ the product switch — the whole bench follows the choice: canvas
   // underlay, placement row, dance preview and submit destination
   function applyKind(k) {
@@ -1290,6 +1354,9 @@ function init() {
       b.setAttribute('aria-selected', String(b.dataset.kind === k)));
     const play = el('fgItemsPlay');
     if (play) play.hidden = k === 'decor';   // nothing dances wearing a chair
+    const prev = el('fgDecorPrev');
+    if (prev) prev.hidden = k !== 'decor';   // …furniture gets context cards instead
+    drawDecorPreviews();
     const sub = el('fgItemsSubmit');
     if (sub) {
       if (!sub.dataset.orig) sub.dataset.orig = sub.innerHTML;
@@ -1312,6 +1379,7 @@ function init() {
   function updateItemsStatus() {
     if (mode !== 'items') { hideToast(); lastRide = '__init__'; paintSpotPicker(); return; }
     paintSpotPicker();
+    drawDecorPreviews();
     const c = computeWear();
     const key = !c ? '__empty__' : (c.anchor + (c.hand || '') + (c.spread ? '!' : ''));
     if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
