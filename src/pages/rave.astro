@@ -52,7 +52,6 @@ const GUIDE = [
   { img: 'broom', name: 'The mop & the spillage', text: 'Every so often, drinks hit the floor — five puddles, and every banana who crosses one slips. The mop waits on Barty’s counter: grab it, stand on a puddle, hit the 🧹 button that appears by your emotes. A spotless floor pays jelly, coins, and Barty’s eternal respect. Back by popular demand — literally, someone wrote in.' },
   { img: 'jboss', name: 'The jelly boss', text: 'Sometimes the thing that escapes the walk-in is… big. It drops in from above the rig, bounces around the floor bumping bananas aside, and SPLITS when a dancer runs it down — one big, to three, to nine little ones sprinting for the corners. Pop them all. The floor ends up sticky with victory.' },
   { img: 'breaker', name: 'The breaker box', text: 'When the power cuts out — and it does — the whole club goes dark: the LED to static, the beams off, the DJ a silhouette. One thing stays lit: the breaker box in the top-right corner. Get there and FLIP it till the lights slam back on. Every flip throws sparks.' },
-  { img: 'monkey', name: 'The monkey', soon: true, text: 'The staff pet and the club’s chaos agent — steals things (famously: the bottle), and keeps its distance when chased. Theatrical, never malicious. Mostly. Currently on a break backstage; it will be back for a future shift.' },
   { img: 'glowstick', name: 'The glowstick', text: 'Survive 30 minutes on the floor and the neon glowstick is yours forever — it pumps with the beat in your banana’s glove, here and in the builder.' },
   { img: 'star', name: 'The gold star', text: 'Grab it and THE ENTOURAGE arrives: two copies of you replaying your every step, half a beat behind. A conga line of yourself. Stop moving and they walk right into you.' },
   { img: 'boots', name: 'Moon boots', text: 'One small step for banana. Big lunar hops with a proper squash on every landing — fifteen seconds of low gravity on a crowded dance floor.' },
@@ -102,8 +101,6 @@ const GUIDE = [
     .rvg__thumb img { image-rendering: pixelated; max-height: 84px; max-width: 120px; width: auto; height: auto; }
     .rvg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: #ffe135; margin: 0 0 0.4rem; text-align: center; }
     .rvg__card p { margin: 0; font-size: 0.86rem; line-height: 1.55; opacity: 0.92; }
-    .rvg__card--soon { border-style: dashed; opacity: 0.9; }
-    .rvg__soon { display: block; width: fit-content; margin: -0.1rem auto 0.55rem; padding: 2px 9px; background: #ffe135; color: #111; border-radius: 999px; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
     .rvg__faq h3 { font-family: "Archivo Black", sans-serif; font-size: 1rem; color: #ffe135; margin: 1.3rem 0 0.3rem; }
     .rvg__faq p { margin: 0; }
     .rvg__doors { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.2rem; }
@@ -504,7 +501,6 @@ const GUIDE = [
     /* beer at HALF size — 32px read as "a bucket of beer" next to Barty (Trym);
        top keeps its bottom seated on the countertop band (nudged 2px up) */
     .rv-counterbeer { position: absolute; width: 18px; height: auto; left: 81%; top: -10px; z-index: 4; }
-    .rv-counterbeer--quest { left: 67%; filter: drop-shadow(0 0 5px rgba(255, 225, 53, 0.6)); } /* the house pour glows a little — it's YOURS */
     /* Barty's special of the window: the cocktail sits where the beer sits —
        38% landed ON Barty and overflowed him (Trym, iOS). Beer + special never
        show at the same time (happy hour vs specials window), so they share the
@@ -598,11 +594,10 @@ const GUIDE = [
     .rv-twinkle__b { animation: rvTwinkleFlip 0.36s steps(1) infinite; animation-delay: -0.18s; }
     @keyframes rvTwinkleFlip { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
     @keyframes rvTwinklePulse { 50% { transform: scale(1.28); } }
-    /* THE NIGHT's chores: litter + puddles lie FLAT (no bob — they're mess,
-       not prizes); swept things spin away under the broom */
+    /* quest mess: puddles lie FLAT (no bob — they're mess, not prizes);
+       swept things spin away under the broom */
     .rv-chore { position: absolute; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; }
     .rv-chore svg { display: block; image-rendering: pixelated; }
-    .rv-chore--peel svg { width: 54px; height: auto; }
     .rv-chore--puddle svg { width: 44px; height: 20px; opacity: 0.9; }
     .rv-chore--swept { animation: rvSwept 0.5s steps(4) forwards; }
     @keyframes rvSwept { 100% { transform: translate(-50%, -50%) scale(0.15) rotate(120deg); opacity: 0; } }
@@ -615,11 +610,6 @@ const GUIDE = [
       80% { transform: rotate(-6deg); }
     }
     @media (prefers-reduced-motion: reduce) { .rv-slipfx { animation: none; } }
-    /* THE MONKEY: staff pet, theatrical guest — never a fake visitor */
-    .rv-monkey { position: absolute; transform: translate(-50%, -50%); width: 54px; pointer-events: none; }
-    .rv-monkey svg { width: 100%; height: auto; image-rendering: pixelated; }
-    .rv-monkey--calm svg { filter: drop-shadow(0 0 6px #ffe135); }
-    .rv-monkey--off { transition: opacity 0.8s ease, transform 0.8s ease; opacity: 0; }
     /* the broom leaning on the counter */
     .rv-broomprop { position: absolute; width: 15px; left: 94%; top: -48px; z-index: 4; line-height: 0; filter: drop-shadow(0 0 5px rgba(255, 214, 80, 0.5)); }
     /* narrow phones: the jelly mixer's left edge reaches ~178px into a ~350px
@@ -630,7 +620,6 @@ const GUIDE = [
       #rvBarman { left: 40px; }
       .rv-bubble { left: 42%; }
       .rv-counterbeer { left: 58%; }
-      .rv-counterbeer--quest { left: 46%; }
       .rv-special { left: 57%; }
       .rv-broomprop { left: 62%; }
     }
@@ -927,35 +916,6 @@ const GUIDE = [
        meter itself steps forward — and UP, clear of the tap-to-continue band
        (they shared the bottom row on mobile) */
     .rv-mixer--tour { transform: translateY(-64px) scale(1.55); transform-origin: 100% 100%; transition: transform 0.45s ease; box-shadow: 0 0 26px rgba(255, 225, 53, 0.45); }
-    /* THE NIGHT: the quest log gets its own panel, top-left — the classic HUD
-       spot for "what am I doing?", away from the meter it merely feeds */
-    .rv-quest { /* same height as the zoom button opposite — the top row is symmetric */
-      position: absolute; top: 8px; left: 8px; z-index: 600; max-width: 190px;
-      box-sizing: border-box; min-height: 44px;
-      display: flex; flex-direction: column; justify-content: center;
-      background: rgba(13, 11, 20, 0.88); border: 3px solid #ffe135; padding: 6px 9px 7px;
-    }
-    .rv-quest[hidden] { display: none; }
-    .rv-quest__k { display: block; font-size: 0.54rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #ffe135; margin-bottom: 3px; }
-    .rv-quest__row { display: flex; align-items: center; gap: 6px; font-size: 0.66rem; font-weight: 800; color: #fffdf5; line-height: 1.35; }
-    /* progressive disclosure on small screens: a new job shows itself, then
-       tucks behind the TONIGHT chip — tap toggles. The floor view wins. */
-    .rv-quest--min .rv-quest__row { display: none; }
-    .rv-quest--min .rv-quest__k { margin-bottom: 0; }
-    @media (max-width: 640px) {
-      .rv-quest { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-      .rv-quest__k::after { content: ' ▾'; }
-      .rv-quest--min .rv-quest__k::after { content: ' ▸'; }
-    }
-    /* desktop: one horizontal bar (TONIGHT · job) — exactly the zoom button's
-       44px, so the floor's top row is symmetric (Trym's rule) */
-    @media (min-width: 641px) {
-      .rv-quest { flex-direction: row; align-items: center; gap: 9px; max-width: none; }
-      .rv-quest__k { margin-bottom: 0; }
-      .rv-quest__row { white-space: nowrap; }
-    }
-    .rv-qbox { flex: none; width: 9px; height: 9px; border: 2px solid #ffe135; background: #241a38; }
-    .rv-qbox.done { background: #39ff14; border-color: #39ff14; }
     /* hype mode: the whole floor sees you peak (effect travels the outfit pipe;
        this glow is the local cherry) */
     .rv-raver.rv-hypemode canvas { filter: drop-shadow(0 0 10px #ffe135) drop-shadow(0 0 18px #ff4d9d); }
@@ -1107,12 +1067,12 @@ const GUIDE = [
     .rv-floor.rv-tourclean #rvGift,
     .rv-floor.rv-tourclean #rvRun, .rv-floor.rv-tourclean #rvTwinkle, .rv-floor.rv-tourclean #rvSpot,
     .rv-floor.rv-tourclean .rv-raver:not(.rv-raver--me),
-    .rv-floor.rv-tourclean #rvChores, .rv-floor.rv-tourclean .rv-monkey { visibility: hidden; }
+    .rv-floor.rv-tourclean #rvQuestObjs { visibility: hidden; }
     /* steps 1–2 only: meters off too — furniture and staff, nothing else */
-    .rv-floor.rv-tourfocus .rv-mixer, .rv-floor.rv-tourfocus .rv-quest { visibility: hidden; }
+    .rv-floor.rv-tourfocus .rv-mixer { visibility: hidden; }
     .rv-world--tour { transition: transform 0.85s ease; }
-    /* THE BIG MOMENT: pixel type over the floor for session-defining beats
-       (the nightshift stamp-out) — same register as the tour's THIS IS YOU */
+    /* THE BIG MOMENT: pixel type over the floor for session-defining beats —
+       same register as the tour's THIS IS YOU */
     .rv-bigmoment {
       position: absolute; left: 50%; top: 26%; transform: translateX(-50%); z-index: 650;
       width: max-content; max-width: 94%; text-align: center; pointer-events: none;
@@ -1576,7 +1536,6 @@ const GUIDE = [
             <div class="rv-item" id="rvItem" style="display:none;" aria-hidden="true"></div>
             <div class="rv-twinkle" id="rvTwinkle" hidden aria-hidden="true"><svg class="rv-twinkle__a" viewBox="0 0 11 11" shape-rendering="crispEdges"><rect x="5" y="0" width="1" height="1" fill="#78ebff"/><rect x="5" y="1" width="1" height="1" fill="#78ebff"/><rect x="5" y="2" width="1" height="1" fill="#ffffff"/><rect x="5" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="4" width="3" height="1" fill="#ffffff"/><rect x="0" y="5" width="2" height="1" fill="#78ebff"/><rect x="2" y="5" width="7" height="1" fill="#ffffff"/><rect x="9" y="5" width="2" height="1" fill="#78ebff"/><rect x="4" y="6" width="3" height="1" fill="#ffffff"/><rect x="5" y="7" width="1" height="1" fill="#ffffff"/><rect x="5" y="8" width="1" height="1" fill="#ffffff"/><rect x="5" y="9" width="1" height="1" fill="#78ebff"/><rect x="5" y="10" width="1" height="1" fill="#78ebff"/></svg><svg class="rv-twinkle__b" viewBox="0 0 11 11" shape-rendering="crispEdges"><rect x="0" y="0" width="1" height="1" fill="#78ebff"/><rect x="10" y="0" width="1" height="1" fill="#78ebff"/><rect x="1" y="1" width="1" height="1" fill="#78ebff"/><rect x="9" y="1" width="1" height="1" fill="#78ebff"/><rect x="2" y="2" width="1" height="1" fill="#ffffff"/><rect x="8" y="2" width="1" height="1" fill="#ffffff"/><rect x="3" y="3" width="1" height="1" fill="#ffffff"/><rect x="7" y="3" width="1" height="1" fill="#ffffff"/><rect x="4" y="4" width="1" height="1" fill="#ffffff"/><rect x="6" y="4" width="1" height="1" fill="#ffffff"/><rect x="5" y="5" width="1" height="1" fill="#ffffff"/><rect x="4" y="6" width="1" height="1" fill="#ffffff"/><rect x="6" y="6" width="1" height="1" fill="#ffffff"/><rect x="3" y="7" width="1" height="1" fill="#ffffff"/><rect x="7" y="7" width="1" height="1" fill="#ffffff"/><rect x="2" y="8" width="1" height="1" fill="#ffffff"/><rect x="8" y="8" width="1" height="1" fill="#ffffff"/><rect x="1" y="9" width="1" height="1" fill="#78ebff"/><rect x="9" y="9" width="1" height="1" fill="#78ebff"/><rect x="0" y="10" width="1" height="1" fill="#78ebff"/><rect x="10" y="10" width="1" height="1" fill="#78ebff"/></svg></div>
             <div id="rvRun" aria-hidden="true"></div>
-            <div id="rvChores" aria-hidden="true"></div>
             <div id="rvQuestObjs" aria-hidden="true"></div>
             <svg class="rv-item rv-item--gold" id="rvGold" viewBox="0 0 8 14" shape-rendering="crispEdges" style="display:none;" aria-hidden="true">
               <rect x="4" y="0" width="1" height="1" fill="#5a3618"/><rect x="4" y="1" width="1" height="1" fill="#5a3618"/><rect x="4" y="2" width="2" height="1" fill="#5a3618"/><rect x="0" y="3" width="1" height="1" fill="#ffffff"/><rect x="3" y="3" width="1" height="1" fill="#d69a1e"/><rect x="4" y="3" width="2" height="1" fill="#ffe135"/><rect x="6" y="3" width="1" height="1" fill="#d69a1e"/><rect x="3" y="4" width="1" height="1" fill="#d69a1e"/><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="4" width="1" height="1" fill="#ffe135"/><rect x="6" y="4" width="1" height="1" fill="#d69a1e"/><rect x="2" y="5" width="1" height="1" fill="#d69a1e"/><rect x="3" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="5" width="2" height="1" fill="#ffe135"/><rect x="6" y="5" width="1" height="1" fill="#d69a1e"/><rect x="2" y="6" width="1" height="1" fill="#d69a1e"/><rect x="3" y="6" width="3" height="1" fill="#ffe135"/><rect x="6" y="6" width="1" height="1" fill="#d69a1e"/><rect x="2" y="7" width="1" height="1" fill="#d69a1e"/><rect x="3" y="7" width="3" height="1" fill="#ffe135"/><rect x="6" y="7" width="1" height="1" fill="#d69a1e"/><rect x="2" y="8" width="1" height="1" fill="#d69a1e"/><rect x="3" y="8" width="3" height="1" fill="#ffe135"/><rect x="6" y="8" width="1" height="1" fill="#d69a1e"/><rect x="2" y="9" width="1" height="1" fill="#d69a1e"/><rect x="3" y="9" width="3" height="1" fill="#ffe135"/><rect x="6" y="9" width="1" height="1" fill="#d69a1e"/><rect x="2" y="10" width="1" height="1" fill="#d69a1e"/><rect x="3" y="10" width="3" height="1" fill="#ffe135"/><rect x="6" y="10" width="1" height="1" fill="#d69a1e"/><rect x="1" y="11" width="1" height="1" fill="#d69a1e"/><rect x="2" y="11" width="3" height="1" fill="#ffe135"/><rect x="5" y="11" width="1" height="1" fill="#d69a1e"/><rect x="7" y="11" width="1" height="1" fill="#ffffff"/><rect x="1" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="12" width="2" height="1" fill="#ffe135"/><rect x="4" y="12" width="1" height="1" fill="#d69a1e"/><rect x="2" y="13" width="2" height="1" fill="#5a3618"/>
@@ -1607,12 +1566,6 @@ const GUIDE = [
               <svg class="rv-counterbeer" id="rvCounterBeer" viewBox="0 0 50 60" style="display:none;">
                 <rect x="10" y="0" width="30" height="10" fill="#fffdf5"/><rect x="0" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#fffdf5"/><rect x="40" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="20" width="30" height="30" fill="#f2c200"/><rect x="15" y="25" width="7" height="20" fill="#ffe135"/><rect x="10" y="50" width="30" height="10" fill="#111111"/>
               </svg>
-              <!-- the FIRST NIGHTSHIFT's house pour: waits on the counter during
-                   step 1, then moves into the newcomer's glove (SVG quirk: inline
-                   display only — [hidden] doesn't work on svg) -->
-              <svg class="rv-counterbeer rv-counterbeer--quest" id="rvQuestDrink" viewBox="0 0 50 60" style="display:none;">
-                <rect x="10" y="0" width="30" height="10" fill="#fffdf5"/><rect x="0" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="10" width="30" height="10" fill="#fffdf5"/><rect x="40" y="10" width="10" height="40" fill="#111111"/><rect x="10" y="20" width="30" height="30" fill="#f2c200"/><rect x="15" y="25" width="7" height="20" fill="#ffe135"/><rect x="10" y="50" width="30" height="10" fill="#111111"/>
-              </svg>
               <svg class="rv-counter" viewBox="0 0 222 60" shape-rendering="crispEdges">
                 <rect x="0" y="0" width="222" height="8" fill="#a97139"/>
                 <rect x="0" y="8" width="222" height="4" fill="#111111"/>
@@ -1624,10 +1577,6 @@ const GUIDE = [
             </div>
           </div>
           <button class="rv-zoom" id="rvZoom" aria-label="Toggle camera zoom" hidden></button>
-          <div class="rv-quest" id="rvQuest" hidden>
-            <span class="rv-quest__k">quest</span>
-            <div class="rv-quest__row"><span class="rv-qbox" id="rvQuestBox"></span><span id="rvQuestTxt"></span></div>
-          </div>
           <div class="rv-mixer" id="rvMixer" aria-hidden="true" title="the JELLY meter — fill it and it's jelly time">
             <div class="rv-wallet" id="rvWalletChip" hidden title="your bananacoins — the stand out back takes these">
               <img src="/assets/banana-stand/coin.png" width="18" height="18" alt="" />
@@ -1733,10 +1682,9 @@ const GUIDE = [
         <p class="rvg__sub">Everything below is the actual pixel art from the club, at actual chunkiness.</p>
         <div class="rvg__grid">
           {GUIDE.map((g) => (
-            <article class={'rvg__card' + (g.soon ? ' rvg__card--soon' : '')}>
+            <article class="rvg__card">
               <div class="rvg__thumb"><img src={G + g.img + '.png'} alt={g.name + ' — banana rave pixel sprite'} loading="lazy" /></div>
               <h3>{g.name}</h3>
-              {g.soon && <span class="rvg__soon">🚧 on a break — coming back</span>}
               <p>{g.text}</p>
             </article>
           ))}

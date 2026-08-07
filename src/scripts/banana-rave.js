@@ -300,10 +300,8 @@ const PIZZA_SVG = '<svg viewBox="0 0 14 14" shape-rendering="crispEdges" xmlns="
 const BALLOON_SVG = '<svg viewBox="0 0 8 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="1" height="1" fill="#1e182c"/><rect x="3" y="0" width="2" height="1" fill="#c62c74"/><rect x="5" y="0" width="1" height="1" fill="#1e182c"/><rect x="1" y="1" width="1" height="1" fill="#1e182c"/><rect x="2" y="1" width="1" height="1" fill="#c62c74"/><rect x="3" y="1" width="2" height="1" fill="#ff4d9d"/><rect x="5" y="1" width="1" height="1" fill="#c62c74"/><rect x="6" y="1" width="1" height="1" fill="#1e182c"/><rect x="0" y="2" width="1" height="1" fill="#1e182c"/><rect x="1" y="2" width="1" height="1" fill="#c62c74"/><rect x="2" y="2" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="6" y="2" width="1" height="1" fill="#c62c74"/><rect x="7" y="2" width="1" height="1" fill="#1e182c"/><rect x="0" y="3" width="1" height="1" fill="#1e182c"/><rect x="1" y="3" width="1" height="1" fill="#c62c74"/><rect x="2" y="3" width="1" height="1" fill="#ff4d9d"/><rect x="3" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="4" y="3" width="2" height="1" fill="#ff4d9d"/><rect x="6" y="3" width="1" height="1" fill="#c62c74"/><rect x="7" y="3" width="1" height="1" fill="#1e182c"/><rect x="0" y="4" width="1" height="1" fill="#1e182c"/><rect x="1" y="4" width="1" height="1" fill="#c62c74"/><rect x="2" y="4" width="4" height="1" fill="#ff4d9d"/><rect x="6" y="4" width="1" height="1" fill="#c62c74"/><rect x="7" y="4" width="1" height="1" fill="#1e182c"/><rect x="0" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="5" width="4" height="1" fill="#ff4d9d"/><rect x="6" y="5" width="1" height="1" fill="#c62c74"/><rect x="7" y="5" width="1" height="1" fill="#1e182c"/><rect x="1" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="6" width="1" height="1" fill="#c62c74"/><rect x="3" y="6" width="2" height="1" fill="#ff4d9d"/><rect x="5" y="6" width="1" height="1" fill="#c62c74"/><rect x="6" y="6" width="1" height="1" fill="#1e182c"/><rect x="2" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="7" width="2" height="1" fill="#c62c74"/><rect x="5" y="7" width="1" height="1" fill="#1e182c"/><rect x="3" y="8" width="2" height="1" fill="#1e182c"/><rect x="3" y="9" width="1" height="1" fill="#ffffff"/><rect x="2" y="10" width="1" height="1" fill="#ffffff"/><rect x="3" y="11" width="1" height="1" fill="#ffffff"/></svg>';
 const ITEM_SVGS = { sauce: SAUCE_SVG, zap: ZAP_SVG, fizz: FIZZ_SVG, candy: CANDY_SVG, pizza: PIZZA_SVG, balloon: BALLOON_SVG };
 // (THE MENU's conveyor sprites join below, once MENU_SVGS exists)
-// THE NIGHT's chores + characters (Pillow-authored, scratchpad night-sprites)
-const PEEL_SVG = '<svg viewBox="0 0 24 18" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="13" y="0" width="1" height="1" fill="#5a3618"/><rect x="14" y="0" width="2" height="1" fill="#3a2410"/><rect x="16" y="0" width="1" height="1" fill="#5a3618"/><rect x="12" y="1" width="2" height="1" fill="#5a3618"/><rect x="14" y="1" width="2" height="1" fill="#3a2410"/><rect x="16" y="1" width="1" height="1" fill="#5a3618"/><rect x="10" y="2" width="3" height="1" fill="#5a3618"/><rect x="13" y="2" width="2" height="1" fill="#ffe135"/><rect x="15" y="2" width="1" height="1" fill="#e0a428"/><rect x="16" y="2" width="1" height="1" fill="#5a3618"/><rect x="10" y="3" width="1" height="1" fill="#5a3618"/><rect x="11" y="3" width="3" height="1" fill="#ffe135"/><rect x="14" y="3" width="1" height="1" fill="#e0a428"/><rect x="15" y="3" width="2" height="1" fill="#5a3618"/><rect x="9" y="4" width="2" height="1" fill="#5a3618"/><rect x="11" y="4" width="3" height="1" fill="#ffe135"/><rect x="14" y="4" width="2" height="1" fill="#5a3618"/><rect x="8" y="5" width="2" height="1" fill="#5a3618"/><rect x="10" y="5" width="5" height="1" fill="#ffe135"/><rect x="15" y="5" width="2" height="1" fill="#5a3618"/><rect x="7" y="6" width="3" height="1" fill="#5a3618"/><rect x="10" y="6" width="1" height="1" fill="#ffe135"/><rect x="11" y="6" width="2" height="1" fill="#fff6c8"/><rect x="13" y="6" width="2" height="1" fill="#ffe135"/><rect x="15" y="6" width="3" height="1" fill="#5a3618"/><rect x="6" y="7" width="2" height="1" fill="#5a3618"/><rect x="8" y="7" width="1" height="1" fill="#ffe135"/><rect x="9" y="7" width="1" height="1" fill="#5a3618"/><rect x="10" y="7" width="1" height="1" fill="#ffe135"/><rect x="11" y="7" width="1" height="1" fill="#fff6c8"/><rect x="12" y="7" width="3" height="1" fill="#ffe135"/><rect x="15" y="7" width="1" height="1" fill="#5a3618"/><rect x="16" y="7" width="1" height="1" fill="#ffe135"/><rect x="17" y="7" width="2" height="1" fill="#5a3618"/><rect x="5" y="8" width="2" height="1" fill="#5a3618"/><rect x="7" y="8" width="2" height="1" fill="#ffe135"/><rect x="9" y="8" width="1" height="1" fill="#5a3618"/><rect x="10" y="8" width="5" height="1" fill="#ffe135"/><rect x="15" y="8" width="1" height="1" fill="#5a3618"/><rect x="16" y="8" width="2" height="1" fill="#ffe135"/><rect x="18" y="8" width="2" height="1" fill="#5a3618"/><rect x="4" y="9" width="2" height="1" fill="#5a3618"/><rect x="6" y="9" width="2" height="1" fill="#ffe135"/><rect x="8" y="9" width="2" height="1" fill="#5a3618"/><rect x="10" y="9" width="5" height="1" fill="#ffe135"/><rect x="15" y="9" width="2" height="1" fill="#5a3618"/><rect x="17" y="9" width="2" height="1" fill="#ffe135"/><rect x="19" y="9" width="2" height="1" fill="#5a3618"/><rect x="3" y="10" width="2" height="1" fill="#5a3618"/><rect x="5" y="10" width="3" height="1" fill="#ffe135"/><rect x="8" y="10" width="1" height="1" fill="#5a3618"/><rect x="9" y="10" width="1" height="1" fill="#e0a428"/><rect x="10" y="10" width="5" height="1" fill="#ffe135"/><rect x="15" y="10" width="1" height="1" fill="#e0a428"/><rect x="16" y="10" width="1" height="1" fill="#5a3618"/><rect x="17" y="10" width="3" height="1" fill="#ffe135"/><rect x="20" y="10" width="2" height="1" fill="#5a3618"/><rect x="2" y="11" width="2" height="1" fill="#5a3618"/><rect x="4" y="11" width="4" height="1" fill="#ffe135"/><rect x="8" y="11" width="2" height="1" fill="#5a3618"/><rect x="10" y="11" width="5" height="1" fill="#ffe135"/><rect x="15" y="11" width="2" height="1" fill="#5a3618"/><rect x="17" y="11" width="1" height="1" fill="#e0a428"/><rect x="18" y="11" width="3" height="1" fill="#ffe135"/><rect x="21" y="11" width="2" height="1" fill="#5a3618"/><rect x="1" y="12" width="2" height="1" fill="#5a3618"/><rect x="3" y="12" width="3" height="1" fill="#ffe135"/><rect x="6" y="12" width="2" height="1" fill="#e0a428"/><rect x="8" y="12" width="2" height="1" fill="#5a3618"/><rect x="10" y="12" width="1" height="1" fill="#e0a428"/><rect x="11" y="12" width="4" height="1" fill="#ffe135"/><rect x="15" y="12" width="3" height="1" fill="#5a3618"/><rect x="18" y="12" width="1" height="1" fill="#e0a428"/><rect x="19" y="12" width="3" height="1" fill="#ffe135"/><rect x="22" y="12" width="2" height="1" fill="#5a3618"/><rect x="1" y="13" width="1" height="1" fill="#5a3618"/><rect x="2" y="13" width="3" height="1" fill="#ffe135"/><rect x="5" y="13" width="1" height="1" fill="#e0a428"/><rect x="6" y="13" width="5" height="1" fill="#5a3618"/><rect x="11" y="13" width="4" height="1" fill="#ffe135"/><rect x="15" y="13" width="1" height="1" fill="#5a3618"/><rect x="17" y="13" width="2" height="1" fill="#5a3618"/><rect x="19" y="13" width="1" height="1" fill="#e0a428"/><rect x="20" y="13" width="3" height="1" fill="#ffe135"/><rect x="23" y="13" width="1" height="1" fill="#5a3618"/><rect x="0" y="14" width="2" height="1" fill="#5a3618"/><rect x="2" y="14" width="2" height="1" fill="#ffe135"/><rect x="4" y="14" width="1" height="1" fill="#e0a428"/><rect x="5" y="14" width="2" height="1" fill="#5a3618"/><rect x="10" y="14" width="1" height="1" fill="#5a3618"/><rect x="11" y="14" width="4" height="1" fill="#ffe135"/><rect x="15" y="14" width="1" height="1" fill="#5a3618"/><rect x="18" y="14" width="2" height="1" fill="#5a3618"/><rect x="20" y="14" width="1" height="1" fill="#e0a428"/><rect x="21" y="14" width="3" height="1" fill="#ffe135"/><rect x="0" y="15" width="1" height="1" fill="#5a3618"/><rect x="1" y="15" width="2" height="1" fill="#ffe135"/><rect x="3" y="15" width="1" height="1" fill="#e0a428"/><rect x="4" y="15" width="2" height="1" fill="#5a3618"/><rect x="10" y="15" width="1" height="1" fill="#5a3618"/><rect x="11" y="15" width="1" height="1" fill="#e0a428"/><rect x="12" y="15" width="3" height="1" fill="#ffe135"/><rect x="15" y="15" width="1" height="1" fill="#5a3618"/><rect x="19" y="15" width="2" height="1" fill="#5a3618"/><rect x="21" y="15" width="1" height="1" fill="#e0a428"/><rect x="22" y="15" width="2" height="1" fill="#ffe135"/><rect x="0" y="16" width="1" height="1" fill="#5a3618"/><rect x="1" y="16" width="2" height="1" fill="#e0a428"/><rect x="3" y="16" width="2" height="1" fill="#5a3618"/><rect x="10" y="16" width="2" height="1" fill="#5a3618"/><rect x="12" y="16" width="2" height="1" fill="#ffe135"/><rect x="14" y="16" width="1" height="1" fill="#e0a428"/><rect x="15" y="16" width="1" height="1" fill="#5a3618"/><rect x="20" y="16" width="2" height="1" fill="#5a3618"/><rect x="22" y="16" width="2" height="1" fill="#e0a428"/><rect x="0" y="17" width="4" height="1" fill="#5a3618"/><rect x="11" y="17" width="1" height="1" fill="#5a3618"/><rect x="12" y="17" width="2" height="1" fill="#e0a428"/><rect x="14" y="17" width="2" height="1" fill="#5a3618"/><rect x="21" y="17" width="3" height="1" fill="#5a3618"/></svg>'; // v2: the CLASSIC peel (Trym's reference) — bent stem, centre tongue, two drooping side flaps, layered outlines
+// the floor's spill — a quest hazard (Pillow-authored, scratchpad sprites)
 const PUDDLE_SVG = '<svg viewBox="0 0 18 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="0" width="6" height="1" fill="#4db8ff"/><rect x="3" y="1" width="3" height="1" fill="#4db8ff"/><rect x="6" y="1" width="6" height="1" fill="#78ebff"/><rect x="12" y="1" width="2" height="1" fill="#4db8ff"/><rect x="2" y="2" width="1" height="1" fill="#4db8ff"/><rect x="3" y="2" width="3" height="1" fill="#78ebff"/><rect x="6" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="7" y="2" width="7" height="1" fill="#78ebff"/><rect x="14" y="2" width="1" height="1" fill="#4db8ff"/><rect x="1" y="3" width="1" height="1" fill="#4db8ff"/><rect x="2" y="3" width="9" height="1" fill="#78ebff"/><rect x="11" y="3" width="1" height="1" fill="#f0f0fa"/><rect x="12" y="3" width="3" height="1" fill="#78ebff"/><rect x="15" y="3" width="1" height="1" fill="#4db8ff"/><rect x="1" y="4" width="1" height="1" fill="#4db8ff"/><rect x="2" y="4" width="2" height="1" fill="#78ebff"/><rect x="4" y="4" width="1" height="1" fill="#f0f0fa"/><rect x="5" y="4" width="9" height="1" fill="#78ebff"/><rect x="14" y="4" width="1" height="1" fill="#4db8ff"/><rect x="2" y="5" width="2" height="1" fill="#4db8ff"/><rect x="4" y="5" width="5" height="1" fill="#78ebff"/><rect x="9" y="5" width="1" height="1" fill="#f0f0fa"/><rect x="10" y="5" width="2" height="1" fill="#78ebff"/><rect x="12" y="5" width="2" height="1" fill="#4db8ff"/><rect x="4" y="6" width="3" height="1" fill="#4db8ff"/><rect x="7" y="6" width="3" height="1" fill="#78ebff"/><rect x="10" y="6" width="3" height="1" fill="#4db8ff"/><rect x="7" y="7" width="3" height="1" fill="#4db8ff"/></svg>';
-const MONKEY_SVG = '<svg viewBox="0 0 24 29" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="0" width="5" height="1" fill="#111111"/><rect x="8" y="1" width="2" height="1" fill="#111111"/><rect x="10" y="1" width="5" height="1" fill="#7a5234"/><rect x="15" y="1" width="2" height="1" fill="#111111"/><rect x="7" y="2" width="1" height="1" fill="#111111"/><rect x="8" y="2" width="9" height="1" fill="#583a22"/><rect x="17" y="2" width="1" height="1" fill="#111111"/><rect x="3" y="3" width="2" height="1" fill="#111111"/><rect x="6" y="3" width="1" height="1" fill="#111111"/><rect x="7" y="3" width="11" height="1" fill="#7a5234"/><rect x="18" y="3" width="1" height="1" fill="#111111"/><rect x="20" y="3" width="2" height="1" fill="#111111"/><rect x="2" y="4" width="1" height="1" fill="#111111"/><rect x="3" y="4" width="2" height="1" fill="#7a5234"/><rect x="5" y="4" width="1" height="1" fill="#111111"/><rect x="6" y="4" width="13" height="1" fill="#7a5234"/><rect x="19" y="4" width="1" height="1" fill="#111111"/><rect x="20" y="4" width="2" height="1" fill="#7a5234"/><rect x="22" y="4" width="1" height="1" fill="#111111"/><rect x="1" y="5" width="1" height="1" fill="#111111"/><rect x="2" y="5" width="6" height="1" fill="#7a5234"/><rect x="8" y="5" width="4" height="1" fill="#d6aa7d"/><rect x="12" y="5" width="1" height="1" fill="#7a5234"/><rect x="13" y="5" width="4" height="1" fill="#d6aa7d"/><rect x="17" y="5" width="6" height="1" fill="#7a5234"/><rect x="23" y="5" width="1" height="1" fill="#111111"/><rect x="0" y="6" width="1" height="1" fill="#111111"/><rect x="1" y="6" width="2" height="1" fill="#7a5234"/><rect x="3" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="6" width="2" height="1" fill="#7a5234"/><rect x="7" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="9" y="6" width="1" height="1" fill="#ffffff"/><rect x="10" y="6" width="1" height="1" fill="#1e140c"/><rect x="11" y="6" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="6" width="1" height="1" fill="#ffffff"/><rect x="15" y="6" width="1" height="1" fill="#1e140c"/><rect x="16" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="18" y="6" width="2" height="1" fill="#7a5234"/><rect x="20" y="6" width="2" height="1" fill="#d6aa7d"/><rect x="22" y="6" width="2" height="1" fill="#7a5234"/><rect x="0" y="7" width="1" height="1" fill="#111111"/><rect x="1" y="7" width="2" height="1" fill="#7a5234"/><rect x="3" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="7" width="2" height="1" fill="#7a5234"/><rect x="7" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="9" y="7" width="2" height="1" fill="#1e140c"/><rect x="11" y="7" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="7" width="2" height="1" fill="#1e140c"/><rect x="16" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="18" y="7" width="2" height="1" fill="#7a5234"/><rect x="20" y="7" width="2" height="1" fill="#d6aa7d"/><rect x="22" y="7" width="2" height="1" fill="#7a5234"/><rect x="1" y="8" width="1" height="1" fill="#111111"/><rect x="2" y="8" width="1" height="1" fill="#7a5234"/><rect x="3" y="8" width="2" height="1" fill="#d6aa7d"/><rect x="5" y="8" width="2" height="1" fill="#7a5234"/><rect x="7" y="8" width="11" height="1" fill="#d6aa7d"/><rect x="18" y="8" width="2" height="1" fill="#7a5234"/><rect x="20" y="8" width="2" height="1" fill="#d6aa7d"/><rect x="22" y="8" width="1" height="1" fill="#7a5234"/><rect x="23" y="8" width="1" height="1" fill="#111111"/><rect x="2" y="9" width="1" height="1" fill="#111111"/><rect x="3" y="9" width="2" height="1" fill="#7a5234"/><rect x="5" y="9" width="1" height="1" fill="#111111"/><rect x="6" y="9" width="1" height="1" fill="#7a5234"/><rect x="7" y="9" width="11" height="1" fill="#d6aa7d"/><rect x="18" y="9" width="1" height="1" fill="#7a5234"/><rect x="19" y="9" width="1" height="1" fill="#111111"/><rect x="20" y="9" width="2" height="1" fill="#7a5234"/><rect x="22" y="9" width="1" height="1" fill="#111111"/><rect x="3" y="10" width="3" height="1" fill="#111111"/><rect x="6" y="10" width="2" height="1" fill="#7a5234"/><rect x="8" y="10" width="3" height="1" fill="#d6aa7d"/><rect x="11" y="10" width="1" height="1" fill="#1e140c"/><rect x="12" y="10" width="1" height="1" fill="#d6aa7d"/><rect x="13" y="10" width="1" height="1" fill="#1e140c"/><rect x="14" y="10" width="3" height="1" fill="#d6aa7d"/><rect x="17" y="10" width="2" height="1" fill="#7a5234"/><rect x="19" y="10" width="1" height="1" fill="#111111"/><rect x="20" y="10" width="1" height="1" fill="#583a22"/><rect x="21" y="10" width="1" height="1" fill="#111111"/><rect x="6" y="11" width="1" height="1" fill="#111111"/><rect x="7" y="11" width="1" height="1" fill="#7a5234"/><rect x="8" y="11" width="9" height="1" fill="#d6aa7d"/><rect x="17" y="11" width="1" height="1" fill="#7a5234"/><rect x="18" y="11" width="1" height="1" fill="#111111"/><rect x="19" y="11" width="3" height="1" fill="#583a22"/><rect x="22" y="11" width="1" height="1" fill="#111111"/><rect x="7" y="12" width="1" height="1" fill="#111111"/><rect x="8" y="12" width="1" height="1" fill="#7a5234"/><rect x="9" y="12" width="2" height="1" fill="#d6aa7d"/><rect x="11" y="12" width="3" height="1" fill="#1e140c"/><rect x="14" y="12" width="2" height="1" fill="#d6aa7d"/><rect x="16" y="12" width="1" height="1" fill="#7a5234"/><rect x="17" y="12" width="2" height="1" fill="#111111"/><rect x="19" y="12" width="3" height="1" fill="#583a22"/><rect x="22" y="12" width="1" height="1" fill="#111111"/><rect x="8" y="13" width="2" height="1" fill="#111111"/><rect x="10" y="13" width="5" height="1" fill="#7a5234"/><rect x="15" y="13" width="2" height="1" fill="#111111"/><rect x="19" y="13" width="2" height="1" fill="#111111"/><rect x="21" y="13" width="2" height="1" fill="#583a22"/><rect x="23" y="13" width="1" height="1" fill="#111111"/><rect x="7" y="14" width="3" height="1" fill="#111111"/><rect x="10" y="14" width="5" height="1" fill="#7a5234"/><rect x="15" y="14" width="3" height="1" fill="#111111"/><rect x="21" y="14" width="2" height="1" fill="#111111"/><rect x="6" y="15" width="1" height="1" fill="#111111"/><rect x="7" y="15" width="8" height="1" fill="#7a5234"/><rect x="15" y="15" width="3" height="1" fill="#583a22"/><rect x="18" y="15" width="1" height="1" fill="#111111"/><rect x="20" y="15" width="1" height="1" fill="#111111"/><rect x="21" y="15" width="2" height="1" fill="#583a22"/><rect x="23" y="15" width="1" height="1" fill="#111111"/><rect x="6" y="16" width="1" height="1" fill="#111111"/><rect x="7" y="16" width="8" height="1" fill="#7a5234"/><rect x="15" y="16" width="3" height="1" fill="#583a22"/><rect x="18" y="16" width="1" height="1" fill="#111111"/><rect x="20" y="16" width="1" height="1" fill="#111111"/><rect x="21" y="16" width="1" height="1" fill="#583a22"/><rect x="22" y="16" width="1" height="1" fill="#111111"/><rect x="5" y="17" width="1" height="1" fill="#111111"/><rect x="6" y="17" width="5" height="1" fill="#7a5234"/><rect x="11" y="17" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="17" width="1" height="1" fill="#7a5234"/><rect x="15" y="17" width="4" height="1" fill="#583a22"/><rect x="19" y="17" width="1" height="1" fill="#111111"/><rect x="20" y="17" width="3" height="1" fill="#583a22"/><rect x="23" y="17" width="1" height="1" fill="#111111"/><rect x="5" y="18" width="1" height="1" fill="#111111"/><rect x="6" y="18" width="4" height="1" fill="#7a5234"/><rect x="10" y="18" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="18" width="4" height="1" fill="#583a22"/><rect x="19" y="18" width="1" height="1" fill="#111111"/><rect x="20" y="18" width="2" height="1" fill="#583a22"/><rect x="22" y="18" width="1" height="1" fill="#111111"/><rect x="4" y="19" width="1" height="1" fill="#111111"/><rect x="5" y="19" width="5" height="1" fill="#7a5234"/><rect x="10" y="19" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="19" width="7" height="1" fill="#583a22"/><rect x="22" y="19" width="1" height="1" fill="#111111"/><rect x="4" y="20" width="1" height="1" fill="#111111"/><rect x="5" y="20" width="4" height="1" fill="#7a5234"/><rect x="9" y="20" width="7" height="1" fill="#d6aa7d"/><rect x="16" y="20" width="5" height="1" fill="#583a22"/><rect x="21" y="20" width="1" height="1" fill="#111111"/><rect x="3" y="21" width="1" height="1" fill="#111111"/><rect x="4" y="21" width="2" height="1" fill="#d6aa7d"/><rect x="6" y="21" width="1" height="1" fill="#111111"/><rect x="7" y="21" width="2" height="1" fill="#7a5234"/><rect x="9" y="21" width="7" height="1" fill="#d6aa7d"/><rect x="16" y="21" width="4" height="1" fill="#583a22"/><rect x="20" y="21" width="1" height="1" fill="#d6aa7d"/><rect x="21" y="21" width="1" height="1" fill="#111111"/><rect x="2" y="22" width="1" height="1" fill="#111111"/><rect x="3" y="22" width="4" height="1" fill="#d6aa7d"/><rect x="7" y="22" width="1" height="1" fill="#111111"/><rect x="8" y="22" width="2" height="1" fill="#7a5234"/><rect x="10" y="22" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="22" width="2" height="1" fill="#583a22"/><rect x="17" y="22" width="1" height="1" fill="#111111"/><rect x="18" y="22" width="1" height="1" fill="#583a22"/><rect x="19" y="22" width="3" height="1" fill="#d6aa7d"/><rect x="22" y="22" width="1" height="1" fill="#111111"/><rect x="2" y="23" width="1" height="1" fill="#111111"/><rect x="3" y="23" width="4" height="1" fill="#d6aa7d"/><rect x="7" y="23" width="1" height="1" fill="#111111"/><rect x="8" y="23" width="2" height="1" fill="#7a5234"/><rect x="10" y="23" width="5" height="1" fill="#d6aa7d"/><rect x="15" y="23" width="2" height="1" fill="#583a22"/><rect x="17" y="23" width="1" height="1" fill="#111111"/><rect x="18" y="23" width="4" height="1" fill="#d6aa7d"/><rect x="22" y="23" width="1" height="1" fill="#111111"/><rect x="3" y="24" width="1" height="1" fill="#111111"/><rect x="4" y="24" width="2" height="1" fill="#d6aa7d"/><rect x="6" y="24" width="1" height="1" fill="#111111"/><rect x="8" y="24" width="1" height="1" fill="#111111"/><rect x="9" y="24" width="2" height="1" fill="#7a5234"/><rect x="11" y="24" width="3" height="1" fill="#d6aa7d"/><rect x="14" y="24" width="2" height="1" fill="#583a22"/><rect x="16" y="24" width="1" height="1" fill="#111111"/><rect x="18" y="24" width="1" height="1" fill="#111111"/><rect x="19" y="24" width="2" height="1" fill="#d6aa7d"/><rect x="21" y="24" width="1" height="1" fill="#111111"/><rect x="4" y="25" width="2" height="1" fill="#111111"/><rect x="8" y="25" width="1" height="1" fill="#111111"/><rect x="9" y="25" width="5" height="1" fill="#7a5234"/><rect x="14" y="25" width="2" height="1" fill="#583a22"/><rect x="16" y="25" width="1" height="1" fill="#111111"/><rect x="19" y="25" width="2" height="1" fill="#111111"/><rect x="8" y="26" width="1" height="1" fill="#111111"/><rect x="9" y="26" width="2" height="1" fill="#7a5234"/><rect x="11" y="26" width="3" height="1" fill="#111111"/><rect x="14" y="26" width="2" height="1" fill="#583a22"/><rect x="16" y="26" width="1" height="1" fill="#111111"/><rect x="7" y="27" width="1" height="1" fill="#111111"/><rect x="8" y="27" width="3" height="1" fill="#d6aa7d"/><rect x="11" y="27" width="1" height="1" fill="#111111"/><rect x="13" y="27" width="1" height="1" fill="#111111"/><rect x="14" y="27" width="3" height="1" fill="#d6aa7d"/><rect x="17" y="27" width="1" height="1" fill="#111111"/><rect x="7" y="28" width="1" height="1" fill="#111111"/><rect x="8" y="28" width="3" height="1" fill="#d6aa7d"/><rect x="11" y="28" width="1" height="1" fill="#111111"/><rect x="13" y="28" width="1" height="1" fill="#111111"/><rect x="14" y="28" width="3" height="1" fill="#d6aa7d"/><rect x="17" y="28" width="1" height="1" fill="#111111"/></svg>'; // v4: bigger eyes; sized by floor depth like every dancer
 const JELLY_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="3" height="1" fill="#ff4d9d"/><rect x="1" y="1" width="5" height="1" fill="#ff4d9d"/><rect x="0" y="2" width="2" height="1" fill="#ff4d9d"/><rect x="2" y="2" width="1" height="1" fill="#f0f0fa"/><rect x="3" y="2" width="4" height="1" fill="#ff4d9d"/><rect x="0" y="3" width="7" height="1" fill="#ff4d9d"/><rect x="0" y="4" width="1" height="1" fill="#c62c74"/><rect x="1" y="4" width="5" height="1" fill="#ff4d9d"/><rect x="6" y="4" width="1" height="1" fill="#c62c74"/><rect x="1" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="5" width="3" height="1" fill="#ff4d9d"/><rect x="5" y="5" width="1" height="1" fill="#c62c74"/><rect x="2" y="6" width="3" height="1" fill="#c62c74"/></svg>'; // the pellets ARE jelly — spilled on the floor, hoovered into the meter
 // JELLY VARIETY (15 Jul): rare recolours of the same 7×7 jelly. Gold = banana
 // hues via swap; rainbow = the same rect layout hand-recoloured row by row.
@@ -524,7 +522,7 @@ function init() {
   const ravers = new Map(); // id -> {outfit, joined, stage, wrap, cv, x, y, size}
   let myId = null;
   let online = false;
-  let welcomed = false; // first roster (or solo fallback) triggers the tour-or-night decision once
+  let welcomed = false; // first roster (or solo fallback) triggers the tour decision once
   const sessionStart = Date.now();
 
   // deterministic floor position from id (no server coordinates needed).
@@ -1320,7 +1318,6 @@ function init() {
       setTimeout(() => toast.remove(), 5000);
     }
     setTimeout(endHypeMode, HYPE_MODE_MS);
-    nightEvent('hypedrop');
   }
   function endHypeMode() {
     const me = myId && ravers.get(myId);
@@ -2072,7 +2069,7 @@ function init() {
   if (shareBtn) shareBtn.addEventListener('click', shareNight);
 
   // the CHAIN is INVISIBLE now (Trym: "i dont care much about it — noise") —
-  // the counter only survives quietly for the night-quest step + the badge
+  // the counter only survives quietly for the badge
   function bumpChain() {
     const now = Date.now();
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
@@ -2080,7 +2077,6 @@ function init() {
     tonight.pickups += 1;
     refreshStats();
     addHype(7); // every pickup is jelly fuel (12 → 7: items overfilled the meter, Trym round 2)
-    nightEvent('chain', chain);
     if (chain === 10) passPatch('chain'); // the badge still mints — quietly
     return chain;
   }
@@ -2090,7 +2086,7 @@ function init() {
     itemWinClaimed = win;
     const sp = itemSpotFor(win);
     pickupPop(sp.x, sp.y);
-    if (id === myId) { bumpChain(); nightEvent('item'); }
+    if (id === myId) bumpChain();
     if (id === myId && kind === 'pizzabox') addHype(15); // a whole pizza is a MEAL — paid even now that the box grants a held-prop fx
     if (fx) {
       applyFx(id, fx);
@@ -2210,7 +2206,6 @@ function init() {
       } catch (e) {}
     }
     bumpChain();
-    nightEvent('drop');
     addHype(10);
     confettiBurst();
     if (audioOn) playDropAudio(); // the catch lands with the beat
@@ -2346,7 +2341,6 @@ function init() {
         r.wrap.classList.toggle('rv-lit', lit);
         if (lit && r.id === myId) {
           addHype(2); // basking in the light per rhythm tick
-          nightEvent('spotlight');
           if (!r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); passPatch('spotlight'); }
         }
       }
@@ -2355,8 +2349,8 @@ function init() {
       for (const r of ravers.values()) r.wrap.classList.remove('rv-lit');
     }
     // — floor items, CAPPED (Trym's rule): a couple on the floor at most, never a
-    // flood. Blocks run in priority order (quest vinyl outranks power-ups); when
-    // the cap is full, lower items simply wait invisible for their next window.
+    // flood. Blocks run in priority order; when the cap is full, lower items
+    // simply wait invisible for their next window.
     const MAX_FLOOR_ITEMS = 2;
     let floorItems = 0;
     // — the lost vinyl: spawns every 7 minutes, first to reach it becomes the courier —
@@ -2366,12 +2360,9 @@ function init() {
     const carried = [...ravers.values()].some((r) => r.vinyl);
     // the record is RARE now — every third window (~21 min): its bonus drop
     // stacked with jelly time and the clock into "drops all the time" (Trym).
-    // While a night quest asks for it, the AMBIENT record hides — the quest
-    // spawns its own personal vinyl, and two records + a stored jelly time
-    // was "3 drops in a row, a bit much" (Trym). Client-side skip only, so
-    // every shown window is still a real worker window — no deploy.
-    const questVinyl = night && night.def && night.def.steps[night.step] && night.def.steps[night.step].check === 'qvinyl';
-    if (vPh < VINYL_WAIT && !questVinyl && vWin % 3 === 0 && vinylWinClaimed !== vWin && !carried) {
+    // Client-side skip only, so every shown window is still a real worker
+    // window — no deploy.
+    if (vPh < VINYL_WAIT && vWin % 3 === 0 && vinylWinClaimed !== vWin && !carried) {
       const s = vinylSpotFor(vWin);
       floorItems++;
       vEl.style.display = '';
@@ -2837,7 +2828,7 @@ function init() {
   // ---- THE TOUR — the first-visit cinematic (Trym's spec: camera moves, big
   // pixel type, spotlight cutouts, "not just a big text box in the middle").
   // It replaced the old welcome show: same red-carpet job, done properly.
-  // Once per device (rv-tour-v1); the ❓ button replays it; ends → Night 1.
+  // Once per device (rv-tour-v1); the ❓ button replays it.
   let tourActive = false, tourStep = -1, tourDemoEl = null;
   function maybeTour() {
     let seen = false;
@@ -2845,12 +2836,6 @@ function init() {
     if (!seen || location.search.includes('tourtest')) {
       try { localStorage.setItem('rv-tour-v1', '1'); } catch (e) {}
       setTimeout(runTour, 1200);
-    } else {
-      // returning visitor: the join is already busy (ravers, jelly raining,
-      // Barty mid-quip) — the quest chip + its chore props wait for a
-      // settle-in breath instead of piling onto the arrival (Trym: "it's a
-      // lot at the same time"). Arrival-quiet principle, extended.
-      setTimeout(nightInit, 9000);
     }
   }
   function tourCamTo(xPct, yPct, s) { // same math as updateCam, arbitrary target
@@ -3049,10 +3034,9 @@ function init() {
     try { if (localStorage.getItem('rv-sound') !== '0' && !audioOn && !audioLoading) audioStart(); } catch (e) {}
     refreshZoomBtn(); // the camera toggle gets its corner back
     track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
-    nightInit(); // the tour hands straight off to Barty's first job
-    // the first-night patch waits its turn — the welcome + tour own the first
-    // minutes, so the PATCH EARNED toast lands 10s after the lesson (idempotent:
-    // ❓ replays just no-op here)
+    // the patch waits its turn — the welcome + tour own the first minutes,
+    // so the PATCH EARNED toast lands 10s after the lesson (idempotent: ❓
+    // replays just no-op here)
     setTimeout(() => passPatch('raver'), 10000);
   }
   el('rvTour').addEventListener('click', (e) => {
@@ -3061,96 +3045,11 @@ function init() {
   });
   el('rvTourBtn').addEventListener('click', () => runTour());
 
-  // ---- THE NIGHT: the quest layer, Act One (full design: the-night-plan) ----
-  // Barty is the quest giver. His voice: over-cheerful southwestern bartender,
-  // tragic childhood leaking out under the breath. Chat bubbles stay white;
-  // QUEST bubbles go yellow; the active job docks under the hype bar with a
-  // pixel checkbox. ONE night per calendar day (closure + a reason to return).
-  // ?nighttest=N previews night N without saving progress.
-  // 🌙 MOTHBALLED (19 Jul, Trym): the quests + nights loop is shelved. It was
-  // repetitive for veterans (an unfinished night re-served its opening sweep on
-  // every join), finite (5 authored nights, no Act Two), and felt mandatory on
-  // arrival — net-negative next to the endless floor loop, which is the actual
-  // game. Everything below stays intact + dormant so Act Two (a date-seeded
-  // rotation engine over these beats) is a REVIVE, not a rebuild: flip this to
-  // true. The single guard in nightInit() disables every entry point; the quest
-  // chip is only ever shown from inside the night flow, so it stays hidden.
-  const NIGHTS_ENABLED = false;
-  const NIGHTS = [
-    { n: 1, steps: [ // FIRST NIGHTSHIFT — Barty's humble ask (Trym's line), then the chores
-      { tray: 'go to the bar — first one’s on the house', check: 'bar',
-        say: ['well howdy, new face! 🤠 i know you came to RAVE…', { t: '…everyone does. anyway!', mutter: true }, 'help an old banana with some chores? c’mon down to the bar — first one’s on the house!'] },
-      { tray: 'run the lost record up to the DJ', check: 'qvinyl',
-        say: ['there ya go! the DJ lost a record on the floor — run it up to the booth, would ya?', { t: 'errands build character. they’re all i had.', mutter: true }] },
-      { tray: 'fill the JELLY meter — then hit JELLY TIME', check: 'hypedrop',
-        say: ['WOO! last chore ain’t even a chore: fill that JELLY meter…', { t: '…and when she’s full, you know what time it is.', mutter: true }] },
-    ], done: { patch: 'night1',
-      say: ['FIRST NIGHTSHIFT done! 🌟 you’re one of us now — night two’s on me tomorrow.', { t: 'i’ll be here. i’m always here.', mutter: true }] } },
-    { n: 2, steps: [ // look who's back — the broom debuts
-      { tray: 'grab the broom at the bar, sweep the peels', check: 'sweep', targets: ['peel', 'peel', 'peel', 'peel'],
-        say: ['well look who’s BACK! 🤠 knew it. folks always come back.', { t: '’cept pa.', mutter: true }, 'some ANIMAL left peels on my floor — grab the broom off the counter and sweep ’em up!'] },
-      { tray: 'grab THREE pickups, back to back', check: 'chain3',
-        say: ['SPOTLESS! now — THREE pickups, back to back, no dawdlin’!'] },
-      { tray: 'stand in the spotlight when it lands', check: 'spotlight',
-        say: ['look at you GO! 🤠 last one: stand in the SPOTLIGHT when it lands. you earned some shine.', { t: 'i had a spotlight once. it moved on.', mutter: true }] },
-    ], done: { patch: null,
-      say: ['shift’s OVER — back to clubbing, partner! same time tomorrow?', { t: 'i’ll count the hours. all of ’em.', mutter: true }] } },
-    { n: 3, steps: [ // THE MONKEY debuts — the club's other staff member
-      { tray: 'catch that monkey!', check: 'monkey',
-        say: ['🐒 the MONKEY’s loose again! little bandit swiped my best bottle — catch him, partner!', { t: 'i named him. that was my mistake.', mutter: true }] },
-      { tray: 'grab a floor snack, pay the monkey', check: 'feed',
-        say: ['HA! got him! he only trades for snacks — grab somethin’ off the floor and pay the bandit.', { t: 'we all have a price. his is candy.', mutter: true }] },
-    ], done: { patch: null,
-      say: ['bottle’s BACK! that’s a nightshift, partner — back to clubbing!', { t: 'the monkey stays. everybody stays but says they won’t.', mutter: true }] } },
-    { n: 4, steps: [ // THE LEAK + stage night
-      { tray: 'grab the broom, mop up the puddles', check: 'sweep', targets: ['puddle', 'puddle', 'puddle'],
-        say: ['EMERGENCY! ⚠️ pipe burst — PUDDLES on my floor! broom’s on the counter. GO!', { t: 'the plumbing’s older than the wiring. i’m older than both.', mutter: true }] },
-      { tray: 'when the stage opens: get up there, throw a 🔥', check: 'stagefire',
-        say: ['DRY! now get ON that stage when it opens and throw a 🔥 — tonight YOU’RE the show.', { t: 'i was the show once. one night. 1987.', mutter: true }] },
-    ], done: { patch: null,
-      say: ['what a SHIFT. the club owes ya one, partner — back to clubbing!', { t: 'the club never pays its debts. anyway!', mutter: true }] } },
-    { n: 5, steps: [ // THE REGULAR — the best-of shift
-      { tray: 'grab the broom — mop up the last puddles', check: 'sweep', targets: ['puddle', 'puddle', 'puddle'],
-        say: ['night FIVE, partner. 🤠 pipes leaked again — puddles all over. you know where the broom is.', { t: 'you know where everything is now. that’s how it gets you.', mutter: true }] },
-      { tray: 'survive THE DROP on the floor', check: 'drop',
-        say: ['CLEAN! now stay on that floor for THE DROP — every third minute, you know the clock by now.'] },
-      { tray: 'one more JELLY TIME — end it right', check: 'hypedrop',
-        say: ['LAST one’s a treat: fill that JELLY meter and end your shift the only right way.', { t: 'endings should be loud. mine wasn’t.', mutter: true }] },
-    ], done: { patch: null,
-      say: ['FIVE nightshifts, partner. you’re not a guest anymore.', { t: 'guests leave.', mutter: true }, 'that stool by the bar? YOURS. always. now — back to clubbing! ⭐'] } },
-  ];
-  const NIGHT_TEST = parseInt((location.search.match(/nighttest=(\d)/) || [])[1] || '0', 10);
-  const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
-  function nightLoad() { try { return JSON.parse(localStorage.getItem('rv-night-v1') || '{}'); } catch (e) { return {}; } }
-  let night = null; // { def, step, qv }
-  const questKicker = (txt) => { document.querySelector('.rv-quest__k').textContent = txt; };
-  // the receipt answers BOTH questions Trym couldn't: WHICH shift you finished
-  // and WHEN the next one opens ("done, doing something i dont remember, but i
-  // dont know when or how i advance")
-  function nightReceipt(doneN) {
-    questKicker('quests ✔');
-    nightTray(doneN < NIGHTS.length
-      ? 'done! shift ' + (doneN + 1) + ' opens tomorrow — back to clubbing'
-      : 'all five shifts done — you’re a regular ⭐', true);
-  }
-  function nightInit() {
-    if (!NIGHTS_ENABLED) return; // 🌙 mothballed — see the flag above
-    if (night) return; // a tour replay must not restart a night in progress
-    const s = nightLoad();
-    if (!NIGHT_TEST && s.lastStamp === localDay()) {
-      // already stamped tonight: the chip stays as the day's receipt — an
-      // empty corner read as "broken", not "done"
-      nightReceipt(Math.min(Math.max((s.arc || 2) - 1, 1), NIGHTS.length));
-      return;
-    }
-    const arc = NIGHT_TEST || s.arc || 1;
-    if (arc > NIGHTS.length) { nightReceipt(NIGHTS.length); return; } // Act One done — Act Two arrives with "the program"
-    night = { def: NIGHTS[arc - 1], step: -1 };
-    questKicker('quests'); // fresh users read QUESTS — the shift lore lives in the tray text (wife-test: "SHIFT" meant nothing)
-    setTimeout(nightAdvance, 2500); // a breath after the tour (or the join), then Barty's first job
-  }
-  // the BIG MOMENT: pixel-type over the floor for session-defining beats —
-  // the stamp-out must be unmissable (a toast is a "nice moment" register)
+  // (THE NIGHT — Barty's five-shift questline — lived here until 8 Aug.
+  // Mothballed 19 Jul, superseded by the floor quests below; design notes
+  // survive in the-night-plan. Only its BIG MOMENT helper is still used.)
+  // pixel-type over the floor for session-defining beats — unmissable in a
+  // way a toast ("nice moment" register) never is
   function bigMoment(title, sub) {
     const d = document.createElement('div');
     d.className = 'rv-bigmoment';
@@ -3160,273 +3059,6 @@ function init() {
     floor.appendChild(d);
     setTimeout(() => d.classList.add('rv-bigmoment--out'), 3800);
     setTimeout(() => d.remove(), 4400);
-  }
-  // small screens get progressive disclosure: a new job announces itself,
-  // then tucks behind the TONIGHT chip after a read — the floor view wins
-  // (Trym: "how can we not present everything all at once"). Tap toggles.
-  const questSmall = matchMedia('(max-width: 640px)');
-  let questTuckT = null;
-  function nightTray(txt, done) {
-    const q = el('rvQuest');
-    if (txt === null) { q.hidden = true; return; }
-    q.hidden = false;
-    el('rvQuestBox').classList.toggle('done', !!done);
-    el('rvQuestTxt').textContent = txt;
-    clearTimeout(questTuckT);
-    q.classList.remove('rv-quest--min'); // news always shows itself first
-    if (questSmall.matches) questTuckT = setTimeout(() => q.classList.add('rv-quest--min'), 7000);
-  }
-  el('rvQuest').addEventListener('click', () => {
-    if (!questSmall.matches) return; // desktop never collapses — space is free
-    clearTimeout(questTuckT);
-    el('rvQuest').classList.toggle('rv-quest--min');
-  });
-  function nightAdvance() {
-    if (!night) return;
-    if (location.search.includes('nightdebug')) console.log('[night] advance from step', night.step, new Error().stack.split('\n')[2]);
-    if (night.step >= 0) { // tick the finished box for a beat before what's next
-      nightTray(night.def.steps[night.step].tray, true);
-      track('rave_night_step', { night: night.def.n, step: night.step });
-    }
-    night.step++;
-    const st = night.def.steps[night.step];
-    setTimeout(() => {
-      if (!night) return;
-      if (st) {
-        bartySay(st.say, true);
-        nightTray(st.tray, false);
-        if (st.check === 'bar') el('rvQuestDrink').style.display = ''; // the promised drink WAITS on the counter
-        if (st.check === 'qvinyl') nightSpawnVinyl();
-        if (st.check === 'sweep') { spawnChores(st.targets); el('rvBroomProp').style.display = ''; } // the broom leans on the counter
-        if (st.check === 'monkey') monkeySpawn();
-      } else {
-        nightStamp();
-      }
-    }, night.step === 0 ? 0 : 1400);
-  }
-  function nightSpawnVinyl() { // the QUEST record: personal, clones the floor sprite
-    const me = myId && ravers.get(myId);
-    let x = 50, y = 50;
-    for (let i = 0; i < 20; i++) {
-      x = 15 + Math.random() * 70; y = 28 + Math.random() * 44;
-      if (!insideBar(x, y) && (!me || Math.hypot(x - me.x, y - me.y) > 24)) break;
-    }
-    const q = el('rvVinyl').cloneNode(true);
-    q.id = 'rvQVinyl';
-    q.style.display = '';
-    q.style.left = x + '%';
-    q.style.top = y + '%';
-    world.appendChild(q);
-    night.qv = { el: q, x, y };
-  }
-  // ---- chores: sweepables (peels + puddles), swept while HOLDING the broom ----
-  function spawnChores(kinds) {
-    const host = el('rvChores');
-    host.innerHTML = '';
-    night.chores = [];
-    for (const kind of kinds) {
-      let x = 50, y = 50;
-      for (let t = 0; t < 30; t++) {
-        x = 12 + Math.random() * 74;
-        y = clamp(26 + Math.random() * 58, topClamp + 6, 86);
-        if (!insideBar(x, y) && night.chores.every((c) => Math.hypot(c.x - x, c.y - y) > 13)) break;
-      }
-      const d = document.createElement('div');
-      d.className = 'rv-chore rv-chore--' + kind;
-      d.innerHTML = kind === 'peel' ? PEEL_SVG : PUDDLE_SVG;
-      d.style.left = x + '%';
-      d.style.top = y + '%';
-      host.appendChild(d);
-      night.chores.push({ x, y, elm: d, done: false });
-    }
-  }
-  function clearChores() {
-    const h = el('rvChores');
-    if (h) h.innerHTML = '';
-    if (night) night.chores = null;
-  }
-  // ---- THE MONKEY: the club's chaos agent — staff pet, THEATRICAL guest,
-  // never a fake visitor (the sacred rule). Flees the chaser, a hair slower
-  // than a banana: catchable by commitment, not luck. ----
-  let monkey = null;
-  function monkeySpawn() {
-    if (monkey) monkeyRemove();
-    const d = document.createElement('div');
-    d.className = 'rv-monkey';
-    d.innerHTML = MONKEY_SVG;
-    world.appendChild(d);
-    monkey = { x: 50, y: topClamp + 8, tx: 25 + Math.random() * 50, ty: 45, el: d, mode: 'loose', lastPick: 0 };
-    d.style.width = Math.round((74 + monkey.y * 0.9) * 0.38) + 'px'; // depth-sized from the first frame
-    pickupPop(monkey.x, monkey.y); // pops in from the booth side — an ENTRANCE
-  }
-  function monkeyRemove() { if (monkey) { monkey.el.remove(); monkey = null; } }
-  function monkeyTick(now, dtMs) {
-    if (!monkey || monkey.mode !== 'loose') return;
-    const me = myId && ravers.get(myId);
-    if (me) {
-      const d = Math.hypot(me.x - monkey.x, me.y - monkey.y);
-      if (d < 18 && now - monkey.lastPick > 650) { // flee the chaser
-        monkey.lastPick = now;
-        const ang = Math.atan2(monkey.y - me.y, monkey.x - me.x) + (Math.random() - 0.5) * 1.2;
-        monkey.tx = clamp(monkey.x + Math.cos(ang) * 30, 8, 92);
-        monkey.ty = clamp(monkey.y + Math.sin(ang) * 24, topClamp + 4, 86);
-        if (blockedAt(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, Math.min(barSolid.y, doorSolid.y) - 8);
-      } else if (now - monkey.lastPick > 2600 && Math.hypot(monkey.tx - monkey.x, monkey.ty - monkey.y) < 2) {
-        monkey.lastPick = now; // amble somewhere new
-        monkey.tx = 12 + Math.random() * 76;
-        monkey.ty = clamp(24 + Math.random() * 60, topClamp + 4, 86);
-        if (blockedAt(monkey.tx, monkey.ty)) monkey.ty = Math.max(topClamp + 4, Math.min(barSolid.y, doorSolid.y) - 8);
-      }
-    }
-    const dx = monkey.tx - monkey.x, dy = monkey.ty - monkey.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 0.8) {
-      const step = (13.5 * dtMs) / 1000;
-      monkey.x += (dx / dist) * Math.min(step, dist);
-      monkey.y += (dy / dist) * Math.min(step, dist);
-      monkey.el.style.left = monkey.x + '%';
-      monkey.el.style.top = monkey.y + '%';
-      monkey.el.style.zIndex = String(100 + Math.round(monkey.y));
-      // the monkey obeys the floor's fake depth like every dancer (deeper =
-      // bigger) — a fixed size broke the perspective (Trym)
-      monkey.el.style.width = Math.round((74 + monkey.y * 0.9) * 0.38) + 'px';
-      monkey.el.style.transform = 'translate(-50%, -50%)' + (dx < 0 ? ' scaleX(-1)' : '');
-    }
-  }
-  function nightFrame(now) { // proximity checks at frame rate (the claims lesson)
-    if (!night || night.step < 0) return;
-    const st = night.def.steps[night.step];
-    if (!st) return;
-    const me = myId && ravers.get(myId);
-    if (!me || me.stage) return;
-    if (now - (night.lastPoll || 0) < 120) return;
-    night.lastPoll = now;
-    if (st.check === 'bar' && me.x < Math.max(BAR_ZONE.x, barSolid.x + 4) && me.y > BAR_ZONE.y) {
-      // the house pour moves from the counter into your glove — a promised
-      // drink you can SEE is a promise kept (local-only; it's your moment)
-      el('rvQuestDrink').style.display = 'none';
-      me.outfit.extras = { ...(me.outfit.extras || {}), beer: true };
-      pickupPop(me.x, me.y);
-      nightAdvance();
-    } else if (st.check === 'qvinyl' && night.qv) {
-      if (!me.qvinyl) {
-        const dxq = ((me.x - night.qv.x) / 100) * floorW, dyq = ((me.y - night.qv.y) / 100) * floorH;
-        if (Math.hypot(dxq, dyq) < (me.size || 90) * 0.6) {
-          me.qvinyl = true; // rides the left glove via the engine (render-time inject)
-          night.qv.el.remove();
-          pickupPop(night.qv.x, night.qv.y);
-          bartySay(['that’s the one! up to the booth with it, partner!'], true);
-        }
-      } else if (me.y < 18 && me.x > 26 && me.x < 74) {
-        me.qvinyl = false;
-        miniDropUntil = Date.now() + 6000; // your delivery, your bonus drop
-        nightAdvance();
-      }
-    } else if (st.check === 'sweep') {
-      if (!me.qbroom) {
-        // first: the broom, off the counter (adjacency zone, like every bar visit)
-        if (me.x < Math.max(BAR_ZONE.x, barSolid.x + 4) && me.y > BAR_ZONE.y) {
-          me.qbroom = true; // rides the right glove via the engine
-          el('rvBroomProp').style.display = 'none';
-          pickupPop(me.x, me.y);
-          const total = night.chores ? night.chores.length : 0;
-          nightTray(st.tray + ' — 0/' + total, false);
-        }
-      } else if (night.chores) {
-        const rPx = (me.size || 90) * 0.55;
-        let left = 0, hit = false;
-        for (const c of night.chores) {
-          if (c.done) { continue; }
-          if (Math.hypot(((me.x - c.x) / 100) * floorW, ((me.y - c.y) / 100) * floorH) < rPx) {
-            c.done = true;
-            hit = true;
-            c.elm.classList.add('rv-chore--swept');
-            const gone = c.elm;
-            setTimeout(() => gone.remove(), 500);
-            pickupPop(c.x, c.y);
-            addHype(4); // chores are jelly too
-          } else {
-            left++;
-          }
-        }
-        if (hit) {
-          const total = night.chores.length;
-          if (left) {
-            nightTray(st.tray + ' — ' + (total - left) + '/' + total, false);
-          } else {
-            me.qbroom = false; // Barty takes the good broom back
-            nightAdvance();
-          }
-        }
-      }
-    } else if (st.check === 'monkey' && monkey && monkey.mode === 'loose') {
-      if (Math.hypot(me.x - monkey.x, me.y - monkey.y) < 6.5) {
-        monkey.mode = 'caught'; // sits still, waits for his price
-        monkey.el.classList.add('rv-monkey--calm');
-        pickupPop(monkey.x, monkey.y);
-        nightAdvance();
-      }
-    } else if (st.check === 'feed' && monkey && night.snack) {
-      if (Math.hypot(me.x - monkey.x, me.y - monkey.y) < 7.5) {
-        night.snack = false;
-        pickupPop(monkey.x, monkey.y);
-        const m = monkey; // paid — waves off and scampers backstage
-        monkey = null;
-        setTimeout(() => {
-          m.el.classList.add('rv-monkey--off');
-          setTimeout(() => m.el.remove(), 900);
-        }, 1500);
-        nightAdvance();
-      }
-    }
-  }
-  function nightEvent(kind, val) { // hooks fired by the floor's own machinery
-    if (!night || night.step < 0) return;
-    const st = night.def.steps[night.step];
-    if (!st) return;
-    if (st.check === 'feed' && kind === 'item' && !night.snack) {
-      night.snack = true; // any floor grab is monkey currency
-      nightTray('got one — bring the snack to the monkey', false);
-      return;
-    }
-    if ((st.check === 'hypedrop' && kind === 'hypedrop')
-      || (st.check === 'chain3' && kind === 'chain' && val >= 3)
-      || (st.check === 'spotlight' && kind === 'spotlight')
-      || (st.check === 'stagefire' && kind === 'fire')
-      || (st.check === 'drop' && kind === 'drop')) nightAdvance();
-  }
-  function nightStamp() {
-    const d = night.def;
-    // tidy the props before the ceremony (whatever the shift left behind)
-    clearChores();
-    monkeyRemove();
-    el('rvBroomProp').style.display = 'none';
-    const meS = myId && ravers.get(myId);
-    if (meS) meS.qbroom = false;
-    night = null;
-    // THE STAMP-OUT: your shift ends, the club doesn't — big type, the floor
-    // drops FOR you, Barty stamps you out, and the chip becomes the receipt
-    bigMoment('NIGHTSHIFT ' + d.n + ' — IN THE BOOKS', 'back to clubbing! 🍌');
-    confettiBurst();
-    miniDropUntil = Date.now() + 8000; // the club celebrates your shift
-    bartySay(d.done.say, true);
-    nightReceipt(d.n);
-    if (d.done.patch) passPatch(d.done.patch);
-    if (d.n === NIGHTS.length) {
-      // THE REGULAR: five shifts and you're one of us
-      setTimeout(() => {
-        bigMoment('YOU’RE A REGULAR ⭐', 'five nightshifts — one of us now');
-        passPatch('regular');
-      }, 4800);
-    }
-    passStat('nights');
-    track('rave_night_complete', { night: d.n });
-    if (!NIGHT_TEST) {
-      try {
-        const s = nightLoad();
-        localStorage.setItem('rv-night-v1', JSON.stringify({ arc: d.n + 1, lastStamp: localDay(), n: (s.n || 0) + 1 }));
-      } catch (e) {}
-    }
   }
 
   // ---- 🎯 FLOOR QUESTS (Quests 2.0) ----------------------------------------
@@ -4081,7 +3713,7 @@ function init() {
       const me = myId && ravers.get(myId);
       if (!me || me.stage) return;
       if (quest.def.tick) quest.def.tick(now);       // frame-rate motion (bosses bounce)
-      if (now - questPollAt < 120) return;           // poll cadence (nightFrame's)
+      if (now - questPollAt < 120) return;           // poll cadence — the claims lesson again
       questPollAt = now;
       if (quest.def.frame) quest.def.frame(me, now);
       return;
@@ -4130,7 +3762,6 @@ function init() {
       const k = b.dataset.emote;
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'emote', k }));
       if (myId) floatEmote(myId, k); // instant local echo
-      if (k === 'fire' && onStage()) nightEvent('fire'); // night 4's stage moment
       // champagne in hand: every emote is a little celebration (+2 jelly)
       const meC = myId && ravers.get(myId);
       if (meC && fxActive(meC, Date.now()) && meC.fx.id === 'champagne') addHype(2);
@@ -4461,9 +4092,7 @@ function init() {
     nadeTick(now, dtMs); // 🍌💨 flying bananas + splat spill, frame rate like everything that moves
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     tryClaims(now); // item claims too — same lesson
-    nightFrame(now); // quest proximity checks — same lesson again
     questFrame(now); // 🎯 floor quests: hazards, tools, the hourly scheduler
-    monkeyTick(now, dtMs); // the bandit keeps its distance
     for (const r of ravers.values()) {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
       // the shock-blink renders HERE — the one loop with no perf gates and no
@@ -4902,7 +4531,7 @@ function init() {
     if (dropActive !== lastDrop) {
       // no confetti here — every-3rd-minute confetti was wallpaper (Trym: "too
       // frequent to appreciate"); the drop already has strobe + pyro + the flash
-      if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); nightEvent('drop'); }
+      if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); }
       if (dropActive && audioOn) playDropAudio(); // the music drops WITH the lights
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
@@ -5331,7 +4960,7 @@ function init() {
     }, 4800);
   })();
   // ?fxtest=<id> — preview any timed effect on yourself (local visual only,
-  // never broadcast; the stagetest/nighttest pattern for fx work)
+  // never broadcast; the stagetest/questtest pattern for fx work)
   const fxTest = new URLSearchParams(location.search).get('fxtest');
   if (fxTest === 'goldrain') {
     // the golden banana's weather, on demand (its real window is ~30 min apart)
