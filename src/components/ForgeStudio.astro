@@ -17,7 +17,11 @@ const items = mode === 'items';
 
   /* LAYOUT — work on the left (canvas + frames), tools on the right,
      ordered by how often a hand actually reaches for them */
-  .fg-grid { display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
+  /* ⚠️ minmax(0, 1fr), NOT 1fr: a plain 1fr track refuses to shrink below its
+     widest child's min-content, and body carries overflow-x:clip — so one
+     un-shrinkable panel silently CUTS the column off screen instead of
+     scrolling (Trym, 7 Aug: the whole workshop was cropped on a phone). */
+  .fg-grid { display: grid; gap: 1.2rem; grid-template-columns: minmax(0, 1fr); }
   @media (min-width: 920px) {
     .fg-grid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
     .fg-stagecol { grid-column: 1; grid-row: 1; }
@@ -43,7 +47,8 @@ const items = mode === 'items';
   .fg-toast.is-sticky { background: var(--banana); color: var(--ink); box-shadow: 0 5px 16px rgba(0,0,0,0.16); }
   @media (prefers-reduced-motion: reduce) { .fg-toast { transition: opacity 0.28s ease; transform: translate(-50%, 0); } }
 
-  .fg-side { display: grid; gap: 1rem; align-content: start; }
+  .fg-side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-content: start; }
+  .fg-side > * { min-width: 0; }   /* panels shrink; nothing escapes the column */
   .fg-panel { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm, 4px 4px 0 var(--ink)); padding: 0.9rem; }
   .fg-panel h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
 
@@ -132,7 +137,10 @@ const items = mode === 'items';
   /* ⚠️ the hidden-attribute trap (5th sighting): .btn's display beats [hidden] */
   .fg-itemsbar [hidden] { display: none !important; }
   /* the product switch — the FIRST decision on the bench */
-  .fg-kind { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  /* the two product cards STACK on a phone — side by side they squeeze the
+     label to one word per line and drag the whole column wide */
+  .fg-kind { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  @media (min-width: 560px) { .fg-kind { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
   .fg-kind__btn {
     font: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer;
     padding: 0.55rem 0.6rem; border: 3px solid var(--ink); background: var(--paper);
@@ -149,7 +157,7 @@ const items = mode === 'items';
     margin: -2px 0 0; font-size: 0.72rem; line-height: 1.45; opacity: 0.8;
   }
   /* the furniture context previews */
-  .fg-decorprev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fg-decorprev { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
   .fg-decorprev figure { margin: 0; }
   .fg-decorprev canvas {
     display: block; width: 100%; height: auto; image-rendering: pixelated;
@@ -267,7 +275,8 @@ const items = mode === 'items';
   .fg-spot:hover { transform: translateY(-1px); }
   .fg-spot.is-on { background: var(--banana, #ffe135); box-shadow: 2px 2px 0 var(--ink); }
   .fg-spot__auto { font-style: normal; font-size: 0.7em; opacity: 0.55; }
-  .fg-signrow { display: flex; gap: 0.6rem; margin-top: 0.7rem; }
+  .fg-signrow { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.7rem; }
+  .fg-signrow > input { flex: 1 1 8rem; min-width: 0; }   /* name fields shrink, never push */
   .fg-signrow[hidden] { display: none; }
   .fg-signrow input {
     flex: 1; min-width: 0; padding: 0.55rem 0.7rem; border: 3px solid var(--ink);
@@ -415,10 +424,10 @@ const items = mode === 'items';
              canvas underlay, placement row, preview and submit all follow. -->
         <div class="fg-kind" id="fgKind" role="tablist" aria-label="What are you making?">
           <button type="button" class="fg-kind__btn" data-kind="wear" role="tab" aria-selected="true">
-            Wearable gear<small>the banana wears it — sold at the Banana Stand</small>
+            Wearable gear<small>the banana wears it</small>
           </button>
           <button type="button" class="fg-kind__btn" data-kind="decor" role="tab" aria-selected="false">
-            Homestead furniture<small>stands in a yard or room — sold on the banana phone</small>
+            Homestead furniture<small>stands in a yard or room</small>
           </button>
         </div>
         <!-- ⭐ THE SPOT PICKER. The drawing SUGGESTS where an item rides (nearest
