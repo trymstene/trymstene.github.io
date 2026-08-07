@@ -129,6 +129,21 @@ const items = mode === 'items';
   .fg-modetab.is-here { background: var(--banana); box-shadow: inset 3px 3px 0 rgba(17, 17, 17, 0.16); cursor: default; }
   .fg-riding { font-size: 0.82rem; font-weight: 800; color: #0e9fb5; margin: 0.35rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
   #fgItemsSave { width: 100%; }
+  /* ⚠️ the hidden-attribute trap (5th sighting): .btn's display beats [hidden] */
+  .fg-itemsbar [hidden] { display: none !important; }
+  /* the product switch — the FIRST decision on the bench */
+  .fg-kind { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fg-kind__btn {
+    font: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer;
+    padding: 0.55rem 0.6rem; border: 3px solid var(--ink); background: var(--paper);
+    color: var(--ink); text-align: center; border-radius: 4px;
+  }
+  .fg-kind__btn small {
+    display: block; font-size: 0.66rem; font-weight: 600; opacity: 0.75; margin-top: 2px;
+  }
+  .fg-kind__btn[aria-selected="true"] {
+    background: var(--nana, #ffe135); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+  }
 
   /* the killer feature: your emoji at REAL chat size, live */
   .fg-chat { background: #313338; color: #dbdee1; padding: 0.7rem 0.8rem; border-radius: 6px; font-size: 0.85rem; }
@@ -380,6 +395,18 @@ const items = mode === 'items';
 
     {items && (
       <div class="fg-itemsbar">
+        <!-- ⭐ WHAT ARE YOU MAKING? Two products share this bench (Trym, 7 Aug:
+             "make sure wearables and homestead furniture are two separate
+             things") — the choice comes FIRST and everything below reshapes:
+             canvas underlay, placement row, preview and submit all follow. -->
+        <div class="fg-kind" id="fgKind" role="tablist" aria-label="What are you making?">
+          <button type="button" class="fg-kind__btn" data-kind="wear" role="tab" aria-selected="true">
+            Wearable gear<small>the banana wears it — drops at the rave</small>
+          </button>
+          <button type="button" class="fg-kind__btn" data-kind="decor" role="tab" aria-selected="false">
+            Homestead furniture<small>stands in a yard or room</small>
+          </button>
+        </div>
         <!-- ⭐ THE SPOT PICKER. The drawing SUGGESTS where an item rides (nearest
              anchor to its centre) and that suggestion is right almost always —
              but a Phantom mask that hangs past the eyeline pulls its own centre
@@ -398,6 +425,7 @@ const items = mode === 'items';
         </div>
         <div id="fgItemsDone" class="fg-importnote" hidden>🎉 Saved to <a href="/pass/">your shelf</a>.</div>
         <div id="fgItemsSubDone" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved items become <b>rave drops</b> with your name riding them.</div>
+        <div id="fgItemsSubDoneDecor" class="fg-importnote" hidden>📮 Sent to the banana guy! The verdict lands on <a href="/pass/">your pass</a> — approved furniture reaches every homestead's <b>Community shelf</b> with your name on it.</div>
       </div>
     )}
   </div>

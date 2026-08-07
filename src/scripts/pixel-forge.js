@@ -226,7 +226,7 @@ function init() {
     }
     if (state.onion && state.cur > 0 && mode !== 'items') drawGridInto(ctx, state.frames[state.cur - 1], cell, 0.3);
     if (mode === 'items' && itemsReady) {
-      if (wearPick === 'decor') {
+      if (itemKind === 'decor') {
         // 🏡 furniture isn't worn — the easel is a FLOOR, not a banana: a warm
         // ground band at the base (decor is base-anchored at the homestead)
         const gh = Math.max(2, Math.round(H / 8)) * cell;
@@ -256,7 +256,7 @@ function init() {
     }
     // 🏡 decor mode: dashed banana lines mark HOMESTEAD TILES (16 forge px =
     // one 48px build-mode tile at the 3× render) — the maker sees the footprint
-    if (mode === 'items' && wearPick === 'decor') {
+    if (mode === 'items' && itemKind === 'decor') {
       ctx.strokeStyle = 'rgba(245,196,0,0.65)';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 4]);
@@ -1155,12 +1155,13 @@ function init() {
   // them — the art stays exactly where it was drawn on the banana, it just
   // rides a different part. Skip that and every override teleports the item.
   let wearPick = null;
+  // ⭐ THE PRODUCT, not a placement: 'wear' | 'decor' — the bench's first
+  // decision (Trym, 7 Aug: wearables and furniture must be two separate things)
+  let itemKind = 'wear';
   let decorWhere = 'yard';   // 🏡 decor only: which homestead store shelf (yard | indoor)
   const WEAR_SPOTS = [['head', null, 'head'], ['face', null, 'face'], ['chest', null, 'body'],
                       ['hand', 'left', 'left hand'], ['hand', 'right', 'right hand'],
-                      ['feet', null, 'feet'],
-                      // 🏡 not worn at all: a decoration for the Homestead's mailbox catalog
-                      ['decor', null, 'homestead']];
+                      ['feet', null, 'feet']];
   const pickKey = (k, h) => k + (h || '');
 
   function computeWear() {
@@ -1199,7 +1200,7 @@ function init() {
     // sombrero whose brim-edge strays a few px into a hand zone must not
     const spread = n >= 6 && (n - topVotes) >= Math.max(3, n * 0.25);
     const auto = [best[0], best[1]];
-    if (wearPick === 'decor') {           // 🏡 a decoration — no body anchor at all
+    if (itemKind === 'decor') {           // 🏡 a decoration — no body anchor at all
       // where + the art's pixel bbox ride the payload: the homestead renders
       // forge pixels at 3× (48px tiles = 16 forge px), so fw/fh ARE the size
       return { art: out.svg, anchor: 'decor', spread: false,
@@ -1239,19 +1240,33 @@ function init() {
     // decor first and never draws on a banana (Trym: "it's not a wearable")
     row.hidden = mode !== 'items';
     if (row.hidden) return;
+    if (itemKind === 'decor') {
+      // 🏡 furniture has NO body spots — only where it goes + the footprint
+      const tiles = c ? (() => {
+        const tw = Math.max(1, Math.ceil(c.fw / 16)), th = Math.max(1, Math.ceil(c.fh / 16));
+        return '<span class="fg-spotlabel">covers ' + tw + '×' + th + (tw * th === 1 ? ' tile' : ' tiles') + '</span>';
+      })() : '';
+      row.innerHTML = '<span class="fg-spotlabel">goes</span>'
+        + '<button type="button" class="fg-spot' + (decorWhere === 'yard' ? ' is-on' : '') + '" data-where="yard">the yard</button>'
+        + '<button type="button" class="fg-spot' + (decorWhere === 'indoor' ? ' is-on' : '') + '" data-where="indoor">indoors</button>'
+        + tiles;
+      row.querySelectorAll('[data-where]').forEach((b2) => {
+        b2.onclick = () => {
+          decorWhere = b2.dataset.where;
+          paintSpotPicker();
+          track('forge_item_where', { where: decorWhere });
+        };
+      });
+      return;
+    }
     const cur = wearPick || (c ? c.auto : '');
-    const chip = ([k, h, lab]) => {
+    row.innerHTML = '<span class="fg-spotlabel">rides the</span>' + WEAR_SPOTS.map(([k, h, lab]) => {
       const key = pickKey(k, h);
       return '<button type="button" class="fg-spot' + (key === cur ? ' is-on' : '')
         + '" data-spot="' + key + '">' + lab
         + (c && key === c.auto ? '<i class="fg-spot__auto" title="what the drawing suggests">✦</i>' : '')
         + '</button>';
-    };
-    // decor is NOT a body spot — it stands apart from the rides-the list
-    row.innerHTML = '<span class="fg-spotlabel">rides the</span>'
-      + WEAR_SPOTS.slice(0, 6).map(chip).join('')
-      + '<span class="fg-spotlabel">· or</span>'
-      + chip(['decor', null, 'homestead decor']);
+    }).join('');
     row.querySelectorAll('.fg-spot').forEach((b2) => {
       b2.onclick = () => {
         // tapping the suggested one again clears the override entirely
@@ -1263,37 +1278,36 @@ function init() {
         track('forge_item_spot', { spot: wearPick || 'auto' });
       };
     });
-    // 🏡 decor extras: which store shelf it belongs on + the tile footprint
-    // (Trym: makers must see how their piece lands in build mode)
-    if (cur === 'decor') {
-      const tiles = c ? (() => {
-        const tw = Math.max(1, Math.ceil(c.fw / 16)), th = Math.max(1, Math.ceil(c.fh / 16));
-        return '<span class="fg-spotlabel">covers ' + tw + '×' + th + (tw * th === 1 ? ' tile' : ' tiles') + '</span>';
-      })() : '';
-      row.insertAdjacentHTML('beforeend',
-        '<span class="fg-spotlabel">goes</span>'
-        + '<button type="button" class="fg-spot' + (decorWhere === 'yard' ? ' is-on' : '') + '" data-where="yard">the yard</button>'
-        + '<button type="button" class="fg-spot' + (decorWhere === 'indoor' ? ' is-on' : '') + '" data-where="indoor">indoors</button>'
-        + tiles);
-      row.querySelectorAll('[data-where]').forEach((b2) => {
-        b2.onclick = () => {
-          decorWhere = b2.dataset.where;
-          paintSpotPicker();
-          track('forge_item_where', { where: decorWhere });
-        };
-      });
-    }
-    // the loudest wearable-ism: the SUBMIT button — furniture goes to the
-    // Homestead, not the rave
+  }
+
+  // ⭐ the product switch — the whole bench follows the choice: canvas
+  // underlay, placement row, dance preview and submit destination
+  function applyKind(k) {
+    itemKind = k;
+    wearPick = null;
+    lastRide = '__init__';
+    document.querySelectorAll('#fgKind .fg-kind__btn').forEach((b) =>
+      b.setAttribute('aria-selected', String(b.dataset.kind === k)));
+    const play = el('fgItemsPlay');
+    if (play) play.hidden = k === 'decor';   // nothing dances wearing a chair
     const sub = el('fgItemsSubmit');
     if (sub) {
       if (!sub.dataset.orig) sub.dataset.orig = sub.innerHTML;
-      const want = cur === 'decor'
+      sub.innerHTML = k === 'decor'
         ? sub.dataset.orig.replace(/Submit to the rave/i, 'Submit to the Homestead')
         : sub.dataset.orig;
-      if (sub.innerHTML !== want) sub.innerHTML = want;
     }
+    paintSpotPicker();
+    updateItemsStatus();
+    refreshAll();
   }
+  document.querySelectorAll('#fgKind .fg-kind__btn').forEach((b) => {
+    b.onclick = () => {
+      if (b.dataset.kind === itemKind) return;
+      applyKind(b.dataset.kind);
+      track('forge_item_kind', { kind: itemKind });
+    };
+  });
 
   function updateItemsStatus() {
     if (mode !== 'items') { hideToast(); lastRide = '__init__'; paintSpotPicker(); return; }
@@ -1303,7 +1317,7 @@ function init() {
     if (key === lastRide) return; // placement unchanged — don't re-toast on every redraw
     lastRide = key;
     if (!c) {
-      showToast(wearPick === 'decor'
+      showToast(itemKind === 'decor'
         ? 'draw your decoration — the warm band at the bottom is the ground'
         : 'draw your item on the banana, where it goes', true, 'edit');
       return;
@@ -1399,7 +1413,7 @@ function init() {
           localStorage.setItem('cat-subs-v1', JSON.stringify(subs.slice(0, 20)));
         } catch (e) {}
         el('fgItemsSubRow').hidden = true;
-        el('fgItemsSubDone').hidden = false;
+        el(itemKind === 'decor' ? 'fgItemsSubDoneDecor' : 'fgItemsSubDone').hidden = false;
         track('forge_item_submit', { anchor: c.anchor });
       } else if (res.status === 429) {
         itemSend.textContent = 'easy there — try later';
