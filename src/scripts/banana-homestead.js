@@ -1513,6 +1513,15 @@ function init(visitDoc, visitMiss) {
     } else if (verb === 'buy') {
       btn.textContent = shipMin(d) ? 'order it' : 'get it';
       btn.disabled = coinBalance() < d.price;
+      // orders in flight show ON the tile — the shed-stack chip, worn by the van
+      const n = state.orders.filter((o) => o.id === d.id).length;
+      if (n) {
+        const op = document.createElement('span');
+        op.className = 'hs-stackn';
+        op.textContent = '🚚 ' + n;
+        op.title = n + ' on the way';
+        tile.appendChild(op);
+      }
     } else {
       btn.textContent = 'place it';
     }
