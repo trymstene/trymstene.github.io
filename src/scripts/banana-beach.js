@@ -12,6 +12,7 @@ import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
+import { shopWindow } from '../../shared/products.js';
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
 // tools/build-beach-scene.py, which declares each collider on the place()
 // call that draws the prop. Never hand-copy a coordinate in here again: the
@@ -2707,13 +2708,9 @@ function init() {
   // you walk into rather than a banner over the sand — doors out-pull
   // billboards in this world about 15:1 (rave_exit_stand 356 vs
   // rave_screen_ad 24 over the same window).
-  // ⚠️ prices are hardcoded here for the hut sign — they must track
-  // shared/products.js priceHint by hand. Magnet retired 7 Aug.
-  const HUT_PRODUCTS = [
-    { key: 'sticker', name: 'kiss-cut sticker', price: '$11.99' },
-    { key: 'mug', name: 'mug', price: '$22.99' },
-    { key: 'tee', name: 'tee', price: '$26.99' },
-  ];
+  // the sign's list and prices come from the manifest — retyping them here
+  // drifted on every price change, and this is a sign people walk up and read.
+  const HUT_PRODUCTS = shopWindow();
   // 🤠 PALMA, who keeps the hut. Trym asked for a straw sun hat and, failing
   // that, "a hat the others dont use" — the wardrobe has no straw hat at all
   // (see the ID GUARD above; that exact gap has bitten this beach before), so

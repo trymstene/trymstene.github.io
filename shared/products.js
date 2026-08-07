@@ -24,7 +24,7 @@
 //   priceHint          display fallback only, in USD (store currency since
 //                      15 Jul 2026); Shopify is the source of truth for the
 //                      real (localized) price at checkout.
-export default [
+const PRODUCTS = [
   {
     // THE TEE (13 Jul 2026, research-backed: apparel = #1 POD category; the
     // wearer's OWN dressed banana printed front and center). Color x size ride
@@ -101,3 +101,25 @@ export default [
 // a distance: $10.99 to the UK, dearer than a t-shirt, with no cheaper rate
 // offered. That pinned it near $15 while the sticker went to $11.99, so it read
 // as the expensive twin of a better product. Its Shopify product is archived.
+
+export default PRODUCTS;
+
+// 🪟 THE WORLD SHOPS' WINDOW — the beach hut and the park merch cart each hang
+// a little sign listing what's for sale. Both used to RETYPE the products and
+// prices, and both went stale on every single price change (three times on
+// 7 Aug alone) — signs a visitor walks up to and reads, quoting numbers the
+// checkout no longer agreed with. They read this instead.
+//
+// The in-world voice stays lowercase and plain ("kiss-cut sticker", not
+// "Sticker"), so the label lives here rather than in the manifest rows — but
+// the PRICE and the LIVE list come from the one place that decides them.
+// ⚠️ A product with no entry here still shows, using its manifest name.
+const WINDOW_LABEL = { sticker: 'kiss-cut sticker', mug: 'mug', tee: 'tee' };
+
+export const shopWindow = () => PRODUCTS
+  .filter((p) => p.live)
+  .map((p) => ({
+    key: p.key,
+    name: WINDOW_LABEL[p.key] || p.name.toLowerCase(),
+    price: '$' + p.priceHint,
+  }));

@@ -8,14 +8,12 @@ import { catCustom } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { MARKET } from './park-geo.js';
 import { track, esc } from './park-util.js';
+import { shopWindow } from '../../shared/products.js';
 
-// 🧃 THE MERCH SHOP — keys are the PDP slugs (/make-a-banana/<key>/, from
-// shared/products.js); prices are display hints, Shopify enforces the real one
-const MERCH_PRODUCTS = [
-  { key: 'sticker', name: 'kiss-cut sticker', price: '$11.99' },
-  { key: 'mug', name: 'mug', price: '$22.99' },
-  { key: 'tee', name: 'tee', price: '$26.99' },
-];
+// 🧃 THE MERCH SHOP — keys are the PDP slugs (/make-a-banana/<key>/). The list
+// and the prices come from the manifest; retyping them here drifted on every
+// price change. Shopify still enforces the real (localized) price at checkout.
+const MERCH_PRODUCTS = shopWindow();
 // 🍌 INKA, keeper of the merch shop — monocle + a drawn print-shop apron
 // (banana NPCs are our own art; the apron is painted over the composite)
 const KEEPER_GREET = 'welcome in. everything on this wall is real — printed, packed and posted.';
