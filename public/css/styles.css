@@ -1001,6 +1001,10 @@ details.story p { margin-bottom: 1rem; }
    button rather than being its own section, so no kicker and a tighter row.
    (Extracted to src/components/PressBelt.astro 8 Aug; the audit found the
    commerce funnel had no social proof at all while the site owned this.) */
-.press-belt--compact { padding: 0.7rem 0 0; margin: 0.6rem 0 0; border-top: 2px solid rgba(17, 17, 17, 0.12); }
-.press-belt--compact .press-belt__logos { gap: 1rem; opacity: 0.62; justify-content: flex-start; }
+/* ⚠️ Had NO bottom padding at all: the logos ended 4px off the belt's own edge
+   with the black Buy button immediately under, which read as a rule crushed
+   into them (Trym). Air on both sides now — and the row gap matters too, since
+   in a PDP column the five marks wrap to two rows. */
+.press-belt--compact { padding: 1.15rem 0 1.1rem; margin: 1.2rem 0 0.4rem; border-top: 2px solid rgba(17, 17, 17, 0.12); }
+.press-belt--compact .press-belt__logos { gap: 0.85rem 1rem; opacity: 0.62; justify-content: flex-start; }
 .press-belt--compact img { filter: grayscale(1); }
