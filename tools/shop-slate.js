@@ -38,7 +38,7 @@ const DTG_PLACE = 'front centre, 12″ wide, top edge ~3″ below the collar —
 // to miss a row. sizes: [label, blankCost] — each row priced off ITS OWN blank.
 export const SLATE = [
   // ---- under $10: the impulse rung the shop has never had -----------------
-  { key: 'sticker', name: 'Kiss-cut sticker', catalog: 358, tech: 'digital',
+  { key: 'sticker', name: 'Kiss-cut sticker', catalog: 358, tech: 'digital', live: true,
     art: 'sticker-4in-hero', place: 'fill the square, ~88% — the classic in colour',
     sizes: [['3″×3″', 2.5], ['4″×4″', 2.5], ['5.5″×5.5″', 2.75]] },
   { key: 'holo', name: 'Holographic sticker', catalog: 673, tech: 'digital',
@@ -81,14 +81,14 @@ export const SLATE = [
   { key: 'beanie', name: 'Beanie (all-over print)', catalog: 458, tech: 'cut-sew',
     art: 'allover-tile-seamless', place: "Printful's template, repeat mode — the tile wraps",
     sizes: [['S/M/L', 15.5]] },
-  { key: 'tote', name: 'Tote bag (all-over print)', catalog: 84, tech: 'cut-sew',
-    art: 'allover-tile-seamless', place: "Printful's template, repeat mode — both faces",
-    sizes: [['15″×15″', 16.75]] },
+  // ⛔ DROPPED — the tote already in the shop wins on both sides: a $10.50
+  // blank against this one's $16.75, so it sells at $14.99 not $19.99 AND
+  // keeps $3.76 not $2.36. Always check the archive before adding a category.
   { key: 'crew', name: 'Crewneck sweatshirt', catalog: 145, blankModel: 'Gildan 18000',
     tech: 'DTG', tier: '$16.95 colours (18 of 25) — drop Ash, Dark Chocolate, Gold, Heather Deep Royal, Heliconia, Irish Green, Purple',
     art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
     sizes: [['S–XL', 16.95], ['2XL', 18.5], ['3XL', 19.95], ['4XL', 21.5], ['5XL', 22.95]] },
-  { key: 'hoodie', name: 'Hoodie', catalog: 146, blankModel: 'Gildan 18500',
+  { key: 'hoodie', name: 'Hoodie', catalog: 146, blankModel: 'Gildan 18500', live: true,
     tech: 'DTG', tier: 'all 26 colours (the two tiers are 6¢ apart — price off the higher)',
     art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
     sizes: [['S–XL', 22.25], ['2XL', 24.19], ['3XL', 26.19], ['4XL', 28.19], ['5XL', 30.19]] },
