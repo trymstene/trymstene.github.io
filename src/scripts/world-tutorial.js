@@ -150,7 +150,13 @@ function steps() {
         + '<div class="bwt-post"><img src="/assets/world/tour-park.jpg" alt="the park" width="420" height="264"><b>the Park</b></div>'
         + '<div class="bwt-post"><img src="/assets/world/tour-rave.jpg" alt="the rave" width="420" height="264"><b>the Rave</b></div>'
         + '<div class="bwt-post"><img src="/assets/world/tour-beach.jpg" alt="banana bay" width="420" height="264"><b>Banana Bay</b></div>'
-        + '<div class="bwt-tile" style="justify-content:center"><em>gardens · dancefloors ·<br>beaches · shops</em><small>every area has its own games</small></div>'
+        // ⚠️ align-content, NOT justify-content. .bwt-tile is a GRID, where
+        // justify-* is the horizontal axis — so the old `justify-content:center`
+        // did nothing vertically and `align-content:start` pinned the copy to
+        // the top of a tile whose height is set by the photo beside it. The gap
+        // underneath read as a broken image (Trym, 8 Aug: "the fourth tile only
+        // looks broken because of all the small text pressed up at the top").
+        + '<div class="bwt-tile" style="align-content:center"><em>gardens · dancefloors ·<br>beaches · shops</em><small>every area has its own games</small></div>'
         + '</div>',
     },
     {
