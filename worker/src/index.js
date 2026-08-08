@@ -98,6 +98,13 @@ export default {
       }
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
+      // 🔧 ONE-SHOT REPAIR #2 — put the official line's variants back into their
+      // Printful delivery profiles. Yesterday's free-shipping revert dissociated
+      // them, so they fell to the default General profile, whose location group
+      // does not hold their stock. A TRACKED variant with no location that both
+      // stocks it and ships under its profile is unbuyable — which is why the
+      // untracked builder products in that same profile were never affected.
+      if (url.pathname === '/admin/reprofile') return handleReprofile(request, env);
       if (url.pathname === '/health') {
         return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1',
           url.searchParams.get('buyable') === '1');
@@ -370,6 +377,49 @@ async function handleServe(request, env, url) {
   });
 }
 
+// ---------- POST /admin/reprofile ----------
+// handle substring -> the Printful profile name substring it belongs to
+const PROFILE_HOME = [
+  ['classic-tee', 'Tshirts (#PF-FRG1001)'],
+  ['short-sleeve', 'Tshirts (#PF-FRG1)'],
+  ['hoodie', 'Hoodies'],
+  ['official-mug', 'Camper mug'],       // the enamel mug rides the FRG42 profile
+  ['crop-top', 'Camper mug'],
+  ['tote-bag', 'Camper mug'],
+];
+
+async function handleReprofile(request, env) {
+  if (!env.FIX_KEY || request.headers.get('X-Fix-Key') !== env.FIX_KEY) {
+    return json({ error: 'nope' }, 403);
+  }
+  const dry = new URL(request.url).searchParams.get('dry') === '1';
+  const dp = await adminGql(env,
+    'query { deliveryProfiles(first: 15) { nodes { id name default } } }');
+  const profiles = dp.deliveryProfiles.nodes;
+  const d = await adminGql(env, `query { products(first: 30) { nodes { handle status tags
+    variants(first: 100) { nodes { id } } } } }`);
+  const out = {};
+  for (const p of d.products.nodes) {
+    if ((p.tags || []).includes('custom-temp') || p.handle.startsWith('custom-')) continue;
+    const hit = PROFILE_HOME.find(([sub]) => p.handle.includes(sub));
+    if (!hit) { out[p.handle] = 'no home mapped — skipped'; continue; }
+    const target = profiles.find((x) => x.name.includes(hit[1]));
+    if (!target) { out[p.handle] = `❌ no profile matching "${hit[1]}"`; continue; }
+    const ids = p.variants.nodes.map((v) => v.id);
+    if (dry) { out[p.handle] = `would move ${ids.length} → ${target.name}`; continue; }
+    try {
+      const r = await adminGql(env,
+        `mutation($id: ID!, $profile: DeliveryProfileInput!) {
+           deliveryProfileUpdate(id: $id, profile: $profile) {
+             profile { id } userErrors { field message } } }`,
+        { id: target.id, profile: { variantsToAssociate: ids } });
+      const ue = r.deliveryProfileUpdate.userErrors;
+      out[p.handle] = ue.length ? `❌ ${ue[0].message}` : `moved ${ids.length} → ${target.name}`;
+    } catch (e) { out[p.handle] = '❌ ' + e.message.slice(0, 160); }
+  }
+  return json(out);
+}
+
 // ---------- GET /health ----------
 // Verifies the Printful token + config without exposing anything sensitive.
 
@@ -421,6 +471,40 @@ async function handleHealth(env, ship, store, buyable) {
           'query { currentAppInstallation { accessScopes { handle } } }');
         out.scopes = sc.currentAppInstallation.accessScopes.map((s) => s.handle).sort().join(', ');
       } catch (e) { out.scopes = 'error: ' + e.message.slice(0, 120); }
+      // needs read_markets: every market's catalog PUBLICATION id. A product
+      // that isn't published to those is invisible-to-buy in that market while
+      // still resolving a converted price — which is exactly the symptom.
+      try {
+        const m = await adminGql(env, `query { markets(first: 15) { nodes { name handle enabled
+          catalogs(first: 5) { nodes { id status ... on MarketCatalog { publication { id } } } } } } }`);
+        out.markets = m.markets.nodes.map((k) => ({
+          name: `${k.name} (${k.handle}) enabled=${k.enabled}`,
+          pubs: k.catalogs.nodes.map((c) => (c.publication && c.publication.id) || c.id + ':' + c.status),
+        }));
+      } catch (e) { out.markets = 'error: ' + e.message.slice(0, 160); }
+      try {
+        const c = await adminGql(env, `query { catalogs(first: 25) { nodes { id status
+          ... on MarketCatalog { title markets(first: 5) { nodes { handle } } }
+          publication { id } } } }`);
+        out.catalogs = c.catalogs.nodes.map((k) => `${k.title || k.id} ${k.status}` +
+          (k.markets ? ` markets=[${k.markets.nodes.map((m) => m.handle).join(',')}]` : '') +
+          ` pub=${k.publication ? k.publication.id.split('/').pop() : 'none'}`);
+      } catch (e) { out.catalogs = 'error: ' + e.message.slice(0, 160); }
+      // needs read_inventory: WHERE the tracked 9999 actually sits
+      try {
+        const inv = await adminGql(env, `query { products(first: 30) { nodes { handle
+          variants(first: 1) { nodes { inventoryItem { tracked
+            inventoryLevels(first: 8) { nodes { id
+              quantities(names: "available") { quantity } } } } } } } } }`);
+        out.inventory = {};
+        for (const p of inv.products.nodes) {
+          const it = p.variants.nodes[0] && p.variants.nodes[0].inventoryItem;
+          if (!it) continue;
+          out.inventory[p.handle] = `tracked=${it.tracked} levels=` +
+            (it.inventoryLevels.nodes.map((l) =>
+              (l.quantities[0] ? l.quantities[0].quantity : '?')).join(', ') || '❌ NONE');
+        }
+      } catch (e) { out.inventory = 'error: ' + e.message.slice(0, 160); }
       const dp = await adminGql(env, `query { deliveryProfiles(first: 10) { nodes {
         id name default productVariantsCount { count }
         profileItems(first: 20) { nodes { product { handle } } }
