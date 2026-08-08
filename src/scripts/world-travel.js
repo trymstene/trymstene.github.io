@@ -59,13 +59,34 @@ const DOOR = '<svg viewBox="0 0 8 15" width="16" height="30" shape-rendering="cr
 const CSS = `
 .wt-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.35rem; }
 .wt-btn svg, .wt-card h2 svg { display:block; }
-/* ⚠️ THE DOOR'S SIZE IS NOT NEGOTIABLE. Host bars size their own icons — the
-   rave squares every button SVG with \`.rv-emote-btn svg { width:1.25em;
+/* ⚠️ THE DOOR KEEPS ITS 8:15 ASPECT, ALWAYS. Host bars size their own icons —
+   the rave squares every button SVG with \`.rv-emote-btn svg { width:1.25em;
    height:1.25em }\` — and an 8x15 door forced into a square is a squashed door.
    Two classes + a type out-specifies any one-class host rule, so this wins
    without !important and without the module knowing which bar it landed in.
-   16x30 is an exact 2x of the art; anything else lands rows on half-pixels. */
-.wt-btn svg.wt-door, .wt-card h2 svg.wt-door { width:16px; height:30px; }
+
+   ⚠️ It must not be TALLER than the host bar's own icons either. A flat 30px
+   made the travel button 51px next to 43px siblings in all four areas (Trym,
+   8 Aug: "the fast travel button is slightly taller than the other buttons").
+   1.25em matches a pixelarticons glyph exactly at every area's font size, and
+   \`width:auto\` keeps the aspect — the door scales, it never squashes. */
+.wt-btn svg.wt-door { height:1.25em; width:auto; }
+.wt-card h2 svg.wt-door { width:16px; height:30px; }
+/* 🎛 ONE HEIGHT FOR EVERY BUTTON IN THE BAR THIS LANDS IN. The bars were never
+   uneven by padding — they are uneven by CONTENT: a pixel icon measures 22px, a
+   bare emoji only its 17.6px line box, so identical padding produced 43px and
+   39px buttons side by side. A floor on the box fixes every current and future
+   member of the row at once, and 44px is also the touch-target minimum, so the
+   sub-44 icon buttons stop being a mobile problem in the same line.
+
+   line-height:1 is part of it: an emoji button's default 1.5 line box is 25.2px
+   against a 22px icon, which left the homestead a stubborn 1px out even with
+   the floor in place. Flatten the line box and the floor becomes the ONLY thing
+   deciding the height, so every button in every bar lands on exactly 44. */
+.wt-row > * {
+  min-height:44px; box-sizing:border-box; line-height:1;
+  display:inline-flex; align-items:center; justify-content:center;
+}
 .wt-card h2 { display:flex; align-items:center; gap:0.4rem; }
 .wt-veil {
   position:fixed; inset:0; z-index:70; display:grid; place-items:center;
@@ -133,6 +154,10 @@ function injectCss() {
 export function initTravel({ here, mount, before, btnClass, track }) {
   if (!mount) return;
   injectCss();
+  // the module tags the bar it joins so `.wt-row > *` can level every button in
+  // it — the row classes are per-area (.pk-actions, .bh-actions, .hs-actions,
+  // .rv-emotes) and a shared widget should not have to name all four
+  mount.classList.add('wt-row');
 
   const btn = document.createElement('button');
   btn.type = 'button';
