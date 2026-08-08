@@ -24,6 +24,14 @@
 //   priceHint          display fallback only, in USD (store currency since
 //                      15 Jul 2026); Shopify is the source of truth for the
 //                      real (localized) price at checkout.
+//                      ⚠️ IT IS NOT ONLY A FALLBACK IN PRACTICE. It is the
+//                      price PRINTED on the builder tiles, both PDPs, the
+//                      /shop/ custom cards, the download-moment offer and the
+//                      park + beach shops — none of which query Shopify. Drop
+//                      a Shopify price without touching this and the whole
+//                      custom lane advertises the old one (8 Aug: the $4.99
+//                      sticker was still shown at $11.99 everywhere, 240% of
+//                      its real price, for a day). REPRICE BOTH, ALWAYS.
 const PRODUCTS = [
   {
     // THE TEE (13 Jul 2026, research-backed: apparel = #1 POD category; the
@@ -60,7 +68,7 @@ const PRODUCTS = [
     },
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
-    priceHint: '26.99',
+    priceHint: '16.99',
     live: true,
   },
   {
@@ -70,7 +78,7 @@ const PRODUCTS = [
     printfulVariantId: 10163,   // Kiss-Cut Stickers (product 358), 3″×3″, cost $2.50
     size: '3″×3″ (7.5 cm)',
     material: 'durable weatherproof vinyl',
-    priceHint: '11.99',
+    priceHint: '4.99',
     live: true,
   },
   {
@@ -90,9 +98,8 @@ const PRODUCTS = [
     print: 'mug',
     size: '12 oz (0.35 l)',
     material: 'white enamel camper mug with a rolled rim',
-    // $12.25 blank + $4.49 US / $9.99 NO shipping, both measured 7 Aug via
-    // /health?ship=1. Free shipping is baked in on BOTH lanes now.
-    priceHint: '22.99',
+    // $12.25 blank; shipping is CHARGED at checkout, not baked in.
+    priceHint: '14.99',
     live: true, // ⚠️ flipped WITH Shopify DRAFT→ACTIVE — the two must never disagree
   },
 ];
