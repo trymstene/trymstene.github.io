@@ -388,6 +388,7 @@ async function handleHealth(env, ship, store, buyable) {
     } else try {
       const d = await adminGql(env, `query { products(first: 30) { nodes {
         handle status tags publishedAt
+        resourcePublications(first: 15) { nodes { isPublished publication { name } } }
         variants(first: 100) { nodes { title inventoryPolicy inventoryQuantity
           inventoryItem { tracked requiresShipping } } } } } }`);
       out.buyable = {};
@@ -402,6 +403,8 @@ async function handleHealth(env, ship, store, buyable) {
             ? `❌ ${blocked.length}/${vs.length} variants blocked — tracked, 0 on hand, policy DENY`
             : (p.status === 'ACTIVE' ? `ok (${vs.length})` : `status ${p.status}`),
           published: p.publishedAt ? 'yes' : '❌ NOT PUBLISHED',
+          channels: p.resourcePublications.nodes.filter((r) => r.isPublished)
+            .map((r) => r.publication.name).join(' | ') || '❌ NO CHANNELS',
           v0: v0.title && `${v0.title}: policy=${v0.inventoryPolicy} qty=${v0.inventoryQuantity} ` +
             `tracked=${v0.inventoryItem.tracked} requiresShipping=${v0.inventoryItem.requiresShipping}`,
         };
@@ -411,15 +414,13 @@ async function handleHealth(env, ship, store, buyable) {
       // market — while still true with no @inContext at all. Inventory looks
       // perfect, the PDP renders, and nobody can buy. Left behind by the
       // free-shipping experiment's profile juggling.
+      // what CAN this app do? saves guessing which scope a 'Access denied'
+      // wants, and proves a newly-granted one actually took
       try {
-        const m = await adminGql(env, `query { markets(first: 10) { nodes {
-          name handle enabled
-          catalogs(first: 5) { nodes { id title status
-            ... on MarketCatalog { publication { id } } } } } } }`);
-        out.markets = m.markets.nodes.map((k) =>
-          `${k.name} (${k.handle}) enabled=${k.enabled} catalogs=[${k.catalogs.nodes
-            .map((c) => `${c.title || c.id}:${c.status}`).join(', ')}]`);
-      } catch (e) { out.markets = 'error: ' + e.message.slice(0, 200); }
+        const sc = await adminGql(env,
+          'query { currentAppInstallation { accessScopes { handle } } }');
+        out.scopes = sc.currentAppInstallation.accessScopes.map((s) => s.handle).sort().join(', ');
+      } catch (e) { out.scopes = 'error: ' + e.message.slice(0, 120); }
       const dp = await adminGql(env, `query { deliveryProfiles(first: 10) { nodes {
         id name default productVariantsCount { count }
         profileItems(first: 20) { nodes { product { handle } } }
@@ -433,7 +434,11 @@ async function handleHealth(env, ship, store, buyable) {
           id: p.id,
           name: (p.default ? '(default) ' : '') + p.name,
           variants: p.productVariantsCount.count,
-          zones: zones.map((z) => z.zone.name + ' [' + z.zone.countries.length + ']'),
+          // the country CODES, not just a count — "International [28]" told us
+          // nothing about whether the US was one of them, which is the only
+          // question that matters for a product that won't sell there
+          zones: zones.map((z) => z.zone.name + ': ' +
+            z.zone.countries.map((c) => c.code.countryCode).join(',')),
           rates,
           products: (p.profileItems ? p.profileItems.nodes.map((i) => i.product.handle) : []),
           warn: rates ? undefined : 'NOTHING CAN SHIP',
