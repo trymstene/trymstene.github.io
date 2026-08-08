@@ -98,13 +98,6 @@ export default {
       }
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
-      // 🔧 ONE-SHOT REPAIR #2 — put the official line's variants back into their
-      // Printful delivery profiles. Yesterday's free-shipping revert dissociated
-      // them, so they fell to the default General profile, whose location group
-      // does not hold their stock. A TRACKED variant with no location that both
-      // stocks it and ships under its profile is unbuyable — which is why the
-      // untracked builder products in that same profile were never affected.
-      if (url.pathname === '/admin/reprofile') return handleReprofile(request, env);
       if (url.pathname === '/health') {
         return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1',
           url.searchParams.get('buyable') === '1');
@@ -375,49 +368,6 @@ async function handleServe(request, env, url) {
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
-}
-
-// ---------- POST /admin/reprofile ----------
-// handle substring -> the Printful profile name substring it belongs to
-const PROFILE_HOME = [
-  ['classic-tee', 'Tshirts (#PF-FRG1001)'],
-  ['short-sleeve', 'Tshirts (#PF-FRG1)'],
-  ['hoodie', 'Hoodies'],
-  ['official-mug', 'Camper mug'],       // the enamel mug rides the FRG42 profile
-  ['crop-top', 'Camper mug'],
-  ['tote-bag', 'Camper mug'],
-];
-
-async function handleReprofile(request, env) {
-  if (!env.FIX_KEY || request.headers.get('X-Fix-Key') !== env.FIX_KEY) {
-    return json({ error: 'nope' }, 403);
-  }
-  const dry = new URL(request.url).searchParams.get('dry') === '1';
-  const dp = await adminGql(env,
-    'query { deliveryProfiles(first: 15) { nodes { id name default } } }');
-  const profiles = dp.deliveryProfiles.nodes;
-  const d = await adminGql(env, `query { products(first: 30) { nodes { handle status tags
-    variants(first: 100) { nodes { id } } } } }`);
-  const out = {};
-  for (const p of d.products.nodes) {
-    if ((p.tags || []).includes('custom-temp') || p.handle.startsWith('custom-')) continue;
-    const hit = PROFILE_HOME.find(([sub]) => p.handle.includes(sub));
-    if (!hit) { out[p.handle] = 'no home mapped — skipped'; continue; }
-    const target = profiles.find((x) => x.name.includes(hit[1]));
-    if (!target) { out[p.handle] = `❌ no profile matching "${hit[1]}"`; continue; }
-    const ids = p.variants.nodes.map((v) => v.id);
-    if (dry) { out[p.handle] = `would move ${ids.length} → ${target.name}`; continue; }
-    try {
-      const r = await adminGql(env,
-        `mutation($id: ID!, $profile: DeliveryProfileInput!) {
-           deliveryProfileUpdate(id: $id, profile: $profile) {
-             profile { id } userErrors { field message } } }`,
-        { id: target.id, profile: { variantsToAssociate: ids } });
-      const ue = r.deliveryProfileUpdate.userErrors;
-      out[p.handle] = ue.length ? `❌ ${ue[0].message}` : `moved ${ids.length} → ${target.name}`;
-    } catch (e) { out[p.handle] = '❌ ' + e.message.slice(0, 160); }
-  }
-  return json(out);
 }
 
 // ---------- GET /health ----------
