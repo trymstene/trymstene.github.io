@@ -262,15 +262,8 @@ export function productDesign(state, product) {
 
 export function productMockup(state, product, size = 900, opts = {}) {
   const style = product.options ? 'tee' : product.key;   // apparel shares one shoot
-  // ⚠️ THE MUG MOCKUP USES A SINGLE-BANANA RENDER, NOT THE PRINT FILE.
-  // renderMugPrint draws the banana TWICE (one per half) because that is what a
-  // real wrap needs. The mockup used to slice columns 0..width/2 out of it to
-  // fake the visible face — a window that does not line up with either copy, so
-  // the neighbour bled in and the face showed one banana plus a sliced fragment
-  // of the next (Trym, 2 Aug: "a cut-in-half preview sticker on it").
-  // The print file is unchanged; only what the BUYER PREVIEW is built from.
-  const design = style === 'mug' ? mugFaceArt(state) : productDesign(state, product);
-  return makeStickerMockup(state, design, size, style, opts);
+  // mugs ignore this canvas — makeStickerMockup derives its own face art
+  return makeStickerMockup(state, productDesign(state, product), size, style, opts);
 }
 
 // one banana, trimmed, on a face-shaped canvas — what a buyer sees from the front
@@ -309,7 +302,15 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
       ? makeTeePhotoMockup(design, size, opts.photo, opts.quad)
       : makeTeeMockup(design, size, opts.colorHex || '#ffffff', opts.bare);
   }
-  if (style === 'mug') return makeMugMockup(design, size, state);
+  // ⚠️ THE MUG MOCKUP BUILDS ITS OWN ART AND IGNORES `design`.
+  // renderMugPrint draws the banana TWICE — one per half — because that is what
+  // a real wrap needs, and makeMugMockup bends whatever it is handed across the
+  // ONE visible face. Hand it the print file and the buyer sees two bananas on
+  // the front of a mug that will only ever show one (Trym, 8 Aug). That is
+  // exactly what happened: this used to be the caller's job to get right, the
+  // builder passed face art and the PDP passed the print file, and only one of
+  // them could be correct. Deriving it here means no caller can get it wrong.
+  if (style === 'mug') return makeMugMockup(mugFaceArt(state), size, state);
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop
