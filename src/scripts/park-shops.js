@@ -21,7 +21,7 @@ const KEEPER_LINES = [
   'that wall is your banana, printed. tap one down and have a look.',
   'no coins in here. real things cost real money — that is what makes them real.',
   'stickers go everywhere. laptops, fridges, somebody’s forehead once.',
-  'free shipping, anywhere on earth. i checked twice.',
+  'we post anywhere on earth. i checked twice.',
 ];
 // the apron, painted in 3px blocks on the 150 grid (inner-shadowed hem + a
 // little banana on the pocket) — scaled to whatever canvas it lands on

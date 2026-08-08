@@ -2724,7 +2724,7 @@ function init() {
     'that wall is your banana, printed. tap one down and have a look.',
     'no shells in here. real things cost real money — that is what makes them real.',
     'stickers survive a beach bag. i have tested this.',
-    'free shipping, anywhere on earth. i checked twice.',
+    'we post anywhere on earth. i checked twice.',
   ];
   const hutEl = document.getElementById('bhHut');
   const hutGoods = document.getElementById('bhHutGoods');

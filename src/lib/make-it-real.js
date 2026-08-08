@@ -33,7 +33,12 @@
 // Verify by MEASURING the built page, never by reading the import list.
 import PRODUCTS from '../../shared/products.js';   // plain catalog, no engine
 
-const PRICE = { amount: 14.99, currency: 'USD' };  // mirrors sticker-core's PRICE
+// ⚠️ was a hand-copied 14.99 "mirroring sticker-core" — a mirror nobody
+// repolished when the sticker dropped to $4.99. Read the manifest instead.
+const PRICE = {
+  amount: parseFloat((PRODUCTS.find((p) => p.key === 'sticker') || {}).priceHint) || 4.99,
+  currency: 'USD',
+};
 const getProduct = (key) => PRODUCTS.find((p) => p.key === key) || null;
 const core = () => import('./sticker-core.js');
 
@@ -166,7 +171,14 @@ const money = () => '$' + PRICE.amount.toFixed(2);
  * Build the card. Everything is optional except `href`.
  * @returns HTMLElement (append it wherever)
  */
-export function offerCard({
+export function offerCard(opts = {}) {
+  // ⭐ rotate HERE, not in offerAfterDownload — the pass page and the park
+  // share card build their cards straight from offerCard, so putting the
+  // picker on the popup path alone left those two showing one fixed line.
+  return buildCard({ ...opts, head: pickHead(opts) });
+}
+
+function buildCard({
   kicker = 'Make it real',
   head = 'Your banana, as a real sticker',
   pills = ['Die-cut vinyl', 'Ships worldwide'],
@@ -255,6 +267,22 @@ export function offerWillShow() {
   try { if (sessionStorage.getItem('mir-seen')) { shownThisSession = true; return false; } } catch (e) {}
   return true;
 }
+// 🎣 ROTATING HEADLINES. Trym, 8 Aug — on "Want this sticker on your laptop?":
+// "great headline for putting the product into a situation where people use
+// stickers - more of that." So each offer carries a `heads` list of SITUATIONS,
+// not descriptions: a lid, a bottle, a 7am coffee, leaving the house. One is
+// picked per open, never the same one twice running, so the same visitor
+// meeting the card on two different pages does not read the same line.
+// `head` stays the safe default for any offer without a list.
+let lastHead = '';
+function pickHead(offer) {
+  const list = (offer && offer.heads) || [];
+  if (list.length < 2) return (offer && offer.head) || list[0];
+  const pool = list.filter((h) => h !== lastHead);
+  lastHead = pool[Math.floor(Math.random() * pool.length)];
+  return lastHead;
+}
+
 export function offerAfterDownload(opts = {}) {
   if (!offerWillShow()) return null;
   if (!QA) {
@@ -302,18 +330,37 @@ export const OFFERS = {
   yours: {
     kicker: 'Make it real', product: 'sticker',
     head: 'That banana, as a real sticker',
+    heads: [
+      'That banana, as a real sticker',
+      'Want this one on your laptop?',
+      'This one belongs on a water bottle',
+      'Stick this one on something',
+      'Real vinyl. Your banana. Your laptop lid.',
+    ],
     pills: ['Die-cut vinyl', 'Ships worldwide'],
     cta: 'See it as a sticker →', href: '/make-a-banana/sticker/', flag: 'MADE BY YOU',
   },
   yoursMug: {
     kicker: 'Make it real', product: 'mug',
     head: 'Your banana, on your morning coffee',
+    heads: [
+      'Your banana, on your morning coffee',
+      'Want to drink out of this one?',
+      'This one, holding your coffee at 7am',
+      'Your banana, on the desk every morning',
+    ],
     pills: ['11oz enamel camper mug', 'Ships worldwide'],
     cta: 'See it on a mug →', href: '/make-a-banana/mug/', flag: 'MADE BY YOU',
   },
   yoursTee: {
     kicker: 'Make it real', product: 'tee',
     head: 'Your banana, on a t-shirt',
+    heads: [
+      'Your banana, on a t-shirt',
+      'Want to wear this one out of the house?',
+      'This one, on your chest, in public',
+      'Your banana, printed and worn',
+    ],
     pills: ['Printed on demand', 'Ships worldwide'],
     cta: 'See it on a tee →', href: '/make-a-banana/tee/', flag: 'MADE BY YOU',
   },
@@ -322,6 +369,11 @@ export const OFFERS = {
     price: false,
     kicker: 'Since 1999', product: 'mug', bare: true,
     head: 'The original banana, on a real mug',
+    heads: [
+      'The original banana, on a real mug',
+      'Want the 1999 one holding your coffee?',
+      'The original, on your desk by morning',
+    ],
     pills: ['Official merch', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
@@ -329,6 +381,11 @@ export const OFFERS = {
     price: false,
     kicker: 'Since 1999', product: 'tee', bare: true,
     head: 'Wear the banana that started it',
+    heads: [
+      'Wear the banana that started it',
+      'Want to wear the 1999 original?',
+      'The one everybody knows, on a shirt',
+    ],
     pills: ['Official tee', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
@@ -337,6 +394,12 @@ export const OFFERS = {
   gallery: {
     kicker: 'Make it real', product: 'sticker',
     head: 'This one can be a real sticker',
+    heads: [
+      'This one can be a real sticker',
+      'Want this one on your laptop?',
+      'This one, stuck to your notebook',
+      'Put this one on a water bottle',
+    ],
     pills: ['Die-cut vinyl', 'Ships worldwide'],
     cta: 'Make it a sticker →', href: '/make-a-banana/sticker/', flag: 'FREE TO MAKE',
   },
@@ -347,6 +410,11 @@ export const OFFERS = {
   remix: {
     price: false, kicker: 'Since 1999', product: 'mug', bare: true,
     head: 'The banana they remixed, on a real mug',
+    heads: [
+      'The banana they remixed, on a real mug',
+      'The one they all started from, on your desk',
+      'Want the original holding your coffee?',
+    ],
     pills: ['Official merch', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
@@ -355,6 +423,11 @@ export const OFFERS = {
     price: false,
     kicker: 'Off the screen', product: 'mug', bare: true,
     head: 'It looks even better on a mug',
+    heads: [
+      'It looks even better on a mug',
+      'Off the screen and onto your desk',
+      'Want it holding your coffee instead?',
+    ],
     pills: ['Official merch', 'Ships worldwide'],
     cta: 'See the official shop →', href: '/shop/', flag: 'THE ORIGINAL',
   },
@@ -363,6 +436,12 @@ export const OFFERS = {
     price: false,
     kicker: 'Make it real', product: 'sticker', bare: true,
     head: 'A banana for your laptop, not just your chat',
+    heads: [
+      'A banana for your laptop, not just your chat',
+      'Want this one on your laptop?',
+      'It works outside the chat window too',
+      'Small enough for chat. Also for a laptop lid.',
+    ],
     pills: ['Die-cut vinyl', 'Ships worldwide'],
     cta: 'Make your own sticker →', href: '/make-a-banana/', flag: 'THE ORIGINAL',
   },

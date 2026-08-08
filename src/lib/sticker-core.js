@@ -26,7 +26,14 @@ export const STICKER = { ...SHOP, variantGid: (getProduct('sticker') || {}).shop
 
 // What the visitor will actually pay — the static fallback; localizedPrice()
 // overwrites it with exactly what checkout charges in the visitor's currency.
-export const PRICE = { amount: 14.99, currency: 'USD' };
+// ⚠️ DERIVED, never typed. Hardcoded here as 14.99 until 8 Aug, which was the
+// sticker's price before shipping stopped being baked in — so every surface
+// that showed the fallback (the download offer above all) quoted 3x the real
+// $4.99 until localizedPrice() happened to land. There is one price list.
+export const PRICE = {
+  amount: parseFloat((getProduct('sticker') || {}).priceHint) || 4.99,
+  currency: 'USD',
+};
 
 // ---- design serialization -------------------------------------------------
 // Parse a builder share-link (URLSearchParams) into a render state. URL-only:

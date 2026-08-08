@@ -18,6 +18,12 @@ import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { initTravel } from './world-travel.js';
+import PRODUCTS from '../../shared/products.js';
+
+// the sticker's price, read from the ONE manifest every surface prices from.
+// ⚠️ Declared up here with the other module consts — the rave's rule: anything
+// init() touches must exist before it, or it dies in the TDZ.
+const STICKER_PRICE = (PRODUCTS.find((p) => p.key === 'sticker') || {}).priceHint || '4.99';
 
 // THE CLUB SCREEN content — the LED wall behind the DJ blinks these one-liners
 // and, every 4th slide, a clickable house ad. Copy is deliberately silly +
@@ -46,7 +52,12 @@ const SCREEN_ADS = [
   // 🛍 the one ad that shows the PRODUCT, and the product is THEIR banana — the
   // floor is full of people who already dressed one up, so the screen just holds
   // it up as vinyl. `art:'me'` makes render() paint the outfit they're wearing.
-  { id: 'sticker', text: 'YOUR BANANA. REAL VINYL.', cta: '$14.99 · free shipping →',
+  // ⚠️ NEVER hardcode the price here again. This read "$14.99 · free shipping"
+  // until 8 Aug — the sticker had been $4.99 since the free-shipping rule was
+  // dropped, so the floor's one merch ad was quoting 3x the real price AND a
+  // shipping deal that no longer exists. STICKER_PRICE is read from the
+  // manifest at module load, the same number the PDP prints.
+  { id: 'sticker', text: 'YOUR BANANA. REAL VINYL.', cta: '$' + STICKER_PRICE + ' · ships worldwide →',
     href: '/make-a-banana/sticker/', adStyle: 'merch', art: 'me' },
   { id: 'pass',    text: 'CLAIM YOUR BANANA PASS',       cta: 'badges · gear · stats →', href: '/pass/' },
   { id: 'shop',    text: 'OFFICIAL BANANA MERCH',        cta: 'the shop →',              href: '/shop/' },
