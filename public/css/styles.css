@@ -594,6 +594,32 @@ a.project-card:hover .project-card__go { text-decoration: underline; }
   .press-belt__logos img[alt="Know Your Meme"] { height: 21px; }
   .press-belt__logos { gap: 1.2rem 2rem; }
 }
+/* ⚠️ The band is only full-bleed when it sits BETWEEN sections (the meme
+   page). Dropped inside a coloured block it ran the whole width while the
+   cards above it stop at 1100px — a white strip cutting straight through the
+   yellow (Trym). Inside a block it becomes a contained panel on the grid's
+   own width, bordered like the cards so it reads as part of the section.
+   :not(--compact) so the PDP's quiet grayscale row keeps winning. */
+.block .press-belt:not(.press-belt--compact) {
+  max-width: 1100px;
+  margin: 3rem auto 0;
+  border: var(--line);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 1.5rem 1.2rem 1.6rem;
+}
+.block .press-belt:not(.press-belt--compact) .press-belt__kicker { margin-bottom: 1rem; }
+@media (max-width: 620px) {
+  .block .press-belt:not(.press-belt--compact) {
+    margin-top: 2.2rem; box-shadow: 4px 4px 0 var(--ink); padding: 1.2rem 0.9rem 1.3rem;
+  }
+  /* the panel is now only as wide as a card, and USA Today's wordmark alone
+     is half of that — at the standalone band's sizes the five marks stacked
+     into four rows. Smaller and tighter so they read as one belt, not a list. */
+  .block .press-belt:not(.press-belt--compact) .press-belt__logos { gap: 0.9rem 1.5rem; }
+  .block .press-belt:not(.press-belt--compact) .press-belt__logos img { height: 20px; }
+  .block .press-belt:not(.press-belt--compact) .press-belt__logos img[alt="Family Guy"] { height: 30px; }
+  .block .press-belt:not(.press-belt--compact) .press-belt__logos img[alt="Know Your Meme"] { height: 18px; }
+}
 
 /* ---------- grab-the-gif box ---------- */
 /* hub CTA: example customized bananas */
