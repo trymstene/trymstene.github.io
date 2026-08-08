@@ -34,6 +34,20 @@ export const marginAt = (price, blank) => price * (1 - FEE_PCT) - FEE_FLAT - bla
 // logo slapped on it — the exact thing the crop-top bar rules out.
 const DTG_PLACE = 'front centre, 12″ wide, top edge ~3″ below the collar — the colour sprite, same file on every colourway';
 
+// 🏷 THE OFFICIAL STAMP — every garment, by default. Trym, 8 Aug: he wanted the
+// clothing to "feel official rather than products bought at RedBubble", and
+// worried a second print would just make every shirt dearer. It would: a BACK
+// print is +$5.95. The neck label is +$0.99, which the rule turns into a flat
+// +$1.00 on the shelf across all seven garments — and it is what a real
+// clothing brand actually does, inside the collar, not competing with the art.
+// `label-tag` and `label-stamp` exist in print-files/motifs/ as alternates.
+export const LABEL = { art: 'label-stack', cost: 0.99, placement: 'label_inside' };
+// what a size ACTUALLY costs us — never read `sizes[i][1]` for pricing.
+// `labelCost: 0` = the label is FREE on that product (all-over print garments
+// are cut-and-sewn, so the label prints in the same pass).
+export const costOf = (p, blank) =>
+  blank + (p.label ? (p.labelCost != null ? p.labelCost : LABEL.cost) : 0);
+
 // tier: the colour set this product is restricted to, and what it costs.
 // Pinning is a CONVENIENCE, not a safety net — Shopify prices per variant, so
 // keeping every colour is fine as long as each one is priced off its own blank
@@ -60,12 +74,13 @@ export const SLATE = [
 
   // ---- $10–$20 ------------------------------------------------------------
   { key: 'tee', name: 'Unisex classic tee', catalog: 438, blankModel: 'Gildan 5000',
-    tech: 'DTG', live: true, tier: 'all 35, both tiers, already priced per variant — leave it alone',
+    tech: 'DTG', label: true, live: true, dearest: true,
+    tier: 'all 35, both tiers, already priced per variant — leave it alone',
     art: '(already has its design)', place: 'no change',
     sizes: [['S–XL', 7.5], ['2XL', 8.95], ['3XL', 10.5], ['4XL', 11.95], ['5XL', 13.5],
             ['5XL premium colours', 17.25]] },
   { key: 'teew', name: "Women's tee", catalog: 849, blankModel: 'Gildan 64000L',
-    tech: 'DTG', tier: 'Azalea, Black, Navy, Red, Royal, RS Sport Grey, White — ⛔ drop Purple (it only exists in L) and Irish Green (its M and 2XL cost more than every other colour)',
+    tech: 'DTG', label: true, tier: 'Azalea, Black, Navy, Red, Royal, RS Sport Grey, White — ⛔ drop Purple (it only exists in L) and Irish Green (its M and 2XL cost more than every other colour)',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 7.5], ['2XL', 8.95]] },
   // ---- 👗 THE APPAREL LINE (Trym, 8 Aug: "some more clothing, women and
@@ -80,17 +95,33 @@ export const SLATE = [
   // $13.69 flat across S–3XL. Keeping them would drag the whole product to
   // $19.99 — dropping them buys a $16.99 boxy tee with ONE price in every size.
   { key: 'teew_relaxed', name: "Women's relaxed tee (boxy)", catalog: 360, blankModel: 'Bella+Canvas 6400',
-    tech: 'DTG', tier: 'Light Violet, Maroon, Mauve, Military Green, Natural, Sage, Vintage White, Heather Deep Teal, Heather Navy, Heather True Royal (10 of 22 — the flat-cost set)',
+    tech: 'DTG', label: true, tier: 'Light Violet, Maroon, Mauve, Military Green, Natural, Sage, Vintage White, Heather Deep Teal, Heather Navy, Heather True Royal (10 of 22 — the flat-cost set)',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–3XL, every size', 13.69]] },
   { key: 'longsleeve', name: 'Long sleeve tee', catalog: 356, blankModel: 'Bella+Canvas 3501',
-    tech: 'DTG', tier: 'all 16 (the two tiers are 4¢ apart — price off the higher)',
+    tech: 'DTG', label: true, tier: 'all 16 (the two tiers are 4¢ apart — price off the higher)',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['XS–XL', 18.29], ['2XL', 20.29]] },
   { key: 'tank', name: 'Unisex tank top', catalog: 248, blankModel: 'Bella+Canvas 3480',
-    tech: 'DTG', tier: 'Black, Navy, Red, True Royal, White — ⛔ drop Athletic Heather ($14.23 in every size, alone)',
+    tech: 'DTG', label: true, tier: 'Black, Navy, Red, True Royal, White — ⛔ drop Athletic Heather ($14.23 in every size, alone)',
     art: 'tee-colour', place: 'front centre, 10″ wide — a tank has a narrower panel than a tee',
     sizes: [['XS', 14.23], ['S–XL', 13.95], ['2XL', 15.5]] },
+  // ---- LIVE garments, added to the slate 8 Aug so the neck label reaches the
+  // whole wardrobe. They were never slate rows because they came back from the
+  // archive, but "official stamp on clothing BY DEFAULT" means these too.
+  { key: 'teem', name: "Men's fitted tee", catalog: 108, blankModel: 'Next Level 3600',
+    tech: 'DTG', label: true, live: true, dearest: true,
+    tier: 'all 8 — priced off the dearest tier; Desert Pink and Light Blue cost 67¢ less and simply keep more',
+    art: 'tee-colour', place: DTG_PLACE,
+    sizes: [['XS–XL', 17.25], ['2XL', 18.75], ['3XL', 20.58]] },
+  // ⭐ the label is FREE here: an all-over print garment is cut-and-sewn, so
+  // Printful prints the label in the same pass (`additional_price: null`).
+  // No price change at all — it just becomes official.
+  { key: 'croptop', name: 'Crop top (all-over print)', catalog: 200,
+    tech: 'cut-sew', label: true, labelCost: 0, live: true, tier: 'white only',
+    art: '(already has its design)', place: 'no change',
+    sizes: [['XS–XL', 19.25]] },
+
   { key: 'buttons', name: 'Buttons, set of 5', catalog: 660, tech: 'digital',
     art: 'buttons-2in', place: 'one banana per button, centred',
     sizes: [['1.25″', 7.58], ['2.25″', 8.5]] },
@@ -116,11 +147,11 @@ export const SLATE = [
   // 4XL/5XL exist on only 6 of these colours — Black, Charcoal, Graphite
   // Heather, Orange, Sport Grey, White. On the rest the ladder stops at 3XL.
   { key: 'crew', name: 'Crewneck sweatshirt', catalog: 145, blankModel: 'Gildan 18000',
-    tech: 'DTG', tier: '$16.95 colours (18 of 25) — drop Ash, Dark Chocolate, Gold, Heather Deep Royal, Heliconia, Irish Green, Purple',
+    tech: 'DTG', label: true, tier: '$16.95 colours (18 of 25) — drop Ash, Dark Chocolate, Gold, Heather Deep Royal, Heliconia, Irish Green, Purple',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 16.95], ['2XL', 18.5], ['3XL', 19.95], ['4XL', 21.5], ['5XL', 22.95]] },
   { key: 'hoodie', name: 'Hoodie', catalog: 146, blankModel: 'Gildan 18500', live: true,
-    tech: 'DTG', tier: 'all 26 colours (the two tiers are 6¢ apart — price off the higher)',
+    tech: 'DTG', label: true, tier: 'all 26 colours (the two tiers are 6¢ apart — price off the higher)',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 22.25], ['2XL', 24.19], ['3XL', 26.19], ['4XL', 28.19], ['5XL', 30.19]] },
 ];
@@ -139,17 +170,42 @@ function clickList() {
     'Every row keeps at least $2.00 after Shopify\'s 2.9% + $0.30.', ''];
   let n = 0;
   for (const p of SLATE) {
-    if (p.live) { L.push(`### ~~${p.name}~~ — already live, no change`, ''); continue; }
+    // a LIVE product with a label still needs a visit — that is the whole point
+    // of "by default". Only the untouched ones get waved through.
+    if (p.live && !p.label) { L.push(`### ~~${p.name}~~ — already live, no change`, ''); continue; }
+    if (p.live) {
+      const free = costOf(p, 0) === 0;
+      L.push(`### ✏️ ${p.name} — ALREADY LIVE, edit it`, '',
+        `- **Printful catalog** #${p.catalog}${p.blankModel ? ` (${p.blankModel})` : ''} · ${p.tech}`,
+        `- 🏷 Add the \`${LABEL.placement}\` placement with \`motifs/${LABEL.art}-black.png\` (\`-white\` on dark colourways)`,
+        free
+          ? '- 💚 **The label is free on this one** — cut-sew prints it in the same pass. **No price change.**'
+          : '- Then reprice in Shopify — the label is +$0.99, which is +$1.00 on the shelf:');
+      if (!free) {
+        L.push('', '| Size | Was | Now |', '|---|---|---|');
+        for (const [label, blank] of p.sizes) {
+          L.push(`| ${label} | $${priceFor(blank).toFixed(2)} | **$${priceFor(costOf(p, blank)).toFixed(2)}** |`);
+        }
+      }
+      L.push('');
+      continue;
+    }
     n += 1;
     L.push(`### ${n}. ${p.name}`, '',
       `- **Printful catalog** #${p.catalog}${p.blankModel ? ` (${p.blankModel})` : ''} · ${p.tech}`,
       `- **Artwork** ${p.art.split(' + ').map((a) => `\`${a}.png\``).join(' + ')}`,
       `- **Placement** ${p.place}`);
     if (p.tier) L.push(`- **Colours** ${p.tier}`);
-    L.push('', '| Size | Blank | Price | You keep |', '|---|---|---|---|');
+    if (p.label) {
+      L.push(`- 🏷 **Neck label** add the \`${LABEL.placement}\` placement and drop \`motifs/${LABEL.art}-black.png\` on it`,
+        '  (use `-white.png` on the dark colourways). +$0.99 — already in the prices below.');
+    }
+    L.push('', '| Size | Cost | Price | You keep |', '|---|---|---|---|');
     for (const [label, blank] of p.sizes) {
-      const price = priceFor(blank);
-      L.push(`| ${label} | $${blank.toFixed(2)} | **$${price.toFixed(2)}** | $${marginAt(price, blank).toFixed(2)} |`);
+      const cost = costOf(p, blank);
+      const price = priceFor(cost);
+      const shown = p.label ? `$${blank.toFixed(2)} + $${LABEL.cost.toFixed(2)}` : `$${blank.toFixed(2)}`;
+      L.push(`| ${label} | ${shown} | **$${price.toFixed(2)}** | $${marginAt(price, cost).toFixed(2)} |`);
     }
     L.push('');
   }
@@ -181,12 +237,17 @@ async function verify() {
     const stale = declared.filter((b) => !live.some((c) => Math.abs(c - b) < 0.005));
     // the catalog's floor vs the slate's floor — the gap is money left behind
     const gap = Math.min(...declared) - live[0];
-    const bad = stale.length || gap > 0.5;
+    // `dearest` = we deliberately price the WHOLE product off its priciest
+    // colour tier, so a cheaper colour existing is the plan, not drift. Without
+    // this the fitted tee cried wolf every run over a 67¢ spread it declares.
+    const bad = stale.length || (gap > 0.5 && !p.dearest);
     if (bad) drift += 1;
     console.log(`${bad ? '❌' : '✅'} ${p.name}  #${p.catalog}`);
     console.log(`     catalog $${live[0].toFixed(2)}–$${live[live.length - 1].toFixed(2)} · slate $${Math.min(...declared).toFixed(2)}–$${Math.max(...declared).toFixed(2)}`);
     if (stale.length) console.log(`     ⚠️  no variant costs ${stale.map((b) => '$' + b.toFixed(2)).join(', ')} any more`);
-    if (gap > 0.5) console.log(`     ⚠️  cheapest colour is $${gap.toFixed(2)} under the slate's floor → could sell at $${priceFor(live[0]).toFixed(2)} not $${priceFor(Math.min(...declared)).toFixed(2)}`);
+    // both sides go through costOf, or a labelled garment looks like it drifted
+    if (gap > 0.5 && p.dearest) console.log(`     ℹ️  cheapest colour is $${gap.toFixed(2)} lower — priced off the dearest tier on purpose, that colour just keeps more`);
+    else if (gap > 0.5) console.log(`     ⚠️  cheapest colour is $${gap.toFixed(2)} under the slate's floor → could sell at $${priceFor(costOf(p, live[0])).toFixed(2)} not $${priceFor(costOf(p, Math.min(...declared))).toFixed(2)}`);
   }
   console.log(`\n${drift ? `${drift} product(s) drifted — re-read the colour tiers before clicking` : 'no drift'}`);
 }
@@ -206,10 +267,12 @@ if (process.argv[1] && process.argv[1].endsWith('shop-slate.js')) {
     for (const p of SLATE) {
       console.log(`\n${p.live ? '● LIVE ' : '○ NEW  '}${p.name}   catalog #${p.catalog}  (${p.tech})`);
       if (p.tier) console.log(`        colours: ${p.tier}`);
+      if (p.label) console.log(`        🏷 ${LABEL.art} in ${LABEL.placement} (+$${costOf(p, 0).toFixed(2)})`);
       for (const [label, blank] of p.sizes) {
-        const price = priceFor(blank);
+        const cost = costOf(p, blank);
+        const price = priceFor(cost);
         low = Math.min(low, price); high = Math.max(high, price);
-        console.log(`        ${pad(label, 14)} blank $${pad(blank.toFixed(2), 7)} → $${pad(price.toFixed(2), 7)} keeps $${marginAt(price, blank).toFixed(2)}`);
+        console.log(`        ${pad(label, 14)} cost $${pad(cost.toFixed(2), 7)} → $${pad(price.toFixed(2), 7)} keeps $${marginAt(price, cost).toFixed(2)}`);
       }
     }
     console.log(`\n${SLATE.length} products · $${low.toFixed(2)} – $${high.toFixed(2)}`);
