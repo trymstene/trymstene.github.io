@@ -355,6 +355,85 @@ def m_sunburst(rays=24, ink=INK, scale=7):
     return trimmed(c)
 
 
+# ---- NECK LABELS ----------------------------------------------------------
+# The "official, not RedBubble" signal, and it is NOT a second front print.
+# Printful sells `label_inside` at +$0.99 and `label_outside` at +$2.49 on every
+# DTG garment in the slate — against +$5.95 for a back print. See §THE OFFICIAL
+# STAMP in the shop-design-direction memory for the full comparison.
+#
+# These are drawn for a ~2.5-3in tag, so the type is CHUNKY on purpose: a label
+# that needs a squint is worse than no label. Black for light garments, white
+# for dark; nothing here depends on colour.
+
+def _fit_line(d, text, font_path, target_w, start):
+    """Largest size at which `text` fits `target_w`. A neck label has a fixed
+    width and variable copy — sizing by eye guarantees one line overhangs."""
+    sz = start
+    while sz > 8 and d.textlength(text, font=ImageFont.truetype(font_path, sz)) > target_w:
+        sz -= 2
+    return ImageFont.truetype(font_path, sz)
+
+
+def l_stamp(ink=INK, scale=4):
+    """The seal, reduced to what survives at neck size: OFFICIAL over the top,
+    the domain under it, and nothing else."""
+    b = banana(2, None, scale)
+    r_in = max(b.width, b.height) * 0.60
+    ring = r_in * 1.34
+    size = int(ring * 2 + r_in * 0.30)
+    c = canvas(size, size)
+    d = ImageDraw.Draw(c)
+    cx = cy = size / 2
+    lw = max(3, int(size * 0.016))
+    d.ellipse([cx - ring, cy - ring, cx + ring, cy + ring], outline=ink, width=lw * 2)
+    place(c, b, cx, cy + r_in * 0.06)
+    t = int(size * 0.088)
+    arc_text(c, 'OFFICIAL', cx, cy, ring * 0.80, t, ink, start=-90, spread=104)
+    arc_text(c, 'TRYMSTENE.COM', cx, cy, ring * 0.80, int(t * 0.72), ink, start=90, flip=True, spread=112)
+    return trimmed(c)
+
+
+def l_tag(ink=INK, scale=3):
+    """Woven-tag proportions: mark on the left, three short lines on the right.
+    The shape a real garment label is, so it reads as one at a glance."""
+    b = banana(2, None, scale)
+    gap = int(b.width * 0.38)
+    lines = [('THE ORIGINAL', 0.30), ('DANCING BANANA', 0.46), ('TRYMSTENE.COM · 1999', 0.24)]
+    tw = int(b.width * 3.5)
+    c = canvas(b.width + gap * 2 + tw, b.height * 1.16)
+    d = ImageDraw.Draw(c)
+    place(c, b, b.width / 2 + gap * 0.4, c.height / 2)
+    fonts = [(s, _fit_line(d, s, FONT, tw, int(b.height * k * 0.5))) for s, k in lines]
+    total = sum(f.size * 1.22 for _, f in fonts)
+    y = c.height / 2 - total / 2
+    for s, f in fonts:
+        d.text((b.width + gap * 1.4, y), s, font=f, fill=ink)
+        y += f.size * 1.22
+    return trimmed(c)
+
+
+def l_stack(ink=INK, scale=3):
+    """Centred and vertical — the layout that survives being printed small and
+    slightly crooked, because nothing has to line up with anything."""
+    b = banana(2, None, scale)
+    w = int(b.width * 3.2)
+    c = canvas(w, b.height * 2.2)
+    d = ImageDraw.Draw(c)
+    place(c, b, w / 2, b.height * 0.60)
+    y = b.height * 1.16
+    rule_w = w * 0.72
+    d.rectangle([(w - rule_w) / 2, y, (w + rule_w) / 2, y + max(3, w * 0.010)], fill=ink)
+    y += b.height * 0.13
+    for s, k in [('OFFICIAL DANCING BANANA', 0.115), ('TRYMSTENE.COM', 0.098), ('SINCE 1999', 0.082)]:
+        f = _fit_line(d, s, FONT, rule_w, int(b.height * k))
+        d.text((w / 2, y), s, font=f, fill=ink, anchor='ma')
+        y += f.size * 1.42
+    return trimmed(c)
+
+
+LABELS = [('stamp', l_stamp), ('tag', l_tag), ('stack', l_stack)]
+
+
 # ---- the set --------------------------------------------------------------
 # `inks` lists the one-ink variants to emit beside the colour file. A motif that
 # depends on colour to be legible (the goldfish, the vinyl label) gets none.
@@ -402,12 +481,22 @@ def main():
             im = (REDRAW[name](ink=colour) if name in REDRAW
                   else one_ink(base, colour, INK_CUT.get(name, 170)))
             made.append((name + '-ink-' + tone, im))
+    labels = []
+    for name, fn in LABELS:
+        if only and name not in only:
+            continue
+        for tone, colour in (('black', INK), ('white', WHITE)):
+            labels.append((name + '-' + tone, fn(ink=colour)))
     for n, im in made:
         p = os.path.join(OUT, 'motif-' + n + '.png')
         im.save(p, optimize=True)
         o('  %-26s %5dx%-5d %6d KB' % (n, im.width, im.height, os.path.getsize(p) // 1024))
-    contact(made)
-    index(made)
+    for n, im in labels:
+        p = os.path.join(OUT, 'label-' + n + '.png')
+        im.save(p, optimize=True)
+        o('  label-%-20s %5dx%-5d %6d KB' % (n, im.width, im.height, os.path.getsize(p) // 1024))
+    contact(made + labels)
+    index(made, labels)
     o('%d files -> %s' % (len(made), os.path.relpath(OUT, REPO)))
 
 
@@ -435,7 +524,7 @@ BLURBS = {
 }
 
 
-def index(made):
+def index(made, labels=()):
     """A README beside the files — the folder IS the deliverable, so what each
     motif is for has to live next to it, not in a chat message."""
     L = ['# Motifs — print-ready, transparent, no product in mind', '',
@@ -457,6 +546,24 @@ def index(made):
                                                     BLURBS.get(base, '')))
     L += ['', '⚠️ Sizes are print resolution, not screen. The smallest here (`face`,',
           '2360px) is still 15″ wide at 150 DPI; the largest are over 18,000px.', '']
+    if labels:
+        L += ['', '## Neck labels — the "official, not RedBubble" stamp', '',
+              'These go in the **`label_inside` placement, not on the front**. Printful',
+              'charges **+$0.99** for it on every DTG garment in the slate (outside label',
+              '+$2.49, back print +$5.95), so it lands as **+$1.00** on the shelf price',
+              'once the pricing rule rounds up — not the +$6 a second front print costs.', '',
+              'Drawn chunky on purpose: they print at ~2.5–3″ and a label that needs a',
+              'squint is worse than no label. `-black` for light garments, `-white` for dark.', '',
+              '| Label | Size | Layout |', '|---|---|---|']
+        blurb = {'stamp': 'A round seal — OFFICIAL over the top, the domain under it.',
+                 'tag': 'Woven-tag proportions: mark left, three short lines right.',
+                 'stack': 'Centred and vertical. Survives being printed small and crooked.'}
+        for n, im in labels:
+            if not n.endswith('-black'):
+                continue
+            b = n[:-6]
+            L.append('| `label-%s` | %d×%d · black/white | %s |' % (b, im.width, im.height, blurb.get(b, '')))
+        L.append('')
     open(os.path.join(OUT, 'README.md'), 'w', encoding='utf-8').write('\n'.join(L))
 
 
