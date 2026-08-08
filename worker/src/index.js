@@ -387,34 +387,57 @@ async function handleHealth(env, ship, store, buyable) {
       out.buyable = 'no admin credentials set';
     } else try {
       const d = await adminGql(env, `query { products(first: 30) { nodes {
-        handle status tags
+        handle status tags publishedAt
         variants(first: 100) { nodes { title inventoryPolicy inventoryQuantity
-          inventoryItem { tracked } } } } } }`);
+          inventoryItem { tracked requiresShipping } } } } } }`);
       out.buyable = {};
       for (const p of d.products.nodes) {
         if ((p.tags || []).includes('custom-temp')) continue;
         const vs = p.variants.nodes;
         const blocked = vs.filter((v) => v.inventoryItem.tracked
           && v.inventoryPolicy === 'DENY' && (v.inventoryQuantity || 0) <= 0);
-        out.buyable[p.handle] = blocked.length
-          ? `❌ ${blocked.length}/${vs.length} variants blocked — tracked, 0 on hand, policy DENY`
-          : (p.status === 'ACTIVE' ? `ok (${vs.length})` : `status ${p.status}`);
+        const v0 = vs[0] || {};
+        out.buyable[p.handle] = {
+          verdict: blocked.length
+            ? `❌ ${blocked.length}/${vs.length} variants blocked — tracked, 0 on hand, policy DENY`
+            : (p.status === 'ACTIVE' ? `ok (${vs.length})` : `status ${p.status}`),
+          published: p.publishedAt ? 'yes' : '❌ NOT PUBLISHED',
+          v0: v0.title && `${v0.title}: policy=${v0.inventoryPolicy} qty=${v0.inventoryQuantity} ` +
+            `tracked=${v0.inventoryItem.tracked} requiresShipping=${v0.inventoryItem.requiresShipping}`,
+        };
       }
       // ⚠️ AND THE ONE THAT ACTUALLY BIT US: a product whose delivery profile
       // has no zone covering a country is availableForSale:FALSE in that
       // market — while still true with no @inContext at all. Inventory looks
       // perfect, the PDP renders, and nobody can buy. Left behind by the
       // free-shipping experiment's profile juggling.
+      try {
+        const m = await adminGql(env, `query { markets(first: 10) { nodes {
+          name handle enabled
+          catalogs(first: 5) { nodes { id title status
+            ... on MarketCatalog { publication { id } } } } } } }`);
+        out.markets = m.markets.nodes.map((k) =>
+          `${k.name} (${k.handle}) enabled=${k.enabled} catalogs=[${k.catalogs.nodes
+            .map((c) => `${c.title || c.id}:${c.status}`).join(', ')}]`);
+      } catch (e) { out.markets = 'error: ' + e.message.slice(0, 200); }
       const dp = await adminGql(env, `query { deliveryProfiles(first: 10) { nodes {
-        name default productVariantsCount { count }
+        id name default productVariantsCount { count }
+        profileItems(first: 20) { nodes { product { handle } } }
         profileLocationGroups { locationGroupZones(first: 20) { nodes {
           zone { name countries { code { countryCode } } }
           methodDefinitions(first: 5) { nodes { name active } } } } } } } }`);
       out.delivery = dp.deliveryProfiles.nodes.map((p) => {
         const zones = p.profileLocationGroups.flatMap((g) => g.locationGroupZones.nodes);
         const rates = zones.reduce((n, z) => n + z.methodDefinitions.nodes.filter((m) => m.active).length, 0);
-        return `${p.default ? '(default) ' : ''}${p.name}: ${p.productVariantsCount.count} variants, ` +
-          `${zones.length} zones, ${rates} active rates${rates ? '' : '  ❌ NOTHING CAN SHIP'}`;
+        return {
+          id: p.id,
+          name: (p.default ? '(default) ' : '') + p.name,
+          variants: p.productVariantsCount.count,
+          zones: zones.map((z) => z.zone.name + ' [' + z.zone.countries.length + ']'),
+          rates,
+          products: (p.profileItems ? p.profileItems.nodes.map((i) => i.product.handle) : []),
+          warn: rates ? undefined : 'NOTHING CAN SHIP',
+        };
       });
     } catch (e) { out.buyable = 'error: ' + e.message.slice(0, 200); }
   }
