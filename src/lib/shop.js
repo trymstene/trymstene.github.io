@@ -90,6 +90,21 @@ export function guideFor(title) {
   return hit ? GUIDES[hit[1]] : null;
 }
 
+// ⚠️ For products we have no chart for (stickers, posters), Printful embeds
+// its OWN size table at the END of the description — so the garments got a
+// tidy "Size guide & measurements" accordion while the sticker's measurements
+// were mushed into the middle of "Product details" as loose rows (Trym).
+// Printful marks it with this exact node, which is a stable hook: split there,
+// drop its heading (the accordion already has one) and let the size-guide
+// section claim the table.
+const GUIDE_MARK = '<p><strong class="size-guide-title">';
+function splitEmbeddedGuide(html) {
+  const i = (html || '').indexOf(GUIDE_MARK);
+  if (i < 0) return [html, null];
+  const tail = html.slice(i).replace(/^<p><strong class="size-guide-title">[\s\S]*?<\/p>/, '');
+  return [html.slice(0, i), tail.trim() || null];
+}
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // "28" / "33.07" / "38–41" (inches) -> pretty inch + cm strings
@@ -98,8 +113,10 @@ const toCm = (v) => String(v).replace(/\d+(\.\d+)?/g, (n) => String(Math.round(p
 
 // Returns the table HTML, or null when the product has no chart (the PDP then
 // hides the whole size-guide section — no "contact me for a chart" nonsense).
+// our real Printful chart when the product maps to one, otherwise whatever
+// Printful embedded in the description — either way the accordion appears
 export function sizeTableHtml(m) {
-  return sizeTableForGuide(guideFor(m.title), m.sizes);
+  return sizeTableForGuide(guideFor(m.title), m.sizes) || m.embeddedGuide || null;
 }
 
 // Same table for a KNOWN guide id (the custom tee PDP: BC3001 = catalog 71) —
@@ -133,7 +150,7 @@ function sizeTableForGuide(g, sizes) {
 function model(node) {
   const handle = node.handle;
   const title = node.title;
-  const descHtml = node.descriptionHtml || '';
+  const [descHtml, embeddedGuide] = splitEmbeddedGuide(node.descriptionHtml || '');
   const images = node.images.edges.map((e) => e.node.url);
   const featured = (node.featuredImage && node.featuredImage.url) || images[0] || '';
   const opts = {};
@@ -170,7 +187,7 @@ function model(node) {
   const cur = variants.length ? variants[0].cur : 'USD';
 
   return {
-    handle, title, descHtml, featured, images, colors, sizes, colorImage, vmap, variants, cur,
+    handle, title, descHtml, embeddedGuide, featured, images, colors, sizes, colorImage, vmap, variants, cur,
     pmin: prices.length ? Math.min(...prices) : 0,
     pmax: prices.length ? Math.max(...prices) : 0,
     url: `${SITE}/shop/${handle}/`,

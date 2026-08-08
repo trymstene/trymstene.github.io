@@ -14,7 +14,13 @@
 /* same content width + centring as .cards/.remix-grid on the rest of the site,
    so the grid doesn't sprawl left-aligned across a widescreen */
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.5rem; margin: 2rem auto 0; max-width: 1100px; }
-.shop-card__img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; background: #fff; border-bottom: var(--line); display: block; }
+/* Printful's mockups are square and DO fill the box — the "white edges" Trym
+   saw are the studio backdrop either side of a centred model, so the garment
+   itself never reaches the card. A small zoom crops backdrop, not product
+   (measured: no pure-white margin to trim, so `cover` alone changes nothing).
+   The card clips it; overflow never touches the card's own drop shadow. */
+.shop-card { overflow: hidden; }
+.shop-card__img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; background: #fff; border-bottom: var(--line); display: block; transform: scale(1.08); }
 .shop-card .project-card__body { padding: 1.1rem 1.2rem 1.2rem; }
 .shop-card h3 { font-size: 1.08rem; line-height: 1.15; margin-bottom: 0.55rem; }
 .shop-card__swatches { display: flex; align-items: center; gap: 5px; margin: 0 0 0.8rem; }
@@ -125,6 +131,15 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 .pdp-details .pdp-details__body { padding: 0 1.2rem 1.2rem; line-height: 1.6; }
 .pdp-details .pdp-details__body br { line-height: 1.9; }
 
+/* Printful's own embedded chart (stickers, posters — anything we have no
+   generated table for) arrives with no class, so it gets the same treatment
+   as .size-table and the two read as one component. Its first row is the
+   header in <td>s, hence the tr:first-child rule; our own uses <th> in a
+   <thead>, so the two never collide. */
+#size-guide table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.92rem; }
+#size-guide table td { border: 2px solid var(--ink); padding: 0.45rem 0.6rem; text-align: center; }
+#size-guide table tr:first-child td { background: var(--banana); font-weight: 800; }
+#size-guide .table-responsive { overflow-x: auto; }
 .size-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.92rem; }
 .size-table th, .size-table td { border: 2px solid var(--ink); padding: 0.45rem 0.6rem; text-align: center; }
 .size-table th { background: var(--banana); font-weight: 800; }
