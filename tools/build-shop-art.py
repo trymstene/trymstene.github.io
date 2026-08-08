@@ -26,6 +26,9 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from banana_render import one_ink  # noqa: E402  (shared with build-shop-motifs.py)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 OUT = os.path.join(REPO, 'print-files')
@@ -50,20 +53,6 @@ def sprite(i, px):
 def trim(img):
     b = img.getbbox()
     return img.crop(b) if b else img
-
-
-def one_ink(art, ink=INK):
-    """Single colour, garment showing through. Threshold on LUMINANCE — going
-    by alpha alone floods the eyes and the highlight and the mark stops
-    reading as a banana (the v1 halftone mistake, same root cause)."""
-    out = Image.new('RGBA', art.size, (0, 0, 0, 0))
-    px, op = art.load(), out.load()
-    for y in range(art.height):
-        for x in range(art.width):
-            r, g, b, a = px[x, y]
-            if a > 90 and (0.299 * r + 0.587 * g + 0.114 * b) < 170:
-                op[x, y] = ink
-    return out
 
 
 def fit(art, w, h, scale=0.92):
