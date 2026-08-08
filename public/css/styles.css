@@ -212,8 +212,16 @@ a { color: inherit; }
    is black on yellow, because it is the only link that asks for money and it
    was reading as one word among seven. Same treatment in the mobile panel and
    the desktop bar — a door people can find is worth more than a tidy row. */
+/* 🛍 THE SHOP LINK SHOUTS NOW (Trym, 8 Aug). It was the least-clicked item in
+   the nav — 89 internal arrivals from 54 people in 28 days against the
+   builder's 8,889 — and yellow-on-yellow made it read as one more word.
+   Hot pink on white is the only thing in the nav that isn't banana-coloured. */
 .nav__group--banana a.nav__shop {
-  background: var(--banana); color: var(--ink); border-top-color: var(--ink);
+  background: #ff4d6d; color: #fff; border-top-color: #ff4d6d;
+}
+.nav__group--banana a.nav__shop:hover,
+.nav__group--banana a.nav__shop:focus-visible {
+  background: var(--ink); color: #ff4d6d; border-top-color: var(--ink);
 }
 /* 🪪 the pass link once it is YOURS — face + name instead of a ticket.
    The face is a data URL baked by /pass/; the nav never loads the compositor. */
@@ -275,8 +283,8 @@ a { color: inherit; }
   /* ⚠️ the shop already LOOKS like the others' hover state, so hovering it
      flips the other way — without this it is the one link that never
      acknowledges the pointer. */
-  .nav__group--banana a.nav__shop { background: var(--banana); color: var(--ink); }
-  .nav__group--banana a.nav__shop:hover { background: var(--ink); color: var(--banana); }
+  .nav__group--banana a.nav__shop { background: #ff4d6d; color: #fff; }
+  .nav__group--banana a.nav__shop:hover { background: var(--ink); color: #ff4d6d; }
 }
 
 /* ---------- hero ---------- */

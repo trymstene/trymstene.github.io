@@ -15,13 +15,18 @@ import PixelIcon from './PixelIcon.astro';
       <a href="/make-a-banana/" data-place="nav">Make a Banana</a>
       <a href="/forge/">Pixel Forge</a>
       {/* 🛍 the ONE nav item that asks for money — inverted so it reads as a
-          door rather than one more equal word. Label shortened to "Shop"
-          (Trym, 1 Aug); the old rule was only ever "not Sticker Shop".
-          Moved out of last place to sit mid-list (Trym, 2 Aug) — it now comes
-          after the two MAKING tools, which is where someone has just made
-          something worth printing. */}
-      <a class="nav__shop" href="/shop/" data-place="nav">Shop</a>
-      <a href="/rave/">Join the Rave</a>
+          door rather than one more equal word. Sits after the two MAKING
+          tools, which is where someone has just made something worth printing.
+          ⭐ 8 Aug: HOT PINK on white and named in full. It was the least-used
+          item in the whole nav — 89 internal arrivals from 54 people in 28
+          days, against 8,889 for the builder — so blending in with the yellow
+          was costing it. Nothing to lose by shouting.
+          ⚠️ "Join the Rave" was removed from the nav here. It measured as the
+          #2 destination, but Trym: "that is all ad traffic so the data sucks".
+          The rave is still reached from the frontpage, the park, the beach,
+          the homestead and fast travel — it just no longer takes a nav slot
+          from the one item that asks for money. */}
+      <a class="nav__shop" href="/shop/" data-place="nav">Official Banana Shop</a>
       {/* nav says "Banana Gallery" (the place); SEO metadata keeps "Banana
           Memes" (the query) — Trym's call, avoids gallery-vs-memes confusion */}
       <a href="/banana-memes/">Banana Gallery</a>
@@ -84,5 +89,30 @@ import PixelIcon from './PixelIcon.astro';
     const sp = document.createElement('span');
     sp.textContent = name || 'My Pass';
     a.appendChild(sp);
+  })();
+
+  // 📊 NAV CLICKS. Asked "which nav items get clicked most?" on 8 Aug and there
+  // was no answer to give: nothing here was instrumented, so the best available
+  // proxy was pageviews-minus-landings, which cannot tell a nav click from any
+  // other link on the page. One delegated listener fixes that for good.
+  // Deliberately fires on the CAPTURE-free bubble and never preventDefaults —
+  // navigation must not wait on an analytics call.
+  (() => {
+    const nav = document.querySelector('.nav');
+    if (!nav) return;
+    nav.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href]');
+      if (!a || !nav.contains(a) || !window.gtag) return;
+      window.gtag('event', 'nav_click', {
+        // the pass link carries the visitor's own name once claimed — send the
+        // STABLE slot, never the label, or the report fills with real names
+        nav_item: a.classList.contains('nav__pass') ? 'My Pass'
+          : (a.classList.contains('nav__brand') ? 'Brand'
+            : (a.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40)),
+        nav_href: a.getAttribute('href'),
+        // the same markup is the desktop bar and the mobile slide-in panel
+        nav_mode: nav.classList.contains('open') ? 'mobile' : 'desktop',
+      });
+    });
   })();
 </script>
