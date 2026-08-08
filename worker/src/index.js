@@ -389,7 +389,7 @@ async function handleHealth(env, ship, store, buyable) {
       const d = await adminGql(env, `query { products(first: 30) { nodes {
         handle status tags publishedAt
         resourcePublications(first: 15) { nodes { isPublished publication { name } } }
-        variants(first: 100) { nodes { title inventoryPolicy inventoryQuantity
+        variants(first: 100) { nodes { title price inventoryPolicy inventoryQuantity
           inventoryItem { tracked requiresShipping } } } } } }`);
       out.buyable = {};
       for (const p of d.products.nodes) {
@@ -405,6 +405,9 @@ async function handleHealth(env, ship, store, buyable) {
           published: p.publishedAt ? 'yes' : '❌ NOT PUBLISHED',
           channels: p.resourcePublications.nodes.filter((r) => r.isPublished)
             .map((r) => r.publication.name).join(' | ') || '❌ NO CHANNELS',
+          // every variant's price — checks a new product's margin against the
+          // slate without opening Shopify, and catches a size priced by hand
+          prices: vs.map((v) => `${v.title} $${v.price}`).slice(0, 14),
           v0: v0.title && `${v0.title}: policy=${v0.inventoryPolicy} qty=${v0.inventoryQuantity} ` +
             `tracked=${v0.inventoryItem.tracked} requiresShipping=${v0.inventoryItem.requiresShipping}`,
         };
@@ -455,7 +458,10 @@ async function handleHealth(env, ship, store, buyable) {
               (l.quantities[0] ? l.quantities[0].quantity : '?')).join(', ') || '❌ NONE');
         }
       } catch (e) { out.inventory = 'error: ' + e.message.slice(0, 160); }
-      const dp = await adminGql(env, `query { deliveryProfiles(first: 10) { nodes {
+      // ⚠️ first: 10 returned exactly 10 and hid a profile — every new product
+      // type can add one (Printful splits by fulfilment category), so this has
+      // to have real headroom or the reconciliation below lies.
+      const dp = await adminGql(env, `query { deliveryProfiles(first: 30) { nodes {
         id name default productVariantsCount { count }
         profileItems(first: 20) { nodes { product { handle } } }
         profileLocationGroups { locationGroupZones(first: 20) { nodes {
