@@ -266,6 +266,44 @@ export function productMockup(state, product, size = 900, opts = {}) {
   return makeStickerMockup(state, productDesign(state, product), size, style, opts);
 }
 
+// 📷 THE MUG, PHOTOGRAPHED — Printful's own blank enamel shot with the design
+// bent onto the barrel. Trym: "hard to, as a potential customer, to understand
+// what the mug will look like, when its drawn like that - and its not an actual
+// photo with the custom banana on it." The tee lane solved this months ago with
+// real shoots; the mug was still a canvas drawing.
+// Quad measured off the 900px shot: the barrel spans x .34–.885, and the handle
+// is clear of the face, so the print sits slightly right of the photo's centre.
+export const MUG_QUAD = { cx: 0.553, top: 0.385, w: 0.345, h: 0.325 };
+
+function makeMugPhotoMockup(design, size, photo, quad) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(photo, 0, 0, size, size);
+  const q = quad || MUG_QUAD;
+  const s = Math.min((size * q.w) / design.width, (size * q.h) / design.height);
+  const dw = design.width * s, dh = design.height * s;
+  const dx = size * q.cx - dw / 2, dy = size * q.top;
+  ctx.save();
+  // ⭐ MULTIPLY is what sells it: the mug's own shading, gloss and the shadow
+  // under the rim read THROUGH the print. Drawn normally the banana sits on
+  // top like a sticker stuck to the screen, which is the whole complaint.
+  // Safe on white enamel (white × ink = ink) and transparent pixels are a no-op.
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.imageSmoothingEnabled = false;
+  const STRIPS = 48, BEND = 0.34;     // barrel curvature, as makeMugMockup
+  const curve = (u) => u * (1 - BEND) + (0.5 - Math.cos(Math.PI * u) * 0.5) * BEND;
+  for (let i = 0; i < STRIPS; i++) {
+    const t = i / STRIPS, tn = (i + 1) / STRIPS;
+    const x0 = dx + curve(t) * dw, x1 = dx + curve(tn) * dw;
+    const shrink = 1 - Math.abs(t - 0.5) * 0.10;   // the barrel's vertical pinch
+    ctx.drawImage(design,
+      Math.floor(t * design.width), 0, Math.ceil(design.width / STRIPS) + 1, design.height,
+      x0, dy + dh * (1 - shrink) / 2, Math.max(1, x1 - x0) + 1, dh * shrink);
+  }
+  ctx.restore();
+  return cv;
+}
+
 // one banana, trimmed, on a face-shaped canvas — what a buyer sees from the front
 function mugFaceArt(state) {
   const src = 1024;
@@ -310,7 +348,14 @@ export function makeStickerMockup(state, design, size = 900, style = 'sticker', 
   // exactly what happened: this used to be the caller's job to get right, the
   // builder passed face art and the PDP passed the print file, and only one of
   // them could be correct. Deriving it here means no caller can get it wrong.
-  if (style === 'mug') return makeMugMockup(mugFaceArt(state), size, state);
+  // a real photo when one has loaded, the drawn mug until then — same
+  // progressive pattern the tee uses, so the page never waits on an image
+  if (style === 'mug') {
+    const face = mugFaceArt(state);
+    return (opts.photo && opts.photo.complete && opts.photo.naturalWidth)
+      ? makeMugPhotoMockup(face, size, opts.photo, opts.quad)
+      : makeMugMockup(face, size, state);
+  }
   const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#e8e4da'; ctx.fillRect(0, 0, size, size); // paper backdrop

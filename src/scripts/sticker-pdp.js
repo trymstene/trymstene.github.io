@@ -49,11 +49,18 @@ const selHex = () => {
 // original catalog model was voted too melancholic), 'man', 'flat'.
 if (sel) sel.mstyle = 'woman';
 const photoCache = {};
-function photoFor(style, color) {
-  const k = style + '-' + color;
+// the mug has one shoot, not a style x colour grid — Printful's blank enamel
+const mugPhoto = () => photoKey('enamel');
+const photoFor = (style, color) => photoKey(style + '-' + color);
+function photoKey(k) {
   if (!photoCache[k]) {
     const img = new Image();
-    img.onload = () => { if (sel.mstyle === style && sel.color === color) paintMockup(); };
+    // repaint whenever a shot lands. The old guard compared it against the
+    // current selection, but it read `sel` — which is NULL on the mug, whose
+    // page has no colour or style to select. Repainting unconditionally is
+    // also simply correct: paintMockup always draws the CURRENT state, so a
+    // photo arriving late can never restore a stale one.
+    img.onload = () => paintMockup();
     img.src = `/assets/${product.key}/${product.key}-${k}.jpg`;
     photoCache[k] = img;
   }
@@ -87,7 +94,8 @@ function designCanvas() {
 function paintMockup() {
   const mock = makeStickerMockup(state, designCanvas(), 900, product.key, {
     colorHex: selHex(),
-    photo: apparel ? photoFor(sel.mstyle, sel.color) : null,
+    photo: apparel ? photoFor(sel.mstyle, sel.color)
+      : (product.print === 'mug' ? mugPhoto() : null),
     quad: apparel ? TEE_QUADS[sel.mstyle] : null,
   });
   const main = el('pdpMock');
