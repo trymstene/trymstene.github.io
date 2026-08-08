@@ -136,6 +136,11 @@ def tile(size, cols=4, px=20, rot=-12, scale=0.80):
 # noted. Pixel art needs no more; posters run at 150 to keep the files sane.
 
 FILES = [
+    # THE GARMENT FILE. Full colour, one file, every colourway — that is what
+    # the live line already prints and the yellow is the whole point. The
+    # one-ink pair below is a fallback that has never shipped on a garment;
+    # keep it for embroidery/patch work, not for DTG.
+    ('tee-colour',            3600, 3600, lambda w, h: fit(trim(sprite(2, 40)), w, h, 0.86)),
     ('tee-oneink-black',      3600, 3600, lambda w, h: fit(one_ink(sprite(2, 40)), w, h, 0.86)),
     ('tee-oneink-white',      3600, 3600, lambda w, h: fit(one_ink(sprite(2, 40), WHITE), w, h, 0.86)),
     ('tee-filled-3x3',        3600, 3600, lambda w, h: grid(w, h, 3, 3, px=26)),

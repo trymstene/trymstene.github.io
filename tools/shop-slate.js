@@ -25,10 +25,14 @@ export const priceFor = (blank, margin = MIN_MARGIN) =>
 const raw = (blank, margin) => (margin + blank + FEE_FLAT) / (1 - FEE_PCT);
 export const marginAt = (price, blank) => price * (1 - FEE_PCT) - FEE_FLAT - blank;
 
-// Every DTG garment carries the SAME mark, in two inks — black on light
-// colours, white on dark. Printful groups colours in the design step, so it is
-// one product with two file swaps, not two products.
-const DTG_PLACE = 'front centre, 12″ wide, top edge ~3″ below the collar — black ink on light colours, white on dark';
+// Every DTG garment carries the SAME mark: the full-colour 1999 sprite, ONE
+// file, on every colourway. That is what the live line already does — the
+// maroon tee, the green hoodie, the black fitted tee and the white crop top all
+// print the identical colour banana, and the yellow is the whole point.
+// ⚠️ The one-ink outline files (tee-oneink-black/white) are NOT for garments.
+// They were built as a fallback and they make the shop look like a blank with a
+// logo slapped on it — the exact thing the crop-top bar rules out.
+const DTG_PLACE = 'front centre, 12″ wide, top edge ~3″ below the collar — the colour sprite, same file on every colourway';
 
 // tier: the colour set this product is restricted to, and what it costs.
 // Pinning is a CONVENIENCE, not a safety net — Shopify prices per variant, so
@@ -61,8 +65,8 @@ export const SLATE = [
     sizes: [['S–XL', 7.5], ['2XL', 8.95], ['3XL', 10.5], ['4XL', 11.95], ['5XL', 13.5],
             ['5XL premium colours', 17.25]] },
   { key: 'teew', name: "Women's tee", catalog: 849, blankModel: 'Gildan 64000L',
-    tech: 'DTG', tier: '$7.50 colours (7 of 9) — drop Irish Green',
-    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
+    tech: 'DTG', tier: 'Azalea, Black, Navy, Red, Royal, RS Sport Grey, White — ⛔ drop Purple (it only exists in L) and Irish Green (its M and 2XL cost more than every other colour)',
+    art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 7.5], ['2XL', 8.95]] },
   // ---- 👗 THE APPAREL LINE (Trym, 8 Aug: "some more clothing, women and
   // men-clothing"). Chosen to fill GAPS, not to add garments: the shop had an
@@ -71,24 +75,30 @@ export const SLATE = [
   // hoodie. Skipped on purpose: the AS Colour crop tee and Mali tee (both
   // $21.99, same slot as the crop top already live) and the Bella+Canvas
   // cropped hoodie ($44.99 — its blank alone is $40.95).
+  // ⚠️ Black and White are DELIBERATELY dropped from this one. They are the
+  // only two colours Bella+Canvas charges $16.95 for; every other colour is
+  // $13.69 flat across S–3XL. Keeping them would drag the whole product to
+  // $19.99 — dropping them buys a $16.99 boxy tee with ONE price in every size.
   { key: 'teew_relaxed', name: "Women's relaxed tee (boxy)", catalog: 360, blankModel: 'Bella+Canvas 6400',
-    tech: 'DTG', tier: '22 colours',
-    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
-    sizes: [['S–XL', 16.95], ['2XL–3XL', 18.5]] },
+    tech: 'DTG', tier: 'Light Violet, Maroon, Mauve, Military Green, Natural, Sage, Vintage White, Heather Deep Teal, Heather Navy, Heather True Royal (10 of 22 — the flat-cost set)',
+    art: 'tee-colour', place: DTG_PLACE,
+    sizes: [['S–3XL, every size', 13.69]] },
   { key: 'longsleeve', name: 'Long sleeve tee', catalog: 356, blankModel: 'Bella+Canvas 3501',
-    tech: 'DTG', tier: '16 colours',
-    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
+    tech: 'DTG', tier: 'all 16 (the two tiers are 4¢ apart — price off the higher)',
+    art: 'tee-colour', place: DTG_PLACE,
     sizes: [['XS–XL', 18.29], ['2XL', 20.29]] },
   { key: 'tank', name: 'Unisex tank top', catalog: 248, blankModel: 'Bella+Canvas 3480',
-    tech: 'DTG', tier: '6 colours',
-    art: 'tee-oneink-black + tee-oneink-white', place: 'front centre, 10″ wide — a tank has a narrower panel than a tee',
-    sizes: [['XS–XL', 14.23], ['2XL', 16.23]] },
+    tech: 'DTG', tier: 'Black, Navy, Red, True Royal, White — ⛔ drop Athletic Heather ($14.23 in every size, alone)',
+    art: 'tee-colour', place: 'front centre, 10″ wide — a tank has a narrower panel than a tee',
+    sizes: [['XS', 14.23], ['S–XL', 13.95], ['2XL', 15.5]] },
   { key: 'buttons', name: 'Buttons, set of 5', catalog: 660, tech: 'digital',
     art: 'buttons-2in', place: 'one banana per button, centred',
     sizes: [['1.25″', 7.58], ['2.25″', 8.5]] },
+  // 8″×10″ found by --verify: it lands at $9.99 and keeps MORE ($2.45) than the
+  // 11″×14″ it replaces ($2.09). A poster under $10 is a better bottom rung.
   { key: 'poster', name: 'Poster (matte)', catalog: 1, tech: 'digital',
     art: 'poster-18x24', place: 'full bleed — the same file scales to all three sizes',
-    sizes: [['11″×14″', 9.25], ['12″×18″', 11.75], ['18″×24″', 13.5]] },
+    sizes: [['8″×10″', 6.95], ['12″×18″', 11.75], ['18″×24″', 13.5]] },
   { key: 'case', name: 'iPhone case (clear)', catalog: 181, tech: 'UV',
     art: 'case-iphone', place: 'full bleed, pattern runs off every edge',
     sizes: [['all 31 models', 11.25]] },
@@ -103,13 +113,15 @@ export const SLATE = [
   // ⛔ DROPPED — the tote already in the shop wins on both sides: a $10.50
   // blank against this one's $16.75, so it sells at $14.99 not $19.99 AND
   // keeps $3.76 not $2.36. Always check the archive before adding a category.
+  // 4XL/5XL exist on only 6 of these colours — Black, Charcoal, Graphite
+  // Heather, Orange, Sport Grey, White. On the rest the ladder stops at 3XL.
   { key: 'crew', name: 'Crewneck sweatshirt', catalog: 145, blankModel: 'Gildan 18000',
     tech: 'DTG', tier: '$16.95 colours (18 of 25) — drop Ash, Dark Chocolate, Gold, Heather Deep Royal, Heliconia, Irish Green, Purple',
-    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
+    art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 16.95], ['2XL', 18.5], ['3XL', 19.95], ['4XL', 21.5], ['5XL', 22.95]] },
   { key: 'hoodie', name: 'Hoodie', catalog: 146, blankModel: 'Gildan 18500', live: true,
     tech: 'DTG', tier: 'all 26 colours (the two tiers are 6¢ apart — price off the higher)',
-    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
+    art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 22.25], ['2XL', 24.19], ['3XL', 26.19], ['4XL', 28.19], ['5XL', 30.19]] },
 ];
 
@@ -151,8 +163,38 @@ function clickList() {
   return L.join('\n');
 }
 
+// --verify: re-fetch every blank from Printful's public catalog and flag drift.
+// This existed only in the header comment until 8 Aug, when it turned out the
+// relaxed tee and the tank had both moved a whole price rung under us — the
+// relaxed tee was specced at $19.99 off a $16.95 blank while 16 of its 22
+// colours had dropped to $13.69, a $3.00 gap on every sale. Costs move; a
+// hand-written slate can only stay honest if something re-reads the source.
+async function verify() {
+  let drift = 0;
+  for (const p of SLATE) {
+    const j = await (await fetch(`https://api.printful.com/products/${p.catalog}`)).json();
+    if (!j.result || !j.result.variants) { console.log(`⚠️  #${p.catalog} ${p.name} — catalog fetch failed`); continue; }
+    const costs = j.result.variants.map((v) => +v.price);
+    const live = [...new Set(costs)].sort((a, b) => a - b);
+    const declared = p.sizes.map(([, b]) => b);
+    // a declared cost that no longer exists anywhere in the catalog is stale
+    const stale = declared.filter((b) => !live.some((c) => Math.abs(c - b) < 0.005));
+    // the catalog's floor vs the slate's floor — the gap is money left behind
+    const gap = Math.min(...declared) - live[0];
+    const bad = stale.length || gap > 0.5;
+    if (bad) drift += 1;
+    console.log(`${bad ? '❌' : '✅'} ${p.name}  #${p.catalog}`);
+    console.log(`     catalog $${live[0].toFixed(2)}–$${live[live.length - 1].toFixed(2)} · slate $${Math.min(...declared).toFixed(2)}–$${Math.max(...declared).toFixed(2)}`);
+    if (stale.length) console.log(`     ⚠️  no variant costs ${stale.map((b) => '$' + b.toFixed(2)).join(', ')} any more`);
+    if (gap > 0.5) console.log(`     ⚠️  cheapest colour is $${gap.toFixed(2)} under the slate's floor → could sell at $${priceFor(live[0]).toFixed(2)} not $${priceFor(Math.min(...declared)).toFixed(2)}`);
+  }
+  console.log(`\n${drift ? `${drift} product(s) drifted — re-read the colour tiers before clicking` : 'no drift'}`);
+}
+
 if (process.argv[1] && process.argv[1].endsWith('shop-slate.js')) {
-  if (process.argv.includes('--list')) {
+  if (process.argv.includes('--verify')) {
+    await verify();
+  } else if (process.argv.includes('--list')) {
     const fs = await import('node:fs');
     const path = new URL('../print-files/CLICK-LIST.md', import.meta.url);
     fs.mkdirSync(new URL('../print-files/', import.meta.url), { recursive: true });
