@@ -98,6 +98,11 @@ export default {
       }
       if (url.pathname.startsWith('/d/')) return handleServe(request, env, url);
       if (url.pathname === '/webhook/shopify') return handleWebhook(request, env, url);
+      // 🖨 GET /pf — what Printful actually holds for the Shopify store, via
+      // the v2 API (v1 refuses platform stores outright). Read-only. This is
+      // the only way to learn which CATALOG variant sits behind each Shopify
+      // variant, which is what a real margin check needs.
+      if (url.pathname === '/pf') return handlePf(request, env, url);
       if (url.pathname === '/health') {
         return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1',
           url.searchParams.get('buyable') === '1');
@@ -368,6 +373,32 @@ async function handleServe(request, env, url) {
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
+}
+
+// ---------- GET /pf ----------
+// Printful's v2 API, read-only. v1's /store/products refuses this store
+// ("applies only to Manual Order / API platform") but v2 answers fine, so this
+// is where the CATALOG variant behind each Shopify variant finally becomes
+// visible — the number a real margin check needs, and the reason the official
+// line was once priced by feel (nobody could see the enamel mug cost $12.25).
+async function handlePf(request, env, url) {
+  const tok = env.PRINTFUL_TOKEN_SHOP;
+  if (!tok) return json({ error: 'no PRINTFUL_TOKEN_SHOP' }, 503);
+  const pf = (path) => fetch('https://api.printful.com' + path, {
+    headers: { Authorization: `Bearer ${tok}` },
+  }).then((r) => r.json());
+  const only = url.searchParams.get('only');       // substring of the name
+  const list = await pf('/v2/sync-products?limit=50');
+  if (!Array.isArray(list.data)) return json({ error: String(JSON.stringify(list)).slice(0, 300) }, 502);
+  const out = {};
+  for (const p of list.data) {
+    if (only && !p.name.toLowerCase().includes(only.toLowerCase())) continue;
+    const v = await pf(`/v2/sync-products/${p.id}/sync-variants?limit=100`);
+    out[p.name] = Array.isArray(v.data)
+      ? v.data.map((x) => `${x.name.replace(p.name, '').replace(/^\s*[-–]\s*/, '')} :: catalog ${x.catalog_variant_id} :: retail ${x.retail_price}`)
+      : String(JSON.stringify(v)).slice(0, 200);
+  }
+  return json(out);
 }
 
 // ---------- GET /health ----------
