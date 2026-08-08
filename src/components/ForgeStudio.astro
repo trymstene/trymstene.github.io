@@ -145,6 +145,16 @@ const items = mode === 'items';
     font: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer;
     padding: 0.55rem 0.6rem; border: 3px solid var(--ink); background: var(--paper);
     color: var(--ink); text-align: center; border-radius: 4px;
+    /* ⚠️ OPTS OUT OF THE GLOBAL BUTTON NOWRAP (styles.css: "button labels never
+       line-break"). That rule is right for ordinary buttons, but this is a
+       CARD button with its own sub-line, and "Homestead furniture" needs 170px
+       to stay on one line — one notch of browser zoom, or the display font not
+       yet swapped in, and it spilled straight out past the border (Trym).
+       Wrapping can only ever kick in where the label would otherwise overflow,
+       so the one-line look is kept everywhere it actually fits. */
+    white-space: normal;
+    /* both cards keep the same height whichever one wraps */
+    display: flex; flex-direction: column; justify-content: center;
   }
   .fg-kind__btn small {
     display: block; font-size: 0.66rem; font-weight: 600; opacity: 0.75; margin-top: 2px;

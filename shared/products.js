@@ -21,6 +21,9 @@
 //   printfulVariantId  Printful catalog variant = what actually gets printed.
 //   live               true = sellable (tile links to its PDP, worker fulfils).
 //                      false = teaser: shown with a "soon" ribbon, not sold.
+//   photo              the mockup SHOOT this product composites onto — the
+//                      real blank, photographed by Printful, for the exact
+//                      variant that ships. Absent = the drawn canvas mockup.
 //   priceHint          display fallback only, in USD (store currency since
 //                      15 Jul 2026); Shopify is the source of truth for the
 //                      real (localized) price at checkout.
@@ -68,6 +71,7 @@ const PRODUCTS = [
     },
     size: 'S–2XL',
     material: 'soft unisex cotton tee (Bella+Canvas 3001)',
+    photo: '/assets/tee/tee-woman-white.jpg',
     priceHint: '16.99',
     live: true,
   },
@@ -98,6 +102,8 @@ const PRODUCTS = [
     print: 'mug',
     size: '12 oz (0.35 l)',
     material: 'white enamel camper mug with a rolled rim',
+    // Printful's own catalog shot for variant 11189 — the exact mug that ships
+    photo: '/assets/mug/mug-enamel.jpg',
     // $12.25 blank; shipping is CHARGED at checkout, not baked in.
     priceHint: '14.99',
     live: true, // ⚠️ flipped WITH Shopify DRAFT→ACTIVE — the two must never disagree

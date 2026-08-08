@@ -260,10 +260,37 @@ export function productDesign(state, product) {
   return cv;
 }
 
+// The mockup shoot for a product, cached across every surface on the page.
+// ⚠️ `photo` lives on the product in shared/products.js so adding one is a
+// single line there, not another branch here. Canvas rendering is synchronous
+// and an Image is not: the FIRST call gets a blank image and the drawn
+// fallback, so callers that care pass onPhotoReady and repaint.
+const shootCache = {};
+export function productPhoto(product, onLoad) {
+  const src = product && product.photo;
+  if (!src || typeof Image === 'undefined') return null;
+  let img = shootCache[src];
+  if (!img) {
+    img = shootCache[src] = new Image();
+    img.src = src;
+  }
+  if (onLoad && !(img.complete && img.naturalWidth)) {
+    img.addEventListener('load', onLoad, { once: true });
+  }
+  return img;
+}
+
 export function productMockup(state, product, size = 900, opts = {}) {
   const style = product.options ? 'tee' : product.key;   // apparel shares one shoot
+  // ⭐ THE PHOTO IS THE DEFAULT, NOT THE CALLER'S JOB. Every surface that shows
+  // a product — the /shop/ custom tiles, the download-moment offer, the park
+  // and beach shops — went through here, and each had to remember to load and
+  // pass a shoot. Only the tee's callers ever did, so the mug stayed a drawing
+  // everywhere (Trym, on the shop tiles). Pass `photo: null` to opt out.
+  const photo = opts.photo !== undefined ? opts.photo : productPhoto(product, opts.onPhotoReady);
+  const quad = opts.quad !== undefined ? opts.quad : (product.options ? TEE_QUADS.woman : null);
   // mugs ignore this canvas — makeStickerMockup derives its own face art
-  return makeStickerMockup(state, productDesign(state, product), size, style, opts);
+  return makeStickerMockup(state, productDesign(state, product), size, style, { ...opts, photo, quad });
 }
 
 // 📷 THE MUG, PHOTOGRAPHED — Printful's own blank enamel shot with the design

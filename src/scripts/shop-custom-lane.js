@@ -16,7 +16,7 @@
 // brain onto a page that is otherwise nearly JS-free, so the import only happens
 // when the lane actually scrolls into view. Most shop visits never reach it.
 import { assetsReady } from '../lib/banana-engine.js';
-import { productMockup, TEE_QUADS, ensureCaptionFont } from '../lib/sticker-core.js';
+import { productMockup, ensureCaptionFont } from '../lib/sticker-core.js';
 import PRODUCTS from '../../shared/products.js';
 
 const BY_KEY = Object.fromEntries(PRODUCTS.map((p) => [p.key, p]));
@@ -37,15 +37,6 @@ function myOutfit() {
   };
 }
 
-// the apparel shoot, so the tee tile is a photo like its official neighbours
-// rather than the fallback pixel garment
-function teePhoto(onLoad) {
-  const img = new Image();
-  img.onload = onLoad;
-  img.src = '/assets/tee/tee-woman-white.jpg';
-  return img;
-}
-
 export async function paintLane(root) {
   const slots = [...root.querySelectorAll('[data-custom-preview]')];
   if (!slots.length) return;
@@ -53,31 +44,25 @@ export async function paintLane(root) {
   await assetsReady();
   await ensureCaptionFont(state);
 
-  const paint = (slot, product, photo) => {
+  // ⭐ NO photo/quad passed: productMockup picks each product's own shoot from
+  // shared/products.js. This used to hand the tee its photo and hard-code
+  // `null` for everything else, which is why the mug tile stayed a drawing
+  // next to real merch (Trym). A tile that has a shoot now gets it for free.
+  const paint = (slot, product) => {
     try {
       const cv = productMockup(state, product, 420, {
         colorHex: '#ffffff',
-        photo: product.options ? photo : null,
-        quad: product.options ? TEE_QUADS.woman : null,
+        // the shoot lands after this paint — redraw that one tile when it does
+        onPhotoReady: () => paint(slot, product),
       });
       cv.className = 'shopcustom__cv';
       slot.replaceChildren(cv);
     } catch (e) { /* a tile is decoration; never take the shop down for one */ }
   };
 
-  let photo = null;
-  const apparel = slots.some((s) => (BY_KEY[s.closest('[data-custom]').dataset.custom] || {}).options);
-  if (apparel) {
-    // the photo arrives late; repaint the apparel tiles when it does rather
-    // than blocking every other tile on one JPEG
-    photo = teePhoto(() => slots.forEach((slot) => {
-      const p = BY_KEY[slot.closest('[data-custom]').dataset.custom];
-      if (p && p.options) paint(slot, p, photo);
-    }));
-  }
   for (const slot of slots) {
     const p = BY_KEY[slot.closest('[data-custom]').dataset.custom];
-    if (p) paint(slot, p, photo);
+    if (p) paint(slot, p);
   }
 
   // only claim it's theirs when it actually is — the fallback is a demo banana
