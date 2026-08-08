@@ -564,6 +564,29 @@ async function handleHealth(env, ship, store, buyable) {
           const r = await pf('/store/products' + q);
           return Array.isArray(r.result) ? r.result : { _said: JSON.stringify(r).slice(0, 140) };
         };
+        // ⚖️ CAN THIS TOKEN CREATE PRODUCTS AT ALL? v1 /store/products refuses
+        // Shopify-platform stores outright ("applies only to Manual Order /
+        // API platform"), which is why 13 products have to be clicked by hand.
+        // Probe v2 read-only before assuming the newer API inherits the ban —
+        // a yes would turn a morning of clicking into one script.
+        const v2 = await fetch('https://api.printful.com/v2/catalog-products?limit=1', {
+          headers: { Authorization: `Bearer ${tok}` },
+        }).then((r) => r.status + ' ' + JSON.stringify(r.ok ? { ok: 1 } : {}).slice(0, 60))
+          .catch((e) => 'err ' + String(e && e.message).slice(0, 60));
+        const v2sync = await fetch('https://api.printful.com/v2/sync-products?limit=1', {
+          headers: { Authorization: `Bearer ${tok}` },
+        }).then(async (r) => r.status + ' ' + (await r.text()).slice(0, 120))
+          .catch((e) => 'err ' + String(e && e.message).slice(0, 60));
+        // Deliberately EMPTY body: a 422/400 validation complaint proves the
+        // endpoint is open to us and only the payload is missing, while 403 or
+        // the platform ban proves it is closed. Creates nothing either way.
+        const v2post = await fetch('https://api.printful.com/v2/sync-products', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+          body: '{}',
+        }).then(async (r) => r.status + ' ' + (await r.text()).slice(0, 220))
+          .catch((e) => 'err ' + String(e && e.message).slice(0, 60));
+        out.store[label + '_v2'] = { catalog: v2, sync_products: v2sync, can_create: v2post };
         const synced = await grab('?limit=50');
         const ignored = await grab('?status=ignored&limit=50');
         out.store[label + '_counts'] = {
