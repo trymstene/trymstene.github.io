@@ -486,7 +486,11 @@ def main():
         if only and name not in only:
             continue
         for tone, colour in (('black', INK), ('white', WHITE)):
-            labels.append((name + '-' + tone, fn(ink=colour)))
+            # 8% transparent breathing room. Printful FITS the file to its label
+            # area, so art trimmed tight to the ink lands hard against the print
+            # boundary — the margin is what keeps the type off the edge.
+            im = fn(ink=colour)
+            labels.append((name + '-' + tone, trimmed(im, int(max(im.size) * 0.08))))
     for n, im in made:
         p = os.path.join(OUT, 'motif-' + n + '.png')
         im.save(p, optimize=True)
