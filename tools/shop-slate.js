@@ -64,6 +64,25 @@ export const SLATE = [
     tech: 'DTG', tier: '$7.50 colours (7 of 9) — drop Irish Green',
     art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
     sizes: [['S–XL', 7.5], ['2XL', 8.95]] },
+  // ---- 👗 THE APPAREL LINE (Trym, 8 Aug: "some more clothing, women and
+  // men-clothing"). Chosen to fill GAPS, not to add garments: the shop had an
+  // entry tee, a men's fitted tee, a crop top and a hoodie — so no women's cut
+  // at the entry price, nothing long-sleeved, and nothing between a tee and a
+  // hoodie. Skipped on purpose: the AS Colour crop tee and Mali tee (both
+  // $21.99, same slot as the crop top already live) and the Bella+Canvas
+  // cropped hoodie ($44.99 — its blank alone is $40.95).
+  { key: 'teew_relaxed', name: "Women's relaxed tee (boxy)", catalog: 360, blankModel: 'Bella+Canvas 6400',
+    tech: 'DTG', tier: '22 colours',
+    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
+    sizes: [['S–XL', 16.95], ['2XL–3XL', 18.5]] },
+  { key: 'longsleeve', name: 'Long sleeve tee', catalog: 356, blankModel: 'Bella+Canvas 3501',
+    tech: 'DTG', tier: '16 colours',
+    art: 'tee-oneink-black + tee-oneink-white', place: DTG_PLACE,
+    sizes: [['XS–XL', 18.29], ['2XL', 20.29]] },
+  { key: 'tank', name: 'Unisex tank top', catalog: 248, blankModel: 'Bella+Canvas 3480',
+    tech: 'DTG', tier: '6 colours',
+    art: 'tee-oneink-black + tee-oneink-white', place: 'front centre, 10″ wide — a tank has a narrower panel than a tee',
+    sizes: [['XS–XL', 14.23], ['2XL', 16.23]] },
   { key: 'buttons', name: 'Buttons, set of 5', catalog: 660, tech: 'digital',
     art: 'buttons-2in', place: 'one banana per button, centred',
     sizes: [['1.25″', 7.58], ['2.25″', 8.5]] },
