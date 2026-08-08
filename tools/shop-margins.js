@@ -21,7 +21,7 @@
 // alternative — a price per colour+size — is 80 rows and how the flat $23.99
 // hoodie came to lose $7.20 a sale in the first place.
 
-import { priceFor, marginAt, MIN_MARGIN } from './shop-slate.js';
+import { priceFor, marginAt, MIN_MARGIN, LABEL } from './shop-slate.js';
 
 const WORKER = 'https://banana-sticker.trymstene.workers.dev/pf';
 const only = process.argv.slice(2).map((s) => s.toLowerCase());
@@ -78,7 +78,16 @@ async function collect(name, rows) {
 const pf = await get(WORKER);
 const wantList = only.includes('--list');
 const wantJson = only.includes('--json');
-const names = only.filter((o) => o !== '--list' && o !== '--json');
+// --label  the product carries the neck label; its $0.99 is part of the cost
+// --exact  set EVERY band to the rule, not only the ones sitting under it.
+//          A product Printful just created carries Printful's suggested retail,
+//          which is neither our rule nor consistent between sizes — "already
+//          clears the rule" is the wrong answer for a brand-new product.
+const withLabel = only.includes('--label');
+const exact = only.includes('--exact');
+const FLAGS = ['--list', '--json', '--label', '--exact'];
+const names = only.filter((o) => !FLAGS.includes(o));
+const costWith = (blank) => blank + (withLabel ? LABEL.cost : 0);
 // product NAME -> { size: price } for the worker to apply. Computed here, where
 // the numbers can be read and checked, rather than derived server-side.
 const payload = {};
@@ -94,7 +103,7 @@ for (const [name, rows] of Object.entries(pf)) {
   if (names.length && !names.some((o) => name.toLowerCase().includes(o))) continue;
   if (!Array.isArray(rows)) { console.log(`\n${name}: ${rows}`); continue; }
   const bands = await collect(name, rows);
-  const needs = bands.filter((b) => Math.min(...b.retails) < priceFor(b.cost));
+  const needs = bands.filter((b) => exact || Math.min(...b.retails) < priceFor(costWith(b.cost)));
   console.log(`\n${name}  (${rows.length} variants, ${bands.length} size bands)`);
   if (wantList) {
     doc.push(`### ${name}`, '');
@@ -105,16 +114,17 @@ for (const [name, rows] of Object.entries(pf)) {
   }
   for (const b of bands) {
     const now = [...b.retails].sort((x, y) => x - y);
-    const want = priceFor(b.cost);
-    const keepsNow = marginAt(now[0], b.cost);
-    const ok = now[0] >= want;
+    const cost = costWith(b.cost);
+    const want = priceFor(cost);
+    const keepsNow = marginAt(now[0], cost);
+    const ok = exact ? (now.length === 1 && now[0] === want) : now[0] >= want;
     if (!ok) anyLoss = true;
     console.log(`   ${(ok ? '✅' : keepsNow < 0 ? '💀' : '⚠️ ').padEnd(3)} ${b.size.padEnd(10)}` +
-      `${String(b.n).padStart(3)}v  blank $${b.cost.toFixed(2).padStart(6)}  now $${now[0].toFixed(2).padStart(6)}` +
-      (ok ? `  keeps $${keepsNow.toFixed(2)}` : `  → $${want.toFixed(2)}  (keeps $${marginAt(want, b.cost).toFixed(2)})`));
+      `${String(b.n).padStart(3)}v  cost $${cost.toFixed(2).padStart(6)}  now $${now[0].toFixed(2).padStart(6)}` +
+      (ok ? `  keeps $${keepsNow.toFixed(2)}` : `  → $${want.toFixed(2)}  (keeps $${marginAt(want, cost).toFixed(2)})`));
     if (wantList && !ok) {
-      doc.push(`| ${b.size} | ${b.n} | $${b.cost.toFixed(2)} | $${now[0].toFixed(2)} | ` +
-        `**$${want.toFixed(2)}** | $${marginAt(want, b.cost).toFixed(2)} |`);
+      doc.push(`| ${b.size} | ${b.n} | $${cost.toFixed(2)} | $${now[0].toFixed(2)} | ` +
+        `**$${want.toFixed(2)}** | $${marginAt(want, cost).toFixed(2)} |`);
     }
     if (!ok) {
       (payload[name] = payload[name] || {})[b.size] = want.toFixed(2);

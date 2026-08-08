@@ -6,6 +6,7 @@
     python tools/shopify-product.py show <handle>     # one product in full
     python tools/shopify-product.py tm [--yes]        # ™ on every official title
     python tools/shopify-product.py price <handle> <amount> [--sku S] [--yes]
+    python tools/shopify-product.py sizes <handle> '{"S":"12.99",...}' [--yes]
     python tools/shopify-product.py status <handle> ACTIVE|DRAFT [--yes]
     python tools/shopify-product.py create spec.json  # DRY RUN — prints the mutation
     python tools/shopify-product.py create spec.json --yes
@@ -247,6 +248,66 @@ def cmd_price(handle, amount, sku, go):
     print('\n✓ %s now %s across %d variant(s)' % (p['title'], amount, len(vs)))
 
 
+def size_of(title):
+    """"Maroon / 2XL" -> "2XL"; "Default Title" -> "One size". Same rule as
+    tools/shop-margins.js, which is where the price map comes from."""
+    tail = title.split('/')[-1].strip()
+    return 'One size' if tail.lower() == 'default title' else tail
+
+
+def cmd_sizes(handle, spec, go):
+    """Per-SIZE prices, which is what a garment actually needs — `price` sets one
+    flat amount across every variant and that is how a tee once shipped at
+    $19.99 over blanks up to $17.55.
+
+        python tools/shopify-product.py sizes <handle> '{"S":"12.99","2XL":"14.99"}'
+
+    Refuses to run if any variant's size is missing from the map. A partial
+    reprice is worse than none: the product goes out with two pricing systems
+    in it and nothing says which rows were skipped."""
+    try:
+        want = json.loads(spec)
+    except ValueError as e:
+        sys.exit('✗ price map is not JSON: %s' % e)
+    tok = token()
+    d = gql('''query($h:String!){ productByHandle(handle:$h){ id title
+      variants(first: 250) { edges { node { id title price } } } } }''', {'h': handle}, tok)
+    p = d.get('productByHandle')
+    if not p:
+        sys.exit('✗ no product with handle ' + handle)
+    vs = [e['node'] for e in p['variants']['edges']]
+    missing = sorted({size_of(v['title']) for v in vs} - set(want))
+    if missing:
+        sys.exit('✗ no price given for: %s\n  (the map covers %s)'
+                 % (', '.join(missing), ', '.join(sorted(want))))
+
+    plan, unchanged = {}, 0
+    for v in vs:
+        s = size_of(v['title'])
+        if str(want[s]) == v['price']:
+            unchanged += 1
+            continue
+        plan.setdefault((s, v['price'], str(want[s])), []).append(v['id'])
+    print('%s — %d variants' % (p['title'], len(vs)))
+    for (s, was, now), ids in sorted(plan.items()):
+        print('  %-10s %3dv   $%-7s → $%s' % (s, len(ids), was, now))
+    if unchanged:
+        print('  %d variant(s) already correct' % unchanged)
+    total = sum(len(i) for i in plan.values())
+    if not total:
+        print('\nNothing to change.')
+        return
+    if not go:
+        print('\n%d variant(s) would change. Re-run with --yes.' % total)
+        return
+    flat = [{'id': i, 'price': now} for (_s, _w, now), ids in plan.items() for i in ids]
+    for k in range(0, len(flat), 100):            # productVariantsBulkUpdate caps at 100
+        ok(gql(VUPDATE, {'productId': p['id'], 'variants': flat[k:k + 100]}, tok),
+           'productVariantsBulkUpdate')
+        print('  ✓ %d/%d' % (min(k + 100, len(flat)), len(flat)))
+    print('\n✓ %s repriced across %d variant(s)' % (p['title'], len(flat)))
+
+
 RENAME = '''mutation($input: ProductInput!) {
   productUpdate(input: $input) { product { id title } userErrors { field message } } }'''
 
@@ -300,6 +361,8 @@ def main():
         cmd_status(a[1], a[2], go)
     elif cmd == 'price':
         cmd_price(a[1], a[2], (a[a.index('--sku') + 1] if '--sku' in a else None), go)
+    elif cmd == 'sizes':
+        cmd_sizes(a[1], a[2], go)
     elif cmd == 'tm':
         cmd_tm(go)
     elif cmd == 'create':
