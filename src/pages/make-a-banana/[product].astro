@@ -10,6 +10,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import PressBelt from '../../components/PressBelt.astro';
 import PRODUCTS from '../../../shared/products.js';
+import { customFaqs } from '../../lib/product-faq.js';
 import { sizeTableForGuideId } from '../../lib/shop.js';
 
 export function getStaticPaths() {
@@ -25,6 +26,9 @@ const sizeGuide = p.options ? sizeTableForGuideId(p.options.sizeGuideId, p.optio
 // cross-sell: the same design on every OTHER live product (manifest-driven —
 // a new product automatically appears here). Design params attach client-side.
 const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
+const faqs = customFaqs({
+  name: p.name, sizes: (p.options && p.options.sizes) || [], hasSizeGuide: !!sizeGuide,
+});
 ---
 <BaseLayout
   title={`Your custom Dancing Banana ${nameLc} | Trym Stene`}
@@ -240,6 +244,25 @@ const others = PRODUCTS.filter((x) => x.live && x.key !== p.key);
           <div class="pdp-details__body" set:html={sizeGuide}></div>
         </details>
       )}
+
+      {/* the same questions the official shop answers, worded once in
+          src/lib/product-faq.js — but this list is the CUSTOM one, because a
+          product made to your own design raises different worries: does it
+          print the banana I actually made, will the pixels go blurry, and can I
+          send it back (no — that is the trade for it being yours).
+          ⚠️ No FAQPage schema here: these pages are noindex, so emitting it
+          would be markup for a result that can never appear. */}
+      <details class="pdp-details pdp-faq">
+        <summary>Questions people ask</summary>
+        <div class="pdp-details__body">
+          {faqs.map((f) => (
+            <div class="pdp-faq__item">
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   </section>
 
