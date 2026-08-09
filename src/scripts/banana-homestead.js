@@ -902,7 +902,12 @@ function init(visitDoc, visitMiss) {
       } else {
         h.x += dx / d * 34 * dt;
         h.y += dy / d * 34 * dt;
-        const fl = dx > 0 ? 'scaleX(-1)' : '';
+        // ⚠️ dx < 0, NOT dx > 0 — the hens walked backwards for exactly this
+        // reason (Trym). The bird flip below is `dx > 0` and is RIGHT, because
+        // the Garden Birds art faces LEFT; the coop hens face RIGHT. The
+        // expression was copied between two sprite sets with opposite native
+        // facing. ⚠️ Check which way a new sprite looks before reusing either.
+        const fl = dx < 0 ? 'scaleX(-1)' : '';
         if (h.fl !== fl) { h.fl = fl; h.img.style.transform = fl; }
         if (now - h.frameAt > 140) {
           h.frameAt = now;
