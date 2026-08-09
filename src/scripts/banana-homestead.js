@@ -1888,6 +1888,32 @@ function init(visitDoc, visitMiss) {
     }
     return true;
   }
+  // 🎯 WHICH THING DID THEY MEAN? Both build tools used to walk the item list
+  // backwards and take the FIRST box containing the tap. Hit boxes are generous
+  // (half the sprite's width, its whole height plus 18px) and yard items
+  // overlap constantly, so on a zoomed-out phone the answer was effectively
+  // whichever happened to sit later in the array — Trym, 8 Aug: "when i tap
+  // move it just selects a random object for me".
+  //
+  // Now every candidate is scored by how far the tap is from its CENTRE,
+  // normalised by its own size so a wide sofa doesn't out-reach a small pot
+  // standing on it. Z-order only breaks ties, which is what "the one on top"
+  // should mean. Returns an index into state.items, or -1.
+  function itemAt(wx, wy) {
+    let best = -1, bestScore = Infinity;
+    for (let k = state.items.length - 1; k >= 0; k--) {
+      const it = state.items[k];
+      const d = DEX[it.id];
+      if (!d) continue;
+      const halfW = Math.max(24, d.w / 2);
+      if (Math.abs(wx - it.x) > halfW || wy < it.y - d.h - 8 || wy > it.y + 10) continue;
+      const cy = it.y - d.h / 2;                       // the sprite's middle, not its feet
+      const score = Math.hypot((wx - it.x) / halfW, (wy - cy) / Math.max(20, d.h / 2));
+      if (score < bestScore) { bestScore = score; best = k; }
+    }
+    return best;
+  }
+
   function startPlacing(id, moving) {
     cancelPlacing();
     const d = DEX[id];
@@ -2379,14 +2405,12 @@ function init(visitDoc, visitMiss) {
     // ✥ move mode: lift a thing, set it down — batch rearranging (Trym:
     // "better to reposition and move stuff in build mode")
     if (arranging && !visiting) {
-      for (let k = state.items.length - 1; k >= 0; k--) {
+      const k = itemAt(wx, wy);
+      if (k >= 0) {
         const it = state.items[k];
-        const d = DEX[it.id];
-        if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
-          state.items.splice(k, 1);
-          startPlacing(it.id, it);
-          return;
-        }
+        state.items.splice(k, 1);
+        startPlacing(it.id, it);
+        return;
       }
       if (Math.abs(wx - state.mailAt.x) < 30 && wy > state.mailAt.y - MAILBOX.h - 10 && wy < state.mailAt.y + 10) {
         startPlacingHome('mail', {});
@@ -2406,17 +2430,15 @@ function init(visitDoc, visitMiss) {
     }
     // 🧹 clear mode: one demolish tool — decor → shed, fence down, soil filled
     if (clearing && !visiting) {
-      for (let k = state.items.length - 1; k >= 0; k--) {
+      const k = itemAt(wx, wy);
+      if (k >= 0) {
         const it = state.items[k];
-        const d = DEX[it.id];
-        if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
-          state.items.splice(k, 1);
-          state.shed.push({ id: it.id });
-          save(); refreshItems();
-          float(it.x, it.y - 40, '📦');
-          track('homestead_pickup', { id: it.id, via: 'planner' });
-          return;
-        }
+        state.items.splice(k, 1);
+        state.shed.push({ id: it.id });
+        save(); refreshItems();
+        float(it.x, it.y - 40, '📦');
+        track('homestead_pickup', { id: it.id, via: 'planner' });
+        return;
       }
       const fi = Math.floor(wx / 48), fj = Math.floor(wy / 48);
       const fc = state.fence.find((s2) => s2.i === fi && s2.j === fj);

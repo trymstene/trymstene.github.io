@@ -216,6 +216,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
        page sits in one band. */
     @media (orientation: portrait) and (max-width: 700px) {
       .hs-planbar { top: auto; bottom: 10px; }
+      /* ⚠️ .hs-confirm ALSO lives at bottom:12px, and the tool bar outranks it
+         2600 to 40 — so moving the tools down buried the ✓/✕ under them and
+         placing looked like it had reset (Trym: "the menu options reset so i
+         have to start over"). The confirm bar precedes the tool bar in the DOM,
+         so a sibling selector lifts the tools only while a ghost is up. */
+      .hs-confirm:not([hidden]) ~ .hs-planbar { bottom: 78px; }
     }
     .hs-dim { position: absolute; background: rgba(6, 8, 14, 0.55); z-index: 1500; pointer-events: none; }
     .hs-gridov { position: absolute; z-index: 70; pointer-events: none; }
