@@ -381,8 +381,9 @@ a { color: inherit; }
   image-rendering: pixelated; transform: rotate(-7deg);
   filter: drop-shadow(4px 5px 0 rgba(0,0,0,0.35));
 }
-/* 💬 the speech bubble does the honest joke: the room IS empty, so the banana
-   says so and the invitation becomes "be early" instead of a false crowd */
+/* 💬 the banana's bubble is the WELCOME (Trym, 9 Aug) — the honesty about the
+   room being quiet moved down into the lead, where it reads as a reason to
+   join rather than as the first thing a stranger is told */
 .dc__bubble {
   /* ⚠️ kept INSIDE the banana's column — at left:46% it sat across the kicker
      in the body column and hid the words "THE BANANA DISCORD" */
@@ -401,8 +402,17 @@ a { color: inherit; }
   text-transform: uppercase; opacity: 0.8; margin-bottom: 0.2rem;
 }
 .dc__h {
+  /* ⚠️ block: it was inline, so its own margin-bottom never applied and the
+     gap to the lead came from nowhere. The logo also needs a line box. */
+  display: block;
   font-family: "Archivo Black", sans-serif; font-size: clamp(1.15rem, 4.4vw, 1.7rem);
   line-height: 1.02; margin: 0 0 0.35rem; color: #fff;
+}
+/* 💬 the Discord mark, set in the headline itself — sized in em so it rides the
+   clamp, and currentColor keeps it the headline's white with no second value */
+.dc__logo {
+  width: 1em; height: 1em; vertical-align: -0.1em;
+  margin-right: 0.34em; fill: currentColor;
 }
 .dc__l { margin: 0 0 0.7rem; font-size: 0.86rem; line-height: 1.45; opacity: 0.92; }
 .dc__go {
