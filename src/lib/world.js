@@ -166,6 +166,20 @@ export const WEATHER_SALT = 0x7a1e;
 export const WEATHER_DAY_MS = 86400000;
 const WEATHER_MINS = { drizzle: [30, 62], heavy: [15, 26], storm: [8, 13] };
 
+// 🌩 SCHEDULED STORMS — hand-placed weather sitting on top of the seeded clock.
+// Still a pure function of time: the table IS part of the function, so the park
+// and the ParkRoom keep agreeing without a single message.
+//
+// Why this exists: in the first TWELVE DAYS live, not one storm fired — computed
+// over the real function, not sampled. The seeded rate was one per ~17.8 days,
+// 8-13 minutes long. The most dramatic thing the park can do had never once
+// happened. This is how we fire one on purpose — for a launch, an event, or a
+// quest beat that needs the tide to have thrown something up the beach.
+// ⚠️⚠️ MIRRORED VERBATIM IN worker-rave/src/index.js — CHANGE BOTH OR NEITHER.
+const STORMS_SCHEDULED = [
+  [Date.UTC(2026, 7, 9, 14, 0), 15],   // 9 Aug 16:00 CEST — the park's first storm
+];
+
 // one day of weather, from its day index alone
 export function weatherDay(d) {
   const r = seedRand(WEATHER_SALT + d * 7919);
@@ -173,7 +187,13 @@ export function weatherDay(d) {
   const nDrizzle = kind === 'dry' ? 1 : kind === 'changeable' ? 3 : 4;
   const heavy = kind === 'wet' ? 1
     : (kind === 'changeable' && seedRand(WEATHER_SALT + d * 401) < 0.40 ? 1 : 0);
-  const storm = kind === 'wet' && seedRand(WEATHER_SALT + d * 613) < 0.30 ? 1 : 0;
+  // ⚠️ RETUNED 9 Aug (Trym: "it can trigger once or twice a week"). Was an
+  // extra 0.30 roll ON TOP of the 20% wet-day chance = 6%/day = one per 17.8
+  // days, which is why zero had ever landed. A wet day is now simply THE stormy
+  // day: 20%/day ≈ one every 5 days. The park recovers fast when worked
+  // (watering pays +2 a slot, so a 64-slot garden is +128 bloom), so a storm
+  // makes chores rather than damage — and chores are the park's actual game.
+  const storm = kind === 'wet' ? 1 : 0;
   const types = [];
   for (let i = 0; i < nDrizzle; i++) types.push('drizzle');
   for (let i = 0; i < heavy; i++) types.push('heavy');
@@ -186,6 +206,22 @@ export function weatherDay(d) {
     const slot = WEATHER_DAY_MS / n;
     const at = Math.floor(i * slot + seedRand(WEATHER_SALT + d * 131 + i * 17) * Math.max(0, slot - ms));
     out.push({ type, at, ms });
+  }
+  // 🌩 merge in anything hand-scheduled for this day. Doing it HERE and not in
+  // weatherAt is the whole point: weatherBetween walks weatherDay too, and that
+  // is what the ParkRoom charges health from on its lazy read. Patch only the
+  // renderer and the sky storms while nothing takes a scratch.
+  for (const [when, mins] of STORMS_SCHEDULED) {
+    const sd = Math.floor(when / WEATHER_DAY_MS);
+    if (sd !== d) continue;
+    const s = { type: 'storm', at: when - sd * WEATHER_DAY_MS, ms: mins * 60000 };
+    // a scheduled storm CLEARS the sky it lands in — events are read first-match
+    // in time order, so an overlapping seeded drizzle would otherwise sort ahead
+    // of it and weatherAt would answer "drizzle" for the whole window
+    for (let i = out.length - 1; i >= 0; i--) {
+      if (out[i].at < s.at + s.ms && s.at < out[i].at + out[i].ms) out.splice(i, 1);
+    }
+    out.push(s);
   }
   return out.sort((a, b) => a.at - b.at);
 }
