@@ -107,10 +107,15 @@ export const SLATE = [
     tech: 'DTG', label: true, live: true, tier: 'all 5 — Agave, Black, Carbon Grey, Harbor Blue, White (one flat cost tier)',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–XL', 15.95], ['2XL', 17.95], ['3XL', 19.95]] },
-  { key: 'tank', name: 'Unisex tank top', catalog: 248, blankModel: 'Bella+Canvas 3480',
-    tech: 'DTG', label: true, tier: 'Black, Navy, Red, True Royal, White — ⛔ drop Athletic Heather ($14.23 in every size, alone)',
+  // ⚠️ #537, NOT the Bella+Canvas 3480 (#248) this row first specced — the SAME
+  // stale-catalog trap as the long sleeve, and it has the same symptom: Squash
+  // (#ffbf6e, a warm orange) rendered as a grey dot because the colour-hex
+  // codegen walks these ids and never saw this blank. Check the catalog id
+  // against the LIVE product before trusting any row here.
+  { key: 'tank', name: "Men's premium tank top", catalog: 537, blankModel: 'Cotton Heritage MC1790',
+    tech: 'DTG', label: true, live: true, tier: '13 available; Trym picked 5 — one flat cost tier, so any subset prices the same',
     art: 'tee-colour', place: 'front centre, 10″ wide — a tank has a narrower panel than a tee',
-    sizes: [['XS', 14.23], ['S–XL', 13.95], ['2XL', 15.5]] },
+    sizes: [['S–XL', 16.29], ['2XL', 18.29], ['3XL', 20.29]] },
   // ---- LIVE garments, added to the slate 8 Aug so the neck label reaches the
   // whole wardrobe. They were never slate rows because they came back from the
   // archive, but "official stamp on clothing BY DEFAULT" means these too.
