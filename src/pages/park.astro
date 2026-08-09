@@ -144,22 +144,41 @@ const faq = {
        ⚠️ transform/opacity only. Never animate `filter` on this page. */
     .pk-wx { position: absolute; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
     .pk-wx__scrim, .pk-wx__rain, .pk-wx__flash {
-      position: absolute; inset: -30%; display: block; opacity: 0;
+      /* generous horizontal slack: the storm SKEWS these sheets, and a skew
+         eats width proportional to HEIGHT — a tall narrow phone shifts the
+         bottom edge ~138px sideways, which -30% of a 360px width cannot cover */
+      position: absolute; inset: -30% -50%; display: block; opacity: 0;
       transition: opacity 2.4s ease;
     }
     .pk-wx__scrim { background: #16283a; inset: 0; }
     .pk-wx__rain {
       background-image: url('/assets/park/rain.png');
       background-repeat: repeat; background-size: 256px 256px;
-      will-change: transform;
     }
     .pk-wx__flash { background: #eaf4ff; inset: 0; opacity: 0; }
 
-    /* the two layers run at different speeds — that parallax is the depth */
-    @keyframes pkRainFar  { from { transform: translate3d(0, 0, 0); }
-                            to   { transform: translate3d(-256px, 1024px, 0); } }
-    @keyframes pkRainNear { from { transform: translate3d(0, 0, 0); }
-                            to   { transform: translate3d(-512px, 1024px, 0); } }
+    /* 🌧 THE SHEETS SCROLL BY BACKGROUND-POSITION, NOT BY TRANSFORM.
+       ⚠️ Deliberate exception to this page's transform/opacity-only line, and
+       the reason is arithmetic: a tiling sheet has to travel a whole multiple
+       of its 256px tile to loop seamlessly, and these travel 1024px — while
+       inset:-30% only buys ~90px of slack. So the old transform version marched
+       the sheet clean off the bottom-right and snapped it back. Measured 9 Aug
+       on the live park: ZERO of 40 frames covered the view, the sheet's top
+       edge sitting 86-389px BELOW a 302px-tall park. Rain was missing more
+       often than it was there. Nobody saw it because drizzle is the only tier
+       that has ever really run, at 0.34 opacity, where patchy reads as light.
+       Scrolling the BACKGROUND instead keeps the element still and always
+       covering, loops at any tile multiple, and costs a repaint only while it
+       is actually raining (~6% of the time, storms 15 min a week).
+       ⚠️ Both numbers must stay multiples of 256 or the loop visibly jumps.
+
+       DIRECTION (Trym, 9 Aug): both textures lean DOWN-RIGHT — measured, the
+       (+1,+1) pixel correlation is 130 on rain.png and 658 on rain-hard.png
+       against ~0 the other way. The old keyframes drove them down-LEFT, so the
+       rain slid sideways across its own streaks. Positive X and Y = down and to
+       the right, which is the way the art points. */
+    @keyframes pkRainFar  { to { background-position: 256px 1024px; } }
+    @keyframes pkRainNear { to { background-position: 512px 1024px; } }
     .pk-wx__rain--far  { animation: pkRainFar 3.4s linear infinite; }
     .pk-wx__rain--near { animation: pkRainNear 1.9s linear infinite; }
 
@@ -178,13 +197,18 @@ const faq = {
     .pk-wx.is-storm .pk-wx__rain { background-image: url('/assets/park/rain-hard.png'); }
     .pk-wx.is-storm .pk-wx__rain--far { opacity: 0.62; animation-duration: 1.5s; }
     .pk-wx.is-storm .pk-wx__rain--near { opacity: 0.8; animation-duration: 0.8s; }
-    /* the WIND is the tilt: skew both sheets and they read as driven rain */
-    .pk-wx.is-storm .pk-wx__rain--far  { animation-name: pkRainGustFar; }
-    .pk-wx.is-storm .pk-wx__rain--near { animation-name: pkRainGustNear; }
-    @keyframes pkRainGustFar  { from { transform: translate3d(0, 0, 0) skewX(-9deg); }
-                                to   { transform: translate3d(-620px, 1024px, 0) skewX(-9deg); } }
-    @keyframes pkRainGustNear { from { transform: translate3d(0, 0, 0) skewX(-13deg); }
-                                to   { transform: translate3d(-980px, 1024px, 0) skewX(-13deg); } }
+    /* the WIND is the tilt: skew both sheets and they read as driven rain.
+       ⚠️ POSITIVE skew now. skewX(a) shifts x by y·tan(a) and CSS +y is DOWN,
+       so the old NEGATIVE angles pushed the bottom of the sheet LEFT — tilting
+       the rain against the lean of its own texture. Positive leans it down-right
+       WITH the art and with the travel. The skew is a STATIC transform (same at
+       both ends, nothing animating it), so it stays free. */
+    .pk-wx.is-storm .pk-wx__rain--far  { animation-name: pkRainGustFar;  transform: skewX(9deg); }
+    .pk-wx.is-storm .pk-wx__rain--near { animation-name: pkRainGustNear; transform: skewX(13deg); }
+    /* ⚠️ 620 and 980 were NOT multiples of the 256px tile — the storm sheets
+       jumped 108px and 212px sideways every loop. Snapped to 512 and 1024. */
+    @keyframes pkRainGustFar  { to { background-position: 512px 1024px; } }
+    @keyframes pkRainGustNear { to { background-position: 1024px 1024px; } }
     .pk-wx.is-storm .pk-wx__flash { animation: pkFlash 11s steps(1) infinite; }
     @keyframes pkFlash {
       0%, 3.2%, 100% { opacity: 0; }
