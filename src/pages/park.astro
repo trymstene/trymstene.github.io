@@ -226,19 +226,43 @@ const faq = {
        the mess. The rave's quest-call type, one size down (Trym), and it only
        appears while the park is still under 30% — if the regulars already put
        it back to 90 there is nothing to explain. */
+    /* ⚠️ NO BOX. It used to be a small dark panel pinned to the top-left corner
+       with 0.5rem type in it, and Trym's verdict was that it looked bad on both
+       desktop and phone — a black box shouting in a whisper. This is the RAVE's
+       big-moment register instead (.rv-bigmoment), one size down: centred over
+       the park, Anton, and the black comes from a ring of hard shadows rather
+       than a background, so the type sits ON the world instead of covering it.
+       ⚠️ pointer-events:none is load-bearing now that it is centred — the park
+       walks on taps, and an overlay in the middle of the map would eat them. */
     .pk-stormnote {
-      position: absolute; top: 44px; left: 8px; z-index: 600; max-width: 176px;
-      box-sizing: border-box; background: rgba(13, 20, 13, 0.9);
-      border: 3px solid #ffe135; padding: 5px 8px 6px;
-      opacity: 0; transform: translateY(-6px); transition: opacity 0.5s ease, transform 0.5s ease;
+      position: absolute; left: 50%; top: 26%; z-index: 600;
+      width: max-content; max-width: 92%; text-align: center; pointer-events: none;
+      opacity: 0; transform: translate(-50%, -8px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
     }
-    .pk-stormnote.is-on { opacity: 1; transform: none; }
-    .pk-stormnote[hidden] { display: none; }
+    .pk-stormnote.is-on { opacity: 1; transform: translate(-50%, 0); }
+    /* ⚠️ !important: any author display: beats the hidden attribute, and this
+       page toggles the note by BOTH a class and hidden (the trap, hit before) */
+    .pk-stormnote[hidden] { display: none !important; }
     .pk-stormnote b {
-      display: block; font-size: 0.5rem; font-weight: 800; letter-spacing: 0.14em;
-      text-transform: uppercase; color: #ffe135; margin-bottom: 3px;
+      display: block; font-family: "Anton", "Arial Black", sans-serif;
+      font-size: clamp(1.45rem, 5.6vw, 2.5rem); line-height: 0.92;
+      letter-spacing: 0.015em; text-transform: uppercase; color: #ffe135;
+      text-wrap: balance;
+      text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+        -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000,
+        5px 6px 0 #000;
     }
-    .pk-stormnote span { font-size: 0.6rem; font-weight: 800; color: #fffdf5; line-height: 1.35; }
+    .pk-stormnote span {
+      display: block; margin-top: 0.45rem; font-size: 0.76rem; font-weight: 800;
+      letter-spacing: 0.1em; text-transform: uppercase; color: #fffdf5;
+      line-height: 1.35; text-shadow: 2px 2px 0 #000;
+      /* ⚠️ balance, or the last word orphans onto a line of its own — caps plus
+         letter-spacing makes a two-line sub-line very easy to hit */
+      text-wrap: balance;
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-stormnote { transition: none; } }
 
     /* 🍂 STORM DEBRIS — leaves torn off and driven across the view. Reuses
        the leaf-pile sprites the sad phase already bakes, so it costs no art:

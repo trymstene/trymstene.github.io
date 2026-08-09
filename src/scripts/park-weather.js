@@ -64,8 +64,11 @@ export function initWeather(ctx) {
   const note = document.createElement('div');
   note.className = 'pk-stormnote';
   note.hidden = true;
-  note.innerHTML = '<b>the morning after</b><span>oh no — a storm came through. '
-    + 'Somebody has some tidying to do.</span>';
+  // ⚠️ the description is SET IN CAPS with letter-spacing now, which punishes
+  // length — and the headline already carries the drama, so "oh no" was doing
+  // the same job twice. Shorter reads louder here.
+  note.innerHTML = '<b>the morning after</b>'
+    + '<span>a storm came through — somebody has tidying to do</span>';
   view.appendChild(note);
   let noted = false;
   function stormNote(stormAt, health) {
