@@ -185,16 +185,25 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-act--icon { display: inline-flex; align-items: center; justify-content: center; }
     .hs-act[aria-pressed="true"] { background: #1a1408; color: #ffe135; }
     /* 🔨 THE PLANNER — build mode: zoomed-out land, dimmed world, lit grid */
+    /* ⚠️ SPANS THE VIEW, NEVER CENTRES ON A FIXED POINT. Six nowrap buttons
+       measure 475px; a phone stage is 335px. With `left:50%` + translateX(-50%)
+       that overflowed by 70px off BOTH edges at once, so the first and last
+       tools were unreachable (Trym, 8 Aug: "offscreen, small, not mobile
+       friendly"). Anchored left+right instead, it centres while it fits and
+       WRAPS to a second row when it doesn't — every tool stays full size and
+       tappable, which a shrink-to-fit or a scroll-with-no-affordance loses. */
     .hs-planbar {
-      position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
-      z-index: 2600; display: flex; gap: 0.4rem;
+      position: absolute; left: 8px; right: 8px; top: 10px;
+      z-index: 2600; display: flex; flex-wrap: wrap;
+      gap: 0.4rem; justify-content: center;
       background: rgba(10, 16, 8, 0.92); border: 3px solid #000; border-radius: 7px;
-      padding: 0.3rem;
+      padding: 0.3rem; box-sizing: border-box;
     }
     .hs-planbar button {
       font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer;
       border: 2px solid #000; background: #fffdf5; padding: 0.35rem 0.6rem;
       white-space: nowrap; touch-action: manipulation;
+      min-height: 40px;                      /* thumbs, not cursors */
     }
     .hs-planbar button[aria-pressed="true"] { background: #ffe135; }
     #hsPlanDone { background: #1a1408; color: #ffe135; }
