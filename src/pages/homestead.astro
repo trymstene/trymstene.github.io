@@ -216,12 +216,19 @@ const description = 'A clearing west of the park with your name on the sign: cla
        page sits in one band. */
     @media (orientation: portrait) and (max-width: 700px) {
       .hs-planbar { top: auto; bottom: 10px; }
-      /* ⚠️ .hs-confirm ALSO lives at bottom:12px, and the tool bar outranks it
-         2600 to 40 — so moving the tools down buried the ✓/✕ under them and
-         placing looked like it had reset (Trym: "the menu options reset so i
-         have to start over"). The confirm bar precedes the tool bar in the DOM,
-         so a sibling selector lifts the tools only while a ghost is up. */
-      .hs-confirm:not([hidden]) ~ .hs-planbar { bottom: 78px; }
+      /* 🫥 ONE BAR AT A TIME. While a ghost is up the only question is "here or
+         not" — the tools decide nothing, so they go away and the confirm owns
+         the screen. Stacking them put THREE control bars over a phone (tools,
+         confirm, and the area's own actions) for a decision with two answers:
+         Trym, 8 Aug — "why showing so much options at the same time? You dont
+         need to see every menu at once".
+         ⚠️ This also settles an overlap: .hs-confirm sits at bottom:12px and
+         the tool bar outranks it 2600 to 40, so moving the tools down buried
+         the ✓/✕ underneath them. The confirm precedes the tool bar in the DOM,
+         so the sibling selector reaches it without touching the JS.
+         Desktop keeps both — its tools sit at the TOP, nothing overlaps, and
+         hiding them there would only flicker on every place in a batch move. */
+      .hs-confirm:not([hidden]) ~ .hs-planbar { display: none; }
     }
     .hs-dim { position: absolute; background: rgba(6, 8, 14, 0.55); z-index: 1500; pointer-events: none; }
     .hs-gridov { position: absolute; z-index: 70; pointer-events: none; }
