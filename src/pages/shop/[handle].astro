@@ -86,6 +86,59 @@ const productSchema = {
     hasMerchantReturnPolicy: RETURNS,
   },
 };
+// ❓ PER-PRODUCT FAQ, BUILT FROM THE PRODUCT'S OWN FACTS — never a generic
+// block copied onto every page. Each answer is derived from data this page
+// already holds (its colours, its sizes, whether it has a size guide), so it
+// cannot drift from what the page shows or go stale when a product changes.
+//
+// Google retired FAQ rich results for most sites in 2023, so this is not a SERP
+// play — it is for the shopper, and for the answer engines that now quote pages
+// directly. The questions are the ones a print-on-demand buyer actually asks.
+const list = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0]);
+const faqs = [
+  {
+    q: 'Is this official Dancing Banana merch?',
+    a: 'Yes. Trym Stene drew the original dancing banana in 1999, and this shop is his — '
+      + 'every design is printed and posted by the person who made the character.',
+  },
+  {
+    q: 'How long will it take to arrive?',
+    a: 'It is printed to order, which takes 2–5 business days, and then the carrier time to you '
+      + 'on top. Shipping is calculated at checkout, so you see the exact cost before you pay.',
+  },
+  ...(m.colors.length > 1 ? [{
+    q: `What colours does the ${m.title.replace(/^DANCING BANANA OFFICIAL™?\s*/i, '')} come in?`,
+    a: `${m.colors.length} colours: ${list(m.colors)}.`,
+  }] : []),
+  ...(m.sizes.length ? [{
+    q: 'What sizes are available, and how do they fit?',
+    a: `${list(m.sizes)}.` + (sizeGuide
+      ? ' The size guide on this page has the real measurements in inches and centimetres — '
+        + 'worth a look, because sizes are not exchangeable.'
+      : ''),
+  }] : []),
+  {
+    q: 'What if it arrives damaged or misprinted?',
+    a: 'It gets replaced free. Report it within 30 days of delivery and a new one is sent at our '
+      + 'cost — the same goes for a parcel lost in transit.',
+  },
+  {
+    q: 'Can I return it or swap the size?',
+    a: 'No — every item is made to order, so there are no returns for a change of mind or a wrong '
+      + 'size. That is why the size guide matters. Damaged, misprinted and defective items are '
+      + 'always covered.',
+  },
+  { q: 'Where do you ship to?', a: 'Worldwide, from the print facility closest to you.' },
+];
+const faqSchema = {
+  '@context': 'https://schema.org/',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
 const breadcrumbSchema = {
   '@context': 'https://schema.org/',
   '@type': 'BreadcrumbList',
@@ -109,6 +162,7 @@ const breadcrumbSchema = {
     <meta property="product:price:currency" content={m.cur} />
     <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   </Fragment>
 
   <nav class="crumbs" aria-label="Breadcrumb">
@@ -192,6 +246,20 @@ const breadcrumbSchema = {
         <div class="pdp-details__body" set:html={sizeGuide}></div>
       </details>
     )}
+    {/* the answers a print-on-demand buyer wants BEFORE paying — made-to-order
+        timing, whether the size can be swapped, and who is actually behind it.
+        Same text as the FAQPage schema, so page and crawler never disagree. */}
+    <details class="pdp-faq">
+      <summary>Questions people ask</summary>
+      <div class="pdp-details__body">
+        {faqs.map((f) => (
+          <div class="pdp-faq__item">
+            <h3>{f.q}</h3>
+            <p>{f.a}</p>
+          </div>
+        ))}
+      </div>
+    </details>
   </section>
 
   <section class="block">

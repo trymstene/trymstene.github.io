@@ -151,3 +151,9 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 .size-toggle { display: inline-flex; gap: 0; margin: 0.3rem 0 0.6rem; border: 3px solid var(--ink); }
 .size-toggle button { padding: 0.35rem 0.8rem; border: 0; background: var(--paper); font-family: inherit; font-weight: 800; cursor: pointer; }
 .size-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+
+/* ❓ per-product FAQ — same text the FAQPage schema carries */
+.pdp-faq__item { margin: 0 0 1.1rem; }
+.pdp-faq__item:last-child { margin-bottom: 0; }
+.pdp-faq__item h3 { margin: 0 0 0.3rem; font-size: 0.95rem; font-weight: 800; }
+.pdp-faq__item p { margin: 0; line-height: 1.6; opacity: 0.86; }
