@@ -208,6 +208,15 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-planbar button[aria-pressed="true"] { background: #ffe135; }
     #hsPlanDone { background: #1a1408; color: #ffe135; }
     .hs-planbar[hidden] { display: none; }
+    /* 📱 PORTRAIT PUTS THE TOOLS UNDER THE THUMB. Build mode on a phone is two
+       gestures — tap a cell, swipe to look — and both happen low on the screen,
+       so a bar pinned to the TOP means reaching past your own work to change
+       tool, with the bar covering the ground you were just looking at. Bottom
+       also lands it next to the area's own action row, so every control on the
+       page sits in one band. */
+    @media (orientation: portrait) and (max-width: 700px) {
+      .hs-planbar { top: auto; bottom: 10px; }
+    }
     .hs-dim { position: absolute; background: rgba(6, 8, 14, 0.55); z-index: 1500; pointer-events: none; }
     .hs-gridov { position: absolute; z-index: 70; pointer-events: none; }
     .hs-hovcell {

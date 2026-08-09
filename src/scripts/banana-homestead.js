@@ -302,7 +302,18 @@ function init(visitDoc, visitMiss) {
       // current tier — fit-to-deed made tier 1 and tier 3 fill the same screen,
       // so upgrades didn't LOOK bigger (Trym's "my area didnt expand?")
       const F = FENCE_TIERS[3].fence;
-      scale = Math.min(1.2, viewW / (F[2] - F[0] + 120), viewH / (F[3] - F[1] + 120));
+      const dw = F[2] - F[0] + 120, dh = F[3] - F[1] + 120;
+      // 📱 PORTRAIT ZOOMS IN AND PANS SIDEWAYS (Trym's call, 8 Aug: "very small
+      // and doesnt utilize the whole screen"). The deed is 1344x576 — 2.33:1 —
+      // and a phone view is 0.58:1, so CONTAIN binds on width and draws the plot
+      // 132px tall inside 580px: 23% used, 77% dead. Fitting the HEIGHT instead
+      // fills the screen and spends the leftover width on a sideways pan.
+      // Sideways is also the only safe axis on a phone: a vertical drag would
+      // compete with the page scroll (the view sets touch-action:none while
+      // building, but the gesture still reads as "the page should move").
+      scale = viewW < viewH
+        ? Math.min(1.2, viewH / dh)
+        : Math.min(1.2, viewW / dw, viewH / dh);
     }
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
@@ -1108,11 +1119,19 @@ function init(visitDoc, visitMiss) {
     toolF.style.display = toolS.style.display = toolC.style.display = '';
     planOverlay();
     setTool('fence');
-    const F = FENCE_TIERS[3].fence;   // same frame at every tier — growth is visible
-    camFree = { x: (F[0] + F[2]) / 2, y: (F[1] + F[3]) / 2 };
+    // ⚠️ OPEN ON YOUR OWN LAND, not on the middle of the max deed. The frame is
+    // still tier 3 so growth stays visible, but once the phone zooms in you can
+    // only see a slice of it — and centring that slice on ground you don't own
+    // yet means build mode opens somewhere you cannot build.
+    const MY = FENCE_TIERS[Math.max(1, Math.min(state.stage, 3))].fence;
+    camFree = { x: (MY[0] + MY[2]) / 2, y: (MY[1] + MY[3]) / 2 };
     view.classList.add('is-placing');
     layout();
     camSnap();
+    // one toast, not two: replaces setTool's when there is anything to pan to
+    if (W * scale > viewW + 8) {
+      toast('🪵 tap the lit grid to build fence · swipe to look across your land', 4200);
+    }
     track('homestead_planner');
   }
   function exitPlanner() {
