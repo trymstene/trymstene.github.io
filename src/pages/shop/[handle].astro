@@ -105,7 +105,15 @@ const breadcrumbSchema = {
 
       {m.colors.length > 0 && (
         <div class="pdp-field">
-          <div class="pdp-field__label">Colour <span>— {m.colors.length} {m.colors.length === 1 ? 'option' : 'options'}</span></div>
+          {/* ⚠️ THE NAME IS VISIBLE, NOT A TOOLTIP. `title=` never opens on a
+              phone and ~85% of this site is mobile, so "Agave" and "Harbor
+              Blue" were two indistinguishable dots to almost everyone (Trym,
+              8 Aug). The chosen colour is now written out beside the label and
+              updated on select — the tooltip stays for mouse users only. */}
+          <div class="pdp-field__label">
+            Colour <span>— {m.colors.length} {m.colors.length === 1 ? 'option' : 'options'}</span>
+            <b class="pdp-field__pick" id="pdpColorName">{m.colors[0]}</b>
+          </div>
           <div class="pdp-swatches">
             {m.colors.map((c) => (
               <button class="pdp-swatch" data-color={c} title={c} aria-label={c} style={`background:${colorHex(c)}`}></button>

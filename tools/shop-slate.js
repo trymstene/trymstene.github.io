@@ -98,10 +98,15 @@ export const SLATE = [
     tech: 'DTG', label: true, tier: 'Light Violet, Maroon, Mauve, Military Green, Natural, Sage, Vintage White, Heather Deep Teal, Heather Navy, Heather True Royal (10 of 22 — the flat-cost set)',
     art: 'tee-colour', place: DTG_PLACE,
     sizes: [['S–3XL, every size', 13.69]] },
-  { key: 'longsleeve', name: 'Long sleeve tee', catalog: 356, blankModel: 'Bella+Canvas 3501',
-    tech: 'DTG', label: true, tier: 'all 16 (the two tiers are 4¢ apart — price off the higher)',
+  // ⚠️ #956, NOT the Bella+Canvas 3501 (#356) this row originally specced.
+  // Trym picked the Cotton Heritage heavyweight when he built it on 8 Aug, and
+  // the slate has to name the blank that is actually LIVE — the colour-hex
+  // codegen walks these catalog ids, so a stale one leaves real colourways
+  // (Agave, Harbor Blue, Carbon Grey) rendering as grey dots in the shop.
+  { key: 'longsleeve', name: "Men's heavyweight long sleeve", catalog: 956, blankModel: 'Cotton Heritage MC1186',
+    tech: 'DTG', label: true, live: true, tier: 'all 5 — Agave, Black, Carbon Grey, Harbor Blue, White (one flat cost tier)',
     art: 'tee-colour', place: DTG_PLACE,
-    sizes: [['XS–XL', 18.29], ['2XL', 20.29]] },
+    sizes: [['S–XL', 15.95], ['2XL', 17.95], ['3XL', 19.95]] },
   { key: 'tank', name: 'Unisex tank top', catalog: 248, blankModel: 'Bella+Canvas 3480',
     tech: 'DTG', label: true, tier: 'Black, Navy, Red, True Royal, White — ⛔ drop Athletic Heather ($14.23 in every size, alone)',
     art: 'tee-colour', place: 'front centre, 10″ wide — a tank has a narrower panel than a tee',

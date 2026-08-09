@@ -44,6 +44,11 @@
   function markColour(c) {
     swatches.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.color === c)); });
     thumbs.forEach(function (t) { t.setAttribute('aria-current', String(t.dataset.color === c)); });
+    // ⚠️ the NAME has to be readable, not hovered. `title=` never opens on a
+    // phone and this shop is ~85% mobile, so "Agave" and "Harbor Blue" were two
+    // grey-ish dots with no way to tell them apart (Trym, 8 Aug).
+    var pick = document.getElementById('pdpColorName');
+    if (pick && c) pick.textContent = c;
   }
   function markSize(s) {
     sizeBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.size === s)); });
