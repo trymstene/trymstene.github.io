@@ -321,12 +321,21 @@ function init(visitDoc, visitMiss) {
   }
   addEventListener('resize', layout);
   layout();
+  // 🪴 while a TOOL is up the camera is FREE: it glides to the ghost once at the
+  // start, then only DRAGS move it — a moving object must never yank the view
+  // around (Trym: "alot of camera jumping"). Tap = try the spot, drag = look
+  // around; two gestures, two jobs.
+  //
+  // ⚠️ ONE PREDICATE, because this list and the pointer handlers' list MUST
+  // agree. They drifted: `clearing` and `arranging` were added to the gesture
+  // handlers and not here, so with the clear or move tool up your drag did
+  // update camFree — the camera just ignored it and stayed locked on the
+  // banana (Trym, 8 Aug: "the camera jumps to my banana and i cant swipe to
+  // where i want, my view is locked"). Any future tool is covered by adding it
+  // to `toolUp` alone.
+  const toolUp = () => placing || digging || fencing || clearing || arranging;
   function camTarget() {
-    // 🪴 while placing the camera is FREE: it glides to the ghost once at the
-    // start, then only DRAGS move it — a moving object must never yank the
-    // view around (Trym: "alot of camera jumping"). Tap = try the spot,
-    // drag = look around; two gestures, two jobs.
-    const foc = ((placing || digging || fencing) && camFree) ? camFree : pos;
+    const foc = (toolUp() && camFree) ? camFree : pos;
     return {
       x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), foc.x * scale - viewW / 2)),
       y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), foc.y * scale - viewH * 0.58)),
@@ -335,7 +344,7 @@ function init(visitDoc, visitMiss) {
   let camWX = NaN, camWY = NaN;
   function cam() {
     const t = camTarget();
-    const k = ((placing || digging || fencing) && camFree) ? 0.3 : 0.12;   // panning wants a tighter leash
+    const k = (toolUp() && camFree) ? 0.3 : 0.12;   // panning wants a tighter leash
     camX += (t.x - camX) * k;
     camY += (t.y - camY) * k;
     if (Math.abs(t.x - camX) < 0.2) camX = t.x;
