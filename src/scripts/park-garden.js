@@ -752,7 +752,33 @@ export function initGarden(ctx) {
       + '<p class="pk-panel__sub">planted by the roadside to make the park prettier.</p>';
     gardenPanel.hidden = false;
   }
-  function borderAct(i) { if (bSpots[i]) openBorderCard(i); else openBorderSheet(i); }
+  async function doClearPot(i) {
+    const f = bSpots[i];
+    if (!f || !f.rot) return;
+    const res = await gFetch('/clearpot', { spot: i });
+    if (res && res.err) { applyGarden(res); toast('somebody already cleared it'); return; }
+    applyGarden(res);
+    const [sx, sy] = BORDER_SPOTS[i];
+    poofInto(world, 'pk-poof', sx / W * 100, (sy - 12) / H * 100);
+    passStat('rep', 2);
+    refreshHud();
+    float(sx, sy - 20, '+2');
+    if (!potClearedOnce) { potClearedOnce = true; track('park_clearpot'); }
+    toast('cleared — the spot is free to plant again', 3200);
+  }
+  let potClearedOnce = false;
+  function borderAct(i) {
+    const f = bSpots[i];
+    if (!f) { openBorderSheet(i); return; }
+    // 🥀 a storm-killed pot is a CHORE, not a plaque. Without this the corpse
+    // opened the same "planted to make the park prettier" card with no way out,
+    // so /clearpot was unreachable from the UI and the spot was blocked for
+    // good. The beds have always done this (gardenAct -> doClear); the roadside
+    // pots simply never got the same wiring, and nobody noticed because until
+    // the 9 Aug weather retune not one storm had ever fired to rot one.
+    if (f.rot) { doClearPot(i); return; }
+    openBorderCard(i);
+  }
   function tapBorder(wx, wy) {
     let best = -1, bd2 = 1e9;
     BORDER_SPOTS.forEach(([sx, sy], i) => {
@@ -1751,6 +1777,19 @@ export function initGarden(ctx) {
         gardenPoll();
       },
       dry: (i) => { const s = gShim.slots[i]; if (s) s.lastWater -= 86460000; gardenPoll(); },
+      // 🥀 storm aftermath QA: rot half the beds AND half the roadside pots,
+      // the same share stormWreck uses. There was NO way to reach this state
+      // without waiting for a real storm, which is exactly how the unclearable
+      // rotted pot survived — the branch was unreachable in testing and, until
+      // the 9 Aug weather retune, unreachable in production too.
+      rot: () => {
+        const beds = gShim.slots.map((s, i) => (s && !s.rot ? i : -1)).filter((i) => i >= 0);
+        beds.slice(0, Math.round(beds.length / 2)).forEach((i) => { gShim.slots[i].rot = Date.now(); });
+        const pots = gShim.border.filter((f) => !f.rot);
+        pots.slice(0, Math.max(1, Math.round(pots.length / 2))).forEach((f) => { f.rot = Date.now(); });
+        gardenPoll();
+        return { beds: Math.round(beds.length / 2), pots: pots.length ? Math.max(1, Math.round(pots.length / 2)) : 0 };
+      },
       // 🫧 algae QA: scatter n patches on free lattice spots; 🍂 a pile just
       // ahead; 🐦 age a house's stocking h hours back (birds-gone at 24)
       algae: (n) => {
