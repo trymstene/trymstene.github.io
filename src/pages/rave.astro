@@ -1805,5 +1805,17 @@ const GUIDE = [
       if (hud) club.insertBefore(hud.el, club.firstChild);
     })();
   </script>
+  <script>
+    // 🕯 RETURN TO SENDER — dark until launch (see homestead.astro for the
+    // full note). ?questtest sticky-on · ?questtest=off · flip QUEST_LIVE ×4.
+    const QUEST_LIVE = false;
+    try {
+      if (/[?&]questtest=off/.test(location.search)) localStorage.removeItem('bwq-dev');
+      else if (/[?&]questtest/.test(location.search)) localStorage.setItem('bwq-dev', '1');
+      if (QUEST_LIVE || localStorage.getItem('bwq-dev') === '1') {
+        import('../lib/world-quest.js').then((m) => m.bootQuest());
+      }
+    } catch (e) { /* quest is optional garnish */ }
+  </script>
   <div class="rv-cut" id="rvCut" aria-hidden="true"></div>
 </BaseLayout>
