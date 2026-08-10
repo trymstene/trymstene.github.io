@@ -223,6 +223,12 @@ a { color: inherit; }
 .nav__group--banana a.nav__shop:focus-visible {
   background: var(--ink); color: #ff4d6d; border-top-color: var(--ink);
 }
+/* 💬 the Discord door — the mark carries the identification, so the label can
+   stay one short word. currentColor means it inherits the nav's yellow and its
+   hover inversion for free, with no second colour to keep in sync. */
+.nav__dc { display: flex; align-items: center; gap: 0.42rem; }
+.nav__dcic { width: 1.05em; height: 1.05em; flex: 0 0 auto; fill: currentColor; }
+
 /* 🪪 the pass link once it is YOURS — face + name instead of a ticket.
    The face is a data URL baked by /pass/; the nav never loads the compositor. */
 .nav__pass--me { display: inline-flex; align-items: center; gap: 0.42rem; }
