@@ -16,11 +16,16 @@
 import { passStat } from './banana-pass.js';
 
 const KEY = 'bwq-c1';
+// ⚠️ the hint chip anchors to the VIEW (the clipping viewport), never the
+// world: the world PANS, so a world-anchored chip lives at the map's top-left
+// corner and is off-screen almost always — which read as "the quest doesn't
+// exist" on the live site (Trym: "i dont see anything"). Markers stay in the
+// world (they mark places); the journal stays on the glass.
 const AREAS = {
-  homestead: { sel: '#hsWorld' },
-  park: { sel: '#pkWorld' },
-  beach: { sel: '#bhWorld' },
-  rave: { sel: '#rvFloor' },
+  homestead: { sel: '#hsWorld', view: '.hs-view' },
+  park: { sel: '#pkWorld', view: '#pkView' },
+  beach: { sel: '#bhWorld', view: '#bhView' },
+  rave: { sel: '#rvFloor', view: '#rvFloor' },
 };
 
 // ---- state ----------------------------------------------------------------
@@ -58,6 +63,7 @@ const WHO = {
 // at: {sel} anchors to a live element, {x,y} = % of the world plate.
 const STEPS = [
   { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 78 },
+    find: 'someone is waiting at your gate (south) — find the !',
     lines: [
       ['nib', 'Plot 11! All yours! Sign here. And here. Initial the hen clause.'],
       ['you', '…who are you?'],
@@ -412,13 +418,18 @@ export function bootQuest() {
     const w = world();
     if (!w) { setTimeout(render, 400); return; }   // world still booting
 
-    // the journal chip — always present in the ACTIVE area, and it is also the
-    // "you're in the wrong area" compass: the hint names where to go
-    if (step.hint) {
+    // the journal chip — always present, and it is also the "you're in the
+    // wrong area" compass. ⚠️ a TALK step shows its `find` line (who to find),
+    // not its hint (what comes AFTER the talk) — step 0 was captioned "find
+    // Old Peel" before Nib had said a word.
+    const label = (step.kind === 'talk')
+      ? (step.find || ('talk to ' + (WHO[step.who] || {}).n)) : step.hint;
+    if (label) {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
-      h.textContent = '🕯 ' + step.hint;
-      w.appendChild(h); layer.push(h);
+      h.textContent = '🕯 ' + label;
+      (document.querySelector(AREAS[area].view) || w).appendChild(h);
+      layer.push(h);
     }
     if (step.area !== area) return;      // objective lives elsewhere — hint covers it
 

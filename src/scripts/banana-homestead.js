@@ -2571,7 +2571,14 @@ function init(visitDoc, visitMiss) {
     if (state.stage >= 1) {
       const sd = structDims();
       if (Math.abs(wx - state.home.x) < sd.w / 2 && wy > state.home.y - sd.h && wy < state.home.y + 8) {
-        const doorish = Math.abs(wx - state.home.x) < sd.w * 0.32 && wy > state.home.y - 64;
+        // ⚠️ the band is sized by the FLOOR, not a flat 64px (Trym: "i cant
+        // walk into my cabin with porch"). Porch styles carry ~100px of decking
+        // at the sprite's bottom, so their visible door sits ABOVE a 64px band
+        // — taps on it read as wall, and walking the porch never entered. The
+        // lower ¾ of the floor is door-intent now; the 64 minimum keeps the
+        // tent exactly as it was, and the roof still just walks you over.
+        const doorish = Math.abs(wx - state.home.x) < sd.w * 0.32
+          && wy > state.home.y - Math.max(64, floorOf(sd.h) * 0.75);
         if (doorish && !visiting && INTERIORS[homeTier()]) {
           if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 130) { enterHome(); return; }
           tgt.x = state.home.x; tgt.y = state.home.y + 24;
