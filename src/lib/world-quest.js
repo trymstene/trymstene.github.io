@@ -324,7 +324,7 @@ function ensureCss() {
 @keyframes bwqPulse { 0%,100% { transform:scale(1); opacity:0.9; } 50% { transform:scale(1.14); opacity:0.45; } }
 /* 🎬 THE CHAPTER SPLASH — the park's post-storm register (big type ON the
    world, no box): a sticker pill, the title under it, fade in → hold → out,
-   THEN the journal chip pops. Shows once (S.in). pointer-events:none is
+   THEN Nib's dialogue opens. Shows once (S.in). pointer-events:none is
    load-bearing — the world walks on taps and this sits mid-screen. */
 .bwq-intro {
   position:absolute; left:50%; top:24%; z-index:4700; width:max-content; max-width:92%;
@@ -486,7 +486,7 @@ export function bootQuest() {
 
   ensureCss();
   const layer = [];   // live quest DOM in this area
-  let dlg = null, dlgTimer = null, watchTimer = null;
+  let dlg = null, dlgTimer = null, watchTimer = null, introBusy = false;
 
   const world = () => document.querySelector(AREAS[area].sel);
 
@@ -645,6 +645,28 @@ export function bootQuest() {
     if (step.area !== area) return;      // objective lives elsewhere — hint covers it
 
     if (step.kind === 'talk') {
+      // 🎬 CHAPTER I splash — plays when you OPEN the questline at Nib, not
+      // on area boot (Trym: it must never compete with the homestead's
+      // first-visit tutorial). Fade in → hold → fade out → the dialogue.
+      // Once per device (S.in); ?questreset replays it.
+      const talk = () => {
+        if (introBusy) return;
+        if (step.who !== 'nib' || S.s !== 0 || S.in) { openDialog(step); return; }
+        introBusy = true;
+        S.in = 1; save();
+        const sp = document.createElement('div');
+        sp.className = 'bwq-intro';
+        sp.innerHTML = '<i>chapter i</i><b>what the plot?</b>';
+        (document.querySelector(AREAS[area].view) || document.body).appendChild(sp);
+        requestAnimationFrame(() => sp.classList.add('is-on'));
+        track('quest_intro');
+        setTimeout(() => {
+          sp.classList.remove('is-on');
+          setTimeout(() => sp.remove(), 600);
+          introBusy = false;
+          openDialog(step);
+        }, 3000);
+      };
       // 🍌 Nib stands there in person — the ! floats above HIM, and tapping
       // either talks. Existing NPCs (Peel, Barty…) already have bodies.
       if (step.who === 'nib') {
@@ -657,7 +679,7 @@ export function bootQuest() {
         // the area's own depth formula — the player passes in FRONT below him
         n.style.zIndex = String(100 + Math.round((AREAS[area].wh || 1100) * step.at.y / 100));
         n.addEventListener('pointerdown', (e) => e.stopPropagation());
-        n.addEventListener('click', (e) => { e.stopPropagation(); openDialog(step); });
+        n.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
         w.appendChild(n); layer.push(n);
         assetsReady().then(() => { try { drawComposite(cv.getContext('2d'), 150, 0, NIB_DRAW); } catch (e) {} });
       }
@@ -673,7 +695,7 @@ export function bootQuest() {
         + '</svg>';
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
       place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 11.5 } : step.at);
-      m.addEventListener('click', (e) => { e.stopPropagation(); openDialog(step); });
+      m.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
     } else if (step.kind === 'objects') {
@@ -742,24 +764,6 @@ export function bootQuest() {
     layer.forEach((el) => { if (el.__at && el.__at.sel) place(el, el.__at); });
   }, 2500);
 
-  // 🎬 CHAPTER I opens like a chapter (Trym: the storm-notice register, not a
-  // corner chip) — once, wherever the quest first boots; the chip pops after.
-  if (!S.in && !S.done) {
-    S.in = 1; save();
-    const iv = document.querySelector(AREAS[area].view) || document.body;
-    const sp = document.createElement('div');
-    sp.className = 'bwq-intro';
-    sp.innerHTML = '<i>chapter i</i><b>what the plot?</b>';
-    iv.appendChild(sp);
-    requestAnimationFrame(() => sp.classList.add('is-on'));
-    setTimeout(() => {
-      sp.classList.remove('is-on');
-      setTimeout(() => sp.remove(), 600);
-      render();
-    }, 3400);
-    track('quest_intro', { area });
-  } else {
-    render();
-  }
+  render();
   track('quest_boot', { area, step: STEPS[S.s] && STEPS[S.s].id });
 }
