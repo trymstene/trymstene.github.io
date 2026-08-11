@@ -356,6 +356,7 @@ function ensureCss() {
   font-size:0.78rem; font-weight:800; padding:7px 11px; line-height:1.35;
   pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
+.bwq-hint[hidden] { display:none !important; }
 @keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
 /* 💬 the dialogue — the park's NPC-card grammar (pk-card--npc: tilted
    waist-up portrait peeking over the corner, name beside it, console box
@@ -522,7 +523,15 @@ export function bootQuest() {
     el.style.top = (y - 1) + '%';
   }
 
+  // the journal chip steps aside while a talk is on (Trym) — the next
+  // objective's render() brings it back
+  function hideHint() {
+    const h = document.querySelector('.bwq-hint');
+    if (h) h.hidden = true;
+  }
+
   function openDialog(step) {
+    hideHint();
     const lines = (S.res && step.linesRes) ? step.linesRes : step.lines;
     let i = 0, typeT = null, txt = '', at = 0, popWho = '';
     if (dlg) dlg.remove();
@@ -653,6 +662,7 @@ export function bootQuest() {
         if (introBusy) return;
         if (step.who !== 'nib' || S.s !== 0 || S.in) { openDialog(step); return; }
         introBusy = true;
+        hideHint();          // the chip yields to the splash too
         S.in = 1; save();
         const sp = document.createElement('div');
         sp.className = 'bwq-intro';
