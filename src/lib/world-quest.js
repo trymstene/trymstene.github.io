@@ -257,14 +257,13 @@ function ensureCss() {
   font-style:normal;
 }
 @keyframes bwqBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
-/* 🍌 the quest NPC — an engine banana, one still frame, clipboard in hand */
-.bwq-npc { position:absolute; z-index:2380; width:46px; transform:translate(-50%,-92%); pointer-events:none; }
+/* 🍌 the quest NPC — an engine banana, one still frame.
+   ⚠️ sized in % OF THE WORLD like the player (.hs-me is width:5.5%): a px
+   width put Nib at a third of the player's size (Trym's screenshot). The CSS
+   clipboard prop is gone too — a floating white rectangle read as a glitch,
+   not a prop. If Nib gets a look, it comes from the real wearable manifest. */
+.bwq-npc { position:absolute; z-index:2380; width:5.4%; transform:translate(-50%,-94%); pointer-events:none; }
 .bwq-npc canvas { display:block; width:100%; image-rendering:pixelated; }
-.bwq-npc s {
-  position:absolute; right:-7px; bottom:16%; width:13px; height:17px;
-  background:#fffdf5; border:2px solid #241c00; border-radius:1px; transform:rotate(7deg);
-  box-shadow:inset 0 3px 0 #b9852c;   /* the clip */
-}
 /* 🎯 quest objects — drawn things, not dots (Trym: "green dots" failed) */
 .bwq-obj {
   position:absolute; z-index:2350; width:40px; height:36px; margin:-18px 0 0 -20px;
@@ -511,7 +510,6 @@ export function bootQuest() {
         const cv = document.createElement('canvas');
         cv.width = 150; cv.height = 160;
         n.appendChild(cv);
-        n.appendChild(document.createElement('s'));   // the clipboard
         place(n, step.at);
         w.appendChild(n); layer.push(n);
         assetsReady().then(() => { try { drawComposite(cv.getContext('2d'), 150, 0, NIB_DRAW); } catch (e) {} });
@@ -519,8 +517,8 @@ export function bootQuest() {
       const m = document.createElement('div');
       m.className = 'bwq-mark';
       m.innerHTML = '<i>!</i>';
-      place(m, step.at);
-      if (step.who === 'nib') m.style.marginTop = '-56px';   // above his head
+      // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
+      place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 13 } : step.at);
       m.addEventListener('click', (e) => { e.stopPropagation(); openDialog(step); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
