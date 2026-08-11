@@ -20,7 +20,9 @@ import { drawComposite, assetsReady } from './banana-engine.js';
 // greeting me" — a floating ! is not a character). Engine-rendered like Old
 // Peel: one locked standing frame, plain suit; the clipboard is CSS chrome.
 const NIB_DRAW = {
-  hat: 'none', glasses: 'none', extras: {},
+  // potter = the round clerk spectacles (Peel's, but Peel has the cane and the
+  // bench — without SOMETHING Nib is identical to a default player banana)
+  hat: 'none', glasses: 'potter', extras: {},
   top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
 };
 
@@ -130,12 +132,12 @@ const STEPS = [
   { id: 'c1_dig', area: 'beach', kind: 'objects',
     hint: 'that patch of sand looks freshly dug — tap it to dig',
     objects: [
-      { id: 'dig', x: 46, y: 58, taps: 3, kind: 'dig',
+      { id: 'dig', sel: '#bhShelly', dx: -5, dy: 7, x: 46, y: 58, taps: 3, kind: 'dig',
         steps: ['…a rusty fork. huh.', '…an old boot. the sea loves boots.',
           '📦 A sealed TIN — heavy, old… someone buried this on purpose'] },
     ] },
 
-  { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', at: { x: 30, y: 46 },
+  { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', at: { sel: '#bhCap', x: 30, y: 46 },
     find: 'Captain Split wants a word about that tin',
     lines: [
       ['split', 'STOP RIGHT THERE. Everything on this beach belongs to me. Maritime law. I wrote it myself.'],
@@ -175,7 +177,7 @@ const STEPS = [
   { id: 'c1_fish', area: 'beach', kind: 'objects',
     hint: 'cast a line at the glowing spot by the flowers — tap to fish',
     objects: [
-      { id: 'fish', x: 74, y: 47, taps: 2, kind: 'fish',
+      { id: 'fish', sel: '#bhGil', dx: 4, dy: 6, x: 74, y: 47, taps: 2, kind: 'fish',
         steps: ['🎣 …an old boot. Another one.',
           '🎞 A wrapped BUNDLE — inside: eight small drawings. A flipbook!'] },
     ] },
@@ -194,7 +196,7 @@ const STEPS = [
     reward: { coins: 15 },
     hint: 'show the flipbook to Barty at the Rave' },
 
-  { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', at: { x: 18, y: 72 },
+  { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', at: { x: 28, y: 84 },
     find: 'show the flipbook to Barty at the bar',
     lines: [
       ['barty', 'Howdy howdy! What can I get— oh! A flipbook! Cute!'],
@@ -210,7 +212,7 @@ const STEPS = [
   { id: 'c1_floor', area: 'rave', kind: 'watch', hint: 'dance 30s · send 3 reactions',
     watch: { secs: 30, taps: 3 } },
 
-  { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', at: { x: 18, y: 72 },
+  { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', at: { x: 28, y: 84 },
     lines: [
       ['barty', 'Okay. So. Every banana in the world does the SAME dance. Since before this club existed.'],
       ['barty', 'And your little book of drawings is OLDER than my floor.'],
@@ -246,16 +248,16 @@ function ensureCss() {
   styled = true;
   const st = document.createElement('style');
   st.textContent = `
+/* ⚠️ the marker is a BOXLESS glyph on purpose (Trym: the yellow box read as
+   "a test-thing" — every UI chip here is a yellow box with a black border, so
+   a quest marker must NOT be one). A chunky free-standing gold ! with a pixel
+   outline is the classic RPG shape and can't be mistaken for a text box. */
 .bwq-mark {
-  position:absolute; z-index:2400; width:26px; height:34px; margin-left:-13px;
+  position:absolute; z-index:2400; width:24px; height:36px; margin-left:-12px;
   cursor:pointer; animation:bwqBob 1.1s ease-in-out infinite;
+  filter:drop-shadow(2px 3px 0 rgba(0,0,0,0.35));
 }
-.bwq-mark i {
-  display:block; width:100%; height:100%;
-  background:#ffe135; border:3px solid #000; box-shadow:2px 2px 0 rgba(0,0,0,0.45);
-  color:#000; font:900 20px/28px "Archivo Black","Arial Black",sans-serif; text-align:center;
-  font-style:normal;
-}
+.bwq-mark svg { display:block; width:100%; height:100%; }
 @keyframes bwqBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
 /* 🍌 the quest NPC — an engine banana, one still frame.
    ⚠️ sized in % OF THE WORLD like the player (.hs-me is width:5.5%): a px
@@ -428,8 +430,16 @@ export function bootQuest() {
       if (tr.width && wr.width) {
         x = ((tr.left + tr.width / 2) - wr.left) / wr.width * 100 + (at.dx || 0);
         y = (tr.top - wr.top) / wr.height * 100 + (at.dy || 0);
+      } else if (t.style.left) {
+        // ⚠️ the beach hides its NPCs (display:none) until you walk up, so
+        // there is no rect — but their style.left/top % is still the true
+        // world position. The park is the OPPOSITE (.pk-old's style misleads,
+        // its rect is true). Rect when laid out, style when hidden.
+        x = parseFloat(t.style.left) + (at.dx || 0);
+        y = parseFloat(t.style.top) + (at.dy || 0);
       }
     }
+    el.__at = at;             // the self-heal tick re-places from this
     el.style.left = x + '%';
     el.style.top = (y - 1) + '%';
   }
@@ -516,9 +526,16 @@ export function bootQuest() {
       }
       const m = document.createElement('div');
       m.className = 'bwq-mark';
-      m.innerHTML = '<i>!</i>';
+      // a drawn pixel !: wide gold bar tapering in, dot below, white shine
+      m.innerHTML = '<svg viewBox="0 0 16 24" aria-hidden="true">'
+        + '<path fill="#111" d="M3 0h10v2h1v8h-1v2h-1v2H4v-2H3v-2H2V2h1z"/>'
+        + '<path fill="#111" d="M4 17h8v7H4z"/>'
+        + '<path fill="#ffc21c" d="M4 1h8v2h1v6h-1v2h-1v2H5v-2H4v-2H3V3h1z"/>'
+        + '<path fill="#ffc21c" d="M5 18h6v5H5z"/>'
+        + '<path fill="#fff3a8" d="M4 1h3v12H5v-2H4v-2H3V3h1zM5 18h2v5H5z"/>'
+        + '</svg>';
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
-      place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 13 } : step.at);
+      place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 11.5 } : step.at);
       m.addEventListener('click', (e) => { e.stopPropagation(); openDialog(step); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
@@ -579,11 +596,13 @@ export function bootQuest() {
     }
   }
 
-  // engines rebuild bits of their world — re-assert the layer if it got wiped
+  // engines rebuild bits of their world — re-assert the layer if it got wiped,
+  // and re-place anchored things (an NPC that lays out late moves its marker)
   setInterval(() => {
     if (S.done || dlg) return;
     const w = world();
-    if (w && layer.length && !layer[0].isConnected) render();
+    if (w && layer.length && !layer[0].isConnected) { render(); return; }
+    layer.forEach((el) => { if (el.__at && el.__at.sel) place(el, el.__at); });
   }, 2500);
 
   render();

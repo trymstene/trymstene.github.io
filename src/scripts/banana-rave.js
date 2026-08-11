@@ -2842,9 +2842,11 @@ function init() {
   // Once per device (rv-tour-v1); the ❓ button replays it.
   let tourActive = false, tourStep = -1, tourDemoEl = null;
   function maybeTour() {
-    let seen = false;
-    try { seen = !!localStorage.getItem('rv-tour-v1'); } catch (e) {}
-    if (!seen || location.search.includes('tourtest')) {
+    // 🌍 RETIRED as an auto-show (Trym, 11 Aug): the WORLD tutorial greets new
+    // players at the Homestead now, so the club stopped running its own on
+    // first visit. The whole tour machinery stays — ?tourtest still plays it
+    // for QA, and a future "how does this room work" button could too.
+    if (location.search.includes('tourtest')) {
       try { localStorage.setItem('rv-tour-v1', '1'); } catch (e) {}
       setTimeout(runTour, 1200);
     }
