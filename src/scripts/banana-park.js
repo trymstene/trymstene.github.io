@@ -417,7 +417,8 @@ function init() {
   function float(x, y, text) {
     const d = document.createElement('div');
     d.className = 'pk-float';
-    d.textContent = text;
+    if (text && text.nodeType) d.appendChild(text);
+    else d.textContent = text;
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
@@ -453,8 +454,10 @@ function init() {
   const refreshHud = () => hud && hud.refresh();
 
   // 🎮 the action bar — React · Sound
-  document.getElementById('pkEmote').addEventListener('click', () => {
-    float(pos.x, pos.y - 44, '❤️');
+  document.getElementById('pkEmote').addEventListener('click', function () {
+    // the float rides the button's own pixel heart — one art source (rave grammar)
+    const s = this.querySelector('svg');
+    float(pos.x, pos.y - 44, s ? s.cloneNode(true) : '❤️');
   });
   (() => {
     // 🧭 fast travel sits in the bar with the other actions — the walked

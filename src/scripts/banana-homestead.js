@@ -1019,7 +1019,8 @@ function init(visitDoc, visitMiss) {
   function float(x, y, text) {
     const d = document.createElement('div');
     d.className = 'hs-float';
-    d.innerHTML = text;   // internal strings only — prices ride the real coin
+    if (text && text.nodeType) d.appendChild(text);
+    else d.innerHTML = text;   // internal strings only — prices ride the real coin
     d.style.left = pct(x, W); d.style.top = pct(y, H);
     world.appendChild(d);
     setTimeout(() => d.remove(), 950);
@@ -1041,7 +1042,11 @@ function init(visitDoc, visitMiss) {
     chips: ['lvl', 'coins', 'crowd'],
   });
   const refreshHud = () => hud && hud.refresh();
-  document.getElementById('hsEmote').addEventListener('click', () => float(pos.x, pos.y - 44, '❤️'));
+  document.getElementById('hsEmote').addEventListener('click', function () {
+    // the float rides the button's own pixel heart — one art source (rave grammar)
+    const s = this.querySelector('svg');
+    float(pos.x, pos.y - 44, s ? s.cloneNode(true) : '❤️');
+  });
   document.getElementById('hsBag').addEventListener('click', () => {
     if (visiting) { toast('that’s ' + state.name + '’s number, not yours'); return; }
     if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }

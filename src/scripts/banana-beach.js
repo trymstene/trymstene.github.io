@@ -646,7 +646,8 @@ function init() {
   function float(x, y, text, hold) {
     const d = document.createElement('div');
     d.className = 'bh-float' + (hold ? ' bh-float--hold' : '');
-    d.textContent = text;
+    if (text && text.nodeType) d.appendChild(text);
+    else d.textContent = text;
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
@@ -2078,8 +2079,10 @@ function init() {
   // itself is mashable on purpose; only the GA4 event is throttled (house rule —
   // same 8s as beach_ball_kick, so a mash reads as one act, not twenty events)
   let emoteTrackAt = 0;
-  document.getElementById('bhEmote').addEventListener('click', () => {
-    float(pos.x, pos.y - 44, '❤️');
+  document.getElementById('bhEmote').addEventListener('click', function () {
+    // the float rides the button's own pixel heart — one art source (rave grammar)
+    const s = this.querySelector('svg');
+    float(pos.x, pos.y - 44, s ? s.cloneNode(true) : '❤️');
     const now = performance.now();
     if (now - emoteTrackAt > 8000) { emoteTrackAt = now; track('beach_emote'); }
   });

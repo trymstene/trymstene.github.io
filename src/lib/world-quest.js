@@ -33,7 +33,9 @@ const KEY = 'bwq-c1';
 // exist" on the live site (Trym: "i dont see anything"). Markers stay in the
 // world (they mark places); the journal stays on the glass.
 const AREAS = {
-  homestead: { sel: '#hsWorld', view: '.hs-view' },
+  // wh = the area's world-coordinate height (homestead-geo WORLD.h) — feeds
+  // the same depth formula the area uses (zIndex = 100 + world y)
+  homestead: { sel: '#hsWorld', view: '.hs-view', wh: 1100 },
   park: { sel: '#pkWorld', view: '#pkView' },
   beach: { sel: '#bhWorld', view: '#bhView' },
   rave: { sel: '#rvFloor', view: '#rvFloor' },
@@ -59,14 +61,26 @@ const coinBal = () => {
 //   SPLIT — bombast; claims ownership of everything; folds instantly
 //   SHELLY — cannot summarise; dates everything; delighted by barnacles
 //   BARTY — canon: over-cheer, beat, dark mutter (never break his DNA)
+// f = locked frame, d = portrait draw — each NPC's REAL in-world look (Peel's
+// cane, Split's tricorn, Barty's uniform), so the card face matches the body
+const NPC = { top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
 const WHO = {
-  nib: { n: 'Nib', c: '#8ecbff' },
-  peel: { n: 'old peel', c: '#c8e6a0' },
-  split: { n: 'captain split', c: '#ffb36b' },
-  shelly: { n: 'shelly', c: '#ffa0c8' },
-  barty: { n: 'barty', c: '#ffe135' },
-  you: { n: 'you', c: '#fffdf5' },
+  nib: { n: 'Nib', c: '#8ecbff', f: 0, d: NIB_DRAW },
+  peel: { n: 'old peel', c: '#c8e6a0', f: 0, d: { hat: 'none', glasses: 'potter', extras: { oldcane: true }, ...NPC } },
+  split: { n: 'captain split', c: '#ffb36b', f: 2, d: { hat: 'tricorn', glasses: 'eyepatch', extras: {}, ...NPC } },
+  shelly: { n: 'shelly', c: '#ffa0c8', f: 2, d: { hat: 'snailhat', glasses: 'none', extras: {}, ...NPC } },
+  barty: { n: 'barty', c: '#ffe135', f: 4, d: { hat: 'none', glasses: 'none', extras: { mustache: true, bowtie: true }, ...NPC } },
+  you: { n: 'you', c: '#fffdf5', f: 0 },
 };
+// 'you' wears whatever the player wears — bb-last rides every area already
+function myDraw() {
+  let o = { hat: 'none', glasses: 'none', extras: {} };
+  try {
+    const b = JSON.parse(localStorage.getItem('bb-last') || 'null');
+    if (b) o = { hat: b.hat || 'none', glasses: b.glasses || 'none', extras: b.extras || {} };
+  } catch (e) {}
+  return { ...o, ...NPC };
+}
 
 // ---- chapter one ----------------------------------------------------------
 // kind: talk (marker → dialogue) · objects (tap the spawned things) ·
@@ -252,19 +266,30 @@ function ensureCss() {
    "a test-thing" — every UI chip here is a yellow box with a black border, so
    a quest marker must NOT be one). A chunky free-standing gold ! with a pixel
    outline is the classic RPG shape and can't be mistaken for a text box. */
+/* delicate, not dry (Trym): a THIN gold ! with a soft breathing glow —
+   the halo is a ::before pulsing opacity (cheap; no filter animation) */
 .bwq-mark {
-  position:absolute; z-index:2400; width:24px; height:36px; margin-left:-12px;
+  position:absolute; z-index:2400; width:22px; height:36px; margin-left:-11px;
   cursor:pointer; animation:bwqBob 1.1s ease-in-out infinite;
-  filter:drop-shadow(2px 3px 0 rgba(0,0,0,0.35));
+  filter:drop-shadow(0 0 4px rgba(255,220,80,0.75)) drop-shadow(2px 3px 0 rgba(0,0,0,0.3));
 }
+.bwq-mark::before {
+  content:''; position:absolute; inset:-10px; pointer-events:none;
+  background:radial-gradient(circle, rgba(255,225,53,0.4) 0%, transparent 62%);
+  animation:bwqGlow 1.8s ease-in-out infinite;
+}
+@keyframes bwqGlow { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
 .bwq-mark svg { display:block; width:100%; height:100%; }
 @keyframes bwqBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
 /* 🍌 the quest NPC — an engine banana, one still frame.
    ⚠️ sized in % OF THE WORLD like the player (.hs-me is width:5.5%): a px
    width put Nib at a third of the player's size (Trym's screenshot). The CSS
    clipboard prop is gone too — a floating white rectangle read as a glitch,
-   not a prop. If Nib gets a look, it comes from the real wearable manifest. */
-.bwq-npc { position:absolute; z-index:2380; width:5.4%; transform:translate(-50%,-94%); pointer-events:none; }
+   not a prop. If Nib gets a look, it comes from the real wearable manifest.
+   ⚠️ NO fixed z-index: he gets the area's depth formula inline (100 + world
+   y) so the player walks in FRONT of him below and BEHIND him above — a flat
+   2380 kept him painted over the player from every side. Tapping him talks. */
+.bwq-npc { position:absolute; width:5.4%; transform:translate(-50%,-94%); cursor:pointer; }
 .bwq-npc canvas { display:block; width:100%; image-rendering:pixelated; }
 /* 🎯 quest objects — drawn things, not dots (Trym: "green dots" failed) */
 .bwq-obj {
@@ -306,18 +331,45 @@ function ensureCss() {
   pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 @keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
-/* 💬 the dialogue — docked INSIDE the game frame, never the browser bottom */
+/* 💬 the dialogue — the park's NPC-card grammar (pk-card--npc: tilted
+   waist-up portrait peeking over the corner, name beside it, console box
+   that TYPES) — docked INSIDE the game frame, never the browser bottom */
 .bwq-dlg {
-  position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:4600;
-  width:min(460px, calc(100% - 16px)); box-sizing:border-box;
-  background:#14240f; color:#fffdf5; border:4px solid #000; box-shadow:5px 5px 0 rgba(0,0,0,0.55);
-  padding:0.85rem 1rem 0.9rem; cursor:pointer;
+  position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:4600;
+  width:min(420px, calc(100% - 20px)); box-sizing:border-box;
+  background:#101a10; color:#fffdf5; border:4px solid #000; box-shadow:6px 6px 0 #000;
+  padding:0.8rem 0.9rem 0.9rem; cursor:pointer;
   animation:bwqCardIn 0.26s cubic-bezier(0.34,1.56,0.64,1);
 }
-.bwq-dlg[hidden] { display:none !important; }
-.bwq-dlg b { display:block; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:0.35rem; }
-.bwq-dlg p { margin:0; font-size:0.95rem; line-height:1.5; font-weight:700; }
-.bwq-dlg small { display:block; margin-top:0.55rem; font-size:0.62rem; opacity:0.55; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; }
+.bwq-dlg [hidden], .bwq-dlg[hidden] { display:none !important; }
+.bwq-pop {
+  position:absolute; top:-62px; left:-22px; z-index:3; width:150px; height:150px;
+  transform:rotate(-8deg); transform-origin:center bottom; pointer-events:none;
+  clip-path:inset(0 0 26% 0);
+  filter:drop-shadow(2px 3px 0 rgba(0,0,0,0.4));
+}
+.bwq-pop canvas { display:block; width:100%; height:100%; image-rendering:pixelated; }
+.bwq-dlg h2 {
+  font-family:"Archivo Black","Arial Black",sans-serif; font-size:1.05rem;
+  margin:0 0 0.45rem; padding-left:100px; min-height:48px;
+  display:flex; align-items:center; letter-spacing:0.03em;
+}
+.bwq-box {
+  min-height:4em; background:#0b130b; border:3px solid #000;
+  box-shadow:inset 0 0 0 2px #2c4a2c; padding:0.55rem 0.65rem 0.8rem;
+  position:relative; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+.bwq-box p { margin:0; font-size:0.9rem; line-height:1.5; font-weight:700; }
+.bwq-box.is-typing p::after { content:'▌'; margin-left:1px; animation:bwqCursor 0.9s steps(1) infinite; }
+@keyframes bwqCursor { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
+.bwq-more {
+  position:absolute; right:8px; bottom:3px; color:#ffe135; font-size:0.8rem;
+  display:none; animation:bwqMore 1s ease-in-out infinite;
+}
+.bwq-box.is-done .bwq-more { display:block; }
+@keyframes bwqMore { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
+.bwq-sp b { display:block; color:#ffe135; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:0.35rem; }
+.bwq-sp small { display:block; margin-top:0.55rem; font-size:0.62rem; opacity:0.55; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; }
 /* 📜 the letter is PAPER: torn edges, ruled lines, handwriting, a tilt */
 .bwq-dlg .bwq-paper {
   background:#f6ecd0 repeating-linear-gradient(180deg, transparent 0 24px, rgba(122,88,40,0.22) 24px 25px);
@@ -332,7 +384,7 @@ function ensureCss() {
   animation:bwqUnfold 0.4s ease-out;
 }
 @keyframes bwqUnfold { 0% { transform:rotate(-1.4deg) scaleY(0.12); opacity:0; } 100% { transform:rotate(-1.4deg) scaleY(1); opacity:1; } }
-.bwq-dlg canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
+.bwq-sp canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
   border:3px solid #000; background:#fffdf5; box-shadow:3px 3px 0 rgba(0,0,0,0.4); }
 .bwq-toast {
   position:fixed; left:50%; top:64px; transform:translateX(-50%); z-index:5200;
@@ -341,7 +393,7 @@ function ensureCss() {
   text-align:center; pointer-events:none; opacity:0; transition:opacity 0.25s ease;
 }
 .bwq-toast.on { opacity:1; }
-@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more { animation:none; } }
 `;
   document.head.appendChild(st);
 }
@@ -446,30 +498,80 @@ export function bootQuest() {
 
   function openDialog(step) {
     const lines = (S.res && step.linesRes) ? step.linesRes : step.lines;
-    let i = 0;
+    let i = 0, typeT = null, txt = '', at = 0, popWho = '';
     if (dlg) dlg.remove();
     dlg = document.createElement('div');
     dlg.className = 'bwq-dlg';
+    dlg.innerHTML = '<div class="bwq-pop"><canvas width="390" height="390"></canvas></div>'
+      + '<h2></h2>'
+      + '<div class="bwq-box"><p></p><span class="bwq-more" aria-hidden="true">▼</span></div>'
+      + '<div class="bwq-sp" hidden></div>';
     // ⚠️ docked INSIDE the game frame — fixed-to-viewport put it below the
     // world on desktop, out of frame entirely (Trym's screenshots)
     (document.querySelector(AREAS[area].view) || document.body).appendChild(dlg);
+    const pop = dlg.querySelector('.bwq-pop'), popCv = pop.querySelector('canvas'),
+      h2 = dlg.querySelector('h2'), box = dlg.querySelector('.bwq-box'),
+      p = box.querySelector('p'), sp = dlg.querySelector('.bwq-sp');
+    const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const typeDone = () => {
+      clearInterval(typeT); typeT = null;
+      p.textContent = txt;
+      box.classList.remove('is-typing');
+      box.classList.add('is-done');
+    };
+    const type = (t) => {
+      clearInterval(typeT); typeT = null;
+      txt = t; at = 0;
+      box.classList.remove('is-done');
+      if (RM) { typeDone(); return; }
+      box.classList.add('is-typing');
+      p.textContent = '';
+      typeT = setInterval(() => {
+        if (!p.isConnected) { clearInterval(typeT); return; }
+        at += 1;
+        p.textContent = txt.slice(0, at);
+        if (at >= txt.length) typeDone();
+      }, 32);
+    };
+    // the portrait: the SAME zoomed waist-up crop as Old Peel's card, redrawn
+    // only when the speaker changes (nib → you → nib mid-scene)
+    const portrait = (who) => {
+      if (who === popWho) return;
+      popWho = who;
+      const w = WHO[who];
+      const d = who === 'you' ? myDraw() : w.d;
+      assetsReady().then(() => {
+        if (popWho !== who || !popCv.isConnected) return;
+        const pc = popCv.getContext('2d');
+        pc.clearRect(0, 0, 390, 390);
+        pc.save();
+        pc.scale(1.5, 1.5); pc.translate(-390 * 0.167, -390 * 0.22);
+        try { drawComposite(pc, 390, w.f || 0, d); } catch (e) {}
+        pc.restore();
+      });
+    };
     const show = () => {
       const [who, text] = lines[i];
-      if (who === 'paper') {
-        dlg.innerHTML = '<div class="bwq-paper"></div><small>tap to continue</small>';
-        dlg.querySelector('.bwq-paper').textContent = text;
-      } else if (who === 'fb') {
-        dlg.innerHTML = '<b style="color:#ffe135">the flipbook</b><small>tap to continue</small>';
-        dlg.insertBefore(flipbookCanvas(), dlg.querySelector('small'));
-      } else {
-        const w = WHO[who];
-        dlg.innerHTML = '<b></b><p></p><small>tap to continue</small>';
-        dlg.querySelector('b').textContent = w.n;
-        dlg.querySelector('b').style.color = w.c;
-        dlg.querySelector('p').textContent = text;
+      const w = WHO[who];
+      if (!w) {   // paper / fb — the prop takes the stage alone
+        pop.hidden = true; h2.hidden = true; box.hidden = true; sp.hidden = false;
+        if (who === 'paper') {
+          sp.innerHTML = '<div class="bwq-paper"></div><small>tap to continue</small>';
+          sp.querySelector('.bwq-paper').textContent = text;
+        } else {
+          sp.innerHTML = '<b>the flipbook</b><small>tap to continue</small>';
+          sp.insertBefore(flipbookCanvas(), sp.querySelector('small'));
+        }
+        return;
       }
+      sp.hidden = true; pop.hidden = false; h2.hidden = false; box.hidden = false;
+      h2.textContent = w.n;
+      h2.style.color = w.c;
+      portrait(who);
+      type(text);
     };
     dlg.addEventListener('click', () => {
+      if (typeT) { typeDone(); return; }   // mid-type tap = the whole line now
       i++;
       if (i < lines.length) { show(); return; }
       dlg.remove(); dlg = null;
@@ -521,18 +623,22 @@ export function bootQuest() {
         cv.width = 150; cv.height = 160;
         n.appendChild(cv);
         place(n, step.at);
+        // the area's own depth formula — the player passes in FRONT below him
+        n.style.zIndex = String(100 + Math.round((AREAS[area].wh || 1100) * step.at.y / 100));
+        n.addEventListener('pointerdown', (e) => e.stopPropagation());
+        n.addEventListener('click', (e) => { e.stopPropagation(); openDialog(step); });
         w.appendChild(n); layer.push(n);
         assetsReady().then(() => { try { drawComposite(cv.getContext('2d'), 150, 0, NIB_DRAW); } catch (e) {} });
       }
       const m = document.createElement('div');
       m.className = 'bwq-mark';
-      // a drawn pixel !: wide gold bar tapering in, dot below, white shine
-      m.innerHTML = '<svg viewBox="0 0 16 24" aria-hidden="true">'
-        + '<path fill="#111" d="M3 0h10v2h1v8h-1v2h-1v2H4v-2H3v-2H2V2h1z"/>'
-        + '<path fill="#111" d="M4 17h8v7H4z"/>'
-        + '<path fill="#ffc21c" d="M4 1h8v2h1v6h-1v2h-1v2H5v-2H4v-2H3V3h1z"/>'
-        + '<path fill="#ffc21c" d="M5 18h6v5H5z"/>'
-        + '<path fill="#fff3a8" d="M4 1h3v12H5v-2H4v-2H3V3h1zM5 18h2v5H5z"/>'
+      // a drawn pixel !: THIN gold bar tapering to the dot, white shine
+      m.innerHTML = '<svg viewBox="0 0 14 24" aria-hidden="true">'
+        + '<path fill="#111" d="M4 0h6v10h-1v4H5v-4H4z"/>'
+        + '<path fill="#111" d="M4 17h6v5H4z"/>'
+        + '<path fill="#ffd23f" d="M5 1h4v8h-1v4H6v-4H5z"/>'
+        + '<path fill="#ffd23f" d="M5 18h4v3H5z"/>'
+        + '<path fill="#fff3a8" d="M5 1h2v8H5zM5 18h1v3H5z"/>'
         + '</svg>';
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
       place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 11.5 } : step.at);
