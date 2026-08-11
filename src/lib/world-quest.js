@@ -14,6 +14,15 @@
 // QA: ?questtest (sticky per device) · ?questtest=off · ?questreset ·
 //     ?queststep=N jumps (test only).
 import { passStat } from './banana-pass.js';
+import { drawComposite, assetsReady } from './banana-engine.js';
+
+// 🍌 NIB IS A REAL BANANA (Trym's polish verdict: "theres no banana NPC
+// greeting me" — a floating ! is not a character). Engine-rendered like Old
+// Peel: one locked standing frame, plain suit; the clipboard is CSS chrome.
+const NIB_DRAW = {
+  hat: 'none', glasses: 'none', extras: {},
+  top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+};
 
 const KEY = 'bwq-c1';
 // ⚠️ the hint chip anchors to the VIEW (the clipping viewport), never the
@@ -62,156 +71,169 @@ const WHO = {
 //       goal (watch for a real-world condition, homestead tent)
 // at: {sel} anchors to a live element, {x,y} = % of the world plate.
 const STEPS = [
-  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 78 },
-    find: 'someone is waiting at your gate (south) — find the !',
+  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 76 },
+    find: 'someone is waiting by your gate — go say hello!',
     lines: [
-      ['nib', 'Plot 11! All yours! Sign here. And here. Initial the hen clause.'],
-      ['you', '…who are you?'],
-      ['nib', 'Nib! Deputy Assistant Registrar, Office of the Mayor. i alphabetise Banana World.'],
-      ['you', 'why did i get a plot?'],
-      ['nib', 'excellent question! *flips pages* …hm. no application. no transfer. just… this.'],
+      ['nib', 'Welcome, welcome! Plot 11 is officially yours. Sign here, please.'],
+      ['you', 'Wait — who are you? And why do I get a whole plot?'],
+      ['nib', 'I’m Nib! I keep Banana World’s registry — every plot, every name, all in this book.'],
+      ['nib', 'And honestly? I have no idea why you got it. There’s no application. No paperwork at all.'],
+      ['nib', 'There’s only this old letter. It’s been waiting for years.'],
       ['paper', '“the eleventh plot, to whoever comes asking. it has waited long enough.”'],
-      ['nib', 'that is not a form. i can’t file feelings.'],
-      ['nib', 'the registry starts in 1999. nothing before it. but Old Peel? Peel is older than the registry.'],
-      ['nib', 'the Park. east of here. tell him it’s official business — he hates that.'],
+      ['you', 'That’s… mysterious.'],
+      ['nib', 'It’s worse than mysterious. It’s UNFILED.'],
+      ['nib', 'My registry only goes back to 1999. But Old Peel in the Park? He’s older than any book.'],
+      ['nib', 'Go ask him about Plot 11. Tell him it’s official business — he absolutely hates that.'],
     ],
     linesRes: [
-      ['nib', 'hello! registry audit! routine! do not be alarm— *flips pages* …you’re not IN the book.'],
-      ['you', 'i’ve lived here for ages?'],
-      ['nib', 'you misunderstand. Plot 11 has NO ENTRY. i feel physically unwell.'],
-      ['nib', 'and there’s this. dead-letter drawer. it was waiting here before YOU ever were.'],
+      ['nib', 'Hello! Routine registry audit! Nothing to worry ab— hold on. You’re not in the book.'],
+      ['you', 'I’ve lived here for ages?'],
+      ['nib', 'Exactly! And Plot 11 has NO entry. None. I feel unwell.'],
+      ['nib', 'And look — this letter has been sitting in the dead-letter drawer since before you even arrived.'],
       ['paper', '“the eleventh plot, to whoever comes asking. it has waited long enough.”'],
-      ['nib', 'the registry starts in 1999. Old Peel is older than the registry. the Park. east.'],
-      ['nib', 'tell him it’s official business. he hates that. it’s the only fun i’m allowed.'],
+      ['nib', 'My registry only goes back to 1999. But Old Peel in the Park is older than any book.'],
+      ['nib', 'Go ask him about Plot 11. Tell him it’s official business — he absolutely hates that.'],
     ],
     hint: 'find Old Peel in the Park' },
 
   { id: 'c1_peel_hi', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'official business? pah. FORMS is what killed the marigolds.'],
-      ['peel', 'you’re the one on eleven, eh. hm. HM.'],
-      ['peel', 'memory works better when the beds are watered. that’s not a bribe, lad. it’s horticulture.'],
+      ['peel', 'Official business? Bah. Paperwork is what killed my marigolds.'],
+      ['peel', 'So YOU’RE the one living on Plot 11 now. Hm. HM.'],
+      ['peel', 'I’ll tell you what I remember — after you help me a little. The plants are thirsty, and my knees are done for the day.'],
     ],
-    hint: 'help Old Peel — water 3 beds, pull 2 weeds' },
+    hint: 'the plants are thirsty — tap the glowing beds to water them, and pull the weeds' },
 
-  { id: 'c1_peel_chores', area: 'park', kind: 'objects', hint: 'water 3 beds, pull 2 weeds',
+  { id: 'c1_peel_chores', area: 'park', kind: 'objects',
+    hint: 'tap the glowing beds to water them 💧 and the weeds to pull them',
     objects: [
-      { id: 'bed1', x: 44, y: 47, taps: 1, kind: 'bed', done: 'watered.' },
-      { id: 'bed2', x: 52, y: 51, taps: 1, kind: 'bed', done: 'watered.' },
-      { id: 'bed3', x: 47, y: 56, taps: 1, kind: 'bed', done: 'watered.' },
-      { id: 'weed1', x: 57, y: 45, taps: 1, kind: 'weed', done: 'pulled.' },
-      { id: 'weed2', x: 41, y: 53, taps: 1, kind: 'weed', done: 'pulled.' },
+      { id: 'bed1', sel: '.pk-old', dx: 9, dy: 5, taps: 1, kind: 'bed', done: '💧 watered — it perks right up' },
+      { id: 'bed2', sel: '.pk-old', dx: 14, dy: 9, taps: 1, kind: 'bed', done: '💧 watered' },
+      { id: 'bed3', sel: '.pk-old', dx: 7, dy: 11, taps: 1, kind: 'bed', done: '💧 watered' },
+      { id: 'weed1', sel: '.pk-old', dx: 18, dy: 4, taps: 1, kind: 'weed', done: '🌿 pulled!' },
+      { id: 'weed2', sel: '.pk-old', dx: 12, dy: 14, taps: 1, kind: 'weed', done: '🌿 pulled!' },
     ] },
 
   { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'there WAS somebody on eleven. long time back.'],
-      ['peel', 'and it bothers me, lad. i remember every banana that ever set foot in this park. not them.'],
-      ['peel', 'no face. no name. gone like a smell.'],
-      ['peel', 'two things stuck, mind. little drawings. sat out front every evening, drawing the same thing over and over. like they were practising.'],
-      ['peel', 'and every morning — EVERY morning, rain or shine — down to the Bay. never came back carrying a thing.'],
-      ['peel', 'so what in blazes were they DOING down there? go on. ask the shore.'],
+      ['peel', 'Good work. Now listen close.'],
+      ['peel', 'There WAS somebody on Plot 11. Long ago.'],
+      ['peel', 'And here’s the strange part: I remember every banana that ever set foot in this park. But not them. No face. No name. Nothing.'],
+      ['peel', 'Only two things stuck with me.'],
+      ['peel', 'Every evening, they sat outside drawing. The same little drawings, over and over. Like they were practising something.'],
+      ['peel', 'And every morning they walked down to the Bay. Every single morning. And always came back empty-handed.'],
+      ['peel', 'So what were they DOING down there? Go to Banana Bay and search along the shore.'],
     ],
-    reward: { coins: 15, note: '🪣 Peel’s old watering can — yours now' },
-    hint: 'go to Banana Bay — search the shore' },
+    reward: { coins: 15, note: '🪣 Peel gives you his old watering can' },
+    hint: 'go to Banana Bay — search along the shore' },
 
-  { id: 'c1_dig', area: 'beach', kind: 'objects', hint: 'that sand looks disturbed — dig',
+  { id: 'c1_dig', area: 'beach', kind: 'objects',
+    hint: 'that patch of sand looks freshly dug — tap it to dig',
     objects: [
       { id: 'dig', x: 46, y: 58, taps: 3, kind: 'dig',
-        steps: ['a fork. of course.', 'one boot. classic beach.', '📦 a sealed TIN — heavy, old, deliberate'] },
+        steps: ['…a rusty fork. huh.', '…an old boot. the sea loves boots.',
+          '📦 A sealed TIN — heavy, old… someone buried this on purpose'] },
     ] },
 
   { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', at: { x: 30, y: 46 },
+    find: 'Captain Split wants a word about that tin',
     lines: [
-      ['split', 'HALT. everything the tide touches is MINE. maritime law. i wrote it.'],
-      ['you', 'it was buried. above the tide line.'],
-      ['split', '…then it is yours by burial law. which you now owe me for teaching you.'],
-      ['split', 'a tin, eh? sealed. old. the sort of thing an OLD banana would recognise.'],
-      ['split', 'the park keeps one of those. go. Split has spoken.'],
+      ['split', 'STOP RIGHT THERE. Everything on this beach belongs to me. Maritime law. I wrote it myself.'],
+      ['you', 'It was buried in the sand. Above the tide line.'],
+      ['split', '…Then it’s yours by burial law. Which also exists. You’re welcome.'],
+      ['split', 'A sealed tin, eh? Old thing like that… the old gardener in the Park has been around forever. He’d know it.'],
+      ['split', 'Take it to him. Split has spoken.'],
     ],
-    hint: 'take the tin back to Old Peel' },
+    hint: 'bring the tin back to Old Peel in the Park' },
 
   { id: 'c1_peel_fuss', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'a tin? give here— no. NO. not over an untidy lawn.'],
-      ['peel', 'litter first. i can’t remember over mess. nobody can. it’s science.'],
+      ['peel', 'A tin? Let me see— no. NO. Not with litter on my lawn.'],
+      ['peel', 'Pick up that rubbish first. I can’t think over mess. Nobody can.'],
     ],
-    hint: 'bin the litter (2)' },
+    hint: 'pick up the 2 pieces of litter — tap them' },
 
-  { id: 'c1_litter', area: 'park', kind: 'objects', hint: 'bin the litter (2)',
+  { id: 'c1_litter', area: 'park', kind: 'objects',
+    hint: 'pick up the 2 pieces of litter — tap them',
     objects: [
-      { id: 'lit1', x: 55, y: 58, taps: 1, kind: 'trash', done: 'binned.' },
-      { id: 'lit2', x: 43, y: 44, taps: 1, kind: 'trash', done: 'binned.' },
+      { id: 'lit1', sel: '.pk-old', dx: 16, dy: 8, taps: 1, kind: 'trash', done: '🗑 picked up' },
+      { id: 'lit2', sel: '.pk-old', dx: 6, dy: 8, taps: 1, kind: 'trash', done: '🗑 picked up' },
     ] },
 
   { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', '*opens it slow* …a photograph. that’s eleven, that is. with a little house on it.'],
-      ['peel', 'there’s no house on eleven, lad. never has been. …except i’m looking at one.'],
-      ['peel', 'and a flower. pressed flat.'],
-      ['peel', 'i know this flower. grows ONE place in the whole world — end of the pier, where nobody planted nothing.'],
-      ['peel', '…except somebody did. didn’t they.'],
+      ['peel', '(he opens the tin slowly)'],
+      ['peel', '…A photograph. That’s Plot 11 alright. But with a little house on it.'],
+      ['peel', 'There has NEVER been a house on Plot 11. Never. …And yet here’s a photo of one.'],
+      ['peel', 'And a flower, pressed flat between the papers.'],
+      ['peel', 'I know this flower. It grows in exactly ONE place: by the pier, down at the Bay.'],
+      ['peel', 'Nobody ever planted flowers there. …Except somebody clearly did.'],
     ],
     reward: { coins: 10, note: '🌸 the pressed flower — keep it safe' },
-    hint: 'the pier at Banana Bay — where the flowers grow' },
+    hint: 'go to the pier at Banana Bay — find where the flowers grow' },
 
-  { id: 'c1_fish', area: 'beach', kind: 'objects', hint: 'fish at the flower spot (pier end)',
+  { id: 'c1_fish', area: 'beach', kind: 'objects',
+    hint: 'cast a line at the glowing spot by the flowers — tap to fish',
     objects: [
       { id: 'fish', x: 74, y: 47, taps: 2, kind: 'fish',
-        steps: ['an old boot. the sea has a theme.', '🎞 a wrapped BUNDLE — eight little drawings. a flipbook.'] },
+        steps: ['🎣 …an old boot. Another one.',
+          '🎞 A wrapped BUNDLE — inside: eight small drawings. A flipbook!'] },
     ] },
 
   { id: 'c1_shelly', area: 'beach', kind: 'talk', who: 'shelly', at: { sel: '#bhShelly', x: 60, y: 40 },
+    find: 'show the bundle to Shelly',
     lines: [
-      ['shelly', 'OH. oh oh oh. barnacle rings. do you know what these MEAN?'],
-      ['you', '…old?'],
-      ['shelly', 'OLD?? this wrap predates my charts. my EARLIER charts. arguably barnacles THEMSELVES.'],
-      ['shelly', 'and inside — paper! eight little pages! flip them. go on. flip!'],
+      ['shelly', 'OH! Oh oh oh. Look at the barnacle rings on that wrapping. Do you know what this MEANS?'],
+      ['you', '…That it’s old?'],
+      ['shelly', 'Old?? This has been underwater longer than I’ve kept charts. And I chart EVERYTHING.'],
+      ['shelly', 'And inside — paper! Eight little pages! Go on, flip through them!'],
       ['fb', ''],
-      ['you', '…it’s a banana. dancing.'],
-      ['shelly', 'i don’t do dancing. the floor man does dancing. the loud room. GO.'],
+      ['you', '…It’s a banana. Dancing.'],
+      ['shelly', 'Dancing is not my department. The loud room handles dancing. Show it to Barty at the Rave!'],
     ],
     reward: { coins: 15 },
     hint: 'show the flipbook to Barty at the Rave' },
 
   { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', at: { x: 18, y: 72 },
+    find: 'show the flipbook to Barty at the bar',
     lines: [
-      ['barty', 'howdy howdy! whatcha got there— a flipbook! cute!'],
+      ['barty', 'Howdy howdy! What can I get— oh! A flipbook! Cute!'],
       ['fb', ''],
-      ['barty', 'that’s just how bananas dance, friend!'],
-      ['you', '…who taught YOU the dance, Barty?'],
-      ['barty', 'taught? nobody TEACHES it! you just… know it!'],
-      ['barty', '…huh.'],
-      ['barty', 'keep my floor warm a minute. i need to think. *mutter* never done that before.'],
+      ['barty', 'Ha! That’s just how bananas dance, friend!'],
+      ['you', 'Barty… who taught YOU the dance?'],
+      ['barty', 'Taught? Nobody teaches it! You’re born knowing it! Everybody just… knows it!'],
+      ['barty', '…Huh. That IS weird, ain’t it.'],
+      ['barty', 'Give me a minute to think. Keep my floor warm while I do — dance a little, send some hearts.'],
     ],
-    hint: 'keep the floor warm — dance + send 3 ❤' },
+    hint: 'keep the floor warm — dance for 30s and send 3 ❤' },
 
   { id: 'c1_floor', area: 'rave', kind: 'watch', hint: 'dance 30s · send 3 reactions',
     watch: { secs: 30, taps: 3 } },
 
   { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', at: { x: 18, y: 72 },
     lines: [
-      ['barty', 'every banana. same dance. since before there was a floor to do it ON.'],
-      ['barty', 'and your little book is older than my floor.'],
-      ['barty', '*mutter* i sleep under that bar. thought i knew everything under it. anyway!'],
-      ['barty', 'whoever drew these taught the whole world to dance… and never signed their name.'],
-      ['barty', 'go home, friend. things that wait get buried. and somethin’ on eleven has waited a LONG time.'],
+      ['barty', 'Okay. So. Every banana in the world does the SAME dance. Since before this club existed.'],
+      ['barty', 'And your little book of drawings is OLDER than my floor.'],
+      ['barty', 'Whoever drew those pages taught the whole world to dance… and never told anyone their name.'],
+      ['barty', 'Go home, friend. Whoever they were — they lived on YOUR plot. If anything’s left of them, it’s there.'],
     ],
-    reward: { coins: 20, note: '🖼 the flipbook — a keepsake for your wall' },
-    hint: 'go home — you live here now' },
+    reward: { coins: 20, note: '🎞 the flipbook — a keepsake' },
+    hint: 'head home to the Homestead' },
 
-  { id: 'c1_move_in', area: 'homestead', kind: 'goal', hint: 'pitch your tent — 📱 order it on the phone',
-    resSkip: '🖼 the photograph goes up on your wall — it’s home now' },
+  { id: 'c1_move_in', area: 'homestead', kind: 'goal',
+    hint: 'make it official — order a tent on your 📱 phone and move in',
+    resSkip: '🖼 the old photograph goes up on your wall. home.' },
 
-  { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 78 },
+  { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 76 },
+    find: 'Nib is back at your gate',
     lines: [
-      ['nib', 'a DWELLING! i can register a dwelling! this is the best day of my— *opens book*'],
-      ['nib', '…there is already an entry on this page.'],
-      ['nib', 'scratched out. by hand. dated 1999.'],
-      ['you', 'who scratches out a registry entry?'],
-      ['nib', 'NOBODY. that is not a thing that CAN happen. i laminated the rulebook MYSELF.'],
-      ['nib', '…i need to sit down. i have never needed to sit down.'],
-      ['paper', 'CHAPTER ONE — complete. 🍌 (chapter two: soon)'],
+      ['nib', 'A dwelling! Wonderful! I can finally register Plot 11 properly. Let me just open the—'],
+      ['nib', '…There’s already an entry on this page.'],
+      ['nib', 'Somebody wrote a name here, long ago. And then scratched it out. It’s dated 1999.'],
+      ['you', 'Who scratches a name OUT of a registry?'],
+      ['nib', 'NOBODY. It isn’t possible. I laminated the rulebook myself.'],
+      ['nib', '…I need to sit down. I have never needed to sit down in my life.'],
+      ['paper', 'CHAPTER ONE — complete 🍌 (chapter two is coming)'],
     ],
     reward: { note: '🖼 the photograph — the house that isn’t there' },
     hint: '' },
@@ -235,43 +257,82 @@ function ensureCss() {
   font-style:normal;
 }
 @keyframes bwqBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+/* 🍌 the quest NPC — an engine banana, one still frame, clipboard in hand */
+.bwq-npc { position:absolute; z-index:2380; width:46px; transform:translate(-50%,-92%); pointer-events:none; }
+.bwq-npc canvas { display:block; width:100%; image-rendering:pixelated; }
+.bwq-npc s {
+  position:absolute; right:-7px; bottom:16%; width:13px; height:17px;
+  background:#fffdf5; border:2px solid #241c00; border-radius:1px; transform:rotate(7deg);
+  box-shadow:inset 0 3px 0 #b9852c;   /* the clip */
+}
+/* 🎯 quest objects — drawn things, not dots (Trym: "green dots" failed) */
 .bwq-obj {
-  position:absolute; z-index:2350; width:34px; height:34px; margin:-17px 0 0 -17px;
+  position:absolute; z-index:2350; width:40px; height:36px; margin:-18px 0 0 -20px;
   cursor:pointer; display:grid; place-items:center;
 }
-.bwq-obj i {
-  display:block; width:22px; height:22px; border:3px solid #000; border-radius:50%;
-  box-shadow:0 0 0 3px rgba(255,225,53,0.35), 2px 2px 0 rgba(0,0,0,0.4);
-  animation:bwqPulse 1.3s ease-in-out infinite;
+.bwq-obj::after {
+  content:''; position:absolute; inset:-3px; border:2px dashed #ffe135;
+  border-radius:8px; animation:bwqPulse 1.3s ease-in-out infinite; pointer-events:none;
 }
-.bwq-obj--bed i { background:#5f8a3c; border-radius:6px; }
-.bwq-obj--weed i { background:#3e6b2a; }
-.bwq-obj--trash i { background:#b9a06a; border-radius:4px; }
-.bwq-obj--dig i { background:#c9a86a; }
-.bwq-obj--fish i { background:#4aa5c9; }
-@keyframes bwqPulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.22); } }
+.bwq-obj i { display:block; }
+.bwq-obj--bed i {
+  width:30px; height:18px; border:2px solid #241c00; border-radius:5px;
+  background:#7a5230 repeating-linear-gradient(90deg, transparent 0 5px, rgba(30,16,4,0.35) 5px 7px);
+}
+.bwq-obj--weed i {
+  width:22px; height:20px; background:#3e6b2a; border:2px solid #142008;
+  clip-path:polygon(50% 0, 68% 38%, 100% 22%, 74% 62%, 92% 100%, 50% 78%, 8% 100%, 26% 62%, 0 22%, 32% 38%);
+}
+.bwq-obj--trash i {
+  width:20px; height:18px; background:#cfc4a8; border:2px solid #241c00;
+  clip-path:polygon(12% 0, 88% 8%, 100% 55%, 78% 100%, 18% 92%, 0 45%);
+}
+.bwq-obj--dig i {
+  width:30px; height:16px; border:2px solid #7a5c33; border-radius:50%;
+  background:#d9b67c; box-shadow:inset 3px 3px 0 #b78f52, inset -4px -2px 0 #eecf96;
+}
+.bwq-obj--fish i {
+  width:28px; height:16px; border:2px solid #1d4b60; border-radius:50%;
+  background:#4aa5c9; box-shadow:inset 0 3px 0 rgba(255,255,255,0.45);
+}
+@keyframes bwqPulse { 0%,100% { transform:scale(1); opacity:0.9; } 50% { transform:scale(1.14); opacity:0.45; } }
+/* 🕯 the journal — a game card, not an info-box (Trym's verdict) */
 .bwq-hint {
-  position:absolute; left:8px; top:44px; z-index:900; max-width:62%;
-  background:rgba(10,14,8,0.85); color:#ffe135; border:2px solid #ffe135;
-  font-size:0.62rem; font-weight:800; padding:4px 8px; border-radius:4px;
-  pointer-events:none; line-height:1.35;
+  position:absolute; left:10px; top:48px; z-index:900; max-width:64%;
+  background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
+  border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
+  font-size:0.78rem; font-weight:800; padding:7px 11px; line-height:1.35;
+  pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
+@keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
+/* 💬 the dialogue — docked INSIDE the game frame, never the browser bottom */
 .bwq-dlg {
-  position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:5000;
-  width:min(480px, calc(100vw - 20px)); box-sizing:border-box;
-  background:#14240f; color:#fffdf5; border:4px solid #000; box-shadow:6px 6px 0 #000;
-  padding:0.8rem 0.95rem 0.9rem; cursor:pointer;
+  position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:4600;
+  width:min(460px, calc(100% - 16px)); box-sizing:border-box;
+  background:#14240f; color:#fffdf5; border:4px solid #000; box-shadow:5px 5px 0 rgba(0,0,0,0.55);
+  padding:0.85rem 1rem 0.9rem; cursor:pointer;
+  animation:bwqCardIn 0.26s cubic-bezier(0.34,1.56,0.64,1);
 }
 .bwq-dlg[hidden] { display:none !important; }
-.bwq-dlg b { display:block; font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:0.3rem; }
-.bwq-dlg p { margin:0; font-size:0.92rem; line-height:1.5; font-weight:700; }
+.bwq-dlg b { display:block; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:0.35rem; }
+.bwq-dlg p { margin:0; font-size:0.95rem; line-height:1.5; font-weight:700; }
 .bwq-dlg small { display:block; margin-top:0.55rem; font-size:0.62rem; opacity:0.55; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; }
+/* 📜 the letter is PAPER: torn edges, ruled lines, handwriting, a tilt */
 .bwq-dlg .bwq-paper {
-  background:#f4e9c8; color:#3a2c14; border:2px solid #3a2c14; padding:0.6rem 0.7rem;
-  font-style:italic; font-weight:700; font-size:0.88rem; line-height:1.5;
+  background:#f6ecd0 repeating-linear-gradient(180deg, transparent 0 24px, rgba(122,88,40,0.22) 24px 25px);
+  color:#43301a; padding:1rem 1rem 0.9rem; transform:rotate(-1.4deg);
+  font-family:"Segoe Script","Bradley Hand","Comic Sans MS",cursive;
+  font-weight:700; font-size:1.02rem; line-height:1.55;
+  box-shadow:3px 4px 0 rgba(0,0,0,0.4);
+  clip-path:polygon(0 3%, 4% 0, 9% 2%, 15% 0, 22% 3%, 30% 1%, 38% 3%, 47% 0, 55% 2%,
+    63% 0, 71% 3%, 79% 1%, 87% 3%, 94% 0, 100% 2%, 100% 97%, 95% 100%, 88% 98%,
+    80% 100%, 71% 97%, 62% 100%, 53% 98%, 44% 100%, 35% 97%, 26% 100%, 17% 98%,
+    9% 100%, 3% 97%, 0 100%);
+  animation:bwqUnfold 0.4s ease-out;
 }
+@keyframes bwqUnfold { 0% { transform:rotate(-1.4deg) scaleY(0.12); opacity:0; } 100% { transform:rotate(-1.4deg) scaleY(1); opacity:1; } }
 .bwq-dlg canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
-  border:3px solid #000; background:#fffdf5; }
+  border:3px solid #000; background:#fffdf5; box-shadow:3px 3px 0 rgba(0,0,0,0.4); }
 .bwq-toast {
   position:fixed; left:50%; top:64px; transform:translateX(-50%); z-index:5200;
   background:#14240f; color:#ffe135; border:3px solid #000; box-shadow:3px 3px 0 #000;
@@ -279,7 +340,7 @@ function ensureCss() {
   text-align:center; pointer-events:none; opacity:0; transition:opacity 0.25s ease;
 }
 .bwq-toast.on { opacity:1; }
-@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-obj i { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper { animation:none; } }
 `;
   document.head.appendChild(st);
 }
@@ -357,15 +418,21 @@ export function bootQuest() {
   }
 
   function place(el, at) {
-    // anchor to a live element's own % position when it exists — the marker
-    // follows whatever the engine decided; fixed % otherwise
+    // ⚠️ anchor by MEASURED RECT, never by style.left — Peel's marker landed on
+    // the FOUNTAIN because .pk-old isn't positioned the way its style implies.
+    // Measuring the element against the world is true for every engine.
     let x = at.x, y = at.y;
-    if (at.sel) {
-      const t = document.querySelector(at.sel);
-      if (t && t.style.left) { x = parseFloat(t.style.left); y = parseFloat(t.style.top); }
+    const t = at.sel && document.querySelector(at.sel);
+    const w = world();
+    if (t && w) {
+      const tr = t.getBoundingClientRect(), wr = w.getBoundingClientRect();
+      if (tr.width && wr.width) {
+        x = ((tr.left + tr.width / 2) - wr.left) / wr.width * 100 + (at.dx || 0);
+        y = (tr.top - wr.top) / wr.height * 100 + (at.dy || 0);
+      }
     }
     el.style.left = x + '%';
-    el.style.top = (y - 4) + '%';
+    el.style.top = (y - 1) + '%';
   }
 
   function openDialog(step) {
@@ -374,7 +441,9 @@ export function bootQuest() {
     if (dlg) dlg.remove();
     dlg = document.createElement('div');
     dlg.className = 'bwq-dlg';
-    document.body.appendChild(dlg);
+    // ⚠️ docked INSIDE the game frame — fixed-to-viewport put it below the
+    // world on desktop, out of frame entirely (Trym's screenshots)
+    (document.querySelector(AREAS[area].view) || document.body).appendChild(dlg);
     const show = () => {
       const [who, text] = lines[i];
       if (who === 'paper') {
@@ -434,10 +503,24 @@ export function bootQuest() {
     if (step.area !== area) return;      // objective lives elsewhere — hint covers it
 
     if (step.kind === 'talk') {
+      // 🍌 Nib stands there in person — the ! floats above HIM, and tapping
+      // either talks. Existing NPCs (Peel, Barty…) already have bodies.
+      if (step.who === 'nib') {
+        const n = document.createElement('div');
+        n.className = 'bwq-npc';
+        const cv = document.createElement('canvas');
+        cv.width = 150; cv.height = 160;
+        n.appendChild(cv);
+        n.appendChild(document.createElement('s'));   // the clipboard
+        place(n, step.at);
+        w.appendChild(n); layer.push(n);
+        assetsReady().then(() => { try { drawComposite(cv.getContext('2d'), 150, 0, NIB_DRAW); } catch (e) {} });
+      }
       const m = document.createElement('div');
       m.className = 'bwq-mark';
       m.innerHTML = '<i>!</i>';
       place(m, step.at);
+      if (step.who === 'nib') m.style.marginTop = '-56px';   // above his head
       m.addEventListener('click', (e) => { e.stopPropagation(); openDialog(step); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
