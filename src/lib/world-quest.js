@@ -322,6 +322,32 @@ function ensureCss() {
   background:#4aa5c9; box-shadow:inset 0 3px 0 rgba(255,255,255,0.45);
 }
 @keyframes bwqPulse { 0%,100% { transform:scale(1); opacity:0.9; } 50% { transform:scale(1.14); opacity:0.45; } }
+/* 🎬 THE CHAPTER SPLASH — the park's post-storm register (big type ON the
+   world, no box): a sticker pill, the title under it, fade in → hold → out,
+   THEN the journal chip pops. Shows once (S.in). pointer-events:none is
+   load-bearing — the world walks on taps and this sits mid-screen. */
+.bwq-intro {
+  position:absolute; left:50%; top:24%; z-index:4700; width:max-content; max-width:92%;
+  text-align:center; pointer-events:none; opacity:0; transform:translate(-50%,-8px);
+  transition:opacity 0.5s ease, transform 0.5s ease;
+}
+.bwq-intro.is-on { opacity:1; transform:translate(-50%,0); }
+.bwq-intro i {
+  display:inline-block; font-style:normal; font-size:0.72rem; font-weight:900;
+  letter-spacing:0.22em; text-transform:uppercase; color:#241c00;
+  background:linear-gradient(#ffe14d,#f2c012); border:3px solid #000;
+  border-radius:999px; padding:0.32rem 0.95rem; box-shadow:3px 3px 0 #000;
+  transform:rotate(-2deg);
+}
+.bwq-intro b {
+  display:block; margin-top:0.6rem;
+  font-family:"Anton","Archivo Black","Arial Black",sans-serif;
+  font-size:clamp(1.6rem, 6.4vw, 2.8rem); line-height:0.92; letter-spacing:0.015em;
+  text-transform:uppercase; color:#ffe135; text-wrap:balance;
+  text-shadow:-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+    -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000, 5px 6px 0 #000;
+}
+@media (prefers-reduced-motion:reduce) { .bwq-intro { transition:none; } }
 /* 🕯 the journal — a game card, not an info-box (Trym's verdict) */
 .bwq-hint {
   position:absolute; left:10px; top:48px; z-index:900; max-width:64%;
@@ -570,7 +596,12 @@ export function bootQuest() {
       portrait(who);
       type(text);
     };
-    dlg.addEventListener('click', () => {
+    // ⚠️ the sheet lives INSIDE the view — without these stops every tap on it
+    // ALSO walks the banana underneath (the areas walk on view click/pointerup)
+    ['pointerdown', 'pointerup', 'touchstart'].forEach((ev) =>
+      dlg.addEventListener(ev, (e) => e.stopPropagation()));
+    dlg.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (typeT) { typeDone(); return; }   // mid-type tap = the whole line now
       i++;
       if (i < lines.length) { show(); return; }
@@ -711,6 +742,24 @@ export function bootQuest() {
     layer.forEach((el) => { if (el.__at && el.__at.sel) place(el, el.__at); });
   }, 2500);
 
-  render();
+  // 🎬 CHAPTER I opens like a chapter (Trym: the storm-notice register, not a
+  // corner chip) — once, wherever the quest first boots; the chip pops after.
+  if (!S.in && !S.done) {
+    S.in = 1; save();
+    const iv = document.querySelector(AREAS[area].view) || document.body;
+    const sp = document.createElement('div');
+    sp.className = 'bwq-intro';
+    sp.innerHTML = '<i>chapter i</i><b>what the plot?</b>';
+    iv.appendChild(sp);
+    requestAnimationFrame(() => sp.classList.add('is-on'));
+    setTimeout(() => {
+      sp.classList.remove('is-on');
+      setTimeout(() => sp.remove(), 600);
+      render();
+    }, 3400);
+    track('quest_intro', { area });
+  } else {
+    render();
+  }
   track('quest_boot', { area, step: STEPS[S.s] && STEPS[S.s].id });
 }
