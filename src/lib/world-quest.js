@@ -27,6 +27,16 @@ const NIB_DRAW = {
 };
 
 const KEY = 'bwq-c1';
+// the quest glyph — a THIN pixel ! (gold, black outline, white shine). ONE
+// art source: the bobbing world marker AND the journal chip's icon (the 🕯
+// emoji there rendered as an illegible smudge at chip size — Trym).
+const MARK_SVG = '<svg viewBox="0 0 14 24" aria-hidden="true">'
+  + '<path fill="#111" d="M4 0h6v10h-1v4H5v-4H4z"/>'
+  + '<path fill="#111" d="M4 17h6v5H4z"/>'
+  + '<path fill="#ffd23f" d="M5 1h4v8h-1v4H6v-4H5z"/>'
+  + '<path fill="#ffd23f" d="M5 18h4v3H5z"/>'
+  + '<path fill="#fff3a8" d="M5 1h2v8H5zM5 18h1v3H5z"/>'
+  + '</svg>';
 // ⚠️ the hint chip anchors to the VIEW (the clipping viewport), never the
 // world: the world PANS, so a world-anchored chip lives at the map's top-left
 // corner and is off-screen almost always — which read as "the quest doesn't
@@ -357,6 +367,10 @@ function ensureCss() {
   pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 .bwq-hint[hidden] { display:none !important; }
+/* the chip's ! is INK, not gold — gold-on-yellow vanished (Trym: "must at
+   least be possible to see"); CSS fill beats the svg's own colours */
+.bwq-hint svg { width:0.72em; height:1.2em; vertical-align:-0.22em; margin-right:5px; }
+.bwq-hint svg path { fill:#241c00; }
 @keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
 /* 💬 the dialogue — the park's NPC-card grammar (pk-card--npc: tilted
    waist-up portrait peeking over the corner, name beside it, console box
@@ -647,7 +661,8 @@ export function bootQuest() {
     if (label) {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
-      h.textContent = '🕯 ' + label;
+      h.innerHTML = MARK_SVG + '<span></span>';
+      h.querySelector('span').textContent = label;
       (document.querySelector(AREAS[area].view) || w).appendChild(h);
       layer.push(h);
     }
@@ -695,16 +710,10 @@ export function bootQuest() {
       }
       const m = document.createElement('div');
       m.className = 'bwq-mark';
-      // a drawn pixel !: THIN gold bar tapering to the dot, white shine
-      m.innerHTML = '<svg viewBox="0 0 14 24" aria-hidden="true">'
-        + '<path fill="#111" d="M4 0h6v10h-1v4H5v-4H4z"/>'
-        + '<path fill="#111" d="M4 17h6v5H4z"/>'
-        + '<path fill="#ffd23f" d="M5 1h4v8h-1v4H6v-4H5z"/>'
-        + '<path fill="#ffd23f" d="M5 18h4v3H5z"/>'
-        + '<path fill="#fff3a8" d="M5 1h2v8H5zM5 18h1v3H5z"/>'
-        + '</svg>';
+      m.innerHTML = MARK_SVG;
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
-      place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 11.5 } : step.at);
+      // (-9: -11.5 floated it a full head-height too high — Trym)
+      place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 9 } : step.at);
       m.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
@@ -734,7 +743,8 @@ export function bootQuest() {
       let secs = S.k.secs || 0, taps = S.k.taps || 0;
       const need = step.watch;
       const chip = layer[0];   // reuse the hint chip as the progress line
-      const paint = () => { if (chip) chip.textContent = '🕯 dance ' + Math.min(secs, need.secs) + '/' + need.secs + 's · ❤ ' + Math.min(taps, need.taps) + '/' + need.taps; };
+      const chipTxt = chip && chip.querySelector('span');
+      const paint = () => { if (chipTxt) chipTxt.textContent = 'dance ' + Math.min(secs, need.secs) + '/' + need.secs + 's · ❤ ' + Math.min(taps, need.taps) + '/' + need.taps; };
       paint();
       const onTap = (e) => { if (e.target.closest('[data-emote]')) { taps++; S.k.taps = taps; save(); paint(); } };
       document.addEventListener('click', onTap);
