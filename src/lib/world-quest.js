@@ -134,9 +134,9 @@ const STEPS = [
     lines: [
       ['peel', 'Official business? Bah. Paperwork is what killed my marigolds.'],
       ['peel', 'So YOU’RE the one living on Plot 11 now. Hm. HM.'],
-      ['peel', 'I’ll tell you what I remember — after you help me a little. My flowerbed has gone thirsty, and my knees are done for the day.'],
+      ['peel', 'I’ll tell you what I remember — after you help me a little. My flowerbed is up in the garden corner, past the mushroom shop. It’s gone thirsty, and my knees are done for the day.'],
     ],
-    hint: 'old peel’s flowers are thirsty — tap them to water 💧, and pull the 2 weeds' },
+    hint: 'water old peel’s flowerbed 💧 — the garden corner, top right, past the mushroom shop' },
 
   // 🌼 the chores happen on PEEL'S OWN FLOWERBED (park-npc PEEL_BED, world
   // px 1652/1712/1772 × 762 → %) — quest-holder-only wilt via `thirst`, each
@@ -146,11 +146,11 @@ const STEPS = [
     thirst: '.pk-peelplant',
     hint: 'old peel’s flowers are thirsty — tap them to water 💧, and pull the 2 weeds',
     objects: [
-      { id: 'bed1', x: 59.9, y: 68.0, taps: 1, kind: 'bed', heal: '[data-peel="0"]', done: '💧 watered — it perks right up' },
-      { id: 'bed2', x: 62.0, y: 68.0, taps: 1, kind: 'bed', heal: '[data-peel="1"]', done: '💧 watered' },
-      { id: 'bed3', x: 64.2, y: 68.0, taps: 1, kind: 'bed', heal: '[data-peel="2"]', done: '💧 watered' },
-      { id: 'weed1', x: 61.0, y: 71.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
-      { id: 'weed2', x: 65.1, y: 70.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
+      { id: 'bed1', x: 87.7, y: 26.8, taps: 1, kind: 'bed', heal: '[data-peel="0"]', done: '💧 watered — it perks right up' },
+      { id: 'bed2', x: 89.9, y: 26.8, taps: 1, kind: 'bed', heal: '[data-peel="1"]', done: '💧 watered' },
+      { id: 'bed3', x: 92.0, y: 26.8, taps: 1, kind: 'bed', heal: '[data-peel="2"]', done: '💧 watered' },
+      { id: 'weed1', x: 88.8, y: 33.8, taps: 1, kind: 'weed', done: '🌿 pulled!' },
+      { id: 'weed2', x: 93.6, y: 31.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
     ] },
 
   { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },

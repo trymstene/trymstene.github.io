@@ -84,16 +84,24 @@ const OLD_TOPICS = [
   ], close: true },
 ];
 
-// 🌼 OLD PEEL'S FLOWERBED — his pride, east of the bench: three REAL bed
-// ditches (g-bed grammar) holding a daisy, a sunflower and a midnight tulip.
-// Pure client decoration, identical for every visitor, no server state —
-// which is exactly why nobody can touch it: always watered, never wilting.
-// The questline is the ONE exception (it wilts them quest-holder-only and
-// has you water them back — world-quest.js drives that via CSS classes).
+// 🌼 OLD PEEL'S FLOWERBED — his pride: three REAL bed ditches (g-bed
+// grammar) holding a daisy, a sunflower and a midnight tulip, in the OPEN
+// top-right garden corner under the community bed row (east of the bench it
+// overflowed the road — Trym). Pure client decoration, identical for every
+// visitor, no server state — which is exactly why nobody can touch it:
+// always watered, never wilting. The questline is the ONE exception (it
+// wilts them quest-holder-only and has you water them back — world-quest.js
+// drives that via CSS classes). His knees being done for the day is why YOU
+// walk over there.
 const PEEL_BED = [
-  [1652, 762, 'g-daisy.png', 26, 31],
-  [1712, 762, 'g-sunflower.png', 31, 47],
-  [1772, 762, 'g-tulip.png', 31, 26],
+  [2420, 330, 'g-daisy.png', 26, 31],
+  [2480, 330, 'g-sunflower.png', 31, 47],
+  [2540, 330, 'g-tulip.png', 31, 26],
+];
+// the bed is SOLID like every open garden bed (BED_SOLID margins) — the
+// chassis checks these in blocked(); without them players stood IN the ditch
+export const PEEL_BED_SOLID = [
+  [2392, 280, 2448, 334], [2452, 280, 2508, 334], [2512, 280, 2568, 334],
 ];
 const PEEL_BED_LINES = [
   'my flowerbed. a daisy, a sunflower, and one midnight tulip.',
@@ -166,13 +174,11 @@ export function initOldPeel(ctx) {
   });
   let peelBedIdx = 0;
   function tapPeelBed(wx, wy) {
-    if (!(wx > 1616 && wx < 1808 && wy > 670 && wy < 790)) return false;
+    if (!(wx > 2385 && wx < 2575 && wy > 238 && wy < 352)) return false;
     if (window.bwqTend) return false;   // quest chores own the bed right now
-    // outside the quest the bed only answers with Peel fussing — it's HIS
-    oldBub.innerHTML = '<i>' + OLD_NAME + '</i>' + esc(PEEL_BED_LINES[peelBedIdx++ % PEEL_BED_LINES.length]);
-    oldBub.classList.add('is-on');
-    clearTimeout(oldTimer);
-    oldTimer = setTimeout(() => oldBub.classList.remove('is-on'), 5600);
+    // outside the quest the bed only answers with Peel fussing — a TOAST,
+    // because his bench (and his bubble) is half a park away from the bed
+    ctx.toast('🌼 old peel: “' + PEEL_BED_LINES[peelBedIdx++ % PEEL_BED_LINES.length] + '”', 3600);
     return true;
   }
 

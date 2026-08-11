@@ -28,7 +28,7 @@ import {
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
 import { initBirds } from './park-birds.js';
-import { initOldPeel } from './park-npc.js';
+import { initOldPeel, PEEL_BED_SOLID } from './park-npc.js';
 import { initFountain } from './park-fountain.js';
 import { initShops } from './park-shops.js';
 import { initGarden } from './park-garden.js';
@@ -343,6 +343,7 @@ function init() {
     }
     for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
     for (const r of liveRects) if (inRect(x, y, r)) return true;
+    for (const r of PEEL_BED_SOLID) if (inRect(x, y, r)) return true;   // 🌼 his bed is a bed
     for (const c of OB_CIRCLES) if (Math.hypot(x - c[0], y - c[1]) < c[2]) return true;
     const px = (x - POND.x) / POND.rx, py = (y - POND.y) / POND.ry;
     if (px * px + py * py < 1) return true;   // bananas famously can't swim
