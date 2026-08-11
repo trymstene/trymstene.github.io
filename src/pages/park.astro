@@ -995,6 +995,10 @@ const faq = {
     @media (prefers-reduced-motion: reduce) {
       .pk-plant.is-ready::after { animation: none; opacity: 0.6; }
     }
+    /* 🕯 Old Peel's flowers during the questline's chores step — the quest
+       (world-quest.js) toggles this quest-holder-only; everyone else keeps
+       seeing them in full bloom. Watering a flower lifts its class again. */
+    .pk-plant.bwq-thirsty { filter: saturate(0.3) brightness(0.85) drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35)); }
     /* 🪧 the ownership stake — a quiet garden label on YOUR plants only */
     .pk-gstake { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
     .pk-gstake svg { display: block; width: 100%; height: 100%; }

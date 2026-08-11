@@ -550,6 +550,7 @@ function init() {
     if (critters.tapBfly(wx, wy)) return;
     if (critters.tapAnimal(wx, wy)) return;
     if (npc.tapOld(wx, wy)) return;
+    if (npc.tapPeelBed(wx, wy)) return;   // 🌼 his flowerbed answers with fussing
     // ⚠️ NO tapWeed HERE (30 Jul). Weeds are a CHORE, and the park's grammar
     // is TOOLS FOR CHORES, TAPS FOR THINGS — but a weed also had a 30px tap
     // target, so a "walk over there" tap that happened to land near one pulled

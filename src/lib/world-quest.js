@@ -134,18 +134,23 @@ const STEPS = [
     lines: [
       ['peel', 'Official business? Bah. Paperwork is what killed my marigolds.'],
       ['peel', 'So YOU’RE the one living on Plot 11 now. Hm. HM.'],
-      ['peel', 'I’ll tell you what I remember — after you help me a little. The plants are thirsty, and my knees are done for the day.'],
+      ['peel', 'I’ll tell you what I remember — after you help me a little. My flowerbed has gone thirsty, and my knees are done for the day.'],
     ],
-    hint: 'the plants are thirsty — tap the glowing beds to water them, and pull the weeds' },
+    hint: 'old peel’s flowers are thirsty — tap them to water 💧, and pull the 2 weeds' },
 
-  { id: 'c1_peel_chores', area: 'park', kind: 'objects',
-    hint: 'tap the glowing beds to water them 💧 and the weeds to pull them',
+  // 🌼 the chores happen on PEEL'S OWN FLOWERBED (park-npc PEEL_BED, world
+  // px 1652/1712/1772 × 762 → %) — quest-holder-only wilt via `thirst`, each
+  // watering `heal`s its own flower back to bloom. The weeds are the park's
+  // REAL weed sprites, spawned quest-side by the no-blocker rule.
+  { id: 'c1_peel_chores', area: 'park', kind: 'objects', tend: 1,
+    thirst: '.pk-peelplant',
+    hint: 'old peel’s flowers are thirsty — tap them to water 💧, and pull the 2 weeds',
     objects: [
-      { id: 'bed1', sel: '.pk-old', dx: 9, dy: 5, taps: 1, kind: 'bed', done: '💧 watered — it perks right up' },
-      { id: 'bed2', sel: '.pk-old', dx: 14, dy: 9, taps: 1, kind: 'bed', done: '💧 watered' },
-      { id: 'bed3', sel: '.pk-old', dx: 7, dy: 11, taps: 1, kind: 'bed', done: '💧 watered' },
-      { id: 'weed1', sel: '.pk-old', dx: 18, dy: 4, taps: 1, kind: 'weed', done: '🌿 pulled!' },
-      { id: 'weed2', sel: '.pk-old', dx: 12, dy: 14, taps: 1, kind: 'weed', done: '🌿 pulled!' },
+      { id: 'bed1', x: 59.9, y: 68.0, taps: 1, kind: 'bed', heal: '[data-peel="0"]', done: '💧 watered — it perks right up' },
+      { id: 'bed2', x: 62.0, y: 68.0, taps: 1, kind: 'bed', heal: '[data-peel="1"]', done: '💧 watered' },
+      { id: 'bed3', x: 64.2, y: 68.0, taps: 1, kind: 'bed', heal: '[data-peel="2"]', done: '💧 watered' },
+      { id: 'weed1', x: 61.0, y: 71.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
+      { id: 'weed2', x: 65.1, y: 70.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
     ] },
 
   { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
@@ -229,6 +234,7 @@ const STEPS = [
     hint: 'show the flipbook to Barty at the Rave' },
 
   { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', at: { x: 28, y: 84 },
+    tapSel: '#rvBarman',
     find: 'show the flipbook to Barty at the bar',
     lines: [
       ['barty', 'Howdy howdy! What can I get— oh! A flipbook! Cute!'],
@@ -245,6 +251,7 @@ const STEPS = [
     watch: { secs: 30, taps: 3 } },
 
   { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', at: { x: 28, y: 84 },
+    tapSel: '#rvBarman',
     lines: [
       ['barty', 'Okay. So. Every banana in the world does the SAME dance. Since before this club existed.'],
       ['barty', 'And your little book of drawings is OLDER than my floor.'],
@@ -323,19 +330,13 @@ function ensureCss() {
   content:''; position:absolute; inset:-3px; border:2px dashed #ffe135;
   border-radius:8px; animation:bwqPulse 1.3s ease-in-out infinite; pointer-events:none;
 }
-.bwq-obj i { display:block; }
-.bwq-obj--bed i {
-  width:30px; height:18px; border:2px solid #241c00; border-radius:5px;
-  background:#7a5230 repeating-linear-gradient(90deg, transparent 0 5px, rgba(30,16,4,0.35) 5px 7px);
-}
-.bwq-obj--weed i {
-  width:22px; height:20px; background:#3e6b2a; border:2px solid #142008;
-  clip-path:polygon(50% 0, 68% 38%, 100% 22%, 74% 62%, 92% 100%, 50% 78%, 8% 100%, 26% 62%, 0 22%, 32% 38%);
-}
-.bwq-obj--trash i {
-  width:20px; height:18px; background:#cfc4a8; border:2px solid #241c00;
-  clip-path:polygon(12% 0, 88% 8%, 100% 55%, 78% 100%, 18% 92%, 0 45%);
-}
+.bwq-obj i { display:block; image-rendering:pixelated; background-size:100% 100%; background-repeat:no-repeat; }
+/* 🌼 park chores wear the PARK'S art (Trym: the drawn boxes read as weirdly
+   placed items): beds = a bare glow ring over Peel's real ditches, weeds and
+   litter = the park's own sprites */
+.bwq-obj--bed i { display:none; }
+.bwq-obj--weed i { width:26px; height:32px; background-image:url('/assets/park/w-weed1.png'); }
+.bwq-obj--trash i { width:22px; height:20px; background-image:url('/assets/park/t-litter1.png'); }
 .bwq-obj--dig i {
   width:30px; height:16px; border:2px solid #7a5c33; border-radius:50%;
   background:#d9b67c; box-shadow:inset 3px 3px 0 #b78f52, inset -4px -2px 0 #eecf96;
@@ -523,10 +524,14 @@ export function bootQuest() {
 
   const world = () => document.querySelector(AREAS[area].sel);
 
+  const unhook = [];   // listeners planted on the areas' own NPC elements
+
   function clearLayer() {
     layer.splice(0).forEach((el) => el.remove());
     if (dlg) { dlg.remove(); dlg = null; }
     clearInterval(watchTimer);
+    unhook.splice(0).forEach((f) => f());
+    window.bwqTalk = null;
   }
 
   function place(el, at) {
@@ -710,6 +715,24 @@ export function bootQuest() {
           openDialog(step);
         }, 3000);
       };
+      // 🗣 QUEST FIRST (Trym): while a talk step targets an NPC, tapping the
+      // NPC starts the QUEST — not their everyday dialogue. Two prongs:
+      // window.bwqTalk is the handle the areas' own tap zones check (park's
+      // tapOld, the beach NPC rects), and a capture listener on the body
+      // catches direct element clicks (Barty has no tap of his own at all).
+      window.bwqTalk = { who: step.who, open: talk };
+      // (document-level capture, delegated: the NPC element may not exist yet
+      // when this render runs, and it fires before every area handler)
+      const tapSel = step.tapSel || (step.at && step.at.sel);
+      if (tapSel) {
+        const onTap = (e) => {
+          if (!e.target.closest || !e.target.closest(tapSel)) return;
+          e.stopPropagation();
+          talk();
+        };
+        document.addEventListener('click', onTap, true);
+        unhook.push(() => document.removeEventListener('click', onTap, true));
+      }
       // 🍌 Nib stands there in person — the ! floats above HIM, and tapping
       // either talks. Existing NPCs (Peel, Barty…) already have bodies.
       if (step.who === 'nib') {
@@ -736,6 +759,25 @@ export function bootQuest() {
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
     } else if (step.kind === 'objects') {
+      // 🌼 Peel's bed steps: `tend` hands the bed to the quest (his fussing
+      // pauses), `thirst` wilts his flowers ON THIS DEVICE ONLY, and each
+      // watering `heal`s its own flower straight back to bloom.
+      if (step.tend) {
+        window.bwqTend = true;
+        unhook.push(() => { window.bwqTend = false; });
+      }
+      if (step.thirst) {
+        const dry = () => document.querySelectorAll(step.thirst).forEach((p) => {
+          const healed = step.objects.some((o) => o.heal && p.matches(o.heal) && (S.k[o.id] || 0) >= o.taps);
+          p.classList.toggle('bwq-thirsty', !healed);
+        });
+        dry();
+        const dryT = setInterval(dry, 1200);   // the park may lay out late
+        unhook.push(() => {
+          clearInterval(dryT);
+          document.querySelectorAll(step.thirst).forEach((p) => p.classList.remove('bwq-thirsty'));
+        });
+      }
       step.objects.forEach((o) => {
         if ((S.k[o.id] || 0) >= o.taps) return;
         const el = document.createElement('div');
@@ -749,7 +791,13 @@ export function bootQuest() {
           save();
           const msg = o.steps ? o.steps[S.k[o.id] - 1] : o.done;
           if (msg) toast(msg);
-          if (S.k[o.id] >= o.taps) el.remove();
+          if (S.k[o.id] >= o.taps) {
+            el.remove();
+            if (o.heal) {
+              const p = document.querySelector(o.heal);
+              if (p) p.classList.remove('bwq-thirsty');
+            }
+          }
           if (step.objects.every((q) => (S.k[q.id] || 0) >= q.taps)) advance();
         });
         w.appendChild(el); layer.push(el);

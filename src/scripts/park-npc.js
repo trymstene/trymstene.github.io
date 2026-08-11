@@ -84,6 +84,23 @@ const OLD_TOPICS = [
   ], close: true },
 ];
 
+// 🌼 OLD PEEL'S FLOWERBED — his pride, east of the bench: three REAL bed
+// ditches (g-bed grammar) holding a daisy, a sunflower and a midnight tulip.
+// Pure client decoration, identical for every visitor, no server state —
+// which is exactly why nobody can touch it: always watered, never wilting.
+// The questline is the ONE exception (it wilts them quest-holder-only and
+// has you water them back — world-quest.js drives that via CSS classes).
+const PEEL_BED = [
+  [1652, 762, 'g-daisy.png', 26, 31],
+  [1712, 762, 'g-sunflower.png', 31, 47],
+  [1772, 762, 'g-tulip.png', 31, 26],
+];
+const PEEL_BED_LINES = [
+  'my flowerbed. a daisy, a sunflower, and one midnight tulip.',
+  'i water them before the sun comes up. never missed a morning.',
+  'look, don’t touch, eh? forty years of practice in that little bed.',
+];
+
 export function initOldPeel(ctx) {
   const { W, H, world, pct, depth, onScreen, pos, tgt } = ctx;
 
@@ -125,8 +142,44 @@ export function initOldPeel(ctx) {
     drawOld();
     setTimeout(drawOld, 700);
   });
+  // 🌼 his flowerbed — bed ground at plate-layer z (a bed is GROUND, see
+  // park-garden's renderBeds note), flowers above it, plate-identical art
+  PEEL_BED.forEach(([bx, by, img, bw, bh], i) => {
+    const soil = document.createElement('div');
+    soil.className = 'pk-bedsoil';
+    soil.style.left = pct(bx, W);
+    soil.style.top = pct(by, H);
+    soil.style.width = pct(58, W);
+    soil.style.height = pct(88, H);
+    soil.style.zIndex = '2';
+    world.appendChild(soil);
+    const fl = document.createElement('div');
+    fl.className = 'pk-plant pk-peelplant';
+    fl.dataset.peel = String(i);
+    fl.style.backgroundImage = "url('/assets/park/" + img + "')";
+    fl.style.width = pct(bw, W);
+    fl.style.height = pct(bh, H);
+    fl.style.left = pct(bx, W);
+    fl.style.top = pct(by - 22, H);
+    fl.style.zIndex = '3';
+    world.appendChild(fl);
+  });
+  let peelBedIdx = 0;
+  function tapPeelBed(wx, wy) {
+    if (!(wx > 1616 && wx < 1808 && wy > 670 && wy < 790)) return false;
+    if (window.bwqTend) return false;   // quest chores own the bed right now
+    // outside the quest the bed only answers with Peel fussing — it's HIS
+    oldBub.innerHTML = '<i>' + OLD_NAME + '</i>' + esc(PEEL_BED_LINES[peelBedIdx++ % PEEL_BED_LINES.length]);
+    oldBub.classList.add('is-on');
+    clearTimeout(oldTimer);
+    oldTimer = setTimeout(() => oldBub.classList.remove('is-on'), 5600);
+    return true;
+  }
+
   let oldSeen = false, oldIdx = 0, oldBand = -1, oldTimer = null;
   function oldSay() {
+    // 🕯 he holds his tongue while the questline has business with him
+    if (window.bwqTalk && window.bwqTalk.who === 'peel') return;
     // the weather takes precedence over the health band while it falls
     const wx = ctx.weather && ctx.weather.now && ctx.weather.now();
     const band = Math.max(0, ctx.phase());
@@ -139,6 +192,8 @@ export function initOldPeel(ctx) {
   }
   function oldTick() {
     if (oldSeen || ctx.phase() < 0) return;
+    // 🕯 the first-sight line WAITS through a quest step instead of burning
+    if (window.bwqTalk && window.bwqTalk.who === 'peel') return;
     if (onScreen(OLD_X, OLD_Y)) { oldSeen = true; oldSay(); }
   }
   function oldPhasePoke() {
@@ -236,6 +291,10 @@ export function initOldPeel(ctx) {
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !oldPanel.hidden) closeOld(); });
   function tapOld(wx, wy) {
     if (!(Math.abs(wx - OLD_X) < 45 && wy > OLD_Y - 90 && wy < OLD_Y + 12)) return false;
+    // 🕯 quest first: while the questline has a talk waiting at Peel, HIS tap
+    // opens it — the bench chat returns once the quest step is done
+    const q = window.bwqTalk;
+    if (q && q.who === 'peel') { q.open(); return true; }
     if (Math.hypot(pos.x - OLD_TALK_AT.x, pos.y - OLD_TALK_AT.y) < 130) { openOld(); return true; }
     pendingOld = true;                        // walk up first, then talk
     tgt.x = OLD_TALK_AT.x;
@@ -250,7 +309,7 @@ export function initOldPeel(ctx) {
   }
 
   return {
-    oldTick, oldWalkTick, oldPhasePoke, tapOld,
+    oldTick, oldWalkTick, oldPhasePoke, tapOld, tapPeelBed,
     clearPending: () => { pendingOld = false; },
   };
 }

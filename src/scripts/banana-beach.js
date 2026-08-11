@@ -552,6 +552,8 @@ function init() {
     // over and opens ON ARRIVAL, at a reachable point in FRONT of him (the wreck
     // itself is solid, so we can't target it directly).
     if (inRect(wx, wy, [CAP_X - 50, CAP_FEET - 108, CAP_X + 50, CAP_FEET + 12])) {
+      // 🕯 quest first: a waiting quest talk outranks the desk
+      if (window.bwqTalk && window.bwqTalk.who === 'split') { window.bwqTalk.open(); return; }
       if (Math.hypot(pos.x - BAR.x, pos.y - BAR.y) < BAR.r + 30) { openDig(); return; }
       seated = null; sitTarget = null; stopFishing();
       meEl.classList.remove('is-sitting');
@@ -564,6 +566,8 @@ function init() {
     // far). Tight to her sprite (~4% wide, bottom-anchored at SHELLY.x/y) — the
     // old box sprawled left over the sign + empty sand and ate walk-by taps.
     if (inRect(wx, wy, [SHELLY.x - 50, SHELLY.y - 108, SHELLY.x + 50, SHELLY.y + 12])) {
+      // 🕯 quest first: a waiting quest talk outranks the shell board
+      if (window.bwqTalk && window.bwqTalk.who === 'shelly') { window.bwqTalk.open(); return; }
       if (Math.hypot(pos.x - SHELLY.x, pos.y - SHELLY.y) < SHELLY.r + 40) { openShells(); return; }
       seated = null; sitTarget = null; stopFishing();
       meEl.classList.remove('is-sitting');
