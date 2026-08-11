@@ -291,6 +291,11 @@ function ensureCss() {
 @keyframes bwqGlow { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
 .bwq-mark svg { display:block; width:100%; height:100%; }
 @keyframes bwqBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+/* 📱 the world shrinks but the px-sized mark doesn't — smaller and lifted a
+   touch on phones or it sits ON Nib's head (Trym) */
+@media (max-width:480px) {
+  .bwq-mark { width:17px; height:28px; margin-left:-8px; margin-top:-12px; }
+}
 /* 🍌 the quest NPC — an engine banana, one still frame.
    ⚠️ sized in % OF THE WORLD like the player (.hs-me is width:5.5%): a px
    width put Nib at a third of the player's size (Trym's screenshot). The CSS
@@ -363,14 +368,19 @@ function ensureCss() {
   position:absolute; left:10px; top:48px; z-index:900; max-width:64%;
   background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
   border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
-  font-size:0.78rem; font-weight:800; padding:7px 11px; line-height:1.35;
+  font-size:0.78rem; font-weight:800; padding:7px 11px 7px 22px; line-height:1.35;
   pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 .bwq-hint[hidden] { display:none !important; }
-/* the chip's ! is INK, not gold — gold-on-yellow vanished (Trym: "must at
-   least be possible to see"); CSS fill beats the svg's own colours */
-.bwq-hint svg { width:0.72em; height:1.2em; vertical-align:-0.22em; margin-right:5px; }
-.bwq-hint svg path { fill:#241c00; }
+/* the chip's ! is a BADGE, not an inline character (Trym: a game, not a
+   website message-box) — a black stickerpill pinned over the chip's corner,
+   the gold ! big and overflowing it. Same MARK_SVG art as the world marker. */
+.bwq-hint__badge {
+  position:absolute; left:-13px; top:-15px; line-height:0;
+  background:#111; border-radius:999px; padding:5px 8px 6px;
+  transform:rotate(-8deg); box-shadow:2px 2px 0 rgba(0,0,0,0.35);
+}
+.bwq-hint__badge svg { display:block; width:13px; height:22px; }
 @keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
 /* 💬 the dialogue — the park's NPC-card grammar (pk-card--npc: tilted
    waist-up portrait peeking over the corner, name beside it, console box
@@ -661,7 +671,7 @@ export function bootQuest() {
     if (label) {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
-      h.innerHTML = MARK_SVG + '<span></span>';
+      h.innerHTML = '<i class="bwq-hint__badge">' + MARK_SVG + '</i><span></span>';
       h.querySelector('span').textContent = label;
       (document.querySelector(AREAS[area].view) || w).appendChild(h);
       layer.push(h);
