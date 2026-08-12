@@ -1253,7 +1253,9 @@ function init(visitDoc, visitMiss) {
     if (!doorClear) { if (d > DOOR_GO * 2) doorClear = true; return; }
     // ?homestead = the park spawns you at ITS west door + park_join logs the
     // via — without it you arrive at the default gate as a 'direct' visitor
-    if (d < DOOR_GO) { exitTo('/park/?homestead'); return; }
+    // (crossing the door LINE in the lane counts too — the GO disc alone
+    // missed wall-huggers walking the road's edge; see the park's note)
+    if (d < DOOR_GO || (pos.x >= DOOR.x && Math.abs(pos.y - DOOR.y) < 62)) { exitTo('/park/?homestead'); return; }
     const want = d < DOOR_ZONE;
     if (want !== stripOn) {
       stripOn = want;

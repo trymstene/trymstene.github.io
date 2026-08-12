@@ -382,11 +382,19 @@ function init() {
   // so arriving through a door can't bounce you straight back out. In the
   // zone the confirm strip names where the road goes; walking on to the door
   // itself is the yes — the cut runs, then the nav.
+  // ⚠️ `ax` = the crossing axis. The GO disc alone missed wall-huggers: the
+  // painted road runs a little SOUTH of the door point, so walking it took
+  // you past the 36px circle and into the wall — strip up, exit never firing
+  // (Trym, stuck at the bay road twice). Crossing the door's LINE inside the
+  // lane band is walking out, wherever in the lane you are.
   const DOOR_DEFS = [
-    { x: DOORS.south.x, y: DOORS.south.y, href: '/rave/', label: 'keep walking ↓ back to the rave' },
-    { x: DOORS.east.x, y: DOORS.east.y, href: '/beach/?park', label: 'keep walking → to Banana Bay' },
-    { x: DOORS.west.x, y: DOORS.west.y, href: '/homestead/?park', label: 'keep walking ← to the Homestead' },
+    { x: DOORS.south.x, y: DOORS.south.y, ax: 'y+', href: '/rave/', label: 'keep walking ↓ back to the rave' },
+    { x: DOORS.east.x, y: DOORS.east.y, ax: 'x+', href: '/beach/?park', label: 'keep walking → to Banana Bay' },
+    { x: DOORS.west.x, y: DOORS.west.y, ax: 'x-', href: '/homestead/?park', label: 'keep walking ← to the Homestead' },
   ];
+  const doorCrossed = (d) => (d.ax === 'x+' ? pos.x >= d.x && Math.abs(pos.y - d.y) < 62
+    : d.ax === 'x-' ? pos.x <= d.x && Math.abs(pos.y - d.y) < 62
+      : pos.y >= d.y && Math.abs(pos.x - d.x) < 62);
   const DOOR_ZONE = 130, DOOR_GO = 36, DOOR_ARM = 180;
   let doorArmed = false, doorClear = false, leaving = false, stripOn = -1;
   // ⚠️ a deliberate tap/keypress ALSO arms the doors. Only the arrival
@@ -416,7 +424,7 @@ function init() {
     });
     if (!doorArmed) { if (nd > DOOR_ARM) doorArmed = true; return; }
     if (!doorClear) { if (nd > DOOR_GO * 2) doorClear = true; return; }
-    if (nd < DOOR_GO) { exitTo(DOOR_DEFS[nearest].href); return; }
+    if (nd < DOOR_GO || doorCrossed(DOOR_DEFS[nearest])) { exitTo(DOOR_DEFS[nearest].href); return; }
     const want = nd < DOOR_ZONE ? nearest : -1;
     if (want !== stripOn) {
       stripOn = want;
