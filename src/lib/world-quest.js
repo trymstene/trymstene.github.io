@@ -37,6 +37,14 @@ const MARK_SVG = '<svg viewBox="0 0 14 24" aria-hidden="true">'
   + '<path fill="#ffd23f" d="M5 18h4v3H5z"/>'
   + '<path fill="#fff3a8" d="M5 1h2v8H5zM5 18h1v3H5z"/>'
   + '</svg>';
+// …and its sibling the ?, the RPG canon's other half: ! = a new task waits,
+// ? = you're RETURNING to somebody (turn in, report back). `turnin: 1` on a
+// talk step swaps the glyph.
+const MARKQ_SVG = '<svg viewBox="0 0 14 24" aria-hidden="true">'
+  + '<path fill="#111" d="M3 0h8v5H3zM6 3h5v5H6zM5 6h5v8H5zM5 17h5v5H5z"/>'
+  + '<path fill="#ffd23f" d="M4 1h6v3H4zM7 4h3v3H7zM6 7h3v6H6zM6 18h3v3H6z"/>'
+  + '<path fill="#fff3a8" d="M4 1h2v2H4zM6 18h1v2H6z"/>'
+  + '</svg>';
 // ⚠️ the hint chip anchors to the VIEW (the clipping viewport), never the
 // world: the world PANS, so a world-anchored chip lives at the map's top-left
 // corner and is off-screen almost always — which read as "the quest doesn't
@@ -153,7 +161,7 @@ const STEPS = [
       { id: 'weed2', x: 93.6, y: 31.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
     ] },
 
-  { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
+  { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
       ['peel', 'Good work. Now listen close.'],
       ['peel', 'There WAS somebody on Plot 11. Long ago.'],
@@ -161,31 +169,45 @@ const STEPS = [
       ['peel', 'Only two things stuck with me.'],
       ['peel', 'Every evening, they sat outside drawing. The same little drawings, over and over. Like they were practising something.'],
       ['peel', 'And every morning they walked down to the Bay. Every single morning. And always came back empty-handed.'],
-      ['peel', 'So what were they DOING down there? Go to Banana Bay and search along the shore.'],
+      ['peel', 'So what were they DOING down there? Go to the Bay and ask Captain Sabreface, by the wreck. Nothing happens on that sand without him seeing it.'],
     ],
     reward: { coins: 15, note: '🪣 Peel gives you his old watering can' },
-    hint: 'go to Banana Bay — search along the shore' },
+    hint: 'go to Banana Bay — ask Captain Sabreface by the wreck' },
 
-  { id: 'c1_dig', area: 'beach', kind: 'objects',
-    hint: 'that patch of sand looks freshly dug — tap it to dig',
-    objects: [
-      { id: 'dig', sel: '#bhShelly', dx: -5, dy: 7, x: 46, y: 58, taps: 3, kind: 'dig',
-        steps: ['…a rusty fork. huh.', '…an old boot. the sea loves boots.',
-          '📦 A sealed TIN — heavy, old… someone buried this on purpose'] },
-    ] },
+  // 🗺 Sabreface's CHART (Trym): the dig spot is not handed out — Split maps
+  // an AREA (a bold circle, not an X) on the quiet NW shore past the sunbeds,
+  // and you dig it out with the REAL ⛏ verb. Spent-sand spacing means the
+  // circle takes real exploring.
+  { id: 'c1_map', area: 'beach', kind: 'talk', who: 'split', at: { sel: '#bhCap', x: 30, y: 46 },
+    find: 'ask Captain Sabreface, by the wreck, about the morning walker',
+    lines: [
+      ['split', 'HALT. You’re asking about the morning banana? On MY beach?'],
+      ['you', 'You knew them?'],
+      ['split', 'Knew them! Every dawn for years they walked my shore. Never took a thing. Never SAID a thing. And one morning — gone.'],
+      ['split', 'But Split sees everything. And Split MAPS everything.'],
+      ['map', ''],
+      ['split', 'They always stopped up there — the quiet stretch past the sunbeds, where the tide comes highest. If they buried anything, it’s inside that circle.'],
+      ['split', 'Dig the circle. Bring me what the sand coughs up — maritime law.'],
+    ],
+    hint: 'dig inside the circle on Sabreface’s chart — the quiet shore past the sunbeds' },
 
-  { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', at: { sel: '#bhCap', x: 30, y: 46 },
+  { id: 'c1_dig', area: 'beach', kind: 'digzone', need: 3,
+    hint: 'dig inside the circle — the quiet shore past the sunbeds (⛏ digs at your feet)',
+    steps: ['…a rusty fork. huh.', '…an old boot. the sea loves boots.',
+      '📦 A sealed TIN — heavy, old… someone buried this on purpose'] },
+
+  { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', turnin: 1, at: { sel: '#bhCap', x: 30, y: 46 },
     find: 'Captain Split wants a word about that tin',
     lines: [
-      ['split', 'STOP RIGHT THERE. Everything on this beach belongs to me. Maritime law. I wrote it myself.'],
-      ['you', 'It was buried in the sand. Above the tide line.'],
-      ['split', '…Then it’s yours by burial law. Which also exists. You’re welcome.'],
+      ['split', 'A TIN! Hand it over — salvage rights! Maritime law! I wrote it myself.'],
+      ['you', 'You sent me to dig it up.'],
+      ['split', '…Then it’s yours by finder’s law. Which also exists. You’re welcome.'],
       ['split', 'A sealed tin, eh? Old thing like that… the old gardener in the Park has been around forever. He’d know it.'],
       ['split', 'Take it to him. Split has spoken.'],
     ],
     hint: 'bring the tin back to Old Peel in the Park' },
 
-  { id: 'c1_peel_fuss', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
+  { id: 'c1_peel_fuss', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
       ['peel', 'A tin? Let me see— no. NO. Not with litter on my lawn.'],
       ['peel', 'Pick up that rubbish first. I can’t think over mess. Nobody can.'],
@@ -199,7 +221,7 @@ const STEPS = [
       { id: 'lit2', sel: '.pk-old', dx: 6, dy: 8, taps: 1, kind: 'trash', done: '🗑 picked up' },
     ] },
 
-  { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
+  { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
       ['peel', '(he opens the tin slowly)'],
       ['peel', '…A photograph. That’s Plot 11 alright. But with a little house on it.'],
@@ -219,7 +241,7 @@ const STEPS = [
           '🎞 A wrapped BUNDLE — inside: eight small drawings. A flipbook!'] },
     ] },
 
-  { id: 'c1_shelly', area: 'beach', kind: 'talk', who: 'shelly', at: { sel: '#bhShelly', x: 60, y: 40 },
+  { id: 'c1_shelly', area: 'beach', kind: 'talk', who: 'shelly', turnin: 1, at: { sel: '#bhShelly', x: 60, y: 40 },
     find: 'show the bundle to Shelly',
     lines: [
       ['shelly', 'OH! Oh oh oh. Look at the barnacle rings on that wrapping. Do you know what this MEANS?'],
@@ -233,7 +255,7 @@ const STEPS = [
     reward: { coins: 15 },
     hint: 'show the flipbook to Barty at the Rave' },
 
-  { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', at: { x: 28, y: 84 },
+  { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', turnin: 1, at: { x: 28, y: 84 },
     tapSel: '#rvBarman',
     find: 'show the flipbook to Barty at the bar',
     lines: [
@@ -250,7 +272,7 @@ const STEPS = [
   { id: 'c1_floor', area: 'rave', kind: 'watch', hint: 'dance 30s · send 3 reactions',
     watch: { secs: 30, taps: 3 } },
 
-  { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', at: { x: 28, y: 84 },
+  { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', turnin: 1, at: { x: 28, y: 84 },
     tapSel: '#rvBarman',
     lines: [
       ['barty', 'Okay. So. Every banana in the world does the SAME dance. Since before this club existed.'],
@@ -265,7 +287,7 @@ const STEPS = [
     hint: 'make it official — order a tent on your 📱 phone and move in',
     resSkip: '🖼 the old photograph goes up on your wall. home.' },
 
-  { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 76 },
+  { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, at: { x: 63, y: 76 },
     find: 'Nib is back at your gate',
     lines: [
       ['nib', 'A dwelling! Wonderful! I can finally register Plot 11 properly. Let me just open the—'],
@@ -478,6 +500,33 @@ function payReward(r) {
   }
 }
 
+// 🗺 SABREFACE'S CHART — the daily treasure map's visual language (drawMap in
+// banana-beach.js: parchment, sea band, pier, boathouse, court, palm dots),
+// but WHOLE (no torn slices) and with a bold CIRCLE over an AREA instead of a
+// precise X (Trym). Landmark numbers mirror beach-geo.js (generated, stable).
+// The circle marks the quiet NW shore past the sunbeds — far from the spawn
+// road, and where the morning walker "stopped where the tide comes highest".
+const DIG_CIRCLE = { x: 310, y: 355, r: 170 };
+function questMapCanvas() {
+  const cv = document.createElement('canvas');
+  cv.width = 300; cv.height = 120;
+  const c = cv.getContext('2d');
+  const sx = 300 / 2760, sy = 120 / 1100;
+  c.fillStyle = '#e7cd91'; c.fillRect(0, 0, 300, 120);                 // parchment sand
+  c.fillStyle = '#63b6d4'; c.fillRect(0, 0, 300, 292 * sy);            // the sea band
+  c.strokeStyle = '#b9702f'; c.lineWidth = 1.5; c.setLineDash([3, 2]); // the court
+  c.strokeRect(690 * sx, 532 * sy, 480 * sx, 480 * sy);
+  c.setLineDash([]);
+  c.fillStyle = '#8a5a2b'; c.fillRect(1812 * sx, 0, 156 * sx, 320 * sy);          // the pier
+  c.fillStyle = '#7a4a21'; c.fillRect(1640 * sx, 720 * sy, 120 * sx, 80 * sy);    // the boathouse
+  c.fillStyle = '#3f7d3a';
+  [[160, 545], [1585, 460], [1418, 838]].forEach(([px, py]) => { c.beginPath(); c.arc(px * sx, py * sy, 6, 0, 7); c.fill(); });
+  c.strokeStyle = '#c0261a'; c.lineWidth = 3;                          // the circle, not an X
+  c.beginPath(); c.arc(DIG_CIRCLE.x * sx, DIG_CIRCLE.y * sy, DIG_CIRCLE.r * sx, 0, 7); c.stroke();
+  c.strokeStyle = '#5a3c14'; c.lineWidth = 3; c.strokeRect(1.5, 1.5, 297, 117);
+  return cv;
+}
+
 // the flipbook: the REAL eight frames off the engine's own sheet — the prop is
 // literally the site's 1999 GIF, which is the whole point of the story
 function flipbookCanvas() {
@@ -567,7 +616,9 @@ export function bootQuest() {
     if (h) h.hidden = true;
   }
 
-  function openDialog(step) {
+  // `replay` = an informational re-show (Sabreface's chart mid-hunt): the
+  // dialogue closes without paying or advancing anything
+  function openDialog(step, replay) {
     hideHint();
     const lines = (S.res && step.linesRes) ? step.linesRes : step.lines;
     let i = 0, typeT = null, txt = '', at = 0, popWho = '';
@@ -625,11 +676,14 @@ export function bootQuest() {
     const show = () => {
       const [who, text] = lines[i];
       const w = WHO[who];
-      if (!w) {   // paper / fb — the prop takes the stage alone
+      if (!w) {   // paper / map / fb — the prop takes the stage alone
         pop.hidden = true; h2.hidden = true; box.hidden = true; sp.hidden = false;
         if (who === 'paper') {
           sp.innerHTML = '<div class="bwq-paper"></div><small>tap to continue</small>';
           sp.querySelector('.bwq-paper').textContent = text;
+        } else if (who === 'map') {
+          sp.innerHTML = '<b>sabreface’s chart</b><small>tap to continue</small>';
+          sp.insertBefore(questMapCanvas(), sp.querySelector('small'));
         } else {
           sp.innerHTML = '<b>the flipbook</b><small>tap to continue</small>';
           sp.insertBefore(flipbookCanvas(), sp.querySelector('small'));
@@ -652,6 +706,7 @@ export function bootQuest() {
       i++;
       if (i < lines.length) { show(); return; }
       dlg.remove(); dlg = null;
+      if (replay) { render(); return; }   // the chip comes back, nothing moves
       payReward(step.reward);
       advance();
     });
@@ -751,7 +806,7 @@ export function bootQuest() {
       }
       const m = document.createElement('div');
       m.className = 'bwq-mark';
-      m.innerHTML = MARK_SVG;
+      m.innerHTML = step.turnin ? MARKQ_SVG : MARK_SVG;
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
       // (-9: -11.5 floated it a full head-height too high — Trym)
       place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 9 } : step.at);
@@ -802,6 +857,34 @@ export function bootQuest() {
         });
         w.appendChild(el); layer.push(el);
       });
+    } else if (step.kind === 'digzone') {
+      // 🗺 dig the circle with the REAL ⛏: the beach makes a .bh-hole for
+      // every FRESH dig (spent sand makes none — the farm fix is the pacing
+      // here), so watching #bhDigs is a read-only seam: no beach code touched,
+      // and the 3 finds need 3 genuinely different spots inside the circle.
+      const chip = layer[0];
+      const chipTxt = chip && chip.querySelector('span');
+      const paint = () => { if (chipTxt) chipTxt.textContent = step.hint + ' · ' + Math.min(S.k.dz || 0, step.need) + '/' + step.need; };
+      paint();
+      // tapping Sabreface mid-hunt re-shows the chart
+      window.bwqTalk = { who: 'split', open: () => openDialog({ kind: 'talk', who: 'split',
+        lines: [['split', 'Lost already? Look —'], ['map', ''], ['split', 'The quiet stretch past the sunbeds. Inside the circle. DIG.']] }, true) };
+      const wrap = document.getElementById('bhDigs');
+      if (wrap) {
+        const obs = new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => {
+          if (!(n.classList && n.classList.contains('bh-hole'))) return;
+          const hx = parseFloat(n.style.left) / 100 * 2760;
+          const hy = parseFloat(n.style.top) / 100 * 1100;
+          if (Math.hypot(hx - DIG_CIRCLE.x, hy - DIG_CIRCLE.y) > DIG_CIRCLE.r) return;
+          S.k.dz = (S.k.dz || 0) + 1;
+          save();
+          toast(step.steps[Math.min(step.steps.length, S.k.dz) - 1], 3200);
+          paint();
+          if (S.k.dz >= step.need) { obs.disconnect(); advance(); }
+        })));
+        obs.observe(wrap, { childList: true });
+        unhook.push(() => obs.disconnect());
+      }
     } else if (step.kind === 'watch') {
       // the rave floor beat: time on the floor + reactions, both client-true.
       // Reactions are clicks on the existing emote buttons — listened for by
