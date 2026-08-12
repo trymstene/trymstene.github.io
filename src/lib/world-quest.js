@@ -40,10 +40,12 @@ const MARK_SVG = '<svg viewBox="0 0 14 24" aria-hidden="true">'
 // …and its sibling the ?, the RPG canon's other half: ! = a new task waits,
 // ? = you're RETURNING to somebody (turn in, report back). `turnin: 1` on a
 // talk step swaps the glyph.
+// (v2: shoulders flare BELOW the top bar on both sides — the left one stops
+// short, which is what makes it an open curve instead of a broken !)
 const MARKQ_SVG = '<svg viewBox="0 0 14 24" aria-hidden="true">'
-  + '<path fill="#111" d="M3 0h8v5H3zM6 3h5v5H6zM5 6h5v8H5zM5 17h5v5H5z"/>'
-  + '<path fill="#ffd23f" d="M4 1h6v3H4zM7 4h3v3H7zM6 7h3v6H6zM6 18h3v3H6z"/>'
-  + '<path fill="#fff3a8" d="M4 1h2v2H4zM6 18h1v2H6z"/>'
+  + '<path fill="#111" d="M4 0h7v4H4zM2 1h5v5H2zM7 1h5v5H7zM7 4h5v5H7zM5 7h5v7H5zM5 17h5v5H5z"/>'
+  + '<path fill="#ffd23f" d="M5 1h5v2H5zM3 2h3v3H3zM8 2h3v3H8zM8 5h3v3H8zM6 8h3v5H6zM6 18h3v3H6z"/>'
+  + '<path fill="#fff3a8" d="M5 1h2v1H5zM3 2h1v2H3zM6 18h1v2H6z"/>'
   + '</svg>';
 // ⚠️ the hint chip anchors to the VIEW (the clipping viewport), never the
 // world: the world PANS, so a world-anchored chip lives at the map's top-left
@@ -506,7 +508,7 @@ function payReward(r) {
 // precise X (Trym). Landmark numbers mirror beach-geo.js (generated, stable).
 // The circle marks the quiet NW shore past the sunbeds — far from the spawn
 // road, and where the morning walker "stopped where the tide comes highest".
-const DIG_CIRCLE = { x: 310, y: 355, r: 170 };
+const DIG_CIRCLE = { x: 310, y: 355, r: 230 };   // r230: the chart circle reads BIG (Trym) and the zone honestly matches it
 function questMapCanvas() {
   const cv = document.createElement('canvas');
   cv.width = 300; cv.height = 120;
@@ -521,7 +523,7 @@ function questMapCanvas() {
   c.fillStyle = '#7a4a21'; c.fillRect(1640 * sx, 720 * sy, 120 * sx, 80 * sy);    // the boathouse
   c.fillStyle = '#3f7d3a';
   [[160, 545], [1585, 460], [1418, 838]].forEach(([px, py]) => { c.beginPath(); c.arc(px * sx, py * sy, 6, 0, 7); c.fill(); });
-  c.strokeStyle = '#c0261a'; c.lineWidth = 3;                          // the circle, not an X
+  c.strokeStyle = '#c0261a'; c.lineWidth = 4;                          // the circle, not an X
   c.beginPath(); c.arc(DIG_CIRCLE.x * sx, DIG_CIRCLE.y * sy, DIG_CIRCLE.r * sx, 0, 7); c.stroke();
   c.strokeStyle = '#5a3c14'; c.lineWidth = 3; c.strokeRect(1.5, 1.5, 297, 117);
   return cv;
