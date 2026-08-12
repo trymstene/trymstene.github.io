@@ -525,6 +525,15 @@ function ensureCss() {
 }
 .bwq-box.is-done .bwq-more { display:block; }
 @keyframes bwqMore { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
+/* 🗣 YOUR lines are BUTTONS you click to say (Trym: tap-through blurred who
+   was speaking) — the park NPC question-deck grammar, one reply at a time */
+.bwq-ans { margin-top:0.55rem; display:flex; flex-direction:column; gap:6px; }
+.bwq-ans button {
+  appearance:none; text-align:left; font:inherit; font-size:0.82rem; font-weight:700;
+  background:#182a18; color:#fffdf5; border:2px solid #000; padding:0.5rem 0.65rem;
+  cursor:pointer;
+}
+.bwq-ans button:hover { background:#234023; }
 .bwq-sp b { display:block; color:#ffe135; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:0.35rem; }
 .bwq-sp small { display:block; margin-top:0.55rem; font-size:0.62rem; opacity:0.55; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; }
 /* 📜 the letter is PAPER: torn edges, ruled lines, handwriting, a tilt */
@@ -763,13 +772,16 @@ export function bootQuest() {
     dlg.innerHTML = '<div class="bwq-pop"><canvas width="390" height="390"></canvas></div>'
       + '<h2></h2>'
       + '<div class="bwq-box"><p></p><span class="bwq-more" aria-hidden="true">▼</span></div>'
+      + '<div class="bwq-ans" hidden></div>'
       + '<div class="bwq-sp" hidden></div>';
     // ⚠️ docked INSIDE the game frame — fixed-to-viewport put it below the
     // world on desktop, out of frame entirely (Trym's screenshots)
     (document.querySelector(AREAS[area].view) || document.body).appendChild(dlg);
     const pop = dlg.querySelector('.bwq-pop'), popCv = pop.querySelector('canvas'),
       h2 = dlg.querySelector('h2'), box = dlg.querySelector('.bwq-box'),
-      p = box.querySelector('p'), sp = dlg.querySelector('.bwq-sp');
+      p = box.querySelector('p'), sp = dlg.querySelector('.bwq-sp'),
+      ans = dlg.querySelector('.bwq-ans');
+    let awaiting = false;   // a reply button is up — only IT may advance
     const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const typeDone = () => {
       clearInterval(typeT); typeT = null;
@@ -808,8 +820,40 @@ export function bootQuest() {
         pc.restore();
       });
     };
+    const next = () => {
+      i++;
+      if (i < lines.length) { show(); return; }
+      dlg.remove(); dlg = null;
+      if (replay) { render(); return; }   // the chip comes back, nothing moves
+      payReward(step.reward);
+      if (step.leave && nibEl && nibEl.isConnected) nibWalkOff(nibEl);
+      advance();
+    };
     const show = () => {
       const [who, text] = lines[i];
+      // 🗣 YOUR line = a reply BUTTON (Trym: tap-through blurred who was
+      // speaking; the park question-deck grammar instead). The NPC's last
+      // words stay on the card, your reply waits as a button, and clicking
+      // it IS saying it — straight into the NPC's answer.
+      if (who === 'you') {
+        awaiting = true;
+        sp.hidden = true; pop.hidden = false; h2.hidden = false; box.hidden = false;
+        box.classList.remove('is-done');   // the ▼ yields to the reply button
+        ans.innerHTML = '';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = text;
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          awaiting = false;
+          ans.hidden = true;
+          next();
+        });
+        ans.appendChild(b);
+        ans.hidden = false;
+        return;
+      }
+      ans.hidden = true;
       const w = WHO[who];
       if (!w) {   // paper / map / fb — the prop takes the stage alone
         pop.hidden = true; h2.hidden = true; box.hidden = true; sp.hidden = false;
@@ -838,13 +882,8 @@ export function bootQuest() {
     dlg.addEventListener('click', (e) => {
       e.stopPropagation();
       if (typeT) { typeDone(); return; }   // mid-type tap = the whole line now
-      i++;
-      if (i < lines.length) { show(); return; }
-      dlg.remove(); dlg = null;
-      if (replay) { render(); return; }   // the chip comes back, nothing moves
-      payReward(step.reward);
-      if (step.leave && nibEl && nibEl.isConnected) nibWalkOff(nibEl);
-      advance();
+      if (awaiting) return;                // your reply button is the only door
+      next();
     });
     show();
   }
