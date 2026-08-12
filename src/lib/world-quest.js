@@ -98,7 +98,10 @@ const NPC = { top: '', bottom: '', bg: 'transparent', captions: false, effect: '
 const WHO = {
   nib: { n: 'Nib', c: '#8ecbff', f: 0, d: NIB_DRAW },
   peel: { n: 'old peel', c: '#c8e6a0', f: 0, d: { hat: 'none', glasses: 'potter', extras: { oldcane: true }, ...NPC } },
-  split: { n: 'captain split', c: '#ffb36b', f: 2, d: { hat: 'tricorn', glasses: 'eyepatch', extras: {}, ...NPC } },
+  // ⚠️ 'split' is only the internal key — the LIVE beach named him Captain
+  // Sabreface everywhere players look (his desk, the page FAQ, Sandy's
+  // lines), and the quest must speak the world's one name
+  split: { n: 'captain sabreface', c: '#ffb36b', f: 2, d: { hat: 'tricorn', glasses: 'eyepatch', extras: {}, ...NPC } },
   shelly: { n: 'shelly', c: '#ffa0c8', f: 2, d: { hat: 'snailhat', glasses: 'none', extras: {}, ...NPC } },
   barty: { n: 'barty', c: '#ffe135', f: 4, d: { hat: 'none', glasses: 'none', extras: { mustache: true, bowtie: true }, ...NPC } },
   you: { n: 'you', c: '#fffdf5', f: 0 },
@@ -118,7 +121,7 @@ function myDraw() {
 //       goal (watch for a real-world condition, homestead tent)
 // at: {sel} anchors to a live element, {x,y} = % of the world plate.
 const STEPS = [
-  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 76 },
+  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', leave: 1, at: { x: 63, y: 76 },
     find: 'someone is waiting by your gate — go say hello!',
     // ✍️ THE VOICE BAR (Trym, 12 Aug round 3): dialogue a 13-year-old and a
     // 50-year-old both read without a stumble — short sentences, plain
@@ -206,26 +209,33 @@ const STEPS = [
       ['split', 'HALT. Who goes there! …You’re asking about the morning banana? On MY beach?'],
       ['you', 'You knew them?'],
       ['split', 'Knew them! Every morning, for years, they walked my shore. Never took a thing. Never said a word. And one day — gone.'],
-      ['split', 'But nothing happens on this beach without Split seeing it. And Split MAPS everything.'],
+      ['split', 'But nothing happens on this beach without Sabreface seeing it. And Sabreface MAPS everything.'],
       ['map', ''],
       ['split', 'See the circle? The quiet stretch past the sunbeds, where the tide comes highest. That’s where they always stopped.'],
       ['split', 'If they buried anything, it’s there. Dig inside the circle — and bring me what the sand coughs up. Maritime law.'],
     ],
     hint: 'dig inside the circle on Sabreface’s map — the quiet shore past the sunbeds' },
 
-  { id: 'c1_dig', area: 'beach', kind: 'digzone', need: 3,
+  // ten fresh digs to the tin (Trym: found on the 4th, should be ~the 10th)
+  // — the spent-sand rule spaces every dig, so ten finds = a real search of
+  // the circle, with the flavor line building toward the strike
+  { id: 'c1_dig', area: 'beach', kind: 'digzone', need: 10,
     hint: 'dig inside the circle — the quiet shore past the sunbeds (⛏ digs at your feet)',
     steps: ['…a rusty fork. huh.', '…an old boot. the sea loves boots.',
+      '…just sand. keep going.', '…a bottle cap from 2003.',
+      '…more sand. the circle is big.', '…a crab claw. the crab kept the rest.',
+      '…something metal! …no. a third boot.', '…the sand feels looser here.',
+      '…so close — you can FEEL it.',
       '📦 A sealed TIN — heavy, old… someone buried this on purpose'] },
 
   { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', turnin: 1, at: { sel: '#bhCap', x: 30, y: 46 },
-    find: 'Captain Split wants a word about that tin',
+    find: 'Captain Sabreface wants a word about that tin',
     lines: [
       ['split', 'A TIN! Hand it over! Salvage rights! Maritime law! I wrote it myself.'],
       ['you', 'You sent me to dig it up.'],
       ['split', '…True. Then it’s yours, by finder’s law. Which also exists. You’re welcome.'],
       ['split', 'A sealed tin, though… old thing like that. Take it to the old gardener in the Park. He’s been around forever — he’ll know it.'],
-      ['split', 'Go on. Split has spoken.'],
+      ['split', 'Go on. Sabreface has spoken.'],
     ],
     hint: 'bring the tin back to Old Peel in the Park' },
 
@@ -309,7 +319,7 @@ const STEPS = [
     hint: 'make it official — order a tent on your 📱 phone and move in',
     resSkip: '🖼 the old photograph goes up on your wall. home.' },
 
-  { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, at: { x: 63, y: 76 },
+  { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, leave: 1, at: { x: 63, y: 76 },
     find: 'Nib is back at your gate',
     lines: [
       ['nib', 'A home! A real home on Plot 11! Wonderful. Now I can finally write you into the book. Let me just—'],
@@ -365,6 +375,27 @@ function ensureCss() {
    2380 kept him painted over the player from every side. Tapping him talks. */
 .bwq-npc { position:absolute; width:5.4%; transform:translate(-50%,-94%); cursor:pointer; }
 .bwq-npc canvas { display:block; width:100%; image-rendering:pixelated; }
+/* 🚶 when his business is done he WALKS off toward the park — a blink-away
+   read as a glitch (Trym). The bob sells the steps; margin, not transform
+   (the centering transform is load-bearing). */
+.bwq-npc--walk { cursor:default; animation:bwqStep 0.34s steps(2) infinite; }
+@keyframes bwqStep { 0%,100% { margin-top:0; } 50% { margin-top:-3px; } }
+/* 🗺 the map button — rides the beach action bar for the whole dig hunt,
+   glowing so nobody has to remember where the circle was (Trym) */
+.bwq-mapbtn { position:relative; }
+.bwq-mapbtn::before {
+  content:''; position:absolute; inset:-6px; pointer-events:none; border-radius:6px;
+  box-shadow:0 0 14px 4px rgba(255,225,53,0.6);
+  animation:bwqGlow 1.6s ease-in-out infinite;
+}
+.bwq-mapbtn svg { display:block; width:1.35em; height:auto; }
+/* 🌿 quest weeds wear the quest's dashed ring — a weed that LOOKS like every
+   other weed still has to say "I am part of this" (Trym) */
+.bwq-qweed { overflow:visible; }
+.bwq-qweed::after {
+  content:''; position:absolute; inset:-7px; border:2px dashed #ffe135;
+  border-radius:8px; animation:bwqPulse 1.3s ease-in-out infinite; pointer-events:none;
+}
 /* 🎯 quest objects — drawn things, not dots (Trym: "green dots" failed) */
 .bwq-obj {
   position:absolute; z-index:2350; width:40px; height:36px; margin:-18px 0 0 -20px;
@@ -514,7 +545,7 @@ function ensureCss() {
   text-align:center; pointer-events:none; opacity:0; transition:opacity 0.25s ease;
 }
 .bwq-toast.on { opacity:1; }
-@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more, .bwq-npc--walk, .bwq-qweed::after, .bwq-mapbtn::before { animation:none; } }
 `;
   document.head.appendChild(st);
 }
@@ -645,6 +676,25 @@ export function bootQuest() {
   const layer = [];   // live quest DOM in this area
   let dlg = null, dlgTimer = null, watchTimer = null, introBusy = false;
   let chipDelayed = false;   // the first chip of a visit holds back ~5s
+  let nibEl = null;          // his body — so a finished talk can walk him off
+
+  // 🚶 done talking, Nib LEAVES — steps down to the road, then walks east
+  // toward the park until the trees take him. Spliced out of the layer
+  // first, so the advance()'s clearLayer doesn't blink him away mid-stride.
+  function nibWalkOff(n) {
+    const at = layer.indexOf(n);
+    if (at >= 0) layer.splice(at, 1);
+    nibEl = null;
+    n.classList.add('bwq-npc--walk');
+    n.style.zIndex = String(100 + Math.round((AREAS[area].wh || 1100) * 0.82));
+    n.style.transition = 'left 1.2s linear, top 1.2s linear';
+    requestAnimationFrame(() => { n.style.top = '81%'; });          // onto the road
+    setTimeout(() => {
+      n.style.transition = 'left 5.5s linear';
+      n.style.left = '97%';                                          // and off east
+    }, 1300);
+    setTimeout(() => n.remove(), 7200);
+  }
 
   const world = () => document.querySelector(AREAS[area].sel);
 
@@ -783,6 +833,7 @@ export function bootQuest() {
       dlg.remove(); dlg = null;
       if (replay) { render(); return; }   // the chip comes back, nothing moves
       payReward(step.reward);
+      if (step.leave && nibEl && nibEl.isConnected) nibWalkOff(nibEl);
       advance();
     });
     show();
@@ -886,6 +937,7 @@ export function bootQuest() {
         n.addEventListener('pointerdown', (e) => e.stopPropagation());
         n.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
         w.appendChild(n); layer.push(n);
+        nibEl = n;
         assetsReady().then(() => { try { drawComposite(cv.getContext('2d'), 150, 0, NIB_DRAW); } catch (e) {} });
       }
       const m = document.createElement('div');
@@ -985,9 +1037,29 @@ export function bootQuest() {
       const chipTxt = chip && chip.querySelector('span');
       const paint = () => { if (chipTxt) chipTxt.textContent = step.hint + ' · ' + Math.min(S.k.dz || 0, step.need) + '/' + step.need; };
       paint();
-      // tapping Sabreface mid-hunt re-shows the chart
-      window.bwqTalk = { who: 'split', open: () => openDialog({ kind: 'talk', who: 'split',
-        lines: [['split', 'Lost already? Look —'], ['map', ''], ['split', 'The quiet stretch past the sunbeds. Inside the circle. DIG.']] }, true) };
+      // 🗺 the map stays one tap away for the WHOLE hunt: a glowing button
+      // on the beach's own action bar reopens it (tapping Sabreface works
+      // too). A pixel map icon, never an OS emoji — the heart lesson.
+      const MAP_AGAIN = { kind: 'talk', who: 'split',
+        lines: [['split', 'Lost already? Look —'], ['map', ''], ['split', 'The quiet stretch past the sunbeds. Inside the circle. DIG.']] };
+      window.bwqTalk = { who: 'split', open: () => openDialog(MAP_AGAIN, true) };
+      const bar = document.querySelector('.bh-actions');
+      if (bar) {
+        const mb = document.createElement('button');
+        mb.type = 'button';
+        mb.className = 'bh-act bh-act--icon bwq-mapbtn';
+        mb.setAttribute('aria-label', 'see the treasure map');
+        mb.innerHTML = '<svg viewBox="0 0 16 13" shape-rendering="crispEdges" aria-hidden="true">'
+          + '<path fill="#5a3c14" d="M0 0h16v13H0z"/>'
+          + '<path fill="#e7cd91" d="M1 1h14v11H1z"/>'
+          + '<path fill="#9fb9bd" d="M1 1h14v3H1z"/>'
+          + '<path fill="rgba(90,60,20,0.3)" d="M8 1h1v11H8z"/>'
+          + '<circle cx="5" cy="8" r="2.4" fill="none" stroke="#b03226" stroke-width="1.6"/>'
+          + '</svg>';
+        mb.addEventListener('click', (e) => { e.stopPropagation(); openDialog(MAP_AGAIN, true); });
+        bar.insertBefore(mb, bar.firstChild);
+        layer.push(mb);
+      }
       const wrap = document.getElementById('bhDigs');
       if (wrap) {
         const obs = new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => {
