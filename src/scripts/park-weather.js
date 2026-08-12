@@ -61,6 +61,10 @@ export function initWeather(ctx) {
   // explanation (Trym). ⚠️ only while health is STILL under 30%: if the
   // regulars already restored it to 90 there is nothing to tell anyone, and a
   // notice about a storm nobody can see is just noise. Once per visit.
+  // 🔤 warm the note's Anton face now — a font only fetches on first USE, so
+  // without this its first show flashed the fallback and swapped (the same
+  // FOUT the chapter splash had; world-quest.js has the full doctrine)
+  if (document.fonts && document.fonts.load) document.fonts.load('1rem Anton').catch(() => {});
   const note = document.createElement('div');
   note.className = 'pk-stormnote';
   note.hidden = true;

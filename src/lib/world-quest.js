@@ -27,6 +27,17 @@ const NIB_DRAW = {
 };
 
 const KEY = 'bwq-c1';
+// 🔤 THE SPLASH FONT, warmed at boot and gated at show time. Anton is only
+// FETCHED on first use (font-display:swap), so the first chapter splash on a
+// page flashed the fallback font for a beat and swapped (Trym). Two-part
+// cure, the pattern for ALL future chapter texts: fontWarm() at bootQuest
+// starts the download in idle time, and the splash only fades in once the
+// face resolves — raced against 800ms so a hung font can never hold the
+// show. The fade-from-0 is what makes the gate airtight: nothing is ever
+// visible in the wrong font.
+const fontWarm = () => ((typeof document !== 'undefined' && document.fonts && document.fonts.load)
+  ? document.fonts.load('1rem Anton').catch(() => {}) : Promise.resolve());
+
 // the quest glyph — a THIN pixel ! (gold, black outline, white shine). ONE
 // art source: the bobbing world marker AND the journal chip's icon (the 🕯
 // emoji there rendered as an illegible smudge at chip size — Trym).
@@ -803,14 +814,18 @@ export function bootQuest() {
         sp.className = 'bwq-intro';
         sp.innerHTML = '<i>chapter i</i><b>what the plot?</b>';
         (document.querySelector(AREAS[area].view) || document.body).appendChild(sp);
-        requestAnimationFrame(() => sp.classList.add('is-on'));
         track('quest_intro');
-        setTimeout(() => {
-          sp.classList.remove('is-on');
-          setTimeout(() => sp.remove(), 600);
-          introBusy = false;
-          openDialog(step);
-        }, 3000);
+        // fade in only once the display font is ready — the FOUT hides
+        // inside the pre-fade; the hold clock starts at the reveal
+        Promise.race([fontWarm(), new Promise((r) => setTimeout(r, 800))]).then(() => {
+          requestAnimationFrame(() => sp.classList.add('is-on'));
+          setTimeout(() => {
+            sp.classList.remove('is-on');
+            setTimeout(() => sp.remove(), 600);
+            introBusy = false;
+            openDialog(step);
+          }, 3000);
+        });
       };
       // 🗣 QUEST FIRST (Trym): while a talk step targets an NPC, tapping the
       // NPC starts the QUEST — not their everyday dialogue. Two prongs:
@@ -975,6 +990,7 @@ export function bootQuest() {
     layer.forEach((el) => { if (el.__at && el.__at.sel) place(el, el.__at); });
   }, 2500);
 
+  fontWarm();   // start the splash font download now, in idle time
   render();
   track('quest_boot', { area, step: STEPS[S.s] && STEPS[S.s].id });
 }
