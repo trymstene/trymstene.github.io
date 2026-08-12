@@ -120,34 +120,35 @@ function myDraw() {
 const STEPS = [
   { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', at: { x: 63, y: 76 },
     find: 'someone is waiting by your gate — go say hello!',
-    // ✍️ Trym's structure (11 Aug, round 2): greet → he was TOLD somebody
-    // would show up → the plot has stood empty since 1999 → he checked the
-    // archives and found the letter, addressed to the owner → the owner is
-    // a mystery. Every line short, every beat in order.
+    // ✍️ THE VOICE BAR (Trym, 12 Aug round 3): dialogue a 13-year-old and a
+    // 50-year-old both read without a stumble — short sentences, plain
+    // words, a STORYTELLER's warmth, no bureaucrat jargon ("registry/deed/
+    // archive" → "the big book"). Nib helps the MAYOR (plants ch.2) and
+    // heard a RUMOUR (a rumour has a source — also ch.2).
     lines: [
-      ['nib', 'Welcome, welcome! I’m Nib — I keep Banana World’s registry. Every plot, every name, all in this book.'],
-      ['nib', 'I was told somebody would turn up at Plot 11 one day. It seems that’s you!'],
-      ['you', 'Plot 11?'],
-      ['nib', 'This one, right here. It has stood empty since 1999 — longer than any plot in the book.'],
-      ['nib', 'I checked its papers in the archive before coming. There is no owner. No name, no deed. Only this old letter.'],
+      ['nib', 'Oh! Hello hello! You’re here!'],
+      ['nib', 'I’m Nib. I help the Mayor keep track of Banana World — every banana, every plot of land, every little shop. It all goes in my big book.'],
+      ['nib', 'And this morning I heard a rumour. Somebody new was coming to town today. That’s you!'],
+      ['you', 'Me? I only just got here.'],
+      ['nib', 'Then the rumour was right! And it gets stranger. This is Plot 11 — nobody has lived here since 1999.'],
+      ['nib', 'There’s no owner in my book. No name. Nothing. Just one old letter, waiting in a drawer all these years.'],
       ['paper', '“the eleventh plot, to whoever comes asking. it has waited long enough.”'],
-      ['you', 'So… whoever comes asking. That could be anyone.'],
-      ['nib', 'It could. But you’re the one standing here. Sign, please — Plot 11 is yours.'],
-      ['nib', 'As for who WROTE it — nobody knows. It isn’t signed. It isn’t dated. It isn’t FILED. I feel unwell.'],
-      ['nib', 'My registry only goes back to 1999. But Old Peel in the Park is older than any book.'],
-      ['nib', 'Go ask him about Plot 11. Tell him it’s official business — he absolutely hates that.'],
+      ['you', 'Whoever comes asking… that could be anyone.'],
+      ['nib', 'Could be. But you’re the one standing here, aren’t you? Sign your name, and Plot 11 is yours.'],
+      ['nib', 'Who wrote the letter? Nobody knows. My book only goes back to 1999 — but Old Peel, in the Park? He’s older than any book.'],
+      ['nib', 'Go ask him about Plot 11. Tell him it’s official business. He hates official business. It’s wonderful.'],
     ],
     linesRes: [
-      ['nib', 'Hello hello! I’m Nib — I keep Banana World’s registry. Every plot, every name, all in this book.'],
-      ['nib', 'I heard somebody finally moved onto Plot 11, so I came to update the records. That’s you!'],
+      ['nib', 'Hello hello! I’m Nib. I help the Mayor keep track of Banana World — every banana, every plot of land, every little shop. It all goes in my big book.'],
+      ['nib', 'I heard somebody finally lives on Plot 11 again — so I came to write you in. That’s you!'],
       ['you', 'That’s me. Is something wrong?'],
-      ['nib', 'Well — this plot stood empty since 1999. Longer than any plot in the book.'],
-      ['nib', 'And when I checked its papers in the archive, there was no owner before you. No name, no deed. Only this old letter.'],
+      ['nib', 'A little, yes. Nobody lived here since 1999. And when I looked up your plot in the book… there was no owner at all. No name. Nothing.'],
+      ['nib', 'Just this one old letter, waiting in a drawer all these years.'],
       ['paper', '“the eleventh plot, to whoever comes asking. it has waited long enough.”'],
       ['you', 'Who wrote it?'],
-      ['nib', 'Nobody knows! It isn’t signed. It isn’t dated. It isn’t FILED. I feel unwell.'],
-      ['nib', 'My registry only goes back to 1999. But Old Peel in the Park is older than any book.'],
-      ['nib', 'Go ask him about Plot 11. Tell him it’s official business — he absolutely hates that.'],
+      ['nib', 'Nobody knows! No name on it. No date. It isn’t even filed properly. I had to sit down.'],
+      ['nib', 'My book only goes back to 1999 — but Old Peel, in the Park? He’s older than any book.'],
+      ['nib', 'Go ask him about Plot 11. Tell him it’s official business. He hates official business. It’s wonderful.'],
     ],
     hint: 'find Old Peel in the Park' },
 
@@ -155,7 +156,8 @@ const STEPS = [
     lines: [
       ['peel', 'Official business? Bah. Paperwork is what killed my marigolds.'],
       ['peel', 'So YOU’RE the one living on Plot 11 now. Hm. HM.'],
-      ['peel', 'I’ll tell you what I remember — after you help me a little. My flowerbed is up in the garden corner, past the mushroom shop. It’s gone thirsty, and my knees are done for the day.'],
+      ['peel', 'I remember a thing or two about that plot. And I’ll tell you — after you help me a little.'],
+      ['peel', 'My flowerbed is up in the garden corner, past the mushroom shop. The flowers are thirsty, and my knees are done for today.'],
     ],
     hint: 'water old peel’s flowerbed 💧 — the garden corner, top right, past the mushroom shop' },
 
@@ -176,13 +178,13 @@ const STEPS = [
 
   { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'Good work. Now listen close.'],
-      ['peel', 'There WAS somebody on Plot 11. Long ago.'],
-      ['peel', 'And here’s the strange part: I remember every banana that ever set foot in this park. But not them. No face. No name. Nothing.'],
+      ['peel', 'Good work. The flowers thank you. Now sit down and listen.'],
+      ['peel', 'Somebody DID live on Plot 11. Long, long ago.'],
+      ['peel', 'And here’s the strange part. I remember every banana that ever walked this park. But that one? No face. No name. Gone, like a smell.'],
       ['peel', 'Only two things stuck with me.'],
       ['peel', 'Every evening, they sat outside drawing. The same little drawings, over and over. Like they were practising something.'],
-      ['peel', 'And every morning they walked down to the Bay. Every single morning. And always came back empty-handed.'],
-      ['peel', 'So what were they DOING down there? Go to the Bay and ask Captain Sabreface, by the wreck. Nothing happens on that sand without him seeing it.'],
+      ['peel', 'And every morning, they walked down to the Bay. Every single morning. And came back with nothing.'],
+      ['peel', 'What were they doing down there? Go to the Bay and ask Captain Sabreface, by the wreck. Nothing happens on that sand without him seeing it.'],
     ],
     reward: { coins: 15, note: '🪣 Peel gives you his old watering can' },
     hint: 'go to Banana Bay — ask Captain Sabreface by the wreck' },
@@ -192,15 +194,15 @@ const STEPS = [
   // and you dig it out with the REAL ⛏ verb. Spent-sand spacing means the
   // circle takes real exploring.
   { id: 'c1_map', area: 'beach', kind: 'talk', who: 'split', at: { sel: '#bhCap', x: 30, y: 46 },
-    find: 'ask Captain Sabreface, by the wreck, about the morning walker',
+    find: 'ask Captain Sabreface, by the wreck, about the morning banana',
     lines: [
-      ['split', 'HALT. You’re asking about the morning banana? On MY beach?'],
+      ['split', 'HALT. Who goes there! …You’re asking about the morning banana? On MY beach?'],
       ['you', 'You knew them?'],
-      ['split', 'Knew them! Every dawn for years they walked my shore. Never took a thing. Never SAID a thing. And one morning — gone.'],
-      ['split', 'But Split sees everything. And Split MAPS everything.'],
+      ['split', 'Knew them! Every morning, for years, they walked my shore. Never took a thing. Never said a word. And one day — gone.'],
+      ['split', 'But nothing happens on this beach without Split seeing it. And Split MAPS everything.'],
       ['map', ''],
-      ['split', 'They always stopped up there — the quiet stretch past the sunbeds, where the tide comes highest. If they buried anything, it’s inside that circle.'],
-      ['split', 'Dig the circle. Bring me what the sand coughs up — maritime law.'],
+      ['split', 'See the circle? The quiet stretch past the sunbeds, where the tide comes highest. That’s where they always stopped.'],
+      ['split', 'If they buried anything, it’s there. Dig inside the circle — and bring me what the sand coughs up. Maritime law.'],
     ],
     hint: 'dig inside the circle on Sabreface’s map — the quiet shore past the sunbeds' },
 
@@ -212,18 +214,18 @@ const STEPS = [
   { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', turnin: 1, at: { sel: '#bhCap', x: 30, y: 46 },
     find: 'Captain Split wants a word about that tin',
     lines: [
-      ['split', 'A TIN! Hand it over — salvage rights! Maritime law! I wrote it myself.'],
+      ['split', 'A TIN! Hand it over! Salvage rights! Maritime law! I wrote it myself.'],
       ['you', 'You sent me to dig it up.'],
-      ['split', '…Then it’s yours by finder’s law. Which also exists. You’re welcome.'],
-      ['split', 'A sealed tin, eh? Old thing like that… the old gardener in the Park has been around forever. He’d know it.'],
-      ['split', 'Take it to him. Split has spoken.'],
+      ['split', '…True. Then it’s yours, by finder’s law. Which also exists. You’re welcome.'],
+      ['split', 'A sealed tin, though… old thing like that. Take it to the old gardener in the Park. He’s been around forever — he’ll know it.'],
+      ['split', 'Go on. Split has spoken.'],
     ],
     hint: 'bring the tin back to Old Peel in the Park' },
 
   { id: 'c1_peel_fuss', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'A tin? Let me see— no. NO. Not with litter on my lawn.'],
-      ['peel', 'Pick up that rubbish first. I can’t think over mess. Nobody can.'],
+      ['peel', 'A tin? Let me see— no. NO. Not with litter all over my lawn.'],
+      ['peel', 'Pick that rubbish up first. I can’t think over mess. Nobody can.'],
     ],
     hint: 'pick up the 2 pieces of litter — tap them' },
 
@@ -236,12 +238,12 @@ const STEPS = [
 
   { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', '(he opens the tin slowly)'],
-      ['peel', '…A photograph. That’s Plot 11 alright. But with a little house on it.'],
-      ['peel', 'There has NEVER been a house on Plot 11. Never. …And yet here’s a photo of one.'],
+      ['peel', '(he opens the tin, slow as Sunday)'],
+      ['peel', '…A photograph. That’s Plot 11 alright. But look — there’s a little house on it.'],
+      ['peel', 'There has never been a house on Plot 11. Never. And yet here’s a photo of one.'],
       ['peel', 'And a flower, pressed flat between the papers.'],
-      ['peel', 'I know this flower. It grows in exactly ONE place: by the pier, down at the Bay.'],
-      ['peel', 'Nobody ever planted flowers there. …Except somebody clearly did.'],
+      ['peel', 'I know this flower. It grows in ONE place: down by the pier, at the Bay.'],
+      ['peel', 'Nobody ever planted flowers there. …And yet somebody did.'],
     ],
     reward: { coins: 10, note: '🌸 the pressed flower — keep it safe' },
     hint: 'go to the pier at Banana Bay — find where the flowers grow' },
@@ -257,13 +259,13 @@ const STEPS = [
   { id: 'c1_shelly', area: 'beach', kind: 'talk', who: 'shelly', turnin: 1, at: { sel: '#bhShelly', x: 60, y: 40 },
     find: 'show the bundle to Shelly',
     lines: [
-      ['shelly', 'OH! Oh oh oh. Look at the barnacle rings on that wrapping. Do you know what this MEANS?'],
+      ['shelly', 'OH! Oh oh oh. Look at the barnacle rings on that wrapping! Do you know what this MEANS?'],
       ['you', '…That it’s old?'],
       ['shelly', 'Old?? This has been underwater longer than I’ve kept charts. And I chart EVERYTHING.'],
-      ['shelly', 'And inside — paper! Eight little pages! Go on, flip through them!'],
+      ['shelly', 'And inside — paper! Eight little pages! Go on, flip through them. Quick quick!'],
       ['fb', ''],
       ['you', '…It’s a banana. Dancing.'],
-      ['shelly', 'Dancing is not my department. The loud room handles dancing. Show it to Barty at the Rave!'],
+      ['shelly', 'Dancing is not my department. The loud room handles dancing. Show it to Barty, at the Rave!'],
     ],
     reward: { coins: 15 },
     hint: 'show the flipbook to Barty at the Rave' },
@@ -274,9 +276,9 @@ const STEPS = [
     lines: [
       ['barty', 'Howdy howdy! What can I get— oh! A flipbook! Cute!'],
       ['fb', ''],
-      ['barty', 'Ha! That’s just how bananas dance, friend!'],
+      ['barty', 'Ha! Well sure — that’s just how bananas dance, friend!'],
       ['you', 'Barty… who taught YOU the dance?'],
-      ['barty', 'Taught? Nobody teaches it! You’re born knowing it! Everybody just… knows it!'],
+      ['barty', 'Taught? Nobody teaches it! You’re born knowing it. Everybody just… knows it.'],
       ['barty', '…Huh. That IS weird, ain’t it.'],
       ['barty', 'Give me a minute to think. Keep my floor warm while I do — dance a little, send some hearts.'],
     ],
@@ -289,8 +291,8 @@ const STEPS = [
     tapSel: '#rvBarman',
     lines: [
       ['barty', 'Okay. So. Every banana in the world does the SAME dance. Since before this club existed.'],
-      ['barty', 'And your little book of drawings is OLDER than my floor.'],
-      ['barty', 'Whoever drew those pages taught the whole world to dance… and never told anyone their name.'],
+      ['barty', 'And your little book of drawings? Older than my floor.'],
+      ['barty', 'Whoever drew those pages taught the whole world to dance… and never told a soul their name.'],
       ['barty', 'Go home, friend. Whoever they were — they lived on YOUR plot. If anything’s left of them, it’s there.'],
     ],
     reward: { coins: 20, note: '🎞 the flipbook — a keepsake' },
@@ -303,11 +305,11 @@ const STEPS = [
   { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, at: { x: 63, y: 76 },
     find: 'Nib is back at your gate',
     lines: [
-      ['nib', 'A dwelling! Wonderful! I can finally register Plot 11 properly. Let me just open the—'],
-      ['nib', '…There’s already an entry on this page.'],
+      ['nib', 'A home! A real home on Plot 11! Wonderful. Now I can finally write you into the book. Let me just—'],
+      ['nib', '…That’s strange. There’s already something on this page.'],
       ['nib', 'Somebody wrote a name here, long ago. And then scratched it out. It’s dated 1999.'],
-      ['you', 'Who scratches a name OUT of a registry?'],
-      ['nib', 'NOBODY. It isn’t possible. I laminated the rulebook myself.'],
+      ['you', 'Who scratches a name OUT of a book?'],
+      ['nib', 'Nobody! You can’t! I laminated the rules myself!'],
       ['nib', '…I need to sit down. I have never needed to sit down in my life.'],
       ['paper', 'CHAPTER ONE — complete 🍌 (chapter two is coming)'],
     ],
