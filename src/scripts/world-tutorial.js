@@ -79,6 +79,29 @@ const CSS = `
 }
 .bwt-back:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
 @media (prefers-reduced-motion:reduce) { .bwt-next, .bwt-back { transition:none; } }
+/* 🍌 THE INVITE — the tour is a CHOICE now (Trym, 12 Aug): a small chip
+   bottom-left in the frame offers it instead of a modal smacking the first
+   second of play (it collided with the quest chip and blocked the walk). */
+.bwt-invite {
+  position:absolute; left:14px; bottom:56px; z-index:60; display:flex; gap:6px;
+  opacity:0; transform:scale(0.6); pointer-events:none;
+}
+.bwt-invite.is-on {
+  opacity:1; transform:none; pointer-events:auto;
+  transition:opacity 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.bwt-invite__go {
+  cursor:pointer; font-family:inherit; font-weight:800; font-size:0.78rem;
+  background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
+  border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
+  padding:0.5rem 0.75rem; white-space:nowrap;
+}
+.bwt-invite__x {
+  cursor:pointer; font-family:inherit; font-weight:800; font-size:0.8rem;
+  background:#14240f; color:#fffdf5; border:3px solid #000; box-shadow:3px 3px 0 #000;
+  border-radius:2px; width:36px;
+}
+@media (prefers-reduced-motion:reduce) { .bwt-invite.is-on { transition:none; } }
 `;
 
 // the same drawn door world-travel carries — a tiny copy keeps this module
@@ -256,4 +279,51 @@ export function initWorldTutorial({ paint, track, force } = {}) {
   show(0);
   if (track) track('bwtour_open');
   return { close: () => done('skip') };
+}
+
+const INV_KEY = 'bw-tour-inv';   // '1' = the invite was waved away for good
+
+/**
+ * 🍌 THE INVITE — the tour as a CHOICE (Trym, 12 Aug). The wizard used to
+ * auto-open on the first visit, colliding with the quest chip and blocking
+ * the first minute of play. Now a small chip bottom-left OFFERS it: tap =
+ * the wizard opens; ✕ = never asks again; finishing or skipping the wizard
+ * retires the invite too (it keys off the same bw-tour-v1 seen flag).
+ * @param mount  the game view element the chip docks into
+ */
+export function initTutorialInvite({ mount, paint, track } = {}) {
+  let seen = false, waved = false;
+  try {
+    seen = !!localStorage.getItem(KEY);
+    waved = !!localStorage.getItem(INV_KEY);
+  } catch (e) {}
+  if (seen || waved) return null;
+
+  if (!styled) {
+    styled = true;
+    const st = document.createElement('style');
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  const b = document.createElement('div');
+  b.className = 'bwt-invite';
+  b.innerHTML = '<button class="bwt-invite__go" type="button">🍌 new here? take the tour</button>'
+    + '<button class="bwt-invite__x" type="button" aria-label="no thanks">✕</button>';
+  (mount || document.body).appendChild(b);
+  // a soft beat after the world lands — never the first thing that happens
+  setTimeout(() => { if (b.isConnected) b.classList.add('is-on'); }, 1600);
+  if (track) track('bwtour_invite');
+
+  b.querySelector('.bwt-invite__go').addEventListener('click', () => {
+    b.remove();
+    initWorldTutorial({ paint, track, force: true });
+  });
+  b.querySelector('.bwt-invite__x').addEventListener('click', () => {
+    try { localStorage.setItem(INV_KEY, '1'); } catch (e) {}
+    b.classList.remove('is-on');
+    setTimeout(() => b.remove(), 350);
+    if (track) track('bwtour_invite_no');
+  });
+  return { el: b };
 }

@@ -11,7 +11,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
-import { initWorldTutorial } from './world-tutorial.js';
+import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
@@ -2790,11 +2790,11 @@ function init(visitDoc, visitMiss) {
   }
 
   assetsReady().then(() => {
-    // 🌍 the Banana World tour — once, on your first visit to the world's
-    // front door (skippable; ?bwtour replays it)
+    // 🌍 the Banana World tour — an INVITE now, never an auto-modal (Trym,
+    // 12 Aug: it smacked up before the first step and fought the quest
+    // chip). The chip offers it bottom-left; ?bwtour still force-opens.
     if (!visiting) {
-      initWorldTutorial({
-        force: /[?&]bwtour(?:=|&|$)/.test(location.search),
+      const tourOpts = {
         track,
         paint: (cv) => {
           try {
@@ -2802,7 +2802,12 @@ function init(visitDoc, visitMiss) {
               { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
           } catch (e) {}
         },
-      });
+      };
+      if (/[?&]bwtour(?:=|&|$)/.test(location.search)) {
+        initWorldTutorial({ ...tourOpts, force: true });
+      } else {
+        initTutorialInvite({ ...tourOpts, mount: document.querySelector('.hs-view') });
+      }
     }
     drawMe();
     place(meEl, pos.x, pos.y, ME_ANCHOR);

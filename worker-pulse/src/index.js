@@ -962,6 +962,7 @@ var EV_LABEL = {
   homestead_restyle:'restyled their home 🎨', homestead_multiplayer:'saw another banana in their yard 👋',
   bwtour_open:'started the Banana World tour 🌍', bwtour_step:'walked a tour step 🌍',
   bwtour_skip:'skipped the tour', bwtour_done:'FINISHED the world tour 🌍',
+  bwtour_invite:'was offered the tour chip 🍌', bwtour_invite_no:'waved the tour chip away',
   rave_exit_stand:'slipped out to the stand 🏪', stand_counter:'reached the stand counter',
   stand_item_view:'eyed stand gear', stand_buy_try:'wanted stand gear they can’t afford 🔥',
   stand_buy:'BOUGHT stand gear 🤑', rave_coin:'pocketed bananacoins 🪙',
@@ -1289,7 +1290,9 @@ var EV_EXPLAIN = {
   homestead_move_home:'moved the whole house to a new spot ✥',
   homestead_restyle:'changed the home’s look from the wardrobe 🎨 (free, same rung)',
   homestead_multiplayer:'👋 SAW another live banana in a yard — the M5 presence rooms working (one room per homestead, owner + visitors together)',
-  bwtour_open:'🌍 the Banana World tour opened — fires once per new visitor at the homestead (the world’s front door), or on ?bwtour replay',
+  bwtour_invite:'🍌 the tour INVITE chip appeared bottom-left — since 12 Aug the tour never auto-opens (it collided with the quest chip and blocked the first minute); this counts new visitors OFFERED the tour. bwtour_open over bwtour_invite = how tempting the chip is',
+  bwtour_invite_no:'pressed ✕ on the tour invite — never asked again (persisted). invite = open + invite_no + ignored-it',
+  bwtour_open:'🌍 the Banana World tour opened — via the invite chip since 12 Aug (it used to auto-open for every new homestead visitor), or on ?bwtour replay',
   bwtour_step:'walked to a tour step (step = 0-7: welcome, homestead, tools, HUD, road map, areas, mechanics, always-growing)',
   bwtour_skip:'left the tour early (step = where it lost them — a cliff at one step means THAT card is the boring one)',
   bwtour_done:'🌍 finished all 8 tour steps — oriented and released into the world' };
