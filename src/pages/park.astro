@@ -999,6 +999,19 @@ const faq = {
        (world-quest.js) toggles this quest-holder-only; everyone else keeps
        seeing them in full bloom. Watering a flower lifts its class again. */
     .pk-plant.bwq-thirsty { filter: saturate(0.3) brightness(0.85) drop-shadow(1px 2px 0 rgba(20, 40, 18, 0.35)); }
+    /* 💧 the quest watering pays off VISIBLY: a one-shot glow burst as the
+       flower comes back (opacity + transform only — the filter doctrine) */
+    .pk-plant.bwq-healed::after {
+      content: ''; position: absolute; inset: -38%; pointer-events: none;
+      background: radial-gradient(circle, rgba(255, 245, 170, 0.9) 0%, rgba(255, 225, 53, 0.35) 45%, rgba(255, 225, 53, 0) 70%);
+      animation: bwqHealBurst 0.9s ease-out forwards;
+    }
+    @keyframes bwqHealBurst {
+      0% { opacity: 0; transform: scale(0.4); }
+      25% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.3); }
+    }
+    @media (prefers-reduced-motion: reduce) { .pk-plant.bwq-healed::after { animation: none; opacity: 0; } }
     /* 🪧 the ownership stake — a quiet garden label on YOUR plants only */
     .pk-gstake { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
     .pk-gstake svg { display: block; width: 100%; height: 100%; }

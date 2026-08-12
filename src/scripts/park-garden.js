@@ -1017,7 +1017,7 @@ export function initGarden(ctx) {
 
   // ---- 🌿 WEEDS + 🌸 THE BLOOM — the shared entropy loop ------------------
   const weeds = new Map();                      // id → { el, x, y }
-  let bloomV = -1, pendingWeed = null, weedTracked = false;
+  let bloomV = -1, pendingWeed = null, pendingQweed = null, weedTracked = false;
   // 🌸 THE HEALTH BAR — bottom-docked (the jellymeter's spot in the rave):
   // fill + % ride the live value, the face + whole palette ride the phase
   const bloomBtn = document.getElementById('pkHBar');
@@ -1641,6 +1641,12 @@ export function initGarden(ctx) {
       const [sx, sy] = PLOTS[pendingWater];
       if (Math.hypot(pos.x - sx, pos.y - sy) < 95) { const i = pendingWater; pendingWater = null; waterSlot(i); }
     }
+    if (pendingQweed) {                     // 🕯 the quest weed's walk-then-pull
+      if (!pendingQweed.el.isConnected) pendingQweed = null;
+      else if (Math.hypot(pos.x - pendingQweed.x, pos.y - pendingQweed.y) < 90) {
+        const q = pendingQweed; pendingQweed = null; q.pull();
+      }
+    }
     if (pendingWeed != null) {
       const w2 = weeds.get(pendingWeed);
       if (!w2) pendingWeed = null;          // pulled by somebody else mid-walk
@@ -1679,6 +1685,12 @@ export function initGarden(ctx) {
       const d = Math.hypot(pos.x - w2.x, pos.y - w2.y);
       if (d < bd) { bd = d; best = { kind: 'weed', id, x: w2.x, y: w2.y }; }
     });
+    // 🕯 the questline's weeds (Peel's bed step) ride the SAME button —
+    // quest-local objects, but pulling weeds must be ONE grammar (Trym)
+    (window.bwqWeeds || []).forEach((q) => {
+      const d = Math.hypot(pos.x - q.x, pos.y - q.y);
+      if (d < bd) { bd = d; best = { kind: 'qweed', q, x: q.x, y: q.y }; }
+    });
     PLOTS.forEach(([sx, sy], i) => {
       const s = gSlots[i];
       if (!s || gWet(s) || gReady(s)) return;
@@ -1705,11 +1717,11 @@ export function initGarden(ctx) {
   function toolTick() {
     const c = toolScan();
     toolChore = c;
-    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.id) : '';
+    const key = c ? c.kind + ':' + (c.kind === 'water' ? c.i : c.kind === 'qweed' ? c.q.id : c.id) : '';
     if (key === toolKey) return;
     toolKey = key;
     if (!c) { toolBtn.hidden = true; return; }
-    toolBtn.textContent = c.kind === 'weed' ? '🌿 pull'
+    toolBtn.textContent = (c.kind === 'weed' || c.kind === 'qweed') ? '🌿 pull'
       : c.kind === 'algae' ? '🫧 skim'
       : c.kind === 'ground' ? '⛏ dig'
       : '💧 water';
@@ -1721,6 +1733,12 @@ export function initGarden(ctx) {
     if (c.kind === 'weed') {
       if (Math.hypot(pos.x - c.x, pos.y - c.y) < 90) { pullWeed(c.id); return; }
       pendingWeed = c.id;
+      tgt.x = c.x; tgt.y = c.y + 26;
+      return;
+    }
+    if (c.kind === 'qweed') {   // 🕯 same walk-then-pull, quest-owned object
+      if (Math.hypot(pos.x - c.x, pos.y - c.y) < 90) { c.q.pull(); return; }
+      pendingQweed = c.q;
       tgt.x = c.x; tgt.y = c.y + 26;
       return;
     }
@@ -1748,7 +1766,7 @@ export function initGarden(ctx) {
     closeGarden,
     gardenerLvl,
     bloomNow: () => bloomV,
-    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingEgg = null; pendingBorder = null; pendingAlgae = null; pendingPost = null; pendingGround = false; },
+    clearPending: () => { pendingGarden = null; pendingWater = null; pendingWeed = null; pendingQweed = null; pendingEgg = null; pendingBorder = null; pendingAlgae = null; pendingPost = null; pendingGround = false; },
     qa: {
       eggs,
       // 🪪 replay the naming moment (clears the once-ever flag AND the name)

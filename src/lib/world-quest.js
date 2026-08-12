@@ -157,28 +157,35 @@ const STEPS = [
       ['peel', 'Official business? Bah. Paperwork is what killed my marigolds.'],
       ['peel', 'So YOU’RE the one living on Plot 11 now. Hm. HM.'],
       ['peel', 'I remember a thing or two about that plot. And I’ll tell you — after you help me a little.'],
-      ['peel', 'My flowerbed is up in the garden corner, past the mushroom shop. The flowers are thirsty, and my knees are done for today.'],
+      ['peel', 'My flowerbed is up in the garden corner, past the mushroom shop. The weeds have taken it over, the flowers are thirsty — and my knees are done for today.'],
     ],
     hint: 'water old peel’s flowerbed 💧 — the garden corner, top right, past the mushroom shop' },
 
   // 🌼 the chores happen on PEEL'S OWN FLOWERBED (park-npc PEEL_BED, world
-  // px 1652/1712/1772 × 762 → %) — quest-holder-only wilt via `thirst`, each
-  // watering `heal`s its own flower back to bloom. The weeds are the park's
-  // REAL weed sprites, spawned quest-side by the no-blocker rule.
+  // px 2420/2480/2540 × 330 → %) — quest-holder-only wilt via `thirst`, each
+  // watering `heal`s its own flower back to bloom (with a glow burst). The
+  // weeds are REAL pk-weed sprites pulled with the park's OWN 🌿 pull button
+  // (window.bwqWeeds feeds the tool scan — one grammar, Trym), spawned
+  // quest-side by the no-blocker rule. Six, scattered ON and around the bed,
+  // so the overtaken-by-weeds line is true on screen and the chore breathes.
   { id: 'c1_peel_chores', area: 'park', kind: 'objects', tend: 1,
     thirst: '.pk-peelplant',
-    hint: 'old peel’s flowers are thirsty — tap them to water 💧, and pull the 2 weeds',
+    hint: 'water the flowers 💧 (tap them) — and pull every weed: walk close, press 🌿 pull',
     objects: [
       { id: 'bed1', x: 87.7, y: 26.8, taps: 1, kind: 'bed', heal: '[data-peel="0"]', done: '💧 watered — it perks right up' },
       { id: 'bed2', x: 89.9, y: 26.8, taps: 1, kind: 'bed', heal: '[data-peel="1"]', done: '💧 watered' },
       { id: 'bed3', x: 92.0, y: 26.8, taps: 1, kind: 'bed', heal: '[data-peel="2"]', done: '💧 watered' },
-      { id: 'weed1', x: 88.8, y: 33.8, taps: 1, kind: 'weed', done: '🌿 pulled!' },
-      { id: 'weed2', x: 93.6, y: 31.6, taps: 1, kind: 'weed', done: '🌿 pulled!' },
+      { id: 'weed1', x: 88.9, y: 26.9, taps: 1, kind: 'weed' },
+      { id: 'weed2', x: 91.3, y: 27.3, taps: 1, kind: 'weed' },
+      { id: 'weed3', x: 86.4, y: 32.5, taps: 1, kind: 'weed' },
+      { id: 'weed4', x: 89.2, y: 34.2, taps: 1, kind: 'weed' },
+      { id: 'weed5', x: 92.2, y: 33.1, taps: 1, kind: 'weed' },
+      { id: 'weed6', x: 94.9, y: 29.3, taps: 1, kind: 'weed' },
     ] },
 
   { id: 'c1_peel_memory', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'Good work. The flowers thank you. Now sit down and listen.'],
+      ['peel', 'Good work. The weeds are gone, and the flowers thank you. Now sit down and listen.'],
       ['peel', 'Somebody DID live on Plot 11. Long, long ago.'],
       ['peel', 'And here’s the strange part. I remember every banana that ever walked this park. But that one? No face. No name. Gone, like a smell.'],
       ['peel', 'Only two things stuck with me.'],
@@ -912,6 +919,7 @@ export function bootQuest() {
       }
       step.objects.forEach((o) => {
         if ((S.k[o.id] || 0) >= o.taps) return;
+        if (step.tend && o.kind === 'weed') return;   // rendered as REAL weeds below
         const el = document.createElement('div');
         el.className = 'bwq-obj bwq-obj--' + o.kind;
         el.innerHTML = '<i></i>';
@@ -927,13 +935,47 @@ export function bootQuest() {
             el.remove();
             if (o.heal) {
               const p = document.querySelector(o.heal);
-              if (p) p.classList.remove('bwq-thirsty');
+              // 💧 the watering pays off VISIBLY: bloom back + a glow burst
+              if (p) {
+                p.classList.remove('bwq-thirsty');
+                p.classList.add('bwq-healed');
+                setTimeout(() => p.classList.remove('bwq-healed'), 950);
+              }
             }
           }
           if (step.objects.every((q) => (S.k[q.id] || 0) >= q.taps)) advance();
         });
         w.appendChild(el); layer.push(el);
       });
+      // 🌿 the quest weeds are REAL pk-weed sprites, pulled with the park's
+      // own 🌿 pull button — window.bwqWeeds feeds park-garden's tool scan,
+      // and pull() plays the exact is-pulled pop the everyday weeds play.
+      if (step.tend) {
+        const qw = [];
+        step.objects.forEach((o, idx) => {
+          if (o.kind !== 'weed' || (S.k[o.id] || 0) >= o.taps) return;
+          const el = document.createElement('div');
+          el.className = 'pk-weed pk-weed--' + (1 + idx % 2) + ' bwq-qweed';
+          el.style.left = o.x + '%';
+          el.style.top = o.y + '%';
+          const wx = o.x / 100 * 2760, wy = o.y / 100 * 1100;   // park world units
+          el.style.zIndex = String(100 + Math.round(wy));
+          w.appendChild(el); layer.push(el);
+          qw.push({ id: o.id, x: wx, y: wy, el,
+            pull: () => {
+              el.classList.add('is-pulled');
+              setTimeout(() => el.remove(), 360);
+              S.k[o.id] = 1;
+              save();
+              passStat('rep', 1);   // same little wage the everyday pull pays
+              toast('🌿 pulled!');
+              window.bwqWeeds = (window.bwqWeeds || []).filter((q) => q.id !== o.id);
+              if (step.objects.every((q2) => (S.k[q2.id] || 0) >= q2.taps)) advance();
+            } });
+        });
+        window.bwqWeeds = qw;
+        unhook.push(() => { window.bwqWeeds = null; });
+      }
     } else if (step.kind === 'digzone') {
       // 🗺 dig the circle with the REAL ⛏: the beach makes a .bh-hole for
       // every FRESH dig (spent sand makes none — the farm fix is the pacing
