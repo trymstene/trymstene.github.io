@@ -191,7 +191,7 @@ const STEPS = [
       ['split', 'They always stopped up there — the quiet stretch past the sunbeds, where the tide comes highest. If they buried anything, it’s inside that circle.'],
       ['split', 'Dig the circle. Bring me what the sand coughs up — maritime law.'],
     ],
-    hint: 'dig inside the circle on Sabreface’s chart — the quiet shore past the sunbeds' },
+    hint: 'dig inside the circle on Sabreface’s map — the quiet shore past the sunbeds' },
 
   { id: 'c1_dig', area: 'beach', kind: 'digzone', need: 3,
     hint: 'dig inside the circle — the quiet shore past the sunbeds (⛏ digs at your feet)',
@@ -470,6 +470,11 @@ function ensureCss() {
 @keyframes bwqUnfold { 0% { transform:rotate(-1.4deg) scaleY(0.12); opacity:0; } 100% { transform:rotate(-1.4deg) scaleY(1); opacity:1; } }
 .bwq-sp canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
   border:3px solid #000; background:#fffdf5; box-shadow:3px 3px 0 rgba(0,0,0,0.4); }
+/* the torn map is its own object — no card frame, the tear IS the edge */
+.bwq-sp canvas.bwq-map {
+  border:0; background:transparent; box-shadow:none; transform:rotate(-1.5deg);
+  filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.4));
+}
 .bwq-toast {
   position:fixed; left:50%; top:64px; transform:translateX(-50%); z-index:5200;
   background:#14240f; color:#ffe135; border:3px solid #000; box-shadow:3px 3px 0 #000;
@@ -502,30 +507,65 @@ function payReward(r) {
   }
 }
 
-// 🗺 SABREFACE'S CHART — the daily treasure map's visual language (drawMap in
-// banana-beach.js: parchment, sea band, pier, boathouse, court, palm dots),
-// but WHOLE (no torn slices) and with a bold CIRCLE over an AREA instead of a
-// precise X (Trym). Landmark numbers mirror beach-geo.js (generated, stable).
-// The circle marks the quiet NW shore past the sunbeds — far from the spawn
-// road, and where the morning walker "stopped where the tide comes highest".
-const DIG_CIRCLE = { x: 310, y: 355, r: 230 };   // r230: the chart circle reads BIG (Trym) and the zone honestly matches it
+// 🗺 SABREFACE'S MAP — an OBJECT, not a diagram (Trym): a folded-out sheet
+// with ragged torn edges, fold creases, sun-bleached colours and worn
+// corners. Landmarks (sea, pier, boathouse, court, palms) mirror
+// beach-geo.js; the bold red CIRCLE marks an AREA, never an X — the quiet
+// NW shore past the sunbeds, where the morning walker always stopped.
+const DIG_CIRCLE = { x: 310, y: 355, r: 230 };   // r230: the circle reads BIG and the zone honestly matches it
 function questMapCanvas() {
   const cv = document.createElement('canvas');
-  cv.width = 300; cv.height = 120;
+  cv.width = 310; cv.height = 132;
+  cv.className = 'bwq-map';
   const c = cv.getContext('2d');
-  const sx = 300 / 2760, sy = 120 / 1100;
-  c.fillStyle = '#e7cd91'; c.fillRect(0, 0, 300, 120);                 // parchment sand
-  c.fillStyle = '#63b6d4'; c.fillRect(0, 0, 300, 292 * sy);            // the sea band
-  c.strokeStyle = '#b9702f'; c.lineWidth = 1.5; c.setLineDash([3, 2]); // the court
-  c.strokeRect(690 * sx, 532 * sy, 480 * sx, 480 * sy);
+  const ox = 10, oy = 10, sx = 290 / 2760, sy = 112 / 1100;
+  const X = (wx) => ox + wx * sx, Y = (wy) => oy + wy * sy;
+  // the ragged tear — FIXED jitter, so the sheet is the same every unfold
+  const J = [4, 8, 3, 9, 5, 2, 8, 4, 7, 3, 6, 9, 2, 5];
+  let j = 0;
+  const jit = () => J[j++ % J.length] * 0.55;
+  const tear = () => {
+    j = 0;
+    c.beginPath();
+    for (let x = 6; x <= 304; x += 18) c.lineTo(x, 4 + jit());
+    for (let y = 6; y <= 126; y += 14) c.lineTo(306 - jit(), y);
+    for (let x = 304; x >= 6; x -= 18) c.lineTo(x, 128 - jit());
+    for (let y = 126; y >= 6; y -= 14) c.lineTo(4 + jit(), y);
+    c.closePath();
+  };
+  tear();
+  c.save();
+  c.clip();
+  // old ink on old paper — everything a shade paler than the world it maps
+  c.fillStyle = '#d9c290'; c.fillRect(0, 0, 310, 132);                    // worn parchment
+  c.fillStyle = '#9fb9bd'; c.fillRect(0, 0, 310, Y(292));                 // the sea, sun-bleached
+  c.strokeStyle = 'rgba(150,100,50,0.7)'; c.lineWidth = 1.5; c.setLineDash([3, 2]);
+  c.strokeRect(X(690), Y(532), 480 * sx, 480 * sy);                       // the court
   c.setLineDash([]);
-  c.fillStyle = '#8a5a2b'; c.fillRect(1812 * sx, 0, 156 * sx, 320 * sy);          // the pier
-  c.fillStyle = '#7a4a21'; c.fillRect(1640 * sx, 720 * sy, 120 * sx, 80 * sy);    // the boathouse
-  c.fillStyle = '#3f7d3a';
-  [[160, 545], [1585, 460], [1418, 838]].forEach(([px, py]) => { c.beginPath(); c.arc(px * sx, py * sy, 6, 0, 7); c.fill(); });
-  c.strokeStyle = '#c0261a'; c.lineWidth = 4;                          // the circle, not an X
-  c.beginPath(); c.arc(DIG_CIRCLE.x * sx, DIG_CIRCLE.y * sy, DIG_CIRCLE.r * sx, 0, 7); c.stroke();
-  c.strokeStyle = '#5a3c14'; c.lineWidth = 3; c.strokeRect(1.5, 1.5, 297, 117);
+  c.fillStyle = '#8f6a3f'; c.fillRect(X(1812), oy, 156 * sx, 320 * sy);   // the pier
+  c.fillStyle = '#7d5c35'; c.fillRect(X(1640), Y(720), 120 * sx, 80 * sy); // the boathouse
+  c.fillStyle = '#6d8a5a';
+  [[160, 545], [1585, 460], [1418, 838]].forEach(([px, py]) => { c.beginPath(); c.arc(X(px), Y(py), 6, 0, 7); c.fill(); });
+  c.strokeStyle = '#b03226'; c.lineWidth = 4;                             // the circle, not an X
+  c.beginPath(); c.arc(X(DIG_CIRCLE.x), Y(DIG_CIRCLE.y), DIG_CIRCLE.r * sx, 0, 7); c.stroke();
+  // fold creases — it lived folded in eighths in a pirate's coat
+  [0.27, 0.52, 0.76].forEach((f) => {
+    const fx2 = Math.round(310 * f);
+    c.fillStyle = 'rgba(90,60,20,0.15)'; c.fillRect(fx2, 0, 2, 132);
+    c.fillStyle = 'rgba(255,250,225,0.3)'; c.fillRect(fx2 + 2, 0, 1, 132);
+  });
+  c.fillStyle = 'rgba(90,60,20,0.13)'; c.fillRect(0, 64, 310, 2);
+  c.fillStyle = 'rgba(255,250,225,0.25)'; c.fillRect(0, 66, 310, 1);
+  // worn corners + an old stain, then one sepia wash over the lot
+  [[10, 12, 30], [298, 14, 26], [12, 120, 28], [296, 118, 32], [160, 70, 24]].forEach(([px, py, r2]) => {
+    const g = c.createRadialGradient(px, py, 2, px, py, r2);
+    g.addColorStop(0, 'rgba(110,78,36,0.22)'); g.addColorStop(1, 'rgba(110,78,36,0)');
+    c.fillStyle = g; c.fillRect(px - r2, py - r2, r2 * 2, r2 * 2);
+  });
+  c.fillStyle = 'rgba(180,150,105,0.13)'; c.fillRect(0, 0, 310, 132);
+  c.restore();
+  tear();
+  c.strokeStyle = '#6b4a24'; c.lineWidth = 2.5; c.stroke();               // the torn edge itself
   return cv;
 }
 
@@ -684,7 +724,7 @@ export function bootQuest() {
           sp.innerHTML = '<div class="bwq-paper"></div><small>tap to continue</small>';
           sp.querySelector('.bwq-paper').textContent = text;
         } else if (who === 'map') {
-          sp.innerHTML = '<b>sabreface’s chart</b><small>tap to continue</small>';
+          sp.innerHTML = '<b>sabreface’s map</b><small>tap to continue</small>';
           sp.insertBefore(questMapCanvas(), sp.querySelector('small'));
         } else {
           sp.innerHTML = '<b>the flipbook</b><small>tap to continue</small>';
