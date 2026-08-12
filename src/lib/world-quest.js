@@ -407,15 +407,19 @@ function ensureCss() {
     -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000, 5px 6px 0 #000;
 }
 @media (prefers-reduced-motion:reduce) { .bwq-intro { transition:none; } }
-/* 🕯 the journal — a game card, not an info-box (Trym's verdict) */
+/* 🕯 the journal — a game card, not an info-box (Trym's verdict).
+   Its FIRST appearance of a visit holds back ~5s and then pops (the world
+   deserves a beat before the UI starts talking); re-renders after a talk
+   show instantly. Toggling animation:none off is what replays the pop. */
 .bwq-hint {
-  position:absolute; left:10px; top:48px; z-index:900; max-width:64%;
+  position:absolute; left:18px; top:48px; z-index:900; max-width:62%;
   background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
   border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
   font-size:0.78rem; font-weight:800; padding:7px 11px 7px 22px; line-height:1.35;
   pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 .bwq-hint[hidden] { display:none !important; }
+.bwq-hint--wait { visibility:hidden; animation:none; }
 /* the chip's ! is a BADGE, not an inline character (Trym: a game, not a
    website message-box) — a black stickerpill pinned over the chip's corner,
    the gold ! big and overflowing it. Same MARK_SVG art as the world marker. */
@@ -631,6 +635,7 @@ export function bootQuest() {
   ensureCss();
   const layer = [];   // live quest DOM in this area
   let dlg = null, dlgTimer = null, watchTimer = null, introBusy = false;
+  let chipDelayed = false;   // the first chip of a visit holds back ~5s
 
   const world = () => document.querySelector(AREAS[area].sel);
 
@@ -802,6 +807,11 @@ export function bootQuest() {
       h.className = 'bwq-hint';
       h.innerHTML = '<i class="bwq-hint__badge">' + MARK_SVG + '</i><span></span>';
       h.querySelector('span').textContent = label;
+      if (!chipDelayed) {   // let the world land first, then pop the journal in
+        chipDelayed = true;
+        h.classList.add('bwq-hint--wait');
+        setTimeout(() => { if (h.isConnected) h.classList.remove('bwq-hint--wait'); }, 5000);
+      }
       (document.querySelector(AREAS[area].view) || w).appendChild(h);
       layer.push(h);
     }
