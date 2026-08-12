@@ -252,33 +252,42 @@ export function analyse(d) {
       + 'once the numbers grow.'));
   }
 
-  // ── 5. the download offer — the new CRO surface ─────────────────────────
+  // ── 5. the download card — the WARM-UP surface (pivoted 12 Aug: it stopped
+  // selling merch and now invites people into Banana World or the Discord;
+  // offer_click is the retired merch CTA, counted only so old windows stay
+  // honest) ────────────────────────────────────────────────────────────────
   const oShown = ev('offer_shown');
-  const oClick = ev('offer_click');
+  const oWorld = ev('offer_world');
+  const oDisc = ev('offer_discord');
+  const oWarm = oWorld + oDisc + ev('offer_click');
   if (oShown >= MIN_STEP_N) {
-    const ctr = Math.round(rate(oClick, oShown) * 100);
-    if (oClick === 0) {
+    const ctr = Math.round(rate(oWarm, oShown) * 100);
+    if (oWarm === 0) {
       reads.push(read(3, '🎯',
-        'The download offer appeared ' + oShown + ' times and nobody clicked it. '
-        + 'The placement is right — that is the moment the wish is granted — so '
-        + 'the problem is the card itself: what it says, or what it asks for.'));
-      rec('Rewrite the offer headline before adding it anywhere else. '
-        + oShown + ' impressions with no clicks is a copy answer, not a reach answer.',
-      oShown + ' shown, 0 clicked');
+        'The download card appeared ' + oShown + ' times and nobody chose the '
+        + 'world or the Discord. The placement is right — that is the moment '
+        + 'the wish is granted — so the problem is the copy: rotate harder, or '
+        + 'the invitation itself is not landing.'));
+      rec('Check which variants are showing (the cards rotate 8 voices) and '
+        + 'rewrite the weakest before adding surfaces. ' + oShown
+        + ' cards with no takers is a copy answer, not a reach answer.',
+      oShown + ' shown, 0 warmed');
     } else {
       reads.push(read(1, '🎯',
-        'The download offer converted at ' + ctr + '% (' + oClick + ' of '
-        + oShown + '). ' + (ctr >= 8
+        'The download card warmed ' + ctr + '% (' + oWarm + ' of ' + oShown
+        + ' — ' + oWorld + ' to the world, ' + oDisc + ' to the Discord). '
+        + (ctr >= 8
           ? 'That is a healthy rate for an interruption people did not ask for.'
-          : 'Low, but it is a card shown after someone already got what they came for '
-            + '— low is the normal shape here.')));
+          : 'Low, but these are file-grabbers being offered a place to stay — '
+            + 'every warm one is a person the old merch card never got.')));
     }
   } else if (oShown > 0) {
     reads.push(read(1, '🎯',
-      'The download offer showed ' + oShown + ' times' + (oClick ? ' and got '
-        + oClick + ' click' + (oClick > 1 ? 's' : '') : '')
-      + '. Not enough yet to judge the card — check back when it has a few '
-      + 'hundred impressions behind it.'));
+      'The download card showed ' + oShown + ' times' + (oWarm ? ' and warmed '
+        + oWarm + ' visitor' + (oWarm > 1 ? 's' : '')
+        + ' toward the world or the Discord' : '')
+      + '. Not enough yet to judge — check back when it has a few hundred '
+      + 'behind it.'));
   }
 
   // ── 6. money ────────────────────────────────────────────────────────────

@@ -12,7 +12,8 @@ const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 // 📥 the download family + the offer that rides it. Downloads are the
 // biggest thing that happens on this site; until now they were one number.
 const DL_EVENTS = ['gif_download', 'png_download', 'wallpaper_download',
-  'offer_shown', 'offer_click', 'offer_skip'];
+  'offer_shown', 'offer_click', 'offer_skip',
+  'offer_world', 'offer_discord'];   // 🌍💬 the warm-up pivot, 12 Aug (offer_click = retired merch CTA)
 
 // events worth plotting on the map / showing in the ticker (the rest is noise)
 const LENS_EVENTS = [
@@ -22,6 +23,7 @@ const LENS_EVENTS = [
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
   'begin_checkout', 'purchase', 'shop_view',
   'offer_shown', 'offer_click', 'offer_skip',   // 🛍 the make-it-real card (offer-FIRST since 6 Aug)
+  'offer_world', 'offer_discord',               // 🌍💬 the warm-up pivot, 12 Aug
   'homestead_open',               // 🏡 the home area's door, 6 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
   // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
@@ -287,16 +289,17 @@ async function apiRange(env, from, to) {
   const dlMap = {};
   const dayMap = {};
   const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
-    offer_shown: 'shown', offer_click: 'click', offer_skip: 'skip' };
+    offer_shown: 'shown', offer_click: 'click', offer_skip: 'skip',
+    offer_world: 'world', offer_discord: 'disc' };
   for (const r of (dls ? rows(dls) : [])) {
     const day = dim(r, 0); const page = dim(r, 1);
     const key = DL_KEY[dim(r, 2)];
     if (!key) continue;
     const v = met(r, 0);
-    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0 });
+    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 });
     row[key] += v;
-    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0 });
-    if (key === 'shown' || key === 'click' || key === 'skip') d[key] += v; else d.files += v;
+    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 });
+    if (key === 'gif' || key === 'png' || key === 'wall') d.files += v; else d[key] += v;
   }
   const dlDaily = Object.values(dayMap).sort((a, b) => (a.d < b.d ? -1 : 1));
   const downloads = Object.values(dlMap)
@@ -463,6 +466,7 @@ const ANALYST_EVENTS = [
   'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
   'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
+  'offer_world', 'offer_discord',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
 ];
 
@@ -576,13 +580,23 @@ function page() {
              box-shadow:0 0 8px var(--ok); animation:blink 1.2s steps(2) infinite; }
   @keyframes blink{ 50%{ opacity:.25; } }
   .bignum{ font-size:1.5rem; color:var(--nana); }
-  .panel{ background:var(--panel); border:3px solid var(--nana); box-shadow:7px 7px 0 #000;
-          padding:14px; margin-bottom:18px; }
+  /* 🧁 THE SOFT PASS (Trym, 12 Aug: "a bit dated… a lot of yellow boxes…
+     boxy and squared — make it fun, softer, varied"). Panels went from
+     yellow-framed hard-shadow boxes to rounded dark cards with ONE accent
+     each — and the accent varies by room, so every tab has its own colour
+     temperature instead of wall-to-wall banana. */
+  .panel{ background:var(--panel); border:2px solid #292144; border-radius:18px;
+          border-top:4px solid var(--acc,var(--nana));
+          box-shadow:0 10px 24px rgba(0,0,0,.38); padding:20px 18px; margin-bottom:22px; }
+  .panel h2{ color:var(--acc,var(--nana)); }
+  .pane[data-pane="downloads"]{ --acc:var(--cool); }
+  .pane[data-pane="shop"]{ --acc:var(--hot); }
+  .pane[data-pane="world"]{ --acc:var(--ok); }
   h1{ color:var(--nana); text-shadow:3px 3px 0 #000; }
-  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
   @media(max-width:800px){ .grid2{ grid-template-columns:1fr; } }
   canvas#map{ width:100%; image-rendering:pixelated; display:block; background:#151129;
-              border:3px solid #000; }
+              border:2px solid #2b2348; border-radius:14px; }
   .hotline{ font-size:.74rem; margin-top:6px; color:var(--ok); }
   .hotline.gold{ color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,.5); }
   .tt{ cursor:help; border-bottom:2px dotted #6b5c16; position:relative;
@@ -590,33 +604,42 @@ function page() {
   .tt:hover, .tt.show{ border-bottom-color:var(--nana); }
   .tt::after{ content:attr(data-tip); display:none; position:absolute; left:0; top:140%;
        z-index:9; width:250px; background:#000; border:2px solid var(--nana); color:var(--ink);
-       padding:7px 9px; font-size:.68rem; font-weight:700; line-height:1.45; text-align:left;
-       box-shadow:4px 4px 0 rgba(0,0,0,.6); white-space:normal; }
+       border-radius:10px; padding:8px 10px; font-size:.68rem; font-weight:700; line-height:1.45;
+       text-align:left; box-shadow:0 8px 18px rgba(0,0,0,.55); white-space:normal; }
   .tt:hover::after, .tt.show::after{ display:block; }
-  .chips{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
-  .chip{ font:inherit; font-size:.72rem; padding:5px 9px; background:#0a0814; color:#d8c96a;
-         border:2px solid #6b5c16; cursor:pointer; letter-spacing:.05em; }
+  .chips{ display:flex; gap:7px; flex-wrap:wrap; margin:10px 0; }
+  .chip{ font:inherit; font-size:.72rem; padding:6px 12px; background:#0a0814; color:#d8c96a;
+         border:2px solid #4a3f2a; border-radius:999px; cursor:pointer; letter-spacing:.05em; }
   .chip:hover{ border-color:var(--nana); color:var(--nana); }
-  .chip.on{ background:var(--nana); color:#000; border-color:var(--nana); box-shadow:3px 3px 0 #000; }
+  .chip.on{ background:var(--nana); color:#000; border-color:var(--nana);
+            box-shadow:0 3px 12px rgba(255,225,53,.35); }
   .mzoom{ position:absolute; top:8px; right:8px; z-index:6; display:flex; gap:6px; }
   .mzoom button{ font:inherit; font-weight:800; font-size:1rem; min-width:40px; min-height:40px;
-    background:rgba(13,11,20,.85); color:#fffdf5; border:3px solid var(--nana); cursor:pointer;
-    touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; }
+    background:rgba(13,11,20,.85); color:#fffdf5; border:2px solid var(--nana); border-radius:12px;
+    cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; }
   .mzoom button:hover{ background:var(--nana); color:#111; }
   select,input[type=date]{ font:inherit; font-size:.72rem; background:#0a0814; color:var(--ink);
-         border:2px solid var(--line); padding:4px 6px; }
+         border:2px solid var(--line); border-radius:9px; padding:5px 8px; }
   .ticker{ overflow:hidden; white-space:nowrap; border-block:2px solid var(--line);
            padding:7px 0; font-size:.78rem; }
   .ticker .in{ display:inline-block; padding-left:100%; animation:tick 17s linear infinite; }
   @keyframes tick{ to{ transform:translateX(-100%); } }
-  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
-  .kpi{ background:var(--nana); border:3px solid #000; box-shadow:4px 4px 0 #000; padding:10px; }
-  .kpi .l{ font-size:.62rem; color:#6b5a00; letter-spacing:.14em; text-transform:uppercase; }
-  .kpi .v{ font-size:1.25rem; color:#111; margin-top:2px; }
-  .kpi .d{ font-size:.68rem; margin-top:2px; }
+  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); gap:12px; }
+  /* 🎨 KPI cards: dark, rounded, each wearing its OWN accent (cycled) — the
+     number takes the colour. This is what replaced the wall of yellow boxes. */
+  .kpi{ background:#1c1631; border:2px solid #2b2348; border-radius:14px;
+        border-left:5px solid var(--kc,var(--nana)); padding:13px 14px; }
+  .kpi .l{ font-size:.62rem; color:var(--dim); letter-spacing:.14em; text-transform:uppercase; }
+  .kpi .v{ font-size:1.35rem; color:var(--kc,var(--nana)); margin-top:3px; }
+  .kpi .d{ font-size:.68rem; margin-top:3px; }
+  .kpis > :nth-child(6n+1){ --kc:var(--nana); }
+  .kpis > :nth-child(6n+2){ --kc:var(--cool); }
+  .kpis > :nth-child(6n+3){ --kc:var(--ok); }
+  .kpis > :nth-child(6n+4){ --kc:var(--hot); }
+  .kpis > :nth-child(6n+5){ --kc:#c99cff; }
+  .kpis > :nth-child(6n+6){ --kc:#ffb45e; }
   .up{ color:var(--ok); } .down{ color:var(--bad); } .flat{ color:var(--dim); }
   i.up, i.down, i.flat{ font-style:normal; }
-  .kpi .up{ color:#0a7a3c; } .kpi .down{ color:#c81e1e; } .kpi .flat{ color:#6b5a00; }
   .fstep{ margin-bottom:8px; }
   .fstep .row{ display:flex; justify-content:space-between; font-size:.74rem; margin-bottom:3px; }
   .info{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px;
@@ -626,22 +649,25 @@ function page() {
   .info:hover, .info.show{ border-color:var(--nana); color:var(--nana); }
   .info::after{ content:attr(data-tip); display:none; position:absolute; left:-10px; top:150%;
          z-index:9; width:230px; background:#000; border:2px solid var(--nana); color:var(--ink);
-         padding:7px 9px; font-size:.68rem; font-weight:700; line-height:1.45; text-align:left;
-         box-shadow:4px 4px 0 rgba(0,0,0,.6); white-space:normal; }
+         border-radius:10px; padding:8px 10px; font-size:.68rem; font-weight:700; line-height:1.45;
+         text-align:left; box-shadow:0 8px 18px rgba(0,0,0,.55); white-space:normal; }
   .info:hover::after, .info.show::after{ display:block; }
-  .fbar{ height:16px; background:#0a0814; border:2px solid var(--line); position:relative; overflow:hidden; }
-  .fbar .fill{ height:100%; background:var(--nana); }
+  .fbar{ height:16px; background:#0a0814; border:2px solid #2b2348; border-radius:8px;
+         position:relative; overflow:hidden; }
+  .fbar .fill{ height:100%; background:var(--acc,var(--nana)); border-radius:5px; }
   .fbar.hotspot .fill{ background:var(--hot); box-shadow:0 0 10px var(--hot); }
   .fdrop{ font-size:.66rem; color:var(--dim); text-align:right; margin:2px 0 6px; }
   .fdrop b{ color:var(--hot); }
   table{ width:100%; border-collapse:collapse; font-size:.76rem; }
-  td,th{ padding:5px 6px; text-align:left; border-bottom:1px solid var(--line); }
-  td.num,th.num{ text-align:right; color:var(--nana); }
-  .minibar{ height:8px; background:var(--nana); display:inline-block; vertical-align:middle; }
+  td,th{ padding:6px 8px; text-align:left; border-bottom:1px solid #241d3c; }
+  tr:hover td{ background:rgba(255,255,255,.025); }
+  td.num,th.num{ text-align:right; color:var(--acc,var(--nana)); }
+  .minibar{ height:8px; background:var(--acc,var(--nana)); border-radius:4px;
+            display:inline-block; vertical-align:middle; }
   .src .fbar .fill{ background:var(--cool); }
   .foot{ color:var(--dim); font-size:.66rem; text-align:center; margin:20px 0 8px; }
-  .err{ background:var(--bad); color:#000; padding:8px 10px; font-size:.75rem; display:none;
-        margin-bottom:12px; }
+  .err{ background:var(--bad); color:#000; padding:8px 12px; font-size:.75rem; display:none;
+        border-radius:12px; margin-bottom:12px; }
   .muted{ color:var(--dim); font-size:.7rem; }
   a{ color:var(--cool); }
 
@@ -653,7 +679,8 @@ function page() {
      eats half a 667px-tall screen the moment a number gains a digit. */
   .head{ position:sticky; top:0; z-index:40; margin:-14px -14px 14px; padding:10px 14px;
          background:rgba(13,11,22,.94); border-bottom:3px solid var(--nana);
-         box-shadow:0 6px 0 rgba(0,0,0,.45); align-items:center; }
+         border-radius:0 0 16px 16px;
+         box-shadow:0 10px 20px rgba(0,0,0,.4); align-items:center; }
   @supports (backdrop-filter:blur(6px)){ .head{ backdrop-filter:blur(6px); } }
   .head .brand{ display:flex; align-items:center; gap:10px; }
   .head .grow{ flex:1 1 auto; }
@@ -713,6 +740,10 @@ function page() {
      its own. Scrolls sideways on a phone rather than wrapping. */
   .tabs{ display:flex; gap:6px; overflow-x:auto; scrollbar-width:none;
          margin-bottom:16px; padding-bottom:2px; -webkit-overflow-scrolling:touch; }
+  /* 📅 the level-up bar: the global time control, no panel chrome */
+  .rangebar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .rb-l{ font-size:.66rem; letter-spacing:.18em; text-transform:uppercase; color:var(--dim);
+         white-space:nowrap; }
   .tabs::-webkit-scrollbar{ display:none; }
   .tabs .chip{ flex:0 0 auto; font-size:.72rem; padding:9px 13px; letter-spacing:.1em; }
   @media(max-width:420px){ .tabs .chip{ font-size:.66rem; padding:9px 9px; letter-spacing:.04em; } }
@@ -772,16 +803,13 @@ function page() {
   </div>
 </div>
 
-<div class="tabs" id="tabs">
-  <button class="chip on" data-pane="overview">🌍 OVERVIEW</button>
-  <button class="chip" data-pane="downloads">📥 DOWNLOADS<b id="tabDl"></b></button>
-  <button class="chip" data-pane="shop">🛍 SHOP<b id="tabShop"></b></button>
-  <button class="chip" data-pane="world">🎠 WORLD<b id="tabWorld"></b></button>
-</div>
-
-<div class="panel">
-  <h2>📅 Time window <span class="muted">(drives every room)</span></h2>
-  <div class="chips" id="rangeChips">
+<!-- 📅 THE LEVEL-UP (Trym, 12 Aug): the time window is a GLOBAL control —
+     it drives every room, so it lives above them all as a slim bar. The
+     Sessions/Visitors data it used to share a panel with moved into the
+     Overview room, so the other tabs stop repeating it. -->
+<div class="rangebar">
+  <span class="rb-l">📅 window</span>
+  <div class="chips" id="rangeChips" style="margin:0;">
     <button class="chip on" data-r="today,today">TODAY</button>
     <button class="chip" data-r="yesterday,yesterday">YESTERDAY</button>
     <button class="chip" data-r="6daysAgo,today">7 DAYS</button>
@@ -789,13 +817,24 @@ function page() {
     <input type="date" id="dFrom"> <input type="date" id="dTo">
     <button class="chip" id="dGo">GO</button>
   </div>
-  <div class="kpis" id="kpis"></div>
-  <div class="kpis" id="devRow" style="margin-top:10px;"></div>
-  <p class="muted" style="margin-top:8px;">deltas = vs the previous window of the same length ·
-     GA4 intraday lags ~4–8h, so “today” fills in through the day</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="chip on" data-pane="overview">🌍 OVERVIEW</button>
+  <button class="chip" data-pane="downloads">📥 DOWNLOADS<b id="tabDl"></b></button>
+  <button class="chip" data-pane="shop">🛍 SHOP<b id="tabShop"></b></button>
+  <button class="chip" data-pane="world">🎠 WORLD<b id="tabWorld"></b></button>
 </div>
 
 <div class="pane" data-pane="overview">
+<div class="panel">
+  <h2>📊 The window at a glance</h2>
+  <div class="kpis" id="kpis"></div>
+  <div class="kpis" id="devRow" style="margin-top:12px;"></div>
+  <p class="muted" style="margin-top:10px;">deltas = vs the previous window of the same length ·
+     GA4 intraday lags ~4–8h, so “today” fills in through the day</p>
+</div>
+
 <div class="panel">
   <h2>🌍 Pixel earth</h2>
   <div style="position:relative;">
@@ -839,7 +878,7 @@ function page() {
 
 <div class="pane" data-pane="downloads" hidden>
 <div class="panel">
-  <h2>📥 The download business <i class="info" data-tip="Giving files away IS the product here — this room is the volume side of the site. TOOK = files handed over. SAW = the make-it-real card appeared (once per visit, by design). CLICKED = they went to a product.">i</i></h2>
+  <h2>📥 The download business <i class="info" data-tip="Giving files away IS the product here — this room is the volume side of the site. TOOK = files handed over. SAW = the warm-up card appeared (once per visit, by design). Since 12 Aug the card invites people into Banana World or the Discord instead of pushing merch — WORLD and DISCORD count those choices, and the warm-up rate is (world + discord) over cards shown.">i</i></h2>
   <div class="kpis" id="dlKpis"></div>
   <div id="dlSum" class="muted" style="margin-top:10px;"></div>
 </div>
@@ -903,8 +942,9 @@ var EV_LABEL = {
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop',
-  offer_shown:'got the make-it-real card 🛍', offer_click:'took the offer 🛍',
-  offer_skip:'said no thanks, took the file 🛍',
+  offer_shown:'got the warm-up card 🌍', offer_click:'took the merch offer 🛍 (retired 12 Aug)',
+  offer_skip:'said no thanks, took the file 📥',
+  offer_world:'chose Banana World from the card 🌍', offer_discord:'headed to the Discord 💬',
   homestead_open:'came home to the Homestead 🏡', homestead_claim:'CLAIMED a homestead 🪧',
   homestead_rename:'repainted their sign ✏️', homestead_upgrade:'UPGRADED their home 🏠',
   homestead_buy:'bought decor from the phone 🛋', homestead_sell:'sold a piece from the shed 🪙',
@@ -1021,7 +1061,7 @@ var EV_LABEL = {
   world_levelup:'levelled up 🎖' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
-  'wallpaper_download','license_click','homestead_open'];
+  'wallpaper_download','license_click','homestead_open','offer_world','offer_discord'];
 // what each event MEANS — hover any event name to see what the visitor did
 var EV_EXPLAIN = {
   page_view:'loaded any page on the site (GA4 auto)',
@@ -1090,9 +1130,11 @@ var EV_EXPLAIN = {
   rave_splat:'got splatted by a popper shot',
   rave_sit:'sat down on their own bar stool (a five-nightshift regular)',
   rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one; ad=sticker is the merch slide that paints THEIR banana as vinyl)',
-  offer_shown:'saw the make-it-real card 🛍. ⭐ INVERTED 6 Aug: the card now opens INSTEAD of the auto-download — the ask comes first, and the file is the card’s own no-thanks button. from = WHICH MOMENT: download_gif / download_meme / download_png (the builder), original + originalTee (the 1999 GIF and PBJ), wallpaper, emoji, gallery, remix (the official shop — community GIFs are not ours to sell), the international pages, and pass_overview. ⚠️ ONCE PER SESSION GLOBALLY, so this counts PEOPLE OFFERED, never impressions',
-  offer_click:'took the make-it-real offer 🛍 and went to the product page — WITHOUT downloading first, which is the whole point of the 6 Aug inversion. offer_click ÷ offer_shown is THE number this change lives or dies by (it was ZERO under download-first)',
-  offer_skip:'pressed “no thanks, just the GIF/PNG” on the card and the file delivered 🛍 (from = same moments as offer_shown). click + skip + dismissals = shown; a skip is still a served visitor, never a loss — but if skip is ~100% of shown, the card copy or the product is the problem',
+  offer_shown:'saw the download card. ⭐ PIVOTED 12 Aug: it stopped selling merch (months of data: direct-to-shop from a download converts nobody) and now WARMS UP — it introduces Banana World (join the Homestead) or the Discord, with the file as its no-thanks button. Rotating copy: the variant param names which of the 8 voices showed (per-variant splits need variant registered as a GA4 custom dimension). from = WHICH MOMENT: download_gif/meme/png (builder), original, originalTee, wallpaper, emoji, gallery, remix, the international pages. ⚠️ ONCE PER SESSION, so this counts PEOPLE OFFERED, never impressions',
+  offer_click:'RETIRED 12 Aug — this was the old merch CTA on the download card (card → product page). It flatlined near zero for its whole life, which is exactly why the card pivoted to the world/Discord warm-up. Old windows still show it; new ones never will',
+  offer_skip:'pressed “no thanks, just the GIF/PNG” on the download card and the file delivered 📥 (from = same moments as offer_shown). world + discord + skip + dismissals = shown; a skip is still a served visitor, never a loss — but if skip is ~100% of shown, the warm-up copy is not warming',
+  offer_world:'🌍 chose BANANA WORLD on the download card — tapped through to the Homestead instead of (or before) taking the file. THE number the 12 Aug warm-up pivot lives or dies by, together with offer_discord. Carries from (which surface) + variant (which of the 8 copy voices) — sent by beacon so the navigation can’t eat it',
+  offer_discord:'💬 chose THE DISCORD on the download card — opened the invite (discord.gg/cuF6BHfZT4) in a new tab; the file stays available behind them. Carries from + variant. offer_world + offer_discord over offer_shown = the warm-up rate',
   rave_exit_stand:'left the club through the EXIT by the bar → the banana stand (via = door or field-guide link)',
   stand_counter:'walked their banana up to the stand counter — the shop actually opened (once per visit)',
   stand_item_view:'tapped a shelf item at the banana stand — the spotlight look (item = which)',
@@ -1548,7 +1590,7 @@ function renderLive(){
   // ⏱ the downloads room's own live feed — same /api/live payload, no new query
   var dlv=document.getElementById('dlLive');
   if(dlv){
-    var DLSET={gif_download:1,png_download:1,wallpaper_download:1,offer_shown:1,offer_click:1,offer_skip:1};
+    var DLSET={gif_download:1,png_download:1,wallpaper_download:1,offer_shown:1,offer_click:1,offer_skip:1,offer_world:1,offer_discord:1};
     var got=(L.recent||[]).filter(function(e){ return DLSET[e.name]; });
     dlv.innerHTML = got.length
       ? got.map(function(e){ return '<div style="font-size:.78rem;margin-bottom:4px;">'
@@ -1619,20 +1661,19 @@ var FUNNELS=[
     'They opened a merch product page — mug, tee, and friends.'],
    ['transactions','Purchases 💰',
     'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']],
-  // 🛍 THE ASK — added 30 Jul, INVERTED 6 Aug. The after-the-file card earned
-  // ZERO clicks (the wish was granted before the ask), so the card now opens
-  // INSTEAD of the auto-download and the file is its no-thanks button. The
-  // funnel starts at the card because the card now comes first.
-  [['offer_shown','Got asked 🛍',
-    'The download click opened the make-it-real card BEFORE any file moved — their own banana as the real product. Once per session, every download surface on the site. Inverted 6 Aug: before that the file auto-saved first, and zero people ever clicked the card.'],
-   ['offer_click','Took the offer',
-    'They tapped through to the product page — without taking the free file first. offer_click ÷ offer_shown is THE number the 6 Aug inversion lives or dies by. The rest of shown split into offer_skip (took the file via the no-thanks button — still a happily served visitor) and plain dismissals.'],
-   ['sticker_pdp_checkout','Hit ORDER',
-    'They clicked ORDER on that product page.'],
-   ['checkout_redirect','→ Shopify checkout',
-    'The design uploaded and the browser left for Shopify.'],
-   ['purchase','PAID 💰',
-    'Real money. Store-wide, and still tied to the Shopify→GA4 purchase link.']]];
+  // 🌍💬 THE WARM-UP — added 30 Jul as a merch ask, inverted 6 Aug, PIVOTED
+  // 12 Aug: months of data said direct-to-shop from a download converts
+  // nobody, so the card introduces Banana World / the Discord instead.
+  // (Not rendered as a bar funnel — the Downloads room KPIs carry it — but
+  // kept current so wiring it back in is one line, not archaeology.)
+  [['offer_shown','Got the warm-up card 🌍',
+    'The download click opened the card BEFORE any file moved. Once per session, every download surface. Since 12 Aug it invites people into Banana World or the Discord — the file is its no-thanks button.'],
+   ['offer_world','Chose Banana World',
+    'Tapped through to the Homestead. offer_world + offer_discord over offer_shown = the warm-up rate.'],
+   ['offer_discord','Chose the Discord',
+    'Opened the community invite in a new tab.'],
+   ['offer_skip','Just took the file',
+    'Pressed no-thanks and the download flowed — still a happily served visitor.']]];
 function fmtDur(s){
   if(s<90) return s+'s';
   return Math.floor(s/60)+'m '+(s%60)+'s';
@@ -1730,22 +1771,27 @@ function renderDownloads(){
     var t0=document.getElementById('tabDl'); if(t0) t0.textContent='';
     return;
   }
-  var tf=0,ts=0,tc=0,tk=0;
-  D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; tk+=(r.skip||0); });
+  var tf=0,ts=0,tc=0,tk=0,tw=0,td2=0;
+  D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; tk+=(r.skip||0);
+    tw+=(r.world||0); td2+=(r.disc||0); });
   var sess=(state.range.kpis&&state.range.kpis.sessions)||0;
   // ⚠️ per 100 sessions, not a raw total: it is the only download number that
   // survives a traffic swing, and traffic here swings by 8× when an ad starts.
   var per=sess? (tf/sess*100).toFixed(1) : '–';
+  // 🌍💬 the warm-up rate = world + discord (+ legacy merch clicks so old
+  // windows keep an honest rate) over cards shown
+  var warm=tw+td2+tc;
   document.getElementById('dlKpis').innerHTML=
     dlk('Files taken',fmt(tf))+dlk('Per 100 visits',per)+
-    dlk('Offers shown',fmt(ts))+dlk('Offers clicked',fmt(tc))+
-    dlk('No-thanks',fmt(tk))+
-    dlk('Card CTR', ts>=20 ? Math.round((tc/ts)*100)+'%' : '–');
+    dlk('Cards shown',fmt(ts))+dlk('→ Banana World',fmt(tw))+
+    dlk('→ Discord',fmt(td2))+dlk('No-thanks',fmt(tk))+
+    dlk('Warm-up rate', ts>=20 ? Math.round((warm/ts)*100)+'%' : '–');
   function dlk(l,v){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; }
   sum.innerHTML = ts<20
-    ? 'Not enough offer cards yet to judge the card itself — come back when a few '
+    ? 'Not enough cards yet to judge the warm-up — come back when a few '
       +'hundred have been shown.'
-    : 'Of every 100 people shown the card, '+Math.round((tc/ts)*100)+' went to a product.';
+    : 'Of every 100 people shown the card, '+Math.round((warm/ts)*100)
+      +' chose the world or the community over just the file.';
 
   // ── the daily shape ──
   var days=state.range.dlDaily||[];
@@ -1759,7 +1805,7 @@ function renderDownloads(){
           var h=Math.max(2,Math.round((x.files/dmax)*100));
           var lbl=x.d.slice(6,8)+'.'+x.d.slice(4,6);
           return '<div class="tt" data-tip="'+lbl+' — '+x.files+' files, '+x.shown
-            +' cards shown, '+x.click+' clicked" style="flex:1 1 0;display:flex;'
+            +' cards shown, '+((x.world||0)+(x.disc||0)+(x.click||0))+' warmed" style="flex:1 1 0;display:flex;'
             +'flex-direction:column;justify-content:flex-end;height:100%;border:0;">'
             +'<div style="background:var(--nana);height:'+h+'%;"></div></div>';
         }).join('')+'</div>'
@@ -1786,11 +1832,14 @@ function renderDownloads(){
   var tb2=document.getElementById('tabDl'); if(tb2) tb2.textContent=tf?fmt(tf):'';
   var max=D[0].files||D[0].shown||1;
   tb.innerHTML='<tr><th>Surface</th><th class="num">Took</th><th class="num">Saw</th>'
-    +'<th class="num">Clicked</th><th class="num">No-thx</th><th class="num">Rate</th></tr>'
+    +'<th class="num">🌍 World</th><th class="num">💬 Discord</th><th class="num">No-thx</th><th class="num">Rate</th></tr>'
     +D.map(function(r){
       // ⚠️ a rate needs at least 20 cards behind it — 3 of 5 is three clicks,
       // not 60%. Same gate the analyst uses; the dashboard must not be looser.
-      var rate = r.shown>=20 ? Math.round((r.click/r.shown)*100)+'%' : '–';
+      // Legacy merch clicks (pre-12 Aug windows) count into the rate so old
+      // windows stay honest, but get no column of their own.
+      var rWarm=(r.world||0)+(r.disc||0)+(r.click||0);
+      var rate = r.shown>=20 ? Math.round((rWarm/r.shown)*100)+'%' : '–';
       var warn = (r.files>=20 && r.shown===0);
       var w=Math.max(2,Math.round((r.files/max)*70));
       return '<tr><td>'+esc(dlName(r.page))
@@ -1798,7 +1847,8 @@ function renderDownloads(){
         +'<br><span class="minibar" style="width:'+w+'px"></span></td>'
         +'<td class="num">'+fmt(r.files)+'</td>'
         +'<td class="num">'+fmt(r.shown)+'</td>'
-        +'<td class="num" style="color:'+(r.click?'var(--ok)':'var(--dim)')+'">'+fmt(r.click)+'</td>'
+        +'<td class="num" style="color:'+(r.world?'var(--ok)':'var(--dim)')+'">'+fmt(r.world||0)+'</td>'
+        +'<td class="num" style="color:'+(r.disc?'var(--cool)':'var(--dim)')+'">'+fmt(r.disc||0)+'</td>'
         +'<td class="num">'+fmt(r.skip||0)+'</td>'
         +'<td class="num">'+rate+'</td></tr>';
     }).join('');

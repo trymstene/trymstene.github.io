@@ -103,6 +103,13 @@ const CSS = `
   .mir__pills { justify-content: center; }
   .mir__no { margin-inline: auto; }
 }
+/* 🌍💬 the warm-up card's two doors: world = ink primary, discord = blurple —
+   the colour IS the label, so the brain routes before it reads */
+.mir__btns { display:flex; flex-direction:column; align-items:flex-start; gap:0.45rem; }
+.mir__go--dc { background:#5865f2; color:#fff; }
+@media (max-width: 430px) {
+  .mir__btns { align-items:center; }
+}
 /* the post-download moment: the card arrives over the page, once */
 .mir-veil {
   position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
@@ -283,6 +290,120 @@ function pickHead(offer) {
   return lastHead;
 }
 
+// 🌍💬 THE WARM-UP PIVOT (Trym, 12 Aug 2026). The data closed the merch
+// question: months of download popups fronting stickers/mugs/tees produced
+// effectively nothing — organic GIF traffic wants the file for Discord or a
+// chat, not a checkout. So the download moment stops selling and starts
+// WARMING UP: the card introduces Banana World (join the Homestead) or the
+// Discord community. The file stays one honest tap away, same as before.
+// The merch offerCard/OFFERS machinery survives untouched for the pass page
+// and park-postcard embeds — only the DOWNLOAD moment pivots.
+export const DISCORD_URL = 'https://discord.gg/cuF6BHfZT4';
+const WORLD_HREF = '/homestead/';
+// 8 rotating voices — a SITUATION or a promise, never a feature list. Which
+// one showed rides every event as `variant`, so the winners can be counted
+// (per-variant splits in GA4 need `variant` registered as a custom
+// dimension — same admin errand family as `from`).
+const WORLD_VARIANTS = [
+  { id: 'home', kicker: 'Banana World', head: 'Your banana deserves a home',
+    pills: ['Free browser world', 'No install, no login'],
+    world: '🏡 Claim your homestead', lead: 'world' },
+  { id: 'alive', kicker: 'Banana World', head: 'That banana? It’s alive, you know',
+    pills: ['It dances. It gardens. It raves.', 'Free, in your browser'],
+    world: '🌍 Step into Banana World', lead: 'world' },
+  { id: 'behind', kicker: 'There’s more', head: 'There’s a whole world behind this GIF',
+    pills: ['A park, a beach, a rave', 'Your banana walks it'],
+    world: '🌍 Visit Banana World', lead: 'world' },
+  { id: 'movein', kicker: 'Banana World', head: 'Don’t just download it — move in',
+    pills: ['Your own plot', 'Pitch a tent, grow a garden'],
+    world: '🏡 Move into the Homestead', lead: 'world' },
+  { id: 'plot', kicker: 'Banana World', head: 'Your GIF is ready. So is your plot.',
+    pills: ['Every banana gets a homestead', 'Free, in your browser'],
+    world: '🏡 See your plot', lead: 'world' },
+  { id: 'company', kicker: 'The community', head: 'Bananas are better with company',
+    pills: ['Memes, remixes, world drops', 'The people who get it'],
+    world: '🌍 Visit Banana World', lead: 'discord' },
+  { id: 'people', kicker: 'The community', head: 'Meet the people who get it',
+    pills: ['Show off your banana', 'Hear about drops first'],
+    world: '🌍 Visit Banana World', lead: 'discord' },
+  { id: 'since99', kicker: 'Since 1999', head: '26 years old — and it just got a whole world',
+    pills: ['The original banana’s world', 'Free, in your browser'],
+    world: '🌍 Step into Banana World', lead: 'world' },
+];
+const DISC_CTA = '💬 Join the Discord';
+
+// their banana standing in the world — sky, grass, and the engine composite.
+// A gradient backdrop is card chrome, not world art (the pack rule is about
+// scenes); the banana itself is the real engine render.
+async function worldShot(outfit, size = 420) {
+  const { drawComposite, assetsReady } = await import('./banana-engine.js');
+  await assetsReady();
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = size;
+  const c = cv.getContext('2d');
+  const sky = c.createLinearGradient(0, 0, 0, size * 0.66);
+  sky.addColorStop(0, '#8ed0f0'); sky.addColorStop(1, '#c6e9f8');
+  c.fillStyle = sky; c.fillRect(0, 0, size, size * 0.66);
+  const grass = c.createLinearGradient(0, size * 0.66, 0, size);
+  grass.addColorStop(0, '#79bd55'); grass.addColorStop(1, '#549a39');
+  c.fillStyle = grass; c.fillRect(0, size * 0.66, size, size * 0.34);
+  drawComposite(c, size, 3, {   // the ta-da pose
+    bg: 'transparent', captions: false, effect: 'none', top: '', bottom: '',
+    ...outfit, extras: (outfit && outfit.extras) || {},
+  });
+  return cv;
+}
+
+function worldCard({ v, outfit, skipText, onWorld, onDiscord, onSkip }) {
+  injectCss();
+  const o = outfit || myOutfit();
+  const card = document.createElement('div');
+  card.className = 'mir';
+  const shot = document.createElement('div');
+  shot.className = 'mir__shot';
+  const f = document.createElement('span');
+  f.className = 'mir__flag';
+  f.textContent = o.made ? 'MADE BY YOU' : 'SINCE 1999';
+  shot.appendChild(f);
+  card.appendChild(shot);
+  worldShot(o).then((cv) => { shot.appendChild(cv); }).catch(() => {});
+  const body = document.createElement('div');
+  const k = document.createElement('p'); k.className = 'mir__kicker'; k.textContent = v.kicker;
+  const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = v.head;
+  const ps = document.createElement('div'); ps.className = 'mir__pills';
+  v.pills.forEach((t) => {
+    const s = document.createElement('span'); s.className = 'mir__pill'; s.textContent = t;
+    ps.appendChild(s);
+  });
+  const btns = document.createElement('div');
+  btns.className = 'mir__btns';
+  const world = document.createElement('a');
+  world.className = 'mir__go';
+  world.href = WORLD_HREF;
+  world.textContent = v.world;
+  if (onWorld) world.addEventListener('click', onWorld);
+  const dc = document.createElement('a');
+  dc.className = 'mir__go mir__go--dc';
+  dc.href = DISCORD_URL;
+  dc.target = '_blank'; dc.rel = 'noopener';
+  dc.textContent = DISC_CTA;
+  if (onDiscord) dc.addEventListener('click', onDiscord);
+  // `lead` only reorders — world is always ink, discord always blurple
+  btns.append(...(v.lead === 'discord' ? [dc, world] : [world, dc]));
+  const no = document.createElement('button');
+  no.type = 'button'; no.className = 'mir__no'; no.textContent = skipText;
+  if (onSkip) no.addEventListener('click', onSkip);
+  body.append(k, h, ps, btns, no);
+  card.appendChild(body);
+  return card;
+}
+
+/**
+ * The download-moment card — the WARM-UP card since 12 Aug. Owns its own
+ * tracking now: offer_shown / offer_world / offer_discord / offer_skip, all
+ * carrying { from, variant } (+ any caller `params`). Callers only supply
+ * the moment (`from`), the file (`onSkip`) and optionally the outfit.
+ */
 export function offerAfterDownload(opts = {}) {
   if (!offerWillShow()) return null;
   if (!QA) {
@@ -290,14 +411,23 @@ export function offerAfterDownload(opts = {}) {
     shownThisSession = true;
   }
   injectCss();
+  const v = WORLD_VARIANTS[Math.floor(Math.random() * WORLD_VARIANTS.length)];
+  const P = { from: opts.from || 'unknown', variant: v.id, ...(opts.params || {}) };
+  const hit = (name, extra) => {
+    try { if (window.gtag) window.gtag('event', name, { ...P, ...(extra || {}) }); } catch (e) {}
+  };
   const veil = document.createElement('div');
   veil.className = 'mir-veil';
   const close = () => veil.remove();
-  const card = offerCard({
-    ...opts,
+  const card = worldCard({
+    v,
+    outfit: opts.outfit,
     skipText: opts.skipText || 'no thanks, just the GIF',
-    onSkip: () => { close(); if (opts.onSkip) opts.onSkip(); },
-    onGo: (e) => { if (opts.onGo) opts.onGo(e); },
+    // ⚠️ beacon transport: the world link navigates THIS tab away instantly —
+    // a plain gtag hit would be cancelled mid-flight with the page
+    onWorld: () => hit('offer_world', { transport_type: 'beacon' }),
+    onDiscord: () => hit('offer_discord', { transport_type: 'beacon' }),
+    onSkip: () => { close(); hit('offer_skip'); if (opts.onSkip) opts.onSkip(); },
   });
   veil.appendChild(card);
   veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
@@ -305,6 +435,7 @@ export function offerAfterDownload(opts = {}) {
     if (e.key === 'Escape') { close(); removeEventListener('keydown', esc); }
   });
   document.body.appendChild(veil);
+  hit('offer_shown');
   return { el: veil, close };
 }
 
@@ -502,17 +633,15 @@ export function wireDownloads(key, over, scope) {
     e.preventDefault();
     e.stopPropagation();
     const fire = () => { refired.add(a); a.click(); };
-    const o = { ...(OFFERS[key] || OFFERS.yours), ...(over || {}) };
-    // ⚠️ `from`, NOT `offer` — the builder has fired offer_shown/offer_click
-    // with `from` since 30 Jul, and two names for one dimension would split
-    // the funnel in Pulse and quietly halve every number.
+    // 🌍 the card owns its copy (rotating world/discord variants) and its own
+    // events now — `key` survives purely as the `from` dimension. `over` is
+    // accepted and ignored so the pages that pass per-item merch overrides
+    // (gallery, locales) keep working unchanged.
     const shown = offerAfterDownload({
+      from: key,
       skipText: skipLabelFor(a),
-      ...o,
-      onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: key }); },
-      onSkip: () => { if (window.gtag) window.gtag('event', 'offer_skip', { from: key }); fire(); },
+      onSkip: fire,
     });
-    if (!shown) { fire(); return; }   // belt and braces: no card, no toll — the file flows
-    if (window.gtag) window.gtag('event', 'offer_shown', { from: key });
+    if (!shown) fire();   // belt and braces: no card, no toll — the file flows
   }, true);
 }

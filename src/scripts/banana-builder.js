@@ -1106,19 +1106,18 @@ function init() {
   // `deliver` — the card's secondary button releases it. Once per session;
   // after that (or if the card can't show) the file flows instantly.
   function offerIt(kind, deliver) {
-    sync(); // the design must be in the URL before we hand it to the PDP
-    const search = location.search;
+    sync(); // keep the design in the URL — the card may navigate away from here
+    // 🌍 the warm-up card (12 Aug): it pitches Banana World / the Discord and
+    // fires its own offer_* events with { from, variant } — the builder only
+    // adds the design string so a winning variant can be tied to a design.
     const shown = offerAfterDownload({
+      from: 'download_' + kind,
       outfit: { ...state },
-      head: kind === 'png' ? 'Want that as a real sticker?' : 'Want your banana on your laptop?',
-      cta: 'See it as a sticker →',
-      href: '/make-a-banana/sticker/' + search,
+      params: { design: designStr() },
       skipText: kind === 'png' ? 'no thanks, just the image' : 'no thanks, just the GIF',
-      onGo: () => track('offer_click', { from: 'download_' + kind, design: designStr() }),
-      onSkip: () => { track('offer_skip', { from: 'download_' + kind }); deliver(); },
+      onSkip: deliver,
     });
-    if (!shown) { deliver(); return; }
-    track('offer_shown', { from: 'download_' + kind, design: designStr() });
+    if (!shown) deliver();
   }
 
   // ---- emoji GIF export: ALWAYS transparent, tight-trimmed, no captions ----
