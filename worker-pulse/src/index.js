@@ -1800,14 +1800,16 @@ function renderDownloads(){
     if(!days.length){ dh.innerHTML='<p class="muted">nothing in this window</p>'; }
     else{
       var dmax=1; days.forEach(function(x){ if(x.files>dmax) dmax=x.files; });
-      dh.innerHTML='<div style="display:flex;align-items:flex-end;gap:3px;height:110px;">'
+      dh.innerHTML='<div style="display:flex;align-items:flex-end;gap:4px;height:110px;">'
         +days.map(function(x){
           var h=Math.max(2,Math.round((x.files/dmax)*100));
           var lbl=x.d.slice(6,8)+'.'+x.d.slice(4,6);
+          // ⚠️ max-width: a one-day window used to render ONE bar as a giant
+          // full-panel slab — bars cap at 64px and sit left instead
           return '<div class="tt" data-tip="'+lbl+' — '+x.files+' files, '+x.shown
-            +' cards shown, '+((x.world||0)+(x.disc||0)+(x.click||0))+' warmed" style="flex:1 1 0;display:flex;'
+            +' cards shown, '+((x.world||0)+(x.disc||0)+(x.click||0))+' warmed" style="flex:1 1 0;max-width:64px;display:flex;'
             +'flex-direction:column;justify-content:flex-end;height:100%;border:0;">'
-            +'<div style="background:var(--nana);height:'+h+'%;"></div></div>';
+            +'<div style="background:var(--acc,var(--nana));border-radius:6px 6px 0 0;height:'+h+'%;"></div></div>';
         }).join('')+'</div>'
         +'<div class="muted" style="margin-top:5px;">'+days[0].d.slice(6,8)+'.'+days[0].d.slice(4,6)
         +' → '+days[days.length-1].d.slice(6,8)+'.'+days[days.length-1].d.slice(4,6)
