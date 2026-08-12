@@ -14,7 +14,7 @@
 // QA: ?questtest (sticky per device) · ?questtest=off · ?questreset ·
 //     ?queststep=N jumps (test only).
 import { passStat } from './banana-pass.js';
-import { drawComposite, assetsReady } from './banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
 
 // 🍌 NIB IS A REAL BANANA (Trym's polish verdict: "theres no banana NPC
 // greeting me" — a floating ! is not a character). Engine-rendered like Old
@@ -157,7 +157,7 @@ const STEPS = [
 
   { id: 'c1_peel_hi', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'Official business? Bah. Paperwork is what killed my marigolds.'],
+      ['peel', 'Official business? Bah. Paperwork is what killed my flowers.'],
       ['peel', 'So YOU’RE the one living on Plot 11 now. Hm. HM.'],
       ['peel', 'I remember a thing or two about that plot. And I’ll tell you — after you help me a little.'],
       ['peel', 'My flowerbed is up in the garden corner, past the mushroom shop. The weeds have taken it over, the flowers are thirsty — and my knees are done for today.'],
@@ -386,10 +386,9 @@ function ensureCss() {
 .bwq-npc { position:absolute; width:5.4%; transform:translate(-50%,-94%); cursor:pointer; }
 .bwq-npc canvas { display:block; width:100%; image-rendering:pixelated; }
 /* 🚶 when his business is done he WALKS off toward the park — a blink-away
-   read as a glitch (Trym). The bob sells the steps; margin, not transform
-   (the centering transform is load-bearing). */
-.bwq-npc--walk { cursor:default; animation:bwqStep 0.34s steps(2) infinite; }
-@keyframes bwqStep { 0%,100% { margin-top:0; } 50% { margin-top:-3px; } }
+   read as a glitch (Trym). The dance frames sell the walk (drawn in JS);
+   the class just retires the pointer. */
+.bwq-npc--walk { cursor:default; }
 /* 🗺 the map button — rides the beach action bar for the whole dig hunt,
    glowing so nobody has to remember where the circle was (Trym) */
 .bwq-mapbtn { position:relative; }
@@ -705,6 +704,15 @@ export function bootQuest() {
     if (at >= 0) layer.splice(at, 1);
     nibEl = null;
     n.classList.add('bwq-npc--walk');
+    // 🕺 a MOVING banana dances — the locked standing frame gliding along
+    // read as a statue on wheels (Trym). Same cadence as every walker.
+    const cv = n.querySelector('canvas');
+    let f = 0;
+    const anim = setInterval(() => {
+      if (!cv || !cv.isConnected) { clearInterval(anim); return; }
+      f = (f + 1) % NFRAMES;
+      try { drawComposite(cv.getContext('2d'), 150, f, NIB_DRAW); } catch (e) {}
+    }, 110);
     n.style.zIndex = String(100 + Math.round((AREAS[area].wh || 1100) * 0.82));
     n.style.transition = 'left 1.2s linear, top 1.2s linear';
     requestAnimationFrame(() => { n.style.top = '81%'; });          // onto the road
