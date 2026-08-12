@@ -878,7 +878,7 @@ function page() {
 
 <div class="pane" data-pane="downloads" hidden>
 <div class="panel">
-  <h2>📥 The download business <i class="info" data-tip="Giving files away IS the product here — this room is the volume side of the site. TOOK = files handed over. SAW = the warm-up card appeared (once per visit, by design). Since 12 Aug the card invites people into Banana World or the Discord instead of pushing merch — WORLD and DISCORD count those choices, and the warm-up rate is (world + discord) over cards shown.">i</i></h2>
+  <h2>📥 The download business <i class="info" data-tip="Giving files away IS the product here — this room is the volume side of the site. TOOK = files handed over. SAW = the warm-up card appeared (on EVERY download since 12 Aug, so it counts cards, not people). The card invites people into Banana World or the Discord instead of pushing merch — WORLD and DISCORD count those choices, and the warm-up rate is (world + discord) over cards shown.">i</i></h2>
   <div class="kpis" id="dlKpis"></div>
   <div id="dlSum" class="muted" style="margin-top:10px;"></div>
 </div>
@@ -897,7 +897,7 @@ function page() {
 <div class="panel">
   <h2>📄 Every surface that hands a file over</h2>
   <div style="overflow-x:auto;"><table id="dlTable"></table></div>
-  <p class="muted" style="margin-top:9px;">the card is capped at ONE per visit — SAW will always sit below TOOK, and that is the design, not a leak</p>
+  <p class="muted" style="margin-top:9px;">since 12 Aug the card rides EVERY download — in fresh windows SAW should track TOOK closely; a big gap means the wiring, in old windows it is just the retired once-per-visit cap</p>
 </div>
 
 </div>
@@ -1130,7 +1130,7 @@ var EV_EXPLAIN = {
   rave_splat:'got splatted by a popper shot',
   rave_sit:'sat down on their own bar stool (a five-nightshift regular)',
   rave_screen_ad:'clicked a house ad on the LED club screen (ad = which one; ad=sticker is the merch slide that paints THEIR banana as vinyl)',
-  offer_shown:'saw the download card. ⭐ PIVOTED 12 Aug: it stopped selling merch (months of data: direct-to-shop from a download converts nobody) and now WARMS UP — it introduces Banana World (join the Homestead) or the Discord, with the file as its no-thanks button. Rotating copy: the variant param names which of the 8 voices showed (per-variant splits need variant registered as a GA4 custom dimension). from = WHICH MOMENT: download_gif/meme/png (builder), original, originalTee, wallpaper, emoji, gallery, remix, the international pages. ⚠️ ONCE PER SESSION, so this counts PEOPLE OFFERED, never impressions',
+  offer_shown:'saw the download card. ⭐ PIVOTED 12 Aug: it stopped selling merch (months of data: direct-to-shop from a download converts nobody) and now WARMS UP — it introduces Banana World (join the Homestead) or the Discord, with the file as its no-thanks button. Rotating copy: the variant param names which of the 8 voices showed (per-variant splits need variant registered as a GA4 custom dimension). from = WHICH MOMENT: download_gif/meme/png (builder), original, originalTee, wallpaper, emoji, gallery, remix, the international pages. Shows on EVERY download since later 12 Aug (the once-per-session cap is retired), so this counts CARDS SHOWN — impressions, not people',
   offer_click:'RETIRED 12 Aug — this was the old merch CTA on the download card (card → product page). It flatlined near zero for its whole life, which is exactly why the card pivoted to the world/Discord warm-up. Old windows still show it; new ones never will',
   offer_skip:'pressed “no thanks, just the GIF/PNG” on the download card and the file delivered 📥 (from = same moments as offer_shown). world + discord + skip + dismissals = shown; a skip is still a served visitor, never a loss — but if skip is ~100% of shown, the warm-up copy is not warming',
   offer_world:'🌍 chose BANANA WORLD on the download card — tapped through to the Homestead instead of (or before) taking the file. THE number the 12 Aug warm-up pivot lives or dies by, together with offer_discord. Carries from (which surface) + variant (which of the 8 copy voices) — sent by beacon so the navigation can’t eat it',

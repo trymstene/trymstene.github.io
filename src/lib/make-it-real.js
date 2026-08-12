@@ -255,23 +255,20 @@ function buildCard({
 }
 
 /**
- * The download-moment card. Shows ONCE per session — the offer is a moment,
- * and a moment repeated is nagging.
- * ⭐ INVERTED 6 Aug (Trym): the ask comes FIRST now. Callers intercept the
- * download, show this, and hand the actual file over as `onSkip` — the card's
- * secondary button IS the download. Dismissing the veil skips the file too;
- * the next click on the download button flows free (the session is marked).
+ * The download-moment card.
+ * ⭐ INVERTED 6 Aug (Trym): the ask comes FIRST. Callers intercept the
+ * download, show this, and hand the actual file over as `onSkip` — the
+ * card's secondary button IS the download. Dismissing the veil skips the
+ * file; the next download click simply opens the card again.
  */
-let shownThisSession = false;
-// ⚠️ read at module load, not at call time — callers sync() the design into the
-// URL first, which rewrites the query string and would eat the flag.
-const QA = typeof location !== 'undefined' && location.search.includes('offertest');
-// the sync eligibility check — callers ask BEFORE intercepting a download, so
-// an ineligible click is never blocked in the first place
+// (the old ?offertest QA flag is retired with the session cap — the card
+// shows on every download now, so QA is just… downloading.)
+// the sync eligibility check — callers ask BEFORE intercepting a download.
+// ⭐ EVERY download shows the card now (Trym, 12 Aug — the old once-per-
+// session cap was merch-era nagware protection; a warm-up invitation rides
+// every file). The skip button still delivers instantly, so the toll is one
+// tap, never a wall.
 export function offerWillShow() {
-  if (QA) return true;
-  if (shownThisSession) return false;
-  try { if (sessionStorage.getItem('mir-seen')) { shownThisSession = true; return false; } } catch (e) {}
   return true;
 }
 // 🎣 ROTATING HEADLINES. Trym, 8 Aug — on "Want this sticker on your laptop?":
@@ -403,13 +400,11 @@ function worldCard({ v, outfit, skipText, onWorld, onDiscord, onSkip }) {
  * tracking now: offer_shown / offer_world / offer_discord / offer_skip, all
  * carrying { from, variant } (+ any caller `params`). Callers only supply
  * the moment (`from`), the file (`onSkip`) and optionally the outfit.
+ * Shows on EVERY download (Trym, 12 Aug) — offer_shown counts CARDS now,
+ * not people.
  */
 export function offerAfterDownload(opts = {}) {
   if (!offerWillShow()) return null;
-  if (!QA) {
-    try { sessionStorage.setItem('mir-seen', '1'); } catch (e) {}
-    shownThisSession = true;
-  }
   injectCss();
   const v = WORLD_VARIANTS[Math.floor(Math.random() * WORLD_VARIANTS.length)];
   const P = { from: opts.from || 'unknown', variant: v.id, ...(opts.params || {}) };
@@ -454,8 +449,8 @@ export function offerAfterDownload(opts = {}) {
 // banana THEY dressed gets the custom lane, because the card can show the exact
 // thing they just made. Same card, two shops, honest either way.
 //
-// ⚠️ ONE PER SESSION, GLOBALLY (offerAfterDownload). A thank-you repeated is
-// nagging — that rule is what keeps this from becoming a popup people hate.
+// (the download popup shows per-download since 12 Aug — these entries now
+// serve only the EMBEDDED cards: pass page, park postcard.)
 export const OFFERS = {
   // ── CUSTOM LANE ── they made it, so we can show it
   yours: {
@@ -607,9 +602,8 @@ function skipLabelFor(a) {
  * 🔗 Wire every download link inside `scope` to an offer.
  *
  * ⭐ FIRST, NOT AFTER (Trym, 6 Aug — the after-the-file card earned ZERO
- * clicks): the first download click opens the CARD instead; its secondary
- * button re-fires the link and the file flows. Once per session — after the
- * card has been seen, every download is native and instant.
+ * clicks): a download click opens the CARD instead; its secondary button
+ * re-fires the link and the file flows. EVERY download (Trym, 12 Aug).
  *
  * ⚠️ CAPTURE + stopPropagation on the intercepted click: GA4's automatic
  * file_download (and any page-level tracker, e.g. the gallery's own
@@ -629,7 +623,7 @@ export function wireDownloads(key, over, scope) {
     if (!a) return;
     if (refired.has(a)) { refired.delete(a); return; }   // the skip button sent it — let it flow
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    if (!offerWillShow()) return;                        // card seen — files flow free
+    if (!offerWillShow()) return;                        // (always true now — kept as the seam)
     e.preventDefault();
     e.stopPropagation();
     const fire = () => { refired.add(a); a.click(); };
