@@ -19,9 +19,18 @@ const description = 'A clearing west of the park with your name on the sign: cla
   <style is:inline slot="head">
     /* JS toggles hidden on flex/grid elements — the UA rule must always win */
     .hs-wrap [hidden], .hs-veil[hidden], .hs-tabs[hidden] { display: none !important; }
-    .hs-wrap { max-width: 1100px; margin: 0 auto; padding: 1.2rem 1rem 2.5rem; }
-    .hs-head h1 { margin: 0 0 0.25rem; }
-    .hs-head p { margin: 0 0 1rem; opacity: 0.8; max-width: 64ch; }
+    /* 🏡 the marquee — the park/bay header grammar in hearth-gold: dark warm
+       page, centered glowing sign, small dim tagline (Trym: the left-aligned
+       white header read basic next to the other areas) */
+    body { background: #16130a; }
+    .hs-wrap { max-width: 1100px; margin: 0 auto; padding: 0.6rem 1rem 2.5rem; color: #fffdf5; }
+    .hs-sign {
+      font-family: "Archivo Black", sans-serif; text-align: center;
+      color: #ffc94d; font-size: clamp(1.4rem, 6.4vw, 2.2rem); line-height: 1.05;
+      margin: 0.7rem 0 0.15rem; letter-spacing: 0.02em;
+      text-shadow: 0 0 12px rgba(255, 201, 77, 0.4), 0 0 30px rgba(200, 140, 40, 0.3);
+    }
+    .hs-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
 
     .hs-stage { position: relative; border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
     .hs-view {
@@ -559,9 +568,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
   </style>
 
   <div class="hs-wrap">
-    <div class="hs-head">
-      <h1>🏡 the homestead</h1>
-    </div>
+    <h1 class="hs-sign">🏡 THE HOMESTEAD</h1>
+    <p class="hs-tag">your own corner of Banana World</p>
 
     <div class="hs-stage">
       <div class="hs-view" id="hsView">
