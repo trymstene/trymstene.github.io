@@ -1089,6 +1089,11 @@ export function initGarden(ctx) {
     }
   }
   function trashTick() {
+    // 🕯 the questline's litter rides the SAME walk-over beat — quest-local
+    // objects, park verbs (the weeds' bwqWeeds pattern, on foot)
+    (window.bwqTrash || []).forEach((q) => {
+      if (Math.hypot(pos.x - q.x, (pos.y - 6) - q.y) <= 32) q.take();
+    });
     trash.forEach((t, id) => {
       if (Math.hypot(pos.x - t.x, (pos.y - 6) - t.y) > 32) return;
       trash.delete(id);                    // optimistic — the reply reconciles

@@ -241,16 +241,26 @@ const STEPS = [
 
   { id: 'c1_peel_fuss', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'A tin? Let me see— no. NO. Not with litter all over my lawn.'],
-      ['peel', 'Pick that rubbish up first. I can’t think over mess. Nobody can.'],
+      ['peel', 'A tin? Let me see— no. NO. Not with litter blowing all over my park.'],
+      ['peel', 'Pick it up first. Every last piece. I can’t think over mess. Nobody can.'],
     ],
-    hint: 'pick up the 2 pieces of litter — tap them' },
+    hint: 'litter has blown all over the park — walk over every piece to pick it up' },
 
-  { id: 'c1_litter', area: 'park', kind: 'objects',
-    hint: 'pick up the 2 pieces of litter — tap them',
+  // 🗑 eight pieces spread across the WHOLE park (Trym: let the chore show
+  // the place off) — REAL pk-trash sprites picked up by WALKING OVER them,
+  // exactly like everyday litter: window.bwqTrash rides park-garden's
+  // trashTick, same is-popped animation, same +2 rep.
+  { id: 'c1_litter', area: 'park', kind: 'objects', sweep: 1,
+    hint: 'litter has blown all over the park — walk over every piece to pick it up',
     objects: [
-      { id: 'lit1', sel: '.pk-old', dx: 16, dy: 8, taps: 1, kind: 'trash', done: '🗑 picked up' },
-      { id: 'lit2', sel: '.pk-old', dx: 6, dy: 8, taps: 1, kind: 'trash', done: '🗑 picked up' },
+      { id: 'lit1', x: 15.6, y: 63.6, taps: 1, kind: 'trash' },
+      { id: 'lit2', x: 34.4, y: 43.6, taps: 1, kind: 'trash' },
+      { id: 'lit3', x: 27.5, y: 84.5, taps: 1, kind: 'trash' },
+      { id: 'lit4', x: 48.2, y: 87.3, taps: 1, kind: 'trash' },
+      { id: 'lit5', x: 64.5, y: 38.2, taps: 1, kind: 'trash' },
+      { id: 'lit6', x: 76.1, y: 65.5, taps: 1, kind: 'trash' },
+      { id: 'lit7', x: 88.8, y: 50.9, taps: 1, kind: 'trash' },
+      { id: 'lit8', x: 58.0, y: 58.2, taps: 1, kind: 'trash' },
     ] },
 
   { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
@@ -389,10 +399,10 @@ function ensureCss() {
   animation:bwqGlow 1.6s ease-in-out infinite;
 }
 .bwq-mapbtn svg { display:block; width:1.35em; height:auto; }
-/* 🌿 quest weeds wear the quest's dashed ring — a weed that LOOKS like every
-   other weed still has to say "I am part of this" (Trym) */
-.bwq-qweed { overflow:visible; }
-.bwq-qweed::after {
+/* 🌿🗑 quest weeds and litter wear the quest's dashed ring — a thing that
+   LOOKS like every other one still has to say "I am part of this" (Trym) */
+.bwq-qweed, .bwq-qtrash { overflow:visible; }
+.bwq-qweed::after, .bwq-qtrash::after {
   content:''; position:absolute; inset:-7px; border:2px dashed #ffe135;
   border-radius:8px; animation:bwqPulse 1.3s ease-in-out infinite; pointer-events:none;
 }
@@ -545,7 +555,7 @@ function ensureCss() {
   text-align:center; pointer-events:none; opacity:0; transition:opacity 0.25s ease;
 }
 .bwq-toast.on { opacity:1; }
-@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more, .bwq-npc--walk, .bwq-qweed::after, .bwq-mapbtn::before { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more, .bwq-npc--walk, .bwq-qweed::after, .bwq-qtrash::after, .bwq-mapbtn::before { animation:none; } }
 `;
   document.head.appendChild(st);
 }
@@ -972,6 +982,7 @@ export function bootQuest() {
       step.objects.forEach((o) => {
         if ((S.k[o.id] || 0) >= o.taps) return;
         if (step.tend && o.kind === 'weed') return;   // rendered as REAL weeds below
+        if (step.sweep && o.kind === 'trash') return; // rendered as REAL litter below
         const el = document.createElement('div');
         el.className = 'bwq-obj bwq-obj--' + o.kind;
         el.innerHTML = '<i></i>';
@@ -1027,6 +1038,44 @@ export function bootQuest() {
         });
         window.bwqWeeds = qw;
         unhook.push(() => { window.bwqWeeds = null; });
+      }
+      // 🗑 quest litter = REAL pk-trash sprites, picked up by WALKING over
+      // them (window.bwqTrash rides park-garden's trashTick) — the chip
+      // counts the sweep so the park-wide walk always shows progress
+      if (step.sweep) {
+        const total = step.objects.filter((o) => o.kind === 'trash').length;
+        const chipTxt = layer[0] && layer[0].querySelector('span');
+        const paintT = () => {
+          if (!chipTxt) return;
+          const n = step.objects.filter((o) => o.kind === 'trash' && (S.k[o.id] || 0) >= o.taps).length;
+          chipTxt.textContent = step.hint + ' · ' + n + '/' + total;
+        };
+        paintT();
+        const qt = [];
+        step.objects.forEach((o, idx) => {
+          if (o.kind !== 'trash' || (S.k[o.id] || 0) >= o.taps) return;
+          const el = document.createElement('div');
+          el.className = 'pk-trash pk-trash--' + (1 + idx % 3) + ' bwq-qtrash';
+          el.style.left = o.x + '%';
+          el.style.top = o.y + '%';
+          const wx = o.x / 100 * 2760, wy = o.y / 100 * 1100;   // park world units
+          el.style.zIndex = String(100 + Math.round(wy));
+          w.appendChild(el); layer.push(el);
+          qt.push({ id: o.id, x: wx, y: wy, el,
+            take: () => {
+              el.classList.add('is-popped');   // the everyday litter pop
+              setTimeout(() => el.remove(), 360);
+              S.k[o.id] = 1;
+              save();
+              passStat('rep', 2);              // same wage as everyday litter
+              toast('🗑 litter cleared');
+              paintT();
+              window.bwqTrash = (window.bwqTrash || []).filter((q) => q.id !== o.id);
+              if (step.objects.every((q2) => (S.k[q2.id] || 0) >= q2.taps)) advance();
+            } });
+        });
+        window.bwqTrash = qt;
+        unhook.push(() => { window.bwqTrash = null; });
       }
     } else if (step.kind === 'digzone') {
       // 🗺 dig the circle with the REAL ⛏: the beach makes a .bh-hole for
