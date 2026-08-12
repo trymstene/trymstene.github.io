@@ -14,7 +14,7 @@ import { initTravel } from './world-travel.js';
 import { initWorldTutorial } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
-import { WORLD, BOUND, ROAD, GATE, SPAWN, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
+import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -1200,11 +1200,13 @@ function init(visitDoc, visitMiss) {
   });
 
   // ---- spawn + walking ----------------------------------------------------
-  // 🛣 arriving by ROAD (walked from the park, or fast travel) spawns you
-  // on the east road heading in — the same door you leave by
+  // 🛣 arriving by ROAD (walked from the park, or fast travel) comes in the
+  // EAST door — the same one you leave by, since the park lies east. A
+  // DIRECT visit walks in from the WEST end of the road instead (Trym:
+  // entering from the right only makes sense if you came from the park).
   const byRoad = /[?&](park|world)(?:=|&|$)/.test(location.search);
-  const pos = byRoad ? { x: W - 90, y: ROAD.y } : { x: SPAWN.x, y: SPAWN.y };
-  const tgt = byRoad ? { x: W - 260, y: ROAD.y } : { x: SPAWN.x - 120, y: SPAWN.y };
+  const pos = byRoad ? { x: W - 90, y: ROAD.y } : { x: 104, y: ROAD.y };
+  const tgt = byRoad ? { x: W - 260, y: ROAD.y } : { x: 300, y: ROAD.y };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('homestead_open', {
     claimed: state.claimedAt ? 1 : 0,
