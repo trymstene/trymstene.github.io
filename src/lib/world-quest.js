@@ -434,7 +434,15 @@ function ensureCss() {
   width:min(420px, calc(100% - 20px)); box-sizing:border-box;
   background:#101a10; color:#fffdf5; border:4px solid #000; box-shadow:6px 6px 0 #000;
   padding:0.8rem 0.9rem 0.9rem; cursor:pointer;
-  animation:bwqCardIn 0.26s cubic-bezier(0.34,1.56,0.64,1);
+  animation:bwqDlgIn 0.26s cubic-bezier(0.34,1.56,0.64,1);
+}
+/* ⚠️ the dialogue is CENTERED by transform, and keyframe transforms REPLACE
+   the base transform — bwqCardIn (scale only) stripped the -50% for its
+   0.26s and the card popped in half a width to the RIGHT, then snapped
+   (Trym). Its own keyframes carry the centering through every frame. */
+@keyframes bwqDlgIn {
+  0% { transform:translateX(-50%) scale(0.6) rotate(-3deg); opacity:0; }
+  100% { transform:translateX(-50%); opacity:1; }
 }
 .bwq-dlg [hidden], .bwq-dlg[hidden] { display:none !important; }
 .bwq-pop {
