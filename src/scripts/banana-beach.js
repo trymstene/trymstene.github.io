@@ -1958,6 +1958,11 @@ function init() {
     }, HOLE_LIFE);
   }
   let digAt = 0, digDry = 0;
+  // ⛏ a dug patch is SPENT until the tide fills its hole back in (HOLE_LIFE)
+  // — without this, mass-clicking one spot farmed coins/pieces forever and
+  // the hunt never needed a single step (Trym). The open hole IS the cue.
+  const DIG_SPENT_R = 56;
+  const spentDigs = [];             // { x, y, t }
   // ⛏ DIG AT YOUR FEET — the ⛏ action button (and Space) call this anywhere on
   // the sand. Strike the buried X → the day's treasure; near it → "packed sand"
   // (the hunt's only cue); otherwise mostly sand, the odd scrap.
@@ -1970,10 +1975,19 @@ function init() {
     const now = performance.now();
     if (now - digAt < 420) return;
     digAt = now;
-    digHole(pos.x, pos.y);
     meEl.animate([{ transform: 'translate(-50%,-100%) scale(1,0.86)' },
       { transform: 'translate(-50%,-100%) scale(1,1)' }], { duration: 260, easing: 'ease-out' });
-    passStat('bh_dug', 1);
+    // spent ground: the hole, the dig stat and every loot roll are FRESH-SAND
+    // only. The treasure X and its packed-sand cue stay live — they are
+    // navigation, not loot, and the X pays once per day regardless.
+    const t2 = Date.now();
+    while (spentDigs.length && t2 - spentDigs[0].t > HOLE_LIFE) spentDigs.shift();
+    const spent = spentDigs.some((s) => Math.hypot(s.x - pos.x, s.y - pos.y) < DIG_SPENT_R);
+    if (!spent) {
+      digHole(pos.x, pos.y);
+      spentDigs.push({ x: pos.x, y: pos.y, t: t2 });
+      passStat('bh_dug', 1);
+    }
     const d = Math.hypot(treasureAt.x - pos.x, treasureAt.y - pos.y);
     if (!treasureFound() && d < DIG_REACH) {
       openTreasure();   // the found-flag commits only when the haul is POCKETED
@@ -1984,6 +1998,11 @@ function init() {
     if (!treasureFound() && d < DIG_WARM) {
       float(pos.x, pos.y - 26, 'the sand’s packed here — close!', true);
       track('beach_dig', { find: 'warm' });
+      return;
+    }
+    if (spent) {
+      float(pos.x, pos.y - 26, '⛏ already dug here — find fresh sand', true);
+      track('beach_dig', { find: 'spent' });
       return;
     }
     // 🪙 loose change rides an ordinary dig ON TOP of whatever else turns up
