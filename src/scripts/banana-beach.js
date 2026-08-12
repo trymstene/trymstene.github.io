@@ -618,7 +618,12 @@ function init() {
   // whole painted lane mouth on its own.
   const PARK_DOOR = { x: 16, y: 1046 };   // the spine's centreline at the edge
   const DOOR_ZONE = 130, DOOR_GO = 52, DOOR_ARM = 180;
-  let doorArmed = false, doorStripOn = false, leaving = false;
+  let doorArmed = false, doorClear = false, doorStripOn = false, leaving = false;
+  // ⚠️ a deliberate tap/keypress ALSO arms the door — arming purely by
+  // distance trapped anyone who turned straight back the way they came
+  // (see the park's doorArmed note, same fix, same day)
+  addEventListener('pointerdown', () => { doorArmed = true; }, true);
+  addEventListener('keydown', () => { doorArmed = true; });
   const exitEl = document.getElementById('bhExitStrip');
   function exitToPark() {
     if (leaving) return;
@@ -632,6 +637,7 @@ function init() {
   function doorTick() {
     const d = Math.hypot(pos.x - PARK_DOOR.x, pos.y - PARK_DOOR.y);
     if (!doorArmed) { if (d > DOOR_ARM) doorArmed = true; return; }
+    if (!doorClear) { if (d > DOOR_GO * 2) doorClear = true; return; }
     if (d < DOOR_GO) { exitToPark(); return; }
     const want = d < DOOR_ZONE;
     if (want !== doorStripOn) {

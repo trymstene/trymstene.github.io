@@ -1231,7 +1231,12 @@ function init(visitDoc, visitMiss) {
   // ---- the east door: back to the park ------------------------------------
   const DOOR = { x: W - 40, y: ROAD.y };
   const DOOR_ZONE = 130, DOOR_GO = 40, DOOR_ARM = 200;
-  let doorArmed = false, leaving = false, stripOn = false;
+  let doorArmed = false, doorClear = false, leaving = false, stripOn = false;
+  // ⚠️ a deliberate tap/keypress ALSO arms the door — arming purely by
+  // distance trapped anyone who turned straight back the way they came
+  // (see the park's doorArmed note, same fix, same day)
+  addEventListener('pointerdown', () => { doorArmed = true; }, true);
+  addEventListener('keydown', () => { doorArmed = true; });
   function exitTo(href) {
     if (leaving) return;
     leaving = true;
@@ -1245,6 +1250,7 @@ function init(visitDoc, visitMiss) {
   function doorTick() {
     const d = Math.hypot(pos.x - DOOR.x, pos.y - DOOR.y);
     if (!doorArmed) { if (d > DOOR_ARM) doorArmed = true; return; }
+    if (!doorClear) { if (d > DOOR_GO * 2) doorClear = true; return; }
     // ?homestead = the park spawns you at ITS west door + park_join logs the
     // via — without it you arrive at the default gate as a 'direct' visitor
     if (d < DOOR_GO) { exitTo('/park/?homestead'); return; }

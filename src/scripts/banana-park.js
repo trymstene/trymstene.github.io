@@ -388,7 +388,16 @@ function init() {
     { x: DOORS.west.x, y: DOORS.west.y, href: '/homestead/?park', label: 'keep walking ← to the Homestead' },
   ];
   const DOOR_ZONE = 130, DOOR_GO = 36, DOOR_ARM = 180;
-  let doorArmed = false, leaving = false, stripOn = -1;
+  let doorArmed = false, doorClear = false, leaving = false, stripOn = -1;
+  // ⚠️ a deliberate tap/keypress ALSO arms the doors. Only the arrival
+  // auto-walk needs the anti-bounce guard — but arming purely by distance
+  // trapped anyone who turned straight back toward the door they came in
+  // by: it never armed until they wandered 180 units away, so the banana
+  // just walked into the frame edge (Trym, on the park's beach road).
+  // doorClear then demands one step out of the GO radius after arming, so
+  // arming while standing IN a door can never teleport you.
+  addEventListener('pointerdown', () => { doorArmed = true; }, true);
+  addEventListener('keydown', () => { doorArmed = true; });
   function exitTo(href) {
     if (leaving) return;
     leaving = true;
@@ -406,6 +415,7 @@ function init() {
       if (dist < nd) { nd = dist; nearest = i; }
     });
     if (!doorArmed) { if (nd > DOOR_ARM) doorArmed = true; return; }
+    if (!doorClear) { if (nd > DOOR_GO * 2) doorClear = true; return; }
     if (nd < DOOR_GO) { exitTo(DOOR_DEFS[nearest].href); return; }
     const want = nd < DOOR_ZONE ? nearest : -1;
     if (want !== stripOn) {
