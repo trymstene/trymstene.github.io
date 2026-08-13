@@ -39,11 +39,24 @@ const CSS = `
   cursor:pointer; text-decoration:underline; padding:0.2rem; z-index:2;
 }
 .bwt-skip:hover { color:#ffe135; }
-.bwt-bar { display:flex; gap:4px; margin:0 4rem 0.9rem 0; }
+/* right margin clears the whole skip link — 4rem left it lying ON the bar */
+.bwt-bar { display:flex; gap:5px; margin:0.1rem 7.5rem 0.95rem 0; }
 .bwt-bar i {
-  flex:1; height:7px; background:#243a1c; border:2px solid #000; border-radius:99px;
+  flex:1; height:13px; background:#243a1c; border:2px solid #000; border-radius:99px;
 }
-.bwt-bar i.on { background:#ffe135; }
+.bwt-bar i.on {
+  background:linear-gradient(#fff3a0,#ffe135 45%,#f2c012);
+  box-shadow:0 0 10px rgba(255,225,53,0.55), inset 0 1px 0 rgba(255,255,255,0.55);
+}
+/* the segment you're ON burns a little brighter (browsers without :has()
+   simply skip the pulse) */
+.bwt-bar i.on:has(+ i:not(.on)), .bwt-bar i.on:last-child {
+  animation:bwtGlow 1.6s ease-in-out infinite;
+}
+@keyframes bwtGlow {
+  0%,100% { box-shadow:0 0 8px rgba(255,225,53,0.45), inset 0 1px 0 rgba(255,255,255,0.55); }
+  50% { box-shadow:0 0 16px rgba(255,225,53,0.95), inset 0 1px 0 rgba(255,255,255,0.55); }
+}
 .bwt-title { margin:0 0 0.2rem; font-size:1.15rem; color:#ffe135; letter-spacing:0.02em; }
 .bwt-sub { margin:0 0 0.85rem; font-size:0.82rem; line-height:1.5; color:rgba(255,253,245,0.78); }
 .bwt-stage { display:grid; gap:0.6rem; margin-bottom:1rem; }
