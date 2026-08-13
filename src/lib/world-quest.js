@@ -58,6 +58,9 @@ const MARKQ_SVG = '<svg viewBox="0 0 14 24" aria-hidden="true">'
   + '<path fill="#ffd23f" d="M5 1h5v2H5zM3 2h3v3H3zM8 2h3v3H8zM8 5h3v3H8zM6 8h3v5H6zM6 18h3v3H6z"/>'
   + '<path fill="#fff3a8" d="M5 1h2v1H5zM3 2h1v2H3zM6 18h1v2H6z"/>'
   + '</svg>';
+// 🎫 the pass icon = the SAME pixelarticons 'card' glyph the pass page and
+// its buttons use — never an OS wallet emoji beside our own icon set (Trym)
+const ICON_CARD = '<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M20 20H4v-2h16v2ZM4 18H2V6h2v12Zm18 0h-2V6h2v12ZM20 6H4V4h16v2Z"/></svg>';
 // ⚠️ the hint chip anchors to the VIEW (the clipping viewport), never the
 // world: the world PANS, so a world-anchored chip lives at the map's top-left
 // corner and is off-screen almost always — which read as "the quest doesn't
@@ -272,6 +275,9 @@ const STEPS = [
     lines: [
       ['peel', '(he opens the box, slow as Sunday)'],
       ['peel', '…A photograph. That’s Plot 11 alright. But look — there’s a little house on it.'],
+      // 🖼 SHOW the photo (Trym: show, don't tell) — the player sees the
+      // house and the lit window BEFORE Peel says it can't exist
+      ['photo', ''],
       ['peel', 'There has never been a house on Plot 11. Never. And yet here’s a photo of one.'],
       ['peel', 'And underneath it… a fishing lure. Old. Carved by hand.'],
       ['peel', 'So THAT’s what the stranger did at the Bay every morning. Fished off the pier. And came home with an empty bucket, every single time.'],
@@ -341,7 +347,7 @@ const STEPS = [
     // the phone icon is the REAL banana-phone sprite, matching the action
     // bar — an OS 📱 emoji beside the actual button art read as two phones
     hint: 'make it official — order a tent on your <img src="/assets/homestead/phone.png" alt=""> banana phone and move in',
-    resSkip: '🖼 the old photograph goes up on your wall. home.' },
+    resSkip: 'the old photograph goes up on your wall. home.' },
 
   { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, leave: 1, at: { x: 63, y: 76 },
     find: 'Nib is back at your gate',
@@ -352,15 +358,20 @@ const STEPS = [
       ['you', 'Who scratches a name OUT of a book?'],
       ['nib', 'Nobody! You can’t! I laminated the rules myself!'],
       ['nib', '…I need to sit down. I have never needed to sit down in my life.'],
-      // 🪪 the chapter's landing: Nib the registrar naturally pitches the
+      // 🎫 the chapter's landing: Nib the registrar warms up (word travels,
+      // everyone liked you, please stay) and THEN naturally pitches the
       // BANANA PASS — the funnel's next step (My Pass login) wrapped in his
       // process-love; the receipt card carries the actual door to /pass/
-      ['nib', 'One more thing, resident. Every proper citizen of Banana World carries a PASS — your name, your things, your story. All in one place.'],
+      ['nib', '…Right. Deep breaths. There is one pleasant piece of paperwork left, resident, and I saved it for last.'],
+      ['nib', 'Word travels fast in a small world. Peel talks. Shelly talks. Barty talks a LOT.'],
+      ['nib', 'And every word about you has been kind. The flowers. The clean park. The little book from the bay. I do hope you decide to stay — Banana World is better with you in it.'],
+      ['nib', 'Which is why you should carry a PASS, like every proper citizen. Your name, your things, your story. All in one place.'],
       ['nib', 'Go to MY PASS and sign yourself in. Then it’s truly official. More official than my book, even. And I laminated my book.'],
       ['paper', 'CHAPTER ONE — complete 🍌 (chapter two is coming)'],
     ],
-    reward: { note: '🖼 the photograph — the house that isn’t there',
-      link: { href: '/pass/', label: '🪪 open My Pass — make it official' } },
+    reward: { note: 'the photograph — the house that isn’t there', art: () => photoCanvas(),
+      link: { href: '/pass/', label: 'open My Pass — make it official',
+        icon: ICON_CARD, art: () => passCanvas() } },
     hint: '' },
 ];
 
@@ -568,12 +579,13 @@ function ensureCss() {
 @keyframes bwqUnfold { 0% { transform:rotate(-1.4deg) scaleY(0.12); opacity:0; } 100% { transform:rotate(-1.4deg) scaleY(1); opacity:1; } }
 .bwq-sp canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
   border:3px solid #000; background:#fffdf5; box-shadow:3px 3px 0 rgba(0,0,0,0.4); }
-/* the torn map and the flipbook are OBJECTS — no card frame, their own
-   paper edges ARE the edge */
-.bwq-sp canvas.bwq-map, .bwq-sp canvas.bwq-fb {
+/* the torn map, the flipbook and the photograph are OBJECTS — no card
+   frame, their own paper edges ARE the edge */
+.bwq-sp canvas.bwq-map, .bwq-sp canvas.bwq-fb, .bwq-sp canvas.bwq-photo {
   border:0; background:transparent; box-shadow:none; transform:rotate(-1.5deg);
   filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.4));
 }
+.bwq-sp canvas.bwq-photo { width:150px; height:auto; image-rendering:auto; }
 /* ⚠️ ABSOLUTE inside the game view, never fixed to the viewport — a fixed
    toast rendered ABOVE the frame on desktop (Trym missed the fishing find
    entirely: the whole payoff played where nobody looks) */
@@ -618,7 +630,16 @@ function ensureCss() {
   border:3px solid #000; box-shadow:3px 3px 0 #000; padding:0.6rem;
 }
 .bwq-reward a.bwq-reward__go:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+.bwq-reward a.bwq-reward__go svg { vertical-align:-3px; }
 .bwq-reward--link button { background:#182a18; color:#fffdf5; }
+/* 🖼 reward ART: the received thing drawn on the receipt, lying at a tilt */
+.bwq-reward__art { width:max-content; margin:0 auto 0.55rem; transform:rotate(-2deg); }
+.bwq-reward__art canvas, .bwq-reward__peek canvas { display:block; }
+.bwq-reward .bwq-photo { width:126px; height:auto; box-shadow:4px 5px 0 rgba(0,0,0,0.45); }
+/* 🎫 the pass peek — the picture of the door, itself a door */
+.bwq-reward__peek { display:block; width:max-content; margin:0.15rem auto 0.6rem; transform:rotate(1.4deg); }
+.bwq-reward__peek:hover { transform:rotate(0deg); }
+.bwq-pass { width:204px; height:auto; box-shadow:4px 5px 0 rgba(0,0,0,0.45); }
 /* 🎞 the bundle RISES from the water at the float — the strike must happen
    where the player is looking, not in a corner chip */
 .bwq-bundle {
@@ -677,9 +698,28 @@ function payReward(r) {
     ? '<a class="bwq-reward__go" href="' + r.link.href + '"></a>' : '';
   card.innerHTML = '<i>you received</i>' + rows + linkHtml + '<button type="button">🍌 got it</button>';
   if (r.note) card.querySelectorAll('p')[r.coins ? 1 : 0].textContent = r.note;
+  // a reward may carry ART — the received thing itself, drawn, not just named
+  if (r.art) {
+    const fig = document.createElement('div');
+    fig.className = 'bwq-reward__art';
+    fig.appendChild(r.art());
+    card.insertBefore(fig, card.children[1] || null);
+  }
   if (r.link) {
-    card.querySelector('.bwq-reward__go').textContent = r.link.label;
+    const go = card.querySelector('.bwq-reward__go');
+    // internal constants only — the icon is our own inline pixelarticon svg
+    go.innerHTML = (r.link.icon || '') + '<span></span>';
+    go.querySelector('span').textContent = (r.link.icon ? ' ' : '') + r.link.label;
     card.classList.add('bwq-reward--link');
+    // …and the door may show WHAT it opens (the finale: the pass itself,
+    // your banana and name already printed on it) — the picture is a link too
+    if (r.link.art) {
+      const peek = document.createElement('a');
+      peek.className = 'bwq-reward__peek';
+      peek.href = r.link.href;
+      peek.appendChild(r.link.art());
+      card.insertBefore(peek, go);
+    }
   }
   veil.appendChild(card);
   (activeView || document.body).appendChild(veil);
@@ -838,6 +878,169 @@ function flipbookCanvas() {
   return cv;
 }
 
+// 🖼 THE PHOTOGRAPH — the chapter's whole mystery in one object (Trym: if a
+// photograph is referenced, make art for it — show, don't tell). An old
+// chemist print: warm-white border, the wide chin, and a sepia scene of
+// Plot 11 with the little house that has never stood there — one window lit.
+// A hand wrote the where and when on the chin. Drawn at 2× for crisp text.
+function photoCanvas() {
+  const cv = document.createElement('canvas');
+  cv.width = 300; cv.height = 344;
+  cv.className = 'bwq-photo';
+  const c = cv.getContext('2d');
+  c.scale(2, 2);
+  // the paper, edges gone cream with age
+  c.fillStyle = '#efe7d2'; c.fillRect(0, 0, 150, 172);
+  c.strokeStyle = '#d8c9a4'; c.lineWidth = 2; c.strokeRect(1, 1, 148, 170);
+  const px = 11, py = 11, pw = 128, ph = 118;
+  c.save();
+  c.beginPath(); c.rect(px, py, pw, ph); c.clip();
+  // sky, gone tea-coloured
+  const sky = c.createLinearGradient(0, py, 0, py + 74);
+  sky.addColorStop(0, '#e0d0a8'); sky.addColorStop(1, '#cdb98c');
+  c.fillStyle = sky; c.fillRect(px, py, pw, 74);
+  // the treeline behind the plot
+  c.fillStyle = '#9a865e';
+  [[10, 16], [34, 12], [126, 13], [142, 17]].forEach(([tx, tr]) => {
+    c.beginPath(); c.arc(px + tx, py + 62, tr, 0, 7); c.fill();
+  });
+  // the ground
+  const gr = c.createLinearGradient(0, py + 64, 0, py + ph);
+  gr.addColorStop(0, '#b3a077'); gr.addColorStop(1, '#9c885e');
+  c.fillStyle = gr; c.fillRect(px, py + 64, pw, ph - 64);
+  // the path to the door
+  c.fillStyle = '#c6b489';
+  c.beginPath();
+  c.moveTo(px + 52, py + ph); c.lineTo(px + 70, py + ph);
+  c.lineTo(px + 80, py + 92); c.lineTo(px + 73, py + 92);
+  c.closePath(); c.fill();
+  // THE HOUSE — small, gabled, real as anything
+  c.fillStyle = '#6d5838'; c.fillRect(px + 58, py + 52, 46, 40);
+  c.fillStyle = '#7d6644'; c.fillRect(px + 58, py + 52, 12, 40);
+  c.fillStyle = '#4b3922';
+  c.beginPath(); c.moveTo(px + 52, py + 54); c.lineTo(px + 81, py + 32);
+  c.lineTo(px + 110, py + 54); c.closePath(); c.fill();
+  c.fillStyle = '#59452a'; c.fillRect(px + 96, py + 37, 7, 13);   // chimney
+  c.fillStyle = '#42311c'; c.fillRect(px + 72, py + 74, 11, 18);  // door
+  // THE WINDOW — lit. warm. somebody home.
+  const wg = c.createRadialGradient(px + 93, py + 66, 2, px + 93, py + 66, 16);
+  wg.addColorStop(0, 'rgba(245,215,120,0.5)'); wg.addColorStop(1, 'rgba(245,215,120,0)');
+  c.fillStyle = wg; c.fillRect(px + 77, py + 50, 32, 32);
+  c.fillStyle = '#f2da8c'; c.fillRect(px + 88, py + 60, 11, 11);
+  c.strokeStyle = '#42311c'; c.lineWidth = 1.5;
+  c.strokeRect(px + 88, py + 60, 11, 11);
+  c.beginPath(); c.moveTo(px + 93.5, py + 60); c.lineTo(px + 93.5, py + 71);
+  c.moveTo(px + 88, py + 65.5); c.lineTo(px + 99, py + 65.5); c.stroke();
+  // the tree by the house
+  c.fillStyle = '#57432a'; c.fillRect(px + 26, py + 58, 5, 26);
+  c.fillStyle = '#8a7448';
+  [[24, 13, 50], [36, 11, 50], [29, 10, 40]].forEach(([tx, tr, ty]) => {
+    c.beginPath(); c.arc(px + tx, py + ty, tr, 0, 7); c.fill();
+  });
+  // grass tufts up front
+  c.strokeStyle = 'rgba(70,55,30,0.5)'; c.lineWidth = 1.5;
+  [[20, 108], [34, 114], [96, 110], [112, 116], [124, 106]].forEach(([gx, gy]) => {
+    c.beginPath(); c.moveTo(px + gx, py + gy); c.lineTo(px + gx - 2, py + gy - 5);
+    c.moveTo(px + gx, py + gy); c.lineTo(px + gx + 2, py + gy - 5); c.stroke();
+  });
+  // age: corner vignettes, one scratch, dust
+  [[px, py], [px + pw, py], [px, py + ph], [px + pw, py + ph]].forEach(([vx, vy]) => {
+    const v = c.createRadialGradient(vx, vy, 4, vx, vy, 42);
+    v.addColorStop(0, 'rgba(72,52,26,0.32)'); v.addColorStop(1, 'rgba(72,52,26,0)');
+    c.fillStyle = v; c.fillRect(vx - 42, vy - 42, 84, 84);
+  });
+  c.strokeStyle = 'rgba(255,250,232,0.5)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(px + 96, py + 6); c.lineTo(px + 74, py + 112); c.stroke();
+  c.fillStyle = 'rgba(255,250,232,0.65)';
+  [[30, 30], [104, 22], [58, 96], [120, 74], [20, 80]].forEach(([dx, dy]) => c.fillRect(px + dx, py + dy, 1.5, 1.5));
+  c.fillStyle = 'rgba(122,92,50,0.10)'; c.fillRect(px, py, pw, ph);   // sepia wash
+  c.restore();
+  c.strokeStyle = 'rgba(90,70,40,0.45)'; c.lineWidth = 1.5; c.strokeRect(px, py, pw, ph);
+  // the chin: a hand wrote where and when (the 1999 of the registry page)
+  c.fillStyle = '#6a5836';
+  c.font = 'italic 700 13px Georgia, "Times New Roman", serif';
+  c.textAlign = 'center';
+  c.fillText('plot 11 — 1999', 75, 154);
+  return cv;
+}
+
+// 🎫 THE PASS — the receipt shows the REAL thing (Trym: My Pass has a card
+// visual, use it). A canvas rendition of /pass/'s official card — banana
+// face, ink header + punched hole, YOUR banana and YOUR name already on it,
+// barcode, serial, red OFFICIAL stamp — so the door under it explains itself.
+function passCanvas() {
+  const cv = document.createElement('canvas');
+  cv.width = 440; cv.height = 256;
+  cv.className = 'bwq-pass';
+  const c = cv.getContext('2d');
+  c.scale(2, 2);
+  // the yellow face + ink frame
+  c.fillStyle = '#141414'; c.fillRect(0, 0, 220, 128);
+  c.fillStyle = '#ffe135'; c.fillRect(3, 3, 214, 122);
+  // header strip + punched hole
+  c.fillStyle = '#141414'; c.fillRect(8, 8, 204, 20);
+  c.fillStyle = '#ffe135';
+  // spaced caps like the real header — but never under the punched hole:
+  // step the letter-spacing down until the line clears it
+  let ls = 1.5;
+  const hdrFont = () => {
+    try { c.letterSpacing = ls + 'px'; } catch (e) {}
+    c.font = '800 8px Verdana, sans-serif';
+  };
+  hdrFont();
+  while (c.measureText('BANANA WORLD · RESIDENT PASS').width > 176 && ls > 0) { ls -= 0.25; hdrFont(); }
+  c.fillText('BANANA WORLD · RESIDENT PASS', 14, 21);
+  try { c.letterSpacing = '0px'; } catch (e) {}
+  c.fillStyle = '#fffdf5'; c.beginPath(); c.arc(202, 18, 4, 0, 7); c.fill();
+  // your banana, on your pass (lands when the engine sheet is ready)
+  assetsReady().then(() => {
+    if (!cv.isConnected) return;
+    const o = document.createElement('canvas');
+    o.width = 160; o.height = 160;
+    try { drawComposite(o.getContext('2d'), 160, 0, myDraw()); } catch (e) { return; }
+    c.imageSmoothingEnabled = false;
+    c.drawImage(o, 12, 32, 58, 58);
+  });
+  // your name (or the pass page's own default), shrunk to fit
+  let nm = '';
+  try { nm = (localStorage.getItem('ps-name-v1') || '').trim(); } catch (e) {}
+  nm = (nm || 'fresh dancing banana').slice(0, 24);
+  c.fillStyle = '#141414';
+  let fs = 14;
+  c.font = '900 ' + fs + 'px "Archivo Black", Verdana, sans-serif';
+  while (c.measureText(nm).width > 132 && fs > 9) {
+    fs -= 1;
+    c.font = '900 ' + fs + 'px "Archivo Black", Verdana, sans-serif';
+  }
+  c.fillText(nm, 76, 52);
+  c.font = '800 7px Verdana, sans-serif';
+  c.globalAlpha = 0.72;
+  c.fillText('MEMBER SINCE — TODAY?', 76, 66);
+  c.globalAlpha = 1;
+  // rank chip
+  c.fillStyle = '#141414'; c.fillRect(76, 74, 72, 15);
+  c.fillStyle = '#ffe135'; c.font = '800 8px Verdana, sans-serif';
+  c.fillText('NEW IN TOWN', 83, 84.5);
+  // barcode + serial (plot 11, the registry's 1999)
+  const BARS = [3, 1, 2, 1, 1, 3, 1, 2, 2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1];
+  let bx = 12;
+  c.fillStyle = '#141414';
+  BARS.forEach((w2, i2) => { if (i2 % 2 === 0) c.fillRect(bx, 102, w2, 16); bx += w2 + 1; });
+  c.font = '800 7px Verdana, sans-serif';
+  c.fillText('Nº 11 · 1999', 92, 115);
+  // the red OFFICIAL stamp
+  c.save();
+  c.translate(179, 97); c.rotate(-0.14);
+  c.globalAlpha = 0.85;
+  c.strokeStyle = '#e22020'; c.lineWidth = 2.5; c.strokeRect(-34, -12, 68, 24);
+  c.lineWidth = 1; c.strokeRect(-31, -9, 62, 18);
+  c.fillStyle = '#e22020'; c.font = '900 11px "Archivo Black", Verdana, sans-serif';
+  c.textAlign = 'center';
+  c.fillText('OFFICIAL', 0, 4);
+  c.restore();
+  return cv;
+}
+
 // ---- the engine -----------------------------------------------------------
 export function bootQuest() {
   const path = location.pathname;
@@ -845,10 +1048,12 @@ export function bootQuest() {
     : path.includes('park') ? 'park'
       : path.includes('beach') ? 'beach'
         : path.includes('rave') ? 'rave' : null;
-  if (!area || S.done) return;
+  if (!area) return;
 
-  // test conveniences
+  // test conveniences — ⚠️ questreset must run BEFORE the done gate, or a
+  // finished chapter can never be replayed on the device
   if (/[?&]questreset/.test(location.search)) { S = { s: 0, k: {}, res: 0, done: 0 }; save(); }
+  if (S.done) return;
   const jump = location.search.match(/[?&]queststep=(\d+)/);
   if (jump) { S.s = Math.min(STEPS.length - 1, +jump[1]); S.k = {}; save(); }
 
@@ -1044,6 +1249,9 @@ export function bootQuest() {
         } else if (who === 'map') {
           sp.innerHTML = '<b>sabreface’s map</b><small>tap to continue</small>';
           sp.insertBefore(questMapCanvas(), sp.querySelector('small'));
+        } else if (who === 'photo') {
+          sp.innerHTML = '<b>the photograph</b><small>tap to continue</small>';
+          sp.insertBefore(photoCanvas(), sp.querySelector('small'));
         } else {
           sp.innerHTML = '<b>the flipbook</b><small>tap to continue</small>';
           sp.insertBefore(flipbookCanvas(), sp.querySelector('small'));
