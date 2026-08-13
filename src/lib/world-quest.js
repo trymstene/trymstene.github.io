@@ -352,9 +352,15 @@ const STEPS = [
       ['you', 'Who scratches a name OUT of a book?'],
       ['nib', 'Nobody! You can’t! I laminated the rules myself!'],
       ['nib', '…I need to sit down. I have never needed to sit down in my life.'],
+      // 🪪 the chapter's landing: Nib the registrar naturally pitches the
+      // BANANA PASS — the funnel's next step (My Pass login) wrapped in his
+      // process-love; the receipt card carries the actual door to /pass/
+      ['nib', 'One more thing, resident. Every proper citizen of Banana World carries a PASS — your name, your things, your story. All in one place.'],
+      ['nib', 'Go to MY PASS and sign yourself in. Then it’s truly official. More official than my book, even. And I laminated my book.'],
       ['paper', 'CHAPTER ONE — complete 🍌 (chapter two is coming)'],
     ],
-    reward: { note: '🖼 the photograph — the house that isn’t there' },
+    reward: { note: '🖼 the photograph — the house that isn’t there',
+      link: { href: '/pass/', label: '🪪 open My Pass — make it official' } },
     hint: '' },
 ];
 
@@ -603,6 +609,16 @@ function ensureCss() {
   border:3px solid #000; box-shadow:3px 3px 0 #000; padding:0.6rem;
 }
 .bwq-reward button:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+/* a reward can carry a DOOR (the finale's My Pass link): the link wears the
+   primary yellow and got-it steps back to a quiet ghost */
+.bwq-reward a.bwq-reward__go {
+  display:block; box-sizing:border-box; width:100%; margin-bottom:0.5rem;
+  font-weight:800; font-size:0.95rem; text-decoration:none;
+  background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
+  border:3px solid #000; box-shadow:3px 3px 0 #000; padding:0.6rem;
+}
+.bwq-reward a.bwq-reward__go:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+.bwq-reward--link button { background:#182a18; color:#fffdf5; }
 /* 🎞 the bundle RISES from the water at the float — the strike must happen
    where the player is looking, not in a corner chip */
 .bwq-bundle {
@@ -655,8 +671,16 @@ function payReward(r) {
   let rows = '';
   if (r.coins) rows += '<p><img src="/assets/homestead/coin16.png" alt=""> +' + r.coins + ' bananacoins</p>';
   if (r.note) rows += '<p></p>';
-  card.innerHTML = '<i>you received</i>' + rows + '<button type="button">🍌 got it</button>';
+  // a reward may carry a DOOR (the finale's My Pass link) — the link takes
+  // the primary style and got-it steps back to a ghost
+  const linkHtml = r.link
+    ? '<a class="bwq-reward__go" href="' + r.link.href + '"></a>' : '';
+  card.innerHTML = '<i>you received</i>' + rows + linkHtml + '<button type="button">🍌 got it</button>';
   if (r.note) card.querySelectorAll('p')[r.coins ? 1 : 0].textContent = r.note;
+  if (r.link) {
+    card.querySelector('.bwq-reward__go').textContent = r.link.label;
+    card.classList.add('bwq-reward--link');
+  }
   veil.appendChild(card);
   (activeView || document.body).appendChild(veil);
   ['pointerdown', 'pointerup', 'touchstart'].forEach((ev) =>

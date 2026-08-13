@@ -1220,6 +1220,9 @@ function init(visitDoc, visitMiss) {
   const SPEED = 168;
   const keys = {};
   addEventListener('keydown', (e) => {
+    // ⚠️ typing is typing — an S in the naming card must never walk the
+    // banana behind the popup (Trym, mid-name)
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
       if (panelOpen()) return;
@@ -1492,7 +1495,7 @@ function init(visitDoc, visitMiss) {
     }).catch(() => {});
     // the naming moment, AFTER the deed (silent if already named/asked)
     askName({
-      why: 'Your clearing has a sign now.',
+      why: 'The sign is up. Now — who lives here?',
       paint: (cv) => { try { drawComposite(cv.getContext('2d'), 72, 2, ME_DRAW); } catch (e) {} },
       clean: (v2) => import('../lib/sticker-core.js').then((m) => m.captionsClean({ top: v2 })).catch(() => true),
     }).then((nm) => { if (nm) myName = nm; });

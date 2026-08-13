@@ -370,6 +370,8 @@ function init() {
   const SPEED = 168;
   const keys = {};
   addEventListener('keydown', (e) => {
+    // ⚠️ typing is typing — a letter in any input must never walk the banana
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
       keys[k] = true; e.preventDefault();

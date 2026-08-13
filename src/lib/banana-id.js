@@ -111,8 +111,11 @@ export function askName(o = {}) {
     const h = document.createElement('h2');
     h.textContent = 'What should we call you?';
     const p = document.createElement('p');
+    // ⚠️ this names the PLAYER, and the copy must say so — "put a name on
+    // it" pointed back at whatever the `why` mentioned (the sign, the seed)
+    // and read as naming THAT twice (Trym, mid-claim)
     p.textContent = (o.why ? o.why + ' ' : '')
-      + 'Put a name on it and it rides everything you make here.';
+      + 'This is your banana’s name — it shows over your head, and signs everything you make in Banana World.';
     const err = document.createElement('p');
     err.className = 'bid-err'; err.hidden = true;
     const inp = document.createElement('input');
