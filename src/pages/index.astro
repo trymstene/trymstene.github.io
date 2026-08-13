@@ -61,10 +61,13 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
     </div>
     <h1 class="hero__title">hello yes,<br>it's the <span class="wobble">banana</span> guy</h1>
     <p class="hero__tag">Welcome in. This is where the dancing banana lives — since 1999, still dancing.</p>
+    <!-- 🌍 ONE DOOR (Trym, 13 Aug): the per-area buttons collapsed into a
+         single entrance — the world is one place now and the homestead is
+         its front door (the quest + tour greet you there). "Enter" was the
+         chosen verb: a place you walk into — "Join" read as signing up,
+         "Play" shrank it to a minigame. -->
     <div class="hero__cta">
-      <a class="btn btn--dark" href="/rave/">🪩 Join the rave →</a>
-      <a class="btn btn--beach" href="/beach/">🏖 Join the beach →</a>
-      <a class="btn btn--park" href="/park/">🌳 Join the park →</a>
+      <a class="btn btn--dark" href="/homestead/">🌍 Enter Banana World →</a>
       <a class="btn btn--light" href="/make-a-banana/" data-place="hero"><PixelIcon name="palette" /> Make a banana</a>
     </div>
   </section>
@@ -84,10 +87,13 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
         <p>Dress your own — hats, shades, captions, dance moves.</p>
         <span class="door__live">the original, since 1999</span>
       </a>
-      <a class="door door--dance" href="/rave/">
-        <span class="door__verb">join the rave</span>
-        <p>Every visitor's banana on one floor, dancing in perfect sync. Right now.</p>
-        <span class="door__live"><span class="door__dot"></span><span id="raveCount">the floor is open</span></span>
+      <!-- the world's door leads to the HOMESTEAD (its front door since the
+           west road opened) — the live rave count still rides the card as the
+           world's pulse -->
+      <a class="door door--dance" href="/homestead/">
+        <span class="door__verb">enter Banana World</span>
+        <p>A rave, a park, a bay — and a homestead of your own. Every visitor's banana lives here.</p>
+        <span class="door__live"><span class="door__dot"></span><span id="raveCount">the world is open</span></span>
       </a>
       <a class="door" href="/shop/">
         <span class="door__verb">hit the shop</span>
@@ -172,7 +178,7 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
       .then((d) => {
         const el = document.getElementById('raveCount');
         if (el && typeof d.count === 'number' && d.count > 0) {
-          el.textContent = d.count === 1 ? '1 banana on the floor' : `${d.count} bananas on the floor`;
+          el.textContent = d.count === 1 ? '1 banana at the rave right now' : `${d.count} bananas at the rave right now`;
         }
       })
       .catch(() => {});
