@@ -338,7 +338,9 @@ const STEPS = [
     hint: 'head home to the Homestead' },
 
   { id: 'c1_move_in', area: 'homestead', kind: 'goal',
-    hint: 'make it official — order a tent on your 📱 phone and move in',
+    // the phone icon is the REAL banana-phone sprite, matching the action
+    // bar — an OS 📱 emoji beside the actual button art read as two phones
+    hint: 'make it official — order a tent on your <img src="/assets/homestead/phone.png" alt=""> banana phone and move in',
     resSkip: '🖼 the old photograph goes up on your wall. home.' },
 
   { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, leave: 1, at: { x: 63, y: 76 },
@@ -486,6 +488,7 @@ function ensureCss() {
   transform:rotate(-8deg); box-shadow:2px 2px 0 rgba(0,0,0,0.35);
 }
 .bwq-hint__badge svg { display:block; width:13px; height:22px; }
+.bwq-hint span img { height:1.1em; width:auto; image-rendering:pixelated; vertical-align:-0.18em; }
 @keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
 /* 💬 the dialogue — the park's NPC-card grammar (pk-card--npc: tilted
    waist-up portrait peeking over the corner, name beside it, console box
@@ -1069,7 +1072,9 @@ export function bootQuest() {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
       h.innerHTML = '<i class="bwq-hint__badge">' + MARK_SVG + '</i><span></span>';
-      h.querySelector('span').textContent = label;
+      // internal strings only — a hint may carry an inline sprite (the
+      // banana phone) so chip icons match the action bar's real art
+      h.querySelector('span').innerHTML = label;
       if (!chipDelayed) {   // let the world land first, then pop the journal in
         chipDelayed = true;
         h.classList.add('bwq-hint--wait');
