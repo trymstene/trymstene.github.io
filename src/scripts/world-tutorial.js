@@ -59,7 +59,10 @@ const CSS = `
 }
 .bwt-title { margin:0 0 0.2rem; font-size:1.15rem; color:#ffe135; letter-spacing:0.02em; }
 .bwt-sub { margin:0 0 0.85rem; font-size:0.82rem; line-height:1.5; color:rgba(255,253,245,0.78); }
-.bwt-stage { display:grid; gap:0.6rem; margin-bottom:1rem; }
+/* 0.6rem bottom = the SAME gap the buttons keep between themselves — the
+   finale stacks stage-content straight onto the button column, so every
+   vertical gap in the card reads as one rhythm */
+.bwt-stage { display:grid; gap:0.6rem; margin-bottom:0.6rem; }
 
 /* 🏷 the tilted sticker label — the one label grammar of the whole tour */
 .bwt-slab {
@@ -205,7 +208,7 @@ const CSS = `
   border:3px solid #000; border-radius:12px; box-shadow:3px 3px 0 #000;
 }
 .bwt-next { background:linear-gradient(#ffe14d,#f2c012); color:#241c00; }
-.bwt-back { background:#182a16; color:#fffdf5; margin-top:0.5rem; }
+.bwt-back { background:#182a16; color:#fffdf5; margin-top:0.6rem; }
 /* the Discord door wears Discord's own blurple, white mark beside the words */
 .bwt-disc { background:#5865f2; color:#fff; margin-top:0.6rem; }
 .bwt-disc svg { vertical-align:-3px; margin-right:4px; }
@@ -362,7 +365,10 @@ function steps(rm) {
     {
       t: '',
       s: '',
-      h: '<div class="bwt-og"><i class="bwt-ogpill">always growing</i>'
+      // the sticker announces what just happened — "always growing" was the
+      // step's old TITLE and read as nonsense on its own (Trym: what is
+      // always growing?)
+      h: '<div class="bwt-og"><i class="bwt-ogpill">population +1</i>'
         + '<div class="bwt-og__win">'
         + '<canvas class="bwt-og__bg" width="840" height="640"></canvas>'
         + '<h3>welcome home,<br>banana</h3>'
