@@ -250,16 +250,21 @@ const STEPS = [
   // the place off) — REAL pk-trash sprites picked up by WALKING OVER them,
   // exactly like everyday litter: window.bwqTrash rides park-garden's
   // trashTick, same is-popped animation, same +2 rep.
+  // ⚠️ PLACEMENT RULE (Trym: pieces hid behind trees): every point must
+  // clear EVERY park-geo OVERLAYS rect (the y-sorted canopies that draw
+  // over things) by ≥25 world px — a piece under a crown is invisible and
+  // the chore turns into checking behind every tree. lit2 sat fully under
+  // the pond-side tree (ov-15) and lit7 hugged the market cart before this.
   { id: 'c1_litter', area: 'park', kind: 'objects', sweep: 1,
     hint: 'litter has blown all over the park — walk over every piece to pick it up',
     objects: [
       { id: 'lit1', x: 15.6, y: 63.6, taps: 1, kind: 'trash' },
-      { id: 'lit2', x: 34.4, y: 43.6, taps: 1, kind: 'trash' },
+      { id: 'lit2', x: 38.0, y: 50.9, taps: 1, kind: 'trash' },
       { id: 'lit3', x: 27.5, y: 84.5, taps: 1, kind: 'trash' },
       { id: 'lit4', x: 48.2, y: 87.3, taps: 1, kind: 'trash' },
       { id: 'lit5', x: 64.5, y: 38.2, taps: 1, kind: 'trash' },
       { id: 'lit6', x: 76.1, y: 65.5, taps: 1, kind: 'trash' },
-      { id: 'lit7', x: 88.8, y: 50.9, taps: 1, kind: 'trash' },
+      { id: 'lit7', x: 89.5, y: 53.6, taps: 1, kind: 'trash' },
       { id: 'lit8', x: 58.0, y: 58.2, taps: 1, kind: 'trash' },
     ] },
 
