@@ -195,26 +195,23 @@ const CSS = `
   position:absolute; left:12px; bottom:8px; z-index:2;
   font-size:0.62rem; font-weight:800; color:#1a1408; opacity:0.7;
 }
-.bwt-disc {
-  display:block; width:100%; box-sizing:border-box; margin-top:0.6rem; text-align:center;
-  cursor:pointer; font-family:inherit; font-weight:800; font-size:0.8rem;
-  background:#182a16; color:#fffdf5; border:3px solid #000; border-radius:10px;
-  box-shadow:3px 3px 0 #000; padding:0.55rem; text-decoration:none;
+/* ⚖️ ONE button size — next, back and the Discord door share identical
+   metrics (padding, font, line-height, border, radius); COLOUR is the
+   hierarchy, never height (Trym: mixed heights read twonky) */
+.bwt-next, .bwt-back, .bwt-disc {
+  display:block; width:100%; box-sizing:border-box; text-align:center;
+  cursor:pointer; font-family:inherit; font-weight:800; font-size:0.9rem;
+  line-height:1.2; padding:0.65rem; text-decoration:none;
+  border:3px solid #000; border-radius:12px; box-shadow:3px 3px 0 #000;
 }
-.bwt-disc:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
-
-.bwt-next {
-  width:100%; cursor:pointer; font-family:inherit; font-weight:800; font-size:0.98rem;
-  background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
-  border:3px solid #000; border-radius:12px; box-shadow:3px 3px 0 #000; padding:0.7rem;
+.bwt-next { background:linear-gradient(#ffe14d,#f2c012); color:#241c00; }
+.bwt-back { background:#182a16; color:#fffdf5; margin-top:0.5rem; }
+/* the Discord door wears Discord's own blurple, white mark beside the words */
+.bwt-disc { background:#5865f2; color:#fff; margin-top:0.6rem; }
+.bwt-disc svg { vertical-align:-3px; margin-right:4px; }
+.bwt-next:active, .bwt-back:active, .bwt-disc:active {
+  transform:translate(2px,2px); box-shadow:1px 1px 0 #000;
 }
-.bwt-next:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
-.bwt-back {
-  width:100%; margin-top:0.5rem; cursor:pointer; font-family:inherit; font-weight:800;
-  font-size:0.78rem; background:#182a16; color:#fffdf5; border:3px solid #000;
-  border-radius:12px; box-shadow:3px 3px 0 #000; padding:0.45rem;
-}
-.bwt-back:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
 @media (prefers-reduced-motion:reduce) {
   .bwt-next, .bwt-back { transition:none; }
   .bwt-full img, .bwt-slide.on img, .bwt-row--tools .bwt-tile, .bwt-flow .bwt-tile > :first-child,
@@ -278,6 +275,9 @@ function roadMap(rm) {
 
 const A = '/assets/homestead/';
 const DISCORD = 'https://discord.gg/cuF6BHfZT4';
+// the Discord mark (Clyde), white via currentColor on the blurple button
+const DISCORD_SVG = '<svg viewBox="0 0 127.14 96.36" width="19" height="14.4" fill="currentColor" aria-hidden="true">'
+  + '<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>';
 
 // the rundown's stops — the Homestead rides along (it was missing from the
 // old four-corners grid, which had three photos and an apology tile)
@@ -372,7 +372,7 @@ function steps(rm) {
         + '<p class="bwt-sub" style="margin:0.7rem 0 0; text-align:center">'
         + 'Nib is waiting outside with your first quest — and new things land every week. '
         + 'The Discord hears about them first.</p>'
-        + '<a class="bwt-disc" href="' + DISCORD + '" target="_blank" rel="noopener">💬 join the Discord ↗</a>',
+        + '<a class="bwt-disc" href="' + DISCORD + '" target="_blank" rel="noopener">' + DISCORD_SVG + ' join the Discord ↗</a>',
       og: true,
       last: true,
     },
