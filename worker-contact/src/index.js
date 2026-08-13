@@ -126,7 +126,7 @@ export default {
       if (!pass || text.length < 1) return new Response('bad reply', { status: 400, headers: cors });
       const res = await stub.fetch('https://do/reply', {
         method: 'POST',
-        body: JSON.stringify({ pass, text, re: String(body.re || '').slice(0, 120), ts: Date.now() }),
+        body: JSON.stringify({ pass, text, re: String(body.re || '').slice(0, 300), ts: Date.now() }),
       });
       return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }

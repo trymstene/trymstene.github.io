@@ -104,8 +104,13 @@ export default {
       // variant, which is what a real margin check needs.
       if (url.pathname === '/pf') return handlePf(request, env, url);
       if (url.pathname === '/health') {
-        return handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1',
+        // CORS so the Banana HQ world desk can show the buyable light — the
+        // silent-unbuyable day must never need a manual curl to notice
+        const res = await handleHealth(env, url.searchParams.get('ship') === '1', url.searchParams.get('store') === '1',
           url.searchParams.get('buyable') === '1');
+        const h = new Headers(res.headers);
+        Object.entries(corsHeaders(env, request)).forEach(([k, v]) => h.set(k, v));
+        return new Response(res.body, { status: res.status, headers: h });
       }
       // visitor country (Cloudflare provides it on every request) — the
       // builder uses it to show Shopify's localized price for that country

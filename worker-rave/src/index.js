@@ -2391,6 +2391,22 @@ export class YardRoom {
       return json({ ok: 1, slug });
     }
 
+    // 📊 the HQ world desk: how many homesteads exist and how fresh they are
+    // (read-only over the yard docs this instance already keeps — the live
+    // per-yard presence sockets are never touched)
+    if (path === '/stats' && request.method === 'GET') {
+      const all = await this.state.storage.list({ prefix: 'y:' });
+      const now = Date.now();
+      let n = 0, day = 0, week = 0;
+      for (const doc of all.values()) {
+        n++;
+        const age = now - (doc.updated || 0);
+        if (age < 86400000) day++;
+        if (age < 7 * 86400000) week++;
+      }
+      return json({ yards: n, day, week });
+    }
+
     // 👀 the public view — what a visitor's browser builds the yard from
     if (path === '/yard' && request.method === 'GET') {
       const slug = (url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);

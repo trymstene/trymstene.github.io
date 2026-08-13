@@ -403,10 +403,15 @@ export async function checkTrymReplies(opts = {}) {
     const replies = await r.json();
     const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     (Array.isArray(replies) ? replies : []).forEach((rp) => {
+      // the reply may land DAYS after the mail — quote what they wrote so
+      // the answer stands on its own (Trym)
+      const re = String(rp.re || '');
+      const quote = re
+        ? '<i>You wrote: “' + esc(re) + (re.length >= 300 ? '…' : '') + '”</i><br>' : '';
       passNoticeAdd({
         id: 'trym-' + rp.key,
         icon: '💬',
-        text: '<b>Message from Trym:</b> ' + esc(rp.text),
+        text: '<b>Message from Trym</b><br>' + quote + esc(rp.text).replace(/\n/g, '<br>'),
         link: '/contact/',
       });
     });
