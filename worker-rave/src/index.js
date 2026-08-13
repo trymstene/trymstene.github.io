@@ -2318,6 +2318,22 @@ export class YardRoom {
         out.items.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
       }
     });
+    // 🛋 room furnishings (visitor interiors, 13 Aug): per-tier lists, same
+    // id discipline as the yard, capped — visitors walk the rooms read-only
+    out.inItems = {};
+    [1, 2, 3].forEach((r) => {
+      const list = s.inItems && Array.isArray(s.inItems[r]) ? s.inItems[r].slice(0, 20) : [];
+      const clean = [];
+      list.forEach((it) => {
+        if (it && typeof it.id === 'string' && /^([a-z0-9]{1,24}|c_[a-f0-9]{6,32})$/.test(it.id)) {
+          clean.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
+        }
+      });
+      if (clean.length) out.inItems[r] = clean;
+    });
+    // 🌰 the feeder clock — visitors see the fed yard's birds too
+    const fa = Number(s.feedAt) || 0;
+    if (fa > 0 && fa < 4102444800000) out.feedAt = fa;
     return out;
   }
 
@@ -2436,6 +2452,7 @@ export class YardRoom {
         slug, name: doc.name, updated: doc.updated,
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home, bedAt: st.bedAt,
         items: st.items || [], soil: st.soil || [], bed: st.bed,   // bed/bedAt: old snapshots, client migrates
+        inItems: st.inItems || {}, feedAt: st.feedAt || 0,
         fence: st.fence || [], mailAt: st.mailAt, signAt: st.signAt,
         guest, wtoday: wat.some((w) => w.d === yDay()),
       });

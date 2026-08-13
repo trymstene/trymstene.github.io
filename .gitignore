@@ -66,3 +66,7 @@ banana-3d/
 
 # Printful upload files — regenerate with tools/build-shop-art.py, never deploy
 print-files/
+
+# reel render artifacts — never in the repo
+tools/reel/frames/
+tools/reel/out/

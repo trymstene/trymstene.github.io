@@ -226,6 +226,9 @@ function visitState(d) {
     mailAt: d.mailAt, signAt: d.signAt,
     bed: Array.isArray(d.bed) ? d.bed : undefined, bedAt: d.bedAt,   // old docs migrate in withHome
     home: d.home, guest: d.guest || [], wtoday: !!d.wtoday,
+    // 🛋 their rooms + feeder clock (worker-sanitized; older docs simply lack them)
+    inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
+    feedAt: Number(d.feedAt) || 0,
   });
 }
 
@@ -263,10 +266,19 @@ function init(visitDoc, visitMiss) {
     if (visiting || !state.claimedAt || !state.slug) return;
     clearTimeout(pushT);
     pushT = setTimeout(() => {
+      // 🛋 rooms travel with the yard now (visitor interiors, 13 Aug):
+      // per-tier furnishing lists, trimmed to what the worker will keep
+      const pubIn = {};
+      [1, 2, 3].forEach((t2) => {
+        const l = ((state.inItems || {})[t2] || []).slice(0, 20)
+          .map((it) => ({ id: it.id, x: Math.round(it.x), y: Math.round(it.y) }));
+        if (l.length) pubIn[t2] = l;
+      });
       yFetch('/save', { name: state.name, state: {
         stage: state.stage, style: state.style, look: state.look, home: state.home,
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
+        inItems: pubIn, feedAt: state.feedAt || 0,
       } }).catch(() => {});
     }, 2500);
   }
@@ -642,8 +654,10 @@ function init(visitDoc, visitMiss) {
     // nudge INTO the room — toward its centre, never back through the door
     tgt.y = pos.y + (pos.y < I.box[1] + I.box[3] / 2 ? 34 : -34);
     camSnap();
-    toast('🏠 home — the door takes you back out');
-    track('homestead_enter_home', { tier: inside });
+    toast(visiting
+      ? '👀 peeking into ' + state.name + '’s place — the door takes you back out'
+      : '🏠 home — the door takes you back out');
+    track('homestead_enter_home', { tier: inside, visit: visiting ? 1 : 0 });
   }
   function exitHome() {
     standUp();
@@ -721,7 +735,7 @@ function init(visitDoc, visitMiss) {
     inEls.forEach((el) => el.remove());
     inEls.length = 0;
     if (!inside) return;
-    (state.inItems[inside] || []).forEach((it) => {
+    ((state.inItems || {})[inside] || []).forEach((it) => {
       if (!DEX[it.id]) return;
       const el = itemDiv(it);
       el.classList.add('hs-it--in');   // indoor pieces survive the is-inside hide
@@ -919,6 +933,63 @@ function init(visitDoc, visitMiss) {
     }
   }
 
+  // 🌰 THE FEEDER (13 Aug): a placed birdhouse is the park's mechanic now —
+  // fill it (coins) and for a day SPECIES birds visit: the park's own
+  // twelve, same rarity weights, same spotting pay, same day-list, so the
+  // pass's bird collection and the park postcard count them together.
+  // ⚠️ tiers/names mirror park-birds.js (module-private there — kept in sync
+  // by hand; the species art is /assets/park/bird-<sp>.png 4x4 sheets).
+  const FEED_COST = 5, FEED_FOR = 24 * 3600000;
+  const feedFresh = () => (state.feedAt || 0) > Date.now() - FEED_FOR;
+  const SP_TIER = { 'house-finch': 0, chickadee: 0, 'red-robin': 0, crow: 0,
+    'blue-jay': 1, magpie: 1, 'wood-thrush': 1, 'cedar-waxwing': 1,
+    cardinal: 2, 'stellers-jay': 2, 'white-dove': 2, hummingbird: 3 };
+  const SP_NAME = { 'blue-jay': 'blue jay', cardinal: 'cardinal', 'cedar-waxwing': 'cedar waxwing',
+    chickadee: 'chickadee', crow: 'crow', 'house-finch': 'house finch',
+    hummingbird: 'hummingbird', magpie: 'magpie', 'red-robin': 'red robin',
+    'stellers-jay': 'steller’s jay', 'white-dove': 'white dove', 'wood-thrush': 'wood thrush' };
+  const SP_TIERS = [{ rep: 1, label: 'common' }, { rep: 2, label: 'uncommon' },
+    { rep: 4, label: 'rare' }, { rep: 8, label: 'very rare' }];
+  const SP_W = [1, 0.45, 0.16, 0.05];
+  function pickSpecies() {
+    const total = SP_W.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total, tier = 0;
+    for (let t2 = 0; t2 < 4; t2++) { r -= SP_W[t2]; if (r <= 0) { tier = t2; break; } }
+    const pool = Object.keys(SP_TIER).filter((k) => SP_TIER[k] === tier);
+    return pool[(Math.random() * pool.length) | 0];
+  }
+  // the same day-list the park writes — one birdwatching life, two places
+  const spDay = () => new Date().toISOString().slice(0, 10);
+  function spToday() {
+    try {
+      const j = JSON.parse(localStorage.getItem('pk_birds_day') || '{}');
+      return j && j.date === spDay() && Array.isArray(j.species) ? j.species : [];
+    } catch (e) { return []; }
+  }
+  function spAdd(sp) {
+    const list = spToday();
+    if (list.indexOf(sp) >= 0) return false;
+    list.push(sp);
+    try { localStorage.setItem('pk_birds_day', JSON.stringify({ date: spDay(), species: list })); } catch (e) {}
+    return true;
+  }
+  function spotBird(b) {
+    const t2 = SP_TIERS[SP_TIER[b.sp] || 0];
+    if (spAdd(b.sp)) {
+      passStat('rep', t2.rep);
+      try { if (!((passGet().stats || {})['bird_' + b.sp])) passStat('bird_' + b.sp, 1); } catch (e) {}
+      refreshHud();
+      float(b.x, b.y - 70, '+' + t2.rep);
+      toast('🔭 spotted! a ' + (SP_NAME[b.sp] || b.sp) + ' — ' + t2.label, 3600);
+      track('homestead_bird', { species: b.sp, tier: t2.label });
+    } else {
+      toast('🔭 a ' + (SP_NAME[b.sp] || b.sp) + ' — already on today’s list');
+    }
+    b.mode = 'out';
+    b.tx = b.x + (b.x > W / 2 ? 600 : -600);
+    b.ty = -80;
+  }
+
   // ---- 🐦 garden birds (M3): they come when the yard is LIVED-IN ----------
   // Ambient, not a loop: an empty yard gets no birds, decor attracts them,
   // bird houses attract more — and walking up close scares them off. The
@@ -955,9 +1026,23 @@ function init(visitDoc, visitMiss) {
         x: Math.random() < 0.5 ? -30 : W + 30, y: Math.max(60, spot.y - 320),
         tx: spot.x, ty: spot.y, mode: 'in', strip: '',
         until: 0, frame: 0, frameAt: 0, hopAt: 0 };
-      setStrip(b, 'f');
+      // 🌰 a FULL FEEDER pulls the park's species in (60% of arrivals):
+      // the 4x4 park sheet rides the same element — row 0 fly, row 2 peck
+      const houses = state.items.filter((i2) => i2.id.indexOf('birdhouse') === 0);
+      if (feedFresh() && houses.length && Math.random() < 0.6) {
+        b.sp = pickSpecies();
+        const house = houses[(Math.random() * houses.length) | 0];
+        b.tx = house.x + (Math.random() * 70 - 35);
+        b.ty = house.y + 10 + Math.random() * 20;
+        img.style.backgroundImage = "url('/assets/park/bird-" + b.sp + ".png')";
+        img.style.backgroundSize = '400% 400%';
+        b.strip = 'sp';
+      } else {
+        setStrip(b, 'f');
+      }
       birdsLive.push(b);
     }
+    if (HS_TEST) window.__hsBird = () => { makeBird(); return birdsLive.length; };
     return (now, dt) => {
       if (now > nextAt) {
         if (birdsLive.length < birdCap()) makeBird();
@@ -969,9 +1054,13 @@ function init(visitDoc, visitMiss) {
         if (now - b.frameAt > (flying ? 90 : 240)) {
           b.frameAt = now;
           b.frame = (b.frame + 1) % 4;
-          const want = flying ? 'f' : 'g';
-          if (b.strip !== want) setStrip(b, want);
-          b.img.style.backgroundPosition = (b.frame * 100 / 3) + '% 0';
+          if (b.sp) {   // park sheet: row 0 = fly, row 2 = peck at the feeder
+            b.img.style.backgroundPosition = (b.frame * 100 / 3) + '% ' + (flying ? 0 : 200 / 3) + '%';
+          } else {
+            const want = flying ? 'f' : 'g';
+            if (b.strip !== want) setStrip(b, want);
+            b.img.style.backgroundPosition = (b.frame * 100 / 3) + '% 0';
+          }
         }
         if (flying) {
           const dx = b.tx - b.x, dy = b.ty - b.y;
@@ -2254,6 +2343,29 @@ function init(visitDoc, visitMiss) {
     const d = DEX[it.id];
     itChip = document.createElement('div');
     itChip.className = 'hs-chip';
+    // 🌰 a birdhouse is a FEEDER (the park's mechanic, 13 Aug): fill it and
+    // real species come — spotting pays like the park's birdwatching
+    if (it.id.indexOf('birdhouse') === 0) {
+      const fd = document.createElement('button');
+      fd.className = 'hs-btn';
+      if (feedFresh()) {
+        const hrs = Math.max(1, Math.ceil((FEED_FOR - (Date.now() - state.feedAt)) / 3600000));
+        fd.textContent = '🌰 full · ' + hrs + 'h';
+        fd.disabled = true;
+      } else {
+        fd.textContent = '🌰 fill the feeder · ' + FEED_COST;
+        fd.addEventListener('click', () => {
+          if (coinBalance() < FEED_COST) { toast('need ' + FEED_COST + ' coins — the world pays for playing'); return; }
+          passStat('coins_spent', FEED_COST);
+          state.feedAt = Date.now();
+          save(); refreshHud(); clearChip();
+          float(it.x, it.y - d.h - 10, '🌰');
+          toast('🌰 the feeder is full — word gets around fast among birds', 3600);
+          track('homestead_feed', { id: it.id });
+        });
+      }
+      itChip.appendChild(fd);
+    }
     if (it.id === 'campfire') {
       const fire = document.createElement('button');
       fire.className = 'hs-btn';
@@ -2435,15 +2547,19 @@ function init(visitDoc, visitMiss) {
       }
       const I = INTERIORS[inside];
       if (I.kitchen && wx > I.kitchen[0] && wx < I.kitchen[2] && wy > I.kitchen[1] && wy < I.kitchen[3]) {
-        if (Math.hypot(pos.x - wx, pos.y - wy) < 170) { openCook(); return; }
+        if (Math.hypot(pos.x - wx, pos.y - wy) < 170) {
+          if (visiting) { toast('👩‍🍳 ' + state.name + '’s kitchen — look, don’t cook'); return; }
+          openCook(); return;
+        }
       }
-      const L2 = state.inItems[inside] || [];
+      const L2 = (state.inItems || {})[inside] || [];
       for (let k = L2.length - 1; k >= 0; k--) {
         const it = L2[k];
         const d2 = DEX[it.id];
         if (d2 && Math.abs(wx - it.x) < Math.max(24, d2.w / 2) && wy > it.y - d2.h - 8 && wy < it.y + 10) {
           if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
             if (d2.sit) sitOn(it, d2);
+            if (visiting) return;   // sitting is hospitality; the chips are not
             clearChip();
             itChip = document.createElement('div');
             itChip.className = 'hs-chip';
@@ -2659,7 +2775,8 @@ function init(visitDoc, visitMiss) {
         // tent exactly as it was, and the roof still just walks you over.
         const doorish = Math.abs(wx - state.home.x) < sd.w * 0.32
           && wy > state.home.y - Math.max(64, floorOf(sd.h) * 0.75);
-        if (doorish && !visiting && INTERIORS[homeTier()]) {
+        // visitors may step inside too (13 Aug) — the room renders read-only
+        if (doorish && INTERIORS[homeTier()]) {
           if (Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 130) { enterHome(); return; }
           tgt.x = state.home.x; tgt.y = state.home.y + 24;
           doorTgt = { x: tgt.x, y: tgt.y };   // arriving = stepping in
@@ -2668,6 +2785,12 @@ function init(visitDoc, visitMiss) {
         tgt.x = state.home.x; tgt.y = state.home.y + 30;
         return;
       }
+    }
+    // 🔭 a species bird within reach: tap = spotted (the park's birdwatching,
+    // visitors included — spotting is device-local)
+    for (const b of birdsLive) {
+      if (!b.sp || b.mode === 'out') continue;
+      if (Math.hypot(wx - b.x, wy - (b.y - 20)) < 48) { spotBird(b); return; }
     }
     // a placed item
     for (let i = state.items.length - 1; i >= 0; i--) {
@@ -2688,7 +2811,7 @@ function init(visitDoc, visitMiss) {
   // 🚪 the door intent: any new target (tap, WASD) cancels it; arriving enters
   setInterval(() => {
     if (!doorTgt) return;
-    if (inside || placing || visiting || tgt.x !== doorTgt.x || tgt.y !== doorTgt.y) { doorTgt = null; return; }
+    if (inside || placing || tgt.x !== doorTgt.x || tgt.y !== doorTgt.y) { doorTgt = null; return; }
     if (Math.hypot(pos.x - doorTgt.x, pos.y - doorTgt.y) < 46) { doorTgt = null; enterHome(); }
   }, 250);
 
@@ -2854,7 +2977,7 @@ function init(visitDoc, visitMiss) {
   // normal session
   if (HS_TEST) {
     window.__hs = {
-      pos, tgt, peers,
+      pos, tgt, peers, birds: birdsLive, feedFresh,
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,
       // the validity-grid probe (round-15 doctrine: verify the grid, not a spot)
