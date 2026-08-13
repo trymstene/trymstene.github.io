@@ -293,10 +293,11 @@ const STEPS = [
   { id: 'c1_shelly', area: 'beach', kind: 'talk', who: 'shelly', turnin: 1, at: { sel: '#bhShelly', x: 60, y: 40 },
     find: 'show the bundle to Shelly',
     lines: [
-      ['shelly', 'OH! Oh oh oh. Look at the barnacle rings on that wrapping! Do you know what this MEANS?'],
-      ['you', '…That it’s old?'],
-      ['shelly', 'Old?? This has been underwater longer than I’ve kept charts. And I chart EVERYTHING.'],
-      ['shelly', 'And inside — paper! Eight little pages! Go on, flip through them. Quick quick!'],
+      ['shelly', 'OH! Oh oh oh. You fished that out of the bay?? Let me see, let me see!'],
+      ['shelly', 'Look how the water aged this paper. This little book has been down there longer than I’ve kept charts. And I chart EVERYTHING.'],
+      ['you', 'How is it not ruined?'],
+      ['shelly', 'Because somebody sealed it up like it MATTERED. Watertight. On purpose.'],
+      ['shelly', 'Eight little pages! Go on — flip through them. Quick quick!'],
       ['fb', ''],
       ['you', '…It’s a banana. Dancing.'],
       ['shelly', 'Dancing is not my department. The loud room handles dancing. Show it to Barty, at the Rave!'],
@@ -304,7 +305,10 @@ const STEPS = [
     reward: { coins: 15 },
     hint: 'show the flipbook to Barty at the Rave' },
 
-  { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', turnin: 1, at: { x: 28, y: 84 },
+  // ⚠️ the mark anchors to Barty's MEASURED body (the Peel grammar) — the
+  // hardcoded floor % floated it beside him, and the rave zooms besides
+  { id: 'c1_barty_look', area: 'rave', kind: 'talk', who: 'barty', turnin: 1,
+    at: { sel: '#rvBarman', dh: 0.15, x: 28, y: 84 },
     tapSel: '#rvBarman',
     find: 'show the flipbook to Barty at the bar',
     lines: [
@@ -321,7 +325,8 @@ const STEPS = [
   { id: 'c1_floor', area: 'rave', kind: 'watch', hint: 'dance 30s · send 3 reactions',
     watch: { secs: 30, taps: 3 } },
 
-  { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', turnin: 1, at: { x: 28, y: 84 },
+  { id: 'c1_barty_truth', area: 'rave', kind: 'talk', who: 'barty', turnin: 1,
+    at: { sel: '#rvBarman', dh: 0.15, x: 28, y: 84 },
     tapSel: '#rvBarman',
     lines: [
       ['barty', 'Okay. So. Every banana in the world does the SAME dance. Since before this club existed.'],
@@ -884,6 +889,10 @@ export function bootQuest() {
       if (tr.width && wr.width) {
         x = ((tr.left + tr.width / 2) - wr.left) / wr.width * 100 + (at.dx || 0);
         y = (tr.top - wr.top) / wr.height * 100 + (at.dy || 0);
+        // `dh` = extra offset as a FRACTION of the anchor's own height —
+        // for anchors whose box has empty headroom (Barty's 150px canvas:
+        // his hat sits ~40% down it, so rect-top floated the mark high)
+        if (at.dh) y += tr.height / wr.height * 100 * at.dh;
       } else if (t.style.left) {
         // ⚠️ the beach hides its NPCs (display:none) until you walk up, so
         // there is no rect — but their style.left/top % is still the true
