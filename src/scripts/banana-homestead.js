@@ -1206,6 +1206,50 @@ function init(visitDoc, visitMiss) {
         : /[?&]world(?:=|&|$)/.test(location.search) ? 'world' : 'direct',
   });
 
+  // 🪙 THE WELCOME TRAIL — a one-time line of bananacoins on the road just
+  // ahead of the walk-in, so the very first minute has something to pick up
+  // (Trym). Spawns ONCE per device (hs-roadcoins-v1) and never again, even
+  // half-collected. Diegetic-faucet sized: 5 × 2c. Walk-over collects.
+  const roadCoins = [];
+  (() => {
+    if (visiting) return;
+    try {
+      if (localStorage.getItem('hs-roadcoins-v1')) return;
+      localStorage.setItem('hs-roadcoins-v1', '1');
+    } catch (e) { return; }
+    const st = document.createElement('style');
+    st.textContent = '.hs-roadcoin{position:absolute;width:26px;height:26px;pointer-events:none;}'
+      + '.hs-roadcoin img{display:block;width:100%;height:100%;image-rendering:pixelated;'
+      + 'filter:drop-shadow(0 3px 2px rgba(20,40,10,0.35));animation:hsCoinBob 1.1s ease-in-out infinite;}'
+      + '@keyframes hsCoinBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}'
+      + '@media (prefers-reduced-motion:reduce){.hs-roadcoin img{animation:none}}';
+    document.head.appendChild(st);
+    // strung along the road AHEAD of the walk-in, whichever door you used;
+    // slight y-jitter so it reads as dropped, not printed
+    [[400, -10], [500, 8], [600, -6], [700, 10], [800, 0]].forEach(([cx, jy], i) => {
+      const x = byRoad ? W - cx : cx, y = ROAD.y + jy;
+      const d = document.createElement('div');
+      d.className = 'hs-roadcoin';
+      d.innerHTML = '<img src="/assets/homestead/coin16.png" alt="" style="animation-delay:' + (i * 0.15) + 's">';
+      place(d, x, y, ' translate(-50%,-50%)');
+      depth(d, y);
+      world.appendChild(d);
+      roadCoins.push({ x, y, el: d });
+    });
+  })();
+  function roadCoinTick() {
+    for (let i = roadCoins.length - 1; i >= 0; i--) {
+      const c = roadCoins[i];
+      if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34) continue;
+      c.el.remove();
+      roadCoins.splice(i, 1);
+      passStat('coins_earned', 2);
+      float(c.x, c.y - 22, '<img src="/assets/homestead/coin16.png" width="14" height="14" style="image-rendering:pixelated;vertical-align:-2px"> +2');
+      refreshHud();
+      if (!roadCoins.length) toast('🪙 first coins in the pocket — playing pays, anywhere in the world', 3600);
+    }
+  }
+
   const SPEED = 168;
   const keys = {};
   addEventListener('keydown', (e) => {
@@ -2789,6 +2833,7 @@ function init(visitDoc, visitMiss) {
       birdTick(now, dt);
       henTick(now, dt);
       peers.forEach((p) => drawPeer(p));
+      if (roadCoins.length) roadCoinTick();
     }
     hsSendMove(now);
     cam();
