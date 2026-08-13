@@ -72,10 +72,10 @@ const AREAS = {
   homestead: { sel: '#hsWorld', view: '.hs-view', wh: 1100 },
   park: { sel: '#pkWorld', view: '#pkView' },
   beach: { sel: '#bhWorld', view: '#bhView' },
-  // chipHost: the journal chip docks on the CLUB frame, not the floor — at
-  // floor-top it covered the dancefloor on mobile (Trym); on the club it
-  // hangs over the LED wall where nothing dances
-  rave: { sel: '#rvFloor', view: '#rvFloor', chipHost: '.rv-club' },
+  // chipHost: the journal chip docks on the BOOTH, riding the stage line —
+  // at floor-top it covered the dancefloor on mobile, and at the LED wall
+  // it covered the screen (Trym): the line between them is nobody's pixels
+  rave: { sel: '#rvFloor', view: '#rvFloor', chipHost: '.rv-booth' },
 };
 
 // ---- state ----------------------------------------------------------------
@@ -499,8 +499,9 @@ function ensureCss() {
 }
 .bwq-hint[hidden] { display:none !important; }
 .bwq-hint--wait { visibility:hidden; animation:none; }
-/* on the club frame the chip rides the LED wall's top edge */
-.rv-club > .bwq-hint { top:14px; left:14px; }
+/* at the rave the chip rides the STAGE LINE — half over the booth's bottom
+   edge, clear of both the LED wall and the dancefloor */
+.rv-booth > .bwq-hint { top:auto; bottom:-14px; left:14px; z-index:5; }
 /* the chip's ! is a BADGE, not an inline character (Trym: a game, not a
    website message-box) — a black stickerpill pinned over the chip's corner,
    the gold ! big and overflowing it. Same MARK_SVG art as the world marker. */
