@@ -178,6 +178,12 @@
     rave_join: 'RaveJoin',
     park_join: 'ParkJoin',
     beach_multiplayer: 'BeachJoin',
+    // 🏡 the world-launch ad lands on /homestead/ — without these Meta sees
+    // the click and nothing after it. Arrival is the volume signal, CLAIM is
+    // the real conversion (they named a plot and moved in).
+    homestead_open: 'HomesteadOpen',
+    homestead_claim: 'HomesteadClaim',
+    world_door: 'WorldDoor',       // the frontpage's Enter-Banana-World click
     shop_view: 'ShopView',
     shop_door: 'ShopDoor',
     offer_click: 'OfferClick',
