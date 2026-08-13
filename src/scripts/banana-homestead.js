@@ -539,25 +539,15 @@ function init(visitDoc, visitMiss) {
   // (Trym: "the placement grid covers the roof / i go behind mid-house")
   const roofOf = (h) => Math.min(144, Math.round(h * 0.45));
   const floorOf = (h) => h - roofOf(h);
-  let structEl = null, structKey = '', tentSpotEl = null, tentGhostEl = null;
+  let structEl = null, structKey = '', tentGhostEl = null, deedHintEl = null;
   function refreshTent() {
     if (state.stage < 1) {
       if (structEl) { structEl.remove(); structEl = null; structKey = ''; }
-      if (!tentSpotEl) {
-        // the DEED outline — the land itself is the invitation, no words
-        tentSpotEl = document.createElement('div');
-        tentSpotEl.className = 'hs-tentspot';
-        const P1 = FENCE_TIERS[1].plot;
-        tentSpotEl.style.left = pct(P1[0], W);
-        tentSpotEl.style.top = pct(P1[1], H);
-        tentSpotEl.style.width = pct(P1[2] - P1[0], W);
-        tentSpotEl.style.height = pct(P1[3] - P1[1], H);
-        tentSpotEl.style.border = '3px dashed rgba(255,225,53,.5)';
-        tentSpotEl.style.borderRadius = '10px';
-        tentSpotEl.style.background = 'transparent';
-        depth(tentSpotEl, P1[1] + 4);
-        world.appendChild(tentSpotEl);
-        // a dark ghost tent stands on it — tap it, the phone opens
+      if (!tentGhostEl) {
+        // ⚠️ no deed outline here — the dashed plot only appears while a
+        // roof is actually being PLACED (Trym: at idle it marked land the
+        // player had no way to use yet). The ghost tent is the invitation.
+        // a dark ghost tent stands on the spot — tap it, the phone opens
         tentGhostEl = document.createElement('div');
         tentGhostEl.className = 'hs-ov';
         const gd = STRUCTS.tent1;
@@ -575,7 +565,6 @@ function init(visitDoc, visitMiss) {
       }
       return;
     }
-    if (tentSpotEl) { tentSpotEl.remove(); tentSpotEl = null; }
     if (tentGhostEl) { tentGhostEl.remove(); tentGhostEl = null; }
     const styleKey = curStyleKey();
     const sig = styleKey + ':' + state.home.x + ',' + state.home.y;
@@ -1997,6 +1986,21 @@ function init(visitDoc, visitMiss) {
       fr.className = 'hs-footring';
       fr.style.height = Math.round(100 * floorOf(d.h) / d.h) + '%';
       el.appendChild(fr);
+      // 📐 the dashed deed outline appears NOW — while a roof is being
+      // placed it shows where the land runs; at idle it was noise (Trym)
+      const tier = Math.max(1, (opts && opts.toStage) || state.stage);
+      const P = FENCE_TIERS[tier].plot;
+      deedHintEl = document.createElement('div');
+      deedHintEl.className = 'hs-tentspot';
+      deedHintEl.style.left = pct(P[0], W);
+      deedHintEl.style.top = pct(P[1], H);
+      deedHintEl.style.width = pct(P[2] - P[0], W);
+      deedHintEl.style.height = pct(P[3] - P[1], H);
+      deedHintEl.style.border = '3px dashed rgba(255,225,53,.5)';
+      deedHintEl.style.borderRadius = '10px';
+      deedHintEl.style.background = 'transparent';
+      depth(deedHintEl, P[1] + 4);
+      world.appendChild(deedHintEl);
     }
     const from = key === 'mail' ? state.mailAt : key === 'sign' ? state.signAt : state.home;
     placing = { home: true, key, x: from.x, y: from.y, el,
@@ -2012,6 +2016,7 @@ function init(visitDoc, visitMiss) {
       : 'choose where it stands — drag to look, tap to try', 3600);
   }
   function confirmHome() {
+    if (deedHintEl) { deedHintEl.remove(); deedHintEl = null; }
     const d = fixDims();
     const x = placing.x, y = placing.y;
     // the sweep: items under the new footprint go safely to the shed
@@ -2137,6 +2142,7 @@ function init(visitDoc, visitMiss) {
   }
   function cancelPlacing() {
     standUp();
+    if (deedHintEl) { deedHintEl.remove(); deedHintEl = null; }
     if (!placing) return;
     const keepX = placing.x, keepY = placing.y;
     view.classList.remove('is-placing');
