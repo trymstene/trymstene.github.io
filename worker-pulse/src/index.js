@@ -25,6 +25,7 @@ const LENS_EVENTS = [
   'offer_shown', 'offer_click', 'offer_skip',   // 🛍 the make-it-real card (offer-FIRST since 6 Aug)
   'offer_world', 'offer_discord',               // 🌍💬 the warm-up pivot, 12 Aug
   'homestead_open',               // 🏡 the home area's door, 6 Aug
+  'quest_step',                   // 🕯 chapter-1 funnel, live 13 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
   // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
   // deserve the map lens as much as any download does
@@ -468,6 +469,7 @@ const ANALYST_EVENTS = [
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
   'offer_world', 'offer_discord',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
+  'quest_step',
 ];
 
 async function gscRange(env, from, to) {
@@ -945,6 +947,15 @@ var EV_LABEL = {
   offer_shown:'got the warm-up card 🌍', offer_click:'took the merch offer 🛍 (retired 12 Aug)',
   offer_skip:'said no thanks, took the file 📥',
   offer_world:'chose Banana World from the card 🌍', offer_discord:'headed to the Discord 💬',
+  quest_boot:'has the questline running 🕯', quest_intro:'watched the CHAPTER I splash 🎬',
+  quest_step:'completed a quest step 🕯',
+  forge_item_kind:'picked a workshop product 🔨', forge_item_spot:'picked a body spot in the workshop 🎯',
+  forge_item_where:'picked where their furniture lives 🏡',
+  id_named:'wrote their name on the pass 🪪', nav_click:'clicked the top navigation 🧭',
+  park_clearpot:'cleared a spent pot in the park 🪴', pdp_dress:'dressed the banana on a product page 🎨',
+  sticker_order_fail_upload:'⚠ sticker order failed at upload', sticker_order_fail_cart:'⚠ sticker order failed at cart',
+  sticker_order_fail_render:'⚠ sticker order failed at render', sticker_order_fail_product:'⚠ sticker order failed — product gone',
+  sticker_order_fail_other:'⚠ sticker order failed — other',
   homestead_open:'came home to the Homestead 🏡', homestead_claim:'CLAIMED a homestead 🪧',
   homestead_rename:'repainted their sign ✏️', homestead_upgrade:'UPGRADED their home 🏠',
   homestead_buy:'bought decor from the phone 🛋', homestead_sell:'sold a piece from the shed 🪙',
@@ -1062,7 +1073,8 @@ var EV_LABEL = {
   world_levelup:'levelled up 🎖' };
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
-  'wallpaper_download','license_click','homestead_open','offer_world','offer_discord'];
+  'wallpaper_download','license_click','homestead_open','offer_world','offer_discord',
+  'quest_step'];
 // what each event MEANS — hover any event name to see what the visitor did
 var EV_EXPLAIN = {
   page_view:'loaded any page on the site (GA4 auto)',
@@ -1261,6 +1273,21 @@ var EV_EXPLAIN = {
   stand_sign_beach:'tapped the signpost pointing down the road to Banana Bay',
   sticker_pdp_boot_fail:'⚠ a custom-product page threw before it could show anything. Any of these is worth chasing — it is a sale that could not even start',
   world_levelup:'⭐ crossed a level ANYWHERE in the world — where says which area. Levels come from rep, which the park waters up and the beach digs up, not just the dance floor. ⚠ the rave also fires its own older rave_levelup, so never add the two together',
+  quest_boot:'🕯 RETURN TO SENDER is running for this visitor — fires on every world-area load while chapter 1 is unfinished. area = where they are, step = the step id they are currently ON (not completed). High quest_boot with a stuck step = the chapter stalls there',
+  quest_intro:'🎬 the CHAPTER I splash played — first tap on Nib, once per device. quest_boot without quest_intro = they saw the marker but never opened the story',
+  quest_step:'🕯 COMPLETED a quest step — id says which (c1_nib_hello → c1_peel_hi → chores → … → c1_nib_registry = chapter done). The id sequence IS the chapter funnel: compare counts per id to find where players drop off. Launched for everyone 13 Aug 2026',
+  forge_item_kind:'🔨 the Items Workshop product switch — kind = wear (rave gear the banana wears) or decor (homestead furniture). Fires on every toggle; the mix says what makers actually come to build',
+  forge_item_spot:'🎯 a maker picked the body spot their wearable rides (spot = the slot, auto = left at the default) — the first committed act of a wearable build',
+  forge_item_where:'🏡 a maker picked where their furniture lives (where = yard or indoor) — the first committed act of a furniture build',
+  id_named:'🪪 saved a NAME through the naming card (at = which moment asked for it — the park asks when your first seed goes in, the homestead when the sign is up). Once per person ever; after this the world stops calling them a fresh dancing banana',
+  nav_click:'🧭 a top-navigation click (nav_item = the label; the My Pass door reports as My Pass even when it carries the visitor’s own name). Wayfinding taste, not conversion',
+  park_clearpot:'🪴 cleared a DEAD pot in the park garden (fires once per session) — tidy-up engagement: someone cared enough to clean a stranger’s withered plant',
+  pdp_dress:'🎨 dressed the banana ON a product page (product, slot, item) — PDP play before any checkout. Dressers are the warmest sticker leads; compare with sticker_pdp_checkout',
+  sticker_order_fail_upload:'⚠ a sticker order died at the artwork UPLOAD stage (message = the error). The stage rides the event NAME so GA4 can split it without custom dimensions; the parent sticker_order_fail holds the same info in one bucket',
+  sticker_order_fail_cart:'⚠ a sticker order died adding to CART (message = the error) — usually the Shopify bridge; check /health?buyable=1 if these cluster',
+  sticker_order_fail_render:'⚠ a sticker order died RENDERING the artwork (message = the error) — the browser could not produce the print file',
+  sticker_order_fail_product:'⚠ a sticker order died because the PRODUCT was not available — the silent-unbuyable-shop fingerprint; check the delivery profile and HEADLESS channel first',
+  sticker_order_fail_other:'⚠ a sticker order died at an UNRECOGNISED stage (message = the error) — read the message; if a pattern forms, promote it to its own stage in sticker-pdp.js',
   homestead_open:'arrived at THE HOMESTEAD 🏡 — the area’s door event, once per load. via = park (walked the west road), world (fast travel), yardlink (opened a neighbour’s shared address), direct (typed/search). claimed + stage say how settled they already are; visit=1 means it was somebody ELSE’s yard',
   homestead_claim:'🪧 CLAIMED their homestead — named the sign, minted the address slug. Fires ONCE per person ever; this is the area’s real conversion. claims ÷ unclaimed homestead_open arrivals = does the ghost-tent onboarding work',
   homestead_rename:'repainted the sign ✏️ — a name change, NOT a new claim (one free retry, then a 48h cooldown; split out 6 Aug so renames stop inflating homestead_claim)',
