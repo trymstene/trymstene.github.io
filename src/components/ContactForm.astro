@@ -60,6 +60,12 @@ const { topic = 'general' } = Astro.props;
             website: form.querySelector('.cform__hp').value,
             topic: form.dataset.topic,
             t: Date.now() - loadedAt,
+            // 🎫 the sender's pass identity, READ-only (never minted here):
+            // lets Trym answer a mail with no email as a My Pass notification
+            // ("Message from Trym") — world-gid = logged-in id, park-sid =
+            // this browser's world id, either one is a reachable mailbox
+            pass: (() => { try { return localStorage.getItem('world-gid') || localStorage.getItem('park-sid') || ''; } catch (e) { return ''; } })(),
+            passName: (() => { try { return (localStorage.getItem('ps-name-v1') || '').slice(0, 24); } catch (e) { return ''; } })(),
           }),
         });
         const d = await res.json().catch(() => ({}));
@@ -67,6 +73,9 @@ const { topic = 'general' } = Astro.props;
           form.reset();
           note.textContent = '✓ sent — I read everything, promise. 🍌';
           btn.textContent = 'Send another →';
+          // 💬 only devices that actually mailed ever poll for a reply — a
+          // "Message from Trym" can land on the Pass even without an email
+          try { if (localStorage.getItem('world-gid') || localStorage.getItem('park-sid')) localStorage.setItem('bm-mailed-v1', String(Date.now())); } catch (err) {}
         } else if (res.status === 429) {
           note.textContent = 'easy there — that’s enough messages for one day.';
           btn.textContent = 'Send it →';

@@ -78,6 +78,11 @@ export default {
           topic: String(body.topic || 'general').slice(0, 40),
           message: msg,
           sender,
+          // 🎫 the sender's pass identity (form-attached when they have one)
+          // — the road back when they left no email: Trym's reply lands as a
+          // My Pass world notification instead
+          pass: String(body.pass || '').slice(0, 64),
+          passName: String(body.passName || '').slice(0, 24),
           ts: Date.now(),
         }),
       });
@@ -105,6 +110,33 @@ export default {
       const token = url.searchParams.get('token') || '';
       if (!env.INBOX_TOKEN || token !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
       const res = await stub.fetch('https://do/spamlist');
+      return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    // 💬 REPLY TO A PASS — Trym answers a mail whose sender left no email but
+    // carried a pass id: the reply is stored per-pass and the pass page polls
+    // it into a "Message from Trym" world notification. The store IS the
+    // correspondence archive.
+    if (url.pathname === '/reply' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (e) { return new Response('bad json', { status: 400, headers: cors }); }
+      if (!env.INBOX_TOKEN || String(body.token || '') !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
+      const pass = String(body.pass || '').slice(0, 64);
+      const text = String(body.text || '').trim().slice(0, 2000);
+      if (!pass || text.length < 1) return new Response('bad reply', { status: 400, headers: cors });
+      const res = await stub.fetch('https://do/reply', {
+        method: 'POST',
+        body: JSON.stringify({ pass, text, re: String(body.re || '').slice(0, 120), ts: Date.now() }),
+      });
+      return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    // the pass-holder's mailbox: their own device polls this with the id only
+    // it holds (same trust model as the per-sid gallery verdicts)
+    if (url.pathname === '/replies' && request.method === 'GET') {
+      const pass = String(url.searchParams.get('pass') || '').slice(0, 64);
+      if (!pass) return new Response('[]', { headers: { ...cors, 'Content-Type': 'application/json' } });
+      const res = await stub.fetch('https://do/replies?pass=' + encodeURIComponent(pass));
       return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
@@ -165,6 +197,22 @@ export class ContactInbox {
       let deleted = 0;
       if (Array.isArray(keys) && keys.length) deleted = await this.state.storage.delete(keys);
       return new Response(JSON.stringify({ ok: true, deleted }));
+    }
+    // 💬 per-pass replies: keyed r:<pass>:<ts> so one list() call serves one
+    // person's whole thread — the archive Trym reads AND the mailbox the
+    // pass polls. Capped at the newest 40 per pass.
+    if (url.pathname === '/reply') {
+      const r = await request.json();
+      await this.state.storage.put('r:' + r.pass + ':' + String(r.ts).padStart(15, '0'), r);
+      const all = await this.state.storage.list({ prefix: 'r:' + r.pass + ':' });
+      const keys = [...all.keys()];
+      if (keys.length > 40) await this.state.storage.delete(keys.slice(0, keys.length - 40));
+      return new Response(JSON.stringify({ ok: true }));
+    }
+    if (url.pathname === '/replies') {
+      const pass = url.searchParams.get('pass') || '';
+      const list = await this.state.storage.list({ prefix: 'r:' + pass + ':', reverse: true, limit: 40 });
+      return new Response(JSON.stringify([...list.entries()].map(([key, r]) => ({ key, text: r.text, re: r.re, ts: r.ts }))), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response('not found', { status: 404 });
   }

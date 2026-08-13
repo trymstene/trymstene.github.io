@@ -793,24 +793,37 @@ function init() {
     const row = el('bbSignRow');
     row.hidden = !row.hidden;
     if (!row.hidden) {
+      // the TITLE prefills from the captions when there are any — but the
+      // maker confirms or writes one; it can no longer default silently
+      try {
+        if (!el('bbSignTitle').value) {
+          el('bbSignTitle').value = [state.top, state.bottom].filter(Boolean).join(' ').trim().slice(0, 60);
+        }
+      } catch (e) {}
       // continuity: the name written on the pass prefills the byline (still
       // editable, and it rides Trym's human review gate like any signature)
       try { if (!el('bbSignName').value) el('bbSignName').value = (localStorage.getItem('ps-name-v1') || '').slice(0, 24); } catch (e) {}
-      el('bbSignName').focus();
+      el('bbSignTitle').focus();
     }
   };
   el('bbSignSend').onclick = async () => {
     sync();
     const params = location.search.slice(1);
     const by = el('bbSignName').value.trim().slice(0, 24);
+    // 🏷 a submission NEEDS a name — half the gallery read "Custom dancing
+    // banana" because the title silently defaulted (Trym)
+    const title = el('bbSignTitle').value.trim().slice(0, 60);
+    if (!title || /^custom dancing banana$/i.test(title)) {
+      toast('Give this banana a name first 🍌');
+      el('bbSignTitle').focus();
+      return;
+    }
     el('bbSignRow').hidden = true;
     toast('Rendering your banana… 🍌');
     try {
       // submissions carry the REAL rendered GIF (the same pixels the meme
       // download makes) — approved ones go straight onto /banana-memes/
       const { blob, isT, tw, th } = await renderMemeGif();
-      const title = [state.top, state.bottom].filter(Boolean).join(' ').trim().slice(0, 60)
-        || 'Custom dancing banana';
       // sid = this browser's anonymous claim ticket: the pass page later asks
       // /gallery/status how the review went and posts the verdict as a notice
       const sid = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');

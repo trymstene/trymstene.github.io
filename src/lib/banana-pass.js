@@ -378,6 +378,41 @@ export async function checkGalleryVerdicts(opts = {}) {
   } catch (e) { /* offline is fine — next visit asks again */ }
 }
 
+// ---- 💬 replies from Trym -> notices -------------------------------------
+// Mailing Banana HQ with a pass attached sets bm-mailed-v1 on the device;
+// ONLY those devices ever poll ($0 doctrine — 99% of visitors never ask).
+// A reply lands as a "Message from Trym" world notification; the whole
+// thread stays readable at HQ per pass id.
+const CONTACT_API = 'https://banana-contact.trymstene.workers.dev';
+
+export async function checkTrymReplies(opts = {}) {
+  let mailedAt = 0, pass = '';
+  try {
+    mailedAt = parseInt(localStorage.getItem('bm-mailed-v1') || '0', 10) || 0;
+    pass = localStorage.getItem('world-gid') || localStorage.getItem('park-sid') || '';
+  } catch (e) { return; }
+  if (!pass || !mailedAt || Date.now() - mailedAt > 90 * 86400000) return;
+  try {
+    const last = parseInt(localStorage.getItem('bm-reply-check-at') || '0', 10) || 0;
+    if (!opts.force && Date.now() - last < 6 * 3600000) return;
+    localStorage.setItem('bm-reply-check-at', String(Date.now()));
+  } catch (e) {}
+  try {
+    const r = await fetch(CONTACT_API + '/replies?pass=' + encodeURIComponent(pass));
+    if (!r.ok) return;
+    const replies = await r.json();
+    const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    (Array.isArray(replies) ? replies : []).forEach((rp) => {
+      passNoticeAdd({
+        id: 'trym-' + rp.key,
+        icon: '💬',
+        text: '<b>Message from Trym:</b> ' + esc(rp.text),
+        link: '/contact/',
+      });
+    });
+  } catch (e) { /* offline is fine — next visit asks again */ }
+}
+
 // ---- 🎁 item-catalog submission verdicts -> notices ---------------------
 // The forge stores {sid, title, at} per club submission in cat-subs-v1; same
 // throttled polling pattern as the gallery verdicts above.

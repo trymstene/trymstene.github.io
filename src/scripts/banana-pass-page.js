@@ -4,7 +4,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams } from '../lib/banana-engine.js';
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
   startLink, finishLink, mailSignin, mailUse, logout,
@@ -151,6 +151,7 @@ async function init() {
   renderNotices();
   checkGalleryVerdicts({ force: true }).then(renderNotices);
   checkCatalogVerdicts({ force: true }).then(renderNotices);
+  checkTrymReplies({ force: true }).then(renderNotices);   // 💬 Message from Trym
   setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
 
   // — patches: light the earned, pin the first few to the card —

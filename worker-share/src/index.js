@@ -339,6 +339,11 @@ async function handleGallerySubmit(request, env, url) {
   const params = clean(meta.params, 800);
   const transparent = !!meta.transparent;
   if (dirty(title) || dirty(by)) return json({ error: 'family friendly only 🍌' }, 400, corsHeaders(env, request));
+  // 🏷 a submission needs a real NAME — the client enforces it too; this is
+  // the backstop (half the gallery was "Custom dancing banana" by default)
+  if (!title || /^custom dancing banana$/i.test(title)) {
+    return json({ error: 'give it a name 🍌' }, 400, corsHeaders(env, request));
+  }
 
   const body = await request.arrayBuffer();
   if (body.byteLength > MAX_GALLERY_BYTES) return json({ error: 'too large' }, 413, corsHeaders(env, request));

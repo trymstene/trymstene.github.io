@@ -22,6 +22,7 @@ const description = 'Authorized banana personnel only.';
       --nana: #ffe135; --hot2: #ff5d8f; --ok: #5ee08a; --cool: #5ec8e0;
       --purp: #c99cff; --org: #ffb45e;
       max-width: 820px; margin: 0 auto; padding: 1.1rem 0.9rem 4rem; color: var(--hink);
+      color-scheme: dark;   /* form-control chrome (textarea scrollbars, selects) matches */
     }
     /* form controls never below 16px → iOS won't zoom-jump on focus */
     .bm-wrap input, .bm-wrap select, .bm-wrap textarea { font-size: 16px; }
@@ -82,6 +83,19 @@ const description = 'Authorized banana personnel only.';
     .bm-mail__body { padding: 0 0.9rem 0.9rem; }
     .bm-mail__msg { white-space: pre-wrap; font-family: inherit; font-size: 0.92rem; line-height: 1.55; margin: 0.2rem 0 0.9rem; border-top: 2px dashed var(--hline); padding-top: 0.8rem; word-break: break-word; }
     .bm-mail__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    /* 💬 the pass-reply desk inside a mail — the road back when there is no email */
+    .bm-stamp--pass { background: var(--ok); color: #14101f; transform: rotate(-1deg); }
+    .bm-passreply { margin-top: 0.9rem; border: 2px solid var(--hline); border-left: 4px solid var(--ok); border-radius: 12px; background: var(--hcard); padding: 0.7rem 0.8rem; }
+    .bm-passreply__head { margin: 0 0 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ok); }
+    .bm-passreply__row { display: flex; gap: 0.5rem; align-items: stretch; }
+    .bm-passreply__row textarea { flex: 1; min-width: 0; resize: vertical; font-family: inherit; padding: 0.5rem 0.6rem; border: 2px solid var(--hline); border-radius: 10px; background: var(--hinput); color: var(--hink); }
+    .bm-btn--passgo { background: var(--ok); border-color: var(--ok); color: #14101f; }
+    .bm-passreply__label { margin: 0.7rem 0 0.3rem; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hdim); }
+    .bm-passreply__msg { font-size: 0.8rem; line-height: 1.45; padding: 0.4rem 0.55rem; margin-bottom: 0.35rem; border: 2px solid var(--hline); border-radius: 10px; background: var(--hinput); word-break: break-word; }
+    .bm-passreply__msg time { color: var(--hdim); font-size: 0.68rem; white-space: nowrap; }
+    /* key-gate rows OUTSIDE .bm-gate (users desk, email lookup) were raw
+       white HTML inputs — one dark rule for every gate row on the page */
+    .bm-gate__row input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border: 2px solid var(--hline); background: var(--hinput); color: var(--hink); font-family: inherit; font-size: 0.95rem; border-radius: 10px; }
     .bm-btn {
       display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
       border: 2px solid var(--hline); background: var(--hcard); padding: 0.5rem 0.9rem;
@@ -171,10 +185,19 @@ const description = 'Authorized banana personnel only.';
       .hq-row__who { grid-column: 1 / -1; }
     }
 
-    .hq-open { border: 2px solid var(--acc, var(--nana)); border-top: none; background: var(--hcard); border-radius: 0 0 12px 12px; margin: -0.5rem 0 0.7rem; padding: 0.7rem 0.8rem; }
+    .hq-open { border: 2px solid var(--acc, var(--nana)); border-top: none; background: var(--hcard); border-radius: 0 0 12px 12px; margin: -0.5rem 0 0.9rem; padding: 0.9rem 1rem 1.1rem; }
+    /* labelled sections give the open row AIR — the pill wall read as one smear */
+    .hq-sec { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--hdim); margin: 1rem 0 0.5rem; }
+    .hq-sec:first-child { margin-top: 0.1rem; }
+    .hq-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 0.45rem; }
+    .hq-stat { background: var(--hinput); border: 2px solid var(--hline); border-radius: 10px; padding: 0.4rem 0.55rem; }
+    .hq-stat b { display: block; font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--acc, var(--nana)); }
+    .hq-stat span { font-size: 0.56rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--hdim); }
+    .hq-gear { display: flex; flex-wrap: wrap; gap: 0.3rem; max-height: 92px; overflow: auto; }
+    .hq-gearchip { font-size: 0.68rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px; background: var(--hinput); box-shadow: inset 0 0 0 2px var(--hline); overflow-wrap: anywhere; }
     .hq-facts { display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; margin: 0 0 0.7rem; }
     .hq-fact { font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.45rem; border-radius: 999px; background: var(--hinput); box-shadow: inset 0 0 0 2px var(--hline); }
-    .hq-give { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 0.45rem; }
+    .hq-give { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 0.6rem 0.7rem; }
     .hq-give label { display: block; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hdim); margin-bottom: 0.2rem; }
     .hq-give__row { display: flex; gap: 0.3rem; }
     .hq-give input { flex: 1 1 auto; min-width: 0; width: 100%; font-family: inherit; font-size: 0.85rem; padding: 0.35rem 0.45rem; border: 2px solid var(--hline); border-radius: 8px; background: var(--hinput); color: var(--hink); }
@@ -499,6 +522,13 @@ const description = 'Authorized banana personnel only.';
         stamp.className = 'bm-stamp' + (m.topic === 'licensing' ? ' bm-stamp--licensing' : '');
         stamp.textContent = m.topic || 'general';
         top.appendChild(stamp);
+        // 🎫 a pass-holder is reachable even without an email
+        if (m.pass) {
+          const ps = document.createElement('span');
+          ps.className = 'bm-stamp bm-stamp--pass';
+          ps.textContent = '🎫 ' + (m.passName || 'pass-holder');
+          top.appendChild(ps);
+        }
         top.appendChild(document.createTextNode(' stamped ' + fmtDate(m.ts) + ' · agent ' + String(m.sender || '?').slice(0, 8)));
         const from = document.createElement('p');
         from.className = 'bm-mail__from';
@@ -543,8 +573,70 @@ const description = 'Authorized banana personnel only.';
         actions.appendChild(shred);
         body.appendChild(msg); body.appendChild(actions);
 
+        // 💬 THE PASS REPLY DESK — a sender with a pass id is reachable even
+        // with no email: the reply is stored per-pass at worker-contact and
+        // lands on their My Pass as a "Message from Trym" world notification.
+        // The stored replies ARE the correspondence archive, shown under the
+        // box. History loads lazily on first open.
+        let loadHist = null;
+        if (m.pass) {
+          const pr = document.createElement('div');
+          pr.className = 'bm-passreply';
+          pr.innerHTML = '<p class="bm-passreply__head">🎫 reply to their Pass'
+            + ' — lands in My Pass as “Message from Trym”' + (m.email ? '' : ' (they left no email)') + '</p>'
+            + '<div class="bm-passreply__row"><textarea rows="2" maxlength="2000" placeholder="write back…"></textarea>'
+            + '<button class="bm-btn bm-btn--passgo" type="button">💬 send</button></div>'
+            + '<div class="bm-passreply__hist"></div>';
+          const ta = pr.querySelector('textarea');
+          const send = pr.querySelector('.bm-btn--passgo');
+          const hist = pr.querySelector('.bm-passreply__hist');
+          const loadHist0 = async () => {
+            try {
+              const r = await fetch(API + '/replies?pass=' + encodeURIComponent(m.pass));
+              const rows = await r.json();
+              hist.innerHTML = '';
+              if (Array.isArray(rows) && rows.length) {
+                const h = document.createElement('p');
+                h.className = 'bm-passreply__label';
+                h.textContent = '↩ your replies to this pass';
+                hist.appendChild(h);
+                rows.forEach((rp) => {
+                  const d = document.createElement('div');
+                  d.className = 'bm-passreply__msg';
+                  d.textContent = rp.text;
+                  const t = document.createElement('time');
+                  t.textContent = ' — ' + fmtDate(rp.ts);
+                  d.appendChild(t);
+                  hist.appendChild(d);
+                });
+              }
+            } catch (e) {}
+          };
+          send.onclick = async () => {
+            const text = ta.value.trim();
+            if (!text) { ta.focus(); return; }
+            send.disabled = true; send.textContent = 'sending…';
+            try {
+              const r = await fetch(API + '/reply', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, pass: m.pass, text, re: String(m.message || '').slice(0, 120) }),
+              });
+              const d = await r.json();
+              if (d.ok) {
+                ta.value = '';
+                send.textContent = '✓ delivered';
+                loadHist0();
+                setTimeout(() => { send.disabled = false; send.textContent = '💬 send'; }, 2500);
+              } else { send.disabled = false; send.textContent = '💬 send'; }
+            } catch (e) { send.disabled = false; send.textContent = '💬 send'; }
+          };
+          loadHist = loadHist0;
+          body.appendChild(pr);
+        }
+
         head.onclick = () => {
           body.hidden = !body.hidden;
+          if (!body.hidden && loadHist) { loadHist(); loadHist = null; }   // once, on first open
           if (!read.has(m.key)) { const s = readSet(); s.add(m.key); saveRead(s); card.classList.remove('bm-mail--unread'); const dt = from.querySelector('.bm-dot'); if (dt) dt.remove(); render0nly(); }
         };
         card.appendChild(head); card.appendChild(body);
@@ -860,30 +952,58 @@ const description = 'Authorized banana personnel only.';
       });
     }
 
-    // the open row: the facts that did not deserve a column, then the controls
+    // the open row, in three LABELLED sections (Trym: the pill-wall read as
+    // one dense smear): the numbers as mini stat cells, the gear as its own
+    // chip shelf, then the give controls
     function userPanel(p) {
       const wrap = document.createElement('div');
       wrap.className = 'hq-open';
-      const facts = document.createElement('div');
-      facts.className = 'hq-facts';
-      [
-        '🎖 ' + p.badges + ' badge' + (p.badges === 1 ? '' : 's'),
-        '⭐ ' + p.rep + ' rep',
-        '🍮 ' + p.jelly + ' jelly',
-        '📅 ' + p.days + ' day' + (p.days === 1 ? '' : 's'),
-        '📱 ' + p.devices + ' device' + (p.devices === 1 ? '' : 's'),
-        '🗄 ' + p.shelf + ' on the shelf',
-        '🪙 ' + p.coinsEarned + ' earned · ' + p.coinsSpent + ' spent',
-        p.gear.length ? '🎁 ' + p.gear.join(', ') : '🎁 no gear yet',
-        p.glow ? '🥢 glowstick' : null,
-      ].filter(Boolean).forEach((t) => {
-        const s2 = document.createElement('span');
-        s2.className = 'hq-fact';
-        s2.textContent = t;
-        facts.appendChild(s2);
-      });
-      wrap.appendChild(facts);
+      const sec = (t) => {
+        const h = document.createElement('p');
+        h.className = 'hq-sec';
+        h.textContent = t;
+        return h;
+      };
 
+      wrap.appendChild(sec('📊 the numbers'));
+      const stats = document.createElement('div');
+      stats.className = 'hq-stats';
+      [
+        [p.badges, 'badges'], [p.rep, 'rep'], [p.jelly, 'jelly'],
+        [p.days, 'days played'], [p.devices, 'devices'], [p.shelf, 'on the shelf'],
+        [p.coinsEarned, 'coins earned'], [p.coinsSpent, 'coins spent'],
+      ].forEach(([v, label]) => {
+        const c = document.createElement('div');
+        c.className = 'hq-stat';
+        const b = document.createElement('b');
+        b.textContent = String(v);
+        const s2 = document.createElement('span');
+        s2.textContent = label;
+        c.append(b, s2);
+        stats.appendChild(c);
+      });
+      wrap.appendChild(stats);
+
+      wrap.appendChild(sec('🎒 the gear'));
+      const gearBox = document.createElement('div');
+      gearBox.className = 'hq-gear';
+      const gearList = [...p.gear, ...(p.glow ? ['glowstick 🥢'] : [])];
+      if (gearList.length) {
+        gearList.forEach((g) => {
+          const s2 = document.createElement('span');
+          s2.className = 'hq-gearchip';
+          s2.textContent = g;
+          gearBox.appendChild(s2);
+        });
+      } else {
+        const s2 = document.createElement('span');
+        s2.className = 'hq-gearchip';
+        s2.textContent = 'no gear yet';
+        gearBox.appendChild(s2);
+      }
+      wrap.appendChild(gearBox);
+
+      wrap.appendChild(sec('🎁 give things'));
       const said = document.createElement('p');
       said.className = 'hq-said';
       const give = document.createElement('div');
