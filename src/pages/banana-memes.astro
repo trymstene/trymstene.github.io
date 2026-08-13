@@ -37,6 +37,7 @@ const cards = items.map((i) => ({
   sub: i.kind === 'sticker' ? '✂ sticker' : '🎞 gif',
   search: `${i.title} ${i.caption} ${i.tags.join(' ')} ${i.kind}`.toLowerCase(),
   tags: i.tags.join(' '),
+  rid: `gal-${i.id}`,   // the detail pages' rating id — the cards show the same board
 }));
 const commCards = community.map((c) => ({
   href: `/banana-memes/by/${c.slug}/`,
@@ -49,6 +50,7 @@ const commCards = community.map((c) => ({
   sub: `🍌 by ${c.by || 'a banana fan'}`,
   search: `${c.title} ${c.by || ''} community ${(c.tags || []).join(' ')} ${c.transparent ? 'sticker' : 'gif'}`.toLowerCase(),
   tags: (c.tags || []).join(' '),
+  rid: `gal-c-${c.slug}`,
 }));
 if (commCards.length) {
   const step = Math.ceil((cards.length + 1) / (commCards.length + 1));
@@ -141,6 +143,9 @@ const crumbLD = {
     /* the community byline reads like the /by/ pages: normal case, no letter-
        spacing (uppercase + tracking made the yellow chip look faded here) */
     .gm-card .gm-kind--by { opacity: 1; text-transform: none; letter-spacing: 0; font-size: 0.72rem; }
+    /* ⭐ the card's rating line — the remix gallery's grammar: bananas, not
+       stars; read-only here (voting lives on the item's own page) */
+    .gm-rate { display: block; font-size: 0.72rem; font-weight: 800; margin-top: 0.15rem; opacity: 0.85; }
     .gm-byname {
       display: inline-block; background: var(--banana); color: var(--ink);
       border: 2px solid var(--ink); padding: 0.05em 0.4em; margin-left: 0.15em;
@@ -191,7 +196,7 @@ const crumbLD = {
     <div class="gm-grid" id="gmGrid">
       {cards.map((c, n) => (
         <a class="gm-card" href={c.href} data-kind={c.kind} data-tags={c.tags}
-           data-community={c.community ? '1' : undefined} data-search={c.search}>
+           data-community={c.community ? '1' : undefined} data-search={c.search} data-rid={c.rid}>
           <div class={`gm-img${c.kind === 'sticker' ? ' gm-img--sticker' : ''}`}>
             <img src={c.img} width={c.w} height={c.h}
                  loading={n < 6 ? 'eager' : 'lazy'}
@@ -201,6 +206,7 @@ const crumbLD = {
           {c.community
             ? <span class="gm-kind gm-kind--by">🍌 by <b class="gm-byname">{c.by}</b></span>
             : <span class="gm-kind">{c.sub}</span>}
+          <span class="gm-rate" hidden></span>
         </a>
       ))}
     </div>
@@ -293,5 +299,23 @@ const crumbLD = {
     }));
     window.addEventListener('popstate', () => { stateFrom(location.pathname); apply(); });
     inp.addEventListener('input', () => { state.q = inp.value.trim().toLowerCase(); apply(); });
+
+    // ⭐ visible ratings on the cards (Trym: like the remix gallery) — one
+    // whole-board fetch from the ratings worker paints every rated card:
+    // "4.2 🍌 · 8". Unrated cards stay clean; voting lives on the item pages.
+    fetch('https://banana-remixes.trymstene.workers.dev/ratings')
+      .then((r) => r.ok && r.json())
+      .then((board) => {
+        if (!board) return;
+        cards.forEach((c) => {
+          const t = board[c.dataset.rid];
+          if (!t || !t[1]) return;
+          const line = c.querySelector('.gm-rate');
+          if (!line) return;
+          line.textContent = (t[0] / t[1]).toFixed(1) + ' 🍌 · ' + t[1] + (t[1] === 1 ? ' vote' : ' votes');
+          line.hidden = false;
+        });
+      })
+      .catch(() => {});
   </script>
 </BaseLayout>
