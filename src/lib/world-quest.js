@@ -373,8 +373,8 @@ const STEPS = [
       ['paper', 'CHAPTER ONE — complete 🍌 (chapter two is coming)'],
     ],
     reward: { note: 'the photograph — the house that isn’t there', art: () => photoCanvas(),
-      link: { href: '/pass/', label: 'open My Pass — make it official',
-        icon: ICON_CARD, art: () => passCanvas() } },
+      link: { href: '/pass/', label: 'open My Pass', icon: ICON_CARD,
+        pill: 'your name · badges · keepsakes', art: () => passCanvas() } },
     hint: '' },
 ];
 
@@ -637,6 +637,14 @@ function ensureCss() {
 }
 .bwq-reward a.bwq-reward__go:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
 .bwq-reward a.bwq-reward__go svg { vertical-align:-3px; }
+/* 🏷 the fine print: a tilted black stickerpill overflowing the button top */
+.bwq-reward a.bwq-reward__go { position:relative; margin-top:0.9rem; overflow:visible; }
+.bwq-reward__pill {
+  position:absolute; top:-13px; right:-7px; transform:rotate(-4deg);
+  font-style:normal; font-size:0.6rem; font-weight:800; line-height:1;
+  background:#111; color:#ffe135; border-radius:999px; padding:5px 9px 6px;
+  box-shadow:2px 2px 0 rgba(0,0,0,0.4); white-space:nowrap; pointer-events:none;
+}
 .bwq-reward--link button { background:#182a18; color:#fffdf5; }
 /* 🖼 reward ART: the received thing drawn on the receipt, lying at a tilt */
 .bwq-reward__art { width:max-content; margin:0 auto 0.55rem; transform:rotate(-2deg); }
@@ -717,6 +725,15 @@ function payReward(r) {
     go.innerHTML = (r.link.icon || '') + '<span></span>';
     go.querySelector('span').textContent = (r.link.icon ? ' ' : '') + r.link.label;
     card.classList.add('bwq-reward--link');
+    // 🏷 the door's fine print rides a tilted stickerpill overflowing the
+    // button's top corner (the chip-badge grammar) — the button itself
+    // stays one short line (Trym)
+    if (r.link.pill) {
+      const pl = document.createElement('i');
+      pl.className = 'bwq-reward__pill';
+      pl.textContent = r.link.pill;
+      go.appendChild(pl);
+    }
     // …and the door may show WHAT it opens (the finale: the pass itself,
     // your banana and name already printed on it) — the picture is a link too
     if (r.link.art) {

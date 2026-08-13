@@ -679,7 +679,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
     // regular visitor. ?questtest turns it on for THIS device (sticky, so it
     // survives fast travel, which drops query params); ?questtest=off turns it
     // off. Launch = flip QUEST_LIVE here + the other three areas (grep it).
-    const QUEST_LIVE = false;
+    const QUEST_LIVE = true;
     try {
       if (/[?&]questtest=off/.test(location.search)) localStorage.removeItem('bwq-dev');
       else if (/[?&]questtest/.test(location.search)) localStorage.setItem('bwq-dev', '1');

@@ -1808,7 +1808,7 @@ const GUIDE = [
   <script>
     // 🕯 RETURN TO SENDER — dark until launch (see homestead.astro for the
     // full note). ?questtest sticky-on · ?questtest=off · flip QUEST_LIVE ×4.
-    const QUEST_LIVE = false;
+    const QUEST_LIVE = true;
     try {
       if (/[?&]questtest=off/.test(location.search)) localStorage.removeItem('bwq-dev');
       else if (/[?&]questtest/.test(location.search)) localStorage.setItem('bwq-dev', '1');
