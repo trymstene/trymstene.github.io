@@ -734,6 +734,8 @@ function payReward(r) {
     go.innerHTML = (r.link.icon || '') + '<span></span>';
     go.querySelector('span').textContent = (r.link.icon ? ' ' : '') + r.link.label;
     card.classList.add('bwq-reward--link');
+    // the chapter's funnel target — count the actual walk-throughs
+    go.addEventListener('click', () => track('quest_pass', { href: r.link.href }));
     // 🏷 the door's fine print rides a tilted stickerpill overflowing the
     // button's top corner (the chip-badge grammar) — the button itself
     // stays one short line (Trym)
@@ -750,6 +752,7 @@ function payReward(r) {
       peek.className = 'bwq-reward__peek';
       peek.href = r.link.href;
       peek.appendChild(r.link.art());
+      peek.addEventListener('click', () => track('quest_pass', { href: r.link.href }));
       card.insertBefore(peek, go);
     }
   }

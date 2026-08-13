@@ -172,6 +172,18 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
   </section>
 
   <script>
+    // 🌍 the one-door funnel: which frontpage door opened Banana World —
+    // homestead_open via=direct can't tell the hero button from a typed URL
+    document.querySelectorAll('a[href="/homestead/"]').forEach((a) => {
+      a.addEventListener('click', () => {
+        try {
+          // @ts-ignore
+          window.gtag && window.gtag('event', 'world_door', {
+            from: a.closest('.hero') ? 'hero' : 'doors', transport_type: 'beacon',
+          });
+        } catch (e) {}
+      });
+    });
     // proof of life on the dance door — fail silently, never block the page
     fetch('https://banana-rave.trymstene.workers.dev/count')
       .then((r) => r.json())
