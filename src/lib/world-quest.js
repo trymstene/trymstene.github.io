@@ -226,22 +226,22 @@ const STEPS = [
       '…more sand. the circle is big.', '…a crab claw. the crab kept the rest.',
       '…something metal! …no. a third boot.', '…the sand feels looser here.',
       '…so close — you can FEEL it.',
-      '📦 A sealed TIN — heavy, old… someone buried this on purpose'] },
+      '📦 An old METAL BOX — sealed tight, heavy… someone buried this on purpose'] },
 
   { id: 'c1_split', area: 'beach', kind: 'talk', who: 'split', turnin: 1, at: { sel: '#bhCap', x: 30, y: 46 },
-    find: 'Captain Sabreface wants a word about that tin',
+    find: 'Captain Sabreface wants a word about that box',
     lines: [
-      ['split', 'A TIN! Hand it over! Salvage rights! Maritime law! I wrote it myself.'],
+      ['split', 'A BOX! Hand it over! Salvage rights! Maritime law! I wrote it myself.'],
       ['you', 'You sent me to dig it up.'],
       ['split', '…True. Then it’s yours, by finder’s law. Which also exists. You’re welcome.'],
-      ['split', 'A sealed tin, though… old thing like that. Take it to the old gardener in the Park. He’s been around forever — he’ll know it.'],
+      ['split', 'An old sealed box like that, though… Take it to the old gardener in the Park. He’s been around forever — he’ll know it.'],
       ['split', 'Go on. Sabreface has spoken.'],
     ],
-    hint: 'bring the tin back to Old Peel in the Park' },
+    hint: 'bring the metal box back to Old Peel in the Park' },
 
   { id: 'c1_peel_fuss', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', 'A tin? Let me see— no. NO. Not with litter blowing all over my park.'],
+      ['peel', 'A box? Let me see— no. NO. Not with litter blowing all over my park.'],
       ['peel', 'Pick it up first. Every last piece. I can’t think over mess. Nobody can.'],
     ],
     hint: 'litter has blown all over the park — walk over every piece to pick it up' },
@@ -265,7 +265,7 @@ const STEPS = [
 
   { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', '(he opens the tin, slow as Sunday)'],
+      ['peel', '(he opens the box, slow as Sunday)'],
       ['peel', '…A photograph. That’s Plot 11 alright. But look — there’s a little house on it.'],
       ['peel', 'There has never been a house on Plot 11. Never. And yet here’s a photo of one.'],
       ['peel', 'And a flower, pressed flat between the papers.'],
@@ -1139,6 +1139,10 @@ export function bootQuest() {
       const MAP_AGAIN = { kind: 'talk', who: 'split',
         lines: [['split', 'Lost already? Look —'], ['map', ''], ['split', 'The quiet stretch past the sunbeds. Inside the circle. DIG.']] };
       window.bwqTalk = { who: 'split', open: () => openDialog(MAP_AGAIN, true) };
+      // the quest is the only voice inside its circle — the beach's own
+      // loot rolls (doubloons, coins, map pieces) pause in there
+      window.bwqDigzone = DIG_CIRCLE;
+      unhook.push(() => { window.bwqDigzone = null; });
       const bar = document.querySelector('.bh-actions');
       if (bar) {
         const mb = document.createElement('button');

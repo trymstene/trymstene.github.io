@@ -2011,6 +2011,12 @@ function init() {
       track('beach_dig', { find: 'spent' });
       return;
     }
+    // 🕯 inside the questline's dig circle the QUEST narrates the find — two
+    // voices on one dig (a worn-doubloon float under the quest's box toast)
+    // read as nonsense (Trym). Ordinary loot resumes outside the circle, and
+    // everywhere the moment the hunt ends.
+    if (window.bwqDigzone
+      && Math.hypot(pos.x - window.bwqDigzone.x, pos.y - window.bwqDigzone.y) <= window.bwqDigzone.r) return;
     // 🪙 loose change rides an ordinary dig ON TOP of whatever else turns up
     if (Math.random() < DIG_COIN_P) {
       const n = digCoins();
