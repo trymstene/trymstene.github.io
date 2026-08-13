@@ -128,8 +128,13 @@ function myDraw() {
 //       goal (watch for a real-world condition, homestead tent)
 // at: {sel} anchors to a live element, {x,y} = % of the world plate.
 const STEPS = [
+  // ⚠️ atRes: for RESIDENTS (stage ≥ 1) the gate spot sits in their fence
+  // opening / on their built plot — Nib waits on the far side of the road
+  // instead, a bit further down, off their property (Trym)
   { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', leave: 1, at: { x: 63, y: 76 },
+    atRes: { x: 66, y: 90 },
     find: 'someone is waiting by your gate — go say hello!',
+    findRes: 'someone is waiting across the road — go say hello!',
     // ✍️ THE VOICE BAR (Trym, 12 Aug round 3): dialogue a 13-year-old and a
     // 50-year-old both read without a stumble — short sentences, plain
     // words, a STORYTELLER's warmth, no bureaucrat jargon ("registry/deed/
@@ -354,7 +359,9 @@ const STEPS = [
     resSkip: 'the old photograph goes up on your wall. home.' },
 
   { id: 'c1_nib_registry', area: 'homestead', kind: 'talk', who: 'nib', turnin: 1, leave: 1, at: { x: 63, y: 76 },
+    atRes: { x: 66, y: 90 },
     find: 'Nib is back at your gate',
+    findRes: 'Nib is back — across the road',
     lines: [
       ['nib', 'A home! A real home on Plot 11! Wonderful. Now I can finally write you into the book. Let me just—'],
       ['nib', '…That’s strange. There’s already something on this page.'],
@@ -1323,7 +1330,7 @@ export function bootQuest() {
     // not its hint (what comes AFTER the talk) — step 0 was captioned "find
     // Old Peel" before Nib had said a word.
     const label = (step.kind === 'talk')
-      ? (step.find || ('talk to ' + (WHO[step.who] || {}).n)) : step.hint;
+      ? ((S.res && step.findRes) || step.find || ('talk to ' + (WHO[step.who] || {}).n)) : step.hint;
     if (label) {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
@@ -1342,6 +1349,9 @@ export function bootQuest() {
     if (step.area !== area) return;      // objective lives elsewhere — hint covers it
 
     if (step.kind === 'talk') {
+      // residents get their own anchor where a step carries one (Nib waits
+      // across the road instead of in their fence opening)
+      const at = (S.res && step.atRes) || step.at;
       // 🎬 CHAPTER I splash — plays when you OPEN the questline at Nib, not
       // on area boot (Trym: it must never compete with the homestead's
       // first-visit tutorial). Fade in → hold → fade out → the dialogue.
@@ -1415,9 +1425,9 @@ export function bootQuest() {
         const cv = document.createElement('canvas');
         cv.width = 150; cv.height = 160;
         n.appendChild(cv);
-        place(n, step.at);
+        place(n, at);
         // the area's own depth formula — the player passes in FRONT below him
-        n.style.zIndex = String(100 + Math.round((AREAS[area].wh || 1100) * step.at.y / 100));
+        n.style.zIndex = String(100 + Math.round((AREAS[area].wh || 1100) * at.y / 100));
         n.addEventListener('pointerdown', (e) => e.stopPropagation());
         n.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
         w.appendChild(n); layer.push(n);
@@ -1429,7 +1439,7 @@ export function bootQuest() {
       m.innerHTML = step.turnin ? MARKQ_SVG : MARK_SVG;
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
       // (-9: -11.5 floated it a full head-height too high — Trym)
-      place(m, step.who === 'nib' ? { ...step.at, y: step.at.y - 9 } : step.at);
+      place(m, step.who === 'nib' ? { ...at, y: at.y - 9 } : at);
       m.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
