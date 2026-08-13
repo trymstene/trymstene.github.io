@@ -2398,13 +2398,29 @@ export class YardRoom {
       const all = await this.state.storage.list({ prefix: 'y:' });
       const now = Date.now();
       let n = 0, day = 0, week = 0;
+      const list = [];
       for (const doc of all.values()) {
         n++;
         const age = now - (doc.updated || 0);
         if (age < 86400000) day++;
         if (age < 7 * 86400000) week++;
+        // public fields only (all readable via /yard?slug already) — the
+        // owner's pass id never leaves the store
+        list.push({ slug: doc.slug, name: doc.name,
+          stage: (doc.state && doc.state.stage) || 0,
+          created: doc.created || 0, updated: doc.updated || 0 });
       }
-      return json({ yards: n, day, week });
+      list.sort((a, b) => b.updated - a.updated);
+      // the headline numbers exclude QA yards (the ?hstest scenario claims as
+      // "Testy") — 9 of the first 14 were Trym's own test runs and the desk
+      // read as a boom; the list still shows everything, flagged
+      const qa = (e) => /^testy(-\d+)?$/.test(e.slug) || e.slug === 'trym';
+      const real = list.filter((e) => !qa(e));
+      const rn = real.length;
+      const rday = real.filter((e) => now - e.updated < 86400000).length;
+      const rweek = real.filter((e) => now - e.updated < 7 * 86400000).length;
+      return json({ yards: rn, day: rday, week: rweek, all: n,
+        list: list.slice(0, 100).map((e) => ({ ...e, qa: qa(e) ? 1 : 0 })) });
     }
 
     // 👀 the public view — what a visitor's browser builds the yard from

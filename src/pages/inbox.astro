@@ -254,6 +254,18 @@ const description = 'Authorized banana personnel only.';
     .bm-live--dirty { border-color: var(--hot2); }
     @media (max-width: 560px) { .bm-live { flex-wrap: wrap; } }
 
+    /* 👥 the neighbourhood census — one row per yard, QA claims dimmed */
+    .hq-yard {
+      display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+      border: 2px solid var(--hline); border-radius: 12px; background: var(--hpanel);
+      padding: 0.5rem 0.75rem; margin-bottom: 0.45rem; color: var(--hink); text-decoration: none;
+    }
+    .hq-yard:hover { border-color: var(--acc, var(--nana)); }
+    .hq-yard b { font-size: 0.9rem; overflow-wrap: anywhere; }
+    .hq-yard span { font-size: 0.7rem; font-weight: 800; color: var(--hdim); }
+    .hq-yard__when { margin-left: auto; font-variant-numeric: tabular-nums; }
+    .hq-yard--qa { opacity: 0.45; }
+
     /* 🌍 the world desk: big honest numbers in the KPI colour cycle */
     .bm-worldcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin: 0 0 0.9rem; }
     .bm-worldcard {
@@ -395,10 +407,14 @@ const description = 'Authorized banana personnel only.';
 
         <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🏡 the homesteads</h3>
         <div class="bm-worldcards">
-          <div class="bm-worldcard"><b id="bmWorldYards">–</b><span>🏡 claimed</span></div>
+          <div class="bm-worldcard"><b id="bmWorldYards">–</b><span>🏡 claimed (real)</span></div>
           <div class="bm-worldcard"><b id="bmWorldYardsDay">–</b><span>🔨 built on today</span></div>
           <div class="bm-worldcard"><b id="bmWorldYardsWeek">–</b><span>📅 built on this week</span></div>
         </div>
+        <!-- 👥 the neighbourhood census: every claimed yard, newest activity
+             first, QA claims (the ?hstest "Testy" scenario) dimmed and out of
+             the headline numbers -->
+        <div id="bmYardList"></div>
 
         <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🚦 status board</h3>
         <div class="bm-worldcards">
@@ -868,6 +884,25 @@ const description = 'Authorized banana personnel only.';
         put('bmWorldYards', y.yards ?? '?');
         put('bmWorldYardsDay', y.day ?? '?');
         put('bmWorldYardsWeek', y.week ?? '?');
+        // 👥 the census — names are VISITOR INPUT: textContent only
+        const box = el('bmYardList');
+        box.textContent = '';
+        const STAGE = ['🪧 plot', '⛺ tent', '🛖 cabin', '🏠 house'];
+        (y.list || []).forEach((e2) => {
+          const row = document.createElement('a');
+          row.className = 'hq-yard' + (e2.qa ? ' hq-yard--qa' : '');
+          row.href = '/homestead/' + e2.slug + '/';
+          const nm = document.createElement('b');
+          nm.textContent = e2.name || e2.slug;
+          const st = document.createElement('span');
+          st.textContent = STAGE[e2.stage] || STAGE[0];
+          const when = document.createElement('span');
+          when.className = 'hq-yard__when';
+          const d2 = Math.floor((Date.now() - (e2.updated || 0)) / 86400000);
+          when.textContent = (e2.qa ? 'QA · ' : '') + (d2 === 0 ? 'built on today' : d2 === 1 ? 'yesterday' : d2 + ' days ago');
+          row.append(nm, st, when);
+          box.appendChild(row);
+        });
       } catch (e) { put('bmWorldYards', '?'); put('bmWorldYardsDay', '?'); put('bmWorldYardsWeek', '?'); }
       try {
         put('bmWorldShop', '…');
