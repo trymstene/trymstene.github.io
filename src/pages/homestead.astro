@@ -173,11 +173,14 @@ const description = 'A clearing west of the park with your name on the sign: cla
       transition: opacity 0.4s ease;
     }
     .hs-hint.is-off { opacity: 0; }
+    /* the PARK's toast grammar — dark card, yellow ink, dropped to 16% so it
+       never shares a line with the quest chip (top-left, yellow): a yellow
+       toast at the chip's row read as one smear of quest UI (Trym) */
     .hs-toast {
-      position: absolute; left: 50%; top: 54px; transform: translateX(-50%);
+      position: absolute; left: 50%; top: max(18%, 140px); transform: translateX(-50%);
       z-index: 30; pointer-events: none; max-width: calc(100% - 2rem); text-align: center;
-      background: #ffe135; color: #1a1408; border: 3px solid #000;
-      box-shadow: 4px 4px 0 rgba(0,0,0,0.4); padding: 0.45rem 0.9rem;
+      background: #101a10; color: #ffe135; border: 3px solid #ffe135;
+      box-shadow: 4px 4px 0 #000; padding: 0.5rem 0.9rem; line-height: 1.35;
       font-size: 0.85rem; font-weight: 800; opacity: 0; transition: opacity 0.25s ease;
     }
     .hs-toast.is-on { opacity: 1; }

@@ -1255,7 +1255,7 @@ function init(visitDoc, visitMiss) {
       passStat('coins_earned', 2);
       float(c.x, c.y - 22, '<img src="/assets/banana-stand/coin.png" width="14" height="14" style="vertical-align:-2px"> +2');
       refreshHud();
-      if (!roadCoins.length) toast('🪙 first coins in the pocket — playing pays, anywhere in the world', 3600);
+      if (!roadCoins.length) toast('<img class="hs-toastico" src="/assets/banana-stand/coin.png" style="image-rendering:auto" alt=""> first coins in the pocket — playing pays, anywhere in the world', 3600);
     }
   }
 
