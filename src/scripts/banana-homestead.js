@@ -655,7 +655,7 @@ function init(visitDoc, visitMiss) {
     tgt.y = pos.y + (pos.y < I.box[1] + I.box[3] / 2 ? 34 : -34);
     camSnap();
     toast(visiting
-      ? '👀 peeking into ' + state.name + '’s place — the door takes you back out'
+      ? '👀 peeking into ' + state.name + ' — the door takes you back out'
       : '🏠 home — the door takes you back out');
     track('homestead_enter_home', { tier: inside, visit: visiting ? 1 : 0 });
   }
