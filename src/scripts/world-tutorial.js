@@ -136,7 +136,7 @@ const CSS = `
 }
 .bwt-pill:nth-child(odd) { transform:rotate(-2deg); }
 .bwt-pill:nth-child(even) { transform:rotate(1.6deg); }
-.bwt-pill img { height:1em; width:auto; image-rendering:pixelated; vertical-align:-0.12em; }
+.bwt-pill img { height:1em; width:auto; vertical-align:-0.12em; }
 
 /* 🌅 the welcome — the banana on a slowly turning sunburst */
 .bwt-hero { display:grid; place-items:center; padding:0.4rem 0 0.2rem; position:relative; }
@@ -165,7 +165,8 @@ const CSS = `
 .bwt-lvl i::after { content:''; display:block; height:100%; background:#ffe135; animation:bwtFill 3s ease-in-out infinite; }
 @keyframes bwtFill { 0% { width:12%; } 70%,100% { width:88%; } }
 .bwt-coin { background:#1a1408; color:#ffe135; transform:rotate(1.4deg); animation:bwtBob 3.4s ease-in-out infinite 0.8s; }
-.bwt-coin img { width:15px; height:15px; image-rendering:pixelated; }
+/* smooth downscale of the 44px coin — pixelated at 15px ate the emboss */
+.bwt-coin img { width:15px; height:15px; }
 
 .bwt-map { display:grid; place-items:center; padding:0.2rem 0 0.4rem; transform:rotate(-1.2deg); }
 
@@ -323,7 +324,7 @@ function steps(rm) {
       s: 'your level and bananacoins follow you — every area pays.',
       h: '<div class="bwt-hud">'
         + '<span class="bwt-lvl">LVL 7 <i></i></span>'
-        + '<span class="bwt-coin"><img src="' + A + 'coin16.png" alt=""> 128</span>'
+        + '<span class="bwt-coin"><img src="/assets/banana-stand/coin.png" alt=""> 128</span>'
         + '</div>',
     },
     {
@@ -359,7 +360,7 @@ function steps(rm) {
         + '<span class="bwt-pill">⛲ decorate</span>'
         + '<span class="bwt-pill">🌱 grow veggies</span>'
         + '<span class="bwt-pill">⛺ tent → cabin → house</span>'
-        + '<span class="bwt-pill"><img src="' + A + 'coin16.png" alt=""> paid in bananacoins — earned by playing</span>'
+        + '<span class="bwt-pill"><img src="/assets/banana-stand/coin.png" alt=""> paid in bananacoins — earned by playing</span>'
         + '</div>',
     },
     {

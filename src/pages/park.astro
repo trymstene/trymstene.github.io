@@ -876,7 +876,7 @@ const faq = {
       transition: left 0.7s linear, top 0.7s ease-in;
     }
     .pk-coinfly img {
-      display: block; image-rendering: pixelated;
+      display: block;
       animation: pkCoinArc 0.7s ease-out forwards;
     }
     @keyframes pkCoinArc {
@@ -1037,7 +1037,7 @@ const faq = {
       display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
       font-weight: 800; font-size: 0.82rem; color: #ffe135;
     }
-    .pk-seedcost img { image-rendering: pixelated; display: block; }
+    .pk-seedcost img { display: block; }   /* smooth downscale of the 44px coin */
     .pk-seedcost--free { color: #8de08d; font-size: 0.7rem; }
     .pk-seedpoor { margin: 0.2rem 0 0; font-size: 0.72rem; opacity: 0.7; }
     /* ⛲ the wish card's 8-ball reveal — the answer fades in for ceremony */
@@ -1501,7 +1501,7 @@ const faq = {
       color: #b9b2d0; border: 2px solid #000; background: #241d33; padding: 0.05rem 0.3rem;
     }
     .pk-price { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 800; color: #ffe135; }
-    .pk-price img { image-rendering: pixelated; }
+    /* price coins smooth-downscale the 44px art — never pixelate small coins */
     .pk-tile .pk-price { font-size: 0.78rem; }
     .pk-tile .pk-price img { width: 14px; }
     .pk-tile__lock { position: absolute; top: -7px; right: -6px; width: 18px; display: none; }

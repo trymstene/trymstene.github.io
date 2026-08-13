@@ -709,7 +709,7 @@ function init() {
       const dx = (cr.left + cr.width / 2 - fr.left) - x0, dy = (cr.top + cr.height / 2 - fr.top) - y0;
       const img = document.createElement('img');
       img.src = '/assets/banana-stand/coin.png';
-      img.style.cssText = 'position:absolute;width:22px;image-rendering:pixelated;z-index:650;pointer-events:none;'
+      img.style.cssText = 'position:absolute;width:22px;z-index:650;pointer-events:none;'
         + 'left:' + x0 + 'px;top:' + y0 + 'px;transform:translate(-50%,-50%);';
       host.appendChild(img);
       img.animate([

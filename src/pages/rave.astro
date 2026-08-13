@@ -478,7 +478,7 @@ const GUIDE = [
       padding: 2px 8px 2px 5px;
     }
     .rv-wallet[hidden] { display: none; }
-    .rv-wallet img { display: block; image-rendering: pixelated; }
+    .rv-wallet img { display: block; }   /* smooth downscale of the 44px coin */
     .rv-wallet b { font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; }
     .rv-wallet.is-bump { animation: rvWalletBump 0.45s steps(3); }
     @keyframes rvWalletBump { 30% { transform: translateY(-5px) scale(1.12); } 70% { transform: translateY(0) scale(1); } }

@@ -628,7 +628,8 @@ function ensureCss() {
   text-transform:uppercase; color:#ffe135; margin-bottom:0.6rem;
 }
 .bwq-reward p { margin:0 0 0.6rem; font-size:0.92rem; font-weight:800; line-height:1.45; }
-.bwq-reward p img { width:16px; height:16px; image-rendering:pixelated; vertical-align:-2px; }
+/* smooth downscale of the 44px stand coin — pixelated at 16px ate the emboss */
+.bwq-reward p img { width:16px; height:16px; vertical-align:-2px; }
 .bwq-reward button {
   width:100%; cursor:pointer; font-family:inherit; font-weight:800; font-size:0.95rem;
   background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
@@ -712,7 +713,7 @@ function payReward(r) {
   const card = document.createElement('div');
   card.className = 'bwq-reward';
   let rows = '';
-  if (r.coins) rows += '<p><img src="/assets/homestead/coin16.png" alt=""> +' + r.coins + ' bananacoins</p>';
+  if (r.coins) rows += '<p><img src="/assets/banana-stand/coin.png" alt=""> +' + r.coins + ' bananacoins</p>';
   if (r.note) rows += '<p></p>';
   // a reward may carry a DOOR (the finale's My Pass link) — the link takes
   // the primary style and got-it steps back to a ghost

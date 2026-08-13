@@ -23,7 +23,9 @@ const view = document.getElementById('hsView');
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
 // 🪙 prices wear the REAL bananacoin, never the stock emoji (Trym)
-const COIN = '<img class="hs-coin" src="/assets/homestead/coin16.png" width="14" height="14" alt="bananacoins">';
+// ⚠️ the 44px stand coin, smooth-DOWNSCALED to 14px (no pixelated) — the
+// 16px art upscaled anywhere read as mush (Trym); one coin, one look, sitewide
+const COIN = '<img class="hs-coin" src="/assets/banana-stand/coin.png" width="14" height="14" alt="bananacoins">';
 
 // 🏡 THE NEIGHBOURHOOD (M1): every claimed yard has a public mirror in the
 // YardRoom DO. worldOwner() owns it; the browser's hs-v1 stays the truth.
@@ -1222,13 +1224,14 @@ function init(visitDoc, visitMiss) {
     // device-pixel-perfect. coin16 upscaled through the camera read as mush
     // (Trym: "why so low resolution").
     const st = document.createElement('style');
-    st.textContent = '.hs-roadcoin{position:absolute;width:22px;height:22px;pointer-events:none;'
-      + 'background:url(/assets/banana-stand/coin-spin.png) 0 0/132px 22px no-repeat;'
-      + 'image-rendering:pixelated;filter:drop-shadow(0 3px 2px rgba(20,40,10,0.35));'
+    st.textContent = '.hs-roadcoin{position:absolute;width:30px;height:30px;pointer-events:none;'
+      + 'background:url(/assets/banana-stand/coin-spin.png) 0 0/180px 30px no-repeat;'
+      + 'image-rendering:pixelated;'
+      + 'filter:drop-shadow(0 0 7px rgba(255,225,53,0.85)) drop-shadow(0 3px 2px rgba(20,40,10,0.3));'
       + 'animation:hsCoinSpin 0.9s steps(6) infinite;}'
-      + '@keyframes hsCoinSpin{to{background-position:-132px 0}}'
+      + '@keyframes hsCoinSpin{to{background-position:-180px 0}}'
       + '@media (prefers-reduced-motion:reduce){.hs-roadcoin{animation:none;'
-      + 'background:url(/assets/banana-stand/coin.png) 0 0/22px 22px no-repeat;}}';
+      + 'background:url(/assets/banana-stand/coin.png) 0 0/30px 30px no-repeat;}}';
     document.head.appendChild(st);
     // strung along the road AHEAD of the walk-in, whichever door you used;
     // slight y-jitter so it reads as dropped, not printed
@@ -1250,7 +1253,7 @@ function init(visitDoc, visitMiss) {
       c.el.remove();
       roadCoins.splice(i, 1);
       passStat('coins_earned', 2);
-      float(c.x, c.y - 22, '<img src="/assets/homestead/coin16.png" width="14" height="14" style="image-rendering:pixelated;vertical-align:-2px"> +2');
+      float(c.x, c.y - 22, '<img src="/assets/banana-stand/coin.png" width="14" height="14" style="vertical-align:-2px"> +2');
       refreshHud();
       if (!roadCoins.length) toast('🪙 first coins in the pocket — playing pays, anywhere in the world', 3600);
     }

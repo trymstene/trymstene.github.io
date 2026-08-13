@@ -506,7 +506,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
 
     /* 🪙 the REAL bananacoin rides every price (never the stock emoji) */
     /* ⚠️ armored: broad tile/card img rules keep catching the coin (3rd hit) */
-    .hs-coin { width: 14px !important; height: 14px !important; image-rendering: pixelated; vertical-align: -2px; }
+    /* smooth downscale of the 44px stand coin — pixelated nearest at 14px ate it */
+    .hs-coin { width: 14px !important; height: 14px !important; vertical-align: -2px; }
 
     /* 👋 visiting someone else's homestead */
     .hs-visit {

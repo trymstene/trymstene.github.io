@@ -42,7 +42,8 @@ const CSS = `
   border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
 }
 .wh__lvlbar i { display: block; height: 100%; width: 0; background: var(--wh-accent); transition: width 0.5s ease; }
-.wh__coins img { display: block; image-rendering: pixelated; }
+/* the 44px stand coin smooth-downscaled — pixelated at 16px ate the emboss */
+.wh__coins img { display: block; }
 .wh__coins b, .wh__tix b { color: var(--wh-accent); }
 .wh__crowd { color: #8affc0; }
 /* a chip with nothing to say takes no room — the bay's rally line, mostly */
