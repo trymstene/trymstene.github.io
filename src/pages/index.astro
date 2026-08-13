@@ -40,9 +40,100 @@ const schema = {
 };
 
 const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  ·  make your own  ·  licensing enquiries welcome  ·  ".repeat(5);
+
+// 🌍 THE WORLD LANDING (13 Aug): the doors became a visual sell — feature
+// stills exported from the reel scenes (tools/reel/export_stills.py) and
+// REAL community homesteads (tools/build-yard-cards.py; re-run to refresh).
+import yardCards from '../data/yard-cards.json';
+const HERO_SLIDES = ['rave', 'homestead', 'treasure', 'builder', 'bay', 'pass']
+  .map((k) => ({ img: `/assets/world/feat-${k}.jpg`, alt: `Banana World — ${k}` }));
+const FEATURES = [
+  { k: 'homestead', line: 'Build your corner.', href: '/homestead/' },
+  { k: 'builder', line: 'Dress the legend.', href: '/make-a-banana/' },
+  { k: 'items', line: 'Draw it. Own it.', href: '/forge/items/' },
+  { k: 'quest', line: 'A mystery from 1999.', href: '/homestead/' },
+  { k: 'rave', line: 'The floor never stops.', href: '/rave/' },
+  { k: 'treasure', line: 'X marks the sand.', href: '/beach/' },
+  { k: 'fishing', line: 'Something’s biting.', href: '/beach/' },
+  { k: 'tending', line: 'The park needs you.', href: '/park/' },
+];
 ---
 <BaseLayout title={title} description={description} ogDescription={ogDescription}>
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
+  <style is:inline slot="head">
+    /* 🌍 the world landing — highly visual, tiny copy, CTA always in reach */
+    .bwl-hero {
+      position: relative; max-width: 1160px; margin: 1.6rem auto 0; aspect-ratio: 16 / 10;
+      border: 4px solid var(--ink); border-radius: 16px; overflow: hidden;
+      box-shadow: 8px 8px 0 var(--ink); background: var(--ink);
+    }
+    @media (max-width: 640px) { .bwl-hero { aspect-ratio: 4 / 5; } }
+    .bwl-hero img {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      opacity: 0; transition: opacity 0.7s ease;
+    }
+    .bwl-hero img.on { opacity: 1; animation: bwlKen 5s ease-in-out forwards; }
+    @keyframes bwlKen { from { transform: scale(1); } to { transform: scale(1.07); } }
+    .bwl-hero__cta {
+      position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); z-index: 2;
+      white-space: nowrap; box-shadow: 4px 4px 0 rgba(0,0,0,0.55);
+    }
+    @media (prefers-reduced-motion: reduce) { .bwl-hero img.on { animation: none; } }
+    .bwl-grid {
+      display: grid; gap: 1rem; grid-template-columns: repeat(2, 1fr);
+      max-width: 1160px; margin: 1.4rem auto 0;
+    }
+    @media (min-width: 760px) { .bwl-grid { grid-template-columns: repeat(4, 1fr); } }
+    .bwl-card {
+      display: block; position: relative; border: 3px solid var(--ink); border-radius: 14px;
+      overflow: hidden; box-shadow: 5px 5px 0 var(--ink); text-decoration: none; color: #fffdf5;
+      transition: transform 0.12s ease, box-shadow 0.12s ease; background: var(--ink);
+    }
+    .bwl-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+    .bwl-card img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+    .bwl-card b {
+      position: absolute; left: 0; right: 0; bottom: 0; padding: 1.6rem 0.7rem 0.6rem;
+      font-family: "Archivo Black", sans-serif; font-size: clamp(0.85rem, 2.2vw, 1.05rem); line-height: 1.1;
+      background: linear-gradient(transparent, rgba(10, 8, 4, 0.88) 55%);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.6);
+    }
+    .bwl-sub { font-family: "Archivo Black", sans-serif; font-size: clamp(1.2rem, 4vw, 1.7rem); margin: 2.4rem 0 0.2rem; }
+    .bwl-subnote { margin: 0.2rem 0 0; font-size: 0.92rem; opacity: 0.75; }
+    .bwl-yards {
+      display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      max-width: 1160px; margin: 1.2rem auto 0;
+    }
+    .bwl-yard {
+      display: block; position: relative; border: 3px solid var(--ink); border-radius: 14px;
+      overflow: hidden; box-shadow: 5px 5px 0 var(--ink); text-decoration: none; color: var(--ink);
+      transition: transform 0.12s ease, box-shadow 0.12s ease; background: var(--paper);
+    }
+    .bwl-yard:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+    .bwl-yard img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+    .bwl-yard__tag {
+      position: absolute; left: 10px; top: 10px; max-width: calc(100% - 20px);
+      background: var(--banana); border: 2px solid var(--ink); border-radius: 6px;
+      padding: 0.2rem 0.5rem; font-size: 0.8rem; font-weight: 800;
+      transform: rotate(-2deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .bwl-yard__go {
+      position: absolute; right: 10px; bottom: 10px;
+      background: var(--ink); color: var(--banana); border-radius: 999px;
+      padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 800;
+    }
+    .bwl-yard--you {
+      display: grid; place-content: center; gap: 0.2rem; text-align: center;
+      background: repeating-linear-gradient(45deg, var(--paper) 0 14px, #f2ecdc 14px 28px);
+      min-height: 180px; border-style: dashed;
+    }
+    .bwl-yard--you .bwl-yard__plus { font-family: "Archivo Black", sans-serif; font-size: 2.4rem; line-height: 1; }
+    .bwl-yard--you b { font-family: "Archivo Black", sans-serif; }
+    .bwl-yard--you span:last-child { font-size: 0.8rem; font-weight: 800; opacity: 0.7; }
+    .bwl-cta { text-align: center; margin-top: 2.2rem; }
+    .bwl-fine { margin: 0.6rem 0 0; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.6; }
+    .bwl-also { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 1.6rem; font-weight: 700; }
+  </style>
 
   <!-- scrolling marquee banner -->
   <div class="marquee" slot="banner" aria-hidden="true">
@@ -72,36 +163,61 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
     </div>
   </section>
 
-  <!-- the doors -->
+  <!-- 🌍 the world landing — the doors became a visual sell (Trym, 13 Aug):
+       feature stills from the reel scenes, real community homesteads with
+       names tagged, a CTA always in reach. Copy stays tiny and sharp. -->
   <section class="block" id="doors">
-    <p class="kicker">Pick a door</p>
-    <h2>The banana is a place now.</h2>
-    <div class="doors">
-      <a class="door" href="/dancing-banana-gif-meme/">
-        <span class="door__verb">grab the GIF</span>
-        <p>The 1999 original, free — and how it became a meme.</p>
-        <span class="door__live">dancing since 1999</span>
-      </a>
-      <a class="door" href="/make-a-banana/" data-place="home-door">
-        <span class="door__verb">make a banana</span>
-        <p>Dress your own — hats, shades, captions, dance moves.</p>
-        <span class="door__live">the original, since 1999</span>
-      </a>
-      <!-- the world's door leads to the HOMESTEAD (its front door since the
-           west road opened) — the live rave count still rides the card as the
-           world's pulse -->
-      <a class="door door--dance" href="/homestead/">
-        <span class="door__verb">enter Banana World</span>
-        <p>A rave, a park, a bay — and a homestead of your own. Every visitor's banana lives here.</p>
-        <span class="door__live"><span class="door__dot"></span><span id="raveCount">the world is open</span></span>
-      </a>
-      <a class="door" href="/shop/">
-        <span class="door__verb">hit the shop</span>
-        <p>Stickers, mugs and tees — the real thing.</p>
-        <span class="door__live">ships worldwide</span>
+    <p class="kicker">Banana World</p>
+    <h2>One world. Every banana.</h2>
+    <div class="bwl-hero" id="bwlHero">
+      {HERO_SLIDES.map((h, i) => (
+        <img class={i === 0 ? 'on' : ''} src={h.img} alt={h.alt}
+             width="640" height="800" loading={i === 0 ? 'eager' : 'lazy'} />
+      ))}
+      <a class="btn btn--dark bwl-hero__cta" href="/homestead/">🌍 Enter Banana World →</a>
+    </div>
+    <p class="doors__daily" style="text-align:center">
+      <span class="door__dot" style="display:inline-block;vertical-align:1px;margin-right:0.4rem"></span>
+      <span id="raveCount">the world is open</span>
+    </p>
+
+    <div class="bwl-grid">
+      {FEATURES.map((f) => (
+        <a class="bwl-card" href={f.href}>
+          <img src={`/assets/world/feat-${f.k}.jpg`} alt={`Banana World — ${f.line}`}
+               width="640" height="800" loading="lazy" />
+          <b>{f.line}</b>
+        </a>
+      ))}
+    </div>
+
+    <h3 class="bwl-sub">Real homesteads. Real bananas.</h3>
+    <p class="bwl-subnote">Built by visitors like you — knock on any door.</p>
+    <div class="bwl-yards">
+      {yardCards.map((y) => (
+        <a class="bwl-yard" href={`/homestead/${y.slug}/`}>
+          <img src={`/assets/world/yard-${y.slug}.jpg`} alt={`${y.name} — a visitor's homestead in Banana World`}
+               width="640" height="480" loading="lazy" />
+          <span class="bwl-yard__tag">🏡 {y.name}</span>
+          <span class="bwl-yard__go">👋 visit →</span>
+        </a>
+      ))}
+      <a class="bwl-yard bwl-yard--you" href="/homestead/">
+        <span class="bwl-yard__plus">+</span>
+        <b>Your name here</b>
+        <span>claim your plot →</span>
       </a>
     </div>
-    <p class="doors__daily">On the decks today: <a href="/banana-of-the-day/">the banana of the day →</a></p>
+
+    <div class="bwl-cta">
+      <a class="btn btn--dark" href="/homestead/">🌍 Enter Banana World →</a>
+      <p class="bwl-fine">free · plays in the browser · your banana is waiting</p>
+    </div>
+    <p class="bwl-also">
+      <a href="/dancing-banana-gif-meme/">grab the 1999 GIF →</a>
+      <a href="/shop/">hit the shop →</a>
+      <a href="/banana-of-the-day/">the banana of the day →</a>
+    </p>
 
     <!-- 💬 THE DISCORD CARD — right under the doors to the areas, because it is
          one of them: the world has a park, a rave, a bay, and a room where the
@@ -184,6 +300,17 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
         } catch (e) {}
       });
     });
+    // 🎠 the hero reel — fade through the world's best moments, Ken Burns
+    // restarting per slide; still image under reduced motion
+    const slides = [...document.querySelectorAll('#bwlHero img')];
+    if (slides.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      let k = 0;
+      setInterval(() => {
+        slides[k].classList.remove('on');
+        k = (k + 1) % slides.length;
+        slides[k].classList.add('on');
+      }, 4200);
+    }
     // proof of life on the dance door — fail silently, never block the page
     fetch('https://banana-rave.trymstene.workers.dev/count')
       .then((r) => r.json())
