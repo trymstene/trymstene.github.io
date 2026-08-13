@@ -20,9 +20,10 @@ import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
 // greeting me" — a floating ! is not a character). Engine-rendered like Old
 // Peel: one locked standing frame, plain suit; the clipboard is CSS chrome.
 const NIB_DRAW = {
-  // potter = the round clerk spectacles (Peel's, but Peel has the cane and the
-  // bench — without SOMETHING Nib is identical to a default player banana)
-  hat: 'none', glasses: 'potter', extras: {},
+  // the mayor's official wears the OFFICE (Trym): top hat + round clerk
+  // spectacles + a proper necktie — nobody else in the cast wears any of
+  // the three together, so his silhouette reads at a glance
+  hat: 'tophat', glasses: 'potter', extras: { necktie: true },
   top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
 };
 
