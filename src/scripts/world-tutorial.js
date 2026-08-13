@@ -166,25 +166,35 @@ const CSS = `
 
 .bwt-map { display:grid; place-items:center; padding:0.2rem 0 0.4rem; transform:rotate(-1.2deg); }
 
-/* 🍌 the finale — our OG share-card, live: yellow field, sticker, big words,
-   giant happy banana. The card the internet already knows us by. */
-.bwt-og {
-  position:relative; background:#ffe135; border:4px solid #000; border-radius:16px;
-  box-shadow:5px 5px 0 rgba(0,0,0,0.5); padding:1.6rem 1rem 0.9rem;
-  display:grid; justify-items:center; gap:0.15rem; transform:rotate(-0.8deg);
-}
+/* 🍌 the finale — our share-card language, live: a glowing sun with ray
+   stripes spreading to the sides, animals strolling the lawn, the fountain,
+   and YOUR banana hands-up, close into the frame. */
+.bwt-og { position:relative; transform:rotate(-0.8deg); }
 .bwt-og .bwt-ogpill {
-  position:absolute; top:-12px; left:12px; transform:rotate(-3deg);
+  position:absolute; top:-12px; left:12px; z-index:3; transform:rotate(-3deg);
   background:#ff5c7a; color:#fff; border:3px solid #000; border-radius:6px;
   font-size:0.66rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
   padding:0.3rem 0.6rem; box-shadow:2px 2px 0 rgba(0,0,0,0.4);
 }
-.bwt-og h3 {
-  margin:0; color:#1a1408; font-size:1.45rem; line-height:1.1; text-align:center;
-  letter-spacing:0.01em;
+.bwt-og__win {
+  position:relative; aspect-ratio:420/320; border:4px solid #000; border-radius:16px;
+  overflow:hidden; box-shadow:5px 5px 0 rgba(0,0,0,0.5); background:#ffe135;
 }
-.bwt-og canvas { width:150px; height:150px; image-rendering:pixelated; }
-.bwt-og small { justify-self:start; font-size:0.62rem; font-weight:800; color:#1a1408; opacity:0.65; }
+.bwt-og__bg { position:absolute; inset:0; width:100%; height:100%; }
+.bwt-og h3 {
+  position:absolute; top:9%; left:0; right:0; z-index:1; margin:0;
+  color:#1a1408; font-size:1.5rem; line-height:1.08; text-align:center;
+  letter-spacing:0.01em; text-shadow:0 0 14px rgba(255,255,255,0.55);
+}
+.bwt-og__me {
+  position:absolute; left:50%; bottom:-14%; z-index:2; width:230px; height:230px;
+  transform:translateX(-50%) rotate(-5deg); image-rendering:pixelated;
+  filter:drop-shadow(0 8px 10px rgba(60,60,10,0.35));
+}
+.bwt-og small {
+  position:absolute; left:12px; bottom:8px; z-index:2;
+  font-size:0.62rem; font-weight:800; color:#1a1408; opacity:0.7;
+}
 .bwt-disc {
   display:block; width:100%; box-sizing:border-box; margin-top:0.6rem; text-align:center;
   cursor:pointer; font-family:inherit; font-weight:800; font-size:0.8rem;
@@ -353,29 +363,138 @@ function steps(rm) {
       t: '',
       s: '',
       h: '<div class="bwt-og"><i class="bwt-ogpill">always growing</i>'
+        + '<div class="bwt-og__win">'
+        + '<canvas class="bwt-og__bg" width="840" height="640"></canvas>'
         + '<h3>welcome home,<br>banana</h3>'
-        + '<canvas width="150" height="150"></canvas>'
-        + '<small>trymstene.com</small></div>'
+        + '<canvas class="bwt-og__me" width="300" height="300"></canvas>'
+        + '<small>trymstene.com</small>'
+        + '</div></div>'
         + '<p class="bwt-sub" style="margin:0.7rem 0 0; text-align:center">'
         + 'Nib is waiting outside with your first quest — and new things land every week. '
         + 'The Discord hears about them first.</p>'
         + '<a class="bwt-disc" href="' + DISCORD + '" target="_blank" rel="noopener">💬 join the Discord ↗</a>',
-      hero: true,
+      og: true,
       last: true,
     },
   ];
 }
 
+// 🌅 THE FINALE SCENE — the share cards' graphic language on the tour's last
+// card: a glowing sun with ray stripes spreading to the sides, a scalloped
+// lawn with flowers, a kite, a beach ball, the fountain — and the park's
+// REAL critter strips strolling through (frame-cycled by `tick`).
+function drawFinale(cv, imgs, tick) {
+  const c = cv.getContext('2d');
+  c.setTransform(2, 0, 0, 2, 0, 0);
+  const W = 420, H = 320;
+  // banana-yellow sky, warm toward the sun
+  const sky = c.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#ffe856'); sky.addColorStop(1, '#ffd21f');
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  // ray stripes fanning out of the sun across the whole field
+  const SX = W / 2, SY = 58;
+  c.fillStyle = 'rgba(255,247,175,0.5)';
+  for (let i = 0; i < 12; i++) {
+    c.save();
+    c.translate(SX, SY);
+    c.rotate((i / 12) * Math.PI * 2 + 0.13);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(560, -32); c.lineTo(560, 32);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+  // the sun itself, glowing — it halos the title sitting over it
+  const glow = c.createRadialGradient(SX, SY, 6, SX, SY, 120);
+  glow.addColorStop(0, 'rgba(255,255,235,0.95)');
+  glow.addColorStop(0.35, 'rgba(255,248,190,0.55)');
+  glow.addColorStop(1, 'rgba(255,248,190,0)');
+  c.fillStyle = glow; c.fillRect(SX - 120, SY - 120, 240, 240);
+  c.fillStyle = '#fff6b8'; c.beginPath(); c.arc(SX, SY, 34, 0, 7); c.fill();
+  c.fillStyle = '#fffdf0'; c.beginPath(); c.arc(SX, SY, 24, 0, 7); c.fill();
+  // a kite up in the rays, string trailing to the lawn
+  c.save();
+  c.translate(64, 92 + (tick % 4 < 2 ? 0 : 2));
+  c.rotate(-0.3);
+  c.fillStyle = '#ff5c7a';
+  c.beginPath(); c.moveTo(0, -16); c.lineTo(11, 0); c.lineTo(0, 16); c.lineTo(-11, 0);
+  c.closePath(); c.fill();
+  c.strokeStyle = '#1a1408'; c.lineWidth = 1.5; c.stroke();
+  c.beginPath(); c.moveTo(0, -16); c.lineTo(0, 16); c.moveTo(-11, 0); c.lineTo(11, 0); c.stroke();
+  c.restore();
+  c.strokeStyle = 'rgba(26,20,8,0.5)'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(60, 106); c.quadraticCurveTo(40, 180, 66, 250); c.stroke();
+  // the lawn, scalloped like the treeline trick
+  c.fillStyle = '#8fbe58';
+  c.beginPath();
+  c.moveTo(0, H); c.lineTo(0, 246);
+  for (let x = 0; x <= W; x += 42) c.quadraticCurveTo(x + 21, 228, x + 42, 246);
+  c.lineTo(W, H); c.closePath(); c.fill();
+  const shade = c.createLinearGradient(0, 246, 0, H);
+  shade.addColorStop(0, 'rgba(20,70,20,0)'); shade.addColorStop(1, 'rgba(20,70,20,0.28)');
+  c.fillStyle = shade; c.fillRect(0, 240, W, H - 240);
+  // little pixel flowers in the grass
+  [[38, 268, '#fffdf5'], [128, 296, '#ffd6e8'], [212, 268, '#fffdf5'],
+    [258, 306, '#ffd6e8'], [382, 292, '#fffdf5'], [172, 310, '#ffe135']].forEach(([fx, fy, col]) => {
+    c.fillStyle = '#2c6b2c'; c.fillRect(fx + 2, fy + 4, 3, 8);
+    c.fillStyle = col;
+    c.fillRect(fx - 4, fy, 5, 5); c.fillRect(fx + 4, fy, 5, 5);
+    c.fillRect(fx, fy - 4, 5, 5); c.fillRect(fx, fy + 4, 5, 5);
+    c.fillStyle = '#fff3a0'; c.fillRect(fx + 1, fy + 1, 3, 3);
+  });
+  // the fountain, mid-lawn right — the park-postcard silhouette, small
+  const fx = 356, fy = 292, k = 0.55;
+  c.fillStyle = '#33735c'; c.fillRect(fx - 52 * k, fy - 14 * k, 104 * k, 14 * k);
+  c.fillStyle = '#7fb98f'; c.fillRect(fx - 52 * k, fy - 20 * k, 104 * k, 6 * k);
+  c.fillStyle = '#33735c'; c.fillRect(fx - 7 * k, fy - 52 * k, 14 * k, 38 * k);
+  c.fillStyle = '#7fb98f'; c.fillRect(fx - 22 * k, fy - 58 * k, 44 * k, 8 * k);
+  c.strokeStyle = 'rgba(200,236,255,0.9)'; c.lineWidth = 5 * k; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(fx, fy - 58 * k);
+  c.quadraticCurveTo(fx - 30 * k, fy - 96 * k, fx - 40 * k, fy - 26 * k); c.stroke();
+  c.beginPath(); c.moveTo(fx, fy - 58 * k);
+  c.quadraticCurveTo(fx + 30 * k, fy - 96 * k, fx + 40 * k, fy - 26 * k); c.stroke();
+  // a beach ball rolled up from the bay (right of the site tag's corner)
+  c.save();
+  c.translate(150, 302); c.rotate((tick % 8) * 0.1);
+  ['#ff5c7a', '#fffdf5', '#78c8ff', '#ffe135'].forEach((col, q) => {
+    c.fillStyle = col;
+    c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 13, q * Math.PI / 2, (q + 1) * Math.PI / 2);
+    c.closePath(); c.fill();
+  });
+  c.strokeStyle = '#1a1408'; c.lineWidth = 2;
+  c.beginPath(); c.arc(0, 0, 13, 0, 7); c.stroke();
+  c.restore();
+  // the park's real critters strolling through, hearts bobbing overhead
+  const crit = (img, x, y, kk, flip) => {
+    if (!img || !img.naturalWidth) return;
+    const fw = Math.floor(img.width / 6), fh = img.height;
+    c.save();
+    c.imageSmoothingEnabled = false;
+    c.translate(x, y);
+    if (flip) c.scale(-1, 1);
+    c.drawImage(img, (tick % 6) * fw, 0, fw, fh, -fw * kk / 2, -fh * kk, fw * kk, fh * kk);
+    c.restore();
+    const hy = y - fh * kk - 9 - (tick % 2 ? 1 : 0);
+    c.fillStyle = '#ff5c7a';
+    c.fillRect(x - 5, hy, 4, 4); c.fillRect(x + 1, hy, 4, 4);
+    c.fillRect(x - 4, hy + 3, 8, 3); c.fillRect(x - 3, hy + 6, 6, 2); c.fillRect(x - 1, hy + 8, 2, 2);
+  };
+  crit(imgs.c1, 96, 262, 1.1);
+  crit(imgs.c2, 344, 252, 1.0, true);
+  crit(imgs.rb, 296, 306, 0.9, true);
+}
+
 let styled = false;
 
 /**
- * @param paint  (canvas) => void — draws the CURRENT dance frame of the
- *               player's banana; the wizard calls it on a beat so the
- *               welcome banana actually dances
- * @param track  analytics fn
- * @param force  show even if already seen (the ?bwtour replay)
+ * @param paint    (canvas) => void — draws the CURRENT dance frame of the
+ *                 player's banana; the wizard calls it on a beat so the
+ *                 welcome banana actually dances
+ * @param paintUp  (canvas) => void — draws the banana in the HANDS-UP pose
+ *                 (the share cards' frame 2) at the canvas's full size; the
+ *                 finale's close-up uses it, falling back to paint
+ * @param track    analytics fn
+ * @param force    show even if already seen (the ?bwtour replay)
  */
-export function initWorldTutorial({ paint, track, force } = {}) {
+export function initWorldTutorial({ paint, paintUp, track, force } = {}) {
   let seen = false;
   try { seen = !!localStorage.getItem(KEY); } catch (e) {}
   if (seen && !force) return null;
@@ -430,6 +549,30 @@ export function initWorldTutorial({ paint, track, force } = {}) {
       beat();
       heroTimer = setInterval(beat, 120);   // the welcome banana dances
     }
+    // 🌅 the finale scene: hands-up banana close-up + the drawn sun-and-lawn
+    // card with the park's critter strips walking on a beat
+    if (st.og) {
+      const bg = el('.bwt-og__bg');
+      const me = el('.bwt-og__me');
+      try { (paintUp || paint) && (paintUp || paint)(me); } catch (e) {}
+      const imgs = {};
+      let tick = 0;
+      [['c1', '/assets/park/a-chicken1.png'], ['c2', '/assets/park/a-chicken2.png'],
+        ['rb', '/assets/park/a-rabbit.png']].forEach(([k, src]) => {
+        const im = new Image();
+        im.onload = () => { if (bg.isConnected) drawFinale(bg, imgs, tick); };
+        im.src = src;
+        imgs[k] = im;
+      });
+      drawFinale(bg, imgs, 0);
+      if (!RM) {
+        heroTimer = setInterval(() => {
+          if (!bg.isConnected) { clearInterval(heroTimer); return; }
+          tick++;
+          drawFinale(bg, imgs, tick);
+        }, 260);
+      }
+    }
     // 🛠 the say-hi tile clones the REAL pixel heart off the action bar
     if (st.clone) {
       veil.querySelectorAll('.bwt-ic[data-clone]').forEach((slot) => {
@@ -479,7 +622,7 @@ const INV_KEY = 'bw-tour-inv';   // '1' = the invite was waved away for good
  * retires the invite too (it keys off the same bw-tour-v1 seen flag).
  * @param mount  the game view element the chip docks into
  */
-export function initTutorialInvite({ mount, paint, track } = {}) {
+export function initTutorialInvite({ mount, paint, paintUp, track } = {}) {
   let seen = false, waved = false;
   try {
     seen = !!localStorage.getItem(KEY);
@@ -505,7 +648,7 @@ export function initTutorialInvite({ mount, paint, track } = {}) {
 
   b.querySelector('.bwt-invite__go').addEventListener('click', () => {
     b.remove();
-    initWorldTutorial({ paint, track, force: true });
+    initWorldTutorial({ paint, paintUp, track, force: true });
   });
   b.querySelector('.bwt-invite__x').addEventListener('click', () => {
     try { localStorage.setItem(INV_KEY, '1'); } catch (e) {}

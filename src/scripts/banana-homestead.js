@@ -2813,6 +2813,14 @@ function init(visitDoc, visitMiss) {
               { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
           } catch (e) {}
         },
+        // the finale close-up: the share cards' hands-up pose (frame 2),
+        // drawn once at the canvas's own resolution
+        paintUp: (cv) => {
+          try {
+            drawComposite(cv.getContext('2d'), cv.width || 300, 2,
+              { ...ME_DRAW, custom: ME_DRAW.c ? catCustom(ME_DRAW.c) : undefined });
+          } catch (e) {}
+        },
       };
       if (/[?&]bwtour(?:=|&|$)/.test(location.search)) {
         initWorldTutorial({ ...tourOpts, force: true });
