@@ -554,8 +554,9 @@ function ensureCss() {
 @keyframes bwqUnfold { 0% { transform:rotate(-1.4deg) scaleY(0.12); opacity:0; } 100% { transform:rotate(-1.4deg) scaleY(1); opacity:1; } }
 .bwq-sp canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
   border:3px solid #000; background:#fffdf5; box-shadow:3px 3px 0 rgba(0,0,0,0.4); }
-/* the torn map is its own object — no card frame, the tear IS the edge */
-.bwq-sp canvas.bwq-map {
+/* the torn map and the flipbook are OBJECTS — no card frame, their own
+   paper edges ARE the edge */
+.bwq-sp canvas.bwq-map, .bwq-sp canvas.bwq-fb {
   border:0; background:transparent; box-shadow:none; transform:rotate(-1.5deg);
   filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.4));
 }
@@ -576,8 +577,8 @@ function ensureCss() {
   pointer-events:none; animation:bwqBundleUp 3.4s ease-out forwards;
 }
 .bwq-bundle canvas {
-  display:block; image-rendering:pixelated; border:3px solid #000; background:#fffdf5;
-  box-shadow:0 0 20px rgba(255,225,53,0.85), 3px 3px 0 rgba(0,0,0,0.4);
+  display:block; image-rendering:pixelated; border:0; background:transparent;
+  filter:drop-shadow(0 0 14px rgba(255,225,53,0.9)) drop-shadow(3px 4px 0 rgba(0,0,0,0.4));
 }
 @keyframes bwqBundleUp {
   0% { opacity:0; margin-top:26px; }
@@ -679,22 +680,89 @@ function questMapCanvas() {
   return cv;
 }
 
-// the flipbook: the REAL eight frames off the engine's own sheet — the prop is
-// literally the site's 1999 GIF, which is the whole point of the story
+// 🎞 THE FLIPBOOK — a PROP, not a pasted GIF (Trym: the raw frames on a
+// white box read as the homepage image inserted into the game). A stack of
+// torn, aged pages stitched at the top, and the banana drawn as an INK
+// SKETCH on the paper: the real 8 frames off the engine sheet, luminance-
+// mapped to pencil ink — because the story says the stranger practised
+// "the same little drawings, over and over". The dance is still the real
+// 1999 dance; it just looks drawn by a hand.
 function flipbookCanvas() {
   const cv = document.createElement('canvas');
-  cv.width = 94; cv.height = 100;
-  const ctx = cv.getContext('2d');
+  cv.width = 132; cv.height = 144;
+  cv.className = 'bwq-fb';
+  const c = cv.getContext('2d');
   const img = new Image();
   img.src = '/assets/banana-dance.png?v=7';
+  // pre-ink the 8 frames once the sheet lands (cheap: 84×90 each)
+  const inks = [];
+  const makeInks = () => {
+    if (inks.length || !img.complete || !img.naturalWidth) return;
+    for (let i = 0; i < 8; i++) {
+      const o = document.createElement('canvas');
+      o.width = 84; o.height = 90;
+      const oc = o.getContext('2d');
+      oc.imageSmoothingEnabled = false;
+      oc.drawImage(img, i * 469, 0, 469, 498, 0, 0, 84, 90);
+      const d = oc.getImageData(0, 0, 84, 90);
+      const px = d.data;
+      for (let p = 0; p < px.length; p += 4) {
+        if (px[p + 3] === 0) continue;
+        const lum = (px[p] + px[p + 1] + px[p + 2]) / 3;
+        px[p] = 66; px[p + 1] = 48; px[p + 2] = 28;          // pencil-brown ink
+        px[p + 3] = Math.min(255, Math.max(0, (255 - lum) * 1.25));
+      }
+      oc.putImageData(d, 0, 0);
+      inks.push(o);
+    }
+  };
+  // a rough-edged page — FIXED jitter (the map's trick), so the tear holds still
+  const J = [2, 4, 1, 5, 3, 2, 5, 1, 4, 2];
+  const page = (x, y, rot, w, h, fill) => {
+    c.save();
+    c.translate(x + w / 2, y + h / 2);
+    c.rotate(rot);
+    c.beginPath();
+    let j = 0;
+    const jit = () => J[j++ % J.length] * 0.5;
+    for (let px2 = -w / 2; px2 <= w / 2; px2 += 14) c.lineTo(px2, -h / 2 + jit());
+    for (let py2 = -h / 2; py2 <= h / 2; py2 += 12) c.lineTo(w / 2 - jit(), py2);
+    for (let px2 = w / 2; px2 >= -w / 2; px2 -= 14) c.lineTo(px2, h / 2 - jit());
+    for (let py2 = h / 2; py2 >= -h / 2; py2 -= 12) c.lineTo(-w / 2 + jit(), py2);
+    c.closePath();
+    c.fillStyle = fill;
+    c.fill();
+    c.strokeStyle = '#6b4a24';
+    c.lineWidth = 1.5;
+    c.stroke();
+    c.restore();
+  };
   let f = 0;
+  const draw = () => {
+    makeInks();
+    c.clearRect(0, 0, 132, 144);
+    // the stack: two dog-eared pages peeking out behind the top one
+    page(14, 14, 0.05, 108, 122, '#cdb684');
+    page(9, 8, -0.035, 110, 124, '#d9c493');
+    page(6, 4, 0.012, 112, 126, '#e8d7a6');
+    // the stitching that binds it — two dark thread loops at the top
+    c.fillStyle = '#3a2a16';
+    c.fillRect(34, 2, 5, 12);
+    c.fillRect(88, 3, 5, 12);
+    // the drawing on the top page
+    if (inks.length) {
+      c.imageSmoothingEnabled = false;
+      c.drawImage(inks[f], 22, 24);
+    }
+    // the practising hand's scribbled page line
+    c.fillStyle = 'rgba(90,60,20,0.35)';
+    c.fillRect(30, 118, 66, 2);
+  };
+  draw();
   const t = setInterval(() => {
     if (!cv.isConnected) { clearInterval(t); return; }
-    if (!img.complete || !img.naturalWidth) return;
-    ctx.clearRect(0, 0, 94, 100);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, f * 469, 0, 469, 498, 3, 3, 88, 94);
     f = (f + 1) % 8;
+    draw();
   }, 130);
   return cv;
 }
