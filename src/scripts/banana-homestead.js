@@ -1217,12 +1217,18 @@ function init(visitDoc, visitMiss) {
       if (localStorage.getItem('hs-roadcoins-v1')) return;
       localStorage.setItem('hs-roadcoins-v1', '1');
     } catch (e) { return; }
+    // ⚠️ the art is the stand's 44px coin (coin-spin strip, 6 frames, 2.5KB)
+    // shown at 22 CSS px — EXACTLY half, so 2× phone screens render it
+    // device-pixel-perfect. coin16 upscaled through the camera read as mush
+    // (Trym: "why so low resolution").
     const st = document.createElement('style');
-    st.textContent = '.hs-roadcoin{position:absolute;width:26px;height:26px;pointer-events:none;}'
-      + '.hs-roadcoin img{display:block;width:100%;height:100%;image-rendering:pixelated;'
-      + 'filter:drop-shadow(0 3px 2px rgba(20,40,10,0.35));animation:hsCoinBob 1.1s ease-in-out infinite;}'
-      + '@keyframes hsCoinBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}'
-      + '@media (prefers-reduced-motion:reduce){.hs-roadcoin img{animation:none}}';
+    st.textContent = '.hs-roadcoin{position:absolute;width:22px;height:22px;pointer-events:none;'
+      + 'background:url(/assets/banana-stand/coin-spin.png) 0 0/132px 22px no-repeat;'
+      + 'image-rendering:pixelated;filter:drop-shadow(0 3px 2px rgba(20,40,10,0.35));'
+      + 'animation:hsCoinSpin 0.9s steps(6) infinite;}'
+      + '@keyframes hsCoinSpin{to{background-position:-132px 0}}'
+      + '@media (prefers-reduced-motion:reduce){.hs-roadcoin{animation:none;'
+      + 'background:url(/assets/banana-stand/coin.png) 0 0/22px 22px no-repeat;}}';
     document.head.appendChild(st);
     // strung along the road AHEAD of the walk-in, whichever door you used;
     // slight y-jitter so it reads as dropped, not printed
@@ -1230,7 +1236,7 @@ function init(visitDoc, visitMiss) {
       const x = byRoad ? W - cx : cx, y = ROAD.y + jy;
       const d = document.createElement('div');
       d.className = 'hs-roadcoin';
-      d.innerHTML = '<img src="/assets/homestead/coin16.png" alt="" style="animation-delay:' + (i * 0.15) + 's">';
+      d.style.animationDelay = (i * 0.13) + 's';   // desynced spins
       place(d, x, y, ' translate(-50%,-50%)');
       depth(d, y);
       world.appendChild(d);
