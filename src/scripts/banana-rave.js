@@ -1021,6 +1021,9 @@ function init() {
   let bubbleSticky = false, bubbleT = null;
   function showBubble(text, sticky, ms, kind) {
     if (tourActive) return; // one voice at a time — Barty doesn't talk over the tour (wife-test)
+    // 🕯 and he holds his tongue while a quest marker hangs over him —
+    // chatter (or a HAPPY HOUR yell) under the ? is noise (Trym)
+    if (window.bwqTalk && window.bwqTalk.mark && window.bwqTalk.who === 'barty') return;
     const b = el('rvBubble');
     b.textContent = text;
     b.classList.toggle('rv-bubble--quest', kind === 'quest');   // yellow = Barty means BUSINESS

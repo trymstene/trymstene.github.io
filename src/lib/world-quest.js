@@ -1113,7 +1113,11 @@ export function bootQuest() {
       // window.bwqTalk is the handle the areas' own tap zones check (park's
       // tapOld, the beach NPC rects), and a capture listener on the body
       // catches direct element clicks (Barty has no tap of his own at all).
-      window.bwqTalk = { who: step.who, open: talk };
+      // `mark: 1` = a quest marker hangs over this NPC right now — their
+      // ambient chit-chat holds its tongue (chatter under the ! / ? is
+      // noise, Trym). The digzone's bwqTalk carries no mark, so Sabreface
+      // may still mutter during the hunt.
+      window.bwqTalk = { who: step.who, open: talk, mark: 1 };
       // (document-level capture, delegated: the NPC element may not exist yet
       // when this render runs, and it fires before every area handler)
       const tapSel = step.tapSel || (step.at && step.at.sel);

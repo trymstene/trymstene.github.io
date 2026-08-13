@@ -1240,6 +1240,8 @@ function init() {
     'nothing here is worth money. that was never the point.',
   ];
   function shellySay(text, ms) {
+    // 🕯 quiet under a quest marker — chatter beneath the ? is noise (Trym)
+    if (window.bwqTalk && window.bwqTalk.mark && window.bwqTalk.who === 'shelly') return;
     shellyBubble.textContent = text;
     shellyBubble.classList.add('is-on');
     clearTimeout(shellyTimer);
@@ -1294,6 +1296,8 @@ function init() {
   ];
   let capTimer = null, capIdx = 0, capGreeted = false;
   function say(text, ms) {
+    // 🕯 quiet under a quest marker (see shellySay)
+    if (window.bwqTalk && window.bwqTalk.mark && window.bwqTalk.who === 'split') return;
     capBubble.textContent = text;
     capBubble.classList.add('is-on');
     clearTimeout(capTimer);
