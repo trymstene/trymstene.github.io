@@ -268,20 +268,22 @@ const STEPS = [
       ['peel', '(he opens the box, slow as Sunday)'],
       ['peel', '…A photograph. That’s Plot 11 alright. But look — there’s a little house on it.'],
       ['peel', 'There has never been a house on Plot 11. Never. And yet here’s a photo of one.'],
-      ['peel', 'And a flower, pressed flat between the papers.'],
-      ['peel', 'I know this flower. It grows in ONE place: down by the pier, at the Bay.'],
-      ['peel', 'Nobody ever planted flowers there. …And yet somebody did.'],
+      ['peel', 'And underneath it… a fishing lure. Old. Carved by hand.'],
+      ['peel', 'So THAT’s what the stranger did at the Bay every morning. Fished off the pier. And came home with an empty bucket, every single time.'],
+      ['you', 'Who fishes every morning and never catches anything?'],
+      ['peel', 'Exactly. Somebody who isn’t fishing for fish. Take the lure — cast where that banana cast, off the pier. I’d wager there’s something still down there.'],
     ],
-    reward: { coins: 10, note: '🌸 the pressed flower — keep it safe' },
-    hint: 'go to the pier at Banana Bay — find where the flowers grow' },
+    reward: { coins: 10, note: '🎣 the stranger’s hand-carved lure — keep it safe' },
+    hint: 'fish off the pier at the Bay — cast at the stranger’s spot' },
 
-  { id: 'c1_fish', area: 'beach', kind: 'objects',
-    hint: 'cast a line at the glowing spot by the flowers — tap to fish',
-    objects: [
-      { id: 'fish', sel: '#bhGil', dx: 4, dy: 6, x: 74, y: 47, taps: 2, kind: 'fish',
-        steps: ['🎣 …an old boot. Another one.',
-          '🎞 A wrapped BUNDLE — inside: eight small drawings. A flipbook!'] },
-    ] },
+  // 🎣 the REAL rod, not a quest puddle (Trym): the player fishes with the
+  // bay's own mechanic — cast, wait for the bite, tap the float — and the
+  // FIFTH catch reels up the bundle instead of a fish (window.bwqFish rides
+  // reel() in banana-beach.js; ordinary catches in between stay ordinary,
+  // one voice per reel).
+  { id: 'c1_fish', area: 'beach', kind: 'fishline', need: 5,
+    hint: 'fish off the pier — cast a line, wait for the bite, tap the float',
+    found: '🎞 Something heavy on the line — a wrapped BUNDLE! Inside: eight little drawings. A flipbook!' },
 
   { id: 'c1_shelly', area: 'beach', kind: 'talk', who: 'shelly', turnin: 1, at: { sel: '#bhShelly', x: 60, y: 40 },
     find: 'show the bundle to Shelly',
@@ -424,10 +426,6 @@ function ensureCss() {
 .bwq-obj--dig i {
   width:30px; height:16px; border:2px solid #7a5c33; border-radius:50%;
   background:#d9b67c; box-shadow:inset 3px 3px 0 #b78f52, inset -4px -2px 0 #eecf96;
-}
-.bwq-obj--fish i {
-  width:28px; height:16px; border:2px solid #1d4b60; border-radius:50%;
-  background:#4aa5c9; box-shadow:inset 0 3px 0 rgba(255,255,255,0.45);
 }
 @keyframes bwqPulse { 0%,100% { transform:scale(1); opacity:0.9; } 50% { transform:scale(1.14); opacity:0.45; } }
 /* 🎬 THE CHAPTER SPLASH — the park's post-storm register (big type ON the
@@ -1176,6 +1174,29 @@ export function bootQuest() {
         obs.observe(wrap, { childList: true });
         unhook.push(() => obs.disconnect());
       }
+    } else if (step.kind === 'fishline') {
+      // 🎣 the bay's OWN rod does the work: window.bwqFish.reel() is called
+      // by banana-beach's reel() on every real bite — we count them, and on
+      // the last one return true so the quest's bundle replaces the fish.
+      // In-between catches stay completely ordinary (one voice per reel).
+      const chip = layer[0];
+      const chipTxt = chip && chip.querySelector('span');
+      const paint = () => { if (chipTxt) chipTxt.textContent = step.hint + ' · ' + Math.min(S.k.fl || 0, step.need) + '/' + step.need; };
+      paint();
+      window.bwqFish = {
+        reel: () => {
+          S.k.fl = (S.k.fl || 0) + 1;
+          save();
+          paint();
+          if (S.k.fl >= step.need) {
+            toast(step.found, 4600);
+            advance();
+            return true;   // the quest takes this catch
+          }
+          return false;    // an ordinary fish — the bay narrates it
+        },
+      };
+      unhook.push(() => { window.bwqFish = null; });
     } else if (step.kind === 'watch') {
       // the rave floor beat: time on the floor + reactions, both client-true.
       // Reactions are clicks on the existing emote buttons — listened for by
