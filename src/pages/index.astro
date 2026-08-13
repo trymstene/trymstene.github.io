@@ -45,8 +45,15 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
 // stills exported from the reel scenes (tools/reel/export_stills.py) and
 // REAL community homesteads (tools/build-yard-cards.py; re-run to refresh).
 import yardCards from '../data/yard-cards.json';
-const HERO_SLIDES = ['rave', 'homestead', 'treasure', 'builder', 'bay', 'pass']
-  .map((k) => ({ img: `/assets/world/feat-${k}.jpg`, alt: `Banana World — ${k}` }));
+// hero slides are HONEST world shots (tools/reel/export_hero.py: real plate
+// crops, sprites at true game scale) — the stylized reel stills stay in the
+// small feature cards where poster close-ups belong
+const HERO_SLIDES = [
+  { img: '/assets/world/hero-park.jpg', alt: 'The Park in Banana World — bananas at the fountain plaza' },
+  { img: '/assets/world/hero-home.jpg', alt: 'A real visitor-built homestead in Banana World' },
+  { img: '/assets/world/hero-bay.jpg', alt: 'Banana Bay — volleyball court, beach hut and palms' },
+  { img: '/assets/world/hero-quest.jpg', alt: 'Nib the registrar waiting with a quest at the homestead gate' },
+];
 const FEATURES = [
   { k: 'homestead', line: 'Build your corner.', href: '/homestead/' },
   { k: 'builder', line: 'Dress the legend.', href: '/make-a-banana/' },
@@ -62,12 +69,15 @@ const FEATURES = [
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <style is:inline slot="head">
     /* 🌍 the world landing — highly visual, tiny copy, CTA always in reach */
+    /* a cinematic STRIP, not a billboard — capped height so it never owns
+       the whole viewport (Trym: way too much space) */
     .bwl-hero {
-      position: relative; max-width: 1160px; margin: 1.6rem auto 0; aspect-ratio: 16 / 10;
+      position: relative; max-width: 1160px; margin: 1.6rem auto 0; aspect-ratio: 21 / 9;
+      max-height: 420px; width: 100%;
       border: 4px solid var(--ink); border-radius: 16px; overflow: hidden;
       box-shadow: 8px 8px 0 var(--ink); background: var(--ink);
     }
-    @media (max-width: 640px) { .bwl-hero { aspect-ratio: 4 / 5; } }
+    @media (max-width: 640px) { .bwl-hero { aspect-ratio: 4 / 3; } }
     .bwl-hero img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
       opacity: 0; transition: opacity 0.7s ease;
@@ -172,7 +182,7 @@ const FEATURES = [
     <div class="bwl-hero" id="bwlHero">
       {HERO_SLIDES.map((h, i) => (
         <img class={i === 0 ? 'on' : ''} src={h.img} alt={h.alt}
-             width="640" height="800" loading={i === 0 ? 'eager' : 'lazy'} />
+             width="1400" height="600" loading={i === 0 ? 'eager' : 'lazy'} />
       ))}
       <a class="btn btn--dark bwl-hero__cta" href="/homestead/">🌍 Enter Banana World →</a>
     </div>
