@@ -559,13 +559,32 @@ function ensureCss() {
   border:0; background:transparent; box-shadow:none; transform:rotate(-1.5deg);
   filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.4));
 }
+/* ⚠️ ABSOLUTE inside the game view, never fixed to the viewport — a fixed
+   toast rendered ABOVE the frame on desktop (Trym missed the fishing find
+   entirely: the whole payoff played where nobody looks) */
 .bwq-toast {
-  position:fixed; left:50%; top:64px; transform:translateX(-50%); z-index:5200;
+  position:absolute; left:50%; top:52px; transform:translateX(-50%); z-index:5200;
   background:#14240f; color:#ffe135; border:3px solid #000; box-shadow:3px 3px 0 #000;
-  font-size:0.8rem; font-weight:800; padding:0.5rem 0.85rem; max-width:88vw;
+  font-size:0.8rem; font-weight:800; padding:0.5rem 0.85rem; max-width:88%;
   text-align:center; pointer-events:none; opacity:0; transition:opacity 0.25s ease;
 }
 .bwq-toast.on { opacity:1; }
+/* 🎞 the bundle RISES from the water at the float — the strike must happen
+   where the player is looking, not in a corner chip */
+.bwq-bundle {
+  position:absolute; z-index:3000; transform:translate(-50%,-60%);
+  pointer-events:none; animation:bwqBundleUp 3.4s ease-out forwards;
+}
+.bwq-bundle canvas {
+  display:block; image-rendering:pixelated; border:3px solid #000; background:#fffdf5;
+  box-shadow:0 0 20px rgba(255,225,53,0.85), 3px 3px 0 rgba(0,0,0,0.4);
+}
+@keyframes bwqBundleUp {
+  0% { opacity:0; margin-top:26px; }
+  12% { opacity:1; margin-top:0; }
+  82% { opacity:1; }
+  100% { opacity:0; margin-top:-8px; }
+}
 @media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more, .bwq-npc--walk, .bwq-qweed::after, .bwq-qtrash::after, .bwq-mapbtn::before { animation:none; } }
 `;
   document.head.appendChild(st);
@@ -573,8 +592,15 @@ function ensureCss() {
 
 // ---- tiny ui helpers ------------------------------------------------------
 let toastEl = null, toastT = 0;
+let activeView = null;   // set at boot — toasts dock INSIDE the game frame
 function toast(msg, ms) {
-  if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'bwq-toast'; document.body.appendChild(toastEl); }
+  const host = activeView || document.body;
+  if (!toastEl || toastEl.parentElement !== host) {
+    if (toastEl) toastEl.remove();
+    toastEl = document.createElement('div');
+    toastEl.className = 'bwq-toast';
+    host.appendChild(toastEl);
+  }
   toastEl.textContent = msg;
   toastEl.classList.add('on');
   clearTimeout(toastT);
@@ -694,6 +720,7 @@ export function bootQuest() {
   }
 
   ensureCss();
+  activeView = document.querySelector(AREAS[area].view) || null;
   const layer = [];   // live quest DOM in this area
   let dlg = null, dlgTimer = null, watchTimer = null, introBusy = false;
   let chipDelayed = false;   // the first chip of a visit holds back ~5s
@@ -1189,11 +1216,24 @@ export function bootQuest() {
       const paint = () => { if (chipTxt) chipTxt.textContent = step.hint + ' · ' + Math.min(S.k.fl || 0, step.need) + '/' + step.need; };
       paint();
       window.bwqFish = {
-        reel: () => {
+        reel: (bob) => {
           S.k.fl = (S.k.fl || 0) + 1;
           save();
           paint();
           if (S.k.fl >= step.need) {
+            // 🎞 the payoff happens AT THE FLOAT: the flipbook rises out of
+            // the water, glowing, right where the player is looking —
+            // appended straight to the world (not the layer) so the step
+            // advancing underneath can't cut the moment short
+            if (bob) {
+              const rev = document.createElement('div');
+              rev.className = 'bwq-bundle';
+              rev.style.left = (bob.x / 2760 * 100) + '%';
+              rev.style.top = (bob.y / 1100 * 100) + '%';
+              rev.appendChild(flipbookCanvas());
+              w.appendChild(rev);
+              setTimeout(() => rev.remove(), 3500);
+            }
             toast(step.found, 4600);
             advance();
             return true;   // the quest takes this catch

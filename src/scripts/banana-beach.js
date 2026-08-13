@@ -1547,7 +1547,7 @@ function init() {
     // 🕯 the questline fishes with this SAME rod: every real bite counts
     // toward the stranger's spot, and the final one reels up the quest
     // bundle INSTEAD of a fish — the quest narrates that one alone
-    if (window.bwqFish && window.bwqFish.reel()) { pendingCatch = null; scheduleBite(); return; }
+    if (window.bwqFish && window.bwqFish.reel(fishing && fishing.bob)) { pendingCatch = null; scheduleBite(); return; }
     // the catch was decided AT BITE TIME so the float could telegraph its tier
     const c = pendingCatch || rollCatch();
     pendingCatch = null;
