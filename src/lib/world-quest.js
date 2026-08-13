@@ -570,6 +570,31 @@ function ensureCss() {
   text-align:center; pointer-events:none; opacity:0; transition:opacity 0.25s ease;
 }
 .bwq-toast.on { opacity:1; }
+/* 🎁 the reward receipt — a card you must click away (the catch-panel
+   grammar): what an NPC just gave you, front and centre */
+.bwq-rveil {
+  position:absolute; inset:0; z-index:5000; display:grid; place-items:center;
+  background:rgba(4,8,4,0.55);
+}
+.bwq-reward {
+  width:min(300px, calc(100% - 40px)); box-sizing:border-box;
+  background:#101a10; color:#fffdf5; border:4px solid #000; box-shadow:6px 6px 0 #000;
+  padding:1rem 1.1rem 1.1rem; text-align:center;
+  animation:bwqRwdIn 0.26s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes bwqRwdIn { 0% { transform:scale(0.6) rotate(-2deg); opacity:0; } 100% { transform:none; opacity:1; } }
+.bwq-reward i {
+  display:block; font-style:normal; font-size:0.68rem; letter-spacing:0.2em;
+  text-transform:uppercase; color:#ffe135; margin-bottom:0.6rem;
+}
+.bwq-reward p { margin:0 0 0.6rem; font-size:0.92rem; font-weight:800; line-height:1.45; }
+.bwq-reward p img { width:16px; height:16px; image-rendering:pixelated; vertical-align:-2px; }
+.bwq-reward button {
+  width:100%; cursor:pointer; font-family:inherit; font-weight:800; font-size:0.95rem;
+  background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
+  border:3px solid #000; box-shadow:3px 3px 0 #000; padding:0.6rem;
+}
+.bwq-reward button:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
 /* 🎞 the bundle RISES from the water at the float — the strike must happen
    where the player is looking, not in a corner chip */
 .bwq-bundle {
@@ -608,14 +633,28 @@ function toast(msg, ms) {
   toastT = setTimeout(() => toastEl.classList.remove('on'), ms || 2600);
 }
 
+// 🎁 a RECEIVED thing demands a RECEIPT (Trym): the reward toast collided
+// with the journal chip and vanished half-read. Every NPC reward now shows
+// a card the player must click away — the catch-panel grammar: what you
+// got, front and centre, confirmed by you.
 function payReward(r) {
   if (!r) return;
-  if (r.coins) {
-    passStat('coins_earned', r.coins);
-    toast('🪙 +' + r.coins + ' bananacoins' + (r.note ? ' · ' + r.note : ''), 3400);
-  } else if (r.note) {
-    toast(r.note, 3400);
-  }
+  if (r.coins) passStat('coins_earned', r.coins);
+  const veil = document.createElement('div');
+  veil.className = 'bwq-rveil';
+  const card = document.createElement('div');
+  card.className = 'bwq-reward';
+  let rows = '';
+  if (r.coins) rows += '<p><img src="/assets/homestead/coin16.png" alt=""> +' + r.coins + ' bananacoins</p>';
+  if (r.note) rows += '<p></p>';
+  card.innerHTML = '<i>you received</i>' + rows + '<button type="button">🍌 got it</button>';
+  if (r.note) card.querySelectorAll('p')[r.coins ? 1 : 0].textContent = r.note;
+  veil.appendChild(card);
+  (activeView || document.body).appendChild(veil);
+  ['pointerdown', 'pointerup', 'touchstart'].forEach((ev) =>
+    veil.addEventListener(ev, (e) => e.stopPropagation()));
+  card.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); veil.remove(); });
+  veil.addEventListener('click', (e) => { e.stopPropagation(); if (e.target === veil) veil.remove(); });
 }
 
 // 🗺 SABREFACE'S MAP — an OBJECT, not a diagram (Trym): a folded-out sheet
@@ -1335,8 +1374,8 @@ export function bootQuest() {
       // the tent. Residents already live here — their beat is the photo line.
       if (S.res) { toast(step.resSkip, 3600); advance(); return; }
       if (coinBal() < 50) {
-        passStat('coins_earned', 50 - coinBal());
-        toast('🪙 Nib’s relocation grant — “it’s a fund. i invented it today.”', 3800);
+        payReward({ coins: 50 - coinBal(),
+          note: '🪙 Nib’s relocation grant — “it’s a fund. i invented it today.”' });
       }
       watchTimer = setInterval(() => {
         try {
