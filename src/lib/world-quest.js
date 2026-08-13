@@ -72,7 +72,10 @@ const AREAS = {
   homestead: { sel: '#hsWorld', view: '.hs-view', wh: 1100 },
   park: { sel: '#pkWorld', view: '#pkView' },
   beach: { sel: '#bhWorld', view: '#bhView' },
-  rave: { sel: '#rvFloor', view: '#rvFloor' },
+  // chipHost: the journal chip docks on the CLUB frame, not the floor — at
+  // floor-top it covered the dancefloor on mobile (Trym); on the club it
+  // hangs over the LED wall where nothing dances
+  rave: { sel: '#rvFloor', view: '#rvFloor', chipHost: '.rv-club' },
 };
 
 // ---- state ----------------------------------------------------------------
@@ -496,6 +499,8 @@ function ensureCss() {
 }
 .bwq-hint[hidden] { display:none !important; }
 .bwq-hint--wait { visibility:hidden; animation:none; }
+/* on the club frame the chip rides the LED wall's top edge */
+.rv-club > .bwq-hint { top:14px; left:14px; }
 /* the chip's ! is a BADGE, not an inline character (Trym: a game, not a
    website message-box) — a black stickerpill pinned over the chip's corner,
    the gold ! big and overflowing it. Same MARK_SVG art as the world marker. */
@@ -1312,7 +1317,7 @@ export function bootQuest() {
         h.classList.add('bwq-hint--wait');
         setTimeout(() => { if (h.isConnected) h.classList.remove('bwq-hint--wait'); }, 5000);
       }
-      (document.querySelector(AREAS[area].view) || w).appendChild(h);
+      (document.querySelector(AREAS[area].chipHost || AREAS[area].view) || w).appendChild(h);
       layer.push(h);
     }
     if (step.area !== area) return;      // objective lives elsewhere — hint covers it
@@ -1359,6 +1364,22 @@ export function bootQuest() {
       // when this render runs, and it fires before every area handler)
       const tapSel = step.tapSel || (step.at && step.at.sel);
       if (tapSel) {
+        // ⚠️ the rave's bar strip is pointer-events:none (decor over the
+        // floor) — a click over Barty targeted the FLOOR and closest() never
+        // matched, so only the mark worked (Trym). While his talk step is
+        // live, the body opts back in (a child may override the parent's
+        // none) — restored on unhook. Retried briefly: some NPC bodies are
+        // drawn after assetsReady.
+        let peTries = 0;
+        const optIn = () => {
+          const body = document.querySelector(tapSel);
+          if (!body) { if (peTries++ < 10) setTimeout(optIn, 400); return; }
+          const prevPe = body.style.pointerEvents, prevCur = body.style.cursor;
+          body.style.pointerEvents = 'auto';
+          body.style.cursor = 'pointer';
+          unhook.push(() => { body.style.pointerEvents = prevPe; body.style.cursor = prevCur; });
+        };
+        optIn();
         const onTap = (e) => {
           if (!e.target.closest || !e.target.closest(tapSel)) return;
           e.stopPropagation();
