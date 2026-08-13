@@ -599,7 +599,7 @@ function ensureCss() {
    where the player is looking, not in a corner chip */
 .bwq-bundle {
   position:absolute; z-index:3000; transform:translate(-50%,-60%);
-  pointer-events:none; animation:bwqBundleUp 3.4s ease-out forwards;
+  pointer-events:none; animation:bwqBundleUp 7s ease-out forwards;
 }
 .bwq-bundle canvas {
   display:block; image-rendering:pixelated; border:0; background:transparent;
@@ -607,8 +607,8 @@ function ensureCss() {
 }
 @keyframes bwqBundleUp {
   0% { opacity:0; margin-top:26px; }
-  12% { opacity:1; margin-top:0; }
-  82% { opacity:1; }
+  6% { opacity:1; margin-top:0; }
+  92% { opacity:1; }
   100% { opacity:0; margin-top:-8px; }
 }
 @media (prefers-reduced-motion:reduce) { .bwq-mark, .bwq-mark::before, .bwq-obj::after, .bwq-hint, .bwq-dlg, .bwq-paper, .bwq-box.is-typing p::after, .bwq-more, .bwq-npc--walk, .bwq-qweed::after, .bwq-qtrash::after, .bwq-mapbtn::before { animation:none; } }
@@ -1339,7 +1339,7 @@ export function bootQuest() {
               rev.style.top = (bob.y / 1100 * 100) + '%';
               rev.appendChild(flipbookCanvas());
               w.appendChild(rev);
-              setTimeout(() => rev.remove(), 3500);
+              setTimeout(() => rev.remove(), 7100);   // ~7s on stage (Trym: 3.4s vanished too fast)
             }
             toast(step.found, 4600);
             advance();
