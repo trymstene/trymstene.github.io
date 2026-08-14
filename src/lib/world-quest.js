@@ -131,9 +131,17 @@ const STEPS = [
   // ⚠️ atRes: for RESIDENTS (stage ≥ 1) the gate spot sits in their fence
   // opening / on their built plot — Nib waits on the far side of the road
   // instead, a bit further down, off their property (Trym)
-  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', leave: 1, at: { x: 63, y: 76 },
+  // ⚠️ NIB MUST BE ON SCREEN AT SPAWN (14 Aug, from the ad's day-one funnel).
+  // At the gate (63%) he sat ~1000 world px east of the west road entrance
+  // where a direct visit lands — so the chip pointed at somebody the camera
+  // was not showing, and 7 of 181 arrivals ever tapped him. He now waits a
+  // short walk up the road, in the frame, between the newcomer and the plot.
+  // ⚠️ MEASURED, not guessed: at the west spawn a 393-wide phone sees world
+  // x 6-591 only. 34% (x612) was clipped at the right edge; 24% (x432) sits
+  // ~3/4 across the frame — plainly visible, still a real walk away.
+  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', leave: 1, at: { x: 24, y: 83 },
     atRes: { x: 66, y: 90 },
-    find: 'someone is waiting by your gate — go say hello!',
+    find: 'someone is waiting up the road — go say hello!',
     findRes: 'someone is waiting across the road — go say hello!',
     // ✍️ THE VOICE BAR (Trym, 12 Aug round 3): dialogue a 13-year-old and a
     // 50-year-old both read without a stumble — short sentences, plain

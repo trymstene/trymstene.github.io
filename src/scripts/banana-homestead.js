@@ -1113,7 +1113,24 @@ function init(visitDoc, visitMiss) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), ms || 2400);
   }
+  let moved = false;            // has the player walked even once?
   const hint = (on) => { if (hintEl) hintEl.classList.toggle('is-off', !on); };
+  // 🍪 ⚠️ THE COVERED INSTRUCTION (14 Aug, from the ad's day-one funnel):
+  // .ccb is fixed to the viewport bottom and .hs-hint sits at the frame's
+  // bottom — on a phone the cookie banner lands exactly on top of "tap to
+  // walk", the one line that turns a picture into a game. Only 6 of 181 ad
+  // arrivals ever walked far enough to collect the coins in front of them.
+  // So the hint WAITS for the banner to go, and only then invites the tap.
+  (() => {
+    if (!hintEl || !document.querySelector('.ccb')) return;
+    hint(false);
+    const watch = setInterval(() => {
+      if (document.querySelector('.ccb')) return;
+      clearInterval(watch);
+      if (!moved) hint(true);          // still standing still? now say how
+    }, 400);
+    setTimeout(() => clearInterval(watch), 60000);
+  })();
 
   // ---- HUD + actions ------------------------------------------------------
   const hud = mountHud({
@@ -2087,7 +2104,7 @@ function init(visitDoc, visitMiss) {
     view.classList.add('is-placing');   // touch drags steer the camera, not the page
     updateGhost();
     confirmEl.hidden = false;
-    hint(false);
+    moved = true; hint(false);
     toast('drag to look around · tap to try a spot — then ✓', 3600);
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
@@ -2155,7 +2172,7 @@ function init(visitDoc, visitMiss) {
     view.classList.add('is-placing');
     updateGhost();
     confirmEl.hidden = false;
-    hint(false);
+    moved = true; hint(false);
     toast(placing.toStage > state.stage
       ? 'your land grows with it — place it anywhere on the new deed'
       : 'choose where it stands — drag to look, tap to try', 3600);
@@ -2528,7 +2545,7 @@ function init(visitDoc, visitMiss) {
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
-    hint(false);
+    moved = true; hint(false);
     clearChip(); clearBedChip();
     if (placing) return;   // pointerdown/drag owns the ghost
     if (inside) {          // indoors: the stove answers, furniture chats, else walks
@@ -2928,7 +2945,7 @@ function init(visitDoc, visitMiss) {
     if (!seen || document.hidden) return;
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
-    if (kx || ky) { tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30; hint(false); }
+    if (kx || ky) { tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30; moved = true; hint(false); }
     const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
     const d = Math.hypot(dx, dy);
     if (sitting && d > 1.5) standUp();

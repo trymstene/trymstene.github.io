@@ -649,8 +649,12 @@ export function initTutorialInvite({ mount, paint, paintUp, track } = {}) {
   b.innerHTML = '<button class="bwt-invite__go" type="button">🍌 new here? take the tour</button>'
     + '<button class="bwt-invite__x" type="button" aria-label="no thanks">✕</button>';
   (mount || document.body).appendChild(b);
-  // a soft beat after the world lands — never the first thing that happens
-  setTimeout(() => { if (b.isConnected) b.classList.add('is-on'); }, 1600);
+  // ⏱ LAST IN THE QUEUE (14 Aug): at 1.6s this landed on top of the cookie
+  // banner, the control hint and the quest chip all at once — four prompts in
+  // the first two seconds, so an ad arrival read none of them (4 of 168 shown
+  // ever opened it). It now waits out the arrival and offers itself once the
+  // player has had a moment: consent → walk → quest → THEN the tour.
+  setTimeout(() => { if (b.isConnected) b.classList.add('is-on'); }, 22000);
   if (track) track('bwtour_invite');
 
   b.querySelector('.bwt-invite__go').addEventListener('click', () => {
