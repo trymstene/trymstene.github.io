@@ -84,8 +84,13 @@ const FEATURES = [
     }
     .bwl-hero img.on { opacity: 1; animation: bwlKen 5s ease-in-out forwards; }
     @keyframes bwlKen { from { transform: scale(1); } to { transform: scale(1.07); } }
+    /* ⚠️ centred WITHOUT a transform: .btn:hover sets its own transform, which
+       REPLACES translateX(-50%) and threw the button half its width to the
+       right on every hover (Trym saw it flicker). Same trap as the quest
+       dialogue's keyframes — never centre a .btn with transform. */
     .bwl-hero__cta {
-      position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); z-index: 2;
+      position: absolute; left: 0; right: 0; bottom: 5%; margin-inline: auto;
+      width: max-content; z-index: 2;
       white-space: nowrap; box-shadow: 4px 4px 0 rgba(0,0,0,0.55);
     }
     @media (prefers-reduced-motion: reduce) { .bwl-hero img.on { animation: none; } }

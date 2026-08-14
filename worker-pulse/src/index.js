@@ -257,6 +257,26 @@ async function apiRange(env, from, to) {
       inListFilter: { values: DL_EVENTS } } },
   }).catch(() => null);
 
+  // 📣 THE CAMPAIGN SPLIT (13 Aug) — the source panel says "instagram /
+  // paid_social", which cannot tell one ad from the next. This adds the
+  // utm_campaign × utm_content rows underneath, so a paid push can be read
+  // creative by creative. Its OWN call: the batch above is at GA4's hard cap
+  // of five requests, and a sixth 400s the whole dashboard.
+  // ⚠️ falls back to campaign-only if sessionManualAdContent is rejected, and
+  // to nothing at all if the campaign dimension itself fails — a missing panel
+  // must never take the page down.
+  const campP = gaPost(env, 'runReport', {
+    dateRanges,
+    dimensions: [{ name: 'sessionCampaignName' }, { name: 'sessionManualAdContent' }],
+    metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }],
+    limit: 12, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+  }).catch(() => gaPost(env, 'runReport', {
+    dateRanges,
+    dimensions: [{ name: 'sessionCampaignName' }],
+    metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }],
+    limit: 12, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+  }).catch(() => null));
+
   const stepTimes = {};
   try {
     const st = await gaPost(env, 'runReport', {
@@ -287,6 +307,7 @@ async function apiRange(env, from, to) {
     (evmapObj[ev] = evmapObj[ev] || {})[cc] = met(r, 0);
   }
   const dls = await dlsP;
+  const campRes = await campP;
   const dlMap = {};
   const dayMap = {};
   const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
@@ -335,6 +356,12 @@ async function apiRange(env, from, to) {
     }, {})).sort((a, b) => b.sessions - a.sessions),
     sources: rows(sources).map((r) => ({ source: dim(r, 0), medium: dim(r, 1),
       sessions: met(r, 0), engaged: met(r, 1), views: met(r, 2) })),
+    // 📣 utm_campaign × utm_content — organic sessions land in GA4 as
+    // "(organic)"/"(direct)"/(not set); those are already the source panel's
+    // job, so only REAL campaign names reach the row
+    camps: (campRes ? rows(campRes) : []).map((r) => ({
+      name: dim(r, 0), content: dim(r, 1) || '', sessions: met(r, 0), engaged: met(r, 1),
+    })).filter((c) => c.name && !/^\((not set|direct|organic|referral)\)$/i.test(c.name)),
     events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0) })),
     eventMap: evmapObj,
     stepTimes,
@@ -654,6 +681,8 @@ function page() {
          border-radius:10px; padding:8px 10px; font-size:.68rem; font-weight:700; line-height:1.45;
          text-align:left; box-shadow:0 8px 18px rgba(0,0,0,.55); white-space:normal; }
   .info:hover::after, .info.show::after{ display:block; }
+  .camph{ font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--dim);
+          margin:14px 0 8px; padding-top:12px; border-top:2px dashed #2b2348; }
   .fbar{ height:16px; background:#0a0814; border:2px solid #2b2348; border-radius:8px;
          position:relative; overflow:hidden; }
   .fbar .fill{ height:100%; background:var(--acc,var(--nana)); border-radius:5px; }
@@ -861,7 +890,8 @@ function page() {
 </div>
 
 <div class="grid2">
-  <div class="panel src"><h2>🚪 Where they came from</h2><div id="sources"></div></div>
+  <div class="panel src"><h2>🚪 Where they came from</h2><div id="sources"></div>
+    <div id="campwrap" hidden><h3 class="camph">📣 campaigns</h3><div id="camps"></div></div></div>
   <div class="panel"><h2>⚡ Top events</h2>
     <div class="chips" style="margin-top:0;">
       <button class="chip on" data-n="10">TOP 10</button>
@@ -2080,6 +2110,20 @@ function renderRange(){
       '<span>'+fmt(s.sessions)+' <span class="muted">· '+er+'% eng · '+pps+' pg/s</span></span></div>'+
       '<div class="fbar"><div class="fill" style="width:'+Math.max(2,(s.sessions/smax)*100)+'%"></div></div></div>';
   }).join('');
+  // 📣 campaigns — only rendered when a real utm_campaign has landed, so an
+  // organic-only week shows nothing rather than an empty box
+  var CA = R.camps || [];
+  document.getElementById('campwrap').hidden = !CA.length;
+  if (CA.length) {
+    var cmax = CA[0].sessions || 1;
+    document.getElementById('camps').innerHTML = CA.slice(0,6).map(function(c){
+      var er = c.sessions ? Math.round((c.engaged/c.sessions)*100) : 0;
+      var nm = c.name + (c.content ? ' · ' + c.content : '');
+      return '<div class="fstep"><div class="row"><span>'+esc(nm)+'</span>'+
+        '<span>'+fmt(c.sessions)+' <span class="muted">· '+er+'% eng</span></span></div>'+
+        '<div class="fbar"><div class="fill" style="width:'+Math.max(2,(c.sessions/cmax)*100)+'%"></div></div></div>';
+    }).join('');
+  }
   var evs=R.events.filter(function(e){ return e.name!=='session_start'&&e.name!=='first_visit'; })
     .slice(0,state.topN);
   var emax=evs.length? evs[0].v:1;
