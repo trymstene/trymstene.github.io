@@ -541,10 +541,20 @@ function ensureCss() {
 }
 /* 🗣 ⚠️ THE CARD MUST NOT SIT ON THE CAST (14 Aug, Trym): these conversations
    happen ON THE ROAD, which the camera clamps to the bottom of the frame — so
-   a bottom-docked card covered both Nib AND the player, and the first thing a
-   new arrival saw of the world's first scene was a box over an empty field.
-   The --top variant flips the card up whenever the speaker is low in frame. */
-.bwq-dlg--top { top:12px; bottom:auto; }
+   a bottom-docked card covered both Nib AND the player, and a new arrival's
+   first look at the world's first scene was a box over an empty field.
+   --mid lifts the card off them when the speaker is low. MIDDLE, not top:
+   pinned to 12px it crowded the HUD chips and read as falling out of frame.
+   ⚠️ MUST FOLLOW .bwq-dlg — same specificity, so source order decides whose
+   bottom wins; placed before, the card kept bottom:12px alongside top and
+   stretched the whole frame (556px of 580px).
+   ⚠️ centred by MARGIN, never transform: bwqDlgIn's keyframes carry
+   translateX(-50%) and a keyframe transform REPLACES the base one, so a
+   translate(-50%,-50%) here would be thrown away the moment it animates. */
+.bwq-dlg--mid { top:0; bottom:32%; height:max-content; margin-block:auto; }
+/* the 32% floor is what keeps the cast clear: dead-centre still clipped
+   the top of Nib's hat, because the road sits low and the camera clamps
+   there — this centres the card in the frame ABOVE them instead. */
 /* ⚠️ the dialogue is CENTERED by transform, and keyframe transforms REPLACE
    the base transform — bwqCardIn (scale only) stripped the -50% for its
    0.26s and the card popped in half a width to the RIGHT, then snapped
@@ -1221,7 +1231,7 @@ export function bootQuest() {
         || (step.tapSel && document.querySelector(step.tapSel));
       if (who) {
         const r = who.getBoundingClientRect();
-        if (r.top + r.height / 2 > hostR.top + hostR.height * 0.5) dlg.classList.add('bwq-dlg--top');
+        if (r.top + r.height / 2 > hostR.top + hostR.height * 0.5) dlg.classList.add('bwq-dlg--mid');
       }
     } catch (e) { /* no measurement, keep the default bottom dock */ }
     const pop = dlg.querySelector('.bwq-pop'), popCv = pop.querySelector('canvas'),
