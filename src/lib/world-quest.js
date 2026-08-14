@@ -539,6 +539,12 @@ function ensureCss() {
   padding:0.8rem 0.9rem 0.9rem; cursor:pointer;
   animation:bwqDlgIn 0.26s cubic-bezier(0.34,1.56,0.64,1);
 }
+/* 🗣 ⚠️ THE CARD MUST NOT SIT ON THE CAST (14 Aug, Trym): these conversations
+   happen ON THE ROAD, which the camera clamps to the bottom of the frame — so
+   a bottom-docked card covered both Nib AND the player, and the first thing a
+   new arrival saw of the world's first scene was a box over an empty field.
+   The --top variant flips the card up whenever the speaker is low in frame. */
+.bwq-dlg--top { top:12px; bottom:auto; }
 /* ⚠️ the dialogue is CENTERED by transform, and keyframe transforms REPLACE
    the base transform — bwqCardIn (scale only) stripped the -50% for its
    0.26s and the card popped in half a width to the RIGHT, then snapped
@@ -1205,7 +1211,19 @@ export function bootQuest() {
       + '<div class="bwq-sp" hidden></div>';
     // ⚠️ docked INSIDE the game frame — fixed-to-viewport put it below the
     // world on desktop, out of frame entirely (Trym's screenshots)
-    (document.querySelector(AREAS[area].view) || document.body).appendChild(dlg);
+    const host = document.querySelector(AREAS[area].view) || document.body;
+    host.appendChild(dlg);
+    // dock the card AWAY from whoever is speaking: measure the NPC (or the
+    // marker) against the frame's midline and flip to the top if they are low
+    try {
+      const hostR = host.getBoundingClientRect();
+      const who = nibEl || document.querySelector('.bwq-mark')
+        || (step.tapSel && document.querySelector(step.tapSel));
+      if (who) {
+        const r = who.getBoundingClientRect();
+        if (r.top + r.height / 2 > hostR.top + hostR.height * 0.5) dlg.classList.add('bwq-dlg--top');
+      }
+    } catch (e) { /* no measurement, keep the default bottom dock */ }
     const pop = dlg.querySelector('.bwq-pop'), popCv = pop.querySelector('canvas'),
       h2 = dlg.querySelector('h2'), box = dlg.querySelector('.bwq-box'),
       p = box.querySelector('p'), sp = dlg.querySelector('.bwq-sp'),
