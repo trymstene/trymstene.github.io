@@ -191,10 +191,17 @@ async function handlePage(env, url) {
   const obj = await env.SHARES.head(`og/${id}.png`);
   if (!obj) {
     // unknown id: send humans to the builder anyway
-    return Response.redirect(`${SITE}/make-a-banana/`, 302);
+    return Response.redirect(`${SITE}/make-a-banana/?utm_source=share&utm_medium=unfurl`, 302);
   }
   const params = (obj.customMetadata && obj.customMetadata.params) || '';
   const target = `${SITE}/make-a-banana/${params ? '?' + params : ''}`;
+  // 📣 LABEL THE HOP (13 Aug): this page is a one-hop unfurl shim, so every
+  // click through it landed in GA4 as a referral from THIS WORKER'S HOSTNAME —
+  // the share loop's own traffic wearing a machine's name (and its best
+  // traffic: ~3.7 pages/session, deeper than paid or direct). `go` carries the
+  // UTMs so it reads as "share / unfurl"; `target` stays CLEAN because it is
+  // the canonical, and a canonical with tracking params is an SEO own-goal.
+  const go = target + (params ? '&' : '?') + 'utm_source=share&utm_medium=unfurl';
   const img = `${url.origin}/so/${id}.png`;
 
   const html = `<!doctype html>
@@ -212,10 +219,10 @@ async function handlePage(env, url) {
 <meta property="og:url" content="${esc(url.origin + '/s/' + id)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${esc(img)}">
-<meta http-equiv="refresh" content="0;url=${esc(target)}">
+<meta http-equiv="refresh" content="0;url=${esc(go)}">
 </head><body>
-<p>Taking you to the banana… <a href="${esc(target)}">continue</a></p>
-<script>location.replace(${JSON.stringify(target)});</script>
+<p>Taking you to the banana… <a href="${esc(go)}">continue</a></p>
+<script>location.replace(${JSON.stringify(go)});</script>
 </body></html>`;
 
   return new Response(html, {
