@@ -1371,7 +1371,13 @@ export function bootQuest() {
     // Old Peel" before Nib had said a word.
     const label = (step.kind === 'talk')
       ? ((S.res && step.findRes) || step.find || ('talk to ' + (WHO[step.who] || {}).n)) : step.hint;
-    if (label) {
+    // 🪩 THE RAVE STAYS CLEAN (Trym, 16 Aug, now the ad's front door): the
+    // floor is sensitive to clutter and its job is to make you want to go
+    // SOMEWHERE ELSE — so the cross-area compass is suppressed here. A step
+    // that actually lives at the rave still shows its chip; the compass
+    // returns the moment you arrive anywhere the quest is really pointing.
+    const compass = step.area !== area;
+    if (label && !(compass && area === 'rave')) {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
       h.innerHTML = '<i class="bwq-hint__badge">' + MARK_SVG + '</i><span></span>';
@@ -1386,7 +1392,7 @@ export function bootQuest() {
       (document.querySelector(AREAS[area].chipHost || AREAS[area].view) || w).appendChild(h);
       layer.push(h);
     }
-    if (step.area !== area) return;      // objective lives elsewhere — hint covers it
+    if (compass) return;                 // objective lives elsewhere — hint covers it
 
     if (step.kind === 'talk') {
       // residents get their own anchor where a step carries one (Nib waits
