@@ -1205,7 +1205,13 @@ const GUIDE = [
       display: flex; flex-direction: column; align-items: center; gap: 5px;
       max-width: min(94%, calc(100% - 250px)); width: max-content; pointer-events: none;
     }
-    @media (max-width: 640px) { .rv-toasts { top: 60px; max-width: 94%; } }
+    /* 📱 mobile: the camera centres YOU, so the club's top band IS the middle
+       of the screen (Trym: coin toasts blocking the floor). Dock the stack at
+       the bottom edge instead, compact, above the jelly meter line. */
+    @media (max-width: 640px) {
+      .rv-toasts { top: auto; bottom: 44px; max-width: 94%; gap: 4px; }
+      .rv-glowtoast { font-size: 0.64rem; padding: 0.28rem 0.6rem; line-height: 1.35; }
+    }
     .rv-glowtoast {
       max-width: 100%; text-align: center; font-size: 0.72rem; line-height: 1.4;
       background: rgba(23, 18, 31, 0.94); color: #fffdf5; border: 2px solid #39ff14;
