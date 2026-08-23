@@ -547,10 +547,16 @@ async function handleHealth(env, ship, store, buyable) {
           }).then((r) => r.json());
           const cart = q.data && q.data.cartCreate && q.data.cartCreate.cart;
           const opts = cart ? cart.deliveryGroups.nodes.flatMap((g) => g.deliveryOptions) : [];
+          // Doctrine (shop-design-direction): shipping is CHARGED on both
+          // lanes — never free (a $4.99 sticker with free shipping sells at a
+          // loss) and never the default profile's leftover ~$19 template rate.
+          // Sane band for a US quote: roughly Printful's real cost.
+          const amt = opts.length ? Number(opts[0].estimatedCost.amount) : null;
+          const cur = opts.length ? opts[0].estimatedCost.currencyCode : '';
           const verdict = !opts.length ? '❌ NO DELIVERY OPTIONS (unbuyable)'
-            : opts.some((o) => Number(o.estimatedCost.amount) === 0) ? 'ok FREE'
-              : '❌ quoted ' + opts[0].estimatedCost.amount + ' ' + opts[0].estimatedCost.currencyCode
-                + ' — profile fell back to default (the 180-NOK bug)';
+            : amt === 0 ? '❌ FREE shipping — doctrine is CHARGED; this sells at a loss'
+              : amt > 12 ? '❌ quoted ' + amt + ' ' + cur + ' — default-profile template rate (the 180-NOK bug)'
+                : 'ok charged ' + amt + ' ' + cur;
           out.shipping[pr.key] = verdict;
           const bh = 'custom-banana-' + pr.key;   // Shopify handle convention
           if (verdict.includes('❌') && out.buyable[bh]) out.buyable[bh].verdict = verdict;
