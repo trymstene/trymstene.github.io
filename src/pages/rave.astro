@@ -952,6 +952,13 @@ const GUIDE = [
     }
     @keyframes rvLzWarn { 50% { opacity: 0.15; } }
     .rv-laser--out { opacity: 0; transition: opacity 0.35s; }
+    /* tiers: gold hits harder + sweeps faster; the rainbow one is the event */
+    .rv-laser--gold .rv-laser__beam { background: linear-gradient(90deg, #fff, #ffe135); box-shadow: 0 0 8px 2px rgba(255, 225, 53, 0.85), 0 0 22px 6px rgba(255, 225, 53, 0.4); }
+    .rv-laser--gold.rv-laser--h .rv-laser__beam { background: linear-gradient(180deg, #fff, #ffe135); }
+    .rv-laser--gold .rv-laser__track { background: rgba(255, 225, 53, 0.07); border-color: rgba(255, 225, 53, 0.35); }
+    .rv-laser--rainbow .rv-laser__beam { width: 6px; background: linear-gradient(180deg, #ff4d4d, #ff9f1c, #ffe135, #37d67a, #4db8ff, #b388ff); box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.55), 0 0 26px 8px rgba(179, 136, 255, 0.45); }
+    .rv-laser--rainbow.rv-laser--h .rv-laser__beam { width: auto; height: 6px; background: linear-gradient(90deg, #ff4d4d, #ff9f1c, #ffe135, #37d67a, #4db8ff, #b388ff); }
+    .rv-laser--rainbow .rv-laser__track { background: rgba(179, 136, 255, 0.08); border-color: rgba(179, 136, 255, 0.4); }
     .rv-laser__tag { /* first-timer teaching: the beam wears its own instruction */
       position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
       font-family: "Archivo Black", sans-serif; font-size: 0.62rem; line-height: 1;
@@ -1750,7 +1757,7 @@ const GUIDE = [
         <p>Nothing here is random — the whole planet shares one schedule. Stay long enough and you'll feel it:</p>
         <ul class="rvg__list rvg__list--clock">
           <li><strong>every ~75 seconds</strong> — the conveyor drops something chaseable</li>
-          <li><strong>every ~11 seconds</strong> — ⚡ the light show BITES: a laser sweeps its corridor. Step out or get zapped — a zap knocks your carried jelly loose (scoop it back!). Dance close without getting hit and it pays. Survive a whole DROP light-show untouched and you have <strong>SURVIVED THE DANCEFLOOR</strong></li>
+          <li><strong>every ~11 seconds</strong> — ⚡ the light show BITES: a laser sweeps its corridor. Step out or get zapped — a zap VAPORIZES most of the jelly it knocks out of you; only a crescent or two lands to scoop back. Pink stings, <strong>gold</strong> sweeps faster and hits harder, and the <strong>rainbow one</strong> — slow, wide, hits hardest, and dancing its edge pays best. Dance close without getting hit and it pays. Survive a whole DROP light-show untouched and you have <strong>SURVIVED THE DANCEFLOOR</strong></li>
           <li><strong>every 2 minutes</strong> — the spotlight wanders; dancing inside it is bonus jelly</li>
           <li><strong>every 3rd minute</strong> — THE DROP. Strobes, pyro, everybody peaks</li>
           <li><strong>every ~3½ minutes</strong> — tonight's wearable drop floats through, until you've caught it</li>

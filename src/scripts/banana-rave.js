@@ -1712,7 +1712,14 @@ function init() {
   function lzSpawn(seed, t0) {
     const vert = lzRnd(seed) < 0.62;             // vertical segments read best on a narrow phone
     const dir = lzRnd(seed + 1) < 0.5 ? 1 : -1;
-    const band = 24 + lzRnd(seed + 2) * 12;      // corridor thickness (% of the cross axis)
+    // ⚡ TIERS (Trym: "different color lazers that do more or less damage" — and
+    // real loss, because "you can always just play more and get out when your
+    // happy": push-your-luck, the night is the bank). Mirrors the jelly-kind
+    // grammar: pink standard · gold ~1/6 faster+harder · rainbow ~1/40 slow,
+    // wide, hits hardest, pays best for a clean dance.
+    const kr = lzRnd(seed + 4);
+    const kind = kr < 1 / 40 ? 'rainbow' : kr < 1 / 40 + 1 / 6 ? 'gold' : 'pink';
+    const band = (24 + lzRnd(seed + 2) * 12) + (kind === 'rainbow' ? 8 : 0);
     let b;
     if (vert) {
       const y0 = clamp(topClamp + 4 + lzRnd(seed + 3) * (84 - band - topClamp), topClamp + 2, 92 - band);
@@ -1722,8 +1729,10 @@ function init() {
       b = { o: 'h', from: dir > 0 ? topClamp + 3 : 91, to: dir > 0 ? 91 : topClamp + 3, x0, x1: x0 + band };
     }
     b.t0 = t0; b.seed = seed; b.sidePrev = null;
+    b.kind = kind;
+    b.sweepS = kind === 'gold' ? 2.2 : kind === 'rainbow' ? 4.6 : LZ_SWEEP;
     const wrap = document.createElement('div');
-    wrap.className = 'rv-laser rv-laser--' + b.o;
+    wrap.className = 'rv-laser rv-laser--' + b.o + (kind !== 'pink' ? ' rv-laser--' + kind : '');
     const track = document.createElement('div');
     track.className = 'rv-laser__track';
     const beam = document.createElement('div');
@@ -1757,13 +1766,19 @@ function init() {
     b.el = wrap; b.beamEl = beam;
     lzBeams.push(b);
   }
-  function lzZapMe(me, now, seed) {
+  function lzZapMe(me, now, b) {
     lzZapAt = now;
     me.shockUntil = now + 460;               // the existing shock-blink render
-    const loss = Math.min(tonight.jelly, LZ_LOSS);
+    // the laser VAPORIZES most of what it knocks loose — only a crescent or two
+    // hits the floor. Even a perfect re-scoop leaves you down: real risk
+    // (Trym: "-10 and two +5s just squares out"). Loss caps at what you carry.
+    const hitFor = b.kind === 'rainbow' ? 30 : b.kind === 'gold' ? 20 : LZ_LOSS;
+    const loss = Math.min(tonight.jelly, hitFor);
+    const recov = Math.min(b.kind === 'rainbow' ? 10 : 5, loss);
     tonight.jelly -= loss;
     if (loss > 0) {
-      scatterSpill(me.x, me.y, loss, seed * 97 + 3);
+      if (recov > 0) scatterSpill(me.x, me.y, recov, b.seed * 97 + 3);
+      if (loss > recov) poofAt(me.x, me.y - 4, 0.9);   // the rest sizzles away
       splatFx(me, { n: loss });
     } else {
       splatFx(me, { n: 0 });
@@ -1771,7 +1786,7 @@ function init() {
     }
     if (lzInDrop) lzDropZapped = true;
     refreshStats();
-    track('rave_zap', { loss });
+    track('rave_zap', { loss, kind: b.kind });
     if (!lzTaught) {
       lzLearned();
       lzToast('⚡ <b>ZAPPED!</b>' + (loss > 0 ? ' — your jelly spilled. scoop it back before somebody else does!' : ' — the light show bites. keep moving!'));
@@ -1829,7 +1844,7 @@ function init() {
       if (tS < 0) continue;
       if (tS < LZ_WARN) continue;                              // warn beat: the segment holds + pulses
       if (b.beamEl.classList.contains('rv-laser__beam--warn')) b.beamEl.classList.remove('rv-laser__beam--warn');
-      const prog = Math.min(1, (tS - LZ_WARN) / LZ_SWEEP);
+      const prog = Math.min(1, (tS - LZ_WARN) / (b.sweepS || LZ_SWEEP));
       const pos = b.from + (b.to - b.from) * prog;
       if (b.o === 'v') b.beamEl.style.left = pos + '%';
       else b.beamEl.style.top = pos + '%';
@@ -1845,7 +1860,7 @@ function init() {
         const hitW = b.o === 'v' ? 1.8 : 2.4;                  // anisotropic floor (% y is ~2x denser)
         if (inBand && Math.abs(along - pos) < hitW) {
           if (r.id === myId) {
-            if (now - lzZapAt > 1600) lzZapMe(r, now, b.seed);
+            if (now - lzZapAt > 1600) lzZapMe(r, now, b);
           } else if (!r.lzShockAt || now - r.lzShockAt > 1600) {
             r.lzShockAt = now;
             r.shockUntil = now + 460;
@@ -1864,10 +1879,12 @@ function init() {
           const edge = meCross < c0 ? c0 - meCross : meCross > c1 ? meCross - c1 : 0;
           if (edge > 0 && edge < LZ_NEAR) {
             tonight.dodges += 1;
-            floatPlus(me.x, me.y - 8, 'CLOSE! +3');
-            addHype(3);
+            const pay = b.kind === 'rainbow' ? 15 : b.kind === 'gold' ? 8 : 3;
+            floatPlus(me.x, me.y - 8, 'CLOSE! +' + pay);
+            addHype(pay);
+            if (b.kind === 'rainbow') confettiBurst();   // dancing with the big one is an event
             refreshStats();
-            track('rave_dodge');
+            track('rave_dodge', { kind: b.kind });
             if (!lzTaught) lzLearned();       // a clean read of the corridor = lesson landed
           }
         }
