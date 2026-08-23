@@ -253,7 +253,7 @@ function spotFor(w) {
 // a walking banana can keep up (~6%/s vs the banana's ~8%/s). Clock-synced:
 // every client computes the same path from the window index.
 function spotAt(w, sPh) {
-  const HOP = 3.5;                 // seconds per waypoint hop
+  const HOP = 2.6;                 // seconds per waypoint hop (quicker — the sugar rush keeps a collector in reach)
   const k = Math.floor(sPh / HOP);
   const step = (i, p0) => {
     const dx = (seedRand(w * 97 + i * 7) - 0.5) * 36;
@@ -1188,7 +1188,7 @@ function init() {
   }
 
   // ---- floor life: spotlight + lost vinyl + hot sauce (one 500ms rhythm tick) ----
-  let spotCoinWin = -1, spotCoinEarned = 0; // the wandering light's per-appearance purse
+  let spotCoinWin = -1, spotCoinEarned = 0, spotLastCoin = 0; // the wandering light's per-appearance purse
   let vinylWinClaimed = -1;
   let lastVinylTry = 0;
   let miniDropUntil = 0;
@@ -2558,11 +2558,14 @@ function init() {
         r.wrap.classList.toggle('rv-lit', lit);
         if (lit && r.id === myId) {
           addHype(2); // basking in the light per rhythm tick
-          // 💰 the light PAYS now (Trym: "a coin for each 0.5s you stand on
-          // it") — this tick IS the half-second. Capped per appearance so one
-          // spot can't out-pay every other coin faucet in the world.
-          if (spotCoinEarned < 15) {
+          // 💰 the light PAYS — one coin per SECOND stood inside, for the
+          // WHOLE appearance (Trym hit the old 15-cap and toured an empty
+          // light: "coins stopped quicker than the floodlight disappeared").
+          // The window itself is the cap now (~35 max, real follows get less).
+          if (spotCoinEarned < 40 && t * 1000 - spotLastCoin >= 950) {
+            spotLastCoin = t * 1000;
             spotCoinEarned += 1;
+            sugarRush(); // a coin is a pickup — chasing the light sustains the legs
             passStat('coins_earned', 1);
             renderWallet(true);
             const d = document.createElement('div');
