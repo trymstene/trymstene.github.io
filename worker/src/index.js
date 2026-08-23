@@ -273,8 +273,14 @@ async function headlessPublicationId(env) {
 let STICKERS_PROFILE = null;
 async function stickersProfileId(env) {
   if (STICKERS_PROFILE) return STICKERS_PROFILE;
-  const d = await adminGql(env, 'query { deliveryProfiles(first: 10) { nodes { id name } } }');
-  const hit = (d.deliveryProfiles.nodes || []).find((p) => /sticker/i.test(p.name));
+  // ⚠️ first: 30, not 10 — the 7-8 Aug label re-makes grew the store to 12
+  // profiles and a first:10 can miss ours. And the match must never land on
+  // "Printful: Stickers (#PF-FRG10)" — those are app-owned; associating into
+  // them fails. Exact name first, fuzzy-minus-Printful as the fallback.
+  const d = await adminGql(env, 'query { deliveryProfiles(first: 30) { nodes { id name } } }');
+  const nodes = d.deliveryProfiles.nodes || [];
+  const hit = nodes.find((p) => p.name === 'Stickers')
+    || nodes.find((p) => /sticker/i.test(p.name) && !/printful/i.test(p.name));
   if (!hit) throw new Error('no Stickers delivery profile found');
   STICKERS_PROFILE = hit.id;
   return STICKERS_PROFILE;
@@ -334,15 +340,23 @@ async function handleCheckout(request, env, url) {
     throw new Error('variantUpdate: ' + JSON.stringify(upd.productVariantsBulkUpdate.userErrors));
   }
 
-  // ✂️ FREE SHIPPING IS OFF (Trym, 7 Aug) — shipping is charged at checkout on
-  // both lanes now, so the per-order product must NOT be attached to the
-  // free-shipping profile. It inherits the General profile, same as everything
-  // else. Trym's reasoning: baking postage in meant pricing every product
-  // per MARKET (Printful shipping varies 2.4x across ours), i.e. two rule sets
-  // instead of one. Charging it leaves a single rule — minimum margin — and it
-  // is what makes a $4.99 sticker possible at all.
-  // ⚠️ stickersProfileId() is kept just below: reversing this is a one-line
-  // restore, and the profile still exists (empty) in Shopify.
+  // 🚚 ASSOCIATION RESTORED (18 Aug). The 7 Aug removal assumed the General
+  // profile carried sane charged rates — it carried leftover TEMPLATE rates
+  // (~179 NOK international), so every minted product overcharged ~4x real
+  // cost. Shipping IS still charged (Trym's one-rule doctrine): the Stickers
+  // profile now bills a flat 49 NOK worldwide, and the mint pins each
+  // per-order product to it so temp products bill exactly like their base
+  // product. MANDATORY fails-closed: any failure = mint 500 = the client
+  // falls back to the shared variant, whose shipping is verified by /health.
+  const assoc = await adminGql(env, `
+    mutation($id: ID!, $profile: DeliveryProfileInput!) {
+      deliveryProfileUpdate(id: $id, profile: $profile) {
+        profile { id } userErrors { field message }
+      }
+    }`, { id: await stickersProfileId(env), profile: { variantsToAssociate: [variantGid] } });
+  if (assoc.deliveryProfileUpdate.userErrors.length) {
+    throw new Error('profileAssociate: ' + JSON.stringify(assoc.deliveryProfileUpdate.userErrors));
+  }
 
   // headless channel ONLY: sellable via the Storefront API, invisible to browsing
   const pub = await adminGql(env, `
