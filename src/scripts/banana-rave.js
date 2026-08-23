@@ -1685,7 +1685,7 @@ function init() {
   // and capped; broke = pure slapstick, so newcomers can't lose a thing).
   // Dancing CLOSE to a beam without being hit pays; surviving THE DROP's
   // frenzy untouched = "SURVIVED THE DANCEFLOOR", the badge + share-card stat.
-  const LZ_GAP = 11;      // seconds between groove sweeps
+  const LZ_GAP = 8;       // seconds between groove sweep windows (Trym after playing: more frequent)
   const LZ_WARN = 1.25;   // warn beat before the segment moves
   const LZ_SWEEP = 3.2;   // seconds a segment takes to cross its corridor
   const LZ_LOSS = 10;     // carried jelly a zap knocks loose (gentler than a banana hit)
@@ -1822,7 +1822,7 @@ function init() {
       // ~40% duty cycle: skip seeded windows so the show breathes (the skeptic's
       // habituation warning) — and never open a groove sweep that would still be
       // mid-flight when the drop lands
-      if (win !== lzSeen && (lzTest || lzRnd(win * 31) < 0.62)
+      if (win !== lzSeen && (lzTest || lzRnd(win * 31) < 0.75)
           && (DROP_PERIOD - (nowS % DROP_PERIOD)) > (LZ_WARN + LZ_SWEEP + 1)) {
         lzSeen = win;
         lzSpawn(win * 7 + 1, (win * gap + 0.4) * 1000);
@@ -4030,6 +4030,11 @@ function init() {
     if (!quest) return;
     const { id, def } = quest;
     quest = null;
+    // ⚠️ the slot latch must survive a REFRESH (Trym finished the balloon drop,
+    // refreshed inside the quest's 150s start window, and the rig let go
+    // again). Latched on COMPLETION, not start — a refresh MID-quest still
+    // restarts it (generous), a finished one never re-offers.
+    try { localStorage.setItem('rv-fq-slot', String(Math.floor(Date.now() / 1800000))); } catch (e) {}
     def.exit(true);
     qBtnHide();
     qHint(null);
@@ -4072,6 +4077,7 @@ function init() {
     // cheap iterations). A slot latch keeps it from restarting after it runs.
     const slot = Math.floor(Date.now() / 1800000);
     if (questHourDone === slot) return;
+    try { if (localStorage.getItem('rv-fq-slot') === String(slot)) { questHourDone = slot; return; } } catch (e) {}
     const ids = Object.keys(FLOOR_QUESTS);
     const at = slot * 1800000 + Math.floor((4 + seedRand(slot * 31 + 9) * 21) * 60000);
     if (Date.now() >= at && Date.now() < at + QUEST_TTL) {
