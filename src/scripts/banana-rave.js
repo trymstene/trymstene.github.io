@@ -877,6 +877,7 @@ function init() {
       : fxActive(me, now) && me.fx.id === 'espresso' ? 2 // caffeine rush — fastest legs in the house
       : fxActive(me, now) && me.fx.id === 'balloon' ? 1.35 : 1; // daiquiri legs / balloon drift
     if (now < hypeModeUntil) boost *= 1.25; // hype mode = disco legs — peaking must FEEL like peaking
+    if (now < rushUntil) boost *= rushMult;  // 🍬 sugar rush — pickups put a skip in the step
     const step = (WALK_SPEED * boost * dtMs) / 1000;
     let nx, ny;
     if (sliding) {
@@ -1882,6 +1883,7 @@ function init() {
         }
         if (Math.hypot(((p.x - me.x) / 100) * floorW, ((p.y - me.y) / 100) * floorH) < 40) {
           p.got = true;
+          sugarRush();
           p.elm.classList.add('rv-pellet--got');
           setTimeout(() => p.elm.remove(), 350);
           tonight.jelly += p.val; // gold spill = 5 each
@@ -1981,6 +1983,7 @@ function init() {
       }
       if (dist < rPx) {
         p.got = true;
+        sugarRush();
         if (run.hello && hello === 1) {
           hello = 2;
           const tag = document.querySelector('.rv-hellotag');
@@ -2272,8 +2275,18 @@ function init() {
 
   // the CHAIN is INVISIBLE now (Trym: "i dont care much about it — noise") —
   // the counter only survives quietly for the badge
+  // 🍬 SUGAR RUSH (Trym: "all pickups should give you a speedbump... the
+  // general feeling is that you move faster than default") — every pickup
+  // grants a short randomized burst of legs; the next pickup refreshes it, so
+  // active collecting sustains the rush and idling settles back to base.
+  let rushUntil = 0, rushMult = 1;
+  function sugarRush() {
+    rushMult = 1.12 + Math.random() * 0.18;              // 12-30% quicker
+    rushUntil = Date.now() + 2200 + Math.random() * 1300; // for 2.2-3.5s
+  }
   function bumpChain() {
     const now = Date.now();
+    sugarRush();
     chain = now - chainAt < CHAIN_MS ? chain + 1 : 1;
     chainAt = now;
     tonight.pickups += 1;
