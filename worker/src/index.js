@@ -265,7 +265,7 @@ async function headlessPublicationId(env) {
   return HEADLESS_PUB;
 }
 
-// Free worldwide shipping lives in the "Stickers" delivery profile — a product
+// CHARGED shipping (flat 49 NOK worldwide) lives in the "Stickers" delivery profile — a product
 // left in the DEFAULT profile charges real rates (the same checklist trap that
 // once hit the tee + magnet, now automated away). Association is MANDATORY:
 // if it fails, /checkout fails, and the client falls back to the shared
