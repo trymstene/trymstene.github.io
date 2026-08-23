@@ -1147,8 +1147,6 @@ var EV_EXPLAIN = {
   rave_run:'kept dancing — fires periodically while on the floor',
   rave_emote:'sent an emote at the rave',
   rave_fx:'triggered a dance-floor effect at the rave',
-  rave_call:'answered a DJ call at the rave',
-  rave_call_miss:'missed a DJ call at the rave',
   rave_hype:'helped fill the hype meter at the rave',
   rave_levelup:'earned rave rep and levelled up',
   rave_spotlight:'got the spotlight at the rave',
