@@ -563,25 +563,6 @@ function init() {
     cv.width = 160; cv.height = 160;
     cv.style.width = size + 'px'; cv.style.height = size + 'px';
     wrap.appendChild(cv);
-    // no YOU tag — the glow marks you, and the first step confirms it (Trym's call)
-    // tap/click ANOTHER banana = lock onto it for the food fight (stopProp so
-    // it doesn't also read as a walk order); your own banana isn't a target
-    if (!isMe) {
-      wrap.style.cursor = 'crosshair';
-      wrap.addEventListener('click', (e) => {
-        // TIGHT hit-test: only the banana's BODY locks on. The wrap box is much
-        // wider than the sprite, and its transparent corners were eating walk
-        // taps — you couldn't walk close past a banana to grab the mop or any
-        // floor item (Trym, first mop field test). A miss falls through to the
-        // floor handler and stays a plain walk order.
-        const b = wrap.getBoundingClientRect();
-        const nx = (e.clientX - b.left) / b.width - 0.5;
-        const ny = (e.clientY - b.top) / b.height - 0.5;
-        if (Math.abs(nx) > 0.22 || Math.abs(ny) > 0.42) return;
-        e.stopPropagation();
-        setTarget(p.id);
-      });
-    }
     world.appendChild(wrap);
     ravers.set(p.id, { ...p, wrap, cv, x, y, size });
     if (p.stage) setStage(p.id, true);
@@ -964,7 +945,6 @@ function init() {
   function dropRaver(id) {
     const r = ravers.get(id);
     if (!r) return;
-    if (id === lockId) clearTarget(); // your target left the floor
     if (!r.stage) poofAt(r.x, r.y, (r.size || 90) / 74); // gone in a puff, not a blink
     r.wrap.remove();
     ravers.delete(id);
@@ -1558,29 +1538,10 @@ function init() {
   // grab — value is redistributed, never destroyed. Hit detection is VICTIM-
   // authoritative: your client judges hits on YOU and announces the splat, so
   // a cheater can only dodge, never hurt (jelly is a local stat anyway).
-  const NADE_SPEED = 68;   // % of floor per second — doubled (Trym: snappier, fewer whiffs)
-  const NADE_RANGE = 40;   // % of floor before it drops
-  const NADE_HIT = 5.4;    // hit radius — a touch fatter so glancing shots land
-  const SHOT_CD = 2000;    // the vibe knob — gentle start (Trym approved)
-  const SPLAT_LOSS = 15;   // jelly a hit knocks loose (Trym: make it hurt)
-  const nades = new Map(); // key -> {el, x, y, vx, vy, dist, by}
-  let nadeSeq = 0;
-  let lastShotAt = 0;
-  let graceUntil = 0;      // newcomers can't be splatted for 60s (or until they fire)
-  let bartyDuckAt = 0;
-  const scatterPellets = []; // splat spill — standalone mini-pellets, self-ticked
+  const scatterPellets = []; // knocked-loose jelly — spilled crescents, self-ticked (the lasers' loot)
 
-  // the shot = a tiny curved banana, the SAME crescent that rains from the
-  // golden banana (Trym: "like the bananas in the banana rain"), glowing
-  const NADE_SVG = '<svg viewBox="0 0 10 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="2" y="0" width="1" height="1" fill="#7a4a21"/><rect x="8" y="0" width="1" height="1" fill="#fff6c8"/>'
-    + '<rect x="2" y="1" width="1" height="1" fill="#ffd23f"/><rect x="8" y="1" width="1" height="1" fill="#ffd23f"/>'
-    + '<rect x="2" y="2" width="2" height="1" fill="#ffd23f"/><rect x="7" y="2" width="2" height="1" fill="#ffd23f"/>'
-    + '<rect x="3" y="3" width="2" height="1" fill="#ffd23f"/><rect x="6" y="3" width="3" height="1" fill="#ffd23f"/>'
-    + '<rect x="3" y="4" width="1" height="1" fill="#e6a817"/><rect x="4" y="4" width="4" height="1" fill="#ffd23f"/><rect x="8" y="4" width="1" height="1" fill="#e6a817"/>'
-    + '<rect x="4" y="5" width="1" height="1" fill="#e6a817"/><rect x="5" y="5" width="2" height="1" fill="#ffd23f"/><rect x="7" y="5" width="1" height="1" fill="#e6a817"/></svg>';
   // the banana SPLASH — yellow bits flying out (not a white star); reads as
-  // "splatted with a banana", cuts through the floor noise
+  // "splatted", cuts through the floor noise
   const SPLASH_SVG = '<svg viewBox="0 0 13 13" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
     + '<rect x="5" y="5" width="3" height="3" fill="#ffd23f"/><rect x="6" y="6" width="1" height="1" fill="#e6a817"/>'
     + '<rect x="6" y="0" width="1" height="2" fill="#ffe135"/><rect x="6" y="11" width="1" height="2" fill="#ffe135"/>'
@@ -1588,36 +1549,6 @@ function init() {
     + '<rect x="2" y="2" width="1" height="1" fill="#ffe135"/><rect x="10" y="2" width="1" height="1" fill="#ffe135"/>'
     + '<rect x="2" y="10" width="1" height="1" fill="#ffe135"/><rect x="10" y="10" width="1" height="1" fill="#ffe135"/>'
     + '<rect x="4" y="1" width="1" height="1" fill="#e6a817"/><rect x="8" y="11" width="1" height="1" fill="#e6a817"/></svg>';
-  // the landing poof — a few yellow specks, no stock emoji (Trym's note)
-  const POP_SVG = '<svg viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="0" y="3" width="1" height="1" fill="#ffd23f"/>'
-    + '<rect x="7" y="4" width="1" height="1" fill="#ffd23f"/><rect x="4" y="7" width="1" height="1" fill="#ffe135"/>'
-    + '<rect x="3" y="3" width="2" height="2" fill="#ffd23f"/></svg>';
-
-  function spawnNade(by, x, y, angle) {
-    const el2 = document.createElement('div');
-    el2.className = 'rv-nade';
-    el2.innerHTML = NADE_SVG;
-    el2.style.left = x + '%';
-    el2.style.top = (y - 5) + '%'; // leaves from banana-hand height
-    world.appendChild(el2);
-    nades.set('n' + (nadeSeq++), {
-      el: el2, x, y: y - 5, by,
-      vx: Math.cos(angle) * NADE_SPEED, vy: Math.sin(angle) * NADE_SPEED,
-      dist: 0,
-    });
-  }
-
-  // the shot just POOFS on landing/miss — no litter left behind
-  function popNade(x, y) {
-    const d = document.createElement('div');
-    d.className = 'rv-nadepop';
-    d.innerHTML = POP_SVG;
-    d.style.left = x + '%';
-    d.style.top = y + '%';
-    world.appendChild(d);
-    setTimeout(() => d.remove(), 350);
-  }
 
   // a floating combat number, gaming-style (red '-N' by default)
   function floatNum(x, y, txt, cls) {
@@ -1915,104 +1846,9 @@ function init() {
     }
   }
 
-  // ---- lock-on targeting (Trym's brief: tap a banana to lock a weak green
-  // square around it, then just keep hitting fire while you move + dodge +
-  // grab jelly — no need to aim each shot by hand) ----
-  let lockId = null;
-  function clearTarget() {
-    if (lockId) {
-      const r = ravers.get(lockId);
-      if (r && r.lockEl) { r.lockEl.remove(); r.lockEl = null; }
-    }
-    lockId = null;
-  }
-  function setTarget(id) {
-    if (id === myId) return;
-    if (id === lockId) { clearTarget(); return; } // tap the locked one again = unlock
-    clearTarget();
-    const r = ravers.get(id);
-    if (!r) return;
-    lockId = id;
-    r.lockEl = document.createElement('div');
-    r.lockEl.className = 'rv-lock';
-    r.lockEl.innerHTML = '<i></i><i></i><i></i><i></i>'; // 4 corner brackets, not a full square
-    r.wrap.appendChild(r.lockEl);
-  }
-
-  function fireNade() {
+  // the spill ticker — knocked-loose crescents (laser zaps) live here
+  function spillTick(now) {
     const me = myId && ravers.get(myId);
-    if (!me || me.stage || tourActive) return;
-    const now = Date.now();
-    if (now - lastShotAt < SHOT_CD) return;
-    lastShotAt = now;
-    graceUntil = 0; // opening fire ends your newcomer shield — fair's fair
-    // aim at the LOCKED target if you have one (they're on the floor); else
-    // just fling the way you're facing. Either way ±18° keeps it silly.
-    let base;
-    const tgt = lockId && ravers.get(lockId);
-    if (tgt && !tgt.stage) base = Math.atan2(tgt.y - me.y, tgt.x - me.x);
-    else base = (me.facing || 1) > 0 ? 0 : Math.PI;
-    const a = base + (Math.random() - 0.5) * 0.5; // ±14° — still silly, lands more
-    spawnNade(myId, me.x, me.y, a);
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'shot', a: +a.toFixed(3) }));
-    // throw recoil — a quick pop so firing FEELS like firing
-    me.cv.classList.remove('rv-throwpop');
-    void me.cv.offsetWidth;
-    me.cv.classList.add('rv-throwpop');
-    const btn = el('rvThrowBtn');
-    if (btn) {
-      btn.disabled = true;
-      setTimeout(() => { btn.disabled = false; }, SHOT_CD);
-    }
-    track('rave_shot');
-  }
-
-  function takeSplat(by) {
-    const me = myId && ravers.get(myId);
-    if (!me || me.stage) return;
-    if (Date.now() < graceUntil) return; // just arrived — not a piñata yet
-    const loss = Math.min(tonight.jelly, SPLAT_LOSS);
-    tonight.jelly -= loss;
-    const seed = (Date.now() ^ (nadeSeq * 2654435761)) >>> 0;
-    splatFx(me, { n: loss }); // I'm the victim — see my own -N, no self hit-ring
-    if (loss > 0) scatterSpill(me.x, me.y, loss, seed);
-    refreshStats();
-    passStat('splatted');
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'splat', by, n: loss, s: seed }));
-    track('rave_splat');
-  }
-
-  function nadeTick(now, dtMs) {
-    const dt = dtMs / 1000;
-    const me = myId && ravers.get(myId);
-    for (const [key, n] of nades) {
-      n.x += n.vx * dt;
-      n.y += n.vy * dt;
-      n.dist += Math.hypot(n.vx * dt, n.vy * dt);
-      n.el.style.left = n.x + '%';
-      n.el.style.top = n.y + '%';
-      const grounded = n.dist > NADE_RANGE || n.x < 2 || n.x > 97 || n.y < topClamp - 6 || n.y > 92;
-      // Barty HATES this (solo players get a target: the bar)
-      if (insideBar(n.x, n.y + 5)) {
-        n.el.remove(); nades.delete(key);
-        popNade(n.x, n.y + 5);
-        if (now - bartyDuckAt > 9000) {
-          bartyDuckAt = now;
-          showBubble('🤠 HEY! who is throwing PRODUCE in my club?!', false, 3500);
-        }
-        continue;
-      }
-      // victim-authoritative: only judge hits on MYSELF
-      if (me && !me.stage && n.by !== myId && Math.hypot(n.x - me.x, (n.y + 5 - me.y) * 1.4) < NADE_HIT) {
-        n.el.remove(); nades.delete(key);
-        takeSplat(n.by);
-        continue;
-      }
-      if (grounded) {
-        n.el.remove(); nades.delete(key);
-        popNade(n.x, Math.min(n.y + 5, 90));
-      }
-    }
     // the spill: collectible by proximity, 25s shelf life
     if (me && !me.stage) {
       for (let i = scatterPellets.length - 1; i >= 0; i--) {
@@ -3012,7 +2848,6 @@ function init() {
       if (m.t === 'pong') { lastPong = Date.now(); }
       else if (m.t === 'roster') {
         myId = m.you;
-        graceUntil = Date.now() + 60000; // fresh arrivals aren't piñatas
         // a reconnect gets a fresh roster — clear ghosts from the dead session first
         const alive = new Set(m.all.map((p) => p.id));
         [...ravers.keys()].forEach((id) => { if (!alive.has(id)) dropRaver(id); });
@@ -3070,18 +2905,6 @@ function init() {
       // the QUICK SWIPE: Trym struck a name — it vanishes mid-dance, the
       // banana falls back to its outfit-name
       else if (m.t === 'name') { const r = ravers.get(m.id); if (r) { r.name = m.name || ''; refreshHud(); } }
-      // 🍌💨 the food fight: everyone simulates every throw; splats are
-      // announced by the VICTIM (their jelly, their call)
-      else if (m.t === 'shot') { const r = ravers.get(m.id); if (r && m.id !== myId) spawnNade(m.id, r.x, r.y, m.a); }
-      else if (m.t === 'splat') {
-        const r = ravers.get(m.id);
-        if (r && m.id !== myId) {
-          const byMe = m.by === myId;
-          splatFx(r, { n: m.n, byMe }); // splash + -N + (if I shot them) the hit-ring
-          if (m.n > 0) scatterSpill(r.x, r.y, m.n, m.s >>> 0);
-          if (byMe) passStat('splats');
-        }
-      }
       else if (m.t === 'move') {
         const r = ravers.get(m.id);
         if (r && !r.stage && r.id !== myId) { leanInto(r, m.x - r.x); setPos(r, m.x, m.y); }
@@ -4097,16 +3920,6 @@ function init() {
   });
   if (QUEST_TEST && FLOOR_QUESTS[QUEST_TEST]) setTimeout(() => startQuest(QUEST_TEST), 3000);
 
-  // ---- the throw button (the food fight's trigger) ----
-  const throwBtn = el('rvThrowBtn');
-  if (throwBtn) throwBtn.addEventListener('click', fireNade);
-  addEventListener('keydown', (e) => {
-    if (e.key !== 'f' && e.key !== 'F') return;
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-    fireNade();
-  });
-
   // ---- emotes ----
   // ⚠️ THE BROADCAST IS THROTTLED TOO (Trym, 17 Aug): one mashed button used
   // to spray a heart onto every other screen per tap and cost a worker message
@@ -4423,7 +4236,7 @@ function init() {
   let trailsDirtyUntil = 0;
   // ⚠️ GATED TO ~60Hz (the park's and the bay's gate — same reasoning). rAF
   // fires at the DISPLAY's rate: 120Hz on a ProMotion iPhone, 165Hz on a
-  // gaming monitor. Ungated, this loop drove stepMe/nadeTick/tickRun/claims/
+  // gaming monitor. Ungated, this loop drove stepMe/spillTick/tickRun/claims/
   // quests/a sweep over every raver AND the whole canvas pass twice per
   // 60Hz beat — and unlike the park's, most of that cost is real DRAWING.
   // 12ms, NOT 15.5: any threshold in (8.4, 16.6) skips alternate 120Hz frames,
@@ -4462,7 +4275,7 @@ function init() {
     lastTick = now;
     stepMe(now, dtMs);
     updateCam();
-    nadeTick(now, dtMs); // 🍌💨 flying bananas + splat spill, frame rate like everything that moves
+    spillTick(now); // knocked-loose crescents collect at frame rate
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
     laserTick(now); // ⚡ the light show bites — sweeps, zaps, dodges, survival
     tryClaims(now); // item claims too — same lesson
