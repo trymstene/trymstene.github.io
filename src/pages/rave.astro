@@ -544,6 +544,7 @@ const GUIDE = [
       background: radial-gradient(closest-side, rgba(255, 225, 53, 0.3), rgba(255, 225, 53, 0.12) 55%, transparent 72%);
     }
     .rv-spot[hidden] { display: none; }
+    .rv-spot { transition: left 0.55s linear, top 0.55s linear; } /* the wander glides between rhythm ticks */
     .rv-lit canvas { filter: drop-shadow(0 0 10px #ffe135) drop-shadow(0 0 3px #fffdf5); }
     .rv-raver--me.rv-lit canvas { filter: drop-shadow(0 0 6px #ffe135) drop-shadow(0 0 12px #fffdf5); }
     /* floor items (vinyl, hot sauce): a soft glow + beat-bob so they beg to be grabbed */
@@ -931,6 +932,20 @@ const GUIDE = [
                  rvPelletBob 0.7s steps(2) calc(var(--pd, 0s) + 0.5s) infinite;
     }
     .rv-pellet svg { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    /* 🔦 the wandering light pays — the little coin tick while you keep up */
+    .rv-spotcoin {
+      position: absolute; transform: translate(-50%, 0); z-index: 363; pointer-events: none;
+      font-family: "Archivo Black", sans-serif; font-size: 0.7rem; color: #ffe135;
+      -webkit-text-stroke: 3px #16121f; paint-order: stroke fill; white-space: nowrap;
+      display: flex; align-items: center; gap: 3px;
+      animation: rvSpotCoin 0.65s ease-out forwards;
+    }
+    .rv-spotcoin img { image-rendering: auto; }
+    @keyframes rvSpotCoin {
+      0% { opacity: 0; transform: translate(-50%, 2px); }
+      25% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -16px); }
+    }
     /* ⚡ the light show bites — sweeping laser segments, the floor's opposition */
     .rv-laser { position: absolute; inset: 0; z-index: 240; pointer-events: none; }
     .rv-laser__track { /* the corridor guide — an honest telegraph of WHERE */
@@ -1205,12 +1220,12 @@ const GUIDE = [
       display: flex; flex-direction: column; align-items: center; gap: 5px;
       max-width: min(94%, calc(100% - 250px)); width: max-content; pointer-events: none;
     }
-    /* 📱 mobile: the camera centres YOU, so the club's top band IS the middle
-       of the screen (Trym: coin toasts blocking the floor). Dock the stack at
-       the bottom edge instead, compact, above the jelly meter line. */
+    /* 📱 mobile: park the toasts OVER THE DJ STAGE band at the club's very top
+       ("better to overlap the dj stage where not much is happening than
+       covering the bottom of the dancefloor") — and minimal (Trym: less space). */
     @media (max-width: 640px) {
-      .rv-toasts { top: auto; bottom: 44px; max-width: 94%; gap: 4px; }
-      .rv-glowtoast { font-size: 0.64rem; padding: 0.28rem 0.6rem; line-height: 1.35; }
+      .rv-toasts { top: 32px; max-width: 88%; gap: 3px; }
+      .rv-glowtoast { font-size: 0.58rem; padding: 0.2rem 0.5rem; line-height: 1.3; border-width: 1px; }
     }
     .rv-glowtoast {
       max-width: 100%; text-align: center; font-size: 0.72rem; line-height: 1.4;

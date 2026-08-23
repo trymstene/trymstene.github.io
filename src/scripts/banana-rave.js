@@ -248,6 +248,27 @@ function spotFor(w) {
   if (x < 36 && y > 66) y -= 30; // never inside the bar corner
   return { x, y };
 }
+// 🔦 the spotlight WANDERS now (Trym: "always be moving... follow it to get
+// the coins") — seeded waypoint steps from the landing spot, capped per hop so
+// a walking banana can keep up (~6%/s vs the banana's ~8%/s). Clock-synced:
+// every client computes the same path from the window index.
+function spotAt(w, sPh) {
+  const HOP = 3.5;                 // seconds per waypoint hop
+  const k = Math.floor(sPh / HOP);
+  const step = (i, p0) => {
+    const dx = (seedRand(w * 97 + i * 7) - 0.5) * 36;
+    const dy = (seedRand(w * 97 + i * 7 + 3) - 0.5) * 28;
+    let x = Math.min(86, Math.max(10, p0.x + dx));
+    let y = Math.min(80, Math.max(14, p0.y + dy));
+    if (x < 36 && y > 66) y -= 26;  // still never inside the bar corner
+    return { x, y };
+  };
+  let p0 = spotFor(w);
+  for (let i = 1; i <= k; i++) p0 = step(i, p0);
+  const p1 = step(k + 1, p0);
+  const f = (sPh % HOP) / HOP;
+  return { x: p0.x + (p1.x - p0.x) * f, y: p0.y + (p1.y - p0.y) * f };
+}
 function vinylSpotFor(w) { // keep in sync with vinylSpot() in worker-rave
   let x = 12 + seedRand(0x5eed + w * 2) * 70;
   let y = 26 + seedRand(0x5eed + w * 2 + 1) * 46; // open floor only — never against the stage edge
@@ -1166,6 +1187,7 @@ function init() {
   }
 
   // ---- floor life: spotlight + lost vinyl + hot sauce (one 500ms rhythm tick) ----
+  let spotCoinWin = -1, spotCoinEarned = 0; // the wandering light's per-appearance purse
   let vinylWinClaimed = -1;
   let lastVinylTry = 0;
   let miniDropUntil = 0;
@@ -2512,15 +2534,32 @@ function init() {
     const spotEl = el('rvSpot');
     const sPh = (((t - SPOT_OFFSET) % SPOT_PERIOD) + SPOT_PERIOD) % SPOT_PERIOD;
     if (sPh < SPOT_LEN) {
-      const s = spotFor(Math.floor((t - SPOT_OFFSET) / SPOT_PERIOD));
+      const spotWin = Math.floor((t - SPOT_OFFSET) / SPOT_PERIOD);
+      const s = spotAt(spotWin, sPh);
       spotEl.hidden = false;
       spotEl.style.left = s.x + '%';
       spotEl.style.top = s.y + '%';
+      if (spotCoinWin !== spotWin) { spotCoinWin = spotWin; spotCoinEarned = 0; }
       for (const r of ravers.values()) {
         const lit = !r.stage && Math.hypot(r.x - s.x, r.y - s.y) < SPOT_R;
         r.wrap.classList.toggle('rv-lit', lit);
         if (lit && r.id === myId) {
           addHype(2); // basking in the light per rhythm tick
+          // 💰 the light PAYS now (Trym: "a coin for each 0.5s you stand on
+          // it") — this tick IS the half-second. Capped per appearance so one
+          // spot can't out-pay every other coin faucet in the world.
+          if (spotCoinEarned < 15) {
+            spotCoinEarned += 1;
+            passStat('coins_earned', 1);
+            renderWallet(true);
+            const d = document.createElement('div');
+            d.className = 'rv-spotcoin';
+            d.innerHTML = '<img src="/assets/banana-stand/coin.png" width="12" height="12" alt=""> +1';
+            d.style.left = r.x + '%';
+            d.style.top = (r.y - 8) + '%';
+            world.appendChild(d);
+            setTimeout(() => d.remove(), 650);
+          }
           if (!r.spotTracked) { r.spotTracked = true; track('rave_spotlight'); passPatch('spotlight'); }
         }
       }
