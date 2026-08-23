@@ -3790,11 +3790,31 @@ function init() {
   });
 
   // ---- emotes ----
+  // ⚠️ THE BROADCAST IS THROTTLED TOO (Trym, 17 Aug): one mashed button used
+  // to spray a heart onto every other screen per tap and cost a worker message
+  // each. Leading edge sends at once, then at most one per window — with a
+  // TRAILING send so the last tap of a burst still reaches the floor instead of
+  // vanishing. Your OWN heart is drawn by the local echo either way, so mashing
+  // still looks instant to you; this only spares everybody else.
+  const EMOTE_SEND_MS = 800;
+  let lastEmoteSend = 0, emoteQueued = null, emoteTimer = null;
+  function sendEmote(k) {
+    if (!(ws && ws.readyState === 1)) return;
+    const now = Date.now(), wait = EMOTE_SEND_MS - (now - lastEmoteSend);
+    if (wait <= 0) { lastEmoteSend = now; ws.send(JSON.stringify({ t: 'emote', k })); return; }
+    emoteQueued = k;              // mid-burst: the last kind tapped is the one that lands
+    if (emoteTimer) return;
+    emoteTimer = setTimeout(() => {
+      emoteTimer = null;
+      const kk = emoteQueued; emoteQueued = null;
+      if (kk && ws && ws.readyState === 1) { lastEmoteSend = Date.now(); ws.send(JSON.stringify({ t: 'emote', k: kk })); }
+    }, wait);
+  }
   document.querySelectorAll('.rv-emote-btn').forEach((b) => {
     if (!b.dataset.emote) return; // the throw button shares the class for LOOK, not emote behaviour
     b.addEventListener('click', () => {
       const k = b.dataset.emote;
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'emote', k }));
+      sendEmote(k);
       const paid = myId ? floatEmote(myId, k) : false; // instant local echo
       // champagne in hand: every emote is a little celebration (+2 jelly) —
       // rides the same pay window, so it cannot be mashed either
