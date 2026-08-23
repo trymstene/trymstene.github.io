@@ -520,6 +520,42 @@ async function handleHealth(env, ship, store, buyable) {
           warn: rates ? undefined : 'NOTHING CAN SHIP',
         };
       });
+      // 🚚 THE 180-NOK GUARD (17 Aug — third profile incident): the custom
+      // products fell OUT of the free-shipping "Stickers" profile into the
+      // default one, and every checkout quoted ~$19 international. The
+      // delivery report above only DESCRIBES profiles; this ASSERTS the truth
+      // the way a buyer meets it — a real Storefront cart per product, US
+      // address, and the quote must be FREE. Failure is written into the
+      // product's verdict so the HQ desk's existing ❌-scan lights up.
+      try {
+        out.shipping = {};
+        for (const pr of PRODUCTS.filter((x) => x.live && x.shopifyVariantGid)) {
+          const q = await fetch('https://officialdancingbanana.myshopify.com/api/2024-07/graphql.json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json',
+              'X-Shopify-Storefront-Access-Token': '1032480366b6bf67760ba73ace4fe0f8' },
+            body: JSON.stringify({
+              query: `mutation($lines: [CartLineInput!]!, $addr: MailingAddressInput!) {
+                cartCreate(input: { lines: $lines, buyerIdentity: { countryCode: US,
+                  deliveryAddressPreferences: [{ deliveryAddress: $addr }] } }) {
+                  cart { deliveryGroups(first: 5) { nodes { deliveryOptions {
+                    title estimatedCost { amount currencyCode } } } } }
+                  userErrors { message } } }`,
+              variables: { lines: [{ merchandiseId: pr.shopifyVariantGid, quantity: 1 }],
+                addr: { country: 'US', address1: '1 Main St', city: 'New York', province: 'NY', zip: '10001' } },
+            }),
+          }).then((r) => r.json());
+          const cart = q.data && q.data.cartCreate && q.data.cartCreate.cart;
+          const opts = cart ? cart.deliveryGroups.nodes.flatMap((g) => g.deliveryOptions) : [];
+          const verdict = !opts.length ? '❌ NO DELIVERY OPTIONS (unbuyable)'
+            : opts.some((o) => Number(o.estimatedCost.amount) === 0) ? 'ok FREE'
+              : '❌ quoted ' + opts[0].estimatedCost.amount + ' ' + opts[0].estimatedCost.currencyCode
+                + ' — profile fell back to default (the 180-NOK bug)';
+          out.shipping[pr.key] = verdict;
+          const bh = 'custom-banana-' + pr.key;   // Shopify handle convention
+          if (verdict.includes('❌') && out.buyable[bh]) out.buyable[bh].verdict = verdict;
+        }
+      } catch (e) { out.shipping = 'error: ' + e.message.slice(0, 160); }
     } catch (e) { out.buyable = 'error: ' + e.message.slice(0, 200); }
   }
   // temp-product feature + cron hygiene at a glance
