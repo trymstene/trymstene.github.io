@@ -1365,6 +1365,35 @@ function init() {
   // of sparkles only YOU see; finish it and a new one draws itself elsewhere.
   // Client-only and per-visitor, so there is ALWAYS something to chase.
   let run = null, nextRunAt = Date.now() + 6000;
+  // 👋 THE HELLO RUN — the tour's zero-modal successor for cold arrivals
+  // (measured 23 Aug: retiring the tour collapsed verb adoption 6-30x for paid
+  // traffic — nothing taught them that tapping walks or that jelly is real).
+  // First-ever visit: the FIRST run spawns as a tight arc NEXT TO the player,
+  // one pellet wearing a "tap to grab!" tag; the first pickup floats a single
+  // "say hi!" hint at the react button. No modal, no steps, nothing to skip.
+  // hello: 1 = teach walking · 2 = teach the react · 0 = done (rv-hello set
+  // only when the lesson lands, so a bounce replays it next visit).
+  let hello = (() => { try { return localStorage.getItem('rv-hello') ? 0 : 1; } catch (e) { return 0; } })();
+  if (hello) nextRunAt = Date.now() + 2500; // a 44s visitor can't wait 6s for the floor to make its offer
+  function helloDone() {
+    hello = 0;
+    try { localStorage.setItem('rv-hello', '1'); } catch (e) {}
+  }
+  function helloReactHint() {
+    const btn = document.querySelector('.rv-emote-btn[data-emote]');
+    if (!btn || document.querySelector('.rv-hellohint')) return helloDone();
+    const r = btn.getBoundingClientRect();
+    const d = document.createElement('div');
+    d.className = 'rv-hellohint';
+    d.innerHTML = 'say hi! <svg viewBox="0 0 7 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="1" height="3" fill="#111"/><rect x="1" y="2" width="1" height="1" fill="#111"/><rect x="5" y="2" width="1" height="1" fill="#111"/><rect x="2" y="3" width="3" height="1" fill="#111"/><rect x="3" y="4" width="1" height="1" fill="#111"/></svg>';
+    d.style.left = Math.round(r.left + r.width / 2) + 'px';
+    d.style.top = Math.round(r.top - 34) + 'px';
+    document.body.appendChild(d);
+    const off = () => { d.remove(); document.removeEventListener('click', onTap, true); helloDone(); };
+    const onTap = (e) => { if (e.target.closest('[data-emote]')) off(); };
+    document.addEventListener('click', onTap, true);
+    setTimeout(() => { if (d.isConnected) off(); }, 10000); // shown once, never nagged
+  }
   // JELLY VARIETY (Trym, 15 Jul: "make the drops more exciting"): rare kinds
   // make every run feel different — variable reward is the whole trick.
   //   gold ~1/12 = +5 · rainbow ~1/60 = +10, confetti + a Barty sighting
@@ -1401,6 +1430,37 @@ function init() {
     const topPct = topClamp + 5;
     const pts = [];
     let tray = false;
+    // 👋 the hello arc: plain pellets only (no fleeing jelly in a lesson),
+    // close enough that one tap collects the lot. Cornered = normal run, and
+    // the teaching simply waits for the next one.
+    if (hello === 1 && !tourActive) {
+      for (let tries = 0; tries < 40 && !pts.length; tries++) {
+        const side = me.x > 55 ? -1 : 1; // the arc opens toward the roomy side
+        const cx = me.x + side * (13 + Math.random() * 3);
+        const cy = Math.min(86, Math.max(topPct + 4, me.y + (Math.random() * 8 - 4)));
+        const arc = [];
+        for (let i = 0; i < 4; i++) {
+          const ang = -0.9 + (i / 3) * 1.8;
+          const x = cx + Math.cos(ang) * 4 * side, y = cy + Math.sin(ang) * 6;
+          if (x < 6 || x > 93 || y < topPct || y > 89 || blockedAt(x, y)) { arc.length = 0; break; }
+          arc.push(mkPellet(x, y, i * 0.09, 'plain'));
+        }
+        if (!arc.length) continue;
+        arc.forEach((q) => { delete q.drift; }); // the lesson holds still
+        pts.push(...arc);
+        const tag = document.createElement('div');
+        tag.className = 'rv-hellotag';
+        tag.textContent = 'tap to grab!';
+        tag.style.left = cx + '%';
+        tag.style.top = (cy - 8) + '%';
+        el('rvRun').appendChild(tag); // rides the run host — wiped with it
+      }
+      if (pts.length) {
+        const host = el('rvRun');
+        pts.forEach((p) => host.appendChild(p.elm));
+        return { pts, born: Date.now(), tray: false, hello: true };
+      }
+    }
     // THE SPILLED TRAY (~1/7 runs): one tight ring instead of a scatter —
     // somebody dropped the whole thing. Centre drop is always the golden one.
     if (Math.random() < 1 / 7) {
@@ -1824,6 +1884,12 @@ function init() {
       }
       if (dist < rPx) {
         p.got = true;
+        if (run.hello && hello === 1) {
+          hello = 2;
+          const tag = document.querySelector('.rv-hellotag');
+          if (tag) tag.remove();
+          setTimeout(helloReactHint, 900); // let the +1 land before the next ask
+        }
         p.elm.style.removeProperty('--pd'); // the spawn stagger must not postpone the pop
         p.elm.classList.add('rv-pellet--got');
         const gone = p.elm;
