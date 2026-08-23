@@ -995,12 +995,29 @@ function init() {
     if (parts.length) showBubble(waveTxt, false, 3600);
   }
 
+  // ⚠️ THE EMOTE IS FREE, THE PAYOUT IS RATE-LIMITED (Trym, 17 Aug: "spamming
+  // heart or fire reacts builds jelly meter, which it shouldn't"). Mashing the
+  // button still shows every single heart — expression must stay instant, and
+  // the quest's watch step counts taps, not payouts — but only the first one
+  // inside the window pays. The gate lives HERE, not on the button, because
+  // addHype() also pays `rep`, the permanent cross-device stat, and a server
+  // echo of your own emote reaches this same function.
+  const EMOTE_PAY_MS = 5000;
+  let lastEmotePay = 0;
+  function emotePaid() {
+    const t = Date.now();
+    if (t - lastEmotePay < EMOTE_PAY_MS) return false;
+    lastEmotePay = t;
+    return true;
+  }
+
   function floatEmote(id, kind) {
     const wPh = (((Date.now() / 1000 - WAVE_OFFSET) % WAVE_PERIOD) + WAVE_PERIOD) % WAVE_PERIOD;
     if (wPh < WAVE_LEN) wavers.add(id); // emoting during the call = you're in the wave
-    if (id === myId) addHype(2);
+    let paid = false;
+    if (id === myId && emotePaid()) { addHype(2); paid = true; }
     const r = ravers.get(id);
-    if (!r) return;
+    if (!r) return paid;
     const e = document.createElement('span');
     e.className = 'rv-emote rv-emote--' + kind;
     // floats reuse the buttons' pixel icons (single art source); fire has no pixel icon yet
@@ -1009,6 +1026,7 @@ function init() {
     else e.innerHTML = { heart: '&#10084;', confetti: '&#10022;', banana: '&#127820;', fire: '&#128293;' }[kind] || '';
     r.wrap.appendChild(e);
     setTimeout(() => e.remove(), 1900);
+    return paid;
   }
 
   // ---- the DJ: banana of the day on the podium ----
@@ -3777,9 +3795,10 @@ function init() {
     b.addEventListener('click', () => {
       const k = b.dataset.emote;
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'emote', k }));
-      if (myId) floatEmote(myId, k); // instant local echo
-      // champagne in hand: every emote is a little celebration (+2 jelly)
-      const meC = myId && ravers.get(myId);
+      const paid = myId ? floatEmote(myId, k) : false; // instant local echo
+      // champagne in hand: every emote is a little celebration (+2 jelly) —
+      // rides the same pay window, so it cannot be mashed either
+      const meC = paid && ravers.get(myId);
       if (meC && fxActive(meC, Date.now()) && meC.fx.id === 'champagne') addHype(2);
       track('rave_emote', { k });
     });
