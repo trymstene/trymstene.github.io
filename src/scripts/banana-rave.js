@@ -1676,6 +1676,212 @@ function init() {
     }
   }
 
+  // ⚡ THE LIGHT SHOW BITES (Trym, 23 Aug: "we dont have any threat or urgency
+  // on the dancefloor that makes this a proper game") — the club's light rig
+  // is the floor's opposition. Clock-seeded sweeping laser SEGMENTS cross the
+  // floor: a corridor guide + warn beat telegraphs each one, dodging is pure
+  // walking, a hit ZAPS you (shock-blink) and knocks carried jelly loose as
+  // scoopable crescents (the splat grammar — "make it hurt", but recoverable
+  // and capped; broke = pure slapstick, so newcomers can't lose a thing).
+  // Dancing CLOSE to a beam without being hit pays; surviving THE DROP's
+  // frenzy untouched = "SURVIVED THE DANCEFLOOR", the badge + share-card stat.
+  const LZ_GAP = 11;      // seconds between groove sweeps
+  const LZ_WARN = 1.25;   // warn beat before the segment moves
+  const LZ_SWEEP = 3.2;   // seconds a segment takes to cross its corridor
+  const LZ_LOSS = 10;     // carried jelly a zap knocks loose (gentler than a banana hit)
+  const LZ_NEAR = 8;      // % beyond the corridor edge that still counts as dancing WITH it
+  const lzTest = new URLSearchParams(location.search).has('lasertest'); // QA: a sweep every ~5s
+  let lzBeams = [];
+  let lzSeen = -1, lzFrzSeen = -1;
+  let lzZapAt = 0;                       // my i-frames (one beam never multi-hits)
+  let lzInDrop = false, lzDropZapped = false, lzDropWhole = false;
+  let lzTaught = (() => { try { return !!localStorage.getItem('rv-lz'); } catch (e) { return false; } })();
+  function lzLearned() { lzTaught = true; try { localStorage.setItem('rv-lz', '1'); } catch (e) {} }
+  function lzRnd(n) {
+    let x = (n * 2654435761) >>> 0;
+    x ^= x >>> 13; x = (x * 1274126177) >>> 0;
+    return ((x ^= x >>> 16) >>> 0) / 4294967296;
+  }
+  function lzToast(html) {
+    const t = document.createElement('div');
+    t.className = 'rv-glowtoast';
+    t.innerHTML = html;
+    (el('rvToasts') || floor).appendChild(t);
+    setTimeout(() => t.remove(), 4200);
+  }
+  function lzSpawn(seed, t0) {
+    const vert = lzRnd(seed) < 0.62;             // vertical segments read best on a narrow phone
+    const dir = lzRnd(seed + 1) < 0.5 ? 1 : -1;
+    const band = 24 + lzRnd(seed + 2) * 12;      // corridor thickness (% of the cross axis)
+    let b;
+    if (vert) {
+      const y0 = clamp(topClamp + 4 + lzRnd(seed + 3) * (84 - band - topClamp), topClamp + 2, 92 - band);
+      b = { o: 'v', from: dir > 0 ? 6 : 93, to: dir > 0 ? 93 : 6, y0, y1: y0 + band };
+    } else {
+      const x0 = 8 + lzRnd(seed + 3) * (88 - band);
+      b = { o: 'h', from: dir > 0 ? topClamp + 3 : 91, to: dir > 0 ? 91 : topClamp + 3, x0, x1: x0 + band };
+    }
+    b.t0 = t0; b.seed = seed; b.sidePrev = null;
+    const wrap = document.createElement('div');
+    wrap.className = 'rv-laser rv-laser--' + b.o;
+    const track = document.createElement('div');
+    track.className = 'rv-laser__track';
+    const beam = document.createElement('div');
+    beam.className = 'rv-laser__beam rv-laser__beam--warn';
+    if (b.o === 'v') {
+      track.style.left = Math.min(b.from, b.to) + '%';
+      track.style.width = Math.abs(b.to - b.from) + '%';
+      track.style.top = b.y0 + '%';
+      track.style.height = (b.y1 - b.y0) + '%';
+      beam.style.left = b.from + '%';
+      beam.style.top = b.y0 + '%';
+      beam.style.height = (b.y1 - b.y0) + '%';
+    } else {
+      track.style.top = Math.min(b.from, b.to) + '%';
+      track.style.height = Math.abs(b.to - b.from) + '%';
+      track.style.left = b.x0 + '%';
+      track.style.width = (b.x1 - b.x0) + '%';
+      beam.style.top = b.from + '%';
+      beam.style.left = b.x0 + '%';
+      beam.style.width = (b.x1 - b.x0) + '%';
+    }
+    if (!lzTaught) {
+      const tag = document.createElement('span');
+      tag.className = 'rv-laser__tag';
+      tag.textContent = 'DODGE!';
+      beam.appendChild(tag);
+    }
+    wrap.appendChild(track);
+    wrap.appendChild(beam);
+    world.appendChild(wrap);
+    b.el = wrap; b.beamEl = beam;
+    lzBeams.push(b);
+  }
+  function lzZapMe(me, now, seed) {
+    lzZapAt = now;
+    me.shockUntil = now + 460;               // the existing shock-blink render
+    const loss = Math.min(tonight.jelly, LZ_LOSS);
+    tonight.jelly -= loss;
+    if (loss > 0) {
+      scatterSpill(me.x, me.y, loss, seed * 97 + 3);
+      splatFx(me, { n: loss });
+    } else {
+      splatFx(me, { n: 0 });
+      floatPlus(me.x, me.y - 8, 'ZAP!');
+    }
+    if (lzInDrop) lzDropZapped = true;
+    refreshStats();
+    track('rave_zap', { loss });
+    if (!lzTaught) {
+      lzLearned();
+      lzToast('⚡ <b>ZAPPED!</b>' + (loss > 0 ? ' — your jelly spilled. scoop it back before somebody else does!' : ' — the light show bites. keep moving!'));
+    }
+  }
+  function laserTick(now) {
+    if (tourActive) {                        // the tour owns the floor — no hazards mid-lesson
+      if (lzBeams.length) { lzBeams.forEach((b) => b.el.remove()); lzBeams = []; }
+      return;
+    }
+    const me = myId && ravers.get(myId);
+    const nowS = now / 1000;
+    const dropSecs = nowS % DROP_PERIOD;
+    const inDrop = dropSecs < DROP_LEN;
+    // — SURVIVED THE DANCEFLOOR: the whole drop frenzy, untouched —
+    if (inDrop && !lzInDrop) { lzInDrop = true; lzDropZapped = false; lzDropWhole = dropSecs < 2; }
+    if (!inDrop && lzInDrop) {
+      lzInDrop = false;
+      if (me && !me.stage && lzDropWhole && !lzDropZapped) {
+        tonight.survived += 1;
+        floatPlus(me.x, me.y - 10, '⚡ SURVIVED!');
+        lzToast('⚡ <b>SURVIVED THE DANCEFLOOR</b> — a whole drop light-show, untouched. that pays.');
+        scatterSpill(clamp(me.x + 6, 8, 90), me.y, 15, ((nowS | 0) * 13) + 5); // +15 in crescents, yours to scoop
+        passStat('floor_survived');
+        refreshStats();
+        track('rave_survive');
+      }
+    }
+    // — the scheduler: groove sweeps between drops, a 3-beam frenzy inside them —
+    const gap = lzTest ? 5 : LZ_GAP;
+    if (!inDrop) {
+      const win = Math.floor(nowS / gap);
+      // ~40% duty cycle: skip seeded windows so the show breathes (the skeptic's
+      // habituation warning) — and never open a groove sweep that would still be
+      // mid-flight when the drop lands
+      if (win !== lzSeen && (lzTest || lzRnd(win * 31) < 0.62)
+          && (DROP_PERIOD - (nowS % DROP_PERIOD)) > (LZ_WARN + LZ_SWEEP + 1)) {
+        lzSeen = win;
+        lzSpawn(win * 7 + 1, (win * gap + 0.4) * 1000);
+      }
+    } else {
+      const dropWin = Math.floor(nowS / DROP_PERIOD);
+      for (let k = 0; k < 3; k++) {
+        const at = dropWin * DROP_PERIOD + 1.5 + k * 4.2;      // staggered through the drop
+        if (nowS >= at && lzFrzSeen < dropWin * 3 + k) {
+          lzFrzSeen = dropWin * 3 + k;
+          lzSpawn(dropWin * 101 + k * 17 + 5, at * 1000);
+        }
+      }
+    }
+    // — move, hit, and the close-dodge pay —
+    for (let i = lzBeams.length - 1; i >= 0; i--) {
+      const b = lzBeams[i];
+      const tS = (now - b.t0) / 1000;
+      if (tS < 0) continue;
+      if (tS < LZ_WARN) continue;                              // warn beat: the segment holds + pulses
+      if (b.beamEl.classList.contains('rv-laser__beam--warn')) b.beamEl.classList.remove('rv-laser__beam--warn');
+      const prog = Math.min(1, (tS - LZ_WARN) / LZ_SWEEP);
+      const pos = b.from + (b.to - b.from) * prog;
+      if (b.o === 'v') b.beamEl.style.left = pos + '%';
+      else b.beamEl.style.top = pos + '%';
+      // zap check: everyone gets the shock VISUAL (deterministic, no network);
+      // only MY hit costs jelly — same client-local grammar as hoovering
+      for (const r of ravers.values()) {
+        if (r.stage) continue;
+        const along = b.o === 'v' ? r.x : r.y;
+        const cross = b.o === 'v' ? r.y : r.x;
+        const c0 = b.o === 'v' ? b.y0 : b.x0;
+        const c1 = b.o === 'v' ? b.y1 : b.x1;
+        const inBand = cross >= c0 && cross <= c1;
+        const hitW = b.o === 'v' ? 1.8 : 2.4;                  // anisotropic floor (% y is ~2x denser)
+        if (inBand && Math.abs(along - pos) < hitW) {
+          if (r.id === myId) {
+            if (now - lzZapAt > 1600) lzZapMe(r, now, b.seed);
+          } else if (!r.lzShockAt || now - r.lzShockAt > 1600) {
+            r.lzShockAt = now;
+            r.shockUntil = now + 460;
+          }
+        }
+      }
+      // the crossing moment for ME: reward a near-corridor dance (skill = staying
+      // CLOSE without being in it — risk pays, cowering across the room doesn't)
+      if (me && !me.stage) {
+        const meAlong = b.o === 'v' ? me.x : me.y;
+        const side = meAlong > pos ? 1 : -1;
+        if (b.sidePrev !== null && side !== b.sidePrev && now - lzZapAt > 400) {
+          const meCross = b.o === 'v' ? me.y : me.x;
+          const c0 = b.o === 'v' ? b.y0 : b.x0;
+          const c1 = b.o === 'v' ? b.y1 : b.x1;
+          const edge = meCross < c0 ? c0 - meCross : meCross > c1 ? meCross - c1 : 0;
+          if (edge > 0 && edge < LZ_NEAR) {
+            tonight.dodges += 1;
+            floatPlus(me.x, me.y - 8, 'CLOSE! +3');
+            addHype(3);
+            refreshStats();
+            track('rave_dodge');
+            if (!lzTaught) lzLearned();       // a clean read of the corridor = lesson landed
+          }
+        }
+        b.sidePrev = side;
+      }
+      if (prog >= 1) {
+        b.el.classList.add('rv-laser--out');
+        const gone = b.el;
+        setTimeout(() => gone.remove(), 400);
+        lzBeams.splice(i, 1);
+      }
+    }
+  }
+
   // ---- lock-on targeting (Trym's brief: tap a banana to lock a weak green
   // square around it, then just keep hitting fire while you move + dodge +
   // grab jelly — no need to aim each shot by hand) ----
@@ -1956,7 +2162,7 @@ function init() {
   let chain = 0, chainAt = 0;
   // ---- TONIGHT's stats: the braggable numbers of this visit (session-only;
   // lifetime totals live on the pass). refreshStats repaints the panel row.
-  const tonight = { jelly: 0, fives: 0, pickups: 0, jellytimes: 0 };
+  const tonight = { jelly: 0, fives: 0, pickups: 0, jellytimes: 0, dodges: 0, survived: 0 };
   // time in the club — same source as the endurance board (joined timestamp,
   // server-held in multiplayer), formatted 1h 2m 3s / 4m 32s / 12s
   function clubTime() {
@@ -1985,6 +2191,7 @@ function init() {
       + stat('🎁', tonight.pickups, 'items you picked up off the floor')
       + stat('👊', tonight.fives, 'fistbumps with other bananas')
       + stat('🕺', tonight.jellytimes, 'jelly times you danced through')
+      + stat('⚡', tonight.survived, 'times you SURVIVED THE DANCEFLOOR — a whole drop light-show, untouched')
       + '<p class="rv-statcap" id="rvStatCap">' + STAT_HINT + '</p>';
     const pills = [...s.querySelectorAll('.rv-stat')];
     const cap = el('rvStatCap');
@@ -2085,12 +2292,18 @@ function init() {
     c.fillStyle = '#ff4d9d';
     c.font = '800 42px "Archivo Black", sans-serif';
     c.fillText('DANCED FOR ' + clubTime().toUpperCase(), S - 60, 292);
+    if (tonight.survived > 0) {
+      c.fillStyle = '#ffe135';
+      c.font = '800 34px "Archivo Black", sans-serif';
+      c.fillText('SURVIVED THE DANCEFLOOR' + (tonight.survived > 1 ? ' \u00d7' + tonight.survived : ''), S - 60, 344);
+    }
     c.shadowBlur = 0;
     const rows = [
       [tonight.jelly, 'JELLY'],
       [tonight.pickups, tonight.pickups === 1 ? 'PICKUP' : 'PICKUPS'],
       [tonight.fives, tonight.fives === 1 ? 'FISTBUMP' : 'FISTBUMPS'],
       [tonight.jellytimes, tonight.jellytimes === 1 ? 'JELLY TIME' : 'JELLY TIMES'],
+      [tonight.dodges, tonight.dodges === 1 ? 'LASER DODGE' : 'LASER DODGES'],
     ];
     let y = 400;
     for (const [n, label] of rows) {
@@ -4212,6 +4425,7 @@ function init() {
     updateCam();
     nadeTick(now, dtMs); // 🍌💨 flying bananas + splat spill, frame rate like everything that moves
     tickRun(); // pellet collection at frame rate — the 500ms tick let fast walkers hop OVER pellets
+    laserTick(now); // ⚡ the light show bites — sweeps, zaps, dodges, survival
     tryClaims(now); // item claims too — same lesson
     questFrame(now); // 🎯 floor quests: hazards, tools, the hourly scheduler
     for (const r of ravers.values()) {
