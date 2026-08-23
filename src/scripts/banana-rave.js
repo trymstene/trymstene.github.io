@@ -1848,6 +1848,22 @@ function init() {
       const pos = b.from + (b.to - b.from) * prog;
       if (b.o === 'v') b.beamEl.style.left = pos + '%';
       else b.beamEl.style.top = pos + '%';
+      // 🌟 danger legibility (Trym): pink is plain, GOLD sheds sparks as it
+      // sweeps, rainbow glitches in CSS. Sparks are cosmetic — no sync needed.
+      if (b.kind === 'gold' && !reduced && now - (b.lastSpark || 0) > 110) {
+        b.lastSpark = now;
+        const sp = document.createElement('div');
+        sp.className = 'rv-lzspark';
+        if (b.o === 'v') {
+          sp.style.left = (pos + (Math.random() - 0.5) * 1.4) + '%';
+          sp.style.top = (b.y0 + Math.random() * (b.y1 - b.y0)) + '%';
+        } else {
+          sp.style.top = (pos + (Math.random() - 0.5) * 1.8) + '%';
+          sp.style.left = (b.x0 + Math.random() * (b.x1 - b.x0)) + '%';
+        }
+        b.el.appendChild(sp);
+        setTimeout(() => sp.remove(), 560);
+      }
       // zap check: everyone gets the shock VISUAL (deterministic, no network);
       // only MY hit costs jelly — same client-local grammar as hoovering
       for (const r of ravers.values()) {

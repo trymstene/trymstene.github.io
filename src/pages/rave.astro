@@ -956,9 +956,46 @@ const GUIDE = [
     .rv-laser--gold .rv-laser__beam { background: linear-gradient(90deg, #fff, #ffe135); box-shadow: 0 0 8px 2px rgba(255, 225, 53, 0.85), 0 0 22px 6px rgba(255, 225, 53, 0.4); }
     .rv-laser--gold.rv-laser--h .rv-laser__beam { background: linear-gradient(180deg, #fff, #ffe135); }
     .rv-laser--gold .rv-laser__track { background: rgba(255, 225, 53, 0.07); border-color: rgba(255, 225, 53, 0.35); }
-    .rv-laser--rainbow .rv-laser__beam { width: 6px; background: linear-gradient(180deg, #ff4d4d, #ff9f1c, #ffe135, #37d67a, #4db8ff, #b388ff); box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.55), 0 0 26px 8px rgba(179, 136, 255, 0.45); }
+    .rv-laser--rainbow .rv-laser__beam { width: 6px; background: linear-gradient(180deg, #ff4d4d, #ff9f1c, #ffe135, #37d67a, #4db8ff, #b388ff); box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.7), 0 0 34px 12px rgba(179, 136, 255, 0.55), 0 0 60px 20px rgba(77, 184, 255, 0.25); }
     .rv-laser--rainbow.rv-laser--h .rv-laser__beam { width: auto; height: 6px; background: linear-gradient(90deg, #ff4d4d, #ff9f1c, #ffe135, #37d67a, #4db8ff, #b388ff); }
     .rv-laser--rainbow .rv-laser__track { background: rgba(179, 136, 255, 0.08); border-color: rgba(179, 136, 255, 0.4); }
+    /* the big one GLITCHES — barely contained: cross-axis jitter + a chromatic
+       ghost double that flickers to the other side */
+    .rv-laser--rainbow .rv-laser__beam:not(.rv-laser__beam--warn) { animation: rvLzGlitchV 0.9s linear infinite; }
+    .rv-laser--rainbow.rv-laser--h .rv-laser__beam:not(.rv-laser__beam--warn) { animation: rvLzGlitchH 0.9s linear infinite; }
+    .rv-laser--rainbow .rv-laser__beam:not(.rv-laser__beam--warn)::after {
+      content: ''; position: absolute; inset: 0; background: inherit; opacity: 0.35;
+      animation: rvLzGhost 0.45s steps(2) infinite;
+    }
+    @keyframes rvLzGlitchV {
+      0%, 100% { transform: translateX(0); opacity: 1; }
+      8% { transform: translateX(2px); } 12% { transform: translateX(-3px); opacity: 0.72; }
+      16% { transform: translateX(0); } 44% { transform: translateX(-2px); }
+      48% { transform: translateX(3px); opacity: 0.85; } 52% { transform: translateX(0); opacity: 1; }
+      80% { transform: translateX(2px); } 84% { transform: translateX(-2px); opacity: 0.75; }
+      88% { transform: translateX(0); }
+    }
+    @keyframes rvLzGlitchH {
+      0%, 100% { transform: translateY(0); opacity: 1; }
+      8% { transform: translateY(2px); } 12% { transform: translateY(-3px); opacity: 0.72; }
+      16% { transform: translateY(0); } 44% { transform: translateY(-2px); }
+      48% { transform: translateY(3px); opacity: 0.85; } 52% { transform: translateY(0); opacity: 1; }
+      80% { transform: translateY(2px); } 84% { transform: translateY(-2px); opacity: 0.75; }
+      88% { transform: translateY(0); }
+    }
+    @keyframes rvLzGhost { 0% { transform: translate(4px, 0); } 50% { transform: translate(-4px, 0); } 100% { transform: translate(4px, 0); } }
+    /* gold's shed sparks — tiny pixel diamonds that pop and die */
+    .rv-lzspark {
+      position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+      background: #ffe135; transform: rotate(45deg);
+      box-shadow: 0 0 6px 1px rgba(255, 225, 53, 0.8);
+      animation: rvLzSpark 0.55s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes rvLzSpark {
+      0% { opacity: 1; transform: rotate(45deg) scale(1); }
+      100% { opacity: 0; transform: rotate(45deg) scale(0.2) translate(4px, 8px); }
+    }
     .rv-laser__tag { /* first-timer teaching: the beam wears its own instruction */
       position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
       font-family: "Archivo Black", sans-serif; font-size: 0.62rem; line-height: 1;
@@ -967,7 +1004,7 @@ const GUIDE = [
       box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
     }
     .rv-laser--h .rv-laser__tag { top: -26px; left: 12%; transform: none; }
-    @media (prefers-reduced-motion: reduce) { .rv-laser__beam--warn { animation: none; opacity: 0.4; } }
+    @media (prefers-reduced-motion: reduce) { .rv-laser__beam--warn, .rv-laser--rainbow .rv-laser__beam, .rv-laser--rainbow .rv-laser__beam::after { animation: none; } .rv-laser__beam--warn { opacity: 0.4; } }
     /* 👋 the hello run — zero-modal teaching for first-timers (the tour's heir) */
     .rv-hellotag {
       position: absolute; z-index: 9; pointer-events: none;
