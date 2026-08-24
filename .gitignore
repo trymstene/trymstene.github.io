@@ -70,3 +70,7 @@ print-files/
 # reel render artifacts — never in the repo
 tools/reel/frames/
 tools/reel/out/
+
+# playwright
+test-results/
+playwright-report/
