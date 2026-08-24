@@ -4363,7 +4363,7 @@ function init() {
         const white = !done && ((((r.shockUntil - now) / 75) | 0) % 2 === 1);
         r.wrap.classList.toggle('rv-shock', !done && !white);
         r.wrap.classList.toggle('rv-shockflash', white);
-        if (done) r.shockUntil = 0;
+        if (done) { r.shockUntil = 0; lastIdx = -1; } // force a repaint pass — the black frame can bake into the composited layer on a dancer that isn't being redrawn
       } else if (r.wrap.classList.contains('rv-shock') || r.wrap.classList.contains('rv-shockflash')) {
         // the sweeper: a shadow with no live shock behind it heals on sight
         r.wrap.classList.remove('rv-shock', 'rv-shockflash');
@@ -4806,6 +4806,7 @@ function init() {
       lastIdx = idx;
       const hue = dropActive ? Math.floor((now / 12) % 360) : 0;
       for (const r of [...ravers.values()].slice(0, MAX_VISIBLE)) {
+        try {
         const o = r.outfit;
         // sealed in a balloon = the calm frame — you float, you don't dance
         const fIdx = (fxActive(r, now) && r.fx.id === 'balloon') ? 0 : idx;
@@ -4834,6 +4835,12 @@ function init() {
           custom: o.c ? catCustom(o.c) : undefined,
         });
         if (fxActive(r, now) && r.fx.id === 'vhs') vhsGlitch(r.cv, now); // worn-tape shear on the fresh frame
+        } catch (e) {
+          if (!r.drawErrAt || now - r.drawErrAt > 5000) {
+            r.drawErrAt = now;
+            console.error('dance draw died for', r.id, e); // the nightly walk fails on this — the real cause names itself
+          }
+        }
       }
       if (djCv) {
         drawComposite(djCv.getContext('2d'), 200, idx, {
