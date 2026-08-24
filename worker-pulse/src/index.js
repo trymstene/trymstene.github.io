@@ -528,7 +528,7 @@ async function apiAnalyst(env) {
           { name: 'engagementRate' }, { name: 'totalRevenue' }, { name: 'transactions' }],
         orderBys: [{ dimension: { dimensionName: 'date' } }], limit: 30 },
       { dateRanges: window8, dimensions: [{ name: 'date' }, { name: 'eventName' }],
-        metrics: [{ name: 'eventCount' }], limit: 2000,
+        metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }], limit: 2000,
         dimensionFilter: { filter: { fieldName: 'eventName',
           inListFilter: { values: ANALYST_EVENTS } } } },
       { dateRanges: [{ startDate: 'yesterday', endDate: 'yesterday' }],
@@ -551,12 +551,14 @@ async function apiAnalyst(env) {
   // one zero-filled series per event — ⚠️ a day with no rows must read 0,
   // not vanish, or the baseline silently averages over fewer days than it says.
   const events = {};
-  for (const n of ANALYST_EVENTS) events[n] = order.map(() => 0);
+  const eventUsers = {}; // PEOPLE per day — the analyst's person-claims read these
+  for (const n of ANALYST_EVENTS) { events[n] = order.map(() => 0); eventUsers[n] = order.map(() => 0); }
   for (const r of rows(evR)) {
     const i = idx[dim(r, 0)];
     const n = dim(r, 1);
     if (i === undefined || !events[n]) continue;
     events[n][i] = met(r, 0);
+    eventUsers[n][i] = met(r, 1);
   }
 
   const campaigns = rows(campR).map((r) => ({
@@ -573,7 +575,7 @@ async function apiAnalyst(env) {
     if (b) gscBase = { clicks: b.clicks / 7, impressions: b.impressions / 7, position: b.position };
   } catch (e) { /* GSC lags a day or two — the analyst just skips search */ }
 
-  const out = analyse({ days, events, campaigns, gsc, gscBase });
+  const out = analyse({ days, events, eventUsers, campaigns, gsc, gscBase });
   const nice = new Date(yDate + 'T12:00:00').toLocaleDateString('en-GB',
     { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
   const data = { ...out, date: yDate, niceDate: nice, generatedAt: Date.now() };

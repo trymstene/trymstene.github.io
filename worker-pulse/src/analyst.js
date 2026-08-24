@@ -118,6 +118,10 @@ export function analyse(d) {
 
   // an event's yesterday, and its baseline daily average
   const ev = (n) => { const a = d.events[n]; return a ? (a[a.length - 1] || 0) : 0; };
+  // any sentence that says PEOPLE must count people — 6 shop views can be 2
+  // humans (Trym, 24 Aug). Falls back to event counts for old-shape callers.
+  const evUArr = (n) => (d.eventUsers || {})[n] || d.events[n] || [];
+  const evU = (n) => { const a = evUArr(n); return a.length ? (a[a.length - 1] || 0) : 0; };
   const evBase = (n) => { const a = d.events[n]; return a ? mean(a.slice(0, -1)) : 0; };
   const evZ = (n) => { const a = d.events[n]; return a ? zed(a[a.length - 1] || 0, a.slice(0, -1)) : 0; };
 
@@ -223,13 +227,13 @@ export function analyse(d) {
   }
 
   // ── 4. the funnel, only where the denominator earns a percentage ────────
-  const made = ev('builder_start');
-  const pdp = ev('sticker_pdp_view');
-  const co = ev('checkout_redirect');
+  const made = evU('builder_start');
+  const pdp = evU('sticker_pdp_view');
+  const co = evU('checkout_redirect');
   if (made >= MIN_STEP_N) {
     const cr = rate(pdp, made);
-    const crBase = rate(mean((d.events.sticker_pdp_view || []).slice(0, -1)),
-      mean((d.events.builder_start || []).slice(0, -1)));
+    const crBase = rate(mean(evUArr('sticker_pdp_view').slice(0, -1)),
+      mean(evUArr('builder_start').slice(0, -1)));
     if (pdp === 0) {
       reads.push(read(3, '🚧',
         made + ' people dressed a banana and not one of them reached a product '
