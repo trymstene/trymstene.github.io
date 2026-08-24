@@ -167,7 +167,7 @@ export default {
       if (!env.GITHUB_PAT) return new Response(JSON.stringify({ ok: false, err: 'no pat' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
       const num = parseInt(body.number, 10);
       const action = String(body.action || '');
-      if (!['approve', 'dismiss', 'comment', 'file'].includes(action) || (action !== 'file' && !num)) {
+      if (!['approve', 'dismiss', 'comment', 'file', 'merge'].includes(action) || (action !== 'file' && !num)) {
         return new Response(JSON.stringify({ ok: false, err: 'bad action' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const GH = 'https://api.github.com/repos/trymstene/trymstene.github.io';
@@ -190,6 +190,14 @@ export default {
           const r2 = await gh('/issues', 'POST', { title, body: note, labels: ['from-hq'] });
           const j2 = await r2.json();
           return new Response(JSON.stringify({ ok: !!j2.number, number: j2.number }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
+        // 🔀 the merge button — squash keeps main linear, one commit per PR,
+        // matching the house history style. GitHub enforces mergeability.
+        if (action === 'merge') {
+          const r3 = await gh('/pulls/' + num + '/merge', 'PUT', { merge_method: 'squash' });
+          const j3 = await r3.json();
+          return new Response(JSON.stringify({ ok: !!j3.merged, err: j3.merged ? undefined : (j3.message || 'not merged') }),
+            { headers: { ...cors, 'Content-Type': 'application/json' } });
         }
         if (note) await gh('/issues/' + num + '/comments', 'POST', { body: note });
         if (action === 'approve') {

@@ -1042,6 +1042,26 @@ const description = 'Authorized banana personnel only.';
             if (!ci) return;
             ci.textContent = !cruns.length ? '— no checks' : running ? '⏳ running' : bad ? '❌ checks failing' : '✅ checks green';
             ci.className = 'bm-devci ' + (running ? 'bm-devci--run' : bad ? 'bm-devci--bad' : 'bm-devci--ok');
+            // 🔀 the merge button appears only for a green, actionable PR —
+            // and only when the worker holds the key
+            if (devPat && !running && !bad && cruns.length) {
+              const acts = document.createElement('div');
+              acts.className = 'bm-devacts';
+              acts.innerHTML = '<button type="button" class="bm-devok">🔀 merge it</button>';
+              const mb = acts.querySelector('button');
+              mb.onclick = async () => {
+                mb.disabled = true; mb.textContent = '⏳ merging…';
+                try {
+                  const r2 = await fetch(API + '/dev/gh', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, number: pr.number, action: 'merge' }) });
+                  const j2 = await r2.json();
+                  if (!j2.ok) throw new Error(j2.err || 'no');
+                  mb.textContent = '🎉 merged';
+                  setTimeout(() => devLoad(), 1500);
+                } catch (e2) { mb.textContent = '✕ github said no — retry'; mb.disabled = false; }
+              };
+              card.appendChild(acts);
+            }
           }).catch(() => {});
         }
       } catch (e) { el('bmDevPrs').innerHTML = '<p class="bm-devempty">github is not answering — try a refresh</p>'; }
