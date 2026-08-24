@@ -320,6 +320,11 @@ const description = 'Authorized banana personnel only.';
     .bm-devci--ok { color: var(--ok); }
     .bm-devci--bad { color: var(--hot2); }
     .bm-devci--run { color: var(--org); }
+    .bm-devfile input, .bm-devfile textarea {
+      font: inherit; border-radius: 10px; border: 2px solid var(--hline);
+      background: var(--hinput); color: var(--hink); padding: 0.55rem;
+    }
+    .bm-devfile textarea { min-height: 56px; resize: vertical; }
     @media (max-width: 560px) { .bm-devcards { grid-template-columns: 1fr 1fr; } .bm-devcards .bm-worldcard:first-child { grid-column: 1 / -1; } }
     .bm-worldcard span { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hdim); }
   </style>
@@ -496,6 +501,12 @@ const description = 'Authorized banana personnel only.';
           <div class="bm-worldcard"><b id="bmDevDeploy">–</b><span>🚀 last deploy</span></div>
           <div class="bm-worldcard"><b id="bmDevQueueN">–</b><span>📋 on the desk</span></div>
           <div class="bm-worldcard"><b id="bmDevPrN">–</b><span>🔧 in flight</span></div>
+        </div>
+        <h3 class="bm-devh">📝 file something</h3>
+        <div class="bm-devcard bm-devfile">
+          <input id="bmDevNewTitle" type="text" maxlength="200" placeholder="what needs doing? (one line)" aria-label="New item title" />
+          <textarea id="bmDevNewBody" placeholder="details, if any… (optional)"></textarea>
+          <div class="bm-devacts"><button type="button" class="bm-devok" id="bmDevFileBtn">📝 put it on the desk</button></div>
         </div>
         <h3 class="bm-devh">📋 on the desk</h3>
         <div id="bmDevQueue" class="bm-devlist"><p class="bm-devempty">…</p></div>
@@ -1036,6 +1047,22 @@ const description = 'Authorized banana personnel only.';
       } catch (e) { el('bmDevPrs').innerHTML = '<p class="bm-devempty">github is not answering — try a refresh</p>'; }
     }
     el('bmDevRefresh').onclick = () => devLoad();
+    el('bmDevFileBtn').onclick = async () => {
+      const title = el('bmDevNewTitle').value.trim();
+      if (!title) { el('bmDevNewTitle').focus(); return; }
+      const btn = el('bmDevFileBtn');
+      btn.disabled = true; btn.textContent = '⏳ filing…';
+      try {
+        const r = await fetch(API + '/dev/gh', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, action: 'file', title, body: el('bmDevNewBody').value.trim() }) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.err || 'no');
+        el('bmDevNewTitle').value = ''; el('bmDevNewBody').value = '';
+        btn.textContent = '✅ filed as #' + j.number;
+        setTimeout(() => { btn.textContent = '📝 put it on the desk'; btn.disabled = false; }, 1800);
+        devLoad();
+      } catch (e) { btn.textContent = '✕ github said no — retry'; btn.disabled = false; }
+    };
 
     // ── 🌍 THE WORLD DESK — live headcounts from the rooms ──
     const WORLD_API = 'https://banana-rave.trymstene.workers.dev';

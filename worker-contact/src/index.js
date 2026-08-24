@@ -167,7 +167,7 @@ export default {
       if (!env.GITHUB_PAT) return new Response(JSON.stringify({ ok: false, err: 'no pat' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
       const num = parseInt(body.number, 10);
       const action = String(body.action || '');
-      if (!num || !['approve', 'dismiss', 'comment'].includes(action)) {
+      if (!['approve', 'dismiss', 'comment', 'file'].includes(action) || (action !== 'file' && !num)) {
         return new Response(JSON.stringify({ ok: false, err: 'bad action' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const GH = 'https://api.github.com/repos/trymstene/trymstene.github.io';
@@ -183,6 +183,14 @@ export default {
       });
       const note = String(body.body || '').slice(0, 4000);
       try {
+        // 📝 the summon box — file a new item onto the desk without leaving HQ
+        if (action === 'file') {
+          const title = String(body.title || '').trim().slice(0, 200);
+          if (!title) return new Response(JSON.stringify({ ok: false, err: 'no title' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+          const r2 = await gh('/issues', 'POST', { title, body: note, labels: ['from-hq'] });
+          const j2 = await r2.json();
+          return new Response(JSON.stringify({ ok: !!j2.number, number: j2.number }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
         if (note) await gh('/issues/' + num + '/comments', 'POST', { body: note });
         if (action === 'approve') {
           await gh('/issues/' + num + '/labels', 'POST', { labels: ['approved'] });
