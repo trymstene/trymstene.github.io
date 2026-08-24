@@ -530,10 +530,11 @@ const GUIDE = [
        beat after the cheer, stand-up timing */
     .rv-bubble--mutter { font-size: 0.5rem; color: #55524a; background: #eae7db; min-width: 110px; }
     .rv-bubble--mutter::before, .rv-bubble--mutter::after { background: #eae7db; }
-    /* phones: Barty pipes down a notch — the bubbles ate too much floor */
+    /* phones: Barty WHISPERS (Trym, round 2: still ate too much floor) —
+       roughly half the old footprint: smaller type, tighter box, tighter pad */
     @media (max-width: 640px) {
-      .rv-bubble { font-size: 0.52rem; max-width: 180px; }
-      .rv-bubble--mutter { font-size: 0.46rem; }
+      .rv-bubble { font-size: 0.42rem; min-width: 90px; max-width: 130px; padding: 0.28rem 0.38rem; line-height: 1.4; border-width: 2px; box-shadow: 2px 2px 0 #000; }
+      .rv-bubble--mutter { font-size: 0.38rem; min-width: 80px; }
     }
 
     /* floor life: light trails, the wandering spotlight, the lost vinyl */
@@ -1533,6 +1534,14 @@ const GUIDE = [
     /* iOS Safari: inset the emote/action bar up by the bottom safe-area so its
        buttons clear Safari's toolbar-reveal band (needs viewport-fit=cover) */
     .rv-hud { padding-bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px) + 12px); }
+    /* 📱 one line for the verbs (Trym: emotes + travel + audio together) — the
+       spacer pseudo goes, gaps tighten, and the WIDE stage pill takes its own
+       centred second row instead of shoving the sound button down there */
+    @media (max-width: 640px) {
+      .rv-hud { gap: 0.4rem; padding-left: 0.4rem; padding-right: 0.4rem; }
+      .rv-hud::before { display: none; }
+      .rv-stage-btn { flex: 1 1 100%; max-width: 250px; }
+    }
 
     /* shorter dancefloor → the frame is shorter and the emote/action bar rises
        into view. Bananas + camera are %-based, so they adapt. */
