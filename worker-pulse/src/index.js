@@ -222,7 +222,7 @@ async function apiRange(env, from, to) {
         metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }, { name: 'screenPageViews' }],
         limit: 12, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }] },
       { dateRanges, dimensions: [{ name: 'eventName' }],
-        metrics: [{ name: 'eventCount' }], limit: 200,
+        metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }], limit: 200,
         orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }] },
       { dateRanges, dimensions: [{ name: 'date' }],
         metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'newUsers' },
@@ -362,7 +362,7 @@ async function apiRange(env, from, to) {
     camps: (campRes ? rows(campRes) : []).map((r) => ({
       name: dim(r, 0), content: dim(r, 1) || '', sessions: met(r, 0), engaged: met(r, 1),
     })).filter((c) => c.name && !/^\((not set|direct|organic|referral)\)$/i.test(c.name)),
-    events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0) })),
+    events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0), u: met(r, 1) })),
     eventMap: evmapObj,
     stepTimes,
   };
@@ -1694,11 +1694,17 @@ function delta(cur, prev){
 }
 function evCount(R,name){ if(!R) return 0;
   for(var i=0;i<R.events.length;i++) if(R.events[i].name===name) return R.events[i].v; return 0; }
+// funnel steps count PEOPLE (totalUsers), never raw events — 6 shop_views from
+// 2 visitors must read as 2, or every step flatters itself (Trym's catch,
+// 24 Aug). Falls back to the event count for cached pre-upgrade windows.
+function evUsers(R,name){ if(!R) return 0;
+  for(var i=0;i<R.events.length;i++) if(R.events[i].name===name)
+    return (R.events[i].u!==undefined? R.events[i].u : R.events[i].v); return 0; }
 function stepVal(R,key){
   if(!R) return 0;
   if(key==='sessions') return R.kpis.sessions;
   if(key==='transactions') return R.kpis.transactions;
-  return evCount(R,key);
+  return evUsers(R,key);
 }
 var FUNNELS=[
   [['sessions','On the site',
