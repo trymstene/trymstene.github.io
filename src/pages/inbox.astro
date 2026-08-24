@@ -953,6 +953,11 @@ const description = 'Authorized banana personnel only.';
       return Math.round(sec / 86400) + 'd ago';
     };
     const devEsc = (t) => String(t || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // ⚠️ OPTIMISTIC BY DESIGN: GitHub's read API is eventually-consistent —
+    // refetching right after a write renders GHOSTS (a merged PR came back
+    // "open" and regrew its merge button on Trym's screen). So actions update
+    // the DOM locally and NEVER auto-refetch; the ↻ chip or a tab re-open
+    // reconciles once GitHub has caught up.
     async function devAct(num, action, note, btn) {
       if (btn) btn.disabled = true;
       try {
@@ -960,9 +965,14 @@ const description = 'Authorized banana personnel only.';
           body: JSON.stringify({ token, number: num, action, body: note || '' }) });
         const j = await r.json();
         if (!j.ok) throw new Error(j.err || 'no');
-        devLoad();
-      } catch (e) { if (btn) { btn.disabled = false; btn.textContent = '✕ github said no'; } }
+        return true;
+      } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = '✕ ' + String(e.message || 'github said no').slice(0, 50) + ' — retry'; }
+        return false;
+      }
     }
+    const devFade = (card) => { card.style.transition = 'opacity 0.45s, transform 0.45s'; card.style.opacity = '0'; card.style.transform = 'translateX(14px)'; setTimeout(() => card.remove(), 480); };
+    const devBumpCount = (id, delta) => { const e2 = el(id); const n = parseInt(e2.textContent, 10); if (!isNaN(n)) e2.textContent = Math.max(0, n + delta); };
     function devIssueCard(it) {
       const card = document.createElement('div');
       card.className = 'bm-devcard';
@@ -988,10 +998,32 @@ const description = 'Authorized banana personnel only.';
       card.querySelectorAll('button').forEach((b) => {
         const a = b.dataset.a;
         if (!devPat && a !== 'talk') b.disabled = true;
-        b.onclick = () => {
+        b.onclick = async () => {
           if (a === 'talk') { commentBox.classList.toggle('is-open'); if (commentBox.classList.contains('is-open')) ta.focus(); return; }
-          if (a === 'send') { if (ta.value.trim()) devAct(it.number, 'comment', ta.value.trim(), b); return; }
-          devAct(it.number, a, ta.value.trim(), b);
+          if (a === 'send') {
+            if (!ta.value.trim()) return;
+            b.textContent = '⏳ sending…';
+            if (await devAct(it.number, 'comment', ta.value.trim(), b)) {
+              ta.value = ''; commentBox.classList.remove('is-open');
+              b.textContent = '💬 send comment'; b.disabled = false;
+              const meta = card.querySelector('.bm-devmeta span:nth-child(2)');
+              if (meta) meta.textContent = '💬 ' + ((parseInt(meta.textContent.replace(/\D/g, ''), 10) || 0) + 1);
+            }
+            return;
+          }
+          b.textContent = a === 'approve' ? '⏳ approving…' : '⏳ dismissing…';
+          if (await devAct(it.number, a, ta.value.trim(), b)) {
+            if (a === 'approve') {
+              b.textContent = '✅ approved';
+              const meta = card.querySelector('.bm-devmeta');
+              if (meta && !meta.querySelector('.bm-devlabel--approved')) meta.insertAdjacentHTML('beforeend', '<span class="bm-devlabel bm-devlabel--approved">approved</span>');
+            } else {
+              devFade(card);
+              devBumpCount('bmDevQueueN', -1);
+              const badge = el('bmDevBadge');
+              if (badge) { const n = Math.max(0, (parseInt(badge.textContent, 10) || 1) - 1); badge.textContent = n; badge.hidden = !n; }
+            }
+          }
         };
       });
       return card;
@@ -1057,7 +1089,10 @@ const description = 'Authorized banana personnel only.';
                   const j2 = await r2.json();
                   if (!j2.ok) throw new Error(j2.err || 'no');
                   mb.textContent = '🎉 merged';
-                  setTimeout(() => devLoad(), 1500);
+                  const ciPill = el('bmDevCi' + pr.number);
+                  if (ciPill) { ciPill.textContent = '🎉 merged'; ciPill.className = 'bm-devci bm-devci--ok'; }
+                  devBumpCount('bmDevPrN', -1);
+                  setTimeout(() => devFade(card), 1400);
                 } catch (e2) { mb.textContent = '✕ ' + String(e2.message || 'github said no').slice(0, 60) + ' — retry'; mb.disabled = false; }
               };
               card.appendChild(acts);
@@ -1077,10 +1112,17 @@ const description = 'Authorized banana personnel only.';
           body: JSON.stringify({ token, action: 'file', title, body: el('bmDevNewBody').value.trim() }) });
         const j = await r.json();
         if (!j.ok) throw new Error(j.err || 'no');
+        const it = { number: j.number, title, body: el('bmDevNewBody').value.trim(),
+          html_url: 'https://github.com/trymstene/trymstene.github.io/issues/' + j.number,
+          created_at: new Date().toISOString(), comments: 0, labels: [{ name: 'from-hq' }] };
+        const q = el('bmDevQueue');
+        const empty = q.querySelector('.bm-devempty');
+        if (empty) empty.remove();
+        q.prepend(devIssueCard(it));
+        devBumpCount('bmDevQueueN', 1);
         el('bmDevNewTitle').value = ''; el('bmDevNewBody').value = '';
         btn.textContent = '✅ filed as #' + j.number;
         setTimeout(() => { btn.textContent = '📝 put it on the desk'; btn.disabled = false; }, 1800);
-        devLoad();
       } catch (e) { btn.textContent = '✕ github said no — retry'; btn.disabled = false; }
     };
 
