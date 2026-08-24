@@ -1041,6 +1041,7 @@ function init() {
   let bubbleSticky = false, bubbleT = null;
   function showBubble(text, sticky, ms, kind) {
     if (tourActive) return; // one voice at a time — Barty doesn't talk over the tour (wife-test)
+    if (hello && kind !== 'quest') return; // …or over the hello lesson (Trym: bubble + banner + tag all at once)
     // 🕯 and he holds his tongue while a quest marker hangs over him —
     // chatter (or a HAPPY HOUR yell) under the ? is noise (Trym)
     if (window.bwqTalk && window.bwqTalk.mark && window.bwqTalk.who === 'barty') return;
@@ -1436,6 +1437,7 @@ function init() {
     // 👋 the hello arc: plain pellets only (no fleeing jelly in a lesson),
     // close enough that one tap collects the lot. Cornered = normal run, and
     // the teaching simply waits for the next one.
+    if (hello === 1 && !tourActive && document.querySelector('.ccb')) return null; // the consent banner goes first — one thing at a time for a first-timer
     if (hello === 1 && !tourActive) {
       // GUARANTEED placement (the player-walk suite caught the old 40-try loop
       // silently giving up when any point clipped a boundary — some
@@ -4340,7 +4342,14 @@ function init() {
     laserTick(now); // ⚡ the light show bites — sweeps, zaps, dodges, survival
     tryClaims(now); // item claims too — same lesson
     questFrame(now); // 🎯 floor quests: hazards, tools, the hourly scheduler
+    // 🧯 one poisoned raver must not freeze the floor: tick() re-arms its rAF
+    // FIRST, so an exception here used to abort the render loop mid-iteration
+    // EVERY frame — the banana it died on stayed a black shock-shadow with its
+    // dance frozen until its state happened to change (Trym's stuck-shadow
+    // report). Contained per raver now, and shouted so the nightly walk's
+    // console assertion drags it into daylight.
     for (const r of ravers.values()) {
+      try {
       if (r.lastWalk && now - r.lastWalk > 300) stopLean(r); // came to rest — stand straight (keep facing)
       // the shock-blink renders HERE — the one loop with no perf gates and no
       // CSS animation. v1's lone timer could be lost (iOS freeze); v2's sweep
@@ -4355,6 +4364,15 @@ function init() {
         r.wrap.classList.toggle('rv-shock', !done && !white);
         r.wrap.classList.toggle('rv-shockflash', white);
         if (done) r.shockUntil = 0;
+      } else if (r.wrap.classList.contains('rv-shock') || r.wrap.classList.contains('rv-shockflash')) {
+        // the sweeper: a shadow with no live shock behind it heals on sight
+        r.wrap.classList.remove('rv-shock', 'rv-shockflash');
+      }
+      } catch (e) {
+        if (!r.tickErrAt || now - r.tickErrAt > 5000) {
+          r.tickErrAt = now;
+          console.error('raver tick died for', r.id, e); // the walk suite treats this as a failure — good
+        }
       }
     }
     // is anything actually painting? a still floor skips the whole canvas pass
