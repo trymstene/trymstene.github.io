@@ -4359,14 +4359,14 @@ function init() {
       // layer even after the class left (only Trym's filter-changing hype drop
       // freed him). Static classes flipped by JS end in a plain style change.
       if (r.shockUntil) {
-        const done = now > r.shockUntil;
-        const white = !done && ((((r.shockUntil - now) / 75) | 0) % 2 === 1);
-        r.wrap.classList.toggle('rv-shock', !done && !white);
-        r.wrap.classList.toggle('rv-shockflash', white);
-        if (done) { r.shockUntil = 0; lastIdx = -1; } // force a repaint pass — the black frame can bake into the composited layer on a dancer that isn't being redrawn
-      } else if (r.wrap.classList.contains('rv-shock') || r.wrap.classList.contains('rv-shockflash')) {
-        // the sweeper: a shadow with no live shock behind it heals on sight
-        r.wrap.classList.remove('rv-shock', 'rv-shockflash');
+        // the blink itself is PAINTED in the dance pass now (source-atop fill —
+        // the filter-class era kept baking black frames on real GPUs). Here:
+        // keep the dance repainting at blink cadence, and close the books.
+        lastIdx = -1; // every frame during a shock repaints — the blink rides the pixels
+        if (now > r.shockUntil) r.shockUntil = 0;
+      }
+      if (r.wrap.classList.contains('rv-shock') || r.wrap.classList.contains('rv-shockflash')) {
+        r.wrap.classList.remove('rv-shock', 'rv-shockflash'); // legacy classes never linger
       }
       } catch (e) {
         if (!r.tickErrAt || now - r.tickErrAt > 5000) {
@@ -4835,6 +4835,16 @@ function init() {
           custom: o.c ? catCustom(o.c) : undefined,
         });
         if (fxActive(r, now) && r.fx.id === 'vhs') vhsGlitch(r.cv, now); // worn-tape shear on the fresh frame
+        // ⚡ the shock-blink, painted IN the pixels (the filter era kept
+        // leaving Trym's banana baked black on real GPUs — headless never
+        // reproduced it; canvas paint cannot bake, the next frame repaints):
+        if (r.shockUntil && now < r.shockUntil) {
+          const ctx2 = r.cv.getContext('2d');
+          ctx2.globalCompositeOperation = 'source-atop';
+          ctx2.fillStyle = ((((r.shockUntil - now) / 75) | 0) % 2 === 1) ? 'rgba(255,255,255,0.95)' : 'rgba(10,20,40,0.9)';
+          ctx2.fillRect(0, 0, 160, 160);
+          ctx2.globalCompositeOperation = 'source-over';
+        }
         } catch (e) {
           if (!r.drawErrAt || now - r.drawErrAt > 5000) {
             r.drawErrAt = now;
