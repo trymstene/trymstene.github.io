@@ -1437,27 +1437,28 @@ function init() {
     // close enough that one tap collects the lot. Cornered = normal run, and
     // the teaching simply waits for the next one.
     if (hello === 1 && !tourActive) {
-      for (let tries = 0; tries < 40 && !pts.length; tries++) {
-        const side = me.x > 55 ? -1 : 1; // the arc opens toward the roomy side
-        const cx = me.x + side * (13 + Math.random() * 3);
-        const cy = Math.min(86, Math.max(topPct + 4, me.y + (Math.random() * 8 - 4)));
-        const arc = [];
-        for (let i = 0; i < 4; i++) {
-          const ang = -0.9 + (i / 3) * 1.8;
-          const x = cx + Math.cos(ang) * 4 * side, y = cy + Math.sin(ang) * 6;
-          if (x < 6 || x > 93 || y < topPct || y > 89 || blockedAt(x, y)) { arc.length = 0; break; }
-          arc.push(mkPellet(x, y, i * 0.09, 'plain'));
-        }
-        if (!arc.length) continue;
-        arc.forEach((q) => { delete q.drift; }); // the lesson holds still
-        pts.push(...arc);
-        const tag = document.createElement('div');
-        tag.className = 'rv-hellotag';
-        tag.textContent = 'tap to grab!';
-        tag.style.left = cx + '%';
-        tag.style.top = (cy - 8) + '%';
-        el('rvRun').appendChild(tag); // rides the run host — wiped with it
+      // GUARANTEED placement (the player-walk suite caught the old 40-try loop
+      // silently giving up when any point clipped a boundary — some
+      // first-timers got a scatter and no lesson). The arc now CLAMPS into
+      // bounds and only dodges the bar corner by sliding up — a lesson that
+      // sometimes doesn't happen is worse than one a little off-centre.
+      const side = me.x > 55 ? -1 : 1; // the arc opens toward the roomy side
+      let cx = Math.min(88, Math.max(11, me.x + side * 14));
+      let cy = Math.min(82, Math.max(topPct + 6, me.y));
+      if (cx < 38 && cy > 58) cy = 56;   // never in the bar corner
+      for (let i = 0; i < 4; i++) {
+        const ang = -0.9 + (i / 3) * 1.8;
+        const x = Math.min(92, Math.max(7, cx + Math.cos(ang) * 4 * side));
+        const y = Math.min(88, Math.max(topPct + 2, cy + Math.sin(ang) * 6));
+        pts.push(mkPellet(x, y, i * 0.09, 'plain'));
       }
+      pts.forEach((q) => { delete q.drift; }); // the lesson holds still
+      const tag = document.createElement('div');
+      tag.className = 'rv-hellotag';
+      tag.textContent = 'tap to grab!';
+      tag.style.left = cx + '%';
+      tag.style.top = (cy - 8) + '%';
+      el('rvRun').appendChild(tag); // rides the run host — wiped with it
       if (pts.length) {
         const host = el('rvRun');
         pts.forEach((p) => host.appendChild(p.elm));
