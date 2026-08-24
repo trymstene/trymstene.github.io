@@ -1443,7 +1443,11 @@ function init() {
       // bounds and only dodges the bar corner by sliding up — a lesson that
       // sometimes doesn't happen is worse than one a little off-centre.
       const side = me.x > 55 ? -1 : 1; // the arc opens toward the roomy side
-      let cx = Math.min(88, Math.max(11, me.x + side * 14));
+      // ⚠️ distance is PIXEL-true, not % — on a 353px phone floor 14% is ~49px,
+      // INSIDE the hoover radius, and the arc ate itself the frame it spawned
+      // (mobile first-timers never saw "tap to grab"; the walk suite caught it)
+      const reachPct = Math.min(26, Math.max(14, (((me.size || 90) * 0.55 + 60) / floorW) * 100));
+      let cx = Math.min(88, Math.max(11, me.x + side * reachPct));
       let cy = Math.min(82, Math.max(topPct + 6, me.y));
       if (cx < 38 && cy > 58) cy = 56;   // never in the bar corner
       for (let i = 0; i < 4; i++) {
