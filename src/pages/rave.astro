@@ -402,7 +402,9 @@ const GUIDE = [
       .rv-pyro svg { animation: none; } .rv-pyro__b { opacity: 0; }
     }
 
-    .rv-floor { position: relative; height: min(62vh, 560px); overflow: hidden; background: #161022; }
+    /* the height lives in ONE later top-level rule (min(50vh,440px), every
+       viewport) — a second height here shadowed it and misled two fixes */
+    .rv-floor { position: relative; overflow: hidden; background: #161022; }
     /* the world layer: ravers + checkerboard live here so the camera (translate+scale)
        moves the floor WITH the crowd; screen-space chrome (drop flash, zoom btn) stays outside */
     .rv-world {
@@ -1554,8 +1556,9 @@ const GUIDE = [
       .rv-stage-btn { flex: 1 1 100%; max-width: 250px; }
     }
 
-    /* shorter dancefloor → the frame is shorter and the emote/action bar rises
-       into view. Bananas + camera are %-based, so they adapt. */
+    /* THE floor height — every viewport (deliberately shorter than the old
+       62vh: the frame must leave the action bar reachable). Bananas + camera
+       are %-based, so they adapt. */
     .rv-floor { height: min(50vh, 440px); }
 
     /* THE STAGE INVITATION — a pulsing pill that rises just beneath the DJ in
