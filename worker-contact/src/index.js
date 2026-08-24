@@ -148,6 +148,53 @@ export default {
       const res = await stub.fetch('https://do/delete', { method: 'POST', body: JSON.stringify({ keys }) });
       return new Response(await res.text(), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
+    // ── 🛠 THE DEV DESK (Banana HQ rig console) ──────────────────────────
+    // Reads are client-side against GitHub's public API (public repo — no
+    // secrets needed). These two routes are only the WRITE half: they proxy
+    // triage actions to GitHub with a PAT held as a wrangler secret, behind
+    // the same inbox token as every other desk. No PAT set = the desk runs
+    // read-only and says so.
+    if (url.pathname === '/dev/ping' && request.method === 'GET') {
+      const token = url.searchParams.get('token') || '';
+      if (!env.INBOX_TOKEN || token !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
+      return new Response(JSON.stringify({ ok: true, pat: !!env.GITHUB_PAT }),
+        { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+    if (url.pathname === '/dev/gh' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (e) { return new Response('bad json', { status: 400, headers: cors }); }
+      if (!env.INBOX_TOKEN || String(body.token || '') !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
+      if (!env.GITHUB_PAT) return new Response(JSON.stringify({ ok: false, err: 'no pat' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+      const num = parseInt(body.number, 10);
+      const action = String(body.action || '');
+      if (!num || !['approve', 'dismiss', 'comment'].includes(action)) {
+        return new Response(JSON.stringify({ ok: false, err: 'bad action' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const GH = 'https://api.github.com/repos/trymstene/trymstene.github.io';
+      const gh = (path, method, payload) => fetch(GH + path, {
+        method,
+        headers: {
+          Authorization: 'Bearer ' + env.GITHUB_PAT,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'banana-hq-dev-desk',
+          'Content-Type': 'application/json',
+        },
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+      const note = String(body.body || '').slice(0, 4000);
+      try {
+        if (note) await gh('/issues/' + num + '/comments', 'POST', { body: note });
+        if (action === 'approve') {
+          await gh('/issues/' + num + '/labels', 'POST', { labels: ['approved'] });
+        } else if (action === 'dismiss') {
+          await gh('/issues/' + num + '/labels', 'POST', { labels: ['dismissed'] });
+          await gh('/issues/' + num, 'PATCH', { state: 'closed', state_reason: 'not_planned' });
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, err: 'github said no' }), { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+    }
     return new Response('not found', { status: 404, headers: cors });
   },
 };

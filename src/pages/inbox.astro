@@ -33,6 +33,7 @@ const description = 'Authorized banana personnel only.';
     #bmPaneItems { --acc: var(--hot2); }
     #bmPaneUsers { --acc: var(--ok); }
     #bmPaneWorld { --acc: var(--nana); }
+    #bmPaneDev { --acc: #8fb6ff; }
     .bm-letterhead {
       background: var(--hpanel); color: var(--hink); border: 2px solid var(--hline);
       border-top: 4px solid var(--nana); box-shadow: 0 10px 26px rgba(0,0,0,0.35);
@@ -277,6 +278,49 @@ const description = 'Authorized banana personnel only.';
     .bm-worldcards > :nth-child(3n+2) { --kc: var(--ok); }
     .bm-worldcards > :nth-child(3n+3) { --kc: var(--cool); }
     .bm-worldcard b { font-size: 2rem; line-height: 1; color: var(--kc, var(--nana)); }
+    /* 🛠 the dev desk */
+    .bm-devcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-top: 0.9rem; }
+    .bm-devcards .bm-worldcard b { font-size: 1rem; padding-top: 0.3rem; line-height: 1.35; }
+    .bm-devnote { margin: 0.7rem 0 0; color: var(--org); font-size: 0.85rem; }
+    .bm-devh { margin: 1.4rem 0 0.55rem; font-size: 0.85rem; color: var(--hdim); letter-spacing: 0.06em; text-transform: uppercase; }
+    .bm-devlist { display: grid; gap: 0.7rem; }
+    .bm-devempty { color: var(--hdim); font-size: 0.9rem; margin: 0.2rem 0; }
+    .bm-devcard {
+      border: 2px solid var(--hline); border-left: 5px solid var(--acc);
+      background: var(--hcard); border-radius: 14px; padding: 0.85rem 0.95rem;
+      display: grid; gap: 0.45rem;
+    }
+    .bm-devtitle { font-weight: 800; line-height: 1.35; }
+    .bm-devtitle a { color: var(--hink); text-decoration: none; }
+    .bm-devtitle a:hover { text-decoration: underline; }
+    .bm-devmeta { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.78rem; color: var(--hdim); }
+    .bm-devlabel {
+      border: 1px solid var(--hline); border-radius: 999px; padding: 0.1rem 0.55rem;
+      font-size: 0.72rem; font-weight: 700; color: var(--hink); background: var(--hpanel);
+    }
+    .bm-devlabel--approved { color: var(--ok); border-color: var(--ok); }
+    .bm-devlabel--dismissed { color: var(--hot2); border-color: var(--hot2); }
+    .bm-devbody { color: var(--hdim); font-size: 0.88rem; line-height: 1.5; overflow-wrap: anywhere; }
+    .bm-devacts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .bm-devacts button {
+      font: inherit; font-weight: 800; font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+      border-radius: 10px; padding: 0.5rem 0.8rem; min-height: 42px;
+      border: 2px solid var(--hline); background: var(--hpanel); color: var(--hink);
+    }
+    .bm-devacts button:disabled { opacity: 0.45; cursor: default; }
+    .bm-devacts .bm-devok { border-color: var(--ok); color: var(--ok); }
+    .bm-devacts .bm-devno { border-color: var(--hot2); color: var(--hot2); }
+    .bm-devcomment { display: none; gap: 0.5rem; }
+    .bm-devcomment.is-open { display: grid; }
+    .bm-devcomment textarea {
+      font: inherit; min-height: 64px; border-radius: 10px; resize: vertical;
+      border: 2px solid var(--hline); background: var(--hinput); color: var(--hink); padding: 0.55rem;
+    }
+    .bm-devci { font-weight: 800; }
+    .bm-devci--ok { color: var(--ok); }
+    .bm-devci--bad { color: var(--hot2); }
+    .bm-devci--run { color: var(--org); }
+    @media (max-width: 560px) { .bm-devcards { grid-template-columns: 1fr 1fr; } .bm-devcards .bm-worldcard:first-child { grid-column: 1 / -1; } }
     .bm-worldcard span { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hdim); }
   </style>
 
@@ -307,6 +351,7 @@ const description = 'Authorized banana personnel only.';
         <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Items<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
         <button class="bm-tab" id="bmTabUsers" role="tab" aria-selected="false" type="button">👤 Users</button>
         <button class="bm-tab" id="bmTabWorld" role="tab" aria-selected="false" type="button">🌍 World</button>
+        <button class="bm-tab" id="bmTabDev" role="tab" aria-selected="false" type="button">🛠 Dev<span class="bm-badge" id="bmDevBadge" hidden></span></button>
       </div>
 
       <div id="bmPaneMail">
@@ -435,6 +480,27 @@ const description = 'Authorized banana personnel only.';
           <a class="bm-chip" href="/banana-memes/">🖼 the gallery</a>
           <a class="bm-chip" href="/pass/">🎫 the pass</a>
         </div>
+      </div>
+
+      <!-- 🛠 THE DEV DESK — the rig's mission control. Reads ride GitHub's
+           public API (public repo, no secrets); approve/comment/dismiss proxy
+           through worker-contact with the inbox token. No PAT on the worker =
+           read-only, and the desk says so honestly. -->
+      <div id="bmPaneDev" hidden>
+        <div class="bm-bar">
+          <span class="bm-count">🛠 the dev desk</span>
+          <button class="bm-chip" id="bmDevRefresh" type="button">↻ refresh</button>
+        </div>
+        <p class="bm-devnote" id="bmDevMode" hidden>🔒 read-only — set the GitHub key on worker-contact to approve from here</p>
+        <div class="bm-worldcards bm-devcards">
+          <div class="bm-worldcard"><b id="bmDevDeploy">–</b><span>🚀 last deploy</span></div>
+          <div class="bm-worldcard"><b id="bmDevQueueN">–</b><span>📋 on the desk</span></div>
+          <div class="bm-worldcard"><b id="bmDevPrN">–</b><span>🔧 in flight</span></div>
+        </div>
+        <h3 class="bm-devh">📋 on the desk</h3>
+        <div id="bmDevQueue" class="bm-devlist"><p class="bm-devempty">…</p></div>
+        <h3 class="bm-devh">🔧 in flight</h3>
+        <div id="bmDevPrs" class="bm-devlist"><p class="bm-devempty">…</p></div>
       </div>
 
       <!-- 👤 USERS — the pass ledger grew up: one row per pass, searchable and
@@ -846,6 +912,9 @@ const description = 'Authorized banana personnel only.';
       el('bmPaneRave').hidden = which !== 'rave';
       el('bmPaneItems').hidden = which !== 'items';
       el('bmPaneWorld').hidden = which !== 'world';
+      el('bmTabDev').setAttribute('aria-selected', String(which === 'dev'));
+      el('bmPaneDev').hidden = which !== 'dev';
+      if (which === 'dev') devLoad();
       if (which === 'gal') galBoot();
       if (which === 'rave') raveLoad();
       if (which === 'items') itemsLoad();
@@ -857,6 +926,116 @@ const description = 'Authorized banana personnel only.';
     el('bmTabItems').onclick = () => setTab('items');
     el('bmTabUsers').onclick = () => setTab('users');
     el('bmTabWorld').onclick = () => setTab('world');
+    el('bmTabDev').onclick = () => setTab('dev');
+
+    // ── 🛠 THE DEV DESK — the rig's mission control ──
+    // Reads: GitHub public API (public repo, ~4 calls per open — the 60/hr
+    // unauthenticated limit is plenty). Writes: worker-contact /dev/gh with
+    // the inbox token; the worker holds the PAT. pat:false = buttons stay
+    // disabled and the read-only note shows.
+    const GH_API = 'https://api.github.com/repos/trymstene/trymstene.github.io';
+    let devPat = false, devPinged = false;
+    const devAgo = (iso) => {
+      const sec = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+      if (sec < 3600) return Math.round(sec / 60) + 'm ago';
+      if (sec < 86400) return Math.round(sec / 3600) + 'h ago';
+      return Math.round(sec / 86400) + 'd ago';
+    };
+    const devEsc = (t) => String(t || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    async function devAct(num, action, note, btn) {
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch(API + '/dev/gh', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, number: num, action, body: note || '' }) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.err || 'no');
+        devLoad();
+      } catch (e) { if (btn) { btn.disabled = false; btn.textContent = '✕ github said no'; } }
+    }
+    function devIssueCard(it) {
+      const card = document.createElement('div');
+      card.className = 'bm-devcard';
+      const labels = (it.labels || []).map((l) => {
+        const n = typeof l === 'string' ? l : l.name;
+        const cls = n === 'approved' ? ' bm-devlabel--approved' : n === 'dismissed' ? ' bm-devlabel--dismissed' : '';
+        return '<span class="bm-devlabel' + cls + '">' + devEsc(n) + '</span>';
+      }).join('');
+      const body = String(it.body || '').replace(/[#*`>\[\]()]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
+      card.innerHTML =
+        '<div class="bm-devtitle"><a href="' + devEsc(it.html_url) + '" target="_blank" rel="noopener">#' + it.number + ' — ' + devEsc(it.title) + '</a></div>'
+        + '<div class="bm-devmeta"><span>' + devAgo(it.created_at) + '</span><span>💬 ' + (it.comments || 0) + '</span>' + labels + '</div>'
+        + (body ? '<div class="bm-devbody">' + devEsc(body) + (String(it.body || '').length > 220 ? '…' : '') + '</div>' : '')
+        + '<div class="bm-devacts">'
+        + '<button type="button" class="bm-devok" data-a="approve">✅ approve</button>'
+        + '<button type="button" data-a="talk">💬 comment</button>'
+        + '<button type="button" class="bm-devno" data-a="dismiss">✕ dismiss</button>'
+        + '</div>'
+        + '<div class="bm-devcomment"><textarea placeholder="a note for the team… (rides along with approve/dismiss too)"></textarea>'
+        + '<div class="bm-devacts"><button type="button" data-a="send">💬 send comment</button></div></div>';
+      const ta = card.querySelector('textarea');
+      const commentBox = card.querySelector('.bm-devcomment');
+      card.querySelectorAll('button').forEach((b) => {
+        const a = b.dataset.a;
+        if (!devPat && a !== 'talk') b.disabled = true;
+        b.onclick = () => {
+          if (a === 'talk') { commentBox.classList.toggle('is-open'); if (commentBox.classList.contains('is-open')) ta.focus(); return; }
+          if (a === 'send') { if (ta.value.trim()) devAct(it.number, 'comment', ta.value.trim(), b); return; }
+          devAct(it.number, a, ta.value.trim(), b);
+        };
+      });
+      return card;
+    }
+    async function devLoad() {
+      const put = (id, v) => { el(id).textContent = v; };
+      if (!devPinged) {
+        devPinged = true;
+        try {
+          const j = await (await fetch(API + '/dev/ping?token=' + encodeURIComponent(token))).json();
+          devPat = !!j.pat;
+        } catch (e) { devPat = false; }
+        el('bmDevMode').hidden = devPat;
+      }
+      try {
+        const runs = await (await fetch(GH_API + '/actions/runs?per_page=1')).json();
+        const r0 = (runs.workflow_runs || [])[0];
+        put('bmDevDeploy', r0 ? ((r0.conclusion === 'success' ? '✅' : r0.status !== 'completed' ? '⏳' : '❌') + ' ' + devAgo(r0.updated_at)) : '—');
+      } catch (e) { put('bmDevDeploy', '?'); }
+      try {
+        const issues = (await (await fetch(GH_API + '/issues?state=open&per_page=30')).json())
+          .filter((x) => !x.pull_request);
+        put('bmDevQueueN', issues.length);
+        const badge = el('bmDevBadge');
+        if (badge) { badge.textContent = issues.length; badge.hidden = !issues.length; }
+        const q = el('bmDevQueue');
+        q.replaceChildren();
+        if (!issues.length) q.innerHTML = '<p class="bm-devempty">the desk is clear — nobody has filed anything 🍃</p>';
+        else issues.forEach((it) => q.appendChild(devIssueCard(it)));
+      } catch (e) { el('bmDevQueue').innerHTML = '<p class="bm-devempty">github is not answering — try a refresh</p>'; }
+      try {
+        const prs = await (await fetch(GH_API + '/pulls?state=open&per_page=15')).json();
+        put('bmDevPrN', prs.length);
+        const host = el('bmDevPrs');
+        host.replaceChildren();
+        if (!prs.length) { host.innerHTML = '<p class="bm-devempty">nothing in flight — the workshop is quiet 🔧</p>'; return; }
+        for (const pr of prs) {
+          const card = document.createElement('div');
+          card.className = 'bm-devcard';
+          card.innerHTML = '<div class="bm-devtitle"><a href="' + devEsc(pr.html_url) + '" target="_blank" rel="noopener">#' + pr.number + ' — ' + devEsc(pr.title) + '</a></div>'
+            + '<div class="bm-devmeta"><span>' + devEsc(pr.head ? pr.head.ref : '') + '</span><span>' + devAgo(pr.created_at) + '</span><span class="bm-devci" id="bmDevCi' + pr.number + '">⏳ checks…</span></div>';
+          host.appendChild(card);
+          fetch(GH_API + '/commits/' + pr.head.sha + '/check-runs').then((x) => x.json()).then((cr) => {
+            const cruns = cr.check_runs || [];
+            const bad = cruns.some((c) => c.conclusion && c.conclusion !== 'success' && c.conclusion !== 'neutral' && c.conclusion !== 'skipped');
+            const running = cruns.some((c) => c.status !== 'completed');
+            const ci = el('bmDevCi' + pr.number);
+            if (!ci) return;
+            ci.textContent = !cruns.length ? '— no checks' : running ? '⏳ running' : bad ? '❌ checks failing' : '✅ checks green';
+            ci.className = 'bm-devci ' + (running ? 'bm-devci--run' : bad ? 'bm-devci--bad' : 'bm-devci--ok');
+          }).catch(() => {});
+        }
+      } catch (e) { el('bmDevPrs').innerHTML = '<p class="bm-devempty">github is not answering — try a refresh</p>'; }
+    }
+    el('bmDevRefresh').onclick = () => devLoad();
 
     // ── 🌍 THE WORLD DESK — live headcounts from the rooms ──
     const WORLD_API = 'https://banana-rave.trymstene.workers.dev';
