@@ -6,6 +6,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: '**/print-parity.spec.mjs', // owned by playwright.parity.config.mjs
   timeout: 60000,
   retries: 1,                       // the world talks to live workers — one retry absorbs a hiccup
   workers: 2,
