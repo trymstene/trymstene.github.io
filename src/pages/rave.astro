@@ -1220,8 +1220,13 @@ const GUIDE = [
        (Trym, twice now): they sit in the stage band, bottom-pinned just above
        the dancefloor's top edge (the floor is min(62vh,560px) tall), growing
        UP into the stage. Never anchor these to the floor. */
+    /* the toasts live INSIDE THE BOOTH (round three: the club-bottom calc
+       assumed the desktop floor height; mobile floors are min(50vh,440px) and
+       the HUD + iOS safe-area sit under them, so on real phones the math put
+       toasts ON the dancefloor). Pinned to the stage band itself, there is
+       nothing to compute — over the DJ on every viewport. */
     .rv-toasts {
-      position: absolute; left: 50%; bottom: calc(min(62vh, 560px) + 6px); transform: translateX(-50%); z-index: 700;
+      position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 700;
       display: flex; flex-direction: column; align-items: center; gap: 5px;
       max-width: min(94%, calc(100% - 250px)); width: max-content; pointer-events: none;
     }
@@ -1239,6 +1244,7 @@ const GUIDE = [
       pointer-events: none;
     }
     .rv-glowtoast b { color: #39ff14; }
+    .rv-glowtoast img { width: 12px; height: 12px; image-rendering: pixelated; vertical-align: -2px; }
     .rv-glowtoast .rv-by { color: #22d3ee; font-weight: 700; } /* the maker's credit rides the drop */
 
     .rv-raver { position: absolute; transform: translate(-50%, -50%); line-height: 0; transition: left 0.18s linear, top 0.18s linear; }
@@ -1278,12 +1284,9 @@ const GUIDE = [
        Same black top rule, same hard-shadowed chunky buttons; the yellow that
        used to outline every button now belongs to the ones that MEAN something
        (the quest tool), which is what yellow is for everywhere else here. */
-    /* ⚙ THE SOUND BUTTON IS A SETTING, NOT AN ACTION (Trym) — pinned right and
-       never moving, while the things you actually DO stay centred. The ::before
-       is a spacer the same width, so the free space splits evenly and the
-       middle group is centred in the WHOLE bar, not in what is left over. */
-    .rv-hud::before { content: ''; min-width: 46px; margin-right: auto; }
-    #rvSoundBtn { margin-left: auto; }
+    /* the sound button lives IN the verb row with the emotes and the travel
+       door (Trym: all on one line, centred together, mobile AND desktop) —
+       no auto-margin pins, no spacer, the row just centres as one group. */
     .rv-hud {
       position: relative;
       display: flex; align-items: center; justify-content: center; gap: 0.6rem;
@@ -1539,7 +1542,6 @@ const GUIDE = [
        centred second row instead of shoving the sound button down there */
     @media (max-width: 640px) {
       .rv-hud { gap: 0.4rem; padding-left: 0.4rem; padding-right: 0.4rem; }
-      .rv-hud::before { display: none; }
       .rv-stage-btn { flex: 1 1 100%; max-width: 250px; }
     }
 
@@ -1620,8 +1622,8 @@ const GUIDE = [
             <g class="rv-spkcone"><circle cx="6" cy="5" r="3" fill="#2a1650"/><circle cx="6" cy="5" r="1.2" fill="#b388ff"/></g>
             <g class="rv-spkcone rv-spkcone--b"><circle cx="6" cy="12" r="3" fill="#2a1650"/><circle cx="6" cy="12" r="1.2" fill="#b388ff"/></g>
           </svg>
+          <div class="rv-toasts" id="rvToasts" aria-live="polite"></div>
         </div>
-        <div class="rv-toasts" id="rvToasts" aria-live="polite"></div>
         <div class="rv-floor" id="rvFloor">
           <!-- the stage invitation — rises beneath the DJ in recurring windows
                (driven by the stage-popup block in banana-rave.js) -->

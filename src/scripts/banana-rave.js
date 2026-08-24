@@ -734,7 +734,7 @@ function init() {
     bumpChain();
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
-    toast.innerHTML = '🪙 <b>+' + n + ' BANANACOIN' + (n > 1 ? 'S' : '') + '</b> — the stand out back takes these.';
+    toast.innerHTML = '<img src="/assets/banana-stand/coin.png" alt=""> <b>+' + n + ' BANANACOIN' + (n > 1 ? 'S' : '') + '</b> — the stand out back takes these.';
     (el('rvToasts') || floor).appendChild(toast);
     setTimeout(() => toast.remove(), 6000);
     track('rave_coin', { n });
