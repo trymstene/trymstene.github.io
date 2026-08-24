@@ -3336,7 +3336,26 @@ function init() {
   // px-true proximity (percent space is anisotropic — the claims lesson)
   const qNear = (me, p, mul) =>
     Math.hypot(((me.x - p.x) / 100) * floorW, ((me.y - p.y) / 100) * floorH) < (me.size || 90) * mul;
-  const qBtnShow = (label) => { if (questBtn) { questBtn.textContent = label; questBtn.hidden = false; } };
+  // 📱 the game frame must keep its OWN action bar on screen: on phones the
+  // hud can sit below the fold (the mop bug — the 🧹 button existed but was
+  // never on a real iPhone's screen, so the quest looked unwinnable). Nudge
+  // the page so floor + hint + action bar end at the viewport bottom — once at
+  // boot, and again whenever a quest tool appears. visualViewport, not
+  // innerHeight: iOS toolbars shrink what's actually visible.
+  function alignGameFrame(smooth) {
+    if (!matchMedia('(max-width: 640px)').matches) return;
+    const hud = document.querySelector('.rv-hud');
+    if (!hud) return;
+    const vh = (window.visualViewport && window.visualViewport.height) || innerHeight;
+    const off = hud.getBoundingClientRect().bottom - vh;
+    if (off > 8 || (smooth && off < -8)) scrollBy({ top: off, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  setTimeout(() => alignGameFrame(false), 800);
+  const qBtnShow = (label) => {
+    if (!questBtn) return;
+    questBtn.textContent = label;
+    if (questBtn.hidden) { questBtn.hidden = false; requestAnimationFrame(() => alignGameFrame(true)); }
+  };
   const qBtnHide = () => { if (questBtn) questBtn.hidden = true; };
   // the standing instruction line above the action bar — Barty's bubble and
   // the LED get eaten by a busy floor, this one calmly stays (null hides it)
