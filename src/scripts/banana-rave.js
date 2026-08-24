@@ -830,24 +830,93 @@ function init() {
   addEventListener('keyup', (e) => { const k = KEYMAP[e.key]; if (k) keysDown.delete(k); });
   addEventListener('blur', () => keysDown.clear());
 
+  // undo the camera: screen point → world percent (shared by tap and steer)
+  const floorWalkPt = (cx, cy) => {
+    const rect = floor.getBoundingClientRect();
+    return {
+      x: clamp(((cx - rect.left - cam.tx) / (rect.width * cam.s)) * 100, 4, 96),
+      y: clamp(((cy - rect.top - cam.ty) / (rect.height * cam.s)) * 100, topClamp, 92),
+    };
+  };
+  const NOT_A_WALK = (t) => t.closest('.rv-zoom') || t.closest('.rv-quest') || t.closest('.rv-mixer') || t.closest('.rv-exitdoor') || t.closest('.rv-stagepop'); // buttons, the quest chip, the JELLY meter + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
   floor.addEventListener('click', (e) => {
-    if (e.target.closest('.rv-zoom') || e.target.closest('.rv-quest') || e.target.closest('.rv-mixer') || e.target.closest('.rv-exitdoor') || e.target.closest('.rv-stagepop')) return; // buttons, the quest chip, the JELLY meter + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
+    if (NOT_A_WALK(e.target)) return;
+    if (Date.now() - steerEndAt < 400) return; // a finished steer is not a walk order
     const me = myId && ravers.get(myId);
     if (!me) return;
     if (me.stage) { setStageWant(false); return; } // on stage: tap the floor to come back down
-    const rect = floor.getBoundingClientRect();
-    // undo the camera: screen point → world percent
     doorArmed = 0; // a fresh floor tap means you changed your mind about leaving
-    walkTarget = {
-      x: clamp(((e.clientX - rect.left - cam.tx) / (rect.width * cam.s)) * 100, 4, 96),
-      y: clamp(((e.clientY - rect.top - cam.ty) / (rect.height * cam.s)) * 100, topClamp, 92),
-    };
+    walkTarget = floorWalkPt(e.clientX, e.clientY);
   });
+
+  // 🕹 HOLD-AND-DRAG STEERING (Trym: only 2.2% of visitors ever walked — the
+  // joystick instinct did nothing). The browser owns the verdict at the first
+  // finger movement, so the three gestures never collide: a swipe moves right
+  // away → the page scrolls exactly as before; a tap walks as before; a finger
+  // HELD STILL ~200ms arms the leash — from then on touchmoves are claimed
+  // (they stay cancelable until a scroll actually starts) and the banana walks
+  // toward the finger. touchend of a steer eats the synthetic click.
+  const STEER_HOLD = 200, STEER_SLOP = 10;
+  let steerTimer = 0, steerOn = false, steerEndAt = 0, steeredOnce = false;
+  let steerX = 0, steerY = 0, steerRing = null;
+  function steerStop(cancelled) {
+    clearTimeout(steerTimer); steerTimer = 0;
+    if (steerOn) { steerOn = false; steerEndAt = Date.now(); if (cancelled) walkTarget = null; }
+    if (steerRing) { steerRing.remove(); steerRing = null; }
+  }
+  function steerArm() {
+    steerTimer = 0;
+    const me = myId && ravers.get(myId);
+    if (!me || me.stage || tourActive) return;
+    steerOn = true;
+    doorArmed = 0;
+    walkTarget = floorWalkPt(steerX, steerY);
+    const rect = floor.getBoundingClientRect();
+    steerRing = document.createElement('div');
+    steerRing.className = 'rv-steerring';
+    steerRing.style.left = (steerX - rect.left) + 'px';
+    steerRing.style.top = (steerY - rect.top) + 'px';
+    floor.appendChild(steerRing);
+    if (!steeredOnce) { steeredOnce = true; track('rave_steer'); }
+  }
+  floor.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || NOT_A_WALK(e.target)) { steerStop(true); return; }
+    steerX = e.touches[0].clientX; steerY = e.touches[0].clientY;
+    clearTimeout(steerTimer);
+    steerTimer = setTimeout(steerArm, STEER_HOLD);
+  }, { passive: true });
+  floor.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 1) { steerStop(true); return; }
+    const t = e.touches[0];
+    if (steerOn) {
+      if (!e.cancelable) { steerStop(true); return; } // a scroll won after all — let go
+      e.preventDefault();
+      steerX = t.clientX; steerY = t.clientY;
+      walkTarget = floorWalkPt(steerX, steerY);
+      if (steerRing) {
+        const rect = floor.getBoundingClientRect();
+        steerRing.style.left = (steerX - rect.left) + 'px';
+        steerRing.style.top = (steerY - rect.top) + 'px';
+      }
+      return;
+    }
+    if (steerTimer && Math.hypot(t.clientX - steerX, t.clientY - steerY) > STEER_SLOP) {
+      clearTimeout(steerTimer); steerTimer = 0; // moved early = a scroll, not a hold
+    }
+  }, { passive: false });
+  floor.addEventListener('touchend', (e) => {
+    if (steerOn && e.cancelable) e.preventDefault(); // no ghost tap-walk after a steer
+    steerStop(false);
+  }, { passive: false });
+  floor.addEventListener('touchcancel', () => steerStop(true), { passive: true });
 
   function stepMe(now, dtMs) {
     if (tourActive) return; // nobody wanders off mid-tour
     const me = myId && ravers.get(myId);
     if (!me || me.stage) return;
+    // a held-still steering finger keeps meaning HERE even while the follow-cam
+    // shifts the world beneath it — re-read it every frame, not just on move
+    if (steerOn) walkTarget = floorWalkPt(steerX, steerY);
     let dx = 0, dy = 0;
     if (keysDown.size) {
       if (keysDown.has('l')) dx -= 1;

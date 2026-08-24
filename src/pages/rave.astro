@@ -1252,7 +1252,16 @@ const GUIDE = [
        smooth remote 150ms packets) only added ~180ms of input lag here */
     .rv-raver--me { transition: none; }
     .rv-raver canvas { transition: transform 0.15s ease; }
-    .rv-floor { cursor: pointer; touch-action: manipulation; }
+    .rv-floor { cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    /* 🕹 the steering ring — screen-space in the floor (the camera must not move it) */
+    .rv-steerring {
+      position: absolute; width: 38px; height: 38px; transform: translate(-50%, -50%);
+      border: 2px solid rgba(255, 253, 245, 0.85); border-radius: 50%;
+      box-shadow: 0 0 8px rgba(57, 255, 20, 0.5), inset 0 0 6px rgba(57, 255, 20, 0.35);
+      pointer-events: none; z-index: 40;
+      animation: rvSteerPop 0.18s steps(3);
+    }
+    @keyframes rvSteerPop { from { transform: translate(-50%, -50%) scale(1.6); } }
     .rv-raver canvas { image-rendering: pixelated; }
     .rv-raver--me canvas { filter: drop-shadow(0 0 6px #ffe135); }
     .rv-emote {
@@ -1742,7 +1751,7 @@ const GUIDE = [
         <div class="rv-door">
           <a href="/make-a-banana/" data-place="rave">Dress your banana &rarr;</a>
         </div>
-        <p class="rv-note"><strong>Boogie with the arrow keys / WASD, or tap the floor.</strong> Everything else — Barty, the jelly, the drops — is in <a href="#what">the field guide below ↓</a></p>
+        <p class="rv-note"><strong>Boogie with the arrow keys / WASD, tap the floor — or hold a finger down a beat and drag to steer.</strong> Everything else — Barty, the jelly, the drops — is in <a href="#what">the field guide below ↓</a></p>
       </aside>
     </div>
 
@@ -1769,7 +1778,7 @@ const GUIDE = [
         <p class="rvg__kicker">the loop</p>
         <h2>what do you actually do here?</h2>
         <ul class="rvg__list">
-          <li><strong>Boogie.</strong> Arrow keys, WASD, or tap the floor. The dance never stops — walking is just dancing with direction.</li>
+          <li><strong>Boogie.</strong> Arrow keys, WASD, or tap the floor — or hold a finger still for a beat and drag: the banana follows it like a leash (a quick swipe still scrolls the page). The dance never stops — walking is just dancing with direction.</li>
           <li><strong>Chase what the floor spawns.</strong> Jelly drops, snacks, power-ups, the lost vinyl, the golden banana — being first is the sport. Everything you grab fills the <strong>JELLY meter</strong>; a full meter is yours to spend on a personal drop.</li>
           <li><strong>Catch tonight's drop.</strong> Once a night the club drops one wearable — walk into it and it's yours forever, worn everywhere your banana goes. Visitor-made gear doesn't wait for a drop night: it goes on sale in the <a href="/park/">Banana Stand</a>'s back-catalog. <a href="/forge/items/">Draw one in the Items Workshop</a> and yours could be on that shelf.</li>
           <li><strong>Fix what breaks.</strong> Every half hour or so, something GOES WRONG in this club — drinks spill, the power dies, a mega-jelly escapes the walk-in, the balloon rig lets go, the big screen turns into a camera. Everyone gets it at the same moment: the LED calls it, <strong>a quest tool appears next to your emote buttons</strong>, and one calm line above the buttons tells you what to do. Fixing it pays jelly and 🪙 coins — and it's never the same thing twice in a row.</li>
