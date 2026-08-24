@@ -2084,6 +2084,16 @@ function init() {
   function refreshStats() {
     const s = el('rvStats');
     if (!s) return;
+    // ⚠️ IN PLACE after the first build — a magnet storm calls this PER PELLET,
+    // and the old full innerHTML rebuild (6 buttons + listeners, many times a
+    // second) janked the main thread hard enough that tap-to-walk missed taps
+    // (Trym: "have to double tap"). Same doctrine as the clock below.
+    const built = s.querySelectorAll('.rv-stat b');
+    if (built.length === 6) {
+      const vals = [clubTime(), tonight.jelly, tonight.pickups, tonight.fives, tonight.jellytimes, tonight.survived];
+      built.forEach((b, i) => { const v = String(vals[i]); if (b.textContent !== v) b.textContent = v; });
+      return;
+    }
     const stat = (icon, val, cap, cls) => '<button type="button" class="rv-stat'
       + (cls ? ' ' + cls : '') + '" data-cap="' + cap + '"><i>' + icon + '</i><b>' + val + '</b></button>';
     s.innerHTML =
