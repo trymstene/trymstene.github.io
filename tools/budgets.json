@@ -1,0 +1,16 @@
+{
+  "_doc": "Per-surface JS budgets in BYTES, measured on the BUILT output (dist/_astro) — the static-import back door means source size lies; only dist tells the truth. Prefix-matched against chunk filenames. Current size + ~15% headroom at adoption (24 Aug 2026); raising a number is a deliberate act that belongs in a PR description, never a drive-by.",
+  "budgets": {
+    "banana-engine.": 240000,
+    "rave.astro": 235000,
+    "park.astro": 135000,
+    "homestead.astro": 130000,
+    "beach.astro": 110000,
+    "inbox.astro": 80000,
+    "world-quest.": 66000,
+    "ForgeStudio.astro": 62000,
+    "make-a-banana.astro": 38000,
+    "pass.astro": 38000
+  },
+  "totalBudget": 1500000
+}
