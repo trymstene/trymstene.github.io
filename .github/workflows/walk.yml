@@ -1,0 +1,50 @@
+name: Player walk
+
+# 🎮 Rig step 2 (Dev Desk issue #2): Playwright walks the world like a player —
+# every area booted to its LAST module (the partial-init trap as a literal
+# test), the rave's hello run taught, the lasers sweeping. Runs on every PR
+# and every night at 03:33 UTC; screenshots of each area land as artifacts
+# (the future blessed-set diff reads these).
+# Found on its FIRST night, before ever merging: the flaky hello-arc
+# placement, and the arc eating itself inside hoover reach on phone floors.
+
+on:
+  pull_request:
+  schedule:
+    - cron: '33 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: walk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  walk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Walk the world
+        run: npx playwright test
+      - name: Keep the walk screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: walk-screenshots
+          path: test-results/walk/
+          if-no-files-found: ignore
+          retention-days: 14
