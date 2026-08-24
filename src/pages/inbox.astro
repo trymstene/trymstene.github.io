@@ -1058,7 +1058,7 @@ const description = 'Authorized banana personnel only.';
                   if (!j2.ok) throw new Error(j2.err || 'no');
                   mb.textContent = '🎉 merged';
                   setTimeout(() => devLoad(), 1500);
-                } catch (e2) { mb.textContent = '✕ github said no — retry'; mb.disabled = false; }
+                } catch (e2) { mb.textContent = '✕ ' + String(e2.message || 'github said no').slice(0, 60) + ' — retry'; mb.disabled = false; }
               };
               card.appendChild(acts);
             }
