@@ -965,12 +965,21 @@ const description = 'Authorized banana personnel only.';
           body: JSON.stringify({ token, number: num, action, body: note || '' }) });
         const j = await r.json();
         if (!j.ok) throw new Error(j.err || 'no');
+        if (action === 'approve' || action === 'dismiss') devRecent(num, action);
         return true;
       } catch (e) {
         if (btn) { btn.disabled = false; btn.textContent = '✕ ' + String(e.message || 'github said no').slice(0, 50) + ' — retry'; }
         return false;
       }
     }
+    const devRecent = (n, action) => {
+      try {
+        const m = JSON.parse(sessionStorage.getItem('bmDevRecent') || '{}');
+        if (action) { m[n] = { a: action, t: Date.now() }; sessionStorage.setItem('bmDevRecent', JSON.stringify(m)); return; }
+        const r = m[n];
+        return r && Date.now() - r.t < 300000 ? r.a : null;
+      } catch (e) { return null; }
+    };
     const devFade = (card) => { card.style.transition = 'opacity 0.45s, transform 0.45s'; card.style.opacity = '0'; card.style.transform = 'translateX(14px)'; setTimeout(() => card.remove(), 480); };
     const devBumpCount = (id, delta) => { const e2 = el(id); const n = parseInt(e2.textContent, 10); if (!isNaN(n)) e2.textContent = Math.max(0, n + delta); };
     function devIssueCard(it) {
@@ -995,9 +1004,11 @@ const description = 'Authorized banana personnel only.';
         + '<div class="bm-devacts"><button type="button" data-a="send">💬 send comment</button></div></div>';
       const ta = card.querySelector('textarea');
       const commentBox = card.querySelector('.bm-devcomment');
+      const already = (it.labels || []).some((l) => (l.name || l) === 'approved');
       card.querySelectorAll('button').forEach((b) => {
         const a = b.dataset.a;
         if (!devPat && a !== 'talk') b.disabled = true;
+        if (already && a === 'approve') { b.disabled = true; b.textContent = '✅ approved'; }
         b.onclick = async () => {
           if (a === 'talk') { commentBox.classList.toggle('is-open'); if (commentBox.classList.contains('is-open')) ta.focus(); return; }
           if (a === 'send') {
@@ -1051,11 +1062,18 @@ const description = 'Authorized banana personnel only.';
         if (badge) { badge.textContent = issues.length; badge.hidden = !issues.length; }
         const q = el('bmDevQueue');
         q.replaceChildren();
-        if (!issues.length) q.innerHTML = '<p class="bm-devempty">the desk is clear — nobody has filed anything 🍃</p>';
-        else issues.forEach((it) => q.appendChild(devIssueCard(it)));
+        const shown = issues.filter((it) => devRecent(it.number) !== 'dismissed');
+        shown.forEach((it) => {
+          if (devRecent(it.number) === 'approve' && !(it.labels || []).some((l) => (l.name || l) === 'approved')) {
+            it.labels = [...(it.labels || []), { name: 'approved' }]; // GitHub's cache is behind our own action
+          }
+        });
+        if (!shown.length) q.innerHTML = '<p class="bm-devempty">the desk is clear — nobody has filed anything 🍃</p>';
+        else shown.forEach((it) => q.appendChild(devIssueCard(it)));
       } catch (e) { el('bmDevQueue').innerHTML = '<p class="bm-devempty">github is not answering — try a refresh</p>'; }
       try {
-        const prs = await (await fetch(GH_API + '/pulls?state=open&per_page=15')).json();
+        const prs = (await (await fetch(GH_API + '/pulls?state=open&per_page=15')).json())
+          .filter((pr) => devRecent(pr.number) !== 'merged');
         put('bmDevPrN', prs.length);
         const host = el('bmDevPrs');
         host.replaceChildren();
@@ -1088,6 +1106,7 @@ const description = 'Authorized banana personnel only.';
                     body: JSON.stringify({ token, number: pr.number, action: 'merge' }) });
                   const j2 = await r2.json();
                   if (!j2.ok) throw new Error(j2.err || 'no');
+                  devRecent(pr.number, 'merged');
                   mb.textContent = '🎉 merged';
                   const ciPill = el('bmDevCi' + pr.number);
                   if (ciPill) { ciPill.textContent = '🎉 merged'; ciPill.className = 'bm-devci bm-devci--ok'; }
