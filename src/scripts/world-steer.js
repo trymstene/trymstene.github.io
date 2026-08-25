@@ -95,11 +95,16 @@ export function initSteer({ view, blocked, toWorld, onArm, onMove, first }) {
       clearTimeout(timer); timer = 0; // moved early = a scroll, not a hold
     }
   }, { passive: false });
-  view.addEventListener('touchend', (e) => {
+  // ⚠️ THE RELEASE LISTENS ON THE WINDOW, not the view: if onArm removes the
+  // node under the finger (the bay's biting float did exactly this), a
+  // view-bound touchend never fires and the steer is stranded ON — the ring
+  // stays and the banana keeps walking at a finger that has let go.
+  addEventListener('touchend', (e) => {
+    if (!on && !timer) return;
     if (on && e.cancelable) e.preventDefault(); // no ghost tap after a steer
     stop();
   }, { passive: false });
-  view.addEventListener('touchcancel', stop, { passive: true });
+  addEventListener('touchcancel', stop, { passive: true });
   // belt + braces: some engines still deliver the click a steer produced
   view.addEventListener('click', (e) => {
     if (Date.now() - endAt < 400) { e.stopPropagation(); e.preventDefault(); }

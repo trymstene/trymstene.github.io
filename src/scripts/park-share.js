@@ -316,12 +316,20 @@ export function initShare(ctx, garden) {
     }).catch(() => {});
   }
 
+  const canShareFiles = () => {
+    try { return !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'x.png', { type: 'image/png' })] })); }
+    catch (e) { return false; }
+  };
   function openShare(cv) {
     const modal = document.getElementById('pkShareModal');
     document.getElementById('pkShareSlot').replaceChildren(cv);
     modal.hidden = false;
     mountOffer(modal.querySelector('.pk-sharemodal__box'));
-    document.getElementById('pkShareSys').hidden = !navigator.canShare;
+    // ⚠️ canShare EXISTING is not the same as being able to share a FILE —
+    // desktop Chrome has the method and refuses the files, so the button
+    // painted and did nothing. Probe with a real (empty) file, like the click
+    // handler below does before it shares.
+    document.getElementById('pkShareSys').hidden = !canShareFiles();
     const toBlob = () => new Promise((r) => cv.toBlob(r, 'image/png'));
     document.getElementById('pkShareDl').onclick = async () => {
       const a = document.createElement('a');

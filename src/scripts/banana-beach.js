@@ -7,7 +7,7 @@
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, coinsNow } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, coinsNow } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
@@ -40,6 +40,13 @@ const FRAME_MS = 12;   // the ~60Hz gate — the bay's loop AND the coconut shy'
 // the coconut shy is opaque and covers the whole view — the bay behind it is
 // hidden by CSS (beach.astro) and every loop that only feeds it stands down
 const inside = () => document.body.classList.contains('bh-inside');
+// 🚧 EVERY FULL-VIEW OVERLAY ON THIS BEACH, in one place: the two rooms (the
+// coconut shy + the Beach Hut, both flagged by body.bh-inside), the .bh-panel
+// cards (shells / ledger / detail / stall / chest / dig / catch) and the share
+// modal. Guard on the STATE, never on a class list — the hand-kept list missed
+// the hut and ⛏ Dig kept digging the sand nobody could see.
+const overlaid = () => inside()
+  || !!document.querySelector('.bh-panel:not([hidden]), #bhShareModal:not([hidden])');
 
 function track(name, params) { if (window.gtag) window.gtag('event', name, params || {}); }
 
@@ -499,7 +506,7 @@ function init() {
     // (let Space press it), matching how the click handler bails on panels.
     if (k === ' ' || k === 'spacebar') {
       const onBtn = e.target && e.target.closest && e.target.closest('button');
-      if (!onBtn && !document.querySelector('.bh-panel:not([hidden])')) { dig(); e.preventDefault(); }
+      if (!onBtn && !overlaid()) { dig(); e.preventDefault(); }
     }
   });
   addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
@@ -612,13 +619,35 @@ function init() {
   });
   // 🕹 hold-and-drag steering — walk orders only; stalls, Shelly, the
   // grabber and the ball keep their taps (a steer arms like a ground tap:
-  // stand up, reel in, drop pendings)
+  // stand up, drop the cast, drop pendings)
+  const toWorld = (cx, cy) => {
+    const r = view.getBoundingClientRect();
+    return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale };
+  };
+  // 🎣 …EXCEPT THE PAYOFF TAP. A finger resting on the biting float for longer
+  // than the 200ms hold used to arm a steer, whose onArm tore the whole cast
+  // down — a 10s wait and a telegraphed rare, gone, with the bobber deleted
+  // out from under a live touch. The float itself is now in blocked(), and a
+  // near-miss hold gets the view handler's own 46-unit forgiveness: it reels
+  // and then deadens the steer, so it can't walk you off the chair behind the
+  // catch card. onArm carries no point, so the arm point is remembered here.
+  let armAt = null, steerDead = false;
+  view.addEventListener('touchstart', (e) => {
+    armAt = e.touches.length === 1 ? { cx: e.touches[0].clientX, cy: e.touches[0].clientY } : null;
+  }, { passive: true });
   initSteer({
     view,
-    blocked: (e) => inside() || e.target.closest('.bh-panel') || e.target.closest('.wh') || e.target.closest('.bh-actions'),
-    toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
-    onArm: () => { hint(false); pendingOpen = null; pendingUmb = null; seated = null; sitTarget = null; meEl.classList.remove('is-sitting'); stopFishing(); },
-    onMove: (w) => setTarget(w.x, w.y),
+    blocked: (e) => inside() || !!e.target.closest('.bh-panel, .wh, .bh-actions, .bh-bob'),
+    toWorld,
+    onArm: () => {
+      hint(false); pendingOpen = null; pendingUmb = null; steerDead = false;
+      if (fishing && armAt) {
+        const w = toWorld(armAt.cx, armAt.cy);   // convert HERE — the cam may have shifted
+        if (Math.hypot(w.x - fishing.bob.x, w.y - fishing.bob.y) < 46) { steerDead = true; reel(); return; }
+      }
+      seated = null; sitTarget = null; meEl.classList.remove('is-sitting'); stopFishing();
+    },
+    onMove: (w) => { if (!steerDead) setTarget(w.x, w.y); },
     first: () => track('beach_steer'),
   });
 
@@ -703,6 +732,7 @@ function init() {
   // court can obstruct it (audit_court() guarantees that at build time), the
   // ball needs NO obstacle test and no world-edge fences at all.
   const CT = COURT;                       // from the generated beach-geo.js
+  const inCourt = (x, y) => x > CT.x0 && x < CT.x1 && y > CT.y0 && y < CT.y1;
   const BALL_R = 14;
   const BX0 = CT.x0 + BALL_R, BX1 = CT.x1 - BALL_R;
   const BY0 = CT.y0 + BALL_R, BY1 = CT.y1 - BALL_R;
@@ -834,6 +864,14 @@ function init() {
     //   gapZ..topZ  → into the mesh, bounced back
     //   above topZ  → a clean volley
     const crossed = (py0 - NET_Y) * (ball.y - NET_Y) < 0;
+    // 🏐 …AND WHOSE RALLY IS IT? applyBall() replays every peer's swing into
+    // this same ball, so an ungated crossing counted a stranger's game as
+    // yours — chip, bestRally and bh_volley all climbing while you fished the
+    // pier. Credit needs you on the court (or to have just swung); the net!/
+    // under! resets stay shared, so a real two-banana rally counts for both.
+    // ⚠️ lastKick starts at 0 = NEVER SWUNG, not "swung at t=0" — without the
+    // truthiness test every crossing in the first 8s on the beach was yours.
+    const mine = inCourt(pos.x, pos.y) || (lastKick > 0 && now - lastKick < 8000);
     if (crossed && ball.x > NET_X0 && ball.x < NET_X1) {
       if (ball.z < NET.gapZ) {
         // a dribbling ball genuinely rolls under — no bounce, but no rally
@@ -847,7 +885,7 @@ function init() {
         rally = 0;
         showRally();
         float(ball.x, ball.y - 14, 'net!');
-      } else {
+      } else if (mine) {
         rally++;
         if (rally > bestRally) {
           bestRally = rally;
@@ -914,8 +952,11 @@ function init() {
   // something to comb, and the SPECIES roll makes the rare grails the long game
   // (the 24-shell set ≈ a month). Client-side + ephemeral, like rave pellets.
   const stats = () => passGet().stats || {};
-  const held = (id) => Math.max(0, (stats()['sh_' + id] || 0) - (stats()['shx_' + id] || 0));
-  const haveCount = () => SHELL_IDS.filter((id) => held(id) > 0).length;
+  // ⚡ every reader takes an OPTIONAL pre-read stats blob. passGet() is not
+  // cheap any more (it materialises the pass's per-device counter slots on
+  // every read), and the 1s side card used to fan one tick out to ~80 of them.
+  const held = (id, s) => { const t = s || stats(); return Math.max(0, (t['sh_' + id] || 0) - (t['shx_' + id] || 0)); };
+  const haveCount = (s) => { const t = s || stats(); return SHELL_IDS.filter((id) => held(id, t) > 0).length; };
   // XP per shell by tier — tunable. Rare-is-more, so a grail is doubly exciting.
   const SHELL_XP = { common: 3, uncommon: 5, rare: 10, legendary: 20 };
   const SHELL_Y0 = 302;            // the wet sand, just below the swim line
@@ -1517,9 +1558,9 @@ function init() {
   //   · bad-luck protection (FISH_PITY) so a dry streak self-corrects.
   //   · the BITE telegraphs the tier, so a big one is exciting before you reel.
   //   · junk is a joke, never a punishment.
-  const fishHeld = (id) => stats()['fish_' + id] || 0;
+  const fishHeld = (id, s) => (s || stats())['fish_' + id] || 0;
   const fishBest = (id) => stats()['fb_' + id] || 0;
-  const fishSpecies = () => FISH.filter((f) => fishHeld(f.id) > 0).length;
+  const fishSpecies = (s) => { const t = s || stats(); return FISH.filter((f) => fishHeld(f.id, t) > 0).length; };
   const tilePos = (i) => (i / (FISH_TILES - 1) * 100) + '% 0';
 
   let fishPity = 0;                 // catches since the last rare-or-better
@@ -1997,11 +2038,10 @@ function init() {
   // the sand. Strike the buried X → the day's treasure; near it → "packed sand"
   // (the hunt's only cue); otherwise mostly sand, the odd scrap.
   function dig() {
-    // never dig behind an open overlay — the Dig button + Space both reach here,
-    // and a panel (shell board / ledger / the desk / a stall / the reward), the
-    // coco hut scene and the share modal all sit over the beach. Guarding at
-    // the source covers every entry point.
-    if (document.querySelector('.bh-panel:not([hidden]), #bhCoco:not([hidden]), #bhShareModal:not([hidden])')) return;
+    // never dig behind an open overlay — the Dig button + Space both reach
+    // here, and .bh-actions is a SIBLING of .bh-view, so ⛏ stays tappable even
+    // with a room open. overlaid() is the one enumeration (see its note).
+    if (overlaid()) return;
     const now = performance.now();
     if (now - digAt < 420) return;
     digAt = now;
@@ -2206,7 +2246,6 @@ function init() {
   // rule is dormant; when the BeachRoom lands it only has to keep this number
   // up to date. ?beachtest can set it, so the behaviour is testable today.
   let peersInCourt = 0;
-  const inCourt = (x, y) => x > CT.x0 && x < CT.x1 && y > CT.y0 && y < CT.y1;
   const courtBananas = () => (inCourt(pos.x, pos.y) ? 1 : 0) + peersInCourt;
   // where the ball will touch down, so he moves to meet it instead of chasing
   function ballLanding() {
@@ -2307,9 +2346,9 @@ function init() {
   // 🎟 TICKETS — deliberately NOT coins. Coins are the world's one economy and
   // the stand's 13 prices are balanced against them; tickets can only ever be
   // spent here, so midway payouts can be tuned freely without touching that.
-  const ticketBal = () => {
-    const s = passGet().stats || {};
-    return Math.max(0, (s.tickets || 0) - (s.tickets_spent || 0));
+  const ticketBal = (s) => {
+    const t = s || stats();
+    return Math.max(0, (t.tickets || 0) - (t.tickets_spent || 0));
   };
   const coinBal = () => coinsNow();   // ⚠️ one wallet formula, one owner (banana-pass.js)
   // ⚖️ ODDS ARE POSTED, not hidden. A ticket only means something if you can
@@ -2481,8 +2520,7 @@ function init() {
         + '</button>';
     const play = document.getElementById('bhStallPlay');
     if (play) play.addEventListener('click', () => {
-      if (coinBal() < def.cost) return;
-      passStat('coins_spent', def.cost);
+      if (!passSpend(def.cost)) return;   // the spend IS the check — a double-tap can't overdraw
       track('beach_stall_play', { stall: def.id, cost: def.cost });
       duckRound(true);
     });
@@ -2555,8 +2593,7 @@ function init() {
         + '</button>';
       const play = document.getElementById('bhStallPlay');
       if (play) play.addEventListener('click', () => {
-        if (coinBal() < def.cost) return;
-        passStat('coins_spent', def.cost);
+        if (!passSpend(def.cost)) return;   // the spend IS the check — a double-tap can't overdraw
         track('beach_stall_play', { stall: def.id, cost: def.cost });
         crabRound(true);
       });
@@ -2666,6 +2703,12 @@ function init() {
     + '<rect x="3" y="9" width="4" height="1" fill="#b89a5e"/><rect x="2" y="2" width="3" height="2" fill="#efdcae"/>'
     + '<rect x="6" y="5" width="2" height="2" fill="#a5854a"/></svg>';
   let cocoRAF = 0, cocoOn = false, coco = null;
+  // 💰 THE ROUND IS BANKED, NOT BINNED. Closing the shy mid-round used to drop
+  // the live round on the floor and reopen with a fresh cocoBuild(false), so
+  // every unthrown PAID ball vanished with no warning and no refund. The
+  // knocked coconuts ride along too, or a close/reopen would re-stock the rail
+  // and turn 5 coins into an unlimited ticket press.
+  let cocoHeld = null;   // { balls, knocked, dead[] } while a paid round waits
 
   // the cartridge CUT — a hard black blink, like the park exit reuses.
   function blink(mid) {
@@ -2747,12 +2790,24 @@ function init() {
       cocoPaintHud();
       drawCocoVendor();
       layoutCocoVendor();
-      cocoBuild(false);
+      const h = cocoHeld; cocoHeld = null;
+      cocoBuild(!!h);
+      if (h) {                       // …you left mid-round: pick it back up
+        coco.balls = h.balls; coco.knocked = h.knocked;
+        h.dead.forEach((d, i) => {
+          const c = coco.coconuts[i];
+          if (d && c) { c.alive = false; c.el.style.display = 'none'; }
+        });
+        cocoFootBalls(false);
+      }
     });
   }
   function closeCoco() {
     cocoOn = false;
     if (cocoRAF) { cancelAnimationFrame(cocoRAF); cocoRAF = 0; }
+    cocoHeld = (coco && coco.live && coco.balls > 0)
+      ? { balls: coco.balls, knocked: coco.knocked, dead: coco.coconuts.map((c) => !c.alive) }
+      : null;
     openStallIdx = -1;
     const foot = document.getElementById('bhFoot');
     blink(() => { cocoScene.hidden = true; document.body.classList.remove('bh-inside'); if (foot) foot.style.display = ''; });
@@ -2893,6 +2948,10 @@ function init() {
   // shows the pay-to-play footer; true arms the throwing.
   function cocoBuild(live) {
     cocoPitch.innerHTML = '';
+    // ⚠️ the foot goes in BEFORE the pitch is measured — they share the scene's
+    // flex column, so measuring first laid the rails and the ball out for a
+    // stage that was about to change height under them.
+    if (live) cocoFootBalls(false, COCO_BALLS); else cocoFootPay();
     const W = cocoPitch.clientWidth, H = cocoPitch.clientHeight;
     // TWO shelves. Splitting the coconuts across rows gives each far more room
     // to roam (they stop bumping into each other) and adds a second height to
@@ -2947,35 +3006,39 @@ function init() {
       ball: { x: ox, y: oy, vx: 0, vy: 0, live: false },
       balls: live ? COCO_BALLS : 0, knocked: 0, aiming: false, dragStart: null };
 
-    if (!live) {
-      const bal = coinBal();
-      const def = STALL_DEFS[2];
-      cocoFoot.innerHTML = '<button class="bh-btn" id="bhCocoPlay" type="button"'
-        + (bal < COCO_COST ? ' disabled' : '') + '>'
-        + (bal < COCO_COST ? 'you need ' + COCO_COST + ' coins'
-          : 'play — ' + COCO_COST + ' coins · ' + COCO_BALLS + ' balls') + '</button>';
-      const p = document.getElementById('bhCocoPlay');
-      if (p) p.addEventListener('click', () => {
-        if (coinBal() < COCO_COST) return;
-        passStat('coins_spent', COCO_COST);
-        track('beach_stall_play', { stall: 'coco', cost: COCO_COST });
-        cocoPaintHud();
-        cocoBuild(true);
-      });
-      cocoFoot.title = def.blurb;
-    } else {
-      cocoFootBalls();
+    if (live) {
       cocoBindThrow();
       cocoLoop();
     }
   }
+  // 💵 THE RULES ARE READ BEFORE THE COINS ARE SPENT. openStall() jumps
+  // straight into this scene, skipping the blurb card the duck and the crab
+  // both render, and the gesture lived only in a title= tooltip — invisible on
+  // the phone 85% of players hold. It is visible copy now, above the button.
+  function cocoFootPay() {
+    const poor = coinBal() < COCO_COST;
+    cocoFoot.innerHTML = '<span class="bh-stallhint" style="margin:0 0 0.45rem">'
+      + STALL_DEFS[2].blurb + '</span>'
+      + '<button class="bh-btn" id="bhCocoPlay" type="button"' + (poor ? ' disabled' : '') + '>'
+      + (poor ? 'you need ' + COCO_COST + ' coins'
+        : 'play — ' + COCO_COST + ' coins · ' + COCO_BALLS + ' balls') + '</button>';
+    const p = document.getElementById('bhCocoPlay');
+    if (p) p.addEventListener('click', () => {
+      if (!passSpend(COCO_COST)) return;   // 💰 one door for money, and it refuses an overdraft
+      track('beach_stall_play', { stall: 'coco', cost: COCO_COST });
+      cocoPaintHud();
+      cocoBuild(true);
+    });
+  }
   // ⚠️ THE AFFORDANCE MUST MATCH THE RULE. One ball flies at a time — that is
   // a fair rule, but until it SAYS so a mid-flight drag is indistinguishable
   // from a broken control.
-  function cocoFootBalls(inAir) {
+  // `n` lets the footer be written before `coco` exists (see cocoBuild).
+  function cocoFootBalls(inAir, n) {
+    const balls = n === undefined ? coco.balls : n;
     cocoFoot.innerHTML = '<span class="bh-stallhint">' + (inAir
       ? 'ball in the air…'
-      : coco.balls + ' ball' + (coco.balls === 1 ? '' : 's')
+      : balls + ' ball' + (balls === 1 ? '' : 's')
         + ' left · drag back from the ball and let go') + '</span>';
     cocoPitch.classList.toggle('is-waiting', !!inAir);
   }
@@ -3155,6 +3218,7 @@ function init() {
   function cocoFinish() {
     cocoOn = false;
     if (cocoRAF) { cancelAnimationFrame(cocoRAF); cocoRAF = 0; }
+    coco.live = false; cocoHeld = null;   // the round is spent — nothing left to bank
     const n = coco.knocked;
     cocoFoot.innerHTML = '<span class="bh-stallhint">'
       + (n ? n + (n === 1 ? ' coconut' : ' coconuts') + ' down → ' + (n * COCO_TIX) + ' tickets!'
@@ -3899,40 +3963,57 @@ function init() {
   const rosterEl = document.getElementById('bhRoster');
   const dayStatsEl = document.getElementById('bhDayStats');
   // 🎮 the park's day badges, ported (see park-share.js): icon + number in a
-  // content-sized pill, the words behind a TAP. ⚠️ refreshSide() rebuilds this
-  // every second, so the tapped badge has to survive the rebuild or the caption
-  // is gone before you have read it.
+  // content-sized pill, the words behind a TAP. ⚠️ refreshSide() runs every
+  // second, so the tapped badge has to survive the tick or the caption is gone
+  // before you have read it.
   let statPick = -1;
   const STAT_HINT = 'tap a badge to see what it counts';
+  let rosterSig = null;
   function refreshSide() {
+    // ⚡ ONE PASS READ PER TICK. haveCount/fishSpecies/ticketBal each used to
+    // fetch and re-materialise the whole pass PER SHELL and PER FISH — ~80
+    // reads a second, growing with the collection until the tick was a long
+    // task on a phone. Read once here and thread it down.
+    const s = stats();
     if (dayStatsEl) {
-      const stat = (icon, val, cap, cls) => '<button type="button" class="bh-stat'
-        + (cls ? ' ' + cls : '') + '" data-cap="' + esc(cap) + '">'
-        + '<i>' + icon + '</i><b>' + val + '</b></button>';
-      dayStatsEl.innerHTML =
-        stat('⏱', beachTime(), 'how long you have been on the beach today', 'is-time')
-        + stat('🐚', haveCount() + '/' + SHELL_IDS.length, 'shell species in your collection')
-        + stat('🐟', fishSpecies() + '/' + FISH.length, 'fish species in the ledger')
-        + stat('🎟', ticketBal(), 'tickets for the pier midway')
-        + stat('🏐', bestRally, 'your best volleyball rally')
-        + '<p class="bh-statcap" id="bhStatCap">' + STAT_HINT + '</p>';
-      const pills = [...dayStatsEl.querySelectorAll('.bh-stat')];
-      const cap = document.getElementById('bhStatCap');
-      const paint = () => {
-        pills.forEach((p2, k) => p2.classList.toggle('is-on', k === statPick));
-        if (cap) cap.textContent = statPick < 0 ? STAT_HINT : (pills[statPick] || {}).dataset.cap || STAT_HINT;
-      };
-      pills.forEach((btn, k) => {
-        btn.addEventListener('click', () => { statPick = statPick === k ? -1 : k; paint(); });
-      });
-      paint();
+      const vals = [beachTime(), haveCount(s) + '/' + SHELL_IDS.length,
+        fishSpecies(s) + '/' + FISH.length, ticketBal(s), bestRally];
+      // ⚡ …and update the five numbers IN PLACE after the first build, exactly
+      // as the rave's badge strip does — a full innerHTML + five fresh click
+      // listeners every second bought nothing.
+      const built = dayStatsEl.querySelectorAll('.bh-stat b');
+      if (built.length === vals.length) {
+        built.forEach((b, i) => { const v = String(vals[i]); if (b.textContent !== v) b.textContent = v; });
+      } else {
+        const stat = (icon, val, cap, cls) => '<button type="button" class="bh-stat'
+          + (cls ? ' ' + cls : '') + '" data-cap="' + esc(cap) + '">'
+          + '<i>' + icon + '</i><b>' + val + '</b></button>';
+        dayStatsEl.innerHTML =
+          stat('⏱', vals[0], 'how long you have been on the beach today', 'is-time')
+          + stat('🐚', vals[1], 'shell species in your collection')
+          + stat('🐟', vals[2], 'fish species in the ledger')
+          + stat('🎟', vals[3], 'tickets for the pier midway')
+          + stat('🏐', vals[4], 'your best volleyball rally')
+          + '<p class="bh-statcap" id="bhStatCap">' + STAT_HINT + '</p>';
+        const pills = [...dayStatsEl.querySelectorAll('.bh-stat')];
+        const cap = document.getElementById('bhStatCap');
+        const paint = () => {
+          pills.forEach((p2, k) => p2.classList.toggle('is-on', k === statPick));
+          if (cap) cap.textContent = statPick < 0 ? STAT_HINT : (pills[statPick] || {}).dataset.cap || STAT_HINT;
+        };
+        pills.forEach((btn, k) => {
+          btn.addEventListener('click', () => { statPick = statPick === k ? -1 : k; paint(); });
+        });
+        paint();
+      }
     }
     if (rosterEl) {
       const me = '<li class="is-you"><span>' + esc(bayName || 'you')
         + '</span><span class="bh-roster__tag">YOU</span></li>';
       const others = [...peers.values()]
         .map((p) => '<li><span>' + esc(p.name || 'a banana') + '</span></li>').join('');
-      rosterEl.innerHTML = me + others;
+      // …and the roster only when it actually changed (it mostly does not)
+      if (me + others !== rosterSig) { rosterSig = me + others; rosterEl.innerHTML = rosterSig; }
     }
   }
   refreshSide();
@@ -4023,10 +4104,11 @@ function init() {
     c.font = '800 42px "Archivo Black", sans-serif';
     c.fillText('SUNBATHED FOR ' + beachTime().toUpperCase(), S - 60, 292);
     c.shadowBlur = 0;
+    const ps = stats(), tix = ticketBal(ps);   // ⚡ one pass read for the card
     const rows = [
-      [haveCount() + '/' + SHELL_IDS.length, 'SHELLS'],
-      [fishSpecies() + '/' + FISH.length, 'FISH'],
-      [String(ticketBal()), ticketBal() === 1 ? 'TICKET' : 'TICKETS'],
+      [haveCount(ps) + '/' + SHELL_IDS.length, 'SHELLS'],
+      [fishSpecies(ps) + '/' + FISH.length, 'FISH'],
+      [String(tix), tix === 1 ? 'TICKET' : 'TICKETS'],
       [String(bestRally), 'BEST RALLY'],
     ];
     let y = 400;
@@ -4059,7 +4141,12 @@ function init() {
     const modal = document.getElementById('bhShareModal');
     document.getElementById('bhShareSlot').replaceChildren(cv);
     modal.hidden = false;
-    document.getElementById('bhShareSys').hidden = !navigator.canShare;
+    // ⚠️ canShare EXISTING is not being able to share a FILE — desktop Chrome
+    // has the method and refuses the files, so the button painted and did
+    // nothing. Probe with a real (empty) file, like the click handler does.
+    let canFiles = false;
+    try { canFiles = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'x.png', { type: 'image/png' })] })); } catch (e) {}
+    document.getElementById('bhShareSys').hidden = !canFiles;
     const toBlob = () => new Promise((r) => cv.toBlob(r, 'image/png'));
     document.getElementById('bhShareDl').onclick = async () => {
       const a = document.createElement('a');

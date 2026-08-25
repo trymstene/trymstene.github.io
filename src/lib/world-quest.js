@@ -8,12 +8,12 @@
 //
 // Loaded DYNAMICALLY by the four area pages, gated on the dev flag — zero
 // bytes for regular visitors until launch (the per-surface budget doctrine).
-// State is local-first in `bwq-c1`; the step index is mirrored into a pass
-// stat (max-merge) so later chapters can sync cross-device.
+// State is local-first in `bwq-c1` — but every PAYOUT is receipted in the pass
+// ledger (`qpay_<step>`), which is what makes the money once per player.
 //
 // QA: ?questtest (sticky per device) · ?questtest=off · ?questreset ·
 //     ?queststep=N jumps (test only).
-import { passStat, coinsNow } from './banana-pass.js';
+import { passStat, passRaw, coinsNow } from './banana-pass.js';
 import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
 
 // 🍌 NIB IS A REAL BANANA (Trym's polish verdict: "theres no banana NPC
@@ -76,7 +76,10 @@ const AREAS = {
   // chipHost: the journal chip docks on the BOOTH, riding the stage line —
   // at floor-top it covered the dancefloor on mobile, and at the LED wall
   // it covered the screen (Trym): the line between them is nobody's pixels
-  rave: { sel: '#rvFloor', view: '#rvFloor', chipHost: '.rv-booth' },
+  // ⚠️ sel is #rvWorld, not the floor: the camera transforms that layer and
+  // Barty rides inside it — a marker parented to the untransformed floor
+  // drifted off him until the 2.5s self-heal tick caught up
+  rave: { sel: '#rvWorld', view: '#rvFloor', chipHost: '.rv-booth' },
 };
 
 // ---- state ----------------------------------------------------------------
@@ -88,6 +91,15 @@ const track = (ev, p) => { try { window.gtag && window.gtag('event', ev, p || {}
 // ⚠️ one wallet formula, one owner. Counters live in per-device slots now
 // (see the ledger note in banana-pass.js), so a raw stats read under-counts.
 const coinBal = () => { try { return coinsNow(); } catch (e) { return 0; } };
+
+// 💰 THE WAGE IS ONCE PER PLAYER, NOT PER DEVICE. bwq-c1 is device-local, so a
+// fresh browser, a second device or ?questreset used to re-pay the whole
+// chapter. The receipt is a monotonic pass counter — it syncs and merges like
+// every other stat, so the STORY still replays, only the money is spent once.
+// (bwq-c1 stays the fast local read for WHERE you are; the pass owns WHAT was
+// paid. ⚠️ never a negative delta — see the ledger note in banana-pass.js.)
+const payKey = (id) => 'qpay_' + id;
+const alreadyPaid = (id) => { try { return (passRaw().stats[payKey(id)] || 0) > 0; } catch (e) { return false; } };
 
 // ---- the cast -------------------------------------------------------------
 // Voices (Trym: Silicon Valley energy, exaggerated, never overlapping):
@@ -726,22 +738,30 @@ function toast(msg, ms) {
 // with the journal chip and vanished half-read. Every NPC reward now shows
 // a card the player must click away — the catch-panel grammar: what you
 // got, front and centre, confirmed by you.
-function payReward(r) {
+function payReward(r, id) {
   if (!r) return;
-  if (r.coins) passStat('coins_earned', r.coins);
+  // 💰 the COINS are once per player (the receipt above); the story beat —
+  // the watering can, the photograph, the pass door — still plays on a replay
+  let coins = r.coins || 0;
+  if (coins && id) {
+    if (alreadyPaid(id)) coins = 0;
+    else passStat(payKey(id), 1);
+  }
+  if (coins) passStat('coins_earned', coins);
+  if (!coins && !r.note && !r.art && !r.link) return;   // a coins-only reward, already paid
   const veil = document.createElement('div');
   veil.className = 'bwq-rveil';
   const card = document.createElement('div');
   card.className = 'bwq-reward';
   let rows = '';
-  if (r.coins) rows += '<p><img src="/assets/banana-stand/coin.png" alt=""> +' + r.coins + ' bananacoins</p>';
+  if (coins) rows += '<p><img src="/assets/banana-stand/coin.png" alt=""> +' + coins + ' bananacoins</p>';
   if (r.note) rows += '<p></p>';
   // a reward may carry a DOOR (the finale's My Pass link) — the link takes
   // the primary style and got-it steps back to a ghost
   const linkHtml = r.link
     ? '<a class="bwq-reward__go" href="' + r.link.href + '"></a>' : '';
   card.innerHTML = '<i>you received</i>' + rows + linkHtml + '<button type="button">🍌 got it</button>';
-  if (r.note) card.querySelectorAll('p')[r.coins ? 1 : 0].textContent = r.note;
+  if (r.note) card.querySelectorAll('p')[coins ? 1 : 0].textContent = r.note;
   // a reward may carry ART — the received thing itself, drawn, not just named
   if (r.art) {
     const fig = document.createElement('div');
@@ -1279,7 +1299,7 @@ export function bootQuest() {
       if (i < lines.length) { show(); return; }
       dlg.remove(); dlg = null;
       if (replay) { render(); return; }   // the chip comes back, nothing moves
-      payReward(step.reward);
+      payReward(step.reward, step.id);
       if (step.leave && nibEl && nibEl.isConnected) nibWalkOff(nibEl);
       advance();
     };
@@ -1348,7 +1368,7 @@ export function bootQuest() {
   function advance() {
     track('quest_step', { id: STEPS[S.s] && STEPS[S.s].id, done: 1 });
     S.s++; S.k = {};
-    passStat('quest_c1', 1);            // monotonic mirror for future sync
+    passStat('quest_c1', 1);            // steps cleared, summed — never an index
     if (S.s >= STEPS.length) { S.done = 1; toast('🍌 CHAPTER ONE — complete', 4200); }
     save();
     render();
@@ -1554,6 +1574,11 @@ export function bootQuest() {
           qw.push({ id: o.id, x: wx, y: wy, el,
             pull: () => {
               el.classList.add('is-pulled');
+              // 🌿 hand it off before advancing — the LAST weed's advance()
+              // clears the layer in the same tick and its pop never played
+              // (the nibWalkOff trick); the timeout below still reaps it
+              const at = layer.indexOf(el);
+              if (at >= 0) layer.splice(at, 1);
               setTimeout(() => el.remove(), 360);
               S.k[o.id] = 1;
               save();
@@ -1591,6 +1616,10 @@ export function bootQuest() {
           qt.push({ id: o.id, x: wx, y: wy, el,
             take: () => {
               el.classList.add('is-popped');   // the everyday litter pop
+              // 🗑 same hand-off as the weeds — the piece that finishes the
+              // sweep is the one the player is looking at
+              const at = layer.indexOf(el);
+              if (at >= 0) layer.splice(at, 1);
               setTimeout(() => el.remove(), 360);
               S.k[o.id] = 1;
               save();
@@ -1716,9 +1745,17 @@ export function bootQuest() {
     } else if (step.kind === 'goal') {
       // the tent. Residents already live here — their beat is the photo line.
       if (S.res) { toast(step.resSkip, 3600); advance(); return; }
-      if (coinBal() < 50) {
-        payReward({ coins: 50 - coinBal(),
-          note: '🪙 Nib’s relocation grant — “it’s a fund. i invented it today.”' });
+      // 🪙 ONCE, EVER. This branch re-runs on every render of the area, so an
+      // ungated top-up was an open faucet: take the 50, spend it in the park,
+      // walk back in, refill — and the card again every time. S.k rides save()
+      // (a reload can't re-mint) and the pass receipt closes it for good.
+      if (!S.k.grant && !alreadyPaid(step.id)) {
+        S.k.grant = 1; save();
+        const short = 50 - coinBal();
+        if (short > 0) {
+          payReward({ coins: short,
+            note: '🪙 Nib’s relocation grant — “it’s a fund. i invented it today.”' }, step.id);
+        }
       }
       watchTimer = setInterval(() => {
         try {

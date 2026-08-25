@@ -70,7 +70,7 @@ const TEST_ANIMAL_HOMES = [[1270, 830], [1340, 890], [1440, 880], null, null, [1
 const SQ_ANCHOR = ' translate(-50%,-100%)';
 
 export function initCritters(ctx) {
-  const { W, H, world, pct, depth, blocked, onScreen, float, pos, tgt, refreshHud, place } = ctx;
+  const { W, H, world, pct, depth, blocked, onScreen, float, pos, tgt, refreshHud, place, hideEl } = ctx;
 
   // ---- 🌰 ACORNS: the park's shells — a calm XP trickle -------------------
   // Walk-over pickup, +2 rep (the same world stat the shells/floor feed).
@@ -127,8 +127,15 @@ export function initCritters(ctx) {
     ? { x0: 1240, y0: 740, x1: 1520, y1: 900 }
     : { x0: BOUND + 60, y0: BOUND + 60, x1: W - BOUND - 60, y1: H - BOUND - 60 };
   const bflys = [{ area: M_AREA, gone: true }, { area: M_AREA, gone: true }, { area: ALL_AREA, gone: true }];
-  let bflyOn = false;
-  function setBflies(on) {
+  // 🌦 squirrels and butterflies need BOTH halves: the bloom band (the chassis
+  // asks) and fair weather (the weather module asks). Each caller only knows
+  // its own half, so the truth is kept here and recomputed — otherwise a bloom
+  // rise mid-storm put them back on the lawn in the downpour.
+  let wxFair = true;
+  let bflyOn = false, wantBf = false;
+  function setBflies(on) { wantBf = on; syncBflies(); }
+  function syncBflies() {
+    const on = wantBf && wxFair;
     if (on === bflyOn) return;
     bflyOn = on;
     bflys.forEach((b) => {
@@ -222,8 +229,10 @@ export function initCritters(ctx) {
   };
   const SQ_HOMES = PARK_TEST ? [[1500, 880], [1180, 970]] : [[300, 640], [1180, 970]];
   const squirrels = [];
-  let sqOn = false;
-  function setSquirrels(on) {
+  let sqOn = false, wantSq = false;
+  function setSquirrels(on) { wantSq = on; syncSquirrels(); }
+  function syncSquirrels() {
+    const on = wantSq && wxFair;
     if (on === sqOn) return;
     sqOn = on;
     if (!on) {
@@ -363,17 +372,21 @@ export function initCritters(ctx) {
     if (k === wxNow) return;
     const was = wxNow;
     wxNow = k;
+    wxFair = k === 'clear' || k === 'drizzle';
+    syncBflies(); syncSquirrels();
     if (k === 'storm') {                       // gone
       if (!hidden) {
         hidden = true;
         animals.forEach((a) => {
           poofInto(world, 'pk-poof', a.x / W * 100, (a.y - 20) / H * 100);
-          a.el.style.display = 'none';
+          // ⚠️ via the chassis, never el.style.display: the cull sweep owns
+          // that property and used to pop them back onto the lawn mid-storm
+          hideEl(a.el, true);
         });
       }
       return;
     }
-    if (hidden) { hidden = false; animals.forEach((a) => { a.el.style.display = ''; }); }
+    if (hidden) { hidden = false; animals.forEach((a) => { hideEl(a.el, false); }); }
     if (k === 'heavy') {
       // one tree each, walked to in the normal way so it never teleports
       const trees = TREE_OVS.map((i) => [OVERLAYS[i][1] + OVERLAYS[i][3] / 2, OVERLAYS[i][5]]);

@@ -568,7 +568,10 @@ export function initGarden(ctx) {
         rects.push([x + BED_SOLID[0], base + BED_SOLID[1], x + BED_SOLID[2], base + BED_SOLID[3]]);
       });
     });
-    if (ctx.setSolids) ctx.setSolids(rects);
+    // ⚠️ NOT `if (ctx.setSolids)` — the optional call is why this shipped dead:
+    // the seam only existed on the ?parktest QA object, so in production every
+    // community-opened bed had no collider and nobody heard a thing
+    ctx.setSolids(rects);
   }
   // 🪓 the earth a dig throws up. Pack-true: the clods are cut from the
   // ditch's OWN soil pixels by the generator, so a burst is the same dirt as

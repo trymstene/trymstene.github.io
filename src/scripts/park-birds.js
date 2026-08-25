@@ -116,7 +116,7 @@ function rosterFor(win, band, ceil) {
 }
 
 export function initBirds(ctx) {
-  const { W, H, world, pct, depth, blocked, float, toast, pos, refreshHud, place } = ctx;
+  const { W, H, world, pct, depth, blocked, float, toast, pos, refreshHud, place, hideEl } = ctx;
 
   const inPlaza = (x, y) => {
     const ex = (x - PLAZA.x) / PLAZA.rx, ey = (y - PLAZA.y) / PLAZA.ry;
@@ -250,7 +250,9 @@ export function initBirds(ctx) {
       place(b.el, b.x, ay, ' translate(-50%,-100%)' + (b.right ? ' scaleX(-1)' : ''));
       b.el.style.zIndex = air ? '1560' : String(100 + Math.round(b.y));
     }
-    const on = b.state === 'fly' || b.state === 'leave';
+    // an indoor bird's shadow goes indoors with it — it used to keep gliding
+    // across the grass with no bird above it
+    const on = !b.indoors && (b.state === 'fly' || b.state === 'leave');
     if (on !== b.shOn) { b.shOn = on; b.sh.style.display = on ? '' : 'none'; }
     if (on) {
       // …and its own change-guard, which it never had
@@ -328,6 +330,7 @@ export function initBirds(ctx) {
       b.nextHome = now + rnd(HOME_EVERY);
       flyIn(b, seats[k].x, seats[k].y);
       b.ft = -k * 0.55;                 // staggered arrivals, not a formation
+      if (wxIndoors) setIndoors(b, true);   // a house stocked mid-downpour
     }
   }
   function setStocked(flags) {
@@ -353,14 +356,22 @@ export function initBirds(ctx) {
   // 🌦 how much of the roster the weather leaves in the sky. Rides the sync
   // KEY, so the machinery that already handles a roster change does all the
   // work: birds off the new list fly off properly, returns fly back in.
-  let wxCut = 1;
+  let wxCut = 1, wxIndoors = false;
+  // ⚠️ through the chassis, never el.style.display: the cull sweep owns that
+  // property on these same elements and used to walk indoor birds back out
+  // into the rain the moment their house scrolled into view. The shadow is
+  // noCull (paint() owns it), so it reads b.indoors instead.
+  function setIndoors(b, on) {
+    b.indoors = on;
+    hideEl(b.el, on);
+  }
   function setWeather(k) {
     // 🏠 the HOUSES go quiet too (Trym: "empty around birdhouses in heavy
     // rain"). Residents are not roster-managed — they belong to their post —
     // so they are simply indoors until it passes. In a real storm the server
     // destroys the houses anyway and the next poll removes them for good.
-    const indoors = k === 'heavy' || k === 'storm';
-    birds.forEach((b2) => { if (b2.spot != null) b2.el.style.display = indoors ? 'none' : ''; });
+    wxIndoors = k === 'heavy' || k === 'storm';
+    birds.forEach((b2) => { if (b2.spot != null) setIndoors(b2, wxIndoors); });
     const cut = k === 'storm' ? 0 : k === 'heavy' ? 0.15 : k === 'drizzle' ? 0.7 : 1;
     if (cut === wxCut) return;
     wxCut = cut;

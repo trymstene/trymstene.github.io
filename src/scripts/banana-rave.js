@@ -723,7 +723,13 @@ function init() {
   }
   function claimCoin() {
     if (!coinLive) return;
-    if (!coinWinClaim(coinLive.win)) { cnEl.style.display = 'none'; coinLive = null; return; } // another tab beat us to it
+    // another tab or room banked this window first — clear it and pay nothing
+    if (!coinWinClaim(coinLive.win)) {
+      const cn = el('rvCoin');
+      if (cn) cn.style.display = 'none';
+      coinLive = null;
+      return;
+    }
     const n = coinAmountFor(coinLive.win);
     pickupPop(coinLive.x, coinLive.y);
     coinFly();
@@ -1511,8 +1517,12 @@ function init() {
     // 👋 the hello arc: plain pellets only (no fleeing jelly in a lesson),
     // close enough that one tap collects the lot. Cornered = normal run, and
     // the teaching simply waits for the next one.
-    if (hello === 1 && !tourActive && document.querySelector('.ccb')) return null; // the consent banner goes first — one thing at a time for a first-timer
-    if (hello === 1 && !tourActive) {
+    // ⚠️ the banner defers the LESSON, never the run. Returning null here
+    // suppressed every jelly run for the whole first visit — the banner has no
+    // auto-dismiss, so an EEA first-timer (the ad lands here) got a floor with
+    // nothing on it until they answered it. Fall through to a normal run.
+    const helloNow = hello === 1 && !tourActive && !document.querySelector('.ccb');
+    if (helloNow) {
       // GUARANTEED placement (the player-walk suite caught the old 40-try loop
       // silently giving up when any point clipped a boundary — some
       // first-timers got a scatter and no lesson). The arc now CLAMPS into
@@ -1827,6 +1837,7 @@ function init() {
       lzToast('⚡ <b>ZAPPED!</b>' + (loss > 0 ? ' — your jelly spilled. scoop it back before somebody else does!' : ' — the light show bites. keep moving!'));
     }
   }
+  let lzLastTick = 0;   // last frame laserTick actually ran — a gap means the player wasn't watching
   function laserTick(now) {
     if (tourActive) {                        // the tour owns the floor — no hazards mid-lesson
       if (lzBeams.length) { lzBeams.forEach((b) => b.el.remove()); lzBeams = []; }
@@ -1837,6 +1848,13 @@ function init() {
     const dropSecs = nowS % DROP_PERIOD;
     const inDrop = dropSecs < DROP_LEN;
     // — SURVIVED THE DANCEFLOOR: the whole drop frenzy, untouched —
+    // ⚠️ SURVIVING MEANS BEING THERE. The falling edge alone paid out for a
+    // player who scrolled away or backgrounded the app: the loop stops (tick
+    // early-returns when the floor is off-screen, and rAF pauses when hidden),
+    // so no beam ever spawned and nothing could zap them — then the first
+    // frame back scored it as a clean dodge. A gap in the ticks disqualifies.
+    if (lzInDrop && lzLastTick && now - lzLastTick > 800) lzDropWhole = false;
+    lzLastTick = now;
     if (inDrop && !lzInDrop) { lzInDrop = true; lzDropZapped = false; lzDropWhole = dropSecs < 2; }
     if (!inDrop && lzInDrop) {
       lzInDrop = false;
@@ -3436,8 +3454,13 @@ function init() {
   const questHintEl = el('rvQuestHint');
   const qHint = (text) => {
     if (!questHintEl) return;
+    const was = questHintEl.hidden;
     if (text) { questHintEl.textContent = text; questHintEl.hidden = false; }
     else questHintEl.hidden = true;
+    // ⚠️ this row is IN FLOW directly above the action bar, so showing it
+    // pushes the bar 34-51px down — past the fold on a phone, for the whole
+    // quest, which is exactly when the tool button matters most.
+    if (was !== questHintEl.hidden) requestAnimationFrame(() => alignGameFrame(true));
   };
 
   // THE REGISTRY — each quest owns enter/frame/button/exit; the chassis owns
@@ -4052,6 +4075,7 @@ function init() {
       const me = myId && ravers.get(myId);
       if (!me || me.stage) return;
       if (quest.def.tick) quest.def.tick(now);       // frame-rate motion (bosses bounce)
+      if (!quest) return;                            // ⚠️ tick may FINISH the quest (the photo snap does)
       if (now - questPollAt < 120) return;           // poll cadence — the claims lesson again
       questPollAt = now;
       if (quest.def.frame) quest.def.frame(me, now);

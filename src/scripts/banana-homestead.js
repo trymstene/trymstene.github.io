@@ -6,7 +6,7 @@
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passSpend, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
@@ -726,7 +726,12 @@ function init(visitDoc, visitMiss) {
   function refreshItems() {
     itemEls.forEach((el) => el.remove());
     itemEls.length = 0;
-    state.items.forEach((it) => { if (DEX[it.id]) itemEls.push(itemDiv(it)); });
+    // 🪄 a lifted piece STAYS in state (see the ghost-window doctrine at
+    // startPlacing) — it just isn't painted twice while its ghost is up
+    state.items.forEach((it) => {
+      if (placing && placing.moving === it) return;
+      if (DEX[it.id]) itemEls.push(itemDiv(it));
+    });
     rebuildSolids();
   }
   const inEls = [];
@@ -735,6 +740,7 @@ function init(visitDoc, visitMiss) {
     inEls.length = 0;
     if (!inside) return;
     ((state.inItems || {})[inside] || []).forEach((it) => {
+      if (placing && placing.moving === it) return;   // its ghost is up
       if (!DEX[it.id]) return;
       const el = itemDiv(it);
       el.classList.add('hs-it--in');   // indoor pieces survive the is-inside hide
@@ -776,6 +782,7 @@ function init(visitDoc, visitMiss) {
   function rebuildSolids() {
     liveRects = [];
     state.items.forEach((it) => {
+      if (placing && placing.moving === it) return;   // a lifted piece has no collider
       const d = DEX[it.id];
       if (d && d.solid) liveRects.push([it.x + d.solid[0], it.y + d.solid[1], it.x + d.solid[2], it.y + d.solid[3]]);
     });
@@ -1120,16 +1127,49 @@ function init(visitDoc, visitMiss) {
   // walk", the one line that turns a picture into a game. Only 6 of 181 ad
   // arrivals ever walked far enough to collect the coins in front of them.
   // So the hint WAITS for the banner to go, and only then invites the tap.
+  //
+  // 📱 …and the same band eats every CONTROL (found again 25 Aug): at 375x667
+  // the banner covers ✓ place it here, the tool bar and the whole ❤️/🔨/📱 row,
+  // so a placement — or a PAID upgrade — cannot be committed. Consent is
+  // legally load-bearing, so the BANNER never moves: the game frame shrinks by
+  // the band and the page nudges so the frame ends above it (world-travel's
+  // boot nudge / the rave's alignGameFrame, with the banner added to the fold).
+  const actionsRow = document.querySelector('.hs-actions');
+  // ⚠️ offsetHeight + its own bottom inset, NEVER the client rect: the banner
+  // slides in from translateY(140%), so at boot its rect is off-screen and a
+  // rect-based band measured zero — the frame never moved (caught in QA)
+  const ccbBand = () => {
+    const b = matchMedia('(max-width: 700px)').matches && document.querySelector('.ccb');
+    if (!b) return 0;   // wide screens: the card is a left-hand corner, the controls centre
+    return b.offsetHeight + (parseFloat(getComputedStyle(b).bottom) || 12) + 8;
+  };
+  // ⚠️ layout() only, never camSnap(): this runs at BOOT and camTarget() reads
+  // `pos`, which is still in its TDZ up here — cam() eases to the new frame
+  function fitFrame() {
+    document.documentElement.style.setProperty('--hs-ccb', ccbBand() + 'px');
+    layout();
+  }
+  function alignFrame(smooth) {
+    if (!actionsRow || !matchMedia('(max-width: 700px)').matches) return;
+    const vh = (window.visualViewport && window.visualViewport.height) || innerHeight;
+    const off = actionsRow.getBoundingClientRect().bottom - (vh - ccbBand());
+    if (off > 8 || (smooth && off < -8)) scrollBy({ top: off, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  addEventListener('resize', fitFrame);
   (() => {
-    if (!hintEl || !document.querySelector('.ccb')) return;
-    hint(false);
+    if (!document.querySelector('.ccb')) return;
+    fitFrame();
+    if (hintEl) hint(false);
     const watch = setInterval(() => {
       if (document.querySelector('.ccb')) return;
       clearInterval(watch);
-      if (!moved) hint(true);          // still standing still? now say how
+      fitFrame();                      // the band is gone — the frame gets it back
+      if (!moved && hintEl) hint(true); // still standing still? now say how
     }, 400);
     setTimeout(() => clearInterval(watch), 60000);
   })();
+  // one boot nudge, after world-travel's (800ms) so the banner's band wins
+  setTimeout(() => alignFrame(false), 900);
 
   // ---- HUD + actions ------------------------------------------------------
   const hud = mountHud({
@@ -1228,6 +1268,13 @@ function init(visitDoc, visitMiss) {
       toolF.style.display = toolS.style.display = toolC.style.display = 'none';
       setTool('move');
       view.classList.add('is-placing');
+      // ⚠️ the placing camera, indoors too: without camFree every finger-down
+      // threw on camFree.x and drag-to-look was dead in every room
+      const R = roomBounds(inside);
+      camFree = { x: (R[0] + R[2]) / 2, y: (R[1] + R[3]) / 2 };
+      layout();
+      camSnap();
+      alignFrame(true);
       track('homestead_planner', { room: inside });
       return;
     }
@@ -1243,6 +1290,7 @@ function init(visitDoc, visitMiss) {
     view.classList.add('is-placing');
     layout();
     camSnap();
+    alignFrame(true);   // the tool bar docks at the bottom in portrait — keep it clear
     // one toast, not two: replaces setTool's when there is anything to pan to
     if (W * scale > viewW + 8) {
       toast('🪵 tap the lit grid to build fence · swipe to look across your land', 4200);
@@ -2101,10 +2149,17 @@ function init(visitDoc, visitMiss) {
       placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(y));
     }
     camFree = { x, y };   // one glide to the ghost — after this, only drags pan
-    if (moving) { refreshItems(); }   // the original disappears while it moves
+    // 💀 THE GHOST WINDOW (the lost-decor bug): a lift used to SPLICE the piece
+    // out of state with no save, so any save landing mid-ghost (a delivery, a
+    // purchase from the phone) wrote the yard without it — and cancel put it
+    // back in memory only. Nothing leaves state until the move COMMITS; the
+    // renderers and rebuildSolids skip placing.moving, so it just stops being
+    // painted. Both lists refresh: indoors the twin stayed lit beside the ghost.
+    if (moving) { refreshItems(); refreshInItems(); }
     view.classList.add('is-placing');   // touch drags steer the camera, not the page
     updateGhost();
     confirmEl.hidden = false;
+    requestAnimationFrame(() => alignFrame(true));   // the ✓ bar must not open under the cookie banner
     moved = true; hint(false);
     toast('drag to look around · tap to try a spot — then ✓', 3600);
   }
@@ -2173,6 +2228,7 @@ function init(visitDoc, visitMiss) {
     view.classList.add('is-placing');
     updateGhost();
     confirmEl.hidden = false;
+    requestAnimationFrame(() => alignFrame(true));   // the ✓ bar must not open under the cookie banner
     moved = true; hint(false);
     toast(placing.toStage > state.stage
       ? 'your land grows with it — place it anywhere on the new deed'
@@ -2253,7 +2309,9 @@ function init(visitDoc, visitMiss) {
     save();
     const grew = fenceTier() !== tierWas;
     tierWas = fenceTier();
-    refreshTent(); refreshSoil(); rebuildSolids(); refreshItems(); refreshHud();
+    // 🪧 refreshFixtures too — the property sign wears the TIER, so an upgrade
+    // that skipped it kept the old plank until the next page load
+    refreshTent(); refreshSoil(); rebuildSolids(); refreshItems(); refreshFixtures(); refreshHud();
     float(x, y - STRUCTS[key].h - 8, '✓');
     plannerAfterPlace(x, y);
     if (grew) setTimeout(() => toast('🌱 your land grew — more room to build, dig and decorate'), 1400);
@@ -2330,11 +2388,7 @@ function init(visitDoc, visitMiss) {
       plannerAfterPlace(keepX, keepY);
       return;
     }
-    if (placing.moving) {
-      (placing.room ? (state.inItems[placing.room] = state.inItems[placing.room] || []) : state.items)
-        .push(placing.moving);   // it never left
-    }
-    const wasBuy = !placing.moving;
+    const wasBuy = !placing.moving;   // a lifted piece never left state — nothing to put back
     const backId = placing.id;
     placing = null;
     confirmEl.hidden = true;
@@ -2348,13 +2402,16 @@ function init(visitDoc, visitMiss) {
     if (placing.home) { confirmHome(); return; }
     view.classList.remove('is-placing');
     camFree = null;
-    const it = { id: placing.id, x: placing.x, y: placing.y };
     const room = placing.room;
+    // a move MUTATES the piece already in state (it keeps its extras — a lit
+    // campfire used to be rebuilt cold); only a buy pushes a new one
+    const it = placing.moving || { id: placing.id, x: placing.x, y: placing.y };
+    it.x = placing.x; it.y = placing.y;
     placing.el.remove();
     const moved = !!placing.moving;
     placing = null;
     confirmEl.hidden = true;
-    (room ? (state.inItems[room] = state.inItems[room] || []) : state.items).push(it);
+    if (!moved) (room ? (state.inItems[room] = state.inItems[room] || []) : state.items).push(it);
     save();
     refreshItems();
     refreshInItems();
@@ -2412,9 +2469,8 @@ function init(visitDoc, visitMiss) {
     const rm = document.createElement('button');
     rm.className = 'hs-btn hs-btn--ghost'; rm.textContent = '📦 put away';
     mv.addEventListener('click', () => {
-      const moving = state.items.splice(idx, 1)[0];
       clearChip();
-      startPlacing(moving.id, moving);
+      startPlacing(it.id, it);   // it stays in state until the move commits
     });
     rm.addEventListener('click', () => {
       const gone = state.items.splice(idx, 1)[0];
@@ -2510,6 +2566,10 @@ function init(visitDoc, visitMiss) {
 
   // 🖐 placing gestures: DRAG pans the camera, TAP tries the spot. Never both
   // from one action — the pan threshold decides which one this gesture was.
+  // ⚠️ ONE chrome list, three guards (pointerdown, the tap dispatch, the steer):
+  // .hs-visit was missing from all three, so a deliberate press on the visiting
+  // banner's only way home armed a steer instead of following the link.
+  const UI_CHROME = '.wh, .hs-actions, .hs-chip, .hs-confirm, .hs-visit';
   let gest = null, justPanned = false;   // { x0, y0, cam0x, cam0y, panning }
   function ghostTo(e) {
     const r = view.getBoundingClientRect();
@@ -2530,7 +2590,8 @@ function init(visitDoc, visitMiss) {
   }
   view.addEventListener('pointerdown', (e) => {
     if ((!placing && !digging && !fencing && !clearing && !arranging) || panelOpen()) return;
-    if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-confirm')) return;
+    if (e.target.closest(UI_CHROME)) return;
+    if (!camFree) camFree = { x: pos.x, y: pos.y };   // a tool that forgot the camera degrades, never throws
     gest = { x0: e.clientX, y0: e.clientY, cam0x: camFree.x, cam0y: camFree.y, panning: false };
   });
   view.addEventListener('pointermove', (e) => {
@@ -2550,8 +2611,7 @@ function init(visitDoc, visitMiss) {
 
   // ---- taps ---------------------------------------------------------------
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-chip')
-      || e.target.closest('.hs-confirm')) return;
+    if (e.target.closest(UI_CHROME)) return;
     if (panelOpen()) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
@@ -2566,7 +2626,6 @@ function init(visitDoc, visitMiss) {
           const it3 = L3[k3];
           const d4 = DEX[it3.id];
           if (d4 && Math.abs(wx - it3.x) < Math.max(24, d4.w / 2) && wy > it3.y - d4.h - 8 && wy < it3.y + 10) {
-            L3.splice(k3, 1);
             startPlacing(it3.id, it3);
             return;
           }
@@ -2603,7 +2662,6 @@ function init(visitDoc, visitMiss) {
             mv3.textContent = '✥ move';
             mv3.addEventListener('click', () => {
               clearChip();
-              L2.splice(k, 1);
               startPlacing(it.id, it);
             });
             const aw = document.createElement('button');
@@ -2636,9 +2694,7 @@ function init(visitDoc, visitMiss) {
     if (arranging && !visiting) {
       const k = itemAt(wx, wy);
       if (k >= 0) {
-        const it = state.items[k];
-        state.items.splice(k, 1);
-        startPlacing(it.id, it);
+        startPlacing(state.items[k].id, state.items[k]);
         return;
       }
       if (Math.abs(wx - state.mailAt.x) < 30 && wy > state.mailAt.y - MAILBOX.h - 10 && wy < state.mailAt.y + 10) {
@@ -2842,7 +2898,7 @@ function init(visitDoc, visitMiss) {
   initSteer({
     view,
     blocked: (e) => panelOpen() || placing || digging || fencing || clearing || arranging
-      || e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-chip') || e.target.closest('.hs-confirm'),
+      || e.target.closest(UI_CHROME),
     toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
     onArm: () => { moved = true; hint(false); clearChip(); clearBedChip(); },
     onMove: (w) => { tgt.x = w.x; tgt.y = w.y; },

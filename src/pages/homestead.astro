@@ -33,8 +33,11 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-tag { text-align: center; margin: 0 0 0.8rem; font-size: 0.82rem; opacity: 0.6; }
 
     .hs-stage { position: relative; border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
+    /* 🍪 --hs-ccb is the cookie banner's band (0 when it is gone) — the frame
+       gives up exactly that much so the controls under it stay reachable */
     .hs-view {
-      position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
+      position: relative; height: max(240px, calc(min(74vh, 580px) - var(--hs-ccb, 0px)));
+      overflow: hidden; cursor: pointer;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       background: #10200c;
     }
@@ -518,6 +521,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
       z-index: 25; display: flex; gap: 0.5rem; align-items: center;
       max-width: calc(100% - 1.2rem); background: rgba(10, 16, 8, 0.9);
       border: 3px solid #000; border-radius: 7px; padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+      /* 🕹 a deliberate press on the only way home is a TAP, never a steer */
+      -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
     }
     .hs-visit b { color: #ffe135; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .hs-visit .hs-btn { font-size: 0.72rem; padding: 0.3rem 0.5rem; text-decoration: none; }

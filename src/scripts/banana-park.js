@@ -56,6 +56,15 @@ if (view && 'IntersectionObserver' in window) {
 // hidden by CSS (park.astro) and every loop that only feeds it stands down
 const inside = () => document.body.classList.contains('pk-inside');
 
+// 🧱 EVERY piece of chrome that lives OVER #pkView — the whole list, once. Both
+// the tap dispatch and the steer's blocked() read it, so the two can never
+// drift apart (they did: `.pk-hbar` and `.pk-stand` were missing from both, so
+// a tap on park health walked you out of the park and a press-hold on it armed
+// a steer instead of opening the card). A new overlay goes here, nowhere else.
+const CHROME = '.wh,.pk-actions,.pk-panel,.pk-shop,.pk-stand,.pk-hbar,'
+  + '.pk-hint,.pk-exitstrip,.pk-toast,.pk-wx,.pk-stormnote';
+const onChrome = (e) => !!(e.target.closest && e.target.closest(CHROME));
+
 function init() {
   const W = WORLD.w, H = WORLD.h;
   // the most art px we ever show on each axis (see the beach's layout() notes)
@@ -134,6 +143,10 @@ function init() {
   // write on a display:none node costs no layout or paint) and reappears where
   // it actually is. Full-bleed children (the plates) have no inline left and
   // are skipped. An element that manages its own display sets `el.noCull`.
+  // 🌦 …and one that the WEATHER has sent away sets `el.forceHide` (via
+  // ctx.hideEl): the sweep still owns `display`, it just knows the answer is
+  // no. Two writers on one property is how storm-hidden animals used to pop
+  // back onto the lawn the moment they scrolled into view.
   function cullSweep() {
     const kids = world.children;
     for (let i = 0; i < kids.length; i++) {
@@ -150,11 +163,18 @@ function init() {
           (parseFloat(el.style.height) / 100 * H || 0) + 60);
       }
       // wider band to STAY on than to come back = no flapping at the border
-      const on = onScreen(x, y, el.cOff ? el.cPad : el.cPad + 90);
+      const on = !el.forceHide && onScreen(x, y, el.cOff ? el.cPad : el.cPad + 90);
       if (on === !el.cOff) continue;
       el.cOff = !on;
       el.style.display = on ? '' : 'none';
     }
+  }
+  // the ONE way a section hides something the sweep also owns. cOff rides
+  // along so the next sweep picks the element up in a consistent state.
+  function hideEl(el, hide) {
+    el.forceHide = !!hide;
+    el.cOff = !!hide;
+    el.style.display = hide ? 'none' : '';
   }
 
   // ---- 📐 TRANSFORM PLACEMENT — for MOVERS only ---------------------------
@@ -295,6 +315,8 @@ function init() {
     plateShow(p <= 1 ? 'sad' : p <= 3 ? 'mid' : 'lush');
     setTrees(p);
     PROP_OVS.forEach((i) => fadeOv(i, p <= 1, 0));
+    // 🐿🦋 the BAND half only — park-critters ANDs in fair weather itself, so a
+    // bloom rise mid-storm can no longer walk them back out into the rain
     critters.setSquirrels(p >= 3);         // 🐿 life returns near the top…
     critters.setBflies(p >= 4);            // 🦋 …and only a perfect park has these
     critters.setAnimalMood(p);             // 🐔 the flock's mood follows the bloom
@@ -519,7 +541,11 @@ function init() {
   // Stable refs (pos/tgt/ME_DRAW, helpers) cross as-is; live chassis state
   // (phase, pSpeed, the camera in onScreen) crosses as getter functions.
   const ctx = {
-    W, H, world, pct, depth, blocked, onScreen, place,
+    W, H, world, pct, depth, blocked, onScreen, place, hideEl,
+    // 🪓 the garden hands over every open bed's walls here — this used to exist
+    // ONLY on the ?parktest QA object, so in production liveRects stayed [] and
+    // players walked straight through every community-opened bed
+    setSolids: (rects) => { liveRects = rects; },
     // 💧 puddles want ROADS, and the weed lattice is lawn-only by
     // construction — so they sit just OFF a lawn point, which lands them on
     // the path or its shoulder without needing a second generated lattice
@@ -558,7 +584,7 @@ function init() {
   const shops = initShops(ctx);
 
   view.addEventListener('click', (e) => {
-    if (e.target.closest('.wh') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel') || e.target.closest('.pk-shop')) return;
+    if (inside() || onChrome(e)) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
     const wy = (e.clientY - r.top + camY) / scale;
@@ -594,7 +620,7 @@ function init() {
   // dispatch (eggs, birds, Old Peel, beds, stands) never runs from a steer
   initSteer({
     view,
-    blocked: (e) => inside() || e.target.closest('.wh') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel') || e.target.closest('.pk-shop'),
+    blocked: (e) => inside() || onChrome(e),
     toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
     onArm: () => { hint(false); shops.clearPending(); fountain.clearPending(); npc.clearPending(); garden.clearPending(); },
     onMove: (w) => { tgt.x = w.x; tgt.y = w.y; },
@@ -764,7 +790,8 @@ function init() {
   if (PARK_TEST) {
     window.__park = {
       pos, tgt, PLOTS,
-      setSolids: (rects) => { liveRects = rects; },
+      setSolids: ctx.setSolids,   // the real seam owns it — this is a reach-in
+      liveRects: () => liveRects,
       ...critters.qa,
       ...birds.qa,
       ...garden.qa,
@@ -772,6 +799,7 @@ function init() {
       coins: (n) => { passStat('coins_earned', n); refreshHud(); },
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       phase: () => phase,
+      setPhase,   // 🍂 force a bloom band — the other half of the wx() test
       // 🌦 weather QA: force a tier (the clock only rains a few % of the time,
       // so waiting for real weather is not a test plan), and fire the
       // post-storm notice on demand. wxForce sticks until you pass null.

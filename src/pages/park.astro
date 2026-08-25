@@ -56,6 +56,11 @@ const faq = {
   <link rel="preload" as="image" href="/assets/park/park.png" slot="head" />
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">
+    /* ⚠️ THE HOUSE TRAP, ONE GUARD FOR THE PAGE: any author `display:` beats the
+       UA [hidden] rule, so a JS-hidden control renders full-width and dead (the
+       postcard's "share…" on every browser without navigator.canShare). This
+       page toggles a dozen things by the attribute — none of them may paint. */
+    [hidden] { display: none !important; }
     body { background: #101a10; }
     .pk-wrap { max-width: 1000px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }
     .pk-sign {
@@ -1640,6 +1645,8 @@ const faq = {
     }
     .pk-sharemodal__card canvas { display: block; width: 100%; height: auto; border: 2px solid #000; }
     .pk-sharemodal__row { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+    /* ⚠️ this `display: flex` is exactly what used to paint the hidden
+       "share…" button — the page-top [hidden] guard is what holds it down */
     .pk-sharemodal__row button {
       flex: 1; min-width: 130px; appearance: none; cursor: pointer; font-family: inherit;
       font-weight: 800; font-size: 0.82rem; padding: 0.5rem; gap: 0.35rem;
