@@ -159,6 +159,21 @@ export function initTravel({ here, mount, before, btnClass, track }) {
   // .rv-emotes) and a shared widget should not have to name all four
   mount.classList.add('wt-row');
 
+  // 📱 the game frame must keep its own action bar on screen (the below-fold
+  // trap: the rave's mop tool sat up to 131px under a real iPhone's fold, and
+  // park/bay/homestead bars measured 36-58px under). The travel module joins
+  // every bar, so it owns the one boot nudge — visualViewport, never
+  // innerHeight (iOS toolbars shrink what's visible). The rave aligns itself
+  // (it must re-align when quest tools appear) so its bar opts out here.
+  if (!mount.closest('.rv-hud')) {
+    setTimeout(() => {
+      if (!matchMedia('(max-width: 640px)').matches) return;
+      const vh = (window.visualViewport && window.visualViewport.height) || innerHeight;
+      const off = mount.getBoundingClientRect().bottom - vh;
+      if (off > 8) scrollBy({ top: off + 6, behavior: 'auto' });
+    }, 800);
+  }
+
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = (btnClass || '') + ' wt-btn';
