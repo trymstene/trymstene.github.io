@@ -11,6 +11,7 @@ import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
+import { initSteer } from './world-steer.js';
 import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
@@ -2824,6 +2825,18 @@ function init(visitDoc, visitMiss) {
       }
     }
     tgt.x = wx; tgt.y = wy;
+  });
+  // 🕹 hold-and-drag steering — walk orders only. The build modes keep their
+  // own drag verb (camera pan while placing/fencing/etc), so steering stands
+  // down whenever one is active; indoors it just walks, like a tap does.
+  initSteer({
+    view,
+    blocked: (e) => panelOpen() || placing || digging || fencing || clearing || arranging
+      || e.target.closest('.wh') || e.target.closest('.hs-actions') || e.target.closest('.hs-chip') || e.target.closest('.hs-confirm'),
+    toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
+    onArm: () => { moved = true; hint(false); clearChip(); clearBedChip(); },
+    onMove: (w) => { tgt.x = w.x; tgt.y = w.y; },
+    first: () => track('hs_steer'),
   });
   // 🚪 the door intent: any new target (tap, WASD) cancels it; arriving enters
   setInterval(() => {

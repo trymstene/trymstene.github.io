@@ -36,6 +36,7 @@ import { initShare } from './park-share.js';
 import { initWeather } from './park-weather.js';
 import { weatherAt } from '../lib/world.js';
 import { initTravel } from './world-travel.js';
+import { initSteer } from './world-steer.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
@@ -588,6 +589,16 @@ function init() {
     if (fountain.tapFountain(wx, wy)) return;
     tgt.x = wx;
     tgt.y = wy;
+  });
+  // 🕹 hold-and-drag steering — feeds ONLY the walk path above; the tap
+  // dispatch (eggs, birds, Old Peel, beds, stands) never runs from a steer
+  initSteer({
+    view,
+    blocked: (e) => inside() || e.target.closest('.wh') || e.target.closest('.pk-actions') || e.target.closest('.pk-panel') || e.target.closest('.pk-shop'),
+    toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
+    onArm: () => { hint(false); shops.clearPending(); fountain.clearPending(); npc.clearPending(); garden.clearPending(); },
+    onMove: (w) => { tgt.x = w.x; tgt.y = w.y; },
+    first: () => track('park_steer'),
   });
 
   // ---- the loop -----------------------------------------------------------

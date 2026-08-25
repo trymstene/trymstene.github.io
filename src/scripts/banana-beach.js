@@ -28,6 +28,7 @@ import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
 import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
 import { initTravel } from './world-travel.js';
+import { initSteer } from './world-steer.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
 // touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
@@ -608,6 +609,17 @@ function init() {
     if (chair) { sitTarget = chair; setTarget(chair.seat.x, chair.seat.y + 10); return; }
     sitTarget = null;
     setTarget(wx, wy);
+  });
+  // 🕹 hold-and-drag steering — walk orders only; stalls, Shelly, the
+  // grabber and the ball keep their taps (a steer arms like a ground tap:
+  // stand up, reel in, drop pendings)
+  initSteer({
+    view,
+    blocked: (e) => inside() || e.target.closest('.bh-panel') || e.target.closest('.wh') || e.target.closest('.bh-actions'),
+    toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
+    onArm: () => { hint(false); pendingOpen = null; pendingUmb = null; seated = null; sitTarget = null; meEl.classList.remove('is-sitting'); stopFishing(); },
+    onMove: (w) => setTarget(w.x, w.y),
+    first: () => track('beach_steer'),
   });
 
   // ---- 🚪 the west road → the park (the park's door grammar) --------------
