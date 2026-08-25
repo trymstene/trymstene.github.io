@@ -236,6 +236,11 @@ const description = 'Your membership card to the banana world: the badges you ha
       font-size: 1rem; letter-spacing: 0.12em; text-transform: uppercase;
       border: 3px solid #000; background: #fffdf5; color: #111;
     }
+    .ps-mail__whose {
+      margin: 0.35rem 0 0; font-size: 0.72rem; line-height: 1.45;
+      color: var(--ink-soft, rgba(17, 17, 17, 0.66));
+    }
+    .ps-mail__whose[hidden] { display: none; }
     .ps-sync__note { margin: 0.5rem 0 0 !important; font-size: 0.74rem !important; opacity: 0.72; min-height: 1em; }
     /* linked = done: nothing to do, so nothing shouts */
     .ps-sync--linked .ps-sync__row,
@@ -368,6 +373,10 @@ const description = 'Your membership card to the banana world: the badges you ha
                    placeholder="you@email.com" aria-label="Your email" />
             <button class="btn btn--dark" id="psMailGo" type="submit">Log in</button>
           </form>
+          <!-- ⚠️ only shown once somebody is signed in: the same field ADDS an
+               address to their pass, so a second person on a shared tablet must
+               be told before they type theirs -->
+          <p class="ps-mail__whose" id="psMailWhose" hidden></p>
         <p class="ps-sync__note" id="psSyncNote"></p>
         <!-- passkeys are a SHORTCUT now, not a fork you have to understand -->
         <div class="ps-alt" id="psAlt" hidden>

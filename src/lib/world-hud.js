@@ -14,7 +14,7 @@
 // wallet are world-wide stats; an area that computed its own would drift from
 // the others the first time a rule changed. Anything the pass cannot answer
 // (the bay's tickets) comes in through `values`.
-import { passGet } from './banana-pass.js';
+import { passGet, coinsNow } from './banana-pass.js';
 import { levelFor } from './pass-defs.js';
 
 const CSS = `
@@ -60,14 +60,15 @@ function injectCss() {
   document.head.appendChild(st);
 }
 
-// The wallet, derived not stored: coins can only ever be REMOVED by writing
-// coins_spent (see mergeBlob — stats merge by MAX, so a decrement would not
-// survive a sync). Exported because areas need the same number the strip shows;
-// a second reader is how a HUD and a shop start disagreeing about your money.
-export const coinBalance = () => {
-  const s = passGet().stats || {};
-  return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
-};
+// The wallet, derived not stored: earned + refunded − spent. Every counter is
+// monotonic (see the ledger note in banana-pass.js), so refunds add rather than
+// subtract. Exported because areas need the same number the strip shows; a
+// second reader is how a HUD and a shop start disagreeing about your money.
+// ⚠️ NO Math.max(0, …) HERE: clamping hid an overdraft as an empty purse, and
+// every coin earned afterwards silently filled the hole instead of appearing.
+// passSpend() refuses to dig one; if a negative ever shows up it is a bug and
+// must be visible, not swallowed.
+export const coinBalance = () => coinsNow();
 
 /**
  * @param mount   the element the strip goes in (a map wrapper for 'overlay')

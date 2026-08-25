@@ -54,6 +54,48 @@ const catalogReady = fetch('https://banana-share.trymstene.workers.dev/catalog/i
 
 const el = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ⚠️ EVERY MODULE CONST BELONGS ABOVE init() — it runs at module-eval time and
+// a const declared under it is still in the temporal dead zone (TDZ).
+
+// ⏱ no fetch on this page may wedge the dashboard: a cold worker or a phone
+// that just lost signal has to lose the race, not the page.
+const PULL_MS = 7000;      // the account pull — a background refresh, keep it short
+const LANDING_MS = 12000;  // spending a magic link — worth waiting a bit longer for
+const LOGIN_WAIT = '🔑 Finishing your login…';
+const OFFLINE_LINE = '📡 Couldn’t reach your account just now — this is what’s saved on this device, and it catches up on its own.';
+
+// 🧾 the page state lives here because paint() runs TWICE — once from this
+// device before any network, again when the account lands — while the gear
+// toggles, the dancing card and the share card all read it live.
+let PASS = null;
+const OUTFIT = { hat: 'none', glasses: 'none', extras: {}, effect: 'none', c: undefined };
+let SHARE_EXTRA = null;
+let lastIdx = -1;          // the signature banana's frame; -1 forces a redraw
+let syncWired = false;
+let offerShown = false;
+
+// 🧢 THE EQUIPPED SET. `c` is a COMMA LIST (a lone id is a one-item list) —
+// the same shape the builder, the rooms and the sync blob all speak.
+// ⚠️ Never test it with `===`: with two items on, equality lights NEITHER tile
+// and "wear it" would REPLACE the whole look with one piece.
+const C_MAX = 5;           // one per body spot, and there are five
+const cList = () => String(OUTFIT.c || '').split(',').map((t) => t.trim()).filter(Boolean);
+const cSet = (ids) => { OUTFIT.c = ids.slice(0, C_MAX).join(',') || undefined; };
+// ⚠️ ONE ITEM PER SPOT — the builder's rule, so the closet cannot assemble a
+// loadout the builder would refuse.
+const spotOf = (id) => { const c = (catCustomP(id) || [])[0]; return c ? String(c.anchor || '') + (c.hand || '') : ''; };
+
+const setCount = (id, n) => { const e = el(id); if (e) e.textContent = n; };
+
+function withTimeout(p, ms) {
+  let t;
+  return Promise.race([
+    Promise.resolve(p).finally(() => clearTimeout(t)),
+    new Promise((_, rej) => { t = setTimeout(() => rej(new Error('timeout')), ms); }),
+  ]);
+}
+
 if (el('psSig')) init();
 
 // same naming as the rave's endurance board — your outfit IS your name
@@ -79,57 +121,91 @@ function signatureOutfit() {
   return { hat: 'none', glasses: 'none', extras: {}, effect: 'none' };
 }
 
+// refresh OUTFIT IN PLACE — the RAF loop, the closet and the share card all
+// hold this exact object, so a repaint may never swap it for a new one
+function loadOutfit() {
+  Object.assign(OUTFIT, { c: undefined }, signatureOutfit());
+}
+
+// ---- THE PAGE, IN TWO PASSES -------------------------------------------
+// ⚠️ LOCAL FIRST, NETWORK SECOND. The dashboard used to be built inside one
+// linear await chain behind two un-timed fetches: while they flew the tab bar
+// sat dead over blank panes, and if either threw it never built at all.
+// paint() reads only this device, so the page is whole and clickable before a
+// byte of network — refresh() can then only ever IMPROVE it.
 async function init() {
   passVisit();
   if (window.gtag) window.gtag('event', 'pass_view');
-  await initMailLanding();          // ⚠️ spend ?in= BEFORE the panel or card draw
+  const landing = takeLanding();   // ?in= leaves the URL NOW; SPENDING it waits
+  initTabs();
   initSync();
-  if (linked()) await pullLatest(); // freshest world BEFORE we draw it
-  const pass = passGet();
-  const outfit = signatureOutfit();
+  paint();
+  initShare();
+  startSignature();
+  if (landing && landing.kind === 'in') {
+    const n = el('psSyncNote');
+    if (n) n.textContent = LOGIN_WAIT; // or they retype an address they just used
+  }
+  setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
+  catalogReady.then(renderGear);         // the catalog landed — repaint the whole closet
+  await refresh(landing);
+}
 
-  // — the card: YOUR name if you wrote one, the outfit-name otherwise —
-  // ✏️ free text is fine HERE (Trym: the premium feel of a real pass): it
-  // renders only on this device + the PNG the user shares themselves — no
-  // site surface hosts it, so no moderation burden. The rave keeps its
-  // outfit-names; the no-free-text-on-the-floor doctrine is untouched.
-  const customName = () => { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } };
-  const renderName = () => { el('psName').textContent = customName() || autoName(outfit); };
+// — the network pass: spend a magic link, pull the account, repaint what moved —
+async function refresh(landing) {
+  // 📯 verdicts on your gallery/catalog submissions — no account needed, never blocking
+  checkGalleryVerdicts({ force: true }).then(renderNotices);
+  checkCatalogVerdicts({ force: true }).then(renderNotices);
+  checkTrymReplies({ force: true }).then(renderNotices);   // 💬 Message from Trym
+  if (!landing && !linked()) return;   // nothing to reach — the local page IS the page
+  let cold = false;
+  if (landing) {
+    try {
+      await withTimeout(runLanding(landing), LANDING_MS);
+    } catch (e) {
+      const slow = e && e.message === 'timeout';
+      if (slow) cold = true;           // an expired link is not an unreachable club
+      passToast('⚠️ <b>' + esc(slow
+        ? 'We couldn’t reach the club just now — try that link again in a moment.'
+        : (e && e.message) || 'That link didn’t work.') + '</b>');
+    }
+  }
+  if (linked()) {
+    const ok = await withTimeout(pullLatest(), PULL_MS).catch(() => false);
+    if (!ok) cold = true;
+  }
+  // ⚠️ the repaint runs LAST and cannot be allowed to throw: the page is
+  // already whole, so a bad blob must cost the refresh, never the dashboard.
+  try {
+    initSync(); // a magic-link login flips this panel from "log in" to "your pass"
+    paint();    // the pull rewrites bb-last, the stats and the shelf
+  } catch (e) { cold = true; }
+  netNote(cold);
+}
+
+// 📡 an unreachable account is SAID OUT LOUD. The page is honest either way —
+// it is drawn from this device — but quietly showing yesterday's numbers behind
+// a spinner-less blank is the thing that reads as broken.
+function netNote(cold) {
+  const note = el('psSyncNote');
+  if (!note) return;
+  if (cold) note.textContent = OFFLINE_LINE;
+  else if (note.textContent === LOGIN_WAIT) note.textContent = '';
+}
+
+// ⚠️ paint() RUNS TWICE — once from localStorage, once when the account lands —
+// so every block below REPLACES what it drew and never appends to it.
+function paint() {
+  PASS = passGet();
+  loadOutfit();
+  const pass = PASS;
+  const patches = pass.patches || {};
+  const days = pass.days || [];
+
   renderName();
-  el('psNameEdit').onclick = () => {
-    if (document.getElementById('psNameInput')) return;
-    const inp = document.createElement('input');
-    inp.id = 'psNameInput';
-    inp.maxLength = 24;
-    inp.value = customName();
-    inp.placeholder = autoName(outfit);
-    inp.setAttribute('aria-label', 'Your name on the pass');
-    el('psName').replaceChildren(inp);
-    inp.focus();
-    let closed = false;
-    const done = (save) => {
-      if (closed) return;
-      if (save) {
-        const v = inp.value.trim().slice(0, 24);
-        if (v && !captionsClean({ top: v })) {
-          passToast('Let’s keep it family friendly 🍌 — try another name');
-          inp.focus();
-          return;
-        }
-        try { if (v) localStorage.setItem('ps-name-v1', v); else localStorage.removeItem('ps-name-v1'); } catch (e) {}
-        passPush(); // the name rides the sync blob to your other devices
-        if (v && v !== autoName(outfit)) passToast('🎫 <b>' + v.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> — it’s officially your pass now.');
-      }
-      closed = true;
-      renderName();
-    };
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') done(true);
-      if (e.key === 'Escape') done(false);
-    });
-    inp.addEventListener('blur', () => done(true));
-  };
-  const since = new Date(pass.created);
+  wireName();
+  const created = pass.created || Date.now();
+  const since = new Date(created);
   el('psSince').textContent = 'member since ' + since.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   // — your standing at the club, ON the card: level chip + rep bar —
@@ -143,27 +219,26 @@ async function init() {
 
   // — the official furniture: serial + barcode, same seeded pattern as the
   // share-card PNG (a real document keeps its number) —
-  el('psSerial').textContent = 'Nº ' + pass.created.toString(36).toUpperCase();
-  drawBarcode(el('psBarcode'), pass.created);
+  el('psSerial').textContent = 'Nº ' + created.toString(36).toUpperCase();
+  drawBarcode(el('psBarcode'), created);
 
   // — 📯 world notifications: verdicts on your gallery submissions (and future news
   // about YOUR stuff). Renders only when there is something to say. —
   renderNotices();
-  checkGalleryVerdicts({ force: true }).then(renderNotices);
-  checkCatalogVerdicts({ force: true }).then(renderNotices);
-  checkTrymReplies({ force: true }).then(renderNotices);   // 💬 Message from Trym
-  setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
 
   // — patches: light the earned, pin the first few to the card —
-  const earned = PATCHES.filter((d) => pass.patches[d.id]);
+  // ⚠️ clear first: on the repaint these classes and tiles are already there
+  document.querySelectorAll('.ps-patch--earned').forEach((c) => c.classList.remove('ps-patch--earned'));
+  const earned = PATCHES.filter((d) => patches[d.id]);
   earned.forEach((d) => {
     const cell = document.querySelector(`.ps-patch[data-patch="${d.id}"]`);
     if (!cell) return;
     cell.classList.add('ps-patch--earned');
-    const when = new Date(pass.patches[d.id]);
+    const when = new Date(patches[d.id]);
     cell.querySelector('.ps-patch__date').textContent = when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   });
   const strip = el('psCardPatches');
+  strip.replaceChildren();
   if (earned.length) {
     earned.slice(0, 6).forEach((d) => {
       const src = document.querySelector(`.ps-patch[data-patch="${d.id}"] svg`);
@@ -186,7 +261,7 @@ async function init() {
     [S.vinyls, 'records delivered'],
     [S.builds, 'bananas taken home'],
     [S.forges, 'emojis forged'],
-    [pass.days.length, 'days on the pass'],
+    [days.length, 'days on the pass'],
   ].filter(([n]) => n > 0);
 
   // shelf counts — power the tab badges AND the overview
@@ -225,7 +300,7 @@ async function init() {
       [S.forges || nEmotes, 'emojis forged'],
       [nItems, 'items made'],
       [earned.length, 'badges earned'],
-      [pass.days.length, 'days on the pass'],
+      [days.length, 'days on the pass'],
     ];
     el('psStats').innerHTML = statAll.map(([n, l]) => `<div class="ps-stat"><b>${n}</b><span>${l}</span></div>`).join('');
   }
@@ -233,7 +308,7 @@ async function init() {
   // — OVERVIEW recent badges: the latest few earned, deep-linking to the tab —
   const ov = el('psOvBadges');
   if (ov) {
-    const recent = earned.slice().sort((a, b) => pass.patches[b.id] - pass.patches[a.id]).slice(0, 4);
+    const recent = earned.slice().sort((a, b) => patches[b.id] - patches[a.id]).slice(0, 4);
     if (recent.length) {
       ov.innerHTML = '';
       recent.forEach((d) => {
@@ -277,6 +352,7 @@ async function init() {
     const mount = el('psOffer');
     if (!mount) return;
     const fit = myOutfit();
+    mount.replaceChildren();   // ⚠️ a repaint must REPLACE this card, not stack a second one
     mount.appendChild(offerCard({
       kicker: 'Make it real',
       head: 'Take your banana off the screen',
@@ -286,166 +362,229 @@ async function init() {
       flag: 'MADE BY YOU',
       onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: 'pass_overview' }); },
     }));
-    if (window.gtag) window.gtag('event', 'offer_shown', { from: 'pass_overview' });
+    if (window.gtag && !offerShown) { offerShown = true; window.gtag('event', 'offer_shown', { from: 'pass_overview' }); }
   })();
 
   // — tab counts —
-  const setCount = (id, n) => { const e = el(id); if (e) e.textContent = n; };
   setCount('cnt-badges', earned.length + '/' + PATCHES.length);
   setCount('cnt-bananas', nBananas);
   setCount('cnt-items', nItems);
   setCount('cnt-emotes', nEmotes);
 
-  // — THE GEAR ROW: earned wearables, toggled straight onto the banana.
-  // bb-last is the toggle target (the rave, stickers and share cards all read
-  // it) and it rides the sync blob — so gear follows you across devices. —
-  function gearEarned(def) {
-    if (def.stat) return ((pass.stats || {})[def.stat] || 0) > 0; // 🍌 the pier plush: prize_plush
-    if (def.flag) { try { return localStorage.getItem(def.flag) === '1'; } catch (e) { return false; } }
-    if (def.patch) return !!pass.patches[def.patch];
-    return false;
-  }
-  function saveOutfit() {
-    try { localStorage.setItem('bb-last', JSON.stringify({ hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, effect: outfit.effect, ...(outfit.c ? { c: outfit.c } : {}) })); } catch (e) {}
-    passPush();
-  }
-  // ⚠⚠ renderGear() OWNS #psGear ENTIRELY — it wipes the host, so anything
-  // rendered into that host by SOMEBODY ELSE is destroyed the next time any
-  // gear is toggled and never comes back.
-  // That was the bug Trym hit (1 Aug): the community items were appended by a
-  // separate one-shot `catalogReady.then(...)` block, so clicking "wear it" on
-  // the Glowstick made Wolf Tail, Pink shoes and Cute pink bow vanish — while
-  // the tab counter still said 6, because the count was right and the DOM was
-  // not. A refresh "fixed" it because the one-shot block ran again.
-  // ⚠️ So BOTH lists are rendered here. If a third source of gear ever appears,
-  // it renders HERE too — never by appending to the host from outside.
-  function renderGear() {
-    const host = el('psGear');
-    host.innerHTML = '';
-    GEAR.forEach((def) => {
-      const earned = gearEarned(def);
-      // a gear slot is an extras id OR a head slot (hat/glasses)
-      const isWorn = () => def.extra ? !!outfit.extras[def.extra]
-        : def.hat ? outfit.hat === def.hat
-        : def.glasses ? outfit.glasses === def.glasses : false;
-      const wearing = earned && isWorn();
-      const cell = document.createElement('div');
-      cell.className = 'ps-gear__item' + (earned ? ' ps-gear__item--earned' : '');
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = 168;
-      cell.appendChild(cv);
-      const h = document.createElement('h3');
-      h.textContent = def.title;
-      cell.appendChild(h);
-      const p = document.createElement('p');
-      p.textContent = def.hint;
-      cell.appendChild(p);
-      if (def.by) { // creator credit rides the item — "by Barty"
-        const by = document.createElement('span');
-        by.className = 'ps-gear__by';
-        by.textContent = 'by ' + def.by;
-        cell.appendChild(by);
-      }
-      if (earned) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
-        b.textContent = wearing ? '✓ wearing it' : 'wear it';
-        b.addEventListener('click', () => {
-          // toggle the item's slot (extras id, or a head slot)
-          if (def.extra) outfit.extras[def.extra] = !outfit.extras[def.extra];
-          else if (def.hat) outfit.hat = (outfit.hat === def.hat ? 'none' : def.hat);
-          else if (def.glasses) outfit.glasses = (outfit.glasses === def.glasses ? 'none' : def.glasses);
-          saveOutfit();
-          renderName(); // honor a custom pass name; don't clobber it with autoName
-          lastIdx = -1; // the signature banana redraws on its next frame
-          renderGear();
-          if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: isWorn() });
-        });
-        cell.appendChild(b);
-      }
-      host.appendChild(cell);
-      // a banana MODELS each item (frame 2, the classic pose); unearned slots
-      // go grayscale via CSS — the closet doubles as the feature map
-      assetsReady().then(() => {
-        drawComposite(cv.getContext('2d'), 168, 2, {
-          bg: 'transparent', captions: false,
-          hat: def.hat || 'none', glasses: def.glasses || 'none',
-          extras: def.extra ? { [def.extra]: true } : {}, top: '', bottom: '', effect: 'none',
-        });
-      });
-    });
-    renderMine(host);
-    setCount('cnt-gear', GEAR.filter(gearEarned).length + ownedCatalog().length);
-  }
+  renderGear();
 
-  // 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
-  // ravers, the maker's credit riding each one. Wear-toggle drives the ONE
-  // custom slot (outfit.c) through the same bb-last pipe as everything else.
-  // Empty until the catalog fetch lands; renderGear() runs again when it does.
-  const ownedCatalog = () => {
-    const own = catOwnedP();
-    // decor kind = homestead goods (forge decor plan) — never closet wearables
-    return CATALOG.filter((it) => own[it.id] && it.kind !== 'decor');
+  SHARE_EXTRA = {
+    rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
+    stats: rows.filter(([, l]) => l !== 'rep at the club').slice(0, 3),
   };
-  function renderMine(host) {
-    ownedCatalog().forEach((it) => {
-      const cell = document.createElement('div');
-      cell.className = 'ps-gear__item ps-gear__item--earned';
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = 168;
-      cell.appendChild(cv);
-      const h = document.createElement('h3');
-      h.textContent = it.title || 'community item';
-      cell.appendChild(h);
-      const p = document.createElement('p');
-      p.textContent = 'Caught on the dance floor — a raver made this.';
-      cell.appendChild(p);
-      if (it.by) {
-        const by = document.createElement('span');
-        by.className = 'ps-gear__by';
-        by.textContent = 'by ' + it.by;
-        cell.appendChild(by);
+
+  lastIdx = -1;                        // the signature banana redraws on its next frame
+  assetsReady().then(bakeAvatar);
+}
+
+// — the card: YOUR name if you wrote one, the outfit-name otherwise —
+// ✏️ free text is fine HERE (Trym: the premium feel of a real pass): it
+// renders only on this device + the PNG the user shares themselves — no
+// site surface hosts it, so no moderation burden. The rave keeps its
+// outfit-names; the no-free-text-on-the-floor doctrine is untouched.
+function customName() { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } }
+function renderName() {
+  if (document.getElementById('psNameInput')) return; // mid-edit — a repaint must not eat the field
+  el('psName').textContent = customName() || autoName(OUTFIT);
+}
+function wireName() {
+  const btn = el('psNameEdit');
+  if (!btn) return;
+  btn.onclick = () => {   // assignment, so a repaint replaces rather than stacks
+    if (document.getElementById('psNameInput')) return;
+    const inp = document.createElement('input');
+    inp.id = 'psNameInput';
+    inp.maxLength = 24;
+    inp.value = customName();
+    inp.placeholder = autoName(OUTFIT);
+    inp.setAttribute('aria-label', 'Your name on the pass');
+    el('psName').replaceChildren(inp);
+    inp.focus();
+    let closed = false;
+    const done = (save) => {
+      if (closed) return;
+      if (save) {
+        const v = inp.value.trim().slice(0, 24);
+        if (v && !captionsClean({ top: v })) {
+          passToast('Let’s keep it family friendly 🍌 — try another name');
+          inp.focus();
+          return;
+        }
+        try { if (v) localStorage.setItem('ps-name-v1', v); else localStorage.removeItem('ps-name-v1'); } catch (e) {}
+        passPush(); // the name rides the sync blob to your other devices
+        if (v && v !== autoName(OUTFIT)) passToast('🎫 <b>' + v.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> — it’s officially your pass now.');
       }
+      closed = true;
+      inp.remove();     // renderName() steps aside while the field is open
+      renderName();
+    };
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') done(true);
+      if (e.key === 'Escape') done(false);
+    });
+    inp.addEventListener('blur', () => done(true));
+  };
+}
+
+// — THE GEAR ROW: earned wearables, toggled straight onto the banana.
+// bb-last is the toggle target (the rave, stickers and share cards all read
+// it) and it rides the sync blob — so gear follows you across devices. —
+function gearEarned(def) {
+  const pass = PASS || {};
+  if (def.stat) return ((pass.stats || {})[def.stat] || 0) > 0; // 🍌 the pier plush: prize_plush
+  if (def.flag) { try { return localStorage.getItem(def.flag) === '1'; } catch (e) { return false; } }
+  if (def.patch) return !!(pass.patches || {})[def.patch];
+  return false;
+}
+function saveOutfit() {
+  try { localStorage.setItem('bb-last', JSON.stringify({ hat: OUTFIT.hat, glasses: OUTFIT.glasses, extras: OUTFIT.extras, effect: OUTFIT.effect, ...(OUTFIT.c ? { c: OUTFIT.c } : {}) })); } catch (e) {}
+  passPush();
+}
+// ⚠⚠ renderGear() OWNS #psGear ENTIRELY — it wipes the host, so anything
+// rendered into that host by SOMEBODY ELSE is destroyed the next time any
+// gear is toggled and never comes back.
+// That was the bug Trym hit (1 Aug): the community items were appended by a
+// separate one-shot `catalogReady.then(...)` block, so clicking "wear it" on
+// the Glowstick made Wolf Tail, Pink shoes and Cute pink bow vanish — while
+// the tab counter still said 6, because the count was right and the DOM was
+// not. A refresh "fixed" it because the one-shot block ran again.
+// ⚠️ So BOTH lists are rendered here. If a third source of gear ever appears,
+// it renders HERE too — never by appending to the host from outside.
+function renderGear() {
+  const host = el('psGear');
+  if (!host || !PASS) return;
+  host.innerHTML = '';
+  GEAR.forEach((def) => {
+    const earned = gearEarned(def);
+    // a gear slot is an extras id OR a head slot (hat/glasses)
+    const isWorn = () => def.extra ? !!OUTFIT.extras[def.extra]
+      : def.hat ? OUTFIT.hat === def.hat
+      : def.glasses ? OUTFIT.glasses === def.glasses : false;
+    const wearing = earned && isWorn();
+    const cell = document.createElement('div');
+    cell.className = 'ps-gear__item' + (earned ? ' ps-gear__item--earned' : '');
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 168;
+    cell.appendChild(cv);
+    const h = document.createElement('h3');
+    h.textContent = def.title;
+    cell.appendChild(h);
+    const p = document.createElement('p');
+    p.textContent = def.hint;
+    cell.appendChild(p);
+    if (def.by) { // creator credit rides the item — "by Barty"
+      const by = document.createElement('span');
+      by.className = 'ps-gear__by';
+      by.textContent = 'by ' + def.by;
+      cell.appendChild(by);
+    }
+    if (earned) {
       const b = document.createElement('button');
       b.type = 'button';
-      const wearing = outfit.c === it.id;
       b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
       b.textContent = wearing ? '✓ wearing it' : 'wear it';
       b.addEventListener('click', () => {
-        outfit.c = outfit.c === it.id ? undefined : it.id;
+        // toggle the item's slot (extras id, or a head slot)
+        if (def.extra) OUTFIT.extras[def.extra] = !OUTFIT.extras[def.extra];
+        else if (def.hat) OUTFIT.hat = (OUTFIT.hat === def.hat ? 'none' : def.hat);
+        else if (def.glasses) OUTFIT.glasses = (OUTFIT.glasses === def.glasses ? 'none' : def.glasses);
         saveOutfit();
-        lastIdx = -1;      // the signature banana redraws with/without it
-        renderGear();      // ⚠️ the SAME repaint as manifest gear — one path
-        if (window.gtag) window.gtag('event', 'gear_toggle', { gear: it.id, on: outfit.c === it.id });
+        renderName(); // honor a custom pass name; don't clobber it with autoName
+        lastIdx = -1; // the signature banana redraws on its next frame
+        renderGear();
+        if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: isWorn() });
       });
       cell.appendChild(b);
-      host.appendChild(cell);
-      assetsReady().then(() => {
-        // the item's svg Image decodes async and drawAcc skips until it's
-        // ready — re-draw a couple of beats later so the first paint of a
-        // one-shot canvas never misses the item
-        const draw = () => drawComposite(cv.getContext('2d'), 168, 2, {
-          bg: 'transparent', captions: false, hat: 'none', glasses: 'none',
-          extras: {}, top: '', bottom: '', effect: 'none', custom: catCustomP(it.id),
-        });
-        draw();
-        setTimeout(draw, 500);
-        setTimeout(draw, 1600);
+    }
+    host.appendChild(cell);
+    // a banana MODELS each item (frame 2, the classic pose); unearned slots
+    // go grayscale via CSS — the closet doubles as the feature map
+    assetsReady().then(() => {
+      drawComposite(cv.getContext('2d'), 168, 2, {
+        bg: 'transparent', captions: false,
+        hat: def.hat || 'none', glasses: def.glasses || 'none',
+        extras: def.extra ? { [def.extra]: true } : {}, top: '', bottom: '', effect: 'none',
       });
     });
-  }
+  });
+  renderMine(host);
+  setCount('cnt-gear', GEAR.filter(gearEarned).length + ownedCatalog().length);
+}
 
-  renderGear();
-  catalogReady.then(renderGear);   // the catalog landed — repaint the whole closet
+// 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
+// ravers, the maker's credit riding each one. Wear-toggle drives the equipped
+// SET (OUTFIT.c) through the same bb-last pipe as everything else.
+// Empty until the catalog fetch lands; renderGear() runs again when it does.
+function ownedCatalog() {
+  const own = catOwnedP();
+  // decor kind = homestead goods (forge decor plan) — never closet wearables
+  return CATALOG.filter((it) => own[it.id] && it.kind !== 'decor');
+}
+function renderMine(host) {
+  ownedCatalog().forEach((it) => {
+    const cell = document.createElement('div');
+    cell.className = 'ps-gear__item ps-gear__item--earned';
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 168;
+    cell.appendChild(cv);
+    const h = document.createElement('h3');
+    h.textContent = it.title || 'community item';
+    cell.appendChild(h);
+    const p = document.createElement('p');
+    p.textContent = 'Caught on the dance floor — a raver made this.';
+    cell.appendChild(p);
+    if (it.by) {
+      const by = document.createElement('span');
+      by.className = 'ps-gear__by';
+      by.textContent = 'by ' + it.by;
+      cell.appendChild(by);
+    }
+    const b = document.createElement('button');
+    b.type = 'button';
+    // ⚠️ MEMBERSHIP, not equality — the closet read `c === it.id`, so a
+    // two-item look lit NO tile and one tap REPLACED the whole set with one
+    // piece. Same rule the builder's chips use ([[reuse-world-ui-grammar]]).
+    const wearing = cList().includes(it.id);
+    b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
+    b.textContent = wearing ? '✓ wearing it' : 'wear it';
+    b.addEventListener('click', () => {
+      const list = cList();
+      if (wearing) cSet(list.filter((x) => x !== it.id));
+      else { const sp = spotOf(it.id); cSet([...list.filter((x) => spotOf(x) !== sp), it.id]); }
+      saveOutfit();
+      lastIdx = -1;      // the signature banana redraws with/without it
+      renderGear();      // ⚠️ the SAME repaint as manifest gear — one path
+      if (window.gtag) window.gtag('event', 'gear_toggle', { gear: it.id, on: !wearing });
+    });
+    cell.appendChild(b);
+    host.appendChild(cell);
+    assetsReady().then(() => {
+      // the item's svg Image decodes async and drawAcc skips until it's
+      // ready — re-draw a couple of beats later so the first paint of a
+      // one-shot canvas never misses the item
+      const draw = () => drawComposite(cv.getContext('2d'), 168, 2, {
+        bg: 'transparent', captions: false, hat: 'none', glasses: 'none',
+        extras: {}, top: '', bottom: '', effect: 'none', custom: catCustomP(it.id),
+      });
+      draw();
+      setTimeout(draw, 500);
+      setTimeout(draw, 1600);
+    });
+  });
+}
 
-  initTabs();
-
-  // — the signature banana dances on the shared clock —
+// — the signature banana dances on the shared clock. Wired ONCE; paint() nudges
+//   it with lastIdx = -1 whenever the outfit underneath it moves. —
+function startSignature() {
   const cv = el('psSig');
+  if (!cv) return;
   const ctx = cv.getContext('2d');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let lastIdx = -1;
   function tick() {
     const cycleMs = BASE_CYCLE_S * 1000;
     const idx = reduced ? 2 : Math.floor((Date.now() % cycleMs) / (cycleMs / NFRAMES));
@@ -453,35 +592,31 @@ async function init() {
       lastIdx = idx;
       drawComposite(ctx, 200, idx, {
         bg: 'transparent', captions: false,
-        hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras, top: '', bottom: '',
-        effect: outfit.effect,
-        custom: outfit.c ? catCustomP(outfit.c) : undefined, // a worn community item rides along
+        hat: OUTFIT.hat, glasses: OUTFIT.glasses, extras: OUTFIT.extras, top: '', bottom: '',
+        effect: OUTFIT.effect,
+        custom: OUTFIT.c ? catCustomP(OUTFIT.c) : undefined, // worn community items ride along
       });
     }
     requestAnimationFrame(tick);
   }
-  // 🪪 bake a 48px still for the TOPNAV. The nav is on every page and must
-  // never load the compositor (see the Forge split, 1 Aug) — so the avatar is
-  // drawn HERE, where the engine is already running, and merely displayed there.
-  function bakeAvatar() {
-    try {
-      const a = document.createElement('canvas');
-      a.width = 48; a.height = 48;
-      drawComposite(a.getContext('2d'), 48, 2, {
-        bg: 'transparent', captions: false,
-        hat: outfit.hat, glasses: outfit.glasses, extras: outfit.extras,
-        top: '', bottom: '', effect: 'none',   // no effect: it must read at 22px
-        custom: outfit.c ? catCustomP(outfit.c) : undefined,
-      });
-      localStorage.setItem('ps-avatar-v1', a.toDataURL('image/png'));
-    } catch (e) { /* quota or a tainted canvas — the nav just stays generic */ }
-  }
-  assetsReady().then(() => { requestAnimationFrame(tick); bakeAvatar(); });
+  assetsReady().then(() => requestAnimationFrame(tick));
+}
 
-  initShare(outfit, pass, {
-    rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
-    stats: rows.filter(([, l]) => l !== 'rep at the club').slice(0, 3),
-  });
+// 🪪 bake a 48px still for the TOPNAV. The nav is on every page and must
+// never load the compositor (see the Forge split, 1 Aug) — so the avatar is
+// drawn HERE, where the engine is already running, and merely displayed there.
+function bakeAvatar() {
+  try {
+    const a = document.createElement('canvas');
+    a.width = 48; a.height = 48;
+    drawComposite(a.getContext('2d'), 48, 2, {
+      bg: 'transparent', captions: false,
+      hat: OUTFIT.hat, glasses: OUTFIT.glasses, extras: OUTFIT.extras,
+      top: '', bottom: '', effect: 'none',   // no effect: it must read at 22px
+      custom: OUTFIT.c ? catCustomP(OUTFIT.c) : undefined,
+    });
+    localStorage.setItem('ps-avatar-v1', a.toDataURL('image/png'));
+  } catch (e) { /* quota or a tainted canvas — the nav just stays generic */ }
 }
 
 // ---- THE DASHBOARD TABS -------------------------------------------------
@@ -522,13 +657,15 @@ function initTabs() {
   });
 
   // anything with data-goto jumps to that tab: the overview's "See all →"
-  // links AND the three headline stat tiles (→ the full Stats tab)
-  document.querySelectorAll('[data-goto]').forEach((b) => {
-    b.addEventListener('click', () => {
-      select(b.dataset.goto);
-      const p = panelOf(b.dataset.goto);
-      if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  // links AND the three headline stat tiles (→ the full Stats tab).
+  // ⚠️ DELEGATED, not bound per element — paint() rebuilds the stat tiles, and
+  // a listener attached to the old node dies with it.
+  document.addEventListener('click', (ev) => {
+    const b = ev.target && ev.target.closest && ev.target.closest('[data-goto]');
+    if (!b) return;
+    select(b.dataset.goto);
+    const p = panelOf(b.dataset.goto);
+    if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // open on the hash if the page was linked to a specific tab (#gear …)
@@ -846,7 +983,9 @@ function openShareModal(cv) {
   };
 }
 
-function initShare(outfit, pass, extra) {
+// ⚠️ no arguments: the card is composed at CLICK time from the module state, so
+// a pull that lands after this was wired still shares the fresh pass.
+function initShare() {
   const btn = el('psShareCard');
   if (!btn) return;
   // 🎫 the mini card IS the button for its own full-size version — one "big
@@ -873,7 +1012,7 @@ function initShare(outfit, pass, extra) {
     const was = btn.innerHTML;
     btn.innerHTML = was.replace('Open my pass', 'Opening…');
     try {
-      const cv = await composeCard(outfit, pass, extra);
+      const cv = await composeCard(OUTFIT, PASS || passGet(), SHARE_EXTRA);
       openShareModal(cv);
       if (window.gtag) window.gtag('event', 'pass_share', { method: 'open' });
     } catch (e) {
@@ -970,66 +1109,91 @@ function initSync() {
     if (!byMail()) {
       box.classList.add('ps-sync--addmail');
       el('psSyncLead').textContent = 'Add your email and you can log in from anywhere — even if you lose this device.';
+      // ⚠️ THE FIELD MEANS SOMETHING ELSE WHEN SOMEONE IS SIGNED IN: it adds an
+      // address to THIS pass, so a second person typing theirs on a shared
+      // tablet joins this pass instead of opening their own. Only shown in the
+      // state where the field is actually on screen.
+      const whose = el('psMailWhose');
+      if (whose) {
+        let who = ''; try { who = (localStorage.getItem('ps-name-v1') || '').slice(0, 24); } catch (e) {}
+        whose.innerHTML = 'You’re logged in' + (who ? ' as <b>' + who.replace(/[<>&]/g, '') + '</b>' : '')
+          + '. This adds an email to <b>this</b> pass — if the banana on screen isn’t yours, log out first so you get your own.';
+        whose.hidden = false;
+      }
       const go = el('psMailGo');
       if (go) go.textContent = 'Add my email';
     }
   };
   const haveCode = el('psHaveCode');
-  wireLink(note);
-  wireMail(note);
-  wireNews();
-  // the passkey shortcut only exists where the browser has one
-  // ⚠️ AND THE DEVICE-CODE BOX HIDES BEHIND THE SAME TOGGLE. A code from your
-  // other device only makes sense once you are in passkey-land; on its own,
-  // under the email field, it is a second unexplained way in.
+  // ⚠️ initSync() RUNS AGAIN after the network pass — a magic-link login flips
+  // this panel from "log in" to "your pass". Listeners are wired ONCE; a second
+  // set would send two login mails per click.
+  if (!syncWired) {
+    syncWired = true;
+    wireLink(note);
+    wireMail(note);
+    wireNews();
+    // ⚠️ logging out drops the CREDENTIAL, not the save file — see logout().
+    const outBtn = el('psLogout');
+    if (outBtn) {
+      outBtn.addEventListener('click', () => {
+        logout();
+        passToast('👋 <b>LOGGED OUT</b><br>Your bananas stay on this device — your garden and your home wait on your account until you log back in.');
+        setTimeout(() => location.reload(), 900);
+      });
+    }
+    if (passkeysSupported()) {
+      // ⚠️ THE DEVICE-CODE BOX HIDES BEHIND THE SAME TOGGLE. A code from your
+      // other device only makes sense once you are in passkey-land; on its own,
+      // under the email field, it is a second unexplained way in.
+      const tog = el('psAltToggle'), row = el('psAltRow');
+      if (tog && row) {
+        tog.addEventListener('click', () => {
+          const open = row.hidden;
+          row.hidden = !open;
+          if (haveCode) haveCode.hidden = !open;
+          tog.setAttribute('aria-expanded', String(open));
+        });
+      }
+      if (el('psSave')) {
+        el('psSave').addEventListener('click', async () => {
+          note.textContent = 'Your device will ask to confirm — that’s the passkey being made…';
+          try {
+            await savePass();
+            showLinked();
+            passToast('🔐 <b>SET UP</b> — Face ID or your fingerprint logs you in on this device now.');
+          } catch (e) {
+            note.textContent = e && e.name === 'NotAllowedError'
+              ? 'No worries — nothing was saved. Try again whenever you like.'
+              : 'That didn’t work — try again in a moment.';
+          }
+        });
+      }
+      if (el('psRestore')) {
+        el('psRestore').addEventListener('click', async () => {
+          note.textContent = 'Pick the banana-world passkey on your device…';
+          try {
+            await restorePass();
+            passToast('🎫 <b>WELCOME BACK</b><br>You’re logged in on this device now.');
+            setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
+          } catch (e) {
+            note.textContent = e && e.name === 'NotAllowedError'
+              ? 'No worries — nothing happened.'
+              : 'No passkey here yet — use your email instead and it works anywhere.';
+          }
+        });
+      }
+    }
+  }
+  // the passkey shortcut only exists where the browser has one, and only while
+  // you are OUT — the buttons above sit inside this panel, so hiding it is what
+  // puts them out of reach once you are in
   const alt = el('psAlt');
-  if (alt && passkeysSupported() && !linked()) {
-    alt.hidden = false;
-    const tog = el('psAltToggle'), row = el('psAltRow');
-    tog.addEventListener('click', () => {
-      const open = row.hidden;
-      row.hidden = !open;
-      if (haveCode) haveCode.hidden = !open;
-      tog.setAttribute('aria-expanded', String(open));
-    });
+  if (alt) alt.hidden = !(passkeysSupported() && !linked());
+  if (linked()) {
+    if (haveCode) haveCode.hidden = true;
+    showLinked();
   }
-  // ⚠️ logging out drops the CREDENTIAL, not the save file — see logout().
-  const outBtn = el('psLogout');
-  if (outBtn) {
-    outBtn.addEventListener('click', () => {
-      logout();
-      passToast('👋 <b>LOGGED OUT</b><br>Your bananas stay on this device.');
-      setTimeout(() => location.reload(), 900);
-    });
-  }
-  if (linked()) { showLinked(); return; }
-  if (!passkeysSupported()) return;
-
-  el('psSave').addEventListener('click', async () => {
-    note.textContent = 'Your device will ask to confirm — that’s the passkey being made…';
-    try {
-      await savePass();
-      showLinked();
-      passToast('🔐 <b>SET UP</b> — Face ID or your fingerprint logs you in on this device now.');
-    } catch (e) {
-      note.textContent = e && e.name === 'NotAllowedError'
-        ? 'No worries — nothing was saved. Try again whenever you like.'
-        : 'That didn’t work — try again in a moment.';
-    }
-  });
-
-  el('psRestore').addEventListener('click', async () => {
-    note.textContent = 'Pick the banana-world passkey on your device…';
-    try {
-      await restorePass();
-      passToast('🎫 <b>WELCOME BACK</b><br>You’re logged in on this device now.');
-      setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
-    } catch (e) {
-      note.textContent = e && e.name === 'NotAllowedError'
-        ? 'No worries — nothing happened.'
-        : 'No passkey here yet — use your email instead and it works anywhere.';
-    }
-  });
 }
 
 // ---- ✉️ email login: one field, one button -----------------------------
@@ -1097,35 +1261,30 @@ function wireNews() {
 }
 
 // 🔗 the magic link lands here as /pass/?in=<ticket>
-// ⚠️ STRIP IT FROM THE URL IMMEDIATELY. It is a bearer credential; leaving it
-// in the address bar means it rides into history, referrers and screenshots —
-// and it is single-use, so a reload would spend it and look like a failure.
-async function initMailLanding() {
+// ⚠️ STRIP IT FROM THE URL IMMEDIATELY — and SYNCHRONOUSLY, before anything can
+// await. It is a bearer credential: left in the address bar it rides into
+// history, referrers and screenshots, and it is single-use, so a reload would
+// spend it and look like a failure. SPENDING it is runLanding()'s job, off the
+// critical path, so a slow worker can never hold the dashboard hostage.
+function takeLanding() {
   const q = new URLSearchParams(location.search);
   // 📣 the news confirmation lands here too — same strip-it-from-the-URL rule
-  const news = q.get('news');
-  if (news) {
-    history.replaceState(null, '', location.pathname + location.hash);
-    try {
-      await newsConfirm(news);
-      passToast('📣 <b>YOU’RE ON THE LIST</b><br>You’ll hear when the world gets bigger.');
-    } catch (e) {
-      passToast('⚠️ <b>' + esc((e && e.message) || 'That link didn’t work.') + '</b>');
-    }
-    return false;
-  }
-  const t = q.get('in');
-  if (!t) return false;
+  const news = q.get('news'), t = q.get('in');
+  if (!news && !t) return null;
   history.replaceState(null, '', location.pathname + location.hash);
-  try {
-    const { attached } = await mailUse(t);
-    passPush();                    // this device's world joins the account
-    passToast(attached
-      ? '✉️ <b>EMAIL ADDED</b><br>You can log in with it on any device now.'
-      : '🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
-    return true;
-  } catch (e) {
-    passToast('⚠️ <b>' + esc((e && e.message) || 'That link didn’t work.') + '</b>');
-    return false;
+  return news ? { kind: 'news', t: news } : { kind: 'in', t };
+}
+
+// ⚠️ throws on failure — refuse to swallow it: refresh() owns the apology.
+async function runLanding(l) {
+  if (l.kind === 'news') {
+    await newsConfirm(l.t);
+    passToast('📣 <b>YOU’RE ON THE LIST</b><br>You’ll hear when the world gets bigger.');
+    return;
   }
+  const { attached } = await mailUse(l.t);
+  passPush();                    // this device's world joins the account
+  passToast(attached
+    ? '✉️ <b>EMAIL ADDED</b><br>You can log in with it on any device now.'
+    : '🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
 }

@@ -2372,10 +2372,38 @@ export class YardRoom {
     await this.state.storage.put('index', rest.slice(0, 400));
   }
 
+  // 🔑 whose yard is this — and RE-KEY it on the way out. A yard claimed
+  // before sign-in is pointed at the browser id (worldOwner() falls back to
+  // worldSid()); if that pointer never moves to the account id, the SECOND
+  // device signs in, sees an unclaimed plot, and mints a duplicate that takes
+  // the address off the yard everything was built on. Migrating here covers
+  // every caller (/claim, /save, /news) from one place.
+  // ⚠️ storage-only awaits: the DO input gate stays shut across the whole
+  // read-modify-write, so two racing calls can never both mint the pointer.
   async ownSlug(pass, alt) {
-    let slug = pass ? await this.state.storage.get('own:' + pass) : null;
-    if (!slug && alt) slug = await this.state.storage.get('own:' + alt);
-    return slug || null;
+    if (pass) {
+      const mine = await this.state.storage.get('own:' + pass);
+      if (mine) return mine;              // already keyed to the account — done
+    }
+    if (!alt) return null;
+    const slug = await this.state.storage.get('own:' + alt);
+    if (!slug) return null;
+    // pass === alt means signed OUT (nothing to migrate to). The old alt
+    // pointer is KEPT either way — it is what carries a signed-out visit back
+    // to their own yard on this browser.
+    if (pass && pass !== alt) {
+      const doc = await this.state.storage.get('y:' + slug);
+      // only re-key a yard the alt actually owns: a shared browser whose doc
+      // already belongs to a third account must not be handed over
+      if (doc && (!doc.pass || doc.pass === alt || doc.pass === pass)) {
+        if (doc.pass !== pass) {
+          doc.pass = pass;
+          await this.state.storage.put('y:' + slug, doc);
+        }
+        await this.state.storage.put('own:' + pass, slug);
+      }
+    }
+    return slug;
   }
 
   async fetch(request) {
@@ -2406,8 +2434,17 @@ export class YardRoom {
       if (cur) {
         const doc = await this.state.storage.get('y:' + cur);
         if (doc) {
-          if (name && name !== doc.name) { doc.name = name; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
-          return json({ slug: cur });
+          // ⚠️ REPAINTING THE SIGN IS AN OWNER'S ACT. On a shared browser the
+          // legacy alt pointer still resolves a yard that has since been
+          // re-keyed to somebody's account — renaming it there would let the
+          // second person paint over the first one's home. Only the owner (or
+          // a signed-out visit on the browser that made it) may rename.
+          const ownsIt = doc.pass === pass || (doc.pass === alt && pass === alt);
+          if (ownsIt) {
+            if (name && name !== doc.name) { doc.name = name; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
+            return json({ slug: cur });
+          }
+          if (!name) return json({ slug: cur });   // just finding the way home
         }
       }
       const base = ySlugBase(name);

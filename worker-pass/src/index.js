@@ -148,6 +148,31 @@ async function challengeOk(env, clientDataJSON) {
 }
 
 // ---------- the merge: union what accumulates, max what counts ----------
+// 💰 the ledger lens: a stat's true value is its frozen legacy scalar plus the
+// sum of its per-device slots. Every server-side reader must use this, or the
+// admin desk under-reports everything a player earned since the slots landed.
+const sumSlots = (o) => { let n = 0; if (o) for (const k in o) { const v = +o[k]; if (Number.isFinite(v)) n += v; } return n; };
+function statTotal(pass, key) {
+  if (!pass) return 0;
+  return (+(pass.base && pass.base[key]) || 0) + sumSlots(pass.led && pass.led[key]);
+}
+// a pre-ledger pass has no base (its scalars ARE the floor), and a device on
+// old code writes the mirror directly — anything above base+slots is real
+// progress and has to be adopted rather than dropped
+function impliedBase(pass) {
+  const b = { ...((pass && pass.base) || {}) };
+  for (const k in (pass && pass.stats) || {}) {
+    const imp = (+pass.stats[k] || 0) - sumSlots((pass.led || {})[k] || {});
+    if (imp > (+b[k] || 0)) b[k] = imp;
+  }
+  return b;
+}
+function statsOf(pass) {
+  const out = { ...impliedBase(pass) };
+  for (const k in (pass && pass.led) || {}) out[k] = (+out[k] || 0) + sumSlots(pass.led[k]);
+  return out;
+}
+
 function mergeBlob(oldB, newB) {
   if (!oldB) return newB;
   if (!newB) return oldB;
@@ -155,12 +180,30 @@ function mergeBlob(oldB, newB) {
   const op = oldB.pass || {}, np = newB.pass || {};
   const patches = { ...(op.patches || {}) };
   for (const [id, ts] of Object.entries(np.patches || {})) patches[id] = Math.min(patches[id] || ts, ts);
-  const stats = { ...(op.stats || {}) };
-  for (const [k, v] of Object.entries(np.stats || {})) stats[k] = Math.max(stats[k] || 0, v);
+  // 💰 THE LEDGER (mirror of banana-pass.js — change both or neither).
+  // Counters live in PER-DEVICE slots summed on read; max-merging a slot is
+  // lossless because only its own device writes it. The bare scalar is the
+  // frozen legacy floor and still merges by max, so a device on old code keeps
+  // working through the transition without double-counting.
+  const base = {};
+  for (const src of [impliedBase(op), impliedBase(np)]) {
+    for (const [k, v] of Object.entries(src)) base[k] = Math.max(base[k] || 0, +v || 0);
+  }
+  const led = {};
+  for (const src of [op.led || {}, np.led || {}]) {
+    for (const [k, slots] of Object.entries(src)) {
+      if (!slots || typeof slots !== 'object') continue;
+      led[k] = led[k] || {};
+      for (const [dev, v] of Object.entries(slots)) led[k][dev] = Math.max(led[k][dev] || 0, +v || 0);
+    }
+  }
   const days = [...new Set([...(op.days || []), ...(np.days || [])])].sort().slice(-400);
+  const mergedPass = { base, led };
+  const stats = {};
+  for (const k of new Set([...Object.keys(base), ...Object.keys(led)])) stats[k] = statTotal(mergedPass, k);
   out.pass = {
     created: Math.min(op.created || Date.now(), np.created || Date.now()),
-    patches, stats, days,
+    patches, stats, base, led, days,
   };
   // shelf tombstones: union deletions (max ts), keep the newest copy per
   // params, and drop anything tombstoned after it was made — so a delete on
@@ -179,8 +222,18 @@ function mergeBlob(oldB, newB) {
     .slice(0, 24);
   out.shelfDel = Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200));
   if (oldB.glow === '1' || newB.glow === '1') out.glow = '1';
-  if (!newB.bbLast && oldB.bbLast) out.bbLast = oldB.bbLast; // a fresh device must never erase the signature banana
-  if (!newB.name && oldB.name) out.name = oldB.name; // …nor the name written on the pass
+  // ⏱ newest edit wins for the outfit and the name (mirror of applyBlob). A
+  // blank-guard alone made a rename un-propagatable and a cleared name
+  // immortal; a clock lets a real edit travel in BOTH directions, while a
+  // fresh device (clock 0) still cannot erase anything.
+  const oAt = +(oldB.bbAt || 0) || 0, nAt = +(newB.bbAt || 0) || 0;
+  if (nAt > oAt) { out.bbLast = newB.bbLast; out.bbAt = nAt; }
+  else if (oAt > nAt) { out.bbLast = oldB.bbLast; out.bbAt = oAt; }
+  else if (!newB.bbLast && oldB.bbLast) out.bbLast = oldB.bbLast;
+  const oNAt = +(oldB.nameAt || 0) || 0, nNAt = +(newB.nameAt || 0) || 0;
+  if (nNAt > oNAt) { out.name = newB.name || ''; out.nameAt = nNAt; }
+  else if (oNAt > nNAt) { out.name = oldB.name || ''; out.nameAt = oNAt; }
+  else if (!newB.name && oldB.name) out.name = oldB.name;
   return out;
 }
 
@@ -322,7 +375,7 @@ async function adminScan(env) {
     if (!rec || rec.link) continue;              // one row per PASS, not per credential
     const blob = rec.blob || {};
     const p = blob.pass || {};
-    const stats = p.stats || {};
+    const stats = statsOf(p);        // totals, not the frozen scalars
     const ex = extra.get(k) || { devices: 0, mail: false };
     const gear = Object.keys(stats).filter((x) => x.startsWith('own_') && stats[x] > 0).map((x) => x.slice(4));
     const rep = stats.rep || 0;
@@ -345,7 +398,7 @@ async function adminScan(env) {
       rep,
       level: levelFor(rep).level,                // ⚠️ the real curve — see the import
       jelly: stats.jelly || 0,
-      coins: Math.max(0, (stats.coins_earned || 0) - (stats.coins_spent || 0)),
+      coins: Math.max(0, (stats.coins_earned || 0) + (stats.coins_refunded || 0) - (stats.coins_spent || 0)),
       coinsEarned: stats.coins_earned || 0,
       coinsSpent: stats.coins_spent || 0,
       gear,
@@ -418,10 +471,16 @@ async function adminGrant(request, env) {
   const blob = rec.blob || (rec.blob = {});
   const p = blob.pass || (blob.pass = { created: Date.now(), patches: {}, stats: {}, days: [] });
   const st = p.stats || (p.stats = {});
+  // ⚠️ grants go into the ADMIN's own ledger slot, never the shared scalar: a
+  // player's device pushes its own slots and max-merges the scalar, so a grant
+  // written to the scalar could be flattened by an older client's copy.
+  const led = p.led || (p.led = {});
+  if (!p.base) p.base = { ...(p.stats || {}) };   // freeze the pre-ledger floor before granting
   const did = [];
   const add = (stat, amount, label) => {
     if (!amount) return;
-    st[stat] = (st[stat] || 0) + amount;
+    led[stat] = led[stat] || {};
+    led[stat].hq = (+led[stat].hq || 0) + amount;
     did.push(label + ' +' + amount);
   };
   add('coins_earned', n(b.coins), 'coins');
@@ -432,14 +491,14 @@ async function adminGrant(request, env) {
   add('jelly', n(b.jelly), 'jelly');
   if (b.gear) {
     const id = String(b.gear).replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
-    if (id) { st['own_' + id] = 1; did.push('gear ' + id); }
+    if (id) { st['own_' + id] = 1; did.push('gear ' + id); }   // a flag, max-safe on the scalar
   }
   if (!did.length) return json({ error: 'nothing to do' }, 400, cors(env, request));
   await env.PASSES.put(k, JSON.stringify({ ...rec, updated: Date.now() }),
     { httpMetadata: { contentType: 'application/json' } });
   await adminNote(env, 'grant', k.slice(5, 13), did.join(', '));
-  const coins = Math.max(0, (st.coins_earned || 0) - (st.coins_spent || 0));
-  return json({ ok: true, did, coins, rep: st.rep || 0, jelly: st.jelly || 0 },
+  const coins = Math.max(0, statTotal(p, 'coins_earned') + statTotal(p, 'coins_refunded') - statTotal(p, 'coins_spent'));
+  return json({ ok: true, did, coins, rep: statTotal(p, 'rep'), jelly: statTotal(p, 'jelly') },
     200, cors(env, request));
 }
 

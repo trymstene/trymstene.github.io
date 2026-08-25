@@ -2,9 +2,11 @@
 // Biometrics appear ONLY here, when linking a device; day-to-day sync rides
 // the device token this module stores (see pushNow in banana-pass.js).
 // CLIENT-ONLY; loaded on /pass/ only.
-import { PASS_API, collectBlob, applyBlob } from './banana-pass.js';
+import { PASS_API, collectBlob, applyBlob, passPush, passNoticeAdd } from './banana-pass.js';
 
 const LINK_KEY = 'pass-link'; // { credId, token }
+const GID_KEY = 'world-gid';  // 🪪 ownership (mirrors banana-pass.js), never the connection sid
+const PULL_KEY = 'pass-pull-at';
 export { PASS_API, collectBlob, applyBlob };
 
 export const passkeysSupported = () =>
@@ -13,8 +15,109 @@ export const passkeysSupported = () =>
 export function linked() {
   try { return JSON.parse(localStorage.getItem(LINK_KEY) || 'null'); } catch (e) { return null; }
 }
+
+// ⚠️ RETURNS FALSE WHEN THE CREDENTIAL DID NOT LAND. A blocked localStorage
+// (private mode, an embedded frame) used to be swallowed here, so every
+// entrance reported a cheerful success while the device stored nothing — and
+// a magic link is single-use, so the player was left with no way back in and
+// no idea why. Callers must surface it.
 function setLink(credId, token) {
-  try { localStorage.setItem(LINK_KEY, JSON.stringify({ credId, token })); } catch (e) {}
+  let ok = false;
+  try { localStorage.setItem(LINK_KEY, JSON.stringify({ credId, token })); ok = true; } catch (e) {}
+  // ⏱ a fresh login syncs NOW — the ambient pull's 10-minute throttle would
+  // otherwise leave worldOwner() on the connection sid for up to ten minutes
+  try { localStorage.removeItem(PULL_KEY); } catch (e) {}
+  return ok;
+}
+const NO_STORE = 'This browser wouldn’t remember the login — private browsing? Try again in a normal window.';
+const NO_STORE_MAIL = 'This browser wouldn’t remember the login — private browsing? Open a normal window and send yourself a fresh link (this one is spent).';
+
+// 🪪 THE WORLD ID rides on every /push and /pull answer — and on nothing else.
+// Keep it or worldOwner() falls back to the per-browser sid and the garden,
+// the homestead and the compost debts stop being this player's.
+function keepGid(d) {
+  const gid = d && typeof d.gid === 'string' && /^[a-f0-9]{8,32}$/.test(d.gid) ? d.gid : '';
+  if (gid) { try { localStorage.setItem(GID_KEY, gid); } catch (e) {} }
+  return gid;
+}
+
+// ⬆️ hand this device's world UP right now. The debounced push in
+// banana-pass.js only fires on the next pass write, and /link/finish accepts
+// no blob at all, so a joining device contributes nothing without this.
+async function pushBlob(credId, token) {
+  try {
+    const r = await fetch(PASS_API + '/push', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credId, token, blob: collectBlob() }),
+    });
+    if (r.ok) { keepGid(await r.json().catch(() => null)); return true; }
+  } catch (e) {}
+  passPush(); // 🔁 a blip — let the debounced push carry it instead
+  return false;
+}
+
+// ---- 🔀 ONE BROWSER, TWO PEOPLE -----------------------------------------
+// The family tablet: a parent is signed in, and their kid types their own
+// address into the form /pass/ still shows while somebody is logged in. Every
+// entrance used to write the new credential and then MERGE the arriving
+// account into the world still sitting in localStorage — then push the fused
+// save file up to the account that just arrived. Unrecoverable, and nothing on
+// screen ever said a word.
+// So an arriving account that is NOT this pass gaining a device lands on a
+// CLEAN device: the world keys go first, then the blob.
+// ⚠️ nothing is lost — the previous world lives on ITS account and comes back
+// when it logs in. This only ever clears localStorage, never the server.
+// ⚠️ any new key that rides collectBlob/applyBlob belongs in this list, or the
+// switch leaves a shred of the last person behind.
+const WORLD_KEYS = [
+  'pass-v1', 'shelf-v1', 'shelf-del-v1', 'bb-last', 'ps-name-v1', 'rv-glowstick', // the sync blob
+  'ps-name-at', 'ps-name-seen', 'bb-at', 'bb-seen',      // …and the name/outfit change-clocks that rank it
+  'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
+  'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
+  GID_KEY, PULL_KEY,
+];
+function wipeWorld() {
+  for (const k of WORLD_KEYS) { try { localStorage.removeItem(k); } catch (e) {} }
+}
+
+// is the pass we just logged into the SAME person? /mail/use and /link/finish
+// carry no gid, so ask the account for one (a cheap token call) and compare it
+// with the gid this device already holds — equal means one human on a second
+// credential. No answer = treat them as a stranger: a needless wipe costs a
+// re-sync, a wrong merge costs the save file.
+async function gidOf(credId, token) {
+  try {
+    const r = await fetch(PASS_API + `/pull?credId=${encodeURIComponent(credId)}&token=${encodeURIComponent(token)}`);
+    if (!r.ok) return '';
+    const d = await r.json();
+    return d && typeof d.gid === 'string' ? d.gid : '';
+  } catch (e) { return ''; }
+}
+
+// hand the device over to the arriving account; true when that meant SWITCHING
+async function settleAccount(prev, credId, token, attached) {
+  let prevGid = '';
+  try { prevGid = localStorage.getItem(GID_KEY) || ''; } catch (e) {}
+  const gid = await gidOf(credId, token);
+  // the server's own attach-vs-login signal first (a pass gaining an address
+  // is not a switch), then the gid, then the credential as a last resort
+  const switched = !!prev && !attached
+    && (prevGid && gid ? gid !== prevGid : prev.credId !== credId);
+  if (switched) {
+    wipeWorld();
+    if (window.gtag) window.gtag('event', 'pass_account_switch');
+    // 📣 …and SAY SO. The page toasts its own line a beat later and a toast is
+    // gone in seconds anyway; the timeline is where the sentence keeps.
+    passNoticeAdd({
+      id: 'switch-' + Date.now(),
+      icon: '🔄',
+      text: '<b>This device switched accounts.</b> Whoever was signed in here before is safe on their own '
+        + 'pass — nothing was deleted, and logging in with their email brings their whole world back.',
+      link: '/pass/',
+    });
+  }
+  if (gid) { try { localStorage.setItem(GID_KEY, gid); } catch (e) {} }
+  return switched;
 }
 
 const bufToB64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -74,12 +177,15 @@ export async function mailUse(t) {
       : 'That link didn’t work — send yourself a fresh one.');
   }
   const { credId, token, blob, attached } = await res.json();
-  setLink(credId, token);
+  // ⚠️ the credential goes first: if this browser refuses to keep it, the
+  // device stays exactly as it was rather than half-switched
+  if (!setLink(credId, token)) throw new Error(NO_STORE_MAIL);
+  const switched = await settleAccount(have, credId, token, attached);
   // ⚠️ merge THEN push: a brand-new email pass arrives with no blob, and this
   // device's world would be lost on the next pull if we never sent it up.
   if (blob) applyBlob(blob);
   if (window.gtag) window.gtag('event', attached ? 'pass_mail_attached' : 'pass_mail_login');
-  return { attached: !!attached };
+  return { attached: !!attached, switched };
 }
 
 // ---- 📣 the news list — a SECOND rail, deliberately not this one ---------
@@ -115,14 +221,23 @@ export async function newsConfirm(t) {
 }
 
 // ---- log out ------------------------------------------------------------
-// ⚠️ THE SAVE FILE STAYS. This drops the credential this browser logs in with,
-// nothing else: bananas, coins and badges are localStorage and wiping them
-// would be indistinguishable from losing them. Logging back in re-merges.
+// ⚠️ THE SAVE FILE STAYS ON THIS DEVICE. This drops the credential this browser
+// logs in with, nothing else: bananas, coins and badges are localStorage and
+// wiping them would be indistinguishable from losing them.
+// 🪪 BUT THE WORLD ID GOES, and that is not free: the gid IS the ownership key,
+// so the garden plots, the homestead address and the compost debts filed under
+// it stop answering to this browser until it logs back in. That is the honest
+// behaviour — a signed-out browser must not keep claiming an account's things —
+// and it IS reversible: the worker HMACs the gid from the pass's own key
+// (worldGid in worker-pass), so the next login gets the identical id back and
+// every world object recognises its owner again.
+// ⚠️ so the toast must not promise "nothing changes" — see banana-pass-page.js.
 export function logout() {
   try { localStorage.removeItem(LINK_KEY); } catch (e) {}
-  // 🪪 the world id is part of the account, not the device — signing out
-  // hands the world back its anonymous per-browser identity
-  try { localStorage.removeItem('world-gid'); } catch (e) {}
+  try { localStorage.removeItem(GID_KEY); } catch (e) {}
+  // ⏱ and drop the pull throttle, so logging back in syncs at once instead of
+  // running on the connection sid until the 10 minutes expire
+  try { localStorage.removeItem(PULL_KEY); } catch (e) {}
   if (window.gtag) window.gtag('event', 'pass_logout');
   return true;
 }
@@ -158,7 +273,7 @@ export async function savePass() {
   });
   if (!res.ok) throw new Error('register failed');
   const { token } = await res.json();
-  setLink(body.credId, token);
+  if (!setLink(body.credId, token)) throw new Error(NO_STORE);
   if (window.gtag) window.gtag('event', 'pass_saved');
   return true;
 }
@@ -183,6 +298,7 @@ export async function startLink() {
 // …and on the NEW device: make its own passkey, hand over the code, and it
 // joins the SAME pass. It never receives the other device's key — only the pass.
 export async function finishLink(code) {
+  const prev = linked();
   const challenge = await getChallenge();
   const cred = await navigator.credentials.create({
     publicKey: {
@@ -217,14 +333,20 @@ export async function finishLink(code) {
       : 'could not link this device');
   }
   const { token, blob } = await res.json();
-  setLink(body.credId, token);
+  if (!setLink(body.credId, token)) throw new Error(NO_STORE);
+  const switched = await settleAccount(prev, body.credId, token, false);
   if (blob) applyBlob(blob);
+  // ⬆️ …and this device's world goes UP. /link/finish carries no blob and the
+  // worker ignores one, so the joining device was the only entrance that
+  // handed over nothing — its shelf and badges lived exactly one pull.
+  await pushBlob(body.credId, token);
   if (window.gtag) window.gtag('event', 'pass_link_finish');
-  return true;
+  return { switched };
 }
 
 // "I have a pass" — assert the passkey on this device and merge both worlds
 export async function restorePass() {
+  const prev = linked();
   const challenge = await getChallenge();
   const assertion = await navigator.credentials.get({
     publicKey: { challenge, userVerification: 'preferred', timeout: 60000 },
@@ -234,17 +356,23 @@ export async function restorePass() {
     clientDataJSON: bufToB64u(assertion.response.clientDataJSON),
     authenticatorData: bufToB64u(assertion.response.authenticatorData),
     signature: bufToB64u(assertion.response.signature),
-    blob: collectBlob(), // this device's world rides along and merges
+    // this device's world rides along and merges — ⚠️ but NOT while somebody
+    // else is signed in here: that uploads THEIR save file into the pass being
+    // restored, before anyone can tell the two people apart. It goes up below
+    // instead, once the device is settled and the world is provably theirs.
+    ...(prev ? {} : { blob: collectBlob() }),
   };
   const res = await fetch(PASS_API + '/assert', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'assert failed');
   const { token, blob } = await res.json();
-  setLink(body.credId, token);
+  if (!setLink(body.credId, token)) throw new Error(NO_STORE);
+  const switched = await settleAccount(prev, body.credId, token, false);
   applyBlob(blob);
+  if (prev && !switched) await pushBlob(body.credId, token); // same person — their world still goes up
   if (window.gtag) window.gtag('event', 'pass_restored');
-  return true;
+  return { switched };
 }
 
 // pull the latest on page load when already linked (cheap token call)
@@ -254,8 +382,11 @@ export async function pullLatest() {
   try {
     const res = await fetch(PASS_API + `/pull?credId=${encodeURIComponent(link.credId)}&token=${encodeURIComponent(link.token)}`);
     if (!res.ok) return false;
-    const { blob } = await res.json();
-    applyBlob(blob);
+    const d = await res.json();
+    // 🪪 the answer carries the world id too — throwing it away left
+    // worldOwner() answering with the per-browser connection sid
+    keepGid(d);
+    applyBlob(d && d.blob);
     return true;
   } catch (e) { return false; }
 }

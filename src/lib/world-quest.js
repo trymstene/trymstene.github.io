@@ -13,7 +13,7 @@
 //
 // QA: ?questtest (sticky per device) · ?questtest=off · ?questreset ·
 //     ?queststep=N jumps (test only).
-import { passStat } from './banana-pass.js';
+import { passStat, coinsNow } from './banana-pass.js';
 import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
 
 // 🍌 NIB IS A REAL BANANA (Trym's polish verdict: "theres no banana NPC
@@ -85,12 +85,9 @@ try { S = { ...S, ...(JSON.parse(localStorage.getItem(KEY) || '{}')) }; } catch 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const track = (ev, p) => { try { window.gtag && window.gtag('event', ev, p || {}); } catch (e) {} };
 
-const coinBal = () => {
-  try {
-    const st = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
-    return Math.max(0, (st.coins_earned || 0) - (st.coins_spent || 0));
-  } catch (e) { return 0; }
-};
+// ⚠️ one wallet formula, one owner. Counters live in per-device slots now
+// (see the ledger note in banana-pass.js), so a raw stats read under-counts.
+const coinBal = () => { try { return coinsNow(); } catch (e) { return 0; } };
 
 // ---- the cast -------------------------------------------------------------
 // Voices (Trym: Silicon Valley energy, exaggerated, never overlapping):

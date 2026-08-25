@@ -6,7 +6,7 @@
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
+import { passStat, passSpend, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
@@ -130,13 +130,11 @@ function applyTestScenario(kind) {
     items: [], shed: [], bed: [null, null, null, null] };
   let s = null;
   if (kind === 'fresh') { try { localStorage.removeItem(HS_KEY); } catch (e) {} return; }
-  if (kind === 'rich') {   // a test wallet: balance jumps to ~9999, state untouched
-    try {
-      const pv = JSON.parse(localStorage.getItem('pass-v1') || '{}');
-      pv.stats = pv.stats || {};
-      pv.stats.coins_earned = (pv.stats.coins_spent || 0) + 9999;
-      localStorage.setItem('pass-v1', JSON.stringify(pv));
-    } catch (e) {}
+  if (kind === 'rich') {   // a test wallet: balance tops up to ~9999, state untouched
+    // ⚠️ through the pass API, never by hand — the ledgers are per-device
+    // slots summed on read, so a raw stats write lands in the wrong shape
+    const need = 9999 - coinBalance();
+    if (need > 0) passStat('coins_earned', need);
     return;
   }
   if (kind === 'claimed') s = base;
@@ -1844,8 +1842,10 @@ function init(visitDoc, visitMiss) {
       grid.className = 'hs-grid';
       DECOR.filter(HERE).filter((d) => curCat === 'all' || d.cat === curCat).forEach((d) => {
         grid.appendChild(shopTile(d, 'buy', () => {
-          if (d.stage > state.stage || coinBalance() < d.price) return;
-          passStat('coins_spent', d.price);
+          if (d.stage > state.stage) return;
+          // the tile disables itself when you are short, but the charge is the
+          // only check that counts — never spend past zero
+          if (!passSpend(d.price)) { shopNote('🪙 not enough coins for that one'); renderShop(); return; }
           refreshHud();
           track('homestead_buy', { id: d.id, price: d.price, ship: shipMin(d) });
           const mins = shipMin(d);
@@ -2179,6 +2179,18 @@ function init(visitDoc, visitMiss) {
       : 'choose where it stands — drag to look, tap to try', 3600);
   }
   function confirmHome() {
+    // 💸 THE MONEY MOVES HERE, not at the CTA. The bag stays open while you
+    // walk the ghost around, so the balance that lit the button can be spent
+    // by now — and an overdrawn wallet reads as ZERO and eats every coin you
+    // earn until the hole refills. passSpend takes nothing when it is short.
+    // (Charging at the CTA would need a refund on every exit — cancel, the
+    // WASD escape hatch, a closed tab — and the closed tab has no refund.)
+    if (placing.toStage && placing.price > 0 && !passSpend(placing.price)) {
+      refreshHud();
+      toast('🪙 not enough coins any more — you need ' + placing.price
+        + '. The spot is still yours, come back with them.', 4200);
+      return;
+    }
     if (deedHintEl) { deedHintEl.remove(); deedHintEl = null; }
     const d = fixDims();
     const x = placing.x, y = placing.y;
@@ -2208,8 +2220,7 @@ function init(visitDoc, visitMiss) {
       plannerAfterPlace(x, y);
       return;
     }
-    if (placing.toStage) {   // this placement completes an UPGRADE
-      passStat('coins_spent', placing.price);
+    if (placing.toStage) {   // this placement completes an UPGRADE (paid above)
       state.stage = placing.toStage;
       state.style = state.style || {};
       state.style[placing.toStage] = placing.key;
@@ -2373,8 +2384,7 @@ function init(visitDoc, visitMiss) {
       } else {
         fd.textContent = '🌰 fill the feeder · ' + FEED_COST;
         fd.addEventListener('click', () => {
-          if (coinBalance() < FEED_COST) { toast('need ' + FEED_COST + ' coins — the world pays for playing'); return; }
-          passStat('coins_spent', FEED_COST);
+          if (!passSpend(FEED_COST)) { toast('need ' + FEED_COST + ' coins — the world pays for playing'); return; }
           state.feedAt = Date.now();
           save(); refreshHud(); clearChip();
           float(it.x, it.y - d.h - 10, '🌰');

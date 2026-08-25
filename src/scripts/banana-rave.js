@@ -11,7 +11,7 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
 import { DROPS, ownsDropStat } from '../data/wearables.js';
-import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, POOF_FRAMES, worldSid } from '../lib/world.js';
+import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -695,8 +695,8 @@ function init() {
   if (walletChip && STAND_OPEN) { walletChip.hidden = false; renderWallet(); }
   // coin window state — claimed windows persist so a reload can't re-farm one
   let coinLive = null, lastCoinTry = 0;
-  let coinWinClaimed = -1;
-  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  // ⚠️ the claim is READ AT CLAIM TIME (world.js) — a load-time snapshot goes
+  // stale the moment another tab or room catches the coin, and pays twice.
   // the pocket: a little coin arcs from the catch spot into the wallet chip,
   // and the wallet bumps when it lands (skipped under reduced motion)
   function coinFly() {
@@ -723,9 +723,8 @@ function init() {
   }
   function claimCoin() {
     if (!coinLive) return;
+    if (!coinWinClaim(coinLive.win)) { cnEl.style.display = 'none'; coinLive = null; return; } // another tab beat us to it
     const n = coinAmountFor(coinLive.win);
-    coinWinClaimed = coinLive.win;
-    try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
     pickupPop(coinLive.x, coinLive.y);
     coinFly();
     passStat('coins_earned', n);
@@ -1310,8 +1309,14 @@ function init() {
   function earnRep(n) {
     const pts = Math.round(n);
     if (!pts || pts < 0) return;
-    const total = passStat('rep', pts);
-    const was = levelFor(total - pts);
+    // ⚠️ read the BEFORE off the ledger and take the AFTER from what was
+    // actually written — passStat silently DOUBLES the delta under the
+    // homestead's 'rep2' buff, so `total - pts` landed a level short and
+    // roughly half the buffed level-ups fired no ceremony and told nobody.
+    const before = (passGet().stats || {}).rep || 0;
+    const wrote = passStat('rep', pts);
+    const total = Number.isFinite(wrote) ? wrote : ((passGet().stats || {}).rep || 0);
+    const was = levelFor(before);
     const lv = levelFor(total);
     refreshLvlBar(lv);
     if (lv.level !== was.level) {
@@ -2735,7 +2740,7 @@ function init() {
     if (cnEl && STAND_OPEN) {
       const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
       const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
-      if (cPh < COIN_WAIT && coinWinClaimed !== cWin && floorItems < MAX_FLOOR_ITEMS) {
+      if (cPh < COIN_WAIT && !coinWinClaimed(cWin) && floorItems < MAX_FLOOR_ITEMS) {
         const cs = coinSpotFor(cWin);
         floorItems++;
         // sprite tiers stayed 1/3/5 when payouts became 5/10/20 — map amount
@@ -2749,7 +2754,7 @@ function init() {
       } else {
         // unclaimed coins vanish in a puff like the conveyor (claimed ones
         // already left via the pickup pop — winClaimed equality skips this)
-        if (coinLive && coinWinClaimed !== coinLive.win && cnEl.style.display !== 'none') poofAt(coinLive.x, coinLive.y, 0.7);
+        if (coinLive && !coinWinClaimed(coinLive.win) && cnEl.style.display !== 'none') poofAt(coinLive.x, coinLive.y, 0.7);
         cnEl.style.display = 'none';
         coinLive = null;
       }

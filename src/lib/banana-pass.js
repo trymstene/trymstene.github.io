@@ -5,23 +5,76 @@
 // no server. Patches are minted once and celebrated with a toast; stats are
 // gentle counters. CLIENT-ONLY module.
 import { PATCHES, OG_CUTOFF } from './pass-defs.js';
+import { worldSid } from './world.js';
 
 const KEY = 'pass-v1';
 export const PASS_API = 'https://banana-pass.trymstene.workers.dev';
 
-function read() {
-  try {
-    const p = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (p && typeof p === 'object') return { created: p.created || Date.now(), patches: p.patches || {}, stats: p.stats || {}, days: p.days || [] };
-  } catch (e) {}
-  return { created: Date.now(), patches: {}, stats: {}, days: [] };
+// 💰 THE LEDGER. Stats used to be plain scalars merged with Math.max, which
+// silently ATE progress: two devices playing inside one sync window kept the
+// larger number, not the sum — 200 coins earned could land as 160, and a
+// concurrent purchase could cost nothing. Counters now live in PER-DEVICE
+// slots (`led[stat][device]`) that are summed on read; max-merging a slot is
+// safe because only its own device ever writes it.
+// ⚠️ SLOTS MUST STAY MONOTONIC — never write a negative delta (a later merge
+// would restore the higher pre-refund value). Refunds go to passRefund().
+// The old scalar stays as a FROZEN legacy floor, so no migration is needed and
+// a device still running old code keeps working through the transition.
+const DEV = () => { try { return String(worldSid() || 'dev').slice(0, 8); } catch (e) { return 'dev'; } };
+const sumSlots = (o) => { let n = 0; for (const k in o) { const v = +o[k]; if (Number.isFinite(v)) n += v; } return n; };
+// `base` is the frozen pre-ledger floor, `led` the per-device slots, and
+// `stats` a DERIVED MIRROR of base+slots kept in storage so the many places
+// that read pass-v1.stats directly (gear unlock gates, the builder, the pass
+// page) keep working with no change and no under-reporting.
+export function statTotal(raw, key) {
+  if (!raw) return 0;
+  const led = raw.led && raw.led[key];
+  return (+(raw.base && raw.base[key]) || 0) + (led ? sumSlots(led) : 0);
 }
-function write(p) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {}
+function mirror(raw) {
+  const stats = { ...raw.base };
+  for (const k in raw.led) stats[k] = statTotal(raw, k);
+  return stats;
+}
+
+function readRaw() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+  if (!p || typeof p !== 'object') return { created: Date.now(), patches: {}, stats: {}, base: {}, led: {}, days: [] };
+  const led = (p.led && typeof p.led === 'object') ? p.led : {};
+  // one-time freeze: a pass written before the ledger has no base, so its
+  // scalars ARE the floor. Idempotent — it only ever runs while base is absent.
+  let base = (p.base && typeof p.base === 'object') ? p.base : null;
+  if (!base) base = { ...(p.stats || {}) };
+  const raw = { created: p.created || Date.now(), patches: p.patches || {}, base, led, days: p.days || [], stats: {} };
+  // ⚠️ a device still running pre-ledger code writes the MIRROR directly, so
+  // anything above base+slots is real progress that has to be adopted
+  for (const k in (p.stats || {})) {
+    const implied = (+p.stats[k] || 0) - sumSlots(led[k] || {});
+    if (implied > (+base[k] || 0)) base[k] = implied;
+  }
+  raw.stats = mirror(raw);
+  return raw;
+}
+function read() {
+  const raw = readRaw();
+  return { created: raw.created, patches: raw.patches, stats: raw.stats, days: raw.days };
+}
+function writeRaw(raw) {
+  raw.stats = mirror(raw);
+  try { localStorage.setItem(KEY, JSON.stringify(raw)); } catch (e) {}
   schedulePush();
+}
+// ⚠️ stats/led are NEVER taken from the caller — read() hands out materialised
+// totals, and writing those back would collapse the slots into the scalar and
+// double-count on the next merge. Only patches/days/created ride this path.
+function write(p) {
+  const raw = readRaw();
+  writeRaw({ created: p.created || raw.created, patches: p.patches || raw.patches, days: p.days || raw.days, base: raw.base, led: raw.led });
 }
 
 export function passGet() { return read(); }
+export function passRaw() { return readRaw(); }
 
 // ---- sync push (Phase 2) ----------------------------------------------
 // If this device is linked to a passkey (pass-sync.js stores 'pass-link'),
@@ -35,7 +88,33 @@ export function collectBlob() {
   try { shelf = JSON.parse(g('shelf-v1') || '[]'); } catch (e) {}
   try { bbLast = JSON.parse(g('bb-last') || 'null'); } catch (e) {}
   try { const d = JSON.parse(g('shelf-del-v1') || '{}'); if (d && typeof d === 'object') shelfDel = d; } catch (e) {}
-  return { pass: read(), shelf, shelfDel, bbLast, glow: g('rv-glowstick') === '1' ? '1' : '', name: (g('ps-name-v1') || '').slice(0, 24) };
+  // ⏱ NAME + OUTFIT NEED A CLOCK. Both used to be "whoever has one wins",
+  // which never converges: a rename never reached the other device and a
+  // cleared name came straight back. The writers are spread over eight files,
+  // so the clock is stamped HERE, the moment a change is first observed.
+  const nameNow = (g('ps-name-v1') || '').slice(0, 24);
+  const bbNow = g('bb-last') || '';
+  return {
+    pass: readRaw(),                      // ⚠️ RAW — materialised totals would double-count on merge
+    shelf, shelfDel, bbLast,
+    glow: g('rv-glowstick') === '1' ? '1' : '',
+    name: nameNow, nameAt: stampClock('ps-name-seen', 'ps-name-at', nameNow),
+    bbAt: stampClock('bb-seen', 'bb-at', bbNow),
+  };
+}
+
+// a change-clock for values written elsewhere: stamp the first time we SEE a
+// new value. A device that has never witnessed a change keeps clock 0, so a
+// fresh install can never out-rank a real edit made on another device.
+function stampClock(seenKey, atKey, cur) {
+  let seen = null, at = 0;
+  try { seen = localStorage.getItem(seenKey); at = +(localStorage.getItem(atKey) || 0) || 0; } catch (e) {}
+  if (seen === null) { try { localStorage.setItem(seenKey, cur); } catch (e) {} return at; }
+  if (seen !== cur) {
+    at = Date.now();
+    try { localStorage.setItem(seenKey, cur); localStorage.setItem(atKey, String(at)); } catch (e) {}
+  }
+  return at;
 }
 
 // 🪪 THE WORLD ID. The pass worker mints a stable per-PERSON id (an HMAC
@@ -55,19 +134,38 @@ function keepGid(d) {
   return d;
 }
 
-let pushT = null;
+let pushT = null, pushDue = 0, pushBound = false;
+// ⚠️ A TRAILING DEBOUNCE ALONE UPLOADS NOTHING during real play: a busy rave
+// session re-arms the 10s timer on every coin and never fires, then the tab
+// closes and the whole session lives on one device only. So: a hard 60s
+// ceiling from the first pending write, plus a flush when the page goes away.
+function pushNow() {
+  clearTimeout(pushT); pushT = null; pushDue = 0;
+  let link = null;
+  try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
+  if (!link || !link.credId || !link.token) return;
+  const body = JSON.stringify({ credId: link.credId, token: link.token, blob: collectBlob() });
+  // sendBeacon survives the page going away; fetch is the everyday path
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && navigator.sendBeacon) {
+    try { navigator.sendBeacon(PASS_API + '/push', new Blob([body], { type: 'application/json' })); return; } catch (e) {}
+  }
+  fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
+    .then((r) => (r && r.ok ? r.json() : null)).then(keepGid).catch(() => {});
+}
 function schedulePush() {
   let link = null;
   try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
   if (!link || !link.credId || !link.token) return;
+  const now = Date.now();
+  if (!pushDue) pushDue = now + 60000;
+  if (!pushBound && typeof document !== 'undefined') {
+    pushBound = true;
+    const flush = () => { if (pushT) pushNow(); };
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    addEventListener('pagehide', flush);
+  }
   clearTimeout(pushT);
-  pushT = setTimeout(() => {
-    fetch(PASS_API + '/push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credId: link.credId, token: link.token, blob: collectBlob() }),
-    }).then((r) => (r && r.ok ? r.json() : null)).then(keepGid).catch(() => {});
-  }, 10000);
+  pushT = setTimeout(pushNow, Math.max(0, Math.min(10000, pushDue - now)));
 }
 
 // nudge a sync push without touching the pass — for writes that live OUTSIDE
@@ -83,12 +181,37 @@ export function applyBlob(blob) {
     const local = collectBlob();
     const patches = { ...(local.pass.patches || {}) };
     for (const [id, ts] of Object.entries((blob.pass && blob.pass.patches) || {})) patches[id] = Math.min(patches[id] || ts, ts);
-    const stats = { ...(local.pass.stats || {}) };
-    for (const [k, v] of Object.entries((blob.pass && blob.pass.stats) || {})) stats[k] = Math.max(stats[k] || 0, v);
+    // the frozen legacy scalars still merge by max (a device on old code keeps
+    // incrementing them); the per-device slots merge by max PER DEVICE, which
+    // is lossless because a slot has exactly one writer
+    const rp = (blob.pass) || {};
+    const impliedBase = (pass) => {
+      const b = { ...(pass.base || {}) };
+      for (const k in (pass.stats || {})) {
+        const imp = (+pass.stats[k] || 0) - sumSlots((pass.led || {})[k] || {});
+        if (imp > (+b[k] || 0)) b[k] = imp;
+      }
+      return b;
+    };
+    const base = {};
+    for (const src of [impliedBase(local.pass || {}), impliedBase(rp)]) {
+      for (const [k, v] of Object.entries(src)) base[k] = Math.max(base[k] || 0, +v || 0);
+    }
+    const led = {};
+    for (const src of [(local.pass && local.pass.led) || {}, (blob.pass && blob.pass.led) || {}]) {
+      for (const [k, slots] of Object.entries(src)) {
+        if (!slots || typeof slots !== 'object') continue;
+        led[k] = led[k] || {};
+        for (const [dev, v] of Object.entries(slots)) led[k][dev] = Math.max(led[k][dev] || 0, +v || 0);
+      }
+    }
+    const merged = { base, led };
+    const stats = {};
+    for (const k of new Set([...Object.keys(base), ...Object.keys(led)])) stats[k] = statTotal(merged, k);
     const days = [...new Set([...(local.pass.days || []), ...((blob.pass && blob.pass.days) || [])])].sort().slice(-400);
     localStorage.setItem('pass-v1', JSON.stringify({
       created: Math.min(local.pass.created || Date.now(), (blob.pass && blob.pass.created) || Date.now()),
-      patches, stats, days,
+      patches, stats, base, led, days,
     }));
     // tombstones union (max ts) — a deleted shelf item stays deleted across
     // devices; keep the newest copy per params, minus anything tombstoned after
@@ -109,9 +232,27 @@ export function applyBlob(blob) {
       .slice(0, 24);
     localStorage.setItem('shelf-v1', JSON.stringify(shelf));
     localStorage.setItem('shelf-del-v1', JSON.stringify(Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200))));
-    if (!local.bbLast && blob.bbLast) localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
+    // ⏱ newest edit wins, both directions — "only if we have none" left two
+    // devices permanently disagreeing and made a cleared name immortal
+    const localBbAt = +(localStorage.getItem('bb-at') || 0) || 0;
+    if (blob.bbLast && +(blob.bbAt || 0) > localBbAt) {
+      const bb = JSON.stringify(blob.bbLast);
+      localStorage.setItem('bb-last', bb);
+      localStorage.setItem('bb-at', String(+blob.bbAt));
+      localStorage.setItem('bb-seen', bb);
+    } else if (!local.bbLast && blob.bbLast) {
+      localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
+    }
     if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
-    if (blob.name && !localStorage.getItem('ps-name-v1')) localStorage.setItem('ps-name-v1', String(blob.name).slice(0, 24));
+    const localNameAt = +(localStorage.getItem('ps-name-at') || 0) || 0;
+    if (blob.name !== undefined && +(blob.nameAt || 0) > localNameAt) {
+      const nm = String(blob.name || '').slice(0, 24);
+      if (nm) localStorage.setItem('ps-name-v1', nm); else localStorage.removeItem('ps-name-v1');
+      localStorage.setItem('ps-name-at', String(+blob.nameAt));
+      localStorage.setItem('ps-name-seen', nm);
+    } else if (blob.name && !localStorage.getItem('ps-name-v1')) {
+      localStorage.setItem('ps-name-v1', String(blob.name).slice(0, 24));
+    }
     try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
   } catch (e) {}
 }
@@ -199,10 +340,23 @@ export function passStat(key, delta = 1) {
   if (b && ((key === 'coins_earned' && b.fx === 'coins2') || (key === 'rep' && b.fx === 'rep2'))) {
     delta *= 2;
   }
-  const p = read();
-  const was = p.stats[key] || 0;
-  p.stats[key] = was + delta;
-  write(p);
+  const p = readRaw();
+  const was = statTotal(p, key);
+  p.base = p.base || {};
+  // ⚠️ a negative delta would break slot monotonicity and could be undone by a
+  // later max-merge. A spend refund has its own monotonic counter; anything
+  // else negative is a caller bug and is refused rather than silently kept.
+  if (delta < 0) {
+    if (key === 'coins_spent') return passRefund(-delta);
+    if (typeof console !== 'undefined') console.warn('passStat: negative delta refused for', key);
+    return was;
+  }
+  p.led = p.led || {};
+  p.led[key] = p.led[key] || {};
+  const d = DEV();
+  p.led[key][d] = (+p.led[key][d] || 0) + delta;
+  writeRaw(p);
+  const now = statTotal(p, key);
   // 🎖 LEVELS HAPPEN EVERYWHERE, BUT ONLY THE RAVE EVER SAID SO. rep is a world
   // stat — the park waters it up, the beach digs it up — and every grant in
   // every area passes through here, so the crossing is caught once rather than
@@ -211,10 +365,31 @@ export function passStat(key, delta = 1) {
   // ⚠️ the rave ALSO fires its own older rave_levelup, so the two overlap on
   // the floor — world_levelup is the superset, never add them together.
   if (key === 'rep' && delta > 0 && typeof window !== 'undefined' && window.gtag) {
-    const b = lvlOf(p.stats[key]);
-    if (b > lvlOf(was)) window.gtag('event', 'world_levelup', { level: b, where: areaOf() });
+    const lv = lvlOf(now);
+    if (lv > lvlOf(was)) window.gtag('event', 'world_levelup', { level: lv, where: areaOf() });
   }
-  return p.stats[key];
+  return now;   // the TRUE new total — callers must not re-derive it from the delta (the buff can double it)
+}
+
+// 💰 the only two ways money moves. passSpend refuses an overdraft instead of
+// digging a hole the wallet reads as an empty purse (an overdrawn wallet used
+// to silently swallow everything the player earned until it refilled).
+export function passSpend(n) {
+  const cost = Math.max(0, Math.round(+n || 0));
+  if (!cost) return true;
+  if (coinsNow() < cost) return false;
+  passStat('coins_spent', cost);
+  return true;
+}
+export function passRefund(n) {
+  const back = Math.max(0, Math.round(+n || 0));
+  if (!back) return 0;
+  return passStat('coins_refunded', back);
+}
+// the wallet, in the one place that owns the formula (world-hud re-exports it)
+export function coinsNow() {
+  const raw = readRaw();
+  return statTotal(raw, 'coins_earned') + statTotal(raw, 'coins_refunded') - statTotal(raw, 'coins_spent');
 }
 
 // call once per page that counts as "being here" — tracks distinct days,

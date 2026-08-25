@@ -60,12 +60,18 @@ export function shelfList() { return read(); }
 export function shelfAdd({ kind = 'banana', params = '', shareId = null }) {
   if (!params) return null;
   const prev = read().find((c) => c.params === params);
+  // ⚠️ RE-SAVING MUST BEAT AN OLD TOMBSTONE. Keeping prev.created made a
+  // re-save on a device that had not pulled yet lose to a delete minted on the
+  // other device — the save silently evaporated on the next merge. The merge
+  // rule is "newer than its tombstone wins", so a deliberate save is always
+  // stamped now; the FIRST-made time is kept separately for display order.
   const item = {
     id: prev ? prev.id : 'c' + Math.random().toString(36).slice(2, 10),
     kind,
     params,
     shareId: shareId || (prev && prev.shareId) || null,
-    created: prev ? prev.created : Date.now(),
+    created: Date.now(),
+    made: (prev && (prev.made || prev.created)) || Date.now(),
   };
   write([item, ...read().filter((c) => c.params !== params)]);
   return item;

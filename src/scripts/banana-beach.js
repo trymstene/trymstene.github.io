@@ -7,9 +7,9 @@
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet } from '../lib/banana-pass.js';
+import { passStat, passGet, coinsNow } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
-import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
 import { shopWindow } from '../../shared/products.js';
@@ -1002,8 +1002,10 @@ function init() {
   coinEl.noCull = true;         // owns its own display — the sweep keeps off it
   coinEl.style.display = 'none';
   world.appendChild(coinEl);
-  let coinLive = null, coinWinClaimed = -1;
-  try { coinWinClaimed = parseInt(localStorage.getItem('bc-win') || '-1', 10); } catch (e) {}
+  // ⚠️ the claim is READ AT CLAIM TIME (world.js), never snapshotted here: a
+  // load-time copy goes stale the moment another tab or room catches the coin,
+  // and the same window pays twice.
+  let coinLive = null;
   const COIN_SALT = 0xbea1;
   function coinSpotFor(win) {
     // the lagoon's straight shoreline (x 340..1620), wet band just under the
@@ -1029,7 +1031,7 @@ function init() {
     const t = Date.now() / 1000;
     const cPh = (((t - COIN_OFFSET) % COIN_PERIOD) + COIN_PERIOD) % COIN_PERIOD;
     const cWin = Math.floor((t - COIN_OFFSET) / COIN_PERIOD);
-    if (cPh < COIN_WAIT && coinWinClaimed !== cWin) {
+    if (cPh < COIN_WAIT && !coinWinClaimed(cWin)) {
       if (!coinLive || coinLive.win !== cWin) {
         const cs = coinSpotFor(cWin);
         const n = coinAmountFor(cWin);
@@ -1054,7 +1056,7 @@ function init() {
       }
     } else {
       // an unclaimed window goes back out with the tide — in the smoke
-      if (coinLive && coinWinClaimed !== coinLive.win && coinEl.style.display !== 'none') {
+      if (coinLive && !coinWinClaimed(coinLive.win) && coinEl.style.display !== 'none') {
         poofInto(world, 'bh-poof', coinLive.x / W * 100, coinLive.y / H * 100);
       }
       coinEl.style.display = 'none';
@@ -1063,9 +1065,8 @@ function init() {
     // the catch: walk into it — same monotonic wallet as every room
     if (coinLive && coinEl.style.display !== 'none'
         && Math.hypot(pos.x - coinLive.x, (pos.y - 6) - coinLive.y) < 34) {
+      if (!coinWinClaim(coinLive.win)) { coinEl.style.display = 'none'; coinLive = null; return; } // another tab got there first
       const n = coinAmountFor(coinLive.win);
-      coinWinClaimed = coinLive.win;
-      try { localStorage.setItem('bc-win', String(coinWinClaimed)); } catch (e) {}
       passStat('coins_earned', n);
       refreshHud();
       coinPickFloat(coinLive.x, coinLive.y - 10, n);
@@ -2310,10 +2311,7 @@ function init() {
     const s = passGet().stats || {};
     return Math.max(0, (s.tickets || 0) - (s.tickets_spent || 0));
   };
-  const coinBal = () => {
-    const s = passGet().stats || {};
-    return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
-  };
+  const coinBal = () => coinsNow();   // ⚠️ one wallet formula, one owner (banana-pass.js)
   // ⚖️ ODDS ARE POSTED, not hidden. A ticket only means something if you can
   // see what it's worth — that's the line between an arcade and a slot machine.
   const DUCK_TABLE = [

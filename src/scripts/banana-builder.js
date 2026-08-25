@@ -902,6 +902,11 @@ function init() {
     const exOn = EXTRA_DEFS.filter((d) => state.extras[d.id]).map((d) => d.id);
     if (exOn.length) p.set('ex', exOn.join('.'));
     if (state.effect !== 'none') p.set('e', state.effect);
+    // ⚠️ the community item belongs in the params too (the engine's own
+    // serializer sets it): the shelf's identity IS this string, so leaving it
+    // out collapsed two different bananas into one slot and thumbnailed the
+    // wrong one — and a share link dropped the item entirely.
+    if (state.c) p.set('c', state.c);
     if (state.spd !== BASE_CYCLE_S) p.set('s', state.spd);
     if (state.frame !== 0) p.set('f', state.frame);
     history.replaceState(null, '', p.toString() ? '?' + p.toString() : location.pathname);

@@ -31,16 +31,37 @@ export function coinAmountFor(w) { // 60% five / 30% ten / 10% twenty
   return r < 0.60 ? 5 : r < 0.90 ? 10 : 20;
 }
 
+// ⚠️ READ THE CLAIM AT CLAIM TIME, NEVER AT LOAD. Rooms snapshot `bc-win` into
+// a module local when they start, so two tabs open on two rooms each hold a
+// stale copy from before the other one caught anything — and the same window
+// pays twice. Ask storage on the claim itself and "caught anywhere is caught
+// everywhere" holds across tabs.
+export function coinWinClaimed(w) {
+  try { return parseInt(localStorage.getItem('bc-win') || '-1', 10) === w; } catch (e) { return false; }
+}
+// take window w — true only for the FIRST caller, in any tab, in any room
+export function coinWinClaim(w) {
+  if (coinWinClaimed(w)) return false;
+  try { localStorage.setItem('bc-win', String(w)); } catch (e) {} // storage blocked never blocks a coin
+  return true;
+}
+
 // the world-wide per-browser session id (localStorage key `park-sid` — the
 // name is historic, the park minted it first). Joining a room with this sid
 // SUPERSEDES your own ghost sockets server-side.
+// ⚠️ MINTED ONCE PER PAGE. When storage is unreadable (private mode, a
+// third-party frame) the fallback used to run on every call, so the connection
+// id — and worldOwner() with it — changed between one request and the next: a
+// new ghost in the room each ping, and nothing you claimed stayed yours.
+let sidMem = '';
 export function worldSid() {
-  let sid = '';
+  if (sidMem) return sidMem;
   try {
-    sid = localStorage.getItem('park-sid') || '';
-    if (!sid) { sid = crypto.randomUUID().slice(0, 12); localStorage.setItem('park-sid', sid); }
-  } catch (e) { sid = String(Math.random()).slice(2, 14); }
-  return sid;
+    sidMem = localStorage.getItem('park-sid') || '';
+    if (!sidMem) { sidMem = crypto.randomUUID().slice(0, 12); localStorage.setItem('park-sid', sidMem); }
+  } catch (e) {}
+  if (!sidMem) sidMem = String(Math.random()).slice(2, 14); // storage said no — memory holds it
+  return sidMem;
 }
 
 // 🪪 WHO OWNS A THING, as opposed to WHO IS CONNECTED.
