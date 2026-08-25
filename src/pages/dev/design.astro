@@ -1,0 +1,561 @@
+---
+// 🎨 THE DESIGN LIBRARY — the visual canon of Banana World, rendered FROM
+// SOURCE at build time (rig item #5). Every specimen's CSS and every value is
+// extracted by src/lib/design-canon.js from the file named beside it, so this
+// page cannot rot: when the canon moves, the build breaks here.
+// Noindexed, never linked from public nav, ships zero client JS.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PixelIcon from '../../components/PixelIcon.astro';
+import {
+  src, cssRule, cssRules, jsCssConst, doorSvg, srcLine, srcComment,
+  census, palette, rootTokens, inkFor, heightsOf, oldPeel, travelAreas,
+  pixelIconNames, iconRefs, budgets,
+} from '../../lib/design-canon.js';
+
+const title = 'The Design Library — Banana World visual canon';
+const description = 'Internal design canon, generated from source at build time.';
+
+// ---- PALETTE ----------------------------------------------------------------
+const AREA_FILES = {
+  rave: ['src/pages/rave.astro'],
+  park: ['src/pages/park.astro'],
+  beach: ['src/pages/beach.astro'],
+  homestead: ['src/pages/homestead.astro'],
+  modules: ['src/scripts/world-travel.js', 'src/lib/world-hud.js', 'src/lib/world-quest.js'],
+};
+const pal = palette(AREA_FILES);
+const tokens = rootTokens();
+const colorTokens = tokens.filter((t) => t.value.startsWith('#'));
+const otherTokens = tokens.filter((t) => !t.value.startsWith('#'));
+
+// ---- BUTTONS & CHIPS --------------------------------------------------------
+const door = doorSvg();
+const parityNote = srcComment('src/pages/rave.astro', 'THE SAME METRICS');
+const toolLabel = /'(💧 water)'/.exec(src('src/scripts/park-garden.js'))?.[1] ?? '💧 water';
+const btnClassOf = (rel) => {
+  const m = /btnClass: '([^']+)'/.exec(src(rel));
+  if (!m) throw new Error('design-canon: no initTravel btnClass in ' + rel);
+  return m[1];
+};
+const doorClass = {
+  park: btnClassOf('src/scripts/banana-park.js'),
+  rave: btnClassOf('src/scripts/banana-rave.js'),
+  beach: btnClassOf('src/scripts/banana-beach.js'),
+  homestead: btnClassOf('src/scripts/banana-homestead.js'),
+};
+
+const barCss = {
+  park: cssRules('src/pages/park.astro', ['.pk-actions::before', '#pkAudio', '.pk-actions', '.pk-act', '.pk-act:active', '.pk-act--icon', '.pk-act--tool']),
+  rave: cssRules('src/pages/rave.astro', ['.rv-hud', '.rv-emotes', '.rv-emote-btn', '.rv-emote-btn svg', '.rv-emote-btn:hover', '.rv-emote-btn:active']),
+  beach: cssRules('src/pages/beach.astro', ['.bh-actions::before', '#bhAudio', '.bh-actions', '.bh-act', '.bh-act:active', '.bh-act--dig', '.bh-act--icon']),
+  homestead: cssRules('src/pages/homestead.astro', ['.hs-actions', '.hs-act', '.hs-act--icon', '.hs-act[aria-pressed="true"]']),
+};
+const wtCss = jsCssConst('src/scripts/world-travel.js');
+const whCss = jsCssConst('src/lib/world-hud.js');
+const touchFloorRule = /\.wt-row > \* \{[\s\S]*?\}/.exec(wtCss)[0];
+const chipRule = /\.wh > \* \{[\s\S]*?\}/.exec(whCss)[0];
+const chipHeight = /height: (\d+)px/.exec(chipRule)[1];
+const areas = travelAreas();
+
+// the two paper doors out of the world, read from the veil template
+const shopRows = [...src('src/scripts/world-travel.js')
+  .matchAll(/wt-go--shop" href="([^"]+)"[^>]*>'\s*\+\s*'<span class="wt-go__icon">([^<]+)<\/span>'\s*\+\s*'<span class="wt-go__name">([^<]+)<\/span>/g)]
+  .map((m) => ({ href: m[1], icon: m[2], name: m[3] }));
+
+// ---- OLD PEEL ---------------------------------------------------------------
+const peel = oldPeel();
+const peelCss = cssRules('src/pages/park.astro', [
+  '.pk-panel', '.pk-card', '.pk-card h2', '.pk-cardx', '.pk-cardx:hover',
+  '.pk-card--npc', '.pk-card--npc h2', '.pk-npcpop', '.pk-npcpop canvas',
+  '.pk-npcsay', '.pk-npcq', '.pk-npcq button', '.pk-npcq button:hover',
+  '.pk-npcbox', '.pk-npcbox p', '.pk-npcbox.is-typing p::after', '@keyframes pkCursor',
+  '.pk-npcbox__more', '.pk-npcbox.is-done .pk-npcbox__more', '@keyframes pkMore',
+]) + '\n' + cssRule('src/pages/park.astro', '@media (max-width: 420px)', '.pk-npcpop');
+// the portrait zoom, read from the draw call so the stand-in matches the canvas
+const zoom = parseFloat(/scale\(([\d.]+)/.exec(peel.portrait[0])[1]);
+const [tx, ty] = [...peel.portrait[0].matchAll(/-390 \* ([\d.]+)/g)].map((m) => parseFloat(m[1]));
+
+// ---- ICONS ------------------------------------------------------------------
+const houseIcons = pixelIconNames().map((n) => ({ name: n, refs: iconRefs('PixelIcon', n) }));
+const proRaw = import.meta.glob('../../icons/pixelart/*.svg', { query: '?raw', import: 'default', eager: true });
+const proIcons = Object.entries(proRaw)
+  .map(([p, svg]) => {
+    const name = p.split('/').pop().replace('.svg', '');
+    return {
+      name,
+      svg: svg.replace('<svg ', '<svg class="pai" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true" focusable="false" '),
+      refs: iconRefs('PixelArtIcon', name),
+    };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+// ---- THE FRAME FORMULA ------------------------------------------------------
+const frames = [
+  { area: 'The Rave', file: 'src/pages/rave.astro', sel: '.rv-floor' },
+  { area: 'The Park', file: 'src/pages/park.astro', sel: '.pk-view' },
+  { area: 'Banana Bay', file: 'src/pages/beach.astro', sel: '.bh-view' },
+  { area: 'The Homestead', file: 'src/pages/homestead.astro', sel: '.hs-view' },
+].map((f) => ({ ...f, heights: heightsOf(f.file, f.sel) }));
+
+const depthLine = srcLine('src/scripts/banana-park.js', /const depth = /);
+const depthNote = srcLine('src/scripts/banana-rave.js', /must be an INTEGER/);
+const depthCount = census(/100 \+ Math\.round/g);
+const bud = budgets();
+
+// design/test matrix — committed constant (GA4 device pull, 25 Jul 2026);
+// analytics numbers cannot be extracted from source
+const VIEWPORTS = [
+  ['360 × 780', 'the NARROW stress test (common Android)'],
+  ['375 × 667', 'the SHORT stress test (iPhone SE)'],
+  ['390 × 844 / 393 × 852', 'the common case (iPhone 12–16) — roomy, not the floor'],
+];
+
+const specimenCss = [
+  '/* ---- extracted: src/pages/park.astro ---- */', barCss.park,
+  '/* ---- extracted: src/pages/rave.astro ---- */', barCss.rave,
+  '/* ---- extracted: src/pages/beach.astro ---- */', barCss.beach,
+  '/* ---- extracted: src/pages/homestead.astro ---- */', barCss.homestead,
+  '/* ---- extracted: src/scripts/world-travel.js (CSS const) ---- */', wtCss,
+  '/* ---- extracted: src/lib/world-hud.js (CSS const) ---- */', whCss,
+  '/* ---- extracted: src/pages/park.astro (Old Peel) ---- */', peelCss,
+].join('\n');
+---
+<BaseLayout title={title} description={description} robots="noindex,follow" showFooter={false}>
+  <style is:inline set:html={specimenCss}></style>
+
+  <div class="dl-wrap">
+    <header class="dl-head">
+      <p class="dl-kicker">internal · generated from source at build time</p>
+      <h1>The Design Library</h1>
+      <p class="dl-lede">
+        The visual canon of Banana World. Nothing on this page is hand-copied: every specimen is
+        rendered with CSS <em>lifted from the file named beside it</em> at <code>astro build</code>,
+        so it cannot drift from the world — if a pattern moves, this build breaks.
+        <strong>The standing rule: never invent UI the world already has a pattern for.</strong>
+        Before building any user-facing element, find its grammar here and reuse it.
+      </p>
+      <nav class="dl-toc" aria-label="sections">
+        <a href="#palette">Palette</a>
+        <a href="#buttons">Buttons &amp; chips</a>
+        <a href="#oldpeel">The NPC card</a>
+        <a href="#icons">PixelIcon set</a>
+        <a href="#frame">The frame formula</a>
+      </nav>
+    </header>
+
+    <!-- ================================ PALETTE ================================ -->
+    <section class="dl-sec" id="palette">
+      <h2>Palette</h2>
+      <p class="dl-note">
+        Counted from every hex literal in the four area pages and the shared world modules
+        (<code>world-travel.js</code>, <code>world-hud.js</code>, <code>world-quest.js</code>).
+        A colour used in three or more of those groups is <strong>world canon</strong> — reach for
+        it before inventing a neighbour.
+      </p>
+
+      <h3>Site tokens <span class="dl-src">public/css/styles.css :root</span></h3>
+      <div class="dl-swatches">
+        {colorTokens.map((t) => (
+          <div class="dl-swatch" style={`background:${t.value};color:${inkFor(t.value)}`}>
+            <b>{t.name}</b><span>{t.value}</span>
+          </div>
+        ))}
+      </div>
+      <p class="dl-note">
+        {otherTokens.map((t) => <code class="dl-token">{t.name}: {t.value}</code>)}
+        — the 4px ink line and the hard offset shadow are the house frame on nearly everything.
+      </p>
+
+      <h3>World canon <span class="dl-src">used in ≥3 areas/modules</span></h3>
+      <div class="dl-swatches">
+        {pal.shared.map((s) => (
+          <div class="dl-swatch" style={`background:${s.hex};color:${inkFor(s.hex)}`}>
+            <b>{s.hex}</b>
+            <span>×{s.total} · {Object.keys(s.areas).join(' ')}</span>
+          </div>
+        ))}
+      </div>
+
+      <h3>Per-area colour</h3>
+      <div class="dl-areas">
+        {Object.entries(pal.own).map(([area, colors]) => (
+          <div class="dl-area">
+            <h4>{area} <span class="dl-src">{AREA_FILES[area].join(', ')}</span></h4>
+            <div class="dl-swatches dl-swatches--sm">
+              {colors.map((c) => (
+                <div class="dl-swatch" style={`background:${c.hex};color:${inkFor(c.hex)}`}>
+                  <b>{c.hex}</b><span>×{c.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ============================ BUTTONS & CHIPS ============================ -->
+    <section class="dl-sec" id="buttons">
+      <h2>Buttons &amp; chips</h2>
+      <p class="dl-note">
+        The house action-bar button: <code>3px</code> ink border, <code>3px 3px 0 #000</code> hard
+        shadow, presses <code>translate(2px,2px)</code>. Icon buttons share exact metrics across
+        every world, per the source note in <code>rave.astro</code>:
+      </p>
+      <blockquote class="dl-quote">{parityNote}</blockquote>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">The Park bar <span class="dl-src">src/pages/park.astro · door + 44px row floor from src/scripts/world-travel.js</span></p>
+        <div class="pk-actions wt-row" aria-label="park actions (specimen)">
+          <button class="pk-act pk-act--tool" type="button">{toolLabel}</button>
+          <button class="pk-act pk-act--icon" type="button" aria-label="react"><PixelIcon name="heart" size="1.25em" /></button>
+          <button class={doorClass.park + ' wt-btn'} type="button" aria-label="travel"><Fragment set:html={door} /></button>
+          <button class="pk-act pk-act--icon" id="pkAudio" type="button" aria-label="sound">🔇</button>
+        </div>
+      </div>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">The Rave bar <span class="dl-src">src/pages/rave.astro</span></p>
+        <div class="rv-hud">
+          <div class="rv-emotes wt-row">
+            <button class="rv-emote-btn" type="button" aria-label="send a heart"><PixelIcon name="heart" size="1.5em" /></button>
+            <button class={doorClass.rave + ' wt-btn'} type="button" aria-label="travel"><Fragment set:html={door} /></button>
+            <button class="rv-emote-btn" type="button" aria-label="sound">🔇</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">Banana Bay bar <span class="dl-src">src/pages/beach.astro</span></p>
+        <div class="bh-actions wt-row" aria-label="beach actions (specimen)">
+          <button class="bh-act bh-act--icon" type="button" aria-label="react"><PixelIcon name="heart" size="1.25em" /></button>
+          <button class="bh-act bh-act--dig" type="button" aria-label="dig">⛏ Dig</button>
+          <button class={doorClass.beach + ' wt-btn'} type="button" aria-label="travel"><Fragment set:html={door} /></button>
+          <button class="bh-act bh-act--icon" id="bhAudio" type="button" aria-label="sound">🔇</button>
+        </div>
+      </div>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">The Homestead bar <span class="dl-src">src/pages/homestead.astro — ⚠️ its own yellow grammar, not the icon-button metrics</span></p>
+        <div class="hs-actions wt-row" aria-label="homestead actions (specimen)">
+          <button class="hs-act hs-act--icon" type="button" aria-label="send a heart"><PixelIcon name="heart" size="1.25em" /></button>
+          <button class="hs-act" type="button" aria-pressed="false">🔨</button>
+          <button class={doorClass.homestead + ' wt-btn'} type="button" aria-label="travel"><Fragment set:html={door} /></button>
+        </div>
+      </div>
+
+      <p class="dl-note">
+        The travel door rides <em>every</em> bar wearing the host's own button classes
+        ({Object.values(doorClass).map((c, i) => <Fragment>{i > 0 && ' · '}<code>{c}</code></Fragment>)})
+        — the shared part is the panel, not the trigger. <code>initTravel</code> tags each bar <code>.wt-row</code>, whose
+        floor levels every member at the 44px touch minimum:
+      </p>
+      <pre class="dl-code"><code>{touchFloorRule}</code></pre>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">World HUD chips <span class="dl-src">src/lib/world-hud.js · demo values</span></p>
+        <div class="dl-hudhost">
+          <div class="wh wh--strip">
+            <span class="wh__lvl"><span class="wh__lvln">LVL 4</span><span class="wh__lvlbar"><i style="width:62%"></i></span></span>
+            <span class="wh__coins"><img src="/assets/banana-stand/coin.png" width="16" height="16" alt="" /><b>128</b></span>
+            <span class="wh__tix">🎟 <b>2</b></span>
+            <span class="wh__crowd"><span aria-hidden="true">◍</span> <span class="wh__crowdn">3 here</span></span>
+          </div>
+        </div>
+        <p class="dl-note">
+          One strip for every area — {chipHeight}px pills, themed per area with
+          <code>--wh-bg/border/text/accent</code>. LVL and coins read from the pass, never passed in.
+        </p>
+      </div>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">Fast travel panel <span class="dl-src">src/scripts/world-travel.js — destinations read from its AREAS const</span></p>
+        <div class="wt-card" role="group" aria-label="travel (specimen)">
+          <h2><Fragment set:html={door} /> where to?</h2>
+          <p class="wt-sub">the roads still work — this is the shortcut.</p>
+          <div class="wt-list">
+            {areas.map((a) => (
+              <a class="wt-go" href={`/${a.id === 'beach' ? 'beach' : a.id}/`}>
+                <span class="wt-go__icon">{a.icon}</span>
+                <span class="wt-go__name">{a.name}</span>
+                <span class="wt-go__arrow">→</span>
+              </a>
+            ))}
+          </div>
+          <hr class="wt-sep" />
+          <div class="wt-list">
+            {shopRows.map((s) => (
+              <a class="wt-go wt-go--shop" href={s.href}>
+                <span class="wt-go__icon">{s.icon}</span>
+                <span class="wt-go__name">{s.name}</span>
+                <span class="wt-go__arrow">→</span>
+              </a>
+            ))}
+          </div>
+          <button class="wt-close" type="button">stay here</button>
+        </div>
+        <p class="dl-note">
+          Yellow rows are <em>areas</em>; paper rows (<code>.wt-go--shop</code>) leave the world —
+          bananacoins buy cosmetics, money buys objects, and the UI keeps that line sharp.
+        </p>
+      </div>
+
+      <details class="dl-details">
+        <summary>view all extracted button/chip CSS</summary>
+        <pre class="dl-code"><code>{[barCss.park, barCss.rave, barCss.beach, barCss.homestead, wtCss, whCss].join('\n\n')}</code></pre>
+      </details>
+    </section>
+
+    <!-- ============================== OLD PEEL ================================ -->
+    <section class="dl-sec" id="oldpeel">
+      <h2>The NPC card — Old Peel</h2>
+      <p class="dl-note">
+        NPC dialogue is <strong>the Old Peel card</strong>, never a bespoke box: dark
+        <code>.pk-card</code> over a dimmed panel, tilted waist-up portrait peeking over the corner,
+        name beside it, a question deck, and the console box that <em>types</em> its answer with a
+        blinking ▌ and a ▼ when done. Future NPCs reuse <code>.pk-card--npc</code>;
+        <code>world-quest.js</code>'s <code>.bwq-dlg</code> mirrors it. Player lines are always
+        reply <em>buttons</em> — tapping the line is saying it.
+      </p>
+
+      <div class="dl-spec">
+        <p class="dl-speclabel">
+          Live specimen <span class="dl-src">CSS + dialogue from src/pages/park.astro and src/scripts/park-npc.js · question deck and console box both shown</span>
+        </p>
+        <div class="dl-stage">
+          <div class="pk-panel">
+            <div class="pk-card pk-card--npc" role="group" aria-label="Old Peel (specimen)">
+              <div class="pk-npcpop" aria-hidden="true">
+                <img
+                  src="/assets/dancing-banana-transparent.png"
+                  alt=""
+                  style={`display:block;width:${zoom * 100}%;margin-left:-${tx * 100}%;margin-top:-${ty * 100}%;image-rendering:pixelated;`}
+                />
+              </div>
+              <button class="pk-cardx" type="button" aria-label="close">✕</button>
+              <h2>old peel</h2>
+              <p class="pk-npcsay">{peel.greet}</p>
+              <div class="pk-npcq">
+                {peel.questions.map((q) => <button type="button">{q}</button>)}
+              </div>
+              <div class="pk-npcbox is-done" style="margin-top:0.7rem">
+                <p>{peel.answer}</p>
+                <span class="pk-npcbox__more" aria-hidden="true">▼</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="dl-note">
+          The portrait here is a static stand-in; in the park it is a live canvas —
+          <code>{peel.portrait.join(' ')}</code> — the same zoom this specimen mirrors.
+          Answers type at 32ms/char in <code>park-npc.js</code>; receiving something shows a
+          receipt card (<code>.bwq-reward</code>), never a toast.
+        </p>
+      </div>
+
+      <details class="dl-details">
+        <summary>view the extracted NPC-card CSS</summary>
+        <pre class="dl-code"><code>{peelCss}</code></pre>
+      </details>
+    </section>
+
+    <!-- =============================== ICONS ================================== -->
+    <section class="dl-sec" id="icons">
+      <h2>The PixelIcon set</h2>
+      <p class="dl-note">
+        <strong>House rule: PixelIcon, never OS emoji, in HUD and chrome.</strong> Every OS draws
+        emoji its own way; these two sets draw ours one way. Emoji are tolerated in <em>content
+        strings</em> (toasts, rewards) only. Floating emotes clone the button's own svg — one art
+        source.
+      </p>
+
+      <h3>House-drawn colour set <span class="dl-src">src/components/PixelIcon.astro — names read from its ICONS map</span></h3>
+      <div class="dl-icons">
+        {houseIcons.map((i) => (
+          <div class="dl-icon">
+            <PixelIcon name={i.name} size="26px" />
+            <b>{i.name}</b>
+            <span>{i.refs ? `×${i.refs}` : 'dynamic'}</span>
+          </div>
+        ))}
+      </div>
+
+      <h3>pixelarticons Pro (mono, currentColor) <span class="dl-src">src/icons/pixelart/ — only icons in use live there; via &lt;PixelArtIcon&gt; or iconSvg()</span></h3>
+      <div class="dl-icons">
+        {proIcons.map((i) => (
+          <div class="dl-icon">
+            <Fragment set:html={i.svg} />
+            <b>{i.name}</b>
+            <span>{i.refs ? `×${i.refs}` : 'dynamic'}</span>
+          </div>
+        ))}
+      </div>
+      <p class="dl-note">
+        “dynamic” = reached through a variable (e.g. <code>PHASE_FACES</code> in
+        <code>park-garden.js</code>), not a literal reference. The full paid pack is gitignored —
+        add an icon by copying its SVG into <code>src/icons/pixelart/</code>.
+      </p>
+    </section>
+
+    <!-- ============================ FRAME FORMULA ============================= -->
+    <section class="dl-sec" id="frame">
+      <h2>The frame formula</h2>
+
+      <h3>Area frames</h3>
+      <p class="dl-note">
+        Every area is top-down (no skies, no horizons), framed <code>4px solid #000</code> with an
+        <code>8px 8px 0 #000</code> shadow, the action band inside the frame below the map.
+        Heights, extracted per page (later declarations win):
+      </p>
+      <div class="dl-tablewrap">
+        <table class="dl-table dl-table--wide">
+          <thead><tr><th>area</th><th>frame</th><th>height</th><th>source</th></tr></thead>
+          <tbody>
+            {frames.map((f) => (
+              <tr>
+                <td>{f.area}</td>
+                <td><code>{f.sel}</code></td>
+                <td>
+                  {f.heights.map((h, i) => (
+                    <div class={i < f.heights.length - 1 ? 'dl-dead' : ''}>
+                      <code>{h.value}</code>
+                      {h.media ? ` @ ${h.media}` : ''}
+                      {i < f.heights.length - 1 ? ' — overridden below' : ''}
+                    </div>
+                  ))}
+                </td>
+                <td class="dl-src">{f.file}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Depth: z from world y</h3>
+      <p class="dl-note">
+        Every in-world body computes its stacking from its feet — never a flat high z-index.
+        {depthCount.total} call sites across {Object.keys(depthCount.files).length} files use it today.
+      </p>
+      <pre class="dl-code"><code>{depthLine}   <span class="dl-dim">// src/scripts/banana-park.js</span>
+{depthNote}   <span class="dl-dim">// src/scripts/banana-rave.js</span></code></pre>
+
+      <h3>Touch floors</h3>
+      <ul class="dl-list">
+        <li><code>min-height: 44px</code> on every bar member (<code>.wt-row &gt; *</code>, world-travel.js) — the touch-target minimum.</li>
+        <li>Icon buttons: <code>0.5rem 0.7rem</code> padding, <code>1.1rem</code> type, <code>min-width: 46px</code> — identical in park/bay/rave (see the parity note above).</li>
+        <li>HUD chips: <code>{chipHeight}px</code> tall (<code>.wh &gt; *</code>, world-hud.js).</li>
+      </ul>
+
+      <h3>Per-surface JS budgets <span class="dl-src">tools/budgets.json — enforced by tools/check-budgets.mjs in CI</span></h3>
+      <div class="dl-tablewrap">
+        <table class="dl-table">
+          <thead><tr><th>chunk prefix</th><th>budget</th></tr></thead>
+          <tbody>
+            {Object.entries(bud.budgets).map(([prefix, cap]) => (
+              <tr><td><code>{prefix}</code></td><td>{(cap / 1000).toLocaleString('en')} kB</td></tr>
+            ))}
+            <tr><td><strong>total dist/_astro JS</strong></td><td><strong>{(bud.totalBudget / 1000).toLocaleString('en')} kB</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dl-note">
+        A page ships only the code it runs tonight — new subsystems load via dynamic import from
+        day one, and a lazy import proves nothing until the <em>built</em> output is measured.
+        This page ships zero client JS.
+      </p>
+
+      <h3>Design/test viewports <span class="dl-src">committed constant — GA4 device pull, 25 Jul 2026 (memory: mobile-viewport-targets)</span></h3>
+      <ul class="dl-list">
+        {VIEWPORTS.map(([v, why]) => <li><code>{v}</code> — {why}</li>)}
+      </ul>
+      <p class="dl-note">Rule of thumb: great at 360 wide AND on the 667-tall SE = great for nearly everyone.</p>
+    </section>
+
+    <footer class="dl-foot">
+      <p>
+        Generated at build time by <code>src/lib/design-canon.js</code>. If a specimen looks wrong,
+        the world is wrong — fix the source, not this page.
+      </p>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  body { background: #100f16; }
+  .dl-wrap { max-width: 1060px; margin: 0 auto; padding: 1.2rem 0.9rem 3rem; color: #fffdf5; }
+  .dl-kicker {
+    font-family: "Archivo Black", sans-serif; font-size: 0.68rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #8de08d; margin: 0.6rem 0 0.2rem; opacity: 0.85;
+  }
+  .dl-head h1 {
+    font-family: "Archivo Black", sans-serif; color: #ffe135;
+    font-size: clamp(1.7rem, 6vw, 2.6rem); margin: 0 0 0.6rem; line-height: 1.05;
+  }
+  .dl-lede { max-width: 720px; line-height: 1.6; font-size: 0.95rem; margin: 0 0 1rem; }
+  .dl-toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.4rem; }
+  .dl-toc a {
+    background: #1c1a26; color: #ffe135; text-decoration: none; font-weight: 800;
+    font-size: 0.8rem; padding: 0.4rem 0.7rem; border: 2px solid #000; box-shadow: 2px 2px 0 #000;
+  }
+  .dl-sec { margin-top: 2.6rem; border-top: 2px dashed rgba(255, 253, 245, 0.18); padding-top: 1.4rem; }
+  .dl-sec h2 {
+    font-family: "Archivo Black", sans-serif; color: #ffe135;
+    font-size: clamp(1.2rem, 4.5vw, 1.7rem); margin: 0 0 0.6rem;
+  }
+  .dl-sec h3 {
+    font-family: "Archivo Black", sans-serif; color: #b6f0b6; font-size: 0.95rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .dl-sec h4 { margin: 0 0 0.4rem; font-size: 0.85rem; color: #ffd98a; }
+  .dl-src {
+    font-family: ui-monospace, monospace; font-weight: 400; font-size: 0.68rem;
+    color: #8aa0c0; letter-spacing: 0; text-transform: none;
+  }
+  .dl-note { font-size: 0.88rem; line-height: 1.6; max-width: 760px; margin: 0.4rem 0 0.8rem; opacity: 0.92; }
+  .dl-note code, .dl-list code { background: #1c1a26; padding: 0.1em 0.35em; font-size: 0.85em; }
+  .dl-token { display: inline-block; background: #1c1a26; padding: 0.15em 0.4em; margin: 0 0.3em 0.3em 0; font-size: 0.78rem; }
+  .dl-quote {
+    margin: 0.6rem 0 1rem; padding: 0.7rem 0.9rem; border-left: 4px solid #ffe135;
+    background: #17151f; font-size: 0.78rem; line-height: 1.55; white-space: pre-wrap;
+    font-family: ui-monospace, monospace; max-width: 760px; overflow-x: auto;
+  }
+  .dl-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); gap: 8px; margin: 0.5rem 0 1rem; }
+  .dl-swatches--sm { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .dl-swatch {
+    border: 2px solid #000; box-shadow: 2px 2px 0 #000; min-height: 62px;
+    padding: 0.45rem 0.5rem; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
+  }
+  .dl-swatch b { font-family: ui-monospace, monospace; font-size: 0.74rem; }
+  .dl-swatch span { font-size: 0.62rem; opacity: 0.85; word-break: break-word; }
+  .dl-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .dl-spec { margin: 1.1rem 0; }
+  .dl-speclabel { margin: 0 0 0.45rem; font-weight: 800; font-size: 0.85rem; color: #b6f0b6; }
+  .dl-spec .wt-card { margin: 0.2rem 0 0; }
+  .dl-hudhost { background: #14240f; border: 2px solid #000; padding: 8px; display: inline-block; max-width: 100%; }
+  .dl-stage { position: relative; min-height: 560px; border: 2px solid #000; background: #14240f; overflow: hidden; }
+  .dl-details { margin: 1rem 0 0; }
+  .dl-details summary { cursor: pointer; font-weight: 800; font-size: 0.82rem; color: #8aa0c0; }
+  .dl-code {
+    background: #0b0a10; border: 2px solid #000; padding: 0.7rem 0.8rem; overflow-x: auto;
+    font-size: 0.72rem; line-height: 1.5; margin: 0.5rem 0 1rem; max-width: 100%;
+  }
+  .dl-code code { font-family: ui-monospace, monospace; white-space: pre; }
+  .dl-dim { color: #6a7690; }
+  .dl-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; margin: 0.5rem 0 1rem; }
+  .dl-icon {
+    background: #17151f; border: 2px solid #000; padding: 0.55rem 0.3rem 0.45rem; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fffdf5;
+  }
+  .dl-icon b { font-size: 0.62rem; font-family: ui-monospace, monospace; word-break: break-word; }
+  .dl-icon span { font-size: 0.58rem; opacity: 0.6; }
+  .dl-tablewrap { overflow-x: auto; margin: 0.5rem 0 1rem; }
+  .dl-table { border-collapse: collapse; font-size: 0.82rem; }
+  .dl-table--wide { min-width: 460px; }
+  .dl-table th, .dl-table td { text-align: left; padding: 0.4rem 0.9rem 0.4rem 0; border-bottom: 1px solid rgba(255, 253, 245, 0.14); vertical-align: top; }
+  .dl-table th { color: #8de08d; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .dl-table code { background: #1c1a26; padding: 0.1em 0.35em; }
+  .dl-dead { opacity: 0.55; text-decoration: line-through; text-decoration-color: rgba(255, 77, 109, 0.7); }
+  .dl-list { margin: 0.4rem 0 0.8rem; padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.7; }
+  .dl-foot { margin-top: 2.5rem; border-top: 2px dashed rgba(255, 253, 245, 0.18); padding-top: 1rem; font-size: 0.78rem; opacity: 0.7; }
+  /* the pro icons render white-on-dark like the world's chrome */
+  .dl-icon .pai { color: #fffdf5; }
+</style>
