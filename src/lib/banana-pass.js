@@ -384,12 +384,21 @@ export async function checkGalleryVerdicts(opts = {}) {
 // A reply lands as a "Message from Trym" world notification; the whole
 // thread stays readable at HQ per pass id.
 const CONTACT_API = 'https://banana-contact.trymstene.workers.dev';
+// 🪪 the mailbox key was stamped AT SEND TIME, so someone who mailed
+// anonymously and minted a world-gid afterwards has the answer filed under
+// their old park-sid — poll that one too or the reply never arrives. The
+// fallback is addressing only: park-sid stays a connection id, never identity.
+const LEGACY_MAILBOX_KEY = 'bm-reply-legacy-v1';
 
 export async function checkTrymReplies(opts = {}) {
-  let mailedAt = 0, pass = '';
+  let mailedAt = 0, pass = '', legacy = '', legacyDone = false;
   try {
     mailedAt = parseInt(localStorage.getItem('bm-mailed-v1') || '0', 10) || 0;
-    pass = localStorage.getItem('world-gid') || localStorage.getItem('park-sid') || '';
+    const gid = localStorage.getItem('world-gid') || '';
+    const sid = localStorage.getItem('park-sid') || '';
+    pass = gid || sid;
+    legacy = gid && sid && sid !== gid ? sid : '';
+    legacyDone = !!localStorage.getItem(LEGACY_MAILBOX_KEY);
   } catch (e) { return; }
   if (!pass || !mailedAt || Date.now() - mailedAt > 90 * 86400000) return;
   try {
@@ -397,24 +406,42 @@ export async function checkTrymReplies(opts = {}) {
     if (!opts.force && Date.now() - last < 6 * 3600000) return;
     localStorage.setItem('bm-reply-check-at', String(Date.now()));
   } catch (e) {}
-  try {
-    const r = await fetch(CONTACT_API + '/replies?pass=' + encodeURIComponent(pass));
-    if (!r.ok) return;
-    const replies = await r.json();
-    const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    (Array.isArray(replies) ? replies : []).forEach((rp) => {
+  const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const notify = (replies) => {
+    replies.forEach((rp) => {
       // the reply may land DAYS after the mail — quote what they wrote so
       // the answer stands on its own (Trym)
       const re = String(rp.re || '');
       const quote = re
         ? '<i>You wrote: “' + esc(re) + (re.length >= 300 ? '…' : '') + '”</i><br>' : '';
       passNoticeAdd({
-        id: 'trym-' + rp.key,
+        id: 'trym-' + rp.key, // key carries the mailbox id — the two never collide
         icon: '💬',
         text: '<b>Message from Trym</b><br>' + quote + esc(rp.text).replace(/\n/g, '<br>'),
         link: '/contact/',
       });
     });
+  };
+  const ask = async (id) => {
+    const r = await fetch(CONTACT_API + '/replies?pass=' + encodeURIComponent(id));
+    if (!r.ok) return null; // 💤 leave it for the next poll
+    const j = await r.json();
+    return Array.isArray(j) ? j : [];
+  };
+  try {
+    const mine = await ask(pass);
+    if (!mine) return;
+    notify(mine);
+    // /replies takes ONE id per call, so the old mailbox costs a second
+    // request — only while the current one is still empty (a mailbox that has
+    // ever answered never empties again), plus one lifetime backfill for
+    // devices that got a gid-addressed reply before this shipped.
+    if (legacy && (!mine.length || !legacyDone)) {
+      const old = await ask(legacy);
+      if (!old) return;
+      notify(old);
+      try { localStorage.setItem(LEGACY_MAILBOX_KEY, '1'); } catch (e) {}
+    }
   } catch (e) { /* offline is fine — next visit asks again */ }
 }
 

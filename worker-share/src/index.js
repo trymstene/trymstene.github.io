@@ -136,6 +136,32 @@ function corsHeaders(env, request) {
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// ⚡ FAN-OUT R2 READS — chunked AND hard-capped. Every binding call is a
+// subrequest and the free plan allows 50 per request, so a wave of ~50 pending
+// submissions read one-by-one 1101s the moderation desk exactly when it is
+// needed. One list + ≤R2_FANOUT_CAP gets stays inside the budget.
+const R2_FANOUT_CAP = 40;
+const R2_FANOUT_CHUNK = 12;
+async function getMany(env, keys) {
+  const take = keys.slice(0, R2_FANOUT_CAP);
+  const objects = [];
+  for (let i = 0; i < take.length; i += R2_FANOUT_CHUNK) {
+    // one dead get must not reject the whole wave — the old loop skipped misses
+    objects.push(...await Promise.all(take.slice(i, i + R2_FANOUT_CHUNK).map((k) => env.SHARES.get(k).catch(() => null))));
+  }
+  return { objects, scanned: take.length, total: keys.length, truncated: keys.length > take.length };
+}
+
+// the truncation signal for the ARRAY responses: /catalog/inbox and
+// /gallery/pending-list are consumed as bare arrays by the Banana Mail desk, so
+// it cannot ride the body — headers, exposed so cross-origin JS can read them.
+const truncHeaders = (g) => (g.truncated ? {
+  'X-Truncated': '1',
+  'X-Scanned': String(g.scanned),
+  'X-Total': String(g.total),
+  'Access-Control-Expose-Headers': 'X-Truncated, X-Scanned, X-Total',
+} : {});
+
 // ---------- POST /share ----------
 // Cost guardrails (R2 writes are the one pay-as-you-go surface on the
 // account): strict Origin check + a best-effort per-IP throttle. Imperfect
@@ -290,13 +316,15 @@ async function handleWallInbox(request, env, url) {
     return json({ ok: true });
   }
   const list = await env.SHARES.list({ prefix: 'wall-inbox/', limit: 100 });
+  const keys = list.objects.map((o) => o.key);
+  const got = await getMany(env, keys);
   const out = [];
-  for (const o of list.objects) {
-    const obj = await env.SHARES.get(o.key);
+  for (let i = 0; i < got.objects.length; i++) {
+    const obj = got.objects[i];
     if (!obj) continue;
     try {
       const d = await obj.json();
-      const id = o.key.slice('wall-inbox/'.length, -'.json'.length);
+      const id = keys[i].slice('wall-inbox/'.length, -'.json'.length);
       out.push({
         id,
         kind: d.kind,
@@ -307,7 +335,7 @@ async function handleWallInbox(request, env, url) {
       });
     } catch (e) {}
   }
-  return json({ pending: out.length, items: out });
+  return json({ pending: out.length, items: out, ...(got.truncated ? { truncated: true, scanned: got.scanned, total: got.total } : {}) });
 }
 
 // ═══════════════ THE BANANA GALLERY submission pipeline ═══════════════
@@ -382,34 +410,39 @@ async function handleGalleryPending(request, env, url) {
   return new Response(obj.body, { headers: { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' } });
 }
 
-// shared: read the pending inbox (oldest first)
+// shared: read the pending inbox (oldest first). Returns the truncation flags
+// alongside the items — a wave bigger than the subrequest budget is capped and
+// SAID SO, never quietly shortened.
 async function listGalleryInbox(env) {
   const list = await env.SHARES.list({ prefix: 'gallery-inbox/', limit: 200 });
+  const keys = list.objects.map((o) => o.key).filter((k) => k.endsWith('.json'));
+  const got = await getMany(env, keys);
   const items = [];
-  for (const o of list.objects) {
-    if (!o.key.endsWith('.json')) continue;
-    const obj = await env.SHARES.get(o.key);
+  for (let i = 0; i < got.objects.length; i++) {
+    const obj = got.objects[i];
     if (!obj) continue;
     try {
       const d = await obj.json();
-      items.push({ id: o.key.slice('gallery-inbox/'.length, -'.json'.length), ...d });
+      items.push({ id: keys[i].slice('gallery-inbox/'.length, -'.json'.length), ...d });
     } catch (e) {}
   }
   items.sort((a, b) => a.created - b.created);
-  return items;
+  return { items, scanned: got.scanned, total: got.total, truncated: got.truncated };
 }
 
 // ---------- GET /gallery/pending-list?key= — JSON for BANANA MAIL's tab ----------
 async function handleGalleryPendingList(request, env, url) {
   if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403);
-  return json(await listGalleryInbox(env), 200, { ...corsHeaders(env, request), 'Cache-Control': 'no-store' });
+  const g = await listGalleryInbox(env);
+  return json(g.items, 200, { ...corsHeaders(env, request), 'Cache-Control': 'no-store', ...truncHeaders(g) });
 }
 
 // ---------- GET /gallery/admin?key= — the approve/reject panel ----------
 async function handleGalleryAdmin(request, env, url) {
   if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403);
   const key = url.searchParams.get('key');
-  const items = await listGalleryInbox(env);
+  const g = await listGalleryInbox(env);
+  const items = g.items;
   const rows = items.map((d) => `
     <div class="card" id="c-${d.id}">
       <img src="/gallery/pending/${d.id}.gif?key=${encodeURIComponent(key)}" alt="">
@@ -439,6 +472,7 @@ async function handleGalleryAdmin(request, env, url) {
 </style></head><body>
 <h1>🖼 Banana Gallery inbox — ${items.length} pending</h1>
 <p style="font-size:0.8rem;opacity:0.7">Approve = live at /banana-memes/by/&lt;slug&gt;/ on the NEXT site build (push or daily cron). Edit the title first — it becomes the page. Reject = gone.</p>
+${g.truncated ? `<p style="font-size:0.85rem;background:#ff4d6d;color:#fff;padding:0.5rem;border:2px solid #000">Showing the first ${g.scanned} of ${g.total} waiting — clear these and refresh for the rest.</p>` : ''}
 ${rows || '<p>Inbox zero 🍌</p>'}
 <script>
 async function mod(id, action) {
@@ -517,20 +551,17 @@ async function handleGalleryModerate(request, env, url) {
 }
 
 // ---------- the verdict ledger — feeds /gallery/status ----------
-// One small JSON of {sid, s:'ok'|'no', slug?, at}; pruned at 60 days (the
-// submitter's browser stops asking after 30) and hard-capped so it can
-// never grow unbounded. Free-tier discipline: one object, tiny.
+// ONE object PER sid, never a shared read-modify-write: the catalog lane below
+// lost an approve to a racing reject that way, and per-key puts cannot clobber
+// each other. `gallery-live/verdicts.json` is the OLD shared list — still read
+// as a fallback below for verdicts written before the split (a submitter's
+// browser stops asking after 30 days, so it retires itself).
 async function recordVerdict(env, entry) {
   try {
-    const obj = await env.SHARES.get('gallery-live/verdicts.json');
-    let list = [];
-    if (obj) { try { list = await obj.json(); } catch (e) {} }
-    const cutoff = Date.now() - 60 * 86400000;
-    list = list.filter((v) => v.at > cutoff && v.sid !== entry.sid).slice(-800);
-    list.push(entry);
-    await env.SHARES.put('gallery-live/verdicts.json', JSON.stringify(list), {
-      httpMetadata: { contentType: 'application/json' },
-    });
+    if (!/^[a-z0-9]{8,32}$/.test(entry.sid || '')) return; // the sid is a KEY now
+    await env.SHARES.put('gallery-verdict/' + entry.sid,
+      JSON.stringify({ s: entry.s, slug: entry.slug || '', at: entry.at || Date.now() }),
+      { httpMetadata: { contentType: 'application/json' } });
   } catch (e) {}
 }
 
@@ -539,17 +570,29 @@ async function recordVerdict(env, entry) {
 // "the banana guy hasn't gotten to it yet"). Ids are unguessable client
 // randoms, so this leaks nothing.
 async function handleGalleryStatus(env, url) {
-  const ids = String(url.searchParams.get('ids') || '')
-    .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s)).slice(0, 20);
+  const asked = String(url.searchParams.get('ids') || '')
+    .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s));
+  const ids = asked.slice(0, 20);
   const out = {};
   if (ids.length) {
-    const obj = await env.SHARES.get('gallery-live/verdicts.json');
-    let list = [];
-    if (obj) { try { list = await obj.json(); } catch (e) {} }
-    for (const v of list) {
-      if (ids.includes(v.sid)) out[v.sid] = { s: v.s, slug: v.slug || '' };
+    const got = await getMany(env, ids.map((s) => 'gallery-verdict/' + s));
+    for (let i = 0; i < got.objects.length; i++) {
+      const obj = got.objects[i];
+      if (!obj) continue;
+      try { const v = await obj.json(); out[ids[i]] = { s: v.s, slug: v.slug || '' }; } catch (e) {}
+    }
+    // 🕰 the pre-split shared list, for verdicts written before per-sid objects
+    if (ids.some((s) => !out[s])) {
+      const obj = await env.SHARES.get('gallery-live/verdicts.json');
+      let list = [];
+      if (obj) { try { list = await obj.json(); } catch (e) {} }
+      for (const v of list) {
+        if (!out[v.sid] && ids.includes(v.sid)) out[v.sid] = { s: v.s, slug: v.slug || '' };
+      }
     }
   }
+  // `_` can never be a sid ([a-z0-9]), so this rides the map without colliding
+  if (asked.length > ids.length) out._truncated = true;
   return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
 }
 
@@ -738,15 +781,16 @@ async function handleCatalogInbox(request, env, url) {
   const cors = corsHeaders(env, request);
   if (!env.WALL_KEY || url.searchParams.get('key') !== env.WALL_KEY) return json({ error: 'forbidden' }, 403, cors);
   const list = await env.SHARES.list({ prefix: 'catalog-inbox/', limit: 200 });
+  const keys = list.objects.map((o) => o.key).filter((k) => k.endsWith('.json'));
+  const got = await getMany(env, keys);
   const items = [];
-  for (const o of list.objects) {
-    if (!o.key.endsWith('.json')) continue;
-    const obj = await env.SHARES.get(o.key);
+  for (let i = 0; i < got.objects.length; i++) {
+    const obj = got.objects[i];
     if (!obj) continue;
-    try { items.push({ id: o.key.slice('catalog-inbox/'.length, -'.json'.length), ...(await obj.json()) }); } catch (e) {}
+    try { items.push({ id: keys[i].slice('catalog-inbox/'.length, -'.json'.length), ...(await obj.json()) }); } catch (e) {}
   }
   items.sort((a, b) => a.created - b.created);
-  return json(items, 200, { ...cors, 'Cache-Control': 'no-store' });
+  return json(items, 200, { ...cors, 'Cache-Control': 'no-store', ...truncHeaders(got) });
 }
 
 // ---------- POST /catalog/moderate?key= {id, action, title?, by?} ----------
@@ -829,14 +873,17 @@ async function handleCatalogItems(env) {
 
 // ---------- GET /catalog/status?ids= — sid → verdict (pass notices) ----------
 async function handleCatalogStatus(env, url) {
-  const ids = String(url.searchParams.get('ids') || '')
-    .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s)).slice(0, 20);
+  const asked = String(url.searchParams.get('ids') || '')
+    .split(',').map((s) => s.trim()).filter((s) => /^[a-z0-9]{8,32}$/.test(s));
+  const ids = asked.slice(0, 20);
   const out = {};
-  for (const sid of ids) {
-    const obj = await env.SHARES.get('catalog-verdict/' + sid);
+  const got = await getMany(env, ids.map((s) => 'catalog-verdict/' + s));
+  for (let i = 0; i < got.objects.length; i++) {
+    const obj = got.objects[i];
     if (!obj) continue;
-    try { const v = await obj.json(); out[sid] = { s: v.s, item: v.item || '' }; } catch (e) {}
+    try { const v = await obj.json(); out[ids[i]] = { s: v.s, item: v.item || '' }; } catch (e) {}
   }
+  if (asked.length > ids.length) out._truncated = true; // `_` can never be a sid
   return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
 }
 
@@ -857,7 +904,10 @@ async function handleCatalogCaught(request, env, url) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
   const id = String(b.id || '');
   const sid = String(b.sid || '');
-  if (!/^c_[a-f0-9]{6,32}$/.test(id) || !/^[a-z0-9]{8,32}$/.test(sid)) return json({ error: 'bad' }, 400, cors);
+  // ⚠️ the sid class MUST keep the DASH: both callers send worldSid(), which is
+  // `crypto.randomUUID().slice(0,12)` — 8 hex, a dash, 3 hex. Without it every
+  // real player 400'd here, silently (the call sites are fire-and-forget).
+  if (!/^c_[a-f0-9]{6,32}$/.test(id) || !/^[a-z0-9-]{8,32}$/.test(sid)) return json({ error: 'bad' }, 400, cors);
   const key = 'catalog-catch/' + id + '.json';
   let rec = { n: 0, seen: {} };
   const obj = await env.SHARES.get(key);
@@ -873,14 +923,17 @@ async function handleCatalogCaught(request, env, url) {
 
 // ---------- GET /catalog/catches?ids= — the tallies (id → n) ----------
 async function handleCatalogCatches(env, url) {
-  const ids = String(url.searchParams.get('ids') || '')
-    .split(',').map((s) => s.trim()).filter((s) => /^c_[a-f0-9]{6,32}$/.test(s)).slice(0, 40);
+  const asked = String(url.searchParams.get('ids') || '')
+    .split(',').map((s) => s.trim()).filter((s) => /^c_[a-f0-9]{6,32}$/.test(s));
+  const ids = asked.slice(0, R2_FANOUT_CAP);
   const out = {};
-  for (const id of ids) {
-    const obj = await env.SHARES.get('catalog-catch/' + id + '.json');
+  const got = await getMany(env, ids.map((id) => 'catalog-catch/' + id + '.json'));
+  for (let i = 0; i < got.objects.length; i++) {
+    const obj = got.objects[i];
     if (!obj) continue;
-    try { const r = await obj.json(); out[id] = r.n || 0; } catch (e) {}
+    try { const r = await obj.json(); out[ids[i]] = r.n || 0; } catch (e) {}
   }
+  if (asked.length > ids.length) out._truncated = true; // `_` can never be a c_ id
   return json(out, 200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' });
 }
 

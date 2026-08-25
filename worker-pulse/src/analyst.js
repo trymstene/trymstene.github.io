@@ -100,11 +100,14 @@ export function analyse(d) {
   // So: compare the three days before yesterday against the four before them.
   // If they are different worlds, judge yesterday against the world it is
   // actually in, and report the SHIFT separately as its own finding.
+  //
+  // ⚠️ SEVEN OR NOTHING. slice(-3) and slice(0,4) only stay disjoint at seven.
+  // At six they share index 3, so the test compares a window against a
+  // superset of itself, drags shiftPct toward 0 and swallows real shifts.
   const recent3 = baseS.slice(-3);
   const early4 = baseS.slice(0, 4);
   const shiftPct = pct(mean(recent3), mean(early4));
-  const regime = recent3.length === 3 && early4.length >= 3
-    && shiftPct !== null && Math.abs(shiftPct) >= 35;
+  const regime = baseS.length >= 7 && shiftPct !== null && Math.abs(shiftPct) >= 35;
 
   const cmpBase = regime ? recent3 : baseS;
   const avgS = mean(cmpBase);
@@ -137,7 +140,26 @@ export function analyse(d) {
     : (S < 150 ? 'moderate — ' + S + ' sessions, enough for direction, not for '
       + 'small differences' : 'good — ' + S + ' sessions');
 
-  // ── 0. the level change itself ──────────────────────────────────
+  // ── 0. A DAY WITH NOTHING IN IT ─────────────────────────────────────────
+  // Pushed FIRST so it sorts ahead of every other weight-3 read and owns the
+  // headline. A live site does not record zero sessions; the day is either an
+  // outage or a broken tag, and it must never reach the "normal day" verdict.
+  if (S === 0) {
+    const wk = Math.round(mean(baseS));
+    reads.push(read(3, '🛑',
+      'Yesterday recorded ZERO sessions'
+      + (wk ? ', against ' + wk + ' a day for the week behind it'
+        : ', and so did every day behind it')
+      + '. Nothing here is a quiet Sunday — a site that had visitors all week '
+      + 'does not have none. Check the site is up and the tag is still firing '
+      + 'before you read another number on this page.'));
+    rec('Load the site yourself and watch the live pulse for your own hit. If '
+      + 'nothing arrives, the measurement broke, not the traffic — and every '
+      + 'baseline below is wrong until it is fixed.',
+    wk ? wk + ' sessions a day, then 0' : 'no sessions anywhere in the window');
+  }
+
+  // ── 0b. the level change itself ─────────────────────────────────
   if (regime) {
     reads.push(read(3, shiftPct > 0 ? '🚀' : '📉',
       'The site has moved to a different level. The last three days average '

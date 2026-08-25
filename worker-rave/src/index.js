@@ -627,7 +627,12 @@ export class RaveRoom {
         // and keep it AWAY from `joined` — the ghost reaper trusts `joined`
         // as the liveness floor for fresh sockets, so backdating it would get
         // newcomers reaped before their first ping.
-        since: Date.now() - Math.min(Math.max(Number(msg.sess) || 0, 0), 86_400_000),
+        // ⚠️ clamped STRICTLY BELOW the stage gate. Any clamp ≥ STAGE_MIN_MS
+        // leaves the bypass fully intact — a claimed seed alone would satisfy
+        // the check on the first message. At one second short, an honest
+        // reconnect keeps its credit and pays a single second; a forged claim
+        // still has to stand on the floor.
+        since: Date.now() - Math.min(Math.max(Number(msg.sess) || 0, 0), STAGE_MIN_MS - 1000),
         lvl: sanLvl(msg.lvl),
         lastEmote: 0,
       };
@@ -844,30 +849,8 @@ export class RaveRoom {
       return;
     }
 
-    // 🍌💨 THE FOOD FIGHT relay — pure fan-out, no physics here. Clients
-    // simulate every throw; the VICTIM announces its own splat (their jelly
-    // is a local stat, so victim-authority is the only honest model — a
-    // cheater can dodge but never hurt). Throttles match the client cooldown.
-    if (msg.t === 'shot' && me) {
-      const nowS = Date.now();
-      if (me.lastShot && nowS - me.lastShot < 1800) return;
-      me.lastShot = nowS;
-      ws.serializeAttachment(me);
-      const a = Number(msg.a);
-      if (!isFinite(a)) return;
-      this.broadcast({ t: 'shot', id: me.id, a: +a.toFixed(3) }, ws);
-      return;
-    }
-    if (msg.t === 'splat' && me) {
-      const nowS = Date.now();
-      if (me.lastSplat && nowS - me.lastSplat < 900) return;
-      me.lastSplat = nowS;
-      ws.serializeAttachment(me);
-      const n = Math.min(20, Math.max(0, Math.round(Number(msg.n) || 0)));
-      const by = /^[a-f0-9-]{4,12}$/.test(String(msg.by || '')) ? msg.by : '';
-      this.broadcast({ t: 'splat', id: me.id, by, n, s: (Number(msg.s) >>> 0) });
-      return;
-    }
+    // 🍌💨 the food-fight relay ('shot'/'splat') lived here until 59cc020 took
+    // the fight off the floor; no client has sent or handled either since.
 
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       const strikes = (await this.state.storage.get('nameStrikes')) || [];
@@ -1017,6 +1000,15 @@ export class ParkRoom {
     const json = (o, status = 200) => new Response(JSON.stringify(o), {
       status, headers: { 'Content-Type': 'application/json' },
     });
+    // ⚠️ THE BODY IS READ FIRST, ABOVE THE FIRST storage.get — NEVER MOVE IT DOWN.
+    // request.text() is not a storage op, so the DO input gate OPENS across it:
+    // a queued /garden would run to completion (its own persist() included)
+    // while we waited, and our blind-put of the eleven keys would stamp its work
+    // back out. One player triggers this — trashTick() fires several /trash and
+    // /rake at once. With the body in hand every remaining await is storage, the
+    // gate stays shut end to end, and the read-modify-write is atomic for free.
+    let b = null;
+    try { b = JSON.parse(await request.text()); } catch (e) {}
     let slots = (await this.state.storage.get('garden')) || [];
     if (!Array.isArray(slots)) slots = [];
     // the garden grew 8 → 16 (W3, site B) → 24 (site C NE): stored arrays PAD
@@ -1121,8 +1113,13 @@ export class ParkRoom {
       }
     }
 
-    // who is asking — set here for a GET, re-set from the body on a POST
-    let asking = (url.searchParams.get('pass') || '').slice(0, 8);
+    // who is asking — ?pass=/?alt= on a GET, the body's ids on a POST.
+    // ⚠️ BOTH NAMES, the same dual identity isMine() reads below: a ripe-compost
+    // debt is filed under the id the PLOT carried, which for anything sown
+    // before the world had a person-id is the browser's legacy per-device sid.
+    const asking = [url.searchParams.get('pass'), url.searchParams.get('alt'), b && b.pass, b && b.alt]
+      .map((v) => (typeof v === 'string' ? v : '').slice(0, 8))
+      .filter((v, k, a) => v && a.indexOf(v) === k);
     // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns.
     // ⭐ every living plant FEEDS the meter by its stars (post-wilt-sweep, so
     // only plants that made it through count)
@@ -1362,11 +1359,16 @@ export class ParkRoom {
     // The poll runs on arrival anyway, so it lands the moment they walk in and
     // find the bed empty — the only moment the message explains anything.
     function compostFor() {
-      const c = asking && cmp[asking];
-      if (!c || !c.n) return {};
-      delete cmp[asking];
-      cmpDirty = true;
-      return { compost: { n: c.n, stars: c.stars } };
+      let n = 0, stars = 0;
+      for (const k of asking) {          // one payout, however many names it was filed under
+        const c = cmp[k];
+        if (!c || !c.n) continue;
+        n += c.n;
+        stars += c.stars;
+        delete cmp[k];
+        cmpDirty = true;
+      }
+      return n ? { compost: { n, stars } } : {};
     }
     const persist = async () => {
       await this.state.storage.put('garden', slots);
@@ -1389,8 +1391,6 @@ export class ParkRoom {
         || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty) await persist();
       return json(body);
     }
-    let b = null;
-    try { b = JSON.parse(await request.text()); } catch (e) {}
     if (!b || typeof b !== 'object') return json({ err: 'bad body' }, 400);
     // 🚀 THE LAUNCH RESET — one-shot admin route for the go-live flip: the
     // park opens DEAD (bloom at the floor, overrun with weeds, beds bare).
@@ -1692,6 +1692,13 @@ export class ParkRoom {
         x: parkClampX(msg.x), y: parkClampY(msg.y),
         joined: Date.now(),
       };
+      // 👻 ATTACH BEFORE THE /ingest FETCH. That fetch is not a storage op, so
+      // the input gate opens across it — a second 'hi' for this sid arriving in
+      // the window has to be able to FIND this socket, or the supersede loop
+      // above skips it and both joins survive as duplicate bananas.
+      // ⚠️ name blank until the ledger answers — a roster is a one-shot
+      // snapshot, so a struck name seen once rides that screen all session.
+      ws.serializeAttachment(this.env && p.name ? { ...p, name: '' } : p);
       // report to the shared world names ledger + apply Trym's strike list (one
       // handle follows a person into every area — the HQ Names desk sees them all)
       if (this.env && p.name) {
@@ -1701,8 +1708,11 @@ export class ParkRoom {
           const j = await r.json();
           if (typeof j.name === 'string') p.name = j.name; // struck names come back empty
         } catch (e) {}
+        let cur = null;
+        try { cur = ws.deserializeAttachment(); } catch (e) {}
+        if (cur && cur.dead) return;   // superseded while we waited — stay gone
+        ws.serializeAttachment(p);     // the ledger's verdict on the name
       }
-      ws.serializeAttachment(p);
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(parkStrip) }));
       this.broadcast({ t: 'join', p: parkStrip(p) }, ws);
       return;
@@ -1843,6 +1853,12 @@ export class BeachRoom {
         sit: msg.sit === true,
         joined: Date.now(),
       };
+      // 👻 attach BEFORE the /ingest fetch (same trap as ParkRoom): the gate
+      // opens across a plain fetch, so a same-sid 'hi' must be able to find
+      // this socket and supersede it instead of joining alongside it.
+      // ⚠️ name blank until the ledger answers — a roster is a one-shot
+      // snapshot, so a struck name seen once rides that screen all session.
+      ws.serializeAttachment(this.env && p.name ? { ...p, name: '' } : p);
       // report to the shared world names ledger + apply Trym's strike list (one
       // handle follows a person into every area — the HQ Names desk sees them all)
       if (this.env && p.name) {
@@ -1852,8 +1868,11 @@ export class BeachRoom {
           const j = await r.json();
           if (typeof j.name === 'string') p.name = j.name; // struck names come back empty
         } catch (e) {}
+        let cur = null;
+        try { cur = ws.deserializeAttachment(); } catch (e) {}
+        if (cur && cur.dead) return;   // superseded while we waited — stay gone
+        ws.serializeAttachment(p);     // the ledger's verdict on the name
       }
-      ws.serializeAttachment(p);
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(bayStrip) }));
       this.broadcast({ t: 'join', p: bayStrip(p) }, ws);
       return;
@@ -2151,7 +2170,7 @@ function hsClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min
 function yardPStrip(p) {
   return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
 }
-const yStrip = (x, n) => String(x == null ? '' : x).replace(/[ -<>]/g, '').trim().slice(0, n);
+const yStrip = (x, n) => String(x == null ? '' : x).replace(/[\x00-\x1f<>]/g, '').trim().slice(0, n);
 const yDay = () => new Date().toISOString().slice(0, 10);
 const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
 // "Trym's Homestead" → trym — the sign name IS the address (clean slugs)
@@ -2239,6 +2258,12 @@ export class YardRoom {
         sit: msg.sit === true,
         joined: Date.now(),
       };
+      // 👻 attach BEFORE the /ingest fetch (same trap as ParkRoom): the gate
+      // opens across a plain fetch, so a same-sid 'hi' must be able to find
+      // this socket and supersede it instead of joining alongside it.
+      // ⚠️ name blank until the ledger answers — a roster is a one-shot
+      // snapshot, so a struck name seen once rides that screen all session.
+      ws.serializeAttachment(this.env && p.name ? { ...p, name: '' } : p);
       // report to the shared world names ledger + apply Trym's strike list
       if (this.env && p.name) {
         try {
@@ -2247,8 +2272,11 @@ export class YardRoom {
           const j = await r.json();
           if (typeof j.name === 'string') p.name = j.name; // struck names come back empty
         } catch (e) {}
+        let cur = null;
+        try { cur = ws.deserializeAttachment(); } catch (e) {}
+        if (cur && cur.dead) return;   // superseded while we waited — stay gone
+        ws.serializeAttachment(p);     // the ledger's verdict on the name
       }
-      ws.serializeAttachment(p);
       ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(yardPStrip) }));
       this.broadcast({ t: 'join', p: yardPStrip(p) }, ws);
       return;

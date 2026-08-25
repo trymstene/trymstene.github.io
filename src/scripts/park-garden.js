@@ -340,9 +340,10 @@ export function initGarden(ctx) {
     if (body) { body.pass = worldOwner(); body.alt = worldSid(); }
     if (PARK_TEST) return shimGarden(path, body);
     try {
-      // 🌱 the READ carries ?pass= — it is the only reply that settles the
-      // compost, so the room has to know whose beds it picked (see RIPE_TTL)
-      const r = await fetch(GARDEN_API + path + (body ? '' : '?pass=' + encodeURIComponent(myShort)), body
+      // 🌱 the READ carries BOTH ids — it is the only reply that settles the
+      // compost, and a debt is filed under the id the PLOT carried, which for
+      // anything sown before the world had a person-id is the legacy sid
+      const r = await fetch(GARDEN_API + path + (body ? '' : '?pass=' + encodeURIComponent(myShort) + '&alt=' + encodeURIComponent(myAlt)), body
         ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
         : undefined);
       return await r.json();

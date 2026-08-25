@@ -181,6 +181,7 @@ const description = 'Authorized banana personnel only.';
     .hq-rec { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.06em; padding: 0.2rem 0.4rem; border-radius: 999px; white-space: nowrap; }
     .hq-rec--yes { background: rgba(94, 224, 138, 0.16); box-shadow: inset 0 0 0 2px rgba(94, 224, 138, 0.55); color: var(--ok); }
     .hq-rec--no { background: rgba(255, 93, 143, 0.14); box-shadow: inset 0 0 0 2px rgba(255, 93, 143, 0.5); color: var(--hot2); }
+    .hq-rec--unknown { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22); color: rgba(255, 253, 245, 0.65); }
     @media (max-width: 560px) {
       .hq-row { grid-template-columns: 1fr auto; }
       .hq-row__who { grid-column: 1 / -1; }
@@ -1290,7 +1291,7 @@ const description = 'Authorized banana personnel only.';
         rep: (a, b) => b.rep - a.rep,
         badges: (a, b) => b.badges - a.badges,
         new: (a, b) => b.created - a.created,
-        risk: (a, b) => (a.mail === b.mail ? b.rep - a.rep : a.mail ? 1 : -1),
+        risk: (a, b) => (a.mail === b.mail ? b.rep - a.rep : a.mail === true ? 1 : b.mail === true ? -1 : b.rep - a.rep),
       }[sort] || ((a, b) => b.updated - a.updated);
       const rows = uRows
         .filter((p) => !q || (p.name || '').toLowerCase().includes(q) || p.id.includes(q))
@@ -1323,9 +1324,13 @@ const description = 'Authorized banana personnel only.';
         coins.className = 'hq-num';
         coins.textContent = '🪙 ' + p.coins;
         const rec = document.createElement('span');
-        rec.className = 'hq-rec ' + (p.mail ? 'hq-rec--yes' : 'hq-rec--no');
-        rec.textContent = p.mail ? 'EMAIL' : 'DEVICE';
-        rec.title = p.mail ? 'has an email — can log in anywhere' : 'device only — a lost device is a lost pass';
+        // mail === null means the scan was truncated before it could prove
+        // recovery either way — say UNKNOWN rather than accusing a pass of
+        // being one dead phone from gone
+        rec.className = 'hq-rec ' + (p.mail === null ? 'hq-rec--unknown' : p.mail ? 'hq-rec--yes' : 'hq-rec--no');
+        rec.textContent = p.mail === null ? '—' : p.mail ? 'EMAIL' : 'DEVICE';
+        rec.title = p.mail === null ? 'not read this scan — the ledger was truncated'
+          : p.mail ? 'has an email — can log in anywhere' : 'device only — a lost device is a lost pass';
         row.append(who, lvl, coins, rec);
         row.onclick = () => { uOpen = uOpen === p.id ? null : p.id; usersRender(); };
         box.appendChild(row);

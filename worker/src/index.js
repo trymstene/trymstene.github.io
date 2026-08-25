@@ -44,16 +44,58 @@ const PRODUCT_BY_SHOPIFY = Object.fromEntries(
 const PRINTFUL_BY_SHOPIFY = Object.fromEntries(
   Object.entries(PRODUCT_BY_SHOPIFY).map(([k, p]) => [k, p.printfulVariantId])
 );
-// manifest by slug — temp per-order products have unknown variant ids, so their
-// line items carry `_product` (the slug) and are mapped through here instead
+// manifest by slug — temp per-order products have unknown variant ids, so the
+// /checkout mint burns the slug into their SKU and fulfilment reads it back
+// from the order. The sku is SERVER-SET; the cart's `_product` attribute isn't.
 const PRODUCT_BY_KEY = Object.fromEntries(PRODUCTS.map((p) => [p.key, p]));
+
+const UUID_RE = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const TEMP_SKU = new RegExp(`^CUSTOM-TEMP-(.+)-${UUID_RE}\\.png$`);
+// ⏳ mints from before the slug segment existed (25 Aug 2026). Temp products
+// are swept at 72h, so this can only match an order in flight across that
+// deploy — it must never become the easy way in again.
+const LEGACY_TEMP_SKU = new RegExp(`^CUSTOM-TEMP-${UUID_RE}\\.png$`);
+
+// what the line actually PAID, in the manifest's currency. priceHint is quoted
+// in USD (the store currency), so a line booked in anything else is unusable
+// for comparison rather than loosely trusted.
+function paidUsd(li) {
+  const m = (li.price_set && li.price_set.shop_money) || null;
+  if (m && m.currency_code && m.currency_code !== 'USD') return null;
+  const n = Number(m && m.amount != null ? m.amount : li.price);
+  return Number.isFinite(n) ? n : null;
+}
+
+// 💰 WHAT GETS PRINTED IS BOUND TO WHAT WAS PAID FOR, never to a cart
+// attribute: `_product` is pure client input (the Storefront cartCreate is
+// public — anyone can replay it with the $4.99 sticker variant and
+// _product:'tee'). Trust order: the variant Shopify charged for, then the slug
+// the mint wrote into the server-set sku.
+function productForLine(li, props) {
+  const byVariant = PRODUCT_BY_SHOPIFY[String(li.variant_id)];
+  if (byVariant) return byVariant;
+  const sku = String(li.sku || '');
+  const m = sku.match(TEMP_SKU);
+  if (m) return PRODUCT_BY_KEY[m[1]] || null;
+  // legacy temp line (minted before the sku carried the product): believe
+  // `_product` only if the line paid at least that product's list price — a
+  // sticker's $4.99 can never buy a tee's print. Deliberately one-sided: a
+  // priceHint that has drifted HIGH only makes this stricter (the line falls
+  // back to the sticker), never looser.
+  if (LEGACY_TEMP_SKU.test(sku)) {
+    const p = PRODUCT_BY_KEY[props._product];
+    const paid = paidUsd(li);
+    if (p && p.live && paid !== null && paid >= Number(p.priceHint)) return p;
+  }
+  return null;
+}
 
 // Resolve the Printful variant for a line item. Products with options (the
 // tee) carry _color/_size as line properties — price-neutral (every combo
 // sells at the same Shopify price), so trusting them only lets a buyer pick
-// which colour/size THEY get. Unknown values fall back to the product default.
+// which colour/size THEY get, once the PRODUCT is settled server-side above.
 function printfulVariantFor(li, props, env) {
-  const p = PRODUCT_BY_KEY[props._product] || PRODUCT_BY_SHOPIFY[String(li.variant_id)];
+  const p = productForLine(li, props);
   if (!p) return parseInt(env.PRINTFUL_VARIANT_ID, 10); // unmapped → default sticker
   if (p.options) {
     const color = p.options.colors.find((c) => c.id === props._color) || p.options.colors[0];
@@ -326,7 +368,10 @@ async function handleCheckout(request, env, url) {
   const variantGid = created.productCreate.product.variants.nodes[0].id;
 
   // copy the price; the sku marks the product disposable (rides into order
-  // line items, so anyone reading an order can tell it was a temp product)
+  // line items, so anyone reading an order can tell it was a temp product).
+  // ⚠️ THE SLUG IN THE SKU IS THE FULFILMENT MAPPING for temp variants — it is
+  // set here, server-side, next to the price Shopify will charge. Never move it
+  // to a cart attribute (see productForLine).
   const upd = await adminGql(env, `
     mutation($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
       productVariantsBulkUpdate(productId: $productId, variants: $variants) {
@@ -334,7 +379,7 @@ async function handleCheckout(request, env, url) {
       }
     }`, {
     productId: prodId,
-    variants: [{ id: variantGid, price: tpl.node.price, inventoryItem: { sku: 'CUSTOM-TEMP-' + key } }],
+    variants: [{ id: variantGid, price: tpl.node.price, inventoryItem: { sku: `CUSTOM-TEMP-${p.key}-${key}` } }],
   });
   if (upd.productVariantsBulkUpdate.userErrors.length) {
     throw new Error('variantUpdate: ' + JSON.stringify(upd.productVariantsBulkUpdate.userErrors));
@@ -821,9 +866,17 @@ async function handleWebhook(request, env, url) {
   for (const li of order.line_items || []) {
     const props = Object.fromEntries((li.properties || []).map((p) => [p.name, p.value]));
     if (props._design_key && /^[a-f0-9-]{36}\.png$/.test(props._design_key)) {
-      // which Printful variant to print = looked up from this line item's
-      // Shopify variant (manifest map; apparel also reads _color/_size).
-      // Fall back to the sticker so a missing mapping never drops an order.
+      // which Printful variant to print = the line's Shopify variant or its
+      // server-set sku, never a cart attribute (apparel still reads
+      // _color/_size). Falls back to the sticker so nothing drops an order.
+      // ⚠️ the sku is LOAD-BEARING for fulfilment since the product stopped
+      // coming from a client attribute: an unresolvable design line would
+      // print every paid tee or mug as a sticker, so say so out loud — this
+      // is the money path's only silent-misprint route.
+      if (!productForLine(li, props)) {
+        console.error('webhook: design line resolved to NO product — printing the sticker default',
+          JSON.stringify({ variant_id: li.variant_id, sku: li.sku || null }));
+      }
       items.push({
         variant_id: printfulVariantFor(li, props, env),
         quantity: li.quantity || 1,
@@ -934,8 +987,10 @@ async function sendMetaPurchase(order, env) {
         currency: order.currency,
         value: Number(order.total_price) || 0,
         num_items: lines.reduce((n, li) => n + (li.quantity || 1), 0),
+        // same server-side resolve as fulfilment — a spoofable attribute must
+        // not decide which product a sale is reported against either
         contents: lines.map((li) => ({
-          id: String(lineProps(li)._product || li.sku || li.variant_id || ''),
+          id: String((productForLine(li, lineProps(li)) || {}).key || li.sku || li.variant_id || ''),
           quantity: li.quantity || 1,
         })),
       },
@@ -979,7 +1034,7 @@ async function sendGa4Purchase(order, env) {
         items: lines.map((li) => {
           const pr = lineProps(li);
           return {
-            item_id: String(pr._product || li.sku || li.variant_id || ''),
+            item_id: String((productForLine(li, pr) || {}).key || li.sku || li.variant_id || ''),
             item_name: li.title || li.name || 'banana',
             item_variant: [pr._color, pr._size].filter(Boolean).join(' / ') || undefined,
             price: Number(li.price) || 0,

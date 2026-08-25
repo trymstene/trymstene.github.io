@@ -30,8 +30,10 @@ function throttled(ip) {
 }
 
 function corsHeaders(env, origin) {
-  const allowed = (env.ALLOWED_ORIGIN || '').split(',');
-  const ok = allowed.includes(origin) ? origin : allowed[0];
+  // ⚠️ trim — one stray space in the comma-separated allowlist would silently
+  // stop matching that origin. Same parse as worker/ and worker-share/.
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const ok = allowed.includes(origin) ? origin : (allowed[0] || '');
   return {
     'Access-Control-Allow-Origin': ok,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',

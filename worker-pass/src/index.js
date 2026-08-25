@@ -24,6 +24,12 @@
 // never clobber each other. Blob cap 256 KB. Cost guardrails as everywhere:
 // Origin allowlist, per-IP throttle, free plan fails closed.
 
+// ⭐ THE WORLD'S OWN LEVEL CURVE, not a lookalike — the ledger has to print the
+// level the PLAYER sees, and a second formula here drifts silently every time
+// the real one is retuned. Bundled by esbuild the way worker/ pulls in
+// shared/products.js; pass-defs is pure data + pure functions, no DOM.
+import { levelFor } from '../../src/lib/pass-defs.js';
+
 const MAX_BLOB = 256 * 1024;
 const MAX_TOKENS = 10;
 const CHALLENGE_TTL = 5 * 60 * 1000;
@@ -241,9 +247,20 @@ async function resolve(env, credId) {
 // shelf's, and that is a separate build.
 // ⚠️ ERASE is the exception that IS durable — there is no record left to merge
 // into. It is also how a GDPR deletion request gets honoured (see /admin/find).
-const ADMIN_LIST = 1000;    // key names are cheap
-const ADMIN_READ = 250;     // record reads are the cost — report truncation honestly
-const GRANT_CAP = 100000;   // no fat fingers turning 100 into 100000000
+// ⚠️ THE FREE PLAN ALLOWS 50 SUBREQUESTS PER REQUEST AND AN R2 BINDING CALL IS
+// ONE. Every record this desk reads, and every one it deletes, spends from that
+// same 50 — so these caps are a hard budget, not a preference: go over and the
+// desk throws 1101 instead of a ledger, i.e. it breaks exactly as the user base
+// grows. Truncation is always REPORTED in the JSON, never silently short.
+const ADMIN_LIST = 1000;     // key names are cheap — one list call whatever the size
+const SUBREQ_BUDGET = 48;    // …of the plan's 50, leaving headroom
+const ADMIN_READ = 46;       // pass records one ledger request reads (1 list + 46 gets)
+const ADMIN_LOG_READ = 40;   // audit-log rows one request reads
+const ADMIN_CHUNK = 12;      // gets/deletes go out in parallel batches, never serially
+const ERASE_HOLD = 5;        // deletes a sweep holds back so it can finish its page
+                             // (a pass carries 1-3 credentials in practice; holding 12
+                             // starved the read budget below what the old code swept)
+const GRANT_CAP = 100000;    // no fat fingers turning 100 into 100000000
 
 const adminOk = (env, key) => !!(env.PASS_ADMIN_KEY && key === env.PASS_ADMIN_KEY);
 const notFound = () => new Response('not found', { status: 404 });
@@ -251,15 +268,31 @@ const notFound = () => new Response('not found', { status: 404 });
 // is not a hex digit, so the prefix tells the two rails apart with no lookup
 const isMailKey = (k) => k.slice(5).startsWith('m');
 
+// read many records at once. ⚠️ a serial `await` per key is what blows the
+// subrequest budget's wall-clock; the CAPS are what keep the count legal, this
+// only stops N reads costing N round trips. Order in = order out.
+async function readMany(env, keys) {
+  const out = [];
+  for (let i = 0; i < keys.length; i += ADMIN_CHUNK) {
+    const batch = await Promise.all(keys.slice(i, i + ADMIN_CHUNK).map(async (k) => {
+      try {
+        const obj = await env.PASSES.get(k);
+        return obj ? [k, await obj.json()] : null;
+      } catch (e) { return null; }
+    }));
+    for (const hit of batch) if (hit) out.push(hit);
+  }
+  return out;
+}
+
 async function adminLog(request, env, url) {
   if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
   const list = await env.PASSES.list({ prefix: 'adminlog/', limit: 200 });
-  const keys = list.objects.map((o) => o.key).sort().reverse().slice(0, 60);
-  const rows = [];
-  for (const k of keys) {
-    try { rows.push(await (await env.PASSES.get(k)).json()); } catch (e) {}
-  }
-  return json({ rows }, 200, { ...cors(env, request), 'Cache-Control': 'no-store' });
+  const all = list.objects.map((o) => o.key).sort().reverse();
+  const keys = all.slice(0, ADMIN_LOG_READ);
+  const rows = (await readMany(env, keys)).map(([, r]) => r);
+  return json({ rows, truncated: all.length > keys.length }, 200,
+    { ...cors(env, request), 'Cache-Control': 'no-store' });
 }
 // ⚠️ every write leaves a trace. An admin desk with no record of what it did
 // is indistinguishable from a compromised one.
@@ -273,15 +306,9 @@ async function adminNote(env, act, id, detail) {
 // the row it points at as a device count + whether that pass can be recovered
 async function adminScan(env) {
   const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST });
-  let truncated = !!list.truncated;
-  const recs = new Map();
-  for (const o of list.objects) {
-    if (recs.size >= ADMIN_READ) { truncated = true; break; }
-    try {
-      const obj = await env.PASSES.get(o.key);
-      if (obj) recs.set(o.key, await obj.json());
-    } catch (e) {}
-  }
+  const keys = list.objects.map((o) => o.key);
+  const truncated = !!list.truncated || keys.length > ADMIN_READ;
+  const recs = new Map(await readMany(env, keys.slice(0, ADMIN_READ)));
   const extra = new Map();                       // homeKey → { devices, mail }
   for (const [k, r] of recs) {
     if (!r || !r.link) continue;
@@ -307,13 +334,16 @@ async function adminScan(env) {
       // ⭐ THE COLUMN THE EMAIL RAIL MADE POSSIBLE: can this player get back in
       // after losing the device? mail = yes, forever. devices only = only while
       // the other one still works. neither = one dead phone from gone.
-      mail: ex.mail || isMailKey(k),
+      // ⚠️ null = UNKNOWN, not "no": past the read cap a recovery pointer may
+      // simply not have been read, and this column is the one an erase or a
+      // support answer leans on. Never print a guess as a fact.
+      mail: (ex.mail || isMailKey(k)) ? true : (truncated ? null : false),
       devices: Object.keys(rec.tokens || {}).length + ex.devices,
       days: (p.days || []).length,
       badges: Object.keys(p.patches || {}).length,
       shelf: (blob.shelf || []).length,
       rep,
-      level: 1 + Math.floor(Math.sqrt(rep / 15)),   // mirrors levelFor() closely enough for a list
+      level: levelFor(rep).level,                // ⚠️ the real curve — see the import
       jelly: stats.jelly || 0,
       coins: Math.max(0, (stats.coins_earned || 0) - (stats.coins_spent || 0)),
       coinsEarned: stats.coins_earned || 0,
@@ -426,19 +456,43 @@ async function adminErase(request, env) {
   if (!k) return json({ error: 'no such pass' }, 404, cors(env, request));
   const home = k.slice(5, -5);
   // sweep the pointers first — a pointer left behind resolves to nothing and
-  // would strand that device on a dangling link
-  const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST });
-  let gone = 0;
-  for (const o of list.objects.slice(0, ADMIN_READ)) {
-    if (o.key === k) continue;
-    try {
-      const r = await (await env.PASSES.get(o.key)).json();
-      if (r && r.link === home) { await env.PASSES.delete(o.key); gone++; }
-    } catch (e) {}
+  // would strand that device on a dangling link.
+  // ⚠️ THE CURSOR IS THE POINT. Sweeping only the first page left every pointer
+  // past it alive, in the one feature whose whole promise is that the data is
+  // gone. A list, a get and a delete each cost one subrequest, so reads and
+  // deletes get separate shares — a page can then always finish deleting what
+  // it just found instead of running dry mid-page.
+  let reads = SUBREQ_BUDGET - 3 - ERASE_HOLD;   // …less adminKeyFor's list, the home
+  let dels = ERASE_HOLD;                        // delete and the audit note still owed
+  let gone = 0, swept = false, cursor;
+  while (reads > 1) {
+    const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST, cursor });
+    reads--;
+    const keys = list.objects.map((o) => o.key).filter((key) => key !== k);
+    const batch = keys.slice(0, reads);
+    reads -= batch.length;
+    const hits = (await readMany(env, batch)).filter(([, r]) => r && r.link === home).map(([key]) => key);
+    const del = hits.slice(0, dels);
+    for (let i = 0; i < del.length; i += ADMIN_CHUNK) {
+      await Promise.all(del.slice(i, i + ADMIN_CHUNK).map((key) => env.PASSES.delete(key)));
+    }
+    dels -= del.length;
+    gone += del.length;
+    if (batch.length < keys.length || del.length < hits.length) break;   // the budget cut it short
+    if (list.truncated && list.cursor) { cursor = list.cursor; continue; }
+    // ⚠️ TERMINATION, and the only place `swept` becomes true: the listing said
+    // this was the last page. A listing that claims MORE and hands back no
+    // cursor stops here too — spinning on it would never end — but reports
+    // false, because pointers past it were never looked at.
+    swept = !list.truncated;
+    break;
   }
+  // the record holding the BLOB always goes, swept or not — the data leaving is
+  // the promise; a stray pointer is inert (resolve() refuses a dangling link)
   await env.PASSES.delete(k);
-  await adminNote(env, 'erase', k.slice(5, 13), gone + ' linked credential(s) too');
-  return json({ ok: true, credentials: gone + 1 }, 200, cors(env, request));
+  await adminNote(env, 'erase', k.slice(5, 13), gone + ' linked credential(s) too'
+    + (swept ? '' : ' — ⚠️ sweep hit the request budget, pointers may remain'));
+  return json({ ok: true, credentials: gone + 1, swept }, 200, cors(env, request));
 }
 
 async function saveRec(env, credId, rec) {

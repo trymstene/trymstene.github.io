@@ -205,6 +205,27 @@ async function apiLive(env) {
 // ── /api/range — today / picked window (cached 60s per window) ──────────
 const RANGE_RE = /^(today|yesterday|\d{1,3}daysAgo|\d{4}-\d{2}-\d{2})$/;
 
+// YYYY-MM-DD in the property's timezone, `back` days before now
+const osloDate = (back) => new Date(Date.now() - back * 86400000)
+  .toLocaleDateString('en-CA', { timeZone: 'Europe/Oslo' });
+
+// every YYYYMMDD key a window covers, oldest→newest. ⚠️ GA4 omits any row
+// whose metrics are all zero, so an empty day must be GENERATED or it vanishes
+// out of the series instead of reading 0. Stepping from a UTC midnight keeps
+// the count exact across a DST weekend.
+function rangeDayKeys(from, to) {
+  const resolve = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s
+    : osloDate(s === 'today' ? 0 : s === 'yesterday' ? 1 : Number(s.replace('daysAgo', ''))));
+  const a = Date.parse(resolve(from) + 'T00:00:00Z');
+  const b = Date.parse(resolve(to) + 'T00:00:00Z');
+  const out = [];
+  if (!(a <= b)) return out;
+  for (let t = a; t <= b; t += 86400000) {
+    out.push(new Date(t).toISOString().slice(0, 10).replace(/-/g, ''));
+  }
+  return out;
+}
+
 async function apiRange(env, from, to) {
   if (!RANGE_RE.test(from) || !RANGE_RE.test(to)) throw new Error('bad range');
   const key = 'range:' + from + ':' + to;
@@ -224,9 +245,14 @@ async function apiRange(env, from, to) {
       { dateRanges, dimensions: [{ name: 'eventName' }],
         metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }], limit: 200,
         orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }] },
+      // ⚠️ metricAggregations is the ONLY deduped read of totalUsers. GA4
+      // dedupes people inside a row, never across the date dimension, so
+      // summing the daily column counts a five-day visitor five times. Costs
+      // no extra request — the total rides back in the same response.
       { dateRanges, dimensions: [{ name: 'date' }],
         metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'newUsers' },
           { name: 'engagementRate' }, { name: 'totalRevenue' }, { name: 'transactions' }],
+        metricAggregations: ['TOTAL'],
         orderBys: [{ dimension: { dimensionName: 'date' } }], limit: 400 },
       { dateRanges, dimensions: [{ name: 'countryId' }, { name: 'eventName' }],
         metrics: [{ name: 'eventCount' }], limit: 2000,
@@ -301,6 +327,11 @@ async function apiRange(env, from, to) {
     eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5),
   }));
   const sum = (k) => dailyRows.reduce((a, x) => a + x[k], 0);
+  // 👥 people, counted once for the whole window. metricValues here follow the
+  // daily request's metric order, so totalUsers is index 1. newUsers stays a
+  // plain sum — a new user is new on exactly one day, so it IS additive.
+  const dailyTot = daily && daily.totals && daily.totals[0] && daily.totals[0].metricValues;
+  const windowUsers = dailyTot && dailyTot[1] ? Number(dailyTot[1].value) || 0 : sum('users');
   const evmapObj = {};
   for (const r of rows(evmap)) {
     const cc = dim(r, 0); const ev = dim(r, 1);
@@ -323,7 +354,15 @@ async function apiRange(env, from, to) {
     const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 });
     if (key === 'gif' || key === 'png' || key === 'wall') d.files += v; else d[key] += v;
   }
-  const dlDaily = Object.values(dayMap).sort((a, b) => (a.d < b.d ? -1 : 1));
+  // ⚠️ a day with no download events sends no row, so the bars used to close
+  // the gap up and imply a continuity the window never had. Walk the window's
+  // own dates and draw the missing ones as real zeros. An all-empty window
+  // stays EMPTY — the chart's "nothing in this window" line beats 28 flat bars.
+  const dlKeys = [...new Set(rangeDayKeys(from, to).concat(Object.keys(dayMap)))].sort();
+  const dlDaily = Object.keys(dayMap).length
+    ? dlKeys.map((d) => dayMap[d]
+      || { d, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 })
+    : [];
   const downloads = Object.values(dlMap)
     .map((r) => ({ ...r, files: r.gif + r.png + r.wall }))
     // ⚠️ keep offer-only rows: a surface showing the card with NOTHING
@@ -336,7 +375,7 @@ async function apiRange(env, from, to) {
     at: Date.now(), from, to,
     downloads, dlDaily,
     kpis: {
-      sessions: sum('sessions'), users: sum('users'), newUsers: sum('newUsers'),
+      sessions: sum('sessions'), users: windowUsers, newUsers: sum('newUsers'),
       engagementRate: dailyRows.length
         ? dailyRows.reduce((a, x) => a + x.eng * x.sessions, 0) / Math.max(1, sum('sessions')) : 0,
       revenue: sum('revenue'), transactions: sum('tx'),
@@ -514,8 +553,14 @@ async function gscRange(env, from, to) {
 
 async function apiAnalyst(env) {
   const now = new Date();
-  const osloDay = (offset) => new Date(now.getTime() - offset * 86400000)
-    .toLocaleDateString('en-CA', { timeZone: 'Europe/Oslo' });
+  // ⚠️ DST-SAFE STEPPING: anchor on the Oslo calendar date, then step whole
+  // days from a UTC midnight. Subtracting 86_400_000 from a local timestamp
+  // slips an hour twice a year — on the fall-back night osloDay(1) returns
+  // TODAY, and since the dates below are generated (not read off the rows)
+  // that fabricates a zero day and fires the dead-day alarm against a healthy
+  // week. UTC has no DST, so stepping there cannot drift.
+  const t0 = Date.parse(now.toLocaleDateString('en-CA', { timeZone: 'Europe/Oslo' }) + 'T00:00:00Z');
+  const osloDay = (offset) => new Date(t0 - offset * 86400000).toISOString().slice(0, 10);
   const yDate = osloDay(1);
   const hit = rspCache.get('analyst:' + yDate);
   if (hit && Date.now() - hit.t < 1800000) return hit.data;
@@ -540,13 +585,24 @@ async function apiAnalyst(env) {
   });
   const [dailyR, evR, campR] = resp.reports || [];
 
-  const days = rows(dailyR).map((r) => ({
-    d: dim(r, 0), sessions: met(r, 0), users: met(r, 1), newUsers: met(r, 2),
-    eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5),
-  }));
-  const order = days.map((x) => x.d);
+  // ⚠️ THE EIGHT DATES ARE GENERATED, NEVER TAKEN OFF THE ROWS. GA4 sends no
+  // row at all for a day whose metrics are all zero, so a dead day used to
+  // vanish — and the analyst's "yesterday" silently became the day before,
+  // printed under yesterday's date. Generated dates keep the last entry
+  // genuinely yesterday and the baseline genuinely seven days.
+  const order = [];
+  for (let o = 8; o >= 1; o--) order.push(osloDay(o).replace(/-/g, ''));
   const idx = {};
   order.forEach((d, i) => { idx[d] = i; });
+  const dayRow = {};
+  for (const r of rows(dailyR)) dayRow[dim(r, 0)] = r;
+  const days = order.map((d) => {
+    const r = dayRow[d];
+    return r
+      ? { d, sessions: met(r, 0), users: met(r, 1), newUsers: met(r, 2),
+        eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5) }
+      : { d, sessions: 0, users: 0, newUsers: 0, eng: 0, revenue: 0, tx: 0 };
+  });
 
   // one zero-filled series per event — ⚠️ a day with no rows must read 0,
   // not vanish, or the baseline silently averages over fewer days than it says.
