@@ -1,0 +1,10 @@
+{
+  "_": "🖨 THE PARITY SET — fixed, deterministic outfits (never the daily/random pick). Rendered by tests/print-parity.spec.mjs (drawComposite) and tests/print_parity_compare.py (tools/banana_render.py) across all 8 frames, then pixel-diffed. Together they cover: every anchor (head/face/chest/hand/feet), front+side art switching, the behind pass (protestsign), behindFront hats (djheadphones + sideSeat), seat variants, per-foot mirroring (clownshoes/skates/flippers), both gloves incl. the bump-to-other-glove rule (mug+bigfish, protestsign+plushbanana), and PNG art (plushbanana). extras listed in catalog order — the JS engine draws in catalog order, the mirror in list order.",
+  "browserCanvas": 8300,
+  "outfits": [
+    { "name": "classic", "hat": "tophat", "glasses": "shades", "extras": ["mustache", "bowtie", "sneakers"] },
+    { "name": "dropkit", "hat": "djheadphones", "glasses": "dwi", "extras": ["goldchain", "clownshoes", "boombox", "trophy"] },
+    { "name": "parade", "hat": "sombrero", "glasses": "potter", "extras": ["fatstache", "scarf", "skates", "protestsign", "plushbanana"] },
+    { "name": "seaside", "hat": "fishbowl", "glasses": "googlyeyes", "extras": ["lifering", "flippers", "mug", "bigfish"] }
+  ]
+}

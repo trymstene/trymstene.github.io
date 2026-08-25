@@ -1,0 +1,81 @@
+name: Print parity
+
+# 🖨 Rig step 4 (Dev Desk issue #4): tools/banana_render.py is the compositor
+# the ACTUAL print files come from (Printful prints what it renders), and it
+# mirrors the site's drawComposite by hand. This job renders the fixed parity
+# outfits across all 8 dance frames in BOTH compositors at the same integer
+# scale and pixel-diffs every pair — divergence means a customer's merch
+# would not match their preview, and that fails CI. Caught on its first local
+# run, before ever merging: chest garments printing MIRRORED on left-facing
+# frames, and half-pixel seams from round-half-even placement.
+
+on:
+  pull_request:
+    paths:
+      - tools/banana_render.py
+      - tools/build-banana-assets.py
+      - src/lib/banana-engine.js
+      - src/lib/banana-geo.js
+      - src/data/wearables.js
+      - src/scripts/banana-builder.js
+      - public/assets/banana-dance.png
+      - public/assets/wearables/**
+      - tests/print-parity*
+      - tests/print_parity_compare.py
+      - playwright.parity.config.mjs
+      - .github/workflows/print-parity.yml
+  push:
+    branches: [main]
+    paths:
+      - tools/banana_render.py
+      - tools/build-banana-assets.py
+      - src/lib/banana-engine.js
+      - src/lib/banana-geo.js
+      - src/data/wearables.js
+      - src/scripts/banana-builder.js
+      - public/assets/banana-dance.png
+      - public/assets/wearables/**
+      - tests/print-parity*
+      - tests/print_parity_compare.py
+      - playwright.parity.config.mjs
+      - .github/workflows/print-parity.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: Install compare deps
+        run: python3 -m pip install --quiet pillow numpy
+      - name: Build
+        run: npm run build
+      - name: Render through drawComposite
+        run: npx playwright test --config playwright.parity.config.mjs
+      - name: Render through banana_render.py and diff
+        run: python3 tests/print_parity_compare.py
+      - name: Keep the diff evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: print-parity-diff
+          path: test-results/print-parity/
+          if-no-files-found: ignore
+          retention-days: 14

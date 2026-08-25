@@ -21,11 +21,20 @@ exactly at any scale — they are drawn as rectangles, not resampled.
     render(2, {'hat': 'fishbowl', 'extras': ['boombox']}, scale=8)   # RGBA
 """
 import json
+import math
 import os
 import re
 import subprocess
 
 from PIL import Image, ImageDraw
+
+
+def _r(v):
+    """round-half-UP — the browser's convention at .5 ties. Python's round()
+    half-EVENs, which let two adjacent accessories round a shared half-pixel
+    in OPPOSITE directions — a 1px seam drawComposite never shows (the print-
+    parity rig caught it: mustache tip vs shade rim on the front frames)."""
+    return math.floor(v + 0.5)
 
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE = open(os.path.join(SITE, 'src', 'lib', 'banana-engine.js'), encoding='utf-8').read()
@@ -95,14 +104,14 @@ def grid_h(key):
 def svg_layer(key, w, h, flip=False):
     """Rasterise a rect-grid SVG at exactly w*h. Rectangles, never a resample —
     that is why an accessory stays as crisp as the sprite at any print size."""
-    im = Image.new('RGBA', (max(1, round(w)), max(1, round(h))), (0, 0, 0, 0))
+    im = Image.new('RGBA', (max(1, _r(w)), max(1, _r(h))), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', SVGS[key])
     sx, sy = im.width / int(vb.group(1)), im.height / int(vb.group(2))
     for r in re.finditer(r'<rect x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"', SVGS[key]):
         x, y, w0, h0 = (int(r.group(i)) for i in range(1, 5))
-        d.rectangle([round(x * sx), round(y * sy),
-                     round((x + w0) * sx) - 1, round((y + h0) * sy) - 1], fill=r.group(5))
+        d.rectangle([_r(x * sx), _r(y * sy),
+                     _r((x + w0) * sx) - 1, _r((y + h0) * sy) - 1], fill=r.group(5))
     return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
 
 
@@ -110,8 +119,8 @@ def png_layer(key, h, flip=False):
     """A few accessories are PNGs, not vectors (the plush banana is the ORIGINAL
     hands-up art). NEAREST so they stay on-model."""
     im = Image.open(os.path.join(SITE, 'public', key.lstrip('/'))).convert('RGBA')
-    w = round(h * im.width / im.height)
-    im = im.resize((max(1, w), max(1, round(h))), Image.NEAREST)
+    w = _r(h * im.width / im.height)
+    im = im.resize((max(1, w), max(1, _r(h))), Image.NEAREST)
     return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
 
 
@@ -150,7 +159,7 @@ def render(idx, outfit=None, scale=8):
     fx = fy = pad
 
     def paste(layer, x, y):
-        im.alpha_composite(layer, (round(x), round(y)))
+        im.alpha_composite(layer, (_r(x), _r(y)))
 
     def acc(name, x, y, w, h, flip=False):
         """`name` is a manifest `art:` value — an SVG key or a PNG one."""
@@ -229,10 +238,14 @@ def render(idx, outfit=None, scale=8):
             for fi, cxu in enumerate(F['feetX']):     # one shoe per foot, left mirrored
                 fcx = fx + (cxu + d.get('dx', 0) * PX) * S
                 acc(d['art'], fcx - fw2 / 2, fby - fh2, fw2, fh2, fi == 0)
-        else:                                          # chest
+        else:                                          # chest — NEVER mirrored:
+            # drawComposite draws front-pass chest garments unflipped on every
+            # frame (only BEHIND-chest art mirrors). This mirrored them on
+            # left frames until the print-parity rig caught the scarf printing
+            # backwards on frames 4/5.
             bw, bh = grid_w(d['art']) * unit, grid_h(d['art']) * unit
             acc(d['art'], fx + F['btCx'] * S - bw / 2,
-                fy + (F['eyeCy'] + d['dy'] * PX) * S - bh / 2, bw, bh, F['face'] == 'left')
+                fy + (F['eyeCy'] + d['dy'] * PX) * S - bh / 2, bw, bh, False)
 
     for gs in ('left', 'right'):
         if gs in glove and not glove[gs].get('behind'):
