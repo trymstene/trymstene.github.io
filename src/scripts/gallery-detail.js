@@ -62,4 +62,7 @@ if (root) {
   if (dl) dl.addEventListener('click', () => {
     if (window.gtag) gtag('event', 'gallery_download', { item: root.dataset.id });
   });
+  // ☕ the download-moment card — the gallery predates it and was the one
+  // download on the site that slipped past the ask
+  import('../lib/make-it-real.js').then((m) => m.wireDownloads('gallery')).catch(() => {});
 }

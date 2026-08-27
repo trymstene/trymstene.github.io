@@ -1130,7 +1130,7 @@ function init() {
     // adds the design string so a winning variant can be tied to a design.
     const shown = offerAfterDownload({
       from: 'download_' + kind,
-      outfit: { ...state },
+      outfit: { ...state, made: true },   // in the builder it is BY DEFINITION theirs
       params: { design: designStr() },
       skipText: kind === 'png' ? 'no thanks, just the image' : 'no thanks, just the GIF',
       onSkip: deliver,

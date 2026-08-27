@@ -340,19 +340,34 @@ async function worldShot(outfit, size = 420) {
   return cv;
 }
 
-function worldCard({ v, outfit, skipText, onGo, onSkip }) {
+function worldCard({ v, outfit, img, skipText, onGo, onSkip }) {
   injectCss();
-  const o = outfit || myOutfit();
   const card = document.createElement('div');
   card.className = 'mir mir--warm';
   const shot = document.createElement('div');
   shot.className = 'mir__shot';
   const f = document.createElement('span');
   f.className = 'mir__flag';
-  f.textContent = o.made ? 'MADE BY YOU' : 'SINCE 1999';
-  shot.appendChild(f);
-  card.appendChild(shot);
-  worldShot(o).then((cv) => { shot.appendChild(cv); }).catch(() => {});
+  // 🖼 THE THUMB IS THE THING BEING DOWNLOADED. `img` (the download's own
+  // href) wins: the official page shows the original, a remix page shows that
+  // remix, a wallpaper shows that wallpaper. The outfit render is ONLY for the
+  // builder, where the file really is their banana — showing a custom fit
+  // with a MADE BY YOU sash over the ORIGINAL's download was a lie.
+  if (img) {
+    f.textContent = 'FREE';
+    const im = document.createElement('img');
+    im.src = img; im.alt = ''; im.loading = 'eager'; im.decoding = 'async';
+    im.style.cssText = 'display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;';
+    shot.appendChild(f);
+    card.appendChild(shot);
+    shot.appendChild(im);
+  } else {
+    const o = outfit || myOutfit();
+    f.textContent = o.made ? 'MADE BY YOU' : 'SINCE 1999';
+    shot.appendChild(f);
+    card.appendChild(shot);
+    worldShot(o).then((cv) => { shot.appendChild(cv); }).catch(() => {});
+  }
   const body = document.createElement('div');
   const k = document.createElement('p'); k.className = 'mir__kicker'; k.textContent = v.kicker;
   const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = v.head;
@@ -407,6 +422,7 @@ export function offerAfterDownload(opts = {}) {
   const card = worldCard({
     v,
     outfit: opts.outfit,
+    img: opts.img,
     skipText: opts.skipText || 'no thanks, just the GIF',
     // ⚠️ beacon transport: the world link navigates THIS tab away instantly —
     // a plain gtag hit would be cancelled mid-flight with the page
@@ -623,6 +639,7 @@ export function wireDownloads(key, over, scope) {
     // (gallery, locales) keep working unchanged.
     const shown = offerAfterDownload({
       from: key,
+      img: a.href,           // the card shows exactly what the tap is taking home
       skipText: skipLabelFor(a),
       onSkip: fire,
     });
