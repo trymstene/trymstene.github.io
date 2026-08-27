@@ -2497,22 +2497,37 @@ function init() {
         localStorage.setItem(DROP.flag, '1');
       }
     } catch (e) {}
+    // ⚖ ONE ITEM PER BODY SPOT — equipping the gift also sweeps the opposing
+    // side (a hat drop takes a head-anchored community piece off, and vice
+    // versa), same rule the builder applies at pick time. Applied to BOTH the
+    // floor outfit and the ride-home blob, or bb-last stores two hats.
+    const catAnchorR = (id) => ((CATALOG.find((x) => x.id === id) || {}).wear || {}).anchor || '';
+    const stripAnchC = (list, anchor) => String(list || '').split(',').map((t) => t.trim())
+      .filter((id) => id && catAnchorR(id) !== anchor).join(',');
+    const wearDrop = (fit) => {
+      if (DROP.catalog) {
+        fit.c = DROP.id;
+        const a = catAnchorR(DROP.id);
+        if (a === 'head') fit.hat = 'none';
+        if (a === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet' && fit.extras) fit.extras[d.id] = false; });
+      } else if (DROP.slot === 'hat') { fit.hat = DROP.id; fit.c = stripAnchC(fit.c, 'head'); }
+      else if (DROP.slot === 'glasses') fit.glasses = DROP.id;
+      else {
+        fit.extras = { ...(fit.extras || {}), [DROP.id]: true };
+        const def = EXTRA_DEFS.find((d) => d.id === DROP.id);
+        if (def && def.anchor === 'feet') fit.c = stripAnchC(fit.c, 'feet');
+      }
+    };
     // equip it right now, on the floor, for the whole room to see
     const me = ravers.get(myId);
     if (me) {
-      if (DROP.catalog) me.outfit.c = DROP.id; // the one custom slot
-      else if (DROP.slot === 'hat') me.outfit.hat = DROP.id;
-      else if (DROP.slot === 'glasses') me.outfit.glasses = DROP.id;
-      else me.outfit.extras = { ...(me.outfit.extras || {}), [DROP.id]: true };
+      wearDrop(me.outfit);
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
     }
     // ride it home — the builder, pass, stickers and share cards all read bb-last
     try {
       const saved = JSON.parse(localStorage.getItem('bb-last') || '{}');
-      if (DROP.catalog) saved.c = DROP.id;
-      else if (DROP.slot === 'hat') saved.hat = DROP.id;
-      else if (DROP.slot === 'glasses') saved.glasses = DROP.id;
-      else saved.extras = { ...(saved.extras || {}), [DROP.id]: true };
+      wearDrop(saved);
       localStorage.setItem('bb-last', JSON.stringify(saved));
     } catch (e) {}
     // the deed also lands on the pass (own_<id>, monotonic + max-merged) so

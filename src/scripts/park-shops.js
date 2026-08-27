@@ -430,6 +430,7 @@ export function initShops(ctx) {
           .sort((a, b) => (b.added || 0) - (a.added || 0))
           .map((it) => ({
             id: it.id, label: it.title || 'community item', slot: 'c',
+            anchor: (it.wear && it.wear.anchor) || '',
             price: ST_BACKCAT_PRICE, back: true, made: it.by || '',
             artHtml: (wearToCustom(it.wear) || {}).art || '',
             desc: (it.by ? 'made by ' + it.by + ', drawn in the forge. ' : 'drawn in the forge by a visitor. ')
@@ -446,12 +447,25 @@ export function initShops(ctx) {
     if (d.zone === 'body') ST_BODY_IDS.push(d.id);
   }));
   function stEquip(item) {
+    // ⚖ one item per body spot crosses the community seam too: STANCHOR reads
+    // the catalog anchor off a community id (this page's own list), so a hat
+    // purchase takes a head-anchored community piece off and vice versa.
+    const STANCHOR = (id) => { const it = ST_ALL.find((x) => x.id === id && x.slot === 'c'); return (it && it.anchor) || ''; };
+    const stripC = (list, anchor) => String(list || '').split(',').map((t) => t.trim())
+      .filter((id) => id && STANCHOR(id) !== anchor).join(',');
     const wear = (o) => {
-      if (item.slot === 'c') { o.c = item.id; return o; }   // community: the one custom slot
-      if (item.slot === 'hat') { o.hat = item.id; return o; }
+      if (item.slot === 'c') {   // community: joins the worn set, one per spot
+        const kept = String(o.c || '').split(',').map((t) => t.trim())
+          .filter((id) => id && !(item.anchor && STANCHOR(id) === item.anchor));
+        o.c = kept.concat(item.id).join(',');
+        if (item.anchor === 'head') o.hat = 'none';
+        if (item.anchor === 'feet') { const ex = { ...(o.extras || {}) }; ST_FEET_IDS.forEach((id) => delete ex[id]); o.extras = ex; }
+        return o;
+      }
+      if (item.slot === 'hat') { o.hat = item.id; o.c = stripC(o.c, 'head'); return o; }
       if (item.slot === 'face') { o.glasses = item.id; return o; }
       const ex = { ...(o.extras || {}) };
-      if (item.anchor === 'feet') ST_FEET_IDS.forEach((id) => delete ex[id]);
+      if (item.anchor === 'feet') { ST_FEET_IDS.forEach((id) => delete ex[id]); o.c = stripC(o.c, 'feet'); }
       if (item.zone === 'body') ST_BODY_IDS.forEach((id) => delete ex[id]);
       ex[item.id] = true;
       o.extras = ex;

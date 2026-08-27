@@ -20,7 +20,7 @@
 //   3. scale drops.spot(drops.window(now)) {u,v} into your coords + guards.
 //   4. in your loop: render while drops.live(now); proximity test → drops.tryCatch(now).
 import { seedRand, worldSid } from './world.js';
-import { DROPS, ownsDropStat } from '../data/wearables.js';
+import { DROPS, WEARABLE_PACKS, ownsDropStat } from '../data/wearables.js';
 import { wearToCustom } from './wear-render.js';
 import { passStat, passGet } from './banana-pass.js';
 
@@ -146,13 +146,27 @@ export function runDropBridge() {
   } catch (e) {}
 }
 
-// ── Equip helpers (generic slot assignment; guarantee the `c` slot survives) ──
+// ── Equip helpers (generic slot assignment; guarantee the `c` slot survives,
+// and ⚖ ONE ITEM PER BODY SPOT — the equip sweeps the opposing side, the same
+// rule the builder applies at pick time) ──
+const FEET_EXTRA_IDS = Object.values(WEARABLE_PACKS).flatMap((p) => (p.extras || []).filter((d) => d.anchor === 'feet').map((d) => d.id));
+const stripAnchoredC = (list, anchor) => String(list || '').split(',').map((t) => t.trim())
+  .filter((id) => id && catAnchorOf(id) !== anchor).join(',');
 export function applyDropToOutfit(outfit, drop) {
   if (!outfit || !drop) return outfit;
-  if (drop.catalog) outfit.c = drop.id;                 // the ONE custom slot
-  else if (drop.slot === 'hat') outfit.hat = drop.id;
+  if (drop.catalog) {                                   // joins the worn set, one per spot
+    const a = catAnchorOf(drop.id);
+    const kept = String(outfit.c || '').split(',').map((t) => t.trim())
+      .filter((id) => id && id !== drop.id && !(a && catAnchorOf(id) === a));
+    outfit.c = kept.concat(drop.id).join(',');
+    if (a === 'head') outfit.hat = 'none';
+    if (a === 'feet' && outfit.extras) FEET_EXTRA_IDS.forEach((id) => delete outfit.extras[id]);
+  } else if (drop.slot === 'hat') { outfit.hat = drop.id; outfit.c = stripAnchoredC(outfit.c, 'head'); }
   else if (drop.slot === 'glasses') outfit.glasses = drop.id;
-  else outfit.extras = { ...(outfit.extras || {}), [drop.id]: true };
+  else {
+    outfit.extras = { ...(outfit.extras || {}), [drop.id]: true };
+    if (FEET_EXTRA_IDS.includes(drop.id)) outfit.c = stripAnchoredC(outfit.c, 'feet');
+  }
   return outfit;
 }
 export function fullOutfit(o) { return { hat: o.hat, glasses: o.glasses, extras: o.extras || {}, c: o.c }; } // never strip c

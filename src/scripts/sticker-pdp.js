@@ -370,6 +370,14 @@ function buildWardrobe() {
     },
   })).concat(commIn((a) => a !== 'head'));
   if (extraChips.length) wardrobeRow(host, 'Extras', extraChips);
+  // 👁 every tray opens on its WORN item — nobody hunts a sidescroll to
+  // find the thing they want to take off (same rule as the builder)
+  host.querySelectorAll('.pdp-ward__tray').forEach((tray) => {
+    const on = tray.querySelector('[aria-pressed="true"]');
+    if (!on) return;
+    const tr = tray.getBoundingClientRect(), cr = on.getBoundingClientRect();
+    tray.scrollLeft += (cr.left - tr.left) - (tray.clientWidth - cr.width) / 2;
+  });
 }
 
 // the mockup AND renderPrintFile, so what you pick here is what gets printed.
@@ -515,10 +523,17 @@ async function boot() {
     .then((items) => {
       if (!Array.isArray(items) || !items.length) return;
       CATALOG = items;
+      // ⚖ a loaded design obeys one-per-spot too: an old link (or legacy
+      // saved state) can carry a hat AND a head-anchored community piece —
+      // the community item wins, as everywhere else.
+      const slots = String(state.c || '').split(',').map((t) => anchorSlot(catAnchor(t.trim()))).filter(Boolean);
+      if (slots.includes('hat')) state.hat = 'none';
+      if (slots.includes('feet')) EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') state.extras[d.id] = false; });
       applyCustom();
       buildWardrobe();
       buildPosePicker();
       paintMockup();
+      syncDesignUrl();
     })
     .catch(() => {});
   track('sticker_pdp_view', withSecs({ product: product.key, design: designStr(state) }));

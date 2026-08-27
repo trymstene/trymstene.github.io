@@ -135,7 +135,8 @@ function init() {
     items.forEach(([val, label]) => {
       const b = document.createElement('button');
       b.className = 'bb-chip'; b.textContent = label; b.dataset.val = val;
-      b.onclick = () => { state[key] = val; onState(); };
+      // re-tap the active one = off — so no row needs a dedicated 'None' box
+      b.onclick = () => { state[key] = state[key] === val ? 'none' : val; onState(); };
       el(host).appendChild(b);
     });
   }
@@ -204,7 +205,7 @@ function init() {
   }
   iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; }, (id) => SHADE_BY_ID[id]);
   iconChips('bbHatChips', HATS, 'hat', (id) => { const d = HAT_BY_ID[id]; return d && SVG[d.art]; }, (id) => HAT_BY_ID[id]);
-  chips('bbEffectChips', EFFECTS, 'effect'); // effects have no wearable art — words stay
+  chips('bbEffectChips', EFFECTS.filter(([v]) => v !== 'none'), 'effect'); // no wearable art — words; no 'None' box (re-tap = off)
   // HANDS — two gloves, one item each. The engine's resolveHands() derives
   // who-holds-what from the equipped SET (identical on every surface — no
   // hand state in outfits). Here we only enforce CAPACITY: equipping a third
@@ -305,8 +306,8 @@ function init() {
 
   // ---- slot trays (#7 ownership stack): the chip rows scroll sideways so the
   // catalog can grow forever. trayify adds the browse affordances — edge fades
-  // + arrows only WHEN items are actually hidden, an item count on the label,
-  // and scrolls the worn item into view so a loaded outfit is never off-screen.
+  // + arrows only WHEN items are actually hidden, an item count on the label.
+  // (revealWorn below scrolls each band to the worn item on load.)
   function trayify(hostId) {
     const tray = el(hostId);
     if (!tray || !tray.children.length) return;
@@ -357,6 +358,20 @@ function init() {
     sync();
   }
   ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+  // 👁 on load every band scrolls its WORN item into view — a loaded outfit
+  // is visible per row, so taking something off never starts with a hunt.
+  // (Runs after aria-pressed is synced: at boot, and again when the catalog
+  // lands and community chips join the rows.)
+  function revealWorn() {
+    ['bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips'].forEach((id) => {
+      const tray = el(id);
+      if (!tray) return;
+      const on = tray.querySelector('[aria-pressed="true"]');
+      if (!on) return;
+      const tr = tray.getBoundingClientRect(), cr = on.getBoundingClientRect();
+      tray.scrollLeft += (cr.left - tr.left) - (tray.clientWidth - cr.width) / 2;
+    });
+  }
 
   // 🎁 THE COMMUNITY ROW — visitor-made wearables (the catalog), rendered once
   // the manifest lands. Owned = a wearable chip; unearned = a locked DOOR to
@@ -471,11 +486,26 @@ function init() {
   }
   fetch(CATALOG_URL)
     .then((r) => (r.ok ? r.json() : []))
-    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); onState(); } })
+    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); normalizeSpots(); onState(); revealWorn(); } })
     .catch(() => { /* offline/blocked: the row just stays hidden */ });
   // 🚪 ?wear=<id> — the pass closet's door: the closet shows the trophy, the
   // BUILDER dresses it (one wear model, one place it can break). Built-ins
   // apply in load(); community ids need the catalog, so they wait here.
+  // ⚖ a LOADED outfit obeys the same one-per-spot rule as a picked one.
+  // Legacy bb-last blobs (and any surface that equipped without knowing
+  // anchors) could carry two hats or two pairs of shoes; the community item
+  // wins — it draws on top anyway, and it's the caught/bought thing.
+  function normalizeSpots() {
+    const list = cList();
+    if (!list.length) return;
+    const bySpot = {};
+    list.forEach((id) => { const sp = spotOf(id) || id; bySpot[sp] = id; });   // last one per spot stays
+    const kept = list.filter((id) => Object.values(bySpot).includes(id));
+    if (kept.length !== list.length) cSet(kept);
+    const slots = kept.map((id) => anchorSlot(catAnchorOf(id)));
+    if (slots.includes('hat')) state.hat = 'none';
+    if (slots.includes('feet')) FEET_DEFS.forEach((d) => { state.extras[d.id] = false; });
+  }
   let pendingWear = '';
   function applyPendingWear() {
     const id = pendingWear; pendingWear = '';
@@ -1383,6 +1413,7 @@ function init() {
   }
 
   refreshUI();
+  revealWorn();   // every band opens showing what's worn (comm chips re-reveal when the catalog lands)
   passVisit();
   // shelf 🏷 tags land here: walk the visitor straight to the sticker card
   if (urlP.get('go') === 'sticker') {

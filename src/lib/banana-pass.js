@@ -658,7 +658,28 @@ export async function checkCatalogVerdicts(opts = {}) {
             own[v.item] = 1;
             localStorage.setItem('cat-own-v1', JSON.stringify(own));
             const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
-            bl.c = v.item;
+            // ⚖ one item per body spot: the new piece JOINS the worn set (it
+            // used to evict everything), and whatever sat on its spot comes
+            // off — the anchor comes from the catalog, the feet ids from the
+            // wearables data (dynamic import: approvals are rare, the every-
+            // page pass lib stays light). Both lookups failing = plain equip.
+            let anchor = '';
+            try {
+              const cr = await fetch(SHARE_API + '/catalog/items.json');
+              const items = cr.ok ? await cr.json() : [];
+              const anchorOf = (id) => (((items.find((x) => x.id === id) || {}).wear || {}).anchor) || '';
+              anchor = anchorOf(v.item);
+              const kept = String(bl.c || '').split(',').map((t) => t.trim())
+                .filter((id) => id && id !== v.item && !(anchor && anchorOf(id) === anchor));
+              bl.c = kept.concat(v.item).join(',');
+            } catch (e2) { bl.c = v.item; }
+            if (anchor === 'head') bl.hat = 'none';
+            if (anchor === 'feet' && bl.extras) {
+              const w = await import('../data/wearables.js');
+              Object.values(w.WEARABLE_PACKS).forEach((pk) => (pk.extras || []).forEach((d) => {
+                if (d.anchor === 'feet') delete bl.extras[d.id];
+              }));
+            }
             localStorage.setItem('bb-last', JSON.stringify(bl));
             equippedOwn = true;
           } catch (e) {}
