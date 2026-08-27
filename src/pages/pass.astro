@@ -6,6 +6,30 @@ import { PATCHES } from '../lib/pass-defs.js';
 
 const title = 'Your Banana Pass — badges, shelf and stats';
 const description = 'Your membership card to the banana world: the badges you have earned, your creations, and your nights on the dance floor. Log in with your email — no password to remember.';
+
+// 🔢 THE NUMBERS PANE, SERVER-RENDERED. Labels and earn-hints live here as HTML
+// because the pass JS budget counts only the script chunk — a string in the
+// markup is free, the same string in a JS array is not.
+// `data-stat` is the pass stat key (the script overrides a handful by name),
+// `free` = a number everyone has (never proof that a stat moved),
+// `noshare` = never picked for the share card's proud one-liner.
+const NUMBERS = [
+  { k: 'level',   free: 1, noshare: 1, label: 'level',             hint: 'rep from anywhere in the world levels you up' },
+  { k: 'rep',     noshare: 1,          label: 'rep at the club',   hint: 'what you get for showing up' },
+  { k: 'coins',                        label: 'bananacoins',       hint: 'the floor, the park and the beach all pay' },
+  { k: 'raveMin',                      label: 'rave minutes',      hint: 'time spent on the dance floor' },
+  { k: 'builds',                       label: 'bananas built',     hint: 'build one in the workshop and take it home' },
+  { k: 'forges',                       label: 'emojis forged',     hint: 'draw one from raw pixels in the forge' },
+  { k: 'items',                        label: 'items made',        hint: 'make a wearable at the Items Workshop' },
+  { k: 'badges',                       label: 'badges earned',     hint: 'moments, not points — they hide everywhere' },
+  { k: 'drops',                        label: 'drops survived',    hint: 'stay standing when the DJ drops the floor' },
+  { k: 'jelly',                        label: 'jelly collected',   hint: 'grab the jelly that flies off the stage' },
+  { k: 'hypes',                        label: 'jelly times',       hint: 'fill the meter and drop the floor yourself' },
+  { k: 'fives',                        label: 'fistbumps',         hint: 'bump another banana on the floor' },
+  { k: 'beers',                        label: 'happy hours won',   hint: 'be first to the bar when Barty calls it' },
+  { k: 'vinyls',                       label: 'records delivered', hint: 'run a lost record back up to the DJ' },
+  { k: 'days',    free: 1,             label: 'days on the pass',  hint: 'come back another day' },
+];
 ---
 <BaseLayout
   title={title}
@@ -15,353 +39,395 @@ const description = 'Your membership card to the banana world: the badges you ha
   robots="noindex"
 >
   <style is:inline slot="head">
-    .ps-wrap { max-width: 900px; margin: 0 auto; padding: 1.6rem 1rem 2.5rem; }
-    .ps-head h1 { margin: 0 0 0.3rem; }
-    .ps-head p { margin: 0 0 1.2rem; opacity: 0.8; max-width: 60ch; }
-
-    /* THE TOP — login left, the pass small on the right. Login first in the DOM
-       so it is also first on a phone, where the columns stack. */
-    .ps-top {
-      display: grid; gap: 1.5rem; align-items: start;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
-      margin-bottom: 1.6rem;
-    }
-    @media (max-width: 780px) { .ps-top { grid-template-columns: 1fr; gap: 1.2rem; } }
-    .ps-top__main { min-width: 0; }
-    .ps-top__pass { min-width: 0; }
-    .ps-open { margin-top: 0.7rem; width: 100%; }
-
-    /* THE OFFICIAL CARD — the share-card's yellow identity, live on the page
-       (banana-yellow face, ink header strip, punched hole, serial + barcode,
-       red OFFICIAL stamp). The PNG people share IS this card. */
-    .ps-official {
-      position: relative; flex: 1 1 380px; max-width: 640px;
-      background: var(--banana); border: var(--line); box-shadow: 8px 8px 0 var(--ink);
-    }
-    .ps-official__head {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
-      background: var(--ink); color: var(--banana); margin: 6px; padding: 0.5rem 0.85rem;
-      font-size: 0.68rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase;
-      white-space: nowrap; overflow: hidden;
-    }
-    .ps-official__hole { flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 3px var(--banana); }
-    .ps-official__body { display: flex; gap: 1rem; padding: 0.7rem 1rem 0.4rem; align-items: center; }
-    .ps-official canvas#psSig { width: 128px; height: 128px; flex: none; image-rendering: pixelated; }
-    .ps-official__meta { min-width: 0; flex: 1; }
-    .ps-card__name { font-family: "Archivo Black", sans-serif; font-size: 1.3rem; line-height: 1.15; margin: 0 0 0.15rem; color: var(--ink); overflow-wrap: anywhere; }
-    .ps-nameedit { border: 0; background: none; cursor: pointer; font-size: 0.85rem; opacity: 0.5; padding: 0 0.15rem; margin-left: 0.25rem; vertical-align: middle; }
-    .ps-nameedit:hover, .ps-nameedit:focus-visible { opacity: 1; }
-    #psNameInput { font: inherit; width: 100%; max-width: 300px; background: #fffdf5; border: 3px solid var(--ink); padding: 0.1rem 0.4rem; }
-    .ps-card__since { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.75; margin: 0 0 0.5rem; }
-    .ps-rankchip { display: inline-block; background: var(--ink); color: var(--banana); font-weight: 800; font-size: 0.78rem; padding: 0.28rem 0.55rem; }
-    .ps-rankbar { display: block; height: 7px; background: rgba(17, 17, 17, 0.22); max-width: 220px; margin: 6px 0 3px; }
-    .ps-rankbar i { display: block; height: 100%; background: var(--ink); }
-    .ps-ranknote { display: block; font-size: 0.66rem; font-weight: 700; opacity: 0.7; }
-    .ps-card__patches { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.55rem; min-height: 1.4rem; }
-    .ps-card__patches svg { width: 1.5rem; height: 1.5rem; background: #fffdf5; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 2px; }
-    .ps-card__patches span { font-size: 0.7rem; opacity: 0.65; align-self: center; }
-    .ps-official__foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 1rem 0.85rem; }
-    #psBarcode { display: block; height: 26px; width: 140px; }
-    .ps-serial { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; color: var(--ink); }
-    .ps-stamp {
-      position: absolute; right: 12px; bottom: 44px; transform: rotate(-8deg);
-      border: 3px solid #e22020; color: #e22020; padding: 3px 12px; opacity: 0.85;
-      font-family: "Archivo Black", sans-serif; font-size: 0.95rem; letter-spacing: 0.04em;
-      pointer-events: none;
-    }
-    .ps-stamp::before { content: ''; position: absolute; inset: 2px; border: 2px solid #e22020; }
-
-    /* 🎫 THE MINI PASS — the same card, shrunk on purpose. ⚠️ these rules must
-       stay AFTER the base .ps-official ones: `canvas#psSig` ties on specificity,
-       so source order is what decides the size. */
-    .ps-official--mini { flex: none; max-width: 100%; box-shadow: 5px 5px 0 var(--ink); cursor: pointer; }
-    .ps-official--mini:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
-    .ps-official--mini .ps-official__head { margin: 5px; padding: 0.34rem 0.55rem; font-size: 0.52rem; letter-spacing: 0.09em; }
-    .ps-official--mini .ps-official__hole { width: 10px; height: 10px; box-shadow: 0 0 0 2px var(--banana); }
-    .ps-official--mini .ps-official__body { padding: 0.45rem 0.6rem 0.25rem; gap: 0.55rem; }
-    .ps-official--mini canvas#psSig { width: 68px; height: 68px; }
-    .ps-official--mini .ps-card__name { font-size: 0.92rem; }
-    .ps-official--mini .ps-card__since { font-size: 0.55rem; margin-bottom: 0.3rem; }
-    .ps-official--mini .ps-rankchip { font-size: 0.62rem; padding: 0.18rem 0.4rem; }
-    .ps-official--mini .ps-rankbar { max-width: 140px; height: 5px; margin: 4px 0 2px; }
-    .ps-official--mini .ps-ranknote { font-size: 0.55rem; }
-    .ps-official--mini .ps-card__patches { display: none; }   /* the full card has them */
-    .ps-official--mini .ps-official__foot { padding: 0 0.6rem 0.5rem; }
-    .ps-official--mini #psBarcode { width: 84px; height: 15px; }
-    .ps-official--mini .ps-serial { font-size: 0.55rem; }
-    .ps-official--mini .ps-stamp { right: 8px; bottom: 26px; font-size: 0.58rem; padding: 2px 6px; border-width: 2px; }
-    .ps-official--mini .ps-stamp::before { inset: 1px; border-width: 1px; }
-    .ps-official--mini .ps-nameedit { font-size: 0.7rem; }
-
-    .ps-actions { margin: 0 0 0; display: flex; gap: 0.6rem; flex-wrap: wrap; }
-    .ps-device { margin: 0.7rem 0 0; font-size: 0.78rem; opacity: 0.65; }
-
-    /* ── THE TAB BAR ── chips in the site's ink/paper/banana language; a
-       horizontal scroller on phones so six tabs never wrap into a wall. */
-    .ps-tabs {
-      display: flex; gap: 0.5rem; margin: 1.8rem 0 0; padding-bottom: 4px;
-      overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-      border-bottom: 3px solid var(--ink);
-    }
-    .ps-tabs::-webkit-scrollbar { display: none; }
-    .ps-tab {
-      flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.4rem;
-      font: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer;
-      background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
-      border-bottom: none; padding: 0.5rem 0.9rem; margin-bottom: -3px;
-      position: relative; white-space: nowrap;
-    }
-    .ps-tab:hover { background: #fffdf5; }
-    .ps-tab[aria-selected="true"] { background: var(--banana); box-shadow: 0 -3px 0 var(--ink) inset; }
-    .ps-tab__count {
-      font-size: 0.68rem; font-weight: 800; background: var(--ink); color: var(--banana);
-      padding: 0.05rem 0.4rem; min-width: 1.1rem; text-align: center;
-    }
-    .ps-tab[aria-selected="true"] .ps-tab__count { background: var(--paper); color: var(--ink); }
-    .ps-tab:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-
-    .ps-panels { margin-top: 1.6rem; }
-    .ps-panel[hidden] { display: none; }
-    .ps-panel__lead { margin: 0 0 1rem; font-size: 0.9rem; opacity: 0.78; max-width: 62ch; }
-
-    /* OVERVIEW — the frontpage: 3 headline stats, then tastes that deep-link
-       into the full tabs. */
-    .ps-hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
-    .ps-herostat {
-      font: inherit; color: var(--ink); cursor: pointer;
-      border: var(--line); background: var(--banana); box-shadow: 5px 5px 0 var(--ink);
-      padding: 0.9rem 0.8rem; text-align: center; min-width: 0;
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-    }
-    .ps-herostat:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
-    .ps-herostat:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-    .ps-herostat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.7rem; line-height: 1; }
-    .ps-herostat span { display: block; margin-top: 0.35rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
-    .ps-herostat em { font-style: normal; font-size: 1.05rem; margin-right: 0.15rem; }
-
-    /* the full numbers drawer — every stat the pass keeps */
-    .ps-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; }
-    .ps-stat { border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); padding: 0.7rem 0.85rem; }
-    .ps-stat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.5rem; line-height: 1; }
-    .ps-stat span { display: block; margin-top: 0.3rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
-
-    .ps-ov-block { margin-top: 2rem; }
-    .ps-ov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; }
-    .ps-ov-head h2 { margin: 0; font-size: 1.1rem; }
-    .ps-seeall {
-      flex: none; font: inherit; font-weight: 800; font-size: 0.8rem; cursor: pointer;
-      background: none; border: none; color: var(--ink); text-decoration: underline;
-      text-underline-offset: 3px; padding: 0;
-    }
-    .ps-seeall:hover { opacity: 0.7; }
-    .ps-ov-badges { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-    .ps-ov-badge {
-      display: flex; align-items: center; gap: 0.5rem; border: 3px solid var(--ink);
-      background: var(--banana); box-shadow: 3px 3px 0 var(--ink); padding: 0.4rem 0.7rem 0.4rem 0.5rem;
-    }
-    .ps-ov-badge svg { width: 1.4rem; height: 1.4rem; flex: none; }
-    .ps-ov-badge b { font-size: 0.82rem; }
-    .ps-ov-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
-
-    /* CLUB NOTICES — verdicts on YOUR stuff, never system chatter. The
-       section renders only when there is something to say (anti-fatigue). */
-    .ps-notices-list { max-width: 640px; }
-    .ps-pendingline { font-size: 0.8rem; opacity: 0.75; margin: 0 0 0.7rem; }
-    .ps-notice {
-      display: flex; gap: 0.7rem; align-items: flex-start;
-      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
-      padding: 0.7rem 0.85rem; margin-bottom: 0.6rem;
-    }
-    .ps-notice--unread { background: var(--banana); }
-    .ps-notice__icon { font-size: 1.25rem; line-height: 1.2; }
-    .ps-notice__body { font-size: 0.85rem; line-height: 1.45; min-width: 0; }
-    .ps-notice__date { display: block; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; margin-top: 0.25rem; }
-    .ps-ov-block .ps-section { margin: 0; }
-
-    /* 🔑 YOUR LOGIN — ⚠️ NO BOX. This was a light-yellow callout tray, which is
-       right for a panel halfway down a page and wrong for the first thing on it:
-       the top of the page needs no container to say "start here". */
-    .ps-sync { margin: 0; max-width: 34rem; }
-    .ps-sync p { margin: 0; font-size: 0.82rem; line-height: 1.5; }
-    .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
-    /* the kicker doubles as the status chip — pink while out, green once in */
-    .kicker.ps-kicker--in { background: #2fd06a; }
-    /* ✂️ THE PERKS ARE PILLS, NOT PROSE — three glanceable words each. Text
-       nobody reads has a conversion rate, and it is zero ([[copy-cro-doctrine]]). */
-    .ps-perks {
-      list-style: none; margin: 0.5rem 0 0; padding: 0;
-      display: flex; flex-wrap: wrap; gap: 0.3rem;
-    }
-    .ps-perks li {
-      padding: 0.22rem 0.5rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700;
-      background: rgba(0, 0, 0, 0.07); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12);
-    }
-    /* ✉️ ONE FIELD, ONE BUTTON. The button must never wrap its label. */
-    .ps-mail { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.8rem; }
-    .ps-mail__in {
-      flex: 1 1 210px; min-width: 0; padding: 0.55rem 0.65rem; font: inherit; font-size: 1rem;
-      border: 3px solid #000; background: #fffdf5; color: #111;
-    }
-    .ps-mail .btn { flex: none; }
-    /* the passkey route: a text toggle, so it costs nothing to ignore */
-    .ps-alt { margin-top: 0.6rem; }
-    .ps-alt__toggle {
-      appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
-      font: inherit; font-size: 0.74rem; font-weight: 700; opacity: 0.7;
-      text-decoration: underline; text-underline-offset: 3px; color: inherit;
-    }
-    .ps-alt__toggle:hover { opacity: 1; }
     /* ⚠️ ONE GUARD FOR THE WHOLE PAGE. `[hidden]` and a class have the same
        specificity, so any `display:` rule written later silently un-hides the
        element — which is how an empty code box shipped saying "type this on the
-       other device" before a code existed. Bitten twice in one day; ends here. */
+       other device" before a code existed. Bitten four times; ends here. */
     [hidden] { display: none !important; }
+    .ps-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-    /* 🔗 the link row — a button, and a code only once you ask for one */
-    .ps-link { margin: 0.6rem 0 0; }
-    .ps-link__code {
-      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-      margin-top: 0.5rem; padding: 0.55rem 0.7rem;
-      background: rgba(255, 225, 53, 0.12); border: 2px dashed #ffe135;
+    /* ── THE SPINE ──────────────────────────────────────────────────────────
+       Phone = one column in the reading order the DOM already has. Desktop =
+       the same nodes re-flowed into a rail + a body, so `display: contents`
+       carries the order instead of a second markup tree. */
+    .ps-wrap {
+      max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 2.5rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
     }
-    .ps-link__code b {
-      font-size: 1.3rem; font-weight: 800; letter-spacing: 0.16em;
-      font-variant-numeric: tabular-nums;
-    }
-    .ps-link__code span { font-size: 0.76rem; opacity: 0.8; }
-    .ps-link__lbl { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem; }
-    .ps-link__row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-    .ps-link__in {
-      flex: 1 1 160px; min-width: 0; padding: 0.5rem 0.6rem; font: inherit;
-      font-size: 1rem; letter-spacing: 0.12em; text-transform: uppercase;
-      border: 3px solid #000; background: #fffdf5; color: #111;
-    }
-    .ps-mail__whose {
-      margin: 0.35rem 0 0; font-size: 0.72rem; line-height: 1.45;
-      color: var(--ink-soft, rgba(17, 17, 17, 0.66));
-    }
-    .ps-mail__whose[hidden] { display: none; }
-    .ps-sync__note { margin: 0.5rem 0 0 !important; font-size: 0.74rem !important; opacity: 0.72; min-height: 1em; }
-    /* linked = done: nothing to do, so nothing shouts */
-    .ps-sync--linked .ps-sync__row,
-    .ps-sync--linked .ps-perks,
-    .ps-sync--linked .ps-mail,
-    .ps-sync--linked .ps-alt { display: none; }
-    /* …except when a logged-in-by-passkey pass is being offered an email. Two
-       classes so it wins regardless of rule order. */
-    .ps-sync--linked.ps-sync--addmail .ps-mail { display: flex; }
-    .ps-out { margin-top: 0.7rem; }
-    /* 📣 the news opt-in — quieter than the login it sits beneath, because it
-       is optional and must never compete with the thing you came to do */
-    .ps-news { margin-top: 1.1rem; padding-top: 0.9rem; border-top: 3px dashed rgba(17, 17, 17, 0.18); max-width: 34rem; }
-    .ps-news__lead { margin: 0 0 0.5rem !important; font-size: 0.85rem !important; }
-    .ps-news__form { margin-top: 0.6rem; }
-    .ps-news__what { margin-top: 0 !important; }
-    .ps-news__what li { font-size: 0.66rem; }
-    .ps-news__fine { margin: 0.45rem 0 0 !important; font-size: 0.7rem !important; opacity: 0.7; }
-    .ps-device--id { margin: 0.6rem 0 0; }
+    .ps-rail, .ps-main { display: contents; }
+    .ps-card { order: 1; }
+    .ps-promise { order: 2; }
+    .ps-news { order: 3; }
+    .ps-nav { order: 4; }
+    .ps-panes { order: 5; }
+    .ps-doors { order: 6; }
+    .ps-keep { order: 7; }
 
-    .ps-section h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
+    /* ── THE CARD — the page header. ONE size: the thing on screen IS the
+       keepsake, and the PNG people share is the same document. ── */
+    .ps-card {
+      position: relative; cursor: pointer;
+      background: var(--banana); border: var(--line); box-shadow: var(--shadow-sm);
+    }
+    .ps-card__head {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+      background: var(--ink); color: var(--banana); margin: 5px; padding: 0.28rem 0.6rem;
+      font-size: 0.56rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase;
+      white-space: nowrap; overflow: hidden;
+    }
+    .ps-card__hole { flex: none; width: 11px; height: 11px; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 3px var(--banana); }
+    .ps-card__body { display: flex; gap: 0.6rem; padding: 0.3rem 0.65rem 0; align-items: center; }
+    .ps-card__sig { position: relative; flex: none; width: 92px; height: 92px; }
+    .ps-card__sig canvas { display: block; width: 92px; height: 92px; image-rendering: pixelated; }
+    /* the zero state: an empty frame is a stronger door than a banana you did
+       not make wearing an OFFICIAL stamp */
+    .ps-card__slot {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      text-align: center; text-decoration: none; font-size: 0.66rem; font-weight: 800;
+      line-height: 1.3; padding: 0.3rem; color: rgba(17, 17, 17, 0.7);
+      border: 3px dashed rgba(17, 17, 17, 0.4);
+    }
+    .ps-card__meta { min-width: 0; flex: 1; }
+    .ps-card__nrow { display: flex; align-items: center; gap: 0.2rem; }
+    .ps-card__who { min-width: 0; flex: 1; }
+    .ps-card__name { font-family: "Archivo Black", sans-serif; font-size: 1.05rem; line-height: 1.1; margin: 0; min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+    /* ✏️ NAME YOUR BANANA is one of the page's named jobs — it gets a real 44px
+       target, not a 20px pencil glyph. */
+    .ps-nameedit {
+      flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+      border: 0; background: none; cursor: pointer; color: var(--ink); opacity: 0.55; padding: 0;
+    }
+    .ps-nameedit:hover, .ps-nameedit:focus-visible { opacity: 1; }
+    #psNameInput { font: inherit; font-size: 1rem; width: 100%; background: #fffdf5; border: 3px solid var(--ink); padding: 0.1rem 0.35rem; }
+    .ps-card__since { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.75; margin: 0 0 0.25rem; }
+    .ps-rankchip { display: inline-block; background: var(--ink); color: var(--banana); font-weight: 800; font-size: 0.7rem; padding: 0.2rem 0.45rem; }
+    .ps-rankbar { display: block; height: 6px; background: rgba(17, 17, 17, 0.22); max-width: 200px; margin: 4px 0 1px; }
+    .ps-rankbar i { display: block; height: 100%; background: var(--ink); }
+    /* ⚠️ the OFFICIAL stamp sits bottom-right INSIDE the card, so this line
+       must stop short of it or the tail reads through a red rotated box */
+    .ps-ranknote {
+      display: block; font-size: 0.58rem; font-weight: 700; line-height: 1.35; opacity: 0.7;
+      max-width: calc(100% - 104px);
+    }
+    .ps-card__patches { display: flex; gap: 0.28rem; flex-wrap: wrap; padding: 0.25rem 0.65rem 0; line-height: 1; }
+    /* ⚠️ the strip clones the pane's badge svgs, and PixelIcon writes its size as
+       an INLINE style — a class rule loses to it, so the shrink must shout. */
+    .ps-card__patches svg { display: block; width: 18px !important; height: 18px !important; background: #fffdf5; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 2px; }
+    .ps-card__patches span { font-size: 0.66rem; opacity: 0.62; align-self: center; }
+    .ps-card__foot { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.65rem 0.1rem; }
+    #psBarcode { display: block; height: 20px; width: 96px; flex: none; }
+    .ps-serial { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; }
+    .ps-card__share {
+      margin-left: auto; display: inline-flex; align-items: center; gap: 0.35rem;
+      min-height: 44px; padding: 0 0.6rem; font: inherit; font-size: 0.72rem; font-weight: 800;
+      background: none; border: 0; cursor: pointer; color: var(--ink); white-space: nowrap;
+    }
+    .ps-card__share:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .ps-stamp {
+      position: absolute; right: 10px; bottom: 38px; transform: rotate(-8deg);
+      border: 3px solid #e22020; color: #e22020; padding: 2px 9px; opacity: 0.85;
+      font-family: "Archivo Black", sans-serif; font-size: 0.8rem; letter-spacing: 0.04em;
+      pointer-events: none;
+    }
+    .ps-stamp::before { content: ''; position: absolute; inset: 2px; border: 2px solid #e22020; }
+    /* 🎫 the magic link has to PAY OFF: coming back signed in stamps the card */
+    .ps-card--stamped .ps-stamp { animation: psStamp 0.5s ease-out; }
+    @keyframes psStamp { from { transform: rotate(-8deg) scale(3); opacity: 0; } 60% { opacity: 1; } to { transform: rotate(-8deg) scale(1); opacity: 0.85; } }
+    @media (prefers-reduced-motion: reduce) { .ps-card--stamped .ps-stamp { animation: none; } }
 
-    /* THE GEAR ROW: earned wearables — a banana models each item; unearned =
-       grayscale silhouette (the closet doubles as a feature map) */
-    .ps-gear { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ps-promise { margin: 0; font-size: 0.8rem; line-height: 1.45; opacity: 0.8; }
+
+    /* ── NEWS FOR YOU — verdicts on YOUR stuff, never system chatter. Renders
+       only when there is something to say (anti-fatigue). ── */
+    .ps-news__h { display: flex; align-items: center; gap: 0.35rem; margin: 0 0 0.4rem; font-size: 0.85rem; }
+    .ps-pendingline { font-size: 0.78rem; opacity: 0.75; margin: 0 0 0.5rem; }
+    .ps-notice {
+      display: flex; gap: 0.55rem; align-items: flex-start; cursor: pointer;
+      border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm);
+      padding: 0.35rem 0.5rem; margin-bottom: 0.35rem;
+    }
+    .ps-notice--unread { background: var(--banana); }
+    .ps-notice__icon { font-size: 1.05rem; line-height: 1.2; }
+    .ps-notice__main { min-width: 0; flex: 1; }
+    .ps-notice__side { flex: none; text-align: right; }
+    /* ⚠️ CLAMPED ON PURPOSE. Unread notices are unbounded, and every line of
+       them pushes the subnav — the only route to the rest of the page — off the
+       first screen. Two lines, then tap the notice for the whole thing. */
+    .ps-notice__body { font-size: 0.79rem; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .ps-notice--open .ps-notice__body { display: block; }
+    .ps-notice__date { display: block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; }
+    .ps-notice__side::after { content: '▾'; display: block; font-size: 0.7rem; font-weight: 800; opacity: 0.55; }
+    .ps-notice--open .ps-notice__side::after { content: '▴'; }
+
+    /* 📣 THE ASK sits at the FOOT of the news strip — same subject as the block
+       above it, and nowhere near the login, so consent is never bundled with
+       the thing they came for. Its own form, its own double opt-in. */
+    .ps-ask { border-top: 3px dashed rgba(17, 17, 17, 0.2); }
+    #psNotices:empty + .ps-ask { border-top: 0; }   /* no strip above it = no rule */
+    .ps-ask__row { display: flex; align-items: center; gap: 0.4rem; min-height: 46px; cursor: pointer; font-size: 0.82rem; font-weight: 800; list-style: none; }
+    .ps-ask__row::-webkit-details-marker { display: none; }
+    .ps-ask__row::after { content: ' ▾'; margin-left: auto; opacity: 0.6; }
+    .ps-ask[open] .ps-ask__row::after { content: ' ▴'; }
+    .ps-ask p { margin: 0 0 0.5rem; font-size: 0.78rem; line-height: 1.45; }
+    .ps-ask__note { margin: 0.4rem 0 0 !important; font-size: 0.72rem !important; opacity: 0.75; }
+
+    /* ── SUBNAV — three chips that always share one row. `flex: 1 1 0` +
+       `min-width: 0` is the whole fix: nowrap alone re-creates the clipped,
+       sideways-scrolling seven-tab wall this replaced. A FOURTH TAB OVERFLOWS;
+       the three-tab cap IS the design. ── */
+    .ps-nav { display: flex; gap: 0.4rem; border-bottom: 3px solid var(--ink); }
+    .ps-tab {
+      flex: 1 1 0; min-width: 0; min-height: 46px; font: inherit; font-weight: 800; font-size: 0.9rem;
+      cursor: pointer; background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
+      border-bottom: none; padding: 0.4rem 0.3rem; margin-bottom: -3px; overflow: hidden;
+    }
+    .ps-tab[aria-selected="true"] { background: var(--banana); box-shadow: 0 -3px 0 var(--ink) inset; }
+    .ps-tab:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    .ps-pane__h { margin: 0 0 0.7rem; font-size: 1rem; }
+    /* filter chips — the same grammar in both panes */
+    .ps-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; }
+    .ps-chip {
+      min-height: 44px; padding: 0 0.8rem; font: inherit; font-weight: 800; font-size: 0.8rem;
+      cursor: pointer; background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .ps-chip[aria-pressed="true"] { background: var(--banana); }
+    .ps-chip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+    /* ── THE DOORS — the world's "where to?" row grammar (see /dev/design/):
+       yellow slab, icon, bold name, arrow hard right. ── */
+    .ps-doors { display: grid; gap: 0.55rem; }
+    .ps-door {
+      display: flex; align-items: center; gap: 0.7rem; min-height: 52px; padding: 0.5rem 0.8rem;
+      text-decoration: none; color: var(--ink); background: var(--banana);
+      border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+    }
+    .ps-door b { font-size: 0.95rem; }
+    .ps-door span { margin-left: auto; font-size: 1.05rem; font-weight: 800; }
+    .ps-door:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+    .ps-door--out { background: var(--paper); }
+
+    /* ── THE SHELF ── */
+    .ps-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
+    .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); cursor: pointer; padding-bottom: 44px; }
+    .shelf-item canvas { display: block; width: 88px; height: 88px; image-rendering: pixelated; }
+    /* 🛍 THE ASK AT THE LAST CLICK, ON THE ITEM — a labelled 44px button in the
+       tile's foot, never a bare 🏷 glyph ([[cro-placement-doctrine]]). */
+    .shelf-tag {
+      position: absolute; left: 0; right: 0; bottom: 0; width: auto; height: 44px;
+      display: flex; align-items: center; justify-content: center; gap: 0.25rem;
+      font-size: 0.62rem; font-weight: 800; text-decoration: none; border: 0;
+      background: var(--ink); color: var(--banana); border-top: 3px solid var(--ink);
+    }
+    .shelf-tag:hover { transform: none; background: var(--hot, #ff4d6d); color: #fff; }
+    .shelf-tag svg { width: 13px; height: 13px; }
+    /* housekeeping is a VETERAN act: a real 44px hit area, a quiet glyph — it
+       must not be the loudest thing on the work they are proudest of */
+    .shelf-x {
+      position: absolute; top: 0; right: 0; width: 44px; height: 44px; padding: 0 0 12px 12px;
+      line-height: 1; background: none; color: rgba(17, 17, 17, 0.35); border: 0;
+      font-weight: 800; font-size: 1.1rem; cursor: pointer;
+    }
+    .shelf-x:hover, .shelf-x:focus-visible { color: var(--hot, #ff4d6d); }
+
+    /* the closet: earned wearables a banana models; unearned = grey silhouette,
+       so the closet doubles as a feature map. Earned first, in CSS. */
+    .ps-gear { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .ps-gear__item {
-      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
-      padding: 0.8rem 0.8rem 0.7rem; text-align: center;
+      border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm);
+      padding: 0.7rem 0.7rem 0.6rem; text-align: center;
     }
     .ps-gear__item canvas { width: 84px; height: 84px; image-rendering: pixelated; }
-    .ps-gear__item h3 { margin: 0.35rem 0 0.15rem; font-size: 0.85rem; }
-    .ps-gear__item p { margin: 0 0 0.55rem; font-size: 0.72rem; opacity: 0.7; line-height: 1.45; }
-    .ps-gear__by { display: block; font-size: 0.68rem; font-weight: 800; color: #0e9fb5; margin: -0.35rem 0 0.5rem; letter-spacing: 0.02em; } /* the maker's credit — "by Barty" */
-    .ps-gear__item:not(.ps-gear__item--earned) { opacity: 0.55; }
+    .ps-gear__item h3 { margin: 0.3rem 0 0.15rem; font-size: 0.85rem; }
+    .ps-gear__item p { margin: 0 0 0.5rem; font-size: 0.72rem; opacity: 0.7; line-height: 1.4; }
+    .ps-gear__by { display: block; font-size: 0.68rem; font-weight: 800; color: #0e9fb5; margin: -0.3rem 0 0.45rem; } /* the maker's credit — "by Barty" */
+    .ps-gear__item:not(.ps-gear__item--earned) { opacity: 0.55; order: 1; }
     .ps-gear__item:not(.ps-gear__item--earned) canvas { filter: grayscale(1) contrast(0.65) brightness(0.9); }
     .ps-gear__item--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
     .ps-gear__btn {
-      border: 3px solid var(--ink); background: var(--paper); font-weight: 800;
-      font-size: 0.72rem; padding: 0.35rem 0.7rem; cursor: pointer;
+      min-height: 44px; padding: 0 0.8rem; font: inherit; border: 3px solid var(--ink);
+      background: var(--paper); font-weight: 800; font-size: 0.75rem; cursor: pointer;
     }
     .ps-gear__btn.on { background: var(--banana); }
 
-    /* the collection: earned bright, unearned dark silhouettes with hints */
-    .ps-patches { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ps-patches { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .ps-patch {
-      border: var(--line); background: var(--paper); box-shadow: 4px 4px 0 var(--ink);
-      padding: 0.8rem 0.8rem 0.7rem; text-align: center;
+      border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm);
+      padding: 0.7rem 0.7rem 0.6rem; text-align: center;
     }
     .ps-patch svg { width: 34px; height: 34px; }
-    .ps-patch h3 { margin: 0.5rem 0 0.15rem; font-size: 0.85rem; }
-    .ps-patch p { margin: 0; font-size: 0.72rem; opacity: 0.7; line-height: 1.45; }
-    .ps-patch .ps-patch__date { display: none; margin-top: 0.3rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
-    .ps-patch:not(.ps-patch--earned) { opacity: 0.55; }
+    .ps-patch h3 { margin: 0.4rem 0 0.15rem; font-size: 0.85rem; }
+    .ps-patch p { margin: 0; font-size: 0.72rem; opacity: 0.7; line-height: 1.4; }
+    .ps-patch .ps-patch__date { display: none; margin-top: 0.25rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
+    .ps-patch:not(.ps-patch--earned) { opacity: 0.55; order: 1; }
     .ps-patch:not(.ps-patch--earned) svg { filter: grayscale(1) contrast(0.6) brightness(0.9); }
     .ps-patch--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
     .ps-patch--earned .ps-patch__date { display: block; }
 
-    .ps-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; }
-    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
-    .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.12s ease; }
-    .shelf-item:hover { transform: translate(-2px, -2px); }
-    .shelf-item canvas { display: block; width: 88px; height: 88px; image-rendering: pixelated; }
-    .shelf-x { position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; line-height: 1; background: var(--ink); color: var(--paper); border: 2px solid var(--paper); font-weight: 800; cursor: pointer; }
-    .shelf-x:hover { background: var(--hot, #ff4d6d); }
+    /* ── NUMBERS — a zero keeps its tile and carries its earn hint (the badge
+       pane's own pattern); non-zero ranks first. Never a grey list of failures. ── */
+    .ps-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+    .ps-stat { border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); padding: 0.6rem 0.7rem; }
+    .ps-stat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.4rem; line-height: 1; }
+    .ps-stat span { display: block; margin-top: 0.25rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+    .ps-stat i { display: none; margin-top: 0.3rem; font-size: 0.68rem; font-style: normal; line-height: 1.35; opacity: 0.85; }
+    .ps-stat--zero { order: 1; background: rgba(17, 17, 17, 0.04); }
+    .ps-stat--zero b { opacity: 0.35; }
+    .ps-stat--zero i { display: block; }
 
-    /* persistent footer: settings + the doors out */
-    .ps-foot { margin-top: 2.6rem; padding-top: 1.6rem; border-top: 3px solid rgba(17,17,17,0.15); }
-    .ps-foot h2 { margin: 0 0 0.7rem; font-size: 1.05rem; }
-    .ps-doors { margin-top: 1.4rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    /* ── THE KEEP ROW — the account, as ONE row. Its summary IS the sync line,
+       so magic-link feedback and the offline apology can never hide inside a
+       collapsed drawer. Native <details>: the toggle costs no JS. ── */
+    .ps-keep { border: 3px solid var(--ink); background: var(--paper); }
+    .ps-keep[open] { background: #fffdf5; }
+    .ps-keep__row {
+      display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0.3rem 0.7rem;
+      cursor: pointer; font-size: 0.82rem; font-weight: 700; list-style: none;
+    }
+    .ps-keep__row::-webkit-details-marker { display: none; }
+    .ps-keep__line { min-width: 0; }
+    .ps-keep__more { margin-left: auto; font-size: 0.72rem; font-weight: 800; opacity: 0.65; white-space: nowrap; }
+    .ps-keep__more::after { content: ' ▾'; }
+    .ps-keep[open] .ps-keep__more::after { content: ' ▴'; }
+    .ps-keep__body { padding: 0 0.7rem 0.8rem; }
+    .ps-keep__claim { margin: 0 0 0.5rem; font-size: 0.82rem; line-height: 1.45; }
+    /* the three phrases that are the whole answer to "why give you my address" */
+    .ps-perks { list-style: none; margin: 0 0 0.6rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .ps-perks li { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; background: rgba(0, 0, 0, 0.07); }
+    /* ✉️ ONE FIELD, ONE BUTTON. The button must never wrap its label. */
+    .ps-mail { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ps-mail__in {
+      flex: 1 1 200px; min-width: 0; padding: 0.55rem 0.65rem; font: inherit; font-size: 1rem;
+      border: 3px solid var(--ink); background: #fffdf5; color: var(--ink);
+    }
+    .ps-mail .btn { flex: none; padding: 0.6rem 1.1rem; }
+    .ps-mail__whose { margin: 0.35rem 0 0; font-size: 0.72rem; line-height: 1.45; opacity: 0.7; }
+    .ps-alt { margin-top: 0.7rem; font-size: 0.78rem; }
+    .ps-alt > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 800; opacity: 0.75; }
+    .ps-sync__row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .ps-sync__row .btn { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
+    .ps-link { margin-top: 0.7rem; }
+    .ps-link .btn { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
+    .ps-link__code {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      margin-top: 0.5rem; padding: 0.5rem 0.7rem; background: rgba(255, 225, 53, 0.16); border: 2px dashed var(--banana);
+    }
+    .ps-link__code b { font-size: 1.25rem; font-weight: 800; letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
+    .ps-link__code span { font-size: 0.74rem; opacity: 0.8; }
+    .ps-link__lbl { display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .ps-link__row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ps-link__in {
+      flex: 1 1 150px; min-width: 0; padding: 0.5rem 0.6rem; font: inherit; font-size: 1rem;
+      letter-spacing: 0.12em; text-transform: uppercase; border: 3px solid var(--ink); background: #fffdf5; color: var(--ink);
+    }
+    /* ⚠️ Log out is the most destructive control on the page: LAST, smallest,
+       and inside a drawer — never above the player's own things. */
+    .ps-out { margin-top: 0.9rem; }
+    .ps-out__btn {
+      min-height: 44px; padding: 0 0.6rem; appearance: none; background: none; border: 0; cursor: pointer;
+      font: inherit; font-size: 0.74rem; font-weight: 700; opacity: 0.6; color: inherit;
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+    .ps-out__btn:hover { opacity: 1; }
 
-    /* share-card lightbox — the card revealed in website style (paper box,
-       ink frame); the OS share sheet is an opt-in button, not the default */
-    .ps-sharemodal {
-      position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
-      background: rgba(17, 17, 17, 0.6); padding: 1rem;
-    }
-    .ps-sharemodal[hidden] { display: none; }
-    .ps-sharemodal__box {
-      position: relative; max-width: min(92vw, 640px); width: 100%;
-      background: var(--paper); border: var(--line); box-shadow: var(--shadow); padding: 0.9rem;
-    }
+    /* share-card lightbox — our own reveal (the OS sheet is previewless on
+       Windows, so it is an opt-in button, not the default) */
+    .ps-sharemodal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(17, 17, 17, 0.6); padding: 1rem; }
+    .ps-sharemodal__box { position: relative; max-width: min(92vw, 640px); width: 100%; background: var(--paper); border: var(--line); box-shadow: var(--shadow); padding: 0.9rem; }
     .ps-sharemodal__card canvas { display: block; width: 100%; height: auto; border: 3px solid var(--ink); }
     .ps-sharemodal__row { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
     .ps-sharemodal__row .btn { flex: 1 1 140px; }
     .ps-sharemodal__close {
-      position: absolute; top: -16px; right: -16px; width: 40px; height: 40px;
+      position: absolute; top: -16px; right: -16px; width: 44px; height: 44px;
       background: var(--banana); color: var(--ink); border: 3px solid var(--ink);
-      font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 3px 3px 0 var(--ink);
-      touch-action: manipulation;
+      font-weight: 800; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); touch-action: manipulation;
     }
 
-    @media (max-width: 560px) {
-      .ps-official__body { flex-direction: row; }
-      .ps-official canvas#psSig { width: 104px; height: 104px; }
-      .ps-card__name { font-size: 1.1rem; }
-      .ps-official__head { font-size: 0.58rem; }
-      .ps-hero-stats { gap: 0.5rem; }
-      .ps-herostat { padding: 0.7rem 0.4rem; }
-      .ps-herostat b { font-size: 1.35rem; }
-      .ps-herostat span { font-size: 0.62rem; }
+    /* ── DESKTOP: a rail and a body. Only the CARD is sticky — a rail taller
+       than the viewport pins its top and strands the doors at 1280×800. ── */
+    @media (min-width: 900px) {
+      .ps-wrap {
+        max-width: 1120px; display: grid; gap: 1.4rem 1.6rem;
+        grid-template-columns: 320px minmax(0, 1fr); padding-top: 1.4rem;
+      }
+      .ps-rail { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; }
+      .ps-main { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; }
+      .ps-card { position: sticky; top: 5.5rem; }
+      .ps-shelf { gap: 0.7rem; }
+    }
+    @media (max-width: 360px) {
+      .ps-card__body { gap: 0.5rem; }
+      .ps-card__sig, .ps-card__sig canvas { width: 84px; height: 84px; }
+      .ps-card__name { font-size: 0.95rem; }
     }
   </style>
 
   <div class="ps-wrap">
-    <!-- ── THE TOP ─────────────────────────────────────────────────────────
-         Logging in IS the top of the page — no panel, no box, no light-yellow
-         tray halfway down. The pass sits alongside as the thing you are logging
-         in to: small by default, one tap to see it full size.
-         ⚠️ THE HEADING SWAPS WITH STATE. Logged out the page is a login page
-         ("log in to banana world"); logged in it is your pass. The page is
-         noindex, so nothing about that is an SEO decision. ── -->
-    <div class="ps-top">
-      <div class="ps-top__main ps-head">
-        <p class="kicker" id="psKicker">Members only (everyone's a member)</p>
-        <h1 id="psSyncTitle">log in to banana world</h1>
-        <p id="psSyncLead">Type your email — we send you a link to click.</p>
-        <div class="ps-sync" id="psSync" hidden>
-          <!-- ⚠️ ONE SENTENCE, ONE FIELD, ONE BUTTON. This used to ask whether
-               you had a pass and whether you wanted to save one — nobody thinks
-               in those words. The perks are pills, not prose
-               ([[copy-cro-doctrine]]): shorter AND more read. -->
+    <h1 class="ps-sr">Your banana pass</h1>
+
+    <div class="ps-rail">
+      <!-- ── 1. THE CARD IS THE PAGE HEADER. The whole thing taps to the share
+           modal; the pencil and the empty-slot door opt out of that. ── -->
+      <div class="ps-card" id="psCard">
+        <div class="ps-card__head">
+          <span>★ Banana World · Membership Pass</span>
+          <span class="ps-card__hole" aria-hidden="true"></span>
+        </div>
+        <div class="ps-card__body">
+          <div class="ps-card__sig">
+            <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
+            <a class="ps-card__slot" id="psSigSlot" href="/make-a-banana/" hidden>your banana<br />goes here →</a>
+          </div>
+          <div class="ps-card__meta">
+            <div class="ps-card__nrow">
+              <div class="ps-card__who">
+                <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span></p>
+                <p class="ps-card__since" id="psSince">member since tonight</p>
+              </div>
+              <button class="ps-nameedit" id="psNameEdit" type="button"
+                      aria-label="Write your own name on the pass"><PixelArtIcon name="pencil" size="20px" /></button>
+            </div>
+            <div id="psRank"></div>
+          </div>
+        </div>
+        <div class="ps-card__patches" id="psCardPatches"></div>
+        <div class="ps-card__foot">
+          <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
+          <span class="ps-serial" id="psSerial"></span>
+          <button class="ps-card__share" id="psShareCard" type="button"><PixelArtIcon name="card" size="16px" /> tap to share</button>
+        </div>
+        <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
+      </div>
+
+      <!-- ── 2. THE PROMISE — the one sentence that says what this page is for ── -->
+      <p class="ps-promise">Everything you make and win saves automatically.<noscript> Turn on JavaScript to see it.</noscript></p>
+
+      <!-- ── 5. SUBNAV — three tabs, hidden until there is something in a pile ── -->
+      <div class="ps-nav" id="psNav" role="tablist" aria-label="Your pass" hidden>
+        <button class="ps-tab" role="tab" id="tab-made" data-tab="made" aria-controls="panel-made" aria-selected="true">Made</button>
+        <button class="ps-tab" role="tab" id="tab-earned" data-tab="earned" aria-controls="panel-earned" aria-selected="false" tabindex="-1">Earned</button>
+        <button class="ps-tab" role="tab" id="tab-numbers" data-tab="numbers" aria-controls="panel-numbers" aria-selected="false" tabindex="-1" hidden>Numbers</button>
+      </div>
+
+      <!-- ── 7. THE DOORS OUT ── -->
+      <div class="ps-doors" id="psDoors">
+        <a class="ps-door" id="psDoorMake" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
+        <a class="ps-door ps-door--out" href="/rave/"><PixelIcon name="sparkle" size="24px" /><b>To the dancefloor</b><span>→</span></a>
+      </div>
+
+      <!-- ── 8. THE KEEP ROW — the account, collapsed to one row. ⚠️ the summary
+           carries the sync line, so "Signing you in…" and the offline apology
+           are visible whether or not the drawer is open. ── -->
+      <details class="ps-keep" id="psKeep">
+        <summary class="ps-keep__row">
+          <PixelArtIcon name="lock" size="18px" />
+          <span class="ps-keep__line" id="psSyncNote">Save this to your email later</span>
+          <span class="ps-keep__more">Account</span>
+        </summary>
+        <div class="ps-keep__body">
+          <p class="ps-keep__claim" id="psKeepClaim" hidden></p>
           <ul class="ps-perks" id="psPerks">
             <li>No password</li>
             <li>Any device</li>
@@ -377,197 +443,117 @@ const description = 'Your membership card to the banana world: the badges you ha
                address to their pass, so a second person on a shared tablet must
                be told before they type theirs -->
           <p class="ps-mail__whose" id="psMailWhose" hidden></p>
-        <p class="ps-sync__note" id="psSyncNote"></p>
-        <!-- passkeys are a SHORTCUT now, not a fork you have to understand -->
-        <div class="ps-alt" id="psAlt" hidden>
-          <button class="ps-alt__toggle" id="psAltToggle" type="button" aria-expanded="false">
-            Or use Face&nbsp;ID / fingerprint
-          </button>
-          <div class="ps-sync__row" id="psAltRow" hidden>
-            <button class="btn btn--light" id="psSave" type="button"><PixelArtIcon name="save" size="18px" /> Set up on this device</button>
-            <button class="btn btn--light" id="psRestore" type="button"><PixelArtIcon name="download" size="18px" /> Use it to log in</button>
+
+          <!-- passkeys are a SHORTCUT, not a fork you have to understand — and
+               the device-code box lives behind the same disclosure, because on
+               its own it is a second unexplained way in -->
+          <details class="ps-alt" id="psAlt" hidden>
+            <summary>Other ways in</summary>
+            <div class="ps-sync__row">
+              <button class="btn btn--light" id="psSave" type="button"><PixelArtIcon name="save" size="18px" /> Set up on this device</button>
+              <button class="btn btn--light" id="psRestore" type="button"><PixelArtIcon name="download" size="18px" /> Use it to log in</button>
+            </div>
+            <label class="ps-link__lbl" for="psCodeIn">Got a code from your other device?</label>
+            <div class="ps-link__row">
+              <input class="ps-link__in" id="psCodeIn" type="text" inputmode="latin" autocomplete="off"
+                     spellcheck="false" maxlength="12" placeholder="ABCD2468" aria-label="Link code" />
+              <button class="btn btn--dark" id="psCodeGo" type="button">Link</button>
+            </div>
+          </details>
+
+          <!-- 🔗 the answer to a passkey that cannot travel (Windows Hello) -->
+          <div class="ps-link" id="psLink" hidden>
+            <button class="btn btn--light" id="psLinkStart" type="button"><PixelArtIcon name="link" size="18px" /> Link another device</button>
+            <div class="ps-link__code" id="psLinkCode" hidden>
+              <b id="psLinkCodeVal">…</b>
+              <span id="psLinkCodeHint">type this on the other device</span>
+            </div>
           </div>
-        </div>
-        <!-- 🔗 LINK A DEVICE — the answer to a passkey that cannot travel
-             (Windows Hello). One row on each side, no explanation needed until
-             you press something. -->
-        <div class="ps-link" id="psLink" hidden>
-          <button class="btn btn--light" id="psLinkStart" type="button">🔗 Link another device</button>
-          <div class="ps-link__code" id="psLinkCode" hidden>
-            <b id="psLinkCodeVal">…</b>
-            <span id="psLinkCodeHint">type this on the other device</span>
-          </div>
-        </div>
-        <div class="ps-link" id="psHaveCode" hidden>
-          <label class="ps-link__lbl" for="psCodeIn">Got a code from your other device?</label>
-          <div class="ps-link__row">
-            <input class="ps-link__in" id="psCodeIn" type="text" inputmode="latin" autocomplete="off"
-                   spellcheck="false" maxlength="12" placeholder="ABCD2468" aria-label="Link code" />
-            <button class="btn btn--dark" id="psCodeGo" type="button">Link</button>
-          </div>
-        </div>
           <div class="ps-out" id="psOut" hidden>
-            <button class="ps-alt__toggle" id="psLogout" type="button">Log out</button>
+            <button class="ps-out__btn" id="psLogout" type="button">Log out</button>
           </div>
         </div>
-        <!-- 📣 THE NEWS LIST — a separate opt-in, shown only once you are in.
-             ⚠️ NEVER part of the login form: consent bundled with a service you
-             came for is not freely given, and it is a dark pattern besides. It
-             asks for the address again on purpose — the one you logged in with
-             is hashed and is not ours to reuse. -->
-        <div class="ps-news" id="psNews" hidden>
-          <p class="ps-news__lead">📣 <b>Want a note when the world gets bigger?</b></p>
-          <!-- ⚠️ THE SCOPE IS THE CONSENT — whatever is promised here is the whole
-               of what may ever be sent, so merch is named up front rather than
-               arriving later as a surprise nobody agreed to. Pills, not prose. -->
-          <ul class="ps-perks ps-news__what">
-            <li>🌍 new areas</li>
-            <li>✨ features</li>
-            <li>🎁 items &amp; wearables</li>
-            <li>🔧 fixes</li>
-            <li>🛒 new merch</li>
-          </ul>
-          <form class="ps-mail ps-news__form" id="psNewsForm">
-            <input class="ps-mail__in" id="psNewsIn" type="email" name="news" required
-                   autocomplete="email" inputmode="email" spellcheck="false" maxlength="160"
-                   placeholder="you@email.com" aria-label="Email for updates" />
-            <button class="btn btn--light" id="psNewsGo" type="submit">Keep me posted</button>
+      </details>
+    </div>
+
+    <div class="ps-main">
+      <!-- ── 3. NEWS FOR YOU + 4. THE ASK at its foot ── -->
+      <section class="ps-news" id="psNewsSec" hidden>
+        <h2 class="ps-news__h" id="psNewsH" hidden><PixelArtIcon name="bell" size="20px" /> News for you</h2>
+        <div id="psNotices"></div>
+        <details class="ps-ask" id="psAsk" hidden>
+          <summary class="ps-ask__row"><PixelArtIcon name="mail" size="16px" /> Want a note when the world gets bigger?</summary>
+          <form id="psAskForm">
+            <p id="psAskLead">New areas, features, items and the odd bit of merch — one click unsubscribes.</p>
+            <div class="ps-mail" id="psAskMail">
+              <input class="ps-mail__in" id="psNewsIn" type="email" name="news" required
+                     autocomplete="email" inputmode="email" spellcheck="false" maxlength="160"
+                     placeholder="you@email.com" aria-label="Email for updates" />
+              <button class="btn btn--light" id="psNewsGo" type="submit">Keep me posted</button>
+            </div>
+            <p class="ps-ask__note" id="psNewsNote"></p>
           </form>
-          <p class="ps-news__fine" id="psNewsNote">No schedule, no spam — one click unsubscribes.
-            The banana has never made me a penny, so the shop is the bit that keeps it going.</p>
-        </div>
-        <p class="ps-device ps-device--id" id="psDevice">🎫 Everything is saved on this device. Turn on JavaScript to log in and carry it anywhere.</p>
-      </div>
+        </details>
+      </section>
 
-      <!-- ── THE PASS, SMALL ────────────────────────────────────────────────
-           Secondary to the login and sized like it: header strip, banana, name,
-           rank. The barcode, patches and stamp belong to the FULL card, which is
-           one tap away — the same modal that shares it, so there is one "big
-           pass" in the product rather than two. -->
-      <aside class="ps-top__pass">
-        <div class="ps-official ps-official--mini" id="psCardMini" title="Open my pass">
-          <div class="ps-official__head">
-            <span>★ Banana World · Membership Pass</span>
-            <span class="ps-official__hole" aria-hidden="true"></span>
+      <!-- ── 6. THE PANE ── -->
+      <div class="ps-panes" id="psPanes">
+        <!-- ⚠️ THE ZERO STATE HAS NO NAVIGATION. A newcomer gets doors, not
+             three empty drawers and a wall of zeros. -->
+        <div class="ps-doors" id="psZero" hidden>
+          <a class="ps-door" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
+          <a class="ps-door" href="/forge/"><PixelIcon name="bolt" size="24px" /><b>Forge an emoji</b><span>→</span></a>
+          <a class="ps-door" href="/forge/items/"><PixelIcon name="palette" size="24px" /><b>Make an item</b><span>→</span></a>
+        </div>
+
+        <section class="ps-pane" role="tabpanel" id="panel-made" aria-labelledby="tab-made" tabindex="0" hidden>
+          <!-- chips appear only when two kinds are actually non-empty; with one
+               kind the heading carries the count -->
+          <div class="ps-chips" id="psMadeChips" role="group" aria-label="Filter what you made" hidden>
+            <button class="ps-chip" type="button" data-kind="" data-h="Everything you've made" aria-pressed="true">All</button>
+            <button class="ps-chip" type="button" data-kind="banana" data-h="Bananas" aria-pressed="false" hidden>Bananas</button>
+            <button class="ps-chip" type="button" data-kind="wearable" data-h="Items" aria-pressed="false" hidden>Items</button>
+            <button class="ps-chip" type="button" data-kind="emoji" data-h="GIFs &amp; emotes" aria-pressed="false" hidden>GIFs</button>
           </div>
-          <div class="ps-official__body">
-            <canvas id="psSig" width="200" height="200" aria-label="Your signature banana"></canvas>
-            <div class="ps-official__meta">
-              <p class="ps-card__name"><span id="psName">Fresh Dancing Banana</span><button
-                class="ps-nameedit" id="psNameEdit" type="button"
-                title="Write your own name on the pass" aria-label="Write your own name on the pass"><PixelArtIcon name="edit" size="16px" /></button></p>
-              <p class="ps-card__since" id="psSince">member since tonight</p>
-              <div id="psRank"></div>
-              <div class="ps-card__patches" id="psCardPatches"></div>
+          <h2 class="ps-pane__h" id="psMadeH">Everything you've made</h2>
+          <div class="ps-shelf" id="psMade"></div>
+          <div id="psOffer"></div>
+        </section>
+
+        <!-- GEAR FIRST: it is the thing you DO here. Badges are a trophy case. -->
+        <section class="ps-pane" role="tabpanel" id="panel-earned" aria-labelledby="tab-earned" tabindex="0" hidden>
+          <div class="ps-chips" role="group" aria-label="Filter what you earned">
+            <button class="ps-chip" type="button" data-blk="psGearBlock" aria-pressed="true">Gear</button>
+            <button class="ps-chip" type="button" data-blk="psBadgeBlock" aria-pressed="false">Badges</button>
+          </div>
+          <div id="psGearBlock">
+            <h2 class="ps-pane__h" id="psGearH">Gear</h2>
+            <div class="ps-gear" id="psGear"></div>
+          </div>
+          <div id="psBadgeBlock" hidden>
+            <h2 class="ps-pane__h" id="psBadgeH">Badges</h2>
+            <div class="ps-patches">
+              {PATCHES.map((p) => (
+                <div class="ps-patch" data-patch={p.id}>
+                  <PixelIcon name={p.icon} size="34px" />
+                  <h3>{p.title}</h3>
+                  <p>{p.hint}</p>
+                  <span class="ps-patch__date"></span>
+                </div>
+              ))}
             </div>
           </div>
-          <div class="ps-official__foot">
-            <canvas id="psBarcode" width="140" height="26" aria-hidden="true"></canvas>
-            <span class="ps-serial" id="psSerial"></span>
+        </section>
+
+        <section class="ps-pane" role="tabpanel" id="panel-numbers" aria-labelledby="tab-numbers" tabindex="0" hidden>
+          <div class="ps-stats">
+            {NUMBERS.map((n) => (
+              <div class="ps-stat" data-stat={n.k} data-free={n.free ? '1' : null} data-noshare={n.noshare ? '1' : null}>
+                <b>0</b><span>{n.label}</span><i>{n.hint}</i>
+              </div>
+            ))}
           </div>
-          <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
-        </div>
-        <button class="btn btn--light ps-open" id="psShareCard" type="button"><PixelArtIcon name="card" size="18px" /> Open my pass</button>
-        <p class="ps-device">✏️ Tap the pencil to name it — family-friendly only 🍌</p>
-      </aside>
-    </div>
-
-    <!-- ── TAB BAR ── -->
-    <div class="ps-tabs" role="tablist" aria-label="Your pass sections">
-      <button class="ps-tab" role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
-      <button class="ps-tab" role="tab" id="tab-stats" data-tab="stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Stats</button>
-      <button class="ps-tab" role="tab" id="tab-badges" data-tab="badges" aria-controls="panel-badges" aria-selected="false" tabindex="-1">Badges <span class="ps-tab__count" id="cnt-badges"></span></button>
-      <button class="ps-tab" role="tab" id="tab-gear" data-tab="gear" aria-controls="panel-gear" aria-selected="false" tabindex="-1">Gear <span class="ps-tab__count" id="cnt-gear"></span></button>
-      <button class="ps-tab" role="tab" id="tab-bananas" data-tab="bananas" aria-controls="panel-bananas" aria-selected="false" tabindex="-1">Bananas <span class="ps-tab__count" id="cnt-bananas"></span></button>
-      <button class="ps-tab" role="tab" id="tab-items" data-tab="items" aria-controls="panel-items" aria-selected="false" tabindex="-1">Items <span class="ps-tab__count" id="cnt-items"></span></button>
-      <button class="ps-tab" role="tab" id="tab-emotes" data-tab="emotes" aria-controls="panel-emotes" aria-selected="false" tabindex="-1">GIFs &amp; emotes <span class="ps-tab__count" id="cnt-emotes"></span></button>
-    </div>
-
-    <div class="ps-panels">
-      <!-- OVERVIEW -->
-      <section class="ps-panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
-        <div class="ps-hero-stats" id="psHeroStats"></div>
-
-        <!-- CLUB NOTICES — appears only when there is news about YOUR stuff -->
-        <div class="ps-ov-block" id="psNoticesSec" hidden>
-          <div class="ps-section">
-            <h2><PixelArtIcon name="bell" size="20px" /> World notifications</h2>
-            <p style="margin:0 0 1rem;font-size:0.88rem;opacity:0.75;">News about your stuff — never noise.</p>
-            <div class="ps-notices-list" id="psNotices"></div>
-          </div>
-        </div>
-
-        <div class="ps-ov-block">
-          <div class="ps-ov-head">
-            <h2>Recent badges</h2>
-            <button class="ps-seeall" type="button" data-goto="badges">See all →</button>
-          </div>
-          <div class="ps-ov-badges" id="psOvBadges"></div>
-        </div>
-
-        <div class="ps-ov-block">
-          <div class="ps-ov-head">
-            <h2>Latest creations</h2>
-            <button class="ps-seeall" type="button" data-goto="bananas">See all →</button>
-          </div>
-          <div class="ps-shelf" id="psOvCreations"></div>
-        </div>
-
-        <!-- 🛍 the offer, last: you have just looked at everything you made -->
-        <div class="ps-ov-block" id="psOffer"></div>
-      </section>
-
-      <!-- STATS — every number the pass keeps -->
-      <section class="ps-panel" role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" tabindex="0" hidden>
-        <p class="ps-panel__lead">Every number the pass keeps. Gentle by design — nobody's ranking you.</p>
-        <div class="ps-stats" id="psStats"></div>
-      </section>
-
-      <!-- BADGES -->
-      <section class="ps-panel" role="tabpanel" id="panel-badges" aria-labelledby="tab-badges" tabindex="0" hidden>
-        <p class="ps-panel__lead">Moments, not points. The dark ones tell you where the fun is hiding.</p>
-        <div class="ps-patches">
-          {PATCHES.map((p) => (
-            <div class="ps-patch" data-patch={p.id}>
-              <PixelIcon name={p.icon} size="34px" />
-              <h3>{p.title}</h3>
-              <p>{p.hint}</p>
-              <span class="ps-patch__date"></span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <!-- GEAR -->
-      <section class="ps-panel" role="tabpanel" id="panel-gear" aria-labelledby="tab-gear" tabindex="0" hidden>
-        <p class="ps-panel__lead">Earned on the floor, worn everywhere. Toggle it onto your banana — the rave, stickers and share cards all follow. The 🎁 ones were drawn by visitors: the maker's name rides along.</p>
-        <div class="ps-gear" id="psGear"></div>
-      </section>
-
-      <!-- BANANAS -->
-      <section class="ps-panel" role="tabpanel" id="panel-bananas" aria-labelledby="tab-bananas" tabindex="0" hidden>
-        <p class="ps-panel__lead">The bananas you built. Order one as a real sticker, mug or tee (🏷), or open it to keep dressing it up.</p>
-        <div class="ps-shelf" id="psBananas"></div>
-      </section>
-
-      <!-- ITEMS -->
-      <section class="ps-panel" role="tabpanel" id="panel-items" aria-labelledby="tab-items" tabindex="0" hidden>
-        <p class="ps-panel__lead">Wearables you made in the <a href="/forge/items/">Items Workshop</a>. Open one to keep tweaking — or submit it to the club: approved items drop at <a href="/rave/">the rave</a> with your name riding them.</p>
-        <div class="ps-shelf" id="psItems"></div>
-      </section>
-
-      <!-- GIFS & EMOTES -->
-      <section class="ps-panel" role="tabpanel" id="panel-emotes" aria-labelledby="tab-emotes" tabindex="0" hidden>
-        <p class="ps-panel__lead">Pixel emojis and GIFs from the forge. Open one to download it for any chat.</p>
-        <div class="ps-shelf" id="psEmotes"></div>
-      </section>
-    </div>
-
-    <!-- ── PERSISTENT FOOTER: the doors out (identity moved up under the card) ── -->
-    <div class="ps-foot">
-      <div class="ps-doors">
-        <a class="btn btn--dark" href="/make-a-banana/">Make a banana →</a>
-        <a class="btn btn--light" href="/rave/">To the floor →</a>
+        </section>
       </div>
     </div>
   </div>

@@ -1,11 +1,14 @@
 // THE CARD — client side of /pass/: draws the signature banana (from bb-last,
-// dancing on the shared wall clock), lights earned patches, fills the gentle
-// stats and hosts the Shelf in its true home. CLIENT-ONLY.
+// dancing on the shared wall clock), lights earned patches, fills the numbers
+// and hosts the Shelf in its true home. CLIENT-ONLY.
+// ⚠️ THE PAGE IS THE CARD, THEN THE PILES, THEN THE ACCOUNT. Anything a player
+// does once ever (log in, link a device, log out, join the list) lives below
+// the things they came for — see docs/pass-redesign-spec.md.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams } from '../lib/banana-engine.js';
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies } from '../lib/banana-pass.js';
-import { PATCHES, GEAR, rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies } from '../lib/banana-pass.js';
+import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
   startLink, finishLink, mailSignin, mailUse, logout,
   newsJoin, newsConfirm } from '../lib/pass-sync.js';
@@ -62,8 +65,17 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 // that just lost signal has to lose the race, not the page.
 const PULL_MS = 7000;      // the account pull — a background refresh, keep it short
 const LANDING_MS = 12000;  // spending a magic link — worth waiting a bit longer for
-const LOGIN_WAIT = '🔑 Finishing your login…';
-const OFFLINE_LINE = '📡 Couldn’t reach your account just now — this is what’s saved on this device, and it catches up on its own.';
+// 📡 the three states of the keep row's summary. It is the SUMMARY on purpose:
+// magic-link feedback and the offline apology can never hide in a shut drawer.
+const LINE_IN = 'Saved to your email';
+const LINE_WAIT = 'Signing you in…';
+const LINE_COLD = 'Offline — showing this device. It catches up on its own.';
+const LINE_OUT = 'Save this to your email later';
+const TAB_KEY = 'ps-tab-v1';
+const NEWS_KEY = 'ps-news-v1';
+// old bookmarks still land somewhere sensible (nothing in the world links a
+// pass hash, but seven tabs were live for months)
+const ALIAS = { overview: 'made', bananas: 'made', items: 'made', emotes: 'made', badges: 'earned', gear: 'earned', stats: 'numbers' };
 
 // 🧾 the page state lives here because paint() runs TWICE — once from this
 // device before any network, again when the account lands — while the gear
@@ -74,6 +86,9 @@ let SHARE_EXTRA = null;
 let lastIdx = -1;          // the signature banana's frame; -1 forces a redraw
 let syncWired = false;
 let offerShown = false;
+let HAVE = false;          // anything made, earned or counted — !HAVE IS the zero state
+let madeKind = '';         // the Made pane's filter ('' = everything)
+let selectTab = null;      // set by initTabs(); paint() re-applies the pane on a repaint
 
 // 🧢 THE EQUIPPED SET. `c` is a COMMA LIST (a lone id is a one-item list) —
 // the same shape the builder, the rooms and the sync blob all speak.
@@ -86,7 +101,13 @@ const cSet = (ids) => { OUTFIT.c = ids.slice(0, C_MAX).join(',') || undefined; }
 // loadout the builder would refuse.
 const spotOf = (id) => { const c = (catCustomP(id) || [])[0]; return c ? String(c.anchor || '') + (c.hand || '') : ''; };
 
-const setCount = (id, n) => { const e = el(id); if (e) e.textContent = n; };
+const setLine = (t) => { el('psSyncNote').textContent = t; };
+const subsPending = (k) => {
+  try {
+    return (JSON.parse(localStorage.getItem(k) || '[]') || [])
+      .filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000).length;
+  } catch (e) { return 0; }
+};
 
 function withTimeout(p, ms) {
   let t;
@@ -133,19 +154,22 @@ function loadOutfit() {
 // sat dead over blank panes, and if either threw it never built at all.
 // paint() reads only this device, so the page is whole and clickable before a
 // byte of network — refresh() can then only ever IMPROVE it.
+// ⚠️ paint() FIRST: initTabs() and initSync() both read HAVE, which is the
+// difference between a zero state and a dashboard.
 async function init() {
   passVisit();
   if (window.gtag) window.gtag('event', 'pass_view');
   const landing = takeLanding();   // ?in= leaves the URL NOW; SPENDING it waits
+  paint();
   initTabs();
   initSync();
-  paint();
   initShare();
+  initChips();
   startSignature();
-  if (landing && landing.kind === 'in') {
-    const n = el('psSyncNote');
-    if (n) n.textContent = LOGIN_WAIT; // or they retype an address they just used
-  }
+  // ⚠️ the shared shelf re-renders itself after a delete, so the tile dressing
+  // is hung off the host rather than off one render call
+  new MutationObserver(dressTiles).observe(el('psMade'), { childList: true });
+  if (landing && landing.kind === 'in') setLine(LINE_WAIT);
   setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
   catalogReady.then(renderGear);         // the catalog landed — repaint the whole closet
   await refresh(landing);
@@ -154,9 +178,9 @@ async function init() {
 // — the network pass: spend a magic link, pull the account, repaint what moved —
 async function refresh(landing) {
   // 📯 verdicts on your gallery/catalog submissions — no account needed, never blocking
-  checkGalleryVerdicts({ force: true }).then(renderNotices);
-  checkCatalogVerdicts({ force: true }).then(renderNotices);
-  checkTrymReplies({ force: true }).then(renderNotices);   // 💬 Message from Trym
+  checkGalleryVerdicts({ force: true }).then(renderNews);
+  checkCatalogVerdicts({ force: true }).then(renderNews);
+  checkTrymReplies({ force: true }).then(renderNews);   // 💬 Message from Trym
   if (!landing && !linked()) return;   // nothing to reach — the local page IS the page
   let cold = false;
   if (landing) {
@@ -177,20 +201,18 @@ async function refresh(landing) {
   // ⚠️ the repaint runs LAST and cannot be allowed to throw: the page is
   // already whole, so a bad blob must cost the refresh, never the dashboard.
   try {
-    initSync(); // a magic-link login flips this panel from "log in" to "your pass"
     paint();    // the pull rewrites bb-last, the stats and the shelf
+    initSync(); // a magic-link login flips the keep row from "log in" to "saved"
   } catch (e) { cold = true; }
   netNote(cold);
 }
 
-// 📡 an unreachable account is SAID OUT LOUD. The page is honest either way —
-// it is drawn from this device — but quietly showing yesterday's numbers behind
-// a spinner-less blank is the thing that reads as broken.
+// 📡 an unreachable account is SAID OUT LOUD, on the row that owns sync status.
+// The page is honest either way — it is drawn from this device — but quietly
+// showing yesterday's numbers behind a spinner-less blank reads as broken.
 function netNote(cold) {
-  const note = el('psSyncNote');
-  if (!note) return;
-  if (cold) note.textContent = OFFLINE_LINE;
-  else if (note.textContent === LOGIN_WAIT) note.textContent = '';
+  if (cold) setLine(LINE_COLD);
+  else if (el('psSyncNote').textContent === LINE_WAIT) setLine(linked() ? LINE_IN : LINE_OUT);
 }
 
 // ⚠️ paint() RUNS TWICE — once from localStorage, once when the account lands —
@@ -198,188 +220,151 @@ function netNote(cold) {
 function paint() {
   PASS = passGet();
   loadOutfit();
-  const pass = PASS;
-  const patches = pass.patches || {};
-  const days = pass.days || [];
+  const patches = PASS.patches || {};
+  const days = PASS.days || [];
+  const S = PASS.stats || {};
 
   renderName();
   wireName();
-  const created = pass.created || Date.now();
-  const since = new Date(created);
-  el('psSince').textContent = 'member since ' + since.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-  // — your standing at the club, ON the card: level chip + rep bar —
-  const rep = (pass.stats || {}).rep || 0;
-  const lv = levelFor(rep);
-  const rk = rankFor(lv.level), nx = nextRank(lv.level);
-  el('psRank').innerHTML = '<span class="ps-rankchip">LVL ' + lv.level + ' · ' + rk.title.toUpperCase() + '</span>'
-    + '<span class="ps-rankbar"><i style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></i></span>'
-    + '<span class="ps-ranknote">' + lv.into + ' / ' + lv.need + ' rep'
-    + (nx ? ' — next title at level ' + nx.at : ' — top of the ladder') + '</span>';
-
-  // — the official furniture: serial + barcode, same seeded pattern as the
-  // share-card PNG (a real document keeps its number) —
+  const created = PASS.created || Date.now();
+  el('psSince').textContent = 'member since ' + new Date(created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  // the official furniture: serial + barcode, same seeded pattern as the
+  // share-card PNG (a real document keeps its number)
   el('psSerial').textContent = 'Nº ' + created.toString(36).toUpperCase();
   drawBarcode(el('psBarcode'), created);
 
-  // — 📯 world notifications: verdicts on your gallery submissions (and future news
-  // about YOUR stuff). Renders only when there is something to say. —
-  renderNotices();
+  // — your standing at the club, ON the card. ⚠️ no bar and no rep number until
+  //   rep exists: 0 / 195 is a scoreboard shown to somebody who hasn't played. —
+  const rep = S.rep || 0;
+  const lv = levelFor(rep);
+  const rk = rankFor(lv.level);
+  el('psRank').innerHTML = '<span class="ps-rankchip">' + (rep ? 'LVL ' + lv.level + ' · ' : '') + rk.title.toUpperCase() + '</span>'
+    + (rep ? '<span class="ps-rankbar"><i style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></i></span>'
+      + '<span class="ps-ranknote">' + lv.into + ' / ' + lv.need + ' rep — what you get for showing up</span>' : '');
 
   // — patches: light the earned, pin the first few to the card —
   // ⚠️ clear first: on the repaint these classes and tiles are already there
   document.querySelectorAll('.ps-patch--earned').forEach((c) => c.classList.remove('ps-patch--earned'));
   const earned = PATCHES.filter((d) => patches[d.id]);
   earned.forEach((d) => {
-    const cell = document.querySelector(`.ps-patch[data-patch="${d.id}"]`);
+    const cell = document.querySelector('.ps-patch[data-patch="' + d.id + '"]');
     if (!cell) return;
     cell.classList.add('ps-patch--earned');
-    const when = new Date(patches[d.id]);
-    cell.querySelector('.ps-patch__date').textContent = when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    cell.querySelector('.ps-patch__date').textContent = new Date(patches[d.id]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   });
   const strip = el('psCardPatches');
   strip.replaceChildren();
-  if (earned.length) {
-    earned.slice(0, 6).forEach((d) => {
-      const src = document.querySelector(`.ps-patch[data-patch="${d.id}"] svg`);
-      if (src) strip.appendChild(src.cloneNode(true));
-    });
-  } else {
-    strip.innerHTML = '<span style="font-size:0.72rem;opacity:0.6;">no badges yet — the floor awaits</span>';
-  }
+  earned.slice(0, 6).forEach((d) => {
+    const src = document.querySelector('.ps-patch[data-patch="' + d.id + '"] svg');
+    if (src) strip.appendChild(src.cloneNode(true));
+  });
+  strip.hidden = !earned.length;   // an empty band says nothing; a door says it better
+  el('psBadgeH').textContent = 'Badges ' + earned.length + '/' + PATCHES.length;
 
-  // — gentle stats (these feed the share card's proud one-liner) —
-  const S = pass.stats || {};
-  const rows = [
-    [S.rep, 'rep at the club'],
-    [S.raveMin, 'rave minutes'],
-    [S.drops, 'drops survived'],
-    [S.jelly, 'jelly collected'],
-    [S.hypes, 'jelly times'],
-    [S.fives, 'fistbumps'],
-    [S.beers, 'happy hours won'],
-    [S.vinyls, 'records delivered'],
-    [S.builds, 'bananas taken home'],
-    [S.forges, 'emojis forged'],
-    [days.length, 'days on the pass'],
-  ].filter(([n]) => n > 0);
-
-  // shelf counts — power the tab badges AND the overview
   const all = shelfList();
-  const nBananas = all.filter((c) => c.kind === 'banana').length;
-  const nItems = all.filter((c) => c.kind === 'wearable').length;
-  const nEmotes = all.filter((c) => c.kind === 'emoji').length;
+  const kinds = { banana: 0, wearable: 0, emoji: 0 };
+  all.forEach((c) => { if (c.kind in kinds) kinds[c.kind]++; });
 
-  // — OVERVIEW hero: three headline tiles, the three pillars (create · rave ·
-  //   collect). Always three, even at zero — a full frontpage that gently
-  //   points at what's still to do. —
-  const hero = [
-    ['🍌', S.builds || nBananas, 'bananas built'],
-    ['🪩', S.raveMin || 0, 'rave minutes'],
-    ['🏅', earned.length, 'badges earned'],
-  ];
-  if (el('psHeroStats')) {
-    el('psHeroStats').innerHTML = hero.map(([e, n, l]) =>
-      `<button type="button" class="ps-herostat" data-goto="stats" aria-label="${n} ${l} — see all your numbers"><b><em>${e}</em>${n}</b><span>${l}</span></button>`).join('');
-  }
+  // — THE NUMBERS. Tiles, labels and earn-hints are server-rendered; this only
+  //   fills them in and dims the zeros (the badge pane's own pattern — a zero
+  //   keeps its tile and says how to move it). `data-free` counts are ones
+  //   everybody has, so they never unlock the tab on their own. —
+  const NUM = { level: lv.level, coins: coinsNow(), badges: earned.length, days: days.length,
+    items: kinds.wearable, builds: S.builds || kinds.banana, forges: S.forges || kinds.emoji };
+  let any = false;
+  document.querySelectorAll('.ps-stat').forEach((t) => {
+    const k = t.dataset.stat;
+    const n = (k in NUM ? NUM[k] : S[k]) || 0;
+    t.firstElementChild.textContent = n;
+    t.classList.toggle('ps-stat--zero', !n);
+    if (n && !t.dataset.free) any = true;
+  });
 
-  // — STATS tab: every number we keep, shown in full (zeros included, so the
-  //   gaps read as gentle nudges rather than hidden features) —
-  if (el('psStats')) {
-    const statAll = [
-      [lv.level, 'level'],
-      [S.rep || 0, 'rep at the club'],
-      [S.raveMin || 0, 'rave minutes'],
-      [S.drops || 0, 'drops survived'],
-      [S.jelly || 0, 'jelly collected'],
-      [S.hypes || 0, 'jelly times'],
-      [S.fives || 0, 'fistbumps'],
-      [S.beers || 0, 'happy hours won'],
-      [S.vinyls || 0, 'records delivered'],
-      [S.builds || nBananas, 'bananas taken home'],
-      [S.forges || nEmotes, 'emojis forged'],
-      [nItems, 'items made'],
-      [earned.length, 'badges earned'],
-      [days.length, 'days on the pass'],
-    ];
-    el('psStats').innerHTML = statAll.map(([n, l]) => `<div class="ps-stat"><b>${n}</b><span>${l}</span></div>`).join('');
-  }
+  // — ⚠️ THE ZERO STATE HAS NO NAVIGATION. Nothing made, nothing earned, nothing
+  //   counted = three doors in the pane slot and not one tile of nothing. —
+  HAVE = !!(all.length || earned.length || any);
+  el('psNav').hidden = !HAVE;
+  el('psZero').hidden = HAVE;
+  el('psSigSlot').hidden = HAVE;   // a dashed frame beats a banana they never made
+  el('psSig').hidden = !HAVE;
+  el('psDoorMake').hidden = !HAVE; // down there the pane doors ARE the exits
+  el('tab-numbers').hidden = !any;
+  if (!HAVE) document.querySelectorAll('.ps-pane').forEach((p) => { p.hidden = true; });
+  else if (selectTab) selectTab();
 
-  // — OVERVIEW recent badges: the latest few earned, deep-linking to the tab —
-  const ov = el('psOvBadges');
-  if (ov) {
-    const recent = earned.slice().sort((a, b) => patches[b.id] - patches[a.id]).slice(0, 4);
-    if (recent.length) {
-      ov.innerHTML = '';
-      recent.forEach((d) => {
-        const src = document.querySelector(`.ps-patch[data-patch="${d.id}"] svg`);
-        const cell = document.createElement('div');
-        cell.className = 'ps-ov-badge';
-        if (src) cell.appendChild(src.cloneNode(true));
-        const b = document.createElement('b');
-        b.textContent = d.title;
-        cell.appendChild(b);
-        ov.appendChild(cell);
-      });
-    } else {
-      ov.innerHTML = '<p class="ps-ov-empty">No badges yet — most of them hide on the dance floor. <a href="/rave/">Step onto the floor →</a></p>';
-    }
-  }
+  // — MADE: chips only when two kinds are actually non-empty; with one kind the
+  //   heading carries the count and the row never costs a line. —
+  let n2 = 0;
+  document.querySelectorAll('#psMadeChips .ps-chip').forEach((c) => {
+    const k = c.dataset.kind;
+    if (!k) return;
+    c.hidden = !kinds[k];
+    if (kinds[k]) n2++;
+  });
+  el('psMadeChips').hidden = n2 < 2;
+  if (n2 < 2) madeKind = n2 ? Object.keys(kinds).find((k) => kinds[k]) : '';
+  renderMade();
 
-  // — creations, SPLIT BY KIND so it's not a junk drawer: bananas (characters)
-  //   open in the builder · items (wearables) + emotes open in the forge —
-  renderShelf(el('psBananas'), { kinds: ['banana'], emptyMsg: 'No bananas yet — build one in the workshop.',
-    onPick: (c) => { location.href = '/make-a-banana/?' + c.params; } });
-  renderShelf(el('psItems'), { kinds: ['wearable'], emptyMsg: 'No items yet — make one in the Items Workshop.',
-    onPick: (c) => { location.href = '/forge/items/?shelf=' + c.id; } });
-  renderShelf(el('psEmotes'), { kinds: ['emoji'], emptyMsg: 'No emotes yet — draw one in the forge.',
-    onPick: (c) => { location.href = '/forge/?shelf=' + c.id; } });
-
-  // — OVERVIEW latest creations: a mixed strip of the newest few, each routed
-  //   to its own tool (banana → builder, item/emote → forge) —
-  renderShelf(el('psOvCreations'), { limit: 4,
-    emptyMsg: 'Nothing yet — build a banana, forge an emoji or make an item and it lands here.',
-    onPick: (c) => {
-      location.href = c.kind === 'banana' ? '/make-a-banana/?' + c.params
-        : (c.kind === 'wearable' ? '/forge/items/?shelf=' : '/forge/?shelf=') + c.id;
-    } });
-
-  // 🛍 the offer, at the BOTTOM of the overview — you have just scrolled past
-  // your badges and everything you have made, which is the one moment on this
-  // page where "have one for real" is a continuation and not an interruption.
-  // Same card as the download moment, so the pitch reads identically everywhere.
-  (() => {
-    const mount = el('psOffer');
-    if (!mount) return;
-    const fit = myOutfit();
-    mount.replaceChildren();   // ⚠️ a repaint must REPLACE this card, not stack a second one
+  // 🛍 the offer, at the foot of MADE — you have just looked at everything you
+  // made, the one moment on this page where "have one for real" continues the
+  // thought instead of interrupting it. ⚠️ MADE BY YOU IS A CLAIM: only a
+  // banana this device actually built may wear it, and a card that cannot make
+  // the claim shows the classic banana bare instead of borrowing someone's.
+  const fit = myOutfit();
+  const mount = el('psOffer');
+  mount.replaceChildren();   // ⚠️ a repaint must REPLACE this card, not stack a second one
+  if (fit.made || kinds.banana) {
     mount.appendChild(offerCard({
       kicker: 'Make it real',
       head: 'Take your banana off the screen',
       cta: 'See it as a sticker →',
       href: '/make-a-banana/sticker/?' + outfitParams(fit).toString(),
       outfit: fit,
-      flag: 'MADE BY YOU',
-      onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: 'pass_overview' }); },
+      bare: !fit.made,
+      flag: fit.made ? 'MADE BY YOU' : '',
+      onGo: () => { if (window.gtag) window.gtag('event', 'offer_click', { from: 'pass_made' }); },
     }));
-    if (window.gtag && !offerShown) { offerShown = true; window.gtag('event', 'offer_shown', { from: 'pass_overview' }); }
-  })();
+    if (window.gtag && !offerShown) { offerShown = true; window.gtag('event', 'offer_shown', { from: 'pass_made' }); }
+  }
 
-  // — tab counts —
-  setCount('cnt-badges', earned.length + '/' + PATCHES.length);
-  setCount('cnt-bananas', nBananas);
-  setCount('cnt-items', nItems);
-  setCount('cnt-emotes', nEmotes);
-
+  renderNews();
   renderGear();
 
   SHARE_EXTRA = {
     rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
-    stats: rows.filter(([, l]) => l !== 'rep at the club').slice(0, 3),
+    // the proud one-liner reads straight off the tiles that are actually non-zero
+    stats: [...document.querySelectorAll('.ps-stat:not(.ps-stat--zero):not([data-noshare])')].slice(0, 3)
+      .map((t) => [+t.firstElementChild.textContent, t.children[1].textContent]),
   };
 
   lastIdx = -1;                        // the signature banana redraws on its next frame
   assetsReady().then(bakeAvatar);
+}
+
+// — ONE MIXED-KIND SHELF, newest first, each tile routed to its own tool —
+function renderMade() {
+  const chips = [...document.querySelectorAll('#psMadeChips .ps-chip')];
+  const on = chips.find((c) => c.dataset.kind === madeKind) || chips[0];
+  chips.forEach((c) => c.setAttribute('aria-pressed', String(c === on)));
+  const n = shelfList().filter((c) => !madeKind || c.kind === madeKind).length;
+  el('psMadeH').textContent = on.dataset.h + ' ' + n;
+  renderShelf(el('psMade'), {
+    kinds: madeKind ? [madeKind] : undefined,
+    onPick: (c) => {
+      location.href = c.kind === 'banana' ? '/make-a-banana/?' + c.params
+        : (c.kind === 'wearable' ? '/forge/items/?shelf=' : '/forge/?shelf=') + c.id;
+    },
+  });
+}
+
+// 🛍 THE ASK AT THE LAST CLICK, ON THE ITEM. The shared shelf ships a bare 🏷
+// glyph; here it becomes a labelled 44px button in the tile's foot. Re-dressed
+// from outside so banana-shelf.js — rendered by four other surfaces — is
+// untouched ([[cro-placement-doctrine]]).
+function dressTiles() {
+  el('psMade').querySelectorAll('.shelf-tag').forEach((t) => {
+    if (!t.firstElementChild) t.innerHTML = iconSvg('sticker', { size: 13 }) + 'Make it real';
+  });
 }
 
 // — the card: YOUR name if you wrote one, the outfit-name otherwise —
@@ -389,14 +374,14 @@ function paint() {
 // outfit-names; the no-free-text-on-the-floor doctrine is untouched.
 function customName() { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } }
 function renderName() {
-  if (document.getElementById('psNameInput')) return; // mid-edit — a repaint must not eat the field
+  if (el('psNameInput')) return; // mid-edit — a repaint must not eat the field
   el('psName').textContent = customName() || autoName(OUTFIT);
 }
 function wireName() {
   const btn = el('psNameEdit');
   if (!btn) return;
   btn.onclick = () => {   // assignment, so a repaint replaces rather than stacks
-    if (document.getElementById('psNameInput')) return;
+    if (el('psNameInput')) return;
     const inp = document.createElement('input');
     inp.id = 'psNameInput';
     inp.maxLength = 24;
@@ -455,6 +440,7 @@ function saveOutfit() {
 // not. A refresh "fixed" it because the one-shot block ran again.
 // ⚠️ So BOTH lists are rendered here. If a third source of gear ever appears,
 // it renders HERE too — never by appending to the host from outside.
+// (earned-first is CSS `order`, not a sort — see .ps-gear__item in pass.astro)
 function renderGear() {
   const host = el('psGear');
   if (!host || !PASS) return;
@@ -513,7 +499,8 @@ function renderGear() {
     });
   });
   renderMine(host);
-  setCount('cnt-gear', GEAR.filter(gearEarned).length + ownedCatalog().length);
+  const own = ownedCatalog().length;
+  el('psGearH').textContent = 'Gear ' + (GEAR.filter(gearEarned).length + own) + '/' + (GEAR.length + own);
 }
 
 // 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
@@ -619,30 +606,31 @@ function bakeAvatar() {
   } catch (e) { /* quota or a tainted canvas — the nav just stays generic */ }
 }
 
-// ---- THE DASHBOARD TABS -------------------------------------------------
-// The pass card is the persistent "avatar"; these tabs swap the content below
-// it (ARIA tab pattern + arrow-key nav + #hash deep-links). Canvases render on
-// init regardless of which panel is hidden — a canvas bitmap is independent of
-// layout — so nothing needs lazy re-drawing when a tab is first shown.
+// ---- THE SUBNAV ---------------------------------------------------------
+// Three tabs — Made · Earned · Numbers — ARIA tab pattern, arrow keys, #hash.
+// The default is the pane you used LAST: replacing one wrong default with
+// another charges the 100th visit for first-visit clarity. Canvases render
+// regardless of which panel is hidden, so nothing needs lazy re-drawing.
 function initTabs() {
   const tabs = [...document.querySelectorAll('.ps-tab')];
   if (!tabs.length) return;
-  const panelOf = (name) => document.getElementById('panel-' + name);
-  const names = tabs.map((t) => t.dataset.tab);
+  let cur = '';
 
   function select(name, focus) {
-    if (!names.includes(name)) name = 'overview';
+    cur = tabs.some((t) => t.dataset.tab === name && !t.hidden) ? name : 'made';
     tabs.forEach((t) => {
-      const on = t.dataset.tab === name;
+      const on = t.dataset.tab === cur;
       t.setAttribute('aria-selected', on ? 'true' : 'false');
       t.tabIndex = on ? 0 : -1;
-      const p = panelOf(t.dataset.tab);
+      const p = el('panel-' + t.dataset.tab);
       if (p) p.hidden = !on;
       if (on && focus) t.focus();
     });
-    try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; }
-    if (window.gtag) window.gtag('event', 'pass_tab', { tab: name });
+    try { localStorage.setItem(TAB_KEY, cur); } catch (e) {}
+    try { history.replaceState(null, '', '#' + cur); } catch (e) {}
+    if (window.gtag) window.gtag('event', 'pass_tab', { tab: cur });
   }
+  selectTab = () => select(cur || firstTab());
 
   tabs.forEach((t, i) => {
     t.addEventListener('click', () => select(t.dataset.tab));
@@ -655,22 +643,34 @@ function initTabs() {
       if (j !== null) { e.preventDefault(); select(tabs[j].dataset.tab, true); }
     });
   });
+  if (!el('psNav').hidden) selectTab();
+}
 
-  // anything with data-goto jumps to that tab: the overview's "See all →"
-  // links AND the three headline stat tiles (→ the full Stats tab).
-  // ⚠️ DELEGATED, not bound per element — paint() rebuilds the stat tiles, and
-  // a listener attached to the old node dies with it.
+// hash → the tab you used last → what the nav dot was counting → made.
+// ⚠️ main.js clears pass-seen-v1 before this module runs, so the badge half of
+// the dot is already spent; unread notices are what is left of it.
+function firstTab() {
+  const h = (location.hash || '').slice(1);
+  let last = '';
+  try { last = localStorage.getItem(TAB_KEY) || ''; } catch (e) {}
+  return ALIAS[h] || h || last || (passNotices().some((n) => !n.read) ? 'earned' : 'made');
+}
+
+// filter chips — ONE delegated handler for both rows. A `data-blk` chip shows
+// its own block (Gear · Badges); a `data-kind` chip filters the shelf.
+function initChips() {
   document.addEventListener('click', (ev) => {
-    const b = ev.target && ev.target.closest && ev.target.closest('[data-goto]');
-    if (!b) return;
-    select(b.dataset.goto);
-    const p = panelOf(b.dataset.goto);
-    if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!ev.target.closest) return;
+    // a notice is clamped to two lines; the whole card opens the rest
+    const n = ev.target.closest('.ps-notice');
+    if (n) { if (!ev.target.closest('a')) n.classList.toggle('ps-notice--open'); return; }
+    const c = ev.target.closest('.ps-chip');
+    if (!c) return;
+    const row = [...c.parentNode.children];
+    row.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+    if (c.dataset.blk) row.forEach((x) => { el(x.dataset.blk).hidden = x !== c; });
+    else { madeKind = c.dataset.kind; renderMade(); }
   });
-
-  // open on the hash if the page was linked to a specific tab (#gear …)
-  const initial = (location.hash || '').replace('#', '');
-  if (initial && names.includes(initial)) select(initial);
 }
 
 // ---- the on-page barcode: same seeded pattern family as the share card ----
@@ -689,33 +689,40 @@ function drawBarcode(cv, seed) {
   }
 }
 
-// ---- 📯 world notifications ---------------------------------------------
-function renderNotices() {
-  const sec = el('psNoticesSec');
+// ---- 📯 NEWS FOR YOU, and the ask at its foot ----------------------------
+// Verdicts on things YOU made, never system chatter. Renders only when there
+// is something to say (anti-fatigue).
+function renderNews() {
+  const sec = el('psNewsSec');
   if (!sec) return;
   const list = passNotices();
-  let pend = 0, catPend = 0;
-  try {
-    pend = (JSON.parse(localStorage.getItem('gal-subs-v1') || '[]') || [])
-      .filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000).length;
-  } catch (e) {}
-  try {
-    catPend = (JSON.parse(localStorage.getItem('cat-subs-v1') || '[]') || [])
-      .filter((s) => s.status === 'pending' && Date.now() - s.at < 30 * 86400000).length;
-  } catch (e) {}
-  if (!list.length && !pend && !catPend) { sec.hidden = true; return; }
-  sec.hidden = false;
+  const pend = subsPending('gal-subs-v1'), catPend = subsPending('cat-subs-v1');
+  const news = list.length || pend || catPend;
+  // ⚠️ ALL UNREAD + the two most recent read. passNoticesMarkRead() marks the
+  // whole store read a beat later, so a render capped below the unread count
+  // would make notices 3..N permanently unreachable — and a verdict on
+  // something you made would vanish having never been seen.
+  let k = 0;
   const fmt = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  el('psNewsH').hidden = !news;
   el('psNotices').innerHTML =
-    (pend ? '<p class="ps-pendingline">⏳ ' + pend + (pend === 1 ? ' banana is' : ' bananas are')
+    (pend ? '<p class="ps-pendingline">' + pend + (pend === 1 ? ' banana is' : ' bananas are')
       + ' with the banana guy for review — the verdict usually lands within 48 hours.</p>' : '')
-    + (catPend ? '<p class="ps-pendingline">🎁 ' + catPend + (catPend === 1 ? ' item is' : ' items are')
+    + (catPend ? '<p class="ps-pendingline">' + catPend + (catPend === 1 ? ' item is' : ' items are')
       + ' with the club for review — approved pieces go on sale with your name on them.</p>' : '')
-    + list.map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
-      + '<span class="ps-notice__icon">' + n.icon + '</span>'
-      + '<div class="ps-notice__body">' + n.text
-      + (n.link ? ' <a href="' + n.link + '">→</a>' : '')
-      + '<span class="ps-notice__date">' + fmt(n.at) + '</span></div></div>').join('');
+    + list.filter((n) => !n.read || ++k <= 2)
+      .map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
+        + '<span class="ps-notice__icon">' + n.icon + '</span>'
+        + '<div class="ps-notice__main"><div class="ps-notice__body">' + n.text
+        + (n.link ? ' <a href="' + n.link + '">→</a>' : '') + '</div></div>'
+        + '<span class="ps-notice__side"><span class="ps-notice__date">' + fmt(n.at) + '</span></span></div>').join('');
+  // 📣 the ask is EARNED by the strip above it: never the first thing a
+  // newcomer with nothing meets, never shown to somebody already on the list,
+  // and nowhere near the login — consent stays unbundled.
+  let sub = false;
+  try { sub = localStorage.getItem(NEWS_KEY) === '1'; } catch (e) {}
+  el('psAsk').hidden = sub || !(news || HAVE);
+  sec.hidden = !news && el('psAsk').hidden;
 }
 
 // ---- share my card: the membership card as a 1200×630 PNG ---------------
@@ -988,29 +995,24 @@ function openShareModal(cv) {
 function initShare() {
   const btn = el('psShareCard');
   if (!btn) return;
-  // 🎫 the mini card IS the button for its own full-size version — one "big
-  // pass" in the product (the shareable one), reached two ways.
-  // ⚠️ not a <button> wrapper: the name-edit pencil lives inside the card, and
-  // a button inside a button is invalid and unclickable.
-  const mini = el('psCardMini');
-  if (mini) {
-    mini.addEventListener('click', (ev) => {
-      if (ev.target.closest('#psNameEdit') || ev.target.closest('#psNameInput')) return;
-      btn.click();
-    });
-  }
+  // 🎫 THE CARD IS THE BUTTON for its own full-size version — one "big pass" in
+  // the product, reached two ways.
+  // ⚠️ not a <button> wrapper: the name pencil and the empty-slot door live
+  // inside the card, and a button inside a button is invalid and unclickable.
+  el('psCard').addEventListener('click', (ev) => {
+    if (ev.target.closest('#psNameEdit,#psNameInput,#psSigSlot,#psShareCard')) return;
+    btn.click();
+  });
   const closeShare = () => { el('psShareModal').hidden = true; };
-  if (el('psShareModal')) {
-    el('psShareClose').addEventListener('click', closeShare);
-    el('psShareModal').addEventListener('click', (e) => { if (e.target === el('psShareModal')) closeShare(); });
-    addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('psShareModal').hidden) closeShare(); });
-  }
+  el('psShareClose').addEventListener('click', closeShare);
+  el('psShareModal').addEventListener('click', (e) => { if (e.target === el('psShareModal')) closeShare(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('psShareModal').hidden) closeShare(); });
   let busy = false;
   btn.addEventListener('click', async () => {
     if (busy) return;
     busy = true;
     const was = btn.innerHTML;
-    btn.innerHTML = was.replace('Open my pass', 'Opening…');
+    btn.innerHTML = was.replace('tap to share', 'opening…');
     try {
       const cv = await composeCard(OUTFIT, PASS || passGet(), SHARE_EXTRA);
       openShareModal(cv);
@@ -1035,7 +1037,7 @@ function wireLink(note) {
         el('psLinkCodeHint').textContent = 'type this on the other device — good for ' + mins + ' min, once';
         el('psLinkCode').hidden = false;
       } catch (e) {
-        if (note) note.textContent = 'Could not make a code — try again in a moment.';
+        note.textContent = 'Could not make a code — try again in a moment.';
       }
       startBtn.disabled = false;
     });
@@ -1044,19 +1046,17 @@ function wireLink(note) {
   if (!go || !inp) return;
   const run = async () => {
     const code = inp.value.trim();
-    if (code.length < 6) { if (note) note.textContent = 'That code looks too short.'; return; }
+    if (code.length < 6) { note.textContent = 'That code looks too short.'; return; }
     go.disabled = true;
-    if (note) note.textContent = 'Your device will ask to confirm — that is this device’s own passkey…';
+    note.textContent = 'Your device will ask to confirm — that is this device’s own passkey…';
     try {
       await finishLink(code);
       passToast('🔗 <b>DEVICE LINKED</b><br>Same pass, both devices.');
       setTimeout(() => location.reload(), 1200);
     } catch (e) {
-      if (note) {
-        note.textContent = e && e.name === 'NotAllowedError'
-          ? 'No worries — nothing happened.'
-          : (e && e.message) || 'Could not link this device.';
-      }
+      note.textContent = e && e.name === 'NotAllowedError'
+        ? 'No worries — nothing happened.'
+        : (e && e.message) || 'Could not link this device.';
       go.disabled = false;
     }
   };
@@ -1064,136 +1064,89 @@ function wireLink(note) {
   inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') run(); });
 }
 
-// ---- login panel --------------------------------------------------------
-// ⚠️ EMAIL IS THE ONLY THING ANYONE HAS TO UNDERSTAND. This panel used to open
-// with "do you have a pass?" and "save my pass" — words nobody uses about
-// logging in, in front of a choice nobody could make correctly (a passkey in
-// Windows Hello strands the account on one PC). Now: type your email, click the
-// link. Passkeys live behind a text toggle for people who want the shortcut.
+// ---- THE KEEP ROW (the account) -----------------------------------------
+// ⚠️ EMAIL IS THE ONLY THING ANYONE HAS TO UNDERSTAND. One drawer, one form,
+// one set of listeners, two densities: logged in it collapses to a single quiet
+// row whose summary is the sync line; logged out it opens itself only when
+// there is something worth keeping — an email demand before the shelf has
+// anything on it is a demand, not an offer.
+// Passkeys live behind "Other ways in" for people who want the shortcut.
 function initSync() {
-  const box = el('psSync');
-  if (!box) return;
-  box.hidden = false;
-  el('psDevice').hidden = true;
+  const keep = el('psKeep');
+  if (!keep) return;
   const note = el('psSyncNote');
   const byMail = () => {
     const l = linked();
     return !!(l && String(l.credId || '').startsWith('m:'));
   };
-  const showLinked = () => {
-    box.classList.add('ps-sync--linked');
-    // ⚠️ THE PAGE CHANGES WHAT IT IS. Logged out it is a login page; logged in
-    // the login is finished business, so the heading hands the page back to the
-    // pass and the status moves into the kicker chip.
-    const title = el('psSyncTitle');
-    if (title) title.textContent = 'your banana pass';
-    const kick = el('psKicker');
-    if (kick) {
-      kick.textContent = 'Logged in ✓';
-      kick.classList.add('ps-kicker--in');
-    }
-    el('psSyncLead').textContent = 'Everything you make and win saves automatically.';
-    note.textContent = '';
-    const lk = el('psLink');
-    if (lk) lk.hidden = false;
-    const out = el('psOut');
-    if (out) out.hidden = false;
-    // 📣 the news opt-in appears only to people who are already in — never
-    // alongside the login, where consent would be bundled with the thing they
-    // actually came for
-    const news = el('psNews');
-    if (news) news.hidden = false;
-    // 🪪 logged in by PASSKEY = no address on file yet, so offer one here. This
-    // is the same field and the same link as signing in — clicking it ATTACHES
-    // the address to this pass rather than starting a second one.
-    if (!byMail()) {
-      box.classList.add('ps-sync--addmail');
-      el('psSyncLead').textContent = 'Add your email and you can log in from anywhere — even if you lose this device.';
-      // ⚠️ THE FIELD MEANS SOMETHING ELSE WHEN SOMEONE IS SIGNED IN: it adds an
-      // address to THIS pass, so a second person typing theirs on a shared
-      // tablet joins this pass instead of opening their own. Only shown in the
-      // state where the field is actually on screen.
-      const whose = el('psMailWhose');
-      if (whose) {
-        let who = ''; try { who = (localStorage.getItem('ps-name-v1') || '').slice(0, 24); } catch (e) {}
-        whose.innerHTML = 'You’re logged in' + (who ? ' as <b>' + who.replace(/[<>&]/g, '') + '</b>' : '')
-          + '. This adds an email to <b>this</b> pass — if the banana on screen isn’t yours, log out first so you get your own.';
-        whose.hidden = false;
-      }
-      const go = el('psMailGo');
-      if (go) go.textContent = 'Add my email';
-    }
-  };
-  const haveCode = el('psHaveCode');
   // ⚠️ initSync() RUNS AGAIN after the network pass — a magic-link login flips
-  // this panel from "log in" to "your pass". Listeners are wired ONCE; a second
-  // set would send two login mails per click.
+  // the row from "log in" to "saved". Listeners are wired ONCE; a second set
+  // would send two login mails per click.
   if (!syncWired) {
     syncWired = true;
     wireLink(note);
     wireMail(note);
     wireNews();
     // ⚠️ logging out drops the CREDENTIAL, not the save file — see logout().
-    const outBtn = el('psLogout');
-    if (outBtn) {
-      outBtn.addEventListener('click', () => {
-        logout();
-        passToast('👋 <b>LOGGED OUT</b><br>Your bananas stay on this device — your garden and your home wait on your account until you log back in.');
-        setTimeout(() => location.reload(), 900);
-      });
-    }
+    el('psLogout').addEventListener('click', () => {
+      logout();
+      passToast('👋 <b>LOGGED OUT</b><br>Your bananas stay on this device — your garden and your home wait on your account until you log back in.');
+      setTimeout(() => location.reload(), 900);
+    });
     if (passkeysSupported()) {
-      // ⚠️ THE DEVICE-CODE BOX HIDES BEHIND THE SAME TOGGLE. A code from your
-      // other device only makes sense once you are in passkey-land; on its own,
-      // under the email field, it is a second unexplained way in.
-      const tog = el('psAltToggle'), row = el('psAltRow');
-      if (tog && row) {
-        tog.addEventListener('click', () => {
-          const open = row.hidden;
-          row.hidden = !open;
-          if (haveCode) haveCode.hidden = !open;
-          tog.setAttribute('aria-expanded', String(open));
-        });
-      }
-      if (el('psSave')) {
-        el('psSave').addEventListener('click', async () => {
-          note.textContent = 'Your device will ask to confirm — that’s the passkey being made…';
-          try {
-            await savePass();
-            showLinked();
-            passToast('🔐 <b>SET UP</b> — Face ID or your fingerprint logs you in on this device now.');
-          } catch (e) {
-            note.textContent = e && e.name === 'NotAllowedError'
-              ? 'No worries — nothing was saved. Try again whenever you like.'
-              : 'That didn’t work — try again in a moment.';
-          }
-        });
-      }
-      if (el('psRestore')) {
-        el('psRestore').addEventListener('click', async () => {
-          note.textContent = 'Pick the banana-world passkey on your device…';
-          try {
-            await restorePass();
-            passToast('🎫 <b>WELCOME BACK</b><br>You’re logged in on this device now.');
-            setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
-          } catch (e) {
-            note.textContent = e && e.name === 'NotAllowedError'
-              ? 'No worries — nothing happened.'
-              : 'No passkey here yet — use your email instead and it works anywhere.';
-          }
-        });
-      }
+      el('psSave').addEventListener('click', async () => {
+        note.textContent = 'Your device will ask to confirm — that’s the passkey being made…';
+        try {
+          await savePass();
+          initSync();   // the row is linked now — same path, no reload
+          passToast('🔐 <b>SET UP</b> — Face ID or your fingerprint logs you in on this device now.');
+        } catch (e) {
+          note.textContent = e && e.name === 'NotAllowedError'
+            ? 'No worries — nothing was saved. Try again whenever you like.'
+            : 'That didn’t work — try again in a moment.';
+        }
+      });
+      el('psRestore').addEventListener('click', async () => {
+        note.textContent = 'Pick the banana-world passkey on your device…';
+        try {
+          await restorePass();
+          passToast('🎫 <b>WELCOME BACK</b><br>You’re logged in on this device now.');
+          setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
+        } catch (e) {
+          note.textContent = e && e.name === 'NotAllowedError'
+            ? 'No worries — nothing happened.'
+            : 'No passkey here yet — use your email instead and it works anywhere.';
+        }
+      });
     }
   }
   // the passkey shortcut only exists where the browser has one, and only while
-  // you are OUT — the buttons above sit inside this panel, so hiding it is what
-  // puts them out of reach once you are in
-  const alt = el('psAlt');
-  if (alt) alt.hidden = !(passkeysSupported() && !linked());
-  if (linked()) {
-    if (haveCode) haveCode.hidden = true;
-    showLinked();
+  // you are OUT
+  el('psAlt').hidden = !(passkeysSupported() && !linked());
+  if (!linked()) {
+    keep.open = HAVE;
+    note.textContent = HAVE ? 'Keep ' + el('psName').textContent + ' — one email, no password' : LINE_OUT;
+    return;
   }
+  keep.open = false;
+  note.textContent = LINE_IN;
+  el('psPerks').hidden = true;
+  el('psMailForm').hidden = byMail();   // an address is already on file
+  el('psLink').hidden = false;
+  el('psOut').hidden = false;
+  if (byMail()) return;
+  // 🪪 logged in by PASSKEY = no address on file yet, so offer one here. This is
+  // the same field and the same link as signing in — clicking it ATTACHES the
+  // address to this pass rather than starting a second one.
+  // ⚠️ THE FIELD MEANS SOMETHING ELSE WHEN SOMEONE IS SIGNED IN: a second
+  // person typing theirs on a shared tablet joins THIS pass instead of opening
+  // their own, so they are told before they type.
+  const whose = el('psMailWhose');
+  let who = ''; try { who = (localStorage.getItem('ps-name-v1') || '').slice(0, 24); } catch (e) {}
+  whose.innerHTML = 'You’re logged in' + (who ? ' as <b>' + who.replace(/[<>&]/g, '') + '</b>' : '')
+    + '. This adds an email to <b>this</b> pass — if the banana on screen isn’t yours, log out first so you get your own.';
+  whose.hidden = false;
+  el('psMailGo').textContent = 'Add my email';
 }
 
 // ---- ✉️ email login: one field, one button -----------------------------
@@ -1202,8 +1155,8 @@ function wireMail(note) {
   if (!form) return;
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const inp = el('psMailIn'), go = el('psMailGo');
-    const email = (inp.value || '').trim();
+    const go = el('psMailGo');
+    const email = (el('psMailIn').value || '').trim();
     if (!email) return;
     go.disabled = true;
     note.textContent = 'Sending…';
@@ -1215,17 +1168,14 @@ function wireMail(note) {
       // ⚠️ EVERY other way in goes away once the link is sent — the only next
       // action is "open your inbox", so nothing else should be on screen.
       form.hidden = true;
-      for (const id of ['psAlt', 'psHaveCode', 'psPerks']) {
-        const n = el(id);
-        if (n) n.hidden = true;
-      }
-      const adding = el('psSync').classList.contains('ps-sync--addmail');
-      el('psSyncTitle').textContent = '📬 Check your inbox';
-      el('psSyncLead').innerHTML = 'We sent a link to <b>' + esc(email) + '</b> — click it and '
-        + (adding ? 'it’s on your pass.' : 'you’re in.');
-      const perks = el('psPerks');
-      if (perks) perks.hidden = true;
-      note.textContent = 'The link works once, for 15 minutes. Not there? Check spam.';
+      el('psAlt').hidden = true;
+      el('psPerks').hidden = true;
+      const claim = el('psKeepClaim');
+      claim.innerHTML = 'We sent a link to <b>' + esc(email) + '</b> — click it and '
+        + (el('psMailWhose').hidden ? 'you’re in.' : 'it’s on your pass.')
+        + ' The link works once, for 15 minutes. Not there? Check spam.';
+      claim.hidden = false;
+      note.textContent = 'Check your inbox';
     } catch (e) {
       note.textContent = (e && e.message) || 'Couldn’t send that — try again in a moment.';
       go.disabled = false;
@@ -1235,12 +1185,12 @@ function wireMail(note) {
 
 // 📣 the news opt-in: ask, then let the inbox prove it
 function wireNews() {
-  const form = el('psNewsForm');
+  const form = el('psAskForm');
   if (!form) return;
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const inp = el('psNewsIn'), go = el('psNewsGo'), note = el('psNewsNote');
-    const email = (inp.value || '').trim();
+    const go = el('psNewsGo'), note = el('psNewsNote');
+    const email = (el('psNewsIn').value || '').trim();
     if (!email) return;
     go.disabled = true;
     note.textContent = 'Sending…';
@@ -1249,8 +1199,8 @@ function wireNews() {
       // ⚠️ "check your inbox", never "you're subscribed" — nobody is on the
       // list until the click, and saying otherwise would be the lie that makes
       // the double opt-in pointless
-      form.hidden = true;
-      el('psNews').querySelector('.ps-news__lead').innerHTML = '📬 <b>One more click</b>';
+      el('psAskMail').hidden = true;
+      el('psAskLead').innerHTML = '<b>One more click.</b>';
       note.textContent = 'Confirm it from the mail we just sent to ' + esc(email)
         + ' — until you do, you are not on any list.';
     } catch (e) {
@@ -1279,11 +1229,15 @@ function takeLanding() {
 async function runLanding(l) {
   if (l.kind === 'news') {
     await newsConfirm(l.t);
+    try { localStorage.setItem(NEWS_KEY, '1'); } catch (e) {}   // the ask has been answered
     passToast('📣 <b>YOU’RE ON THE LIST</b><br>You’ll hear when the world gets bigger.');
     return;
   }
   const { attached } = await mailUse(l.t);
   passPush();                    // this device's world joins the account
+  // 🎫 THE ROUND TRIP HAS TO PAY OFF: they left the site, opened a mail and came
+  // back — the card stamps itself so the login is something you can SEE.
+  el('psCard').classList.add('ps-card--stamped');
   passToast(attached
     ? '✉️ <b>EMAIL ADDED</b><br>You can log in with it on any device now.'
     : '🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
