@@ -712,11 +712,27 @@ function metaIds() {
 }
 
 // ---- checkout -------------------------------------------------------------
-// Upload the print PNG to the Worker (→ R2), then create a Shopify cart with
-// the design attached as line-item attributes. Returns the checkoutUrl (the
-// caller redirects). Throws on any failure so the caller can recover the UI.
-export async function uploadAndCheckout(printCanvas, product = getProduct('sticker'), selection = null) {
-  if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
+// Upload the print PNG to the Worker (→ R2), then put it in the ORDER — one
+// Shopify cart that lives across designs (localStorage), so ten different
+// bananas check out as ten lines of one order. Each line carries its own
+// design attributes; the fulfilment webhook already prints per line.
+const CART_KEY = 'custom-cart-v1';
+export function orderCart() { try { return JSON.parse(localStorage.getItem(CART_KEY) || 'null'); } catch (e) { return null; } }
+function saveCart(c) { try { localStorage.setItem(CART_KEY, JSON.stringify(c)); } catch (e) {} }
+function clearCart() { try { localStorage.removeItem(CART_KEY); } catch (e) {} }
+
+async function storefront(query, variables) {
+  const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
+    body: JSON.stringify({ query, variables }),
+  });
+  const data = await res.json();
+  return data && data.data;
+}
+
+// upload the print + mint the per-order variant → one ready CartLineInput
+async function prepareLine(printCanvas, product, selection) {
   const blob = await new Promise((r) => printCanvas.toBlob(r, 'image/png'));
   if (!blob) throw new Error('render failed: toBlob returned null'); // iOS under memory pressure does this silently
   const up = await fetch(SHOP.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
@@ -763,17 +779,58 @@ export async function uploadAndCheckout(printCanvas, product = getProduct('stick
     }
   } catch (e) {}
 
-  const mutation = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
-  const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
-    body: JSON.stringify({
-      query: mutation,
-      variables: { lines: [{ merchandiseId, quantity: 1, attributes }] },
-    }),
-  });
-  const data = await res.json();
-  const checkout = data && data.data && data.data.cartCreate && data.data.cartCreate.cart && data.data.cartCreate.cart.checkoutUrl;
-  if (!checkout) throw new Error('cart failed: ' + JSON.stringify(data));
-  return { checkoutUrl: checkout, key, url };
+  return { line: { merchandiseId, quantity: 1, attributes }, key, url };
+}
+
+const CART_FIELDS = 'id checkoutUrl totalQuantity';
+// Add THIS design to the standing order (creating it if none). Returns
+// { checkoutUrl, n, key, url }. A dead stored cart (completed checkout,
+// expired) fails the add and a fresh cart quietly takes its place.
+export async function addToOrder(printCanvas, product = getProduct('sticker'), selection = null) {
+  if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
+  const { line, key, url } = await prepareLine(printCanvas, product, selection);
+  const prev = orderCart();
+  if (prev && prev.id) {
+    try {
+      const d = await storefront(
+        'mutation($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
+        { cartId: prev.id, lines: [line] });
+      const cart = d && d.cartLinesAdd && d.cartLinesAdd.cart;
+      if (cart && cart.checkoutUrl) {
+        const c = { id: cart.id, checkoutUrl: cart.checkoutUrl, n: cart.totalQuantity || 0, at: Date.now() };
+        saveCart(c);
+        return { ...c, key, url };
+      }
+    } catch (e) {}
+    clearCart();
+  }
+  const d = await storefront(
+    'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
+    { lines: [line] });
+  const cart = d && d.cartCreate && d.cartCreate.cart;
+  if (!cart || !cart.checkoutUrl) throw new Error('cart failed: ' + JSON.stringify(d));
+  const c = { id: cart.id, checkoutUrl: cart.checkoutUrl, n: cart.totalQuantity || 1, at: Date.now() };
+  saveCart(c);
+  return { ...c, key, url };
+}
+
+// Ask Shopify what the stored order really holds (checkout may have completed
+// on the shop domain — this page never sees that). Drops a dead/empty cart.
+export async function refreshOrderCart() {
+  const c = orderCart();
+  if (!c || !c.id) return null;
+  try {
+    const d = await storefront('query($id: ID!) { cart(id: $id) { ' + CART_FIELDS + ' } }', { id: c.id });
+    const cart = d && d.cart;
+    if (!cart || !cart.totalQuantity) { clearCart(); return null; }
+    const u = { id: cart.id, checkoutUrl: cart.checkoutUrl || c.checkoutUrl, n: cart.totalQuantity, at: c.at };
+    saveCart(u);
+    return u;
+  } catch (e) { return c; }   // offline: show what we knew
+}
+
+// The ORDER button: everything waiting in the order plus this design, then to
+// checkout. Same contract as always — returns { checkoutUrl, key, url }.
+export async function uploadAndCheckout(printCanvas, product = getProduct('sticker'), selection = null) {
+  return addToOrder(printCanvas, product, selection);
 }

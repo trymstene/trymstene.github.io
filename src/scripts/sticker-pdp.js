@@ -12,7 +12,7 @@ import { passPatch } from '../lib/banana-pass.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
   bboxOf, pad, crop, renderPrintFile, renderApparelPrint, renderMugPrint, makeStickerMockup,
-  localizedPrice, uploadAndCheckout, stickerCaptions, stickerEffect, TEE_QUADS,
+  localizedPrice, uploadAndCheckout, addToOrder, refreshOrderCart, stickerCaptions, stickerEffect, TEE_QUADS,
   ensureCaptionFont,
 } from '../lib/sticker-core.js';
 
@@ -544,6 +544,46 @@ async function boot() {
   }
 }
 boot().catch((e) => { console.error('PDP boot failed:', e); track('sticker_pdp_boot_fail', { message: String((e && e.message) || e).slice(0, 90) }); });
+
+// 🛒 THE STANDING ORDER — ten different bananas, one checkout. The note only
+// appears once something is waiting; the Order button always takes the whole
+// order (this design joins it on click).
+function paintOrderNote(c) {
+  const note = el('pdpCartNote');
+  if (!note) return;
+  if (c && c.n > 0) {
+    note.textContent = '\u{1F6D2} ' + c.n + (c.n === 1 ? ' banana' : ' bananas') + ' waiting in this order \u2014 the Order button takes them all to checkout';
+    note.hidden = false;
+  } else { note.hidden = true; note.textContent = ''; }
+}
+refreshOrderCart().then(paintOrderNote).catch(() => {});
+
+// "+ Add & make another": this design joins the order, then straight back to
+// the builder for the next banana. Same guard rails as the Order button.
+if (el('pdpAddMore')) el('pdpAddMore').onclick = async () => {
+  if (busy) return;
+  if (!captionsClean(state)) {
+    const st = el('pdpStock'); st.textContent = 'Let\u2019s keep it family friendly \u{1F34C} \u2014 head back and try other words';
+    st.className = 'pdp-stock pdp-stock--no'; return;
+  }
+  busy = true;
+  const btn = el('pdpAddMore'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Adding your ' + product.name.toLowerCase() + '\u2026';
+  try {
+    await ensureCaptionFont(state);
+    const c = await addToOrder(renderPrintFile(state, product), product, sel);
+    track('pdp_add_to_order', withSecs({ product: product.key, n: c.n, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
+    paintOrderNote(c);
+    btn.textContent = '\u2713 in the order \u2014 off to the builder\u2026';
+    setTimeout(() => { window.location.href = '/make-a-banana/'; }, 900);
+  } catch (e) {
+    console.error(e);
+    track('sticker_order_fail', { message: String((e && e.message) || e).slice(0, 90), stage: 'add' });
+    const st = el('pdpStock'); st.textContent = 'Hmm, that didn\u2019t work \u2014 give it another try?';
+    st.className = 'pdp-stock pdp-stock--no';
+    btn.disabled = false; btn.textContent = label; busy = false;
+  }
+};
 
 let busy = false;
 // not-yet-live products render a disabled teaser button without the id

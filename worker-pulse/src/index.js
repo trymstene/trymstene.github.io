@@ -20,7 +20,7 @@ const DL_EVENTS = ['gif_download', 'png_download', 'wallpaper_download',
 const LENS_EVENTS = [
   'gif_download', 'png_download', 'wallpaper_download', 'builder_boot', 'builder_start',
   'generator_click', 'surprise_me', 'share_link_copy', 'rave_join',
-  'sticker_pdp_view', 'sticker_pdp_checkout', 'checkout_redirect',
+  'sticker_pdp_view', 'sticker_pdp_checkout', 'pdp_add_to_order', 'checkout_redirect',
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
   'begin_checkout', 'purchase', 'shop_view',
   'offer_shown', 'offer_click', 'offer_skip',   // 🛍 the make-it-real card (offer-FIRST since 6 Aug)
@@ -155,7 +155,7 @@ async function apiLive(env) {
   // 1 eyeing a product · 2 hit ORDER · 3 at the checkout · 4 PAID
   const STAGE = {
     sticker_pdp_view: 1, view_item: 1, select_item: 1,
-    sticker_pdp_checkout: 2, checkout_redirect: 3, begin_checkout: 3, purchase: 4,
+    sticker_pdp_checkout: 2, pdp_add_to_order: 2, checkout_redirect: 3, begin_checkout: 3, purchase: 4,
   };
   const evFull = {}; const evNow = []; const hot = {};
   for (const r of rows(events)) {
@@ -533,7 +533,7 @@ async function apiReport(env) {
 // the spike you are trying to detect.
 const ANALYST_EVENTS = [
   'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
-  'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
+  'pdp_add_to_order', 'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
   'offer_world', 'offer_discord', 'offer_support',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
@@ -1029,6 +1029,7 @@ var EV_LABEL = {
   generator_click:'headed to the builder', surprise_me:'hit surprise me',
   share_link_copy:'shared a banana', rave_join:'joined the rave',
   sticker_pdp_view:'eyed a custom product', sticker_pdp_checkout:'hit ORDER',
+  pdp_add_to_order:'added a banana to a multi-item order',
   checkout_redirect:'went to checkout 💰', select_item:'picked merch',
   view_item:'viewed merch', license_click:'read the license',
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
@@ -1205,6 +1206,7 @@ var EV_EXPLAIN = {
   pdp_option_pick:'picked a tee color or size on the product page',
   sticker_pdp_view:'opened a custom-product page (sticker / magnet / tee) with THEIR banana on it',
   sticker_pdp_checkout:'clicked the big ORDER button on a custom-product page',
+  pdp_add_to_order:'🛒 clicked ADD & MAKE ANOTHER on a custom-product page — the design joined a standing multi-banana order (n = how many are waiting) and they went back to the builder for the next one. The ORDER button later takes the whole order to checkout',
   checkout_redirect:'their design uploaded fine and they were sent to the Shopify checkout',
   sticker_order_fail:'the order pipeline errored before checkout — a spike here = something broke',
   sticker_order_fail_upload:'order failed while uploading the design (network/worker)',
@@ -1797,6 +1799,8 @@ var FUNNELS=[
     'They clicked to order their design and landed on a custom product page — tee, sticker or magnet, their banana on it.'],
    ['sticker_pdp_checkout','Hit ORDER',
     'They clicked the big ORDER button on a custom product page.'],
+   ['pdp_add_to_order','Added another',
+    'They put the design into a standing order and went back to make another banana — multi-item orders exist since 28 Aug.'],
    ['checkout_redirect','→ Shopify checkout',
     'Their design uploaded fine and the browser sent them off to the Shopify checkout.'],
    ['begin_checkout','Checkout started ⌁store-wide',
