@@ -15,6 +15,21 @@ export default defineConfig({
   // so the middle step is gone. Keep old links/bookmarks alive → the builder.
   redirects: {
     '/make/': '/make-a-banana/',
+    // 🛒 THE WIX STORE'S URLS. /product-page/<slug> was Wix's format and the
+    // slugs outlived the migration — bots still probe them daily and a stale
+    // bookmark would land on a 404. `?gone=1` tells main.js not to count the
+    // arrival, so forwarding scrapers cannot inflate the shop's numbers.
+    '/product-page/crop-top/': '/shop/?gone=1',
+    '/product-page/dancing-banana-official-enamel-mug/': '/shop/?gone=1',
+    '/product-page/dancing-banana-official-framed-photo-print/': '/shop/?gone=1',
+    '/product-page/dancing-banana-official-mini-unisex-organic-t-shirt/': '/shop/?gone=1',
+    '/product-page/music-band-unisex-classic-tee/': '/shop/?gone=1',
+    '/product-page/sports-water-bottle/': '/shop/?gone=1',
+    '/product-page/dancing-banana-official-bubble-free-stickers/': '/shop/?gone=1',
+    '/product-page/dancing-banana-official-men-s-premium-tank-top/': '/shop/?gone=1',
+    '/product-page/unisex-classic-tee/': '/shop/?gone=1',
+    '/product-page/unisex-hoodie/': '/shop/?gone=1',
+    '/product-page/where-do-you-see-yourself-in-10-years-unisex-classic-tee/': '/shop/?gone=1',
     // Park 2.0: the PARK is the area, the BANANA STAND is the shop in it —
     // the area page moved to /park/ (the old slug had spread through doors,
     // LED ads and guides; those all point at /park/ now).

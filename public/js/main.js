@@ -230,7 +230,14 @@
     s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
     document.head.appendChild(s);
     gtag('js', new Date());
-    gtag('config', GA_ID);
+    // 🤖 arrivals forwarded from a retired URL are almost entirely scrapers
+    // probing the old Wix store (measured: 42 of 45 with no referrer, one view
+    // each, desktop Chrome, from a proxy spread). They run JS, so they WOULD
+    // count — and on a page with a hundred visits ever that is not noise, it
+    // is a wrong number. Send them nothing; a real person still gets the page.
+    var junk = false;
+    try { junk = /(?:^|[?&])gone=1(?:&|$)/.test(location.search); } catch (e) {}
+    gtag('config', GA_ID, junk ? { send_page_view: false } : {});
 
     // Microsoft Clarity — session recordings + heatmaps (free, uncapped).
     // Sits INSIDE the production + internal-flag + consent guards like GA:

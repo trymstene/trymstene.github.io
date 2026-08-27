@@ -187,7 +187,12 @@ export default {
       if (!env.GITHUB_PAT) return new Response(JSON.stringify({ ok: false, err: 'no pat' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
       const num = parseInt(body.number, 10);
       const action = String(body.action || '');
-      if (!['approve', 'dismiss', 'comment', 'file', 'merge'].includes(action) || (action !== 'file' && !num)) {
+      // 🚀 'deploy' carries no issue number: community gallery + catalog pages
+      // are built at BUILD TIME, so an approval is invisible until the site
+      // rebuilds (nightly otherwise). A maker told "you're live" would click
+      // through to a 404 — this closes that window.
+      if (!['approve', 'dismiss', 'comment', 'file', 'merge', 'deploy'].includes(action)
+          || (action !== 'file' && action !== 'deploy' && !num)) {
         return new Response(JSON.stringify({ ok: false, err: 'bad action' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const note = String(body.body || '').slice(0, 4000);
@@ -219,6 +224,13 @@ export default {
         return r;
       };
       try {
+        // 🚀 rebuild the site now — a workflow_dispatch on the deploy workflow.
+        // ⚠️ needs Actions: read+write on the PAT; the desk shows the refusal
+        // rather than pretending the page went live.
+        if (action === 'deploy') {
+          await gh('/actions/workflows/deploy.yml/dispatches', 'POST', { ref: 'main' });
+          return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
         // 📝 the summon box — file a new item onto the desk without leaving HQ
         if (action === 'file') {
           const title = String(body.title || '').trim().slice(0, 200);

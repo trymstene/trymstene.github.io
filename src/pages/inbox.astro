@@ -575,6 +575,44 @@ const description = 'Authorized banana personnel only.';
     import { wearToCustom } from '../lib/wear-render.js';
 
     const API = new URLSearchParams(location.search).get('api') || 'https://banana-contact.trymstene.workers.dev';
+    // 🚀 community pages are built at BUILD TIME, so an approval is invisible
+    // until the site rebuilds — a maker following "you're live" hit a 404 for
+    // up to a day. Approving asks for a rebuild; the toast tells the truth
+    // either way, because a silent failure is what caused this in the first
+    // place. Needs Actions: read+write on the PAT.
+    // the desk had no notification channel — errors used alert() and successes
+    // said nothing. One line, bottom-centre, house colours.
+    function bmToast(msg) {
+      let t = document.getElementById('bmToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'bmToast';
+        t.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;'
+          + 'max-width:min(92vw,420px);padding:0.6rem 0.9rem;border:3px solid #000;background:#ffe135;'
+          + 'color:#111;font-weight:800;font-size:0.78rem;line-height:1.4;box-shadow:5px 5px 0 #000;text-align:center;';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.hidden = false;
+      clearTimeout(bmToast._t);
+      bmToast._t = setTimeout(() => { t.hidden = true; }, 6000);
+    }
+    let rebuildAt = 0;
+    async function askRebuild(what) {
+      if (Date.now() - rebuildAt < 60000) return;   // one dispatch per minute is plenty
+      rebuildAt = Date.now();
+      try {
+        const r = await fetch(API + '/dev/gh', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, action: 'deploy' }),
+        });
+        const j = await r.json().catch(() => ({}));
+        bmToast(j.ok ? '🚀 rebuilding the site — ' + what + ' is live in a few minutes'
+          : '⚠ approved, but the rebuild was refused (' + (j.err || 'no reason') + ') — it goes live on the nightly build');
+      } catch (e) {
+        bmToast('⚠ approved, but the rebuild could not be reached — it goes live on the nightly build');
+      }
+    }
     const READ_KEY = 'inbox-read-v1';
     const el = (id) => document.getElementById(id);
 
@@ -1635,7 +1673,10 @@ const description = 'Authorized banana personnel only.';
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
           });
           const d = await r.json().catch(() => ({}));
-          if (d.ok) { card.remove(); itemsCount(); return; }
+          if (d.ok) {
+            if (payload && payload.action === 'approve') askRebuild('the item');
+            card.remove(); itemsCount(); return;
+          }
           btn.textContent = d.error || 'failed'; btn.disabled = false;
         } catch (e) { btn.textContent = 'failed — retry'; btn.disabled = false; }
       };
@@ -1844,6 +1885,7 @@ const description = 'Authorized banana personnel only.';
             });
             const d = await r.json();
             if (d.ok) {
+              if (action === 'approve') askRebuild('the banana');
               card.classList.add('bm-mail--shredding');
               setTimeout(() => { galItems = galItems.filter((x) => x.id !== it.id); galRender(); }, 360);
               return;
