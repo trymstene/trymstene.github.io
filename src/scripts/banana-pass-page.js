@@ -67,10 +67,15 @@ const PULL_MS = 7000;      // the account pull — a background refresh, keep it
 const LANDING_MS = 12000;  // spending a magic link — worth waiting a bit longer for
 // 📡 the three states of the keep row's summary. It is the SUMMARY on purpose:
 // magic-link feedback and the offline apology can never hide in a shut drawer.
-const LINE_IN = 'Saved to your email';
+// ⚠️ SAY THE STATE, NOT THE MECHANISM (Trym): "Saved to your email" left a
+// player asking what was saved, and where — they arrive expecting the account
+// / login / my-page words the rest of the web taught them. The row says
+// whether they are logged in; the drawer explains how it works.
+// ⚠️ we cannot print the address: the site stores NO emails, only a hash.
+const LINE_IN = 'Logged in — your progress is saved';
 const LINE_WAIT = 'Signing you in…';
-const LINE_COLD = 'Offline — showing this device. It catches up on its own.';
-const LINE_OUT = 'Save this to your email later';
+const LINE_COLD = 'Not connected — showing what is saved on this device';
+const LINE_OUT = 'Not logged in — nothing is saved off this device yet';
 const TAB_KEY = 'ps-tab-v1';
 const NEWS_KEY = 'ps-news-v1';
 // old bookmarks still land somewhere sensible (nothing in the world links a
@@ -1143,7 +1148,7 @@ function initSync() {
   el('psAlt').hidden = !(passkeysSupported() && !linked());
   if (!linked()) {
     keep.open = HAVE;
-    note.textContent = HAVE ? 'Keep ' + el('psName').textContent + ' — one email, no password' : LINE_OUT;
+    note.textContent = HAVE ? 'Log in to keep ' + el('psName').textContent + ' — email only, no password' : LINE_OUT;
     return;
   }
   keep.open = false;

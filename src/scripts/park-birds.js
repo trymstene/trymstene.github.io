@@ -413,7 +413,12 @@ export function initBirds(ctx) {
     b.nextHome = performance.now() + 30000;
   }
   function tapBird(wx, wy) {
-    let best = null, bd = 46;
+    // ⚠️ TIGHT TO THE SPRITE (the Shelly rule from the bay): birds run FIRST in
+    // the tap chain and wander the lawn — at 46 units a bird drifting near a
+    // bed ate the tap meant for the PLANT behind it, and because birds move it
+    // felt like the plant card randomly refusing to open. A bird is ~20px; 28
+    // still catches a deliberate tap on the bird itself.
+    let best = null, bd = 28;
     for (const b of birds) {
       if (b.state === 'leave') continue;
       const d = Math.hypot(wx - b.x, wy - (b.y - b.alt - 16));
