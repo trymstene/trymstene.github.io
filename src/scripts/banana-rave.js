@@ -11,7 +11,7 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
 import { DROPS, ownsDropStat } from '../data/wearables.js';
-import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid } from '../lib/world.js';
+import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -3005,7 +3005,7 @@ function init() {
       // sess = floor time so far: iOS re-sockets on every background/foreground,
       // and the server's stage gate must not restart with the socket
       // sid = worldSid() (world-lib): a rejoin SUPERSEDES your own ghosts server-side
-      ws.send(JSON.stringify({ t: 'hi', sid: worldSid(), outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
+      ws.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }

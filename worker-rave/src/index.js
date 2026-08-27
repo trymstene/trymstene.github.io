@@ -600,12 +600,13 @@ export class RaveRoom {
       // kills its own ghost sockets NOW — quick park→club roundtrips were
       // stacking duplicate dancers until the reaper's sweep
       const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      const own = typeof msg.own === 'string' ? msg.own.slice(0, 24) : '';   // 🪪 the PERSON, when they have an account
       if (sid) {
         for (const other of this.state.getWebSockets()) {
           if (other === ws) continue;
           let a = null;
           try { a = other.deserializeAttachment(); } catch (e) {}
-          if (a && !a.dead && a.sid === sid) {
+          if (a && !a.dead && (a.sid === sid || (own && a.own === own))) {
             a.dead = true;
             try { other.serializeAttachment(a); } catch (e) {}
             try { other.close(1000, 'superseded'); } catch (e) {}
@@ -617,6 +618,7 @@ export class RaveRoom {
       const p = {
         id: crypto.randomUUID().slice(0, 8),
         sid,
+        own,
         name: sanitizeName(msg.name, strikes), // '' = the outfit-name speaks
         outfit: sanitizeOutfit(msg.outfit),
         joined: Date.now(),
@@ -1682,12 +1684,13 @@ export class ParkRoom {
       // ghost sockets immediately — without this, quick roundtrips stacked
       // duplicate bananas until the reaper's 120s sweep
       const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      const own = typeof msg.own === 'string' ? msg.own.slice(0, 24) : '';   // 🪪 the PERSON, when they have an account
       if (sid) {
         for (const other of this.state.getWebSockets()) {
           if (other === ws) continue;
           let a = null;
           try { a = other.deserializeAttachment(); } catch (e) {}
-          if (a && !a.dead && a.sid === sid) {
+          if (a && !a.dead && (a.sid === sid || (own && a.own === own))) {
             a.dead = true;
             try { other.serializeAttachment(a); } catch (e) {}
             try { other.close(1000, 'superseded'); } catch (e) {}
@@ -1698,6 +1701,7 @@ export class ParkRoom {
       const p = {
         id: crypto.randomUUID().slice(0, 8),
         sid,
+        own,
         name: sanitizeName(msg.name, []), // family filter; the strike list is applied via /ingest below
         outfit: sanitizeOutfit(msg.outfit),
         x: parkClampX(msg.x), y: parkClampY(msg.y),
@@ -1842,12 +1846,13 @@ export class BeachRoom {
       // same browser rejoining (beach→park→beach) kills its own ghosts now
       // instead of leaving duplicates until the 120s sweep.
       const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      const own = typeof msg.own === 'string' ? msg.own.slice(0, 24) : '';   // 🪪 the PERSON, when they have an account
       if (sid) {
         for (const other of this.state.getWebSockets()) {
           if (other === ws) continue;
           let a = null;
           try { a = other.deserializeAttachment(); } catch (e) {}
-          if (a && !a.dead && a.sid === sid) {
+          if (a && !a.dead && (a.sid === sid || (own && a.own === own))) {
             a.dead = true;
             try { other.serializeAttachment(a); } catch (e) {}
             try { other.close(1000, 'superseded'); } catch (e) {}
@@ -1858,6 +1863,7 @@ export class BeachRoom {
       const p = {
         id: crypto.randomUUID().slice(0, 8),
         sid,
+        own,
         name: sanitizeName(msg.name, []),
         outfit: sanitizeOutfit(msg.outfit),
         x: bayClampX(msg.x), y: bayClampY(msg.y),
@@ -2247,12 +2253,13 @@ export class YardRoom {
       this.reapStale();
       // SUPERSEDE — mandatory in every room (world-engineering doctrine)
       const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      const own = typeof msg.own === 'string' ? msg.own.slice(0, 24) : '';   // 🪪 the PERSON, when they have an account
       if (sid) {
         for (const other of this.state.getWebSockets()) {
           if (other === ws) continue;
           let a = null;
           try { a = other.deserializeAttachment(); } catch (e) {}
-          if (a && !a.dead && a.sid === sid) {
+          if (a && !a.dead && (a.sid === sid || (own && a.own === own))) {
             a.dead = true;
             try { other.serializeAttachment(a); } catch (e) {}
             try { other.close(1000, 'superseded'); } catch (e) {}
@@ -2263,6 +2270,7 @@ export class YardRoom {
       const p = {
         id: crypto.randomUUID().slice(0, 8),
         sid,
+        own,
         name: sanitizeName(msg.name, []),
         outfit: sanitizeOutfit(msg.outfit),
         x: hsClampX(msg.x), y: hsClampY(msg.y),

@@ -119,7 +119,9 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     ws = sock;
     sock.onopen = () => {
       tries = 0;
-      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), ...hi() }));
+      // 🪪 the OWNER rides along so a person shows up ONCE, not once per
+      // device — the room supersedes an older socket for the same account.
+      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), ...hi() }));
     };
     sock.onmessage = (ev) => {
       let m;
