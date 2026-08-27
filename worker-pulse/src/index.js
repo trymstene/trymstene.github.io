@@ -13,7 +13,8 @@ const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 // biggest thing that happens on this site; until now they were one number.
 const DL_EVENTS = ['gif_download', 'png_download', 'wallpaper_download',
   'offer_shown', 'offer_click', 'offer_skip',
-  'offer_world', 'offer_discord'];   // 🌍💬 the warm-up pivot, 12 Aug (offer_click = retired merch CTA)
+  'offer_world', 'offer_discord',    // 🌍💬 the warm-up pivot, 12 Aug (offer_click = retired merch CTA)
+  'offer_support'];                  // ☕ the SUPPORT TEST, 27 Aug — the card asks for a coffee now
 
 // events worth plotting on the map / showing in the ticker (the rest is noise)
 const LENS_EVENTS = [
@@ -23,7 +24,8 @@ const LENS_EVENTS = [
   'select_item', 'view_item', 'license_click', 'tip_click', 'forge_start',
   'begin_checkout', 'purchase', 'shop_view',
   'offer_shown', 'offer_click', 'offer_skip',   // 🛍 the make-it-real card (offer-FIRST since 6 Aug)
-  'offer_world', 'offer_discord',               // 🌍💬 the warm-up pivot, 12 Aug
+  'offer_world', 'offer_discord',               // 🌍💬 the warm-up pivot, 12 Aug (retired 27 Aug)
+  'offer_support',                              // ☕ the support ask, 27 Aug
   'homestead_open',               // 🏡 the home area's door, 6 Aug
   'quest_step',                   // 🕯 chapter-1 funnel, live 13 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
@@ -343,15 +345,15 @@ async function apiRange(env, from, to) {
   const dayMap = {};
   const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
     offer_shown: 'shown', offer_click: 'click', offer_skip: 'skip',
-    offer_world: 'world', offer_discord: 'disc' };
+    offer_world: 'world', offer_discord: 'disc', offer_support: 'coffee' };
   for (const r of (dls ? rows(dls) : [])) {
     const day = dim(r, 0); const page = dim(r, 1);
     const key = DL_KEY[dim(r, 2)];
     if (!key) continue;
     const v = met(r, 0);
-    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 });
+    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0 });
     row[key] += v;
-    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 });
+    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0 });
     if (key === 'gif' || key === 'png' || key === 'wall') d.files += v; else d[key] += v;
   }
   // ⚠️ a day with no download events sends no row, so the bars used to close
@@ -361,7 +363,7 @@ async function apiRange(env, from, to) {
   const dlKeys = [...new Set(rangeDayKeys(from, to).concat(Object.keys(dayMap)))].sort();
   const dlDaily = Object.keys(dayMap).length
     ? dlKeys.map((d) => dayMap[d]
-      || { d, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0 })
+      || { d, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0 })
     : [];
   const downloads = Object.values(dlMap)
     .map((r) => ({ ...r, files: r.gif + r.png + r.wall }))
@@ -533,7 +535,7 @@ const ANALYST_EVENTS = [
   'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
   'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
-  'offer_world', 'offer_discord',
+  'offer_world', 'offer_discord', 'offer_support',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
   'quest_step',
 ];
@@ -1034,7 +1036,16 @@ var EV_LABEL = {
   shop_view:'browsed the shop',
   offer_shown:'got the warm-up card 🌍', offer_click:'took the merch offer 🛍 (retired 12 Aug)',
   offer_skip:'said no thanks, took the file 📥',
-  offer_world:'chose Banana World from the card 🌍', offer_discord:'headed to the Discord 💬',
+  offer_world:'chose Banana World from the card 🌍 (retired 27 Aug)', offer_discord:'headed to the Discord 💬 (retired 27 Aug)',
+  offer_support:'clicked buy-me-a-coffee on the card ☕',
+  gallery_download:'took a gallery banana home 🖼',
+  forge_gif_export:'exported their forge creation 🔨',
+  forge_open:'opened the Pixel Forge 🔨',
+  rave_steer:'steered with hold-and-drag 🕹', park_steer:'steered in the park 🕹',
+  beach_steer:'steered at the bay 🕹', hs_steer:'steered at the homestead 🕹',
+  rave_zap:'got zapped by the light show ⚡', rave_dodge:'close-dodged a laser ⚡',
+  rave_survive:'SURVIVED THE DANCEFLOOR ⚡', world_levelup:'levelled up, anywhere 🎖',
+  rave_quest_start:'a floor quest began 🎯', rave_quest_done:'finished a floor quest 🎯',
   quest_boot:'has the questline running 🕯', quest_intro:'watched the CHAPTER I splash 🎬',
   quest_step:'completed a quest step 🕯', quest_pass:'took the finale door to My Pass 🎫',
   world_door:'entered Banana World from the frontpage 🌍',
@@ -1164,9 +1175,15 @@ var EV_LABEL = {
 var LENSES = ['gif_download','builder_boot','builder_start','rave_join','sticker_pdp_view',
   'checkout_redirect','begin_checkout','purchase','view_item','select_item',
   'wallpaper_download','license_click','homestead_open','offer_world','offer_discord',
-  'quest_step'];
+  'offer_support','quest_step'];
 // what each event MEANS — hover any event name to see what the visitor did
 var EV_EXPLAIN = {
+  gallery_download:'downloaded a community banana from its gallery page (the download card rides this too since 27 Aug)',
+  forge_gif_export:'exported a finished GIF from the Pixel Forge — the forge equivalent of gif_download',
+  forge_open:'opened the Pixel Forge (/forge/ = emoji bench, /forge/items/ = the items workshop)',
+  world_levelup:'crossed a level anywhere in the world — the superset; the rave also fires its own older rave_levelup, never add them together',
+  rave_quest_start:'a scheduled floor quest fired on their floor (same quest, same moment, for everyone present)',
+  rave_quest_done:'they finished the floor quest and took the completion pay',
   page_view:'loaded any page on the site (GA4 auto)',
   session_start:'a new visit began (GA4 auto)',
   first_visit:'a brand-new visitor GA4 has never seen before',
@@ -1796,19 +1813,19 @@ var FUNNELS=[
     'They opened a merch product page — mug, tee, and friends.'],
    ['transactions','Purchases 💰',
     'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']],
-  // 🌍💬 THE WARM-UP — added 30 Jul as a merch ask, inverted 6 Aug, PIVOTED
-  // 12 Aug: months of data said direct-to-shop from a download converts
-  // nobody, so the card introduces Banana World / the Discord instead.
-  // (Not rendered as a bar funnel — the Downloads room KPIs carry it — but
-  // kept current so wiring it back in is one line, not archaeology.)
-  [['offer_shown','Got the warm-up card 🌍',
-    'The download click opened the card BEFORE any file moved. Once per session, every download surface. Since 12 Aug it invites people into Banana World or the Discord — the file is its no-thanks button.'],
-   ['offer_world','Chose Banana World',
-    'Tapped through to the Homestead. offer_world + offer_discord over offer_shown = the warm-up rate.'],
-   ['offer_discord','Chose the Discord',
-    'Opened the community invite in a new tab.'],
+  // ☕ THE SUPPORT TEST — the card's third life. Merch ask (30 Jul) →
+  // world/Discord warm-up (12 Aug) → an honest buy-me-a-coffee ask (27 Aug):
+  // "I make nothing on the banana." One message, $5 (= the BMAC coffee
+  // price), on EVERY download surface incl. the gallery (first wired 27 Aug).
+  // The question this funnel answers: will this audience pay ANYTHING?
+  // Clicks land on buymeacoffee.com/trymstene — the MONEY shows there, not
+  // here; this measures willingness. Read it in people, never events.
+  [['offer_shown','Got the support card ☕',
+    'The download click opened the card BEFORE any file moved. Since 27 Aug it makes one honest ask: "I make nothing on the banana — buy me a coffee, $5." The file is its no-thanks button.'],
+   ['offer_support','Clicked buy-me-a-coffee 💛',
+    'Tapped through to buymeacoffee.com/trymstene in a new tab. This over "Got the support card" = the willingness rate — the number the whole test exists to learn. Actual money lands on the BMAC dashboard, not in GA4.'],
    ['offer_skip','Just took the file',
-    'Pressed no-thanks and the download flowed — still a happily served visitor.']]];
+    'Pressed no-thanks and the download flowed — still a happily served visitor, and the answer the test expects most often.']]];
 function fmtDur(s){
   if(s<90) return s+'s';
   return Math.floor(s/60)+'m '+(s%60)+'s';
@@ -1906,27 +1923,29 @@ function renderDownloads(){
     var t0=document.getElementById('tabDl'); if(t0) t0.textContent='';
     return;
   }
-  var tf=0,ts=0,tc=0,tk=0,tw=0,td2=0;
+  var tf=0,ts=0,tc=0,tk=0,tw=0,td2=0,tcof=0;
   D.forEach(function(r){ tf+=r.files; ts+=r.shown; tc+=r.click; tk+=(r.skip||0);
-    tw+=(r.world||0); td2+=(r.disc||0); });
+    tw+=(r.world||0); td2+=(r.disc||0); tcof+=(r.coffee||0); });
   var sess=(state.range.kpis&&state.range.kpis.sessions)||0;
   // ⚠️ per 100 sessions, not a raw total: it is the only download number that
   // survives a traffic swing, and traffic here swings by 8× when an ad starts.
   var per=sess? (tf/sess*100).toFixed(1) : '–';
-  // 🌍💬 the warm-up rate = world + discord (+ legacy merch clicks so old
-  // windows keep an honest rate) over cards shown
+  // ☕ THE SUPPORT TEST (27 Aug): willingness = coffee clicks over cards shown.
+  // The retired warm-up (world+discord+legacy merch) stays computed so an old
+  // window still reads honestly — but the headline is the coffee.
   var warm=tw+td2+tc;
   document.getElementById('dlKpis').innerHTML=
     dlk('Files taken',fmt(tf))+dlk('Per 100 visits',per)+
-    dlk('Cards shown',fmt(ts))+dlk('→ Banana World',fmt(tw))+
-    dlk('→ Discord',fmt(td2))+dlk('No-thanks',fmt(tk))+
-    dlk('Warm-up rate', ts>=20 ? Math.round((warm/ts)*100)+'%' : '–');
+    dlk('Cards shown',fmt(ts))+dlk('☕ Coffee clicks',fmt(tcof))+
+    dlk('Willingness', ts>=20 ? (tcof/ts*100).toFixed(1)+'%' : '–')+
+    dlk('No-thanks',fmt(tk))+
+    dlk('Warm-up (retired)', warm ? Math.round((warm/Math.max(ts,1))*100)+'%' : '–');
   function dlk(l,v){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; }
   sum.innerHTML = ts<20
-    ? 'Not enough cards yet to judge the warm-up — come back when a few '
+    ? 'Not enough cards yet to judge the ask — come back when a few '
       +'hundred have been shown.'
-    : 'Of every 100 people shown the card, '+Math.round((warm/ts)*100)
-      +' chose the world or the community over just the file.';
+    : 'Of every 100 people shown the card, '+(tcof/ts*100).toFixed(1)
+      +' clicked the ☕ $5 ask. Money lands on the BMAC dashboard, not here.';
 
   // ── the daily shape ──
   var days=state.range.dlDaily||[];
@@ -1969,14 +1988,11 @@ function renderDownloads(){
   var tb2=document.getElementById('tabDl'); if(tb2) tb2.textContent=tf?fmt(tf):'';
   var max=D[0].files||D[0].shown||1;
   tb.innerHTML='<tr><th>Surface</th><th class="num">Took</th><th class="num">Saw</th>'
-    +'<th class="num">🌍 World</th><th class="num">💬 Discord</th><th class="num">No-thx</th><th class="num">Rate</th></tr>'
+    +'<th class="num">☕ Coffee</th><th class="num">No-thx</th><th class="num">Willing</th></tr>'
     +D.map(function(r){
       // ⚠️ a rate needs at least 20 cards behind it — 3 of 5 is three clicks,
       // not 60%. Same gate the analyst uses; the dashboard must not be looser.
-      // Legacy merch clicks (pre-12 Aug windows) count into the rate so old
-      // windows stay honest, but get no column of their own.
-      var rWarm=(r.world||0)+(r.disc||0)+(r.click||0);
-      var rate = r.shown>=20 ? Math.round((rWarm/r.shown)*100)+'%' : '–';
+      var rate = r.shown>=20 ? ((r.coffee||0)/r.shown*100).toFixed(1)+'%' : '–';
       var warn = (r.files>=20 && r.shown===0);
       var w=Math.max(2,Math.round((r.files/max)*70));
       return '<tr><td>'+esc(dlName(r.page))
@@ -1984,8 +2000,7 @@ function renderDownloads(){
         +'<br><span class="minibar" style="width:'+w+'px"></span></td>'
         +'<td class="num">'+fmt(r.files)+'</td>'
         +'<td class="num">'+fmt(r.shown)+'</td>'
-        +'<td class="num" style="color:'+(r.world?'var(--ok)':'var(--dim)')+'">'+fmt(r.world||0)+'</td>'
-        +'<td class="num" style="color:'+(r.disc?'var(--cool)':'var(--dim)')+'">'+fmt(r.disc||0)+'</td>'
+        +'<td class="num" style="color:'+(r.coffee?'var(--ok)':'var(--dim)')+'">'+fmt(r.coffee||0)+'</td>'
         +'<td class="num">'+fmt(r.skip||0)+'</td>'
         +'<td class="num">'+rate+'</td></tr>';
     }).join('');
