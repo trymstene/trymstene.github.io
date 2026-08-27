@@ -1394,9 +1394,15 @@ export class ParkRoom {
       // a second phone was told "only its grower can harvest it" about their
       // own plant, with their own name printed on the card. Anything the alt
       // owns becomes the account's the moment the account looks at it.
-      if (short && alt && short !== alt) {
+      // ⚠️ TDZ: `short`/`alt` are declared far BELOW this handler — reading them
+      // here threw on every read, and a throw means no CORS headers, so the
+      // browser reported a CORS failure and the park loaded with no garden at
+      // all. Take the ids from the query string, which is what a GET carries.
+      const gOwner = (url.searchParams.get('pass') || '').slice(0, 8);
+      const gAlt = (url.searchParams.get('alt') || '').slice(0, 8);
+      if (gOwner && gAlt && gOwner !== gAlt) {
         for (const o of [...slots, ...((hs && hs.list) || []), ...((bd && bd.list) || [])]) {
-          if (o && o.passShort === alt) { o.passShort = short; dirty = true; }
+          if (o && o.passShort === gAlt) { o.passShort = gOwner; dirty = true; }
         }
       }
       const body = payload(compostFor());

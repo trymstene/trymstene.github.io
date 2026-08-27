@@ -72,7 +72,10 @@ const NUMBERS = [
     .ps-card__head {
       position: relative; z-index: 1;   /* the sunburst is positioned, so the strip must out-rank it */
       display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
-      background: var(--ink); color: var(--banana); margin: 5px; padding: 0.28rem 0.6rem;
+      /* ⚠️ NO MARGIN: inset by 5px this read as a black stripe placed ON the
+         card. It is part OF the pass — it runs to all three edges, under the
+         card's own border, the way the printed header does. */
+      background: var(--ink); color: var(--banana); padding: 0.42rem 0.7rem;
       font-size: 0.56rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase;
       white-space: nowrap; overflow: hidden;
     }

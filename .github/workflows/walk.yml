@@ -40,6 +40,13 @@ jobs:
         run: npm run build
       - name: Walk the world
         run: npx playwright test
+      # ⚠️ the walk allowlists CORS/fetch noise (a local build genuinely cannot
+      # reach the workers), so a 500 on a LIVE worker was invisible to it — the
+      # park served an empty world while the suite stayed green. This looks at
+      # what players actually get. Nightly only: a PR cannot break production.
+      - name: The world answers
+        if: github.event_name == 'schedule'
+        run: node tools/check-endpoints.mjs
       - name: Keep the walk screenshots
         if: always()
         uses: actions/upload-artifact@v4
