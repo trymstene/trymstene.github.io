@@ -190,7 +190,10 @@ function wardrobeRow(host, kicker, chips) {
       const a = document.createElement('a');
       a.className = 'pdp-ward__locked';
       a.href = locked.href;
-      a.innerHTML = chipArt(art) || label;
+      // ⚠️ no art ≠ print the label inline: not-yet-owned community pieces
+      // have no wearable art, and their raw names side by side rendered as
+      // overlapping garble. A locked tile looks like a tile.
+      a.innerHTML = chipArt(art) || '<span class="pdp-ward__none">🔒</span>';
       a.title = label + ' — ' + locked.why;
       a.setAttribute('aria-label', label + ' (locked — ' + locked.why + ')');
       tray.appendChild(a);
@@ -295,15 +298,20 @@ function buildWardrobe() {
     const door = earnDoor(d);
     return { href: door.href, why: d.lock || ('catch it at ' + door.at) };
   };
-  wardrobeRow(host, 'Hat', HATS.map(([id, label]) => ({
-    art: id === 'none' ? '' : artOf(HAT_BY_ID[id]),
+  // ⚠️ no "none" tile anywhere (Trym): extras and community already toggle
+  // off by re-tapping, so a dedicated empty box on hat/shades was the odd row
+  // out. Tap the worn one to take it off — one rule for every band.
+  wardrobeRow(host, 'Hat', HATS.filter(([id]) => id !== 'none').map(([id, label]) => ({
+    art: artOf(HAT_BY_ID[id]),
     label, locked: lockOf(HAT_BY_ID[id]),
-    on: () => state.hat === id, pick: () => { state.hat = id; },
+    on: () => state.hat === id,
+    pick: () => { state.hat = state.hat === id ? 'none' : id; },
   })));
-  wardrobeRow(host, 'Shades', GLASSES.map(([id, label]) => ({
-    art: id === 'none' ? '' : artOf(SHADE_BY_ID[id]),
+  wardrobeRow(host, 'Shades', GLASSES.filter(([id]) => id !== 'none').map(([id, label]) => ({
+    art: artOf(SHADE_BY_ID[id]),
     label, locked: lockOf(SHADE_BY_ID[id]),
-    on: () => state.glasses === id, pick: () => { state.glasses = id; },
+    on: () => state.glasses === id,
+    pick: () => { state.glasses = state.glasses === id ? 'none' : id; },
   })));
   // artOf() in the filter drops anything with no drawable chip — a tray of
   // blank "none" boxes is worse than a shorter tray
@@ -321,7 +329,7 @@ function buildWardrobe() {
   // rave drop). Only ONE can be worn at a time (the single `c` slot), so
   // picking is exclusive, not a toggle-set.
   if (CATALOG.length) {
-    wardrobeRow(host, 'Community', CATALOG.slice()
+    wardrobeRow(host, 'Community', CATALOG.filter((it) => it.kind !== 'decor')
       .sort((a, b) => (a.added || 0) - (b.added || 0))
       .map((it) => {
         const name = it.title || 'community item';

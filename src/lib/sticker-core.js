@@ -40,7 +40,10 @@ export const PRICE = {
 // the PDP always arrives with the whole design in the query string. Mirrors
 // the builder's load() so a link renders identically on both pages.
 export function parseDesign(p) {
-  const state = { bg: 'transparent', top: '', bottom: '', glasses: 'none', hat: 'none', extras: {}, effect: 'none', frame: 0 };
+  // 🙌 frame 2 = the hands-up pose, the same presentation frame the official
+  // shop art leads with — a product page should open on the celebratory move,
+  // not mid-step. A builder link's ?f= still wins below.
+  const state = { bg: 'transparent', top: '', bottom: '', glasses: 'none', hat: 'none', extras: {}, effect: 'none', frame: 2 };
   if (p.get('bg')) state.bg = p.get('bg');
   state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
   const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
