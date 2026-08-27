@@ -348,13 +348,31 @@ const NUMBERS = [
     /* ── DESKTOP: a rail and a body. Only the CARD is sticky — a rail taller
        than the viewport pins its top and strands the doors at 1280×800. ── */
     @media (min-width: 900px) {
+      /* the CARD spans the top — it is a keepsake and it reads as one only
+         with room; squeezed into a 320px rail its rep line broke over three
+         lines. Under it: a nav rail, and the body. Nothing is sticky — a rail
+         taller than the viewport pins its top and strands the doors. */
       .ps-wrap {
-        max-width: 1120px; display: grid; gap: 1.4rem 1.6rem;
+        max-width: 1120px; display: grid; gap: 1.1rem 1.6rem;
         grid-template-columns: 320px minmax(0, 1fr); padding-top: 1.4rem;
       }
-      .ps-rail { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; }
-      .ps-main { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; }
-      .ps-card { position: sticky; top: 5.5rem; }
+      /* ⚠️ the rail/body become real grid items here, so they default to
+         order:0 and would jump ABOVE the card's mobile order:1 — the card
+         landed at the foot of the page. State the desktop order outright. */
+      .ps-rail { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; order: 3; }
+      .ps-main { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; order: 4; }
+      .ps-card { order: 1; }
+      .ps-promise { order: 2; }
+      .ps-card, .ps-promise { grid-column: 1 / -1; }
+      /* ⚠️ it is a CARD, not a banner: stretched to the full 1088 the content
+         clustered left and the middle went empty. Capped near a real pass's
+         proportions and centred, so the width reads as room around it. */
+      .ps-card { max-width: 680px; margin: 0 auto; width: 100%; }
+      .ps-card__body { gap: 1.4rem; align-items: center; }
+      .ps-card__sig, .ps-card__sig canvas { width: 148px; height: 148px; }
+      .ps-card__name { font-size: 1.75rem; }
+      .ps-ranknote { max-width: none; }
+      .ps-promise { margin: 0; text-align: center; }
       .ps-shelf { gap: 0.7rem; }
     }
     @media (max-width: 360px) {
@@ -367,7 +385,6 @@ const NUMBERS = [
   <div class="ps-wrap">
     <h1 class="ps-sr">Your banana pass</h1>
 
-    <div class="ps-rail">
       <!-- ── 1. THE CARD IS THE PAGE HEADER. The whole thing taps to the share
            modal; the pencil and the empty-slot door opt out of that. ── -->
       <div class="ps-card" id="psCard">
@@ -403,6 +420,7 @@ const NUMBERS = [
 
       <!-- ── 2. THE PROMISE — the one sentence that says what this page is for ── -->
       <p class="ps-promise">Everything you make and win saves automatically.<noscript> Turn on JavaScript to see it.</noscript></p>
+    <div class="ps-rail">
 
       <!-- ── 5. SUBNAV — three tabs, hidden until there is something in a pile ── -->
       <div class="ps-nav" id="psNav" role="tablist" aria-label="Your pass" hidden>
