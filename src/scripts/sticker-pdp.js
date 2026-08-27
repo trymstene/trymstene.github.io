@@ -545,47 +545,41 @@ async function boot() {
 }
 boot().catch((e) => { console.error('PDP boot failed:', e); track('sticker_pdp_boot_fail', { message: String((e && e.message) || e).slice(0, 90) }); });
 
-// 🛒 THE STANDING ORDER — ten different bananas, one checkout. The note only
-// appears once something is waiting; the Order button always takes the whole
-// order (this design joins it on click).
-function paintOrderNote(c) {
-  const note = el('pdpCartNote');
-  if (!note) return;
-  if (c && c.n > 0) {
-    note.textContent = '\u{1F6D2} ' + c.n + (c.n === 1 ? ' banana' : ' bananas') + ' waiting in this order \u2014 the Order button takes them all to checkout';
-    note.hidden = false;
-  } else { note.hidden = true; note.textContent = ''; }
-}
-refreshOrderCart().then(paintOrderNote).catch(() => {});
+// 🛒 THE CART — the nav drawer is the visible cart now. This page only
+// needs to keep the badge honest on arrival (a checkout may have completed
+// on the shop domain) and to hand new lines over.
+refreshOrderCart().catch(() => {});
 
-// "+ Add & make another": this design joins the order, then straight back to
-// the builder for the next banana. Same guard rails as the Order button.
+// "Add to cart": the design joins the cart and the drawer slides open —
+// you stay right here. Same guard rails as the Order button.
 if (el('pdpAddMore')) el('pdpAddMore').onclick = async () => {
   if (busy) return;
   if (!captionsClean(state)) {
-    const st = el('pdpStock'); st.textContent = 'Let\u2019s keep it family friendly \u{1F34C} \u2014 head back and try other words';
+    const st = el('pdpStock'); st.textContent = 'Let’s keep it family friendly 🍌 — head back and try other words';
     st.className = 'pdp-stock pdp-stock--no'; return;
   }
   busy = true;
   const btn = el('pdpAddMore'); const label = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Adding your ' + product.name.toLowerCase() + '\u2026';
+  btn.disabled = true; btn.textContent = 'Adding your ' + product.name.toLowerCase() + '…';
   try {
     await ensureCaptionFont(state);
     const c = await addToOrder(renderPrintFile(state, product), product, sel);
     track('pdp_add_to_order', withSecs({ product: product.key, n: c.n, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
-    paintOrderNote(c);
-    btn.textContent = '\u2713 in the order \u2014 off to the builder\u2026';
-    setTimeout(() => { window.location.href = '/make-a-banana/'; }, 900);
+    btn.textContent = '✓ in the cart';
+    if (window.__bbCart) window.__bbCart.open();
+    setTimeout(() => { btn.disabled = false; btn.textContent = label; busy = false; }, 1200);
   } catch (e) {
     console.error(e);
     track('sticker_order_fail', { message: String((e && e.message) || e).slice(0, 90), stage: 'add' });
-    const st = el('pdpStock'); st.textContent = 'Hmm, that didn\u2019t work \u2014 give it another try?';
+    const st = el('pdpStock'); st.textContent = 'Hmm, that didn’t work — give it another try?';
     st.className = 'pdp-stock pdp-stock--no';
     btn.disabled = false; btn.textContent = label; busy = false;
   }
 };
-
 let busy = false;
+// backing out of the Shopify checkout restores this page from bfcache with
+// busy=true and a stuck button — reload wipes the trap (state rides the URL)
+window.addEventListener('pageshow', (e) => { if (e.persisted && busy) location.reload(); });
 // not-yet-live products render a disabled teaser button without the id
 if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
   if (busy) return;

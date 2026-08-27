@@ -155,7 +155,7 @@ async function apiLive(env) {
   // 1 eyeing a product · 2 hit ORDER · 3 at the checkout · 4 PAID
   const STAGE = {
     sticker_pdp_view: 1, view_item: 1, select_item: 1,
-    sticker_pdp_checkout: 2, pdp_add_to_order: 2, checkout_redirect: 3, begin_checkout: 3, purchase: 4,
+    sticker_pdp_checkout: 2, pdp_add_to_order: 2, add_to_cart: 2, checkout_redirect: 3, begin_checkout: 3, purchase: 4,
   };
   const evFull = {}; const evNow = []; const hot = {};
   for (const r of rows(events)) {
@@ -533,7 +533,7 @@ async function apiReport(env) {
 // the spike you are trying to detect.
 const ANALYST_EVENTS = [
   'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
-  'pdp_add_to_order', 'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
+  'pdp_add_to_order', 'add_to_cart', 'cart_open', 'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
   'offer_world', 'offer_discord', 'offer_support',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
@@ -1030,6 +1030,7 @@ var EV_LABEL = {
   share_link_copy:'shared a banana', rave_join:'joined the rave',
   sticker_pdp_view:'eyed a custom product', sticker_pdp_checkout:'hit ORDER',
   pdp_add_to_order:'added a banana to a multi-item order',
+  add_to_cart:'put an official product in the cart', cart_open:'opened the cart drawer',
   checkout_redirect:'went to checkout 💰', select_item:'picked merch',
   view_item:'viewed merch', license_click:'read the license',
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
@@ -1206,7 +1207,9 @@ var EV_EXPLAIN = {
   pdp_option_pick:'picked a tee color or size on the product page',
   sticker_pdp_view:'opened a custom-product page (sticker / magnet / tee) with THEIR banana on it',
   sticker_pdp_checkout:'clicked the big ORDER button on a custom-product page',
-  pdp_add_to_order:'🛒 clicked ADD & MAKE ANOTHER on a custom-product page — the design joined a standing multi-banana order (n = how many are waiting) and they went back to the builder for the next one. The ORDER button later takes the whole order to checkout',
+  pdp_add_to_order:'🛒 clicked ADD TO CART on a custom-product page — the design joined the shared cart (n = items in it) and the cart drawer opened. The ORDER button, or the drawer\u2019s Checkout, takes the whole cart to Shopify',
+  add_to_cart:'🛒 put an OFFICIAL product in the shared cart from a /shop/ product page — official merch and custom bananas ride the same cart since 28 Aug',
+  cart_open:'opened the cart drawer in the nav (n = items in it at that moment) — the visible cart shipped 28 Aug',
   checkout_redirect:'their design uploaded fine and they were sent to the Shopify checkout',
   sticker_order_fail:'the order pipeline errored before checkout — a spike here = something broke',
   sticker_order_fail_upload:'order failed while uploading the design (network/worker)',
@@ -1799,8 +1802,8 @@ var FUNNELS=[
     'They clicked to order their design and landed on a custom product page — tee, sticker or magnet, their banana on it.'],
    ['sticker_pdp_checkout','Hit ORDER',
     'They clicked the big ORDER button on a custom product page.'],
-   ['pdp_add_to_order','Added another',
-    'They put the design into a standing order and went back to make another banana — multi-item orders exist since 28 Aug.'],
+   ['pdp_add_to_order','Added to cart',
+    'They put the design into the shared cart (custom + official ride one cart since 28 Aug) — the drawer opened to confirm.'],
    ['checkout_redirect','→ Shopify checkout',
     'Their design uploaded fine and the browser sent them off to the Shopify checkout.'],
    ['begin_checkout','Checkout started ⌁store-wide',

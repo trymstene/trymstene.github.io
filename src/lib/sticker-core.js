@@ -11,11 +11,8 @@ import PRODUCTS from '../../shared/products.js';
 // Shared store wiring — the SAME store + worker fulfil every custom product;
 // only the variant changes per product (see shared/products.js). Storefront
 // token is PUBLIC (safe to embed). See memory: sticker-flow.
-export const SHOP = {
-  workerBase: 'https://banana-sticker.trymstene.workers.dev',
-  shopDomain: 'officialdancingbanana.myshopify.com',
-  storefrontToken: '1032480366b6bf67760ba73ace4fe0f8',
-};
+import { SHOP, storefront, cartRead, cartSave, cartClear, cartAddLine, CART_FIELDS } from './shop-config.js';
+export { SHOP };
 export { PRODUCTS };
 export function getProduct(key) { return PRODUCTS.find((p) => p.key === key) || null; }
 
@@ -178,11 +175,10 @@ export function renderApparelPrint(state, W = 2080) {   // ⚠️ keep W a multi
   if (state.top && state.effect !== 'confetti' && state.effect !== 'sparkle') {
     trimmed = tightenTopGap(trimmed);
   }
-  // place it in the print area: capped size, BOTTOM-ANCHORED at the 73% line
-  // (Trym's call: keep the motive as far down as possible so all the slack
-  // becomes clearance between the neck edge and the top of the design — a
-  // max-height design now starts 13% down the area (≈2″ below the collar
-  // seam) instead of 7%, and shorter designs sit even lower, mid-chest)
+  // place it in the print area: capped size, BOTTOM-ANCHORED at the 58% line.
+  // History: the anchor sat at 73% when the motive was big (all slack above,
+  // as collar clearance) — after the 30% shrink that parked a small motive at
+  // the belly (Trym, 28 Aug: too far down). 58% puts it on the upper chest.
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
   // ~30% smaller than the first run (Trym, 28 Aug: the chest motive wore the
@@ -195,7 +191,7 @@ export function renderApparelPrint(state, W = 2080) {   // ⚠️ keep W a multi
   if (K >= 13) s = Math.max(1 / K, Math.floor(s * K) / K);
   const dw = trimmed.width * s, dh = trimmed.height * s;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(trimmed, Math.round((W - dw) / 2), Math.round(H * 0.73 - dh), dw, dh);
+  ctx.drawImage(trimmed, Math.round((W - dw) / 2), Math.round(H * 0.58 - dh), dw, dh);
   return cv;
 }
 
@@ -716,20 +712,7 @@ function metaIds() {
 // Shopify cart that lives across designs (localStorage), so ten different
 // bananas check out as ten lines of one order. Each line carries its own
 // design attributes; the fulfilment webhook already prints per line.
-const CART_KEY = 'custom-cart-v1';
-export function orderCart() { try { return JSON.parse(localStorage.getItem(CART_KEY) || 'null'); } catch (e) { return null; } }
-function saveCart(c) { try { localStorage.setItem(CART_KEY, JSON.stringify(c)); } catch (e) {} }
-function clearCart() { try { localStorage.removeItem(CART_KEY); } catch (e) {} }
-
-async function storefront(query, variables) {
-  const res = await fetch('https://' + SHOP.shopDomain + '/api/2024-10/graphql.json', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.storefrontToken },
-    body: JSON.stringify({ query, variables }),
-  });
-  const data = await res.json();
-  return data && data.data;
-}
+export const orderCart = cartRead;
 
 // upload the print + mint the per-order variant → one ready CartLineInput
 async function prepareLine(printCanvas, product, selection) {
@@ -782,49 +765,26 @@ async function prepareLine(printCanvas, product, selection) {
   return { line: { merchandiseId, quantity: 1, attributes }, key, url };
 }
 
-const CART_FIELDS = 'id checkoutUrl totalQuantity';
-// Add THIS design to the standing order (creating it if none). Returns
-// { checkoutUrl, n, key, url }. A dead stored cart (completed checkout,
-// expired) fails the add and a fresh cart quietly takes its place.
+// Add THIS design to the cart (creating one if none). Returns
+// { checkoutUrl, n, key, url }. shop-config owns the cart mechanics.
 export async function addToOrder(printCanvas, product = getProduct('sticker'), selection = null) {
   if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
   const { line, key, url } = await prepareLine(printCanvas, product, selection);
-  const prev = orderCart();
-  if (prev && prev.id) {
-    try {
-      const d = await storefront(
-        'mutation($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
-        { cartId: prev.id, lines: [line] });
-      const cart = d && d.cartLinesAdd && d.cartLinesAdd.cart;
-      if (cart && cart.checkoutUrl) {
-        const c = { id: cart.id, checkoutUrl: cart.checkoutUrl, n: cart.totalQuantity || 0, at: Date.now() };
-        saveCart(c);
-        return { ...c, key, url };
-      }
-    } catch (e) {}
-    clearCart();
-  }
-  const d = await storefront(
-    'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
-    { lines: [line] });
-  const cart = d && d.cartCreate && d.cartCreate.cart;
-  if (!cart || !cart.checkoutUrl) throw new Error('cart failed: ' + JSON.stringify(d));
-  const c = { id: cart.id, checkoutUrl: cart.checkoutUrl, n: cart.totalQuantity || 1, at: Date.now() };
-  saveCart(c);
+  const c = await cartAddLine(line);
   return { ...c, key, url };
 }
 
 // Ask Shopify what the stored order really holds (checkout may have completed
 // on the shop domain — this page never sees that). Drops a dead/empty cart.
 export async function refreshOrderCart() {
-  const c = orderCart();
+  const c = cartRead();
   if (!c || !c.id) return null;
   try {
     const d = await storefront('query($id: ID!) { cart(id: $id) { ' + CART_FIELDS + ' } }', { id: c.id });
     const cart = d && d.cart;
-    if (!cart || !cart.totalQuantity) { clearCart(); return null; }
+    if (!cart || !cart.totalQuantity) { cartClear(); return null; }
     const u = { id: cart.id, checkoutUrl: cart.checkoutUrl || c.checkoutUrl, n: cart.totalQuantity, at: c.at };
-    saveCart(u);
+    cartSave(u);
     return u;
   } catch (e) { return c; }   // offline: show what we knew
 }

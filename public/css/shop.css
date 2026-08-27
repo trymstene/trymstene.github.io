@@ -165,3 +165,7 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 }
 .pdp-faq__item h3 { margin: 0 0 0.55rem; font-size: 1rem; font-weight: 800; line-height: 1.3; }
 .pdp-faq__item p { margin: 0; line-height: 1.7; opacity: 0.86; max-width: 68ch; }
+
+/* 🛒 add-to-cart: the quieter sibling under Buy — same cart the custom lane fills */
+.pdp-addcart { display: block; width: 100%; margin-top: 0.55rem; white-space: nowrap; }
+.pdp-addcart[disabled] { opacity: 0.55; cursor: default; }

@@ -120,10 +120,8 @@ const faqs = customFaqs({
         background-repeat: no-repeat; background-position: center; background-size: contain;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70' shape-rendering='crispEdges'%3E%3Crect x='30' width='10' height='20' fill='%23262233'/%3E%3Crect x='30' y='50' width='10' height='20' fill='%23262233'/%3E%3Crect y='30' width='20' height='10' fill='%23262233'/%3E%3Crect x='50' y='30' width='20' height='10' fill='%23262233'/%3E%3Crect x='20' y='20' width='30' height='30' fill='%23262233'/%3E%3Crect x='30' y='10' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='30' y='50' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='10' y='30' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='50' y='30' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='25' y='25' width='20' height='20' fill='%23ff4d6d'/%3E%3C/svg%3E");
       }
-      /* the second door: add this banana to the standing order, go make the next */
+      /* the second door: this banana joins the cart, the drawer confirms it */
       .pdp-addmore { display: block; width: 100%; margin-top: 0.55rem; white-space: nowrap; }
-      .pdp-cartnote { margin: 0.5rem 0 0; font-size: 0.82rem; font-weight: 700; opacity: 0.85; }
-      .pdp-cartnote[hidden] { display: none !important; }
       .pdp-opts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.45rem; }
       .pdp-swatch {
         width: 40px; height: 40px; padding: 0; border: 3px solid var(--ink, #111);
@@ -230,8 +228,7 @@ const faqs = customFaqs({
       {p.live ? (
         <>
           <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
-          <button class="btn pdp-addmore" id="pdpAddMore"><PixelIcon name="banana" size="1.2em" /> Add &amp; make another</button>
-          <p class="pdp-cartnote" id="pdpCartNote" hidden></p>
+          <button class="btn pdp-addmore" id="pdpAddMore"><PixelIcon name="banana" size="1.2em" /> Add to cart</button>
         </>
       ) : (
         <button class="btn btn--dark pdp-buy" disabled style="opacity:.55;cursor:default;">Landing any day now 🍌</button>

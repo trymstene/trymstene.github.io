@@ -20,6 +20,7 @@
   var priceEl = root.querySelector('.pdp__price');
   var stockEl = root.querySelector('.pdp-stock');
   var buyBtn = root.querySelector('.pdp-buy');
+  var addBtn = root.querySelector('.pdp-addcart');
   var swatches = [].slice.call(root.querySelectorAll('.pdp-swatch'));
   var thumbs = [].slice.call(root.querySelectorAll('.pdp-thumb'));
   var sizeBtns = [].slice.call(root.querySelectorAll('.pdp-size'));
@@ -73,18 +74,21 @@
       stockEl.className = 'pdp-stock';
       buyBtn.disabled = true;
       buyBtn.textContent = needSize ? 'Select a size' : 'Select a colour';
+      if (addBtn) addBtn.disabled = true;
     } else if (v && v.available) {
       priceEl.textContent = money(v.price);
       stockEl.textContent = 'In stock · printed & shipped on demand';
       stockEl.className = 'pdp-stock pdp-stock--ok';
       buyBtn.disabled = false;
       buyBtn.textContent = 'Buy →';
+      if (addBtn) addBtn.disabled = false;
     } else {
       priceEl.textContent = v ? money(v.price) : money(DATA.priceMin);
       stockEl.textContent = 'Sold out' + (hasColors || hasSizes ? ' in this option' : '');
       stockEl.className = 'pdp-stock pdp-stock--no';
       buyBtn.disabled = true;
       buyBtn.textContent = 'Unavailable';
+      if (addBtn) addBtn.disabled = true;
     }
   }
 
@@ -151,7 +155,6 @@
   // The custom lane already did this (sticker-core metaIds); this lane didn't.
   // exactly the shape sticker-core.js has been shipping for weeks — pass the
   // whole line as a typed variable rather than inlining an attribute list.
-  var CART_M = 'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } } }';
   function trackIds() {
     var out = [];
     var ck = function (n) { return (document.cookie.match('(^|; )' + n + '=([^;]*)') || [])[2]; };
@@ -162,27 +165,96 @@
     return out;
   }
 
+  // 🛒 the SHARED cart: official lines join the same Shopify cart the custom
+  // lane fills, so a custom sticker + this shirt check out as one order.
+  // Storage contract mirrors src/lib/shop-config.js (this file can't import).
+  var CART_KEY = 'custom-cart-v1';
+  var CART_FIELDS = 'id checkoutUrl totalQuantity';
+  function cartRead() { try { return JSON.parse(localStorage.getItem(CART_KEY) || 'null'); } catch (e) { return null; } }
+  function cartWrite(cart) {
+    var c = { id: cart.id, checkoutUrl: cart.checkoutUrl, n: cart.totalQuantity || 0, at: Date.now() };
+    try { localStorage.setItem(CART_KEY, JSON.stringify(c)); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent('bb-cart', { detail: { n: c.n } })); } catch (e) {}
+    return c;
+  }
+  // ⚠️ mirrors src/lib/shop-config.js cartAddLine — same doctrine (28 Aug
+  // review): userErrors = FAILURE even beside a cart with a checkoutUrl, and
+  // a network throw is NOT a dead cart (never clear the pointer on it). A
+  // fresh cart is minted only when Shopify answers with cart: null.
+  function errsOf(payload) {
+    return ((payload && payload.userErrors) || []).map(function (e) { return e.message; }).join('; ');
+  }
+  function cartCreateWith(line) {
+    return gql('mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
+               { lines: [line] })
+      .then(function (r) {
+        var payload = r && r.data && r.data.cartCreate;
+        var errs = errsOf(payload);
+        if (errs) throw new Error('cart failed: ' + errs);
+        var fresh = payload && payload.cart;
+        if (!fresh || !fresh.checkoutUrl || !fresh.totalQuantity) throw new Error('cart failed');
+        return cartWrite(fresh);
+      });
+  }
+  function cartAddLine(line) {
+    var prev = cartRead();
+    if (!prev || !prev.id) return cartCreateWith(line);
+    return gql('mutation($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
+               { cartId: prev.id, lines: [line] })
+      .then(function (r) {
+        if (!r || !r.data) throw new Error('cart add failed: no response');
+        var payload = r.data.cartLinesAdd;
+        var errs = errsOf(payload);
+        if (errs) throw new Error('cart add failed: ' + errs);
+        var cart = payload && payload.cart;
+        if (cart && cart.checkoutUrl) return cartWrite(cart);
+        try { localStorage.removeItem(CART_KEY); } catch (e) {}   // Shopify says the cart is gone
+        return cartCreateWith(line);
+      });
+  }
+  if (addBtn) addBtn.addEventListener('click', function () {
+    var v = variantFor(selColor, selSize);
+    if (!v || !v.available) return;
+    addBtn.disabled = true;
+    var orig = addBtn.textContent; addBtn.textContent = 'Adding…';
+    cartAddLine({ merchandiseId: v.id, quantity: 1, attributes: trackIds() }).then(function (c) {
+      if (window.gtag) gtag('event', 'add_to_cart', withSecs({
+        currency: DATA.currency, value: v.price, n: c.n,
+        items: [{ item_name: DATA.title, item_variant: (selColor || '') + ' / ' + (selSize || '') }],
+      }));
+      addBtn.textContent = '✓ in the cart';
+      if (window.__bbCart) window.__bbCart.open();
+      setTimeout(function () { addBtn.disabled = false; addBtn.textContent = orig; }, 1200);
+    }).catch(function () {
+      addBtn.disabled = false; addBtn.textContent = orig;
+      stockEl.textContent = 'Couldn’t add it — please try again.';
+      stockEl.className = 'pdp-stock pdp-stock--no';
+    });
+  });
+
+  // ⚖ Buy → means the same thing the custom lane's Order means: THIS item
+  // joins the shared cart and checkout carries EVERY line. Two identical-
+  // looking doors with opposite cart semantics shipped for an hour and the
+  // review caught it — a buyer with a waiting custom sticker would have paid
+  // for the tee alone while the badge still showed their sticker.
   buyBtn.addEventListener('click', function () {
     var v = variantFor(selColor, selSize);
     if (!v || !v.available) return;
     buyBtn.disabled = true;
     var orig = buyBtn.textContent; buyBtn.textContent = 'Opening checkout…';
-    gql(CART_M, { lines: [{ merchandiseId: v.id, quantity: 1, attributes: trackIds() }] }).then(function (res) {
-      var url = res && res.data && res.data.cartCreate && res.data.cartCreate.cart && res.data.cartCreate.cart.checkoutUrl;
-      if (url) {
-        if (window.gtag) gtag('event', 'begin_checkout', withSecs({ items: [{ item_name: DATA.title, item_variant: selColor + ' / ' + selSize }] }));
-        window.location.href = url;
-      } else {
-        buyBtn.disabled = false; buyBtn.textContent = orig;
-        stockEl.textContent = 'Couldn’t start checkout — please try again.';
-        stockEl.className = 'pdp-stock pdp-stock--no';
-      }
+    cartAddLine({ merchandiseId: v.id, quantity: 1, attributes: trackIds() }).then(function (c) {
+      if (window.gtag) gtag('event', 'begin_checkout', withSecs({ items: [{ item_name: DATA.title, item_variant: selColor + ' / ' + selSize }] }));
+      window.location.href = c.checkoutUrl;
     }).catch(function () {
       buyBtn.disabled = false; buyBtn.textContent = orig;
-      stockEl.textContent = 'Network hiccup — please try again.';
+      stockEl.textContent = 'Couldn’t start checkout — please try again.';
       stockEl.className = 'pdp-stock pdp-stock--no';
     });
   });
+
+  // backing out of the Shopify checkout restores this page from bfcache with
+  // the button still stuck on 'Opening checkout…' — reset it
+  window.addEventListener('pageshow', function (e) { if (e.persisted) update(); });
 
   // init: pick the first colour (nudges an explicit size choice); products with
   // no colours still need their sizes enabled + the buy state initialised.

@@ -40,10 +40,29 @@ import PixelIcon from './PixelIcon.astro';
       <a class="nav__pass" href="/pass/" title="Your banana pass">🎫 My Pass</a>
     </div>
   </nav>
+  <!-- 🛒 the global cart: always visible in the bar (badge = live count),
+       opens the drawer. Sits right of My Pass on desktop, left of the
+       burger on mobile — where webshops keep it. -->
+  <button class="nav__cartbtn" id="navCartBtn" type="button" aria-label="Cart">
+    <svg viewBox="0 0 120 120" shape-rendering="crispEdges" aria-hidden="true" focusable="false">
+      <rect x="10" y="10" width="20" height="10" fill="#262233"/>
+      <rect x="20" y="20" width="10" height="10" fill="#262233"/>
+      <rect x="20" y="30" width="90" height="10" fill="#262233"/>
+      <rect x="20" y="40" width="10" height="30" fill="#262233"/>
+      <rect x="100" y="40" width="10" height="30" fill="#262233"/>
+      <rect x="30" y="40" width="70" height="30" fill="#ffd23f"/>
+      <rect x="20" y="70" width="90" height="10" fill="#262233"/>
+      <rect x="30" y="90" width="20" height="20" fill="#262233"/>
+      <rect x="80" y="90" width="20" height="20" fill="#262233"/>
+    </svg>
+    <span class="nav-note nav-note--cart" id="navCartCount" hidden>0</span>
+  </button>
   <div class="nav__backdrop"></div>
 </header>
 
 <script>
+  import { initCartUi } from '../lib/cart-ui.js';
+  initCartUi();
   // Scroll-aware nav: hide on scroll-down, show on a deliberate scroll-up.
   // Asymmetric hysteresis — hides after a little down-scroll, but needs a real
   // up-scroll to return, so minor scroll-adjusting doesn't pop it back open.
