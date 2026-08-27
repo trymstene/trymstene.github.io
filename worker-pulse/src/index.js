@@ -1225,6 +1225,7 @@ var EV_EXPLAIN = {
   rave_snack:'caught a conveyor snack on the floor (kind = which one)',
   rave_zap:'zapped by the rave light show (loss = jelly knocked loose)',
   rave_steer:'used hold-and-drag steering on the dancefloor (once per visit)',
+  offer_support:'clicked the buy-me-a-coffee ask on a download card',
   park_steer:'used hold-and-drag steering in the park (once per visit)',
   beach_steer:'used hold-and-drag steering at the bay (once per visit)',
   hs_steer:'used hold-and-drag steering at the homestead (once per visit)',

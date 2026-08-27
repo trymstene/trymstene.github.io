@@ -305,24 +305,18 @@ const WORLD_HREF = '/homestead/';
 // button and `variant` rides every event so the winners can be counted
 // (per-variant splits in GA4 need `variant` registered as a custom
 // dimension — same admin errand family as `from`).
+// ☕ THE SUPPORT TEST (Trym, 27 Aug): every download-moment card asks for
+// support instead of pitching the world/Discord — an honest ask at the one
+// moment a stranger has just received something. ONE message, deliberately:
+// a clean read on willingness-to-pay beats a rotation. The $5 matches the
+// coffee price set on the BMAC page — if that setting changes, change this.
+// The old world/discord rotation lives in git (WORLD_VARIANTS, this commit's
+// parent) — this is a TEST, not a demolition.
 const WORLD_VARIANTS = [
-  { id: 'home', to: 'world', kicker: 'Banana World', head: 'Your banana deserves a home',
-    pills: ['Free browser world', 'No install, no login'], cta: '🏡 Claim your homestead' },
-  { id: 'behind', to: 'world', kicker: 'There’s more', head: 'There’s a whole world behind this GIF',
-    pills: ['A park, a beach, a rave', 'Your banana walks it'], cta: '🌍 Visit Banana World' },
-  { id: 'movein', to: 'world', kicker: 'Banana World', head: 'Don’t just download it — move in',
-    pills: ['Your own plot', 'Pitch a tent, grow a garden'], cta: '🏡 Move into the Homestead' },
-  { id: 'plot', to: 'world', kicker: 'Banana World', head: 'Your GIF is ready. So is your plot.',
-    pills: ['Every banana gets a homestead', 'Free, in your browser'], cta: '🏡 See your plot' },
-  { id: 'since99', to: 'world', kicker: 'Since 1999', head: '26 years old — and it just got a whole world',
-    pills: ['The original banana’s world', 'Free, in your browser'], cta: '🌍 Step into Banana World' },
-  { id: 'company', to: 'discord', kicker: 'The community', head: 'Bananas are better with company',
-    pills: ['Memes, remixes, world drops', 'The people who get it'], cta: '💬 Join the Discord' },
-  { id: 'people', to: 'discord', kicker: 'The community', head: 'Meet the people who get it',
-    pills: ['Show off your banana', 'Hear about drops first'], cta: '💬 Meet them on Discord' },
-  { id: 'hangout', to: 'discord', kicker: 'The community', head: 'Where do bananas hang out?',
-    pills: ['The community server', 'Memes, drops, world news'], cta: '💬 Join the Discord' },
+  { id: 'coffee', to: 'support', kicker: 'Free, since 1999', head: 'I make nothing on the banana',
+    pills: ['Every download is free', 'Support keeps it that way'], cta: '☕ Buy me a coffee — $5' },
 ];
+export const SUPPORT_URL = 'https://buymeacoffee.com/trymstene';
 
 // their banana standing in the world — sky, grass, and the engine composite.
 // A gradient backdrop is card chrome, not world art (the pack rule is about
@@ -370,7 +364,11 @@ function worldCard({ v, outfit, skipText, onGo, onSkip }) {
   // ONE primary — the variant's destination decides both colour and door
   const go = document.createElement('a');
   go.textContent = v.cta;
-  if (v.to === 'discord') {
+  if (v.to === 'support') {
+    go.className = 'mir__go';
+    go.href = SUPPORT_URL;
+    go.target = '_blank'; go.rel = 'noopener';
+  } else if (v.to === 'discord') {
     go.className = 'mir__go mir__go--dc';
     go.href = DISCORD_URL;
     go.target = '_blank'; go.rel = 'noopener';
@@ -412,7 +410,7 @@ export function offerAfterDownload(opts = {}) {
     skipText: opts.skipText || 'no thanks, just the GIF',
     // ⚠️ beacon transport: the world link navigates THIS tab away instantly —
     // a plain gtag hit would be cancelled mid-flight with the page
-    onGo: () => hit(v.to === 'discord' ? 'offer_discord' : 'offer_world',
+    onGo: () => hit(v.to === 'support' ? 'offer_support' : v.to === 'discord' ? 'offer_discord' : 'offer_world',
       { transport_type: 'beacon' }),
     onSkip: () => { close(); hit('offer_skip'); if (opts.onSkip) opts.onSkip(); },
   });
