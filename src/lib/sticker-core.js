@@ -336,13 +336,17 @@ function makeMugPhotoMockup(design, size, photo, quad) {
   ctx.imageSmoothingEnabled = false;
   const STRIPS = 48, BEND = 0.34;     // barrel curvature, as makeMugMockup
   const curve = (u) => u * (1 - BEND) + (0.5 - Math.cos(Math.PI * u) * 0.5) * BEND;
+  // ⚠️ whole-pixel abutting strips, as makeMugMockup — and doubly so here:
+  // under MULTIPLY an overlapped column inks twice and prints as a dark stripe.
   for (let i = 0; i < STRIPS; i++) {
     const t = i / STRIPS, tn = (i + 1) / STRIPS;
-    const x0 = dx + curve(t) * dw, x1 = dx + curve(tn) * dw;
+    const sx0 = Math.floor(t * design.width);
+    const sx1 = i + 1 === STRIPS ? design.width : Math.floor(tn * design.width);
+    const x0 = Math.round(dx + curve(t) * dw), x1 = Math.round(dx + curve(tn) * dw);
+    if (x1 <= x0 || sx1 <= sx0) continue;
     const shrink = 1 - Math.abs(t - 0.5) * 0.10;   // the barrel's vertical pinch
-    ctx.drawImage(design,
-      Math.floor(t * design.width), 0, Math.ceil(design.width / STRIPS) + 1, design.height,
-      x0, dy + dh * (1 - shrink) / 2, Math.max(1, x1 - x0) + 1, dh * shrink);
+    ctx.drawImage(design, sx0, 0, sx1 - sx0, design.height,
+      x0, dy + dh * (1 - shrink) / 2, x1 - x0, dh * shrink);
   }
   ctx.restore();
   return cv;
@@ -517,13 +521,18 @@ function makeMugMockup(design, size, state) {
   // to linear keeps the barrel readable at the edges without widening the art.
   const BEND = 0.3;
   const curve = (u) => u * (1 - BEND) + (0.5 - Math.cos(Math.PI * u) * 0.5) * BEND;
+  // ⚠️ STRIPS MUST ABUT ON WHOLE PIXELS. Fractional strip edges each get an
+  // anti-aliased seam (the mug's white bleeding through) — 48 strips became 48
+  // pale vertical stripes through any solid background. Round both ends and
+  // hand the rounded edge to the next strip: no gap, no overlap, no seam.
   for (let i = 0; i < STRIPS; i++) {
     const t = i / STRIPS, tn = (i + 1) / STRIPS;
-    const x0 = dx + curve(t) * dw, x1 = dx + curve(tn) * dw;
+    const sx0 = Math.floor(t * halfW), sx1 = i + 1 === STRIPS ? halfW : Math.floor(tn * halfW);
+    const x0 = Math.round(dx + curve(t) * dw), x1 = Math.round(dx + curve(tn) * dw);
+    if (x1 <= x0 || sx1 <= sx0) continue;
     const shrink = 1 - Math.abs(t - 0.5) * 0.13;                   // top/bottom pinch
-    ctx.drawImage(design,
-      Math.floor(t * halfW), 0, Math.ceil(halfW / STRIPS) + 1, design.height,
-      x0, dy + dh * (1 - shrink) / 2, Math.max(1, x1 - x0) + 1, dh * shrink);
+    ctx.drawImage(design, sx0, 0, sx1 - sx0, design.height,
+      x0, dy + dh * (1 - shrink) / 2, x1 - x0, dh * shrink);
   }
   ctx.restore();
 
