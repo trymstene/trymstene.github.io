@@ -1386,6 +1386,17 @@ export class ParkRoom {
       if (stormAt) await this.state.storage.put('lastStormAt', stormAt);
     };
     if (url.pathname === '/garden' && request.method !== 'POST') {
+      // 🪪 OWNERSHIP CONVERGES ON EVERY READ. A plot sown before the player had
+      // an account is keyed to that BROWSER's id, and it only ever migrated
+      // when they watered it from that same browser — so a signed-in player on
+      // a second phone was told "only its grower can harvest it" about their
+      // own plant, with their own name printed on the card. Anything the alt
+      // owns becomes the account's the moment the account looks at it.
+      if (short && alt && short !== alt) {
+        for (const o of [...slots, ...((hs && hs.list) || []), ...((bd && bd.list) || [])]) {
+          if (o && o.passShort === alt) { o.passShort = short; dirty = true; }
+        }
+      }
       const body = payload(compostFor());
       if (dirty || weedsDirty || decayed || eggsDirty || trashDirty || borderDirty
         || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty) await persist();
