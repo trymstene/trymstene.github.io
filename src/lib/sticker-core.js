@@ -185,10 +185,17 @@ export function renderApparelPrint(state, W = 2080) {   // ⚠️ keep W a multi
   // seam) instead of 7%, and shorter designs sit even lower, mid-chest)
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
-  const s = Math.min((W * 0.74) / trimmed.width, (H * 0.60) / trimmed.height);
+  // ~30% smaller than the first run (Trym, 28 Aug: the chest motive wore the
+  // shirt) — and snapped to the sprite grid so every sprite pixel stays a
+  // whole number of print pixels (fractional scales stripe)
+  const K = W / 160;
+  let s = Math.min((W * 0.52) / trimmed.width, (H * 0.42) / trimmed.height);
+  // snap only at print resolution — the grid is fine there (K=13); at preview
+  // sizes (K=4) the quarter-steps eat far more than the stripes they prevent
+  if (K >= 13) s = Math.max(1 / K, Math.floor(s * K) / K);
   const dw = trimmed.width * s, dh = trimmed.height * s;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(trimmed, (W - dw) / 2, H * 0.73 - dh, dw, dh);
+  ctx.drawImage(trimmed, Math.round((W - dw) / 2), Math.round(H * 0.73 - dh), dw, dh);
   return cv;
 }
 
