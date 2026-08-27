@@ -258,7 +258,15 @@ function paint() {
     const src = document.querySelector('.ps-patch[data-patch="' + d.id + '"] svg');
     if (src) strip.appendChild(src.cloneNode(true));
   });
+  // the rest as one ink chip, like the shared PNG — a count beats a cut-off row
+  if (earned.length > 6) {
+    const more = document.createElement('span');
+    more.className = 'ps-card__more';
+    more.textContent = '+' + (earned.length - 6);
+    strip.appendChild(more);
+  }
   strip.hidden = !earned.length;   // an empty band says nothing; a door says it better
+  el('psBadgeLabel').hidden = !earned.length;
   el('psBadgeH').textContent = 'Badges ' + earned.length + '/' + PATCHES.length;
 
   const all = shelfList();
@@ -330,12 +338,22 @@ function paint() {
   renderNews();
   renderGear();
 
-  SHARE_EXTRA = {
-    rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(),
-    // the proud one-liner reads straight off the tiles that are actually non-zero
-    stats: [...document.querySelectorAll('.ps-stat:not(.ps-stat--zero):not([data-noshare])')].slice(0, 3)
-      .map((t) => [+t.firstElementChild.textContent, t.children[1].textContent]),
-  };
+  const proud = [...document.querySelectorAll('.ps-stat:not(.ps-stat--zero):not([data-noshare])')].slice(0, 3)
+    .map((t) => [+t.firstElementChild.textContent, t.children[1].textContent]);
+  SHARE_EXTRA = { rankLine: 'LVL ' + lv.level + ' · ' + rk.title.toUpperCase(), stats: proud };
+  // ⚠️ the same line the shared PNG prints — the card on screen IS the keepsake,
+  // so what it says and what people pass around must not diverge
+  const sline = el('psCardStats');
+  // each stat is one unbreakable unit — wrapping mid-item put "4" on one line
+  // and "BADGES EARNED" on the next, which reads as two different numbers
+  sline.replaceChildren();
+  proud.forEach(([n, l], i) => {
+    if (i) sline.appendChild(document.createTextNode('  ·  '));
+    const u = document.createElement('span');
+    u.textContent = n + ' ' + (n === 1 ? l.replace(/s/, '') : l);
+    sline.appendChild(u);
+  });
+  sline.hidden = !proud.length;
 
   lastIdx = -1;                        // the signature banana redraws on its next frame
   assetsReady().then(bakeAvatar);
