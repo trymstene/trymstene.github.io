@@ -71,7 +71,7 @@ function photoKey(k) {
 function designCanvas() {
   // apparel: the preview IS the print file (the full 12″×16″ area with the
   // design placed inside it) at preview res — WYSIWYG with the real print
-  if (apparel) return renderApparelPrint(state, 512);
+  if (apparel) return renderApparelPrint(state, 640);   // ⚠️ multiple of 160 — 512 striped
   // mug: same deal — the preview IS the wrap print file, and the mockup shows
   // the half of it that faces you
   if (product.print === 'mug') return renderMugPrint(state, 1024);
@@ -260,6 +260,13 @@ const earnDoor = (d) => (d.earned === 'pier' ? { href: '/beach/', at: 'the pier'
 // deploy. The builder has consumed them since P4-D; this page did not, so a
 // caught item vanished the moment you went to buy something with it on.
 const CATALOG_URL = 'https://banana-share.trymstene.workers.dev/catalog/items.json';
+// 🧢 THE MISSING LOGIC STEP (Trym): a community piece and a built-in wearable
+// on the same spot used to STACK — a community beanie drawn on top of a hat.
+// The catalog knows each item's anchor; only the real collisions exclude:
+// head ⟷ hat, feet ⟷ shoe extras. Reads THIS page's catalog instance —
+// drops.js has its own copy and a cross-instance read would see [].
+const catAnchor = (id) => { const it = CATALOG.find((x) => x.id === id); return (it && it.wear && it.wear.anchor) || ''; };
+const anchorSlot = (a) => (a === 'head' ? 'hat' : a === 'feet' ? 'feet' : null);
 let CATALOG = [];
 const CAT_CUSTOM = {};
 const catOwned = () => { try { return JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {}; } catch (e) { return {}; } };
@@ -305,7 +312,12 @@ function buildWardrobe() {
     art: artOf(HAT_BY_ID[id]),
     label, locked: lockOf(HAT_BY_ID[id]),
     on: () => state.hat === id,
-    pick: () => { state.hat = state.hat === id ? 'none' : id; },
+    pick: () => {
+      state.hat = state.hat === id ? 'none' : id;
+      // ⚠️ crossing rows must REPAINT rows: each tray only re-syncs itself,
+      // so a cleared community piece would keep glowing pressed
+      if (state.hat !== 'none' && state.c && anchorSlot(catAnchor(state.c)) === 'hat') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
+    },
   })));
   wardrobeRow(host, 'Shades', GLASSES.filter(([id]) => id !== 'none').map(([id, label]) => ({
     art: artOf(SHADE_BY_ID[id]),
@@ -320,7 +332,10 @@ function buildWardrobe() {
     wardrobeRow(host, 'Extras', extras.map((d) => ({
       art: artOf(d), label: d.label, locked: lockOf(d),
       on: () => !!state.extras[d.id],
-      pick: () => { state.extras[d.id] = !state.extras[d.id]; },
+      pick: () => {
+        state.extras[d.id] = !state.extras[d.id];
+        if (state.extras[d.id] && d.anchor === 'feet' && state.c && anchorSlot(catAnchor(state.c)) === 'feet') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
+      },
     })));
   }
   // 🎁 THE COMMUNITY ROW — hidden until the catalog lands, then owned items are
@@ -339,7 +354,16 @@ function buildWardrobe() {
           label: name + (it.by ? ' by ' + it.by : ''),
           locked: owned ? null : { href: '/park/', why: 'buy it at the Banana Stand' },
           on: () => state.c === it.id,
-          pick: () => { state.c = state.c === it.id ? '' : it.id; applyCustom(); },
+          pick: () => {
+            state.c = state.c === it.id ? '' : it.id;
+            applyCustom();
+            if (state.c) {
+              const slot = anchorSlot(catAnchor(state.c));
+              if (slot === 'hat') state.hat = 'none';
+              if (slot === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') state.extras[d.id] = false; });
+              if (slot) queueMicrotask(buildWardrobe);
+            }
+          },
         };
       }));
   }

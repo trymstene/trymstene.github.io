@@ -137,7 +137,10 @@ export async function ensureCaptionFont(state) {
 export function renderPrintFile(state, product = null) {
   if (product && product.print === 'mug') return renderMugPrint(state);
   if (product && product.options) return renderApparelPrint(state);
-  const W = 2048;
+  // ⚠️ INTEGER SPRITE SCALE (the stripes bug): 2048 is 160×12.8, and a
+  // fractional nearest-neighbour upscale gives some art pixels 13 rows and
+  // others 12 — visible banding on the PRINT FILE itself. 2080 = 13×.
+  const W = 2080;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = W; const ctx = cv.getContext('2d');
   composite(ctx, W, state.frame, state, {
     bg: state.bg, captions: stickerCaptions(state), effect: stickerEffect(state),
@@ -157,7 +160,7 @@ export function renderPrintFile(state, product = null) {
 // down (≈1.4″ below the collar seam) — Trym: the fill-the-area default sat
 // huge and right at the neck opening. The PDP mockup draws this same canvas,
 // so what you see is what prints.
-export function renderApparelPrint(state, W = 2048) {
+export function renderApparelPrint(state, W = 2080) {   // ⚠️ keep W a multiple of 160 — fractional sprite scales stripe
   const H = Math.round(W * (16 / 12));
   // render + trim the raw design first
   const raw = document.createElement('canvas'); raw.width = W; raw.height = W;
@@ -198,7 +201,7 @@ export function renderApparelPrint(state, W = 2048) {
 // fight — a mug is the one product where the caption is the point.
 export function renderMugPrint(state, W = 2475) {
   const H = Math.round(W * (1155 / 2475));
-  const src = 2048;
+  const src = 2080;   // ⚠️ 13× the 160-unit grid — fractional sprite scales stripe
   const raw = document.createElement('canvas'); raw.width = raw.height = src;
   const rctx = raw.getContext('2d');
   composite(rctx, src, state.frame, state, {
@@ -215,7 +218,11 @@ export function renderMugPrint(state, W = 2475) {
   }
   ctx.imageSmoothingEnabled = false;
   const half = W / 2;
-  const s = Math.min((half * 0.78) / trimmed.width, (H * 0.90) / trimmed.height);
+  // ⚠️ snap the placement so each ART pixel (13 raw px) maps to a WHOLE number
+  // of destination px — a free-floating scale re-stripes what the integer
+  // composite just cleaned. floor, never round: overshooting the fit clips.
+  let s = Math.min((half * 0.78) / trimmed.width, (H * 0.90) / trimmed.height);
+  s = Math.max(1, Math.floor(s * 13)) / 13;
   const dw = trimmed.width * s, dh = trimmed.height * s;
   for (const cx of [half * 0.5, half * 1.5]) {
     ctx.drawImage(trimmed, cx - dw / 2, (H - dh) / 2, dw, dh);
@@ -256,8 +263,8 @@ function tightenTopGap(cv) {
 // which reads as a placeholder next to real merch — nobody clicks a placeholder.
 export function productDesign(state, product) {
   if (product.print === 'mug') return renderMugPrint(state, 1024);
-  if (product.options) return renderApparelPrint(state, 512);
-  const W = 512;
+  if (product.options) return renderApparelPrint(state, 640);
+  const W = 640;   // ⚠️ 4× the grid — 512 was 3.2× and striped
   const cv = document.createElement('canvas'); cv.width = cv.height = W;
   const ctx = cv.getContext('2d');
   composite(ctx, W, state.frame, state, {
@@ -343,7 +350,7 @@ function makeMugPhotoMockup(design, size, photo, quad) {
 
 // one banana, trimmed, on a face-shaped canvas — what a buyer sees from the front
 function mugFaceArt(state) {
-  const src = 1024;
+  const src = 1120;   // ⚠️ 7× the grid — 1024 was 6.4× and striped
   const raw = document.createElement('canvas'); raw.width = raw.height = src;
   const rctx = raw.getContext('2d');
   composite(rctx, src, state.frame, state, {

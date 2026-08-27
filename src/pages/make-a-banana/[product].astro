@@ -81,9 +81,13 @@ const faqs = customFaqs({
         text-transform: uppercase; opacity: 0.6;
       }
       .pdp-ward__tray {
-        display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.25rem;
+        display: flex; gap: 0.4rem; overflow-x: auto; overflow-y: hidden; padding-bottom: 0.25rem;
         scroll-snap-type: x proximity;
+        /* the rows scroll, but a visible scrollbar under every band reads as
+           chrome, not wardrobe (Trym) — same treatment as the pass tabs */
+        scrollbar-width: none;
       }
+      .pdp-ward__tray::-webkit-scrollbar { display: none; }
       .pdp-ward__tray button {
         flex: 0 0 auto; scroll-snap-align: start; cursor: pointer; line-height: 0;
         width: 52px; height: 52px; padding: 4px; background: #fff;

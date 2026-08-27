@@ -4,7 +4,7 @@
 // ⚠️ THE PAGE IS THE CARD, THEN THE PILES, THEN THE ACCOUNT. Anything a player
 // does once ever (log in, link a device, log out, join the list) lives below
 // the things they came for — see docs/pass-redesign-spec.md.
-import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams } from '../lib/banana-engine.js';
+import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams, EXTRA_DEFS } from '../lib/banana-engine.js';
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies } from '../lib/banana-pass.js';
@@ -20,6 +20,8 @@ import { wearToCustom } from '../lib/wear-render.js';
 // can be worn; the manifest is public + cached, fetched once per page
 let CATALOG = [];
 const CAT_CUSTOM = {};
+const catAnchorP = (id) => { const it = CATALOG.find((x) => x.id === id); return (it && it.wear && it.wear.anchor) || ''; };
+const anchorSlotP = (a) => (a === 'head' ? 'hat' : a === 'feet' ? 'feet' : null);
 const catCustomP = (ids) => {
   // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
   // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
@@ -565,7 +567,15 @@ function renderMine(host) {
     b.addEventListener('click', () => {
       const list = cList();
       if (wearing) cSet(list.filter((x) => x !== it.id));
-      else { const sp = spotOf(it.id); cSet([...list.filter((x) => spotOf(x) !== sp), it.id]); }
+      else {
+        const sp = spotOf(it.id);
+        cSet([...list.filter((x) => spotOf(x) !== sp), it.id]);
+        // 🧢 across the seam too: a head piece takes the hat's spot, a feet
+        // piece the shoes' — the same rule the builder and the PDPs apply
+        const slot = anchorSlotP(catAnchorP(it.id));
+        if (slot === 'hat') OUTFIT.hat = 'none';
+        if (slot === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') OUTFIT.extras[d.id] = false; });
+      }
       saveOutfit();
       lastIdx = -1;      // the signature banana redraws with/without it
       renderGear();      // ⚠️ the SAME repaint as manifest gear — one path

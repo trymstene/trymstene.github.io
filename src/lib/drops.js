@@ -56,6 +56,21 @@ export function fmtClock(s) { s = Math.max(0, Math.round(s)); return Math.floor(
 let CATALOG = [];
 let _catPromise = null;
 const CAT_CUSTOM = {};
+// 🧢 THE MISSING LOGIC STEP (Trym): a community item and a built-in wearable
+// occupying the same spot used to stack — a community beanie ON TOP of a
+// regular hat. The catalog knows each item's anchor; this is the one shared
+// bridge between that anchor and the built-in slots. Deliberately minimal:
+// only the collisions that exist are excluded (head ⟷ hat, feet ⟷ shoes) —
+// a chest tail or a face nose coexists with everything by design.
+export function catAnchorOf(id) {
+  const it = CATALOG.find((x) => x.id === id);
+  return (it && it.wear && it.wear.anchor) || '';
+}
+// the built-in slot a community anchor displaces (and vice versa)
+export function anchorSlot(anchor) {
+  return anchor === 'head' ? 'hat' : anchor === 'feet' ? 'feet' : null;
+}
+
 export function loadCatalog() {                          // idempotent; returns the ONE shared promise
   if (_catPromise) return _catPromise;
   _catPromise = fetch(CATALOG_URL).then((r) => (r.ok ? r.json() : []))

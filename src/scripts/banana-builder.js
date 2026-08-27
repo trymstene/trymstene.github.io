@@ -23,7 +23,7 @@ import {
 import { memeGif } from '../lib/meme-gif.js';
 import { offerAfterDownload } from '../lib/make-it-real.js'; // 🛍 the moment the wish is granted
 import { wearToCustom } from '../lib/wear-render.js'; // community-item wear payload → engine custom channel
-import { loadCatalog as loadDropCatalog } from '../lib/drops.js';
+import { loadCatalog as loadDropCatalog, catAnchorOf, anchorSlot } from '../lib/drops.js';
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -189,7 +189,16 @@ function init() {
       b.dataset.val = val;
       b.title = label;
       b.setAttribute('aria-label', label);
-      b.onclick = () => { state[key] = (state[key] === val ? 'none' : val); onState(); };
+      b.onclick = () => {
+        state[key] = (state[key] === val ? 'none' : val);
+        // 🧢 a built-in hat displaces a head-anchored community piece — the
+        // same one-per-spot rule the community items already keep among
+        // themselves, extended across the seam (a beanie stacked ON a hat)
+        if (key === 'hat' && state.hat !== 'none') {
+          cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'hat'));
+        }
+        onState();
+      };
       el(host).appendChild(b);
     });
   }
@@ -247,7 +256,11 @@ function init() {
 
   // FEET row — single-select: one shoe clears the others; a 'none' chip returns
   // to the banana's own baked-in shoes. setFeet enforces the exclusivity.
-  const setFeet = (id) => { FEET_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); }); onState(); };
+  const setFeet = (id) => {
+    FEET_DEFS.forEach((d) => { state.extras[d.id] = (d.id === id); });
+    if (id) cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'feet'));
+    onState();
+  };
   if (el('bbFeetChips') && FEET_DEFS.length) {
     FEET_DEFS.forEach((d) => {
       const b = document.createElement('button');
@@ -430,7 +443,15 @@ function init() {
       action.onclick = () => {
         const list = cList();
         if (worn) cSet(list.filter((x) => x !== it.id));
-        else { const sp = spotOf(it.id); cSet([...list.filter((x) => spotOf(x) !== sp), it.id]); }
+        else {
+          const sp = spotOf(it.id);
+          cSet([...list.filter((x) => spotOf(x) !== sp), it.id]);
+          // …and the seam the spot rule never crossed: a head piece takes the
+          // hat's spot, a feet piece takes the shoes' — both directions
+          const slot = anchorSlot(catAnchorOf(it.id));
+          if (slot === 'hat') state.hat = 'none';
+          if (slot === 'feet') FEET_DEFS.forEach((d) => { state.extras[d.id] = false; });
+        }
         onState(); cardPop.hidden = true;
       };
     } else {
