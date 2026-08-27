@@ -366,12 +366,13 @@ function init() {
   // must NOT borrow one place's name ("Club"). The row hides when empty.
   let CAT_CATCHES = {}; // id -> caught-count (the recognition tally, from the worker)
   function renderCatalog() {
-    const host = el('bbCatalogChips');
-    if (!host) return;
-    const row = host.closest('.bb-row');
-    host.innerHTML = '';
-    if (!CATALOG.length) { if (row) row.hidden = true; return; }
-    if (row) row.hidden = false;
+    // 🧢 NO COMMUNITY PILE (Trym): a community beanie IS a hat, so it lives in
+    // the HAT row — the row's single spot then owns the exclusivity instead of
+    // hand-wired cross-checks. head→hats, feet→shoes, the rest→extras. The old
+    // dedicated row is gone; provenance is a badge, not a shelf.
+    document.querySelectorAll('[data-comm]').forEach((n) => n.remove());   // idempotent re-render
+    if (!CATALOG.length) return;
+    const hostFor = (anchor) => el(anchor === 'head' ? 'bbHatChips' : anchor === 'feet' ? 'bbFeetChips' : 'bbExtrasChips');
     // publish owned community items to the synced own_<id> stat so ownership
     // follows you to other devices, the same bridge the rave runs
     try {
@@ -383,17 +384,17 @@ function init() {
       const name = it.title || 'community item';
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'bb-chip bb-chip--icon' + (owned ? '' : ' bb-chip--locked');
+      b.className = 'bb-chip bb-chip--icon bb-chip--comm' + (owned ? '' : ' bb-chip--locked');
       b.innerHTML = chipArt(((catCustom(it.id) || [])[0] || {}).art) || name;
-      if (owned) b.dataset.val = it.id;
+      b.dataset.comm = it.id;   // ⚠️ NOT dataset.val — the rows' own aria sync must skip these
       b.setAttribute('aria-label', name + (it.by ? ' by ' + it.by : '') + (owned ? '' : ' — locked, tap for info'));
       // EVERY community chip opens the CARD (works on touch AND desktop, so the
       // ~85% on mobile finally see the maker + caught count) — the card carries
       // the wear / catch-it action itself.
       b.onclick = () => communityCard(it);
-      host.appendChild(b);
+      const tgt = hostFor((it.wear && it.wear.anchor) || '');
+      if (tgt) tgt.appendChild(b);
     });
-    trayify('bbCatalogChips');
   }
   // 🍌 THE COMMUNITY CARD — a banana-themed popover (replaces the stock browser
   // tooltip, which only desktop saw): the item, its MAKER, how many bananas have
@@ -470,8 +471,30 @@ function init() {
   }
   fetch(CATALOG_URL)
     .then((r) => (r.ok ? r.json() : []))
-    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); onState(); } })
+    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); onState(); } })
     .catch(() => { /* offline/blocked: the row just stays hidden */ });
+  // 🚪 ?wear=<id> — the pass closet's door: the closet shows the trophy, the
+  // BUILDER dresses it (one wear model, one place it can break). Built-ins
+  // apply in load(); community ids need the catalog, so they wait here.
+  let pendingWear = '';
+  function applyPendingWear() {
+    const id = pendingWear; pendingWear = '';
+    if (!id) return;
+    if (/^c_/.test(id)) {
+      if (!ownsCatalog(id)) return;
+      const sp = spotOf(id);
+      cSet([...cList().filter((x) => spotOf(x) !== sp), id]);
+      const slot = anchorSlot(catAnchorOf(id));
+      if (slot === 'hat') state.hat = 'none';
+      if (slot === 'feet') FEET_DEFS.forEach((d) => { state.extras[d.id] = false; });
+      return;
+    }
+    // a built-in went on in load(); a worn community piece on the same spot
+    // comes off now that the catalog can tell us where each one sits
+    if (state.hat === id) cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'hat'));
+    else if (state.extras[id] && FEET_DEFS.some((f) => f.id === id))
+      cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'feet'));
+  }
 
   // ---- THE INVENTORY sheet: the whole category at once. Tiles are thin
   // PROXIES of the tray chips — clicks delegate to the real buttons, so every
@@ -974,6 +997,23 @@ function init() {
       if (bl.c) state.c = String(bl.c).split(',').map((t) => t.trim())
         .filter((id) => id && ownsCatalog(id)).slice(0, 5).join(',');
     } catch (e) {}
+    // 🚪 ?wear=<id> — the pass closet's door. AFTER the bb-last seed so the
+    // seed can't undress it. Built-ins go on now; community ids (and any
+    // spot-clash with a worn community piece) wait for the catalog in
+    // applyPendingWear() — anchors are unknowable before it lands.
+    const wear = (p.get('wear') || '').trim();
+    if (wear) {
+      pendingWear = wear;
+      if (HAT_BY_ID[wear] && earnedUnlocked(HAT_BY_ID[wear])) state.hat = wear;
+      else if (SHADE_BY_ID[wear] && earnedUnlocked(SHADE_BY_ID[wear])) state.glasses = wear;
+      else if (!/^c_/.test(wear)) {
+        const d = EXTRA_DEFS.find((x) => x.id === wear);
+        if (d && !d.raveOnly && earnedUnlocked(d)) {
+          if (d.anchor === 'feet') FEET_DEFS.forEach((f) => { state.extras[f.id] = (f.id === wear); });
+          else state.extras[wear] = true;
+        }
+      }
+    }
     if (p.get('bg')) state.bg = p.get('bg');
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
     if (hasOutfitParams) { // URL outfits win; a paramless open keeps the bb-last seed above
@@ -1099,13 +1139,15 @@ function init() {
     [['bbGlassesChips','glasses'],['bbHatChips','hat'],['bbEffectChips','effect']].forEach(([host, key]) => {
       document.querySelectorAll('#' + host + ' .bb-chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.val === state[key]));
     });
-    document.querySelectorAll('#bbExtrasChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
+    document.querySelectorAll('#bbExtrasChips .bb-chip:not([data-comm])').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.val])));
     // ⚠️ MEMBERSHIP, not equality — with two items equipped an equality test
     // lights NEITHER chip, so the wardrobe silently looks empty.
-    document.querySelectorAll('#bbCatalogChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed',
-      String(!!c.dataset.val && cList().includes(c.dataset.val))));
+    // community chips live inside the real rows now — sync them LAST so the
+    // rows' own loops (which match dataset.val and see undefined) can't win
+    document.querySelectorAll('[data-comm]').forEach((c) => c.setAttribute('aria-pressed',
+      String(cList().includes(c.dataset.comm))));
     const anyFeet = FEET_DEFS.some((d) => state.extras[d.id]); // 'none' lights up when no shoe is worn
-    document.querySelectorAll('#bbFeetChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
+    document.querySelectorAll('#bbFeetChips .bb-chip:not([data-comm])').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.feet === 'none' ? !anyFeet : !!state.extras[c.dataset.feet])));
     document.querySelectorAll('#bbBodyChips .bb-chip').forEach((c) => c.setAttribute('aria-pressed', String(!!state.extras[c.dataset.body])));
     document.querySelectorAll('.bb-frame').forEach((f) => f.setAttribute('aria-pressed', String(parseInt(f.dataset.frame, 10) === state.frame)));
     const pb = el('bbPause');

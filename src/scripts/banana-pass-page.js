@@ -20,8 +20,6 @@ import { wearToCustom } from '../lib/wear-render.js';
 // can be worn; the manifest is public + cached, fetched once per page
 let CATALOG = [];
 const CAT_CUSTOM = {};
-const catAnchorP = (id) => { const it = CATALOG.find((x) => x.id === id); return (it && it.wear && it.wear.anchor) || ''; };
-const anchorSlotP = (a) => (a === 'head' ? 'hat' : a === 'feet' ? 'feet' : null);
 const catCustomP = (ids) => {
   // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
   // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
@@ -101,12 +99,9 @@ let selectTab = null;      // set by initTabs(); paint() re-applies the pane on 
 // the same shape the builder, the rooms and the sync blob all speak.
 // ⚠️ Never test it with `===`: with two items on, equality lights NEITHER tile
 // and "wear it" would REPLACE the whole look with one piece.
-const C_MAX = 5;           // one per body spot, and there are five
 const cList = () => String(OUTFIT.c || '').split(',').map((t) => t.trim()).filter(Boolean);
-const cSet = (ids) => { OUTFIT.c = ids.slice(0, C_MAX).join(',') || undefined; };
 // ⚠️ ONE ITEM PER SPOT — the builder's rule, so the closet cannot assemble a
 // loadout the builder would refuse.
-const spotOf = (id) => { const c = (catCustomP(id) || [])[0]; return c ? String(c.anchor || '') + (c.hand || '') : ''; };
 
 const setLine = (t) => { el('psSyncNote').textContent = t; };
 const subsPending = (k) => {
@@ -451,10 +446,6 @@ function gearEarned(def) {
   if (def.patch) return !!(pass.patches || {})[def.patch];
   return false;
 }
-function saveOutfit() {
-  try { localStorage.setItem('bb-last', JSON.stringify({ hat: OUTFIT.hat, glasses: OUTFIT.glasses, extras: OUTFIT.extras, effect: OUTFIT.effect, ...(OUTFIT.c ? { c: OUTFIT.c } : {}) })); } catch (e) {}
-  passPush();
-}
 // ⚠⚠ renderGear() OWNS #psGear ENTIRELY — it wipes the host, so anything
 // rendered into that host by SOMEBODY ELSE is destroyed the next time any
 // gear is toggled and never comes back.
@@ -495,22 +486,15 @@ function renderGear() {
       cell.appendChild(by);
     }
     if (earned) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
-      b.textContent = wearing ? '✓ wearing it' : 'wear it';
-      b.addEventListener('click', () => {
-        // toggle the item's slot (extras id, or a head slot)
-        if (def.extra) OUTFIT.extras[def.extra] = !OUTFIT.extras[def.extra];
-        else if (def.hat) OUTFIT.hat = (OUTFIT.hat === def.hat ? 'none' : def.hat);
-        else if (def.glasses) OUTFIT.glasses = (OUTFIT.glasses === def.glasses ? 'none' : def.glasses);
-        saveOutfit();
-        renderName(); // honor a custom pass name; don't clobber it with autoName
-        lastIdx = -1; // the signature banana redraws on its next frame
-        renderGear();
-        if (window.gtag) window.gtag('event', 'gear_toggle', { gear: def.id, on: isWorn() });
-      });
-      cell.appendChild(b);
+      // 🚪 DRESSING HAPPENS IN THE BUILDER (Trym): the closet shows the
+      // trophies and what's on; the builder is the one place outfits change.
+      // ?wear= pre-selects the item so the door lands you mid-dressing.
+      const wid = def.hat || def.glasses || def.extra || '';
+      const a = document.createElement('a');
+      a.className = 'ps-gear__btn' + (wearing ? ' on' : '');
+      a.href = '/make-a-banana/' + (wid && !wearing ? '?wear=' + encodeURIComponent(wid) : '');
+      a.textContent = wearing ? '✓ wearing it' : 'dress it →';
+      cell.appendChild(a);
     }
     host.appendChild(cell);
     // a banana MODELS each item (frame 2, the classic pose); unearned slots
@@ -529,8 +513,8 @@ function renderGear() {
 }
 
 // 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
-// ravers, the maker's credit riding each one. Wear-toggle drives the equipped
-// SET (OUTFIT.c) through the same bb-last pipe as everything else.
+// ravers, the maker's credit riding each one. Read-only here: the builder is
+// where dressing happens (the ?wear= door on each tile).
 // Empty until the catalog fetch lands; renderGear() runs again when it does.
 function ownedCatalog() {
   const own = catOwnedP();
@@ -556,32 +540,15 @@ function renderMine(host) {
       by.textContent = 'by ' + it.by;
       cell.appendChild(by);
     }
-    const b = document.createElement('button');
-    b.type = 'button';
-    // ⚠️ MEMBERSHIP, not equality — the closet read `c === it.id`, so a
-    // two-item look lit NO tile and one tap REPLACED the whole set with one
-    // piece. Same rule the builder's chips use ([[reuse-world-ui-grammar]]).
+    // ⚠️ MEMBERSHIP, not equality — a two-item look must light both tiles.
+    // 🚪 Dressing happens in the BUILDER (as manifest gear above): the
+    // ?wear= door carries the exclusion rules, so this page keeps none.
     const wearing = cList().includes(it.id);
-    b.className = 'ps-gear__btn' + (wearing ? ' on' : '');
-    b.textContent = wearing ? '✓ wearing it' : 'wear it';
-    b.addEventListener('click', () => {
-      const list = cList();
-      if (wearing) cSet(list.filter((x) => x !== it.id));
-      else {
-        const sp = spotOf(it.id);
-        cSet([...list.filter((x) => spotOf(x) !== sp), it.id]);
-        // 🧢 across the seam too: a head piece takes the hat's spot, a feet
-        // piece the shoes' — the same rule the builder and the PDPs apply
-        const slot = anchorSlotP(catAnchorP(it.id));
-        if (slot === 'hat') OUTFIT.hat = 'none';
-        if (slot === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') OUTFIT.extras[d.id] = false; });
-      }
-      saveOutfit();
-      lastIdx = -1;      // the signature banana redraws with/without it
-      renderGear();      // ⚠️ the SAME repaint as manifest gear — one path
-      if (window.gtag) window.gtag('event', 'gear_toggle', { gear: it.id, on: !wearing });
-    });
-    cell.appendChild(b);
+    const a = document.createElement('a');
+    a.className = 'ps-gear__btn' + (wearing ? ' on' : '');
+    a.href = '/make-a-banana/' + (wearing ? '' : '?wear=' + encodeURIComponent(it.id));
+    a.textContent = wearing ? '✓ wearing it' : 'dress it →';
+    cell.appendChild(a);
     host.appendChild(cell);
     assetsReady().then(() => {
       // the item's svg Image decodes async and drawAcc skips until it's

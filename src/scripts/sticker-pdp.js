@@ -183,12 +183,12 @@ function wardrobeRow(host, kicker, chips) {
   tray.className = 'pdp-ward__tray';
   tray.setAttribute('role', 'group');
   tray.setAttribute('aria-label', kicker);
-  chips.forEach(({ art, label, on, pick, locked }) => {
+  chips.forEach(({ art, label, on, pick, locked, comm }) => {
     // a LOCKED item is a door, not a dead chip: you can see the thing exists
     // and tapping tells you where to go and get it
     if (locked) {
       const a = document.createElement('a');
-      a.className = 'pdp-ward__locked';
+      a.className = 'pdp-ward__locked' + (comm ? ' pdp-ward__comm' : '');
       a.href = locked.href;
       // ⚠️ no art ≠ print the label inline: not-yet-owned community pieces
       // have no wearable art, and their raw names side by side rendered as
@@ -201,6 +201,7 @@ function wardrobeRow(host, kicker, chips) {
     }
     const b = document.createElement('button');
     b.type = 'button';
+    if (comm) b.className = 'pdp-ward__comm';
     b.setAttribute('aria-label', label);
     b.setAttribute('aria-pressed', String(on()));
     b.innerHTML = chipArt(art) || '<span class="pdp-ward__none">none</span>';
@@ -308,6 +309,38 @@ function buildWardrobe() {
   // ⚠️ no "none" tile anywhere (Trym): extras and community already toggle
   // off by re-tapping, so a dedicated empty box on hat/shades was the odd row
   // out. Tap the worn one to take it off — one rule for every band.
+  // 🎁 community wearables sit INSIDE the built-in rows (Trym: the separate
+  // Community pile was messy) — head-anchored pieces join Hat, the rest join
+  // Extras, and a pixel sparkle is what says "community-made". Locked ones
+  // stay doors to the Banana Stand. One `c` slot: picking one replaces the
+  // other, so a swap can cross rows — hence the full rebuild on every pick.
+  const commChip = (it) => {
+    const name = it.title || 'community item';
+    const owned = ownsCatalog(it.id);
+    return {
+      anchor: (it.wear && it.wear.anchor) || '',
+      chip: {
+        art: ((catCustom(it.id) || [])[0] || {}).art,
+        label: name + (it.by ? ' by ' + it.by : '') + ' — community-made',
+        comm: true,
+        locked: owned ? null : { href: '/park/', why: 'buy it at the Banana Stand' },
+        on: () => state.c === it.id,
+        pick: () => {
+          state.c = state.c === it.id ? '' : it.id;
+          applyCustom();
+          if (state.c) {
+            const slot = anchorSlot(catAnchor(state.c));
+            if (slot === 'hat') state.hat = 'none';
+            if (slot === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') state.extras[d.id] = false; });
+          }
+          queueMicrotask(buildWardrobe);
+        },
+      },
+    };
+  };
+  const comm = CATALOG.filter((it) => it.kind !== 'decor')
+    .sort((a, b) => (a.added || 0) - (b.added || 0)).map(commChip);
+  const commIn = (want) => comm.filter((c) => want(c.anchor)).map((c) => c.chip);
   wardrobeRow(host, 'Hat', HATS.filter(([id]) => id !== 'none').map(([id, label]) => ({
     art: artOf(HAT_BY_ID[id]),
     label, locked: lockOf(HAT_BY_ID[id]),
@@ -318,7 +351,7 @@ function buildWardrobe() {
       // so a cleared community piece would keep glowing pressed
       if (state.hat !== 'none' && state.c && anchorSlot(catAnchor(state.c)) === 'hat') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
     },
-  })));
+  })).concat(commIn((a) => a === 'head')));
   wardrobeRow(host, 'Shades', GLASSES.filter(([id]) => id !== 'none').map(([id, label]) => ({
     art: artOf(SHADE_BY_ID[id]),
     label, locked: lockOf(SHADE_BY_ID[id]),
@@ -328,45 +361,15 @@ function buildWardrobe() {
   // artOf() in the filter drops anything with no drawable chip — a tray of
   // blank "none" boxes is worse than a shorter tray
   const extras = EXTRA_DEFS.filter((d) => !d.raveOnly && ownsWearable(d) && artOf(d));
-  if (extras.length) {
-    wardrobeRow(host, 'Extras', extras.map((d) => ({
-      art: artOf(d), label: d.label, locked: lockOf(d),
-      on: () => !!state.extras[d.id],
-      pick: () => {
-        state.extras[d.id] = !state.extras[d.id];
-        if (state.extras[d.id] && d.anchor === 'feet' && state.c && anchorSlot(catAnchor(state.c)) === 'feet') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
-      },
-    })));
-  }
-  // 🎁 THE COMMUNITY ROW — hidden until the catalog lands, then owned items are
-  // wearable and the rest are locked doors to the Banana Stand, where every
-  // approved community piece is on sale (7 Aug: they no longer wait for a
-  // rave drop). Only ONE can be worn at a time (the single `c` slot), so
-  // picking is exclusive, not a toggle-set.
-  if (CATALOG.length) {
-    wardrobeRow(host, 'Community', CATALOG.filter((it) => it.kind !== 'decor')
-      .sort((a, b) => (a.added || 0) - (b.added || 0))
-      .map((it) => {
-        const name = it.title || 'community item';
-        const owned = ownsCatalog(it.id);
-        return {
-          art: ((catCustom(it.id) || [])[0] || {}).art,
-          label: name + (it.by ? ' by ' + it.by : ''),
-          locked: owned ? null : { href: '/park/', why: 'buy it at the Banana Stand' },
-          on: () => state.c === it.id,
-          pick: () => {
-            state.c = state.c === it.id ? '' : it.id;
-            applyCustom();
-            if (state.c) {
-              const slot = anchorSlot(catAnchor(state.c));
-              if (slot === 'hat') state.hat = 'none';
-              if (slot === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') state.extras[d.id] = false; });
-              if (slot) queueMicrotask(buildWardrobe);
-            }
-          },
-        };
-      }));
-  }
+  const extraChips = extras.map((d) => ({
+    art: artOf(d), label: d.label, locked: lockOf(d),
+    on: () => !!state.extras[d.id],
+    pick: () => {
+      state.extras[d.id] = !state.extras[d.id];
+      if (state.extras[d.id] && d.anchor === 'feet' && state.c && anchorSlot(catAnchor(state.c)) === 'feet') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
+    },
+  })).concat(commIn((a) => a !== 'head'));
+  if (extraChips.length) wardrobeRow(host, 'Extras', extraChips);
 }
 
 // the mockup AND renderPrintFile, so what you pick here is what gets printed.

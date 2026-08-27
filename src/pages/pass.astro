@@ -288,6 +288,9 @@ const NUMBERS = [
     .ps-gear__btn {
       min-height: 44px; padding: 0 0.8rem; font: inherit; border: 3px solid var(--ink);
       background: var(--paper); font-weight: 800; font-size: 0.75rem; cursor: pointer;
+      /* the wear-toggle is a LINK to the builder now — keep the button look */
+      display: inline-flex; align-items: center; justify-content: center;
+      text-decoration: none; color: var(--ink); text-align: center; white-space: nowrap;
     }
     .ps-gear__btn.on { background: var(--banana); }
 
