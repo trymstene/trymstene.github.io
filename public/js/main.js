@@ -348,68 +348,10 @@ if (backdrop) backdrop.addEventListener('click', () => setMenu(false));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
 window.addEventListener('resize', () => { if (window.innerWidth >= 820) setMenu(false); });
 
-// Badge notification on the pass — iOS-style: a hot dot with the count of
-// UNSEEN badges (earned since you last looked at /pass/). Visiting the pass
-// clears it, earning a badge pops it live. Nothing shows at zero.
-(function () {
-  var SEEN_KEY = 'pass-seen-v1';
-  function earnedCount() {
-    try {
-      var p = JSON.parse(localStorage.getItem('pass-v1') || 'null');
-      return p && p.patches ? Object.keys(p.patches).length : 0;
-    } catch (e) { return 0; }
-  }
-  function seenCount() {
-    try { return parseInt(localStorage.getItem(SEEN_KEY) || '0', 10) || 0; } catch (e) { return 0; }
-  }
-  // Club Notices (gallery verdicts etc.) ride the same dot — unread ones are
-  // marked read by the pass page itself, which dispatches pass:change
-  function unreadNotices() {
-    try {
-      var l = JSON.parse(localStorage.getItem('ps-notices-v1') || '[]');
-      var n = 0;
-      for (var i = 0; i < l.length; i++) if (l[i] && !l[i].read) n++;
-      return n;
-    } catch (e) { return 0; }
-  }
-  function renderPassNote() {
-    var unseen = Math.max(0, earnedCount() - seenCount()) + unreadNotices();
-    var hosts = [document.querySelector('.nav__pass'), document.querySelector('.nav__toggle')];
-    hosts.forEach(function (host) {
-      if (!host) return;
-      var isToggle = host.classList.contains('nav__toggle');
-      var dot = host.querySelector('.nav-note');
-      if (unseen <= 0) { if (dot) dot.remove(); return; }
-      if (!dot) {
-        dot = document.createElement('span');
-        // ⚠️ the BURGER wears a plain news DOT, never a number: next to the
-        // cart's count badge, two numbered red circles read as a glitch
-        // (Trym's screenshot, 28 Aug). Numbers mean counts (the cart);
-        // dots mean "news inside". The numbered badge stays on My Pass.
-        dot.className = 'nav-note' + (isToggle ? ' nav-note--dot' : '');
-        dot.setAttribute('aria-hidden', 'true');
-        host.appendChild(dot);
-      }
-      dot.textContent = isToggle ? '' : unseen;
-    });
-    var pass = document.querySelector('.nav__pass');
-    if (pass) pass.setAttribute('aria-label', unseen > 0 ? ('Your banana pass — ' + unseen + ' new') : 'Your banana pass');
-  }
-  function markSeen() {
-    try { localStorage.setItem(SEEN_KEY, String(earnedCount())); } catch (e) {}
-    document.querySelectorAll('.nav-note').forEach(function (d) { d.remove(); });
-  }
-  if (location.pathname === '/pass/') {
-    // checking the pass = notification read — including badges minted WHILE
-    // looking at it (they light up on the page itself, no dot needed)
-    markSeen();
-    document.addEventListener('pass:change', markSeen);
-  } else {
-    renderPassNote();
-    // a badge earned mid-page pops the dot immediately (banana-pass.js dispatches)
-    document.addEventListener('pass:change', renderPassNote);
-  }
-})();
+// 🔕 THE PASS DOT RETIRED (Trym, 28 Aug): two corner badges — the cart's
+// count and the pass's news dot — read as a bug, so we chose. The CART is
+// the nav's one badge; pass news waits inside My Pass ("News for you",
+// ps-notices — the pass page marks them read itself).
 
 // Current year in footer
 const year = document.getElementById('year');
