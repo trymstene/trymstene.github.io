@@ -17,8 +17,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // on all three with their Join buttons. (Removing that last click means taking
 // the payment ourselves through a merchant of record — the Lemon Squeezy
 // track — not a URL trick.) Buttons open in a new tab so the wall stays put.
-const KOFI = 'https://ko-fi.com/trymstene/tiers';
-const KOFI_ONCE = 'https://ko-fi.com/trymstene';   // the tip jar — any amount, once
+import { PAY, KOFI_TIP, RAIL } from '../data/pay-rail.js';
+const KOFI = 'https://ko-fi.com/trymstene/tiers';   // still the tip-jar's home
+const KOFI_ONCE = KOFI_TIP;                          // any amount, once
 const TIERS = [
   {
     key: 'blue', tier: 'sup-t1', name: 'Friend of the Banana', price: 5,
@@ -187,8 +188,9 @@ const TIERS = [
                   nothing on screen says so. Say it where the money is, not
                   only in the small print at the bottom. */}
               <p class="swt__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that's how the hat finds you.</p>
-              <a class="swt__join" href={KOFI} target="_blank" rel="noopener"
-                data-tier={t.tier}>Join on Ko-fi →</a>
+              <a class="swt__join" href={PAY.join(t.tier.slice(-2))}
+                target={PAY.newTab ? '_blank' : null} rel="noopener"
+                data-tier={t.tier}>{PAY.label}</a>
             </div>
           </article>
         ))}

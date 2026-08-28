@@ -56,6 +56,8 @@ export default {
       if (url.pathname === '/admin/erase') return adminErase(request, env);
       if (url.pathname === '/admin/log') return adminLog(request, env, url);
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
+      if (url.pathname === '/polar-hook') return polarHook(request, env);
+      if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
       if (url.pathname === '/supporters') return supporters(request, env);
       if (url.pathname === '/health') return json({ ok: true });
       return json({ error: 'not found' }, 404);
@@ -311,7 +313,7 @@ async function writeJson(env, key, v) {
 }
 // deliver a grant into the member's home blob via the email rail; true if a
 // pass existed to deliver to
-async function kofiDeliver(env, emailHash, grant) {
+async function deliverGrant(env, emailHash, grant) {
   const mailKey = 'm' + emailHash;
   const rec = await loadKey(env, mailKey);
   if (!rec) return false;
@@ -364,11 +366,146 @@ async function kofiHook(request, env) {
       n: d.is_public === false ? '' : String(d.from_name || '').slice(0, 40),
     };
     await writeJson(env, 'kofi/members.json', members);
-    const delivered = await kofiDeliver(env, emailHash, { t, until });
+    const delivered = await deliverGrant(env, emailHash, { t, until });
     return json({ ok: true, delivered });
   }
   return json({ ok: true });
 }
+// ---------- 🐻‍❄️ THE POLAR RAIL (prototype — dark until its secrets exist) ----
+// Why a second rail at all: Ko-fi has NO checkout API (webhooks out, nothing in)
+// and its internal mint endpoint is Cloudflare bot-walled, so a supporter must
+// always take one hop to ko-fi.com. Polar is a merchant of record with a real
+// API, so the button can mint a checkout HERE and hand the buyer straight to
+// payment — and it carries EU VAT, which is why this is never raw Stripe.
+// Both rails write the SAME member/wall stores, so /supporters/ and the park
+// board do not care which one paid.
+const POLAR_PRODUCT_ENV = { t1: 'POLAR_T1', t2: 'POLAR_T2', t3: 'POLAR_T3' };
+const POLAR_GRANT = { t1: 'sup-t1', t2: 'sup-t2', t3: 'sup-t3' };
+const polarBase = (env) => env.POLAR_BASE || 'https://sandbox-api.polar.sh';
+
+// GET /pay/checkout?t=t1|t2|t3 → 302 straight into a fresh Polar checkout.
+// ⚠️ every failure lands the buyer back on /supporters/ with a reason rather
+// than a worker error page: a dead money path must be visible, never a blank.
+async function payCheckout(request, env, url) {
+  const site = (env.ALLOWED_ORIGIN || 'https://trymstene.com').split(',')[0].trim();
+  const back = (why) => Response.redirect(site + '/supporters/?pay=' + why, 302);
+  const t = String(url.searchParams.get('t') || '').slice(0, 4);
+  const pid = env[POLAR_PRODUCT_ENV[t] || ''] || '';
+  if (!pid || !env.POLAR_TOKEN) return back('unconfigured');
+  try {
+    const r = await fetch(polarBase(env) + '/v1/checkouts', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + env.POLAR_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        products: [pid],
+        success_url: site + '/supporters/?joined=1',
+        metadata: { tier: POLAR_GRANT[t] || '', src: 'supporters' },
+      }),
+    });
+    const d = await r.json().catch(() => null);
+    const to = d && (d.url || d.checkout_url);
+    return (r.ok && to) ? Response.redirect(to, 302) : back('down');
+  } catch (e) { return back('down'); }
+}
+
+// Standard Webhooks: base64 HMAC-SHA256 over `id.timestamp.body`, header
+// `webhook-signature: v1,<sig>` (space-separated list during key rotation).
+// The secret may arrive raw or base64 behind a whsec_ prefix — accept both.
+async function polarVerify(env, headers, body) {
+  const raw = env.POLAR_WEBHOOK_SECRET || '';
+  const id = headers.get('webhook-id'), ts = headers.get('webhook-timestamp');
+  const sigs = headers.get('webhook-signature');
+  if (!raw || !id || !ts || !sigs) return false;
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false;   // replay window
+  const s = raw.startsWith('whsec_') ? raw.slice(6) : raw;
+  let bytes;
+  try { bytes = Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); } catch (e) { bytes = te.encode(s); }
+  const key = await crypto.subtle.importKey('raw', bytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = await crypto.subtle.sign('HMAC', key, te.encode(id + '.' + ts + '.' + body));
+  const expect = btoa(String.fromCharCode(...new Uint8Array(mac)));
+  return sigs.split(' ').some((one) => one.split(',')[1] === expect);
+}
+
+// product id → tier, then the product NAME, then the amount (cents) — the same
+// belt-and-braces the Ko-fi rail needs, for the same reason: a payload field
+// you assume is present is the one that arrives null on the first real sale
+function polarTier(env, d) {
+  const pid = (d.product && d.product.id) || d.product_id || '';
+  for (const [t, key] of Object.entries(POLAR_PRODUCT_ENV)) {
+    if (pid && env[key] && env[key] === pid) return POLAR_GRANT[t];
+  }
+  const name = String((d.product && d.product.name) || '');
+  if (/legend|gold/i.test(name)) return 'sup-t3';
+  if (/patron|silver/i.test(name)) return 'sup-t2';
+  if (/friend|blue/i.test(name)) return 'sup-t1';
+  const cents = +(d.amount || (d.price && d.price.price_amount) || 0);
+  return cents >= 1500 ? 'sup-t3' : cents >= 1000 ? 'sup-t2' : cents >= 500 ? 'sup-t1' : null;
+}
+
+async function polarHook(request, env) {
+  if (request.method !== 'POST') return json({ error: 'not found' }, 404);
+  if (!env.POLAR_WEBHOOK_SECRET) return json({ error: 'not configured' }, 503);
+  const body = await request.text();
+  if (!(await polarVerify(env, request.headers, body))) return json({ error: 'bad signature' }, 403);
+  let ev;
+  try { ev = JSON.parse(body); } catch (e) { return json({ error: 'bad json' }, 400); }
+  const type = String(ev.type || ''), d = ev.data || {};
+  const cust = d.customer || d.user || {};
+  const email = normMail(cust.email || d.customer_email || '');
+  const pub = String(cust.public_name || cust.name || '').slice(0, 40);
+  const now = Date.now();
+  const tx = String(d.id || '') || ('p' + now);
+
+  // 🧾 the wall ledger — one line per payment, whichever rail took it
+  const isSub = /^subscription\./.test(type) || !!d.subscription_id || !!d.recurring_interval;
+  if (type === 'order.paid' || type === 'subscription.active' || type === 'subscription.cycled') {
+    const wall = (await readJson(env, 'kofi/wall.json')) || [];
+    if (!wall.some((w) => w.tx === tx)) {
+      wall.unshift({ tx, ts: now, n: pub, a: String((+d.amount || 0) / 100), c: 'USD',
+        k: isSub ? 'member' : 'coffee' });
+      await writeJson(env, 'kofi/wall.json', wall.slice(0, 500));
+    }
+  }
+
+  if (!email) return json({ ok: true, note: 'no email on event' });
+  const members = (await readJson(env, 'kofi/members.json')) || {};
+  const hash = await sha256Hex(email);
+
+  // revocation is still BY TIME everywhere else — this just brings the clock
+  // forward, so the 72h client grace still applies and nothing goes negative
+  if (type === 'subscription.revoked') {
+    if (members[hash]) {
+      members[hash] = { ...members[hash], until: now, last: now };
+      await writeJson(env, 'kofi/members.json', members);
+      await deliverGrant(env, hash, { t: members[hash].t, until: now });
+    }
+    return json({ ok: true, revoked: true });
+  }
+
+  const GRANT_EVENTS = ['subscription.created', 'subscription.active', 'subscription.cycled', 'subscription.updated'];
+  if (GRANT_EVENTS.includes(type) || (type === 'order.paid' && isSub)) {
+    if (d.status && !['active', 'trialing'].includes(String(d.status))) {
+      return json({ ok: true, note: 'status ' + d.status });
+    }
+    const t = polarTier(env, d);
+    if (!t) {
+      const pend = (await readJson(env, 'kofi/pending.json')) || [];
+      pend.unshift({ ts: now, tx, rail: 'polar', product: (d.product && d.product.name) || '', a: d.amount });
+      await writeJson(env, 'kofi/pending.json', pend.slice(0, 100));
+      return json({ ok: true, banked: 'unknown tier' });
+    }
+    // the period end IS the truth when Polar sends it; otherwise fall back to
+    // the same ~35 day window the Ko-fi rail uses
+    const per = Date.parse(d.current_period_end || '') || 0;
+    const until = Math.max(per || (now + KOFI_EXTEND), +(members[hash] || {}).until || 0);
+    members[hash] = { t, until, last: now, n: pub };
+    await writeJson(env, 'kofi/members.json', members);
+    const delivered = await deliverGrant(env, hash, { t, until });
+    return json({ ok: true, tier: t, delivered });
+  }
+  return json({ ok: true, ignored: type });
+}
+
 // GET /supporters — the public feed for the wall/page: names only, cached
 async function supporters(request, env) {
   const wall = (await readJson(env, 'kofi/wall.json')) || [];
