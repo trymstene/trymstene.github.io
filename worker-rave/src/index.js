@@ -1343,6 +1343,7 @@ export class ParkRoom {
       // WATERED days now, and only the room has counted them
       grew: s.grew || 0, ...(isReady(s) ? { ready: 1 } : {}),
       ...(ledgerMine(s.passShort) ? { mine: 1 } : {}),
+      ...(s.picks ? { picks: s.picks } : {}),   // 🍓 regrowers count their picks
       waterers: (s.waterers || []).length,
       wlast: (s.wlast || []).slice(-5),
     } : null);

@@ -2,7 +2,7 @@
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
 import { poofInto, worldSid, worldOwner } from '../lib/world.js';
-import { passStat, passGet, seedGain, passSpend, passRefund } from '../lib/banana-pass.js';
+import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd } from '../lib/banana-pass.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
   ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
@@ -1458,6 +1458,14 @@ export function initGarden(ctx) {
   function closeGarden() { gardenPanel.hidden = true; gardenOpenSlot = -1; }
   document.getElementById('pkGardenClose').addEventListener('click', closeGarden);
   gardenPanel.addEventListener('click', (e) => { if (e.target === gardenPanel) closeGarden(); });
+  // 📣 the 28 Aug seed drop, announced ONCE per banana (passNoticeAdd dedupes
+  // by id): returning gardeners would otherwise only find the new seeds by
+  // re-reading a shelf they already know
+  passNoticeAdd({
+    id: 'seed-drop-2808', icon: '🍓',
+    text: '<b>New seeds at the park!</b> Carrot, strawberry, sweetcorn and rare watermelon just landed in the seed sheet — and the strawberry <b>regrows</b>: pick it and the bush fruits again, three harvests per plant.',
+    link: '/park/',
+  });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !gardenPanel.hidden) closeGarden(); });
   function coinChip(n) {
     return '<span class="pk-seedcost"><img src="/assets/banana-stand/coin.png" width="14" height="14" alt="coins" /> ' + n + '</span>';
@@ -1482,7 +1490,7 @@ export function initGarden(ctx) {
       + '<p class="pk-glvl">🧑‍🌾 gardener lvl ' + gl.lvl + ' · ' + gl.n + ' harvest' + (gl.n === 1 ? '' : 's') + '</p>'
       + '<p class="pk-panel__sub">plant a seed — it grows on real days, even while you’re gone. '
       + 'water it or it wilts away (higher ⭐ holds out longer). ⭐ feed the park’s health while it lives.</p>'
-      + SEEDS.map((sd) => {
+      + [...SEEDS].sort((a, b) => a.stars - b.stars || a.price - b.price).map((sd) => {
         const locked = sd.stars > gl.stars;
         const cost = priceNow(sd);
         const free = blessed && !locked && sd.price <= VOUCHER_MAX;
@@ -1567,7 +1575,8 @@ export function initGarden(ctx) {
       + tallyBtn('pkWho', '💧', s.waterers || 0, s.wlast)
       + (ready ? '' : actionBtn('pkWaterBtn', '💧 water it', mine ? '' : '+2 REP'))
       + (mine ? '<p class="pk-gsaved">' + (sd.wearable
-        ? '💾 saved to your pass' : '🌾 harvest pays +' + (sd.stars * 8) + ' rep') + '</p>' : '');
+        ? '💾 saved to your pass' : '🌾 harvest pays +' + (sd.stars * 8) + ' rep'
+          + (sd.regrow ? ' · fruits ' + (sd.regrow - (s.picks || 0)) + '× more' : '')) + '</p>' : '');
     wireTally('pkWho');
     const wb = document.getElementById('pkWaterBtn');
     if (wb) wb.addEventListener('click', () => waterSlot(i));
