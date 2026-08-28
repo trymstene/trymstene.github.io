@@ -406,12 +406,33 @@ function sanitizeCList(v) {
   const toks = String(v || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4);
   return toks.length && toks.every((t) => /^c_[a-f0-9]{6,32}$/.test(t)) ? toks.join(',') : '';
 }
-function sanitizeOutfit(o) {
+// 🎩 MEMBER GEAR rides a SIGNED TOKEN, the beer pattern made portable:
+// worker-pass mints `tier.until.hmac` (MEMBER_HMAC, the shared secret on both
+// workers) for a live grant; the client presents it as `mt` on hi/outfit
+// messages; a verified rank lets the member hats through sanitize for THAT
+// message only. Ids stay OUT of the generated allowlists — an unverified
+// client claiming tophatgold still gets 'none'. Mirror of wearables.js
+// member: tiers — change both or neither.
+const MEMBER_TIER_RANK = { 'sup-t1': 1, 'sup-t2': 2, 'sup-t3': 3 };
+const MEMBER_HAT_NEED = { tophatblue: 1, tophatsilver: 2, tophatgold: 3 };
+async function memberRankOf(env, mt) {
+  try {
+    if (!mt || !env || !env.MEMBER_HMAC) return 0;
+    const [t, until, sig] = String(mt).split('.');
+    if (!MEMBER_TIER_RANK[t] || !(+until > Date.now()) || !sig) return 0;
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.MEMBER_HMAC),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(t + '.' + (+until)));
+    const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hex === sig ? MEMBER_TIER_RANK[t] : 0;
+  } catch (e) { return 0; }
+}
+function sanitizeOutfit(o, mrank = 0) {
   o = o && typeof o === 'object' ? o : {};
   const extras = {};
   EXTRA_IDS.forEach((id) => { if (o.extras && o.extras[id] === true) extras[id] = true; });
   return {
-    hat: HAT_IDS.includes(o.hat) ? o.hat : 'none',
+    hat: (HAT_IDS.includes(o.hat) || (MEMBER_HAT_NEED[o.hat] || 9) <= mrank) ? o.hat : 'none',
     glasses: SHADE_IDS.includes(o.glasses) ? o.glasses : 'none',
     extras,
     effect: EFFECT_IDS.includes(o.effect) ? o.effect : 'none',
@@ -588,6 +609,7 @@ export class RaveRoom {
   async webSocketMessage(ws, raw) {
     let msg;
     try { msg = JSON.parse(raw); } catch (e) { return; }
+    const mrank = msg && msg.mt ? await memberRankOf(this.env, msg.mt) : 0;
     if (!msg || typeof msg !== 'object') return;
 
     let me = null;
@@ -620,7 +642,7 @@ export class RaveRoom {
         sid,
         own,
         name: sanitizeName(msg.name, strikes), // '' = the outfit-name speaks
-        outfit: sanitizeOutfit(msg.outfit),
+        outfit: sanitizeOutfit(msg.outfit, mrank),
         joined: Date.now(),
         // floor time carried across reconnects: iOS re-sockets on every
         // background/foreground, so gating the stage on `joined` alone made
@@ -858,7 +880,7 @@ export class RaveRoom {
       const strikes = (await this.state.storage.get('nameStrikes')) || [];
       me.name = sanitizeName(msg.name !== undefined ? msg.name : me.name, strikes);
       if (me.name) this.recordName(me.sid, me.name);
-      me.outfit = sanitizeOutfit(msg.outfit);
+      me.outfit = sanitizeOutfit(msg.outfit, mrank);
       if (msg.sober) { me.beer = false; me.fx = undefined; } // the water: a clean slate is a CLEAN slate
       if (me.beer) me.outfit.extras.beer = true; // the beer survives a wardrobe change
       ws.serializeAttachment(me);
@@ -1717,6 +1739,7 @@ export class ParkRoom {
   async webSocketMessage(ws, raw) {
     let msg;
     try { msg = JSON.parse(raw); } catch (e) { return; }
+    const mrank = msg && msg.mt ? await memberRankOf(this.env, msg.mt) : 0;
     if (!msg || typeof msg !== 'object') return;
     let me = null;
     try { me = ws.deserializeAttachment(); } catch (e) {}
@@ -1747,7 +1770,7 @@ export class ParkRoom {
         sid,
         own,
         name: sanitizeName(msg.name, []), // family filter; the strike list is applied via /ingest below
-        outfit: sanitizeOutfit(msg.outfit),
+        outfit: sanitizeOutfit(msg.outfit, mrank),
         x: parkClampX(msg.x), y: parkClampY(msg.y),
         joined: Date.now(),
       };
@@ -1786,7 +1809,7 @@ export class ParkRoom {
       return;
     }
     if (msg.t === 'outfit' && me) { // bought something at the stand mid-visit
-      me.outfit = sanitizeOutfit(msg.outfit);
+      me.outfit = sanitizeOutfit(msg.outfit, mrank);
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
     }
@@ -1879,6 +1902,7 @@ export class BeachRoom {
   async webSocketMessage(ws, raw) {
     let msg;
     try { msg = JSON.parse(raw); } catch (e) { return; }
+    const mrank = msg && msg.mt ? await memberRankOf(this.env, msg.mt) : 0;
     if (!msg || typeof msg !== 'object') return;
     let me = null;
     try { me = ws.deserializeAttachment(); } catch (e) {}
@@ -1909,7 +1933,7 @@ export class BeachRoom {
         sid,
         own,
         name: sanitizeName(msg.name, []),
-        outfit: sanitizeOutfit(msg.outfit),
+        outfit: sanitizeOutfit(msg.outfit, mrank),
         x: bayClampX(msg.x), y: bayClampY(msg.y),
         sit: msg.sit === true,
         joined: Date.now(),
@@ -1949,7 +1973,7 @@ export class BeachRoom {
       return;
     }
     if (msg.t === 'outfit' && me) {
-      me.outfit = sanitizeOutfit(msg.outfit);
+      me.outfit = sanitizeOutfit(msg.outfit, mrank);
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
       return;
@@ -2295,6 +2319,7 @@ export class YardRoom {
   async webSocketMessage(ws, raw) {
     let msg;
     try { msg = JSON.parse(raw); } catch (e) { return; }
+    const mrank = msg && msg.mt ? await memberRankOf(this.env, msg.mt) : 0;
     if (!msg || typeof msg !== 'object') return;
     let me = null;
     try { me = ws.deserializeAttachment(); } catch (e) {}
@@ -2323,7 +2348,7 @@ export class YardRoom {
         sid,
         own,
         name: sanitizeName(msg.name, []),
-        outfit: sanitizeOutfit(msg.outfit),
+        outfit: sanitizeOutfit(msg.outfit, mrank),
         x: hsClampX(msg.x), y: hsClampY(msg.y),
         sit: msg.sit === true,
         joined: Date.now(),
@@ -2362,7 +2387,7 @@ export class YardRoom {
       return;
     }
     if (msg.t === 'outfit' && me) {
-      me.outfit = sanitizeOutfit(msg.outfit);
+      me.outfit = sanitizeOutfit(msg.outfit, mrank);
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
     }

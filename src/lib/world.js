@@ -54,6 +54,13 @@ export function coinWinClaim(w) {
 // id — and worldOwner() with it — changed between one request and the next: a
 // new ghost in the room each ping, and nothing you claimed stayed yours.
 let sidMem = '';
+// 🎩 the signed member token (minted by worker-pass, verified by worker-rave):
+// presented on hi/outfit so rooms let the supporter hat through sanitize and
+// OTHER players see it. undefined = not a member; the token expires on its own.
+export function memberTok() {
+  try { return localStorage.getItem('bb-mtok') || undefined; } catch (e) { return undefined; }
+}
+
 export function worldSid() {
   if (sidMem) return sidMem;
   try {
@@ -121,7 +128,7 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
       tries = 0;
       // 🪪 the OWNER rides along so a person shows up ONCE, not once per
       // device — the room supersedes an older socket for the same account.
-      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), ...hi() }));
+      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), mt: memberTok(), ...hi() }));
     };
     sock.onmessage = (ev) => {
       let m;
@@ -153,7 +160,13 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     if (document.visibilityState === 'visible' && !closedForGood && (!ws || ws.readyState > 1)) { tries = 0; connect(); }
   });
   return {
-    send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); },
+    // 🎩 outfit changes re-present the member token — the worker verifies per
+    // message, so a wardrobe change mid-visit keeps the supporter hat visible
+    send(obj) {
+      if (!(ws && ws.readyState === 1)) return;
+      if (obj && obj.t === 'outfit') obj = { mt: memberTok(), ...obj };
+      ws.send(JSON.stringify(obj));
+    },
     get live() { return !!ws && ws.readyState === 1; },
     // 🚪 leave NOW, don't wait for pagehide. Walking out a door runs a cut
     // animation before navigating, and pagehide only fires when the nav

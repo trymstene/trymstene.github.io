@@ -112,6 +112,21 @@ async function hmacHex(env, msg) {
   return bufToHex(await crypto.subtle.sign('HMAC', key, te.encode(msg)));
 }
 
+// 🎩 the MEMBER TOKEN — `tier.until.hmac`, signed with MEMBER_HMAC (the secret
+// SHARED with worker-rave, which verifies it to let member hats through room
+// sanitize). Minted on pull/push/mail-use whenever the home blob holds a live
+// grant; expires with the grant, so revocation needs no recall. Deliberately
+// unbound to a person: sharing one leaks only a hat LOOK for ≤35 days — the
+// cosmetics bar, same as every client-side wearable check.
+async function mintMemberToken(env, member) {
+  try {
+    if (!env.MEMBER_HMAC || !member || !member.t || !(+member.until > Date.now())) return undefined;
+    const base = member.t + '.' + (+member.until);
+    const key = await crypto.subtle.importKey('raw', te.encode(env.MEMBER_HMAC), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return base + '.' + bufToHex(await crypto.subtle.sign('HMAC', key, te.encode(base)));
+  } catch (e) { return undefined; }
+}
+
 // ---------- 🪪 THE WORLD ID ----------
 // A stable, public, per-PERSON id for the walkable world — the thing the garden
 // needed and never had. Derived from the PRIMARY record's key, so every device
@@ -1007,7 +1022,9 @@ async function mailUse(request, env, url) {
       await saveKey(env, R.homeKey, R.home);
     }
   } catch (e) {}
-  return json({ credId, token, attached, blob: (R && R.home.blob) || rec.blob || null },
+  const blobOut = (R && R.home.blob) || rec.blob || null;
+  return json({ credId, token, attached, blob: blobOut,
+    memberToken: await mintMemberToken(env, (blobOut || {}).member) },
     200, cors(env, request));
 }
 
@@ -1214,7 +1231,8 @@ async function push(request, env) {
   if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
   R.home.blob = mergeBlob(R.home.blob, b.blob);
   await saveKey(env, R.homeKey, R.home);
-  return json({ ok: true, gid: await worldGid(env, R.homeKey) }, 200, cors(env, request));
+  return json({ ok: true, gid: await worldGid(env, R.homeKey),
+    memberToken: await mintMemberToken(env, (R.home.blob || {}).member) }, 200, cors(env, request));
 }
 
 async function pull(request, env, url) {
@@ -1223,5 +1241,6 @@ async function pull(request, env, url) {
   const R = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
   return json({ blob: R.home.blob, updated: R.home.updated,
-    gid: await worldGid(env, R.homeKey) }, 200, cors(env, request));
+    gid: await worldGid(env, R.homeKey),
+    memberToken: await mintMemberToken(env, (R.home.blob || {}).member) }, 200, cors(env, request));
 }

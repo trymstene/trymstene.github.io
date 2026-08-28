@@ -132,6 +132,13 @@ function keepGid(d) {
       localStorage.setItem(GID_KEY, d.gid);
     }
   } catch (e) {}
+  // 🎩 the signed member token (mirror of pass-sync.js keepGid — change both):
+  // rooms present it so other players get to SEE the supporter hat
+  try {
+    if (d && typeof d.memberToken === 'string' && /^sup-t[123]\.\d+\.[a-f0-9]{64}$/.test(d.memberToken)) {
+      localStorage.setItem('bb-mtok', d.memberToken);
+    }
+  } catch (e) {}
   return d;
 }
 

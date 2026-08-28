@@ -38,6 +38,15 @@ const NO_STORE_MAIL = 'This browser wouldn’t remember the login — private br
 function keepGid(d) {
   const gid = d && typeof d.gid === 'string' && /^[a-f0-9]{8,32}$/.test(d.gid) ? d.gid : '';
   if (gid) { try { localStorage.setItem(GID_KEY, gid); } catch (e) {} }
+  // 🎩 the signed member token rides the same responses (mirror of
+  // banana-pass.js keepGid — change both): rooms present it so other
+  // players get to SEE the supporter hat. Absent = leave the stored one
+  // (it expires on its own; a lapsed grant just stops renewing it).
+  try {
+    if (d && typeof d.memberToken === 'string' && /^sup-t[123]\.\d+\.[a-f0-9]{64}$/.test(d.memberToken)) {
+      localStorage.setItem('bb-mtok', d.memberToken);
+    }
+  } catch (e) {}
   return gid;
 }
 
@@ -74,7 +83,7 @@ const WORLD_KEYS = [
   'ps-name-at', 'ps-name-seen', 'bb-at', 'bb-seen',      // …and the name/outfit change-clocks that rank it
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
-  'bb-member',                                           // the supporter-membership grant (revocable, per person)
+  'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
   GID_KEY, PULL_KEY,
 ];
 function wipeWorld() {
@@ -177,10 +186,12 @@ export async function mailUse(t) {
       : e.error === 'used or unknown' ? 'That link was already used — send yourself a fresh one.'
       : 'That link didn’t work — send yourself a fresh one.');
   }
-  const { credId, token, blob, attached } = await res.json();
+  const d = await res.json();
+  const { credId, token, blob, attached } = d;
   // ⚠️ the credential goes first: if this browser refuses to keep it, the
   // device stays exactly as it was rather than half-switched
   if (!setLink(credId, token)) throw new Error(NO_STORE_MAIL);
+  keepGid(d); // gid + member token, when the login carries them
   const switched = await settleAccount(have, credId, token, attached);
   // ⚠️ merge THEN push: a brand-new email pass arrives with no blob, and this
   // device's world would be lost on the next pull if we never sent it up.

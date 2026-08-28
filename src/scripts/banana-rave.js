@@ -11,7 +11,7 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
 import { DROPS, ownsDropStat } from '../data/wearables.js';
-import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner } from '../lib/world.js';
+import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner, memberTok } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -1426,7 +1426,7 @@ function init() {
       me.wrap.classList.add('rv-hypemode');
       prevEffect = me.outfit.effect;
       me.outfit.effect = 'disco'; // broadcast: the floor sees you peaking
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', mt: memberTok(), outfit: me.outfit }));
       const toast = document.createElement('div');
       toast.className = 'rv-glowtoast';
       toast.innerHTML = '🍌 <b>IT’S JELLY TIME</b> — disco legs, gold trail, the floor goes OFF!';
@@ -1440,7 +1440,7 @@ function init() {
     if (me) {
       me.wrap.classList.remove('rv-hypemode');
       me.outfit.effect = prevEffect || 'none';
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', mt: memberTok(), outfit: me.outfit }));
     }
     renderHype();
   }
@@ -2522,7 +2522,7 @@ function init() {
     const me = ravers.get(myId);
     if (me) {
       wearDrop(me.outfit);
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', mt: memberTok(), outfit: me.outfit }));
     }
     // ride it home — the builder, pass, stickers and share cards all read bb-last
     try {
@@ -2631,7 +2631,7 @@ function init() {
     prevEffect = null; // the hype drop must not re-dress the stripped effect
     refreshHud();
     // sober: true also clears the server-held beer + fx — a clean slate is a clean slate
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit, sober: true }));
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', mt: memberTok(), outfit: me.outfit, sober: true }));
   }
 
   function pickVinyl(id) {
@@ -3020,7 +3020,7 @@ function init() {
       // sess = floor time so far: iOS re-sockets on every background/foreground,
       // and the server's stage gate must not restart with the socket
       // sid = worldSid() (world-lib): a rejoin SUPERSEDES your own ghosts server-side
-      ws.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
+      ws.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), mt: memberTok(), outfit: myOutfit(), name: myPassName(), sess: Date.now() - sessionStart, lvl: levelFor((passGet().stats || {}).rep || 0).level }));
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -4218,7 +4218,7 @@ function init() {
     const me = ravers.get(myId);
     if (me) {
       me.outfit.extras = { ...(me.outfit.extras || {}), glowstick: true };
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', outfit: me.outfit }));
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', mt: memberTok(), outfit: me.outfit }));
     }
     // the saved builder banana wears it home too
     try {
