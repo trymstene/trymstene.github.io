@@ -1,92 +1,164 @@
 ---
-// 🎩 THE SUPPORTERS WALL — the public thank-you page, live from the Ko-fi rail
-// (worker-pass GET /supporters: active members by tier + recent support, names
-// only, private supporters respected). Members are grouped under their hat;
-// coffees stream below. Empty states are honest — the wall opened empty.
+// 🎩 THE SUPPORTERS WALL — and the place you actually join. Ko-fi's own page
+// opens on the tip jar and hides memberships behind a tab, so this page IS the
+// storefront: the three tiers with the in-game art of what you get, the living
+// wall, and the recent support feed. The Join buttons deep-link to
+// ko-fi.com/trymstene/tiers (their checkout is a modal on their domain — there
+// is no per-tier URL, so the tier list is the deepest honest link).
+// Data: worker-pass GET /supporters — public names only, private supporters
+// already filtered server-side.
 import BaseLayout from '../layouts/BaseLayout.astro';
-const KOFI = 'https://ko-fi.com/trymstene';
+const KOFI = 'https://ko-fi.com/trymstene/tiers';
+const TIERS = [
+  {
+    key: 'blue', tier: 'sup-t1', name: 'Friend of the Banana', price: 5,
+    hat: 'Blue Top Hat', blurb: 'You keep the lights on and the banana dancing.',
+    perks: ['The Blue Top Hat — never for sale', 'A blue glow under your banana', 'Your name on the park board', 'Your name on this wall'],
+  },
+  {
+    key: 'silver', tier: 'sup-t2', name: 'Patron of the Park', price: 10,
+    hat: 'Silver Top Hat', blurb: 'A real part of why Banana World stays free.',
+    perks: ['The Silver Top Hat — taller, pinstriped', 'Moonlight glow under your banana', 'Your name on the park board', 'Higher up this wall'],
+  },
+  {
+    key: 'gold', tier: 'sup-t3', name: 'Legend of Banana World', price: 15,
+    hat: 'Gold Top Hat', blurb: 'The tallest hat in the world, worn only by legends.',
+    perks: ['The Gold Top Hat — woven satin', 'The full golden radiance', 'Your name in gold on the board', 'Top of this wall, and my gratitude'],
+  },
+];
 ---
 <BaseLayout
   title="Supporters of Banana World"
-  description="The people keeping the banana dancing — members and coffee-buyers of Banana World, on the wall. Join them and wear a supporter top hat in the world.">
+  description="Join the people keeping Banana World free — three membership tiers, each with a top hat and a glow your banana wears everywhere. See the supporters wall and the latest support.">
   <style is:inline slot="head">
-    .sw { background: #14181d; color: #f2e8d8; padding: 2.6rem 1.2rem 4rem; }
-    .sw__in { max-width: 760px; margin: 0 auto; }
-    .sw__kicker { color: #ffd23f; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
-    .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.7rem, 6vw, 2.4rem); margin: 0 0 0.8rem; color: #ffffff; }
-    .sw p { line-height: 1.6; font-size: 0.98rem; margin: 0 0 1rem; }
+    .sw { background: #14181d; color: #f2e8d8; padding: 2.4rem 1.1rem 4rem; }
+    .sw__in { max-width: 940px; margin: 0 auto; }
+    .sw__kicker { color: #ffd23f; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.15em; text-transform: uppercase; margin: 0 0 0.4rem; }
+    .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.8rem, 7vw, 2.8rem); margin: 0 0 0.7rem; color: #fff; line-height: 1.05; }
+    .sw__lede { line-height: 1.6; font-size: 1rem; margin: 0 0 1.4rem; max-width: 60ch; opacity: 0.92; }
     .sw a { color: #ffd23f; }
-    .sw a.sw__join { display: inline-block; background: #ffd23f; color: #111; font-weight: 800; text-decoration: none; padding: 0.7rem 1.2rem; border: 3px solid #111; box-shadow: 5px 5px 0 #000; margin: 0.4rem 0 0; }
-    .sw__join:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
-    .sw__tier { margin-top: 2.4rem; background: #1b2129; border: 3px solid #2c3542; box-shadow: 6px 6px 0 #000; padding: 1rem 1.1rem 1.2rem; }
-    .sw__tier--gold { border-color: #eda912; }
-    .sw__tier--silver { border-color: #9aa4b2; }
-    .sw__tier--blue { border-color: #3564d9; }
-    .sw__tierhead { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
-    .sw__tierhead img { image-rendering: pixelated; height: 44px; width: auto; }
-    .sw__tierhead h2 { font-family: "Archivo Black", sans-serif; font-size: 1.05rem; margin: 0; }
-    .sw__tier--gold h2 { color: #ffd84d; }
-    .sw__tier--silver h2 { color: #dfe5ec; }
-    .sw__tier--blue h2 { color: #7fa3f5; }
-    .sw__names { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
-    .sw__names li { background: #10151b; border: 2px solid #2c3542; padding: 0.3rem 0.6rem; font-weight: 700; font-size: 0.92rem; }
-    .sw__empty { opacity: 0.75; font-size: 0.92rem; margin: 0; }
-    .sw__wall { margin-top: 2.4rem; }
-    .sw__wall h2 { font-family: "Archivo Black", sans-serif; font-size: 1.2rem; color: #ffd23f; margin: 0 0 0.7rem; }
-    .sw__feed { margin: 0; padding: 0; list-style: none; }
-    .sw__feed li { border-bottom: 1px solid #242c37; padding: 0.5rem 0.1rem; font-size: 0.94rem; }
-    .sw__feed b { color: #ffffff; }
-    .sw__feed time { opacity: 0.6; font-size: 0.82rem; margin-left: 0.4rem; }
-    .sw__note { margin-top: 2.2rem; font-size: 0.86rem; opacity: 0.75; }
+
+    /* ---- the three tiers: the shop, in the world's own furniture ---- */
+    .sw__tiers { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); margin: 0 0 3rem; }
+    .swt {
+      display: flex; flex-direction: column; background: #1b2129;
+      border: 3px solid #2c3542; box-shadow: 7px 7px 0 #000; overflow: hidden;
+    }
+    .swt--blue { border-color: #3564d9; }
+    .swt--silver { border-color: #9aa4b2; }
+    .swt--gold { border-color: #eda912; }
+    /* the art crops to a letterbox rather than running full-square: three
+       square cards stacked made the phone page a 4000px scroll */
+    .swt__art {
+      display: block; width: 100%; height: auto; aspect-ratio: 5 / 4;
+      object-fit: cover; object-position: 50% 88%;
+      image-rendering: pixelated; border-bottom: 3px solid #2c3542;
+    }
+    .swt--blue .swt__art { border-color: #3564d9; }
+    .swt--silver .swt__art { border-color: #9aa4b2; }
+    .swt--gold .swt__art { border-color: #eda912; }
+    .swt__body { padding: 0.9rem 1rem 1.1rem; display: flex; flex-direction: column; flex: 1; }
+    .swt__name { font-family: "Archivo Black", sans-serif; font-size: 1.02rem; margin: 0 0 0.15rem; }
+    .swt--blue .swt__name { color: #7fa3f5; }
+    .swt--silver .swt__name { color: #dfe5ec; }
+    .swt--gold .swt__name { color: #ffd84d; }
+    .swt__price { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; color: #fff; margin: 0 0 0.5rem; }
+    .swt__price small { font-size: 0.72rem; font-family: inherit; opacity: 0.6; font-weight: 400; }
+    .swt__blurb { margin: 0 0 0.7rem; font-size: 0.9rem; line-height: 1.5; opacity: 0.85; }
+    .swt__perks { list-style: none; margin: 0 0 1.1rem; padding: 0; display: grid; gap: 0.35rem; }
+    .swt__perks li { font-size: 0.86rem; line-height: 1.4; display: flex; gap: 0.5rem; }
+    .swt__perks li::before { content: "▸"; color: #ffd23f; flex: 0 0 auto; }
+    .sw a.swt__join {
+      margin-top: auto; display: block; text-align: center; text-decoration: none;
+      background: #ffd23f; color: #111; font-weight: 800; padding: 0.7rem 1rem;
+      border: 3px solid #111; box-shadow: 4px 4px 0 #000;
+    }
+    .sw a.swt__join:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+
+    /* ---- the wall + the feed ---- */
+    .sw__cols { display: grid; gap: 1.4rem; grid-template-columns: 1fr; }
+    @media (min-width: 780px) { .sw__cols { grid-template-columns: 1.15fr 1fr; } }
+    .sw h2 { font-family: "Archivo Black", sans-serif; font-size: 1.25rem; color: #ffd23f; margin: 0 0 0.2rem; }
+    .sw__sub { margin: 0 0 0.9rem; font-size: 0.86rem; opacity: 0.65; }
+    .swg { background: #1b2129; border: 3px solid #2c3542; box-shadow: 6px 6px 0 #000; padding: 0.85rem 1rem 1rem; margin-bottom: 1rem; }
+    .swg--gold { border-color: #eda912; }
+    .swg--silver { border-color: #9aa4b2; }
+    .swg--blue { border-color: #3564d9; }
+    .swg__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .swg__head img { image-rendering: pixelated; height: 34px; width: auto; }
+    .swg__head h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; margin: 0; }
+    .swg--gold h3 { color: #ffd84d; }
+    .swg--silver h3 { color: #dfe5ec; }
+    .swg--blue h3 { color: #7fa3f5; }
+    .swg__names { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+    .swg__names li { background: #10151b; border: 2px solid #2c3542; padding: 0.28rem 0.55rem; font-weight: 700; font-size: 0.9rem; }
+    .sw__empty { margin: 0; font-size: 0.88rem; opacity: 0.6; }
+    .swf { margin: 0; padding: 0; list-style: none; }
+    .swf li { border-bottom: 1px solid #242c37; padding: 0.5rem 0.1rem; font-size: 0.92rem; }
+    .swf b { color: #fff; }
+    .swf time { opacity: 0.55; font-size: 0.8rem; margin-left: 0.35rem; }
+    .sw__note { margin-top: 2.2rem; font-size: 0.85rem; opacity: 0.7; line-height: 1.6; max-width: 66ch; }
   </style>
 
   <section class="sw">
     <div class="sw__in">
       <p class="sw__kicker">the people keeping the banana dancing</p>
       <h1>The Supporters Wall</h1>
-      <p>
-        Banana World is free — the rave, the park, the bay, the builder, all of it.
-        These are the people who keep the lights on. Members wear a
-        <a href="/make-a-banana/">supporter top hat</a> everywhere their banana goes,
-        with a glow to match.
+      <p class="sw__lede">
+        Banana World is free — the rave, the park, the bay, the builder, all of it, with no ads
+        and no accounts. It stays that way because of the bananas below. Join them and yours
+        wears a top hat and a glow <strong>everywhere it goes</strong>, and your name goes up on
+        the board in the park.
       </p>
-      <a class="sw__join" href={KOFI} rel="noopener">Join them on Ko-fi →</a>
 
-      <div class="sw__tier sw__tier--gold">
-        <div class="sw__tierhead">
-          <img src="/assets/supporters/hat-gold.png" alt="the Gold Top Hat" width="44" height="40" loading="lazy" />
-          <h2>Legends of Banana World</h2>
-        </div>
-        <ul class="sw__names" id="swGold"></ul>
-        <p class="sw__empty" id="swGoldEmpty">The gold hat waits for its first legend.</p>
-      </div>
-      <div class="sw__tier sw__tier--silver">
-        <div class="sw__tierhead">
-          <img src="/assets/supporters/hat-silver.png" alt="the Silver Top Hat" width="44" height="40" loading="lazy" />
-          <h2>Patrons of the Park</h2>
-        </div>
-        <ul class="sw__names" id="swSilver"></ul>
-        <p class="sw__empty" id="swSilverEmpty">No patrons yet — the park keeps growing anyway.</p>
-      </div>
-      <div class="sw__tier sw__tier--blue">
-        <div class="sw__tierhead">
-          <img src="/assets/supporters/hat-blue.png" alt="the Blue Top Hat" width="44" height="40" loading="lazy" />
-          <h2>Friends of the Banana</h2>
-        </div>
-        <ul class="sw__names" id="swBlue"></ul>
-        <p class="sw__empty" id="swBlueEmpty">The wall is freshly built — the first name could be yours.</p>
+      <div class="sw__tiers">
+        {TIERS.map((t) => (
+          <article class={`swt swt--${t.key}`}>
+            <img class="swt__art" src={`/assets/supporters/tier-${t.key}.png`} width="480" height="480"
+              alt={`A dancing banana wearing the ${t.hat}, glowing in the park`} loading="lazy" />
+            <div class="swt__body">
+              <h3 class="swt__name">{t.name}</h3>
+              <p class="swt__price">${t.price}<small> / month</small></p>
+              <p class="swt__blurb">{t.blurb}</p>
+              <ul class="swt__perks">{t.perks.map((p) => <li>{p}</li>)}</ul>
+              <a class="swt__join" href={KOFI} rel="noopener" data-tier={t.tier}>Join →</a>
+            </div>
+          </article>
+        ))}
       </div>
 
-      <div class="sw__wall">
-        <h2>Recent support</h2>
-        <ul class="sw__feed" id="swFeed"></ul>
-        <p class="sw__empty" id="swFeedEmpty">Every coffee lands here, the moment it happens.</p>
+      <div class="sw__cols">
+        <div>
+          <h2>The wall</h2>
+          <p class="sw__sub">Everyone with a membership running right now.</p>
+          {['gold', 'silver', 'blue'].map((k) => {
+            const t = TIERS.find((x) => x.key === k);
+            return (
+              <div class={`swg swg--${k}`}>
+                <div class="swg__head">
+                  <img src={`/assets/supporters/hat-${k}.png`} alt={`the ${t.hat}`} height="34" loading="lazy" />
+                  <h3>{t.name}</h3>
+                </div>
+                <ul class="swg__names" id={`sw-${k}`}></ul>
+                <p class="sw__empty" id={`sw-${k}-empty`}>Nobody yet — this could be you.</p>
+              </div>
+            );
+          })}
+        </div>
+        <div>
+          <h2>Recent support</h2>
+          <p class="sw__sub">Every coffee and every renewal, as it lands.</p>
+          <ul class="swf" id="swFeed"></ul>
+          <p class="sw__empty" id="swFeedEmpty">Nothing yet today — the wall is freshly built.</p>
+        </div>
       </div>
 
       <p class="sw__note">
-        Names appear exactly as given on Ko-fi; supporters who chose to stay private
-        stay private here too. Membership hats are granted and retired automatically
-        with your subscription — see <a href="/pass/">your pass</a>.
+        Memberships run through <a href={KOFI} rel="noopener">Ko-fi</a>, who handle the payment —
+        cancel any time from there, and the hat simply retires itself. Names appear exactly as
+        given on Ko-fi, and supporters who chose to stay private stay private here too. Your hat
+        arrives on your banana within the hour; sign in with <a href="/pass/">your pass</a> using
+        the same email so it knows where to send it.
       </p>
     </div>
   </section>
@@ -94,36 +166,35 @@ const KOFI = 'https://ko-fi.com/trymstene';
   <script is:inline>
     (() => {
       const API = 'https://banana-pass.trymstene.workers.dev/supporters';
+      const KEY = { 'sup-t3': 'gold', 'sup-t2': 'silver', 'sup-t1': 'blue' };
       const ago = (ts) => {
-        const d = Date.now() - ts;
-        const day = 86400000;
+        const d = Date.now() - ts, day = 86400000;
         if (d < 3600000) return 'just now';
         if (d < day) return Math.round(d / 3600000) + 'h ago';
         if (d < day * 30) return Math.round(d / day) + 'd ago';
         return new Date(ts).toLocaleDateString();
       };
       fetch(API).then((r) => r.json()).then((d) => {
-        const groups = { 'sup-t3': 'Gold', 'sup-t2': 'Silver', 'sup-t1': 'Blue' };
         for (const m of d.members || []) {
-          const g = groups[m.t];
-          if (!g || !m.n) continue;
+          const k = KEY[m.t];
+          if (!k || !m.n) continue;
           const li = document.createElement('li');
           li.textContent = m.n;
-          document.getElementById('sw' + g).appendChild(li);
+          document.getElementById('sw-' + k).appendChild(li);
         }
-        for (const g of Object.values(groups)) {
-          if (document.getElementById('sw' + g).children.length) {
-            document.getElementById('sw' + g + 'Empty').hidden = true;
+        for (const k of ['gold', 'silver', 'blue']) {
+          if (document.getElementById('sw-' + k).children.length) {
+            document.getElementById('sw-' + k + '-empty').hidden = true;
           }
         }
         const feed = document.getElementById('swFeed');
-        for (const w of (d.wall || []).slice(0, 30)) {
+        for (const w of (d.wall || []).slice(0, 25)) {
           const li = document.createElement('li');
           const b = document.createElement('b');
           b.textContent = w.n || 'Someone';
           li.appendChild(b);
           li.appendChild(document.createTextNode(
-            w.k === 'member' ? ' renewed their membership' : ' bought the banana a coffee'));
+            w.k === 'member' ? ' joined the wall' : ' bought the banana a coffee'));
           const t = document.createElement('time');
           t.textContent = ago(w.ts);
           li.appendChild(t);
@@ -131,6 +202,11 @@ const KOFI = 'https://ko-fi.com/trymstene';
         }
         if (feed.children.length) document.getElementById('swFeedEmpty').hidden = true;
       }).catch(() => {});
+      document.querySelectorAll('.swt__join').forEach((a) => {
+        a.addEventListener('click', () => {
+          if (window.gtag) window.gtag('event', 'supporter_join_click', { tier: a.dataset.tier });
+        });
+      });
     })();
   </script>
 </BaseLayout>
