@@ -664,6 +664,14 @@ const faq = {
       background: rgba(13, 18, 11, 0.9); border: 3px solid #000; padding: 6px 8px;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
+    /* it OPENS the health card, so it must read as a button, not a readout:
+       the world's chunky drop-shadow, a press-down, and the doctrine's own
+       (i) glyph capping the right end (Trym: "doesn't look clickable") */
+    .pk-hbar { box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55); }
+    .pk-hbar:active { transform: translateX(-50%) translateY(2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55); }
+    .pk-hbar__more { display: grid; place-items: center; flex: none; opacity: 0.75; color: #e8f4e8; }
+    .pk-hbar__more .pai { display: block; }
+    @media (hover: hover) { .pk-hbar:hover .pk-hbar__more { opacity: 1; } .pk-hbar:hover { filter: brightness(1.12); } }
     .pk-hbar__face { display: grid; place-items: center; width: 22px; height: 22px; flex: none; }
     .pk-hbar__face .pai { display: block; }
     .pk-hbar__track { position: relative; flex: 1; height: 16px; border: 2px solid #000; overflow: hidden; }
@@ -1680,6 +1688,7 @@ const faq = {
         <button class="pk-hbar" id="pkHBar" type="button" aria-label="park health">
           <span class="pk-hbar__face" id="pkHFace" aria-hidden="true"></span>
           <span class="pk-hbar__track"><i class="pk-hbar__fill" id="pkHFill"></i><b class="pk-hbar__pct" id="pkHPct">—</b></span>
+          <span class="pk-hbar__more" id="pkHMore" aria-hidden="true"></span>
         </button>
         <div class="pk-hint" id="pkHint">tap to walk · arrow keys / WASD work too</div>
         <div class="pk-exitstrip" id="pkExitStrip" role="status" aria-live="polite"></div>

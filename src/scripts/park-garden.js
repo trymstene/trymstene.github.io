@@ -1096,6 +1096,9 @@ export function initGarden(ctx) {
   // 🌸 THE HEALTH BAR — bottom-docked (the jellymeter's spot in the rave):
   // fill + % ride the live value, the face + whole palette ride the phase
   const bloomBtn = document.getElementById('pkHBar');
+  // the (i) cap that says "this opens" — pixel icon, coloured with the face
+  const hMoreEl = document.getElementById('pkHMore');
+  if (hMoreEl) hMoreEl.innerHTML = iconSvg('info-box', { size: 15 });
   const hFaceEl = document.getElementById('pkHFace');
   const hFillEl = document.getElementById('pkHFill');
   const hPctEl = document.getElementById('pkHPct');
