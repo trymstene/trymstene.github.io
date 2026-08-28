@@ -1509,7 +1509,9 @@ function init(visitDoc, visitMiss) {
   const guestEl = document.getElementById('hsGuest');
   const cookEl = document.getElementById('hsCook');
   const confirmEl = document.getElementById('hsConfirm');
-  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden;
+  const seedEl = document.getElementById('hsSeed');
+  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden
+    || !seedEl.hidden;
   // while any popup is open the PAGE must not scroll under it (Trym)
   const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
 
@@ -1562,6 +1564,8 @@ function init(visitDoc, visitMiss) {
   }
   function openCook() { cookEl.hidden = false; syncLock(); renderCook(); track('homestead_kitchen'); }
   document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; syncLock(); });
+  document.getElementById('hsSeedClose').addEventListener('click', () => { seedEl.hidden = true; syncLock(); });
+  seedEl.addEventListener('click', (e) => { if (e.target === seedEl) { seedEl.hidden = true; syncLock(); } });
   cookEl.addEventListener('click', (e) => { if (e.target === cookEl) { cookEl.hidden = true; syncLock(); } });
 
   // ---- 🪧 the guestbook at the sign (+ your address, once you have one) ----
@@ -2550,38 +2554,50 @@ function init(visitDoc, visitMiss) {
     }).catch(() => toast('the watering can is empty — try again in a bit'));
   }
 
+  // 🌱 THE SEED SHEET (the park's, in homestead colours). Only what's in the
+  // pouch is listed — an empty pouch never opens an empty modal, it says where
+  // seeds come from instead.
+  function openSeedPanel(cell, at) {
+    const pouch = CROPS.filter((c) => seedCount(c.id) > 0);
+    if (!pouch.length) { toast('no seeds in the pouch — harvest crops in the park garden 🌱', 3600); return; }
+    const note = document.getElementById('hsSeedNote');
+    note.textContent = pouch.length === 1
+      ? 'one kind in the pouch — plant it and it grows on watered days.'
+      : pouch.length + ' kinds in the pouch. Seeds come from harvesting in the park.';
+    const list = document.getElementById('hsSeedList');
+    list.replaceChildren();
+    pouch.forEach((c) => {
+      const row = document.createElement('button');
+      row.className = 'hs-seedrow';
+      row.type = 'button';
+      row.innerHTML = '<i>' + (CROP_EMO[c.id] || '🌱') + '</i><b>' + c.name + '</b>'
+        + '<span>🌱×' + seedCount(c.id) + '</span>';
+      row.addEventListener('click', () => {
+        if (!seedCount(c.id)) return;
+        seedUse(c.id);
+        cell.crop = c.id; cell.waters = 0; cell.last = ''; cell.planted = dayStr();
+        save(); refreshSoil();
+        seedEl.hidden = true; syncLock();
+        float(at[0], at[1] - 44, '🌱');
+        track('homestead_plant', { crop: c.id });
+      });
+      list.appendChild(row);
+    });
+    seedEl.hidden = false;
+    syncLock();
+  }
+
   function cellTap(cell) {
     clearBedChip();
     if (visiting) { visitorWater(); return; }
     const s = [cellCx(cell), cellBase(cell) - 16];
     const b = cell.crop ? cell : null;
     if (!b) {
-      bedChip = document.createElement('div');
-      bedChip.className = 'hs-chip';
-      // 🌱 seeds are POCKETED AT THE PARK (crop harvests there), spent here
-      let anySeeds = false;
-      CROPS.forEach((c) => {
-        const n = seedCount(c.id);
-        anySeeds = anySeeds || n > 0;
-        const btn = document.createElement('button');
-        btn.className = 'hs-btn';
-        btn.innerHTML = (CROP_EMO[c.id] || '') + ' ' + c.name + ' · 🌱×' + n;
-        btn.disabled = !n;
-        btn.addEventListener('click', () => {
-          if (!seedCount(c.id)) return;
-          seedUse(c.id);
-          cell.crop = c.id; cell.waters = 0; cell.last = ''; cell.planted = dayStr();
-          save(); refreshSoil(); clearBedChip();
-          float(s[0], s[1] - 44, '🌱');
-          track('homestead_plant', { crop: c.id });
-        });
-        bedChip.appendChild(btn);
-      });
-      if (!anySeeds) toast('no seeds in the pouch — harvest crops in the park garden 🌱', 3600);
-      bedChip.style.left = pct(s[0], W);
-      bedChip.style.top = pct(s[1] - 52, H);
-      bedChip.style.zIndex = '3000';
-      world.appendChild(bedChip);
+      // 🌱 seeds are POCKETED AT THE PARK (crop harvests there), spent here.
+      // The picker is the PARK'S SEED SHEET — a modal of rows — not a row of
+      // buttons pinned to the bed: that listed every crop in the game and ran
+      // off the side of a phone (Kiwi, 28 Aug).
+      openSeedPanel(cell, s);
       return;
     }
     if (cropStage(b) >= 4) {

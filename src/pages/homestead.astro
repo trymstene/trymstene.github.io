@@ -172,6 +172,26 @@ const description = 'A clearing west of the park with your name on the sign: cla
       background: rgba(10, 16, 8, 0.92); border: 3px solid #000; padding: 6px;
       border-radius: 6px; box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
     }
+    /* 🌱 the seed picker is the PARK'S SEED SHEET, in homestead colours: a
+       scrollable modal of rows. It used to be a row of buttons pinned to the
+       bed — one per crop in the game — which ran off the side of a phone
+       (Kiwi, 28 Aug). A modal cannot overflow the world, and the park already
+       taught everyone what choosing a seed looks like. */
+    .hs-seedlist {
+      display: grid; gap: 0.5rem; max-height: 46vh; overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .hs-seedrow {
+      appearance: none; font-family: inherit; width: 100%; cursor: pointer;
+      display: flex; align-items: center; gap: 0.7rem; text-align: left;
+      border: 2px solid #000; background: #fff; color: #1a1408;
+      padding: 0.5rem 0.6rem;
+    }
+    .hs-seedrow:hover { outline: 2px solid #a7d98a; outline-offset: 1px; }
+    .hs-seedrow:active { transform: translate(2px, 2px); }
+    .hs-seedrow i { font-style: normal; font-size: 1.4rem; line-height: 1; }
+    .hs-seedrow b { flex: 1; min-width: 0; font-size: 0.9rem; }
+    .hs-seedrow span { flex: 0 0 auto; font-weight: 800; font-size: 0.82rem; }
     .hs-btn {
       font: inherit; font-size: 0.8rem; font-weight: 800; cursor: pointer;
       border: 3px solid #000; background: #ffe135; color: #1a1408;
@@ -297,13 +317,18 @@ const description = 'A clearing west of the park with your name on the sign: cla
 
     /* panels: the claim + the mailbox */
     .hs-veil {
-      position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+      /* ⚠️ above the in-world chrome (the quest hint rides z 900), or a bubble
+         draws straight through an open modal */
+      position: fixed; inset: 0; z-index: 950; display: grid; place-items: center;
       padding: 1rem; background: rgba(6, 10, 4, 0.7);
       overscroll-behavior: contain;
     }
     body.hs-lock { overflow: hidden; }
     .hs-veil[hidden] { display: none; }
     .hs-card {
+      /* ⚠️ RELATIVE: .hs-shopx is absolute, and without this its ✕ escapes the
+         card and lands in the page's top corner (only #hsShop had the rule) */
+      position: relative;
       width: min(430px, 100%); background: #fffdf5; color: #1a1408;
       border: 3px solid #000; box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
       padding: 1rem 1rem 1.1rem;
@@ -644,6 +669,15 @@ const description = 'A clearing west of the park with your name on the sign: cla
         <div class="hs-pantry" id="hsPantry"></div>
         <p class="hs-note" id="hsCookNote"></p>
         <div class="hs-cooklist" id="hsCookList"></div>
+      </div>
+    </div>
+
+    <div class="hs-veil" id="hsSeed" hidden>
+      <div class="hs-card">
+        <button class="hs-shopx" id="hsSeedClose" aria-label="Close">✕</button>
+        <h2>🌱 Plant a seed</h2>
+        <p class="hs-note" id="hsSeedNote"></p>
+        <div class="hs-seedlist" id="hsSeedList"></div>
       </div>
     </div>
 
