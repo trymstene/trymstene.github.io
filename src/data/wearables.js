@@ -36,12 +36,12 @@ export const WEARABLE_PACKS = {
       { id: 'party',  label: 'Party',   phrase: 'a party hat',  art: 'party',  seat: -1 },
       { id: 'crown',  label: 'Crown',   phrase: 'a crown',      art: 'crown',  seat: -1 },
       { id: 'tophat', label: 'Top hat', phrase: 'a top hat',    art: 'tophat', seat: 0  },
-      // 🎩 SUPPORTER TOP HATS — BMAC membership tiers. member: gear is GRANTED
+      // 🎩 SUPPORTER TOP HATS — Ko-fi membership tiers. member: gear is GRANTED
       // AND REVOKED by live subscription state — never 'earned', never for
       // sale, hidden from non-members; the entitlement logic owns these.
-      { id: 'tophatbronze', label: 'Bronze Top Hat', phrase: 'a bronze top hat', art: 'tophatbronze', seat: 0, member: 'bmac-t1', lock: 'a supporter hat — active membership only' },
-      { id: 'tophatsilver', label: 'Silver Top Hat', phrase: 'a silver top hat', art: 'tophatsilver', seat: 0, member: 'bmac-t2', lock: 'a supporter hat — active membership only' },
-      { id: 'tophatgold',   label: 'Gold Top Hat',   phrase: 'the gold top hat', art: 'tophatgold',   seat: 0, member: 'bmac-t3', lock: 'a supporter hat — active membership only' },
+      { id: 'tophatbronze', label: 'Bronze Top Hat', phrase: 'a bronze top hat', art: 'tophatbronze', seat: 0, member: 'sup-t1', lock: 'a supporter hat — active membership only' },
+      { id: 'tophatsilver', label: 'Silver Top Hat', phrase: 'a silver top hat', art: 'tophatsilver', seat: 0, member: 'sup-t2', lock: 'a supporter hat — active membership only' },
+      { id: 'tophatgold',   label: 'Gold Top Hat',   phrase: 'the gold top hat', art: 'tophatgold',   seat: 0, member: 'sup-t3', lock: 'a supporter hat — active membership only' },
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },
       { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
       { id: 'sombrero', label: 'Sombrero', phrase: 'a big sombrero', art: 'sombrero', seat: -1 },
@@ -256,7 +256,7 @@ export function ownsWearable(d) {
   } catch (e) { return false; }
 }
 
-// 💛 MEMBERSHIP GEAR — defs carrying `member: 'bmac-t1'|'t2'|'t3'` are supporter
+// 💛 MEMBERSHIP GEAR — defs carrying `member: 'sup-t1'|'t2'|'t3'` are supporter
 // gear, GRANTED AND REVOKED by live subscription state. The grant is a
 // short-lived local entitlement written by the pass layer ('bb-member' =
 // {t, until-ms}); no grant, an expired one, or SSR = not yours. Higher tiers
@@ -264,7 +264,7 @@ export function ownsWearable(d) {
 // member gear comes AND goes — ⚠️ member: must never coexist with preview:,
 // price:, drop: or earned: on one def (checked below in dev).
 // banana-pass.js mirrors the id→tier table (import-light; change BOTH).
-const MEMBER_RANK = { 'bmac-t1': 1, 'bmac-t2': 2, 'bmac-t3': 3 };
+const MEMBER_RANK = { 'sup-t1': 1, 'sup-t2': 2, 'sup-t3': 3 };
 // ⏳ 72h of grace past `until`: renewal webhooks + the 10-min pull throttle
 // must never strip a PAYING member at a billing boundary — a canceled one
 // keeps the hat three days longer, which is a soft landing, not a leak

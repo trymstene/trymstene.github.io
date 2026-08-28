@@ -55,6 +55,8 @@ export default {
       if (url.pathname === '/admin/grant') return adminGrant(request, env);
       if (url.pathname === '/admin/erase') return adminErase(request, env);
       if (url.pathname === '/admin/log') return adminLog(request, env, url);
+      if (url.pathname === '/kofi-hook') return kofiHook(request, env);
+      if (url.pathname === '/supporters') return supporters(request, env);
       if (url.pathname === '/health') return json({ ok: true });
       return json({ error: 'not found' }, 404);
     } catch (e) {
@@ -251,13 +253,120 @@ function mergeBlob(oldB, newB) {
   return out;
 }
 
-const MEMBER_RANK = { 'bmac-t1': 1, 'bmac-t2': 2, 'bmac-t3': 3 };
+const MEMBER_RANK = { 'sup-t1': 1, 'sup-t2': 2, 'sup-t3': 3 };
 function cleanMember(m) {
   if (!m || typeof m !== 'object') return null;
   if (!Object.prototype.hasOwnProperty.call(MEMBER_RANK, m.t)) return null;
   const u = +m.until;
   if (!Number.isFinite(u) || u <= 0) return null;
   return { t: m.t, until: Math.min(u, Date.now() + 400 * 86400 * 1000) };
+}
+
+// ---------- ☕ THE KO-FI RAIL — memberships in, grants out ----------
+// Ko-fi POSTs form-encoded `data=<json>` to /kofi-hook on every payment
+// (configured at ko-fi.com/manage/webhooks; auth = its verification_token
+// checked against the KOFI_TOKEN secret — no Origin guard, it's server-to-
+// server). There is NO end-of-membership event and none is needed: every
+// membership payment extends the grant ~35 days, so a lapse expires on its
+// own (revocation by time — the same rule the whole grant system runs on).
+// The payer email is normMail'd, hashed, and DISCARDED — the store holds
+// hashes and public names only, the standing no-emails doctrine.
+// Grants are delivered STRAIGHT INTO the member's home blob via the email
+// rail ('m' + hash): paid before ever logging in → the grant waits in the
+// member store and lands at mail/use. Tier names are matched loosely; a
+// payment that matches no tier is banked in kofi/pending.json, never dropped.
+const KOFI_TIERS = [
+  { m: /legend|gold/i, t: 'sup-t3' },
+  { m: /patron|silver/i, t: 'sup-t2' },
+  { m: /friend|bronze/i, t: 'sup-t1' },
+];
+const KOFI_EXTEND = 35 * 86400 * 1000;
+function kofiTier(d) {
+  const name = String(d.tier_name || '');
+  if (name) for (const r of KOFI_TIERS) if (r.m.test(name)) return r.t;
+  const usd = String(d.currency || '').toUpperCase() === 'USD' ? parseFloat(d.amount) : NaN;
+  return usd >= 15 ? 'sup-t3' : usd >= 10 ? 'sup-t2' : usd >= 5 ? 'sup-t1' : null;
+}
+async function readJson(env, key) {
+  const o = await env.PASSES.get(key);
+  try { return o ? await o.json() : null; } catch (e) { return null; }
+}
+async function writeJson(env, key, v) {
+  await env.PASSES.put(key, JSON.stringify(v), { httpMetadata: { contentType: 'application/json' } });
+}
+// deliver a grant into the member's home blob via the email rail; true if a
+// pass existed to deliver to
+async function kofiDeliver(env, emailHash, grant) {
+  const mailKey = 'm' + emailHash;
+  const rec = await loadKey(env, mailKey);
+  if (!rec) return false;
+  const homeKey = rec.link || mailKey;
+  const home = rec.link ? await loadKey(env, homeKey) : rec;
+  if (!home) return false;
+  home.blob = mergeBlob(home.blob, { member: grant });
+  await saveKey(env, homeKey, home);
+  return true;
+}
+async function kofiHook(request, env) {
+  if (request.method !== 'POST') return json({ error: 'not found' }, 404);
+  if (!env.KOFI_TOKEN) return json({ error: 'not configured' }, 503);
+  let d;
+  try {
+    const form = await request.formData();
+    d = JSON.parse(form.get('data') || '');
+  } catch (e) { return json({ error: 'bad payload' }, 400); }
+  if (!d || typeof d !== 'object' || d.verification_token !== env.KOFI_TOKEN) {
+    return json({ error: 'bad token' }, 403);
+  }
+  const ts = Date.now();
+  const tx = String(d.kofi_transaction_id || d.message_id || '') || ('t' + ts);
+  // every payment lands on the wall ledger (names only when the supporter
+  // chose public; dedup by transaction — Ko-fi retries undelivered hooks)
+  const wall = (await readJson(env, 'kofi/wall.json')) || [];
+  if (!wall.some((w) => w.tx === tx)) {
+    wall.unshift({
+      tx, ts,
+      n: d.is_public === false ? '' : String(d.from_name || '').slice(0, 40),
+      a: String(d.amount || ''), c: String(d.currency || '').slice(0, 3),
+      k: d.is_subscription_payment ? 'member' : 'coffee',
+    });
+    await writeJson(env, 'kofi/wall.json', wall.slice(0, 500));
+  }
+  if (d.is_subscription_payment || /subscription/i.test(String(d.type || ''))) {
+    const t = kofiTier(d);
+    if (!t) {
+      const pend = (await readJson(env, 'kofi/pending.json')) || [];
+      pend.unshift({ ts, tx, tier_name: String(d.tier_name || ''), a: String(d.amount || ''), c: String(d.currency || '') });
+      await writeJson(env, 'kofi/pending.json', pend.slice(0, 100));
+      return json({ ok: true, banked: 'unknown tier' });
+    }
+    const emailHash = await sha256Hex(normMail(d.email));
+    const members = (await readJson(env, 'kofi/members.json')) || {};
+    const cur = members[emailHash] || {};
+    const until = Math.max(ts + KOFI_EXTEND, +cur.until || 0);
+    members[emailHash] = {
+      t, until, last: ts,
+      n: d.is_public === false ? '' : String(d.from_name || '').slice(0, 40),
+    };
+    await writeJson(env, 'kofi/members.json', members);
+    const delivered = await kofiDeliver(env, emailHash, { t, until });
+    return json({ ok: true, delivered });
+  }
+  return json({ ok: true });
+}
+// GET /supporters — the public feed for the wall/page: names only, cached
+async function supporters(request, env) {
+  const wall = (await readJson(env, 'kofi/wall.json')) || [];
+  const members = (await readJson(env, 'kofi/members.json')) || {};
+  const now = Date.now();
+  const names = Object.values(members)
+    .filter((m) => m.until > now && m.n)
+    .sort((a, b) => (MEMBER_RANK[b.t] || 0) - (MEMBER_RANK[a.t] || 0) || (a.last || 0) - (b.last || 0))
+    .map((m) => ({ n: m.n, t: m.t }));
+  return json({
+    members: names,
+    wall: wall.slice(0, 100).map((w) => ({ n: w.n, k: w.k, ts: w.ts })),
+  }, 200, { ...cors(env, request), 'Cache-Control': 'public, max-age=300' });
 }
 
 // ⭐ THE KEY SPACE IS SHARED. A passkey's key is the hash of its credential id;
@@ -888,6 +997,16 @@ async function mailUse(request, env, url) {
   const token = await mintToken(rec);
   await saveKey(env, key, rec);
   const R = await resolve(env, credId);
+  // ☕ a Ko-fi membership bought BEFORE this pass first logged in has been
+  // waiting in the member store — it lands the moment the email rail proves
+  // the address (key = 'm' + emailHash, so the hash is right here)
+  try {
+    const m = ((await readJson(env, 'kofi/members.json')) || {})[key.slice(1)];
+    if (m && m.until > Date.now() && R && R.home) {
+      R.home.blob = mergeBlob(R.home.blob, { member: { t: m.t, until: m.until } });
+      await saveKey(env, R.homeKey, R.home);
+    }
+  } catch (e) {}
   return json({ credId, token, attached, blob: (R && R.home.blob) || rec.blob || null },
     200, cors(env, request));
 }

@@ -319,8 +319,8 @@ export function passPatch(id, opts = {}) {
 // shared state: a grant-less linked device stripped the incoming outfit and
 // re-exported it at the donor's clock, erasing a paying member's hat
 // server-side (the pass-ledger max-merge lesson, again).
-const MEMBER_TIER = { tophatbronze: 'bmac-t1', tophatsilver: 'bmac-t2', tophatgold: 'bmac-t3' };
-const MEMBER_RANK = { 'bmac-t1': 1, 'bmac-t2': 2, 'bmac-t3': 3 };
+const MEMBER_TIER = { tophatbronze: 'sup-t1', tophatsilver: 'sup-t2', tophatgold: 'sup-t3' };
+const MEMBER_RANK = { 'sup-t1': 1, 'sup-t2': 2, 'sup-t3': 3 };
 const MEMBER_GRACE = 72 * 3600 * 1000; // renewal lag must never strip a payer
 const memberRankOf = (t) => (Object.prototype.hasOwnProperty.call(MEMBER_RANK, t) ? MEMBER_RANK[t] : 0);
 function readMemberGrant() {
