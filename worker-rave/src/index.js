@@ -2018,6 +2018,9 @@ const GARDEN_SEEDS = {
   strawberry: { days: 3, stars: 2, price: 30, regrow: 3 },   // 🍓 fruits 3× per plant
   corn: { days: 5, stars: 4, price: 140 },
   watermelon: { days: 7, stars: 5, price: 320 },
+  grape: { days: 6, stars: 6, price: 400, regrow: 3 },   // 🌵 the exotic tier (lvl 5)
+  pineapple: { days: 8, stars: 6, price: 500 },
+  prickly: { days: 9, stars: 6, price: 650 },
 };
 const gardenSeed = (id) => GARDEN_SEEDS[id] || { days: 99, stars: 1 };
 // 64 slots: 0-7 = site A by the meadow, 8-15 = W3's site B by the playground,

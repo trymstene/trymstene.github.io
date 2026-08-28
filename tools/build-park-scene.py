@@ -1203,11 +1203,18 @@ if os.path.isdir(FARM):
                            ('strawberry', 'Strawberry_Growth_Stages_48x48.png'),
                            ('carrot', 'Carrot_Growth_Stages_48x48.png'),
                            ('corn', 'Corn_Growth_Stages_48x48.png'),
-                           ('watermelon', 'Watermelon_Growth_Stages_48x48.png')):
+                           ('watermelon', 'Watermelon_Growth_Stages_48x48.png'),
+                           # 🌵 the EXOTIC tier (gardener lvl 5, 28 Aug)
+                           ('grape', 'Grape_Growth_Stages_48x48.png'),
+                           ('pineapple', 'Pineapple_Growth_Stages_48x48.png'),
+                           ('prickly', 'Prickly_Pear_Growth_Stages_48x48.png')):
         try:
             f = _glob.glob(os.path.join(FARM, '**', cropsheet), recursive=True)[0]
             sheet = Image.open(f).convert('RGBA')
-            arth = sheet.height // 2
+            # art row = 96px (2 tiles). Most sheets are 192 tall so height//2
+            # matched by luck; grape carries a SECOND art row (red grapes) that
+            # the halving grabbed too — cap at the real row height.
+            arth = min(sheet.height // 2, 96)
             for n, col in enumerate((0, 1, 3, 5), 1):
                 cell = sheet.crop((col * 48, 0, col * 48 + 48, arth))
                 s = blockify(cell, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)

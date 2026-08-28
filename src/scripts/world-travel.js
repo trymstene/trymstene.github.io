@@ -202,6 +202,12 @@ export function initTravel({ here, mount, before, btnClass, track }) {
     // 🎁 the workshop is a BENCH, not a place — paper like the shop. It feeds
     // the whole community-item loop (draw → submit → on sale), and doors
     // beat posters here too: until now it only had the LED ad.
+    // 🍌 THE BUILDER — the most-loved tool on the site had no door in the
+    // travel card at all (Trym, 28 Aug). First in the bench list.
+    + '<a class="wt-go wt-go--shop" href="/make-a-banana/" data-to="builder">'
+    + '<span class="wt-go__icon">🍌</span>'
+    + '<span class="wt-go__name">Make a Banana</span>'
+    + '<span class="wt-go__arrow">→</span></a>'
     + '<a class="wt-go wt-go--shop" href="/forge/items/" data-to="items">'
     + '<span class="wt-go__icon">🎁</span>'
     + '<span class="wt-go__name">Items Workshop</span>'

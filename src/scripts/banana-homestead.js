@@ -72,8 +72,11 @@ const CROPS = [
   { id: 'strawberry', name: 'Strawberry', seed: 3 },
   { id: 'corn', name: 'Sweetcorn', seed: 3 },
   { id: 'watermelon', name: 'Watermelon', seed: 3 },
+  { id: 'grape', name: 'Grapes', seed: 3 },
+  { id: 'pineapple', name: 'Pineapple', seed: 3 },
+  { id: 'prickly', name: 'Prickly pear', seed: 3 },
 ];
-const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉' };
+const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵' };
 // 🍳 THE SPINE (M2): crops → the pantry → dishes with WORLD-WIDE effects.
 // The multiplier enforces itself inside passStat — one choke point, every area.
 const DISHES = [
@@ -87,6 +90,8 @@ const DISHES = [
     pay: 22, blurb: 'chops straight into 22 bananacoins' },
   { id: 'fruitcup', icon: '🍧', name: 'Fruit cup', need: { strawberry: 2, watermelon: 1 },
     pay: 34, blurb: 'sweetens straight into 34 bananacoins' },
+  { id: 'smoothie', icon: '🍹', name: 'Tropical smoothie', need: { grape: 1, pineapple: 1, prickly: 1 },
+    pay: 65, blurb: 'blends straight into 65 bananacoins' },
 ];
 const TENT_PRICE = 50;
 const dayStr = () => new Date().toISOString().slice(0, 10);
