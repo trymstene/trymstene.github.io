@@ -874,6 +874,21 @@ const faq = {
     .bh-card p { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
     .bh-panel__sub { opacity: 0.9; }
     .bh-panel__sub b { color: #ffd98a; opacity: 1; }
+    /* 📖 the field guide below the frame — the world's guide grammar (short,
+       visual, sprite cards) in bay colours. See park.astro .pkg for the twin. */
+    .bhg { max-width: 760px; margin: 3rem auto 0; padding: 0 1.2rem; color: #f2e8d8; }
+    .bhg__block { margin-top: 2.6rem; }
+    .bhg__kicker { color: #ffd23f; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
+    .bhg__block h2 { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; margin: 0 0 0.8rem; color: #7fd4ff; }
+    .bhg__block p { line-height: 1.6; font-size: 0.96rem; margin: 0 0 0.8rem; }
+    .bhg__block a { color: #ffd23f; }
+    .bhg__grid { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin-top: 1.2rem; }
+    .bhg__card { background: #10202b; border: 3px solid #7fd4ff; box-shadow: 6px 6px 0 #000; padding: 0.9rem; }
+    .bhg__thumb { height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.55rem; }
+    .bhg__thumb img { image-rendering: pixelated; max-height: 64px; max-width: 110px; width: auto; height: auto; }
+    .bhg__thumb i { display: block; background-repeat: no-repeat; image-rendering: pixelated; transform-origin: center; }
+    .bhg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; color: #7fd4ff; margin: 0 0 0.35rem; text-align: center; }
+    .bhg__card p { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.92; }
     /* the "how it works" strip — three short steps, so the loop reads at a glance */
     .bh-how {
       list-style: none; margin: 0 0 0.85rem; padding: 0.6rem 0.75rem;
@@ -1717,6 +1732,55 @@ const faq = {
 
     <div class="bh-foot" id="bhFoot">
       <a class="bh-btn" href="/park/?beach" data-place="beach">🌳 back to the park</a>
+    </div>
+
+    <!-- ===== below the bay: the field guide (short, visual — see park.astro) ===== -->
+    <div class="bhg">
+      <section class="bhg__block" id="what">
+        <p class="bhg__kicker">the fine print, in sand</p>
+        <h2>what is this place?</h2>
+        <p>
+          The bay is the park&rsquo;s lazy east end &mdash; a beach where the sun never quite sets.
+          <strong>Free, in the browser, no account</strong> &mdash; and every banana on the sand is a real
+          visitor, live.
+        </p>
+      </section>
+
+      <section class="bhg__block" id="do">
+        <p class="bhg__kicker">the loop</p>
+        <h2>what do you actually do here?</h2>
+        <div class="bhg__grid">
+          <article class="bhg__card">
+            <div class="bhg__thumb"><i style="width:16px;height:16px;background-image:url(/assets/beach/fish.png);transform:scale(3)"></i></div>
+            <h3>fish</h3>
+            <p>Cast from the pier, reel on the bite. The rarest ones fight back.</p>
+          </article>
+          <article class="bhg__card">
+            <div class="bhg__thumb"><img src="/assets/beach/dig-patch.png" alt="a diggable sand patch — beach pixel sprite" loading="lazy" /></div>
+            <h3>dig</h3>
+            <p>&#9935; patches in the sand hide shells and better. First shovel wins.</p>
+          </article>
+          <article class="bhg__card">
+            <div class="bhg__thumb"><i style="width:16px;height:16px;background-image:url(/assets/beach/shells.png);transform:scale(3)"></i></div>
+            <h3>shells</h3>
+            <p>The tide leaves them on the sand &mdash; collect the lot.</p>
+          </article>
+          <article class="bhg__card">
+            <div class="bhg__thumb"><i style="width:28px;height:28px;background-image:url(/assets/beach/volleyball.png);transform:scale(2)"></i></div>
+            <h3>rally</h3>
+            <p>Tap the ball, keep it up &mdash; the whole beach counts the rally together.</p>
+          </article>
+          <article class="bhg__card">
+            <div class="bhg__thumb"><img src="/assets/beach/pier.png" alt="the pier — beach pixel sprite" loading="lazy" /></div>
+            <h3>the grabber</h3>
+            <p>The machine on the pier: coins in, claw down, prizes up to the giant plush.</p>
+          </article>
+        </div>
+        <p style="margin-top:1.2rem">
+          Everything you earn lands on <a href="/pass/">your pass</a>. <a href="/park/?beach">The park</a> is
+          one road west; <a href="/rave/">the rave</a> is past it.
+        </p>
+      </section>
     </div>
   </div>
 

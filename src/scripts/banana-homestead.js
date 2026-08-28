@@ -12,7 +12,6 @@ import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
 import { gardenerLvlFor } from '../lib/pass-defs.js';
 import { initTravel } from './world-travel.js';
-import { initGuide } from '../lib/field-guide.js';
 import { initSteer } from './world-steer.js';
 import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
@@ -1228,17 +1227,6 @@ function init(visitDoc, visitMiss) {
     openShop('home');   // 🍌 the phone opens on its home screen
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
-  initGuide({
-    mount: document.querySelector('.hs-actions'),
-    btnClass: 'hs-act hs-act--icon', area: 'homestead', title: 'the homestead', track,
-    rows: [
-      { art: '/assets/homestead/m-mail.png', verb: 'claim', line: 'name your plot, pitch the tent' },
-      { art: '/assets/park/g-sprout2.png', verb: 'sow', line: 'plant the seeds your park harvests pocket' },
-      { art: '/assets/park/g-soil-wet.png', verb: 'water', line: 'once a day — neighbours can help' },
-      { art: '/assets/homestead/campfire-lit.gif', verb: 'cook', line: 'dishes pay coins or boost the world' },
-      { art: '/assets/homestead/d-arcade.png', verb: 'decorate', line: 'furnish it — visitors drop by' },
-    ],
-  });
   // 🔨 THE PLANNER (Trym: "a separate mode where the camera zooms out and
   // you get the whole map as a dark overlay grid") — building is rare, so it
   // lives behind ONE button and gets a real editor: the deed lit and gridded,

@@ -134,6 +134,12 @@ const faq = {
     .pkg__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
     .pkg__list li { padding-left: 1.1rem; position: relative; }
     .pkg__list li::before { content: '\00B7'; position: absolute; left: 0.25rem; color: #8de08d; font-weight: 800; }
+    .pkg__grid { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin-top: 1.2rem; }
+    .pkg__card { background: #101a10; border: 3px solid #8de08d; box-shadow: 6px 6px 0 #000; padding: 0.9rem; }
+    .pkg__thumb { height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.55rem; }
+    .pkg__thumb img { image-rendering: pixelated; max-height: 64px; max-width: 110px; width: auto; height: auto; }
+    .pkg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; color: #8de08d; margin: 0 0 0.35rem; text-align: center; }
+    .pkg__card p { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.92; }
     .pkg__seeds { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.4rem 0 0.9rem; }
     .pkg__seeds th, .pkg__seeds td { text-align: left; padding: 0.4rem 0.6rem 0.4rem 0; border-bottom: 1px solid rgba(141, 224, 141, 0.18); }
     .pkg__seeds th { color: #8de08d; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -1808,93 +1814,95 @@ const faq = {
       <p class="pk-sidenote">Everyone here is a real visitor. Walk with the arrow keys / WASD or tap the grass — pull the weeds you find, and plant something in the shared beds.</p>
     </aside>
 
-    <!-- ===== below the park: what this place IS (the indexable half) ===== -->
+    <!-- ===== below the park: what this place IS (the indexable half).
+         ⚠️ GAME-DESIGN INFORMATION RULES (Trym, 28 Aug): short, visual,
+         concrete — sprite cards over prose, one clause per idea, no clumps
+         of text. Cut words before adding any. ===== -->
     <div class="pkg">
       <section class="pkg__block" id="what">
         <p class="pkg__kicker">the fine print, in green</p>
         <h2>what is this place?</h2>
         <p>
           In 1999 I drew <a href="/dancing-banana-gif-meme/">a little banana that never stopped dancing</a>.
-          It has a park now. <strong>The Park is a free browser game</strong> &mdash; no account, no download,
-          no install &mdash; and every other banana walking around in it is a real visitor, live, right now.
+          It has a park now &mdash; <strong>a free browser game</strong>, no account, and every banana
+          walking around is a real visitor, live.
         </p>
         <p>
-          It is also the one part of Banana World that <strong>can die</strong>. The park runs on a single
-          shared health meter, and it sinks on its own. Weeds spread, litter turns up, the pond scums over.
-          Left alone for a day the grass goes to straw, the trees turn, the animals mope about and the eggs
-          stop coming. Nobody owns the place, so it only stays green if the people passing through keep it green.
-        </p>
-        <p>
-          The night it opened I set it to 5% health and 60 weeds and left it there to see what would happen.
-          It was back to 100% by morning &mdash; two regulars had planted it out and pulled the lot.
+          The catch: <strong>the park can die.</strong> One shared health meter, always sinking. The night it
+          opened I set it to 5% and sixty weeds &mdash; by morning, two regulars had it back at 100%.
         </p>
       </section>
 
       <section class="pkg__block" id="do">
         <p class="pkg__kicker">the loop</p>
         <h2>what do you actually do here?</h2>
-        <ul class="pkg__list">
-          <li><strong>Plant something.</strong> There are 64 beds and 22 roadside spots. Seeds cost coins, take days to grow, and the one you plant carries your name on its stake.</li>
-          <li><strong>Water what somebody else planted.</strong> This is the part people miss. A plant only feeds the park while it has been watered in the last day, so the garden runs on strangers watering each other's beds.</li>
-          <li><strong>Pull the weeds.</strong> The free verb &mdash; no coins, no cost, just tap. Weeds spread in patches from living parents, so a patch left alone becomes a field.</li>
-          <li><strong>Tidy up.</strong> Litter on the grass, algae on the pond, leaf piles when things are grim. Every piece you clear lifts the meter a little, and every piece left holds it down.</li>
-          <li><strong>Spot the birds.</strong> Twelve species visit, from house finches up to a hummingbird that comes alone. What shows up depends on how healthy the park is, and everyone in the park sees the same birds at the same time. Your day's list is on the card beside the map.</li>
-          <li><strong>Find an egg.</strong> Healthy parks lay eggs; a park above 95% lays golden ones. First tap wins, and they pay coins and beach tickets.</li>
-          <li><strong>Shop, without leaving.</strong> Both shops are inside the world &mdash; the <strong>merch kiosk</strong> under the mushroom, and <strong>the Banana Stand</strong> at the top of the north road where coins buy gear.</li>
-          <li><strong>Talk to Old Peel.</strong> The old banana on the bench by the fountain has opinions about the state of the place, and they change as it changes.</li>
-        </ul>
+        <div class="pkg__grid">
+          <article class="pkg__card">
+            <div class="pkg__thumb"><img src="/assets/park/g-sunflower.png" alt="a grown sunflower — park pixel sprite" loading="lazy" /></div>
+            <h3>plant</h3>
+            <p>Seeds cost coins, grow on watered days, and wear your name on the stake.</p>
+          </article>
+          <article class="pkg__card">
+            <div class="pkg__thumb"><img src="/assets/park/g-soil-wet.png" alt="watered soil — park pixel sprite" loading="lazy" /></div>
+            <h3>water anybody&rsquo;s</h3>
+            <p>The whole park runs on strangers watering each other&rsquo;s beds. +2 rep a pour.</p>
+          </article>
+          <article class="pkg__card">
+            <div class="pkg__thumb"><img src="/assets/park/c-strawberry-4.png" alt="a ripe strawberry bush — park pixel sprite" loading="lazy" /></div>
+            <h3>harvest</h3>
+            <p>Ripe pays rep and pockets a seed for <a href="/homestead/">your homestead</a>. Some bushes fruit three times.</p>
+          </article>
+          <article class="pkg__card">
+            <div class="pkg__thumb"><img src="/assets/park/w-weed1.png" alt="a weed — park pixel sprite" loading="lazy" /></div>
+            <h3>tidy</h3>
+            <p>Weeds, litter, pond scum &mdash; every piece cleared lifts the meter, every piece left holds it down.</p>
+          </article>
+          <article class="pkg__card">
+            <div class="pkg__thumb"><img src="/assets/park/e-egg.png" alt="a park egg — pixel sprite" loading="lazy" /></div>
+            <h3>find eggs</h3>
+            <p>Healthy parks lay them; above 95% they can come out golden. First tap wins.</p>
+          </article>
+          <article class="pkg__card">
+            <div class="pkg__thumb"><img src="/assets/park/ov-0.png" alt="Old Peel on his bench — park pixel sprite" loading="lazy" /></div>
+            <h3>meet the locals</h3>
+            <p>Old Peel has opinions. Twelve bird species visit by health. Both shops are inside the world.</p>
+          </article>
+        </div>
       </section>
 
       <section class="pkg__block" id="health">
         <p class="pkg__kicker">the meter</p>
         <h2>how park health works</h2>
-        <p>
-          One number, 0 to 100, shared by everyone. It falls a little every hour on its own, and faster for
-          every weed and every patch of algae in the park. Watering, planting and clearing push it back.
-        </p>
-        <p>
-          <strong>Mess also holds down the ceiling.</strong> However well the garden is watered, the park
-          cannot read 100% while there is litter on the grass or scum on the pond &mdash; so a perfect score
-          means somebody actually tidied, not just that the plants are fed.
-        </p>
-        <p>
-          The meter is the whole park's face. Below 60 the colour drains out of the map, leaf piles appear and
-          the animals go quiet; below 40 it is properly overrun. Above 80 the butterflies and squirrels come
-          back, the rare birds start visiting and the eggs start appearing. There is a floor &mdash; it can get
-          grim, but it can never become hopeless.
-        </p>
+        <ul class="pkg__list">
+          <li><strong>It sinks on its own.</strong> Watering, planting and tidying push it back.</li>
+          <li><strong>Mess caps the ceiling.</strong> No 100% while there&rsquo;s litter on the grass or scum on the pond.</li>
+          <li><strong>The park shows it.</strong> Below 60 the colour drains and the animals mope; above 80 the rare birds and the eggs come back.</li>
+        </ul>
       </section>
 
       <section class="pkg__block" id="guide">
-        <p class="pkg__kicker">field guide</p>
-        <h2>seeds, stars and the gardener's ladder</h2>
-        <p>
-          Every seed is rated <strong>one to five stars</strong>. Stars mean two things and nothing else: a
-          living plant feeds the park by its stars, and a starrier plant survives longer between waterings.
-        </p>
+        <p class="pkg__kicker">the ladder</p>
+        <h2>seeds, stars and the gardener</h2>
+        <p>Every harvest climbs your gardener level; the level raises the seed shelf.</p>
         <table class="pkg__seeds">
-          <thead><tr><th>seed</th><th>stars</th><th>unlocked at</th></tr></thead>
+          <thead><tr><th>seeds</th><th>stars</th><th>unlocked at</th></tr></thead>
           <tbody>
             <tr><td>daisy</td><td>&#9733;</td><td>from the start</td></tr>
-            <tr><td>sunflower</td><td>&#9733;&#9733;</td><td>from the start</td></tr>
-            <tr><td>midnight tulip &middot; tomato</td><td>&#9733;&#9733;&#9733;</td><td>gardener level 2 &mdash; 3 harvests</td></tr>
-            <tr><td>pumpkin</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>gardener level 3 &mdash; 8 harvests</td></tr>
-            <tr><td>golden wheat</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>gardener level 4 &mdash; 15 harvests</td></tr>
+            <tr><td>carrot &middot; strawberry &middot; sunflower</td><td>&#9733;&#9733;</td><td>from the start</td></tr>
+            <tr><td>midnight tulip &middot; tomato</td><td>&#9733;&#9733;&#9733;</td><td>3 harvests</td></tr>
+            <tr><td>pumpkin &middot; sweetcorn</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>8 harvests</td></tr>
+            <tr><td>golden wheat &middot; watermelon</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>15 harvests</td></tr>
+            <tr><td>grapevine &middot; pineapple &middot; prickly pear</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>30 harvests &mdash; the exotic tier</td></tr>
           </tbody>
         </table>
-        <h3>who lives here</h3>
-        <ul class="pkg__list">
-          <li><strong>The animals.</strong> Chickens, a rooster, two ducks on the pond bank and a rabbit. They wander, and the bubble over their head tells you what they make of the park's health.</li>
-          <li><strong>The birds.</strong> Twelve species on a shared rota, common to very rare. Build and stock a birdhouse and a family moves in &mdash; and a stocked house feeds the park a little every hour.</li>
-          <li><strong>Old Peel.</strong> The park's oldest resident, on the bench by the fountain. Ask him things.</li>
-          <li><strong>Inka</strong>, behind the counter in the mushroom kiosk, and <strong>the stand keeper</strong> up the north road.</li>
-        </ul>
-        <h3>the roads out</h3>
         <p>
-          The park is the crossroads of Banana World. The <strong>south road</strong> goes down to
-          <a href="/rave/">the rave</a>, the dance floor that never stops. The <strong>east road</strong> runs
-          out to <a href="/beach/">Banana Bay</a> &mdash; volleyball, shells, fishing and the pier. Everything
-          you earn in any of them lands on <a href="/pass/">your banana pass</a>.
+          Stars mean two things: a living plant feeds the park by its stars, and starrier plants last longer
+          between waterings. The strawberry and the grapevine <strong>regrow</strong> &mdash; three picks per plant.
+        </p>
+        <p>
+          The park is the crossroads: <a href="/rave/">the rave</a> down the south road,
+          <a href="/beach/">Banana Bay</a> out east &mdash; and everything you earn lands on
+          <a href="/pass/">your pass</a>.
         </p>
       </section>
 
@@ -1903,17 +1911,17 @@ const faq = {
         <h2>frequently asked</h2>
         <dl class="pkg__faq">
           <dt>Is The Park free to play?</dt>
-          <dd>Yes. The Park is a free browser game &mdash; no account, no download, no install. Your custom dancing banana walks straight in through the gate.</dd>
+          <dd>Yes &mdash; free, in the browser, no account. Your banana walks straight in through the gate.</dd>
           <dt>What do you do in The Park?</dt>
-          <dd>You keep a shared garden alive. Plant seeds in the beds, water what other people planted, pull weeds, pick up litter, skim the pond, spot the day's birds and hunt for eggs &mdash; every one of those nudges the park's health meter.</dd>
+          <dd>Keep a shared garden alive: plant, water other people&rsquo;s beds, pull weeds, tidy, spot birds, hunt eggs. Everything nudges the health meter.</dd>
           <dt>What is park health?</dt>
-          <dd>One number, 0 to 100, shared by everyone in the park. It sinks on its own and every weed, algae patch and piece of litter holds it down, so a park nobody tends visibly dies &mdash; the grass goes straw, the trees turn, the animals mope. Watering, planting and tidying push it back up.</dd>
-          <dt>Can you play The Park with other people?</dt>
-          <dd>Yes. Every other banana you see is a real visitor, live. The garden is shared too &mdash; you can water a plant somebody else put in, and the health meter is the whole park's score, not yours.</dd>
+          <dd>One number, 0&ndash;100, shared by everyone. It sinks on its own; tending pushes it back. A park nobody tends visibly dies.</dd>
+          <dt>Can you play with other people?</dt>
+          <dd>Yes &mdash; every banana is a real visitor, live, and the garden is shared. The meter is the whole park&rsquo;s score, not yours.</dd>
           <dt>How do you unlock better seeds?</dt>
-          <dd>By harvesting. Seeds are rated one to five stars, and your gardener level rises with every harvest: three harvests unlock three-star seeds, eight unlock four-star, fifteen unlock the five-star golden wheat. Better seeds feed the park harder and survive longer without water.</dd>
+          <dd>Harvest. Three harvests unlock three-star seeds, eight unlock four, fifteen unlock five &mdash; and thirty opens the six-star exotic tier.</dd>
           <dt>How do you get to The Park?</dt>
-          <dd>Dress a banana in <a href="/make-a-banana/">the free builder</a> and walk in. The Park sits in the middle of Banana World: the rave is down the south road, Banana Bay is along the east road, and both shops are inside the park itself.</dd>
+          <dd>Dress a banana in <a href="/make-a-banana/">the free builder</a> and walk in. The rave and the bay are one road away.</dd>
         </dl>
       </section>
     </div>

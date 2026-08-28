@@ -55,6 +55,19 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-it--ghost.is-bad { outline-color: #ff5f5f; filter: saturate(0.4); }
     /* 🏠 structure ghosts: the dashed ring marks the FLOOR, not the roof */
     .hs-it--struct { outline: none; }
+    /* 📖 the field guide below the frame — the world's guide grammar */
+    .hsg { max-width: 760px; margin: 3rem auto 0; padding: 0 1.2rem; color: #ece4d4; }
+    .hsg__block { margin-top: 2.6rem; }
+    .hsg__kicker { color: #ffd23f; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
+    .hsg__block h2 { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; margin: 0 0 0.8rem; color: #a7d98a; }
+    .hsg__block p { line-height: 1.6; font-size: 0.96rem; margin: 0 0 0.8rem; }
+    .hsg__block a { color: #ffd23f; }
+    .hsg__grid { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin-top: 1.2rem; }
+    .hsg__card { background: #16200f; border: 3px solid #a7d98a; box-shadow: 6px 6px 0 #000; padding: 0.9rem; }
+    .hsg__thumb { height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.55rem; }
+    .hsg__thumb img { image-rendering: pixelated; max-height: 64px; max-width: 110px; width: auto; height: auto; }
+    .hsg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; color: #a7d98a; margin: 0 0 0.35rem; text-align: center; }
+    .hsg__card p { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.92; }
     .hs-footring {
       position: absolute; left: 0; right: 0; bottom: 0;
       border: 3px dashed #ffe135; box-sizing: border-box; pointer-events: none;
@@ -673,11 +686,54 @@ const description = 'A clearing west of the park with your name on the sign: cla
       </div>
     </div>
 
-    <section class="hs-about">
-      <p>Your own corner of Banana World. Bananacoins come from playing anywhere —
-        <a href="/rave/">the rave</a>, <a href="/park/">the park</a> and
-        <a href="/beach/">the bay</a> all pay.</p>
-    </section>
+    <!-- ===== below the clearing: the field guide (short, visual — see park.astro) ===== -->
+    <div class="hsg">
+      <section class="hsg__block" id="what">
+        <p class="hsg__kicker">the fine print, on the porch</p>
+        <h2>what is this place?</h2>
+        <p>
+          <strong>Your own corner of Banana World.</strong> Claim a clearing, name it, build it out &mdash;
+          and the coins come from playing anywhere: <a href="/rave/">the rave</a>,
+          <a href="/park/">the park</a> and <a href="/beach/">the bay</a> all pay.
+        </p>
+      </section>
+
+      <section class="hsg__block" id="do">
+        <p class="hsg__kicker">the loop</p>
+        <h2>what do you actually do here?</h2>
+        <div class="hsg__grid">
+          <article class="hsg__card">
+            <div class="hsg__thumb"><img src="/assets/homestead/m-mail.png" alt="a red mailbox — homestead pixel sprite" loading="lazy" /></div>
+            <h3>claim</h3>
+            <p>Name your plot and pitch the tent. The mailbox makes it official.</p>
+          </article>
+          <article class="hsg__card">
+            <div class="hsg__thumb"><img src="/assets/park/g-sprout2.png" alt="a sprout — pixel sprite" loading="lazy" /></div>
+            <h3>sow</h3>
+            <p>Every park harvest pockets a seed &mdash; plant them in your own beds here.</p>
+          </article>
+          <article class="hsg__card">
+            <div class="hsg__thumb"><img src="/assets/park/g-soil-wet.png" alt="watered soil — pixel sprite" loading="lazy" /></div>
+            <h3>water</h3>
+            <p>Once a day. Visiting neighbours can pour for you &mdash; it counts overnight.</p>
+          </article>
+          <article class="hsg__card">
+            <div class="hsg__thumb"><img src="/assets/homestead/campfire-lit.gif" alt="a campfire — homestead pixel sprite" loading="lazy" /></div>
+            <h3>cook</h3>
+            <p>The kitchen turns crops into coins &mdash; or dishes that boost the whole world.</p>
+          </article>
+          <article class="hsg__card">
+            <div class="hsg__thumb"><img src="/assets/homestead/d-arcade.png" alt="an arcade cabinet — homestead pixel sprite" loading="lazy" /></div>
+            <h3>decorate</h3>
+            <p>Furnish the yard, upgrade the roof. Visitors drop by and see it all.</p>
+          </article>
+        </div>
+        <p style="margin-top:1.2rem">
+          Everything syncs to <a href="/pass/">your pass</a>. Forge decor for the yard in
+          <a href="/forge/items/">the Items Workshop</a>.
+        </p>
+      </section>
+    </div>
   </div>
 
   <script>

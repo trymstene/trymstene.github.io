@@ -36,7 +36,6 @@ import { initShare } from './park-share.js';
 import { initWeather } from './park-weather.js';
 import { weatherAt } from '../lib/world.js';
 import { initTravel } from './world-travel.js';
-import { initGuide } from '../lib/field-guide.js';
 import { initSteer } from './world-steer.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
@@ -513,18 +512,6 @@ function init() {
     initTravel({ here: 'park', mount: document.querySelector('.pk-actions'),
       before: document.getElementById('pkAudio'),   // the speaker stays rightmost
       btnClass: 'pk-act pk-act--icon', track });
-    initGuide({
-      mount: document.querySelector('.pk-actions'),
-      before: document.getElementById('pkAudio'),
-      btnClass: 'pk-act pk-act--icon', area: 'park', title: 'the park', track,
-      rows: [
-        { art: '/assets/park/g-sprout2.png', verb: 'plant', line: 'tap an open bed, buy a seed' },
-        { art: '/assets/park/g-soil-wet.png', verb: 'water daily', line: 'plants grow on the days they drink' },
-        { art: '/assets/park/g-sunflower.png', verb: 'harvest', line: 'ripe pays rep + a homestead seed' },
-        { art: '/assets/park/w-weed1.png', verb: 'tidy', line: 'weeds & litter drag the health bar' },
-        { art: '/assets/park/e-egg.png', verb: 'find eggs', line: 'a thriving park can lay a golden one' },
-      ],
-    });
     const btn = document.getElementById('pkAudio');
     let on = false;
     btn.addEventListener('click', () => {
