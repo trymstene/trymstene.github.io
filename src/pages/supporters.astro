@@ -78,6 +78,10 @@ const TIERS = [
     .swt__perks { list-style: none; margin: 0 0 1.1rem; padding: 0; display: grid; gap: 0.35rem; }
     .swt__perks li { font-size: 0.86rem; line-height: 1.4; display: flex; gap: 0.5rem; }
     .swt__perks li::before { content: "▸"; color: #ffd23f; flex: 0 0 auto; }
+    .swt__idnote {
+      margin: 0 0 0.7rem; font-size: 0.76rem; line-height: 1.45; opacity: 0.8;
+      border-left: 3px solid #ffd23f; padding-left: 0.55rem;
+    }
     .sw a.swt__join {
       margin-top: auto; display: block; text-align: center; text-decoration: none;
       background: #ffd23f; color: #111; font-weight: 800; padding: 0.7rem 1rem;
@@ -177,6 +181,12 @@ const TIERS = [
               <p class="swt__price">${t.price}<small> / month</small></p>
               <p class="swt__blurb">{t.blurb}</p>
               <ul class="swt__perks">{t.perks.map((p) => <li>{p}</li>)}</ul>
+              {/* ⚠️ THE ONE THING THAT CAN GO WRONG: the hat is delivered by
+                  matching the Ko-fi payer's email to the pass's — hashed, never
+                  stored — so a different address means the grant waits and
+                  nothing on screen says so. Say it where the money is, not
+                  only in the small print at the bottom. */}
+              <p class="swt__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that's how the hat finds you.</p>
               <a class="swt__join" href={KOFI} target="_blank" rel="noopener"
                 data-tier={t.tier}>Join on Ko-fi →</a>
             </div>

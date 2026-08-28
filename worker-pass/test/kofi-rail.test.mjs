@@ -115,6 +115,17 @@ const ok = (cond, label, extra) => {
   ok(m && m.t === 'sup-t2', 'USD 10 falls back to sup-t2', m);
 }
 
+// 7b. ⚠️ tier_name ARRIVES NULL on real Ko-fi membership webhooks (their docs
+// and every field dump show it) — the amount fallback is what saves the grant
+{
+  await hook({ verification_token: KOFI, type: 'Subscription', kofi_transaction_id: 'tx-5b',
+    is_subscription_payment: true, tier_name: null, from_name: 'Nullkey',
+    amount: '15.00', currency: 'USD', is_public: true, email: 'nullkey@example.com' });
+  const members = JSON.parse(env.PASSES._m.get('kofi/members.json'));
+  const m = members[await sha('nullkey@example.com')];
+  ok(m && m.t === 'sup-t3', 'null tier_name still maps by amount (USD 15 -> gold)', m);
+}
+
 // 8. unmappable membership is banked as pending, never dropped
 {
   const r = await hook({ verification_token: KOFI, type: 'Subscription', kofi_transaction_id: 'tx-6',
