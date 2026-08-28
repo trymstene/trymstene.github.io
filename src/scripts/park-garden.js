@@ -160,14 +160,13 @@ const seedMult = (held) => 1 + (held * held) / 25;
 
 // 🌸 the bloom card IS the bar (Trym): five tappable phase segments, a
 // glyph each, wilted→lush ramp; a tap reveals that phase's line below
-const PHASE_GLYPHS = ['💀', '🍂', '🌱', '🌿', '🦋'];
 // ONE line per phase (Trym): the state + what to do about it
 const PHASE_LINES = [
-  '💀 the park is dead — pull the weeds and plant something.',
-  '🍂 wilting badly — keep pulling, keep planting.',
-  '🌾 patchy, half straw — water what grows.',
-  '🌿 nearly back — keep it watered and weeded.',
-  '🦋 the park is thriving — hold it here and an egg can come out golden.',
+  'the park is dead — pull the weeds and plant something.',
+  'wilting badly — keep pulling, keep planting.',
+  'patchy, half straw — water what grows.',
+  'nearly back — keep it watered and weeded.',
+  'thriving — hold it here and an egg can come out golden.',
 ];
 
 export function initGarden(ctx) {
@@ -1131,7 +1130,7 @@ export function initGarden(ctx) {
       f.style.clipPath = 'inset(0 ' + (100 - Math.max(0, v)) + '% 0 0)';
       gardenBody.querySelectorAll('.pk-bglyph').forEach((g, i) => g.classList.toggle('is-now', i === p));
       const num = document.getElementById('pkBnum');
-      if (num) num.textContent = bloomStatus();
+      if (num) num.textContent = Math.round(Math.max(0, v)) + '%';
     }
   }
   // ---- 🗑 GARBAGE — litter on the lawn, walked over like acorns -----------
@@ -1338,55 +1337,45 @@ export function initGarden(ctx) {
   // health and garden occupancy are different quantities that both live in
   // percent, so the one that gates the beds has to be somewhere you can see it,
   // and it has to say what would change it.
-  function gardenLine() {
-    const open = bedsOpen.size * BED_N;
-    if (!open) return '';
-    const taken = gSlots.filter((s2, k) => s2 && bedOpen(k)).length;
-    const pctFull = Math.round((taken / open) * 100);
-    const short = Math.max(0, Math.ceil(open * BED_FULL_UI) - taken);
-    const all = bedsOpen.size >= BEDS.length;
-    return '<p class="pk-gardenline"><b>🌱 the garden</b> — ' + taken + ' of ' + open
-      + ' beds planted (' + pctFull + '%)<span>'
-      + (bedPending
-        ? '🪓 fresh ground is marked out somewhere — grab the spade'
-        : all
-          ? 'every bed in the park is open'
-          : short === 0
-            ? '🪓 new ground is due — it appears on the next visit'
-            : 'plant ' + short + ' more and the gardeners break new ground')
-      + '</span></p>';
-  }
 
   // the card is mostly BAR: five phase segments, each its own fill slice,
   // the live phase ringed; tapping a segment reveals that phase's lines
-  function bloomStatus() {
-    const n = weeds.size;
-    const v = Math.max(0, bloomV);
-    const stars = gSlots.reduce((t, s) => t + ((SEED_BY[s && s.seed] || {}).stars || 0), 0);
-    return Math.round(v) + '%'
-      + (n ? ' · ' + n + ' weed' + (n === 1 ? '' : 's') + ' out there' : '')
-      + (stars ? ' · ' + starStr(Math.min(stars, 5)) + (stars > 5 ? '×' + stars : '') + ' feeding it' : '');
-  }
   // ONE continuous bar (Trym: progress first, chapters second): a single
   // fill sliding over the faint ramp, ticks at the phase borders, glyphs
   // over their zones, invisible per-phase tap zones for the line reveals.
   // The fill + status track LIVE while the card is open (refreshBloom).
   bloomBtn.addEventListener('click', () => {
     const v = Math.max(0, bloomV);
-    gardenBody.innerHTML = '<h2>🌸 park health</h2>'
+    const nWeeds = weeds.size;
+    const stars = gSlots.reduce((t, s2) => t + ((SEED_BY[s2 && s2.seed] || {}).stars || 0), 0);
+    // the bed meta, one clause: count + the crowd goal when there is one
+    const open = bedsOpen.size * BED_N;
+    const taken = gSlots.filter((s2, k) => s2 && bedOpen(k)).length;
+    const short = Math.max(0, Math.ceil(open * BED_FULL_UI) - taken);
+    const bedGoal = bedPending ? 'fresh ground is marked out — grab the spade'
+      : bedsOpen.size >= BEDS.length ? 'every bed is open'
+      : short === 0 ? 'new ground is due on the next visit'
+      : short + ' more opens new ground';
+    gardenBody.innerHTML = '<div class="whg">'
+      + '<p class="whg__label">park health</p>'
+      + '<p class="whg__num" id="pkBnum">' + Math.round(v) + '%</p>'
+      + '</div>'
       + '<div class="pk-bbar">'
-      + '<div class="pk-bglyphs">' + PHASE_GLYPHS.map((g, i) =>
-        '<span class="pk-bglyph' + (i === ctx.phase() ? ' is-now' : '') + '">' + g + '</span>').join('') + '</div>'
+      + '<div class="pk-bglyphs">' + PHASE_FACES.map((f, i) =>
+        '<span class="pk-bglyph' + (i === ctx.phase() ? ' is-now' : '') + '">' + iconSvg(f, { size: 17 }) + '</span>').join('') + '</div>'
       + '<div class="pk-btrack"><i class="pk-bramp"></i>'
       + '<i class="pk-bfill" id="pkBfill" style="clip-path:inset(0 ' + (100 - v) + '% 0 0)"></i>'
       + PHASE_STARTS.slice(1).map((t) => '<i class="pk-btick" style="left:' + t + '%"></i>').join('') + '</div>'
-      + PHASE_GLYPHS.map((g, i) =>
+      + PHASE_FACES.map((f, i) =>
         '<button class="pk-bzone" type="button" data-p="' + i + '" style="left:' + (i * 20) + '%"'
         + ' aria-label="park health phase ' + (i + 1) + ' of 5"></button>').join('')
       + '</div>'
-      + '<p class="pk-bloomnum" id="pkBnum">' + bloomStatus() + '</p>'
-      + gardenLine()
-      + '<p id="pkBexp"></p>';
+      + '<p id="pkBexp"></p>'
+      + '<p class="pk-bmeta">'
+      + (stars ? iconSvg('star', { size: 12 }) + '×' + stars + ' feeding it' : 'nothing planted yet')
+      + (nWeeds ? ' · ' + nWeeds + ' weed' + (nWeeds === 1 ? '' : 's') + ' dragging' : '')
+      + '</p>'
+      + (open ? '<p class="pk-bmeta">beds ' + taken + ' / ' + open + ' · ' + bedGoal + '</p>' : '');
     const exp = document.getElementById('pkBexp');
     const show = (i) => {
       exp.className = 'pk-bexp' + (i <= 1 ? ' pk-bexp--sad' : '');
