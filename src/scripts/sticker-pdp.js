@@ -339,7 +339,10 @@ function buildWardrobe() {
   const comm = CATALOG.filter((it) => it.kind !== 'decor')
     .sort((a, b) => (a.added || 0) - (b.added || 0)).map(commChip);
   const commIn = (want) => comm.filter((c) => want(c.anchor)).map((c) => c.chip);
-  wardrobeRow(host, 'Hat', HATS.filter(([id]) => id !== 'none').map(([id, label]) => ({
+  // 🎩 member (supporter) gear never dresses a product — not even for live
+  // members, whose HATS/GLASSES legitimately include it (sticker-core strips
+  // it from every render; hiding the chip keeps the UI honest about that)
+  wardrobeRow(host, 'Hat', HATS.filter(([id]) => id !== 'none' && !(HAT_BY_ID[id] || {}).member).map(([id, label]) => ({
     art: artOf(HAT_BY_ID[id]),
     label, locked: lockOf(HAT_BY_ID[id]),
     on: () => state.hat === id,
@@ -350,7 +353,7 @@ function buildWardrobe() {
       if (state.hat !== 'none' && state.c && anchorSlot(catAnchor(state.c)) === 'hat') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
     },
   })).concat(commIn((a) => a === 'head')));
-  wardrobeRow(host, 'Shades', GLASSES.filter(([id]) => id !== 'none').map(([id, label]) => ({
+  wardrobeRow(host, 'Shades', GLASSES.filter(([id]) => id !== 'none' && !(SHADE_BY_ID[id] || {}).member).map(([id, label]) => ({
     art: artOf(SHADE_BY_ID[id]),
     label, locked: lockOf(SHADE_BY_ID[id]),
     on: () => state.glasses === id,
@@ -358,7 +361,7 @@ function buildWardrobe() {
   })));
   // artOf() in the filter drops anything with no drawable chip — a tray of
   // blank "none" boxes is worse than a shorter tray
-  const extras = EXTRA_DEFS.filter((d) => !d.raveOnly && ownsWearable(d) && artOf(d));
+  const extras = EXTRA_DEFS.filter((d) => !d.raveOnly && !d.member && ownsWearable(d) && artOf(d));
   const extraChips = extras.map((d) => ({
     art: artOf(d), label: d.label, locked: lockOf(d),
     on: () => !!state.extras[d.id],

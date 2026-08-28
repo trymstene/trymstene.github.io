@@ -1450,6 +1450,12 @@ const description = 'Authorized banana personnel only.';
         go.onclick = async () => {
           const v = inp.value.trim();
           if (!v) return;
+          // supporter (member:) gear rides the live BMAC grant, never an own_
+          // stat — a granted stat would be permanent (max-merge) and meaningless
+          if (act === 'gear' && /^tophat(bronze|silver|gold)$/.test(v)) {
+            said.textContent = '🎩 supporter hats come from a live membership, not a grant — nothing sent';
+            return;
+          }
           go.disabled = true;
           said.textContent = 'Sending…';
           try {

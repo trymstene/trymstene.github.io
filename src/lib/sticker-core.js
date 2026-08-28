@@ -3,9 +3,15 @@
 // pipeline lives in ONE place. Config drift here = a broken sale, so both pages
 // import these — never re-declare them. Framework-free; imports the engine.
 import {
-  GLASSES, HAT_BY_ID, EXTRA_DEFS, EFFECTS, NFRAMES,
+  GLASSES, HAT_BY_ID, SHADE_BY_ID, EXTRA_DEFS, EFFECTS, NFRAMES,
   drawComposite as engineDraw,
 } from './banana-engine.js';
+
+// 🎩 supporter (member:) gear NEVER lands on a custom product — not via a
+// crafted ?h= link, not via a live member's own bb-last-seeded order. A mug
+// outlives a subscription; nothing permanent may carry a revocable hat.
+const EXTRA_BY_ID = Object.fromEntries(EXTRA_DEFS.map((d) => [d.id, d]));
+const notMember = (def) => !(def && def.member);
 import PRODUCTS from '../../shared/products.js';
 
 // Shared store wiring — the SAME store + worker fulfil every custom product;
@@ -43,9 +49,9 @@ export function parseDesign(p) {
   const state = { bg: 'transparent', top: '', bottom: '', glasses: 'none', hat: 'none', extras: {}, effect: 'none', frame: 2 };
   if (p.get('bg')) state.bg = p.get('bg');
   state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
-  const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
-  const h = p.get('h'); state.hat = HAT_BY_ID[h] ? h : 'none';
-  (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id)) state.extras[id] = true; });
+  const g = p.get('g'); state.glasses = (GLASSES.some(([v]) => v === g) && notMember(SHADE_BY_ID[g])) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
+  const h = p.get('h'); state.hat = (HAT_BY_ID[h] && notMember(HAT_BY_ID[h])) ? h : 'none';
+  (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id && !d.member)) state.extras[id] = true; });
   if (p.get('mu') === '1') state.extras.mustache = true; // legacy params
   if (p.get('bt') === '1') state.extras.bowtie = true;
   const e = p.get('e') || p.get('m'); // old m=disco links still work
@@ -70,10 +76,17 @@ export function designStr(state) {
   return [state.hat, state.glasses, ex, state.effect, state.bg].join('|');
 }
 
-// draw this state's outfit'd banana (the engine takes explicit outfit args)
+// draw this state's outfit'd banana (the engine takes explicit outfit args).
+// Belt to parseDesign's braces: the builder hands bb-last-seeded state straight
+// to renderPrintFile, so member gear is stripped HERE too — every print file,
+// mockup and pose thumbnail draws through this one function.
 export function composite(ctx, W, idx, state, o = {}) {
+  const extras = {};
+  for (const k in state.extras) { if (state.extras[k] && notMember(EXTRA_BY_ID[k])) extras[k] = true; }
   return engineDraw(ctx, W, idx, {
-    hat: state.hat, glasses: state.glasses, extras: state.extras,
+    hat: notMember(HAT_BY_ID[state.hat]) ? state.hat : 'none',
+    glasses: notMember(SHADE_BY_ID[state.glasses]) ? state.glasses : 'none',
+    extras,
     top: state.top, bottom: state.bottom,
     // 🎁 the ONE community-item slot. `state.c` is just an id; the CALLER
     // resolves it to a wear payload on `state.custom` (it needs the catalog,

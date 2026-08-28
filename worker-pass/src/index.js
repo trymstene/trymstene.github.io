@@ -234,7 +234,30 @@ function mergeBlob(oldB, newB) {
   if (nNAt > oNAt) { out.name = newB.name || ''; out.nameAt = nNAt; }
   else if (oNAt > nNAt) { out.name = oldB.name || ''; out.nameAt = oNAt; }
   else if (!newB.name && oldB.name) out.name = oldB.name;
+  // 🎩 the membership grant is person-scoped and merges by max(until), rank
+  // breaking the tie (a prorated tier upgrade keeps the renewal date) — a
+  // stale device can never regress it, and revocation happens by TIME (the
+  // grant stops renewing), so there is no delete to merge (mirror of
+  // banana-pass.js applyBlob; change both or neither). cleanMember clamps
+  // client-authored shapes: bad tier / non-finite / far-future `until` would
+  // otherwise poison the durable copy so a REAL grant could never win again;
+  // cleaning oldB too makes a previously-poisoned record self-heal.
+  const oM = cleanMember(oldB.member), nM = cleanMember(newB.member);
+  if (oldB.member !== undefined || newB.member !== undefined) {
+    const oU = (oM || {}).until || 0, nU = (nM || {}).until || 0;
+    out.member = nU > oU ? nM : oU > nU ? oM
+      : (MEMBER_RANK[(nM || {}).t] || 0) >= (MEMBER_RANK[(oM || {}).t] || 0) ? nM : oM;
+  }
   return out;
+}
+
+const MEMBER_RANK = { 'bmac-t1': 1, 'bmac-t2': 2, 'bmac-t3': 3 };
+function cleanMember(m) {
+  if (!m || typeof m !== 'object') return null;
+  if (!Object.prototype.hasOwnProperty.call(MEMBER_RANK, m.t)) return null;
+  const u = +m.until;
+  if (!Number.isFinite(u) || u <= 0) return null;
+  return { t: m.t, until: Math.min(u, Date.now() + 400 * 86400 * 1000) };
 }
 
 // ⭐ THE KEY SPACE IS SHARED. A passkey's key is the hash of its credential id;

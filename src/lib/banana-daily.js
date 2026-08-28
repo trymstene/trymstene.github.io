@@ -23,7 +23,10 @@ function packActive(pack, date) {
 function pools(date) {
   const active = Object.values(WEARABLE_PACKS).filter((p) => packActive(p, date));
   const pair = (x) => [x.id, x.phrase];
-  const live = (x) => !x.preview; // preview-flagged candidates never go public
+  // preview-flagged candidates never go public; member (supporter) gear is
+  // UNCONDITIONALLY excluded — this pool is a deterministic shared contract
+  // (server build + every client), a viewer-dependent pool would desync it
+  const live = (x) => !x.preview && !x.member;
   // the daily banana wears only freely-available items — never earned/dropped
   // souvenirs (glowstick, DJ headphones…), in ANY slot. Extras already gate on
   // !earned below; hats + shades now do too (an earned hat would otherwise leak

@@ -100,6 +100,7 @@ export function collectBlob() {
     glow: g('rv-glowstick') === '1' ? '1' : '',
     name: nameNow, nameAt: stampClock('ps-name-seen', 'ps-name-at', nameNow),
     bbAt: stampClock('bb-seen', 'bb-at', bbNow),
+    member: readMemberGrant(),            // 🎩 person-scoped, max(until)-merged
   };
 }
 
@@ -234,6 +235,21 @@ export function applyBlob(blob) {
     localStorage.setItem('shelf-del-v1', JSON.stringify(Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200))));
     // ⏱ newest edit wins, both directions — "only if we have none" left two
     // devices permanently disagreeing and made a cleared name immortal
+    // 🎩 the person-scoped membership grant arrives with the blob — merge it
+    // BEFORE the outfit lands, so a freshly-linked device of a live member
+    // never mistakes the incoming hat for unlicensed gear
+    try {
+      const bm = blob.member;
+      const cur = readMemberGrant();
+      // adopt on a longer grant, OR a higher tier at the same until (a
+      // prorated upgrade keeps the renewal date — rank must break the tie
+      // both here and in worker-pass mergeBlob, or it can never propagate)
+      if (bm && memberRankOf(bm.t) && Number.isFinite(+bm.until)
+        && (+bm.until > ((cur || {}).until || 0)
+          || (+bm.until === (cur || {}).until && memberRankOf(bm.t) > memberRankOf(cur.t)))) {
+        localStorage.setItem('bb-member', JSON.stringify({ t: bm.t, until: +bm.until }));
+      }
+    } catch (e) {}
     const localBbAt = +(localStorage.getItem('bb-at') || 0) || 0;
     if (blob.bbLast && +(blob.bbAt || 0) > localBbAt) {
       const bb = JSON.stringify(blob.bbLast);
@@ -243,6 +259,7 @@ export function applyBlob(blob) {
     } else if (!local.bbLast && blob.bbLast) {
       localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
     }
+    sweepMemberGear();
     if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
     const localNameAt = +(localStorage.getItem('ps-name-at') || 0) || 0;
     if (blob.name !== undefined && +(blob.nameAt || 0) > localNameAt) {
@@ -291,6 +308,51 @@ export function passPatch(id, opts = {}) {
   // pop the nav's badge-notification dot live (rendered by main.js)
   try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
   return true;
+}
+
+// 🎩 mirrored from src/data/wearables.js (member gear + grant check) — same
+// budget seam as lvlOf below. Change both or neither.
+// THE GRANT IS PERSON-SCOPED: 'bb-member' = {t, until-ms} rides the sync blob
+// merged by max(until) — every device of the member agrees, and REVOCATION
+// HAPPENS BY TIME (the grant just stops renewing), never by a negative delta
+// or a removal. A device-local grant was the first design and it corrupted
+// shared state: a grant-less linked device stripped the incoming outfit and
+// re-exported it at the donor's clock, erasing a paying member's hat
+// server-side (the pass-ledger max-merge lesson, again).
+const MEMBER_TIER = { tophatbronze: 'bmac-t1', tophatsilver: 'bmac-t2', tophatgold: 'bmac-t3' };
+const MEMBER_RANK = { 'bmac-t1': 1, 'bmac-t2': 2, 'bmac-t3': 3 };
+const MEMBER_GRACE = 72 * 3600 * 1000; // renewal lag must never strip a payer
+const memberRankOf = (t) => (Object.prototype.hasOwnProperty.call(MEMBER_RANK, t) ? MEMBER_RANK[t] : 0);
+function readMemberGrant() {
+  try {
+    const g = JSON.parse(localStorage.getItem('bb-member') || 'null');
+    return (g && memberRankOf(g.t) && Number.isFinite(+g.until)) ? { t: g.t, until: +g.until } : null;
+  } catch (e) { return null; }
+}
+function memberGearOk(id) {
+  const need = MEMBER_TIER[id];
+  if (!need) return true;
+  const g = readMemberGrant();
+  return !!(g && memberRankOf(g.t) >= MEMBER_RANK[need] && g.until + MEMBER_GRACE > Date.now());
+}
+// The ONE place a revoked hat comes off: rewrite the LOCAL bb-last (only when
+// something actually fails the grant) and leave bb-seen alone — the next
+// collectBlob then stamps a fresh clock, so the strip is an authored outfit
+// change that propagates and WINS on every device. Never strip an INCOMING
+// blob in place: persisting a strip at the donor's clock ties with the wearer's
+// pushes and the server value flip-flops forever. Shelf thumbnails keep their
+// snapshot (like a photo) — wearing and product doors are gated, display isn't.
+function sweepMemberGear() {
+  try {
+    const o = JSON.parse(localStorage.getItem('bb-last') || 'null');
+    if (!o || typeof o !== 'object') return;
+    let dirty = false;
+    const out = { ...o, extras: o.extras ? { ...o.extras } : o.extras };
+    if (out.hat && !memberGearOk(out.hat)) { out.hat = 'none'; dirty = true; }
+    if (out.glasses && !memberGearOk(out.glasses)) { out.glasses = 'none'; dirty = true; }
+    if (out.extras) for (const k in out.extras) { if (!memberGearOk(k)) { delete out.extras[k]; dirty = true; } }
+    if (dirty) localStorage.setItem('bb-last', JSON.stringify(out));
+  } catch (e) {}
 }
 
 // ⚠️ mirrored from pass-defs.js (levelStep/levelFor). Importing that module
@@ -726,3 +788,8 @@ export function passToast(html, ms = 7000) {
   clearTimeout(toastT);
   toastT = setTimeout(() => t.classList.remove('pass-toast--show'), ms);
 }
+
+// 🎩 revocation-by-time needs a broom: any page that loads the pass layer
+// (nearly all of them) sweeps an expired member hat out of the saved outfit
+// before the world draws it. Self-catching, no-op while the grant is live.
+sweepMemberGear();

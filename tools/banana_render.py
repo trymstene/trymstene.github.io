@@ -77,6 +77,12 @@ ITEMS = {d['id']: d for d in json.loads(subprocess.run(
     capture_output=True, text=True, check=True).stdout)}
 assert 'fishbowl' in ITEMS and 'boombox' in ITEMS, 'manifest import drifted'
 
+# member: (supporter) gear never reaches print output — this IS the compositor
+# Printful's files come from, and nothing permanent may carry a revocable hat.
+# BANANA_RENDER_MEMBER=1 lifts the gate for art review renders only.
+if not os.environ.get('BANANA_RENDER_MEMBER'):
+    ITEMS = {k: v for k, v in ITEMS.items() if 'member' not in v}
+
 HATS = {k: v for k, v in ITEMS.items() if 'seat' in v}
 SHADES = {k: v for k, v in ITEMS.items() if 'front' in v and 'anchor' not in v}
 EXTRAS = {k: v for k, v in ITEMS.items() if 'anchor' in v}

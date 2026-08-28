@@ -36,6 +36,12 @@ export const WEARABLE_PACKS = {
       { id: 'party',  label: 'Party',   phrase: 'a party hat',  art: 'party',  seat: -1 },
       { id: 'crown',  label: 'Crown',   phrase: 'a crown',      art: 'crown',  seat: -1 },
       { id: 'tophat', label: 'Top hat', phrase: 'a top hat',    art: 'tophat', seat: 0  },
+      // 🎩 SUPPORTER TOP HATS — BMAC membership tiers. member: gear is GRANTED
+      // AND REVOKED by live subscription state — never 'earned', never for
+      // sale, hidden from non-members; the entitlement logic owns these.
+      { id: 'tophatbronze', label: 'Bronze Top Hat', phrase: 'a bronze top hat', art: 'tophatbronze', seat: 0, member: 'bmac-t1', lock: 'a supporter hat — active membership only' },
+      { id: 'tophatsilver', label: 'Silver Top Hat', phrase: 'a silver top hat', art: 'tophatsilver', seat: 0, member: 'bmac-t2', lock: 'a supporter hat — active membership only' },
+      { id: 'tophatgold',   label: 'Gold Top Hat',   phrase: 'the gold top hat', art: 'tophatgold',   seat: 0, member: 'bmac-t3', lock: 'a supporter hat — active membership only' },
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },
       { id: 'viking', label: 'Viking', phrase: 'a viking helmet', art: 'viking', seat: -1 },
       { id: 'sombrero', label: 'Sombrero', phrase: 'a big sombrero', art: 'sombrero', seat: -1 },
@@ -225,7 +231,7 @@ export const WEARABLE_PACKS = {
 // deriving it here means the worker can never silently drift from the engine.
 export const CLIENT_EXTRA_IDS = Object.values(WEARABLE_PACKS)
   .flatMap((p) => p.extras || [])
-  .filter((e) => !e.raveOnly)
+  .filter((e) => !e.raveOnly && !e.member)
   .map((e) => e.id);
 
 // 🏪 STAND OWNERSHIP — a purchase writes the pass stat `own_<id>` (monotonic,
@@ -241,12 +247,39 @@ export const CLIENT_EXTRA_IDS = Object.values(WEARABLE_PACKS)
 // An item with a real `earned:` gate must NOT have `preview: true` — the gate
 // is what hides it, and it hides it in a way that shows the DOOR.
 export function ownsWearable(d) {
+  if (d.member && !memberUnlocked(d)) return false;
   if (!d.preview) return true;
   if (d.preview !== 'stand') return false;
   try {
     const stats = (JSON.parse(localStorage.getItem('pass-v1') || '{}').stats) || {};
     return (stats['own_' + d.id] || 0) > 0;
   } catch (e) { return false; }
+}
+
+// 💛 MEMBERSHIP GEAR — defs carrying `member: 'bmac-t1'|'t2'|'t3'` are supporter
+// gear, GRANTED AND REVOKED by live subscription state. The grant is a
+// short-lived local entitlement written by the pass layer ('bb-member' =
+// {t, until-ms}); no grant, an expired one, or SSR = not yours. Higher tiers
+// include the lower hats. Unlike `earned:` (forever) and `preview:` (never),
+// member gear comes AND goes — ⚠️ member: must never coexist with preview:,
+// price:, drop: or earned: on one def (checked below in dev).
+// banana-pass.js mirrors the id→tier table (import-light; change BOTH).
+const MEMBER_RANK = { 'bmac-t1': 1, 'bmac-t2': 2, 'bmac-t3': 3 };
+// ⏳ 72h of grace past `until`: renewal webhooks + the 10-min pull throttle
+// must never strip a PAYING member at a billing boundary — a canceled one
+// keeps the hat three days longer, which is a soft landing, not a leak
+export const MEMBER_GRACE = 72 * 3600 * 1000;
+export function memberGrant() {
+  try {
+    const g = JSON.parse(localStorage.getItem('bb-member') || 'null');
+    return (g && Object.prototype.hasOwnProperty.call(MEMBER_RANK, g.t)
+      && +g.until + MEMBER_GRACE > Date.now()) ? g.t : null;
+  } catch (e) { return null; }
+}
+export function memberUnlocked(d) {
+  if (!d.member) return true;
+  const t = memberGrant();
+  return !!t && MEMBER_RANK[t] >= (MEMBER_RANK[d.member] || 9);
 }
 
 // Drop catches sync the same way: catching (or back-catalog-buying) writes
@@ -267,7 +300,15 @@ export function ownsDropStat(id) {
 // new drop never needs three edits. A dropped item is also `earned:'rave'`, so
 // it's already excluded from the default builder/daily and shown locked.
 export const DROPS = Object.values(WEARABLE_PACKS).flatMap((p) => [
-  ...(p.hats || []).filter((d) => d.drop).map((d) => ({ id: d.id, slot: 'hat', art: d.art, flag: d.flag, by: d.by, label: d.label })),
-  ...(p.shades || []).filter((d) => d.drop).map((d) => ({ id: d.id, slot: 'glasses', art: d.front, flag: d.flag, by: d.by, label: d.label })),
-  ...(p.extras || []).filter((d) => d.drop).map((d) => ({ id: d.id, slot: 'extra', art: d.art || d.front, flag: d.flag, by: d.by, label: d.label })),
+  ...(p.hats || []).filter((d) => d.drop && !d.member).map((d) => ({ id: d.id, slot: 'hat', art: d.art, flag: d.flag, by: d.by, label: d.label })),
+  ...(p.shades || []).filter((d) => d.drop && !d.member).map((d) => ({ id: d.id, slot: 'glasses', art: d.front, flag: d.flag, by: d.by, label: d.label })),
+  ...(p.extras || []).filter((d) => d.drop && !d.member).map((d) => ({ id: d.id, slot: 'extra', art: d.art || d.front, flag: d.flag, by: d.by, label: d.label })),
 ]);
+
+// dev-only lifecycle guard: revocable member gear must never carry a forever
+// lifecycle (earned/drop) or a shop one (price/preview) — they cannot mix
+if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+  Object.values(WEARABLE_PACKS).flatMap((p) => [...(p.hats || []), ...(p.shades || []), ...(p.extras || [])])
+    .filter((d) => d.member && (d.preview || d.price || d.drop || d.earned))
+    .forEach((d) => console.warn('⚠️ wearables: member item "' + d.id + '" carries a conflicting lifecycle flag'));
+}

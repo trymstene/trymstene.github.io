@@ -6,7 +6,7 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { wardChip, chipArt, trayify, revealWorn, attachTips } from '../lib/wardrobe-ui.js';
-import { ownsWearable, ownsDropStat } from '../data/wearables.js';
+import { ownsWearable, ownsDropStat, memberUnlocked } from '../data/wearables.js';
 import { shelfAdd } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
 import {
@@ -148,6 +148,9 @@ function init() {
   // Generic on purpose: a SECOND earned:'rave' item (the DJ-headphones drop)
   // must read ITS flag, not the glowstick's. Defined before iconChips runs.
   const earnedUnlocked = (d) => {
+    // 🎩 supporter gear rides the LIVE grant, not an earned proof — a lapsed
+    // membership must fail here so bb-last / ?wear= can't re-dress the hat
+    if (d.member && !memberUnlocked(d)) return false;
     if (!d.earned) return true;
     try {
       // a pass STAT gate (the pier plush: prize_plush, written by the grabber)
@@ -691,8 +694,10 @@ function init() {
     state.bg = pick(BGS); state.top = q[0]; state.bottom = q[1];
     // surprise-me never rolls a LOCKED drop (an unearned earned:'rave' hat/shade
     // like the DJ headphones) — you can only wear what you've caught
-    const hatOK = HATS.filter(([id]) => id === 'none' || !HAT_BY_ID[id] || earnedUnlocked(HAT_BY_ID[id]));
-    const shadeOK = GLASSES.filter(([id]) => id === 'none' || !SHADE_BY_ID[id] || earnedUnlocked(SHADE_BY_ID[id]));
+    // …and never rolls member (supporter) gear either — even for a live member
+    // the hat is a deliberate wear, not a dice outcome
+    const hatOK = HATS.filter(([id]) => id === 'none' || !HAT_BY_ID[id] || (!HAT_BY_ID[id].member && earnedUnlocked(HAT_BY_ID[id])));
+    const shadeOK = GLASSES.filter(([id]) => id === 'none' || !SHADE_BY_ID[id] || (!SHADE_BY_ID[id].member && earnedUnlocked(SHADE_BY_ID[id])));
     state.glasses = pick(shadeOK)[0]; state.hat = pick(hatOK)[0];
     // non-feet extras roll independently; feet are EXCLUSIVE (same rule
     // setFeet enforces) — at most one pair, so the chips can't show four
@@ -702,19 +707,19 @@ function init() {
     const handDefs = EXTRA_DEFS.filter((d) => d.anchor === 'hand');
     const handIds = handDefs.map((d) => d.id);
     EXTRA_DEFS.forEach((d) => {
-      state.extras[d.id] = !d.raveOnly && ownsWearable(d) && !feetIds.includes(d.id) && !bodyIds.includes(d.id)
+      state.extras[d.id] = !d.raveOnly && !d.member && ownsWearable(d) && !feetIds.includes(d.id) && !bodyIds.includes(d.id)
         && !handIds.includes(d.id) && earnedUnlocked(d) && Math.random() < 0.3;
     });
-    const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && earnedUnlocked(d));
+    const shoeable = FEET_DEFS.filter((d) => !d.raveOnly && !d.member && earnedUnlocked(d));
     if (shoeable.length && Math.random() < 0.45) state.extras[pick(shoeable).id] = true;
     // neckwear is EXCLUSIVE too (bow tie OR chain OR tie OR scarf, never a pile)
-    const bodyable = BODY_DEFS.filter((d) => earnedUnlocked(d));
+    const bodyable = BODY_DEFS.filter((d) => !d.member && earnedUnlocked(d));
     if (bodyable.length && Math.random() < 0.4) state.extras[pick(bodyable).id] = true;
     // held items are exclusive PER GLOVE (Trym's catch: the independent roll
     // could double-fist one hand) — at most one item per glove; a left+right
     // pair (trophy + balloons) is legit, two mugs in one glove is not
     for (const glove of ['left', 'right']) {
-      const holdable = handDefs.filter((d) => d.hand === glove && !d.raveOnly && ownsWearable(d) && earnedUnlocked(d));
+      const holdable = handDefs.filter((d) => d.hand === glove && !d.raveOnly && !d.member && ownsWearable(d) && earnedUnlocked(d));
       if (holdable.length && Math.random() < 0.35) state.extras[pick(holdable).id] = true;
     }
     state.effect = pick(['none','none','disco','sparkle','confetti']);
@@ -976,9 +981,13 @@ function init() {
     state.top = p.get('t') || ''; state.bottom = p.get('b') || '';
     if (hasOutfitParams) { // URL outfits win; a paramless open keeps the bb-last seed above
       const g = p.get('g'); state.glasses = GLASSES.some(([v]) => v === g) ? g : (g ? 'shades' : 'none'); // old classic/cool links → shades
-      const h = p.get('h'); state.hat = HAT_BY_ID[h] ? h : 'none';
+      // share links keep their fidelity for normal gear (an uncaught drop still
+      // shows) — but member (supporter) gear needs the viewer's OWN live grant:
+      // ?h=tophatgold must not dress, export or hand a stranger the gold hat
+      const h = p.get('h'); const hd = HAT_BY_ID[h];
+      state.hat = (hd && (!hd.member || memberUnlocked(hd))) ? h : 'none';
       state.extras = {};
-      (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id)) state.extras[id] = true; });
+      (p.get('ex') || '').split('.').forEach((id) => { if (EXTRA_DEFS.some((d) => d.id === id && (!d.member || memberUnlocked(d)))) state.extras[id] = true; });
       if (p.get('mu') === '1') state.extras.mustache = true; // legacy params
       if (p.get('bt') === '1') state.extras.bowtie = true;
       const e = p.get('e') || p.get('m'); // old m=disco links still work

@@ -74,6 +74,7 @@ const WORLD_KEYS = [
   'ps-name-at', 'ps-name-seen', 'bb-at', 'bb-seen',      // …and the name/outfit change-clocks that rank it
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
+  'bb-member',                                           // the supporter-membership grant (revocable, per person)
   GID_KEY, PULL_KEY,
 ];
 function wipeWorld() {

@@ -14,11 +14,15 @@ import { WEARABLE_PACKS } from '../src/data/wearables.js';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const packs = Object.values(WEARABLE_PACKS);
 
-const hats = ['none', ...packs.flatMap((p) => p.hats || []).map((d) => d.id)];
-const shades = ['none', ...packs.flatMap((p) => p.shades || []).map((d) => d.id)];
+// member: (supporter) gear is excluded like raveOnly — revocable gear must
+// never enter the client-claimable allowlists, or any raver could broadcast
+// it. When server-side grant verification lands, member ids get admitted
+// per-connection (the beer pattern), not here.
+const hats = ['none', ...packs.flatMap((p) => p.hats || []).filter((d) => !d.member).map((d) => d.id)];
+const shades = ['none', ...packs.flatMap((p) => p.shades || []).filter((d) => !d.member).map((d) => d.id)];
 // raveOnly items (beer/cone/vinyl/broom) are server-granted — excluded so
 // sanitize strips them from client outfits
-const extras = packs.flatMap((p) => p.extras || []).filter((d) => !d.raveOnly).map((d) => d.id);
+const extras = packs.flatMap((p) => p.extras || []).filter((d) => !d.raveOnly && !d.member).map((d) => d.id);
 const drops = packs.flatMap((p) => [...(p.hats || []), ...(p.shades || []), ...(p.extras || [])])
   .filter((d) => d.drop).map((d) => d.id);
 
