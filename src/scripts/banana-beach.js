@@ -28,6 +28,7 @@ import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
 import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
 import { initTravel } from './world-travel.js';
+import { initGuide } from '../lib/field-guide.js';
 import { initSteer } from './world-steer.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -2191,6 +2192,18 @@ function init() {
     initTravel({ here: 'beach', mount: document.querySelector('.bh-actions'),
       before: document.getElementById('bhAudio'),   // the speaker stays rightmost
       btnClass: 'bh-act bh-act--icon', track });
+    initGuide({
+      mount: document.querySelector('.bh-actions'),
+      before: document.getElementById('bhAudio'),
+      btnClass: 'bh-act bh-act--icon', area: 'beach', title: 'banana bay', track,
+      rows: [
+        { art: '/assets/beach/fish.png', fw: 16, fh: 16, verb: 'fish', line: 'cast off the pier, reel on the bite' },
+        { art: '/assets/beach/dig-patch.png', verb: 'dig', line: 'sandy patches hide buried finds' },
+        { art: '/assets/beach/shells.png', fw: 16, fh: 16, verb: 'shells', line: 'the tide leaves them — collect the set' },
+        { art: '/assets/beach/volleyball.png', fw: 28, fh: 28, verb: 'rally', line: 'keep the ball up with whoever is here' },
+        { art: '/assets/beach/pier.png', verb: 'the grabber', line: 'the pier machine — coins in, prize out' },
+      ],
+    });
     const btn = document.getElementById('bhAudio');
     let on = false;
     btn.addEventListener('click', () => {
