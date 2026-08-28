@@ -179,7 +179,7 @@ function init() {
         a.className = 'bb-chip bb-chip--icon bb-chip--locked';
         a.href = door.href; a.dataset.place = 'builder-locked';
         a.innerHTML = artFor(val) || label;
-        a.title = (def.label || label) + ' — ' + (def.lock || 'earned at ' + door.at);
+        a.dataset.tip = (def.label || label) + ' — ' + (def.lock || 'earned at ' + door.at);
         a.setAttribute('aria-label', (def.label || label) + ' (locked — earn it at ' + door.at + ')');
         el(host).appendChild(a);
         return;
@@ -188,7 +188,7 @@ function init() {
       b.className = 'bb-chip bb-chip--icon';
       b.innerHTML = artFor(val);
       b.dataset.val = val;
-      b.title = label;
+      b.dataset.tip = label;
       b.setAttribute('aria-label', label);
       b.onclick = () => {
         state[key] = (state[key] === val ? 'none' : val);
@@ -238,7 +238,7 @@ function init() {
       a.className = 'bb-chip bb-chip--icon bb-chip--locked';
       a.href = dr.href; a.dataset.place = 'builder-locked';
       a.innerHTML = chipArt(art) || d.label;
-      a.title = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
+      a.dataset.tip = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
       a.setAttribute('aria-label', d.label + ' (locked — earn it at ' + dr.at + ')');
       el('bbExtrasChips').appendChild(a);
       return;
@@ -247,7 +247,7 @@ function init() {
     b.className = 'bb-chip bb-chip--icon';
     b.innerHTML = chipArt(art) || d.label;
     b.dataset.val = d.id;
-    b.title = d.label;
+    b.dataset.tip = d.label;
     b.setAttribute('aria-label', d.label);
     b.onclick = d.anchor === 'hand'
       ? () => toggleHand(d)
@@ -268,7 +268,7 @@ function init() {
       b.className = 'bb-chip bb-chip--icon';
       b.innerHTML = SVG[d.art];
       b.dataset.feet = d.id;
-      b.title = d.label; b.setAttribute('aria-label', d.label);
+      b.dataset.tip = d.label; b.setAttribute('aria-label', d.label);
       b.onclick = () => setFeet(state.extras[d.id] ? null : d.id); // click the active pair = take them off
       el('bbFeetChips').appendChild(b);
     });
@@ -289,7 +289,7 @@ function init() {
         a.className = 'bb-chip bb-chip--icon bb-chip--locked';
         a.href = dr.href; a.dataset.place = 'builder-locked';
         a.innerHTML = SVG[d.front || d.art] || d.label;
-        a.title = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
+        a.dataset.tip = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
         a.setAttribute('aria-label', d.label + ' (locked — earn it at ' + dr.at + ')');
         el('bbBodyChips').appendChild(a);
         return;
@@ -298,7 +298,7 @@ function init() {
       b.className = 'bb-chip bb-chip--icon';
       b.innerHTML = SVG[d.front || d.art];
       b.dataset.body = d.id;
-      b.title = d.label; b.setAttribute('aria-label', d.label);
+      b.dataset.tip = d.label; b.setAttribute('aria-label', d.label);
       b.onclick = () => setBody(state.extras[d.id] ? null : d.id); // click the worn one = take it off
       el('bbBodyChips').appendChild(b);
     });
@@ -358,6 +358,47 @@ function init() {
     sync();
   }
   ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
+  // 🏷 THE BANANA TOOLTIP — the OS title bubble looked stock (Trym, 28 Aug),
+  // so chips carry data-tip and ONE themed bubble follows the pointer instead.
+  // Hover/keyboard only ([[tappable-info-doctrine]]: touch never had tooltips —
+  // on mobile the info lives in visible selection + the community card).
+  const tipEl = document.createElement('div');
+  tipEl.className = 'bb-tip';
+  tipEl.hidden = true;
+  document.body.appendChild(tipEl);
+  let tipT = 0;
+  const tipHide = () => { clearTimeout(tipT); tipT = 0; tipEl.hidden = true; };
+  const tipShowFor = (chip) => {
+    const text = chip.dataset.tip || chip.getAttribute('aria-label');
+    if (!text) return;
+    tipEl.textContent = text;
+    tipEl.hidden = false;
+    tipEl.style.left = '0px'; tipEl.style.top = '0px';   // reset before measuring
+    const r = chip.getBoundingClientRect(), tr = tipEl.getBoundingClientRect();
+    const x = Math.max(6, Math.min(innerWidth - tr.width - 6, r.left + r.width / 2 - tr.width / 2));
+    let y = r.top - tr.height - 12;
+    const below = y < 4;
+    if (below) y = r.bottom + 12;
+    tipEl.classList.toggle('bb-tip--below', below);
+    tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+  };
+  if (matchMedia('(hover: hover)').matches) {
+    document.addEventListener('mouseover', (e) => {
+      const chip = e.target.closest && e.target.closest('.bb-chip');
+      if (!chip) { tipHide(); return; }
+      clearTimeout(tipT);
+      tipT = setTimeout(() => tipShowFor(chip), 160);
+    });
+    document.addEventListener('mouseout', (e) => {
+      if (e.target.closest && e.target.closest('.bb-chip')) tipHide();
+    });
+  }
+  document.addEventListener('focusin', (e) => {
+    const chip = e.target.closest && e.target.closest('.bb-chip');
+    if (chip) tipShowFor(chip); else tipHide();
+  });
+  document.addEventListener('click', tipHide, true);
+  addEventListener('scroll', tipHide, { passive: true, capture: true });
   // 👁 on load every band scrolls its WORN item into view — a loaded outfit
   // is visible per row, so taking something off never starts with a hunt.
   // (Runs after aria-pressed is synced: at boot, and again when the catalog
@@ -556,7 +597,7 @@ function init() {
       p.innerHTML = src.innerHTML;
       p.style.cssText = src.style.cssText; // swatches carry their colour inline
       if (src.dataset.bg) p.dataset.bg = src.dataset.bg; // refreshUI paints .bb-swatch by data-bg
-      p.title = src.title || src.textContent;
+      if (src.dataset.tip) p.dataset.tip = src.dataset.tip;
       p.setAttribute('aria-label', src.getAttribute('aria-label') || src.textContent);
       g.appendChild(p);
     });
