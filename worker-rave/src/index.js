@@ -1697,7 +1697,15 @@ export class ParkRoom {
       // {err} blanked the beds on screen until the next poll.
       if (!isMine(s)) return json(payload({ err: 'not yours' }), 403);
       if (!isReady(s)) return json(payload({ err: 'still growing' }), 409);
-      slots[i] = null;
+      // 🍓 a REGROWER survives its pick: the bush drops back a stage and
+      // fruits again — `regrow` picks in all, then the slot frees. readyAt
+      // resets so RIPE_TTL counts from the NEXT ripening, not the first.
+      const hsd = gardenSeed(s.seed);
+      if (hsd.regrow && (s.picks || 0) + 1 < hsd.regrow) {
+        s.picks = (s.picks || 0) + 1;
+        s.grew = Math.max(0, hsd.days - 1);
+        s.readyAt = 0;
+      } else slots[i] = null;
     } else {
       return json({ err: 'not found' }, 404);
     }
@@ -2005,6 +2013,10 @@ const GARDEN_SEEDS = {
   tomato: { days: 4, stars: 3, price: 90 },
   pumpkin: { days: 5, stars: 4, price: 160 },
   wheat: { days: 6, stars: 5, price: 300 },
+  carrot: { days: 3, stars: 2, price: 20 },
+  strawberry: { days: 3, stars: 2, price: 30, regrow: 3 },   // 🍓 fruits 3× per plant
+  corn: { days: 5, stars: 4, price: 140 },
+  watermelon: { days: 7, stars: 5, price: 320 },
 };
 const gardenSeed = (id) => GARDEN_SEEDS[id] || { days: 99, stars: 1 };
 // 64 slots: 0-7 = site A by the meadow, 8-15 = W3's site B by the playground,

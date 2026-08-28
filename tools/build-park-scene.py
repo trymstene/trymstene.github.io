@@ -1198,7 +1198,12 @@ if os.path.isdir(FARM):
     import glob as _glob
     for cid, cropsheet in (('tomato', 'Tomato_Growth_Stages_48x48.png'),
                            ('pumpkin', 'Pumpkin_Growth_Stages_48x48.png'),
-                           ('wheat', 'Wheat_Growth_Stages_48x48.png')):
+                           ('wheat', 'Wheat_Growth_Stages_48x48.png'),
+                           # the 28 Aug variety drop (Kiwi plays the garden daily)
+                           ('strawberry', 'Strawberry_Growth_Stages_48x48.png'),
+                           ('carrot', 'Carrot_Growth_Stages_48x48.png'),
+                           ('corn', 'Corn_Growth_Stages_48x48.png'),
+                           ('watermelon', 'Watermelon_Growth_Stages_48x48.png')):
         try:
             f = _glob.glob(os.path.join(FARM, '**', cropsheet), recursive=True)[0]
             sheet = Image.open(f).convert('RGBA')

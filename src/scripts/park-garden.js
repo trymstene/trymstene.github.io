@@ -49,6 +49,13 @@ const SEEDS = [
   { id: 'tomato', emoji: '🍅', name: 'tomato', stars: 3, price: 90, days: 4, crop: 1 },
   { id: 'pumpkin', emoji: '🎃', name: 'pumpkin', stars: 4, price: 160, days: 5, crop: 1 },
   { id: 'wheat', emoji: '🌾', name: 'golden wheat', stars: 5, price: 300, days: 6, crop: 1, rare: true },
+  // 🍓 the 28 Aug variety drop. The strawberry REGROWS — pick it and the bush
+  // drops back a stage and fruits again, `regrow` picks in all: the garden's
+  // first come-back-tomorrow loop, priced for the daily visitor.
+  { id: 'carrot', emoji: '🥕', name: 'carrot', stars: 2, price: 20, days: 3, crop: 1 },
+  { id: 'strawberry', emoji: '🍓', name: 'strawberry', stars: 2, price: 30, days: 3, crop: 1, regrow: 3 },
+  { id: 'corn', emoji: '🌽', name: 'sweetcorn', stars: 4, price: 140, days: 5, crop: 1 },
+  { id: 'watermelon', emoji: '🍉', name: 'watermelon', stars: 5, price: 320, days: 7, crop: 1, rare: true },
 ];
 const SEED_BY = {};
 SEEDS.forEach((s) => { SEED_BY[s.id] = s; });
@@ -68,6 +75,14 @@ const STAGE_ART = {
   pumpkin3: ['c-pumpkin-3.png', 38, 35], pumpkin4: ['c-pumpkin-4.png', 38, 51],
   wheat1: ['c-wheat-1.png', 24, 12], wheat2: ['c-wheat-2.png', 24, 24],
   wheat3: ['c-wheat-3.png', 24, 26], wheat4: ['c-wheat-4.png', 31, 38],
+  strawberry1: ['c-strawberry-1.png', 22, 15], strawberry2: ['c-strawberry-2.png', 26, 17],
+  strawberry3: ['c-strawberry-3.png', 26, 22], strawberry4: ['c-strawberry-4.png', 28, 35],
+  carrot1: ['c-carrot-1.png', 26, 24], carrot2: ['c-carrot-2.png', 31, 26],
+  carrot3: ['c-carrot-3.png', 31, 28], carrot4: ['c-carrot-4.png', 35, 38],
+  corn1: ['c-corn-1.png', 22, 22], corn2: ['c-corn-2.png', 28, 31],
+  corn3: ['c-corn-3.png', 28, 38], corn4: ['c-corn-4.png', 28, 58],
+  watermelon1: ['c-watermelon-1.png', 19, 19], watermelon2: ['c-watermelon-2.png', 35, 19],
+  watermelon3: ['c-watermelon-3.png', 35, 22], watermelon4: ['c-watermelon-4.png', 38, 49],
   // 🥀 ONE corpse for every plant and every stage — the farm pack ships a
   // single Rotten per crop with no growth phases, so "dead is dead" is both
   // what the art supports and what Trym picked. A storm sets slot.rot.
@@ -341,8 +356,13 @@ export function initGarden(ctx) {
       gShim.bloom = Math.min(100, gShim.bloom + 2);
     } else if (path === '/harvest') {
       if (!s) return Promise.resolve({ err: 'empty' });
-      if ((s.grew || 0) < SEED_BY[s.seed].days) return Promise.resolve({ err: 'still growing' });
-      gShim.slots[i] = null;
+      const hsd = SEED_BY[s.seed];
+      if ((s.grew || 0) < hsd.days) return Promise.resolve({ err: 'still growing' });
+      // 🍓 the shim mirrors the room's regrow rule (QA parity)
+      if (hsd.regrow && (s.picks || 0) + 1 < hsd.regrow) {
+        s.picks = (s.picks || 0) + 1;
+        s.grew = Math.max(0, hsd.days - 1);
+      } else gShim.slots[i] = null;
     }
     return Promise.resolve(strip());
   }
@@ -1472,7 +1492,8 @@ export function initGarden(ctx) {
           + '<span class="pk-seedrow__txt"><b>' + sd.name + (sd.rare ? ' <em>rare</em>' : '') + '</b>'
           + '<small>' + starStr(sd.stars) + ' · ' + sd.days + ' days → '
           + (locked ? '🔒 gardener lvl ' + lvlFor2(sd)
-            : sd.wearable ? 'the ' + sd.wearLabel : '+' + (sd.stars * 8) + ' rep') + '</small></span>'
+            : sd.wearable ? 'the ' + sd.wearLabel
+              : '+' + (sd.stars * 8) + ' rep' + (sd.regrow ? ' · fruits ' + sd.regrow + '×' : '')) + '</small></span>'
           + (free ? '<span class="pk-seedcost pk-seedcost--free">🎁 blessed — free</span>' : coinChip(cost))
           + '</button>';
       }).join('')
@@ -1621,8 +1642,9 @@ export function initGarden(ctx) {
       passStat('rep', sd.stars * 8);
       refreshHud();
       float(PLOTS[i][0], PLOTS[i][1] - 20, '+' + (sd.stars * 8));
+      const again = sd.regrow && gSlots[i];   // the room kept the bush — more picks coming
       toast(sd.emoji + ' ' + sd.name + ' harvested — +' + (sd.stars * 8) + ' rep!'
-        + (sd.crop ? ' A seed for your homestead 🌱' : ''), 4200);
+        + (again ? ' The bush will fruit again 🍓' : sd.crop ? ' A seed for your homestead 🌱' : ''), 4200);
     } else {
       passStat('own_' + sd.wearable, 1); // the wearable's earned-gate proof
       toast(sd.emoji + ' ' + sd.wearLabel + ' harvested — saved to your pass!', 4200);

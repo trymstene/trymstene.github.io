@@ -67,8 +67,13 @@ const CROPS = [
   { id: 'tomato', name: 'Tomato', seed: 3 },
   { id: 'pumpkin', name: 'Pumpkin', seed: 3 },
   { id: 'wheat', name: 'Wheat', seed: 3 },
+  // the park's 28 Aug variety drop — same seeds-from-harvest pipe
+  { id: 'carrot', name: 'Carrot', seed: 3 },
+  { id: 'strawberry', name: 'Strawberry', seed: 3 },
+  { id: 'corn', name: 'Sweetcorn', seed: 3 },
+  { id: 'watermelon', name: 'Watermelon', seed: 3 },
 ];
-const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾' };
+const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉' };
 // 🍳 THE SPINE (M2): crops → the pantry → dishes with WORLD-WIDE effects.
 // The multiplier enforces itself inside passStat — one choke point, every area.
 const DISHES = [
@@ -78,6 +83,10 @@ const DISHES = [
     fx: 'rep2', mins: 45, blurb: 'double XP from everything · 45 min · everywhere' },
   { id: 'loaf', icon: '🍞', name: 'Golden loaf', need: { wheat: 3 },
     pay: 25, blurb: 'bakes straight into 25 bananacoins' },
+  { id: 'salad', icon: '🥗', name: 'Garden salad', need: { carrot: 2, corn: 1 },
+    pay: 22, blurb: 'chops straight into 22 bananacoins' },
+  { id: 'fruitcup', icon: '🍧', name: 'Fruit cup', need: { strawberry: 2, watermelon: 1 },
+    pay: 34, blurb: 'sweetens straight into 34 bananacoins' },
 ];
 const TENT_PRICE = 50;
 const dayStr = () => new Date().toISOString().slice(0, 10);
