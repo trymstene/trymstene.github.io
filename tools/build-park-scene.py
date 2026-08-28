@@ -1238,6 +1238,22 @@ for _fid in ('daisy', 'sunflower', 'tulip'):
     except Exception as e:
         print('  flower alias failed', _fid, e)
 
+# ---- 🧓 OLD PEEL'S PORTRAIT — the field guide's "meet the locals" card.
+# His exact in-game outfit (park-npc.js OLD_DRAW: potter specs + the old
+# cane), rendered through banana_render (the Python drawComposite mirror) so
+# the portrait can never drift from the NPC. ⚠️ ov-*.png are the health-phase
+# TREE overlays, not Old Peel — the card shipped wearing a tree once.
+try:
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location('br', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'banana_render.py'))
+    _br = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_br)
+    _op = _br.render(0, {'glasses': 'potter', 'extras': ['oldcane']}, scale=1)
+    _op = _op.crop(_op.getbbox())
+    _op.save(os.path.join(OUT, 'old-peel.png'), optimize=True)
+    print('  old-peel.png: %dx%d' % _op.size)
+except Exception as e:
+    print('  old peel portrait failed', e)
+
 # ---- 🥀 THE RUINED PLANT — one sprite for every dead plant --------------
 # A storm ruins half the beds, and the farm pack ships exactly one Rotten per
 # crop with NO growth phases — so one universal corpse is both what the art
