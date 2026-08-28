@@ -524,17 +524,32 @@ function ensureCss() {
 }
 .bwq-hint[hidden] { display:none !important; }
 .bwq-hint--wait { visibility:hidden; animation:none; }
+/* 📕 folded — the card drops to a 0×0 anchor rather than hiding, so the badge
+   holds the exact spot the finger just tapped. Transparent border, not
+   border-width:0: the badge is placed off the PADDING box. */
+.bwq-hint.is-min {
+  max-width:none; padding:0; width:0; height:0;
+  background:none; border-color:transparent; box-shadow:none; animation:none;
+}
+.bwq-hint.is-min > span { display:none; }
 /* at the rave the chip rides the STAGE LINE — half over the booth's bottom
    edge, clear of both the LED wall and the dancefloor */
 .rv-booth > .bwq-hint { top:auto; bottom:-14px; left:14px; z-index:5; }
 /* the chip's ! is a BADGE, not an inline character (Trym: a game, not a
    website message-box) — a black stickerpill pinned over the chip's corner,
-   the gold ! big and overflowing it. Same MARK_SVG art as the world marker. */
+   the gold ! big and overflowing it. Same MARK_SVG art as the world marker.
+   It is also the chip's fold control. ⚠️ the chip is pointer-events:none (the
+   world walks on taps), so the badge has to buy its own back. */
 .bwq-hint__badge {
   position:absolute; left:-13px; top:-15px; line-height:0;
   background:#111; border-radius:999px; padding:5px 8px 6px;
   transform:rotate(-8deg); box-shadow:2px 2px 0 rgba(0,0,0,0.35);
+  border:0; cursor:pointer; pointer-events:auto;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
 }
+/* a thumb-sized hit area under a sticker-sized sticker (393px is the primary) */
+.bwq-hint__badge::after { content:''; position:absolute; inset:-8px; }
+.bwq-hint__badge:active { transform:rotate(-8deg) translate(1px,1px); box-shadow:1px 1px 0 rgba(0,0,0,0.35); }
 .bwq-hint__badge svg { display:block; width:13px; height:22px; }
 .bwq-hint span img { height:1.1em; width:auto; image-rendering:pixelated; vertical-align:-0.18em; }
 @keyframes bwqCardIn { 0% { transform:scale(0.6) rotate(-3deg); opacity:0; } 100% { transform:none; opacity:1; } }
@@ -1397,10 +1412,25 @@ export function bootQuest() {
     if (label && !(compass && area === 'rave')) {
       const h = document.createElement('div');
       h.className = 'bwq-hint';
-      h.innerHTML = '<i class="bwq-hint__badge">' + MARK_SVG + '</i><span></span>';
+      h.innerHTML = '<button type="button" class="bwq-hint__badge">' + MARK_SVG + '</button><span></span>';
       // internal strings only — a hint may carry an inline sprite (the
       // banana phone) so chip icons match the action bar's real art
       h.querySelector('span').innerHTML = label;
+      // the ! folds the card away when you have other business in the world
+      // (Trym). Folded rides in bwq-c1, so a re-render — or the next area —
+      // can't quietly unfold it again.
+      const badge = h.querySelector('.bwq-hint__badge');
+      const fold = () => {
+        h.classList.toggle('is-min', !!S.hm);
+        badge.setAttribute('aria-expanded', S.hm ? 'false' : 'true');
+        badge.setAttribute('aria-label', S.hm ? 'show the quest note' : 'hide the quest note');
+      };
+      fold();
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();       // the world walks on taps
+        S.hm = S.hm ? 0 : 1; save();
+        fold();
+      });
       if (!chipDelayed) {   // let the world land first, then pop the journal in
         chipDelayed = true;
         h.classList.add('bwq-hint--wait');
