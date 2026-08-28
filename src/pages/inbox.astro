@@ -1452,7 +1452,7 @@ const description = 'Authorized banana personnel only.';
           if (!v) return;
           // supporter (member:) gear rides the live BMAC grant, never an own_
           // stat — a granted stat would be permanent (max-merge) and meaningless
-          if (act === 'gear' && /^tophat(bronze|silver|gold)$/.test(v)) {
+          if (act === 'gear' && /^tophat(blue|silver|gold)$/.test(v)) {
             said.textContent = '🎩 supporter hats come from a live membership, not a grant — nothing sent';
             return;
           }

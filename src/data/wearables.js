@@ -39,7 +39,7 @@ export const WEARABLE_PACKS = {
       // 🎩 SUPPORTER TOP HATS — Ko-fi membership tiers. member: gear is GRANTED
       // AND REVOKED by live subscription state — never 'earned', never for
       // sale, hidden from non-members; the entitlement logic owns these.
-      { id: 'tophatbronze', label: 'Bronze Top Hat', phrase: 'a bronze top hat', art: 'tophatbronze', seat: 0, member: 'sup-t1', lock: 'a supporter hat — active membership only' },
+      { id: 'tophatblue', label: 'Blue Top Hat', phrase: 'a royal blue top hat', art: 'tophatblue', seat: 0, member: 'sup-t1', lock: 'a supporter hat — active membership only' },
       { id: 'tophatsilver', label: 'Silver Top Hat', phrase: 'a silver top hat', art: 'tophatsilver', seat: 0, member: 'sup-t2', lock: 'a supporter hat — active membership only' },
       { id: 'tophatgold',   label: 'Gold Top Hat',   phrase: 'the gold top hat', art: 'tophatgold',   seat: 0, member: 'sup-t3', lock: 'a supporter hat — active membership only' },
       { id: 'cowboy', label: 'Cowboy',  phrase: 'a cowboy hat', art: 'cowboy', seat: -1 },

@@ -278,7 +278,7 @@ function cleanMember(m) {
 const KOFI_TIERS = [
   { m: /legend|gold/i, t: 'sup-t3' },
   { m: /patron|silver/i, t: 'sup-t2' },
-  { m: /friend|bronze/i, t: 'sup-t1' },
+  { m: /friend|blue/i, t: 'sup-t1' },
 ];
 const KOFI_EXTEND = 35 * 86400 * 1000;
 function kofiTier(d) {
