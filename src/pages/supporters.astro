@@ -8,6 +8,15 @@
 // Data: worker-pass GET /supporters — public names only, private supporters
 // already filtered server-side.
 import BaseLayout from '../layouts/BaseLayout.astro';
+// ⚠️ THERE IS NO PER-TIER DEEP LINK, and it isn't for want of looking: each
+// tier does carry a GUID, but Ko-fi's Join button POSTs it to
+// /api/subscriptions/membership/create and only THEN redirects to the
+// server-minted /summary/<transactionId> — the checkout URL does not exist
+// until someone clicks. The tier objects carry no share URL or slug, and the
+// cards have no anchors. /tiers is therefore the deepest honest link: it lands
+// on all three with their Join buttons. (Removing that last click means taking
+// the payment ourselves through a merchant of record — the Lemon Squeezy
+// track — not a URL trick.) Buttons open in a new tab so the wall stays put.
 const KOFI = 'https://ko-fi.com/trymstene/tiers';
 const KOFI_ONCE = 'https://ko-fi.com/trymstene';   // the tip jar — any amount, once
 const TIERS = [
@@ -168,7 +177,8 @@ const TIERS = [
               <p class="swt__price">${t.price}<small> / month</small></p>
               <p class="swt__blurb">{t.blurb}</p>
               <ul class="swt__perks">{t.perks.map((p) => <li>{p}</li>)}</ul>
-              <a class="swt__join" href={KOFI} rel="noopener" data-tier={t.tier}>Join →</a>
+              <a class="swt__join" href={KOFI} target="_blank" rel="noopener"
+                data-tier={t.tier}>Join on Ko-fi →</a>
             </div>
           </article>
         ))}
@@ -186,7 +196,7 @@ const TIERS = [
             above, and it genuinely helps: the servers and the art get paid the same way.
           </p>
         </div>
-        <a class="swo__btn" href={KOFI_ONCE} rel="noopener" data-tier="once">Send one →</a>
+        <a class="swo__btn" href={KOFI_ONCE} target="_blank" rel="noopener" data-tier="once">Send one →</a>
       </article>
 
       <p class="sw__note">
