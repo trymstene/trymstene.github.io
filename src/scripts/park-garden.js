@@ -469,9 +469,11 @@ export function initGarden(ctx) {
   // 🍌 THE MAKER'S STICKER — whoever planted it / built it, on a tilted
   // banana-yellow label. A name is the most human thing on these cards, so it
   // gets to look like something somebody stuck on, not a field in a form.
-  function nameSticker(name, mine) {
+  function nameSticker(name, mine, elsewhere) {
     return '<span class="pk-sticker' + (mine ? ' is-mine' : '') + '">'
-      + esc(mine ? 'you planted this' : name || 'a mystery banana') + '</span>';
+      + esc(mine ? 'you planted this'
+        : elsewhere ? 'you, on another device'
+        : name || 'a mystery banana') + '</span>';
   }
   function makerSticker(name, mine, verb) {
     return '<span class="pk-sticker' + (mine ? ' is-mine' : '') + '">'
@@ -1578,16 +1580,25 @@ export function initGarden(ctx) {
     gardenOpenSlot = i;
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const mine = gMine(s), ready = gReady(s);
+    // 🪪 YOUR OWN NAME ON A ROW YOU CANNOT PICK. A plot belongs to the identity
+    // that sowed it, and a browser with no pass sign-in IS its own identity —
+    // so a second device grows plants your current self can't touch. The card
+    // used to answer that with "waiting for <your own name>", which reads as a
+    // bug and was reported as one twice. Say the true thing, show the door.
+    const elsewhere = !mine && !!s.name && !!ctx.parkName && s.name === ctx.parkName;
     // a stranger's plant is an OWNERSHIP popup: their name leads, big
     // ⭐ SPECIES FIRST, then who grew it, then the one number that matters.
     // The growing-days line is gone (Trym) — the moisture bar IS the status.
     gardenBody.innerHTML = '<h2 class="pk-cardtitle">' + sd.emoji + ' ' + esc(sd.name) + '</h2>'
-      + '<p class="pk-stickerrow">' + nameSticker(s.name, mine)
+      + '<p class="pk-stickerrow">' + nameSticker(s.name, mine, elsewhere)
       + '<span class="pk-stars">' + starStr(sd.stars) + '</span></p>'
       + (ready
         ? '<p class="pk-ready pk-ready--big">' + (mine ? '✨ FULL-GROWN — tap it to harvest!'
+          : elsewhere ? 'GROWN ON YOUR OTHER DEVICE'
           : '✨ READY TO PICK — waiting for ' + (s.name ? esc(s.name) : 'its grower')) + '</p>'
         : '')
+      + (elsewhere ? '<p class="pk-gsaved">Sign in there too and this row comes home. '
+        + '<a href="/pass/">My&nbsp;Pass&nbsp;→</a></p>' : '')
       // 💧 a READY plant is past watering — the moisture bar and water button
       // bow out and the harvest line is the hero (they confused everyone:
       // biggest visual said "needs water", the button to do it was gone)
