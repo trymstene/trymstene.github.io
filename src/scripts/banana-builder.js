@@ -5,6 +5,7 @@
 // frame-picker thumbnails and both exports, so what you see is what you get.
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
+import { wardChip, chipArt, trayify, revealWorn, attachTips } from '../lib/wardrobe-ui.js';
 import { ownsWearable, ownsDropStat } from '../data/wearables.js';
 import { shelfAdd } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
@@ -158,10 +159,6 @@ function init() {
     } catch (e) {}
     return false;
   };
-  // a chip's art is normally an inline pixel-SVG string; a PNG-art item (the
-  // plush = the resized banana) needs an <img> instead of raw innerHTML.
-  const chipArt = (art) => (!art ? '' : art.charAt(0) === '<' ? art
-    : '<img src="' + art + '" alt="" style="max-width:100%;max-height:100%;image-rendering:pixelated" />');
   // where a locked souvenir's DOOR sends you — the pier plush lives at the beach
   const earnDoor = (d) => (d.earned === 'pier'
     ? { href: '/beach/', at: 'the pier' }
@@ -174,33 +171,28 @@ function init() {
       const def = defFor && defFor(val);
       if (def && !earnedUnlocked(def)) {
         // a locked drop is a DOOR: the chip links to where you catch it
-        const a = document.createElement('a');
         const door = earnDoor(def);
-        a.className = 'bb-chip bb-chip--icon bb-chip--locked';
-        a.href = door.href; a.dataset.place = 'builder-locked';
-        a.innerHTML = artFor(val) || label;
-        a.dataset.tip = (def.label || label) + ' — ' + (def.lock || 'earned at ' + door.at);
-        a.setAttribute('aria-label', (def.label || label) + ' (locked — earn it at ' + door.at + ')');
-        el(host).appendChild(a);
+        el(host).appendChild(wardChip({
+          art: artFor(val), label: def.label || label,
+          locked: { href: door.href, place: 'builder-locked',
+            tip: (def.label || label) + ' — ' + (def.lock || 'earned at ' + door.at),
+            aria: (def.label || label) + ' (locked — earn it at ' + door.at + ')' },
+        }));
         return;
       }
-      const b = document.createElement('button');
-      b.className = 'bb-chip bb-chip--icon';
-      b.innerHTML = artFor(val);
-      b.dataset.val = val;
-      b.dataset.tip = label;
-      b.setAttribute('aria-label', label);
-      b.onclick = () => {
-        state[key] = (state[key] === val ? 'none' : val);
-        // 🧢 a built-in hat displaces a head-anchored community piece — the
-        // same one-per-spot rule the community items already keep among
-        // themselves, extended across the seam (a beanie stacked ON a hat)
-        if (key === 'hat' && state.hat !== 'none') {
-          cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'hat'));
-        }
-        onState();
-      };
-      el(host).appendChild(b);
+      el(host).appendChild(wardChip({
+        art: artFor(val), label, data: { val },
+        onPick: () => {
+          state[key] = (state[key] === val ? 'none' : val);
+          // 🧢 a built-in hat displaces a head-anchored community piece — the
+          // same one-per-spot rule the community items already keep among
+          // themselves, extended across the seam (a beanie stacked ON a hat)
+          if (key === 'hat' && state.hat !== 'none') {
+            cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'hat'));
+          }
+          onState();
+        },
+      }));
     });
   }
   iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; }, (id) => SHADE_BY_ID[id]);
@@ -234,25 +226,20 @@ function init() {
     if (!earnedUnlocked(d)) {
       // a locked souvenir is a DOOR: the chip links to where you earn it
       const dr = earnDoor(d);
-      const a = document.createElement('a');
-      a.className = 'bb-chip bb-chip--icon bb-chip--locked';
-      a.href = dr.href; a.dataset.place = 'builder-locked';
-      a.innerHTML = chipArt(art) || d.label;
-      a.dataset.tip = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
-      a.setAttribute('aria-label', d.label + ' (locked — earn it at ' + dr.at + ')');
-      el('bbExtrasChips').appendChild(a);
+      el('bbExtrasChips').appendChild(wardChip({
+        art, label: d.label,
+        locked: { href: dr.href, place: 'builder-locked',
+          tip: d.label + ' — ' + (d.lock || ('earned at ' + dr.at)),
+          aria: d.label + ' (locked — earn it at ' + dr.at + ')' },
+      }));
       return;
     }
-    const b = document.createElement('button');
-    b.className = 'bb-chip bb-chip--icon';
-    b.innerHTML = chipArt(art) || d.label;
-    b.dataset.val = d.id;
-    b.dataset.tip = d.label;
-    b.setAttribute('aria-label', d.label);
-    b.onclick = d.anchor === 'hand'
-      ? () => toggleHand(d)
-      : () => { state.extras[d.id] = !state.extras[d.id]; onState(); };
-    el('bbExtrasChips').appendChild(b);
+    el('bbExtrasChips').appendChild(wardChip({
+      art, label: d.label, data: { val: d.id },
+      onPick: d.anchor === 'hand'
+        ? () => toggleHand(d)
+        : () => { state.extras[d.id] = !state.extras[d.id]; onState(); },
+    }));
   });
 
   // FEET row — single-select: one shoe clears the others; a 'none' chip returns
@@ -264,13 +251,10 @@ function init() {
   };
   if (el('bbFeetChips') && FEET_DEFS.length) {
     FEET_DEFS.forEach((d) => {
-      const b = document.createElement('button');
-      b.className = 'bb-chip bb-chip--icon';
-      b.innerHTML = SVG[d.art];
-      b.dataset.feet = d.id;
-      b.dataset.tip = d.label; b.setAttribute('aria-label', d.label);
-      b.onclick = () => setFeet(state.extras[d.id] ? null : d.id); // click the active pair = take them off
-      el('bbFeetChips').appendChild(b);
+      el('bbFeetChips').appendChild(wardChip({
+        art: SVG[d.art], label: d.label, data: { feet: d.id },
+        onPick: () => setFeet(state.extras[d.id] ? null : d.id), // click the active pair = take them off
+      }));
     });
   }
 
@@ -285,133 +269,36 @@ function init() {
       // one. A locked souvenir is a DOOR, in every row that can hold one.
       if (!earnedUnlocked(d)) {
         const dr = earnDoor(d);
-        const a = document.createElement('a');
-        a.className = 'bb-chip bb-chip--icon bb-chip--locked';
-        a.href = dr.href; a.dataset.place = 'builder-locked';
-        a.innerHTML = SVG[d.front || d.art] || d.label;
-        a.dataset.tip = d.label + ' — ' + (d.lock || ('earned at ' + dr.at));
-        a.setAttribute('aria-label', d.label + ' (locked — earn it at ' + dr.at + ')');
-        el('bbBodyChips').appendChild(a);
+        el('bbBodyChips').appendChild(wardChip({
+          art: SVG[d.front || d.art], label: d.label,
+          locked: { href: dr.href, place: 'builder-locked',
+            tip: d.label + ' — ' + (d.lock || ('earned at ' + dr.at)),
+            aria: d.label + ' (locked — earn it at ' + dr.at + ')' },
+        }));
         return;
       }
-      const b = document.createElement('button');
-      b.className = 'bb-chip bb-chip--icon';
-      b.innerHTML = SVG[d.front || d.art];
-      b.dataset.body = d.id;
-      b.dataset.tip = d.label; b.setAttribute('aria-label', d.label);
-      b.onclick = () => setBody(state.extras[d.id] ? null : d.id); // click the worn one = take it off
-      el('bbBodyChips').appendChild(b);
+      el('bbBodyChips').appendChild(wardChip({
+        art: SVG[d.front || d.art], label: d.label, data: { body: d.id },
+        onPick: () => setBody(state.extras[d.id] ? null : d.id), // click the worn one = take it off
+      }));
     });
   }
 
-  // ---- slot trays (#7 ownership stack): the chip rows scroll sideways so the
-  // catalog can grow forever. trayify adds the browse affordances — edge fades
-  // + arrows only WHEN items are actually hidden, an item count on the label.
-  // (revealWorn below scrolls each band to the worn item on load.)
-  function trayify(hostId) {
-    const tray = el(hostId);
-    if (!tray || !tray.children.length) return;
+  // ---- slot trays + tooltips + reveal: the SHARED wardrobe layer
+  // (src/lib/wardrobe-ui.js) — same furniture as the custom product pages.
+  // openInventory (the ⊞ all sheet) stays builder-only and rides in as the
+  // onSeeAll callback.
+  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach((id) => {
+    const tray = el(id);
+    if (!tray) return;
     const row = tray.closest('.bb-row');
-    const label = row && row.querySelector('label');
-    if (label && !label.querySelector('.bb-count')) {
-      const slotName = label.textContent.trim();
-      const n = document.createElement('span');
-      n.className = 'bb-count';
-      n.textContent = tray.children.length;
-      label.appendChild(n);
-      // the OVERVIEW door: trays show 4-5 at a time; the inventory sheet
-      // shows the whole category at once (Trym: scanning a long sidescroll
-      // for "that item somewhere at the end" is exhausting)
-      const all = document.createElement('button');
-      all.type = 'button';
-      all.className = 'bb-seeall';
-      all.textContent = '⊞ all';
-      all.setAttribute('aria-label', 'Browse all ' + slotName.toLowerCase());
-      all.onclick = () => openInventory(tray, slotName);
-      label.appendChild(all);
-    }
-    let aL = null, aR = null;
-    if (row) {
-      const mk = (dir) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'bb-trayarrow bb-trayarrow--' + (dir < 0 ? 'l' : 'r');
-        b.textContent = dir < 0 ? '‹' : '›';
-        b.setAttribute('aria-label', dir < 0 ? 'Scroll back' : 'More items');
-        b.onclick = () => tray.scrollBy({ left: dir * tray.clientWidth * 0.8, behavior: 'smooth' });
-        row.appendChild(b);
-        return b;
-      };
-      aL = mk(-1); aR = mk(1);
-    }
-    const sync = () => {
-      const more = tray.scrollWidth - tray.clientWidth > 4;
-      const atL = tray.scrollLeft < 4;
-      const atR = tray.scrollLeft > tray.scrollWidth - tray.clientWidth - 4;
-      tray.classList.toggle('bb-chips--fadeR', more && !atR);
-      tray.classList.toggle('bb-chips--fadeL', more && !atL);
-      if (aL) aL.hidden = !more || atL;
-      if (aR) aR.hidden = !more || atR;
-    };
-    tray.addEventListener('scroll', sync, { passive: true });
-    window.addEventListener('resize', sync);
-    sync();
-  }
-  ['bbSwatches', 'bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach(trayify);
-  // 🏷 THE BANANA TOOLTIP — the OS title bubble looked stock (Trym, 28 Aug),
-  // so chips carry data-tip and ONE themed bubble follows the pointer instead.
-  // Hover/keyboard only ([[tappable-info-doctrine]]: touch never had tooltips —
-  // on mobile the info lives in visible selection + the community card).
-  const tipEl = document.createElement('div');
-  tipEl.className = 'bb-tip';
-  tipEl.hidden = true;
-  document.body.appendChild(tipEl);
-  let tipT = 0;
-  const tipHide = () => { clearTimeout(tipT); tipT = 0; tipEl.hidden = true; };
-  const tipShowFor = (chip) => {
-    const text = chip.dataset.tip || chip.getAttribute('aria-label');
-    if (!text) return;
-    tipEl.textContent = text;
-    tipEl.hidden = false;
-    tipEl.style.left = '0px'; tipEl.style.top = '0px';   // reset before measuring
-    const r = chip.getBoundingClientRect(), tr = tipEl.getBoundingClientRect();
-    const x = Math.max(6, Math.min(innerWidth - tr.width - 6, r.left + r.width / 2 - tr.width / 2));
-    let y = r.top - tr.height - 12;
-    const below = y < 4;
-    if (below) y = r.bottom + 12;
-    tipEl.classList.toggle('bb-tip--below', below);
-    tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
-  };
-  if (matchMedia('(hover: hover)').matches) {
-    document.addEventListener('mouseover', (e) => {
-      const chip = e.target.closest && e.target.closest('.bb-chip');
-      if (!chip) { tipHide(); return; }
-      clearTimeout(tipT);
-      tipT = setTimeout(() => tipShowFor(chip), 160);
-    });
-    document.addEventListener('mouseout', (e) => {
-      if (e.target.closest && e.target.closest('.bb-chip')) tipHide();
-    });
-  }
-  document.addEventListener('focusin', (e) => {
-    const chip = e.target.closest && e.target.closest('.bb-chip');
-    if (chip) tipShowFor(chip); else tipHide();
+    trayify(tray, { label: row && row.querySelector('label'), onSeeAll: openInventory });
   });
-  document.addEventListener('click', tipHide, true);
-  addEventListener('scroll', tipHide, { passive: true, capture: true });
-  // 👁 on load every band scrolls its WORN item into view — a loaded outfit
-  // is visible per row, so taking something off never starts with a hunt.
-  // (Runs after aria-pressed is synced: at boot, and again when the catalog
-  // lands and community chips join the rows.)
-  function revealWorn() {
-    ['bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips'].forEach((id) => {
-      const tray = el(id);
-      if (!tray) return;
-      const on = tray.querySelector('[aria-pressed="true"]');
-      if (!on) return;
-      const tr = tray.getBoundingClientRect(), cr = on.getBoundingClientRect();
-      tray.scrollLeft += (cr.left - tr.left) - (tray.clientWidth - cr.width) / 2;
-    });
+  attachTips();
+  // 👁 every band opens scrolled to its WORN item — at boot, and again when
+  // the catalog lands and community chips join the rows
+  function revealWornAll() {
+    ['bbGlassesChips', 'bbHatChips', 'bbBodyChips', 'bbFeetChips', 'bbExtrasChips', 'bbEffectChips'].forEach((id) => revealWorn(el(id)));
   }
 
   // 🎁 THE COMMUNITY ROW — visitor-made wearables (the catalog), rendered once
@@ -438,18 +325,28 @@ function init() {
     CATALOG.filter((it) => it.kind !== 'decor').sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
       const owned = ownsCatalog(it.id);
       const name = it.title || 'community item';
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'bb-chip bb-chip--icon bb-chip--comm' + (owned ? '' : ' bb-chip--locked');
-      b.innerHTML = chipArt(((catCustom(it.id) || [])[0] || {}).art) || name;
-      b.dataset.comm = it.id;   // ⚠️ NOT dataset.val — the rows' own aria sync must skip these
-      b.setAttribute('aria-label', name + (it.by ? ' by ' + it.by : '') + (owned ? '' : ' — locked, tap for info'));
       // EVERY community chip opens the CARD (works on touch AND desktop, so the
       // ~85% on mobile finally see the maker + caught count) — the card carries
-      // the wear / catch-it action itself.
-      b.onclick = () => communityCard(it);
+      // the wear / catch-it action itself, so a locked one is NOT a door here.
+      const b = wardChip({
+        art: ((catCustom(it.id) || [])[0] || {}).art,
+        label: name + (it.by ? ' by ' + it.by : '') + (owned ? '' : ' — locked, tap for info'),
+        tip: name + (it.by ? ' by ' + it.by : ''),
+        comm: true,
+        data: { comm: it.id },   // ⚠️ NOT dataset.val — the rows' own aria sync must skip these
+        onPick: () => communityCard(it),
+      });
+      if (!owned) b.classList.add('bb-chip--locked');
       const tgt = hostFor((it.wear && it.wear.anchor) || '');
       if (tgt) tgt.appendChild(b);
+    });
+    // the label counts were stamped before the catalog landed — retally
+    document.querySelectorAll('.bb-trayrow').forEach((row) => {
+      const tray = row.querySelector('.bb-chips');
+      const n = row.querySelector('.bb-count');
+      if (tray && n) n.textContent = tray.children.length;
+      // nudge the scroll sync so fades/arrows notice the new overflow
+      if (tray) tray.dispatchEvent(new Event('scroll'));
     });
   }
   // 🍌 THE COMMUNITY CARD — a banana-themed popover (replaces the stock browser
@@ -527,7 +424,7 @@ function init() {
   }
   fetch(CATALOG_URL)
     .then((r) => (r.ok ? r.json() : []))
-    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); normalizeSpots(); onState(); revealWorn(); } })
+    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); normalizeSpots(); onState(); revealWornAll(); } })
     .catch(() => { /* offline/blocked: the row just stays hidden */ });
   // 🚪 ?wear=<id> — the pass closet's door: the closet shows the trophy, the
   // BUILDER dresses it (one wear model, one place it can break). Built-ins
@@ -615,17 +512,7 @@ function init() {
   el('bbInvClose').onclick = closeInventory;
   el('bbInvBack').onclick = closeInventory;
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el('bbInv').hidden) closeInventory(); });
-  // a loaded outfit's worn items scroll into view (never hidden in the overflow)
-  function revealWorn() {
-    document.querySelectorAll('.bb-chips [aria-pressed="true"]').forEach((c) => {
-      const tray = c.parentElement;
-      if (tray.scrollWidth - tray.clientWidth > 4) {
-        tray.scrollLeft = Math.max(0, c.offsetLeft - tray.clientWidth / 2 + c.offsetWidth / 2);
-        tray.dispatchEvent(new Event('scroll'));
-      }
-    });
-  }
-  setTimeout(revealWorn, 60); // after refreshUI paints aria-pressed
+  setTimeout(revealWornAll, 60); // after refreshUI paints aria-pressed
 
   topIn.addEventListener('input', () => { state.top = topIn.value; onState(); });
   botIn.addEventListener('input', () => { state.bottom = botIn.value; onState(); });
@@ -1454,7 +1341,7 @@ function init() {
   }
 
   refreshUI();
-  revealWorn();   // every band opens showing what's worn (comm chips re-reveal when the catalog lands)
+  revealWornAll();   // every band opens showing what's worn (comm chips re-reveal when the catalog lands)
   passVisit();
   // shelf 🏷 tags land here: walk the visitor straight to the sticker card
   if (urlP.get('go') === 'sticker') {

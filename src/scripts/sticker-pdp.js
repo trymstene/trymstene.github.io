@@ -9,6 +9,7 @@ import {
 import { ownsWearable, ownsDropStat } from '../data/wearables.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { passPatch } from '../lib/banana-pass.js';
+import { wardChip, trayify, revealWorn, attachTips } from '../lib/wardrobe-ui.js';
 import {
   PRICE, parseDesign, composite, designStr, captionsClean, getProduct,
   bboxOf, pad, crop, renderPrintFile, renderApparelPrint, renderMugPrint, makeStickerMockup,
@@ -180,47 +181,40 @@ function wardrobeRow(host, kicker, chips) {
   const k = document.createElement('div');
   k.className = 'pdp-ward__k'; k.textContent = kicker;
   const tray = document.createElement('div');
-  tray.className = 'pdp-ward__tray';
+  tray.className = 'pdp-ward__tray bb-chips';
   tray.setAttribute('role', 'group');
   tray.setAttribute('aria-label', kicker);
-  chips.forEach(({ art, label, on, pick, locked, comm }) => {
-    // a LOCKED item is a door, not a dead chip: you can see the thing exists
-    // and tapping tells you where to go and get it
-    if (locked) {
-      const a = document.createElement('a');
-      a.className = 'pdp-ward__locked' + (comm ? ' pdp-ward__comm' : '');
-      a.href = locked.href;
-      // ⚠️ no art ≠ print the label inline: not-yet-owned community pieces
-      // have no wearable art, and their raw names side by side rendered as
-      // overlapping garble. A locked tile looks like a tile.
-      a.innerHTML = chipArt(art) || '<span class="pdp-ward__none">🔒</span>';
-      a.title = label + ' — ' + locked.why;
-      a.setAttribute('aria-label', label + ' (locked — ' + locked.why + ')');
-      tray.appendChild(a);
+  chips.forEach((c) => {
+    if (c.locked) {
+      // a LOCKED item is a door, not a dead chip: you can see the thing exists
+      // and tapping tells you where to go and get it
+      tray.appendChild(wardChip({
+        art: c.art, label: c.label, comm: c.comm,
+        locked: { href: c.locked.href,
+          tip: c.label + ' — ' + c.locked.why,
+          aria: c.label + ' (locked — ' + c.locked.why + ')' },
+      }));
       return;
     }
-    const b = document.createElement('button');
-    b.type = 'button';
-    if (comm) b.className = 'pdp-ward__comm';
-    b.setAttribute('aria-label', label);
-    b.setAttribute('aria-pressed', String(on()));
-    b.innerHTML = chipArt(art) || '<span class="pdp-ward__none">none</span>';
-    b.onclick = () => {
-      pick();
-      // the poses show the outfit, so they have to be redrawn with it
-      buildPosePicker();
-      paintMockup();
-      syncDesignUrl();
-      // ⚠️ index against the BUTTONS only — locked chips are <a>, so a naive
-      // children[i] would pair the wrong chip with the wrong state
-      const unlocked = chips.filter((c) => !c.locked);
-      tray.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(unlocked[i].on())));
-      track('pdp_dress', { product: product.key, slot: kicker.toLowerCase(), item: label });
-    };
-    tray.appendChild(b);
+    tray.appendChild(wardChip({
+      art: c.art, label: c.label, comm: c.comm, pressed: c.on(),
+      onPick: () => {
+        c.pick();
+        // the poses show the outfit, so they have to be redrawn with it
+        buildPosePicker();
+        paintMockup();
+        syncDesignUrl();
+        // ⚠️ index against the BUTTONS only — locked chips are <a>, so a naive
+        // children[i] would pair the wrong chip with the wrong state
+        const unlocked = chips.filter((x) => !x.locked);
+        tray.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(unlocked[i].on())));
+        track('pdp_dress', { product: product.key, slot: kicker.toLowerCase(), item: c.label });
+      },
+    }));
   });
   row.append(k, tray);
   host.appendChild(row);
+  trayify(tray, { label: k });   // arrows + item count, same as the builder
 }
 
 // ⚠️ WEARABLES NAME THEIR ART TWO WAYS. Hats and held things carry a single
@@ -229,11 +223,6 @@ function wardrobeRow(host, kicker, chips) {
 // showing the empty "none" placeholder.
 const artOf = (d) => (d && (ART[d.art] || ART[d.front])) || '';
 
-// ⚠️ NOT ALL ART IS SVG. Most wearables are an inline pixel-SVG string, but a
-// PNG-art item (the pier plush = the resized real banana) is a PATH — dropped
-// into innerHTML it renders as the literal text "/assets/…png".
-const chipArt = (art) => (!art ? '' : art.charAt(0) === '<' ? art
-  : '<img src="' + art + '" alt="" style="max-width:100%;max-height:100%;image-rendering:pixelated">');
 
 // ⚠️ TWO DIFFERENT GATES, and they behave oppositely — copied from the builder
 // so the shop and the workshop agree about what you may wear:
@@ -296,6 +285,8 @@ function catCustom(ids) {
 // state.custom is what makes the preview, the print file and the checkout
 // image all agree — they every one read composite(), which reads state.custom.
 function applyCustom() { state.custom = state.c ? catCustom(state.c) : undefined; }
+
+attachTips();   // the builder's themed tooltips, on this page's chips too
 
 function buildWardrobe() {
   const host = el('pdpWardrobe');
@@ -372,18 +363,17 @@ function buildWardrobe() {
   if (extraChips.length) wardrobeRow(host, 'Extras', extraChips);
   // 👁 every tray opens on its WORN item — nobody hunts a sidescroll to
   // find the thing they want to take off (same rule as the builder)
-  host.querySelectorAll('.pdp-ward__tray').forEach((tray) => {
-    const on = tray.querySelector('[aria-pressed="true"]');
-    if (!on) return;
-    const tr = tray.getBoundingClientRect(), cr = on.getBoundingClientRect();
-    tray.scrollLeft += (cr.left - tr.left) - (tray.clientWidth - cr.width) / 2;
-  });
+  host.querySelectorAll('.pdp-ward__tray').forEach(revealWorn);
 }
 
 // the mockup AND renderPrintFile, so what you pick here is what gets printed.
 function buildPosePicker() {
   const host = el('pdpPoses');
   if (!host) return;
+  // ⚠️ this REBUILDS — without the clear, every wardrobe pick and the catalog
+  // landing appended a whole extra pose strip (live on prod for a month,
+  // hidden off the right edge by overflow-x; the 28 Aug review caught it)
+  host.replaceChildren();
   const mark = () => host.querySelectorAll('button').forEach((b) =>
     b.setAttribute('aria-pressed', String(parseInt(b.dataset.frame, 10) === state.frame)));
   for (let i = 0; i < NFRAMES; i++) {

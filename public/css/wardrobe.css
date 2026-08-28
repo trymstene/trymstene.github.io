@@ -1,0 +1,98 @@
+/* 👕 THE SHARED WARDROBE LOOK — chips, trays, tooltips. One file for every
+   surface that dresses the banana (the main builder + the custom product
+   pages), paired with src/lib/wardrobe-ui.js. Polish lands here ONCE. */
+
+/* ---- chips ---- */
+.bb-chip {
+  border: 3px solid var(--ink); background: var(--paper); padding: 0.4rem 0.8rem;
+  font-weight: 700; cursor: pointer; border-radius: 2px; font-size: 0.9rem;
+}
+.bb-chip[aria-pressed="true"] { background: var(--ink); color: var(--banana); }
+/* icon chips: the wearable art IS the button. DE-CHROMED — unselected items
+   carry NO box (just the pixel art), so a row of options reads as a calm set,
+   not a wall of identical rectangles. Only the CHOSEN one gets a frame. */
+.bb-chip--icon {
+  width: 56px; height: 56px; padding: 6px;
+  display: inline-grid; place-items: center; line-height: 0;
+  border-color: transparent; background: transparent; border-radius: 4px;
+}
+.bb-chip--icon:hover { background: rgba(17, 17, 17, 0.06); }
+.bb-chip--icon svg { max-width: 100%; max-height: 100%; width: auto; height: auto; image-rendering: pixelated; }
+.bb-chip--icon[aria-pressed="true"] {
+  background: var(--banana); border-color: var(--ink); outline: 3px solid var(--hot, #ff4d6d); outline-offset: 1px;
+}
+/* locked chips are <a> doors → restore the grid-centering the display
+   override killed, and keep the art centred */
+.bb-chip--icon.bb-chip--locked { position: relative; opacity: 0.8; display: inline-grid; place-items: center; }
+.bb-chip__none { font-size: 1.1rem; line-height: 1; opacity: 0.7; }
+/* pixel padlock badge (no stock emoji) — gold body, dark outline + keyhole */
+.bb-chip--icon.bb-chip--locked::after {
+  content: ''; position: absolute; right: -3px; bottom: -3px;
+  width: 15px; height: 17px; image-rendering: pixelated;
+  background-repeat: no-repeat; background-position: center; background-size: contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 80' shape-rendering='crispEdges'%3E%3Crect x='20' width='30' height='10' fill='%23262233'/%3E%3Crect x='10' y='10' width='10' height='20' fill='%23262233'/%3E%3Crect x='50' y='10' width='10' height='20' fill='%23262233'/%3E%3Crect y='30' width='70' height='10' fill='%23262233'/%3E%3Crect y='70' width='70' height='10' fill='%23262233'/%3E%3Crect y='40' width='10' height='30' fill='%23262233'/%3E%3Crect x='60' y='40' width='10' height='30' fill='%23262233'/%3E%3Crect x='10' y='40' width='50' height='10' fill='%23ffd23f'/%3E%3Crect x='10' y='50' width='20' height='10' fill='%23ffd23f'/%3E%3Crect x='40' y='50' width='20' height='10' fill='%23ffd23f'/%3E%3Crect x='30' y='50' width='10' height='10' fill='%23262233'/%3E%3Crect x='10' y='60' width='20' height='10' fill='%23f5a623'/%3E%3Crect x='40' y='60' width='20' height='10' fill='%23f5a623'/%3E%3Crect x='30' y='60' width='10' height='10' fill='%23262233'/%3E%3C/svg%3E");
+}
+.bb-chip--locked {
+  display: inline-block; border-style: dashed; opacity: 0.75; text-decoration: none; color: var(--ink);
+}
+.bb-chip--locked:hover { opacity: 1; background: var(--banana); }
+/* ✦ community-made wearables live INSIDE the built-in rows — the pixel
+   sparkle is what says "guest art" (locked ones keep the padlock instead) */
+.bb-chip--comm { position: relative; }
+.bb-chip--comm:not(.bb-chip--locked)::before {
+  content: ''; position: absolute; right: -2px; top: -2px; z-index: 1;
+  width: 13px; height: 13px; image-rendering: pixelated;
+  background-repeat: no-repeat; background-position: center; background-size: contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70' shape-rendering='crispEdges'%3E%3Crect x='30' width='10' height='20' fill='%23262233'/%3E%3Crect x='30' y='50' width='10' height='20' fill='%23262233'/%3E%3Crect y='30' width='20' height='10' fill='%23262233'/%3E%3Crect x='50' y='30' width='20' height='10' fill='%23262233'/%3E%3Crect x='20' y='20' width='30' height='30' fill='%23262233'/%3E%3Crect x='30' y='10' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='30' y='50' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='10' y='30' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='50' y='30' width='10' height='10' fill='%23ff4d6d'/%3E%3Crect x='25' y='25' width='20' height='20' fill='%23ff4d6d'/%3E%3C/svg%3E");
+}
+
+/* ---- trays ---- */
+.bb-chips {
+  display: flex; flex-wrap: nowrap; gap: 0.5rem;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity; scrollbar-width: none;
+  padding: 2px; /* room for the selected chip's outline */
+}
+.bb-chips::-webkit-scrollbar { display: none; }
+.bb-chips > * { flex: 0 0 auto; scroll-snap-align: start; }
+.bb-trayrow { position: relative; }
+/* edge fades signal hidden items (JS toggles) */
+.bb-chips--fadeR { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
+.bb-chips--fadeL { -webkit-mask-image: linear-gradient(to left, #000 88%, transparent); mask-image: linear-gradient(to left, #000 88%, transparent); }
+.bb-chips--fadeL.bb-chips--fadeR { -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); }
+/* chunky tray arrows — desktop affordance; touch just swipes */
+.bb-trayarrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 28px; height: 40px; display: grid; place-items: center;
+  border: 3px solid var(--ink); background: var(--banana); border-radius: 2px;
+  font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 2px 2px 0 var(--ink);
+  padding: 0; line-height: 1;
+}
+.bb-trayarrow--l { left: -8px; }
+.bb-trayarrow--r { right: -8px; }
+.bb-trayarrow[hidden] { display: none !important; }
+@media (hover: none) { .bb-trayarrow { display: none; } }
+/* item count on the slot label — the browse signal at a glance */
+.bb-count { font-weight: 800; font-size: 0.72rem; opacity: 0.55; margin-left: 0.3rem; }
+.bb-seeall {
+  margin-left: auto; border: 2px solid var(--ink); background: var(--paper);
+  font-family: inherit; font-weight: 800; font-size: 0.68rem; letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem; cursor: pointer; border-radius: 2px; text-transform: uppercase;
+}
+.bb-seeall:hover { background: var(--banana); }
+
+/* ---- 🏷 the banana tooltip — ink bubble, banana text, pixel notch ---- */
+.bb-tip {
+  position: fixed; z-index: 90; pointer-events: none;
+  background: var(--ink); color: var(--banana);
+  padding: 0.32rem 0.6rem; border-radius: 2px;
+  font-size: 0.78rem; font-weight: 700; line-height: 1.3; max-width: 240px;
+  box-shadow: 3px 3px 0 rgba(17, 17, 17, 0.3);
+}
+.bb-tip[hidden] { display: none !important; }
+.bb-tip::after {
+  content: ''; position: absolute; left: 50%; bottom: -4px;
+  width: 9px; height: 9px; margin-left: -5px;
+  background: var(--ink); transform: rotate(45deg);
+}
+.bb-tip--below::after { bottom: auto; top: -4px; }
