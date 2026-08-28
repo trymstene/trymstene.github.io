@@ -377,15 +377,20 @@ window.addEventListener('resize', () => { if (window.innerWidth >= 820) setMenu(
     var hosts = [document.querySelector('.nav__pass'), document.querySelector('.nav__toggle')];
     hosts.forEach(function (host) {
       if (!host) return;
+      var isToggle = host.classList.contains('nav__toggle');
       var dot = host.querySelector('.nav-note');
       if (unseen <= 0) { if (dot) dot.remove(); return; }
       if (!dot) {
         dot = document.createElement('span');
-        dot.className = 'nav-note';
+        // ⚠️ the BURGER wears a plain news DOT, never a number: next to the
+        // cart's count badge, two numbered red circles read as a glitch
+        // (Trym's screenshot, 28 Aug). Numbers mean counts (the cart);
+        // dots mean "news inside". The numbered badge stays on My Pass.
+        dot.className = 'nav-note' + (isToggle ? ' nav-note--dot' : '');
         dot.setAttribute('aria-hidden', 'true');
         host.appendChild(dot);
       }
-      dot.textContent = unseen;
+      dot.textContent = isToggle ? '' : unseen;
     });
     var pass = document.querySelector('.nav__pass');
     if (pass) pass.setAttribute('aria-label', unseen > 0 ? ('Your banana pass — ' + unseen + ' new') : 'Your banana pass');

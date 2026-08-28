@@ -170,6 +170,8 @@ a { color: inherit; }
   pointer-events: none;
 }
 .nav__toggle .nav-note { top: -6px; right: -8px; }
+/* the burger's variant: a plain news dot — counts belong to the cart */
+.nav-note--dot { min-width: 12px; width: 12px; height: 12px; padding: 0; }
 /* menu OPEN: the panel's own My-Pass row carries the news — a count floating
    on the close ✗ is noise (Trym's iOS screenshot) */
 .nav.open .nav__toggle .nav-note { display: none; }
