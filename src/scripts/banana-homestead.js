@@ -10,6 +10,7 @@ import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse } fr
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance } from '../lib/world-hud.js';
+import { GLVL_AT, GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
@@ -75,8 +76,12 @@ const CROPS = [
   { id: 'grape', name: 'Grapes', seed: 3 },
   { id: 'pineapple', name: 'Pineapple', seed: 3 },
   { id: 'prickly', name: 'Prickly pear', seed: 3 },
+  // 🌼 flowers joined the pouch 28 Aug — every park harvest pockets a seed now
+  { id: 'daisy', name: 'Daisy', seed: 3 },
+  { id: 'sunflower', name: 'Sunflower', seed: 3 },
+  { id: 'tulip', name: 'Midnight tulip', seed: 3 },
 ];
-const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵' };
+const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵', daisy: '🌼', sunflower: '🌻', tulip: '🌷' };
 // 🍳 THE SPINE (M2): crops → the pantry → dishes with WORLD-WIDE effects.
 // The multiplier enforces itself inside passStat — one choke point, every area.
 const DISHES = [
@@ -92,6 +97,8 @@ const DISHES = [
     pay: 34, blurb: 'sweetens straight into 34 bananacoins' },
   { id: 'smoothie', icon: '🍹', name: 'Tropical smoothie', need: { grape: 1, pineapple: 1, prickly: 1 },
     pay: 65, blurb: 'blends straight into 65 bananacoins' },
+  { id: 'bouquet', icon: '💐', name: 'Wildflower bouquet', need: { daisy: 1, sunflower: 1, tulip: 1 },
+    pay: 30, blurb: 'ties straight into 30 bananacoins' },
 ];
 const TENT_PRICE = 50;
 const dayStr = () => new Date().toISOString().slice(0, 10);
@@ -1189,8 +1196,30 @@ function init(visitDoc, visitMiss) {
   const hud = mountHud({
     mount: view,
     theme: { bg: 'rgba(16, 24, 12, 0.82)' },
-    chips: ['lvl', 'coins', 'crowd'],
+    // 🧑‍🌾 the beds live here too, so the gardener chip does — the card says
+    // where the ladder is CLIMBED (the park), with a door
+    chips: ['lvl', 'coins', 'gardener', 'crowd'],
+    onGardener: openGardenerCard,
   });
+  function openGardenerCard() {
+    const gl = gardenerLvlFor((passGet().stats || {}).garden_harvests || 0);
+    let veil = document.getElementById('hsGardCard');
+    if (!veil) {
+      veil = document.createElement('div');
+      veil.id = 'hsGardCard';
+      veil.className = 'hs-veil';
+      veil.addEventListener('click', (e) => { if (e.target === veil) veil.hidden = true; });
+      document.body.appendChild(veil);
+    }
+    const rows = GLVL_AT.map((at, i) => '<p style="margin:0.25rem 0">'
+      + (gl.n >= at ? '✅' : '🔒') + ' <b>lvl ' + (i + 1) + '</b> · ' + at + ' harvests · seeds up to '
+      + '⭐'.repeat(GLVL_STARS[i]) + '</p>').join('');
+    veil.innerHTML = '<div class="hs-card"><h2>🧑‍🌾 gardener level ' + gl.lvl + '</h2>'
+      + '<p>' + gl.n + ' harvests. The ladder climbs in the <b>park garden</b> — every pick counts, and higher levels unlock better seeds for planting everywhere.</p>'
+      + rows
+      + '<p style="margin-top:0.8rem"><a class="hs-btn" href="/park/?world">🌳 to the park garden →</a></p></div>';
+    veil.hidden = false;
+  }
   const refreshHud = () => hud && hud.refresh();
   document.getElementById('hsEmote').addEventListener('click', function () {
     // the float rides the button's own pixel heart — one art source (rave grammar)

@@ -493,7 +493,10 @@ function init() {
                    // positioned ancestor and .pk-stage is static, so mounting
                    // there sent the strip to the top of the PAGE.
     theme: { bg: 'rgba(14, 22, 14, 0.82)' },
-    chips: ['lvl', 'coins', 'crowd'],
+    // 🧑‍🌾 the gardener chip is PARK-LOCAL (the JELLY rule) — tapping it opens
+    // the ladder card the garden module hangs on the ctx seam
+    chips: ['lvl', 'coins', 'gardener', 'crowd'],
+    onGardener: () => { if (ctx.gardenerCard) ctx.gardenerCard(); },
   });
   const refreshHud = () => hud && hud.refresh();
 

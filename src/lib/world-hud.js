@@ -15,7 +15,7 @@
 // the others the first time a rule changed. Anything the pass cannot answer
 // (the bay's tickets) comes in through `values`.
 import { passGet, coinsNow } from './banana-pass.js';
-import { levelFor } from './pass-defs.js';
+import { levelFor, gardenerLvlFor } from './pass-defs.js';
 
 const CSS = `
 .wh {
@@ -42,6 +42,9 @@ const CSS = `
   border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
 }
 .wh__lvlbar i { display: block; height: 100%; width: 0; background: var(--wh-accent); transition: width 0.5s ease; }
+.wh .wh__gard { background: none; border: 0; color: inherit; font: inherit; padding: 0;
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.wh .wh__lvlbar--s { width: 16px; }
 /* the 44px stand coin smooth-downscaled — pixelated at 16px ate the emboss */
 .wh__coins img { display: block; }
 .wh__coins b, .wh__tix b { color: var(--wh-accent); }
@@ -75,6 +78,8 @@ export const coinBalance = () => coinsNow();
  * @param layout  'overlay' (default, over the map) | 'strip' (an in-flow band)
  * @param theme   { bg, border, text, accent } — any subset
  * @param chips   which to build, in order: 'lvl' 'coins' 'tix' 'slot' 'crowd'
+ *                + 'gardener' — AREA-LOCAL (park + homestead opt in; the JELLY
+ *                rule): 🧑‍🌾 level with a mini per-harvest fill, tap = onGardener
  * @param values  getters for what the pass cannot answer, e.g. { tix: () => n }
  * @param adopt   EXISTING nodes to place in the strip instead of building them.
  *                ⚠️ this is the club's path: its engine owns rvLvlRow/rvCount/
@@ -84,7 +89,7 @@ export const coinBalance = () => coinsNow();
  * @returns { el, refresh, setCrowd, setSlot, stop }
  */
 export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl', 'coins', 'crowd'],
-                          values = {}, adopt = [] } = {}) {
+                          values = {}, adopt = [], onGardener = null } = {}) {
   if (!mount) return null;
   injectCss();
 
@@ -114,6 +119,15 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
       made.tix = add('tix', '🎟 <b>0</b>');
     } else if (c === 'slot') {
       made.slot = add('slot', '');
+    } else if (c === 'gardener') {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'wh__gard';
+      b.setAttribute('aria-label', 'Your gardener level');
+      b.innerHTML = '🧑‍🌾 <b>1</b><span class="wh__lvlbar wh__lvlbar--s"><i></i></span>';
+      if (onGardener) b.addEventListener('click', onGardener);
+      el.appendChild(b);
+      made.gard = b;
     } else if (c === 'crowd') {
       made.crowd = add('crowd', '<span aria-hidden="true">◍</span> <span class="wh__crowdn">solo</span>');
     }
@@ -126,6 +140,8 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
   const coinN = made.coins && made.coins.querySelector('b');
   const tixN = made.tix && made.tix.querySelector('b');
   const crowdN = made.crowd && made.crowd.querySelector('.wh__crowdn');
+  const gardN = made.gard && made.gard.querySelector('b');
+  const gardFill = made.gard && made.gard.querySelector('.wh__lvlbar i');
 
   function refresh() {
     const s = passGet().stats || {};
@@ -135,6 +151,12 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
       if (lvlFill) lvlFill.style.width = Math.round((lv.into / lv.need) * 100) + '%';
     }
     if (coinN) coinN.textContent = coinBalance();
+    if (gardN) {
+      const g = gardenerLvlFor(s.garden_harvests || 0);
+      gardN.textContent = g.lvl;
+      if (gardFill) gardFill.style.width = (g.nextAt == null ? 100
+        : Math.round(((g.n - g.prevAt) / (g.nextAt - g.prevAt)) * 100)) + '%';
+    }
     if (tixN && values.tix) tixN.textContent = values.tix();
   }
 

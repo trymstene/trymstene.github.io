@@ -1224,6 +1224,20 @@ if os.path.isdir(FARM):
         except Exception as e:
             print('  crop stages failed', cid, e)
 
+# ---- 🌼 FLOWER STAGE ALIASES — the homestead beds read c-<id>-<stage>.png
+# for EVERYTHING plantable, and flowers only have sprouts + one bloom sprite.
+# Stages 1-2 alias the shared sprouts, 3-4 the bloom. Copies, not art.
+import shutil as _sh
+for _fid in ('daisy', 'sunflower', 'tulip'):
+    try:
+        _sh.copyfile(os.path.join(OUT, 'g-sprout1.png'), os.path.join(OUT, 'c-%s-1.png' % _fid))
+        _sh.copyfile(os.path.join(OUT, 'g-sprout2.png'), os.path.join(OUT, 'c-%s-2.png' % _fid))
+        for _st in (3, 4):
+            _sh.copyfile(os.path.join(OUT, 'g-%s.png' % _fid), os.path.join(OUT, 'c-%s-%d.png' % (_fid, _st)))
+        print('  c-%s-1..4.png aliased' % _fid)
+    except Exception as e:
+        print('  flower alias failed', _fid, e)
+
 # ---- 🥀 THE RUINED PLANT — one sprite for every dead plant --------------
 # A storm ruins half the beds, and the farm pack ships exactly one Rotten per
 # crop with NO growth phases — so one universal corpse is both what the art

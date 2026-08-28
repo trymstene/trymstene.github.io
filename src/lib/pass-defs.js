@@ -90,3 +90,19 @@ export const RANKS = [
 ];
 export const rankFor = (level) => { let r = RANKS[0]; for (const k of RANKS) { if (level >= k.at) r = k; } return r; };
 export const nextRank = (level) => RANKS.find((k) => k.at > level) || null;
+
+// 🧑‍🌾 THE GARDENER LADDER — a PARK-LOCAL track (the JELLY rule: area tracks
+// live in area HUDs, never the global bar). Levels are earned in total
+// harvests; each level raises the seed-star ceiling. Lives here so the park,
+// the homestead and the World HUD's gardener chip all read ONE table.
+export const GLVL_AT = [0, 3, 8, 15, 30];
+export const GLVL_STARS = [2, 3, 4, 5, 6];
+export function gardenerLvlFor(n) {
+  let l = 1;
+  while (l < GLVL_AT.length && n >= GLVL_AT[l]) l++;
+  return {
+    lvl: l, n, stars: GLVL_STARS[l - 1],
+    prevAt: GLVL_AT[l - 1],
+    nextAt: l < GLVL_AT.length ? GLVL_AT[l] : null,   // null = top of the ladder
+  };
+}
