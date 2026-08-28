@@ -409,12 +409,44 @@ function resolveHands(extras) {
 // ---- the one render path ----
 // Draws frame `idx` composited into a W×W canvas.
 // o: { bg: css color|'transparent', captions: bool, hue: deg, effect: 'none'|'disco'|'sparkle'|'confetti' }
+// tier LIGHT colors (≠ metal colors — bronze light would read brown/mud):
+// blue pool / white moonlight / gold radiance, gold always the brightest
+const MEMBER_GLOW = {
+  'sup-t1': { core: 'rgba(90,140,255,0.55)', r: 1.0 },
+  'sup-t2': { core: 'rgba(225,235,245,0.5)', r: 1.08 },
+  'sup-t3': { core: 'rgba(255,210,70,0.72)', r: 1.25 },
+};
+
 function drawComposite(ctx, W, idx, o) {
   ctx.clearRect(0, 0, W, W);
   if (o.bg && o.bg !== 'transparent') { ctx.fillStyle = o.bg; ctx.fillRect(0, 0, W, W); }
   const fh = W * FRAME_H_FRAC, scale = fh / FH, fw = FW * scale;
   const fx = (W - fw) / 2, fy = W * FRAME_TOP_FRAC;
   const F = FRAMES[idx];
+  // 💛 THE MEMBER UNDER-GLOW — a supporter hat lights the ground under the
+  // banana, everywhere drawComposite runs. 'screen' so it only ever BRIGHTENS
+  // (normal alpha mixes orange into green grass = mud); one radial gradient per
+  // frame + a wall-clock pulse — both ancient canvas, iOS-safe. It keys off the
+  // hat id, so surfaces that strip member gear (sticker-core → every product
+  // render) lose the glow with the hat automatically. o.glow === false opts out.
+  const mgl = HAT_BY_ID[o.hat] && HAT_BY_ID[o.hat].member && o.glow !== false
+    ? MEMBER_GLOW[HAT_BY_ID[o.hat].member] : null;
+  if (mgl) {
+    const cx = fx + ((F.feetX[0] + F.feetX[1]) / 2) * scale;
+    const cy = fy + 476 * scale;
+    const pulse = 1 + 0.08 * Math.sin(Date.now() / 480);
+    const rw = fw * 0.55 * mgl.r * pulse;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.translate(cx, cy);
+    ctx.scale(1, 0.4);
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rw);
+    grad.addColorStop(0, mgl.core);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(-rw, -rw, rw * 2, rw * 2);
+    ctx.restore();
+  }
   const unit = PX * scale;
   const side = F.face !== 'front';
   const mirror = F.face === 'left' ? -1 : 1;

@@ -1,0 +1,136 @@
+---
+// 🎩 THE SUPPORTERS WALL — the public thank-you page, live from the Ko-fi rail
+// (worker-pass GET /supporters: active members by tier + recent support, names
+// only, private supporters respected). Members are grouped under their hat;
+// coffees stream below. Empty states are honest — the wall opened empty.
+import BaseLayout from '../layouts/BaseLayout.astro';
+const KOFI = 'https://ko-fi.com/trymstene';
+---
+<BaseLayout
+  title="Supporters of Banana World"
+  description="The people keeping the banana dancing — members and coffee-buyers of Banana World, on the wall. Join them and wear a supporter top hat in the world.">
+  <style is:inline slot="head">
+    .sw { background: #14181d; color: #f2e8d8; padding: 2.6rem 1.2rem 4rem; }
+    .sw__in { max-width: 760px; margin: 0 auto; }
+    .sw__kicker { color: #ffd23f; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
+    .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.7rem, 6vw, 2.4rem); margin: 0 0 0.8rem; color: #ffffff; }
+    .sw p { line-height: 1.6; font-size: 0.98rem; margin: 0 0 1rem; }
+    .sw a { color: #ffd23f; }
+    .sw a.sw__join { display: inline-block; background: #ffd23f; color: #111; font-weight: 800; text-decoration: none; padding: 0.7rem 1.2rem; border: 3px solid #111; box-shadow: 5px 5px 0 #000; margin: 0.4rem 0 0; }
+    .sw__join:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+    .sw__tier { margin-top: 2.4rem; background: #1b2129; border: 3px solid #2c3542; box-shadow: 6px 6px 0 #000; padding: 1rem 1.1rem 1.2rem; }
+    .sw__tier--gold { border-color: #eda912; }
+    .sw__tier--silver { border-color: #9aa4b2; }
+    .sw__tier--blue { border-color: #3564d9; }
+    .sw__tierhead { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .sw__tierhead img { image-rendering: pixelated; height: 44px; width: auto; }
+    .sw__tierhead h2 { font-family: "Archivo Black", sans-serif; font-size: 1.05rem; margin: 0; }
+    .sw__tier--gold h2 { color: #ffd84d; }
+    .sw__tier--silver h2 { color: #dfe5ec; }
+    .sw__tier--blue h2 { color: #7fa3f5; }
+    .sw__names { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+    .sw__names li { background: #10151b; border: 2px solid #2c3542; padding: 0.3rem 0.6rem; font-weight: 700; font-size: 0.92rem; }
+    .sw__empty { opacity: 0.75; font-size: 0.92rem; margin: 0; }
+    .sw__wall { margin-top: 2.4rem; }
+    .sw__wall h2 { font-family: "Archivo Black", sans-serif; font-size: 1.2rem; color: #ffd23f; margin: 0 0 0.7rem; }
+    .sw__feed { margin: 0; padding: 0; list-style: none; }
+    .sw__feed li { border-bottom: 1px solid #242c37; padding: 0.5rem 0.1rem; font-size: 0.94rem; }
+    .sw__feed b { color: #ffffff; }
+    .sw__feed time { opacity: 0.6; font-size: 0.82rem; margin-left: 0.4rem; }
+    .sw__note { margin-top: 2.2rem; font-size: 0.86rem; opacity: 0.75; }
+  </style>
+
+  <section class="sw">
+    <div class="sw__in">
+      <p class="sw__kicker">the people keeping the banana dancing</p>
+      <h1>The Supporters Wall</h1>
+      <p>
+        Banana World is free — the rave, the park, the bay, the builder, all of it.
+        These are the people who keep the lights on. Members wear a
+        <a href="/make-a-banana/">supporter top hat</a> everywhere their banana goes,
+        with a glow to match.
+      </p>
+      <a class="sw__join" href={KOFI} rel="noopener">Join them on Ko-fi →</a>
+
+      <div class="sw__tier sw__tier--gold">
+        <div class="sw__tierhead">
+          <img src="/assets/supporters/hat-gold.png" alt="the Gold Top Hat" width="44" height="40" loading="lazy" />
+          <h2>Legends of Banana World</h2>
+        </div>
+        <ul class="sw__names" id="swGold"></ul>
+        <p class="sw__empty" id="swGoldEmpty">The gold hat waits for its first legend.</p>
+      </div>
+      <div class="sw__tier sw__tier--silver">
+        <div class="sw__tierhead">
+          <img src="/assets/supporters/hat-silver.png" alt="the Silver Top Hat" width="44" height="40" loading="lazy" />
+          <h2>Patrons of the Park</h2>
+        </div>
+        <ul class="sw__names" id="swSilver"></ul>
+        <p class="sw__empty" id="swSilverEmpty">No patrons yet — the park keeps growing anyway.</p>
+      </div>
+      <div class="sw__tier sw__tier--blue">
+        <div class="sw__tierhead">
+          <img src="/assets/supporters/hat-blue.png" alt="the Blue Top Hat" width="44" height="40" loading="lazy" />
+          <h2>Friends of the Banana</h2>
+        </div>
+        <ul class="sw__names" id="swBlue"></ul>
+        <p class="sw__empty" id="swBlueEmpty">The wall is freshly built — the first name could be yours.</p>
+      </div>
+
+      <div class="sw__wall">
+        <h2>Recent support</h2>
+        <ul class="sw__feed" id="swFeed"></ul>
+        <p class="sw__empty" id="swFeedEmpty">Every coffee lands here, the moment it happens.</p>
+      </div>
+
+      <p class="sw__note">
+        Names appear exactly as given on Ko-fi; supporters who chose to stay private
+        stay private here too. Membership hats are granted and retired automatically
+        with your subscription — see <a href="/pass/">your pass</a>.
+      </p>
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const API = 'https://banana-pass.trymstene.workers.dev/supporters';
+      const ago = (ts) => {
+        const d = Date.now() - ts;
+        const day = 86400000;
+        if (d < 3600000) return 'just now';
+        if (d < day) return Math.round(d / 3600000) + 'h ago';
+        if (d < day * 30) return Math.round(d / day) + 'd ago';
+        return new Date(ts).toLocaleDateString();
+      };
+      fetch(API).then((r) => r.json()).then((d) => {
+        const groups = { 'sup-t3': 'Gold', 'sup-t2': 'Silver', 'sup-t1': 'Blue' };
+        for (const m of d.members || []) {
+          const g = groups[m.t];
+          if (!g || !m.n) continue;
+          const li = document.createElement('li');
+          li.textContent = m.n;
+          document.getElementById('sw' + g).appendChild(li);
+        }
+        for (const g of Object.values(groups)) {
+          if (document.getElementById('sw' + g).children.length) {
+            document.getElementById('sw' + g + 'Empty').hidden = true;
+          }
+        }
+        const feed = document.getElementById('swFeed');
+        for (const w of (d.wall || []).slice(0, 30)) {
+          const li = document.createElement('li');
+          const b = document.createElement('b');
+          b.textContent = w.n || 'Someone';
+          li.appendChild(b);
+          li.appendChild(document.createTextNode(
+            w.k === 'member' ? ' renewed their membership' : ' bought the banana a coffee'));
+          const t = document.createElement('time');
+          t.textContent = ago(w.ts);
+          li.appendChild(t);
+          feed.appendChild(li);
+        }
+        if (feed.children.length) document.getElementById('swFeedEmpty').hidden = true;
+      }).catch(() => {});
+    })();
+  </script>
+</BaseLayout>
