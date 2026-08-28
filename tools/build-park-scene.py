@@ -460,6 +460,7 @@ TREE_OVS = []          # tree overlays — client greens them one by one (W1c)
 SIGNS = []
 ROAD_SIGN = None                # 🧭 the waypost at the east road's end
 ROAD_SIGN_W = None              # 🧭 …and the west road's (→ the Homestead)
+SUP_BOARD = None                # 💛 the supporters board, by Old Peel's bench
 MARKET = {}
 
 TRUNK = ('rect', -13, -36, 13, 0)
@@ -1477,6 +1478,67 @@ if HAVE_PACK:
     place(_POLE, ROAD_SIGN_W[0], ROAD_SIGN_W[1], scale=1.0, sh=0.9,
           layer=True, solid=('circle', 8))
 
+    # 💛 THE SUPPORTERS BOARD — also DRAWN, for the same reason the pole is:
+    # 6223 pack sprites were swept for a monument and the only near-fit was the
+    # Camping signboard with "Camping" burnt into it (see kofi-supporters memory).
+    # A plank panel on two pole legs, papers pinned to it crooked — the NAMES are
+    # not painted on: they live on the tap card and /supporters/, so the art never
+    # goes stale. The header plank is DOM (banana-park.js), like the waypost signs.
+    def build_supboard(w=156, ph=68, legh=46, K=3):
+        WOOD_, LIT_, GRAIN_, DARK_ = (146, 102, 56), (178, 128, 72), (120, 83, 44), (104, 71, 38)
+        INK_ = (52, 36, 21)
+        PAPERS = [(26, 20, -6, (247, 240, 214), (214, 203, 176)),
+                  (22, 17, 5, (238, 231, 208), (206, 196, 170)),
+                  (24, 19, -3, (250, 243, 222), (219, 208, 182)),
+                  (20, 16, 7, (236, 224, 200), (203, 191, 164)),
+                  (25, 18, -8, (245, 236, 210), (212, 200, 174)),
+                  (21, 17, 4, (240, 232, 205), (208, 197, 170))]
+
+        def note(pw, ph2, tilt, col, shade):
+            im = Image.new('RGBA', (pw * K, ph2 * K), (0, 0, 0, 0))
+            nd = ImageDraw.Draw(im)
+            nd.rectangle([0, 0, pw * K - 1, ph2 * K - 1], fill=shade)
+            nd.rectangle([0, 0, pw * K - K - 1, ph2 * K - K - 1], fill=col)
+            # short ragged "writing" — a centred full-width line plus the tilt
+            # reads as a book spine, so the lines stay left and uneven
+            for i, ly in enumerate(range(6, ph2 - 4, 4)):
+                x2 = (5 + (pw - 12) * (0.9 if i % 3 == 0 else 0.62 if i % 3 == 1 else 0.75)) * K
+                nd.rectangle([4 * K, ly * K, x2, ly * K + K - 1], fill=shade)
+            nd.rectangle([(pw // 2 - 1) * K, 0, (pw // 2) * K + K - 1, 2 * K - 1], fill=(74, 48, 30))
+            return im.rotate(tilt, expand=True, resample=Image.NEAREST)
+
+        W2, H2 = w * K, (ph + legh) * K
+        s = Image.new('RGBA', (W2, H2), (0, 0, 0, 0))
+        d = ImageDraw.Draw(s)
+        lw, lx1, lx2 = 8 * K, 22 * K, (w - 30) * K
+        for lx in (lx1, lx2):
+            d.rectangle([lx, (ph - 6) * K, lx + lw - 1, H2 - 1], fill=INK_)
+            d.rectangle([lx + K, (ph - 6) * K + K, lx + lw - K - 1, H2 - K - 1], fill=WOOD_)
+            d.rectangle([lx + K, (ph - 6) * K + K, lx + 2 * K - 1, H2 - K - 1], fill=LIT_)
+        d.rectangle([0, 0, W2 - 1, ph * K - 1], fill=INK_)
+        d.rectangle([K, K, W2 - K - 1, ph * K - K - 1], fill=WOOD_)
+        d.rectangle([K, K, W2 - K - 1, 6 * K - 1], fill=LIT_)
+        d.rectangle([K, (ph - 7) * K, W2 - K - 1, ph * K - K - 1], fill=DARK_)
+        for gy in (20, 40):
+            d.rectangle([K, gy * K, W2 - K - 1, gy * K + K - 1], fill=GRAIN_)
+        for px in (7, w - 9):
+            for py in (10, ph - 13):
+                d.rectangle([px * K, py * K, px * K + K - 1, py * K + K - 1], fill=INK_)
+        for (px, py), spec in zip([(12, 12), (46, 15), (80, 11), (114, 16), (28, 38), (96, 39)], PAPERS):
+            pim = note(*spec)
+            sh2 = Image.new('RGBA', pim.size, (0, 0, 0, 0))
+            sh2.paste((0, 0, 0, 60), (0, 0), pim.split()[3])
+            s.alpha_composite(sh2, (px * K + K, py * K + K))
+            s.alpha_composite(pim, (px * K, py * K))
+        return blockify(s, factor=K, colors=14, alpha_thresh=0.4, trim=False)
+
+    # south-east of Old Peel's bench: a little below him, a little to the right
+    SUP_BOARD = (1700, 800)
+    _SUPB = '__supporters_board.png'
+    _cache[(_SUPB, 1, 28, 0.0, 1.0, 1.0)] = build_supboard()
+    place(_SUPB, SUP_BOARD[0], SUP_BOARD[1], scale=1.0, sh=0.55,
+          layer=True, solid=('rect', -72, -16, 72, 4))
+
 
 # ---- 🌦 THE RAIN TILE --------------------------------------------------
 # ONE seamless tile, scrolled by CSS transform, is the whole rain engine: no
@@ -1862,6 +1924,8 @@ def emit_geo():
              % ('{ x: %d, y: %d }' % ROAD_SIGN if ROAD_SIGN else 'null'))
     L.append('export const ROAD_SIGN_W = %s;'
              % ('{ x: %d, y: %d }' % ROAD_SIGN_W if ROAD_SIGN_W else 'null'))
+    L.append('export const SUP_BOARD = %s;'
+             % ('{ x: %d, y: %d }' % SUP_BOARD if SUP_BOARD else 'null'))
     L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])

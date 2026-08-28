@@ -23,7 +23,7 @@ import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, ROAD_SIGN_W, WEED_GRID,
+  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, ROAD_SIGN_W, SUP_BOARD, WEED_GRID,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
@@ -241,6 +241,59 @@ function init() {
     way.style.top = pct(ROAD_SIGN_W.y - 60, H);
     way.style.zIndex = String(100 + ROAD_SIGN_W.y + 3);
     world.appendChild(way);
+  }
+  // 💛 the supporters board's header plank — the same DOM-plank trick as the
+  // waypost signs, wide enough to span the board and sitting ON its top rail
+  // (the names are NOT on the board; they live in its card and /supporters/)
+  if (SUP_BOARD) {
+    const sup = document.createElement('div');
+    sup.className = 'pk-way pk-way--sup';
+    sup.textContent = 'SUPPORTERS';
+    sup.style.left = pct(SUP_BOARD.x, W);
+    sup.style.top = pct(SUP_BOARD.y - 107, H);   // 3px above the board's top rail
+    sup.style.zIndex = String(100 + SUP_BOARD.y + 3);
+    sup.addEventListener('click', (e) => { e.stopPropagation(); openSupCard(); });
+    world.appendChild(sup);
+  }
+
+  // 💛 the board's card: who is keeping the world free. The feed is public
+  // (names only, private supporters already filtered server-side) and cached
+  // for the visit — the board is scenery, not a live ticker.
+  const supPanel = document.getElementById('pkSup');
+  const supBody = document.getElementById('pkSupBody');
+  let supFeed = null;
+  const supEsc = (s) => String(s).replace(/[<>&"]/g, (c) => (
+    { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  function supPaint() {
+    const rows = (supFeed && supFeed.members) || [];
+    supBody.innerHTML = '<h2 class="pk-cardtitle">💛 The supporters board</h2>'
+      + '<p>' + (rows.length
+        ? 'These bananas pay for the world to stay free.'
+        : 'Nobody is pinned up here yet. The first name could be yours.') + '</p>'
+      + (rows.length ? '<ul class="pk-suplist">' + rows.slice(0, 24).map((m) =>
+        '<li><i class="pk-suppip pk-suppip--' + (m.t || 'sup-t1').slice(-2)
+        + '"></i>' + supEsc(m.n) + '</li>').join('') + '</ul>' : '')
+      + '<a class="pk-cta" href="/supporters/"><span class="pk-cta__verb">'
+      + (rows.length ? 'the whole wall →' : 'join them →') + '</span></a>';
+  }
+  function openSupCard() {
+    supPaint();
+    supPanel.hidden = false;
+    track('park_supboard');
+    if (supFeed) return;
+    fetch('https://banana-pass.trymstene.workers.dev/supporters')
+      .then((r) => r.json()).then((d) => { supFeed = d; if (!supPanel.hidden) supPaint(); })
+      .catch(() => {});
+  }
+  document.getElementById('pkSupClose')
+    .addEventListener('click', () => { supPanel.hidden = true; });
+  // the board itself answers a tap, not just its plank (the world's rule:
+  // things you can read are tappable where they stand)
+  function tapSupBoard(wx, wy) {
+    if (!SUP_BOARD) return false;
+    if (Math.abs(wx - SUP_BOARD.x) > 82 || wy > SUP_BOARD.y + 6 || wy < SUP_BOARD.y - 118) return false;
+    openSupCard();
+    return true;
   }
 
   // 🍂 THE FIVE BLOOM PHASES (W1c) — 0 dead … 4 perfect. Bands start at
@@ -600,6 +653,7 @@ function init() {
     if (birds.tapBird(wx, wy)) return;      // 🔭 they fly above everything
     if (critters.tapBfly(wx, wy)) return;
     if (critters.tapAnimal(wx, wy)) return;
+    if (tapSupBoard(wx, wy)) return;
     if (npc.tapOld(wx, wy)) return;
     if (npc.tapPeelBed(wx, wy)) return;   // 🌼 his flowerbed answers with fussing
     // ⚠️ NO tapWeed HERE (30 Jul). Weeds are a CHORE, and the park's grammar

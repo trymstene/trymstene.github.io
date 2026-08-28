@@ -559,6 +559,19 @@ const faq = {
       background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
       background-size: 100% 5px;
     }
+    /* 💛 the supporters board's header: the same plank, grown to span the board
+       and nailed across its top rail. Tappable — it opens the wall. */
+    .pk-way--sup {
+      font-size: 0.62rem; padding: 3px 22px; letter-spacing: 0.06em;
+      pointer-events: auto; cursor: pointer;
+    }
+    a.pk-cta { text-decoration: none; }   /* the card's door is a button, not a link */
+    .pk-suplist { list-style: none; margin: 0.6rem 0 0.9rem; padding: 0; display: grid; gap: 0.3rem; }
+    .pk-suplist li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; }
+    .pk-suppip { width: 9px; height: 9px; flex: 0 0 auto; border: 1px solid #000; }
+    .pk-suppip--t3 { background: #ffd24d; }
+    .pk-suppip--t2 { background: #e2eaf2; }
+    .pk-suppip--t1 { background: #6ea0ff; }
     /* 🍂 the bloom-phase twins — real art swaps riding THE BLOOM (never a
        CSS filter on the world). Ground plates (sad 0-1 / mid 2-3) crossfade
        1.5s over the lush background, under every positioned walker/prop;
@@ -1700,6 +1713,15 @@ const faq = {
           <div class="pk-card" role="dialog" aria-label="The garden">
             <button class="pk-cardx" id="pkGardenClose" type="button" aria-label="close">✕</button>
             <div id="pkGardenBody"></div>
+          </div>
+        </div>
+
+        <!-- 💛 THE SUPPORTERS BOARD — its own card, so the garden's panel keeps
+             owning the garden. Names come from the live Ko-fi feed. -->
+        <div class="pk-panel" id="pkSup" hidden>
+          <div class="pk-card" role="dialog" aria-label="The supporters board">
+            <button class="pk-cardx" id="pkSupClose" type="button" aria-label="close">✕</button>
+            <div id="pkSupBody"></div>
           </div>
         </div>
 
