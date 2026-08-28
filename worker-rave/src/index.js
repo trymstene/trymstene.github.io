@@ -1055,6 +1055,12 @@ export class ParkRoom {
     // that grower next walks in. You lose the slot, never the harvest.
     const cmp = (await this.state.storage.get('compost')) || {};
     let cmpDirty = false;
+    // 🪪 THE SID LEDGER — { oldDeviceSidShort: ownerShort }. A request that
+    // carries BOTH a person-id and a device-sid proves the pairing (the
+    // browser held both), so ownership of plots sown before sign-in follows
+    // the PERSON to every device — not only the browser that sowed them.
+    const sidmap = (await this.state.storage.get('sidmap')) || {};
+    let sidDirty = false;
     for (let i = 0; i < GARDEN_SLOTS; i++) {
       const w = slots[i];
       if (!w || w.rot) continue;                      // a storm's ruin is a CHORE, not a crop
@@ -1122,6 +1128,19 @@ export class ParkRoom {
     const asking = [url.searchParams.get('pass'), url.searchParams.get('alt'), b && b.pass, b && b.alt]
       .map((v) => (typeof v === 'string' ? v : '').slice(0, 8))
       .filter((v, k, a) => v && a.indexOf(v) === k);
+    {
+      const pP = ((url.searchParams.get('pass') || (b && b.pass) || '') + '').slice(0, 8);
+      const pA = ((url.searchParams.get('alt') || (b && b.alt) || '') + '').slice(0, 8);
+      if (pP && pA && pP !== pA && sidmap[pA] !== pP) {
+        sidmap[pA] = pP;
+        const sk = Object.keys(sidmap);                 // bounded — evict oldest
+        if (sk.length > 500) delete sidmap[sk[0]];
+        sidDirty = true;
+      }
+    }
+    // does this plot belong to the asker, through any name the ledger knows?
+    const ledgerMine = (short2) => !!short2
+      && (asking.includes(short2) || asking.includes(sidmap[short2]));
     // 🌿 weeds + 🌸 bloom ride the same read: lazy decay, catch-up spawns.
     // ⭐ every living plant FEEDS the meter by its stars (post-wilt-sweep, so
     // only plants that made it through count)
@@ -1323,6 +1342,7 @@ export class ParkRoom {
       // ⭐ the client no longer derives ripeness from wall-clock days — growth is
       // WATERED days now, and only the room has counted them
       grew: s.grew || 0, ...(isReady(s) ? { ready: 1 } : {}),
+      ...(ledgerMine(s.passShort) ? { mine: 1 } : {}),
       waterers: (s.waterers || []).length,
       wlast: (s.wlast || []).slice(-5),
     } : null);
@@ -1362,7 +1382,13 @@ export class ParkRoom {
     // find the bed empty — the only moment the message explains anything.
     function compostFor() {
       let n = 0, stars = 0;
-      for (const k of asking) {          // one payout, however many names it was filed under
+      // …including debts filed under old device-sids the ledger has since
+      // tied to this person — an orphaned crop still finds its grower
+      const names = [...asking];
+      for (const k of Object.keys(sidmap)) {
+        if (asking.includes(sidmap[k]) && !names.includes(k)) names.push(k);
+      }
+      for (const k of names) {           // one payout, however many names it was filed under
         const c = cmp[k];
         if (!c || !c.n) continue;
         n += c.n;
@@ -1375,6 +1401,7 @@ export class ParkRoom {
     const persist = async () => {
       await this.state.storage.put('garden', slots);
       await this.state.storage.put('compost', cmp);
+      if (sidDirty) await this.state.storage.put('sidmap', sidmap);
       await this.state.storage.put('beds', bedState);
       await this.state.storage.put('weeds', wd);
       await this.state.storage.put('trash', tr);
@@ -1402,12 +1429,14 @@ export class ParkRoom {
       const gAlt = (url.searchParams.get('alt') || '').slice(0, 8);
       if (gOwner && gAlt && gOwner !== gAlt) {
         for (const o of [...slots, ...((hs && hs.list) || []), ...((bd && bd.list) || [])]) {
-          if (o && o.passShort === gAlt) { o.passShort = gOwner; dirty = true; }
+          // this device's old sid — and any OTHER device's sid the ledger has
+          // since tied to this person — folds into the person-id for good
+          if (o && (o.passShort === gAlt || sidmap[o.passShort] === gOwner)) { o.passShort = gOwner; dirty = true; }
         }
       }
       const body = payload(compostFor());
       if (dirty || weedsDirty || decayed || eggsDirty || trashDirty || borderDirty
-        || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty) await persist();
+        || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty || sidDirty) await persist();
       return json(body);
     }
     if (!b || typeof b !== 'object') return json({ err: 'bad body' }, 400);
@@ -1473,7 +1502,7 @@ export class ParkRoom {
     // Every touch migrates the plot forward, so the legacy id fades out on its
     // own and no migration script was needed.
     const alt = (typeof b.alt === 'string' ? b.alt.slice(0, 24) : '').slice(0, 8);
-    const isMine = (o) => !!o && (o.passShort === short || (!!alt && o.passShort === alt));
+    const isMine = (o) => !!o && (o.passShort === short || (!!alt && o.passShort === alt) || sidmap[o.passShort] === short);
     const claim = (o) => { if (o && o.passShort !== short) o.passShort = short; };
     // 🥚 first tap wins (the rave-drop pattern) — the egg's removal IS the verdict
     if (url.pathname === '/garden/egg') {

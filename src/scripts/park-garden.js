@@ -380,7 +380,9 @@ export function initGarden(ctx) {
   // migrate to the owner id on any touch; birdhouses never do, so a house
   // raised before signing in stays yours only through the alt.
   const gOwn = (short) => !!short && (short === me() || (myAlt !== myShort && short === myAlt));
-  const gMine = (s) => !!s && gOwn(s.passShort);
+  // …and the room stamps `mine: 1` through its sid ledger — a plot sown on
+  // your OTHER device is yours even when this browser's two ids can't prove it
+  const gMine = (s) => !!s && (gOwn(s.passShort) || !!s.mine);
   // ⭐ DID THE ROOM ACTUALLY DO IT? Every reply carries ok on success and err
   // on a miss; a dead fetch is null. Anything else is a miss.
   const gDone = (r) => !!r && !!r.ok && !r.err;
@@ -1422,7 +1424,16 @@ export function initGarden(ctx) {
 
     }
   }
-  gardenPoll();
+  // ⚠️ the FIRST read must not fail quietly: a cold worker or a flaky mobile
+  // fetch left the whole garden BLANK until the next 60s poll (any tap's
+  // reply repopulated it — Kiwi's "clicked the bird house and it all came
+  // back"). Retry the boot read on a short fuse until one lands.
+  (async function bootRead(n) {
+    const res = await gFetch('');
+    if (res) { applyGarden(res); return; }
+    if (n < 3) setTimeout(() => bootRead(n + 1), [2500, 6000, 15000][n]);
+    else gardenPoll();   // out of retries — one last try + the offline fallback
+  })(0);
   setInterval(() => { if (!document.hidden) gardenPoll(); }, 60000);
   function closeGarden() { gardenPanel.hidden = true; gardenOpenSlot = -1; }
   document.getElementById('pkGardenClose').addEventListener('click', closeGarden);
@@ -1524,10 +1535,13 @@ export function initGarden(ctx) {
       + '<p class="pk-stickerrow">' + nameSticker(s.name, mine)
       + '<span class="pk-stars">' + starStr(sd.stars) + '</span></p>'
       + (ready
-        ? '<p class="pk-ready">' + (mine ? '✨ full-grown — tap it to harvest'
-          : '✨ ready to pick — only its grower can harvest it') + '</p>'
+        ? '<p class="pk-ready pk-ready--big">' + (mine ? '✨ FULL-GROWN — tap it to harvest!'
+          : '✨ READY TO PICK — waiting for ' + (s.name ? esc(s.name) : 'its grower')) + '</p>'
         : '')
-      + (s.rot ? '' : meterRow('💧', 'soil moisture',
+      // 💧 a READY plant is past watering — the moisture bar and water button
+      // bow out and the harvest line is the hero (they confused everyone:
+      // biggest visual said "needs water", the button to do it was gone)
+      + (ready || s.rot ? '' : meterRow('💧', 'soil moisture',
         leftOf(s.lastWater || s.plantedAt), 'bone dry', 'water'))
       + tallyBtn('pkWho', '💧', s.waterers || 0, s.wlast)
       + (ready ? '' : actionBtn('pkWaterBtn', '💧 water it', mine ? '' : '+2 REP'))
