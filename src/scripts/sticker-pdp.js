@@ -4,7 +4,7 @@
 // pipeline. All the heavy lifting lives in ../lib/sticker-core.js (shared with
 // the builder) so config + render + checkout never drift between the two.
 import {
-  assetsReady, NFRAMES, HATS, GLASSES, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, SVG as ART,
+  assetsReady, artReady, NFRAMES, HATS, GLASSES, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, SVG as ART,
 } from '../lib/banana-engine.js';
 import { ownsWearable, ownsDropStat } from '../data/wearables.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -92,6 +92,8 @@ function designCanvas() {
   return cv;
 }
 
+const customArts = () => (Array.isArray(state.custom) ? state.custom : state.custom ? [state.custom] : [])
+  .map((c) => c && c.art).filter(Boolean);
 function paintMockup() {
   const mock = makeStickerMockup(state, designCanvas(), 900, product.key, {
     colorHex: selHex(),
@@ -102,6 +104,11 @@ function paintMockup() {
   const main = el('pdpMock');
   main.width = mock.width; main.height = mock.height;
   main.getContext('2d').drawImage(mock, 0, 0);
+  // ⏳ a just-equipped community item's art may still be LOADING — this canvas
+  // paints once (no RAF loop like the builder), so the first pick drew a
+  // banana without its new shoes. artReady resolves true only when it had to
+  // wait, so the repaint fires once and cannot loop.
+  artReady(customArts()).then((waited) => { if (waited) { paintMockup(); buildPosePicker(); } });
 }
 
 // apparel option chips: colour repaints the tee, size just marks itself
@@ -553,6 +560,7 @@ if (el('pdpAddMore')) el('pdpAddMore').onclick = async () => {
   btn.disabled = true; btn.textContent = 'Adding your ' + product.name.toLowerCase() + '…';
   try {
     await ensureCaptionFont(state);
+    await artReady(customArts());   // a community item's art must be IN the print
     const c = await addToOrder(renderPrintFile(state, product), product, sel);
     track('pdp_add_to_order', withSecs({ product: product.key, n: c.n, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
     btn.textContent = '✓ in the cart';
@@ -584,6 +592,7 @@ if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
   track('sticker_pdp_checkout', withSecs({ product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
   try {
     await ensureCaptionFont(state); // Anton must be decoded before we bake the print
+    await artReady(customArts());   // a community item's art must be IN the print
     const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state, product), product, sel);
     // secs_since_prev here = upload+cart pipeline latency (ORDER click -> redirect)
     track('checkout_redirect', withSecs({ value: PRICE.amount, currency: PRICE.currency }));

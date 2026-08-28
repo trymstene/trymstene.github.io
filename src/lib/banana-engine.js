@@ -319,6 +319,23 @@ async function assetsReady() {
   })));
 }
 
+// ⏳ wait for SPECIFIC art keys. Community items enter imgCache lazily — at
+// their first drawAcc, which is AFTER boot's assetsReady resolved — and
+// drawAcc silently skips an unloaded image, so a ONE-SHOT canvas (the PDP
+// mockup, a print file) can paint a banana missing the item it just equipped
+// (Trym's first-click-does-nothing report, 28 Aug). Resolves true only if it
+// actually had to wait — callers repaint on true without looping.
+async function artReady(keys) {
+  const imgs = (keys || []).filter(Boolean).map(imgFor);
+  const pending = imgs.filter((i) => !(i.complete && i.naturalWidth));
+  if (!pending.length) return false;
+  await Promise.all(pending.map((i) => new Promise((res) => {
+    i.addEventListener('load', () => res(), { once: true });
+    i.addEventListener('error', () => res(), { once: true });
+  })));
+  return true;
+}
+
 // Safari (macOS + iOS) does NOT support ctx.filter — it silently ignores it,
 // so hue-rotate (disco, the drop rainbow) did nothing on Apple devices
 // (Trym's iOS catch). Detect once; ?huetest forces the fallback for testing.
@@ -658,6 +675,6 @@ export {
   HAT_BY_ID, SHADE_BY_ID, HATS, GLASSES,
   PX, gridW, gridH, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
   SPARKS, CONFETTI,
-  sheet, imgFor, assetsReady, drawComposite, drawAcc, drawSparks, drawConfetti, caption,
+  sheet, imgFor, assetsReady, artReady, drawComposite, drawAcc, drawSparks, drawConfetti, caption,
   resolveHands, outfitParams,
 };
