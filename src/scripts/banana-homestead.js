@@ -9,8 +9,8 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
-import { mountHud, coinBalance } from '../lib/world-hud.js';
-import { GLVL_AT, GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
+import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
+import { gardenerLvlFor } from '../lib/pass-defs.js';
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
@@ -1211,13 +1211,8 @@ function init(visitDoc, visitMiss) {
       veil.addEventListener('click', (e) => { if (e.target === veil) veil.hidden = true; });
       document.body.appendChild(veil);
     }
-    const rows = GLVL_AT.map((at, i) => '<p style="margin:0.25rem 0">'
-      + (gl.n >= at ? '✅' : '🔒') + ' <b>lvl ' + (i + 1) + '</b> · ' + at + ' harvests · seeds up to '
-      + '⭐'.repeat(GLVL_STARS[i]) + '</p>').join('');
-    veil.innerHTML = '<div class="hs-card"><h2>🧑‍🌾 gardener level ' + gl.lvl + '</h2>'
-      + '<p>' + gl.n + ' harvests. The ladder climbs in the <b>park garden</b> — every pick counts, and higher levels unlock better seeds for planting everywhere.</p>'
-      + rows
-      + '<p style="margin-top:0.8rem"><a class="hs-btn" href="/park/?world">🌳 to the park garden →</a></p></div>';
+    veil.innerHTML = '<div class="hs-card">' + gardenerCardHtml(gl)
+      + '<p style="margin:0.9rem 0 0;text-align:center"><a class="hs-btn" href="/park/?world">the ladder climbs in the park garden →</a></p></div>';
     veil.hidden = false;
   }
   const refreshHud = () => hud && hud.refresh();

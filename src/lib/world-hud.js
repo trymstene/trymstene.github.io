@@ -15,7 +15,8 @@
 // the others the first time a rule changed. Anything the pass cannot answer
 // (the bay's tickets) comes in through `values`.
 import { passGet, coinsNow } from './banana-pass.js';
-import { levelFor, gardenerLvlFor } from './pass-defs.js';
+import { levelFor, gardenerLvlFor, GLVL_AT, GLVL_STARS } from './pass-defs.js';
+import { iconSvg } from './pixel-icons.js';
 
 const CSS = `
 .wh {
@@ -45,6 +46,22 @@ const CSS = `
 .wh .wh__gard { background: none; border: 0; color: inherit; font: inherit; padding: 0;
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 .wh .wh__lvlbar--s { width: 16px; }
+.wh__gardart { height: 15px; width: auto; image-rendering: pixelated; }
+/* 🧑‍🌾 the gardener card BODY — one game-style stat block, shared by the park
+   panel and the homestead card. THE STAT IS THE VISUAL (a big number under a
+   small-caps label), then one bar to the NEXT rung, then one line naming what
+   that rung unlocks. Nothing else — no tier table (Trym, 28 Aug: no game
+   lists every unreached level). */
+.whg { text-align: center; padding: 0.3rem 0 0.1rem; }
+.whg__art { width: 34px; height: auto; image-rendering: pixelated; }
+.whg__label { margin: 0.25rem 0 0; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.65; }
+.whg__num { margin: 0; font-family: "Archivo Black", "Space Grotesk", sans-serif; font-size: 2.7rem; line-height: 1.05; }
+.whg__bar { width: min(220px, 82%); height: 10px; margin: 0.5rem auto 0.35rem; background: rgba(0, 0, 0, 0.45); border: 2px solid rgba(0, 0, 0, 0.55); border-radius: 4px; overflow: hidden; }
+/* ⚠️ the card renders OUTSIDE .wh — the accent var needs its fallback */
+.whg__bar i { display: block; height: 100%; background: var(--wh-accent, #ffe14d); }
+.whg__count { margin: 0 0 0.55rem; font-size: 0.8rem; opacity: 0.8; }
+.whg__next { margin: 0; font-size: 0.88rem; font-weight: 700; }
+.whg__next svg { vertical-align: -2px; color: #ffd23f; }
 /* the 44px stand coin smooth-downscaled — pixelated at 16px ate the emboss */
 .wh__coins img { display: block; }
 .wh__coins b, .wh__tix b { color: var(--wh-accent); }
@@ -124,7 +141,10 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
       b.type = 'button';
       b.className = 'wh__gard';
       b.setAttribute('aria-label', 'Your gardener level');
-      b.innerHTML = '🧑‍🌾 <b>1</b><span class="wh__lvlbar wh__lvlbar--s"><i></i></span>';
+      // pack art, never an OS emoji (Trym, 28 Aug — the doctrine exists for a
+      // reason and this chip shipped violating it): the park's own sprout
+      b.innerHTML = '<img class="wh__gardart" src="/assets/park/g-sprout2.png" alt="" />'
+        + '<b>1</b><span class="wh__lvlbar wh__lvlbar--s"><i></i></span>';
       if (onGardener) b.addEventListener('click', onGardener);
       el.appendChild(b);
       made.gard = b;
@@ -176,4 +196,24 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
     setSlot: (t) => { if (made.slot) made.slot.textContent = t || ''; },
     stop: () => clearInterval(timer),
   };
+}
+
+// the gardener card BODY (see the .whg CSS above) — each area wraps it in its
+// own panel. `g` comes from gardenerLvlFor().
+export function gardenerCardHtml(g) {
+  injectCss();
+  const top = g.nextAt == null;
+  const nextIsExotic = !top && g.lvl + 1 === GLVL_AT.length;
+  const pct = top ? 100 : Math.round(((g.n - g.prevAt) / (g.nextAt - g.prevAt)) * 100);
+  return '<div class="whg">'
+    + '<img class="whg__art" src="/assets/park/g-sprout2.png" alt="" />'
+    + '<p class="whg__label">gardener</p>'
+    + '<p class="whg__num">' + g.lvl + '</p>'
+    + (top
+      ? '<p class="whg__next">top of the ladder — every seed is yours</p>'
+      : '<div class="whg__bar"><i style="width:' + pct + '%"></i></div>'
+        + '<p class="whg__count">' + g.n + ' / ' + g.nextAt + ' harvests</p>'
+        + '<p class="whg__next">next: ' + (nextIsExotic ? 'the exotic tier'
+          : 'seeds up to ' + iconSvg('star', { size: 13 }).repeat(GLVL_STARS[g.lvl])) + '</p>')
+    + '</div>';
 }

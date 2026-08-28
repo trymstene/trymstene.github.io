@@ -3,7 +3,8 @@
 // Split from banana-park.js (P5); wired through the shared ctx.
 import { poofInto, worldSid, worldOwner } from '../lib/world.js';
 import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd } from '../lib/banana-pass.js';
-import { GLVL_AT, GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
+import { GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
+import { gardenerCardHtml } from '../lib/world-hud.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
   ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
@@ -452,21 +453,7 @@ export function initGarden(ctx) {
   // tappable-info doctrine): this is THE discoverable home of the system.
   function openGardenerCard() {
     const gl = gardenerLvl();
-    const rows = GLVL_AT.map((at, i) => {
-      const lvl = i + 1;
-      const done = gl.lvl > lvl || (gl.lvl === lvl);
-      const cur = gl.lvl === lvl;
-      return '<p class="pk-glvlrow' + (cur ? ' pk-glvlrow--cur' : '') + '">'
-        + (gl.n >= at ? '✅' : '🔒') + ' <b>lvl ' + lvl + '</b> · ' + at + ' harvest' + (at === 1 ? '' : 's')
-        + ' · seeds up to ' + starStr(GLVL_STARS[i])
-        + (lvl === GLVL_AT.length ? ' <em>the exotic tier</em>' : '') + '</p>';
-    }).join('');
-    gardenBody.innerHTML = '<h2>🧑‍🌾 gardener level ' + gl.lvl + '</h2>'
-      + '<p class="pk-panel__sub">' + gl.n + ' harvest' + (gl.n === 1 ? '' : 's')
-      + ' — every pick climbs the ladder, and the ladder raises the seed shelf.'
-      + (gl.nextAt != null ? ' <b>' + (gl.nextAt - gl.n) + ' more to lvl ' + (gl.lvl + 1) + '.</b>'
-        : ' <b>Top of the ladder — every seed in the park is yours.</b>') + '</p>'
-      + rows;
+    gardenBody.innerHTML = gardenerCardHtml(gl);
     gardenOpenSlot = -1;
     gardenPanel.hidden = false;
     track('park_gardener_card', { lvl: gl.lvl, n: gl.n });
