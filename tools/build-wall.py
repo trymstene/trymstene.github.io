@@ -65,42 +65,59 @@ def board():
         for y, start, run, col in GRAIN[b]:
             for i in range(run):
                 im.putpixel(((start + i) % BW, top + y), rgb(col))
-        # the seam under this board, with the next board's lit edge above it
+        # ⚠️ TWO ROWS, NOT ONE. A single dark row is a 3px scratch at x3; a
+        # gap plus the LIT TOP LIP of the board below is what makes two courses
+        # read as two planks instead of one plank with a line on it.
         for x in range(BW):
             im.putpixel((x, top + BH - 1), rgb(SEAM))
+            im.putpixel((x, top), rgb('#5f4e3a'))
     im.save(os.path.join(OUT, 'wall-board.png'))
 
 
 def rail():
     """the batten across the top and bottom — what stops the field looking
     like wallpaper and starts it looking like carpentry"""
-    H = 7
+    # ⚠️ LIGHTER THAN THE FIELD, and it casts its OWN hard shadow. At 25%
+    # lighter it read as one more plank; and a soft CSS blur under it was the
+    # only smooth-edged object in a composition made entirely of pixels.
+    H = 9
     im = Image.new('RGBA', (BW, H), (0, 0, 0, 0))
-    rows = ['#5a4a36', '#6b5942', '#5f4e3a', '#544534', '#4a3d2e', '#3e3327', '#2a221a']
-    for y in range(H):
+    rows = ['#7a6549', '#8a7455', '#7a6549', '#6b5942', '#5b4b38', '#483b2c', '#2f271d']
+    for y in range(len(rows)):
         for x in range(BW):
             im.putpixel((x, y), rgb(rows[y]))
+    for x in range(BW):                      # the shadow it throws on the field
+        im.putpixel((x, 7), (0, 0, 0, 140))
+        im.putpixel((x, 8), (0, 0, 0, 60))
     for start, run in [(9, 34), (58, 27)]:   # lit grain lines, wrapping
         for i in range(run):
-            im.putpixel(((start + i) % BW, 2), rgb('#7a6650'))
+            im.putpixel(((start + i) % BW, 2), rgb('#9c8666'))
     im.save(os.path.join(OUT, 'wall-rail.png'))
 
 
 def screw():
-    im = Image.new('RGBA', (6, 6), (0, 0, 0, 0))
-    body = [(1, 1), (2, 1), (3, 1), (4, 1),
-            (1, 2), (2, 2), (3, 2), (4, 2),
-            (1, 3), (2, 3), (3, 3), (4, 3),
-            (2, 0), (3, 0), (2, 4), (3, 4),
-            (0, 2), (5, 2)]
-    for x, y in body:
+    """8x8 with a real round head and a slot — at 6x6 the silhouette read as a
+    pale blob rather than a fixing"""
+    im = Image.new('RGBA', (8, 8), (0, 0, 0, 0))
+    head = [(2, 0), (3, 0), (4, 0), (5, 0),
+            (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1),
+            (0, 2), (1, 2), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (7, 2),
+            (0, 3), (1, 3), (2, 3), (3, 3), (4, 3), (5, 3), (6, 3), (7, 3),
+            (0, 4), (1, 4), (2, 4), (3, 4), (4, 4), (5, 4), (6, 4), (7, 4),
+            (1, 5), (2, 5), (3, 5), (4, 5), (5, 5), (6, 5),
+            (2, 6), (3, 6), (4, 6), (5, 6)]
+    for x, y in head:
         im.putpixel((x, y), rgb(NAIL))
-    for x, y in [(2, 0), (2, 1), (1, 1), (1, 2)]:   # lit on the top-left
-        im.putpixel((x, y), rgb('#c0ab8a'))
-    for x, y in [(3, 3), (3, 4), (4, 3), (4, 2)]:   # shadowed underneath
-        im.putpixel((x, y), rgb('#2f281f'))
-    for x, y in [(2, 2), (3, 2)]:            # the slot
-        im.putpixel((x, y), rgb('#2b241b'))
+    for x, y in [(2, 0), (3, 0), (1, 1), (2, 1), (0, 2), (1, 2), (1, 3)]:
+        im.putpixel((x, y), rgb('#c0ab8a'))          # lit from the top-left
+    for x, y in [(5, 5), (4, 6), (5, 6), (6, 5), (7, 4), (6, 4)]:
+        im.putpixel((x, y), rgb('#3a3126'))          # turning away from it
+    for x in range(2, 6):                            # the slot
+        im.putpixel((x, 3), rgb('#241d16'))
+    im.putpixel((2, 4), rgb('#4a3f30'))
+    im.putpixel((5, 4), rgb('#4a3f30'))
+    for x, y in [(2, 7), (3, 7), (4, 7), (5, 7)]:    # its shadow on the wood
+        im.putpixel((x, y), (0, 0, 0, 120))
     im.save(os.path.join(OUT, 'wall-screw.png'))
 
 
@@ -108,6 +125,6 @@ if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     board(); rail(); screw()
     print(f'  wall-board.png  {BW}x{BH * BOARDS}  ({BOARDS} boards, tiles both ways, grain wraps)')
-    print('  wall-rail.png   48x7   (top and bottom batten)')
-    print('  wall-screw.png  6x6')
+    print(f'  wall-rail.png   {BW}x9   (batten + its own hard shadow)')
+    print('  wall-screw.png  8x8')
     print('\ndrawn at x3 in the page')
