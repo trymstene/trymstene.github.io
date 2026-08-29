@@ -603,21 +603,33 @@ const faq = {
 
     /* ⭐ today's supporter — a line, NOT another box. The card was boxes inside
        boxes inside boxes; the label alone is enough to lift the name out. */
-    .pk-supstar { display: flex; align-items: center; margin: 0 0 1.5rem; }
-    .pk-supstar .pk-plaq { margin-bottom: 0; }
+    /* ⭐ the spotlight: centred, and lit from behind rather than boxed in.
+       A radial glow separates it from the board without adding another border
+       to a card that already had too many. */
+    .pk-supstar {
+      text-align: center; margin: 0 0 2.1rem; padding: 1rem 0.5rem 1.15rem;
+      background: radial-gradient(58% 100% at 50% 52%, rgba(255, 225, 120, 0.19), rgba(255, 225, 120, 0) 72%);
+    }
+    .pk-supstar .pk-plaq { margin: 0; }
     .pk-supstar__k {
-      margin: 0 0 0.5rem; font-size: 0.58rem; font-weight: 800;
-      letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.55;
+      margin: 0 0 0.6rem; font-size: 0.58rem; font-weight: 800; color: #ffe14d;
+      letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.85;
     }
     .pk-supfoot { margin: 1.3rem 0 1.1rem; font-size: 0.78rem; opacity: 0.7; }
 
-    /* ⚠️ AIR IS THE GROUPING. Each metal is its own cluster with a gap under
-       it — no headings, no boxes, no rules. The card had become a wall of
-       plaques with nothing to breathe between them. */
-    .pk-plaqg { margin-bottom: 0.85rem; }
+    /* each metal is its own cluster: a name over it, air under it, no boxes */
+    .pk-plaqg { margin-bottom: 1.25rem; }
     .pk-plaqg:last-child { margin-bottom: 0; }
-    /* the title needs room under it before the board starts */
-    #pkSupBody .pk-cardtitle { margin-bottom: 1.15rem; }
+    .pk-plaqg__k {
+      margin: 0 0 0.45rem; font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.13em; text-transform: uppercase; opacity: 0.75;
+    }
+    .pk-plaqg--gold .pk-plaqg__k { color: #ffd84d; }
+    .pk-plaqg--silver .pk-plaqg__k { color: #dfe5ec; }
+    .pk-plaqg--blue .pk-plaqg__k { color: #8fb0f7; }
+    .pk-plaqg--coffee .pk-plaqg__k { color: #cbc0a5; }
+    /* the title needs real room under it before the board starts */
+    #pkSupBody .pk-cardtitle { margin-bottom: 1.7rem; }
     #pkSupBody .pk-cta { margin-top: 0.2rem; }
 
     /* the plaque's label, on tap as well as hover */

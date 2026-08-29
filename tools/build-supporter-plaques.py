@@ -32,33 +32,39 @@ OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'support
 # bands: one colour per row, top to bottom — the whole body of the thing
 # cut: how many pixels the silhouette pulls IN from the left on each row; the
 #      right cap is its mirror. This is what stops them being rectangles.
+# a real pixel radius, not a chamfer — the SAME curve on all three metals, so
+# they read as a matching set of made objects
+ROUND = [4, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4]
+# torn wood: the ends are splintered, and no two rows break in the same place
+TORN = [3, 3, 1, 1, 0, 0, 2, 2, 4, 4, 0, 0, 1, 3, 3]
+
 TIERS = {
     'coffee': {
-        'bands': ['#ded6c4', '#e6dfd0', '#e3dbcb', '#dfd7c6', '#dad1be', '#dad1be',
-                  '#d4cab5', '#d4cab5', '#cec4ad', '#c8bda5', '#c2b69c', '#bbae93',
-                  '#b1a386', '#a39476', '#8b7f66'],
-        'cut':   [2, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 1, 2, 3],   # torn along the fold
-        'line': '#8a8168',
+        'bands': ['#e0d6c2', '#d9cfb9', '#d2c8b0', '#cbc1a7', '#c5ba9f', '#beb396',
+                  '#b8ac8e', '#b1a586', '#aa9e7e', '#a49775', '#9d906d', '#968965',
+                  '#8c8059', '#7b7049', '#625939'],
+        'cut': TORN,
+        'line': '#46402a',
     },
     'blue': {
         'bands': ['#8fb4ff', '#6f9bf0', '#5786e6', '#4a79e0', '#4676dc', '#3f6fd8',
                   '#3f6fd8', '#3a68cf', '#3a68cf', '#3560c2', '#3059b5', '#2c53ab',
                   '#26489a', '#1e3d80', '#14264f'],
-        'cut':   [3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3],   # a sawn plank end
+        'cut': ROUND,
         'line': '#0e1c3c',
     },
     'silver': {
         'bands': ['#ffffff', '#eef4fb', '#e2eaf4', '#d3dde9', '#c9d4e2', '#c1cddb',
                   '#b9c6d6', '#b9c6d6', '#adbbcc', '#a3b2c4', '#9aa9bc', '#94a2b3',
                   '#8391a3', '#6d7a8a', '#444e5c'],
-        'cut':   [4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],   # corners clipped off
+        'cut': ROUND,
         'line': '#333b47',
     },
     'gold': {
         'bands': ['#ffefb4', '#ffdd7a', '#f8ce5c', '#f2c243', '#eeba34', '#e9b228',
                   '#e5ab1c', '#e5ab1c', '#dda216', '#d29711', '#c78f0e', '#bd8a0c',
                   '#a97806', '#8f6608', '#55380a'],
-        'cut':   [5, 3, 2, 1, 1, 0, 0, 0, 0, 0, 1, 1, 2, 3, 5],   # notched, like a trophy plate
+        'cut': ROUND,
         'line': '#402906',
     },
 }
@@ -79,7 +85,7 @@ def build(tier, spec):
 
     # ── what makes each one a THING and not a swatch ──
     if tier == 'blue':
-        for cx in (5, W - 6):                       # two nail heads, LIT on top
+        for cx in (5, W - 7):                       # two nail heads, LIT on top
             im.putpixel((cx, 4), rgb('#cfe0ff'))
             im.putpixel((cx + 1, 4), rgb('#8fb4ff'))
             im.putpixel((cx, 5), rgb('#6f9bf0'))
@@ -90,7 +96,7 @@ def build(tier, spec):
             for x in range(cut[y] + 2, W - cut[y] - 2, 4):
                 im.putpixel((x, y), rgb('#3560c2'))
     if tier == 'silver':
-        for cx in (5, W - 6):                       # rivets
+        for cx in (5, W - 7):                       # rivets
             im.putpixel((cx, 6), rgb('#7f8c9d'))
             im.putpixel((cx + 1, 6), rgb('#7f8c9d'))
             im.putpixel((cx, 7), rgb('#7f8c9d'))
@@ -113,13 +119,15 @@ def build(tier, spec):
             im.putpixel((cx, 6), rgb('#ffe08a'))
             im.putpixel((cx, 8), rgb('#b98305'))
     if tier == 'coffee':
-        for cx in (6, W - 7):                       # a strip of tape holding it up
-            for y in range(0, 4):
-                im.putpixel((cx, y), rgb('#e3dcc9'))
-                im.putpixel((cx + 1, y), rgb('#d8d0bb'))
-        for y in (5, 9):                            # ruled lines, faint
-            for x in range(cut[y] + 3, W - cut[y] - 3):
-                im.putpixel((x, y), rgb('#e0d8c6'))
+        for y in (4, 8, 11):                        # wood grain, on the mid's 4px period
+            for x in range(2, W - 2, 4):
+                if cut[y] <= x < W - cut[y]:
+                    im.putpixel((x, y), rgb('#a1996f'))
+                    if x + 1 < W - cut[y]:
+                        im.putpixel((x + 1, y), rgb('#a1996f'))
+        for y in (2, 9):                            # knots and splits
+            for x in range(cut[y] + 3, W - cut[y] - 3, 8):
+                im.putpixel((x, y), rgb('#8d855f'))
 
     # ── the 1px outline that makes it pixel art rather than a shape ──
     line = rgb(spec['line'])

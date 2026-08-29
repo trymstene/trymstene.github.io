@@ -272,10 +272,10 @@ function init() {
   // somebody looking at a board in a park (Trym) — the metal IS the rank, and
   // the tier's real name lives in the tooltip, on tap as well as on hover.
   const SUP_ROWS = [
-    { t: 'sup-t3', k: 'gold', name: 'Legend of Banana World', hat: 'gold' },
-    { t: 'sup-t2', k: 'silver', name: 'Patron of the Park', hat: 'silver' },
-    { t: 'sup-t1', k: 'blue', name: 'Friend of the Banana', hat: 'blue' },
-    { t: 'coffee', k: 'coffee', name: 'bought a coffee', hat: '' },
+    { t: 'sup-t3', k: 'gold', name: 'Legend of Banana World', many: 'Legends of Banana World' },
+    { t: 'sup-t2', k: 'silver', name: 'Patron of the Park', many: 'Patrons of the Park' },
+    { t: 'sup-t1', k: 'blue', name: 'Friend of the Banana', many: 'Friends of the Banana' },
+    { t: 'coffee', k: 'coffee', name: 'bought a coffee', many: 'Bought a coffee' },
   ];
   const supRank = (t) => SUP_ROWS.find((r) => r.t === (t || 'coffee')) || SUP_ROWS[3];
   // one name lifted each day, the same one for everybody — splitmix32 over the
@@ -311,9 +311,14 @@ function init() {
       // a spotlight needs a crowd to be picked out of — on a board of two
       // names it is just the same plaque printed twice
       if (all.length >= 4) {
-        const star = all[supDayPick(all.length)];
+        // ⚠️ PICK FROM A STABLE ORDER. The feed is sorted by rank then by last
+        // payment, so a single renewal reshuffles it — and "today's supporter"
+        // would quietly become somebody else halfway through the day. By name,
+        // it only moves when the board itself does.
+        const byName = all.slice().sort((a, b) => a.n.localeCompare(b.n));
+        const star = byName[supDayPick(byName.length)];
         const sr = supRank(star.t);
-        out += '<p class="pk-supstar__k">today\'s supporter</p><div class="pk-supstar">'
+        out += '<div class="pk-supstar"><p class="pk-supstar__k">today\'s supporter</p>'
           + supPlaque(star.n, sr, isMe(star.n)) + '</div>';
       }
       // best metal first, alphabetical inside it, so anyone can find their own
@@ -323,10 +328,11 @@ function init() {
       out += '<div class="pk-plaqs">' + SUP_ROWS.map((r) => {
         const list = all.filter((m) => (m.t || 'coffee') === r.t).sort((a, b) => a.n.localeCompare(b.n));
         return list.length
-          ? '<div class="pk-plaqg">' + list.map((m) => supPlaque(m.n, r, isMe(m.n))).join('') + '</div>'
+          ? '<div class="pk-plaqg pk-plaqg--' + r.k + '"><p class="pk-plaqg__k">' + r.many + '</p>'
+            + list.map((m) => supPlaque(m.n, r, isMe(m.n))).join('') + '</div>'
           : '';
       }).join('') + '</div>';
-      out += '<p class="pk-supfoot">These bananas pay for the world to stay free.</p>';
+      out += '<p class="pk-supfoot">The whole world runs on these bananas 💛</p>';
     }
     // ⚠️ don't sell the board to someone already nailed to it. A supporter gets
     // told they are up there and a quiet door to their own membership; the big
