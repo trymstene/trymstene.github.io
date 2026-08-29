@@ -22,6 +22,13 @@ const TIERS = [
     description: 'The Gold Top Hat — the tallest hat in the world, worn only by legends — with the full golden radiance under your banana, your name in gold on the board, and my honest gratitude.' },
 ];
 
+// ☕ the tip jar as a product: pay-what-you-want, one-time, no reward attached.
+// Created only with --tips, because Ko-fi takes 0% on donations and is a fair
+// home for them — this exists so the whole page CAN be hop-free if we want it.
+const TIP = { key: 'POLAR_TIP', name: 'Buy the banana a coffee', min: 300, preset: 500,
+  description: 'A one-off thank-you, any amount. No hat and nothing gated — just help keeping Banana World free, and your name on the supporters wall.' };
+const WANT_TIPS = process.argv.includes('--tips');
+
 if (!TOKEN) { console.error('POLAR_TOKEN is required (an organization access token).'); process.exit(1); }
 
 const api = async (path, opts = {}) => {
@@ -61,6 +68,29 @@ for (const t of TIERS) {
   });
   console.log(`+ created ${t.name} → ${made.id}`);
   secrets.push([t.key, made.id]);
+}
+
+if (WANT_TIPS) {
+  const found = byName.get(TIP.name);
+  if (found) {
+    console.log(`= ${TIP.name} exists → ${found.id}`);
+    secrets.push([TIP.key, found.id]);
+  } else if (DRY) {
+    console.log(`+ would create ${TIP.name} (pay what you want, min $${TIP.min / 100})`);
+  } else {
+    const made = await api('/v1/products', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: TIP.name,
+        description: TIP.description,
+        recurring_interval: null,       // one-time
+        prices: [{ amount_type: 'custom', price_currency: 'usd',
+          minimum_amount: TIP.min, preset_amount: TIP.preset }],
+      }),
+    });
+    console.log(`+ created ${TIP.name} → ${made.id}`);
+    secrets.push([TIP.key, made.id]);
+  }
 }
 
 // the webhook endpoint — same events the worker actually handles

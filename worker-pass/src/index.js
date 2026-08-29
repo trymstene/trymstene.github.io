@@ -379,8 +379,8 @@ async function kofiHook(request, env) {
 // payment — and it carries EU VAT, which is why this is never raw Stripe.
 // Both rails write the SAME member/wall stores, so /supporters/ and the park
 // board do not care which one paid.
-const POLAR_PRODUCT_ENV = { t1: 'POLAR_T1', t2: 'POLAR_T2', t3: 'POLAR_T3' };
-const POLAR_GRANT = { t1: 'sup-t1', t2: 'sup-t2', t3: 'sup-t3' };
+const POLAR_PRODUCT_ENV = { t1: 'POLAR_T1', t2: 'POLAR_T2', t3: 'POLAR_T3', tip: 'POLAR_TIP' };
+const POLAR_GRANT = { t1: 'sup-t1', t2: 'sup-t2', t3: 'sup-t3', tip: '' };   // a tip grants nothing but thanks
 const polarBase = (env) => env.POLAR_BASE || 'https://sandbox-api.polar.sh';
 
 // GET /pay/checkout?t=t1|t2|t3 → 302 straight into a fresh Polar checkout.
