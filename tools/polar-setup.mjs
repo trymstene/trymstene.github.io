@@ -95,7 +95,7 @@ if (WANT_TIPS) {
 
 // the webhook endpoint — same events the worker actually handles
 const EVENTS = ['subscription.created', 'subscription.active', 'subscription.updated',
-  'subscription.cycled', 'subscription.revoked', 'order.paid'];
+  'subscription.cycled', 'subscription.revoked', 'order.paid', 'order.refunded'];
 let hookSecret = null;
 if (!DRY) {
   const hooks = await api('/v1/webhooks/endpoints?limit=100').catch(() => ({ items: [] }));

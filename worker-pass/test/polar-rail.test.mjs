@@ -141,6 +141,17 @@ const ok = (c, label, extra) => {
   ok(r.body.revoked && m.until <= Date.now(), 'revoked expires the grant by TIME', m);
 }
 
+// 6b. ⚠️ A REFUND IS NOT A CANCELLATION: Polar leaves the subscription active
+// and fires order.refunded separately, so this must revoke on its own
+{
+  await hook({ type: 'subscription.active', data: sub({ customer: { email: 'refundme@example.com', public_name: 'Refundme' } }) });
+  const before = JSON.parse(env.PASSES._m.get('kofi/members.json'))[await sha('refundme@example.com')];
+  const r = await hook({ type: 'order.refunded', data: sub({ id: 'ord_ref', customer: { email: 'refundme@example.com' } }) });
+  const after = JSON.parse(env.PASSES._m.get('kofi/members.json'))[await sha('refundme@example.com')];
+  ok(before.until > Date.now(), 'the hat was granted first', before);
+  ok(r.body.revoked && after.until <= Date.now(), 'order.refunded retires the hat by TIME', after);
+}
+
 // 7. a cancelled-but-still-paid subscription keeps the hat until period end
 {
   const r = await hook({ type: 'subscription.canceled', data: sub({ customer: { email: 'kept@example.com' } }) });

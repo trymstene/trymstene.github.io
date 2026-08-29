@@ -30,3 +30,12 @@ export const RAILS = {
 };
 export const PAY = RAILS[RAIL] || RAILS.kofi;
 export const KOFI_TIP = 'https://ko-fi.com/trymstene';
+
+// 🚪 THE WAY OUT — Polar's own customer portal: the supporter enters the email
+// they paid with, gets a one-time code, and can cancel there themselves. It must
+// be easy to find and never behind a tab; a subscription you cannot leave is a
+// trap, and hiding the exit is the oldest dark pattern there is.
+export const MANAGE = {
+  polar: 'https://polar.sh/trym-stene/portal',
+  kofi: 'https://ko-fi.com/manage/supportreceived',   // Ko-fi members manage from their own Ko-fi account
+}[RAIL] || 'https://polar.sh/trym-stene/portal';

@@ -489,7 +489,11 @@ async function polarHook(request, env) {
 
   // revocation is still BY TIME everywhere else — this just brings the clock
   // forward, so the 72h client grace still applies and nothing goes negative
-  if (type === 'subscription.revoked') {
+  // ⚠️ A REFUND IS NOT A CANCELLATION in Polar — refunding an order leaves the
+  // subscription active, and order.refunded is a SEPARATE event that has to be
+  // subscribed to explicitly. Missing it meant a refunded supporter kept the hat
+  // silently (found by refunding a real payment; the endpoint now carries it).
+  if (type === 'subscription.revoked' || type === 'order.refunded') {
     if (members[hash]) {
       members[hash] = { ...members[hash], until: now, last: now };
       await writeJson(env, 'kofi/members.json', members);

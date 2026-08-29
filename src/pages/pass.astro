@@ -175,6 +175,21 @@ const NUMBERS = [
     @media (prefers-reduced-motion: reduce) { .ps-card--stamped .ps-stamp { animation: none; } }
 
     .ps-promise { margin: 0; font-size: 0.8rem; line-height: 1.45; opacity: 0.8; }
+    /* 💛 the support block — the world's card furniture, tier-tinted */
+    .ps-sup { border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); background: #fffdf5; padding: 0.8rem 0.9rem 0.9rem; }
+    .ps-sup__head { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.4rem; }
+    .ps-sup__hat { image-rendering: pixelated; height: 34px; width: auto; }
+    .ps-sup__kicker { margin: 0; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; }
+    .ps-sup__tier { margin: 0; font-family: "Archivo Black", sans-serif; font-size: 1rem; }
+    .ps-sup__meta { margin: 0 0 0.7rem; font-size: 0.82rem; line-height: 1.5; opacity: 0.85; }
+    .ps-sup__acts { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .ps-sup__manage {
+      background: var(--banana); color: var(--ink); font-weight: 800; font-size: 0.84rem;
+      text-decoration: none; padding: 0.5rem 0.8rem; border: 2px solid var(--ink);
+      box-shadow: 3px 3px 0 var(--ink); white-space: nowrap;
+    }
+    .ps-sup__manage:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+    .ps-sup__wall { font-size: 0.8rem; }
 
     /* ── NEWS FOR YOU — verdicts on YOUR stuff, never system chatter. Renders
        only when there is something to say (anti-fatigue). ── */
@@ -476,6 +491,24 @@ const NUMBERS = [
         <button class="ps-tab" role="tab" id="tab-earned" data-tab="earned" aria-controls="panel-earned" aria-selected="false" tabindex="-1">Earned</button>
         <button class="ps-tab" role="tab" id="tab-numbers" data-tab="numbers" aria-controls="panel-numbers" aria-selected="false" tabindex="-1" hidden>Numbers</button>
       </div>
+
+      <!-- ── 6b. YOUR SUPPORT — only rendered for a live member. NOT a fourth
+           tab: the three-tab cap is the design (see the subnav note), and the
+           way to cancel must never be something you hunt for. ── -->
+      <section class="ps-sup" id="psSup" hidden>
+        <div class="ps-sup__head">
+          <img class="ps-sup__hat" id="psSupHat" src="/assets/supporters/hat-blue.png" alt="" width="34" height="31" />
+          <div>
+            <p class="ps-sup__kicker">your support</p>
+            <h2 class="ps-sup__tier" id="psSupTier">Friend of the Banana</h2>
+          </div>
+        </div>
+        <p class="ps-sup__meta" id="psSupMeta"></p>
+        <div class="ps-sup__acts">
+          <a class="ps-sup__manage" id="psSupManage" href="#" rel="noopener">Manage or cancel →</a>
+          <a class="ps-sup__wall" href="/supporters/">See the wall</a>
+        </div>
+      </section>
 
       <!-- ── 7. THE DOORS OUT ── -->
       <div class="ps-doors" id="psDoors">

@@ -17,7 +17,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // on all three with their Join buttons. (Removing that last click means taking
 // the payment ourselves through a merchant of record — the Lemon Squeezy
 // track — not a URL trick.) Buttons open in a new tab so the wall stays put.
-import { PAY, KOFI_TIP, RAIL } from '../data/pay-rail.js';
+import { PAY, KOFI_TIP, RAIL, MANAGE } from '../data/pay-rail.js';
 const KOFI = 'https://ko-fi.com/trymstene/tiers';   // still the tip-jar's home
 const KOFI_ONCE = KOFI_TIP;                          // any amount, once
 const TIERS = [
@@ -130,6 +130,25 @@ const TIERS = [
       box-shadow: 4px 4px 0 #000; white-space: nowrap;
     }
     .sw a.swo__btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+    .sw__you {
+      display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
+      background: #1b2129; border: 3px solid #ffd23f; box-shadow: 6px 6px 0 #000;
+      padding: 0.85rem 1rem; margin: 0 0 1.6rem;
+    }
+    .sw__youhat { image-rendering: pixelated; height: 38px; width: auto; flex: 0 0 auto; }
+    .sw__youtxt { flex: 1 1 240px; margin: 0; font-size: 0.92rem; line-height: 1.5; }
+    .sw a.sw__youbtn {
+      flex: 0 0 auto; text-decoration: none; background: #ffd23f; color: #111;
+      font-weight: 800; font-size: 0.84rem; padding: 0.55rem 0.9rem;
+      border: 3px solid #111; box-shadow: 3px 3px 0 #000; white-space: nowrap;
+    }
+    /* the tier you are already on stops being a sales pitch */
+    .swt--mine { outline: 3px solid #ffd23f; outline-offset: 3px; }
+    .swt__mine {
+      display: block; background: #ffd23f; color: #111; font-weight: 800;
+      font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+      text-align: center; padding: 0.3rem; margin: 0 0 0.6rem;
+    }
     .sw__note { margin-top: 2.2rem; font-size: 0.85rem; opacity: 0.7; line-height: 1.6; max-width: 66ch; }
   </style>
 
@@ -143,6 +162,13 @@ const TIERS = [
         <a href="#join">join them</a> with a membership — your banana gets a top hat and a glow
         it wears <strong>everywhere it goes</strong> — or send a one-off coffee. Both land here.
       </p>
+
+      <!-- 💛 an existing supporter should never be sold what they already have -->
+      <div class="sw__you" id="swYou" hidden>
+        <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
+        <p class="sw__youtxt" id="swYouTxt"></p>
+        <a class="sw__youbtn" id="swYouManage" href={MANAGE} target="_blank" rel="noopener">Manage or cancel →</a>
+      </div>
 
       <div class="sw__cols">
         <div>
@@ -260,6 +286,40 @@ const TIERS = [
         }
         if (feed.children.length) document.getElementById('swFeedEmpty').hidden = true;
       }).catch(() => {});
+      // 💛 already a supporter? say so, and turn their own tier's button into
+      // the way OUT rather than a second sale. Reads 'bb-member' — the same
+      // person-scoped grant the hats honour — so it needs no network call.
+      (() => {
+        const TIERS = { 'sup-t1': ['Friend of the Banana', 'blue', 5],
+          'sup-t2': ['Patron of the Park', 'silver', 10],
+          'sup-t3': ['Legend of Banana World', 'gold', 15] };
+        let g = null;
+        try { g = JSON.parse(localStorage.getItem('bb-member') || 'null'); } catch (e) {}
+        const t = g && TIERS[g.t];
+        if (!t || !(+g.until + 72 * 3600 * 1000 > Date.now())) return;
+        const ends = new Date(+g.until);
+        const live = +g.until > Date.now();
+        document.getElementById('swYouHat').src = '/assets/supporters/hat-' + t[1] + '.png';
+        document.getElementById('swYouTxt').textContent = live
+          ? 'You are a ' + t[0] + ' — thank you. $' + t[2] + ' a month, renewing ' + ends.toLocaleDateString() + '.'
+          : 'Your membership ended ' + ends.toLocaleDateString() + '. The hat comes off shortly — you can start again any time.';
+        document.getElementById('swYou').hidden = false;
+        const card = document.querySelector('.swt--' + t[1]);
+        if (card && live) {
+          card.classList.add('swt--mine');
+          const tag = document.createElement('p');
+          tag.className = 'swt__mine';
+          tag.textContent = 'your tier';
+          card.querySelector('.swt__body').prepend(tag);
+          const btn = card.querySelector('.swt__join');
+          btn.textContent = 'Manage or cancel →';
+          btn.href = 'https://polar.sh/trym-stene/portal';
+          btn.target = '_blank';
+          const note = card.querySelector('.swt__idnote');
+          if (note) note.remove();
+        }
+      })();
+
       document.querySelectorAll('.swt__join').forEach((a) => {
         a.addEventListener('click', () => {
           if (window.gtag) window.gtag('event', 'supporter_join_click', { tier: a.dataset.tier });

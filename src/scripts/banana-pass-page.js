@@ -9,6 +9,7 @@ import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
+import { MANAGE } from '../data/pay-rail.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
   startLink, finishLink, mailSignin, mailUse, logout,
   newsJoin, newsConfirm } from '../lib/pass-sync.js';
@@ -81,6 +82,38 @@ const NEWS_KEY = 'ps-news-v1';
 // old bookmarks still land somewhere sensible (nothing in the world links a
 // pass hash, but seven tabs were live for months)
 const ALIAS = { overview: 'made', bananas: 'made', items: 'made', emotes: 'made', badges: 'earned', gear: 'earned', stats: 'numbers' };
+
+// 💛 YOUR SUPPORT — read straight from the local grant ('bb-member', the same
+// person-scoped record the hats read), so it works offline and needs no call.
+// Shown only while a grant is live; the way to cancel sits right in it, because
+// a subscription whose exit is hard to find is a trap.
+const SUP_TIERS = {
+  'sup-t1': { name: 'Friend of the Banana', hat: 'blue', price: 5 },
+  'sup-t2': { name: 'Patron of the Park', hat: 'silver', price: 10 },
+  'sup-t3': { name: 'Legend of Banana World', hat: 'gold', price: 15 },
+};
+function paintSupport() {
+  const box = document.getElementById('psSup');
+  if (!box) return;
+  let g = null;
+  try { g = JSON.parse(localStorage.getItem('bb-member') || 'null'); } catch (e) {}
+  const t = g && SUP_TIERS[g.t];
+  // the 72h grace the hats honour — a lapsed member still sees the block while
+  // the hat is still on, so the state on screen matches the state on the banana
+  if (!t || !(+g.until + 72 * 3600 * 1000 > Date.now())) { box.hidden = true; return; }
+  const ends = new Date(+g.until);
+  const days = Math.round((ends - Date.now()) / 86400000);
+  document.getElementById('psSupTier').textContent = t.name;
+  document.getElementById('psSupHat').src = '/assets/supporters/hat-' + t.hat + '.png';
+  document.getElementById('psSupHat').alt = 'the ' + t.name + ' hat';
+  document.getElementById('psSupMeta').textContent = days >= 0
+    ? '$' + t.price + ' a month · renews ' + ends.toLocaleDateString() + ' (' + (days === 0 ? 'today' : days + ' days') + '). Your hat and glow are on your banana everywhere, and your name is on the board in the park.'
+    : 'Ended ' + ends.toLocaleDateString() + ' — the hat comes off shortly. Thank you for the time you kept the lights on.';
+  const man = document.getElementById('psSupManage');
+  man.href = MANAGE;
+  man.target = '_blank';
+  box.hidden = false;
+}
 
 // 🧾 the page state lives here because paint() runs TWICE — once from this
 // device before any network, again when the account lands — while the gear
@@ -220,6 +253,7 @@ function netNote(cold) {
 // ⚠️ paint() RUNS TWICE — once from localStorage, once when the account lands —
 // so every block below REPLACES what it drew and never appends to it.
 function paint() {
+  paintSupport();
   PASS = passGet();
   loadOutfit();
   const patches = PASS.patches || {};
