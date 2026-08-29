@@ -305,8 +305,14 @@
       // "took a door out of the world to /shop/" — the nav is one of them, and
       // this is how we find out whether making it yellow was worth it.
       gtag('event', 'shop_door', { from: place });
-    } else if (href.indexOf('buymeacoffee') > -1) {
+    } else if (href.indexOf('/pay/tip') > -1) {
+      // ⚠️ MATCH THE RAIL, NOT THE PLATFORM. This read `buymeacoffee` and kept
+      // reading it for the whole day after every tip link moved to our own
+      // worker — so every tap went untracked and the willingness rate the whole
+      // support test exists to measure quietly read zero.
       gtag('event', 'tip_click', { placement: place });
+    } else if (href.indexOf('/pay/checkout') > -1) {
+      gtag('event', 'member_join_click', { placement: place });
     } else if (href.indexOf('license-the-dancing-banana') > -1) {
       gtag('event', 'license_click', { placement: place });
     }

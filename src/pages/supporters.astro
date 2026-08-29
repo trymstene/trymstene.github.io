@@ -42,20 +42,24 @@ const TIERS = [
     .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.8rem, 7vw, 2.8rem); margin: 0 0 0.7rem; color: #fff; line-height: 1.05; }
     .sw__lede { line-height: 1.6; font-size: 1rem; margin: 0 0 var(--gap-part); max-width: 60ch; opacity: 0.92; }
     /* 🧭 a way into a page this tall — three doors, not a menu */
-    .sw__jump { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: var(--gap-part) 0 0; padding: 0; list-style: none; }
+    .sw__jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: var(--gap-part) 0 0; padding: 0; list-style: none; }
     .sw a.sw__jumpl {
-      display: inline-block; text-decoration: none; font-size: 0.78rem; font-weight: 800;
-      letter-spacing: 0.04em; color: #f2e8d8; padding: 0.4rem 0.7rem;
-      border: 2px solid #38424f; background: #1b2129;
+      display: inline-block; text-decoration: none; font-size: 0.82rem; font-weight: 800;
+      letter-spacing: 0.04em; color: #f2e8d8; padding: 0.7rem 0.9rem;
+      border: 2px solid #4a5666; background: #1b2129;
     }
     .sw a.sw__jumpl:hover { border-color: #ffd23f; color: #ffd23f; }
+    /* the page's purpose, carrying its price — the only thing that put a
+       number above the fold for somebody who is not a supporter yet */
+    .sw a.sw__jumpl--go { background: #ffd23f; color: #111; border-color: #111; }
     /* headings you can land on should not land under the sticky header */
-    .sw__sec { scroll-margin-top: 84px; }
+    .sw__sec { scroll-margin-top: 2rem; }
     .sw a { color: #ffd23f; }
 
     /* ---- the three tiers: the shop, in the world's own furniture ---- */
-    .sw__tiers { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); margin: 0; }
+    .sw__tiers { display: grid; gap: var(--gap-sub); grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); margin: 0; }
     .swt {
+      position: relative;
       display: flex; flex-direction: column; background: #1b2129;
       border: 3px solid #2c3542; box-shadow: 7px 7px 0 #000; overflow: hidden;
     }
@@ -64,6 +68,10 @@ const TIERS = [
     .swt--gold { border-color: #eda912; }
     /* the art crops to a letterbox rather than running full-square: three
        square cards stacked made the phone page a 4000px scroll */
+    /* ⚠️ 5/4 put the Join button of the first card BELOW the fold on a 360
+       phone that had just tapped "Memberships" — the picture was the largest
+       object in the stack and the least informative part of it */
+    @media (max-width: 560px) { .swt__art { aspect-ratio: 5 / 3 !important; } }
     .swt__art {
       display: block; width: 100%; height: auto; aspect-ratio: 5 / 4;
       object-fit: cover; object-position: 50% 88%;
@@ -96,8 +104,16 @@ const TIERS = [
     .sw a.swt__join:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
 
     /* ---- the wall + the feed ---- */
-    .sw__cols { display: grid; gap: var(--gap-sec); grid-template-columns: 1fr; }
-    @media (min-width: 780px) { .sw__cols { grid-template-columns: 1.15fr 1fr; gap: 2.4rem; align-items: start; } }
+    /* ⚠️ ONE COLUMN, EVERYWHERE. As a peer column the feed was a 419x251 dead
+       field at 1180 — it can never fill a width it was given, because it is
+       three lines. It is a SUB-PART of the wall, so it reads like one: the
+       between-sections gap made it look like a fourth destination. */
+    .sw__cols { display: grid; gap: var(--gap-sub); grid-template-columns: 1fr; }
+    .sw__feedh {
+      margin: 0 0 0.45rem; font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.13em; text-transform: uppercase; opacity: 0.6;
+    }
+    
     /* ── THE VERTICAL SCALE ─────────────────────────────────────────────
        ⚠️ A HEADING'S JOB IS TO BREAK CONTENT UP, so it needs space ABOVE it —
        more above than below, or it belongs to the wrong side. These headings
@@ -106,14 +122,14 @@ const TIERS = [
          --gap-head  above a heading inside a section
          --gap-part  between a section's own sub-parts
        Nothing on this page invents its own vertical number. */
-    .sw { --gap-sec: 3rem; --gap-part: 1.15rem; }
+    .sw { --gap-sec: 3rem; --gap-sub: 1.75rem; --gap-part: 1.15rem; }
     @media (min-width: 780px) { .sw { --gap-sec: 3.75rem; } }
     .sw__sec + .sw__sec { margin-top: var(--gap-sec); }
     .sw h2 {
       font-family: "Archivo Black", sans-serif; font-size: 1.25rem; color: #ffd23f;
       margin: 0 0 0.3rem; line-height: 1.15;
     }
-    .sw__sub { margin: 0 0 var(--gap-part); font-size: 0.86rem; opacity: 0.65; max-width: 52ch; }
+    .sw__sub { margin: 0 0 var(--gap-part); font-size: 0.86rem; opacity: 0.65; max-width: 66ch; }
     /* 🔢 THE COUNT — a number is not a design. Scaling the type up and leaving
        it floating is the laziest version of a stat; the figure gets an OBJECT
        to sit on: a banana-yellow tile, knocked a couple of degrees off square
@@ -122,8 +138,8 @@ const TIERS = [
     .sw__stat b {
       flex: 0 0 auto; display: grid; place-items: center;
       min-width: 54px; height: 54px; padding: 0 0.5rem;
-      background: #ffd23f; color: #14181d; border: 3px solid #000;
-      box-shadow: 4px 4px 0 #000; transform: rotate(-3deg);
+      background: #ffd23f; color: #14181d; border: 3px solid #2c3542;
+      transform: rotate(-3deg);
       font-family: "Archivo Black", sans-serif; font-size: 1.7rem; line-height: 1;
     }
     .sw__stat span { font-size: 0.9rem; line-height: 1.45; opacity: 0.8; max-width: 30ch; text-wrap: balance; }
@@ -144,13 +160,15 @@ const TIERS = [
     .sw a.sw__youbtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
     /* the tier you are already on stops being a sales pitch */
     .swt--mine { outline: 3px solid #ffd23f; outline-offset: 3px; }
+    /* out of flow, or the flagged card grows and the set stops lining up */
     .swt__mine {
-      display: block; background: #ffd23f; color: #111; font-weight: 800;
+      position: absolute; top: 0; left: 0; right: 0; z-index: 2; margin: 0;
+      background: #ffd23f; color: #111; font-weight: 800;
       font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
-      text-align: center; padding: 0.3rem; margin: 0 0 0.6rem;
+      text-align: center; padding: 0.3rem;
     }
     .sw__idnote {
-      margin: 0.9rem 0 0; font-size: 0.82rem; line-height: 1.5; opacity: 0.85;
+      margin: var(--gap-part) 0; font-size: 0.82rem; line-height: 1.5; opacity: 0.85;
       border-left: 3px solid #ffd23f; padding-left: 0.6rem;
     }
     .sw__empty { margin: 0; font-size: 0.88rem; opacity: 0.6; }
@@ -174,6 +192,8 @@ const TIERS = [
     /* it is a section too, so the scale owns its outer space and the panel
        only owns its inner */
     .sw__sec.swc { padding: 1.4rem 1.1rem 1.5rem; }
+    /* a plank nailed across the page has to reach both edges of it */
+    @media (max-width: 780px) { .sw__sec.swc { margin-inline: -1.1rem; } }
     .swc__head { display: flex; align-items: flex-start; gap: 0.8rem; margin-bottom: 1.1rem; }
     .swc__coin { image-rendering: pixelated; flex: 0 0 auto; }
     .swc__h {
@@ -198,7 +218,8 @@ const TIERS = [
     .sw a.swc__amt:hover { transform: translateY(-2px); --pg: rgba(255, 225, 150, 0.55); }
     .sw a.swc__amt:active { transform: translateY(1px); }
     .sw a.swc__any {
-      flex: 0 0 100%; margin: 0.35rem 0 0; font-size: 0.84rem; font-weight: 700;
+      flex: 0 0 100%; display: inline-block; margin: 0.4rem 0 0; padding: 0.75rem 0;
+      font-size: 0.84rem; font-weight: 700;
       color: #e6dcc6; text-decoration: underline; text-underline-offset: 3px;
     }
     @media (max-width: 400px) {
@@ -224,7 +245,7 @@ const TIERS = [
       <ul class="sw__jump">
         <li><a class="sw__jumpl" href="#wall">The wall</a></li>
         <li><a class="sw__jumpl" href="#coffee">Buy a coffee</a></li>
-        <li><a class="sw__jumpl" href="#join">Memberships</a></li>
+        <li><a class="sw__jumpl sw__jumpl--go" href="#join">Memberships from $5</a></li>
       </ul>
 
       <!-- 💛 an existing supporter should never be sold what they already have -->
@@ -246,8 +267,7 @@ const TIERS = [
           <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
         </div>
         <div>
-          <h2>Recent support</h2>
-          <p class="sw__sub">Every coffee and every renewal, as it lands.</p>
+          <p class="sw__feedh">Latest</p>
           <ul class="swf" id="swFeed"></ul>
           <p class="sw__empty" id="swFeedEmpty">Nothing yet today — the wall is freshly built.</p>
         </div>
@@ -275,6 +295,7 @@ const TIERS = [
       <section class="sw__sec" id="join">
       <h2>Join the wall</h2>
       <p class="sw__sub">A membership dresses your banana. Cancel any time; the hat retires itself.</p>
+      <p class="sw__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that is how the hat finds you.</p>
       <div class="sw__tiers">
         {TIERS.map((t) => (
           <article class={`swt swt--${t.key}`}>
@@ -298,7 +319,6 @@ const TIERS = [
           different address means the grant waits and nothing on screen says
           so. Said ONCE under the row, where it is read; three times inside
           three cards is small print. */}
-      <p class="sw__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that is how the hat finds you.</p>
       </section>
 
       {/* ☕ NOT EVERYONE WANTS A SUBSCRIPTION, and a one-off should not be the

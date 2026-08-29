@@ -27,7 +27,10 @@ export const RAILS = {
     newTab: false,     // our own redirect into checkout — same tab is the point
   },
 };
-export const PAY = RAILS[RAIL] || RAILS.kofi;
+// ⚠️ the fallback is the LIVE rail. This fell back to `kofi`, so a one-character
+// typo in RAIL would have sent every membership join to a platform we no longer
+// use — quietly, and only on the money path.
+export const PAY = RAILS[RAIL] || RAILS.polar;
 // ☕ THE ONE-OFF TIP, EVERYWHERE. Every "buy me a coffee" on the site points
 // here: the download cards, the footer, the localised pages, the gif-meme page
 // and /supporters/. ⚠️ They used to point at buymeacoffee.com — a platform

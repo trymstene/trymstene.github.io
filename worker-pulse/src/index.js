@@ -1827,12 +1827,12 @@ var FUNNELS=[
   // "I make nothing on the banana." One message, $5 (= the BMAC coffee
   // price), on EVERY download surface incl. the gallery (first wired 27 Aug).
   // The question this funnel answers: will this audience pay ANYTHING?
-  // Clicks land on buymeacoffee.com/trymstene — the MONEY shows there, not
+  // Clicks land on our own /pay/tip — the MONEY shows in Polar, not
   // here; this measures willingness. Read it in people, never events.
   [['offer_shown','Got the support card ☕',
     'The download click opened the card BEFORE any file moved. Since 27 Aug it makes one honest ask: "I make nothing on the banana — buy me a coffee, $5." The file is its no-thanks button.'],
    ['offer_support','Clicked buy-me-a-coffee 💛',
-    'Tapped through to buymeacoffee.com/trymstene in a new tab. This over "Got the support card" = the willingness rate — the number the whole test exists to learn. Actual money lands on the BMAC dashboard, not in GA4.'],
+    'Tapped a tip amount through to our own checkout. This over "Got the support card" = the willingness rate — the number the whole test exists to learn. Actual money lands in Polar, not in GA4.'],
    ['offer_skip','Just took the file',
     'Pressed no-thanks and the download flowed — still a happily served visitor, and the answer the test expects most often.']]];
 function fmtDur(s){
