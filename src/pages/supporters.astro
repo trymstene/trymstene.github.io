@@ -42,9 +42,11 @@ const TIERS = [
     .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.8rem, 7vw, 2.8rem); margin: 0 0 0.7rem; color: #fff; line-height: 1.05; }
     .sw__lede { line-height: 1.6; font-size: 1rem; margin: 0 0 var(--gap-part); max-width: 60ch; opacity: 0.92; }
     /* 🧭 a way into a page this tall — three doors, not a menu */
-    /* the count and the doors on one line — the number is the claim, the
-       button is what you do about it */
-    .sw__pitch { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.6rem; }
+    /* the count + doors on the left, the feed on the right */
+    .sw__under { display: grid; gap: var(--gap-sub); grid-template-columns: 1fr; align-items: start; }
+    @media (min-width: 860px) { .sw__under { grid-template-columns: 1.05fr 1fr; gap: 2.4rem; } }
+    /* the number is the claim, the button is what you do about it */
+    .sw__pitch { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.2rem; }
     .sw__pitchgo { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     @media (max-width: 560px) { .sw__pitchgo { width: 100%; } }
     .sw a.sw__jumpl {
@@ -353,41 +355,41 @@ const TIERS = [
       </p>
       </section>
 
+      {/* the same plaques that hang on the park's board — one drawn layer, two
+          surfaces, so the wall you walk past in the world is the wall here */}
       <section class="sw__sec" id="wall">
-      <div class="sw__cols">
-        <div>
-          <h2>The wall</h2>
-          <p class="sw__sub">Every membership running right now, and every coffee.</p>
-          {/* the same plaques that hang on the park's board — one drawn layer,
-              two surfaces, so the wall you see in the world is the wall here */}
-          <div class="swwall">
-            <div id="swWall"></div>
-            <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
-          </div>
+        <div class="swwall">
+          <div id="swWall"></div>
+          <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
         </div>
-        <div>
-          <p class="sw__feedh">Latest</p>
-          <ul class="swf" id="swFeed"></ul>
-          <p class="sw__empty" id="swFeedEmpty">Nothing yet today — the wall is freshly built.</p>
-        </div>
-      </div>
       </section>
 
       {/* 🔢 the count and the way in, side by side. The wall is the argument;
           this is the sentence under it. ⚠️ The membership call is HIDDEN for
           somebody who already has one — they get the banner instead, which is
           about their own membership rather than a pitch for a second. */}
-      <section class="sw__sec sw__pitch">
-        <p class="sw__stat"><b id="swCount">—</b> <span>keeping the lights on</span></p>
-        <div class="sw__pitchgo" id="swPitchGo">
-          <a class="sw__jumpl sw__jumpl--go" href="#join">Memberships from $5</a>
-          <a class="sw__jumpl" href="#coffee">Buy a coffee</a>
+      {/* 🔢 the count and the feed are both a line long — neither earns a full
+          width of its own, so they share one. ⚠️ The membership call is HIDDEN
+          for somebody who already has one: they get the banner instead, which
+          is about their membership rather than a pitch for a second. */}
+      <section class="sw__sec sw__under">
+        <div class="sw__pitch">
+          <p class="sw__stat"><b id="swCount">—</b> <span>keeping the lights on</span></p>
+          <div class="sw__pitchgo" id="swPitchGo">
+            <a class="sw__jumpl sw__jumpl--go" href="#join">Memberships from $5</a>
+            <a class="sw__jumpl" href="#coffee">Buy a coffee</a>
+          </div>
+          <!-- 💛 an existing supporter should never be sold what they already have -->
+          <div class="sw__you" id="swYou" hidden>
+            <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
+            <p class="sw__youtxt" id="swYouTxt"></p>
+            <a class="sw__youbtn" id="swYouManage" href="/pass/">Manage →</a>
+          </div>
         </div>
-        <!-- 💛 an existing supporter should never be sold what they already have -->
-        <div class="sw__you" id="swYou" hidden>
-          <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
-          <p class="sw__youtxt" id="swYouTxt"></p>
-          <a class="sw__youbtn" id="swYouManage" href="/pass/">Manage →</a>
+        <div class="sw__latest">
+          <p class="sw__feedh">Latest</p>
+          <ul class="swf" id="swFeed"></ul>
+          <p class="sw__empty" id="swFeedEmpty">Nothing yet today — the wall is freshly built.</p>
         </div>
       </section>
 
@@ -494,9 +496,19 @@ const TIERS = [
           const list = all.filter((m) => (m.t || 'coffee') === r.t).sort((a, b) => a.n.localeCompare(b.n));
           if (!list.length) return '';
           return '<div class="bb-plaqg bb-plaqg--' + r.k + '"><p class="bb-plaqg__k">' + r.many + '</p>'
-            + list.map((m) => '<span class="bb-plaq bb-plaq--' + r.k
-              + (myName && m.n.toLowerCase() === myName ? ' bb-plaq--me' : '') + '">'
-              + esc(m.n) + (myName && m.n.toLowerCase() === myName ? '<i>you</i>' : '') + '</span>').join('')
+            + list.map((m) => {
+              const me = myName && m.n.toLowerCase() === myName;
+              // 🪛 nobody screws a row of plaques on perfectly straight. The
+              // angle is derived from the NAME, not from chance, so a person's
+              // plaque always hangs the same way and the wall does not
+              // rearrange itself every time the page loads.
+              let h = 0;
+              for (let i = 0; i < m.n.length; i++) h = (h * 31 + m.n.charCodeAt(i)) & 0xffff;
+              const tilt = [-1.1, -0.6, -0.25, 0.25, 0.6, 1.1][h % 6];
+              return '<span class="bb-plaq bb-plaq--' + r.k + (me ? ' bb-plaq--me' : '')
+                + '" style="transform:rotate(' + tilt + 'deg)">'
+                + esc(m.n) + (me ? '<i>you</i>' : '') + '</span>';
+            }).join('')
             + '</div>';
         }).join('');
         if (all.length) document.getElementById('swWallEmpty').hidden = true;
