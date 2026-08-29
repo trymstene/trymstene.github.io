@@ -93,7 +93,7 @@ const SUP_TIERS = {
   'sup-t3': { name: 'Legend of Banana World', hat: 'gold', price: 15 },
 };
 function paintSupport() {
-  const box = document.getElementById('psSup');
+  const box = el('psSup');
   if (!box) return;
   let g = null;
   try { g = JSON.parse(localStorage.getItem('bb-member') || 'null'); } catch (e) {}
@@ -103,9 +103,9 @@ function paintSupport() {
   if (!t || !(+g.until + 72 * 3600 * 1000 > Date.now())) { box.hidden = true; return; }
   SUP.tier = t;
   SUP.until = +g.until;
-  document.getElementById('psSupTier').textContent = t.name;
-  document.getElementById('psSupHat').src = '/assets/supporters/hat-' + t.hat + '.png';
-  document.getElementById('psSupHat').alt = 'the ' + t.name + ' hat';
+  el('psSupTier').textContent = t.name;
+  el('psSupHat').src = '/assets/supporters/hat-' + t.hat + '.png';
+  el('psSupHat').alt = 'the ' + t.name + ' hat';
   supPaintMeta();
   box.hidden = false;
   supWire();
@@ -124,13 +124,13 @@ function supPaintMeta() {
   const t = SUP.tier;
   if (!t) return;
   const end = SUP.endsAt || SUP.until;
-  const meta = document.getElementById('psSupMeta');
-  const box = document.getElementById('psSup');
-  const btn = document.getElementById('psSupCancel');
+  const meta = el('psSupMeta');
+  const box = el('psSup');
+  const btn = el('psSupCancel');
   box.classList.toggle('ps-sup--ending', SUP.ending);
   if (SUP.until < Date.now()) {
     meta.textContent = 'Ended ' + supDate(SUP.until) + ' — the hat comes off shortly. Thank you for the time you kept the lights on.';
-    document.getElementById('psSupActs').hidden = true;
+    el('psSupActs').hidden = true;
     return;
   }
   meta.textContent = SUP.ending
@@ -141,36 +141,36 @@ function supPaintMeta() {
   // subscription it is, so we cannot honestly offer the button — say where the
   // door is instead of pretending to be it
   btn.hidden = SUP.known === false;
-  const port = document.getElementById('psSupPortal');
+  const port = el('psSupPortal');
   port.textContent = SUP.known === false ? 'Manage or cancel on Polar →' : 'Card & receipts →';
   // when we cannot see which subscription is theirs, say so — "you have no
   // membership" would be a lie, and it is the sentence that earns an angry email
-  const miss = document.getElementById('psSupMiss');
+  const miss = el('psSupMiss');
   miss.hidden = SUP.known !== false;
 }
 
 function supWire() {
   if (SUP.wired) return;
   SUP.wired = true;
-  const ask = document.getElementById('psSupAsk');
-  const note = document.getElementById('psSupNote');
+  const ask = el('psSupAsk');
+  const note = el('psSupNote');
   const say = (msg) => { note.textContent = msg; note.hidden = !msg; };
 
-  document.getElementById('psSupCancel').addEventListener('click', () => {
+  el('psSupCancel').addEventListener('click', () => {
     if (SUP.ending) { supDo('keep'); return; }        // changing your mind needs no confirming
-    document.getElementById('psSupAskT').textContent =
+    el('psSupAskT').textContent =
       'You keep the ' + SUP.tier.hat.replace(/^./, (c) => c.toUpperCase()) + ' Top Hat until '
       + supDate(SUP.endsAt || SUP.until) + ', then it comes off. Nothing more is charged, and you can start again any time.';
     ask.hidden = false;
-    document.getElementById('psSupActs').hidden = true;
+    el('psSupActs').hidden = true;
     say('');
   });
-  document.getElementById('psSupNo').addEventListener('click', () => {
+  el('psSupNo').addEventListener('click', () => {
     ask.hidden = true;
-    document.getElementById('psSupActs').hidden = false;
+    el('psSupActs').hidden = false;
   });
-  document.getElementById('psSupYes').addEventListener('click', () => {
-    const why = document.getElementById('psSupWhy').value;
+  el('psSupYes').addEventListener('click', () => {
+    const why = el('psSupWhy').value;
     supDo('cancel', why ? { reason: why } : {});
   });
 }
@@ -197,7 +197,7 @@ function supTake(d) {
 // the quiet read on open — a member who has already cancelled elsewhere must
 // not be shown a Cancel button
 async function supStatus() {
-  const port = document.getElementById('psSupPortal');
+  const port = el('psSupPortal');
   port.href = MANAGE;                                  // the honest fallback, always live
   port.target = '_blank';
   try { supTake(await supCall('status')); } catch (e) { SUP.known = false; }
@@ -207,9 +207,9 @@ async function supStatus() {
 async function supDo(act, extra = {}) {
   if (SUP.busy) return;                                // a double-tap must not send two cancels
   SUP.busy = true;
-  const btn = document.getElementById('psSupCancel');
-  const yes = document.getElementById('psSupYes');
-  const note = document.getElementById('psSupNote');
+  const btn = el('psSupCancel');
+  const yes = el('psSupYes');
+  const note = el('psSupNote');
   const say = (m) => { note.textContent = m; note.hidden = !m; };
   yes.disabled = btn.disabled = true;
   say(act === 'cancel' ? 'Cancelling…' : 'One moment…');
@@ -217,12 +217,12 @@ async function supDo(act, extra = {}) {
     const d = await supCall(act, extra);
     if (d && d.ok) {
       supTake(d);
-      document.getElementById('psSupAsk').hidden = true;
-      document.getElementById('psSupActs').hidden = false;
+      el('psSupAsk').hidden = true;
+      el('psSupActs').hidden = false;
       // the line above already carries the date — this only has to say it landed
       say(act === 'cancel' ? 'Cancelled. Thank you for the months you gave.' : 'Still a member. Nothing changed.');
     } else {
-      document.getElementById('psSupActs').hidden = false;
+      el('psSupActs').hidden = false;
       say('That did not go through, and nothing was changed. Try again in a moment, or use the Polar link below.');
     }
   } catch (e) {
