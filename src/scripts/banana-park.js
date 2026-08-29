@@ -264,17 +264,20 @@ function init() {
   let supFeed = null;
   const supEsc = (s) => String(s).replace(/[<>&"]/g, (c) => (
     { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
-  // 🎖 THE PLAQUES. Four ranks, and the board reads as a board: one-time
-  // coffees on plain grey-white, then blue, silver and gold, each with the
-  // faint light its hat wears in-world. Tapping the board should feel like
-  // arriving somewhere, not like finding a link out of the game — so the whole
-  // wall is HERE, and the only thing that leaves is joining it.
+  // 🎖 THE PLAQUES — drawn (tools/build-supporter-plaques.py), not styled. Four
+  // different OBJECTS: a torn paper note for a one-off coffee, a nailed plank,
+  // a riveted plate, an engraved brass plate. Three-part art (drawn ends + a
+  // tiling middle) so any length of name keeps its ends.
+  // ⚠️ NO TIER HEADINGS. "FRIENDS" over a row of names means nothing to
+  // somebody looking at a board in a park (Trym) — the metal IS the rank, and
+  // the tier's real name lives in the tooltip, on tap as well as on hover.
   const SUP_ROWS = [
-    { t: 'sup-t3', k: 'gold', label: 'legends', hat: 'gold' },
-    { t: 'sup-t2', k: 'silver', label: 'patrons', hat: 'silver' },
-    { t: 'sup-t1', k: 'blue', label: 'friends', hat: 'blue' },
-    { t: 'coffee', k: 'coffee', label: 'coffees', hat: '' },
+    { t: 'sup-t3', k: 'gold', name: 'Legend of Banana World', hat: 'gold' },
+    { t: 'sup-t2', k: 'silver', name: 'Patron of the Park', hat: 'silver' },
+    { t: 'sup-t1', k: 'blue', name: 'Friend of the Banana', hat: 'blue' },
+    { t: 'coffee', k: 'coffee', name: 'bought a coffee', hat: '' },
   ];
+  const supRank = (t) => SUP_ROWS.find((r) => r.t === (t || 'coffee')) || SUP_ROWS[3];
   // one name lifted each day, the same one for everybody — splitmix32 over the
   // UTC date, the world's own daily-pick shape
   function supDayPick(n) {
@@ -285,13 +288,14 @@ function init() {
     x = Math.imul(x ^ (x >>> 15), 0x735a2d97);
     return ((x ^ (x >>> 15)) >>> 0) % n;
   }
-  const supPlaque = (n, k, me) => '<span class="pk-plaq pk-plaq--' + k
-    + (me ? ' pk-plaq--me' : '') + '">' + supEsc(n) + (me ? '<b>you</b>' : '') + '</span>';
+  const supPlaque = (n, r, me) => '<button type="button" class="pk-plaq pk-plaq--' + r.k
+    + (me ? ' pk-plaq--me' : '') + '" data-tip="' + supEsc(r.name) + '">'
+    + supEsc(n) + (me ? '<i>you</i>' : '') + '</button>';
 
   function supPaint() {
     const members = (supFeed && supFeed.members) || [];
-    // one-time supporters earn a plaque too — dedup by name, newest first,
-    // and never one that is already up there as a member
+    // one-off coffees earn a plaque too — deduped by name, and never one that
+    // is already up there on a membership
     const seen = new Set(members.map((m) => m.n));
     const coffees = ((supFeed && supFeed.wall) || [])
       .filter((w) => w.k !== 'member' && w.n && !seen.has(w.n) && (seen.add(w.n) || true))
@@ -304,22 +308,21 @@ function init() {
     if (!all.length) {
       out += '<p>Nobody is pinned up here yet. The first plaque could be yours.</p>';
     } else {
-      // ⭐ TODAY'S SUPPORTER — the reason to tap the board again tomorrow
-      const star = all[supDayPick(all.length)];
-      const sk = (SUP_ROWS.find((r) => r.t === (star.t || 'coffee')) || SUP_ROWS[3]);
-      out += '<div class="pk-supstar">'
-        + (sk.hat ? '<img src="/assets/supporters/hat-' + sk.hat + '.png" alt="" width="30" height="27" />' : '')
-        + '<div><p class="pk-supstar__k">today\'s supporter</p>'
-        + supPlaque(star.n, sk.k, isMe(star.n)) + '</div></div>';
-      // …then the whole board, tier by tier, each row alphabetical so anyone
-      // can find their own name without reading every plaque
-      out += SUP_ROWS.map((r) => {
-        const list = all.filter((m) => (m.t || 'coffee') === r.t)
-          .sort((a, b) => a.n.localeCompare(b.n));
-        if (!list.length) return '';
-        return '<div class="pk-suprow"><p class="pk-suprow__k">' + r.label + '</p><div>'
-          + list.map((m) => supPlaque(m.n, r.k, isMe(m.n))).join('') + '</div></div>';
-      }).join('');
+      // a spotlight needs a crowd to be picked out of — on a board of two
+      // names it is just the same plaque printed twice
+      if (all.length >= 4) {
+        const star = all[supDayPick(all.length)];
+        const sr = supRank(star.t);
+        out += '<p class="pk-supstar__k">today\'s supporter</p><div class="pk-supstar">'
+          + (sr.hat ? '<img src="/assets/supporters/hat-' + sr.hat + '.png" alt="" width="34" height="31" />' : '')
+          + supPlaque(star.n, sr, isMe(star.n)) + '</div>';
+      }
+      // the whole board in one run: best metal first, alphabetical inside it,
+      // so anyone can find their own name without reading every plaque
+      const order = SUP_ROWS.map((r) => r.t);
+      out += '<div class="pk-plaqs">' + all.slice().sort((a, b) =>
+        order.indexOf(a.t || 'coffee') - order.indexOf(b.t || 'coffee') || a.n.localeCompare(b.n))
+        .map((m) => supPlaque(m.n, supRank(m.t), isMe(m.n))).join('') + '</div>';
       out += '<p class="pk-supfoot">These bananas pay for the world to stay free.</p>';
     }
     // ⚠️ don't sell the board to someone already nailed to it. A supporter gets
@@ -332,6 +335,39 @@ function init() {
       : '<a class="pk-cta" href="/supporters/"><span class="pk-cta__verb">get on the board →</span></a>';
     supBody.innerHTML = out;
   }
+
+  // 🏷 the plaque's own label — the tier name, on TAP as well as hover, because
+  // most of the world is on a phone and a phone has never had a hover
+  // ([[tappable-info-doctrine]]). One bubble, borrowed from the builder's.
+  let supTipEl = null, supTipT = 0;
+  function supTip(btn) {
+    if (!supTipEl) {
+      supTipEl = document.createElement('div');
+      supTipEl.className = 'pk-tip';
+      supTipEl.hidden = true;
+      document.body.appendChild(supTipEl);
+    }
+    clearTimeout(supTipT);
+    if (!btn) { supTipEl.hidden = true; return; }
+    supTipEl.textContent = btn.dataset.tip || '';
+    supTipEl.hidden = false;
+    supTipEl.style.left = '0px'; supTipEl.style.top = '0px';
+    const r = btn.getBoundingClientRect(), t = supTipEl.getBoundingClientRect();
+    supTipEl.style.left = Math.max(6, Math.min(innerWidth - t.width - 6, r.left + r.width / 2 - t.width / 2)) + 'px';
+    const above = r.top - t.height - 10;
+    supTipEl.classList.toggle('pk-tip--below', above < 4);
+    supTipEl.style.top = (above < 4 ? r.bottom + 10 : above) + 'px';
+    supTipT = setTimeout(() => { supTipEl.hidden = true; }, 2400);
+  }
+  supBody.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('.pk-plaq');
+    if (b) supTip(b);
+  });
+  supBody.addEventListener('mouseover', (e) => {
+    if (!matchMedia('(hover: hover)').matches) return;
+    const b = e.target.closest && e.target.closest('.pk-plaq');
+    if (b) supTip(b);
+  });
   function openSupCard() {
     supPaint();
     supPanel.hidden = false;
