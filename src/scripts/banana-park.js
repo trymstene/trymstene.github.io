@@ -314,15 +314,18 @@ function init() {
         const star = all[supDayPick(all.length)];
         const sr = supRank(star.t);
         out += '<p class="pk-supstar__k">today\'s supporter</p><div class="pk-supstar">'
-          + (sr.hat ? '<img src="/assets/supporters/hat-' + sr.hat + '.png" alt="" width="34" height="31" />' : '')
           + supPlaque(star.n, sr, isMe(star.n)) + '</div>';
       }
-      // the whole board in one run: best metal first, alphabetical inside it,
-      // so anyone can find their own name without reading every plaque
-      const order = SUP_ROWS.map((r) => r.t);
-      out += '<div class="pk-plaqs">' + all.slice().sort((a, b) =>
-        order.indexOf(a.t || 'coffee') - order.indexOf(b.t || 'coffee') || a.n.localeCompare(b.n))
-        .map((m) => supPlaque(m.n, supRank(m.t), isMe(m.n))).join('') + '</div>';
+      // best metal first, alphabetical inside it, so anyone can find their own
+      // name — and each metal is its own cluster, separated by AIR. Grouping
+      // without headings: the gap says "these belong together" and nobody has
+      // to be told what FRIENDS means.
+      out += '<div class="pk-plaqs">' + SUP_ROWS.map((r) => {
+        const list = all.filter((m) => (m.t || 'coffee') === r.t).sort((a, b) => a.n.localeCompare(b.n));
+        return list.length
+          ? '<div class="pk-plaqg">' + list.map((m) => supPlaque(m.n, r, isMe(m.n))).join('') + '</div>'
+          : '';
+      }).join('') + '</div>';
       out += '<p class="pk-supfoot">These bananas pay for the world to stay free.</p>';
     }
     // ⚠️ don't sell the board to someone already nailed to it. A supporter gets

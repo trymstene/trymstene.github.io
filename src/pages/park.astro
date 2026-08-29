@@ -599,18 +599,26 @@ const faq = {
       --pg: rgba(255, 198, 60, 0.7);
     }
     .pk-plaq--me { --pg: #fffdf5; }
-    .pk-plaqs { margin: 0.1rem 0 0.2rem; }
+    .pk-plaqs { margin: 0; }
 
     /* ⭐ today's supporter — a line, NOT another box. The card was boxes inside
        boxes inside boxes; the label alone is enough to lift the name out. */
-    .pk-supstar { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.75rem; }
-    .pk-supstar img { image-rendering: pixelated; flex: 0 0 auto; }
+    .pk-supstar { display: flex; align-items: center; margin: 0 0 1.5rem; }
     .pk-supstar .pk-plaq { margin-bottom: 0; }
     .pk-supstar__k {
-      margin: 0.5rem 0 0.3rem; font-size: 0.58rem; font-weight: 800;
+      margin: 0 0 0.5rem; font-size: 0.58rem; font-weight: 800;
       letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.55;
     }
-    .pk-supfoot { margin: 0.5rem 0 0.7rem; font-size: 0.78rem; opacity: 0.7; }
+    .pk-supfoot { margin: 1.3rem 0 1.1rem; font-size: 0.78rem; opacity: 0.7; }
+
+    /* ⚠️ AIR IS THE GROUPING. Each metal is its own cluster with a gap under
+       it — no headings, no boxes, no rules. The card had become a wall of
+       plaques with nothing to breathe between them. */
+    .pk-plaqg { margin-bottom: 0.85rem; }
+    .pk-plaqg:last-child { margin-bottom: 0; }
+    /* the title needs room under it before the board starts */
+    #pkSupBody .pk-cardtitle { margin-bottom: 1.15rem; }
+    #pkSupBody .pk-cta { margin-top: 0.2rem; }
 
     /* the plaque's label, on tap as well as hover */
     .pk-tip {
@@ -626,7 +634,7 @@ const faq = {
     }
     .pk-tip--below::after { bottom: auto; top: -4px; }
 
-    .pk-supmine { margin: 0.2rem 0 0; font-size: 0.86rem; font-weight: 700; }
+    .pk-supmine { margin: 0.3rem 0 0.1rem; font-size: 0.86rem; font-weight: 700; }
     /* 🍂 the bloom-phase twins — real art swaps riding THE BLOOM (never a
        CSS filter on the world). Ground plates (sad 0-1 / mid 2-3) crossfade
        1.5s over the lush background, under every positioned walker/prop;
@@ -989,8 +997,14 @@ const faq = {
     .pk-toast.is-on { opacity: 1; transform: translate(-50%, 0) scale(1); }
 
     /* the popup cards (bloom / garden) */
+    /* ⚠️ AN OPEN CARD IS A MODAL AND MUST OUTRANK THE CHATTER. It used to be
+       the LOWEST overlay in the park (z-12), under the toast (20) and under
+       the questline's hint card (.bwq-hint, 900) — so "someone is waiting up
+       the road" fired straight across whatever you had opened to read. 1000
+       clears both and still sits under the plaque tooltip (1200) and the
+       full-screen overlays. */
     .pk-panel {
-      position: absolute; inset: 0; z-index: 12; display: grid; place-items: center;
+      position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center;
       background: rgba(0, 0, 0, 0.55); padding: 0.8rem;
     }
     .pk-panel[hidden] { display: none; }
