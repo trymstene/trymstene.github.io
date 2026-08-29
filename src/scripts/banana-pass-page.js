@@ -7,7 +7,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams, EXTRA_DEFS } from '../lib/banana-engine.js';
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies, PASS_API } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
 import { MANAGE } from '../data/pay-rail.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
@@ -101,18 +101,135 @@ function paintSupport() {
   // the 72h grace the hats honour — a lapsed member still sees the block while
   // the hat is still on, so the state on screen matches the state on the banana
   if (!t || !(+g.until + 72 * 3600 * 1000 > Date.now())) { box.hidden = true; return; }
-  const ends = new Date(+g.until);
-  const days = Math.round((ends - Date.now()) / 86400000);
+  SUP.tier = t;
+  SUP.until = +g.until;
   document.getElementById('psSupTier').textContent = t.name;
   document.getElementById('psSupHat').src = '/assets/supporters/hat-' + t.hat + '.png';
   document.getElementById('psSupHat').alt = 'the ' + t.name + ' hat';
-  document.getElementById('psSupMeta').textContent = days >= 0
-    ? '$' + t.price + ' a month · renews ' + ends.toLocaleDateString() + ' (' + (days === 0 ? 'today' : days + ' days') + '). Your hat and glow are on your banana everywhere, and your name is on the board in the park.'
-    : 'Ended ' + ends.toLocaleDateString() + ' — the hat comes off shortly. Thank you for the time you kept the lights on.';
-  const man = document.getElementById('psSupManage');
-  man.href = MANAGE;
-  man.target = '_blank';
+  supPaintMeta();
   box.hidden = false;
+  supWire();
+  supStatus();
+}
+
+// 🚪 THE WAY OUT LIVES HERE, not on someone else's domain. The local grant
+// paints instantly; the worker then tells us the truth from Polar (is it
+// already ending? when?) and the card catches up. ⚠️ NOTHING about the
+// subscription is written locally — the webhook owns the grant, and a cancel
+// does not shorten it: you keep the hat for the month you paid for.
+const SUP = { tier: null, until: 0, ending: false, endsAt: 0, known: null, busy: false, wired: false };
+const supDate = (ms) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+
+function supPaintMeta() {
+  const t = SUP.tier;
+  if (!t) return;
+  const end = SUP.endsAt || SUP.until;
+  const meta = document.getElementById('psSupMeta');
+  const box = document.getElementById('psSup');
+  const btn = document.getElementById('psSupCancel');
+  box.classList.toggle('ps-sup--ending', SUP.ending);
+  if (SUP.until < Date.now()) {
+    meta.textContent = 'Ended ' + supDate(SUP.until) + ' — the hat comes off shortly. Thank you for the time you kept the lights on.';
+    document.getElementById('psSupActs').hidden = true;
+    return;
+  }
+  meta.textContent = SUP.ending
+    ? 'Ending ' + supDate(end) + '. Nothing more will be charged, and your hat stays on until then.'
+    : '$' + t.price + ' a month · renews ' + supDate(end) + '. Your hat and glow are on your banana everywhere, and your name is on the board in the park.';
+  btn.textContent = SUP.ending ? 'Keep my membership' : 'Cancel membership';
+  // known === false: the membership predates us recording which Polar
+  // subscription it is, so we cannot honestly offer the button — say where the
+  // door is instead of pretending to be it
+  btn.hidden = SUP.known === false;
+  const port = document.getElementById('psSupPortal');
+  port.textContent = SUP.known === false ? 'Manage or cancel on Polar →' : 'Card & receipts →';
+  // when we cannot see which subscription is theirs, say so — "you have no
+  // membership" would be a lie, and it is the sentence that earns an angry email
+  const miss = document.getElementById('psSupMiss');
+  miss.hidden = SUP.known !== false;
+}
+
+function supWire() {
+  if (SUP.wired) return;
+  SUP.wired = true;
+  const ask = document.getElementById('psSupAsk');
+  const note = document.getElementById('psSupNote');
+  const say = (msg) => { note.textContent = msg; note.hidden = !msg; };
+
+  document.getElementById('psSupCancel').addEventListener('click', () => {
+    if (SUP.ending) { supDo('keep'); return; }        // changing your mind needs no confirming
+    document.getElementById('psSupAskT').textContent =
+      'You keep the ' + SUP.tier.hat.replace(/^./, (c) => c.toUpperCase()) + ' Top Hat until '
+      + supDate(SUP.endsAt || SUP.until) + ', then it comes off. Nothing more is charged, and you can start again any time.';
+    ask.hidden = false;
+    document.getElementById('psSupActs').hidden = true;
+    say('');
+  });
+  document.getElementById('psSupNo').addEventListener('click', () => {
+    ask.hidden = true;
+    document.getElementById('psSupActs').hidden = false;
+  });
+  document.getElementById('psSupYes').addEventListener('click', () => {
+    const why = document.getElementById('psSupWhy').value;
+    supDo('cancel', why ? { reason: why } : {});
+  });
+}
+
+async function supCall(act, extra = {}) {
+  const link = linked();
+  if (!link || !link.credId || !link.token) return null;
+  const r = await fetch(PASS_API + '/pay/manage', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ act, credId: link.credId, token: link.token, ...extra }),
+  });
+  return r.ok ? r.json() : null;
+}
+
+function supTake(d) {
+  if (!d || d.known === false) { SUP.known = false; return; }
+  SUP.known = true;
+  SUP.ending = !!d.ending;
+  const e = Date.parse(d.endsAt || '');
+  if (e) SUP.endsAt = e;
+  supPaintMeta();
+}
+
+// the quiet read on open — a member who has already cancelled elsewhere must
+// not be shown a Cancel button
+async function supStatus() {
+  const port = document.getElementById('psSupPortal');
+  port.href = MANAGE;                                  // the honest fallback, always live
+  port.target = '_blank';
+  try { supTake(await supCall('status')); } catch (e) { SUP.known = false; }
+  supPaintMeta();
+}
+
+async function supDo(act, extra = {}) {
+  if (SUP.busy) return;                                // a double-tap must not send two cancels
+  SUP.busy = true;
+  const btn = document.getElementById('psSupCancel');
+  const yes = document.getElementById('psSupYes');
+  const note = document.getElementById('psSupNote');
+  const say = (m) => { note.textContent = m; note.hidden = !m; };
+  yes.disabled = btn.disabled = true;
+  say(act === 'cancel' ? 'Cancelling…' : 'One moment…');
+  try {
+    const d = await supCall(act, extra);
+    if (d && d.ok) {
+      supTake(d);
+      document.getElementById('psSupAsk').hidden = true;
+      document.getElementById('psSupActs').hidden = false;
+      // the line above already carries the date — this only has to say it landed
+      say(act === 'cancel' ? 'Cancelled. Thank you for the months you gave.' : 'Still a member. Nothing changed.');
+    } else {
+      document.getElementById('psSupActs').hidden = false;
+      say('That did not go through, and nothing was changed. Try again in a moment, or use the Polar link below.');
+    }
+  } catch (e) {
+    say('That did not go through. Nothing was changed.');
+  }
+  yes.disabled = btn.disabled = false;
+  SUP.busy = false;
 }
 
 // 🧾 the page state lives here because paint() runs TWICE — once from this

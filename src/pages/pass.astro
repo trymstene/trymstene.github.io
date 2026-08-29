@@ -190,6 +190,23 @@ const NUMBERS = [
     }
     .ps-sup__manage:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
     .ps-sup__wall { font-size: 0.8rem; }
+    button.ps-sup__manage { font: inherit; font-weight: 800; font-size: 0.84rem; cursor: pointer; }
+    .ps-sup__ask { margin-top: 0.75rem; border-top: 2px dashed var(--ink); padding-top: 0.65rem; }
+    .ps-sup__askt { margin: 0 0 0.55rem; font-size: 0.82rem; line-height: 1.5; }
+    .ps-sup__why { display: block; font-size: 0.72rem; font-weight: 700; opacity: 0.75; margin-bottom: 0.6rem; }
+    .ps-sup__why small { font-weight: 400; }
+    .ps-sup__why select { display: block; margin-top: 0.25rem; font: inherit; font-size: 0.8rem; padding: 0.3rem; border: 2px solid var(--ink); background: #fff; max-width: 100%; }
+    .ps-sup__askrow { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ps-sup__yes, .ps-sup__no {
+      font: inherit; font-weight: 800; font-size: 0.82rem; cursor: pointer;
+      padding: 0.45rem 0.75rem; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+    }
+    .ps-sup__yes { background: #fffdf5; }
+    .ps-sup__no { background: var(--banana); }
+    .ps-sup__yes:active, .ps-sup__no:active, button.ps-sup__manage:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+    .ps-sup__note { margin: 0.6rem 0 0; font-size: 0.8rem; line-height: 1.5; font-weight: 700; }
+    .ps-sup--ending { background: #fff6e0; }
+    .ps-sup__miss { margin: 0.55rem 0 0; font-size: 0.76rem; line-height: 1.5; opacity: 0.75; }
 
     /* ── NEWS FOR YOU — verdicts on YOUR stuff, never system chatter. Renders
        only when there is something to say (anti-fatigue). ── */
@@ -504,10 +521,33 @@ const NUMBERS = [
           </div>
         </div>
         <p class="ps-sup__meta" id="psSupMeta"></p>
-        <div class="ps-sup__acts">
-          <a class="ps-sup__manage" id="psSupManage" href="#" rel="noopener">Manage or cancel →</a>
+        <div class="ps-sup__acts" id="psSupActs">
+          <button class="ps-sup__manage" id="psSupCancel" type="button">Cancel membership</button>
+          <a class="ps-sup__wall" id="psSupPortal" href="#" rel="noopener">Card &amp; receipts →</a>
           <a class="ps-sup__wall" href="/supporters/">See the wall</a>
         </div>
+        <!-- the confirm opens IN the card. A membership's exit does not deserve
+             a modal on top of the page it lives on. -->
+        <div class="ps-sup__ask" id="psSupAsk" hidden>
+          <p class="ps-sup__askt" id="psSupAskT"></p>
+          <label class="ps-sup__why">If you like, say why <small>(optional)</small>
+            <select id="psSupWhy">
+              <option value="">—</option>
+              <option value="too_expensive">Too expensive</option>
+              <option value="unused">I wasn't using it</option>
+              <option value="missing_features">Missing something I wanted</option>
+              <option value="low_quality">Not what I hoped</option>
+              <option value="switched_service">Supporting something else</option>
+              <option value="other">Another reason</option>
+            </select>
+          </label>
+          <div class="ps-sup__askrow">
+            <button class="ps-sup__yes" id="psSupYes" type="button">Yes, cancel it</button>
+            <button class="ps-sup__no" id="psSupNo" type="button">Never mind</button>
+          </div>
+        </div>
+        <p class="ps-sup__note" id="psSupNote" hidden></p>
+        <p class="ps-sup__miss" id="psSupMiss" hidden>We can't see which membership this is from this login — it was probably paid with a different email address. Sign in with that one and the button appears here, or use the link above.</p>
       </section>
 
       <!-- ── 7. THE DOORS OUT ── -->

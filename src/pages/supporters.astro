@@ -17,7 +17,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // on all three with their Join buttons. (Removing that last click means taking
 // the payment ourselves through a merchant of record — the Lemon Squeezy
 // track — not a URL trick.) Buttons open in a new tab so the wall stays put.
-import { PAY, KOFI_TIP, RAIL, MANAGE } from '../data/pay-rail.js';
+import { PAY, KOFI_TIP, RAIL } from '../data/pay-rail.js';
 const KOFI = 'https://ko-fi.com/trymstene/tiers';   // still the tip-jar's home
 const KOFI_ONCE = KOFI_TIP;                          // any amount, once
 const TIERS = [
@@ -167,7 +167,7 @@ const TIERS = [
       <div class="sw__you" id="swYou" hidden>
         <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
         <p class="sw__youtxt" id="swYouTxt"></p>
-        <a class="sw__youbtn" id="swYouManage" href={MANAGE} target="_blank" rel="noopener">Manage or cancel →</a>
+        <a class="sw__youbtn" id="swYouManage" href="/pass/">Manage or cancel →</a>
       </div>
 
       <div class="sw__cols">
@@ -313,8 +313,7 @@ const TIERS = [
           card.querySelector('.swt__body').prepend(tag);
           const btn = card.querySelector('.swt__join');
           btn.textContent = 'Manage or cancel →';
-          btn.href = 'https://polar.sh/trym-stene/portal';
-          btn.target = '_blank';
+          btn.href = '/pass/';
           const note = card.querySelector('.swt__idnote');
           if (note) note.remove();
         }

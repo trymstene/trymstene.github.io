@@ -58,6 +58,7 @@ export default {
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
       if (url.pathname === '/polar-hook') return polarHook(request, env);
       if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
+      if (url.pathname === '/pay/manage') return payManage(request, env);
       if (url.pathname === '/supporters') return supporters(request, env);
       if (url.pathname === '/health') return json({ ok: true });
       return json({ error: 'not found' }, 404);
@@ -313,7 +314,11 @@ async function writeJson(env, key, v) {
 }
 // deliver a grant into the member's home blob via the email rail; true if a
 // pass existed to deliver to
-async function deliverGrant(env, emailHash, grant) {
+// `polar` carries the provider's own ids for this membership. They are stamped
+// on the HOME RECORD, never in the blob: the blob syncs to every device and is
+// client-writable on push, and the one thing a cancel button must not accept is
+// a subscription id chosen by the browser asking for the cancellation.
+async function deliverGrant(env, emailHash, grant, polar) {
   const mailKey = 'm' + emailHash;
   const rec = await loadKey(env, mailKey);
   if (!rec) return false;
@@ -321,6 +326,7 @@ async function deliverGrant(env, emailHash, grant) {
   const home = rec.link ? await loadKey(env, homeKey) : rec;
   if (!home) return false;
   home.blob = mergeBlob(home.blob, { member: grant });
+  if (polar && polar.sub) home.polar = { ...(home.polar || {}), ...polar, at: Date.now() };
   await saveKey(env, homeKey, home);
   return true;
 }
@@ -389,6 +395,7 @@ const polarBase = (env) => env.POLAR_BASE || 'https://sandbox-api.polar.sh';
 async function payCheckout(request, env, url) {
   const site = (env.ALLOWED_ORIGIN || 'https://trymstene.com').split(',')[0].trim();
   const back = (why) => Response.redirect(site + '/supporters/?pay=' + why, 302);
+  if (throttled(request.headers.get('CF-Connecting-IP') || 'unknown')) return back('busy');
   const t = String(url.searchParams.get('t') || '').slice(0, 4);
   const pid = env[POLAR_PRODUCT_ENV[t] || ''] || '';
   if (!pid || !env.POLAR_TOKEN) return back('unconfigured');
@@ -406,6 +413,125 @@ async function payCheckout(request, env, url) {
     const to = d && (d.url || d.checkout_url);
     return (r.ok && to) ? Response.redirect(to, 302) : back('down');
   } catch (e) { return back('down'); }
+}
+
+// ---------- 🚪 THE WAY OUT, on our own page ----------
+// A membership you can only leave by logging into a stranger's site is a
+// membership people hesitate to start. Everything a supporter needs — see it,
+// cancel it, change their mind — happens on /pass/ with no second login,
+// because the pass credential they already hold is the proof.
+//
+// ⚠️ THE SUBSCRIPTION ID IS NEVER TAKEN FROM THE REQUEST. It is read off the
+// home record, where only a signature-verified Polar webhook can have written
+// it. A client that could name the id could cancel a stranger's membership by
+// guessing one, and ids travel in plain sight through checkout URLs.
+// ⚠️ NO `portal` ACTION HERE, deliberately. Minting a customer session hands
+// the browser a URL containing a one-hour token that opens invoices, the
+// billing email and the saved card — far more than a cancel, off one pass
+// token. Card and receipts go through Polar's own email-code portal (they
+// require it for PCI anyway); what a member actually needs often — leaving —
+// happens here in one tap.
+const MANAGE_ACTS = ['status', 'cancel', 'keep'];
+const MANAGE_MAX = 5;                                  // mutations per hour, per pass
+const CANCEL_REASONS = ['too_expensive', 'missing_features', 'switched_service',
+  'unused', 'customer_service', 'low_quality', 'too_complex', 'other'];
+
+async function payManage(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  const out = (o, st = 200) => json(o, st, cors(env, request));
+  if (request.method !== 'POST') return out({ error: 'not found' }, 404);
+  let b;
+  try { b = await request.json(); } catch (e) { return out({ error: 'bad json' }, 400); }
+  const act = String(b.act || 'status');
+  if (!MANAGE_ACTS.includes(act)) return out({ error: 'bad act' }, 400);
+
+  const R = await tokenRec(env, b.credId, b.token);
+  if (!R) return out({ error: 'not linked' }, 403);
+  let P = (R.home && R.home.polar) || {};
+  // 🩹 memberships that predate the stamp: when the home record IS the email
+  // identity, its own key carries the address hash, so the member store can say
+  // which subscription this is. ⚠️ the hash comes from the RECORD KEY, never
+  // from the request — a browser still cannot name whose membership to touch.
+  if (!P.sub && /^m[0-9a-f]{64}$/.test(R.homeKey)) {
+    const m = ((await readJson(env, 'kofi/members.json')) || {})[R.homeKey.slice(1)];
+    if (m && m.sub) {
+      P = { sub: m.sub, cust: m.cust || '', at: Date.now() };
+      R.home.polar = P;
+      await saveKey(env, R.homeKey, R.home);        // pay the lookup once
+    }
+  }
+  // no stamped subscription = we genuinely cannot tell which one is theirs, and
+  // guessing on a money path is worse than saying so. Ko-fi members land here
+  // too: that rail has no cancel API at all, and no `sub` to stamp.
+  if (!P.sub) return out({ ok: true, known: false });
+  if (!env.POLAR_TOKEN) return out({ ok: true, known: false, why: 'unconfigured' });
+  // ⚠️ FAIL CLOSED OFF PRODUCTION. polarBase() falls back to sandbox, where a
+  // real subscription id does not exist — a cancel would report failure (or
+  // one day succeed against nothing) while the card kept being charged.
+  if (!/^https:\/\/api\.polar\.sh\/?$/.test(polarBase(env))) return out({ ok: true, known: false, why: 'unconfigured' });
+
+  // a per-PASS budget, kept on the record itself. The IP throttle is an
+  // in-memory Map per isolate — fine for chatter, not a control on a route
+  // that moves money. Reads are free; only mutations spend.
+  if (act !== 'status') {
+    const win = R.home.manage && Date.now() - R.home.manage.t < 3600e3 ? R.home.manage : { n: 0, t: Date.now() };
+    if (win.n >= MANAGE_MAX) return out({ error: 'slow down' }, 429);
+    win.n++;
+    R.home.manage = win;
+    await saveKey(env, R.homeKey, R.home);
+  }
+
+  const api = (path, init = {}) => fetch(polarBase(env) + path, {
+    ...init,
+    headers: { Authorization: 'Bearer ' + env.POLAR_TOKEN, 'Content-Type': 'application/json', ...(init.headers || {}) },
+  });
+
+  try {
+    const at = '/v1/subscriptions/' + encodeURIComponent(P.sub);
+    // ⚠️ ONLY EVER cancel_at_period_end. `revoke` takes back a month that has
+    // already been paid for and cannot be undone — the opposite of every other
+    // revocation in this codebase, which happens by TIME.
+    const body = act === 'cancel'
+      ? { cancel_at_period_end: true,
+          customer_cancellation_reason: CANCEL_REASONS.includes(String(b.reason)) ? b.reason : null }
+      : { cancel_at_period_end: false };
+    const call = () => (act === 'status' ? api(at) : api(at, { method: 'PATCH', body: JSON.stringify(body) }));
+
+    let r = await call();
+    // a row Polar is already busy with — one polite retry beats telling somebody
+    // their cancellation failed when it merely collided
+    if (r.status === 409) {
+      await new Promise((ok) => setTimeout(ok, 900));
+      r = await call();
+    }
+    let d = await r.json().catch(() => null);
+    if (!r.ok) {
+      const code = String((d && (d.error || d.type)) || '');
+      // ⚠️ ALREADY CANCELLED IS NOT A FAILURE. Polar 403s a second cancel, and
+      // showing that as an error tells someone their membership is still
+      // running when it is not — so read the truth back and show that instead.
+      if (code === 'AlreadyCanceledSubscription') {
+        const g = await api(at);
+        const gd = await g.json().catch(() => null);
+        if (g.ok && gd && gd.id) d = gd;
+      }
+      // the provider's own error text never reaches the browser — it is theirs,
+      // it changes without notice, and none of it helps a member
+      console.error('polar manage', act, r.status, code);
+      if (!d || !d.id) return out({ error: 'polar' }, 502);
+    }
+    if (!d || !d.id) return out({ error: 'polar' }, 502);
+    // names and ids stay server-side; the page only needs what it will show
+    return out({
+      ok: true, known: true, act,
+      state: String(d.status || ''),
+      ending: !!d.cancel_at_period_end || ['canceled', 'revoked'].includes(String(d.status)),
+      endsAt: d.ends_at || d.current_period_end || null,
+      amount: +d.amount || 0,
+      product: String((d.product || {}).name || ''),
+    });
+  } catch (e) { return out({ error: 'polar down' }, 502); }
 }
 
 // Standard Webhooks: base64 HMAC-SHA256 over `id.timestamp.body`, header
@@ -518,9 +644,15 @@ async function polarHook(request, env) {
     // the same ~35 day window the Ko-fi rail uses
     const per = Date.parse(d.current_period_end || '') || 0;
     const until = Math.max(per || (now + KOFI_EXTEND), +(members[hash] || {}).until || 0);
-    members[hash] = { t, until, last: now, n: pub };
+    // ⚠️ on order.paid the event's own id is the ORDER's — the subscription is
+    // one field over. Stamping the order id here would give the cancel route a
+    // valid-looking id that Polar refuses.
+    const subId = String((/^subscription\./.test(type) ? d.id : d.subscription_id) || '');
+    const polar = { sub: subId, cust: String(cust.id || '') };
+    members[hash] = { t, until, last: now, n: pub,
+      ...(subId ? { sub: subId } : {}), ...(cust.id ? { cust: String(cust.id) } : {}) };
     await writeJson(env, 'kofi/members.json', members);
-    const delivered = await deliverGrant(env, hash, { t, until });
+    const delivered = await deliverGrant(env, hash, { t, until }, polar);
     return json({ ok: true, tier: t, delivered });
   }
   return json({ ok: true, ignored: type });
@@ -1176,6 +1308,11 @@ async function mailUse(request, env, url) {
     const m = ((await readJson(env, 'kofi/members.json')) || {})[key.slice(1)];
     if (m && m.until > Date.now() && R && R.home) {
       R.home.blob = mergeBlob(R.home.blob, { member: { t: m.t, until: m.until } });
+      // ⚠️ the ids come across too. Without this the member has a hat but no
+      // way to take it off from our own page — deliverGrant is not the only
+      // door a membership arrives through, and a cancel button that only works
+      // for people who happened to log in first is not a cancel button.
+      if (m.sub) R.home.polar = { ...(R.home.polar || {}), sub: m.sub, cust: m.cust || '', at: Date.now() };
       await saveKey(env, R.homeKey, R.home);
     }
   } catch (e) {}
