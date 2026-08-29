@@ -90,9 +90,14 @@ const ok = (c, label, extra) => {
   const m = members[await sha('kiwi@example.com')];
   ok(r.status === 200 && r.body.tier === 'sup-t1', 'subscription.active grants sup-t1', r.body);
   ok(m && m.until > Date.now() + 25 * 86400e3, 'until comes from current_period_end', m);
+  ok(!env.PASSES._m.get('kofi/wall.json'),
+    'subscription.active alone writes NO wall line (Polar fires four events per payment)');
+  // …the payment itself does, once, on the same wall the Ko-fi rail writes
+  await hook({ type: 'order.paid', data: sub({ id: 'ord_1', subscription_id: 'sub_1' }) });
+  await hook({ type: 'order.paid', data: sub({ id: 'ord_1', subscription_id: 'sub_1' }) });
   const wall = JSON.parse(env.PASSES._m.get('kofi/wall.json'));
   ok(wall.length === 1 && wall[0].k === 'member' && wall[0].n === 'KiwiRainbowRain',
-    'the payment lands on the SAME wall the Ko-fi rail writes', wall[0]);
+    'order.paid writes exactly one line, retries deduped', wall);
 }
 
 // 3. tier mapping falls back: unknown product id → name → amount

@@ -417,13 +417,24 @@ async function polarVerify(env, headers, body) {
   const sigs = headers.get('webhook-signature');
   if (!raw || !id || !ts || !sigs) return false;
   if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false;   // replay window
-  const s = raw.startsWith('whsec_') ? raw.slice(6) : raw;
-  let bytes;
-  try { bytes = Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); } catch (e) { bytes = te.encode(s); }
-  const key = await crypto.subtle.importKey('raw', bytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const mac = await crypto.subtle.sign('HMAC', key, te.encode(id + '.' + ts + '.' + body));
-  const expect = btoa(String.fromCharCode(...new Uint8Array(mac)));
-  return sigs.split(' ').some((one) => one.split(',')[1] === expect);
+  // ⚠️ THE KEY DERIVATION IS NOT THE OBVIOUS ONE. Standard Webhooks says the
+  // secret is base64 behind a `whsec_` prefix, but Polar's SDK base64-ENCODES
+  // the secret string it was given and hands that to the library, which then
+  // decodes it — so their real HMAC key is the UTF-8 bytes of the whole secret,
+  // prefix included. Guessing wrong cost a round of live 403s with Polar
+  // retrying politely, so try every sane derivation and accept any match: all
+  // three are HMAC-SHA256 under a secret only Polar and this worker hold.
+  const bare = raw.startsWith('whsec_') ? raw.slice(6) : raw;
+  const keys = [te.encode(raw), te.encode(bare)];
+  try { keys.push(Uint8Array.from(atob(bare), (c) => c.charCodeAt(0))); } catch (e) {}
+  const want = sigs.split(' ').map((one) => one.split(',')[1]).filter(Boolean);
+  for (const bytes of keys) {
+    const key = await crypto.subtle.importKey('raw', bytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const mac = await crypto.subtle.sign('HMAC', key, te.encode(id + '.' + ts + '.' + body));
+    const expect = btoa(String.fromCharCode(...new Uint8Array(mac)));
+    if (want.includes(expect)) return true;
+  }
+  return false;
 }
 
 // product id → tier, then the product NAME, then the amount (cents) — the same
@@ -458,7 +469,12 @@ async function polarHook(request, env) {
 
   // 🧾 the wall ledger — one line per payment, whichever rail took it
   const isSub = /^subscription\./.test(type) || !!d.subscription_id || !!d.recurring_interval;
-  if (type === 'order.paid' || type === 'subscription.active' || type === 'subscription.cycled') {
+  // ⚠️ ONLY order.paid writes here. Polar fires subscription.created, .active,
+  // .updated AND order.paid for a single payment, each carrying a different id,
+  // so a tx-keyed dedupe cannot see they are the same event — one join showed
+  // up as two lines on the public feed until this was narrowed to the one event
+  // that actually means money moved.
+  if (type === 'order.paid') {
     const wall = (await readJson(env, 'kofi/wall.json')) || [];
     if (!wall.some((w) => w.tx === tx)) {
       wall.unshift({ tx, ts: now, n: pub, a: String((+d.amount || 0) / 100), c: 'USD',
