@@ -1,24 +1,13 @@
 ---
-// 🎩 THE SUPPORTERS WALL — and the place you actually join. Ko-fi's own page
-// opens on the tip jar and hides memberships behind a tab, so this page IS the
-// storefront: the three tiers with the in-game art of what you get, the living
-// wall, and the recent support feed. The Join buttons deep-link to
-// ko-fi.com/trymstene/tiers (their checkout is a modal on their domain — there
-// is no per-tier URL, so the tier list is the deepest honest link).
+// 🎩 THE SUPPORTERS WALL — and the place you actually join. This page IS the
+// storefront: the living wall in the park's own plaques, the recent-support
+// feed, a one-off coffee, and the three tiers with in-game art of what you get.
+// Every button mints its checkout on our own worker and lands straight on
+// payment — no hop to anybody else's profile page.
 // Data: worker-pass GET /supporters — public names only, private supporters
 // already filtered server-side.
 import BaseLayout from '../layouts/BaseLayout.astro';
-// ⚠️ THERE IS NO PER-TIER DEEP LINK, and it isn't for want of looking: each
-// tier does carry a GUID, but Ko-fi's Join button POSTs it to
-// /api/subscriptions/membership/create and only THEN redirects to the
-// server-minted /summary/<transactionId> — the checkout URL does not exist
-// until someone clicks. The tier objects carry no share URL or slug, and the
-// cards have no anchors. /tiers is therefore the deepest honest link: it lands
-// on all three with their Join buttons. (Removing that last click means taking
-// the payment ourselves through a merchant of record — the Lemon Squeezy
-// track — not a URL trick.) Buttons open in a new tab so the wall stays put.
 import { PAY, RAIL } from '../data/pay-rail.js';
-const KOFI = 'https://ko-fi.com/trymstene/tiers';   // still the tip-jar's home
 const WORKER = 'https://banana-pass.trymstene.workers.dev';
 const TIERS = [
   {
@@ -247,11 +236,11 @@ const TIERS = [
           are the same object. */}
 
       <p class="sw__note">
-        Memberships run through <a href={KOFI} rel="noopener">Ko-fi</a>, who handle the payment —
-        cancel any time from there, and the hat simply retires itself. Names appear exactly as
-        given on Ko-fi, and supporters who chose to stay private stay private here too. Your hat
-        arrives on your banana within the hour; sign in with <a href="/pass/">your pass</a> using
-        the same email so it knows where to send it.
+        Payments run through <a href="https://polar.sh" rel="noopener nofollow">Polar</a>, who
+        handle the card and the tax. Cancel any time from <a href="/pass/">your pass</a> — the hat
+        stays on until the end of the month you already paid for, then retires itself. Names
+        appear exactly as given at checkout. Your hat arrives on your banana within the hour, so
+        sign in with your pass using the same email and it will know where to send it.
       </p>
     </div>
   </section>

@@ -187,8 +187,8 @@ const ok = (c, label, extra) => {
   ok(sent.body.amount === 500 && sent.body.products[0] === 'prod_tip',
     'the amount chosen on our page is the amount charged', sent.body);
 
-  await worker.fetch(new Request('https://x/pay/tip?a=1'), tipEnv);
-  ok(!('amount' in sent.body), 'a sub-dollar amount is dropped, not charged', sent.body);
+  await worker.fetch(new Request('https://x/pay/tip?a=100'), tipEnv);
+  ok(!('amount' in sent.body), 'under the product minimum the amount is dropped, not refused', sent.body);
   await worker.fetch(new Request('https://x/pay/tip?a=999999'), tipEnv);
   ok(!('amount' in sent.body), 'a stray digit cannot mint a four-figure checkout', sent.body);
   await worker.fetch(new Request('https://x/pay/tip'), tipEnv);

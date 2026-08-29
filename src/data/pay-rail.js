@@ -11,8 +11,7 @@
 //           ?pay=unconfigured rather than failing in front of somebody's card.
 //
 // ⚠️ Flipping this changes NOTHING about the hats: both rails write the same
-// member store and deliver the same grant by the same email hash. Ko-fi keeps
-// the tip jar either way — one-off support is a Ko-fi strength and needs no API.
+// member store and deliver the same grant by the same email hash.
 export const RAIL = 'polar';
 
 const WORKER = 'https://banana-pass.trymstene.workers.dev';
@@ -29,7 +28,10 @@ export const RAILS = {
   },
 };
 export const PAY = RAILS[RAIL] || RAILS.kofi;
-export const KOFI_TIP = 'https://ko-fi.com/trymstene';
+// ☕ one-off support goes through OUR OWN checkout now (worker /pay/tip) —
+// Trym, 29 Aug: "more consistent and probably easier to remove uneccessary
+// middle steps for CRO". Ko-fi survives only as the worker's outage fallback,
+// where its URL lives; nothing on the site links to it any more.
 
 // 🚪 THE WAY OUT — Polar's own customer portal: the supporter enters the email
 // they paid with, gets a one-time code, and can cancel there themselves. It must

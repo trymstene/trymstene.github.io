@@ -537,20 +537,22 @@ async function payManage(request, env) {
 
 // ☕ A ONE-OFF, IN ONE TAP. The amount is chosen on our own page and carried
 // into the checkout, so nobody has to type it twice.
-// ⚠️ FALLS BACK TO KO-FI, ON PURPOSE. Ko-fi takes 0% on donations and Polar
-// takes 4% + 40c, which on a $3 coffee is most of the tip — so until a tip
-// product exists here (POLAR_TIP), this route is a redirect to the tip jar and
-// the buttons still work. A dead donate button is worse than a slower one.
+// ⚠️ AND IT FALLS BACK TO THE KO-FI TIP JAR rather than erroring — if the
+// product is unset, the token is missing, or Polar is down, the money still has
+// somewhere to go. A dead donate button is worse than a slower one, and this is
+// the one route where the visitor is already holding their wallet.
 const TIP_JAR = 'https://ko-fi.com/trymstene';
 async function payTip(request, env, url) {
   const site = (env.ALLOWED_ORIGIN || 'https://trymstene.com').split(',')[0].trim();
   if (throttled(request.headers.get('CF-Connecting-IP') || 'unknown')) return Response.redirect(TIP_JAR, 302);
   const pid = env.POLAR_TIP || '';
   if (!pid || !env.POLAR_TOKEN) return Response.redirect(TIP_JAR, 302);
-  // cents, clamped: below a dollar the fees eat the whole thing, and a stray
-  // digit should never mint a four-figure checkout
+  // cents, clamped to what the product will actually accept: its minimum is
+  // $3, and below that Polar refuses the checkout outright — better to drop the
+  // amount and let them pick than to bounce somebody off a broken link. The
+  // ceiling is there so a stray digit cannot mint a four-figure checkout.
   const want = Math.round(Number(url.searchParams.get('a')) || 0);
-  const amount = want >= 100 && want <= 50000 ? want : 0;
+  const amount = want >= 300 && want <= 50000 ? want : 0;
   try {
     const r = await fetch(polarBase(env) + '/v1/checkouts', {
       method: 'POST',
