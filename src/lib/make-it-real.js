@@ -32,6 +32,7 @@
 // ⚠️ Same back-door that defeated the Forge's lazy import via banana-shelf.js.
 // Verify by MEASURING the built page, never by reading the import list.
 import PRODUCTS from '../../shared/products.js';   // plain catalog, no engine
+import { TIP_URL } from '../data/pay-rail.js';
 
 // ⚠️ was a hand-copied 14.99 "mirroring sticker-core" — a mirror nobody
 // repolished when the sticker dropped to $4.99. Read the manifest instead.
@@ -309,14 +310,14 @@ const WORLD_HREF = '/homestead/';
 // support instead of pitching the world/Discord — an honest ask at the one
 // moment a stranger has just received something. ONE message, deliberately:
 // a clean read on willingness-to-pay beats a rotation. The $5 matches the
-// coffee price set on the BMAC page — if that setting changes, change this.
+// $5 matches the middle preset on /supporters/, which is where this now goes.
 // The old world/discord rotation lives in git (WORLD_VARIANTS, this commit's
 // parent) — this is a TEST, not a demolition.
 const WORLD_VARIANTS = [
   { id: 'coffee', to: 'support', kicker: 'Free, since 1999', head: 'I make nothing on the banana',
     pills: ['Every download is free', 'Support keeps it that way'], cta: '☕ Buy me a coffee — $5' },
 ];
-export const SUPPORT_URL = 'https://buymeacoffee.com/trymstene';
+export const SUPPORT_URL = TIP_URL;
 
 // their banana standing in the world — sky, grass, and the engine composite.
 // A gradient backdrop is card chrome, not world art (the pack rule is about

@@ -40,11 +40,21 @@ const TIERS = [
     .sw__in { max-width: 940px; margin: 0 auto; }
     .sw__kicker { color: #ffd23f; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.15em; text-transform: uppercase; margin: 0 0 0.4rem; }
     .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.8rem, 7vw, 2.8rem); margin: 0 0 0.7rem; color: #fff; line-height: 1.05; }
-    .sw__lede { line-height: 1.6; font-size: 1rem; margin: 0 0 1.4rem; max-width: 60ch; opacity: 0.92; }
+    .sw__lede { line-height: 1.6; font-size: 1rem; margin: 0 0 var(--gap-part); max-width: 60ch; opacity: 0.92; }
+    /* 🧭 a way into a page this tall — three doors, not a menu */
+    .sw__jump { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: var(--gap-part) 0 0; padding: 0; list-style: none; }
+    .sw a.sw__jumpl {
+      display: inline-block; text-decoration: none; font-size: 0.78rem; font-weight: 800;
+      letter-spacing: 0.04em; color: #f2e8d8; padding: 0.4rem 0.7rem;
+      border: 2px solid #38424f; background: #1b2129;
+    }
+    .sw a.sw__jumpl:hover { border-color: #ffd23f; color: #ffd23f; }
+    /* headings you can land on should not land under the sticky header */
+    .sw__sec { scroll-margin-top: 84px; }
     .sw a { color: #ffd23f; }
 
     /* ---- the three tiers: the shop, in the world's own furniture ---- */
-    .sw__tiers { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); margin: 0 0 3rem; }
+    .sw__tiers { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); margin: 0; }
     .swt {
       display: flex; flex-direction: column; background: #1b2129;
       border: 3px solid #2c3542; box-shadow: 7px 7px 0 #000; overflow: hidden;
@@ -86,15 +96,59 @@ const TIERS = [
     .sw a.swt__join:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
 
     /* ---- the wall + the feed ---- */
-    .sw__cols { display: grid; gap: 1.4rem; grid-template-columns: 1fr; margin-bottom: 2.6rem; }
-    @media (min-width: 780px) { .sw__cols { grid-template-columns: 1.15fr 1fr; } }
-    .sw h2 { font-family: "Archivo Black", sans-serif; font-size: 1.25rem; color: #ffd23f; margin: 0 0 0.2rem; }
-    .sw__h2b { font-size: 1.5rem !important; padding-top: 0.4rem; border-top: 3px solid #2c3542; }
-    .sw__sub { margin: 0 0 0.9rem; font-size: 0.86rem; opacity: 0.65; }
-    /* 🔢 the number first — a wall is a score before it is a list */
-    .sw__stat { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 1.6rem; }
-    .sw__stat b { font-family: "Archivo Black", sans-serif; font-size: 2.4rem; color: #ffd23f; line-height: 1; }
-    .sw__stat span { font-size: 0.86rem; opacity: 0.75; }
+    .sw__cols { display: grid; gap: var(--gap-sec); grid-template-columns: 1fr; }
+    @media (min-width: 780px) { .sw__cols { grid-template-columns: 1.15fr 1fr; gap: 2.4rem; align-items: start; } }
+    /* ── THE VERTICAL SCALE ─────────────────────────────────────────────
+       ⚠️ A HEADING'S JOB IS TO BREAK CONTENT UP, so it needs space ABOVE it —
+       more above than below, or it belongs to the wrong side. These headings
+       had `margin: 0 0 0.2rem` and sat flush against the block before them.
+         --gap-sec   between two top-level sections
+         --gap-head  above a heading inside a section
+         --gap-part  between a section's own sub-parts
+       Nothing on this page invents its own vertical number. */
+    .sw { --gap-sec: 3rem; --gap-part: 1.15rem; }
+    @media (min-width: 780px) { .sw { --gap-sec: 3.75rem; } }
+    .sw__sec + .sw__sec { margin-top: var(--gap-sec); }
+    .sw h2 {
+      font-family: "Archivo Black", sans-serif; font-size: 1.25rem; color: #ffd23f;
+      margin: 0 0 0.3rem; line-height: 1.15;
+    }
+    .sw__sub { margin: 0 0 var(--gap-part); font-size: 0.86rem; opacity: 0.65; max-width: 52ch; }
+    /* 🔢 THE COUNT — a number is not a design. Scaling the type up and leaving
+       it floating is the laziest version of a stat; the figure gets an OBJECT
+       to sit on: a banana-yellow tile, knocked a couple of degrees off square
+       so it reads as something pinned to the page rather than a bigger word. */
+    .sw__stat { display: flex; align-items: center; gap: 0.7rem; margin: 0; }
+    .sw__stat b {
+      flex: 0 0 auto; display: grid; place-items: center;
+      min-width: 54px; height: 54px; padding: 0 0.5rem;
+      background: #ffd23f; color: #14181d; border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000; transform: rotate(-3deg);
+      font-family: "Archivo Black", sans-serif; font-size: 1.7rem; line-height: 1;
+    }
+    .sw__stat span { font-size: 0.9rem; line-height: 1.45; opacity: 0.8; max-width: 30ch; text-wrap: balance; }
+
+    /* lit, not boxed — the same move as the park's spotlight */
+    .sw__you {
+      display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
+      background: radial-gradient(70% 130% at 22% 50%, rgba(255, 210, 63, 0.16), rgba(255, 210, 63, 0) 70%);
+      border-left: 3px solid #ffd23f; padding: 0.85rem 0.95rem; margin: var(--gap-part) 0 0;
+    }
+    .sw__youhat { image-rendering: pixelated; height: 38px; width: auto; flex: 0 0 auto; }
+    .sw__youtxt { flex: 1 1 240px; margin: 0; font-size: 0.92rem; line-height: 1.5; }
+    .sw a.sw__youbtn {
+      flex: 0 0 auto; text-decoration: none; background: #ffd23f; color: #111;
+      font-weight: 800; font-size: 0.84rem; padding: 0.55rem 0.9rem;
+      border: 3px solid #111; box-shadow: 3px 3px 0 #000; white-space: nowrap;
+    }
+    .sw a.sw__youbtn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    /* the tier you are already on stops being a sales pitch */
+    .swt--mine { outline: 3px solid #ffd23f; outline-offset: 3px; }
+    .swt__mine {
+      display: block; background: #ffd23f; color: #111; font-weight: 800;
+      font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+      text-align: center; padding: 0.3rem; margin: 0 0 0.6rem;
+    }
     .sw__idnote {
       margin: 0.9rem 0 0; font-size: 0.82rem; line-height: 1.5; opacity: 0.85;
       border-left: 3px solid #ffd23f; padding-left: 0.6rem;
@@ -111,12 +165,15 @@ const TIERS = [
        No card border: a torn top and bottom edge drawn from the slat art
        instead, so it reads as a plank nailed across the page. */
     .swc {
-      position: relative; margin: 2.6rem 0 2.8rem; padding: 1.4rem 1.1rem 1.5rem;
+      position: relative; margin: 0; padding: 1.4rem 1.1rem 1.5rem;
       background:
         linear-gradient(rgba(224, 205, 168, 0.17), rgba(224, 205, 168, 0.04)),
         radial-gradient(80% 120% at 20% 0%, rgba(255, 210, 63, 0.12), rgba(255, 210, 63, 0) 70%);
       border-top: 3px solid #6c675c; border-bottom: 3px solid #6c675c;
     }
+    /* it is a section too, so the scale owns its outer space and the panel
+       only owns its inner */
+    .sw__sec.swc { padding: 1.4rem 1.1rem 1.5rem; }
     .swc__head { display: flex; align-items: flex-start; gap: 0.8rem; margin-bottom: 1.1rem; }
     .swc__coin { image-rendering: pixelated; flex: 0 0 auto; }
     .swc__h {
@@ -148,11 +205,12 @@ const TIERS = [
       .sw a.swc__amt { min-width: 70px; padding: 0 24px; }
     }
 
-    .sw__note { margin-top: 2.2rem; font-size: 0.85rem; opacity: 0.7; line-height: 1.6; max-width: 66ch; }
+    .sw__note { margin-top: var(--gap-sec); font-size: 0.85rem; opacity: 0.7; line-height: 1.6; max-width: 66ch; }
   </style>
 
   <section class="sw">
     <div class="sw__in">
+      <section class="sw__sec">
       <p class="sw__kicker">the people keeping the banana dancing</p>
       <h1>The Supporters Wall</h1>
       <p class="sw__lede">
@@ -161,13 +219,23 @@ const TIERS = [
       </p>
       <p class="sw__stat"><b id="swCount">—</b> <span>keeping the lights on</span></p>
 
+      {/* 🧭 the page is four screens tall on a phone — three doors in, so the
+          memberships are not something you have to scroll past the wall to find */}
+      <ul class="sw__jump">
+        <li><a class="sw__jumpl" href="#wall">The wall</a></li>
+        <li><a class="sw__jumpl" href="#coffee">Buy a coffee</a></li>
+        <li><a class="sw__jumpl" href="#join">Memberships</a></li>
+      </ul>
+
       <!-- 💛 an existing supporter should never be sold what they already have -->
       <div class="sw__you" id="swYou" hidden>
         <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
         <p class="sw__youtxt" id="swYouTxt"></p>
         <a class="sw__youbtn" id="swYouManage" href="/pass/">Manage or cancel →</a>
       </div>
+      </section>
 
+      <section class="sw__sec" id="wall">
       <div class="sw__cols">
         <div>
           <h2>The wall</h2>
@@ -184,8 +252,9 @@ const TIERS = [
           <p class="sw__empty" id="swFeedEmpty">Nothing yet today — the wall is freshly built.</p>
         </div>
       </div>
+      </section>
 
-      <section class="swc" id="coffee">
+      <section class="sw__sec swc" id="coffee">
         <div class="swc__head">
           <img class="swc__coin" src="/assets/banana-stand/coin.png" width="44" height="44"
             alt="" loading="lazy" />
@@ -203,7 +272,8 @@ const TIERS = [
         </div>
       </section>
 
-      <h2 class="sw__h2b" id="join">Join the wall</h2>
+      <section class="sw__sec" id="join">
+      <h2>Join the wall</h2>
       <p class="sw__sub">A membership dresses your banana. Cancel any time; the hat retires itself.</p>
       <div class="sw__tiers">
         {TIERS.map((t) => (
@@ -229,6 +299,7 @@ const TIERS = [
           so. Said ONCE under the row, where it is read; three times inside
           three cards is small print. */}
       <p class="sw__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that is how the hat finds you.</p>
+      </section>
 
       {/* ☕ NOT EVERYONE WANTS A SUBSCRIPTION, and a one-off should not be the
           last thing on a 4000px page. It sits right under the wall it puts you

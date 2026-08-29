@@ -29,7 +29,7 @@ export const locales = [
     dlOriginalLabel: 'Originele GIF ↓', dlOriginalFile: 'dansende-banaan-trymstene.com.gif',
     dlTransLabel: 'Transparante PNG ↓', dlTransFile: 'dansende-banaan-transparant-trymstene.com.png',
     makeYourOwn: 'Maak je eigen dansende banaan →',
-    tip: 'Hij is gratis — altijd. Maar als de banaan je liet glimlachen, kun je <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">de bananenman een koffie aanbieden</a>.',
+    tip: 'Hij is gratis — altijd. Maar als de banaan je liet glimlachen, kun je <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">de bananenman een koffie aanbieden</a>.',
     faqKicker: 'Veelgestelde vragen', faqHeading: 'Dansende banaan — FAQ',
     faq: [
       { q: 'Wie heeft de dansende banaan gemaakt?', a: 'Ik — Trym Stene. Ik animeerde hem in 1999 in Animation Shop.' },
@@ -63,7 +63,7 @@ export const locales = [
     dlOriginalLabel: 'GIF original ↓', dlOriginalFile: 'platano-bailando-trymstene.com.gif',
     dlTransLabel: 'PNG transparente ↓', dlTransFile: 'platano-bailando-transparente-trymstene.com.png',
     makeYourOwn: 'Crea tu propio plátano bailando →',
-    tip: 'Es gratis — siempre. Pero si el plátano te sacó una sonrisa, puedes <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">invitarle un café al creador</a>.',
+    tip: 'Es gratis — siempre. Pero si el plátano te sacó una sonrisa, puedes <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">invitarle un café al creador</a>.',
     faqKicker: 'Preguntas frecuentes', faqHeading: 'Plátano bailando — FAQ',
     faq: [
       { q: '¿Quién creó el plátano bailando?', a: 'Yo — Trym Stene. Lo animé en 1999 en Animation Shop.' },
@@ -97,7 +97,7 @@ export const locales = [
     dlOriginalLabel: 'GIF original ↓', dlOriginalFile: 'banana-dancando-trymstene.com.gif',
     dlTransLabel: 'PNG transparente ↓', dlTransFile: 'banana-dancando-transparente-trymstene.com.png',
     makeYourOwn: 'Crie a sua própria banana dançando →',
-    tip: 'É grátis — sempre. Mas se a banana te fez sorrir, você pode <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">pagar um café para o criador</a>.',
+    tip: 'É grátis — sempre. Mas se a banana te fez sorrir, você pode <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">pagar um café para o criador</a>.',
     faqKicker: 'Perguntas frequentes', faqHeading: 'Banana dançando — FAQ',
     faq: [
       { q: 'Quem criou a banana dançando?', a: 'Eu — Trym Stene. Eu a animei em 1999 no Animation Shop.' },
@@ -131,7 +131,7 @@ export const locales = [
     dlOriginalLabel: 'GIF original ↓', dlOriginalFile: 'banane-qui-danse-trymstene.com.gif',
     dlTransLabel: 'PNG transparent ↓', dlTransFile: 'banane-qui-danse-transparent-trymstene.com.png',
     makeYourOwn: 'Crée ta propre banane qui danse →',
-    tip: "C'est gratuit — toujours. Mais si la banane t'a fait sourire, tu peux <a href=\"https://buymeacoffee.com/trymstene\" target=\"_blank\" rel=\"noopener\">offrir un café au créateur</a>.",
+    tip: "C'est gratuit — toujours. Mais si la banane t'a fait sourire, tu peux <a href=\"https://banana-pass.trymstene.workers.dev/pay/tip\" target=\"_blank\" rel=\"noopener\">offrir un café au créateur</a>.",
     faqKicker: 'Questions fréquentes', faqHeading: 'Banane qui danse — FAQ',
     faq: [
       { q: 'Qui a créé la banane qui danse ?', a: "Moi — Trym Stene. Je l'ai animée en 1999 dans Animation Shop." },
@@ -165,7 +165,7 @@ export const locales = [
     dlOriginalLabel: 'Original-GIF ↓', dlOriginalFile: 'tanzende-banane-trymstene.com.gif',
     dlTransLabel: 'Transparentes PNG ↓', dlTransFile: 'tanzende-banane-transparent-trymstene.com.png',
     makeYourOwn: 'Mach deine eigene tanzende Banane →',
-    tip: 'Es ist gratis — immer. Aber wenn die Banane dich zum Lächeln gebracht hat, kannst du <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">dem Bananen-Typen einen Kaffee spendieren</a>.',
+    tip: 'Es ist gratis — immer. Aber wenn die Banane dich zum Lächeln gebracht hat, kannst du <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">dem Bananen-Typen einen Kaffee spendieren</a>.',
     faqKicker: 'Häufige Fragen', faqHeading: 'Tanzende Banane — FAQ',
     faq: [
       { q: 'Wer hat die tanzende Banane gemacht?', a: 'Ich — Trym Stene. Ich habe sie 1999 in Animation Shop animiert.' },
@@ -199,7 +199,7 @@ export const locales = [
     dlOriginalLabel: 'Оригинальный GIF ↓', dlOriginalFile: 'tancuyushchiy-banan-trymstene.com.gif',
     dlTransLabel: 'Прозрачный PNG ↓', dlTransFile: 'tancuyushchiy-banan-transparent-trymstene.com.png',
     makeYourOwn: 'Создайте свой танцующий банан →',
-    tip: 'Это бесплатно — всегда. Но если банан вызвал у вас улыбку, вы можете <a href="https://buymeacoffee.com/trymstene" target="_blank" rel="noopener">угостить автора кофе</a>.',
+    tip: 'Это бесплатно — всегда. Но если банан вызвал у вас улыбку, вы можете <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">угостить автора кофе</a>.',
     faqKicker: 'Частые вопросы', faqHeading: 'Танцующий банан — FAQ',
     faq: [
       { q: 'Кто создал танцующий банан?', a: 'Я — Trym Stene. Я анимировал его в 1999 году в Animation Shop.' },
