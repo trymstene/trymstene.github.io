@@ -48,10 +48,14 @@ const TIERS = [
       letter-spacing: 0.04em; color: #f2e8d8; padding: 0.7rem 0.9rem;
       border: 2px solid #4a5666; background: #1b2129;
     }
-    .sw a.sw__jumpl:hover { border-color: #ffd23f; color: #ffd23f; }
+    /* ⚠️ the outlined chips go yellow on hover — which on the FILLED chip
+       painted yellow text on a yellow background and erased the label. A
+       shared :hover that only swaps a colour cannot serve both variants. */
+    .sw a.sw__jumpl:not(.sw__jumpl--go):hover { border-color: #ffd23f; color: #ffd23f; }
     /* the page's purpose, carrying its price — the only thing that put a
        number above the fold for somebody who is not a supporter yet */
     .sw a.sw__jumpl--go { background: #ffd23f; color: #111; border-color: #111; }
+    .sw a.sw__jumpl--go:hover { background: #ffe14d; color: #111; }
     /* headings you can land on should not land under the sticky header */
     .sw__sec { scroll-margin-top: 2rem; }
     .sw a { color: #ffd23f; }

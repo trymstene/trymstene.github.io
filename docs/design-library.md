@@ -126,7 +126,24 @@ A page-wide `a { color: … }` will repaint a link you styled somewhere else.
 Anything drawn on its own background — a plaque, a token, a tile — must restate
 its own ink when it is also a link.
 
-## 10. Copy
+## 10. A filled variant needs its own states
+
+A `:hover` written for the outlined version of a component will not serve the
+filled version. `border-color: banana; color: banana` reads well on a dark
+outlined chip and paints **yellow text on a yellow background** on the filled
+one — the label vanishes under the cursor.
+
+Whenever you add a `--filled` / `--primary` modifier, give it its own `:hover`,
+`:focus-visible` and `:active`, and exclude it from the base one:
+
+```css
+.chip:not(.chip--go):hover { border-color: var(--banana); color: var(--banana); }
+.chip--go:hover { background: var(--banana-light); color: #111; }
+```
+
+Check every state of every variant, not just the default of each.
+
+## 11. Copy
 
 - Dates inside English sentences are formatted in English (`en-GB`), not in the
   visitor's locale. "19.9.2026" mid-sentence is a bug.
@@ -137,7 +154,7 @@ its own ink when it is also a link.
 - The same warning in three cards is not emphasis, it is small print. Say it
   once, under the row.
 
-## 11. Money links live in one constant
+## 12. Money links live in one constant
 
 Never hardcode a payment URL in a page. `src/data/pay-rail.js` owns every
 address money can travel to. Ten links across the site were still pointing at a
@@ -145,7 +162,7 @@ platform abandoned months earlier — the footer, six localised pages, the
 gif-meme page, and the download cards at the highest-traffic moment on the
 site. `tools/check-design.mjs` fails the build on a hardcoded payment host.
 
-## 12. Verify by looking
+## 13. Verify by looking
 
 Mechanical checks are the floor. Walk the surface as a player on the built
 site, screenshot every state, and *read the screenshots back*. A DOM assertion
