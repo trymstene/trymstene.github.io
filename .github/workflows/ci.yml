@@ -47,3 +47,5 @@ jobs:
         run: npm run build
       - name: Budget gate — built JS per surface
         run: node tools/check-budgets.mjs
+      - name: Design gate — the mechanical half of docs/design-library.md
+        run: node tools/check-design.mjs

@@ -1,3 +1,12 @@
+/* ⚠️ THE HIDDEN GUARD — ONE RULE, SITE-WIDE.
+   The `hidden` attribute is a plain `display: none`, so ANY author `display:`
+   beats it — a flex row, a grid, an inline-block. This has been patched one
+   selector at a time FIVE times (.nav-note--cart, .bbc, .bbc-backdrop, two
+   pages) instead of once, and the fifth escape shipped an empty supporter
+   banner to every visitor on the page that takes money.
+   Fix the CLASS of bug, not the instance. See docs/design-library.md. */
+[hidden] { display: none !important; }
+
 /* ============================================================
    Trym Stene — loud & maximalist, mobile-first
    Neo-brutalist banana energy. Hand-built, no framework.
@@ -299,8 +308,6 @@ a { color: inherit; }
 /* menu open: the ink panel owns the screen — the cart yields to the ✕ */
 .nav.open .nav__cartbtn { visibility: hidden; }
 .nav-note--cart { pointer-events: none; }
-/* the hidden-attribute trap, appearance #5: .nav-note's display beats [hidden] */
-.nav-note--cart[hidden] { display: none !important; }
 @media (min-width: 1360px) {
   .nav__links { order: 5; margin-left: auto; }
   .nav__cartbtn { margin-left: 0.6rem; }
@@ -318,8 +325,6 @@ a { color: inherit; }
 }
 .bbc--in { transform: none; }
 @media (prefers-reduced-motion: reduce) { .bbc { transition: none; } }
-/* [hidden] must always win — author display rules have beaten it before */
-.bbc[hidden], .bbc-backdrop[hidden] { display: none !important; }
 .bbc__head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.85rem 1.1rem; background: var(--banana, #ffe135);
