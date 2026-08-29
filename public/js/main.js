@@ -305,6 +305,9 @@
       // "took a door out of the world to /shop/" — the nav is one of them, and
       // this is how we find out whether making it yellow was worth it.
       gtag('event', 'shop_door', { from: place });
+    } else if (/^\/supporters\/?($|[?#])/.test(href)) {
+      // which door earns the wall its visits — same shape as `shop_door`
+      gtag('event', 'supporters_door', { from: place });
     } else if (href.indexOf('/pay/tip') > -1) {
       // ⚠️ MATCH THE RAIL, NOT THE PLATFORM. This read `buymeacoffee` and kept
       // reading it for the whole day after every tip link moved to our own

@@ -371,6 +371,14 @@ function init() {
   supBody.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('.bb-plaq');
     if (b) supTip(b);
+    // ⚠️ `park_supboard` only ever said the card was OPENED. Opening is
+    // interest; leaving through the door is intent, and it was invisible.
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (a) {
+      const to = a.getAttribute('href') || '';
+      track(to.indexOf('/pass/') > -1 ? 'supboard_manage' : 'supboard_join',
+        { names: supBody.querySelectorAll('.bb-plaq').length });
+    }
   });
   supBody.addEventListener('mouseover', (e) => {
     if (!matchMedia('(hover: hover)').matches) return;
