@@ -42,7 +42,11 @@ const TIERS = [
     .sw h1 { font-family: "Archivo Black", sans-serif; font-size: clamp(1.8rem, 7vw, 2.8rem); margin: 0 0 0.7rem; color: #fff; line-height: 1.05; }
     .sw__lede { line-height: 1.6; font-size: 1rem; margin: 0 0 var(--gap-part); max-width: 60ch; opacity: 0.92; }
     /* 🧭 a way into a page this tall — three doors, not a menu */
-    .sw__jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: var(--gap-part) 0 0; padding: 0; list-style: none; }
+    /* the count and the doors on one line — the number is the claim, the
+       button is what you do about it */
+    .sw__pitch { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.6rem; }
+    .sw__pitchgo { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    @media (max-width: 560px) { .sw__pitchgo { width: 100%; } }
     .sw a.sw__jumpl {
       display: inline-block; text-decoration: none; font-size: 0.82rem; font-weight: 800;
       letter-spacing: 0.04em; color: #f2e8d8; padding: 0.7rem 0.9rem;
@@ -229,7 +233,7 @@ const TIERS = [
        it floating is the laziest version of a stat; the figure gets an OBJECT
        to sit on: a banana-yellow tile, knocked a couple of degrees off square
        so it reads as something pinned to the page rather than a bigger word. */
-    .sw__stat { display: flex; align-items: center; gap: 0.7rem; margin: 0; }
+    .sw__stat { display: flex; align-items: center; gap: 0.7rem; margin: 0; flex: 0 1 auto; }
     .sw__stat b {
       flex: 0 0 auto; display: grid; place-items: center;
       min-width: 54px; height: 54px; padding: 0 0.5rem;
@@ -243,7 +247,7 @@ const TIERS = [
     .sw__you {
       display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
       background: radial-gradient(70% 130% at 22% 50%, rgba(255, 210, 63, 0.16), rgba(255, 210, 63, 0) 70%);
-      border-left: 3px solid #ffd23f; padding: 0.85rem 0.95rem; margin: var(--gap-part) 0 0;
+      border-left: 3px solid #ffd23f; padding: 0.85rem 0.95rem; margin: 0; flex: 1 1 100%;
     }
     .sw__youhat { image-rendering: pixelated; height: 38px; width: auto; flex: 0 0 auto; }
     .sw__youtxt { flex: 1 1 240px; margin: 0; font-size: 0.92rem; line-height: 1.5; }
@@ -347,22 +351,6 @@ const TIERS = [
         The rave, the park, the bay, the builder — all free, no ads, no accounts.
         It stays that way because of these bananas.
       </p>
-      <p class="sw__stat"><b id="swCount">—</b> <span>keeping the lights on</span></p>
-
-      {/* 🧭 the page is four screens tall on a phone — three doors in, so the
-          memberships are not something you have to scroll past the wall to find */}
-      <ul class="sw__jump">
-        <li><a class="sw__jumpl" href="#wall">The wall</a></li>
-        <li><a class="sw__jumpl" href="#coffee">Buy a coffee</a></li>
-        <li><a class="sw__jumpl sw__jumpl--go" href="#join">Memberships from $5</a></li>
-      </ul>
-
-      <!-- 💛 an existing supporter should never be sold what they already have -->
-      <div class="sw__you" id="swYou" hidden>
-        <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
-        <p class="sw__youtxt" id="swYouTxt"></p>
-        <a class="sw__youbtn" id="swYouManage" href="/pass/">Manage or cancel →</a>
-      </div>
       </section>
 
       <section class="sw__sec" id="wall">
@@ -383,6 +371,24 @@ const TIERS = [
           <p class="sw__empty" id="swFeedEmpty">Nothing yet today — the wall is freshly built.</p>
         </div>
       </div>
+      </section>
+
+      {/* 🔢 the count and the way in, side by side. The wall is the argument;
+          this is the sentence under it. ⚠️ The membership call is HIDDEN for
+          somebody who already has one — they get the banner instead, which is
+          about their own membership rather than a pitch for a second. */}
+      <section class="sw__sec sw__pitch">
+        <p class="sw__stat"><b id="swCount">—</b> <span>keeping the lights on</span></p>
+        <div class="sw__pitchgo" id="swPitchGo">
+          <a class="sw__jumpl sw__jumpl--go" href="#join">Memberships from $5</a>
+          <a class="sw__jumpl" href="#coffee">Buy a coffee</a>
+        </div>
+        <!-- 💛 an existing supporter should never be sold what they already have -->
+        <div class="sw__you" id="swYou" hidden>
+          <img class="sw__youhat" id="swYouHat" src="/assets/supporters/hat-blue.png" alt="" width="38" height="34" />
+          <p class="sw__youtxt" id="swYouTxt"></p>
+          <a class="sw__youbtn" id="swYouManage" href="/pass/">Manage →</a>
+        </div>
       </section>
 
       <section class="sw__sec swc" id="coffee">
@@ -529,6 +535,8 @@ const TIERS = [
           ? 'You are a ' + t[0] + ' — thank you. $' + t[2] + ' a month, renewing ' + on + '.'
           : 'Your membership ended ' + on + '. The hat comes off shortly — you can start again any time.';
         document.getElementById('swYou').hidden = false;
+        // the pitch and the banner are the same slot: you get one or the other
+        if (live) document.getElementById('swPitchGo').hidden = true;
         const card = document.querySelector('.swt--' + t[1]);
         if (card && live) {
           card.classList.add('swt--mine');
@@ -537,7 +545,7 @@ const TIERS = [
           tag.textContent = 'your tier';
           card.querySelector('.swt__body').prepend(tag);
           const btn = card.querySelector('.swt__join');
-          btn.textContent = 'Manage or cancel →';
+          btn.textContent = 'Manage →';
           btn.href = '/pass/';
           const note = card.querySelector('.swt__idnote');
           if (note) note.remove();
