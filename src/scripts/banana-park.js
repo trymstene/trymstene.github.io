@@ -264,17 +264,73 @@ function init() {
   let supFeed = null;
   const supEsc = (s) => String(s).replace(/[<>&"]/g, (c) => (
     { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  // 🎖 THE PLAQUES. Four ranks, and the board reads as a board: one-time
+  // coffees on plain grey-white, then blue, silver and gold, each with the
+  // faint light its hat wears in-world. Tapping the board should feel like
+  // arriving somewhere, not like finding a link out of the game — so the whole
+  // wall is HERE, and the only thing that leaves is joining it.
+  const SUP_ROWS = [
+    { t: 'sup-t3', k: 'gold', label: 'legends', hat: 'gold' },
+    { t: 'sup-t2', k: 'silver', label: 'patrons', hat: 'silver' },
+    { t: 'sup-t1', k: 'blue', label: 'friends', hat: 'blue' },
+    { t: 'coffee', k: 'coffee', label: 'coffees', hat: '' },
+  ];
+  // one name lifted each day, the same one for everybody — splitmix32 over the
+  // UTC date, the world's own daily-pick shape
+  function supDayPick(n) {
+    if (n < 2) return 0;
+    const d = new Date();
+    let x = (d.getUTCFullYear() * 372 + d.getUTCMonth() * 31 + d.getUTCDate()) ^ 0x9e3779b9;
+    x = Math.imul(x ^ (x >>> 16), 0x21f0aaad);
+    x = Math.imul(x ^ (x >>> 15), 0x735a2d97);
+    return ((x ^ (x >>> 15)) >>> 0) % n;
+  }
+  const supPlaque = (n, k, me) => '<span class="pk-plaq pk-plaq--' + k
+    + (me ? ' pk-plaq--me' : '') + '">' + supEsc(n) + (me ? '<b>you</b>' : '') + '</span>';
+
   function supPaint() {
-    const rows = (supFeed && supFeed.members) || [];
-    supBody.innerHTML = '<h2 class="pk-cardtitle">💛 The supporters board</h2>'
-      + '<p>' + (rows.length
-        ? 'These bananas pay for the world to stay free.'
-        : 'Nobody is pinned up here yet. The first name could be yours.') + '</p>'
-      + (rows.length ? '<ul class="pk-suplist">' + rows.slice(0, 24).map((m) =>
-        '<li><i class="pk-suppip pk-suppip--' + (m.t || 'sup-t1').slice(-2)
-        + '"></i>' + supEsc(m.n) + '</li>').join('') + '</ul>' : '')
-      + '<a class="pk-cta" href="/supporters/"><span class="pk-cta__verb">'
-      + (rows.length ? 'the whole wall →' : 'join them →') + '</span></a>';
+    const members = (supFeed && supFeed.members) || [];
+    // one-time supporters earn a plaque too — dedup by name, newest first,
+    // and never one that is already up there as a member
+    const seen = new Set(members.map((m) => m.n));
+    const coffees = ((supFeed && supFeed.wall) || [])
+      .filter((w) => w.k !== 'member' && w.n && !seen.has(w.n) && (seen.add(w.n) || true))
+      .map((w) => ({ n: w.n, t: 'coffee' }));
+    const all = members.concat(coffees);
+    const mine = (parkName || '').toLowerCase();
+    const isMe = (n) => !!mine && n.toLowerCase() === mine;
+
+    let out = '<h2 class="pk-cardtitle">💛 The supporters board</h2>';
+    if (!all.length) {
+      out += '<p>Nobody is pinned up here yet. The first plaque could be yours.</p>';
+    } else {
+      // ⭐ TODAY'S SUPPORTER — the reason to tap the board again tomorrow
+      const star = all[supDayPick(all.length)];
+      const sk = (SUP_ROWS.find((r) => r.t === (star.t || 'coffee')) || SUP_ROWS[3]);
+      out += '<div class="pk-supstar">'
+        + (sk.hat ? '<img src="/assets/supporters/hat-' + sk.hat + '.png" alt="" width="30" height="27" />' : '')
+        + '<div><p class="pk-supstar__k">today\'s supporter</p>'
+        + supPlaque(star.n, sk.k, isMe(star.n)) + '</div></div>';
+      // …then the whole board, tier by tier, each row alphabetical so anyone
+      // can find their own name without reading every plaque
+      out += SUP_ROWS.map((r) => {
+        const list = all.filter((m) => (m.t || 'coffee') === r.t)
+          .sort((a, b) => a.n.localeCompare(b.n));
+        if (!list.length) return '';
+        return '<div class="pk-suprow"><p class="pk-suprow__k">' + r.label + '</p><div>'
+          + list.map((m) => supPlaque(m.n, r.k, isMe(m.n))).join('') + '</div></div>';
+      }).join('');
+      out += '<p class="pk-supfoot">These bananas pay for the world to stay free.</p>';
+    }
+    // ⚠️ don't sell the board to someone already nailed to it. A supporter gets
+    // told they are up there and a quiet door to their own membership; the big
+    // yellow button is for the people who are not.
+    let mem = null;
+    try { mem = JSON.parse(localStorage.getItem('bb-member') || 'null'); } catch (e) {}
+    out += (mem && +mem.until + 72 * 3600 * 1000 > Date.now())
+      ? '<p class="pk-supmine">You are up there 💛 <a href="/pass/">your membership →</a></p>'
+      : '<a class="pk-cta" href="/supporters/"><span class="pk-cta__verb">get on the board →</span></a>';
+    supBody.innerHTML = out;
   }
   function openSupCard() {
     supPaint();

@@ -566,12 +566,48 @@ const faq = {
       pointer-events: auto; cursor: pointer;
     }
     a.pk-cta { text-decoration: none; }   /* the card's door is a button, not a link */
-    .pk-suplist { list-style: none; margin: 0.6rem 0 0.9rem; padding: 0; display: grid; gap: 0.3rem; }
-    .pk-suplist li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; }
-    .pk-suppip { width: 9px; height: 9px; flex: 0 0 auto; border: 1px solid #000; }
-    .pk-suppip--t3 { background: #ffd24d; }
-    .pk-suppip--t2 { background: #e2eaf2; }
-    .pk-suppip--t1 { background: #6ea0ff; }
+    /* 🎖 THE PLAQUES — the board's whole point. Four metals, each carrying the
+       light its hat wears in-world: grey-white for a one-off coffee, then blue,
+       silver and gold, glowing a little more as they climb. Flat colour reads
+       as a chip; two stops and a lit top edge read as something screwed to a
+       plank, which is what these are. */
+    .pk-plaq {
+      display: inline-block; margin: 0 0.28rem 0.28rem 0; padding: 0.2rem 0.5rem;
+      font-size: 0.82rem; font-weight: 800; letter-spacing: 0.01em; line-height: 1.25;
+      border: 2px solid #000; border-radius: 1px; color: #1a1a1a;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 2px 2px 0 rgba(0, 0, 0, 0.45);
+    }
+    .pk-plaq b { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; margin-left: 0.35rem; opacity: 0.65; }
+    .pk-plaq--coffee { background: linear-gradient(#f7f2e4, #c9c0a8); border-color: #6c675c; }
+    .pk-plaq--blue {
+      background: linear-gradient(#a9c7ff, #4b78dd); border-color: #22407e; color: #0b1b3d;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 2px 2px 0 rgba(0, 0, 0, 0.45), 0 0 9px rgba(110, 160, 255, 0.55);
+    }
+    .pk-plaq--silver {
+      background: linear-gradient(#f4f9ff, #93a3b6); border-color: #4e5967;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 2px 2px 0 rgba(0, 0, 0, 0.45), 0 0 9px rgba(214, 232, 255, 0.6);
+    }
+    .pk-plaq--gold {
+      background: linear-gradient(#ffe793, #e0a413); border-color: #7a5a08; color: #2f2200;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 2px 2px 0 rgba(0, 0, 0, 0.45), 0 0 11px rgba(255, 198, 60, 0.7);
+    }
+    .pk-plaq--me { outline: 2px solid #fff; outline-offset: 1px; }
+
+    /* ⭐ today's supporter — one name lifted out, the same one for everybody,
+       so the board is worth a tap again tomorrow */
+    .pk-supstar {
+      display: flex; align-items: center; gap: 0.6rem; margin: 0.55rem 0 0.7rem;
+      padding: 0.5rem 0.6rem; background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+    }
+    .pk-supstar img { image-rendering: pixelated; flex: 0 0 auto; }
+    .pk-supstar__k, .pk-suprow__k {
+      margin: 0 0 0.25rem; font-size: 0.58rem; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.55;
+    }
+    .pk-suprow { margin-bottom: 0.5rem; }
+    .pk-supfoot { margin: 0.5rem 0 0.7rem; font-size: 0.78rem; opacity: 0.7; }
+    .pk-supmine { margin: 0.2rem 0 0; font-size: 0.86rem; font-weight: 700; }
     /* 🍂 the bloom-phase twins — real art swaps riding THE BLOOM (never a
        CSS filter on the world). Ground plates (sad 0-1 / mid 2-3) crossfade
        1.5s over the lush background, under every positioned walker/prop;
