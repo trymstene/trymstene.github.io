@@ -113,6 +113,55 @@ const TIERS = [
        three lines. It is a SUB-PART of the wall, so it reads like one: the
        between-sections gap made it look like a fourth destination. */
     .sw__cols { display: grid; gap: var(--gap-sub); grid-template-columns: 1fr; }
+    /* 🪵 THE WALL. The plaques were floating on the page background, so the
+       section was a list of chips rather than a place you get your name put
+       up. Boards (tools/build-wall.py) at x3, a batten top and bottom, and a
+       screw in each corner — the plaques then read as MOUNTED on something.
+       ⚠️ min-height on purpose: with one supporter the wall still has to look
+       like a wall worth being on. Room to grow, not a bug. */
+    .swwall {
+      position: relative; margin: 0; padding: 2.1rem 1.4rem 2.2rem; min-height: 210px;
+      /* ⚠️ LONGHAND, NOT THE SHORTHAND. A five-layer `background:` with
+         four-value positions parsed as invalid and was dropped whole — the
+         wall rendered as bare page with two rails floating on it, and nothing
+         warned. Longhand cannot fail silently in the same way. */
+      background-image: url(/assets/supporters/wall-board.png);
+      background-repeat: repeat;
+      background-size: 288px 144px;
+      image-rendering: pixelated;
+      box-shadow: inset 0 0 44px rgba(0, 0, 0, 0.38), 6px 6px 0 rgba(0, 0, 0, 0.5);
+    }
+    /* the battens that turn a repeating field into carpentry */
+    /* the screws live IN the batten, which is what they would actually be
+       fastening — and it keeps them out of the way of the names.
+       ⚠️ A 4-VALUE POSITION NEEDS A KEYWORD ON BOTH AXES: `12px bottom 30px`
+       is invalid, and ONE invalid entry drops the WHOLE list, silently. */
+    .swwall::before, .swwall::after {
+      content: ''; position: absolute; left: 0; right: 0; height: 21px;
+      background-image:
+        url(/assets/supporters/wall-screw.png), url(/assets/supporters/wall-screw.png),
+        url(/assets/supporters/wall-rail.png);
+      background-position: left 14px center, right 14px center, 0 0;
+      background-repeat: no-repeat, no-repeat, repeat-x;
+      background-size: 18px 18px, 18px 18px, 288px 21px;
+      image-rendering: pixelated;
+    }
+    .swwall::before { top: 0; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45); }
+    .swwall::after { bottom: 0; box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.45); }
+    /* ⚠️ a plaque on a wall casts onto the wall. Chained after the tier glow,
+       because one `filter` declaration replaces the other. */
+    .swwall .bb-plaq {
+      filter: drop-shadow(0 0 4px var(--pg, transparent)) drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.55));
+    }
+    /* the rank labels are branded into the timber, not printed on paper */
+    .swwall .bb-plaqg__k { opacity: 0.9; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8); }
+    .swwall .bb-plaqg { margin-bottom: 1.5rem; }
+    .swwall .sw__empty { margin: 0; color: #cbbb9a; opacity: 0.85; }
+    @media (max-width: 780px) {
+      /* the wall reaches both edges of the page it is built into */
+      .swwall { margin-inline: -1.1rem; padding: 1.9rem 1.1rem 2rem; min-height: 170px; }
+    }
+
     .sw__feedh {
       margin: 0 0 0.45rem; font-size: 0.6rem; font-weight: 800;
       letter-spacing: 0.13em; text-transform: uppercase; opacity: 0.6;
@@ -281,8 +330,10 @@ const TIERS = [
           <p class="sw__sub">Every membership running right now, and every coffee.</p>
           {/* the same plaques that hang on the park's board — one drawn layer,
               two surfaces, so the wall you see in the world is the wall here */}
-          <div id="swWall"></div>
-          <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
+          <div class="swwall">
+            <div id="swWall"></div>
+            <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
+          </div>
         </div>
         <div>
           <p class="sw__feedh">Latest</p>
