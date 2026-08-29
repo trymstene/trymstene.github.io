@@ -39,15 +39,16 @@ const api = async (path, opts = {}) => {
 
 const buf = readFileSync(filePath);
 const sha = createHash('sha256').update(buf).digest('base64');
-const org = (await api('/v1/products/' + productId)).organization_id;
+const product = await api('/v1/products/' + productId);
 
-console.log(`· ${basename(filePath)} — ${buf.length} bytes, org ${org}`);
+console.log(`· ${basename(filePath)} — ${buf.length} bytes → ${product.name}`);
 
 // 1. declare it
 const file = await api('/v1/files/', {
   method: 'POST',
+  // ⚠️ NO organization_id. An organization token already IS the organization,
+  // and sending it is a 422 — "disallowed when using an organization token".
   body: JSON.stringify({
-    organization_id: org,
     name: basename(filePath),
     mime_type: 'image/png',
     size: buf.length,
