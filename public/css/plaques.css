@@ -1,0 +1,68 @@
+/* 🎖 THE SUPPORTER PLAQUES — the ONE layer, worn by the park's board and by
+   /supporters/. Art from tools/build-supporter-plaques.py.
+
+   Three-part drawn art: the ends are pictures and only the plain middle
+   repeats, so a long name never stretches a nail out of shape. 12px caps and a
+   4px middle, all drawn at x2 with image-rendering: pixelated.
+
+   ⚠️ THE GLOW IS A drop-shadow, NOT A box-shadow. It has to follow the
+   splintered wood and the rounded brass, not the rectangle they sit in.
+   ⚠️ Two silhouettes, each committed to: the three memberships share one
+   pixel radius so they read as a matching set; the one-off coffee is a torn
+   slat. Half-doing both read as neither (Trym, 29 Aug).
+   ⚠️ Every surface that uses these needs `[hidden] { display: none !important }`
+   of its own — a plaque row with an author `display` beats the attribute. */
+.bb-plaq {
+  appearance: none; border: 0; cursor: pointer; display: inline-block;
+  height: 30px; line-height: 30px; padding: 0 22px; margin: 0 5px 6px 0;
+  font-family: inherit; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.01em;
+  color: #241d10; background-color: transparent;
+  background-image: var(--pl), var(--pr), var(--pm);
+  background-position: left top, right top, 24px top;
+  background-repeat: no-repeat, no-repeat, repeat-x;
+  background-size: 24px 30px, 24px 30px, 8px 30px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 4px var(--pg, transparent));
+}
+.bb-plaq i {
+  font-style: normal; font-size: 0.6rem; letter-spacing: 0.08em;
+  text-transform: uppercase; opacity: 0.6; margin-left: 0.32rem;
+}
+.bb-plaq:active { transform: translateY(1px); }
+.bb-plaq--coffee {
+  --pl: url(/assets/supporters/plaq-coffee-l.png);
+  --pm: url(/assets/supporters/plaq-coffee-m.png);
+  --pr: url(/assets/supporters/plaq-coffee-r.png);
+}
+.bb-plaq--blue {
+  --pl: url(/assets/supporters/plaq-blue-l.png);
+  --pm: url(/assets/supporters/plaq-blue-m.png);
+  --pr: url(/assets/supporters/plaq-blue-r.png);
+  --pg: rgba(110, 160, 255, 0.6); color: #eaf1ff;
+}
+.bb-plaq--silver {
+  --pl: url(/assets/supporters/plaq-silver-l.png);
+  --pm: url(/assets/supporters/plaq-silver-m.png);
+  --pr: url(/assets/supporters/plaq-silver-r.png);
+  --pg: rgba(214, 232, 255, 0.4);
+}
+.bb-plaq--gold {
+  --pl: url(/assets/supporters/plaq-gold-l.png);
+  --pm: url(/assets/supporters/plaq-gold-m.png);
+  --pr: url(/assets/supporters/plaq-gold-r.png);
+  --pg: rgba(255, 198, 60, 0.7);
+}
+/* your own name, wherever it appears */
+.bb-plaq--me { --pg: #fffdf5; }
+
+/* a cluster: its rank named above it, air below it, and no box around it */
+.bb-plaqg { margin-bottom: 1.25rem; }
+.bb-plaqg:last-child { margin-bottom: 0; }
+.bb-plaqg__k {
+  margin: 0 0 0.45rem; font-size: 0.6rem; font-weight: 800;
+  letter-spacing: 0.13em; text-transform: uppercase; opacity: 0.75;
+}
+.bb-plaqg--gold .bb-plaqg__k { color: #ffd84d; }
+.bb-plaqg--silver .bb-plaqg__k { color: #dfe5ec; }
+.bb-plaqg--blue .bb-plaqg__k { color: #8fb0f7; }
+.bb-plaqg--coffee .bb-plaqg__k { color: #cbc0a5; }

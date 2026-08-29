@@ -41,7 +41,12 @@ const TIERS = [
 <BaseLayout
   title="Supporters of Banana World"
   description="Join the people keeping Banana World free — three membership tiers, each with a top hat and a glow your banana wears everywhere. See the supporters wall and the latest support.">
+  <link rel="stylesheet" href="/css/plaques.css" slot="head" />
   <style is:inline slot="head">
+    /* ⚠️ ONE GUARD FOR THE WHOLE PAGE. `[hidden]` loses to any author
+       `display:` — and it did: the supporter banner is a flex row, so the
+       empty box was rendering for every visitor who was not a supporter. */
+    [hidden] { display: none !important; }
     .sw { background: #14181d; color: #f2e8d8; padding: 2.4rem 1.1rem 4rem; }
     .sw__in { max-width: 940px; margin: 0 auto; }
     .sw__kicker { color: #ffd23f; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.15em; text-transform: uppercase; margin: 0 0 0.4rem; }
@@ -76,6 +81,7 @@ const TIERS = [
     .swt__price { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; color: #fff; margin: 0 0 0.5rem; }
     .swt__price small { font-size: 0.72rem; font-family: inherit; opacity: 0.6; font-weight: 400; }
     .swt__blurb { margin: 0 0 0.7rem; font-size: 0.9rem; line-height: 1.5; opacity: 0.85; }
+    .swt__plaq { margin: 0 0 0.9rem; }
     .swt__perks { list-style: none; margin: 0 0 1.1rem; padding: 0; display: grid; gap: 0.35rem; }
     .swt__perks li { font-size: 0.86rem; line-height: 1.4; display: flex; gap: 0.5rem; }
     .swt__perks li::before { content: "▸"; color: #ffd23f; flex: 0 0 auto; }
@@ -96,18 +102,14 @@ const TIERS = [
     .sw h2 { font-family: "Archivo Black", sans-serif; font-size: 1.25rem; color: #ffd23f; margin: 0 0 0.2rem; }
     .sw__h2b { font-size: 1.5rem !important; padding-top: 0.4rem; border-top: 3px solid #2c3542; }
     .sw__sub { margin: 0 0 0.9rem; font-size: 0.86rem; opacity: 0.65; }
-    .swg { background: #1b2129; border: 3px solid #2c3542; box-shadow: 6px 6px 0 #000; padding: 0.85rem 1rem 1rem; margin-bottom: 1rem; }
-    .swg--gold { border-color: #eda912; }
-    .swg--silver { border-color: #9aa4b2; }
-    .swg--blue { border-color: #3564d9; }
-    .swg__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
-    .swg__head img { image-rendering: pixelated; height: 34px; width: auto; }
-    .swg__head h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; margin: 0; }
-    .swg--gold h3 { color: #ffd84d; }
-    .swg--silver h3 { color: #dfe5ec; }
-    .swg--blue h3 { color: #7fa3f5; }
-    .swg__names { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
-    .swg__names li { background: #10151b; border: 2px solid #2c3542; padding: 0.28rem 0.55rem; font-weight: 700; font-size: 0.9rem; }
+    /* 🔢 the number first — a wall is a score before it is a list */
+    .sw__stat { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 1.6rem; }
+    .sw__stat b { font-family: "Archivo Black", sans-serif; font-size: 2.4rem; color: #ffd23f; line-height: 1; }
+    .sw__stat span { font-size: 0.86rem; opacity: 0.75; }
+    .sw__idnote {
+      margin: 0.9rem 0 0; font-size: 0.82rem; line-height: 1.5; opacity: 0.85;
+      border-left: 3px solid #ffd23f; padding-left: 0.6rem;
+    }
     .sw__empty { margin: 0; font-size: 0.88rem; opacity: 0.6; }
     .swf { margin: 0; padding: 0; list-style: none; }
     .swf li { border-bottom: 1px solid #242c37; padding: 0.5rem 0.1rem; font-size: 0.92rem; }
@@ -124,16 +126,18 @@ const TIERS = [
     .swo__txt { flex: 1 1 260px; min-width: 0; }
     .swo__txt h3 { font-family: "Archivo Black", sans-serif; font-size: 1rem; margin: 0 0 0.25rem; color: #fff; }
     .swo__txt p { margin: 0; font-size: 0.88rem; line-height: 1.5; opacity: 0.85; }
+    .swo__plaq { margin-top: 0.55rem !important; }
     .sw a.swo__btn {
       flex: 0 0 auto; text-decoration: none; background: #1b2129; color: #ffd23f;
       font-weight: 800; padding: 0.65rem 1.1rem; border: 3px solid #ffd23f;
       box-shadow: 4px 4px 0 #000; white-space: nowrap;
     }
     .sw a.swo__btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+    /* lit, not boxed — the same move as the park's spotlight */
     .sw__you {
       display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
-      background: #1b2129; border: 3px solid #ffd23f; box-shadow: 6px 6px 0 #000;
-      padding: 0.85rem 1rem; margin: 0 0 1.6rem;
+      background: radial-gradient(70% 130% at 22% 50%, rgba(255, 210, 63, 0.16), rgba(255, 210, 63, 0) 70%);
+      border-left: 3px solid #ffd23f; padding: 0.8rem 0.9rem; margin: 0 0 1.8rem;
     }
     .sw__youhat { image-rendering: pixelated; height: 38px; width: auto; flex: 0 0 auto; }
     .sw__youtxt { flex: 1 1 240px; margin: 0; font-size: 0.92rem; line-height: 1.5; }
@@ -157,11 +161,10 @@ const TIERS = [
       <p class="sw__kicker">the people keeping the banana dancing</p>
       <h1>The Supporters Wall</h1>
       <p class="sw__lede">
-        Banana World is free — the rave, the park, the bay, the builder, all of it, with no ads
-        and no accounts. It stays that way because of these bananas. You can
-        <a href="#join">join them</a> with a membership — your banana gets a top hat and a glow
-        it wears <strong>everywhere it goes</strong> — or send a one-off coffee. Both land here.
+        The rave, the park, the bay, the builder — all free, no ads, no accounts.
+        It stays that way because of these bananas.
       </p>
+      <p class="sw__stat"><b id="swCount">—</b> <span>keeping the lights on</span></p>
 
       <!-- 💛 an existing supporter should never be sold what they already have -->
       <div class="sw__you" id="swYou" hidden>
@@ -173,20 +176,11 @@ const TIERS = [
       <div class="sw__cols">
         <div>
           <h2>The wall</h2>
-          <p class="sw__sub">Everyone with a membership running right now.</p>
-          {['gold', 'silver', 'blue'].map((k) => {
-            const t = TIERS.find((x) => x.key === k);
-            return (
-              <div class={`swg swg--${k}`}>
-                <div class="swg__head">
-                  <img src={`/assets/supporters/hat-${k}.png`} alt={`the ${t.hat}`} height="34" loading="lazy" />
-                  <h3>{t.name}</h3>
-                </div>
-                <ul class="swg__names" id={`sw-${k}`}></ul>
-                <p class="sw__empty" id={`sw-${k}-empty`}>Nobody yet — this could be you.</p>
-              </div>
-            );
-          })}
+          <p class="sw__sub">Every membership running right now, and every coffee.</p>
+          {/* the same plaques that hang on the park's board — one drawn layer,
+              two surfaces, so the wall you see in the world is the wall here */}
+          <div id="swWall"></div>
+          <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
         </div>
         <div>
           <h2>Recent support</h2>
@@ -207,13 +201,8 @@ const TIERS = [
               <h3 class="swt__name">{t.name}</h3>
               <p class="swt__price">${t.price}<small> / month</small></p>
               <p class="swt__blurb">{t.blurb}</p>
+              <p class="swt__plaq"><span class={`bb-plaq bb-plaq--${t.key}`}>your name here</span></p>
               <ul class="swt__perks">{t.perks.map((p) => <li>{p}</li>)}</ul>
-              {/* ⚠️ THE ONE THING THAT CAN GO WRONG: the hat is delivered by
-                  matching the Ko-fi payer's email to the pass's — hashed, never
-                  stored — so a different address means the grant waits and
-                  nothing on screen says so. Say it where the money is, not
-                  only in the small print at the bottom. */}
-              <p class="swt__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that's how the hat finds you.</p>
               <a class="swt__join" href={PAY.join(t.tier.slice(-2))}
                 target={PAY.newTab ? '_blank' : null} rel="noopener"
                 data-tier={t.tier}>{PAY.label}</a>
@@ -221,6 +210,12 @@ const TIERS = [
           </article>
         ))}
       </div>
+      {/* ⚠️ THE ONE THING THAT CAN GO WRONG: the hat is delivered by matching
+          the payer's email to the pass's — hashed, never stored — so a
+          different address means the grant waits and nothing on screen says
+          so. Said ONCE under the row, where it is read; three times inside
+          three cards is small print. */}
+      <p class="sw__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that is how the hat finds you.</p>
 
       {/* 💛 not everyone wants a subscription — the tip jar is a first-class
           option here, not a footnote, and it lands on the same feed */}
@@ -229,10 +224,8 @@ const TIERS = [
           alt="a bananacoin" loading="lazy" />
         <div class="swo__txt">
           <h3>Or just buy the banana a coffee</h3>
-          <p>
-            Any amount, once, no subscription. No hat — but your name lands on the feed
-            above, and it genuinely helps: the servers and the art get paid the same way.
-          </p>
+          <p>Any amount, once, no subscription. No hat — but a slat with your name on the wall above.</p>
+          <p class="swo__plaq"><span class="bb-plaq bb-plaq--coffee">your name here</span></p>
         </div>
         <a class="swo__btn" href={KOFI_ONCE} target="_blank" rel="noopener" data-tier="once">Send one →</a>
       </article>
@@ -258,19 +251,43 @@ const TIERS = [
         if (d < day * 30) return Math.round(d / day) + 'd ago';
         return new Date(ts).toLocaleDateString();
       };
+      // 🎖 the wall is built from the same drawn plaques the park's board
+      // hangs — one layer (/css/plaques.css), two surfaces, so the wall you
+      // walk past in the world is the wall you read here.
+      const ROWS = [
+        { t: 'sup-t3', k: 'gold', many: 'Legends of Banana World' },
+        { t: 'sup-t2', k: 'silver', many: 'Patrons of the Park' },
+        { t: 'sup-t1', k: 'blue', many: 'Friends of the Banana' },
+        { t: 'coffee', k: 'coffee', many: 'Bought a coffee' },
+      ];
+      let myName = '';
+      try { myName = (localStorage.getItem('ps-name-v1') || '').trim().toLowerCase(); } catch (e) {}
+      const esc = (x) => String(x).replace(/[<>&"]/g, (c) => (
+        { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
       fetch(API).then((r) => r.json()).then((d) => {
-        for (const m of d.members || []) {
-          const k = KEY[m.t];
-          if (!k || !m.n) continue;
-          const li = document.createElement('li');
-          li.textContent = m.n;
-          document.getElementById('sw-' + k).appendChild(li);
-        }
-        for (const k of ['gold', 'silver', 'blue']) {
-          if (document.getElementById('sw-' + k).children.length) {
-            document.getElementById('sw-' + k + '-empty').hidden = true;
-          }
-        }
+        const members = (d.members || []).filter((m) => m.n && KEY[m.t]);
+        // a one-off coffee earns a plaque too, deduped against the memberships
+        const seen = new Set(members.map((m) => m.n));
+        const coffees = (d.wall || [])
+          .filter((w) => w.k !== 'member' && w.n && !seen.has(w.n) && (seen.add(w.n) || true))
+          .map((w) => ({ n: w.n, t: 'coffee' }));
+        const all = members.concat(coffees);
+        document.getElementById('swCount').textContent = all.length || '—';
+        document.querySelector('.sw__stat span').textContent =
+          all.length === 1 ? 'banana keeping the lights on' : 'bananas keeping the lights on';
+
+        document.getElementById('swWall').innerHTML = ROWS.map((r) => {
+          const list = all.filter((m) => (m.t || 'coffee') === r.t).sort((a, b) => a.n.localeCompare(b.n));
+          if (!list.length) return '';
+          return '<div class="bb-plaqg bb-plaqg--' + r.k + '"><p class="bb-plaqg__k">' + r.many + '</p>'
+            + list.map((m) => '<span class="bb-plaq bb-plaq--' + r.k
+              + (myName && m.n.toLowerCase() === myName ? ' bb-plaq--me' : '') + '">'
+              + esc(m.n) + (myName && m.n.toLowerCase() === myName ? '<i>you</i>' : '') + '</span>').join('')
+            + '</div>';
+        }).join('');
+        if (all.length) document.getElementById('swWallEmpty').hidden = true;
+
         const feed = document.getElementById('swFeed');
         for (const w of (d.wall || []).slice(0, 25)) {
           const li = document.createElement('li');
@@ -298,11 +315,12 @@ const TIERS = [
         const t = g && TIERS[g.t];
         if (!t || !(+g.until + 72 * 3600 * 1000 > Date.now())) return;
         const ends = new Date(+g.until);
+        const on = ends.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
         const live = +g.until > Date.now();
         document.getElementById('swYouHat').src = '/assets/supporters/hat-' + t[1] + '.png';
         document.getElementById('swYouTxt').textContent = live
-          ? 'You are a ' + t[0] + ' — thank you. $' + t[2] + ' a month, renewing ' + ends.toLocaleDateString() + '.'
-          : 'Your membership ended ' + ends.toLocaleDateString() + '. The hat comes off shortly — you can start again any time.';
+          ? 'You are a ' + t[0] + ' — thank you. $' + t[2] + ' a month, renewing ' + on + '.'
+          : 'Your membership ended ' + on + '. The hat comes off shortly — you can start again any time.';
         document.getElementById('swYou').hidden = false;
         const card = document.querySelector('.swt--' + t[1]);
         if (card && live) {

@@ -288,8 +288,8 @@ function init() {
     x = Math.imul(x ^ (x >>> 15), 0x735a2d97);
     return ((x ^ (x >>> 15)) >>> 0) % n;
   }
-  const supPlaque = (n, r, me) => '<button type="button" class="pk-plaq pk-plaq--' + r.k
-    + (me ? ' pk-plaq--me' : '') + '" data-tip="' + supEsc(r.name) + '">'
+  const supPlaque = (n, r, me) => '<button type="button" class="bb-plaq bb-plaq--' + r.k
+    + (me ? ' bb-plaq--me' : '') + '" data-tip="' + supEsc(r.name) + '">'
     + supEsc(n) + (me ? '<i>you</i>' : '') + '</button>';
 
   function supPaint() {
@@ -328,7 +328,7 @@ function init() {
       out += '<div class="pk-plaqs">' + SUP_ROWS.map((r) => {
         const list = all.filter((m) => (m.t || 'coffee') === r.t).sort((a, b) => a.n.localeCompare(b.n));
         return list.length
-          ? '<div class="pk-plaqg pk-plaqg--' + r.k + '"><p class="pk-plaqg__k">' + r.many + '</p>'
+          ? '<div class="bb-plaqg bb-plaqg--' + r.k + '"><p class="bb-plaqg__k">' + r.many + '</p>'
             + list.map((m) => supPlaque(m.n, r, isMe(m.n))).join('') + '</div>'
           : '';
       }).join('') + '</div>';
@@ -369,12 +369,12 @@ function init() {
     supTipT = setTimeout(() => { supTipEl.hidden = true; }, 2400);
   }
   supBody.addEventListener('click', (e) => {
-    const b = e.target.closest && e.target.closest('.pk-plaq');
+    const b = e.target.closest && e.target.closest('.bb-plaq');
     if (b) supTip(b);
   });
   supBody.addEventListener('mouseover', (e) => {
     if (!matchMedia('(hover: hover)').matches) return;
-    const b = e.target.closest && e.target.closest('.pk-plaq');
+    const b = e.target.closest && e.target.closest('.bb-plaq');
     if (b) supTip(b);
   });
   function openSupCard() {

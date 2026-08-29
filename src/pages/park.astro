@@ -55,6 +55,7 @@ const faq = {
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
   <link rel="preload" as="image" href="/assets/park/park.png" slot="head" />
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
+  <link rel="stylesheet" href="/css/plaques.css" slot="head" />
   <style is:inline slot="head">
     /* ⚠️ THE HOUSE TRAP, ONE GUARD FOR THE PAGE: any author `display:` beats the
        UA [hidden] rule, so a JS-hidden control renders full-width and dead (the
@@ -566,39 +567,6 @@ const faq = {
       pointer-events: auto; cursor: pointer;
     }
     a.pk-cta { text-decoration: none; }   /* the card's door is a button, not a link */
-    /* 🎖 THE PLAQUES — three-part drawn art: the ends are pictures and only
-       the plain middle repeats, so a long name never stretches a nail out of
-       shape. 12px caps and a 4px middle, all drawn at x2.
-       ⚠️ the glow is a drop-shadow, not a box-shadow: it has to follow the
-       torn paper and the notched brass, not the rectangle they sit in. */
-    .pk-plaq {
-      appearance: none; border: 0; cursor: pointer; display: inline-block;
-      height: 30px; line-height: 30px; padding: 0 22px; margin: 0 5px 6px 0;
-      font-family: inherit; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.01em;
-      color: #241d10; background-color: transparent;
-      background-image: var(--pl), var(--pr), var(--pm);
-      background-position: left top, right top, 24px top;
-      background-repeat: no-repeat, no-repeat, repeat-x;
-      background-size: 24px 30px, 24px 30px, 8px 30px;
-      image-rendering: pixelated;
-      filter: drop-shadow(0 0 4px var(--pg, transparent));
-    }
-    .pk-plaq i { font-style: normal; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; margin-left: 0.32rem; }
-    .pk-plaq:active { transform: translateY(1px); }
-    .pk-plaq--coffee { --pl: url(/assets/supporters/plaq-coffee-l.png); --pm: url(/assets/supporters/plaq-coffee-m.png); --pr: url(/assets/supporters/plaq-coffee-r.png); }
-    .pk-plaq--blue {
-      --pl: url(/assets/supporters/plaq-blue-l.png); --pm: url(/assets/supporters/plaq-blue-m.png); --pr: url(/assets/supporters/plaq-blue-r.png);
-      --pg: rgba(110, 160, 255, 0.6); color: #eaf1ff;
-    }
-    .pk-plaq--silver {
-      --pl: url(/assets/supporters/plaq-silver-l.png); --pm: url(/assets/supporters/plaq-silver-m.png); --pr: url(/assets/supporters/plaq-silver-r.png);
-      --pg: rgba(214, 232, 255, 0.4);
-    }
-    .pk-plaq--gold {
-      --pl: url(/assets/supporters/plaq-gold-l.png); --pm: url(/assets/supporters/plaq-gold-m.png); --pr: url(/assets/supporters/plaq-gold-r.png);
-      --pg: rgba(255, 198, 60, 0.7);
-    }
-    .pk-plaq--me { --pg: #fffdf5; }
     .pk-plaqs { margin: 0; }
 
     /* ⭐ today's supporter — a line, NOT another box. The card was boxes inside
@@ -610,24 +578,13 @@ const faq = {
       text-align: center; margin: 0 0 2.1rem; padding: 1rem 0.5rem 1.15rem;
       background: radial-gradient(58% 100% at 50% 52%, rgba(255, 225, 120, 0.19), rgba(255, 225, 120, 0) 72%);
     }
-    .pk-supstar .pk-plaq { margin: 0; }
+    .pk-supstar .bb-plaq { margin: 0; }
     .pk-supstar__k {
       margin: 0 0 0.6rem; font-size: 0.58rem; font-weight: 800; color: #ffe14d;
       letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.85;
     }
     .pk-supfoot { margin: 1.3rem 0 1.1rem; font-size: 0.78rem; opacity: 0.7; }
 
-    /* each metal is its own cluster: a name over it, air under it, no boxes */
-    .pk-plaqg { margin-bottom: 1.25rem; }
-    .pk-plaqg:last-child { margin-bottom: 0; }
-    .pk-plaqg__k {
-      margin: 0 0 0.45rem; font-size: 0.6rem; font-weight: 800;
-      letter-spacing: 0.13em; text-transform: uppercase; opacity: 0.75;
-    }
-    .pk-plaqg--gold .pk-plaqg__k { color: #ffd84d; }
-    .pk-plaqg--silver .pk-plaqg__k { color: #dfe5ec; }
-    .pk-plaqg--blue .pk-plaqg__k { color: #8fb0f7; }
-    .pk-plaqg--coffee .pk-plaqg__k { color: #cbc0a5; }
     /* the title needs real room under it before the board starts */
     #pkSupBody .pk-cardtitle { margin-bottom: 1.7rem; }
     #pkSupBody .pk-cta { margin-top: 0.2rem; }
