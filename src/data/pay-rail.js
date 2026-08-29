@@ -13,7 +13,7 @@
 // ⚠️ Flipping this changes NOTHING about the hats: both rails write the same
 // member store and deliver the same grant by the same email hash. Ko-fi keeps
 // the tip jar either way — one-off support is a Ko-fi strength and needs no API.
-export const RAIL = 'kofi';
+export const RAIL = 'polar';
 
 const WORKER = 'https://banana-pass.trymstene.workers.dev';
 export const RAILS = {
