@@ -17,9 +17,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // on all three with their Join buttons. (Removing that last click means taking
 // the payment ourselves through a merchant of record — the Lemon Squeezy
 // track — not a URL trick.) Buttons open in a new tab so the wall stays put.
-import { PAY, KOFI_TIP, RAIL } from '../data/pay-rail.js';
+import { PAY, RAIL } from '../data/pay-rail.js';
 const KOFI = 'https://ko-fi.com/trymstene/tiers';   // still the tip-jar's home
-const KOFI_ONCE = KOFI_TIP;                          // any amount, once
+const WORKER = 'https://banana-pass.trymstene.workers.dev';
 const TIERS = [
   {
     key: 'blue', tier: 'sup-t1', name: 'Friend of the Banana', price: 5,
@@ -117,42 +117,48 @@ const TIERS = [
     .swf time { opacity: 0.55; font-size: 0.8rem; margin-left: 0.35rem; }
     /* the one-time card: same furniture, laid on its side so it reads as the
        alternative to a subscription rather than a fourth tier */
-    .swo {
-      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-      background: #1b2129; border: 3px solid #2c3542; box-shadow: 7px 7px 0 #000;
-      padding: 1rem 1.1rem; margin: 0 0 1rem;
+    /* ☕ THE COFFEE — the one warm panel on a dark page, in the slat's own
+       wood, so the eye lands on it between the wall and the memberships.
+       No card border: a torn top and bottom edge drawn from the slat art
+       instead, so it reads as a plank nailed across the page. */
+    .swc {
+      position: relative; margin: 2.6rem 0 2.8rem; padding: 1.4rem 1.1rem 1.5rem;
+      background:
+        linear-gradient(rgba(224, 205, 168, 0.17), rgba(224, 205, 168, 0.04)),
+        radial-gradient(80% 120% at 20% 0%, rgba(255, 210, 63, 0.12), rgba(255, 210, 63, 0) 70%);
+      border-top: 3px solid #6c675c; border-bottom: 3px solid #6c675c;
     }
-    .swo__art { image-rendering: pixelated; flex: 0 0 auto; width: 44px; height: 44px; }
-    .swo__txt { flex: 1 1 260px; min-width: 0; }
-    .swo__txt h3 { font-family: "Archivo Black", sans-serif; font-size: 1rem; margin: 0 0 0.25rem; color: #fff; }
-    .swo__txt p { margin: 0; font-size: 0.88rem; line-height: 1.5; opacity: 0.85; }
-    .swo__plaq { margin-top: 0.55rem !important; }
-    .sw a.swo__btn {
-      flex: 0 0 auto; text-decoration: none; background: #1b2129; color: #ffd23f;
-      font-weight: 800; padding: 0.65rem 1.1rem; border: 3px solid #ffd23f;
-      box-shadow: 4px 4px 0 #000; white-space: nowrap;
+    .swc__head { display: flex; align-items: flex-start; gap: 0.8rem; margin-bottom: 1.1rem; }
+    .swc__coin { image-rendering: pixelated; flex: 0 0 auto; }
+    .swc__h {
+      font-family: "Archivo Black", sans-serif; font-size: 1.15rem; margin: 0 0 0.3rem;
+      color: #f0e6d2 !important;
     }
-    .sw a.swo__btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
-    /* lit, not boxed — the same move as the park's spotlight */
-    .sw__you {
-      display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
-      background: radial-gradient(70% 130% at 22% 50%, rgba(255, 210, 63, 0.16), rgba(255, 210, 63, 0) 70%);
-      border-left: 3px solid #ffd23f; padding: 0.8rem 0.9rem; margin: 0 0 1.8rem;
+    .swc__sub { margin: 0; font-size: 0.87rem; line-height: 1.5; opacity: 0.8; }
+    /* the amounts ARE the slats — tapping one is tapping the thing you get */
+    .swc__amts { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.35rem; }
+    /* ⚠️ `.sw a` paints every link banana-yellow, which on pale wood is
+       invisible — the plaque's own ink has to win here.
+       Drawn at x3 rather than x2: a whole INTEGER step, so the pixels stay
+       square, and it lands near a 44px tap target instead of a 30px one. */
+    .sw a.swc__amt {
+      color: #2a2110; text-decoration: none; text-align: center;
+      height: 45px; line-height: 45px; min-width: 96px; padding: 0 30px;
+      font-size: 0.95rem; margin: 0 6px 8px 0;
+      background-size: 36px 45px, 36px 45px, 12px 45px;
+      background-position: left top, right top, 36px top;
+      transition: transform 0.08s ease, filter 0.12s ease;
     }
-    .sw__youhat { image-rendering: pixelated; height: 38px; width: auto; flex: 0 0 auto; }
-    .sw__youtxt { flex: 1 1 240px; margin: 0; font-size: 0.92rem; line-height: 1.5; }
-    .sw a.sw__youbtn {
-      flex: 0 0 auto; text-decoration: none; background: #ffd23f; color: #111;
-      font-weight: 800; font-size: 0.84rem; padding: 0.55rem 0.9rem;
-      border: 3px solid #111; box-shadow: 3px 3px 0 #000; white-space: nowrap;
+    .sw a.swc__amt:hover { transform: translateY(-2px); --pg: rgba(255, 225, 150, 0.55); }
+    .sw a.swc__amt:active { transform: translateY(1px); }
+    .sw a.swc__any {
+      flex: 0 0 100%; margin: 0.35rem 0 0; font-size: 0.84rem; font-weight: 700;
+      color: #e6dcc6; text-decoration: underline; text-underline-offset: 3px;
     }
-    /* the tier you are already on stops being a sales pitch */
-    .swt--mine { outline: 3px solid #ffd23f; outline-offset: 3px; }
-    .swt__mine {
-      display: block; background: #ffd23f; color: #111; font-weight: 800;
-      font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
-      text-align: center; padding: 0.3rem; margin: 0 0 0.6rem;
+    @media (max-width: 400px) {
+      .sw a.swc__amt { min-width: 70px; padding: 0 24px; }
     }
+
     .sw__note { margin-top: 2.2rem; font-size: 0.85rem; opacity: 0.7; line-height: 1.6; max-width: 66ch; }
   </style>
 
@@ -190,6 +196,24 @@ const TIERS = [
         </div>
       </div>
 
+      <section class="swc" id="coffee">
+        <div class="swc__head">
+          <img class="swc__coin" src="/assets/banana-stand/coin.png" width="44" height="44"
+            alt="" loading="lazy" />
+          <div>
+            <h2 class="swc__h">Or just buy the banana a coffee</h2>
+            <p class="swc__sub">Once, no subscription, no hat — and a slat with your name on the wall above.</p>
+          </div>
+        </div>
+        <div class="swc__amts">
+          {[3, 5, 10].map((n) => (
+            <a class="bb-plaq bb-plaq--coffee swc__amt" href={`${WORKER}/pay/tip?a=${n * 100}`}
+              data-tier="once" data-amt={n}>${n}</a>
+          ))}
+          <a class="swc__any" href={`${WORKER}/pay/tip`} data-tier="once">another amount →</a>
+        </div>
+      </section>
+
       <h2 class="sw__h2b" id="join">Join the wall</h2>
       <p class="sw__sub">A membership dresses your banana. Cancel any time; the hat retires itself.</p>
       <div class="sw__tiers">
@@ -217,18 +241,10 @@ const TIERS = [
           three cards is small print. */}
       <p class="sw__idnote">Pay with the same email as <a href="/pass/">your pass</a> — that is how the hat finds you.</p>
 
-      {/* 💛 not everyone wants a subscription — the tip jar is a first-class
-          option here, not a footnote, and it lands on the same feed */}
-      <article class="swo">
-        <img class="swo__art" src="/assets/banana-stand/coin.png" width="44" height="44"
-          alt="a bananacoin" loading="lazy" />
-        <div class="swo__txt">
-          <h3>Or just buy the banana a coffee</h3>
-          <p>Any amount, once, no subscription. No hat — but a slat with your name on the wall above.</p>
-          <p class="swo__plaq"><span class="bb-plaq bb-plaq--coffee">your name here</span></p>
-        </div>
-        <a class="swo__btn" href={KOFI_ONCE} target="_blank" rel="noopener" data-tier="once">Send one →</a>
-      </article>
+      {/* ☕ NOT EVERYONE WANTS A SUBSCRIPTION, and a one-off should not be the
+          last thing on a 4000px page. It sits right under the wall it puts you
+          on, and the amounts ARE the slats you get — the button and the reward
+          are the same object. */}
 
       <p class="sw__note">
         Memberships run through <a href={KOFI} rel="noopener">Ko-fi</a>, who handle the payment —

@@ -168,5 +168,37 @@ const ok = (c, label, extra) => {
     'an unknown tier cannot mint a checkout', res2.headers.get('location'));
 }
 
+// 9. ☕ THE ONE-OFF: the amount is chosen on our page and carried into the
+// checkout, and the button is never allowed to be dead
+{
+  const res = await worker.fetch(new Request('https://x/pay/tip?a=300'), env);
+  ok(res.status === 302 && /ko-fi\.com/.test(res.headers.get('location') || ''),
+    'with no tip product it falls back to the tip jar, not an error', res.headers.get('location'));
+
+  let sent = null;
+  globalThis.fetch = async (url, init) => {
+    sent = { url: String(url), body: JSON.parse(init.body) };
+    return new Response(JSON.stringify({ url: 'https://polar.sh/checkout/abc' }), { status: 200 });
+  };
+  const tipEnv = { ...env, POLAR_TIP: 'prod_tip', POLAR_BASE: 'https://api.polar.sh' };
+  const r2 = await worker.fetch(new Request('https://x/pay/tip?a=500'), tipEnv);
+  ok(r2.status === 302 && /polar\.sh\/checkout/.test(r2.headers.get('location') || ''),
+    'a configured tip goes straight to checkout', r2.headers.get('location'));
+  ok(sent.body.amount === 500 && sent.body.products[0] === 'prod_tip',
+    'the amount chosen on our page is the amount charged', sent.body);
+
+  await worker.fetch(new Request('https://x/pay/tip?a=1'), tipEnv);
+  ok(!('amount' in sent.body), 'a sub-dollar amount is dropped, not charged', sent.body);
+  await worker.fetch(new Request('https://x/pay/tip?a=999999'), tipEnv);
+  ok(!('amount' in sent.body), 'a stray digit cannot mint a four-figure checkout', sent.body);
+  await worker.fetch(new Request('https://x/pay/tip'), tipEnv);
+  ok(!('amount' in sent.body), 'no amount = they pick it on the checkout', sent.body);
+
+  globalThis.fetch = async () => { throw new Error('down'); };
+  const r3 = await worker.fetch(new Request('https://x/pay/tip?a=500'), tipEnv);
+  ok(r3.status === 302 && /ko-fi\.com/.test(r3.headers.get('location') || ''),
+    'if the rail is down the tip jar still takes the money', r3.headers.get('location'));
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

@@ -58,6 +58,7 @@ export default {
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
       if (url.pathname === '/polar-hook') return polarHook(request, env);
       if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
+      if (url.pathname === '/pay/tip') return payTip(request, env, url);
       if (url.pathname === '/pay/manage') return payManage(request, env);
       if (url.pathname === '/supporters') return supporters(request, env);
       if (url.pathname === '/health') return json({ ok: true });
@@ -532,6 +533,39 @@ async function payManage(request, env) {
       product: String((d.product || {}).name || ''),
     });
   } catch (e) { return out({ error: 'polar down' }, 502); }
+}
+
+// ☕ A ONE-OFF, IN ONE TAP. The amount is chosen on our own page and carried
+// into the checkout, so nobody has to type it twice.
+// ⚠️ FALLS BACK TO KO-FI, ON PURPOSE. Ko-fi takes 0% on donations and Polar
+// takes 4% + 40c, which on a $3 coffee is most of the tip — so until a tip
+// product exists here (POLAR_TIP), this route is a redirect to the tip jar and
+// the buttons still work. A dead donate button is worse than a slower one.
+const TIP_JAR = 'https://ko-fi.com/trymstene';
+async function payTip(request, env, url) {
+  const site = (env.ALLOWED_ORIGIN || 'https://trymstene.com').split(',')[0].trim();
+  if (throttled(request.headers.get('CF-Connecting-IP') || 'unknown')) return Response.redirect(TIP_JAR, 302);
+  const pid = env.POLAR_TIP || '';
+  if (!pid || !env.POLAR_TOKEN) return Response.redirect(TIP_JAR, 302);
+  // cents, clamped: below a dollar the fees eat the whole thing, and a stray
+  // digit should never mint a four-figure checkout
+  const want = Math.round(Number(url.searchParams.get('a')) || 0);
+  const amount = want >= 100 && want <= 50000 ? want : 0;
+  try {
+    const r = await fetch(polarBase(env) + '/v1/checkouts', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + env.POLAR_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        products: [pid],
+        ...(amount ? { amount } : {}),          // 0 = let them pick on the checkout
+        success_url: site + '/supporters/?thanks=1',
+        metadata: { tier: 'coffee', src: 'supporters' },
+      }),
+    });
+    const d = await r.json().catch(() => null);
+    const to = d && (d.url || d.checkout_url);
+    return (r.ok && to) ? Response.redirect(to, 302) : Response.redirect(TIP_JAR, 302);
+  } catch (e) { return Response.redirect(TIP_JAR, 302); }
 }
 
 // Standard Webhooks: base64 HMAC-SHA256 over `id.timestamp.body`, header
