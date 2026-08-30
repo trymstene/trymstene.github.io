@@ -114,4 +114,4 @@ One hard rule carried from the start: if the chicken slice doesn't prove people 
 
 4. **Rumors about the pit.** Should the morning news occasionally whisper about the boarded-up house before The Cut exists? **Recommendation:** not one line until The Cut is actually live — then rare seasoning, never a weekly drumbeat. A promise on a schedule becomes a lie the moment the schedule slips.
 
-5. **Naming twins.** Can two goats both be named Gunnar? **Recommendation:** one name per species per farm — it keeps "Gunnar remembers you" clean when you re-buy.
+5. **Naming twins.** ✅ DECIDED (Trym, 30 Aug): **no duplicate names on a farm, full stop.** Stricter than the per-species version and better for it — every news line ("Gunnar waited by the gate") is unambiguous even across species. The name picker simply refuses a name already in use and asks for another.
