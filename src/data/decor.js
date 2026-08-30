@@ -21,6 +21,7 @@ export const DECOR = [
   { id: 'campfire', name: 'Campfire', cat: 'lighting', price: 15, stage: 1, w: 33, h: 21, surface: 'ground', img: '/assets/homestead/d-campfire.png', solid: [-12, -12, 12, 2] },
   { id: 'marshfire', name: 'Marshmallow fire', cat: 'lighting', price: 20, stage: 1, w: 25, h: 31, surface: 'ground', img: '/assets/homestead/d-marshfire.png', solid: [-10, -12, 10, 2] },
   { id: 'lantern2', name: 'Tall lantern', cat: 'lighting', price: 14, stage: 1, w: 23, h: 33, surface: 'ground', img: '/assets/homestead/d-lantern2.png', solid: [-10, -12, 10, 2] },
+  { id: 'trough', name: 'Water trough', cat: 'farm', price: 10, stage: 0, w: 65, h: 33, surface: 'ground', img: '/assets/homestead/d-trough.png', solid: [-24, -12, 24, 2] },
   { id: 'scarecrow', name: 'Scarecrow', cat: 'farm', price: 25, stage: 1, w: 85, h: 79, surface: 'ground', img: '/assets/homestead/d-scarecrow.png', solid: [-32, -12, 32, 2] },
   { id: 'bananacrate', name: 'Banana crate', cat: 'farm', price: 15, stage: 1, w: 63, h: 45, surface: 'ground', img: '/assets/homestead/d-bananacrate.png', solid: [-23, -12, 23, 2] },
   { id: 'flowerbush2', name: 'Rose bush', cat: 'nature', price: 11, stage: 1, w: 89, h: 31, surface: 'ground', img: '/assets/homestead/d-flowerbush2.png', solid: [-33, -12, 33, 2] },

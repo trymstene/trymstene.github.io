@@ -281,6 +281,23 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-planbar button[aria-pressed="true"] { background: #ffe135; color: #17120c; }
     #hsPlanDone { background: #1a1408; color: #ffe135; }
     .hs-planbar[hidden] { display: none; }
+    /* 🐔 slice 1: the egg on the ground, the hen's mood bubble, the stall */
+    .hs-egg {
+      position: absolute; width: 26px; height: 26px; pointer-events: none;
+      background: url(/assets/park/e-egg.png) center/contain no-repeat;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 6px rgba(255, 240, 180, 0.8)) drop-shadow(0 2px 2px rgba(20, 40, 10, 0.3));
+    }
+    /* ❤️/💔 — the park's hearts-only mood grammar, worn by the hens */
+    .hs-mood {
+      position: absolute; left: 50%; top: -16px; transform: translateX(-50%);
+      font-size: 14px; line-height: 1; background: #fffdf5; color: #17120c;
+      border: 2px solid #000; border-radius: 999px; padding: 2px 5px;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 5;
+    }
+    .hs-mood.is-on { opacity: 1; }
+    .hs-stallrow { display: flex; gap: 0.5rem; margin-top: 0.55rem; }
+    .hs-stallrow .hs-btn { flex: 1; white-space: nowrap; }
     /* 📱 PORTRAIT PUTS THE TOOLS UNDER THE THUMB. Build mode on a phone is two
        gestures — tap a cell, swipe to look — and both happen low on the screen,
        so a bar pinned to the TOP means reaching past your own work to change
@@ -727,11 +744,13 @@ const description = 'A clearing west of the park with your name on the sign: cla
         <h2 id="hsShopTitle">🍌 Banana Phone</h2>
         <p id="hsShopLead"></p>
         <div class="hs-apps" id="hsApps">
+          <button type="button" data-tab="stall" hidden><span class="hs-appic" style="background:#fdeccc">🥚</span>Stall</button>
           <button type="button" data-tab="order"><span class="hs-appic" style="background:#dff1ff">🛒</span>Order</button>
           <button type="button" data-tab="shed"><span class="hs-appic" style="background:#f3e6cf;position:relative">📦<i class="hs-appbadge" id="hsShedBadge" hidden></i></span>Shed</button>
           <button type="button" data-tab="up"><span class="hs-appic" style="background:#e2f4d9">⛺</span>Upgrades</button>
         </div>
         <div class="hs-tabs">
+          <button type="button" data-tab="stall" hidden>🥚 Stall</button>
           <button type="button" data-tab="order" aria-pressed="true">🛒 Order</button>
           <button type="button" data-tab="shed" aria-pressed="false">📦 Shed</button>
           <button type="button" data-tab="up" aria-pressed="false">⛺ Upgrades</button>

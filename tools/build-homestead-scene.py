@@ -645,6 +645,8 @@ DECOR_DEF = [
     ('campfire', 'Campfire', 'lighting', 15, 1, ['ME_Singles_Camping_48x48_Campfire_1.png'], True),
     ('marshfire', 'Marshmallow fire', 'lighting', 20, 1, ['ME_Singles_Camping_48x48_Campfire_Marshmallow_1.png'], True),
     ('lantern2', 'Tall lantern', 'lighting', 14, 1, ['ME_Singles_Camping_48x48_Lantern_2.png'], True),
+    # 🐔 the FARM's first object (slice 1): granted free at claim, extras buyable
+    ('trough', 'Water trough', 'farm', 10, 0, [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Drinking_Trough_Horizontal_Empty_48x48.png')], True),
     ('scarecrow', 'Scarecrow', 'farm', 25, 1, [os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Scarecrow_48x48.png')], True),
     ('bananacrate', 'Banana crate', 'farm', 15, 1, [os.path.join(FARM, 'Single_Files_48x48', 'Fruit_Trees_48x48', 'Crate_Brown_Bananas_48x48.png')], True),
     ('flowerbush2', 'Rose bush', 'nature', 11, 1, ['ME_Singles_City_Props_48x48_Flower_Bush_4.png'], True),
@@ -912,6 +914,12 @@ if HAVE_PACK:
     import shutil
     ANIM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Exteriors_48x48/Animated_48x48/Animated_gifs_48x48')
     shutil.copy(os.path.join(ANIM, 'Campfire_48x48.gif'), os.path.join(OUT, 'campfire-lit.gif'))
+    # 💧 the trough's FED state — same pipeline as its catalog sprite so the
+    # two frames land pixel-identical apart from the water
+    _tf = sprite([os.path.join(FARM, 'Single_Files_48x48', 'Props_and_Buildings_48x48', 'Drinking_Trough_Horizontal_Full_48x48.png')], scale=DECOR_SCALE.get('trough', DECOR_DEFAULT))
+    if _tf is not None:
+        _tf.save(os.path.join(OUT, 'd-trough-full.png'), optimize=True)
+        print('  d-trough-full.png %dx%d' % (_tf.width, _tf.height))
     shutil.copy(os.path.join(ANIM, 'Garden_Fountain_1_48x48.gif'), os.path.join(OUT, 'd-fountain.gif'))
     for did, name, cat, price, stage, path in INDOOR_DEF:
         sc = IN_SCALE.get(did, DECOR_DEFAULT)

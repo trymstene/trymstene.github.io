@@ -16,7 +16,7 @@ import { initSteer } from './world-steer.js';
 
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
-import { WORLD, BOUND, ROAD, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
+import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -238,6 +238,28 @@ function applyTestScenario(kind) {
   }
   if (s) { try { localStorage.setItem(HS_KEY, JSON.stringify(s)); } catch (e) {} }
 }
+// 🐔 THE FARM (slice 1: chickens) — DARK-LAUNCHED. ?farm arms it on this
+// device and it stays armed; ?farmoff disarms. With the switch off every path
+// below is inert and the page behaves byte-for-byte as before — that contract
+// is what lets Trym play the real thing on prod before anyone else sees it.
+const FARM = (() => {
+  try {
+    if (/[?&]farm(?:=|&|$)/.test(location.search)) localStorage.setItem('hs-farm', '1');
+    if (/[?&]farmoff(?:=|&|$)/.test(location.search)) localStorage.removeItem('hs-farm');
+    return !!localStorage.getItem('hs-farm');
+  } catch (e) { return false; }
+})();
+// the farm's day clock — UTC day numbers, matching the worker's dayOf math.
+// qaDayOfs lets ?hstest QA walk time forward without touching the ledger.
+let qaDayOfs = 0;
+const dayNum = () => Math.floor((Date.now() + qaDayOfs) / 86400000);
+// 📊 once-per-session events — the park's latch, so users(event)/users(open)
+// and sessions-per-user both read true (nothing here latched before, and the
+// analysis that found the harvest cliff was only possible because the park's
+// verbs did)
+const tracked1 = {};
+function track1(name, params) { if (tracked1[name]) return; tracked1[name] = 1; track(name, params); }
+
 const HS_TEST = typeof location !== 'undefined'
   && new URLSearchParams(location.search).get('hstest');
 if (HS_TEST) applyTestScenario(HS_TEST);
@@ -741,6 +763,9 @@ function init(visitDoc, visitMiss) {
     el.style.height = pct(d.h, H);
     if (d.svg) el.innerHTML = d.svg;
     else el.style.backgroundImage = "url('" + d.img + "')";
+    if (it.id === 'trough' && !ghost && FARM && fedToday()) {
+      el.style.backgroundImage = "url('/assets/homestead/d-trough-full.png')";
+    }
     if (it.id === 'campfire' && it.lit && !ghost) {
       el.style.backgroundImage = "url('/assets/homestead/campfire-lit.gif')";
       el.style.height = pct(d.h * 2, H);
@@ -910,23 +935,51 @@ function init(visitDoc, visitMiss) {
   const hens = [];
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
-    if (!hasCoop || REDUCED) {
+    // 🐔 FARM: hens are GRANTED at claim (state.hens), not coop-gated — the
+    // coop keeps its three strollers on top. Before the claim, ONE hen follows
+    // the walk-in: the design's hook is “a hen followed me home”, and she is
+    // hen zero of the pair the claim grants. Under reduced motion the flock
+    // STANDS — it never vanishes (the trap list's own rule; legacy coop-only
+    // behaviour is unchanged with the switch off).
+    const want = FARM
+      ? (!visiting && !state.claimedAt ? 1 : (state.hens || 0) + (hasCoop ? 3 : 0))
+      : (hasCoop && !REDUCED ? 3 : 0);
+    if (!want) {
       while (hens.length) hens.pop().el.remove();
       return;
     }
-    while (hens.length < 3) {
+    while (hens.length > want) hens.pop().el.remove();
+    while (hens.length < want) {
       const el = document.createElement('div');
       el.className = 'hs-hen';
       const img = document.createElement('span');
-      img.style.backgroundImage = "url('/assets/homestead/c-hen" + hens.length + ".png')";
+      img.style.backgroundImage = "url('/assets/homestead/c-hen" + (hens.length % 3) + ".png')";
       el.appendChild(img);
       world.appendChild(el);
-      const coop = state.items.find((i) => i.id === 'coop');
-      hens.push({ el, img, x: coop.x - 30 + hens.length * 30, y: coop.y + 20,
-        tx: coop.x, ty: coop.y + 40, waitUntil: 0, frame: 0, frameAt: 0 });
+      const anchor = state.items.find((i) => i.id === 'coop')
+        || state.items.find((i) => i.id === 'trough')
+        || { x: state.home.x + 40, y: state.home.y + 44 };
+      const follow = FARM && !visiting && !state.claimedAt;
+      hens.push({ el, img, follow,
+        x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
+        y: follow ? pos.y + 4 : anchor.y + 20,
+        tx: anchor.x, ty: anchor.y + 40, waitUntil: 0, frame: 0, frameAt: 0 });
     }
     const P = plotNow();
     for (const h of hens) {
+      if (h.follow) {   // trailing the banana up the road, until the claim
+        if (state.claimedAt) h.follow = false;
+        h.tx = pos.x - 46; h.ty = pos.y + 4;
+      }
+      if (REDUCED) {    // FARM-only path (legacy returned above): stand still
+        if (h.px !== h.x) {
+          h.px = h.x; h.py = h.y;
+          h.el.style.left = pct(h.x - 16, W);
+          h.el.style.top = pct(h.y - 30, H);
+          h.el.style.zIndex = String(100 + Math.round(h.y));
+        }
+        continue;
+      }
       const dx = h.tx - h.x, dy = h.ty - h.y;
       const d = Math.hypot(dx, dy);
       if (d < 3) {
@@ -963,6 +1016,91 @@ function init(visitDoc, visitMiss) {
         h.el.style.zIndex = String(100 + Math.round(h.y));
       }
     }
+  }
+
+  // ---- 🐔 THE SMALLHOLDING, slice 1 (dark behind FARM) ------------------
+  // The area's headline bug was that it PAYS NOTHING. The hens fix that: two
+  // are granted at claim, they lay overnight, the eggs are walk-over pickups,
+  // and the gate stall turns them into the area's first coins. Care is a
+  // bonus, never rent — an unfed hen still lays, feeding doubles TOMORROW.
+  // ⚠️ FUNCTION DECLARATIONS, deliberately — itemDiv calls fedToday() and the
+  // boot-time refreshItems() at :867 runs BEFORE this line is reached, so a
+  // const here would be a TDZ crash for every returning player with a trough
+  // (the rave's module-consts-above-init lesson, nearly repaid in full).
+  function farmStats() { return passGet().stats || {}; }
+  function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
+  function farmGrant() {
+    // idempotent: claims made before the farm existed get theirs on arrival
+    if (state.hens) return;
+    state.hens = 2;
+    if (!state.items.some((i) => i.id === 'trough')) {
+      state.items.push({ id: 'trough', x: state.home.x + 96, y: state.home.y + 52 });
+    }
+    if (!state.items.some((i) => i.id === 'campfire')) {
+      state.items.push({ id: 'campfire', lit: 1, x: state.home.x - 88, y: state.home.y + 58 });
+    }
+    // ⏰ the day clock starts at the moment of the grant — without this, a
+    // claim made mid-session had hs_day = 0 and the FIRST morning spent
+    // itself seeding the clock instead of laying (caught in the walk)
+    passStat('hs_day', dayNum() - (farmStats().hs_day || 0));
+    save(); refreshItems();
+    toast('🐔 two hens moved in — they’re yours. they lay while you’re away', 4200);
+    track1('homestead_farm_grant');
+  }
+  // ⏰ THE MORNING — yield accrued from days-since-last-visit, HARD-CAPPED at
+  // two days so a fortnight away hands back the same full yard as a weekend
+  // (the only shape the ledger can express: monotonic day counters, never a
+  // subtraction, max-merge safe across devices — hs_day/hs_fed live on the
+  // PASS, never in doc.state, which /save wholesale-replaces).
+  const eggEls = [];
+  function morningTick() {
+    if (!FARM || visiting || !state.claimedAt || !state.hens) return;
+    const st = farmStats();
+    const today = dayNum();
+    const last = st.hs_day || 0;
+    if (!last) { passStat('hs_day', today); return; }   // day zero seeds the clock
+    const gap = Math.min(today - last, 2);
+    if (gap <= 0) return;
+    const fed = (st.hs_fed || 0) >= last;               // fed on the last visit day
+    const eggs = gap * state.hens * (fed ? 2 : 1);
+    passStat('hs_day', today - last);
+    const t = state.items.find((i) => i.id === 'trough') || { x: state.home.x + 96, y: state.home.y + 52 };
+    for (let i = 0; i < eggs; i++) {
+      const el = document.createElement('div');
+      el.className = 'hs-egg';
+      const x = t.x - 44 + (i % 4) * 30, y = t.y + 12 + Math.floor(i / 4) * 24;
+      el.style.left = pct(x, W); el.style.top = pct(y, H);
+      depth(el, y);
+      world.appendChild(el);
+      eggEls.push({ x, y, el });
+    }
+    toast('🥚 your hens left ' + eggs + ' egg' + (eggs > 1 ? 's' : '') + ' by the trough'
+      + (fed ? ' — double, for yesterday’s feed' : ''), 4200);
+  }
+  function farmEggTick() {
+    if (visiting) return;                               // pay-side gate: a
+    for (let i = eggEls.length - 1; i >= 0; i--) {      // visited yard must
+      const c = eggEls[i];                              // never mint for the
+      if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34) continue;   // visitor
+      c.el.remove();
+      eggEls.splice(i, 1);
+      state.eggs = (state.eggs || 0) + 1;
+      save();
+      float(c.x, c.y - 22, '🥚 +1');
+      track1('homestead_egg');
+    }
+  }
+  // ❤️ the mood bubble — the park's hearts-only grammar, reused exactly:
+  // ❤️ fed today, 💔 hungry (an appointment, never a wound — the floor
+  // never drops). Tap a hen to ask her.
+  function henMood(h) {
+    let b = h.el.querySelector('.hs-mood');
+    if (!b) { b = document.createElement('span'); b.className = 'hs-mood'; h.el.appendChild(b); }
+    b.textContent = fedToday() ? '❤️' : '💔';
+    b.classList.add('is-on');
+    clearTimeout(h.moodT);
+    h.moodT = setTimeout(() => b.classList.remove('is-on'), 1800);
+    track1('homestead_mood', { fed: fedToday() ? 1 : 0 });
   }
 
   // 🐦 NO SPECIES COLLECTION HERE (Trym, 30 Aug). Birdwatching belongs to
@@ -1346,8 +1484,14 @@ function init(visitDoc, visitMiss) {
   // DIRECT visit walks in from the WEST end of the road instead (Trym:
   // entering from the right only makes sense if you came from the park).
   const byRoad = /[?&](park|world)(?:=|&|$)/.test(location.search);
-  const pos = byRoad ? { x: W - 90, y: ROAD.y } : { x: 104, y: ROAD.y };
-  const tgt = byRoad ? { x: W - 260, y: ROAD.y } : { x: 300, y: ROAD.y };
+  // 🚩 FARM spawns direct arrivals on the road IN FRONT OF the yard — the
+  // measured killer was geometry: the old spawn walked x104→300 inside a 520px
+  // camera while everything the area owns sits at x 930-1250, so the majority
+  // of players never once had their own plot on screen.
+  const pos = byRoad ? { x: W - 90, y: ROAD.y }
+    : FARM ? { x: GATE.x - 300, y: ROAD.y } : { x: 104, y: ROAD.y };
+  const tgt = byRoad ? { x: W - 260, y: ROAD.y }
+    : FARM ? { x: GATE.x - 40, y: ROAD.y } : { x: 300, y: ROAD.y };
   const c0 = camTarget(); camX = c0.x; camY = c0.y;
   track('homestead_open', {
     claimed: state.claimedAt ? 1 : 0,
@@ -1387,7 +1531,10 @@ function init(visitDoc, visitMiss) {
     document.head.appendChild(st);
     // strung along the road AHEAD of the walk-in, whichever door you used;
     // slight y-jitter so it reads as dropped, not printed
-    [[400, -10], [500, 8], [600, -6], [700, 10], [800, 0]].forEach(([cx, jy], i) => {
+    // FARM: the coins string along the shorter gate walk, so the arrival
+    // auto-walk crosses every one of them before the first tap
+    ((FARM && !byRoad) ? [[880, -10], [950, 8], [1020, -6], [1090, 10], [1148, 0]]
+      : [[400, -10], [500, 8], [600, -6], [700, 10], [800, 0]]).forEach(([cx, jy], i) => {
       const x = byRoad ? W - cx : cx, y = ROAD.y + jy;
       const d = document.createElement('div');
       d.className = 'hs-roadcoin';
@@ -1407,6 +1554,10 @@ function init(visitDoc, visitMiss) {
       passStat('coins_earned', 2);
       float(c.x, c.y - 22, '<img src="/assets/banana-stand/coin.png" width="14" height="14" style="vertical-align:-2px"> +2');
       refreshHud();
+      // 🏡 FARM: the claim is FREE and lands after you have DONE something —
+      // the first coin is the something. (The tent stays the first purchase;
+      // claiming just stops costing 50 coins of gate.)
+      if (FARM && !visiting && !state.claimedAt) offerClaim();
       if (!roadCoins.length) {
         try { localStorage.setItem('hs-roadcoins-v1', '1'); } catch (e) {}
         toast('<img class="hs-toastico" src="/assets/banana-stand/coin.png" style="image-rendering:auto" alt=""> first coins in the pocket — playing pays, anywhere in the world', 3600);
@@ -1484,6 +1635,11 @@ function init(visitDoc, visitMiss) {
     // ⚠️ ONLY WHAT YOU HAVE. This printed a chip per crop in the game — 14 of
     // them now, almost all reading × 0 — which pushed the dishes themselves off
     // the bottom of a phone in a card that had no scroller.
+    if (FARM && (state.pantry.egg || 0) > 0) {
+      const b = document.createElement('span');
+      b.textContent = '🥚 × ' + state.pantry.egg;
+      pan.appendChild(b);
+    }
     const held = CROPS.filter((c) => (state.pantry[c.id] || 0) > 0);
     held.forEach((c) => {
       const b = document.createElement('span');
@@ -1695,7 +1851,9 @@ function init(visitDoc, visitMiss) {
     state.name = v;
     const wasRename = renaming;   // a repaint is not a founding — the funnel splits here
     if (renaming) { state.renames = (state.renames || 0) + 1; state.renamedAt = Date.now(); renaming = false; }
+    const wasUnclaimed = !state.claimedAt;
     state.claimedAt = state.claimedAt || Date.now();
+    if (FARM && wasUnclaimed) farmGrant();
     save(); refreshSign();
     claimEl.hidden = true;
     syncLock();
@@ -1832,6 +1990,7 @@ function init(visitDoc, visitMiss) {
     const catsRow = document.getElementById('hsShopCats');
     list.replaceChildren();
     catsRow.hidden = true;
+    if (FARM && shopEl.dataset.tab === 'stall') { renderStall(list); return; }
     // ⛺ TENT FIRST (Trym): before you've moved in, the mailbox offers ONE
     // thing — the catalog stays behind the canvas until the tent is up.
     const tabsRow = shopEl.querySelector('.hs-tabs');
@@ -2048,10 +2207,69 @@ function init(visitDoc, visitMiss) {
   // no stock emojis in the phone chrome (Trym) — clean OS titles
   const SHOP_HEADS = {
     home: ['Banana Phone', ''],
+    stall: ['The gate stall', 'The road’s only got so many customers a day.'],
     order: ['Order online', 'The van delivers to your mailbox.'],
     shed: ['Your shed', 'Ready to place in build mode.'],
     up: ['Upgrades', ''],
   };
+  // 🥚 THE GATE STALL — one card, two buttons, no tabs inside it. Sells at
+  // 4c an egg against a 25c/day take (the cap is the PIPE, not a throttle:
+  // surplus is meant to become a dish). The daily tally is device-local by
+  // design — the worst a second device buys is one more capped day.
+  const EGG_C = 4, STALL_CAP = 25;
+  function stallDay() {
+    try {
+      const j = JSON.parse(localStorage.getItem('hs-stall-v1') || 'null');
+      if (j && j.d === dayNum()) return j;
+    } catch (e) {}
+    return { d: dayNum(), sold: 0 };
+  }
+  function renderStall(list) {
+    const eggs = state.eggs || 0;
+    const sd = stallDay();
+    const room = Math.max(0, STALL_CAP - sd.sold);
+    const canSell = Math.min(eggs, Math.floor(room / EGG_C));
+    const card = document.createElement('div');
+    card.className = 'hs-up';
+    card.innerHTML = '<div class="hs-uphead"><b>🥚 Eggs</b>'
+      + '<span class="hs-price">× ' + eggs + '</span></div>'
+      + '<span>' + EGG_C + ' ' + COIN + ' each · today’s takings ' + sd.sold + '/' + STALL_CAP + ' ' + COIN + '</span>'
+      + (eggs && !canSell ? '<span class="hs-note">the stall is sold out for today — the pantry never is</span>' : '')
+      + (!eggs ? '<span class="hs-note">the hens lay overnight — come back tomorrow morning</span>' : '');
+    const row = document.createElement('div');
+    row.className = 'hs-stallrow';
+    const sell = document.createElement('button');
+    sell.className = 'hs-btn';
+    sell.textContent = canSell ? '🪙 sell ' + canSell + ' → ' + (canSell * EGG_C) + ' coins' : '🪙 sell';
+    sell.disabled = !canSell;
+    sell.addEventListener('click', () => {
+      const nSold = Math.min(state.eggs || 0, Math.floor((STALL_CAP - stallDay().sold) / EGG_C));
+      if (!nSold) return;
+      state.eggs -= nSold;
+      const coins = nSold * EGG_C;
+      passStat('coins_earned', coins);
+      try { localStorage.setItem('hs-stall-v1', JSON.stringify({ d: dayNum(), sold: stallDay().sold + coins })); } catch (e) {}
+      save(); refreshHud(); renderShop();
+      toast('🪙 +' + coins + ' — the stall took ' + nSold + ' egg' + (nSold > 1 ? 's' : ''), 3200);
+      track1('homestead_sell_stall', { n: nSold });
+    });
+    const pan = document.createElement('button');
+    pan.className = 'hs-btn hs-btn--ghost';
+    pan.textContent = '🍳 to the pantry';
+    pan.disabled = !eggs;
+    pan.addEventListener('click', () => {
+      const nAll = state.eggs || 0;
+      state.pantry = state.pantry || {};
+      state.pantry.egg = (state.pantry.egg || 0) + nAll;
+      state.eggs = 0;
+      save(); renderShop();
+      toast('🍳 ' + nAll + ' egg' + (nAll > 1 ? 's' : '') + ' into the pantry', 3200);
+      track1('homestead_pantry_eggs', { n: nAll });
+    });
+    row.appendChild(sell); row.appendChild(pan);
+    card.appendChild(row);
+    list.appendChild(card);
+  }
   function shopHead() {
     const hd = SHOP_HEADS[shopEl.dataset.tab] || SHOP_HEADS.order;
     document.getElementById('hsShopTitle').textContent = hd[0];
@@ -2067,7 +2285,7 @@ function init(visitDoc, visitMiss) {
     }
   }
   function openShop(tab, remote) {
-    if (state.stage < 1) tab = 'order';   // tent-first: straight to the one offer
+    if (state.stage < 1 && tab !== 'stall') tab = 'order';   // tent-first: straight to the one offer (the stall trades from day one — it FUNDS the tent)
     if (tab) shopEl.dataset.tab = tab;
     shopHead();
     shopEl.hidden = false;
@@ -2452,6 +2670,32 @@ function init(visitDoc, visitMiss) {
     // ⚠️ THE PAID FEEDER IS GONE with the species it summoned — leaving it
     // would charge 5 coins for nothing at all. The birdhouse is still decor,
     // and birds still favour it as a perch.
+    if (it.id === 'trough' && FARM) {
+      const fd = document.createElement('button');
+      fd.className = 'hs-btn';
+      if (fedToday()) {
+        fd.textContent = '💧 full — tomorrow pays double';
+        fd.disabled = true;
+      } else {
+        fd.textContent = '💧 fill the trough';
+        fd.addEventListener('click', () => {
+          passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0));
+          clearChip();
+          refreshItems();                    // the water appears
+          hens.forEach((h) => float(h.x, h.y - 40, '❤️'));
+          toast('💧 fed & watered — everything pays double tomorrow', 3600);
+          track1('homestead_feed');
+        });
+      }
+      itChip.appendChild(fd);
+      if (state.eggs || fedToday()) {        // the stall is one tap from the yard
+        const sl = document.createElement('button');
+        sl.className = 'hs-btn';
+        sl.textContent = '🥚 stall' + (state.eggs ? ' · ' + state.eggs : '');
+        sl.addEventListener('click', () => { clearChip(); openShop('stall'); });
+        itChip.appendChild(sl);
+      }
+    }
     if (it.id === 'campfire') {
       const fire = document.createElement('button');
       fire.className = 'hs-btn';
@@ -2814,6 +3058,16 @@ function init(visitDoc, visitMiss) {
       save(); refreshSoil();
       return;
     }
+    // 🐔 a hen within reach answers with her mood — checked AFTER the placed
+    // items, deliberately: the flock gathers AT the trough, so a hen-first
+    // test swallowed the tap that fills it (caught in the walk). Mood is a
+    // flourish; the trough is the verb. Never in build mode — the planner's
+    // taps belong to the grid.
+    if (FARM && !planner) {
+      for (const h of hens) {
+        if (Math.hypot(wx - h.x, wy - (h.y - 14)) < 36) { henMood(h); return; }
+      }
+    }
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
       if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
@@ -3073,6 +3327,7 @@ function init(visitDoc, visitMiss) {
     if (!inside) {
       birdTick(now, dt);
       henTick(now, dt);
+      if (FARM) farmEggTick();
       peers.forEach((p) => drawPeer(p));
       if (roadCoins.length) roadCoinTick();
     }
@@ -3081,9 +3336,21 @@ function init(visitDoc, visitMiss) {
   }
   // the QA reach-in (the park's ?parktest pattern) — nothing here exists in a
   // normal session
+  // 🐔 farm boot — after everything above exists: back-grants for yards
+  // claimed before the farm, then the morning
+  if (FARM) {
+    document.querySelectorAll('[data-tab="stall"]').forEach((b) => { b.hidden = false; });
+  }
+  if (FARM && !visiting && state.claimedAt) { farmGrant(); morningTick(); }
+  if (FARM && !visiting && !state.claimedAt) {
+    setTimeout(() => { if (!state.claimedAt) offerClaim(); }, 20000);
+  }
   if (HS_TEST) {
     window.__hs = {
       pos, tgt, peers, birds: birdsLive,
+      // 🐔 farm QA: morning(d) walks the clock d days and relays the morning
+      morning: (d) => { qaDayOfs += (d || 1) * 86400000; morningTick(); return farmStats().hs_day; },
+      farm: () => ({ hens: state.hens || 0, eggs: state.eggs || 0, fed: fedToday(), eggsOnGround: eggEls.length }),
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,
       // the validity-grid probe (round-15 doctrine: verify the grid, not a spot)
