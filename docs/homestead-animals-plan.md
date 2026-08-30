@@ -110,7 +110,7 @@ One hard rule carried from the start: if the chicken slice doesn't prove people 
 
 2. **Where does knitting live?** Inside the forge (fits the "forge makes wearables" story, but the forge is nearly out of room) or as fixed recipes on the farm's own tailor table (drawn in the pack, cheaper, but less forge identity)? ✅ DECIDED (Trym, 30 Aug): **the tailor table, on the homestead.** His reasoning is the doctrine: sending a player to the forge mid-loop means jumping out of the game.
 
-3. **The rooster's insurance.** Extending stored yield from two days to three is a real gift to lapsed players, but it's your call whether absence coverage should be buyable at all. **Recommendation:** yes — it's cheap, characterful, and the kind of kindness this world is known for.
+3. **The rooster's insurance.** ✅ DECIDED (Trym, 30 Aug): **yes — with one condition: the user must clearly understand it.** Two places carry that, both in plain words and never in a tooltip: the stall card at purchase ("keeps the yard running while you're away — your goods wait 3 mornings instead of 2"), and the morning news at the exact moment it pays ("you were gone 3 days — the rooster kept everything: 3 eggs waiting"). The effect is narrated when it matters, not only sold up front.
 
 4. **Rumors about the pit.** Should the morning news occasionally whisper about the boarded-up house before The Cut exists? ✅ DECIDED (Trym, 30 Aug): **total silence.** Not one line until the Cut actually exists for players — internal plans stay internal.
 
