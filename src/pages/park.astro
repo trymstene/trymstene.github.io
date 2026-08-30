@@ -568,6 +568,26 @@ const faq = {
     }
     a.pk-cta { text-decoration: none; }   /* the card's door is a button, not a link */
     .pk-plaqs { margin: 0; }
+    /* 🪵 the board, inside the card.
+       ⚠️ ONE SCROLLER. Giving the wall its own `max-height` left the CARD
+       scrolling too, so the way out sat below the fold on a 740px phone — the
+       oldest trap on this site. Making the card a flex column does NOT fix it
+       either: the card's flex child is #pkSupBody, not the wall, so the wall
+       never shrinks. So the wall does not scroll at all — the CARD is the one
+       scroller, and the list is capped short enough that there is little to
+       scroll. */
+    .pk-supwall { margin: 0 0 0.7rem; }
+    .pk-supwall .bb-wall { box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.45); }
+    .pk-supsee { margin: 0.55rem 0 0; font-size: 0.84rem; font-weight: 700; }
+    /* ⚠️ SHORT PHONES, NOT NARROW ONES. The card's ceiling is the stage's
+       height, so this is a max-height query — at 360x740 the spotlight was the
+       40px standing between the board and the way off it. */
+    @media (max-height: 780px) {
+      .pk-supstar { margin-bottom: 0.7rem; padding: 0.35rem 0.5rem 0.45rem; }
+      .pk-supstar__k { margin-bottom: 0.35rem; }
+      .pk-supwall .bb-wall--sm { padding: 20px 14px 22px; }
+      .pk-supwall .bb-plaqg { padding-bottom: 9px; margin-bottom: 10px; }
+    }
 
     /* ⭐ today's supporter — a line, NOT another box. The card was boxes inside
        boxes inside boxes; the label alone is enough to lift the name out. */
@@ -575,7 +595,7 @@ const faq = {
        A radial glow separates it from the board without adding another border
        to a card that already had too many. */
     .pk-supstar {
-      text-align: center; margin: 0 0 2.1rem; padding: 1rem 0.5rem 1.15rem;
+      text-align: center; margin: 0 0 1.15rem; padding: 0.6rem 0.5rem 0.7rem;
       background: radial-gradient(58% 100% at 50% 52%, rgba(255, 225, 120, 0.19), rgba(255, 225, 120, 0) 72%);
     }
     .pk-supstar .bb-plaq { margin: 0; }

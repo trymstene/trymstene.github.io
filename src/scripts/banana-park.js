@@ -277,6 +277,7 @@ function init() {
     { t: 'sup-t1', k: 'blue', name: 'Friend of the Banana', many: 'Friends of the Banana' },
     { t: 'coffee', k: 'coffee', name: 'bought a coffee', many: 'Bought a coffee' },
   ];
+  const SUP_SHOW = 5;          // enough to show the ladder, short enough to read
   const supRank = (t) => SUP_ROWS.find((r) => r.t === (t || 'coffee')) || SUP_ROWS[3];
   // one name lifted each day, the same one for everybody — splitmix32 over the
   // UTC date, the world's own daily-pick shape
@@ -321,27 +322,43 @@ function init() {
         out += '<div class="pk-supstar"><p class="pk-supstar__k">today\'s supporter</p>'
           + supPlaque(star.n, sr, isMe(star.n)) + '</div>';
       }
-      // best metal first, alphabetical inside it, so anyone can find their own
-      // name — and each metal is its own cluster, separated by AIR. Grouping
-      // without headings: the gap says "these belong together" and nobody has
-      // to be told what FRIENDS means.
-      out += '<div class="pk-plaqs">' + SUP_ROWS.map((r) => {
-        const list = all.filter((m) => (m.t || 'coffee') === r.t).sort((a, b) => a.n.localeCompare(b.n));
-        return list.length
-          ? '<div class="bb-plaqg bb-plaqg--' + r.k + '"><p class="bb-plaqg__k">' + r.many + '</p>'
-            + list.map((m) => supPlaque(m.n, r, isMe(m.n))).join('') + '</div>'
-          : '';
-      }).join('') + '</div>';
-      out += '<p class="pk-supfoot">The whole world runs on these bananas 💛</p>';
+      // 🪵 THE SAME BOARDS THE PAGE HANGS — one shared layer (.bb-wall in
+      // plaques.css), so tapping the board in the park shows the board, not a
+      // list of names on a card that happens to be about a board.
+      // ⚠️ CAPPED AND SCROLLED. The popup is a card in a game, not a page: the
+      // whole wall in here would push the way out below the fold. Best metal
+      // first, so what you see without scrolling is the top of the ladder.
+      const order = SUP_ROWS.map((r) => r.t);
+      const ranked = all.slice().sort((a, b) =>
+        order.indexOf(a.t || 'coffee') - order.indexOf(b.t || 'coffee') || a.n.localeCompare(b.n));
+      const shown = ranked.slice(0, SUP_SHOW);
+      out += '<div class="pk-supwall"><div class="bb-wall bb-wall--sm">'
+        + SUP_ROWS.map((r) => {
+          const list = shown.filter((m) => (m.t || 'coffee') === r.t);
+          return list.length
+            ? '<div class="bb-plaqg bb-plaqg--' + r.k + '"><p class="bb-plaqg__k">' + r.many + '</p>'
+              + list.map((m) => supPlaque(m.n, r, isMe(m.n))).join('') + '</div>'
+            : '';
+        }).join('') + '</div></div>';
     }
     // ⚠️ don't sell the board to someone already nailed to it. A supporter gets
     // told they are up there and a quiet door to their own membership; the big
     // yellow button is for the people who are not.
     let mem = null;
     try { mem = JSON.parse(localStorage.getItem('bb-member') || 'null'); } catch (e) {}
-    out += (mem && +mem.until + 72 * 3600 * 1000 > Date.now())
+    const isMem = mem && +mem.until + 72 * 3600 * 1000 > Date.now();
+    // ⚠️ EVERYBODY GETS A ROUTE TO THE WHOLE BOARD. A member used to get a door
+    // to their own membership and nothing else — no way from the park to the
+    // wall they are on.
+    out += isMem
       ? '<p class="pk-supmine">You are up there 💛 <a href="/pass/">your membership →</a></p>'
       : '<a class="pk-cta" href="/supporters/"><span class="pk-cta__verb">get on the board →</span></a>';
+    // the count IS the reason to tap — two lines saying nearly the same thing
+    // cost a line the card does not have, and the number is the better half
+    const hidden = all.length - Math.min(all.length, SUP_SHOW);
+    out += '<p class="pk-supsee"><a href="/supporters/">'
+      + (hidden ? hidden + ' more on the board — see them all →' : 'See the whole board →')
+      + '</a></p>';
     supBody.innerHTML = out;
   }
 

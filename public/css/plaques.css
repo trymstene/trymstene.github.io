@@ -70,3 +70,91 @@
 .bb-plaqg--silver .bb-plaqg__k { color: #dfe5ec; }
 .bb-plaqg--blue .bb-plaqg__k { color: #8fb0f7; }
 .bb-plaqg--coffee .bb-plaqg__k { color: #cbc0a5; }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   🪵 THE WALL — the boards the plaques hang on. Art: tools/build-wall.py.
+   Worn by /supporters/ and by the park's board popup, so it lives here.
+   ⚠️ A wall needs an EDGE. Without the border and hard shadow it does not
+   read as an object, it just stops. */
+.bb-wall {
+  position: relative; padding: 48px 40px 51px; min-height: 260px;
+  background-image: url(/assets/supporters/wall-board.png);
+  background-repeat: repeat;
+  background-size: 288px 144px;
+  image-rendering: pixelated;
+  border: 3px solid #17120c;
+  box-shadow: inset 0 0 52px rgba(0, 0, 0, 0.42), 8px 8px 0 #000;
+}
+/* the battens, with the screws that would actually be fastening them.
+   ⚠️ A 4-VALUE POSITION NEEDS A KEYWORD ON BOTH AXES: `12px bottom 30px` is
+   invalid, and ONE invalid entry drops the WHOLE list, silently. */
+.bb-wall::before, .bb-wall::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 27px;
+  background-image:
+    url(/assets/supporters/wall-screw.png), url(/assets/supporters/wall-screw.png),
+    url(/assets/supporters/wall-rail.png);
+  background-position: left 14px center, right 14px center, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat-x;
+  background-size: 24px 24px, 24px 24px, 288px 27px;
+  image-rendering: pixelated;
+}
+.bb-wall::before { top: 0; }
+.bb-wall::after { bottom: 0; transform: scaleY(-1); }
+
+/* 🪚 EVERY RANK GETS A SHELF. Each row of plaques ends well short of the
+   width; a groove cut across the FULL width turns that emptiness into room on
+   the rail rather than content that failed to fill its container. Deliberately
+   quieter than the battens so it does not become boxes inside boxes. */
+.bb-wall .bb-plaqg {
+  padding-bottom: 18px; margin-bottom: 20px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 0 rgba(196, 172, 128, 0.16);
+}
+.bb-wall .bb-plaqg:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; box-shadow: none; }
+
+/* ⚠️ AT x2 THE PLAQUES READ AS FILTER CHIPS ON A TEXTURE. At x3 they are
+   objects somebody mounted. Whole step, so the pixels stay square. */
+.bb-wall .bb-plaq {
+  height: 45px; line-height: 45px; padding: 0 30px; margin: 0 11px 12px 0;
+  font-size: 0.95rem;
+  background-size: 36px 45px, 36px 45px, 12px 45px;
+  background-position: left top, right top, 36px top;
+  /* ⚠️ WITH EVERY PLAQUE LIT, NOTHING IS LIT. The ambient per-tier glow comes
+     off on the wall and is given back only to the visitor's own. */
+  --pg: transparent;
+  filter: drop-shadow(3px 4px 0 rgba(0, 0, 0, 0.62));
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bb-wall .bb-plaq--me {
+  --pg: #fff6d8;
+  filter: drop-shadow(0 0 7px var(--pg)) drop-shadow(3px 4px 0 rgba(0, 0, 0, 0.62));
+}
+/* stencilled into the timber, not printed on it */
+.bb-wall .bb-plaqg__k {
+  color: #b9a37e !important; opacity: 1; font-size: 0.64rem;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+}
+.bb-wall .bb-empty { margin: 0; color: #cbbb9a; opacity: 0.9; font-size: 0.86rem; }
+
+/* 🪟 THE SMALL WALL — the same boards inside a popup, where there is no room
+   for 48px of padding and a 260px minimum. Same object, closer crop. */
+.bb-wall--sm {
+  padding: 24px 14px 26px; min-height: 0;
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.45), 4px 4px 0 #000;
+}
+.bb-wall--sm .bb-plaq {
+  height: 30px; line-height: 30px; padding: 0 22px; font-size: 0.8rem;
+  background-size: 24px 30px, 24px 30px, 8px 30px;
+  background-position: left top, right top, 24px top;
+  margin: 0 7px 8px 0;
+}
+.bb-wall--sm .bb-plaqg { padding-bottom: 12px; margin-bottom: 13px; }
+
+@media (max-width: 780px) {
+  .bb-wall { padding: 40px 1.1rem 42px; min-height: 200px; }
+  .bb-wall .bb-plaq {
+    height: 30px; line-height: 30px; padding: 0 22px; font-size: 0.8rem;
+    background-size: 24px 30px, 24px 30px, 8px 30px;
+    background-position: left top, right top, 24px top; margin: 0 7px 9px 0;
+  }
+}

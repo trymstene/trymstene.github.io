@@ -119,96 +119,8 @@ const TIERS = [
        three lines. It is a SUB-PART of the wall, so it reads like one: the
        between-sections gap made it look like a fourth destination. */
     .sw__cols { display: grid; gap: var(--gap-sub); grid-template-columns: 1fr; }
-    /* 🪵 THE WALL. The plaques were floating on the page background, so the
-       section was a list of chips rather than a place you get your name put
-       up. Boards (tools/build-wall.py) at x3, a batten top and bottom with
-       screws through it, and every rank on its own shelf.
-       ⚠️ min-height on purpose: with one supporter the wall still has to look
-       like a wall worth being on. The emptiness is room, not a shortfall. */
-    .swwall {
-      position: relative; margin: 0; padding: 48px 40px 51px; min-height: 260px;
-      background-image: url(/assets/supporters/wall-board.png);
-      background-repeat: repeat;
-      background-size: 288px 144px;
-      image-rendering: pixelated;
-      /* ⚠️ IT HAD NO EDGE. A wall is an object; this one just stopped. The
-         3px ink border and hard black shadow are the page's own language —
-         the same the tier cards and every button already wear. */
-      border: 3px solid #17120c;
-      box-shadow: inset 0 0 52px rgba(0, 0, 0, 0.42), 8px 8px 0 #000;
-    }
-    /* the battens. The screws live IN them, which is what they would actually
-       be fastening, and it keeps them off the rank labels.
-       ⚠️ A 4-VALUE POSITION NEEDS A KEYWORD ON BOTH AXES: `12px bottom 30px`
-       is invalid, and ONE invalid entry drops the WHOLE list, silently. */
-    .swwall::before, .swwall::after {
-      content: ''; position: absolute; left: 0; right: 0; height: 27px;
-      background-image:
-        url(/assets/supporters/wall-screw.png), url(/assets/supporters/wall-screw.png),
-        url(/assets/supporters/wall-rail.png);
-      background-position: left 14px top 3px, right 14px top 3px, 0 0;
-      background-repeat: no-repeat, no-repeat, repeat-x;
-      background-size: 24px 24px, 24px 24px, 288px 27px;
-      image-rendering: pixelated;
-    }
-    .swwall::before { top: 0; }
-    .swwall::after { bottom: 0; transform: scaleY(-1); }
-
-    /* 🪚 EVERY RANK GETS A SHELF. This is what was actually missing: each row
-       of plaques ended at ~45% of the width and the rest was structureless
-       void — worse with ten names than with one. A groove cut across the FULL
-       width turns that emptiness into room on the rail. 2px dark over 2px
-       light is a cut in timber; deliberately quieter than the battens so it
-       does not become boxes inside boxes. */
-    .swwall .bb-plaqg {
-      padding-bottom: 18px; margin-bottom: 20px;
-      border-bottom: 2px solid rgba(0, 0, 0, 0.6);
-      box-shadow: 0 2px 0 rgba(196, 172, 128, 0.16);
-    }
-    .swwall .bb-plaqg:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; box-shadow: none; }
-
-    /* ⚠️ AT x2 THE PLAQUES READ AS FILTER CHIPS ON A TEXTURE. At x3 they are
-       objects somebody mounted. Whole step, so the pixels stay square. */
-    .swwall .bb-plaq {
-      height: 45px; line-height: 45px; padding: 0 30px; margin: 0 11px 12px 0;
-      font-size: 0.95rem;
-      background-size: 36px 45px, 36px 45px, 12px 45px;
-      background-position: left top, right top, 36px top;
-      /* ⚠️ WITH EVERY PLAQUE LIT, NOTHING IS LIT. The ambient per-tier glow
-         comes off on the wall and is given back only to the visitor's own —
-         which is the one emotional thing the wall exists to do. The cast
-         shadow is a drop-shadow so it follows the torn slat and the rounded
-         brass, not the box they sit in. */
-      --pg: transparent;
-      filter: drop-shadow(3px 4px 0 rgba(0, 0, 0, 0.62));
-      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .swwall .bb-plaq--me {
-      --pg: #fff6d8;
-      filter: drop-shadow(0 0 7px var(--pg)) drop-shadow(3px 4px 0 rgba(0, 0, 0, 0.62));
-    }
-    /* the rank names are stencilled into the timber, not printed on it — a
-       web-blue label on dark wood was the least in-world thing on the board.
-       They stay, because they are the only place the wall names the tiers. */
-    .swwall .bb-plaqg__k {
-      color: #b9a37e !important; opacity: 1; font-size: 0.64rem;
-      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
-    }
-    .swwall .sw__empty { margin: 0; color: #cbbb9a; opacity: 0.9; }
-
     /* the wall is the hero, so it is the widest thing on the page */
     @media (min-width: 1180px) { #wall { margin-inline: -60px; } }
-    @media (max-width: 780px) {
-      /* full-bleed: the wood runs off both edges, which is what makes it read
-         as A WALL rather than a noticeboard sitting on a page */
-      .swwall {
-        margin-inline: -1.1rem; padding: 40px 1.1rem 42px; min-height: 200px;
-        border-left: 0; border-right: 0;
-      }
-      .swwall .bb-plaq { height: 30px; line-height: 30px; padding: 0 22px; font-size: 0.8rem;
-        background-size: 24px 30px, 24px 30px, 8px 30px;
-        background-position: left top, right top, 24px top; margin: 0 7px 9px 0; }
-    }
 
     .sw__feedh {
       margin: 0 0 0.45rem; font-size: 0.6rem; font-weight: 800;
@@ -358,9 +270,9 @@ const TIERS = [
       {/* the same plaques that hang on the park's board — one drawn layer, two
           surfaces, so the wall you walk past in the world is the wall here */}
       <section class="sw__sec" id="wall">
-        <div class="swwall">
+        <div class="bb-wall">
           <div id="swWall"></div>
-          <p class="sw__empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
+          <p class="bb-empty" id="swWallEmpty">Nobody is pinned up here yet. The first plaque could be yours.</p>
         </div>
       </section>
 
