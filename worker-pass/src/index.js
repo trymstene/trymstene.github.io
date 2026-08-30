@@ -1046,6 +1046,26 @@ async function mintToken(rec) {
   rec.tokens = Object.fromEntries(keys);
   return token;
 }
+// 🔒 A GRANT IS SERVER-AUTHORED, ALWAYS. Every blob arriving from a browser
+// goes through here first.
+//
+// ⚠️ WHY: `member` used to ride the sync blob in BOTH directions, and mergeBlob
+// only checked its SHAPE — a known tier and a finite `until` — never where it
+// came from. So `localStorage.setItem('bb-member', {t:'sup-t3', until: …})`
+// followed by one push wrote a Legend grant onto the server record, which then
+// minted a real signed member token and put the gold hat on that banana in
+// front of everybody in the rave. Cosmetic, and it was logged as an accepted
+// risk back when no payment rail existed. One exists now.
+//
+// The grant only ever comes from deliverGrant() or /mail/use, both of which
+// write the home record directly and do not pass through here. The client's
+// ONLY legitimate move is to adopt what the server sends down — so stripping it
+// on the way up costs a real member nothing.
+function clientBlob(blob) {
+  if (!blob || typeof blob !== 'object' || !('member' in blob)) return blob;
+  const { member, ...rest } = blob;
+  return rest;
+}
 function blobOk(blob) {
   return blob && typeof blob === 'object' && JSON.stringify(blob).length <= MAX_BLOB;
 }
@@ -1073,7 +1093,7 @@ async function register(request, env) {
   if (existing && existing.link) {
     const R = await resolve(env, credId);
     if (R) {
-      R.home.blob = mergeBlob(R.home.blob, blob || null);
+      R.home.blob = mergeBlob(R.home.blob, clientBlob(blob) || null);
       const tk = await mintToken(R.own);
       await saveKey(env, R.ownKey, R.own);
       await saveKey(env, R.homeKey, R.home);
@@ -1081,7 +1101,7 @@ async function register(request, env) {
     }
   }
   const rec = existing || { pk, alg, tokens: {}, blob: null };
-  rec.blob = mergeBlob(rec.blob, blob || null);
+  rec.blob = mergeBlob(rec.blob, clientBlob(blob) || null);
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
   return json({ token }, 200, cors(env, request));
@@ -1124,7 +1144,7 @@ async function assert_(request, env) {
   if (!ok) return json({ error: 'bad signature' }, 403, cors(env, request));
 
   // …but the BLOB lives on the home record, which may be another device's
-  if (blob && blobOk(blob)) R.home.blob = mergeBlob(R.home.blob, blob);
+  if (blob && blobOk(blob)) R.home.blob = mergeBlob(R.home.blob, clientBlob(blob));
   const token = await mintToken(rec);
   await saveKey(env, R.ownKey, rec);
   if (R.homeKey !== R.ownKey) await saveKey(env, R.homeKey, R.home);
@@ -1565,7 +1585,7 @@ async function push(request, env) {
   const R = await tokenRec(env, b.credId, b.token);
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
   if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
-  R.home.blob = mergeBlob(R.home.blob, b.blob);
+  R.home.blob = mergeBlob(R.home.blob, clientBlob(b.blob));
   await saveKey(env, R.homeKey, R.home);
   return json({ ok: true, gid: await worldGid(env, R.homeKey),
     memberToken: await mintMemberToken(env, (R.home.blob || {}).member) }, 200, cors(env, request));

@@ -118,5 +118,48 @@ const ok = (c, label, extra) => {
     'nor at a later date — the date is inside what was signed');
 }
 
+// 5. 🔒 A GRANT IS SERVER-AUTHORED. A browser can put anything in localStorage;
+// what it must never do is have that come back as a signed member token.
+{
+  await seed(Date.now() + 10 * 86400000);          // a real sup-t2 membership
+  const key = await sha(CRED);
+
+  const push = async (blob) => worker.fetch(new Request('https://x/push', {
+    method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credId: CRED, token: TOKEN, blob }),
+  }), env);
+  const stored = async () => JSON.parse(env.PASSES._m.get(`pass/${key}.json`)).blob.member;
+
+  // the whole exploit, in one line of somebody's console
+  await push({ member: { t: 'sup-t3', until: Date.now() + 400 * 86400000 } });
+  const after = await stored();
+  ok(after.t === 'sup-t2', 'a pushed Legend grant does not overwrite a real Patron one', after);
+  ok(after.until < Date.now() + 30 * 86400000, 'nor does it extend the date', after);
+  const mt = await mintedToken();
+  ok(await raveRankOf(mt) === 2, 'and the rave still sees the tier that was actually paid for');
+
+  // …and somebody with no membership at all cannot mint one
+  const key2 = await sha('cred-nobody');
+  await env.PASSES.put(`pass/${key2}.json`, JSON.stringify({
+    pk: 'x', alg: -7, tokens: { [await sha('tok-nobody')]: { t: Date.now() } }, blob: { stats: {} },
+  }));
+  await worker.fetch(new Request('https://x/push', {
+    method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credId: 'cred-nobody', token: 'tok-nobody',
+      blob: { member: { t: 'sup-t3', until: Date.now() + 400 * 86400000 } } }),
+  }), env);
+  const rec2 = JSON.parse(env.PASSES._m.get(`pass/${key2}.json`));
+  ok(!(rec2.blob && rec2.blob.member), 'a non-member cannot mint themselves a hat', rec2.blob);
+
+  const res2 = await worker.fetch(new Request(
+    'https://x/pull?credId=cred-nobody&token=tok-nobody', { headers: { Origin: ORIGIN } }), env);
+  ok(!(await res2.json()).memberToken, 'and gets no token to present to the rave');
+
+  // ⚠️ the rest of the blob still syncs — this strips ONE key, not the payload
+  await push({ stats: { coins_earned: 7 }, member: { t: 'sup-t3', until: Date.now() + 9e9 } });
+  const blob = JSON.parse(env.PASSES._m.get(`pass/${key}.json`)).blob;
+  ok(blob.stats && blob.stats.coins_earned === 7, 'everything else in the blob still syncs', blob.stats);
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
