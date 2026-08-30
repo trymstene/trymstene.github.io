@@ -2040,6 +2040,7 @@ function bayStrip(p) {
 // 3 + floor(stars / 2). Price is client-side display/spend only (coins are
 // client-authoritative), the server never charges it.
 const GARDEN_SEEDS = {
+  radish: { days: 1, stars: 1, price: 5 },   // 🧬 ready the next day — the on-ramp
   daisy: { days: 2, stars: 1, price: 10 },
   sunflower: { days: 4, stars: 2, price: 25 },
   tulip: { days: 5, stars: 3, price: 60 },

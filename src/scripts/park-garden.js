@@ -44,6 +44,14 @@ const STAKE_SVG = SVG('7 12',
 // stats, /dev-wearables desk); crops pay rep (stars × 8) — crop wearables
 // wait on a Trym batch review.
 const SEEDS = [
+  // 🧬 THE ONE-DAY CROP (30 Aug). 95% of everyone who plants comes back and
+  // waters — and 14% ever harvest, because the fastest crop took THREE days
+  // and the median park visit is under two minutes. The radish closes the
+  // loop TOMORROW: plant it, water it once, pick it. First in the sheet and
+  // the cheapest thing in it, so it is what a new gardener buys.
+  // (🥬 and not a radish: Unicode has no radish, and the pack's sprite is
+  // mostly leaves with a pink root under them. Deliberate, not a typo.)
+  { id: 'radish', emoji: '🥬', name: 'radish', stars: 1, price: 5, days: 1, crop: 1 },
   { id: 'daisy', emoji: '🌼', name: 'daisy', stars: 1, price: 10, days: 2, wearable: 'daisypin', wearLabel: 'daisy pin' },
   // sunflower wearable TBD (round 4: the crown draft was dropped) — pays rep meanwhile
   { id: 'sunflower', emoji: '🌻', name: 'sunflower', stars: 2, price: 25, days: 4 },
@@ -87,6 +95,8 @@ const STAGE_ART = {
   wheat3: ['c-wheat-3.png', 24, 26], wheat4: ['c-wheat-4.png', 31, 38],
   strawberry1: ['c-strawberry-1.png', 22, 15], strawberry2: ['c-strawberry-2.png', 26, 17],
   strawberry3: ['c-strawberry-3.png', 26, 22], strawberry4: ['c-strawberry-4.png', 28, 35],
+  radish1: ['c-radish-1.png', 19, 19], radish2: ['c-radish-2.png', 24, 17],
+  radish3: ['c-radish-3.png', 24, 22], radish4: ['c-radish-4.png', 28, 33],
   carrot1: ['c-carrot-1.png', 26, 24], carrot2: ['c-carrot-2.png', 31, 26],
   carrot3: ['c-carrot-3.png', 31, 28], carrot4: ['c-carrot-4.png', 35, 38],
   corn1: ['c-corn-1.png', 22, 22], corn2: ['c-corn-2.png', 28, 31],
@@ -1485,6 +1495,11 @@ export function initGarden(ctx) {
     link: '/park/',
   });
   passNoticeAdd({
+    id: 'radish-3008', icon: '🥬',
+    text: '<b>The radish is in the seed sheet.</b> Five coins, and it is ready the <b>next day</b> — plant it, water it once, pick it. The fastest thing in the garden.',
+    link: '/park/',
+  });
+  passNoticeAdd({
     id: 'seed-drop-2808', icon: '🍓',
     text: '<b>New seeds at the park!</b> Carrot, strawberry, sweetcorn and rare watermelon just landed in the seed sheet — and the strawberry <b>regrows</b>: pick it and the bush fruits again, three harvests per plant.',
     link: '/park/',
@@ -1521,7 +1536,7 @@ export function initGarden(ctx) {
           + ' data-seed="' + sd.id + '"' + (locked || (!free && bal < cost) ? ' disabled' : '') + '>'
           + '<i>' + sd.emoji + '</i>'
           + '<span class="pk-seedrow__txt"><b>' + sd.name + (sd.rare ? ' <em>rare</em>' : '') + '</b>'
-          + '<small>' + starStr(sd.stars) + ' · ' + sd.days + ' days → '
+          + '<small>' + starStr(sd.stars) + ' · ' + sd.days + (sd.days === 1 ? ' day → ' : ' days → ')
           + (locked ? '🔒 gardener lvl ' + lvlFor2(sd)
             : sd.wearable ? 'the ' + sd.wearLabel
               : '+' + (sd.stars * 8) + ' rep' + (sd.regrow ? ' · fruits ' + sd.regrow + '×' : '')) + '</small></span>'
@@ -1559,7 +1574,10 @@ export function initGarden(ctx) {
     }
     applyGarden(res);
     float(PLOTS[i][0], PLOTS[i][1] - 6, '🌱');
-    toast(sd.emoji + ' ' + sd.name + ' planted — day 1 of ' + sd.days);
+    // 🧬 a ONE-day crop has no "day 1 of 1" to report — that reads as finished.
+    // Say the thing the player needs to do next instead.
+    toast(sd.emoji + ' ' + sd.name + ' planted — '
+      + (sd.days === 1 ? 'water it tomorrow and pick it' : 'day 1 of ' + sd.days));
     // 📊 held + paid ride the event: without them the price curve is
     // invisible in GA4 and the next tuning round is guesswork
     if (!plantTracked) {

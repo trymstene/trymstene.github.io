@@ -1206,6 +1206,8 @@ if os.path.isdir(FARM):
                            # the 28 Aug variety drop (Kiwi plays the garden daily)
                            ('strawberry', 'Strawberry_Growth_Stages_48x48.png'),
                            ('carrot', 'Carrot_Growth_Stages_48x48.png'),
+                           # 🧬 the ONE-DAY crop (30 Aug) — see SEEDS in park-garden.js
+                           ('radish', 'Radish_Growth_Stages_48x48.png'),
                            ('corn', 'Corn_Growth_Stages_48x48.png'),
                            ('watermelon', 'Watermelon_Growth_Stages_48x48.png'),
                            # 🌵 the EXOTIC tier (gardener lvl 5, 28 Aug)

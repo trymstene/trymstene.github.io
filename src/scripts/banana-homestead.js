@@ -65,6 +65,7 @@ const STRUCT_LADDER = [
 ];
 const STYLE_DEFAULTS = { 1: 'tent1', 2: 'mobm3', 3: 'country' };
 const CROPS = [
+  { id: 'radish', name: 'Radish', seed: 3 },
   { id: 'tomato', name: 'Tomato', seed: 3 },
   { id: 'pumpkin', name: 'Pumpkin', seed: 3 },
   { id: 'wheat', name: 'Wheat', seed: 3 },
@@ -81,7 +82,7 @@ const CROPS = [
   { id: 'sunflower', name: 'Sunflower', seed: 3 },
   { id: 'tulip', name: 'Midnight tulip', seed: 3 },
 ];
-const CROP_EMO = { tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵', daisy: '🌼', sunflower: '🌻', tulip: '🌷' };
+const CROP_EMO = { radish: '🥬', tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵', daisy: '🌼', sunflower: '🌻', tulip: '🌷' };
 // 🍳 THE SPINE (M2): crops → the pantry → dishes with WORLD-WIDE effects.
 // The multiplier enforces itself inside passStat — one choke point, every area.
 const DISHES = [
