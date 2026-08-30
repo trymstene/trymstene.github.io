@@ -106,7 +106,7 @@ One hard rule carried from the start: if the chicken slice doesn't prove people 
 
 ## 10. OPEN QUESTIONS FOR TRYM
 
-1. **The golden signal.** The fed-today marker and the earned permanent golden animal can't both be the golden sprite — a one-tap bonus would counterfeit a two-week achievement (same logic as protecting the paid top hat). **Recommendation:** fed-today = a shimmer effect; the golden *sprite* is reserved for the permanent Golden Flock graduation. Yes/no?
+1. **The golden signal.** ✅ DECIDED (Trym, 30 Aug): **the fed signal is the park's mood bubble, reused exactly.** The park's language is hearts-only (his own rule: no emoji faces in-world): ❤️ bubble = fed, 💔 bubble = hungry today, tap the animal to reveal its mood. No third in-between icon — the park's own mid band shows nothing, and that answers the petted-but-not-fed case: petting always pays the heart float and bond, but the ❤️ mood needs food in the pen. 💔 never means suffering — the guaranteed yield floor never drops. No shimmer needed at all, so the golden sprite stays reserved for the earned Golden Flock. (Park source: pk-mood bubble, MOOD_EMO ['💔','','❤️'], park-critters.js.)
 
 2. **Where does knitting live?** Inside the forge (fits the "forge makes wearables" story, but the forge is nearly out of room) or as fixed recipes on the farm's own tailor table (drawn in the pack, cheaper, but less forge identity)? ✅ DECIDED (Trym, 30 Aug): **the tailor table, on the homestead.** His reasoning is the doctrine: sending a player to the forge mid-loop means jumping out of the game.
 
