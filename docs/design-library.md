@@ -126,6 +126,34 @@ A page-wide `a { color: … }` will repaint a link you styled somewhere else.
 Anything drawn on its own background — a plaque, a token, a tile — must restate
 its own ink when it is also a link.
 
+**If you set `background`, set `color` in the same rule.** Not "usually" — every
+time. The background is local and the ink travels, so a rule that paints only
+half the pair is a bet that whatever is inherited happens to be readable on the
+colour you just chose. That bet has now lost twice in one file:
+
+```css
+/* the homestead's build tools, 30 Aug — four of six labels were invisible */
+.hs-planbar button { background: #fffdf5; }   /* ink inherited: #fffdf5 */
+```
+
+Cream on cream is contrast **1.0**. The only tool anyone could read was `done`,
+for the single reason that it happened to declare `color`. The sibling rule
+`.hs-act` had the same fault and looked fine only because every one of those
+buttons is an emoji, and emoji ignore `color`.
+
+Two things this teaches beyond the fix:
+
+- **Emoji hide the bug.** A control labelled with a glyph will look correct
+  while its text is unreadable. Check labels, not appearance.
+- **A pressed/active state that declares its ink is not proof the base does.**
+  Both offenders here had a correct `[aria-pressed="true"]`.
+
+To sweep an area, measure rather than read: walk every visible control, resolve
+the painted background by climbing ancestors through transparency, and flag
+anything under a 3:1 ratio. Ignore rules whose background is a `gradient` or an
+image — the computed `background-color` lies about those, and both false
+positives in the 30 Aug sweep were exactly that.
+
 ## 10. A filled variant needs its own states
 
 A `:hover` written for the outlined version of a component will not serve the
