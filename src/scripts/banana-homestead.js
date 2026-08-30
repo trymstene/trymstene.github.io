@@ -856,30 +856,6 @@ function init(visitDoc, visitMiss) {
     const col = !w2 ? 'l' : (e2 ? (row === 'm' ? 'c' : 'm') : 'r');
     return row + col;
   }
-  // 🌱 WHERE SEEDS COME FROM, SAID ON THE BED ITSELF.
-  // The only place that answer existed was a toast AFTER tapping an empty bed —
-  // so a player who found the homestead before the park had nothing to pull on.
-  // ⚠️ It shows only when it is the answer to a question you actually have:
-  // your own yard, ground you have already tilled, and an empty pouch. The
-  // moment you own one seed it disappears for good, so it teaches once and
-  // never nags. Tapping it goes where the seeds are.
-  let seedTipEl = null;
-  function seedHint() {
-    const bare = visiting ? null : state.soil.find((c) => !c.crop);
-    const need = bare && !CROPS.some((c) => seedCount(c.id) > 0);
-    if (!need) { if (seedTipEl) { seedTipEl.remove(); seedTipEl = null; } return; }
-    if (!seedTipEl) {
-      seedTipEl = document.createElement('a');
-      seedTipEl.className = 'hs-chip hs-chip--hint';
-      seedTipEl.href = '/park/';
-      seedTipEl.textContent = '🌱 Harvest in the park for seeds →';
-      seedTipEl.addEventListener('click', () => track('homestead_seed_hint'));
-      world.appendChild(seedTipEl);
-    }
-    seedTipEl.style.left = pct(cellCx(bare), W);
-    seedTipEl.style.top = pct(cellBase(bare) - 18, H);
-    depth(seedTipEl, cellBase(bare));
-  }
   const soilEls = new Map();
   function refreshSoil() {
     const seen = new Set();
@@ -922,7 +898,6 @@ function init(visitDoc, visitMiss) {
     soilEls.forEach((e, key) => {
       if (!seen.has(key)) { e.soil.remove(); if (e.crop) e.crop.remove(); soilEls.delete(key); }
     });
-    seedHint();
   }
   refreshSoil();
 
@@ -2584,7 +2559,11 @@ function init(visitDoc, visitMiss) {
   // seeds come from instead.
   function openSeedPanel(cell, at) {
     const pouch = CROPS.filter((c) => seedCount(c.id) > 0);
-    if (!pouch.length) { toast('no seeds in the pouch — harvest crops in the park garden 🌱', 3600); return; }
+    // 🌱 THE ONE PLACE THIS IS SAID. Tapping bare soil is the moment somebody
+    // asks where seeds come from, so the answer lives here and nowhere else —
+    // an always-on label on the bed answers it before anyone has wondered, and
+    // it does not link out: you came to the homestead to be here.
+    if (!pouch.length) { toast('no seeds yet — harvest a crop in the park 🌱', 3600); return; }
     const note = document.getElementById('hsSeedNote');
     note.textContent = pouch.length === 1
       ? 'one kind in the pouch — plant it and it grows on watered days.'
