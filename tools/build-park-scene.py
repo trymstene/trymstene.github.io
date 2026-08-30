@@ -829,7 +829,10 @@ if HAVE_PACK:
         try_place([name], px_, py_, solid=ROCK_BOX, scale=PROP * 0.9)
     # a couple of worn dirt patches breaking the lawn up — ⚠️ on OPEN LAWN
     # only (round 4 smeared one across the plaza's rim)
-    for dcx, dcy, drx, dry_ in ((980, 330, 64, 36), (2380, 780, 70, 40), (520, 1010, 60, 34)):
+    # ⚠️ (980, 330) REMOVED: props landed on it (mushrooms and a dug-in tool
+    # right on its rim) and the two read as one muddled object rather than a
+    # worn patch with things near it. The lawn there is better plain.
+    for dcx, dcy, drx, dry_ in ((2380, 780, 70, 40), (520, 1010, 60, 34)):
         for y in range(dcy - dry_, dcy + dry_):
             for x in range(dcx - drx, dcx + drx):
                 dd = ((x - dcx) / float(drx)) ** 2 + ((y - dcy) / float(dry_)) ** 2
