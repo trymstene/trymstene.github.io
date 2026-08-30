@@ -108,10 +108,10 @@ One hard rule carried from the start: if the chicken slice doesn't prove people 
 
 1. **The golden signal.** The fed-today marker and the earned permanent golden animal can't both be the golden sprite — a one-tap bonus would counterfeit a two-week achievement (same logic as protecting the paid top hat). **Recommendation:** fed-today = a shimmer effect; the golden *sprite* is reserved for the permanent Golden Flock graduation. Yes/no?
 
-2. **Where does knitting live?** Inside the forge (fits the "forge makes wearables" story, but the forge is nearly out of room) or as fixed recipes on the farm's own tailor table (drawn in the pack, cheaper, but less forge identity)? **Recommendation:** the tailor table on the homestead — ship the road sooner, move it to the forge later if you want.
+2. **Where does knitting live?** Inside the forge (fits the "forge makes wearables" story, but the forge is nearly out of room) or as fixed recipes on the farm's own tailor table (drawn in the pack, cheaper, but less forge identity)? ✅ DECIDED (Trym, 30 Aug): **the tailor table, on the homestead.** His reasoning is the doctrine: sending a player to the forge mid-loop means jumping out of the game.
 
 3. **The rooster's insurance.** Extending stored yield from two days to three is a real gift to lapsed players, but it's your call whether absence coverage should be buyable at all. **Recommendation:** yes — it's cheap, characterful, and the kind of kindness this world is known for.
 
-4. **Rumors about the pit.** Should the morning news occasionally whisper about the boarded-up house before The Cut exists? **Recommendation:** not one line until The Cut is actually live — then rare seasoning, never a weekly drumbeat. A promise on a schedule becomes a lie the moment the schedule slips.
+4. **Rumors about the pit.** Should the morning news occasionally whisper about the boarded-up house before The Cut exists? ✅ DECIDED (Trym, 30 Aug): **total silence.** Not one line until the Cut actually exists for players — internal plans stay internal.
 
 5. **Naming twins.** ✅ DECIDED (Trym, 30 Aug): **no duplicate names on a farm, full stop.** Stricter than the per-species version and better for it — every news line ("Gunnar waited by the gate") is unambiguous even across species. The name picker simply refuses a name already in use and asks for another.
