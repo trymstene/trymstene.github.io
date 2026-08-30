@@ -115,3 +115,26 @@ One hard rule carried from the start: if the chicken slice doesn't prove people 
 4. **Rumors about the pit.** Should the morning news occasionally whisper about the boarded-up house before The Cut exists? ✅ DECIDED (Trym, 30 Aug): **total silence.** Not one line until the Cut actually exists for players — internal plans stay internal.
 
 5. **Naming twins.** ✅ DECIDED (Trym, 30 Aug): **no duplicate names on a farm, full stop.** Stricter than the per-species version and better for it — every news line ("Gunnar waited by the gate") is unambiguous even across species. The name picker simply refuses a name already in use and asks for another.
+
+## 11. WEATHER (added by Trym, 30 Aug)
+
+**The homestead gets the park's weather — the same events, on the same world
+clock.** One sky over Banana World: when it rains at the park it rains at your
+farm, and the park's storm is your storm, at the same minute.
+
+**But the storm never destroys anything here.** At the park a storm can ruin
+beds. At the homestead, destruction is off the table — the private yard never
+punishes (and it never has: nothing you made is ever touched). Instead:
+
+- **Rain** waters every bed for free (already planned — the sky does your one
+  chore, and the morning news says so).
+- **Storm** = the animals **cluster together and are unhappy**: they bunch up,
+  huddled — near the coop or barn if you have one — with 💔 bubbles in the
+  just-decided mood grammar. No damage, no lost yield. It is weather as
+  THEATER: your farm visibly reacts to the world, and it looks like something
+  happened, because something did.
+- Morning after a storm: the news tells it — the flock weathered it together.
+
+One natural extension, suggested not decided: a hug during or right after a
+storm could count double for bond — comforting a frightened animal is the most
+character-building moment a farm has. Trym's call whether that ships.
