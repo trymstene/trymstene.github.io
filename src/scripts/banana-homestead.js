@@ -1025,9 +1025,21 @@ function init(visitDoc, visitMiss) {
     if (REDUCED || !BIRDS.length) return () => {};
     let nextAt = 6000 + Math.random() * 9000;
     const birdCap = () => Math.min(3, 1 + state.items.filter((i) => i.id.indexOf('birdhouse') === 0).length);
+    // ⚠️ AN EMPTY YARD USED TO GET NO BIRDS AT ALL. The pool was state.items
+    // alone, so `if (!pool.length) return null` bailed for every player who had
+    // not yet bought decor — which is 641 of the 644 who have ever opened this
+    // place. The one ambient thing the homestead owns was gated behind the shop
+    // it is supposed to sell you on. Anything standing in the yard is a perch:
+    // your roof, the mailbox, the sign, a fence post, a dug bed.
     function landSpot() {
       const houses = state.items.filter((i) => i.id.indexOf('birdhouse') === 0);
-      const pool = (houses.length && Math.random() < 0.6) ? houses : state.items;
+      const perches = state.items.concat(
+        state.claimedAt && state.stage >= 1 ? [{ x: state.home.x, y: state.home.y }] : [],
+        [{ x: MAILBOX.x, y: MAILBOX.y }, { x: SIGN.x, y: SIGN.y }],
+        // ⚠️ fence and soil are stored as GRID CELLS { i, j }, not world x/y
+        (state.fence || []).map((f) => ({ x: cellCx(f), y: cellBase(f) })),
+        (state.soil || []).map((c) => ({ x: cellCx(c), y: cellBase(c) })));
+      const pool = (houses.length && Math.random() < 0.6) ? houses : perches;
       if (!pool.length) return null;
       const it = pool[(Math.random() * pool.length) | 0];
       const P = plotNow();
