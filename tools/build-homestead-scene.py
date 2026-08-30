@@ -57,7 +57,7 @@ ROAD_HW = 44
 # only ever ADDS land, so nothing placed can be orphaned by an upgrade.
 # tier 3 runs EAST past the shared corner too — the top rung owns the WHOLE
 # clearing (Trym: "i cant move my level 3 house here"); tiers 1-2 stay nested
-FENCE_TIERS = {1: (17, 9, 27, 16), 2: (12, 7, 27, 16), 3: (7, 5, 34, 16)}
+FENCE_TIERS = {1: (17, 9, 27, 16), 2: (12, 7, 27, 16), 3: (2, 2, 34, 16)}
 FX0, FY0, FX1, FY1 = FENCE_TIERS[3]        # the outer property line
 GATE_COLS = (23, 24)             # SOUTH-side gap → x 1104..1200 (walk up + in)
 GATE_X = (GATE_COLS[0] + 1) * T  # the gap's centre ≈ 1152
