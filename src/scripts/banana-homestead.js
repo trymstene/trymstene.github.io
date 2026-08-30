@@ -16,7 +16,7 @@ import { initSteer } from './world-steer.js';
 import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
-import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
+import { WORLD, BOUND, ROAD, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 
@@ -776,8 +776,6 @@ function init(visitDoc, visitMiss) {
     if (!I) return false;
     const B = roomBounds(t);
     if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
-    if (I.kitchen && x + d.w / 2 > I.kitchen[0] - 8 && x - d.w / 2 < I.kitchen[2] + 8
-      && y > I.kitchen[1] - 20 && y - d.h < I.kitchen[3] + 8) return false;
     // the DOOR CORRIDOR only — the gap's own width (+4), never the floor
     // beside it: standing a lamp NEXT to the door is what real rooms do
     if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 4 && x - d.w / 2 < I.exit[2] + 4 && y > I.exit[1] - (t === 1 ? 36 : 90)) return false;
@@ -1224,7 +1222,13 @@ function init(visitDoc, visitMiss) {
   });
   document.getElementById('hsBag').addEventListener('click', () => {
     if (visiting) { toast('that’s ' + state.name + '’s number, not yours'); return; }
-    if (!state.claimedAt) { toast('walk in through the gate first — this clearing can be yours'); return; }
+    // ⚠️ THE GATE THIS ASKED FOR DOES NOT EXIST. This refused to open until
+    // `claimedAt`, and `claimedAt` is set in exactly one place — offerClaim(),
+    // whose only caller runs AFTER the 50-coin tent is placed. The tent is
+    // bought in this shop. So the visible control turned every new player away
+    // with an instruction they could not follow (GATE was imported and never
+    // referenced), and the only working door was the tent ghost 264px off the
+    // right edge of a 375px phone. 644 arrivals, 10 claims.
     openShop('home');   // 🍌 the phone opens on its home screen
   });
   initTravel({ here: 'homestead', mount: document.querySelector('.hs-actions'), btnClass: 'hs-act hs-act--icon', track });
@@ -1409,7 +1413,9 @@ function init(visitDoc, visitMiss) {
     if (visiting) return;
     try {
       if (localStorage.getItem('hs-roadcoins-v1')) return;
-      localStorage.setItem('hs-roadcoins-v1', '1');
+      // ⚠️ THE FLAG IS WRITTEN WHEN THE LAST COIN IS PICKED UP, NOT HERE. It
+      // used to be set at spawn, so one reload, one back-nav or one bounce
+      // spent the area's entire free faucet without paying out a single coin.
     } catch (e) { return; }
     // ⚠️ the art is the stand's 44px coin (coin-spin strip, 6 frames, 2.5KB)
     // shown at 22 CSS px — EXACTLY half, so 2× phone screens render it
@@ -1448,6 +1454,7 @@ function init(visitDoc, visitMiss) {
       float(c.x, c.y - 22, '<img src="/assets/banana-stand/coin.png" width="14" height="14" style="vertical-align:-2px"> +2');
       refreshHud();
       if (!roadCoins.length) {
+        try { localStorage.setItem('hs-roadcoins-v1', '1'); } catch (e) {}
         toast('<img class="hs-toastico" src="/assets/banana-stand/coin.png" style="image-rendering:auto" alt=""> first coins in the pocket — playing pays, anywhere in the world', 3600);
         track('roadcoins_done');   // the first-ten-seconds hook landed
       }
@@ -1520,11 +1527,21 @@ function init(visitDoc, visitMiss) {
   function renderCook() {
     const pan = document.getElementById('hsPantry');
     pan.replaceChildren();
-    CROPS.forEach((c) => {
+    // ⚠️ ONLY WHAT YOU HAVE. This printed a chip per crop in the game — 14 of
+    // them now, almost all reading × 0 — which pushed the dishes themselves off
+    // the bottom of a phone in a card that had no scroller.
+    const held = CROPS.filter((c) => (state.pantry[c.id] || 0) > 0);
+    held.forEach((c) => {
       const b = document.createElement('span');
-      b.textContent = CROP_EMO[c.id] + ' × ' + (state.pantry[c.id] || 0);
+      b.textContent = CROP_EMO[c.id] + ' × ' + state.pantry[c.id];
       pan.appendChild(b);
     });
+    if (!held.length) {
+      const b = document.createElement('span');
+      b.className = 'hs-pantryempty';
+      b.textContent = 'the pantry is empty — harvest a bed to fill it';
+      pan.appendChild(b);
+    }
     const buff = buffGet();
     const note = document.getElementById('hsCookNote');
     note.textContent = buff
@@ -2691,13 +2708,12 @@ function init(visitDoc, visitMiss) {
         }
         // no piece under the tap — fall through, walking still works
       }
-      const I = INTERIORS[inside];
-      if (I.kitchen && wx > I.kitchen[0] && wx < I.kitchen[2] && wy > I.kitchen[1] && wy < I.kitchen[3]) {
-        if (Math.hypot(pos.x - wx, pos.y - wy) < 170) {
-          if (visiting) { toast('👩‍🍳 ' + state.name + '’s kitchen — look, don’t cook'); return; }
-          openCook(); return;
-        }
-      }
+      // ⚠️ THE KITCHEN ZONE WAS NEVER BAKED. Both guards here read I.kitchen,
+      // and INTERIORS (homestead-geo.js, GENERATED) carries only
+      // img/box/spawn/exit/cols — grep -c kitchen returns 0. So the designed
+      // door into openCook() could never open, and the stove chip was the only
+      // way in: tent 50 + cabin 300 + stove 42 + a 45-min van. Nobody has ever
+      // cooked. Removed rather than left looking live; the fire replaces it.
       const L2 = (state.inItems || {})[inside] || [];
       for (let k = L2.length - 1; k >= 0; k--) {
         const it = L2[k];

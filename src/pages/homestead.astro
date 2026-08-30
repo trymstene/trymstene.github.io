@@ -610,14 +610,25 @@ const description = 'A clearing west of the park with your name on the sign: cla
     /* 🍳 the kitchen */
     .hs-pantry { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.55rem; }
     .hs-pantry span {
-      border: 2px solid #000; background: #fff; border-radius: 999px;
+      border: 2px solid #000; background: #fff; color: #17120c; border-radius: 999px;
       padding: 0.2rem 0.55rem; font-size: 0.8rem; font-weight: 800;
     }
+    .hs-pantryempty { border-style: dashed !important; opacity: 0.75; font-weight: 700 !important; }
     #hsCook .hs-note { margin: 0 0 0.7rem; }
-    .hs-cooklist { display: grid; gap: 0.5rem; }
+    /* ⚠️ THE ONE LIST IN THIS FILE THAT HAD NO SCROLLER. Measured at 375×667:
+       an 834px card in a 667px viewport, 183px clipped, scrollableBy 0 — and
+       `body.hs-lock { overflow: hidden }` kills the page scroll behind it, so
+       the last two dishes were simply unreachable. Every sibling list already
+       had one (.hs-seedlist, .hs-guestlist); the kitchen was the exception.
+       It cleared Trym's own 393×852 phone by 2px, which is why it was never
+       seen. */
+    .hs-cooklist {
+      display: grid; gap: 0.5rem;
+      max-height: min(46vh, 380px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
     .hs-dish {
       display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
-      background: #fff; padding: 0.5rem 0.6rem;
+      background: #fff; color: #17120c; padding: 0.5rem 0.6rem;
     }
     .hs-dish > div { flex: 1; min-width: 0; }
     .hs-dish b { display: block; font-size: 0.9rem; }
