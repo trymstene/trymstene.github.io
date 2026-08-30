@@ -13,7 +13,7 @@ import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
 import { gardenerLvlFor } from '../lib/pass-defs.js';
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
-import { initWorldTutorial, initTutorialInvite } from './world-tutorial.js';
+
 import { askName } from '../lib/banana-id.js';
 import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
@@ -3191,10 +3191,26 @@ function init(visitDoc, visitMiss) {
           } catch (e) {}
         },
       };
-      if (/[?&]bwtour(?:=|&|$)/.test(location.search)) {
-        initWorldTutorial({ ...tourOpts, force: true });
-      } else {
-        initTutorialInvite({ ...tourOpts, mount: document.querySelector('.hs-view') });
+      // ⚠️ THE TOUR IS 33KB OF ONCE-EVER WIZARD AND IT WAS IN EVERY PAGE LOAD.
+      // Statically imported, and the homestead is its only consumer in the
+      // repo — so Rollup folded the whole thing (CSS template, STOPS table,
+      // finale canvas painter) into this chunk, and every returning player
+      // downloaded and parsed it forever to run two localStorage reads that
+      // say "you have seen this". Both entry points bail on those same two
+      // keys (world-tutorial.js:507 and :638) before they touch anything, so
+      // the read happens here and the module is fetched only when it is
+      // actually going to draw. Same precedent as sticker-core at :1658.
+      const forced = /[?&]bwtour(?:=|&|$)/.test(location.search);
+      let tourSeen = false, tourWaved = false;
+      try {
+        tourSeen = !!localStorage.getItem('bw-tour-v1');
+        tourWaved = !!localStorage.getItem('bw-tour-inv');
+      } catch (e) {}
+      if (forced || !(tourSeen || tourWaved)) {
+        import('./world-tutorial.js').then((t) => {
+          if (forced) t.initWorldTutorial({ ...tourOpts, force: true });
+          else t.initTutorialInvite({ ...tourOpts, mount: document.querySelector('.hs-view') });
+        }).catch(() => {});
       }
     }
     drawMe();
