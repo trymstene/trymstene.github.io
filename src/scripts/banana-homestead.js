@@ -249,7 +249,6 @@ function visitState(d) {
     home: d.home, guest: d.guest || [], wtoday: !!d.wtoday,
     // 🛋 their rooms + feeder clock (worker-sanitized; older docs simply lack them)
     inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
-    feedAt: Number(d.feedAt) || 0,
   });
 }
 
@@ -299,7 +298,7 @@ function init(visitDoc, visitMiss) {
         stage: state.stage, style: state.style, look: state.look, home: state.home,
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
-        inItems: pubIn, feedAt: state.feedAt || 0,
+        inItems: pubIn,
       } }).catch(() => {});
     }, 2500);
   }
@@ -959,62 +958,13 @@ function init(visitDoc, visitMiss) {
     }
   }
 
-  // 🌰 THE FEEDER (13 Aug): a placed birdhouse is the park's mechanic now —
-  // fill it (coins) and for a day SPECIES birds visit: the park's own
-  // twelve, same rarity weights, same spotting pay, same day-list, so the
-  // pass's bird collection and the park postcard count them together.
-  // ⚠️ tiers/names mirror park-birds.js (module-private there — kept in sync
-  // by hand; the species art is /assets/park/bird-<sp>.png 4x4 sheets).
-  const FEED_COST = 5, FEED_FOR = 24 * 3600000;
-  const feedFresh = () => (state.feedAt || 0) > Date.now() - FEED_FOR;
-  const SP_TIER = { 'house-finch': 0, chickadee: 0, 'red-robin': 0, crow: 0,
-    'blue-jay': 1, magpie: 1, 'wood-thrush': 1, 'cedar-waxwing': 1,
-    cardinal: 2, 'stellers-jay': 2, 'white-dove': 2, hummingbird: 3 };
-  const SP_NAME = { 'blue-jay': 'blue jay', cardinal: 'cardinal', 'cedar-waxwing': 'cedar waxwing',
-    chickadee: 'chickadee', crow: 'crow', 'house-finch': 'house finch',
-    hummingbird: 'hummingbird', magpie: 'magpie', 'red-robin': 'red robin',
-    'stellers-jay': 'steller’s jay', 'white-dove': 'white dove', 'wood-thrush': 'wood thrush' };
-  const SP_TIERS = [{ rep: 1, label: 'common' }, { rep: 2, label: 'uncommon' },
-    { rep: 4, label: 'rare' }, { rep: 8, label: 'very rare' }];
-  const SP_W = [1, 0.45, 0.16, 0.05];
-  function pickSpecies() {
-    const total = SP_W.reduce((a, b) => a + b, 0);
-    let r = Math.random() * total, tier = 0;
-    for (let t2 = 0; t2 < 4; t2++) { r -= SP_W[t2]; if (r <= 0) { tier = t2; break; } }
-    const pool = Object.keys(SP_TIER).filter((k) => SP_TIER[k] === tier);
-    return pool[(Math.random() * pool.length) | 0];
-  }
-  // the same day-list the park writes — one birdwatching life, two places
-  const spDay = () => new Date().toISOString().slice(0, 10);
-  function spToday() {
-    try {
-      const j = JSON.parse(localStorage.getItem('pk_birds_day') || '{}');
-      return j && j.date === spDay() && Array.isArray(j.species) ? j.species : [];
-    } catch (e) { return []; }
-  }
-  function spAdd(sp) {
-    const list = spToday();
-    if (list.indexOf(sp) >= 0) return false;
-    list.push(sp);
-    try { localStorage.setItem('pk_birds_day', JSON.stringify({ date: spDay(), species: list })); } catch (e) {}
-    return true;
-  }
-  function spotBird(b) {
-    const t2 = SP_TIERS[SP_TIER[b.sp] || 0];
-    if (spAdd(b.sp)) {
-      passStat('rep', t2.rep);
-      try { if (!((passGet().stats || {})['bird_' + b.sp])) passStat('bird_' + b.sp, 1); } catch (e) {}
-      refreshHud();
-      float(b.x, b.y - 70, '+' + t2.rep);
-      toast('🔭 spotted! a ' + (SP_NAME[b.sp] || b.sp) + ' — ' + t2.label, 3600);
-      track('homestead_bird', { species: b.sp, tier: t2.label });
-    } else {
-      toast('🔭 a ' + (SP_NAME[b.sp] || b.sp) + ' — already on today’s list');
-    }
-    b.mode = 'out';
-    b.tx = b.x + (b.x > W / 2 ? 600 : -600);
-    b.ty = -80;
-  }
+  // 🐦 NO SPECIES COLLECTION HERE (Trym, 30 Aug). Birdwatching belongs to
+  // the PARK, where it can feed the park's health — a shared place worth
+  // keeping nice. In a private yard it hung off nothing: it wrote the PARK's
+  // own day-list and `bird_<sp>` stats from a second location, paid each
+  // species once ever, and paid in rep you cannot spend. Twelve sightings and
+  // it was finished. Animals you keep replace it. The birdhouse stays
+  // purchasable and birds still prefer it — nobody loses what they bought.
 
   // ---- 🐦 garden birds (M3): they come when the yard is LIVED-IN ----------
   // Ambient, not a loop: an empty yard gets no birds, decor attracts them,
@@ -1064,20 +1014,7 @@ function init(visitDoc, visitMiss) {
         x: Math.random() < 0.5 ? -30 : W + 30, y: Math.max(60, spot.y - 320),
         tx: spot.x, ty: spot.y, mode: 'in', strip: '',
         until: 0, frame: 0, frameAt: 0, hopAt: 0 };
-      // 🌰 a FULL FEEDER pulls the park's species in (60% of arrivals):
-      // the 4x4 park sheet rides the same element — row 0 fly, row 2 peck
-      const houses = state.items.filter((i2) => i2.id.indexOf('birdhouse') === 0);
-      if (feedFresh() && houses.length && Math.random() < 0.6) {
-        b.sp = pickSpecies();
-        const house = houses[(Math.random() * houses.length) | 0];
-        b.tx = house.x + (Math.random() * 70 - 35);
-        b.ty = house.y + 10 + Math.random() * 20;
-        img.style.backgroundImage = "url('/assets/park/bird-" + b.sp + ".png')";
-        img.style.backgroundSize = '400% 400%';
-        b.strip = 'sp';
-      } else {
-        setStrip(b, 'f');
-      }
+      setStrip(b, 'f');
       birdsLive.push(b);
     }
     if (HS_TEST) window.__hsBird = () => { makeBird(); return birdsLive.length; };
@@ -1092,9 +1029,7 @@ function init(visitDoc, visitMiss) {
         if (now - b.frameAt > (flying ? 90 : 240)) {
           b.frameAt = now;
           b.frame = (b.frame + 1) % 4;
-          if (b.sp) {   // park sheet: row 0 = fly, row 2 = peck at the feeder
-            b.img.style.backgroundPosition = (b.frame * 100 / 3) + '% ' + (flying ? 0 : 200 / 3) + '%';
-          } else {
+          {
             const want = flying ? 'f' : 'g';
             if (b.strip !== want) setStrip(b, want);
             b.img.style.backgroundPosition = (b.frame * 100 / 3) + '% 0';
@@ -2501,28 +2436,9 @@ function init(visitDoc, visitMiss) {
     const d = DEX[it.id];
     itChip = document.createElement('div');
     itChip.className = 'hs-chip';
-    // 🌰 a birdhouse is a FEEDER (the park's mechanic, 13 Aug): fill it and
-    // real species come — spotting pays like the park's birdwatching
-    if (it.id.indexOf('birdhouse') === 0) {
-      const fd = document.createElement('button');
-      fd.className = 'hs-btn';
-      if (feedFresh()) {
-        const hrs = Math.max(1, Math.ceil((FEED_FOR - (Date.now() - state.feedAt)) / 3600000));
-        fd.textContent = '🌰 full · ' + hrs + 'h';
-        fd.disabled = true;
-      } else {
-        fd.textContent = '🌰 fill the feeder · ' + FEED_COST;
-        fd.addEventListener('click', () => {
-          if (!passSpend(FEED_COST)) { toast('need ' + FEED_COST + ' coins — the world pays for playing'); return; }
-          state.feedAt = Date.now();
-          save(); refreshHud(); clearChip();
-          float(it.x, it.y - d.h - 10, '🌰');
-          toast('🌰 the feeder is full — word gets around fast among birds', 3600);
-          track('homestead_feed', { id: it.id });
-        });
-      }
-      itChip.appendChild(fd);
-    }
+    // ⚠️ THE PAID FEEDER IS GONE with the species it summoned — leaving it
+    // would charge 5 coins for nothing at all. The birdhouse is still decor,
+    // and birds still favour it as a perch.
     if (it.id === 'campfire') {
       const fire = document.createElement('button');
       fire.className = 'hs-btn';
@@ -2957,12 +2873,6 @@ function init(visitDoc, visitMiss) {
         return;
       }
     }
-    // 🔭 a species bird within reach: tap = spotted (the park's birdwatching,
-    // visitors included — spotting is device-local)
-    for (const b of birdsLive) {
-      if (!b.sp || b.mode === 'out') continue;
-      if (Math.hypot(wx - b.x, wy - (b.y - 20)) < 48) { spotBird(b); return; }
-    }
     // a placed item
     for (let i = state.items.length - 1; i >= 0; i--) {
       const it = state.items[i];
@@ -3160,7 +3070,7 @@ function init(visitDoc, visitMiss) {
   // normal session
   if (HS_TEST) {
     window.__hs = {
-      pos, tgt, peers, birds: birdsLive, feedFresh,
+      pos, tgt, peers, birds: birdsLive,
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,
       // the validity-grid probe (round-15 doctrine: verify the grid, not a spot)
