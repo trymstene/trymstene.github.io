@@ -235,3 +235,27 @@ Monotonic, never negative, max-merge safe — a second device on the same day co
 ---
 
 **Files this touches:** `src/scripts/banana-homestead.js` (`:16`, `:82-104`, `:428-556`, `:702`, `:738-742`, `:903-1018`, `:1245`, `:1406-1456`, `:1685-1727`, `:1774-2159`, `:2366`, `:3155-3159`, `:3195-3197`), `src/data/decor.js:28`, `src/lib/banana-pass.js:399-421`, `src/scripts/homestead-geo.js` *(generated — edit `tools/build-homestead-scene.py:34/:77/:309/:314/:591/:906`, never the geo file)*, `src/pages/homestead.astro`, `worker-rave/src/index.js:2694-2697` *(slice 6 only)*.
+---
+
+## Addendum, 30 Aug evening — two rules from Trym after seeing the expanded yard
+
+**1. Pens are containers, not cages for one species.** A pen is never welded to
+the animal in it. The player can swap what lives in a pen whenever they want —
+sell the goat, keep the pen, put sheep in it. The pen's SIZE decides what it
+*can* hold; the player decides what it *does* hold. No "demolish and rebuild"
+step, ever — that would tax the fence work this whole design exists to reward.
+
+**2. No artificial animal cap — the pen ladder IS the cap.** Measured 30 Aug:
+40 animated animals + 53 static decor items ran at 165fps (desktop). A real
+maxed farm holds ~8-10 animals (4 hens + goat + 2 sheep + cow), an order of
+magnitude below any performance edge. Page WEIGHT is unaffected by animal
+count (that is code size, fixed). The only caps that exist are diegetic ones
+the player can see: pen size, and FENCE_CAP 120. ⚠️ Re-verify on a real phone
+during slice 1 — the 165 is a desktop number; the park's ambient load is the
+precedent that phones handle this fine.
+
+**Land verdict (same session):** stage-3 plot expanded 234 → 372 tiles, now
+hard against the tree line on three sides and the road on the fourth. Room for
+~4-5 pens + house + decor. More means growing the WORLD from 1800×1100 — a
+deliberate decision, not a tweak. Trym: "okay start, hard to say without
+filling it up" — revisit after slice 3 (the pen) ships.
