@@ -53,7 +53,14 @@ const VISIT_SLUG = (() => {
 const HS_KEY = 'hs-v1';
 // ⚠️ STRESS-TESTED 3 Aug (?hstest=full): 16 items on the 19×10-tile lawn read
 // as ~15% furnished — "full" must LOOK like a lived-in yard, so the caps rose.
-const CAPS = [12, 28, 42, 56];   // placement spots per stage — each rung adds room
+// ⚠️ 30 Aug, same standard applied to the TOP rung (Trym: "we need to expand
+// the area you can build on once you've upgraded to full house"). Measured on
+// ?hstest=max: the stage-3 plot is 26×9 = 234 tiles and a MAXED yard filled
+// 53 of them — 23%. The ground was never the limit; this number was, and the
+// house alone eats 7 tiles of width. The full house is the last rung and the
+// biggest purchase in the world at 900 coins, so it gets the big jump: room to
+// actually furnish the land you paid for, at ~41% covered, walking space kept.
+const CAPS = [12, 28, 42, 96];   // placement spots per stage — each rung adds room
 // 🏠 the ladder: every rung is a WARDROBE — pick a style, then place it
 const STRUCT_LADDER = [
   { key: 'tent', price: 50, name: 'Pitch a tent', icon: '⛺',
@@ -2183,10 +2190,16 @@ function init(visitDoc, visitMiss) {
     // and west (Trym hit the invisible inset twice, 24px then 2px short)
     if (x - d.w / 2 < P[0] - 58 || x + d.w / 2 > P[2] + 58) return false;
     if (y - floorOf(d.h) < P[1] - 56 || y > P[3] - 8) return false;
-    for (const c of state.fence) {
-      if (x > c.i * 48 - 26 && x < c.i * 48 + 74 && y > c.j * 48 - 12 && y < c.j * 48 + 60) return false;
-    }
     const foot = [x - d.w * 0.52, y - floorOf(d.h), x + d.w * 0.52, y + 12];
+    // ⚠️ THE FOOTPRINT, NOT THE ANCHOR (Trym's screenshot, 30 Aug: the country
+    // house sat on top of his fence). This tested the single anchor point
+    // against a ~100x72 box per fence cell, so a 356px-wide house whose base
+    // centre happened to land in open ground could lay its whole west wall
+    // across a fence run. The soil test three lines down had it right all
+    // along — same rect, same overlap maths, now used for both.
+    for (const c of state.fence) {
+      if (foot[0] < (c.i + 1) * 48 && foot[2] > c.i * 48 && foot[1] < (c.j + 1) * 48 && foot[3] > c.j * 48) return false;
+    }
     for (const c of state.soil) {   // structures keep off the dug soil
       if (foot[0] < (c.i + 1) * 48 && foot[2] > c.i * 48 && foot[1] < (c.j + 1) * 48 && foot[3] > c.j * 48) return false;
     }
