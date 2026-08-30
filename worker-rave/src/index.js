@@ -414,12 +414,20 @@ function sanitizeCList(v) {
 // client claiming tophatgold still gets 'none'. Mirror of wearables.js
 // member: tiers — change both or neither.
 const MEMBER_TIER_RANK = { 'sup-t1': 1, 'sup-t2': 2, 'sup-t3': 3 };
+// ⚠️ MIRRORED, AND IT MUST STAY MIRRORED: src/data/wearables.js,
+// src/lib/banana-pass.js and worker-pass all use the same 72h.
+// The client shows a member's hat for `until + GRACE` — the cushion that stops
+// renewal or webhook lag stripping somebody who has paid. This check used to be
+// `until > now`, so for those 72 hours the wearer saw their own hat and NOBODY
+// ELSE IN THE ROOM DID. A hat whose whole point is being seen, unseen, on the
+// one surface where other people are looking.
 const MEMBER_HAT_NEED = { tophatblue: 1, tophatsilver: 2, tophatgold: 3 };
+const MEMBER_GRACE = 72 * 3600 * 1000;
 async function memberRankOf(env, mt) {
   try {
     if (!mt || !env || !env.MEMBER_HMAC) return 0;
     const [t, until, sig] = String(mt).split('.');
-    if (!MEMBER_TIER_RANK[t] || !(+until > Date.now()) || !sig) return 0;
+    if (!MEMBER_TIER_RANK[t] || !(+until + MEMBER_GRACE > Date.now()) || !sig) return 0;
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.MEMBER_HMAC),
       { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(t + '.' + (+until)));

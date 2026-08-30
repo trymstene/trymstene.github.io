@@ -122,9 +122,15 @@ async function hmacHex(env, msg) {
 // grant; expires with the grant, so revocation needs no recall. Deliberately
 // unbound to a person: sharing one leaks only a hat LOOK for ≤35 days — the
 // cosmetics bar, same as every client-side wearable check.
+const MEMBER_GRACE = 72 * 3600 * 1000;
 async function mintMemberToken(env, member) {
   try {
-    if (!env.MEMBER_HMAC || !member || !member.t || !(+member.until > Date.now())) return undefined;
+    // ⚠️ THE GRACE APPLIES HERE TOO. Refusing to mint during it meant the
+    // client had no token to present at all, so worker-rave could not have
+    // honoured the grace even if it wanted to. 72h, mirrored from
+    // src/data/wearables.js — change one, change all four.
+    if (!env.MEMBER_HMAC || !member || !member.t
+      || !(+member.until + MEMBER_GRACE > Date.now())) return undefined;
     const base = member.t + '.' + (+member.until);
     const key = await crypto.subtle.importKey('raw', te.encode(env.MEMBER_HMAC), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     return base + '.' + bufToHex(await crypto.subtle.sign('HMAC', key, te.encode(base)));
