@@ -293,7 +293,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
        new circle instead, the heart overflowed it, and it had no tail. The
        reuse rule exists for exactly this). Rounded rect, black down-arrow. */
     .hs-mood {
-      position: absolute; left: 50%; top: 6px; transform: translate(-50%, -100%);
+      /* ⚠️ the drop is a PERCENT of the animal's box, not fixed px — the
+         bubble itself never scales with the world (11px text must stay
+         readable), so a 6px drop that sat on a 38px desktop duck BURIED a
+         21px mobile hen (Trym: looks broken on mobile). 15%% of the box =
+         the same approved 6px on desktop, 3px on a phone. */
+      position: absolute; left: 50%; top: 15%; transform: translate(-50%, -100%);
       background: #fffdf5; border: 2px solid #000; border-radius: 6px;
       padding: 2px 4px; font-size: 11px; line-height: 1; white-space: nowrap;
       opacity: 0; transition: opacity 0.3s ease; pointer-events: none;

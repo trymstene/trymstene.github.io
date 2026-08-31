@@ -157,8 +157,25 @@ function applyTestScenario(kind) {
   const day = new Date().toISOString().slice(0, 10);
   const base = { v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 0,
     items: [], shed: [], bed: [null, null, null, null] };
+  // ⚠️ QA MUST NEVER EAT A REAL YARD. Every scenario below overwrites hs-v1
+  // and SAVES — which is how Trym's phone lost "Tryms Place" to "Testy's
+  // Homestead" (31 Aug): a test URL from the farm walk ran on a device that
+  // held a real claim. A scenario now refuses to touch a claimed yard unless
+  // that yard is already Testy's; wiping a real one takes hstest=fresh-really.
   let s = null;
-  if (kind === 'fresh') { try { localStorage.removeItem(HS_KEY); } catch (e) {} return; }
+  try {
+    const cur = JSON.parse(localStorage.getItem(HS_KEY) || 'null');
+    if (cur && cur.claimedAt && !/^Testy/.test(cur.name || '')
+      && kind !== 'fresh-really' && kind !== 'rich') {
+      console.warn('hstest: refusing to overwrite the real yard "' + cur.name
+        + '" — use ?hstest=fresh-really if you truly mean to wipe it');
+      return;
+    }
+  } catch (e) {}
+  if (kind === 'fresh' || kind === 'fresh-really') {
+    try { localStorage.removeItem(HS_KEY); } catch (e) {}
+    return;
+  }
   if (kind === 'rich') {   // a test wallet: balance tops up to ~9999, state untouched
     // ⚠️ through the pass API, never by hand — the ledgers are per-device
     // slots summed on read, so a raw stats write lands in the wrong shape
