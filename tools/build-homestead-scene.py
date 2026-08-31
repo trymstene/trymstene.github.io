@@ -925,6 +925,32 @@ if HAVE_PACK:
         st2 = sh.crop((0, row * 48, 192, row * 48 + 48)).resize((144, 36), Image.NEAREST)
         st2.save(os.path.join(OUT, out_name), optimize=True)
         print('  ' + out_name)
+    # 🐄🐓 slice 4: the cow (96px frames, the standing graze row at y472)
+    # and the rooster (the chicken recipe, row 1)
+    cw = Image.open(os.path.join(ANI, 'Cows_48x48/Cow_48x48.png')).convert('RGBA')
+    cst = cw.crop((0, 472, 384, 544)).resize((288, 54), Image.NEAREST)
+    cst.save(os.path.join(OUT, 'c-cow.png'), optimize=True)
+    print('  c-cow.png')
+    ro = Image.open(os.path.join(ANI, 'Chickens_and_Roosters_48x48/Rooster_Brown_48x48.png')).convert('RGBA')
+    rst = ro.crop((0, 48, 192, 96)).resize((128, 32), Image.NEAREST)
+    rst.save(os.path.join(OUT, 'c-roost.png'), optimize=True)
+    print('  c-roost.png')
+    # 🧀 the cheese machine's still frame + the cheese pickup icon
+    CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
+    chm = Image.open(CHM).convert('RGBA')
+    # 32 frames of 186px on the strip; auto-trim the still frame to its art
+    f0 = chm.crop((0, 0, 186, chm.height))
+    f0 = f0.crop(f0.getbbox())
+    f0 = f0.resize((int(f0.width * 0.62), int(f0.height * 0.62)), Image.NEAREST)
+    f0.save(os.path.join(OUT, 'd-cheesemk.png'), optimize=True)
+    # it joins the catalog by hand — its source is a frame of an animated
+    # strip, which the DECOR_DEF pipeline cannot express
+    _chw = max(10, int(f0.width * 0.38))
+    DECOR_OUT.append(('cheesemk', 'Cheese machine', 'farm', 60, 0, f0.width, f0.height, [-_chw, -12, _chw, 2]))
+    print('  d-cheesemk.png %dx%d (+catalog)' % (f0.width, f0.height))
+    CHI = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/Icons/Icons_32x32/Icons_32x32/Singles_Icons_32x32_Food_Cheese.png')
+    Image.open(CHI).convert('RGBA').save(os.path.join(OUT, 'm-cheese.png'), optimize=True)
+    print('  m-cheese.png')
     # 🥛 the milk-can pickup — the pack's own 32px icon, kept at native px
     MICON = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/Icons/Icons_32x32/Icons_32x32/Singles_Icons_32x32_Tools_Bucket_Milk.png')
     Image.open(MICON).convert('RGBA').save(os.path.join(OUT, 'm-milk.png'), optimize=True)

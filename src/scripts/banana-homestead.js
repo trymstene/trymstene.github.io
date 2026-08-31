@@ -89,24 +89,30 @@ const CROPS = [
   { id: 'sunflower', name: 'Sunflower', seed: 3 },
   { id: 'tulip', name: 'Midnight tulip', seed: 3 },
 ];
-const CROP_EMO = { radish: '🥬', tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵', daisy: '🌼', sunflower: '🌻', tulip: '🌷' };
+const CROP_EMO = { egg: '🥚', milk: '🥛', cheese: '🧀', radish: '🥬', tomato: '🍅', pumpkin: '🎃', wheat: '🌾', carrot: '🥕', strawberry: '🍓', corn: '🌽', watermelon: '🍉', grape: '🍇', pineapple: '🍍', prickly: '🌵', daisy: '🌼', sunflower: '🌻', tulip: '🌷' };
 // 🍳 THE SPINE (M2): crops → the pantry → dishes with WORLD-WIDE effects.
 // The multiplier enforces itself inside passStat — one choke point, every area.
 const DISHES = [
-  { id: 'stew', icon: '🍲', name: 'Campfire stew', need: { tomato: 2, wheat: 1 },
+  // 🍳 SLICE 4 RETUNE — the old table needed park crops behind a 3-9 day
+  // grow and a 300-coin wheat seed, which is why homestead_cook read ZERO
+  // users ever. One rule now: what the FARM gives (free) cooks into COINS;
+  // what the PARK sells (bought seeds) cooks into world-wide BUFFS. The
+  // cheapest park ingredient is the 5-coin radish that finishes tomorrow —
+  // the outbound pipe, priced for day two.
+  { id: 'fried', icon: '🍳', name: 'Fried egg', need: { egg: 2 },
+    pay: 10, blurb: 'sizzles straight into 10 bananacoins' },
+  { id: 'greens', icon: '🥗', name: 'Egg & greens', need: { egg: 1, radish: 1 },
+    pay: 16, blurb: 'tosses straight into 16 bananacoins' },
+  { id: 'soup', icon: '🥣', name: 'Creamy soup', need: { milk: 1, carrot: 1 },
+    pay: 22, blurb: 'simmers straight into 22 bananacoins' },
+  { id: 'bouquet', icon: '💐', name: 'Wildflower bouquet', need: { daisy: 1, sunflower: 1 },
+    pay: 18, blurb: 'ties straight into 18 bananacoins' },
+  { id: 'board', icon: '🧀', name: 'Cheese board', need: { cheese: 1 },
+    pay: 26, blurb: 'plates straight into 26 bananacoins' },
+  { id: 'stew', icon: '🍲', name: 'Campfire stew', need: { tomato: 2 },
     fx: 'coins2', mins: 45, blurb: 'every bananacoin pays double · 45 min · everywhere' },
-  { id: 'pie', icon: '🥧', name: 'Pumpkin pie', need: { pumpkin: 2, wheat: 1 },
+  { id: 'pie', icon: '🥧', name: 'Pumpkin pie', need: { pumpkin: 2 },
     fx: 'rep2', mins: 45, blurb: 'double XP from everything · 45 min · everywhere' },
-  { id: 'loaf', icon: '🍞', name: 'Golden loaf', need: { wheat: 3 },
-    pay: 25, blurb: 'bakes straight into 25 bananacoins' },
-  { id: 'salad', icon: '🥗', name: 'Garden salad', need: { carrot: 2, corn: 1 },
-    pay: 22, blurb: 'chops straight into 22 bananacoins' },
-  { id: 'fruitcup', icon: '🍧', name: 'Fruit cup', need: { strawberry: 2, watermelon: 1 },
-    pay: 34, blurb: 'sweetens straight into 34 bananacoins' },
-  { id: 'smoothie', icon: '🍹', name: 'Tropical smoothie', need: { grape: 1, pineapple: 1, prickly: 1 },
-    pay: 65, blurb: 'blends straight into 65 bananacoins' },
-  { id: 'bouquet', icon: '💐', name: 'Wildflower bouquet', need: { daisy: 1, sunflower: 1, tulip: 1 },
-    pay: 30, blurb: 'ties straight into 30 bananacoins' },
 ];
 const TENT_PRICE = 50;
 const dayStr = () => new Date().toISOString().slice(0, 10);
@@ -1006,6 +1012,12 @@ function init(visitDoc, visitMiss) {
       if (a && a.sp === 'goat') {
         el.className = 'hs-hen hs-hen--goat';
         img.style.backgroundImage = "url('/assets/homestead/c-goat.png')";
+      } else if (a && a.sp === 'cow') {
+        el.className = 'hs-hen hs-hen--cow';
+        img.style.backgroundImage = "url('/assets/homestead/c-cow.png')";
+      } else if (a && a.sp === 'rooster') {
+        el.className = 'hs-hen hs-hen--roost';
+        img.style.backgroundImage = "url('/assets/homestead/c-roost.png')";
       } else if (a && a.sp === 'sheep') {
         el.className = 'hs-hen hs-hen--sheep';
         img.style.backgroundImage = "url('/assets/homestead/" + ((a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')";
@@ -1155,7 +1167,9 @@ function init(visitDoc, visitMiss) {
     return { pens,
       hen: big && big.int >= 4 ? 4 : 2,
       goat: big && big.int >= 8 ? 1 : 0,
-      sheep: big && big.int >= 12 ? 2 : 0 };
+      sheep: big && big.int >= 12 ? 2 : 0,
+      cow: big && big.int >= 20 ? 1 : 0,
+      rooster: 1 };
   }
   const spCount = (sp) => farmAnimals().filter((a) => a.sp === sp).length;
   // 🟩 THE LIVE TINT — closed pens light up WHILE the fence tool is in hand
@@ -1219,12 +1233,19 @@ function init(visitDoc, visitMiss) {
     const today = dayNum();
     const last = st.hs_day || 0;
     if (!last) { passStat('hs_day', today); return; }   // day zero seeds the clock
-    const gap = Math.min(today - last, 2);
+    // 🐓 the rooster keeps the yard while you're away: the pile holds THREE
+    // mornings instead of two. Said twice in plain words (Trym's condition):
+    // on his stall card, and by the news at the exact moment it pays.
+    const capDays = farmAnimals().some((a) => a.sp === 'rooster') ? 3 : 2;
+    const gap = Math.min(today - last, capDays);
     if (gap <= 0) return;
     const fed = (st.hs_fed || 0) >= last;               // fed on the last visit day
     const flock = farmAnimals();
     const eggs = gap * flock.filter((a) => a.sp === 'hen').length * (fed ? 2 : 1);
-    const milk = gap * flock.filter((a) => a.sp === 'goat').length * (fed ? 2 : 1);
+    // 🥛 the dairy: a goat fills one can a day, the cow two
+    const dairy = flock.filter((a) => a.sp === 'goat').length
+      + flock.filter((a) => a.sp === 'cow').length * 2;
+    const milk = gap * dairy * (fed ? 2 : 1);
     // 🧶 wool grows in DAYS, capped at ready — a fortnight away meets the
     // same one shearing as a weekend, never a backlog
     flock.forEach((a) => { if (a.sp === 'sheep') a.wd = Math.min(3, (a.wd || 0) + gap); });
@@ -1242,14 +1263,31 @@ function init(visitDoc, visitMiss) {
       world.appendChild(el);
       eggEls.push({ x, y, el, kind });
     });
+    // 🧀 the press finishes overnight, whoever is watching
+    const press = state.items.find((i2) => i2.id === 'cheesemk' && i2.load && i2.load < today);
+    if (press) {
+      press.load = 0;
+      const el = document.createElement('div');
+      el.className = 'hs-chz';
+      el.style.left = pct(press.x + 30, W); el.style.top = pct(press.y - 10, H);
+      depth(el, press.y);
+      world.appendChild(el);
+      eggEls.push({ x: press.x + 30, y: press.y - 10, el, kind: 'cheese' });
+      save();
+    }
     const star = bestBond();
     const who = star && star.name ? star.name + (farmAnimals().length > 1 ? ' & co' : '') : 'the farm';
     const bits = [];
     if (eggs) bits.push(eggs + ' egg' + (eggs > 1 ? 's' : ''));
     if (milk) bits.push(milk + ' can' + (milk > 1 ? 's' : '') + ' of milk');
+    if (press) bits.push('a wheel of cheese');
     if (bits.length) {
-      toast('🥚 ' + who + ' left ' + bits.join(' · ') + ' by the trough'
-        + (fed ? ' — double, for yesterday’s feed' : ''), 4200);
+      // when the third morning pays, the rooster gets his credit by name —
+      // the effect is narrated at the moment it matters, never only sold
+      const kept = gap >= 3 ? 'you were gone ' + (today - last) + ' days — the rooster kept everything: '
+        : '';
+      toast('🥚 ' + (kept || who + ' left ') + bits.join(' · ') + (kept ? '' : ' by the trough')
+        + (fed ? ' — double, for yesterday’s feed' : ''), 4600);
     }
     if (flock.some((a) => a.sp === 'sheep' && (a.wd || 0) >= 3)) {
       setTimeout(() => toast('🧶 the sheep is woolly — tap her to shear', 3600), 4600);
@@ -1262,7 +1300,11 @@ function init(visitDoc, visitMiss) {
       if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34) continue;   // visitor
       c.el.remove();
       eggEls.splice(i, 1);
-      if (c.kind === 'milk') {
+      if (c.kind === 'cheese') {
+        state.cheese = (state.cheese || 0) + 1;
+        float(c.x, c.y - 22, '🧀 +1');
+        track1('homestead_cheese');
+      } else if (c.kind === 'milk') {
         state.milk = (state.milk || 0) + 1;
         float(c.x, c.y - 22, '🥛 +1');
         track1('homestead_milk');
@@ -1903,10 +1945,14 @@ function init(visitDoc, visitMiss) {
     // ⚠️ ONLY WHAT YOU HAVE. This printed a chip per crop in the game — 14 of
     // them now, almost all reading × 0 — which pushed the dishes themselves off
     // the bottom of a phone in a card that had no scroller.
-    if (FARM && (state.pantry.egg || 0) > 0) {
-      const b = document.createElement('span');
-      b.textContent = '🥚 × ' + state.pantry.egg;
-      pan.appendChild(b);
+    if (FARM) {
+      ['egg', 'milk', 'cheese'].forEach((k) => {
+        if ((state.pantry[k] || 0) > 0) {
+          const b = document.createElement('span');
+          b.textContent = CROP_EMO[k] + ' × ' + state.pantry[k];
+          pan.appendChild(b);
+        }
+      });
     }
     const held = CROPS.filter((c) => (state.pantry[c.id] || 0) > 0);
     held.forEach((c) => {
@@ -2484,11 +2530,14 @@ function init(visitDoc, visitMiss) {
   // 4c an egg against a 25c/day take (the cap is the PIPE, not a throttle:
   // surplus is meant to become a dish). The daily tally is device-local by
   // design — the worst a second device buys is one more capped day.
-  const EGG_C = 4, MILK_C = 6, WOOL_C = 12, STALL_CAP = 25;
+  const EGG_C = 4, MILK_C = 6, WOOL_C = 12, CHEESE_C = 20, STALL_CAP = 25;
   const ANIMAL_SHOP = [
     { sp: 'hen', name: 'a hen', price: 12, icon: '🐔', needs: 'a pen of 4+ tiles holds four' },
+    { sp: 'rooster', name: 'the rooster', price: 25, icon: '🐓',
+      needs: '', pitch: 'keeps the yard while you’re away — your goods wait 3 mornings instead of 2' },
     { sp: 'goat', name: 'a goat', price: 35, icon: '🐐', needs: 'fence a pen of 8+ tiles' },
     { sp: 'sheep', name: 'a sheep', price: 45, icon: '🐑', needs: 'fence a pen of 12+ tiles' },
+    { sp: 'cow', name: 'the cow', price: 90, icon: '🐄', needs: 'fence a pen of 20+ tiles' },
   ];
   function stallDay() {
     try {
@@ -2535,7 +2584,7 @@ function init(visitDoc, visitMiss) {
       pan.addEventListener('click', () => {
         const nAll = state[kind] || 0;
         state.pantry = state.pantry || {};
-        const pk = kind === 'milk' ? 'milk' : 'egg';
+        const pk = kind === 'milk' ? 'milk' : kind === 'cheese' ? 'cheese' : 'egg';
         state.pantry[pk] = (state.pantry[pk] || 0) + nAll;
         state[kind] = 0;
         save(); renderShop();
@@ -2556,6 +2605,7 @@ function init(visitDoc, visitMiss) {
     goodsRow(list, '🥚', 'Eggs', 'eggs', EGG_C, 'the hens lay overnight — come back tomorrow morning');
     if (spCount('goat') || state.milk) goodsRow(list, '🥛', 'Milk', 'milk', MILK_C, 'the goat milks overnight');
     if (spCount('sheep') || state.wool) goodsRow(list, '🧶', 'Wool', 'wool', WOOL_C, 'wool grows back in three days');
+    if (state.cheese || state.items.some((i2) => i2.id === 'cheesemk')) goodsRow(list, '🧀', 'Cheese', 'cheese', CHEESE_C, 'two milk in the press, a wheel by morning');
     // 🚧 THE PEN LADDER — what your fence has earned. Never a locked door:
     // a rung you cannot buy says exactly which fence would open it.
     const caps = penCaps();
@@ -2576,12 +2626,20 @@ function init(visitDoc, visitMiss) {
         b.disabled = true;
       } else {
         b.textContent = an.icon + ' ' + an.name + ' · ' + an.price + ' coins';
+        if (an.pitch) b.title = '';   // the pitch is VISIBLE copy, never a tooltip
+        if (an.pitch) {
+          const p2 = document.createElement('span');
+          p2.className = 'hs-buypitch';
+          p2.textContent = an.pitch;
+          b.appendChild(p2);
+        }
         b.addEventListener('click', () => {
           if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
           farmAnimals().push({ sp: an.sp, b: 0, pd: 0, name: '', wd: 0 });
           state.hens = spCount('hen');
           save(); refreshHud(); renderShop();
-          toast(an.icon + ' ' + an.name + ' is yours — she’s finding her feet in the pen', 3600);
+          toast(an.icon + ' ' + an.name + ' is yours — '
+            + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet in the pen'), 3600);
           track1('homestead_buy_animal', { sp: an.sp });
         });
       }
@@ -2990,6 +3048,28 @@ function init(visitDoc, visitMiss) {
     // ⚠️ THE PAID FEEDER IS GONE with the species it summoned — leaving it
     // would charge 5 coins for nothing at all. The birdhouse is still decor,
     // and birds still favour it as a perch.
+    if (it.id === 'cheesemk' && FARM) {
+      const pr = document.createElement('button');
+      pr.className = 'hs-btn';
+      if (it.load) {
+        pr.textContent = '🧀 pressing — ready tomorrow';
+        pr.disabled = true;
+      } else if ((state.milk || 0) >= 2) {
+        pr.textContent = '🧀 press 2 milk';
+        pr.addEventListener('click', () => {
+          state.milk -= 2;
+          it.load = dayNum();
+          save(); clearChip();
+          float(it.x, it.y - 60, '🥛🥛');
+          toast('🧀 the press turns overnight — a wheel by morning', 3600);
+          track1('homestead_press');
+        });
+      } else {
+        pr.textContent = '🧀 needs 2 milk in the pocket';
+        pr.disabled = true;
+      }
+      itChip.appendChild(pr);
+    }
     if (it.id === 'trough' && FARM) {
       const fd = document.createElement('button');
       fd.className = 'hs-btn';
@@ -3015,6 +3095,16 @@ function init(visitDoc, visitMiss) {
         sl.addEventListener('click', () => { clearChip(); openShop('stall'); });
         itChip.appendChild(sl);
       }
+    }
+    if (it.id === 'campfire' && FARM && it.lit) {
+      // 🍳 "the fire is already lit" — cooking stops hiding behind tent 50
+      // + cabin 300 + stove 42 + a 45-minute van. The lit fire in the yard IS
+      // the kitchen; the stove stays as the indoor upgrade.
+      const ck = document.createElement('button');
+      ck.className = 'hs-btn';
+      ck.textContent = '🍳 cook';
+      ck.addEventListener('click', () => { clearChip(); openCook(); });
+      itChip.appendChild(ck);
     }
     if (it.id === 'campfire') {
       const fire = document.createElement('button');
@@ -3744,7 +3834,7 @@ function init(visitDoc, visitMiss) {
       animals: () => farmAnimals(),
       pens: () => penCaps(),
       wool: (i, d) => { const a = farmAnimals()[i || 0]; if (a) { a.wd = d; save(); } return a; },
-      goods: () => ({ eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0 }),
+      goods: () => ({ eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0, cheese: state.cheese || 0 }),
       farm: () => ({ hens: state.hens || 0, eggs: state.eggs || 0, fed: fedToday(), eggsOnGround: eggEls.length }),
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,

@@ -2447,7 +2447,12 @@ export class YardRoom {
     if (typeof s.look === 'string' && /^[a-z0-9]{1,16}$/.test(s.look)) out.look = s.look;
     (Array.isArray(s.items) ? s.items.slice(0, YARD_ITEM_CAP) : []).forEach((it) => {
       if (it && typeof it.id === 'string' && /^([a-z0-9]{1,24}|c_[a-f0-9]{6,32})$/.test(it.id)) {
-        out.items.push({ id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) });
+        const o2 = { id: it.id, x: num(it.x, 0, 1800), y: num(it.y, 0, 1100) };
+        // 🔥 the lit flag survives the wire — "the fire is already lit" must
+        // not arrive as "the fire is out" on a second device (and visitors
+        // get to see a burning hearth)
+        if (it.lit) o2.lit = 1;
+        out.items.push(o2);
       }
     });
     // 🛋 room furnishings (visitor interiors, 13 Aug): per-tier lists, same
@@ -2471,7 +2476,7 @@ export class YardRoom {
     // save; this is the backstop, not the filter)
     out.animals = [];
     (Array.isArray(s.animals) ? s.animals.slice(0, 24) : []).forEach((a) => {
-      if (!a || !['hen', 'goat', 'sheep'].includes(a.sp)) return;
+      if (!a || !['hen', 'goat', 'sheep', 'cow', 'rooster'].includes(a.sp)) return;
       const nm = typeof a.name === 'string' ? a.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       out.animals.push({ sp: a.sp, b: num(a.b, 0, 999), name: nm, wd: num(a.wd, 0, 3) });
     });
