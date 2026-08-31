@@ -1028,8 +1028,8 @@ function init(visitDoc, visitMiss) {
       }
       // per-species anchor: half-width and height in world px, so the cow
       // stands ON her spot instead of hanging off a hen-sized hook
-      const dims = a && a.sp === 'cow' ? [32, 46]
-        : a && (a.sp === 'goat' || a.sp === 'sheep') ? [22, 36] : [16, 30];
+      const dims = a && a.sp === 'cow' ? [30, 34]
+        : a && (a.sp === 'goat' || a.sp === 'sheep') ? [21, 32] : [16, 30];
       const h2 = { el, img, follow, a, hw: dims[0], hv: dims[1],
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,

@@ -911,30 +911,35 @@ if HAVE_PACK:
         strip = hsheet.crop((0, 48, 192, 96)).resize((128, 32), Image.NEAREST)
         strip.save(os.path.join(OUT, 'c-hen%d.png' % hi), optimize=True)
     print('  c-hen0..2.png (coop chickens)')
-    # 🐐🐑 slice 3: the pen animals — same recipe as the hens (row 1 = the
-    # side walk, first 4 frames), baked a touch larger because a goat should
-    # read bigger than a hen. The sheep carries TWO strips: the pack drew a
-    # whole "Sheared" block into the model-2 sheet (row 11 = its side walk),
-    # so wool-ready vs shorn is purpose-drawn art, not a reading we assign.
+    # 🐐🐑🐄🐓 THE FLOCK STRIPS, done properly (Trym: "they don't look
+    # good" — and they didn't). Every farm sheet CAPTIONS ITSELF with
+    # "ROW: n COL: 24": cells are sheet_w/24 wide and sheet_h/n tall, row 0
+    # is four DIRECTION POSES (baking those made the rooster spin like a
+    # chopper) and row 1 is the true side walk. The first bake cut 48px
+    # strides through 96-144px frames — four half-animals sliding through
+    # body parts. Each strip: 4 frames of row 1, bbox-trimmed as a UNIT so
+    # the frames stay aligned, kept at native px (CSS sizes the display).
     ANI = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animals_48x48')
-    for out_name, sheet_path, row in (
-            ('c-goat.png', 'Goats_48x48/Goat_Brown_48x48.png', 1),
-            ('c-sheepf.png', 'Sheeps_48x48/Sheep_2_White_48x48.png', 1),
-            ('c-sheeps.png', 'Sheeps_48x48/Sheep_2_White_48x48.png', 11)):
+    def flock_strip(sheet_path, cell_w, row_y, cell_h, out_name):
         sh = Image.open(os.path.join(ANI, sheet_path)).convert('RGBA')
-        st2 = sh.crop((0, row * 48, 192, row * 48 + 48)).resize((144, 36), Image.NEAREST)
-        st2.save(os.path.join(OUT, out_name), optimize=True)
-        print('  ' + out_name)
-    # 🐄🐓 slice 4: the cow (96px frames, the standing graze row at y472)
-    # and the rooster (the chicken recipe, row 1)
-    cw = Image.open(os.path.join(ANI, 'Cows_48x48/Cow_48x48.png')).convert('RGBA')
-    cst = cw.crop((0, 472, 384, 544)).resize((288, 54), Image.NEAREST)
-    cst.save(os.path.join(OUT, 'c-cow.png'), optimize=True)
-    print('  c-cow.png')
-    ro = Image.open(os.path.join(ANI, 'Chickens_and_Roosters_48x48/Rooster_Brown_48x48.png')).convert('RGBA')
-    rst = ro.crop((0, 48, 192, 96)).resize((128, 32), Image.NEAREST)
-    rst.save(os.path.join(OUT, 'c-roost.png'), optimize=True)
-    print('  c-roost.png')
+        strip = sh.crop((0, row_y, cell_w * 4, row_y + cell_h))
+        bb = strip.getbbox()
+        # trim TOP/BOTTOM only — horizontal trim would break the 4-frame grid
+        strip = strip.crop((0, bb[1], strip.width, bb[3]))
+        # the two sheep coats share one display box — pad both to a common
+        # height, bottom-aligned, so the shear can't make her jump
+        if out_name in ('c-sheepf.png', 'c-sheeps.png'):
+            pad = Image.new('RGBA', (strip.width, 57), (0, 0, 0, 0))
+            pad.alpha_composite(strip, (0, 57 - strip.height))
+            strip = pad
+        strip.save(os.path.join(OUT, out_name), optimize=True)
+        print('  %s %dx%d (frame %dx%d)' % (out_name, strip.width, strip.height, strip.width // 4, strip.height))
+        return strip
+    flock_strip('Goats_48x48/Goat_Brown_48x48.png', 96, 144, 144, 'c-goat.png')
+    flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 96, 96, 'c-sheepf.png')
+    flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 480, 96, 'c-sheeps.png')
+    flock_strip('Chickens_and_Roosters_48x48/Rooster_Brown_48x48.png', 48, 96, 96, 'c-roost.png')
+    flock_strip('Cows_48x48/Cow_48x48.png', 144, 144, 144, 'c-cow.png')
     # 🧀 the cheese machine's still frame + the cheese pickup icon
     CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
     chm = Image.open(CHM).convert('RGBA')
