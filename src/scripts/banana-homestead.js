@@ -348,6 +348,8 @@ function init(visitDoc, visitMiss) {
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
         inItems: pubIn,
+        animals: (state.animals || []).slice(0, 24).map((a) => ({
+          sp: a.sp, b: Math.round(a.b || 0), name: a.name || '' })),
       } }).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
@@ -958,6 +960,9 @@ function init(visitDoc, visitMiss) {
 
   // ---- 🐔 coop chickens: three hens stroll the property (Trym) -------------
   const hens = [];
+  let henGreeted = false;   // the bond-7 gate greeting fires once per visit
+  const bestBond = () => farmAnimals().filter((a) => a.sp === 'hen')
+    .reduce((m, a) => (!m || a.b > m.b ? a : m), null);
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
     // 🐔 FARM: hens are GRANTED at claim (state.hens), not coop-gated — the
@@ -985,10 +990,22 @@ function init(visitDoc, visitMiss) {
         || state.items.find((i) => i.id === 'trough')
         || { x: state.home.x + 40, y: state.home.y + 44 };
       const follow = FARM && !visiting && !state.claimedAt;
-      hens.push({ el, img, follow,
+      // bind this sprite to its entity (owner's hens only — a visited yard's
+      // flock is scenery and pays nothing, the standing pay-side gate)
+      const flock = (FARM && !visiting && state.claimedAt) ? farmAnimals().filter((a2) => a2.sp === 'hen') : [];
+      const a = flock[hens.length] || null;
+      const h2 = { el, img, follow, a,
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,
-        tx: anchor.x, ty: anchor.y + 40, waitUntil: 0, frame: 0, frameAt: 0 });
+        tx: anchor.x, ty: anchor.y + 40, waitUntil: 0, frame: 0, frameAt: 0 };
+      // ❤️ bond 7: she MEETS YOU AT THE GATE — once per arrival, the most
+      // bonded hen walks to where you stood when the yard opened
+      if (a && a.b >= 7 && !henGreeted && a === bestBond()) {
+        henGreeted = true;
+        h2.tx = pos.x + 26; h2.ty = pos.y + 8;
+        h2.waitUntil = 0;
+      }
+      hens.push(h2);
     }
     const P = plotNow();
     for (const h of hens) {
@@ -1054,10 +1071,23 @@ function init(visitDoc, visitMiss) {
   // (the rave's module-consts-above-init lesson, nearly repaid in full).
   function farmStats() { return passGet().stats || {}; }
   function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
+  // 🐔 slice 2: an animal is an ENTITY — { sp, b (bond, only ever up),
+  // pd (last pet day), name }. state.hens stays as the count mirror the pen
+  // maths reads. Bond and names ride hs-v1 AND the yard sync (yardSan keeps
+  // them), so the phone and the desktop agree on who Henrietta is.
+  function farmAnimals() {
+    if (!Array.isArray(state.animals)) state.animals = [];
+    // migrate the slice-1 count into entities, once
+    while (state.animals.filter((a) => a.sp === 'hen').length < (state.hens || 0)) {
+      state.animals.push({ sp: 'hen', b: 0, pd: 0, name: '' });
+    }
+    return state.animals;
+  }
   function farmGrant() {
     // idempotent: claims made before the farm existed get theirs on arrival
-    if (state.hens) return;
+    if (state.hens) { farmAnimals(); return; }
     state.hens = 2;
+    farmAnimals();
     if (!state.items.some((i) => i.id === 'trough')) {
       state.items.push({ id: 'trough', x: state.home.x + 96, y: state.home.y + 52 });
     }
@@ -1099,7 +1129,9 @@ function init(visitDoc, visitMiss) {
       world.appendChild(el);
       eggEls.push({ x, y, el });
     }
-    toast('🥚 your hens left ' + eggs + ' egg' + (eggs > 1 ? 's' : '') + ' by the trough'
+    const star = bestBond();
+    const who = star && star.name ? star.name + (state.hens > 1 ? ' & co' : '') : 'your hens';
+    toast('🥚 ' + who + ' left ' + eggs + ' egg' + (eggs > 1 ? 's' : '') + ' by the trough'
       + (fed ? ' — double, for yesterday’s feed' : ''), 4200);
   }
   function farmEggTick() {
@@ -1126,6 +1158,74 @@ function init(visitDoc, visitMiss) {
     clearTimeout(h.moodT);
     h.moodT = setTimeout(() => b.classList.remove('is-on'), 1800);
     track1('homestead_mood', { fed: fedToday() ? 1 : 0 });
+    // ❤️ THE HUG (slice 2). The same tap: bond climbs once per day per animal
+    // and never, ever falls — pd is the only gate, there is no decay anywhere.
+    const a = h.a;
+    if (!a || visiting) return;
+    const today = dayNum();
+    if ((a.pd || 0) < today) {
+      a.pd = today;
+      a.b = (a.b || 0) + 1;
+      save();
+      float(h.x, h.y - 44, '❤️');
+      track1('homestead_pet', { b: a.b });
+      if (a.b === 3 && !a.name) {
+        toast('❤️ she trusts you now — tap her again to give her a name', 4200);
+      } else if (a.b === 7) {
+        toast('❤️ ' + (a.name || 'she') + ' will meet you at the gate from now on', 4200);
+      }
+    }
+    // ✏️ NAMING at bond 3 — earned, never bought. One name per farm, ever
+    // (Trym: no duplicates), through the same family filter as every sign.
+    if (a.b >= 3 && !a.name) henNameChip(h);
+    else if (a.name) henNameShow(h);
+  }
+  // her name, said over her head when you tap her (the bubble stays
+  // hearts-only — the name is a label, not a mood)
+  function henNameShow(h) {
+    let t = h.el.querySelector('.hs-henname');
+    if (!t) { t = document.createElement('i'); t.className = 'hs-henname'; h.el.appendChild(t); }
+    t.textContent = h.a.name;
+    t.classList.add('is-on');
+    clearTimeout(h.nameT);
+    h.nameT = setTimeout(() => t.classList.remove('is-on'), 2600);
+  }
+  function henNameChip(h) {
+    clearChip();
+    itChip = document.createElement('div');
+    itChip.className = 'hs-chip hs-chip--name';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.maxLength = 20; inp.placeholder = 'her name…';
+    inp.className = 'hs-nameinp';
+    const ok = document.createElement('button');
+    ok.className = 'hs-btn'; ok.textContent = '❤️ name her';
+    ok.addEventListener('click', async () => {
+      const v = (inp.value || '').trim().slice(0, 20);
+      if (!v) { inp.focus(); return; }
+      // ⚠️ one Gunnar per farm, full stop — every news line stays unambiguous
+      if (farmAnimals().some((a2) => a2.name && a2.name.toLowerCase() === v.toLowerCase())) {
+        toast('there’s already a ' + v + ' on this farm — every name is one of a kind');
+        inp.focus(); return;
+      }
+      ok.disabled = true;
+      let clean = true;
+      try { clean = await import('../lib/sticker-core.js').then((m) => m.captionsClean({ top: v })); } catch (e) {}
+      ok.disabled = false;
+      if (!clean) { toast('let’s keep names family friendly — try another'); inp.focus(); return; }
+      h.a.name = v;
+      save();
+      clearChip();
+      float(h.x, h.y - 44, '❤️');
+      toast('❤️ ' + v + '! she knows it’s you', 3600);
+      track1('homestead_name_animal');
+    });
+    itChip.appendChild(inp); itChip.appendChild(ok);
+    itChip.style.left = pct(h.x, W);
+    itChip.style.top = pct(h.y - 44, H);
+    itChip.style.transform = 'translate(-50%, -100%)';
+    depth(itChip, h.y + 400);
+    world.appendChild(itChip);
+    inp.focus();
   }
 
   // 🐦 NO SPECIES COLLECTION HERE (Trym, 30 Aug). Birdwatching belongs to
@@ -3385,6 +3485,7 @@ function init(visitDoc, visitMiss) {
     fence: Array.isArray(d.fence) ? d.fence : [],
     mailAt: d.mailAt, signAt: d.signAt, home: d.home,
     inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
+    animals: Array.isArray(d.animals) ? d.animals : undefined,
   });
   async function yardPull() {
     if (!FARM || visiting || HS_TEST) return;
@@ -3407,6 +3508,10 @@ function init(visitDoc, visitMiss) {
       next = { ...state, ...syncedFields(r) };
     }
     if (!next) return;
+    if (Array.isArray(next.animals)) {
+      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: 0, name: a.name || '' }));
+      next.hens = next.animals.filter((a) => a.sp === 'hen').length || next.hens || 0;
+    }
     next.pubUpdated = r.updated || Date.now();
     next.dirty = 0;
     const stamp = r.slug + ':' + (r.updated || 0);
@@ -3434,6 +3539,8 @@ function init(visitDoc, visitMiss) {
       // 🐔 farm QA: morning(d) walks the clock d days and relays the morning
       morning: (d) => { qaDayOfs += (d || 1) * 86400000; morningTick(); return farmStats().hs_day; },
       pull: yardPull,
+      bond: (i, b) => { const a = farmAnimals()[i || 0]; if (a) { a.b = b; a.pd = 0; save(); } return a; },
+      animals: () => farmAnimals(),
       farm: () => ({ hens: state.hens || 0, eggs: state.eggs || 0, fed: fedToday(), eggsOnGround: eggEls.length }),
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,

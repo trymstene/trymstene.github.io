@@ -2466,6 +2466,15 @@ export class YardRoom {
     // 🌰 the feeder clock — visitors see the fed yard's birds too
     const fa = Number(s.feedAt) || 0;
     if (fa > 0 && fa < 4102444800000) out.feedAt = fa;
+    // 🐔 the flock (farm slice 2): species-whitelisted, bond clamped, names
+    // length/charset-limited server-side (the client family-filters before
+    // save; this is the backstop, not the filter)
+    out.animals = [];
+    (Array.isArray(s.animals) ? s.animals.slice(0, 24) : []).forEach((a) => {
+      if (!a || a.sp !== 'hen') return;
+      const nm = typeof a.name === 'string' ? a.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
+      out.animals.push({ sp: 'hen', b: num(a.b, 0, 999), name: nm });
+    });
     return out;
   }
 
@@ -2594,7 +2603,7 @@ export class YardRoom {
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home,
         items: st.items || [], soil: st.soil || [], fence: st.fence || [],
         mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},
-        bed: st.bed, bedAt: st.bedAt,
+        bed: st.bed, bedAt: st.bedAt, animals: st.animals || [],
       });
     }
 

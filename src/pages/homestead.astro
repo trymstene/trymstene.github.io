@@ -317,6 +317,19 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     .hs-mood.is-on { opacity: 1; }
     .hs-stallrow { display: flex; gap: 0.5rem; margin-top: 0.55rem; }
+    /* ✏️ slice 2: the naming chip (bond 3) and the said-over-her-head name */
+    .hs-chip--name { display: flex; gap: 0.4rem; align-items: center; }
+    .hs-nameinp {
+      font: inherit; font-size: 0.8rem; width: 9.5rem; padding: 0.3rem 0.45rem;
+      border: 2px solid #000; background: #fffdf5; color: #17120c;
+    }
+    .hs-henname {
+      position: absolute; left: 50%; top: -4px; transform: translate(-50%, -100%);
+      font-style: normal; font-size: 10px; font-weight: 800; white-space: nowrap;
+      color: #fffdf5; text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+      opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    }
+    .hs-henname.is-on { opacity: 1; }
     .hs-stallrow .hs-btn { flex: 1; white-space: nowrap; }
     /* 📱 PORTRAIT PUTS THE TOOLS UNDER THE THUMB. Build mode on a phone is two
        gestures — tap a cell, swipe to look — and both happen low on the screen,
