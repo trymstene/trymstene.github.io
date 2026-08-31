@@ -938,10 +938,13 @@ if HAVE_PACK:
     # 🧀 the cheese machine's still frame + the cheese pickup icon
     CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
     chm = Image.open(CHM).convert('RGBA')
-    # 32 frames of 186px on the strip; auto-trim the still frame to its art
-    f0 = chm.crop((0, 0, 186, chm.height))
+    # ⚠️ the sheet CAPTIONS ITSELF: "FRAME SIZE: 64x48" is baked into a label
+    # row, and the first bake cropped 186px slabs that carried the caption
+    # into the game (Trym's screenshot: TURN ON printed on his lawn). The
+    # machine is one 64x48 frame at top-left; ×1.3 for bench presence.
+    f0 = chm.crop((33, 33, 97, 81))   # the frame sits at (33,33), measured by alpha
     f0 = f0.crop(f0.getbbox())
-    f0 = f0.resize((int(f0.width * 0.62), int(f0.height * 0.62)), Image.NEAREST)
+    f0 = f0.resize((int(f0.width * 1.3), int(f0.height * 1.3)), Image.NEAREST)
     f0.save(os.path.join(OUT, 'd-cheesemk.png'), optimize=True)
     # it joins the catalog by hand — its source is a frame of an animated
     # strip, which the DECOR_DEF pipeline cannot express

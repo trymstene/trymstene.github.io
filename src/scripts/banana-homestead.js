@@ -995,6 +995,10 @@ function init(visitDoc, visitMiss) {
       const el = document.createElement('div');
       el.className = 'hs-hen';
       const img = document.createElement('span');
+      img.className = 'hs-henimg';   // ⚠️ NOT a bare span — `.hs-hen span` also
+      // caught the mood bubble (a span in the same element) and dressed it in
+      // the sprite's square box + 400% background (Trym's screenshot: a
+      // stretched white slab with the heart in its corner)
       img.style.backgroundImage = "url('/assets/homestead/c-hen" + (hens.length % 3) + ".png')";
       el.appendChild(img);
       world.appendChild(el);
@@ -1022,7 +1026,11 @@ function init(visitDoc, visitMiss) {
         el.className = 'hs-hen hs-hen--sheep';
         img.style.backgroundImage = "url('/assets/homestead/" + ((a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')";
       }
-      const h2 = { el, img, follow, a,
+      // per-species anchor: half-width and height in world px, so the cow
+      // stands ON her spot instead of hanging off a hen-sized hook
+      const dims = a && a.sp === 'cow' ? [32, 46]
+        : a && (a.sp === 'goat' || a.sp === 'sheep') ? [22, 36] : [16, 30];
+      const h2 = { el, img, follow, a, hw: dims[0], hv: dims[1],
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,
         tx: anchor.x, ty: anchor.y + 40, waitUntil: 0, frame: 0, frameAt: 0 };
@@ -1044,8 +1052,8 @@ function init(visitDoc, visitMiss) {
       if (REDUCED) {    // FARM-only path (legacy returned above): stand still
         if (h.px !== h.x) {
           h.px = h.x; h.py = h.y;
-          h.el.style.left = pct(h.x - 16, W);
-          h.el.style.top = pct(h.y - 30, H);
+          h.el.style.left = pct(h.x - (h.hw || 16), W);
+          h.el.style.top = pct(h.y - (h.hv || 30), H);
           h.el.style.zIndex = String(100 + Math.round(h.y));
         }
         continue;
@@ -1096,8 +1104,8 @@ function init(visitDoc, visitMiss) {
       }
       if (h.px !== h.x || h.py !== h.y) {
         h.px = h.x; h.py = h.y;
-        h.el.style.left = pct(h.x - 16, W);
-        h.el.style.top = pct(h.y - 30, H);
+        h.el.style.left = pct(h.x - (h.hw || 16), W);
+        h.el.style.top = pct(h.y - (h.hv || 30), H);
         h.el.style.zIndex = String(100 + Math.round(h.y));
       }
     }
