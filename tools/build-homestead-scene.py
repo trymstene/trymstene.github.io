@@ -944,6 +944,22 @@ if HAVE_PACK:
     flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 576, 96, 'c-sheeps.png')
     flock_strip('Chickens_and_Roosters_48x48/Rooster_Brown_48x48.png', 48, 192, 96, 'c-roost.png')
     flock_strip('Cows_48x48/Cow_48x48.png', 144, 288, 144, 'c-cow.png')
+    # 🐕 the dog runs, always — her gait is the sheet's own RUN band
+    # (this sheet labels its bands: IDLE/WALK/RUN/EAT; RUN sits at y603-668).
+    # ⚠️ HER STRIDE IS 144, NOT 96 (COL: 24 over 3456px) — the first bake
+    # assumed 96 and sliced two dogs into every frame. The side-view run is
+    # SIX frames; the engine animates four, so we keep the gallop's beats:
+    # gather (0), push (2), extend (3), land (5).
+    dsh = Image.open(os.path.join(ANI, 'Dogs_48x48/Dog_Labrador_Brown_48x48.png')).convert('RGBA')
+    picks = [0, 2, 3, 5]
+    cells = [dsh.crop((k * 144 + 4, 603, k * 144 + 108, 669)) for k in picks]
+    top = min(c.getbbox()[1] for c in cells)
+    bot = max(c.getbbox()[3] for c in cells)
+    dst = Image.new('RGBA', (104 * 4, bot - top), (0, 0, 0, 0))
+    for i, c in enumerate(cells):
+        dst.alpha_composite(c.crop((0, top, 104, bot)), (i * 104, 0))
+    dst.save(os.path.join(OUT, 'c-dog.png'), optimize=True)
+    print('  c-dog.png %dx%d (frame %dx%d)' % (dst.width, dst.height, 104, dst.height))
     # 🧀 the cheese machine's still frame + the cheese pickup icon
     CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
     chm = Image.open(CHM).convert('RGBA')

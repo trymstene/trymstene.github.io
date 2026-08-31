@@ -2476,7 +2476,7 @@ export class YardRoom {
     // save; this is the backstop, not the filter)
     out.animals = [];
     (Array.isArray(s.animals) ? s.animals.slice(0, 24) : []).forEach((a) => {
-      if (!a || !['hen', 'goat', 'sheep', 'cow', 'rooster'].includes(a.sp)) return;
+      if (!a || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog'].includes(a.sp)) return;
       const nm = typeof a.name === 'string' ? a.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       const a2 = { sp: a.sp, b: num(a.b, 0, 999), name: nm, wd: num(a.wd, 0, 3) };
       if (a.hm && Number.isFinite(Number(a.hm.x))) a2.hm = { x: num(a.hm.x, 0, 1800), y: num(a.hm.y, 0, 1100) };
@@ -2485,7 +2485,7 @@ export class YardRoom {
     // 💛 sold-but-remembered animals — same discipline as the flock
     out.memory = [];
     (Array.isArray(s.memory) ? s.memory.slice(0, 12) : []).forEach((m) => {
-      if (!m || !['hen', 'goat', 'sheep', 'cow', 'rooster'].includes(m.sp)) return;
+      if (!m || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog'].includes(m.sp)) return;
       const nm2 = typeof m.name === 'string' ? m.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       out.memory.push({ sp: m.sp, b: num(m.b, 0, 999), name: nm2 });
     });

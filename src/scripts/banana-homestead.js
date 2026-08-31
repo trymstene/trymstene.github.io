@@ -1031,11 +1031,15 @@ function init(visitDoc, visitMiss) {
       } else if (a && a.sp === 'sheep') {
         el.className = 'hs-hen hs-hen--sheep';
         img.style.backgroundImage = "url('/assets/homestead/" + ((a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')";
+      } else if (a && a.sp === 'dog') {
+        el.className = 'hs-hen hs-hen--dog';
+        img.style.backgroundImage = "url('/assets/homestead/c-dog.png')";
       }
       // per-species anchor: half-width and height in world px, so the cow
       // stands ON her spot instead of hanging off a hen-sized hook
       const dims = a && a.sp === 'cow' ? [30, 34]
-        : a && (a.sp === 'goat' || a.sp === 'sheep') ? [21, 32] : [16, 30];
+        : a && (a.sp === 'goat' || a.sp === 'sheep') ? [21, 32]
+        : a && a.sp === 'dog' ? [22, 28] : [16, 30];
       const h2 = { el, img, follow, a, hw: dims[0], hv: dims[1],
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,
@@ -1064,15 +1068,18 @@ function init(visitDoc, visitMiss) {
           h4.el.className = na.sp === 'goat' ? 'hs-hen hs-hen--goat'
             : na.sp === 'cow' ? 'hs-hen hs-hen--cow'
             : na.sp === 'rooster' ? 'hs-hen hs-hen--roost'
-            : na.sp === 'sheep' ? 'hs-hen hs-hen--sheep' : 'hs-hen';
+            : na.sp === 'sheep' ? 'hs-hen hs-hen--sheep'
+            : na.sp === 'dog' ? 'hs-hen hs-hen--dog' : 'hs-hen';
           h4.fluff = undefined;
           h4.img.style.backgroundImage = na.sp === 'goat' ? "url('/assets/homestead/c-goat.png')"
             : na.sp === 'cow' ? "url('/assets/homestead/c-cow.png')"
             : na.sp === 'rooster' ? "url('/assets/homestead/c-roost.png')"
             : na.sp === 'sheep' ? "url('/assets/homestead/" + ((na.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')"
+            : na.sp === 'dog' ? "url('/assets/homestead/c-dog.png')"
             : "url('/assets/homestead/c-hen" + (i4 % 3) + ".png')";
           const dims2 = na.sp === 'cow' ? [30, 34]
-            : (na.sp === 'goat' || na.sp === 'sheep') ? [21, 32] : [16, 30];
+            : (na.sp === 'goat' || na.sp === 'sheep') ? [21, 32]
+            : na.sp === 'dog' ? [22, 28] : [16, 30];
           h4.hw = dims2[0]; h4.hv = dims2[1];
         }
       });
@@ -1092,6 +1099,11 @@ function init(visitDoc, visitMiss) {
         }
         continue;
       }
+      // 🐕 the dog's whole job — she trails the banana at her own run
+      // pace, every tick, forever. Pens and ✥ pins never apply to her: the
+      // wander retarget below may write a clamped target, but this line owns
+      // hers again next frame. Carried somewhere, she simply runs back to you.
+      if (h.a && h.a.sp === 'dog' && !h.follow) { h.tx = pos.x - 52; h.ty = pos.y + 6; }
       const dx = h.tx - h.x, dy = h.ty - h.y;
       const d = Math.hypot(dx, dy);
       if (d < 3) {
@@ -1129,8 +1141,11 @@ function init(visitDoc, visitMiss) {
           }
         }
       } else {
-        h.x += dx / d * 34 * dt;
-        h.y += dy / d * 34 * dt;
+        // 🐕 run gait, run speed — she keeps pace with the banana (168);
+        // everything else ambles
+        const spd = h.a && h.a.sp === 'dog' ? 150 : 34;
+        h.x += dx / d * spd * dt;
+        h.y += dy / d * spd * dt;
         // ⚠️ dx < 0, NOT dx > 0 — the hens walked backwards for exactly this
         // reason (Trym). The bird flip below is `dx > 0` and is RIGHT, because
         // the Garden Birds art faces LEFT; the coop hens face RIGHT. The
@@ -1223,7 +1238,8 @@ function init(visitDoc, visitMiss) {
       goat: big && big.int >= 8 ? 1 : 0,
       sheep: big && big.int >= 12 ? 2 : 0,
       cow: big && big.int >= 20 ? 1 : 0,
-      rooster: 1 };
+      rooster: 1,
+      dog: 1 };   // 🐕 pens are for keeping animals IN — she keeps herself on you
   }
   const spCount = (sp) => farmAnimals().filter((a) => a.sp === sp).length;
   // 🟩 THE LIVE TINT — closed pens light up WHILE the fence tool is in hand
@@ -2615,6 +2631,10 @@ function init(visitDoc, visitMiss) {
     { sp: 'goat', name: 'a goat', price: 35, icon: '🐐', needs: 'fence a pen of 8+ tiles' },
     { sp: 'sheep', name: 'a sheep', price: 45, icon: '🐑', needs: 'fence a pen of 12+ tiles' },
     { sp: 'cow', name: 'the cow', price: 90, icon: '🐄', needs: 'fence a pen of 20+ tiles' },
+    // 🐕 the one animal that pays NOTHING and needs NO pen — the honest
+    // pitch is the whole point: everything else here is a payoff, she is not
+    { sp: 'dog', name: 'the dog', price: 40, icon: '🐕',
+      needs: '', pitch: 'no eggs, no milk, no wool — nothing, ever. She just runs at your heel wherever you go' },
   ];
   function stallDay() {
     try {
@@ -2722,7 +2742,9 @@ function init(visitDoc, visitMiss) {
           toast(mem && mem.name
             ? '💛 ' + mem.name + '! ' + (an.sp === 'rooster' ? 'he remembers you' : 'she remembers you')
             : an.icon + ' ' + an.name + ' is yours — '
-              + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet in the pen'), 3600);
+              + (an.sp === 'rooster' ? 'he’s already bossing the yard'
+                : an.sp === 'dog' ? 'she’s already at your heel'
+                : 'she’s finding her feet in the pen'), 3600);
           track1('homestead_buy_animal', { sp: an.sp });
         });
       }
@@ -2749,7 +2771,7 @@ function init(visitDoc, visitMiss) {
       list.appendChild(p3);
       return;
     }
-    const ICO = { hen: '🐔', rooster: '🐓', goat: '🐐', sheep: '🐑', cow: '🐄' };
+    const ICO = { hen: '🐔', rooster: '🐓', goat: '🐐', sheep: '🐑', cow: '🐄', dog: '🐕' };
     const price = (sp) => (ANIMAL_SHOP.find((x) => x.sp === sp) || {}).price || 10;
     flock.forEach((a) => {
       const card = document.createElement('div');
@@ -2759,8 +2781,9 @@ function init(visitDoc, visitMiss) {
       card.innerHTML = '<div class="hs-uphead"><b>' + (ICO[a.sp] || '🐔') + ' '
         + (a.name ? a.name : 'unnamed ' + a.sp) + '</b>'
         + '<span class="hs-price">❤️ ' + (a.b || 0) + '</span></div>'
-        + '<span>' + state2 + (a.name ? '' : ' · hug her ' + Math.max(0, 3 - (a.b || 0)) + ' more day'
-          + (3 - (a.b || 0) === 1 ? '' : 's') + ' to name her') + '</span>';
+        + '<span>' + state2 + (a.name ? '' : ' · hug ' + (a.sp === 'rooster' ? 'him' : 'her') + ' '
+          + Math.max(0, 3 - (a.b || 0)) + ' more day' + (3 - (a.b || 0) === 1 ? '' : 's')
+          + ' to name ' + (a.sp === 'rooster' ? 'him' : 'her')) + '</span>';
       const row = document.createElement('div');
       row.className = 'hs-stallrow';
       const sb = document.createElement('button');
@@ -2769,7 +2792,8 @@ function init(visitDoc, visitMiss) {
       sb.addEventListener('click', () => {
         if (a.name && !sb.armed) {
           sb.armed = true;
-          sb.textContent = '↩ rehome ' + a.name + '? she’ll remember you — tap again';
+          sb.textContent = '↩ rehome ' + a.name + '? '
+            + (a.sp === 'rooster' ? 'he’ll' : 'she’ll') + ' remember you — tap again';
           setTimeout(() => { sb.armed = false; if (sb.isConnected) renderShop(); }, 4000);
           return;
         }
