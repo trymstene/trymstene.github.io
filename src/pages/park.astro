@@ -883,15 +883,25 @@ const faq = {
     @media (prefers-reduced-motion: reduce) { .pk-animal { animation: none; } }
     /* 💬 the mood bubble — pops once on first sight, again on tap; the tail
        is centred so the parent's direction flip can't skew it */
+    /* ⚠️ the tail is TWO triangles — black rim behind, white fill in front —
+       because a lone 3px border-triangle read as "a very thin black line
+       pointing downwards - does not look like a speech-bubble" (Trym, 31 Aug,
+       with a screenshot of the duck). And the bubble sits ON the head now
+       (top 0, tail overlapping the sprite) instead of floating 8px above it. */
     .pk-mood {
-      position: absolute; left: 50%; top: -6px; transform: translate(-50%, -100%);
+      position: absolute; left: 50%; top: 0; transform: translate(-50%, -100%);
       background: #fffdf5; border: 2px solid #000; border-radius: 6px;
       padding: 2px 4px; font-size: 11px; line-height: 1; white-space: nowrap;
       opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
     }
     .pk-mood::after {
-      content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
-      border: 3px solid transparent; border-top: 5px solid #000; border-bottom: 0;
+      content: ''; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
+      border: 6px solid transparent; border-top: 8px solid #000; border-bottom: 0;
+    }
+    .pk-mood::before {
+      content: ''; position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%);
+      border: 4px solid transparent; border-top: 5px solid #fffdf5; border-bottom: 0;
+      z-index: 1;
     }
     .pk-mood.is-on { opacity: 1; }
     /* 🍌 OLD PEEL — the bench elder: an engine banana held on frame 0 (no
