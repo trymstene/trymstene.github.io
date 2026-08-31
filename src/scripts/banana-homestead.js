@@ -323,9 +323,12 @@ function init(visitDoc, visitMiss) {
   // ⚠️ a visitor's save is a NO-OP twice over: never write their yard into
   // hs-v1, never push their yard to the DO as ours
   const save = visiting ? () => {} : () => {
+    state.dirty = 1;   // cleared when /save answers — the pull never overwrites unpushed work
     try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {}
     pushYard();
   };
+  // write the state down WITHOUT queueing a push — for bookkeeping fields only
+  const saveRaw = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
   // debounced publish of the public snapshot (the yard the neighbours see)
   let pushT = null;
   function pushYard() {
@@ -345,7 +348,12 @@ function init(visitDoc, visitMiss) {
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
         inItems: pubIn,
-      } }).catch(() => {});
+      } }).then((r) => {
+        // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
+        // only when the server's stamp beats this one and nothing local is
+        // still waiting to push — device clocks are never compared
+        if (r && r.updated) { state.pubUpdated = r.updated; state.dirty = 0; saveRaw(); }
+      }).catch(() => {});
     }, 2500);
   }
   // ⚠️ TDZ: camTarget() reads these and is CALLED at spawn setup, so they
@@ -3353,6 +3361,64 @@ function init(visitDoc, visitMiss) {
   }
   // the QA reach-in (the park's ?parktest pattern) — nothing here exists in a
   // normal session
+  // ---- ⬇️ THE PULL — cross-device sync's missing half (Trym, 31 Aug) ------
+  // The push always converged: /claim keys yards by the PASS, so a second
+  // signed-in device gets the same address back and there is never a duplicate
+  // yard per pass. But that device started EMPTY — Trym's phone greeted him as
+  // Testy's Homestead while the real Tryms Place sat published on the server.
+  // On boot, /mine asks the server which yard this pass owns:
+  //   · nothing local (or a Testy leftover, or another pass's yard) → ADOPT
+  //     the published yard wholesale; the old local state is stashed in
+  //     hs-v1-prev first, so nothing is ever silently destroyed
+  //   · same yard, server saved LATER by another device, nothing local
+  //     unpushed → refresh the SYNCED fields only — shed, pantry, eggs, hens
+  //     and every other local-only pocket survives untouched
+  //   · same yard, first boot after this shipped → grandfather: record the
+  //     stamp, adopt nothing (the device in hand is the source of truth)
+  // ?hstest skips the pull entirely — test yards stay test yards, and the
+  // scenario guard already refuses to clobber real ones.
+  const syncedFields = (d) => ({
+    name: d.name || state.name, stage: d.stage || 0,
+    style: d.style || {}, look: typeof d.look === 'string' ? d.look : '',
+    items: Array.isArray(d.items) ? d.items : [],
+    soil: Array.isArray(d.soil) ? d.soil : [],
+    fence: Array.isArray(d.fence) ? d.fence : [],
+    mailAt: d.mailAt, signAt: d.signAt, home: d.home,
+    inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
+  });
+  async function yardPull() {
+    if (!FARM || visiting || HS_TEST) return;
+    let r;
+    try { r = await yFetch('/mine', {}); } catch (e) { return; }
+    if (!r || !r.slug) return;
+    const mine = state.slug === r.slug;
+    const testy = /^Testy/.test(state.name || '');
+    let next = null;
+    if (!state.claimedAt || testy || !mine) {
+      try { localStorage.setItem('hs-v1-prev', localStorage.getItem(HS_KEY) || ''); } catch (e) {}
+      next = withHome({ v: 1, ...syncedFields(r), slug: r.slug,
+        claimedAt: r.created || Date.now(), shed: [], pantry: {},
+        bed: Array.isArray(r.bed) ? r.bed : undefined, bedAt: r.bedAt });
+    } else if (!state.pubUpdated) {
+      state.pubUpdated = r.updated || 1;   // grandfather: this device is truth
+      saveRaw();
+      return;
+    } else if ((r.updated || 0) > state.pubUpdated && !state.dirty) {
+      next = { ...state, ...syncedFields(r) };
+    }
+    if (!next) return;
+    next.pubUpdated = r.updated || Date.now();
+    next.dirty = 0;
+    const stamp = r.slug + ':' + (r.updated || 0);
+    try { if (sessionStorage.getItem('hs-pull') === stamp) return; } catch (e) {}
+    try { sessionStorage.setItem('hs-pull', stamp); } catch (e) {}
+    try { localStorage.setItem(HS_KEY, JSON.stringify(next)); } catch (e) { return; }
+    track1('homestead_pull', { how: mine ? 'refresh' : 'adopt' });
+    toast('⬇️ fetching your homestead…', 2400);
+    setTimeout(() => location.reload(), 700);
+  }
+  yardPull();
+
   // 🐔 farm boot — after everything above exists: back-grants for yards
   // claimed before the farm, then the morning
   if (FARM) {
@@ -3367,6 +3433,7 @@ function init(visitDoc, visitMiss) {
       pos, tgt, peers, birds: birdsLive,
       // 🐔 farm QA: morning(d) walks the clock d days and relays the morning
       morning: (d) => { qaDayOfs += (d || 1) * 86400000; morningTick(); return farmStats().hs_day; },
+      pull: yardPull,
       farm: () => ({ hens: state.hens || 0, eggs: state.eggs || 0, fed: fedToday(), eggsOnGround: eggEls.length }),
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,

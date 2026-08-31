@@ -2573,7 +2573,29 @@ export class YardRoom {
       doc.updated = Date.now();
       await this.state.storage.put('y:' + slug, doc);
       await this.indexUpsert(doc);
-      return json({ ok: 1, slug });
+      // the updated stamp rides back — the pull-sync compares SERVER times
+      // only, because two devices' own clocks cannot be compared
+      return json({ ok: 1, slug, updated: doc.updated });
+    }
+
+    // 🏡 MINE — the pull half of cross-device sync (31 Aug). The push half
+    // always converged (ownSlug keys yards by the pass), but a second signed-in
+    // device started EMPTY instead of fetching the yard down — Trym's phone
+    // greeted him as Testy while his real homestead sat on the server. POST
+    // because auth rides the body like every other yard call; the response is
+    // the same shape /yard serves visitors, plus created for the local claim.
+    if (path === '/mine' && request.method === 'POST') {
+      const slug = await this.ownSlug(pass, alt);
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ slug: null });
+      const st = doc.state || {};
+      return json({
+        slug, name: doc.name, created: doc.created || 0, updated: doc.updated || 0,
+        stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home,
+        items: st.items || [], soil: st.soil || [], fence: st.fence || [],
+        mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},
+        bed: st.bed, bedAt: st.bedAt,
+      });
     }
 
     // 📊 the HQ world desk: how many homesteads exist and how fresh they are
