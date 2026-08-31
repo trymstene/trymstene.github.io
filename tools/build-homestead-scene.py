@@ -935,11 +935,15 @@ if HAVE_PACK:
         strip.save(os.path.join(OUT, out_name), optimize=True)
         print('  %s %dx%d (frame %dx%d)' % (out_name, strip.width, strip.height, strip.width // 4, strip.height))
         return strip
-    flock_strip('Goats_48x48/Goat_Brown_48x48.png', 96, 144, 144, 'c-goat.png')
-    flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 96, 96, 'c-sheepf.png')
-    flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 480, 96, 'c-sheeps.png')
-    flock_strip('Chickens_and_Roosters_48x48/Rooster_Brown_48x48.png', 48, 96, 96, 'c-roost.png')
-    flock_strip('Cows_48x48/Cow_48x48.png', 144, 144, 144, 'c-cow.png')
+    # ⚠️ row 1 is the IDLE cycle — only the head moves, which is why the
+    # flock walked with stiff legs (Trym). ROW 2 is the walk (sheared sheep:
+    # row 6 of its block), found by measuring leg-region motion across every
+    # candidate window and then LOOKING at the winners.
+    flock_strip('Goats_48x48/Goat_Brown_48x48.png', 96, 288, 144, 'c-goat.png')
+    flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 192, 96, 'c-sheepf.png')
+    flock_strip('Sheeps_48x48/Sheep_2_White_48x48.png', 96, 576, 96, 'c-sheeps.png')
+    flock_strip('Chickens_and_Roosters_48x48/Rooster_Brown_48x48.png', 48, 192, 96, 'c-roost.png')
+    flock_strip('Cows_48x48/Cow_48x48.png', 144, 288, 144, 'c-cow.png')
     # 🧀 the cheese machine's still frame + the cheese pickup icon
     CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
     chm = Image.open(CHM).convert('RGBA')
