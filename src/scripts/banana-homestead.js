@@ -355,7 +355,10 @@ function init(visitDoc, visitMiss) {
         mailAt: state.mailAt, signAt: state.signAt,
         inItems: pubIn,
         animals: (state.animals || []).slice(0, 24).map((a) => ({
-          sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0) })),
+          sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0),
+          hm: a.hm ? { x: Math.round(a.hm.x), y: Math.round(a.hm.y) } : undefined })),
+        memory: (state.memory || []).slice(0, 12).map((m) => ({
+          sp: m.sp, b: Math.round(m.b || 0), name: m.name || '' })),
       } }).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
@@ -967,7 +970,9 @@ function init(visitDoc, visitMiss) {
   // ---- 🐔 coop chickens: three hens stroll the property (Trym) -------------
   const hens = [];
   let farmPen = null;       // the largest pen, recomputed when the fence changes
+  let farmPens = [];        // all pens — a carried animal can be assigned to any
   let farmPenN = -1;
+  let carryA = null;        // ✥ move tool: the animal in your arms
   let henGreeted = false;   // the bond-7 gate greeting fires once per visit
   const bestBond = () => farmAnimals().filter((a) => a.sp === 'hen')
     .reduce((m, a) => (!m || a.b > m.b ? a : m), null);
@@ -975,7 +980,8 @@ function init(visitDoc, visitMiss) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
     if (FARM && (state.fence || []).length !== farmPenN) {
       farmPenN = (state.fence || []).length;
-      farmPen = computePens()[0] || null;
+      farmPens = computePens();
+      farmPen = farmPens[0] || null;
     }
     // 🐔 FARM: hens are GRANTED at claim (state.hens), not coop-gated — the
     // coop keeps its three strollers on top. Before the claim, ONE hen follows
@@ -1043,6 +1049,34 @@ function init(visitDoc, visitMiss) {
       }
       hens.push(h2);
     }
+    // ⚠️ REBIND sprite↔entity every tick — the binding was fixed at creation
+    // by index, so after a sale the surviving sprites carried STALE refs to
+    // sold animals: Henrietta's new home was written onto a ghost (the walk).
+    // Cheap for a flock of ten; re-dress the sprite when its species changed.
+    if (FARM && !visiting && state.claimedAt) {
+      const fl = farmAnimals();
+      hens.forEach((h4, i4) => {
+        const na = fl[i4] || null;
+        if (h4.a === na) return;
+        const oldSp = h4.a && h4.a.sp;
+        h4.a = na;
+        if (na && na.sp !== oldSp) {
+          h4.el.className = na.sp === 'goat' ? 'hs-hen hs-hen--goat'
+            : na.sp === 'cow' ? 'hs-hen hs-hen--cow'
+            : na.sp === 'rooster' ? 'hs-hen hs-hen--roost'
+            : na.sp === 'sheep' ? 'hs-hen hs-hen--sheep' : 'hs-hen';
+          h4.fluff = undefined;
+          h4.img.style.backgroundImage = na.sp === 'goat' ? "url('/assets/homestead/c-goat.png')"
+            : na.sp === 'cow' ? "url('/assets/homestead/c-cow.png')"
+            : na.sp === 'rooster' ? "url('/assets/homestead/c-roost.png')"
+            : na.sp === 'sheep' ? "url('/assets/homestead/" + ((na.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')"
+            : "url('/assets/homestead/c-hen" + (i4 % 3) + ".png')";
+          const dims2 = na.sp === 'cow' ? [30, 34]
+            : (na.sp === 'goat' || na.sp === 'sheep') ? [21, 32] : [16, 30];
+          h4.hw = dims2[0]; h4.hv = dims2[1];
+        }
+      });
+    }
     const P = plotNow();
     for (const h of hens) {
       if (h.follow) {   // trailing the banana up the road, until the claim
@@ -1066,12 +1100,24 @@ function init(visitDoc, visitMiss) {
           h.waitUntil = 0;
           h.tx = Math.max(P[0] + 16, Math.min(P[2] - 16, h.x + (Math.random() * 260 - 130)));
           h.ty = Math.max(P[1] + 40, Math.min(P[3] - 10, h.y + (Math.random() * 160 - 80)));
-          // 🚧 the paddock: a penned animal wanders INSIDE the largest pen.
-          // Open the fence and it simply wanders the plot — never destroyed,
-          // never blocked, the pens-are-containers doctrine in motion.
-          if (h.a && farmPen && farmPen.int >= 4) {
-            h.tx = Math.max(farmPen.x0 + 10, Math.min(farmPen.x1 - 10, h.tx));
-            h.ty = Math.max(farmPen.y0 + 14, Math.min(farmPen.y1 - 4, h.ty));
+          // 🚧 the paddock — WHERE YOU PUT HER decides where she stays
+          // (Trym: "i cant tell animals where to stay or go"). An animal
+          // carried to a spot in the ✥ tool keeps to it: inside a pen, that
+          // pen is hers; on open grass, she keeps to that corner. Untouched
+          // animals default to the largest pen as before. Open the fence and
+          // she simply roams — never destroyed, never blocked.
+          if (h.a) {
+            const pin = h.a.hm;
+            const pen2 = pin
+              ? farmPens.find((p) => pin.x > p.x0 && pin.x < p.x1 && pin.y > p.y0 && pin.y < p.y1)
+              : farmPen;
+            if (pen2 && pen2.int >= 4) {
+              h.tx = Math.max(pen2.x0 + 10, Math.min(pen2.x1 - 10, h.tx));
+              h.ty = Math.max(pen2.y0 + 14, Math.min(pen2.y1 - 4, h.ty));
+            } else if (pin) {
+              h.tx = Math.max(pin.x - 130, Math.min(pin.x + 130, h.tx));
+              h.ty = Math.max(pin.y - 90, Math.min(pin.y + 90, h.ty));
+            }
           }
           // the sheep's coat follows its wool: swap strips when the state flips
           if (h.a && h.a.sp === 'sheep') {
@@ -1204,11 +1250,45 @@ function init(visitDoc, visitMiss) {
   }
   function farmAnimals() {
     if (!Array.isArray(state.animals)) state.animals = [];
-    // migrate the slice-1 count into entities, once
-    while (state.animals.filter((a) => a.sp === 'hen').length < (state.hens || 0)) {
-      state.animals.push({ sp: 'hen', b: 0, pd: 0, name: '' });
+    // ⚠️ the slice-1 count migrates into entities ONCE, flag-gated — this
+    // used to run on every call, topping the list back up to the mirror, so
+    // a sold hen was resurrected before her refund toast faded (the walk:
+    // +12 paid, flock unchanged, forever)
+    if (!state.animalsV) {
+      while (state.animals.filter((a) => a.sp === 'hen').length < (state.hens || 0)) {
+        state.animals.push({ sp: 'hen', b: 0, pd: 0, name: '' });
+      }
+      state.animalsV = 1;
     }
     return state.animals;
+  }
+  // 💛 THE FARM'S MEMORY — the pens-are-containers promise, kept: sell the
+  // goat and buy a goat next month, and Gunnar walks back in with his name
+  // and his bond. Anything named or bonded is stashed on sale; a later buy of
+  // the same species revives the most-bonded memory first. Capped, oldest out.
+  function farmMemory() {
+    if (!Array.isArray(state.memory)) state.memory = [];
+    return state.memory;
+  }
+  function farmSell(sp, price) {
+    const flock = farmAnimals().filter((a) => a.sp === sp);
+    if (!flock.length) return null;
+    // the least-loved, unnamed animal goes first — Henrietta is safe until
+    // she is the only one left
+    flock.sort((a, b) => (a.name ? 1 : 0) - (b.name ? 1 : 0) || (a.b || 0) - (b.b || 0));
+    const a = flock[0];
+    state.animals.splice(state.animals.indexOf(a), 1);
+    if (a.name || (a.b || 0) > 0) {
+      farmMemory().push({ sp: a.sp, name: a.name || '', b: a.b || 0 });
+      if (state.memory.length > 12) state.memory.shift();
+    }
+    // the mirror updates from the raw list — never through a path that
+    // could re-migrate
+    state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
+    passStat('coins_earned', price);   // full price back — swapping is the
+    save(); refreshHud();              // strategy verb, never a tax
+    track1('homestead_sell_animal', { sp });
+    return a;
   }
   function farmGrant() {
     // idempotent: claims made before the farm existed get theirs on arrival
@@ -1394,7 +1474,10 @@ function init(visitDoc, visitMiss) {
       const v = (inp.value || '').trim().slice(0, 20);
       if (!v) { inp.focus(); return; }
       // ⚠️ one Gunnar per farm, full stop — every news line stays unambiguous
-      if (farmAnimals().some((a2) => a2.name && a2.name.toLowerCase() === v.toLowerCase())) {
+      // one name per farm INCLUDING the remembered — or a later revival
+      // would bring back a twin
+      if (farmAnimals().some((a2) => a2.name && a2.name.toLowerCase() === v.toLowerCase())
+        || farmMemory().some((m) => m.name && m.name.toLowerCase() === v.toLowerCase())) {
         toast('there’s already a ' + v + ' on this farm — every name is one of a kind');
         inp.focus(); return;
       }
@@ -1754,6 +1837,7 @@ function init(visitDoc, visitMiss) {
     // ⚠️ every tool flag resets here — a stuck flag eats all walk taps (the
     // arranging leak: move tool survived 'done' and blocked tap-to-walk)
     planner = false; digging = false; fencing = false; clearing = false; arranging = false;
+    if (carryA) { carryA.el.style.opacity = ''; carryA = null; }   // arms empty on done
     toolF.style.display = toolS.style.display = toolC.style.display = '';
     buildBtn.setAttribute('aria-pressed', 'false');
     planBar.hidden = true;
@@ -2643,15 +2727,48 @@ function init(visitDoc, visitMiss) {
         }
         b.addEventListener('click', () => {
           if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
-          farmAnimals().push({ sp: an.sp, b: 0, pd: 0, name: '', wd: 0 });
+          // 💛 the most-bonded memory of this species walks back in first
+          const mem = farmMemory().filter((m) => m.sp === an.sp)
+            .sort((x, y) => (y.b || 0) - (x.b || 0))[0];
+          if (mem) state.memory.splice(state.memory.indexOf(mem), 1);
+          farmAnimals().push({ sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0 });
           state.hens = spCount('hen');
           save(); refreshHud(); renderShop();
-          toast(an.icon + ' ' + an.name + ' is yours — '
-            + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet in the pen'), 3600);
+          toast(mem && mem.name
+            ? '💛 ' + mem.name + '! ' + (an.sp === 'rooster' ? 'he remembers you' : 'she remembers you')
+            : an.icon + ' ' + an.name + ' is yours — '
+              + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet in the pen'), 3600);
           track1('homestead_buy_animal', { sp: an.sp });
         });
       }
       prow.appendChild(b);
+      // ↩ selling, beside buying — full price back. The pick protects the
+      // loved: unnamed and least-bonded go first, and when the one on the
+      // block is NAMED the button asks twice before it lets go of her.
+      const owned2 = spCount(an.sp);
+      if (owned2 > 0) {
+        const flock2 = farmAnimals().filter((a2) => a2.sp === an.sp)
+          .sort((x, y) => (x.name ? 1 : 0) - (y.name ? 1 : 0) || (x.b || 0) - (y.b || 0));
+        const pick = flock2[0];
+        const sb = document.createElement('button');
+        sb.className = 'hs-btn hs-btn--ghost';
+        sb.textContent = '↩ sell ' + (pick.name ? pick.name : 'one') + ' · +' + an.price;
+        sb.addEventListener('click', () => {
+          if (pick.name && !sb.armed) {
+            sb.armed = true;
+            sb.textContent = '↩ sell ' + pick.name + '? she’ll remember you — tap again';
+            setTimeout(() => { sb.armed = false; if (sb.isConnected) renderShop(); }, 4000);
+            return;
+          }
+          const gone = farmSell(an.sp, an.price);
+          renderShop();
+          if (gone) {
+            toast('🪙 +' + an.price + ' — ' + (gone.name ? gone.name + ' will remember you'
+              : 'the ' + an.sp + ' found a new farm'), 3600);
+          }
+        });
+        prow.appendChild(sb);
+      }
     });
     pen.appendChild(prow);
     list.appendChild(pen);
@@ -3370,6 +3487,38 @@ function init(visitDoc, visitMiss) {
     // ✥ move mode: lift a thing, set it down — batch rearranging (Trym:
     // "better to reposition and move stuff in build mode")
     if (arranging && !visiting) {
+      // 🐔 an animal in your arms lands where you tap — before anything
+      // else, so putting her down always wins
+      if (carryA) {
+        const P2 = plotNow();
+        const px2 = Math.max(P2[0] + 16, Math.min(P2[2] - 16, wx));
+        const py2 = Math.max(P2[1] + 40, Math.min(P2[3] - 6, wy));
+        carryA.a.hm = { x: Math.round(px2), y: Math.round(py2) };
+        carryA.x = px2; carryA.y = py2;
+        carryA.tx = px2; carryA.ty = py2;
+        carryA.el.style.opacity = '';
+        float(px2, py2 - 40, '🐾');
+        toast((carryA.a.name || 'she') + ' stays here now', 2600);
+        carryA = null;
+        save();
+        track1('homestead_move_animal');
+        return;
+      }
+      // ...or pick the nearest one up
+      if (FARM) {
+        let bh = null, bd = 36;
+        for (const h3 of hens) {
+          if (!h3.a) continue;
+          const d3 = Math.hypot(wx - h3.x, wy - (h3.y - 14));
+          if (d3 < bd) { bd = d3; bh = h3; }
+        }
+        if (bh) {
+          carryA = bh;
+          bh.el.style.opacity = '0.55';
+          toast('🐾 tap where ' + (bh.a.name || 'she') + ' should stay', 3600);
+          return;
+        }
+      }
       const k = itemAt(wx, wy);
       if (k >= 0) {
         startPlacing(state.items[k].id, state.items[k]);
@@ -3785,6 +3934,7 @@ function init(visitDoc, visitMiss) {
     mailAt: d.mailAt, signAt: d.signAt, home: d.home,
     inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
     animals: Array.isArray(d.animals) ? d.animals : undefined,
+    memory: Array.isArray(d.memory) ? d.memory : undefined,
   });
   async function yardPull() {
     if (!FARM || visiting || HS_TEST) return;
