@@ -911,6 +911,24 @@ if HAVE_PACK:
         strip = hsheet.crop((0, 48, 192, 96)).resize((128, 32), Image.NEAREST)
         strip.save(os.path.join(OUT, 'c-hen%d.png' % hi), optimize=True)
     print('  c-hen0..2.png (coop chickens)')
+    # 🐐🐑 slice 3: the pen animals — same recipe as the hens (row 1 = the
+    # side walk, first 4 frames), baked a touch larger because a goat should
+    # read bigger than a hen. The sheep carries TWO strips: the pack drew a
+    # whole "Sheared" block into the model-2 sheet (row 11 = its side walk),
+    # so wool-ready vs shorn is purpose-drawn art, not a reading we assign.
+    ANI = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animals_48x48')
+    for out_name, sheet_path, row in (
+            ('c-goat.png', 'Goats_48x48/Goat_Brown_48x48.png', 1),
+            ('c-sheepf.png', 'Sheeps_48x48/Sheep_2_White_48x48.png', 1),
+            ('c-sheeps.png', 'Sheeps_48x48/Sheep_2_White_48x48.png', 11)):
+        sh = Image.open(os.path.join(ANI, sheet_path)).convert('RGBA')
+        st2 = sh.crop((0, row * 48, 192, row * 48 + 48)).resize((144, 36), Image.NEAREST)
+        st2.save(os.path.join(OUT, out_name), optimize=True)
+        print('  ' + out_name)
+    # 🥛 the milk-can pickup — the pack's own 32px icon, kept at native px
+    MICON = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/Icons/Icons_32x32/Icons_32x32/Singles_Icons_32x32_Tools_Bucket_Milk.png')
+    Image.open(MICON).convert('RGBA').save(os.path.join(OUT, 'm-milk.png'), optimize=True)
+    print('  m-milk.png')
     import shutil
     ANIM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Exteriors_48x48/Animated_48x48/Animated_gifs_48x48')
     shutil.copy(os.path.join(ANIM, 'Campfire_48x48.gif'), os.path.join(OUT, 'campfire-lit.gif'))

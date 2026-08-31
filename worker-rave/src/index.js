@@ -2471,9 +2471,9 @@ export class YardRoom {
     // save; this is the backstop, not the filter)
     out.animals = [];
     (Array.isArray(s.animals) ? s.animals.slice(0, 24) : []).forEach((a) => {
-      if (!a || a.sp !== 'hen') return;
+      if (!a || !['hen', 'goat', 'sheep'].includes(a.sp)) return;
       const nm = typeof a.name === 'string' ? a.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
-      out.animals.push({ sp: 'hen', b: num(a.b, 0, 999), name: nm });
+      out.animals.push({ sp: a.sp, b: num(a.b, 0, 999), name: nm, wd: num(a.wd, 0, 3) });
     });
     return out;
   }

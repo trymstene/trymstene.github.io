@@ -349,7 +349,7 @@ function init(visitDoc, visitMiss) {
         mailAt: state.mailAt, signAt: state.signAt,
         inItems: pubIn,
         animals: (state.animals || []).slice(0, 24).map((a) => ({
-          sp: a.sp, b: Math.round(a.b || 0), name: a.name || '' })),
+          sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0) })),
       } }).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
@@ -960,11 +960,17 @@ function init(visitDoc, visitMiss) {
 
   // ---- 🐔 coop chickens: three hens stroll the property (Trym) -------------
   const hens = [];
+  let farmPen = null;       // the largest pen, recomputed when the fence changes
+  let farmPenN = -1;
   let henGreeted = false;   // the bond-7 gate greeting fires once per visit
   const bestBond = () => farmAnimals().filter((a) => a.sp === 'hen')
     .reduce((m, a) => (!m || a.b > m.b ? a : m), null);
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
+    if (FARM && (state.fence || []).length !== farmPenN) {
+      farmPenN = (state.fence || []).length;
+      farmPen = computePens()[0] || null;
+    }
     // 🐔 FARM: hens are GRANTED at claim (state.hens), not coop-gated — the
     // coop keeps its three strollers on top. Before the claim, ONE hen follows
     // the walk-in: the design's hook is “a hen followed me home”, and she is
@@ -972,7 +978,7 @@ function init(visitDoc, visitMiss) {
     // STANDS — it never vanishes (the trap list's own rule; legacy coop-only
     // behaviour is unchanged with the switch off).
     const want = FARM
-      ? (!visiting && !state.claimedAt ? 1 : (state.hens || 0) + (hasCoop ? 3 : 0))
+      ? (!visiting && !state.claimedAt ? 1 : farmAnimals().length + (hasCoop ? 3 : 0))
       : (hasCoop && !REDUCED ? 3 : 0);
     if (!want) {
       while (hens.length) hens.pop().el.remove();
@@ -990,10 +996,20 @@ function init(visitDoc, visitMiss) {
         || state.items.find((i) => i.id === 'trough')
         || { x: state.home.x + 40, y: state.home.y + 44 };
       const follow = FARM && !visiting && !state.claimedAt;
-      // bind this sprite to its entity (owner's hens only — a visited yard's
-      // flock is scenery and pays nothing, the standing pay-side gate)
-      const flock = (FARM && !visiting && state.claimedAt) ? farmAnimals().filter((a2) => a2.sp === 'hen') : [];
+      // bind this sprite to its entity (owner's animals only — a visited
+      // yard's flock is scenery and pays nothing, the standing pay-side gate)
+      const flock = (FARM && !visiting && state.claimedAt) ? farmAnimals() : [];
       const a = flock[hens.length] || null;
+      // 🐐 species dress the same skeleton: strip + a size class. The sheep
+      // wears the pack's own two states — woolly when wool is ready, the
+      // drawn Sheared block otherwise.
+      if (a && a.sp === 'goat') {
+        el.className = 'hs-hen hs-hen--goat';
+        img.style.backgroundImage = "url('/assets/homestead/c-goat.png')";
+      } else if (a && a.sp === 'sheep') {
+        el.className = 'hs-hen hs-hen--sheep';
+        img.style.backgroundImage = "url('/assets/homestead/" + ((a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')";
+      }
       const h2 = { el, img, follow, a,
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,
@@ -1030,6 +1046,21 @@ function init(visitDoc, visitMiss) {
           h.waitUntil = 0;
           h.tx = Math.max(P[0] + 16, Math.min(P[2] - 16, h.x + (Math.random() * 260 - 130)));
           h.ty = Math.max(P[1] + 40, Math.min(P[3] - 10, h.y + (Math.random() * 160 - 80)));
+          // 🚧 the paddock: a penned animal wanders INSIDE the largest pen.
+          // Open the fence and it simply wanders the plot — never destroyed,
+          // never blocked, the pens-are-containers doctrine in motion.
+          if (h.a && farmPen && farmPen.int >= 4) {
+            h.tx = Math.max(farmPen.x0 + 10, Math.min(farmPen.x1 - 10, h.tx));
+            h.ty = Math.max(farmPen.y0 + 14, Math.min(farmPen.y1 - 4, h.ty));
+          }
+          // the sheep's coat follows its wool: swap strips when the state flips
+          if (h.a && h.a.sp === 'sheep') {
+            const wantF = (h.a.wd || 0) >= 3;
+            if (h.fluff !== wantF) {
+              h.fluff = wantF;
+              h.img.style.backgroundImage = "url('/assets/homestead/" + (wantF ? 'c-sheepf.png' : 'c-sheeps.png') + "')";
+            }
+          }
         }
       } else {
         h.x += dx / d * 34 * dt;
@@ -1075,6 +1106,80 @@ function init(visitDoc, visitMiss) {
   // pd (last pet day), name }. state.hens stays as the count mirror the pen
   // maths reads. Bond and names ride hs-v1 AND the yard sync (yardSan keeps
   // them), so the phone and the desktop agree on who Henrietta is.
+  // 🚧 THE PEN TEST — a BOUNDING BOX over each connected fence cluster,
+  // never a flood fill, and biased to YES (the doctrine: state.fence is a
+  // cell list, not a polygon, and a false "not closed" on a fence the player
+  // believes is shut punishes exactly the arranger this design rewards). A
+  // cluster is a pen when it reaches all four sides of its own box and holds
+  // at least one interior tile; a one-cell gate gap still counts.
+  function computePens() {
+    const cells = state.fence || [];
+    if (cells.length < 8) return [];
+    const key = (i, j) => i + ',' + j;
+    const set = new Set(cells.map((c) => key(c.i, c.j)));
+    const seen = new Set();
+    const pens = [];
+    for (const c of cells) {
+      const k0 = key(c.i, c.j);
+      if (seen.has(k0)) continue;
+      const q = [c]; seen.add(k0);
+      let mnI = c.i, mxI = c.i, mnJ = c.j, mxJ = c.j;
+      const members = [];
+      while (q.length) {
+        const cur = q.pop();
+        members.push(cur);
+        mnI = Math.min(mnI, cur.i); mxI = Math.max(mxI, cur.i);
+        mnJ = Math.min(mnJ, cur.j); mxJ = Math.max(mxJ, cur.j);
+        for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+          const k2 = key(cur.i + di, cur.j + dj);
+          if (!seen.has(k2) && set.has(k2)) { seen.add(k2); q.push({ i: cur.i + di, j: cur.j + dj }); }
+        }
+      }
+      const touches = members.some((m) => m.i === mnI) && members.some((m) => m.i === mxI)
+        && members.some((m) => m.j === mnJ) && members.some((m) => m.j === mxJ);
+      const inTiles = Math.max(0, mxI - mnI - 1) * Math.max(0, mxJ - mnJ - 1);
+      if (touches && inTiles >= 1) {
+        pens.push({ mnI, mxI, mnJ, mxJ, int: inTiles,
+          // the interior in world px, for wander clamps and the tint
+          x0: (mnI + 1) * 48, y0: (mnJ + 1) * 48, x1: mxI * 48, y1: mxJ * 48 });
+      }
+    }
+    return pens.sort((a, b) => b.int - a.int);
+  }
+  // 📐 capacity reads the LARGEST pen — the ladder as written: ≥4 tiles
+  // holds 4 hens, ≥8 adds the goat, ≥12 adds two sheep. One paddock model:
+  // every animal lives in the biggest pen when one exists.
+  function penCaps() {
+    const pens = computePens();
+    const big = pens[0];
+    return { pens,
+      hen: big && big.int >= 4 ? 4 : 2,
+      goat: big && big.int >= 8 ? 1 : 0,
+      sheep: big && big.int >= 12 ? 2 : 0 };
+  }
+  const spCount = (sp) => farmAnimals().filter((a) => a.sp === sp).length;
+  // 🟩 THE LIVE TINT — closed pens light up WHILE the fence tool is in hand
+  // (the doctrine: closed must be SEEN during the act, not reported after).
+  const penEls = [];
+  function penTint() {
+    penEls.forEach((e) => e.remove());
+    penEls.length = 0;
+    if (!FARM || !fencing) return;
+    computePens().forEach((p) => {
+      const d = document.createElement('div');
+      d.className = 'hs-pen';
+      d.style.left = pct(p.x0, W); d.style.top = pct(p.y0, H);
+      d.style.width = pct(p.x1 - p.x0, W); d.style.height = pct(p.y1 - p.y0, H);
+      const t = document.createElement('i');
+      t.textContent = p.int + ' tiles — ' + (p.int >= 20 ? 'room for anything'
+        : p.int >= 12 ? 'sheep would settle here' : p.int >= 8 ? 'a goat fits'
+        : p.int >= 4 ? 'hens approve' : 'a bit snug');
+      d.appendChild(t);
+      world.appendChild(d);
+      penEls.push(d);
+      track1('homestead_pen', { tiles: p.int });
+    });
+  }
   function farmAnimals() {
     if (!Array.isArray(state.animals)) state.animals = [];
     // migrate the slice-1 count into entities, once
@@ -1117,22 +1222,38 @@ function init(visitDoc, visitMiss) {
     const gap = Math.min(today - last, 2);
     if (gap <= 0) return;
     const fed = (st.hs_fed || 0) >= last;               // fed on the last visit day
-    const eggs = gap * state.hens * (fed ? 2 : 1);
+    const flock = farmAnimals();
+    const eggs = gap * flock.filter((a) => a.sp === 'hen').length * (fed ? 2 : 1);
+    const milk = gap * flock.filter((a) => a.sp === 'goat').length * (fed ? 2 : 1);
+    // 🧶 wool grows in DAYS, capped at ready — a fortnight away meets the
+    // same one shearing as a weekend, never a backlog
+    flock.forEach((a) => { if (a.sp === 'sheep') a.wd = Math.min(3, (a.wd || 0) + gap); });
     passStat('hs_day', today - last);
     const t = state.items.find((i) => i.id === 'trough') || { x: state.home.x + 96, y: state.home.y + 52 };
-    for (let i = 0; i < eggs; i++) {
+    const drops = [];
+    for (let i = 0; i < eggs; i++) drops.push('egg');
+    for (let i = 0; i < milk; i++) drops.push('milk');
+    drops.forEach((kind, i) => {
       const el = document.createElement('div');
-      el.className = 'hs-egg';
+      el.className = kind === 'milk' ? 'hs-milk' : 'hs-egg';
       const x = t.x - 44 + (i % 4) * 30, y = t.y + 12 + Math.floor(i / 4) * 24;
       el.style.left = pct(x, W); el.style.top = pct(y, H);
       depth(el, y);
       world.appendChild(el);
-      eggEls.push({ x, y, el });
-    }
+      eggEls.push({ x, y, el, kind });
+    });
     const star = bestBond();
-    const who = star && star.name ? star.name + (state.hens > 1 ? ' & co' : '') : 'your hens';
-    toast('🥚 ' + who + ' left ' + eggs + ' egg' + (eggs > 1 ? 's' : '') + ' by the trough'
-      + (fed ? ' — double, for yesterday’s feed' : ''), 4200);
+    const who = star && star.name ? star.name + (farmAnimals().length > 1 ? ' & co' : '') : 'the farm';
+    const bits = [];
+    if (eggs) bits.push(eggs + ' egg' + (eggs > 1 ? 's' : ''));
+    if (milk) bits.push(milk + ' can' + (milk > 1 ? 's' : '') + ' of milk');
+    if (bits.length) {
+      toast('🥚 ' + who + ' left ' + bits.join(' · ') + ' by the trough'
+        + (fed ? ' — double, for yesterday’s feed' : ''), 4200);
+    }
+    if (flock.some((a) => a.sp === 'sheep' && (a.wd || 0) >= 3)) {
+      setTimeout(() => toast('🧶 the sheep is woolly — tap her to shear', 3600), 4600);
+    }
   }
   function farmEggTick() {
     if (visiting) return;                               // pay-side gate: a
@@ -1141,10 +1262,16 @@ function init(visitDoc, visitMiss) {
       if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34) continue;   // visitor
       c.el.remove();
       eggEls.splice(i, 1);
-      state.eggs = (state.eggs || 0) + 1;
+      if (c.kind === 'milk') {
+        state.milk = (state.milk || 0) + 1;
+        float(c.x, c.y - 22, '🥛 +1');
+        track1('homestead_milk');
+      } else {
+        state.eggs = (state.eggs || 0) + 1;
+        float(c.x, c.y - 22, '🥚 +1');
+        track1('homestead_egg');
+      }
       save();
-      float(c.x, c.y - 22, '🥚 +1');
-      track1('homestead_egg');
     }
   }
   // ❤️ the mood bubble — the park's hearts-only grammar, reused exactly:
@@ -1162,6 +1289,20 @@ function init(visitDoc, visitMiss) {
     // and never, ever falls — pd is the only gate, there is no decay anywhere.
     const a = h.a;
     if (!a || visiting) return;
+    // 🧶 THE SHEAR (slice 3): a woolly sheep gives her coat on the tap —
+    // one wool, the drawn Sheared sprite takes over, three days grow it back
+    if (a.sp === 'sheep' && (a.wd || 0) >= 3) {
+      a.wd = 0;
+      state.wool = (state.wool || 0) + 1;
+      save();
+      // the coat comes off WITH the tap — the tick's lazy swap only runs on a
+      // wander retarget, which left her fluffy for seconds after the shear
+      h.fluff = false;
+      h.img.style.backgroundImage = "url('/assets/homestead/c-sheeps.png')";
+      float(h.x, h.y - 48, '🧶 +1');
+      toast('🧶 a bundle of wool — ' + (a.name || 'she') + ' looks lighter already', 3600);
+      track1('homestead_shear');
+    }
     const today = dayNum();
     if ((a.pd || 0) < today) {
       a.pd = today;
@@ -1470,6 +1611,7 @@ function init(visitDoc, visitMiss) {
       : digging ? '⛏️ tap your land to till soil — tap soil to fill it back'
       : clearing ? '🧹 tap anything to clear it — decor goes safely to the shed'
       : '✥ tap a thing to lift it — decor, house, mailbox or sign', 3400);
+    penTint();   // existing pens light up the moment the tool is in hand
   }
   function planOverlay() {
     const F = FENCE_TIERS[fenceTier()].fence;
@@ -1566,6 +1708,7 @@ function init(visitDoc, visitMiss) {
     buildBtn.setAttribute('aria-pressed', 'false');
     planBar.hidden = true;
     planShow(false);
+    penTint();   // fencing is false now — this clears the tint
     if (hovEl) hovEl.hidden = true;
     if (!placing) camFree = null;
     view.classList.toggle('is-placing', !!placing);
@@ -2341,7 +2484,12 @@ function init(visitDoc, visitMiss) {
   // 4c an egg against a 25c/day take (the cap is the PIPE, not a throttle:
   // surplus is meant to become a dish). The daily tally is device-local by
   // design — the worst a second device buys is one more capped day.
-  const EGG_C = 4, STALL_CAP = 25;
+  const EGG_C = 4, MILK_C = 6, WOOL_C = 12, STALL_CAP = 25;
+  const ANIMAL_SHOP = [
+    { sp: 'hen', name: 'a hen', price: 12, icon: '🐔', needs: 'a pen of 4+ tiles holds four' },
+    { sp: 'goat', name: 'a goat', price: 35, icon: '🐐', needs: 'fence a pen of 8+ tiles' },
+    { sp: 'sheep', name: 'a sheep', price: 45, icon: '🐑', needs: 'fence a pen of 12+ tiles' },
+  ];
   function stallDay() {
     try {
       const j = JSON.parse(localStorage.getItem('hs-stall-v1') || 'null');
@@ -2349,51 +2497,98 @@ function init(visitDoc, visitMiss) {
     } catch (e) {}
     return { d: dayNum(), sold: 0 };
   }
-  function renderStall(list) {
-    const eggs = state.eggs || 0;
+  function stallSell(kind, price, label) {
+    const nSold = Math.min(state[kind] || 0, Math.floor((STALL_CAP - stallDay().sold) / price));
+    if (!nSold) return;
+    state[kind] -= nSold;
+    const coins = nSold * price;
+    passStat('coins_earned', coins);
+    try { localStorage.setItem('hs-stall-v1', JSON.stringify({ d: dayNum(), sold: stallDay().sold + coins })); } catch (e) {}
+    save(); refreshHud(); renderShop();
+    toast('🪙 +' + coins + ' — the stall took ' + nSold + ' ' + label, 3200);
+    track1('homestead_sell_stall', { kind, n: nSold });
+  }
+  function goodsRow(list, icon, title, kind, price, emptyNote) {
+    const have = state[kind] || 0;
     const sd = stallDay();
-    const room = Math.max(0, STALL_CAP - sd.sold);
-    const canSell = Math.min(eggs, Math.floor(room / EGG_C));
+    const canSell = Math.min(have, Math.floor(Math.max(0, STALL_CAP - sd.sold) / price));
     const card = document.createElement('div');
     card.className = 'hs-up';
-    card.innerHTML = '<div class="hs-uphead"><b>🥚 Eggs</b>'
-      + '<span class="hs-price">× ' + eggs + '</span></div>'
-      + '<span>' + EGG_C + ' ' + COIN + ' each · today’s takings ' + sd.sold + '/' + STALL_CAP + ' ' + COIN + '</span>'
-      + (eggs && !canSell ? '<span class="hs-note">the stall is sold out for today — the pantry never is</span>' : '')
-      + (!eggs ? '<span class="hs-note">the hens lay overnight — come back tomorrow morning</span>' : '');
+    card.innerHTML = '<div class="hs-uphead"><b>' + icon + ' ' + title + '</b>'
+      + '<span class="hs-price">× ' + have + '</span></div>'
+      + '<span>' + price + ' ' + COIN + ' each</span>'
+      + (have && !canSell ? '<span class="hs-note">the stall is sold out for today</span>' : '')
+      + (!have && emptyNote ? '<span class="hs-note">' + emptyNote + '</span>' : '');
     const row = document.createElement('div');
     row.className = 'hs-stallrow';
     const sell = document.createElement('button');
     sell.className = 'hs-btn';
-    sell.textContent = canSell ? '🪙 sell ' + canSell + ' → ' + (canSell * EGG_C) + ' coins' : '🪙 sell';
+    sell.textContent = canSell ? '🪙 sell ' + canSell + ' → ' + (canSell * price) + ' coins' : '🪙 sell';
     sell.disabled = !canSell;
-    sell.addEventListener('click', () => {
-      const nSold = Math.min(state.eggs || 0, Math.floor((STALL_CAP - stallDay().sold) / EGG_C));
-      if (!nSold) return;
-      state.eggs -= nSold;
-      const coins = nSold * EGG_C;
-      passStat('coins_earned', coins);
-      try { localStorage.setItem('hs-stall-v1', JSON.stringify({ d: dayNum(), sold: stallDay().sold + coins })); } catch (e) {}
-      save(); refreshHud(); renderShop();
-      toast('🪙 +' + coins + ' — the stall took ' + nSold + ' egg' + (nSold > 1 ? 's' : ''), 3200);
-      track1('homestead_sell_stall', { n: nSold });
-    });
-    const pan = document.createElement('button');
-    pan.className = 'hs-btn hs-btn--ghost';
-    pan.textContent = '🍳 to the pantry';
-    pan.disabled = !eggs;
-    pan.addEventListener('click', () => {
-      const nAll = state.eggs || 0;
-      state.pantry = state.pantry || {};
-      state.pantry.egg = (state.pantry.egg || 0) + nAll;
-      state.eggs = 0;
-      save(); renderShop();
-      toast('🍳 ' + nAll + ' egg' + (nAll > 1 ? 's' : '') + ' into the pantry', 3200);
-      track1('homestead_pantry_eggs', { n: nAll });
-    });
-    row.appendChild(sell); row.appendChild(pan);
+    sell.addEventListener('click', () => stallSell(kind, price, title.toLowerCase()));
+    row.appendChild(sell);
+    if (kind !== 'wool') {
+      const pan = document.createElement('button');
+      pan.className = 'hs-btn hs-btn--ghost';
+      pan.textContent = '🍳 to the pantry';
+      pan.disabled = !have;
+      pan.addEventListener('click', () => {
+        const nAll = state[kind] || 0;
+        state.pantry = state.pantry || {};
+        const pk = kind === 'milk' ? 'milk' : 'egg';
+        state.pantry[pk] = (state.pantry[pk] || 0) + nAll;
+        state[kind] = 0;
+        save(); renderShop();
+        toast('🍳 ' + nAll + ' into the pantry', 3200);
+        track1('homestead_pantry_eggs', { kind, n: nAll });
+      });
+      row.appendChild(pan);
+    }
     card.appendChild(row);
     list.appendChild(card);
+  }
+  function renderStall(list) {
+    const sd = stallDay();
+    const head = document.createElement('p');
+    head.className = 'hs-note';
+    head.textContent = 'today’s takings ' + sd.sold + '/' + STALL_CAP + ' coins — the road’s only got so many customers';
+    list.appendChild(head);
+    goodsRow(list, '🥚', 'Eggs', 'eggs', EGG_C, 'the hens lay overnight — come back tomorrow morning');
+    if (spCount('goat') || state.milk) goodsRow(list, '🥛', 'Milk', 'milk', MILK_C, 'the goat milks overnight');
+    if (spCount('sheep') || state.wool) goodsRow(list, '🧶', 'Wool', 'wool', WOOL_C, 'wool grows back in three days');
+    // 🚧 THE PEN LADDER — what your fence has earned. Never a locked door:
+    // a rung you cannot buy says exactly which fence would open it.
+    const caps = penCaps();
+    const pen = document.createElement('div');
+    pen.className = 'hs-up';
+    pen.innerHTML = '<div class="hs-uphead"><b>🚧 The pen</b>'
+      + '<span class="hs-price">' + (caps.pens[0] ? caps.pens[0].int + ' tiles' : 'no pen yet') + '</span></div>'
+      + '<span>your fence decides what you can keep — build it in 🔨 build mode</span>';
+    const prow = document.createElement('div');
+    prow.className = 'hs-stallrow hs-stallrow--wrap';
+    ANIMAL_SHOP.forEach((an) => {
+      const owned = spCount(an.sp);
+      const cap = caps[an.sp];
+      const b = document.createElement('button');
+      b.className = 'hs-btn';
+      if (owned >= cap) {
+        b.textContent = an.icon + ' ' + an.name + ' · ' + (cap === 0 ? an.needs : owned + '/' + cap);
+        b.disabled = true;
+      } else {
+        b.textContent = an.icon + ' ' + an.name + ' · ' + an.price + ' coins';
+        b.addEventListener('click', () => {
+          if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
+          farmAnimals().push({ sp: an.sp, b: 0, pd: 0, name: '', wd: 0 });
+          state.hens = spCount('hen');
+          save(); refreshHud(); renderShop();
+          toast(an.icon + ' ' + an.name + ' is yours — she’s finding her feet in the pen', 3600);
+          track1('homestead_buy_animal', { sp: an.sp });
+        });
+      }
+      prow.appendChild(b);
+    });
+    pen.appendChild(prow);
+    list.appendChild(pen);
   }
   function shopHead() {
     const hd = SHOP_HEADS[shopEl.dataset.tab] || SHOP_HEADS.order;
@@ -3114,7 +3309,7 @@ function init(visitDoc, visitMiss) {
       const fc = state.fence.find((s2) => s2.i === fi && s2.j === fj);
       if (fc) {
         state.fence = state.fence.filter((s2) => s2 !== fc);
-        save(); refreshFenceB(); rebuildSolids();
+        save(); refreshFenceB(); rebuildSolids(); penTint();
         float(fi * 48 + 24, fj * 48 + 28, '🪵');
         return;
       }
@@ -3153,7 +3348,7 @@ function init(visitDoc, visitMiss) {
         float(cx, cb - 24, '🔨');
         track('homestead_fence', { n: state.fence.length });
       }
-      save(); refreshFenceB(); rebuildSolids();
+      save(); refreshFenceB(); rebuildSolids(); penTint();
       return;
     }
     // 🪏 dig mode: tap lawn = till a cell, tap empty soil = fill it back
@@ -3189,9 +3384,15 @@ function init(visitDoc, visitMiss) {
     // flourish; the trough is the verb. Never in build mode — the planner's
     // taps belong to the grid.
     if (FARM && !planner) {
+      // ⚠️ NEAREST animal wins, not first-in-array — in a full paddock the
+      // flock bunches up, and array order let a hen steal the tap meant for
+      // the woolly sheep beside her (caught in the slice-3 walk)
+      let bestH = null, bestD = 36;
       for (const h of hens) {
-        if (Math.hypot(wx - h.x, wy - (h.y - 14)) < 36) { henMood(h); return; }
+        const d2 = Math.hypot(wx - h.x, wy - (h.y - 14));
+        if (d2 < bestD) { bestD = d2; bestH = h; }
       }
+      if (bestH) { henMood(bestH); return; }
     }
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
@@ -3509,7 +3710,7 @@ function init(visitDoc, visitMiss) {
     }
     if (!next) return;
     if (Array.isArray(next.animals)) {
-      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: 0, name: a.name || '' }));
+      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: 0, name: a.name || '', wd: a.wd || 0 }));
       next.hens = next.animals.filter((a) => a.sp === 'hen').length || next.hens || 0;
     }
     next.pubUpdated = r.updated || Date.now();
@@ -3541,6 +3742,9 @@ function init(visitDoc, visitMiss) {
       pull: yardPull,
       bond: (i, b) => { const a = farmAnimals()[i || 0]; if (a) { a.b = b; a.pd = 0; save(); } return a; },
       animals: () => farmAnimals(),
+      pens: () => penCaps(),
+      wool: (i, d) => { const a = farmAnimals()[i || 0]; if (a) { a.wd = d; save(); } return a; },
+      goods: () => ({ eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0 }),
       farm: () => ({ hens: state.hens || 0, eggs: state.eggs || 0, fed: fedToday(), eggsOnGround: eggEls.length }),
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       room: () => yardRoom,

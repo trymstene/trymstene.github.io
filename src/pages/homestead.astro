@@ -330,6 +330,27 @@ const description = 'A clearing west of the park with your name on the sign: cla
       opacity: 0; transition: opacity 0.25s; pointer-events: none;
     }
     .hs-henname.is-on { opacity: 1; }
+    /* 🚧 slice 3: the pen tint (fence mode only), the flock's sizes, milk */
+    .hs-pen {
+      position: absolute; pointer-events: none; z-index: 66;
+      background: rgba(140, 230, 120, 0.16); border: 2px dashed rgba(150, 235, 130, 0.6);
+    }
+    .hs-pen i {
+      position: absolute; left: 50%; top: -10px; transform: translate(-50%, -100%);
+      font-style: normal; font-size: 10px; font-weight: 800; white-space: nowrap;
+      color: #d9ffd0; text-shadow: 1px 1px 0 #000;
+      background: rgba(10, 16, 8, 0.75); padding: 2px 6px; border-radius: 4px;
+    }
+    .hs-hen--goat { width: 2.6%; }
+    .hs-hen--sheep { width: 2.8%; }
+    .hs-milk {
+      position: absolute; width: 24px; height: 24px; pointer-events: none;
+      background: url(/assets/homestead/m-milk.png) center/contain no-repeat;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 6px rgba(210, 235, 255, 0.7)) drop-shadow(0 2px 2px rgba(20, 40, 10, 0.3));
+    }
+    .hs-stallrow--wrap { flex-wrap: wrap; }
+    .hs-stallrow--wrap .hs-btn { flex: 1 1 46%; }
     .hs-stallrow .hs-btn { flex: 1; white-space: nowrap; }
     /* 📱 PORTRAIT PUTS THE TOOLS UNDER THE THUMB. Build mode on a phone is two
        gestures — tap a cell, swipe to look — and both happen low on the screen,
