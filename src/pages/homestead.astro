@@ -526,29 +526,42 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-list { display: grid; gap: 0.8rem; max-height: min(46vh, 380px); overflow-y: auto;
       overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .hs-note { margin: 0; font-size: 0.8rem; opacity: 0.75; }
-    /* 📱 the phone ROW — one shape for stall/market/animals/shed (Trym:
-       game UI not web UI; sprite left, words right, small buttons) */
-    .hs-list--rows { gap: 0.45rem; }
-    .hs-row2, .hs-row { display: flex; align-items: center; gap: 0.6rem;
-      border: 2px solid #000; background: #fff; padding: 0.4rem 0.5rem; }
+    /* 📱 the phone ROW — one shape for stall/market/animals/shed. Trym's
+       laws (1 Sep): NO black borders inside the apps ("boxy... web
+       dashboard") — sticker cards, pill buttons, pill chips, rounded
+       pastel thumb tiles, like the app home screen; the list PACKS TO THE
+       TOP (align-content — the shell is tall, and a stretched grid floated
+       one lone cow to the middle of the screen); every action column the
+       SAME width so buttons never come out different sizes. */
+    .hs-list--rows { gap: 0.5rem; align-content: start; }
+    .hs-row { display: flex; align-items: center; gap: 0.6rem;
+      background: #fff; border-radius: 16px; padding: 0.5rem 0.6rem;
+      box-shadow: 0 3px 0 rgba(31, 26, 8, 0.1); }
     .hs-rowthumb { flex: none; width: 54px; height: 46px; display: grid; place-items: center;
-      border: 2px solid #000; background: #dff0c8; overflow: hidden; }
+      background: #e8f3d7; border-radius: 12px; overflow: hidden; }
     .hs-rowthumb i { display: block; background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
     .hs-rowthumb img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; display: block; }
     .hs-rowthumb .hs-tilesvg { width: 40px; height: 40px; }
     .hs-rowmain { flex: 1; min-width: 0; }
     .hs-rowmain > b { display: flex; align-items: center; gap: 0.35rem; font-size: 0.84rem; line-height: 1.2; }
+    .hs-rowtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .hs-rowsub { display: block; font-size: 0.69rem; line-height: 1.3; opacity: 0.82; margin-top: 1px; }
-    .hs-rowact { flex: none; display: grid; gap: 0.28rem; }
-    .hs-rowact .hs-btn { font-size: 0.7rem; padding: 0.3rem 0.45rem; }
-    .hs-rowbond { margin-left: auto; border: 2px solid #000; background: #fffbe0;
-      font-size: 0.68rem; font-weight: 800; padding: 0 0.3rem; white-space: nowrap; }
+    .hs-rowact { flex: none; width: 98px; display: grid; gap: 0.3rem; }
+    .hs-list--rows .hs-btn { width: 100%; border: 0; border-radius: 999px; text-align: center;
+      font-size: 0.68rem; padding: 0.36rem 0.4rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.22); }
+    .hs-list--rows .hs-btn--ghost { background: #fff3c4; }
+    .hs-list--rows .hs-btn[disabled] { opacity: 0.4; box-shadow: none; }
+    .hs-rowbond { margin-left: auto; border-radius: 999px; background: #fff3c4;
+      font-size: 0.66rem; font-weight: 800; padding: 0.1rem 0.55rem; white-space: nowrap; }
+    .hs-rowbond--love { background: #ffe4ec; }
+    .hs-row--dim { box-shadow: none; background: rgba(255, 255, 255, 0.55); }
     .hs-row--dim .hs-rowthumb i { filter: grayscale(0.9) opacity(0.6); }
     .hs-row--dim .hs-rowmain { opacity: 0.65; }
-    .hs-fencecard { border: 2px solid #000; background: #fff; padding: 0.45rem 0.55rem; }
+    .hs-fencecard { background: #fff; border-radius: 16px; padding: 0.5rem 0.65rem;
+      box-shadow: 0 3px 0 rgba(31, 26, 8, 0.1); }
     .hs-fencecard b { display: flex; align-items: center; font-size: 0.84rem; }
-    .hs-fencechip { margin-left: auto; border: 2px solid #000; background: #e6f3d5;
-      font-size: 0.68rem; font-weight: 800; padding: 0 0.35rem; white-space: nowrap; }
+    .hs-fencechip { margin-left: auto; border-radius: 999px; background: #dff0c8;
+      font-size: 0.66rem; font-weight: 800; padding: 0.1rem 0.55rem; white-space: nowrap; }
     .hs-fencecard .hs-rowsub { margin-top: 2px; }
     .hs-up { display: grid; gap: 0.8rem; border: 2px solid #000; background: #fff; padding: 0.95rem; }
     .hs-uphead { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }

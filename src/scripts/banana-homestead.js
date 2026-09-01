@@ -2863,8 +2863,13 @@ function init(visitDoc, visitMiss) {
     const m = document.createElement('div');
     m.className = 'hs-rowmain';
     const b2 = document.createElement('b');
-    b2.textContent = o.title;
-    if (o.chip) { const c = document.createElement('span'); c.className = 'hs-rowbond'; c.textContent = o.chip; b2.appendChild(c); }
+    const tt = document.createElement('span');
+    tt.className = 'hs-rowtitle';
+    tt.textContent = o.title;
+    b2.appendChild(tt);
+    if (o.chip) { const c = document.createElement('span');
+      c.className = 'hs-rowbond' + (o.love ? ' hs-rowbond--love' : '');
+      c.textContent = o.chip; b2.appendChild(c); }
     m.appendChild(b2);
     const s2 = document.createElement('span');
     s2.className = 'hs-rowsub';
@@ -2924,11 +2929,11 @@ function init(visitDoc, visitMiss) {
   // players build FENCES, so the fence is what the phone talks about.
   const BUY_SUB = {
     hen: 'lays an egg every morning',
-    rooster: 'minds the yard — your goods keep 3 mornings, not 2',
+    rooster: 'keeps your goods safe longer',
     goat: 'fills a can of milk a day',
     sheep: 'grows wool for shearing',
     cow: 'fills two cans a day',
-    dog: 'makes nothing, ever — she just runs at your heel',
+    dog: 'no goods — just love',
   };
   const HOME_W = { hen: 'all home', rooster: 'he’s home', goat: 'she’s home',
     sheep: 'both home', cow: 'she’s home', dog: 'at your heel' };
@@ -3017,7 +3022,7 @@ function init(visitDoc, visitMiss) {
       const sb = btnEl('↩ rehome', true, () => {
         if (a.name && !sb.armed) {
           sb.armed = true;
-          sb.innerHTML = 'yes, rehome · +' + price(a.sp) + ' ' + COIN;
+          sb.innerHTML = 'yes · +' + price(a.sp) + ' ' + COIN;
           r2.sub.textContent = (he ? 'he’ll' : 'she’ll') + ' remember you — tap again to be sure';
           setTimeout(() => { sb.armed = false; if (sb.isConnected) renderShop(); }, 4000);
           return;
@@ -3036,7 +3041,7 @@ function init(visitDoc, visitMiss) {
       });
       r2 = rowEl({ sprite: (young ? 'y' : '') + a.sp,
         title: a.name ? a.name : (young ? 'little ' : 'unnamed ') + a.sp,
-        chip: '❤️ ' + (a.b || 0), sub: stateLn + nameHint, acts: [sb] });
+        chip: '❤️ ' + (a.b || 0), love: true, sub: stateLn + nameHint, acts: [sb] });
       list.appendChild(r2.row);
     });
   }
