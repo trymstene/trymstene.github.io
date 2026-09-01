@@ -525,16 +525,31 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-view.is-placing { touch-action: none; }
     .hs-list { display: grid; gap: 0.8rem; max-height: min(46vh, 380px); overflow-y: auto;
       overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-    .hs-row {
-      display: flex; align-items: center; gap: 0.8rem; border: 2px solid #000;
-      background: #fff; padding: 0.65rem 0.75rem;
-    }
-    .hs-row img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; flex: 0 0 auto; }
-    .hs-row__meta { flex: 1; min-width: 0; }
-    .hs-row__meta b { display: block; font-size: 0.86rem; }
-    .hs-row__meta span { display: block; font-size: 0.74rem; opacity: 0.7; }
-    .hs-row .hs-btn { font-size: 0.74rem; padding: 0.4rem 0.55rem; }
     .hs-note { margin: 0; font-size: 0.8rem; opacity: 0.75; }
+    /* 📱 the phone ROW — one shape for stall/market/animals/shed (Trym:
+       game UI not web UI; sprite left, words right, small buttons) */
+    .hs-list--rows { gap: 0.45rem; }
+    .hs-row2, .hs-row { display: flex; align-items: center; gap: 0.6rem;
+      border: 2px solid #000; background: #fff; padding: 0.4rem 0.5rem; }
+    .hs-rowthumb { flex: none; width: 54px; height: 46px; display: grid; place-items: center;
+      border: 2px solid #000; background: #dff0c8; overflow: hidden; }
+    .hs-rowthumb i { display: block; background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+    .hs-rowthumb img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; display: block; }
+    .hs-rowthumb .hs-tilesvg { width: 40px; height: 40px; }
+    .hs-rowmain { flex: 1; min-width: 0; }
+    .hs-rowmain > b { display: flex; align-items: center; gap: 0.35rem; font-size: 0.84rem; line-height: 1.2; }
+    .hs-rowsub { display: block; font-size: 0.69rem; line-height: 1.3; opacity: 0.82; margin-top: 1px; }
+    .hs-rowact { flex: none; display: grid; gap: 0.28rem; }
+    .hs-rowact .hs-btn { font-size: 0.7rem; padding: 0.3rem 0.45rem; }
+    .hs-rowbond { margin-left: auto; border: 2px solid #000; background: #fffbe0;
+      font-size: 0.68rem; font-weight: 800; padding: 0 0.3rem; white-space: nowrap; }
+    .hs-row--dim .hs-rowthumb i { filter: grayscale(0.9) opacity(0.6); }
+    .hs-row--dim .hs-rowmain { opacity: 0.65; }
+    .hs-fencecard { border: 2px solid #000; background: #fff; padding: 0.45rem 0.55rem; }
+    .hs-fencecard b { display: flex; align-items: center; font-size: 0.84rem; }
+    .hs-fencechip { margin-left: auto; border: 2px solid #000; background: #e6f3d5;
+      font-size: 0.68rem; font-weight: 800; padding: 0 0.35rem; white-space: nowrap; }
+    .hs-fencecard .hs-rowsub { margin-top: 2px; }
     .hs-up { display: grid; gap: 0.8rem; border: 2px solid #000; background: #fff; padding: 0.95rem; }
     .hs-uphead { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
     .hs-uphead b { font-size: 0.98rem; }
@@ -843,8 +858,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
         <h2 id="hsShopTitle">🍌 Banana Phone</h2>
         <p id="hsShopLead"></p>
         <div class="hs-apps" id="hsApps">
-          <button type="button" data-tab="sell" hidden><span class="hs-appic" style="background:#fdeccc">🪙</span>Sell</button>
-          <button type="button" data-tab="buy" hidden><span class="hs-appic" style="background:#e7f3d1">🐄</span>Buy</button>
+          <button type="button" data-tab="sell" hidden><span class="hs-appic" style="background:#fdeccc">🪙</span>Stall</button>
+          <button type="button" data-tab="buy" hidden><span class="hs-appic" style="background:#e7f3d1">🐄</span>Market</button>
           <button type="button" data-tab="animals" hidden><span class="hs-appic" style="background:#fbe4e4">🐔</span>My animals</button>
           <button type="button" data-tab="order"><span class="hs-appic" style="background:#dff1ff">🛒</span>Order</button>
           <button type="button" data-tab="shed"><span class="hs-appic" style="background:#f3e6cf;position:relative">📦<i class="hs-appbadge" id="hsShedBadge" hidden></i></span>Shed</button>

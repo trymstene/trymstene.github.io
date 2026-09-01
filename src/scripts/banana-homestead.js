@@ -1362,9 +1362,12 @@ function init(visitDoc, visitMiss) {
       d.style.left = pct(p.x0, W); d.style.top = pct(p.y0, H);
       d.style.width = pct(p.x1 - p.x0, W); d.style.height = pct(p.y1 - p.y0, H);
       const t = document.createElement('i');
-      t.textContent = p.int + ' tiles — ' + (p.int >= 20 ? 'room for anything'
-        : p.int >= 12 ? 'sheep would settle here' : p.int >= 8 ? 'a goat fits'
-        : p.int >= 4 ? 'hens approve' : 'a bit snug');
+      // the SAME size-words the market speaks — building the fence is
+      // where players learn them
+      t.textContent = p.int >= 20 ? 'cow-sized — room for everyone'
+        : p.int >= 12 ? 'sheep-sized — sheep would settle here'
+        : p.int >= 8 ? 'goat-sized — a goat fits'
+        : p.int >= 4 ? 'hen-sized — hens approve' : 'a bit snug — stretch it out';
       d.appendChild(t);
       world.appendChild(d);
       penEls.push(d);
@@ -1456,8 +1459,8 @@ function init(visitDoc, visitMiss) {
     if (gradN || leftMin < 9) setTimeout(() => toast(gradN
       ? '🎉 ' + (gradName || 'the little one') + (gradN > 1 ? ' & co' : '')
         + ' — all grown up. The mornings start paying tomorrow'
-      : '🐣 the little ones grew — ' + leftMin + ' full morning'
-        + (leftMin === 1 ? '' : 's') + ' to go', 4600), 9400);
+      : '🐣 the little ones grew — fill the trough ' + leftMin
+        + ' more morning' + (leftMin === 1 ? '' : 's'), 4600), 9400);
     passStat('hs_day', today - last);
     const t = state.items.find((i) => i.id === 'trough') || { x: state.home.x + 96, y: state.home.y + 52 };
     const drops = [];
@@ -2517,6 +2520,7 @@ function init(visitDoc, visitMiss) {
 
   function renderShop() {
     const list = document.getElementById('hsShopList');
+    list.classList.remove('hs-list--rows');
     const catsRow = document.getElementById('hsShopCats');
     list.replaceChildren();
     catsRow.hidden = true;
@@ -2626,6 +2630,46 @@ function init(visitDoc, visitMiss) {
       // duplicates STACK (Bush ×7, one tile); selling pays half, floor — the
       // buff can at most break even, and unpriced trophies are memories, not
       // merchandise (no sell button, never destroyed)
+      if (FARM) {
+        // 📱 shed as app rows: thumb, name, count, two small buttons
+        list.classList.add('hs-list--rows');
+        const counts2 = {};
+        state.shed.forEach((s) => { if (DEX[s.id]) counts2[s.id] = (counts2[s.id] || 0) + 1; });
+        Object.keys(counts2).forEach((id) => {
+          const d = DEX[id];
+          const sale2 = Math.floor((d.price || 0) / 2);
+          const acts = [btnEl('place it', false, () => {
+            const indoorItem = isIndoorItem(d);
+            if (indoorItem && !inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
+            if (!indoorItem && inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
+            if (inside ? inList().length >= INCAP[inside] : state.items.length >= cap()) {
+              toast(inside ? 'this room is full (' + INCAP[inside] + ' spots)' : 'the plot is full');
+              return;
+            }
+            const i3 = state.shed.findIndex((sx) => sx.id === id);
+            if (i3 < 0) return;
+            state.shed.splice(i3, 1);
+            save();
+            closeShop();
+            startPlacing(d.id);
+          })];
+          if (sale2 > 0) acts.push(btnEl('sell · ' + sale2 + ' ' + COIN, true, () => {
+            const i3 = state.shed.findIndex((sx) => sx.id === id);
+            if (i3 < 0) return;
+            state.shed.splice(i3, 1);
+            passStat('coins_earned', sale2);
+            save();
+            refreshHud();
+            shopNote('💰 sold — +' + sale2 + ' coins');
+            track('homestead_sell', { id: id, sale: sale2 });
+            shopHead();
+            renderShop();
+          }));
+          list.appendChild(rowEl({ svg: d.svg, img: d.svg ? null : d.img, title: d.name,
+            chip: counts2[id] > 1 ? '× ' + counts2[id] : '', sub: 'in the shed', acts }).row);
+        });
+        return;
+      }
       const grid = document.createElement('div');
       grid.className = 'hs-grid';
       const counts = {};
@@ -2740,11 +2784,11 @@ function init(visitDoc, visitMiss) {
   // no stock emojis in the phone chrome (Trym) — clean OS titles
   const SHOP_HEADS = {
     home: ['Banana Phone', ''],
-    sell: ['The gate stall', 'The road’s only got so many customers a day.'],
-    buy: ['The market', 'Your fence decides what you can keep.'],
+    sell: ['The stall', 'Sell what your farm makes.'],
+    buy: ['The market', 'A bigger fence fits more animals.'],
     animals: ['My animals', 'Everyone who lives here.'],
     order: ['Order online', 'The van delivers to your mailbox.'],
-    shed: ['Your shed', 'Ready to place in build mode.'],
+    shed: ['The shed', 'Your stuff, ready to place.'],
     up: ['Upgrades', ''],
   };
   // 🥚 THE GATE STALL — one card, two buttons, no tabs inside it. Sells at
@@ -2753,17 +2797,15 @@ function init(visitDoc, visitMiss) {
   // design — the worst a second device buys is one more capped day.
   const EGG_C = 4, MILK_C = 6, WOOL_C = 12, CHEESE_C = 20, STALL_CAP = 25;
   const BABY_W = { hen: 'chick', rooster: 'chick', goat: 'kid goat', sheep: 'lamb', cow: 'calf' };
+  // needs = the locked-row line; it speaks the SAME size-words as the
+  // fence card and the build-mode fence label, so they explain each other
   const ANIMAL_SHOP = [
-    { sp: 'hen', name: 'a hen', price: 12, icon: '🐔', needs: 'a pen of 4+ tiles holds four' },
-    { sp: 'rooster', name: 'the rooster', price: 25, icon: '🐓',
-      needs: '', pitch: 'keeps the yard while you’re away — your goods wait 3 mornings instead of 2' },
-    { sp: 'goat', name: 'a goat', price: 35, icon: '🐐', needs: 'fence a pen of 8+ tiles' },
-    { sp: 'sheep', name: 'a sheep', price: 45, icon: '🐑', needs: 'fence a pen of 12+ tiles' },
-    { sp: 'cow', name: 'the cow', price: 90, icon: '🐄', needs: 'fence a pen of 20+ tiles' },
-    // 🐕 the one animal that pays NOTHING and needs NO pen — the honest
-    // pitch is the whole point: everything else here is a payoff, she is not
-    { sp: 'dog', name: 'the dog', price: 40, icon: '🐕',
-      needs: '', pitch: 'no eggs, no milk, no wool — nothing, ever. She just runs at your heel wherever you go' },
+    { sp: 'hen', name: 'a hen', price: 12, needs: 'needs a hen-sized fence' },
+    { sp: 'rooster', name: 'the rooster', price: 25, needs: '' },
+    { sp: 'goat', name: 'a goat', price: 35, needs: 'needs a goat-sized fence' },
+    { sp: 'sheep', name: 'a sheep', price: 45, needs: 'needs a sheep-sized fence' },
+    { sp: 'cow', name: 'the cow', price: 90, needs: 'needs a cow-sized fence' },
+    { sp: 'dog', name: 'the dog', price: 40, needs: '' },
   ];
   function stallDay() {
     try {
@@ -2783,31 +2825,69 @@ function init(visitDoc, visitMiss) {
     toast('🪙 +' + coins + ' — the stall took ' + nSold + ' ' + label, 3200);
     track1('homestead_sell_stall', { kind, n: nSold });
   }
-  function goodsRow(list, icon, title, kind, price, emptyNote) {
+  // ---- 📱 THE PHONE ROW -------------------------------------------
+  // One shape for stall/market/animals/shed (Trym: "game UI, not web UI" —
+  // sprite left, words right, small buttons; an app list, not floating
+  // boxes). Thumbs are the game's OWN art: [strip, frameW, frameH, showW].
+  const THUMB = {
+    hen: ['c-hen0.png', 32, 32, 32], rooster: ['c-roost.png', 48, 48, 40],
+    goat: ['c-goat.png', 96, 78, 46], sheep: ['c-sheepf.png', 96, 57, 48],
+    cow: ['c-cow.png', 144, 81, 52], dog: ['c-dogidle.png', 104, 66, 48],
+    yhen: ['c-chick.png', 48, 30, 30], yrooster: ['c-chick.png', 48, 30, 30],
+    ygoat: ['c-ygoat.png', 96, 57, 38], ysheep: ['c-ysheep.png', 96, 48, 38],
+    ycow: ['c-ycow.png', 96, 60, 42],
+  };
+  function btnEl(html, ghost, fn) {
+    const b = document.createElement('button');
+    b.className = 'hs-btn' + (ghost ? ' hs-btn--ghost' : '');
+    b.innerHTML = html;   // ⚠️ internal strings + COIN only — player names go in TITLES (textContent)
+    if (fn) b.addEventListener('click', fn); else b.disabled = true;
+    return b;
+  }
+  function rowEl(o) {
+    const r = document.createElement('div');
+    r.className = 'hs-row' + (o.dim ? ' hs-row--dim' : '');
+    const t = document.createElement('span');
+    t.className = 'hs-rowthumb';
+    if (o.svg) { const sv = document.createElement('span'); sv.className = 'hs-tilesvg'; sv.innerHTML = o.svg; t.appendChild(sv); }
+    else if (o.img) { const im = document.createElement('img'); im.src = o.img; im.alt = ''; t.appendChild(im); }
+    else if (o.sprite && THUMB[o.sprite]) {
+      const sp = THUMB[o.sprite];
+      const i2 = document.createElement('i');
+      i2.style.backgroundImage = "url('/assets/homestead/" + sp[0] + "')";
+      i2.style.width = sp[3] + 'px';
+      i2.style.aspectRatio = sp[1] + ' / ' + sp[2];
+      t.appendChild(i2);
+    }
+    r.appendChild(t);
+    const m = document.createElement('div');
+    m.className = 'hs-rowmain';
+    const b2 = document.createElement('b');
+    b2.textContent = o.title;
+    if (o.chip) { const c = document.createElement('span'); c.className = 'hs-rowbond'; c.textContent = o.chip; b2.appendChild(c); }
+    m.appendChild(b2);
+    const s2 = document.createElement('span');
+    s2.className = 'hs-rowsub';
+    if (o.sub) { s2.textContent = o.sub; m.appendChild(s2); }
+    r.appendChild(m);
+    if (o.acts && o.acts.length) {
+      const a2 = document.createElement('div');
+      a2.className = 'hs-rowact';
+      o.acts.forEach((x) => a2.appendChild(x));
+      r.appendChild(a2);
+    }
+    return { row: r, sub: s2 };
+  }
+  function goodsRow(list, img, title, kind, price, emptyNote) {
     const have = state[kind] || 0;
     const sd = stallDay();
     const canSell = Math.min(have, Math.floor(Math.max(0, STALL_CAP - sd.sold) / price));
-    const card = document.createElement('div');
-    card.className = 'hs-up';
-    card.innerHTML = '<div class="hs-uphead"><b>' + icon + ' ' + title + '</b>'
-      + '<span class="hs-price">× ' + have + '</span></div>'
-      + '<span>' + price + ' ' + COIN + ' each</span>'
-      + (have && !canSell ? '<span class="hs-note">the stall is sold out for today</span>' : '')
-      + (!have && emptyNote ? '<span class="hs-note">' + emptyNote + '</span>' : '');
-    const row = document.createElement('div');
-    row.className = 'hs-stallrow';
-    const sell = document.createElement('button');
-    sell.className = 'hs-btn';
-    sell.textContent = canSell ? '🪙 sell ' + canSell + ' → ' + (canSell * price) + ' coins' : '🪙 sell';
-    sell.disabled = !canSell;
-    sell.addEventListener('click', () => stallSell(kind, price, title.toLowerCase()));
-    row.appendChild(sell);
-    if (kind !== 'wool') {
-      const pan = document.createElement('button');
-      pan.className = 'hs-btn hs-btn--ghost';
-      pan.textContent = '🍳 to the pantry';
-      pan.disabled = !have;
-      pan.addEventListener('click', () => {
+    const acts = [canSell
+      ? btnEl('sell ' + canSell + ' · ' + (canSell * price) + ' ' + COIN, false,
+        () => stallSell(kind, price, title.toLowerCase()))
+      : btnEl('sell', false, null)];
+    if (kind !== 'wool' && have) {
+      acts.push(btnEl('to the pantry', true, () => {
         const nAll = state[kind] || 0;
         state.pantry = state.pantry || {};
         const pk = kind === 'milk' ? 'milk' : kind === 'cheese' ? 'cheese' : 'egg';
@@ -2816,91 +2896,103 @@ function init(visitDoc, visitMiss) {
         save(); renderShop();
         toast('🍳 ' + nAll + ' into the pantry', 3200);
         track1('homestead_pantry_eggs', { kind, n: nAll });
-      });
-      row.appendChild(pan);
+      }));
     }
-    card.appendChild(row);
-    list.appendChild(card);
+    const sub2 = have && !canSell ? 'the stall’s full today — more tomorrow'
+      : have ? price + ' coins each' : emptyNote;
+    list.appendChild(rowEl({ img, title, chip: '× ' + have, sub: sub2, acts }).row);
   }
-  // 🪙 SELL — the payoff desk, nothing else (Trym: one place to see your
-  // animals, one place to administer the payoffs — sauce them together and
-  // the UX goes messy)
+  // 🪙 THE STALL — the payoff desk. Goods wear their own item icons
+  // (the pack's hand-made 32px set — the same family m-milk/m-cheese
+  // already come from).
   function renderSell(list) {
+    list.classList.add('hs-list--rows');
     const sd = stallDay();
     const head = document.createElement('p');
     head.className = 'hs-note';
-    head.textContent = 'today’s takings ' + sd.sold + '/' + STALL_CAP + ' coins — the road’s only got so many customers';
+    head.textContent = 'the stall buys ' + STALL_CAP + ' coins of goods a day — ' + sd.sold + ' so far';
     list.appendChild(head);
-    goodsRow(list, '🥚', 'Eggs', 'eggs', EGG_C, 'the hens lay overnight — come back tomorrow morning');
-    if (spCount('goat') || spCount('cow') || state.milk) goodsRow(list, '🥛', 'Milk', 'milk', MILK_C, 'the dairy milks overnight');
-    if (spCount('sheep') || state.wool) goodsRow(list, '🧶', 'Wool', 'wool', WOOL_C, 'wool grows back in three days');
-    if (state.cheese || state.items.some((i2) => i2.id === 'cheesemk')) goodsRow(list, '🧀', 'Cheese', 'cheese', CHEESE_C, 'two milk in the press, a wheel by morning');
+    goodsRow(list, '/assets/homestead/m-egg.png', 'Eggs', 'eggs', EGG_C, 'the hens lay overnight');
+    if (spCount('goat') || spCount('cow') || state.milk) goodsRow(list, '/assets/homestead/m-milk.png', 'Milk', 'milk', MILK_C, 'fresh milk in the morning');
+    if (spCount('sheep') || state.wool) goodsRow(list, '/assets/homestead/m-wool.png', 'Wool', 'wool', WOOL_C, 'wool grows back in three days');
+    if (state.cheese || state.items.some((i2) => i2.id === 'cheesemk')) goodsRow(list, '/assets/homestead/m-cheese.png', 'Cheese', 'cheese', CHEESE_C, 'put 2 milk in the press — cheese by morning');
   }
-  // 🐄 BUY — the market: the pen ladder and nothing else. A rung you
-  // cannot buy names the exact fence that would open it.
+  // 🐄 THE MARKET — capacity in ANIMALS and size-words, never tiles
+  // (Trym: "are we expecting users to count tiles?"). The fence card and
+  // the locked rows speak the same four rankable words a kid can order:
+  // hen-sized → goat-sized → sheep-sized → cow-sized. "The Pen" is dead —
+  // players build FENCES, so the fence is what the phone talks about.
+  const BUY_SUB = {
+    hen: 'lays an egg every morning',
+    rooster: 'minds the yard — your goods keep 3 mornings, not 2',
+    goat: 'fills a can of milk a day',
+    sheep: 'grows wool for shearing',
+    cow: 'fills two cans a day',
+    dog: 'makes nothing, ever — she just runs at your heel',
+  };
+  const HOME_W = { hen: 'all home', rooster: 'he’s home', goat: 'she’s home',
+    sheep: 'both home', cow: 'she’s home', dog: 'at your heel' };
   function renderBuy(list) {
+    list.classList.add('hs-list--rows');
     const caps = penCaps();
-    const pen = document.createElement('div');
-    pen.className = 'hs-up';
-    pen.innerHTML = '<div class="hs-uphead"><b>🚧 The pen</b>'
-      + '<span class="hs-price">' + (caps.pens[0] ? caps.pens[0].int + ' tiles' : 'no pen yet') + '</span></div>'
-      + '<span>your fence decides what you can keep — build it in 🔨 build mode</span>';
-    list.appendChild(pen);
+    const big = caps.pens[0];
+    const n2 = big ? big.int : 0;
+    const F = !big ? ['not built yet', 'Fence in some grass in 🔨 build mode — close it all the way round and animals can move in.']
+      : n2 >= 20 ? ['cow-sized', 'Room for everyone — hens, goat, sheep and the cow.']
+      : n2 >= 12 ? ['sheep-sized', 'Room for hens, a goat and 2 sheep. Bigger, and the cow fits.']
+      : n2 >= 8 ? ['goat-sized', 'Room for 4 hens and a goat. Bigger, and 2 sheep fit.']
+      : n2 >= 4 ? ['hen-sized', 'Room for 4 hens. Bigger, and a goat fits.']
+      : ['a bit snug', 'It’s closed — nice! Stretch it bigger and 4 hens fit.'];
+    const fc = document.createElement('div');
+    fc.className = 'hs-fencecard';
+    fc.innerHTML = '<b>🚧 Your fence <span class="hs-fencechip"></span></b><span class="hs-rowsub"></span>';
+    fc.querySelector('.hs-fencechip').textContent = F[0];
+    fc.querySelector('.hs-rowsub').textContent = F[1];
+    list.appendChild(fc);
     ANIMAL_SHOP.forEach((an) => {
       const owned = spCount(an.sp);
       const cap = caps[an.sp];
-      const card = document.createElement('div');
-      card.className = 'hs-up';
-      const row = document.createElement('div');
-      row.className = 'hs-stallrow';
-      const b = document.createElement('button');
-      b.className = 'hs-btn';
-      if (owned >= cap) {
-        b.textContent = an.icon + ' ' + an.name + ' · ' + (cap === 0 ? an.needs : owned + '/' + cap);
-        b.disabled = true;
+      const chip = owned ? '× ' + owned : '';
+      if (cap === 0) {
+        list.appendChild(rowEl({ sprite: an.sp, title: an.name, sub: an.needs, dim: true }).row);
+      } else if (owned >= cap) {
+        list.appendChild(rowEl({ sprite: an.sp, title: an.name, chip, sub: HOME_W[an.sp] }).row);
       } else {
-        b.textContent = an.icon + ' ' + an.name + ' · ' + an.price + ' coins';
-        b.addEventListener('click', () => {
-          if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
-          const mem = farmMemory().filter((m) => m.sp === an.sp)
-            .sort((x, y) => (y.b || 0) - (x.b || 0))[0];
-          if (mem) state.memory.splice(state.memory.indexOf(mem), 1);
-          // 🐣 new animals arrive YOUNG (the dog excepted — the pack has
-          // no puppy); a remembered one returns at her remembered stage
-          const na2 = { sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0 };
-          if (an.sp !== 'dog') na2.gd = mem ? (mem.gd == null ? 5 : mem.gd) : 0;
-          farmAnimals().push(na2);
-          state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
-          save(); refreshHud(); renderShop();
-          toast(mem && mem.name
-            ? '💛 ' + mem.name + '! ' + (an.sp === 'rooster' ? 'he remembers you' : 'she remembers you')
-            : an.sp === 'dog' ? '🐕 the dog is yours — she’s already at your heel'
-            // ⚠️ an UNNAMED remembered adult also lands here — only a real kid
-            // gets the kid line (the walk caught a returning ewe sold as
-            // "a lamb!")
-            : na2.gd != null && na2.gd < 5
-              ? '🐣 a ' + BABY_W[an.sp] + '! Five full-trough mornings and '
-                + (an.sp === 'rooster' ? 'he’s' : 'she’s') + ' grown'
-            : an.icon + ' ' + an.name + ' is back — '
-              + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet in the pen'), 3600);
-          track1('homestead_buy_animal', { sp: an.sp });
-        });
+        list.appendChild(rowEl({ sprite: an.sp, title: an.name, chip, sub: BUY_SUB[an.sp],
+          acts: [btnEl('buy · ' + an.price + ' ' + COIN, false, () => buyAnimal(an))] }).row);
       }
-      row.appendChild(b);
-      card.appendChild(row);
-      if (an.pitch) {
-        const p2 = document.createElement('span');
-        p2.className = 'hs-buypitch';
-        p2.textContent = an.pitch;
-        card.appendChild(p2);
-      }
-      list.appendChild(card);
     });
   }
-  // 🐔 MY ANIMALS — the roster: everyone who lives here, seen in one
-  // place, each with her mood, her bond and her own rehome button (the pick
-  // is YOURS here, not a species sort)
+  function buyAnimal(an) {
+    if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
+    const mem = farmMemory().filter((m) => m.sp === an.sp)
+      .sort((x, y) => (y.b || 0) - (x.b || 0))[0];
+    if (mem) state.memory.splice(state.memory.indexOf(mem), 1);
+    // 🐣 new animals arrive YOUNG (the dog excepted — the pack has
+    // no puppy); a remembered one returns at her remembered stage
+    const na2 = { sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0 };
+    if (an.sp !== 'dog') na2.gd = mem ? (mem.gd == null ? 5 : mem.gd) : 0;
+    farmAnimals().push(na2);
+    state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
+    save(); refreshHud(); renderShop();
+    toast(mem && mem.name
+      ? '💛 ' + mem.name + '! ' + (an.sp === 'rooster' ? 'he remembers you' : 'she remembers you')
+      : an.sp === 'dog' ? '🐕 the dog is yours — she’s already at your heel'
+      // ⚠️ an UNNAMED remembered adult also lands here — only a real kid
+      // gets the kid line
+      : na2.gd != null && na2.gd < 5
+        ? '🐣 a ' + BABY_W[an.sp] + '! fill the trough 5 mornings and '
+          + (an.sp === 'rooster' ? 'he’ll' : 'she’ll') + ' grow up'
+      : an.name + ' is back — '
+        + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet'), 3600);
+    track1('homestead_buy_animal', { sp: an.sp });
+  }
+  // 🐔 MY ANIMALS — the roster: her own sprite (babies look like
+  // babies), her hearts, her state, and a SMALL rehome button (the pick is
+  // yours here, not a species sort). Named friends still ask twice — the
+  // warning moves into the row's own status line, not a ballooning button.
   function renderAnimals(list) {
+    list.classList.add('hs-list--rows');
     const flock = farmAnimals();
     if (!flock.length) {
       const p3 = document.createElement('p');
@@ -2909,32 +3001,24 @@ function init(visitDoc, visitMiss) {
       list.appendChild(p3);
       return;
     }
-    const ICO = { hen: '🐔', rooster: '🐓', goat: '🐐', sheep: '🐑', cow: '🐄', dog: '🐕' };
     const price = (sp) => (ANIMAL_SHOP.find((x) => x.sp === sp) || {}).price || 10;
     flock.forEach((a) => {
-      const card = document.createElement('div');
-      card.className = 'hs-up';
-      const state2 = isYoungA(a)
-        ? '🐣 growing — ' + (5 - (a.gd || 0)) + ' full-trough morning'
-          + (5 - (a.gd || 0) === 1 ? '' : 's') + ' to go'
+      const he = a.sp === 'rooster';
+      const young = isYoungA(a);
+      const left = 5 - (a.gd || 0);
+      const stateLn = young
+        ? '🐣 growing up — fill the trough ' + left + ' more morning' + (left === 1 ? '' : 's')
         : a.sp === 'sheep' && (a.wd || 0) >= 3 ? '🧶 woolly — tap her to shear'
         : fedToday() ? '❤️ fed today' : '💔 hungry — fill the trough';
-      card.innerHTML = '<div class="hs-uphead"><b>' + (ICO[a.sp] || '🐔') + ' '
-        + (a.name ? a.name : (isYoungA(a) ? 'little ' : 'unnamed ') + a.sp) + '</b>'
-        + '<span class="hs-price">❤️ ' + (a.b || 0) + '</span></div>'
-        + '<span>' + state2 + (a.name ? '' : ' · hug ' + (a.sp === 'rooster' ? 'him' : 'her') + ' '
-          + Math.max(0, 3 - (a.b || 0)) + ' more day' + (3 - (a.b || 0) === 1 ? '' : 's')
-          + ' to name ' + (a.sp === 'rooster' ? 'him' : 'her')) + '</span>';
-      const row = document.createElement('div');
-      row.className = 'hs-stallrow';
-      const sb = document.createElement('button');
-      sb.className = 'hs-btn hs-btn--ghost';
-      sb.textContent = '↩ rehome · +' + price(a.sp) + ' coins';
-      sb.addEventListener('click', () => {
+      const nameHint = a.name ? '' : ' · hug ' + (he ? 'him' : 'her') + ' '
+        + Math.max(0, 3 - (a.b || 0)) + ' more day' + (3 - (a.b || 0) === 1 ? '' : 's')
+        + ' to name ' + (he ? 'him' : 'her');
+      let r2;
+      const sb = btnEl('↩ rehome', true, () => {
         if (a.name && !sb.armed) {
           sb.armed = true;
-          sb.textContent = '↩ rehome ' + a.name + '? '
-            + (a.sp === 'rooster' ? 'he’ll' : 'she’ll') + ' remember you — tap again';
+          sb.innerHTML = 'yes, rehome · +' + price(a.sp) + ' ' + COIN;
+          r2.sub.textContent = (he ? 'he’ll' : 'she’ll') + ' remember you — tap again to be sure';
           setTimeout(() => { sb.armed = false; if (sb.isConnected) renderShop(); }, 4000);
           return;
         }
@@ -2950,9 +3034,10 @@ function init(visitDoc, visitMiss) {
           : 'the ' + a.sp + ' found a new farm'), 3600);
         track1('homestead_sell_animal', { sp: a.sp });
       });
-      row.appendChild(sb);
-      card.appendChild(row);
-      list.appendChild(card);
+      r2 = rowEl({ sprite: (young ? 'y' : '') + a.sp,
+        title: a.name ? a.name : (young ? 'little ' : 'unnamed ') + a.sp,
+        chip: '❤️ ' + (a.b || 0), sub: stateLn + nameHint, acts: [sb] });
+      list.appendChild(r2.row);
     });
   }
   function shopHead() {
