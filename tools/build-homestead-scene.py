@@ -950,16 +950,47 @@ if HAVE_PACK:
     # assumed 96 and sliced two dogs into every frame. The side-view run is
     # SIX frames; the engine animates four, so we keep the gallop's beats:
     # gather (0), push (2), extend (3), land (5).
+    # She has three gaits now (slice 5.5): RUN (gallop, the chase), IDLE
+    # (tail wag, resting/lingering) and EAT (head-down ground-sniff, the
+    # pause between zoomies). All three pad to ONE shared frame box,
+    # bottom-aligned, so a strip swap never moves her feet. Bands by
+    # alpha: IDLE y195-284, RUN y579-668, EAT y774-860.
     dsh = Image.open(os.path.join(ANI, 'Dogs_48x48/Dog_Labrador_Brown_48x48.png')).convert('RGBA')
-    picks = [0, 2, 3, 5]
-    cells = [dsh.crop((k * 144 + 4, 603, k * 144 + 108, 669)) for k in picks]
-    top = min(c.getbbox()[1] for c in cells)
-    bot = max(c.getbbox()[3] for c in cells)
-    dst = Image.new('RGBA', (104 * 4, bot - top), (0, 0, 0, 0))
-    for i, c in enumerate(cells):
-        dst.alpha_composite(c.crop((0, top, 104, bot)), (i * 104, 0))
-    dst.save(os.path.join(OUT, 'c-dog.png'), optimize=True)
-    print('  c-dog.png %dx%d (frame %dx%d)' % (dst.width, dst.height, 104, dst.height))
+    def dog_cells(y0, y1):
+        return [dsh.crop((k * 144 + 4, y0, k * 144 + 108, y1)) for k in (0, 2, 3, 5)]
+    dbands = { 'c-dog.png': dog_cells(579, 669), 'c-dogidle.png': dog_cells(195, 285),
+               'c-dogeat.png': dog_cells(774, 861) }
+    dtrim = {}
+    dH = 0
+    for nm, cs in dbands.items():
+        t2 = min(c.getbbox()[1] for c in cs)
+        b2 = max(c.getbbox()[3] for c in cs)
+        dtrim[nm] = [c.crop((0, t2, 104, b2)) for c in cs]
+        dH = max(dH, b2 - t2)
+    for nm, cs in dtrim.items():
+        dst = Image.new('RGBA', (104 * 4, dH), (0, 0, 0, 0))
+        for i, c in enumerate(cs):
+            dst.alpha_composite(c, (i * 104, dH - c.height))
+        dst.save(os.path.join(OUT, nm), optimize=True)
+        print('  %s %dx%d (frame 104x%d)' % (nm, dst.width, dst.height, dH))
+    # 🐣 THE YOUNG (slice 5.6): bought animals arrive as babies and grow
+    # up one fed morning at a time. Baby quadrupeds: stride 96, WALK is
+    # row 2; the chick swaps rows (WALK is row 3, stride 48). Side group =
+    # first 6 cells, all face right; keep beats 0,2,3,5.
+    def baby_strip(path, stride, y0, y1, out):
+        sh2 = Image.open(os.path.join(ANI, path)).convert('RGBA')
+        cs = [sh2.crop((k * stride, y0, (k + 1) * stride, y1)) for k in (0, 2, 3, 5)]
+        t3 = min(c.getbbox()[1] for c in cs)
+        b3 = max(c.getbbox()[3] for c in cs)
+        dst2 = Image.new('RGBA', (stride * 4, b3 - t3), (0, 0, 0, 0))
+        for i, c in enumerate(cs):
+            dst2.alpha_composite(c.crop((0, t3, stride, b3)), (i * stride, 0))
+        dst2.save(os.path.join(OUT, out), optimize=True)
+        print('  %s %dx%d (frame %dx%d)' % (out, dst2.width, dst2.height, stride, b3 - t3))
+    baby_strip('Chickens_and_Roosters_48x48/Chick_48x48.png', 48, 150, 189, 'c-chick.png')
+    baby_strip('Goats_48x48/Goat_Baby_Brown_48x48.png', 96, 216, 285, 'c-ygoat.png')
+    baby_strip('Sheeps_48x48/Sheep_Baby_White_48x48.png', 96, 225, 288, 'c-ysheep.png')
+    baby_strip('Cows_48x48/Cow_Baby_48x48.png', 96, 201, 288, 'c-ycow.png')
     # 🧀 the cheese machine's still frame + the cheese pickup icon
     CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
     chm = Image.open(CHM).convert('RGBA')

@@ -356,9 +356,11 @@ function init(visitDoc, visitMiss) {
         inItems: pubIn,
         animals: (state.animals || []).slice(0, 24).map((a) => ({
           sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0),
+          gd: a.gd == null ? undefined : Math.round(a.gd),
           hm: a.hm ? { x: Math.round(a.hm.x), y: Math.round(a.hm.y) } : undefined })),
         memory: (state.memory || []).slice(0, 12).map((m) => ({
-          sp: m.sp, b: Math.round(m.b || 0), name: m.name || '' })),
+          sp: m.sp, b: Math.round(m.b || 0), name: m.name || '',
+          gd: m.gd == null ? undefined : Math.round(m.gd) })),
       } }).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
@@ -1019,28 +1021,13 @@ function init(visitDoc, visitMiss) {
       // 🐐 species dress the same skeleton: strip + a size class. The sheep
       // wears the pack's own two states — woolly when wool is ready, the
       // drawn Sheared block otherwise.
-      if (a && a.sp === 'goat') {
-        el.className = 'hs-hen hs-hen--goat';
-        img.style.backgroundImage = "url('/assets/homestead/c-goat.png')";
-      } else if (a && a.sp === 'cow') {
-        el.className = 'hs-hen hs-hen--cow';
-        img.style.backgroundImage = "url('/assets/homestead/c-cow.png')";
-      } else if (a && a.sp === 'rooster') {
-        el.className = 'hs-hen hs-hen--roost';
-        img.style.backgroundImage = "url('/assets/homestead/c-roost.png')";
-      } else if (a && a.sp === 'sheep') {
-        el.className = 'hs-hen hs-hen--sheep';
-        img.style.backgroundImage = "url('/assets/homestead/" + ((a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')";
-      } else if (a && a.sp === 'dog') {
-        el.className = 'hs-hen hs-hen--dog';
-        img.style.backgroundImage = "url('/assets/homestead/c-dog.png')";
-      }
-      // per-species anchor: half-width and height in world px, so the cow
-      // stands ON her spot instead of hanging off a hen-sized hook
-      const dims = a && a.sp === 'cow' ? [30, 34]
-        : a && (a.sp === 'goat' || a.sp === 'sheep') ? [21, 32]
-        : a && a.sp === 'dog' ? [22, 28] : [16, 30];
-      const h2 = { el, img, follow, a, hw: dims[0], hv: dims[1],
+      const dr0 = dressFor(a, hens.length);
+      el.className = dr0.cls;
+      img.style.backgroundImage = dr0.img;
+      // per-species anchor from the wardrobe, so the cow stands ON her
+      // spot instead of hanging off a hen-sized hook
+      const dims = [dr0.hw, dr0.hv];
+      const h2 = { el, img, follow, a, yng: dr0.y, hw: dims[0], hv: dims[1],
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,
         tx: anchor.x, ty: anchor.y + 40, waitUntil: 0, frame: 0, frameAt: 0 };
@@ -1061,27 +1048,17 @@ function init(visitDoc, visitMiss) {
       const fl = farmAnimals();
       hens.forEach((h4, i4) => {
         const na = fl[i4] || null;
-        if (h4.a === na) return;
-        const oldSp = h4.a && h4.a.sp;
+        const yn4 = na && isYoungA(na) ? 1 : 0;
+        if (h4.a === na && h4.yng === yn4) return;   // stage change re-dresses too
         h4.a = na;
-        if (na && na.sp !== oldSp) {
-          h4.el.className = na.sp === 'goat' ? 'hs-hen hs-hen--goat'
-            : na.sp === 'cow' ? 'hs-hen hs-hen--cow'
-            : na.sp === 'rooster' ? 'hs-hen hs-hen--roost'
-            : na.sp === 'sheep' ? 'hs-hen hs-hen--sheep'
-            : na.sp === 'dog' ? 'hs-hen hs-hen--dog' : 'hs-hen';
-          h4.fluff = undefined;
-          h4.img.style.backgroundImage = na.sp === 'goat' ? "url('/assets/homestead/c-goat.png')"
-            : na.sp === 'cow' ? "url('/assets/homestead/c-cow.png')"
-            : na.sp === 'rooster' ? "url('/assets/homestead/c-roost.png')"
-            : na.sp === 'sheep' ? "url('/assets/homestead/" + ((na.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png') + "')"
-            : na.sp === 'dog' ? "url('/assets/homestead/c-dog.png')"
-            : "url('/assets/homestead/c-hen" + (i4 % 3) + ".png')";
-          const dims2 = na.sp === 'cow' ? [30, 34]
-            : (na.sp === 'goat' || na.sp === 'sheep') ? [21, 32]
-            : na.sp === 'dog' ? [22, 28] : [16, 30];
-          h4.hw = dims2[0]; h4.hv = dims2[1];
+        if (na) {
+          const dr = dressFor(na, i4);
+          h4.el.className = dr.cls;
+          h4.img.style.backgroundImage = dr.img;
+          h4.hw = dr.hw; h4.hv = dr.hv;
+          h4.fluff = undefined; h4.dstrip = undefined; h4.dg = undefined;
         }
+        h4.yng = yn4;
       });
     }
     const P = plotNow();
@@ -1099,14 +1076,13 @@ function init(visitDoc, visitMiss) {
         }
         continue;
       }
-      // 🐕 the dog's whole job — she trails the banana at her own run
-      // pace, every tick, forever. Pens and ✥ pins never apply to her: the
-      // wander retarget below may write a clamped target, but this line owns
-      // hers again next frame. Carried somewhere, she simply runs back to you.
-      if (h.a && h.a.sp === 'dog' && !h.follow) { h.tx = pos.x - 52; h.ty = pos.y + 6; }
+      // 🐕 the leash became a brain (Trym: glued to the heel she read
+      // as part of the banana's own animation). Pens and ✥ pins still
+      // never bind her — dogBrain owns her targets every frame.
+      if (h.a && h.a.sp === 'dog' && !h.follow) dogBrain(h, now);
       const dx = h.tx - h.x, dy = h.ty - h.y;
       const d = Math.hypot(dx, dy);
-      if (d < 3) {
+      if (d < 3 && !(h.a && h.a.sp === 'dog')) {
         if (!h.waitUntil) h.waitUntil = now + 1500 + Math.random() * 5000;
         if (now > h.waitUntil) {
           h.waitUntil = 0;
@@ -1132,7 +1108,7 @@ function init(visitDoc, visitMiss) {
             }
           }
           // the sheep's coat follows its wool: swap strips when the state flips
-          if (h.a && h.a.sp === 'sheep') {
+          if (h.a && h.a.sp === 'sheep' && !isYoungA(h.a)) {
             const wantF = (h.a.wd || 0) >= 3;
             if (h.fluff !== wantF) {
               h.fluff = wantF;
@@ -1140,10 +1116,15 @@ function init(visitDoc, visitMiss) {
             }
           }
         }
-      } else {
-        // 🐕 run gait, run speed — she keeps pace with the banana (168);
-        // everything else ambles
-        const spd = h.a && h.a.sp === 'dog' ? 150 : 34;
+      } else if (d > 1) {
+        // ⚠️ the d > 1 guard is LOAD-BEARING: the dog skips the d<3 idle
+        // branch above, so a held position (tx === x) reaches this mover
+        // with d = 0 — and dx/d is 0/0 = NaN, which poisoned h.x forever
+        // (the sprite froze at its last valid style; the walk found her)
+        // 🐕 gait comes from her brain: trot 150 / zoomies 210 /
+        // sprint 280 (the banana walks 168 — a slower dog never catches
+        // a leaver). Everything else ambles.
+        const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150) : 34;
         h.x += dx / d * spd * dt;
         h.y += dy / d * spd * dt;
         // ⚠️ dx < 0, NOT dx > 0 — the hens walked backwards for exactly this
@@ -1153,7 +1134,7 @@ function init(visitDoc, visitMiss) {
         // facing. ⚠️ Check which way a new sprite looks before reusing either.
         const fl = dx < 0 ? 'scaleX(-1)' : '';
         if (h.fl !== fl) { h.fl = fl; h.img.style.transform = fl; }
-        if (now - h.frameAt > 140) {
+        if (now - h.frameAt > (h.dfr || 140)) {
           h.frameAt = now;
           h.frame = (h.frame + 1) % 4;
         }
@@ -1181,6 +1162,132 @@ function init(visitDoc, visitMiss) {
   // boot-time refreshItems() at :867 runs BEFORE this line is reached, so a
   // const here would be a TDZ crash for every returning player with a trough
   // (the rave's module-consts-above-init lesson, nearly repaid in full).
+  // ---- 🐣 the wardrobe ---------------------------------------------
+  // Age is data (gd = fed mornings; null or 5+ = grown), the look is
+  // derived. ONE table dresses creation AND the every-tick rebind — the
+  // old ternary chains doubled per species and young forms would have
+  // tripled them.
+  function isYoungA(a) { return !!a && a.gd != null && a.gd < 5; }
+  function dressFor(a, i) {
+    const y = isYoungA(a) ? 1 : 0;
+    const sp = a && a.sp;
+    let r;
+    if (sp === 'goat') r = y ? ['ygoat', 'c-ygoat.png', 17, 19] : ['goat', 'c-goat.png', 21, 32];
+    else if (sp === 'cow') r = y ? ['ycow', 'c-ycow.png', 19, 25] : ['cow', 'c-cow.png', 30, 34];
+    else if (sp === 'rooster') r = y ? ['chick', 'c-chick.png', 11, 12] : ['roost', 'c-roost.png', 16, 30];
+    else if (sp === 'sheep') r = y ? ['ysheep', 'c-ysheep.png', 19, 23]
+      : ['sheep', (a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png', 26, 38];
+    else if (sp === 'dog') r = ['dog', 'c-dog.png', 31, 36];
+    else r = y ? ['chick', 'c-chick.png', 11, 12] : ['', 'c-hen' + (i % 3) + '.png', 16, 30];
+    return { y, cls: 'hs-hen' + (r[0] ? ' hs-hen--' + r[0] : ''),
+      img: "url('/assets/homestead/" + r[1] + "')", hw: r[2], hv: r[3] };
+  }
+  // ---- 🐕 THE DOG'S SOUL -------------------------------------------
+  // Six moods instead of a leash, tuned so a ~400px phone viewport
+  // actually WITNESSES them — the shadow band keeps her at most a step
+  // off-screen, and the check-in clock guarantees a visit every 18-30s:
+  //   rest    · tail-wagging near the house (or near you), 8-20s
+  //   play    · 2-4 zoomies with ground-sniff pauses and a look back
+  //   shadow  · drifts along 180-280px behind a moving player
+  //   checkin · trots over, heart, lingers, wanders off again
+  //   sitby   · you stand still 6s and she comes to sit at your leg
+  //   seek    · you CROSS the plot edge outward → 280 px/s sprint (25s
+  //             cooldown: fence work AT the boundary never triggers it);
+  //             deep in the road she stops at the edge and waits for you
+  // Strips share one frame box (bake), so swaps never move her feet.
+  // REDUCED motion never reaches this — she freezes with the flock.
+  function dogBrain(h, now) {
+    const g = h.dg || (h.dg = { m: 'checkin', until: 0, heelAt: now, cd: 0,
+      dash: 0, gapUntil: 0, pMoveAt: now, px: pos.x, py: pos.y, wasIn: true, jit: null });
+    const P = plotNow();
+    const pIn = pos.x > P[0] - 24 && pos.x < P[2] + 24 && pos.y > P[1] - 24 && pos.y < P[3] + 50;
+    if (Math.hypot(pos.x - g.px, pos.y - g.py) > 1.5) g.pMoveAt = now;
+    g.px = pos.x; g.py = pos.y;
+    const pd = Math.hypot(pos.x - h.x, pos.y - h.y);
+    // leaving? only an OUTWARD CROSSING counts — never proximity, or she
+    // would mob every fence-builder all session
+    if (g.wasIn && !pIn && now > g.cd) { g.m = 'seek'; g.cd = now + 25000; }
+    g.wasIn = pIn;
+    // the guaranteed visit
+    if (g.m !== 'seek' && g.m !== 'sitby' && g.m !== 'checkin' && g.m !== 'linger') {
+      if (g.jit == null) g.jit = 18000 + Math.random() * 12000;
+      if (now - g.heelAt > g.jit) { g.m = 'checkin'; g.jit = null; }
+    }
+    // you stood still a while — she notices
+    if ((g.m === 'rest' || g.m === 'play' || g.m === 'shadow')
+      && now - g.pMoveAt > 6000 && pd > 90) { g.m = 'sitby'; }
+    let strip = 'c-dog.png', spd = 150, fr = 140;
+    const arrive = () => { g.heelAt = now; float(h.x, h.y - 44, '❤️');
+      g.m = 'linger'; g.until = now + 2500 + Math.random() * 2500; };
+    if (g.m === 'seek') {
+      spd = 280; fr = 90;
+      if (pos.y > P[3] + 60) {
+        // she will not follow into the road — she waits at the edge
+        h.tx = Math.max(P[0] + 24, Math.min(P[2] - 24, pos.x));
+        h.ty = P[3] - 6;
+        if (Math.hypot(h.tx - h.x, h.ty - h.y) < 5) { strip = 'c-dogidle.png'; spd = 0; }
+      } else {
+        h.tx = pos.x - 52; h.ty = pos.y + 6;
+        if (pd < 70) arrive();
+      }
+    } else if (g.m === 'checkin') {
+      spd = 210; fr = 110;
+      h.tx = pos.x - 52; h.ty = pos.y + 6;
+      if (pd < 70) arrive();
+    } else if (g.m === 'linger') {
+      strip = 'c-dogidle.png'; spd = 0; h.tx = h.x; h.ty = h.y;
+      if (now > g.until) { g.m = Math.random() < 0.5 ? 'play' : 'rest'; g.until = 0; g.dash = 0; }
+    } else if (g.m === 'sitby') {
+      h.tx = pos.x - 40; h.ty = pos.y + 8;
+      if (pd < 55) { strip = 'c-dogidle.png'; spd = 0; h.tx = h.x; h.ty = h.y; g.heelAt = now; }
+      if (now - g.pMoveAt < 800) { g.m = 'shadow'; }
+    } else if (g.m === 'rest') {
+      if (!g.until) {
+        g.until = now + 8000 + Math.random() * 12000;
+        const nearHome = Math.hypot(pos.x - state.home.x, pos.y - state.home.y) < 400;
+        const ax = nearHome ? state.home.x : pos.x, ay = nearHome ? state.home.y + 90 : pos.y;
+        g.rx = Math.max(P[0] + 30, Math.min(P[2] - 30, ax + (Math.random() * 280 - 140)));
+        g.ry = Math.max(P[1] + 50, Math.min(P[3] - 12, ay + (Math.random() * 140 - 40)));
+      }
+      h.tx = g.rx; h.ty = g.ry;
+      if (Math.hypot(g.rx - h.x, g.ry - h.y) < 5) { strip = 'c-dogidle.png'; spd = 0; }
+      if (pd > 350) { g.m = 'shadow'; g.until = 0; }
+      else if (now > g.until) { g.m = 'play'; g.until = 0; g.dash = 0; }
+    } else if (g.m === 'play') {
+      spd = 210; fr = 110;
+      if (!g.dash && !g.gapUntil) g.dash = 2 + Math.floor(Math.random() * 3);
+      if (g.gapUntil && now < g.gapUntil) {
+        // the sniff between zoomies — and a look back at you
+        strip = 'c-dogeat.png'; spd = 0; h.tx = h.x; h.ty = h.y;
+        const fl2 = pos.x < h.x ? 'scaleX(-1)' : '';
+        if (h.fl !== fl2) { h.fl = fl2; h.img.style.transform = fl2; }
+      } else if (Math.hypot(h.tx - h.x, h.ty - h.y) < 5) {
+        if (g.dash <= 0) { g.m = Math.random() < 0.6 ? 'rest' : 'shadow'; g.until = 0; g.gapUntil = 0; }
+        else {
+          g.dash--;
+          g.gapUntil = now + 300 + Math.random() * 600;
+          const a2 = Math.random() * Math.PI * 2, r2 = 60 + Math.random() * 120;
+          h.tx = Math.max(P[0] + 30, Math.min(P[2] - 30, h.x + Math.cos(a2) * r2));
+          h.ty = Math.max(P[1] + 50, Math.min(P[3] - 12, h.y + Math.sin(a2) * r2 * 0.6));
+        }
+      } else { g.gapUntil = 0; }
+      if (pd > 350) { g.m = 'shadow'; g.gapUntil = 0; }
+    } else {
+      // shadow — the leash that keeps everything else visible
+      if (pd > 280) {
+        h.tx = pos.x + (h.x - pos.x) / (pd || 1) * 230;
+        h.ty = pos.y + (h.y - pos.y) / (pd || 1) * 230;
+      } else { h.tx = h.x; h.ty = h.y; strip = 'c-dogidle.png'; spd = 0; }
+      if (now - g.pMoveAt > 2500) { g.m = 'rest'; g.until = 0; }
+    }
+    h.dspd = spd; h.dfr = fr;
+    if (h.dstrip !== strip) {
+      h.dstrip = strip;
+      h.img.style.backgroundImage = "url('/assets/homestead/" + strip + "')";
+    }
+    // she wags even when she isn't going anywhere
+    if (spd === 0 && now - h.frameAt > 300) { h.frameAt = now; h.frame = (h.frame + 1) % 4; }
+  }
   function farmStats() { return passGet().stats || {}; }
   function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
   // 🐔 slice 2: an animal is an ENTITY — { sp, b (bond, only ever up),
@@ -1320,19 +1427,37 @@ function init(visitDoc, visitMiss) {
     // 🐓 the rooster keeps the yard while you're away: the pile holds THREE
     // mornings instead of two. Said twice in plain words (Trym's condition):
     // on his stall card, and by the news at the exact moment it pays.
-    const capDays = farmAnimals().some((a) => a.sp === 'rooster') ? 3 : 2;
+    const capDays = farmAnimals().some((a) => a.sp === 'rooster' && !isYoungA(a)) ? 3 : 2;
     const gap = Math.min(today - last, capDays);
     if (gap <= 0) return;
     const fed = (st.hs_fed || 0) >= last;               // fed on the last visit day
     const flock = farmAnimals();
-    const eggs = gap * flock.filter((a) => a.sp === 'hen').length * (fed ? 2 : 1);
+    const adult = (a) => !isYoungA(a);   // kids pay in cuteness, not goods
+    const eggs = gap * flock.filter((a) => a.sp === 'hen' && adult(a)).length * (fed ? 2 : 1);
     // 🥛 the dairy: a goat fills one can a day, the cow two
-    const dairy = flock.filter((a) => a.sp === 'goat').length
-      + flock.filter((a) => a.sp === 'cow').length * 2;
+    const dairy = flock.filter((a) => a.sp === 'goat' && adult(a)).length
+      + flock.filter((a) => a.sp === 'cow' && adult(a)).length * 2;
     const milk = gap * dairy * (fed ? 2 : 1);
     // 🧶 wool grows in DAYS, capped at ready — a fortnight away meets the
     // same one shearing as a weekend, never a backlog
-    flock.forEach((a) => { if (a.sp === 'sheep') a.wd = Math.min(3, (a.wd || 0) + gap); });
+    flock.forEach((a) => { if (a.sp === 'sheep' && adult(a)) a.wd = Math.min(3, (a.wd || 0) + gap); });
+    // 🐣 kids grow on FED mornings only — pause on a miss, never regress
+    // (the zero-guilt doctrine; the park's watered-days precedent). The
+    // stage flips HERE, on morning arrival with its own news line, never
+    // silently mid-play — and growing AFTER the yields means a graduate's
+    // first goods land TOMORROW, exactly as the news promises.
+    let gradN = 0, gradName = '', leftMin = 9;
+    if (fed) flock.forEach((a) => {
+      if (!isYoungA(a)) return;
+      a.gd += 1;
+      if (a.gd >= 5) { gradN++; if (a.name && !gradName) gradName = a.name; }
+      else leftMin = Math.min(leftMin, 5 - a.gd);
+    });
+    if (gradN || leftMin < 9) setTimeout(() => toast(gradN
+      ? '🎉 ' + (gradName || 'the little one') + (gradN > 1 ? ' & co' : '')
+        + ' — all grown up. The mornings start paying tomorrow'
+      : '🐣 the little ones grew — ' + leftMin + ' full morning'
+        + (leftMin === 1 ? '' : 's') + ' to go', 4600), 9400);
     passStat('hs_day', today - last);
     const t = state.items.find((i) => i.id === 'trough') || { x: state.home.x + 96, y: state.home.y + 52 };
     const drops = [];
@@ -1432,13 +1557,16 @@ function init(visitDoc, visitMiss) {
     const today = dayNum();
     if ((a.pd || 0) < today) {
       a.pd = today;
-      a.b = (a.b || 0) + 1;
+      // 🐣 a hug means MORE to a kid — double bond while she's little
+      // (raising pays in the other currency while the goods wait)
+      const inc = isYoungA(a) ? 2 : 1;
+      a.b = (a.b || 0) + inc;
       save();
       float(h.x, h.y - 44, '❤️');
       track1('homestead_pet', { b: a.b });
-      if (a.b === 3 && !a.name) {
+      if (a.b >= 3 && a.b - inc < 3 && !a.name) {
         toast('❤️ she trusts you now — tap her again to give her a name', 4200);
-      } else if (a.b === 7) {
+      } else if (a.b >= 7 && a.b - inc < 7) {
         toast('❤️ ' + (a.name || 'she') + ' will meet you at the gate from now on', 4200);
       }
     }
@@ -2624,6 +2752,7 @@ function init(visitDoc, visitMiss) {
   // surplus is meant to become a dish). The daily tally is device-local by
   // design — the worst a second device buys is one more capped day.
   const EGG_C = 4, MILK_C = 6, WOOL_C = 12, CHEESE_C = 20, STALL_CAP = 25;
+  const BABY_W = { hen: 'chick', rooster: 'chick', goat: 'kid goat', sheep: 'lamb', cow: 'calf' };
   const ANIMAL_SHOP = [
     { sp: 'hen', name: 'a hen', price: 12, icon: '🐔', needs: 'a pen of 4+ tiles holds four' },
     { sp: 'rooster', name: 'the rooster', price: 25, icon: '🐓',
@@ -2736,15 +2865,24 @@ function init(visitDoc, visitMiss) {
           const mem = farmMemory().filter((m) => m.sp === an.sp)
             .sort((x, y) => (y.b || 0) - (x.b || 0))[0];
           if (mem) state.memory.splice(state.memory.indexOf(mem), 1);
-          farmAnimals().push({ sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0 });
+          // 🐣 new animals arrive YOUNG (the dog excepted — the pack has
+          // no puppy); a remembered one returns at her remembered stage
+          const na2 = { sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0 };
+          if (an.sp !== 'dog') na2.gd = mem ? (mem.gd == null ? 5 : mem.gd) : 0;
+          farmAnimals().push(na2);
           state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
           save(); refreshHud(); renderShop();
           toast(mem && mem.name
             ? '💛 ' + mem.name + '! ' + (an.sp === 'rooster' ? 'he remembers you' : 'she remembers you')
-            : an.icon + ' ' + an.name + ' is yours — '
-              + (an.sp === 'rooster' ? 'he’s already bossing the yard'
-                : an.sp === 'dog' ? 'she’s already at your heel'
-                : 'she’s finding her feet in the pen'), 3600);
+            : an.sp === 'dog' ? '🐕 the dog is yours — she’s already at your heel'
+            // ⚠️ an UNNAMED remembered adult also lands here — only a real kid
+            // gets the kid line (the walk caught a returning ewe sold as
+            // "a lamb!")
+            : na2.gd != null && na2.gd < 5
+              ? '🐣 a ' + BABY_W[an.sp] + '! Five full-trough mornings and '
+                + (an.sp === 'rooster' ? 'he’s' : 'she’s') + ' grown'
+            : an.icon + ' ' + an.name + ' is back — '
+              + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet in the pen'), 3600);
           track1('homestead_buy_animal', { sp: an.sp });
         });
       }
@@ -2776,10 +2914,13 @@ function init(visitDoc, visitMiss) {
     flock.forEach((a) => {
       const card = document.createElement('div');
       card.className = 'hs-up';
-      const state2 = a.sp === 'sheep' && (a.wd || 0) >= 3 ? '🧶 woolly — tap her to shear'
+      const state2 = isYoungA(a)
+        ? '🐣 growing — ' + (5 - (a.gd || 0)) + ' full-trough morning'
+          + (5 - (a.gd || 0) === 1 ? '' : 's') + ' to go'
+        : a.sp === 'sheep' && (a.wd || 0) >= 3 ? '🧶 woolly — tap her to shear'
         : fedToday() ? '❤️ fed today' : '💔 hungry — fill the trough';
       card.innerHTML = '<div class="hs-uphead"><b>' + (ICO[a.sp] || '🐔') + ' '
-        + (a.name ? a.name : 'unnamed ' + a.sp) + '</b>'
+        + (a.name ? a.name : (isYoungA(a) ? 'little ' : 'unnamed ') + a.sp) + '</b>'
         + '<span class="hs-price">❤️ ' + (a.b || 0) + '</span></div>'
         + '<span>' + state2 + (a.name ? '' : ' · hug ' + (a.sp === 'rooster' ? 'him' : 'her') + ' '
           + Math.max(0, 3 - (a.b || 0)) + ' more day' + (3 - (a.b || 0) === 1 ? '' : 's')
@@ -2799,7 +2940,7 @@ function init(visitDoc, visitMiss) {
         }
         state.animals.splice(state.animals.indexOf(a), 1);
         if (a.name || (a.b || 0) > 0) {
-          farmMemory().push({ sp: a.sp, name: a.name || '', b: a.b || 0 });
+          farmMemory().push({ sp: a.sp, name: a.name || '', b: a.b || 0, gd: a.gd });
           if (state.memory.length > 12) state.memory.shift();
         }
         state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
@@ -4000,7 +4141,8 @@ function init(visitDoc, visitMiss) {
     }
     if (!next) return;
     if (Array.isArray(next.animals)) {
-      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: 0, name: a.name || '', wd: a.wd || 0 }));
+      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: 0, name: a.name || '',
+        wd: a.wd || 0, gd: a.gd == null ? undefined : a.gd, hm: a.hm }));
       next.hens = next.animals.filter((a) => a.sp === 'hen').length || next.hens || 0;
     }
     next.pubUpdated = r.updated || Date.now();
@@ -4039,6 +4181,9 @@ function init(visitDoc, visitMiss) {
       pull: yardPull,
       bond: (i, b) => { const a = farmAnimals()[i || 0]; if (a) { a.b = b; a.pd = 0; save(); } return a; },
       animals: () => farmAnimals(),
+      grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
+      feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
+      dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },
       pens: () => penCaps(),
       wool: (i, d) => { const a = farmAnimals()[i || 0]; if (a) { a.wd = d; save(); } return a; },
       goods: () => ({ eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0, cheese: state.cheese || 0 }),
