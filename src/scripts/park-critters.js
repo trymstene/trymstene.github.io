@@ -326,7 +326,7 @@ export function initCritters(ctx) {
   function showMood(a) {
     const e = MOOD_EMO[bandFor(ctx.phase())];
     if (!e) { a.bub.classList.remove('is-on'); return; }   // mid band = no bubble
-    a.bub.textContent = e;
+    a.bub.innerHTML = '<b>' + e + '</b>';   // <b> = the raised text layer above the tail
     a.bub.classList.add('is-on');
     clearTimeout(a.bubTimer);
     a.bubTimer = setTimeout(() => a.bub.classList.remove('is-on'), 2500);

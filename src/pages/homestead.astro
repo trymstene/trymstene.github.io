@@ -326,10 +326,15 @@ const description = 'A clearing west of the park with your name on the sign: cla
        edge, the diamond's centre 1px inside the border band. Tuned at 6x
        on a bench page (scratchpad bubble-bench), not in-game squinting. */
     .hs-mood::after {
-      content: ''; position: absolute; left: 50%; bottom: -5px;
+      content: ''; position: absolute; left: 50%; bottom: -6px;
       width: 8px; height: 8px; transform: translateX(-50%) rotate(45deg);
       background: #fffdf5; border-right: 2px solid #000; border-bottom: 2px solid #000;
     }
+    /* the diamond's top corner must cross into the interior to bridge the
+       border — so the CONTENT gets its own raised layer, or the tail paints
+       over the emoji's bottom (positioned pseudos always beat plain text;
+       Trym caught the half-hidden heart). Every mood writer wraps in <b>. */
+    .hs-mood b { position: relative; z-index: 1; font-weight: inherit; font-style: normal; }
     .hs-mood.is-on { opacity: 1; }
     .hs-stallrow { display: flex; gap: 0.5rem; margin-top: 0.55rem; }
     /* ✏️ slice 2: the naming chip (bond 3) and the said-over-her-head name */

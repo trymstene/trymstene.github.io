@@ -191,7 +191,7 @@ export function initOldPeel(ctx) {
     const band = Math.max(0, ctx.phase());
     if (band !== oldBand) { oldBand = band; oldIdx = 0; }
     const lines = (wx && OLD_WX[wx]) || OLD_LINES[band];
-    oldBub.innerHTML = '<i>' + OLD_NAME + '</i>' + esc(lines[oldIdx++ % lines.length]);
+    oldBub.innerHTML = '<b><i>' + OLD_NAME + '</i>' + esc(lines[oldIdx++ % lines.length]) + '</b>';
     oldBub.classList.add('is-on');
     clearTimeout(oldTimer);
     oldTimer = setTimeout(() => oldBub.classList.remove('is-on'), 5600);

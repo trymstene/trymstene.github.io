@@ -1531,7 +1531,7 @@ function init(visitDoc, visitMiss) {
   function henMood(h) {
     let b = h.el.querySelector('.hs-mood');
     if (!b) { b = document.createElement('span'); b.className = 'hs-mood'; h.el.appendChild(b); }
-    b.textContent = fedToday() ? '❤️' : '💔';
+    b.innerHTML = '<b>' + (fedToday() ? '❤️' : '💔') + '</b>';   // <b> = the raised text layer (see CSS)
     b.classList.add('is-on');
     clearTimeout(h.moodT);
     h.moodT = setTimeout(() => b.classList.remove('is-on'), 1800);
