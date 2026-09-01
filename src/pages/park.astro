@@ -902,21 +902,21 @@ const faq = {
       padding: 2px 4px; font-size: 11px; line-height: 1; white-space: nowrap;
       opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
     }
-    /* ⚠️ the BLACK rim hangs FULLY BELOW the bubble's edge — when it poked
-       1px into the box, fractional world scaling rounded that overlap into
-       black wedges inside the white (Trym's duck screenshot, 31 Aug). The
-       WHITE fill is the opposite: it must climb OVER the bubble's 2px black
-       border into the interior, or that border reads as a hairline seam
-       between bubble and tail (Trym's cow screenshot, 1 Sep). White-on-white
-       can't wedge, so only the fill bridges. */
+    /* ⚠️ the tail is ONE rotated square now, not two stacked triangles —
+       the wedge pair could never both bridge the border seam AND keep a
+       thin outline (round 5's fix just made the black tip fatter, Trym's
+       Betsy screenshot). A white 8px diamond with 2px black on only its
+       two LOWER edges: the top corner hides white-on-white inside the
+       bubble (killing the border seam), and the side corners land inside
+       the border band so its black merges into the bubble's own line.
+       ⚠️ `bottom` here measures from the PADDING box — the 2px border
+       sits below it, so -5px puts the box bottom 3px below the outer
+       edge, the diamond's centre 1px inside the border band. Tuned at 6x
+       on a bench page (scratchpad bubble-bench), not in-game squinting. */
     .pk-mood::after {
-      content: ''; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
-      border: 6px solid transparent; border-top: 8px solid #000; border-bottom: 0;
-    }
-    .pk-mood::before {
-      content: ''; position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
-      border: 4px solid transparent; border-top: 5px solid #fffdf5; border-bottom: 0;
-      z-index: 1;
+      content: ''; position: absolute; left: 50%; bottom: -5px;
+      width: 8px; height: 8px; transform: translateX(-50%) rotate(45deg);
+      background: #fffdf5; border-right: 2px solid #000; border-bottom: 2px solid #000;
     }
     .pk-mood.is-on { opacity: 1; }
     /* 🍌 OLD PEEL — the bench elder: an engine banana held on frame 0 (no
