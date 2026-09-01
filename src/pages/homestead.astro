@@ -306,20 +306,27 @@ const description = 'A clearing west of the park with your name on the sign: cla
          readable), so a 6px drop that sat on a 38px desktop duck BURIED a
          21px mobile hen (Trym: looks broken on mobile). 15%% of the box =
          the same approved 6px on desktop, 3px on a phone. */
-      position: absolute; left: 50%; top: 15%; transform: translate(-50%, -100%);
+      /* the calc lift: a flat 7px above the proportional drop (Trym: "5-10
+         pixels up above the animal") — a lift can't bury a small sprite the
+         way the old fixed DROP did, so flat px is safe in this direction */
+      position: absolute; left: 50%; top: calc(15% - 7px); transform: translate(-50%, -100%);
       background: #fffdf5; border: 2px solid #000; border-radius: 6px;
       padding: 2px 4px; font-size: 11px; line-height: 1; white-space: nowrap;
       opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
     }
-    /* ⚠️ the triangles hang FULLY BELOW the bubble's edge — when they poked
-       1px into the box, the world's fractional scaling rounded that overlap
-       into black wedges inside the white (Trym's duck screenshot, 31 Aug) */
+    /* ⚠️ the BLACK rim hangs FULLY BELOW the bubble's edge — when it poked
+       1px into the box, fractional world scaling rounded that overlap into
+       black wedges inside the white (Trym's duck screenshot, 31 Aug). The
+       WHITE fill is the opposite: it must climb OVER the bubble's 2px black
+       border into the interior, or that border reads as a hairline seam
+       between bubble and tail (Trym's cow screenshot, 1 Sep). White-on-white
+       can't wedge, so only the fill bridges. */
     .hs-mood::after {
       content: ''; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
       border: 6px solid transparent; border-top: 8px solid #000; border-bottom: 0;
     }
     .hs-mood::before {
-      content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
+      content: ''; position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
       border: 4px solid transparent; border-top: 5px solid #fffdf5; border-bottom: 0;
       z-index: 1;
     }
