@@ -199,3 +199,16 @@ that a class is present says nothing about whether the thing is legible.
 ⚠️ `astro dev` hot-reload lies on `<style is:inline>` edits. If a style change
 does not show up, restart the dev server before you start debugging code that
 was already correct.
+
+## 14. The Banana Phone speaks softly
+
+Inside the phone there are NO black borders (Trym, 1 Sep 2026: "this is the
+way"). The language: sticker cards (border-radius 16, soft `0 3px 0` shadow),
+pastel rounded thumb tiles, pill buttons and pill chips (`border-radius: 999px`;
+hearts get pink), lists packed to the TOP with `align-content: start`, and one
+fixed action-column width so every button is the same size no matter its label.
+The world OUTSIDE the phone keeps its chunky black-border chrome — the contrast
+is deliberate. Every new phone screen copies the `.hs-row` family, and every
+phone-screen change is verified at the shell's real height (375×812 emulation),
+never in a squat pane — a stretched list floats its rows to the middle and a
+short viewport cannot show it.
