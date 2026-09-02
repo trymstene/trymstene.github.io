@@ -769,8 +769,10 @@ const description = 'A clearing west of the park with your name on the sign: cla
       background: #fbf7ea radial-gradient(#e7dfc8 1.2px, transparent 1.4px) 0 0 / 18px 18px; box-shadow: inset 0 0 0 1px rgba(31, 26, 8, 0.06); }
     .hs-treeview:active { cursor: grabbing; }
     .hs-treecanvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-    .hs-tfit { position: absolute; right: 10px; bottom: 10px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: #fff;
+    .hs-tfit, .hs-tfold { position: absolute; right: 10px; bottom: 10px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: #fff;
       color: #6b5200; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.14); cursor: pointer; }
+    .hs-tfold { right: 52px; }
+    .hs-tfold svg { display: block; }
     .hs-tnode { position: absolute; display: grid; justify-items: center; gap: 3px; text-align: center; cursor: pointer;
       transition: left 0.35s ease, top 0.35s ease, opacity 0.3s ease, transform 0.3s ease; }
     .hs-tnode.is-new { opacity: 0; transform: translateY(10px) scale(0.94); }

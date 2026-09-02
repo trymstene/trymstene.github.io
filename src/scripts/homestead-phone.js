@@ -15,9 +15,10 @@ import pxCrown from '../icons/pixelart/crown-solid.svg?raw';
 import pxStar from '../icons/pixelart/star-solid.svg?raw';
 import pxFlower from '../icons/pixelart/flower-solid.svg?raw';
 import pxChev from '../icons/pixelart/chevron-down.svg?raw';
+import pxChevUp from '../icons/pixelart/chevron-up.svg?raw';
 import pxZoomOut from '../icons/pixelart/zoom-out.svg?raw';
 const PX = { edit: pxEdit, check: pxCheck, 'heart-solid': pxHeartS, heart: pxHeart, calendar: pxCal, cake: pxCake,
-  'crown-solid': pxCrown, 'star-solid': pxStar, 'flower-solid': pxFlower, 'chevron-down': pxChev, 'zoom-out': pxZoomOut };
+  'crown-solid': pxCrown, 'star-solid': pxStar, 'flower-solid': pxFlower, 'chevron-down': pxChev, 'chevron-up': pxChevUp, 'zoom-out': pxZoomOut };
 // an inline <svg> string, sized in px; currentColor follows the host
 export const ico = (nm, size) => (PX[nm] || '').replace('<svg ', '<svg width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true" ');
 let C = null;
@@ -443,7 +444,12 @@ export function renderTree(list) {
   }
   const view = document.createElement('div');
   list.appendChild(view);
-  buildTree(view, nodes, { icon: ico, art: '/assets/homestead/',
+  // your folds are a view preference: this device, never synced
+  const FOLD_K = 'hs-tree-folds';
+  let folded = [];
+  try { folded = JSON.parse(localStorage.getItem(FOLD_K) || '[]'); } catch (e) {}
+  buildTree(view, nodes, { icon: ico, art: '/assets/homestead/', folded,
+    onFold: (ids) => { try { localStorage.setItem(FOLD_K, JSON.stringify(ids)); } catch (e) {} },
     onTap: (n) => { openPet(n.rec, n.kind); track1('homestead_tree_tap', { state: n.state }); } });
   track1('homestead_tree', { n: nodes.length });
 }

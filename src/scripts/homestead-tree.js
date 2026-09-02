@@ -4,7 +4,8 @@
 //
 // node: { id, pa, name, state: 'live' | 'grass' | 'away', line,
 //         thumb: { file, fw, fh, w }, gold, badge: 'star-solid' | 'crown-solid' | '' }
-// opts: { onTap(node), icon(name, px) -> inline <svg> string, art: '/assets/homestead/' }
+// opts: { onTap(node), icon(name, px) -> inline <svg> string, art: '/assets/homestead/',
+//         folded: [ids folded last time], onFold(ids) — the view remembers your folds }
 
 const NODE_W = 88, NODE_H = 130, GAP_X = 12, GAP_Y = 44, ROW_H = 182, PAD = 10;
 const SC_MIN = 0.45, SC_MAX = 2;
@@ -14,7 +15,10 @@ export function buildTree(view, nodes, opts) {
   const kids = new Map();
   nodes.forEach((n) => { const p = n.pa && byId.has(n.pa) ? n.pa : 0; if (!kids.has(p)) kids.set(p, []); kids.get(p).push(n); });
   const roots = (kids.get(0) || []);
-  const open = new Set(nodes.filter((n) => (kids.get(n.id) || []).length).map((n) => n.id));   // everything expanded at first
+  const parents = nodes.filter((n) => (kids.get(n.id) || []).length);
+  const foldedIn = new Set(opts.folded || []);
+  const open = new Set(parents.filter((n) => !foldedIn.has(n.id)).map((n) => n.id));   // open, unless you folded it last time
+  const remember = () => { if (opts.onFold) opts.onFold(parents.filter((n) => !open.has(n.id)).map((n) => n.id)); };
   view.innerHTML = '';
   view.classList.add('hs-treeview');
   const canvas = document.createElement('div');
@@ -92,7 +96,7 @@ export function buildTree(view, nodes, opts) {
         tg.classList.toggle('is-open', open.has(n.id));
         const p1 = layout().get(n.id);
         tx -= (p1.x - p0.x) * sc; ty -= (p1.y - p0.y) * sc;
-        glide(); apply(); paint();
+        glide(); apply(); paint(); remember();
       });
       el.appendChild(tg);
     }
@@ -131,6 +135,8 @@ export function buildTree(view, nodes, opts) {
         el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
         el.classList.remove('is-gone');
       }
+      const tg = el.querySelector('.hs-ttoggle');
+      if (tg) tg.classList.toggle('is-open', open.has(id));
     });
     els.forEach((el, id) => {
       if (vis.has(id)) return;
@@ -165,6 +171,7 @@ export function buildTree(view, nodes, opts) {
     pos.forEach((p) => { mx = Math.max(mx, p.x + NODE_W + PAD); my = Math.max(my, p.y + NODE_H + PAD); });
     canvas.style.width = mx + 'px'; canvas.style.height = my + 'px';
     if (first) { fit(false); first = false; }
+    syncFold();
   };
 
   // 🗺 the map: pan by drag or wheel, zoom by pinch or ctrl-wheel, one pill to refit
@@ -195,6 +202,25 @@ export function buildTree(view, nodes, opts) {
   fitBtn.innerHTML = icon('zoom-out', 18);
   fitBtn.addEventListener('click', (e) => { e.stopPropagation(); fit(true, true); });
   view.appendChild(fitBtn);
+  // 🪗 fold every family / open every family — one pill, speaking the node
+  // toggles' own chevron language; only there when there is something to fold
+  const foldBtn = document.createElement('button');
+  foldBtn.className = 'hs-tfold';
+  const anyOpen = () => parents.some((n) => open.has(n.id));
+  const syncFold = () => {
+    if (!parents.length) return;
+    const o = anyOpen();
+    foldBtn.innerHTML = icon(o ? 'chevron-up' : 'chevron-down', 18);
+    foldBtn.setAttribute('aria-label', o ? 'fold every family' : 'open every family');
+  };
+  foldBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const o = anyOpen();
+    open.clear();
+    if (!o) parents.forEach((n) => open.add(n.id));
+    paint(); remember(); fit(true, o);
+  });
+  if (parents.length) view.appendChild(foldBtn);
 
   // ⚠️ the map CAPTURES the pointer to pan, and a captured pointer's `click`
   // lands on the map, never on the photo under the finger — so a tap is read
