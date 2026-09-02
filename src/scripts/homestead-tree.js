@@ -21,6 +21,7 @@ export function buildTree(view, nodes, opts) {
   canvas.className = 'hs-treecanvas';
   view.appendChild(canvas);
   const els = new Map();    // id -> node element
+  const nodeOf = new WeakMap();   // node element -> node
   const lines = new Map();  // id -> [segments] for the family under this parent
   let tx = 0, ty = 0, sc = 1, first = true;
 
@@ -95,7 +96,7 @@ export function buildTree(view, nodes, opts) {
       });
       el.appendChild(tg);
     }
-    el.addEventListener('click', () => opts.onTap && opts.onTap(n));
+    nodeOf.set(el, n);   // taps are read off the pointer (see below), never `click`
     return el;
   };
 
@@ -195,22 +196,31 @@ export function buildTree(view, nodes, opts) {
   fitBtn.addEventListener('click', (e) => { e.stopPropagation(); fit(true, true); });
   view.appendChild(fitBtn);
 
+  // ⚠️ the map CAPTURES the pointer to pan, and a captured pointer's `click`
+  // lands on the map, never on the photo under the finger — so a tap is read
+  // off the pointer itself: a press on a photo that neither moves nor grows
+  // a second finger. (The pills are buttons and keep their own clicks.)
   const ptrs = new Map();
-  let drag = null, pinch = null, downAt = null;
+  let drag = null, pinch = null, tap = null;
   const local = (e) => { const r = view.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const still = (e) => tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8;
   view.addEventListener('pointerdown', (e) => {
-    downAt = [e.clientX, e.clientY];
     if (e.target.closest('button')) return;
     ptrs.set(e.pointerId, local(e));
-    view.setPointerCapture(e.pointerId);
+    try { view.setPointerCapture(e.pointerId); } catch (err) {}
     if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()];
-      pinch = { d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s0: sc }; drag = null;
-    } else { drag = { x: e.clientX, y: e.clientY, tx, ty }; }
+      pinch = { d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s0: sc }; drag = null; tap = null;
+    } else {
+      drag = { x: e.clientX, y: e.clientY, tx, ty };
+      const el = e.target.closest('.hs-tnode');
+      tap = el ? { el, x: e.clientX, y: e.clientY } : null;
+    }
   });
   view.addEventListener('pointermove', (e) => {
     if (!ptrs.has(e.pointerId)) return;
     ptrs.set(e.pointerId, local(e));
+    if (tap && !still(e)) tap = null;
     if (pinch && ptrs.size === 2) {
       const [a, b] = [...ptrs.values()];
       const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -219,6 +229,11 @@ export function buildTree(view, nodes, opts) {
     } else if (drag) { tx = drag.tx + (e.clientX - drag.x); ty = drag.ty + (e.clientY - drag.y); apply(); }
   });
   const end = (e) => {
+    if (e.type === 'pointerup' && ptrs.size === 1 && still(e)) {
+      const n = nodeOf.get(tap.el);
+      if (n && opts.onTap) opts.onTap(n);
+    }
+    tap = null;
     ptrs.delete(e.pointerId); pinch = null;
     const rest = [...ptrs.keys()];
     drag = null;
@@ -230,12 +245,6 @@ export function buildTree(view, nodes, opts) {
     if (e.ctrlKey) { const [x, y] = local(e); zoomAt(sc * (e.deltaY < 0 ? 1.1 : 0.9), x, y); }
     else { tx -= e.deltaX; ty -= e.deltaY; apply(); }
   }, { passive: false });
-  // a tap that moved more than a few px is a pan, not a tap
-  view.addEventListener('click', (e) => {
-    const moved = downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6;
-    downAt = null;
-    if (moved) e.stopPropagation();
-  }, true);
 
   paint();
   return { refit: () => fit(true, true), paint };
