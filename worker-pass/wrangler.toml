@@ -27,3 +27,8 @@ NEWS_OPEN = "1"
 # names no faucet is still accepted (counted `unruled` on the desk); "1" =
 # refused. Flip once the desk shows unruled at ~0 for a day.
 RULES_STRICT = "0"
+# 🎩 stand ownership through an accepted spend (2 Sep 2026). "0" = a stand
+# spend that names no item (a tab on pre-slice JS) is adopted as before and
+# counted ownLegacy on the desk; "1" = refused (nobody is charged for an item
+# they will not get). Flip once the desk shows ownLegacy at ~0 for a day.
+OWN_STRICT = "0"

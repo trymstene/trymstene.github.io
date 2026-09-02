@@ -29,10 +29,10 @@ import { WEED_GRID, BORDER_SPOTS_N, ALGAE_SPOTS, BIRD_SPOTS_N } from './park-wee
 // rerun the script after any wearable change, then deploy this worker.
 // raveOnly items (beer/cone/vinyl/broom) are server-granted and excluded
 // so sanitize strips them from client outfits.
-const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap', 'djheadphones', 'duckhat', 'melticecream', 'watermelonhat', 'buckethat', 'snailhat', 'squidhat', 'woolbeanie'];
+const HAT_IDS = ['none', 'party', 'crown', 'tophat', 'cowboy', 'viking', 'sombrero', 'halo', 'beanieprop', 'woolbeanie', 'backwardscap', 'gradcap', 'tricorn', 'jester', 'friedegg', 'pigeon', 'arrowthru', 'fishbowl', 'devilhorns', 'nightcap', 'djheadphones', 'duckhat', 'melticecream', 'watermelonhat', 'buckethat', 'snailhat', 'squidhat'];
 const DROP_IDS = ['djheadphones'];
 const SHADE_IDS = ['none', 'shades', 'dwi', 'hearts', 'visor', 'threed', 'potter', 'nerd', 'monocle', 'groucho', 'eyepatch', 'googlyeyes', 'cucumbers', 'snorkelmask'];
-const EXTRA_IDS = ['mustache', 'oldcane', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'coneofshame', 'lifering', 'nightshirt', 'flamingoring', 'medal', 'daisypin', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'sockssandals', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'balloondog', 'plushbanana', 'potato', 'midnighttulip', 'cactuspot', 'glowstick', 'goldbanana', 'woolscarf'];
+const EXTRA_IDS = ['mustache', 'oldcane', 'fatstache', 'bowtie', 'necktie', 'goldchain', 'scarf', 'woolscarf', 'coneofshame', 'lifering', 'nightshirt', 'flamingoring', 'medal', 'daisypin', 'sneakers', 'sneakersblue', 'sneakersgold', 'skates', 'clownshoes', 'cowboyboots', 'discoboots', 'ledsneakers', 'flamekicks', 'flippers', 'sockssandals', 'boombox', 'mug', 'trophy', 'boingball', 'balloons', 'rubberchicken', 'bigfish', 'protestsign', 'candle', 'balloondog', 'plushbanana', 'potato', 'midnighttulip', 'cactuspot', 'glowstick', 'goldbanana'];
 // ALLOWLISTS-END
 const EFFECT_IDS = ['none', 'disco', 'sparkle', 'confetti'];
 const EMOTES = ['heart', 'confetti', 'banana', 'fire']; // fire = stage members only

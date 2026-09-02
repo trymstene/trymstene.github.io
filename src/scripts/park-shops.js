@@ -3,7 +3,7 @@
 // through the shared ctx (ME_DRAW/invalidateMe/sendOutfit = the equip seam).
 import { drawComposite, assetsReady, outfitParams, SVG as ART } from '../lib/banana-engine.js';
 import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
-import { passStat, passGet, passPush } from '../lib/banana-pass.js';
+import { passStat, passGet, passPush, passSpend, passFlush } from '../lib/banana-pass.js';
 import { catCustom } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { MARKET } from './park-geo.js';
@@ -484,15 +484,16 @@ export function initShops(ctx) {
     const item = stPicked;
     if (!item) return;
     if (stOwned(item.id)) { standSay('you already own that one.'); return; }
-    const bal = coinBal();
-    if (bal < item.price) {
+    // 🎩 the spend IS the check, and the row names the item: the pass worker
+    // judges it (owned / price / funds) and authors the ownership; the hat is
+    // worn on the next frame and settles on the ack (a refusal takes it off)
+    if (!passSpend(item.price, 'stand', item.id)) {
       // still the demand list — "wanted it, couldn't afford it"
       track('stand_buy_try', { item: item.id });
-      standSay('that’s ' + item.price + '. you’ve got ' + bal + '. the floor pays in coins.');
+      standSay('that’s ' + item.price + '. you’ve got ' + coinBal() + '. the floor pays in coins.');
       return;
     }
-    passStat('coins_spent', item.price, 'stand');
-    passStat('own_' + item.id, 1);
+    passStat('own_' + item.id, 1);   // the optimistic local flag — the server's word replaces it
     if (item.back) {
       // back-catalog buys also write the LEGACY stores so every flag/cat-own
       // reader (rave gift gate, builder chips) unlocks at once
@@ -506,6 +507,7 @@ export function initShops(ctx) {
       }
     }
     stEquip(item);
+    passFlush();   // 🎩 a purchase settles now
     refreshHud();
     refreshStandWallet();
     stUpdateTiles();
@@ -514,6 +516,22 @@ export function initShops(ctx) {
     track('stand_buy', { item: item.id, price: item.price, kind: item.back ? 'drop' : 'stand' });
   });
   document.getElementById('pkStandKeeper').addEventListener('click', () => standSay('*polishes the counter*'));
+  // 🎩 the till bounced a purchase (banana-pass walletKeep): the coins are
+  // already back in the wallet and the flag is gone from the ledger — take it
+  // off the drawn banana too, and say why in the keeper's voice
+  document.addEventListener('pass:refused', (e) => {
+    const { i, r } = (e && e.detail) || {};
+    if (!i) return;
+    if (ME_DRAW.hat === i) ME_DRAW.hat = 'none';
+    if (ME_DRAW.glasses === i) ME_DRAW.glasses = 'none';
+    if (ME_DRAW.extras && ME_DRAW.extras[i]) delete ME_DRAW.extras[i];
+    standSay(r === 'funds' ? 'the till bounced that one — not enough in the purse.'
+      : r === 'owned' ? 'you already had it. no double dipping.'
+      : 'the price tag changed under you — refresh and try again.');
+    refreshHud(); refreshStandWallet(); stUpdateTiles(); if (stPicked) stUpdateSpot(stPicked);
+    ctx.invalidateMe(); ctx.sendOutfit();
+    track('stand_buy_refused', { item: i, why: r });
+  });
   function openStand() {
     buildStand();
     refreshStandWallet();

@@ -49,3 +49,5 @@ jobs:
         run: node tools/check-budgets.mjs
       - name: Design gate — the mechanical half of docs/design-library.md
         run: node tools/check-design.mjs
+      - name: generated blocks in sync (worker allowlists, stand prices, stand ids)
+        run: node tools/build-worker-allowlists.mjs --check
