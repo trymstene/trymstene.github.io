@@ -1620,6 +1620,25 @@ function init(visitDoc, visitMiss) {
         + ' — all grown up. The mornings start paying tomorrow'
       : '🐣 the little ones grew — fill the trough ' + leftMin
         + ' more morning' + (leftMin === 1 ? '' : 's'), 4600), 9400);
+    // 💔 THE OBLIGATION (Trym, 2 Sep: "you should hug your animals — a
+    // day without hugging loses a heart, that's how Stardew does it"). The
+    // one deliberate exception to zero-guilt: every full day since the
+    // last morning that she went unhugged costs one heart. Counted exactly
+    // — a day is judged once, never twice — floored at zero; names are
+    // never lost, only levels and badges fall back honestly.
+    let lostN = 0, lostA = 0, worst = null, worstN = 0;
+    flock.forEach((a) => {
+      const missed = Math.max(0, (today - 1) - Math.max(a.pd || 0, last - 1));
+      if (!missed || !(a.b > 0)) return;
+      const cut = Math.min(a.b, missed);
+      a.b -= cut; lostN += cut; lostA++;
+      if (cut > worstN) { worstN = cut; worst = a; }
+    });
+    if (lostN) hens.forEach(petBadge);   // crowns and stars come off with the hearts
+    const lostLine = lostN
+      ? '💔 ' + (worst.name || 'the ' + worst.sp) + (lostA > 1 ? ' & co' : '') + ' missed you — '
+        + lostN + ' heart' + (lostN > 1 ? 's' : '') + ' lost'
+      : '';
     passStat('hs_day', today - last);
     const t = state.items.find((i) => i.id === 'trough') || { x: state.home.x + 96, y: state.home.y + 52 };
     const drops = [];
@@ -1658,7 +1677,9 @@ function init(visitDoc, visitMiss) {
       const kept = gap >= 3 ? 'you were gone ' + (today - last) + ' days — the rooster kept everything: '
         : '';
       toast('🥚 ' + (kept || who + ' left ') + bits.join(' · ') + (kept ? '' : ' by the trough')
-        + (fed ? ' — double, for yesterday’s feed' : ''), 4600);
+        + (fed ? ' — double, for yesterday’s feed' : '') + (lostLine ? ' · ' + lostLine : ''), 4600);
+    } else if (lostLine) {
+      toast(lostLine, 4600);
     }
     if (flock.some((a) => a.sp === 'sheep' && (a.wd || 0) >= 3)) {
       setTimeout(() => toast('🧶 the sheep is woolly — tap her to shear', 3600), 4600);
