@@ -2,6 +2,7 @@
 // first phone or card open (the yard's hot path stays under its budget).
 // Everything it needs arrives once through ctx; `state`, `inside` and
 // `visiting` are LIVE getters because the main module reassigns them.
+import { buildTree } from './homestead-tree.js';
 let C = null;
 let BABY_W, SPOT_W, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
 export function init(ctx) {
@@ -12,19 +13,23 @@ export function init(ctx) {
 // 🪪 THE CARD — her portrait, her level as dots, three stat tiles with
 // icons, one concrete next-step line. Visuals first (Trym); names go in
 // through textContent, never markup.
-export function openPet(a) {
+// kind: undefined for a living animal; 'grass' (at rest) or 'away' (rehomed)
+// opens the same card frozen — a photo to look at, nothing to press
+export function openPet(a, kind) {
   if (!a) return;
   const box = document.getElementById('hsPetBody');
-  const lv = lvOf(a), young = isYoungA(a), he = a.sp === 'rooster';
+  const gone = kind === 'grass' || kind === 'away';
+  const lv = lvOf(a), young = !gone && isYoungA(a), he = a.sp === 'rooster';
   const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
   const badge = lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '';
   const GOOD = { hen: ['m-egg.png', 'eggs'], goat: ['m-milk.png', 'cans'], cow: ['m-milk.png', 'cans'],
     sheep: ['m-wool.png', 'wool'], rooster: ['', 'mornings'], dog: ['', 'visits'] };
   const g = GOOD[a.sp] || GOOD.hen;
-  const days = Math.max(0, dayNum() - (a.ad == null ? dayNum() : a.ad));
+  const days = Math.max(0, (a.ld == null ? dayNum() : a.ld) - (a.ad == null ? dayNum() : a.ad));
   const goodsN = a.sp === 'rooster' ? days : (a.gs || 0);
   const left = 5 - (a.gd || 0);
-  const next = a.egg ? (he ? 'he' : 'she') + ' has an egg — make room and it hatches'
+  const next = gone ? (kind === 'grass' ? 'Resting in the long grass. The sign keeps ' + (he ? 'his' : 'her') + ' name.' : 'Living on another farm now — and remembering you.')
+    : a.egg ? (he ? 'he' : 'she') + ' has an egg — make room and it hatches'
     : young
     ? 'fill the trough ' + left + ' more morning' + (left === 1 ? '' : 's') + ' — then ' + (he ? 'he' : 'she') + '’s grown'
     : lv >= 10 ? ''
@@ -32,22 +37,22 @@ export function openPet(a) {
       + (lv + 1 === 3 && !a.name ? ' — then you can name ' + (he ? 'him' : 'her')
         : lv + 1 === 5 ? ' — ' + (he ? 'he' : 'she') + '’ll meet you at the gate' : '');
   const icon = (nm, col) => "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/" + nm + ".svg);color:" + col + "'></span>";
-  box.innerHTML = "<div class='hs-pethead'><span class='hs-petport" + (lv >= 10 ? ' hs-petport--best' : '') + "'>"
+  box.innerHTML = "<div class='hs-pethead'><span class='hs-petport" + (lv >= 10 ? ' hs-petport--best' : '') + (kind === 'grass' ? ' hs-petport--rest' : kind === 'away' ? ' hs-petport--away' : '') + "'>"
     + "<i style=\"background-image:url('/assets/homestead/" + sp[0] + "');width:" + Math.round(sp[3] * 1.45) + "px;aspect-ratio:" + sp[1] + "/" + sp[2] + "\"></i>"
     + (badge ? "<span class='hs-petbadge pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/" + badge + ".svg);color:#d9a400'></span>" : '')
     + "</span><div class='hs-petname'><b class='" + (lv >= 10 ? 'is-best' : '') + "'></b><small></small>"
     + "<div class='hs-petlv'><span class='hs-rowbond" + (lv >= 10 ? ' hs-rowbond--love' : '') + "'>Lv " + lv + "</span><span class='hs-petdots'>"
     + Array.from({ length: 10 }, (_, i) => '<i' + (i < lv ? " class='on'" : '') + '></i>').join('') + "</span></div></div></div>"
     + (next ? "<p class='hs-petnext'></p>" : '')
-    + (traitLine(a) ? "<p class='hs-pettrait'></p>" : '')
+    + (traitLine(a, gone) ? "<p class='hs-pettrait'></p>" : '')
     + "<div class='hs-petstats'>"
     + "<div class='hs-petstat'>" + icon('heart-solid', '#e5566d') + "<div><span class='n'>" + (a.b || 0) + "</span><span class='l'>hugs</span></div></div>"
     + "<div class='hs-petstat'>" + (g[0] ? "<img src='/assets/homestead/" + g[0] + "' alt=''>" : icon(a.sp === 'dog' ? 'heart' : 'cake', '#b07d00'))
     + "<div><span class='n'>" + goodsN + "</span><span class='l'>" + g[1] + "</span></div></div>"
     + "<div class='hs-petstat'>" + icon('calendar', '#4a6b8a') + "<div><span class='n'>" + days + "</span><span class='l'>days</span></div></div>"
     + "</div><div class='hs-petacts'></div>";
-  box.querySelector('.hs-petname b').textContent = a.name || (young ? 'little ' : 'unnamed ') + a.sp;
-  if (lv >= 3) {
+  box.querySelector('.hs-petname b').textContent = a.name || (young ? 'little ' : gone ? 'a ' : 'unnamed ') + a.sp;
+  if (lv >= 3 && !gone) {
     const pen = document.createElement('button');
     pen.className = 'hs-petedit';
     pen.setAttribute('aria-label', a.name ? 'rename' : 'name her');
@@ -58,9 +63,10 @@ export function openPet(a) {
   const par = a.pa ? (C.state.animals.find((x) => x.id === a.pa) || (C.state.grass || []).find((x) => x.id === a.pa)) : null;
   box.querySelector('.hs-petname small').textContent = young
     ? (par && par.name ? par.name + '’s ' : '') + (BABY_W[a.sp] || a.sp) + ' · growing up'
-    : a.sp + ' · ' + (isOld(a) ? 'old friend of the farm' : 'grown') + (lv >= 10 ? ' · best friends' : '');
+    : a.sp + ' · ' + (kind === 'grass' ? 'at rest' : kind === 'away' ? 'rehomed' : isOld(a) ? 'old friend of the farm' : 'grown') + (lv >= 10 ? ' · best friends' : '');
   if (next) box.querySelector('.hs-petnext').textContent = next;
-  if (traitLine(a)) box.querySelector('.hs-pettrait').textContent = traitLine(a);
+  if (traitLine(a, gone)) box.querySelector('.hs-pettrait').textContent = traitLine(a, gone);
+  if (gone) { petEl.hidden = false; syncLock(); return; }
   box.querySelector('.hs-petacts').appendChild(btnEl('↩ rehome', true, () => { petEl.hidden = true; syncLock(); openShop('animals'); }));
   if (isOld(a) && a.sp !== 'dog') {
     // 🌾 the long grass: only for old friends, only by your hand, twice
@@ -76,6 +82,7 @@ export function openPet(a) {
       }
       petEl.hidden = true; syncLock();
       toGrass(a);
+      renderShop();   // the tree behind the card, if that is where she was tapped
     });
     box.querySelector('.hs-petacts').insertBefore(gb, box.querySelector('.hs-petacts').firstChild);
   }
@@ -127,13 +134,15 @@ export function petRename(a) {
   b.appendChild(inp); b.appendChild(ok);
   inp.focus();
 }
-export function traitLine(a) {
+// brief: character only — no friend, no spot (the ones who left have neither)
+export function traitLine(a, brief) {
   if (a.sp === 'dog') return '';
   const t = traitsOf(a), he = he0(a);
   const w = [];
   if (t.pace === 0) w.push('a dawdler'); else if (t.pace === 2) w.push('quick on ' + (he ? 'his' : 'her') + ' feet');
   if (t.pat === 0) w.push('restless'); else if (t.pat === 2) w.push('a dreamer');
   if (t.bold === 0) w.push('a bit shy'); else if (t.bold === 1) w.push('nosy');
+  if (brief) return w.join(' · ');
   const f = bestFriend(a);
   if (f) w.push('inseparable from ' + (f.name || 'the ' + f.sp));
   const sp = spotOf(a);
@@ -356,7 +365,7 @@ export function renderAnimals(list) {
       }
       C.state.animals.splice(C.state.animals.indexOf(a), 1);
       if (a.name) {   // ⚠️ NAMED only — an unnamed revival read as "grown up right away"
-        farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd, id: a.id, ad: a.ad, gs: a.gs || 0, sd: a.sd });
+        farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd, id: a.id, ad: a.ad, gs: a.gs || 0, sd: a.sd, pa: a.pa });
         if (C.state.memory.length > 12) C.state.memory.shift();
       }
       C.state.hens = C.state.animals.filter((a2) => a2.sp === 'hen').length;
@@ -373,6 +382,49 @@ export function renderAnimals(list) {
     r2.row.addEventListener('click', (e) => { if (e.target.closest('button')) return; closeShop(); openPet(a); });
     list.appendChild(r2.row);
   });
+}
+// 🌳 THE FAMILY TREE — everyone who ever lived here: the living (a level
+// badge, gold at Lv 10), the ones at rest (a sepia photo) and the rehomed
+// (a dashed frame). Founders have no known parent; tapping opens the card.
+export function renderTree(list) {
+  list.classList.add('hs-list--tree');
+  const today = dayNum();
+  const dayLine = (n, tail) => n + ' day' + (n === 1 ? '' : 's') + tail;
+  const nodes = [];
+  farmAnimals().forEach((a) => {
+    const lv = lvOf(a), young = isYoungA(a);
+    const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
+    nodes.push({ id: a.id, pa: a.pa, rec: a, kind: undefined, state: 'live',
+      name: a.name || (young ? 'little ' : 'unnamed ') + a.sp,
+      line: dayLine(Math.max(0, today - (a.ad == null ? today : a.ad)), ' here'),
+      thumb: { file: sp[0], fw: sp[1], fh: sp[2], w: sp[3] },
+      gold: lv >= 10, badge: lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '' });
+  });
+  (C.state.grass || []).forEach((g, i) => {
+    const sp = THUMB[g.sp] || THUMB.hen;
+    nodes.push({ id: g.id || 'g' + i, pa: g.pa, rec: g, kind: 'grass', state: 'grass',
+      name: g.name || 'a ' + g.sp,
+      line: dayLine(Math.max(0, (g.ld == null ? today : g.ld) - (g.ad == null ? today : g.ad)), ' · at rest'),
+      thumb: { file: sp[0], fw: sp[1], fh: sp[2], w: sp[3] }, gold: lvOf(g) >= 10, badge: '' });
+  });
+  farmMemory().forEach((m, i) => {
+    const sp = THUMB[m.sp] || THUMB.hen;
+    nodes.push({ id: m.id || 'm' + i, pa: m.pa, rec: m, kind: 'away', state: 'away',
+      name: m.name || 'a ' + m.sp, line: 'rehomed',
+      thumb: { file: sp[0], fw: sp[1], fh: sp[2], w: sp[3] }, gold: lvOf(m) >= 10, badge: '' });
+  });
+  if (!nodes.length) {
+    const p3 = document.createElement('p');
+    p3.className = 'hs-note';
+    p3.textContent = 'nobody has lived here yet — the market has hens';
+    list.appendChild(p3);
+    return;
+  }
+  const view = document.createElement('div');
+  list.appendChild(view);
+  buildTree(view, nodes, { icons: '/assets/pixelarticons-pro-2.2.1/svg/', art: '/assets/homestead/',
+    onTap: (n) => { openPet(n.rec, n.kind); track1('homestead_tree_tap', { state: n.state }); } });
+  track1('homestead_tree', { n: nodes.length });
 }
 export function shedRows(list) {
     // 📱 shed as app rows: thumb, name, count, two small buttons

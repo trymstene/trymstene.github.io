@@ -762,6 +762,49 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     .hs-appbadge[hidden] { display: none; }
     .hs-phoneshell > .hs-list { flex: 1 1 auto; min-height: 0; max-height: none; }
+    /* 🌳 THE FAMILY TREE — a map you swipe: sticker photos on dotted paper,
+       the living fidget, the ones at rest are sepia, the rehomed dashed */
+    .hs-list--tree { display: block; overflow: hidden; padding: 0.3rem 0.85rem 0.85rem 1.15rem; }
+    .hs-list--tree > .hs-note { padding-top: 0.5rem; }
+    .hs-treeview { position: relative; overflow: hidden; height: 100%; border-radius: 16px; cursor: grab; touch-action: none;
+      background: #fbf7ea radial-gradient(#e7dfc8 1.2px, transparent 1.4px) 0 0 / 18px 18px; box-shadow: inset 0 0 0 1px rgba(31, 26, 8, 0.06); }
+    .hs-treeview:active { cursor: grabbing; }
+    .hs-treecanvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+    .hs-tfit { position: absolute; right: 10px; bottom: 10px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: #fff;
+      color: #6b5200; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.14); cursor: pointer; }
+    .hs-tfit .pai-m { width: 18px; height: 18px; }
+    .hs-tnode { position: absolute; display: grid; justify-items: center; gap: 3px; text-align: center; cursor: pointer;
+      transition: left 0.35s ease, top 0.35s ease, opacity 0.3s ease, transform 0.3s ease; }
+    .hs-tnode.is-new { opacity: 0; transform: translateY(10px) scale(0.94); }
+    .hs-tnode.is-gone { opacity: 0; transform: scale(0.9); pointer-events: none; }
+    .hs-tphoto { position: relative; width: 74px; height: 62px; border-radius: 16px; background: #e8f3d7;
+      display: grid; place-items: center; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 0 rgba(31, 26, 8, 0.12); }
+    .hs-tphoto i { display: block; background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+    .is-live .hs-tphoto i { animation: hs-tbob 4s ease-in-out infinite; }
+    @keyframes hs-tbob { 0%, 88%, 100% { transform: none; } 91% { transform: translateY(-3px); } 94% { transform: none; } 97% { transform: translateY(-2px); } }
+    .is-grass .hs-tphoto { background: #ece7d9; }
+    .is-grass .hs-tphoto i { filter: grayscale(1) sepia(0.35) contrast(0.92) brightness(1.06); }
+    .is-away .hs-tphoto { opacity: 0.55; border: 3px dashed #d3c69f; background: #f5f2e8; }
+    .hs-tbadge { position: absolute; right: 4px; top: 4px; width: 15px; height: 15px; color: #d9a400; }
+    .is-grass .hs-tbadge { color: #b8737f; }
+    .hs-tnode b { font-size: 0.72rem; line-height: 1.1; max-width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .is-gold b { color: #b07d00; }
+    .hs-tnode small { font-size: 0.64rem; opacity: 0.65; line-height: 1; white-space: nowrap; }
+    .hs-ttoggle { width: 28px; height: 28px; margin-top: 2px; border: 0; border-radius: 999px; background: #fff3c4; color: #6b5200;
+      display: grid; place-items: center; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.16); cursor: pointer; font: inherit; }
+    .hs-ttoggle .pai-m { width: 14px; height: 14px; transition: transform 0.3s ease; }
+    .hs-ttoggle.is-open .pai-m { transform: rotate(180deg); }
+    .hs-ttoggle b { display: none; font-size: 0.66rem; line-height: 1; }
+    .hs-ttoggle:not(.is-open) b { display: block; }
+    .hs-ttoggle:not(.is-open) .pai-m { display: none; }
+    .hs-tline { position: absolute; background: #dccfa6; border-radius: 3px; opacity: 1;
+      transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.3s ease; }
+    .hs-tline.is-new { opacity: 0; }
+    .hs-petport--rest i { filter: grayscale(1) sepia(0.35) contrast(0.92) brightness(1.06); }
+    .hs-petport--rest { background: #ece7d9; }
+    .hs-petport--away { opacity: 0.6; }
+    /* the card floats over the phone: a tap in the tree opens it, closing it lands back on the tree */
+    #hsPet { z-index: 960; }
 
     /* the place/cancel confirm bar rides the bottom of the view */
     .hs-confirm {
@@ -952,6 +995,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <button type="button" data-tab="sell" hidden><span class="hs-appic" style="background:#fdeccc">🪙</span>Stall</button>
           <button type="button" data-tab="buy" hidden><span class="hs-appic" style="background:#e7f3d1">🐄</span>Market</button>
           <button type="button" data-tab="animals" hidden><span class="hs-appic" style="background:#fbe4e4">🐔</span>My animals</button>
+          <button type="button" data-tab="tree" hidden><span class="hs-appic" style="background:#e3efd9">🌳</span>Family</button>
           <button type="button" data-tab="order"><span class="hs-appic" style="background:#dff1ff">🛒</span>Order</button>
           <button type="button" data-tab="shed"><span class="hs-appic" style="background:#f3e6cf;position:relative">📦<i class="hs-appbadge" id="hsShedBadge" hidden></i></span>Shed</button>
           <button type="button" data-tab="up"><span class="hs-appic" style="background:#e2f4d9">⛺</span>Upgrades</button>
