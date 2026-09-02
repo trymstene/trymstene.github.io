@@ -201,6 +201,12 @@ function applyTestScenario(kind) {
         cur.pantry = cur.pantry || {};
         const top = { egg: 4, milk: 3, cheese: 2, radish: 2, carrot: 2, tomato: 2, pumpkin: 2, daisy: 1, sunflower: 1 };
         Object.keys(top).forEach((k) => { cur.pantry[k] = Math.max(cur.pantry[k] || 0, top[k]); });
+        // 🧶 and the tailor's side: wool to knit with, and a tailor table in the
+        // shed if this yard has none yet (place it yourself — the shed is yours)
+        cur.wool = Math.max(cur.wool || 0, 8);
+        cur.shed = cur.shed || [];
+        const hasTailor = (cur.items || []).some((i) => i.id === 'tailor') || cur.shed.some((i) => i.id === 'tailor');
+        if (!hasTailor) cur.shed.push({ id: 'tailor' });
         localStorage.setItem(HS_KEY, JSON.stringify(cur));
       }
     } catch (e) {}
