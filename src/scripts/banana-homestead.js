@@ -1374,12 +1374,60 @@ function init(visitDoc, visitMiss) {
       + "<div class='hs-petstat'>" + icon('calendar', '#4a6b8a') + "<div><span class='n'>" + days + "</span><span class='l'>days</span></div></div>"
       + "</div><div class='hs-petacts'></div>";
     box.querySelector('.hs-petname b').textContent = a.name || (young ? 'little ' : 'unnamed ') + a.sp;
+    if (lv >= 3) {
+      const pen = document.createElement('button');
+      pen.className = 'hs-petedit';
+      pen.setAttribute('aria-label', a.name ? 'rename' : 'name her');
+      pen.innerHTML = "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/edit.svg)'></span>";
+      pen.addEventListener('click', () => petRename(a));
+      box.querySelector('.hs-petname b').appendChild(pen);
+    }
     box.querySelector('.hs-petname small').textContent = young ? (BABY_W[a.sp] || a.sp) + ' · growing up'
       : a.sp + ' · grown' + (lv >= 10 ? ' · best friends' : '');
     if (next) box.querySelector('.hs-petnext').textContent = next;
     box.querySelector('.hs-petacts').appendChild(btnEl('↩ rehome', true, () => { petEl.hidden = true; syncLock(); openShop('animals'); }));
     petEl.hidden = false; syncLock();
     track1('homestead_pet_card', { lv });
+  }
+  function petRename(a) {
+    const b = document.querySelector('#hsPetBody .hs-petname b');
+    if (!b || b.querySelector('input')) return;
+    const he = he0(a);
+    b.innerHTML = '';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.maxLength = 20; inp.className = 'hs-nameinp';
+    inp.placeholder = he ? 'his name…' : 'her name…';
+    inp.value = a.name || '';
+    const ok = document.createElement('button');
+    ok.className = 'hs-petedit hs-petedit--ok';
+    ok.setAttribute('aria-label', 'save name');
+    ok.innerHTML = "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/check.svg)'></span>";
+    const go = async () => {
+      const v = (inp.value || '').trim().slice(0, 20);
+      if (!v) { inp.focus(); return; }
+      // ⚠️ one Gunnar per farm — the living AND the remembered
+      const taken = (x) => x !== a && x.name && x.name.toLowerCase() === v.toLowerCase();
+      if (farmAnimals().some(taken) || farmMemory().some(taken)) {
+        toast('there’s already a ' + v + ' on this farm — every name is one of a kind');
+        inp.focus(); return;
+      }
+      ok.disabled = true;
+      let clean = true;
+      try { clean = await import('../lib/sticker-core.js').then((m) => m.captionsClean({ top: v })); } catch (e) {}
+      ok.disabled = false;
+      if (!clean) { toast('let’s keep names family friendly — try another'); inp.focus(); return; }
+      const first = !a.name;
+      a.name = v;
+      save();
+      toast(first ? '❤️ ' + v + '! ' + (he ? 'he knows it’s you' : 'she knows it’s you')
+        : (he ? 'he answers to ' : 'she answers to ') + v + ' now', 3600);
+      track1(first ? 'homestead_name_animal' : 'homestead_rename_animal');
+      openPet(a);
+    };
+    ok.addEventListener('click', go);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    b.appendChild(inp); b.appendChild(ok);
+    inp.focus();
   }
   function farmStats() { return passGet().stats || {}; }
   function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
@@ -1689,15 +1737,15 @@ function init(visitDoc, visitMiss) {
       }
       track1('homestead_pet', { b: a.b });
       if (a.b >= 3 && a.b - inc < 3 && !a.name) {
-        toast('❤️ she trusts you now — tap her again to give her a name', 4200);
+        toast('❤️ ' + (he0(a) ? 'he trusts you now — open his card (tap twice) to name him'
+          : 'she trusts you now — open her card (tap twice) to name her'), 4200);
       } else if (a.b >= 7 && a.b - inc < 7) {
         toast('❤️ ' + (a.name || 'she') + ' will meet you at the gate from now on', 4200);
       }
     }
     // ✏️ NAMING at bond 3 — earned, never bought. One name per farm, ever
     // (Trym: no duplicates), through the same family filter as every sign.
-    if (a.b >= 3 && !a.name) henNameChip(h);
-    else if (a.name) henNameShow(h);
+    if (a.name) henNameShow(h);
   }
   // her name, said over her head when you tap her (the bubble stays
   // hearts-only — the name is a label, not a mood)
@@ -1708,46 +1756,6 @@ function init(visitDoc, visitMiss) {
     t.classList.add('is-on');
     clearTimeout(h.nameT);
     h.nameT = setTimeout(() => t.classList.remove('is-on'), 2600);
-  }
-  function henNameChip(h) {
-    clearChip();
-    itChip = document.createElement('div');
-    itChip.className = 'hs-chip hs-chip--name';
-    const inp = document.createElement('input');
-    inp.type = 'text'; inp.maxLength = 20; inp.placeholder = 'her name…';
-    inp.className = 'hs-nameinp';
-    const ok = document.createElement('button');
-    ok.className = 'hs-btn'; ok.textContent = '❤️ name her';
-    ok.addEventListener('click', async () => {
-      const v = (inp.value || '').trim().slice(0, 20);
-      if (!v) { inp.focus(); return; }
-      // ⚠️ one Gunnar per farm, full stop — every news line stays unambiguous
-      // one name per farm INCLUDING the remembered — or a later revival
-      // would bring back a twin
-      if (farmAnimals().some((a2) => a2.name && a2.name.toLowerCase() === v.toLowerCase())
-        || farmMemory().some((m) => m.name && m.name.toLowerCase() === v.toLowerCase())) {
-        toast('there’s already a ' + v + ' on this farm — every name is one of a kind');
-        inp.focus(); return;
-      }
-      ok.disabled = true;
-      let clean = true;
-      try { clean = await import('../lib/sticker-core.js').then((m) => m.captionsClean({ top: v })); } catch (e) {}
-      ok.disabled = false;
-      if (!clean) { toast('let’s keep names family friendly — try another'); inp.focus(); return; }
-      h.a.name = v;
-      save();
-      clearChip();
-      float(h.x, h.y - 44, '❤️');
-      toast('❤️ ' + v + '! she knows it’s you', 3600);
-      track1('homestead_name_animal');
-    });
-    itChip.appendChild(inp); itChip.appendChild(ok);
-    itChip.style.left = pct(h.x, W);
-    itChip.style.top = pct(h.y - 44, H);
-    itChip.style.transform = 'translate(-50%, -100%)';
-    depth(itChip, h.y + 400);
-    world.appendChild(itChip);
-    inp.focus();
   }
 
   // 🐦 NO SPECIES COLLECTION HERE (Trym, 30 Aug). Birdwatching belongs to

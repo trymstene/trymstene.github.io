@@ -338,7 +338,6 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-mood.is-on { opacity: 1; }
     .hs-stallrow { display: flex; gap: 0.5rem; margin-top: 0.55rem; }
     /* ✏️ slice 2: the naming chip (bond 3) and the said-over-her-head name */
-    .hs-chip--name { display: flex; gap: 0.4rem; align-items: center; }
     .hs-nameinp {
       font: inherit; font-size: 0.8rem; width: 9.5rem; padding: 0.3rem 0.45rem;
       border: 2px solid #000; background: #fffdf5; color: #17120c;
@@ -542,6 +541,15 @@ const description = 'A clearing west of the park with your name on the sign: cla
       padding: 0.36rem 0.4rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.22); }
     .hs-pet .hs-btn--ghost { background: #fff3c4; }
     .hs-row--tap { cursor: pointer; }
+    /* ✏️ naming lives on the card: a pencil by the name from Lv 3 */
+    .hs-petedit { flex: none; width: 24px; height: 24px; margin-left: 6px; border: 0; border-radius: 999px;
+      background: #fff3c4; color: #6b5200; cursor: pointer; display: inline-grid; place-items: center;
+      box-shadow: 0 2px 0 rgba(31, 26, 8, 0.16); vertical-align: middle; }
+    .hs-petedit .pai-m { width: 14px; height: 14px; }
+    .hs-petedit--ok { background: #ffe135; color: #1a1408; }
+    .hs-petname b { display: flex; align-items: center; }
+    .hs-petname .hs-nameinp { flex: 1; min-width: 0; font: inherit; font-weight: 800; font-size: 0.95rem;
+      border: 0; border-radius: 10px; background: #fff; padding: 0.25rem 0.5rem; box-shadow: inset 0 0 0 2px #ffe135; }
     /* 🌟 the level shows on the animal herself: a star from Lv 5, a crown
        and a golden glow at Lv 10, a hop on the way up */
     .hs-henbadge { position: absolute; right: -5px; top: -7px; width: 11px; height: 11px; color: #d9a400; }
