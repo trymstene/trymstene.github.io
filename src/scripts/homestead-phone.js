@@ -3,10 +3,10 @@
 // Everything it needs arrives once through ctx; `state`, `inside` and
 // `visiting` are LIVE getters because the main module reassigns them.
 let C = null;
-let CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
+let BABY_W, SPOT_W, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
 export function init(ctx) {
   C = ctx;
-  ({ CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf } = ctx);
+  ({ BABY_W, SPOT_W, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf } = ctx);
 }
 
 // 🪪 THE CARD — her portrait, her level as dots, three stat tiles with
@@ -24,7 +24,8 @@ export function openPet(a) {
   const days = Math.max(0, dayNum() - (a.ad == null ? dayNum() : a.ad));
   const goodsN = a.sp === 'rooster' ? days : (a.gs || 0);
   const left = 5 - (a.gd || 0);
-  const next = young
+  const next = a.egg ? (he ? 'he' : 'she') + ' has an egg — make room and it hatches'
+    : young
     ? 'fill the trough ' + left + ' more morning' + (left === 1 ? '' : 's') + ' — then ' + (he ? 'he' : 'she') + '’s grown'
     : lv >= 10 ? ''
     : lvNext(a) + ' hug' + (lvNext(a) === 1 ? '' : 's') + ' to Lv ' + (lv + 1)
@@ -54,11 +55,30 @@ export function openPet(a) {
     pen.addEventListener('click', () => petRename(a));
     box.querySelector('.hs-petname b').appendChild(pen);
   }
-  box.querySelector('.hs-petname small').textContent = young ? (BABY_W[a.sp] || a.sp) + ' · growing up'
-    : a.sp + ' · grown' + (lv >= 10 ? ' · best friends' : '');
+  const par = a.pa ? (C.state.animals.find((x) => x.id === a.pa) || (C.state.grass || []).find((x) => x.id === a.pa)) : null;
+  box.querySelector('.hs-petname small').textContent = young
+    ? (par && par.name ? par.name + '’s ' : '') + (BABY_W[a.sp] || a.sp) + ' · growing up'
+    : a.sp + ' · ' + (isOld(a) ? 'old friend of the farm' : 'grown') + (lv >= 10 ? ' · best friends' : '');
   if (next) box.querySelector('.hs-petnext').textContent = next;
   if (traitLine(a)) box.querySelector('.hs-pettrait').textContent = traitLine(a);
   box.querySelector('.hs-petacts').appendChild(btnEl('↩ rehome', true, () => { petEl.hidden = true; syncLock(); openShop('animals'); }));
+  if (isOld(a) && a.sp !== 'dog') {
+    // 🌾 the long grass: only for old friends, only by your hand, twice
+    const gb = btnEl('🌾 the long grass', true, () => {
+      if (!gb.armed) {
+        gb.armed = true;
+        gb.innerHTML = 'yes, let ' + (he ? 'him' : 'her') + ' rest';
+        const nx = box.querySelector('.hs-petnext') || box.insertBefore(document.createElement('p'), box.querySelector('.hs-pettrait') || box.querySelector('.hs-petstats'));
+        nx.className = 'hs-petnext';
+        nx.textContent = (he ? 'He' : 'She') + ' stops working and starts being remembered — the sign keeps ' + (he ? 'his' : 'her') + ' name. Tap again to be sure.';
+        setTimeout(() => { if (gb.isConnected && gb.armed) openPet(a); }, 5000);
+        return;
+      }
+      petEl.hidden = true; syncLock();
+      toGrass(a);
+    });
+    box.querySelector('.hs-petacts').insertBefore(gb, box.querySelector('.hs-petacts').firstChild);
+  }
   petEl.hidden = false; syncLock();
   track1('homestead_pet_card', { lv });
 }
@@ -107,7 +127,6 @@ export function petRename(a) {
   b.appendChild(inp); b.appendChild(ok);
   inp.focus();
 }
-const SPOT_W = ['the trough', 'the well', 'the house', 'the coop', 'the fence'];
 export function traitLine(a) {
   if (a.sp === 'dog') return '';
   const t = traitsOf(a), he = he0(a);
@@ -121,7 +140,6 @@ export function traitLine(a) {
   if (sp) w.push('you’ll find ' + (he ? 'him' : 'her') + ' by ' + SPOT_W[sp.k]);
   return w.join(' · ');
 }
-const BABY_W = { hen: 'chick', rooster: 'chick', goat: 'kid goat', sheep: 'lamb', cow: 'calf' };
 // needs = the locked-row line; it speaks the SAME size-words as the
 // fence card and the build-mode fence label, so they explain each other
 const ANIMAL_SHOP = [

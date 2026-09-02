@@ -360,7 +360,11 @@ function init(visitDoc, visitMiss) {
           pd: Math.round(a.pd || 0),
           id: a.id || undefined, ad: a.ad == null ? undefined : Math.round(a.ad),
           gs: Math.round(a.gs || 0), sd: a.sd == null ? undefined : Math.round(a.sd),
+          pa: a.pa || undefined, egg: a.egg ? 1 : undefined,
           hm: a.hm ? { x: Math.round(a.hm.x), y: Math.round(a.hm.y) } : undefined })),
+        grass: (state.grass || []).slice(0, 40).map((g) => ({ sp: g.sp, name: g.name || '', b: Math.round(g.b || 0),
+          ad: g.ad == null ? undefined : Math.round(g.ad), gs: Math.round(g.gs || 0), sd: g.sd == null ? undefined : Math.round(g.sd),
+          id: g.id || undefined, pa: g.pa || undefined, ld: g.ld == null ? undefined : Math.round(g.ld) })),
         memory: (state.memory || []).slice(0, 12).map((m) => ({
           sp: m.sp, b: Math.round(m.b || 0), name: m.name || '',
           gd: m.gd == null ? undefined : Math.round(m.gd),
@@ -1418,6 +1422,46 @@ function init(visitDoc, visitMiss) {
     }
     return null;
   }
+  const BABY_W = { hen: 'chick', rooster: 'chick', goat: 'kid goat', sheep: 'lamb', cow: 'calf' };
+  const SPOT_W = ['the trough', 'the well', 'the house', 'the coop', 'the fence'];
+  const isOld = (a) => a.ad != null && dayNum() - a.ad >= 90;   // an old friend of the farm
+  // 🥚 GENERATIONS — a kid of her own line: her species, her arrival
+  // today, ONE of her four traits inherited (the rest rolled fresh), and
+  // her id as the parent (the family tree hangs off it)
+  function hatchFrom(a, today) {
+    const t = traitsOf(a), keep = Math.floor(Math.random() * 4);
+    const r3 = () => Math.floor(Math.random() * 3);
+    const c = { pace: keep === 0 ? t.pace : r3(), pat: keep === 1 ? t.pat : r3(),
+      bold: keep === 2 ? t.bold : Math.floor(Math.random() * 4), spot: keep === 3 ? t.spot : Math.floor(Math.random() * 5) };
+    return { sp: a.sp, b: 0, pd: 0, name: '', wd: 0, gd: 0, id: mintId(), ad: today, gs: 0, pa: a.id,
+      sd: c.pace + 3 * c.pat + 9 * c.bold + 36 * c.spot + 180 * Math.floor(Math.random() * 50) };
+  }
+  // 🌾 THE LONG GRASS — the only door out, and only the player opens it.
+  // She stops working and starts being remembered: her record moves to
+  // state.grass (the album), her slot frees, and if she had an egg waiting
+  // it hatches into her place — the generational swap. The day after, the
+  // news says where her best friend stood.
+  function toGrass(a) {
+    const i = state.animals.indexOf(a);
+    if (i < 0) return null;
+    const bf = bestFriend(a), sp = spotOf(a);
+    state.animals.splice(i, 1);
+    state.grass = state.grass || [];
+    if (state.grass.length < 40) state.grass.push({ sp: a.sp, name: a.name || '', b: a.b || 0, ad: a.ad, gs: a.gs || 0,
+      sd: a.sd, id: a.id, pa: a.pa, ld: dayNum() });
+    state.hens = state.animals.filter((x) => x.sp === 'hen').length;
+    const h = hens.find((o) => o.a === a);
+    if (h) float(h.x, h.y - 48, '❤️');
+    state.grassNews = 'The yard was quiet this morning.' + (bf
+      ? ' ' + (bf.name || 'The ' + bf.sp) + ' stood by ' + (sp ? SPOT_W[sp.k] : 'the gate') + ' a while — ' + (a.name ? a.name + '’s spot.' : 'where she used to stand.') : '');
+    let born = null;
+    if (a.egg) { born = hatchFrom(a, dayNum()); state.animals.push(born); }
+    state.hens = state.animals.filter((x) => x.sp === 'hen').length;
+    save(); refreshHud();
+    toast((a.name || 'She') + ' went into the long grass. ' + (born ? 'Her ' + BABY_W[a.sp] + ' hatched in her place.' : 'She’ll be in the album.'), 5200);
+    track1('homestead_long_grass', { born: born ? 1 : 0 });
+    return born;
+  }
   function farmStats() { return passGet().stats || {}; }
   function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
   // 🐔 slice 2: an animal is an ENTITY — { sp, b (bond, only ever up),
@@ -1672,6 +1716,24 @@ function init(visitDoc, visitMiss) {
     } else if (lostLine) {
       mainLine = lostLine;
     }
+    // 🥚 GENERATIONS: an old friend at best friends gets an egg; it
+    // hatches the morning there is room for her species, else it waits
+    let eggLine = '', bornLine = '';
+    flock.forEach((a) => {
+      if (a.sp === 'dog' || isYoungA(a) || a.egg) return;
+      if (isOld(a) && lvOf(a) >= 10) { a.egg = 1; if (!eggLine) eggLine = '🥚 ' + (a.name || 'the ' + a.sp) + ' has an egg'; }
+    });
+    const caps0 = penCaps();
+    flock.slice().forEach((a) => {
+      if (!a.egg) return;
+      if (spCount(a.sp) >= (caps0[a.sp] || 0)) { if (eggLine.indexOf(' — ') < 0) eggLine += ' — make room and it hatches'; return; }
+      state.animals.push(hatchFrom(a, today)); a.egg = 0;
+      if (!bornLine) bornLine = '🐣 ' + (a.name || 'the ' + a.sp) + ' had a ' + BABY_W[a.sp] + ' — her own';
+      eggLine = '';
+    });
+    if (bornLine) state.hens = state.animals.filter((x) => x.sp === 'hen').length;
+    const quietLine = state.grassNews || '';
+    state.grassNews = '';
     const woolLine = flock.some((a) => a.sp === 'sheep' && (a.wd || 0) >= 3)
       ? '🧶 the sheep is woolly — tap her to shear' : '';
     // 🎉 RITUALS (Trym: care and emotion is what can shine here)
@@ -1688,7 +1750,7 @@ function init(visitDoc, visitMiss) {
         + (yd.length > 1 ? 'yard-days today' : ((today - yd[0].ad) / 30 === 1 ? 'a month' : ((today - yd[0].ad) / 30) + ' months') + ' here today')
       : '';
     // 📰 the news, one line at a time, in order of importance
-    const news = [mainLine, firstLine, growLine, ydLine, woolLine].filter(Boolean);
+    const news = [mainLine, quietLine, bornLine, firstLine, growLine, eggLine, ydLine, woolLine].filter(Boolean);
     news.forEach((t, i) => setTimeout(() => toast(t, 4600), i * 4800));
   }
   function farmEggTick() {
@@ -2683,6 +2745,7 @@ function init(visitDoc, visitMiss) {
   let phoneMod = null, renderTok = 0;
   const phoneCtx = {
     get state() { return state; }, get inside() { return inside; }, get visiting() { return visiting; },
+    get BABY_W() { return BABY_W; }, get SPOT_W() { return SPOT_W; }, get isOld() { return isOld; }, get toGrass() { return toGrass; },
     get CHEESE_C() { return CHEESE_C; },
     get COIN() { return COIN; },
     get DEX() { return DEX; },
@@ -4157,6 +4220,7 @@ function init(visitDoc, visitMiss) {
     inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
     animals: Array.isArray(d.animals) ? d.animals : undefined,
     memory: Array.isArray(d.memory) ? d.memory : undefined,
+    grass: Array.isArray(d.grass) ? d.grass : undefined,
   });
   async function yardPull() {
     if (!FARM || visiting || HS_TEST) return;
@@ -4186,7 +4250,8 @@ function init(visitDoc, visitMiss) {
     if (Array.isArray(next.animals)) {
       next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: a.pd || 0, name: a.name || '',
         wd: a.wd || 0, gd: a.gd == null ? undefined : a.gd, hm: a.hm,
-        id: a.id || mintId(), ad: a.ad == null ? undefined : a.ad, gs: a.gs || 0, sd: a.sd == null ? undefined : a.sd }));
+        id: a.id || mintId(), ad: a.ad == null ? undefined : a.ad, gs: a.gs || 0, sd: a.sd == null ? undefined : a.sd,
+        pa: a.pa || undefined, egg: a.egg ? 1 : undefined }));
       next.hens = next.animals.filter((a) => a.sp === 'hen').length || next.hens || 0;
     }
     next.pubUpdated = r.updated || Date.now();
@@ -4226,6 +4291,8 @@ function init(visitDoc, visitMiss) {
       bond: (i, b) => { const a = farmAnimals()[i || 0]; if (a) { a.b = b; a.pd = 0; save(); } return a; },
       animals: () => farmAnimals(),
       pet: (i) => phone().then((PH) => PH.openPet(farmAnimals()[i || 0])),
+      age: (i, d2) => { const a = farmAnimals()[i || 0]; if (a) { a.ad = dayNum() - d2; save(); } return a; },
+      grass: () => state.grass || [],
       grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
       feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
       dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },

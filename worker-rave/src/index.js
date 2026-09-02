@@ -2486,8 +2486,23 @@ export class YardRoom {
       if (a.ad != null) a2.ad = num(a.ad, 0, 99999);
       if (a.gs) a2.gs = num(a.gs, 0, 999999);
       if (a.sd != null) a2.sd = num(a.sd, 0, 9999);
+      if (a.pa) a2.pa = num(a.pa, 0, 999999);   // 🥚 parent id (the family tree)
+      if (a.egg) a2.egg = 1;                     // an egg waiting for room
       if (a.hm && Number.isFinite(Number(a.hm.x))) a2.hm = { x: num(a.hm.x, 0, 1800), y: num(a.hm.y, 0, 1100) };
       out.animals.push(a2);
+    });
+    // 🌾 the long grass — the album's residents, same discipline
+    out.grass = [];
+    (Array.isArray(s.grass) ? s.grass.slice(0, 40) : []).forEach((g) => {
+      if (!g || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog'].includes(g.sp)) return;
+      const nm3 = typeof g.name === 'string' ? g.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
+      const g2 = { sp: g.sp, name: nm3, b: num(g.b, 0, 999), gs: num(g.gs, 0, 999999) };
+      if (g.ad != null) g2.ad = num(g.ad, 0, 99999);
+      if (g.ld != null) g2.ld = num(g.ld, 0, 99999);
+      if (g.sd != null) g2.sd = num(g.sd, 0, 9999);
+      if (g.id) g2.id = num(g.id, 0, 999999);
+      if (g.pa) g2.pa = num(g.pa, 0, 999999);
+      out.grass.push(g2);
     });
     // 💛 sold-but-remembered animals — same discipline as the flock
     out.memory = [];
@@ -2500,6 +2515,7 @@ export class YardRoom {
       if (m.ad != null) m2.ad = num(m.ad, 0, 99999);
       if (m.gs) m2.gs = num(m.gs, 0, 999999);
       if (m.sd != null) m2.sd = num(m.sd, 0, 9999);
+      if (m.pa) m2.pa = num(m.pa, 0, 999999);
       out.memory.push(m2);
     });
     return out;
@@ -2667,7 +2683,7 @@ export class YardRoom {
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home,
         items: st.items || [], soil: st.soil || [], fence: st.fence || [],
         mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},
-        bed: st.bed, bedAt: st.bedAt, animals: st.animals || [], memory: st.memory || [],
+        bed: st.bed, bedAt: st.bedAt, animals: st.animals || [], memory: st.memory || [], grass: st.grass || [],
       });
     }
 
