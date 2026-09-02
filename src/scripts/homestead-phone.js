@@ -458,7 +458,7 @@ export function renderTree(list) {
 // 🍽 THE TREAT — who gets the dish? Every animal as a sticker tile: her
 // portrait (the tree's photo tile), her name, level pill and heart dots, so
 // the choice is a look at the flock, not a list. Tap = give; the hearts land.
-export function renderTreat(list, dish, n, onGive, onBack) {
+export function renderTreat(list, dish, nFor, faveFor, onGive, onBack) {
   list.classList.add('hs-krecipes--tiles');
   list.replaceChildren();
   const back = document.createElement('button');
@@ -469,11 +469,13 @@ export function renderTreat(list, dish, n, onGive, onBack) {
   farmAnimals().forEach((a) => {
     const lv = lvOf(a), young = isYoungA(a);
     const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
+    const n = nFor(a), fave = faveFor(a);
     const t = document.createElement('button');
-    t.className = 'hs-ktile is-live';
+    t.className = 'hs-ktile is-live' + (fave ? ' is-fave' : '');
     t.innerHTML = "<span class='hs-tphoto'><i style=\"background-image:url('/assets/homestead/" + sp[0] + "');width:" + sp[3] + "px;aspect-ratio:" + sp[1] + "/" + sp[2] + "\"></i></span>"
       + "<b></b><span class='hs-rowbond" + (lv >= 10 ? ' hs-rowbond--love' : '') + "'>Lv " + lv + "</span>"
       + "<span class='hs-petdots'>" + Array.from({ length: 10 }, (_, i) => '<i' + (i < lv ? " class='on'" : '') + '></i>').join('') + "</span>"
+      + "<span class='hs-ktreatn'>+" + n + " ❤" + (fave ? " · favourite" : '') + "</span>"
       + "<em class='hs-kgift'>+" + n + " ❤</em>";
     t.querySelector('b').textContent = a.name || (young ? 'little ' : 'unnamed ') + a.sp;
     t.addEventListener('click', () => {

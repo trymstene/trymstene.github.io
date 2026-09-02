@@ -1,6 +1,7 @@
 // 🌟 the yard badges: two bundled pixel icons (the full pack is gitignored — never a pack URL)
 import pxStar from '../icons/pixelart/star-solid.svg?raw';
 import pxCrown from '../icons/pixelart/crown-solid.svg?raw';
+import pxEdit from '../icons/pixelart/edit.svg?raw';
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
 //
 // The world's first PERSONAL space: claim the plot, name it, buy decor at the
@@ -625,6 +626,13 @@ function init(visitDoc, visitMiss) {
   const signName = document.createElement('div');
   signName.className = 'hs-signname';
   world.appendChild(signName);
+  // ✏️ an EMPTY plank is the claim (Trym: the naming popup landed before
+  // anyone knew what the place was): a pencil bobs over the blank sign until
+  // it has a name; tapping the sign up close opens the naming card
+  const signHint = document.createElement('div');
+  signHint.className = 'hs-signhint';
+  signHint.innerHTML = pxEdit.replace('<svg ', '<svg width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" ');
+  world.appendChild(signHint);
   function refreshFixtures() {
     mailEl.style.left = pct(state.mailAt.x - MAILBOX.w / 2, W);
     mailEl.style.top = pct(state.mailAt.y - MAILBOX.h, H);
@@ -641,9 +649,16 @@ function init(visitDoc, visitMiss) {
     signName.style.top = pct(state.signAt.y - sd2.h + 7, H);
     signName.dataset.tier = String(fenceTier());
     depth(signName, state.signAt.y + 200);
+    signHint.style.left = pct(state.signAt.x, W);
+    signHint.style.top = pct(state.signAt.y - sd2.h - 6, H);
+    depth(signHint, state.signAt.y + 201);
   }
   refreshFixtures();
-  function refreshSign() { signName.textContent = state.name || ''; signName.hidden = !state.name; }
+  function refreshSign() {
+    signName.textContent = state.name || '';
+    signName.hidden = !state.name;
+    signHint.style.display = (!state.name && !visiting) ? '' : 'none';
+  }
   refreshSign();
 
   // ---- 🏠 the structure at the TENT spot: nothing → tent → cabin → house --
@@ -2399,10 +2414,7 @@ function init(visitDoc, visitMiss) {
       passStat('coins_earned', 2);
       float(c.x, c.y - 22, '<img src="/assets/banana-stand/coin.png" width="14" height="14" style="vertical-align:-2px"> +2');
       refreshHud();
-      // 🏡 FARM: the claim is FREE and lands after you have DONE something —
-      // the first coin is the something. (The tent stays the first purchase;
-      // claiming just stops costing 50 coins of gate.)
-      if (FARM && !visiting && !state.claimedAt) offerClaim();
+      // 🏡 the claim is FREE and waits on the blank sign — never a popup
       if (!roadCoins.length) {
         try { localStorage.setItem('hs-roadcoins-v1', '1'); } catch (e) {}
         toast('<img class="hs-toastico" src="/assets/banana-stand/coin.png" style="image-rendering:auto" alt=""> first coins in the pocket — playing pays, anywhere in the world', 3600);
@@ -2490,7 +2502,18 @@ function init(visitDoc, visitMiss) {
   const kPlate = (d) => d.id === 'bouquet' ? '/assets/homestead/d-sunvase.png' : '/assets/homestead/f-' + d.id + '.png';
   let cookAt = 'stove', cookBusy = null, cookTimer = 0;   // the door it opened from; the dish on the go
   const dishOf = (id) => DISHES.find((d) => d.id === id);
-  const treatN = (d) => 1 + Math.round((d.pay || 0) / 12);   // the hearts a dish is worth as a treat
+  // 🍽 TREAT QUALITIES (Trym): a hearts ladder per dish, and every species
+  // has ONE favourite dish worth +2 more — said on the recipe row (so you cook
+  // for someone) and again on her tile in the picker
+  const TREAT_BASE = { fried: 1, greens: 2, bouquet: 2, soup: 3, board: 4 };
+  const FAVE = { hen: 'greens', rooster: 'fried', goat: 'bouquet', sheep: 'soup', cow: 'board', dog: 'fried' };
+  const FAVE_W = { hen: 'hens’', rooster: 'roosters’', goat: 'goats’', sheep: 'sheep’s', cow: 'cows’', dog: 'dogs’' };
+  const isFave = (d, a) => !!a && FAVE[a.sp] === d.id;
+  const treatN = (d, a) => (TREAT_BASE[d.id] || 1) + (isFave(d, a) ? 2 : 0);
+  const faveWord = (d) => {
+    const who = Object.keys(FAVE).filter((sp) => FAVE[sp] === d.id).map((sp) => FAVE_W[sp]);
+    return who.length ? ' · ' + who.join(' and ') + ' favourite' : '';
+  };
   function renderCook(keepNote) {
     const pan = document.getElementById('hsPantry');
     pan.replaceChildren();
@@ -2532,7 +2555,7 @@ function init(visitDoc, visitMiss) {
           + kIcon(k) + Math.min(P[k] || 0, n) + '/' + n + '</span>').join('')
         + "</div></div><div class='hs-kact'></div>";
       row.querySelector('b').textContent = d.name;
-      row.querySelector('small').textContent = d.fx ? '✨ ' + d.blurb : '→ ' + d.pay + ' coins, or a +' + treatN(d) + ' ❤ treat';
+      row.querySelector('small').textContent = d.fx ? '✨ ' + d.blurb : '→ ' + d.pay + ' coins, or a +' + treatN(d) + ' ❤ treat' + faveWord(d);
       const btn = document.createElement('button');
       btn.className = 'hs-btn';
       btn.textContent = cookBusy ? 'busy' : busy ? 'pot’s busy' : ok ? 'cook' : 'need ' + short[0];
@@ -2601,7 +2624,7 @@ function init(visitDoc, visitMiss) {
     if (canTreat) {
       const tr = document.createElement('button');
       tr.className = 'hs-btn hs-btn--treat';
-      tr.textContent = 'treat · +' + treatN(d) + ' ❤';
+      tr.textContent = 'treat · +' + treatN(d) + ' ❤';   // the base; her tile says what SHE gets
       tr.addEventListener('click', () => openTreat(d));
       acts.appendChild(tr);
     }
@@ -2625,19 +2648,19 @@ function init(visitDoc, visitMiss) {
   function openTreat(d) {
     document.getElementById('hsKRecLabel').textContent = 'Who gets the ' + d.name.toLowerCase() + '?';
     const list = document.getElementById('hsCookList');
-    phone().then((PH) => PH.renderTreat(list, d, treatN(d), (a) => giveTreat(a, d),
+    phone().then((PH) => PH.renderTreat(list, d, (a) => treatN(d, a), (a) => isFave(d, a), (a) => giveTreat(a, d),
       () => { document.getElementById('hsKRecLabel').textContent = 'Recipes'; renderCook(true); }));
   }
   function giveTreat(a, d) {
     if (state.plate !== d.id) return;
-    const n = treatN(d);
+    const n = treatN(d, a);
     clearPlate();
     bondUp(a, n, hens.find((o) => o.a === a));
     save();
     document.getElementById('hsKRecLabel').textContent = 'Recipes';
     const note = document.getElementById('hsCookNote');
     note.classList.remove('is-buff');
-    note.textContent = (a.name || 'the ' + a.sp) + ' loved the ' + d.name.toLowerCase() + ' — +' + n + ' ❤';
+    note.textContent = (a.name || 'the ' + a.sp) + ' loved the ' + d.name.toLowerCase() + (isFave(d, a) ? ' — ' + (he0(a) ? 'his' : 'her') + ' favourite! +' : ' — +') + n + ' ❤';
     track1('homestead_treat', { dish: d.id, sp: a.sp });
     renderCook(true);
   }
@@ -4174,7 +4197,10 @@ function init(visitDoc, visitMiss) {
     }
     // 🪧 the sign: near = the guestbook, far = walk to it
     if (Math.hypot(wx - state.signAt.x, wy - (state.signAt.y - 30)) < 56) {
-      if (Math.hypot(pos.x - state.signAt.x, pos.y - state.signAt.y) < 130) { openGuest(); return; }
+      if (Math.hypot(pos.x - state.signAt.x, pos.y - state.signAt.y) < 130) {
+        if (!state.claimedAt && !visiting) { claimShown = false; offerClaim(); return; }
+        openGuest(); return;
+      }
       tgt.x = state.signAt.x - 44; tgt.y = state.signAt.y + 6;
       return;
     }
@@ -4501,9 +4527,6 @@ function init(visitDoc, visitMiss) {
   }
   armAnimalsTab();
   if (FARM && !visiting && state.claimedAt) { farmGrant(); morningTick(); }
-  if (FARM && !visiting && !state.claimedAt) {
-    setTimeout(() => { if (!state.claimedAt) offerClaim(); }, 20000);
-  }
   if (HS_TEST) {
     window.__hs = {
       pos, tgt, peers, birds: birdsLive,

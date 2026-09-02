@@ -176,6 +176,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     @keyframes hsFloat { to { transform: translate(-50%, -220%); opacity: 0; } }
 
+    /* ✏️ the blank sign's pencil: a small white pill bobbing over the plank */
+    .hs-signhint { position: absolute; transform: translate(-50%, -100%); width: 24px; height: 24px; border-radius: 999px;
+      background: #fff; color: #6b5200; display: grid; place-items: center; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+      pointer-events: none; animation: hs-signbob 1.4s ease-in-out infinite; }
+    .hs-signhint svg { display: block; }
+    @keyframes hs-signbob { 0%, 100% { margin-top: 0; } 50% { margin-top: -5px; } }
     .hs-chip {
       position: absolute; transform: translate(-50%, -100%); display: flex; gap: 6px;
       background: rgba(10, 16, 8, 0.92); border: 3px solid #000; padding: 6px;
@@ -953,6 +959,9 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-ktile .hs-rowbond { margin: 0; }
     .hs-ktile .hs-petdots i { width: 6px; height: 6px; }
     .hs-kgift { position: absolute; left: 50%; top: 34px; transform: translateX(-50%); font-style: normal; font-weight: 800; color: #e5566d; opacity: 0; pointer-events: none; }
+    .hs-ktreatn { font-size: 0.62rem; font-weight: 800; color: rgba(26, 20, 8, 0.55); white-space: nowrap; }
+    .hs-ktile.is-fave { box-shadow: 0 0 0 2px #ffb3c6, 0 3px 0 rgba(31, 26, 8, 0.1); }
+    .hs-ktile.is-fave .hs-ktreatn { color: #e5566d; }
     .hs-ktile.is-given { animation: hs-kgiven 0.7s ease-out; }
     .hs-ktile.is-given .hs-kgift { animation: hs-kfloat 0.9s ease-out forwards; }
     @keyframes hs-kgiven { 0% { transform: scale(1); } 30% { transform: scale(1.08); } 100% { transform: scale(1); } }
