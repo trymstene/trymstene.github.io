@@ -1552,7 +1552,7 @@ function init(visitDoc, visitMiss) {
     state.grassNews = 'The yard was quiet this morning.' + (bf
       ? ' ' + (bf.name || 'The ' + bf.sp) + ' stood by ' + (sp ? SPOT_W[sp.k] : 'the gate') + ' a while — ' + (a.name ? a.name + '’s spot.' : 'where she used to stand.') : '');
     let born = null;
-    if (a.egg) { born = hatchFrom(a, dayNum()); state.animals.push(born); }
+    if (a.egg) { born = hatchFrom(a, dayNum()); state.animals.push(born); track1('homestead_hatch', { sp: a.sp, at: 'grass' }); }
     state.hens = state.animals.filter((x) => x.sp === 'hen').length;
     save(); refreshHud();
     toast((a.name || 'She') + ' went into the long grass. ' + (born ? 'Her ' + BABY_W[a.sp] + ' hatched in her place.' : 'She’ll be in the album.'), 5200);
@@ -1743,7 +1743,7 @@ function init(visitDoc, visitMiss) {
     if (fed) flock.forEach((a) => {
       if (!isYoungA(a)) return;
       a.gd += 1;
-      if (a.gd >= 5) { gradN++; if (a.name && !gradName) gradName = a.name; a.greet = 1; }
+      if (a.gd >= 5) { gradN++; if (a.name && !gradName) gradName = a.name; a.greet = 1; track1('homestead_grow', { sp: a.sp }); }
       else leftMin = Math.min(leftMin, 5 - a.gd);
     });
     const growLine = !(gradN || leftMin < 9) ? '' : gradN
@@ -1765,7 +1765,7 @@ function init(visitDoc, visitMiss) {
       a.b -= cut; lostN += cut; lostA++;
       if (cut > worstN) { worstN = cut; worst = a; }
     });
-    if (lostN) hens.forEach(petBadge);   // crowns and stars come off with the hearts
+    if (lostN) { hens.forEach(petBadge); track1('homestead_decay', { hearts: lostN, animals: lostA }); }   // crowns and stars come off with the hearts
     const lostLine = lostN
       ? '💔 ' + (worst.name || 'the ' + worst.sp) + (lostA > 1 ? ' & co' : '') + ' missed you — '
         + lostN + ' heart' + (lostN > 1 ? 's' : '') + ' lost'
@@ -1825,6 +1825,7 @@ function init(visitDoc, visitMiss) {
       if (!a.egg) return;
       if (spCount(a.sp) >= (caps0[a.sp] || 0)) { if (eggLine.indexOf(' — ') < 0) eggLine += ' — make room and it hatches'; return; }
       state.animals.push(hatchFrom(a, today)); a.egg = 0;
+      track1('homestead_hatch', { sp: a.sp, at: 'morning' });
       if (!bornLine) bornLine = '🐣 ' + (a.name || 'the ' + a.sp) + ' had a ' + BABY_W[a.sp] + ' — her own';
       eggLine = '';
     });
@@ -1926,6 +1927,7 @@ function init(visitDoc, visitMiss) {
     a.b = (a.b || 0) + inc;
     const lvWas = lvOf({ b: a.b - inc }), lvNow = lvOf(a);
     if (lvNow > lvWas) {
+      track('homestead_levelup', { lv: lvNow, sp: a.sp, best: lvNow >= 10 ? 1 : 0 });
       if (h) {
         float(h.x, h.y - 62, '⬆ Lv ' + lvNow);
         h.el.classList.add('is-hop');

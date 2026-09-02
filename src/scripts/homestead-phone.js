@@ -138,6 +138,7 @@ export function petRename(a) {
     if (!clean) { toast('let’s keep names family friendly — try another'); inp.focus(); return; }
     const first = !a.name;
     a.name = v;
+    track1('homestead_name', { sp: a.sp });
     save();
     const bf = first ? bestFriend(a) : null;
     if (bf) {
