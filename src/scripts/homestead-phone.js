@@ -70,7 +70,9 @@ export function openPet(a, kind) {
     + "<div class='hs-petstat'>" + icon('calendar', '#4a6b8a') + "<div><span class='n'>" + days + "</span><span class='l'>days</span></div></div>"
     + "</div><div class='hs-petacts'></div>";
   box.querySelector('.hs-petname b').textContent = a.name || (young ? 'little ' : gone ? 'a ' : 'unnamed ') + a.sp;
-  if (lv >= 3 && !gone) {
+  // a name is earned at Lv 3 — but once given it is hers, and hearts decay: the
+  // pencil never disappears from a named animal (Trym: "can't rename my dog")
+  if ((lv >= 3 || a.name) && !gone) {
     const pen = document.createElement('button');
     pen.className = 'hs-petedit';
     pen.setAttribute('aria-label', a.name ? 'rename' : 'name her');
