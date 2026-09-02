@@ -992,15 +992,13 @@ if HAVE_PACK:
     baby_strip('Sheeps_48x48/Sheep_Baby_White_48x48.png', 96, 225, 288, 'c-ysheep.png')
     baby_strip('Cows_48x48/Cow_Baby_48x48.png', 96, 201, 288, 'c-ycow.png')
     # 🧀 the cheese machine's still frame + the cheese pickup icon
-    CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animated_48x48/Animated_sheets_48x48/Cheese_Machine_48x48.png')
+    # ⚠️ the animated sheet's "FRAME SIZE: 64x48" caption lied TWICE: the
+    # first bake carried the caption onto the lawn, and the second cropped a
+    # 64x48 window out of what is really a 4×3-tile prop — half a machine
+    # (Trym: "looks cut in half or something"). The tileset ships it whole.
+    CHM = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Single_Files_48x48/0_Complete_Tileset_48x48/Cheese_Machine_Full_48x48.png')
     chm = Image.open(CHM).convert('RGBA')
-    # ⚠️ the sheet CAPTIONS ITSELF: "FRAME SIZE: 64x48" is baked into a label
-    # row, and the first bake cropped 186px slabs that carried the caption
-    # into the game (Trym's screenshot: TURN ON printed on his lawn). The
-    # machine is one 64x48 frame at top-left; ×1.3 for bench presence.
-    f0 = chm.crop((33, 33, 97, 81))   # the frame sits at (33,33), measured by alpha
-    f0 = f0.crop(f0.getbbox())
-    f0 = f0.resize((int(f0.width * 1.3), int(f0.height * 1.3)), Image.NEAREST)
+    f0 = chm.crop(chm.getbbox())   # 162x111 native, whole-pixel, no scaling
     f0.save(os.path.join(OUT, 'd-cheesemk.png'), optimize=True)
     # it joins the catalog by hand — its source is a frame of an animated
     # strip, which the DECOR_DEF pipeline cannot express

@@ -2970,7 +2970,7 @@ function init(visitDoc, visitMiss) {
   }
   function buyAnimal(an) {
     if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
-    const mem = farmMemory().filter((m) => m.sp === an.sp)
+    const mem = farmMemory().filter((m) => m.sp === an.sp && m.name)   // old nameless records stay inert
       .sort((x, y) => (y.b || 0) - (x.b || 0))[0];
     if (mem) state.memory.splice(state.memory.indexOf(mem), 1);
     // 🐣 new animals arrive YOUNG (the dog excepted — the pack has
@@ -3028,8 +3028,8 @@ function init(visitDoc, visitMiss) {
           return;
         }
         state.animals.splice(state.animals.indexOf(a), 1);
-        if (a.name || (a.b || 0) > 0) {
-          farmMemory().push({ sp: a.sp, name: a.name || '', b: a.b || 0, gd: a.gd });
+        if (a.name) {   // ⚠️ NAMED only — an unnamed revival read as "grown up right away"
+          farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd });
           if (state.memory.length > 12) state.memory.shift();
         }
         state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
@@ -3435,7 +3435,11 @@ function init(visitDoc, visitMiss) {
   });
   document.getElementById('hsPlaceNo').addEventListener('click', cancelPlacing);
 
-  // an existing item, tapped: move it or put it away
+  // an existing item, tapped in PLAY mode: only what you can DO with it
+  // (fill, press, cook, light). Moving and putting away live in build mode
+  // (✥ and 🧹), and the stall lives on the phone — Trym: "the buttons
+  // become a bit noisy if you have decorated a lot". No verbs → no chip;
+  // the tap walks you there like any patch of grass.
   let itChip = null;
   function itemChip(idx) {
     clearChip();
@@ -3486,13 +3490,6 @@ function init(visitDoc, visitMiss) {
         });
       }
       itChip.appendChild(fd);
-      if (state.eggs || fedToday()) {        // the stall is one tap from the yard
-        const sl = document.createElement('button');
-        sl.className = 'hs-btn';
-        sl.textContent = '🥚 stall' + (state.eggs ? ' · ' + state.eggs : '');
-        sl.addEventListener('click', () => { clearChip(); openShop('sell'); });
-        itChip.appendChild(sl);
-      }
     }
     if (it.id === 'campfire' && FARM && it.lit) {
       // 🍳 "the fire is already lit" — cooking stops hiding behind tent 50
@@ -3517,28 +3514,12 @@ function init(visitDoc, visitMiss) {
       });
       itChip.appendChild(fire);
     }
-    const mv = document.createElement('button');
-    mv.className = 'hs-btn'; mv.textContent = '✥ move';
-    const rm = document.createElement('button');
-    rm.className = 'hs-btn hs-btn--ghost'; rm.textContent = '📦 put away';
-    mv.addEventListener('click', () => {
-      clearChip();
-      startPlacing(it.id, it);   // it stays in state until the move commits
-    });
-    rm.addEventListener('click', () => {
-      const gone = state.items.splice(idx, 1)[0];
-      state.shed.push({ id: gone.id });
-      save();
-      clearChip();
-      refreshItems();
-      float(it.x, it.y - 40, '📦');
-      track('homestead_pickup', { id: gone.id });
-    });
-    itChip.append(mv, rm);
+    if (!itChip.children.length) { itChip = null; return false; }
     itChip.style.left = pct(it.x, W);
     itChip.style.top = pct(it.y - d.h - 14, H);
     itChip.style.zIndex = '3000';
     world.appendChild(itChip);
+    return true;
   }
   function clearChip() { if (itChip) { itChip.remove(); itChip = null; } }
 
@@ -3725,25 +3706,9 @@ function init(visitDoc, visitMiss) {
               ck2.addEventListener('click', () => { clearChip(); openCook(); });
               itChip.append(ck2);
             }
-            const mv3 = document.createElement('button');
-            mv3.className = 'hs-btn';
-            mv3.textContent = '✥ move';
-            mv3.addEventListener('click', () => {
-              clearChip();
-              startPlacing(it.id, it);
-            });
-            const aw = document.createElement('button');
-            aw.className = 'hs-btn hs-btn--ghost';
-            aw.textContent = '📦 put away';
-            aw.addEventListener('click', () => {
-              clearChip();
-              L2.splice(k, 1);
-              state.shed.push({ id: it.id });
-              save();
-              refreshInItems();
-              float(it.x, it.y - 30, '📦');
-            });
-            itChip.append(mv3, aw);
+            // moving / putting away is build mode's job indoors too (✥ lifts,
+            // 🧹 sends to the shed) — a chair just seats you, no menu
+            if (!itChip.children.length) { itChip = null; return; }
             itChip.style.left = pct(it.x, W);
             itChip.style.top = pct(it.y - (d2.h || 30) - 10, H);
             itChip.style.zIndex = '3200';
@@ -3815,6 +3780,22 @@ function init(visitDoc, visitMiss) {
     }
     // 🧹 clear mode: one demolish tool — decor → shed, fence down, soil filled
     if (clearing && !visiting) {
+      if (inside) {   // 📦 indoor furniture goes back to the shed from here
+        const L4 = (state.inItems || {})[inside] || [];
+        for (let k4 = L4.length - 1; k4 >= 0; k4--) {
+          const it4 = L4[k4];
+          const d4 = DEX[it4.id];
+          if (d4 && Math.abs(wx - it4.x) < Math.max(24, d4.w / 2) && wy > it4.y - d4.h - 8 && wy < it4.y + 10) {
+            L4.splice(k4, 1);
+            state.shed.push({ id: it4.id });
+            save(); refreshInItems();
+            float(it4.x, it4.y - 30, '📦');
+            track('homestead_pickup', { id: it4.id, via: 'planner' });
+            return;
+          }
+        }
+        return;
+      }
       const k = itemAt(wx, wy);
       if (k >= 0) {
         const it = state.items[k];
@@ -3994,7 +3975,7 @@ function init(visitDoc, visitMiss) {
         if (visiting) { tgt.x = it.x; tgt.y = it.y + 30; return; }   // look, don't touch
         if (Math.hypot(pos.x - it.x, pos.y - it.y) < 150) {
           if (d.sit) sitOn(it, d);
-          itemChip(i);
+          if (!itemChip(i) && !d.sit) { tgt.x = wx; tgt.y = wy; }   // nothing to do here — just walk
         }
         else { tgt.x = it.x; tgt.y = it.y + 30; }
         return;
