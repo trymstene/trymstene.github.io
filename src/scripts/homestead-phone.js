@@ -3,6 +3,23 @@
 // Everything it needs arrives once through ctx; `state`, `inside` and
 // `visiting` are LIVE getters because the main module reassigns them.
 import { buildTree } from './homestead-tree.js';
+// 🎨 pixel icons come BUNDLED from src/icons/pixelart (copy an SVG in to use
+// it) — the full pack under public/assets is gitignored and 404s on the live site
+import pxEdit from '../icons/pixelart/edit.svg?raw';
+import pxCheck from '../icons/pixelart/check.svg?raw';
+import pxHeartS from '../icons/pixelart/heart-solid.svg?raw';
+import pxHeart from '../icons/pixelart/heart.svg?raw';
+import pxCal from '../icons/pixelart/calendar.svg?raw';
+import pxCake from '../icons/pixelart/cake.svg?raw';
+import pxCrown from '../icons/pixelart/crown-solid.svg?raw';
+import pxStar from '../icons/pixelart/star-solid.svg?raw';
+import pxFlower from '../icons/pixelart/flower-solid.svg?raw';
+import pxChev from '../icons/pixelart/chevron-down.svg?raw';
+import pxZoomOut from '../icons/pixelart/zoom-out.svg?raw';
+const PX = { edit: pxEdit, check: pxCheck, 'heart-solid': pxHeartS, heart: pxHeart, calendar: pxCal, cake: pxCake,
+  'crown-solid': pxCrown, 'star-solid': pxStar, 'flower-solid': pxFlower, 'chevron-down': pxChev, 'zoom-out': pxZoomOut };
+// an inline <svg> string, sized in px; currentColor follows the host
+export const ico = (nm, size) => (PX[nm] || '').replace('<svg ', '<svg width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true" ');
 let C = null;
 let BABY_W, SPOT_W, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
 export function init(ctx) {
@@ -36,10 +53,10 @@ export function openPet(a, kind) {
     : lvNext(a) + ' hug' + (lvNext(a) === 1 ? '' : 's') + ' to Lv ' + (lv + 1)
       + (lv + 1 === 3 && !a.name ? ' — then you can name ' + (he ? 'him' : 'her')
         : lv + 1 === 5 ? ' — ' + (he ? 'he' : 'she') + '’ll meet you at the gate' : '');
-  const icon = (nm, col) => "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/" + nm + ".svg);color:" + col + "'></span>";
+  const icon = (nm, col) => "<span class='hs-petico' style='color:" + col + "'>" + ico(nm, 18) + "</span>";
   box.innerHTML = "<div class='hs-pethead'><span class='hs-petport" + (lv >= 10 ? ' hs-petport--best' : '') + (kind === 'grass' ? ' hs-petport--rest' : kind === 'away' ? ' hs-petport--away' : '') + "'>"
     + "<i style=\"background-image:url('/assets/homestead/" + sp[0] + "');width:" + Math.round(sp[3] * 1.45) + "px;aspect-ratio:" + sp[1] + "/" + sp[2] + "\"></i>"
-    + (badge ? "<span class='hs-petbadge pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/" + badge + ".svg);color:#d9a400'></span>" : '')
+    + (badge ? "<span class='hs-petbadge' style='color:#d9a400'>" + ico(badge, 18) + "</span>" : '')
     + "</span><div class='hs-petname'><b class='" + (lv >= 10 ? 'is-best' : '') + "'></b><small></small>"
     + "<div class='hs-petlv'><span class='hs-rowbond" + (lv >= 10 ? ' hs-rowbond--love' : '') + "'>Lv " + lv + "</span><span class='hs-petdots'>"
     + Array.from({ length: 10 }, (_, i) => '<i' + (i < lv ? " class='on'" : '') + '></i>').join('') + "</span></div></div></div>"
@@ -56,7 +73,7 @@ export function openPet(a, kind) {
     const pen = document.createElement('button');
     pen.className = 'hs-petedit';
     pen.setAttribute('aria-label', a.name ? 'rename' : 'name her');
-    pen.innerHTML = "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/edit.svg)'></span>";
+    pen.innerHTML = ico('edit', 14);
     pen.addEventListener('click', () => petRename(a));
     box.querySelector('.hs-petname b').appendChild(pen);
   }
@@ -101,7 +118,7 @@ export function petRename(a) {
   const ok = document.createElement('button');
   ok.className = 'hs-petedit hs-petedit--ok';
   ok.setAttribute('aria-label', 'save name');
-  ok.innerHTML = "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/check.svg)'></span>";
+  ok.innerHTML = ico('check', 14);
   const go = async () => {
     const v = (inp.value || '').trim().slice(0, 20);
     if (!v) { inp.focus(); return; }
@@ -422,7 +439,7 @@ export function renderTree(list) {
   }
   const view = document.createElement('div');
   list.appendChild(view);
-  buildTree(view, nodes, { icons: '/assets/pixelarticons-pro-2.2.1/svg/', art: '/assets/homestead/',
+  buildTree(view, nodes, { icon: ico, art: '/assets/homestead/',
     onTap: (n) => { openPet(n.rec, n.kind); track1('homestead_tree_tap', { state: n.state }); } });
   track1('homestead_tree', { n: nodes.length });
 }

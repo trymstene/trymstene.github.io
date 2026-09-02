@@ -4,7 +4,7 @@
 //
 // node: { id, pa, name, state: 'live' | 'grass' | 'away', line,
 //         thumb: { file, fw, fh, w }, gold, badge: 'star-solid' | 'crown-solid' | '' }
-// opts: { onTap(node), icons: '/assets/pixelarticons-pro-2.2.1/svg/', art: '/assets/homestead/' }
+// opts: { onTap(node), icon(name, px) -> inline <svg> string, art: '/assets/homestead/' }
 
 const NODE_W = 88, NODE_H = 130, GAP_X = 12, GAP_Y = 44, ROW_H = 182, PAD = 10;
 const SC_MIN = 0.45, SC_MAX = 2;
@@ -55,7 +55,7 @@ export function buildTree(view, nodes, opts) {
     return pos;
   };
 
-  const icon = (name) => '<span class="pai-m" style="--pai:url(' + opts.icons + name + '.svg)"></span>';
+  const icon = (name, px) => opts.icon(name, px);
   const nodeEl = (n) => {
     const el = document.createElement('div');
     el.className = 'hs-tnode is-' + n.state + (n.gold ? ' is-gold' : '');
@@ -69,8 +69,8 @@ export function buildTree(view, nodes, opts) {
     const badge = n.state === 'grass' ? 'flower-solid' : n.badge;
     if (badge) {
       const b = document.createElement('span');
-      b.className = 'hs-tbadge pai-m';
-      b.style.setProperty('--pai', 'url(' + opts.icons + badge + '.svg)');
+      b.className = 'hs-tbadge';
+      b.innerHTML = icon(badge, 15);
       ph.appendChild(b);
     }
     el.appendChild(ph);
@@ -82,7 +82,7 @@ export function buildTree(view, nodes, opts) {
       const tg = document.createElement('button');
       tg.className = 'hs-ttoggle' + (open.has(n.id) ? ' is-open' : '');
       tg.setAttribute('aria-label', 'show or hide the family');
-      tg.innerHTML = icon('chevron-down') + '<b>' + family(n) + '</b>';
+      tg.innerHTML = icon('chevron-down', 14) + '<b>' + family(n) + '</b>';
       tg.addEventListener('click', (e) => {
         e.stopPropagation();
         // the tapped animal stays under the thumb: the canvas glides by the
@@ -192,7 +192,7 @@ export function buildTree(view, nodes, opts) {
   const fitBtn = document.createElement('button');
   fitBtn.className = 'hs-tfit';
   fitBtn.setAttribute('aria-label', 'show the whole tree');
-  fitBtn.innerHTML = icon('zoom-out');
+  fitBtn.innerHTML = icon('zoom-out', 18);
   fitBtn.addEventListener('click', (e) => { e.stopPropagation(); fit(true, true); });
   view.appendChild(fitBtn);
 

@@ -506,8 +506,6 @@ const description = 'A clearing west of the park with your name on the sign: cla
     /* 🪪 THE ANIMAL CARD — phone language (rule 14): sticker card, pill
        level, dots for progress, three icon stat tiles of ONE size. Icons
        are the pixel pack, colour-masked so they take any colour. */
-    .pai-m { display: inline-block; width: 18px; height: 18px; background: currentColor; flex: none;
-      -webkit-mask: var(--pai) center / contain no-repeat; mask: var(--pai) center / contain no-repeat; }
     .hs-pet { position: relative; width: min(300px, 100%); box-sizing: border-box;
       background: #fffdf5; color: #1a1408; border-radius: 20px; padding: 14px 14px 12px;
       box-shadow: 0 6px 0 rgba(20, 16, 4, 0.28); }
@@ -546,7 +544,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-petedit { flex: none; width: 24px; height: 24px; margin-left: 6px; border: 0; border-radius: 999px;
       background: #fff3c4; color: #6b5200; cursor: pointer; display: inline-grid; place-items: center;
       box-shadow: 0 2px 0 rgba(31, 26, 8, 0.16); vertical-align: middle; }
-    .hs-petedit .pai-m { width: 14px; height: 14px; }
+    .hs-petico { flex: none; width: 18px; height: 18px; }
+    .hs-petico svg, .hs-petbadge svg, .hs-petedit svg, .hs-henbadge svg, .hs-tbadge svg, .hs-tfit svg { display: block; }
     .hs-petedit--ok { background: #ffe135; color: #1a1408; }
     .hs-petname b { display: flex; align-items: center; }
     .hs-petname .hs-nameinp { flex: 1; min-width: 0; font: inherit; font-weight: 800; font-size: 0.95rem;
@@ -772,7 +771,6 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-treecanvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
     .hs-tfit { position: absolute; right: 10px; bottom: 10px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: #fff;
       color: #6b5200; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.14); cursor: pointer; }
-    .hs-tfit .pai-m { width: 18px; height: 18px; }
     .hs-tnode { position: absolute; display: grid; justify-items: center; gap: 3px; text-align: center; cursor: pointer;
       transition: left 0.35s ease, top 0.35s ease, opacity 0.3s ease, transform 0.3s ease; }
     .hs-tnode.is-new { opacity: 0; transform: translateY(10px) scale(0.94); }
@@ -792,11 +790,11 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-tnode small { font-size: 0.64rem; opacity: 0.65; line-height: 1; white-space: nowrap; }
     .hs-ttoggle { width: 28px; height: 28px; margin-top: 2px; border: 0; border-radius: 999px; background: #fff3c4; color: #6b5200;
       display: grid; place-items: center; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.16); cursor: pointer; font: inherit; }
-    .hs-ttoggle .pai-m { width: 14px; height: 14px; transition: transform 0.3s ease; }
-    .hs-ttoggle.is-open .pai-m { transform: rotate(180deg); }
+    .hs-ttoggle svg { display: block; transition: transform 0.3s ease; }
+    .hs-ttoggle.is-open svg { transform: rotate(180deg); }
     .hs-ttoggle b { display: none; font-size: 0.66rem; line-height: 1; }
     .hs-ttoggle:not(.is-open) b { display: block; }
-    .hs-ttoggle:not(.is-open) .pai-m { display: none; }
+    .hs-ttoggle:not(.is-open) svg { display: none; }
     .hs-tline { position: absolute; background: #dccfa6; border-radius: 3px; opacity: 1;
       transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.3s ease; }
     .hs-tline.is-new { opacity: 0; }

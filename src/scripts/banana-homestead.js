@@ -1,3 +1,6 @@
+// 🌟 the yard badges: two bundled pixel icons (the full pack is gitignored — never a pack URL)
+import pxStar from '../icons/pixelart/star-solid.svg?raw';
+import pxCrown from '../icons/pixelart/crown-solid.svg?raw';
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
 //
 // The world's first PERSONAL space: claim the plot, name it, buy decor at the
@@ -1381,8 +1384,8 @@ function init(visitDoc, visitMiss) {
     h.bdg = want;
     let s2 = h.el.querySelector('.hs-henbadge');
     if (!want) { if (s2) s2.remove(); h.el.classList.remove('hs-hen--best'); return; }
-    if (!s2) { s2 = document.createElement('span'); s2.className = 'hs-henbadge pai-m'; h.el.appendChild(s2); }
-    s2.style.setProperty('--pai', "url(/assets/pixelarticons-pro-2.2.1/svg/" + want + ".svg)");
+    if (!s2) { s2 = document.createElement('span'); s2.className = 'hs-henbadge'; h.el.appendChild(s2); }
+    s2.innerHTML = (want === 'crown-solid' ? pxCrown : pxStar).replace('<svg ', '<svg width="11" height="11" shape-rendering="crispEdges" aria-hidden="true" ');
     h.el.classList.toggle('hs-hen--best', lv >= 10);
   }
   // ---- 🎲 TRAITS FROM THE SEED ------------------------------------------
