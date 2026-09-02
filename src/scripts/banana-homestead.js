@@ -1897,35 +1897,42 @@ function init(visitDoc, visitMiss) {
     const today = dayNum();
     if ((a.pd || 0) < today) {
       a.pd = today;
-      const gWas = greeter();
       // 🐣 a hug means MORE to a kid — double bond while she's little
       // (raising pays in the other currency while the goods wait)
       const inc = isYoungA(a) ? 2 : 1;
-      a.b = (a.b || 0) + inc;
-      save();
       float(h.x, h.y - 44, yardDay(a) ? '❤️❤️' : '❤️');   // 🎂 two on her yard-day
-      // 🐾 LEVEL UP — a hop, a float, the badge; loud and celebrated
-      const lvWas = lvOf({ b: a.b - inc }), lvNow = lvOf(a);
-      if (lvNow > lvWas) {
-        float(h.x, h.y - 62, '⬆ Lv ' + lvNow);
-        h.el.classList.add('is-hop');
-        setTimeout(() => h.el.classList.remove('is-hop'), 700);
-        petBadge(h);
-        if (lvNow >= 10) toast('👑 ' + nameOf(a) + ' — best friends', 4200);
-      }
+      bondUp(a, inc, h);
+      save();
       track1('homestead_pet', { b: a.b });
-      if (a.b >= 3 && a.b - inc < 3 && !a.name) {
-        toast('❤️ ' + (he0(a) ? 'he trusts you now — open his card (tap twice) to name him'
-          : 'she trusts you now — open her card (tap twice) to name her'), 4200);
-      } else if (gWas !== a && greeter() === a) {
-        // crossing 7 in the lead, or overtaking the old greeter — an
-        // outranked animal is never promised the gate
-        toast('❤️ ' + nameOf(a) + ' will meet you at the gate from now on', 4200);
-      }
     }
     // ✏️ NAMING at bond 3 — earned, never bought. One name per farm, ever
     // (Trym: no duplicates), through the same family filter as every sign.
     if (a.name) henNameShow(h);
+  }
+  // ❤️ hearts go up — the hug and a cooked treat share the moment: the
+  // level-up hop, float and badge (when she is on screen), and the two
+  // milestone toasts (a name at 3, the gate at 7)
+  function bondUp(a, inc, h) {
+    const gWas = greeter();
+    a.b = (a.b || 0) + inc;
+    const lvWas = lvOf({ b: a.b - inc }), lvNow = lvOf(a);
+    if (lvNow > lvWas) {
+      if (h) {
+        float(h.x, h.y - 62, '⬆ Lv ' + lvNow);
+        h.el.classList.add('is-hop');
+        setTimeout(() => h.el.classList.remove('is-hop'), 700);
+        petBadge(h);
+      }
+      if (lvNow >= 10) toast('👑 ' + nameOf(a) + ' — best friends', 4200);
+    }
+    if (a.b >= 3 && a.b - inc < 3 && !a.name) {
+      toast('❤️ ' + (he0(a) ? 'he trusts you now — open his card (tap twice) to name him'
+        : 'she trusts you now — open her card (tap twice) to name her'), 4200);
+    } else if (gWas !== a && greeter() === a) {
+      // crossing 7 in the lead, or overtaking the old greeter — an
+      // outranked animal is never promised the gate
+      toast('❤️ ' + nameOf(a) + ' will meet you at the gate from now on', 4200);
+    }
   }
   // her name, said over her head when you tap her (the bubble stays
   // hearts-only — the name is a label, not a mood)
@@ -2481,7 +2488,9 @@ function init(visitDoc, visitMiss) {
   const kIcon = (k) => KICON[k] ? "<img src='/assets/homestead/" + KICON[k] + ".png' alt=''>"
     : (k === 'daisy' || k === 'sunflower' || k === 'tulip') ? "<img src='/assets/park/g-" + k + ".png' alt=''>" : (CROP_EMO[k] || '');
   const kPlate = (d) => d.id === 'bouquet' ? '/assets/homestead/d-sunvase.png' : '/assets/homestead/f-' + d.id + '.png';
-  let cookAt = 'stove', cookBusy = null;   // the door it opened from; the dish on the go
+  let cookAt = 'stove', cookBusy = null, cookTimer = 0;   // the door it opened from; the dish on the go
+  const dishOf = (id) => DISHES.find((d) => d.id === id);
+  const treatN = (d) => 1 + Math.round((d.pay || 0) / 12);   // the hearts a dish is worth as a treat
   function renderCook(keepNote) {
     const pan = document.getElementById('hsPantry');
     pan.replaceChildren();
@@ -2502,7 +2511,7 @@ function init(visitDoc, visitMiss) {
     }
     const buff = buffGet();
     const note = document.getElementById('hsCookNote');
-    if (!keepNote && !cookBusy) {
+    if (!keepNote && !cookBusy && !state.plate) {
       note.classList.toggle('is-buff', !!buff);
       note.textContent = buff
         ? '✨ ' + (buff.fx === 'coins2' ? 'double coins' : 'double XP') + ' is on — '
@@ -2510,6 +2519,7 @@ function init(visitDoc, visitMiss) {
         : cookAt === 'fire' ? 'the fire is lit — pick a dish' : 'the stove is cold — pick a dish';
     }
     const list = document.getElementById('hsCookList');
+    list.classList.remove('hs-krecipes--tiles');
     list.replaceChildren();
     const can = (d) => Object.entries(d.need).every(([k, n]) => (P[k] || 0) >= n);
     DISHES.slice().sort((a, b) => can(b) - can(a)).forEach((d) => {
@@ -2522,7 +2532,7 @@ function init(visitDoc, visitMiss) {
           + kIcon(k) + Math.min(P[k] || 0, n) + '/' + n + '</span>').join('')
         + "</div></div><div class='hs-kact'></div>";
       row.querySelector('b').textContent = d.name;
-      row.querySelector('small').textContent = d.fx ? '✨ ' + d.blurb : '→ ' + d.pay + ' coins';
+      row.querySelector('small').textContent = d.fx ? '✨ ' + d.blurb : '→ ' + d.pay + ' coins, or a +' + treatN(d) + ' ❤ treat';
       const btn = document.createElement('button');
       btn.className = 'hs-btn';
       btn.textContent = cookBusy ? 'busy' : busy ? 'pot’s busy' : ok ? 'cook' : 'need ' + short[0];
@@ -2534,37 +2544,122 @@ function init(visitDoc, visitMiss) {
   }
   function cookDish(d) {
     if (cookBusy) return;
+    if (state.plate) sellPlate(true);   // the counter holds one dish — cooking again sells the one waiting
     Object.entries(d.need).forEach(([k, n]) => { state.pantry[k] -= n; });
+    const T = d.st === 'counter' ? 2200 : d.st === 'oven' ? 5000 : 4000;
+    state.cooking = { id: d.id, until: Date.now() + T };   // survives a reload mid-cook
     save();
+    startCookShow(d, T);
+    track('homestead_cook', { dish: d.id, at: cookAt });
+  }
+  function startCookShow(d, T) {
     cookBusy = d;
     const stage = document.getElementById('hsKStage');
-    const T = d.st === 'counter' ? 2200 : d.st === 'oven' ? 5000 : 4000;
     stage.className = 'hs-kstage ' + (cookAt === 'fire' ? 'is-fire'
       : (d.st === 'oven' ? 'is-oven' : 'is-hob') + (d.st === 'pan' ? ' is-pan' : d.st === 'pot' ? ' is-pot' : ''));
     stage.style.setProperty('--cook', T + 'ms');
     document.getElementById('hsKPlate').querySelector('img').src = kPlate(d);
-    document.getElementById('hsKFloat').textContent = d.fx ? '✨' : '+' + d.pay + ' 🪙';
+    document.getElementById('hsKFloat').textContent = d.fx ? '✨' : '';
+    document.getElementById('hsKActs').replaceChildren();
     void stage.offsetWidth;   // flush the reset so the bar and the burners transition in
     stage.classList.add('is-on');
     const note = document.getElementById('hsCookNote');
     note.textContent = d.verb + '…';
     note.classList.remove('is-buff');
     renderCook(true);
-    track('homestead_cook', { dish: d.id, at: cookAt });
-    setTimeout(() => {
-      cookBusy = null;
-      stage.classList.remove('is-on'); stage.classList.add('is-done');
-      if (d.fx) { buffSet(d.fx, d.mins); note.textContent = d.name + ' — ' + d.blurb; note.classList.add('is-buff'); }
-      else { passStat('coins_earned', d.pay); refreshHud(); note.textContent = d.name + ' → ' + d.pay + ' coins in your wallet'; }
-      save();
-      renderCook(true);
-    }, T);
+    clearTimeout(cookTimer);
+    cookTimer = setTimeout(() => finishDish(d), T);
+  }
+  function finishDish(d) {
+    cookBusy = null; delete state.cooking;
+    const stage = document.getElementById('hsKStage');
+    stage.classList.remove('is-on'); stage.classList.add('is-done');
+    const note = document.getElementById('hsCookNote');
+    if (d.fx) { buffSet(d.fx, d.mins); note.textContent = d.name + ' — ' + d.blurb; note.classList.add('is-buff'); save(); renderCook(true); return; }
+    // 🍽 a coin dish WAITS on the counter: sell it, or treat someone with it
+    // (Trym: cashing a dish straight into coins felt like nothing happened)
+    state.plate = d.id; save();
+    showPlate(d);
+    renderCook(true);
+  }
+  function showPlate(d) {
+    const stage = document.getElementById('hsKStage');
+    document.getElementById('hsKPlate').querySelector('img').src = kPlate(d);
+    document.getElementById('hsKFloat').textContent = '';
+    stage.classList.remove('is-on'); stage.classList.add('is-done');
+    const note = document.getElementById('hsCookNote');
+    note.classList.remove('is-buff');
+    const canTreat = farmAnimals().length > 0;
+    note.textContent = d.name + ' is ready — sell it' + (canTreat ? ', or treat someone' : '');
+    const acts = document.getElementById('hsKActs');
+    acts.replaceChildren();
+    const sell = document.createElement('button');
+    sell.className = 'hs-btn';
+    sell.textContent = 'sell · +' + d.pay + ' 🪙';
+    sell.addEventListener('click', () => sellPlate(false));
+    acts.appendChild(sell);
+    if (canTreat) {
+      const tr = document.createElement('button');
+      tr.className = 'hs-btn hs-btn--treat';
+      tr.textContent = 'treat · +' + treatN(d) + ' ❤';
+      tr.addEventListener('click', () => openTreat(d));
+      acts.appendChild(tr);
+    }
+  }
+  function clearPlate() {
+    state.plate = null;
+    document.getElementById('hsKActs').replaceChildren();
+    document.getElementById('hsKStage').classList.remove('is-done');
+  }
+  function sellPlate(quiet) {
+    const d = dishOf(state.plate);
+    if (!d) return;
+    clearPlate();
+    passStat('coins_earned', d.pay); refreshHud(); save();
+    const note = document.getElementById('hsCookNote');
+    note.classList.remove('is-buff');
+    note.textContent = d.name + ' → ' + d.pay + ' coins in your wallet';
+    if (quiet) toast('🪙 +' + d.pay + ' — sold the ' + d.name.toLowerCase(), 2600);
+    track1('homestead_sell_dish', { dish: d.id });
+  }
+  function openTreat(d) {
+    document.getElementById('hsKRecLabel').textContent = 'Who gets the ' + d.name.toLowerCase() + '?';
+    const list = document.getElementById('hsCookList');
+    phone().then((PH) => PH.renderTreat(list, d, treatN(d), (a) => giveTreat(a, d),
+      () => { document.getElementById('hsKRecLabel').textContent = 'Recipes'; renderCook(true); }));
+  }
+  function giveTreat(a, d) {
+    if (state.plate !== d.id) return;
+    const n = treatN(d);
+    clearPlate();
+    bondUp(a, n, hens.find((o) => o.a === a));
+    save();
+    document.getElementById('hsKRecLabel').textContent = 'Recipes';
+    const note = document.getElementById('hsCookNote');
+    note.classList.remove('is-buff');
+    note.textContent = (a.name || 'the ' + a.sp) + ' loved the ' + d.name.toLowerCase() + ' — +' + n + ' ❤';
+    track1('homestead_treat', { dish: d.id, sp: a.sp });
+    renderCook(true);
   }
   function openCook(where) {
     cookAt = where === 'fire' ? 'fire' : 'stove';
-    if (!cookBusy) document.getElementById('hsKStage').className = 'hs-kstage' + (cookAt === 'fire' ? ' is-fire' : '');
     document.getElementById('hsCookTitle').textContent = cookAt === 'fire' ? '🔥 The fire' : '🍳 The kitchen';
-    cookEl.hidden = false; syncLock(); renderCook(); track('homestead_kitchen', { at: cookAt });
+    document.getElementById('hsKRecLabel').textContent = 'Recipes';
+    cookEl.hidden = false; syncLock();
+    track('homestead_kitchen', { at: cookAt });
+    if (cookBusy) { renderCook(true); return; }
+    if (state.cooking) {
+      // a dish left on the heat (the page reloaded mid-cook) picks up where it was
+      const d = dishOf(state.cooking.id), left = state.cooking.until - Date.now();
+      if (d && left > 0) { startCookShow(d, left); return; }
+      if (d) { renderCook(); finishDish(d); return; }
+      delete state.cooking;
+    }
+    document.getElementById('hsKStage').className = 'hs-kstage' + (cookAt === 'fire' ? ' is-fire' : '');
+    document.getElementById('hsKActs').replaceChildren();
+    renderCook();
+    const waiting = dishOf(state.plate);
+    if (waiting) showPlate(waiting); else state.plate = null;
   }
   document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; syncLock(); });
   document.getElementById('hsPetClose').addEventListener('click', () => { petEl.hidden = true; syncLock(); });

@@ -940,6 +940,22 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-kact { flex: none; width: 82px; }
     .hs-kact .hs-btn { width: 100%; border: 0; border-radius: 999px; background: #ffd21f; color: #1a1408; font: inherit; font-size: 0.72rem; font-weight: 800; padding: 0.42rem 0.4rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.22); cursor: pointer; }
     .hs-kact .hs-btn[disabled] { opacity: 0.4; box-shadow: none; cursor: default; }
+    /* 🍽 the plated dish's two futures, and the treat picker: the flock as sticker tiles */
+    .hs-kacts { display: flex; gap: 8px; margin: 8px 0 0; }
+    .hs-kacts:empty { display: none; }
+    .hs-kacts .hs-btn { flex: 1; border: 0; border-radius: 999px; background: #ffd21f; color: #1a1408; font: inherit; font-size: 0.78rem; font-weight: 800; padding: 0.5rem 0.4rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.22); cursor: pointer; }
+    .hs-kacts .hs-btn--treat { background: #ffe4ec; }
+    .hs-krecipes--tiles { grid-template-columns: repeat(3, 1fr); }
+    .hs-ktback { grid-column: 1 / -1; border: 0; border-radius: 999px; background: #fff3c4; color: #1a1408; font: inherit; font-size: 0.72rem; font-weight: 800; padding: 0.42rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.16); cursor: pointer; }
+    .hs-ktile { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 9px; border: 0; border-radius: 16px; background: #fff; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.1); font: inherit; color: inherit; cursor: pointer; }
+    .hs-ktile .hs-tphoto { width: 70px; height: 58px; }
+    .hs-ktile b { max-width: 100%; font-size: 0.74rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hs-ktile .hs-rowbond { margin: 0; }
+    .hs-ktile .hs-petdots i { width: 6px; height: 6px; }
+    .hs-kgift { position: absolute; left: 50%; top: 34px; transform: translateX(-50%); font-style: normal; font-weight: 800; color: #e5566d; opacity: 0; pointer-events: none; }
+    .hs-ktile.is-given { animation: hs-kgiven 0.7s ease-out; }
+    .hs-ktile.is-given .hs-kgift { animation: hs-kfloat 0.9s ease-out forwards; }
+    @keyframes hs-kgiven { 0% { transform: scale(1); } 30% { transform: scale(1.08); } 100% { transform: scale(1); } }
   </style>
 
   <div class="hs-wrap">
@@ -1006,10 +1022,11 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <div class="hs-kfloat" id="hsKFloat"></div>
           <div class="hs-kbar"><i></i></div>
         </div>
+        <div class="hs-kacts" id="hsKActs"></div>
         <p class="hs-kline" id="hsCookNote"></p>
         <span class="hs-klabel">On your shelf</span>
         <div class="hs-kshelf" id="hsPantry"></div>
-        <span class="hs-klabel">Recipes</span>
+        <span class="hs-klabel" id="hsKRecLabel">Recipes</span>
         <div class="hs-krecipes" id="hsCookList"></div>
       </div>
     </div>

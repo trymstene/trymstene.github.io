@@ -455,6 +455,36 @@ export function renderTree(list) {
     onTap: (n) => { openPet(n.rec, n.kind); track1('homestead_tree_tap', { state: n.state }); } });
   track1('homestead_tree', { n: nodes.length });
 }
+// 🍽 THE TREAT — who gets the dish? Every animal as a sticker tile: her
+// portrait (the tree's photo tile), her name, level pill and heart dots, so
+// the choice is a look at the flock, not a list. Tap = give; the hearts land.
+export function renderTreat(list, dish, n, onGive, onBack) {
+  list.classList.add('hs-krecipes--tiles');
+  list.replaceChildren();
+  const back = document.createElement('button');
+  back.className = 'hs-ktback';
+  back.textContent = '← keep it on the counter';
+  back.addEventListener('click', () => { list.classList.remove('hs-krecipes--tiles'); onBack(); });
+  list.appendChild(back);
+  farmAnimals().forEach((a) => {
+    const lv = lvOf(a), young = isYoungA(a);
+    const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
+    const t = document.createElement('button');
+    t.className = 'hs-ktile is-live';
+    t.innerHTML = "<span class='hs-tphoto'><i style=\"background-image:url('/assets/homestead/" + sp[0] + "');width:" + sp[3] + "px;aspect-ratio:" + sp[1] + "/" + sp[2] + "\"></i></span>"
+      + "<b></b><span class='hs-rowbond" + (lv >= 10 ? ' hs-rowbond--love' : '') + "'>Lv " + lv + "</span>"
+      + "<span class='hs-petdots'>" + Array.from({ length: 10 }, (_, i) => '<i' + (i < lv ? " class='on'" : '') + '></i>').join('') + "</span>"
+      + "<em class='hs-kgift'>+" + n + " ❤</em>";
+    t.querySelector('b').textContent = a.name || (young ? 'little ' : 'unnamed ') + a.sp;
+    t.addEventListener('click', () => {
+      if (list.dataset.given) return;
+      list.dataset.given = '1';
+      t.classList.add('is-given');
+      setTimeout(() => { delete list.dataset.given; list.classList.remove('hs-krecipes--tiles'); onGive(a); }, 750);
+    });
+    list.appendChild(t);
+  });
+}
 export function shedRows(list) {
     // 📱 shed as app rows: thumb, name, count, two small buttons
     list.classList.add('hs-list--rows');
