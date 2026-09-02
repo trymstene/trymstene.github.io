@@ -243,14 +243,18 @@ function goodsRow(list, img, title, kind, price, emptyNote) {
       () => stallSell(kind, price, title.toLowerCase()))
     : btnEl('sell', false, null)];
   if (kind !== 'wool' && have) {
-    acts.push(btnEl('to the pantry', true, () => {
+    // "the pantry" was a word with no place on screen (Trym) — it is the
+    // kitchen's shelf, so the goods go "to the kitchen", and the toast
+    // names the door: the stove
+    acts.push(btnEl('to the kitchen', true, () => {
       const nAll = C.state[kind] || 0;
       C.state.pantry = C.state.pantry || {};
       const pk = kind === 'milk' ? 'milk' : kind === 'cheese' ? 'cheese' : 'egg';
       C.state.pantry[pk] = (C.state.pantry[pk] || 0) + nAll;
       C.state[kind] = 0;
       save(); renderShop();
-      toast('🍳 ' + nAll + ' into the pantry', 3200);
+      toast('🍳 ' + nAll + ' ' + title.toLowerCase() + (C.state.stage >= 2
+        ? ' in the kitchen — cook at the stove' : ' saved for the kitchen — a real roof comes with a stove'), 3600);
       track1('homestead_pantry_eggs', { kind, n: nAll });
     }));
   }
@@ -355,7 +359,7 @@ export function renderAnimals(list) {
   if (!flock.length) {
     const p3 = document.createElement('p');
     p3.className = 'hs-note';
-    p3.textContent = 'nobody lives here yet — the market has hens';
+    p3.textContent = 'nobody lives here yet — buy a hen';
     list.appendChild(p3);
     return;
   }
@@ -433,7 +437,7 @@ export function renderTree(list) {
   if (!nodes.length) {
     const p3 = document.createElement('p');
     p3.className = 'hs-note';
-    p3.textContent = 'nobody has lived here yet — the market has hens';
+    p3.textContent = 'nobody has lived here yet — buy a hen';
     list.appendChild(p3);
     return;
   }

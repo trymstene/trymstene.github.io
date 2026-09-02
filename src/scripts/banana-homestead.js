@@ -2404,7 +2404,7 @@ function init(visitDoc, visitMiss) {
     if (!held.length) {
       const b = document.createElement('span');
       b.className = 'hs-pantryempty';
-      b.textContent = 'the pantry is empty — harvest a bed to fill it';
+      b.textContent = 'nothing to cook with yet — harvest a bed, or send milk over from the stall';
       pan.appendChild(b);
     }
     const buff = buffGet();
@@ -3032,11 +3032,11 @@ function init(visitDoc, visitMiss) {
   // no stock emojis in the phone chrome (Trym) — clean OS titles
   const SHOP_HEADS = {
     home: ['Banana Phone', ''],
-    sell: ['The stall', 'Sell what your farm makes.'],
-    buy: ['The market', 'A bigger fence fits more animals.'],
+    sell: ['Sell goods', 'The stall takes what your farm makes.'],
+    buy: ['Buy animals', 'A bigger fence fits more of them.'],
     animals: ['My animals', 'Everyone who lives here.'],
     tree: ['The family tree', 'Everyone who ever lived here.'],
-    order: ['Order online', 'The van delivers to your mailbox.'],
+    order: ['Order stuff', 'The van delivers to your mailbox.'],
     shed: ['The shed', 'Your stuff, ready to place.'],
     up: ['Upgrades', ''],
   };
@@ -3634,7 +3634,7 @@ function init(visitDoc, visitMiss) {
       save(); refreshSoil();
       float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[b.crop] || '🧺'));
       track('homestead_harvest', { crop: b.crop });
-      if (state.stage < 2) toast('into the pantry — a real roof comes with a stove 🍳', 2800);
+      if (state.stage < 2) toast('saved for the kitchen — a real roof comes with a stove 🍳', 2800);
       return;
     }
     if (b.last === dayStr()) { float(s[0], s[1] - 44, '💤 tomorrow'); return; }
