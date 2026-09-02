@@ -1013,10 +1013,13 @@ function init(visitDoc, visitMiss) {
   let farmPenN = -1;
   let carryA = null;        // ✥ move tool: the animal in your arms
   let henGreeted = false;   // the bond-7 gate greeting fires once per visit
-  // any species — the toast promises "she'll meet you at the gate" to
-  // everyone, so the pick must not be hens-only (the dog greets her own way)
+  // the most-bonded animal of any species but the dog (she has her own brain)
   const bestBond = () => farmAnimals().filter((a) => a.sp !== 'dog')
     .reduce((m, a) => (!m || (a.b || 0) > (m.b || 0) ? a : m), null);
+  // ⚠️ the ONE owner of "who meets you at the gate": the toast that promises
+  // it and the arrival that delivers it both ask here. Any other test was a
+  // promise the yard never kept (a goat at 7 behind a hen at 9, the dog)
+  const greeter = () => { const g = bestBond(); return g && (g.b || 0) >= 7 ? g : null; };
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
     if (FARM && (state.fence || []).length !== farmPenN) {
@@ -1070,13 +1073,15 @@ function init(visitDoc, visitMiss) {
         x: follow ? pos.x - 60 : anchor.x - 30 + hens.length * 30,
         y: follow ? pos.y + 4 : anchor.y + 20,
         tx: anchor.x, ty: anchor.y + 40, waitUntil: 0, frame: 0, frameAt: 0 };
-      // ❤️ bond 7: she MEETS YOU AT THE GATE — once per arrival, the most
-      // bonded hen walks to where you stood when the yard opened
-      if (a && a.b >= 7 && !henGreeted && a === bestBond()) {
+      // ❤️ bond 7: she MEETS YOU AT THE GATE — once per arrival, the one
+      // greeter walks to where the walk-in sets you down (tgt, not the
+      // spawn: the road-in is 260px long, and aimed at the spawn she stood
+      // alone on the road behind you — the walk)
+      if (a && !henGreeted && a === greeter()) {
         henGreeted = true;
         // beside you, not on you (Trym: a greeter zooming into the banana
         // reads as a clump); she ends up facing you
-        h2.tx = pos.x + 58; h2.ty = pos.y + 10;
+        h2.tx = tgt.x + 58; h2.ty = tgt.y + 10;
         h2.waitUntil = 0;
       }
       hens.push(h2);
@@ -1425,6 +1430,7 @@ function init(visitDoc, visitMiss) {
   function lvNext(a) { const l = lvOf(a); return l >= 10 ? 0 : LV_AT[l] - (a.b || 0); }
   function mintId() { return 100000 + Math.floor(Math.random() * 900000); }
   const he0 = (a) => a.sp === 'rooster';
+  const nameOf = (a) => a.name || (he0(a) ? 'he' : 'she');
   // 🎂 her yard-day: every 30 days from the day she arrived
   const yardDay = (a) => a.ad != null && dayNum() > a.ad && (dayNum() - a.ad) % 30 === 0;
   // 🌟 a star from Lv 5, a crown and a golden glow at Lv 10 — worn on
@@ -1859,12 +1865,13 @@ function init(visitDoc, visitMiss) {
       h.fluff = false;
       h.img.style.backgroundImage = "url('/assets/homestead/c-sheeps.png')";
       float(h.x, h.y - 48, '🧶 +1');
-      toast('🧶 a bundle of wool — ' + (a.name || 'she') + ' looks lighter already', 3600);
+      toast('🧶 a bundle of wool — ' + nameOf(a) + ' looks lighter already', 3600);
       track1('homestead_shear');
     }
     const today = dayNum();
     if ((a.pd || 0) < today) {
       a.pd = today;
+      const gWas = greeter();
       // 🐣 a hug means MORE to a kid — double bond while she's little
       // (raising pays in the other currency while the goods wait)
       const inc = isYoungA(a) ? 2 : 1;
@@ -1878,14 +1885,16 @@ function init(visitDoc, visitMiss) {
         h.el.classList.add('is-hop');
         setTimeout(() => h.el.classList.remove('is-hop'), 700);
         petBadge(h);
-        if (lvNow >= 10) toast('👑 ' + (a.name || (he0(a) ? 'he' : 'she')) + ' — best friends', 4200);
+        if (lvNow >= 10) toast('👑 ' + nameOf(a) + ' — best friends', 4200);
       }
       track1('homestead_pet', { b: a.b });
       if (a.b >= 3 && a.b - inc < 3 && !a.name) {
         toast('❤️ ' + (he0(a) ? 'he trusts you now — open his card (tap twice) to name him'
           : 'she trusts you now — open her card (tap twice) to name her'), 4200);
-      } else if (a.b >= 7 && a.b - inc < 7) {
-        toast('❤️ ' + (a.name || 'she') + ' will meet you at the gate from now on', 4200);
+      } else if (gWas !== a && greeter() === a) {
+        // crossing 7 in the lead, or overtaking the old greeter — an
+        // outranked animal is never promised the gate
+        toast('❤️ ' + nameOf(a) + ' will meet you at the gate from now on', 4200);
       }
     }
     // ✏️ NAMING at bond 3 — earned, never bought. One name per farm, ever
@@ -3852,7 +3861,7 @@ function init(visitDoc, visitMiss) {
         carryA.tx = px2; carryA.ty = py2;
         carryA.el.style.opacity = '';
         float(px2, py2 - 40, '🐾');
-        toast((carryA.a.name || 'she') + ' stays here now', 2600);
+        toast(nameOf(carryA.a) + ' stays here now', 2600);
         carryA = null;
         save();
         track1('homestead_move_animal');
@@ -3869,7 +3878,7 @@ function init(visitDoc, visitMiss) {
         if (bh) {
           carryA = bh;
           bh.el.style.opacity = '0.55';
-          toast('🐾 tap where ' + (bh.a.name || 'she') + ' should stay', 3600);
+          toast('🐾 tap where ' + nameOf(bh.a) + ' should stay', 3600);
           return;
         }
       }
