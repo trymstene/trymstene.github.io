@@ -1020,6 +1020,40 @@ function init(visitDoc, visitMiss) {
   // it and the arrival that delivers it both ask here. Any other test was a
   // promise the yard never kept (a goat at 7 behind a hen at 9, the dog)
   const greeter = () => { const g = bestBond(); return g && (g.b || 0) >= 7 ? g : null; };
+  // 🚧 the paddock — WHERE YOU PUT HER decides where she stays
+  // (Trym: "i cant tell animals where to stay or go"). An animal
+  // carried to a spot in the ✥ tool keeps to it: inside a pen, that
+  // pen is hers; on open grass, she keeps to that corner. Untouched
+  // animals default to the largest pen as before. Open the fence and
+  // she simply roams — never destroyed, never blocked. ONE clamp for
+  // every target she is handed (wander, the gate greeting, the rituals):
+  // the fence is solid for her now, so a target beyond it was a bump
+  // and a shrug, not a walk — the greeter comes to her near rail instead
+  function penned(a, tx, ty) {
+    const pin = a.hm;
+    const pen2 = pin
+      ? farmPens.find((p) => pin.x > p.x0 && pin.x < p.x1 && pin.y > p.y0 && pin.y < p.y1)
+      : farmPen;
+    if (pen2 && pen2.int >= 4) {
+      return [Math.max(pen2.x0 + 10, Math.min(pen2.x1 - 10, tx)), Math.max(pen2.y0 + 14, Math.min(pen2.y1 - 4, ty))];
+    }
+    if (pin) return [Math.max(pin.x - 130, Math.min(pin.x + 130, tx)), Math.max(pin.y - 90, Math.min(pin.y + 90, ty))];
+    return [tx, ty];
+  }
+  // 🚶 hand her a destination — the paddock clamp, then the route. The
+  // yard's south fence is drawn right across the edge with the gate as its
+  // one gap, so a walk between yard and road goes by the gate mouth in two
+  // legs (h.via), straight down the middle — never through the pickets.
+  // Both ways, so the road is never a trap
+  function walkTo(h, x, y) {
+    const [tx, ty] = penned(h.a, x, y);
+    const south = (yy) => yy > GATE.y + 4, north = (yy) => yy < GATE.y - 30;
+    h.via = null;
+    if (north(h.y) && south(ty)) { h.tx = GATE.x; h.ty = GATE.y - 46; h.via = [[GATE.x, ROAD.y], [tx, ty]]; }
+    else if (south(h.y) && north(ty)) { h.tx = GATE.x; h.ty = ROAD.y; h.via = [[GATE.x, GATE.y - 46], [tx, ty]]; }
+    else { h.tx = tx; h.ty = ty; }
+    h.waitUntil = 0;
+  }
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
     if (FARM && (state.fence || []).length !== farmPenN) {
@@ -1081,8 +1115,11 @@ function init(visitDoc, visitMiss) {
         henGreeted = true;
         // beside you, not on you (Trym: a greeter zooming into the banana
         // reads as a clump); she ends up facing you
-        h2.tx = tgt.x + 58; h2.ty = tgt.y + 10;
-        h2.waitUntil = 0;
+        walkTo(h2, tgt.x + 58, tgt.y + 10);
+        // a shy one still comes — the greeting IS trust; the 70px flinch
+        // stays off for the walk and the moment (a shy greeter arrived,
+        // took one look and stepped away — the walk)
+        h2.shyAt = now + 40000;
       }
       hens.push(h2);
       h2.tr = a ? traitsOf(a) : null;
@@ -1132,11 +1169,11 @@ function init(visitDoc, visitMiss) {
       if (h.a && h.a.sp === 'dog' && !h.follow) dogBrain(h, now);
       // 🎉 rituals that walk: a graduate comes over to you once; on
       // naming day her best friend comes to hear the new name
-      if (h.a && h.a.greet) { delete h.a.greet; h.tx = pos.x + 58; h.ty = pos.y + 10; h.waitUntil = 0; }
+      if (h.a && h.a.greet) { delete h.a.greet; walkTo(h, pos.x + 58, pos.y + 10); h.shyAt = now + 40000; }
       if (h.a && h.a.visit) {
         const to = hens.find((o) => o.a && o.a.id === h.a.visit);
         delete h.a.visit;
-        if (to) { h.tx = to.x + 40; h.ty = to.y + 6; h.waitUntil = 0; }
+        if (to) walkTo(h, to.x + 40, to.y + 6);
       }
       // 🎲 a shy one keeps her distance: you within 70px → she steps
       // 60px away (a 3s cooldown keeps it from jitter); nosy is the opposite
@@ -1151,6 +1188,12 @@ function init(visitDoc, visitMiss) {
       }
       const dx = h.tx - h.x, dy = h.ty - h.y;
       const d = Math.hypot(dx, dy);
+      if (d < 3 && h.via) {   // next leg of a routed walk, no pause between
+        const v = h.via.shift();
+        if (!h.via.length) h.via = null;
+        h.tx = v[0]; h.ty = v[1]; h.waitUntil = 0;
+        continue;
+      }
       if (d < 3 && !(h.a && h.a.sp === 'dog')) {
         if (!h.waitUntil) h.waitUntil = now + (h.tr && h.tr.pat === 0 ? 1000 + Math.random() * 2000   // 🎲 restless
           : h.tr && h.tr.pat === 2 ? 5000 + Math.random() * 9000                                 // a dreamer
@@ -1184,25 +1227,8 @@ function init(visitDoc, visitMiss) {
             const ox = h.tx - o.x, oy = h.ty - o.y, od = Math.hypot(ox, oy);
             if (od < 40) { h.tx += (od ? ox / od : 1) * (40 - od); h.ty += (od ? oy / od : 0) * (40 - od); }
           }
-          // 🚧 the paddock — WHERE YOU PUT HER decides where she stays
-          // (Trym: "i cant tell animals where to stay or go"). An animal
-          // carried to a spot in the ✥ tool keeps to it: inside a pen, that
-          // pen is hers; on open grass, she keeps to that corner. Untouched
-          // animals default to the largest pen as before. Open the fence and
-          // she simply roams — never destroyed, never blocked.
-          if (h.a) {
-            const pin = h.a.hm;
-            const pen2 = pin
-              ? farmPens.find((p) => pin.x > p.x0 && pin.x < p.x1 && pin.y > p.y0 && pin.y < p.y1)
-              : farmPen;
-            if (pen2 && pen2.int >= 4) {
-              h.tx = Math.max(pen2.x0 + 10, Math.min(pen2.x1 - 10, h.tx));
-              h.ty = Math.max(pen2.y0 + 14, Math.min(pen2.y1 - 4, h.ty));
-            } else if (pin) {
-              h.tx = Math.max(pin.x - 130, Math.min(pin.x + 130, h.tx));
-              h.ty = Math.max(pin.y - 90, Math.min(pin.y + 90, h.ty));
-            }
-          }
+          // 🚧 the paddock rules her wander too, and the gate its route (walkTo)
+          if (h.a) walkTo(h, h.tx, h.ty);
           // the sheep's coat follows its wool: swap strips when the state flips
           if (h.a && h.a.sp === 'sheep' && !isYoungA(h.a)) {
             const wantF = (h.a.wd || 0) >= 3;
@@ -1248,7 +1274,7 @@ function init(visitDoc, visitMiss) {
           if (stuck) {
             nx = h.x; ny = h.y;
             if (h.a.sp === 'dog') { if (h.dg) { h.dg.m = 'rest'; h.dg.until = now + 2500; h.dg.heelAt = now; } }
-            else { h.tx = h.x; h.ty = h.y; h.waitUntil = 0; }
+            else { h.tx = h.x; h.ty = h.y; h.waitUntil = 0; h.via = null; }
           }
         }
         h.x = nx; h.y = ny;
