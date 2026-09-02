@@ -126,10 +126,14 @@ function stampClock(seenKey, atKey, cur) {
 // ⚠️ It is an identifier, not a credential — it proves nothing and gates
 // nothing that matters. Ownership of a plot is not a secret.
 export const GID_KEY = 'world-gid';
+export const WT_KEY = 'world-wt';   // 🪪 its proof — see worldToken() in world.js
 function keepGid(d) {
   try {
     if (d && typeof d.gid === 'string' && /^[a-f0-9]{8,32}$/.test(d.gid)) {
       localStorage.setItem(GID_KEY, d.gid);
+    }
+    if (d && typeof d.worldToken === 'string' && /^[a-f0-9]{16}\.\d+\.[a-f0-9,]*\.[a-f0-9]{64}$/.test(d.worldToken)) {
+      localStorage.setItem(WT_KEY, d.worldToken);
     }
   } catch (e) {}
   // 🎩 the signed member token (mirror of pass-sync.js keepGid — change both):
@@ -160,10 +164,53 @@ function pushNow() {
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
     .then((r) => (r && r.ok ? r.json() : null)).then(keepGid).catch(() => {});
 }
+// 🫧 AN ANONYMOUS PASS AT THE FIRST MEANINGFUL WRITE. Every player gets a
+// server-side home — and a world id + the token that proves it — the moment
+// they earn or make something. Nothing on screen: no email, no passkey, no
+// prompt. It makes ownership a PERSON from day one (a yard or a plot is keyed
+// to the id, not the browser) and lets the world workers verify who is
+// writing. ⚠️ It is NOT recovery: the credential lives in this browser like
+// any device token. Only the email link survives a wipe, and that ask stays
+// at the investment moment (banana-id). One try an hour when the worker is
+// down, so a dead pass worker costs one call.
+let anonP = null;
+export function ensureAnon() {
+  if (anonP) return anonP;
+  let link = null;
+  try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
+  if (link && link.credId && link.token) return Promise.resolve(true);
+  try {
+    if (+(localStorage.getItem('anon-try-at') || 0) > Date.now() - 3600000) return Promise.resolve(false);
+    localStorage.setItem('anon-try-at', String(Date.now()));
+  } catch (e) { return Promise.resolve(false); }
+  anonP = fetch(PASS_API + '/anon', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ blob: collectBlob() }),
+  })
+    .then((r) => (r && r.ok ? r.json() : null))
+    .then((d) => {
+      if (!d || !d.credId || !d.token) return false;
+      localStorage.setItem('pass-link', JSON.stringify({ credId: d.credId, token: d.token }));
+      localStorage.removeItem('pass-pull-at');
+      keepGid(d);
+      try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
+      if (window.gtag) window.gtag('event', 'pass_anon');
+      return true;
+    })
+    .catch(() => false)
+    .then((ok) => { anonP = null; return ok; });
+  return anonP;
+}
+if (typeof document !== 'undefined') document.addEventListener('world:noid', () => { ensureAnon(); });
+
 function schedulePush() {
   let link = null;
   try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
-  if (!link || !link.credId || !link.token) return;
+  if (!link || !link.credId || !link.token) {
+    // 🫧 the first write of an unlinked device mints its pass, then pushes
+    ensureAnon().then((ok) => { if (ok) schedulePush(); });
+    return;
+  }
   const now = Date.now();
   if (!pushDue) pushDue = now + 60000;
   if (!pushBound && typeof document !== 'undefined') {

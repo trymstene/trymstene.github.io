@@ -435,6 +435,40 @@ async function memberRankOf(env, mt) {
     return hex === sig ? MEMBER_TIER_RANK[t] : 0;
   } catch (e) { return 0; }
 }
+// 🪪 THE WORLD TOKEN — `gid.exp.aliases.sig`, minted by worker-pass on every
+// pull/push and signed with the shared MEMBER_HMAC under a 'wt:' prefix. It is
+// the PROOF that the browser claiming a world id holds the pass behind it.
+// Before it (2 Sep 2026) `pass` was a plain string, and the garden published
+// every plot's owner id — two requests took over anyone's garden.
+// Returns { gid, aliases } or null. `aliases` = world ids this person used to
+// answer to (an anonymous pass folded into their real one).
+// ⚠️ SOFT MODE while the world rolls over: a write WITHOUT a token still passes
+// (tabs on cached JS have none yet), but a token that is present and wrong is
+// refused. WT_ENFORCE=1 (wrangler var) refuses unproven person-id claims too.
+async function worldTokenOf(env, wt) {
+  try {
+    if (!wt || !env || !env.MEMBER_HMAC) return null;
+    const m = /^([a-f0-9]{16})\.(\d+)\.([a-f0-9,]*)\.([a-f0-9]{64})$/.exec(String(wt));
+    if (!m || !(+m[2] > Date.now())) return null;
+    const base = m[1] + '.' + m[2] + '.' + m[3];
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.MEMBER_HMAC),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('wt:' + base));
+    const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hex === m[4] ? { gid: m[1], aliases: m[3] ? m[3].split(',') : [] } : null;
+  } catch (e) { return null; }
+}
+const wtEnforce = (env) => !!(env && String(env.WT_ENFORCE || '') === '1');
+// 🕶 a keyed hash of an owner id for the WIRE: the client can still tell two
+// growers apart and match a plot to a name, but nobody can turn it back into
+// the id the room accepts as proof. Falls back to a fixed salt without the
+// secret (dev only — the ids are 4 bytes, a plain hash would brute-force).
+async function whoHash(env, short) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('who:' + ((env && env.MEMBER_HMAC) || 'dev-salt')),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(String(short || '')));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
+}
 function sanitizeOutfit(o, mrank = 0) {
   o = o && typeof o === 'object' ? o : {};
   const extras = {};
@@ -1041,6 +1075,10 @@ export class ParkRoom {
     // gate stays shut end to end, and the read-modify-write is atomic for free.
     let b = null;
     try { b = JSON.parse(await request.text()); } catch (e) {}
+    // 🪪 proof first, storage second: worldTokenOf awaits WebCrypto, which is
+    // not a storage op, so it has to sit up here with the body read
+    const wtRaw = ((b && typeof b.wt === 'string' ? b.wt : '') || url.searchParams.get('wt') || '').slice(0, 200);
+    const tok = await worldTokenOf(this.env, wtRaw);
     let slots = (await this.state.storage.get('garden')) || [];
     if (!Array.isArray(slots)) slots = [];
     // the garden grew 8 → 16 (W3, site B) → 24 (site C NE): stored arrays PAD
@@ -1091,6 +1129,12 @@ export class ParkRoom {
     // the PERSON to every device — not only the browser that sowed them.
     const sidmap = (await this.state.storage.get('sidmap')) || {};
     let sidDirty = false;
+    // 🪪 PERSONS — every world id a valid token has ever vouched for here.
+    // A person-id is never somebody's alias: the ledger and the alt path
+    // below refuse to treat one as a legacy device sid, which is what closed
+    // the takeover (an attacker sent a victim's PUBLISHED id as their `alt`).
+    const persons = (await this.state.storage.get('persons')) || {};
+    let personsDirty = false;
     for (let i = 0; i < GARDEN_SLOTS; i++) {
       const w = slots[i];
       if (!w || w.rot) continue;                      // a storm's ruin is a CHORE, not a crop
@@ -1155,19 +1199,33 @@ export class ParkRoom {
     // ⚠️ BOTH NAMES, the same dual identity isMine() reads below: a ripe-compost
     // debt is filed under the id the PLOT carried, which for anything sown
     // before the world had a person-id is the browser's legacy per-device sid.
-    const asking = [url.searchParams.get('pass'), url.searchParams.get('alt'), b && b.pass, b && b.alt]
-      .map((v) => (typeof v === 'string' ? v : '').slice(0, 8))
-      .filter((v, k, a) => v && a.indexOf(v) === k);
-    {
-      const pP = ((url.searchParams.get('pass') || (b && b.pass) || '') + '').slice(0, 8);
-      const pA = ((url.searchParams.get('alt') || (b && b.alt) || '') + '').slice(0, 8);
-      if (pP && pA && pP !== pA && sidmap[pA] !== pP) {
-        sidmap[pA] = pP;
-        const sk = Object.keys(sidmap);                 // bounded — evict oldest
-        if (sk.length > 500) delete sidmap[sk[0]];
-        sidDirty = true;
-      }
+    const pP = ((url.searchParams.get('pass') || (b && b.pass) || '') + '').slice(0, 8);
+    const pA = ((url.searchParams.get('alt') || (b && b.alt) || '') + '').slice(0, 8);
+    // proven = the token vouches for the id this request claims to be
+    const proven = !!tok && tok.gid.slice(0, 8) === pP;
+    const aliasShorts = tok ? tok.aliases.map((a) => a.slice(0, 8)).filter((a) => a && a !== pP) : [];
+    if (proven && !persons[pP]) {
+      persons[pP] = now;
+      const pk = Object.keys(persons);                 // bounded — evict oldest
+      if (pk.length > 2000) delete persons[pk[0]];
+      personsDirty = true;
     }
+    const learn = (from, to) => {
+      if (!from || !to || from === to || sidmap[from] === to) return;
+      sidmap[from] = to;
+      const sk = Object.keys(sidmap);                 // bounded — evict oldest
+      if (sk.length > 500) delete sidmap[sk[0]];
+      sidDirty = true;
+    };
+    // ⚠️ the ledger LEARNS only from a proven person, and never files a proven
+    // person under somebody else — that pair was the whole exploit
+    if (proven && pA && !persons[pA]) learn(pA, pP);
+    if (proven) aliasShorts.forEach((a) => learn(a, pP));   // both ids vouched for by the token
+    // …and the names this asker answers to, for `mine` and the compost payout:
+    // their own claim, their alt ONLY if it is not a proven person's id, and
+    // the aliases their token vouches for
+    const asking = [pP, pA && !persons[pA] ? pA : '', ...(proven ? aliasShorts : [])]
+      .filter((v, k, a) => v && a.indexOf(v) === k);
     // does this plot belong to the asker, through any name the ledger knows?
     const ledgerMine = (short2) => !!short2
       && (asking.includes(short2) || asking.includes(sidmap[short2]));
@@ -1366,8 +1424,17 @@ export class ParkRoom {
     let borderDirty = false;
     const bAlive = bd.list.filter((f) => now - f.at < BORDER_TTL);
     if (bAlive.length !== bd.list.length) { bd.list = bAlive; borderDirty = true; }
+    // 🕶 the owner id never leaves the room: `who` is a keyed hash (stable, so
+    // the client can count growers and match names), `mine` is the room's own
+    // verdict for the asker — the ONLY ownership signal the client may use
+    const whoCache = {};
+    const whoOf = async (short) => {
+      if (!short) return undefined;
+      if (!whoCache[short]) whoCache[short] = await whoHash(this.env, short);
+      return whoCache[short];
+    };
     const strip = (s) => (s ? {
-      passShort: s.passShort, name: s.name, seed: s.seed,
+      who: whoCache[s.passShort], name: s.name, seed: s.seed,
       plantedAt: s.plantedAt, lastWater: s.lastWater, ...(s.rot ? { rot: s.rot } : {}),
       // ⭐ the client no longer derives ripeness from wall-clock days — growth is
       // WATERED days now, and only the room has counted them
@@ -1377,7 +1444,11 @@ export class ParkRoom {
       waterers: (s.waterers || []).length,
       wlast: (s.wlast || []).slice(-5),
     } : null);
-    const payload = (extra) => ({
+    const payload = async (extra) => {
+      for (const o of [...slots, ...hs.list]) if (o && o.passShort) await whoOf(o.passShort);
+      return payloadSync(extra);
+    };
+    const payloadSync = (extra) => ({
       slots: slots.map(strip),
       // the ceiling again, on the CURRENT lists: a chore's reply then shows
       // the tidier number straight away instead of waiting for the next read.
@@ -1401,7 +1472,8 @@ export class ParkRoom {
           : null,
       },
       houses: hs.list.map((h2) => ({ spot: h2.spot, name: h2.name,
-        passShort: h2.passShort, builtAt: h2.builtAt, lastStock: h2.lastStock || 0,
+        who: whoCache[h2.passShort], ...(ledgerMine(h2.passShort) ? { mine: 1 } : {}),
+        builtAt: h2.builtAt, lastStock: h2.lastStock || 0,
         stockers: (h2.stockers || []).length,
         slast: (h2.slast || []).slice(-5) })),
       ...extra,
@@ -1433,6 +1505,7 @@ export class ParkRoom {
       await this.state.storage.put('garden', slots);
       await this.state.storage.put('compost', cmp);
       if (sidDirty) await this.state.storage.put('sidmap', sidmap);
+      if (personsDirty) await this.state.storage.put('persons', persons);
       await this.state.storage.put('beds', bedState);
       await this.state.storage.put('weeds', wd);
       await this.state.storage.put('trash', tr);
@@ -1458,17 +1531,21 @@ export class ParkRoom {
       // all. Take the ids from the query string, which is what a GET carries.
       const gOwner = (url.searchParams.get('pass') || '').slice(0, 8);
       const gAlt = (url.searchParams.get('alt') || '').slice(0, 8);
-      if (gOwner && gAlt && gOwner !== gAlt) {
+      // ⚠️ only a PROVEN person folds anything, and a proven person's own id
+      // is never folded as if it were a device sid (the takeover path)
+      if (proven && gOwner && gAlt && gOwner !== gAlt) {
+        const altOk = !persons[gAlt];
         for (const o of [...slots, ...((hs && hs.list) || []), ...((bd && bd.list) || [])]) {
           // this device's old sid — and any OTHER device's sid the ledger has
           // since tied to this person — folds into the person-id for good
-          if (o && (o.passShort === gAlt || sidmap[o.passShort] === gOwner)) { o.passShort = gOwner; dirty = true; }
+          if (o && ((altOk && o.passShort === gAlt) || sidmap[o.passShort] === gOwner
+            || aliasShorts.includes(o.passShort))) { o.passShort = gOwner; dirty = true; }
         }
       }
-      const body = payload(compostFor());
+      const extra = compostFor();
       if (dirty || weedsDirty || decayed || eggsDirty || trashDirty || borderDirty
-        || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty || sidDirty) await persist();
-      return json(body);
+        || algaeDirty || leavesDirty || wxDirty || cmpDirty || bedsDirty || sidDirty || personsDirty) await persist();
+      return json(await payload(extra));
     }
     if (!b || typeof b !== 'object') return json({ err: 'bad body' }, 400);
     // 🚀 THE LAUNCH RESET — one-shot admin route for the go-live flip: the
@@ -1526,84 +1603,96 @@ export class ParkRoom {
     const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
     const short = pass.slice(0, 8);
     if (!short) return json({ err: 'bad pass' }, 400);
+    // 🪪 a person-id claim (pass ≠ alt) needs the token: wrong = refused now,
+    // missing = refused once WT_ENFORCE is on (see worldTokenOf)
+    {
+      const altS = (typeof b.alt === 'string' ? b.alt : '').slice(0, 8);
+      if (altS && altS !== short) {
+        if (wtRaw && !proven) return json({ err: 'token' }, 401);
+        if (!wtRaw && wtEnforce(this.env)) return json({ err: 'token' }, 401);
+      }
+    }
     // 🪪 THE SECOND NAME YOU ANSWER TO. `pass` is now the world OWNER id — the
     // same string on every device of one account. `alt` is that browser's old
     // per-device sid, sent so plots sown BEFORE this existed are still yours.
     // ⚠️ Both are accepted for reading ownership; only `short` is ever WRITTEN.
     // Every touch migrates the plot forward, so the legacy id fades out on its
     // own and no migration script was needed.
-    const alt = (typeof b.alt === 'string' ? b.alt.slice(0, 24) : '').slice(0, 8);
-    const isMine = (o) => !!o && (o.passShort === short || (!!alt && o.passShort === alt) || sidmap[o.passShort] === short);
+    const altRaw = (typeof b.alt === 'string' ? b.alt.slice(0, 24) : '').slice(0, 8);
+    // ⚠️ a proven person's id is never honoured as somebody's alt
+    const alt = altRaw && !persons[altRaw] ? altRaw : '';
+    const isMine = (o) => !!o && (o.passShort === short || (!!alt && o.passShort === alt) || sidmap[o.passShort] === short
+      || (proven && aliasShorts.includes(o.passShort)));
     const claim = (o) => { if (o && o.passShort !== short) o.passShort = short; };
     // 🥚 first tap wins (the rave-drop pattern) — the egg's removal IS the verdict
     if (url.pathname === '/garden/egg') {
       const ei = eg.list.findIndex((e) => e.id === b.id);
-      if (ei < 0) return json(payload({ err: 'gone' }), 404);
+      if (ei < 0) return json(await payload({ err: 'gone' }), 404);
       const [e] = eg.list.splice(ei, 1);
       // generous-faucet doctrine (Trym 29 Jul): sinks are easy, faucets hard
       const reward = e.g ? { coins: 40, tickets: 8, golden: 1 }
         : Math.random() < 0.25 ? { tickets: 5 }
           : { coins: 6 + Math.floor(Math.random() * 7) };
       await persist();
-      return json(payload({ ok: 1, reward }));
+      return json(await payload({ ok: 1, reward }));
     }
     // 🗑 pick up a piece of litter — first touch wins, +1 bloom says thanks
     if (url.pathname === '/garden/trash') {
       const ti = tr.list.findIndex((t) => t.id === b.id);
-      if (ti < 0) return json(payload({ err: 'gone' }), 404);
+      if (ti < 0) return json(await payload({ err: 'gone' }), 404);
       tr.list.splice(ti, 1);
       bl.v = Math.min(100, bl.v + 1);
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🥀 clear a ruined plant — the storm's cleanup chore. Frees the bed and
     // pays a little back; the bed is then plantable by anyone, as before.
     if (url.pathname === '/garden/clear') {
       const i = Math.floor(Number(b.slot));
-      if (!(i >= 0 && i < slots.length) || !slots[i] || !slots[i].rot) return json(payload({ err: 'gone' }), 404);
+      if (!(i >= 0 && i < slots.length) || !slots[i] || !slots[i].rot) return json(await payload({ err: 'gone' }), 404);
       slots[i] = null;
       bl.v = Math.min(100, bl.v + BLOOM_CLEAR);
       dirty = true;
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🌼 …and the same for a ruined roadside pot
     if (url.pathname === '/garden/clearpot') {
       const sp = Math.floor(Number(b.spot));
       const fi = bd.list.findIndex((f) => f.spot === sp && f.rot);
-      if (fi < 0) return json(payload({ err: 'gone' }), 404);
+      if (fi < 0) return json(await payload({ err: 'gone' }), 404);
       bd.list.splice(fi, 1);
       bl.v = Math.min(100, bl.v + BLOOM_CLEAR);
       borderDirty = true;
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🌿 pull a weed — removing it IS the rate limit
     if (url.pathname === '/garden/weed') {
       const wi = wd.list.findIndex((w2) => w2.id === b.id);
-      if (wi < 0) return json(payload({ err: 'gone' }), 404);
+      if (wi < 0) return json(await payload({ err: 'gone' }), 404);
       wd.list.splice(wi, 1);
       bl.v = Math.min(100, bl.v + BLOOM_PULL);
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🫧 skim an algae patch — first touch wins, a small bloom push back
     if (url.pathname === '/garden/algae') {
       const ai = alg.list.findIndex((a2) => a2.id === b.id);
-      if (ai < 0) return json(payload({ err: 'gone' }), 404);
+      if (ai < 0) return json(await payload({ err: 'gone' }), 404);
       alg.list.splice(ai, 1);
       bl.v = Math.min(100, bl.v + BLOOM_SKIM);
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🍂 rake a leaf pile — walk-over like litter, a touch more bloom back
     if (url.pathname === '/garden/rake') {
       const li = lv.list.findIndex((l2) => l2.id === b.id);
-      if (li < 0) return json(payload({ err: 'gone' }), 404);
+      if (li < 0) return json(await payload({ err: 'gone' }), 404);
       lv.list.splice(li, 1);
       bl.v = Math.min(100, bl.v + BLOOM_RAKE);
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🐦 raise a birdhouse — first-come per post; 30 coins client-side (like
     // seeds, never charged here). Building includes the first stocking, so
@@ -1611,22 +1700,22 @@ export class ParkRoom {
     if (url.pathname === '/garden/bhbuild') {
       const sp = Math.floor(Number(b.spot));
       if (!(sp >= 0 && sp < BIRD_SPOTS_N)) return json({ err: 'bad spot' }, 400);
-      if (hs.list.some((h2) => h2.spot === sp)) return json(payload({ err: 'taken' }), 409);
+      if (hs.list.some((h2) => h2.spot === sp)) return json(await payload({ err: 'taken' }), 409);
       hs.list.push({ spot: sp, name: sanitizeName(b.name, []) || '', passShort: short,
         builtAt: now, lastStock: now,
         sday: { [short]: Math.floor(now / 86_400_000) }, stockers: [short] });
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🌾 stock a built house — free, 1/person/day (the watering grammar);
     // stocked <24h = the birds are in and the house feeds the bloom
     if (url.pathname === '/garden/bhstock') {
       const sp = Math.floor(Number(b.spot));
       const h2 = hs.list.find((x2) => x2.spot === sp);
-      if (!h2) return json(payload({ err: 'empty' }), 404);
+      if (!h2) return json(await payload({ err: 'empty' }), 404);
       const day = Math.floor(now / 86_400_000);
       h2.sday = h2.sday || {};
-      if (h2.sday[short] === day) return json(payload({ err: 'stocked today' }), 429);
+      if (h2.sday[short] === day) return json(await payload({ err: 'stocked today' }), 429);
       h2.sday[short] = day;
       const sk = Object.keys(h2.sday);         // bounded, like a plant's wday
       if (sk.length > 60) delete h2.sday[sk[0]];
@@ -1641,7 +1730,7 @@ export class ParkRoom {
       h2.stockers = h2.stockers || [];
       if (!h2.stockers.includes(short)) { h2.stockers.push(short); if (h2.stockers.length > 60) h2.stockers.shift(); }
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🌼 plant a border flower — first-come per spot; coins client-side like
     // seeds (never charged here), NO bloom feed — decoration is its own pay
@@ -1649,11 +1738,11 @@ export class ParkRoom {
       const sp = Math.floor(Number(b.spot));
       if (!(sp >= 0 && sp < BORDER_SPOTS_N)) return json({ err: 'bad spot' }, 400);
       if (!BORDER_KINDS.includes(b.kind)) return json({ err: 'bad kind' }, 400);
-      if (bd.list.some((f) => f.spot === sp)) return json(payload({ err: 'taken' }), 409);
+      if (bd.list.some((f) => f.spot === sp)) return json(await payload({ err: 'taken' }), 409);
       bd.list.push({ spot: sp, kind: b.kind, name: sanitizeName(b.name, []) || '',
         passShort: short, at: now });
       await persist();
-      return json(payload({ ok: 1 }));
+      return json(await payload({ ok: 1 }));
     }
     // 🪓 BREAK GROUND — a chore, not a purchase and not a spawn. Chores are
     // the park's unlimited shared class (weeds, litter, algae, leaves), the only
@@ -1661,8 +1750,8 @@ export class ParkRoom {
     // ⚠️ the bed it opens is PUBLIC — the digger gets rep, not the bed.
     if (url.pathname === '/garden/bedbreak') {
       const p = bedState.pending;
-      if (!p) return json(payload({ err: 'no ground' }), 409);
-      if (Math.floor(Number(b.bed)) !== p.bed) return json(payload({ err: 'gone' }), 409);
+      if (!p) return json(await payload({ err: 'no ground' }), 409);
+      if (Math.floor(Number(b.bed)) !== p.bed) return json(await payload({ err: 'gone' }), 409);
       p.digs = (p.digs || 0) + 1;
       p.by = (p.by || []).concat(short).slice(-BED_DIGS);
       bedsDirty = true;
@@ -1674,15 +1763,15 @@ export class ParkRoom {
         opened = 1;
       }
       await persist();
-      return json(payload({ ok: 1, opened }));
+      return json(await payload({ ok: 1, opened }));
     }
     const i = Math.floor(Number(b.slot));
     if (!(i >= 0 && i < GARDEN_SLOTS)) return json({ err: 'bad slot' }, 400);
     const s = slots[i];
     if (url.pathname === '/garden/plant') {
       // 🪓 unbroken ground is lawn — you cannot plant in a bed nobody opened
-      if (!openSet.has(Math.floor(i / BED_SLOTS))) return json(payload({ err: 'not open' }), 409);
-      if (s) return json(payload({ err: 'taken' }), 409);
+      if (!openSet.has(Math.floor(i / BED_SLOTS))) return json(await payload({ err: 'not open' }), 409);
+      if (s) return json(await payload({ err: 'taken' }), 409);
       if (!GARDEN_SEEDS[b.seed]) return json({ err: 'bad seed' }, 400);
       slots[i] = {
         passShort: short, name: sanitizeName(b.name, []) || '', seed: b.seed,
@@ -1691,20 +1780,20 @@ export class ParkRoom {
       };
       bl.v = Math.min(100, bl.v + BLOOM_PLANT);
     } else if (url.pathname === '/garden/water') {
-      if (!s) return json(payload({ err: 'empty' }), 404);
+      if (!s) return json(await payload({ err: 'empty' }), 404);
       const day = Math.floor(now / 86_400_000);
       s.wday = s.wday || {};
       // ⚠️ CHECK BOTH NAMES. This is the half of Jade's bug that let a second
       // device water the same plant again on the same day: the ledger is keyed
       // by id, and her laptop's id was simply absent from it.
       if (s.wday[short] === day || (alt && s.wday[alt] === day)) {
-        return json(payload({ err: 'watered today' }), 429);
+        return json(await payload({ err: 'watered today' }), 429);
       }
       s.wday[short] = day;
       if (alt && alt !== short) delete s.wday[alt];   // fold the old name in
       const wk = Object.keys(s.wday);          // bounded — a busy slot can't grow forever
       if (wk.length > 60) delete s.wday[wk[0]];
-      if (s.rot) return json(payload({ err: 'rot' }), 409);
+      if (s.rot) return json(await payload({ err: 'rot' }), 409);
       s.lastWater = now;
       // 💧 the last few names, so the card can say WHO kept it alive instead of
       // only how many did. Bounded at 5 and no consecutive repeat — it is a
@@ -1722,12 +1811,12 @@ export class ParkRoom {
       if (!s.waterers.includes(short)) { s.waterers.push(short); if (s.waterers.length > 60) s.waterers.shift(); }
       bl.v = Math.min(100, bl.v + BLOOM_WATER);
     } else if (url.pathname === '/garden/harvest') {
-      if (!s) return json(payload({ err: 'empty' }), 404);
+      if (!s) return json(await payload({ err: 'empty' }), 404);
       // ⚠️ payload(), NOT a bare {err}: every other branch returns the garden
       // with its error, and the client applies whatever comes back. A bare
       // {err} blanked the beds on screen until the next poll.
-      if (!isMine(s)) return json(payload({ err: 'not yours' }), 403);
-      if (!isReady(s)) return json(payload({ err: 'still growing' }), 409);
+      if (!isMine(s)) return json(await payload({ err: 'not yours' }), 403);
+      if (!isReady(s)) return json(await payload({ err: 'still growing' }), 409);
       // 🍓 a REGROWER survives its pick: the bush drops back a stage and
       // fruits again — `regrow` picks in all, then the slot frees. readyAt
       // resets so RIPE_TTL counts from the NEXT ripening, not the first.
@@ -1741,7 +1830,7 @@ export class ParkRoom {
       return json({ err: 'not found' }, 404);
     }
     await persist();
-    return json(payload({ ok: 1 }));
+    return json(await payload({ ok: 1 }));
   }
 
   async webSocketMessage(ws, raw) {
@@ -2543,10 +2632,22 @@ export class YardRoom {
   // every caller (/claim, /save, /news) from one place.
   // ⚠️ storage-only awaits: the DO input gate stays shut across the whole
   // read-modify-write, so two racing calls can never both mint the pointer.
-  async ownSlug(pass, alt) {
+  async ownSlug(pass, alt, aliases) {
     if (pass) {
       const mine = await this.state.storage.get('own:' + pass);
       if (mine) return mine;              // already keyed to the account — done
+      // 🫧 a yard claimed under a world id this person used to have (an
+      // anonymous pass folded into this one — the token vouches for both)
+      for (const a of aliases || []) {
+        const slug = await this.state.storage.get('own:' + a);
+        if (!slug) continue;
+        const doc = await this.state.storage.get('y:' + slug);
+        if (doc && (!doc.pass || doc.pass === a || doc.pass === pass)) {
+          if (doc.pass !== pass) { doc.pass = pass; await this.state.storage.put('y:' + slug, doc); }
+          await this.state.storage.put('own:' + pass, slug);
+          return slug;
+        }
+      }
     }
     if (!alt) return null;
     const slug = await this.state.storage.get('own:' + alt);
@@ -2588,12 +2689,25 @@ export class YardRoom {
     const pass = yStrip(body.pass, 64), alt = yStrip(body.alt, 64);
     const who = (pass || alt).slice(0, 8);
     const name = yStrip(body.name, 28);
+    // 🪪 the world token: verified BEFORE the first storage op (WebCrypto is
+    // not a storage await — the input-gate doctrine). A person-id claim
+    // (pass ≠ alt) with a wrong token is refused; with none, only under
+    // WT_ENFORCE. /rename is the admin's and carries its own key.
+    const wtRaw = yStrip(body.wt, 200);
+    const tok = request.method === 'POST' ? await worldTokenOf(this.env, wtRaw) : null;
+    const proven = !!tok && tok.gid === pass;
+    const aliases = proven ? tok.aliases : [];
+    if (request.method === 'POST' && path !== '/rename' && pass && alt && pass !== alt) {
+      if (wtRaw && !proven) { this.wtMiss = (this.wtMiss || 0) + 1; return json({ err: 'token' }, 401); }
+      if (!wtRaw) { this.wtNone = (this.wtNone || 0) + 1; if (wtEnforce(this.env)) return json({ err: 'token' }, 401); }
+      else this.wtOk = (this.wtOk || 0) + 1;
+    }
 
     // 🪧 claim: mint the address once, keep it forever (renames keep the slug —
     // repainting the sign must not move the house)
     if (path === '/claim' && request.method === 'POST') {
       if (!pass) return json({ err: 'no id' }, 400);
-      const cur = await this.ownSlug(pass, alt);
+      const cur = await this.ownSlug(pass, alt, aliases);
       if (cur) {
         const doc = await this.state.storage.get('y:' + cur);
         if (doc) {
@@ -2653,7 +2767,7 @@ export class YardRoom {
 
     // 💾 save: publish the yard's public snapshot (sanitized, capped)
     if (path === '/save' && request.method === 'POST') {
-      const slug = await this.ownSlug(pass, alt);
+      const slug = await this.ownSlug(pass, alt, aliases);
       if (!slug) return json({ err: 'unclaimed' }, 404);
       const doc = await this.state.storage.get('y:' + slug);
       if (!doc) return json({ err: 'gone' }, 404);
@@ -2674,7 +2788,7 @@ export class YardRoom {
     // because auth rides the body like every other yard call; the response is
     // the same shape /yard serves visitors, plus created for the local claim.
     if (path === '/mine' && request.method === 'POST') {
-      const slug = await this.ownSlug(pass, alt);
+      const slug = await this.ownSlug(pass, alt, aliases);
       const doc = slug ? await this.state.storage.get('y:' + slug) : null;
       if (!doc) return json({ slug: null });
       const st = doc.state || {};
@@ -2717,6 +2831,8 @@ export class YardRoom {
       const rday = real.filter((e) => now - e.updated < 86400000).length;
       const rweek = real.filter((e) => now - e.updated < 7 * 86400000).length;
       return json({ yards: rn, day: rday, week: rweek, all: n,
+        // 🪪 the token rollout, this isolate's lifetime: ok / wrong / absent
+        wt: { ok: this.wtOk || 0, miss: this.wtMiss || 0, none: this.wtNone || 0, enforce: wtEnforce(this.env) ? 1 : 0 },
         list: list.slice(0, 100).map((e) => ({ ...e, qa: qa(e) ? 1 : 0 })) });
     }
 
@@ -2786,7 +2902,7 @@ export class YardRoom {
 
     // 📯 the owner's away-news: who came by, who signed, who watered
     if (path === '/news' && request.method === 'POST') {
-      const slug = await this.ownSlug(pass, alt);
+      const slug = await this.ownSlug(pass, alt, aliases);
       if (!slug) return json({ err: 'unclaimed' }, 404);
       const doc = await this.state.storage.get('y:' + slug);
       const seen = (await this.state.storage.get('seen:' + slug)) || (doc && doc.created) || 0;

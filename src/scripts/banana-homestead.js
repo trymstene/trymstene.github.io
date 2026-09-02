@@ -19,7 +19,7 @@ import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
 import { askName } from '../lib/banana-id.js';
-import { worldOwner, worldSid, presenceRoom, poofInto } from '../lib/world.js';
+import { worldOwner, worldSid, worldToken, presenceRoom, poofInto } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
@@ -39,7 +39,7 @@ const YARD_API = 'https://banana-rave.trymstene.workers.dev/yards';
 async function yFetch(path, body) {
   const r = await fetch(YARD_API + path, body ? {
     method: 'POST',
-    body: JSON.stringify({ ...body, pass: worldOwner(), alt: worldSid() }),
+    body: JSON.stringify({ ...body, pass: worldOwner(), alt: worldSid(), wt: worldToken() }),   // 🪪 id + proof
   } : undefined);
   if (!r.ok) throw new Error('yard ' + r.status);
   return r.json();

@@ -50,6 +50,7 @@ export default {
       if (url.pathname === '/link/finish') return linkFinish(request, env);
       if (url.pathname === '/push') return push(request, env);
       if (url.pathname === '/pull') return pull(request, env, url);
+      if (url.pathname === '/anon') return anon(request, env);
       if (url.pathname === '/admin/ledger') return adminLedger(request, env, url);
       if (url.pathname === '/admin/find') return adminFind(request, env);
       if (url.pathname === '/admin/grant') return adminGrant(request, env);
@@ -151,6 +152,31 @@ async function mintMemberToken(env, member) {
 // longer id costs bytes in every plot for no extra safety at this scale.
 async function worldGid(env, homeKey) {
   return (await hmacHex(env, 'world:' + homeKey)).slice(0, 16);
+}
+// 🪪 THE WORLD TOKEN — `gid.exp.aliases.sig`. The world id above is an
+// identifier; this is the PROOF that the browser presenting it holds the pass
+// behind it. Until 2 Sep 2026 the garden and the yards took `pass` as a plain
+// string (and the garden published it), so anyone could write as anyone.
+// Signed with MEMBER_HMAC — the secret worker-rave already shares for member
+// hats — under its own 'wt:' prefix; 30 days, renewed on every pull and push.
+// `aliases` = world ids this pass used to answer to (an anonymous pass folded
+// into it), so a yard or a plot keyed to the old id follows the person.
+// No secret configured = no token, and the world workers stay in soft mode.
+const WT_TTL = 30 * 86400000;
+async function mintWorldToken(env, gid, aliases) {
+  try {
+    if (!env.MEMBER_HMAC || !gid) return undefined;
+    const al = (aliases || []).filter((a) => /^[a-f0-9]{8,16}$/.test(a) && a !== gid).slice(-8).join(',');
+    const base = gid + '.' + (Date.now() + WT_TTL) + '.' + al;
+    const key = await crypto.subtle.importKey('raw', te.encode(env.MEMBER_HMAC), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return base + '.' + bufToHex(await crypto.subtle.sign('HMAC', key, te.encode('wt:' + base)));
+  } catch (e) { return undefined; }
+}
+// everything a logged-in answer carries about WHO this is, in one place
+async function identityOf(env, R) {
+  const gid = await worldGid(env, R.homeKey);
+  return { gid, worldToken: await mintWorldToken(env, gid, R.home.aliases),
+    memberToken: await mintMemberToken(env, (R.home.blob || {}).member) };
 }
 
 // ---------- POST /challenge ----------
@@ -881,6 +907,7 @@ async function adminScan(env) {
       coinsSpent: stats.coins_spent || 0,
       gear,
       glow: blob.glow === '1',
+      anon: !!rec.anon,                          // 🫧 a server pass nobody has claimed yet
     });
   }
   rows.sort((a, b) => b.updated - a.updated);
@@ -1070,6 +1097,60 @@ function blobOk(blob) {
   return blob && typeof blob === 'object' && JSON.stringify(blob).length <= MAX_BLOB;
 }
 
+// ---------- POST /anon — a pass with nobody to log in as (yet) ----------
+// ⭐ EVERY PLAYER GETS A SERVER PASS at their first meaningful write. Nothing
+// changes on screen: no email, no passkey, no prompt. The world gets a stable
+// person-id (and a token that proves it) before anybody decides to keep the
+// pass, and adding an email or a passkey later ATTACHES to this same home
+// (register/mail-use/assert take the device's credentials), so the world id
+// never changes underneath a yard. ⚠️ It does NOT survive a wipe — the
+// credential lives in the browser like any device token. Only a linked email
+// does that, and that ask stays at the investment moment.
+const anonHits = new Map();
+function anonThrottled(ip) {
+  const now = Date.now();
+  const rec = anonHits.get(ip) || { n: 0, t: now };
+  if (now - rec.t > 3600000) { rec.n = 0; rec.t = now; }
+  rec.n++;
+  anonHits.set(ip, rec);
+  if (anonHits.size > 5000) anonHits.clear();
+  return rec.n > 12;
+}
+async function anon(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  if (anonThrottled(request.headers.get('CF-Connecting-IP') || 'unknown')) return json({ error: 'slow down' }, 429, cors(env, request));
+  let b = {};
+  try { b = await request.json(); } catch (e) {}
+  const blob = b && b.blob;
+  if (blob && !blobOk(blob)) return json({ error: 'blob too large' }, 413, cors(env, request));
+  const credId = 'a:' + bufToHex(crypto.getRandomValues(new Uint8Array(24)));
+  const rec = { anon: 1, tokens: {}, blob: mergeBlob(null, clientBlob(blob) || null) };
+  const token = await mintToken(rec);
+  await saveRec(env, credId, rec);
+  const R = { home: rec, homeKey: await keyFor(credId) };
+  return json({ credId, token, ...(await identityOf(env, R)) }, 200, cors(env, request));
+}
+// 🫧 FOLD an anonymous pass into the pass this device just logged into: its
+// blob merges in (nothing lost), the anon record becomes a pointer (its token
+// keeps resolving), and its world id is kept as an ALIAS so the yard and the
+// plots it claimed follow the person. ⚠️ ONLY anonymous homes fold. A real
+// pass arriving on a shared browser is a SWITCH (pass-sync settleAccount),
+// never a merge — that is the family-tablet rule and it stays.
+async function foldAnon(env, R, fromCredId, fromToken) {
+  try {
+    if (!fromCredId || !fromToken || !R || !R.home) return false;
+    const F = await tokenRec(env, fromCredId, fromToken);
+    if (!F || !F.home.anon || F.homeKey !== F.ownKey || F.homeKey === R.homeKey) return false;
+    R.home.blob = mergeBlob(R.home.blob, clientBlob(F.home.blob));
+    const gid = await worldGid(env, F.homeKey);
+    R.home.aliases = [...new Set([...(R.home.aliases || []), gid])].slice(-8);
+    const ptr = { tokens: F.home.tokens || {}, link: R.homeKey, folded: Date.now() };
+    await saveKey(env, F.homeKey, ptr);
+    return true;
+  } catch (e) { return false; }
+}
+
 // ---------- POST /register ----------
 async function register(request, env) {
   const bad = guard(env, request);
@@ -1098,6 +1179,20 @@ async function register(request, env) {
       await saveKey(env, R.ownKey, R.own);
       await saveKey(env, R.homeKey, R.home);
       return json({ token: tk }, 200, cors(env, request));
+    }
+  }
+  // 🫧 a passkey made on a device that already holds an ANONYMOUS pass joins
+  // that pass instead of starting a second one: the new credential is a
+  // pointer, the home (and its world id) stays exactly what the yard is keyed to
+  if (!existing && b.fromCredId && b.fromToken) {
+    const F = await tokenRec(env, b.fromCredId, b.fromToken);
+    if (F && F.home.anon && F.homeKey === F.ownKey) {
+      F.home.blob = mergeBlob(F.home.blob, clientBlob(blob) || null);
+      const ptr = { pk, alg, tokens: {}, link: F.homeKey };
+      const tk = await mintToken(ptr);
+      await saveKey(env, F.homeKey, F.home);
+      await saveRec(env, credId, ptr);
+      return json({ token: tk, joined: true }, 200, cors(env, request));
     }
   }
   const rec = existing || { pk, alg, tokens: {}, blob: null };
@@ -1145,10 +1240,11 @@ async function assert_(request, env) {
 
   // …but the BLOB lives on the home record, which may be another device's
   if (blob && blobOk(blob)) R.home.blob = mergeBlob(R.home.blob, clientBlob(blob));
+  const folded = await foldAnon(env, R, b.fromCredId, b.fromToken);
   const token = await mintToken(rec);
   await saveKey(env, R.ownKey, rec);
-  if (R.homeKey !== R.ownKey) await saveKey(env, R.homeKey, R.home);
-  return json({ token, blob: R.home.blob }, 200, cors(env, request));
+  if (R.homeKey !== R.ownKey || folded) await saveKey(env, R.homeKey, R.home);
+  return json({ token, blob: R.home.blob, folded, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }
 
 // WebAuthn ECDSA signatures are DER; WebCrypto wants raw r||s (32+32)
@@ -1363,6 +1459,11 @@ async function mailUse(request, env, url) {
   const token = await mintToken(rec);
   await saveKey(env, key, rec);
   const R = await resolve(env, credId);
+  // 🫧 a KNOWN address arriving on a device that holds an anonymous pass:
+  // that world folds into this one (see foldAnon) instead of being left behind
+  const folded = !attached && R && R.home
+    ? await foldAnon(env, R, url.searchParams.get('credId'), url.searchParams.get('token')) : false;
+  if (folded) await saveKey(env, R.homeKey, R.home);
   // ☕ a Ko-fi membership bought BEFORE this pass first logged in has been
   // waiting in the member store — it lands the moment the email rail proves
   // the address (key = 'm' + emailHash, so the hash is right here)
@@ -1379,8 +1480,8 @@ async function mailUse(request, env, url) {
     }
   } catch (e) {}
   const blobOut = (R && R.home.blob) || rec.blob || null;
-  return json({ credId, token, attached, blob: blobOut,
-    memberToken: await mintMemberToken(env, (blobOut || {}).member) },
+  return json({ credId, token, attached, folded, blob: blobOut,
+    ...(R ? await identityOf(env, R) : { memberToken: await mintMemberToken(env, (blobOut || {}).member) }) },
     200, cors(env, request));
 }
 
@@ -1565,7 +1666,10 @@ async function linkFinish(request, env) {
   delete rec.blob;                                          // the home record owns it
   const token = await mintToken(rec);
   await saveKey(env, ownKey, rec);
-  return json({ token, blob: home.blob }, 200, cors(env, request));
+  const R = { home, homeKey: ticket.home };
+  const folded = await foldAnon(env, R, b.fromCredId, b.fromToken);
+  if (folded) await saveKey(env, ticket.home, home);
+  return json({ token, blob: home.blob, folded, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }
 
 // ---------- token-auth sync (no biometrics day-to-day) ----------
@@ -1587,8 +1691,7 @@ async function push(request, env) {
   if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
   R.home.blob = mergeBlob(R.home.blob, clientBlob(b.blob));
   await saveKey(env, R.homeKey, R.home);
-  return json({ ok: true, gid: await worldGid(env, R.homeKey),
-    memberToken: await mintMemberToken(env, (R.home.blob || {}).member) }, 200, cors(env, request));
+  return json({ ok: true, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }
 
 async function pull(request, env, url) {
@@ -1596,7 +1699,5 @@ async function pull(request, env, url) {
   if (bad) return bad;
   const R = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-  return json({ blob: R.home.blob, updated: R.home.updated,
-    gid: await worldGid(env, R.homeKey),
-    memberToken: await mintMemberToken(env, (R.home.blob || {}).member) }, 200, cors(env, request));
+  return json({ blob: R.home.blob, updated: R.home.updated, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }

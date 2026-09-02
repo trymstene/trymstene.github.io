@@ -12,7 +12,7 @@ import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
 import { MANAGE } from '../data/pay-rail.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
   startLink, finishLink, mailSignin, mailUse, logout,
-  newsJoin, newsConfirm } from '../lib/pass-sync.js';
+  newsJoin, newsConfirm, loggedIn } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -364,7 +364,7 @@ async function refresh(landing) {
 // showing yesterday's numbers behind a spinner-less blank reads as broken.
 function netNote(cold) {
   if (cold) setLine(LINE_COLD);
-  else if (el('psSyncNote').textContent === LINE_WAIT) setLine(linked() ? LINE_IN : LINE_OUT);
+  else if (el('psSyncNote').textContent === LINE_WAIT) setLine(loggedIn() ? LINE_IN : LINE_OUT);
 }
 
 // ⚠️ paint() RUNS TWICE — once from localStorage, once when the account lands —
@@ -1277,8 +1277,10 @@ function initSync() {
   }
   // the passkey shortcut only exists where the browser has one, and only while
   // you are OUT
-  el('psAlt').hidden = !(passkeysSupported() && !linked());
-  if (!linked()) {
+  // 🫧 an anonymous pass syncs but is NOT a login (nothing survives a wipe):
+  // the page keeps asking for the email exactly as if the device were unlinked
+  el('psAlt').hidden = !(passkeysSupported() && !loggedIn());
+  if (!loggedIn()) {
     keep.open = HAVE;
     note.textContent = HAVE ? 'Log in to keep ' + el('psName').textContent + ' — email only, no password' : LINE_OUT;
     return;

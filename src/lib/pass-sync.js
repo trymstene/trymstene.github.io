@@ -6,6 +6,7 @@ import { PASS_API, collectBlob, applyBlob, passPush, passNoticeAdd } from './ban
 
 const LINK_KEY = 'pass-link'; // { credId, token }
 const GID_KEY = 'world-gid';  // 🪪 ownership (mirrors banana-pass.js), never the connection sid
+const WT_KEY = 'world-wt';    // 🪪 …and its proof (the world token)
 const PULL_KEY = 'pass-pull-at';
 export { PASS_API, collectBlob, applyBlob };
 
@@ -14,6 +15,15 @@ export const passkeysSupported = () =>
 
 export function linked() {
   try { return JSON.parse(localStorage.getItem(LINK_KEY) || 'null'); } catch (e) { return null; }
+}
+// 🫧 an ANONYMOUS pass (minted by banana-pass ensureAnon, credId 'a:…') is a
+// link for sync purposes and NOT a login for the UI: nothing about it survives
+// a wipe, so the page must keep asking for the email. loggedIn() is what the
+// pass page shows; linked() is what the wire uses.
+export const isAnon = (l) => !!(l && String(l.credId || '').startsWith('a:'));
+export function loggedIn() {
+  const l = linked();
+  return l && !isAnon(l) ? l : null;
 }
 
 // ⚠️ RETURNS FALSE WHEN THE CREDENTIAL DID NOT LAND. A blocked localStorage
@@ -38,6 +48,12 @@ const NO_STORE_MAIL = 'This browser wouldn’t remember the login — private br
 function keepGid(d) {
   const gid = d && typeof d.gid === 'string' && /^[a-f0-9]{8,32}$/.test(d.gid) ? d.gid : '';
   if (gid) { try { localStorage.setItem(GID_KEY, gid); } catch (e) {} }
+  // 🪪 …with its proof (mirror of banana-pass.js keepGid — change both)
+  try {
+    if (d && typeof d.worldToken === 'string' && /^[a-f0-9]{16}\.\d+\.[a-f0-9,]*\.[a-f0-9]{64}$/.test(d.worldToken)) {
+      localStorage.setItem(WT_KEY, d.worldToken);
+    }
+  } catch (e) {}
   // 🎩 the signed member token rides the same responses (mirror of
   // banana-pass.js keepGid — change both): rooms present it so other
   // players get to SEE the supporter hat. Absent = leave the stored one
@@ -84,7 +100,7 @@ const WORLD_KEYS = [
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
   'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
-  GID_KEY, PULL_KEY,
+  GID_KEY, WT_KEY, PULL_KEY,
 ];
 function wipeWorld() {
   for (const k of WORLD_KEYS) { try { localStorage.removeItem(k); } catch (e) {} }
@@ -100,6 +116,7 @@ async function gidOf(credId, token) {
     const r = await fetch(PASS_API + `/pull?credId=${encodeURIComponent(credId)}&token=${encodeURIComponent(token)}`);
     if (!r.ok) return '';
     const d = await r.json();
+    keepGid(d);   // the token and the member token land with the gid
     return d && typeof d.gid === 'string' ? d.gid : '';
   } catch (e) { return ''; }
 }
@@ -111,7 +128,9 @@ async function settleAccount(prev, credId, token, attached) {
   const gid = await gidOf(credId, token);
   // the server's own attach-vs-login signal first (a pass gaining an address
   // is not a switch), then the gid, then the credential as a last resort
-  const switched = !!prev && !attached
+  // 🫧 an anonymous pass is never "somebody else": the server folded it into
+  // the arriving pass (foldAnon), so this device's world goes UP, not away
+  const switched = !!prev && !attached && !isAnon(prev)
     && (prevGid && gid ? gid !== prevGid : prev.credId !== credId);
   if (switched) {
     wipeWorld();
@@ -247,6 +266,7 @@ export async function newsConfirm(t) {
 export function logout() {
   try { localStorage.removeItem(LINK_KEY); } catch (e) {}
   try { localStorage.removeItem(GID_KEY); } catch (e) {}
+  try { localStorage.removeItem(WT_KEY); } catch (e) {}
   // ⏱ and drop the pull throttle, so logging back in syncs at once instead of
   // running on the connection sid until the 10 minutes expire
   try { localStorage.removeItem(PULL_KEY); } catch (e) {}
@@ -256,6 +276,7 @@ export function logout() {
 
 // "Save your pass" — create the passkey and upload this device's world
 export async function savePass() {
+  const prev = linked();
   const challenge = await getChallenge();
   const cred = await navigator.credentials.create({
     publicKey: {
@@ -279,6 +300,9 @@ export async function savePass() {
     alg: cred.response.getPublicKeyAlgorithm(),
     clientDataJSON: bufToB64u(cred.response.clientDataJSON),
     blob: collectBlob(),
+    // 🫧 the anonymous pass this device already holds: the passkey JOINS it
+    // (a pointer to the same home), so the world id under the yard never moves
+    ...(isAnon(prev) ? { fromCredId: prev.credId, fromToken: prev.token } : {}),
   };
   const res = await fetch(PASS_API + '/register', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -334,6 +358,7 @@ export async function finishLink(code) {
     pk: bufToB64u(pk),
     alg: cred.response.getPublicKeyAlgorithm(),
     clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+    ...(isAnon(prev) ? { fromCredId: prev.credId, fromToken: prev.token } : {}),   // 🫧 folds in
   };
   const res = await fetch(PASS_API + '/link/finish', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -344,8 +369,10 @@ export async function finishLink(code) {
       : e.error === 'bad code' ? 'that code did not match'
       : 'could not link this device');
   }
-  const { token, blob } = await res.json();
+  const dl = await res.json();
+  const { token, blob } = dl;
   if (!setLink(body.credId, token)) throw new Error(NO_STORE);
+  keepGid(dl);
   const switched = await settleAccount(prev, body.credId, token, false);
   if (blob) applyBlob(blob);
   // ⬆️ …and this device's world goes UP. /link/finish carries no blob and the
@@ -373,13 +400,16 @@ export async function restorePass() {
     // restored, before anyone can tell the two people apart. It goes up below
     // instead, once the device is settled and the world is provably theirs.
     ...(prev ? {} : { blob: collectBlob() }),
+    ...(isAnon(prev) ? { fromCredId: prev.credId, fromToken: prev.token } : {}),   // 🫧 folds in
   };
   const res = await fetch(PASS_API + '/assert', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'assert failed');
-  const { token, blob } = await res.json();
+  const da = await res.json();
+  const { token, blob } = da;
   if (!setLink(body.credId, token)) throw new Error(NO_STORE);
+  keepGid(da);
   const switched = await settleAccount(prev, body.credId, token, false);
   applyBlob(blob);
   if (prev && !switched) await pushBlob(body.credId, token); // same person — their world still goes up

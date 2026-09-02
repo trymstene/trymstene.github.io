@@ -85,12 +85,32 @@ export function worldSid() {
 // signed in (stable across every device on the account), the local sid when
 // not. Anonymous players are unchanged — they are still one-browser-one-player,
 // which is the most anyone can promise without an account.
+let noidSent = false;
 export function worldOwner() {
   try {
     const gid = localStorage.getItem('world-gid');
     if (gid) return gid;
   } catch (e) {}
+  // 🫧 no person-id yet: tell the pass module once, and it mints an anonymous
+  // pass (banana-pass.js ensureAnon) so the NEXT write is a person's, not a
+  // browser's. An event, not an import — banana-pass imports this file.
+  if (!noidSent && typeof document !== 'undefined') {
+    noidSent = true;
+    try { document.dispatchEvent(new CustomEvent('world:noid')); } catch (e) {}
+  }
   return worldSid();
+}
+
+// 🪪 THE WORLD TOKEN — proof, for the world workers, that this browser holds
+// the pass behind worldOwner(). Minted by worker-pass on every pull/push
+// (`gid.exp.aliases.sig`, 30 days) and kept next to the gid; the workers
+// refuse a wrong one and, once WT_ENFORCE is on, an absent one. undefined =
+// nothing to show (signed out, or a token that has run out).
+export function worldToken() {
+  try {
+    const t = localStorage.getItem('world-wt') || '';
+    return +(t.split('.')[1] || 0) > Date.now() ? t : undefined;
+  } catch (e) { return undefined; }
 }
 
 // the three-frame smoke puff — leavers and expired pickups go in a puff,

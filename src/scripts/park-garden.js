@@ -1,7 +1,7 @@
 // 🌱 THE GARDEN — the park's daily-return ritual (P3b) + the entropy loop
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
-import { poofInto, worldSid, worldOwner } from '../lib/world.js';
+import { poofInto, worldSid, worldOwner, worldToken } from '../lib/world.js';
 import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd } from '../lib/banana-pass.js';
 import { GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
 import { gardenerCardHtml } from '../lib/world-hud.js';
@@ -402,13 +402,17 @@ export function initGarden(ctx) {
     myShort = own.slice(0, 8);
     myAlt = sid.slice(0, 8);
     idAt = Date.now();
-    if (body) { body.pass = own; body.alt = sid; }
+    // 🪪 …and the proof: the room refuses a wrong token, and an absent one
+    // once it enforces (a person-id claim without proof is nobody's)
+    const wt = worldToken();
+    if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; }
     if (PARK_TEST) return shimGarden(path, body);
     try {
       // 🌱 the READ carries BOTH ids — it is the only reply that settles the
       // compost, and a debt is filed under the id the PLOT carried, which for
       // anything sown before the world had a person-id is the legacy sid
-      const r = await fetch(GARDEN_API + path + (body ? '' : '?pass=' + encodeURIComponent(myShort) + '&alt=' + encodeURIComponent(myAlt)), body
+      const r = await fetch(GARDEN_API + path + (body ? '' : '?pass=' + encodeURIComponent(myShort) + '&alt=' + encodeURIComponent(myAlt)
+        + (wt ? '&wt=' + encodeURIComponent(wt) : '')), body
         ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
         : undefined);
       return await r.json();
@@ -425,9 +429,13 @@ export function initGarden(ctx) {
   // migrate to the owner id on any touch; birdhouses never do, so a house
   // raised before signing in stays yours only through the alt.
   const gOwn = (short) => !!short && (short === me() || (myAlt !== myShort && short === myAlt));
-  // …and the room stamps `mine: 1` through its sid ledger — a plot sown on
-  // your OTHER device is yours even when this browser's two ids can't prove it
-  const gMine = (s) => !!s && (gOwn(s.passShort) || !!s.mine);
+  // ⭐ THE ROOM'S VERDICT IS THE OWNERSHIP SIGNAL. Since 2 Sep 2026 the wire
+  // carries `who` (a keyed hash — count growers, match names, reverse to
+  // nothing) and `mine` (stamped for this asker through every name the room
+  // knows: pass, alt, the sid ledger, aliases). The published owner id was
+  // the hole that let anyone harvest anyone. gOwn() only still answers for
+  // the ?parktest shim, which keeps passShort locally.
+  const gMine = (s) => !!s && (!!s.mine || gOwn(s.passShort));
   // ⭐ DID THE ROOM ACTUALLY DO IT? Every reply carries ok on success and err
   // on a miss; a dead fetch is null. Anything else is a miss.
   const gDone = (r) => !!r && !!r.ok && !r.err;
@@ -1054,14 +1062,14 @@ export function initGarden(ctx) {
     if (!gDone(res)) { applyGarden(res); if (!res) toast(MISS_LINE); return; }
     applyGarden(res);
     float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🌾');
-    if (!gOwn(h.passShort)) { passStat('rep', 2); refreshHud(); }
+    if (!gMine(h)) { passStat('rep', 2); refreshHud(); }
     toast('🌾 stocked — the birds are staying another day');
     if (!bhStockTracked) { bhStockTracked = true; track('park_birdhouse', { act: 'stock' }); }
   }
   function openHouseCard(i) {
     const h = bHouses[i];
     if (!h) { openPostSheet(i); return; }
-    const mine = gOwn(h.passShort);
+    const mine = gMine(h);
     const fed = bhFed(h);
     // same shape as the plant card: the THING first, its maker on a sticker,
     // then the one meter the card exists for
@@ -1451,8 +1459,8 @@ export function initGarden(ctx) {
     snapped = true;
     const open = bedsOpen.size * BED_N;
     const live = res.slots.filter((s2, k) => s2 && bedOpen(k));
-    const mine = live.filter((s2) => gOwn(s2.passShort)).length;
-    const owners = new Set(live.map((s2) => s2.passShort));
+    const mine = live.filter((s2) => gMine(s2)).length;
+    const owners = new Set(live.map((s2) => s2.who || s2.passShort));
     track('park_garden', {
       beds: bedsOpen.size,
       full: open ? Math.round((live.length / open) * 100) : 0,
@@ -1510,7 +1518,7 @@ export function initGarden(ctx) {
   }
   // how many living plants are MINE right now — the price rides on this
   const myPlants = () => gSlots.reduce(
-    (t, s2) => t + (s2 && gOwn(s2.passShort) && !s2.rot ? 1 : 0), 0);
+    (t, s2) => t + (s2 && gMine(s2) && !s2.rot ? 1 : 0), 0);
   const priceNow = (sd) => Math.round(sd.price * seedMult(myPlants()));
 
   function openSeedSheet(i) {
