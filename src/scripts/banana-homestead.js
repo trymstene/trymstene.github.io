@@ -358,10 +358,14 @@ function init(visitDoc, visitMiss) {
           sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0),
           gd: a.gd == null ? undefined : Math.round(a.gd),
           pd: Math.round(a.pd || 0),
+          id: a.id || undefined, ad: a.ad == null ? undefined : Math.round(a.ad),
+          gs: Math.round(a.gs || 0), sd: a.sd == null ? undefined : Math.round(a.sd),
           hm: a.hm ? { x: Math.round(a.hm.x), y: Math.round(a.hm.y) } : undefined })),
         memory: (state.memory || []).slice(0, 12).map((m) => ({
           sp: m.sp, b: Math.round(m.b || 0), name: m.name || '',
-          gd: m.gd == null ? undefined : Math.round(m.gd) })),
+          gd: m.gd == null ? undefined : Math.round(m.gd),
+          id: m.id || undefined, ad: m.ad == null ? undefined : Math.round(m.ad),
+          gs: Math.round(m.gs || 0), sd: m.sd == null ? undefined : Math.round(m.sd) })),
       } }).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
@@ -1044,6 +1048,7 @@ function init(visitDoc, visitMiss) {
         h2.waitUntil = 0;
       }
       hens.push(h2);
+      petBadge(h2);
     }
     // ⚠️ REBIND sprite↔entity every tick — the binding was fixed at creation
     // by index, so after a sale the surviving sprites carried STALE refs to
@@ -1064,6 +1069,7 @@ function init(visitDoc, visitMiss) {
           h4.fluff = undefined; h4.dstrip = undefined; h4.dg = undefined;
         }
         h4.yng = yn4;
+        petBadge(h4);
       });
     }
     const P = plotNow();
@@ -1237,7 +1243,7 @@ function init(visitDoc, visitMiss) {
     if ((g.m === 'rest' || g.m === 'play' || g.m === 'shadow')
       && now - g.pMoveAt > 6000 && pd > 90) { g.m = 'sitby'; }
     let strip = 'c-dog.png', spd = 150, fr = 140;
-    const arrive = () => { g.heelAt = now; float(h.x, h.y - 44, '❤️');
+    const arrive = () => { g.heelAt = now; float(h.x, h.y - 44, '❤️'); if (h.a) h.a.gs = (h.a.gs || 0) + 1;
       g.m = 'linger'; g.until = now + 2500 + Math.random() * 2500; };
     if (g.m === 'seek') {
       spd = 280; fr = 90;
@@ -1307,6 +1313,73 @@ function init(visitDoc, visitMiss) {
     }
     // she wags even when she isn't going anywhere
     if (spd === 0 && now - h.frameAt > 300) { h.frameAt = now; h.frame = (h.frame + 1) % 4; }
+  }
+  // ---- 🐾 LEVELS ------------------------------------------------------
+  // Hearts are the XP (hugs, never falling); the LEVEL is read off them,
+  // with a real ceiling: Lv 10 = best friends — a state you live in, never
+  // a number that keeps climbing (Trym's loop). Lv 3 is the name, Lv 5 the
+  // gate greeting — the old rungs, now on the same ladder.
+  const LV_AT = [0, 2, 3, 5, 7, 10, 13, 17, 22, 28];
+  function lvOf(a) { let l = 1; for (let i = 1; i < LV_AT.length; i++) if ((a.b || 0) >= LV_AT[i]) l = i + 1; return l; }
+  function lvNext(a) { const l = lvOf(a); return l >= 10 ? 0 : LV_AT[l] - (a.b || 0); }
+  function mintId() { return 100000 + Math.floor(Math.random() * 900000); }
+  const he0 = (a) => a.sp === 'rooster';
+  // 🌟 a star from Lv 5, a crown and a golden glow at Lv 10 — worn on
+  // the sprite itself, so progress shows from across the yard
+  function petBadge(h) {
+    const a = h.a;
+    const lv = a ? lvOf(a) : 0;
+    const want = lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '';
+    if (h.bdg === want) return;
+    h.bdg = want;
+    let s2 = h.el.querySelector('.hs-henbadge');
+    if (!want) { if (s2) s2.remove(); h.el.classList.remove('hs-hen--best'); return; }
+    if (!s2) { s2 = document.createElement('span'); s2.className = 'hs-henbadge pai-m'; h.el.appendChild(s2); }
+    s2.style.setProperty('--pai', "url(/assets/pixelarticons-pro-2.2.1/svg/" + want + ".svg)");
+    h.el.classList.toggle('hs-hen--best', lv >= 10);
+  }
+  // 🪪 THE CARD — her portrait, her level as dots, three stat tiles with
+  // icons, one concrete next-step line. Visuals first (Trym); names go in
+  // through textContent, never markup.
+  function openPet(a) {
+    if (!a) return;
+    const box = document.getElementById('hsPetBody');
+    const lv = lvOf(a), young = isYoungA(a), he = a.sp === 'rooster';
+    const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
+    const badge = lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '';
+    const GOOD = { hen: ['m-egg.png', 'eggs'], goat: ['m-milk.png', 'cans'], cow: ['m-milk.png', 'cans'],
+      sheep: ['m-wool.png', 'wool'], rooster: ['', 'mornings'], dog: ['', 'visits'] };
+    const g = GOOD[a.sp] || GOOD.hen;
+    const days = Math.max(0, dayNum() - (a.ad == null ? dayNum() : a.ad));
+    const goodsN = a.sp === 'rooster' ? days : (a.gs || 0);
+    const left = 5 - (a.gd || 0);
+    const next = young
+      ? 'fill the trough ' + left + ' more morning' + (left === 1 ? '' : 's') + ' — then ' + (he ? 'he' : 'she') + '’s grown'
+      : lv >= 10 ? ''
+      : lvNext(a) + ' hug' + (lvNext(a) === 1 ? '' : 's') + ' to Lv ' + (lv + 1)
+        + (lv + 1 === 3 && !a.name ? ' — then you can name ' + (he ? 'him' : 'her')
+          : lv + 1 === 5 ? ' — ' + (he ? 'he' : 'she') + '’ll meet you at the gate' : '');
+    const icon = (nm, col) => "<span class='pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/" + nm + ".svg);color:" + col + "'></span>";
+    box.innerHTML = "<div class='hs-pethead'><span class='hs-petport" + (lv >= 10 ? ' hs-petport--best' : '') + "'>"
+      + "<i style=\"background-image:url('/assets/homestead/" + sp[0] + "');width:" + Math.round(sp[3] * 1.45) + "px;aspect-ratio:" + sp[1] + "/" + sp[2] + "\"></i>"
+      + (badge ? "<span class='hs-petbadge pai-m' style='--pai:url(/assets/pixelarticons-pro-2.2.1/svg/" + badge + ".svg);color:#d9a400'></span>" : '')
+      + "</span><div class='hs-petname'><b class='" + (lv >= 10 ? 'is-best' : '') + "'></b><small></small>"
+      + "<div class='hs-petlv'><span class='hs-rowbond" + (lv >= 10 ? ' hs-rowbond--love' : '') + "'>Lv " + lv + "</span><span class='hs-petdots'>"
+      + Array.from({ length: 10 }, (_, i) => '<i' + (i < lv ? " class='on'" : '') + '></i>').join('') + "</span></div></div></div>"
+      + (next ? "<p class='hs-petnext'></p>" : '')
+      + "<div class='hs-petstats'>"
+      + "<div class='hs-petstat'>" + icon('heart-solid', '#e5566d') + "<div><span class='n'>" + (a.b || 0) + "</span><span class='l'>hugs</span></div></div>"
+      + "<div class='hs-petstat'>" + (g[0] ? "<img src='/assets/homestead/" + g[0] + "' alt=''>" : icon(a.sp === 'dog' ? 'heart' : 'cake', '#b07d00'))
+      + "<div><span class='n'>" + goodsN + "</span><span class='l'>" + g[1] + "</span></div></div>"
+      + "<div class='hs-petstat'>" + icon('calendar', '#4a6b8a') + "<div><span class='n'>" + days + "</span><span class='l'>days</span></div></div>"
+      + "</div><div class='hs-petacts'></div>";
+    box.querySelector('.hs-petname b').textContent = a.name || (young ? 'little ' : 'unnamed ') + a.sp;
+    box.querySelector('.hs-petname small').textContent = young ? (BABY_W[a.sp] || a.sp) + ' · growing up'
+      : a.sp + ' · grown' + (lv >= 10 ? ' · best friends' : '');
+    if (next) box.querySelector('.hs-petnext').textContent = next;
+    box.querySelector('.hs-petacts').appendChild(btnEl('↩ rehome', true, () => { petEl.hidden = true; syncLock(); openShop('animals'); }));
+    petEl.hidden = false; syncLock();
+    track1('homestead_pet_card', { lv });
   }
   function farmStats() { return passGet().stats || {}; }
   function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
@@ -1406,6 +1479,18 @@ function init(visitDoc, visitMiss) {
       }
       state.animalsV = 1;
     }
+    // 🐾 v3: every animal gets an identity — id (the family tree will
+    // need it), arrival day (grandfathered to the claim day), a personality
+    // seed — once, flag-gated like the hen migration above
+    if ((state.animalsV || 0) < 3) {
+      const day0 = state.claimedAt ? Math.floor(state.claimedAt / 86400000) : dayNum();
+      state.animals.forEach((a) => {
+        if (!a.id) a.id = mintId();
+        if (a.ad == null) a.ad = day0;
+        if (a.sd == null) a.sd = Math.floor(Math.random() * 10000);
+      });
+      state.animalsV = 3;
+    }
     return state.animals;
   }
   // 💛 THE FARM'S MEMORY — the pens-are-containers promise, kept: sell the
@@ -1461,6 +1546,12 @@ function init(visitDoc, visitMiss) {
     const dairy = flock.filter((a) => a.sp === 'goat' && adult(a)).length
       + flock.filter((a) => a.sp === 'cow' && adult(a)).length * 2;
     const milk = gap * dairy * (fed ? 2 : 1);
+    // 🐾 her own tally — the card's "she's laid 31 eggs"
+    flock.forEach((a) => {
+      if (!adult(a)) return;
+      if (a.sp === 'hen' || a.sp === 'goat') a.gs = (a.gs || 0) + gap * (fed ? 2 : 1);
+      else if (a.sp === 'cow') a.gs = (a.gs || 0) + gap * 2 * (fed ? 2 : 1);
+    });
     // 🧶 wool grows in DAYS, capped at ready — a fortnight away meets the
     // same one shearing as a weekend, never a backlog
     flock.forEach((a) => { if (a.sp === 'sheep' && adult(a)) a.wd = Math.min(3, (a.wd || 0) + gap); });
@@ -1567,6 +1658,7 @@ function init(visitDoc, visitMiss) {
     // one wool, the drawn Sheared sprite takes over, three days grow it back
     if (a.sp === 'sheep' && (a.wd || 0) >= 3) {
       a.wd = 0;
+      a.gs = (a.gs || 0) + 1;
       state.wool = (state.wool || 0) + 1;
       save();
       // the coat comes off WITH the tap — the tick's lazy swap only runs on a
@@ -1586,6 +1678,15 @@ function init(visitDoc, visitMiss) {
       a.b = (a.b || 0) + inc;
       save();
       float(h.x, h.y - 44, '❤️');
+      // 🐾 LEVEL UP — a hop, a float, the badge; loud and celebrated
+      const lvWas = lvOf({ b: a.b - inc }), lvNow = lvOf(a);
+      if (lvNow > lvWas) {
+        float(h.x, h.y - 62, '⬆ Lv ' + lvNow);
+        h.el.classList.add('is-hop');
+        setTimeout(() => h.el.classList.remove('is-hop'), 700);
+        petBadge(h);
+        if (lvNow >= 10) toast('👑 ' + (a.name || (he0(a) ? 'he' : 'she')) + ' — best friends', 4200);
+      }
       track1('homestead_pet', { b: a.b });
       if (a.b >= 3 && a.b - inc < 3 && !a.name) {
         toast('❤️ she trusts you now — tap her again to give her a name', 4200);
@@ -2172,8 +2273,9 @@ function init(visitDoc, visitMiss) {
   const cookEl = document.getElementById('hsCook');
   const confirmEl = document.getElementById('hsConfirm');
   const seedEl = document.getElementById('hsSeed');
+  const petEl = document.getElementById('hsPet');
   const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden
-    || !seedEl.hidden;
+    || !seedEl.hidden || !petEl.hidden;
   // while any popup is open the PAGE must not scroll under it (Trym)
   const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
 
@@ -2245,6 +2347,8 @@ function init(visitDoc, visitMiss) {
   }
   function openCook() { cookEl.hidden = false; syncLock(); renderCook(); track('homestead_kitchen'); }
   document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; syncLock(); });
+  document.getElementById('hsPetClose').addEventListener('click', () => { petEl.hidden = true; syncLock(); });
+  petEl.addEventListener('click', (e) => { if (e.target === petEl) { petEl.hidden = true; syncLock(); } });
   document.getElementById('hsSeedClose').addEventListener('click', () => { seedEl.hidden = true; syncLock(); });
   seedEl.addEventListener('click', (e) => { if (e.target === seedEl) { seedEl.hidden = true; syncLock(); } });
   cookEl.addEventListener('click', (e) => { if (e.target === cookEl) { cookEl.hidden = true; syncLock(); } });
@@ -2995,7 +3099,9 @@ function init(visitDoc, visitMiss) {
     if (mem) state.memory.splice(state.memory.indexOf(mem), 1);
     // 🐣 new animals arrive YOUNG (the dog excepted — the pack has
     // no puppy); a remembered one returns at her remembered stage
-    const na2 = { sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0 };
+    const na2 = { sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0,
+      id: mem && mem.id ? mem.id : mintId(), ad: mem && mem.ad != null ? mem.ad : dayNum(),
+      gs: mem ? (mem.gs || 0) : 0, sd: mem && mem.sd != null ? mem.sd : Math.floor(Math.random() * 10000) };
     if (an.sp !== 'dog') na2.gd = mem ? (mem.gd == null ? 5 : mem.gd) : 0;
     farmAnimals().push(na2);
     state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
@@ -3049,7 +3155,7 @@ function init(visitDoc, visitMiss) {
         }
         state.animals.splice(state.animals.indexOf(a), 1);
         if (a.name) {   // ⚠️ NAMED only — an unnamed revival read as "grown up right away"
-          farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd });
+          farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd, id: a.id, ad: a.ad, gs: a.gs || 0, sd: a.sd });
           if (state.memory.length > 12) state.memory.shift();
         }
         state.hens = state.animals.filter((a2) => a2.sp === 'hen').length;
@@ -3061,7 +3167,9 @@ function init(visitDoc, visitMiss) {
       });
       r2 = rowEl({ sprite: (young ? 'y' : '') + a.sp,
         title: a.name ? a.name : (young ? 'little ' : 'unnamed ') + a.sp,
-        chip: '❤️ ' + (a.b || 0), love: true, sub: stateLn + nameHint, acts: [sb] });
+        chip: 'Lv ' + lvOf(a), love: lvOf(a) >= 10, sub: stateLn + nameHint, acts: [sb] });
+      r2.row.classList.add('hs-row--tap');
+      r2.row.addEventListener('click', (e) => { if (e.target.closest('button')) return; closeShop(); openPet(a); });
       list.appendChild(r2.row);
     });
   }
@@ -3461,6 +3569,7 @@ function init(visitDoc, visitMiss) {
   // become a bit noisy if you have decorated a lot". No verbs → no chip;
   // the tap walks you there like any patch of grass.
   let itChip = null;
+  let lastTapH = null, lastTapAt = 0;   // 🐾 second tap on the same animal within 600ms = her card
   function itemChip(idx) {
     clearChip();
     const it = state.items[idx];
@@ -3925,7 +4034,12 @@ function init(visitDoc, visitMiss) {
         const d2 = Math.hypot(wx - h.x, wy - (h.y - 14));
         if (d2 < bestD) { bestD = d2; bestH = h; }
       }
-      if (bestH) { henMood(bestH); return; }
+      if (bestH) {
+        const t0 = Date.now();
+        if (bestH.a && lastTapH === bestH && t0 - lastTapAt < 600) { lastTapH = null; openPet(bestH.a); return; }
+        lastTapH = bestH; lastTapAt = t0;
+        henMood(bestH); return;
+      }
     }
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
@@ -4249,7 +4363,8 @@ function init(visitDoc, visitMiss) {
     if (!next) return;
     if (Array.isArray(next.animals)) {
       next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: a.pd || 0, name: a.name || '',
-        wd: a.wd || 0, gd: a.gd == null ? undefined : a.gd, hm: a.hm }));
+        wd: a.wd || 0, gd: a.gd == null ? undefined : a.gd, hm: a.hm,
+        id: a.id || mintId(), ad: a.ad == null ? undefined : a.ad, gs: a.gs || 0, sd: a.sd == null ? undefined : a.sd }));
       next.hens = next.animals.filter((a) => a.sp === 'hen').length || next.hens || 0;
     }
     next.pubUpdated = r.updated || Date.now();
@@ -4288,6 +4403,7 @@ function init(visitDoc, visitMiss) {
       pull: yardPull,
       bond: (i, b) => { const a = farmAnimals()[i || 0]; if (a) { a.b = b; a.pd = 0; save(); } return a; },
       animals: () => farmAnimals(),
+      pet: (i) => openPet(farmAnimals()[i || 0]),
       grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
       feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
       dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },

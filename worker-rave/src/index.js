@@ -2481,6 +2481,11 @@ export class YardRoom {
       const a2 = { sp: a.sp, b: num(a.b, 0, 999), name: nm, wd: num(a.wd, 0, 3) };
       if (a.gd != null) a2.gd = num(a.gd, 0, 9);   // 🐣 growth stage; absent = grown
       if (a.pd) a2.pd = num(a.pd, 0, 99999);        // last-hug day — rides the sync so a pull can't reopen today's hug
+      // 🐾 identity: stable id (the family tree), arrival day, goods tally, personality seed
+      if (a.id) a2.id = num(a.id, 0, 999999);
+      if (a.ad != null) a2.ad = num(a.ad, 0, 99999);
+      if (a.gs) a2.gs = num(a.gs, 0, 999999);
+      if (a.sd != null) a2.sd = num(a.sd, 0, 9999);
       if (a.hm && Number.isFinite(Number(a.hm.x))) a2.hm = { x: num(a.hm.x, 0, 1800), y: num(a.hm.y, 0, 1100) };
       out.animals.push(a2);
     });
@@ -2491,6 +2496,10 @@ export class YardRoom {
       const nm2 = typeof m.name === 'string' ? m.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       const m2 = { sp: m.sp, b: num(m.b, 0, 999), name: nm2 };
       if (m.gd != null) m2.gd = num(m.gd, 0, 9);
+      if (m.id) m2.id = num(m.id, 0, 999999);
+      if (m.ad != null) m2.ad = num(m.ad, 0, 99999);
+      if (m.gs) m2.gs = num(m.gs, 0, 999999);
+      if (m.sd != null) m2.sd = num(m.sd, 0, 9999);
       out.memory.push(m2);
     });
     return out;

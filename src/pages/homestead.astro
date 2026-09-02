@@ -504,6 +504,50 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-chipbar[disabled] { opacity: 1; cursor: default; }
     .hs-chipbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #ffe135; }
     .hs-chipbar span { position: relative; }
+    /* 🪪 THE ANIMAL CARD — phone language (rule 14): sticker card, pill
+       level, dots for progress, three icon stat tiles of ONE size. Icons
+       are the pixel pack, colour-masked so they take any colour. */
+    .pai-m { display: inline-block; width: 18px; height: 18px; background: currentColor; flex: none;
+      -webkit-mask: var(--pai) center / contain no-repeat; mask: var(--pai) center / contain no-repeat; }
+    .hs-pet { position: relative; width: min(300px, 100%); box-sizing: border-box;
+      background: #fffdf5; color: #1a1408; border-radius: 20px; padding: 14px 14px 12px;
+      box-shadow: 0 6px 0 rgba(20, 16, 4, 0.28); }
+    .hs-petx { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border: 0;
+      border-radius: 999px; background: #fff3c4; font: inherit; font-weight: 800; cursor: pointer;
+      box-shadow: 0 2px 0 rgba(31, 26, 8, 0.18); }
+    .hs-pethead { display: flex; gap: 12px; align-items: center; }
+    .hs-petport { flex: none; width: 84px; height: 72px; border-radius: 14px; background: #e8f3d7;
+      display: grid; place-items: center; overflow: hidden; position: relative; }
+    .hs-petport i { display: block; background-size: 400% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+    .hs-petport--best { box-shadow: inset 0 0 0 3px #ffe135, 0 0 12px rgba(255, 225, 53, 0.75); }
+    .hs-petbadge { position: absolute; right: 5px; top: 5px; width: 18px; height: 18px; }
+    .hs-petname { min-width: 0; flex: 1; padding-right: 26px; }
+    .hs-petname b { display: block; font-size: 1.02rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hs-petname b.is-best { color: #b07d00; }
+    .hs-petname small { display: block; font-size: 0.72rem; opacity: 0.7; margin-top: 1px; }
+    .hs-petlv { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+    .hs-petlv .hs-rowbond { margin-left: 0; }
+    .hs-petdots { display: flex; gap: 4px; }
+    .hs-petdots i { width: 9px; height: 9px; border-radius: 999px; background: #ece4cc; }
+    .hs-petdots i.on { background: #ffe135; box-shadow: 0 1px 0 rgba(31, 26, 8, 0.25); }
+    .hs-petnext { font-size: 0.7rem; opacity: 0.75; margin: 6px 0 0; }
+    .hs-petstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .hs-petstat { height: 58px; border-radius: 14px; background: #fff; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.1);
+      display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 6px; padding: 0 8px 0 9px; }
+    .hs-petstat img { width: 22px; height: 22px; image-rendering: pixelated; }
+    .hs-petstat .n { font-size: 1.05rem; font-weight: 800; line-height: 1; }
+    .hs-petstat .l { display: block; font-size: 0.62rem; opacity: 0.65; margin-top: 2px; }
+    .hs-petacts { display: flex; justify-content: flex-end; margin-top: 12px; }
+    .hs-pet .hs-btn { width: 98px; border: 0; border-radius: 999px; text-align: center; font-size: 0.7rem;
+      padding: 0.36rem 0.4rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.22); }
+    .hs-pet .hs-btn--ghost { background: #fff3c4; }
+    .hs-row--tap { cursor: pointer; }
+    /* 🌟 the level shows on the animal herself: a star from Lv 5, a crown
+       and a golden glow at Lv 10, a hop on the way up */
+    .hs-henbadge { position: absolute; right: -5px; top: -7px; width: 11px; height: 11px; color: #d9a400; }
+    .hs-hen--best .hs-henimg { filter: drop-shadow(0 0 3px rgba(255, 225, 53, 0.95)); }
+    @keyframes hs-hop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-16px); } }
+    .hs-hen.is-hop { animation: hs-hop 0.6s ease-out; }
     .hs-lockpill {
       position: absolute; top: 30px; left: 50%; transform: translateX(-50%) rotate(-6deg);
       background: #ffe135; border-radius: 999px; padding: 0.14rem 0.5rem;
@@ -866,6 +910,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
       </div>
     </div>
 
+    <div class="hs-veil" id="hsPet" hidden>
+      <div class="hs-pet">
+        <button class="hs-petx" id="hsPetClose" aria-label="Close">✕</button>
+        <div id="hsPetBody"></div>
+      </div>
+    </div>
     <div class="hs-veil" id="hsGuest" hidden>
       <div class="hs-card">
         <button class="hs-shopx" id="hsGuestClose" aria-label="Close">✕</button>
