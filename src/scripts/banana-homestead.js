@@ -1038,7 +1038,9 @@ function init(visitDoc, visitMiss) {
       // bonded hen walks to where you stood when the yard opened
       if (a && a.b >= 7 && !henGreeted && a === bestBond()) {
         henGreeted = true;
-        h2.tx = pos.x + 26; h2.ty = pos.y + 8;
+        // beside you, not on you (Trym: a greeter zooming into the banana
+        // reads as a clump); she ends up facing you
+        h2.tx = pos.x + 58; h2.ty = pos.y + 10;
         h2.waitUntil = 0;
       }
       hens.push(h2);
@@ -1091,6 +1093,14 @@ function init(visitDoc, visitMiss) {
           h.waitUntil = 0;
           h.tx = Math.max(P[0] + 16, Math.min(P[2] - 16, h.x + (Math.random() * 260 - 130)));
           h.ty = Math.max(P[1] + 40, Math.min(P[3] - 10, h.y + (Math.random() * 160 - 80)));
+          // 🐾 PERSONAL SPACE (Trym: "one big overlapping clump of
+          // sprites") — a target on top of another animal's spot is pushed
+          // 40px away from it before she commits
+          for (const o of hens) {
+            if (o === h) continue;
+            const ox = h.tx - o.x, oy = h.ty - o.y, od = Math.hypot(ox, oy);
+            if (od < 40) { h.tx += (od ? ox / od : 1) * (40 - od); h.ty += (od ? oy / od : 0) * (40 - od); }
+          }
           // 🚧 the paddock — WHERE YOU PUT HER decides where she stays
           // (Trym: "i cant tell animals where to stay or go"). An animal
           // carried to a spot in the ✥ tool keeps to it: inside a pen, that
@@ -1141,6 +1151,13 @@ function init(visitDoc, visitMiss) {
           h.frameAt = now;
           h.frame = (h.frame + 1) % 4;
         }
+      }
+      // 🐾 ...and standing animals ease apart (36px) — 20 px/s, so it
+      // reads as shuffling room, never as a shove
+      for (const o of hens) {
+        if (o === h) continue;
+        const ox = h.x - o.x, oy = h.y - o.y, od = Math.hypot(ox, oy);
+        if (od < 36 && od > 0.01) { h.x += ox / od * 20 * dt; h.y += oy / od * 20 * dt; }
       }
       // ⚡ write-on-change only — an idle hen costs zero DOM
       if (h.pf !== h.frame) {
