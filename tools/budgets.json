@@ -1,5 +1,5 @@
 {
-  "_raises": "2 Sep 2026 homestead-phone. NEW 34000 — the Banana Phone + animal card split out of homestead.astro into a lazy chunk (loaded on first phone/card open) so the yard's hot path stays under its 130k cap. 29 Aug 2026 pass.astro 38000→42000 — My Pass gained subscription management (see the membership state, cancel it, un-cancel it). Deliberate: the exit for a paid membership is not a thing to shave, and the page had 103 bytes of headroom left.",
+  "_raises": "2 Sep 2026 homestead-kitchen. NEW 16000 - the kitchen + the tailor split out of the homestead main chunk (94%) into a lazy chunk loaded on the first stove/fire/tailor open. 2 Sep 2026 homestead-phone. NEW 34000 — the Banana Phone + animal card split out of homestead.astro into a lazy chunk (loaded on first phone/card open) so the yard's hot path stays under its 130k cap. 29 Aug 2026 pass.astro 38000→42000 — My Pass gained subscription management (see the membership state, cancel it, un-cancel it). Deliberate: the exit for a paid membership is not a thing to shave, and the page had 103 bytes of headroom left.",
   "_doc": "Per-surface JS budgets in BYTES, measured on the BUILT output (dist/_astro) — the static-import back door means source size lies; only dist tells the truth. Prefix-matched against chunk filenames. Current size + ~15% headroom at adoption (24 Aug 2026); raising a number is a deliberate act that belongs in a PR description, never a drive-by.",
   "budgets": {
     "banana-engine.": 240000,
@@ -7,6 +7,7 @@
     "park.astro": 135000,
     "homestead.astro": 130000,
     "homestead-phone.": 34000,
+    "homestead-kitchen.": 16000,
     "beach.astro": 110000,
     "inbox.astro": 80000,
     "world-quest.": 66000,
