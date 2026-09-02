@@ -22,10 +22,10 @@ const PX = { edit: pxEdit, check: pxCheck, 'heart-solid': pxHeartS, heart: pxHea
 // an inline <svg> string, sized in px; currentColor follows the host
 export const ico = (nm, size) => (PX[nm] || '').replace('<svg ', '<svg width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true" ');
 let C = null;
-let BABY_W, SPOT_W, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
+let BABY_W, SPOT_W, cap, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
 export function init(ctx) {
   C = ctx;
-  ({ BABY_W, SPOT_W, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf } = ctx);
+  ({ BABY_W, SPOT_W, cap, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf } = ctx);
 }
 
 // 🪪 THE CARD — her portrait, her level as dots, three stat tiles with

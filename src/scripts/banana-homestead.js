@@ -2819,6 +2819,7 @@ function init(visitDoc, visitMiss) {
     get fedToday() { return fedToday; },
     get he0() { return he0; },
     get inList() { return inList; },
+    get cap() { return cap; },   // ⚠️ missed by the first split: the shed's "place it" threw for a day
     get isIndoorItem() { return isIndoorItem; },
     get isYoungA() { return isYoungA; },
     get lvNext() { return lvNext; },
