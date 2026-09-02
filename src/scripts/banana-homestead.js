@@ -506,6 +506,7 @@ function init(visitDoc, visitMiss) {
   // ---- 🪵 THE PLAYER FENCE: cells like soil, autotiled from the kit -------
   const FENCE_CAP = 120;
   const fenceHas = (i, j) => state.fence.some((c) => c.i === i && c.j === j);
+  const fenceHit = (x, y) => fenceRects.some((r) => x > r[0] && x < r[2] && y > r[1] && y < r[3]);   // the player's own rail hitboxes
   // ⚠️ THE CORNER LESSON (Trym's screenshot): the kit's verticals come in
   // WEST-post and EAST-post flavours — a column must put its posts in the
   // SAME tile column as the corner piece it hangs off, so we walk the column
@@ -1193,8 +1194,17 @@ function init(visitDoc, visitMiss) {
         // a leaver). Everything else ambles.
         const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150)
           : 34 * (h.tr ? [0.75, 1, 1.3][h.tr.pace] : 1);   // 🎲 a dawdler, or quick on her feet
-        h.x += dx / d * spd * dt;
-        h.y += dy / d * spd * dt;
+        let nx = h.x + dx / d * spd * dt, ny = h.y + dy / d * spd * dt;
+        // 🐕 the fence is a fence for her too (Trym: "the dog runs over the
+        // fence") — the flock is clamped to its pen, she is not, so she meets
+        // the player's own rail hitboxes: a step into a rail slides along it,
+        // a dead stop hands her brain a rest so she does not lean on it forever
+        if (h.a && h.a.sp === 'dog' && fenceRects.length && fenceHit(nx, ny)) {
+          if (!fenceHit(nx, h.y)) ny = h.y;
+          else if (!fenceHit(h.x, ny)) nx = h.x;
+          else { nx = h.x; ny = h.y; if (h.dg) { h.dg.m = 'rest'; h.dg.until = now + 2500; h.dg.heelAt = now; } }
+        }
+        h.x = nx; h.y = ny;
         // ⚠️ dx < 0, NOT dx > 0 — the hens walked backwards for exactly this
         // reason (Trym). The bird flip below is `dx > 0` and is RIGHT, because
         // the Garden Birds art faces LEFT; the coop hens face RIGHT. The
@@ -4337,6 +4347,7 @@ function init(visitDoc, visitMiss) {
       tree: () => openShop('tree'),
       cook: (w) => openCook(w || 'stove'),
       pantry: () => (state.pantry = state.pantry || {}),
+      fence: (cells) => { (cells || []).forEach((c) => { if (!fenceHas(c.i, c.j)) state.fence.push({ i: c.i, j: c.j }); }); refreshFenceB(); save(); return state.fence.length; },
       grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
       feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
       dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },
