@@ -357,6 +357,7 @@ function init(visitDoc, visitMiss) {
         animals: (state.animals || []).slice(0, 24).map((a) => ({
           sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0),
           gd: a.gd == null ? undefined : Math.round(a.gd),
+          pd: Math.round(a.pd || 0),
           hm: a.hm ? { x: Math.round(a.hm.x), y: Math.round(a.hm.y) } : undefined })),
         memory: (state.memory || []).slice(0, 12).map((m) => ({
           sp: m.sp, b: Math.round(m.b || 0), name: m.name || '',
@@ -976,8 +977,10 @@ function init(visitDoc, visitMiss) {
   let farmPenN = -1;
   let carryA = null;        // ✥ move tool: the animal in your arms
   let henGreeted = false;   // the bond-7 gate greeting fires once per visit
-  const bestBond = () => farmAnimals().filter((a) => a.sp === 'hen')
-    .reduce((m, a) => (!m || a.b > m.b ? a : m), null);
+  // any species — the toast promises "she'll meet you at the gate" to
+  // everyone, so the pick must not be hens-only (the dog greets her own way)
+  const bestBond = () => farmAnimals().filter((a) => a.sp !== 'dog')
+    .reduce((m, a) => (!m || (a.b || 0) > (m.b || 0) ? a : m), null);
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
     if (FARM && (state.fence || []).length !== farmPenN) {
@@ -4228,7 +4231,7 @@ function init(visitDoc, visitMiss) {
     }
     if (!next) return;
     if (Array.isArray(next.animals)) {
-      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: 0, name: a.name || '',
+      next.animals = next.animals.map((a) => ({ sp: a.sp, b: a.b || 0, pd: a.pd || 0, name: a.name || '',
         wd: a.wd || 0, gd: a.gd == null ? undefined : a.gd, hm: a.hm }));
       next.hens = next.animals.filter((a) => a.sp === 'hen').length || next.hens || 0;
     }

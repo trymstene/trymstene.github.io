@@ -2480,6 +2480,7 @@ export class YardRoom {
       const nm = typeof a.name === 'string' ? a.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       const a2 = { sp: a.sp, b: num(a.b, 0, 999), name: nm, wd: num(a.wd, 0, 3) };
       if (a.gd != null) a2.gd = num(a.gd, 0, 9);   // 🐣 growth stage; absent = grown
+      if (a.pd) a2.pd = num(a.pd, 0, 99999);        // last-hug day — rides the sync so a pull can't reopen today's hug
       if (a.hm && Number.isFinite(Number(a.hm.x))) a2.hm = { x: num(a.hm.x, 0, 1800), y: num(a.hm.y, 0, 1100) };
       out.animals.push(a2);
     });
