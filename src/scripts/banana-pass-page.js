@@ -7,7 +7,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams, EXTRA_DEFS } from '../lib/banana-engine.js';
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
-import { passGet, passVisit, passToast, passPush, passNotices, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies, PASS_API } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticeAdd, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies, PASS_API } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
 import { MANAGE } from '../data/pay-rail.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
@@ -488,6 +488,10 @@ function paint() {
     if (window.gtag && !offerShown) { offerShown = true; window.gtag('event', 'offer_shown', { from: 'pass_made' }); }
   }
 
+  // 🐔 launch news (2 Sep 2026): the homestead became a farm — one notice, once
+  passNoticeAdd({ id: 'news-farm-2026-09', icon: '🐔',
+    text: 'The homestead is a farm now: hens, goats, sheep, a cow and a dog, a kitchen you watch, a tailor for the wool, and a family tree. Tap the blank sign to claim yours.',
+    link: '/homestead/' });
   renderNews();
   renderGear();
 

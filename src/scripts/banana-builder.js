@@ -165,6 +165,8 @@ function init() {
   // where a locked souvenir's DOOR sends you — the pier plush lives at the beach
   const earnDoor = (d) => (d.earned === 'pier'
     ? { href: '/beach/', at: 'the pier' }
+    : d.earned === 'homestead'
+      ? { href: '/homestead/', at: 'the homestead' }
     : d.earned === 'garden'
       ? { href: '/park/', at: 'the park garden' }
       : { href: '/rave/', at: 'the rave' });

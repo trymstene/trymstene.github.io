@@ -189,7 +189,7 @@ const THUMB = {
   goat: ['c-goat.png', 96, 78, 46], sheep: ['c-sheepf.png', 96, 57, 48],
   cow: ['c-cow.png', 144, 81, 52], dog: ['c-dogidle.png', 104, 66, 48],
   yhen: ['c-chick.png', 48, 30, 30], yrooster: ['c-chick.png', 48, 30, 30],
-  ygoat: ['c-ygoat.png', 96, 57, 38], ysheep: ['c-ysheep.png', 96, 48, 38],
+  ygoat: ['c-ygoat.png', 96, 57, 42], ysheep: ['c-ysheep.png', 96, 48, 38],
   ycow: ['c-ycow.png', 96, 60, 42],
 };
 function btnEl(html, ghost, fn) {

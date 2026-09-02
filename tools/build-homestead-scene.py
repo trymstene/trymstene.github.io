@@ -1005,6 +1005,21 @@ if HAVE_PACK:
     _chw = max(10, int(f0.width * 0.38))
     DECOR_OUT.append(('cheesemk', 'Cheese machine', 'farm', 60, 0, f0.width, f0.height, [-_chw, -12, _chw, 2]))
     print('  d-cheesemk.png %dx%d (+catalog)' % (f0.width, f0.height))
+    # 🧶 THE TAILOR TABLE — a tailor's dummy beside the work desk (Modern
+    # Interiors, clothing store singles 3 + 260), composed whole-pixel; the
+    # dummy alone stands on the tailor card's stage and wears the knit
+    CS = os.path.expanduser('~/OneDrive/banana-art-pack/moderninteriors-win/1_Interiors/48x48/Theme_Sorter_Singles_48x48/21_Clothing_Store_Singles_48x48')
+    dm = Image.open(os.path.join(CS, 'Clothing_Store_Singles_48x48_3.png')).convert('RGBA')
+    dk = Image.open(os.path.join(CS, 'Clothing_Store_Singles_48x48_260.png')).convert('RGBA')
+    tl = Image.new('RGBA', (dk.width + 40, max(dk.height, dm.height)), (0, 0, 0, 0))
+    tl.paste(dk, (0, tl.height - dk.height), dk)
+    tl.paste(dm, (dk.width - 8, tl.height - dm.height), dm)   # the dummy stands at the desk's right end
+    tl = tl.crop(tl.getbbox())
+    tl.save(os.path.join(OUT, 'd-tailor.png'), optimize=True)
+    dm.crop(dm.getbbox()).save(os.path.join(OUT, 'k-dummy.png'), optimize=True)
+    _tw = max(10, int(tl.width * 0.4))
+    DECOR_OUT.append(('tailor', 'Tailor table', 'farm', 45, 0, tl.width, tl.height, [-_tw, -12, _tw, 2]))
+    print('  d-tailor.png %dx%d (+catalog)' % (tl.width, tl.height))
     CHI = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/Icons/Icons_32x32/Icons_32x32/Singles_Icons_32x32_Food_Cheese.png')
     Image.open(CHI).convert('RGBA').save(os.path.join(OUT, 'm-cheese.png'), optimize=True)
     print('  m-cheese.png')

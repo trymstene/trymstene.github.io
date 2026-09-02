@@ -51,6 +51,10 @@ export const WEARABLE_PACKS = {
       // HAT_IDS/SHADE_IDS/EXTRA_IDS mirrors + deploy worker-rave.
       { id: 'halo', label: 'Halo', phrase: 'a golden halo', art: 'halo', seat: -1 },
       { id: 'beanieprop', label: 'Propeller beanie', phrase: 'a propeller beanie', art: 'beanieprop', seat: -1 },
+      // 🧶 KNITTED at the homestead's tailor from a sheep's wool — earned:'homestead'
+      // rides the pass stat the first knit writes; never for sale (art: src/data/knitwear.js)
+      { id: 'woolbeanie', label: 'Wool beanie', phrase: 'a hand-knitted wool beanie', art: 'woolbeanie', seat: -1,
+        earned: 'homestead', stat: 'knit_woolbeanie', lock: 'knitted, never bought: shear a sheep at your homestead and knit the wool at the tailor' },
       { id: 'backwardscap', label: 'Backwards cap', phrase: 'a backwards cap', art: 'backwardscap', seat: 0 },
       { id: 'gradcap', label: 'Graduation cap', phrase: 'a graduation cap', art: 'gradcap', seat: -1 },
       { id: 'tricorn', label: 'Pirate tricorn', phrase: 'a pirate tricorn', art: 'tricorn', seat: -1 },
@@ -123,6 +127,8 @@ export const WEARABLE_PACKS = {
       { id: 'necktie',  label: 'Necktie',   phrase: 'a blue necktie',   anchor: 'chest', zone: 'body', dy: 11.5, art: 'necktie' },
       { id: 'goldchain', label: 'Gold chain', phrase: 'a gold chain',   anchor: 'chest', zone: 'body', dy: 9.0, art: 'goldchain' },
       { id: 'scarf',    label: 'Scarf',     phrase: 'a cosy red scarf', anchor: 'chest', zone: 'body', dy: 8.5, art: 'scarf' },
+      { id: 'woolscarf', label: 'Wool scarf', phrase: 'a hand-knitted wool scarf', anchor: 'chest', zone: 'body', dy: 8.5, art: 'woolscarf',
+        earned: 'homestead', stat: 'knit_woolscarf', lock: 'knitted, never bought: shear a sheep at your homestead and knit the wool at the tailor' },
       // id is coneofshame, NOT cone (the rave owns 'cone'
       // as the happy-hour traffic-cone grant); open middle so the face shows
       // dy 2 + tall solid art = the rim reaches the eyes and the face vanishes

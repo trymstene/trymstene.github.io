@@ -1,3 +1,4 @@
+import { KNIT_SVG } from '../data/knitwear.js';
 // 🌟 the yard badges: two bundled pixel icons (the full pack is gitignored — never a pack URL)
 import pxStar from '../icons/pixelart/star-solid.svg?raw';
 import pxCrown from '../icons/pixelart/crown-solid.svg?raw';
@@ -1339,7 +1340,7 @@ function init(visitDoc, visitMiss) {
     const y = isYoungA(a) ? 1 : 0;
     const sp = a && a.sp;
     let r;
-    if (sp === 'goat') r = y ? ['ygoat', 'c-ygoat.png', 17, 19] : ['goat', 'c-goat.png', 21, 32];
+    if (sp === 'goat') r = y ? ['ygoat', 'c-ygoat.png', 19, 22] : ['goat', 'c-goat.png', 21, 32];
     else if (sp === 'cow') r = y ? ['ycow', 'c-ycow.png', 19, 25] : ['cow', 'c-cow.png', 30, 34];
     else if (sp === 'rooster') r = y ? ['chick', 'c-chick.png', 11, 12] : ['roost', 'c-roost.png', 16, 30];
     else if (sp === 'sheep') r = y ? ['ysheep', 'c-ysheep.png', 19, 23]
@@ -2474,10 +2475,11 @@ function init(visitDoc, visitMiss) {
   const shopEl = document.getElementById('hsShop');
   const guestEl = document.getElementById('hsGuest');
   const cookEl = document.getElementById('hsCook');
+  const tailorEl = document.getElementById('hsTailor');
   const confirmEl = document.getElementById('hsConfirm');
   const seedEl = document.getElementById('hsSeed');
   const petEl = document.getElementById('hsPet');
-  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden
+  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden || !tailorEl.hidden
     || !seedEl.hidden || !petEl.hidden;
   // while any popup is open the PAGE must not scroll under it (Trym)
   const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
@@ -2681,6 +2683,96 @@ function init(visitDoc, visitMiss) {
     if (waiting) showPlate(waiting); else state.plate = null;
   }
   document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; syncLock(); });
+  // ---- 🧶 THE TAILOR — the Threadneedle road: a sheep's wool becomes
+  // knitwear at a table in the yard. The FIRST of each pattern is yours to
+  // wear (a pass stat the builder and the rave read: earned:'homestead');
+  // every one after sells for more than the raw wool ever could. Same
+  // grammar as the kitchen: a stage you watch, the shelf, the patterns.
+  const KNITS = [
+    { id: 'woolbeanie', name: 'Wool beanie', wool: 3, pay: 50, wear: 'hat' },
+    { id: 'woolscarf', name: 'Wool scarf', wool: 4, pay: 70, wear: 'neck' },
+  ];
+  let knitBusy = null, knitTimer = 0;
+  const knitOwned = (k) => (farmStats()['knit_' + k.id] || 0) > 0;
+  const knitArt = (k, px) => KNIT_SVG[k.id].replace('<svg ', '<svg style="width:' + px + 'px;height:auto" ');
+  function renderTailor(keepNote) {
+    const wool = state.wool || 0;
+    const sh = document.getElementById('hsTShelf');
+    sh.replaceChildren();
+    const chip = document.createElement('span');
+    chip.className = wool ? 'hs-kchip' : 'hs-kempty';
+    if (wool) chip.innerHTML = "<img src='/assets/homestead/m-wool.png' alt=''>× " + wool;
+    else chip.textContent = 'no wool yet — a sheep grows a coat in three days, then you shear it';
+    sh.appendChild(chip);
+    const note = document.getElementById('hsTNote');
+    if (!keepNote && !knitBusy) note.textContent = wool ? 'the needles are still — pick a pattern' : 'the needles are still';
+    const list = document.getElementById('hsTList');
+    list.replaceChildren();
+    KNITS.forEach((k) => {
+      const ok = wool >= k.wool, own = knitOwned(k);
+      const row = document.createElement('div');
+      row.className = 'hs-krow' + (ok && !knitBusy ? '' : ' is-dim');
+      row.innerHTML = "<span class='hs-kthumb hs-kthumb--knit'>" + knitArt(k, 38) + "</span><div class='hs-kmain'><b></b><small></small><div class='hs-kneeds'>"
+        + "<span class='hs-kneed" + (ok ? '' : ' is-short') + "'><img src='/assets/homestead/m-wool.png' alt=''>" + Math.min(wool, k.wool) + '/' + k.wool + "</span></div></div><div class='hs-kact'></div>";
+      row.querySelector('b').textContent = k.name;
+      row.querySelector('small').textContent = own ? 'in your wardrobe · the next sells for ' + k.pay + ' coins' : 'the first one is yours to wear';
+      const act = row.querySelector('.hs-kact');
+      const btn = document.createElement('button');
+      btn.className = 'hs-btn';
+      btn.textContent = knitBusy ? 'busy' : ok ? 'knit' : 'need ' + (k.wool - wool) + ' wool';
+      btn.disabled = !ok || !!knitBusy;
+      btn.addEventListener('click', () => knitPattern(k));
+      act.appendChild(btn);
+      if (own) {
+        const w = document.createElement('a');
+        w.className = 'hs-btn';
+        w.href = '/make-a-banana/?wear=' + k.id;
+        w.textContent = 'wear it';
+        act.appendChild(w);
+      }
+      list.appendChild(row);
+    });
+  }
+  function knitPattern(k) {
+    if (knitBusy || (state.wool || 0) < k.wool) return;
+    state.wool -= k.wool; save();
+    knitBusy = k;
+    const stage = document.getElementById('hsTStage');
+    stage.classList.remove('is-done');
+    stage.style.setProperty('--cook', '4000ms');
+    const kn = document.getElementById('hsTKnit');
+    kn.className = 'hs-tknit ' + (k.wear === 'hat' ? 'is-hat' : 'is-neck');
+    kn.innerHTML = knitArt(k, 46);
+    void stage.offsetWidth;
+    stage.classList.add('is-on');
+    document.getElementById('hsTNote').textContent = 'knitting…';
+    renderTailor(true);
+    clearTimeout(knitTimer);
+    knitTimer = setTimeout(() => {
+      knitBusy = null;
+      stage.classList.remove('is-on'); stage.classList.add('is-done');
+      const first = !knitOwned(k);
+      const note = document.getElementById('hsTNote');
+      if (first) {
+        passStat('knit_' + k.id, 1);
+        note.textContent = k.name + ' — yours. it’s in your wardrobe, at the rave too';
+        toast('🧶 ' + k.name.toLowerCase() + ' — knitted. wear it from the builder', 4200);
+      } else {
+        passStat('coins_earned', k.pay); refreshHud();
+        note.textContent = k.name + ' → ' + k.pay + ' coins in your wallet';
+      }
+      save();
+      track1('homestead_knit', { pattern: k.id, first: first ? 1 : 0 });
+      renderTailor(true);
+    }, 4000);
+  }
+  function openTailor() {
+    tailorEl.hidden = false; syncLock();
+    if (!knitBusy) document.getElementById('hsTStage').className = 'hs-kstage hs-tstage';
+    renderTailor();
+    track('homestead_tailor');
+  }
+  document.getElementById('hsTailorClose').addEventListener('click', () => { tailorEl.hidden = true; syncLock(); });
   document.getElementById('hsPetClose').addEventListener('click', () => { petEl.hidden = true; syncLock(); });
   petEl.addEventListener('click', (e) => { if (e.target === petEl) { petEl.hidden = true; syncLock(); } });
   document.getElementById('hsSeedClose').addEventListener('click', () => { seedEl.hidden = true; syncLock(); });
@@ -3705,6 +3797,13 @@ function init(visitDoc, visitMiss) {
     // ⚠️ THE PAID FEEDER IS GONE with the species it summoned — leaving it
     // would charge 5 coins for nothing at all. The birdhouse is still decor,
     // and birds still favour it as a perch.
+    if (it.id === 'tailor' && FARM) {
+      const kn = document.createElement('button');
+      kn.className = 'hs-btn';
+      kn.textContent = '🧶 knit';
+      kn.addEventListener('click', () => { clearChip(); openTailor(); });
+      itChip.appendChild(kn);
+    }
     if (it.id === 'cheesemk' && FARM) {
       const pr = document.createElement('button');
       pr.className = 'hs-btn';
@@ -4539,6 +4638,8 @@ function init(visitDoc, visitMiss) {
       memory: () => (state.memory = state.memory || []),
       tree: () => openShop('tree'),
       cook: (w) => openCook(w || 'stove'),
+      tailor: () => openTailor(),
+      stock: (o) => { Object.assign(state, o); save(); return state; },
       pantry: () => (state.pantry = state.pantry || {}),
       fence: (cells) => { (cells || []).forEach((c) => { if (!fenceHas(c.i, c.j)) state.fence.push({ i: c.i, j: c.j }); }); refreshFenceB(); save(); return state.fence.length; },
       blocked: (x, y) => blockedOut(x, y),

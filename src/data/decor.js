@@ -36,6 +36,7 @@ export const DECOR = [
   { id: 'sunvase', name: 'Sunflower vase', cat: 'garden', price: 20, stage: 3, w: 31, h: 65, surface: 'ground', img: '/assets/homestead/d-sunvase.png', solid: [-11, -12, 11, 2] },
   { id: 'whitevase', name: 'White flower vase', cat: 'garden', price: 20, stage: 3, w: 31, h: 53, surface: 'ground', img: '/assets/homestead/d-whitevase.png', solid: [-11, -12, 11, 2] },
   { id: 'cheesemk', name: 'Cheese machine', cat: 'farm', price: 60, stage: 0, w: 162, h: 111, surface: 'ground', img: '/assets/homestead/d-cheesemk.png', solid: [-61, -12, 61, 2] },
+  { id: 'tailor', name: 'Tailor table', cat: 'farm', price: 45, stage: 0, w: 130, h: 105, surface: 'ground', img: '/assets/homestead/d-tailor.png', solid: [-52, -12, 52, 2] },
   { id: 'stove', name: 'The stove', cat: 'kitchen', price: 42, stage: 2, w: 32, h: 64, surface: 'floor', img: '/assets/homestead/d-stove.png', solid: null },
   { id: 'coffeemk', name: 'Coffee counter', cat: 'kitchen', price: 26, stage: 2, w: 255, h: 76, surface: 'floor', img: '/assets/homestead/d-coffeemk.png', solid: null },
   { id: 'dinchair', name: 'Dining chair', cat: 'kitchen', price: 10, stage: 2, w: 32, h: 64, surface: 'floor', sit: 'l', img: '/assets/homestead/d-dinchair.png', solid: null },
