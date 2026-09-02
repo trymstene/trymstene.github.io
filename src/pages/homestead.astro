@@ -498,6 +498,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
       background: #1a1408; color: #ffe135; border-radius: 999px;
       font-size: 0.62rem; font-weight: 800; padding: 1px 7px;
     }
+    /* 🧀 the press chip as a progress bar: the yellow fill is the
+       wheel's progress toward morning */
+    .hs-chipbar { position: relative; overflow: hidden; background: #fffdf5; }
+    .hs-chipbar[disabled] { opacity: 1; cursor: default; }
+    .hs-chipbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #ffe135; }
+    .hs-chipbar span { position: relative; }
     .hs-lockpill {
       position: absolute; top: 30px; left: 50%; transform: translateX(-50%) rotate(-6deg);
       background: #ffe135; border-radius: 999px; padding: 0.14rem 0.5rem;

@@ -3454,13 +3454,25 @@ function init(visitDoc, visitMiss) {
       const pr = document.createElement('button');
       pr.className = 'hs-btn';
       if (it.load) {
-        pr.textContent = '🧀 pressing — ready tomorrow';
+        // 🧀 the press runs to the NEXT MORNING (the day clock ticks at
+        // UTC midnight) — the chip is a progress bar of how far the wheel
+        // has come, with a rough hours-left (Trym: "a progress bar showing
+        // when cheese is done")
+        const dayMs = 86400000;
+        const doneAt = (it.load + 1) * dayMs - qaDayOfs;
+        const startAt = it.loadAt || (it.load * dayMs - qaDayOfs);
+        const frac = Math.max(0.03, Math.min(1, (Date.now() - startAt) / Math.max(1, doneAt - startAt)));
+        const hrs = Math.ceil(Math.max(0, doneAt - Date.now()) / 3600000);
+        pr.className = 'hs-btn hs-chipbar';
+        pr.innerHTML = '<i style="width:' + Math.round(frac * 100) + '%"></i><span>🧀 pressing — '
+          + (hrs <= 1 ? 'under an hour' : 'about ' + hrs + 'h') + ' to go</span>';
         pr.disabled = true;
       } else if ((state.milk || 0) >= 2) {
         pr.textContent = '🧀 press 2 milk';
         pr.addEventListener('click', () => {
           state.milk -= 2;
           it.load = dayNum();
+          it.loadAt = Date.now();   // for the progress bar (device-local, like load)
           save(); clearChip();
           float(it.x, it.y - 60, '🥛🥛');
           toast('🧀 the press turns overnight — a wheel by morning', 3600);
