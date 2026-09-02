@@ -49,4 +49,4 @@ ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # refused, a missing one still passes (tabs on cached JS have none yet).
 # Flip to "1" once /yards/stats shows wt.none at ~0 for a day: then a
 # person-id claim (pass ≠ alt) without proof is refused too.
-WT_ENFORCE = "0"
+WT_ENFORCE = "1"   # flipped 2 Sep 2026 evening (Trym: "flip it")
