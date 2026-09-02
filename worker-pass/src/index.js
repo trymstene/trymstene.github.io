@@ -1182,6 +1182,7 @@ const RULES = {
     dish:   { max: 52,  day: 400 },    // dishes pay 10–26
     knit:   { max: 140, day: 560 },    // beanie 50 / scarf 70
     rehome: { max: 120, day: 600 },    // an animal sold back at its price
+    quest:  { max: 100, total: 300 },  // Return to Sender wages (15/10/15/20 + a top-up), once per person
     qa:     { deny: 1 },
   },
 };

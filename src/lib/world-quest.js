@@ -762,7 +762,7 @@ function payReward(r, id) {
     if (alreadyPaid(id)) coins = 0;
     else passStat(payKey(id), 1);
   }
-  if (coins) passStat('coins_earned', coins);
+  if (coins) passStat('coins_earned', coins, 'quest');   // 📏 named: a ruled area refuses an unnamed faucet under RULES_STRICT
   if (!coins && !r.note && !r.art && !r.link) return;   // a coins-only reward, already paid
   const veil = document.createElement('div');
   veil.className = 'bwq-rveil';
