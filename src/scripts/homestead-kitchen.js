@@ -219,7 +219,7 @@ const KNITS = [
 ];
 let knitBusy = null, knitTimer = 0;
 const knitOwned = (k) => (farmStats()['knit_' + k.id] || 0) > 0;
-const knitArt = (k, px) => KNIT_SVG[k.id].replace('<svg ', '<svg style="width:' + px + 'px;height:auto" ');
+const knitArt = (k, px) => KNIT_SVG[k.id].replace('<svg ', px ? '<svg style="width:' + px + 'px;height:auto" ' : '<svg ');   // no px = the stage's CSS sizes it
 function renderTailor(keepNote) {
   const wool = C.state.wool || 0;
   const sh = document.getElementById('hsTShelf');
@@ -267,7 +267,7 @@ function knitPattern(k) {
   stage.style.setProperty('--cook', '4000ms');
   const kn = document.getElementById('hsTKnit');
   kn.className = 'hs-tknit ' + (k.wear === 'hat' ? 'is-hat' : 'is-neck');
-  kn.innerHTML = knitArt(k, 46);
+  kn.innerHTML = knitArt(k);
   void stage.offsetWidth;
   stage.classList.add('is-on');
   document.getElementById('hsTNote').textContent = 'knitting…';

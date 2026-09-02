@@ -968,10 +968,15 @@ const description = 'A clearing west of the park with your name on the sign: cla
     /* 🧶 the tailor: the dummy on the stage wears what you knit; wool fluff while the needles go */
     .hs-tstage { --sx: 88px; --sy: 92px; }
     .hs-tdummy { position: absolute; left: 50px; bottom: 22px; width: 76px; height: 82px; background: url(/assets/homestead/k-dummy.png) 0 0 / 76px 82px no-repeat; image-rendering: pixelated; }
-    .hs-tknit { position: absolute; left: 50px; bottom: 22px; width: 76px; height: 82px; display: grid; justify-items: center; align-content: start; opacity: 0; transform: scale(0); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s; pointer-events: none; }
-    .hs-tknit svg { width: 46px; height: auto; }
-    .hs-tknit.is-hat { padding-top: 0; margin-bottom: 14px; }   /* bottom-anchored: margin-BOTTOM lifts it onto the crown */
-    .hs-tknit.is-neck { padding-top: 32px; }
+    /* the knits sit on the dummy at the ENGINE's ratio (hat = 12 grid units of 13 frame px on
+       a 469px frame; the 2× dummy is 1/6 of that frame) rounded to a whole 2px per cell so
+       the pixels stay crisp: 24×18 beanie on the crown, 22×18 scarf at the chest anchor */
+    .hs-tknit { position: absolute; left: 50px; bottom: 22px; width: 76px; height: 82px; opacity: 0; transform: scale(0); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s; pointer-events: none; }
+    .hs-tknit svg { position: absolute; width: 24px; height: 18px; }
+    .hs-tknit.is-hat { transform-origin: 39px 10px; }
+    .hs-tknit.is-hat svg { left: 27px; top: -4px; }
+    .hs-tknit.is-neck { transform-origin: 39px 41px; }
+    .hs-tknit.is-neck svg { left: 28px; top: 32px; width: 22px; }
     .hs-tstage.is-done .hs-tknit { opacity: 1; transform: scale(1); }
     .hs-kthumb--knit svg { width: 38px; height: auto; }
     .hs-kact { display: grid; gap: 4px; }
