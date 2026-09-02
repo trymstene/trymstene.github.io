@@ -278,17 +278,11 @@ function applyTestScenario(kind) {
   }
   if (s) { try { localStorage.setItem(HS_KEY, JSON.stringify(s)); } catch (e) {} }
 }
-// 🐔 THE FARM (slice 1: chickens) — DARK-LAUNCHED. ?farm arms it on this
-// device and it stays armed; ?farmoff disarms. With the switch off every path
-// below is inert and the page behaves byte-for-byte as before — that contract
-// is what lets Trym play the real thing on prod before anyone else sees it.
-const FARM = (() => {
-  try {
-    if (/[?&]farm(?:=|&|$)/.test(location.search)) localStorage.setItem('hs-farm', '1');
-    if (/[?&]farmoff(?:=|&|$)/.test(location.search)) localStorage.removeItem('hs-farm');
-    return !!localStorage.getItem('hs-farm');
-  } catch (e) { return false; }
-})();
+// 🐔 THE FARM — LIVE FOR EVERYONE since 2 Sep 2026 (the flip). It was
+// dark-launched behind a ?farm device switch from 30 Aug to 2 Sep, played on
+// prod by Trym first. FARM stays a constant so the flag-off paths can be
+// deleted at leisure rather than in a hurry.
+const FARM = true;
 // the farm's day clock — UTC day numbers, matching the worker's dayOf math.
 // qaDayOfs lets ?hstest QA walk time forward without touching the ledger.
 let qaDayOfs = 0;
