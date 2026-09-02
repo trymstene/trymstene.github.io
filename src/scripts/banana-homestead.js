@@ -1048,6 +1048,7 @@ function init(visitDoc, visitMiss) {
         h2.waitUntil = 0;
       }
       hens.push(h2);
+      h2.tr = a ? traitsOf(a) : null;
       petBadge(h2);
     }
     // ⚠️ REBIND sprite↔entity every tick — the binding was fixed at creation
@@ -1069,6 +1070,7 @@ function init(visitDoc, visitMiss) {
           h4.fluff = undefined; h4.dstrip = undefined; h4.dg = undefined;
         }
         h4.yng = yn4;
+        h4.tr = na ? traitsOf(na) : null;
         petBadge(h4);
       });
     }
@@ -1091,14 +1093,44 @@ function init(visitDoc, visitMiss) {
       // as part of the banana's own animation). Pens and ✥ pins still
       // never bind her — dogBrain owns her targets every frame.
       if (h.a && h.a.sp === 'dog' && !h.follow) dogBrain(h, now);
+      // 🎲 a shy one keeps her distance: you within 70px → she steps
+      // 60px away (a 3s cooldown keeps it from jitter); nosy is the opposite
+      if (h.a && h.tr && h.tr.bold === 0 && !h.follow) {
+        const sdx = h.x - pos.x, sdy = h.y - pos.y, sdd = Math.hypot(sdx, sdy);
+        if (sdd < 70 && now > (h.shyAt || 0)) {
+          h.shyAt = now + 3000;
+          h.tx = Math.max(P[0] + 16, Math.min(P[2] - 16, h.x + (sdd ? sdx / sdd : 1) * 60));
+          h.ty = Math.max(P[1] + 40, Math.min(P[3] - 10, h.y + (sdd ? sdy / sdd : 0) * 40));
+          h.waitUntil = 0;
+        }
+      }
       const dx = h.tx - h.x, dy = h.ty - h.y;
       const d = Math.hypot(dx, dy);
       if (d < 3 && !(h.a && h.a.sp === 'dog')) {
-        if (!h.waitUntil) h.waitUntil = now + 1500 + Math.random() * 5000;
+        if (!h.waitUntil) h.waitUntil = now + (h.tr && h.tr.pat === 0 ? 1000 + Math.random() * 2000   // 🎲 restless
+          : h.tr && h.tr.pat === 2 ? 5000 + Math.random() * 9000                                 // a dreamer
+          : 1500 + Math.random() * 5000);
         if (now > h.waitUntil) {
           h.waitUntil = 0;
           h.tx = Math.max(P[0] + 16, Math.min(P[2] - 16, h.x + (Math.random() * 260 - 130)));
           h.ty = Math.max(P[1] + 40, Math.min(P[3] - 10, h.y + (Math.random() * 160 - 80)));
+          // 🎲 TRAITS: where she goes is who she is. 30% of hops toward
+          // her best friend, 40% toward her favourite spot, and a nosy one
+          // pokes at you every third hop. The pen clamp below still rules.
+          if (h.a && h.tr) {
+            h.hop = (h.hop || 0) + 1;
+            const r0 = Math.random();
+            const fr = bestFriend(h.a);
+            const frH = fr && hens.find((o) => o.a === fr);
+            if (h.tr.bold === 1 && h.hop % 3 === 0 && Math.hypot(pos.x - h.x, pos.y - h.y) < 400) {
+              h.tx = pos.x + (Math.random() * 80 - 40); h.ty = pos.y + 30 + Math.random() * 20;
+            } else if (r0 < 0.3 && frH) {
+              h.tx = frH.x + (Math.random() * 100 - 50); h.ty = frH.y + (Math.random() * 60 - 30);
+            } else if (r0 < 0.7) {
+              const sp2 = spotOf(h.a);
+              if (sp2) { h.tx = sp2.x + (Math.random() * 120 - 60); h.ty = sp2.y + (Math.random() * 60 - 20); }
+            }
+          }
           // 🐾 PERSONAL SPACE (Trym: "one big overlapping clump of
           // sprites") — a target on top of another animal's spot is pushed
           // 40px away from it before she commits
@@ -1143,7 +1175,8 @@ function init(visitDoc, visitMiss) {
         // 🐕 gait comes from her brain: trot 150 / zoomies 210 /
         // sprint 280 (the banana walks 168 — a slower dog never catches
         // a leaver). Everything else ambles.
-        const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150) : 34;
+        const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150)
+          : 34 * (h.tr ? [0.75, 1, 1.3][h.tr.pace] : 1);   // 🎲 a dawdler, or quick on her feet
         h.x += dx / d * spd * dt;
         h.y += dy / d * spd * dt;
         // ⚠️ dx < 0, NOT dx > 0 — the hens walked backwards for exactly this
@@ -1367,6 +1400,7 @@ function init(visitDoc, visitMiss) {
       + "<div class='hs-petlv'><span class='hs-rowbond" + (lv >= 10 ? ' hs-rowbond--love' : '') + "'>Lv " + lv + "</span><span class='hs-petdots'>"
       + Array.from({ length: 10 }, (_, i) => '<i' + (i < lv ? " class='on'" : '') + '></i>').join('') + "</span></div></div></div>"
       + (next ? "<p class='hs-petnext'></p>" : '')
+      + (traitLine(a) ? "<p class='hs-pettrait'></p>" : '')
       + "<div class='hs-petstats'>"
       + "<div class='hs-petstat'>" + icon('heart-solid', '#e5566d') + "<div><span class='n'>" + (a.b || 0) + "</span><span class='l'>hugs</span></div></div>"
       + "<div class='hs-petstat'>" + (g[0] ? "<img src='/assets/homestead/" + g[0] + "' alt=''>" : icon(a.sp === 'dog' ? 'heart' : 'cake', '#b07d00'))
@@ -1385,6 +1419,7 @@ function init(visitDoc, visitMiss) {
     box.querySelector('.hs-petname small').textContent = young ? (BABY_W[a.sp] || a.sp) + ' · growing up'
       : a.sp + ' · grown' + (lv >= 10 ? ' · best friends' : '');
     if (next) box.querySelector('.hs-petnext').textContent = next;
+    if (traitLine(a)) box.querySelector('.hs-pettrait').textContent = traitLine(a);
     box.querySelector('.hs-petacts').appendChild(btnEl('↩ rehome', true, () => { petEl.hidden = true; syncLock(); openShop('animals'); }));
     petEl.hidden = false; syncLock();
     track1('homestead_pet_card', { lv });
@@ -1428,6 +1463,57 @@ function init(visitDoc, visitMiss) {
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
     b.appendChild(inp); b.appendChild(ok);
     inp.focus();
+  }
+  // ---- 🎲 TRAITS FROM THE SEED ------------------------------------------
+  // One hidden number per animal (sd), read the same way every time, is her
+  // whole personality — pace, patience, boldness, a favourite spot — plus a
+  // best friend picked by nearest seed. No new data, no new art: where she
+  // goes and how she moves is who she is. Every word is a compliment.
+  function traitsOf(a) {
+    const sd = a.sd || 0;
+    return { pace: sd % 3, pat: Math.floor(sd / 3) % 3, bold: Math.floor(sd / 9) % 4, spot: Math.floor(sd / 36) % 5 };
+  }
+  function bestFriend(a) {
+    let best = null, bd = 1e9;
+    farmAnimals().forEach((o) => {
+      if (o === a || o.sp === 'dog') return;
+      const d = Math.abs((o.sd || 0) - (a.sd || 0));
+      if (d < bd) { bd = d; best = o; }
+    });
+    return best;
+  }
+  const SPOT_W = ['the trough', 'the well', 'the house', 'the coop', 'the fence'];
+  function spotOf(a) {
+    const t = traitsOf(a).spot;
+    const it = (id) => state.items.find((i) => i.id === id);
+    for (let step = 0; step < 5; step++) {   // hers first; fall through if it isn't built
+      const k = (t + step) % 5;
+      if (k === 0) { const i2 = it('trough'); if (i2) return { x: i2.x, y: i2.y + 22, k }; }
+      else if (k === 1) { const i2 = it('fountain'); if (i2) return { x: i2.x, y: i2.y + 34, k }; }
+      else if (k === 2) { if (state.home && state.stage >= 1) return { x: state.home.x, y: state.home.y + 64, k }; }
+      else if (k === 3) { const i2 = it('coop'); if (i2) return { x: i2.x, y: i2.y + 26, k }; }
+      else if (k === 4 && (state.fence || []).length) {
+        const ref = a.hm || { x: state.home.x, y: state.home.y + 120 };
+        let bc = null, bdd = 1e9;
+        state.fence.forEach((c) => { const cx = c.i * 48 + 24, cy = c.j * 48 + 48;
+          const d = Math.hypot(cx - ref.x, cy - ref.y); if (d < bdd) { bdd = d; bc = { x: cx, y: cy, k }; } });
+        if (bc) return bc;
+      }
+    }
+    return null;
+  }
+  function traitLine(a) {
+    if (a.sp === 'dog') return '';
+    const t = traitsOf(a), he = he0(a);
+    const w = [];
+    if (t.pace === 0) w.push('a dawdler'); else if (t.pace === 2) w.push('quick on ' + (he ? 'his' : 'her') + ' feet');
+    if (t.pat === 0) w.push('restless'); else if (t.pat === 2) w.push('a dreamer');
+    if (t.bold === 0) w.push('a bit shy'); else if (t.bold === 1) w.push('nosy');
+    const f = bestFriend(a);
+    if (f) w.push('inseparable from ' + (f.name || 'the ' + f.sp));
+    const sp = spotOf(a);
+    if (sp) w.push('you’ll find ' + (he ? 'him' : 'her') + ' by ' + SPOT_W[sp.k]);
+    return w.join(' · ');
   }
   function farmStats() { return passGet().stats || {}; }
   function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
