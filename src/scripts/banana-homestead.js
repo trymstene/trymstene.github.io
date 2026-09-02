@@ -102,20 +102,21 @@ const DISHES = [
   // what the PARK sells (bought seeds) cooks into world-wide BUFFS. The
   // cheapest park ingredient is the 5-coin radish that finishes tomorrow —
   // the outbound pipe, priced for day two.
-  { id: 'fried', icon: '🍳', name: 'Fried egg', need: { egg: 2 },
+  // st = the station the ritual plays on (pan/pot on the hob, oven, counter), verb = the bar's word
+  { id: 'fried', icon: '🍳', name: 'Fried egg', need: { egg: 2 }, st: 'pan', verb: 'frying',
     pay: 10, blurb: 'sizzles straight into 10 bananacoins' },
-  { id: 'greens', icon: '🥗', name: 'Egg & greens', need: { egg: 1, radish: 1 },
+  { id: 'greens', icon: '🥗', name: 'Egg & greens', need: { egg: 1, radish: 1 }, st: 'pan', verb: 'tossing',
     pay: 16, blurb: 'tosses straight into 16 bananacoins' },
-  { id: 'soup', icon: '🥣', name: 'Creamy soup', need: { milk: 1, carrot: 1 },
+  { id: 'soup', icon: '🥣', name: 'Creamy soup', need: { milk: 1, carrot: 1 }, st: 'pot', verb: 'simmering',
     pay: 22, blurb: 'simmers straight into 22 bananacoins' },
-  { id: 'bouquet', icon: '💐', name: 'Wildflower bouquet', need: { daisy: 1, sunflower: 1 },
+  { id: 'bouquet', icon: '💐', name: 'Wildflower bouquet', need: { daisy: 1, sunflower: 1 }, st: 'counter', verb: 'tying',
     pay: 18, blurb: 'ties straight into 18 bananacoins' },
-  { id: 'board', icon: '🧀', name: 'Cheese board', need: { cheese: 1 },
+  { id: 'board', icon: '🧀', name: 'Cheese board', need: { cheese: 1 }, st: 'counter', verb: 'plating',
     pay: 26, blurb: 'plates straight into 26 bananacoins' },
-  { id: 'stew', icon: '🍲', name: 'Campfire stew', need: { tomato: 2 },
-    fx: 'coins2', mins: 45, blurb: 'every bananacoin pays double · 45 min · everywhere' },
-  { id: 'pie', icon: '🥧', name: 'Pumpkin pie', need: { pumpkin: 2 },
-    fx: 'rep2', mins: 45, blurb: 'double XP from everything · 45 min · everywhere' },
+  { id: 'stew', icon: '🍲', name: 'Campfire stew', need: { tomato: 2 }, st: 'pot', verb: 'simmering',
+    fx: 'coins2', mins: 45, blurb: 'double coins · 45 min · everywhere' },
+  { id: 'pie', icon: '🥧', name: 'Pumpkin pie', need: { pumpkin: 2 }, st: 'oven', verb: 'baking',
+    fx: 'rep2', mins: 45, blurb: 'double XP · 45 min · everywhere' },
 ];
 const TENT_PRICE = 50;
 const dayStr = () => new Date().toISOString().slice(0, 10);
@@ -2379,73 +2380,105 @@ function init(visitDoc, visitMiss) {
   // while any popup is open the PAGE must not scroll under it (Trym)
   const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
 
-  // ---- 🍳 the kitchen (stage 2+): the pantry becomes WORLD-WIDE effects ----
-  function renderCook() {
+  // ---- 🍳 THE KITCHEN — a stove you WATCH (Trym: "pressing a button and it
+  // prints a dish is doing taxes"). Three parts, named on screen: the shelf
+  // (what you have), the recipes (have/need per ingredient, cookable first)
+  // and the ritual: burners light, the pan sizzles, a bar fills, the dish
+  // lands on the counter with its payout line. Opened from the stove in the
+  // house or the lit campfire in the yard — the fire plays the same ritual
+  // on the tripod pot. Ingredient art = the farm's 32px icon family, the
+  // park's own flowers; dishes = the pack's plated singles.
+  const KICON = { egg: 'm-egg', milk: 'm-milk', cheese: 'm-cheese', radish: 'm-radish', carrot: 'm-carrot',
+    tomato: 'm-tomato', pumpkin: 'm-pumpkin', wheat: 'm-wheat', strawberry: 'm-strawberry', corn: 'm-corn',
+    watermelon: 'm-watermelon', grape: 'm-grape', pineapple: 'm-pineapple', prickly: 'm-prickly' };
+  const kIcon = (k) => KICON[k] ? "<img src='/assets/homestead/" + KICON[k] + ".png' alt=''>"
+    : (k === 'daisy' || k === 'sunflower' || k === 'tulip') ? "<img src='/assets/park/g-" + k + ".png' alt=''>" : (CROP_EMO[k] || '');
+  const kPlate = (d) => d.id === 'bouquet' ? '/assets/homestead/d-sunvase.png' : '/assets/homestead/f-' + d.id + '.png';
+  let cookAt = 'stove', cookBusy = null;   // the door it opened from; the dish on the go
+  function renderCook(keepNote) {
     const pan = document.getElementById('hsPantry');
     pan.replaceChildren();
-    // ⚠️ ONLY WHAT YOU HAVE. This printed a chip per crop in the game — 14 of
-    // them now, almost all reading × 0 — which pushed the dishes themselves off
-    // the bottom of a phone in a card that had no scroller.
-    if (FARM) {
-      ['egg', 'milk', 'cheese'].forEach((k) => {
-        if ((state.pantry[k] || 0) > 0) {
-          const b = document.createElement('span');
-          b.textContent = CROP_EMO[k] + ' × ' + state.pantry[k];
-          pan.appendChild(b);
-        }
-      });
-    }
-    const held = CROPS.filter((c) => (state.pantry[c.id] || 0) > 0);
-    held.forEach((c) => {
+    const P = state.pantry || (state.pantry = {});
+    // ⚠️ ONLY WHAT YOU HAVE — a chip per crop (14 × 0) once pushed the dishes off the phone
+    const held = Object.keys(P).filter((k) => (P[k] || 0) > 0);
+    held.forEach((k) => {
       const b = document.createElement('span');
-      b.textContent = CROP_EMO[c.id] + ' × ' + state.pantry[c.id];
+      b.className = 'hs-kchip';
+      b.innerHTML = kIcon(k) + '× ' + P[k];
       pan.appendChild(b);
     });
     if (!held.length) {
       const b = document.createElement('span');
-      b.className = 'hs-pantryempty';
-      b.textContent = 'nothing to cook with yet — harvest a bed, or send milk over from the stall';
+      b.className = 'hs-kempty';
+      b.textContent = 'nothing on the shelf yet — harvest a bed, or send eggs and milk over from the stall';
       pan.appendChild(b);
     }
     const buff = buffGet();
     const note = document.getElementById('hsCookNote');
-    note.textContent = buff
-      ? '✨ ' + (buff.fx === 'coins2' ? 'double coins' : 'double XP') + ' is on — '
-        + Math.max(1, Math.round((buff.until - Date.now()) / 60000)) + ' min left'
-      : 'grow it, cook it — the whole world pays out more.';
+    if (!keepNote && !cookBusy) {
+      note.classList.toggle('is-buff', !!buff);
+      note.textContent = buff
+        ? '✨ ' + (buff.fx === 'coins2' ? 'double coins' : 'double XP') + ' is on — '
+          + Math.max(1, Math.round((buff.until - Date.now()) / 60000)) + ' min left'
+        : cookAt === 'fire' ? 'the fire is lit — pick a dish' : 'the stove is cold — pick a dish';
+    }
     const list = document.getElementById('hsCookList');
     list.replaceChildren();
-    DISHES.forEach((d) => {
+    const can = (d) => Object.entries(d.need).every(([k, n]) => (P[k] || 0) >= n);
+    DISHES.slice().sort((a, b) => can(b) - can(a)).forEach((d) => {
+      const ok = can(d), busy = !!(d.fx && buff);   // one pot, one simmer at a time
+      const short = Object.entries(d.need).find(([k, n]) => (P[k] || 0) < n);
       const row = document.createElement('div');
-      row.className = 'hs-dish';
-      const needTxt = Object.entries(d.need).map(([k, n]) => CROP_EMO[k] + '×' + n).join('  ');
-      const meta = document.createElement('div');
-      meta.innerHTML = '<b>' + d.icon + ' ' + d.name + '</b><span>' + needTxt + ' → ' + d.blurb + '</span>';
+      row.className = 'hs-krow' + (ok && !busy && !cookBusy ? '' : ' is-dim');
+      row.innerHTML = "<span class='hs-kthumb'><img src='" + kPlate(d) + "' alt=''></span><div class='hs-kmain'><b></b><small></small><div class='hs-kneeds'>"
+        + Object.entries(d.need).map(([k, n]) => "<span class='hs-kneed" + ((P[k] || 0) >= n ? '' : ' is-short') + "'>"
+          + kIcon(k) + Math.min(P[k] || 0, n) + '/' + n + '</span>').join('')
+        + "</div></div><div class='hs-kact'></div>";
+      row.querySelector('b').textContent = d.name;
+      row.querySelector('small').textContent = d.fx ? '✨ ' + d.blurb : '→ ' + d.pay + ' coins';
       const btn = document.createElement('button');
       btn.className = 'hs-btn';
-      const can = Object.entries(d.need).every(([k, n]) => (state.pantry[k] || 0) >= n);
-      const busy = d.fx && buff;   // one pot, one simmer at a time
-      btn.textContent = busy ? 'pot’s busy' : 'cook it';
-      btn.disabled = !can || !!busy;
-      btn.addEventListener('click', () => {
-        Object.entries(d.need).forEach(([k, n]) => { state.pantry[k] -= n; });
-        if (d.fx) {
-          buffSet(d.fx, d.mins);
-          toast(d.icon + ' ' + d.blurb);
-        } else {
-          passStat('coins_earned', d.pay);
-          refreshHud();
-          toast(d.icon + ' +' + d.pay + ' bananacoins — fresh from the oven');
-        }
-        save();
-        track('homestead_cook', { dish: d.id });
-        renderCook();
-      });
-      row.append(meta, btn);
+      btn.textContent = cookBusy ? 'busy' : busy ? 'pot’s busy' : ok ? 'cook' : 'need ' + short[0];
+      btn.disabled = !ok || busy || !!cookBusy;
+      btn.addEventListener('click', () => cookDish(d));
+      row.querySelector('.hs-kact').appendChild(btn);
       list.appendChild(row);
     });
   }
-  function openCook() { cookEl.hidden = false; syncLock(); renderCook(); track('homestead_kitchen'); }
+  function cookDish(d) {
+    if (cookBusy) return;
+    Object.entries(d.need).forEach(([k, n]) => { state.pantry[k] -= n; });
+    save();
+    cookBusy = d;
+    const stage = document.getElementById('hsKStage');
+    const T = d.st === 'counter' ? 2200 : d.st === 'oven' ? 5000 : 4000;
+    stage.className = 'hs-kstage ' + (cookAt === 'fire' ? 'is-fire'
+      : (d.st === 'oven' ? 'is-oven' : 'is-hob') + (d.st === 'pan' ? ' is-pan' : d.st === 'pot' ? ' is-pot' : ''));
+    stage.style.setProperty('--cook', T + 'ms');
+    document.getElementById('hsKPlate').querySelector('img').src = kPlate(d);
+    document.getElementById('hsKFloat').textContent = d.fx ? '✨' : '+' + d.pay + ' 🪙';
+    void stage.offsetWidth;   // flush the reset so the bar and the burners transition in
+    stage.classList.add('is-on');
+    const note = document.getElementById('hsCookNote');
+    note.textContent = d.verb + '…';
+    note.classList.remove('is-buff');
+    renderCook(true);
+    track('homestead_cook', { dish: d.id, at: cookAt });
+    setTimeout(() => {
+      cookBusy = null;
+      stage.classList.remove('is-on'); stage.classList.add('is-done');
+      if (d.fx) { buffSet(d.fx, d.mins); note.textContent = d.name + ' — ' + d.blurb; note.classList.add('is-buff'); }
+      else { passStat('coins_earned', d.pay); refreshHud(); note.textContent = d.name + ' → ' + d.pay + ' coins in your wallet'; }
+      save();
+      renderCook(true);
+    }, T);
+  }
+  function openCook(where) {
+    cookAt = where === 'fire' ? 'fire' : 'stove';
+    if (!cookBusy) document.getElementById('hsKStage').className = 'hs-kstage' + (cookAt === 'fire' ? ' is-fire' : '');
+    document.getElementById('hsCookTitle').textContent = cookAt === 'fire' ? '🔥 The fire' : '🍳 The kitchen';
+    cookEl.hidden = false; syncLock(); renderCook(); track('homestead_kitchen', { at: cookAt });
+  }
   document.getElementById('hsCookClose').addEventListener('click', () => { cookEl.hidden = true; syncLock(); });
   document.getElementById('hsPetClose').addEventListener('click', () => { petEl.hidden = true; syncLock(); });
   petEl.addEventListener('click', (e) => { if (e.target === petEl) { petEl.hidden = true; syncLock(); } });
@@ -3529,7 +3562,7 @@ function init(visitDoc, visitMiss) {
       const ck = document.createElement('button');
       ck.className = 'hs-btn';
       ck.textContent = '🍳 cook';
-      ck.addEventListener('click', () => { clearChip(); openCook(); });
+      ck.addEventListener('click', () => { clearChip(); openCook('fire'); });
       itChip.appendChild(ck);
     }
     if (it.id === 'campfire') {
@@ -3634,7 +3667,7 @@ function init(visitDoc, visitMiss) {
       save(); refreshSoil();
       float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[b.crop] || '🧺'));
       track('homestead_harvest', { crop: b.crop });
-      if (state.stage < 2) toast('saved for the kitchen — a real roof comes with a stove 🍳', 2800);
+      if (state.stage < 2) toast('on the shelf — cook it at the fire 🍳', 2800);
       return;
     }
     if (b.last === dayStr()) { float(s[0], s[1] - 44, '💤 tomorrow'); return; }
@@ -3734,7 +3767,7 @@ function init(visitDoc, visitMiss) {
               const ck2 = document.createElement('button');
               ck2.className = 'hs-btn';
               ck2.textContent = '🍳 cook';
-              ck2.addEventListener('click', () => { clearChip(); openCook(); });
+              ck2.addEventListener('click', () => { clearChip(); openCook('stove'); });
               itChip.append(ck2);
             }
             // moving / putting away is build mode's job indoors too (✥ lifts,
@@ -4302,6 +4335,8 @@ function init(visitDoc, visitMiss) {
       grass: () => (state.grass = state.grass || []),
       memory: () => (state.memory = state.memory || []),
       tree: () => openShop('tree'),
+      cook: (w) => openCook(w || 'stove'),
+      pantry: () => (state.pantry = state.pantry || {}),
       grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
       feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
       dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },

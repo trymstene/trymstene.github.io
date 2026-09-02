@@ -866,33 +866,79 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-order b { flex: 1; font-size: 0.82rem; }
     .hs-order em { font-style: normal; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
 
-    /* 🍳 the kitchen */
-    .hs-pantry { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.55rem; }
-    .hs-pantry span {
-      border: 2px solid #000; background: #fff; color: #17120c; border-radius: 999px;
-      padding: 0.2rem 0.55rem; font-size: 0.8rem; font-weight: 800;
-    }
-    .hs-pantryempty { border-style: dashed !important; opacity: 0.75; font-weight: 700 !important; }
-    #hsCook .hs-note { margin: 0 0 0.7rem; }
-    /* ⚠️ THE ONE LIST IN THIS FILE THAT HAD NO SCROLLER. Measured at 375×667:
-       an 834px card in a 667px viewport, 183px clipped, scrollableBy 0 — and
-       `body.hs-lock { overflow: hidden }` kills the page scroll behind it, so
-       the last two dishes were simply unreachable. Every sibling list already
-       had one (.hs-seedlist, .hs-guestlist); the kitchen was the exception.
-       It cleared Trym's own 393×852 phone by 2px, which is why it was never
-       seen. */
-    .hs-cooklist {
-      display: grid; gap: 0.5rem;
-      max-height: min(46vh, 380px); overflow-y: auto; -webkit-overflow-scrolling: touch;
-    }
-    .hs-dish {
-      display: flex; align-items: center; gap: 0.7rem; border: 2px solid #000;
-      background: #fff; color: #17120c; padding: 0.5rem 0.6rem;
-    }
-    .hs-dish > div { flex: 1; min-width: 0; }
-    .hs-dish b { display: block; font-size: 0.9rem; }
-    .hs-dish span { display: block; font-size: 0.75rem; opacity: 0.75; line-height: 1.4; }
-    .hs-dish .hs-btn { flex: 0 0 auto; font-size: 0.74rem; padding: 0.4rem 0.55rem; }
+    /* 🍳 THE KITCHEN — the Banana Phone language on a world card: a stove you
+       watch (burners light, the pan sizzles, a bar fills, the dish lands on
+       the counter), the shelf (what you have), the recipes (have/need). The
+       recipe list scrolls — the old card clipped its last dishes on 667px. */
+    .hs-kitchen { border: 0; border-radius: 20px; box-shadow: 0 6px 0 rgba(20, 16, 4, 0.28);
+      padding: 14px 14px 12px; width: min(360px, 100%); box-sizing: border-box; }
+    .hs-kitchen h2 { margin: 0 0 10px; font-size: 1.05rem; }
+    .hs-kstage { position: relative; height: 128px; border-radius: 16px; overflow: hidden; --sx: 76px; --sy: 92px;
+      background: #fbf7ea radial-gradient(#e7dfc8 1.2px, transparent 1.4px) 0 0 / 18px 18px; box-shadow: inset 0 0 0 1px rgba(31, 26, 8, 0.06); }
+    .hs-kstage.is-pot { --sx: 46px; --sy: 122px; }
+    .hs-kstage.is-fire { --sx: 84px; --sy: 74px; }
+    .hs-kcounter { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: #e9d9b6; border-top: 3px solid #f6ecd2; }
+    /* ⚠️ strips animate in PIXELS (background-size = the sheet's natural size at the
+       element's scale): a percentage position is measured against (box − image)
+       and lands on the wrong frame, or on nothing at all */
+    .hs-kstove { position: absolute; left: 20px; bottom: 22px; width: 96px; height: 96px; }
+    .hs-kstove i { position: absolute; left: 0; top: 0; width: 96px; height: 96px; background: url(/assets/homestead/k-cooktop-off.png) 0 0 / 96px 96px no-repeat; image-rendering: pixelated; }
+    .hs-kstage.is-on.is-hob .hs-kstove i { background-image: url(/assets/homestead/k-cooktop-on.png); background-size: 384px 96px; animation: hs-kflame 0.5s steps(4) infinite; }
+    @keyframes hs-kflame { to { background-position: -384px 0; } }
+    .hs-kpan { position: absolute; left: 36px; bottom: 44px; width: 96px; height: 96px; background: url(/assets/homestead/k-pan.png) 0 0 / 768px 96px no-repeat; image-rendering: pixelated; opacity: 0; transition: opacity 0.25s; }
+    .hs-kstage.is-pan .hs-kpan { opacity: 1; }
+    .hs-kstage.is-on.is-pan .hs-kpan { animation: hs-ksizzle 0.9s steps(8) infinite; }
+    @keyframes hs-ksizzle { to { background-position: -768px 0; } }
+    .hs-kpot { position: absolute; left: 30px; bottom: 76px; width: 72px; height: 48px; background: url(/assets/homestead/k-pot.png) 0 0 / 72px 48px no-repeat; image-rendering: pixelated; opacity: 0; transition: opacity 0.25s; }
+    .hs-kstage.is-pot .hs-kpot { opacity: 1; }
+    .hs-koven { position: absolute; left: 128px; bottom: 22px; width: 48px; height: 96px; background: url(/assets/homestead/k-oven.png) 0 0 / 288px 96px no-repeat; image-rendering: pixelated; }
+    .hs-kstage.is-done.is-oven .hs-koven { animation: hs-kdoor 0.5s steps(5) forwards; }
+    @keyframes hs-kdoor { to { background-position: -240px 0; } }
+    .hs-ktripod { position: absolute; left: 24px; bottom: 20px; width: 144px; height: 96px; background: url(/assets/homestead/k-tripod-idle.png) 0 0 / 144px 96px no-repeat; image-rendering: pixelated; display: none; }
+    .hs-kstage.is-fire .hs-ktripod { display: block; }
+    .hs-kstage.is-fire .hs-kstove, .hs-kstage.is-fire .hs-koven, .hs-kstage.is-fire .hs-kpan, .hs-kstage.is-fire .hs-kpot { display: none; }
+    .hs-kstage.is-fire.is-on .hs-ktripod { background-image: url(/assets/homestead/k-tripod-on.png); animation: hs-kglow 0.6s ease-in-out infinite alternate; }
+    .hs-kstage.is-fire.is-done .hs-ktripod { background-image: url(/assets/homestead/k-tripod-done.png); }
+    @keyframes hs-kglow { from { filter: brightness(1); } to { filter: brightness(1.18); } }
+    .hs-ksteam { position: absolute; left: var(--sx); bottom: var(--sy); width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); opacity: 0; pointer-events: none; }
+    .hs-ksteam:nth-of-type(2) { margin-left: 12px; margin-bottom: 4px; }
+    .hs-ksteam:nth-of-type(3) { margin-left: -8px; margin-bottom: -2px; }
+    .hs-kstage.is-on .hs-ksteam { animation: hs-ksteam 1.6s ease-out infinite; }
+    .hs-kstage.is-on .hs-ksteam:nth-of-type(2) { animation-delay: 0.5s; }
+    .hs-kstage.is-on .hs-ksteam:nth-of-type(3) { animation-delay: 1s; }
+    @keyframes hs-ksteam { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 20% { opacity: 0.9; } 100% { opacity: 0; transform: translate(6px, -46px) scale(1.5); } }
+    .hs-kplate { position: absolute; right: 26px; bottom: 30px; width: 64px; height: 64px; display: grid; place-items: end center; transform: scale(0); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .hs-kplate img { max-width: 64px; max-height: 64px; image-rendering: pixelated; }
+    .hs-kstage.is-done .hs-kplate { transform: scale(1); }
+    .hs-kfloat { position: absolute; right: 30px; bottom: 90px; font-weight: 800; color: #b07d00; opacity: 0; pointer-events: none; }
+    .hs-kstage.is-done .hs-kfloat { animation: hs-kfloat 1.4s ease-out forwards; }
+    @keyframes hs-kfloat { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px); } }
+    .hs-kbar { position: absolute; left: 24px; right: 24px; bottom: 8px; height: 10px; border-radius: 999px; background: rgba(31, 26, 8, 0.12); overflow: hidden; opacity: 0; transition: opacity 0.2s; }
+    .hs-kbar i { display: block; height: 100%; width: 0; background: #ffd21f; border-radius: 999px; }
+    .hs-kstage.is-on .hs-kbar { opacity: 1; }
+    .hs-kstage.is-on .hs-kbar i { transition: width var(--cook, 4s) linear; width: 100%; }
+    .hs-kline { margin: 8px 2px 10px; font-size: 0.8rem; font-weight: 700; color: rgba(26, 20, 8, 0.75); min-height: 1.2em; }
+    .hs-kline.is-buff { color: #8a6a00; }
+    .hs-klabel { display: block; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(26, 20, 8, 0.5); margin: 0 2px 6px; }
+    .hs-kshelf { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; min-height: 30px; }
+    .hs-kchip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px 0 6px; border-radius: 999px; background: #fff; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.12); font-size: 0.78rem; font-weight: 800; }
+    .hs-kchip img { width: 22px; height: 22px; image-rendering: pixelated; object-fit: contain; }
+    .hs-kempty { font-size: 0.78rem; font-weight: 700; color: rgba(26, 20, 8, 0.55); padding: 4px 2px; }
+    .hs-krecipes { display: grid; gap: 8px; max-height: min(38vh, 320px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .hs-krow { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 16px; padding: 8px 10px; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.1); }
+    .hs-krow.is-dim { opacity: 0.6; }
+    .hs-kthumb { flex: none; width: 46px; height: 46px; border-radius: 12px; background: #f3ecd6; display: grid; place-items: center; }
+    .hs-kthumb img { max-width: 40px; max-height: 40px; image-rendering: pixelated; }
+    .hs-kmain { flex: 1; min-width: 0; }
+    .hs-kmain b { display: block; font-size: 0.86rem; line-height: 1.2; }
+    .hs-kmain small { display: block; font-size: 0.7rem; color: rgba(26, 20, 8, 0.6); margin-top: 2px; }
+    .hs-kneeds { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .hs-kneed { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px 0 3px; border-radius: 999px; font-size: 0.66rem; font-weight: 800; background: #e8f3d7; color: #2f5a1a; }
+    .hs-kneed img { width: 16px; height: 16px; image-rendering: pixelated; object-fit: contain; }
+    .hs-kneed.is-short { background: #f3ede0; color: rgba(26, 20, 8, 0.55); }
+    .hs-kact { flex: none; width: 82px; }
+    .hs-kact .hs-btn { width: 100%; border: 0; border-radius: 999px; background: #ffd21f; color: #1a1408; font: inherit; font-size: 0.72rem; font-weight: 800; padding: 0.42rem 0.4rem; box-shadow: 0 2px 0 rgba(31, 26, 8, 0.22); cursor: pointer; }
+    .hs-kact .hs-btn[disabled] { opacity: 0.4; box-shadow: none; cursor: default; }
   </style>
 
   <div class="hs-wrap">
@@ -944,12 +990,26 @@ const description = 'A clearing west of the park with your name on the sign: cla
     </div>
 
     <div class="hs-veil" id="hsCook" hidden>
-      <div class="hs-card">
-        <button class="hs-shopx" id="hsCookClose" aria-label="Close">✕</button>
-        <h2>🍳 The kitchen</h2>
-        <div class="hs-pantry" id="hsPantry"></div>
-        <p class="hs-note" id="hsCookNote"></p>
-        <div class="hs-cooklist" id="hsCookList"></div>
+      <div class="hs-card hs-kitchen">
+        <button class="hs-petx" id="hsCookClose" aria-label="Close">✕</button>
+        <h2 id="hsCookTitle">🍳 The kitchen</h2>
+        <div class="hs-kstage" id="hsKStage">
+          <div class="hs-kcounter"></div>
+          <div class="hs-kstove"><i></i></div>
+          <div class="hs-koven"></div>
+          <div class="hs-ktripod"></div>
+          <div class="hs-kpan"></div>
+          <div class="hs-kpot"></div>
+          <b class="hs-ksteam"></b><b class="hs-ksteam"></b><b class="hs-ksteam"></b>
+          <div class="hs-kplate" id="hsKPlate"><img alt=""></div>
+          <div class="hs-kfloat" id="hsKFloat"></div>
+          <div class="hs-kbar"><i></i></div>
+        </div>
+        <p class="hs-kline" id="hsCookNote"></p>
+        <span class="hs-klabel">On your shelf</span>
+        <div class="hs-kshelf" id="hsPantry"></div>
+        <span class="hs-klabel">Recipes</span>
+        <div class="hs-krecipes" id="hsCookList"></div>
       </div>
     </div>
 

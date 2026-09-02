@@ -254,8 +254,8 @@ function goodsRow(list, img, title, kind, price, emptyNote) {
       C.state.pantry[pk] = (C.state.pantry[pk] || 0) + nAll;
       C.state[kind] = 0;
       save(); renderShop();
-      toast('🍳 ' + nAll + ' ' + title.toLowerCase() + (C.state.stage >= 2
-        ? ' in the kitchen — cook at the stove' : ' saved for the kitchen — a real roof comes with a stove'), 3600);
+      toast('🍳 ' + nAll + ' ' + title.toLowerCase() + ' on the kitchen shelf — cook at the '
+        + (C.state.stage >= 2 ? 'stove' : 'fire'), 3600);
       track1('homestead_pantry_eggs', { kind, n: nAll });
     }));
   }
