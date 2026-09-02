@@ -4207,6 +4207,10 @@ function init(visitDoc, visitMiss) {
     let r;
     try { r = await yFetch('/mine', {}); } catch (e) { return; }
     if (!r || !r.slug) return;
+    // 🪧 a renamed yard is still MINE — the server says what it used to
+    // be called, so this device switches address quietly (refresh, never
+    // adopt: the shed, pantry and pockets survive)
+    if (r.was && state.slug === r.was && state.slug !== r.slug) { state.slug = r.slug; saveRaw(); }
     const mine = state.slug === r.slug;
     const testy = /^Testy/.test(state.name || '');
     let next = null;

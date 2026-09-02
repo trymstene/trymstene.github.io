@@ -2495,6 +2495,13 @@ export class YardRoom {
     return out;
   }
 
+  // 🪧 slug aliases: after a rename the old address is { alias: new } —
+  // every slug that arrives from a client goes through here first
+  async canon(slug) {
+    if (!slug) return slug;
+    const doc = await this.state.storage.get('y:' + slug);
+    return doc && doc.alias ? doc.alias : slug;
+  }
   async indexUpsert(doc) {
     const idx = (await this.state.storage.get('index')) || [];
     const rest = idx.filter((e) => e.slug !== doc.slug);
@@ -2588,6 +2595,36 @@ export class YardRoom {
       return json({ slug });
     }
 
+    // 🪧 RENAME (admin, ?key=YARD_ADMIN secret): move a yard to a new
+    // address and leave a forwarding alias behind. The old doc becomes
+    // { alias }, every 'own:' pointer at the old slug is re-aimed, the
+    // guestbook and waterings move, the doors index is rewritten, and the
+    // new doc remembers `was` so the owner's devices treat it as the SAME
+    // yard (client: refresh, never adopt — the shed and pantry survive).
+    if (path === '/rename' && request.method === 'POST') {
+      const key = url.searchParams.get('key') || '';
+      if (!this.env || !this.env.YARD_ADMIN || key !== String(this.env.YARD_ADMIN).trim()) return json({ err: 'no' }, 403);
+      const from = yStrip(body.from, 40).toLowerCase(), to = yStrip(body.to, 40).toLowerCase();
+      if (!from || !to || from === to || !/^[a-z0-9-]+$/.test(to)) return json({ err: 'bad slug' }, 400);
+      const doc = await this.state.storage.get('y:' + from);
+      if (!doc || doc.alias) return json({ err: 'no such yard' }, 404);
+      if (await this.state.storage.get('y:' + to)) return json({ err: 'taken' }, 409);
+      const moved = { ...doc, slug: to, was: from, updated: Date.now() };
+      await this.state.storage.put('y:' + to, moved);
+      const owners = await this.state.storage.list({ prefix: 'own:' });
+      let re = 0;
+      for (const [k, v] of owners) if (v === from) { await this.state.storage.put(k, to); re++; }
+      for (const p of ['g:', 'wat:']) {
+        const v = await this.state.storage.get(p + from);
+        if (v !== undefined) { await this.state.storage.put(p + to, v); await this.state.storage.delete(p + from); }
+      }
+      await this.state.storage.put('y:' + from, { alias: to, since: Date.now() });
+      const idx = ((await this.state.storage.get('index')) || []).filter((e) => e.slug !== from);
+      await this.state.storage.put('index', idx);
+      await this.indexUpsert(moved);
+      return json({ ok: 1, from, to, owners: re });
+    }
+
     // 💾 save: publish the yard's public snapshot (sanitized, capped)
     if (path === '/save' && request.method === 'POST') {
       const slug = await this.ownSlug(pass, alt);
@@ -2616,7 +2653,7 @@ export class YardRoom {
       if (!doc) return json({ slug: null });
       const st = doc.state || {};
       return json({
-        slug, name: doc.name, created: doc.created || 0, updated: doc.updated || 0,
+        slug, was: doc.was || null, name: doc.name, created: doc.created || 0, updated: doc.updated || 0,
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home,
         items: st.items || [], soil: st.soil || [], fence: st.fence || [],
         mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},
@@ -2633,6 +2670,7 @@ export class YardRoom {
       let n = 0, day = 0, week = 0;
       const list = [];
       for (const doc of all.values()) {
+        if (doc.alias) continue;
         n++;
         const age = now - (doc.updated || 0);
         if (age < 86400000) day++;
@@ -2658,9 +2696,9 @@ export class YardRoom {
 
     // 👀 the public view — what a visitor's browser builds the yard from
     if (path === '/yard' && request.method === 'GET') {
-      const slug = (url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      const slug = await this.canon((url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40));
       const doc = slug ? await this.state.storage.get('y:' + slug) : null;
-      if (!doc) return json({ err: 'no such yard' }, 404);
+      if (!doc || doc.alias) return json({ err: 'no such yard' }, 404);
       const st = doc.state || {};
       const guest = ((await this.state.storage.get('g:' + slug)) || []).slice(0, 12)
         .map((g) => ({ n: g.n, x: g.x, t: g.t }));
@@ -2677,7 +2715,7 @@ export class YardRoom {
 
     // 👋 a visit — one line per visitor per day, for the away-news
     if (path === '/visit' && request.method === 'POST') {
-      const slug = yStrip(body.slug, 40).toLowerCase();
+      const slug = await this.canon(yStrip(body.slug, 40).toLowerCase());
       const doc = slug ? await this.state.storage.get('y:' + slug) : null;
       if (!doc) return json({ err: 'no such yard' }, 404);
       if (doc.pass === pass) return json({ ok: 1, own: 1 });
@@ -2692,7 +2730,7 @@ export class YardRoom {
 
     // ✍️ the guestbook — one note per visitor per day (today's note is editable)
     if (path === '/sign' && request.method === 'POST') {
-      const slug = yStrip(body.slug, 40).toLowerCase();
+      const slug = await this.canon(yStrip(body.slug, 40).toLowerCase());
       const doc = slug ? await this.state.storage.get('y:' + slug) : null;
       if (!doc) return json({ err: 'no such yard' }, 404);
       const text = yStrip(body.text, 90);
@@ -2708,7 +2746,7 @@ export class YardRoom {
 
     // 💧 a neighbour waters the beds — once per yard per day, any neighbour
     if (path === '/water' && request.method === 'POST') {
-      const slug = yStrip(body.slug, 40).toLowerCase();
+      const slug = await this.canon(yStrip(body.slug, 40).toLowerCase());
       const doc = slug ? await this.state.storage.get('y:' + slug) : null;
       if (!doc) return json({ err: 'no such yard' }, 404);
       if (doc.pass === pass) return json({ err: 'own' }, 400);
