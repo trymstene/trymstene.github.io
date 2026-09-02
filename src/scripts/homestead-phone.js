@@ -328,7 +328,7 @@ export function renderBuy(list) {
   });
 }
 function buyAnimal(an) {
-  if (!passSpend(an.price)) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
+  if (!passSpend(an.price, 'buy')) { toast('need ' + an.price + ' coins — the stall pays daily'); return; }
   const mem = farmMemory().filter((m) => m.sp === an.sp && m.name)   // old nameless records stay inert
     .sort((x, y) => (y.b || 0) - (x.b || 0))[0];
   if (mem) C.state.memory.splice(C.state.memory.indexOf(mem), 1);
@@ -394,7 +394,7 @@ export function renderAnimals(list) {
         if (C.state.memory.length > 12) C.state.memory.shift();
       }
       C.state.hens = C.state.animals.filter((a2) => a2.sp === 'hen').length;
-      passStat('coins_earned', price(a.sp));
+      passStat('coins_earned', price(a.sp), 'rehome');
       save(); refreshHud(); renderShop();
       toast('🪙 +' + price(a.sp) + ' — ' + (a.name ? a.name + ' will remember you'
         : 'the ' + a.sp + ' found a new farm'), 3600);
@@ -515,7 +515,7 @@ export function shedRows(list) {
         const i3 = C.state.shed.findIndex((sx) => sx.id === id);
         if (i3 < 0) return;
         C.state.shed.splice(i3, 1);
-        passStat('coins_earned', sale2);
+        passStat('coins_earned', sale2, 'shed');
         save();
         refreshHud();
         shopNote('💰 sold — +' + sale2 + ' coins');

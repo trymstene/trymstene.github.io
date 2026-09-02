@@ -10,7 +10,7 @@ import pxEdit from '../icons/pixelart/edit.svg?raw';
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
@@ -190,8 +190,11 @@ function applyTestScenario(kind) {
   if (kind === 'rich') {   // a test wallet: balance tops up to ~9999, state untouched
     // ⚠️ through the pass API, never by hand — the ledgers are per-device
     // slots summed on read, so a raw stats write lands in the wrong shape
+    // 🧪 …and local-only from here: the server refuses the 'qa' faucet, so
+    // this device keeps reading its own ledger instead of the server wallet
+    try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {}
     const need = 9999 - coinBalance();
-    if (need > 0) passStat('coins_earned', need);
+    if (need > 0) passStat('coins_earned', need, 'qa');
     return;
   }
   if (kind === 'pantry') {   // a stocked kitchen shelf on THIS yard (Trym: "no ingredients on ?farm") — additive, device-local, nothing else touched
@@ -2373,6 +2376,7 @@ function init(visitDoc, visitMiss) {
     if (visiting) return;
     try {
       if (localStorage.getItem('hs-roadcoins-v1')) return;
+      if (ruleUsed('homestead:road').n >= 5) return;   // 📏 collected on another device — once per person
       // ⚠️ THE FLAG IS WRITTEN WHEN THE LAST COIN IS PICKED UP, NOT HERE. It
       // used to be set at spawn, so one reload, one back-nav or one bounce
       // spent the area's entire free faucet without paying out a single coin.
@@ -2413,7 +2417,7 @@ function init(visitDoc, visitMiss) {
       if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34) continue;
       c.el.remove();
       roadCoins.splice(i, 1);
-      passStat('coins_earned', 2);
+      passStat('coins_earned', 2, 'road');
       float(c.x, c.y - 22, '<img src="/assets/banana-stand/coin.png" width="14" height="14" style="vertical-align:-2px"> +2');
       refreshHud();
       // 🏡 the claim is FREE and waits on the blank sign — never a popup
@@ -2952,7 +2956,7 @@ function init(visitDoc, visitMiss) {
           if (d.stage > state.stage) return;
           // the tile disables itself when you are short, but the charge is the
           // only check that counts — never spend past zero
-          if (!passSpend(d.price)) { shopNote('🪙 not enough coins for that one'); renderShop(); return; }
+          if (!passSpend(d.price, 'order')) { shopNote('🪙 not enough coins for that one'); renderShop(); return; }
           refreshHud();
           track('homestead_buy', { id: d.id, price: d.price, ship: shipMin(d) });
           const mins = shipMin(d);
@@ -3019,7 +3023,7 @@ function init(visitDoc, visitMiss) {
             const i = state.shed.findIndex((s) => s.id === id);
             if (i < 0) return;
             state.shed.splice(i, 1);
-            passStat('coins_earned', sale);
+            passStat('coins_earned', sale, 'shed');
             save();
             refreshHud();
             shopNote('💰 sold — +' + sale + ' coins');
@@ -3118,11 +3122,14 @@ function init(visitDoc, visitMiss) {
     return { d: dayNum(), sold: 0 };
   }
   function stallSell(kind, price, label) {
-    const nSold = Math.min(state[kind] || 0, Math.floor((STALL_CAP - stallDay().sold) / price));
+    // 📏 sold today = this device's tally OR what the server says this PERSON
+    // sold on any device (plus what is still in the outbox) — whichever is more
+    const soldToday = Math.max(stallDay().sold, ruleUsed('homestead:stall').used);
+    const nSold = Math.min(state[kind] || 0, Math.floor((STALL_CAP - soldToday) / price));
     if (!nSold) return;
     state[kind] -= nSold;
     const coins = nSold * price;
-    passStat('coins_earned', coins);
+    passStat('coins_earned', coins, 'stall');
     try { localStorage.setItem('hs-stall-v1', JSON.stringify({ d: dayNum(), sold: stallDay().sold + coins })); } catch (e) {}
     save(); refreshHud(); renderShop();
     toast('🪙 +' + coins + ' — the stall took ' + nSold + ' ' + label, 3200);
@@ -3340,7 +3347,7 @@ function init(visitDoc, visitMiss) {
     // earn until the hole refills. passSpend takes nothing when it is short.
     // (Charging at the CTA would need a refund on every exit — cancel, the
     // WASD escape hatch, a closed tab — and the closed tab has no refund.)
-    if (placing.toStage && placing.price > 0 && !passSpend(placing.price)) {
+    if (placing.toStage && placing.price > 0 && !passSpend(placing.price, 'stage')) {
       refreshHud();
       toast('🪙 not enough coins any more — you need ' + placing.price
         + '. The spot is still yours, come back with them.', 4200);

@@ -179,7 +179,8 @@ async function identityOf(env, R) {
     memberToken: await mintMemberToken(env, (R.home.blob || {}).member),
     // 💰 the server wallet (once frozen) and the tape ids it has seen, so a
     // device can clear an outbox a beacon push delivered without an ack
-    ...walletOut(R.home), seen: (R.home.log && R.home.log.seen) || [] };
+    ...walletOut(R.home), seen: (R.home.log && R.home.log.seen) || [],
+    ...(R.home.rules ? { rules: R.home.rules } : {}) };   // 📏 the caps this person has used
 }
 
 // ---------- POST /challenge ----------
@@ -910,6 +911,9 @@ async function adminScan(env) {
         : Math.max(0, (stats.coins_earned || 0) + (stats.coins_refunded || 0) - (stats.coins_spent || 0)),
       wallet: !!rec.wallet,
       refused: (rec.wallet && rec.wallet.refused) || 0,
+      // 📏 events a faucet rule refused (by reason) and unnamed ones let through
+      rr: rec.log && rec.log.rr ? Object.values(rec.log.rr).reduce((t, v) => t + v, 0) : 0,
+      unruled: (rec.log && rec.log.unruled) || 0,
       coinsEarned: stats.coins_earned || 0,
       coinsSpent: stats.coins_spent || 0,
       gear,
@@ -1156,13 +1160,59 @@ function slotsOf(blob, dv) {
 // plus whatever its outbox still holds, so play stays smooth offline and the
 // two agree on every ack. ⚠️ ONE FORMULA, BOTH SIDES: base + earned +
 // refunded − spent (banana-pass.js coinsNow is the client's owner).
+// ---------- 📏 PER-AREA RULES (2 Sep 2026, slice 3 of the server-side ledger) ----------
+// A coins_earned event from a RULED area must name its faucet (`s`) and fit
+// that faucet's per-event `max` and per-PERSON `day` (UTC) / `total`
+// (lifetime) caps, or it is refused before the wallet (tape row x:1 + r:
+// why). The caps a person has used ride every identity answer as `rules`,
+// so the client's local cap logic reads the person's state, not the
+// device's — that is the per-device → per-person change. `max` values are
+// 2× the nominal pay because the homestead buff doubles every grant.
+// ⚠️ ADD THE RULE BEFORE THE FAUCET: a named source the table does not know
+// is refused ('src'). An UNNAMED event from a ruled area is accepted and
+// counted `unruled` while RULES_STRICT is off (tabs on pre-slice JS name
+// nothing); flip RULES_STRICT=1 once the desk shows unruled at ~0.
+// `deny` = a faucet that must never reach the server wallet (the QA top-up:
+// QA devices run on the local ledger, see banana-pass.js pass-wallet-off).
+const RULES = {
+  homestead: {
+    road:   { max: 4,   count: 5 },    // 5 coins on the road, once per person (a count, so the buff cannot double it)
+    stall:  { max: 50,  day: 50 },     // the stall pays 25 a day (50 buffed)
+    shed:   { max: 400, day: 1200 },   // selling a shed piece back at half price
+    dish:   { max: 52,  day: 400 },    // dishes pay 10–26
+    knit:   { max: 140, day: 560 },    // beanie 50 / scarf 70
+    rehome: { max: 120, day: 600 },    // an animal sold back at its price
+    qa:     { deny: 1 },
+  },
+};
+const rulesStrict = (env) => !!(env && String(env.RULES_STRICT || '') === '1');
+const utcDay = (t) => new Date(t).toISOString().slice(0, 10);
+// the verdict for one earned event: null = fine, else the reason it is refused
+function ruleGate(home, row, strict, log) {
+  const area = RULES[row.a];
+  if (!area) return null;                       // an unruled area — as before
+  if (!row.s) { if (strict) return 'src'; log.unruled = (log.unruled || 0) + 1; return null; }
+  const rule = area[row.s];
+  if (!rule) return 'src';
+  if (rule.deny) return 'deny';
+  if (row.d > rule.max) return 'max';
+  const st = (home.rules || (home.rules = {}))[row.a + ':' + row.s] || { d: '', used: 0, total: 0, n: 0 };
+  const today = utcDay(Date.now());
+  if (st.d !== today) { st.d = today; st.used = 0; }
+  if (rule.day != null && st.used + row.d > rule.day) return 'day';
+  if (rule.total != null && st.total + row.d > rule.total) return 'total';
+  if (rule.count != null && (st.n || 0) + 1 > rule.count) return 'total';   // a lifetime NUMBER of payouts
+  st.used += row.d; st.total += row.d; st.n = (st.n || 0) + 1;
+  home.rules[row.a + ':' + row.s] = st;
+  return null;
+}
 const ledgerBalance = (blob) => {
   const p = blob && blob.pass;
   return p ? statTotal(p, 'coins_earned') + statTotal(p, 'coins_refunded') - statTotal(p, 'coins_spent') : 0;
 };
 const walletBal = (w) => (w ? (w.base || 0) + (w.earned || 0) + (w.refunded || 0) - (w.spent || 0) : 0);
 const walletOut = (home) => (home && home.wallet ? { wallet: { bal: walletBal(home.wallet), seq: home.wallet.seq || 0 } } : {});
-function tapeIn(home, ev, evDrop, dv, before, after, postBlob) {
+function tapeIn(home, ev, evDrop, dv, before, after, postBlob, strict) {
   const log = home.log || (home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
   log.pushes = (log.pushes || 0) + 1;
   const seen = new Set(log.seen || []);
@@ -1192,6 +1242,10 @@ function tapeIn(home, ev, evDrop, dv, before, after, postBlob) {
   for (const r of rows) {
     if (r.k.startsWith('patch:')) continue;
     if (r.k === 'coins_spent' && !fresh && walletBal(w) - r.d < 0) { r.x = 1; w.refused = (w.refused || 0) + 1; continue; }
+    if (r.k === 'coins_earned' && !fresh) {   // 📏 the faucet's rule (the freeze push is history, not play)
+      const why = ruleGate(home, r, strict, log);
+      if (why) { r.x = 1; r.r = why; log.rr = log.rr || {}; log.rr[why] = (log.rr[why] || 0) + 1; continue; }
+    }
     if (r.k === 'coins_earned') w.earned += r.d;
     else if (r.k === 'coins_refunded') w.refunded += r.d;
     else if (r.k === 'coins_spent') w.spent += r.d;
@@ -1817,7 +1871,7 @@ async function push(request, env) {
   const dv = /^[\w-]{1,8}$/.test(String(b.blob.evDev || '')) ? String(b.blob.evDev) : '';
   const before = slotsOf(R.home.blob, dv);
   R.home.blob = mergeBlob(R.home.blob, clientBlob(b.blob));
-  tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv), R.home.blob);
+  tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv), R.home.blob, rulesStrict(env));
   await saveKey(env, R.homeKey, R.home);
   return json({ ok: true, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }

@@ -451,6 +451,28 @@ const EV_KEY = 'pass-ev-v1', EV_CAP = 400;
 // server refused simply never lands in `bal` — the overlay lets go of it when
 // its event is acked, which is the honest moment. Cleared on logout/switch.
 const WALLET_KEY = 'pass-wallet-v1';
+// 📏 PER-AREA RULES (slice 3). The pass worker refuses a coin event that
+// breaks its faucet's rule and hands back, with every answer, how much of
+// each per-PERSON cap this player has used today (`rules`). ruleUsed() is
+// that number plus what this device's outbox still holds for the same
+// faucet — so a cap is a person's cap on every device, not a device's.
+// 🧪 pass-wallet-off = a QA device: coins stay on the local ledger (the
+// server refuses the 'qa' faucet and never counts them). Set by ?hstest=rich.
+const RULES_KEY = 'pass-rules-v1', WALLET_OFF = 'pass-wallet-off';
+const walletOff = () => { try { return localStorage.getItem(WALLET_OFF) === '1'; } catch (e) { return false; } };
+export function ruleUsed(key) {
+  let srv = null;
+  try { srv = (JSON.parse(localStorage.getItem(RULES_KEY) || 'null') || {})[key] || null; } catch (e) {}
+  const today = new Date().toISOString().slice(0, 10);
+  let used = srv && srv.d === today ? +srv.used || 0 : 0;
+  let total = srv ? +srv.total || 0 : 0;
+  let n = srv ? +srv.n || 0 : 0;
+  const [area, src] = String(key).split(':');
+  for (const e of evRead()) {
+    if (e.k === 'coins_earned' && e.a === area && e.s === src) { used += +e.d || 0; total += +e.d || 0; n++; }
+  }
+  return { used, total, n };
+}
 function walletRead() {
   try {
     const w = JSON.parse(localStorage.getItem(WALLET_KEY) || 'null');
@@ -467,6 +489,7 @@ export function walletKeep(d) {
     }
     // ids the tape already holds (a beacon push has no ack) leave the outbox now
     if (Array.isArray(d.seen) && d.seen.length) evAck(new Set(d.seen.map(String)));
+    if (d.rules && typeof d.rules === 'object') localStorage.setItem(RULES_KEY, JSON.stringify(d.rules));   // 📏 the caps used
   } catch (e) {}
 }
 let evDropped = 0;
@@ -567,7 +590,7 @@ export function coinsNow() {
   const raw = readRaw();
   const ledger = statTotal(raw, 'coins_earned') + statTotal(raw, 'coins_refunded') - statTotal(raw, 'coins_spent');
   const w = walletRead();
-  if (!w) return ledger;             // no server number yet — the ledger is the wallet, as before
+  if (!w || walletOff()) return ledger;   // no server number yet (or a QA device) — the ledger is the wallet
   let pend = 0;                      // what this device wrote since the server last answered
   for (const e of evRead()) {
     if (e.k === 'coins_earned' || e.k === 'coins_refunded') pend += +e.d || 0;

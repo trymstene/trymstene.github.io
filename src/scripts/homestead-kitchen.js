@@ -162,7 +162,7 @@ function sellPlate(quiet) {
   const d = dishOf(C.state.plate);
   if (!d) return;
   clearPlate();
-  passStat('coins_earned', d.pay); refreshHud(); save();
+  passStat('coins_earned', d.pay, 'dish'); refreshHud(); save();
   const note = document.getElementById('hsCookNote');
   note.classList.remove('is-buff');
   note.textContent = d.name + ' → ' + d.pay + ' coins in your wallet';
@@ -283,7 +283,7 @@ function knitPattern(k) {
       note.textContent = k.name + ' — yours. it’s in your wardrobe, at the rave too';
       toast('🧶 ' + k.name.toLowerCase() + ' — knitted. wear it from the builder', 4200);
     } else {
-      passStat('coins_earned', k.pay); refreshHud();
+      passStat('coins_earned', k.pay, 'knit'); refreshHud();
       note.textContent = k.name + ' → ' + k.pay + ' coins in your wallet';
     }
     save();

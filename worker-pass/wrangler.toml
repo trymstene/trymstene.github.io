@@ -23,3 +23,7 @@ PASS_HMAC = "banana-world-challenge-stamp-v1"
 # is switched on. Set to "" and /news/join refuses with 503 and the opt-in on
 # /pass/ says so, rather than quietly collecting addresses nobody can mail.
 NEWS_OPEN = "1"
+# 📏 the per-area faucet rules (2 Sep 2026). "0" = a homestead coin event that
+# names no faucet is still accepted (counted `unruled` on the desk); "1" =
+# refused. Flip once the desk shows unruled at ~0 for a day.
+RULES_STRICT = "0"
