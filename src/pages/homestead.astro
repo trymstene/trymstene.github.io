@@ -966,12 +966,12 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-ktile.is-given .hs-kgift { animation: hs-kfloat 0.9s ease-out forwards; }
     @keyframes hs-kgiven { 0% { transform: scale(1); } 30% { transform: scale(1.08); } 100% { transform: scale(1); } }
     /* 🧶 the tailor: the dummy on the stage wears what you knit; wool fluff while the needles go */
-    .hs-tstage { --sx: 100px; --sy: 84px; }
-    .hs-tdummy { position: absolute; left: 62px; bottom: 22px; width: 48px; height: 80px; background: url(/assets/homestead/k-dummy.png) 0 0 / 48px 80px no-repeat; image-rendering: pixelated; }
-    .hs-tknit { position: absolute; left: 62px; bottom: 22px; width: 48px; height: 80px; display: grid; justify-items: center; align-content: start; opacity: 0; transform: scale(0); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s; pointer-events: none; }
+    .hs-tstage { --sx: 88px; --sy: 92px; }
+    .hs-tdummy { position: absolute; left: 50px; bottom: 22px; width: 76px; height: 82px; background: url(/assets/homestead/k-dummy.png) 0 0 / 76px 82px no-repeat; image-rendering: pixelated; }
+    .hs-tknit { position: absolute; left: 50px; bottom: 22px; width: 76px; height: 82px; display: grid; justify-items: center; align-content: start; opacity: 0; transform: scale(0); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s; pointer-events: none; }
     .hs-tknit svg { width: 46px; height: auto; }
-    .hs-tknit.is-hat { padding-top: 0; margin-top: -18px; }
-    .hs-tknit.is-neck { padding-top: 26px; }
+    .hs-tknit.is-hat { padding-top: 0; margin-bottom: 14px; }   /* bottom-anchored: margin-BOTTOM lifts it onto the crown */
+    .hs-tknit.is-neck { padding-top: 32px; }
     .hs-tstage.is-done .hs-tknit { opacity: 1; transform: scale(1); }
     .hs-kthumb--knit svg { width: 38px; height: auto; }
     .hs-kact { display: grid; gap: 4px; }

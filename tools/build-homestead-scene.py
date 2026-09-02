@@ -1005,21 +1005,48 @@ if HAVE_PACK:
     _chw = max(10, int(f0.width * 0.38))
     DECOR_OUT.append(('cheesemk', 'Cheese machine', 'farm', 60, 0, f0.width, f0.height, [-_chw, -12, _chw, 2]))
     print('  d-cheesemk.png %dx%d (+catalog)' % (f0.width, f0.height))
-    # 🧶 THE TAILOR TABLE — a tailor's dummy beside the work desk (Modern
-    # Interiors, clothing store singles 3 + 260), composed whole-pixel; the
-    # dummy alone stands on the tailor card's stage and wears the knit
+    # 🧶 THE TAILOR TABLE — the work desk (Modern Interiors clothing-store
+    # single 260) with a BANANA tailor's dummy: the engine's own hands-up
+    # frame (banana-dance.png frame 2) sampled back to its 12px logical grid
+    # (lossless), face and all (Trym picked the one with the face), in the
+    # pack mannequin's four stone tones, at 2× = the yard banana's own size.
+    # Trym (2 Sep): the pack's human mannequin was the one thing in the yard
+    # not from this world. The dummy alone stands on the tailor card's stage.
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import banana_render as _br
+    _sheet = _br.sheet(); _FW, _FH = _br.FW, _br.FH
+    _fr = _sheet.crop((2 * _FW, 0, 3 * _FW, _FH)).convert('RGBA'); _px = _fr.load()
+    _cell = 12; _gw, _gh = _FW // _cell, _FH // _cell
+    _lg = Image.new('RGBA', (_gw, _gh), (0, 0, 0, 0)); _lp = _lg.load()
+    for _j in range(_gh):
+        for _i in range(_gw):
+            _lp[_i, _j] = _px[_i * _cell + _cell // 2, _j * _cell + _cell // 2]
+    _lg = _lg.crop(_lg.getbbox())
     CS = os.path.expanduser('~/OneDrive/banana-art-pack/moderninteriors-win/1_Interiors/48x48/Theme_Sorter_Singles_48x48/21_Clothing_Store_Singles_48x48')
-    dm = Image.open(os.path.join(CS, 'Clothing_Store_Singles_48x48_3.png')).convert('RGBA')
+    _man = Image.open(os.path.join(CS, 'Clothing_Store_Singles_48x48_3.png')).convert('RGBA')   # its PALETTE only
+    _cols = {c: n for n, c in _man.getcolors(4096) if c[3] > 0}
+    _ramp = sorted(_cols, key=lambda c: 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2])
+    _outline, _dark, _mid, _light = _ramp[0][:3], _ramp[len(_ramp) // 4][:3], _ramp[len(_ramp) // 2][:3], _ramp[-1][:3]
+    _o = _lg.copy(); _p = _o.load(); _W, _H = _o.size
+    for _j in range(_H):
+        for _i in range(_W):
+            r, g, b, a = _p[_i, _j]
+            if a == 0:
+                continue
+            L = 0.299 * r + 0.587 * g + 0.114 * b
+            _p[_i, _j] = (_outline if L < 60 else _dark if L < 140 else _mid if L < 205 else _light) + (255,)
+    dm = _o.resize((_o.width * 2, _o.height * 2), Image.NEAREST)
     dk = Image.open(os.path.join(CS, 'Clothing_Store_Singles_48x48_260.png')).convert('RGBA')
-    tl = Image.new('RGBA', (dk.width + 40, max(dk.height, dm.height)), (0, 0, 0, 0))
+    tl = Image.new('RGBA', (dk.width + dm.width - 8, max(dk.height, dm.height)), (0, 0, 0, 0))
     tl.paste(dk, (0, tl.height - dk.height), dk)
     tl.paste(dm, (dk.width - 8, tl.height - dm.height), dm)   # the dummy stands at the desk's right end
     tl = tl.crop(tl.getbbox())
     tl.save(os.path.join(OUT, 'd-tailor.png'), optimize=True)
-    dm.crop(dm.getbbox()).save(os.path.join(OUT, 'k-dummy.png'), optimize=True)
+    dm.save(os.path.join(OUT, 'k-dummy.png'), optimize=True)
     _tw = max(10, int(tl.width * 0.4))
     DECOR_OUT.append(('tailor', 'Tailor table', 'farm', 45, 0, tl.width, tl.height, [-_tw, -12, _tw, 2]))
-    print('  d-tailor.png %dx%d (+catalog)' % (tl.width, tl.height))
+    print('  d-tailor.png %dx%d, k-dummy.png %dx%d (+catalog)' % (tl.width, tl.height, dm.width, dm.height))
     CHI = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/Icons/Icons_32x32/Icons_32x32/Singles_Icons_32x32_Food_Cheese.png')
     Image.open(CHI).convert('RGBA').save(os.path.join(OUT, 'm-cheese.png'), optimize=True)
     print('  m-cheese.png')
