@@ -2,7 +2,7 @@
 // Biometrics appear ONLY here, when linking a device; day-to-day sync rides
 // the device token this module stores (see pushNow in banana-pass.js).
 // CLIENT-ONLY; loaded on /pass/ only.
-import { PASS_API, collectBlob, applyBlob, passPush, passNoticeAdd } from './banana-pass.js';
+import { PASS_API, collectBlob, applyBlob, passPush, passNoticeAdd, walletKeep } from './banana-pass.js';
 
 const LINK_KEY = 'pass-link'; // { credId, token }
 const GID_KEY = 'world-gid';  // 🪪 ownership (mirrors banana-pass.js), never the connection sid
@@ -63,6 +63,7 @@ function keepGid(d) {
       localStorage.setItem('bb-mtok', d.memberToken);
     }
   } catch (e) {}
+  walletKeep(d);   // 💰 the server wallet lands with a login too
   return gid;
 }
 
@@ -100,7 +101,7 @@ const WORLD_KEYS = [
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
   'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
-  'pass-ev-v1',                                          // 📜 the unsent ledger tape — never the next person's
+  'pass-ev-v1', 'pass-wallet-v1',                        // 📜 the unsent ledger tape + 💰 the server wallet — never the next person's
   GID_KEY, WT_KEY, PULL_KEY,
 ];
 function wipeWorld() {
@@ -268,6 +269,7 @@ export function logout() {
   try { localStorage.removeItem(LINK_KEY); } catch (e) {}
   try { localStorage.removeItem(GID_KEY); } catch (e) {}
   try { localStorage.removeItem(WT_KEY); } catch (e) {}
+  try { localStorage.removeItem('pass-wallet-v1'); } catch (e) {}   // 💰 signed out = the ledger is the wallet again
   // ⏱ and drop the pull throttle, so logging back in syncs at once instead of
   // running on the connection sid until the 10 minutes expire
   try { localStorage.removeItem(PULL_KEY); } catch (e) {}

@@ -13,7 +13,7 @@ import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_
 import { DROPS, ownsDropStat } from '../data/wearables.js';
 import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner, memberTok } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { passPatch, passStat, passVisit, passToast, passGet } from '../lib/banana-pass.js';
+import { passPatch, passStat, passVisit, passToast, passGet, coinsNow } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -679,14 +679,10 @@ function init() {
   // two rects separately so each edge slides correctly
   const blockedAt = (x, y) => insideBar(x, y) || insideDoor(x, y);
 
-  // 🪙 the wallet chip on the jelly mixer — balance = earned − spent, both
-  // monotonic pass stats (they only ever grow; the blob merges them as max,
-  // so cross-device sums can never lose coins)
+  // 🪙 the wallet chip on the jelly mixer — ONE formula sitewide: coinsNow()
+  // (this used to keep its own earned − spent copy: no refunds, clamped at 0)
   const walletChip = el('rvWalletChip');
-  const coinBalance = () => {
-    const s = passGet().stats || {};
-    return Math.max(0, (s.coins_earned || 0) - (s.coins_spent || 0));
-  };
+  const coinBalance = () => coinsNow();
   const renderWallet = (bump) => {
     if (!walletChip) return;
     el('rvWallet').textContent = coinBalance();

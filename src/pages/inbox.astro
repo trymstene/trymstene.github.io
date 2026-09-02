@@ -1401,6 +1401,8 @@ const description = 'Authorized banana personnel only.';
         // 0 = every coin has a story. Big and growing = look at the events.
         // (advisory: a device on old JS reports no events at all)
         [p.ev || 0, 'events logged'], [p.drift || 0, 'drift' + (p.unsure ? ' · ' + p.unsure + ' unsure' : '')],
+        // 💰 the server wallet: coins above ARE it once frozen; refused = spends the server would not carry
+        [p.wallet ? p.refused || 0 : '—', p.wallet ? 'refused spends' : 'wallet not frozen yet'],
       ].forEach(([v, label]) => {
         const c = document.createElement('div');
         c.className = 'hq-stat';

@@ -137,6 +137,7 @@ function keepGid(d) {
       localStorage.setItem(WT_KEY, d.worldToken);
     }
   } catch (e) {}
+  walletKeep(d);   // 💰 the server wallet + the tape ids it has seen
   // 🎩 the signed member token (mirror of pass-sync.js keepGid — change both):
   // rooms present it so other players get to SEE the supporter hat
   try {
@@ -166,7 +167,7 @@ function pushNow() {
   }
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
     .then((r) => (r && r.ok ? r.json() : null))
-    .then((d) => { if (d && d.ok) { evAck(sent); evDropped = 0; } keepGid(d); })
+    .then((d) => { if (d && d.ok) { keepGid(d); evAck(sent); evDropped = 0; } else keepGid(d); })
     .catch(() => {});
 }
 // 🫧 AN ANONYMOUS PASS AT THE FIRST MEANINGFUL WRITE. Every player gets a
@@ -440,7 +441,34 @@ const areaOf = () => {
 // what this device's own slot moved against what its events explain: the
 // DRIFT. Totals stay client-authoritative — this is the audit trail, not the
 // wallet. Device-only key; pass-sync wipes it on an account switch.
-const EV_KEY = 'pass-ev-v1', EV_CAP = 240;
+const EV_KEY = 'pass-ev-v1', EV_CAP = 400;
+// 💰 THE SERVER WALLET (slice 2). The pass worker keeps a balance built only
+// from tape events it accepted, frozen at this player's own number on their
+// first push after it shipped. It arrives as { bal, seq } with every pull/push
+// answer, together with the tape ids the server has seen. coinsNow() shows
+// that number PLUS what the outbox still holds, so a coin earned offline
+// counts at once and the two agree the moment the push is acked. A spend the
+// server refused simply never lands in `bal` — the overlay lets go of it when
+// its event is acked, which is the honest moment. Cleared on logout/switch.
+const WALLET_KEY = 'pass-wallet-v1';
+function walletRead() {
+  try {
+    const w = JSON.parse(localStorage.getItem(WALLET_KEY) || 'null');
+    return w && Number.isFinite(+w.bal) ? { bal: +w.bal, seq: +w.seq || 0, at: +w.at || 0 } : null;
+  } catch (e) { return null; }
+}
+export function walletKeep(d) {
+  if (!d || typeof d !== 'object') return;
+  try {
+    if (d.wallet && Number.isFinite(+d.wallet.bal)) {
+      const cur = walletRead();
+      const seq = +d.wallet.seq || 0;
+      if (!cur || seq >= cur.seq) localStorage.setItem(WALLET_KEY, JSON.stringify({ bal: +d.wallet.bal, seq, at: Date.now() }));
+    }
+    // ids the tape already holds (a beacon push has no ack) leave the outbox now
+    if (Array.isArray(d.seen) && d.seen.length) evAck(new Set(d.seen.map(String)));
+  } catch (e) {}
+}
 let evDropped = 0;
 function evRead() {
   try { const a = JSON.parse(localStorage.getItem(EV_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
@@ -537,7 +565,15 @@ export function passRefund(n, src) {
 // the wallet, in the one place that owns the formula (world-hud re-exports it)
 export function coinsNow() {
   const raw = readRaw();
-  return statTotal(raw, 'coins_earned') + statTotal(raw, 'coins_refunded') - statTotal(raw, 'coins_spent');
+  const ledger = statTotal(raw, 'coins_earned') + statTotal(raw, 'coins_refunded') - statTotal(raw, 'coins_spent');
+  const w = walletRead();
+  if (!w) return ledger;             // no server number yet — the ledger is the wallet, as before
+  let pend = 0;                      // what this device wrote since the server last answered
+  for (const e of evRead()) {
+    if (e.k === 'coins_earned' || e.k === 'coins_refunded') pend += +e.d || 0;
+    else if (e.k === 'coins_spent') pend -= +e.d || 0;
+  }
+  return w.bal + pend;
 }
 
 // call once per page that counts as "being here" — tracks distinct days,

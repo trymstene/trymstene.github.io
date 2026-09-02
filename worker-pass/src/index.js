@@ -176,7 +176,10 @@ async function mintWorldToken(env, gid, aliases) {
 async function identityOf(env, R) {
   const gid = await worldGid(env, R.homeKey);
   return { gid, worldToken: await mintWorldToken(env, gid, R.home.aliases),
-    memberToken: await mintMemberToken(env, (R.home.blob || {}).member) };
+    memberToken: await mintMemberToken(env, (R.home.blob || {}).member),
+    // 💰 the server wallet (once frozen) and the tape ids it has seen, so a
+    // device can clear an outbox a beacon push delivered without an ack
+    ...walletOut(R.home), seen: (R.home.log && R.home.log.seen) || [] };
 }
 
 // ---------- POST /challenge ----------
@@ -902,7 +905,11 @@ async function adminScan(env) {
       rep,
       level: levelFor(rep).level,                // ⚠️ the real curve — see the import
       jelly: stats.jelly || 0,
-      coins: Math.max(0, (stats.coins_earned || 0) + (stats.coins_refunded || 0) - (stats.coins_spent || 0)),
+      // 💰 the server wallet once frozen, the client ledger's number until then
+      coins: rec.wallet ? walletBal(rec.wallet)
+        : Math.max(0, (stats.coins_earned || 0) + (stats.coins_refunded || 0) - (stats.coins_spent || 0)),
+      wallet: !!rec.wallet,
+      refused: (rec.wallet && rec.wallet.refused) || 0,
       coinsEarned: stats.coins_earned || 0,
       coinsSpent: stats.coins_spent || 0,
       gear,
@@ -998,6 +1005,20 @@ async function adminGrant(request, env) {
   // ⚠️ TAKING coins raises SPENT, never lowers EARNED — a lowered number loses
   // to MAX on the player's next push and the deduction would just vanish.
   add('coins_spent', n(b.take), 'coins taken');
+  // 💰 …and the server wallet moves with the grant (a slot alone never moves it)
+  if (rec.wallet && (n(b.coins) || n(b.take))) {
+    rec.wallet.earned += n(b.coins);
+    rec.wallet.spent += n(b.take);
+    rec.wallet.seq = (rec.wallet.seq || 0) + 1;
+    rec.wallet.at = Date.now();
+    const log = rec.log || (rec.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
+    for (const [k, d] of [['coins_earned', n(b.coins)], ['coins_spent', n(b.take)]]) {
+      if (!d) continue;
+      log.ev.push({ id: bufToHex(crypto.getRandomValues(new Uint8Array(4))), t: Date.now(), k, d, a: 'hq', s: 'grant', at: Date.now() });
+      log.n = (log.n || 0) + 1;
+    }
+    if (log.ev.length > LOG_CAP) log.ev.splice(0, log.ev.length - LOG_CAP);
+  }
   add('rep', n(b.rep), 'rep');
   add('jelly', n(b.jelly), 'jelly');
   if (b.gear) {
@@ -1008,7 +1029,8 @@ async function adminGrant(request, env) {
   await env.PASSES.put(k, JSON.stringify({ ...rec, updated: Date.now() }),
     { httpMetadata: { contentType: 'application/json' } });
   await adminNote(env, 'grant', k.slice(5, 13), did.join(', '));
-  const coins = Math.max(0, statTotal(p, 'coins_earned') + statTotal(p, 'coins_refunded') - statTotal(p, 'coins_spent'));
+  const coins = rec.wallet ? walletBal(rec.wallet)
+    : Math.max(0, statTotal(p, 'coins_earned') + statTotal(p, 'coins_refunded') - statTotal(p, 'coins_spent'));
   return json({ ok: true, did, coins, rep: statTotal(p, 'rep'), jelly: statTotal(p, 'jelly') },
     200, cors(env, request));
 }
@@ -1114,40 +1136,77 @@ function clientBlob(blob) {
 // pre-tape JS pushes slot moves with no events at all (drift = everything),
 // and a push whose outbox overflowed (evDrop > 0) is skipped as `unsure`.
 // Totals stay client-authoritative; nothing here changes what a player has.
-const LOG_CAP = 600, SEEN_CAP = 400, EV_MAX = 300;
+const LOG_CAP = 600, SEEN_CAP = 400, EV_MAX = 400;
 const DRIFT_KEYS = ['coins_earned', 'coins_spent', 'coins_refunded', 'rep', 'jelly'];
+const COIN_KEYS = ['coins_earned', 'coins_refunded', 'coins_spent'];
 function slotsOf(blob, dv) {
   const out = {};
   const led = (blob && blob.pass && blob.pass.led) || {};
   if (dv) for (const k in led) { const v = +(led[k] && led[k][dv]); if (Number.isFinite(v)) out[k] = v; }
   return out;
 }
-function tapeIn(home, ev, evDrop, dv, before, after) {
+// ---------- 💰 THE SERVER WALLET (2 Sep 2026, slice 2 of the server-side ledger) ----------
+// The balance is what the SERVER has accepted. It is FROZEN at the player's
+// own number on their first push after this shipped (nobody loses a coin;
+// whatever came before is grandfathered), then moved only by tape events —
+// coins_earned, coins_refunded, coins_spent — and by admin grants. A ledger
+// slot that moves with no event behind it moves the drift, never the wallet.
+// A spend the wallet cannot cover is REFUSED (kept on the tape as x:1) so the
+// balance never goes below zero. The client's coinsNow() shows this number
+// plus whatever its outbox still holds, so play stays smooth offline and the
+// two agree on every ack. ⚠️ ONE FORMULA, BOTH SIDES: base + earned +
+// refunded − spent (banana-pass.js coinsNow is the client's owner).
+const ledgerBalance = (blob) => {
+  const p = blob && blob.pass;
+  return p ? statTotal(p, 'coins_earned') + statTotal(p, 'coins_refunded') - statTotal(p, 'coins_spent') : 0;
+};
+const walletBal = (w) => (w ? (w.base || 0) + (w.earned || 0) + (w.refunded || 0) - (w.spent || 0) : 0);
+const walletOut = (home) => (home && home.wallet ? { wallet: { bal: walletBal(home.wallet), seq: home.wallet.seq || 0 } } : {});
+function tapeIn(home, ev, evDrop, dv, before, after, postBlob) {
   const log = home.log || (home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
   log.pushes = (log.pushes || 0) + 1;
   const seen = new Set(log.seen || []);
-  const sum = {};
   const now = Date.now();
-  let added = 0;
+  const rows = [];
   for (const e of (Array.isArray(ev) ? ev : []).slice(0, EV_MAX)) {
     if (!e || typeof e !== 'object') continue;
     const id = String(e.id || '');
     const k = String(e.k || '').slice(0, 32);
     const d = +e.d;
     if (!/^[a-f0-9]{6,12}$/.test(id) || seen.has(id) || !k || !Number.isFinite(d) || Math.abs(d) > 1e6) continue;
+    if (COIN_KEYS.includes(k) && !(d > 0)) continue;          // coins only ever move by a positive counter
     const row = { id, t: Math.min(+e.t || now, now), k, d, a: String(e.a || '').slice(0, 16), at: now };
     if (e.s) row.s = String(e.s).slice(0, 32);
-    log.ev.push(row);
-    seen.add(id); log.seen.push(id); added++;
-    if (!k.startsWith('patch:')) sum[k] = (sum[k] || 0) + d;
+    seen.add(id); log.seen.push(id);
+    rows.push(row);
   }
-  log.n = (log.n || 0) + added;
+  // 💰 the wallet, from the accepted rows in the order they happened
+  const fresh = !home.wallet;
+  if (fresh) {
+    let explained = 0;
+    for (const r of rows) if (COIN_KEYS.includes(r.k)) explained += r.k === 'coins_spent' ? -r.d : r.d;
+    home.wallet = { base: ledgerBalance(postBlob) - explained, earned: 0, spent: 0, refunded: 0, seq: 0, refused: 0, frozenAt: now };
+  }
+  const w = home.wallet;
+  const sum = {};
+  for (const r of rows) {
+    if (r.k.startsWith('patch:')) continue;
+    if (r.k === 'coins_spent' && !fresh && walletBal(w) - r.d < 0) { r.x = 1; w.refused = (w.refused || 0) + 1; continue; }
+    if (r.k === 'coins_earned') w.earned += r.d;
+    else if (r.k === 'coins_refunded') w.refunded += r.d;
+    else if (r.k === 'coins_spent') w.spent += r.d;
+    sum[r.k] = (sum[r.k] || 0) + r.d;
+  }
+  if (rows.length || fresh) { w.seq = (w.seq || 0) + 1; w.at = now; }
+  log.ev.push(...rows);
+  log.n = (log.n || 0) + rows.length;
   if (log.ev.length > LOG_CAP) log.ev.splice(0, log.ev.length - LOG_CAP);
   if (log.seen.length > SEEN_CAP) log.seen.splice(0, log.seen.length - SEEN_CAP);
   const dropped = Math.max(0, Math.floor(+evDrop || 0));
-  if (dropped) { log.drop = (log.drop || 0) + dropped; log.unsure = (log.unsure || 0) + 1; return added; }
-  if (!dv) return added;
+  if (dropped) { log.drop = (log.drop || 0) + dropped; log.unsure = (log.unsure || 0) + 1; return rows.length; }
+  if (!dv || fresh) return rows.length;   // the freeze push carries history, not drift
   // the drift: what the slot moved, minus what the tape explains, per key
+  // (a refused spend explains nothing, so it shows up here too)
   log.drift = log.drift || {};
   const keys = new Set([...Object.keys(before), ...Object.keys(after), ...Object.keys(sum)]);
   for (const k of keys) {
@@ -1155,7 +1214,7 @@ function tapeIn(home, ev, evDrop, dv, before, after) {
     const d = moved - (sum[k] || 0);
     if (d) { log.drift[k] = (log.drift[k] || 0) + d; log.driftAt = now; }
   }
-  return added;
+  return rows.length;
 }
 const driftScore = (log) => (log && log.drift ? DRIFT_KEYS.reduce((t, k) => t + Math.abs(log.drift[k] || 0), 0) : 0);
 function blobOk(blob) {
@@ -1758,7 +1817,7 @@ async function push(request, env) {
   const dv = /^[\w-]{1,8}$/.test(String(b.blob.evDev || '')) ? String(b.blob.evDev) : '';
   const before = slotsOf(R.home.blob, dv);
   R.home.blob = mergeBlob(R.home.blob, clientBlob(b.blob));
-  tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv));
+  tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv), R.home.blob);
   await saveKey(env, R.homeKey, R.home);
   return json({ ok: true, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }
