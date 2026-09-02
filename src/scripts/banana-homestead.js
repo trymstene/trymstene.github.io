@@ -506,7 +506,6 @@ function init(visitDoc, visitMiss) {
   // ---- 🪵 THE PLAYER FENCE: cells like soil, autotiled from the kit -------
   const FENCE_CAP = 120;
   const fenceHas = (i, j) => state.fence.some((c) => c.i === i && c.j === j);
-  const fenceHit = (x, y) => fenceRects.some((r) => x > r[0] && x < r[2] && y > r[1] && y < r[3]);   // the player's own rail hitboxes
   // ⚠️ THE CORNER LESSON (Trym's screenshot): the kit's verticals come in
   // WEST-post and EAST-post flavours — a column must put its posts in the
   // SAME tile column as the corner piece it hangs off, so we walk the column
@@ -900,6 +899,15 @@ function init(visitDoc, visitMiss) {
   }
   const inRect = (x, y, r) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
   const inRoadLane = (y) => Math.abs(y - ROAD.y) < ROAD.hw - 6;
+  // the yard's solids — the player's test, and the dog's (she is never indoors)
+  function blockedOut(x, y) {
+    if (x < BOUND || y < BOUND || y > H - BOUND) return true;
+    if (x > W - BOUND && !inRoadLane(y)) return true;      // east = the road out
+    for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
+    for (const r of fenceRects) if (inRect(x, y, r)) return true;
+    for (const r of liveRects) if (inRect(x, y, r)) return true;
+    return false;
+  }
   function blocked(x, y) {
     if (inside) {
       const I = INTERIORS[inside];
@@ -908,12 +916,7 @@ function init(visitDoc, visitMiss) {
       for (const r of I.cols) if (inRect(x, y, r)) return true;
       return false;
     }
-    if (x < BOUND || y < BOUND || y > H - BOUND) return true;
-    if (x > W - BOUND && !inRoadLane(y)) return true;      // east = the road out
-    for (const r of OB_RECTS) if (inRect(x, y, r)) return true;
-    for (const r of fenceRects) if (inRect(x, y, r)) return true;
-    for (const r of liveRects) if (inRect(x, y, r)) return true;
-    return false;
+    return blockedOut(x, y);
   }
   rebuildSolids();
   refreshItems();
@@ -1195,13 +1198,15 @@ function init(visitDoc, visitMiss) {
         const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150)
           : 34 * (h.tr ? [0.75, 1, 1.3][h.tr.pace] : 1);   // 🎲 a dawdler, or quick on her feet
         let nx = h.x + dx / d * spd * dt, ny = h.y + dy / d * spd * dt;
-        // 🐕 the fence is a fence for her too (Trym: "the dog runs over the
-        // fence") — the flock is clamped to its pen, she is not, so she meets
-        // the player's own rail hitboxes: a step into a rail slides along it,
-        // a dead stop hands her brain a rest so she does not lean on it forever
-        if (h.a && h.a.sp === 'dog' && fenceRects.length && fenceHit(nx, ny)) {
-          if (!fenceHit(nx, h.y)) ny = h.y;
-          else if (!fenceHit(h.x, ny)) nx = h.x;
+        // 🐕 the yard's solids are solid for her too (Trym: "the dog runs over
+        // the fence… the house and other items") — the flock is clamped to its
+        // pen, she is not, so she meets the player's own colliders (fences,
+        // the house, placed items, trees): a step into one slides along it, a
+        // dead stop hands her brain a rest so she never leans on it. A dog
+        // already standing in a solid may always step out of it.
+        if (h.a && h.a.sp === 'dog' && blockedOut(nx, ny) && !blockedOut(h.x, h.y)) {
+          if (!blockedOut(nx, h.y)) ny = h.y;
+          else if (!blockedOut(h.x, ny)) nx = h.x;
           else { nx = h.x; ny = h.y; if (h.dg) { h.dg.m = 'rest'; h.dg.until = now + 2500; h.dg.heelAt = now; } }
         }
         h.x = nx; h.y = ny;
@@ -4348,6 +4353,8 @@ function init(visitDoc, visitMiss) {
       cook: (w) => openCook(w || 'stove'),
       pantry: () => (state.pantry = state.pantry || {}),
       fence: (cells) => { (cells || []).forEach((c) => { if (!fenceHas(c.i, c.j)) state.fence.push({ i: c.i, j: c.j }); }); refreshFenceB(); save(); return state.fence.length; },
+      blocked: (x, y) => blockedOut(x, y),
+      dogAt: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && [h2.x, h2.y]; },
       grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
       feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
       dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },
