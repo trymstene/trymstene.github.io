@@ -176,7 +176,7 @@ function applyTestScenario(kind) {
   try {
     const cur = JSON.parse(localStorage.getItem(HS_KEY) || 'null');
     if (cur && cur.claimedAt && !/^Testy/.test(cur.name || '')
-      && kind !== 'fresh-really' && kind !== 'rich') {
+      && kind !== 'fresh-really' && kind !== 'rich' && kind !== 'pantry') {
       console.warn('hstest: refusing to overwrite the real yard "' + cur.name
         + '" — use ?hstest=fresh-really if you truly mean to wipe it');
       return;
@@ -191,6 +191,18 @@ function applyTestScenario(kind) {
     // slots summed on read, so a raw stats write lands in the wrong shape
     const need = 9999 - coinBalance();
     if (need > 0) passStat('coins_earned', need);
+    return;
+  }
+  if (kind === 'pantry') {   // a stocked kitchen shelf on THIS yard (Trym: "no ingredients on ?farm") — additive, device-local, nothing else touched
+    try {
+      const cur = JSON.parse(localStorage.getItem(HS_KEY) || 'null');
+      if (cur) {
+        cur.pantry = cur.pantry || {};
+        const top = { egg: 4, milk: 3, cheese: 2, radish: 2, carrot: 2, tomato: 2, pumpkin: 2, daisy: 1, sunflower: 1 };
+        Object.keys(top).forEach((k) => { cur.pantry[k] = Math.max(cur.pantry[k] || 0, top[k]); });
+        localStorage.setItem(HS_KEY, JSON.stringify(cur));
+      }
+    } catch (e) {}
     return;
   }
   if (kind === 'claimed') s = base;
@@ -373,7 +385,8 @@ function init(visitDoc, visitMiss) {
           sp: m.sp, b: Math.round(m.b || 0), name: m.name || '',
           gd: m.gd == null ? undefined : Math.round(m.gd),
           id: m.id || undefined, ad: m.ad == null ? undefined : Math.round(m.ad),
-          gs: Math.round(m.gs || 0), sd: m.sd == null ? undefined : Math.round(m.sd) })),
+          gs: Math.round(m.gs || 0), sd: m.sd == null ? undefined : Math.round(m.sd),
+          pa: m.pa || undefined })),   // a rehomed kid keeps her parent on every device (the tree)
       } }).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is

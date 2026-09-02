@@ -66,6 +66,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hsg__card { background: #16200f; border: 3px solid #a7d98a; box-shadow: 6px 6px 0 #000; padding: 0.9rem; }
     .hsg__thumb { height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.55rem; }
     .hsg__thumb img { image-rendering: pixelated; max-height: 64px; max-width: 110px; width: auto; height: auto; }
+    .hsg__thumb i { display: block; image-rendering: pixelated; background-repeat: no-repeat; transform-origin: center; }   /* one frame of a strip, scaled whole */
     .hsg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; color: #a7d98a; margin: 0 0 0.35rem; text-align: center; }
     .hsg__card p { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.92; }
     .hs-footring {
@@ -1106,9 +1107,24 @@ const description = 'A clearing west of the park with your name on the sign: cla
             <p>Once a day. Visiting neighbours can pour for you &mdash; it counts overnight.</p>
           </article>
           <article class="hsg__card">
+            <div class="hsg__thumb"><i style="background-image:url(/assets/homestead/c-hen0.png);width:32px;height:32px;transform:scale(2)" role="img" aria-label="a hen — homestead pixel sprite"></i></div>
+            <h3>keep</h3>
+            <p>Two hens come with the claim. Fence more land and a goat, a sheep, a cow can move in.</p>
+          </article>
+          <article class="hsg__card">
+            <div class="hsg__thumb"><i style="background-image:url(/assets/homestead/c-dogidle.png);width:104px;height:66px" role="img" aria-label="the farm dog — homestead pixel sprite"></i></div>
+            <h3>hug</h3>
+            <p>A hug a day levels them up: a name at three, a friend at the gate at five, best friends at ten.</p>
+          </article>
+          <article class="hsg__card">
             <div class="hsg__thumb"><img src="/assets/homestead/campfire-lit.gif" alt="a campfire — homestead pixel sprite" loading="lazy" /></div>
             <h3>cook</h3>
-            <p>The kitchen turns crops into coins &mdash; or dishes that boost the whole world.</p>
+            <p>Eggs and milk go to the kitchen. Watch the pan sizzle &mdash; the dish pays coins, or boosts the whole world.</p>
+          </article>
+          <article class="hsg__card">
+            <div class="hsg__thumb"><i style="background-image:url(/assets/homestead/c-chick.png);width:48px;height:30px;transform:scale(2)" role="img" aria-label="a chick — homestead pixel sprite"></i></div>
+            <h3>remember</h3>
+            <p>Old friends have chicks. Everyone who ever lived here stays in the family tree on the Banana Phone.</p>
           </article>
           <article class="hsg__card">
             <div class="hsg__thumb"><img src="/assets/homestead/d-arcade.png" alt="an arcade cabinet — homestead pixel sprite" loading="lazy" /></div>
