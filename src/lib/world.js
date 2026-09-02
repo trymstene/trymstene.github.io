@@ -17,6 +17,8 @@ export function seedRand(n) {
 // The claimed-window key `bc-win` is shared, so a window caught anywhere is
 // caught everywhere (no double-dipping). Rooms roll their OWN spot salts.
 export const COIN_TEST = typeof location !== 'undefined' && location.search.includes('cointest');
+// 🧪 a QA device: its coins are named 'qa' (the pass worker denies them), so it keeps reading its own ledger
+if (COIN_TEST) { try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {} }
 // ⚠️ retuned 29 Jul (Trym, HQ ledger read: "theres actually a shortage of
 // coins") — 240min windows at EV 1.6 paid a daily visitor ~2-3 coins against
 // 10-300 coin sinks. Hourly windows at EV ~4.8 → an active day pays 5-15:

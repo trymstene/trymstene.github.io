@@ -971,6 +971,7 @@ function init() {
   // the QA reach-in (same family as ?beachtest): place the banana, top up
   // coins, read the live rosters — nothing here exists in a normal session
   if (PARK_TEST) {
+    try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 a QA device reads its own ledger (the server denies 'qa')
     window.__park = {
       pos, tgt, PLOTS,
       setSolids: ctx.setSolids,   // the real seam owns it — this is a reach-in
@@ -979,7 +980,7 @@ function init() {
       ...birds.qa,
       ...garden.qa,
       ...(shops.qa || {}),
-      coins: (n) => { passStat('coins_earned', n); refreshHud(); },
+      coins: (n) => { passStat('coins_earned', n, 'qa'); refreshHud(); },
       warp: (x, y) => { pos.x = x; pos.y = y; tgt.x = x; tgt.y = y; meWX = NaN; },
       phase: () => phase,
       setPhase,   // 🍂 force a bloom band — the other half of the wx() test

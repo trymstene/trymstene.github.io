@@ -444,8 +444,8 @@ export function initGarden(ctx) {
   // passRefund (a ledger slot must never take a negative delta) and nothing is
   // toasted as done. ⚠️ this used to fire only on 'taken', so a null reply
   // (offline, a worker 500) kept the money AND said the seed was in.
-  function gMiss(res, refund, taken) {
-    if (refund) passRefund(refund);
+  function gMiss(res, refund, taken, src) {
+    if (refund) passRefund(refund, src);
     refreshHud();
     toast(res && res.err === 'taken' ? taken : MISS_LINE, 3600);
     applyGarden(res);
@@ -833,11 +833,11 @@ export function initGarden(ctx) {
   async function plantBorder(i, kindId) {
     // 💰 the spend IS the balance check — passSpend refuses, and spends
     // nothing, when the coins are not there
-    if (!passSpend(BORDER_PRICE)) return;
+    if (!passSpend(BORDER_PRICE, 'border')) return;
     refreshHud();
     closeGarden();
     const res = await gFetch('/border', { spot: i, kind: kindId, name: ctx.parkName });
-    if (!gDone(res)) { gMiss(res, BORDER_PRICE, 'somebody beat you to this spot'); return; }
+    if (!gDone(res)) { gMiss(res, BORDER_PRICE, 'somebody beat you to this spot', 'border'); return; }
     applyGarden(res);
     const kd = borderKind(kindId);
     float(BORDER_SPOTS[i][0], BORDER_SPOTS[i][1] - 6, kd.emoji);
@@ -1042,11 +1042,11 @@ export function initGarden(ctx) {
     gardenPanel.hidden = false;
   }
   async function buildHouse(i) {
-    if (!passSpend(BH_PRICE)) return;
+    if (!passSpend(BH_PRICE, 'birdhouse')) return;
     refreshHud();
     closeGarden();
     const res = await gFetch('/bhbuild', { spot: i, name: ctx.parkName });
-    if (!gDone(res)) { gMiss(res, BH_PRICE, 'somebody beat you to this post'); return; }
+    if (!gDone(res)) { gMiss(res, BH_PRICE, 'somebody beat you to this post', 'birdhouse'); return; }
     applyGarden(res);
     float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🐦');
     toast('🐦 birdhouse raised — the birds moved straight in. stock it daily to keep them.', 4600);
@@ -1266,7 +1266,7 @@ export function initGarden(ctx) {
     // (client-side roll, same as the world's other coin juice)
     if (Math.random() < 0.08) {
       const n = 1 + Math.floor(Math.random() * 3);
-      passStat('coins_earned', n);
+      passStat('coins_earned', n, PARK_TEST ? 'qa' : 'weed');
       float(w2.x + 18, w2.y - 34, '+' + n + ' 🪙');
       toast('🪙 something under the roots — +' + n, 2600);
     }
@@ -1324,7 +1324,7 @@ export function initGarden(ctx) {
     if (res.err) { toast('🥚 someone got it first'); return; }
     passStat('eggs_found', 1);              // the park-day card's ledger
     const r = res.reward || {};
-    if (r.coins) passStat('coins_earned', r.coins);
+    if (r.coins) passStat('coins_earned', r.coins, PARK_TEST ? 'qa' : 'egg');
     if (r.tickets) passStat('tickets', r.tickets);   // the bay's pier currency
     refreshHud();
     float(e.x, e.y - 14, r.golden ? '✨' : '+' + (r.coins || r.tickets));
@@ -1569,7 +1569,7 @@ export function initGarden(ctx) {
     const cost = priceNow(sd);
     const free = hasVoucher() && sd.price <= VOUCHER_MAX;
     if (free) setVoucher(false);
-    else if (!passSpend(cost)) return;      // 💰 the spend IS the balance check
+    else if (!passSpend(cost, 'seed')) return;      // 💰 the spend IS the balance check
     refreshHud();
     closeGarden();
     const res = await gFetch('/plant', { slot: i, seed: seedId, name: ctx.parkName });
@@ -1577,7 +1577,7 @@ export function initGarden(ctx) {
     // planted nothing, and still toasted "day 1 of 4"
     if (!gDone(res)) {
       if (free) setVoucher(true);           // the blessing survives the miss
-      gMiss(res, free ? 0 : cost, 'somebody beat you to this patch');
+      gMiss(res, free ? 0 : cost, 'somebody beat you to this patch', 'seed');
       return;
     }
     applyGarden(res);

@@ -491,7 +491,7 @@ export function initShops(ctx) {
       standSay('that’s ' + item.price + '. you’ve got ' + bal + '. the floor pays in coins.');
       return;
     }
-    passStat('coins_spent', item.price);
+    passStat('coins_spent', item.price, 'stand');
     passStat('own_' + item.id, 1);
     if (item.back) {
       // back-catalog buys also write the LEGACY stores so every flag/cat-own

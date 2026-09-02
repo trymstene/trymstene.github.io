@@ -11,7 +11,7 @@
 // shares the same clock. Zero server involvement.
 import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_DEFS, SVG } from '../lib/banana-engine.js';
 import { DROPS, ownsDropStat } from '../data/wearables.js';
-import { seedRand, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner, memberTok } from '../lib/world.js';
+import { seedRand, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner, memberTok } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet, coinsNow } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
@@ -729,7 +729,7 @@ function init() {
     const n = coinAmountFor(coinLive.win);
     pickupPop(coinLive.x, coinLive.y);
     coinFly();
-    passStat('coins_earned', n);
+    passStat('coins_earned', n, COIN_TEST ? 'qa' : 'window');
     if (audioOn) playCoinAudio();
     addHype(3);
     bumpChain();
@@ -2686,7 +2686,7 @@ function init() {
             spotLastCoin = t * 1000;
             spotCoinEarned += 1;
             sugarRush(); // a coin is a pickup — chasing the light sustains the legs
-            passStat('coins_earned', 1);
+            passStat('coins_earned', 1, 'spot');
             renderWallet(true);
             const d = document.createElement('div');
             d.className = 'rv-spotcoin';
@@ -3416,6 +3416,7 @@ function init() {
   // moment for every raver on the floor. QA: ?questtest=<id> still force-starts.
   const QUESTS_ENABLED = true;
   const QUEST_TEST = new URLSearchParams(location.search).get('questtest');
+  if (QUEST_TEST) { try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {} }   // 🧪 forced quests pay 'qa' — this device reads its own ledger
   const QUEST_TTL = 150000;      // unfinished quests quietly pack up
   const questBtn = el('rvQuestActBtn');
   let quest = null;              // { id, def, endAt }
@@ -4061,7 +4062,7 @@ function init() {
     qBtnHide();
     qHint(null);
     addHype(12);                                     // completion pay: XP + meter
-    passStat('coins_earned', 6);
+    passStat('coins_earned', 6, QUEST_TEST ? 'qa' : 'floorquest');
     renderWallet(true);
     const me = myId && ravers.get(myId);
     if (me) floatPlus(me.x, me.y - 10, '+6 🪙');

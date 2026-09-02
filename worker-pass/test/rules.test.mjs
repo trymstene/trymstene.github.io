@@ -89,7 +89,7 @@ r = await pushEv(a, [ev('coins_earned', 9, 'homestead')]);
 ok('an unnamed homestead event passes while RULES_STRICT is off', r.wallet.bal === 9, r.wallet);
 let R = await rec(a.credId);
 ok('…and is counted unruled', R.log.unruled === 1, R.log.unruled);
-r = await pushEv(a, [ev('coins_earned', 30, 'park')]);
+r = await pushEv(a, [ev('coins_earned', 30, 'forge')]);
 ok('an unruled area is untouched', r.wallet.bal === 39, r.wallet);
 r = await pushEv(a, [ev('coins_earned', 26, 'homestead', 'dish'), ev('coins_earned', 70, 'homestead', 'knit'), ev('coins_earned', 45, 'homestead', 'rehome'), ev('coins_earned', 100, 'homestead', 'shed')]);
 ok('every named homestead faucet is paid within its rule', r.wallet.bal === 39 + 26 + 70 + 45 + 100, r.wallet);
@@ -111,7 +111,7 @@ env = mkEnv({ RULES_STRICT: '1' });
 a = await player();
 r = await pushEv(a, [ev('coins_earned', 9, 'homestead')]);
 ok('an unnamed homestead event is refused under RULES_STRICT', r.wallet.bal === 0 && (await lastRows(a, 1))[0].r === 'src', r.wallet);
-r = await pushEv(a, [ev('coins_earned', 9, 'park')]);
+r = await pushEv(a, [ev('coins_earned', 9, 'forge')]);
 ok('…while an unruled area is still fine', r.wallet.bal === 9);
 
 console.log('6. the desk');

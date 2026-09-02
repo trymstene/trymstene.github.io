@@ -7,9 +7,9 @@
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, coinsNow } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, coinsNow, ruleUsed } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
-import { seedRand, presenceRoom, poofInto, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
 import { shopWindow } from '../../shared/products.js';
@@ -1108,7 +1108,7 @@ function init() {
         && Math.hypot(pos.x - coinLive.x, (pos.y - 6) - coinLive.y) < 34) {
       if (!coinWinClaim(coinLive.win)) { coinEl.style.display = 'none'; coinLive = null; return; } // another tab got there first
       const n = coinAmountFor(coinLive.win);
-      passStat('coins_earned', n);
+      passStat('coins_earned', n, COIN_TEST ? 'qa' : 'window');
       refreshHud();
       coinPickFloat(coinLive.x, coinLive.y - 10, n);
       track('rave_coin', { n, at: 'beach' });
@@ -1196,7 +1196,7 @@ function init() {
       track('beach_drift', { find: 'mappiece', n });
     } else if (roll < 35) {
       const n = 2 + Math.floor(r2 * 5);   // 2-6
-      passStat('coins_earned', n);
+      passStat('coins_earned', n, 'bottle');
       refreshHud();
       float(d.x, d.y - 10, '🪙 +' + n + ' bananacoins', true);
       track('beach_drift', { find: 'coins', n });
@@ -1460,7 +1460,8 @@ function init() {
   const fishCoinsLeft = () => {
     let st = {};
     try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
-    return st.day === digDay ? Math.max(0, FISH_COIN_CAP - (st.got || 0)) : FISH_COIN_CAP;
+    const got = Math.max(st.day === digDay ? (st.got || 0) : 0, ruleUsed('beach:fishing').used);   // 📏 this PERSON's day, on any device
+    return Math.max(0, FISH_COIN_CAP - got);
   };
   const addFishCoins = (n) => {
     let st = {};
@@ -1637,7 +1638,7 @@ function init() {
       if (Math.random() < BYCATCH_P) {
         const by = Math.min(2 + Math.floor(Math.random() * 3), fishCoinsLeft());
         if (by > 0) {
-          passStat('coins_earned', by); addFishCoins(by);
+          passStat('coins_earned', by, 'fishing'); addFishCoins(by);
           refreshHud();
           body += '<p class="bh-catch__new">🪙 something shiny on the line — <b>+'
             + by + ' bananacoin' + (by === 1 ? '' : 's') + '</b></p>';
@@ -1659,7 +1660,7 @@ function init() {
         + (c.n === 1 ? '' : 's') + '</b> — spend them at the pier</p>';
     } else if (c.kind === 'coins') {
       const give = Math.min(c.n, fishCoinsLeft());
-      if (give > 0) { passStat('coins_earned', give); addFishCoins(give);
+      if (give > 0) { passStat('coins_earned', give, 'fishing'); addFishCoins(give);
         body = '<div class="bh-catch__big">🪙</div><p><b>' + give + ' bananacoin'
           + (give === 1 ? '' : 's') + '</b> snagged on the hook</p>';
       } else {
@@ -2084,7 +2085,7 @@ function init() {
     // 🪙 loose change rides an ordinary dig ON TOP of whatever else turns up
     if (Math.random() < DIG_COIN_P) {
       const n = digCoins();
-      passStat('coins_earned', n);
+      passStat('coins_earned', n, 'dig');
       refreshHud();
       float(pos.x, pos.y - 50, '🪙 beach change! +' + n, true);
       track('beach_coins', { n, at: 'dig' });
@@ -2520,7 +2521,7 @@ function init() {
         + '</button>';
     const play = document.getElementById('bhStallPlay');
     if (play) play.addEventListener('click', () => {
-      if (!passSpend(def.cost)) return;   // the spend IS the check — a double-tap can't overdraw
+      if (!passSpend(def.cost, 'duck')) return;   // the spend IS the check — a double-tap can't overdraw
       track('beach_stall_play', { stall: def.id, cost: def.cost });
       duckRound(true);
     });
@@ -2593,7 +2594,7 @@ function init() {
         + '</button>';
       const play = document.getElementById('bhStallPlay');
       if (play) play.addEventListener('click', () => {
-        if (!passSpend(def.cost)) return;   // the spend IS the check — a double-tap can't overdraw
+        if (!passSpend(def.cost, 'crab')) return;   // the spend IS the check — a double-tap can't overdraw
         track('beach_stall_play', { stall: def.id, cost: def.cost });
         crabRound(true);
       });
@@ -3024,7 +3025,7 @@ function init() {
         : 'play — ' + COCO_COST + ' coins · ' + COCO_BALLS + ' balls') + '</button>';
     const p = document.getElementById('bhCocoPlay');
     if (p) p.addEventListener('click', () => {
-      if (!passSpend(COCO_COST)) return;   // 💰 one door for money, and it refuses an overdraft
+      if (!passSpend(COCO_COST, 'coco')) return;   // 💰 one door for money, and it refuses an overdraft
       track('beach_stall_play', { stall: 'coco', cost: COCO_COST });
       cocoPaintHud();
       cocoBuild(true);
@@ -3701,7 +3702,8 @@ function init() {
   // your coins up to 100 so the stalls are testable on a phone with no console
   // (coins are XP, never real money — see the stand's one-faucet doctrine).
   if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
-    if (coinBal() < 100) passStat('coins_earned', 100 - coinBal());
+    try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 a QA device reads its own ledger (the server denies 'qa')
+    if (coinBal() < 100) passStat('coins_earned', 100 - coinBal(), 'qa');
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,

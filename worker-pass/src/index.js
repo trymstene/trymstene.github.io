@@ -1185,6 +1185,38 @@ const RULES = {
     quest:  { max: 100, total: 300 },  // Return to Sender wages (15/10/15/20 + a top-up), once per person
     qa:     { deny: 1 },
   },
+  // 🏖 the beach — sized from the 2 Sep faucet audit. ⚠️ `window` is the
+  // shared world coin (world.js): COIN_PERIOD=60 runs on a SECONDS clock, so
+  // a window is 60 s today (the 27 Jul commit meant minutes) — 1440/day × 20
+  // × buff; the day cap is deliberately above that ceiling (a design call for
+  // Trym, not a rule). `dig` and `bottle` have no local cap either; their max
+  // is the real guard until a design cap is chosen.
+  beach: {
+    window:  { max: 40,  day: 60000 },   // tide coin 5|10|20 per world window (bc-win)
+    bottle:  { max: 12,  day: 50000 },   // drift bottle 2-6 on 30% of bottles, one per 22 s
+    fishing: { max: 10,  day: 30 },      // bycatch 2-4 + coin catch 2-5, one 15/day device cap (bh-fishcoins-v1) × buff
+    dig:     { max: 10,  day: 2100000 }, // loose change 2-5 on 16% of digs, 420 ms throttle, no local cap
+    quest:   { max: 30,  count: 1 },     // c1_shelly 15, once ever
+    qa:      { deny: 1 },                // ?beachtest top-up, ?cointest windows
+  },
+  // 🌳 the park — `wish` is the one cap meant to bite: the fountain is
+  // net-positive EV per 1-coin toss, so 7000/day stops a grinder after
+  // ~40-80 minutes of tapping and touches nobody else.
+  park: {
+    wish:  { max: 50,  day: 7000 },   // fountain answer: 25 jackpot (3%) or 4-10 (15-25%) per toss
+    weed:  { max: 6,   day: 300 },    // roots 1-3 on 8% of pulls; ~360 room weeds a day
+    egg:   { max: 80,  day: 3000 },   // the room's verdict: golden 40 / plain 6-12, ~32 lays a day
+    quest: { max: 30,  count: 2 },    // c1_peel_memory 15 + c1_peel_tin 10, once ever each
+    qa:    { deny: 1 },               // window.__park.coins(n), ?parktest shim weeds/eggs
+  },
+  // 🪩 the rave — `spot` tapes one coin per lit second (≤35 per appearance)
+  rave: {
+    window:     { max: 40, day: 60000 },  // the same faucet and bc-win claim as the beach
+    spot:       { max: 2,  day: 60000 },  // spotlight 1 coin/s, ≤40 per 35 s appearance, in-memory cap only
+    floorquest: { max: 12, day: 600 },    // floor quest 6, one per 30-min slot (rv-fq-slot) × buff
+    quest:      { max: 40, count: 1 },    // c1_barty_truth 20, once ever
+    qa:         { deny: 1 },              // ?questtest forced completions, ?cointest windows
+  },
 };
 const rulesStrict = (env) => !!(env && String(env.RULES_STRICT || '') === '1');
 const utcDay = (t) => new Date(t).toISOString().slice(0, 10);

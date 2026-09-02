@@ -93,7 +93,7 @@ export function initFountain(ctx, garden) {
   function doWish() {
     if (tossBusy) return;
     if (coinBal() < 1) { toast('no coins — the rave floor drops them'); return; }
-    passStat('coins_spent', 1);
+    passStat('coins_spent', 1, 'wish');
     refreshHud();
     if (!tossTracked) { tossTracked = true; track('park_toss'); }
     tossBusy = true;
@@ -122,7 +122,7 @@ export function initFountain(ctx, garden) {
     const r = Math.random();
     let bless = '', result = 'wisdom';
     if (r < 0.03) {
-      passStat('coins_earned', 25);
+      passStat('coins_earned', 25, 'wish');
       refreshHud();
       bless = 'the fountain overflows — +25 🪙';
       result = 'jackpot';
@@ -132,7 +132,7 @@ export function initFountain(ctx, garden) {
       result = 'seed';
     } else if (r < 0.28) {
       const n = 4 + Math.floor(Math.random() * 7);
-      passStat('coins_earned', n);
+      passStat('coins_earned', n, 'wish');
       refreshHud();
       bless = 'the fountain returns your kindness — +' + n + ' 🪙';
       result = 'coins';
