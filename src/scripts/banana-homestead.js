@@ -1093,6 +1093,14 @@ function init(visitDoc, visitMiss) {
       // as part of the banana's own animation). Pens and ✥ pins still
       // never bind her — dogBrain owns her targets every frame.
       if (h.a && h.a.sp === 'dog' && !h.follow) dogBrain(h, now);
+      // 🎉 rituals that walk: a graduate comes over to you once; on
+      // naming day her best friend comes to hear the new name
+      if (h.a && h.a.greet) { delete h.a.greet; h.tx = pos.x + 58; h.ty = pos.y + 10; h.waitUntil = 0; }
+      if (h.a && h.a.visit) {
+        const to = hens.find((o) => o.a && o.a.id === h.a.visit);
+        delete h.a.visit;
+        if (to) { h.tx = to.x + 40; h.ty = to.y + 6; h.waitUntil = 0; }
+      }
       // 🎲 a shy one keeps her distance: you within 70px → she steps
       // 60px away (a 3s cooldown keeps it from jitter); nosy is the opposite
       if (h.a && h.tr && h.tr.bold === 0 && !h.follow) {
@@ -1357,6 +1365,8 @@ function init(visitDoc, visitMiss) {
   function lvNext(a) { const l = lvOf(a); return l >= 10 ? 0 : LV_AT[l] - (a.b || 0); }
   function mintId() { return 100000 + Math.floor(Math.random() * 900000); }
   const he0 = (a) => a.sp === 'rooster';
+  // 🎂 her yard-day: every 30 days from the day she arrived
+  const yardDay = (a) => a.ad != null && dayNum() > a.ad && (dayNum() - a.ad) % 30 === 0;
   // 🌟 a star from Lv 5, a crown and a golden glow at Lv 10 — worn on
   // the sprite itself, so progress shows from across the yard
   function petBadge(h) {
@@ -1454,6 +1464,11 @@ function init(visitDoc, visitMiss) {
       const first = !a.name;
       a.name = v;
       save();
+      const bf = first ? bestFriend(a) : null;
+      if (bf) {
+        bf.visit = a.id;
+        setTimeout(() => toast((bf.name || 'the ' + bf.sp) + ' came to hear ' + (he ? 'his' : 'her') + ' new name', 3600), 3800);
+      }
       toast(first ? '❤️ ' + v + '! ' + (he ? 'he knows it’s you' : 'she knows it’s you')
         : (he ? 'he answers to ' : 'she answers to ') + v + ' now', 3600);
       track1(first ? 'homestead_name_animal' : 'homestead_rename_animal');
@@ -1681,6 +1696,7 @@ function init(visitDoc, visitMiss) {
       + flock.filter((a) => a.sp === 'cow' && adult(a)).length * 2;
     const milk = gap * dairy * (fed ? 2 : 1);
     // 🐾 her own tally — the card's "she's laid 31 eggs"
+    const prevGs = new Map(flock.map((a) => [a, a.gs || 0]));
     flock.forEach((a) => {
       if (!adult(a)) return;
       if (a.sp === 'hen' || a.sp === 'goat') a.gs = (a.gs || 0) + gap * (fed ? 2 : 1);
@@ -1698,14 +1714,14 @@ function init(visitDoc, visitMiss) {
     if (fed) flock.forEach((a) => {
       if (!isYoungA(a)) return;
       a.gd += 1;
-      if (a.gd >= 5) { gradN++; if (a.name && !gradName) gradName = a.name; }
+      if (a.gd >= 5) { gradN++; if (a.name && !gradName) gradName = a.name; a.greet = 1; }
       else leftMin = Math.min(leftMin, 5 - a.gd);
     });
-    if (gradN || leftMin < 9) setTimeout(() => toast(gradN
+    const growLine = !(gradN || leftMin < 9) ? '' : gradN
       ? '🎉 ' + (gradName || 'the little one') + (gradN > 1 ? ' & co' : '')
         + ' — all grown up. The mornings start paying tomorrow'
       : '🐣 the little ones grew — fill the trough ' + leftMin
-        + ' more morning' + (leftMin === 1 ? '' : 's'), 4600), 9400);
+        + ' more morning' + (leftMin === 1 ? '' : 's');
     // 💔 THE OBLIGATION (Trym, 2 Sep: "you should hug your animals — a
     // day without hugging loses a heart, that's how Stardew does it"). The
     // one deliberate exception to zero-guilt: every full day since the
@@ -1754,6 +1770,7 @@ function init(visitDoc, visitMiss) {
     const star = bestBond();
     const who = star && star.name ? star.name + (farmAnimals().length > 1 ? ' & co' : '') : 'the farm';
     const bits = [];
+    let mainLine = '';
     if (eggs) bits.push(eggs + ' egg' + (eggs > 1 ? 's' : ''));
     if (milk) bits.push(milk + ' can' + (milk > 1 ? 's' : '') + ' of milk');
     if (press) bits.push('a wheel of cheese');
@@ -1762,14 +1779,29 @@ function init(visitDoc, visitMiss) {
       // the effect is narrated at the moment it matters, never only sold
       const kept = gap >= 3 ? 'you were gone ' + (today - last) + ' days — the rooster kept everything: '
         : '';
-      toast('🥚 ' + (kept || who + ' left ') + bits.join(' · ') + (kept ? '' : ' by the trough')
-        + (fed ? ' — double, for yesterday’s feed' : '') + (lostLine ? ' · ' + lostLine : ''), 4600);
+      mainLine = '🥚 ' + (kept || who + ' left ') + bits.join(' · ') + (kept ? '' : ' by the trough')
+        + (fed ? ' — double, for yesterday’s feed' : '') + (lostLine ? ' · ' + lostLine : '');
     } else if (lostLine) {
-      toast(lostLine, 4600);
+      mainLine = lostLine;
     }
-    if (flock.some((a) => a.sp === 'sheep' && (a.wd || 0) >= 3)) {
-      setTimeout(() => toast('🧶 the sheep is woolly — tap her to shear', 3600), 4600);
-    }
+    const woolLine = flock.some((a) => a.sp === 'sheep' && (a.wd || 0) >= 3)
+      ? '🧶 the sheep is woolly — tap her to shear' : '';
+    // 🎉 RITUALS (Trym: care and emotion is what can shine here)
+    // her first egg / can gets her name on it
+    const firstA = flock.find((a) => a.name && prevGs.get(a) === 0 && (a.gs || 0) > 0 && a.sp !== 'dog');
+    const firstLine = firstA
+      ? '🥚 ' + firstA.name + '’s first ' + (firstA.sp === 'hen' ? 'egg' : 'can of milk')
+        + ' — ' + (he0(firstA) ? 'he’s very pleased with himself' : 'she’s very pleased with herself')
+      : '';
+    // her yard-day, every 30 days since she arrived
+    const yd = flock.filter((a) => a.name && yardDay(a));
+    const ydLine = yd.length
+      ? '🎂 ' + yd[0].name + (yd.length > 1 ? ' & co' : '') + ' — '
+        + (yd.length > 1 ? 'yard-days today' : ((today - yd[0].ad) / 30 === 1 ? 'a month' : ((today - yd[0].ad) / 30) + ' months') + ' here today')
+      : '';
+    // 📰 the news, one line at a time, in order of importance
+    const news = [mainLine, firstLine, growLine, ydLine, woolLine].filter(Boolean);
+    news.forEach((t, i) => setTimeout(() => toast(t, 4600), i * 4800));
   }
   function farmEggTick() {
     if (visiting) return;                               // pay-side gate: a
@@ -1832,7 +1864,7 @@ function init(visitDoc, visitMiss) {
       const inc = isYoungA(a) ? 2 : 1;
       a.b = (a.b || 0) + inc;
       save();
-      float(h.x, h.y - 44, '❤️');
+      float(h.x, h.y - 44, yardDay(a) ? '❤️❤️' : '❤️');   // 🎂 two on her yard-day
       // 🐾 LEVEL UP — a hop, a float, the badge; loud and celebrated
       const lvWas = lvOf({ b: a.b - inc }), lvNow = lvOf(a);
       if (lvNow > lvWas) {
