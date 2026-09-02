@@ -921,6 +921,13 @@ function init(visitDoc, visitMiss) {
     for (const r of liveRects) if (inRect(x, y, r)) return true;
     return false;
   }
+  // the solid a point stands in (bounds are not a thing you can be inside of)
+  function solidAt(x, y) {
+    for (const r of OB_RECTS) if (inRect(x, y, r)) return r;
+    for (const r of fenceRects) if (inRect(x, y, r)) return r;
+    for (const r of liveRects) if (inRect(x, y, r)) return r;
+    return null;
+  }
   function blocked(x, y) {
     if (inside) {
       const I = INTERIORS[inside];
@@ -1211,16 +1218,33 @@ function init(visitDoc, visitMiss) {
         const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150)
           : 34 * (h.tr ? [0.75, 1, 1.3][h.tr.pace] : 1);   // 🎲 a dawdler, or quick on her feet
         let nx = h.x + dx / d * spd * dt, ny = h.y + dy / d * spd * dt;
-        // 🐕 the yard's solids are solid for her too (Trym: "the dog runs over
-        // the fence… the house and other items") — the flock is clamped to its
-        // pen, she is not, so she meets the player's own colliders (fences,
-        // the house, placed items, trees): a step into one slides along it, a
-        // dead stop hands her brain a rest so she never leans on it. A dog
-        // already standing in a solid may always step out of it.
-        if (h.a && h.a.sp === 'dog' && blockedOut(nx, ny) && !blockedOut(h.x, h.y)) {
-          if (!blockedOut(nx, h.y)) ny = h.y;
-          else if (!blockedOut(h.x, ny)) nx = h.x;
-          else { nx = h.x; ny = h.y; if (h.dg) { h.dg.m = 'rest'; h.dg.until = now + 2500; h.dg.heelAt = now; } }
+        // 🚧 the yard's solids are solid for every animal (Trym: "the dog runs
+        // over the fence… the house and other items… animals walk through the
+        // cheese press") — they meet the player's own colliders (fences, the
+        // house, placed items, trees): a step into one slides along it; a dead
+        // stop hands the dog's brain a rest and a grazer a fresh wander target
+        // (she pauses, then picks somewhere else). An animal standing INSIDE a
+        // solid (spawned there, or a piece set down on her) may only step out
+        // by the nearest edge — never across it; "already inside, so free"
+        // was how a hen strolled through a whole fence line.
+        if (h.a) {
+          const inR = solidAt(h.x, h.y);
+          let stuck = false;
+          if (!inR) {
+            if (blockedOut(nx, ny)) {
+              if (!blockedOut(nx, h.y)) ny = h.y;
+              else if (!blockedOut(h.x, ny)) nx = h.x;
+              else stuck = true;
+            }
+          } else {
+            const depth = (x, y) => Math.min(x - inR[0], inR[2] - x, y - inR[1], inR[3] - y);
+            if (inRect(nx, ny, inR) && depth(nx, ny) >= depth(h.x, h.y)) stuck = true;
+          }
+          if (stuck) {
+            nx = h.x; ny = h.y;
+            if (h.a.sp === 'dog') { if (h.dg) { h.dg.m = 'rest'; h.dg.until = now + 2500; h.dg.heelAt = now; } }
+            else { h.tx = h.x; h.ty = h.y; h.waitUntil = 0; }
+          }
         }
         h.x = nx; h.y = ny;
         // ⚠️ dx < 0, NOT dx > 0 — the hens walked backwards for exactly this
