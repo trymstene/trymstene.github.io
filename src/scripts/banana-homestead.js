@@ -3086,7 +3086,7 @@ function init(visitDoc, visitMiss) {
         b.type = 'button';
         b.textContent = c === 'all' ? 'All' : (CAT_LABELS[c] || c);
         b.setAttribute('aria-pressed', String(c === curCat));
-        b.addEventListener('click', () => { shopEl.dataset.cat = c; renderShop(); });
+        b.addEventListener('click', () => { shopEl.dataset.cat = c; renderShop(); track('homestead_shelf', { cat: c }); });
         catsRow.appendChild(b);
       });
       if (full) {
@@ -3326,9 +3326,11 @@ function init(visitDoc, visitMiss) {
     if (e.target === shopEl) closeShop();
     const t = e.target.closest('[data-tab]');
     if (t && t.tagName === 'BUTTON') {
+      const from = shopEl.dataset.tab;
       shopEl.dataset.tab = t.dataset.tab;
       shopHead();
       renderShop();
+      track('homestead_app', { app: t.dataset.tab, from });   // which app they chose, from where
     }
   });
   document.getElementById('hsShopClose').addEventListener('click', () => {
