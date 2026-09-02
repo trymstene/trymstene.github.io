@@ -100,6 +100,7 @@ const WORLD_KEYS = [
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
   'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
+  'pass-ev-v1',                                          // 📜 the unsent ledger tape — never the next person's
   GID_KEY, WT_KEY, PULL_KEY,
 ];
 function wipeWorld() {

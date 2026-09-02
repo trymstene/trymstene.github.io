@@ -101,6 +101,7 @@ export function collectBlob() {
     name: nameNow, nameAt: stampClock('ps-name-seen', 'ps-name-at', nameNow),
     bbAt: stampClock('bb-seen', 'bb-at', bbNow),
     member: readMemberGrant(),            // 🎩 person-scoped, max(until)-merged
+    ev: evRead().slice(0, 300), evDrop: evDropped, evDev: DEV(),   // 📜 the tape (stripped server-side, never stored in the blob)
   };
 }
 
@@ -156,13 +157,17 @@ function pushNow() {
   let link = null;
   try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
   if (!link || !link.credId || !link.token) return;
-  const body = JSON.stringify({ credId: link.credId, token: link.token, blob: collectBlob() });
+  const blob = collectBlob();
+  const sent = new Set((blob.ev || []).map((e) => e.id));
+  const body = JSON.stringify({ credId: link.credId, token: link.token, blob });
   // sendBeacon survives the page going away; fetch is the everyday path
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && navigator.sendBeacon) {
     try { navigator.sendBeacon(PASS_API + '/push', new Blob([body], { type: 'application/json' })); return; } catch (e) {}
   }
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
-    .then((r) => (r && r.ok ? r.json() : null)).then(keepGid).catch(() => {});
+    .then((r) => (r && r.ok ? r.json() : null))
+    .then((d) => { if (d && d.ok) { evAck(sent); evDropped = 0; } keepGid(d); })
+    .catch(() => {});
 }
 // 🫧 AN ANONYMOUS PASS AT THE FIRST MEANINGFUL WRITE. Every player gets a
 // server-side home — and a world id + the token that proves it — the moment
@@ -354,6 +359,7 @@ export function passPatch(id, opts = {}) {
   if (p.patches[id]) return false;
   p.patches[id] = Date.now();
   write(p);
+  evAdd('patch:' + id, 1);
   const def = PATCHES.find((d) => d.id === id);
   // players read "badge"; the code keeps saying patch (the JELLY precedent —
   // ids, storage and GA events never rename)
@@ -421,8 +427,33 @@ const lvlOf = (rep) => {
 const areaOf = () => {
   const p = (typeof location !== 'undefined' && location.pathname) || '';
   return p.indexOf('/rave') === 0 ? 'rave' : p.indexOf('/park') === 0 ? 'park'
-    : p.indexOf('/beach') === 0 ? 'beach' : p.indexOf('/forge') === 0 ? 'forge' : 'site';
+    : p.indexOf('/beach') === 0 ? 'beach' : p.indexOf('/forge') === 0 ? 'forge'
+    : p.indexOf('/homestead') === 0 ? 'homestead' : p.indexOf('/make-a-banana') === 0 ? 'builder'
+    : p.indexOf('/pass') === 0 ? 'pass' : 'site';
 };
+
+// 📜 THE LEDGER TAPE (2 Sep 2026, slice 1 of the server-side ledger). Every
+// stat write also drops a small event — key, delta, area, optional source —
+// into an outbox that rides the next push. The pass worker keeps the last few
+// hundred per player INSIDE the pass record (no extra storage calls), dedupes
+// by id (a beacon push has no ack, so events can travel twice), and compares
+// what this device's own slot moved against what its events explain: the
+// DRIFT. Totals stay client-authoritative — this is the audit trail, not the
+// wallet. Device-only key; pass-sync wipes it on an account switch.
+const EV_KEY = 'pass-ev-v1', EV_CAP = 240;
+let evDropped = 0;
+function evRead() {
+  try { const a = JSON.parse(localStorage.getItem(EV_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function evWrite(a) { try { localStorage.setItem(EV_KEY, JSON.stringify(a)); } catch (e) {} }
+function evAdd(k, d, src) {
+  const a = evRead();
+  a.push({ id: Math.random().toString(16).slice(2, 10).padEnd(8, '0'), t: Date.now(), k, d, a: areaOf(),
+    ...(src ? { s: String(src).slice(0, 32) } : {}) });
+  if (a.length > EV_CAP) { evDropped += a.length - EV_CAP; a.splice(0, a.length - EV_CAP); }
+  evWrite(a);
+}
+function evAck(ids) { if (ids && ids.size) evWrite(evRead().filter((e) => !ids.has(e.id))); }
 
 // 🍳 THE KITCHEN'S REACH (Homestead M2): a cooked dish buffs the WHOLE world
 // from this one crossing — every coin/rep grant in every area flows through
@@ -451,7 +482,7 @@ export function seedCount(crop) {
   return Math.max(0, (s['seedg_' + crop] || 0) - (s['seedu_' + crop] || 0));
 }
 
-export function passStat(key, delta = 1) {
+export function passStat(key, delta = 1, src) {
   const b = (delta > 0 && (key === 'coins_earned' || key === 'rep')) ? buffGet() : null;
   if (b && ((key === 'coins_earned' && b.fx === 'coins2') || (key === 'rep' && b.fx === 'rep2'))) {
     delta *= 2;
@@ -472,6 +503,7 @@ export function passStat(key, delta = 1) {
   const d = DEV();
   p.led[key][d] = (+p.led[key][d] || 0) + delta;
   writeRaw(p);
+  evAdd(key, delta, src);   // 📜 the tape sees the delta the slot really moved (buff included)
   const now = statTotal(p, key);
   // 🎖 LEVELS HAPPEN EVERYWHERE, BUT ONLY THE RAVE EVER SAID SO. rep is a world
   // stat — the park waters it up, the beach digs it up — and every grant in
@@ -490,17 +522,17 @@ export function passStat(key, delta = 1) {
 // 💰 the only two ways money moves. passSpend refuses an overdraft instead of
 // digging a hole the wallet reads as an empty purse (an overdrawn wallet used
 // to silently swallow everything the player earned until it refilled).
-export function passSpend(n) {
+export function passSpend(n, src) {
   const cost = Math.max(0, Math.round(+n || 0));
   if (!cost) return true;
   if (coinsNow() < cost) return false;
-  passStat('coins_spent', cost);
+  passStat('coins_spent', cost, src);
   return true;
 }
-export function passRefund(n) {
+export function passRefund(n, src) {
   const back = Math.max(0, Math.round(+n || 0));
   if (!back) return 0;
-  return passStat('coins_refunded', back);
+  return passStat('coins_refunded', back, src);
 }
 // the wallet, in the one place that owns the formula (world-hud re-exports it)
 export function coinsNow() {

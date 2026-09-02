@@ -1396,6 +1396,11 @@ const description = 'Authorized banana personnel only.';
         [p.badges, 'badges'], [p.rep, 'rep'], [p.jelly, 'jelly'],
         [p.days, 'days played'], [p.devices, 'devices'], [p.shelf, 'on the shelf'],
         [p.coinsEarned, 'coins earned'], [p.coinsSpent, 'coins spent'],
+        // 📜 the tape: how many events the player's devices reported, and the
+        // drift — what their ledger moved beyond what those events explain.
+        // 0 = every coin has a story. Big and growing = look at the events.
+        // (advisory: a device on old JS reports no events at all)
+        [p.ev || 0, 'events logged'], [p.drift || 0, 'drift' + (p.unsure ? ' · ' + p.unsure + ' unsure' : '')],
       ].forEach(([v, label]) => {
         const c = document.createElement('div');
         c.className = 'hq-stat';
@@ -1407,6 +1412,22 @@ const description = 'Authorized banana personnel only.';
         stats.appendChild(c);
       });
       wrap.appendChild(stats);
+
+      if (Array.isArray(p.evLast) && p.evLast.length) {
+        wrap.appendChild(sec('📜 the last events'));
+        const tape = document.createElement('div');
+        tape.className = 'hq-gear';
+        p.evLast.slice().reverse().forEach((e) => {
+          const s2 = document.createElement('span');
+          s2.className = 'hq-gearchip';
+          const when = new Date(e.t || 0);
+          s2.textContent = when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' '
+            + when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+            + ' · ' + (e.a || '?') + ' · ' + e.k + ' ' + (e.d > 0 ? '+' : '') + e.d + (e.s ? ' (' + e.s + ')' : '');
+          tape.appendChild(s2);
+        });
+        wrap.appendChild(tape);
+      }
 
       wrap.appendChild(sec('🎒 the gear'));
       const gearBox = document.createElement('div');

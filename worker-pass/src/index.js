@@ -908,6 +908,12 @@ async function adminScan(env) {
       gear,
       glow: blob.glow === '1',
       anon: !!rec.anon,                          // 🫧 a server pass nobody has claimed yet
+      // 📜 the tape: events kept, drift score (|slot move − events| over the
+      // money keys), pushes the drift could not judge, and the last few events
+      ev: (rec.log && rec.log.n) || 0,
+      drift: driftScore(rec.log),
+      unsure: (rec.log && rec.log.unsure) || 0,
+      evLast: ((rec.log && rec.log.ev) || []).slice(-8).map((e) => ({ t: e.t, k: e.k, d: e.d, a: e.a, ...(e.s ? { s: e.s } : {}) })),
     });
   }
   rows.sort((a, b) => b.updated - a.updated);
@@ -1089,10 +1095,69 @@ async function mintToken(rec) {
 // ONLY legitimate move is to adopt what the server sends down — so stripping it
 // on the way up costs a real member nothing.
 function clientBlob(blob) {
-  if (!blob || typeof blob !== 'object' || !('member' in blob)) return blob;
-  const { member, ...rest } = blob;
+  if (!blob || typeof blob !== 'object') return blob;
+  // `member` is server-authored; `ev`/`evDrop`/`evDev` are the ledger tape,
+  // consumed by /push and never part of the blob
+  const { member, ev, evDrop, evDev, ...rest } = blob;
   return rest;
 }
+
+// ---------- 📜 THE LEDGER TAPE (2 Sep 2026, slice 1 of the server-side ledger) ----------
+// Every stat write on a device also sends a small event with the next push:
+// { id, t, k, d, a (area), s? (source) }. We keep the last LOG_CAP per player
+// INSIDE the home record — the record is read and written on every push
+// anyway, so the tape costs no extra R2 call — dedupe by id (a beacon push
+// has no ack and re-sends), and score DRIFT: how far the pushing device's own
+// ledger slot moved beyond what its events explain. Honest play drifts 0.
+// A DevTools edit of pass-v1 moves a slot with no event behind it — that is
+// the number the desk shows. ⚠️ Advisory, not a verdict: a device still on
+// pre-tape JS pushes slot moves with no events at all (drift = everything),
+// and a push whose outbox overflowed (evDrop > 0) is skipped as `unsure`.
+// Totals stay client-authoritative; nothing here changes what a player has.
+const LOG_CAP = 600, SEEN_CAP = 400, EV_MAX = 300;
+const DRIFT_KEYS = ['coins_earned', 'coins_spent', 'coins_refunded', 'rep', 'jelly'];
+function slotsOf(blob, dv) {
+  const out = {};
+  const led = (blob && blob.pass && blob.pass.led) || {};
+  if (dv) for (const k in led) { const v = +(led[k] && led[k][dv]); if (Number.isFinite(v)) out[k] = v; }
+  return out;
+}
+function tapeIn(home, ev, evDrop, dv, before, after) {
+  const log = home.log || (home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
+  log.pushes = (log.pushes || 0) + 1;
+  const seen = new Set(log.seen || []);
+  const sum = {};
+  const now = Date.now();
+  let added = 0;
+  for (const e of (Array.isArray(ev) ? ev : []).slice(0, EV_MAX)) {
+    if (!e || typeof e !== 'object') continue;
+    const id = String(e.id || '');
+    const k = String(e.k || '').slice(0, 32);
+    const d = +e.d;
+    if (!/^[a-f0-9]{6,12}$/.test(id) || seen.has(id) || !k || !Number.isFinite(d) || Math.abs(d) > 1e6) continue;
+    const row = { id, t: Math.min(+e.t || now, now), k, d, a: String(e.a || '').slice(0, 16), at: now };
+    if (e.s) row.s = String(e.s).slice(0, 32);
+    log.ev.push(row);
+    seen.add(id); log.seen.push(id); added++;
+    if (!k.startsWith('patch:')) sum[k] = (sum[k] || 0) + d;
+  }
+  log.n = (log.n || 0) + added;
+  if (log.ev.length > LOG_CAP) log.ev.splice(0, log.ev.length - LOG_CAP);
+  if (log.seen.length > SEEN_CAP) log.seen.splice(0, log.seen.length - SEEN_CAP);
+  const dropped = Math.max(0, Math.floor(+evDrop || 0));
+  if (dropped) { log.drop = (log.drop || 0) + dropped; log.unsure = (log.unsure || 0) + 1; return added; }
+  if (!dv) return added;
+  // the drift: what the slot moved, minus what the tape explains, per key
+  log.drift = log.drift || {};
+  const keys = new Set([...Object.keys(before), ...Object.keys(after), ...Object.keys(sum)]);
+  for (const k of keys) {
+    const moved = (after[k] || 0) - (before[k] || 0);
+    const d = moved - (sum[k] || 0);
+    if (d) { log.drift[k] = (log.drift[k] || 0) + d; log.driftAt = now; }
+  }
+  return added;
+}
+const driftScore = (log) => (log && log.drift ? DRIFT_KEYS.reduce((t, k) => t + Math.abs(log.drift[k] || 0), 0) : 0);
 function blobOk(blob) {
   return blob && typeof blob === 'object' && JSON.stringify(blob).length <= MAX_BLOB;
 }
@@ -1689,7 +1754,11 @@ async function push(request, env) {
   const R = await tokenRec(env, b.credId, b.token);
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
   if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
+  // 📜 the pushing device's own slots, before and after the merge
+  const dv = /^[\w-]{1,8}$/.test(String(b.blob.evDev || '')) ? String(b.blob.evDev) : '';
+  const before = slotsOf(R.home.blob, dv);
   R.home.blob = mergeBlob(R.home.blob, clientBlob(b.blob));
+  tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv));
   await saveKey(env, R.homeKey, R.home);
   return json({ ok: true, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }
