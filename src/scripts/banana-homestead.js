@@ -10,7 +10,7 @@ import pxEdit from '../icons/pixelart/edit.svg?raw';
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
@@ -357,10 +357,7 @@ function init(visitDoc, visitMiss) {
   const saveRaw = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
   // debounced publish of the public snapshot (the yard the neighbours see)
   let pushT = null;
-  function pushYard() {
-    if (visiting || !state.claimedAt || !state.slug) return;
-    clearTimeout(pushT);
-    pushT = setTimeout(() => {
+  function yardBody() {
       // 🛋 rooms travel with the yard now (visitor interiors, 13 Aug):
       // per-tier furnishing lists, trimmed to what the worker will keep
       const pubIn = {};
@@ -369,7 +366,7 @@ function init(visitDoc, visitMiss) {
           .map((it) => ({ id: it.id, x: Math.round(it.x), y: Math.round(it.y) }));
         if (l.length) pubIn[t2] = l;
       });
-      yFetch('/save', { name: state.name, state: {
+      return { name: state.name, since: state.pubUpdated || undefined, state: {
         stage: state.stage, style: state.style, look: state.look, home: state.home,
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
@@ -391,14 +388,52 @@ function init(visitDoc, visitMiss) {
           id: m.id || undefined, ad: m.ad == null ? undefined : Math.round(m.ad),
           gs: Math.round(m.gs || 0), sd: m.sd == null ? undefined : Math.round(m.sd),
           pa: m.pa || undefined })),   // a rehomed kid keeps her parent on every device (the tree)
-      } }).then((r) => {
+      } };
+  }
+  function pushYard() {
+    if (visiting || !state.claimedAt || !state.slug) return;
+    clearTimeout(pushT);
+    pushT = setTimeout(() => {
+      yFetch('/save', yardBody()).then((r) => {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
         // still waiting to push — device clocks are never compared
         if (r && r.updated) { state.pubUpdated = r.updated; state.dirty = 0; saveRaw(); }
-      }).catch(() => {});
+      }).catch((e) => {
+        // 409 = this device synced before the yard's current stamp: another
+        // device changed the yard since. Merge theirs in (animals, grass and
+        // memories by id — a bought animal never vanishes), then save again.
+        if (String(e && e.message || '').includes('409')) yardResync();
+      });
     }, 2500);
   }
+  function yardResync() {
+    yFetch('/mine', {}).then((r) => {
+      if (!r || !r.slug || r.slug !== state.slug) return;
+      const byId = (mine, theirs) => {
+        const seen = new Set((theirs || []).map((x) => x.id).filter(Boolean));
+        return [...(theirs || []), ...(mine || []).filter((x) => x.id && !seen.has(x.id))];
+      };
+      const merged = { ...state, ...syncedFields(r),
+        animals: byId(state.animals, r.animals), grass: byId(state.grass, r.grass), memory: byId(state.memory, r.memory) };
+      if (Array.isArray(merged.animals)) merged.hens = merged.animals.filter((a) => a.sp === 'hen').length || 0;
+      merged.pubUpdated = r.updated || Date.now();
+      merged.dirty = 1;
+      try { localStorage.setItem(HS_KEY, JSON.stringify(merged)); } catch (e) { return; }
+      track1('homestead_pull', { how: 'resync' });
+      toast('⬇️ fetching your homestead…', 2400);
+      setTimeout(() => location.reload(), 700);
+    }).catch(() => {});
+  }
+  // a yard still waiting to push when the tab goes away flushes as a beacon
+  // (text/plain: no preflight on unload; the worker parses the body as JSON)
+  addEventListener('pagehide', () => {
+    if (visiting || !state.dirty || !state.claimedAt || !state.slug || !navigator.sendBeacon) return;
+    clearTimeout(pushT);
+    try {
+      navigator.sendBeacon(YARD_API + '/save', new Blob([JSON.stringify({ ...yardBody(), pass: worldOwner(), alt: worldSid(), wt: worldToken() })], { type: 'text/plain' }));
+    } catch (e) {}
+  });
   // ⚠️ TDZ: camTarget() reads these and is CALLED at spawn setup, so they
   // must live above the camera section (the rave-floor lesson)
   let placing = null;   // { id, x, y, el, moving }
@@ -2853,6 +2888,7 @@ function init(visitDoc, visitMiss) {
     get DISHES() { return DISHES; },
     get bondUp() { return bondUp; },
     get buffGet() { return buffGet; },
+    get coinsPaid() { return coinsPaid; },
     get buffSet() { return buffSet; },
     get cookEl() { return cookEl; },
     get farmStats() { return farmStats; },
@@ -3026,7 +3062,7 @@ function init(visitDoc, visitMiss) {
             passStat('coins_earned', sale, 'shed');
             save();
             refreshHud();
-            shopNote('💰 sold — +' + sale + ' coins');
+            shopNote('💰 sold — +' + coinsPaid(sale) + ' coins');
             track('homestead_sell', { id: id, sale: sale });
             shopHead();
             renderShop();
@@ -3133,12 +3169,23 @@ function init(visitDoc, visitMiss) {
     if (nSold <= 0) { if ((state[kind] || 0) > 0) toast('the stall is done for today — it opens again tomorrow', 2800); return; }
     state[kind] -= nSold;
     const coins = nSold * price;
-    passStat('coins_earned', coins, 'stall');
+    passStat('coins_earned', coins, 'stall', kind + '-' + nSold);   // the goods ride the row: a refused sale puts them back
     try { localStorage.setItem('hs-stall-v1', JSON.stringify({ d: dayNum(), sold: stallDay().sold + coins })); } catch (e) {}
     save(); refreshHud(); renderShop();
-    toast('🪙 +' + coins + ' — the stall took ' + nSold + ' ' + label, 3200);
+    toast('🪙 +' + coinsPaid(coins) + ' — the stall took ' + nSold + ' ' + label, 3200);
     track1('homestead_sell_stall', { kind, n: nSold });
   }
+  // a stall sale the server would not pay (the cap was already spent on
+  // another device): the goods go quietly back on the shelf, the number
+  // reads what the server holds — nothing to explain, the eggs are there
+  document.addEventListener('pass:refused', (e) => {
+    const { k, s, i } = (e && e.detail) || {};
+    if (k !== 'coins_earned' || s !== 'stall' || !i) return;
+    const m = /^(eggs|milk|wool|cheese)-(\d{1,3})$/.exec(String(i));
+    if (!m) return;
+    state[m[1]] = (state[m[1]] || 0) + +m[2];
+    save(); renderShop();
+  });
   function shopHead() {
     const hd = SHOP_HEADS[shopEl.dataset.tab] || SHOP_HEADS.order;
     document.getElementById('hsShopTitle').textContent = hd[0];

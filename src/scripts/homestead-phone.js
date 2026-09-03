@@ -22,10 +22,10 @@ const PX = { edit: pxEdit, check: pxCheck, 'heart-solid': pxHeartS, heart: pxHea
 // an inline <svg> string, sized in px; currentColor follows the host
 export const ico = (nm, size) => (PX[nm] || '').replace('<svg ', '<svg width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true" ');
 let C = null;
-let BABY_W, SPOT_W, cap, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf;
+let BABY_W, bestFriend, cap, CHEESE_C, closeShop, COIN, coinsPaid, dayNum, DEX, EGG_C, farmAnimals, farmMemory, fedToday, he0, INCAP, inList, isIndoorItem, isOld, isYoungA, lvNext, lvOf, MILK_C, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, SPOT_W, spotOf, STALL_CAP, stallDay, stallSell, startPlacing, syncLock, toast, toGrass, track, track1, traitsOf, WOOL_C;
 export function init(ctx) {
   C = ctx;
-  ({ BABY_W, SPOT_W, cap, isOld, toGrass, CHEESE_C, COIN, DEX, EGG_C, INCAP, MILK_C, STALL_CAP, WOOL_C, bestFriend, closeShop, dayNum, farmAnimals, farmMemory, fedToday, he0, inList, isIndoorItem, isYoungA, lvNext, lvOf, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, spotOf, stallDay, stallSell, startPlacing, syncLock, toast, track, track1, traitsOf } = ctx);
+  ({ BABY_W, bestFriend, cap, CHEESE_C, closeShop, COIN, coinsPaid, dayNum, DEX, EGG_C, farmAnimals, farmMemory, fedToday, he0, INCAP, inList, isIndoorItem, isOld, isYoungA, lvNext, lvOf, MILK_C, mintId, openShop, passSpend, passStat, penCaps, petEl, refreshHud, renderShop, save, shopHead, shopNote, spCount, SPOT_W, spotOf, STALL_CAP, stallDay, stallSell, startPlacing, syncLock, toast, toGrass, track, track1, traitsOf, WOOL_C } = ctx);
 }
 
 // 🪪 THE CARD — her portrait, her level as dots, three stat tiles with
@@ -396,7 +396,7 @@ export function renderAnimals(list) {
       C.state.hens = C.state.animals.filter((a2) => a2.sp === 'hen').length;
       passStat('coins_earned', price(a.sp), 'rehome');
       save(); refreshHud(); renderShop();
-      toast('🪙 +' + price(a.sp) + ' — ' + (a.name ? a.name + ' will remember you'
+      toast('🪙 +' + coinsPaid(price(a.sp)) + ' — ' + (a.name ? a.name + ' will remember you'
         : 'the ' + a.sp + ' found a new farm'), 3600);
       track1('homestead_sell_animal', { sp: a.sp });
     });
@@ -518,7 +518,7 @@ export function shedRows(list) {
         passStat('coins_earned', sale2, 'shed');
         save();
         refreshHud();
-        shopNote('💰 sold — +' + sale2 + ' coins');
+        shopNote('💰 sold — +' + coinsPaid(sale2) + ' coins');
         track('homestead_sell', { id: id, sale: sale2 });
         shopHead();
         renderShop();

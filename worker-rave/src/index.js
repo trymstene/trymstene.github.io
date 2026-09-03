@@ -2775,6 +2775,12 @@ export class YardRoom {
       if (!slug) return json({ err: 'unclaimed' }, 404);
       const doc = await this.state.storage.get('y:' + slug);
       if (!doc) return json({ err: 'gone' }, 404);
+      // ⏱ a device that last synced BEFORE the yard's current stamp is stale:
+      // its wholesale save would erase what another device did since. It
+      // gets the stamp back, pulls, merges and saves again (the client's
+      // yardResync) — a bought animal never vanishes under an old tab.
+      const since = +body.since;
+      if (Number.isFinite(since) && since > 0 && doc.updated && since < doc.updated) return json({ err: 'stale', updated: doc.updated }, 409);
       doc.state = this.yardSan(body.state);
       if (name) doc.name = name;
       doc.updated = Date.now();

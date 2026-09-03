@@ -917,6 +917,7 @@ async function adminScan(env) {
       unruled: (rec.log && rec.log.unruled) || 0,
       // 🎩 stand ownership: frozen-in ids and pushes from pre-slice tabs
       ownFroze: rec.ownFroze || [],
+      veteran: !!rec.veteran,
       ownLegacy: (rec.log && rec.log.ownLegacy) || 0,
       coinsEarned: stats.coins_earned || 0,
       coinsSpent: stats.coins_spent || 0,
@@ -1164,8 +1165,17 @@ function clientBlob(blob, keepOwn) {
 }
 // the one door an inbound client blob takes onto a home record
 const NEW_FLOOR = 300;   // the most a brand-new record's claimed ledger may open with
-function takeBlob(home, blob, keepOwn) {
-  const fresh = !home.ownAt && !!home.blob;   // a record that never held a blob has nothing to grandfather
+// 🧓 a VETERAN: a ledger created before the rollout, minting its first server
+// pass now. Its claims are unverifiable like any new record's, but they are
+// almost always honest weeks of play — so the mint grandfathers them (gear
+// kept, coins to a sane ceiling) instead of shrinking a real player's purse.
+// The door this leaves open is one forged anonymous pass; a fold into a real
+// pass still carries only event-backed coins and authored gear.
+const ROLLOUT_AT = Date.UTC(2026, 8, 2);          // 2 Sep 2026
+const VETERAN_CEIL = 5000;
+const isVeteranBlob = (blob) => !!(blob && blob.pass && Number.isFinite(+blob.pass.created) && +blob.pass.created > 0 && +blob.pass.created < ROLLOUT_AT);
+function takeBlob(home, blob, keepOwn, freeze) {
+  const fresh = freeze || (!home.ownAt && !!home.blob);   // a record that never held a blob has nothing to grandfather — unless it is a veteran's
   const out = mergeBlob(home.blob, clientBlob(blob, fresh || keepOwn) || null);
   if (fresh) {
     home.ownAt = Date.now();
@@ -1272,7 +1282,7 @@ const rulesStrict = (env) => !!(env && String(env.RULES_STRICT || '') === '1');
 // 🔁 a refund must look like the spend it undoes: the park's three server
 // goods, at their prices, a sane day ceiling — anything else is refused
 const REFUNDS = {
-  park: { seed: { max: 650, day: 2000 }, border: { max: 3, day: 60 }, birdhouse: { max: 30, day: 300 } },
+  park: { seed: { max: 1600, day: 4000 }, border: { max: 3, day: 60 }, birdhouse: { max: 30, day: 300 } },   // seed = the multiplied price of a held-6 planter
 };
 function refundGate(home, row, log) {
   const area = REFUNDS[row.a];
@@ -1348,7 +1358,7 @@ function tapeIn(home, ev, evDrop, dv, before, after, postBlob, strict, ownFresh,
     let explained = 0;
     for (const r of rows) if (COIN_KEYS.includes(r.k)) explained += r.k === 'coins_spent' ? -r.d : r.d;
     let base = ledgerBalance(postBlob) - explained;
-    if (home.born) base = Math.min(base, NEW_FLOOR);
+    if (home.born) base = Math.min(base, home.veteran ? VETERAN_CEIL : NEW_FLOOR);
     home.wallet = { base, earned: 0, spent: 0, refunded: 0, seq: 0, refused: 0, frozenAt: now };
   }
   const w = home.wallet;
@@ -1443,8 +1453,9 @@ async function anon(request, env) {
   const credId = 'a:' + bufToHex(crypto.getRandomValues(new Uint8Array(24)));
   // a brand-new record adopts NO claimed gear (born + ownAt stamped) and its
   // coins open at a capped floor — an unverifiable claim is not a grandfather
-  const rec = { anon: 1, tokens: {}, blob: null, born: Date.now(), ownAt: Date.now(), ownFroze: [] };
-  rec.blob = takeBlob(rec, blob || null);
+  const veteran = isVeteranBlob(blob);
+  const rec = { anon: 1, tokens: {}, blob: null, born: Date.now(), ...(veteran ? { veteran: 1 } : { ownAt: Date.now(), ownFroze: [] }) };
+  rec.blob = takeBlob(rec, blob || null, false, veteran);
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
   const R = { home: rec, homeKey: await keyFor(credId) };
@@ -1551,8 +1562,9 @@ async function register(request, env) {
       return json({ token: tk, joined: true }, 200, cors(env, request));
     }
   }
-  const rec = existing || { pk, alg, tokens: {}, blob: null, born: Date.now(), ownAt: Date.now(), ownFroze: [] };
-  rec.blob = takeBlob(rec, blob);
+  const veteran = !existing && isVeteranBlob(blob);
+  const rec = existing || { pk, alg, tokens: {}, blob: null, born: Date.now(), ...(veteran ? { veteran: 1 } : { ownAt: Date.now(), ownFroze: [] }) };
+  rec.blob = takeBlob(rec, blob, false, veteran);
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
   return json({ token }, 200, cors(env, request));
@@ -2052,7 +2064,9 @@ async function push(request, env) {
   R.home.blob = takeBlob(R.home, b.blob);
   const rows = tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv), R.home.blob, rulesStrict(env), ownFresh, ownStrict(env)) || [];
   await saveKey(env, R.homeKey, R.home);
-  const nak = rows.filter((r) => r.x && r.i).map((r) => ({ id: r.id, i: r.i, r: r.r }));
+  // every refused row goes back: a stand item's refusal undresses the banana;
+  // a refused stall sale puts the eggs back; the rest just corrects the number
+  const nak = rows.filter((r) => r.x).map((r) => ({ id: r.id, k: r.k, d: r.d, r: r.r, ...(r.s ? { s: r.s } : {}), ...(r.i ? { i: r.i } : {}) }));
   return json({ ok: true, ...(await identityOf(env, R)), ...(nak.length ? { nak } : {}) }, 200, cors(env, request));
 }
 

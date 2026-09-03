@@ -13,7 +13,7 @@ import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_
 import { DROPS, ownsDropStat } from '../data/wearables.js';
 import { seedRand, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner, memberTok } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { passPatch, passStat, passVisit, passToast, passGet, coinsNow } from '../lib/banana-pass.js';
+import { passPatch, passStat, passVisit, passToast, passGet, coinsNow, coinsPaid } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -689,6 +689,7 @@ function init() {
     if (bump) { walletChip.classList.remove('is-bump'); void walletChip.offsetWidth; walletChip.classList.add('is-bump'); }
   };
   if (walletChip && STAND_OPEN) { walletChip.hidden = false; renderWallet(); }
+  document.addEventListener('pass:change', () => renderWallet());   // a server reconcile repaints the chip, not only the next coin
   // coin window state — claimed windows persist so a reload can't re-farm one
   let coinLive = null, lastCoinTry = 0;
   // ⚠️ the claim is READ AT CLAIM TIME (world.js) — a load-time snapshot goes
@@ -735,7 +736,7 @@ function init() {
     bumpChain();
     const toast = document.createElement('div');
     toast.className = 'rv-glowtoast';
-    toast.innerHTML = '<img src="/assets/banana-stand/coin.png" alt=""> <b>+' + n + ' BANANACOIN' + (n > 1 ? 'S' : '') + '</b> — the stand out back takes these.';
+    toast.innerHTML = '<img src="/assets/banana-stand/coin.png" alt=""> <b>+' + coinsPaid(n) + ' BANANACOIN' + (coinsPaid(n) > 1 ? 'S' : '') + '</b> — the stand out back takes these.';
     (el('rvToasts') || floor).appendChild(toast);
     setTimeout(() => toast.remove(), 6000);
     track('rave_coin', { n });
@@ -2690,7 +2691,7 @@ function init() {
             renderWallet(true);
             const d = document.createElement('div');
             d.className = 'rv-spotcoin';
-            d.innerHTML = '<img src="/assets/banana-stand/coin.png" width="12" height="12" alt=""> +1';
+            d.innerHTML = '<img src="/assets/banana-stand/coin.png" width="12" height="12" alt=""> +' + coinsPaid(1);
             d.style.left = r.x + '%';
             d.style.top = (r.y - 8) + '%';
             world.appendChild(d);
@@ -4065,7 +4066,7 @@ function init() {
     passStat('coins_earned', 6, QUEST_TEST ? 'qa' : 'floorquest');
     renderWallet(true);
     const me = myId && ravers.get(myId);
-    if (me) floatPlus(me.x, me.y - 10, '+6 🪙');
+    if (me) floatPlus(me.x, me.y - 10, '+' + coinsPaid(6) + ' 🪙');
     bigMoment(def.doneBig[0], def.doneBig[1]);
     if (def.doneSay) bartySay(def.doneSay, true);
     if (def.after) def.after();                      // quest-specific payoff (e.g. the wave)

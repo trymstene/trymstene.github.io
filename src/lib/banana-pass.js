@@ -166,9 +166,9 @@ function pushNow() {
     try { navigator.sendBeacon(PASS_API + '/push', new Blob([body], { type: 'application/json' })); return; } catch (e) {}
   }
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
-    .then((r) => (r && r.ok ? r.json() : null))
+    .then((r) => { if (r && r.ok) return r.json(); if (!r || r.status >= 500 || r.status === 429) schedulePush(); return null; })
     .then((d) => { if (d && d.ok) { keepGid(d, true); evDropped = 0; } else keepGid(d); })   // acked by `seen`, never by ok alone
-    .catch(() => {});
+    .catch(() => schedulePush());   // a dropped connection tries again on the 10 s / 60 s clock
 }
 // 🫧 AN ANONYMOUS PASS AT THE FIRST MEANINGFUL WRITE. Every player gets a
 // server-side home — and a world id + the token that proves it — the moment
@@ -352,19 +352,27 @@ export function applyBlob(blob) {
 // phone): earned badges used to converge only on /pass/ visits. Now any page
 // that loads this module pulls the synced blob when linked, at most every
 // 10 minutes — the nav dot converges within a page-view.
-(() => {
+// pullIfStale(maxAge): once at load (10 min), again when the tab comes back to
+// the foreground (2 min), and on demand where a stale number would mislead —
+// the stand's shelf, a stall — so a second device's spending is seen before
+// the phone promises something the server will refuse
+export function pullIfStale(maxAge = 600000) {
   try {
     const link = JSON.parse(localStorage.getItem('pass-link') || 'null');
-    if (!link || !link.credId || !link.token) return;
+    if (!link || !link.credId || !link.token) return Promise.resolve(false);
     const last = parseInt(localStorage.getItem('pass-pull-at') || '0', 10) || 0;
-    if (Date.now() - last < 600000) return;
+    if (Date.now() - last < maxAge) return Promise.resolve(false);
     localStorage.setItem('pass-pull-at', String(Date.now()));
-    fetch(PASS_API + `/pull?credId=${encodeURIComponent(link.credId)}&token=${encodeURIComponent(link.token)}`)
+    return fetch(PASS_API + `/pull?credId=${encodeURIComponent(link.credId)}&token=${encodeURIComponent(link.token)}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d && d.blob) applyBlob(d.blob); keepGid(d); })
-      .catch(() => {});
-  } catch (e) {}
-})();
+      .then((d) => { if (d && d.blob) applyBlob(d.blob); keepGid(d); return !!d; })
+      .catch(() => false);
+  } catch (e) { return Promise.resolve(false); }
+}
+pullIfStale();
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullIfStale(120000); });
+}
 
 // mint a patch (once). Returns true only the FIRST time — callers can skip
 // their own celebration; we toast here so every surface behaves the same.
@@ -554,8 +562,12 @@ export function walletKeep(d, force) {
     // freshest (force) — it also wins over a forged local snapshot.
     const cur = walletRead();
     const seq = d.wallet && Number.isFinite(+d.wallet.bal) ? +d.wallet.seq || 0 : null;
-    if (!force && cur && seq != null && seq < cur.seq) return;
-    if (seq != null) localStorage.setItem(WALLET_KEY, JSON.stringify({ bal: +d.wallet.bal, seq, at: Date.now() }));
+    // an older answer (an ack that overtook a newer one) changes nothing — unless
+    // the stored seq is absurdly ahead, which only a forged snapshot can be
+    const forgedLocal = !!(cur && seq != null && cur.seq > seq + 100);
+    if (cur && seq != null && seq < cur.seq && !forgedLocal) return;
+    let balChanged = false;
+    if (seq != null) { balChanged = !cur || cur.bal !== +d.wallet.bal; localStorage.setItem(WALLET_KEY, JSON.stringify({ bal: +d.wallet.bal, seq, at: Date.now() })); }
     // ids the tape already holds (a beacon push has no ack) leave the outbox now
     if (Array.isArray(d.seen) && d.seen.length) evAck(new Set(d.seen.map(String)));
     if (d.rules && typeof d.rules === 'object') localStorage.setItem(RULES_KEY, JSON.stringify(d.rules));   // 📏 the caps used
@@ -563,10 +575,17 @@ export function walletKeep(d, force) {
     const gone = reconcileOwn(d);
     // a duplicate buy refused as 'owned' is still owned — never take that one off
     const ownNow = Array.isArray(d.own) ? d.own.map(String) : [];
-    const naks = Array.isArray(d.nak) ? d.nak.filter((x) => x && typeof x === 'object' && x.i && !ownNow.includes(String(x.i))) : [];
+    const naksAll = Array.isArray(d.nak) ? d.nak.filter((x) => x && typeof x === 'object') : [];
+    // a refused STAND purchase undresses the banana; every other refusal is
+    // handed to whichever surface can put things right (the stall returns
+    // the eggs) — quietly, the number simply reads what the server holds
+    const naks = naksAll.filter((x) => x.i && OWN_IDS.includes(String(x.i)) && !ownNow.includes(String(x.i)));
     const swept = sweepStandGear([...gone, ...naks.map((x) => String(x.i))]);
-    for (const x of naks) { try { document.dispatchEvent(new CustomEvent('pass:refused', { detail: { i: String(x.i), r: String(x.r || '') } })); } catch (e) {} }
-    if (gone.length || swept) { try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {} }
+    for (const x of naksAll) {
+      if (x.i && OWN_IDS.includes(String(x.i)) && ownNow.includes(String(x.i))) continue;   // a duplicate buy: still owned, nothing to say
+      try { document.dispatchEvent(new CustomEvent('pass:refused', { detail: { i: x.i ? String(x.i) : '', k: String(x.k || ''), d: +x.d || 0, r: String(x.r || ''), s: x.s ? String(x.s) : '' } })); } catch (e) {}
+    }
+    if (gone.length || swept || balChanged) { try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {} }
   } catch (e) {}
 }
 let evDropped = 0;
@@ -663,6 +682,9 @@ export function passRefund(n, src) {
   return passStat('coins_refunded', back, src);
 }
 // the wallet, in the one place that owns the formula (world-hud re-exports it)
+// 🍲 what a grant actually pays right now: the stew doubles every coins_earned
+// on this device, so a toast that prints the nominal number lies by half
+export const coinsPaid = (n) => { const b = buffGet(); return b && b.fx === 'coins2' ? n * 2 : n; };
 export function coinsNow() {
   const raw = readRaw();
   const ledger = statTotal(raw, 'coins_earned') + statTotal(raw, 'coins_refunded') - statTotal(raw, 'coins_spent');
@@ -941,6 +963,7 @@ export async function checkCatalogVerdicts(opts = {}) {
             const own = JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {};
             own[v.item] = 1;
             localStorage.setItem('cat-own-v1', JSON.stringify(own));
+            passStat('own_' + v.item, 1);   // rides the pass blob now — every device, not only the one that heard the verdict
             const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
             // ⚖ one item per body spot: the new piece JOINS the worn set (it
             // used to evict everything), and whatever sat on its spot comes

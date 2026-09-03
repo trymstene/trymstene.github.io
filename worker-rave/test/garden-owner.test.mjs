@@ -146,5 +146,14 @@ ok('the first proven person to sign in on that browser learns the pairing', feed
 feed = await get(park, `pass=${A.slice(0, 8)}&alt=${S2.slice(0, 8)}&wt=${await wt(A)}`);
 ok('a second proven person naming the same sid does not take it', !feed.slots[4].mine, feed.slots[4]);
 
+console.log('9. a stale yard save is refused');
+r = await yp('/save', { state: { stage: 1, items: [] }, pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a save without a stamp still lands', r.ok === 1 && r.updated > 0, r);
+const stamp = r.updated;
+r = await yp('/save', { state: { stage: 2, items: [] }, since: stamp - 1000, pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a device that synced before the current stamp is refused 409 stale', r.status === 409 && r.err === 'stale' && r.updated === stamp, r);
+r = await yp('/save', { state: { stage: 2, items: [] }, since: stamp, pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('…and one that synced at the current stamp saves', r.ok === 1 && r.updated >= stamp, r);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

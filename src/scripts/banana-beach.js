@@ -7,7 +7,7 @@
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
@@ -1198,7 +1198,7 @@ function init() {
       const n = 2 + Math.floor(r2 * 5);   // 2-6
       passStat('coins_earned', n, 'bottle');
       refreshHud();
-      float(d.x, d.y - 10, '🪙 +' + n + ' bananacoins', true);
+      float(d.x, d.y - 10, '🪙 +' + coinsPaid(n) + ' bananacoins', true);
       track('beach_drift', { find: 'coins', n });
     } else if (roll < 55) {
       // a shell for the collection — the shore pickup's own award path
@@ -1643,7 +1643,7 @@ function init() {
           passStat('coins_earned', by, 'fishing'); addFishCoins(by);
           refreshHud();
           body += '<p class="bh-catch__new">🪙 something shiny on the line — <b>+'
-            + by + ' bananacoin' + (by === 1 ? '' : 's') + '</b></p>';
+            + coinsPaid(by) + ' bananacoin' + (coinsPaid(by) === 1 ? '' : 's') + '</b></p>';
           track('beach_coins', { n: by, at: 'fish' });
         }
       }
@@ -1663,8 +1663,8 @@ function init() {
     } else if (c.kind === 'coins') {
       const give = Math.min(c.n, fishCoinsLeft());
       if (give > 0) { passStat('coins_earned', give, 'fishing'); addFishCoins(give);
-        body = '<div class="bh-catch__big">🪙</div><p><b>' + give + ' bananacoin'
-          + (give === 1 ? '' : 's') + '</b> snagged on the hook</p>';
+        body = '<div class="bh-catch__big">🪙</div><p><b>' + coinsPaid(give) + ' bananacoin'
+          + (coinsPaid(give) === 1 ? '' : 's') + '</b> snagged on the hook</p>';
       } else {
         body = '<div class="bh-catch__big">🪙</div><p>a coin — but it slips off. '
           + '(the sea’s given up its coins for today)</p>';
@@ -2089,7 +2089,7 @@ function init() {
       const n = digCoins();
       passStat('coins_earned', n, 'dig');
       refreshHud();
-      float(pos.x, pos.y - 50, '🪙 beach change! +' + n, true);
+      float(pos.x, pos.y - 50, '🪙 beach change! +' + coinsPaid(n), true);
       track('beach_coins', { n, at: 'dig' });
     }
     // 🗺 turn up a torn map piece — rare, with a pity ramp: every dry dig since

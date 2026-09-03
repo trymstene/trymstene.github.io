@@ -4,10 +4,10 @@
 // `state`, `inside` and `visiting` are LIVE getters.
 import { KNIT_SVG } from '../data/knitwear.js';
 let C = null;
-let CROP_EMO, DISHES, bondUp, buffGet, buffSet, cookEl, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1;
+let bondUp, buffGet, buffSet, coinsPaid, cookEl, CROP_EMO, DISHES, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1;
 export function init(ctx) {
   C = ctx;
-  ({ CROP_EMO, DISHES, bondUp, buffGet, buffSet, cookEl, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1 } = ctx);
+  ({ bondUp, buffGet, buffSet, coinsPaid, cookEl, CROP_EMO, DISHES, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1 } = ctx);
 }
 
 // ---- 🍳 THE KITCHEN — a stove you WATCH (Trym: "pressing a button and it
@@ -165,7 +165,7 @@ function sellPlate(quiet) {
   passStat('coins_earned', d.pay, 'dish'); refreshHud(); save();
   const note = document.getElementById('hsCookNote');
   note.classList.remove('is-buff');
-  note.textContent = d.name + ' → ' + d.pay + ' coins in your wallet';
+  note.textContent = d.name + ' → ' + coinsPaid(d.pay) + ' coins in your wallet';
   if (quiet) toast('🪙 +' + d.pay + ' — sold the ' + d.name.toLowerCase(), 2600);
   track1('homestead_sell_dish', { dish: d.id });
 }
@@ -284,7 +284,7 @@ function knitPattern(k) {
       toast('🧶 ' + k.name.toLowerCase() + ' — knitted. wear it from the builder', 4200);
     } else {
       passStat('coins_earned', k.pay, 'knit'); refreshHud();
-      note.textContent = k.name + ' → ' + k.pay + ' coins in your wallet';
+      note.textContent = k.name + ' → ' + coinsPaid(k.pay) + ' coins in your wallet';
     }
     save();
     track1('homestead_knit', { pattern: k.id, first: first ? 1 : 0 });

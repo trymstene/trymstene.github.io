@@ -2,7 +2,7 @@
 // banana-park.js (P5); wired through the shared ctx (+ the garden API for
 // the shared panel). The seed VOUCHER lives here (the fountain grants it,
 // the garden spends it — park-garden.js imports the helpers).
-import { passStat } from '../lib/banana-pass.js';
+import { passStat, coinsPaid } from '../lib/banana-pass.js';
 import { FOUNTAIN } from './park-geo.js';
 import { track } from './park-util.js';
 
@@ -124,7 +124,7 @@ export function initFountain(ctx, garden) {
     if (r < 0.03) {
       passStat('coins_earned', 25, 'wish');
       refreshHud();
-      bless = 'the fountain overflows — +25 🪙';
+      bless = 'the fountain overflows — +' + coinsPaid(25) + ' 🪙';
       result = 'jackpot';
     } else if (r < 0.13 && !hasVoucher()) {
       setVoucher(true);
@@ -134,7 +134,7 @@ export function initFountain(ctx, garden) {
       const n = 4 + Math.floor(Math.random() * 7);
       passStat('coins_earned', n, 'wish');
       refreshHud();
-      bless = 'the fountain returns your kindness — +' + n + ' 🪙';
+      bless = 'the fountain returns your kindness — +' + coinsPaid(n) + ' 🪙';
       result = 'coins';
     }
     track('park_wish', { result });

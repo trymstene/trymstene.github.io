@@ -22,7 +22,8 @@ function fakeR2() {
 const mkEnv = (extra = {}) => ({ PASSES: fakeR2(), ALLOWED_ORIGIN: ORIGIN, PASS_HMAC: 't', MEMBER_HMAC: 'h', PASS_ADMIN_KEY: KEY, ...extra });
 let env = mkEnv();
 const ctx = { waitUntil() {}, passThroughOnException() {} };
-const hit = (path, init = {}) => worker.fetch(new Request('https://w.dev' + path, { ...init, headers: { Origin: ORIGIN, 'Content-Type': 'application/json' } }), env, ctx);
+// a fresh IP per call: the anon mint is capped per IP per hour and this suite mints many
+const hit = (path, init = {}) => worker.fetch(new Request('https://w.dev' + path, { ...init, headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'CF-Connecting-IP': '10.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250) } }), env, ctx);
 const post = (p, b) => hit(p, { method: 'POST', body: JSON.stringify(b) });
 let pass = 0, fail = 0;
 const ok = (name, cond, extra) => { if (cond) { pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name, extra === undefined ? '' : JSON.stringify(extra)); } };
@@ -33,7 +34,7 @@ let n = 0;
 const ev = (k, d, a, s, i) => ({ id: 'f' + String(++n).padStart(7, '0'), t: Date.now(), k, d, a, ...(s ? { s } : {}), ...(i ? { i } : {}) });
 // a client blob: slots for earned/spent + any own_ claims the device makes
 const blob = (led, events, extra = {}) => ({
-  pass: { created: 1, patches: {}, base: extra.base || {}, stats: extra.stats || {}, led: Object.fromEntries(Object.entries(led).map(([k, v]) => [k, { [DEV]: v }])), days: [] },
+  pass: { created: extra.created || Date.now(), patches: {}, base: extra.base || {}, stats: extra.stats || {}, led: Object.fromEntries(Object.entries(led).map(([k, v]) => [k, { [DEV]: v }])), days: [] },
   ev: events, evDrop: 0, evDev: DEV,
 });
 const push = (a, b) => post('/push', { credId: a.credId, token: a.token, blob: b }).then((r) => r.json());
@@ -143,6 +144,18 @@ ok('the anon pass earned 25 net and owns the snail hat', Ran.wallet && (Ran.wall
 // foldAnon is reached by /assert, /mail/use and /link/finish; simulate through /link/finish with a forged challenge is heavy too.
 // So: exercise foldAnon's contract directly through the exported worker by a link ticket: skipped here; covered by the mail-rail fold test below.
 ok('(fold contract covered in anon-pass.test.mjs D + the new fold-wallet case)', true);
+
+console.log('9. a veteran (a ledger from before the rollout) is grandfathered at the mint');
+const vet = await (await post('/anon', { blob: blob({ coins_earned: 900, coins_spent: 88, own_squidhat: 1, own_potato: 1 }, [], { created: Date.UTC(2026, 6, 1) }) })).json();
+ok("the mint keeps the veteran's stand gear", Array.isArray(vet.own) && vet.own.includes('squidhat') && vet.own.includes('potato'), vet.own);
+r = await push(vet, blob({ coins_earned: 900, coins_spent: 88, own_squidhat: 1, own_potato: 1 }, [], { created: Date.UTC(2026, 6, 1) }));
+ok('…and the wallet opens at the ledger, not the 300 floor', r.wallet && r.wallet.bal === 812, r.wallet);
+R = await rec(vet.credId);
+ok('…marked veteran, born, with the gear frozen in', R.veteran === 1 && R.born > 0 && R.ownFroze.includes('squidhat'), { veteran: R.veteran, froze: R.ownFroze });
+const fresh = await (await post('/anon', { blob: blob({ coins_earned: 900, own_squidhat: 1 }, [], { created: Date.now() }) })).json();
+ok('a ledger created after the rollout is not a veteran: gear stripped', !fresh.own.includes('squidhat'), fresh.own);
+r = await push(fresh, blob({ coins_earned: 900 }, []));
+ok('…and its coins open at the floor', r.wallet && r.wallet.bal === 300, r.wallet);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

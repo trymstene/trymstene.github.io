@@ -74,6 +74,7 @@ export function shelfAdd({ kind = 'banana', params = '', shareId = null }) {
     made: (prev && (prev.made || prev.created)) || Date.now(),
   };
   write([item, ...read().filter((c) => c.params !== params)]);
+  passPush();   // a save reaches the other device on the 10 s / 60 s clock, like a delete
   return item;
 }
 

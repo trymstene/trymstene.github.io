@@ -2,7 +2,7 @@
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
 import { poofInto, worldSid, worldOwner, worldToken } from '../lib/world.js';
-import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd } from '../lib/banana-pass.js';
+import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd, coinsPaid } from '../lib/banana-pass.js';
 import { GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
 import { gardenerCardHtml } from '../lib/world-hud.js';
 import { iconSvg } from '../lib/pixel-icons.js';
@@ -1267,7 +1267,7 @@ export function initGarden(ctx) {
     if (Math.random() < 0.08) {
       const n = 1 + Math.floor(Math.random() * 3);
       passStat('coins_earned', n, PARK_TEST ? 'qa' : 'weed');
-      float(w2.x + 18, w2.y - 34, '+' + n + ' 🪙');
+      float(w2.x + 18, w2.y - 34, '+' + coinsPaid(n) + ' 🪙');
       toast('🪙 something under the roots — +' + n, 2600);
     }
     refreshHud();
@@ -1330,11 +1330,11 @@ export function initGarden(ctx) {
     float(e.x, e.y - 14, r.golden ? '✨' : '+' + (r.coins || r.tickets));
     if (r.golden) {
       confettiAt(e.x, e.y);
-      toast('🥚✨ THE GOLDEN EGG — +' + r.coins + ' coins, +' + r.tickets + ' beach tickets!', 4600);
+      toast('🥚✨ THE GOLDEN EGG — +' + coinsPaid(r.coins) + ' coins, +' + r.tickets + ' beach tickets!', 4600);
     } else if (r.tickets) {
       toast('🥚 ' + r.tickets + ' beach tickets in an egg?! the pier takes those', 4200);
     } else {
-      toast('🥚 +' + r.coins + ' coins — fresh from the hens');
+      toast('🥚 +' + coinsPaid(r.coins) + ' coins — fresh from the hens');
     }
     if (!eggTracked) { eggTracked = true; track('park_egg', { golden: r.golden ? 1 : 0 }); }
   }

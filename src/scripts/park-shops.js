@@ -3,7 +3,7 @@
 // through the shared ctx (ME_DRAW/invalidateMe/sendOutfit = the equip seam).
 import { drawComposite, assetsReady, outfitParams, SVG as ART } from '../lib/banana-engine.js';
 import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
-import { passStat, passGet, passPush, passSpend, passFlush } from '../lib/banana-pass.js';
+import { passStat, passGet, passPush, passSpend, passFlush, pullIfStale } from '../lib/banana-pass.js';
 import { catCustom } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { MARKET } from './park-geo.js';
@@ -519,9 +519,13 @@ export function initShops(ctx) {
   // 🎩 the till bounced a purchase (banana-pass walletKeep): the coins are
   // already back in the wallet and the flag is gone from the ledger — take it
   // off the drawn banana too, and say why in the keeper's voice
+  document.addEventListener('pass:change', () => {
+    if (standEl.hidden) return;
+    refreshStandWallet(); stUpdateTiles(); if (stPicked) stUpdateSpot(stPicked);
+  });
   document.addEventListener('pass:refused', (e) => {
-    const { i, r } = (e && e.detail) || {};
-    if (!i) return;
+    const { i, r, s } = (e && e.detail) || {};
+    if (!i || s !== 'stand') return;   // only a stand purchase is the keeper's business
     if (ME_DRAW.hat === i) ME_DRAW.hat = 'none';
     if (ME_DRAW.glasses === i) ME_DRAW.glasses = 'none';
     if (ME_DRAW.extras && ME_DRAW.extras[i]) delete ME_DRAW.extras[i];
@@ -533,6 +537,7 @@ export function initShops(ctx) {
     track('stand_buy_refused', { item: i, why: r });
   });
   function openStand() {
+    pullIfStale(0);   // the shelf shows the SERVER's purse and gear, not last week's — the answer repaints it via pass:change
     buildStand();
     refreshStandWallet();
     stUpdateTiles();
