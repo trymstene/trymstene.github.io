@@ -2,7 +2,7 @@
 // Biometrics appear ONLY here, when linking a device; day-to-day sync rides
 // the device token this module stores (see pushNow in banana-pass.js).
 // CLIENT-ONLY; loaded on /pass/ only.
-import { PASS_API, collectBlob, applyBlob, passPush, passNoticeAdd, walletKeep } from './banana-pass.js';
+import { PASS_API, collectBlob, applyBlob, passPush, passNoticeAdd, walletKeep, anonInFlight } from './banana-pass.js';
 
 const LINK_KEY = 'pass-link'; // { credId, token }
 const GID_KEY = 'world-gid';  // 🪪 ownership (mirrors banana-pass.js), never the connection sid
@@ -134,6 +134,11 @@ async function settleAccount(prev, credId, token, attached) {
   // the arriving pass (foldAnon), so this device's world goes UP, not away
   const switched = !!prev && !attached && !isAnon(prev)
     && (prevGid && gid ? gid !== prevGid : prev.credId !== credId);
+  // 💰 a different HOME (an anonymous pass folded in, or a switch): its wallet
+  // snapshot and caps must not outlive it here, or their seq blocks the new pass's
+  if (prev && prev.credId !== credId && !attached) {
+    try { localStorage.removeItem('pass-wallet-v1'); localStorage.removeItem('pass-rules-v1'); } catch (e) {}
+  }
   if (switched) {
     wipeWorld();
     if (window.gtag) window.gtag('event', 'pass_account_switch');
@@ -192,6 +197,7 @@ export async function mailSignin(email) {
 // retry it, and never leave the token sitting in the address bar (the caller
 // strips it immediately — it is a bearer credential in a URL).
 export async function mailUse(t) {
+  await (anonInFlight() || Promise.resolve());   // 🫧 a mint in flight lands first, so it is folded, never lost
   // ⭐ if this device already holds a pass, hand over its token: a first-time
   // address then ATTACHES to that pass instead of starting a second one. This
   // is what makes "add my email" and "log me in" the same single journey.
@@ -279,6 +285,7 @@ export function logout() {
 
 // "Save your pass" — create the passkey and upload this device's world
 export async function savePass() {
+  await (anonInFlight() || Promise.resolve());
   const prev = linked();
   const challenge = await getChallenge();
   const cred = await navigator.credentials.create({
@@ -337,6 +344,7 @@ export async function startLink() {
 // …and on the NEW device: make its own passkey, hand over the code, and it
 // joins the SAME pass. It never receives the other device's key — only the pass.
 export async function finishLink(code) {
+  await (anonInFlight() || Promise.resolve());
   const prev = linked();
   const challenge = await getChallenge();
   const cred = await navigator.credentials.create({
@@ -388,6 +396,7 @@ export async function finishLink(code) {
 
 // "I have a pass" — assert the passkey on this device and merge both worlds
 export async function restorePass() {
+  await (anonInFlight() || Promise.resolve());
   const prev = linked();
   const challenge = await getChallenge();
   const assertion = await navigator.credentials.get({

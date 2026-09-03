@@ -31,4 +31,4 @@ RULES_STRICT = "0"
 # spend that names no item (a tab on pre-slice JS) is adopted as before and
 # counted ownLegacy on the desk; "1" = refused (nobody is charged for an item
 # they will not get). Flip once the desk shows ownLegacy at ~0 for a day.
-OWN_STRICT = "0"
+OWN_STRICT = "1"   # flipped 3 Sep 2026 in the QA batch: the pre-slice builds never named the stand anyway

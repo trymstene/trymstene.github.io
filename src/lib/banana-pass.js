@@ -128,7 +128,7 @@ function stampClock(seenKey, atKey, cur) {
 // nothing that matters. Ownership of a plot is not a secret.
 export const GID_KEY = 'world-gid';
 export const WT_KEY = 'world-wt';   // 🪪 its proof — see worldToken() in world.js
-function keepGid(d) {
+function keepGid(d, force) {
   try {
     if (d && typeof d.gid === 'string' && /^[a-f0-9]{8,32}$/.test(d.gid)) {
       localStorage.setItem(GID_KEY, d.gid);
@@ -137,7 +137,7 @@ function keepGid(d) {
       localStorage.setItem(WT_KEY, d.worldToken);
     }
   } catch (e) {}
-  walletKeep(d);   // 💰 the server wallet + the tape ids it has seen
+  walletKeep(d, force);   // 💰 the server wallet + the tape ids it has seen (a push ack is always the freshest)
   // 🎩 the signed member token (mirror of pass-sync.js keepGid — change both):
   // rooms present it so other players get to SEE the supporter hat
   try {
@@ -167,7 +167,7 @@ function pushNow() {
   }
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
     .then((r) => (r && r.ok ? r.json() : null))
-    .then((d) => { if (d && d.ok) { keepGid(d); evAck(sent); evDropped = 0; } else keepGid(d); })
+    .then((d) => { if (d && d.ok) { keepGid(d, true); evDropped = 0; } else keepGid(d); })   // acked by `seen`, never by ok alone
     .catch(() => {});
 }
 // 🫧 AN ANONYMOUS PASS AT THE FIRST MEANINGFUL WRITE. Every player gets a
@@ -196,6 +196,9 @@ export function ensureAnon() {
     .then((r) => (r && r.ok ? r.json() : null))
     .then((d) => {
       if (!d || !d.credId || !d.token) return false;
+      let cur = null;
+      try { cur = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
+      if (cur && cur.credId && cur.token) return false;   // a real login landed meanwhile — it wins, the mint is dropped
       localStorage.setItem('pass-link', JSON.stringify({ credId: d.credId, token: d.token }));
       localStorage.removeItem('pass-pull-at');
       keepGid(d);
@@ -208,6 +211,7 @@ export function ensureAnon() {
   return anonP;
 }
 if (typeof document !== 'undefined') document.addEventListener('world:noid', () => { ensureAnon(); });
+export const anonInFlight = () => anonP;   // a login entrance awaits this before reading the link
 
 function schedulePush() {
   let link = null;
@@ -451,7 +455,7 @@ const areaOf = () => {
 // what this device's own slot moved against what its events explain: the
 // DRIFT. Totals stay client-authoritative — this is the audit trail, not the
 // wallet. Device-only key; pass-sync wipes it on an account switch.
-const EV_KEY = 'pass-ev-v1', EV_CAP = 400;
+const EV_KEY = 'pass-ev-v1', EV_CAP = 800;
 // 💰 THE SERVER WALLET (slice 2). The pass worker keeps a balance built only
 // from tape events it accepted, frozen at this player's own number on their
 // first push after it shipped. It arrives as { bal, seq } with every pull/push
@@ -482,7 +486,7 @@ const RULES_KEY = 'pass-rules-v1', WALLET_OFF = 'pass-wallet-off';
 // whose ownership the pass worker authors). NEVER edit by hand.
 const OWN_IDS = ['duckhat', 'melticecream', 'watermelonhat', 'buckethat', 'snailhat', 'squidhat', 'snorkelmask', 'flamingoring', 'medal', 'sockssandals', 'balloondog', 'potato', 'cactuspot'];
 // OWN-IDS-END
-const walletOff = () => { try { return localStorage.getItem(WALLET_OFF) === '1'; } catch (e) { return false; } };
+const walletOff = () => { try { return sessionStorage.getItem(WALLET_OFF) === '1'; } catch (e) { return false; } };   // 🧪 per TAB: a one-off test URL never detaches a real device
 export function ruleUsed(key) {
   let srv = null;
   try { srv = (JSON.parse(localStorage.getItem(RULES_KEY) || 'null') || {})[key] || null; } catch (e) {}
@@ -542,20 +546,24 @@ function sweepStandGear(ids) {
     return dirty;
   } catch (e) { return false; }
 }
-export function walletKeep(d) {
+export function walletKeep(d, force) {
   if (!d || typeof d !== 'object') return;
   try {
-    if (d.wallet && Number.isFinite(+d.wallet.bal)) {
-      const cur = walletRead();
-      const seq = +d.wallet.seq || 0;
-      if (!cur || seq >= cur.seq) localStorage.setItem(WALLET_KEY, JSON.stringify({ bal: +d.wallet.bal, seq, at: Date.now() }));
-    }
+    // ⏱ answers can arrive out of order: an older one (lower wallet seq) must
+    // not delete a hat the newer one just confirmed. A push ack is always the
+    // freshest (force) — it also wins over a forged local snapshot.
+    const cur = walletRead();
+    const seq = d.wallet && Number.isFinite(+d.wallet.bal) ? +d.wallet.seq || 0 : null;
+    if (!force && cur && seq != null && seq < cur.seq) return;
+    if (seq != null) localStorage.setItem(WALLET_KEY, JSON.stringify({ bal: +d.wallet.bal, seq, at: Date.now() }));
     // ids the tape already holds (a beacon push has no ack) leave the outbox now
     if (Array.isArray(d.seen) && d.seen.length) evAck(new Set(d.seen.map(String)));
     if (d.rules && typeof d.rules === 'object') localStorage.setItem(RULES_KEY, JSON.stringify(d.rules));   // 📏 the caps used
     // 🎩 after the seen-ack (so an answered purchase no longer counts as pending)
     const gone = reconcileOwn(d);
-    const naks = Array.isArray(d.nak) ? d.nak.filter((x) => x && typeof x === 'object' && x.i) : [];
+    // a duplicate buy refused as 'owned' is still owned — never take that one off
+    const ownNow = Array.isArray(d.own) ? d.own.map(String) : [];
+    const naks = Array.isArray(d.nak) ? d.nak.filter((x) => x && typeof x === 'object' && x.i && !ownNow.includes(String(x.i))) : [];
     const swept = sweepStandGear([...gone, ...naks.map((x) => String(x.i))]);
     for (const x of naks) { try { document.dispatchEvent(new CustomEvent('pass:refused', { detail: { i: String(x.i), r: String(x.r || '') } })); } catch (e) {} }
     if (gone.length || swept) { try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {} }

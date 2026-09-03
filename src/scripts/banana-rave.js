@@ -3416,7 +3416,7 @@ function init() {
   // moment for every raver on the floor. QA: ?questtest=<id> still force-starts.
   const QUESTS_ENABLED = true;
   const QUEST_TEST = new URLSearchParams(location.search).get('questtest');
-  if (QUEST_TEST) { try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {} }   // 🧪 forced quests pay 'qa' — this device reads its own ledger
+  if (QUEST_TEST) { try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {} }   // 🧪 forced quests pay 'qa' — this device reads its own ledger
   const QUEST_TTL = 150000;      // unfinished quests quietly pack up
   const questBtn = el('rvQuestActBtn');
   let quest = null;              // { id, def, endAt }

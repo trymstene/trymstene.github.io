@@ -1031,7 +1031,7 @@ async function adminGrant(request, env) {
   add('jelly', n(b.jelly), 'jelly');
   if (b.gear) {
     const id = String(b.gear).replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
-    if (id) { st['own_' + id] = 1; did.push('gear ' + id); }   // a flag, max-safe on the scalar
+    if (id) { st['own_' + id] = 1; p.base = p.base || {}; p.base['own_' + id] = 1; did.push('gear ' + id); }   // base + mirror: identityOf reads base
   }
   if (!did.length) return json({ error: 'nothing to do' }, 400, cors(env, request));
   await env.PASSES.put(k, JSON.stringify({ ...rec, updated: Date.now() }),
@@ -1160,8 +1160,9 @@ function clientBlob(blob, keepOwn) {
   return { ...rest, pass: p };
 }
 // the one door an inbound client blob takes onto a home record
+const NEW_FLOOR = 300;   // the most a brand-new record's claimed ledger may open with
 function takeBlob(home, blob, keepOwn) {
-  const fresh = !home.ownAt;
+  const fresh = !home.ownAt && !!home.blob;   // a record that never held a blob has nothing to grandfather
   const out = mergeBlob(home.blob, clientBlob(blob, fresh || keepOwn) || null);
   if (fresh) {
     home.ownAt = Date.now();
@@ -1182,7 +1183,7 @@ function takeBlob(home, blob, keepOwn) {
 // pre-tape JS pushes slot moves with no events at all (drift = everything),
 // and a push whose outbox overflowed (evDrop > 0) is skipped as `unsure`.
 // Totals stay client-authoritative; nothing here changes what a player has.
-const LOG_CAP = 600, SEEN_CAP = 400, EV_MAX = 400;
+const LOG_CAP = 600, SEEN_CAP = 2000, EV_MAX = 600;   // seen ≫ a push, or a beacon re-send double-counts
 const DRIFT_KEYS = ['coins_earned', 'coins_spent', 'coins_refunded', 'rep', 'jelly'];
 const COIN_KEYS = ['coins_earned', 'coins_refunded', 'coins_spent'];
 function slotsOf(blob, dv) {
@@ -1223,7 +1224,7 @@ const RULES = {
     shed:   { max: 400, day: 1200 },   // selling a shed piece back at half price
     dish:   { max: 52,  day: 400 },    // dishes pay 10–26
     knit:   { max: 140, day: 560 },    // beanie 50 / scarf 70
-    rehome: { max: 120, day: 600 },    // an animal sold back at its price
+    rehome: { max: 200, day: 600 },    // an animal sold back at its price (cow 90 × the buff)
     quest:  { max: 100, total: 300 },  // Return to Sender wages (15/10/15/20 + a top-up), once per person
     qa:     { deny: 1 },
   },
@@ -1251,6 +1252,10 @@ const RULES = {
     quest: { max: 30,  count: 2 },    // c1_peel_memory 15 + c1_peel_tin 10, once ever each
     qa:    { deny: 1 },               // window.__park.coins(n), ?parktest shim weeds/eggs
   },
+  // 🎫 the pass page — the questline's finale pays there (bootQuest area 'pass')
+  pass: {
+    quest: { max: 100, total: 300 },
+  },
   // 🪩 the rave — `spot` tapes one coin per lit second (≤35 per appearance)
   rave: {
     window:     { max: 40, day: 60000 },  // the same faucet and bc-win claim as the beach
@@ -1261,23 +1266,48 @@ const RULES = {
   },
 };
 const rulesStrict = (env) => !!(env && String(env.RULES_STRICT || '') === '1');
+// 🔁 a refund must look like the spend it undoes: the park's three server
+// goods, at their prices, a sane day ceiling — anything else is refused
+const REFUNDS = {
+  park: { seed: { max: 650, day: 2000 }, border: { max: 3, day: 60 }, birdhouse: { max: 30, day: 300 } },
+};
+function refundGate(home, row, log) {
+  const area = REFUNDS[row.a];
+  if (!area) return 'area';
+  const rule = row.s && area[row.s];
+  if (!rule) return 'src';
+  if (row.d > rule.max) return 'max';
+  const key = 'refund:' + row.a + ':' + row.s;
+  const st = (home.rules || (home.rules = {}))[key] || { d: '', used: 0 };
+  const day = utcDay(row.t || Date.now());
+  if (st.d !== day) { st.d = day; st.used = 0; }
+  if (st.used + row.d > rule.day) return 'day';
+  st.used += row.d;
+  home.rules[key] = st;
+  return null;
+}
 const utcDay = (t) => new Date(t).toISOString().slice(0, 10);
 // the verdict for one earned event: null = fine, else the reason it is refused
 function ruleGate(home, row, strict, log) {
   const area = RULES[row.a];
-  if (!area) return null;                       // an unruled area — as before
+  if (!area) return 'area';                     // deny by default: only a ruled area may mint coins
   if (!row.s) { if (strict) return 'src'; log.unruled = (log.unruled || 0) + 1; return null; }
   const rule = area[row.s];
   if (!rule) return 'src';
   if (rule.deny) return 'deny';
   if (row.d > rule.max) return 'max';
   const st = (home.rules || (home.rules = {}))[row.a + ':' + row.s] || { d: '', used: 0, total: 0, n: 0 };
-  const today = utcDay(Date.now());
-  if (st.d !== today) { st.d = today; st.used = 0; }
-  if (rule.day != null && st.used + row.d > rule.day) return 'day';
+  // 📅 the day is the EVENT's UTC day, not the push's: a beacon push landing
+  // just after midnight must not eat the new day's cap. Two buckets — today
+  // and the day before; anything older is history and counts against nothing.
+  const day = utcDay(row.t || Date.now());
+  if (day > (st.d || '')) { st.pd = st.d || ''; st.pused = st.used || 0; st.d = day; st.used = 0; }
+  const bucket = day === st.d ? 'used' : day === (st.pd || '') ? 'pused' : '';
+  if (rule.day != null && bucket && (st[bucket] || 0) + row.d > rule.day) return 'day';
   if (rule.total != null && st.total + row.d > rule.total) return 'total';
   if (rule.count != null && (st.n || 0) + 1 > rule.count) return 'total';   // a lifetime NUMBER of payouts
-  st.used += row.d; st.total += row.d; st.n = (st.n || 0) + 1;
+  if (bucket) st[bucket] = (st[bucket] || 0) + row.d;
+  st.total += row.d; st.n = (st.n || 0) + 1;
   home.rules[row.a + ':' + row.s] = st;
   return null;
 }
@@ -1309,9 +1339,14 @@ function tapeIn(home, ev, evDrop, dv, before, after, postBlob, strict, ownFresh,
   // 💰 the wallet, from the accepted rows in the order they happened
   const fresh = !home.wallet;
   if (fresh) {
+    // the floor = the ledger minus EVERY coin row in this push (accepted or
+    // not — a refused row's coins must not survive inside the floor); a record
+    // born after the wallet shipped opens at a capped floor, never at a claim
     let explained = 0;
     for (const r of rows) if (COIN_KEYS.includes(r.k)) explained += r.k === 'coins_spent' ? -r.d : r.d;
-    home.wallet = { base: ledgerBalance(postBlob) - explained, earned: 0, spent: 0, refunded: 0, seq: 0, refused: 0, frozenAt: now };
+    let base = ledgerBalance(postBlob) - explained;
+    if (home.born) base = Math.min(base, NEW_FLOOR);
+    home.wallet = { base, earned: 0, spent: 0, refunded: 0, seq: 0, refused: 0, frozenAt: now };
   }
   const w = home.wallet;
   const sum = {};
@@ -1325,16 +1360,24 @@ function tapeIn(home, ev, evDrop, dv, before, after, postBlob, strict, ownFresh,
       if (!fresh && item && !ownFresh && statTotal(postBlob && postBlob.pass, 'own_' + item) > 0) { refuse(r, 'owned'); continue; }
       if (!fresh && item && r.d < OWN_PRICES[item]) { refuse(r, 'price'); continue; }
       if (!fresh && walletBal(w) - r.d < 0) { r.x = 1; r.r = 'funds'; w.refused = (w.refused || 0) + 1; continue; }
-      if (!fresh && !item && r.s === 'stand' && strictOwn) { refuse(r, 'item'); continue; }   // a stand spend that names nothing (pre-slice JS)
+      if (!item && r.s === 'stand') {   // a stand spend that names nothing (pre-slice JS): counted, refused under OWN_STRICT
+        log.ownLegacy = (log.ownLegacy || 0) + 1;
+        if (strictOwn) { refuse(r, 'item'); continue; }
+      }
       if (item && postBlob) {
         const p = postBlob.pass || (postBlob.pass = { created: now, patches: {}, stats: {}, base: {}, led: {}, days: [] });
         p.base = p.base || {}; p.stats = p.stats || {};
         p.base['own_' + item] = 1; p.stats['own_' + item] = 1;
         r.own = 1;
+        home.ownAuth = [...new Set([...(home.ownAuth || []), item])];   // remembered: it crosses a fold
       }
     }
-    if (r.k === 'coins_earned' && !fresh) {   // 📏 the faucet's rule (the freeze push is history, not play)
+    if (r.k === 'coins_earned') {   // 📏 the faucet's rule — on every push, the freeze push included (its rows are play, not history)
       const why = ruleGate(home, r, strict, log);
+      if (why) { refuse(r, why); continue; }
+    }
+    if (r.k === 'coins_refunded') {   // 🔁 a refund must look like the spend it undoes
+      const why = refundGate(home, r, log);
       if (why) { refuse(r, why); continue; }
     }
     if (r.k === 'coins_earned') w.earned += r.d;
@@ -1395,8 +1438,10 @@ async function anon(request, env) {
   const blob = b && b.blob;
   if (blob && !blobOk(blob)) return json({ error: 'blob too large' }, 413, cors(env, request));
   const credId = 'a:' + bufToHex(crypto.getRandomValues(new Uint8Array(24)));
-  const rec = { anon: 1, tokens: {}, blob: null };
-  rec.blob = takeBlob(rec, blob || null);   // a brand-new record adopts the device's claims once
+  // a brand-new record adopts NO claimed gear (born + ownAt stamped) and its
+  // coins open at a capped floor — an unverifiable claim is not a grandfather
+  const rec = { anon: 1, tokens: {}, blob: null, born: Date.now(), ownAt: Date.now(), ownFroze: [] };
+  rec.blob = takeBlob(rec, blob || null);
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
   const R = { home: rec, homeKey: await keyFor(credId) };
@@ -1413,7 +1458,44 @@ async function foldAnon(env, R, fromCredId, fromToken) {
     if (!fromCredId || !fromToken || !R || !R.home) return false;
     const F = await tokenRec(env, fromCredId, fromToken);
     if (!F || !F.home.anon || F.homeKey !== F.ownKey || F.homeKey === R.homeKey) return false;
-    R.home.blob = mergeBlob(R.home.blob, clientBlob(F.home.blob, true));   // server-held: no strip
+    // 🎩 gear crosses the fold only if the anon pass EARNED it here (authored
+    // by an accepted purchase) — or froze it in as an old record's history
+    const keep = new Set([...(F.home.ownAuth || []), ...(F.home.born ? [] : (F.home.ownFroze || []))]);
+    const fb = clientBlob(F.home.blob, true);
+    if (fb && fb.pass && typeof fb.pass === 'object') {
+      const p = { ...fb.pass };
+      for (const f of ['base', 'led', 'stats']) {
+        if (!p[f] || typeof p[f] !== 'object') continue;
+        const o = { ...p[f] };
+        for (const id of OWN_IDS_W) if (!keep.has(id)) delete o['own_' + id];
+        p[f] = o;
+      }
+      fb.pass = p;
+    }
+    R.home.blob = mergeBlob(R.home.blob, fb);
+    // 💰 the coins the anon pass earned and spent here (event-backed, never its
+    // frozen floor) follow the person; so do the caps it used and the tape ids
+    // it has seen (a re-sent event must still dedupe after the fold)
+    if (F.home.wallet && R.home.wallet) {
+      const fw = F.home.wallet, rw = R.home.wallet;
+      rw.earned += fw.earned || 0; rw.refunded += fw.refunded || 0; rw.spent += fw.spent || 0;
+      rw.seq = (rw.seq || 0) + 1; rw.at = Date.now();
+    }
+    if (F.home.rules) {
+      R.home.rules = R.home.rules || {};
+      for (const [k, st] of Object.entries(F.home.rules)) {
+        const cur = R.home.rules[k];
+        if (!cur) { R.home.rules[k] = st; continue; }
+        if (cur.d === st.d) cur.used = Math.max(cur.used || 0, st.used || 0);
+        else if ((st.d || '') > (cur.d || '')) { cur.pd = cur.d; cur.pused = cur.used || 0; cur.d = st.d; cur.used = st.used || 0; }
+        cur.total = (cur.total || 0) + (st.total || 0); cur.n = (cur.n || 0) + (st.n || 0);
+      }
+    }
+    if (F.home.log && Array.isArray(F.home.log.seen) && F.home.log.seen.length) {
+      const log = R.home.log || (R.home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
+      log.seen = [...new Set([...log.seen, ...F.home.log.seen])].slice(-SEEN_CAP);
+    }
+    if (F.home.ownAuth) R.home.ownAuth = [...new Set([...(R.home.ownAuth || []), ...F.home.ownAuth])];
     const gid = await worldGid(env, F.homeKey);
     R.home.aliases = [...new Set([...(R.home.aliases || []), gid])].slice(-8);
     const ptr = { tokens: F.home.tokens || {}, link: R.homeKey, folded: Date.now() };
@@ -1466,7 +1548,7 @@ async function register(request, env) {
       return json({ token: tk, joined: true }, 200, cors(env, request));
     }
   }
-  const rec = existing || { pk, alg, tokens: {}, blob: null };
+  const rec = existing || { pk, alg, tokens: {}, blob: null, born: Date.now(), ownAt: Date.now(), ownFroze: [] };
   rec.blob = takeBlob(rec, blob);
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
@@ -1963,14 +2045,9 @@ async function push(request, env) {
   // 📜 the pushing device's own slots, before and after the merge
   const dv = /^[\w-]{1,8}$/.test(String(b.blob.evDev || '')) ? String(b.blob.evDev) : '';
   const before = slotsOf(R.home.blob, dv);
-  // 🎩 a stand spend that names no item comes from a tab on pre-slice JS:
-  // while OWN_STRICT is off that push is adopted unstripped, as before, and counted
-  const legacy = !ownStrict(env) && Array.isArray(b.blob.ev)
-    && b.blob.ev.some((e) => e && typeof e === 'object' && e.k === 'coins_spent' && e.s === 'stand' && !e.i);
-  const ownFresh = !R.home.ownAt;
-  R.home.blob = takeBlob(R.home, b.blob, legacy);
+  const ownFresh = !R.home.ownAt && !!R.home.blob;
+  R.home.blob = takeBlob(R.home, b.blob);
   const rows = tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv), R.home.blob, rulesStrict(env), ownFresh, ownStrict(env)) || [];
-  if (legacy && R.home.log) R.home.log.ownLegacy = (R.home.log.ownLegacy || 0) + 1;
   await saveKey(env, R.homeKey, R.home);
   const nak = rows.filter((r) => r.x && r.i).map((r) => ({ id: r.id, i: r.i, r: r.r }));
   return json({ ok: true, ...(await identityOf(env, R)), ...(nak.length ? { nak } : {}) }, 200, cors(env, request));

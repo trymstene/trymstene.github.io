@@ -487,7 +487,7 @@ export function initShops(ctx) {
     // 🎩 the spend IS the check, and the row names the item: the pass worker
     // judges it (owned / price / funds) and authors the ownership; the hat is
     // worn on the next frame and settles on the ack (a refusal takes it off)
-    if (!passSpend(item.price, 'stand', item.id)) {
+    if (!passSpend(item.price, item.back ? 'backcat' : 'stand', item.back ? undefined : item.id)) {   // 🎩 only stand stock names an item the worker prices
       // still the demand list — "wanted it, couldn't afford it"
       track('stand_buy_try', { item: item.id });
       standSay('that’s ' + item.price + '. you’ve got ' + coinBal() + '. the floor pays in coins.');

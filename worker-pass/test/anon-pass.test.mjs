@@ -112,6 +112,15 @@ const t1 = await mailLink('kiwi@example.com');
 const first = await (await hit('/mail/use?t=' + t1)).json();            // a brand-new email pass
 ok('the email pass exists on its own gid', /^[a-f0-9]{16}$/.test(first.gid || '') && first.gid !== a.gid, first);
 const b = await (await post('/anon', { blob: { shelf: [{ params: 'anon=1', kind: 'banana', created: 3 }] } }, '5.5.5.5')).json();
+// the anon pass plays: earns 40, buys a snail hat (authored), forges a squid hat claim; the real pass has a frozen wallet of 500
+const DEVX = 'devfold1';
+const bl = (led, events) => ({ pass: { created: 1, patches: {}, base: {}, stats: {}, led: Object.fromEntries(Object.entries(led).map(([k, v]) => [k, { [DEVX]: v }])), days: [] }, ev: events, evDrop: 0, evDev: DEVX });
+await post('/push', { credId: b.credId, token: b.token, blob: bl({ coins_earned: 40 }, [{ id: 'f01d0001', t: Date.now(), k: 'coins_earned', d: 40, a: 'park', s: 'egg' }]) });
+await post('/push', { credId: b.credId, token: b.token, blob: bl({ coins_earned: 40, coins_spent: 15, own_snailhat: 1, own_squidhat: 1 }, [{ id: 'f01d0002', t: Date.now(), k: 'coins_spent', d: 15, a: 'park', s: 'stand', i: 'snailhat' }]) });
+{ // the real pass: a frozen wallet of 500 (set directly — the floor is history)
+  const hk = 'pass/m' + (await sha('kiwi@example.com')) + '.json';
+  const st = JSON.parse(env.PASSES._m.get(hk)); st.wallet = { base: 500, earned: 0, spent: 0, refunded: 0, seq: 1, refused: 0, frozenAt: 1 }; env.PASSES._m.set(hk, JSON.stringify(st));
+}
 const t2 = await mailLink('kiwi@example.com');
 const fold = await (await hit('/mail/use?t=' + t2 + '&credId=' + encodeURIComponent(b.credId) + '&token=' + b.token)).json();
 ok('the login says it folded', fold.folded === true && fold.attached === false, fold);
@@ -121,6 +130,8 @@ const ft = await tokenOk(fold.worldToken);
 ok('…and the old gid rides the token as an alias', !!ft && ft.aliases.includes(b.gid), ft);
 const viaOld = await (await hit(`/pull?credId=${encodeURIComponent(b.credId)}&token=${b.token}`)).json();
 ok('the old anon credential now resolves to the email pass', viaOld.gid === first.gid, viaOld.gid);
+ok('the fold carried the anon pass\'s earned coins (500 + 40 − 15)', fold.wallet && fold.wallet.bal === 525, fold.wallet);
+ok('…and the bought snail hat, but not the forged squid hat', Array.isArray(fold.own) && fold.own.includes('snailhat') && !fold.own.includes('squidhat'), fold.own);
 
 // ---- E. a NEW email on an anonymous device attaches (gid unchanged) ----
 console.log('E. attach');

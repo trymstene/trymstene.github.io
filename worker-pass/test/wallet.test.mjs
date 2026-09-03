@@ -39,7 +39,7 @@ const rec = async (credId) => {
 };
 const DEV = 'dev00001';
 let n = 0;
-const ev = (k, d, a = 'park') => ({ id: 'c' + String(++n).padStart(7, '0'), t: Date.now(), k, d, a });
+const ev = (k, d, a = 'park', s) => ({ id: 'c' + String(++n).padStart(7, '0'), t: Date.now(), k, d, a, ...(s ? { s } : {}) });
 const slots = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { [DEV]: v }]));
 const blob = (led, events, evDrop = 0) => ({ pass: { created: 1, patches: {}, base: {}, led: slots(led), days: [] }, ev: events, evDrop, evDev: DEV });
 
@@ -72,7 +72,7 @@ r = await push(blob({ coins_earned: 260, coins_spent: 130 }, [ev('coins_spent', 
 ok('an overdraft spend is refused — the balance holds', r.wallet.bal === 30, r.wallet);
 R = await rec(a.credId);
 ok('…marked on the tape and counted', R.wallet.refused === 1 && R.log.ev.some((e) => e.k === 'coins_spent' && e.d === 100 && e.x === 1), R.log.ev.slice(-1));
-r = await push(blob({ coins_earned: 260, coins_spent: 130 }, [ev('coins_refunded', 5, 'park')]));
+r = await push(blob({ coins_earned: 260, coins_spent: 130 }, [ev('coins_refunded', 5, 'park', 'birdhouse')]));
 ok('a refund raises it', r.wallet.bal === 35, r.wallet);
 r = await push(blob({ coins_earned: 260, coins_spent: 130 }, [{ id: 'c9999999', t: Date.now(), k: 'coins_earned', d: -50, a: 'park' }]));
 ok('a negative coin event is ignored', r.wallet.bal === 35, r.wallet);

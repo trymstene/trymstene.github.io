@@ -192,7 +192,7 @@ function applyTestScenario(kind) {
     // slots summed on read, so a raw stats write lands in the wrong shape
     // 🧪 …and local-only from here: the server refuses the 'qa' faucet, so
     // this device keeps reading its own ledger instead of the server wallet
-    try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {}
+    try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {}
     const need = 9999 - coinBalance();
     if (need > 0) passStat('coins_earned', need, 'qa');
     return;
@@ -3124,9 +3124,13 @@ function init(visitDoc, visitMiss) {
   function stallSell(kind, price, label) {
     // 📏 sold today = this device's tally OR what the server says this PERSON
     // sold on any device (plus what is still in the outbox) — whichever is more
-    const soldToday = Math.max(stallDay().sold, ruleUsed('homestead:stall').used);
-    const nSold = Math.min(state[kind] || 0, Math.floor((STALL_CAP - soldToday) / price));
-    if (!nSold) return;
+    // ⚠️ ONE UNIT: the buff doubles what the tape and the server count, the
+    // local tally is unbuffed — compare in buffed units, and never go negative
+    const mult = (buffGet() || {}).fx === 'coins2' ? 2 : 1;
+    const soldToday = Math.max(stallDay().sold * mult, ruleUsed('homestead:stall').used);
+    const room = Math.max(0, STALL_CAP * mult - soldToday);
+    const nSold = Math.min(state[kind] || 0, Math.floor(room / (price * mult)));
+    if (nSold <= 0) { if ((state[kind] || 0) > 0) toast('the stall is done for today — it opens again tomorrow', 2800); return; }
     state[kind] -= nSold;
     const coins = nSold * price;
     passStat('coins_earned', coins, 'stall');

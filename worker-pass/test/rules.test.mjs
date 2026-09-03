@@ -27,8 +27,10 @@ function fakeR2() {
 const mkEnv = (extra = {}) => ({ PASSES: fakeR2(), ALLOWED_ORIGIN: ORIGIN, PASS_HMAC: 't', MEMBER_HMAC: 'h', PASS_ADMIN_KEY: KEY, ...extra });
 let env = mkEnv();
 const ctx = { waitUntil() {}, passThroughOnException() {} };
+// a fresh IP per call: the worker's in-memory 30/min throttle would otherwise
+// answer 429 partway through this (long) suite
 const hit = (path, init = {}) => worker.fetch(new Request('https://w.dev' + path, {
-  ...init, headers: { Origin: ORIGIN, 'Content-Type': 'application/json', ...(init.headers || {}) },
+  ...init, headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'CF-Connecting-IP': '10.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250), ...(init.headers || {}) },
 }), env, ctx);
 const post = (p, b) => hit(p, { method: 'POST', body: JSON.stringify(b) });
 let pass = 0, fail = 0;
@@ -90,9 +92,13 @@ ok('an unnamed homestead event passes while RULES_STRICT is off', r.wallet.bal =
 let R = await rec(a.credId);
 ok('…and is counted unruled', R.log.unruled === 1, R.log.unruled);
 r = await pushEv(a, [ev('coins_earned', 30, 'forge')]);
-ok('an unruled area is untouched', r.wallet.bal === 39, r.wallet);
+ok('an unruled area is refused (deny by default)', r.wallet.bal === 9 && (await lastRows(a, 1))[0].r === 'area', r.wallet);
+r = await pushEv(a, [ev('coins_earned', 20, 'pass', 'quest')]);
+ok('the questline finale on the pass page is ruled and paid', r.wallet.bal === 29, r.wallet);
+r = await pushEv(a, [ev('coins_earned', 180, 'homestead', 'rehome')]);
+ok('a buffed cow rehome (180) fits its max', r.wallet.bal === 209, r.wallet);
 r = await pushEv(a, [ev('coins_earned', 26, 'homestead', 'dish'), ev('coins_earned', 70, 'homestead', 'knit'), ev('coins_earned', 45, 'homestead', 'rehome'), ev('coins_earned', 100, 'homestead', 'shed')]);
-ok('every named homestead faucet is paid within its rule', r.wallet.bal === 39 + 26 + 70 + 45 + 100, r.wallet);
+ok('every named homestead faucet is paid within its rule', r.wallet.bal === 209 + 26 + 70 + 45 + 100, r.wallet);
 
 console.log('4. the day rolls over');
 R = await rec(a.credId);
@@ -112,12 +118,25 @@ a = await player();
 r = await pushEv(a, [ev('coins_earned', 9, 'homestead')]);
 ok('an unnamed homestead event is refused under RULES_STRICT', r.wallet.bal === 0 && (await lastRows(a, 1))[0].r === 'src', r.wallet);
 r = await pushEv(a, [ev('coins_earned', 9, 'forge')]);
-ok('…while an unruled area is still fine', r.wallet.bal === 9);
+ok('…and an unruled area is refused there too', r.wallet.bal === 0);
 
 console.log('6. the desk');
 const led = await (await hit('/admin/ledger?key=' + KEY)).json();
 const row = (led.passes || []).find((x) => x.rr >= 1);
-ok('the ledger row counts rule refusals', !!row && row.rr === 1, row && { rr: row.rr, unruled: row.unruled });
+ok('the ledger row counts rule refusals', !!row && row.rr === 2, row && { rr: row.rr, unruled: row.unruled });
+
+console.log('7. refunds and the event-time day');
+env = mkEnv();
+a = await player();
+r = await pushEv(a, [ev('coins_earned', 40, 'park', 'egg'), { id: 'a0000001', t: Date.now(), k: 'coins_spent', d: 30, a: 'park', s: 'birdhouse' }, { id: 'a0000002', t: Date.now(), k: 'coins_refunded', d: 30, a: 'park', s: 'birdhouse' }]);
+ok('a birdhouse refund at its price is carried', r.wallet.bal === 40, r.wallet);
+r = await pushEv(a, [{ id: 'a0000003', t: Date.now(), k: 'coins_refunded', d: 999, a: 'park', s: 'birdhouse' }, { id: 'a0000004', t: Date.now(), k: 'coins_refunded', d: 5, a: 'rave', s: 'window' }, { id: 'a0000005', t: Date.now(), k: 'coins_refunded', d: 5, a: 'park' }]);
+ok('an oversized, an unruled-area and an unnamed refund are refused', r.wallet.bal === 40, r.wallet);
+const yesterday = Date.now() - 86400000;
+r = await pushEv(a, [{ id: 'a0000006', t: yesterday, k: 'coins_earned', d: 25, a: 'homestead', s: 'stall' }, { id: 'a0000007', t: yesterday, k: 'coins_earned', d: 25, a: 'homestead', s: 'stall' }]);
+ok('two stall sales stamped yesterday fill yesterday\'s bucket', r.wallet.bal === 90, r.wallet);
+r = await pushEv(a, [ev('coins_earned', 25, 'homestead', 'stall')]);
+ok('…and today\'s stall is still open', r.wallet.bal === 115, r.wallet);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

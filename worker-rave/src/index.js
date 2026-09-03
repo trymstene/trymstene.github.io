@@ -1211,7 +1211,7 @@ export class ParkRoom {
       personsDirty = true;
     }
     const learn = (from, to) => {
-      if (!from || !to || from === to || sidmap[from] === to) return;
+      if (!from || !to || from === to || sidmap[from]) return;   // first proven pairing wins, never overwritten
       sidmap[from] = to;
       const sk = Object.keys(sidmap);                 // bounded — evict oldest
       if (sk.length > 500) delete sidmap[sk[0]];
@@ -1221,10 +1221,14 @@ export class ParkRoom {
     // person under somebody else — that pair was the whole exploit
     if (proven && pA && !persons[pA]) learn(pA, pP);
     if (proven) aliasShorts.forEach((a) => learn(a, pP));   // both ids vouched for by the token
+    // 🪪 a KNOWN PERSON's id without their token is an impostor: it answers to
+    // nothing — not `mine`, not the compost, not a harvest (the pass = alt
+    // "signed-out" shape used to slip past the token gate on that string)
+    const impostor = !proven && !!persons[pP];
     // …and the names this asker answers to, for `mine` and the compost payout:
     // their own claim, their alt ONLY if it is not a proven person's id, and
     // the aliases their token vouches for
-    const asking = [pP, pA && !persons[pA] ? pA : '', ...(proven ? aliasShorts : [])]
+    const asking = [impostor ? '' : pP, pA && !persons[pA] ? pA : '', ...(proven ? aliasShorts : [])]
       .filter((v, k, a) => v && a.indexOf(v) === k);
     // does this plot belong to the asker, through any name the ledger knows?
     const ledgerMine = (short2) => !!short2
@@ -1621,7 +1625,7 @@ export class ParkRoom {
     const altRaw = (typeof b.alt === 'string' ? b.alt.slice(0, 24) : '').slice(0, 8);
     // ⚠️ a proven person's id is never honoured as somebody's alt
     const alt = altRaw && !persons[altRaw] ? altRaw : '';
-    const isMine = (o) => !!o && (o.passShort === short || (!!alt && o.passShort === alt) || sidmap[o.passShort] === short
+    const isMine = (o) => !impostor && !!o && (o.passShort === short || (!!alt && o.passShort === alt) || sidmap[o.passShort] === short
       || (proven && aliasShorts.includes(o.passShort)));
     const claim = (o) => { if (o && o.passShort !== short) o.passShort = short; };
     // 🥚 first tap wins (the rave-drop pattern) — the egg's removal IS the verdict

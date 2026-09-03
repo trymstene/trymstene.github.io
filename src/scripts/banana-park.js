@@ -971,7 +971,7 @@ function init() {
   // the QA reach-in (same family as ?beachtest): place the banana, top up
   // coins, read the live rosters — nothing here exists in a normal session
   if (PARK_TEST) {
-    try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 a QA device reads its own ledger (the server denies 'qa')
+    try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 this QA TAB reads its own ledger (the server denies 'qa')
     window.__park = {
       pos, tgt, PLOTS,
       setSolids: ctx.setSolids,   // the real seam owns it — this is a reach-in

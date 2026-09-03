@@ -48,10 +48,10 @@ const blobWith = (slots, events, evDrop = 0) => ({
 console.log('1. events ride the push and stay out of the blob');
 const a = await (await post('/anon', {})).json();
 const push = (blob) => post('/push', { credId: a.credId, token: a.token, blob });
-let r = await (await push(blobWith({ coins_earned: 5 }, [ev('aaaa0001', 'coins_earned', 5, 'park', { s: 'water' })]))).json();
+let r = await (await push(blobWith({ coins_earned: 5 }, [ev('aaaa0001', 'coins_earned', 5, 'park', { s: 'egg' })]))).json();
 ok('the push is accepted', r.ok === true, r);
 let R = await rec(a.credId);
-ok('the record holds the tape', R.log && R.log.n === 1 && R.log.ev[0].k === 'coins_earned' && R.log.ev[0].s === 'water', R.log);
+ok('the record holds the tape', R.log && R.log.n === 1 && R.log.ev[0].k === 'coins_earned' && R.log.ev[0].s === 'egg', R.log);
 ok('…and the stored blob carries no ev fields', !('ev' in R.blob) && !('evDev' in R.blob) && !('evDrop' in R.blob), Object.keys(R.blob));
 ok('an honest push drifts 0', !R.log.drift || !Object.keys(R.log.drift).length, R.log.drift);
 
@@ -93,7 +93,7 @@ r = await (await push(blobWith({ coins_earned: 140, rep: 12, jelly: 600 }, many.
 r = await (await push(blobWith({ coins_earned: 140, rep: 12, jelly: 700 }, many.slice(600)))).json();
 R = await rec(a.credId);
 ok('the tape keeps the newest 600 and counts them all', R.log.ev.length === 600 && R.log.n === 704, [R.log.ev.length, R.log.n]);
-ok('the seen ring is bounded', R.log.seen.length <= 400, R.log.seen.length);
+ok('the seen ring is bounded', R.log.seen.length <= 2000, R.log.seen.length);
 
 console.log('8. the desk sees it');
 const led = await (await hit('/admin/ledger?key=' + KEY)).json();

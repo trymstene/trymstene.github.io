@@ -7,7 +7,7 @@
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, coinsNow, ruleUsed } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
@@ -1460,8 +1460,10 @@ function init() {
   const fishCoinsLeft = () => {
     let st = {};
     try { st = JSON.parse(localStorage.getItem('bh-fishcoins-v1') || '{}'); } catch (e) {}
-    const got = Math.max(st.day === digDay ? (st.got || 0) : 0, ruleUsed('beach:fishing').used);   // 📏 this PERSON's day, on any device
-    return Math.max(0, FISH_COIN_CAP - got);
+    // 📏 this PERSON's day on any device — in ONE unit (the buff doubles the tape)
+    const mult = (buffGet() || {}).fx === 'coins2' ? 2 : 1;
+    const got = Math.max((st.day === digDay ? (st.got || 0) : 0) * mult, ruleUsed('beach:fishing').used);
+    return Math.max(0, Math.floor((FISH_COIN_CAP * mult - got) / mult));
   };
   const addFishCoins = (n) => {
     let st = {};
@@ -3702,7 +3704,7 @@ function init() {
   // your coins up to 100 so the stalls are testable on a phone with no console
   // (coins are XP, never real money — see the stand's one-faucet doctrine).
   if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
-    try { localStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 a QA device reads its own ledger (the server denies 'qa')
+    try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 this QA TAB reads its own ledger (the server denies 'qa')
     if (coinBal() < 100) passStat('coins_earned', 100 - coinBal(), 'qa');
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },

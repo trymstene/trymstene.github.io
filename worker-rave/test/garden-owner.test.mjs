@@ -130,5 +130,21 @@ ok('…and the yard is re-keyed to them', (yard.state._m.get('y:' + slug) || {})
 const st = await yard.fetch(new Request('https://room/stats')).then((r2) => r2.json());
 ok('/stats reports the rollout counters', st.wt && st.wt.ok >= 1 && st.wt.miss >= 1 && st.wt.none >= 1, st.wt);
 
+
+console.log('7. a known person without their token is nobody');
+r = await postJ(park, '/garden/harvest', { slot: 0, pass: V.slice(0, 8), alt: V.slice(0, 8) });   // pass = alt, the "signed-out" shape, with Kiwi's id
+ok('the signed-out shape cannot harvest a proven person\'s plot', !r.ok, r);
+feed = await get(park, `pass=${V.slice(0, 8)}&alt=${V.slice(0, 8)}`);
+ok('…nor see it as mine', !feed.slots[0].mine, feed.slots[0]);
+feed = await get(park, `pass=${V.slice(0, 8)}&alt=${Vs.slice(0, 8)}&wt=${await wt(V)}`);
+ok('with her token it is hers as ever', feed.slots[0].mine === 1);
+console.log('8. the ledger never re-points a learned sid');
+const S2 = 'sidsid00cafe';
+r = await postJ(park, '/garden/plant', { slot: 4, seed: 'radish', name: 'S2', pass: S2, alt: S2 });
+feed = await get(park, `pass=${P.slice(0, 8)}&alt=${S2.slice(0, 8)}&wt=${await wt(P)}`);
+ok('the first proven person to sign in on that browser learns the pairing', feed.slots[4].mine === 1);
+feed = await get(park, `pass=${A.slice(0, 8)}&alt=${S2.slice(0, 8)}&wt=${await wt(A)}`);
+ok('a second proven person naming the same sid does not take it', !feed.slots[4].mine, feed.slots[4]);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
