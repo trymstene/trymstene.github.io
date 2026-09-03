@@ -53,7 +53,11 @@ const description = 'Authorized banana personnel only.';
     .hqp-i:hover { background: rgba(244, 238, 255, 0.16); color: var(--hink); }
     .hqp-note { margin: -0.3rem 0 0.8rem; padding: 0.75rem 0.9rem; border-radius: 14px;
       background: rgba(244, 238, 255, 0.05); color: var(--hdim); font-size: 0.84rem; line-height: 1.45; }
-    .hqp-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; margin: 0 0 0.9rem; }
+    /* ⚠️ a fixed column count leaves a hole on any room whose KPI count is not
+       a multiple of it — 6 tiles in 4 columns, 7 in 3. Flex lets the last row
+       grow into the gap instead. */
+    .hqp-tiles { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 0.9rem; }
+    .hqp-tiles > * { flex: 1 1 clamp(8rem, 30%, 14rem); }
     .hqp-tile { background: var(--hcard); border-radius: 18px; padding: 0.8rem 0.9rem;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
     .hqp-tval { font-family: "Archivo Black", sans-serif; font-size: 1.5rem; line-height: 1.05;
@@ -152,6 +156,14 @@ const description = 'Authorized banana personnel only.';
       background: rgba(244, 238, 255, 0.05); color: var(--hink); font-size: 0.8rem; line-height: 1.45; }
     @media (prefers-reduced-motion: reduce) { .ps-tickin { animation: none; padding-left: 0; } }
 
+    /* what they are holding, right now */
+    .ps-devs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 0; }
+    .ps-dev { flex: 1 1 8rem; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+      gap: 0 0.55rem; align-items: center; background: var(--hcard); border-radius: 16px; padding: 0.6rem 0.8rem; }
+    .ps-devi { grid-row: span 2; font-size: 1.35rem; line-height: 1; }
+    .ps-devn { color: var(--hdim); font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .ps-devv { color: var(--hink); font-size: 0.9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
     .hqp-tbl { display: grid; gap: 1px; background: rgba(244, 238, 255, 0.06); border-radius: 16px;
       overflow: hidden; margin: 0.5rem 0 0; }
     .hqp-trow { display: flex; justify-content: space-between; gap: 0.8rem; align-items: baseline;
@@ -229,7 +241,9 @@ const description = 'Authorized banana personnel only.';
     .hqp-empty { color: var(--hdim); font-size: 0.85rem; padding: 0.9rem; line-height: 1.5; }
     .hqp-foot { color: var(--hdim); font-size: 0.72rem; opacity: 0.75; margin-top: 1rem; }
     @media (min-width: 620px) {
-      .hqp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      /* three across, and an orphan stays a third wide instead of stretching
+         the full width of the desk */
+      .hqp-tiles > * { flex-basis: 22%; max-width: calc((100% - 1.2rem) / 3); }
     }
 
     /* form controls never below 16px → iOS won't zoom-jump on focus */

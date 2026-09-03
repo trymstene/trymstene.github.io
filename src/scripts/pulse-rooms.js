@@ -14,12 +14,10 @@
 //     payload carries no comparison of its own
 import { section, tile, lineChart, barsH, div, nfmt, pct } from './hq-pulse.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
-import { FUNNELS, DL_NAMES, AREAS, SHOPS } from '../data/pulse-dicts.js';
+import { flag, place, FUNNELS, DL_NAMES, AREAS, SHOPS } from '../data/pulse-dicts.js';
 
 const MIN_N = 20;
 const DEV_ICON = { desktop: '🖥', mobile: '📱', tablet: '📟' };
-const flag = (cc) => (/^[A-Z]{2}$/.test(cc || '')
-  ? String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0))) : '🏳');
 const SKIP_EV = new Set(['session_start', 'first_visit']);
 
 // ── the previous window of equal length, so every number can carry a delta ──
@@ -134,6 +132,8 @@ export function renderOverview(into, S) {
 }
 
 // ── who is on screen right this second ──────────────────────────────────────
+const DEVI = { mobile: '📱', desktop: '💻', tablet: '📲', smart_tv: '📺' };
+
 export function renderNow(into, S) {
   const L = S.live;
   if (!L) { div('hqp-empty', 'waiting for the live read…', into); return; }
@@ -149,10 +149,24 @@ export function renderNow(into, S) {
   const t2 = div('hqp-tbl', null, s);
   (L.cities || []).slice(0, 12).forEach((c) => {
     const row = div('hqp-trow', null, t2);
-    div('hqp-tk', flag(c.cc) + ' ' + (c.name || c.city || '—'), row);
+    div('hqp-tk', place(c.cc, c.name || c.city), row);
     div('hqp-tv', nfmt(c.v), row);
   });
   if (!(L.cities || []).length) div('hqp-empty', 'no cities on the board', t2);
+  // 📱 what they are holding. GA4 sends this as a plain object, and it is the
+  // one live number that settles a layout argument.
+  const dev = Object.entries(L.devices || {}).sort((x, y) => y[1] - x[1]);
+  if (dev.length) {
+    const tot = dev.reduce((a2, d) => a2 + (+d[1] || 0), 0) || 1;
+    const s3 = section(into, 'On what', null);
+    const strip = div('ps-devs', null, s3);
+    dev.forEach(([name, v]) => {
+      const c = div('ps-dev', null, strip);
+      div('ps-devi', DEVI[name] || '🖥', c);
+      div('ps-devn', name, c);
+      div('ps-devv', nfmt(v) + '  ·  ' + Math.round((v / tot) * 100) + '%', c);
+    });
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -205,7 +219,7 @@ export function renderDownloads(into, S) {
     dl.forEach((r) => {
       const col = div('hqp-b2', null, wrap);
       const fill = div('hqp-b2f', null, col);
-      fill.style.height = Math.max(2, Math.round((+r.files || 0) / dmax * 100)) + '%';
+      fill.style.height = (+r.files ? Math.max(2, Math.round((+r.files || 0) / dmax * 100)) : 0) + '%';
       const d = r.d.slice(6, 8) + '.' + r.d.slice(4, 6);
       col.addEventListener('click', () => {
         note2.hidden = false;
@@ -231,7 +245,7 @@ export function renderDownloads(into, S) {
   const t3 = div('hqp-tbl', null, s3);
   geoRows.forEach(([cc, v]) => {
     const row = div('hqp-trow', null, t3);
-    div('hqp-tk', flag(cc) + ' ' + cc, row);
+    div('hqp-tk', place(cc), row);
     div('hqp-tv', nfmt(v), row);
   });
   if (!geoRows.length) div('hqp-empty', 'no country data in this window', t3);
@@ -264,7 +278,7 @@ export function renderDownloads(into, S) {
       w.title = '';
     }
     const bar = div('hqp-mini', null, k);
-    bar.style.width = Math.max(2, Math.round((+r.files || 0) / fmax * 70)) + 'px';
+    bar.style.width = (+r.files ? Math.max(2, Math.round((+r.files || 0) / fmax * 70)) : 0) + 'px';
     div('hqp-tv', nfmt(r.files) + ' · ' + nfmt(r.shown) + ' · ' + nfmt(r.coffee) + ' · ' + nfmt(r.skip)
       + ' · ' + ((+r.shown || 0) >= MIN_N ? ((+r.coffee || 0) / r.shown * 100).toFixed(1) + '%' : '–'), row);
   });
@@ -311,7 +325,7 @@ function renderFunnel(host, R, steps, title, sub, explainNote) {
     const row = div('hqp-fstep' + (i === worst - 1 ? ' is-work' : ''), null, wrap);
     const bar = div('hqp-fbar', null, row);
     // clamped: a later step can legitimately exceed step 0 (GA4 counts events)
-    bar.style.width = (vals[0] ? Math.min(100, Math.max(1.2, vals[i] / vals[0] * 100)) : 0) + '%';
+    bar.style.width = (vals[i] && vals[0] ? Math.min(100, Math.max(1.2, vals[i] / vals[0] * 100)) : 0) + '%';
     bar.style.background = i === worst - 1 ? '#ff5d8f' : '#6E45E0';
     const lab = div('hqp-flab', null, row);
     const nm = div('hqp-fname', null, lab);
@@ -365,7 +379,7 @@ export function renderShop(into, S) {
     const v = stepVal(R, st[0]);
     const row = div('hqp-fstep', null, card);
     const bar = div('hqp-fbar', null, row);
-    bar.style.width = Math.max(2, shown ? (v / shown) * 100 : 0) + '%';
+    bar.style.width = (v && shown ? Math.max(2, (v / shown) * 100) : 0) + '%';
     bar.style.background = i === 0 ? '#1F8A70' : '#4a4270';
     const lab = div('hqp-flab', null, row);
     div('hqp-fname', '↳ ' + st[1], lab);
@@ -426,7 +440,7 @@ export function renderWorld(into, S) {
     sh.steps.forEach(([key, label], i) => {
       const row = div('hqp-fstep', null, wrap);
       const bar = div('hqp-fbar', null, row);
-      bar.style.width = Math.max(2, (vals[i] / vmax) * 100) + '%';
+      bar.style.width = (vals[i] ? Math.max(2, (vals[i] / vmax) * 100) : 0) + '%';
       bar.style.background = sh.real ? '#C85A1E' : '#1F8A70';
       const lab = div('hqp-flab', null, row);
       div('hqp-fname', label, lab);

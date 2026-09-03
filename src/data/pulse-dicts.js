@@ -71,7 +71,7 @@ export const DL_NAMES=[
 ];
 
 export const AREAS=[
-  {key:'rave',  name:'The rave',  icon:'🩩', door:'rave_join',
+  {key:'rave',  name:'The rave',  icon:'🪩', door:'rave_join',
    q:'Do people STAY? — joins, and what they did once the music started'},
   {key:'park',  name:'The park',  icon:'🌳', door:'park_join',
    q:'Do they COME BACK? — gardening is the only loop that needs a return visit'},
@@ -88,6 +88,53 @@ export const AREAS=[
   {key:'stand', name:'The Banana Stand', icon:'🏪', door:'stand_counter',
    q:'Do they SPEND? — coins buy cosmetics, and the till is the proof'},
 ];
+
+// 🏳 FLAGS, AND THE MACHINE THAT CANNOT DRAW THEM.
+//
+// Windows ships no flag-emoji font, so a flag pair falls back to the bare
+// letters "NO" and the ticker then reads "no grabbed the GIF ×3". The desk is
+// read on Windows, so detect it once — a supported pair renders as ONE glyph,
+// an unsupported one as two letters — and bracket the code, which is not a word.
+let FLAGOK = null;
+function flagsDraw() {
+  try {
+    const g = document.createElement('canvas').getContext('2d');
+    g.font = '20px sans-serif';
+    return g.measureText(String.fromCodePoint(127475, 127476)).width < g.measureText(String.fromCodePoint(127475)).width * 1.7;
+  } catch (e) { return true; }
+}
+export const flag = (cc) => {
+  if (FLAGOK === null) FLAGOK = flagsDraw();
+  if (!/^[A-Z]{2}$/.test(cc || '')) return FLAGOK ? '🏳' : '[??]';
+  return FLAGOK
+    ? String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0)))
+    : '[' + cc + ']';
+};
+
+// a place, named once: the bracket fallback already SAYS the country code,
+// so appending it again printed rows reading "[US] US".
+export const place = (cc, name) => {
+  const f = flag(cc);
+  if (name && name !== cc) return f + ' ' + name;
+  return f.charAt(0) === '[' ? f : f + ' ' + cc;
+};
+
+// 🌍 WHO IS IN THE WORLD RIGHT NOW.
+//
+// ⚠️ GA4's REALTIME api has no page-path dimension. `unifiedScreenName` is the
+// page TITLE, so the live payload's `pages[].page` is a title too. The old page
+// prefix-matched '/rave/' against it and therefore counted ZERO people in the
+// world for as long as it existed — the number was never once right.
+//
+// So we match titles, and `page` is the built page whose <title> must still
+// start with `title` — tools/check-pulse-areas.mjs fails the build otherwise.
+export const WORLD_TITLES=[
+  {page:'rave/',      title:'The Banana Rave'},
+  {page:'park/',      title:'The Park'},
+  {page:'beach/',     title:'Banana Bay'},
+  {page:'homestead/', title:'The Homestead'},
+];
+export const inWorld=(t)=>WORLD_TITLES.some((w)=>String(t||'').startsWith(w.title));
 
 export const SHOPS=[
   // ⚠️ stand_buy_try is NOT a step before stand_buy — it fires when someone

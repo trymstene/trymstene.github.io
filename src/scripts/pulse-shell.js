@@ -17,6 +17,7 @@
 import { buildEarth, HOTTXT } from './pulse-map.js';
 import * as MAP from '../data/pulse-map.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
+import { flag, inWorld } from '../data/pulse-dicts.js';
 import { renderLedger } from './hq-pulse.js';
 import { renderOverview, renderNow, renderDownloads, renderShop, renderWorld, prevWindow } from './pulse-rooms.js';
 
@@ -51,8 +52,6 @@ const osloYesterday = () => {
 
 // the hot line speaks a shade louder than the map tooltip
 const HOTLINE = { 2: 'hit ORDER 🛒', 3: 'reached the CHECKOUT 💳', 4: 'BOUGHT 💰🎉' };
-const flag = (cc) => (/^[A-Z]{2}$/.test(cc || '')
-  ? String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0))) : '🏳');
 const el = (tag, cls, txt, parent) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -168,11 +167,14 @@ export function mountPulse(host, io) {
     // the 85% of traffic on a phone. Here a tap opens it.
     const note = el('div', 'ps-tnote', null, into);
     note.hidden = true;
+    // ⚠️ the old page had these three under the map and the first rebuild
+    // dropped them: the map says WHERE, and nothing said WHAT they were on.
+    const lists = el('div', 'ps-lists', null, into);
 
     into._live = () => {
       const L = S.live;
       if (!L) return;
-      const hot = L.hot || [];
+      const hot = Object.entries(L.hot || {}).map(([cc, stage]) => ({ cc, stage: +stage || 0 }));
       legend.textContent = S.mode === 'live'
         ? 'who is on the site right now (' + nfmt(L.total || 0) + ')'
         : S.mode === 'event' ? 'where ' + (EV_LABEL[S.lens] || S.lens) + ' happened in this window'
@@ -181,7 +183,7 @@ export function mountPulse(host, io) {
       hotLine.hidden = !worst.length;
       if (worst.length) {
         hotLine.textContent = '🟢 last 30 min: ' + worst.slice(0, 4)
-          .map((h) => flag(h.cc || h.code) + ' ' + (HOTLINE[h.stage] || HOTTXT[h.stage] || '')).join('  ·  ');
+          .map((h) => flag(h.cc) + ' someone ' + (HOTLINE[h.stage] || HOTTXT[h.stage] || '')).join('  ·  ');
       }
       const rec = L.recent || [];
       tickIn.textContent = '';
@@ -207,6 +209,8 @@ export function mountPulse(host, io) {
         });
         tickIn.appendChild(el('span', 'ps-tsep', '   🍌', null));
       }
+      lists.textContent = '';
+      renderNow(lists, S);
     };
   }
 
@@ -324,10 +328,8 @@ export function mountPulse(host, io) {
     const L = S.live;
     if (!L) return;
     vNow.textContent = nfmt(L.total || 0);
-    const inWorld = (L.pages || []).filter((p) => /\/(rave|park|beach|homestead|banana-world)\//.test(p.page || ''))
-      .reduce((a, p) => a + (+p.v || 0), 0);
-    vWorld.textContent = nfmt(inWorld);
-    const near = (L.hot || []).filter((h) => (+h.stage || 0) >= 2).length;
+    vWorld.textContent = nfmt((L.pages || []).reduce((a, p) => a + (inWorld(p.page) ? +p.v || 0 : 0), 0));
+    const near = Object.values(L.hot || {}).filter((st) => (+st || 0) >= 2).length;
     hotWrap.hidden = !near;
     vHot.textContent = nfmt(near);
     drawSpark();

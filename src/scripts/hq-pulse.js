@@ -85,7 +85,13 @@ export function lineChart(host, pts, opts) {
     mk('text', { x: 6, y: yy + 4, fill: DIM, 'font-size': 12 }, svg).textContent = nfmt(max * f);
   });
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
-  mk('path', { d: `${d} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z`, fill: (o.color || LINE) + '22' }, svg);
+  // ⚠️ a flat 13%-alpha yellow over the panel reads as MUD. The fill has to
+  // fade out downward so the ink stays at the line, where the data is.
+  const gid = 'hqpg' + (host.childElementCount + 1) + '-' + Math.round(max);
+  const grad = mk('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, mk('defs', {}, svg));
+  mk('stop', { offset: '0%', 'stop-color': o.color || LINE, 'stop-opacity': 0.34 }, grad);
+  mk('stop', { offset: '100%', 'stop-color': o.color || LINE, 'stop-opacity': 0.02 }, grad);
+  mk('path', { d: `${d} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z`, fill: 'url(#' + gid + ')' }, svg);
   mk('path', { d, fill: 'none', stroke: o.color || LINE, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
   // the last point is the one that gets a label — never a number on every point
   const last = pts[pts.length - 1];
@@ -131,7 +137,7 @@ export function barsH(host, rows, opts) {
     div('hqp-blab', r.k, row);
     const track = div('hqp-btrack', null, row);
     const fill = div('hqp-bfill', null, track);
-    fill.style.width = Math.max(2, (r.v / max) * 100) + '%';
+    fill.style.width = (r.v ? Math.max(2, (r.v / max) * 100) : 0) + '%';
     fill.style.background = o.mono || catOf(r.k, i);
     div('hqp-bval', nfmt(r.v), row);
   });

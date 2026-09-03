@@ -23,7 +23,14 @@
 //     radius (r+0.5)*PX + p*3.5*PX, alpha (1-p)² × 0.4, line PX*0.9
 //   · confetti fires on an INCREASE in the purchase count, not on an event
 
-const PX = 6;
+// ⚠️ PX IS MEASURED, NOT FIXED. A 1080px canvas squeezed into a 345px phone
+// is a 0.32 downscale, and the 1px gutter between cells lands on a fraction of
+// a pixel — the browser then drops whole ROWS of it and the earth renders as
+// horizontal stripes. So the backing store is sized to the real displayed box
+// and the cell size falls out of it; below 3px a cell the gutter is dropped
+// entirely, because a sub-pixel gutter is the stripes.
+let PX = 6;
+const MAXDPR = 2;
 const SEA = '#151129';
 const LAND = '#453a75';
 const COL = { live: '255,225,53', range: '255,93,143', event: '94,224,138' };
@@ -47,12 +54,11 @@ export function buildEarth(host, MAP, opts) {
     return b;
   });
 
+  const DPR = Math.min(MAXDPR, (window.devicePixelRatio || 1));
   const wrap = document.createElement('div');
   wrap.className = 'pm-wrap';
   const cv = document.createElement('canvas');
   cv.className = 'pm-cv';
-  cv.width = W * PX;
-  cv.height = H * PX;
   wrap.appendChild(cv);
   const tip = document.createElement('div');
   tip.className = 'pm-tip';
@@ -61,21 +67,45 @@ export function buildEarth(host, MAP, opts) {
   host.appendChild(wrap);
   const ctx = cv.getContext('2d');
 
-  // the land never changes — render it ONCE so 60fps costs almost nothing
+  // the land never changes — render it once per size so 60fps costs almost nothing
   const landCv = document.createElement('canvas');
-  landCv.width = W * PX;
-  landCv.height = H * PX;
-  (function paintLand() {
+  function paintLand() {
+    landCv.width = Math.round(W * PX);
+    landCv.height = Math.round(H * PX);
     const g = landCv.getContext('2d');
     g.fillStyle = SEA;
     g.fillRect(0, 0, landCv.width, landCv.height);
     g.fillStyle = LAND;
+    const gut = PX >= 3 ? Math.max(1, Math.round(PX * 0.16)) : 0;
     for (let y = 0; y < H; y++) {
       const row = LANDBITS[y];
       if (!row) continue;
-      for (let x = 0; x < W; x++) if (row[x] === '1') g.fillRect(x * PX, y * PX, PX - 1, PX - 1);
+      const y0 = Math.round(y * PX), yh = Math.max(1, Math.round((y + 1) * PX) - y0 - gut);
+      for (let x = 0; x < W; x++) {
+        if (row[x] !== '1') continue;
+        const x0 = Math.round(x * PX);
+        g.fillRect(x0, y0, Math.max(1, Math.round((x + 1) * PX) - x0 - gut), yh);
+      }
     }
-  }());
+  }
+
+  // the canvas is sized to the box it actually occupies, in device pixels, so
+  // nothing is ever resampled on its way to the screen
+  function layout() {
+    const box = wrap.clientWidth || host.clientWidth || 0;
+    if (!box) return false;                 // hidden: keep the size we had
+    const px = Math.max(1.2, (box * DPR) / W);
+    if (Math.abs(px - PX) < 0.01 && cv.width) return false;
+    PX = px;
+    cv.width = Math.round(W * PX);
+    cv.height = Math.round(H * PX);
+    cv.style.width = '100%';
+    cv.style.height = 'auto';
+    paintLand();
+    return true;
+  }
+  layout();
+  addEventListener('resize', layout);
 
   const view = { s: 1, ox: 0, oy: 0 };
   const clampView = () => {
@@ -91,12 +121,10 @@ export function buildEarth(host, MAP, opts) {
   let lastPurchases = null;
   let raf = 0;
 
-  const hotOf = () => ((state.live && state.live.hot) || []);
-  const stageOf = (cc) => {
-    let best = 0;
-    for (const h of hotOf()) if ((h.cc || h.code) === cc) best = Math.max(best, +h.stage || 0);
-    return best;
-  };
+  // ⚠️ `hot` is an OBJECT keyed by country code — { US: 4, DE: 3 } — not a
+  // list of rows. Treating it as an array threw on the first live payload.
+  const hotOf = () => ((state.live && state.live.hot) || {});
+  const stageOf = (cc) => +hotOf()[cc] || 0;
 
   function data() {
     if (state.mode === 'live') {
@@ -185,8 +213,7 @@ export function buildEarth(host, MAP, opts) {
     //    signal outlives the session, or it vanishes at the worst moment.
     if (state.mode === 'live') {
       const here = new Set(dots.map((d) => d.cc));
-      for (const h of hotOf()) {
-        const cc = h.cc || h.code;
+      for (const [cc, st] of Object.entries(hotOf())) {
         if (here.has(cc)) continue;
         const c = MAP.CENTROIDS[cc];
         if (!c) continue;
@@ -194,7 +221,7 @@ export function buildEarth(host, MAP, opts) {
         ctx.fillStyle = 'rgba(' + GREEN + ',' + Math.min(0.8, blink).toFixed(2) + ')';
         ctx.fillRect(toX(c[0] + 0.5) - PX * k / 2, toY(c[1] + 0.5) - PX * k / 2, PX * k, PX * k);
         dots.push({ x: c[0], y: c[1], cx: toX(c[0] + 0.5), cy: toY(c[1] + 0.5), r: 1,
-          cc, name: h.name || cc, v: 0, stage: +h.stage || 1, ghost: true });
+          cc, name: cc, v: 0, stage: +st || 1, ghost: true });
       }
     }
     // ── and the eight seconds that say somebody actually paid. Drawn in

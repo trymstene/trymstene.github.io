@@ -51,5 +51,7 @@ jobs:
         run: node tools/check-design.mjs
       - name: Storage gate — every key on a player's device is declared
         run: node tools/check-storage.mjs
+      - name: Pulse gate — the world page titles the live counter matches on
+        run: node tools/check-pulse-areas.mjs
       - name: generated blocks in sync (worker allowlists, stand prices, stand ids)
         run: node tools/build-worker-allowlists.mjs --check
