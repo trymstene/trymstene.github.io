@@ -1428,10 +1428,10 @@ function init(visitDoc, visitMiss) {
     const y = isYoungA(a) ? 1 : 0;
     const sp = a && a.sp;
     let r;
-    if (sp === 'goat') r = y ? ['ygoat', 'c-ygoat.png', 19, 22] : ['goat', 'c-goat.png', 21, 32];
-    else if (sp === 'cow') r = y ? ['ycow', 'c-ycow.png', 19, 25] : ['cow', 'c-cow.png', 30, 34];
+    if (sp === 'goat') r = y ? ['ygoat', 'c-ygoat.png', 21, 24] : ['goat', 'c-goat.png', 21, 32];
+    else if (sp === 'cow') r = y ? ['ycow', 'c-ycow.png', 24, 32] : ['cow', 'c-cow.png', 30, 34];
     else if (sp === 'rooster') r = y ? ['chick', 'c-chick.png', 11, 12] : ['roost', 'c-roost.png', 16, 30];
-    else if (sp === 'sheep') r = y ? ['ysheep', 'c-ysheep.png', 19, 23]
+    else if (sp === 'sheep') r = y ? ['ysheep', 'c-ysheep.png', 23, 28]
       : ['sheep', (a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png', 26, 38];
     else if (sp === 'dog') r = ['dog', 'c-dog.png', 31, 36];
     else r = y ? ['chick', 'c-chick.png', 11, 12] : ['', 'c-hen' + (i % 3) + '.png', 16, 30];
