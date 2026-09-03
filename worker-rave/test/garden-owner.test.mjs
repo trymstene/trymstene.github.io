@@ -172,5 +172,32 @@ ok('…taking that stamp, the save lands and the mark moves on', r.ok === 1 && r
 r = await yp('/save', { state: { stage: 5, items: [] }, mark: 'NOPE!!', since: r.updated, pass: P2, alt: 'zzz', wt: await wt(P2) });
 ok('a junk mark is dropped, never stored', r.ok === 1 && r.mark === null, r);
 
+// 11. 🥚 THE PANTRY TRAVELS. Produce, the kitchen shelf and the shed of
+// unplaced furniture were the last things a player HOLDS that never left the
+// browser: eggs collected on a phone were invisible on a laptop.
+console.log('11. the pantry travels with the yard');
+r = await yp('/save', { state: { stage: 1, items: [],
+  goods: { eggs: 6, milk: 2, wool: 40, cheese: 1 },
+  pantry: { egg: 4, radish: 2, NOPE: 9, tomato: 0 },
+  shed: [{ id: 'bench' }, { id: 'tailor' }, { id: 'BAD ID!' }] },
+  since: r.updated, mark: 'pantry01', pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a save carrying the pantry lands', r.ok === 1, r);
+r = await yp('/mine', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('produce comes home on the other device', r.goods && r.goods.eggs === 6 && r.goods.wool === 40 && r.goods.cheese === 1, r.goods);
+ok('…the kitchen shelf too, junk keys and empty counts dropped', r.pantry && r.pantry.egg === 4 && r.pantry.radish === 2 && !('NOPE' in r.pantry) && !('tomato' in r.pantry), r.pantry);
+ok('…and the shed, with a bad id refused', Array.isArray(r.shed) && r.shed.length === 2 && r.shed[0].id === 'bench', r.shed);
+const vis = await yard.fetch(new Request('https://room/yard?slug=' + r.slug)).then((x) => x.json());
+ok('a VISITOR never sees what the player is holding', !vis.goods && !vis.pantry && !vis.shed, { g: vis.goods, p: vis.pantry, s: vis.shed });
+r = await yp('/save', { state: { stage: 1, items: [], goods: { eggs: 9999, milk: -5 }, pantry: {}, shed: [] },
+  since: 0, mark: 'pantry02', pass: P2, alt: 'zzz', wt: await wt(P2) });
+r = await yp('/mine', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('counts are clamped, never negative and never absurd', r.goods.eggs === 999 && r.goods.milk === 0, r.goods);
+ok('…an emptied shelf and shed are honoured (the player spent them)', Object.keys(r.pantry).length === 0 && r.shed.length === 0, { p: r.pantry, s: r.shed });
+// ⚠️ THE MIXED-VERSION GUARD: a tab still running yesterday's script saves a
+// yard with no pantry in it. That must not erase the shelf on every device.
+r = await yp('/save', { state: { stage: 2, items: [] }, since: 0, mark: 'oldtab01', pass: P2, alt: 'zzz', wt: await wt(P2) });
+r = await yp('/mine', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a save from an older tab leaves the fields ABSENT, never empty', r.goods === undefined && r.pantry === undefined && r.shed === undefined, { g: r.goods, p: r.pantry, s: r.shed });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -2533,6 +2533,27 @@ export class YardRoom {
       }
       out.soil.push(cell);
     });
+    // 🥚 what the player HOLDS: produce, the kitchen shelf and the shed of
+    // furniture not yet placed. Only ever written when the save carries them —
+    // a tab on an older script must not empty the pantry it knows nothing about.
+    if (s.goods && typeof s.goods === 'object') {
+      out.goods = { eggs: num(s.goods.eggs, 0, 999), milk: num(s.goods.milk, 0, 999),
+        wool: num(s.goods.wool, 0, 999), cheese: num(s.goods.cheese, 0, 999) };
+    }
+    if (s.pantry && typeof s.pantry === 'object') {
+      out.pantry = {};
+      Object.keys(s.pantry).slice(0, 24).forEach((k) => {
+        if (!/^[a-z]{1,12}$/.test(k)) return;
+        const v2 = num(s.pantry[k], 0, 999);
+        if (v2 > 0) out.pantry[k] = v2;
+      });
+    }
+    if (Array.isArray(s.shed)) {
+      out.shed = [];
+      s.shed.slice(0, 40).forEach((it) => {
+        if (it && typeof it.id === 'string' && /^([a-z0-9]{1,24}|c_[a-f0-9]{6,32})$/.test(it.id)) out.shed.push({ id: it.id });
+      });
+    }
     [1, 2, 3].forEach((r) => {
       const v = s.style && s.style[r];
       if (typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v)) out.style[r] = v;
@@ -2816,6 +2837,8 @@ export class YardRoom {
         items: st.items || [], soil: st.soil || [], fence: st.fence || [],
         mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},
         bed: st.bed, bedAt: st.bedAt, animals: st.animals || [], memory: st.memory || [], grass: st.grass || [],
+        // the player's own things — a visitor at /yard never sees these
+        goods: st.goods, pantry: st.pantry, shed: st.shed,
       });
     }
 

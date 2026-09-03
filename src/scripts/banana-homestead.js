@@ -376,6 +376,11 @@ function init(visitDoc, visitMiss) {
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
         inItems: pubIn,
+        // 🥚 what this homestead is holding: the eggs in hand, the kitchen
+        // shelf and the furniture still in the shed
+        goods: { eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0, cheese: state.cheese || 0 },
+        pantry: state.pantry || {},
+        shed: (state.shed || []).slice(0, 40).map((it) => ({ id: it.id })),
         animals: (state.animals || []).slice(0, 24).map((a) => ({
           sp: a.sp, b: Math.round(a.b || 0), name: a.name || '', wd: Math.round(a.wd || 0),
           gd: a.gd == null ? undefined : Math.round(a.gd),
@@ -4397,6 +4402,12 @@ function init(visitDoc, visitMiss) {
     animals: Array.isArray(d.animals) ? d.animals : undefined,
     memory: Array.isArray(d.memory) ? d.memory : undefined,
     grass: Array.isArray(d.grass) ? d.grass : undefined,
+    // ⚠️ absent, not empty: a yard last saved by a tab that did not know about
+    // the pantry leaves this device's own shelf exactly where it is
+    ...(d.goods && typeof d.goods === 'object' ? { eggs: +d.goods.eggs || 0, milk: +d.goods.milk || 0,
+      wool: +d.goods.wool || 0, cheese: +d.goods.cheese || 0 } : {}),
+    ...(d.pantry && typeof d.pantry === 'object' ? { pantry: d.pantry } : {}),
+    ...(Array.isArray(d.shed) ? { shed: d.shed.filter((it) => it && it.id).map((it) => ({ id: it.id })) } : {}),
   });
   async function yardPull() {
     if (!FARM || visiting || HS_TEST) return;
@@ -4412,8 +4423,8 @@ function init(visitDoc, visitMiss) {
     let next = null;
     if (!state.claimedAt || testy || !mine) {
       try { localStorage.setItem('hs-v1-prev', localStorage.getItem(HS_KEY) || ''); } catch (e) {}
-      next = withHome({ v: 1, ...syncedFields(r), slug: r.slug,
-        claimedAt: r.created || Date.now(), shed: [], pantry: {},
+      next = withHome({ v: 1, shed: [], pantry: {}, ...syncedFields(r), slug: r.slug,
+        claimedAt: r.created || Date.now(),
         bed: Array.isArray(r.bed) ? r.bed : undefined, bedAt: r.bedAt });
     } else if (!state.pubUpdated) {
       state.pubUpdated = r.updated || 1;   // grandfather: this device is truth
