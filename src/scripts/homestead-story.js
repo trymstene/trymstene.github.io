@@ -49,6 +49,23 @@ export function buildStory(view, items, opts) {
   deck.className = 'hs-sdeck';
   view.appendChild(deck);
 
+  // ⚠️ FIXED GEOMETRY, ONE SCALE — the tree's answer, not a media query. The
+  // card is always 202x300; a tall phone shows it bigger and a short one
+  // smaller, so the deck fills the paper it is on and a photo never lands in
+  // a different place on a different phone.
+  function fit() {
+    const h = view.clientHeight || 0;
+    if (!h) return;
+    const s = Math.max(0.85, Math.min(1.5, (h - 48) / 300));
+    deck.style.transformOrigin = '0 0';
+    deck.style.transform = 'scale(' + s.toFixed(3) + ')';
+    deck.style.width = (100 / s) + '%';
+    deck.style.height = (100 / s) + '%';
+  }
+  const onResize = () => fit();
+  addEventListener('resize', onResize);
+  addEventListener('orientationchange', onResize);
+
   // "today" and "yesterday" are warmer than a date, and a date is en-GB
   const fmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
   function when(t) {
@@ -180,10 +197,17 @@ export function buildStory(view, items, opts) {
   view.appendChild(top);
   view.appendChild(info);
   paint();
+  fit();
 
   return {
     paint,
-    refit() { deck.scrollLeft = 0; },
-    destroy() { timers.forEach(clearTimeout); timers.clear(); },
+    refit: fit,
+    // ⚠️ the tree drops its handle and leaks a timer per node; this one is
+    // held by the caller and takes its listeners and timers with it
+    destroy() {
+      timers.forEach(clearTimeout); timers.clear();
+      removeEventListener('resize', onResize);
+      removeEventListener('orientationchange', onResize);
+    },
   };
 }
