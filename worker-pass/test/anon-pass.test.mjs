@@ -155,5 +155,31 @@ let last = 200;
 for (let i = 0; i < 14 && last !== 429; i++) last = (await post('/anon', {}, '9.9.9.9')).status;
 ok('a 13th mint in an hour from one IP is refused', last === 429, last);
 
+// 🕯 THE QUESTLINE FOLLOWS THE PASS. Step-level and forward only: the taps
+// made inside a step never travel, so switching device mid-step hands that
+// step back at its beginning (Trym: that is how a console game does it).
+console.log('\nQ. the chapter follows the player');
+const q = await (await post('/anon', { blob: { quest: { s: 4, done: 0, resSet: 1, res: 1 } } })).json();
+const qp = (blob) => post('/push', { credId: q.credId, token: q.token, blob }).then((r) => r.json());
+const qpull = () => hit('/pull?credId=' + encodeURIComponent(q.credId) + '&token=' + q.token).then((r) => r.json());
+let qr = await qpull();
+ok('the mint keeps the chapter', qr.blob.quest && qr.blob.quest.s === 4 && qr.blob.quest.res === 1, qr.blob.quest);
+await qp({ quest: { s: 7, done: 0 } });
+qr = await qpull();
+ok('a device further along carries everyone forward', qr.blob.quest.s === 7, qr.blob.quest);
+ok('…and the resident branch, decided once, sticks', qr.blob.quest.resSet === 1 && qr.blob.quest.res === 1, qr.blob.quest);
+await qp({ quest: { s: 2, done: 0 } });
+qr = await qpull();
+ok('a device left behind can never walk the chapter back', qr.blob.quest.s === 7, qr.blob.quest);
+await qp({ quest: { s: 7, done: 1 } });
+qr = await qpull();
+ok('finishing it sticks', qr.blob.quest.done === 1, qr.blob.quest);
+await qp({ quest: { s: 7, done: 0 } });
+qr = await qpull();
+ok('…and an older device cannot un-finish it', qr.blob.quest.done === 1, qr.blob.quest);
+await qp({ quest: { s: 9, k: { thing: 3 } } });
+qr = await qpull();
+ok('the taps inside a step are never stored', !qr.blob.quest.k, qr.blob.quest);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

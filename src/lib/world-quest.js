@@ -84,6 +84,7 @@ const AREAS = {
 
 // ---- state ----------------------------------------------------------------
 let S = { s: 0, k: {}, res: 0, done: 0 };
+let syncBound = false;   // the cross-device listener is bound once per page
 try { S = { ...S, ...(JSON.parse(localStorage.getItem(KEY) || '{}')) }; } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const track = (ev, p) => { try { window.gtag && window.gtag('event', ev, p || {}); } catch (e) {} };
@@ -1387,6 +1388,23 @@ export function bootQuest() {
     if (S.s >= STEPS.length) { S.done = 1; toast('🍌 CHAPTER ONE — complete', 4200); }
     save();
     render();
+  }
+
+  // 🕯 the chapter moved on the player's other device: take the step and
+  // repaint where they stand. The quest reads its state once at boot, so
+  // without this a laptop opened mid-chapter shows yesterday's step until
+  // it is refreshed. Forward only — a sync can never walk anybody back.
+  if (!syncBound) {
+    syncBound = true;
+    document.addEventListener('pass:quest', () => {
+      let q = null;
+      try { q = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+      if (!q) return;
+      const inS = +q.s || 0;
+      if (inS < S.s || (inS === S.s && !!q.done === !!S.done)) return;
+      S = { ...S, ...q };
+      render();
+    });
   }
 
   function render() {

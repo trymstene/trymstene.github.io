@@ -100,6 +100,7 @@ const WORLD_KEYS = [
   'ps-name-at', 'ps-name-seen', 'bb-at', 'bb-seen',      // …and the name/outfit change-clocks that rank it
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
+  'bwq-c1',                                              // 🕯 the chapter — it belongs to the pass now, never to the next person on this browser
   'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
   'pass-ev-v1', 'pass-wallet-v1', 'pass-rules-v1',       // 📜 the unsent ledger tape + 💰 the server wallet + 📏 caps used — never the next person's
   GID_KEY, WT_KEY, PULL_KEY,

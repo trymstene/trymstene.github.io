@@ -268,6 +268,20 @@ function mergeBlob(oldB, newB) {
     created: Math.min(op.created || Date.now(), np.created || Date.now()),
     patches, stats, base, led, days,
   };
+  // 🕯 THE QUESTLINE. A chapter belongs to the player, not the browser. The
+  // step only ever moves FORWARD, so it merges by max; the taps inside a step
+  // never travel (the client drops them), so arriving on a second device
+  // starts that step over. The resident branch is decided once and sticks.
+  if (oldB.quest || newB.quest) {
+    const qa = (oldB.quest && typeof oldB.quest === 'object') ? oldB.quest : {};
+    const qb = (newB.quest && typeof newB.quest === 'object') ? newB.quest : {};
+    const resSet = (qa.resSet || qb.resSet) ? 1 : 0;
+    out.quest = {
+      s: Math.max(+qa.s || 0, +qb.s || 0),
+      done: (qa.done || qb.done) ? 1 : 0,
+      ...(resSet ? { resSet: 1, res: Math.max(qa.resSet ? (+qa.res || 0) : 0, qb.resSet ? (+qb.res || 0) : 0) } : {}),
+    };
+  }
   // shelf tombstones: union deletions (max ts), keep the newest copy per
   // params, and drop anything tombstoned after it was made — so a delete on
   // one device propagates instead of being resurrected by the union.

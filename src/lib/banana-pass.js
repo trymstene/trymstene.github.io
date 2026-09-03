@@ -80,6 +80,16 @@ export function passRaw() { return readRaw(); }
 // If this device is linked to a passkey (pass-sync.js stores 'pass-link'),
 // every pass write quietly pushes the whole world after a 10s debounce.
 // The worker merges (union/max), so pushes can never lose remote progress.
+// 🕯 the chapter's position: the step, the finish, and the resident branch.
+// The step's own scratch (`k`) is deliberately NOT sent — see mergeBlob.
+function readQuest() {
+  try {
+    const q = JSON.parse(localStorage.getItem('bwq-c1') || 'null');
+    if (!q || typeof q !== 'object') return undefined;
+    return { s: +q.s || 0, done: q.done ? 1 : 0, ...(q.resSet ? { resSet: 1, res: +q.res || 0 } : {}) };
+  } catch (e) { return undefined; }
+}
+
 export function collectBlob() {
   const g = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   let shelf = [];
@@ -96,7 +106,7 @@ export function collectBlob() {
   const bbNow = g('bb-last') || '';
   return {
     pass: readRaw(),                      // ⚠️ RAW — materialised totals would double-count on merge
-    shelf, shelfDel, bbLast,
+    shelf, shelfDel, bbLast, quest: readQuest(),
     glow: g('rv-glowstick') === '1' ? '1' : '',
     name: nameNow, nameAt: stampClock('ps-name-seen', 'ps-name-at', nameNow),
     bbAt: stampClock('bb-seen', 'bb-at', bbNow),
@@ -316,6 +326,25 @@ export function applyBlob(blob) {
       .slice(0, 24);
     localStorage.setItem('shelf-v1', JSON.stringify(shelf));
     localStorage.setItem('shelf-del-v1', JSON.stringify(Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200))));
+    // 🕯 the chapter moves FORWARD only. A step reached elsewhere is adopted
+    // with its scratch cleared, so the step begins cleanly here; a step this
+    // device is ahead of is left alone and the next push raises the server.
+    try {
+      const q = blob.quest;
+      if (q && typeof q === 'object') {
+        let cur = {};
+        try { cur = JSON.parse(localStorage.getItem('bwq-c1') || '{}') || {}; } catch (e2) {}
+        const inS = +q.s || 0, curS = +cur.s || 0;
+        const gainStep = inS > curS, gainDone = !!q.done && !cur.done, gainRes = !!q.resSet && !cur.resSet;
+        if (gainStep || gainDone || gainRes) {
+          const next = { ...cur, s: Math.max(inS, curS), done: (q.done || cur.done) ? 1 : 0 };
+          if (gainStep) next.k = {};
+          if (gainRes) { next.res = +q.res || 0; next.resSet = 1; }
+          localStorage.setItem('bwq-c1', JSON.stringify(next));
+          try { document.dispatchEvent(new CustomEvent('pass:quest')); } catch (e2) {}
+        }
+      }
+    } catch (e) {}
     // ⏱ newest edit wins, both directions — "only if we have none" left two
     // devices permanently disagreeing and made a cleared name immortal
     // 🎩 the person-scoped membership grant arrives with the blob — merge it
