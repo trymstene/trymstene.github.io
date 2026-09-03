@@ -56,7 +56,7 @@ export function buildStory(view, items, opts) {
   function fit() {
     const h = view.clientHeight || 0;
     if (!h) return;
-    const s = Math.max(0.85, Math.min(1.5, (h - 48) / 300));
+    const s = Math.max(0.8, Math.min(1.5, (h - 52) / 314));
     deck.style.transformOrigin = '0 0';
     deck.style.transform = 'scale(' + s.toFixed(3) + ')';
     deck.style.width = (100 / s) + '%';
