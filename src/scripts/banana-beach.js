@@ -7,7 +7,7 @@
 // boathouse — pieces of his map wash up + dig out; the X is new each day.
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid, passBest, passBestGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
@@ -759,7 +759,14 @@ function init() {
   // bumping from right against the net demands an apex the cap won't give.
   const MAX_APEX = 265;
   let rally = 0, bestRally = 0, restAt = 0, lastKick = 0, kickTrackAt = 0;
-  try { bestRally = parseInt(localStorage.getItem('bh-rally-best') || '0', 10) || 0; } catch (e) {}
+  // 🏐 the best rally follows the player: it lives on the pass, and the old
+  // device-only number is folded in once so nobody's record is reset
+  bestRally = passBestGet('rally');
+  try {
+    const old = parseInt(localStorage.getItem('bh-rally-best') || '0', 10) || 0;
+    if (old > bestRally) bestRally = passBest('rally', old);
+    localStorage.removeItem('bh-rally-best');
+  } catch (e) {}
   function showRally() {
     hud.setSlot(rally > 1 ? ('🏐 ' + rally + (bestRally > 1 ? ' · best ' + bestRally : '')) : '');
   }
@@ -888,8 +895,7 @@ function init() {
       } else if (mine) {
         rally++;
         if (rally > bestRally) {
-          bestRally = rally;
-          try { localStorage.setItem('bh-rally-best', String(bestRally)); } catch (e) {}
+          bestRally = passBest('rally', rally);
         }
         showRally();
         if (rally === 5 || rally === 10 || rally === 25) {

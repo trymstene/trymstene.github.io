@@ -80,6 +80,25 @@ export function passRaw() { return readRaw(); }
 // If this device is linked to a passkey (pass-sync.js stores 'pass-link'),
 // every pass write quietly pushes the whole world after a 10s debounce.
 // The worker merges (union/max), so pushes can never lose remote progress.
+// 🏆 PERSONAL BESTS — the highest a player has ever reached, anywhere. A best
+// cannot live in the ledger: the ledger SUMS a stat across a person's devices,
+// so a rally of 12 on the phone and 8 on the laptop would read 20. These merge
+// by max instead, here and in worker-pass mergeBlob (change both or neither).
+const BEST_KEY = 'pass-best-v1';
+function bestsRead() {
+  try { const o = JSON.parse(localStorage.getItem(BEST_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; }
+}
+export const passBestGet = (key) => +bestsRead()[key] || 0;
+export function passBest(key, n) {
+  const v = Math.max(0, Math.round(+n || 0));
+  const all = bestsRead();
+  if (v <= (+all[key] || 0)) return +all[key] || 0;
+  all[key] = v;
+  try { localStorage.setItem(BEST_KEY, JSON.stringify(all)); } catch (e) {}
+  schedulePush();
+  return v;
+}
+
 // 🕯 the chapter's position: the step, the finish, and the resident branch.
 // The step's own scratch (`k`) is deliberately NOT sent — see mergeBlob.
 function readQuest() {
@@ -106,7 +125,7 @@ export function collectBlob() {
   const bbNow = g('bb-last') || '';
   return {
     pass: readRaw(),                      // ⚠️ RAW — materialised totals would double-count on merge
-    shelf, shelfDel, bbLast, quest: readQuest(),
+    shelf, shelfDel, bbLast, quest: readQuest(), bests: bestsRead(),
     glow: g('rv-glowstick') === '1' ? '1' : '',
     name: nameNow, nameAt: stampClock('ps-name-seen', 'ps-name-at', nameNow),
     bbAt: stampClock('bb-seen', 'bb-at', bbNow),
@@ -326,6 +345,19 @@ export function applyBlob(blob) {
       .slice(0, 24);
     localStorage.setItem('shelf-v1', JSON.stringify(shelf));
     localStorage.setItem('shelf-del-v1', JSON.stringify(Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200))));
+    // 🏆 a best is the highest either side has seen
+    try {
+      const inB = blob.bests;
+      if (inB && typeof inB === 'object') {
+        const all = bestsRead();
+        let moved = false;
+        for (const [k, v] of Object.entries(inB)) {
+          const n = Math.max(0, Math.round(+v || 0));
+          if (n > (+all[k] || 0)) { all[k] = n; moved = true; }
+        }
+        if (moved) localStorage.setItem(BEST_KEY, JSON.stringify(all));
+      }
+    } catch (e) {}
     // 🕯 the chapter moves FORWARD only. A step reached elsewhere is adopted
     // with its scratch cleared, so the step begins cleanly here; a step this
     // device is ahead of is left alone and the next push raises the server.

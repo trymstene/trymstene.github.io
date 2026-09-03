@@ -159,9 +159,13 @@ ok('a 13th mint in an hour from one IP is refused', last === 429, last);
 // made inside a step never travel, so switching device mid-step hands that
 // step back at its beginning (Trym: that is how a console game does it).
 console.log('\nQ. the chapter follows the player');
-const q = await (await post('/anon', { blob: { quest: { s: 4, done: 0, resSet: 1, res: 1 } } })).json();
-const qp = (blob) => post('/push', { credId: q.credId, token: q.token, blob }).then((r) => r.json());
-const qpull = () => hit('/pull?credId=' + encodeURIComponent(q.credId) + '&token=' + q.token).then((r) => r.json());
+const q = await (await post('/anon', { blob: { quest: { s: 4, done: 0, resSet: 1, res: 1 } } }, '7.7.7.250')).json();
+// ⚠️ its own address: the worker throttles 30 requests a minute per IP, and
+// this suite is already spending the default one
+let qip = 0;
+const QIP = () => '7.7.7.' + ((qip++) % 200);
+const qp = (blob) => post('/push', { credId: q.credId, token: q.token, blob }, QIP()).then((r) => r.json());
+const qpull = () => hit('/pull?credId=' + encodeURIComponent(q.credId) + '&token=' + q.token, {}, QIP()).then((r) => r.json());
 let qr = await qpull();
 ok('the mint keeps the chapter', qr.blob.quest && qr.blob.quest.s === 4 && qr.blob.quest.res === 1, qr.blob.quest);
 await qp({ quest: { s: 7, done: 0 } });
@@ -180,6 +184,20 @@ ok('…and an older device cannot un-finish it', qr.blob.quest.done === 1, qr.bl
 await qp({ quest: { s: 9, k: { thing: 3 } } });
 qr = await qpull();
 ok('the taps inside a step are never stored', !qr.blob.quest.k, qr.blob.quest);
+
+// 🏆 A PERSONAL BEST IS NOT A COUNTER. The ledger sums a stat across a
+// person's devices; a best of 12 on the phone and 8 on the laptop is 12.
+console.log('\nB. personal bests merge by max, never by sum');
+await qp({ bests: { rally: 12 } });
+await qp({ bests: { rally: 8 } });
+qr = await qpull();
+ok('the higher number is the record', qr.blob.bests.rally === 12, qr.blob.bests);
+await qp({ bests: { rally: 30, dig: 4 } });
+qr = await qpull();
+ok('…a new record replaces it, and a second best rides along', qr.blob.bests.rally === 30 && qr.blob.bests.dig === 4, qr.blob.bests);
+await qp({ bests: { rally: -5, 'NOT A KEY': 9, dig: 1e12 } });
+qr = await qpull();
+ok('junk keys are dropped and numbers are clamped', qr.blob.bests.rally === 30 && !('NOT A KEY' in qr.blob.bests) && qr.blob.bests.dig <= 1e9, qr.blob.bests);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

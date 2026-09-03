@@ -268,6 +268,21 @@ function mergeBlob(oldB, newB) {
     created: Math.min(op.created || Date.now(), np.created || Date.now()),
     patches, stats, base, led, days,
   };
+  // 🏆 PERSONAL BESTS merge by MAX, never by sum: a best is the highest one
+  // device has ever seen, not the total of what every device saw.
+  if (oldB.bests || newB.bests) {
+    const ba = (oldB.bests && typeof oldB.bests === 'object') ? oldB.bests : {};
+    const bb = (newB.bests && typeof newB.bests === 'object') ? newB.bests : {};
+    const bests = {};
+    for (const src of [ba, bb]) {
+      for (const [k, v] of Object.entries(src)) {
+        if (!/^[a-z][a-z0-9_]{0,23}$/.test(k)) continue;
+        const n = Math.max(0, Math.min(1e9, Math.round(Number(v) || 0)));
+        if (n > (bests[k] || 0)) bests[k] = n;
+      }
+    }
+    out.bests = bests;
+  }
   // 🕯 THE QUESTLINE. A chapter belongs to the player, not the browser. The
   // step only ever moves FORWARD, so it merges by max; the taps inside a step
   // never travel (the client drops them), so arriving on a second device
