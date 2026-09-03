@@ -396,13 +396,17 @@ function init(visitDoc, visitMiss) {
       } };
   }
   // the publish MARK, written down BEFORE the publish leaves: a flush at
-  // pagehide never gets an answer, and this is how the next boot recognises
-  // the stamp on the server as its own work rather than somebody else's
+  // pagehide never gets an answer, and this is how a 409 or the next boot
+  // recognises the stamp on the server as this device's own work.
+  // ⚠️ THE LAST FEW, not the last one: every attempt mints a fresh mark, so
+  // by the time an answer names one, this device has rotated past it.
   function stampMark() {
     state.pubMark = Math.random().toString(36).slice(2, 10);
+    state.pubMarks = [...(state.pubMarks || []), state.pubMark].slice(-6);
     try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {}
     return state.pubMark;
   }
+  const ourMark = (m) => !!m && (state.pubMarks || []).includes(String(m));
   function pushYard() {
     if (visiting || !state.claimedAt || !state.slug) return;
     clearTimeout(pushT);
@@ -421,7 +425,7 @@ function init(visitDoc, visitMiss) {
         // lost, this device is simply holding an older receipt. Take the
         // stamp and save again — no merge, no reload under the player.
         const b = (e && e.body) || {};
-        if (b.mark && state.pubMark && b.mark === state.pubMark) {
+        if (ourMark(b.mark)) {
           state.pubUpdated = b.updated || state.pubUpdated;
           saveRaw();
           pushYard();
@@ -4415,7 +4419,7 @@ function init(visitDoc, visitMiss) {
       state.pubUpdated = r.updated || 1;   // grandfather: this device is truth
       saveRaw();
       return;
-    } else if (r.mark && state.pubMark && r.mark === state.pubMark) {
+    } else if (r.mark && (state.pubMarks || []).includes(String(r.mark))) {
       // the stamp on the server is this device's own last flush: take the
       // receipt and keep the yard on screen exactly as it is
       state.pubUpdated = r.updated || state.pubUpdated;
