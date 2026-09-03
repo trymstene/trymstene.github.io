@@ -2722,8 +2722,10 @@ export class YardRoom {
           // a signed-out visit on the browser that made it) may rename.
           const ownsIt = doc.pass === pass || (doc.pass === alt && pass === alt);
           if (ownsIt) {
-            if (name && name !== doc.name) { doc.name = name; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
-            return json({ slug: cur });
+            // a rename moves the stamp, so it must hand it back — otherwise
+            // the next save carries a stale `since` and the yard reloads
+            if (name && name !== doc.name) { doc.name = name; doc.mark = undefined; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
+            return json({ slug: cur, updated: doc.updated || 0 });
           }
           if (!name) return json({ slug: cur });   // just finding the way home
         }
@@ -2779,16 +2781,22 @@ export class YardRoom {
       // its wholesale save would erase what another device did since. It
       // gets the stamp back, pulls, merges and saves again (the client's
       // yardResync) — a bought animal never vanishes under an old tab.
+      // 🏷 the publish MARK says whose save this stamp belongs to. A flush as
+      // the tab goes away gets no answer, so the device cannot learn the new
+      // stamp — without the mark its next save looks stale against ITS OWN
+      // work and the yard reloads under the player. The mark rides the 409 too.
+      const mark = /^[a-z0-9]{4,16}$/.test(String(body.mark || '')) ? String(body.mark) : '';
       const since = +body.since;
-      if (Number.isFinite(since) && since > 0 && doc.updated && since < doc.updated) return json({ err: 'stale', updated: doc.updated }, 409);
+      if (Number.isFinite(since) && since > 0 && doc.updated && since < doc.updated) return json({ err: 'stale', updated: doc.updated, mark: doc.mark || null }, 409);
       doc.state = this.yardSan(body.state);
       if (name) doc.name = name;
+      doc.mark = mark || undefined;
       doc.updated = Date.now();
       await this.state.storage.put('y:' + slug, doc);
       await this.indexUpsert(doc);
       // the updated stamp rides back — the pull-sync compares SERVER times
       // only, because two devices' own clocks cannot be compared
-      return json({ ok: 1, slug, updated: doc.updated });
+      return json({ ok: 1, slug, updated: doc.updated, mark: mark || null });
     }
 
     // 🏡 MINE — the pull half of cross-device sync (31 Aug). The push half
@@ -2803,7 +2811,7 @@ export class YardRoom {
       if (!doc) return json({ slug: null });
       const st = doc.state || {};
       return json({
-        slug, was: doc.was || null, name: doc.name, created: doc.created || 0, updated: doc.updated || 0,
+        slug, was: doc.was || null, name: doc.name, created: doc.created || 0, updated: doc.updated || 0, mark: doc.mark || null,
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home,
         items: st.items || [], soil: st.soil || [], fence: st.fence || [],
         mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},

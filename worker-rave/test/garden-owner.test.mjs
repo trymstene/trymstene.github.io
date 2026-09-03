@@ -155,5 +155,22 @@ ok('a device that synced before the current stamp is refused 409 stale', r.statu
 r = await yp('/save', { state: { stage: 2, items: [] }, since: stamp, pass: P2, alt: 'zzz', wt: await wt(P2) });
 ok('…and one that synced at the current stamp saves', r.ok === 1 && r.updated >= stamp, r);
 
+// 10. 🏷 THE PUBLISH MARK — a device must not conflict with its own flush.
+// The save sent as the tab goes away gets no answer, so the device cannot
+// learn the new stamp. The mark lets the next boot (and the 409) recognise
+// that stamp as its own work instead of reloading the yard over the player.
+console.log('10. the publish mark tells a device its own flush');
+r = await yp('/save', { state: { stage: 3, items: [] }, mark: 'abc12345', pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a save hands its mark back', r.ok === 1 && r.mark === 'abc12345', r);
+const own = r.updated;
+r = await yp('/mine', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('…/mine carries the mark of the last publish', r.mark === 'abc12345' && r.updated === own, { mark: r.mark });
+r = await yp('/save', { state: { stage: 4, items: [] }, since: own - 5000, mark: 'def67890', pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a stale save is refused WITH the mark, so the device can see the stamp is its own', r.status === 409 && r.mark === 'abc12345' && r.updated === own, r);
+r = await yp('/save', { state: { stage: 4, items: [] }, since: own, mark: 'def67890', pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('…taking that stamp, the save lands and the mark moves on', r.ok === 1 && r.mark === 'def67890', r);
+r = await yp('/save', { state: { stage: 5, items: [] }, mark: 'NOPE!!', since: r.updated, pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('a junk mark is dropped, never stored', r.ok === 1 && r.mark === null, r);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

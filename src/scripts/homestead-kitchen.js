@@ -166,7 +166,7 @@ function sellPlate(quiet) {
   const note = document.getElementById('hsCookNote');
   note.classList.remove('is-buff');
   note.textContent = d.name + ' → ' + coinsPaid(d.pay) + ' coins in your wallet';
-  if (quiet) toast('🪙 +' + d.pay + ' — sold the ' + d.name.toLowerCase(), 2600);
+  if (quiet) toast('🪙 +' + coinsPaid(d.pay) + ' — sold the ' + d.name.toLowerCase(), 2600);
   track1('homestead_sell_dish', { dish: d.id });
 }
 function openTreat(d) {

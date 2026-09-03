@@ -180,6 +180,11 @@ async function identityOf(env, R) {
     // 💰 the server wallet (once frozen) and the tape ids it has seen, so a
     // device can clear an outbox a beacon push delivered without an ack
     ...walletOut(R.home), seen: (R.home.log && R.home.log.seen) || [],
+    // 🧾 refusals WAIT here. A push flushed as the page went away has no
+    // answer, and an answer that lands on the rave reaches no surface that
+    // can put a stall sale right — so every unclaimed refusal rides each
+    // push AND pull until the device that can act on it says it did.
+    ...((R.home.log && R.home.log.nak && R.home.log.nak.length) ? { nak: R.home.log.nak } : {}),
     ...(R.home.rules ? { rules: R.home.rules } : {}),   // 📏 the caps this person has used
     own: OWN_IDS_W.filter((id) => statTotal((R.home.blob || {}).pass, 'own_' + id) > 0) };   // 🎩 the stand gear this pass holds
 }
@@ -2066,8 +2071,14 @@ async function push(request, env) {
   await saveKey(env, R.homeKey, R.home);
   // every refused row goes back: a stand item's refusal undresses the banana;
   // a refused stall sale puts the eggs back; the rest just corrects the number
-  const nak = rows.filter((r) => r.x).map((r) => ({ id: r.id, k: r.k, d: r.d, r: r.r, ...(r.s ? { s: r.s } : {}), ...(r.i ? { i: r.i } : {}) }));
-  return json({ ok: true, ...(await identityOf(env, R)), ...(nak.length ? { nak } : {}) }, 200, cors(env, request));
+  const log = R.home.log || (R.home.log = {});
+  const kept = Array.isArray(log.nak) ? log.nak : [];
+  const done = new Set((Array.isArray(b.nakAck) ? b.nakAck : []).slice(0, 60).map((x) => String(x)));
+  const fresh = rows.filter((r) => r.x).map((r) => ({ id: r.id, k: r.k, d: r.d, r: r.r, ...(r.s ? { s: r.s } : {}), ...(r.i ? { i: r.i } : {}) }));
+  const ids = new Set(kept.map((x) => x.id));
+  log.nak = [...kept, ...fresh.filter((x) => !ids.has(x.id))].filter((x) => !done.has(x.id)).slice(-20);
+  await saveKey(env, R.homeKey, R.home);
+  return json({ ok: true, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }
 
 async function pull(request, env, url) {

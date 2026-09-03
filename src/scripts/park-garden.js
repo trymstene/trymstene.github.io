@@ -1268,7 +1268,7 @@ export function initGarden(ctx) {
       const n = 1 + Math.floor(Math.random() * 3);
       passStat('coins_earned', n, PARK_TEST ? 'qa' : 'weed');
       float(w2.x + 18, w2.y - 34, '+' + coinsPaid(n) + ' 🪙');
-      toast('🪙 something under the roots — +' + n, 2600);
+      toast('🪙 something under the roots — +' + coinsPaid(n), 2600);
     }
     refreshHud();
     float(w2.x, w2.y - 20, '+1');
@@ -1327,7 +1327,7 @@ export function initGarden(ctx) {
     if (r.coins) passStat('coins_earned', r.coins, PARK_TEST ? 'qa' : 'egg');
     if (r.tickets) passStat('tickets', r.tickets);   // the bay's pier currency
     refreshHud();
-    float(e.x, e.y - 14, r.golden ? '✨' : '+' + (r.coins || r.tickets));
+    float(e.x, e.y - 14, r.golden ? '✨' : '+' + (r.coins ? coinsPaid(r.coins) : r.tickets));
     if (r.golden) {
       confettiAt(e.x, e.y);
       toast('🥚✨ THE GOLDEN EGG — +' + coinsPaid(r.coins) + ' coins, +' + r.tickets + ' beach tickets!', 4600);

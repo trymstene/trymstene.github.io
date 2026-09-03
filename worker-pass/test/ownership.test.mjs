@@ -37,7 +37,7 @@ const blob = (led, events, extra = {}) => ({
   pass: { created: extra.created || Date.now(), patches: {}, base: extra.base || {}, stats: extra.stats || {}, led: Object.fromEntries(Object.entries(led).map(([k, v]) => [k, { [DEV]: v }])), days: [] },
   ev: events, evDrop: 0, evDev: DEV,
 });
-const push = (a, b) => post('/push', { credId: a.credId, token: a.token, blob: b }).then((r) => r.json());
+const push = (a, b, extra) => post('/push', { credId: a.credId, token: a.token, blob: b, ...(extra || {}) }).then((r) => r.json());
 const pull = (a) => hit(`/pull?credId=${encodeURIComponent(a.credId)}&token=${a.token}`).then((r) => r.json());
 const owned = (R, id) => (((R.blob || {}).pass || {}).base || {})['own_' + id] > 0 || Object.values((((R.blob || {}).pass || {}).led || {})['own_' + id] || {}).some((v) => v > 0);
 
@@ -74,12 +74,29 @@ r = await push(a, blob({ coins_earned: 200, coins_spent: 90, own_duckhat: 1, own
 ok('an overpay (30 for a 25 bucket hat after a cut) is accepted', r.wallet.bal === 110 && r.own.includes('buckethat'), [r.wallet, r.own]);
 r = await push(a, blob({ coins_earned: 200, coins_spent: 100, own_duckhat: 1, own_buckethat: 1, own_snailhat: 1 }, [ev('coins_spent', 10, 'park', 'stand', 'snailhat')]));
 R = await rec(a.credId);
-ok('an under-price spend is refused, nothing debited, nothing owned', r.wallet.bal === 110 && !owned(R, 'snailhat') && r.nak && r.nak[0].i === 'snailhat' && r.nak[0].r === 'price', [r.wallet, r.nak]);
+const last = (x) => (x.nak || [])[(x.nak || []).length - 1] || {};
+ok('an under-price spend is refused, nothing debited, nothing owned', r.wallet.bal === 110 && !owned(R, 'snailhat') && last(r).i === 'snailhat' && last(r).r === 'price', [r.wallet, r.nak]);
 r = await push(a, blob({ coins_earned: 200, coins_spent: 220, own_duckhat: 1, own_buckethat: 1, own_squidhat: 1, own_flamingoring: 1 }, [ev('coins_spent', 120, 'park', 'stand', 'flamingoring')]));
 R = await rec(a.credId);
-ok('an overdraft is refused as funds', r.wallet.bal === 110 && !owned(R, 'flamingoring') && r.nak[0].r === 'funds', [r.wallet, r.nak]);
+ok('an overdraft is refused as funds', r.wallet.bal === 110 && !owned(R, 'flamingoring') && last(r).r === 'funds', [r.wallet, r.nak]);
 r = await push(a, blob({ coins_earned: 200, coins_spent: 160, own_duckhat: 1, own_buckethat: 1 }, [ev('coins_spent', 60, 'park', 'stand', 'duckhat')]));
-ok('buying what you own is refused as owned, no charge', r.wallet.bal === 110 && r.nak[0].r === 'owned', [r.wallet, r.nak]);
+ok('buying what you own is refused as owned, no charge', r.wallet.bal === 110 && last(r).r === 'owned', [r.wallet, r.nak]);
+
+// 10. 🧾 A REFUSAL WAITS FOR THE SURFACE THAT CAN PUT IT RIGHT
+// A push flushed as the page went away has no answer, and an answer that
+// lands on the rave reaches no stall. So refusals ride every push AND pull
+// until the device says it acted on one.
+console.log('10. refusals are durable until claimed');
+const held = (r.nak || []).map((x) => x.id);
+ok('the ring holds every unclaimed refusal, not just the last push\'s', held.length === 3, held);
+r = await push(a, blob({ coins_earned: 200, coins_spent: 160, own_duckhat: 1, own_buckethat: 1 }, []));
+ok('...and a push that refuses nothing still carries them', (r.nak || []).length === 3, (r.nak || []).map((x) => x.r));
+const pulled = await pull(a);
+ok('...the PULL carries them too, so the next page opened hears them', (pulled.nak || []).length === 3, (pulled.nak || []).length);
+r = await push(a, blob({ coins_earned: 200, coins_spent: 160, own_duckhat: 1, own_buckethat: 1 }, []), { nakAck: [held[0], held[1]] });
+ok('a claimed refusal is let go, the unclaimed one stays', (r.nak || []).length === 1 && r.nak[0].id === held[2], (r.nak || []).map((x) => x.id));
+r = await push(a, blob({ coins_earned: 200, coins_spent: 160, own_duckhat: 1, own_buckethat: 1 }, []), { nakAck: [held[2]] });
+ok('...and the last one goes when it is claimed', !r.nak || !r.nak.length, r.nak);
 r = await push(a, blob({ coins_earned: 200, coins_spent: 205 }, [ev('coins_spent', 45, 'homestead', 'order', 'decor:campfire')]));
 R = await rec(a.credId);
 ok('an unknown item is a plain spend: debited, nothing authored', r.wallet.bal === 65 && !Object.keys(R.blob.pass.base).some((k) => k.includes('campfire')), r.wallet);

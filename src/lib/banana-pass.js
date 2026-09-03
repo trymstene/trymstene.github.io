@@ -149,6 +149,15 @@ function keepGid(d, force) {
 }
 
 let pushT = null, pushDue = 0, pushBound = false;
+// a worker that is down or an address that is over its minute budget must not
+// be asked again every 10 s by every open tab — that is how a throttle stays
+// on. Each failure doubles the wait (30 s → 15 min, jittered), a success or a
+// fresh answer clears it. A new write never collapses the wait back to 10 s.
+let pushFail = 0, pushHold = 0;
+function pushBackoff() {
+  pushFail = Math.min(pushFail + 1, 6);
+  pushHold = Date.now() + Math.round(Math.min(900000, 30000 * Math.pow(2, pushFail - 1)) * (0.75 + Math.random() * 0.5));
+}
 // ⚠️ A TRAILING DEBOUNCE ALONE UPLOADS NOTHING during real play: a busy rave
 // session re-arms the 10s timer on every coin and never fires, then the tab
 // closes and the whole session lives on one device only. So: a hard 60s
@@ -160,15 +169,15 @@ function pushNow() {
   if (!link || !link.credId || !link.token) return;
   const blob = collectBlob();
   const sent = new Set((blob.ev || []).map((e) => e.id));
-  const body = JSON.stringify({ credId: link.credId, token: link.token, blob });
+  const body = JSON.stringify({ credId: link.credId, token: link.token, blob, nakAck: nakDone() });
   // sendBeacon survives the page going away; fetch is the everyday path
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && navigator.sendBeacon) {
     try { navigator.sendBeacon(PASS_API + '/push', new Blob([body], { type: 'application/json' })); return; } catch (e) {}
   }
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
-    .then((r) => { if (r && r.ok) return r.json(); if (!r || r.status >= 500 || r.status === 429) schedulePush(); return null; })
+    .then((r) => { if (r && r.ok) { pushFail = 0; pushHold = 0; return r.json(); } if (!r || r.status >= 500 || r.status === 429) { pushBackoff(); schedulePush(); } return null; })
     .then((d) => { if (d && d.ok) { keepGid(d, true); evDropped = 0; } else keepGid(d); })   // acked by `seen`, never by ok alone
-    .catch(() => schedulePush());   // a dropped connection tries again on the 10 s / 60 s clock
+    .catch(() => { pushBackoff(); schedulePush(); });   // a dropped connection tries again, each time later than the last
 }
 // 🫧 AN ANONYMOUS PASS AT THE FIRST MEANINGFUL WRITE. Every player gets a
 // server-side home — and a world id + the token that proves it — the moment
@@ -230,7 +239,7 @@ function schedulePush() {
     addEventListener('pagehide', flush);
   }
   clearTimeout(pushT);
-  pushT = setTimeout(pushNow, Math.max(0, Math.min(10000, pushDue - now)));
+  pushT = setTimeout(pushNow, Math.max(Math.max(0, Math.min(10000, pushDue - now)), pushHold ? pushHold - now : 0));
 }
 
 // nudge a sync push without touching the pass — for writes that live OUTSIDE
@@ -575,7 +584,7 @@ export function walletKeep(d, force) {
     const gone = reconcileOwn(d);
     // a duplicate buy refused as 'owned' is still owned — never take that one off
     const ownNow = Array.isArray(d.own) ? d.own.map(String) : [];
-    const naksAll = Array.isArray(d.nak) ? d.nak.filter((x) => x && typeof x === 'object') : [];
+    const naksAll = (Array.isArray(d.nak) ? d.nak.filter((x) => x && typeof x === 'object') : []).filter((x) => !nakDone().includes(String(x.id || '')));
     // a refused STAND purchase undresses the banana; every other refusal is
     // handed to whichever surface can put things right (the stall returns
     // the eggs) — quietly, the number simply reads what the server holds
@@ -583,10 +592,24 @@ export function walletKeep(d, force) {
     const swept = sweepStandGear([...gone, ...naks.map((x) => String(x.i))]);
     for (const x of naksAll) {
       if (x.i && OWN_IDS.includes(String(x.i)) && ownNow.includes(String(x.i))) continue;   // a duplicate buy: still owned, nothing to say
-      try { document.dispatchEvent(new CustomEvent('pass:refused', { detail: { i: x.i ? String(x.i) : '', k: String(x.k || ''), d: +x.d || 0, r: String(x.r || ''), s: x.s ? String(x.s) : '' } })); } catch (e) {}
+      try { document.dispatchEvent(new CustomEvent('pass:refused', { detail: { id: String(x.id || ''), i: x.i ? String(x.i) : '', k: String(x.k || ''), d: +x.d || 0, r: String(x.r || ''), s: x.s ? String(x.s) : '' } })); } catch (e) {}
     }
     if (gone.length || swept || balChanged) { try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {} }
   } catch (e) {}
+}
+// 🧾 a refusal the player's surface actually put right (the stall handed the
+// eggs back). Only a CLAIMED one is acked — the rest ride along until they age
+// out of the record's ring, so whichever page opens next still hears them.
+const NAK_KEY = 'pass-nak-v1';
+function nakDone() {
+  try { const a = JSON.parse(localStorage.getItem(NAK_KEY) || '[]'); return Array.isArray(a) ? a.map(String) : []; } catch (e) { return []; }
+}
+export function passNakDone(id) {
+  const v = String(id || ''); if (!v) return;
+  const a = nakDone(); if (a.includes(v)) return;
+  a.push(v);
+  try { localStorage.setItem(NAK_KEY, JSON.stringify(a.slice(-40))); } catch (e) {}
+  schedulePush();
 }
 let evDropped = 0;
 function evRead() {

@@ -10,7 +10,7 @@ import pxEdit from '../icons/pixelart/edit.svg?raw';
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone } from '../lib/banana-pass.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
@@ -41,7 +41,12 @@ async function yFetch(path, body) {
     method: 'POST',
     body: JSON.stringify({ ...body, pass: worldOwner(), alt: worldSid(), wt: worldToken() }),   // 🪪 id + proof
   } : undefined);
-  if (!r.ok) throw new Error('yard ' + r.status);
+  if (!r.ok) {
+    const e = new Error('yard ' + r.status);
+    e.status = r.status;
+    try { e.body = await r.json(); } catch (x) {}
+    throw e;
+  }
   return r.json();
 }
 // ?yard=trym today; /homestead/trym/ the day the apex goes orange-cloud
@@ -366,7 +371,7 @@ function init(visitDoc, visitMiss) {
           .map((it) => ({ id: it.id, x: Math.round(it.x), y: Math.round(it.y) }));
         if (l.length) pubIn[t2] = l;
       });
-      return { name: state.name, since: state.pubUpdated || undefined, state: {
+      return { name: state.name, since: state.pubUpdated || undefined, mark: stampMark(), state: {
         stage: state.stage, style: state.style, look: state.look, home: state.home,
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,
@@ -390,6 +395,14 @@ function init(visitDoc, visitMiss) {
           pa: m.pa || undefined })),   // a rehomed kid keeps her parent on every device (the tree)
       } };
   }
+  // the publish MARK, written down BEFORE the publish leaves: a flush at
+  // pagehide never gets an answer, and this is how the next boot recognises
+  // the stamp on the server as its own work rather than somebody else's
+  function stampMark() {
+    state.pubMark = Math.random().toString(36).slice(2, 10);
+    try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {}
+    return state.pubMark;
+  }
   function pushYard() {
     if (visiting || !state.claimedAt || !state.slug) return;
     clearTimeout(pushT);
@@ -403,7 +416,18 @@ function init(visitDoc, visitMiss) {
         // 409 = this device synced before the yard's current stamp: another
         // device changed the yard since. Merge theirs in (animals, grass and
         // memories by id — a bought animal never vanishes), then save again.
-        if (String(e && e.message || '').includes('409')) yardResync();
+        if (!String(e && e.message || '').includes('409')) return;
+        // the stamp that refused us is OUR OWN unanswered flush: nothing was
+        // lost, this device is simply holding an older receipt. Take the
+        // stamp and save again — no merge, no reload under the player.
+        const b = (e && e.body) || {};
+        if (b.mark && state.pubMark && b.mark === state.pubMark) {
+          state.pubUpdated = b.updated || state.pubUpdated;
+          saveRaw();
+          pushYard();
+          return;
+        }
+        yardResync();
       });
     }, 2500);
   }
@@ -414,8 +438,13 @@ function init(visitDoc, visitMiss) {
         const seen = new Set((theirs || []).map((x) => x.id).filter(Boolean));
         return [...(theirs || []), ...(mine || []).filter((x) => x.id && !seen.has(x.id))];
       };
+      // an id this device moved to the long grass or a new home is GONE from
+      // the pen on purpose — the server copy predates that, so taking theirs
+      // wholesale would put the goat back (and pay to rehome her twice)
+      const left = new Set([...(state.memory || []), ...(state.grass || [])].map((x) => x && x.id).filter(Boolean));
       const merged = { ...state, ...syncedFields(r),
-        animals: byId(state.animals, r.animals), grass: byId(state.grass, r.grass), memory: byId(state.memory, r.memory) };
+        animals: byId(state.animals, r.animals).filter((a) => !(a && left.has(a.id))),
+        grass: byId(state.grass, r.grass), memory: byId(state.memory, r.memory) };
       if (Array.isArray(merged.animals)) merged.hens = merged.animals.filter((a) => a.sp === 'hen').length || 0;
       merged.pubUpdated = r.updated || Date.now();
       merged.dirty = 1;
@@ -2711,7 +2740,9 @@ function init(visitDoc, visitMiss) {
     track(wasRename ? 'homestead_rename' : 'homestead_claim');
     // mint the ADDRESS — the sign name becomes the slug (yardBoot retries if offline)
     yFetch('/claim', { name: v }).then((r) => {
-      if (r && r.slug) { state.slug = r.slug; save(); }
+      // the rename moved the yard's stamp: take the new receipt with it, or
+      // the next save reads as stale and the homestead reloads under the sign
+      if (r && r.slug) { state.slug = r.slug; if (r.updated) state.pubUpdated = r.updated; save(); }
     }).catch(() => {});
     // the naming moment, AFTER the deed (silent if already named/asked)
     askName({
@@ -3179,12 +3210,13 @@ function init(visitDoc, visitMiss) {
   // another device): the goods go quietly back on the shelf, the number
   // reads what the server holds — nothing to explain, the eggs are there
   document.addEventListener('pass:refused', (e) => {
-    const { k, s, i } = (e && e.detail) || {};
-    if (k !== 'coins_earned' || s !== 'stall' || !i) return;
+    const { k, s, i, id } = (e && e.detail) || {};
+    if (visiting || k !== 'coins_earned' || s !== 'stall' || !i) return;
     const m = /^(eggs|milk|wool|cheese)-(\d{1,3})$/.exec(String(i));
     if (!m) return;
     state[m[1]] = (state[m[1]] || 0) + +m[2];
     save(); renderShop();
+    passNakDone(id);   // put right — the record can let this one go
   });
   function shopHead() {
     const hd = SHOP_HEADS[shopEl.dataset.tab] || SHOP_HEADS.order;
@@ -4381,6 +4413,13 @@ function init(visitDoc, visitMiss) {
         bed: Array.isArray(r.bed) ? r.bed : undefined, bedAt: r.bedAt });
     } else if (!state.pubUpdated) {
       state.pubUpdated = r.updated || 1;   // grandfather: this device is truth
+      saveRaw();
+      return;
+    } else if (r.mark && state.pubMark && r.mark === state.pubMark) {
+      // the stamp on the server is this device's own last flush: take the
+      // receipt and keep the yard on screen exactly as it is
+      state.pubUpdated = r.updated || state.pubUpdated;
+      state.dirty = 0;
       saveRaw();
       return;
     } else if ((r.updated || 0) > state.pubUpdated && !state.dirty) {
