@@ -61,6 +61,10 @@ export function buildStory(view, items, opts) {
     deck.style.transform = 'scale(' + s.toFixed(3) + ')';
     deck.style.width = (100 / s) + '%';
     deck.style.height = (100 / s) + '%';
+    // ⚠️ the pills are NOT inside the scaled deck, so the room a card must
+    // leave for them shrinks as the deck grows — reserve it in the deck's
+    // own units or a card lands on top of them
+    deck.style.paddingBottom = Math.round(50 / s) + 'px';
   }
   const onResize = () => fit();
   addEventListener('resize', onResize);
