@@ -14,6 +14,7 @@
 //     payload carries no comparison of its own
 import { section, tile, lineChart, barsH, div, nfmt, pct } from './hq-pulse.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
+import { FUNNELS, DL_NAMES, AREAS, SHOPS } from '../data/pulse-dicts.js';
 
 const MIN_N = 20;
 const DEV_ICON = { desktop: '🖥', mobile: '📱', tablet: '📟' };
@@ -152,4 +153,292 @@ export function renderNow(into, S) {
     div('hqp-tv', nfmt(c.v), row);
   });
   if (!(L.cities || []).length) div('hqp-empty', 'no cities on the board', t2);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 📥 DOWNLOADS — giving files away IS the product here, so this is the volume
+// side of the site. TOOK = files handed over. SAW = the card appeared, which
+// since 12 Aug rides EVERY download, so it counts cards and not people.
+// ════════════════════════════════════════════════════════════════════════════
+
+// longest prefix wins; a deeper path keeps the surface and adds its own slug
+function dlName(page) {
+  const p = String(page || '');
+  let best = null;
+  for (const [pre, name] of DL_NAMES) if (p.indexOf(pre) === 0 && (!best || pre.length > best[0].length)) best = [pre, name];
+  if (!best) return p === '/' ? 'The front page' : p;
+  const rest = p.slice(best[0].length).replace(/\/$/, '');
+  return rest ? best[1] + ' · ' + rest.split('/').pop().replace(/-/g, ' ') : best[1];
+}
+const DLSET = new Set(['gif_download', 'png_download', 'wallpaper_download', 'offer_shown',
+  'offer_click', 'offer_skip', 'offer_world', 'offer_discord']);
+
+export function renderDownloads(into, S) {
+  const R = S.range;
+  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
+  const rows = R.downloads || [];
+  let s = section(into, 'The download business', 'TOOK is files handed over. SAW is the card appearing — since 12 Aug it rides every download, so it counts cards, not people. The card makes one honest ask, and WILLINGNESS is coffee clicks over cards shown. A rate needs twenty cards behind it before it is printed: three out of five is three clicks, not sixty per cent.');
+  if (!rows.length) { div('hqp-empty', 'no downloads in this window', s); return; }
+  const sum = (k) => rows.reduce((a, r) => a + (+r[k] || 0), 0);
+  const tf = sum('files'), ts = sum('shown'), tc = sum('click'), tk = sum('skip');
+  const tw = sum('world'), td = sum('disc'), tcof = sum('coffee');
+  const warm = tw + td + tc;
+  const sessions = (R.kpis && R.kpis.sessions) || 0;
+  const g = div('hqp-tiles', null, s);
+  tile(g, 'files taken', nfmt(tf));
+  tile(g, 'per 100 visits', sessions ? (tf / sessions * 100).toFixed(1) : '–');
+  tile(g, 'cards shown', nfmt(ts));
+  tile(g, 'coffee clicks', nfmt(tcof), '☕ the ask');
+  tile(g, 'willingness', ts >= MIN_N ? (tcof / ts * 100).toFixed(1) + '%' : '–', ts >= MIN_N ? 'of cards shown' : 'needs 20 cards');
+  tile(g, 'no-thanks', nfmt(tk));
+  tile(g, 'warm-up', warm ? Math.round(warm / Math.max(ts, 1) * 100) + '%' : '–', 'retired ask');
+  div('hqp-cap', ts >= MIN_N
+    ? 'Of every 100 people shown the card, ' + (tcof / ts * 100).toFixed(1) + ' clicked the ☕ ask. The money lands on the payment dashboard, not here.'
+    : 'Not enough cards yet to judge the ask — come back when a few hundred have been shown.', s);
+
+  // ── files, day by day ──────────────────────────────────────────────────
+  const dl = (R.dlDaily || []).slice().sort((a, b) => (a.d < b.d ? -1 : 1));
+  if (dl.length) {
+    const s2 = section(into, 'Files taken, day by day', null);
+    const wrap = div('hqp-bars2', null, s2);
+    const dmax = Math.max(1, ...dl.map((r) => +r.files || 0));
+    dl.forEach((r) => {
+      const col = div('hqp-b2', null, wrap);
+      const fill = div('hqp-b2f', null, col);
+      fill.style.height = Math.max(2, Math.round((+r.files || 0) / dmax * 100)) + '%';
+      const d = r.d.slice(6, 8) + '.' + r.d.slice(4, 6);
+      col.addEventListener('click', () => {
+        note2.hidden = false;
+        note2.textContent = d + ' — ' + (r.files || 0) + ' files, ' + (r.shown || 0) + ' cards shown, '
+          + ((r.world || 0) + (r.disc || 0) + (r.click || 0)) + ' warmed';
+      });
+    });
+    var note2 = div('hqp-note', '', s2);
+    note2.hidden = true;
+    div('hqp-cap', dl[0].d.slice(6, 8) + '.' + dl[0].d.slice(4, 6) + ' → '
+      + dl[dl.length - 1].d.slice(6, 8) + '.' + dl[dl.length - 1].d.slice(4, 6)
+      + ' · peak ' + dmax + ' in a day · tap a bar for the detail', s2);
+  }
+
+  // ── who is taking them, free off the event map ─────────────────────────
+  const em = R.eventMap || {};
+  const geo = {};
+  ['gif_download', 'png_download', 'wallpaper_download'].forEach((k) => {
+    Object.entries(em[k] || {}).forEach(([cc, v]) => { geo[cc] = (geo[cc] || 0) + (+v || 0); });
+  });
+  const geoRows = Object.entries(geo).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const s3 = section(into, 'Who is taking them', null);
+  const t3 = div('hqp-tbl', null, s3);
+  geoRows.forEach(([cc, v]) => {
+    const row = div('hqp-trow', null, t3);
+    div('hqp-tk', flag(cc) + ' ' + cc, row);
+    div('hqp-tv', nfmt(v), row);
+  });
+  if (!geoRows.length) div('hqp-empty', 'no country data in this window', t3);
+
+  // ── the last five minutes ──────────────────────────────────────────────
+  const s4 = section(into, 'Just downloaded', 'The last five minutes, straight off the realtime feed.');
+  const t4 = div('hqp-tbl', null, s4);
+  const recent = ((S.live && S.live.recent) || []).filter((r) => DLSET.has(r.name));
+  recent.forEach((r) => {
+    const row = div('hqp-trow', null, t4);
+    div('hqp-tk', flag(r.cc) + ' ' + (EV_LABEL[r.name] || r.name) + (r.v > 1 ? ' ×' + r.v : ''), row);
+    div('hqp-tv', '', row);
+  });
+  if (!recent.length) div('hqp-empty', 'nothing in the last five minutes', t4);
+
+  // ── every surface that hands a file over ───────────────────────────────
+  const s5 = section(into, 'Every surface that hands a file over', 'Since 12 Aug the card rides every download, so in a fresh window SAW should track TOOK closely. A big gap means the wiring; in an old window it is just the retired once-per-visit cap.');
+  const t5 = div('hqp-tbl', null, s5);
+  const head = div('hqp-trow is-head', null, t5);
+  div('hqp-tk', 'surface', head);
+  div('hqp-tv', 'took · saw · ☕ · no-thx · willing', head);
+  const fmax = Math.max(1, ...rows.map((r) => +r.files || 0));
+  rows.slice().sort((a, b) => (+b.files || 0) - (+a.files || 0)).forEach((r) => {
+    const row = div('hqp-trow', null, t5);
+    const k = div('hqp-tk', null, row);
+    k.textContent = dlName(r.page);
+    // ⚠️ files went out here but the offer never appeared — that is wiring
+    if ((+r.files || 0) >= MIN_N && !(+r.shown || 0)) {
+      const w = div('hqp-warn', ' ⚠ no offer', k);
+      w.title = '';
+    }
+    const bar = div('hqp-mini', null, k);
+    bar.style.width = Math.max(2, Math.round((+r.files || 0) / fmax * 70)) + 'px';
+    div('hqp-tv', nfmt(r.files) + ' · ' + nfmt(r.shown) + ' · ' + nfmt(r.coffee) + ' · ' + nfmt(r.skip)
+      + ' · ' + ((+r.shown || 0) >= MIN_N ? ((+r.coffee || 0) / r.shown * 100).toFixed(1) + '%' : '–'), row);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 🏷️ SHOP — two funnels, told apart purely by which events they name. There
+// is no product-type dimension anywhere in GA4 for this site.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ⚠️ steps count PEOPLE (totalUsers), never raw events: six shop views from
+// two visitors must read as two, or every step flatters itself
+function stepVal(R, key) {
+  if (key === 'sessions') return (R.kpis && R.kpis.sessions) || 0;
+  if (key === 'transactions') return (R.kpis && R.kpis.transactions) || 0;
+  const e = (R.events || []).find((x) => x.name === key);
+  return e ? (e.u != null ? +e.u : +e.v) || 0 : 0;
+}
+const fmtDur = (n) => (n < 90 ? n + 's' : Math.floor(n / 60) + 'm ' + (n % 60) + 's');
+
+function renderFunnel(host, R, steps, title, sub, explainNote) {
+  const s = section(host, title, sub);
+  const vals = steps.map(([k]) => stepVal(R, k));
+  // ⚠️ THE HOTSPOT marks the step people STALL ON — the page to fix — not the
+  // step they fail to reach. Pass one needs 20 behind the source; if nothing
+  // qualifies, pass two drops the size gate rather than marking nothing.
+  let worst = -1, worstRate = 2;
+  for (let i = 1; i < vals.length; i++) {
+    if (vals[i - 1] < MIN_N) continue;
+    const r = vals[i - 1] ? vals[i] / vals[i - 1] : 1;
+    if (r < worstRate) { worstRate = r; worst = i; }
+  }
+  if (worst < 0) {
+    for (let i = 1; i < vals.length; i++) {
+      if (!vals[i - 1]) continue;
+      const r = vals[i] / vals[i - 1];
+      if (r < worstRate) { worstRate = r; worst = i; }
+    }
+  }
+  const wrap = div('hqp-funnel', null, s);
+  const note = div('hqp-note', '', s);
+  note.hidden = true;
+  steps.forEach(([key, label, why], i) => {
+    const row = div('hqp-fstep' + (i === worst - 1 ? ' is-work' : ''), null, wrap);
+    const bar = div('hqp-fbar', null, row);
+    // clamped: a later step can legitimately exceed step 0 (GA4 counts events)
+    bar.style.width = (vals[0] ? Math.min(100, Math.max(1.2, vals[i] / vals[0] * 100)) : 0) + '%';
+    bar.style.background = i === worst - 1 ? '#ff5d8f' : '#6E45E0';
+    const lab = div('hqp-flab', null, row);
+    const nm = div('hqp-fname', null, lab);
+    nm.textContent = String(label).replace(' ⌁store-wide', '');
+    if (String(label).indexOf('⌁store-wide') > -1) div('hqp-fstore', ' (store-wide)', nm);
+    div('hqp-fnum', nfmt(vals[i]), lab);
+    if (i > 0) {
+      const t = (R.stepTimes || {})[key];
+      div('hqp-fdrop', pct(vals[i], vals[i - 1]) + '% make it from “' + String(steps[i - 1][1]).replace(' ⌁store-wide', '') + '”'
+        + (t ? ' · ⌀ ' + fmtDur(t) + ' to get here' : ''), row);
+    }
+    if (i === worst - 1 && worst > 0) {
+      div('hqp-fwork', '⟵ WORK HERE · only ' + pct(vals[worst], vals[i]) + '% continue to “'
+        + String(steps[worst][1]).replace(' ⌁store-wide', '') + '”', row);
+    }
+    row.addEventListener('click', () => { note.hidden = false; note.textContent = why || label; });
+  });
+  if (explainNote) div('hqp-cap', explainNote, s);
+}
+
+export function renderShop(into, S) {
+  const R = S.range;
+  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
+  if (S.to === 'today' && !((R.kpis || {}).sessions)) {
+    div('hqp-note', '⏳ waiting for GA4’s intraday data — today’s visits land here when Google catches up.', into).hidden = false;
+  }
+  renderFunnel(into, R, FUNNELS[0], 'Custom banana funnel',
+    'make-a-banana → tee, sticker or magnet. Every step counts people, not events. The last two steps are store-wide, because Shopify fires them for the official line too. Tap a step to read what it measures.',
+    'the highlighted step is the one people stall on — the page to fix, not the one they fail to reach');
+  renderFunnel(into, R, FUNNELS[1], 'Official merch funnel', 'The /shop/ line.', null);
+  // ⚠️ NOT A FUNNEL. The old page defined these three and never drew them,
+  // and now I know why: taking the file is a SIBLING of clicking the ask, not
+  // a step after it. Chained, it printed "1800% make it from" — so it is drawn
+  // as what it is, one question with two answers.
+  const ask = FUNNELS[2];
+  const shown = stepVal(R, ask[0][0]);
+  const s2 = section(into, 'The support ask',
+    'The download card opens before any file moves and makes one honest ask. The two lines below are answers to it, not steps after it — the file is the no-thanks button.');
+  const card = div('hqp-funnel', null, s2);
+  const note2 = div('hqp-note', '', s2);
+  note2.hidden = true;
+  const topRow = div('hqp-fstep', null, card);
+  const topBar = div('hqp-fbar', null, topRow);
+  topBar.style.width = '100%';
+  topBar.style.background = '#6E45E0';
+  const topLab = div('hqp-flab', null, topRow);
+  div('hqp-fname', ask[0][1], topLab);
+  div('hqp-fnum', nfmt(shown), topLab);
+  topRow.addEventListener('click', () => { note2.hidden = false; note2.textContent = ask[0][2]; });
+  [ask[1], ask[2]].forEach((st, i) => {
+    const v = stepVal(R, st[0]);
+    const row = div('hqp-fstep', null, card);
+    const bar = div('hqp-fbar', null, row);
+    bar.style.width = Math.max(2, shown ? (v / shown) * 100 : 0) + '%';
+    bar.style.background = i === 0 ? '#1F8A70' : '#4a4270';
+    const lab = div('hqp-flab', null, row);
+    div('hqp-fname', '↳ ' + st[1], lab);
+    div('hqp-fnum', nfmt(v), lab);
+    div('hqp-fdrop', shown >= MIN_N ? pct(v, shown) + '% of the cards shown' : 'needs 20 cards before a rate means anything', row);
+    row.addEventListener('click', () => { note2.hidden = false; note2.textContent = st[2]; });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 🎠 THE WORLD — the areas are different products, so they get different
+// questions. Each card carries its own.
+// ════════════════════════════════════════════════════════════════════════════
+export function renderWorld(into, S) {
+  const R = S.range;
+  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
+  const evs = R.events || [];
+  const cnt = (n) => { const e = evs.find((x) => x.name === n); return e ? +e.v || 0 : 0; };
+
+  let s = section(into, 'The world — one question per area', 'Each area is a different product, so each is asked a different thing. The card shows its headline door number and everything that happened inside it in this window.');
+  AREAS.forEach((A) => {
+    const mine = evs.filter((e) => e.name.indexOf(A.key + '_') === 0 || e.name === A.door);
+    const total = mine.reduce((a, e) => a + (+e.v || 0), 0);
+    const card = div('hqp-area' + (total ? '' : ' is-dead'), null, s);
+    div('hqp-aname', A.icon + ' ' + A.name, card);
+    if (!total) { div('hqp-empty', 'nobody came in this window', card); return; }
+    div('hqp-aq', A.q, card);
+    const door = cnt(A.door);
+    if (!A.door) div('hqp-warn', '⚠ no arrival event — this area cannot answer “how many came” until one is added', card);
+    else div('hqp-abig', nfmt(door) + '  ' + (EV_LABEL[A.door] || A.door), card);
+    div('hqp-cap', nfmt(total) + ' things done inside', card);
+    const acts = mine.filter((e) => e.name !== A.door).sort((a, b) => b.v - a.v).slice(0, 6);
+    if (!acts.length) { div('hqp-empty', 'they arrived and did nothing else — the door works, the room does not', card); return; }
+    const t = div('hqp-tbl', null, card);
+    const note = div('hqp-note', '', card);
+    note.hidden = true;
+    acts.forEach((e) => {
+      const row = div('hqp-trow is-tap', null, t);
+      div('hqp-tk', EV_LABEL[e.name] || e.name, row);
+      div('hqp-tv', nfmt(e.v), row);
+      row.addEventListener('click', () => { note.hidden = false; note.textContent = e.name + ' — ' + explain(e.name).why; });
+    });
+  });
+  div('hqp-cap', 'the rave, the park, the bay and the forge share one room until one of them is busy enough to fill its own — an empty room reads worse than a short one', s);
+
+  // ── the shops inside the world ─────────────────────────────────────────
+  s = section(into, 'The shops inside the world', 'Every storefront a banana can walk into. Some sell for coins and some take real money — the row says which.');
+  SHOPS.forEach((sh) => {
+    const vals = sh.steps.map(([k]) => cnt(k));
+    const top = vals[0] || 0;
+    const vmax = Math.max(1, ...vals);   // ⚠️ scale to the BIGGEST step: a till can predate its own door
+    const card = div('hqp-area' + (vals.some((v) => v) ? '' : ' is-dead'), null, s);
+    const head = div('hqp-aname', null, card);
+    head.textContent = sh.icon + ' ' + sh.name + ' · ' + sh.where;
+    if (sh.real) div('hqp-real', ' · real money', head);
+    if (!vals.some((v) => v)) { div('hqp-empty', 'nobody walked in during this window', card); return; }
+    const wrap = div('hqp-funnel', null, card);
+    sh.steps.forEach(([key, label], i) => {
+      const row = div('hqp-fstep', null, wrap);
+      const bar = div('hqp-fbar', null, row);
+      bar.style.width = Math.max(2, (vals[i] / vmax) * 100) + '%';
+      bar.style.background = sh.real ? '#C85A1E' : '#1F8A70';
+      const lab = div('hqp-flab', null, row);
+      div('hqp-fname', label, lab);
+      div('hqp-fnum', nfmt(vals[i]) + (i > 0 && vals[i - 1] >= MIN_N && vals[i] <= vals[i - 1]
+        ? '  ·  ' + pct(vals[i], vals[i - 1]) + '% of the step above' : ''), lab);
+    });
+    if (sh.aside) {
+      const av = cnt(sh.aside[0]);
+      if (av) div('hqp-cap', '⤷ ' + nfmt(av) + ' ' + sh.aside[1], card);
+    }
+    if (sh.steps.length > 1 && top >= MIN_N && !vals[vals.length - 1]) {
+      div('hqp-warn', '⚠ ' + nfmt(top) + ' came in and nobody reached the last step — that is the shop to work on', card);
+    }
+  });
 }

@@ -18,7 +18,7 @@ import { buildEarth, HOTTXT } from './pulse-map.js';
 import * as MAP from '../data/pulse-map.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { renderLedger } from './hq-pulse.js';
-import { renderOverview, renderNow, prevWindow } from './pulse-rooms.js';
+import { renderOverview, renderNow, renderDownloads, renderShop, renderWorld, prevWindow } from './pulse-rooms.js';
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
   'checkout_redirect', 'begin_checkout', 'purchase', 'view_item', 'select_item', 'wallpaper_download',
@@ -195,6 +195,9 @@ export function mountPulse(host, io) {
     body.style.setProperty('--acc', acc);
     if (S.room === 'live') { liveRoom(body); if (body._live) body._live(); return; }
     if (S.room === 'overview') { renderOverview(body, S); renderNow(body, S); return; }
+    if (S.room === 'downloads') { renderDownloads(body, S); return; }
+    if (S.room === 'shop') { renderShop(body, S); return; }
+    if (S.room === 'world') { renderWorld(body, S); return; }
     if (S.room === 'ledger') {
       if (!S.ledger) { el('div', 'hqp-empty', 'reading the world…', body); io.ledger().then((d) => { S.ledger = d; if (S.room === 'ledger') paint(); }); return; }
       renderLedger(body, { ...S.ledger, analyst: S.analyst, live: S.live });
