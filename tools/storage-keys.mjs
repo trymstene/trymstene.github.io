@@ -92,6 +92,7 @@ export const KEYS = {
   'bw-tour-v1': { travels: 'no', why: 'the world tour has played here' },
   'bw-tour-inv': { travels: 'no', why: 'the world tour invite has shown here' },
   'inbox-read-v1': { travels: 'no', why: 'which HQ inbox threads are read (Trym\'s desk)' },
+  'pulse-pane': { travels: 'no', why: 'which Pulse room was last open at HQ — a view preference on this desk' },
   'pk_birds_day': { travels: 'no', why: 'the park bird flock, seeded per day for this device' },
   'pk_bfly': { travels: 'no', why: 'the park butterfly state for this device' },
   'fk-t': { travels: 'no', why: 'a shop page timing marker' },
