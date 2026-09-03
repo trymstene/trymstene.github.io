@@ -236,5 +236,22 @@ ok('the owner comes home to the hugs', Array.isArray(r.hugs) && r.hugs.length ==
   && r.hugs.some((h) => h.i === 314159 && h.n === 'Kiwi'), r.hugs);
 ok('…and to the filled trough', Array.isArray(r.feeds) && r.feeds.length === 1 && r.feeds[0].n === 'Kiwi', r.feeds);
 
+// 13. 📖 THE FARM STORY reads the same rows as the away-news, but whole, in
+// order, and WITHOUT consuming them: /news exists to fire toasts and stamps
+// its seen marker on the way out, so a story cannot be built on it.
+console.log('13. the farm story: a read that changes nothing');
+r = await yp('/news', { pass: P2, alt: 'zzz', wt: await wt(P2) });          // consume the news
+r = await yp('/diary', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('the story still has everything the news already ate', Array.isArray(r.rows)
+  && r.rows.some((x) => x.k === 'hug') && r.rows.some((x) => x.k === 'feed'), (r.rows || []).map((x) => x.k));
+ok('a hug names the animal it was for', r.rows.some((x) => x.k === 'hug' && x.an === 'Gunnar' && x.sp === 'goat'),
+  (r.rows || []).filter((x) => x.k === 'hug'));
+ok('rows are newest first', r.rows.every((x, i) => i === 0 || r.rows[i - 1].t >= x.t), r.rows.map((x) => x.t));
+ok('nobody\'s id rides along, only the name they signed with', !JSON.stringify(r.rows).includes('"o"'), r.rows[0]);
+const again = await yp('/diary', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('…and reading it twice reads the same story', again.rows.length === r.rows.length, { a: r.rows.length, b: again.rows.length });
+r = await yp('/diary', { pass: V, alt: Vs, wt: await wt(V) });
+ok('a stranger has no story to read here', r.status === 404, r);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -2944,7 +2944,7 @@ export class YardRoom {
       const day = yDay();
       const wat = (await this.state.storage.get('wat:' + slug)) || [];
       if (wat.some((w) => w.d === day)) return json({ ok: 1, already: 1 });
-      wat.unshift({ n: yStrip(body.name, 24), o: who, d: day });
+      wat.unshift({ n: yStrip(body.name, 24), o: who, d: day, t: Date.now() });
       await this.state.storage.put('wat:' + slug, wat.slice(0, WAT_CAP));
       return json({ ok: 1 });
     }
@@ -2963,7 +2963,7 @@ export class YardRoom {
       const day = yDay();
       const hugs = (await this.state.storage.get('hug:' + slug)) || [];
       if (hugs.some((h) => h.d === day && h.i === id)) return json({ ok: 1, already: 1 });
-      hugs.unshift({ i: id, n: yStrip(body.name, 24), o: who, d: day });
+      hugs.unshift({ i: id, n: yStrip(body.name, 24), o: who, d: day, t: Date.now() });
       await this.state.storage.put('hug:' + slug, hugs.slice(0, HUG_CAP));
       return json({ ok: 1 });
     }
@@ -2979,7 +2979,7 @@ export class YardRoom {
       const day = yDay();
       const fed = (await this.state.storage.get('fed:' + slug)) || [];
       if (fed.some((f) => f.d === day)) return json({ ok: 1, already: 1 });
-      fed.unshift({ n: yStrip(body.name, 24), o: who, d: day });
+      fed.unshift({ n: yStrip(body.name, 24), o: who, d: day, t: Date.now() });
       await this.state.storage.put('fed:' + slug, fed.slice(0, FEED_CAP));
       if (doc.state) {
         doc.state.feedAt = Date.now();
@@ -3008,6 +3008,42 @@ export class YardRoom {
         hugs: hugs.map((h) => ({ i: h.i, n: h.n, d: h.d })),
         feeds: feeds.map((f) => ({ n: f.n, d: f.d })),
       });
+    }
+
+    // 📖 THE FARM STORY. The same rows the away-news reads, but whole and in
+    // order, and READING IT CHANGES NOTHING — no seen marker, no filtering.
+    // ⚠️ `o` (who) never leaves the room: a page shows the name somebody chose
+    // to sign with, never the id behind it.
+    if (path === '/diary' && request.method === 'POST') {
+      const slug = await this.ownSlug(pass, alt, aliases);
+      if (!slug) return json({ err: 'unclaimed' }, 404);
+      const doc = await this.state.storage.get('y:' + slug);
+      if (!doc) return json({ err: 'gone' }, 404);
+      const st = doc.state || {};
+      // a hug names the animal it was for — the pen first, then the long grass
+      // and the ones who moved on, so a story about Gunnar still says Gunnar
+      const cast = new Map();
+      [...(st.animals || []), ...(st.grass || []), ...(st.memory || [])].forEach((a) => {
+        if (a && a.id && !cast.has(a.id)) cast.set(a.id, { sp: a.sp, an: a.name || '' });
+      });
+      const DAY_MS = 86400000;
+      const stamp = (r) => +r.t || (r.d ? Date.parse(r.d + 'T12:00:00Z') : 0) || 0;
+      const rows = [];
+      const vis = (await this.state.storage.get('vis:' + slug)) || [];
+      const signs = (await this.state.storage.get('g:' + slug)) || [];
+      const wats = (await this.state.storage.get('wat:' + slug)) || [];
+      const hugs = (await this.state.storage.get('hug:' + slug)) || [];
+      const feds = (await this.state.storage.get('fed:' + slug)) || [];
+      vis.forEach((v) => rows.push({ k: 'visit', n: v.n || '', t: stamp(v) }));
+      signs.forEach((g) => rows.push({ k: 'sign', n: g.n || '', x: g.x || '', t: stamp(g) }));
+      wats.forEach((w) => rows.push({ k: 'water', n: w.n || '', t: stamp(w) }));
+      feds.forEach((f) => rows.push({ k: 'feed', n: f.n || '', t: stamp(f) }));
+      hugs.forEach((h) => {
+        const c = cast.get(h.i) || {};
+        rows.push({ k: 'hug', n: h.n || '', t: stamp(h), sp: c.sp || '', an: c.an || '' });
+      });
+      rows.sort((a, b) => b.t - a.t);
+      return json({ slug, name: doc.name, created: doc.created || 0, rows: rows.slice(0, 80), day: DAY_MS });
     }
 
     // 🚪 the doors — the most recently lived-in homesteads (the signpost feed)
