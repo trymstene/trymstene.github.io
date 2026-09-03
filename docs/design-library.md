@@ -62,6 +62,46 @@ reads as a thing pinned to the page rather than a bigger word.
 }
 ```
 
+### 3b. A value is never quieter than its own label
+
+Found on the Pulse desk 3 Sep 2026, where it had been true for a month:
+
+```css
+.hqp-tk { font-size: 0.82rem; }                       /* the label — full ink */
+.hqp-tv { color: var(--hdim); font-size: 0.76rem; }   /* the NUMBER — dimmer  */
+```
+
+Every table on that dashboard whispered its own numbers. The reader's eye went
+to the word and had to hunt for the figure. Whenever a block pairs a figure with
+a name for it, three voices, always in this order of loudness:
+
+| voice | job | treatment |
+|---|---|---|
+| **value** | the number | brightest ink, heaviest weight, `tabular-nums` |
+| **label** | what it is | recessive ink, smaller, often uppercase + tracked |
+| **prose** | why it matters | quietest, normal case, generous line-height |
+
+`font-variant-numeric: tabular-nums` on every figure that sits in a column — a
+digit that does not line up with the one above it is the everyday version of
+"hard to read which line is which number".
+
+### 3c. A wide row needs a leader
+
+Past roughly 40rem, a short label on the left and a lone number on the right stop
+being one row to the eye. Band alternate rows, highlight on hover, rule every
+fifth row, and run a dotted leader between the two — a grid item in the middle
+column, so it grows to exactly the gap:
+
+```css
+.row { display: grid; grid-template-columns: minmax(0, max-content) 1fr max-content; }
+.row::after { content: ''; grid-column: 2; align-self: center; height: 0;
+  margin: 0 0.7rem; border-bottom: 1px dotted rgba(244, 238, 255, 0.18); }
+```
+
+And never concatenate several values into one cell. `1.8k · 1.7k · 92 · 1.4k ·
+5.4%` under a header reading `took · saw · coffee · no-thx · willing` asks the
+reader to pair them by counting separators. Give every number its own column.
+
 ## 4. `[hidden]` loses
 
 **Any author `display:` beats the `hidden` attribute.** A flex row, a grid, an
