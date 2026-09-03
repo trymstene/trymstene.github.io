@@ -43,8 +43,13 @@ const CSS = `
   border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
 }
 .wh__lvlbar i { display: block; height: 100%; width: 0; background: var(--wh-accent); transition: width 0.5s ease; }
-.wh .wh__gard { background: none; border: 0; color: inherit; font: inherit; padding: 0;
-  display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+/* 🧑‍🌾 the gardener chip is a <button>, so it needs the button defaults
+   reset — but it wears the SAME pill as every other chip. It used to strip its
+   own background, border and padding and was the only bare chip in the row
+   (Trym, 3 Sep). Reset the font a button gets for free and let the shared
+   .wh > * rule do the rest, so the pill cannot drift away again. */
+.wh .wh__gard { font-family: inherit; font-size: 0.76rem; font-weight: 800;
+  letter-spacing: inherit; cursor: pointer; }
 .wh .wh__lvlbar--s { width: 16px; }
 .wh__gardart { height: 15px; width: auto; image-rendering: pixelated; }
 /* 🧑‍🌾 the gardener card BODY — one game-style stat block, shared by the park
