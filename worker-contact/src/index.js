@@ -32,7 +32,7 @@ function corsHeaders(env, origin) {
   return {
     'Access-Control-Allow-Origin': ok,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Inbox-Token',
   };
 }
 
@@ -186,7 +186,11 @@ export default {
     // so worker-pulse needs no CORS header and keeps its own gate exactly as
     // it is: a wrong token there is still a 404 to the whole world.
     if (url.pathname === '/pulse' && request.method === 'GET') {
-      const tok = url.searchParams.get('token') || '';
+      // ⚠️ THE TOKEN COMES IN A HEADER, NOT THE QUERY STRING. A key in a URL
+      // lands in browser history, in devtools, and in any screenshot of the
+      // console — which is exactly how this one first got shown to somebody.
+      // The query form still works so an old tab does not break.
+      const tok = (request.headers.get('X-Inbox-Token') || url.searchParams.get('token') || '').trim();
       if (!env.INBOX_TOKEN || tok !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
       if (!env.DASH_TOKEN) {
         return new Response(JSON.stringify({ ok: false, err: 'no dash token' }),
@@ -197,7 +201,10 @@ export default {
         return new Response(JSON.stringify({ ok: false, err: 'bad room' }),
           { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
-      const q = new URLSearchParams({ t: env.DASH_TOKEN });
+      // ⚠️ .trim(): `wrangler secret put` keeps a trailing newline if the
+      // paste had one, and Pulse answers a wrong token with a plain 404 — so
+      // an invisible character reads as "the whole dashboard is missing"
+      const q = new URLSearchParams({ t: String(env.DASH_TOKEN).trim() });
       if (want === 'range') {
         q.set('from', String(url.searchParams.get('from') || 'today').slice(0, 12));
         q.set('to', String(url.searchParams.get('to') || 'today').slice(0, 12));
@@ -205,6 +212,13 @@ export default {
       try {
         const up = await fetch('https://banana-pulse.trymstene.workers.dev/api/' + want + '?' + q.toString());
         const body = await up.text();
+        // Pulse says 404 for a wrong token AND for a wrong path. Passing that
+        // straight through told the desk "not found" for what is really "the
+        // dashboard token is wrong", so name it.
+        if (up.status === 404) {
+          return new Response(JSON.stringify({ ok: false, err: 'pulse refused the dashboard token' }),
+            { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
         return new Response(body, { status: up.status,
           headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       } catch (e) {

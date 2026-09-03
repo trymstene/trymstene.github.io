@@ -1172,7 +1172,9 @@ const description = 'Authorized banana personnel only.';
         // 📡 Google comes THROUGH worker-contact — the dashboard token lives
         // there as a secret, so no GA4 credential reaches this browser and
         // there is one door. The workers' own numbers come straight.
-        const px = (r, q) => fetch(API + '/pulse?r=' + r + (q || '') + '&token=' + encodeURIComponent(token || ''))
+        // the key rides a HEADER now — a token in a URL ends up in history,
+        // in the console and in screenshots of the console
+        const px = (r, q) => fetch(API + '/pulse?r=' + r + (q || ''), { headers: { 'X-Inbox-Token': token || '' } })
           .then((x) => (x.ok ? x.json() : null)).catch(() => null);
         if (pulseApp) pulseApp.destroy();
         pulseApp = pulseMod.mountPulse(host, {
