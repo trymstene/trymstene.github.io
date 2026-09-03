@@ -1104,8 +1104,14 @@ const description = 'Authorized banana personnel only.';
         // so no GA4 credential ever reaches this browser and there is one door.
         const px = (r) => fetch(API + '/pulse?r=' + r + '&token=' + encodeURIComponent(token || ''))
           .then((x) => (x.ok ? x.json() : null)).catch(() => null);
+        // ⚠️ keep WHY it failed: lumping every failure into "key refused" sent
+        // Trym to check a key that was fine when the real fault was a missing
+        // CORS header on the worker
+        let rollWhy = '';
         const [roll, world, analyst, live] = await Promise.all([
-          fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key))
+            .then((r) => { if (r.ok) return r.json(); rollWhy = 'the pass worker answered ' + r.status; return null; })
+            .catch((e) => { rollWhy = 'the pass worker could not be reached (' + String(e.message || e).slice(0, 60) + ')'; return null; }),
           fetch(WORLD_API + '/yards/stats').then((r) => (r.ok ? r.json() : null)).catch(() => null),
           px('analyst'), px('live'),
         ]);
@@ -1113,7 +1119,9 @@ const description = 'Authorized banana personnel only.';
           host.innerHTML = '';
           const p = document.createElement('div');
           p.className = 'hqp-empty';
-          p.textContent = 'The pass admin key was refused. Check it on the Users tab.';
+          p.textContent = rollWhy.indexOf('404') > -1
+            ? 'The pass admin key was refused. Check it on the Users tab.'
+            : 'The world numbers could not be read — ' + (rollWhy || 'no answer') + '.';
           host.appendChild(p);
           return;
         }

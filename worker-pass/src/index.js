@@ -1018,13 +1018,14 @@ async function adminRollup(request, env, url) {
   const days = [...got.values()].filter(Boolean).sort((a, b) => (a.day < b.day ? -1 : 1));
   let state = null;
   try { const o = await env.PASSES.get(ROLL_STATE); state = o ? await o.json() : null; } catch (e) {}
-  return json({ days, today: (state && state.acc) || null, keep: ROLL_KEEP }, 200, { 'Cache-Control': 'no-store' });
+  return json({ days, today: (state && state.acc) || null, keep: ROLL_KEEP }, 200,
+    { ...cors(env, request), 'Cache-Control': 'no-store' });
 }
 
 // a manual nudge, so a fresh day can be walked without waiting on the clock
 async function adminTick(request, env, url) {
   if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
-  return json(await rollupTick(env), 200, { 'Cache-Control': 'no-store' });
+  return json(await rollupTick(env), 200, { ...cors(env, request), 'Cache-Control': 'no-store' });
 }
 
 async function adminScan(env) {

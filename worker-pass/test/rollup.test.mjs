@@ -102,7 +102,18 @@ r = await hit('/admin/rollup?key=desk-key&days=7');
 const d2 = (r.days || []).find((x) => x.day === today);
 ok('…and the file it wrote is unchanged', d2.passes === before, { now: d2.passes, before });
 
-console.log('6. the desk is still a locked door');
+console.log('6. the desk is reachable FROM A BROWSER');
+// ⚠️ this route is called by the HQ page; without the header the browser
+// blocks the answer and the desk can only say "refused" for every fault
+const withCors = await worker.fetch(new Request('https://w.dev/admin/rollup?key=desk-key&days=7',
+  { headers: { Origin: ORIGIN } }), env, ctx);
+ok('the rollup answers with the CORS header the other admin routes send',
+  withCors.headers.get('Access-Control-Allow-Origin') === ORIGIN, withCors.headers.get('Access-Control-Allow-Origin'));
+const tickCors = await worker.fetch(new Request('https://w.dev/admin/rollup/tick?key=desk-key',
+  { headers: { Origin: ORIGIN } }), env, ctx);
+ok('…and so does the manual tick', tickCors.headers.get('Access-Control-Allow-Origin') === ORIGIN, tickCors.headers.get('Access-Control-Allow-Origin'));
+
+console.log('7. the desk is still a locked door');
 const bad = await worker.fetch(new Request('https://w.dev/admin/rollup?key=nope', { headers: { Origin: ORIGIN } }), env, ctx);
 ok('a wrong key gets nothing at all', bad.status === 404, bad.status);
 
